@@ -142,6 +142,31 @@ Either must bind the key to a non-empty value - the key alone leaves the same mi
     {{- if and (empty (include "optimize.effectiveAuthJwksUrl" .)) (ne (include "optimize.jwksSuppliedByRelease" .) "true") }}
       {{- fail (printf "[camunda][error] Optimize with OIDC authentication and optimize.security.authentication.oidc.type=%s requires optimize.security.authentication.oidc.jwksUrl (or global.identity.auth.jwksUrl), naming the endpoint Optimize fetches token signing keys from. Only KEYCLOAK has an endpoint layout to derive it from, and only while an issuerBackendUrl resolves to append it to, so this release renders an empty api.jwtSetUri and can validate no token. A release that supplies it itself is exempt: set a non-empty api.jwtSetUri in optimize.configuration, which replaces the file this chart renders, or in an optimize.extraConfiguration file, which Optimize imports after it, or name %s in optimize.env or in optimize.security.authentication.oidc.envFromProvides." (include "optimize.effectiveAuthType" .) (include "optimize.jwksEnvNames" .)) }}
     {{- end }}
+    {{/*
+    A component-scoped Optimize identity switches on the identity env ConfigMap, which always states
+    CAMUNDA_IDENTITY_BASEURL. With no Identity URL on either side that value falls back to
+    camundaPlatform.identityURL's in-release default, http://<release>-identity:<port> - an address
+    that resolves only where this release runs Management Identity itself. A release that runs none
+    therefore renders a Service name nothing serves, and because Optimize contacts Identity for
+    authorizations rather than for token validation, a valid issuer and JWKS still let it start and
+    report ready; only the first authorization lookup fails.
+
+    Scoped the same way as the issuer and JWKS checks above, to a release that configures Optimize's
+    own identity. camundaPlatform.identityEnabled is already false in orchestration and optimize
+    modes, so a release that runs no Identity of its own is caught whichever mode put it in that
+    position.
+
+    The release may answer this itself, as with every other guard here: CAMUNDA_IDENTITY_BASEURL in
+    optimize.env, or named in optimize.security.authentication.oidc.envFromProvides, is the value the
+    container reads instead of the ConfigMap's, so there is nothing left for the chart to resolve.
+    */}}
+    {{- if and
+          (ne (include "camundaPlatform.identityEnabled" .) "true")
+          (empty (dig "identity" "service" "url" "" .Values.optimize))
+          (empty .Values.global.identity.service.url)
+          (ne (include "optimize.identityUrlMayComeFromEnv" .) "true") }}
+      {{- fail (printf "[camunda][error] Optimize configures its own identity but this release runs no Management Identity (identity.enabled=false, or global.topology.mode=orchestration or optimize), and neither optimize.identity.service.url nor global.identity.service.url names one. %s would fall back to this chart's in-release default, http://<release>-identity:<port>, which no Service in this release answers, so Optimize starts and reports ready while every authorization lookup fails. Set optimize.identity.service.url (or global.identity.service.url) to the Management Identity this release authenticates against. A release that supplies it itself is exempt: name %s in optimize.env, or in optimize.security.authentication.oidc.envFromProvides." (include "optimize.identityUrlEnvNames" .) (include "optimize.identityUrlEnvNames" .)) }}
+    {{- end }}
   {{- end }}
   {{/*
   A Secret reference without a key matches neither branch of

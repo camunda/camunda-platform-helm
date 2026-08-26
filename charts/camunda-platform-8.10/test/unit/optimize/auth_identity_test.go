@@ -51,7 +51,11 @@ func (s *AuthIdentityTemplateTest) render(extra map[string]string, templates []s
 		// This chart bundles no Keycloak, so global.identity.auth.enabled resolves no issuer on its
 		// own and the issuer constraint rejects the render. Name a backend URL so every case below
 		// exercises its own subject rather than that constraint.
-		"global.identity.auth.issuerBackendUrl":    "http://keycloak.example.com/realms/camunda",
+		"global.identity.auth.issuerBackendUrl": "http://keycloak.example.com/realms/camunda",
+		// identity.enabled defaults to false, so for the same reason name the Management Identity
+		// these releases authenticate against: a component-scoped Optimize identity on a release that
+		// runs no Identity of its own is rejected, and every case below is about something else.
+		"global.identity.service.url":              "http://identity.example.com/identity",
 		"optimize.enabled":                         "true",
 		"orchestration.data.secondaryStorage.type": "elasticsearch",
 	}
@@ -456,6 +460,7 @@ func (s *AuthIdentityTemplateTest) TestComponentExistingSecretWithoutAKeyIsRejec
 		"optimize.security.authentication.oidc.jwksUrl": "https://issuer.example.com/certs",
 		"optimize.enabled":                                            "true",
 		"orchestration.data.secondaryStorage.type":                    "elasticsearch",
+		"global.identity.service.url":                                 "http://identity.example.com/identity",
 		"optimize.security.authentication.oidc.secret.existingSecret": "tenant-oidc",
 	}}
 	_, err := helm.RenderTemplateE(s.T(), options, s.chartPath, s.release,
@@ -666,6 +671,7 @@ func (s *AuthIdentityTemplateTest) TestComponentJwksUrlServesANonKeycloakType() 
 		"global.identity.auth.issuerBackendUrl":        "http://keycloak.example.com/realms/camunda",
 		"optimize.enabled":                             "true",
 		"orchestration.data.secondaryStorage.type":     "elasticsearch",
+		"global.identity.service.url":                  "http://identity.example.com/identity",
 		"optimize.security.authentication.oidc.type":   "GENERIC",
 		"optimize.security.authentication.oidc.issuer": "https://issuer.example.com",
 	}
@@ -704,6 +710,7 @@ func (s *AuthIdentityTemplateTest) TestOptimizeConfigurationMaySupplyTheJwksUri(
 		"global.identity.auth.issuerBackendUrl":        "http://keycloak.example.com/realms/camunda",
 		"optimize.enabled":                             "true",
 		"orchestration.data.secondaryStorage.type":     "elasticsearch",
+		"global.identity.service.url":                  "http://identity.example.com/identity",
 		"optimize.security.authentication.oidc.type":   "GENERIC",
 		"optimize.security.authentication.oidc.issuer": "https://issuer.example.com",
 	}
@@ -827,6 +834,7 @@ func (s *AuthIdentityTemplateTest) TestExtraConfigurationMaySupplyTheJwksUri() {
 		"global.identity.auth.issuerBackendUrl":        "http://keycloak.example.com/realms/camunda",
 		"optimize.enabled":                             "true",
 		"orchestration.data.secondaryStorage.type":     "elasticsearch",
+		"global.identity.service.url":                  "http://identity.example.com/identity",
 		"optimize.security.authentication.oidc.type":   "GENERIC",
 		"optimize.security.authentication.oidc.issuer": "https://issuer.example.com",
 		"optimize.extraConfiguration[0].file":          "jwks-overrides.yaml",
@@ -983,6 +991,7 @@ func (s *AuthIdentityTemplateTest) TestOptimizeEnvMaySupplyTheClientSecret() {
 		"optimize.security.authentication.oidc.jwksUrl":               "https://issuer.example.com/certs",
 		"optimize.enabled":                                            "true",
 		"orchestration.data.secondaryStorage.type":                    "elasticsearch",
+		"global.identity.service.url":                                 "http://identity.example.com/identity",
 		"optimize.security.authentication.oidc.secret.existingSecret": "tenant-oidc",
 		"optimize.env[0].name":                                        "CAMUNDA_IDENTITY_CLIENT_SECRET",
 		"optimize.env[0].valueFrom.secretKeyRef.name":                 "tenant-oidc",
@@ -1003,6 +1012,7 @@ func (s *AuthIdentityTemplateTest) TestDeclaredEnvFromMaySupplyTheClientSecret()
 		"optimize.security.authentication.oidc.jwksUrl":               "https://issuer.example.com/certs",
 		"optimize.enabled":                                            "true",
 		"orchestration.data.secondaryStorage.type":                    "elasticsearch",
+		"global.identity.service.url":                                 "http://identity.example.com/identity",
 		"optimize.security.authentication.oidc.secret.existingSecret": "tenant-oidc",
 		"optimize.envFrom[0].secretRef.name":                          "tenant-oidc-env",
 		"optimize.security.authentication.oidc.envFromProvides[0]":    "CAMUNDA_IDENTITY_CLIENT_SECRET",
@@ -1031,6 +1041,7 @@ func (s *AuthIdentityTemplateTest) TestKeycloakWithoutABackendUrlDerivesNoJwksUr
 		"identity.enabled":                             "false",
 		"optimize.enabled":                             "true",
 		"orchestration.data.secondaryStorage.type":     "elasticsearch",
+		"global.identity.service.url":                  "http://identity.example.com/identity",
 		"optimize.security.authentication.oidc.type":   "KEYCLOAK",
 		"optimize.security.authentication.oidc.issuer": "https://issuer.example.com",
 	}
@@ -1045,4 +1056,108 @@ func (s *AuthIdentityTemplateTest) TestKeycloakWithoutABackendUrlDerivesNoJwksUr
 		[]string{"templates/optimize/configmap.yaml"})
 	s.Require().NoError(err)
 	s.Require().Contains(out, `jwtSetUri: "https://issuer.example.com/certs"`)
+}
+
+// A component-scoped Optimize identity is configured on a release that runs no Management Identity
+// of its own, so the in-release default CAMUNDA_IDENTITY_BASEURL points at a Service that is never
+// deployed. Optimize reaches Identity for authorizations rather than for token validation, so a
+// valid issuer and JWKS let it start and report ready and only the first authorization lookup fails
+// - which is why this is rejected at render time rather than left to the deploy to discover.
+func (s *AuthIdentityTemplateTest) TestComponentScopedIdentityRequiresAReachableIdentityUrl() {
+	values := map[string]string{
+		"global.identity.auth.enabled":                           "false",
+		"identity.enabled":                                       "false",
+		"optimize.enabled":                                       "true",
+		"orchestration.data.secondaryStorage.type":               "elasticsearch",
+		"optimize.security.authentication.method":                "oidc",
+		"optimize.security.authentication.oidc.type":             "GENERIC",
+		"optimize.security.authentication.oidc.issuer":           "https://idp.example.com/realms/camunda",
+		"optimize.security.authentication.oidc.issuerBackendUrl": "https://idp.example.com/realms/camunda",
+		"optimize.security.authentication.oidc.jwksUrl":          "https://idp.example.com/realms/camunda/protocol/openid-connect/certs",
+	}
+	_, err := helm.RenderTemplateE(s.T(), &helm.Options{SetValues: values}, s.chartPath, s.release,
+		[]string{"templates/optimize/configmap-identity-env.yaml"})
+	s.Require().Error(err)
+	s.Require().Contains(err.Error(), "neither optimize.identity.service.url nor global.identity.service.url names one")
+
+	// The component-scoped URL answers it, and is the value Optimize is then given.
+	component := map[string]string{}
+	for k, v := range values {
+		component[k] = v
+	}
+	component["optimize.identity.service.url"] = "http://identity.hub.svc:80/identity"
+	out, err := helm.RenderTemplateE(s.T(), &helm.Options{SetValues: component}, s.chartPath, s.release,
+		[]string{"templates/optimize/configmap-identity-env.yaml"})
+	s.Require().NoError(err)
+	s.Require().Contains(out, `CAMUNDA_IDENTITY_BASEURL: "http://identity.hub.svc:80/identity"`)
+
+	// So does the release-shared one, which is the shape an Optimize release pointed at a Management
+	// Identity elsewhere already uses.
+	global := map[string]string{}
+	for k, v := range values {
+		global[k] = v
+	}
+	global["global.identity.service.url"] = "http://identity.hub.svc:80/identity"
+	out, err = helm.RenderTemplateE(s.T(), &helm.Options{SetValues: global}, s.chartPath, s.release,
+		[]string{"templates/optimize/configmap-identity-env.yaml"})
+	s.Require().NoError(err)
+	s.Require().Contains(out, `CAMUNDA_IDENTITY_BASEURL: "http://identity.hub.svc:80/identity"`)
+}
+
+// The same guard is answered by the release supplying the variable as container env, because the
+// Deployment lists optimize.env and optimize.envFrom after the identity env ConfigMap and so what
+// they carry is the CAMUNDA_IDENTITY_BASEURL the container actually reads. An entry whose value is
+// empty carries nothing, so it answers nothing.
+func (s *AuthIdentityTemplateTest) TestReleaseSuppliedIdentityUrlEnvAnswersTheGuard() {
+	base := map[string]string{
+		"global.identity.auth.enabled":                           "false",
+		"identity.enabled":                                       "false",
+		"optimize.enabled":                                       "true",
+		"orchestration.data.secondaryStorage.type":               "elasticsearch",
+		"optimize.security.authentication.method":                "oidc",
+		"optimize.security.authentication.oidc.type":             "GENERIC",
+		"optimize.security.authentication.oidc.issuer":           "https://idp.example.com/realms/camunda",
+		"optimize.security.authentication.oidc.issuerBackendUrl": "https://idp.example.com/realms/camunda",
+		"optimize.security.authentication.oidc.jwksUrl":          "https://idp.example.com/realms/camunda/protocol/openid-connect/certs",
+	}
+	with := func(extra map[string]string) map[string]string {
+		values := map[string]string{}
+		for k, v := range base {
+			values[k] = v
+		}
+		for k, v := range extra {
+			values[k] = v
+		}
+		return values
+	}
+
+	// An optimize.env entry with a value the container will read.
+	_, err := helm.RenderTemplateE(s.T(), &helm.Options{SetValues: with(map[string]string{
+		"optimize.env[0].name":  "CAMUNDA_IDENTITY_BASEURL",
+		"optimize.env[0].value": "http://identity.elsewhere.svc:80/identity",
+	})}, s.chartPath, s.release, []string{"templates/optimize/deployment.yaml"})
+	s.Require().NoError(err)
+
+	// The same entry bound to nothing reaches the container as an empty variable, so the guard stands.
+	_, err = helm.RenderTemplateE(s.T(), &helm.Options{SetValues: with(map[string]string{
+		"optimize.env[0].name":  "CAMUNDA_IDENTITY_BASEURL",
+		"optimize.env[0].value": "",
+	})}, s.chartPath, s.release, []string{"templates/optimize/deployment.yaml"})
+	s.Require().Error(err)
+	s.Require().Contains(err.Error(), "neither optimize.identity.service.url nor global.identity.service.url names one")
+
+	// A declared envFrom source answers it too, and only the declaration says one carries it.
+	declared := with(map[string]string{
+		"optimize.envFrom[0].configMapRef.name":                    "tenant-identity",
+		"optimize.security.authentication.oidc.envFromProvides[0]": "CAMUNDA_IDENTITY_BASEURL",
+	})
+	_, err = helm.RenderTemplateE(s.T(), &helm.Options{SetValues: declared}, s.chartPath, s.release,
+		[]string{"templates/optimize/deployment.yaml"})
+	s.Require().NoError(err)
+
+	delete(declared, "optimize.security.authentication.oidc.envFromProvides[0]")
+	_, err = helm.RenderTemplateE(s.T(), &helm.Options{SetValues: declared}, s.chartPath, s.release,
+		[]string{"templates/optimize/deployment.yaml"})
+	s.Require().Error(err)
+	s.Require().Contains(err.Error(), "neither optimize.identity.service.url nor global.identity.service.url names one")
 }
