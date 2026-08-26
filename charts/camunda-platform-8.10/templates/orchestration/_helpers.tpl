@@ -484,7 +484,7 @@ constraints.tpl does: one form alone lets a different YAML style slip past the c
 */ -}}
 {{- define "orchestration.physicalTenantsDeclared" -}}
 {{- $args := dict "extraConfiguration" .Values.orchestration.extraConfiguration "path" (list "camunda" "physical-tenants") -}}
-{{- if or (eq (include "camundaPlatform.extraConfigHasPath" $args) "true") (eq (include "camundaPlatform.extraConfigHasDottedPath" $args) "true") (eq (include "camundaPlatform.extraConfigHasRawKeyPrefix" $args) "true") -}}
+{{- if or (eq (include "camundaPlatform.extraConfigHasPathInAnyYamlDocument" $args) "true") (eq (include "camundaPlatform.extraConfigHasRawKeyPrefix" $args) "true") -}}
 true
 {{- end -}}
 {{- end -}}
