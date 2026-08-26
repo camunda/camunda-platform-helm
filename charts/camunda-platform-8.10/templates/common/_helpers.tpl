@@ -2095,11 +2095,14 @@ Usage (inside the Optimize pod template's metadata.annotations):
 {{- if .Values.global.tls.optimize.autoRollout -}}
 {{- $o := .Values.global.tls.optimize -}}
 {{- if and $o.enabled $o.cert.secret.existingSecret -}}
-{{- include "camundaPlatform.tlsChecksumAnnotation" (dict
-    "context" .
-    "annotation" "checksum/optimize-tls"
-    "secretName" $o.cert.secret.existingSecret
-    "certKey" (include "camundaPlatform.optimizeServerSecretCertKey" .)) }}
+{{- $secret := lookup "v1" "Secret" .Release.Namespace $o.cert.secret.existingSecret -}}
+{{- $data := ($secret | default dict).data | default dict -}}
+{{- $hashes := list (get $data (include "camundaPlatform.optimizeServerSecretCertKey" .)) -}}
+{{- if eq ($o.type | default "pkcs12") "pem" -}}
+{{- $keyKey := $o.privateKey.secret.existingSecretKey | default "tls.key" -}}
+{{- $hashes = append $hashes (get $data $keyKey) -}}
+{{- end -}}
+checksum/optimize-tls: {{ join "" $hashes | sha256sum }}
 {{- end -}}
 {{- end -}}
 {{- end -}}
