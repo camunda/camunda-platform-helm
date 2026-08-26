@@ -770,14 +770,25 @@ Zeebe templates.
 {{- end -}}
 
 {{/*
-[camunda-platform] Returns "true" when Orchestration REST TLS is enabled. An
-explicit orchestration.env entry for SERVER_SSL_ENABLED wins over
-global.tls.orchestration.rest.enabled, because Kubernetes keeps the LAST
-duplicate env var and the chart must report the same TLS state the running
-container actually ends up with. A "valueFrom"-sourced entry (no literal
-value) resolves to "unknown" from orchestrationEnvLastValue and is treated
-the same as "unset" here — the chart defers to the global flag rather than
-assuming the runtime secret disables TLS.
+[camunda-platform] Returns "true" when Orchestration REST TLS is enabled,
+resolved in the order Spring itself applies, highest precedence first:
+
+  1. an orchestration.env entry for SERVER_SSL_ENABLED (last duplicate wins)
+  2. global.tls.orchestration.rest.enabled, which the StatefulSet emits as that
+     same env var, so orchestration.env is appended after it and outranks it
+  3. orchestration.extraConfiguration setting server.ssl.enabled
+  4. orchestration.configuration setting server.ssl.enabled
+
+Both env sources rank above both YAML sources because Spring ranks OS
+environment variables above every application.yaml source. A "valueFrom"-sourced
+env entry (no literal value) resolves to "unknown" from
+orchestrationEnvLastValue and is treated the same as "unset" here: the chart
+cannot read that value at render time, so it falls through to the remaining
+sources rather than assuming the runtime secret disables TLS.
+
+The YAML sources match nested keys literally, so flat dotted keys,
+relaxed-binding camelCase, and springImport: false entries stay invisible here.
+camunda.constraints.warnings warns about what this cannot see.
 */}}
 {{- define "camundaPlatform.orchestrationRESTTLSEnabled" -}}
   {{- $envValue := include "camundaPlatform.orchestrationEnvLastValue" (dict "context" . "name" "SERVER_SSL_ENABLED") -}}
@@ -788,16 +799,21 @@ assuming the runtime secret disables TLS.
   {{- else if .Values.global.tls.orchestration.rest.enabled -}}
     true
   {{- else -}}
-    false
+    {{- $configState := include "camundaPlatform.appConfigBoolState" (dict
+        "configuration" .Values.orchestration.configuration
+        "extraConfiguration" .Values.orchestration.extraConfiguration
+        "path" (list "server" "ssl" "enabled")) -}}
+    {{- ternary "true" "false" (eq $configState "true") -}}
   {{- end -}}
 {{- end -}}
 
 {{/*
-[camunda-platform] Returns "true" when Orchestration gRPC TLS is enabled. An
-explicit orchestration.env entry for CAMUNDA_API_GRPC_SSL_ENABLED wins over
-global.tls.orchestration.grpc.enabled, mirroring
-camundaPlatform.orchestrationRESTTLSEnabled, including the "unknown" ==
-"unset" fallback for a valueFrom-sourced entry.
+[camunda-platform] Returns "true" when Orchestration gRPC TLS is enabled,
+mirroring camundaPlatform.orchestrationRESTTLSEnabled exactly: same four-source
+precedence, same "unknown" == "unset" handling for a valueFrom-sourced env
+entry, and the same literal-nested-key limits on the YAML sources. The gRPC
+property path is camunda.api.grpc.ssl.enabled, the relaxed-binding YAML form of
+the CAMUNDA_API_GRPC_SSL_ENABLED env var the StatefulSet emits.
 */}}
 {{- define "camundaPlatform.orchestrationGRPCTLSEnabled" -}}
   {{- $envValue := include "camundaPlatform.orchestrationEnvLastValue" (dict "context" . "name" "CAMUNDA_API_GRPC_SSL_ENABLED") -}}
@@ -808,7 +824,11 @@ camundaPlatform.orchestrationRESTTLSEnabled, including the "unknown" ==
   {{- else if .Values.global.tls.orchestration.grpc.enabled -}}
     true
   {{- else -}}
-    false
+    {{- $configState := include "camundaPlatform.appConfigBoolState" (dict
+        "configuration" .Values.orchestration.configuration
+        "extraConfiguration" .Values.orchestration.extraConfiguration
+        "path" (list "camunda" "api" "grpc" "ssl" "enabled")) -}}
+    {{- ternary "true" "false" (eq $configState "true") -}}
   {{- end -}}
 {{- end -}}
 
@@ -844,6 +864,144 @@ Usage:
     {{- end -}}
   {{- end -}}
   {{- $result -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] Returns "true", "false" or "unset" for a boolean key path in a
+<component>.configuration string. "unset" means the parsed YAML has no scalar at
+that path. Keys match literally on nested map keys, so flat dotted keys
+("server.ssl.enabled: true" as one key), relaxed-binding camelCase, and keys
+outside the first YAML document are NOT matched — same accepted form as
+camundaPlatform.effectiveExtraConfigValue.
+Usage:
+  {{ include "camundaPlatform.configYamlBoolState" (dict
+    "configuration" .Values.orchestration.configuration
+    "path" (list "server" "ssl" "enabled")) }}
+*/}}
+{{- define "camundaPlatform.configYamlBoolState" -}}
+  {{- $state := "unset" -}}
+  {{- $parsed := (.configuration | default "" | fromYaml) -}}
+  {{- if kindIs "map" $parsed -}}
+    {{- $node := $parsed -}}
+    {{- $found := true -}}
+    {{- range $key := .path -}}
+      {{- if and $found (kindIs "map" $node) (hasKey $node $key) -}}
+        {{- $node = index $node $key -}}
+      {{- else -}}
+        {{- $found = false -}}
+      {{- end -}}
+    {{- end -}}
+    {{- if and $found (not (kindIs "invalid" $node)) (not (kindIs "map" $node)) (not (kindIs "slice" $node)) -}}
+      {{- $state = ternary "true" "false" (eq (lower (toString $node)) "true") -}}
+    {{- end -}}
+  {{- end -}}
+  {{- $state -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] Returns "true", "false" or "unset" for a boolean key path set
+through <component>.extraConfiguration. Delegates to
+camundaPlatform.effectiveExtraConfigValue, so later entries win and entries with
+springImport: false are skipped, and inherits its accepted YAML form.
+Usage:
+  {{ include "camundaPlatform.extraConfigBoolState" (dict
+    "extraConfiguration" .Values.orchestration.extraConfiguration
+    "path" (list "server" "ssl" "enabled")) }}
+*/}}
+{{- define "camundaPlatform.extraConfigBoolState" -}}
+  {{- $raw := include "camundaPlatform.effectiveExtraConfigValue" (dict
+      "default" "unset"
+      "extraConfiguration" .extraConfiguration
+      "path" .path) -}}
+  {{- if eq $raw "unset" -}}
+    unset
+  {{- else -}}
+    {{- ternary "true" "false" (eq (lower $raw) "true") -}}
+  {{- end -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] Returns "true", "false" or "unset" for a boolean key path as
+Spring resolves it across a component's two YAML config sources.
+extraConfiguration outranks configuration: extraConfiguration entries are pulled
+in through spring.config.import, and an imported document overrides the document
+that imports it. This also matches camundaPlatform.effectiveExtraConfigValue,
+which already treats extraConfiguration as overriding its fallback.
+Callers must apply env vars on top of this result, not below it: Spring ranks
+OS environment variables above every application.yaml source, and the chart's
+own TLS flags reach the container as env vars.
+Usage:
+  {{ include "camundaPlatform.appConfigBoolState" (dict
+    "configuration" .Values.orchestration.configuration
+    "extraConfiguration" .Values.orchestration.extraConfiguration
+    "path" (list "server" "ssl" "enabled")) }}
+*/}}
+{{- define "camundaPlatform.appConfigBoolState" -}}
+  {{- $state := include "camundaPlatform.configYamlBoolState" (dict
+      "configuration" .configuration
+      "path" .path) -}}
+  {{- $extra := include "camundaPlatform.extraConfigBoolState" (dict
+      "extraConfiguration" .extraConfiguration
+      "path" .path) -}}
+  {{- if ne $extra "unset" -}}
+    {{- $state = $extra -}}
+  {{- end -}}
+  {{- $state -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] Returns "true" when a component's YAML config sources mention
+a key path at all, in any form Spring accepts. Wraps <component>.configuration as
+a single extraConfiguration-shaped entry so all three existing matchers apply to
+both sources: nested keys (extraConfigHasPath), dotted/relaxed keys
+(extraConfigHasDottedPath), and raw text for .properties or unparsable content
+(extraConfigHasRawKeyPrefix). Any subkey below the path counts, so a path of
+"server" "ssl" "key-store" also matches "key-store.file-path".
+Presence only — this says nothing about the value. Use it to decide whether the
+operator has taken ownership of a setting, not to read it.
+Usage:
+  {{ include "camundaPlatform.appConfigMentionsPath" (dict
+    "configuration" .Values.orchestration.configuration
+    "extraConfiguration" .Values.orchestration.extraConfiguration
+    "path" (list "server" "ssl" "certificate")) }}
+*/}}
+{{- define "camundaPlatform.appConfigMentionsPath" -}}
+  {{- $sources := concat
+      (list (dict "content" (.configuration | default "")))
+      (.extraConfiguration | default list) -}}
+  {{- $args := dict "extraConfiguration" $sources "path" .path -}}
+  {{- if or
+      (eq (include "camundaPlatform.extraConfigHasPath" $args) "true")
+      (eq (include "camundaPlatform.extraConfigHasDottedPath" $args) "true")
+      (eq (include "camundaPlatform.extraConfigHasRawKeyPrefix" $args) "true") -}}
+    true
+  {{- end -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] Returns "true" when a component's YAML config sources declare
+server cert material for a TLS listener, under any of the key spellings Spring
+binds: a PEM "certificate" or a "key-store" / "keyStore" keystore. Callers use
+this to tell "the operator owns the cert in application.yaml" apart from "no cert
+is configured anywhere", so a config-based TLS opt-in is not failed for missing
+cert wiring the chart simply cannot see.
+Usage:
+  {{ include "camundaPlatform.appConfigHasCertMaterial" (dict
+    "configuration" .Values.orchestration.configuration
+    "extraConfiguration" .Values.orchestration.extraConfiguration
+    "prefix" (list "server" "ssl")) }}
+*/}}
+{{- define "camundaPlatform.appConfigHasCertMaterial" -}}
+  {{- $found := "" -}}
+  {{- range $leaf := (list "certificate" "key-store" "keyStore") -}}
+    {{- if eq (include "camundaPlatform.appConfigMentionsPath" (dict
+        "configuration" $.configuration
+        "extraConfiguration" $.extraConfiguration
+        "path" (concat $.prefix (list $leaf)))) "true" -}}
+      {{- $found = "true" -}}
+    {{- end -}}
+  {{- end -}}
+  {{- $found -}}
 {{- end -}}
 
 {{/*

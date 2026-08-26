@@ -225,9 +225,21 @@ gRPC server to crash on startup. Fail loudly at render time instead.
   {{- $restCertRef := include "camundaPlatform.orchestrationTLSCertRef" (dict "context" . "proto" "rest") | fromYaml -}}
   {{- $grpcCertRef := include "camundaPlatform.orchestrationTLSCertRef" (dict "context" . "proto" "grpc") | fromYaml -}}
   {{- $hasEnvFrom := not (empty .Values.orchestration.envFrom) -}}
+  {{/* An operator who enables TLS through orchestration.{configuration,extraConfiguration}
+       owns application.yaml and can declare the cert there, where no env var appears.
+       Treat that as cert material so a config-based opt-in is not failed for wiring
+       the chart cannot see. */}}
+  {{- $restCertInYaml := eq (include "camundaPlatform.appConfigHasCertMaterial" (dict
+      "configuration" .Values.orchestration.configuration
+      "extraConfiguration" .Values.orchestration.extraConfiguration
+      "prefix" (list "server" "ssl"))) "true" -}}
+  {{- $grpcCertInYaml := eq (include "camundaPlatform.appConfigHasCertMaterial" (dict
+      "configuration" .Values.orchestration.configuration
+      "extraConfiguration" .Values.orchestration.extraConfiguration
+      "prefix" (list "camunda" "api" "grpc" "ssl"))) "true" -}}
   {{- if eq (include "camundaPlatform.orchestrationRESTTLSEnabled" .) "true" }}
     {{- if not $restCertRef.name }}
-      {{- if not (or (has "SERVER_SSL_KEY_STORE" $envNames) (has "SERVER_SSL_CERTIFICATE" $envNames) $hasEnvFrom) }}
+      {{- if not (or (has "SERVER_SSL_KEY_STORE" $envNames) (has "SERVER_SSL_CERTIFICATE" $envNames) $hasEnvFrom $restCertInYaml) }}
         {{- $errorMessage := printf "%s %s %s"
             "[camunda][error] Orchestration REST TLS is enabled but no server cert is configured."
             "Set global.tls.orchestration.rest.cert.secret.existingSecret (recommended) or cert.secret.inlineSecret (PEM only) so the chart mounts the cert,"
@@ -265,7 +277,7 @@ gRPC server to crash on startup. Fail loudly at render time instead.
   {{- end }}
   {{- if eq (include "camundaPlatform.orchestrationGRPCTLSEnabled" .) "true" }}
     {{- if not $grpcCertRef.name }}
-      {{- if not (or (has "CAMUNDA_API_GRPC_SSL_CERTIFICATE" $envNames) $hasEnvFrom) }}
+      {{- if not (or (has "CAMUNDA_API_GRPC_SSL_CERTIFICATE" $envNames) $hasEnvFrom $grpcCertInYaml) }}
         {{- $errorMessage := printf "%s %s %s"
             "[camunda][error] Orchestration gRPC TLS is enabled but no server cert is configured."
             "Set global.tls.orchestration.grpc.cert.secret.existingSecret (recommended) or cert.secret.inlineSecret so the chart mounts the cert,"
@@ -648,6 +660,81 @@ The following values inside your values.yaml need to be set but were not:
       {{- end }}
     {{- end }}
 
+  {{- end }}
+
+  {{/* Orchestration TLS detection guardrails: the chart derives ingress backend
+       protocols and in-cluster client endpoint schemes from
+       camundaPlatform.orchestrationRESTTLSEnabled / ...GRPCTLSEnabled. Those read
+       orchestration.env, global.tls.orchestration.*, and nested YAML keys in
+       orchestration.{configuration,extraConfiguration}. Two forms stay
+       unreadable at render time; warn rather than derive plaintext silently. */}}
+  {{- if .Values.orchestration.enabled }}
+    {{- $tlsProps := list
+        (dict "proto" "REST" "envName" "SERVER_SSL_ENABLED" "flag" "global.tls.orchestration.rest.enabled" "path" (list "server" "ssl" "enabled") "state" (include "camundaPlatform.orchestrationRESTTLSEnabled" .))
+        (dict "proto" "gRPC" "envName" "CAMUNDA_API_GRPC_SSL_ENABLED" "flag" "global.tls.orchestration.grpc.enabled" "path" (list "camunda" "api" "grpc" "ssl" "enabled") "state" (include "camundaPlatform.orchestrationGRPCTLSEnabled" .))
+    }}
+    {{- range $prop := $tlsProps }}
+
+      {{/* (W1) A dotted/relaxed key form Spring accepts but the chart's nested-key
+             walk cannot see. Only flagged while the derivation resolved to
+             plaintext, so a key the chart already detected never warns. Splits
+             yielding a single segment are skipped: a bare "enabled: true" line
+             matches unrelated config. */}}
+      {{- if ne $prop.state "true" }}
+        {{- $dottedHit := "" -}}
+        {{- $contents := list ($.Values.orchestration.configuration | default "") -}}
+        {{- range $entry := ($.Values.orchestration.extraConfiguration | default list) -}}
+          {{- $contents = append $contents ($entry.content | default "") -}}
+        {{- end -}}
+        {{- range $split := until (sub (len $prop.path) 1 | int) -}}
+          {{- $dotted := join "." (slice $prop.path $split) -}}
+          {{- $pattern := printf "(?m)^[ \t]*%s[ \t]*[:=][ \t]*[\"']?(?i)true" (replace "." "\\." $dotted) -}}
+          {{- range $content := $contents -}}
+            {{- if regexMatch $pattern $content -}}
+              {{- $dottedHit = $dotted -}}
+            {{- end -}}
+          {{- end -}}
+        {{- end -}}
+        {{- if $dottedHit }}
+          {{- $warningMessage := printf "%s %s %s"
+              "[camunda][warning]"
+              (printf "orchestration.configuration or orchestration.extraConfiguration appears to enable Orchestration %s TLS through the dotted key '%s', which the chart cannot read." $prop.proto $dottedHit)
+              (printf "The chart matches nested YAML keys only, so it still derives plaintext: the /orchestration ingress keeps an HTTP backend and in-cluster clients get an http:// or grpc:// endpoint against a TLS listener, which installs cleanly and then fails at connection time. Set %s: true, or add an orchestration.env entry for %s, or rewrite the key in nested YAML form." $prop.flag $prop.envName)
+          -}}
+          {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+        {{- end }}
+      {{- end }}
+
+      {{/* (W2) A valueFrom-sourced SSL toggle is unresolvable at render time, so the
+             chart falls through to the remaining sources. Precise: it fires only on
+             an env entry that actually names the SSL property. */}}
+      {{- range $e := ($.Values.orchestration.env | default list) }}
+        {{- if and (eq ($e.name | default "") $prop.envName) (not $e.value) $e.valueFrom }}
+          {{- $warningMessage := printf "%s %s %s"
+              "[camunda][warning]"
+              (printf "orchestration.env sets %s from a valueFrom reference, whose value the chart cannot read at render time." $prop.envName)
+              (printf "Orchestration %s TLS state therefore falls back to %s and the YAML config sources. If the referenced key resolves to a value that disagrees with that fallback, ingress backend protocols and in-cluster endpoint schemes will be derived for the wrong transport. Set the toggle literally and keep valueFrom for cert material only." $prop.proto $prop.flag)
+          -}}
+          {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+        {{- end }}
+      {{- end }}
+    {{- end }}
+
+    {{/* (W3) The split /orchestration Ingress forces backend-protocol: HTTPS over
+           any inherited annotation. Correct (an HTTP backend against a TLS
+           listener is SUPPORT-33090) but silent, and operators who set this
+           annotation by hand set it deliberately. */}}
+    {{- if eq (include "camundaPlatform.orchestrationRESTTLSEnabled" .) "true" }}
+      {{- $inherited := index (.Values.global.ingress.annotations | default dict) "nginx.ingress.kubernetes.io/backend-protocol" }}
+      {{- if and $inherited (ne (upper (toString $inherited)) "HTTPS") }}
+        {{- $warningMessage := printf "%s %s %s"
+            "[camunda][warning]"
+            (printf "global.ingress.annotations sets nginx.ingress.kubernetes.io/backend-protocol: %s, but Orchestration REST TLS is enabled." $inherited)
+            "The dedicated /orchestration Ingress overrides that value with HTTPS, because an HTTP backend against a TLS listener returns 'Bad Request: This combination of host and port requires TLS.'. Every other annotation and label in global.ingress is still inherited. Only the /orchestration route is overridden; other routes keep your value."
+        -}}
+        {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+      {{- end }}
+    {{- end }}
   {{- end }}
 
   {{/* Warn when Orchestration server TLS is enabled but no caBundle is set.
