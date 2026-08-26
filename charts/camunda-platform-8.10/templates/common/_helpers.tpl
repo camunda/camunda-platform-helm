@@ -1167,7 +1167,13 @@ Usage:
 [camunda-platform] Returns "true" when Optimize server-side TLS is enabled. An
 explicit literal optimize.env entry for SERVER_SSL_ENABLED wins over
 global.tls.optimize.enabled. A valueFrom-sourced entry is unknown at render
-time, so the chart defers to the global flag rather than assuming a value.
+time, so the chart defers to the remaining sources rather than assuming a value.
+
+With neither env source set, optimize.extraConfiguration and then
+optimize.configuration are consulted for server.ssl.enabled, so an Optimize TLS
+opt-in made by owning application.yaml still drives probe schemes and the
+/optimize Ingress backend protocol. Same source order and same
+literal-nested-key limits as camundaPlatform.orchestrationRESTTLSEnabled.
 */}}
 {{- define "camundaPlatform.optimizeServerTLSEnabled" -}}
   {{- $envValue := include "camundaPlatform.optimizeServerEnvLastValue" (dict "context" . "name" "SERVER_SSL_ENABLED") -}}
@@ -1178,7 +1184,11 @@ time, so the chart defers to the global flag rather than assuming a value.
   {{- else if .Values.global.tls.optimize.enabled -}}
     true
   {{- else -}}
-    false
+    {{- $configState := include "camundaPlatform.appConfigBoolState" (dict
+        "configuration" .Values.optimize.configuration
+        "extraConfiguration" .Values.optimize.extraConfiguration
+        "path" (list "server" "ssl" "enabled")) -}}
+    {{- ternary "true" "false" (eq $configState "true") -}}
   {{- end -}}
 {{- end -}}
 

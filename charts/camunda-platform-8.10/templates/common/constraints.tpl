@@ -393,6 +393,13 @@ gRPC server to crash on startup. Fail loudly at render time instead.
   {{- if eq (include "camundaPlatform.optimizeServerTLSEnabled" .) "true" }}
     {{- $chartMountsCert := and .Values.global.tls.optimize.enabled .Values.global.tls.optimize.cert.secret.existingSecret -}}
     {{- $handWiredCert := or (has "SERVER_SSL_KEY_STORE" $envNames) (has "SERVER_SSL_CERTIFICATE" $envNames) -}}
+    {{/* An operator who enables TLS through optimize.{configuration,extraConfiguration}
+         owns application.yaml and declares the cert there, where no env var appears. */}}
+    {{- $certInYaml := eq (include "camundaPlatform.appConfigHasCertMaterial" (dict
+        "configuration" .Values.optimize.configuration
+        "extraConfiguration" .Values.optimize.extraConfiguration
+        "prefix" (list "server" "ssl"))) "true" -}}
+    {{- $handWiredCert = or $handWiredCert $certInYaml -}}
     {{- if not (or $chartMountsCert $handWiredCert) }}
       {{- $errorMessage := printf "%s %s %s"
           "[camunda][error] Optimize server TLS is enabled but no server cert is configured."
@@ -871,6 +878,57 @@ The following values inside your values.yaml need to be set but were not:
             "[camunda][warning]"
             "connectors.env sets SERVER_SSL_ENABLED from a valueFrom reference, whose value the chart cannot read at render time."
             "Connectors TLS state therefore falls back to global.tls.connectors.enabled and the YAML config sources. If the referenced key resolves to a value that disagrees with that fallback, probe schemes and the in-cluster Connectors URL will be derived for the wrong transport. Set the toggle literally and keep valueFrom for cert material only."
+        -}}
+        {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+      {{- end }}
+    {{- end }}
+  {{- end }}
+
+  {{/* Optimize TLS detection guardrails: probe schemes and the /optimize Ingress
+       backend protocol are derived from
+       camundaPlatform.optimizeServerTLSEnabled, which reads optimize.env,
+       global.tls.optimize.enabled, and nested YAML keys in
+       optimize.{configuration,extraConfiguration}. Warn about the two forms it
+       cannot read rather than deriving plaintext silently. */}}
+  {{- if .Values.optimize.enabled }}
+    {{- $optimizeTLS := include "camundaPlatform.optimizeServerTLSEnabled" . }}
+
+    {{/* (W1) A dotted/relaxed key form the nested-key walk cannot see. Splits
+           yielding a single segment are skipped: a bare "enabled: true" line
+           matches unrelated config. */}}
+    {{- if ne $optimizeTLS "true" }}
+      {{- $sslPath := list "server" "ssl" "enabled" -}}
+      {{- $dottedHit := "" -}}
+      {{- $contents := list (.Values.optimize.configuration | default "") -}}
+      {{- range $entry := (.Values.optimize.extraConfiguration | default list) -}}
+        {{- $contents = append $contents ($entry.content | default "") -}}
+      {{- end -}}
+      {{- range $split := until (sub (len $sslPath) 1 | int) -}}
+        {{- $dotted := join "." (slice $sslPath $split) -}}
+        {{- $pattern := printf "(?m)^[ \t]*%s[ \t]*[:=][ \t]*[\"']?(?i)true" (replace "." "\\." $dotted) -}}
+        {{- range $content := $contents -}}
+          {{- if regexMatch $pattern $content -}}
+            {{- $dottedHit = $dotted -}}
+          {{- end -}}
+        {{- end -}}
+      {{- end -}}
+      {{- if $dottedHit }}
+        {{- $warningMessage := printf "%s %s %s"
+            "[camunda][warning]"
+            (printf "optimize.configuration or optimize.extraConfiguration appears to enable Optimize server TLS through the dotted key '%s', which the chart cannot read." $dottedHit)
+            "The chart matches nested YAML keys only, so it still derives plaintext: the Optimize probes stay on HTTP scheme and the /optimize ingress keeps an HTTP backend against a TLS listener, which installs cleanly and then fails at connection time. Set global.tls.optimize.enabled: true, or add an optimize.env entry for SERVER_SSL_ENABLED, or rewrite the key in nested YAML form."
+        -}}
+        {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+      {{- end }}
+    {{- end }}
+
+    {{/* (W2) A valueFrom-sourced SSL toggle is unresolvable at render time. */}}
+    {{- range $e := (.Values.optimize.env | default list) }}
+      {{- if and (eq ($e.name | default "") "SERVER_SSL_ENABLED") (not $e.value) $e.valueFrom }}
+        {{- $warningMessage := printf "%s %s %s"
+            "[camunda][warning]"
+            "optimize.env sets SERVER_SSL_ENABLED from a valueFrom reference, whose value the chart cannot read at render time."
+            "Optimize server TLS state therefore falls back to global.tls.optimize.enabled and the YAML config sources. If the referenced key resolves to a value that disagrees with that fallback, probe schemes and the /optimize ingress backend protocol will be derived for the wrong transport. Set the toggle literally and keep valueFrom for cert material only."
         -}}
         {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
       {{- end }}

@@ -491,3 +491,122 @@ func (s *OptimizeTLSTest) TestTLSEnvAndVolumeWiring() {
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
+
+// TestTLSDetectionFromConfigSources covers the config sources Optimize server
+// TLS state is resolved from beyond optimize.env, plus the form the chart cannot
+// read at render time.
+func (s *OptimizeTLSTest) TestTLSDetectionFromConfigSources() {
+	requireProbeScheme := func(t *testing.T, output string, scheme corev1.URIScheme) {
+		var deployment appsv1.Deployment
+		helm.UnmarshalK8SYaml(t, output, &deployment)
+
+		container := s.mainContainer(&deployment)
+		require.NotNil(t, container.ReadinessProbe, "readiness probe must be set")
+		require.NotNil(t, container.ReadinessProbe.HTTPGet, "readiness probe must be an httpGet")
+		require.Equal(t, scheme, container.ReadinessProbe.HTTPGet.Scheme)
+	}
+
+	testCases := []testhelpers.TestCase{
+		{
+			Name:        "TLS via optimize.configuration — probes use HTTPS",
+			ValuesFiles: []string{"testdata/values-optimize-tls-configuration.yaml"},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				requireProbeScheme(t, output, corev1.URISchemeHTTPS)
+			},
+		},
+		{
+			Name:        "TLS via optimize.extraConfiguration — probes use HTTPS",
+			ValuesFiles: []string{"testdata/values-optimize-tls-extra-configuration.yaml"},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				requireProbeScheme(t, output, corev1.URISchemeHTTPS)
+			},
+		},
+		{
+			Name:        "optimize.env false overrides configuration true — probes use HTTP",
+			ValuesFiles: []string{"testdata/values-optimize-tls-configuration-env-false.yaml"},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				requireProbeScheme(t, output, corev1.URISchemeHTTP)
+			},
+		},
+		{
+			Name:        "dotted key form is not detected — probes stay HTTP",
+			ValuesFiles: []string{"testdata/values-optimize-tls-dotted-key.yaml"},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				requireProbeScheme(t, output, corev1.URISchemeHTTP)
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+// TestTLSDetectionIngressBackend pins the /optimize Ingress backend protocol,
+// the second value derived from Optimize TLS state.
+func (s *OptimizeTLSTest) TestTLSDetectionIngressBackend() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TLS via optimize.configuration — dedicated Ingress uses HTTPS backend",
+			ValuesFiles: []string{
+				"testdata/values-optimize-tls-configuration.yaml",
+			},
+			Values: map[string]string{
+				"global.ingress.enabled": "true",
+				"optimize.contextPath":   "/optimize",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "nginx.ingress.kubernetes.io/backend-protocol: HTTPS")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(
+		s.T(), s.chartPath, s.release, s.namespace,
+		[]string{"templates/common/ingress-optimize-http.yaml"}, testCases,
+	)
+}
+
+// TestTLSDetectionWarnings pins the two diagnostics for config the derivation
+// cannot read.
+func (s *OptimizeTLSTest) TestTLSDetectionWarnings() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name:        "dotted key form warns",
+			ValuesFiles: []string{"testdata/values-optimize-tls-dotted-key.yaml"},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "enable Optimize server TLS through the dotted key 'server.ssl.enabled'")
+			},
+		},
+		{
+			Name:        "nested key form does not warn",
+			ValuesFiles: []string{"testdata/values-optimize-tls-configuration.yaml"},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.NotContains(t, output, "enable Optimize server TLS through the dotted key")
+			},
+		},
+		{
+			Name: "valueFrom toggle warns",
+			Values: map[string]string{
+				"optimize.enabled":                               "true",
+				"optimize.env[0].name":                           "SERVER_SSL_ENABLED",
+				"optimize.env[0].valueFrom.configMapKeyRef.name": "tls-config",
+				"optimize.env[0].valueFrom.configMapKeyRef.key":  "ssl-enabled",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "optimize.env sets SERVER_SSL_ENABLED from a valueFrom reference")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(
+		s.T(), s.chartPath, s.release, s.namespace,
+		[]string{"templates/common/configmap-warnings.yaml"}, testCases,
+	)
+}
