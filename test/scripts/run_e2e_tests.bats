@@ -73,7 +73,7 @@ teardown() {
   HUB_NAMESPACE_ARG="matrix-810-mns-hub"
   OPTIMIZE_NAMESPACE_ARG="matrix-810-mns-opt-orcha"
   OPTIMIZE_CONTEXT_PATH_ARG="/optimize-orcha"
-  MODELER_CLUSTER_NAME_ARG="orcha-cluster"
+  MODELER_CLUSTER_NAME_ARG="Orchestration A"
 
   # Only the function is wanted, so define it from the script's own source.
   eval "$(sed -n '/^build_rerun_cmd() {/,/^}/p' "$SCRIPT")"
@@ -85,7 +85,7 @@ teardown() {
   [[ "$output" == *"--hub-namespace matrix-810-mns-hub"* ]]
   [[ "$output" == *"--optimize-namespace matrix-810-mns-opt-orcha"* ]]
   [[ "$output" == *"--optimize-context-path /optimize-orcha"* ]]
-  [[ "$output" == *"--modeler-cluster-name orcha-cluster"* ]]
+  [[ "$output" == *"--modeler-cluster-name Orchestration\\ A"* ]]
 }
 
 @test "the rerun command omits topology flags for an ordinary single-namespace run" {

@@ -79,26 +79,27 @@ build_rerun_cmd() {
   # command that reproduces it. Reads the same globals the run itself used; the
   # topology arguments come from the *_ARG snapshots taken before "$ENV_FILE" was
   # sourced, since that file replaces OPTIMIZE_CONTEXT_PATH with an absolute URL.
-  local cmd="./scripts/run-e2e-tests.sh --absolute-chart-path ${ABSOLUTE_CHART_PATH} --namespace ${NAMESPACE}"
-  [[ -n "$KUBE_CONTEXT" ]] && cmd+=" --kube-context ${KUBE_CONTEXT}"
-  [[ -n "$TEST_EXCLUDE" ]] && cmd+=" --test-exclude \"${TEST_EXCLUDE}\""
-  [[ "$RUN_SMOKE_TESTS" == "true" ]] && cmd+=" --run-smoke-tests"
-  [[ "$IS_OPENSEARCH" == "true" ]] && cmd+=" --opensearch"
-  [[ "$IS_RBA" == "true" ]] && cmd+=" --rba"
-  [[ "$IS_MT" == "true" ]] && cmd+=" --mt"
-  [[ "$IS_AUTH0" == "true" ]] && cmd+=" --auth0"
-  [[ -n "$VIDEO_MODE" ]] && cmd+=" --video ${VIDEO_MODE}"
-  [[ -n "$TRACE_MODE" ]] && cmd+=" --trace ${TRACE_MODE}"
-  [[ -n "$RETRIES" ]] && cmd+=" --retries ${RETRIES}"
-  [[ -n "$LOCAL_TEST_SUITE" ]] && cmd+=" --local-test-suite ${LOCAL_TEST_SUITE}"
+  local -a cmd=(./scripts/run-e2e-tests.sh --absolute-chart-path "$ABSOLUTE_CHART_PATH" --namespace "$NAMESPACE")
+  [[ -n "$KUBE_CONTEXT" ]] && cmd+=(--kube-context "$KUBE_CONTEXT")
+  [[ -n "$TEST_EXCLUDE" ]] && cmd+=(--test-exclude "$TEST_EXCLUDE")
+  [[ "$RUN_SMOKE_TESTS" == "true" ]] && cmd+=(--run-smoke-tests)
+  [[ "$IS_OPENSEARCH" == "true" ]] && cmd+=(--opensearch)
+  [[ "$IS_RBA" == "true" ]] && cmd+=(--rba)
+  [[ "$IS_MT" == "true" ]] && cmd+=(--mt)
+  [[ "$IS_AUTH0" == "true" ]] && cmd+=(--auth0)
+  [[ -n "$VIDEO_MODE" ]] && cmd+=(--video "$VIDEO_MODE")
+  [[ -n "$TRACE_MODE" ]] && cmd+=(--trace "$TRACE_MODE")
+  [[ -n "$RETRIES" ]] && cmd+=(--retries "$RETRIES")
+  [[ -n "$LOCAL_TEST_SUITE" ]] && cmd+=(--local-test-suite "$LOCAL_TEST_SUITE")
   # Without these a failing topology leg prints a rerun command that targets an
   # orchestration-only environment: it cannot reproduce the failure, and it would skip
   # Optimize again rather than reporting it.
-  [[ -n "$HUB_NAMESPACE_ARG" ]] && cmd+=" --hub-namespace ${HUB_NAMESPACE_ARG}"
-  [[ -n "$OPTIMIZE_NAMESPACE_ARG" ]] && cmd+=" --optimize-namespace ${OPTIMIZE_NAMESPACE_ARG}"
-  [[ -n "$OPTIMIZE_CONTEXT_PATH_ARG" ]] && cmd+=" --optimize-context-path ${OPTIMIZE_CONTEXT_PATH_ARG}"
-  [[ -n "$MODELER_CLUSTER_NAME_ARG" ]] && cmd+=" --modeler-cluster-name ${MODELER_CLUSTER_NAME_ARG}"
-  echo "$cmd"
+  [[ -n "$HUB_NAMESPACE_ARG" ]] && cmd+=(--hub-namespace "$HUB_NAMESPACE_ARG")
+  [[ -n "$OPTIMIZE_NAMESPACE_ARG" ]] && cmd+=(--optimize-namespace "$OPTIMIZE_NAMESPACE_ARG")
+  [[ -n "$OPTIMIZE_CONTEXT_PATH_ARG" ]] && cmd+=(--optimize-context-path "$OPTIMIZE_CONTEXT_PATH_ARG")
+  [[ -n "$MODELER_CLUSTER_NAME_ARG" ]] && cmd+=(--modeler-cluster-name "$MODELER_CLUSTER_NAME_ARG")
+  printf '%q ' "${cmd[@]}"
+  printf '\n'
 }
 
 usage() {
