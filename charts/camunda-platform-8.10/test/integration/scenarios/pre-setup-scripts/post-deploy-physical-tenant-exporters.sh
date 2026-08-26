@@ -20,6 +20,16 @@ fail() {
   exit 1
 }
 
+partitions_are_healthy() {
+  jq -e '
+    (keys | sort) == ["default", "tenanta", "tenantb"]
+    and all(.default, .tenanta, .tenantb;
+      type == "array"
+      and length > 0
+      and all(.[]; .exporterPhase == "EXPORTING" and .exportedPosition >= 0))
+  ' >/dev/null 2>&1
+}
+
 PORT_FORWARD_LOG="$(mktemp)"
 kubectl "${CONTEXT_ARGS[@]}" -n "${NAMESPACE}" port-forward \
   "statefulset/${RELEASE}-zeebe" ":9600" >"${PORT_FORWARD_LOG}" 2>&1 &
@@ -70,10 +80,7 @@ for attempt in {1..60}; do
   partitions="$(curl --silent --show-error --max-time 10 \
     "http://127.0.0.1:${LOCAL_PORT}${ACTUATOR}/partitions" 2>/dev/null)" || true
 
-  if jq -e '
-        (length >= 2)
-        and all(.[][]; .exporterPhase == "EXPORTING" and .exportedPosition >= 0)
-      ' <<<"${partitions}" >/dev/null 2>&1; then
+  if partitions_are_healthy <<<"${partitions}"; then
     break
   fi
 
