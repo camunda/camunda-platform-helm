@@ -1097,6 +1097,12 @@ ends up with — probe schemes and the in-cluster Connectors URL are derived fro
 this helper. A "valueFrom"-sourced entry (no literal value) resolves to
 "unknown" from connectorsEnvLastValue and is treated the same as "unset" here,
 mirroring camundaPlatform.orchestrationRESTTLSEnabled.
+
+With neither env source set, connectors.extraConfiguration and then
+connectors.configuration are consulted for server.ssl.enabled, so a Connectors
+TLS opt-in made by owning application.yaml still drives probe schemes and the
+in-cluster Connectors URL. Same source order and same literal-nested-key limits
+as camundaPlatform.orchestrationRESTTLSEnabled.
 */}}
 {{- define "camundaPlatform.connectorsTLSEnabled" -}}
   {{- $envValue := include "camundaPlatform.connectorsEnvLastValue" (dict "context" . "name" "SERVER_SSL_ENABLED") -}}
@@ -1107,7 +1113,11 @@ mirroring camundaPlatform.orchestrationRESTTLSEnabled.
   {{- else if .Values.global.tls.connectors.enabled -}}
     true
   {{- else -}}
-    false
+    {{- $configState := include "camundaPlatform.appConfigBoolState" (dict
+        "configuration" .Values.connectors.configuration
+        "extraConfiguration" .Values.connectors.extraConfiguration
+        "path" (list "server" "ssl" "enabled")) -}}
+    {{- ternary "true" "false" (eq $configState "true") -}}
   {{- end -}}
 {{- end -}}
 

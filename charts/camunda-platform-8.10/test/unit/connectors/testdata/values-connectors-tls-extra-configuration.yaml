@@ -1,0 +1,10 @@
+connectors:
+  enabled: true
+  extraConfiguration:
+    - file: tls.yaml
+      content: |
+        server:
+          ssl:
+            enabled: true
+            certificate: /certs/tls.crt
+            certificate-private-key: /certs/tls.key

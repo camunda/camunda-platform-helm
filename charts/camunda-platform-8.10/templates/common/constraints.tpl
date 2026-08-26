@@ -357,6 +357,13 @@ gRPC server to crash on startup. Fail loudly at render time instead.
   {{- if eq (include "camundaPlatform.connectorsTLSEnabled" .) "true" }}
     {{- $chartMountsCert := and .Values.global.tls.connectors.enabled .Values.global.tls.connectors.cert.secret.existingSecret -}}
     {{- $handWiredCert := or (has "SERVER_SSL_KEY_STORE" $envNames) (has "SERVER_SSL_CERTIFICATE" $envNames) -}}
+    {{/* An operator who enables TLS through connectors.{configuration,extraConfiguration}
+         owns application.yaml and declares the cert there, where no env var appears. */}}
+    {{- $certInYaml := eq (include "camundaPlatform.appConfigHasCertMaterial" (dict
+        "configuration" .Values.connectors.configuration
+        "extraConfiguration" .Values.connectors.extraConfiguration
+        "prefix" (list "server" "ssl"))) "true" -}}
+    {{- $handWiredCert = or $handWiredCert $certInYaml -}}
     {{- if not (or $chartMountsCert $handWiredCert) }}
       {{- $errorMessage := printf "%s %s %s"
           "[camunda][error] Connectors TLS is enabled but no server cert is configured."
@@ -758,6 +765,56 @@ The following values inside your values.yaml need to be set but were not:
             "[camunda][warning]"
             (printf "global.ingress.annotations sets nginx.ingress.kubernetes.io/backend-protocol: %s, but Orchestration REST TLS is enabled." $inherited)
             "The dedicated /orchestration Ingress overrides that value with HTTPS, because an HTTP backend against a TLS listener returns 'Bad Request: This combination of host and port requires TLS.'. Every other annotation and label in global.ingress is still inherited. Only the /orchestration route is overridden; other routes keep your value."
+        -}}
+        {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+      {{- end }}
+    {{- end }}
+  {{- end }}
+
+  {{/* Connectors TLS detection guardrails: probe schemes and the in-cluster
+       Connectors URL are derived from camundaPlatform.connectorsTLSEnabled, which
+       reads connectors.env, global.tls.connectors.enabled, and nested YAML keys in
+       connectors.{configuration,extraConfiguration}. Warn about the two forms it
+       cannot read rather than deriving plaintext silently. */}}
+  {{- if .Values.connectors.enabled }}
+    {{- $connectorsTLS := include "camundaPlatform.connectorsTLSEnabled" . }}
+
+    {{/* (W1) A dotted/relaxed key form the nested-key walk cannot see. Splits
+           yielding a single segment are skipped: a bare "enabled: true" line
+           matches unrelated config. */}}
+    {{- if ne $connectorsTLS "true" }}
+      {{- $sslPath := list "server" "ssl" "enabled" -}}
+      {{- $dottedHit := "" -}}
+      {{- $contents := list (.Values.connectors.configuration | default "") -}}
+      {{- range $entry := (.Values.connectors.extraConfiguration | default list) -}}
+        {{- $contents = append $contents ($entry.content | default "") -}}
+      {{- end -}}
+      {{- range $split := until (sub (len $sslPath) 1 | int) -}}
+        {{- $dotted := join "." (slice $sslPath $split) -}}
+        {{- $pattern := printf "(?m)^[ \t]*%s[ \t]*[:=][ \t]*[\"']?(?i)true" (replace "." "\\." $dotted) -}}
+        {{- range $content := $contents -}}
+          {{- if regexMatch $pattern $content -}}
+            {{- $dottedHit = $dotted -}}
+          {{- end -}}
+        {{- end -}}
+      {{- end -}}
+      {{- if $dottedHit }}
+        {{- $warningMessage := printf "%s %s %s"
+            "[camunda][warning]"
+            (printf "connectors.configuration or connectors.extraConfiguration appears to enable Connectors TLS through the dotted key '%s', which the chart cannot read." $dottedHit)
+            "The chart matches nested YAML keys only, so it still derives plaintext: the Connectors probes stay on HTTP scheme and in-cluster clients get an http:// Connectors URL against a TLS listener, which installs cleanly and then fails at connection time. Set global.tls.connectors.enabled: true, or add a connectors.env entry for SERVER_SSL_ENABLED, or rewrite the key in nested YAML form."
+        -}}
+        {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+      {{- end }}
+    {{- end }}
+
+    {{/* (W2) A valueFrom-sourced SSL toggle is unresolvable at render time. */}}
+    {{- range $e := (.Values.connectors.env | default list) }}
+      {{- if and (eq ($e.name | default "") "SERVER_SSL_ENABLED") (not $e.value) $e.valueFrom }}
+        {{- $warningMessage := printf "%s %s %s"
+            "[camunda][warning]"
+            "connectors.env sets SERVER_SSL_ENABLED from a valueFrom reference, whose value the chart cannot read at render time."
+            "Connectors TLS state therefore falls back to global.tls.connectors.enabled and the YAML config sources. If the referenced key resolves to a value that disagrees with that fallback, probe schemes and the in-cluster Connectors URL will be derived for the wrong transport. Set the toggle literally and keep valueFrom for cert material only."
         -}}
         {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
       {{- end }}

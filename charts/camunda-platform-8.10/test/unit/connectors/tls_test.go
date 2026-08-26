@@ -515,3 +515,96 @@ func (s *ConnectorsTLSTest) TestTLSChecksumAnnotation() {
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
+
+// TestTLSDetectionFromConfigSources covers the config sources Connectors TLS
+// state is resolved from beyond connectors.env, plus the two forms the chart
+// cannot read at render time.
+func (s *ConnectorsTLSTest) TestTLSDetectionFromConfigSources() {
+	requireProbeScheme := func(t *testing.T, output string, scheme corev1.URIScheme) {
+		var deployment appsv1.Deployment
+		helm.UnmarshalK8SYaml(t, output, &deployment)
+
+		container := deployment.Spec.Template.Spec.Containers[0]
+		require.NotNil(t, container.ReadinessProbe, "readiness probe must be set")
+		require.NotNil(t, container.ReadinessProbe.HTTPGet, "readiness probe must be an httpGet")
+		require.Equal(t, scheme, container.ReadinessProbe.HTTPGet.Scheme)
+	}
+
+	testCases := []testhelpers.TestCase{
+		{
+			Name:        "TLS via connectors.configuration — probes use HTTPS",
+			ValuesFiles: []string{"testdata/values-connectors-tls-configuration.yaml"},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				requireProbeScheme(t, output, corev1.URISchemeHTTPS)
+			},
+		},
+		{
+			Name:        "TLS via connectors.extraConfiguration — probes use HTTPS",
+			ValuesFiles: []string{"testdata/values-connectors-tls-extra-configuration.yaml"},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				requireProbeScheme(t, output, corev1.URISchemeHTTPS)
+			},
+		},
+		{
+			Name:        "connectors.env false overrides configuration true — probes use HTTP",
+			ValuesFiles: []string{"testdata/values-connectors-tls-configuration-env-false.yaml"},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				requireProbeScheme(t, output, corev1.URISchemeHTTP)
+			},
+		},
+		{
+			Name:        "dotted key form is not detected — probes stay HTTP",
+			ValuesFiles: []string{"testdata/values-connectors-tls-dotted-key.yaml"},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				requireProbeScheme(t, output, corev1.URISchemeHTTP)
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+// TestTLSDetectionWarnings pins the two diagnostics for config the derivation
+// cannot read.
+func (s *ConnectorsTLSTest) TestTLSDetectionWarnings() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name:        "dotted key form warns",
+			ValuesFiles: []string{"testdata/values-connectors-tls-dotted-key.yaml"},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "enable Connectors TLS through the dotted key 'server.ssl.enabled'")
+			},
+		},
+		{
+			Name:        "nested key form does not warn",
+			ValuesFiles: []string{"testdata/values-connectors-tls-configuration.yaml"},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.NotContains(t, output, "enable Connectors TLS through the dotted key")
+			},
+		},
+		{
+			Name: "valueFrom toggle warns",
+			Values: map[string]string{
+				"connectors.enabled":                               "true",
+				"connectors.env[0].name":                           "SERVER_SSL_ENABLED",
+				"connectors.env[0].valueFrom.configMapKeyRef.name": "tls-config",
+				"connectors.env[0].valueFrom.configMapKeyRef.key":  "ssl-enabled",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "connectors.env sets SERVER_SSL_ENABLED from a valueFrom reference")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(
+		s.T(), s.chartPath, s.release, s.namespace,
+		[]string{"templates/common/configmap-warnings.yaml"}, testCases,
+	)
+}
