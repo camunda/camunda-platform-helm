@@ -21,7 +21,8 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
-	"sync"
+
+	"golang.org/x/sync/errgroup"
 
 	"scripts/camunda-core/pkg/executil"
 )
@@ -118,6 +119,7 @@ func nonEmptyScalar(v any) (string, bool) {
 // trustworthy answer was obtained. At most one is set.
 type imageResolution struct {
 	Ref        string
+	Source     string // values file the reference came from
 	Platform   string
 	Digest     string
 	Err        error
@@ -178,36 +180,22 @@ func childDigestForPlatform(index imageIndex, platform string) (string, bool) {
 // imageCheckConcurrency bounds the parallel registry round-trips.
 const imageCheckConcurrency = 6
 
-// checkedImage pairs a resolution outcome with the layer the image came from.
-type checkedImage struct {
-	ref        string
-	source     string
-	err        error
-	unverified error
-}
-
 // resolveImagesConcurrently validates images in parallel and returns the results
 // in the input order, so the reported list stays deterministic.
-func resolveImagesConcurrently(ctx context.Context, images []pinnedImage, platform string) []checkedImage {
-	results := make([]checkedImage, len(images))
-	sem := make(chan struct{}, imageCheckConcurrency)
-	var wg sync.WaitGroup
+func resolveImagesConcurrently(ctx context.Context, images []pinnedImage, platform string) []imageResolution {
+	results := make([]imageResolution, len(images))
+	var g errgroup.Group
+	g.SetLimit(imageCheckConcurrency)
 
 	for i, img := range images {
-		wg.Add(1)
-		go func(i int, img pinnedImage) {
-			defer wg.Done()
-			sem <- struct{}{}
-			defer func() { <-sem }()
-
+		g.Go(func() error {
 			res := resolveImageForPlatform(ctx, img.Ref, platform)
-			results[i] = checkedImage{
-				ref: img.Ref, source: img.Source,
-				err: res.Err, unverified: res.Unverified,
-			}
-		}(i, img)
+			res.Source = img.Source
+			results[i] = res
+			return nil
+		})
 	}
-	wg.Wait()
+	_ = g.Wait() // every worker records its outcome in results and returns nil
 	return results
 }
 
@@ -247,9 +235,6 @@ func enterpriseValuesLayers(files []string) []string {
 // the check could not run.
 func checkPinnedImages(ctx context.Context, valuesFiles []string, platform string) Check {
 	const name = "enterprise image manifests"
-	if platform == "" {
-		platform = defaultImagePlatform
-	}
 
 	images := collectPinnedImages(enterpriseValuesLayers(valuesFiles))
 	if len(images) == 0 {
@@ -264,10 +249,10 @@ func checkPinnedImages(ctx context.Context, valuesFiles []string, platform strin
 	checked := 0
 	for _, res := range resolveImagesConcurrently(ctx, images, platform) {
 		switch {
-		case res.err != nil:
-			broken = append(broken, fmt.Sprintf("%s (from %s): %v", res.ref, res.source, res.err))
-		case res.unverified != nil:
-			unverified = append(unverified, fmt.Sprintf("%s: %v", res.ref, res.unverified))
+		case res.Err != nil:
+			broken = append(broken, fmt.Sprintf("%s (from %s): %v", res.Ref, res.Source, res.Err))
+		case res.Unverified != nil:
+			unverified = append(unverified, fmt.Sprintf("%s: %v", res.Ref, res.Unverified))
 		default:
 			checked++
 		}
