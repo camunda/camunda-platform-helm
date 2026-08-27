@@ -29,19 +29,8 @@ import (
 	"scripts/deploy-camunda/pkg/types"
 )
 
-// An unresolvable image reference is not something `helm --wait` can recover
-// from: kubelet keeps retrying until the Helm timeout expires and the run ends
-// as "context deadline exceeded", which names neither the image nor the reason.
-// The guard below watches pods during the wait and aborts as soon as a pull
-// failure is provably terminal, turning a 20-minute timeout into a ~1-minute
-// failure that names the pod, container, image and registry error.
-//
-// It never turns a failing deploy into a passing one. It only shortens a deploy
-// that was already doomed, and replaces the diagnosis.
-
 const (
-	// imagePullGuardEnvVar disables the guard when set to "off" or "false", for
-	// the case where aborting early is worse than waiting out the timeout.
+	// imagePullGuardEnvVar disables the guard when set to "off", "false", "0" or "no".
 	imagePullGuardEnvVar = "DEPLOY_CAMUNDA_IMAGE_PULL_GUARD"
 )
 
