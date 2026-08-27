@@ -92,12 +92,15 @@ func TestHubTopologyRendersPerTenantOptimizeClientsAndApis(t *testing.T) {
 
 	require.Contains(t, output, `audience: "optimize-east-ta-api"`)
 	require.Contains(t, output, `audience: "optimize-east-tb-api"`)
+	require.Regexp(t, `id: "optimize-east-ta"(?s).*?permissions:\s*\n\s*- audience: "optimize-east-ta-api"\s*\n\s*definition: write:\*`, output)
+	require.Regexp(t, `id: "optimize-east-tb"(?s).*?permissions:\s*\n\s*- audience: "optimize-east-tb-api"\s*\n\s*definition: write:\*`, output)
 	require.Contains(t, output, `- name: "Optimize East tenanta API"`)
 	require.Contains(t, output, `- name: "Optimize East tenantb API"`)
 
 	// the cluster-level Optimize keeps its own client and audience alongside the tenants
 	require.Contains(t, output, `id: "optimize-east"`)
 	require.Contains(t, output, `audience: "optimize-east-api"`)
+	require.Regexp(t, `id: "optimize-east"(?s).*?permissions:\s*\n\s*- audience: "optimize-east-api"\s*\n\s*definition: write:\*`, output)
 }
 
 func TestHubTopologyPerTenantOptimizeRoleFallsBackToSharedRole(t *testing.T) {

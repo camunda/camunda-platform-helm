@@ -168,7 +168,7 @@ func TestSynthesizeReleaseEntry_NoRoleRunsE2EDuringDeploy(t *testing.T) {
 	}
 }
 
-func TestSynthesizeReleaseEntry_OrchestrationHasNoDependencies(t *testing.T) {
+func TestSynthesizeReleaseEntry_OrchestrationHasNoDependenciesOrPostDeployHook(t *testing.T) {
 	hook := &matrix.LifecycleHook{Script: "post-deploy-hub-ping.sh"}
 	baseEntry := matrix.Entry{Version: "8.10", ChartPath: "charts/camunda-platform-8.10", Scenario: "multinamespace", Shortname: "mns", Auth: "keycloak", PostDeploy: hook}
 	releases := testTopologyReleases()
@@ -190,13 +190,13 @@ func TestSynthesizeReleaseEntry_OrchestrationHasNoDependencies(t *testing.T) {
 		if len(orchEntry.ExtraValues) != 0 {
 			t.Errorf("orchestration release %q ExtraValues = %v, want empty", rel.NamespaceSuffix, orchEntry.ExtraValues)
 		}
-		if orchEntry.PostDeploy != hook {
-			t.Errorf("orchestration release %q PostDeploy = %v, want scenario hook", rel.NamespaceSuffix, orchEntry.PostDeploy)
+		if orchEntry.PostDeploy != nil {
+			t.Errorf("orchestration release %q PostDeploy = %v, want nil so the hook runs once at topology level", rel.NamespaceSuffix, orchEntry.PostDeploy)
 		}
 	}
 	hubEntry := synthesizeReleaseEntry(baseEntry, releases[0], "gke")
 	if hubEntry.PostDeploy != nil {
-		t.Errorf("Hub PostDeploy = %v, want nil so the hook runs after orchestration", hubEntry.PostDeploy)
+		t.Errorf("Hub PostDeploy = %v, want nil so the hook runs once at topology level", hubEntry.PostDeploy)
 	}
 }
 
@@ -404,6 +404,7 @@ func TestBuildTopologyReleaseEnv_PublishesServedReferencesForOptimize(t *testing
 		Role:                "optimize",
 		NamespaceSuffix:     "optb",
 		Serves:              "orchb",
+		Tenant:              "tenantb",
 		OptimizeContextPath: "/optimize-orchb",
 	}
 
@@ -417,6 +418,9 @@ func TestBuildTopologyReleaseEnv_PublishesServedReferencesForOptimize(t *testing
 	if got := env["RELEASE_OPTIMIZE_CONTEXT_PATH"]; got != "/optimize-orchb" {
 		t.Errorf("RELEASE_OPTIMIZE_CONTEXT_PATH = %q", got)
 	}
+	if got := env["RELEASE_TENANT_ID"]; got != "tenantb" {
+		t.Errorf("RELEASE_TENANT_ID = %q", got)
+	}
 }
 
 // Repointing serves must repoint the records this Optimize reads. The values
@@ -427,7 +431,7 @@ func TestBuildTopologyReleaseEnv_ServedPrefixFollowsServes(t *testing.T) {
 		"ORCHA_ORCHESTRATION_INDEX_PREFIX": "job-orcha",
 		"ORCHB_ORCHESTRATION_INDEX_PREFIX": "job-orchb",
 	}
-	base := matrix.TopologyRelease{Role: "optimize", NamespaceSuffix: "opta", OptimizeContextPath: "/optimize-a"}
+	base := matrix.TopologyRelease{Role: "optimize", NamespaceSuffix: "opta", Tenant: "default", OptimizeContextPath: "/optimize-a"}
 
 	servesA := base
 	servesA.Serves = "orcha"
@@ -447,7 +451,7 @@ func TestBuildTopologyReleaseEnv_OmitsOptimizeKeysForOtherRoles(t *testing.T) {
 		Role:            "orchestration",
 		NamespaceSuffix: "orcha",
 	})
-	for _, key := range []string{"RELEASE_OPTIMIZE_CONTEXT_PATH", "SERVED_ORCHESTRATION_INDEX_PREFIX", "SERVED_NAMESPACE"} {
+	for _, key := range []string{"RELEASE_TENANT_ID", "RELEASE_OPTIMIZE_CONTEXT_PATH", "SERVED_ORCHESTRATION_INDEX_PREFIX", "SERVED_NAMESPACE"} {
 		if _, exists := env[key]; exists {
 			t.Errorf("%s must not be published for a non-optimize release", key)
 		}
@@ -470,8 +474,10 @@ func TestBuildTopologyReleaseEnv_DerivedKeysOutrankReleaseEnv(t *testing.T) {
 		Role:                "optimize",
 		NamespaceSuffix:     "opta",
 		Serves:              "orcha",
+		Tenant:              "default",
 		OptimizeContextPath: "/optimize-orcha",
 		Env: map[string]string{
+			"RELEASE_TENANT_ID":                 "stale-tenant",
 			"RELEASE_OPTIMIZE_CONTEXT_PATH":     "/optimize-stale",
 			"SERVED_ORCHESTRATION_INDEX_PREFIX": "job-somewhere-else",
 			"SERVED_NAMESPACE":                  "ns-somewhere-else",
@@ -481,6 +487,7 @@ func TestBuildTopologyReleaseEnv_DerivedKeysOutrankReleaseEnv(t *testing.T) {
 
 	env := buildTopologyReleaseEnv(shared, release)
 	for key, want := range map[string]string{
+		"RELEASE_TENANT_ID":                 "default",
 		"RELEASE_OPTIMIZE_CONTEXT_PATH":     "/optimize-orcha",
 		"SERVED_ORCHESTRATION_INDEX_PREFIX": "job-orcha",
 		"SERVED_NAMESPACE":                  "ns-orcha",

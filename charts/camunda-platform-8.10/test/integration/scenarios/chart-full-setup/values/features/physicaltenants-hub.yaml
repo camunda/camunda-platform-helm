@@ -1,12 +1,7 @@
 # Hub namespace layer for the physicaltenants topology (8.10).
 #
-# One Orchestration Cluster whose two Physical Tenants each run their own
-# Optimize release. The cluster record registers tenant A's Optimize client and
-# the shared optimize-orcha-api resource server; tenant B's client is added
-# through identity.clients[] because
-# global.topology.clusters[].components.optimize is singular and cannot describe
-# a second Optimize for one cluster. Both clients therefore share one audience —
-# identity-separated, not authorization-isolated.
+# One Orchestration Cluster whose default tenant and two named Physical Tenants
+# each run their own Optimize release.
 #
 # NOTE: avoid writing literal dollar-brace placeholder syntax in prose comments
 # in this file — the env var scanner (os.Expand-based) matches it anywhere in the
@@ -31,7 +26,7 @@ global:
         version: "8.10.0-alpha3"
         contextPaths:
           orchestration: /orchestration
-          optimize: "${OPTTA_OPTIMIZE_CONTEXT_PATH}"
+          optimize: "${OPTDEFAULT_OPTIMIZE_CONTEXT_PATH}"
           connectors: /connectors
         components:
           orchestration:
@@ -44,34 +39,45 @@ global:
               existingSecretKey: identity-orchestration-client-token
           optimize:
             enabled: true
-            clientId: optimize-orcha-ta
-            audience: optimize-orcha-api
-            redirectUrl: "https://${HUB_HOST}${OPTTA_OPTIMIZE_CONTEXT_PATH}"
+            clientId: optimize-orcha-default
+            audience: optimize-orcha-default-api
+            redirectUrl: "https://${HUB_HOST}${OPTDEFAULT_OPTIMIZE_CONTEXT_PATH}"
+            roleName: Optimize Orchestration A default
             secret:
               existingSecret: integration-test-credentials
-              existingSecretKey: identity-optimize-client-token
+              existingSecretKey: identity-optimize-default-client-token
           connectors:
             enabled: true
             clientId: connectors-orcha
             secret:
               existingSecret: integration-test-credentials
               existingSecretKey: identity-connectors-client-token
+        physicalTenants:
+          - id: tenanta
+            components:
+              optimize:
+                enabled: true
+                clientId: optimize-orcha-tenanta
+                audience: optimize-orcha-tenanta-api
+                redirectUrl: "https://${HUB_HOST}${OPTTA_OPTIMIZE_CONTEXT_PATH}"
+                roleName: Optimize Orchestration A tenanta
+                secret:
+                  existingSecret: integration-test-credentials
+                  existingSecretKey: identity-optimize-tenanta-client-token
+          - id: tenantb
+            components:
+              optimize:
+                enabled: true
+                clientId: optimize-orcha-tenantb
+                audience: optimize-orcha-tenantb-api
+                redirectUrl: "https://${HUB_HOST}${OPTTB_OPTIMIZE_CONTEXT_PATH}"
+                roleName: Optimize Orchestration A tenantb
+                secret:
+                  existingSecret: integration-test-credentials
+                  existingSecretKey: identity-optimize-tenantb-client-token
 
 identity:
   clients:
-    - id: optimize-orcha-tb
-      name: Optimize Orchestration A tenantb
-      type: confidential
-      secret:
-        existingSecret: integration-test-credentials
-        existingSecretKey: identity-optimize-client-token
-      rootUrl: "https://${HUB_HOST}${OPTTB_OPTIMIZE_CONTEXT_PATH}"
-      redirectUris: /api/authentication/callback
-      permissions:
-        - resourceServerId: optimize-orcha-api
-          definition: write:*
-        - resourceServerId: camunda-identity-resource-server
-          definition: read:users
     - id: venom
       name: Venom
       secret:
@@ -89,7 +95,11 @@ identity:
           definition: read:*
         - resourceServerId: orchestration-orcha-api
           definition: write:*
-        - resourceServerId: optimize-orcha-api
+        - resourceServerId: optimize-orcha-default-api
+          definition: write:*
+        - resourceServerId: optimize-orcha-tenanta-api
+          definition: write:*
+        - resourceServerId: optimize-orcha-tenantb-api
           definition: write:*
         - resourceServerId: web-modeler-api
           definition: write:*

@@ -56,6 +56,7 @@ topology:
     - role: optimize
       namespace-suffix: opta
       serves: orcha
+      tenant: default
       optimize-context-path: /optimize-orcha
       identity: keycloak-external-optimize
       persistence: elasticsearch-external
@@ -66,6 +67,7 @@ topology:
     - role: optimize
       namespace-suffix: optb
       serves: orchb
+      tenant: default
       optimize-context-path: /optimize-orchb
       identity: keycloak-external-optimize
       persistence: elasticsearch-external

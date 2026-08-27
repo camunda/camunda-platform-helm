@@ -1891,6 +1891,7 @@ integration:
                 features:
                   - multinamespace-optimize-a
                 serves: orcha
+                tenant: default
                 optimize-context-path: /optimize-orcha
               - role: optimize
                 namespace-suffix: optb
@@ -1900,6 +1901,7 @@ integration:
                 features:
                   - multinamespace-optimize-b
                 serves: orchb
+                tenant: default
                 optimize-context-path: /optimize-orchb
             shared-storage: elasticsearch
             shared-storage-service: elasticsearch-master
@@ -1918,12 +1920,10 @@ integration:
           post-deploy:
             script: post-deploy-physical-tenant-exporters.sh
             description: |
-              Asserts that every Physical Tenant, including default, opened the legacy
-              Zeebe exporter and is exporting. Fails if any tenant fell back to a
-              BlockingExporter or its exported position is stuck at -1, and fails if fewer
-              than two tenants report partitions. Stands in for the per-tenant Optimize
-              coverage the e2e suite cannot express yet, because Optimize reads the legacy
-              exporter and its records are the only thing a per-tenant Optimize can import.
+              After the complete topology is ready, asserts that default, tenanta, and
+              tenantb export; deploys one process through each Physical Tenant route; proves
+              each Optimize imports only its own process; and proves sibling client tokens
+              are rejected.
           topology:
             name: hub-1orch-2tenants
             releases:
@@ -1953,6 +1953,16 @@ integration:
                 modeler-cluster-id: orcha
                 modeler-cluster-name: Orchestration A
               - role: optimize
+                namespace-suffix: optdefault
+                depends-on: hub
+                identity: keycloak-external-optimize
+                persistence: elasticsearch-external
+                features:
+                  - physicaltenants-optimize-default
+                serves: orcha
+                tenant: default
+                optimize-context-path: /optimize-orcha-default
+              - role: optimize
                 namespace-suffix: optta
                 depends-on: hub
                 identity: keycloak-external-optimize
@@ -1960,6 +1970,7 @@ integration:
                 features:
                   - physicaltenants-optimize-ta
                 serves: orcha
+                tenant: tenanta
                 optimize-context-path: /optimize-orcha-ta
               - role: optimize
                 namespace-suffix: opttb
@@ -1969,6 +1980,7 @@ integration:
                 features:
                   - physicaltenants-optimize-tb
                 serves: orcha
+                tenant: tenantb
                 optimize-context-path: /optimize-orcha-tb
             shared-storage: elasticsearch
             shared-storage-service: elasticsearch-master

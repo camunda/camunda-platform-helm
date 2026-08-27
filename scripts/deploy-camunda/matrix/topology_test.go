@@ -52,7 +52,7 @@ func optimizeTopology(serves, contextPath string) *Topology {
 			{Role: "hub", NamespaceSuffix: "hub", Features: []string{"hub"}},
 			{Role: "orchestration", NamespaceSuffix: "orcha", Features: []string{"orchestration"}, ModelerClusterID: "orcha", ModelerClusterName: "Orchestration A", DependsOn: "hub"},
 			{Role: "orchestration", NamespaceSuffix: "orchb", Features: []string{"orchestration"}, ModelerClusterID: "orchb", ModelerClusterName: "Orchestration B", DependsOn: "hub"},
-			{Role: "optimize", NamespaceSuffix: "opta", Serves: serves, OptimizeContextPath: contextPath, Features: []string{"optimize"}, DependsOn: "hub"},
+			{Role: "optimize", NamespaceSuffix: "opta", Serves: serves, Tenant: "default", OptimizeContextPath: contextPath, Features: []string{"optimize"}, DependsOn: "hub"},
 		},
 	}
 }
@@ -171,6 +171,7 @@ func TestTopologyValidate_ValidWithOptimizeReleases(t *testing.T) {
 				Role:                "optimize",
 				NamespaceSuffix:     "opta",
 				Serves:              "orcha",
+				Tenant:              "default",
 				OptimizeContextPath: "/optimize-orcha",
 				Features:            []string{"optimize"},
 				Identity:            "keycloak-external",
@@ -194,7 +195,7 @@ func TestTopologyValidate_OptimizeRoleNeedsNoModelerCluster(t *testing.T) {
 		Releases: []TopologyRelease{
 			{Role: "hub", NamespaceSuffix: "hub", Features: []string{"hub"}},
 			{Role: "orchestration", NamespaceSuffix: "orcha", Features: []string{"orchestration"}, ModelerClusterID: "orcha", ModelerClusterName: "Orchestration A", DependsOn: "hub"},
-			{Role: "optimize", NamespaceSuffix: "opta", Serves: "orcha", OptimizeContextPath: "/optimize-orcha", Features: []string{"optimize"}, DependsOn: "hub"},
+			{Role: "optimize", NamespaceSuffix: "opta", Serves: "orcha", Tenant: "default", OptimizeContextPath: "/optimize-orcha", Features: []string{"optimize"}, DependsOn: "hub"},
 		},
 	}
 
@@ -213,13 +214,57 @@ func TestTopologyValidate_OptimizeRoleRequiresDependsOn(t *testing.T) {
 		Releases: []TopologyRelease{
 			{Role: "hub", NamespaceSuffix: "hub", Features: []string{"hub"}},
 			{Role: "orchestration", NamespaceSuffix: "orcha", Features: []string{"orchestration"}, ModelerClusterID: "orcha", ModelerClusterName: "Orchestration A", DependsOn: "hub"},
-			{Role: "optimize", NamespaceSuffix: "opta", Serves: "orcha", OptimizeContextPath: "/optimize-orcha", Features: []string{"optimize"}},
+			{Role: "optimize", NamespaceSuffix: "opta", Serves: "orcha", Tenant: "default", OptimizeContextPath: "/optimize-orcha", Features: []string{"optimize"}},
 		},
 	}
 
 	err := top.Validate("ctx", dir, t.TempDir())
 	if err == nil || !strings.Contains(err.Error(), `depends-on must be "hub"`) {
 		t.Fatalf("expected depends-on=hub requirement for optimize role, got %v", err)
+	}
+}
+
+func TestTopologyValidate_OptimizeRoleDefaultsToDefaultTenant(t *testing.T) {
+	dir := t.TempDir()
+	writeValuesFile(t, dir, "features/hub.yaml")
+	writeValuesFile(t, dir, "features/orchestration.yaml")
+	writeLayer(t, dir, "features/optimize.yaml", optimizeLayerFollowingDeclaration)
+	top := optimizeTopology("orcha", "/optimize-orcha")
+	top.Releases[3].Tenant = ""
+
+	if err := top.Validate("ctx", dir, t.TempDir()); err != nil {
+		t.Fatalf("legacy Optimize release without tenant must map to default, got %v", err)
+	}
+}
+
+func TestTopologyValidate_RejectsTenantOnOtherRoles(t *testing.T) {
+	dir := t.TempDir()
+	writeValuesFile(t, dir, "features/hub.yaml")
+	writeValuesFile(t, dir, "features/orchestration.yaml")
+	writeLayer(t, dir, "features/optimize.yaml", optimizeLayerFollowingDeclaration)
+	top := optimizeTopology("orcha", "/optimize-orcha")
+	top.Releases[1].Tenant = "default"
+
+	err := top.Validate("ctx", dir, t.TempDir())
+	if err == nil || !strings.Contains(err.Error(), "must not set tenant") {
+		t.Fatalf("expected tenant to be rejected on orchestration, got %v", err)
+	}
+}
+
+func TestTopologyValidate_RejectsDuplicateServesTenantBinding(t *testing.T) {
+	dir := t.TempDir()
+	writeValuesFile(t, dir, "features/hub.yaml")
+	writeValuesFile(t, dir, "features/orchestration.yaml")
+	writeLayer(t, dir, "features/optimize.yaml", optimizeLayerFollowingDeclaration)
+	top := optimizeTopology("orcha", "/optimize-orcha")
+	duplicate := top.Releases[3]
+	duplicate.NamespaceSuffix = "optb"
+	duplicate.OptimizeContextPath = "/optimize-orcha-b"
+	top.Releases = append(top.Releases, duplicate)
+
+	err := top.Validate("ctx", dir, t.TempDir())
+	if err == nil || !strings.Contains(err.Error(), `duplicate serves+tenant binding ("orcha", "default")`) {
+		t.Fatalf("expected duplicate binding rejection, got %v", err)
 	}
 }
 
@@ -233,7 +278,7 @@ func TestTopologyValidate_OptimizeRoleRejectsNonHubDependsOn(t *testing.T) {
 		Releases: []TopologyRelease{
 			{Role: "hub", NamespaceSuffix: "hub", Features: []string{"hub"}},
 			{Role: "orchestration", NamespaceSuffix: "orcha", Features: []string{"orchestration"}, ModelerClusterID: "orcha", ModelerClusterName: "Orchestration A", DependsOn: "hub"},
-			{Role: "optimize", NamespaceSuffix: "opta", Serves: "orcha", OptimizeContextPath: "/optimize-orcha", Features: []string{"optimize"}, DependsOn: "orchestration"},
+			{Role: "optimize", NamespaceSuffix: "opta", Serves: "orcha", Tenant: "default", OptimizeContextPath: "/optimize-orcha", Features: []string{"optimize"}, DependsOn: "orchestration"},
 		},
 	}
 
@@ -253,7 +298,7 @@ func TestTopologyValidate_OptimizeRoleRequiresServesAndContextPath(t *testing.T)
 		Releases: []TopologyRelease{
 			{Role: "hub", NamespaceSuffix: "hub", Features: []string{"hub"}},
 			{Role: "orchestration", NamespaceSuffix: "orcha", Features: []string{"orchestration"}, ModelerClusterID: "orcha", ModelerClusterName: "Orchestration A", DependsOn: "hub"},
-			{Role: "optimize", NamespaceSuffix: "opta", Features: []string{"optimize"}, DependsOn: "hub"},
+			{Role: "optimize", NamespaceSuffix: "opta", Tenant: "default", Features: []string{"optimize"}, DependsOn: "hub"},
 		},
 	}
 
@@ -273,7 +318,7 @@ func TestTopologyValidate_OptimizeServesMustNameOrchestrationRelease(t *testing.
 		Releases: []TopologyRelease{
 			{Role: "hub", NamespaceSuffix: "hub", Features: []string{"hub"}},
 			{Role: "orchestration", NamespaceSuffix: "orcha", Features: []string{"orchestration"}, ModelerClusterID: "orcha", ModelerClusterName: "Orchestration A", DependsOn: "hub"},
-			{Role: "optimize", NamespaceSuffix: "opta", Serves: "nope", OptimizeContextPath: "/optimize-orcha", Features: []string{"optimize"}, DependsOn: "hub"},
+			{Role: "optimize", NamespaceSuffix: "opta", Serves: "nope", Tenant: "default", OptimizeContextPath: "/optimize-orcha", Features: []string{"optimize"}, DependsOn: "hub"},
 		},
 	}
 
@@ -566,8 +611,8 @@ func TestTopologyValidate_AllowsSeveralOptimizeReleasesPerOrchestration(t *testi
 		Releases: []TopologyRelease{
 			{Role: "hub", NamespaceSuffix: "hub", Features: []string{"hub"}},
 			{Role: "orchestration", NamespaceSuffix: "orcha", Features: []string{"orchestration"}, ModelerClusterID: "orcha", ModelerClusterName: "Orchestration A", DependsOn: "hub"},
-			{Role: "optimize", NamespaceSuffix: "opta1", Serves: "orcha", OptimizeContextPath: "/optimize-tenanta", Features: []string{"optimize"}, DependsOn: "hub"},
-			{Role: "optimize", NamespaceSuffix: "opta2", Serves: "orcha", OptimizeContextPath: "/optimize-tenantb", Features: []string{"optimize"}, DependsOn: "hub"},
+			{Role: "optimize", NamespaceSuffix: "opta1", Serves: "orcha", Tenant: "tenanta", OptimizeContextPath: "/optimize-tenanta", Features: []string{"optimize"}, DependsOn: "hub"},
+			{Role: "optimize", NamespaceSuffix: "opta2", Serves: "orcha", Tenant: "tenantb", OptimizeContextPath: "/optimize-tenantb", Features: []string{"optimize"}, DependsOn: "hub"},
 		},
 	}
 
@@ -586,8 +631,8 @@ func TestTopologyValidate_RejectsDuplicateOptimizeContextPath(t *testing.T) {
 		Releases: []TopologyRelease{
 			{Role: "hub", NamespaceSuffix: "hub", Features: []string{"hub"}},
 			{Role: "orchestration", NamespaceSuffix: "orcha", Features: []string{"orchestration"}, ModelerClusterID: "orcha", ModelerClusterName: "Orchestration A", DependsOn: "hub"},
-			{Role: "optimize", NamespaceSuffix: "opta1", Serves: "orcha", OptimizeContextPath: "/optimize", Features: []string{"optimize"}, DependsOn: "hub"},
-			{Role: "optimize", NamespaceSuffix: "opta2", Serves: "orcha", OptimizeContextPath: "/optimize", Features: []string{"optimize"}, DependsOn: "hub"},
+			{Role: "optimize", NamespaceSuffix: "opta1", Serves: "orcha", Tenant: "tenanta", OptimizeContextPath: "/optimize", Features: []string{"optimize"}, DependsOn: "hub"},
+			{Role: "optimize", NamespaceSuffix: "opta2", Serves: "orcha", Tenant: "tenantb", OptimizeContextPath: "/optimize", Features: []string{"optimize"}, DependsOn: "hub"},
 		},
 	}
 
@@ -795,7 +840,7 @@ func TestTopologyValidate_RejectsReleaseEnvShadowingDerivedKeys(t *testing.T) {
 	writeValuesFile(t, dir, "features/orchestration.yaml")
 	writeLayer(t, dir, "features/optimize.yaml", optimizeLayerFollowingDeclaration)
 
-	for _, key := range []string{"RELEASE_OPTIMIZE_CONTEXT_PATH", "SERVED_ORCHESTRATION_INDEX_PREFIX", "SERVED_NAMESPACE", "SERVED_HOST", "ORCH_NAMESPACE", "ORCH_HOST", "ORCH_ZEEBE_GRPC", "ORCH_ZEEBE_REST"} {
+	for _, key := range []string{"RELEASE_TENANT_ID", "RELEASE_OPTIMIZE_CONTEXT_PATH", "SERVED_ORCHESTRATION_INDEX_PREFIX", "SERVED_NAMESPACE", "SERVED_HOST", "ORCH_NAMESPACE", "ORCH_HOST", "ORCH_ZEEBE_GRPC", "ORCH_ZEEBE_REST"} {
 		top := optimizeTopology("orcha", "/optimize-orcha")
 		top.Releases[3].Env = map[string]string{key: "hand-written"}
 		err := top.Validate("ctx", dir, t.TempDir())
@@ -910,7 +955,7 @@ func TestTopologyValidate_RejectsOptimizeGlobalFallbackClientIdDisagreeingWithTh
 	writeLayer(t, dir, "features/optimize.yaml", strings.Replace(optimizeLayerMatchingHubInventoryViaGlobal, "clientId: optimize-orcha", "clientId: optimize-renamed", 1))
 
 	err := optimizeTopology("orcha", "/optimize-orcha").Validate("ctx", dir, t.TempDir())
-	if err == nil || !strings.Contains(err.Error(), "the Hub registers this cluster's Optimize client id as \"optimize-orcha\"") {
+	if err == nil || !strings.Contains(err.Error(), "the Hub registers this tenant's Optimize client id as \"optimize-orcha\"") {
 		t.Fatalf("expected the client id mismatch to be reported, got %v", err)
 	}
 	if !strings.Contains(err.Error(), "global.identity.auth.optimize.clientId is \"optimize-renamed\"") {
@@ -1039,7 +1084,7 @@ func TestTopologyValidate_RejectsOptimizeClientIdDisagreeingWithTheHubInventory(
 	writeLayer(t, dir, "features/optimize.yaml", strings.Replace(optimizeLayerMatchingHubInventory, "clientId: optimize-orcha", "clientId: optimize-renamed", 1))
 
 	err := optimizeTopology("orcha", "/optimize-orcha").Validate("ctx", dir, t.TempDir())
-	if err == nil || !strings.Contains(err.Error(), "the Hub registers this cluster's Optimize client id as \"optimize-orcha\"") {
+	if err == nil || !strings.Contains(err.Error(), "the Hub registers this tenant's Optimize client id as \"optimize-orcha\"") {
 		t.Fatalf("expected the client id mismatch to be reported, got %v", err)
 	}
 }
@@ -1051,7 +1096,7 @@ func TestTopologyValidate_RejectsOptimizeAudienceDisagreeingWithTheHubInventory(
 	writeLayer(t, dir, "features/optimize.yaml", strings.Replace(optimizeLayerMatchingHubInventory, "audience: optimize-orcha-api", "audience: optimize-orcha", 1))
 
 	err := optimizeTopology("orcha", "/optimize-orcha").Validate("ctx", dir, t.TempDir())
-	if err == nil || !strings.Contains(err.Error(), "the Hub registers this cluster's Optimize audience as \"optimize-orcha-api\"") {
+	if err == nil || !strings.Contains(err.Error(), "the Hub registers this tenant's Optimize audience as \"optimize-orcha-api\"") {
 		t.Fatalf("expected the audience mismatch to be reported, got %v", err)
 	}
 }
@@ -1152,8 +1197,8 @@ func twoTenantOptimizeTopology() *Topology {
 		Releases: []TopologyRelease{
 			{Role: "hub", NamespaceSuffix: "hub", Features: []string{"hub"}},
 			{Role: "orchestration", NamespaceSuffix: "orcha", Features: []string{"orchestration"}, ModelerClusterID: "orcha", ModelerClusterName: "Orchestration A", DependsOn: "hub"},
-			{Role: "optimize", NamespaceSuffix: "opta", Serves: "orcha", OptimizeContextPath: "/optimize-orcha", Features: []string{"optimize"}, DependsOn: "hub"},
-			{Role: "optimize", NamespaceSuffix: "optb", Serves: "orcha", OptimizeContextPath: "/optimize-orcha-b", Features: []string{"optimize-b"}, DependsOn: "hub"},
+			{Role: "optimize", NamespaceSuffix: "opta", Serves: "orcha", Tenant: "default", OptimizeContextPath: "/optimize-orcha", Features: []string{"optimize"}, DependsOn: "hub"},
+			{Role: "optimize", NamespaceSuffix: "optb", Serves: "orcha", Tenant: "tenantb", OptimizeContextPath: "/optimize-orcha-b", Features: []string{"optimize-b"}, DependsOn: "hub"},
 		},
 	}
 }
@@ -1161,7 +1206,21 @@ func twoTenantOptimizeTopology() *Topology {
 // hubInventoryWithSecondOptimizeClient registers tenant A's Optimize on the
 // cluster record and tenant B's as a plain client, which is the only place a
 // second Optimize for one cluster can go.
-const hubInventoryWithSecondOptimizeClient = hubInventoryRegisteringOptimize + `identity:
+var hubInventoryWithSecondOptimizeClient = strings.Replace(hubInventoryRegisteringOptimize,
+	"              existingSecretKey: identity-optimize-client-token\n",
+	`              existingSecretKey: identity-optimize-client-token
+        physicalTenants:
+          - id: tenantb
+            components:
+              optimize:
+                enabled: true
+                clientId: optimize-orcha-b
+                audience: optimize-orcha-api
+                redirectUrl: "https://${HUB_HOST}${OPTB_OPTIMIZE_CONTEXT_PATH}"
+                secret:
+                  existingSecret: integration-test-credentials
+                  existingSecretKey: identity-optimize-client-token
+`, 1) + `identity:
   clients:
     - id: optimize-orcha-b
       name: Optimize Orchestration A tenant B
@@ -1203,149 +1262,47 @@ func writeTwoTenantLayers(t *testing.T, dir, hubLayer, tenantALayer, tenantBLaye
 	writeLayer(t, dir, "features/optimize-b.yaml", tenantBLayer)
 }
 
-func TestTopologyValidate_AcceptsASecondTenantOptimizeProvisionedAsAnIdentityClient(t *testing.T) {
+func TestTopologyValidate_SelectsMatchingPhysicalTenantOptimize(t *testing.T) {
 	dir := t.TempDir()
 	writeTwoTenantLayers(t, dir, hubInventoryWithSecondOptimizeClient, optimizeLayerMatchingHubInventory, optimizeLayerSecondTenant)
 
 	if err := twoTenantOptimizeTopology().Validate("ctx", dir, t.TempDir()); err != nil {
-		t.Fatalf("expected the two-tenant topology to validate, got %v", err)
+		t.Fatalf("expected explicit default and tenantb bindings to validate, got %v", err)
 	}
 }
 
-// A second optimize release must not switch the check off for the release the
-// cluster record does name: that release's identity is still duplicated, and a
-// drift in it still fails only at login.
-func TestTopologyValidate_StillChecksTheRecordReleaseWhenASecondTenantServesTheSameOrchestration(t *testing.T) {
+func TestTopologyValidate_RejectsPhysicalTenantIdentityMismatch(t *testing.T) {
 	dir := t.TempDir()
-	drifted := strings.Replace(optimizeLayerMatchingHubInventory, "audience: optimize-orcha-api", "audience: optimize-renamed-api", 1)
-	writeTwoTenantLayers(t, dir, hubInventoryWithSecondOptimizeClient, drifted, optimizeLayerSecondTenant)
-
-	err := twoTenantOptimizeTopology().Validate("ctx", dir, t.TempDir())
-	if err == nil || !strings.Contains(err.Error(), "the Hub registers this cluster's Optimize audience as \"optimize-orcha-api\"") {
-		t.Fatalf("expected the record release's audience drift to still be reported, got %v", err)
-	}
-}
-
-func TestTopologyValidate_RejectsASecondTenantOptimizeNothingProvisions(t *testing.T) {
-	dir := t.TempDir()
-	unprovisioned := strings.Replace(optimizeLayerSecondTenant, "clientId: optimize-orcha-b", "clientId: optimize-orcha-c", 1)
-	writeTwoTenantLayers(t, dir, hubInventoryWithSecondOptimizeClient, optimizeLayerMatchingHubInventory, unprovisioned)
-
-	err := twoTenantOptimizeTopology().Validate("ctx", dir, t.TempDir())
-	if err == nil || !strings.Contains(err.Error(), "so nothing provisions this release's client") {
-		t.Fatalf("expected the unprovisioned client to be reported, got %v", err)
-	}
-}
-
-// hubWithNonKeycloakIssuer rewrites the Hub layer to a non-Keycloak issuer.
-// templates/identity/configmap.yaml renders the whole identity.clients block only
-// under authIssuerType KEYCLOAK, so under this issuer those entries provision
-// nothing and the operator creates the client in their own IdP.
-func hubWithNonKeycloakIssuer(layer string) string {
-	return strings.Replace(layer, "global:\n  topology:", "global:\n  identity:\n    auth:\n      type: MICROSOFT\n  topology:", 1)
-}
-
-// A client with no rootUrl and no absolute redirectUris registers no callback at
-// all, so Identity has nowhere to send Optimize back to. The deploy cannot see it:
-// every workload reports ready and only the login fails.
-func TestTopologyValidate_RejectsASecondTenantOptimizeClientRegisteringNoRedirect(t *testing.T) {
-	dir := t.TempDir()
-	hub := strings.Replace(hubInventoryWithSecondOptimizeClient, "      rootUrl: \"https://${HUB_HOST}${OPTB_OPTIMIZE_CONTEXT_PATH}\"\n", "", 1)
-	writeTwoTenantLayers(t, dir, hub, optimizeLayerMatchingHubInventory, optimizeLayerSecondTenant)
-
-	err := twoTenantOptimizeTopology().Validate("ctx", dir, t.TempDir())
-	if err == nil || !strings.Contains(err.Error(), "no rootUrl and no absolute redirectUris") {
-		t.Fatalf("expected the missing redirect registration to be reported, got %v", err)
-	}
-}
-
-// A client with no permissions is minted no token for any resource server, so the
-// audience the release declares is unreachable rather than merely unmatched.
-func TestTopologyValidate_RejectsASecondTenantOptimizeClientWithNoPermissions(t *testing.T) {
-	dir := t.TempDir()
-	hub := strings.Replace(hubInventoryWithSecondOptimizeClient, "      permissions:\n        - resourceServerId: optimize-orcha-api\n          definition: write:*\n", "", 1)
-	writeTwoTenantLayers(t, dir, hub, optimizeLayerMatchingHubInventory, optimizeLayerSecondTenant)
-
-	err := twoTenantOptimizeTopology().Validate("ctx", dir, t.TempDir())
-	if err == nil || !strings.Contains(err.Error(), "no permission naming a resource server") {
-		t.Fatalf("expected the missing permissions to be reported, got %v", err)
-	}
-}
-
-// A permissions list whose entries name no resource server is non-empty and still
-// grants access to nothing, so counting entries rather than usable servers would
-// let it through as a permission that merely fails to match.
-func TestTopologyValidate_RejectsASecondTenantOptimizeClientWhosePermissionsNameNoResourceServer(t *testing.T) {
-	dir := t.TempDir()
-	hub := strings.Replace(
-		hubInventoryWithSecondOptimizeClient,
-		"      permissions:\n        - resourceServerId: optimize-orcha-api\n          definition: write:*\n",
-		"      permissions:\n        - definition: write:*\n",
-		1,
-	)
-	writeTwoTenantLayers(t, dir, hub, optimizeLayerMatchingHubInventory, optimizeLayerSecondTenant)
-
-	err := twoTenantOptimizeTopology().Validate("ctx", dir, t.TempDir())
-	if err == nil || !strings.Contains(err.Error(), "no permission naming a resource server") {
-		t.Fatalf("expected a permissions list naming no resource server to be reported, got %v", err)
-	}
-}
-
-// Under a non-Keycloak issuer identity.clients provisions nothing, so the same
-// incomplete entry is not a defect: the real client lives in the operator's IdP
-// and the chart cannot see it. Requiring these fields here would fail a supported
-// topology, which is why both requirements above are scoped to Keycloak.
-func TestTopologyValidate_AcceptsAnIncompleteClientUnderANonKeycloakIssuer(t *testing.T) {
-	dir := t.TempDir()
-	hub := strings.Replace(hubInventoryWithSecondOptimizeClient, "      rootUrl: \"https://${HUB_HOST}${OPTB_OPTIMIZE_CONTEXT_PATH}\"\n", "", 1)
-	hub = strings.Replace(hub, "      permissions:\n        - resourceServerId: optimize-orcha-api\n          definition: write:*\n", "", 1)
-	writeTwoTenantLayers(t, dir, hubWithNonKeycloakIssuer(hub), optimizeLayerMatchingHubInventory, optimizeLayerSecondTenant)
-
-	if err := twoTenantOptimizeTopology().Validate("ctx", dir, t.TempDir()); err != nil {
-		t.Fatalf("a non-Keycloak issuer provisions no identity.clients, so nothing here is required: %v", err)
-	}
-}
-
-// Keycloak honours an absolute redirectUris entry as it stands and resolves only
-// relative ones against rootUrl, so an absolute entry is a complete registration
-// and an empty rootUrl beside one is correct rather than broken.
-func TestTopologyValidate_AcceptsASecondTenantOptimizeRedirectFromAnAbsoluteRedirectUri(t *testing.T) {
-	dir := t.TempDir()
-	hub := strings.Replace(
-		hubInventoryWithSecondOptimizeClient,
-		"      rootUrl: \"https://${HUB_HOST}${OPTB_OPTIMIZE_CONTEXT_PATH}\"\n      redirectUris: /api/authentication/callback\n",
-		"      redirectUris:\n        - \"https://${HUB_HOST}${OPTB_OPTIMIZE_CONTEXT_PATH}\"\n",
-		1,
-	)
-	writeTwoTenantLayers(t, dir, hub, optimizeLayerMatchingHubInventory, optimizeLayerSecondTenant)
-
-	if err := twoTenantOptimizeTopology().Validate("ctx", dir, t.TempDir()); err != nil {
-		t.Fatalf("an absolute redirectUri registers the callback on its own: %v", err)
-	}
-}
-
-func TestTopologyValidate_RejectsASecondTenantOptimizeRedirectingOffItsRegisteredRootUrl(t *testing.T) {
-	dir := t.TempDir()
-	drifted := strings.Replace(optimizeLayerSecondTenant, "${RELEASE_OPTIMIZE_CONTEXT_PATH}\"\n        secret", "${OPTA_OPTIMIZE_CONTEXT_PATH}\"\n        secret", 1)
+	drifted := strings.Replace(optimizeLayerSecondTenant, "audience: optimize-orcha-api", "audience: optimize-renamed-api", 1)
 	writeTwoTenantLayers(t, dir, hubInventoryWithSecondOptimizeClient, optimizeLayerMatchingHubInventory, drifted)
 
 	err := twoTenantOptimizeTopology().Validate("ctx", dir, t.TempDir())
-	if err == nil || !strings.Contains(err.Error(), "the Hub registers this client's redirect as") {
-		t.Fatalf("expected the redirect URL to be checked against the registered root URL, got %v", err)
-	}
-	if !strings.Contains(err.Error(), `.rootUrl)`) {
-		t.Fatalf("the message must name rootUrl as the registered source, got %v", err)
+	if err == nil || !strings.Contains(err.Error(), `physicalTenants[id="tenantb"].components.optimize.audience`) {
+		t.Fatalf("expected the physical tenant audience drift to be reported, got %v", err)
 	}
 }
 
-func TestTopologyValidate_RejectsASecondTenantOptimizeAudiencedToAnUnpermittedResourceServer(t *testing.T) {
+func TestTopologyValidate_RejectsMissingPhysicalTenantInventory(t *testing.T) {
 	dir := t.TempDir()
-	drifted := strings.Replace(optimizeLayerSecondTenant, "audience: optimize-orcha-api", "audience: optimize-orcha-b-api", 1)
-	writeTwoTenantLayers(t, dir, hubInventoryWithSecondOptimizeClient, optimizeLayerMatchingHubInventory, drifted)
+	hub := strings.Replace(hubInventoryWithSecondOptimizeClient, "          - id: tenantb", "          - id: tenantc", 1)
+	writeTwoTenantLayers(t, dir, hub, optimizeLayerMatchingHubInventory, optimizeLayerSecondTenant)
 
 	err := twoTenantOptimizeTopology().Validate("ctx", dir, t.TempDir())
-	if err == nil || !strings.Contains(err.Error(), "the Hub permits this client only on optimize-orcha-api") {
-		t.Fatalf("expected the unpermitted audience to be reported, got %v", err)
+	if err == nil || !strings.Contains(err.Error(), `has no physicalTenants entry with id "tenantb"`) {
+		t.Fatalf("expected the missing physical tenant to be reported, got %v", err)
+	}
+}
+
+func TestTopologyValidate_RejectsDisabledPhysicalTenantOptimize(t *testing.T) {
+	dir := t.TempDir()
+	hub := strings.Replace(hubInventoryWithSecondOptimizeClient,
+		"          - id: tenantb\n            components:\n              optimize:\n                enabled: true",
+		"          - id: tenantb\n            components:\n              optimize:\n                enabled: false", 1)
+	writeTwoTenantLayers(t, dir, hub, optimizeLayerMatchingHubInventory, optimizeLayerSecondTenant)
+
+	err := twoTenantOptimizeTopology().Validate("ctx", dir, t.TempDir())
+	if err == nil || !strings.Contains(err.Error(), `physicalTenants[id="tenantb"].components.optimize.enabled must be true`) {
+		t.Fatalf("expected disabled physical tenant Optimize to be rejected, got %v", err)
 	}
 }
 
@@ -1368,9 +1325,8 @@ func TestTopologyValidate_RejectsOptimizeWhoseHubClusterInventoryIsResetToEmpty(
 	writeValuesFile(t, dir, "features/orchestration.yaml")
 	writeLayer(t, dir, "features/optimize.yaml", optimizeLayerMatchingHubInventory)
 
-	err := optimizeTopology("orcha", "/optimize-orcha").Validate("ctx", dir, t.TempDir())
-	if err == nil || !strings.Contains(err.Error(), "so nothing provisions this release's client") {
-		t.Fatalf("expected the emptied cluster inventory to leave the client unprovisioned, got %v", err)
+	if err := optimizeTopology("orcha", "/optimize-orcha").Validate("ctx", dir, t.TempDir()); err == nil || !strings.Contains(err.Error(), `no cluster record with id "orcha"`) {
+		t.Fatalf("an absent cluster inventory must fail because the Hub provisions no client, got %v", err)
 	}
 }
 
@@ -1386,19 +1342,6 @@ func TestTopologyValidate_AcceptsOptimizeWhoseLaterHubLayerLeavesTheInventoryAlo
 
 	if err := optimizeTopology("orcha", "/optimize-orcha").Validate("ctx", dir, t.TempDir()); err != nil {
 		t.Fatalf("a later layer that states no inventory must leave the registrations standing, got %v", err)
-	}
-}
-
-// identity.clients is replaced the same way, and it is the only place a second
-// tenant's Optimize can be provisioned.
-func TestTopologyValidate_RejectsSecondTenantOptimizeWhoseHubClientListIsResetToEmpty(t *testing.T) {
-	dir := t.TempDir()
-	writeLayer(t, dir, "base.yaml", hubInventoryWithSecondOptimizeClient)
-	writeTwoTenantLayers(t, dir, "identity:\n  clients: []\n", optimizeLayerMatchingHubInventory, optimizeLayerSecondTenant)
-
-	err := twoTenantOptimizeTopology().Validate("ctx", dir, t.TempDir())
-	if err == nil || !strings.Contains(err.Error(), "so nothing provisions this release's client") {
-		t.Fatalf("expected the emptied client list to leave tenant B unprovisioned, got %v", err)
 	}
 }
 
@@ -1445,19 +1388,14 @@ func TestTopologyValidate_RejectsOptimizeInlineSecretAgainstARegisteredSecretRef
 	}
 }
 
-// The standalone-client path resolves the secret with inlineSecret first, the
-// order identity.clients[] is rendered in.
-func TestTopologyValidate_RejectsSecondTenantOptimizeInlineSecretDifferingFromItsIdentityClient(t *testing.T) {
+func TestTopologyValidate_RejectsPhysicalTenantOptimizeInlineSecretMismatch(t *testing.T) {
 	dir := t.TempDir()
-	hubLayer := hubInventoryRegisteringOptimize + inlineSecretOn(
-		strings.TrimPrefix(hubInventoryWithSecondOptimizeClient, hubInventoryRegisteringOptimize),
-		"hub-registered-secret")
-	writeTwoTenantLayers(t, dir, hubLayer, optimizeLayerMatchingHubInventory,
+	writeTwoTenantLayers(t, dir, inlineSecretOn(hubInventoryWithSecondOptimizeClient, "hub-registered-secret"), optimizeLayerMatchingHubInventory,
 		inlineSecretOn(optimizeLayerSecondTenant, "release-sent-secret"))
 
 	err := twoTenantOptimizeTopology().Validate("ctx", dir, t.TempDir())
 	if err == nil || !strings.Contains(err.Error(), "are different literals") {
-		t.Fatalf("expected the differing inline secrets to be reported on the client path, got %v", err)
+		t.Fatalf("expected the physical tenant secret mismatch, got %v", err)
 	}
 }
 

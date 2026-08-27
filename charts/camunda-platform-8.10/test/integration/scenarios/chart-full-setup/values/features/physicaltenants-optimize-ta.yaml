@@ -11,17 +11,8 @@
 # The reader prefix is the ORCHA cluster's prefix with this tenant's suffix,
 # matching this tenant's exporter index prefix under camunda.physical-tenants in
 # features/physicaltenants-orchestration.yaml. OPTIMIZE_INDEX_PREFIX is derived
-# per release namespace, so the two Optimizes never share index space.
+# per release namespace, so the three Optimizes never share index space.
 #
-# NOTE ON AUTHORIZATION: both tenants' Optimize clients share the audience
-# optimize-orcha-api, so these two instances are separated by client identity but
-# are not authorization-isolated — a token minted for one is accepted by the other.
-# That is a property of this scenario, not of the chart: a cluster record can give
-# each tenant its own resource server through
-# global.topology.clusters[].physicalTenants[].components.optimize. This scenario
-# has not been migrated to it, and it is skip-e2e, so nothing here exercises the
-# per-tenant audience path or asserts a cross-tenant rejection.
-
 global:
   topology:
     mode: optimize
@@ -33,13 +24,19 @@ optimize:
   security:
     authentication:
       oidc:
-        clientId: "optimize-orcha-ta"
-        audience: "optimize-orcha-api"
+        clientId: "optimize-orcha-tenanta"
+        audience: "optimize-orcha-tenanta-api"
         redirectUrl: "https://${HUB_HOST}${RELEASE_OPTIMIZE_CONTEXT_PATH}"
         secret:
           existingSecret: integration-test-credentials
-          existingSecretKey: identity-optimize-client-token
+          existingSecretKey: identity-optimize-tenanta-client-token
   contextPath: "${RELEASE_OPTIMIZE_CONTEXT_PATH}"
+  extraConfiguration:
+    - file: acceptance-api.yaml
+      content: |
+        api:
+          jwtAuthForApiEnabled: true
+          audience: optimize-orcha-tenanta-api
   database:
     elasticsearch:
       enabled: true
@@ -50,4 +47,4 @@ optimize:
       prefix: "${SERVED_ORCHESTRATION_INDEX_PREFIX}-ta"
   env:
     - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SETTINGS_INDEX_PREFIX
-      value: $OPTIMIZE_INDEX_PREFIX
+      value: "${OPTIMIZE_INDEX_PREFIX}-tenanta"

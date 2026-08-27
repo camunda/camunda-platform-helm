@@ -112,6 +112,12 @@ type TopologyRelease struct {
 	// an optimize release runs in its own namespace on the Hub host.
 	Serves string `yaml:"serves,omitempty" json:"serves,omitempty"`
 
+	// Tenant is the physical tenant this Optimize release serves. "default"
+	// selects the orchestration cluster's components.optimize record; any other
+	// value selects the matching physicalTenants entry. Required for Optimize
+	// releases and rejected for every other role.
+	Tenant string `yaml:"tenant,omitempty" json:"tenant,omitempty"`
+
 	// OptimizeContextPath is the ingress path this release's Optimize is served
 	// on, matching optimize.contextPath in its values layer. Required for
 	// Role == "optimize", rejected for any other role.
@@ -137,6 +143,7 @@ var reservedTopologyEnvKeys = []string{
 	"ORCH_HOST",
 	"ORCH_ZEEBE_GRPC",
 	"ORCH_ZEEBE_REST",
+	"RELEASE_TENANT_ID",
 	"RELEASE_OPTIMIZE_CONTEXT_PATH",
 	"SERVED_NAMESPACE",
 	"SERVED_HOST",
@@ -182,6 +189,7 @@ func (t *Topology) Validate(ctx string, chartFullSetupDir string, depsDir string
 	orchestrationCount := 0
 	modelerClusterIDs := map[string]bool{}
 	modelerClusterNames := map[string]bool{}
+	optimizeBindings := map[string]string{}
 
 	for i, r := range t.Releases {
 		label := fmt.Sprintf("%s: topology %q: release[%d] (role %q, namespace-suffix %q)", ctx, t.Name, i, r.Role, r.NamespaceSuffix)
@@ -206,11 +214,23 @@ func (t *Topology) Validate(ctx string, chartFullSetupDir string, depsDir string
 				modelerClusterNames[r.ModelerClusterName] = true
 			}
 		case "optimize":
+			tenant := strings.TrimSpace(r.Tenant)
+			if tenant == "" {
+				tenant = "default"
+			}
 			if strings.TrimSpace(r.DependsOn) != "hub" {
 				problems = append(problems, fmt.Sprintf("%s: depends-on must be \"hub\" so the release deploys after the Management Identity that provisions its client, got %q", label, r.DependsOn))
 			}
 			if strings.TrimSpace(r.Serves) == "" {
 				problems = append(problems, fmt.Sprintf("%s: serves is required and must name the namespace-suffix of the orchestration release this Optimize reads", label))
+			}
+			if r.Serves != "" {
+				binding := r.Serves + "\x00" + tenant
+				if owner, exists := optimizeBindings[binding]; exists {
+					problems = append(problems, fmt.Sprintf("%s: duplicate serves+tenant binding (%q, %q), already used by optimize release %q", label, r.Serves, tenant, owner))
+				} else {
+					optimizeBindings[binding] = r.NamespaceSuffix
+				}
 			}
 			if strings.TrimSpace(r.OptimizeContextPath) == "" {
 				problems = append(problems, fmt.Sprintf("%s: optimize-context-path is required and must match optimize.contextPath in the release's values layer", label))
@@ -311,6 +331,9 @@ func (t *Topology) Validate(ctx string, chartFullSetupDir string, depsDir string
 			}
 			if r.OptimizeContextPath != "" {
 				problems = append(problems, fmt.Sprintf("%s: topology %q: release[%d] (role %q) must not set optimize-context-path; it applies only to role \"optimize\"", ctx, t.Name, i, r.Role))
+			}
+			if r.Tenant != "" {
+				problems = append(problems, fmt.Sprintf("%s: topology %q: release[%d] (role %q) must not set tenant; it applies only to role \"optimize\"", ctx, t.Name, i, r.Role))
 			}
 		} else if r.Serves != "" && !orchestrationSuffixes[r.Serves] {
 			problems = append(problems, fmt.Sprintf("%s: topology %q: release[%d] serves %q does not reference a declared orchestration release's namespace-suffix", ctx, t.Name, i, r.Serves))
@@ -618,7 +641,8 @@ type hubInventory struct {
 	// Hub inventory to check against" from "the Hub registers nothing", which an
 	// empty inventory alone cannot say and which are opposite answers: the first
 	// has nothing to report, the second means no Optimize client is provisioned.
-	read bool
+	read             bool
+	clustersDeclared bool
 }
 
 // hubClusterValues is one cluster's entry in that inventory, narrowed to what an
@@ -629,14 +653,24 @@ type hubClusterValues struct {
 		Optimize *string `yaml:"optimize"`
 	} `yaml:"contextPaths"`
 	Components struct {
-		Optimize struct {
-			Enabled     *bool             `yaml:"enabled"`
-			ClientID    *string           `yaml:"clientId"`
-			Audience    *string           `yaml:"audience"`
-			RedirectURL *string           `yaml:"redirectUrl"`
-			Secret      optimizeSecretRef `yaml:"secret"`
-		} `yaml:"optimize"`
+		Optimize hubOptimizeValues `yaml:"optimize"`
 	} `yaml:"components"`
+	PhysicalTenants []hubPhysicalTenant `yaml:"physicalTenants"`
+}
+
+type hubPhysicalTenant struct {
+	ID         string `yaml:"id"`
+	Components struct {
+		Optimize hubOptimizeValues `yaml:"optimize"`
+	} `yaml:"components"`
+}
+
+type hubOptimizeValues struct {
+	Enabled     *bool             `yaml:"enabled"`
+	ClientID    *string           `yaml:"clientId"`
+	Audience    *string           `yaml:"audience"`
+	RedirectURL *string           `yaml:"redirectUrl"`
+	Secret      optimizeSecretRef `yaml:"secret"`
 }
 
 // placeholderForms returns the two substitution spellings os.Expand accepts for
@@ -1066,6 +1100,7 @@ func hubOptimizeInventory(t *Topology, chartFullSetupDir string) hubInventory {
 	// never states one is treated as Keycloak-provisioned - which is what it is.
 	authIssuerType := "KEYCLOAK"
 	read := false
+	clustersDeclared := false
 	for _, path := range releaseLayerPaths(*hub, chartFullSetupDir) {
 		content, err := os.ReadFile(path)
 		if err != nil {
@@ -1079,6 +1114,7 @@ func hubOptimizeInventory(t *Topology, chartFullSetupDir string) hubInventory {
 		var stated []hubClusterValues
 		if decodeHubList(layer.Global.Topology.Clusters, &stated) {
 			clusters = stated
+			clustersDeclared = true
 		}
 		var statedClients []hubIdentityClient
 		if decodeHubList(layer.Identity.Clients, &statedClients) {
@@ -1089,10 +1125,11 @@ func hubOptimizeInventory(t *Topology, chartFullSetupDir string) hubInventory {
 		}
 	}
 	inventory := hubInventory{
-		clusters:       make(map[string]hubClusterValues, len(clusters)),
-		clients:        make(map[string]hubIdentityClient, len(clients)),
-		authIssuerType: authIssuerType,
-		read:           read,
+		clusters:         make(map[string]hubClusterValues, len(clusters)),
+		clients:          make(map[string]hubIdentityClient, len(clients)),
+		authIssuerType:   authIssuerType,
+		read:             read,
+		clustersDeclared: clustersDeclared,
 	}
 	for _, c := range clusters {
 		if c.ID != "" {
@@ -1151,23 +1188,17 @@ func expandTopologyPlaceholders(value string, subs map[string]string) string {
 // A mismatch is invisible to the deploy: every workload rolls out and reports
 // ready, and only a browser login fails, which is exactly the assertion the
 // physicaltenants scenario currently skips (skip-e2e).
-//
-// A cluster record holds one Optimize, so when several optimize releases serve one
-// orchestration only one of them is the release that record names; the others are
-// provisioned as standalone identity.clients entries and are checked against those.
-// Deciding which is which by client id rather than by declaration order is what
-// keeps the check from blaming whichever release did not win the registration.
 func validateOptimizeIdentityAgainstHub(label string, t *Topology, r TopologyRelease, oidc optimizeOIDCLayer, keys optimizeOIDCKeys, inventory hubInventory) []string {
-	if r.Serves == "" || !inventory.read {
+	if r.Serves == "" || !inventory.read || !inventory.clustersDeclared {
 		return nil
+	}
+	tenantID := r.Tenant
+	if tenantID == "" {
+		tenantID = "default"
 	}
 
 	clusterID := ""
-	servingSameOrchestration := 0
 	for _, other := range t.Releases {
-		if other.Role == "optimize" && other.Serves == r.Serves {
-			servingSameOrchestration++
-		}
 		if other.Role == "orchestration" && other.NamespaceSuffix == r.Serves {
 			clusterID = other.ModelerClusterID
 			if clusterID == "" {
@@ -1181,28 +1212,32 @@ func validateOptimizeIdentityAgainstHub(label string, t *Topology, r TopologyRel
 	hubSubs := topologyContextPathSubs(t, nil)
 	releaseSubs := topologyContextPathSubs(t, &r)
 
-	// No cluster record with an enabled Optimize leaves a standalone
-	// identity.clients entry as the only thing that can provision this release,
-	// which is the same position an Optimize the record does not name is in. That
-	// is also the state a later Hub layer produces by replacing the inventory with
-	// an empty list, so it is checked rather than passed over.
 	cluster, hasRecord := inventory.clusters[clusterID]
-	if !hasRecord || !isEnabled(cluster.Components.Optimize.Enabled) {
-		return validateOptimizeIdentityAgainstHubClients(label, r, oidc, keys, inventory, clusterID, "", false, hubSubs, releaseSubs)
+	if !hasRecord {
+		return []string{fmt.Sprintf("%s: the Hub inventory has no cluster record with id %q", label, clusterID)}
 	}
 
-	registered := stringValue(cluster.Components.Optimize.ClientID)
-	presented := stringValue(oidc.ClientID)
-
-	// The cluster record names this release when their client ids agree. With one
-	// optimize release serving the orchestration there is no other candidate, so
-	// the record names it even if it states no client id - and then the client id
-	// comparison below is the check that says so.
-	isRecordRelease := servingSameOrchestration == 1 ||
-		(registered != "" && presented != "" &&
-			expandTopologyPlaceholders(registered, hubSubs) == expandTopologyPlaceholders(presented, releaseSubs))
-	if !isRecordRelease {
-		return validateOptimizeIdentityAgainstHubClients(label, r, oidc, keys, inventory, clusterID, registered, true, hubSubs, releaseSubs)
+	component := cluster.Components.Optimize
+	hubLocation := fmt.Sprintf("global.topology.clusters[id=%q].components.optimize", clusterID)
+	if tenantID != "default" {
+		found := false
+		for _, tenant := range cluster.PhysicalTenants {
+			if tenant.ID == tenantID {
+				component = tenant.Components.Optimize
+				hubLocation = fmt.Sprintf("global.topology.clusters[id=%q].physicalTenants[id=%q].components.optimize", clusterID, tenantID)
+				found = true
+				break
+			}
+		}
+		if !found {
+			return []string{fmt.Sprintf("%s: the Hub cluster %q has no physicalTenants entry with id %q", label, clusterID, tenantID)}
+		}
+	}
+	if !isEnabled(component.Enabled) {
+		return []string{fmt.Sprintf("%s: %s.enabled must be true so the Hub provisions this Optimize release", label, hubLocation)}
+	}
+	if stringValue(component.ClientID) == "" || stringValue(component.Audience) == "" || stringValue(component.RedirectURL) == "" || normalizedSecretForm(component.Secret).kind == "" {
+		return []string{fmt.Sprintf("%s: %s requires clientId, audience, redirectUrl, and secret so the Hub provisions this Optimize release", label, hubLocation)}
 	}
 
 	var problems []string
@@ -1213,22 +1248,22 @@ func validateOptimizeIdentityAgainstHub(label string, t *Topology, r TopologyRel
 		}
 		release := stringValue(releaseValue)
 		if release == "" {
-			problems = append(problems, fmt.Sprintf("%s: the Hub registers this cluster's Optimize %s as %q (global.topology.clusters[id=%q].components.optimize.%s) but no layer of this release sets %s, so it presents the chart default instead of the identity Identity provisioned for it", label, what, hub, clusterID, hubKey, releaseKey))
+			problems = append(problems, fmt.Sprintf("%s: the Hub registers this tenant's Optimize %s as %q (%s.%s) but no layer of this release sets %s, so it presents the chart default instead of the identity Identity provisioned for it", label, what, hub, hubLocation, hubKey, releaseKey))
 			return
 		}
 		if expandTopologyPlaceholders(hub, hubSubs) == expandTopologyPlaceholders(release, releaseSubs) {
 			return
 		}
-		problems = append(problems, fmt.Sprintf("%s: %s is %q but the Hub registers this cluster's Optimize %s as %q (global.topology.clusters[id=%q].components.optimize.%s); the value Optimize presents and the value Identity provisioned have to be the same one", label, releaseKey, release, what, hub, clusterID, hubKey))
+		problems = append(problems, fmt.Sprintf("%s: %s is %q but the Hub registers this tenant's Optimize %s as %q (%s.%s); the value Optimize presents and the value Identity provisioned have to be the same one", label, releaseKey, release, what, hub, hubLocation, hubKey))
 	}
-	compare("client id", "clientId", keys.ClientID, cluster.Components.Optimize.ClientID, oidc.ClientID)
-	compare("audience", "audience", keys.Audience, cluster.Components.Optimize.Audience, oidc.Audience)
-	compare("redirect URL", "redirectUrl", keys.RedirectURL, cluster.Components.Optimize.RedirectURL, oidc.RedirectURL)
+	compare("client id", "clientId", keys.ClientID, component.ClientID, oidc.ClientID)
+	compare("audience", "audience", keys.Audience, component.Audience, oidc.Audience)
+	compare("redirect URL", "redirectUrl", keys.RedirectURL, component.RedirectURL, oidc.RedirectURL)
 	problems = append(problems, secretFormProblems(
 		label,
-		fmt.Sprintf("global.topology.clusters[id=%q].components.optimize.secret", clusterID),
+		hubLocation+".secret",
 		keys.Secret,
-		normalizedSecretForm(cluster.Components.Optimize.Secret),
+		normalizedSecretForm(component.Secret),
 		inlineFirstSecretForm(oidc.Secret),
 		hubSubs, releaseSubs,
 	)...)
@@ -1238,7 +1273,11 @@ func validateOptimizeIdentityAgainstHub(label string, t *Topology, r TopologyRel
 	// to a path no ingress serves while the redirect URL above still matches. It is
 	// checked only against the release the record names, since that is the Optimize
 	// the record describes.
-	if advertised := stringValue(cluster.ContextPaths.Optimize); advertised != "" && r.OptimizeContextPath != "" {
+	if tenantID == "default" {
+		advertised := stringValue(cluster.ContextPaths.Optimize)
+		if advertised == "" || r.OptimizeContextPath == "" {
+			return problems
+		}
 		if expandTopologyPlaceholders(advertised, hubSubs) != r.OptimizeContextPath {
 			problems = append(problems, fmt.Sprintf("%s: the Hub advertises this cluster's Optimize at %q (global.topology.clusters[id=%q].contextPaths.optimize) but the release declares optimize-context-path %q; set it to %q so the declaration is the only copy", label, advertised, clusterID, r.OptimizeContextPath, placeholderForms(TopologyEnvToken(r.NamespaceSuffix) + "_OPTIMIZE_CONTEXT_PATH")[0]))
 		}

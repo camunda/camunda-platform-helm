@@ -87,6 +87,9 @@ data:
               id: {{ $optimize.clientId | quote }}
               type: confidential
               secret: {{ printf "${VALUES_TOPOLOGY_%s_OPTIMIZE_SECRET:}" $token }}
+              permissions:
+                - audience: {{ $optimize.audience | quote }}
+                  definition: write:*
               root-url: {{ tpl $optimize.redirectUrl $ | quote }}
               redirect-uris:
                 - "/api/authentication/callback"
@@ -99,6 +102,9 @@ data:
               id: {{ $tenantOptimize.clientId | quote }}
               type: confidential
               secret: {{ printf "${VALUES_TOPOLOGY_%s_TENANT_%s_OPTIMIZE_SECRET:}" $token (include "camundaPlatform.topologyEnvToken" $tenant.id) }}
+              permissions:
+                - audience: {{ $tenantOptimize.audience | quote }}
+                  definition: write:*
               root-url: {{ tpl $tenantOptimize.redirectUrl $ | quote }}
               redirect-uris:
                 - "/api/authentication/callback"
