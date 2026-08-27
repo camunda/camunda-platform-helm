@@ -48,6 +48,15 @@
     addLabels: ['security'],
     enabled: true,
   },
+  lockFileMaintenance: {
+    enabled: true,
+    schedule: ['before 5am on the first day of the month'],
+    groupName: 'npm lockfiles',
+    automerge: false,
+    platformAutomerge: false,
+    recreateWhen: 'auto',
+    addLabels: ['deps/tools', 'kind/chore'],
+  },
   'helm-values': {
     fileMatch: [
       '(^|/).*?values.*?\\.yaml$',
@@ -408,6 +417,20 @@
         'charts/camunda-platform-8.5/**',
         'charts/camunda-platform-8.6/**',
       ],
+    },
+    {
+      description: 'Disable lock file maintenance for all managers.',
+      matchUpdateTypes: ['lockFileMaintenance'],
+      enabled: false,
+    },
+    {
+      description: 'Enable lock file maintenance for the npm workspaces.',
+      matchUpdateTypes: ['lockFileMaintenance'],
+      matchFileNames: [
+        'helm-docs-site/**',
+        'helm-values-mcp/**',
+      ],
+      enabled: true,
     },
   ],
   customManagers: [
