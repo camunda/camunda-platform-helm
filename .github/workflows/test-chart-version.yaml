@@ -401,6 +401,22 @@ jobs:
   # Release-please PRs get their release files from the promotion workflow.
   # For all other PRs, chores are not applicable — report success immediately.
   # For merge queue commits, chores were verified on the PR — re-report success.
+  report-release-chores-skip-untrusted:
+    name: "release-chores"
+    if: >-
+      ${{
+        github.event_name == 'pull_request' && (
+          github.event.pull_request.head.repo.full_name != github.repository ||
+          github.event.pull_request.user.login == 'dependabot[bot]'
+        ) &&
+        !startsWith(github.head_ref, 'release-please--')
+      }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - run: echo "Release chores are not required."
+
   report-release-chores-skip:
     name: "Report release-chores status (skip)"
     if: >-
