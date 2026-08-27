@@ -59,8 +59,8 @@ Chart 15.x (Camunda 8.10) requires Helm v4 or later.
   {{- if .Values.global.noSecondaryStorage }}
     {{- fail "[camunda][error] global.topology.mode=optimize requires global.noSecondaryStorage=false; Optimize reads exported records from secondary storage." }}
   {{- end }}
-  {{- $esEnabled := or .Values.global.elasticsearch.enabled .Values.optimize.database.elasticsearch.enabled }}
-  {{- $osEnabled := or .Values.global.opensearch.enabled .Values.optimize.database.opensearch.enabled }}
+  {{- $esEnabled := .Values.optimize.database.elasticsearch.enabled }}
+  {{- $osEnabled := .Values.optimize.database.opensearch.enabled }}
   {{- if not (or $esEnabled $osEnabled) }}
     {{- fail "[camunda][error] global.topology.mode=optimize requires optimize.database.elasticsearch.enabled or optimize.database.opensearch.enabled, with url.host addressing the secondary storage the Orchestration Cluster exports to. This chart bundles no Elasticsearch, and with neither backend enabled Optimize renders an empty connection node list and reaches no storage at all." }}
   {{- end }}
