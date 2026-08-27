@@ -87,8 +87,6 @@ func (s *ServiceTest) TestDifferentValuesInputs() {
 				s.Require().Equal("bar", service.ObjectMeta.Annotations["foo"])
 			},
 		}, {
-			// webapp's Service does not wire appProtocol (only restapi/websockets do).
-			Skip: s.component == "webapp",
 			Name: "TestAppProtocolsDefaultEmpty",
 			Values: map[string]string{
 				"identity.enabled":                    "true",
@@ -105,7 +103,6 @@ func (s *ServiceTest) TestDifferentValuesInputs() {
 				}
 			},
 		}, {
-			Skip: s.component == "webapp",
 			Name: "TestAppProtocolsSetsOnlyTargetedPort",
 			Values: map[string]string{
 				"identity.enabled":                                         "true",
@@ -128,7 +125,6 @@ func (s *ServiceTest) TestDifferentValuesInputs() {
 				}
 			},
 		}, {
-			Skip: s.component == "webapp",
 			Name: "TestAppProtocolsUnknownPortNameFails",
 			Values: map[string]string{
 				"identity.enabled":                                          "true",

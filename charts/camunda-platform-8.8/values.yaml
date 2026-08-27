@@ -1935,6 +1935,8 @@ webModeler:
       port: 80
       ## @param webModeler.webapp.service.managementPort defines the management port of the service
       managementPort: 8071
+      ## @param webModeler.webapp.service.appProtocols can be used to set the Kubernetes Service appProtocol hint per port (http, http-management), e.g. {http: "http"}. Empty by default, no behavior change. See https://kubernetes.io/docs/concepts/services-networking/service/#application-protocol
+      appProtocols: {}
 
     ## @param webModeler.webapp.configuration if specified, contents will be used as the application.yaml
     configuration: ""
