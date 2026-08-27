@@ -264,7 +264,12 @@ Fail with a message if Web Modeler is enabled but management Identity is not ena
 
 {{- $hubRestapiPodLabels := or .Values.camundaHub.restapi.podLabels .Values.webModeler.restapi.podLabels | default dict }}
 {{- $hubWebsocketsPodLabels := or .Values.camundaHub.websockets.podLabels .Values.webModeler.websockets.podLabels | default dict }}
-{{- if or (hasKey $hubRestapiPodLabels "camunda.io/upgrade-phase") (hasKey $hubWebsocketsPodLabels "camunda.io/upgrade-phase") }}
+{{- if or
+  (hasKey (.Values.global.labels | default dict) "camunda.io/upgrade-phase")
+  (hasKey (.Values.global.commonLabels | default dict) "camunda.io/upgrade-phase")
+  (hasKey $hubRestapiPodLabels "camunda.io/upgrade-phase")
+  (hasKey $hubWebsocketsPodLabels "camunda.io/upgrade-phase")
+}}
   {{- fail "[camunda][error] The pod label camunda.io/upgrade-phase is reserved for Camunda Hub upgrade lifecycle traffic isolation and cannot be overridden." }}
 {{- end }}
 

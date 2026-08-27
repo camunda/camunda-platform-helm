@@ -108,16 +108,18 @@ func TestCamundaHubUpgradePhaseLabelCannotBeOverridden(t *testing.T) {
 	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
 
-	for _, component := range []struct {
+	for _, label := range []struct {
 		name     string
 		labelKey string
 		template string
 	}{
 		{name: "restapi", labelKey: "camundaHub.restapi.podLabels.camunda\\.io/upgrade-phase", template: "templates/web-modeler/deployment-restapi.yaml"},
 		{name: "websockets", labelKey: "camundaHub.websockets.podLabels.camunda\\.io/upgrade-phase", template: "templates/web-modeler/deployment-websockets.yaml"},
+		{name: "global labels", labelKey: "global.labels.camunda\\.io/upgrade-phase", template: "templates/web-modeler/deployment-restapi.yaml"},
+		{name: "global common labels", labelKey: "global.commonLabels.camunda\\.io/upgrade-phase", template: "templates/web-modeler/deployment-restapi.yaml"},
 	} {
-		component := component
-		t.Run(component.name, func(t *testing.T) {
+		label := label
+		t.Run(label.name, func(t *testing.T) {
 			t.Parallel()
 			_, err := helm.RenderTemplateE(t, &helm.Options{SetValues: map[string]string{
 				"camundaHub.enabled":                  "true",
@@ -125,8 +127,8 @@ func TestCamundaHubUpgradePhaseLabelCannotBeOverridden(t *testing.T) {
 				"camundaHub.restapi.mail.fromAddress": "example@example.com",
 				"global.elasticsearch.enabled":        "true",
 				"identity.enabled":                    "true",
-				component.labelKey:                    "normal",
-			}}, chartPath, "camunda-platform-test", []string{component.template})
+				label.labelKey:                        "normal",
+			}}, chartPath, "camunda-platform-test", []string{label.template})
 
 			require.ErrorContains(t, err, "camunda.io/upgrade-phase is reserved")
 		})
