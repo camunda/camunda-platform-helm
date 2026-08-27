@@ -30,8 +30,6 @@
 #     access tokens by default).
 
 global:
-  elasticsearch:
-    enabled: true
   host: "$CAMUNDA_HOSTNAME"
   ingress:
     enabled: true

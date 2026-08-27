@@ -16,12 +16,8 @@ JVM apps still need a keystore at runtime. The change is that the chart, not the
 
 ## Deprecation: legacy per-component JKS path
 
-The legacy `*.tls.secret.existingSecret` and `global.<engine>.tls.jks.*` fields remain functional but are **deprecated as of chart 15.x** in favour of `global.tls.caBundle.secret.*`. Concrete fields:
+The legacy component `*.tls.secret.existingSecret` fields remain functional but are **deprecated as of chart 15.x** in favour of `global.tls.caBundle.secret.*`. The `global.elasticsearch` and `global.opensearch` trees — including their `tls.secret.*` and `tls.jks.secret.*` (password-injection, #5994) blocks — were removed in chart 15.0.0; setting them fails the render with a `keyRemoved` constraint. Remaining deprecated fields:
 
-- `global.elasticsearch.tls.secret.{existingSecret,existingSecretKey}`
-- `global.opensearch.tls.secret.{existingSecret,existingSecretKey}`
-- `global.elasticsearch.tls.jks.secret.*` (chart 14.x; password-injection block from #5994)
-- `global.opensearch.tls.jks.secret.*`
 - `orchestration.data.secondaryStorage.elasticsearch.tls.secret.*`
 - `orchestration.data.secondaryStorage.opensearch.tls.secret.*`
 - `optimize.database.elasticsearch.tls.secret.*`

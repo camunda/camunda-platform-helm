@@ -113,7 +113,6 @@ func TestGoldenConfigmapWithRDBMSEnabled(t *testing.T) {
 		GoldenFileName: "configmap-rdbms",
 		Templates:      []string{"templates/orchestration/configmap.yaml"},
 		SetValues: map[string]string{
-			"global.elasticsearch.enabled":                                       "false",
 			"orchestration.exporters.rdbms.enabled":                              "true",
 			"orchestration.data.secondaryStorage.rdbms.url":                      "jdbc:postgresql://rdbms:5432/camunda",
 			"orchestration.data.secondaryStorage.rdbms.username":                 "camunda",

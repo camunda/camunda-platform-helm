@@ -6,8 +6,6 @@
 # are in test/integration/companion-values/opensearch.yaml (security disabled, single node).
 
 global:
-  elasticsearch:
-    enabled: false
   exporter:
     zeebe:
       enabled: true

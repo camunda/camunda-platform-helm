@@ -476,6 +476,49 @@ func (s *ConstraintTemplateTest) TestWebModelerExternalDatabaseUserRemovedGate()
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
+func (s *ConstraintTemplateTest) TestGlobalDatastoreTreesRemovedGate() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestGlobalElasticsearchTreeFails",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"global.elasticsearch.enabled":             "false",
+			},
+			Expected: map[string]string{
+				"ERROR": `The Helm values file key "global.elasticsearch" has been removed. Configure this via "optimize.database.elasticsearch.* (enabled, url, auth, tls.secret, prefix) for Optimize and orchestration.data.secondaryStorage.elasticsearch.* (or .type) for the Orchestration Cluster; clusterName has no replacement (app default is unchanged, set camunda.data.secondary-storage.elasticsearch.cluster-name via orchestration.extraConfiguration if needed); the JKS truststore password injection is removed, use global.tls.caBundle.secret (PEM) or the component's javaOpts" instead.`,
+			},
+		},
+		{
+			Name: "TestGlobalOpenSearchTreeFails",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":           "opensearch",
+				"orchestration.data.secondaryStorage.opensearch.url": "https://os.example.com:443",
+				"global.opensearch.url.host":                         "os.example.com",
+			},
+			Expected: map[string]string{
+				"ERROR": `The Helm values file key "global.opensearch" has been removed. Configure this via "optimize.database.opensearch.* (enabled, url, auth, tls.secret, prefix, aws.enabled) for Optimize and orchestration.data.secondaryStorage.opensearch.* (or .type) for the Orchestration Cluster; clusterName has no replacement (app default is unchanged, set camunda.data.secondary-storage.opensearch.cluster-name via orchestration.extraConfiguration if needed); the JKS truststore password injection is removed, use global.tls.caBundle.secret (PEM) or the component's javaOpts" instead.`,
+			},
+		},
+		{
+			Name: "TestComponentScopedDatastoreKeysRenderOk",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":                        "elasticsearch",
+				"orchestration.data.secondaryStorage.elasticsearch.url":           "http://es.example.com:9200",
+				"orchestration.data.secondaryStorage.elasticsearch.auth.username": "esuser",
+				"identity.enabled":                         "true",
+				"optimize.enabled":                         "true",
+				"optimize.database.elasticsearch.enabled":  "true",
+				"optimize.database.elasticsearch.url.host": "es.example.com",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
 func (s *ConstraintTemplateTest) TestCamundaHubWebModelerKeyRenamedGuards() {
 	testCases := []testhelpers.TestCase{
 		{

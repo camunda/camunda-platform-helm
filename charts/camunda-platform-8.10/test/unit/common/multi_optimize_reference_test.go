@@ -57,7 +57,6 @@ func (s *MultiOptimizeReferenceTemplateTest) TestPlatformReleaseRegistersSecondO
 		{
 			Name:        "TestIdentityClientConfiguration",
 			Template:    "templates/identity/configmap.yaml",
-			Values:      map[string]string{"global.elasticsearch.enabled": "false"},
 			ValuesFiles: []string{s.platformValues},
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().NoError(err)
@@ -78,7 +77,6 @@ func (s *MultiOptimizeReferenceTemplateTest) TestPlatformReleaseRegistersSecondO
 		{
 			Name:        "TestIdentityClientSecretReference",
 			Template:    "templates/identity/deployment.yaml",
-			Values:      map[string]string{"global.elasticsearch.enabled": "false"},
 			ValuesFiles: []string{s.platformValues},
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().NoError(err)
@@ -96,7 +94,6 @@ func (s *MultiOptimizeReferenceTemplateTest) TestPlatformReleaseRegistersSecondO
 		{
 			Name:        "TestPlatformOptimizeDeployment",
 			Template:    "templates/optimize/deployment.yaml",
-			Values:      map[string]string{"global.elasticsearch.enabled": "false"},
 			ValuesFiles: []string{s.platformValues},
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().NoError(err)
@@ -118,7 +115,6 @@ func (s *MultiOptimizeReferenceTemplateTest) TestPlatformReleaseRegistersSecondO
 		{
 			Name:        "TestPlatformIngress",
 			Template:    "templates/common/ingress-http.yaml",
-			Values:      map[string]string{"global.elasticsearch.enabled": "false"},
 			ValuesFiles: []string{s.platformValues},
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().NoError(err)
@@ -142,7 +138,6 @@ func (s *MultiOptimizeReferenceTemplateTest) TestOptimizeOnlyRelease() {
 		{
 			Name:        "TestOptimizeConfiguration",
 			Template:    "templates/optimize/configmap.yaml",
-			Values:      map[string]string{"global.elasticsearch.enabled": "false"},
 			ValuesFiles: []string{s.optimizeOnlyValues},
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().NoError(err)
@@ -162,7 +157,6 @@ func (s *MultiOptimizeReferenceTemplateTest) TestOptimizeOnlyRelease() {
 		{
 			Name:        "TestIdentityServiceConfiguration",
 			Template:    "templates/common/configmap-identity-auth.yaml",
-			Values:      map[string]string{"global.elasticsearch.enabled": "false"},
 			ValuesFiles: []string{s.optimizeOnlyValues},
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().NoError(err)
@@ -176,7 +170,6 @@ func (s *MultiOptimizeReferenceTemplateTest) TestOptimizeOnlyRelease() {
 		{
 			Name:        "TestOptimizeDeployment",
 			Template:    "templates/optimize/deployment.yaml",
-			Values:      map[string]string{"global.elasticsearch.enabled": "false"},
 			ValuesFiles: []string{s.optimizeOnlyValues},
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().NoError(err)
@@ -198,7 +191,6 @@ func (s *MultiOptimizeReferenceTemplateTest) TestOptimizeOnlyRelease() {
 		{
 			Name:        "TestOptimizeIngress",
 			Template:    "templates/common/ingress-http.yaml",
-			Values:      map[string]string{"global.elasticsearch.enabled": "false"},
 			ValuesFiles: []string{s.optimizeOnlyValues},
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().NoError(err)
@@ -213,7 +205,6 @@ func (s *MultiOptimizeReferenceTemplateTest) TestOptimizeOnlyRelease() {
 		},
 		{
 			Name:        "TestOnlyOptimizeWorkloadRenders",
-			Values:      map[string]string{"global.elasticsearch.enabled": "false"},
 			ValuesFiles: []string{s.optimizeOnlyValues},
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().NoError(err)

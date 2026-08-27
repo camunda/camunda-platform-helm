@@ -271,7 +271,7 @@ describe('MCP Tools', () => {
     });
 
     it('should detect deprecated configs', () => {
-      const result = getConfigInfo({ path: 'global.elasticsearch.enabled' });
+      const result = getConfigInfo({ path: 'orchestration.extraInitContainers' });
       expect(result.deprecated).toBe(true);
     });
 

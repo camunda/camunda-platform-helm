@@ -170,8 +170,7 @@ func TestGoldenDefaultsTemplateOrchestration(t *testing.T) {
             GoldenFileName: name,
             Templates:      []string{"templates/orchestration/" + name + ".yaml"},
             SetValues: map[string]string{
-                "global.elasticsearch.enabled": "true",
-                "elasticsearch.enabled":        "true",
+                "orchestration.data.secondaryStorage.type": "elasticsearch",
             },
             IgnoredLines: []string{
                 `\s+checksum/.+?:\s+.*`, // ignore configmap checksums
