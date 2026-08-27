@@ -1379,6 +1379,33 @@ func (s *ConfigmapTemplateTest) TestZonedConfiguration() {
 			},
 		},
 		{
+			Name: "TestSingleZoneStillRendersItsInitialContactPoints",
+			Values: map[string]string{
+				"global.multiregion.mode":                      "zoned",
+				"global.multiregion.zone":                      "region-a",
+				"global.multiregion.zones[0].name":             "region-a",
+				"global.multiregion.zones[0].numberOfBrokers":  "2",
+				"global.multiregion.zones[0].numberOfReplicas": "2",
+				"global.multiregion.zones[0].priority":         "100",
+				"orchestration.profiles.broker":                "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				// One zone is one cluster behind one headless Service, so the
+				// chart can address every broker itself, exactly as it does for a
+				// single-region deployment. Only a cluster spread over more than
+				// one zone needs the list handed to it from outside.
+				require.Contains(t, output, "initial-contact-points:")
+				require.Contains(t, output, "camunda-platform-test-zeebe-0.${K8S_SERVICE_NAME}:26502")
+				require.Contains(t, output, "camunda-platform-test-zeebe-1.${K8S_SERVICE_NAME}:26502")
+				// Two brokers, so two contact points. The count comes from the zone
+				// list, not from `orchestration.clusterSize`, which is still on its
+				// default of three and would have produced a third.
+				require.NotContains(t, output, "camunda-platform-test-zeebe-2.${K8S_SERVICE_NAME}:26502")
+				require.Contains(t, output, "size: \"2\"")
+			},
+		},
+		{
 			Name: "TestZonedModeDoesNotEnableLegacyElasticsearchExporter",
 			Values: map[string]string{
 				"global.multiregion.mode":                                       "zoned",

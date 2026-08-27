@@ -88,9 +88,9 @@ camunda:
         {{- end }}
     {{- end }}
     # zeebe.broker.cluster
-    {{- if and (ne (include "orchestration.zoned" .) "true") (le (int .Values.global.multiregion.regions) 1) }}
+    {{- if and (le (int .Values.global.multiregion.regions) 1) (le (len .Values.global.multiregion.zones) 1) }}
     initial-contact-points:
-    {{- range (untilStep 0 (int .Values.orchestration.clusterSize) 1) }}
+    {{- range (untilStep 0 (int (include "orchestration.clusterSize" $)) 1) }}
       - {{ include "orchestration.fullname" $ }}-{{ . }}.${K8S_SERVICE_NAME}:{{ $.Values.orchestration.service.internalPort }}
     {{- end }}
     {{- else }}
