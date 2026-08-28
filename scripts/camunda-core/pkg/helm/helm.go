@@ -139,9 +139,11 @@ func DependencyUpdate(ctx context.Context, chartPath string) error {
 }
 
 // RepoAdd registers a Helm chart repository (helm repo add).
-// If the repo already exists, Helm treats this as a no-op update.
+// --force-update makes this idempotent: without it Helm fails with
+// "repository name (%s) already exists" whenever the name is registered under
+// a URL that differs by so much as a trailing slash.
 func RepoAdd(ctx context.Context, name, url string) error {
-	args := []string{"repo", "add", name, url}
+	args := []string{"repo", "add", name, url, "--force-update"}
 	if err := Run(ctx, args, ""); err != nil {
 		return fmt.Errorf("helm repo add %s %s failed: %w", name, url, err)
 	}
