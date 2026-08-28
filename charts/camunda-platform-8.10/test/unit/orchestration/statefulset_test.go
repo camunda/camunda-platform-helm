@@ -127,7 +127,8 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 		{
 			Name: "TestContainerSetPodLabels",
 			Values: map[string]string{
-				"orchestration.podLabels.foo": "bar",
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"orchestration.podLabels.foo":              "bar",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var statefulSet appsv1.StatefulSet
