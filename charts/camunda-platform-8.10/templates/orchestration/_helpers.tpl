@@ -357,20 +357,7 @@ spring-imported orchestration.extraConfiguration file, override it.
 ) -}}
 {{- end -}}
 
-{{- define "orchestration.hasCamundaExporter" -}}
-{{- and (not (eq (include "orchestration.secondaryStorage" .) "none")) (eq (include "orchestration.camundaExporterEnabled" .) "true") (not .Values.orchestration.exporters.rdbms.enabled) -}}
-{{- end -}}
-
-{{- define "orchestration.hasNoExporter" -}}
-{{-
-and
-(ne (include "orchestration.hasLegacyOpenSearchExporter" .) "true")
-(ne (include "orchestration.hasLegacyElasticsearchExporter" .) "true")
-(ne (include "orchestration.hasCamundaExporter" .) "true")
--}}
-{{- end -}}
-
-{{- define "orchestration.hasLegacyElasticsearchExporter" -}}
+{{- define "orchestration.hasElasticsearchExporter" -}}
 {{- and
       .Values.optimize.database.elasticsearch.enabled
       (eq (include "camundaPlatform.optimizeEnabled" .) "true")
@@ -381,7 +368,7 @@ and
 -}}
 {{- end -}}
 
-{{- define "orchestration.hasLegacyOpenSearchExporter" -}}
+{{- define "orchestration.hasOpenSearchExporter" -}}
 {{- and
       .Values.optimize.database.opensearch.enabled
       (eq (include "camundaPlatform.optimizeEnabled" .) "true")
@@ -400,7 +387,7 @@ when no host resolves, the exporter keeps the secondary-storage/global compatibi
 */}}
 {{- define "orchestration.legacyElasticsearchExporterUsesOptimizeSource" -}}
 {{- and
-      (eq (include "orchestration.hasLegacyElasticsearchExporter" .) "true")
+      (eq (include "orchestration.hasElasticsearchExporter" .) "true")
       (eq (include "camundaPlatform.optimizeEnabled" .) "true")
       (ne (include "camundaPlatform.elasticsearchHost" .) "")
 -}}
@@ -408,8 +395,8 @@ when no host resolves, the exporter keeps the secondary-storage/global compatibi
 
 {{- define "orchestration.legacyOpenSearchExporterUsesOptimizeSource" -}}
 {{- and
-      (ne (include "orchestration.hasLegacyElasticsearchExporter" .) "true")
-      (eq (include "orchestration.hasLegacyOpenSearchExporter" .) "true")
+      (ne (include "orchestration.hasElasticsearchExporter" .) "true")
+      (eq (include "orchestration.hasOpenSearchExporter" .) "true")
       (eq (include "camundaPlatform.optimizeEnabled" .) "true")
       (ne (include "camundaPlatform.opensearchHost" .) "")
 -}}

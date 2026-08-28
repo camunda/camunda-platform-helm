@@ -286,7 +286,7 @@ integration:
               Waits for the authenticated Orchestration Cluster ping to register its
               uniquely named cluster in Hub's database.
         - name: keycloak-mt
-          enabled: false
+          enabled: true
           shortname: kemt
           auth: keycloak
           flow: upgrade-minor
@@ -297,7 +297,9 @@ integration:
             eks: preemptible
             gke: distroci
           identity: keycloak
-          persistence: elasticsearch
+          persistence: elasticsearch-companion
+          features:
+            - custom-history
           dependencies:
             - chart: charts/internal-keycloak-26
               release-name: keycloak
@@ -315,7 +317,7 @@ integration:
                 - RDBMS_POSTGRESQL_USERNAME
                 - RDBMS_POSTGRESQL_PASSWORD
         - name: keycloak-rba
-          enabled: true
+          enabled: false
           shortname: kerba
           auth: keycloak
           flow: upgrade-minor

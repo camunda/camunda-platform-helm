@@ -70,6 +70,30 @@ type ProfilesYAML struct {
 
 type CamundaYAML struct {
 	Identity IdentityYAML `yaml:"identity"`
+	Data     DataYAML     `yaml:"data"`
+}
+
+type DataYAML struct {
+	SecondaryStorage SecondaryStorageYAML `yaml:"secondary-storage"`
+}
+
+type SecondaryStorageYAML struct {
+	AutoconfigureCamundaExporter bool                       `yaml:"autoconfigure-camunda-exporter"`
+	Elasticsearch                DocumentSecondaryStoreYAML `yaml:"elasticsearch"`
+	OpenSearch                   DocumentSecondaryStoreYAML `yaml:"opensearch"`
+}
+
+type DocumentSecondaryStoreYAML struct {
+	History HistoryYAML `yaml:"history"`
+}
+
+type HistoryYAML struct {
+	ElsRolloverDateFormat     string `yaml:"els-rollover-date-format"`
+	RolloverInterval          string `yaml:"rollover-interval"`
+	RolloverBatchSize         int    `yaml:"rollover-batch-size"`
+	WaitPeriodBeforeArchiving string `yaml:"wait-period-before-archiving"`
+	DelayBetweenRuns          int    `yaml:"delay-between-runs"`
+	MaximumDelayBetweenRuns   int    `yaml:"max-delay-between-runs"`
 }
 
 type IdentityYAML struct {

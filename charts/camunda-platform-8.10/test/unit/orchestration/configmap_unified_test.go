@@ -1010,7 +1010,8 @@ func (s *ConfigmapTemplateTest) TestLegacyExporterMultiRegionGate() {
 
 			var applicationYaml map[string]any
 			require.NoError(t, yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &applicationYaml))
-			require.Contains(t, configmap.Data["application.yaml"], "io.camunda.exporter.CamundaExporter")
+			require.Contains(t, configmap.Data["application.yaml"], "autoconfigure-camunda-exporter: true")
+			require.NotContains(t, configmap.Data["application.yaml"], "io.camunda.exporter.CamundaExporter")
 			if expected {
 				require.Contains(t, configmap.Data["application.yaml"], exporterClass)
 			} else {
@@ -1215,7 +1216,7 @@ func (s *ConfigmapTemplateTest) TestCamundaExporterHonorsAutoconfigureFromExtraC
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
 				require.Contains(t, output, "autoconfigure-camunda-exporter: true")
-				require.Contains(t, output, "camundaexporter:")
+				require.NotContains(t, output, "camundaexporter:")
 			},
 		},
 		{
