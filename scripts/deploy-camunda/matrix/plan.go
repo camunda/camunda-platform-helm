@@ -125,12 +125,64 @@ type buildAllTrigger struct {
 	Description string
 }
 
+var chartCIWorkflows = []string{
+	"build-ci-runner-image",
+	"chart-validate-template",
+	"cleanup-namespace",
+	"integration-tests-gate",
+	"test-chart-version",
+	"test-chart-version-template",
+	"test-integration-cleanup-template",
+	"test-integration-diagnostics-template",
+	"test-integration-runner",
+	"test-integration-template",
+	"test-local-template",
+	"test-unit-template",
+}
+
+var deployRelevantScriptDirs = []string{
+	"camunda-core",
+	"ci-result-cache",
+	"deploy-camunda",
+	"integration-tests-gate",
+	"playwright-pin",
+	"prepare-helm-values",
+	"validate-values-schema",
+	"vault-secret-mapper",
+}
+
+var deployRelevantScriptFiles = []string{
+	"base_playwright_script.sh",
+	"check-no-plaintext-datastore.sh",
+	"check-values-enterprise.sh",
+	"check-values-latest.sh",
+	"deploy-camunda.sh",
+	"dns-fallback.cjs",
+	"download-chart-docker-images.sh",
+	"harbor-retry.sh",
+	"prepare-helm-values.sh",
+	"render-e2e-env.sh",
+	"run-e2e-tests.sh",
+}
+
+func alternation(names []string) string {
+	quoted := make([]string, 0, len(names))
+	for _, name := range names {
+		quoted = append(quoted, regexp.QuoteMeta(name))
+	}
+	return strings.Join(quoted, "|")
+}
+
 // buildAllTriggers mirrors the BUILD_ALL_TRIGGERS list of the bash
 // implementation. Patterns are matched per changed path, like grep.
 var buildAllTriggers = []buildAllTrigger{
 	{
-		Pattern:     regexp.MustCompile(`\.github/(workflows|actions)`),
-		Description: ".github/workflows or .github/actions",
+		Pattern:     regexp.MustCompile(`^\.github/workflows/(` + alternation(chartCIWorkflows) + `)\.yaml$`),
+		Description: ".github/workflows (chart-CI workflows)",
+	},
+	{
+		Pattern:     regexp.MustCompile(`^\.github/actions/`),
+		Description: ".github/actions",
 	},
 	{
 		Pattern:     regexp.MustCompile(`\.github/config`),
@@ -138,11 +190,12 @@ var buildAllTriggers = []buildAllTrigger{
 		Description: ".github/config (excluding release-please)",
 	},
 	{
-		// Anchor required: tj-actions/changed-files with dir_names:true emits
-		// the bare token "scripts" so unanchored "scripts/" misses top-level
-		// helper changes.
-		Pattern:     regexp.MustCompile(`(^|[[:space:]])scripts(/|$|[[:space:]])`),
-		Description: "scripts/ (any helper script)",
+		Pattern:     regexp.MustCompile(`^scripts/(` + alternation(deployRelevantScriptDirs) + `)/`),
+		Description: "scripts/ (deployer and its runtime dependencies)",
+	},
+	{
+		Pattern:     regexp.MustCompile(`^scripts/(` + alternation(deployRelevantScriptFiles) + `)$`),
+		Description: "scripts/ (deploy and e2e helpers)",
 	},
 	{
 		Pattern:     regexp.MustCompile(`^\.tool-versions$`),
