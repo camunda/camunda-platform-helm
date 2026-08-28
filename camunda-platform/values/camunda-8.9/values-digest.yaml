@@ -6,15 +6,15 @@ console:
   # https://hub.docker.com/r/camunda/console/tags
   image:
     repository: camunda/console
-    tag: 8.9.88
-    digest: "sha256:532d06524542f6a6eed504ac4719b6b7ad667d8d71aac1a3f5f5f385e44ffb72"
+    tag: 8.9.90
+    digest: "sha256:6aeb9fff5f2426176cab613f91fd4dbc091a293d42de7e76f09d9896cfc4864e"
 
 connectors:
   # https://hub.docker.com/r/camunda/connectors-bundle/tags
   image:
     repository: camunda/connectors-bundle
-    tag: 8.9.8
-    digest: "sha256:472f8e49a872d351e2c8e90120c90edc0d4dfa695e8c222e7ae6d07e3c9b56a8"
+    tag: 8.9.9
+    digest: "sha256:18977c4cbb290c35f66104ab95718bb71710e01a268419031714ec79c31c6883"
 
 optimize:
   # https://hub.docker.com/r/camunda/optimize/tags
