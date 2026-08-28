@@ -561,6 +561,34 @@ func (s *OptimizeTLSTest) TestTLSDetectionFromConfigSources() {
 				requireProbeScheme(t, output, corev1.URISchemeHTTP)
 			},
 		},
+		{
+			Name:        "TLS in a later YAML document is unresolved — probes stay HTTP",
+			ValuesFiles: []string{"testdata/values-optimize-tls-multi-document.yaml"},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				requireProbeScheme(t, output, corev1.URISchemeHTTP)
+			},
+		},
+		{
+			Name:        "TLS in an inactive profile document is unresolved — probes stay HTTP",
+			ValuesFiles: []string{"testdata/values-optimize-tls-profile-activated.yaml"},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				requireProbeScheme(t, output, corev1.URISchemeHTTP)
+			},
+		},
+		{
+			Name:        "explicit global TLS flag overrides ambiguous configuration",
+			ValuesFiles: []string{"testdata/values-optimize-tls-multi-document.yaml"},
+			Values: map[string]string{
+				"global.tls.optimize.enabled":                    "true",
+				"global.tls.optimize.cert.secret.existingSecret": "optimize-ks",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				requireProbeScheme(t, output, corev1.URISchemeHTTPS)
+			},
+		},
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
@@ -582,6 +610,18 @@ func (s *OptimizeTLSTest) TestTLSDetectionIngressBackend() {
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
 				require.Contains(t, output, "nginx.ingress.kubernetes.io/backend-protocol: HTTPS")
+			},
+		},
+		{
+			Name:        "TLS in a later YAML document does not select the HTTPS ingress",
+			ValuesFiles: []string{"testdata/values-optimize-tls-multi-document.yaml"},
+			Values: map[string]string{
+				"global.ingress.enabled": "true",
+				"optimize.contextPath":   "/optimize",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), "could not find template")
 			},
 		},
 	}
@@ -610,6 +650,22 @@ func (s *OptimizeTLSTest) TestTLSDetectionWarnings() {
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
 				require.NotContains(t, output, "enable Optimize server TLS through the dotted key")
+			},
+		},
+		{
+			Name:        "multi-document configuration warns",
+			ValuesFiles: []string{"testdata/values-optimize-tls-multi-document.yaml"},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "multi-document or profile-activated Optimize configuration")
+			},
+		},
+		{
+			Name:        "profile-activated configuration warns",
+			ValuesFiles: []string{"testdata/values-optimize-tls-profile-activated.yaml"},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "multi-document or profile-activated Optimize configuration")
 			},
 		},
 		{
