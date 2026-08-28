@@ -146,7 +146,7 @@ func resolveRegistryCredentialsFromEnvironment(docker *config.DockerFlags) error
 					Str("registry", item.registry).
 					Str("set", set).
 					Str("unset", unset).
-					Msg("Ignoring half-configured registry credentials from the environment; trying the keyring next")
+					Msg("Ignoring half-configured registry credentials from the environment; trying other credential sources")
 				continue
 			}
 			*item.username, *item.password = username, password

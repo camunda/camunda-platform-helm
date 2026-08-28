@@ -198,9 +198,6 @@ func TestCredentialsConfigureStoresPairWithoutPrintingSecret(t *testing.T) {
 	}
 }
 
-// A shell profile that exports only DOCKERHUB_USERNAME must not mask a keyring credential. The
-// half-set pair used to abort resolution with "DOCKERHUB_USERNAME/DOCKERHUB_PASSWORD must both be
-// set", so a correctly configured keyring failed to deploy until the stray var was unset.
 func TestResolveRegistryCredentialsFallsBackWhenEnvPairIsHalfSet(t *testing.T) {
 	store := useMemoryCredentialStore(t)
 	store.values[credentials.DockerHubRegistry] = credentials.Credential{Username: "stored", Password: "stored-token"}
