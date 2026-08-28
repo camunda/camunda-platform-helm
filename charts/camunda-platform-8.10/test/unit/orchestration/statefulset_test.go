@@ -1349,6 +1349,7 @@ func (s *StatefulSetTest) TestGlobalTlsOrchestrationFlagsInjectEnv() {
 		{
 			Name: "REST inline cert WITH inline private key renders successfully",
 			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":                     "elasticsearch",
 				"orchestration.enabled":                                        "true",
 				"global.tls.orchestration.rest.enabled":                        "true",
 				"global.tls.orchestration.rest.type":                           "pem",
@@ -1741,6 +1742,7 @@ func (s *StatefulSetTest) TestOrchestrationTLSAutoRollout() {
 
 				outB, errB := helm.RenderTemplateE(s.T(), &helm.Options{
 					SetValues: map[string]string{
+						"orchestration.data.secondaryStorage.type":                     "elasticsearch",
 						"orchestration.enabled":                                        "true",
 						"global.tls.orchestration.autoRollout":                         "true",
 						"global.tls.orchestration.grpc.enabled":                        "true",
