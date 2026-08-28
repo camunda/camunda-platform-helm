@@ -1434,3 +1434,29 @@ Usage (inside an env: list):
 - name: JAVA_TOOL_OPTIONS
   value: {{ include "camundaPlatform.caBundleJavaOpts" . | quote }}
 {{- end -}}
+
+{{/*
+appProtocol
+Returns the appProtocol value configured for a named Service port, or an empty string if unset.
+Fails the render if the map contains a key that isn't a known appProtocols key for this Service,
+to catch typos (e.g. "gprc") at `helm template`/CI time instead of silently no-op-ing.
+
+Usage:
+{{- with include "camundaPlatform.appProtocol" (dict
+  "portName" "grpc"
+  "knownPorts" (list "management" "http" "grpc")
+  "appProtocols" .Values.orchestration.service.appProtocols
+) }}
+      appProtocol: {{ . | quote }}
+{{- end }}
+*/}}
+{{- define "camundaPlatform.appProtocol" -}}
+{{- if .appProtocols -}}
+{{- range $key, $_ := .appProtocols -}}
+{{- if not (has $key $.knownPorts) -}}
+{{- fail (printf "appProtocols: %q is not a valid appProtocols key, expected one of %v" $key $.knownPorts) -}}
+{{- end -}}
+{{- end -}}
+{{- get .appProtocols .portName -}}
+{{- end -}}
+{{- end -}}
