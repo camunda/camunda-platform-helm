@@ -1740,7 +1740,6 @@ func (s *StatefulSetTest) TestOrchestrationTLSAutoRollout() {
 
 				outB, errB := helm.RenderTemplateE(s.T(), &helm.Options{
 					SetValues: map[string]string{
-						"global.elasticsearch.enabled":                                 "true",
 						"orchestration.enabled":                                        "true",
 						"global.tls.orchestration.autoRollout":                         "true",
 						"global.tls.orchestration.grpc.enabled":                        "true",

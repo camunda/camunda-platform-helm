@@ -748,7 +748,6 @@ func TestOrchestrationOnlyRESTTLSIngressesAreInstallable(t *testing.T) {
 
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"global.elasticsearch.enabled":          "true",
 			"global.ingress.enabled":                "true",
 			"global.host":                           "camunda.example.test",
 			"orchestration.enabled":                 "true",
