@@ -1,6 +1,6 @@
 # Integrate Azure Blob Storage as a document handling backend in the Helm chart
 
-- Status: accepted
+- Status: accepted (amended by [ADR 0096](0096-narrow-document-store-configuration-to-verified-consumers.md))
 - Date: 2026-03-19
 - Decision-makers: Rei
 
