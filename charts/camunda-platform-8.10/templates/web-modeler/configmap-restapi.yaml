@@ -26,7 +26,7 @@ data:
 
       modeler:
         feature:
-          play-enabled: {{ ternary "false" "true" .Values.global.noSecondaryStorage | quote }}
+          test-mode-enabled: {{ ternary "false" "true" .Values.global.noSecondaryStorage | quote }}
 
         pusher:
           host: {{ include "webModeler.websockets.fullname" . | quote }}

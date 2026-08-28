@@ -62,11 +62,16 @@ type IdentityYAML struct {
 	Type    string `yaml:"type"`
 }
 type ModelerYAML struct {
+	Feature  FeatureYAML         `yaml:"feature"`
 	Security ModelerSecurityYAML `yaml:"security"`
 	Clusters []ClusterYAML       `yaml:"clusters"`
 	Server   ModelerServerYAML   `yaml:"server"`
 	OAuth2   ModelerOAuth2YAML   `yaml:"oauth2"`
 	Pusher   PusherYAML          `yaml:"pusher"`
+}
+
+type FeatureYAML struct {
+	TestModeEnabled string `yaml:"test-mode-enabled"`
 }
 
 type ModelerSecurityYAML struct {
