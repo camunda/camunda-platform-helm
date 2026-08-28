@@ -23,6 +23,12 @@ import (
 
 var localUses = regexp.MustCompile(`uses:\s*\./\.github/(workflows/[\w.-]+\.ya?ml|actions/[\w.-]+)`)
 
+var scriptsReference = regexp.MustCompile(`scripts/([A-Za-z0-9_.-]+)`)
+
+var chartCIScriptWaivers = map[string]string{
+	"list-chart-image-commits.sh": "diagnostic output only: both call sites in test-integration-runner.yaml are `if: always()` with `continue-on-error: true`, so it cannot change a chart-CI result",
+}
+
 func chartCIUsesClosure(t *testing.T, repoRoot string) map[string]bool {
 	t.Helper()
 	reachable := map[string]bool{}
@@ -91,6 +97,45 @@ func TestDeployRelevantScriptAllowlistEntriesExist(t *testing.T) {
 	for _, name := range deployRelevantScriptFiles {
 		if _, err := os.Stat(filepath.Join(repoRoot, "scripts", name)); err != nil {
 			t.Errorf("deployRelevantScriptFiles entry %q does not exist under scripts/", name)
+		}
+	}
+}
+
+func TestDeployRelevantScriptAllowlistCoversChartCIReferences(t *testing.T) {
+	repoRoot := findRepoRoot(t)
+	allowed := map[string]bool{}
+	for _, name := range deployRelevantScriptDirs {
+		allowed[name] = true
+	}
+	for _, name := range deployRelevantScriptFiles {
+		allowed[name] = true
+	}
+
+	for reached := range chartCIUsesClosure(t, repoRoot) {
+		candidates := []string{filepath.Join(repoRoot, ".github", reached)}
+		if filepath.Ext(reached) == "" {
+			candidates = []string{
+				filepath.Join(repoRoot, ".github", reached, "action.yaml"),
+				filepath.Join(repoRoot, ".github", reached, "action.yml"),
+			}
+		}
+		for _, candidate := range candidates {
+			content, err := os.ReadFile(candidate)
+			if err != nil {
+				continue
+			}
+			for _, match := range scriptsReference.FindAllStringSubmatch(string(content), -1) {
+				segment := match[1]
+				if allowed[segment] {
+					continue
+				}
+				if reason, waived := chartCIScriptWaivers[segment]; waived {
+					t.Logf("scripts/%s is referenced by .github/%s but deliberately not build-all: %s", segment, reached, reason)
+					continue
+				}
+				t.Errorf("scripts/%s is referenced by .github/%s but is neither in the build-all allowlist nor in "+
+					"chartCIScriptWaivers; a change to it would no longer build any chart version", segment, reached)
+			}
 		}
 	}
 }
