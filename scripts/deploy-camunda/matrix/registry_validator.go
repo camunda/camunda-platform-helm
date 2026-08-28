@@ -22,7 +22,13 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+
+	"scripts/camunda-core/pkg/versionmatrix"
 )
+
+const bitnamiMigrationHookScript = "post-infra-bitnami-migration.sh"
+
+const bitnamiMigrationHookID = "post-infra-bitnami-migration"
 
 // RegistryValidator enforces the registry's load-time invariants from
 // ADR 0093 §3:
@@ -30,8 +36,11 @@ import (
 //   - every LifecycleHook passes LifecycleHook.Validate (description set,
 //     exactly one of fixtures or script, plain basenames);
 //   - referenced basenames (hook fixtures under common/resources/, hook
-//     scripts under pre-setup-scripts/, feature values-files, dependency
-//     values-files) resolve to existing files;
+//     scripts under pre-setup-scripts/, feature values-files, persistence
+//     values-files, dependency values-files) resolve to existing files;
+//   - no upgrade-flow scenario selects a persistence layer that enables, in the
+//     previous chart version, a subchart this chart no longer bundles, unless a
+//     migration hook bridges the two backends;
 //   - no two post-fan-out CIScenario entries collide on
 //     (Shortname, Flow, Platform) after applying matrix.Generate's flow
 //     defaulting (empty flow treated as "install") — the natural CI namespace key;
@@ -71,6 +80,7 @@ func (v *RegistryValidator) Validate(cfg *CITestConfig) error {
 	scriptsDir := filepath.Join(scenariosDir, "pre-setup-scripts")
 	chartFullSetupDir := filepath.Join(scenariosDir, "chart-full-setup")
 	featuresDir := filepath.Join(chartFullSetupDir, "values", "features")
+	persistenceDir := filepath.Join(chartFullSetupDir, "values", "persistence")
 	registryDepsDir := filepath.Join(v.ChartDir, "test", RegistryDirName, "dependencies")
 
 	// Referenced-set tracking — feeds the orphan walks below. Populated as a
@@ -111,6 +121,12 @@ func (v *RegistryValidator) Validate(cfg *CITestConfig) error {
 			problems = append(problems, fmt.Sprintf("%s: feature %q: missing values file at %s", ctx, feature, fPath))
 		}
 	}
+	checkPersistence := func(ctx, persistence string) {
+		pPath := filepath.Join(persistenceDir, persistence+".yaml")
+		if info, err := os.Stat(pPath); err != nil || info.IsDir() {
+			problems = append(problems, fmt.Sprintf("%s: persistence %q: missing values file at %s", ctx, persistence, pPath))
+		}
+	}
 	// Per-scenario extra-values resolution: relative paths resolve against the
 	// scenario's chart-full-setup dir (matching appendScenarioExtraValues in
 	// runner_execute.go); absolute paths are runtime-supplied and not validated.
@@ -145,6 +161,51 @@ func (v *RegistryValidator) Validate(cfg *CITestConfig) error {
 			return
 		} else if info.IsDir() {
 			problems = append(problems, fmt.Sprintf("%s: dependency %s: values-file %q: is a directory at %s", ctx, dep.ReleaseName, dep.ValuesFile, path))
+		}
+	}
+
+	currentDeps, currentDepsErr := readChartDependencies(v.ChartDir)
+	prevVersion, prevVersionErr := versionmatrix.PreviousAppVersion(version)
+	var (
+		prevDeps           []chartDependencyRef
+		prevDepsErr        error
+		prevPersistenceDir string
+	)
+	if prevVersionErr == nil {
+		prevChartDir := filepath.Join(repoRoot, "charts", "camunda-platform-"+prevVersion)
+		prevDeps, prevDepsErr = readChartDependencies(prevChartDir)
+		prevPersistenceDir = filepath.Join(prevChartDir, "test", "integration", "scenarios", "chart-full-setup", "values", "persistence")
+	}
+
+	checkUpgradePersistence := func(ctx string, scn CIScenario, effectiveFlow string) {
+		if scn.Persistence == "" {
+			return
+		}
+		if effectiveFlow != "upgrade-minor" && !versionmatrix.IsUpgradeOnlyFlow(effectiveFlow) {
+			return
+		}
+		if prevVersionErr != nil || currentDepsErr != nil || prevDepsErr != nil {
+			return
+		}
+		prevValues, err := readYAMLMap(filepath.Join(prevPersistenceDir, scn.Persistence+".yaml"))
+		if err != nil {
+			return
+		}
+		for _, dep := range prevDeps {
+			if dep.Condition == "" || hasChartDependency(currentDeps, dep.Name) {
+				continue
+			}
+			if !anyConditionKeyTrue(prevValues, dep.Condition) {
+				continue
+			}
+			if scn.PostInfra != nil && scn.PostInfra.Script == bitnamiMigrationHookScript {
+				continue
+			}
+			problems = append(problems, fmt.Sprintf(
+				"%s: persistence %q resolves in chart version %s to a values file that enables subchart %q (%s: true), which this chart no longer bundles"+
+					" — the upgrade would address two different backends and start against empty storage;"+
+					" select a companion persistence layer both versions can reach, or declare \"post-infra: %s\" to migrate the data first",
+				ctx, scn.Persistence, prevVersion, dep.Name, dep.Condition, bitnamiMigrationHookID))
 		}
 	}
 
@@ -183,6 +244,9 @@ func (v *RegistryValidator) Validate(cfg *CITestConfig) error {
 		for _, dep := range scn.Dependencies {
 			checkDep(label, dep)
 		}
+		if scn.Persistence != "" {
+			checkPersistence(label, scn.Persistence)
+		}
 		if scn.Topology != nil {
 			if err := scn.Topology.Validate(label, chartFullSetupDir, registryDepsDir); err != nil {
 				problems = append(problems, err.Error())
@@ -216,6 +280,8 @@ func (v *RegistryValidator) Validate(cfg *CITestConfig) error {
 		if effectiveFlow == "" {
 			effectiveFlow = "install"
 		}
+
+		checkUpgradePersistence(label, scn, effectiveFlow)
 
 		if pf != nil {
 			permitted := FilterFlows(pf, version, []string{effectiveFlow})
