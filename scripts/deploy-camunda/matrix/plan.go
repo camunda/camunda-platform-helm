@@ -144,7 +144,17 @@ var buildAllTriggers = []buildAllTrigger{
 		Pattern:     regexp.MustCompile(`(^|[[:space:]])scripts(/|$|[[:space:]])`),
 		Description: "scripts/ (any helper script)",
 	},
+	{
+		Pattern:     regexp.MustCompile(`^\.tool-versions$`),
+		Description: ".tool-versions (toolchain pins)",
+	},
+	{
+		Pattern:     regexp.MustCompile(`^test/e2e/`),
+		Description: "test/e2e/ (shared Playwright config)",
+	},
 }
+
+var chartDocPath = regexp.MustCompile(`^charts/camunda-platform-8[^/]*/[^/]+\.(md|MD|txt)$`)
 
 var manualFlowPattern = regexp.MustCompile(`^(install|upgrade-patch|upgrade-minor)(,(install|upgrade-patch|upgrade-minor))*$`)
 
@@ -234,7 +244,12 @@ func selectPlanVersions(repoRoot string, opts PlanOptions) ([]string, error) {
 		return []string{opts.ManualTrigger}, nil
 	}
 
-	paths := strings.Fields(opts.ChangedFiles)
+	var paths []string
+	for _, path := range strings.Fields(opts.ChangedFiles) {
+		if !chartDocPath.MatchString(path) {
+			paths = append(paths, path)
+		}
+	}
 	for _, trigger := range buildAllTriggers {
 		if triggerFires(trigger, paths) {
 			return opts.ActiveVersions, nil
