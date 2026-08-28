@@ -1,6 +1,6 @@
 # Centralize document-store configuration via shared ConfigMap with multi-backend support
 
-- Status: accepted
+- Status: accepted (amended by [ADR 0096](0096-narrow-document-store-configuration-to-verified-consumers.md))
 - Date: 2025-02-21
 - Decision-makers: Daniel Rodriguez
 
