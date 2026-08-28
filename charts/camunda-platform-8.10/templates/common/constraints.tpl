@@ -922,6 +922,28 @@ The following values inside your values.yaml need to be set but were not:
       {{- end }}
     {{- end }}
 
+    {{- $ambiguousConfig := false -}}
+    {{- $contents := list (.Values.optimize.configuration | default "") -}}
+    {{- range $entry := (.Values.optimize.extraConfiguration | default list) -}}
+      {{- $contents = append $contents ($entry.content | default "") -}}
+    {{- end -}}
+    {{- range $content := $contents -}}
+      {{- if or
+          (regexMatch "(?m)^[ \\t]*(---|\\.\\.\\.)[ \\t]*(#.*)?$" $content)
+          (regexMatch "(?m)^[ \\t]*spring\\.config\\.activate([.:]|[ \\t]*=)" $content)
+          (regexMatch "(?m)^[ \\t]*activate:[ \\t]*(#.*)?$" $content) -}}
+        {{- $ambiguousConfig = true -}}
+      {{- end -}}
+    {{- end -}}
+    {{- if and $ambiguousConfig (not .Values.global.tls.optimize.enabled) (ne $optimizeTLS "true") -}}
+      {{- $warningMessage := printf "%s %s %s"
+          "[camunda][warning]"
+          "The chart cannot derive Optimize TLS from multi-document or profile-activated Optimize configuration because Spring applies document ordering and activation conditions at runtime."
+          "The chart therefore keeps probes and ingress routing on HTTP. Set global.tls.optimize.enabled: true or a literal optimize.env SERVER_SSL_ENABLED value to make the transport explicit."
+      -}}
+      {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+    {{- end }}
+
     {{/* (W2) A valueFrom-sourced SSL toggle is unresolvable at render time. */}}
     {{- range $e := (.Values.optimize.env | default list) }}
       {{- if and (eq ($e.name | default "") "SERVER_SSL_ENABLED") (not $e.value) $e.valueFrom }}

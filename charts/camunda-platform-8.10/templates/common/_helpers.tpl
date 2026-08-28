@@ -1169,11 +1169,10 @@ explicit literal optimize.env entry for SERVER_SSL_ENABLED wins over
 global.tls.optimize.enabled. A valueFrom-sourced entry is unknown at render
 time, so the chart defers to the remaining sources rather than assuming a value.
 
-With neither env source set, optimize.extraConfiguration and then
-optimize.configuration are consulted for server.ssl.enabled, so an Optimize TLS
-opt-in made by owning application.yaml still drives probe schemes and the
-/optimize Ingress backend protocol. Same source order and same
-literal-nested-key limits as camundaPlatform.orchestrationRESTTLSEnabled.
+With neither env source set, simple single-document, unconditional YAML in
+optimize.extraConfiguration and optimize.configuration is consulted for
+server.ssl.enabled. Multi-document YAML and spring.config.activate conditions
+cannot be resolved safely at render time and require an explicit flag or env.
 */}}
 {{- define "camundaPlatform.optimizeServerTLSEnabled" -}}
   {{- $envValue := include "camundaPlatform.optimizeServerEnvLastValue" (dict "context" . "name" "SERVER_SSL_ENABLED") -}}
@@ -1184,11 +1183,28 @@ literal-nested-key limits as camundaPlatform.orchestrationRESTTLSEnabled.
   {{- else if .Values.global.tls.optimize.enabled -}}
     true
   {{- else -}}
+    {{- $ambiguous := false -}}
+    {{- $contents := list (.Values.optimize.configuration | default "") -}}
+    {{- range $entry := (.Values.optimize.extraConfiguration | default list) -}}
+      {{- $contents = append $contents ($entry.content | default "") -}}
+    {{- end -}}
+    {{- range $content := $contents -}}
+      {{- if or
+          (regexMatch "(?m)^[ \\t]*(---|\\.\\.\\.)[ \\t]*(#.*)?$" $content)
+          (regexMatch "(?m)^[ \\t]*spring\\.config\\.activate([.:]|[ \\t]*=)" $content)
+          (regexMatch "(?m)^[ \\t]*activate:[ \\t]*(#.*)?$" $content) -}}
+        {{- $ambiguous = true -}}
+      {{- end -}}
+    {{- end -}}
+    {{- if $ambiguous -}}
+      false
+    {{- else -}}
     {{- $configState := include "camundaPlatform.appConfigBoolState" (dict
         "configuration" .Values.optimize.configuration
         "extraConfiguration" .Values.optimize.extraConfiguration
         "path" (list "server" "ssl" "enabled")) -}}
     {{- ternary "true" "false" (eq $configState "true") -}}
+    {{- end -}}
   {{- end -}}
 {{- end -}}
 
