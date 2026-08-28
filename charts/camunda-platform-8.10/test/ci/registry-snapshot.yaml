@@ -297,7 +297,7 @@ integration:
             eks: preemptible
             gke: distroci
           identity: keycloak
-          persistence: elasticsearch
+          persistence: elasticsearch-companion
           features:
             - custom-history
           dependencies:

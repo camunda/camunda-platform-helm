@@ -74,7 +74,6 @@ func (s *ConfigMapWarningsTemplateTest) TestDifferentValuesInputs() {
 		{
 			Name: "TestHistoryDeprecationWarningsNameAllKeysAndRemovalVersion",
 			Values: map[string]string{
-				"global.elasticsearch.enabled":                    "false",
 				"orchestration.data.secondaryStorage.type":        "elasticsearch",
 				"orchestration.history.elsRolloverDateFormat":     "yyyy-MM",
 				"orchestration.history.rolloverInterval":          "2d",
