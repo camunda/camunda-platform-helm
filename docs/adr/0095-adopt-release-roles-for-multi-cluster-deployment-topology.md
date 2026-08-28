@@ -2,7 +2,7 @@
 
 - Status: proposed
 - Date: 2026-07-29
-- Decision-makers: Distribution team, Management Identity owners, Camunda Hub owners
+- Decision-makers: Distribution team, Management Identity owners, Camunda Hub owners, Optimize owners
 
 ## Context and Problem Statement
 
@@ -23,10 +23,27 @@ The chart therefore needs a durable contract that expresses how each Helm releas
 overall deployment, without coupling the contract to a particular namespace layout or requiring
 imperative cluster discovery.
 
+Physical Tenants add a fourth participant to that picture. An Orchestration Cluster can host several
+tenants, and each tenant needs its own Optimize: Optimize reads exported records from one index
+prefix, so one Optimize instance can serve exactly one tenant. Running those instances inside the
+orchestration release would couple every tenant's Optimize lifecycle to the Orchestration Cluster's
+StatefulSet, and the workload release would have to describe a set of tenants it does not own. A
+release whose role is to run one Optimize against one tenant's storage is therefore a distinct
+participant, not a variation of an orchestration release.
+
+Tenant configuration itself is a separate question from topology. Under
+[ADR 0091](0091-adopt-component-extraconfiguration-as-the-standard-application-configuration-mechanism.md)
+a release's role is Tier 2 cross-component coordination, while a tenant's own settings are Tier 1
+application configuration; the two therefore live in different places, and this ADR records that
+boundary so it is not relitigated per feature.
+
 ### Applicability by version
 
 This decision applies to the Camunda 8.10 Helm chart and later chart versions that retain the
 Hub/workload topology. Earlier chart versions keep their existing behavior and values.
+
+The `optimize` role and the Physical Tenant constraints below apply from the 8.10 chart, where
+Physical Tenants first ship, and are unreleased at the time of writing.
 
 The initial implementation lands in [PR #6688](https://github.com/camunda/camunda-platform-helm/pull/6688).
 Upgrade validation from 8.9 to an 8.10 CI topology is tracked separately in
@@ -77,8 +94,9 @@ cluster inventory and any number of independently configured orchestration relea
 
 The following constraints are normative:
 
-1. **Release roles.** A release MUST use one of `combined`, `hub`, or `orchestration`.
-   `combined` MUST remain the default and MUST preserve existing single-release behavior.
+1. **Release roles.** A release MUST use one of `combined`, `hub`, `orchestration`, or
+   `optimize`. `combined` MUST remain the default and MUST preserve existing single-release
+   behavior.
 2. **Hub ownership.** A Hub release MUST run Management Identity and MAY run Camunda
    Hub. It MUST be the only release that declares `global.topology.clusters` for the deployment.
 3. **Cluster records.** Each Hub cluster record MUST have a stable unique ID and MUST declare
@@ -118,6 +136,30 @@ The following constraints are normative:
     umbrella-chart internals so a future Hub/workload chart split can implement the same
     semantics without replacing the operator-facing model.
 
+14. **Optimize role.** An `optimize` release MUST deploy Optimize and no other Camunda
+    component, and every other component MUST be gated off by the role rather than by the operator
+    disabling each one. It MUST NOT declare sibling clusters or tenants. It MUST be able to
+    configure its own authentication and Management Identity connection on the `optimize`
+    component, because a release that deploys one component has no meaningful release-shared
+    `global` scope. It MUST have a resolvable Management Identity URL, an enabled secondary-storage
+    backend of its own, and — when the chart renders that release's ingress or gateway — a context
+    path, since the shared Ingress emits no Optimize rule without one.
+15. **Physical Tenant configuration ownership.** A Physical Tenant's own configuration is
+    application configuration and is Tier 1 under ADR 0091, so it MUST be supplied through
+    `orchestration.extraConfiguration` and MUST NOT gain typed `values.yaml` keys. The chart MAY
+    detect that tenants are declared in order to enforce constraints on its own inputs, and MUST
+    then require OIDC authentication and an explicitly pinned issuer, because the Orchestration
+    Cluster rejects a provider without `issuerUri` once tenants exist and the issuer cannot be
+    derived from a network route. Detection MUST match every configuration form the application
+    accepts, or a differently written file evades the check.
+16. **Per-tenant Optimize identity.** A Hub cluster record MUST be able to describe one Optimize
+    per Physical Tenant, each with its own client id and its own resource server, so that a token
+    minted for one tenant's Optimize is not valid at another's. A deployment MAY still point several
+    tenants at one shared audience, in which case those instances are separated by client identity
+    only; neither the chart nor the documentation may describe that arrangement as authorization
+    isolation. Constraint 9 already separates their storage, and storage isolation MUST NOT be read
+    as implying authorization isolation either.
+
 The initial chart implementation is scoped to fresh 8.10 topology deployments. Converting an existing
 combined production release into split releases requires separate data, storage, and rollback planning
 and is not defined by this ADR.
@@ -141,6 +183,14 @@ and is not defined by this ADR.
   remain operator responsibilities unless separately standardized.
 - Supporting more clusters increases Identity initialization state and Camunda Hub polling load;
   supported scale limits require operational validation.
+- Per-tenant Optimize resource servers add another set of Identity records to reconcile per cluster,
+  and a deployment that leaves tenants on one shared audience still gets client-identity separation
+  only. That weaker arrangement is easy to reach by omission, so it needs to be visible in
+  documentation rather than inferred from the presence of per-tenant records.
+- A tenant's configuration lives in `extraConfiguration`, so the chart cannot validate it. Declaring
+  any tenant also stops the default tenant inheriting the release's root exporters, which the chart
+  previously hid by generating that block; a hand-written file must supply it, and omitting it stops
+  the default tenant exporting silently.
 
 ## Links
 
@@ -150,3 +200,6 @@ and is not defined by this ADR.
 - Related implementation: [camunda-platform-helm#6688](https://github.com/camunda/camunda-platform-helm/pull/6688).
 - Related E2E support: [c8-cross-component-e2e-tests#2884](https://github.com/camunda/c8-cross-component-e2e-tests/pull/2884).
 - Related documentation: [camunda-docs#9480](https://github.com/camunda/camunda-docs/pull/9480).
+- Optimize role implementation: [camunda-platform-helm#6884](https://github.com/camunda/camunda-platform-helm/pull/6884).
+- Physical Tenant configuration through `extraConfiguration`: [camunda-platform-helm#6889](https://github.com/camunda/camunda-platform-helm/pull/6889).
+- Per-tenant Optimize client and audience: [camunda-platform-helm#6902](https://github.com/camunda/camunda-platform-helm/pull/6902).
