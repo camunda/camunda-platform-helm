@@ -32,7 +32,7 @@ jobs:
     env:
       TEST_NAMESPACE: camunda-platform
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@43320645ff9e9e50f390cb40dacb4f07ff204f1c # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@2fa2e5ecfa1d82a6d2a93106bd43889f68500f4f # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: "${{ inputs.camunda-helm-git-ref }}"
@@ -49,7 +49,7 @@ jobs:
             secret/data/products/distribution/ci DOCKERHUB_PASSWORD | TEST_DOCKER_PASSWORD;
           exportEnv: false
       - name: Install common software tooling
-        uses: camunda/infra-global-github-actions/common-tooling@43320645ff9e9e50f390cb40dacb4f07ff204f1c # main
+        uses: camunda/infra-global-github-actions/common-tooling@2fa2e5ecfa1d82a6d2a93106bd43889f68500f4f # main
         with:
           overwrite: "false"
           build-essential-enabled: "true"
