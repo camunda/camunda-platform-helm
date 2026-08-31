@@ -167,7 +167,7 @@ go.addlicense-install:
 # surfaces as an error instead of a vacuous pass.
 .PHONY: go.addlicense-files
 go.addlicense-files:
-	@files=$$(find $(chartPath)/test -name '*.go' 2>/dev/null | grep -Ev '$(licenseExcludeGrep)'); \
+	@files=$$(find $(chartPath)/test -name '*.go' -not -path '*/node_modules/*' 2>/dev/null | grep -Ev '$(licenseExcludeGrep)'); \
 	if [ -z "$$files" ]; then \
 		echo "ERROR: no in-scope .go files under '$(chartPath)/test' - refusing to report success." >&2; \
 		echo "       (excluded from the licence gate: $(licenseExcludePaths))" >&2; \
