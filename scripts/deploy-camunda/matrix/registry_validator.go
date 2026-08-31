@@ -189,6 +189,13 @@ func (v *RegistryValidator) Validate(cfg *CITestConfig) error {
 		}
 		prevValues, err := readYAMLMap(filepath.Join(prevPersistenceDir, scn.Persistence+".yaml"))
 		if err != nil {
+			if effectiveFlow == "upgrade-minor" {
+				problems = append(problems, fmt.Sprintf(
+					"%s: persistence %q does not resolve in chart version %s (%v)"+
+						" — step 1 of the two-step upgrade installs that chart from its own scenario dir;"+
+						" add the layer there or select one both versions provide",
+					ctx, scn.Persistence, prevVersion, err))
+			}
 			return
 		}
 		for _, dep := range prevDeps {

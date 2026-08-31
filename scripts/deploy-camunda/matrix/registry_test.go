@@ -614,6 +614,31 @@ func TestRegistryValidatorAcceptsUpgradePersistenceWhenStillBundled(t *testing.T
 	}
 }
 
+func TestRegistryValidatorRejectsUpgradePersistenceMissingFromPreviousVersion(t *testing.T) {
+	_, chartDir, regDir, _ := syntheticChartWithPrevious(t, depsWithElasticsearch, depsWithElasticsearch)
+	writePersistence(t, chartDir, "rdbms-self-signed", "")
+	writeManifest(t, regDir, "    - id: a\n      shortname: a\n      enabled: true\n")
+	writeFile(t, filepath.Join(regDir, "scenarios", "a.yaml"),
+		"name: a\nflows: [upgrade-minor]\nplatforms: [gke]\npersistence: rdbms-self-signed\n")
+
+	_, err := LoadRegistry(chartDir)
+	if err == nil || !strings.Contains(err.Error(), "does not resolve in chart version") {
+		t.Fatalf("want missing previous-version persistence error, got: %v", err)
+	}
+}
+
+func TestRegistryValidatorExemptsModularUpgradePersistenceMissingFromPreviousVersion(t *testing.T) {
+	_, chartDir, regDir, _ := syntheticChartWithPrevious(t, depsWithElasticsearch, depsWithElasticsearch)
+	writePersistence(t, chartDir, "rdbms-self-signed", "")
+	writeManifest(t, regDir, "    - id: a\n      shortname: a\n      enabled: true\n")
+	writeFile(t, filepath.Join(regDir, "scenarios", "a.yaml"),
+		"name: a\nflows: [modular-upgrade-minor]\nplatforms: [gke]\npersistence: rdbms-self-signed\n")
+
+	if _, err := LoadRegistry(chartDir); err != nil {
+		t.Fatalf("want no error, got: %v", err)
+	}
+}
+
 func TestRegistryValidatorAcceptsUpgradePersistenceWithoutPreviousVersion(t *testing.T) {
 	_, chartDir, regDir := syntheticChart(t)
 	writeManifest(t, regDir, "    - id: a\n      shortname: a\n      enabled: true\n")
