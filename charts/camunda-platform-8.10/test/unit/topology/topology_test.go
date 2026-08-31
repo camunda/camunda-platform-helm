@@ -415,10 +415,330 @@ func TestNullTopologyPreservesCombinedMode(t *testing.T) {
 	require.Contains(t, output, "kind: ConfigMap")
 }
 
+func TestOptimizeTopologyRendersOnlyOptimizeWorkload(t *testing.T) {
+	output := render(t, "optimize.yaml")
+
+	require.Contains(t, output, "name: camunda-optimize")
+	require.NotContains(t, output, "name: camunda-zeebe")
+	require.NotContains(t, output, "name: camunda-identity")
+	require.NotContains(t, output, "name: camunda-connectors")
+	require.NotContains(t, output, "name: camunda-web-modeler")
+	require.NotContains(t, output, "kind: StatefulSet")
+}
+
+func TestOptimizeTopologyRendersOnlyItsOwnIngressPath(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "optimize.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues: map[string]string{
+			"global.ingress.enabled":    "true",
+			"global.host":               "east.example.com",
+			"orchestration.contextPath": "/orchestration",
+			"connectors.contextPath":    "/connectors",
+		},
+	}
+
+	output := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{"templates/common/ingress-http.yaml"})
+
+	require.Contains(t, output, "path: /optimize-tenanta")
+	require.NotContains(t, output, "path: /orchestration")
+	require.NotContains(t, output, "path: /connectors")
+}
+
+func TestOptimizeTopologyKeepsReaderAndOwnIndexPrefixesDistinct(t *testing.T) {
+	output := render(t, "optimize.yaml",
+		"templates/optimize/configmap.yaml",
+		"templates/optimize/deployment.yaml",
+	)
+
+	require.Contains(t, output, `name: "orch-east"`)
+	require.Contains(t, output, "name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SETTINGS_INDEX_PREFIX")
+	require.Contains(t, output, "value: optimize-east-tenanta")
+}
+
+func TestOptimizeTopologySuppressesIdentityServiceMonitor(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "optimize.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues:   map[string]string{"prometheusServiceMonitor.enabled": "true"},
+	}
+
+	output := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{
+		"templates/service-monitor/optimize-service-monitor.yaml",
+	})
+	require.Contains(t, output, "kind: ServiceMonitor")
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{
+		"templates/service-monitor/identity-service-monitor.yaml",
+	})
+	require.Error(t, err)
+}
+
+func TestOptimizeTopologyRequiresOptimizeEnabled(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "optimize.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues:   map[string]string{"optimize.enabled": "false"},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/optimize/configmap.yaml"})
+	require.ErrorContains(t, err, "global.topology.mode=optimize requires optimize.enabled=true")
+}
+
+func TestOptimizeTopologyRequiresContextPathWhenRenderingIngress(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "optimize.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues: map[string]string{
+			"optimize.contextPath":   "",
+			"global.ingress.enabled": "true",
+		},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/optimize/configmap.yaml"})
+	require.ErrorContains(t, err, "requires optimize.contextPath when this chart renders")
+}
+
+// The same applies to the Gateway API path, whose HTTPRoute would otherwise match an empty prefix.
+func TestOptimizeTopologyRequiresContextPathWhenRenderingGateway(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "optimize.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues: map[string]string{
+			"optimize.contextPath":   "",
+			"global.gateway.enabled": "true",
+		},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/optimize/configmap.yaml"})
+	require.ErrorContains(t, err, "requires optimize.contextPath when this chart renders")
+}
+
+// With no chart-rendered routing there is nothing for a context path to serve, so an Optimize-only
+// release reached through its Service directly must not be forced to invent one.
+func TestOptimizeTopologyAllowsEmptyContextPathWithoutRouting(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "optimize.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues:   map[string]string{"optimize.contextPath": ""},
+	}
+
+	output := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{"templates/optimize/configmap.yaml"})
+	require.Contains(t, output, "kind: ConfigMap")
+}
+
+func TestOptimizeTopologyRequiresManagementIdentityURL(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "optimize.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues:   map[string]string{"global.identity.service.url": ""},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/optimize/configmap.yaml"})
+	require.ErrorContains(t, err, "requires optimize.identity.service.url or global.identity.service.url")
+}
+
+// The component-level override must satisfy the same constraint: an Optimize-only release may name
+// its own Management Identity instead of the release-shared global one.
+func TestOptimizeTopologyAcceptsComponentIdentityURL(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "optimize.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues: map[string]string{
+			"global.identity.service.url":   "",
+			"optimize.identity.service.url": "http://identity.tenant.svc/identity",
+		},
+	}
+
+	output := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{"templates/optimize/configmap.yaml"})
+	require.Contains(t, output, "kind: ConfigMap")
+}
+
+func TestOptimizeTopologyRequiresIdentityAuth(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "optimize.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues:   map[string]string{"global.identity.auth.enabled": "false"},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/optimize/configmap.yaml"})
+	require.ErrorContains(t, err, "requires authentication; set optimize.security.authentication.method=oidc or global.identity.auth.enabled=true")
+}
+
+// A release-scoped method satisfies the constraint on its own: an Optimize-only release decides
+// whether it authenticates without the release-shared global switch.
+func TestOptimizeTopologyAcceptsComponentAuthMethod(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "optimize.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues: map[string]string{
+			"global.identity.auth.enabled":            "false",
+			"optimize.security.authentication.method": "oidc",
+		},
+	}
+
+	output := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{"templates/optimize/configmap.yaml"})
+	require.Contains(t, output, "kind: ConfigMap")
+}
+
+// And setting it to none turns Optimize's auth off even when the global switch is on, which is the
+// override direction that previously had no expression at all.
+func TestOptimizeComponentAuthMethodNoneDisablesAuth(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "optimize.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues:   map[string]string{"optimize.security.authentication.method": "none"},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/optimize/configmap.yaml"})
+	require.ErrorContains(t, err, "requires authentication")
+}
+
+func TestOptimizeTopologyRequiresAuthIssuer(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "optimize.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues: map[string]string{
+			"global.identity.auth.issuer":          "",
+			"global.identity.auth.publicIssuerUrl": "",
+		},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/optimize/configmap.yaml"})
+	require.ErrorContains(t, err, "requires optimize.security.authentication.oidc.issuer")
+}
+
+// The component key satisfies the issuer constraint on its own, so an Optimize-only release names
+// the "iss" claim it validates without depending on a release-shared global value.
+func TestOptimizeTopologyAcceptsComponentAuthIssuer(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "optimize.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues: map[string]string{
+			"global.identity.auth.issuer":                  "",
+			"global.identity.auth.publicIssuerUrl":         "",
+			"optimize.security.authentication.oidc.issuer": "https://idp.example.com/realms/camunda",
+		},
+	}
+
+	output := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{"templates/optimize/configmap.yaml"})
+	require.Contains(t, output, "kind: ConfigMap")
+}
+
+// An Optimize-only release reads records from storage it does not deploy, so leaving both
+// backends off renders an empty connection node list rather than failing.
+func TestOptimizeTopologyRequiresADatabaseBackend(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "optimize.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues:   map[string]string{"optimize.database.elasticsearch.enabled": "false"},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/optimize/configmap.yaml"})
+	require.ErrorContains(t, err, "requires optimize.database.elasticsearch.enabled or optimize.database.opensearch.enabled")
+}
+
+// OpenSearch satisfies it just as well as Elasticsearch.
+func TestOptimizeTopologyAcceptsOpenSearchBackend(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "optimize.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues: map[string]string{
+			"optimize.database.elasticsearch.enabled": "false",
+			"optimize.database.opensearch.enabled":    "true",
+			"optimize.database.opensearch.url.host":   "opensearch.example.com",
+		},
+	}
+
+	output := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{"templates/optimize/configmap.yaml"})
+	require.Contains(t, output, "kind: ConfigMap")
+}
+
+func TestOptimizeTopologyRejectsNoSecondaryStorage(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "optimize.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues:   map[string]string{"global.noSecondaryStorage": "true"},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/optimize/configmap.yaml"})
+	require.ErrorContains(t, err, "global.topology.mode=optimize requires global.noSecondaryStorage=false")
+}
+
+func TestUnknownTopologyModeIsRejected(t *testing.T) {
+	options := &helm.Options{
+		ValuesFiles: []string{filepath.Join("testdata", "optimize.yaml")},
+		SetValues:   map[string]string{"global.topology.mode": "analytics"},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/optimize/configmap.yaml"})
+	require.ErrorContains(t, err, "'combined', 'hub', 'orchestration', 'optimize'")
+}
+
 func splitDocuments(output string) []string {
 	return strings.Split(output, "\n---\n")
 }
 
 func contains(value, substring string) bool {
 	return strings.Contains(value, substring)
+}
+
+// Optimize mode is new, so it can reject the shape that renders an empty api.jwtSetUri outright
+// rather than deploying an Optimize that can validate no token.
+func TestOptimizeTopologyRequiresAResolvableJwksUrl(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "optimize.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues:   map[string]string{"global.identity.auth.jwksUrl": ""},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/optimize/configmap.yaml"})
+	require.ErrorContains(t, err, "requires optimize.security.authentication.oidc.jwksUrl")
+}
+
+// The component key satisfies it without a global one, which is the point of the release-scoped key.
+func TestOptimizeTopologyAcceptsAComponentScopedJwksUrl(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "optimize.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues: map[string]string{
+			"global.identity.auth.jwksUrl":                  "",
+			"optimize.security.authentication.oidc.jwksUrl": "https://issuer.example.com/certs",
+		},
+	}
+
+	output := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{"templates/optimize/configmap.yaml"})
+	require.Contains(t, output, `jwtSetUri: "https://issuer.example.com/certs"`)
+}
+
+// A release routing the JWKS URL through envFrom must say which variable the source carries: its
+// keys are unreadable here, so presence alone would let an unrelated ConfigMap answer the guard.
+func TestOptimizeTopologyAcceptsEnvFromDeclaringTheJwksUri(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "optimize.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues: map[string]string{
+			"global.identity.auth.jwksUrl":                             "",
+			"optimize.envFrom[0].configMapRef.name":                    "optimize-oidc-overrides",
+			"optimize.security.authentication.oidc.envFromProvides[0]": "SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI",
+		},
+	}
+
+	output := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{"templates/optimize/deployment.yaml"})
+	require.Contains(t, output, "name: optimize-oidc-overrides")
+}
+
+func TestOptimizeTopologyRejectsAnUndeclaredEnvFromInPlaceOfAJwksUrl(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "optimize.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues: map[string]string{
+			"global.identity.auth.jwksUrl":          "",
+			"optimize.envFrom[0].configMapRef.name": "optimize-oidc-overrides",
+		},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/optimize/deployment.yaml"})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "requires optimize.security.authentication.oidc.jwksUrl")
 }

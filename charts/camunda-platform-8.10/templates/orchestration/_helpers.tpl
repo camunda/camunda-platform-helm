@@ -357,10 +357,18 @@ spring-imported orchestration.extraConfiguration file, override it.
 ) -}}
 {{- end -}}
 
+{{/*
+[orchestration] The backend the legacy exporters key off is the resolved one, via
+orchestration.secondaryStorage: an unset orchestration.data.secondaryStorage.type still resolves to
+elasticsearch or opensearch through optimize.database.<backend>.enabled,
+and reading the raw key instead would silently drop an explicit orchestration.exporters.zeebe opt-in.
+*/}}
 {{- define "orchestration.hasElasticsearchExporter" -}}
 {{- and
-      .Values.optimize.database.elasticsearch.enabled
-      (eq (include "camundaPlatform.optimizeEnabled" .) "true")
+      (or
+        (and (eq (include "orchestration.secondaryStorage" .) "elasticsearch") .Values.orchestration.exporters.zeebe.enabled)
+        (and .Values.optimize.database.elasticsearch.enabled (eq (include "camundaPlatform.optimizeEnabled" .) "true"))
+      )
       (or
         .Values.orchestration.exporters.zeebe.enabled
         (lt (int (default 0 .Values.global.multiregion.regions)) 2)
@@ -370,8 +378,10 @@ spring-imported orchestration.extraConfiguration file, override it.
 
 {{- define "orchestration.hasOpenSearchExporter" -}}
 {{- and
-      .Values.optimize.database.opensearch.enabled
-      (eq (include "camundaPlatform.optimizeEnabled" .) "true")
+      (or
+        (and (eq (include "orchestration.secondaryStorage" .) "opensearch") .Values.orchestration.exporters.zeebe.enabled)
+        (and .Values.optimize.database.opensearch.enabled (eq (include "camundaPlatform.optimizeEnabled" .) "true"))
+      )
       (or
         .Values.orchestration.exporters.zeebe.enabled
         (lt (int (default 0 .Values.global.multiregion.regions)) 2)

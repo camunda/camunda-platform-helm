@@ -120,7 +120,7 @@
                     "properties": {
                         "mode": {
                             "type": "string",
-                            "enum": ["combined", "hub", "orchestration"],
+                            "enum": ["combined", "hub", "orchestration", "optimize"],
                             "default": "combined"
                         },
                         "clusters": {
@@ -635,6 +635,33 @@
         },
         "optimize": {
             "properties": {
+                "security": {
+                    "properties": {
+                        "authentication": {
+                            "properties": {
+                                "method": {
+                                    "enum": ["", "oidc", "none"]
+                                },
+                                "oidc": {
+                                    "properties": {
+                                        "envFromProvides": {
+                                            "items": {
+                                                "type": "string",
+                                                "enum": [
+                                                    "CAMUNDA_IDENTITY_ISSUER",
+                                                    "CAMUNDA_IDENTITY_ISSUER_BACKEND_URL",
+                                                    "SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI",
+                                                    "CAMUNDA_IDENTITY_CLIENT_SECRET",
+                                                    "CAMUNDA_IDENTITY_BASEURL"
+                                                ]
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
                 "automountServiceAccountToken": {
                     "type": ["boolean", "null"],
                     "description": "can be used to override the automatic mounting of the service account token at the pod level. When unset, the ServiceAccount configuration is used.",

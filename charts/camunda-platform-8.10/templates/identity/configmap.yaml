@@ -208,7 +208,7 @@ data:
               id: ${CAMUNDA_OPTIMIZE_CLIENT_ID:${VALUES_KEYCLOAK_INIT_OPTIMIZE_CLIENT_ID:optimize}}
               type: confidential
               secret: ${CAMUNDA_OPTIMIZE_SECRET:${VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET:}}
-              root-url: {{ tpl .Values.global.identity.auth.optimize.redirectUrl $ | quote }}
+              root-url: {{ tpl (include "optimize.effectiveAuthRedirectUrl" $) $ | quote }}
               redirect-uris:
                 - "/api/authentication/callback"
                 - "/"

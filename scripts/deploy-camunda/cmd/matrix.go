@@ -588,50 +588,60 @@ Under the hood this invokes deploy.Execute() for each matrix entry.`,
 					// synthesizeReleaseOpts). Building it from the same flag
 					// variables here, rather than hand-picking a subset,
 					// is what prevents fields silently dropping for
-					// topology deploys (this fixed the 3rd and 4th such bug:
-					// IngressBaseDomains, HelmTimeout, and DeleteNamespaceFirst).
+					// topology deploys (this fixed the 3rd, 4th and 5th such
+					// bug: IngressBaseDomains, HelmTimeout,
+					// DeleteNamespaceFirst, and WaitIngressReady /
+					// IngressReadyTimeoutMinutes).
+					//
+					// Only LogDir and the On* display callbacks may legitimately
+					// differ from the matrix.Run(...) literal below: LogDir is
+					// re-derived there (timestamped subdirectory) and the
+					// callbacks drive a status table that topology runs do not
+					// render. Any other divergence is this bug again.
 					baseTopologyRunOpts := matrix.RunOptions{
-						DryRun:                dryRun,
-						Coverage:              coverage,
-						StopOnFailure:         stopOnFailure,
-						Cleanup:               cleanup,
-						DeleteNamespaceFirst:  deleteNamespace,
-						KubeContexts:          kubeContexts,
-						KubeContext:           kubeContext,
-						NamespacePrefix:       namespacePrefix,
-						Platform:              platform,
-						MaxParallel:           maxParallel,
-						TestE2E:               testE2E,
-						TestAll:               testAll,
-						RepoRoot:              repoRoot,
-						EnvFiles:              envFiles,
-						EnvFile:               envFile,
-						IngressBaseDomains:    ingressBaseDomains,
-						IngressBaseDomain:     ingressBaseDomain,
-						LogLevel:              logLevel,
-						SkipDependencyUpdate:  skipDependencyUpdate,
-						VaultBackedSecrets:    vaultBackedSecrets,
-						UseVaultBackedSecrets: useVaultBackedSecrets,
-						KeycloakHost:          keycloakHost,
-						KeycloakProtocol:      keycloakProtocol,
-						UpgradeFromVersion:    upgradeFromVersion,
-						HelmTimeout:           helmTimeout,
-						DockerUsername:        dockerUsername,
-						DockerPassword:        dockerPassword,
-						EnsureDockerRegistry:  ensureDockerRegistry || len(topologyEntries) > 0,
-						DockerHubUsername:     dockerHubUsername,
-						DockerHubPassword:     dockerHubPassword,
-						EnsureDockerHub:       ensureDockerHub,
-						UseLatest:             useLatest,
-						UseQA:                 useQA,
-						ForceImageOverrides:   forceImageOverrides,
-						ExtraHelmArgs:         extraHelmArgs,
-						ExtraHelmSets:         extraHelmSets,
-						ExtraValues:           extraValues,
-						NamespaceOverride:     namespaceOverride,
-						ChartRef:              chartRef,
-						ChartRefVersion:       chartRefVersion,
-						LogDir:                logDir,
+						DryRun:                     dryRun,
+						Coverage:                   coverage,
+						StopOnFailure:              stopOnFailure,
+						Cleanup:                    cleanup,
+						DeleteNamespaceFirst:       deleteNamespace,
+						KubeContexts:               kubeContexts,
+						KubeContext:                kubeContext,
+						NamespacePrefix:            namespacePrefix,
+						Platform:                   platform,
+						MaxParallel:                maxParallel,
+						TestE2E:                    testE2E,
+						TestAll:                    testAll,
+						RepoRoot:                   repoRoot,
+						EnvFiles:                   envFiles,
+						EnvFile:                    envFile,
+						IngressBaseDomains:         ingressBaseDomains,
+						IngressBaseDomain:          ingressBaseDomain,
+						LogLevel:                   logLevel,
+						SkipDependencyUpdate:       skipDependencyUpdate,
+						VaultBackedSecrets:         vaultBackedSecrets,
+						UseVaultBackedSecrets:      useVaultBackedSecrets,
+						KeycloakHost:               keycloakHost,
+						KeycloakProtocol:           keycloakProtocol,
+						UpgradeFromVersion:         upgradeFromVersion,
+						HelmTimeout:                helmTimeout,
+						DockerUsername:             dockerUsername,
+						DockerPassword:             dockerPassword,
+						EnsureDockerRegistry:       ensureDockerRegistry || len(topologyEntries) > 0,
+						DockerHubUsername:          dockerHubUsername,
+						DockerHubPassword:          dockerHubPassword,
+						EnsureDockerHub:            ensureDockerHub,
+						UseLatest:                  useLatest,
+						UseQA:                      useQA,
+						ForceImageOverrides:        forceImageOverrides,
+						ExtraHelmArgs:              extraHelmArgs,
+						ExtraHelmSets:              extraHelmSets,
+						ExtraValues:                extraValues,
+						NamespaceOverride:          namespaceOverride,
+						ChartRef:                   chartRef,
+						ChartRefVersion:            chartRefVersion,
+						WaitIngressReady:           waitIngressReady,
+						IngressReadyTimeoutMinutes: ingressReadyTimeout,
+						LogDir:                     logDir,
 					}
 
 					for _, e := range topologyEntries {
@@ -1140,32 +1150,40 @@ func buildOrchestrationZeebeEnv(orchestrationCtx *deploy.ScenarioContext) map[st
 	}
 }
 
-func topologyEnvToken(value string) string {
-	var token strings.Builder
-	for _, r := range strings.ToUpper(value) {
-		if r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' {
-			token.WriteRune(r)
-		} else {
-			token.WriteByte('_')
-		}
-	}
-	return strings.Trim(token.String(), "_")
-}
-
+// buildTopologyReleaseEnv layers a release's substitution namespace: shared
+// cross-release variables first, then the release's own env, and finally the
+// keys this driver derives from the topology declaration. The derived keys go
+// last on purpose - they are the declaration's only copy, and a release env
+// entry that shadowed one would deploy a context path or reader prefix that
+// disagrees with optimize-context-path/serves and with the smoke matrix.
+// matrix.Topology.Validate rejects such an entry outright; this ordering keeps
+// the generated value authoritative even so.
 func buildTopologyReleaseEnv(shared map[string]string, release matrix.TopologyRelease) map[string]string {
 	env := make(map[string]string, len(shared)+len(release.Env)+4)
 	for key, value := range shared {
 		env[key] = value
 	}
+	for key, value := range release.Env {
+		env[key] = value
+	}
 	if release.Role == "orchestration" {
-		token := topologyEnvToken(release.NamespaceSuffix)
+		token := matrix.TopologyEnvToken(release.NamespaceSuffix)
 		env["ORCH_NAMESPACE"] = env[token+"_NAMESPACE"]
 		env["ORCH_HOST"] = env[token+"_HOST"]
 		env["ORCH_ZEEBE_GRPC"] = env[token+"_ZEEBE_GRPC"]
 		env["ORCH_ZEEBE_REST"] = env[token+"_ZEEBE_REST"]
 	}
-	for key, value := range release.Env {
-		env[key] = value
+	if release.Role == "optimize" {
+		// RELEASE_-prefixed: buildScenarioEnv seeds this namespace from the process
+		// environment, where OPTIMIZE_CONTEXT_PATH is a name the Playwright suite reads
+		// (pages/SM-8.10/NavigationPage.ts). Keep the two namespaces from sharing a key.
+		env["RELEASE_OPTIMIZE_CONTEXT_PATH"] = release.OptimizeContextPath
+		if release.Serves != "" {
+			token := matrix.TopologyEnvToken(release.Serves)
+			env["SERVED_NAMESPACE"] = env[token+"_NAMESPACE"]
+			env["SERVED_HOST"] = env[token+"_HOST"]
+			env["SERVED_ORCHESTRATION_INDEX_PREFIX"] = env[token+"_ORCHESTRATION_INDEX_PREFIX"]
+		}
 	}
 	return env
 }
@@ -1229,7 +1247,6 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 		releases = append(releases, deploy.TopologyRelease{
 			Role:            r.Role,
 			NamespaceSuffix: r.NamespaceSuffix,
-			Values:          r.Values,
 			DependsOn:       r.DependsOn,
 		})
 	}
@@ -1249,12 +1266,16 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 
 	hubIdx := -1
 	var orchestrationIndices []int
+	var optimizeIndices []int
 	for i, r := range entry.Topology.Releases {
 		if r.Role == "hub" {
 			hubIdx = i
 		}
 		if r.Role == "orchestration" {
 			orchestrationIndices = append(orchestrationIndices, i)
+		}
+		if r.Role == "optimize" {
+			optimizeIndices = append(optimizeIndices, i)
 		}
 	}
 	if hubIdx == -1 {
@@ -1274,15 +1295,23 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 	// (8080) ports from orchestration.service.{grpcPort,httpPort}.
 	addTopologyIngressHosts(crossRefEnv, opts, platform, contexts[hubIdx], entry.Topology.Releases, contexts)
 	for _, i := range orchestrationIndices {
-		token := topologyEnvToken(entry.Topology.Releases[i].NamespaceSuffix)
+		token := matrix.TopologyEnvToken(entry.Topology.Releases[i].NamespaceSuffix)
 		crossRefEnv[token+"_NAMESPACE"] = contexts[i].Namespace
+		crossRefEnv[token+"_ORCHESTRATION_INDEX_PREFIX"] = contexts[i].OrchestrationIndexPrefix
 		for key, value := range buildOrchestrationZeebeEnv(contexts[i]) {
 			crossRefEnv[token+strings.TrimPrefix(key, "ORCH")] = value
 		}
 	}
+	for _, i := range optimizeIndices {
+		release := entry.Topology.Releases[i]
+		token := matrix.TopologyEnvToken(release.NamespaceSuffix)
+		crossRefEnv[token+"_NAMESPACE"] = contexts[i].Namespace
+		crossRefEnv[token+"_OPTIMIZE_CONTEXT_PATH"] = release.OptimizeContextPath
+	}
 	if len(orchestrationIndices) == 1 {
 		i := orchestrationIndices[0]
 		crossRefEnv["ORCH_NAMESPACE"] = contexts[i].Namespace
+		crossRefEnv["ORCH_ORCHESTRATION_INDEX_PREFIX"] = contexts[i].OrchestrationIndexPrefix
 		for key, value := range buildOrchestrationZeebeEnv(contexts[i]) {
 			crossRefEnv[key] = value
 		}
@@ -1301,12 +1330,11 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 
 		releaseEntry := synthesizeReleaseEntry(entry, rel, platform)
 		releaseOpts := synthesizeReleaseOpts(opts, platform, releaseCtx.Namespace)
-		if len(orchestrationIndices) > 1 {
-			hostKey := "HUB_HOST"
-			if rel.Role == "orchestration" {
-				hostKey = topologyEnvToken(rel.NamespaceSuffix) + "_HOST"
+		hostKey := topologyReleaseHostKey(rel.Role, rel.NamespaceSuffix, len(orchestrationIndices))
+		if hostKey != "" {
+			if host := crossRefEnv[hostKey]; host != "" {
+				releaseOpts.ExtraHelmSets = append(releaseOpts.ExtraHelmSets, "global.host="+host)
 			}
-			releaseOpts.ExtraHelmSets = append(releaseOpts.ExtraHelmSets, "global.host="+crossRefEnv[hostKey])
 		}
 
 		flags, namespace, _, _, cleanup, buildErr := matrix.BuildEntryFlags(releaseEntry, releaseOpts)
@@ -1338,6 +1366,28 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 	return nil
 }
 
+// topologyReleaseHostKey names the crossRefEnv key whose value must be pushed
+// into a release's global.host, or "" to leave global.host to BuildEntryFlags'
+// namespace-derived default.
+//
+// An "optimize" release is always pinned to the Hub host: its values layer
+// registers an OIDC redirect URL under HUB_HOST, so a namespace-derived host
+// would break the callback. Other roles keep the pre-existing behavior of
+// overriding only when several orchestration releases must be split across
+// distinct hosts.
+func topologyReleaseHostKey(role, namespaceSuffix string, orchestrationCount int) string {
+	if role == "optimize" {
+		return "HUB_HOST"
+	}
+	if orchestrationCount <= 1 {
+		return ""
+	}
+	if role == "orchestration" {
+		return matrix.TopologyEnvToken(namespaceSuffix) + "_HOST"
+	}
+	return "HUB_HOST"
+}
+
 func addTopologyIngressHosts(crossRefEnv map[string]string, opts matrix.RunOptions, platform string, hubCtx *deploy.ScenarioContext, releases []matrix.TopologyRelease, contexts []*deploy.ScenarioContext) {
 	orchestrationCount := 0
 	for _, release := range releases {
@@ -1349,7 +1399,7 @@ func addTopologyIngressHosts(crossRefEnv map[string]string, opts matrix.RunOptio
 		crossRefEnv["HUB_HOST"] = sharedHost
 		for _, release := range releases {
 			if release.Role == "orchestration" {
-				crossRefEnv[topologyEnvToken(release.NamespaceSuffix)+"_HOST"] = sharedHost
+				crossRefEnv[matrix.TopologyEnvToken(release.NamespaceSuffix)+"_HOST"] = sharedHost
 				crossRefEnv["ORCH_HOST"] = sharedHost
 			}
 		}
@@ -1372,7 +1422,7 @@ func addTopologyIngressHosts(crossRefEnv map[string]string, opts matrix.RunOptio
 			IngressSubdomain:  contexts[i].Namespace,
 			IngressBaseDomain: baseDomain,
 		}).ResolveIngressHostname()
-		crossRefEnv[topologyEnvToken(release.NamespaceSuffix)+"_HOST"] = host
+		crossRefEnv[matrix.TopologyEnvToken(release.NamespaceSuffix)+"_HOST"] = host
 		if orchestrationCount == 1 {
 			crossRefEnv["ORCH_HOST"] = host
 		}
@@ -1427,29 +1477,11 @@ func topologyDeployOrder(releases []matrix.TopologyRelease) ([]int, error) {
 // layer selection instead of the scenario-level (uniform) ones — the core of
 // the per-release layer fix. Extracted as a pure function for testability.
 func synthesizeReleaseEntry(entry matrix.Entry, rel matrix.TopologyRelease, platform string) matrix.Entry {
+	// Feature layers go through the same env-var substitution pipeline as the
+	// identity and persistence layers (scenarios.BuildDeploymentConfig →
+	// values.Process), so a release's ${...} placeholders resolve before Helm
+	// sees them.
 	features := append([]string(nil), rel.Features...)
-	var extraValues []string
-
-	// rel.Values is the release's own overlay file. When it lives under
-	// values/features/ (the convention every multinamespace release uses),
-	// resolve it as a Feature layer instead of an ExtraValues file: Feature
-	// layers go through the SAME env-var substitution pipeline as
-	// identity/persistence layers (scenarios.BuildDeploymentConfig →
-	// values.Process), whereas ExtraValues files are passed straight into
-	// BuildValuesChain WITHOUT substitution. Feeding a topology release's
-	// ${...} placeholders (e.g. EXTERNAL_ELASTICSEARCH_HOST) through
-	// ExtraValues was the root cause of the live-GKE "does not exist" failure
-	// this fix addresses — Feature layers close that gap.
-	const featuresPrefix = "features/"
-	if strings.HasPrefix(rel.Values, featuresPrefix) {
-		featureName := strings.TrimSuffix(strings.TrimPrefix(rel.Values, featuresPrefix), ".yaml")
-		features = append(features, featureName)
-	} else if rel.Values != "" {
-		// Fallback for any release values file NOT under values/features/:
-		// still gets deployed, but its placeholders are only substituted if
-		// resolved another way (e.g. no placeholders at all).
-		extraValues = []string{filepath.Join("values", rel.Values)}
-	}
 
 	releaseEntry := matrix.Entry{
 		Version:      entry.Version,
@@ -1465,7 +1497,6 @@ func synthesizeReleaseEntry(entry matrix.Entry, rel matrix.TopologyRelease, plat
 		Persistence:  rel.Persistence,
 		Features:     features,
 		Dependencies: rel.ResolvedDependencies,
-		ExtraValues:  extraValues,
 	}
 	if rel.Role == "orchestration" {
 		releaseEntry.PostDeploy = entry.PostDeploy
