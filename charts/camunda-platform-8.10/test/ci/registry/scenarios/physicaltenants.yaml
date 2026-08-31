@@ -6,16 +6,8 @@ platforms:
   - gke
 infra-type:
   gke: distroci
-# e2e is blocked on the test suite, not on the chart: the Optimize flows in
-# smoke-tests.spec.ts and optimize-user-flows.spec.ts create their data through
-# Web Modeler, which deploys over the plain /v2 path and so lands records in the
-# default tenant, while a per-tenant Optimize reads its own tenant's prefix and
-# finds nothing. The suite has no concept of a Physical Tenant, and
-# components.orchestration on the cluster record is singular, so one record
-# cannot name a tenant-scoped Modeler target per tenant. Skipping that one
-# dimension keeps the isolation, initialization and per-tenant export coverage
-# below, which the post-deploy hook asserts. Drop this key once the e2e suite can
-# address an Optimize per tenant.
+# Repository-owned post-deploy acceptance covers physical routing and Optimize
+# import. The external browser suite does not support tenant routing yet.
 skip-e2e: true
 post-deploy: physicaltenants-exporters
 topology:
@@ -50,8 +42,20 @@ topology:
         ORCH_OPTIMIZE_AUDIENCE: optimize-orcha-api
         ORCH_CONNECTORS_CLIENT_ID: connectors-orcha
     - role: optimize
+      namespace-suffix: optdefault
+      serves: orcha
+      tenant: default
+      optimize-context-path: /optimize-orcha-default
+      identity: keycloak-external-optimize
+      persistence: elasticsearch-external
+      dependencies: []
+      features:
+        - physicaltenants-optimize-default
+      depends-on: hub
+    - role: optimize
       namespace-suffix: optta
       serves: orcha
+      tenant: tenanta
       optimize-context-path: /optimize-orcha-ta
       identity: keycloak-external-optimize
       persistence: elasticsearch-external
@@ -62,6 +66,7 @@ topology:
     - role: optimize
       namespace-suffix: opttb
       serves: orcha
+      tenant: tenantb
       optimize-context-path: /optimize-orcha-tb
       identity: keycloak-external-optimize
       persistence: elasticsearch-external

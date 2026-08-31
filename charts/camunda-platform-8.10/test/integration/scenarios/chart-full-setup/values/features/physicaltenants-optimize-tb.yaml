@@ -11,16 +11,8 @@
 # The reader prefix is the ORCHA cluster's prefix with this tenant's suffix,
 # matching this tenant's exporter index prefix under camunda.physical-tenants in
 # features/physicaltenants-orchestration.yaml. OPTIMIZE_INDEX_PREFIX is derived
-# per release namespace, so the two Optimizes never share index space.
+# per release namespace, so the three Optimizes never share index space.
 #
-# NOTE ON AUTHORIZATION: both tenants' Optimize clients share the audience
-# optimize-orcha-api. global.topology.clusters[].components.optimize is singular,
-# so the hub can register a second client for tenant B via identity.clients[] but
-# cannot register a second resource server, and a client permission must name an
-# existing one. Per-tenant Optimize audiences therefore are not expressible in
-# the cluster record today: the two instances are identity-separated but not
-# authorization-isolated.
-
 global:
   topology:
     mode: optimize
@@ -32,13 +24,19 @@ optimize:
   security:
     authentication:
       oidc:
-        clientId: "optimize-orcha-tb"
-        audience: "optimize-orcha-api"
+        clientId: "optimize-orcha-tenantb"
+        audience: "optimize-orcha-tenantb-api"
         redirectUrl: "https://${HUB_HOST}${RELEASE_OPTIMIZE_CONTEXT_PATH}"
         secret:
           existingSecret: integration-test-credentials
-          existingSecretKey: identity-optimize-client-token
+          existingSecretKey: identity-optimize-tenantb-client-token
   contextPath: "${RELEASE_OPTIMIZE_CONTEXT_PATH}"
+  extraConfiguration:
+    - file: acceptance-api.yaml
+      content: |
+        api:
+          jwtAuthForApiEnabled: true
+          audience: optimize-orcha-tenantb-api
   database:
     elasticsearch:
       enabled: true
@@ -49,4 +47,4 @@ optimize:
       prefix: "${SERVED_ORCHESTRATION_INDEX_PREFIX}-tb"
   env:
     - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SETTINGS_INDEX_PREFIX
-      value: $OPTIMIZE_INDEX_PREFIX
+      value: "${OPTIMIZE_INDEX_PREFIX}-tenantb"

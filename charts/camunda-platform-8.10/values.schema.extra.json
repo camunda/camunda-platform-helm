@@ -1487,7 +1487,7 @@
                 "enabled": {"type": "boolean"},
                 "clientId": {"type": "string"},
                 "audience": {"type": "string"},
-                "redirectUrl": {"type": "string"},
+                "redirectUrl": {"type": "string", "pattern": "^$|^https?://[^\\s]+$"},
                 "roleName": {"type": "string"},
                 "secret": {"$ref": "#/$defs/topologySecret"},
                 "serviceName": {"type": "string"},
@@ -1561,7 +1561,26 @@
                         "connectors": {"type": "string", "pattern": "^$|^/"}
                     }
                 },
-                "components": {"$ref": "#/$defs/topologyComponents"}
+                "components": {"$ref": "#/$defs/topologyComponents"},
+                "physicalTenants": {
+                    "type": "array",
+                    "items": {"$ref": "#/$defs/topologyPhysicalTenant"}
+                }
+            }
+        },
+        "topologyPhysicalTenant": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "components"],
+            "properties": {
+                "id": {"type": "string", "pattern": "^[a-z0-9]{1,64}$"},
+                "components": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                        "optimize": {"$ref": "#/$defs/topologyOptimizeComponent"}
+                    }
+                }
             }
         }
     }

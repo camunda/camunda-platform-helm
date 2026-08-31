@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"scripts/camunda-core/pkg/executil"
 	"scripts/camunda-core/pkg/logging"
@@ -40,6 +41,13 @@ var lifecycleVarPassthrough = []string{
 	"POSTGRESQL_JDBC_URL",
 	"CAMUNDA_HOSTNAME",
 	"HUB_NAMESPACE",
+	"ORCH_NAMESPACE",
+}
+
+func isTopologyLifecycleVar(key string) bool {
+	return key == "HUB_HOST" || key == "ORCH_HOST" ||
+		strings.HasSuffix(key, "_NAMESPACE") ||
+		strings.HasSuffix(key, "_OPTIMIZE_CONTEXT_PATH")
 }
 
 // resolveLifecycleEnv builds the env map used to resolve lifecycle hook
@@ -75,6 +83,11 @@ func resolveLifecycleEnv(flags *config.RuntimeFlags) map[string]string {
 	if flags != nil {
 		for _, k := range lifecycleVarPassthrough {
 			if v := flags.ExtraEnv[k]; v != "" {
+				out[k] = v
+			}
+		}
+		for k, v := range flags.ExtraEnv {
+			if v != "" && isTopologyLifecycleVar(k) {
 				out[k] = v
 			}
 		}
@@ -220,10 +233,21 @@ func registerDeclarativePostDeployHook(flags *config.RuntimeFlags, hook *Lifecyc
 	return registerDeclarativeHook(flags, hook, hookPostDeploy, &flags.PostDeployHooks, repoRoot, appVersion, scenario)
 }
 
-// RegisterDeclarativePostDeployHook registers a post-deploy hook for callers
-// that execute a synthesized matrix entry outside the standard runner path.
-func RegisterDeclarativePostDeployHook(flags *config.RuntimeFlags, hook *LifecycleHook, repoRoot, appVersion, scenario string) error {
-	return registerDeclarativePostDeployHook(flags, hook, repoRoot, appVersion, scenario)
+// RunDeclarativePostDeployHook validates and immediately executes a post-deploy
+// hook. It is used when the lifecycle boundary is broader than one deployment,
+// such as a topology composed of several releases.
+func RunDeclarativePostDeployHook(ctx context.Context, flags *config.RuntimeFlags, hook *LifecycleHook, repoRoot, appVersion, scenario string) error {
+	if hook == nil {
+		return nil
+	}
+	if err := hook.Validate(fmt.Sprintf("scenario %q: %s", scenario, hookPostDeploy)); err != nil {
+		return err
+	}
+	fn, err := buildHookFunc(flags, hook, hookPostDeploy, repoRoot, appVersion, scenario)
+	if err != nil {
+		return err
+	}
+	return fn(ctx)
 }
 
 // runDeclarativePreUpgradeHook executes the supplied pre-upgrade hook between
