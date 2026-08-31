@@ -6,14 +6,6 @@ platforms:
   - gke
 infra-type:
   gke: distroci
-# The topology smoke matrix carries each leg's optimize-suffix and context path
-# (see matrix/plan.go's planTopologyMetadata), but the e2e runner still derives
-# its Optimize endpoint from the orchestration namespace, which is not where
-# Optimize runs here. Until the runner consumes that mapping this scenario
-# asserts deploy-time coverage only: both Optimize releases render their own
-# OIDC client and audience and reach readiness against the Orchestration they
-# serve. Drop this key in the same change that teaches the runner the mapping.
-skip-e2e: true
 topology:
   name: hub-2orch-2optimize
   shared-storage: elasticsearch
