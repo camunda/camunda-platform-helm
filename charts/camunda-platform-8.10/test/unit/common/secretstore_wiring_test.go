@@ -301,6 +301,45 @@ func (s *secretStoreWiringTest) TestStatefulSetWiring() {
 			},
 		},
 		{
+			Name:     "Two physical tenants each mount their own Secret at their own path",
+			Template: "templates/orchestration/statefulset.yaml",
+			Values: mergeValues(secretStoreBaseValues(), map[string]string{
+				"orchestration.secretStore.file.default.path":                                          "/etc/camunda/secrets/default",
+				"orchestration.secretStore.file.default.secret.existingSecret":                         "root-secret",
+				"orchestration.secretStore.physicalTenants.tenanta.file.default.path":                  "/etc/camunda/secrets/tenanta",
+				"orchestration.secretStore.physicalTenants.tenanta.file.default.secret.existingSecret": "tenanta-secret",
+				"orchestration.secretStore.physicalTenants.tenantb.file.default.path":                  "/etc/camunda/secrets/tenantb",
+				"orchestration.secretStore.physicalTenants.tenantb.file.default.secret.existingSecret": "tenantb-secret",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var sts appsv1.StatefulSet
+				helm.UnmarshalK8SYaml(t, output, &sts)
+				volumeNameBySecret := map[string]string{}
+				for _, volume := range sts.Spec.Template.Spec.Volumes {
+					if volume.Secret != nil && strings.HasPrefix(volume.Name, "secretstore-") {
+						volumeNameBySecret[volume.Secret.SecretName] = volume.Name
+						s.Require().NotNil(volume.Secret.DefaultMode)
+						s.Require().Equal(int32(0400), *volume.Secret.DefaultMode)
+					}
+				}
+				s.Require().Len(volumeNameBySecret, 3)
+				mountPathByVolume := map[string]string{}
+				for _, mount := range sts.Spec.Template.Spec.Containers[0].VolumeMounts {
+					mountPathByVolume[mount.Name] = mount.MountPath
+				}
+				for secretName, wantPath := range map[string]string{
+					"root-secret":    "/etc/camunda/secrets/default",
+					"tenanta-secret": "/etc/camunda/secrets/tenanta",
+					"tenantb-secret": "/etc/camunda/secrets/tenantb",
+				} {
+					volumeName := volumeNameBySecret[secretName]
+					s.Require().NotEmpty(volumeName, "no volume for Secret %q", secretName)
+					s.Require().Equal(wantPath, mountPathByVolume[volumeName])
+				}
+			},
+		},
+		{
 			Name:     "Generated volume name is a DNS label for an awkward tenant id",
 			Template: "templates/orchestration/statefulset.yaml",
 			Values: mergeValues(secretStoreBaseValues(), map[string]string{
