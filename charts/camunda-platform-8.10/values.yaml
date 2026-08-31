@@ -2601,7 +2601,7 @@ orchestration:
 
   ## @param orchestration.configuration if specified, contents will be used as the application.yaml
   configuration: ""
-  ## @param orchestration.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
+  ## @param orchestration.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml. Physical Tenants are declared here too, under `camunda.physical-tenants` per ADR-0091 - there is no `orchestration.physicalTenants` values key. The chart detects that key to render the issuer-uri form of the OIDC provider, which the Orchestration Cluster requires once tenants exist, and fails the render when a release that deploys Orchestration is not on OIDC or has no resolvable `global.identity.auth.issuer`. Give every tenant its own secondary-storage index prefix; declaring any tenant also stops the `default` tenant inheriting this release's root exporters, so `default` needs its own exporter entry.
   ## Each entry has: file (filename), content (file contents), and optional springImport (bool, default true).
   ## Set springImport to false to mount the file without adding it to spring.config.import (e.g. for log4j2.xml).
   extraConfiguration: []
