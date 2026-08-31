@@ -70,8 +70,8 @@ func TestCamundaHubUpgradePhases(t *testing.T) {
 				"camundaHub.upgrade.phase":            testCase.phase,
 				"camundaHub.restapi.replicas":         "3",
 				"camundaHub.restapi.mail.fromAddress": "example@example.com",
-				"global.elasticsearch.enabled":        "true",
 				"identity.enabled":                    "true",
+				"orchestration.enabled":               "false",
 			}
 
 			output := helm.RenderTemplate(t, &helm.Options{SetValues: values}, chartPath, "camunda-platform-test", []string{
@@ -157,8 +157,8 @@ func TestCamundaHubUpgradePhaseLabelCannotBeOverridden(t *testing.T) {
 				"camundaHub.enabled":                  "true",
 				"camundaHub.upgrade.phase":            "migrate",
 				"camundaHub.restapi.mail.fromAddress": "example@example.com",
-				"global.elasticsearch.enabled":        "true",
 				"identity.enabled":                    "true",
+				"orchestration.enabled":               "false",
 				label.labelKey:                        "normal",
 			}}, chartPath, "camunda-platform-test", []string{label.template})
 
@@ -190,8 +190,8 @@ func TestCamundaHubUpgradePhaseSupportsLegacyEnablement(t *testing.T) {
 
 	output := helm.RenderTemplate(t, &helm.Options{SetValues: map[string]string{
 		"camundaHub.upgrade.phase":            "migrate",
-		"global.elasticsearch.enabled":        "true",
 		"identity.enabled":                    "true",
+		"orchestration.enabled":               "false",
 		"webModeler.enabled":                  "true",
 		"webModeler.restapi.mail.fromAddress": "example@example.com",
 	}}, chartPath, "camunda-platform-test", []string{"templates/web-modeler/deployment-restapi.yaml"})
@@ -209,8 +209,8 @@ func TestCamundaHubUpgradePhaseRejectsInvalidValue(t *testing.T) {
 	_, err = helm.RenderTemplateE(t, &helm.Options{SetValues: map[string]string{
 		"camundaHub.enabled":                  "true",
 		"camundaHub.upgrade.phase":            "invalid",
-		"global.elasticsearch.enabled":        "true",
 		"identity.enabled":                    "true",
+		"orchestration.enabled":               "false",
 		"webModeler.restapi.mail.fromAddress": "example@example.com",
 	}}, chartPath, "camunda-platform-test", []string{"templates/web-modeler/deployment-restapi.yaml"})
 
