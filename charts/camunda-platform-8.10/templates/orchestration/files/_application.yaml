@@ -347,7 +347,7 @@ zeebe:
           {{- end }}
           url: {{ include "camundaPlatform.legacyExporterElasticsearchURL" . | quote }}
           index:
-            prefix: {{ .Values.optimize.database.elasticsearch.prefix | default "zeebe-record" | quote }}
+            prefix: {{ include "orchestration.legacyExporterElasticsearchPrefix" . | quote }}
             numberOfReplicas: {{ ternary .Values.orchestration.index.replicas .Values.orchestration.exporters.zeebe.replicas (kindIs "invalid" .Values.orchestration.exporters.zeebe.replicas) | quote }}
           {{- if .Values.orchestration.retention.enabled }}
           retention:
@@ -366,7 +366,7 @@ zeebe:
           {{- end }}
           url: {{ include "camundaPlatform.legacyExporterOpensearchURL" . | quote }}
           index:
-            prefix: {{ .Values.optimize.database.opensearch.prefix | default "zeebe-record" | quote }}
+            prefix: {{ include "orchestration.legacyExporterOpenSearchPrefix" . | quote }}
             numberOfReplicas: {{ ternary .Values.orchestration.index.replicas .Values.orchestration.exporters.zeebe.replicas (kindIs "invalid" .Values.orchestration.exporters.zeebe.replicas) | quote }}
           {{- if eq (include "orchestration.legacyOpenSearchExporterAwsEnabled" .) "true" }}
           aws:

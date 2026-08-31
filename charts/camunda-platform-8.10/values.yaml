@@ -2553,6 +2553,10 @@ orchestration:
     ## @param orchestration.exporters.zeebe.enabled if true, enables the legacy Zeebe Elasticsearch and OpenSearch exporters.
     zeebe:
       enabled: false
+      ## @extra orchestration.exporters.zeebe.index configuration of the indices the legacy Zeebe exporter writes.
+      index:
+        ## @param orchestration.exporters.zeebe.index.prefix defines the index prefix the legacy Zeebe exporter writes, for whichever of Elasticsearch or OpenSearch is in use. Set it on the release running the Orchestration Cluster. When empty, "optimize.database.elasticsearch.prefix" (or its OpenSearch equivalent) is used instead.
+        prefix: ""
     appIntegrations:
       apiKey:
         secret:
@@ -2563,7 +2567,7 @@ orchestration:
           ## @param orchestration.exporters.appIntegrations.apiKey.secret.existingSecretKey defines the key within the existing Kubernetes Secret.
           existingSecretKey: ""
   index:
-    ## @param orchestration.index.prefix if specified, defines an index prefix in Elasticsearch/OpenSearch for Orchestration Cluster indices. For ES/OS exporters or Optimize use the "optimize.database.elasticsearch.prefix" or OpenSearch equivalent.
+    ## @param orchestration.index.prefix if specified, defines an index prefix in Elasticsearch/OpenSearch for Orchestration Cluster indices. This does not apply to the legacy Zeebe exporter, which is configured by "orchestration.exporters.zeebe.index.prefix", nor to the indices Optimize reads, which are named by "optimize.database.elasticsearch.prefix" or the OpenSearch equivalent.
     prefix: ""
     ## @param orchestration.index.replicas can be used to specify the number of replicas for Orchestration Cluster indices.
     replicas: 1
@@ -2739,7 +2743,7 @@ optimize:
         protocol: http
         host: "{{ .Release.Name }}-elasticsearch"
         port: 9200
-      ## @param optimize.database.elasticsearch.prefix defines the prefix which is used by the old Zeebe Elasticsearch Exporter to create Elasticsearch indexes and consumed by Optimize.
+      ## @param optimize.database.elasticsearch.prefix defines the prefix of the Elasticsearch indexes Optimize reads. The exporter writing them is configured by "orchestration.exporters.zeebe.index.prefix"; keep the two equal.
       prefix: "zeebe-record"
     # Opensearch configuration which is shared between the sub charts
     ## @extra optimize.database.opensearch
@@ -2779,7 +2783,7 @@ optimize:
         protocol: https
         host: ""
         port: 443
-      ## @param optimize.database.opensearch.prefix defines the prefix which is used by the old Zeebe OpenSearch Exporter to create OpenSearch indexes and consumed by Optimize.
+      ## @param optimize.database.opensearch.prefix defines the prefix of the OpenSearch indexes Optimize reads. The exporter writing them is configured by "orchestration.exporters.zeebe.index.prefix"; keep the two equal.
       prefix: "zeebe-record"
 
 
