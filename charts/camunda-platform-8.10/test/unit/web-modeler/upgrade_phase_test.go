@@ -26,8 +26,6 @@ import (
 )
 
 func TestCamundaHubUpgradePhases(t *testing.T) {
-	t.Parallel()
-
 	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
 
@@ -64,8 +62,6 @@ func TestCamundaHubUpgradePhases(t *testing.T) {
 	for _, testCase := range testCases {
 		testCase := testCase
 		t.Run(testCase.name, func(t *testing.T) {
-			t.Parallel()
-
 			values := map[string]string{
 				"camundaHub.enabled":                  "true",
 				"camundaHub.upgrade.phase":            testCase.phase,
@@ -103,8 +99,6 @@ func TestCamundaHubUpgradePhases(t *testing.T) {
 }
 
 func TestCamundaHubUpgradePhaseLabelCannotBeOverridden(t *testing.T) {
-	t.Parallel()
-
 	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
 
@@ -120,7 +114,6 @@ func TestCamundaHubUpgradePhaseLabelCannotBeOverridden(t *testing.T) {
 	} {
 		label := label
 		t.Run(label.name, func(t *testing.T) {
-			t.Parallel()
 			_, err := helm.RenderTemplateE(t, &helm.Options{SetValues: map[string]string{
 				"camundaHub.enabled":                  "true",
 				"camundaHub.upgrade.phase":            "migrate",
@@ -136,15 +129,12 @@ func TestCamundaHubUpgradePhaseLabelCannotBeOverridden(t *testing.T) {
 }
 
 func TestCamundaHubUpgradePhaseRendersGitOpsWarning(t *testing.T) {
-	t.Parallel()
-
 	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
 
 	for _, phase := range []string{"quiesce", "migrate"} {
 		phase := phase
 		t.Run(phase, func(t *testing.T) {
-			t.Parallel()
 			output := helm.RenderTemplate(t, &helm.Options{SetValues: map[string]string{
 				"camundaHub.upgrade.phase": phase,
 				"orchestration.enabled":    "false",
@@ -156,8 +146,6 @@ func TestCamundaHubUpgradePhaseRendersGitOpsWarning(t *testing.T) {
 }
 
 func TestCamundaHubUpgradePhaseSupportsLegacyEnablement(t *testing.T) {
-	t.Parallel()
-
 	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
 
@@ -176,8 +164,6 @@ func TestCamundaHubUpgradePhaseSupportsLegacyEnablement(t *testing.T) {
 }
 
 func TestCamundaHubUpgradePhaseRejectsInvalidValue(t *testing.T) {
-	t.Parallel()
-
 	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
 
