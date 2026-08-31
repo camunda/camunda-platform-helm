@@ -68,5 +68,5 @@ identity:
   # https://hub.docker.com/r/camunda/identity/tags
   image:
     repository: camunda/identity
-    tag: 8.8.16
-    digest: "sha256:191d4fe2e4eaea9651f41596434c8448c5664fc36d3b537db2ed3b2ee9cde3a0"
+    tag: 8.8.17
+    digest: "sha256:c9f67e7ea5a01415000added6ef0d54d03d9dc574c513e26bb97adf790f17057"
