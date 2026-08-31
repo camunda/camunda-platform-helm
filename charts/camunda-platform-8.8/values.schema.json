@@ -3691,7 +3691,7 @@
                         },
                         "affinity": {
                             "type": "object",
-                            "description": "can be used to define pod affinity or anti-affinity, see https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity",
+                            "description": "can be used for [affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity); match `podLabels` for upgrade stability.",
                             "default": {}
                         },
                         "resources": {
@@ -4098,7 +4098,7 @@
                         },
                         "affinity": {
                             "type": "object",
-                            "description": "can be used to define pod affinity or anti-affinity, see https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity",
+                            "description": "can be used for [affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity); match `podLabels` for upgrade stability.",
                             "default": {}
                         },
                         "resources": {
@@ -4494,7 +4494,7 @@
                         },
                         "affinity": {
                             "type": "object",
-                            "description": "can be used to define pod affinity or anti-affinity, see https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity",
+                            "description": "can be used for [affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity); match `podLabels` for upgrade stability.",
                             "default": {}
                         },
                         "resources": {
