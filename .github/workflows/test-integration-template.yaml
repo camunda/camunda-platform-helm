@@ -318,7 +318,7 @@ jobs:
           CI_PLATFORMS: "${{ inputs.platforms }}"
           CI_FLOWS: "${{ inputs.flows }}"
         run: |
-          "$GITHUB_WORKSPACE/.local-bin/deploy-camunda" ci integration-matrix \
+          deploy-camunda ci integration-matrix \
             --platforms "$CI_PLATFORMS" \
             --flows "$CI_FLOWS" \
             --matrix-data "$CI_MATRIX_INPUT"
@@ -329,7 +329,7 @@ jobs:
           CI_SHORTNAME: "${{ inputs.shortname }}"
           CI_SCENARIO: "${{ inputs.scenario }}"
         run: |
-          "$GITHUB_WORKSPACE/.local-bin/deploy-camunda" ci e2e-matrix \
+          deploy-camunda ci e2e-matrix \
             --repo-root "$GITHUB_WORKSPACE" \
             --chart-dir "$CI_CHART_DIR" \
             --shortname "$CI_SHORTNAME" \
