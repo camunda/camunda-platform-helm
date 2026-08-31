@@ -15,6 +15,8 @@
 package web_modeler
 
 import (
+	"encoding/json"
+	"io"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -23,6 +25,7 @@ import (
 	"github.com/stretchr/testify/require"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	k8syaml "k8s.io/apimachinery/pkg/util/yaml"
 )
 
 func TestCamundaHubUpgradePhases(t *testing.T) {
@@ -71,9 +74,16 @@ func TestCamundaHubUpgradePhases(t *testing.T) {
 				"identity.enabled":                    "true",
 			}
 
-			restapiOutput := helm.RenderTemplate(t, &helm.Options{SetValues: values}, chartPath, "camunda-platform-test", []string{"templates/web-modeler/deployment-restapi.yaml"})
-			var restapiDeployment appsv1.Deployment
-			helm.UnmarshalK8SYaml(t, restapiOutput, &restapiDeployment)
+			output := helm.RenderTemplate(t, &helm.Options{SetValues: values}, chartPath, "camunda-platform-test", []string{
+				"templates/web-modeler/deployment-restapi.yaml",
+				"templates/web-modeler/deployment-websockets.yaml",
+				"templates/web-modeler/service-restapi.yaml",
+				"templates/web-modeler/service-websockets.yaml",
+			})
+			deployments, services := decodeUpgradePhaseResources(t, output)
+			require.Contains(t, deployments, "camunda-platform-test-web-modeler-restapi")
+			require.Contains(t, deployments, "camunda-platform-test-web-modeler-websockets")
+			restapiDeployment := deployments["camunda-platform-test-web-modeler-restapi"]
 			require.Equal(t, testCase.restapiReplicas, *restapiDeployment.Spec.Replicas)
 			require.Equal(t, testCase.strategy, restapiDeployment.Spec.Strategy.Type)
 			if testCase.phase == "migrate" {
@@ -82,20 +92,49 @@ func TestCamundaHubUpgradePhases(t *testing.T) {
 			}
 			require.Equal(t, testCase.phase, restapiDeployment.Spec.Template.Labels["camunda.io/upgrade-phase"])
 
-			websocketsOutput := helm.RenderTemplate(t, &helm.Options{SetValues: values}, chartPath, "camunda-platform-test", []string{"templates/web-modeler/deployment-websockets.yaml"})
-			var websocketsDeployment appsv1.Deployment
-			helm.UnmarshalK8SYaml(t, websocketsOutput, &websocketsDeployment)
+			websocketsDeployment := deployments["camunda-platform-test-web-modeler-websockets"]
 			require.Equal(t, testCase.websocketsReplicas, *websocketsDeployment.Spec.Replicas)
 			require.Equal(t, testCase.phase, websocketsDeployment.Spec.Template.Labels["camunda.io/upgrade-phase"])
 
-			for _, template := range []string{"templates/web-modeler/service-restapi.yaml", "templates/web-modeler/service-websockets.yaml"} {
-				serviceOutput := helm.RenderTemplate(t, &helm.Options{SetValues: values}, chartPath, "camunda-platform-test", []string{template})
-				var service corev1.Service
-				helm.UnmarshalK8SYaml(t, serviceOutput, &service)
+			for _, service := range services {
 				require.Equal(t, "normal", service.Spec.Selector["camunda.io/upgrade-phase"])
 			}
+			require.Len(t, deployments, 2)
+			require.Len(t, services, 2)
 		})
 	}
+}
+
+func decodeUpgradePhaseResources(t *testing.T, output string) (map[string]appsv1.Deployment, map[string]corev1.Service) {
+	t.Helper()
+	deployments := map[string]appsv1.Deployment{}
+	services := map[string]corev1.Service{}
+	decoder := k8syaml.NewYAMLOrJSONDecoder(strings.NewReader(output), 4096)
+	for {
+		var object map[string]any
+		err := decoder.Decode(&object)
+		if err == io.EOF {
+			break
+		}
+		require.NoError(t, err)
+		if len(object) == 0 {
+			continue
+		}
+		data, err := json.Marshal(object)
+		require.NoError(t, err)
+
+		switch object["kind"] {
+		case "Deployment":
+			var deployment appsv1.Deployment
+			require.NoError(t, json.Unmarshal(data, &deployment))
+			deployments[deployment.Name] = deployment
+		case "Service":
+			var service corev1.Service
+			require.NoError(t, json.Unmarshal(data, &service))
+			services[service.Name] = service
+		}
+	}
+	return deployments, services
 }
 
 func TestCamundaHubUpgradePhaseLabelCannotBeOverridden(t *testing.T) {
