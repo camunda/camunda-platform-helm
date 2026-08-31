@@ -223,6 +223,21 @@ The following values inside your values.yaml need to be set but were not:
       {{- end }}
     {{- end }}
   {{- end }}
+
+  {{/* regexFind trims the Bitnami "-debian-12-rN" / rebuild-date suffix so
+       semverCompare receives a parseable version. */}}
+  {{- if .Values.identityKeycloak.enabled }}
+    {{- $keycloakVersion := regexFind "^[0-9]+\\.[0-9]+\\.[0-9]+" ((.Values.identityKeycloak.image).tag | toString) }}
+    {{- if and $keycloakVersion (semverCompare "<26.7.2" $keycloakVersion) }}
+      {{- $warningMessage := printf "%s %s %s %s"
+          "[camunda][warning]"
+          (printf "SECURITY: the bundled Keycloak image is pinned to %s, which is affected by CVE-2026-18963, a critical password-reset flaw enabling account takeover. It is fixed in Keycloak 26.7.2." $keycloakVersion)
+          "No fixed \"camunda/keycloak\" image is published yet, so the chart default cannot be raised. Tracking issue: https://github.com/camunda/camunda-platform-helm/issues/6987"
+          "Override \"identityKeycloak.image\" with a Keycloak 26.7.2 or later build (Enterprise: \"registry.camunda.cloud/keycloak-ee/keycloak:26.7.2\"), or use an externally managed Keycloak."
+      -}}
+      {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+    {{- end }}
+  {{- end }}
 {{- end }}
 
 

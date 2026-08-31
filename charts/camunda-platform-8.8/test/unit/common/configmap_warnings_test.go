@@ -90,3 +90,69 @@ func (s *ConfigMapWarningsTemplateTest) TestDifferentValuesInputs() {
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
+
+func (s *ConfigMapWarningsTemplateTest) TestBundledKeycloakCveWarning() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestAffectedVersionWarns",
+			Values: map[string]string{
+				"identity.enabled":         "true",
+				"identityKeycloak.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().Contains(configmap.Data["warnings"], "CVE-2026-18963")
+			},
+		},
+		{
+			Name: "TestBitnamiRevisionSuffixIsParsed",
+			Values: map[string]string{
+				"identity.enabled":           "true",
+				"identityKeycloak.enabled":   "true",
+				"identityKeycloak.image.tag": "26.3.3-debian-12-r0-2026-08-27-001",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().Contains(configmap.Data["warnings"], "CVE-2026-18963")
+			},
+		},
+		{
+			Name: "TestFixedVersionDoesNotWarn",
+			Values: map[string]string{
+				"identity.enabled":           "true",
+				"identityKeycloak.enabled":   "true",
+				"identityKeycloak.image.tag": "26.7.2",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NotContains(output, "CVE-2026-18963")
+			},
+		},
+		{
+			Name: "TestUnparseableTagDoesNotWarn",
+			Values: map[string]string{
+				"identity.enabled":           "true",
+				"identityKeycloak.enabled":   "true",
+				"identityKeycloak.image.tag": "latest",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NotContains(output, "CVE-2026-18963")
+			},
+		},
+		{
+			Name: "TestDisabledKeycloakDoesNotWarn",
+			Values: map[string]string{
+				"identity.enabled":         "true",
+				"identityKeycloak.enabled": "false",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NotContains(output, "CVE-2026-18963")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
