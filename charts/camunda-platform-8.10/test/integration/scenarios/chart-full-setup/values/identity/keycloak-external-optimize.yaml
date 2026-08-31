@@ -1,6 +1,6 @@
 # External-Keycloak identity layer for Optimize-only releases (8.10)
-# Layer 3 (auth method), per-release override: used ONLY by releases with
-# role "optimize" in the multinamespace-optimize topology.
+# Layer 3 (auth method), per-release override: used by releases with role
+# "optimize" in the multinamespace-optimize and physicaltenants topologies.
 #
 # Unlike identity/keycloak-external.yaml, this layer configures no
 # Orchestration Cluster or Connectors auth — an Optimize release runs neither.
@@ -20,7 +20,8 @@
 #
 # The Optimize client id, audience, redirect URL, context path, and index
 # prefixes are per release and come from the matching
-# features/multinamespace-optimize-<suffix>.yaml layer.
+# features/multinamespace-optimize-<suffix>.yaml or
+# features/physicaltenants-optimize-<suffix>.yaml layer.
 
 global:
   host: "$CAMUNDA_HOSTNAME"
