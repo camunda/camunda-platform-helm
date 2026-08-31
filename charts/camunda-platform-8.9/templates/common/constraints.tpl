@@ -473,8 +473,8 @@ The following values inside your values.yaml need to be set but were not:
       {{- $warningMessage := printf "%s %s %s %s"
           "[camunda][warning]"
           (printf "SECURITY: the bundled Keycloak image is pinned to %s, which is affected by CVE-2026-18963, a critical password-reset flaw enabling account takeover. It is fixed in Keycloak 26.7.2." $keycloakVersion)
-          "No fixed \"camunda/keycloak\" image is published yet, so the chart default cannot be raised. Tracking issue: https://github.com/camunda/camunda-platform-helm/issues/6987"
-          "Override \"identityKeycloak.image\" with a Keycloak 26.7.2 or later build (Enterprise: \"registry.camunda.cloud/keycloak-ee/keycloak:26.7.2\"), or use an externally managed Keycloak."
+          "The Bitnami-based \"camunda/keycloak\" tags this chart defaults to are frozen on the discontinued bitnamilegacy base and will not receive the fix. Details: https://github.com/camunda/camunda-platform-helm/issues/6987"
+          "Migrate to an externally managed Keycloak, or to the maintained \"camunda/keycloak:quay-*\" images (Enterprise: \"registry.camunda.cloud/keycloak-ee/keycloak:26.7.2\"). The quay images follow upstream Keycloak conventions and are not a drop-in replacement for this Bitnami-based subchart."
       -}}
       {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
     {{- end }}
