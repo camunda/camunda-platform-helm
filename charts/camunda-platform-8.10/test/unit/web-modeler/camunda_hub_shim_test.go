@@ -227,6 +227,33 @@ func (s *CamundaHubShimTemplateTest) TestCamundaHubValuesTakePrecedenceOverLegac
 	s.Require().Equal(int32(3), *deployment.Spec.Replicas)
 }
 
+func (s *CamundaHubShimTemplateTest) TestCamundaHubPodLabelAndAffinityTakePrecedenceTogether() {
+	values := map[string]string{
+		"camundaHub.enabled":                          "true",
+		"camundaHub.restapi.podLabels.affinity-group": "hub",
+		"camundaHub.restapi.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].weight":                                                   "100",
+		"camundaHub.restapi.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].podAffinityTerm.labelSelector.matchLabels.affinity-group": "hub",
+		"camundaHub.restapi.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].podAffinityTerm.topologyKey":                              "topology.kubernetes.io/zone",
+		"webModeler.enabled":                          "true",
+		"webModeler.restapi.mail.fromAddress":         "legacy@example.com",
+		"webModeler.restapi.podLabels.affinity-group": "legacy",
+		"webModeler.restapi.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].weight":                                                   "1",
+		"webModeler.restapi.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].podAffinityTerm.labelSelector.matchLabels.affinity-group": "legacy",
+		"webModeler.restapi.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].podAffinityTerm.topologyKey":                              "kubernetes.io/hostname",
+	}
+	output, err := s.renderWebModelerRestAPI(values)
+	s.Require().NoError(err)
+
+	deployment := s.unmarshalDeployment(output)
+	s.Require().Equal("hub", deployment.Spec.Template.Labels["affinity-group"])
+
+	preferredTerms := deployment.Spec.Template.Spec.Affinity.PodAntiAffinity.PreferredDuringSchedulingIgnoredDuringExecution
+	s.Require().Len(preferredTerms, 1)
+	s.Require().Equal(int32(100), preferredTerms[0].Weight)
+	s.Require().Equal("hub", preferredTerms[0].PodAffinityTerm.LabelSelector.MatchLabels["affinity-group"])
+	s.Require().Equal("topology.kubernetes.io/zone", preferredTerms[0].PodAffinityTerm.TopologyKey)
+}
+
 func (s *CamundaHubShimTemplateTest) TestLegacyOnlyValuesStillApply() {
 	values := map[string]string{
 		"camundaHub.enabled":                  "false",
