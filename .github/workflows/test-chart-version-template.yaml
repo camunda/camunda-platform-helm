@@ -223,8 +223,8 @@ jobs:
       ingress-ready-timeout: ${{ inputs.ingress-ready-timeout }}
       flows: ${{ inputs.flows }}
       camunda-helm-dir: "camunda-platform-${{ inputs.camunda-version }}"
-      camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
-      caller-git-ref: "${{ github.event.pull_request.head.sha }}"
+      camunda-helm-git-ref: "${{ github.sha }}"
+      caller-git-ref: "${{ github.sha }}"
       test-case: "${{ inputs.case }}"
       scenario: "${{ inputs.scenario }}"
       e2e-enabled: "${{ inputs.e2e-enabled }}"
