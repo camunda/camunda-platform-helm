@@ -43,11 +43,11 @@ runs:
 
     - name: Authenticate to OpenShift
       if: inputs.platform == 'rosa' && inputs.auth-data == ''
-      uses: redhat-actions/oc-login@2a1614bc977c054c8786c8e35fc9534bd0ddc156 # v2
+      uses: ./.github/actions/openshift-login
       with:
-        openshift_server_url: ${{ env.ROSA_URL }}
-        openshift_username:   ${{ env.ROSA_USER }}
-        openshift_password:   ${{ env.ROSA_PASS }}
+        server-url: ${{ env.ROSA_URL }}
+        username:   ${{ env.ROSA_USER }}
+        password:   ${{ env.ROSA_PASS }}
 
     - name: Set up Teleport
       if: inputs.platform == 'eks'

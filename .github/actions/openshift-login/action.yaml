@@ -1,0 +1,16 @@
+name: openshift-login
+description: Log in to an OpenShift (ROSA) cluster
+inputs:
+  server-url: { required: true, description: OpenShift API server URL }
+  username:   { required: true, description: OpenShift username }
+  password:   { required: true, description: OpenShift password }
+
+runs:
+  using: "composite"
+  steps:
+    - name: Authenticate to OpenShift
+      uses: redhat-actions/oc-login@2a1614bc977c054c8786c8e35fc9534bd0ddc156 # v2
+      with:
+        openshift_server_url: ${{ inputs.server-url }}
+        openshift_username:   ${{ inputs.username }}
+        openshift_password:   ${{ inputs.password }}
