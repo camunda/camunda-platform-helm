@@ -237,7 +237,7 @@ jobs:
     with:
       identifier: "${{ github.event.pull_request.number || github.ref }}-unit-${{ matrix.version }}"
       camunda-helm-dir: "camunda-platform-${{ matrix.version }}"
-      camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
+      camunda-helm-git-ref: "${{ github.sha }}"
 
   validation:
     if: ${{ needs.init.outputs.camunda-versions != '[]' }}
@@ -251,7 +251,7 @@ jobs:
     with:
       identifier: "${{ github.event.pull_request.number || github.ref }}-vald-${{ matrix.version }}"
       camunda-helm-dir: "camunda-platform-${{ matrix.version }}"
-      camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
+      camunda-helm-git-ref: "${{ github.sha }}"
 
   kind-testing:
     if: ${{ needs.init.outputs.camunda-versions != '[]' && !contains(github.head_ref, 'release-please--branches--') }}
@@ -269,7 +269,7 @@ jobs:
     with:
       identifier: "${{ github.event.pull_request.number || github.ref }}-loc-${{ matrix.version }}"
       camunda-helm-dir: "camunda-platform-${{ matrix.version }}"
-      camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
+      camunda-helm-git-ref: "${{ github.sha }}"
 
   integration-tests:
     # Skip integration tests for Renovate image/digest PRs - these images are already
