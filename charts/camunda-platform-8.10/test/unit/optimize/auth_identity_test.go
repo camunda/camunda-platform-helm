@@ -23,6 +23,8 @@ import (
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	"gopkg.in/yaml.v3"
+	corev1 "k8s.io/api/core/v1"
 )
 
 type AuthIdentityTemplateTest struct {
@@ -114,6 +116,40 @@ func (s *AuthIdentityTemplateTest) TestIdentityOverridesRenderAComponentScopedCo
 	s.Require().Contains(out, "https://tenant-issuer.example.com")
 	s.Require().Contains(out, "http://identity.tenant.svc/identity")
 	s.Require().NotContains(out, "https://global-issuer.example.com")
+}
+
+func (s *AuthIdentityTemplateTest) TestTemplatedComponentIssuerHasOneRenderedContract() {
+	values := map[string]string{
+		"global.identity.auth.issuer":                  "https://global-issuer.example.com",
+		"optimize.security.authentication.oidc.issuer": `https://{{ .Release.Name }}.example.com/realms/tenant`,
+	}
+	want := "https://" + s.release + ".example.com/realms/tenant"
+
+	var applicationConfigMap corev1.ConfigMap
+	application := s.render(values, []string{"templates/optimize/configmap.yaml"})
+	helm.UnmarshalK8SYaml(s.T(), application, &applicationConfigMap)
+	var config struct {
+		Camunda struct {
+			Identity struct {
+				Issuer string `yaml:"issuer"`
+			} `yaml:"identity"`
+			Security struct {
+				Authentication struct {
+					OIDC struct {
+						IssuerURI string `yaml:"issuer-uri"`
+					} `yaml:"oidc"`
+				} `yaml:"authentication"`
+			} `yaml:"security"`
+		} `yaml:"camunda"`
+	}
+	s.Require().NoError(yaml.Unmarshal([]byte(applicationConfigMap.Data["application-ccsm.yaml"]), &config))
+	s.Require().Equal(want, config.Camunda.Identity.Issuer)
+	s.Require().Equal(want, config.Camunda.Security.Authentication.OIDC.IssuerURI)
+
+	var identityConfigMap corev1.ConfigMap
+	identity := s.render(values, []string{"templates/optimize/configmap-identity-env.yaml"})
+	helm.UnmarshalK8SYaml(s.T(), identity, &identityConfigMap)
+	s.Require().Equal(want, identityConfigMap.Data["CAMUNDA_IDENTITY_ISSUER"])
 }
 
 // Without an override the component ConfigMap must not exist, so existing releases render exactly
