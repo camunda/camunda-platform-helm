@@ -534,8 +534,13 @@ data:
           {{- if ne $client.type "public" }}
           secret: ${VALUES_{{ $client.id | upper}}_CLIENT_SECRET:}
           {{- end }}
-          redirectUris: {{ $client.redirectUris }}
-          rootUrl: {{ $client.rootUrl }}
+          {{- if kindIs "slice" $client.redirectUris }}
+          redirectUris:
+            {{- tpl (toYaml $client.redirectUris) $ | nindent 12 }}
+          {{- else }}
+          redirectUris: {{ tpl ($client.redirectUris | toString) $ }}
+          {{- end }}
+          rootUrl: {{ tpl ($client.rootUrl | toString) $ }}
           type: {{ $client.type }}
           permissions:
             {{- with $client.permissions }}
