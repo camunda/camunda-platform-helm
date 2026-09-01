@@ -1,5 +1,35 @@
 # Changelog
 
+## [14.9.0](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.9-14.8.5...camunda-platform-8.9-14.9.0) (2026-09-01)
+
+
+### Features
+
+* add generic appProtocol support for Service ports in 8.9 ([#6664](https://github.com/camunda/camunda-platform-helm/issues/6664)) ([e9c6f56](https://github.com/camunda/camunda-platform-helm/commit/e9c6f567d8595a852d6dfb1237f1c4597a7667f3))
+
+
+### Documentation
+
+* document stable pod labels for Web Modeler anti-affinity rules ([#6931](https://github.com/camunda/camunda-platform-helm/issues/6931)) ([a374ffb](https://github.com/camunda/camunda-platform-helm/commit/a374ffb748e291947afe1874565870c4a744cc98))
+
+
+### Dependencies
+
+* update camunda-platform-images (patch) ([#6991](https://github.com/camunda/camunda-platform-helm/issues/6991)) ([f7fd20f](https://github.com/camunda/camunda-platform-helm/commit/f7fd20f6f18a9966e260e9ea1a7daa2f9849ec69))
+* update camunda-platform-images (patch) ([#6993](https://github.com/camunda/camunda-platform-helm/issues/6993)) ([b02f60f](https://github.com/camunda/camunda-platform-helm/commit/b02f60fbcf9115be8e9b997fdb5ad42576afb82a))
+* update camunda/connectors-bundle docker tag to v8.9.9 ([#6976](https://github.com/camunda/camunda-platform-helm/issues/6976)) ([e9a2521](https://github.com/camunda/camunda-platform-helm/commit/e9a2521afa4590f156d707efc3d149e1aa17ebcb))
+* update camunda/console docker tag to v8.9.89 ([#6960](https://github.com/camunda/camunda-platform-helm/issues/6960)) ([8388268](https://github.com/camunda/camunda-platform-helm/commit/838826804dda0d145680c9ae60db6f6fed80c74c))
+* update camunda/console docker tag to v8.9.90 ([#6968](https://github.com/camunda/camunda-platform-helm/issues/6968)) ([124f11c](https://github.com/camunda/camunda-platform-helm/commit/124f11c3cf6fcbfe30ddd32ee7626c63b93384e4))
+* update camunda/console docker tag to v8.9.91 ([#6986](https://github.com/camunda/camunda-platform-helm/issues/6986)) ([7a4c9bd](https://github.com/camunda/camunda-platform-helm/commit/7a4c9bd291cd2494ca94388d041c17197b3ee51f))
+* update patch-updates (patch) ([#6967](https://github.com/camunda/camunda-platform-helm/issues/6967)) ([0aa0fe4](https://github.com/camunda/camunda-platform-helm/commit/0aa0fe4e2bff35a75214ec6da4a025e3fb806fb2))
+* update patch-updates (patch) ([#6992](https://github.com/camunda/camunda-platform-helm/issues/6992)) ([5aa6614](https://github.com/camunda/camunda-platform-helm/commit/5aa6614093a79567e36116793845b1fc87bf8748))
+* update patch-updates (patch) ([#6994](https://github.com/camunda/camunda-platform-helm/issues/6994)) ([23d294a](https://github.com/camunda/camunda-platform-helm/commit/23d294a661df5f2ddb9834a92cefa632008ea9fb))
+
+
+### Refactors
+
+* **8.9,8.10:** remove redundant camundaexporter from zeebe.broker.exporters ([#6454](https://github.com/camunda/camunda-platform-helm/issues/6454)) ([8a99505](https://github.com/camunda/camunda-platform-helm/commit/8a99505a2e483c55c726a4cad83e8b0c6f4f6880))
+
 ## [14.8.5](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.9-14.8.4...camunda-platform-8.9-14.8.5) (2026-08-24)
 
 
