@@ -72,6 +72,9 @@ Chart 15.x (Camunda 8.10) requires Helm v4 or later.
   {{- if not (or $esEnabled $osEnabled) }}
     {{- fail "[camunda][error] global.topology.mode=optimize requires optimize.database.elasticsearch.enabled or optimize.database.opensearch.enabled, with url.host addressing the secondary storage the Orchestration Cluster exports to. This chart bundles no Elasticsearch, and with neither backend enabled Optimize renders an empty connection node list and reaches no storage at all." }}
   {{- end }}
+  {{- if and (or $esEnabled $osEnabled) (empty (include "optimize.effectiveDatabaseHost" .)) }}
+    {{- fail "[camunda][error] global.topology.mode=optimize requires a non-empty url.host for the enabled Optimize database backend. Elasticsearch takes precedence when both backends are enabled; without its host Optimize renders an unusable connection node and cannot reach secondary storage." }}
+  {{- end }}
   {{- if ne (include "optimize.authEnabled" .) "true" }}
     {{- fail "[camunda][error] global.topology.mode=optimize requires authentication; set optimize.security.authentication.method=oidc or global.identity.auth.enabled=true." }}
   {{- end }}
@@ -112,6 +115,9 @@ environment-config.yaml wholesale, and optimize.extraConfiguration, which Optimi
 Either must bind the key to a non-empty value - the key alone leaves the same missing endpoint.
 */}}
 {{- if and (eq (include "camundaPlatform.optimizeEnabled" .) "true") (eq (include "optimize.authEnabled" .) "true") }}
+  {{- if not (has (include "optimize.effectiveAuthType" .) (list "KEYCLOAK" "MICROSOFT" "GENERIC")) }}
+    {{- fail (printf "[camunda][error] Optimize OIDC issuer type must be one of KEYCLOAK, MICROSOFT, or GENERIC; got %q from optimize.security.authentication.oidc.type (or global.identity.auth.type)." (include "optimize.effectiveAuthType" .)) }}
+  {{- end }}
   {{/*
   A component-scoped method=oidc switches Optimize's authentication on without
   switching Identity's provisioning on with it: templates/identity/deployment.yaml
@@ -183,7 +189,7 @@ Either must bind the key to a non-empty value - the key alone leaves the same mi
 
   Dropped, not mis-set, is also why the release may answer this itself: with nothing of the chart's
   emitted for that variable, an optimize.env entry - a valueFrom secretKeyRef naming the key
-  directly, say - or a declared envFrom variable is the only CAMUNDA_IDENTITY_CLIENT_SECRET the
+  directly, say - or a declared envFrom variable is the only VALUES_OPTIMIZE_CLIENT_SECRET the
   container sees, and such a release is authenticating today. Failing it unconditionally would turn
   a working deployment into a failed upgrade over a key it does not need.
   */}}

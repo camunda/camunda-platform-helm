@@ -28,7 +28,7 @@
       "indexPrefix" (include "optimize.indexPrefix" .)
       "clientId" (include "optimize.effectiveAuthClientId" .)
       "audience" (include "camundaPlatform.authAudienceOptimize" .)
-      "redirectUrl" (include "optimize.effectiveAuthRedirectUrl" .)
+      "redirectUrl" (tpl (include "optimize.effectiveAuthRedirectUrl" .) .)
       "secret" (include "camundaPlatform.topologyContractSecret" (dict "secret" $effectiveSecret "inlineFirst" true) | fromJson)
   -}}
   {{- $clusters := list -}}
@@ -42,7 +42,7 @@
           "enabled" (get $component "enabled")
           "clientId" ($component.clientId | default "" | toString)
           "audience" ($component.audience | default "" | toString)
-          "redirectUrl" ($component.redirectUrl | default "" | toString)
+          "redirectUrl" (tpl ($component.redirectUrl | default "" | toString) $)
           "secret" (include "camundaPlatform.topologyContractSecret" (dict "secret" ($component.secret | default dict)) | fromJson)
         )
     ) -}}
@@ -58,14 +58,14 @@
     {{- $redirects := list -}}
     {{- if kindIs "slice" $client.redirectUris -}}
       {{- range $redirect := $client.redirectUris -}}
-        {{- $redirects = append $redirects ($redirect | toString) -}}
+        {{- $redirects = append $redirects (tpl ($redirect | toString) $) -}}
       {{- end -}}
     {{- else if $client.redirectUris -}}
-      {{- $redirects = append $redirects ($client.redirectUris | toString) -}}
+      {{- $redirects = append $redirects (tpl ($client.redirectUris | toString) $) -}}
     {{- end -}}
     {{- $clients = append $clients (dict
         "id" ($client.id | default "" | toString)
-        "rootUrl" ($client.rootUrl | default "" | toString)
+        "rootUrl" (tpl ($client.rootUrl | default "" | toString) $)
         "redirectUris" $redirects
         "resourceServerIds" $servers
         "secret" (include "camundaPlatform.topologyContractSecret" (dict "secret" ($client.secret | default dict) "inlineFirst" true) | fromJson)
