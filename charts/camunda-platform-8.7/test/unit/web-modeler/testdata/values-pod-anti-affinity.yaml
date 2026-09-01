@@ -1,0 +1,40 @@
+webModeler:
+  enabled: true
+  restapi:
+    mail:
+      fromAddress: example@example.com
+    podLabels:
+      scheduling.example.com/affinity-group: web-modeler-restapi
+    affinity:
+      podAntiAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  scheduling.example.com/affinity-group: web-modeler-restapi
+              topologyKey: topology.kubernetes.io/zone
+  webapp:
+    podLabels:
+      scheduling.example.com/affinity-group: web-modeler-webapp
+    affinity:
+      podAntiAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  scheduling.example.com/affinity-group: web-modeler-webapp
+              topologyKey: topology.kubernetes.io/zone
+  websockets:
+    podLabels:
+      scheduling.example.com/affinity-group: web-modeler-websockets
+    affinity:
+      podAntiAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  scheduling.example.com/affinity-group: web-modeler-websockets
+              topologyKey: topology.kubernetes.io/zone

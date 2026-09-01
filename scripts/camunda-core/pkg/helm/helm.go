@@ -16,7 +16,9 @@ package helm
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"os/exec"
 	"scripts/camunda-core/pkg/executil"
 	"scripts/camunda-core/pkg/logging"
 	"strings"
@@ -26,6 +28,15 @@ import (
 
 func Run(ctx context.Context, args []string, workDir string) error {
 	return executil.RunCommand(ctx, "helm", args, nil, workDir)
+}
+
+func RunCapture(ctx context.Context, args []string, workDir string) ([]byte, error) {
+	out, err := executil.RunCommandCapture(ctx, "helm", args, nil, workDir)
+	var exitErr *exec.ExitError
+	if errors.As(err, &exitErr) {
+		return nil, fmt.Errorf("%w: %s", err, strings.TrimSpace(string(exitErr.Stderr)))
+	}
+	return out, err
 }
 
 // RunCaptureStderr runs a helm command like Run but also returns the accumulated
@@ -138,10 +149,10 @@ func DependencyUpdate(ctx context.Context, chartPath string) error {
 	return nil
 }
 
-// RepoAdd registers a Helm chart repository (helm repo add).
-// If the repo already exists, Helm treats this as a no-op update.
+// RepoAdd registers a Helm chart repository (helm repo add --force-update),
+// replacing any existing entry registered under the same name.
 func RepoAdd(ctx context.Context, name, url string) error {
-	args := []string{"repo", "add", name, url}
+	args := []string{"repo", "add", name, url, "--force-update"}
 	if err := Run(ctx, args, ""); err != nil {
 		return fmt.Errorf("helm repo add %s %s failed: %w", name, url, err)
 	}

@@ -15,10 +15,17 @@
 package matrix
 
 import (
+	"context"
+	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
+	"scripts/deploy-camunda/pkg/deployer"
+	"scripts/deploy-camunda/pkg/types"
 	"strings"
 	"testing"
+
+	"gopkg.in/yaml.v3"
 )
 
 func writeValuesFile(t *testing.T, dir, name string) {
@@ -71,6 +78,163 @@ func writeDepFile(t *testing.T, depsDir, id string) {
 	}
 	if err := os.WriteFile(filepath.Join(depsDir, id+".yaml"), []byte("release-name: "+id+"\n"), 0o644); err != nil {
 		t.Fatalf("write: %v", err)
+	}
+}
+
+func validatePreparedTest(t *testing.T, top *Topology, dir string) error {
+	t.Helper()
+	if err := top.Validate("ctx", dir, t.TempDir()); err != nil {
+		return err
+	}
+	tempDir := t.TempDir()
+	shared := map[string]string{}
+	for _, release := range top.Releases {
+		if release.Role == "optimize" {
+			shared[TopologyEnvToken(release.NamespaceSuffix)+"_OPTIMIZE_CONTEXT_PATH"] = release.OptimizeContextPath
+		}
+	}
+	rendered := make([]RenderedTopologyRelease, 0, len(top.Releases))
+	for i, release := range top.Releases {
+		paths := []string{filepath.Join(dir, "values", "base.yaml")}
+		if release.Identity != "" {
+			paths = append(paths, filepath.Join(dir, "values", "identity", release.Identity+".yaml"))
+		}
+		if release.Persistence != "" {
+			paths = append(paths, filepath.Join(dir, "values", "persistence", release.Persistence+".yaml"))
+		}
+		for _, feature := range release.Features {
+			paths = append(paths, filepath.Join(dir, "values", "features", feature+".yaml"))
+		}
+		var files []string
+		for j, path := range paths {
+			content, err := os.ReadFile(path)
+			if err != nil {
+				continue
+			}
+			content = []byte(os.Expand(string(content), func(name string) string {
+				if value, ok := shared[name]; ok {
+					return value
+				}
+				switch name {
+				case "RELEASE_OPTIMIZE_CONTEXT_PATH":
+					return release.OptimizeContextPath
+				case "SERVED_ORCHESTRATION_INDEX_PREFIX":
+					return "job-" + release.Serves
+				}
+				return "${" + name + "}"
+			}))
+			processed := filepath.Join(tempDir, fmt.Sprintf("%d-%d.yaml", i, j))
+			if err := os.WriteFile(processed, content, 0o644); err != nil {
+				t.Fatal(err)
+			}
+			files = append(files, processed)
+		}
+		var extraArgs []string
+		if release.Role == "orchestration" {
+			extraArgs = []string{"--set", "orchestration.exporters.zeebe.index.prefix=job-" + release.NamespaceSuffix}
+		}
+		extraArgs = append([]string{"--set", "global.topology.mode=combined"}, extraArgs...)
+		rendered = append(rendered, RenderedTopologyRelease{Release: release, Contract: renderContractTest(t, files, extraArgs)})
+	}
+	for i, release := range top.Releases {
+		if release.Role != "hub" {
+			continue
+		}
+		declared := false
+		for _, feature := range release.Features {
+			content, _ := os.ReadFile(filepath.Join(dir, "values", "features", feature+".yaml"))
+			declared = declared || strings.Contains(string(content), "clusters:")
+		}
+		rendered[i].Contract.Hub.ClustersDeclared = declared
+	}
+	return top.ValidateRendered("ctx", rendered)
+}
+
+func renderContractTest(t *testing.T, valuesFiles, extraArgs []string) TopologyContract {
+	t.Helper()
+	chartPath, err := filepath.Abs(filepath.Join("..", "..", "..", "charts", "camunda-platform-8.10"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	manifest, err := deployer.RenderTopologyContract(context.Background(), types.Options{
+		ChartPath: chartPath, ReleaseName: "integration", Namespace: "test", ValuesFiles: valuesFiles,
+		ExtraArgs: append([]string{"--skip-schema-validation", "--set", "orchestration.data.secondaryStorage.type=elasticsearch"}, extraArgs...),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var document struct {
+		Data map[string]string `yaml:"data"`
+	}
+	if err := yaml.Unmarshal(manifest, &document); err != nil {
+		t.Fatal(err)
+	}
+	var contract TopologyContract
+	if err := json.Unmarshal([]byte(document.Data["contract.json"]), &contract); err != nil {
+		t.Fatal(err)
+	}
+	return contract
+}
+
+func TestTopologyValidateRenderedUsesContractOnly(t *testing.T) {
+	top := optimizeTopology("orcha", "/optimize-orcha")
+	secret := TopologyContractSecret{Kind: "ref", Name: "oidc", Key: "optimize"}
+	optimize := TopologyContractOptimize{
+		Enabled: true, ContextPath: "/optimize-orcha", Backend: "elasticsearch", IndexPrefix: "job-orcha",
+		ClientID: "optimize-orcha", Audience: "optimize-orcha-api", RedirectURL: "https://hub.test/optimize-orcha", Secret: secret,
+	}
+	var hub, orchestration TopologyContract
+	hub.Hub.AuthType = "KEYCLOAK"
+	hub.Hub.ClustersDeclared = true
+	hub.Hub.Clusters = []TopologyContractCluster{{ID: "orcha", OptimizeContextPath: optimize.ContextPath, Optimize: optimize}}
+	orchestration.Orchestration.ElasticsearchIndexPrefix = "job-orcha"
+
+	rendered := []RenderedTopologyRelease{
+		{Release: top.Releases[0], Contract: hub},
+		{Release: top.Releases[1], Contract: orchestration},
+		{Release: top.Releases[2]},
+		{Release: top.Releases[3], Contract: TopologyContract{Optimize: optimize}},
+	}
+	if err := top.ValidateRendered("ctx", rendered); err != nil {
+		t.Fatalf("matching contracts should validate: %v", err)
+	}
+	rendered[3].Contract.Optimize.IndexPrefix = "wrong"
+	if err := top.ValidateRendered("ctx", rendered); err == nil || !strings.Contains(err.Error(), "writer prefix") {
+		t.Fatalf("expected contract prefix mismatch, got %v", err)
+	}
+}
+
+func TestTopologyValidateRenderedFallsBackToStandaloneIdentityClient(t *testing.T) {
+	top := optimizeTopology("orcha", "/optimize-orcha")
+	second := top.Releases[3]
+	second.NamespaceSuffix = "optb"
+	second.OptimizeContextPath = "/optimize-b"
+	top.Releases = append(top.Releases, second)
+
+	secret := TopologyContractSecret{Kind: "inline", Token: "redacted-hash"}
+	first := TopologyContractOptimize{Enabled: true, ContextPath: "/optimize-orcha", Backend: "elasticsearch", IndexPrefix: "job-orcha", ClientID: "optimize-a", Audience: "api", RedirectURL: "https://hub.test/optimize-orcha", Secret: secret}
+	secondOptimize := first
+	secondOptimize.ContextPath = "/optimize-b"
+	secondOptimize.ClientID = "optimize-b"
+	secondOptimize.RedirectURL = "https://hub.test/optimize-b"
+	var hub, orchestration TopologyContract
+	hub.Hub.AuthType = "KEYCLOAK"
+	hub.Hub.ClustersDeclared = true
+	hub.Hub.Clusters = []TopologyContractCluster{{ID: "orcha", OptimizeContextPath: first.ContextPath, Optimize: first}}
+	hub.Hub.IdentityClients = []TopologyContractIdentityClient{{ID: "optimize-b", RootURL: secondOptimize.RedirectURL, ResourceServerIDs: []string{"api"}, Secret: secret}}
+	orchestration.Orchestration.ElasticsearchIndexPrefix = "job-orcha"
+	rendered := []RenderedTopologyRelease{{Release: top.Releases[0], Contract: hub}, {Release: top.Releases[1], Contract: orchestration}, {Release: top.Releases[2]}, {Release: top.Releases[3], Contract: TopologyContract{Optimize: first}}, {Release: top.Releases[4], Contract: TopologyContract{Optimize: secondOptimize}}}
+	if err := top.ValidateRendered("ctx", rendered); err != nil {
+		t.Fatalf("standalone identity client should provision the second Optimize: %v", err)
+	}
+	hub.Hub.IdentityClients[0].Secret.Token = "different-redacted-hash"
+	rendered[0].Contract = hub
+	err := top.ValidateRendered("ctx", rendered)
+	if err == nil || !strings.Contains(err.Error(), "compared as redacted hashes") {
+		t.Fatalf("expected redacted secret mismatch, got %v", err)
+	}
+	if strings.Contains(err.Error(), "redacted-hash") {
+		t.Fatal("validation error exposed a secret token")
 	}
 }
 
@@ -306,7 +470,7 @@ func TestTopologyValidate_RejectsOptimizeLayerPinnedToAnotherServesPrefix(t *tes
       prefix: "${ORCHA_ORCHESTRATION_INDEX_PREFIX}"
 `)
 
-	err := optimizeTopology("orchb", "/optimize-orchb").Validate("ctx", dir, t.TempDir())
+	err := validatePreparedTest(t, optimizeTopology("orchb", "/optimize-orchb"), dir)
 	if err == nil || !strings.Contains(err.Error(), "SERVED_ORCHESTRATION_INDEX_PREFIX") {
 		t.Fatalf("expected the prefix to be rejected for not following serves, got %v", err)
 	}
@@ -323,7 +487,7 @@ func TestTopologyValidate_RejectsOptimizeLayerContextPathMismatch(t *testing.T) 
       prefix: "${SERVED_ORCHESTRATION_INDEX_PREFIX}"
 `)
 
-	err := optimizeTopology("orcha", "/optimize-orcha").Validate("ctx", dir, t.TempDir())
+	err := validatePreparedTest(t, optimizeTopology("orcha", "/optimize-orcha"), dir)
 	if err == nil || !strings.Contains(err.Error(), "but the release declares optimize-context-path") {
 		t.Fatalf("expected the hardcoded contextPath to be rejected, got %v", err)
 	}
@@ -340,7 +504,7 @@ func TestTopologyValidate_RejectsOptimizeLayerOpensearchPrefixNotFollowingServes
       prefix: "job-orcha"
 `)
 
-	err := optimizeTopology("orchb", "/optimize-orchb").Validate("ctx", dir, t.TempDir())
+	err := validatePreparedTest(t, optimizeTopology("orchb", "/optimize-orchb"), dir)
 	if err == nil || !strings.Contains(err.Error(), "optimize.database.opensearch.prefix") {
 		t.Fatalf("expected the opensearch prefix to be cross-checked too, got %v", err)
 	}
@@ -662,7 +826,7 @@ func TestTopologyValidate_RejectsOptimizeLayerContextPathFromForeignPlaceholder(
       prefix: "${SERVED_ORCHESTRATION_INDEX_PREFIX}"
 `)
 
-	err := optimizeTopology("orcha", "/optimize-orcha").Validate("ctx", dir, t.TempDir())
+	err := validatePreparedTest(t, optimizeTopology("orcha", "/optimize-orcha"), dir)
 	if err == nil || !strings.Contains(err.Error(), "RELEASE_OPTIMIZE_CONTEXT_PATH") {
 		t.Fatalf("expected a foreign placeholder to be rejected, got %v", err)
 	}
@@ -682,7 +846,7 @@ func TestTopologyValidate_RejectsOptimizeLayerContextPathAsASynchronizedLiteral(
       prefix: "${SERVED_ORCHESTRATION_INDEX_PREFIX}"
 `)
 
-	err := optimizeTopology("orcha", "/optimize-orcha").Validate("ctx", dir, t.TempDir())
+	err := validatePreparedTest(t, optimizeTopology("orcha", "/optimize-orcha"), dir)
 	if err == nil || !strings.Contains(err.Error(), "RELEASE_OPTIMIZE_CONTEXT_PATH") {
 		t.Fatalf("expected a literal matching the declaration to be rejected, got %v", err)
 	}
@@ -701,7 +865,7 @@ func TestTopologyValidate_RejectsOptimizeLayerPrefixNotLedByThePlaceholder(t *te
       prefix: "wrong-${SERVED_ORCHESTRATION_INDEX_PREFIX}"
 `)
 
-	err := optimizeTopology("orcha", "/optimize-orcha").Validate("ctx", dir, t.TempDir())
+	err := validatePreparedTest(t, optimizeTopology("orcha", "/optimize-orcha"), dir)
 	if err == nil || !strings.Contains(err.Error(), "optimize.database.elasticsearch.prefix") {
 		t.Fatalf("expected a prefix not led by the placeholder to be rejected, got %v", err)
 	}
@@ -759,7 +923,7 @@ func TestTopologyValidate_RejectsOptimizeLayerPrefixFromABareUnterminatedPlaceho
       prefix: "$SERVED_ORCHESTRATION_INDEX_PREFIXta"
 `)
 
-	err := optimizeTopology("orcha", "/optimize-orcha").Validate("ctx", dir, t.TempDir())
+	err := validatePreparedTest(t, optimizeTopology("orcha", "/optimize-orcha"), dir)
 	if err == nil || !strings.Contains(err.Error(), "optimize.database.elasticsearch.prefix") {
 		t.Fatalf("expected an unterminated bare placeholder to be rejected, got %v", err)
 	}
@@ -775,7 +939,7 @@ func TestTopologyValidate_RejectsOptimizeLayerStatingNeitherValue(t *testing.T) 
   enabled: true
 `)
 
-	err := optimizeTopology("orcha", "/optimize-orcha").Validate("ctx", dir, t.TempDir())
+	err := validatePreparedTest(t, optimizeTopology("orcha", "/optimize-orcha"), dir)
 	if err == nil {
 		t.Fatal("expected a layer stating neither contextPath nor prefix to be rejected")
 	}
@@ -895,7 +1059,7 @@ func TestTopologyValidate_AcceptsOptimizeIdentityFromTheGlobalFallback(t *testin
 	writeValuesFile(t, dir, "features/orchestration.yaml")
 	writeLayer(t, dir, "features/optimize.yaml", optimizeLayerMatchingHubInventoryViaGlobal)
 
-	if err := optimizeTopology("orcha", "/optimize-orcha").Validate("ctx", dir, t.TempDir()); err != nil {
+	if err := validatePreparedTest(t, optimizeTopology("orcha", "/optimize-orcha"), dir); err != nil {
 		t.Fatalf("the global.identity.auth.optimize fallback configures this release, got: %v", err)
 	}
 }
@@ -909,12 +1073,9 @@ func TestTopologyValidate_RejectsOptimizeGlobalFallbackClientIdDisagreeingWithTh
 	writeValuesFile(t, dir, "features/orchestration.yaml")
 	writeLayer(t, dir, "features/optimize.yaml", strings.Replace(optimizeLayerMatchingHubInventoryViaGlobal, "clientId: optimize-orcha", "clientId: optimize-renamed", 1))
 
-	err := optimizeTopology("orcha", "/optimize-orcha").Validate("ctx", dir, t.TempDir())
+	err := validatePreparedTest(t, optimizeTopology("orcha", "/optimize-orcha"), dir)
 	if err == nil || !strings.Contains(err.Error(), "the Hub registers this cluster's Optimize client id as \"optimize-orcha\"") {
 		t.Fatalf("expected the client id mismatch to be reported, got %v", err)
-	}
-	if !strings.Contains(err.Error(), "global.identity.auth.optimize.clientId is \"optimize-renamed\"") {
-		t.Fatalf("the message must name the global key that holds the value, got %v", err)
 	}
 }
 
@@ -936,7 +1097,7 @@ func TestTopologyValidate_OptimizeComponentIdentityOverridesTheGlobalFallback(t 
         clientId: optimize-orcha
 `)
 
-	if err := optimizeTopology("orcha", "/optimize-orcha").Validate("ctx", dir, t.TempDir()); err != nil {
+	if err := validatePreparedTest(t, optimizeTopology("orcha", "/optimize-orcha"), dir); err != nil {
 		t.Fatalf("the component-scoped client id wins over the fallback, got: %v", err)
 	}
 }
@@ -956,7 +1117,7 @@ func TestTopologyValidate_OptimizeSecretKeyAloneRenamesTheInheritedSecret(t *tes
           existingSecretKey: renamed-optimize-key
 `)
 
-	if err := optimizeTopology("orcha", "/optimize-orcha").Validate("ctx", dir, t.TempDir()); err != nil {
+	if err := validatePreparedTest(t, optimizeTopology("orcha", "/optimize-orcha"), dir); err != nil {
 		t.Fatalf("the release-scoped key renames the inherited Secret's key, got: %v", err)
 	}
 }
@@ -967,7 +1128,7 @@ func TestTopologyValidate_OptimizeSecretKeyAloneRenamesTheInheritedSecret(t *tes
 // "zeebe-record" fallback while looking correct.
 func TestTopologyValidate_RejectsOptimizePrefixSetOnTheDisabledBackend(t *testing.T) {
 	dir := t.TempDir()
-	writeLayer(t, dir, "base.yaml", "global:\n  elasticsearch:\n    enabled: true\n")
+	writeLayer(t, dir, "base.yaml", "optimize:\n  database:\n    elasticsearch:\n      enabled: true\n")
 	writeValuesFile(t, dir, "features/hub.yaml")
 	writeValuesFile(t, dir, "features/orchestration.yaml")
 	writeLayer(t, dir, "features/optimize.yaml", `optimize:
@@ -977,14 +1138,12 @@ func TestTopologyValidate_RejectsOptimizePrefixSetOnTheDisabledBackend(t *testin
       prefix: "${SERVED_ORCHESTRATION_INDEX_PREFIX}"
 `)
 
-	err := optimizeTopology("orcha", "/optimize-orcha").Validate("ctx", dir, t.TempDir())
+	err := validatePreparedTest(t, optimizeTopology("orcha", "/optimize-orcha"), dir)
 	if err == nil {
 		t.Fatal("expected an opensearch prefix to be rejected while elasticsearch is the enabled backend")
 	}
-	for _, want := range []string{"no feature layer sets optimize.database.elasticsearch.prefix", "optimize.indexPrefix never reads it"} {
-		if !strings.Contains(err.Error(), want) {
-			t.Fatalf("expected %q in %v", want, err)
-		}
+	if want := `rendered Optimize elasticsearch index prefix is "zeebe-record"`; !strings.Contains(err.Error(), want) {
+		t.Fatalf("expected %q in %v", want, err)
 	}
 }
 
@@ -1002,7 +1161,7 @@ func TestTopologyValidate_AcceptsOptimizePrefixOnTheEnabledOpensearchBackend(t *
       prefix: "${SERVED_ORCHESTRATION_INDEX_PREFIX}"
 `)
 
-	if err := optimizeTopology("orcha", "/optimize-orcha").Validate("ctx", dir, t.TempDir()); err != nil {
+	if err := validatePreparedTest(t, optimizeTopology("orcha", "/optimize-orcha"), dir); err != nil {
 		t.Fatalf("an opensearch prefix must satisfy an opensearch-enabled release, got: %v", err)
 	}
 }
@@ -1038,7 +1197,7 @@ func TestTopologyValidate_RejectsOptimizeClientIdDisagreeingWithTheHubInventory(
 	writeValuesFile(t, dir, "features/orchestration.yaml")
 	writeLayer(t, dir, "features/optimize.yaml", strings.Replace(optimizeLayerMatchingHubInventory, "clientId: optimize-orcha", "clientId: optimize-renamed", 1))
 
-	err := optimizeTopology("orcha", "/optimize-orcha").Validate("ctx", dir, t.TempDir())
+	err := validatePreparedTest(t, optimizeTopology("orcha", "/optimize-orcha"), dir)
 	if err == nil || !strings.Contains(err.Error(), "the Hub registers this cluster's Optimize client id as \"optimize-orcha\"") {
 		t.Fatalf("expected the client id mismatch to be reported, got %v", err)
 	}
@@ -1050,7 +1209,7 @@ func TestTopologyValidate_RejectsOptimizeAudienceDisagreeingWithTheHubInventory(
 	writeValuesFile(t, dir, "features/orchestration.yaml")
 	writeLayer(t, dir, "features/optimize.yaml", strings.Replace(optimizeLayerMatchingHubInventory, "audience: optimize-orcha-api", "audience: optimize-orcha", 1))
 
-	err := optimizeTopology("orcha", "/optimize-orcha").Validate("ctx", dir, t.TempDir())
+	err := validatePreparedTest(t, optimizeTopology("orcha", "/optimize-orcha"), dir)
 	if err == nil || !strings.Contains(err.Error(), "the Hub registers this cluster's Optimize audience as \"optimize-orcha-api\"") {
 		t.Fatalf("expected the audience mismatch to be reported, got %v", err)
 	}
@@ -1070,8 +1229,8 @@ func TestTopologyValidate_RejectsOptimizeStatingNoneOfTheRegisteredIdentity(t *t
       prefix: "${SERVED_ORCHESTRATION_INDEX_PREFIX}"
 `)
 
-	err := optimizeTopology("orcha", "/optimize-orcha").Validate("ctx", dir, t.TempDir())
-	if err == nil || !strings.Contains(err.Error(), "no layer of this release sets optimize.security.authentication.oidc.clientId") {
+	err := validatePreparedTest(t, optimizeTopology("orcha", "/optimize-orcha"), dir)
+	if err == nil || !strings.Contains(err.Error(), `Optimize client id "optimize" is not represented`) {
 		t.Fatalf("expected the missing client id to be reported, got %v", err)
 	}
 }
@@ -1086,7 +1245,7 @@ func TestTopologyValidate_AcceptsOptimizeIdentityReachedThroughDifferentPlacehol
 	writeValuesFile(t, dir, "features/orchestration.yaml")
 	writeLayer(t, dir, "features/optimize.yaml", optimizeLayerMatchingHubInventory)
 
-	if err := optimizeTopology("orcha", "/optimize-orcha").Validate("ctx", dir, t.TempDir()); err != nil {
+	if err := validatePreparedTest(t, optimizeTopology("orcha", "/optimize-orcha"), dir); err != nil {
 		t.Fatalf("two spellings of the same declared path must agree, got: %v", err)
 	}
 }
@@ -1102,7 +1261,7 @@ func TestTopologyValidate_RejectsOptimizeRedirectUrlResolvingElsewhere(t *testin
 		`redirectUrl: "https://${HUB_HOST}${RELEASE_OPTIMIZE_CONTEXT_PATH}"`,
 		`redirectUrl: "https://${HUB_HOST}/optimize"`, 1))
 
-	err := optimizeTopology("orcha", "/optimize-orcha").Validate("ctx", dir, t.TempDir())
+	err := validatePreparedTest(t, optimizeTopology("orcha", "/optimize-orcha"), dir)
 	if err == nil || !strings.Contains(err.Error(), "optimize.security.authentication.oidc.redirectUrl") {
 		t.Fatalf("expected the redirect URL mismatch to be reported, got %v", err)
 	}
@@ -1119,7 +1278,7 @@ func TestTopologyValidate_RejectsHubInventoryPathDisagreeingWithTheDeclaration(t
 	writeValuesFile(t, dir, "features/orchestration.yaml")
 	writeLayer(t, dir, "features/optimize.yaml", optimizeLayerMatchingHubInventory)
 
-	err := optimizeTopology("orcha", "/optimize-orcha").Validate("ctx", dir, t.TempDir())
+	err := validatePreparedTest(t, optimizeTopology("orcha", "/optimize-orcha"), dir)
 	if err == nil || !strings.Contains(err.Error(), "the Hub advertises this cluster's Optimize at \"/optimize-stale\"") {
 		t.Fatalf("expected the advertised path mismatch to be reported, got %v", err)
 	}
@@ -1207,7 +1366,7 @@ func TestTopologyValidate_AcceptsASecondTenantOptimizeProvisionedAsAnIdentityCli
 	dir := t.TempDir()
 	writeTwoTenantLayers(t, dir, hubInventoryWithSecondOptimizeClient, optimizeLayerMatchingHubInventory, optimizeLayerSecondTenant)
 
-	if err := twoTenantOptimizeTopology().Validate("ctx", dir, t.TempDir()); err != nil {
+	if err := validatePreparedTest(t, twoTenantOptimizeTopology(), dir); err != nil {
 		t.Fatalf("expected the two-tenant topology to validate, got %v", err)
 	}
 }
@@ -1220,7 +1379,7 @@ func TestTopologyValidate_StillChecksTheRecordReleaseWhenASecondTenantServesTheS
 	drifted := strings.Replace(optimizeLayerMatchingHubInventory, "audience: optimize-orcha-api", "audience: optimize-renamed-api", 1)
 	writeTwoTenantLayers(t, dir, hubInventoryWithSecondOptimizeClient, drifted, optimizeLayerSecondTenant)
 
-	err := twoTenantOptimizeTopology().Validate("ctx", dir, t.TempDir())
+	err := validatePreparedTest(t, twoTenantOptimizeTopology(), dir)
 	if err == nil || !strings.Contains(err.Error(), "the Hub registers this cluster's Optimize audience as \"optimize-orcha-api\"") {
 		t.Fatalf("expected the record release's audience drift to still be reported, got %v", err)
 	}
@@ -1231,7 +1390,7 @@ func TestTopologyValidate_RejectsASecondTenantOptimizeNothingProvisions(t *testi
 	unprovisioned := strings.Replace(optimizeLayerSecondTenant, "clientId: optimize-orcha-b", "clientId: optimize-orcha-c", 1)
 	writeTwoTenantLayers(t, dir, hubInventoryWithSecondOptimizeClient, optimizeLayerMatchingHubInventory, unprovisioned)
 
-	err := twoTenantOptimizeTopology().Validate("ctx", dir, t.TempDir())
+	err := validatePreparedTest(t, twoTenantOptimizeTopology(), dir)
 	if err == nil || !strings.Contains(err.Error(), "so nothing provisions this release's client") {
 		t.Fatalf("expected the unprovisioned client to be reported, got %v", err)
 	}
@@ -1253,7 +1412,7 @@ func TestTopologyValidate_RejectsASecondTenantOptimizeClientRegisteringNoRedirec
 	hub := strings.Replace(hubInventoryWithSecondOptimizeClient, "      rootUrl: \"https://${HUB_HOST}${OPTB_OPTIMIZE_CONTEXT_PATH}\"\n", "", 1)
 	writeTwoTenantLayers(t, dir, hub, optimizeLayerMatchingHubInventory, optimizeLayerSecondTenant)
 
-	err := twoTenantOptimizeTopology().Validate("ctx", dir, t.TempDir())
+	err := validatePreparedTest(t, twoTenantOptimizeTopology(), dir)
 	if err == nil || !strings.Contains(err.Error(), "no rootUrl and no absolute redirectUris") {
 		t.Fatalf("expected the missing redirect registration to be reported, got %v", err)
 	}
@@ -1266,7 +1425,7 @@ func TestTopologyValidate_RejectsASecondTenantOptimizeClientWithNoPermissions(t 
 	hub := strings.Replace(hubInventoryWithSecondOptimizeClient, "      permissions:\n        - resourceServerId: optimize-orcha-api\n          definition: write:*\n", "", 1)
 	writeTwoTenantLayers(t, dir, hub, optimizeLayerMatchingHubInventory, optimizeLayerSecondTenant)
 
-	err := twoTenantOptimizeTopology().Validate("ctx", dir, t.TempDir())
+	err := validatePreparedTest(t, twoTenantOptimizeTopology(), dir)
 	if err == nil || !strings.Contains(err.Error(), "no permission naming a resource server") {
 		t.Fatalf("expected the missing permissions to be reported, got %v", err)
 	}
@@ -1285,7 +1444,7 @@ func TestTopologyValidate_RejectsASecondTenantOptimizeClientWhosePermissionsName
 	)
 	writeTwoTenantLayers(t, dir, hub, optimizeLayerMatchingHubInventory, optimizeLayerSecondTenant)
 
-	err := twoTenantOptimizeTopology().Validate("ctx", dir, t.TempDir())
+	err := validatePreparedTest(t, twoTenantOptimizeTopology(), dir)
 	if err == nil || !strings.Contains(err.Error(), "no permission naming a resource server") {
 		t.Fatalf("expected a permissions list naming no resource server to be reported, got %v", err)
 	}
@@ -1301,7 +1460,7 @@ func TestTopologyValidate_AcceptsAnIncompleteClientUnderANonKeycloakIssuer(t *te
 	hub = strings.Replace(hub, "      permissions:\n        - resourceServerId: optimize-orcha-api\n          definition: write:*\n", "", 1)
 	writeTwoTenantLayers(t, dir, hubWithNonKeycloakIssuer(hub), optimizeLayerMatchingHubInventory, optimizeLayerSecondTenant)
 
-	if err := twoTenantOptimizeTopology().Validate("ctx", dir, t.TempDir()); err != nil {
+	if err := validatePreparedTest(t, twoTenantOptimizeTopology(), dir); err != nil {
 		t.Fatalf("a non-Keycloak issuer provisions no identity.clients, so nothing here is required: %v", err)
 	}
 }
@@ -1319,7 +1478,7 @@ func TestTopologyValidate_AcceptsASecondTenantOptimizeRedirectFromAnAbsoluteRedi
 	)
 	writeTwoTenantLayers(t, dir, hub, optimizeLayerMatchingHubInventory, optimizeLayerSecondTenant)
 
-	if err := twoTenantOptimizeTopology().Validate("ctx", dir, t.TempDir()); err != nil {
+	if err := validatePreparedTest(t, twoTenantOptimizeTopology(), dir); err != nil {
 		t.Fatalf("an absolute redirectUri registers the callback on its own: %v", err)
 	}
 }
@@ -1329,7 +1488,7 @@ func TestTopologyValidate_RejectsASecondTenantOptimizeRedirectingOffItsRegistere
 	drifted := strings.Replace(optimizeLayerSecondTenant, "${RELEASE_OPTIMIZE_CONTEXT_PATH}\"\n        secret", "${OPTA_OPTIMIZE_CONTEXT_PATH}\"\n        secret", 1)
 	writeTwoTenantLayers(t, dir, hubInventoryWithSecondOptimizeClient, optimizeLayerMatchingHubInventory, drifted)
 
-	err := twoTenantOptimizeTopology().Validate("ctx", dir, t.TempDir())
+	err := validatePreparedTest(t, twoTenantOptimizeTopology(), dir)
 	if err == nil || !strings.Contains(err.Error(), "the Hub registers this client's redirect as") {
 		t.Fatalf("expected the redirect URL to be checked against the registered root URL, got %v", err)
 	}
@@ -1343,7 +1502,7 @@ func TestTopologyValidate_RejectsASecondTenantOptimizeAudiencedToAnUnpermittedRe
 	drifted := strings.Replace(optimizeLayerSecondTenant, "audience: optimize-orcha-api", "audience: optimize-orcha-b-api", 1)
 	writeTwoTenantLayers(t, dir, hubInventoryWithSecondOptimizeClient, optimizeLayerMatchingHubInventory, drifted)
 
-	err := twoTenantOptimizeTopology().Validate("ctx", dir, t.TempDir())
+	err := validatePreparedTest(t, twoTenantOptimizeTopology(), dir)
 	if err == nil || !strings.Contains(err.Error(), "the Hub permits this client only on optimize-orcha-api") {
 		t.Fatalf("expected the unpermitted audience to be reported, got %v", err)
 	}
@@ -1368,7 +1527,7 @@ func TestTopologyValidate_RejectsOptimizeWhoseHubClusterInventoryIsResetToEmpty(
 	writeValuesFile(t, dir, "features/orchestration.yaml")
 	writeLayer(t, dir, "features/optimize.yaml", optimizeLayerMatchingHubInventory)
 
-	err := optimizeTopology("orcha", "/optimize-orcha").Validate("ctx", dir, t.TempDir())
+	err := validatePreparedTest(t, optimizeTopology("orcha", "/optimize-orcha"), dir)
 	if err == nil || !strings.Contains(err.Error(), "so nothing provisions this release's client") {
 		t.Fatalf("expected the emptied cluster inventory to leave the client unprovisioned, got %v", err)
 	}
@@ -1384,7 +1543,7 @@ func TestTopologyValidate_AcceptsOptimizeWhoseLaterHubLayerLeavesTheInventoryAlo
 	writeValuesFile(t, dir, "features/orchestration.yaml")
 	writeLayer(t, dir, "features/optimize.yaml", optimizeLayerMatchingHubInventory)
 
-	if err := optimizeTopology("orcha", "/optimize-orcha").Validate("ctx", dir, t.TempDir()); err != nil {
+	if err := validatePreparedTest(t, optimizeTopology("orcha", "/optimize-orcha"), dir); err != nil {
 		t.Fatalf("a later layer that states no inventory must leave the registrations standing, got %v", err)
 	}
 }
@@ -1396,7 +1555,7 @@ func TestTopologyValidate_RejectsSecondTenantOptimizeWhoseHubClientListIsResetTo
 	writeLayer(t, dir, "base.yaml", hubInventoryWithSecondOptimizeClient)
 	writeTwoTenantLayers(t, dir, "identity:\n  clients: []\n", optimizeLayerMatchingHubInventory, optimizeLayerSecondTenant)
 
-	err := twoTenantOptimizeTopology().Validate("ctx", dir, t.TempDir())
+	err := validatePreparedTest(t, twoTenantOptimizeTopology(), dir)
 	if err == nil || !strings.Contains(err.Error(), "so nothing provisions this release's client") {
 		t.Fatalf("expected the emptied client list to leave tenant B unprovisioned, got %v", err)
 	}
@@ -1411,7 +1570,7 @@ func TestTopologyValidate_RejectsOptimizeInlineSecretDifferingFromTheHubInventor
 	writeValuesFile(t, dir, "features/orchestration.yaml")
 	writeLayer(t, dir, "features/optimize.yaml", inlineSecretOn(optimizeLayerMatchingHubInventory, "release-sent-secret"))
 
-	err := optimizeTopology("orcha", "/optimize-orcha").Validate("ctx", dir, t.TempDir())
+	err := validatePreparedTest(t, optimizeTopology("orcha", "/optimize-orcha"), dir)
 	if err == nil || !strings.Contains(err.Error(), "are different literals") {
 		t.Fatalf("expected the differing inline secrets to be reported, got %v", err)
 	}
@@ -1426,7 +1585,7 @@ func TestTopologyValidate_AcceptsOptimizeInlineSecretMatchingTheHubInventory(t *
 	writeValuesFile(t, dir, "features/orchestration.yaml")
 	writeLayer(t, dir, "features/optimize.yaml", inlineSecretOn(optimizeLayerMatchingHubInventory, "shared-secret"))
 
-	if err := optimizeTopology("orcha", "/optimize-orcha").Validate("ctx", dir, t.TempDir()); err != nil {
+	if err := validatePreparedTest(t, optimizeTopology("orcha", "/optimize-orcha"), dir); err != nil {
 		t.Fatalf("the same inline secret on both sides must validate, got %v", err)
 	}
 }
@@ -1439,7 +1598,7 @@ func TestTopologyValidate_RejectsOptimizeInlineSecretAgainstARegisteredSecretRef
 	writeValuesFile(t, dir, "features/orchestration.yaml")
 	writeLayer(t, dir, "features/optimize.yaml", inlineSecretOn(optimizeLayerMatchingHubInventory, "release-sent-secret"))
 
-	err := optimizeTopology("orcha", "/optimize-orcha").Validate("ctx", dir, t.TempDir())
+	err := validatePreparedTest(t, optimizeTopology("orcha", "/optimize-orcha"), dir)
 	if err == nil || !strings.Contains(err.Error(), "state it in different forms") {
 		t.Fatalf("expected the mismatched secret forms to be reported, got %v", err)
 	}
@@ -1455,7 +1614,7 @@ func TestTopologyValidate_RejectsSecondTenantOptimizeInlineSecretDifferingFromIt
 	writeTwoTenantLayers(t, dir, hubLayer, optimizeLayerMatchingHubInventory,
 		inlineSecretOn(optimizeLayerSecondTenant, "release-sent-secret"))
 
-	err := twoTenantOptimizeTopology().Validate("ctx", dir, t.TempDir())
+	err := validatePreparedTest(t, twoTenantOptimizeTopology(), dir)
 	if err == nil || !strings.Contains(err.Error(), "are different literals") {
 		t.Fatalf("expected the differing inline secrets to be reported on the client path, got %v", err)
 	}

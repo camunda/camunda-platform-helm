@@ -159,7 +159,7 @@ runs:
 
     - name: Install if required common software tooling
       if: steps.check-tools.outputs.skip-install != 'true'
-      uses: camunda/infra-global-github-actions/common-tooling@43320645ff9e9e50f390cb40dacb4f07ff204f1c # main
+      uses: camunda/infra-global-github-actions/common-tooling@2fa2e5ecfa1d82a6d2a93106bd43889f68500f4f # main
       with:
         overwrite: "false"
         build-essential-enabled: "false"

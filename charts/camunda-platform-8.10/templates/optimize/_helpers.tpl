@@ -102,9 +102,15 @@ every existing values file rendering unchanged.
   {{- $oidc.type | default (include "camundaPlatform.authIssuerType" .) -}}
 {{- end -}}
 
+{{- define "optimize.authIssuer" -}}
+  {{- $issuer := dig "security" "authentication" "oidc" "issuer" "" .Values.optimize -}}
+  {{- if $issuer -}}
+    {{- tpl $issuer . -}}
+  {{- end -}}
+{{- end -}}
+
 {{- define "optimize.effectiveAuthIssuer" -}}
-  {{- $oidc := dig "security" "authentication" "oidc" dict .Values.optimize -}}
-  {{- $oidc.issuer | default (include "camundaPlatform.authIssuerUrlWithFallback" .) -}}
+  {{- include "optimize.authIssuer" . | default (include "camundaPlatform.authIssuerUrlWithFallback" .) -}}
 {{- end -}}
 
 {{- define "optimize.effectiveAuthIssuerBackendUrl" -}}
@@ -146,9 +152,9 @@ was configured away from. Each one keeps the global helper's shape and falls bac
 that overrides nothing renders exactly as before.
 */}}
 {{- define "optimize.effectiveAuthIssuerUrl" -}}
-  {{- $oidc := dig "security" "authentication" "oidc" dict .Values.optimize -}}
-  {{- if $oidc.issuer -}}
-    {{- tpl $oidc.issuer . -}}
+  {{- $issuer := include "optimize.authIssuer" . -}}
+  {{- if $issuer -}}
+    {{- $issuer -}}
   {{- else -}}
     {{- include "camundaPlatform.authIssuerUrl" . -}}
   {{- end -}}

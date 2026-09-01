@@ -52,14 +52,6 @@ Chart 15.x (Camunda 8.10) requires Helm v4 or later.
 {{- if and (eq $topologyMode "orchestration") (ne (include "camundaPlatform.orchestrationEnabled" .) "true") }}
   {{- fail "[camunda][error] global.topology.mode=orchestration requires orchestration.enabled=true." }}
 {{- end }}
-{{- if and (eq (include "camundaPlatform.orchestrationEnabled" .) "true") (eq (include "orchestration.physicalTenantsDeclared" .) "true") }}
-  {{- if ne (include "orchestration.authMethod" .) "oidc" }}
-    {{- fail "[camunda][error] camunda.physical-tenants in orchestration.extraConfiguration requires OIDC authentication; each tenant is assigned an OIDC provider." }}
-  {{- end }}
-  {{- if not (include "orchestration.authIssuerUrl" .) }}
-    {{- fail "[camunda][error] camunda.physical-tenants in orchestration.extraConfiguration requires global.identity.auth.issuer (or orchestration.security.authentication.oidc.issuer) to be set to the exact \"iss\" claim your identity provider mints. The Orchestration Cluster rejects a provider without issuerUri once tenants are configured, and it then validates \"iss\" on every token. This value cannot be derived: global.identity.auth.publicIssuerUrl and issuerBackendUrl are network routes, and a Keycloak started without a pinned hostname mints a different \"iss\" per route, so in-cluster callers and browsers would present different issuers. Pin your identity provider to one issuer (for Keycloak, KC_HOSTNAME) and set that value here." }}
-  {{- end }}
-{{- end }}
 {{- if eq $topologyMode "optimize" }}
   {{- if not .Values.optimize.enabled }}
     {{- fail "[camunda][error] global.topology.mode=optimize requires optimize.enabled=true." }}
