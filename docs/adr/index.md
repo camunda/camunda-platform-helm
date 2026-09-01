@@ -98,3 +98,4 @@
 | 94 | [Remove bundled Bitnami subcharts from the 8.10 chart and migrate CI to companion charts](0094-remove-bundled-bitnami-subcharts-from-the-8-10-chart.md) |
 | 95 | [Adopt release roles for multi-cluster deployment topology](0095-adopt-release-roles-for-multi-cluster-deployment-topology.md) |
 | 96 | [Require Helm v4 baseline for chart 15.x (8.10) and later, and restrict version-gated Helm built-ins](0096-require-helm-v4-baseline-for-chart-15x-and-restrict-version-gated-helm-builtins.md) |
+| 97 | [Narrow document-store configuration to its verified consumers and separate it from ambient cloud credentials](0097-narrow-document-store-configuration-to-verified-consumers.md) |

@@ -19,10 +19,16 @@ spec:
       targetPort: http
       protocol: TCP
       name: http
+      {{- with include "camundaPlatform.appProtocol" (dict "portName" "http" "knownPorts" (list "http" "management") "appProtocols" .Values.console.service.appProtocols) }}
+      appProtocol: {{ . | quote }}
+      {{- end }}
     - port: {{ .Values.console.service.managementPort }}
       name: management
       targetPort: management
       protocol: TCP
+      {{- with include "camundaPlatform.appProtocol" (dict "portName" "management" "knownPorts" (list "http" "management") "appProtocols" .Values.console.service.appProtocols) }}
+      appProtocol: {{ . | quote }}
+      {{- end }}
   selector:
     {{- include "console.matchLabels" . | nindent 4 }}
 {{- end }}

@@ -17,6 +17,7 @@ package deploy
 import (
 	"fmt"
 	"hash/fnv"
+	"os"
 	"regexp"
 	"strings"
 
@@ -80,6 +81,13 @@ type PreparedScenario struct {
 	// clients secret) so that they can flow from prepareScenarioValues to
 	// executeDeployment without going through the process environment.
 	Secrets map[string]string
+}
+
+func (p *PreparedScenario) Cleanup() {
+	if p != nil && p.TempDir != "" {
+		_ = os.RemoveAll(p.TempDir)
+		p.TempDir = ""
+	}
 }
 
 // generateScenarioContext creates a scenario-specific deployment context.
