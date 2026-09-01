@@ -225,6 +225,94 @@ func TestPlanBareScriptsTokenTriggersAll(t *testing.T) {
 	}
 }
 
+func TestPlanChartDocOnlyEmptyMatrix(t *testing.T) {
+	result, err := Plan(findRepoRoot(t), PlanOptions{
+		ActiveVersions: planActiveVersions,
+		ManualTrigger:  "none",
+		ChangedFiles:   "charts/camunda-platform-8.10/README.md charts/camunda-platform-8.10/RELEASE-NOTES.md",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	matrixJSON, err := result.MatrixJSON()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if matrixJSON != `{"include":[]}` {
+		t.Errorf("matrix = %s, want empty include", matrixJSON)
+	}
+}
+
+func TestPlanChartDocWithTemplateChangeBuildsVersion(t *testing.T) {
+	result, err := Plan(findRepoRoot(t), PlanOptions{
+		ActiveVersions: planActiveVersions,
+		ManualTrigger:  "none",
+		ChangedFiles:   "charts/camunda-platform-8.10/README.md charts/camunda-platform-8.10/templates/common/_helpers.tpl",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := planVersionsIn(result.Include); len(got) != 1 || got[0] != "8.10" {
+		t.Errorf("versions = %v, want [8.10]", got)
+	}
+}
+
+func TestPlanChartNotesTxtIsNotDoc(t *testing.T) {
+	result, err := Plan(findRepoRoot(t), PlanOptions{
+		ActiveVersions: planActiveVersions,
+		ManualTrigger:  "none",
+		ChangedFiles:   "charts/camunda-platform-8.10/templates/NOTES.txt",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := planVersionsIn(result.Include); len(got) != 1 || got[0] != "8.10" {
+		t.Errorf("versions = %v, want [8.10]", got)
+	}
+}
+
+func TestPlanToolVersionsTriggersAll(t *testing.T) {
+	result, err := Plan(findRepoRoot(t), PlanOptions{
+		ActiveVersions: planActiveVersions,
+		ManualTrigger:  "none",
+		ChangedFiles:   ".tool-versions",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := planVersionsIn(result.Include); len(got) != len(planActiveVersions) {
+		t.Errorf("versions = %v, want all of %v", got, planActiveVersions)
+	}
+}
+
+func TestPlanSharedE2EConfigTriggersAll(t *testing.T) {
+	result, err := Plan(findRepoRoot(t), PlanOptions{
+		ActiveVersions: planActiveVersions,
+		ManualTrigger:  "none",
+		ChangedFiles:   "test/e2e/playwright.base.config.ts",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := planVersionsIn(result.Include); len(got) != len(planActiveVersions) {
+		t.Errorf("versions = %v, want all of %v", got, planActiveVersions)
+	}
+}
+
+func TestPlanChartScopedE2EPathOnlyTriggersChart(t *testing.T) {
+	result, err := Plan(findRepoRoot(t), PlanOptions{
+		ActiveVersions: planActiveVersions,
+		ManualTrigger:  "none",
+		ChangedFiles:   "charts/camunda-platform-8.10/test/e2e/foo.spec.ts",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := planVersionsIn(result.Include); len(got) != 1 || got[0] != "8.10" {
+		t.Errorf("versions = %v, want [8.10]", got)
+	}
+}
+
 func TestPlanUnrelatedPathEmptyMatrix(t *testing.T) {
 	result, err := Plan(findRepoRoot(t), PlanOptions{
 		ActiveVersions: planActiveVersions,
