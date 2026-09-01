@@ -6,6 +6,10 @@ name: Test - Camunda Hub GitOps Phases
       camunda-helm-git-ref:
         required: true
         type: string
+      camunda-helm-git-ref-name:
+        required: false
+        type: string
+        default: ""
 
 permissions:
   contents: read
@@ -62,7 +66,8 @@ jobs:
         run: |
           go run . \
             --controller "${{ matrix.controller }}" \
-            --revision "${{ inputs.camunda-helm-git-ref }}"
+            --revision "${{ inputs.camunda-helm-git-ref }}" \
+            --revision-ref-name "${{ inputs.camunda-helm-git-ref-name }}"
 
       - name: Delete KIND cluster
         if: always()

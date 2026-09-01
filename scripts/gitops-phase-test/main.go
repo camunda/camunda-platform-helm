@@ -29,11 +29,12 @@ import (
 const release = "gitops-phase"
 
 type config struct {
-	controller string
-	repo       string
-	revision   string
-	chartPath  string
-	namespace  string
+	controller      string
+	repo            string
+	revision        string
+	revisionRefName string
+	chartPath       string
+	namespace       string
 }
 
 type deployment struct {
@@ -77,6 +78,7 @@ func main() {
 	flag.StringVar(&cfg.controller, "controller", "helm", "helm, argocd, or flux")
 	flag.StringVar(&cfg.repo, "repo", "https://github.com/camunda/camunda-platform-helm.git", "Git repository URL")
 	flag.StringVar(&cfg.revision, "revision", "main", "Git revision")
+	flag.StringVar(&cfg.revisionRefName, "revision-ref-name", "", "fully qualified Git ref containing the revision")
 	flag.StringVar(&cfg.chartPath, "chart-path", "charts/camunda-platform-8.10", "chart path")
 	flag.StringVar(&cfg.namespace, "namespace", "gitops-phase", "target namespace")
 	flag.Parse()
@@ -126,7 +128,7 @@ func (c config) apply(phase string) error {
 		source := map[string]any{
 			"apiVersion": "source.toolkit.fluxcd.io/v1", "kind": "GitRepository",
 			"metadata": map[string]any{"name": release, "namespace": "flux-system"},
-			"spec":     map[string]any{"interval": "1m", "url": c.repo, "ref": map[string]any{"commit": c.revision}},
+			"spec":     map[string]any{"interval": "1m", "url": c.repo, "ref": fluxReference(c.revision, c.revisionRefName)},
 		}
 		if err := applyJSON(source); err != nil {
 			return err
@@ -145,6 +147,13 @@ func (c config) apply(phase string) error {
 	default:
 		return fmt.Errorf("unsupported controller %q", c.controller)
 	}
+}
+
+func fluxReference(revision, refName string) map[string]any {
+	if refName != "" {
+		return map[string]any{"name": refName}
+	}
+	return map[string]any{"commit": revision}
 }
 
 func values(phase string) map[string]any {
