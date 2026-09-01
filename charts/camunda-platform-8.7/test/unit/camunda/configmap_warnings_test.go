@@ -112,6 +112,16 @@ func (s *ConfigMapWarningsTemplateTest) TestBundledKeycloakCveWarning() {
 			},
 		},
 		{
+			Name: "TestFixedVersionWithBitnamiSuffixDoesNotWarn",
+			Values: map[string]string{
+				"identityKeycloak.enabled":   "true",
+				"identityKeycloak.image.tag": "26.7.2-debian-12-r0",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NotContains(output, "CVE-2026-18963")
+			},
+		},
+		{
 			Name: "TestFixedVersionDoesNotWarn",
 			Values: map[string]string{
 				"identityKeycloak.enabled":   "true",
