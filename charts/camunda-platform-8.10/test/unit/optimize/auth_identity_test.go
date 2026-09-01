@@ -723,6 +723,32 @@ func (s *AuthIdentityTemplateTest) TestComponentJwksUrlServesANonKeycloakType() 
 	s.Require().Contains(out, `jwtSetUri: "https://issuer.example.com/certs"`)
 }
 
+func (s *AuthIdentityTemplateTest) TestInvalidComponentIssuerTypeIsRejected() {
+	values := map[string]string{
+		"global.identity.auth.enabled":                  "true",
+		"global.identity.auth.type":                     "GENERIC",
+		"optimize.enabled":                              "true",
+		"orchestration.data.secondaryStorage.type":      "elasticsearch",
+		"global.identity.service.url":                   "http://identity.example.com/identity",
+		"optimize.security.authentication.oidc.type":    "unsupported",
+		"optimize.security.authentication.oidc.issuer":  "https://issuer.example.com",
+		"optimize.security.authentication.oidc.jwksUrl": "https://issuer.example.com/certs",
+	}
+	_, err := helm.RenderTemplateE(s.T(), &helm.Options{SetValues: values}, s.chartPath, s.release,
+		[]string{"templates/optimize/configmap.yaml"})
+
+	s.Require().ErrorContains(err, "Optimize OIDC issuer type must be one of")
+}
+
+func (s *AuthIdentityTemplateTest) TestLowercaseComponentIssuerTypeIsAccepted() {
+	out := s.render(map[string]string{
+		"optimize.security.authentication.oidc.type": "keycloak",
+	}, []string{"templates/optimize/configmap.yaml"})
+
+	s.Require().Contains(out,
+		`jwtSetUri: "http://keycloak.example.com/realms/camunda/protocol/openid-connect/certs"`)
+}
+
 // api.jwtSetUri is one config key an explicit optimize.env entry overrides in the container, so
 // naming it there answers the JWKS requirement the same way the values key does.
 func (s *AuthIdentityTemplateTest) TestOptimizeEnvMaySupplyTheJwksUri() {
@@ -1015,7 +1041,7 @@ func (s *AuthIdentityTemplateTest) TestEnvFromProvidesWithoutASourceIsRejected()
 	}
 }
 
-// An existingSecret without a key drops CAMUNDA_IDENTITY_CLIENT_SECRET from the Deployment entirely,
+// An existingSecret without a key drops VALUES_OPTIMIZE_CLIENT_SECRET from the Deployment entirely,
 // which is also why a release may answer for it: with nothing of the chart's emitted there, an
 // optimize.env entry naming the key itself is the only client secret the container sees, and such a
 // release authenticates today. Failing it would turn a working deployment into a failed upgrade over
@@ -1029,7 +1055,7 @@ func (s *AuthIdentityTemplateTest) TestOptimizeEnvMaySupplyTheClientSecret() {
 		"orchestration.data.secondaryStorage.type":                    "elasticsearch",
 		"global.identity.service.url":                                 "http://identity.example.com/identity",
 		"optimize.security.authentication.oidc.secret.existingSecret": "tenant-oidc",
-		"optimize.env[0].name":                                        "CAMUNDA_IDENTITY_CLIENT_SECRET",
+		"optimize.env[0].name":                                        "VALUES_OPTIMIZE_CLIENT_SECRET",
 		"optimize.env[0].valueFrom.secretKeyRef.name":                 "tenant-oidc",
 		"optimize.env[0].valueFrom.secretKeyRef.key":                  "optimize-secret",
 	}
@@ -1051,7 +1077,7 @@ func (s *AuthIdentityTemplateTest) TestDeclaredEnvFromMaySupplyTheClientSecret()
 		"global.identity.service.url":                                 "http://identity.example.com/identity",
 		"optimize.security.authentication.oidc.secret.existingSecret": "tenant-oidc",
 		"optimize.envFrom[0].secretRef.name":                          "tenant-oidc-env",
-		"optimize.security.authentication.oidc.envFromProvides[0]":    "CAMUNDA_IDENTITY_CLIENT_SECRET",
+		"optimize.security.authentication.oidc.envFromProvides[0]":    "VALUES_OPTIMIZE_CLIENT_SECRET",
 	}
 	out, err := helm.RenderTemplateE(s.T(), &helm.Options{SetValues: values}, s.chartPath, s.release,
 		[]string{"templates/optimize/deployment.yaml"})
@@ -1064,6 +1090,25 @@ func (s *AuthIdentityTemplateTest) TestDeclaredEnvFromMaySupplyTheClientSecret()
 		[]string{"templates/optimize/deployment.yaml"})
 	s.Require().Error(err)
 	s.Require().Contains(err.Error(), "requires an existingSecretKey alongside its existingSecret")
+}
+
+func (s *AuthIdentityTemplateTest) TestLegacyIdentityClientSecretDoesNotExemptMissingOptimizeSecretKey() {
+	values := map[string]string{
+		"global.identity.auth.enabled":                                "true",
+		"global.identity.auth.issuer":                                 "https://issuer.example.com",
+		"optimize.security.authentication.oidc.jwksUrl":               "https://issuer.example.com/certs",
+		"optimize.enabled":                                            "true",
+		"orchestration.data.secondaryStorage.type":                    "elasticsearch",
+		"global.identity.service.url":                                 "http://identity.example.com/identity",
+		"optimize.security.authentication.oidc.secret.existingSecret": "tenant-oidc",
+		"optimize.env[0].name":                                        "CAMUNDA_IDENTITY_CLIENT_SECRET",
+		"optimize.env[0].valueFrom.secretKeyRef.name":                 "tenant-oidc",
+		"optimize.env[0].valueFrom.secretKeyRef.key":                  "legacy-secret",
+	}
+	_, err := helm.RenderTemplateE(s.T(), &helm.Options{SetValues: values}, s.chartPath, s.release,
+		[]string{"templates/optimize/deployment.yaml"})
+
+	s.Require().ErrorContains(err, "requires an existingSecretKey alongside its existingSecret")
 }
 
 // KEYCLOAK derives the JWKS endpoint only while there is an issuer backend URL to append it to. A
