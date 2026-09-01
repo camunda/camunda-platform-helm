@@ -1,0 +1,31 @@
+camundaHub:
+  enabled: true
+  restapi:
+    mail:
+      fromAddress: example@example.com
+    podLabels:
+      scheduling.example.com/affinity-group: camunda-hub-restapi
+    affinity:
+      podAntiAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  scheduling.example.com/affinity-group: camunda-hub-restapi
+              topologyKey: topology.kubernetes.io/zone
+  websockets:
+    podLabels:
+      scheduling.example.com/affinity-group: camunda-hub-websockets
+    affinity:
+      podAntiAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  scheduling.example.com/affinity-group: camunda-hub-websockets
+              topologyKey: topology.kubernetes.io/zone
+
+identity:
+  enabled: true

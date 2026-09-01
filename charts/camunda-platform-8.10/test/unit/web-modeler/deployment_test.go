@@ -162,6 +162,26 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				s.Require().Equal("bar", deployment.Spec.Template.Labels["foo"])
 			},
 		}, {
+			Name:        "TestContainerSetPodAntiAffinityWithStablePodLabel",
+			ValuesFiles: []string{filepath.Join(s.chartPath, "test/unit/web-modeler/testdata/values-pod-anti-affinity.yaml")},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				const labelKey = "scheduling.example.com/affinity-group"
+				podLabel := deployment.Spec.Template.Labels[labelKey]
+				s.Require().Equal("camunda-hub-"+s.component, podLabel)
+
+				podAntiAffinity := deployment.Spec.Template.Spec.Affinity.PodAntiAffinity
+				s.Require().NotNil(podAntiAffinity)
+				s.Require().Len(podAntiAffinity.PreferredDuringSchedulingIgnoredDuringExecution, 1)
+
+				term := podAntiAffinity.PreferredDuringSchedulingIgnoredDuringExecution[0]
+				s.Require().Equal(int32(100), term.Weight)
+				s.Require().Equal("topology.kubernetes.io/zone", term.PodAffinityTerm.TopologyKey)
+				s.Require().Equal(podLabel, term.PodAffinityTerm.LabelSelector.MatchLabels[labelKey])
+			},
+		}, {
 			Name: "TestContainerSetPodAnnotations",
 			Values: map[string]string{
 				"identity.enabled":                                  "true",
