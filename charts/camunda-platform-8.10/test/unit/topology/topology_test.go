@@ -16,6 +16,7 @@ package topology
 
 import (
 	_ "camunda-platform/test/unit/utils"
+	"encoding/json"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -25,6 +26,63 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 )
+
+func TestTopologyContractIsHiddenAndRedactsInlineSecrets(t *testing.T) {
+	options := &helm.Options{SetValues: map[string]string{
+		"orchestration.data.secondaryStorage.type":                    "elasticsearch",
+		"optimize.security.authentication.oidc.secret.inlineSecret": "must-not-render",
+	}}
+	normal := helm.RenderTemplate(t, options, chartPath(t), "camunda", nil)
+	require.NotContains(t, normal, "topology-contract")
+
+	contract := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{"templates/common/topology-contract.yaml"}, "--api-versions", "camunda.io/topology-contract")
+	require.Contains(t, contract, "topology-contract")
+	require.NotContains(t, contract, "must-not-render")
+}
+
+func TestTopologyContractContainsEffectiveOptimizeAndHubValues(t *testing.T) {
+	options := &helm.Options{
+		ValuesFiles: []string{filepath.Join("testdata", "hub-keycloak.yaml")},
+		SetValues: map[string]string{
+			"orchestration.data.secondaryStorage.type":                                  "elasticsearch",
+			"optimize.enabled":                                                          "true",
+			"optimize.contextPath":                                                      "/analytics",
+			"optimize.database.elasticsearch.enabled":                                   "true",
+			"optimize.database.elasticsearch.prefix":                                    "records-east",
+			"global.topology.clusters[0].components.optimize.enabled":                    "true",
+			"global.topology.clusters[0].components.optimize.clientId":                   "optimize-east",
+			"global.topology.clusters[0].components.optimize.audience":                   "optimize-east-api",
+			"global.topology.clusters[0].components.optimize.redirectUrl":                "https://example.test/analytics",
+			"global.topology.clusters[0].components.optimize.secret.existingSecret":      "oidc",
+			"global.topology.clusters[0].components.optimize.secret.existingSecretKey":   "client-secret",
+			"optimize.security.authentication.oidc.clientId":                             "optimize-east",
+			"optimize.security.authentication.oidc.audience":                             "optimize-east-api",
+			"optimize.security.authentication.oidc.redirectUrl":                          "https://example.test/analytics",
+			"optimize.security.authentication.oidc.secret.existingSecret":                "oidc",
+			"optimize.security.authentication.oidc.secret.existingSecretKey":             "client-secret",
+		},
+	}
+	output := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{"templates/common/topology-contract.yaml"}, "--api-versions", "camunda.io/topology-contract")
+	var document struct{ Data map[string]string `yaml:"data"` }
+	helm.UnmarshalK8SYaml(t, output, &document)
+	var contract struct {
+		Optimize struct {
+			ContextPath string `json:"contextPath"`
+			Backend     string `json:"backend"`
+			IndexPrefix string `json:"indexPrefix"`
+		} `json:"optimize"`
+		Hub struct {
+			AuthType string            `json:"authType"`
+			Clusters []json.RawMessage `json:"clusters"`
+		} `json:"hub"`
+	}
+	require.NoError(t, json.Unmarshal([]byte(document.Data["contract.json"]), &contract))
+	require.Equal(t, "/analytics", contract.Optimize.ContextPath)
+	require.Equal(t, "elasticsearch", contract.Optimize.Backend)
+	require.Equal(t, "records-east", contract.Optimize.IndexPrefix)
+	require.Equal(t, "KEYCLOAK", contract.Hub.AuthType)
+	require.NotEmpty(t, contract.Hub.Clusters)
+}
 
 func chartPath(t *testing.T) string {
 	t.Helper()

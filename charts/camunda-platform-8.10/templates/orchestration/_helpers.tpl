@@ -466,6 +466,15 @@ otherwise.
 {{- end -}}
 {{- end -}}
 
+{{/* Effective writer prefixes exposed to topology contract validation. */}}
+{{- define "orchestration.legacyExporterElasticsearchPrefix" -}}
+{{- dig "index" "prefix" "" .Values.orchestration.exporters.zeebe | default .Values.optimize.database.elasticsearch.prefix | default "zeebe-record" -}}
+{{- end -}}
+
+{{- define "orchestration.legacyExporterOpenSearchPrefix" -}}
+{{- dig "index" "prefix" "" .Values.orchestration.exporters.zeebe | default .Values.optimize.database.opensearch.prefix | default "zeebe-record" -}}
+{{- end -}}
+
 {{- define "orchestration.hasAppIntegrations" -}}
 {{- include "camundaPlatform.hasSecretConfig" (dict "config" .Values.orchestration.exporters.appIntegrations.apiKey) -}}
 {{- end -}}
