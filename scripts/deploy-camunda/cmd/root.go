@@ -111,6 +111,9 @@ func NewRootCommand() *cobra.Command {
 				if cmd.Name() == "diagnostics" || (cmd.Parent() != nil && cmd.Parent().Name() == "diagnostics") {
 					return nil
 				}
+				if cmd.Name() == "version" {
+					return nil
+				}
 				// ci subcommands compute GitHub Actions step variables; no
 				// chart/namespace config needed.
 				if cmd.Name() == "ci" || (cmd.Parent() != nil && cmd.Parent().Name() == "ci") {
@@ -590,6 +593,7 @@ func Execute() error {
 	rootCmd.AddCommand(newCICommand())
 	rootCmd.AddCommand(newE2EEnvCommand())
 	rootCmd.AddCommand(newTopologyCommand())
+	rootCmd.AddCommand(newVersionCommand())
 
 	err := rootCmd.Execute()
 	if err != nil {

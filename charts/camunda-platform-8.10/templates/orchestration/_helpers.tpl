@@ -466,38 +466,13 @@ otherwise.
 {{- end -}}
 {{- end -}}
 
-{{- /*
-NOTE: matches the nested, dotted and raw-properties forms, as the camunda.secrets check in
-constraints.tpl does: one form alone lets a different YAML style slip past the check.
-*/ -}}
-{{- define "orchestration.physicalTenantsDeclared" -}}
-{{- $args := dict "extraConfiguration" .Values.orchestration.extraConfiguration "path" (list "camunda" "physical-tenants") -}}
-{{- if or (eq (include "camundaPlatform.extraConfigHasPathInAnyYamlDocument" $args) "true") (eq (include "camundaPlatform.extraConfigHasRawKeyPrefix" $args) "true") -}}
-true
-{{- end -}}
+{{/* Effective writer prefixes exposed to topology contract validation. */}}
+{{- define "orchestration.legacyExporterElasticsearchPrefix" -}}
+{{- dig "index" "prefix" "" .Values.orchestration.exporters.zeebe | default .Values.optimize.database.elasticsearch.prefix | default "zeebe-record" -}}
 {{- end -}}
 
-{{/*
-[orchestration] Exporter id of the release's legacy exporter, empty when it runs none.
-*/}}
-{{- define "orchestration.legacyExporterId" -}}
-{{- if eq (include "orchestration.hasLegacyElasticsearchExporter" .) "true" -}}
-elasticsearch
-{{- else if eq (include "orchestration.hasLegacyOpenSearchExporter" .) "true" -}}
-opensearch
-{{- end -}}
-{{- end -}}
-
-{{/*
-[orchestration] Index prefix of the release's root legacy exporter, empty when it runs none.
-*/}}
-{{- define "orchestration.legacyExporterPrefix" -}}
-{{- $exporterId := include "orchestration.legacyExporterId" . -}}
-{{- if eq $exporterId "elasticsearch" -}}
-{{- .Values.optimize.database.elasticsearch.prefix | default .Values.global.elasticsearch.prefix -}}
-{{- else if eq $exporterId "opensearch" -}}
-{{- .Values.optimize.database.opensearch.prefix | default .Values.global.opensearch.prefix -}}
-{{- end -}}
+{{- define "orchestration.legacyExporterOpenSearchPrefix" -}}
+{{- dig "index" "prefix" "" .Values.orchestration.exporters.zeebe | default .Values.optimize.database.opensearch.prefix | default "zeebe-record" -}}
 {{- end -}}
 
 {{- define "orchestration.hasAppIntegrations" -}}

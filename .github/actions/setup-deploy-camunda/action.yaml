@@ -48,3 +48,21 @@ runs:
         else
           echo "$GITHUB_WORKSPACE/.local-bin" >> "$GITHUB_PATH"
         fi
+    - name: Report selected deploy-camunda
+      shell: bash
+      env:
+        DC_RUNNER_BINARY: ${{ steps.runner-binary.outputs.present }}
+        DC_CACHED_BINARY: ${{ steps.binary-check.outputs.present }}
+      run: |
+        if [[ "${DC_RUNNER_BINARY}" == "true" ]]; then
+          binary_source="runner-temp"
+        elif [[ "${DC_CACHED_BINARY}" == "true" ]]; then
+          binary_source="cache"
+        else
+          binary_source="build"
+        fi
+        echo "::group::deploy-camunda selection"
+        echo "source:    ${binary_source}"
+        echo "path:      $(command -v deploy-camunda)"
+        deploy-camunda version || echo "revision:  unavailable"
+        echo "::endgroup::"

@@ -163,13 +163,15 @@ func Generate(repoRoot string, opts GenerateOptions) ([]Entry, error) {
 	for _, version := range versions {
 		chartDir := filepath.Join(repoRoot, "charts", fmt.Sprintf("camunda-platform-%s", version))
 
-		cfg, err := LoadRegistry(chartDir)
-		if err != nil {
+		if !HasRegistry(chartDir) {
 			logging.Logger.Warn().
 				Str("version", version).
-				Err(err).
-				Msg("Skipping version — failed to load CI test config")
+				Msg("Skipping version — no CI scenario registry")
 			continue
+		}
+		cfg, err := LoadRegistry(chartDir)
+		if err != nil {
+			return nil, fmt.Errorf("load CI registry for version %s: %w", version, err)
 		}
 
 		// Only PR scenarios
