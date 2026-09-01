@@ -83,6 +83,11 @@ inputs:
       Ingress path that Optimize release is served on, e.g. /optimize-orcha.
     required: false
     default: ""
+  modeler-cluster-name:
+    description: >-
+      Web Modeler cluster targeted by this topology leg.
+    required: false
+    default: ""
   namespace-override:
     description: >-
       Overrides the namespace workflow-vars would otherwise compute from
@@ -252,6 +257,7 @@ runs:
         # non-topology leg navigate to the ingress root instead of /optimize.
         E2E_ARG_OPTIMIZE_NAMESPACE: ${{ inputs.optimize-namespace }}
         E2E_ARG_OPTIMIZE_CONTEXT_PATH: ${{ inputs.optimize-context-path }}
+        E2E_ARG_MODELER_CLUSTER_NAME: ${{ inputs.modeler-cluster-name }}
         REQUIRE_SM_810_TEST_SUITE: ${{ inputs.hub-namespace != '' }}
       run: |
         cd "$GITHUB_WORKSPACE/scripts"
@@ -282,6 +288,7 @@ runs:
         [[ -n "$HUB_NAMESPACE" ]] && E2E_ARGS+=(--hub-namespace "${HUB_NAMESPACE}")
         [[ -n "$E2E_ARG_OPTIMIZE_NAMESPACE" ]] && E2E_ARGS+=(--optimize-namespace "${E2E_ARG_OPTIMIZE_NAMESPACE}")
         [[ -n "$E2E_ARG_OPTIMIZE_CONTEXT_PATH" ]] && E2E_ARGS+=(--optimize-context-path "${E2E_ARG_OPTIMIZE_CONTEXT_PATH}")
+        [[ -n "$E2E_ARG_MODELER_CLUSTER_NAME" ]] && E2E_ARGS+=(--modeler-cluster-name "${E2E_ARG_MODELER_CLUSTER_NAME}")
 
         ./run-e2e-tests.sh "${E2E_ARGS[@]}"
 
