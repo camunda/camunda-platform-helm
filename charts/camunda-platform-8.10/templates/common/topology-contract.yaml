@@ -1,0 +1,96 @@
+{{- define "camundaPlatform.topologyContractSecret" -}}
+  {{- $secret := .secret | default dict -}}
+  {{- $inlineFirst := .inlineFirst | default false -}}
+  {{- if and $inlineFirst $secret.inlineSecret -}}
+    {{- toJson (dict "kind" "inline" "token" ($secret.inlineSecret | toString | sha256sum)) -}}
+  {{- else if and $secret.existingSecret $secret.existingSecretKey -}}
+    {{- toJson (dict "kind" "ref" "name" ($secret.existingSecret | toString) "key" ($secret.existingSecretKey | toString)) -}}
+  {{- else if $secret.inlineSecret -}}
+    {{- toJson (dict "kind" "inline" "token" ($secret.inlineSecret | toString | sha256sum)) -}}
+  {{- else if or $secret.existingSecret $secret.existingSecretKey -}}
+    {{- toJson (dict "kind" "ref" "name" ($secret.existingSecret | default "" | toString) "key" ($secret.existingSecretKey | default "" | toString)) -}}
+  {{- else -}}
+    {{- toJson (dict) -}}
+  {{- end -}}
+{{- end -}}
+{{- if .Capabilities.APIVersions.Has "camunda.io/topology-contract" -}}
+  {{- $effectiveSecret := include "optimize.effectiveAuthSecret" . | fromYaml -}}
+  {{- $backend := "none" -}}
+  {{- if .Values.optimize.database.elasticsearch.enabled -}}
+    {{- $backend = "elasticsearch" -}}
+  {{- else if .Values.optimize.database.opensearch.enabled -}}
+    {{- $backend = "opensearch" -}}
+  {{- end -}}
+  {{- $optimize := dict
+      "enabled" (.Values.optimize.enabled | default false)
+      "contextPath" (.Values.optimize.contextPath | default "" | toString)
+      "backend" $backend
+      "indexPrefix" (include "optimize.indexPrefix" .)
+      "clientId" (include "optimize.effectiveAuthClientId" .)
+      "audience" (include "camundaPlatform.authAudienceOptimize" .)
+      "redirectUrl" (include "optimize.effectiveAuthRedirectUrl" .)
+      "secret" (include "camundaPlatform.topologyContractSecret" (dict "secret" $effectiveSecret "inlineFirst" true) | fromJson)
+  -}}
+  {{- $clusters := list -}}
+  {{- range $cluster := (.Values.global.topology.clusters | default list) -}}
+    {{- $component := dig "components" "optimize" dict $cluster -}}
+    {{- $contextPaths := $cluster.contextPaths | default dict -}}
+    {{- $clusters = append $clusters (dict
+        "id" ($cluster.id | default "" | toString)
+        "optimizeContextPath" ($contextPaths.optimize | default "" | toString)
+        "optimize" (dict
+          "enabled" (get $component "enabled")
+          "clientId" ($component.clientId | default "" | toString)
+          "audience" ($component.audience | default "" | toString)
+          "redirectUrl" ($component.redirectUrl | default "" | toString)
+          "secret" (include "camundaPlatform.topologyContractSecret" (dict "secret" ($component.secret | default dict)) | fromJson)
+        )
+    ) -}}
+  {{- end -}}
+  {{- $clients := list -}}
+  {{- range $client := (.Values.identity.clients | default list) -}}
+    {{- $servers := list -}}
+    {{- range $permission := ($client.permissions | default list) -}}
+      {{- if $permission.resourceServerId -}}
+        {{- $servers = append $servers ($permission.resourceServerId | toString) -}}
+      {{- end -}}
+    {{- end -}}
+    {{- $redirects := list -}}
+    {{- if kindIs "slice" $client.redirectUris -}}
+      {{- range $redirect := $client.redirectUris -}}
+        {{- $redirects = append $redirects ($redirect | toString) -}}
+      {{- end -}}
+    {{- else if $client.redirectUris -}}
+      {{- $redirects = append $redirects ($client.redirectUris | toString) -}}
+    {{- end -}}
+    {{- $clients = append $clients (dict
+        "id" ($client.id | default "" | toString)
+        "rootUrl" ($client.rootUrl | default "" | toString)
+        "redirectUris" $redirects
+        "resourceServerIds" $servers
+        "secret" (include "camundaPlatform.topologyContractSecret" (dict "secret" ($client.secret | default dict) "inlineFirst" true) | fromJson)
+    ) -}}
+  {{- end -}}
+  {{- $contract := dict
+      "optimize" $optimize
+      "orchestration" (dict
+        "elasticsearchIndexPrefix" (include "orchestration.legacyExporterElasticsearchPrefix" .)
+        "opensearchIndexPrefix" (include "orchestration.legacyExporterOpenSearchPrefix" .)
+      )
+      "hub" (dict
+        "authType" (include "camundaPlatform.authIssuerType" . | upper)
+        "clustersDeclared" (hasKey (.Values.global.topology | default dict) "clusters")
+        "clusters" $clusters
+        "identityClients" $clients
+      )
+  -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "camundaPlatform.fullname" . }}-topology-contract
+  labels:
+    {{- include "camundaPlatform.labels" . | nindent 4 }}
+data:
+  contract.json: |
+    {{- $contract | toJson | nindent 4 }}
+{{- end -}}
