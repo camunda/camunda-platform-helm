@@ -317,7 +317,7 @@ integration:
                 - RDBMS_POSTGRESQL_USERNAME
                 - RDBMS_POSTGRESQL_PASSWORD
         - name: keycloak-rba
-          enabled: false
+          enabled: true
           shortname: kerba
           auth: keycloak
           flow: upgrade-minor
@@ -359,7 +359,7 @@ integration:
             eks: preemptible
             gke: distroci
           identity: keycloak
-          persistence: elasticsearch
+          persistence: elasticsearch-companion
           dependencies:
             - chart: charts/internal-keycloak-26
               release-name: keycloak
@@ -886,7 +886,7 @@ integration:
             eks: preemptible
             gke: distroci
           identity: keycloak
-          persistence: elasticsearch
+          persistence: elasticsearch-companion
           features:
             - hub-webmodeler-only
           skip-e2e: true
@@ -919,7 +919,7 @@ integration:
             eks: preemptible
             gke: distroci
           identity: keycloak
-          persistence: elasticsearch
+          persistence: elasticsearch-companion
           features:
             - hub-console-only
           skip-e2e: true

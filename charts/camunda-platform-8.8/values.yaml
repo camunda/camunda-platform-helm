@@ -722,7 +722,7 @@ identity:
     ## @param identity.image.repository defines which image repository to use
     repository: camunda/identity
     ## @param identity.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.8.16
+    tag: 8.8.17
     ## @param identity.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param identity.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -773,6 +773,8 @@ identity:
     metricsPort: 82
     ## @param identity.service.metricsName defines the name of the service on which the identity metrics will be available
     metricsName: metrics
+    ## @param identity.service.appProtocols can be used to set the Kubernetes Service appProtocol hint per port (http, metrics), e.g. {http: "http"}. Empty by default, no behavior change. See https://kubernetes.io/docs/concepts/services-networking/service/#application-protocol
+    appProtocols: {}
 
   ## @extra identity.podSecurityContext defines the security options the Management Identity pod should be run with
   podSecurityContext:
@@ -1317,6 +1319,8 @@ console:
     serverName: http
     ## @param console.service.managementPort defines the management port used to access metrics and app status
     managementPort: 9100
+    ## @param console.service.appProtocols can be used to set the Kubernetes Service appProtocol hint per port (http, management), e.g. {http: "http"}. Empty by default, no behavior change. See https://kubernetes.io/docs/concepts/services-networking/service/#application-protocol
+    appProtocols: {}
 
   ## console.resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
   ## @param console.resources.requests.cpu
@@ -1728,7 +1732,7 @@ webModeler:
     nodeSelector: {}
     ## @param webModeler.restapi.tolerations can be used to define pod tolerations, see https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
     tolerations: []
-    ## @param webModeler.restapi.affinity can be used to define pod affinity or anti-affinity, see https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
+    ## @param webModeler.restapi.affinity can be used for [affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity); match `podLabels` for upgrade stability.
     affinity: {}
 
     ## @extra webModeler.restapi.resources configuration of resource requests and limits for the container, see https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
@@ -1754,6 +1758,8 @@ webModeler:
       port: 80
       ## @param webModeler.restapi.service.managementPort defines the management port of the service
       managementPort: 8091
+      ## @param webModeler.restapi.service.appProtocols can be used to set the Kubernetes Service appProtocol hint per port (http, http-management), e.g. {http: "http"}. Empty by default, no behavior change. See https://kubernetes.io/docs/concepts/services-networking/service/#application-protocol
+      appProtocols: {}
 
     ## @param webModeler.restapi.configuration if specified, contents will be used as the application.yaml
     configuration: ""
@@ -1903,7 +1909,7 @@ webModeler:
     nodeSelector: {}
     ## @param webModeler.webapp.tolerations can be used to define pod tolerations, see https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
     tolerations: []
-    ## @param webModeler.webapp.affinity can be used to define pod affinity or anti-affinity, see https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
+    ## @param webModeler.webapp.affinity can be used for [affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity); match `podLabels` for upgrade stability.
     affinity: {}
 
     ## @extra webModeler.webapp.resources configuration of resource requests and limits for the container, see https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
@@ -1929,6 +1935,8 @@ webModeler:
       port: 80
       ## @param webModeler.webapp.service.managementPort defines the management port of the service
       managementPort: 8071
+      ## @param webModeler.webapp.service.appProtocols can be used to set the Kubernetes Service appProtocol hint per port (http, http-management), e.g. {http: "http"}. Empty by default, no behavior change. See https://kubernetes.io/docs/concepts/services-networking/service/#application-protocol
+      appProtocols: {}
 
     ## @param webModeler.webapp.configuration if specified, contents will be used as the application.yaml
     configuration: ""
@@ -2078,7 +2086,7 @@ webModeler:
     nodeSelector: {}
     ## @param webModeler.websockets.tolerations can be used to define pod tolerations, see https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
     tolerations: []
-    ## @param webModeler.websockets.affinity can be used to define pod affinity or anti-affinity, see https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
+    ## @param webModeler.websockets.affinity can be used for [affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity); match `podLabels` for upgrade stability.
     affinity: {}
 
     ## @extra webModeler.websockets.resources configuration of resource requests and limits for the container, see https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
@@ -2102,6 +2110,8 @@ webModeler:
       type: ClusterIP
       ## @param webModeler.websockets.service.port defines the port of the service
       port: 80
+      ## @param webModeler.websockets.service.appProtocols can be used to set the Kubernetes Service appProtocol hint per port (http), e.g. {http: "kubernetes.io/ws"}. Empty by default, no behavior change. See https://kubernetes.io/docs/concepts/services-networking/service/#application-protocol
+      appProtocols: {}
     ## @param webModeler.websockets.configuration if specified, contents will be used as the application.yaml
     configuration: ""
     ## @param webModeler.websockets.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
@@ -2273,7 +2283,7 @@ connectors:
     ## @param connectors.image.repository defines which image repository to use
     repository: camunda/connectors-bundle
     ## @param connectors.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.8.17
+    tag: 8.8.18
     ## @param connectors.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param connectors.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -2312,6 +2322,8 @@ connectors:
     serverPort: 8080
     ## @param connectors.service.serverName defines the port name where the Connector web application will be available
     serverName: http
+    ## @param connectors.service.appProtocols can be used to set the Kubernetes Service appProtocol hint per port (server), e.g. {server: "http"}. Empty by default, no behavior change. See https://kubernetes.io/docs/concepts/services-networking/service/#application-protocol
+    appProtocols: {}
 
   ## @extra connectors.resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
   ## @param connectors.resources.requests.cpu
@@ -2643,7 +2655,7 @@ orchestration:
     ## @param orchestration.image.repository defines which image repository to use
     repository: camunda/camunda
     ## @param orchestration.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.8.36
+    tag: 8.8.37
     ## @param orchestration.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param orchestration.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -2912,6 +2924,9 @@ orchestration:
       #   protocol: TCP
       #   port: 5701
       #   targetPort: 5701
+
+    ## @param orchestration.service.appProtocols can be used to set the Kubernetes Service appProtocol hint per port (management, http, internal, command, grpc), e.g. {grpc: "kubernetes.io/h2c"}. Empty by default, no behavior change. See https://kubernetes.io/docs/concepts/services-networking/service/#application-protocol
+    appProtocols: {}
 
   ## @extra orchestration.serviceAccount configuration for the service account where the broker pods are assigned to
   serviceAccount:
@@ -3249,7 +3264,7 @@ optimize:
     ## @param optimize.image.repository defines which image repository to use
     repository: camunda/optimize
     ## @param optimize.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.8.36
+    tag: 8.8.37
     ## @param optimize.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param optimize.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -3337,6 +3352,8 @@ optimize:
     port: 80
     ## @param optimize.service.managementPort defines the port where actuator will be available. Also required to reach backup API
     managementPort: 8092
+    ## @param optimize.service.appProtocols can be used to set the Kubernetes Service appProtocol hint per port (http, management), e.g. {http: "http"}. Empty by default, no behavior change. See https://kubernetes.io/docs/concepts/services-networking/service/#application-protocol
+    appProtocols: {}
 
   ## @extra optimize.podSecurityContext defines the security options the Optimize pod should be run with
   podSecurityContext:

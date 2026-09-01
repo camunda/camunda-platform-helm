@@ -1743,27 +1743,6 @@ Usage:
 {{- end -}}
 
 {{- /*
-NOTE: multi-document companion to extraConfigHasPath and extraConfigHasDottedPath. fromYaml
-reads only the first YAML document, so split imported YAML before applying both path forms.
-*/ -}}
-{{- define "camundaPlatform.extraConfigHasPathInAnyYamlDocument" -}}
-{{- $found := "" -}}
-{{- range .extraConfiguration -}}
-  {{- if not (and (hasKey . "springImport") (eq .springImport false)) -}}
-    {{- $file := .file | default "" -}}
-    {{- range $document := regexSplit "(?m)^---[ \\t]*(#.*)?[ \\t]*$" (.content | default "") -1 -}}
-      {{- $entry := list (dict "file" $file "content" $document) -}}
-      {{- $args := dict "extraConfiguration" $entry "path" $.path -}}
-      {{- if or (eq (include "camundaPlatform.extraConfigHasPath" $args) "true") (eq (include "camundaPlatform.extraConfigHasDottedPath" $args) "true") -}}
-        {{- $found = "true" -}}
-      {{- end -}}
-    {{- end -}}
-  {{- end -}}
-{{- end -}}
-{{- $found -}}
-{{- end -}}
-
-{{- /*
 NOTE: exact-leaf companion to extraConfigHasPath, for guards that need the value rather than
 the key: reports "true" only when a spring-imported <component>.extraConfiguration file binds
 the given path to a non-empty scalar. Presence is not enough where a guard exists because the

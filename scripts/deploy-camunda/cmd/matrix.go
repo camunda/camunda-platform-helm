@@ -17,6 +17,7 @@ package cmd
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -35,6 +36,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"gopkg.in/yaml.v3"
 )
 
 // newMatrixCommand creates the matrix parent command with list and run subcommands.
@@ -1159,7 +1161,7 @@ func buildOrchestrationZeebeEnv(orchestrationCtx *deploy.ScenarioContext) map[st
 // matrix.Topology.Validate rejects such an entry outright; this ordering keeps
 // the generated value authoritative even so.
 func buildTopologyReleaseEnv(shared map[string]string, release matrix.TopologyRelease) map[string]string {
-	env := make(map[string]string, len(shared)+len(release.Env)+5)
+	env := make(map[string]string, len(shared)+len(release.Env)+4)
 	for key, value := range shared {
 		env[key] = value
 	}
@@ -1174,11 +1176,6 @@ func buildTopologyReleaseEnv(shared map[string]string, release matrix.TopologyRe
 		env["ORCH_ZEEBE_REST"] = env[token+"_ZEEBE_REST"]
 	}
 	if release.Role == "optimize" {
-		tenant := release.Tenant
-		if tenant == "" {
-			tenant = "default"
-		}
-		env["RELEASE_TENANT_ID"] = tenant
 		// RELEASE_-prefixed: buildScenarioEnv seeds this namespace from the process
 		// environment, where OPTIMIZE_CONTEXT_PATH is a name the Playwright suite reads
 		// (pages/SM-8.10/NavigationPage.ts). Keep the two namespaces from sharing a key.
@@ -1329,6 +1326,21 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 		return fmt.Errorf("topology entry %s/%s: %w", entry.Version, entry.Scenario, err)
 	}
 
+	type preparedTopologyRelease struct {
+		release   matrix.TopologyRelease
+		flags     *config.RuntimeFlags
+		namespace string
+		prepared  *deploy.PreparedScenario
+		cleanup   func()
+	}
+	preparedReleases := make([]preparedTopologyRelease, 0, len(order))
+	defer func() {
+		for _, release := range preparedReleases {
+			release.prepared.Cleanup()
+			release.cleanup()
+		}
+	}()
+
 	for _, i := range order {
 		rel := entry.Topology.Releases[i]
 		releaseCtx := contexts[i]
@@ -1349,48 +1361,51 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 		}
 
 		applyTopologyReleaseOverrides(flags, buildTopologyReleaseEnv(crossRefEnv, rel))
+		if err := matrix.RegisterDeclarativePostDeployHook(flags, releaseEntry.PostDeploy, opts.RepoRoot, releaseEntry.Version, releaseEntry.Scenario); err != nil {
+			cleanup()
+			return fmt.Errorf("topology release %s/%s (namespace-suffix %q): register post-deploy hook: %w", entry.Scenario, rel.Role, rel.NamespaceSuffix, err)
+		}
+		prepared, prepareErr := deploy.PrepareScenario(ctx, releaseCtx, flags)
+		if prepareErr != nil {
+			cleanup()
+			return fmt.Errorf("topology release %s/%s (namespace-suffix %q) prepare failed: %w", entry.Scenario, rel.Role, rel.NamespaceSuffix, prepareErr)
+		}
+		preparedReleases = append(preparedReleases, preparedTopologyRelease{release: rel, flags: flags, namespace: namespace, prepared: prepared, cleanup: cleanup})
+	}
 
-		deployErr := deploy.Execute(ctx, flags)
-		cleanup()
+	rendered := make([]matrix.RenderedTopologyRelease, 0, len(preparedReleases))
+	for _, release := range preparedReleases {
+		manifest, err := deploy.RenderPreparedTopologyContract(ctx, release.prepared, release.flags)
+		if err != nil {
+			return fmt.Errorf("topology release %s/%s contract render failed: %w", entry.Scenario, release.release.Role, err)
+		}
+		var document struct {
+			Data map[string]string `yaml:"data"`
+		}
+		if err := yaml.Unmarshal(manifest, &document); err != nil {
+			return fmt.Errorf("topology release %s/%s contract manifest decode failed: %w", entry.Scenario, release.release.Role, err)
+		}
+		var contract matrix.TopologyContract
+		if err := json.Unmarshal([]byte(document.Data["contract.json"]), &contract); err != nil {
+			return fmt.Errorf("topology release %s/%s contract decode failed: %w", entry.Scenario, release.release.Role, err)
+		}
+		rendered = append(rendered, matrix.RenderedTopologyRelease{Release: release.release, Contract: contract})
+	}
+	if err := entry.Topology.ValidateRendered(fmt.Sprintf("topology entry %s/%s", entry.Version, entry.Scenario), rendered); err != nil {
+		return err
+	}
+
+	for _, release := range preparedReleases {
+		deployErr := deploy.ExecutePrepared(ctx, release.prepared, release.flags)
 
 		status := "OK"
 		if deployErr != nil {
 			status = fmt.Sprintf("FAILED: %v", deployErr)
 		}
-		fmt.Fprintf(os.Stdout, "topology release %s/%s (namespace %s): %s\n", entry.Scenario, rel.Role, namespace, status)
+		fmt.Fprintf(os.Stdout, "topology release %s/%s (namespace %s): %s\n", entry.Scenario, release.release.Role, release.namespace, status)
 
 		if deployErr != nil {
-			return fmt.Errorf("topology release %s/%s (namespace-suffix %q) deploy failed: %w", entry.Scenario, rel.Role, rel.NamespaceSuffix, deployErr)
-		}
-	}
-
-	// A scenario post-deploy hook belongs to the completed topology, not to an
-	// individual Helm release. Anchor it deterministically to the first declared
-	// orchestration release so legacy TEST_NAMESPACE and the ORCH_* aliases refer
-	// to the same release.
-	if entry.PostDeploy != nil {
-		if len(orchestrationIndices) == 0 {
-			return fmt.Errorf("topology %s: post-deploy hook requires an orchestration release anchor", entry.Scenario)
-		}
-		i := orchestrationIndices[0]
-		rel := entry.Topology.Releases[i]
-		releaseEntry := synthesizeReleaseEntry(entry, rel, platform)
-		releaseOpts := synthesizeReleaseOpts(opts, platform, contexts[i].Namespace)
-		if hostKey := topologyReleaseHostKey(rel.Role, rel.NamespaceSuffix, len(orchestrationIndices)); hostKey != "" {
-			if host := crossRefEnv[hostKey]; host != "" {
-				releaseOpts.ExtraHelmSets = append(releaseOpts.ExtraHelmSets, "global.host="+host)
-			}
-		}
-		flags, _, _, _, cleanup, buildErr := matrix.BuildEntryFlags(releaseEntry, releaseOpts)
-		if buildErr != nil {
-			cleanup()
-			return fmt.Errorf("topology %s: build post-deploy hook flags: %w", entry.Scenario, buildErr)
-		}
-		applyTopologyReleaseOverrides(flags, buildTopologyReleaseEnv(crossRefEnv, rel))
-		hookErr := matrix.RunDeclarativePostDeployHook(ctx, flags, entry.PostDeploy, opts.RepoRoot, entry.Version, entry.Scenario)
-		cleanup()
-		if hookErr != nil {
-			return fmt.Errorf("topology %s: post-deploy hook failed: %w", entry.Scenario, hookErr)
+			return fmt.Errorf("topology release %s/%s (namespace-suffix %q) deploy failed: %w", entry.Scenario, release.release.Role, release.release.NamespaceSuffix, deployErr)
 		}
 	}
 
@@ -1636,6 +1651,9 @@ func synthesizeReleaseEntry(entry matrix.Entry, rel matrix.TopologyRelease, plat
 		Persistence:  rel.Persistence,
 		Features:     features,
 		Dependencies: rel.ResolvedDependencies,
+	}
+	if rel.Role == "orchestration" {
+		releaseEntry.PostDeploy = entry.PostDeploy
 	}
 	// e2e is a topology-level concern, not a per-release one: a release's deploy returns while later
 	// releases are still undeployed, so testing here would test a partial topology (and would repeat
