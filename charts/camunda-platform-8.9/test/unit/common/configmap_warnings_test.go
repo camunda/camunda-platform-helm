@@ -170,6 +170,20 @@ func (s *ConfigMapWarningsTemplateTest) TestBundledKeycloakCveWarning() {
 			},
 		},
 		{
+			Name: "TestOverriddenRepositoryOmitsFrozenLineClaim",
+			Values: mergeMaps(baseValues, map[string]string{
+				"identityKeycloak.image.repository": "acme/keycloak",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				warnings := configmap.Data["warnings"]
+				s.Require().Contains(warnings, "CVE-2026-18963")
+				s.Require().NotContains(warnings, "frozen on the discontinued bitnamilegacy base")
+			},
+		},
+		{
 			Name: "TestLastAffectedVersionWarns",
 			Values: mergeMaps(baseValues, map[string]string{
 				"identityKeycloak.image.tag": "26.7.1",
@@ -187,6 +201,12 @@ func (s *ConfigMapWarningsTemplateTest) TestBundledKeycloakCveWarning() {
 				"identityKeycloak.image.tag": "26.7.2-debian-12-r0",
 			}),
 			Verifier: func(t *testing.T, output string, err error) {
+				// A no-warning render produces no manifest, which --show-only reports as a
+				// missing template; any other error means the render broke for an unrelated
+				// reason and must not pass as "no warning".
+				if err != nil {
+					s.Require().Contains(err.Error(), "could not find template")
+				}
 				s.Require().NotContains(output, "CVE-2026-18963")
 			},
 		},
@@ -196,6 +216,12 @@ func (s *ConfigMapWarningsTemplateTest) TestBundledKeycloakCveWarning() {
 				"identityKeycloak.image.tag": "26.7.2",
 			}),
 			Verifier: func(t *testing.T, output string, err error) {
+				// A no-warning render produces no manifest, which --show-only reports as a
+				// missing template; any other error means the render broke for an unrelated
+				// reason and must not pass as "no warning".
+				if err != nil {
+					s.Require().Contains(err.Error(), "could not find template")
+				}
 				s.Require().NotContains(output, "CVE-2026-18963")
 			},
 		},
@@ -205,6 +231,12 @@ func (s *ConfigMapWarningsTemplateTest) TestBundledKeycloakCveWarning() {
 				"identityKeycloak.image.tag": "latest",
 			}),
 			Verifier: func(t *testing.T, output string, err error) {
+				// A no-warning render produces no manifest, which --show-only reports as a
+				// missing template; any other error means the render broke for an unrelated
+				// reason and must not pass as "no warning".
+				if err != nil {
+					s.Require().Contains(err.Error(), "could not find template")
+				}
 				s.Require().NotContains(output, "CVE-2026-18963")
 			},
 		},
@@ -214,6 +246,12 @@ func (s *ConfigMapWarningsTemplateTest) TestBundledKeycloakCveWarning() {
 				"identityKeycloak.enabled": "false",
 			}),
 			Verifier: func(t *testing.T, output string, err error) {
+				// A no-warning render produces no manifest, which --show-only reports as a
+				// missing template; any other error means the render broke for an unrelated
+				// reason and must not pass as "no warning".
+				if err != nil {
+					s.Require().Contains(err.Error(), "could not find template")
+				}
 				s.Require().NotContains(output, "CVE-2026-18963")
 			},
 		},
