@@ -129,6 +129,9 @@ func NewRootCommand() *cobra.Command {
 				if cmd.Name() == "topology" || (cmd.Parent() != nil && cmd.Parent().Name() == "topology") {
 					return nil
 				}
+				if cmd.Name() == "acceptance" || (cmd.Parent() != nil && cmd.Parent().Name() == "acceptance") {
+					return nil
+				}
 				if cmd.Name() == "completion" ||
 					cmd.Name() == cobra.ShellCompRequestCmd ||
 					cmd.Name() == cobra.ShellCompNoDescRequestCmd {
@@ -594,6 +597,7 @@ func Execute() error {
 	rootCmd.AddCommand(newE2EEnvCommand())
 	rootCmd.AddCommand(newTopologyCommand())
 	rootCmd.AddCommand(newVersionCommand())
+	rootCmd.AddCommand(newAcceptanceCommand())
 
 	err := rootCmd.Execute()
 	if err != nil {
