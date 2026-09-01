@@ -201,6 +201,29 @@ func (s *secretStoreConfigTest) TestDifferentValuesInputs() {
 				s.Require().Contains(config, "path: /root/secrets")
 			},
 		},
+		{
+			Name:     "Two physical tenants render their own file store paths",
+			Template: "templates/orchestration/configmap.yaml",
+			Values: mergeValues(secretStoreBaseValues(), map[string]string{
+				"orchestration.secretStore.file.default.path":                                          "/etc/camunda/secrets/default",
+				"orchestration.secretStore.file.default.secret.existingSecret":                         "root-secret",
+				"orchestration.secretStore.physicalTenants.tenanta.file.default.path":                  "/etc/camunda/secrets/tenanta",
+				"orchestration.secretStore.physicalTenants.tenanta.file.default.secret.existingSecret": "tenanta-secret",
+				"orchestration.secretStore.physicalTenants.tenantb.file.default.path":                  "/etc/camunda/secrets/tenantb",
+				"orchestration.secretStore.physicalTenants.tenantb.file.default.secret.existingSecret": "tenantb-secret",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				config := s.applicationConfig(output)
+				s.Require().Contains(config, "physical-tenants:")
+				s.Require().Contains(config, "tenanta:")
+				s.Require().Contains(config, "tenantb:")
+				s.Require().Contains(config, "path: /etc/camunda/secrets/tenanta")
+				s.Require().Contains(config, "path: /etc/camunda/secrets/tenantb")
+				s.Require().Contains(config, "path: /etc/camunda/secrets/default")
+				s.Require().NotContains(config, "existingSecret")
+			},
+		},
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)

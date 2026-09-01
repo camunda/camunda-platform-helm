@@ -517,6 +517,139 @@ func TestRegistryValidatorRejectsMissingScript(t *testing.T) {
 	}
 }
 
+func TestRegistryValidatorRejectsMissingPersistenceValues(t *testing.T) {
+	abs := absChartDir(t)
+	cfg, err := LoadRegistry(abs)
+	if err != nil {
+		t.Fatalf("LoadRegistry: %v", err)
+	}
+	cfg.Integration.Case.PR.Scenarios[0].Persistence = "nonexistent-persistence"
+	err = (&RegistryValidator{ChartDir: abs}).Validate(cfg)
+	if err == nil || !strings.Contains(err.Error(), "nonexistent-persistence") {
+		t.Fatalf("want missing-persistence error, got: %v", err)
+	}
+}
+
+const (
+	depsWithoutElasticsearch = "  - name: common\n    version: 2.x.x\n"
+	depsWithElasticsearch    = "  - name: elasticsearch\n    version: 21.6.3\n    condition: \"elasticsearch.enabled\"\n  - name: common\n    version: 2.x.x\n"
+)
+
+func TestRegistryValidatorRejectsUnmitigatedBitnamiPersistenceDrop(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		flow string
+	}{
+		{"two-step upgrade", "upgrade-minor"},
+		{"modular upgrade", "modular-upgrade-minor"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			_, chartDir, regDir, _ := syntheticChartWithPrevious(t, depsWithoutElasticsearch, depsWithElasticsearch)
+			writeManifest(t, regDir, "    - id: a\n      shortname: a\n      enabled: true\n")
+			writeFile(t, filepath.Join(regDir, "scenarios", "a.yaml"),
+				"name: a\nflows: ["+tc.flow+"]\nplatforms: [gke]\npersistence: elasticsearch\n")
+
+			_, err := LoadRegistry(chartDir)
+			if err == nil || !strings.Contains(err.Error(), "this chart no longer bundles") {
+				t.Fatalf("want dropped-subchart persistence error, got: %v", err)
+			}
+		})
+	}
+}
+
+func TestRegistryValidatorExemptsMitigatedBitnamiPersistenceDrop(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		scenario string
+		withHook bool
+	}{
+		{
+			name:     "companion persistence layer",
+			scenario: "name: a\nflows: [upgrade-minor]\nplatforms: [gke]\npersistence: elasticsearch-companion\n",
+		},
+		{
+			name:     "migration hook declared",
+			scenario: "name: a\nflows: [upgrade-minor]\nplatforms: [gke]\npersistence: elasticsearch\npost-infra: mig\n",
+			withHook: true,
+		},
+		{
+			name:     "install flow",
+			scenario: "name: a\nflows: [install]\nplatforms: [gke]\npersistence: elasticsearch\n",
+		},
+		{
+			name:     "upgrade-patch flow",
+			scenario: "name: a\nflows: [upgrade-patch]\nplatforms: [gke]\npersistence: elasticsearch\n",
+		},
+		{
+			name:     "no persistence field",
+			scenario: "name: a\nflows: [upgrade-minor]\nplatforms: [gke]\n",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			_, chartDir, regDir, _ := syntheticChartWithPrevious(t, depsWithoutElasticsearch, depsWithElasticsearch)
+			writeManifest(t, regDir, "    - id: a\n      shortname: a\n      enabled: true\n")
+			writeFile(t, filepath.Join(regDir, "scenarios", "a.yaml"), tc.scenario)
+			if tc.withHook {
+				writeFile(t, filepath.Join(regDir, "hooks", "mig.yaml"),
+					"description: migrate off the dropped subchart\nscript: "+bitnamiMigrationHookScript+"\n")
+				writeFile(t, filepath.Join(chartDir, "test", "integration", "scenarios", "pre-setup-scripts", bitnamiMigrationHookScript),
+					"#!/usr/bin/env bash\n")
+			}
+
+			if _, err := LoadRegistry(chartDir); err != nil {
+				t.Fatalf("want no error, got: %v", err)
+			}
+		})
+	}
+}
+
+func TestRegistryValidatorAcceptsUpgradePersistenceWhenStillBundled(t *testing.T) {
+	_, chartDir, regDir, _ := syntheticChartWithPrevious(t, depsWithElasticsearch, depsWithElasticsearch)
+	writeManifest(t, regDir, "    - id: a\n      shortname: a\n      enabled: true\n")
+	writeFile(t, filepath.Join(regDir, "scenarios", "a.yaml"),
+		"name: a\nflows: [upgrade-minor]\nplatforms: [gke]\npersistence: elasticsearch\n")
+
+	if _, err := LoadRegistry(chartDir); err != nil {
+		t.Fatalf("want no error, got: %v", err)
+	}
+}
+
+func TestRegistryValidatorRejectsUpgradePersistenceMissingFromPreviousVersion(t *testing.T) {
+	_, chartDir, regDir, _ := syntheticChartWithPrevious(t, depsWithElasticsearch, depsWithElasticsearch)
+	writePersistence(t, chartDir, "rdbms-self-signed", "")
+	writeManifest(t, regDir, "    - id: a\n      shortname: a\n      enabled: true\n")
+	writeFile(t, filepath.Join(regDir, "scenarios", "a.yaml"),
+		"name: a\nflows: [upgrade-minor]\nplatforms: [gke]\npersistence: rdbms-self-signed\n")
+
+	_, err := LoadRegistry(chartDir)
+	if err == nil || !strings.Contains(err.Error(), "does not resolve in chart version") {
+		t.Fatalf("want missing previous-version persistence error, got: %v", err)
+	}
+}
+
+func TestRegistryValidatorExemptsModularUpgradePersistenceMissingFromPreviousVersion(t *testing.T) {
+	_, chartDir, regDir, _ := syntheticChartWithPrevious(t, depsWithElasticsearch, depsWithElasticsearch)
+	writePersistence(t, chartDir, "rdbms-self-signed", "")
+	writeManifest(t, regDir, "    - id: a\n      shortname: a\n      enabled: true\n")
+	writeFile(t, filepath.Join(regDir, "scenarios", "a.yaml"),
+		"name: a\nflows: [modular-upgrade-minor]\nplatforms: [gke]\npersistence: rdbms-self-signed\n")
+
+	if _, err := LoadRegistry(chartDir); err != nil {
+		t.Fatalf("want no error, got: %v", err)
+	}
+}
+
+func TestRegistryValidatorAcceptsUpgradePersistenceWithoutPreviousVersion(t *testing.T) {
+	_, chartDir, regDir := syntheticChart(t)
+	writeManifest(t, regDir, "    - id: a\n      shortname: a\n      enabled: true\n")
+	writeFile(t, filepath.Join(regDir, "scenarios", "a.yaml"),
+		"name: a\nflows: [upgrade-minor]\nplatforms: [gke]\npersistence: elasticsearch\n")
+
+	if _, err := LoadRegistry(chartDir); err != nil {
+		t.Fatalf("want no error, got: %v", err)
+	}
+}
+
 // TestRegistryValidatorRejectsMissingFeatureValues exercises checkFeature.
 // Feature names resolve to <feature>.yaml under chart-full-setup/values/features/;
 // a dangling name must surface as a validation error so PR review catches
@@ -659,6 +792,7 @@ func syntheticChart(t *testing.T) (string, string, string) {
 		filepath.Join(chartDir, "test", "integration", "scenarios", "common", "resources"),
 		filepath.Join(chartDir, "test", "integration", "scenarios", "pre-setup-scripts"),
 		filepath.Join(chartDir, "test", "integration", "scenarios", "chart-full-setup", "values", "features"),
+		filepath.Join(chartDir, "test", "integration", "scenarios", "chart-full-setup", "values", "persistence"),
 		filepath.Join(dir, ".github", "config"),
 	}
 	for _, d := range dirs {
@@ -668,7 +802,33 @@ func syntheticChart(t *testing.T) (string, string, string) {
 	}
 	// Permissive default so tests that don't care about permitted-flows pass.
 	writePermittedFlows(t, dir, "rules: []\n")
+	writePersistence(t, chartDir, "elasticsearch", "")
 	return dir, chartDir, regDir
+}
+
+func writePersistence(t *testing.T, chartDir, name, body string) {
+	t.Helper()
+	dir := filepath.Join(chartDir, "test", "integration", "scenarios", "chart-full-setup", "values", "persistence")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	writeFile(t, filepath.Join(dir, name+".yaml"), body)
+}
+
+func syntheticChartWithPrevious(t *testing.T, currentDeps, prevDeps string) (string, string, string, string) {
+	t.Helper()
+	repoRoot, chartDir, regDir := syntheticChart(t)
+	writeFile(t, filepath.Join(chartDir, "Chart.yaml"), "name: camunda-platform\ndependencies:\n"+currentDeps)
+	writePersistence(t, chartDir, "elasticsearch-companion", "")
+
+	prevChartDir := filepath.Join(repoRoot, "charts", "camunda-platform-99.98")
+	if err := os.MkdirAll(prevChartDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	writeFile(t, filepath.Join(prevChartDir, "Chart.yaml"), "name: camunda-platform\ndependencies:\n"+prevDeps)
+	writePersistence(t, prevChartDir, "elasticsearch", "elasticsearch:\n  enabled: true\n")
+	writePersistence(t, prevChartDir, "elasticsearch-companion", "elasticsearch:\n  enabled: false\n")
+	return repoRoot, chartDir, regDir, prevChartDir
 }
 
 // writeManifest writes a minimal manifest.yaml whose scenarios block is the

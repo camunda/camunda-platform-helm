@@ -50,7 +50,7 @@ integration:
       enabled: true
     - id: keycloak-rba
       shortname: kerba
-      enabled: false
+      enabled: true
     - id: keycloak-original-upgrade
       shortname: keyc
       enabled: false
