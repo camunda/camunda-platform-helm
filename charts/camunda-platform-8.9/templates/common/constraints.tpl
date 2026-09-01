@@ -470,11 +470,12 @@ The following values inside your values.yaml need to be set but were not:
   {{- if .Values.identityKeycloak.enabled }}
     {{- $keycloakVersion := regexFind "^[0-9]+\\.[0-9]+\\.[0-9]+" ((.Values.identityKeycloak.image).tag | toString) }}
     {{- if and $keycloakVersion (semverCompare "<26.7.2" $keycloakVersion) }}
-      {{- $warningMessage := printf "%s %s %s %s"
+      {{- $warningMessage := printf "%s %s %s %s %s"
           "[camunda][warning]"
           (printf "SECURITY: the bundled Keycloak image is pinned to %s, which is affected by CVE-2026-18963, a critical password-reset flaw enabling account takeover. It is fixed in Keycloak 26.7.2." $keycloakVersion)
-          "The Bitnami-based \"camunda/keycloak\" tags this chart defaults to are frozen on the discontinued bitnamilegacy base and will not receive the fix. Details: https://github.com/camunda/camunda-platform-helm/issues/6987"
-          "Migrate to an externally managed Keycloak, or to the maintained \"camunda/keycloak:quay-*\" images (Enterprise: \"registry.camunda.cloud/keycloak-ee/keycloak:26.7.2\"). The quay images follow upstream Keycloak conventions and are not a drop-in replacement for this Bitnami-based subchart."
+          "The Bitnami-based \"camunda/keycloak\" tags this chart defaults to are frozen on the discontinued bitnamilegacy base and will not receive the fix."
+          "Recommended: migrate this subchart to the Keycloak Operator, which replaces its StatefulSet: https://docs.camunda.io/docs/self-managed/deployment/helm/operational-tasks/migration-from-bitnami/"
+          "Enterprise customers can instead point \"identityKeycloak.image\" at \"registry.camunda.cloud/keycloak-ee/keycloak:26.7.2\", which is Bitnami-based and drop-in compatible with this subchart. Details: https://github.com/camunda/camunda-platform-helm/issues/6987"
       -}}
       {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
     {{- end }}
