@@ -60,11 +60,16 @@ When `mode: zoned`:
 - `camunda.cluster.replication-factor` is the sum of all `numberOfReplicas` values.
 - The StatefulSet replica count is the local zone's `numberOfBrokers` value.
 - The pod receives `CAMUNDA_CLUSTER_ZONE` with the configured local zone.
-- The chart does not render `camunda.cluster.node-id`.
-- The chart does not compute or set the node ID. The Camunda application owns
-  the zone-aware node ID computation.
-- Initial contact points are not generated. Users provide them through the
-  supported application environment variable mechanism when required.
+- `camunda.cluster.node-id` renders, backed by `VALUES_ORCHESTRATION_NODE_ID`, as
+  it does in legacy mode.
+- The startup script sets that node ID to the Pod ordinal, which is the broker's
+  index inside its own zone (`0` to `numberOfBrokers - 1`). Zone-aware brokers are
+  addressed by the composite member ID `<zone>_<node-id>`, so the zone name is what
+  keeps the identity unique across the cluster and no cluster-wide offset applies.
+- Initial contact points are generated when the cluster is a single zone, because
+  one zone sits behind one headless Service that the chart can address itself. A
+  cluster spread over more than one zone gets no generated list; users provide it
+  through the supported application environment variable mechanism.
 - Zoned mode is treated as multi-region for the advertised broker hostname.
 - Legacy Elasticsearch and OpenSearch exporter checks must not treat zoned mode
   as a single-region deployment.
@@ -118,16 +123,20 @@ mode because it is a per-deployment broker setting.
 
 ## Validation Scope
 
-The Helm chart does not currently validate the zone topology. The application is
-responsible for validating, among other things:
+The chart validates only what it needs to render a correct topology:
 
-- zone names and duplicates
-- local-zone membership
-- broker and replica counts
+- `global.multiregion.zone` is set.
+- `global.multiregion.zone` names one of the entries in `global.multiregion.zones`.
+- `values.schema.json` constrains each `zones` entry: `name`, `numberOfBrokers`,
+  `numberOfReplicas` and `priority` are required, the counts are integers of at
+  least `1` and the priority is a non-negative integer.
+
+The application remains responsible for the semantic checks the chart cannot make:
+
+- duplicate zone names
+- replica counts against the resulting partition distribution
 - topology totals
 - application-level zone constraints
-
-Helm-level zone validation may be added later.
 
 ## Verification Matrix
 
@@ -140,7 +149,9 @@ The 8.10 unit tests must cover:
 | Legacy StatefulSet scaling | Replica division for one and multiple regions |
 | Legacy initial contacts | Generated for one region; omitted for multiple regions |
 | Legacy custom configuration | Custom application configuration replaces generated application configuration |
-| Zoned mode | Local replica count, computed cluster totals, zone env, `ZONE_AWARE` topology, no Helm node ID |
-| Zoned contact points | Generated contact points remain disabled |
+| Zoned mode | Local replica count, computed cluster totals, zone env, `ZONE_AWARE` topology, node ID rendered from the Pod ordinal |
+| Zoned node ID | Node ID is the index inside the local zone, with no cluster-wide offset |
+| Zoned contact points | Generated for a single-zone cluster, sized from the zone list; omitted beyond one zone |
 | Zoned exporter gating | Zoned mode does not activate legacy single-region exporter behavior |
 | Zoned/legacy conflict | Non-default legacy region settings fail in zoned mode |
+| Zoned zone membership | An unset or undeclared `global.multiregion.zone` fails |
