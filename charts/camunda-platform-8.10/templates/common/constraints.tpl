@@ -209,6 +209,7 @@ Either must bind the key to a non-empty value - the key alone leaves the same mi
     {{- $_ := set $seenIds $client.id true }}
   {{- end }}
   {{- $seenRoles := dict "ManagementIdentity" true "Orchestration" true "Optimize" true "Web Modeler" true "Web Modeler Admin" true "Hub" true "Hub Admin" true "Analyst" true "Console" true "DevOps" true }}
+  {{- $seenTopologySecretEnvNames := dict }}
   {{- $legacyIds := list }}
   {{- if .Values.global.identity.auth.connectors.alwaysRegister }}
     {{- $legacyIds = append $legacyIds (include "connectors.authClientId" .) }}
@@ -239,6 +240,12 @@ Either must bind the key to a non-empty value - the key alone leaves the same mi
     {{- range $componentName := list "orchestration" "optimize" "connectors" }}
       {{- $component := get ($cluster.components | default dict) $componentName | default dict }}
       {{- if $component.enabled }}
+        {{- $secretEnvName := printf "VALUES_TOPOLOGY_%s_%s_SECRET" (include "camundaPlatform.topologyEnvToken" $cluster.id) (upper $componentName) }}
+        {{- $componentLabel := printf "global.topology.clusters[%s].components.%s" $cluster.id $componentName }}
+        {{- if hasKey $seenTopologySecretEnvNames $secretEnvName }}
+          {{- fail (printf "[camunda][error] %s and %s generate the same topology secret environment variable %s." (get $seenTopologySecretEnvNames $secretEnvName) $componentLabel $secretEnvName) }}
+        {{- end }}
+        {{- $_ := set $seenTopologySecretEnvNames $secretEnvName $componentLabel }}
         {{- if empty $component.clientId }}
           {{- fail (printf "[camunda][error] global.topology.clusters[%s].components.%s requires clientId when enabled." $cluster.id $componentName) }}
         {{- end }}
@@ -280,6 +287,12 @@ Either must bind the key to a non-empty value - the key alone leaves the same mi
       {{- $_ := set $seenTenantIds ($tenant.id | toString) true }}
       {{- $tenantOptimize := dig "components" "optimize" dict $tenant }}
       {{- if $tenantOptimize.enabled }}
+        {{- $secretEnvName := printf "VALUES_TOPOLOGY_%s_TENANT_%s_OPTIMIZE_SECRET" (include "camundaPlatform.topologyEnvToken" $cluster.id) (include "camundaPlatform.topologyEnvToken" $tenant.id) }}
+        {{- $tenantLabel := printf "global.topology.clusters[%s].physicalTenants[%s]" $cluster.id $tenant.id }}
+        {{- if hasKey $seenTopologySecretEnvNames $secretEnvName }}
+          {{- fail (printf "[camunda][error] %s and %s generate the same topology secret environment variable %s." (get $seenTopologySecretEnvNames $secretEnvName) $tenantLabel $secretEnvName) }}
+        {{- end }}
+        {{- $_ := set $seenTopologySecretEnvNames $secretEnvName $tenantLabel }}
         {{- if or (empty $tenantOptimize.clientId) (empty $tenantOptimize.audience) (empty $tenantOptimize.redirectUrl) }}
           {{- fail (printf "[camunda][error] global.topology.clusters[%s].physicalTenants[%s].components.optimize requires clientId, audience, and redirectUrl when enabled." $cluster.id $tenant.id) }}
         {{- end }}

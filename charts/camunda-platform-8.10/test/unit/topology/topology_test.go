@@ -251,6 +251,49 @@ func TestHubTopologyPhysicalTenantRejectsDuplicateId(t *testing.T) {
 	require.ErrorContains(t, err, `duplicate global.topology.clusters[east].physicalTenants id "tenanta"`)
 }
 
+func TestHubTopologyRejectsPhysicalTenantOptimizeSecretEnvNameCollision(t *testing.T) {
+	options := &helm.Options{
+		ValuesFiles: []string{filepath.Join("testdata", "hub-physical-tenants.yaml")},
+		SetJSONValues: map[string]string{
+			"global.topology.clusters[1].components": `{"optimize":{"enabled":true,"clientId":"optimize-east-tenant-tenanta","audience":"optimize-east-tenant-tenanta-api","redirectUrl":"https://east-tenant-tenanta.example.com/optimize","secret":{"inlineSecret":"secret"}}}`,
+		},
+		SetValues: map[string]string{
+			"global.topology.clusters[1].id":          "east-tenant-tenanta",
+			"global.topology.clusters[1].namespace":   "camunda-east-tenant-tenanta",
+			"global.topology.clusters[1].releaseName": "camunda-east-tenant-tenanta",
+			"global.topology.clusters[1].host":        "east-tenant-tenanta.example.com",
+			"global.topology.clusters[1].version":     "8.10.0",
+		},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/identity/deployment.yaml"})
+	require.ErrorContains(t, err, "global.topology.clusters[east].physicalTenants[tenanta] and global.topology.clusters[east-tenant-tenanta].components.optimize generate the same topology secret environment variable VALUES_TOPOLOGY_EAST_TENANT_TENANTA_OPTIMIZE_SECRET")
+}
+
+func TestTopologySchemaAcceptsTemplatedOrchestrationRedirectUrl(t *testing.T) {
+	options := &helm.Options{
+		ValuesFiles: []string{filepath.Join("testdata", "hub-keycloak.yaml")},
+		SetJSONValues: map[string]string{
+			"global.topology.clusters[0].components.orchestration.redirectUrl": `"{{ printf \"https://east.example.com/orchestration\" }}"`,
+		},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/identity/configmap.yaml"})
+	require.NoError(t, err)
+}
+
+func TestTopologySchemaRejectsInvalidOptimizeRedirectUrl(t *testing.T) {
+	options := &helm.Options{
+		ValuesFiles: []string{filepath.Join("testdata", "hub-physical-tenants.yaml")},
+		SetValues: map[string]string{
+			"global.topology.clusters[0].physicalTenants[0].components.optimize.redirectUrl": "not-a-url",
+		},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/identity/configmap.yaml"})
+	require.ErrorContains(t, err, "physicalTenants/0/components/optimize/redirectUrl': 'not-a-url' does not match pattern")
+}
+
 func TestHubTopologySuppressesDefaultWorkloadPlane(t *testing.T) {
 	output := render(t, "hub-generic.yaml")
 

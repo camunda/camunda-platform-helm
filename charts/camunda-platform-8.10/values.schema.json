@@ -6922,8 +6922,7 @@
                     "type": "string"
                 },
                 "redirectUrl": {
-                    "type": "string",
-                    "pattern": "^$|^https?://[^\\s]+$"
+                    "type": "string"
                 },
                 "roleName": {
                     "type": "string"
@@ -6977,7 +6976,8 @@
                     "type": "string"
                 },
                 "redirectUrl": {
-                    "type": "string"
+                    "type": "string",
+                    "pattern": "^$|^https?://[^\\s]+$"
                 },
                 "roleName": {
                     "type": "string"
