@@ -1507,7 +1507,7 @@
                 "enabled": {"type": "boolean"},
                 "clientId": {"type": "string"},
                 "audience": {"type": "string"},
-                "redirectUrl": {"type": "string", "pattern": "^$|^https?://[^\\s]+$"},
+                "redirectUrl": {"type": "string", "pattern": "^$|^https?://(?:[^\\s{}]|\\{\\{[^}]*\\}\\})+$"},
                 "roleName": {"type": "string"},
                 "secret": {"$ref": "#/$defs/topologySecret"},
                 "serviceName": {"type": "string"},
