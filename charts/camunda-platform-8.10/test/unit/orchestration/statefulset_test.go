@@ -352,6 +352,46 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 				s.Require().Equal("log4j2.xml", volumeMounts[4].SubPath)
 			},
 		}, {
+			Name: "TestLog4j2MountNotDuplicatedWhenBothSourcesSetIt",
+			Values: map[string]string{
+				"orchestration.log4j2":                             "<Configuration>deprecated</Configuration>",
+				"orchestration.extraConfiguration[0].file":         "log4j2.xml",
+				"orchestration.extraConfiguration[0].springImport": "false",
+				"orchestration.extraConfiguration[0].content":      "<Configuration>operator</Configuration>",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var statefulSet appsv1.StatefulSet
+				helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+				count := 0
+				for _, vm := range statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts {
+					if vm.MountPath == "/usr/local/camunda/config/log4j2.xml" {
+						count++
+					}
+				}
+				s.Require().Equal(1, count,
+					"log4j2.xml must be mounted exactly once when orchestration.log4j2 and extraConfiguration both set it")
+			},
+		}, {
+			Name: "TestLog4j2MountedOnceFromExtraConfigurationAlone",
+			Values: map[string]string{
+				"orchestration.extraConfiguration[0].file":         "log4j2.xml",
+				"orchestration.extraConfiguration[0].springImport": "false",
+				"orchestration.extraConfiguration[0].content":      "<Configuration>operator</Configuration>",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var statefulSet appsv1.StatefulSet
+				helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+				count := 0
+				for _, vm := range statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts {
+					if vm.MountPath == "/usr/local/camunda/config/log4j2.xml" {
+						count++
+					}
+				}
+				s.Require().Equal(1, count, "log4j2.xml should be mounted once from extraConfiguration")
+			},
+		}, {
 			Name:                 "TestContainerSetExtraVolumes",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{

@@ -444,6 +444,92 @@ func (s *ConfigmapLegacyTemplateTest) TestExtraConfigurationSpringImport() {
 					"Second file content should be present in ConfigMap even with springImport: false")
 			},
 		},
+		{
+			Name:   "TestLog4j2KeyNotEmittedWhenUnset",
+			Values: map[string]string{},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Equal(0, strings.Count(output, "log4j2.xml: |"),
+					"log4j2.xml should not be emitted at all when orchestration.log4j2 is unset")
+			},
+		},
+		{
+			Name: "TestLog4j2KeyEmittedOnceFromDeprecatedKey",
+			Values: map[string]string{
+				"orchestration.log4j2": "<Configuration>deprecated</Configuration>",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Equal(1, strings.Count(output, "log4j2.xml: |"),
+					"log4j2.xml should be emitted exactly once")
+
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().Contains(configmap.Data["log4j2.xml"], "<Configuration>deprecated</Configuration>",
+					"orchestration.log4j2 content should be used when extraConfiguration does not supply the file")
+			},
+		},
+		{
+			Name: "TestLog4j2KeyEmittedOnceFromExtraConfiguration",
+			Values: map[string]string{
+				"orchestration.extraConfiguration[0].file":         "log4j2.xml",
+				"orchestration.extraConfiguration[0].springImport": "false",
+				"orchestration.extraConfiguration[0].content":      "<Configuration>operator</Configuration>",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Equal(1, strings.Count(output, "log4j2.xml: |"),
+					"log4j2.xml must not be defined twice in ConfigMap data")
+
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().Contains(configmap.Data["log4j2.xml"], "<Configuration>operator</Configuration>",
+					"extraConfiguration content should be used")
+			},
+		},
+		{
+			Name: "TestLog4j2ExtraConfigurationWinsOverDeprecatedKey",
+			Values: map[string]string{
+				"orchestration.log4j2":                             "<Configuration>deprecated</Configuration>",
+				"orchestration.extraConfiguration[0].file":         "log4j2.xml",
+				"orchestration.extraConfiguration[0].springImport": "false",
+				"orchestration.extraConfiguration[0].content":      "<Configuration>operator</Configuration>",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Equal(1, strings.Count(output, "log4j2.xml: |"),
+					"log4j2.xml must not be defined twice when both sources set it")
+
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().Contains(configmap.Data["log4j2.xml"], "<Configuration>operator</Configuration>",
+					"extraConfiguration should win over the deprecated orchestration.log4j2")
+				s.Require().NotContains(configmap.Data["log4j2.xml"], "deprecated",
+					"deprecated orchestration.log4j2 content should be suppressed")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *ConfigmapLegacyTemplateTest) TestExtraConfigurationDoesNotSuppressChartRenderedProperties() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestChartStillRendersItsOwnValueAlongsideExtraConfiguration",
+			Values: map[string]string{
+				"orchestration.extraConfiguration[0].file":    "operator-override.yaml",
+				"orchestration.extraConfiguration[0].content": "camunda:\n  data:\n    snapshot-period: 7m\n",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+				applicationYaml := configmap.Data["application.yaml"]
+				s.Require().Contains(applicationYaml, "optional:file:/usr/local/camunda/config/operator-override.yaml",
+					"the operator file must be imported by the chart's application.yaml")
+				s.Require().Contains(applicationYaml, "snapshot-period: \"5m\"",
+					"the chart must keep rendering its own default; the import outranks it at runtime")
+				s.Require().Contains(configmap.Data["operator-override.yaml"], "snapshot-period: 7m",
+					"the operator value must be delivered as its own imported document")
+			},
+		},
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
