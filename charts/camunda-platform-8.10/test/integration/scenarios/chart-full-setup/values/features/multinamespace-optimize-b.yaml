@@ -27,6 +27,8 @@ global:
 
 optimize:
   enabled: true
+  # This release has no local Orchestration Service to satisfy the common test waiter.
+  initContainers: []
   livenessProbe:
     enabled: true
   security:
