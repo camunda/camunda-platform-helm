@@ -99,7 +99,7 @@ every existing values file rendering unchanged.
 
 {{- define "optimize.effectiveAuthType" -}}
   {{- $oidc := dig "security" "authentication" "oidc" dict .Values.optimize -}}
-  {{- $oidc.type | default (include "camundaPlatform.authIssuerType" .) -}}
+  {{- upper ($oidc.type | default (include "camundaPlatform.authIssuerType" .)) -}}
 {{- end -}}
 
 {{- define "optimize.authIssuer" -}}
@@ -213,7 +213,7 @@ SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI
 {{- end -}}
 
 {{- define "optimize.clientSecretEnvNames" -}}
-CAMUNDA_IDENTITY_CLIENT_SECRET
+VALUES_OPTIMIZE_CLIENT_SECRET
 {{- end -}}
 
 {{- define "optimize.identityUrlEnvNames" -}}
@@ -327,7 +327,7 @@ false
 
 {{/*
 [optimize] Whether the client secret may reach the container without this chart resolving it. With an
-existingSecret and no key the Deployment emits no CAMUNDA_IDENTITY_CLIENT_SECRET at all
+existingSecret and no key the Deployment emits no VALUES_OPTIMIZE_CLIENT_SECRET at all
 (camundaPlatform.emitEnvVarFromSecretConfig matches neither branch), so nothing of the chart's is
 there to outrank: an optimize.env entry - including a valueFrom secretKeyRef, which is how a release
 names the key itself - and a declared envFrom variable both land it.
@@ -483,6 +483,18 @@ Uses the component-specific key (optimize.database.<backend>.prefix) with a hard
   {{- .Values.optimize.database.opensearch.prefix | default "zeebe-record" -}}
 {{- else -}}
   {{- "zeebe-record" -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+[optimize] Resolve the host for the backend Optimize selects. Elasticsearch wins when both are
+enabled, matching optimize.defaultConfig and optimize.indexPrefix.
+*/}}
+{{- define "optimize.effectiveDatabaseHost" -}}
+{{- if .Values.optimize.database.elasticsearch.enabled -}}
+  {{- include "camundaPlatform.elasticsearchHost" . -}}
+{{- else if .Values.optimize.database.opensearch.enabled -}}
+  {{- include "camundaPlatform.opensearchHost" . -}}
 {{- end -}}
 {{- end -}}
 

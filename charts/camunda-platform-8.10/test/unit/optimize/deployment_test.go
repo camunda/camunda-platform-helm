@@ -99,6 +99,32 @@ func (s *DeploymentTemplateTest) TestAutomountServiceAccountToken() {
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
+func (s *DeploymentTemplateTest) TestOptimizeOnlyScenarioDropsLocalOrchestrationWaiter() {
+	valuesRoot := filepath.Join(s.chartPath, "test/integration/scenarios")
+	for _, suffix := range []string{"a", "b"} {
+		s.Run(suffix, func() {
+			output, err := helm.RenderTemplateE(s.T(), &helm.Options{
+				ValuesFiles: []string{
+					filepath.Join(valuesRoot, "common/values-integration-test.yaml"),
+					filepath.Join(valuesRoot, "chart-full-setup/values/identity/keycloak-external-optimize.yaml"),
+					filepath.Join(valuesRoot, "chart-full-setup/values/persistence/elasticsearch-external.yaml"),
+					filepath.Join(valuesRoot, "chart-full-setup/values/features/multinamespace-optimize-"+suffix+".yaml"),
+				},
+			}, s.chartPath, s.release, s.templates)
+			require.NoError(s.T(), err)
+
+			var deployment appsv1.Deployment
+			helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+			initContainerNames := make([]string, 0, len(deployment.Spec.Template.Spec.InitContainers))
+			for _, container := range deployment.Spec.Template.Spec.InitContainers {
+				initContainerNames = append(initContainerNames, container.Name)
+			}
+			require.Contains(s.T(), initContainerNames, "migration")
+			require.NotContains(s.T(), initContainerNames, "wait-for-orchestration")
+		})
+	}
+}
+
 func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 	testCases := []testhelpers.TestCase{
 		{
