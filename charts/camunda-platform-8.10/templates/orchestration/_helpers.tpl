@@ -489,29 +489,6 @@ true
 {{- end -}}
 {{- end -}}
 
-{{/*
-[orchestration] Exporter id of the release's legacy exporter, empty when it runs none.
-*/}}
-{{- define "orchestration.legacyExporterId" -}}
-{{- if eq (include "orchestration.hasLegacyElasticsearchExporter" .) "true" -}}
-elasticsearch
-{{- else if eq (include "orchestration.hasLegacyOpenSearchExporter" .) "true" -}}
-opensearch
-{{- end -}}
-{{- end -}}
-
-{{/*
-[orchestration] Index prefix of the release's root legacy exporter, empty when it runs none.
-*/}}
-{{- define "orchestration.legacyExporterPrefix" -}}
-{{- $exporterId := include "orchestration.legacyExporterId" . -}}
-{{- if eq $exporterId "elasticsearch" -}}
-{{- .Values.optimize.database.elasticsearch.prefix | default .Values.global.elasticsearch.prefix -}}
-{{- else if eq $exporterId "opensearch" -}}
-{{- .Values.optimize.database.opensearch.prefix | default .Values.global.opensearch.prefix -}}
-{{- end -}}
-{{- end -}}
-
 {{- define "orchestration.hasAppIntegrations" -}}
 {{- include "camundaPlatform.hasSecretConfig" (dict "config" .Values.orchestration.exporters.appIntegrations.apiKey) -}}
 {{- end -}}
