@@ -170,6 +170,18 @@ func (s *ConfigMapWarningsTemplateTest) TestBundledKeycloakCveWarning() {
 			},
 		},
 		{
+			Name: "TestLastAffectedVersionWarns",
+			Values: mergeMaps(baseValues, map[string]string{
+				"identityKeycloak.image.tag": "26.7.1",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().Contains(configmap.Data["warnings"], "CVE-2026-18963")
+			},
+		},
+		{
 			Name: "TestFixedVersionWithBitnamiSuffixDoesNotWarn",
 			Values: mergeMaps(baseValues, map[string]string{
 				"identityKeycloak.image.tag": "26.7.2-debian-12-r0",
