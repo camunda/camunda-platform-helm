@@ -475,7 +475,7 @@ The following values inside your values.yaml need to be set but were not:
           (printf "SECURITY: the bundled Keycloak image is pinned to %s, which is affected by CVE-2026-18963, a critical password-reset flaw enabling account takeover. It is fixed in Keycloak 26.7.2." $keycloakVersion)
           "The Bitnami-based \"camunda/keycloak\" tags this chart defaults to are frozen on the discontinued bitnamilegacy base and will not receive the fix."
           "Recommended: migrate this subchart to the Keycloak Operator, which replaces its StatefulSet: https://docs.camunda.io/docs/self-managed/deployment/helm/operational-tasks/migration-from-bitnami/"
-          "Enterprise customers can instead point \"identityKeycloak.image\" at \"registry.camunda.cloud/keycloak-ee/keycloak:26.7.2\", which is Bitnami-based and drop-in compatible with this subchart. Details: https://github.com/camunda/camunda-platform-helm/issues/6987"
+          "Enterprise customers can instead deploy with the chart's \"values-enterprise.yaml\", which pins the Bitnami-based \"keycloak-ee/keycloak\" 26.7.2 image along with the registry pull secret it requires. Details: https://github.com/camunda/camunda-platform-helm/issues/6987"
       -}}
       {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
     {{- end }}
