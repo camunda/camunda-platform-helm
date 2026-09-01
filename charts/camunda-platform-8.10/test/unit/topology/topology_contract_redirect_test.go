@@ -27,20 +27,20 @@ func TestTopologyContractResolvesRedirectTemplatesInReleaseContext(t *testing.T)
 	options := &helm.Options{
 		ValuesFiles: []string{filepath.Join("testdata", "hub-keycloak.yaml")},
 		SetValues: map[string]string{
-			"global.ingress.host": "hub.example.test",
+			"global.host": "hub.example.test",
 			"global.topology.clusters[0].components.optimize.enabled":                  "true",
 			"global.topology.clusters[0].components.optimize.clientId":                 "cluster-optimize",
 			"global.topology.clusters[0].components.optimize.audience":                 "cluster-optimize-api",
-			"global.topology.clusters[0].components.optimize.redirectUrl":              `https://{{ .Values.global.ingress.host }}/cluster-optimize`,
+			"global.topology.clusters[0].components.optimize.redirectUrl":              `https://{{ .Values.global.host }}/cluster-optimize`,
 			"global.topology.clusters[0].components.optimize.secret.existingSecret":    "cluster-oidc",
 			"global.topology.clusters[0].components.optimize.secret.existingSecretKey": "client-secret",
 			"identity.clients[0].id":                            "tenant-optimize",
 			"identity.clients[0].name":                          "Tenant Optimize",
 			"identity.clients[0].type":                          "public",
-			"identity.clients[0].rootUrl":                       `https://{{ .Values.global.ingress.host }}/tenant-optimize`,
-			"identity.clients[0].redirectUris[0]":               `https://{{ .Values.global.ingress.host }}/tenant-optimize/callback`,
+			"identity.clients[0].rootUrl":                       `https://{{ .Values.global.host }}/tenant-optimize`,
+			"identity.clients[0].redirectUris[0]":               `https://{{ .Values.global.host }}/tenant-optimize/callback`,
 			"identity.clients[0].secret.inlineSecret":           "unused",
-			"optimize.security.authentication.oidc.redirectUrl": `https://{{ .Values.global.ingress.host }}/release-optimize`,
+			"optimize.security.authentication.oidc.redirectUrl": `https://{{ .Values.global.host }}/release-optimize`,
 			"orchestration.data.secondaryStorage.type":          "elasticsearch",
 		},
 	}
@@ -78,7 +78,7 @@ func TestTopologyContractResolvesRedirectTemplatesInReleaseContext(t *testing.T)
 	require.Equal(t, "https://hub.example.test/cluster-optimize", contract.Hub.Clusters[0].Optimize.RedirectURL)
 	require.Equal(t, "https://hub.example.test/tenant-optimize", contract.Hub.IdentityClients[0].RootURL)
 	require.Equal(t, []string{"https://hub.example.test/tenant-optimize/callback"}, contract.Hub.IdentityClients[0].RedirectURIs)
-	require.NotContains(t, output, "{{ .Values.global.ingress.host }}")
+	require.NotContains(t, output, "{{ .Values.global.host }}")
 	require.Contains(t, output, "rootUrl: https://hub.example.test/tenant-optimize")
 	require.Contains(t, output, "- https://hub.example.test/tenant-optimize/callback")
 }
