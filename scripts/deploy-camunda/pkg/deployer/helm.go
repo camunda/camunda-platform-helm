@@ -22,6 +22,7 @@ import (
 	"scripts/camunda-core/pkg/helm"
 	"scripts/camunda-core/pkg/logging"
 	"scripts/deploy-camunda/pkg/types"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -157,38 +158,7 @@ func upgradeInstall(ctx context.Context, o types.Options) error {
 		args = append(args, "--timeout", fmt.Sprintf("%ds", int(o.Timeout.Seconds())))
 	}
 
-	// Deployer convention: set global.ingress.host for Camunda Platform
-	if o.IngressHost != "" {
-		args = append(args, "--set", "global.ingress.host="+o.IngressHost)
-	}
-
-	// Optional post-renderer
-	if o.PostRendererPath != "" {
-		args = append(args, "--post-renderer", o.PostRendererPath)
-	}
-
-	// Values files in order
-	for _, v := range o.ValuesFiles {
-		args = append(args, "-f", v)
-	}
-
-	// Set pairs - deployer uses map[string]string, format as key=value
-	if len(o.SetPairs) > 0 {
-		// Sort keys for determinism
-		keys := make([]string, 0, len(o.SetPairs))
-		for k := range o.SetPairs {
-			keys = append(keys, k)
-		}
-		// Note: intentionally not sorting to preserve user order
-		for k, v := range o.SetPairs {
-			args = append(args, "--set", fmt.Sprintf("%s=%s", k, v))
-		}
-	}
-
-	// Extra args last (allow override)
-	if len(o.ExtraArgs) > 0 {
-		args = append(args, o.ExtraArgs...)
-	}
+	args = appendHelmValueArgs(args, o)
 
 	_, runErr := helmRunWithRetry(ctx, args)
 	if runErr != nil {
@@ -199,6 +169,27 @@ func upgradeInstall(ctx context.Context, o types.Options) error {
 		}
 	}
 	return nil
+}
+
+func appendHelmValueArgs(args []string, o types.Options) []string {
+	if o.IngressHost != "" {
+		args = append(args, "--set", "global.ingress.host="+o.IngressHost)
+	}
+	if o.PostRendererPath != "" {
+		args = append(args, "--post-renderer", o.PostRendererPath)
+	}
+	for _, valueFile := range o.ValuesFiles {
+		args = append(args, "-f", valueFile)
+	}
+	keys := make([]string, 0, len(o.SetPairs))
+	for key := range o.SetPairs {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	for _, key := range keys {
+		args = append(args, "--set", fmt.Sprintf("%s=%s", key, o.SetPairs[key]))
+	}
+	return append(args, o.ExtraArgs...)
 }
 
 // composeKubeArgs builds kubeconfig and context arguments

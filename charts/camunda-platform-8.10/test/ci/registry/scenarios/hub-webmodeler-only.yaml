@@ -3,7 +3,7 @@ auth: keycloak
 flows:
   - upgrade-minor
 identity: keycloak
-persistence: elasticsearch
+persistence: elasticsearch-companion
 features:
   - hub-webmodeler-only
 platforms:
