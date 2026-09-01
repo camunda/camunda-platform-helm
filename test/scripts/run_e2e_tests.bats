@@ -40,6 +40,20 @@ teardown() {
   rm -rf "$TMPDIR_TEST"
 }
 
+@test "topology smoke CI passes the Modeler cluster through the action and CLI" {
+  workflow="$ROOT/.github/workflows/test-integration-runner.yaml"
+  action="$ROOT/.github/actions/playwright-e2e-tests/action.yaml"
+
+  run grep -F 'modeler-cluster-name: ${{ matrix.modeler_cluster_name }}' "$workflow"
+  [ "$status" -eq 0 ]
+
+  run grep -F 'E2E_ARG_MODELER_CLUSTER_NAME: ${{ inputs.modeler-cluster-name }}' "$action"
+  [ "$status" -eq 0 ]
+
+  run grep -F 'E2E_ARGS+=(--modeler-cluster-name "${E2E_ARG_MODELER_CLUSTER_NAME}")' "$action"
+  [ "$status" -eq 0 ]
+}
+
 @test "--optimize-namespace without --hub-namespace is rejected" {
   run "$SCRIPT" --absolute-chart-path "$CHART_PATH" --namespace test-ns \
     --optimize-namespace opt-ns --optimize-context-path /optimize-orcha
