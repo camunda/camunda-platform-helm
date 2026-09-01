@@ -209,13 +209,53 @@ func TestPlanScriptsChangeTriggersAll(t *testing.T) {
 	}
 }
 
-func TestPlanBareScriptsTokenTriggersAll(t *testing.T) {
-	// tj-actions/changed-files with dir_names:true collapses scripts/<file>
-	// to the bare token "scripts".
+func TestPlanNonDeployScriptsNoTrigger(t *testing.T) {
 	result, err := Plan(findRepoRoot(t), PlanOptions{
 		ActiveVersions: planActiveVersions,
 		ManualTrigger:  "none",
-		ChangedFiles:   "scripts",
+		ChangedFiles:   "scripts/notify-pr-activity/main.go scripts/release-tools/pkg/harbor/client.go",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := planVersionsIn(result.Include); len(got) != 0 {
+		t.Errorf("versions = %v, want none", got)
+	}
+}
+
+func TestPlanNonChartWorkflowNoTrigger(t *testing.T) {
+	result, err := Plan(findRepoRoot(t), PlanOptions{
+		ActiveVersions: planActiveVersions,
+		ManualTrigger:  "none",
+		ChangedFiles:   ".github/workflows/repo-pr-labeler.yaml",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := planVersionsIn(result.Include); len(got) != 0 {
+		t.Errorf("versions = %v, want none", got)
+	}
+}
+
+func TestPlanChartCIWorkflowTriggersAll(t *testing.T) {
+	result, err := Plan(findRepoRoot(t), PlanOptions{
+		ActiveVersions: planActiveVersions,
+		ManualTrigger:  "none",
+		ChangedFiles:   ".github/workflows/test-integration-runner.yaml",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := planVersionsIn(result.Include); len(got) != len(planActiveVersions) {
+		t.Errorf("versions = %v, want all of %v", got, planActiveVersions)
+	}
+}
+
+func TestPlanActionChangeTriggersAll(t *testing.T) {
+	result, err := Plan(findRepoRoot(t), PlanOptions{
+		ActiveVersions: planActiveVersions,
+		ManualTrigger:  "none",
+		ChangedFiles:   ".github/actions/playwright-e2e-tests/action.yaml",
 	})
 	if err != nil {
 		t.Fatal(err)
