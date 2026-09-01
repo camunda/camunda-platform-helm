@@ -233,6 +233,11 @@ func registerDeclarativePostDeployHook(flags *config.RuntimeFlags, hook *Lifecyc
 	return registerDeclarativeHook(flags, hook, hookPostDeploy, &flags.PostDeployHooks, repoRoot, appVersion, scenario)
 }
 
+// RegisterDeclarativePostDeployHook registers a hook for a synthesized topology release.
+func RegisterDeclarativePostDeployHook(flags *config.RuntimeFlags, hook *LifecycleHook, repoRoot, appVersion, scenario string) error {
+	return registerDeclarativePostDeployHook(flags, hook, repoRoot, appVersion, scenario)
+}
+
 // RunDeclarativePostDeployHook validates and immediately executes a post-deploy
 // hook. It is used when the lifecycle boundary is broader than one deployment,
 // such as a topology composed of several releases.
