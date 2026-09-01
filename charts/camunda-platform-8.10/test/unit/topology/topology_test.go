@@ -29,7 +29,7 @@ import (
 
 func TestTopologyContractIsHiddenAndRedactsInlineSecrets(t *testing.T) {
 	options := &helm.Options{SetValues: map[string]string{
-		"orchestration.data.secondaryStorage.type":                    "elasticsearch",
+		"orchestration.data.secondaryStorage.type":                  "elasticsearch",
 		"optimize.security.authentication.oidc.secret.inlineSecret": "must-not-render",
 	}}
 	normal := helm.RenderTemplate(t, options, chartPath(t), "camunda", nil)
@@ -44,26 +44,28 @@ func TestTopologyContractContainsEffectiveOptimizeAndHubValues(t *testing.T) {
 	options := &helm.Options{
 		ValuesFiles: []string{filepath.Join("testdata", "hub-keycloak.yaml")},
 		SetValues: map[string]string{
-			"orchestration.data.secondaryStorage.type":                                  "elasticsearch",
-			"optimize.enabled":                                                          "true",
-			"optimize.contextPath":                                                      "/analytics",
-			"optimize.database.elasticsearch.enabled":                                   "true",
-			"optimize.database.elasticsearch.prefix":                                    "records-east",
-			"global.topology.clusters[0].components.optimize.enabled":                    "true",
-			"global.topology.clusters[0].components.optimize.clientId":                   "optimize-east",
-			"global.topology.clusters[0].components.optimize.audience":                   "optimize-east-api",
-			"global.topology.clusters[0].components.optimize.redirectUrl":                "https://example.test/analytics",
-			"global.topology.clusters[0].components.optimize.secret.existingSecret":      "oidc",
-			"global.topology.clusters[0].components.optimize.secret.existingSecretKey":   "client-secret",
-			"optimize.security.authentication.oidc.clientId":                             "optimize-east",
-			"optimize.security.authentication.oidc.audience":                             "optimize-east-api",
-			"optimize.security.authentication.oidc.redirectUrl":                          "https://example.test/analytics",
-			"optimize.security.authentication.oidc.secret.existingSecret":                "oidc",
-			"optimize.security.authentication.oidc.secret.existingSecretKey":             "client-secret",
+			"orchestration.data.secondaryStorage.type":                                 "elasticsearch",
+			"optimize.enabled":                                                         "true",
+			"optimize.contextPath":                                                     "/analytics",
+			"optimize.database.elasticsearch.enabled":                                  "true",
+			"optimize.database.elasticsearch.prefix":                                   "records-east",
+			"global.topology.clusters[0].components.optimize.enabled":                  "true",
+			"global.topology.clusters[0].components.optimize.clientId":                 "optimize-east",
+			"global.topology.clusters[0].components.optimize.audience":                 "optimize-east-api",
+			"global.topology.clusters[0].components.optimize.redirectUrl":              "https://example.test/analytics",
+			"global.topology.clusters[0].components.optimize.secret.existingSecret":    "oidc",
+			"global.topology.clusters[0].components.optimize.secret.existingSecretKey": "client-secret",
+			"optimize.security.authentication.oidc.clientId":                           "optimize-east",
+			"optimize.security.authentication.oidc.audience":                           "optimize-east-api",
+			"optimize.security.authentication.oidc.redirectUrl":                        "https://example.test/analytics",
+			"optimize.security.authentication.oidc.secret.existingSecret":              "oidc",
+			"optimize.security.authentication.oidc.secret.existingSecretKey":           "client-secret",
 		},
 	}
 	output := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{"templates/common/topology-contract.yaml"}, "--api-versions", "camunda.io/topology-contract")
-	var document struct{ Data map[string]string `yaml:"data"` }
+	var document struct {
+		Data map[string]string `yaml:"data"`
+	}
 	helm.UnmarshalK8SYaml(t, output, &document)
 	var contract struct {
 		Optimize struct {
