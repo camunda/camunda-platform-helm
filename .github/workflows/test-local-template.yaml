@@ -32,7 +32,7 @@ jobs:
     env:
       TEST_NAMESPACE: camunda-platform
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@43320645ff9e9e50f390cb40dacb4f07ff204f1c # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@2fa2e5ecfa1d82a6d2a93106bd43889f68500f4f # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: "${{ inputs.camunda-helm-git-ref }}"
@@ -49,7 +49,7 @@ jobs:
             secret/data/products/distribution/ci DOCKERHUB_PASSWORD | TEST_DOCKER_PASSWORD;
           exportEnv: false
       - name: Install common software tooling
-        uses: camunda/infra-global-github-actions/common-tooling@43320645ff9e9e50f390cb40dacb4f07ff204f1c # main
+        uses: camunda/infra-global-github-actions/common-tooling@2fa2e5ecfa1d82a6d2a93106bd43889f68500f4f # main
         with:
           overwrite: "false"
           build-essential-enabled: "true"
@@ -126,7 +126,7 @@ jobs:
         run: |
           test -n "${{ env.TEST_HELM_DIGEST_VALUES }}" &&
             TEST_HELM_EXTRA_ARGS="--values charts/${{ inputs.camunda-helm-dir }}/values-digest.yaml"
-          if [[ "${{ inputs.camunda-helm-dir }}" == "camunda-platform-8.10" || "${{ inputs.camunda-helm-dir }}" == "camunda-platform-8.9" ]]; then
+          if [[ "${{ inputs.camunda-helm-dir }}" == "camunda-platform-8.10" || "${{ inputs.camunda-helm-dir }}" == "camunda-platform-8.9" || "${{ inputs.camunda-helm-dir }}" == "camunda-platform-8.8" ]]; then
             TEST_HELM_EXTRA_ARGS="${TEST_HELM_EXTRA_ARGS} \
               --set orchestration.service.appProtocols.grpc=kubernetes.io/h2c \
               --set orchestration.service.appProtocols.management=http \
@@ -138,8 +138,8 @@ jobs:
             --values "charts/${{ inputs.camunda-helm-dir }}/test/integration/scenarios/common/values-integration-test-pull-secrets.yaml" \
             --values "charts/${{ inputs.camunda-helm-dir }}/values-local.yaml" \
             ${TEST_HELM_EXTRA_ARGS}
-      - name: Verify appProtocol is set on live Service objects (8.10, 8.9)
-        if: ${{ inputs.camunda-helm-dir == 'camunda-platform-8.10' || inputs.camunda-helm-dir == 'camunda-platform-8.9' }}
+      - name: Verify appProtocol is set on live Service objects (8.10, 8.9, 8.8)
+        if: ${{ inputs.camunda-helm-dir == 'camunda-platform-8.10' || inputs.camunda-helm-dir == 'camunda-platform-8.9' || inputs.camunda-helm-dir == 'camunda-platform-8.8' }}
         run: |
           set -euo pipefail
           check() {

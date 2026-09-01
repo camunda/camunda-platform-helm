@@ -1338,7 +1338,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.9.8"
+                            "default": "8.9.9"
                         },
                         "digest": {
                             "type": "string",
@@ -2633,7 +2633,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be used to set the Docker image tag for the Console image",
-                            "default": "8.9.89"
+                            "default": "8.9.91"
                         },
                         "digest": {
                             "type": "string",
@@ -3727,7 +3727,7 @@
                         },
                         "affinity": {
                             "type": "object",
-                            "description": "can be used to define pod affinity or anti-affinity, see https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity",
+                            "description": "can be used for [affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity); match `podLabels` for upgrade stability.",
                             "default": {}
                         },
                         "resources": {
@@ -4130,7 +4130,7 @@
                         },
                         "affinity": {
                             "type": "object",
-                            "description": "can be used to define pod affinity or anti-affinity, see https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity",
+                            "description": "can be used for [affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity); match `podLabels` for upgrade stability.",
                             "default": {}
                         },
                         "resources": {
@@ -4780,7 +4780,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.9.8"
+                            "default": "8.9.9"
                         },
                         "digest": {
                             "type": "string",
@@ -5618,7 +5618,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.9.17"
+                            "default": "8.9.18"
                         },
                         "digest": {
                             "type": "string",
@@ -6906,7 +6906,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.9.17"
+                            "default": "8.9.18"
                         },
                         "digest": {
                             "type": "string",
