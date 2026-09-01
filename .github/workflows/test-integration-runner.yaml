@@ -351,7 +351,7 @@ jobs:
       TEST_CLUSTER_TYPE: ${{ inputs.distro-type || inputs.cluster-type }}
 
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@43320645ff9e9e50f390cb40dacb4f07ff204f1c # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@2fa2e5ecfa1d82a6d2a93106bd43889f68500f4f # main
       - name: Info - ℹ️ Print workflow inputs ℹ️
         env:
           GITHUB_CONTEXT: ${{ toJson(inputs) }}
@@ -893,7 +893,7 @@ jobs:
       TEST_CLUSTER_TYPE: ${{ inputs.distro-type || inputs.cluster-type }}
 
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@43320645ff9e9e50f390cb40dacb4f07ff204f1c # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@2fa2e5ecfa1d82a6d2a93106bd43889f68500f4f # main
       - name: Info - ℹ️ Print workflow inputs ℹ️
         env:
           GITHUB_CONTEXT: ${{ toJson(inputs) }}
@@ -1288,7 +1288,7 @@ jobs:
       deployments: write
       packages: read
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@43320645ff9e9e50f390cb40dacb4f07ff204f1c # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@2fa2e5ecfa1d82a6d2a93106bd43889f68500f4f # main
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -1377,7 +1377,7 @@ jobs:
       deployments: write
       packages: read
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@43320645ff9e9e50f390cb40dacb4f07ff204f1c # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@2fa2e5ecfa1d82a6d2a93106bd43889f68500f4f # main
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -1478,7 +1478,7 @@ jobs:
       deployments: write
       packages: read
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@43320645ff9e9e50f390cb40dacb4f07ff204f1c # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@2fa2e5ecfa1d82a6d2a93106bd43889f68500f4f # main
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -1534,7 +1534,6 @@ jobs:
           GKE_WIP:          ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER }}
           GKE_SA:           ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_SERVICE_ACCOUNT }}
           CI_DEPLOYMENT_TTL: ${{ env.CI_DEPLOYMENT_TTL }}
-          MODELER_CLUSTER_NAME: ${{ matrix.modeler_cluster_name }}
         with:
           camunda-helm-git-ref: ${{ inputs.camunda-helm-git-ref }}
           camunda-helm-dir: ${{ inputs.camunda-helm-dir }}
@@ -1548,6 +1547,7 @@ jobs:
           hub-namespace: "${{ steps.base-vars.outputs.namespace }}-${{ inputs.topology-hub-suffix }}"
           optimize-namespace: "${{ matrix.optimize_suffix && format('{0}-{1}', steps.base-vars.outputs.namespace, matrix.optimize_suffix) || '' }}"
           optimize-context-path: "${{ matrix.optimize_context_path || '' }}"
+          modeler-cluster-name: ${{ matrix.modeler_cluster_name }}
           binary-artifact-name: ${{ inputs.binary-artifact-name }}
           deployment-ttl: ${{ env.CI_DEPLOYMENT_TTL }}
           auth: ${{ inputs.auth }}
@@ -1593,7 +1593,7 @@ jobs:
       deployments: write
       packages: read
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@43320645ff9e9e50f390cb40dacb4f07ff204f1c # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@2fa2e5ecfa1d82a6d2a93106bd43889f68500f4f # main
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
