@@ -17,6 +17,7 @@ package cmd
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -35,6 +36,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"gopkg.in/yaml.v3"
 )
 
 // newMatrixCommand creates the matrix parent command with list and run subcommands.
@@ -1324,6 +1326,21 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 		return fmt.Errorf("topology entry %s/%s: %w", entry.Version, entry.Scenario, err)
 	}
 
+	type preparedTopologyRelease struct {
+		release   matrix.TopologyRelease
+		flags     *config.RuntimeFlags
+		namespace string
+		prepared  *deploy.PreparedScenario
+		cleanup   func()
+	}
+	preparedReleases := make([]preparedTopologyRelease, 0, len(order))
+	defer func() {
+		for _, release := range preparedReleases {
+			release.prepared.Cleanup()
+			release.cleanup()
+		}
+	}()
+
 	for _, i := range order {
 		rel := entry.Topology.Releases[i]
 		releaseCtx := contexts[i]
@@ -1348,18 +1365,47 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 			cleanup()
 			return fmt.Errorf("topology release %s/%s (namespace-suffix %q): register post-deploy hook: %w", entry.Scenario, rel.Role, rel.NamespaceSuffix, err)
 		}
+		prepared, prepareErr := deploy.PrepareScenario(ctx, releaseCtx, flags)
+		if prepareErr != nil {
+			cleanup()
+			return fmt.Errorf("topology release %s/%s (namespace-suffix %q) prepare failed: %w", entry.Scenario, rel.Role, rel.NamespaceSuffix, prepareErr)
+		}
+		preparedReleases = append(preparedReleases, preparedTopologyRelease{release: rel, flags: flags, namespace: namespace, prepared: prepared, cleanup: cleanup})
+	}
 
-		deployErr := deploy.Execute(ctx, flags)
-		cleanup()
+	rendered := make([]matrix.RenderedTopologyRelease, 0, len(preparedReleases))
+	for _, release := range preparedReleases {
+		manifest, err := deploy.RenderPreparedTopologyContract(ctx, release.prepared, release.flags)
+		if err != nil {
+			return fmt.Errorf("topology release %s/%s contract render failed: %w", entry.Scenario, release.release.Role, err)
+		}
+		var document struct {
+			Data map[string]string `yaml:"data"`
+		}
+		if err := yaml.Unmarshal(manifest, &document); err != nil {
+			return fmt.Errorf("topology release %s/%s contract manifest decode failed: %w", entry.Scenario, release.release.Role, err)
+		}
+		var contract matrix.TopologyContract
+		if err := json.Unmarshal([]byte(document.Data["contract.json"]), &contract); err != nil {
+			return fmt.Errorf("topology release %s/%s contract decode failed: %w", entry.Scenario, release.release.Role, err)
+		}
+		rendered = append(rendered, matrix.RenderedTopologyRelease{Release: release.release, Contract: contract})
+	}
+	if err := entry.Topology.ValidateRendered(fmt.Sprintf("topology entry %s/%s", entry.Version, entry.Scenario), rendered); err != nil {
+		return err
+	}
+
+	for _, release := range preparedReleases {
+		deployErr := deploy.ExecutePrepared(ctx, release.prepared, release.flags)
 
 		status := "OK"
 		if deployErr != nil {
 			status = fmt.Sprintf("FAILED: %v", deployErr)
 		}
-		fmt.Fprintf(os.Stdout, "topology release %s/%s (namespace %s): %s\n", entry.Scenario, rel.Role, namespace, status)
+		fmt.Fprintf(os.Stdout, "topology release %s/%s (namespace %s): %s\n", entry.Scenario, release.release.Role, release.namespace, status)
 
 		if deployErr != nil {
-			return fmt.Errorf("topology release %s/%s (namespace-suffix %q) deploy failed: %w", entry.Scenario, rel.Role, rel.NamespaceSuffix, deployErr)
+			return fmt.Errorf("topology release %s/%s (namespace-suffix %q) deploy failed: %w", entry.Scenario, release.release.Role, release.release.NamespaceSuffix, deployErr)
 		}
 	}
 
