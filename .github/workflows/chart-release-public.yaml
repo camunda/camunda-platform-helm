@@ -442,7 +442,9 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.generate-github-token.outputs.token }}
         run: |
-          make release.set-prs-version-label chartPath="charts/camunda-platform-${{ needs.release.outputs.chart-dir-id }}"
+          make release.set-prs-version-label \
+            chartPath="charts/camunda-platform-${{ needs.release.outputs.chart-dir-id }}" \
+            chartVersion="${{ needs.release.outputs.version }}"
 
       - name: Stamp release date on the release-please PR
         id: stamp

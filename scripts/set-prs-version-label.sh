@@ -89,7 +89,7 @@ fi
 echo "${chart_dirs}" | while read -r chart_dir; do
     [[ -z "${chart_dir}" ]] && continue
     app_version="$(yq '.appVersion | sub("\..$", "")' ${chart_dir}/Chart.yaml)"
-    chart_version="$(yq '.version' ${chart_dir}/Chart.yaml)"
+    chart_version="${chartVersion:-$(yq '.version' ${chart_dir}/Chart.yaml)}"
     app_version_label="version/${app_version}"
     # The "version:x.y.z" label format is used by the support team,
     # it must not changed without checking with the support team.
