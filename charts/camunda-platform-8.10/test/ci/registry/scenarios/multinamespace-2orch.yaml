@@ -6,6 +6,7 @@ platforms:
   - gke
 infra-type:
   gke: distroci
+post-infra: post-infra-legacy-elasticsearch
 topology:
   name: hub-2orch
   shared-storage: elasticsearch
