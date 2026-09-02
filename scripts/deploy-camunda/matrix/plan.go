@@ -495,7 +495,8 @@ type TopologyE2ELeg struct {
 	ChartVersion string
 	ChartDir     string
 	// Suite names the application suite this leg runs. TestChartDir is the chart
-	// whose Playwright suite runs and PlaywrightProject is that suite's project.
+	// whose Playwright suite runs (the release's own chart) and
+	// PlaywrightProject is that suite's project.
 	Suite             string
 	TestChartDir      string
 	PlaywrightProject string
@@ -545,23 +546,15 @@ func TopologyE2ELegs(parentVersion string, topology *Topology) []TopologyE2ELeg 
 			}
 			targets = append(targets, leg)
 		}
-		// Each orchestration target runs two application suites: the Hub Web Modeler
-		// suite, which always comes from the 8.10 chart because the Hub plane is
-		// versioned independently, and the orchestration suite from the release's
-		// OWN chart, so a mixed-version topology tests each app against the chart
-		// it actually deploys.
+		// One golden path per orchestration target: the orchestration application
+		// suite, run from the release's OWN chart. That is what makes a
+		// mixed-version topology test each orchestration app against the chart it
+		// actually deploys.
 		for _, target := range targets {
-			hubLeg := target
-			hubLeg.Suite = "hub"
-			hubLeg.TestChartDir = "camunda-platform-8.10"
-			hubLeg.PlaywrightProject = "hub-web-modeler"
-			legs = append(legs, hubLeg)
-
-			orchLeg := target
-			orchLeg.Suite = "orchestration"
-			orchLeg.TestChartDir = orchLeg.ChartDir
-			orchLeg.PlaywrightProject = "topology-orchestration"
-			legs = append(legs, orchLeg)
+			target.Suite = "orchestration"
+			target.TestChartDir = target.ChartDir
+			target.PlaywrightProject = "topology-orchestration"
+			legs = append(legs, target)
 		}
 	}
 	return legs
