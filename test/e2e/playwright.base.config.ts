@@ -74,6 +74,11 @@ export function makeShadowConfig(opts: {
         name: "hub-web-modeler",
         testMatch: ["**/hub-web-modeler-smoke.spec.{ts,js}"],
       },
+      {
+        name: "topology-orchestration",
+        testMatch: ["**/topology-orchestration-smoke.spec.{ts,js}"],
+        ...tasklistV2Use,
+      },
       ...(includeSetupProject
         ? [
             {
