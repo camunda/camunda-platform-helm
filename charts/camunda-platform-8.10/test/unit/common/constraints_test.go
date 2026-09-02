@@ -931,6 +931,30 @@ func (s *ConstraintTemplateTest) TestPvcAccessModesReadWriteOncePodGuard() {
 				s.Require().ErrorContains(err, "Kubernetes requires ReadWriteOncePod to be the only access mode in the list")
 			},
 		},
+		{
+			// pvcAccessModes is inert unless persistenceType renders a PVC, so an otherwise
+			// invalid combination must not block the install.
+			Name: "InvalidCombinationDoesNotFailWhenNoPvcIsRendered",
+			Values: map[string]string{
+				"orchestration.persistenceType":   "memory",
+				"orchestration.pvcAccessModes[0]": "ReadWriteOncePod",
+				"orchestration.pvcAccessModes[1]": "ReadWriteOnce",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+			},
+		},
+		{
+			Name: "InvalidCombinationDoesNotFailWhenOrchestrationDisabled",
+			Values: map[string]string{
+				"orchestration.enabled":           "false",
+				"orchestration.pvcAccessModes[0]": "ReadWriteOncePod",
+				"orchestration.pvcAccessModes[1]": "ReadWriteOnce",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+			},
+		},
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
