@@ -212,10 +212,25 @@ Fail if there is no secondary storage type specified and if noSecondaryStorage i
 {{- end }}
 
 {{/*
+Fail if the multi-region topology is described in both places at once. Picking one
+silently would deploy a topology the other block does not describe, and the two are
+merged nowhere.
+*/}}
+{{- if and (eq (include "camundaPlatform.multiregionConfigured" (.Values.orchestration.multiregion | default dict)) "true") (eq (include "camundaPlatform.multiregionConfigured" (.Values.global.multiregion | default dict)) "true") }}
+  {{- fail "[camunda][error] orchestration.multiregion and global.multiregion are both configured. global.multiregion is deprecated; keep orchestration.multiregion and remove the global block." -}}
+{{- end }}
+
+{{- $mr := include "camundaPlatform.multiregion" $ | fromYaml -}}
+{{- $mrKey := "orchestration.multiregion" -}}
+{{- if ne (include "camundaPlatform.multiregionConfigured" (.Values.orchestration.multiregion | default dict)) "true" -}}
+  {{- $mrKey = "global.multiregion" -}}
+{{- end -}}
+
+{{/*
 Fail if zoned mode is combined with the region-based multiregion settings it replaces.
 */}}
-{{- if and (eq .Values.global.multiregion.mode "zoned") (or (ne (int .Values.global.multiregion.regions) 1) (ne (int .Values.global.multiregion.regionId) 0)) }}
-  {{- fail "[camunda][error] global.multiregion.regions and global.multiregion.regionId cannot be used with zoned mode." -}}
+{{- if and (eq $mr.mode "zoned") (or (ne (int $mr.regions) 1) (ne (int $mr.regionId) 0)) }}
+  {{- fail (printf "[camunda][error] %s.regions and %s.regionId cannot be used with zoned mode." $mrKey $mrKey) -}}
 {{- end }}
 
 {{/*
@@ -223,17 +238,17 @@ Fail if zoned mode does not describe the zone this release belongs to. The zone 
 is what assigns broker node IDs and partition replicas, so a release whose own zone is
 missing from it would take the IDs of the first zone and collide with it.
 */}}
-{{- if eq .Values.global.multiregion.mode "zoned" }}
-  {{- $zone := .Values.global.multiregion.zone -}}
+{{- if eq $mr.mode "zoned" }}
+  {{- $zone := $mr.zone -}}
   {{- if not $zone }}
-    {{- fail "[camunda][error] global.multiregion.zone must name the zone this release is deployed to when using zoned mode." -}}
+    {{- fail (printf "[camunda][error] %s.zone must name the zone this release is deployed to when using zoned mode." $mrKey) -}}
   {{- end }}
   {{- $names := list -}}
-  {{- range .Values.global.multiregion.zones -}}
+  {{- range $mr.zones -}}
     {{- $names = append $names .name -}}
   {{- end -}}
   {{- if not (has $zone $names) }}
-    {{- fail (printf "[camunda][error] global.multiregion.zone %q is not declared in global.multiregion.zones (%s)." $zone (join ", " $names)) -}}
+    {{- fail (printf "[camunda][error] %s.zone %q is not declared in %s.zones (%s)." $mrKey $zone $mrKey (join ", " $names)) -}}
   {{- end }}
 {{- end }}
 
@@ -574,6 +589,16 @@ The following values inside your values.yaml need to be set but were not:
       -}}
       {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
     {{- end }}
+  {{- end }}
+
+  {{- if eq (include "camundaPlatform.multiregionConfigured" (.Values.global.multiregion | default dict)) "true" }}
+    {{- $warningMessage := printf "%s %s %s %s"
+        "[camunda][warning]"
+        "DEPRECATION: \"global.multiregion.*\" is deprecated and will be removed in chart v16 (Camunda 8.11)."
+        "Only the Orchestration Cluster reads these keys, so they moved to \"orchestration.multiregion.*\" with the same field names."
+        "Move the block and remove the global one; setting both fails the render."
+    -}}
+    {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
   {{- end }}
 
   {{/* Camunda Hub consolidation deprecation warnings */}}

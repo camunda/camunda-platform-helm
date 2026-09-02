@@ -1,3 +1,4 @@
+{{- $mr := include "camundaPlatform.multiregion" $ | fromYaml -}}
 {{- if eq (include "camundaPlatform.orchestrationEnabled" .) "true" -}}
 {{- $tlsConfig := include "orchestration.effectiveTlsConfig" . | fromYaml -}}
 apiVersion: apps/v1
@@ -105,7 +106,7 @@ spec:
                   fieldPath: metadata.name
             {{- if eq (include "orchestration.zoned" .) "true" }}
             - name: CAMUNDA_CLUSTER_ZONE
-              value: {{ .Values.global.multiregion.zone | quote }}
+              value: {{ $mr.zone | quote }}
             {{- end }}
             {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
             {{- include "camundaPlatform.caBundleEnv" . | nindent 12 }}
