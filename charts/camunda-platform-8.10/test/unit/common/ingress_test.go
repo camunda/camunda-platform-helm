@@ -393,18 +393,19 @@ func (s *OptimizeHttpIngressTemplateTest) TestDifferentValuesInputs() {
 			},
 		},
 		{
+			// Asserting on the suite template keeps this scoped: helm
+			// --show-only errors instead of emitting nothing when a template
+			// renders empty, so that error is the assertion. Rendering the
+			// whole chart instead would make the negative assertion far
+			// broader than the behaviour under test.
 			Name: "TestOptimizeHttpIngressDisabledWithoutServerTLS",
-			CaseTemplates: &testhelpers.CaseTemplate{
-				Templates: nil,
-			},
 			Values: map[string]string{
 				"global.ingress.enabled": "true",
 				"optimize.enabled":       "true",
 				"optimize.contextPath":   "/optimize",
 			},
-			Verifier: func(t *testing.T, output string, err error) {
-				require.NoError(t, err)
-				require.NotContains(t, output, "name: camunda-platform-test-optimize-http")
+			Expected: map[string]string{
+				"ERROR": "could not find template templates/common/ingress-optimize-http.yaml in chart",
 			},
 		},
 		{
@@ -489,19 +490,17 @@ func (s *OrchestrationHttpIngressTemplateTest) TestDifferentValuesInputs() {
 			},
 		},
 		{
+			// Same scoping as the Optimize case above: the suite template
+			// failing to render is the assertion, not a chart-wide
+			// NotContains.
 			Name: "TestOrchestrationHttpIngressDisabledWithoutServerTLS",
-			CaseTemplates: &testhelpers.CaseTemplate{
-				Templates: nil,
-			},
 			Values: map[string]string{
 				"global.ingress.enabled":    "true",
 				"orchestration.enabled":     "true",
 				"orchestration.contextPath": "/orchestration",
 			},
-			Verifier: func(t *testing.T, output string, err error) {
-				require.NoError(t, err)
-
-				require.NotContains(t, output, "name: camunda-platform-test-orchestration-http")
+			Expected: map[string]string{
+				"ERROR": "could not find template templates/common/ingress-orchestration-http.yaml in chart",
 			},
 		},
 		{
