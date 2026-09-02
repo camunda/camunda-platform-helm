@@ -623,11 +623,11 @@ global:
   ## Cluster reads these keys, so they moved to `orchestration.multiregion`. Setting both
   ## blocks fails the render.
   multiregion:
-    ## @param global.multiregion.mode (deprecated - use `orchestration.multiregion.mode`) defines the multi-region configuration mode. Possible values: `legacy` or `zoned`.
+    ## @skip global.multiregion.mode deprecated, use `orchestration.multiregion.mode`
     mode: legacy
-    ## @param global.multiregion.zone (deprecated - use `orchestration.multiregion.zone`) can be used to define the zone of this Orchestration Cluster deployment when using zoned mode.
+    ## @skip global.multiregion.zone deprecated, use `orchestration.multiregion.zone`
     zone: ""
-    ## @param global.multiregion.zones (deprecated - use `orchestration.multiregion.zones`) can be used to define the zones of the Orchestration Cluster when using zoned mode.
+    ## @skip global.multiregion.zones deprecated, use `orchestration.multiregion.zones`
     zones: []
     ## @skip global.multiregion.regions number of regions that this Camunda Platform instance is stretched across
     regions: 1
