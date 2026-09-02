@@ -760,3 +760,20 @@ func TestPlanTopologyMetadataIncludesTenantID(t *testing.T) {
 		t.Fatalf("smoke matrix = %s, want %s", smoke, want)
 	}
 }
+
+func TestPlanTierOneIncludesMixedTopology(t *testing.T) {
+	result, err := Plan(findRepoRoot(t), PlanOptions{
+		ActiveVersions: planActiveVersions,
+		ManualTrigger:  "8.10",
+		Tier:           1,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, entry := range result.Include {
+		if entry.Scenario == "multinamespace-2orch" {
+			return
+		}
+	}
+	t.Fatal("tier-1 matrix does not include multinamespace-2orch")
+}
