@@ -1460,7 +1460,7 @@ func (s *ConfigmapTemplateTest) TestZonedModeRejectsLegacyRegionSettings() {
 				"orchestration.profiles.broker":                       "true",
 			},
 			Expected: map[string]string{
-				"ERROR": "orchestration.clusterSize cannot be used with zoned mode",
+				"ERROR": "orchestration.clusterSize is 6 but orchestration.multiregion.zones sums to 4 brokers",
 			},
 		},
 		{
@@ -1476,7 +1476,7 @@ func (s *ConfigmapTemplateTest) TestZonedModeRejectsLegacyRegionSettings() {
 				"orchestration.profiles.broker":                       "true",
 			},
 			Expected: map[string]string{
-				"ERROR": "orchestration.replicationFactor cannot be used with zoned mode",
+				"ERROR": "orchestration.replicationFactor is 4 but orchestration.multiregion.zones sums to 2 replicas",
 			},
 		},
 		{
