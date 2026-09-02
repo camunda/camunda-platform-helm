@@ -64,35 +64,33 @@ spec:
             - name: APP_INTEGRATIONS_CLUSTER_ID
               value: {{ . | quote }}
             {{- end }}
-            {{- if ne (include "connectors.hasAppIntegrationsOauth" .) "true" }}
+            {{- if eq (include "connectors.hasAppIntegrationsOauth" .) "true" }}
+            {{- $appIntegrationsOauth := .Values.connectors.appIntegrations.oauth }}
+            - name: APP_INTEGRATIONS_OAUTH_TOKEN_ENDPOINT
+              value: {{ $appIntegrationsOauth.tokenEndpoint | quote }}
+            - name: APP_INTEGRATIONS_OAUTH_CLIENT_ID
+              value: {{ $appIntegrationsOauth.clientId | quote }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "APP_INTEGRATIONS_OAUTH_CLIENT_SECRET"
+                "config" $appIntegrationsOauth
+            ) | nindent 12 }}
+            {{- with $appIntegrationsOauth.audience }}
+            - name: APP_INTEGRATIONS_OAUTH_AUDIENCE
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with $appIntegrationsOauth.scopes }}
+            - name: APP_INTEGRATIONS_OAUTH_SCOPES
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with $appIntegrationsOauth.clientAuthentication }}
+            - name: APP_INTEGRATIONS_OAUTH_CLIENT_AUTHENTICATION
+              value: {{ . | quote }}
+            {{- end }}
+            {{- else }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "APP_INTEGRATIONS_API_KEY"
                 "config" .Values.connectors.appIntegrations.apiKey
             ) | nindent 12 }}
-            {{- end }}
-            {{- with .Values.connectors.appIntegrations.oauth.tokenEndpoint }}
-            - name: APP_INTEGRATIONS_OAUTH_TOKEN_ENDPOINT
-              value: {{ . | quote }}
-            {{- end }}
-            {{- with .Values.connectors.appIntegrations.oauth.clientId }}
-            - name: APP_INTEGRATIONS_OAUTH_CLIENT_ID
-              value: {{ . | quote }}
-            {{- end }}
-            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
-                "envName" "APP_INTEGRATIONS_OAUTH_CLIENT_SECRET"
-                "config" .Values.connectors.appIntegrations.oauth
-            ) | nindent 12 }}
-            {{- with .Values.connectors.appIntegrations.oauth.audience }}
-            - name: APP_INTEGRATIONS_OAUTH_AUDIENCE
-              value: {{ . | quote }}
-            {{- end }}
-            {{- with .Values.connectors.appIntegrations.oauth.scopes }}
-            - name: APP_INTEGRATIONS_OAUTH_SCOPES
-              value: {{ . | quote }}
-            {{- end }}
-            {{- with .Values.connectors.appIntegrations.oauth.clientAuthentication }}
-            - name: APP_INTEGRATIONS_OAUTH_CLIENT_AUTHENTICATION
-              value: {{ . | quote }}
             {{- end }}
             {{- end }}
             {{- if and .Values.global.documentStore.type.aws.enabled (not .Values.global.documentStore.type.aws.irsa.enabled) }}

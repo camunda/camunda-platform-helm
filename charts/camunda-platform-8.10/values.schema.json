@@ -3571,12 +3571,12 @@
                     "properties": {
                         "baseUrl": {
                             "type": "string",
-                            "description": "can be used to set the App Integrations backend base URL. Required to use the App Integrations connector.",
+                            "description": "can be used to set the App Integrations backend base URL. Required to use the App Integrations connector, together with either `connectors.appIntegrations.apiKey` or `connectors.appIntegrations.oauth`.",
                             "default": ""
                         },
                         "clusterId": {
                             "type": "string",
-                            "description": "can be used to set this orchestration cluster's UUID as registered in the App Integrations backend. Required when authenticating with OAuth, optional when authenticating with an API key.",
+                            "description": "can be used to set this orchestration cluster's UUID as registered in the App Integrations backend. Must be unique per Orchestration Cluster release. Required when authenticating with OAuth, optional when authenticating with an API key.",
                             "default": ""
                         },
                         "apiKey": {
@@ -3619,17 +3619,17 @@
                                 },
                                 "audience": {
                                     "type": "string",
-                                    "description": "can be used to set the identifier of the API the token is requested for.",
+                                    "description": "can be used to set the identifier of the API the token is requested for. Only applied when `connectors.appIntegrations.oauth` is fully configured.",
                                     "default": ""
                                 },
                                 "scopes": {
                                     "type": "string",
-                                    "description": "can be used to set the requested token scopes.",
+                                    "description": "can be used to set the requested token scopes. Only applied when `connectors.appIntegrations.oauth` is fully configured.",
                                     "default": ""
                                 },
                                 "clientAuthentication": {
                                     "type": "string",
-                                    "description": "can be used to set how the client credentials are transmitted. Possible values: `credentialsBody` or `basicAuthHeader`.",
+                                    "description": "can be used to set how the client credentials are transmitted. Possible values: `credentialsBody` or `basicAuthHeader`. Only applied when `connectors.appIntegrations.oauth` is fully configured.",
                                     "default": "",
                                     "enum": [
                                         "",

@@ -463,6 +463,16 @@ Fail with a message if Web Modeler is enabled but management Identity is not ena
     -}}
     {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
   {{- end }}
+  {{- if and
+      (ne (include "connectors.hasAppIntegrationsOauth" .) "true")
+      (ne (include "camundaPlatform.hasSecretConfig" (dict "config" $appIntegrations.apiKey)) "true") }}
+    {{- $errorMessage := printf "[camunda][error] %s %s %s"
+        "The App Integrations connector has a base URL but no credentials."
+        "Set \"connectors.appIntegrations.apiKey.secret\", or set \"connectors.appIntegrations.oauth.tokenEndpoint\", \"connectors.appIntegrations.oauth.clientId\", and \"connectors.appIntegrations.oauth.secret\" together."
+        "A secret block referencing an existing Kubernetes Secret needs both \"existingSecret\" and \"existingSecretKey\"."
+    -}}
+    {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
+  {{- end }}
   {{- if and (eq (include "connectors.hasAppIntegrationsOauth" .) "true") (not $appIntegrations.clusterId) }}
     {{- $errorMessage := printf "[camunda][error] %s %s"
         "The App Integrations connector is configured to authenticate with OAuth but no cluster id is set."

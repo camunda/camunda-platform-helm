@@ -1809,9 +1809,9 @@ connectors:
 
   ## @extra connectors.appIntegrations configuration to let the App Integrations connector reach the App Integrations backend.
   appIntegrations:
-    ## @param connectors.appIntegrations.baseUrl can be used to set the App Integrations backend base URL. Required to use the App Integrations connector.
+    ## @param connectors.appIntegrations.baseUrl can be used to set the App Integrations backend base URL. Required to use the App Integrations connector, together with either `connectors.appIntegrations.apiKey` or `connectors.appIntegrations.oauth`.
     baseUrl: ""
-    ## @param connectors.appIntegrations.clusterId can be used to set this orchestration cluster's UUID as registered in the App Integrations backend. Required when authenticating with OAuth, optional when authenticating with an API key.
+    ## @param connectors.appIntegrations.clusterId can be used to set this orchestration cluster's UUID as registered in the App Integrations backend. Must be unique per Orchestration Cluster release. Required when authenticating with OAuth, optional when authenticating with an API key.
     clusterId: ""
 
     ## @extra connectors.appIntegrations.apiKey configuration to authenticate against the App Integrations backend with an API key. Omitted from the runtime when `connectors.appIntegrations.oauth` is fully configured, since OAuth takes precedence.
@@ -1831,11 +1831,11 @@ connectors:
       tokenEndpoint: ""
       ## @param connectors.appIntegrations.oauth.clientId can be used to set the OAuth 2.0 client id.
       clientId: ""
-      ## @param connectors.appIntegrations.oauth.audience can be used to set the identifier of the API the token is requested for.
+      ## @param connectors.appIntegrations.oauth.audience can be used to set the identifier of the API the token is requested for. Only applied when `connectors.appIntegrations.oauth` is fully configured.
       audience: ""
-      ## @param connectors.appIntegrations.oauth.scopes can be used to set the requested token scopes.
+      ## @param connectors.appIntegrations.oauth.scopes can be used to set the requested token scopes. Only applied when `connectors.appIntegrations.oauth` is fully configured.
       scopes: ""
-      ## @param connectors.appIntegrations.oauth.clientAuthentication can be used to set how the client credentials are transmitted. Possible values: `credentialsBody` or `basicAuthHeader`.
+      ## @param connectors.appIntegrations.oauth.clientAuthentication can be used to set how the client credentials are transmitted. Possible values: `credentialsBody` or `basicAuthHeader`. Only applied when `connectors.appIntegrations.oauth` is fully configured.
       clientAuthentication: ""
       ## @extra connectors.appIntegrations.oauth.secret configuration to provide the OAuth 2.0 client secret.
       secret:

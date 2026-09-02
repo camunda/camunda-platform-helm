@@ -868,20 +868,25 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				s.requireNoEnvVarNamed(env, "APP_INTEGRATIONS_API_KEY")
 			},
 		}, {
-			Name: "TestAppIntegrationsIncompleteOauthKeepsApiKey",
+			Name: "TestAppIntegrationsApiKeyPathOmitsOauthEnvVars",
 			Values: map[string]string{
 				"connectors.enabled":                                    "true",
 				"connectors.appIntegrations.baseUrl":                    "https://app-integrations.example.com",
 				"connectors.appIntegrations.apiKey.secret.inlineSecret": "api-key-value",
 				"connectors.appIntegrations.oauth.audience":             "app-integrations-api",
+				"connectors.appIntegrations.oauth.scopes":               "messages.write",
+				"connectors.appIntegrations.oauth.clientAuthentication": "basicAuthHeader",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
 				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
 
-				// then
+				// then - OAuth is not the selected mechanism, so none of its settings reach the pod
 				env := deployment.Spec.Template.Spec.Containers[0].Env
 				s.Require().Contains(env, corev1.EnvVar{Name: "APP_INTEGRATIONS_API_KEY", Value: "api-key-value"})
+				for _, envvar := range env {
+					s.Require().False(strings.HasPrefix(envvar.Name, "APP_INTEGRATIONS_OAUTH_"), envvar.Name)
+				}
 			},
 		}, {
 			Name: "TestAppIntegrationsEmptyOauthOptionalsAreOmitted",
@@ -926,6 +931,25 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			},
 			Expected: map[string]string{
 				"ERROR": "The App Integrations connector is configured to authenticate with OAuth but no cluster id is set.",
+			},
+		}, {
+			Name: "TestAppIntegrationsBaseUrlWithoutCredentialsFails",
+			Values: map[string]string{
+				"connectors.enabled":                 "true",
+				"connectors.appIntegrations.baseUrl": "https://app-integrations.example.com",
+			},
+			Expected: map[string]string{
+				"ERROR": "The App Integrations connector has a base URL but no credentials.",
+			},
+		}, {
+			Name: "TestAppIntegrationsExistingSecretWithoutKeyFails",
+			Values: map[string]string{
+				"connectors.enabled":                                      "true",
+				"connectors.appIntegrations.baseUrl":                      "https://app-integrations.example.com",
+				"connectors.appIntegrations.apiKey.secret.existingSecret": "app-integrations-secret",
+			},
+			Expected: map[string]string{
+				"ERROR": "The App Integrations connector has a base URL but no credentials.",
 			},
 		},
 	}
