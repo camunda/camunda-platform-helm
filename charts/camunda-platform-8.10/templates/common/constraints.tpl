@@ -397,6 +397,32 @@ merged nowhere.
 {{- end -}}
 
 {{/*
+Fail if the zone topology is described without selecting zoned mode. Nothing else
+rejects it: the zoned branches are all entered on the mode, so the zone list would be
+read by the contact-points gate alone, which suppresses the generated bootstrap list
+while the rest of the render stays single-region. The cluster then starts with no peers
+and no zone awareness, and helm reports success.
+*/}}
+{{- if and (ne $mr.mode "zoned") (or (ne $mr.zone "") (gt (len $mr.zones) 0)) }}
+  {{- fail (printf "[camunda][error] %s.zone and %s.zones require %s.mode=zoned." $mrKey $mrKey $mrKey) -}}
+{{- end }}
+
+{{/*
+Fail if zoned mode is combined with a cluster size or replication factor it derives.
+Both are summed from the zone list, so a value left over from a single-region release
+would be discarded in silence, and the StatefulSet would scale to the local zone's
+broker count without the diff naming the setting it ignored.
+*/}}
+{{- if eq $mr.mode "zoned" }}
+  {{- if ne (int .Values.orchestration.clusterSize) 3 }}
+    {{- fail (printf "[camunda][error] orchestration.clusterSize cannot be used with zoned mode; it is the sum of numberOfBrokers over %s.zones." $mrKey) -}}
+  {{- end }}
+  {{- if ne (int .Values.orchestration.replicationFactor) 3 }}
+    {{- fail (printf "[camunda][error] orchestration.replicationFactor cannot be used with zoned mode; it is the sum of numberOfReplicas over %s.zones." $mrKey) -}}
+  {{- end }}
+{{- end }}
+
+{{/*
 Fail if zoned mode is combined with the region-based multiregion settings it replaces.
 */}}
 {{- if and (eq $mr.mode "zoned") (or (ne (int $mr.regions) 1) (ne (int $mr.regionId) 0)) }}

@@ -1418,11 +1418,51 @@ func (s *ConfigmapTemplateTest) TestZonedConfiguration() {
 				"orchestration.data.secondaryStorage.rdbms.url":                 "jdbc:postgresql://localhost:5432/camunda",
 				"orchestration.data.secondaryStorage.rdbms.username":            "camunda",
 				"orchestration.data.secondaryStorage.rdbms.secret.inlineSecret": "my-password",
-				"optimize.enabled": "true",
+				"optimize.enabled":                        "true",
+				"optimize.database.elasticsearch.enabled": "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
 				require.NotContains(t, output, "io.camunda.zeebe.exporter.ElasticsearchExporter")
+			},
+		},
+		{
+			Name: "TestZonedModeDoesNotEnableLegacyOpenSearchExporter",
+			Values: map[string]string{
+				"orchestration.multiregion.mode":                                "zoned",
+				"orchestration.multiregion.zone":                                "region-a",
+				"orchestration.multiregion.zones[0].name":                       "region-a",
+				"orchestration.multiregion.zones[0].numberOfBrokers":            "2",
+				"orchestration.multiregion.zones[0].numberOfReplicas":           "2",
+				"orchestration.multiregion.zones[0].priority":                   "100",
+				"orchestration.exporters.rdbms.enabled":                         "true",
+				"orchestration.data.secondaryStorage.rdbms.url":                 "jdbc:postgresql://localhost:5432/camunda",
+				"orchestration.data.secondaryStorage.rdbms.username":            "camunda",
+				"orchestration.data.secondaryStorage.rdbms.secret.inlineSecret": "my-password",
+				"optimize.enabled":                     "true",
+				"optimize.database.opensearch.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.NotContains(t, output, "io.camunda.zeebe.exporter.opensearch.OpensearchExporter")
+			},
+		},
+		{
+			// Control for the two cases above: same inputs, legacy mode. Without it
+			// they pass whether or not the zoned guard exists, since the exporter is
+			// also absent when Optimize does not ask for that database.
+			Name: "TestLegacySingleRegionStillEnablesTheElasticsearchExporter",
+			Values: map[string]string{
+				"orchestration.exporters.rdbms.enabled":                         "true",
+				"orchestration.data.secondaryStorage.rdbms.url":                 "jdbc:postgresql://localhost:5432/camunda",
+				"orchestration.data.secondaryStorage.rdbms.username":            "camunda",
+				"orchestration.data.secondaryStorage.rdbms.secret.inlineSecret": "my-password",
+				"optimize.enabled":                        "true",
+				"optimize.database.elasticsearch.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "io.camunda.zeebe.exporter.ElasticsearchExporter")
 			},
 		},
 	}
