@@ -435,11 +435,16 @@ jobs:
             helm-ct
             yq
 
+      - name: Build release-tools
+        run: cd scripts/release-tools && go build -o /tmp/release-tools .
+
       - name: Label PRs with version
         env:
           GH_TOKEN: ${{ steps.generate-github-token.outputs.token }}
         run: |
-          make release.set-prs-version-label chartPath="charts/camunda-platform-${{ needs.release.outputs.chart-dir-id }}"
+          make release.set-prs-version-label \
+            chartPath="charts/camunda-platform-${{ needs.release.outputs.chart-dir-id }}" \
+            chartVersion="${{ needs.release.outputs.version }}"
 
       - name: Stamp release date on the release-please PR
         id: stamp
@@ -453,8 +458,6 @@ jobs:
           head_ref="release-please--branches--main--components--camunda-platform-${APP_VERSION}"
           git fetch origin "${head_ref}" --tags
           git checkout "${head_ref}"
-
-          (cd scripts/release-tools && go build -o /tmp/release-tools .)
 
           /tmp/release-tools stamp-release --app "${APP_VERSION}" --chart-version "${CHART_VERSION}"
           /tmp/release-tools version-matrix --readme "${APP_VERSION}"
