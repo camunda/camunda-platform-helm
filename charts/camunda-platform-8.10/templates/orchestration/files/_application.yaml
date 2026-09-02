@@ -93,7 +93,7 @@ camunda:
          itself. Beyond that it cannot know how brokers reach each other, so the list is the
          user's to provide. Keyed on the mode, not on the zone count, because the zone list
          is only meaningful in zoned mode. */ -}}
-    {{- if or (and (eq (include "orchestration.zoned" $) "true") (le (len $mr.zones) 1)) (and (ne (include "orchestration.zoned" $) "true") (le (int $mr.regions) 1)) }}
+    {{- if ne (include "camundaPlatform.multiregionSpread" $) "true" }}
     initial-contact-points:
     {{- range (untilStep 0 (int (include "orchestration.clusterSize" $)) 1) }}
       - {{ include "orchestration.fullname" $ }}-{{ . }}.${K8S_SERVICE_NAME}:{{ $.Values.orchestration.service.internalPort }}

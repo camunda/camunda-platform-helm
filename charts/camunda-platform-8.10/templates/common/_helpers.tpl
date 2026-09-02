@@ -2716,3 +2716,20 @@ departs from the chart default.
 true
 {{- end -}}
 {{- end -}}
+
+{{/*
+NOTE: "true" when the cluster spans more than one failure domain, which is more than one
+zone in zoned mode and more than one region in legacy mode. Single-zone zoned counts as
+one cluster, the same as single-region legacy: it exists to skew leaders inside a region,
+not to spread across them. Three call sites depend on agreeing about this, so they read
+it here rather than each spelling it out: the generated initial contact points, the
+legacy Optimize exporters, and the NOTES.txt warning.
+*/}}
+{{- define "camundaPlatform.multiregionSpread" -}}
+{{- $mr := include "camundaPlatform.multiregion" . | fromYaml -}}
+{{- if eq (include "orchestration.zoned" .) "true" -}}
+  {{- gt (len $mr.zones) 1 -}}
+{{- else -}}
+  {{- gt (int $mr.regions) 1 -}}
+{{- end -}}
+{{- end -}}

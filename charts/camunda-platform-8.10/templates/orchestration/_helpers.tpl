@@ -410,31 +410,23 @@ spring-imported orchestration.extraConfiguration file, override it.
 {{- end -}}
 
 {{- define "orchestration.hasElasticsearchExporter" -}}
-{{- $mr := include "camundaPlatform.multiregion" $ | fromYaml -}}
 {{- and
       .Values.optimize.database.elasticsearch.enabled
       (eq (include "camundaPlatform.optimizeEnabled" .) "true")
       (or
         .Values.orchestration.exporters.zeebe.enabled
-        (and
-          (ne (include "orchestration.zoned" .) "true")
-          (lt (int (default 0 $mr.regions)) 2)
-        )
+        (ne (include "camundaPlatform.multiregionSpread" .) "true")
       )
 -}}
 {{- end -}}
 
 {{- define "orchestration.hasOpenSearchExporter" -}}
-{{- $mr := include "camundaPlatform.multiregion" $ | fromYaml -}}
 {{- and
       .Values.optimize.database.opensearch.enabled
       (eq (include "camundaPlatform.optimizeEnabled" .) "true")
       (or
         .Values.orchestration.exporters.zeebe.enabled
-        (and
-          (ne (include "orchestration.zoned" .) "true")
-          (lt (int (default 0 $mr.regions)) 2)
-        )
+        (ne (include "camundaPlatform.multiregionSpread" .) "true")
       )
 -}}
 {{- end -}}

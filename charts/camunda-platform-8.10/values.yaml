@@ -2267,6 +2267,10 @@ orchestration:
   # cluster has prerequisites and procedures this file cannot carry; see
   # https://docs.camunda.io/docs/self-managed/concepts/multi-region/dual-region/
   multiregion:
+    ## Fixed for the life of the cluster. Zoned brokers are identified by the composite
+    ## `<zone>_<index>`, legacy ones by a number, so switching an existing release
+    ## re-identifies every broker against Raft state written under the old IDs and the
+    ## members no longer recognise each other. Deploy a new cluster instead.
     ## @param orchestration.multiregion.mode defines the multi-region configuration mode. Possible values: `legacy` or `zoned`.
     mode: legacy
     ## @param orchestration.multiregion.zone can be used to define the zone of this Orchestration Cluster deployment when using zoned mode.

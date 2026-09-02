@@ -1414,6 +1414,10 @@ func (s *ConfigmapTemplateTest) TestZonedConfiguration() {
 				"orchestration.multiregion.zones[0].numberOfBrokers":            "2",
 				"orchestration.multiregion.zones[0].numberOfReplicas":           "2",
 				"orchestration.multiregion.zones[0].priority":                   "100",
+				"orchestration.multiregion.zones[1].name":                       "region-b",
+				"orchestration.multiregion.zones[1].numberOfBrokers":            "2",
+				"orchestration.multiregion.zones[1].numberOfReplicas":           "1",
+				"orchestration.multiregion.zones[1].priority":                   "50",
 				"orchestration.exporters.rdbms.enabled":                         "true",
 				"orchestration.data.secondaryStorage.rdbms.url":                 "jdbc:postgresql://localhost:5432/camunda",
 				"orchestration.data.secondaryStorage.rdbms.username":            "camunda",
@@ -1435,6 +1439,10 @@ func (s *ConfigmapTemplateTest) TestZonedConfiguration() {
 				"orchestration.multiregion.zones[0].numberOfBrokers":            "2",
 				"orchestration.multiregion.zones[0].numberOfReplicas":           "2",
 				"orchestration.multiregion.zones[0].priority":                   "100",
+				"orchestration.multiregion.zones[1].name":                       "region-b",
+				"orchestration.multiregion.zones[1].numberOfBrokers":            "2",
+				"orchestration.multiregion.zones[1].numberOfReplicas":           "1",
+				"orchestration.multiregion.zones[1].priority":                   "50",
 				"orchestration.exporters.rdbms.enabled":                         "true",
 				"orchestration.data.secondaryStorage.rdbms.url":                 "jdbc:postgresql://localhost:5432/camunda",
 				"orchestration.data.secondaryStorage.rdbms.username":            "camunda",
@@ -1445,6 +1453,30 @@ func (s *ConfigmapTemplateTest) TestZonedConfiguration() {
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
 				require.NotContains(t, output, "io.camunda.zeebe.exporter.opensearch.OpensearchExporter")
+			},
+		},
+		{
+			// A single zone is one cluster, like a single region: it skews leaders
+			// inside a region rather than spreading across them, so it keeps the
+			// exporter that a genuinely spread cluster has to give up.
+			Name: "TestSingleZoneZonedModeKeepsTheElasticsearchExporter",
+			Values: map[string]string{
+				"orchestration.multiregion.mode":                                "zoned",
+				"orchestration.multiregion.zone":                                "region-a",
+				"orchestration.multiregion.zones[0].name":                       "region-a",
+				"orchestration.multiregion.zones[0].numberOfBrokers":            "2",
+				"orchestration.multiregion.zones[0].numberOfReplicas":           "2",
+				"orchestration.multiregion.zones[0].priority":                   "100",
+				"orchestration.exporters.rdbms.enabled":                         "true",
+				"orchestration.data.secondaryStorage.rdbms.url":                 "jdbc:postgresql://localhost:5432/camunda",
+				"orchestration.data.secondaryStorage.rdbms.username":            "camunda",
+				"orchestration.data.secondaryStorage.rdbms.secret.inlineSecret": "my-password",
+				"optimize.enabled":                        "true",
+				"optimize.database.elasticsearch.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "io.camunda.zeebe.exporter.ElasticsearchExporter")
 			},
 		},
 		{
@@ -1481,6 +1513,90 @@ func (s *ConfigmapTemplateTest) TestZonedModeRejectsLegacyRegionSettings() {
 			},
 			Expected: map[string]string{
 				"ERROR": "orchestration.multiregion.regions and orchestration.multiregion.regionId cannot be used with zoned mode",
+			},
+		},
+		{
+			Name:                    "TestZonedModeRejectsAClusterSizeItDerives",
+			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.clusterSize=6"},
+			Values: map[string]string{
+				"orchestration.multiregion.mode":                      "zoned",
+				"orchestration.multiregion.zone":                      "region-a",
+				"orchestration.multiregion.zones[0].name":             "region-a",
+				"orchestration.multiregion.zones[0].numberOfBrokers":  "2",
+				"orchestration.multiregion.zones[0].numberOfReplicas": "2",
+				"orchestration.multiregion.zones[0].priority":         "100",
+				"orchestration.multiregion.zones[1].name":             "region-b",
+				"orchestration.multiregion.zones[1].numberOfBrokers":  "2",
+				"orchestration.multiregion.zones[1].numberOfReplicas": "1",
+				"orchestration.multiregion.zones[1].priority":         "50",
+				"orchestration.profiles.broker":                       "true",
+			},
+			Expected: map[string]string{
+				"ERROR": "orchestration.clusterSize cannot be used with zoned mode",
+			},
+		},
+		{
+			Name:                    "TestZonedModeRejectsAReplicationFactorItDerives",
+			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.replicationFactor=4"},
+			Values: map[string]string{
+				"orchestration.multiregion.mode":                      "zoned",
+				"orchestration.multiregion.zone":                      "region-a",
+				"orchestration.multiregion.zones[0].name":             "region-a",
+				"orchestration.multiregion.zones[0].numberOfBrokers":  "2",
+				"orchestration.multiregion.zones[0].numberOfReplicas": "2",
+				"orchestration.multiregion.zones[0].priority":         "100",
+				"orchestration.profiles.broker":                       "true",
+			},
+			Expected: map[string]string{
+				"ERROR": "orchestration.replicationFactor cannot be used with zoned mode",
+			},
+		},
+		{
+			Name: "TestZonesWithoutZonedModeAreRejected",
+			Values: map[string]string{
+				"orchestration.multiregion.zone":                      "region-a",
+				"orchestration.multiregion.zones[0].name":             "region-a",
+				"orchestration.multiregion.zones[0].numberOfBrokers":  "2",
+				"orchestration.multiregion.zones[0].numberOfReplicas": "2",
+				"orchestration.multiregion.zones[0].priority":         "100",
+				"orchestration.profiles.broker":                       "true",
+			},
+			Expected: map[string]string{
+				"ERROR": "require orchestration.multiregion.mode=zoned",
+			},
+		},
+		{
+			Name: "TestZonedModeRejectsDuplicateZoneNames",
+			Values: map[string]string{
+				"orchestration.multiregion.mode":                      "zoned",
+				"orchestration.multiregion.zone":                      "region-a",
+				"orchestration.multiregion.zones[0].name":             "region-a",
+				"orchestration.multiregion.zones[0].numberOfBrokers":  "2",
+				"orchestration.multiregion.zones[0].numberOfReplicas": "1",
+				"orchestration.multiregion.zones[0].priority":         "100",
+				"orchestration.multiregion.zones[1].name":             "region-a",
+				"orchestration.multiregion.zones[1].numberOfBrokers":  "2",
+				"orchestration.multiregion.zones[1].numberOfReplicas": "1",
+				"orchestration.multiregion.zones[1].priority":         "50",
+				"orchestration.profiles.broker":                       "true",
+			},
+			Expected: map[string]string{
+				"ERROR": "declares \"region-a\" twice",
+			},
+		},
+		{
+			Name: "TestZonedModeRejectsMoreReplicasThanBrokers",
+			Values: map[string]string{
+				"orchestration.multiregion.mode":                      "zoned",
+				"orchestration.multiregion.zone":                      "region-a",
+				"orchestration.multiregion.zones[0].name":             "region-a",
+				"orchestration.multiregion.zones[0].numberOfBrokers":  "1",
+				"orchestration.multiregion.zones[0].numberOfReplicas": "3",
+				"orchestration.multiregion.zones[0].priority":         "100",
+				"orchestration.profiles.broker":                       "true",
+			},
+			Expected: map[string]string{
+				"ERROR": "asks for 3 replicas on 1 brokers",
 			},
 		},
 		{
