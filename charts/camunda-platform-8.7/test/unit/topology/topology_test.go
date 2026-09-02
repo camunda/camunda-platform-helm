@@ -15,6 +15,7 @@
 package topology
 
 import (
+	_ "camunda-platform/test/unit/utils"
 	"path/filepath"
 	"testing"
 
