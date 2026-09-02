@@ -1,4 +1,4 @@
-{{ if and .Values.orchestration.enabled .Values.orchestration.podDisruptionBudget.enabled }}
+{{ if and (eq (include "camundaPlatform.orchestrationEnabled" .) "true") .Values.orchestration.podDisruptionBudget.enabled }}
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:

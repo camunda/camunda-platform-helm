@@ -5,6 +5,21 @@
         "global": {
             "type": "object",
             "properties": {
+                "topology": {
+                    "type": "object",
+                    "properties": {
+                        "mode": {
+                            "type": "string",
+                            "description": "defines the role of this release in the deployment topology. Supported values are combined and orchestration.",
+                            "default": "combined",
+                            "enum": [
+                                "combined",
+                                "orchestration"
+                            ]
+                        }
+                    },
+                    "additionalProperties": false
+                },
                 "license": {
                     "type": "object",
                     "properties": {
