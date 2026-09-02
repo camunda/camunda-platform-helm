@@ -1980,3 +1980,39 @@ Usage:
 {{- get .appProtocols .portName -}}
 {{- end -}}
 {{- end -}}
+
+{{/*
+NOTE: resolves the multi-region block, preferring orchestration.multiregion over the
+deprecated global.multiregion, which only still carries regions and regionId. Whole-block
+precedence, never per field, so a topology cannot be assembled half from each. Absent
+fields fall back to the chart defaults, which is what lets the global block supply the
+legacy pair without declaring the zoned ones. constraints.tpl rejects setting both.
+*/}}
+{{- define "camundaPlatform.multiregion" -}}
+{{- $src := .Values.global.multiregion | default dict -}}
+{{- if eq (include "camundaPlatform.multiregionConfigured" (.Values.orchestration.multiregion | default dict)) "true" -}}
+  {{- $src = .Values.orchestration.multiregion | default dict -}}
+{{- end -}}
+{{- dict
+      "mode" ($src.mode | default "legacy")
+      "zone" ($src.zone | default "")
+      "zones" ($src.zones | default list)
+      "regions" ($src.regions | default 1)
+      "regionId" ($src.regionId | default 0)
+    | toJson -}}
+{{- end -}}
+
+{{/*
+NOTE: takes a multi-region block, not the root context. Emits "true" when any field
+departs from the chart default.
+*/}}
+{{- define "camundaPlatform.multiregionConfigured" -}}
+{{- if or
+      (ne (default "legacy" .mode) "legacy")
+      (ne (default "" .zone) "")
+      (gt (len (default list .zones)) 0)
+      (ne (int (default 1 .regions)) 1)
+      (ne (int (default 0 .regionId)) 0) -}}
+true
+{{- end -}}
+{{- end -}}
