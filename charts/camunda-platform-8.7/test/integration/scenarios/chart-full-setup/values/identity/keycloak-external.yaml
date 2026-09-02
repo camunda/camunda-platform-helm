@@ -15,12 +15,12 @@ global:
     keycloak:
       url:
         protocol: http
-        host: "integration-keycloak.${HUB_NAMESPACE}.svc.cluster.local"
+        host: "keycloak.${HUB_NAMESPACE}.svc.cluster.local"
         port: "80"
     auth:
       enabled: true
       type: KEYCLOAK
-      issuerBackendUrl: "http://integration-keycloak.${HUB_NAMESPACE}.svc.cluster.local:80/auth/realms/camunda-platform"
+      issuerBackendUrl: "http://keycloak.${HUB_NAMESPACE}.svc.cluster.local:80/auth/realms/camunda-platform"
       publicIssuerUrl: "https://${HUB_HOST}/auth/realms/camunda-platform"
       operate:
         clientId: "${ORCH_ORCHESTRATION_CLIENT_ID}"
