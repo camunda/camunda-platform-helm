@@ -58,6 +58,9 @@ integration:
       shortname: keorg
       tier: 2
       enabled: true
+    - id: keycloak-original-install
+      shortname: kcor
+      enabled: false
     - id: gateway-keycloak
       shortname: gatkc
       tier: 2
