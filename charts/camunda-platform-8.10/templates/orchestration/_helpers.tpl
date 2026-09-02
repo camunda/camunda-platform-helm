@@ -12,14 +12,43 @@
     ) -}}
 {{- end -}}
 
+{{/*
+NOTE: resolves the multi-region block, preferring orchestration.multiregion over the
+deprecated global.multiregion. Whole-block precedence, never per field, so a topology
+cannot be assembled half from each. constraints.tpl rejects setting both.
+*/}}
+{{- define "camundaPlatform.multiregion" -}}
+{{- if eq (include "camundaPlatform.multiregionConfigured" (.Values.orchestration.multiregion | default dict)) "true" -}}
+  {{- toYaml (.Values.orchestration.multiregion | default dict) -}}
+{{- else -}}
+  {{- toYaml (.Values.global.multiregion | default dict) -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+NOTE: takes a multi-region block, not the root context. Emits "true" when any field
+departs from the chart default.
+*/}}
+{{- define "camundaPlatform.multiregionConfigured" -}}
+{{- if or
+      (ne (default "legacy" .mode) "legacy")
+      (ne (default "" .zone) "")
+      (gt (len (default list .zones)) 0)
+      (ne (int (default 1 .regions)) 1)
+      (ne (int (default 0 .regionId)) 0) -}}
+true
+{{- end -}}
+{{- end -}}
+
 {{- define "orchestration.zoned" -}}
-{{- eq .Values.global.multiregion.mode "zoned" -}}
+{{- eq (get (include "camundaPlatform.multiregion" . | fromYaml) "mode") "zoned" -}}
 {{- end -}}
 
 {{- define "orchestration.clusterSize" -}}
+{{- $mr := include "camundaPlatform.multiregion" $ | fromYaml -}}
 {{- if eq (include "orchestration.zoned" .) "true" -}}
   {{- $clusterSize := 0 -}}
-  {{- range .Values.global.multiregion.zones -}}
+  {{- range $mr.zones -}}
     {{- $clusterSize = add $clusterSize (int .numberOfBrokers) -}}
   {{- end -}}
   {{- $clusterSize -}}
@@ -29,9 +58,10 @@
 {{- end -}}
 
 {{- define "orchestration.replicationFactor" -}}
+{{- $mr := include "camundaPlatform.multiregion" $ | fromYaml -}}
 {{- if eq (include "orchestration.zoned" .) "true" -}}
   {{- $replicationFactor := 0 -}}
-  {{- range .Values.global.multiregion.zones -}}
+  {{- range $mr.zones -}}
     {{- $replicationFactor = add $replicationFactor (int .numberOfReplicas) -}}
   {{- end -}}
   {{- $replicationFactor -}}
@@ -41,9 +71,10 @@
 {{- end -}}
 
 {{- define "orchestration.zoneBrokers" -}}
+{{- $mr := include "camundaPlatform.multiregion" $ | fromYaml -}}
 {{- $zoneBrokers := 0 -}}
-{{- range .Values.global.multiregion.zones -}}
-  {{- if eq .name $.Values.global.multiregion.zone -}}
+{{- range $mr.zones -}}
+  {{- if eq .name $mr.zone -}}
     {{- $zoneBrokers = int .numberOfBrokers -}}
   {{- end -}}
 {{- end -}}
@@ -51,10 +82,11 @@
 {{- end -}}
 
 {{- define "orchestration.replicas" -}}
+{{- $mr := include "camundaPlatform.multiregion" $ | fromYaml -}}
 {{- if eq (include "orchestration.zoned" .) "true" -}}
 {{- include "orchestration.zoneBrokers" . -}}
 {{- else -}}
-{{- div .Values.orchestration.clusterSize .Values.global.multiregion.regions -}}
+{{- div .Values.orchestration.clusterSize $mr.regions -}}
 {{- end -}}
 {{- end -}}
 
@@ -404,6 +436,7 @@ spring-imported orchestration.extraConfiguration file, override it.
 {{- end -}}
 
 {{- define "orchestration.hasElasticsearchExporter" -}}
+{{- $mr := include "camundaPlatform.multiregion" $ | fromYaml -}}
 {{- and
       .Values.optimize.database.elasticsearch.enabled
       (eq (include "camundaPlatform.optimizeEnabled" .) "true")
@@ -411,13 +444,14 @@ spring-imported orchestration.extraConfiguration file, override it.
         .Values.orchestration.exporters.zeebe.enabled
         (and
           (ne (include "orchestration.zoned" .) "true")
-          (lt (int (default 0 .Values.global.multiregion.regions)) 2)
+          (lt (int (default 0 $mr.regions)) 2)
         )
       )
 -}}
 {{- end -}}
 
 {{- define "orchestration.hasOpenSearchExporter" -}}
+{{- $mr := include "camundaPlatform.multiregion" $ | fromYaml -}}
 {{- and
       .Values.optimize.database.opensearch.enabled
       (eq (include "camundaPlatform.optimizeEnabled" .) "true")
@@ -425,7 +459,7 @@ spring-imported orchestration.extraConfiguration file, override it.
         .Values.orchestration.exporters.zeebe.enabled
         (and
           (ne (include "orchestration.zoned" .) "true")
-          (lt (int (default 0 .Values.global.multiregion.regions)) 2)
+          (lt (int (default 0 $mr.regions)) 2)
         )
       )
 -}}

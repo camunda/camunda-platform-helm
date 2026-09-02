@@ -2421,6 +2421,57 @@ func (s *StatefulSetTest) TestZonedMode() {
 				require.Equal(t, "region-b", zoneEnv.Value)
 			},
 		},
+		{
+			Name: "TestZonedModeReadsTheOrchestrationScopedBlock",
+			Values: map[string]string{
+				"orchestration.multiregion.mode":                      "zoned",
+				"orchestration.multiregion.zone":                      "region-b",
+				"orchestration.multiregion.zones[0].name":             "region-a",
+				"orchestration.multiregion.zones[0].numberOfBrokers":  "2",
+				"orchestration.multiregion.zones[0].numberOfReplicas": "2",
+				"orchestration.multiregion.zones[0].priority":         "100",
+				"orchestration.multiregion.zones[1].name":             "region-b",
+				"orchestration.multiregion.zones[1].numberOfBrokers":  "3",
+				"orchestration.multiregion.zones[1].numberOfReplicas": "3",
+				"orchestration.multiregion.zones[1].priority":         "50",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var statefulSet appsv1.StatefulSet
+				helm.UnmarshalK8SYaml(t, output, &statefulSet)
+
+				require.Equal(t, int32(3), *statefulSet.Spec.Replicas)
+				var zoneEnv *corev1.EnvVar
+				for i := range statefulSet.Spec.Template.Spec.Containers[0].Env {
+					if statefulSet.Spec.Template.Spec.Containers[0].Env[i].Name == "CAMUNDA_CLUSTER_ZONE" {
+						zoneEnv = &statefulSet.Spec.Template.Spec.Containers[0].Env[i]
+					}
+				}
+				require.NotNil(t, zoneEnv)
+				require.Equal(t, "region-b", zoneEnv.Value)
+			},
+		},
+		{
+			Name: "TestZonedModeRejectsBothMultiregionBlocks",
+			Values: map[string]string{
+				"orchestration.multiregion.mode":                      "zoned",
+				"orchestration.multiregion.zone":                      "region-a",
+				"orchestration.multiregion.zones[0].name":             "region-a",
+				"orchestration.multiregion.zones[0].numberOfBrokers":  "2",
+				"orchestration.multiregion.zones[0].numberOfReplicas": "2",
+				"orchestration.multiregion.zones[0].priority":         "100",
+				"global.multiregion.mode":                             "zoned",
+				"global.multiregion.zone":                             "region-a",
+				"global.multiregion.zones[0].name":                    "region-a",
+				"global.multiregion.zones[0].numberOfBrokers":         "2",
+				"global.multiregion.zones[0].numberOfReplicas":        "2",
+				"global.multiregion.zones[0].priority":                "100",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), "orchestration.multiregion and global.multiregion are both configured")
+			},
+		},
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)

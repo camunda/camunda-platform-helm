@@ -737,12 +737,15 @@ global:
   # outlined by Camunda before applying them in production setups.
   # Before advancing to production go-live, validating these procedures with Camunda is strongly recommended.
   # Customers are solely responsible for detecting any regional failures and implementing the necessary operational procedure described.
+  ## Deprecated since chart v15 (Camunda 8.10); remove in v16. Only the Orchestration
+  ## Cluster reads these keys, so they moved to `orchestration.multiregion`. Setting both
+  ## blocks fails the render.
   multiregion:
-    ## @param global.multiregion.mode defines the multi-region configuration mode. Possible values: `legacy` or `zoned`.
+    ## @param global.multiregion.mode (deprecated - use `orchestration.multiregion.mode`) defines the multi-region configuration mode. Possible values: `legacy` or `zoned`.
     mode: legacy
-    ## @param global.multiregion.zone can be used to define the zone of this Orchestration Cluster deployment when using zoned mode.
+    ## @param global.multiregion.zone (deprecated - use `orchestration.multiregion.zone`) can be used to define the zone of this Orchestration Cluster deployment when using zoned mode.
     zone: ""
-    ## @param global.multiregion.zones can be used to define the zones of the Orchestration Cluster when using zoned mode.
+    ## @param global.multiregion.zones (deprecated - use `orchestration.multiregion.zones`) can be used to define the zones of the Orchestration Cluster when using zoned mode.
     zones: []
     ## @skip global.multiregion.regions number of regions that this Camunda Platform instance is stretched across
     regions: 1
@@ -2270,6 +2273,24 @@ orchestration:
     api:
       ## @param orchestration.multitenancy.api.enabled if true, then enable multitenancy API used for tenant management.
       enabled: true
+
+  # Multiregion options for the Orchestration Cluster
+  #
+  ## WARNING: Customers must develop and test the operational procedure described below in non-production environments based on the framework steps
+  # outlined by Camunda before applying them in production setups.
+  # Before advancing to production go-live, validating these procedures with Camunda is strongly recommended.
+  # Customers are solely responsible for detecting any regional failures and implementing the necessary operational procedure described.
+  multiregion:
+    ## @param orchestration.multiregion.mode defines the multi-region configuration mode. Possible values: `legacy` or `zoned`.
+    mode: legacy
+    ## @param orchestration.multiregion.zone can be used to define the zone of this Orchestration Cluster deployment when using zoned mode.
+    zone: ""
+    ## @param orchestration.multiregion.zones can be used to define the zones of the Orchestration Cluster when using zoned mode.
+    zones: []
+    ## @skip orchestration.multiregion.regions number of regions that this Camunda Platform instance is stretched across
+    regions: 1
+    ## @skip orchestration.multiregion.regionId unique id of the region. MUST start at 0 for the computation to work correctly. With 2 regions, you would have region 0 and 1.
+    regionId: 0
 
   ## @param orchestration.clusterSize defines the amount of brokers (=replicas), which are deployed via helm
   clusterSize: "3"
