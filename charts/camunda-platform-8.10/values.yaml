@@ -620,18 +620,12 @@ global:
   # Before advancing to production go-live, validating these procedures with Camunda is strongly recommended.
   # Customers are solely responsible for detecting any regional failures and implementing the necessary operational procedure described.
   ## Deprecated since chart v15 (Camunda 8.10); remove in v16. Only the Orchestration
-  ## Cluster reads these keys, so they moved to `orchestration.multiregion`. Setting both
-  ## blocks fails the render.
+  ## Cluster reads these keys, so they moved to `orchestration.multiregion`, which is
+  ## also where zoned mode is configured. Setting both blocks fails the render.
   multiregion:
-    ## @skip global.multiregion.mode deprecated, use `orchestration.multiregion.mode`
-    mode: legacy
-    ## @skip global.multiregion.zone deprecated, use `orchestration.multiregion.zone`
-    zone: ""
-    ## @skip global.multiregion.zones deprecated, use `orchestration.multiregion.zones`
-    zones: []
-    ## @skip global.multiregion.regions number of regions that this Camunda Platform instance is stretched across
+    ## @skip global.multiregion.regions deprecated, use `orchestration.multiregion.regions`
     regions: 1
-    ## @skip global.multiregion.regionId unique id of the region. MUST start at 0 for the computation to work correctly. With 2 regions, you would have region 0 and 1.
+    ## @skip global.multiregion.regionId deprecated, use `orchestration.multiregion.regionId`
     regionId: 0
 
   ## Document Store Configuration

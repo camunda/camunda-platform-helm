@@ -14,15 +14,23 @@
 
 {{/*
 NOTE: resolves the multi-region block, preferring orchestration.multiregion over the
-deprecated global.multiregion. Whole-block precedence, never per field, so a topology
-cannot be assembled half from each. constraints.tpl rejects setting both.
+deprecated global.multiregion, which only still carries regions and regionId. Whole-block
+precedence, never per field, so a topology cannot be assembled half from each. Absent
+fields fall back to the chart defaults, which is what lets the global block supply the
+legacy pair without declaring the zoned ones. constraints.tpl rejects setting both.
 */}}
 {{- define "camundaPlatform.multiregion" -}}
+{{- $src := .Values.global.multiregion | default dict -}}
 {{- if eq (include "camundaPlatform.multiregionConfigured" (.Values.orchestration.multiregion | default dict)) "true" -}}
-  {{- toYaml (.Values.orchestration.multiregion | default dict) -}}
-{{- else -}}
-  {{- toYaml (.Values.global.multiregion | default dict) -}}
+  {{- $src = .Values.orchestration.multiregion | default dict -}}
 {{- end -}}
+{{- dict
+      "mode" ($src.mode | default "legacy")
+      "zone" ($src.zone | default "")
+      "zones" ($src.zones | default list)
+      "regions" ($src.regions | default 1)
+      "regionId" ($src.regionId | default 0)
+    | toJson -}}
 {{- end -}}
 
 {{/*
