@@ -132,6 +132,18 @@ Fail with a message if Web Modeler is enabled but management Identity is not ena
 {{- end }}
 
 {{/*
+Fail with a message if orchestration.pvcAccessModes includes ReadWriteOncePod together with any
+other access mode. Kubernetes requires ReadWriteOncePod to be the sole access mode on a PVC.
+*/}}
+{{- if and (has "ReadWriteOncePod" .Values.orchestration.pvcAccessModes) (gt (len .Values.orchestration.pvcAccessModes) 1) }}
+  {{- $errorMessage := printf "[camunda][error] %s %s"
+      "orchestration.pvcAccessModes includes \"ReadWriteOncePod\" together with another access mode."
+      "Kubernetes requires ReadWriteOncePod to be the only access mode in the list; set orchestration.pvcAccessModes to [\"ReadWriteOncePod\"] on its own."
+  -}}
+  {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
+{{- end }}
+
+{{/*
 camunda.constraints.warnings
 Non-fatal deprecation/config warnings. Consumed by NOTES.txt (helm install/upgrade) and by
 configmap-warnings.yaml, which renders the "<release>-warnings" ConfigMap on the GitOps path
@@ -336,6 +348,15 @@ The following values inside your values.yaml need to be set but were not:
       {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
     {{- end }}
 
+  {{- end }}
+
+  {{- if has "ReadWriteOncePod" .Values.orchestration.pvcAccessModes }}
+    {{- $warningMessage := printf "%s %s %s"
+        "[camunda][warning]"
+        "orchestration.pvcAccessModes is set to ReadWriteOncePod, which requires a CSI driver that supports it; otherwise the PersistentVolumeClaim will remain stuck in Pending."
+        "PersistentVolumeClaim accessModes are immutable, so this only applies to new installs / new PVCs, not to an existing StatefulSet via \"helm upgrade\"."
+    -}}
+    {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
   {{- end }}
 {{- end }}
 

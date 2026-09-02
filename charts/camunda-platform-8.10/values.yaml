@@ -2288,6 +2288,10 @@ orchestration:
   ## @param orchestration.pvcSize defines the persistent volume claim size, which is used by each broker pod https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims
   pvcSize: "32Gi"
   ## @param orchestration.pvcAccessModes can be used to configure the persistent volume claim access mode https://kubernetes.io/docs/concepts/storage/persistent-volumes/#access-modes
+  # For a storage-layer single-writer guarantee (instead of relying on pod anti-affinity alone), set
+  # this to ["ReadWriteOncePod"]. This requires a CSI driver that supports ReadWriteOncePod, and it
+  # must be the only access mode in the list. PersistentVolumeClaim accessModes are immutable, so this
+  # only takes effect for new installs / new PVCs, not via "helm upgrade" on an existing StatefulSet.
   pvcAccessModes: ["ReadWriteOnce"]
   ## @param orchestration.pvcStorageClassName can be used to set the storage class name which should be used by the persistent volume claim.
   # It is recommended to use a storage class, which is backed with a SSD. Set to "-" to disable use of default storage class.

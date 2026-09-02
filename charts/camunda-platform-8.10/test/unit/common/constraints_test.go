@@ -909,3 +909,29 @@ func (s *ConstraintTemplateTest) TestManagementIdentityExternalServiceUrl() {
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
+
+func (s *ConstraintTemplateTest) TestPvcAccessModesReadWriteOncePodGuard() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "ReadWriteOncePodAloneRenders",
+			Values: map[string]string{
+				"orchestration.pvcAccessModes[0]": "ReadWriteOncePod",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+			},
+		},
+		{
+			Name: "ReadWriteOncePodWithAnotherAccessModeFails",
+			Values: map[string]string{
+				"orchestration.pvcAccessModes[0]": "ReadWriteOncePod",
+				"orchestration.pvcAccessModes[1]": "ReadWriteOnce",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().ErrorContains(err, "Kubernetes requires ReadWriteOncePod to be the only access mode in the list")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
