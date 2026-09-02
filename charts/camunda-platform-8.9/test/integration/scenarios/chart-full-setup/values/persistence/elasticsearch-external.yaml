@@ -8,7 +8,7 @@ global:
     url:
       protocol: "${EXTERNAL_ELASTICSEARCH_SCHEME}"
       host: "${EXTERNAL_ELASTICSEARCH_HOST}"
-      port: "${EXTERNAL_ELASTICSEARCH_PORT}"
+      port: ${EXTERNAL_ELASTICSEARCH_PORT}
 
 optimize:
   database:
