@@ -80,6 +80,33 @@ func TestHubTopologyOptimizeRedirectUrisIncludesRoot(t *testing.T) {
 	require.Regexp(t, `redirect-uris:\s*\n\s*-\s*"/api/authentication/callback"\s*\n\s*-\s*"/"\s*\n`, output)
 }
 
+func TestHubTopologyRendersLegacySplitWorkloadEndpoints(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "hub-keycloak.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues: map[string]string{
+			"camundaHub.enabled":                                                       "true",
+			"camundaHub.restapi.mail.fromAddress":                                      "noreply@example.com",
+			"global.topology.clusters[0].architecture":                                 "legacy",
+			"global.topology.clusters[0].components.orchestration.serviceName":         "camunda-zeebe",
+			"global.topology.clusters[0].components.orchestration.gatewayServiceName":  "camunda-zeebe-gateway",
+			"global.topology.clusters[0].components.orchestration.operateServiceName":  "camunda-operate",
+			"global.topology.clusters[0].components.orchestration.tasklistServiceName": "camunda-tasklist",
+		},
+	}
+
+	output := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{
+		"templates/identity/configmap.yaml",
+		"templates/web-modeler/configmap-restapi.yaml",
+	})
+	require.Contains(t, output, `http://camunda-operate.camunda-east.svc.cluster.local:9600/operate/actuator/health/readiness`)
+	require.Contains(t, output, `http://camunda-tasklist.camunda-east.svc.cluster.local:9600/tasklist/actuator/health/readiness`)
+	require.Contains(t, output, `http://camunda-zeebe-gateway.camunda-east.svc.cluster.local:9600/actuator/health/readiness`)
+	require.Contains(t, output, `- "/operate/identity-callback"`)
+	require.Contains(t, output, `- "/tasklist/identity-callback"`)
+	require.NotContains(t, output, `type: admin`)
+}
+
 func TestHubTopologySuppressesDefaultWorkloadPlane(t *testing.T) {
 	output := render(t, "hub-generic.yaml")
 

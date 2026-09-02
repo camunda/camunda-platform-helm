@@ -68,3 +68,19 @@ topology:
         ORCH_OPTIMIZE_CLIENT_ID: optimize-orchc
         ORCH_OPTIMIZE_AUDIENCE: optimize-orchc-api
         ORCH_CONNECTORS_CLIENT_ID: connectors-orchc
+    - role: orchestration
+      chart-version: "8.7"
+      namespace-suffix: orchd
+      modeler-cluster-id: orchd
+      modeler-cluster-name: Orchestration D
+      identity: keycloak-external
+      persistence: elasticsearch-external
+      dependencies: []
+      values: features/multinamespace-orchestration.yaml
+      depends-on: hub
+      env:
+        ORCH_ORCHESTRATION_CLIENT_ID: orchestration-orchd
+        ORCH_ORCHESTRATION_AUDIENCE: orchestration-orchd-api
+        ORCH_OPTIMIZE_CLIENT_ID: optimize-orchd
+        ORCH_OPTIMIZE_AUDIENCE: optimize-orchd-api
+        ORCH_CONNECTORS_CLIENT_ID: connectors-orchd

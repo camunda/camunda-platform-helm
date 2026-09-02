@@ -1380,11 +1380,14 @@ required by camunda.modeler.clusters (introduced in 8.10 Hub/WebModeler).
 {{- $orchestration := dig "components" "orchestration" dict $cluster }}
 {{- $optimize := dig "components" "optimize" dict $cluster }}
 {{- $connectors := dig "components" "connectors" dict $cluster }}
+{{- $legacy := eq ($cluster.architecture | default "unified") "legacy" }}
 {{- $orchestrationPath := include "camundaPlatform.topologyContextPath" (dig "contextPaths" "orchestration" "" $cluster) }}
 {{- $optimizePath := include "camundaPlatform.topologyContextPath" (dig "contextPaths" "optimize" "" $cluster) }}
 {{- $connectorsPath := include "camundaPlatform.topologyContextPath" (dig "contextPaths" "connectors" "" $cluster) }}
 {{- $orchestrationName := $orchestration.serviceName | default (include "camundaPlatform.topologyComponentFullname" (dict "releaseName" $cluster.releaseName "componentName" "zeebe")) }}
 {{- $gatewayName := $orchestration.gatewayServiceName | default (printf "%s-gateway" $orchestrationName) }}
+{{- $operateName := $orchestration.operateServiceName | default (include "camundaPlatform.topologyComponentFullname" (dict "releaseName" $cluster.releaseName "componentName" "operate")) }}
+{{- $tasklistName := $orchestration.tasklistServiceName | default (include "camundaPlatform.topologyComponentFullname" (dict "releaseName" $cluster.releaseName "componentName" "tasklist")) }}
 {{- $optimizeName := $optimize.serviceName | default (include "camundaPlatform.topologyComponentFullname" (dict "releaseName" $cluster.releaseName "componentName" "optimize")) }}
 {{- $connectorsName := $connectors.serviceName | default (include "camundaPlatform.topologyComponentFullname" (dict "releaseName" $cluster.releaseName "componentName" "connectors")) }}
 - id: {{ $cluster.id | quote }}
@@ -1416,26 +1419,28 @@ required by camunda.modeler.clusters (introduced in 8.10 Hub/WebModeler).
     version: {{ $cluster.version | quote }}
     urls:
       webapp: {{ $orchestration.operateUrl | default (printf "https://%s%s/operate" $cluster.host $orchestrationPath) | quote }}
-      readiness: {{ $orchestration.readinessUrl | default (printf "http://%s.%s.svc.cluster.local:9600%s/actuator/health/readiness" $orchestrationName $cluster.namespace $orchestrationPath) | quote }}
+      readiness: {{ $orchestration.operateReadinessUrl | default (ternary (printf "http://%s.%s.svc.cluster.local:9600/operate/actuator/health/readiness" $operateName $cluster.namespace) (printf "http://%s.%s.svc.cluster.local:9600%s/actuator/health/readiness" $orchestrationName $cluster.namespace $orchestrationPath) $legacy) | quote }}
   - name: Tasklist
     type: tasklist
     version: {{ $cluster.version | quote }}
     urls:
       webapp: {{ $orchestration.tasklistUrl | default (printf "https://%s%s/tasklist" $cluster.host $orchestrationPath) | quote }}
-      readiness: {{ $orchestration.readinessUrl | default (printf "http://%s.%s.svc.cluster.local:9600%s/actuator/health/readiness" $orchestrationName $cluster.namespace $orchestrationPath) | quote }}
+      readiness: {{ $orchestration.tasklistReadinessUrl | default (ternary (printf "http://%s.%s.svc.cluster.local:9600/tasklist/actuator/health/readiness" $tasklistName $cluster.namespace) (printf "http://%s.%s.svc.cluster.local:9600%s/actuator/health/readiness" $orchestrationName $cluster.namespace $orchestrationPath) $legacy) | quote }}
+  {{- if not $legacy }}
   - name: Orchestration Admin
     type: admin
     version: {{ $cluster.version | quote }}
     urls:
       webapp: {{ $orchestration.adminUrl | default (printf "https://%s%s/admin" $cluster.host $orchestrationPath) | quote }}
       readiness: {{ $orchestration.readinessUrl | default (printf "http://%s.%s.svc.cluster.local:9600%s/actuator/health/readiness" $orchestrationName $cluster.namespace $orchestrationPath) | quote }}
+  {{- end }}
   - name: Orchestration Cluster
     type: orchestration
     version: {{ $cluster.version | quote }}
     urls:
       grpc: {{ $orchestration.grpcUrl | default (printf "grpc://%s.%s.svc.cluster.local:26500" $gatewayName $cluster.namespace) | quote }}
       rest: {{ $orchestration.restUrl | default (printf "http://%s.%s.svc.cluster.local:8080%s" $gatewayName $cluster.namespace $orchestrationPath) | quote }}
-      readiness: {{ $orchestration.readinessUrl | default (printf "http://%s.%s.svc.cluster.local:9600%s/actuator/health/readiness" $orchestrationName $cluster.namespace $orchestrationPath) | quote }}
+      readiness: {{ $orchestration.readinessUrl | default (ternary (printf "http://%s.%s.svc.cluster.local:9600/actuator/health/readiness" $gatewayName $cluster.namespace) (printf "http://%s.%s.svc.cluster.local:9600%s/actuator/health/readiness" $orchestrationName $cluster.namespace $orchestrationPath) $legacy) | quote }}
   {{- end }}
 {{- end }}
 {{- end -}}
