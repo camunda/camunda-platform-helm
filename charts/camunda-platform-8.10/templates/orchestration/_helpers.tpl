@@ -12,67 +12,33 @@
     ) -}}
 {{- end -}}
 
-{{/*
-NOTE: resolves the multi-region block, preferring orchestration.multiregion over the
-deprecated global.multiregion, which only still carries regions and regionId. Whole-block
-precedence, never per field, so a topology cannot be assembled half from each. Absent
-fields fall back to the chart defaults, which is what lets the global block supply the
-legacy pair without declaring the zoned ones. constraints.tpl rejects setting both.
-*/}}
-{{- define "camundaPlatform.multiregion" -}}
-{{- $src := .Values.global.multiregion | default dict -}}
-{{- if eq (include "camundaPlatform.multiregionConfigured" (.Values.orchestration.multiregion | default dict)) "true" -}}
-  {{- $src = .Values.orchestration.multiregion | default dict -}}
-{{- end -}}
-{{- dict
-      "mode" ($src.mode | default "legacy")
-      "zone" ($src.zone | default "")
-      "zones" ($src.zones | default list)
-      "regions" ($src.regions | default 1)
-      "regionId" ($src.regionId | default 0)
-    | toJson -}}
-{{- end -}}
-
-{{/*
-NOTE: takes a multi-region block, not the root context. Emits "true" when any field
-departs from the chart default.
-*/}}
-{{- define "camundaPlatform.multiregionConfigured" -}}
-{{- if or
-      (ne (default "legacy" .mode) "legacy")
-      (ne (default "" .zone) "")
-      (gt (len (default list .zones)) 0)
-      (ne (int (default 1 .regions)) 1)
-      (ne (int (default 0 .regionId)) 0) -}}
-true
-{{- end -}}
-{{- end -}}
-
 {{- define "orchestration.zoned" -}}
-{{- eq (get (include "camundaPlatform.multiregion" . | fromYaml) "mode") "zoned" -}}
+{{- eq (include "camundaPlatform.multiregion" . | fromYaml).mode "zoned" -}}
+{{- end -}}
+
+{{/*
+NOTE: takes a dict of "zones" and the zone "field" to total, not the root context.
+*/}}
+{{- define "orchestration.zoneSum" -}}
+{{- $total := 0 -}}
+{{- $field := .field -}}
+{{- range .zones -}}
+  {{- $total = add $total (int (index . $field)) -}}
+{{- end -}}
+{{- $total -}}
 {{- end -}}
 
 {{- define "orchestration.clusterSize" -}}
-{{- $mr := include "camundaPlatform.multiregion" $ | fromYaml -}}
 {{- if eq (include "orchestration.zoned" .) "true" -}}
-  {{- $clusterSize := 0 -}}
-  {{- range $mr.zones -}}
-    {{- $clusterSize = add $clusterSize (int .numberOfBrokers) -}}
-  {{- end -}}
-  {{- $clusterSize -}}
+  {{- include "orchestration.zoneSum" (dict "zones" (include "camundaPlatform.multiregion" $ | fromYaml).zones "field" "numberOfBrokers") -}}
 {{- else -}}
   {{- .Values.orchestration.clusterSize -}}
 {{- end -}}
 {{- end -}}
 
 {{- define "orchestration.replicationFactor" -}}
-{{- $mr := include "camundaPlatform.multiregion" $ | fromYaml -}}
 {{- if eq (include "orchestration.zoned" .) "true" -}}
-  {{- $replicationFactor := 0 -}}
-  {{- range $mr.zones -}}
-    {{- $replicationFactor = add $replicationFactor (int .numberOfReplicas) -}}
-  {{- end -}}
-  {{- $replicationFactor -}}
+  {{- include "orchestration.zoneSum" (dict "zones" (include "camundaPlatform.multiregion" $ | fromYaml).zones "field" "numberOfReplicas") -}}
 {{- else -}}
   {{- .Values.orchestration.replicationFactor -}}
 {{- end -}}
