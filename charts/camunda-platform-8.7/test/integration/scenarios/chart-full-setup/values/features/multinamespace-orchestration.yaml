@@ -1,13 +1,23 @@
 # Orchestration-side component configuration for the multi-namespace topology.
 global:
   elasticsearch:
-    prefix: $ORCHESTRATION_INDEX_PREFIX
+    prefix: l87-$ORCHESTRATION_INDEX_PREFIX
+
+operate:
+  env:
+    - name: CAMUNDA_OPERATE_ELASTICSEARCH_INDEXPREFIX
+      value: l87op-$ORCHESTRATION_INDEX_PREFIX
+
+tasklist:
+  env:
+    - name: CAMUNDA_TASKLIST_ELASTICSEARCH_INDEXPREFIX
+      value: l87tl-$ORCHESTRATION_INDEX_PREFIX
 
 optimize:
   enabled: true
   env:
     - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SETTINGS_INDEX_PREFIX
-      value: $OPTIMIZE_INDEX_PREFIX
+      value: l87-$OPTIMIZE_INDEX_PREFIX
 
 connectors:
   enabled: true
