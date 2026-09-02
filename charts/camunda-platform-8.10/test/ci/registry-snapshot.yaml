@@ -1915,7 +1915,6 @@ integration:
           tier: 2
           infra-type:
             gke: distroci
-          skip-e2e: true
           topology:
             name: hub-2orch
             releases:
@@ -1943,7 +1942,8 @@ integration:
                   ORCH_ORCHESTRATION_CLIENT_ID: orchestration-orcha
                 modeler-cluster-id: orcha
                 modeler-cluster-name: Orchestration A
-              - role: orchestration
+              - chart-version: "8.9"
+                role: orchestration
                 namespace-suffix: orchb
                 values: features/multinamespace-orchestration.yaml
                 depends-on: hub
