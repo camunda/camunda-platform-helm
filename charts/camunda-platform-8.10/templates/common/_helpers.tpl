@@ -1697,6 +1697,26 @@ Usage:
 {{- end -}}
 
 {{- /*
+NOTE: filename companion to extraConfigHasPath, matching on the entry's "file" rather than
+its parsed content. Unlike the content helpers it does NOT skip springImport:false entries:
+a non-Spring file such as log4j2.xml still occupies a ConfigMap data key and a subPath
+volumeMount, so a chart-rendered file of the same name would collide on both.
+Usage:
+{{ if eq (include "camundaPlatform.extraConfigHasFile" (dict
+  "extraConfiguration" .Values.orchestration.extraConfiguration
+  "file" "log4j2.xml")) "true" }}
+*/ -}}
+{{- define "camundaPlatform.extraConfigHasFile" -}}
+{{- $found := "" -}}
+{{- range .extraConfiguration -}}
+  {{- if eq (.file | default "") $.file -}}
+    {{- $found = "true" -}}
+  {{- end -}}
+{{- end -}}
+{{- $found -}}
+{{- end -}}
+
+{{- /*
 NOTE: dotted-key companion to extraConfigHasPath. Spring accepts the relaxed form
 "camunda.secrets.stores.aws.default.region: x", which fromYaml parses as one top-level
 key, so the nested walk in extraConfigHasPath cannot see it. Spring also accepts every
