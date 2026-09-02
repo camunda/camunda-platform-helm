@@ -1466,6 +1466,7 @@ jobs:
     timeout-minutes: 40
     strategy:
       fail-fast: false
+      max-parallel: 8
       matrix:
         include: ${{ fromJson(inputs.topology-smoke-matrix) }}
     permissions:
@@ -1534,7 +1535,7 @@ jobs:
         with:
           camunda-helm-git-ref: ${{ inputs.camunda-helm-git-ref }}
           camunda-helm-dir: ${{ matrix.chart_dir }}
-          test-chart-dir: camunda-platform-8.10
+          test-chart-dir: ${{ matrix.test_chart_dir }}
           camunda-helm-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
           flow: ${{ inputs.flow }}
           distro-platform: ${{ inputs.distro-platform }}
@@ -1551,7 +1552,7 @@ jobs:
           shard-index: ${{ matrix.shard_index }}
           scenario: ${{ inputs.scenario }}
           run-smoke-tests: "false"
-          playwright-project: hub-web-modeler
+          playwright-project: ${{ matrix.playwright_project }}
           e2e-test-suite-ref: topology-hub-web-modeler-suite
           artifact-suffix: ${{ matrix.orchestration_suffix }}-${{ matrix.suite }}
       - name: Observe build status
