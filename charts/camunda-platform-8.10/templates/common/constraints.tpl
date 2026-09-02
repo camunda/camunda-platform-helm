@@ -244,6 +244,15 @@ would be discarded in silence, and the StatefulSet would scale to the local zone
 broker count without the diff naming the setting it ignored.
 */}}
 {{- if eq $mr.mode "zoned" }}
+  {{/*
+  NOTE: compared against the chart default, not against the zone-derived value. Helm
+  cannot distinguish an explicitly supplied default from the chart default, and the
+  derived value differs from the default on nearly every real topology, so comparing
+  the two would reject every zoned install. Same technique, and same blind spot, as the
+  regions/regionId rejection above: a value that happens to equal the default is inert.
+  Keep in sync with orchestration.clusterSize and orchestration.replicationFactor in
+  values.yaml.
+  */}}
   {{- if ne (int .Values.orchestration.clusterSize) 3 }}
     {{- fail (printf "[camunda][error] orchestration.clusterSize cannot be used with zoned mode; it is the sum of numberOfBrokers over %s.zones." $mrKey) -}}
   {{- end }}
@@ -257,6 +266,27 @@ Fail if zoned mode is combined with the region-based multiregion settings it rep
 */}}
 {{- if and (eq $mr.mode "zoned") (or (ne (int $mr.regions) 1) (ne (int $mr.regionId) 0)) }}
   {{- fail (printf "[camunda][error] %s.regions and %s.regionId cannot be used with zoned mode." $mrKey $mrKey) -}}
+{{- end }}
+
+{{/*
+Fail if a zone name repeats, or if a zone claims more replicas than it has brokers.
+
+A duplicate name collapses two zones into one member-ID namespace, which is the broker
+collision this mode exists to prevent. A zone cannot hold more replicas of a partition
+than it has brokers to hold them on, and the sum would then promise a replication factor
+no quorum can reach.
+*/}}
+{{- if eq $mr.mode "zoned" }}
+  {{- $seen := list -}}
+  {{- range $mr.zones -}}
+    {{- if has .name $seen }}
+      {{- fail (printf "[camunda][error] %s.zones declares %q twice; zone names are broker member ID prefixes and must be unique." $mrKey .name) -}}
+    {{- end }}
+    {{- $seen = append $seen .name -}}
+    {{- if gt (int .numberOfReplicas) (int .numberOfBrokers) }}
+      {{- fail (printf "[camunda][error] %s.zones entry %q asks for %d replicas on %d brokers; a zone cannot hold more replicas than it has brokers." $mrKey .name (int .numberOfReplicas) (int .numberOfBrokers)) -}}
+    {{- end }}
+  {{- end }}
 {{- end }}
 
 {{/*
