@@ -1,4 +1,4 @@
-{{- if and .Values.connectors.enabled .Values.connectors.persistence.enabled (not .Values.connectors.persistence.existingClaim) }}
+{{- if and (eq (include "camundaPlatform.connectorsEnabled" .) "true") .Values.connectors.persistence.enabled (not .Values.connectors.persistence.existingClaim) }}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:

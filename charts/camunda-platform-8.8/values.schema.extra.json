@@ -95,6 +95,17 @@
                         }
                     }
                 },
+                "topology": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                        "mode": {
+                            "type": "string",
+                            "enum": ["combined", "orchestration"],
+                            "default": "combined"
+                        }
+                    }
+                },
                 "multiregion": {
                     "type": "object",
                     "description": "Multi-region configuration for the Orchestration cluster. WARNING: get your configuration reviewed by Camunda before going to production \u2014 see https://docs.camunda.io/docs/self-managed/concepts/multi-region/dual-region/.",
