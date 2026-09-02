@@ -474,16 +474,6 @@ func planTopologyMetadata(parentVersion string, topology *Topology) (string, str
 					ShardIndex:          strconv.Itoa(len(smoke) + 1),
 					ChartVersion:        chartVersion,
 					ChartDir:            "camunda-platform-" + chartVersion,
-					Suite:               "hub",
-					TestChartDir:        "camunda-platform-8.10",
-					PlaywrightProject:   "hub-web-modeler",
-				})
-				smoke = append(smoke, topologySmokeEntry{
-					OrchestrationSuffix: release.NamespaceSuffix,
-					ModelerClusterID:    release.ModelerClusterID,
-					ShardIndex:          strconv.Itoa(len(smoke) + 1),
-					ChartVersion:        chartVersion,
-					ChartDir:            "camunda-platform-" + chartVersion,
 					Suite:               "orchestration",
 					TestChartDir:        "camunda-platform-" + chartVersion,
 					PlaywrightProject:   "topology-orchestration",
