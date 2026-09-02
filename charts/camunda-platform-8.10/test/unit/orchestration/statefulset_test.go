@@ -2394,16 +2394,16 @@ func (s *StatefulSetTest) TestZonedMode() {
 		{
 			Name: "TestZonedModeUsesLocalZoneBrokerCountAndEnvironmentVariable",
 			Values: map[string]string{
-				"global.multiregion.mode":                      "zoned",
-				"global.multiregion.zone":                      "region-b",
-				"global.multiregion.zones[0].name":             "region-a",
-				"global.multiregion.zones[0].numberOfBrokers":  "2",
-				"global.multiregion.zones[0].numberOfReplicas": "2",
-				"global.multiregion.zones[0].priority":         "100",
-				"global.multiregion.zones[1].name":             "region-b",
-				"global.multiregion.zones[1].numberOfBrokers":  "3",
-				"global.multiregion.zones[1].numberOfReplicas": "3",
-				"global.multiregion.zones[1].priority":         "50",
+				"orchestration.multiregion.mode":                      "zoned",
+				"orchestration.multiregion.zone":                      "region-b",
+				"orchestration.multiregion.zones[0].name":             "region-a",
+				"orchestration.multiregion.zones[0].numberOfBrokers":  "2",
+				"orchestration.multiregion.zones[0].numberOfReplicas": "2",
+				"orchestration.multiregion.zones[0].priority":         "100",
+				"orchestration.multiregion.zones[1].name":             "region-b",
+				"orchestration.multiregion.zones[1].numberOfBrokers":  "3",
+				"orchestration.multiregion.zones[1].numberOfReplicas": "3",
+				"orchestration.multiregion.zones[1].priority":         "50",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
@@ -2460,12 +2460,7 @@ func (s *StatefulSetTest) TestZonedMode() {
 				"orchestration.multiregion.zones[0].numberOfBrokers":  "2",
 				"orchestration.multiregion.zones[0].numberOfReplicas": "2",
 				"orchestration.multiregion.zones[0].priority":         "100",
-				"global.multiregion.mode":                             "zoned",
-				"global.multiregion.zone":                             "region-a",
-				"global.multiregion.zones[0].name":                    "region-a",
-				"global.multiregion.zones[0].numberOfBrokers":         "2",
-				"global.multiregion.zones[0].numberOfReplicas":        "2",
-				"global.multiregion.zones[0].priority":                "100",
+				"global.multiregion.regions":                          "2",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.Error(t, err)
@@ -2500,9 +2495,9 @@ func (s *StatefulSetTest) TestLegacyModeCompatibility() {
 			Name:                    "ExplicitLegacyModeUsesLegacyReplicaDivision",
 			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.clusterSize=6"},
 			Values: map[string]string{
-				"global.multiregion.mode":     "legacy",
-				"global.multiregion.regions":  "2",
-				"global.multiregion.regionId": "1",
+				"orchestration.multiregion.mode": "legacy",
+				"global.multiregion.regions":     "2",
+				"global.multiregion.regionId":    "1",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)

@@ -1290,10 +1290,10 @@ func (s *ConfigmapTemplateTest) TestLegacyConfigurationCompatibility() {
 		{
 			Name: "ExplicitLegacyModeUsesLegacyNodeIDAndMultiRegionAdvertisedHost",
 			Values: map[string]string{
-				"global.multiregion.mode":       "legacy",
-				"global.multiregion.regions":    "2",
-				"global.multiregion.regionId":   "1",
-				"orchestration.profiles.broker": "true",
+				"orchestration.multiregion.mode": "legacy",
+				"global.multiregion.regions":     "2",
+				"global.multiregion.regionId":    "1",
+				"orchestration.profiles.broker":  "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
@@ -1307,8 +1307,8 @@ func (s *ConfigmapTemplateTest) TestLegacyConfigurationCompatibility() {
 		{
 			Name: "LegacyCustomConfigurationRemainsAuthoritative",
 			Values: map[string]string{
-				"global.multiregion.mode":     "legacy",
-				"orchestration.configuration": "camunda:\n  cluster:\n    partition-count: 7\n",
+				"orchestration.multiregion.mode": "legacy",
+				"orchestration.configuration":    "camunda:\n  cluster:\n    partition-count: 7\n",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
@@ -1327,17 +1327,17 @@ func (s *ConfigmapTemplateTest) TestZonedConfiguration() {
 		{
 			Name: "TestApplicationYamlShouldContainZoneAwareConfiguration",
 			Values: map[string]string{
-				"global.multiregion.mode":                      "zoned",
-				"global.multiregion.zone":                      "region-a",
-				"global.multiregion.zones[0].name":             "region-a",
-				"global.multiregion.zones[0].numberOfBrokers":  "2",
-				"global.multiregion.zones[0].numberOfReplicas": "2",
-				"global.multiregion.zones[0].priority":         "100",
-				"global.multiregion.zones[1].name":             "region-b",
-				"global.multiregion.zones[1].numberOfBrokers":  "3",
-				"global.multiregion.zones[1].numberOfReplicas": "3",
-				"global.multiregion.zones[1].priority":         "50",
-				"orchestration.profiles.broker":                "true",
+				"orchestration.multiregion.mode":                      "zoned",
+				"orchestration.multiregion.zone":                      "region-a",
+				"orchestration.multiregion.zones[0].name":             "region-a",
+				"orchestration.multiregion.zones[0].numberOfBrokers":  "2",
+				"orchestration.multiregion.zones[0].numberOfReplicas": "2",
+				"orchestration.multiregion.zones[0].priority":         "100",
+				"orchestration.multiregion.zones[1].name":             "region-b",
+				"orchestration.multiregion.zones[1].numberOfBrokers":  "3",
+				"orchestration.multiregion.zones[1].numberOfReplicas": "3",
+				"orchestration.multiregion.zones[1].priority":         "50",
+				"orchestration.profiles.broker":                       "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
@@ -1354,17 +1354,17 @@ func (s *ConfigmapTemplateTest) TestZonedConfiguration() {
 		{
 			Name: "TestZonedNodeIdIsTheIndexInsideTheZone",
 			Values: map[string]string{
-				"global.multiregion.mode":                      "zoned",
-				"global.multiregion.zone":                      "region-b",
-				"global.multiregion.zones[0].name":             "region-a",
-				"global.multiregion.zones[0].numberOfBrokers":  "2",
-				"global.multiregion.zones[0].numberOfReplicas": "2",
-				"global.multiregion.zones[0].priority":         "100",
-				"global.multiregion.zones[1].name":             "region-b",
-				"global.multiregion.zones[1].numberOfBrokers":  "3",
-				"global.multiregion.zones[1].numberOfReplicas": "3",
-				"global.multiregion.zones[1].priority":         "50",
-				"orchestration.profiles.broker":                "true",
+				"orchestration.multiregion.mode":                      "zoned",
+				"orchestration.multiregion.zone":                      "region-b",
+				"orchestration.multiregion.zones[0].name":             "region-a",
+				"orchestration.multiregion.zones[0].numberOfBrokers":  "2",
+				"orchestration.multiregion.zones[0].numberOfReplicas": "2",
+				"orchestration.multiregion.zones[0].priority":         "100",
+				"orchestration.multiregion.zones[1].name":             "region-b",
+				"orchestration.multiregion.zones[1].numberOfBrokers":  "3",
+				"orchestration.multiregion.zones[1].numberOfReplicas": "3",
+				"orchestration.multiregion.zones[1].priority":         "50",
+				"orchestration.profiles.broker":                       "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
@@ -1381,13 +1381,13 @@ func (s *ConfigmapTemplateTest) TestZonedConfiguration() {
 		{
 			Name: "TestSingleZoneStillRendersItsInitialContactPoints",
 			Values: map[string]string{
-				"global.multiregion.mode":                      "zoned",
-				"global.multiregion.zone":                      "region-a",
-				"global.multiregion.zones[0].name":             "region-a",
-				"global.multiregion.zones[0].numberOfBrokers":  "2",
-				"global.multiregion.zones[0].numberOfReplicas": "2",
-				"global.multiregion.zones[0].priority":         "100",
-				"orchestration.profiles.broker":                "true",
+				"orchestration.multiregion.mode":                      "zoned",
+				"orchestration.multiregion.zone":                      "region-a",
+				"orchestration.multiregion.zones[0].name":             "region-a",
+				"orchestration.multiregion.zones[0].numberOfBrokers":  "2",
+				"orchestration.multiregion.zones[0].numberOfReplicas": "2",
+				"orchestration.multiregion.zones[0].priority":         "100",
+				"orchestration.profiles.broker":                       "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
@@ -1408,17 +1408,17 @@ func (s *ConfigmapTemplateTest) TestZonedConfiguration() {
 		{
 			Name: "TestZonedModeDoesNotEnableLegacyElasticsearchExporter",
 			Values: map[string]string{
-				"global.multiregion.mode":                                       "zoned",
-				"global.multiregion.zone":                                       "region-a",
-				"global.multiregion.zones[0].name":                              "region-a",
-				"global.multiregion.zones[0].numberOfBrokers":                   "2",
-				"global.multiregion.zones[0].numberOfReplicas":                  "2",
-				"global.multiregion.zones[0].priority":                          "100",
+				"orchestration.multiregion.mode":                                "zoned",
+				"orchestration.multiregion.zone":                                "region-a",
+				"orchestration.multiregion.zones[0].name":                       "region-a",
+				"orchestration.multiregion.zones[0].numberOfBrokers":            "2",
+				"orchestration.multiregion.zones[0].numberOfReplicas":           "2",
+				"orchestration.multiregion.zones[0].priority":                   "100",
 				"orchestration.exporters.rdbms.enabled":                         "true",
 				"orchestration.data.secondaryStorage.rdbms.url":                 "jdbc:postgresql://localhost:5432/camunda",
 				"orchestration.data.secondaryStorage.rdbms.username":            "camunda",
 				"orchestration.data.secondaryStorage.rdbms.secret.inlineSecret": "my-password",
-				"optimize.enabled":                                              "true",
+				"optimize.enabled": "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
@@ -1435,41 +1435,41 @@ func (s *ConfigmapTemplateTest) TestZonedModeRejectsLegacyRegionSettings() {
 		{
 			Name: "TestZonedModeRejectsLegacyRegions",
 			Values: map[string]string{
-				"global.multiregion.mode":       "zoned",
-				"global.multiregion.regions":    "2",
-				"orchestration.profiles.broker": "true",
+				"orchestration.multiregion.mode":    "zoned",
+				"orchestration.multiregion.regions": "2",
+				"orchestration.profiles.broker":     "true",
 			},
 			Expected: map[string]string{
-				"ERROR": "global.multiregion.regions and global.multiregion.regionId cannot be used with zoned mode",
+				"ERROR": "orchestration.multiregion.regions and orchestration.multiregion.regionId cannot be used with zoned mode",
 			},
 		},
 		{
 			Name: "TestZonedModeRejectsAnUndeclaredZone",
 			Values: map[string]string{
-				"global.multiregion.mode":                      "zoned",
-				"global.multiregion.zone":                      "region-c",
-				"global.multiregion.zones[0].name":             "region-a",
-				"global.multiregion.zones[0].numberOfBrokers":  "2",
-				"global.multiregion.zones[0].numberOfReplicas": "2",
-				"global.multiregion.zones[0].priority":         "100",
-				"orchestration.profiles.broker":                "true",
+				"orchestration.multiregion.mode":                      "zoned",
+				"orchestration.multiregion.zone":                      "region-c",
+				"orchestration.multiregion.zones[0].name":             "region-a",
+				"orchestration.multiregion.zones[0].numberOfBrokers":  "2",
+				"orchestration.multiregion.zones[0].numberOfReplicas": "2",
+				"orchestration.multiregion.zones[0].priority":         "100",
+				"orchestration.profiles.broker":                       "true",
 			},
 			Expected: map[string]string{
-				"ERROR": "global.multiregion.zone \"region-c\" is not declared in global.multiregion.zones",
+				"ERROR": "orchestration.multiregion.zone \"region-c\" is not declared in orchestration.multiregion.zones",
 			},
 		},
 		{
 			Name: "TestZonedModeRejectsAnEmptyZone",
 			Values: map[string]string{
-				"global.multiregion.mode":                      "zoned",
-				"global.multiregion.zones[0].name":             "region-a",
-				"global.multiregion.zones[0].numberOfBrokers":  "2",
-				"global.multiregion.zones[0].numberOfReplicas": "2",
-				"global.multiregion.zones[0].priority":         "100",
-				"orchestration.profiles.broker":                "true",
+				"orchestration.multiregion.mode":                      "zoned",
+				"orchestration.multiregion.zones[0].name":             "region-a",
+				"orchestration.multiregion.zones[0].numberOfBrokers":  "2",
+				"orchestration.multiregion.zones[0].numberOfReplicas": "2",
+				"orchestration.multiregion.zones[0].priority":         "100",
+				"orchestration.profiles.broker":                       "true",
 			},
 			Expected: map[string]string{
-				"ERROR": "global.multiregion.zone must name the zone this release is deployed to",
+				"ERROR": "orchestration.multiregion.zone must name the zone this release is deployed to",
 			},
 		},
 	}
