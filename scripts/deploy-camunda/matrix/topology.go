@@ -55,6 +55,10 @@ type Topology struct {
 // companions of their own (they consume the Hub release's shared
 // Elasticsearch and Identity/Keycloak cross-namespace by FQDN).
 type TopologyRelease struct {
+	// ChartVersion selects the local chart and values layers for this release.
+	// Empty inherits the parent matrix entry's version.
+	ChartVersion string `yaml:"chart-version,omitempty" json:"chartVersion,omitempty"`
+
 	// Role is "hub", "orchestration", or "optimize". Exactly one
 	// "hub" role must be declared per Topology.
 	Role string `yaml:"role" json:"role"`
@@ -145,13 +149,35 @@ var reservedTopologyEnvKeys = []string{
 	"SERVED_ORCHESTRATION_INDEX_PREFIX",
 }
 
+// releaseChartPaths resolves the chart a single topology release runs against.
+// A release that pins no chart-version inherits parentVersion. chartVersion is
+// reported so callers can name it in errors, and safe is false when the pinned
+// value is not a plain filename (so it must not be joined into a path).
+func releaseChartPaths(repoRoot, parentChartDir, parentVersion string, r TopologyRelease) (chartVersion, releaseChartDir, chartFullSetupDir string, safe bool) {
+	chartVersion = r.ChartVersion
+	if chartVersion == "" {
+		chartVersion = parentVersion
+	}
+	safe = isPlainFilename(chartVersion)
+	releaseChartDir = parentChartDir
+	if safe {
+		releaseChartDir = filepath.Join(repoRoot, "charts", "camunda-platform-"+chartVersion)
+	}
+	chartFullSetupDir = filepath.Join(releaseChartDir, "test", "integration", "scenarios", "chart-full-setup")
+	return chartVersion, releaseChartDir, chartFullSetupDir, safe
+}
+
 // Validate enforces Topology's load-time invariants:
 //   - at least one release is declared;
+//   - every release's chart-version is a plain filename that resolves to a
+//     local chart directory under <repoRoot>/charts/camunda-platform-<version>;
 //   - no release sets Values, which Features replaces;
 //   - every release declares at least one Features layer, and every one of them
-//     resolves on disk under <chartFullSetupDir>/values/features/<id>.yaml;
+//     resolves on disk under its selected chart's
+//     chart-full-setup/values/features/<id>.yaml;
 //   - every release's Identity/Persistence layer (when set) resolves on disk
-//     under <chartFullSetupDir>/values/identity/ or .../persistence/;
+//     under its selected chart's chart-full-setup values/identity/ or
+//     .../persistence/;
 //   - every release's Dependencies IDs (when set) resolve to a file under
 //     <depsDir>/<id>.yaml;
 //   - every release's DependsOn (when set) references a declared Role, and is
@@ -167,9 +193,13 @@ var reservedTopologyEnvKeys = []string{
 // chart-rendered contract; Validate never reconstructs Helm's merged values.
 //
 // ctx is prepended to error messages, e.g. `scenario "multinamespace": topology: ...`.
-func (t *Topology) Validate(ctx string, chartFullSetupDir string, depsDir string) error {
+func (t *Topology) Validate(ctx string, chartDir string, depsDir string) error {
 	if t == nil {
 		return nil
+	}
+	repoRoot, parentVersion, err := deriveRepoRootAndVersion(chartDir)
+	if err != nil {
+		return err
 	}
 	var problems []string
 
@@ -186,6 +216,12 @@ func (t *Topology) Validate(ctx string, chartFullSetupDir string, depsDir string
 
 	for i, r := range t.Releases {
 		label := fmt.Sprintf("%s: topology %q: release[%d] (role %q, namespace-suffix %q)", ctx, t.Name, i, r.Role, r.NamespaceSuffix)
+		chartVersion, releaseChartDir, chartFullSetupDir, chartVersionSafe := releaseChartPaths(repoRoot, chartDir, parentVersion, r)
+		if !chartVersionSafe {
+			problems = append(problems, fmt.Sprintf("%s: chart-version %q must not contain path separators", label, chartVersion))
+		} else if info, err := os.Stat(releaseChartDir); err != nil || !info.IsDir() {
+			problems = append(problems, fmt.Sprintf("%s: chart-version %q: missing local chart directory at %s", label, chartVersion, releaseChartDir))
+		}
 
 		switch r.Role {
 		case "hub":
@@ -336,7 +372,11 @@ func (t *Topology) Validate(ctx string, chartFullSetupDir string, depsDir string
 			continue
 		}
 		label := fmt.Sprintf("%s: topology %q: release (role %q, namespace-suffix %q)", ctx, t.Name, r.Role, r.NamespaceSuffix)
-		problems = append(problems, validateOptimizeLayerSources(label, r, chartFullSetupDir)...)
+		_, _, releaseChartFullSetupDir, safe := releaseChartPaths(repoRoot, chartDir, parentVersion, r)
+		if !safe {
+			continue
+		}
+		problems = append(problems, validateOptimizeLayerSources(label, r, releaseChartFullSetupDir)...)
 	}
 
 	if len(problems) == 0 {

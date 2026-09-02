@@ -1401,7 +1401,7 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 		rel := entry.Topology.Releases[i]
 		releaseCtx := contexts[i]
 
-		releaseEntry := synthesizeReleaseEntry(entry, rel, platform)
+		releaseEntry := synthesizeReleaseEntry(opts.RepoRoot, entry, rel, platform)
 		releaseOpts := synthesizeReleaseOpts(opts, platform, releaseCtx.Namespace)
 		hostKey := topologyReleaseHostKey(rel.Role, rel.NamespaceSuffix, len(orchestrationIndices))
 		if hostKey != "" {
@@ -1537,7 +1537,7 @@ func runTopologyE2ELegs(
 		return nil
 	}
 
-	legs := matrix.TopologyE2ELegs(entry.Topology)
+	legs := matrix.TopologyE2ELegs(entry.Version, entry.Topology)
 	if len(legs) == 0 {
 		return nil
 	}
@@ -1577,7 +1577,7 @@ func runTopologyE2ELegs(
 		}
 
 		rel := relBySuffix[leg.OrchestrationSuffix]
-		releaseEntry := synthesizeReleaseEntry(entry, rel, platform)
+		releaseEntry := synthesizeReleaseEntry(opts.RepoRoot, entry, rel, platform)
 		releaseOpts := synthesizeReleaseOpts(opts, platform, orchestrationNamespace)
 		if hostKey := topologyReleaseHostKey(rel.Role, rel.NamespaceSuffix, len(orchestrationIndices)); hostKey != "" {
 			if host := crossRefEnv[hostKey]; host != "" {
@@ -1730,16 +1730,24 @@ func topologyDeployOrder(releases []matrix.TopologyRelease) ([]int, error) {
 // carrying THAT release's own identity/persistence/features/dependencies
 // layer selection instead of the scenario-level (uniform) ones — the core of
 // the per-release layer fix. Extracted as a pure function for testability.
-func synthesizeReleaseEntry(entry matrix.Entry, rel matrix.TopologyRelease, platform string) matrix.Entry {
+func synthesizeReleaseEntry(repoRoot string, entry matrix.Entry, rel matrix.TopologyRelease, platform string) matrix.Entry {
 	// Feature layers go through the same env-var substitution pipeline as the
 	// identity and persistence layers (scenarios.BuildDeploymentConfig →
 	// values.Process), so a release's ${...} placeholders resolve before Helm
 	// sees them.
 	features := append([]string(nil), rel.Features...)
 
+	// A release may pin its own chart-version, so a topology can mix chart
+	// versions (e.g. an 8.10 Hub serving an 8.9 orchestration release). Empty
+	// inherits the parent matrix entry's version, which is the uniform case.
+	version := rel.ChartVersion
+	if version == "" {
+		version = entry.Version
+	}
+
 	releaseEntry := matrix.Entry{
-		Version:      entry.Version,
-		ChartPath:    entry.ChartPath,
+		Version:      version,
+		ChartPath:    filepath.Join(repoRoot, "charts", "camunda-platform-"+version),
 		Scenario:     entry.Scenario,
 		Shortname:    entry.Shortname,
 		Auth:         entry.Auth,

@@ -117,7 +117,7 @@ func TestSynthesizeReleaseEntry_HubCarriesOwnLayers(t *testing.T) {
 	}
 	releases := testTopologyReleases()
 
-	hubEntry := synthesizeReleaseEntry(baseEntry, releases[0], "gke")
+	hubEntry := synthesizeReleaseEntry("/repo", baseEntry, releases[0], "gke")
 
 	if hubEntry.Identity != "keycloak" {
 		t.Errorf("Hub Identity = %q, want %q", hubEntry.Identity, "keycloak")
@@ -164,7 +164,7 @@ func TestSynthesizeReleaseEntry_NoRoleRunsE2EDuringDeploy(t *testing.T) {
 	}
 
 	for _, rel := range testTopologyReleases() {
-		entry := synthesizeReleaseEntry(baseEntry, rel, "gke")
+		entry := synthesizeReleaseEntry("/repo", baseEntry, rel, "gke")
 		if !entry.SkipE2E {
 			t.Errorf("role %q: SkipE2E = false, want true (e2e is a topology-level phase)", rel.Role)
 		}
@@ -177,7 +177,7 @@ func TestSynthesizeReleaseEntry_OrchestrationHasNoDependenciesOrPostDeployHook(t
 	releases := testTopologyReleases()
 
 	for _, rel := range releases[1:] {
-		orchEntry := synthesizeReleaseEntry(baseEntry, rel, "gke")
+		orchEntry := synthesizeReleaseEntry("/repo", baseEntry, rel, "gke")
 		if orchEntry.Identity != "keycloak-external" {
 			t.Errorf("orchestration Identity = %q, want %q", orchEntry.Identity, "keycloak-external")
 		}
@@ -197,9 +197,27 @@ func TestSynthesizeReleaseEntry_OrchestrationHasNoDependenciesOrPostDeployHook(t
 			t.Errorf("orchestration release %q PostDeploy = %v, want nil so the hook runs once at topology level", rel.NamespaceSuffix, orchEntry.PostDeploy)
 		}
 	}
-	hubEntry := synthesizeReleaseEntry(baseEntry, releases[0], "gke")
+	hubEntry := synthesizeReleaseEntry("/repo", baseEntry, releases[0], "gke")
 	if hubEntry.PostDeploy != nil {
 		t.Errorf("Hub PostDeploy = %v, want nil so the hook runs once at topology level", hubEntry.PostDeploy)
+	}
+}
+
+func TestSynthesizeReleaseEntry_UsesReleaseChartVersion(t *testing.T) {
+	baseEntry := matrix.Entry{Version: "8.10", ChartPath: "/elsewhere/camunda-platform-8.10"}
+	rel := matrix.TopologyRelease{ChartVersion: "8.9"}
+
+	got := synthesizeReleaseEntry("/repo", baseEntry, rel, "gke")
+	if got.Version != "8.9" {
+		t.Errorf("Version = %q, want 8.9", got.Version)
+	}
+	if got.ChartPath != filepath.Join("/repo", "charts", "camunda-platform-8.9") {
+		t.Errorf("ChartPath = %q", got.ChartPath)
+	}
+
+	inherited := synthesizeReleaseEntry("/repo", baseEntry, matrix.TopologyRelease{}, "gke")
+	if inherited.Version != "8.10" || inherited.ChartPath != filepath.Join("/repo", "charts", "camunda-platform-8.10") {
+		t.Errorf("inherited chart = %s at %s", inherited.Version, inherited.ChartPath)
 	}
 }
 
