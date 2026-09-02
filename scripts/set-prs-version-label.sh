@@ -99,11 +99,8 @@ echo "${chart_dirs}" | while read -r chart_dir; do
     echo "Apps version: ${app_version}"
     echo "Chart version: ${chart_version}"
 
-    # Create the chart version label if it doesn't exist.
-    # We need to use grep because GH CLI doesn't support exact match.
-    gh label list --search "${chart_version_label}" | grep "${chart_version_label}" ||
-        gh label create "${chart_version_label}" --color "0052CC" \
-            --description "Issues and PRs related to chart version ${chart_version}"
+    gh label create "${chart_version_label}" --color "0052CC" \
+        --description "Issues and PRs related to chart version ${chart_version}" --force
 
     # Update GH PRs and Issues with the chart version.
     # Labeling is best-effort: a single failure (non-PR reference, transient API
