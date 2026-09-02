@@ -72,6 +72,10 @@ inputs:
     description: Git ref of camunda/c8-cross-component-e2e-tests to build and use instead of npm latest.
     required: false
     default: ""
+  artifact-suffix:
+    description: Unique suffix for reports from parallel topology suite legs.
+    required: false
+    default: ""
   hub-namespace:
     description: >-
       For a multi-namespace topology scenario: the namespace running the
@@ -338,7 +342,7 @@ runs:
       if: ${{ !success() }}
       shell: bash
       run: |
-        raw="diagnostics-e2e-${{ inputs.identifier }}-${{ inputs.flow }}-${{ inputs.test-stage }}-${{ inputs.shard-index }}-${{ github.run_id }}-${{ github.run_attempt }}"
+        raw="diagnostics-e2e-${{ inputs.identifier }}-${{ inputs.flow }}-${{ inputs.test-stage }}-${{ inputs.shard-index }}-${{ inputs.artifact-suffix }}-${{ github.run_id }}-${{ github.run_attempt }}"
         echo "name=${raw//[^a-zA-Z0-9._-]/-}" >> "$GITHUB_OUTPUT"
 
     - name: Upload namespace diagnostics
@@ -354,8 +358,8 @@ runs:
       if: ${{ always() }}
       uses: ./.github/actions/upload-artifact-retry
       with:
-        name: blob-report-${{ inputs.identifier }}-${{ inputs.flow }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ inputs.test-stage }}-${{ inputs.shard-index }}
-        path: ${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/e2e/blob-report
+        name: blob-report-${{ inputs.identifier }}-${{ inputs.flow }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ inputs.test-stage }}-${{ inputs.shard-index }}-${{ inputs.artifact-suffix }}
+        path: ${{ inputs.test-chart-dir != '' && format('{0}/charts/{1}/test/e2e/blob-report', github.workspace, inputs.test-chart-dir) || format('{0}/test/e2e/blob-report', env.ABSOLUTE_TEST_CHART_DIR) }}
         retention-days: 1
 
     - name: Set report date
@@ -368,8 +372,8 @@ runs:
       if: ${{ always() }}
       uses: ./.github/actions/upload-artifact-retry
       with:
-        name: playwright-results-json-${{ github.run_id }}-${{ inputs.identifier }}-${{ inputs.flow }}-${{ inputs.distro-platform }}-${{ inputs.test-stage }}-${{ inputs.shard-index }}-${{ steps.report_date.outputs.date }}
-        path: ${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/e2e/test-results/playwright-results.json
+        name: playwright-results-json-${{ github.run_id }}-${{ inputs.identifier }}-${{ inputs.flow }}-${{ inputs.distro-platform }}-${{ inputs.test-stage }}-${{ inputs.shard-index }}-${{ inputs.artifact-suffix }}-${{ steps.report_date.outputs.date }}
+        path: ${{ inputs.test-chart-dir != '' && format('{0}/charts/{1}/test/e2e/test-results/playwright-results.json', github.workspace, inputs.test-chart-dir) || format('{0}/test/e2e/test-results/playwright-results.json', env.ABSOLUTE_TEST_CHART_DIR) }}
         if-no-files-found: warn
         retention-days: 5
 
@@ -377,9 +381,9 @@ runs:
       if: ${{ !success() }}
       uses: ./.github/actions/upload-artifact-retry
       with:
-        name: playwright-traces-${{ github.run_id }}-${{ inputs.identifier }}-${{ inputs.flow }}-${{ inputs.distro-platform }}-${{ inputs.test-stage }}-${{ inputs.shard-index }}-${{ steps.report_date.outputs.date }}
+        name: playwright-traces-${{ github.run_id }}-${{ inputs.identifier }}-${{ inputs.flow }}-${{ inputs.distro-platform }}-${{ inputs.test-stage }}-${{ inputs.shard-index }}-${{ inputs.artifact-suffix }}-${{ steps.report_date.outputs.date }}
         path: |
-          ${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/e2e/test-results/**/trace.zip
-          ${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/e2e/test-results/**/*.png
+          ${{ inputs.test-chart-dir != '' && format('{0}/charts/{1}/test/e2e/test-results/**/trace.zip', github.workspace, inputs.test-chart-dir) || format('{0}/test/e2e/test-results/**/trace.zip', env.ABSOLUTE_TEST_CHART_DIR) }}
+          ${{ inputs.test-chart-dir != '' && format('{0}/charts/{1}/test/e2e/test-results/**/*.png', github.workspace, inputs.test-chart-dir) || format('{0}/test/e2e/test-results/**/*.png', env.ABSOLUTE_TEST_CHART_DIR) }}
         if-no-files-found: ignore
         retention-days: 5

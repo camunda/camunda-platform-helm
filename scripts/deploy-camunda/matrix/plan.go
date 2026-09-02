@@ -77,10 +77,13 @@ type PlanEntry struct {
 type topologySmokeEntry struct {
 	OrchestrationSuffix string `json:"orchestration_suffix"`
 	ModelerClusterID    string `json:"modeler_cluster_id"`
-	ModelerClusterName  string `json:"modeler_cluster_name"`
+	ModelerClusterName  string `json:"modeler_cluster_name,omitempty"`
 	ShardIndex          string `json:"shard_index"`
 	ChartVersion        string `json:"chart_version"`
 	ChartDir            string `json:"chart_dir"`
+	Suite               string `json:"suite"`
+	TestChartDir        string `json:"test_chart_dir"`
+	PlaywrightProject   string `json:"playwright_project"`
 }
 
 // PlanResult is the computed build matrix.
@@ -471,6 +474,19 @@ func planTopologyMetadata(parentVersion string, topology *Topology) (string, str
 					ShardIndex:          strconv.Itoa(len(smoke) + 1),
 					ChartVersion:        chartVersion,
 					ChartDir:            "camunda-platform-" + chartVersion,
+					Suite:               "hub",
+					TestChartDir:        "camunda-platform-8.10",
+					PlaywrightProject:   "hub-web-modeler",
+				})
+				smoke = append(smoke, topologySmokeEntry{
+					OrchestrationSuffix: release.NamespaceSuffix,
+					ModelerClusterID:    release.ModelerClusterID,
+					ShardIndex:          strconv.Itoa(len(smoke) + 1),
+					ChartVersion:        chartVersion,
+					ChartDir:            "camunda-platform-" + chartVersion,
+					Suite:               "orchestration",
+					TestChartDir:        "camunda-platform-" + chartVersion,
+					PlaywrightProject:   "topology-orchestration",
 				})
 			}
 		}
