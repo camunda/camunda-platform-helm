@@ -1044,6 +1044,7 @@ run_playwright_tests() {
   local kube_context="${10:-}"  # Optional: kubernetes context
   local rerun_cmd="${11:-}"  # Optional: command to rerun tests locally
   local is_auth0="${12:-false}"  # Optional: select auth0-smoke project (Auth0 OIDC scenario)
+  local playwright_project="${13:-}"  # Optional: select a named Playwright project
 
   log "Smoke tests: $run_smoke_tests"
   log "Reporter: $reporter"
@@ -1071,8 +1072,10 @@ run_playwright_tests() {
   # auth0 scenario can never run the QA-owned smoke-tests.spec.js (which
   # depends on a Keycloak admin) — it has its own auth0-smoke project that
   # speaks Auth0 OIDC instead.
-  local project="full-suite"
-  if [[ "$is_auth0" == "true" ]]; then
+  local project="${playwright_project:-full-suite}"
+  if [[ -n "$playwright_project" ]]; then
+    info "Running Playwright project: $project"
+  elif [[ "$is_auth0" == "true" ]]; then
     project="auth0-smoke"
     info "Running Auth0 OIDC smoke tests..."
   elif [[ "$run_smoke_tests" == "true" ]]; then
@@ -1096,7 +1099,7 @@ run_playwright_tests() {
   [[ -n "${PLAYWRIGHT_E2E_RETRIES:-}" ]] && playwright_args+=(--retries="$PLAYWRIGHT_E2E_RETRIES")
   # smoke-tests uses a low worker count by default; other projects keep the
   # config default unless PLAYWRIGHT_E2E_WORKERS is set.
-  if [[ "$project" == "smoke-tests" ]]; then
+  if [[ "$project" == "smoke-tests" || "$project" == "hub-web-modeler" ]]; then
     playwright_args+=(--workers="${PLAYWRIGHT_E2E_WORKERS:-2}")
   elif [[ -n "${PLAYWRIGHT_E2E_WORKERS:-}" ]]; then
     playwright_args+=(--workers="$PLAYWRIGHT_E2E_WORKERS")

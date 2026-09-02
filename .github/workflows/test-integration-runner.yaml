@@ -1534,6 +1534,7 @@ jobs:
         with:
           camunda-helm-git-ref: ${{ inputs.camunda-helm-git-ref }}
           camunda-helm-dir: ${{ matrix.chart_dir }}
+          test-chart-dir: camunda-platform-8.10
           camunda-helm-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
           flow: ${{ inputs.flow }}
           distro-platform: ${{ inputs.distro-platform }}
@@ -1549,7 +1550,9 @@ jobs:
           test-stage: after-install
           shard-index: ${{ matrix.shard_index }}
           scenario: ${{ inputs.scenario }}
-          run-smoke-tests: "true"
+          run-smoke-tests: "false"
+          playwright-project: hub-web-modeler
+          e2e-test-suite-ref: topology-hub-web-modeler-suite
       - name: Observe build status
         if: always()
         continue-on-error: true

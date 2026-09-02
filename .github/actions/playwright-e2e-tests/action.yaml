@@ -60,6 +60,18 @@ inputs:
     description: If true, run only the smoke-tests project. If false, run the full-suite project.
     required: false
     default: "true"
+  playwright-project:
+    description: Named Playwright project to run instead of smoke-tests or full-suite.
+    required: false
+    default: ""
+  test-chart-dir:
+    description: Chart directory whose Playwright config provides the test suite.
+    required: false
+    default: ""
+  e2e-test-suite-ref:
+    description: Git ref of camunda/c8-cross-component-e2e-tests to build and use instead of npm latest.
+    required: false
+    default: ""
   hub-namespace:
     description: >-
       For a multi-namespace topology scenario: the namespace running the
@@ -180,6 +192,21 @@ runs:
         chmod +x "${RUNNER_TEMP}/bin/deploy-camunda"
         echo "${RUNNER_TEMP}/bin" >> "$GITHUB_PATH"
 
+    - name: Checkout E2E test suite
+      if: inputs.e2e-test-suite-ref != ''
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      with:
+        repository: camunda/c8-cross-component-e2e-tests
+        ref: ${{ inputs.e2e-test-suite-ref }}
+        path: .e2e-test-suite
+
+    - name: Build E2E test suite
+      if: inputs.e2e-test-suite-ref != ''
+      shell: bash
+      run: |
+        npm ci --prefix "${GITHUB_WORKSPACE}/.e2e-test-suite"
+        npm run build --prefix "${GITHUB_WORKSPACE}/.e2e-test-suite"
+
     - name: Set workflow vars
       id: vars
       uses: ./.github/actions/workflow-vars
@@ -249,6 +276,7 @@ runs:
         TEST_AUTH_TYPE: ${{ inputs.auth }}
         HUB_NAMESPACE: ${{ inputs.hub-namespace }}
         REQUIRE_SM_810_TEST_SUITE: ${{ inputs.hub-namespace != '' }}
+        REQUIRE_HUB_WEB_MODELER_TEST_SUITE: ${{ inputs.playwright-project == 'hub-web-modeler' }}
       run: |
         cd "$GITHUB_WORKSPACE/scripts"
         # Unset KEYCLOAK_REALM to avoid conflicts with the integration tests
@@ -271,11 +299,17 @@ runs:
           SMOKE_FLAG=""
         fi
 
+        TEST_CHART_DIR="${{ inputs.test-chart-dir }}"
         E2E_ARGS=(--absolute-chart-path "${ABSOLUTE_TEST_CHART_DIR}" --namespace "${TEST_NAMESPACE}")
+        if [[ -n "$TEST_CHART_DIR" ]]; then
+          E2E_ARGS+=(--test-chart-path "${GITHUB_WORKSPACE}/charts/${TEST_CHART_DIR}")
+        fi
         [[ -n "$SMOKE_FLAG" ]] && E2E_ARGS+=("$SMOKE_FLAG")
         E2E_ARGS+=(--trace retain-on-failure --verbose)
         [[ -n "$EXTRA_FLAGS" ]] && E2E_ARGS+=("$EXTRA_FLAGS")
         [[ -n "$HUB_NAMESPACE" ]] && E2E_ARGS+=(--hub-namespace "${HUB_NAMESPACE}")
+        [[ -n "${{ inputs.playwright-project }}" ]] && E2E_ARGS+=(--playwright-project "${{ inputs.playwright-project }}")
+        [[ -n "${{ inputs.e2e-test-suite-ref }}" ]] && E2E_ARGS+=(--local-test-suite "${GITHUB_WORKSPACE}/.e2e-test-suite")
 
         ./run-e2e-tests.sh "${E2E_ARGS[@]}"
 
