@@ -196,6 +196,7 @@
                 },
                 "multiregion": {
                     "type": "object",
+                    "additionalProperties": false,
                     "description": "DEPRECATED, use orchestration.multiregion. Only the legacy regions and regionId settings remain here; zoned mode is configured under orchestration.multiregion.",
                     "default": {},
                     "properties": {
@@ -891,6 +892,7 @@
             "properties": {
                 "multiregion": {
                     "type": "object",
+                    "additionalProperties": false,
                     "description": "Multi-region configuration for the Orchestration cluster. WARNING: get your configuration reviewed by Camunda before going to production — see https://docs.camunda.io/docs/self-managed/concepts/multi-region/dual-region/.",
                     "default": {},
                     "properties": {

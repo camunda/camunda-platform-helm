@@ -2689,17 +2689,29 @@ fields fall back to the chart defaults, which is what lets the global block supp
 legacy pair without declaring the zoned ones. constraints.tpl rejects setting both.
 */}}
 {{- define "camundaPlatform.multiregion" -}}
-{{- $src := .Values.global.multiregion | default dict -}}
-{{- if eq (include "camundaPlatform.multiregionConfigured" (.Values.orchestration.multiregion | default dict)) "true" -}}
-  {{- $src = .Values.orchestration.multiregion | default dict -}}
+{{- $orch := .Values.orchestration.multiregion | default dict -}}
+{{- $global := .Values.global.multiregion | default dict -}}
+{{- if eq (include "camundaPlatform.multiregionConfigured" $orch) "true" -}}
+  {{- dict
+        "mode" ($orch.mode | default "legacy")
+        "zone" ($orch.zone | default "")
+        "zones" ($orch.zones | default list)
+        "regions" ($orch.regions | default 1)
+        "regionId" ($orch.regionId | default 0)
+      | toJson -}}
+{{- else -}}
+  {{- /* Only the legacy pair is read back from the deprecated block. mode, zone and
+       zones never shipped there, and honouring them would keep zoned mode reachable
+       through the spelling being removed in v16, which values.yaml and both schemas
+       already say it is not. */ -}}
+  {{- dict
+        "mode" "legacy"
+        "zone" ""
+        "zones" list
+        "regions" ($global.regions | default 1)
+        "regionId" ($global.regionId | default 0)
+      | toJson -}}
 {{- end -}}
-{{- dict
-      "mode" ($src.mode | default "legacy")
-      "zone" ($src.zone | default "")
-      "zones" ($src.zones | default list)
-      "regions" ($src.regions | default 1)
-      "regionId" ($src.regionId | default 0)
-    | toJson -}}
 {{- end -}}
 
 {{/*
