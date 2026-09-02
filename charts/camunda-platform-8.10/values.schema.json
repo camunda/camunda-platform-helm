@@ -7474,7 +7474,21 @@
                 "gatewayServiceName": {
                     "type": "string"
                 },
+                "operateServiceName": {
+                    "type": "string"
+                },
+                "tasklistServiceName": {
+                    "type": "string"
+                },
                 "readinessUrl": {
+                    "type": "string",
+                    "pattern": "^$|^https?://[^\\s]+$"
+                },
+                "operateReadinessUrl": {
+                    "type": "string",
+                    "pattern": "^$|^https?://[^\\s]+$"
+                },
+                "tasklistReadinessUrl": {
                     "type": "string",
                     "pattern": "^$|^https?://[^\\s]+$"
                 },
@@ -7607,6 +7621,13 @@
                 },
                 "version": {
                     "type": "string"
+                },
+                "architecture": {
+                    "type": "string",
+                    "enum": [
+                        "unified",
+                        "legacy"
+                    ]
                 },
                 "authorizations": {
                     "type": "object",
