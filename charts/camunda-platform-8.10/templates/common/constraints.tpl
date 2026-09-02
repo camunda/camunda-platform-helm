@@ -486,6 +486,29 @@ Non-fatal deprecation/config warnings. Consumed by NOTES.txt (helm install/upgra
 configmap-warnings.yaml, which renders the "<release>-warnings" ConfigMap on the GitOps path
 (helm template / Argo CD / Flux). Feed new deprecations here so they reach both channels.
 */}}
+{{/*
+[camunda-platform] Warning text for a TLS toggle the chart cannot resolve because
+the winning YAML config document is gated by spring.config.activate. Shared by
+every component that derives probe schemes or ingress backend protocols from
+camundaPlatform.appConfigBoolState, so the diagnosis and the two exits are worded
+once. Returns the message only; the caller emits it inside
+camunda.constraints.warnings.
+Usage:
+  {{ include "camunda.constraints.unresolvedTLSConfigWarning" (dict
+    "component" "Orchestration REST"
+    "valuesPrefix" "orchestration"
+    "dottedPath" "server.ssl.enabled"
+    "flag" "global.tls.orchestration.rest.enabled"
+    "envName" "SERVER_SSL_ENABLED") }}
+*/}}
+{{- define "camunda.constraints.unresolvedTLSConfigWarning" -}}
+  {{- printf "%s %s %s"
+      "[camunda][warning]"
+      (printf "%s.configuration or %s.extraConfiguration sets '%s' inside a spring.config.activate-conditioned YAML document, whose activation depends on the profile and cloud platform the container starts with and cannot be evaluated while templating." .valuesPrefix .valuesPrefix .dottedPath)
+      (printf "The chart therefore derives plaintext for %s, so probe schemes and ingress backend protocols are rendered for HTTP while the listener may start on TLS, which installs cleanly and then fails at connection time. Set %s: true, or add a literal %s.env entry for %s, to make the transport explicit." .component .flag .valuesPrefix .envName)
+  -}}
+{{- end -}}
+
 {{- define "camunda.constraints.warnings" }}
   {{- $hubUpgradePhase := include "camundaHub.upgradePhase" . }}
   {{- if eq $hubUpgradePhase "quiesce" }}
@@ -763,7 +786,7 @@ The following values inside your values.yaml need to be set but were not:
        protocols and in-cluster client endpoint schemes from
        camundaPlatform.orchestrationRESTTLSEnabled / ...GRPCTLSEnabled. Those read
        orchestration.env, global.tls.orchestration.*, and nested YAML keys in
-       orchestration.{configuration,extraConfiguration}. Two forms stay
+       orchestration.{configuration,extraConfiguration}. Three forms stay
        unreadable at render time; warn rather than derive plaintext silently. */}}
   {{- if .Values.orchestration.enabled }}
     {{- $tlsProps := list
@@ -815,9 +838,29 @@ The following values inside your values.yaml need to be set but were not:
           {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
         {{- end }}
       {{- end }}
+
+      {{/* (W3) A spring.config.activate-conditioned document sets the toggle, so the
+             chart cannot tell whether Spring applies it and keeps deriving plaintext.
+             Only flagged while the derivation resolved to plaintext, so an explicit
+             flag or env entry that already settles the transport never warns. */}}
+      {{- if ne $prop.state "true" }}
+        {{- $configState := include "camundaPlatform.appConfigBoolState" (dict
+            "configuration" $.Values.orchestration.configuration
+            "extraConfiguration" $.Values.orchestration.extraConfiguration
+            "path" $prop.path) }}
+        {{- if eq $configState "unresolved" }}
+          {{- $warningMessage := include "camunda.constraints.unresolvedTLSConfigWarning" (dict
+              "component" (printf "Orchestration %s" $prop.proto)
+              "valuesPrefix" "orchestration"
+              "dottedPath" (join "." $prop.path)
+              "flag" $prop.flag
+              "envName" $prop.envName) }}
+          {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+        {{- end }}
+      {{- end }}
     {{- end }}
 
-    {{/* (W3) The split /orchestration Ingress forces backend-protocol: HTTPS over
+    {{/* (W4) The split /orchestration Ingress forces backend-protocol: HTTPS over
            any inherited annotation. Correct (an HTTP backend against a TLS
            listener is SUPPORT-33090) but silent, and operators who set this
            annotation by hand set it deliberately. */}}
@@ -837,8 +880,8 @@ The following values inside your values.yaml need to be set but were not:
   {{/* Connectors TLS detection guardrails: probe schemes and the in-cluster
        Connectors URL are derived from camundaPlatform.connectorsTLSEnabled, which
        reads connectors.env, global.tls.connectors.enabled, and nested YAML keys in
-       connectors.{configuration,extraConfiguration}. Warn about the two forms it
-       cannot read rather than deriving plaintext silently. */}}
+       connectors.{configuration,extraConfiguration}. Warn about the three forms
+       it cannot read rather than deriving plaintext silently. */}}
   {{- if .Values.connectors.enabled }}
     {{- $connectorsTLS := include "camundaPlatform.connectorsTLSEnabled" . }}
 
@@ -882,13 +925,31 @@ The following values inside your values.yaml need to be set but were not:
         {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
       {{- end }}
     {{- end }}
+
+    {{/* (W3) A spring.config.activate-conditioned document sets the toggle, so the
+           chart cannot tell whether Spring applies it and keeps deriving plaintext. */}}
+    {{- if ne $connectorsTLS "true" }}
+      {{- $configState := include "camundaPlatform.appConfigBoolState" (dict
+          "configuration" .Values.connectors.configuration
+          "extraConfiguration" .Values.connectors.extraConfiguration
+          "path" (list "server" "ssl" "enabled")) }}
+      {{- if eq $configState "unresolved" }}
+        {{- $warningMessage := include "camunda.constraints.unresolvedTLSConfigWarning" (dict
+            "component" "Connectors"
+            "valuesPrefix" "connectors"
+            "dottedPath" "server.ssl.enabled"
+            "flag" "global.tls.connectors.enabled"
+            "envName" "SERVER_SSL_ENABLED") }}
+        {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+      {{- end }}
+    {{- end }}
   {{- end }}
 
   {{/* Optimize TLS detection guardrails: probe schemes and the /optimize Ingress
        backend protocol are derived from
        camundaPlatform.optimizeServerTLSEnabled, which reads optimize.env,
        global.tls.optimize.enabled, and nested YAML keys in
-       optimize.{configuration,extraConfiguration}. Warn about the two forms it
+       optimize.{configuration,extraConfiguration}. Warn about the three forms it
        cannot read rather than deriving plaintext silently. */}}
   {{- if .Values.optimize.enabled }}
     {{- $optimizeTLS := include "camundaPlatform.optimizeServerTLSEnabled" . }}
@@ -922,26 +983,22 @@ The following values inside your values.yaml need to be set but were not:
       {{- end }}
     {{- end }}
 
-    {{- $ambiguousConfig := false -}}
-    {{- $contents := list (.Values.optimize.configuration | default "") -}}
-    {{- range $entry := (.Values.optimize.extraConfiguration | default list) -}}
-      {{- $contents = append $contents ($entry.content | default "") -}}
-    {{- end -}}
-    {{- range $content := $contents -}}
-      {{- if or
-          (regexMatch "(?m)^[ \\t]*(---|\\.\\.\\.)[ \\t]*(#.*)?$" $content)
-          (regexMatch "(?m)^[ \\t]*spring\\.config\\.activate([.:]|[ \\t]*=)" $content)
-          (regexMatch "(?m)^[ \\t]*activate:[ \\t]*(#.*)?$" $content) -}}
-        {{- $ambiguousConfig = true -}}
-      {{- end -}}
-    {{- end -}}
-    {{- if and $ambiguousConfig (not .Values.global.tls.optimize.enabled) (ne $optimizeTLS "true") -}}
-      {{- $warningMessage := printf "%s %s %s"
-          "[camunda][warning]"
-          "The chart cannot derive Optimize TLS from multi-document or profile-activated Optimize configuration because Spring applies document ordering and activation conditions at runtime."
-          "The chart therefore keeps probes and ingress routing on HTTP. Set global.tls.optimize.enabled: true or a literal optimize.env SERVER_SSL_ENABLED value to make the transport explicit."
-      -}}
-      {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+    {{/* (W3) A spring.config.activate-conditioned document sets the toggle, so the
+           chart cannot tell whether Spring applies it and keeps deriving plaintext. */}}
+    {{- if ne $optimizeTLS "true" }}
+      {{- $configState := include "camundaPlatform.appConfigBoolState" (dict
+          "configuration" .Values.optimize.configuration
+          "extraConfiguration" .Values.optimize.extraConfiguration
+          "path" (list "server" "ssl" "enabled")) }}
+      {{- if eq $configState "unresolved" }}
+        {{- $warningMessage := include "camunda.constraints.unresolvedTLSConfigWarning" (dict
+            "component" "Optimize"
+            "valuesPrefix" "optimize"
+            "dottedPath" "server.ssl.enabled"
+            "flag" "global.tls.optimize.enabled"
+            "envName" "SERVER_SSL_ENABLED") }}
+        {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+      {{- end }}
     {{- end }}
 
     {{/* (W2) A valueFrom-sourced SSL toggle is unresolvable at render time. */}}

@@ -1,0 +1,12 @@
+optimize:
+  enabled: true
+  configuration: |
+    server:
+      ssl:
+        enabled: true
+        certificate: /certs/tls.crt
+        certificate-private-key: /certs/tls.key
+    ---
+    server:
+      ssl:
+        enabled: false

@@ -562,15 +562,28 @@ func (s *OptimizeTLSTest) TestTLSDetectionFromConfigSources() {
 			},
 		},
 		{
-			Name:        "TLS in a later YAML document is unresolved — probes stay HTTP",
+			// Spring applies every document, so TLS outside the first one is
+			// still the effective state.
+			Name:        "TLS in a later YAML document — probes use HTTPS",
 			ValuesFiles: []string{"testdata/values-optimize-tls-multi-document.yaml"},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				requireProbeScheme(t, output, corev1.URISchemeHTTPS)
+			},
+		},
+		{
+			// Later documents override earlier ones for the keys they set.
+			Name:        "later document switches TLS off — probes stay HTTP",
+			ValuesFiles: []string{"testdata/values-optimize-tls-later-document-overrides.yaml"},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
 				requireProbeScheme(t, output, corev1.URISchemeHTTP)
 			},
 		},
 		{
-			Name:        "TLS in an inactive profile document is unresolved — probes stay HTTP",
+			// Activation is a runtime decision, so the chart must not derive a
+			// secure transport from a conditioned document.
+			Name:        "TLS in a profile-activated document is unresolved — probes stay HTTP",
 			ValuesFiles: []string{"testdata/values-optimize-tls-profile-activated.yaml"},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
@@ -578,8 +591,8 @@ func (s *OptimizeTLSTest) TestTLSDetectionFromConfigSources() {
 			},
 		},
 		{
-			Name:        "explicit global TLS flag overrides ambiguous configuration",
-			ValuesFiles: []string{"testdata/values-optimize-tls-multi-document.yaml"},
+			Name:        "explicit global TLS flag overrides an unresolved configuration",
+			ValuesFiles: []string{"testdata/values-optimize-tls-profile-activated.yaml"},
 			Values: map[string]string{
 				"global.tls.optimize.enabled":                    "true",
 				"global.tls.optimize.cert.secret.existingSecret": "optimize-ks",
@@ -613,8 +626,22 @@ func (s *OptimizeTLSTest) TestTLSDetectionIngressBackend() {
 			},
 		},
 		{
-			Name:        "TLS in a later YAML document does not select the HTTPS ingress",
+			Name:        "TLS in a later YAML document selects the HTTPS ingress",
 			ValuesFiles: []string{"testdata/values-optimize-tls-multi-document.yaml"},
+			Values: map[string]string{
+				"global.ingress.enabled": "true",
+				"optimize.contextPath":   "/optimize",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "nginx.ingress.kubernetes.io/backend-protocol: HTTPS")
+			},
+		},
+		{
+			// helm --show-only errors instead of emitting nothing when the
+			// template renders empty, which is the shape of "no HTTPS route".
+			Name:        "profile-activated TLS does not select the HTTPS ingress",
+			ValuesFiles: []string{"testdata/values-optimize-tls-profile-activated.yaml"},
 			Values: map[string]string{
 				"global.ingress.enabled": "true",
 				"optimize.contextPath":   "/optimize",
@@ -653,19 +680,36 @@ func (s *OptimizeTLSTest) TestTLSDetectionWarnings() {
 			},
 		},
 		{
-			Name:        "multi-document configuration warns",
-			ValuesFiles: []string{"testdata/values-optimize-tls-multi-document.yaml"},
-			Verifier: func(t *testing.T, output string, err error) {
-				require.NoError(t, err)
-				require.Contains(t, output, "multi-document or profile-activated Optimize configuration")
-			},
-		},
-		{
+			// W3: activation is unknown while templating, so the operator is
+			// asked to make the transport explicit.
 			Name:        "profile-activated configuration warns",
 			ValuesFiles: []string{"testdata/values-optimize-tls-profile-activated.yaml"},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
-				require.Contains(t, output, "multi-document or profile-activated Optimize configuration")
+				require.Contains(t, output, "inside a spring.config.activate-conditioned YAML document")
+				require.Contains(t, output, "derives plaintext for Optimize")
+			},
+		},
+		{
+			// W3 must stay quiet for a multi-document source the chart reads in
+			// full: unconditional documents are resolved, not unresolved.
+			Name:        "multi-document configuration does not warn",
+			ValuesFiles: []string{"testdata/values-optimize-tls-multi-document.yaml"},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.NotContains(t, output, "spring.config.activate-conditioned YAML document")
+			},
+		},
+		{
+			// helm --show-only errors instead of emitting nothing when the
+			// warnings ConfigMap renders empty, which is the shape of "no
+			// warning at all". A multi-document config that never mentions TLS
+			// must not draw a TLS warning.
+			Name:        "multi-document configuration without TLS does not warn",
+			ValuesFiles: []string{"testdata/values-optimize-tls-multi-document-plain.yaml"},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), "could not find template")
 			},
 		},
 		{
