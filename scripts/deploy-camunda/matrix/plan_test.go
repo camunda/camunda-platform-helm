@@ -128,9 +128,20 @@ func TestPlanTopologyWorkflowMetadata(t *testing.T) {
 	if entry.TopologyHubSuffix != "hub" {
 		t.Errorf("topologyHubSuffix = %q, want hub", entry.TopologyHubSuffix)
 	}
-	wantSmoke := `[{"orchestration_suffix":"orcha","modeler_cluster_id":"orcha","modeler_cluster_name":"Orchestration A","shard_index":"1"},{"orchestration_suffix":"orchb","modeler_cluster_id":"orchb","modeler_cluster_name":"Orchestration B","shard_index":"2"}]`
+	wantSmoke := `[{"orchestration_suffix":"orcha","modeler_cluster_id":"orcha","modeler_cluster_name":"Orchestration A","shard_index":"1","chart_version":"8.10","chart_dir":"camunda-platform-8.10"},{"orchestration_suffix":"orchb","modeler_cluster_id":"orchb","modeler_cluster_name":"Orchestration B","shard_index":"2","chart_version":"8.10","chart_dir":"camunda-platform-8.10"}]`
 	if entry.TopologySmokeMatrix != wantSmoke {
 		t.Errorf("topologySmokeMatrix = %q, want %q", entry.TopologySmokeMatrix, wantSmoke)
+	}
+}
+
+func TestPlanTopologyMetadataUsesReleaseChartVersion(t *testing.T) {
+	_, _, smoke := planTopologyMetadata("8.10", &Topology{Releases: []TopologyRelease{
+		{Role: "orchestration", NamespaceSuffix: "current", ModelerClusterID: "current", ModelerClusterName: "Current"},
+		{ChartVersion: "8.9", Role: "orchestration", NamespaceSuffix: "previous", ModelerClusterID: "previous", ModelerClusterName: "Previous"},
+	}})
+	want := `[{"orchestration_suffix":"current","modeler_cluster_id":"current","modeler_cluster_name":"Current","shard_index":"1","chart_version":"8.10","chart_dir":"camunda-platform-8.10"},{"orchestration_suffix":"previous","modeler_cluster_id":"previous","modeler_cluster_name":"Previous","shard_index":"2","chart_version":"8.9","chart_dir":"camunda-platform-8.9"}]`
+	if smoke != want {
+		t.Fatalf("smoke = %s, want %s", smoke, want)
 	}
 }
 

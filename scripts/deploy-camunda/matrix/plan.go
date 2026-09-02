@@ -79,6 +79,8 @@ type topologySmokeEntry struct {
 	ModelerClusterID    string `json:"modeler_cluster_id"`
 	ModelerClusterName  string `json:"modeler_cluster_name"`
 	ShardIndex          string `json:"shard_index"`
+	ChartVersion        string `json:"chart_version"`
+	ChartDir            string `json:"chart_dir"`
 }
 
 // PlanResult is the computed build matrix.
@@ -417,7 +419,7 @@ func groupPlanEntries(version string, entries []Entry) []PlanEntry {
 			infraEks = "preemptible"
 		}
 
-		topologyNamespaceSuffixes, topologyHubSuffix, topologySmokeMatrix := planTopologyMetadata(first.Topology)
+		topologyNamespaceSuffixes, topologyHubSuffix, topologySmokeMatrix := planTopologyMetadata(first.Version, first.Topology)
 
 		out = append(out, PlanEntry{
 			Version:                   version,
@@ -447,12 +449,16 @@ func groupPlanEntries(version string, entries []Entry) []PlanEntry {
 	return out
 }
 
-func planTopologyMetadata(topology *Topology) (string, string, string) {
+func planTopologyMetadata(parentVersion string, topology *Topology) (string, string, string) {
 	suffixes := []string{}
 	smoke := []topologySmokeEntry{}
 	hubSuffix := ""
 	if topology != nil {
 		for _, release := range topology.Releases {
+			chartVersion := release.ChartVersion
+			if chartVersion == "" {
+				chartVersion = parentVersion
+			}
 			suffixes = append(suffixes, release.NamespaceSuffix)
 			if release.Role == "hub" {
 				hubSuffix = release.NamespaceSuffix
@@ -463,6 +469,8 @@ func planTopologyMetadata(topology *Topology) (string, string, string) {
 					ModelerClusterID:    release.ModelerClusterID,
 					ModelerClusterName:  release.ModelerClusterName,
 					ShardIndex:          strconv.Itoa(len(smoke) + 1),
+					ChartVersion:        chartVersion,
+					ChartDir:            "camunda-platform-" + chartVersion,
 				})
 			}
 		}
