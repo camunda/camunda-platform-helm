@@ -613,12 +613,7 @@ global:
         ## @param global.identity.auth.connectors.alwaysRegister if true, this Identity always provisions the Connectors Keycloak client, even when Connectors OIDC auth is not active in this release. Defaults to registering only when Connectors uses OIDC. Use for multi-namespace deployments where a central Identity registers a component that runs in another namespace.
         alwaysRegister: false
 
-  # Multiregion options for Zeebe
-  #
-  ## WARNING: Customers must develop and test the operational procedure described below in non-production environments based on the framework steps
-  # outlined by Camunda before applying them in production setups.
-  # Before advancing to production go-live, validating these procedures with Camunda is strongly recommended.
-  # Customers are solely responsible for detecting any regional failures and implementing the necessary operational procedure described.
+  # Multiregion options for Zeebe.
   ## Deprecated since chart v15 (Camunda 8.10); remove in v16. Only the Orchestration
   ## Cluster reads these keys, so they moved to `orchestration.multiregion`, which is
   ## also where zoned mode is configured. Setting both blocks fails the render.
@@ -2106,12 +2101,9 @@ orchestration:
       ## @param orchestration.multitenancy.api.enabled if true, then enable multitenancy API used for tenant management.
       enabled: true
 
-  # Multiregion options for the Orchestration Cluster
-  #
-  ## WARNING: Customers must develop and test the operational procedure described below in non-production environments based on the framework steps
-  # outlined by Camunda before applying them in production setups.
-  # Before advancing to production go-live, validating these procedures with Camunda is strongly recommended.
-  # Customers are solely responsible for detecting any regional failures and implementing the necessary operational procedure described.
+  # Multiregion options for the Orchestration Cluster. Operating a multi-region
+  # cluster has prerequisites and procedures this file cannot carry; see
+  # https://docs.camunda.io/docs/self-managed/concepts/multi-region/dual-region/
   multiregion:
     ## @param orchestration.multiregion.mode defines the multi-region configuration mode. Possible values: `legacy` or `zoned`.
     mode: legacy
