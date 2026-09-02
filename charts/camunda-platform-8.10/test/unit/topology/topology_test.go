@@ -88,6 +88,7 @@ func TestHubTopologyRendersLegacySplitWorkloadEndpoints(t *testing.T) {
 			"camundaHub.enabled":                                                       "true",
 			"camundaHub.restapi.mail.fromAddress":                                      "noreply@example.com",
 			"global.topology.clusters[0].architecture":                                 "legacy",
+			"global.topology.clusters[0].version":                                      "8.7.0",
 			"global.topology.clusters[0].components.orchestration.serviceName":         "camunda-zeebe",
 			"global.topology.clusters[0].components.orchestration.gatewayServiceName":  "camunda-zeebe-gateway",
 			"global.topology.clusters[0].components.orchestration.operateServiceName":  "camunda-operate",
@@ -102,6 +103,8 @@ func TestHubTopologyRendersLegacySplitWorkloadEndpoints(t *testing.T) {
 	require.Contains(t, output, `http://camunda-operate.camunda-east.svc.cluster.local:9600/operate/actuator/health/readiness`)
 	require.Contains(t, output, `http://camunda-tasklist.camunda-east.svc.cluster.local:9600/tasklist/actuator/health/readiness`)
 	require.Contains(t, output, `http://camunda-zeebe-gateway.camunda-east.svc.cluster.local:9600/actuator/health/readiness`)
+	require.Contains(t, output, `type: zeebeGateway`)
+	require.Regexp(t, `version: "8\.7\.0"\s+authentication: "BEARER_TOKEN"\s+components:`, output)
 	require.Contains(t, output, `- "/operate/identity-callback"`)
 	require.Contains(t, output, `- "/tasklist/identity-callback"`)
 	require.NotContains(t, output, `type: admin`)

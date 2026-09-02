@@ -1394,8 +1394,10 @@ required by camunda.modeler.clusters (introduced in 8.10 Hub/WebModeler).
   name: {{ ($cluster.name | default $cluster.id) | quote }}
   version: {{ $cluster.version | quote }}
   authentication: "BEARER_TOKEN"
+  {{- if not $legacy }}
   authorizations:
     enabled: {{ dig "authorizations" "enabled" false $cluster }}
+  {{- end }}
   components:
   {{- if $optimize.enabled }}
   - name: Optimize
@@ -1435,7 +1437,7 @@ required by camunda.modeler.clusters (introduced in 8.10 Hub/WebModeler).
       readiness: {{ $orchestration.readinessUrl | default (printf "http://%s.%s.svc.cluster.local:9600%s/actuator/health/readiness" $orchestrationName $cluster.namespace $orchestrationPath) | quote }}
   {{- end }}
   - name: Orchestration Cluster
-    type: orchestration
+    type: {{ ternary "zeebeGateway" "orchestration" $legacy }}
     version: {{ $cluster.version | quote }}
     urls:
       grpc: {{ $orchestration.grpcUrl | default (printf "grpc://%s.%s.svc.cluster.local:26500" $gatewayName $cluster.namespace) | quote }}
