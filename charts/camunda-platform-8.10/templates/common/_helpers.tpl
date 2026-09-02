@@ -788,6 +788,9 @@ sources rather than assuming the runtime secret disables TLS.
 
 The YAML sources match nested keys literally, so flat dotted keys,
 relaxed-binding camelCase, and springImport: false entries stay invisible here.
+Multi-document sources are resolved in document order, but a document gated by
+spring.config.activate resolves to "unresolved" and is treated as plaintext here
+because its activation is a runtime decision.
 camunda.constraints.warnings warns about what this cannot see.
 */}}
 {{- define "camundaPlatform.orchestrationRESTTLSEnabled" -}}
@@ -811,7 +814,8 @@ camunda.constraints.warnings warns about what this cannot see.
 [camunda-platform] Returns "true" when Orchestration gRPC TLS is enabled,
 mirroring camundaPlatform.orchestrationRESTTLSEnabled exactly: same four-source
 precedence, same "unknown" == "unset" handling for a valueFrom-sourced env
-entry, and the same literal-nested-key limits on the YAML sources. The gRPC
+entry, same document-order resolution with spring.config.activate treated as
+unresolved, and the same literal-nested-key limits on the YAML sources. The gRPC
 property path is camunda.api.grpc.ssl.enabled, the relaxed-binding YAML form of
 the CAMUNDA_API_GRPC_SSL_ENABLED env var the StatefulSet emits.
 */}}
@@ -867,12 +871,22 @@ Usage:
 {{- end -}}
 
 {{/*
-[camunda-platform] Returns "true", "false" or "unset" for a boolean key path in a
-<component>.configuration string. "unset" means the parsed YAML has no scalar at
-that path. Keys match literally on nested map keys, so flat dotted keys
-("server.ssl.enabled: true" as one key), relaxed-binding camelCase, and keys
-outside the first YAML document are NOT matched — same accepted form as
-camundaPlatform.effectiveExtraConfigValue.
+[camunda-platform] Returns "true", "false", "unset" or "unresolved" for a boolean
+key path in a <component>.configuration string, resolved the way Spring resolves
+a multi-document YAML source: documents are split on "---" and "..." separator
+lines and applied in order, so a later document overrides an earlier one for the
+keys it sets. "unset" means no document places a scalar at that path.
+
+"unresolved" means the document that wins the path carries a
+spring.config.activate condition. Whether Spring applies that document depends on
+the active profiles and cloud platform at runtime, which cannot be evaluated
+while templating, so callers must require an explicit chart flag or env var
+rather than derive a transport from it. A conditioned document that does not set
+the path is ignored, and an unconditional document after one wins outright.
+
+Keys match literally on nested map keys, so flat dotted keys
+("server.ssl.enabled: true" as one key) and relaxed-binding camelCase are NOT
+matched. camunda.constraints.warnings warns about what this cannot see.
 Usage:
   {{ include "camundaPlatform.configYamlBoolState" (dict
     "configuration" .Values.orchestration.configuration
@@ -880,53 +894,124 @@ Usage:
 */}}
 {{- define "camundaPlatform.configYamlBoolState" -}}
   {{- $state := "unset" -}}
-  {{- $parsed := (.configuration | default "" | fromYaml) -}}
-  {{- if kindIs "map" $parsed -}}
-    {{- $node := $parsed -}}
-    {{- $found := true -}}
-    {{- range $key := .path -}}
-      {{- if and $found (kindIs "map" $node) (hasKey $node $key) -}}
-        {{- $node = index $node $key -}}
-      {{- else -}}
-        {{- $found = false -}}
+  {{- $documents := regexSplit "(?m)^[ \t]*(---|\\.\\.\\.)[ \t]*(#.*)?$" (.configuration | default "") -1 -}}
+  {{- range $document := $documents -}}
+    {{- $parsed := ($document | fromYaml) -}}
+    {{- if and (kindIs "map" $parsed) (not (hasKey $parsed "Error")) -}}
+      {{- $value := include "camundaPlatform.yamlDocBoolAt" (dict "document" $parsed "path" $.path) -}}
+      {{- if ne $value "unset" -}}
+        {{- if eq (include "camundaPlatform.yamlDocIsConditional" (dict "document" $parsed)) "true" -}}
+          {{- $state = "unresolved" -}}
+        {{- else -}}
+          {{- $state = $value -}}
+        {{- end -}}
       {{- end -}}
-    {{- end -}}
-    {{- if and $found (not (kindIs "invalid" $node)) (not (kindIs "map" $node)) (not (kindIs "slice" $node)) -}}
-      {{- $state = ternary "true" "false" (eq (lower (toString $node)) "true") -}}
     {{- end -}}
   {{- end -}}
   {{- $state -}}
 {{- end -}}
 
 {{/*
-[camunda-platform] Returns "true", "false" or "unset" for a boolean key path set
-through <component>.extraConfiguration. Delegates to
-camundaPlatform.effectiveExtraConfigValue, so later entries win and entries with
-springImport: false are skipped, and inherits its accepted YAML form.
+[camunda-platform] Returns "true", "false" or "unset" for a boolean key path
+inside one already-parsed YAML document. Walks nested map keys literally and
+ignores map, slice and null nodes, so only a scalar at the exact path resolves.
+Usage:
+  {{ include "camundaPlatform.yamlDocBoolAt" (dict
+    "document" $parsed
+    "path" (list "server" "ssl" "enabled")) }}
+*/}}
+{{- define "camundaPlatform.yamlDocBoolAt" -}}
+  {{- $state := "unset" -}}
+  {{- $node := .document -}}
+  {{- $found := true -}}
+  {{- range $key := .path -}}
+    {{- if and $found (kindIs "map" $node) (hasKey $node $key) -}}
+      {{- $node = index $node $key -}}
+    {{- else -}}
+      {{- $found = false -}}
+    {{- end -}}
+  {{- end -}}
+  {{- if and $found (not (kindIs "invalid" $node)) (not (kindIs "map" $node)) (not (kindIs "slice" $node)) -}}
+    {{- $state = ternary "true" "false" (eq (lower (toString $node)) "true") -}}
+  {{- end -}}
+  {{- $state -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] Returns "true" when one already-parsed YAML document carries a
+spring.config.activate condition, in every key spelling fromYaml can leave it in:
+fully nested spring -> config -> activate, a partly dotted "config.activate" key
+under spring, or a fully dotted top-level "spring.config.activate" key. Callers
+treat such a document as unresolvable while templating, because activation
+depends on the runtime profile and cloud platform.
+Usage:
+  {{ include "camundaPlatform.yamlDocIsConditional" (dict "document" $parsed) }}
+*/}}
+{{- define "camundaPlatform.yamlDocIsConditional" -}}
+  {{- $conditional := false -}}
+  {{- range $key, $unused := .document -}}
+    {{- if or (eq $key "spring.config.activate") (hasPrefix "spring.config.activate." $key) -}}
+      {{- $conditional = true -}}
+    {{- end -}}
+  {{- end -}}
+  {{- $spring := index .document "spring" -}}
+  {{- if kindIs "map" $spring -}}
+    {{- range $key, $unused := $spring -}}
+      {{- if or (eq $key "config.activate") (hasPrefix "config.activate." $key) -}}
+        {{- $conditional = true -}}
+      {{- end -}}
+    {{- end -}}
+    {{- $config := index $spring "config" -}}
+    {{- if kindIs "map" $config -}}
+      {{- range $key, $unused := $config -}}
+        {{- if or (eq $key "activate") (hasPrefix "activate." $key) -}}
+          {{- $conditional = true -}}
+        {{- end -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+  {{- ternary "true" "false" $conditional -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] Returns "true", "false", "unset" or "unresolved" for a boolean
+key path set through <component>.extraConfiguration. Each entry is resolved with
+camundaPlatform.configYamlBoolState, so multi-document content and
+spring.config.activate conditions behave exactly as they do in
+<component>.configuration. Later entries win and entries with
+springImport: false are skipped.
 Usage:
   {{ include "camundaPlatform.extraConfigBoolState" (dict
     "extraConfiguration" .Values.orchestration.extraConfiguration
     "path" (list "server" "ssl" "enabled")) }}
 */}}
 {{- define "camundaPlatform.extraConfigBoolState" -}}
-  {{- $raw := include "camundaPlatform.effectiveExtraConfigValue" (dict
-      "default" "unset"
-      "extraConfiguration" .extraConfiguration
-      "path" .path) -}}
-  {{- if eq $raw "unset" -}}
-    unset
-  {{- else -}}
-    {{- ternary "true" "false" (eq (lower $raw) "true") -}}
+  {{- $state := "unset" -}}
+  {{- range $entry := (.extraConfiguration | default list) -}}
+    {{- if not (and (hasKey $entry "springImport") (eq $entry.springImport false)) -}}
+      {{- $entryState := include "camundaPlatform.configYamlBoolState" (dict
+          "configuration" ($entry.content | default "")
+          "path" $.path) -}}
+      {{- if ne $entryState "unset" -}}
+        {{- $state = $entryState -}}
+      {{- end -}}
+    {{- end -}}
   {{- end -}}
+  {{- $state -}}
 {{- end -}}
 
 {{/*
-[camunda-platform] Returns "true", "false" or "unset" for a boolean key path as
-Spring resolves it across a component's two YAML config sources.
+[camunda-platform] Returns "true", "false", "unset" or "unresolved" for a boolean
+key path as Spring resolves it across a component's two YAML config sources.
 extraConfiguration outranks configuration: extraConfiguration entries are pulled
 in through spring.config.import, and an imported document overrides the document
 that imports it. This also matches camundaPlatform.effectiveExtraConfigValue,
 which already treats extraConfiguration as overriding its fallback.
+"unresolved" is returned when the source that wins the path sets it inside a
+spring.config.activate-conditioned document; callers must then require an
+explicit flag or env var instead of deriving a value. An extraConfiguration entry
+that resolves definitely still overrides an unresolved configuration, because
+Spring applies the imported document last either way.
 Callers must apply env vars on top of this result, not below it: Spring ranks
 OS environment variables above every application.yaml source, and the chart's
 own TLS flags reach the container as env vars.
@@ -952,11 +1037,14 @@ Usage:
 {{/*
 [camunda-platform] Returns "true" when a component's YAML config sources mention
 a key path at all, in any form Spring accepts. Wraps <component>.configuration as
-a single extraConfiguration-shaped entry so all three existing matchers apply to
+an extraConfiguration-shaped entry so all three existing matchers apply to
 both sources: nested keys (extraConfigHasPath), dotted/relaxed keys
 (extraConfigHasDottedPath), and raw text for .properties or unparsable content
 (extraConfigHasRawKeyPrefix). Any subkey below the path counts, so a path of
 "server" "ssl" "key-store" also matches "key-store.file-path".
+Every source is split on "---" and "..." separator lines into one entry per YAML
+document first, because extraConfigHasPath parses a single document only and
+would otherwise miss a key Spring reads from a later one.
 Presence only — this says nothing about the value. Use it to decide whether the
 operator has taken ownership of a setting, not to read it.
 Usage:
@@ -966,9 +1054,15 @@ Usage:
     "path" (list "server" "ssl" "certificate")) }}
 */}}
 {{- define "camundaPlatform.appConfigMentionsPath" -}}
-  {{- $sources := concat
+  {{- $raw := concat
       (list (dict "content" (.configuration | default "")))
       (.extraConfiguration | default list) -}}
+  {{- $sources := list -}}
+  {{- range $entry := $raw -}}
+    {{- range $document := regexSplit "(?m)^[ \t]*(---|\\.\\.\\.)[ \t]*(#.*)?$" ($entry.content | default "") -1 -}}
+      {{- $sources = append $sources (merge (dict "content" $document) (omit $entry "content")) -}}
+    {{- end -}}
+  {{- end -}}
   {{- $args := dict "extraConfiguration" $sources "path" .path -}}
   {{- if or
       (eq (include "camundaPlatform.extraConfigHasPath" $args) "true")
@@ -1102,8 +1196,9 @@ mirroring camundaPlatform.orchestrationRESTTLSEnabled.
 With neither env source set, connectors.extraConfiguration and then
 connectors.configuration are consulted for server.ssl.enabled, so a Connectors
 TLS opt-in made by owning application.yaml still drives probe schemes and the
-in-cluster Connectors URL. Same source order and same literal-nested-key limits
-as camundaPlatform.orchestrationRESTTLSEnabled.
+in-cluster Connectors URL. Same source order, same document-order resolution
+with spring.config.activate treated as unresolved, and the same
+literal-nested-key limits as camundaPlatform.orchestrationRESTTLSEnabled.
 */}}
 {{- define "camundaPlatform.connectorsTLSEnabled" -}}
   {{- $envValue := include "camundaPlatform.connectorsEnvLastValue" (dict "context" . "name" "SERVER_SSL_ENABLED") -}}
@@ -1169,10 +1264,13 @@ explicit literal optimize.env entry for SERVER_SSL_ENABLED wins over
 global.tls.optimize.enabled. A valueFrom-sourced entry is unknown at render
 time, so the chart defers to the remaining sources rather than assuming a value.
 
-With neither env source set, simple single-document, unconditional YAML in
-optimize.extraConfiguration and optimize.configuration is consulted for
-server.ssl.enabled. Multi-document YAML and spring.config.activate conditions
-cannot be resolved safely at render time and require an explicit flag or env.
+With neither env source set, optimize.extraConfiguration and then
+optimize.configuration are consulted for server.ssl.enabled through
+camundaPlatform.appConfigBoolState, so multi-document sources resolve in
+document order. A spring.config.activate-conditioned document resolves to
+"unresolved" and is treated as plaintext here, because its activation is a
+runtime decision; camunda.constraints.warnings then asks for an explicit flag
+or env entry.
 */}}
 {{- define "camundaPlatform.optimizeServerTLSEnabled" -}}
   {{- $envValue := include "camundaPlatform.optimizeServerEnvLastValue" (dict "context" . "name" "SERVER_SSL_ENABLED") -}}
@@ -1183,28 +1281,11 @@ cannot be resolved safely at render time and require an explicit flag or env.
   {{- else if .Values.global.tls.optimize.enabled -}}
     true
   {{- else -}}
-    {{- $ambiguous := false -}}
-    {{- $contents := list (.Values.optimize.configuration | default "") -}}
-    {{- range $entry := (.Values.optimize.extraConfiguration | default list) -}}
-      {{- $contents = append $contents ($entry.content | default "") -}}
-    {{- end -}}
-    {{- range $content := $contents -}}
-      {{- if or
-          (regexMatch "(?m)^[ \\t]*(---|\\.\\.\\.)[ \\t]*(#.*)?$" $content)
-          (regexMatch "(?m)^[ \\t]*spring\\.config\\.activate([.:]|[ \\t]*=)" $content)
-          (regexMatch "(?m)^[ \\t]*activate:[ \\t]*(#.*)?$" $content) -}}
-        {{- $ambiguous = true -}}
-      {{- end -}}
-    {{- end -}}
-    {{- if $ambiguous -}}
-      false
-    {{- else -}}
     {{- $configState := include "camundaPlatform.appConfigBoolState" (dict
         "configuration" .Values.optimize.configuration
         "extraConfiguration" .Values.optimize.extraConfiguration
         "path" (list "server" "ssl" "enabled")) -}}
     {{- ternary "true" "false" (eq $configState "true") -}}
-    {{- end -}}
   {{- end -}}
 {{- end -}}
 

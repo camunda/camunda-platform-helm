@@ -1,0 +1,22 @@
+orchestration:
+  data:
+    secondaryStorage:
+      type: elasticsearch
+  configuration: |
+    server:
+      ssl:
+        enabled: true
+    camunda:
+      api:
+        grpc:
+          ssl:
+            enabled: true
+    ---
+    server:
+      ssl:
+        enabled: false
+    camunda:
+      api:
+        grpc:
+          ssl:
+            enabled: false

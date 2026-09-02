@@ -1,0 +1,14 @@
+orchestration:
+  data:
+    secondaryStorage:
+      type: elasticsearch
+  configuration: |
+    logging:
+      level:
+        root: INFO
+    ---
+    management:
+      endpoints:
+        web:
+          exposure:
+            include: health
