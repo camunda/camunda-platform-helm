@@ -1199,6 +1199,78 @@ func (s *ConfigmapTemplateTest) TestMultiRegionInitialContactPoints() {
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
+func (s *ConfigmapTemplateTest) TestBundledOperateTasklistZeebeClientTLS() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestPlaintextByDefault",
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Equal(t, 2, strings.Count(output, "secure: false"),
+					"both bundled Operate and Tasklist zeebe blocks must declare plaintext explicitly")
+				require.NotContains(t, output, "secure: true")
+				require.NotContains(t, output, "certificatePath:")
+			},
+		},
+		{
+			Name: "TestSecureWhenGrpcTLSEnabled",
+			Values: map[string]string{
+				"global.tls.orchestration.grpc.enabled":                    "true",
+				"global.tls.orchestration.grpc.cert.secret.existingSecret": "grpc-pem",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Equal(t, 2, strings.Count(output, "secure: true"))
+				require.NotContains(t, output, "secure: false")
+			},
+		},
+		{
+			Name: "TestCertificatePathFromCaBundleWhenSecure",
+			Values: map[string]string{
+				"global.tls.orchestration.grpc.enabled":                    "true",
+				"global.tls.orchestration.grpc.cert.secret.existingSecret": "grpc-pem",
+				"global.tls.caBundle.secret.existingSecret":                "my-ca",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Equal(t, 2, strings.Count(output, "certificatePath: /etc/camunda/tls/ca.crt"))
+			},
+		},
+		{
+			Name: "TestCertificatePathOmittedWithoutCaBundle",
+			Values: map[string]string{
+				"global.tls.orchestration.grpc.enabled":                    "true",
+				"global.tls.orchestration.grpc.cert.secret.existingSecret": "grpc-pem",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.NotContains(t, output, "certificatePath:",
+					"the client rejects an EMPTY caCertificatePath; absent means JVM default truststore")
+			},
+		},
+		{
+			Name: "TestCertificatePathOmittedWhenPlaintext",
+			Values: map[string]string{
+				"global.tls.caBundle.secret.existingSecret": "my-ca",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.NotContains(t, output, "certificatePath:")
+			},
+		},
+		{
+			Name:        "TestSecureWhenGrpcTLSEnabledViaOrchestrationEnv",
+			ValuesFiles: []string{filepath.Join(s.chartPath, "test/unit/orchestration/testdata/values-orchestration-grpc-tls-env-only.yaml")},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Equal(t, 2, strings.Count(output, "secure: true"),
+					"an orchestration.env toggle must drive the bundled clients too")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
 func (s *ConfigmapTemplateTest) TestCamundaExporterHonorsAutoconfigureFromExtraConfiguration() {
 	testCases := []testhelpers.TestCase{
 		{

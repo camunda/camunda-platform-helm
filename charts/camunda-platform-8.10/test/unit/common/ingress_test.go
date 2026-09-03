@@ -21,6 +21,8 @@ import (
 	"testing"
 
 	"github.com/gruntwork-io/terratest/modules/helm"
+	"github.com/gruntwork-io/terratest/modules/k8s"
+	"github.com/gruntwork-io/terratest/modules/logger"
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -118,6 +120,46 @@ func (s *IngressTemplateTest) TestDifferentValuesInputs() {
 			},
 		},
 		{
+			Name:                 "TestIngressOmitsOrchestrationWhenGlobalTLSFlagSet",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"global.ingress.enabled":                                   "true",
+				"orchestration.contextPath":                                "/orchestration",
+				"optimize.enabled":                                         "true",
+				"optimize.contextPath":                                     "/optimize",
+				"global.tls.orchestration.rest.enabled":                    "true",
+				"global.tls.orchestration.rest.cert.secret.existingSecret": "rest-ks",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				s.Require().NotContains(output, "path: /orchestration",
+					"combined ingress-http.yaml must not emit the Orchestration HTTP backend rule when REST TLS is enabled via global.tls.orchestration.rest.enabled — the split ingress-orchestration-http.yaml handles HTTPS")
+
+				var ingress netv1.Ingress
+				helm.UnmarshalK8SYaml(t, output, &ingress)
+				requireIngressPathsNotEmpty(t, ingress)
+			},
+		},
+		{
+			Name:                 "TestIngressNotRenderedWhenOrchestrationIsTheOnlyRouteAndRESTTLSEnabled",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"global.ingress.enabled":                                   "true",
+				"orchestration.contextPath":                                "/orchestration",
+				"identity.enabled":                                         "false",
+				"optimize.enabled":                                         "false",
+				"connectors.enabled":                                       "false",
+				"webModeler.enabled":                                       "false",
+				"global.tls.orchestration.rest.enabled":                    "true",
+				"global.tls.orchestration.rest.cert.secret.existingSecret": "rest-ks",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Error(err,
+					"the shared HTTP Ingress must not be rendered when no route remains — an Ingress with an empty spec.rules[].http.paths is rejected by the Kubernetes API server")
+				s.Require().NotContains(output, "kind: Ingress")
+			},
+		},
+		{
 			Name:                 "TestIngressComponentDisabled",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
@@ -152,6 +194,7 @@ func (s *IngressTemplateTest) TestDifferentValuesInputs() {
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
 				"global.ingress.enabled":                        "true",
+				"orchestration.contextPath":                     "/orchestration",
 				"global.ingress.labels.test-label":              "test-value",
 				"global.ingress.labels.external-dns":            "enabled",
 				"global.ingress.labels.nginx\\.ingress\\.class": "public",
@@ -170,7 +213,8 @@ func (s *IngressTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestIngressWithoutLabels",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"global.ingress.enabled": "true",
+				"global.ingress.enabled":    "true",
+				"orchestration.contextPath": "/orchestration",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var ingress netv1.Ingress
@@ -189,6 +233,7 @@ func (s *IngressTemplateTest) TestDifferentValuesInputs() {
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
 				"global.ingress.enabled":          "true",
+				"orchestration.contextPath":       "/orchestration",
 				"global.commonLabels.app":         "common-override",
 				"global.commonLabels.environment": "common-env",
 				"global.ingress.labels.app":       "ingress-override",
@@ -212,6 +257,9 @@ func (s *IngressTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestIngressHostWithTemplatingAndTLS",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			ValuesFiles:          []string{filepath.Join(s.chartPath, "test/unit/common/testdata/values-templated-ingress-host-tls.yaml")},
+			Values: map[string]string{
+				"orchestration.contextPath": "/orchestration",
+			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var ingress netv1.Ingress
 				helm.UnmarshalK8SYaml(t, output, &ingress)
@@ -225,10 +273,14 @@ func (s *IngressTemplateTest) TestDifferentValuesInputs() {
 		{
 			Name: "TestHttpIngressOmitsOrchestrationPathWithServerTLS",
 			Values: map[string]string{
-				"global.ingress.enabled":    "true",
-				"orchestration.enabled":     "true",
-				"orchestration.contextPath": "/orchestration",
-				"orchestration.env[0].name": "SERVER_SSL_ENABLED",
+				"global.ingress.enabled":     "true",
+				"orchestration.enabled":      "true",
+				"orchestration.contextPath":  "/orchestration",
+				"optimize.enabled":           "true",
+				"optimize.contextPath":       "/optimize",
+				"orchestration.env[0].name":  "SERVER_SSL_ENABLED",
+				"orchestration.env[1].name":  "SERVER_SSL_KEY_STORE",
+				"orchestration.env[1].value": "file:/usr/local/camunda/certificates/orchestration/rest/keystore.p12",
 			},
 			RenderTemplateExtraArgs: []string{
 				"--set-string", "orchestration.env[0].value=true",
@@ -237,6 +289,10 @@ func (s *IngressTemplateTest) TestDifferentValuesInputs() {
 				require.NoError(t, err)
 
 				require.NotContains(t, output, "path: /orchestration")
+
+				var ingress netv1.Ingress
+				helm.UnmarshalK8SYaml(t, output, &ingress)
+				requireIngressPathsNotEmpty(t, ingress)
 			},
 		},
 	}
@@ -279,6 +335,8 @@ func (s *OrchestrationHttpIngressTemplateTest) TestDifferentValuesInputs() {
 				"orchestration.enabled":                      "true",
 				"orchestration.contextPath":                  "/orchestration",
 				"orchestration.env[0].name":                  "SERVER_SSL_ENABLED",
+				"orchestration.env[1].name":                  "SERVER_SSL_KEY_STORE",
+				"orchestration.env[1].value":                 "file:/usr/local/camunda/certificates/orchestration/rest/keystore.p12",
 			},
 			RenderTemplateExtraArgs: []string{
 				"--set-string", "orchestration.env[0].value=true",
@@ -313,6 +371,140 @@ func (s *OrchestrationHttpIngressTemplateTest) TestDifferentValuesInputs() {
 				require.NoError(t, err)
 
 				require.NotContains(t, output, "name: camunda-platform-test-orchestration-http")
+			},
+		},
+		{
+			Name: "TestOrchestrationHttpIngressRenderedWhenGlobalTlsOrchestrationRestEnabled",
+			Values: map[string]string{
+				"global.ingress.enabled":                                   "true",
+				"global.host":                                              "camunda.example.com",
+				"orchestration.enabled":                                    "true",
+				"orchestration.contextPath":                                "/orchestration",
+				"global.tls.orchestration.rest.enabled":                    "true",
+				"global.tls.orchestration.rest.cert.secret.existingSecret": "rest-ks",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+
+				var ingress netv1.Ingress
+				helm.UnmarshalK8SYaml(t, output, &ingress)
+
+				require.Equal(t, "camunda-platform-test-orchestration-http", ingress.Name)
+				require.Equal(t, "HTTPS", ingress.Annotations["nginx.ingress.kubernetes.io/backend-protocol"])
+				require.Equal(t, "/orchestration", ingress.Spec.Rules[0].HTTP.Paths[0].Path)
+			},
+		},
+		{
+			Name: "TestOrchestrationHttpIngressEmitsProxyVerifyAnnotationsWhenEnabled",
+			Values: map[string]string{
+				"global.ingress.enabled":                                   "true",
+				"global.host":                                              "camunda.example.com",
+				"orchestration.enabled":                                    "true",
+				"orchestration.contextPath":                                "/orchestration",
+				"global.tls.orchestration.rest.enabled":                    "true",
+				"global.tls.orchestration.rest.cert.secret.existingSecret": "rest-ks",
+				"global.tls.orchestration.rest.proxyVerify.enabled":        "true",
+				"global.tls.orchestration.rest.proxyVerify.caSecret.secret.existingSecret": "upstream-ca",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var ingress netv1.Ingress
+				helm.UnmarshalK8SYaml(t, output, &ingress)
+				require.Equal(t, "on", ingress.Annotations["nginx.ingress.kubernetes.io/proxy-ssl-verify"])
+				require.Contains(t, ingress.Annotations["nginx.ingress.kubernetes.io/proxy-ssl-secret"], "/upstream-ca")
+				require.Contains(t, ingress.Annotations["nginx.ingress.kubernetes.io/proxy-ssl-name"], "-gateway",
+					"sniHost unset; proxy-ssl-name should be derived from the Orchestration Service DNS")
+				require.NotContains(t, ingress.Annotations["nginx.ingress.kubernetes.io/proxy-ssl-name"], ":",
+					"SNI name must be a bare hostname without a port")
+				require.Equal(t, "on", ingress.Annotations["nginx.ingress.kubernetes.io/proxy-ssl-server-name"])
+			},
+		},
+		{
+			Name: "TestOrchestrationHttpIngressProxyVerifyFailsWithoutCaSecret",
+			Values: map[string]string{
+				"global.ingress.enabled":                                   "true",
+				"global.host":                                              "camunda.example.com",
+				"orchestration.enabled":                                    "true",
+				"orchestration.contextPath":                                "/orchestration",
+				"global.tls.orchestration.rest.enabled":                    "true",
+				"global.tls.orchestration.rest.cert.secret.existingSecret": "rest-ks",
+				"global.tls.orchestration.rest.proxyVerify.enabled":        "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), "proxyVerify.enabled is true but caSecret.secret.existingSecret / inlineSecret is empty")
+			},
+		},
+		{
+			Name: "TestOrchestrationHttpIngressEmitsProxyVerifyAnnotationsFromInlineCaSecret",
+			Values: map[string]string{
+				"global.ingress.enabled":                                                 "true",
+				"global.host":                                                            "camunda.example.com",
+				"orchestration.enabled":                                                  "true",
+				"orchestration.contextPath":                                              "/orchestration",
+				"global.tls.orchestration.rest.enabled":                                  "true",
+				"global.tls.orchestration.rest.cert.secret.existingSecret":               "rest-ks",
+				"global.tls.orchestration.rest.proxyVerify.enabled":                      "true",
+				"global.tls.orchestration.rest.proxyVerify.caSecret.secret.inlineSecret": "CABUNDLEPEM",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var ingress netv1.Ingress
+				helm.UnmarshalK8SYaml(t, output, &ingress)
+				require.Equal(t, "on", ingress.Annotations["nginx.ingress.kubernetes.io/proxy-ssl-verify"])
+				require.Contains(t, ingress.Annotations["nginx.ingress.kubernetes.io/proxy-ssl-secret"], "-tls-rest-ca",
+					"an inline CA secret should resolve to the chart-generated <orchestration.fullname>-tls-rest-ca Secret")
+			},
+		},
+		{
+			Name: "TestOrchestrationHttpIngressProxyVerifyFailsWhenRestDisabled",
+			Values: map[string]string{
+				"global.ingress.enabled":                            "true",
+				"global.host":                                       "camunda.example.com",
+				"orchestration.enabled":                             "true",
+				"orchestration.contextPath":                         "/orchestration",
+				"global.tls.orchestration.rest.proxyVerify.enabled": "true",
+				"global.tls.orchestration.rest.proxyVerify.caSecret.secret.existingSecret": "upstream-ca",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), "proxyVerify.enabled is true but Orchestration REST TLS is not enabled")
+			},
+		},
+		{
+			Name: "TestOrchestrationHttpIngressRejectsInvalidSecretType",
+			Values: map[string]string{
+				"global.ingress.enabled":                                   "true",
+				"global.host":                                              "camunda.example.com",
+				"orchestration.enabled":                                    "true",
+				"orchestration.contextPath":                                "/orchestration",
+				"global.tls.orchestration.rest.enabled":                    "true",
+				"global.tls.orchestration.rest.cert.secret.existingSecret": "rest-ks",
+				"global.tls.orchestration.rest.type":                       "jks",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), "is not supported. Use one of: pkcs12, pem")
+			},
+		},
+		{
+			Name: "TestOrchestrationHttpIngressProxyVerifyHonoursCaSecretNamespaceOverride",
+			Values: map[string]string{
+				"global.ingress.enabled":                                   "true",
+				"global.host":                                              "camunda.example.com",
+				"orchestration.enabled":                                    "true",
+				"orchestration.contextPath":                                "/orchestration",
+				"global.tls.orchestration.rest.enabled":                    "true",
+				"global.tls.orchestration.rest.cert.secret.existingSecret": "rest-ks",
+				"global.tls.orchestration.rest.proxyVerify.enabled":        "true",
+				"global.tls.orchestration.rest.proxyVerify.caSecret.secret.existingSecret": "upstream-ca",
+				"global.tls.orchestration.rest.proxyVerify.caSecret.namespace":             "central-pki",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var ingress netv1.Ingress
+				helm.UnmarshalK8SYaml(t, output, &ingress)
+				require.Equal(t, "central-pki/upstream-ca", ingress.Annotations["nginx.ingress.kubernetes.io/proxy-ssl-secret"])
 			},
 		},
 	}
@@ -455,7 +647,143 @@ func (s *GrpcIngressTemplateTest) TestDifferentValuesInputs() {
 				s.Require().Equal("kept", ingress.Annotations["custom.io"])
 			},
 		},
+		{
+			Name:                 "TestGrpcIngressUsesSecureBackendProtocolWhenGlobalTlsOrchestrationGrpcEnabled",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"orchestration.enabled":                                    "true",
+				"orchestration.ingress.grpc.enabled":                       "true",
+				"global.tls.orchestration.grpc.enabled":                    "true",
+				"global.tls.orchestration.grpc.cert.secret.existingSecret": "grpc-pem",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+
+				var ingress netv1.Ingress
+				helm.UnmarshalK8SYaml(t, output, &ingress)
+
+				s.Require().Equal("GRPCS", ingress.Annotations["nginx.ingress.kubernetes.io/backend-protocol"])
+			},
+		},
+		{
+			Name:                 "TestGrpcIngressUsesPlaintextBackendProtocolByDefault",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"orchestration.enabled":              "true",
+				"orchestration.ingress.grpc.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+
+				var ingress netv1.Ingress
+				helm.UnmarshalK8SYaml(t, output, &ingress)
+
+				s.Require().NotEqual("GRPCS", ingress.Annotations["nginx.ingress.kubernetes.io/backend-protocol"])
+			},
+		},
+		{
+			Name:                 "TestGrpcIngressNeverEmitsProxyVerifyAnnotations",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"orchestration.enabled":                                                    "true",
+				"orchestration.ingress.grpc.enabled":                                       "true",
+				"global.tls.orchestration.grpc.enabled":                                    "true",
+				"global.tls.orchestration.grpc.cert.secret.existingSecret":                 "grpc-pem",
+				"global.tls.orchestration.rest.enabled":                                    "true",
+				"global.tls.orchestration.rest.cert.secret.existingSecret":                 "rest-keystore",
+				"global.tls.orchestration.rest.proxyVerify.enabled":                        "true",
+				"global.tls.orchestration.rest.proxyVerify.caSecret.secret.existingSecret": "upstream-ca",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var ingress netv1.Ingress
+				helm.UnmarshalK8SYaml(t, output, &ingress)
+
+				s.Require().Equal("GRPCS", ingress.Annotations["nginx.ingress.kubernetes.io/backend-protocol"])
+				for _, a := range []string{"proxy-ssl-verify", "proxy-ssl-secret", "proxy-ssl-name", "proxy-ssl-server-name"} {
+					s.Require().NotContains(ingress.Annotations, "nginx.ingress.kubernetes.io/"+a,
+						"proxy_ssl_* has no effect on a grpc_pass backend; REST proxyVerify must not leak onto the gRPC ingress")
+				}
+			},
+		},
+		{
+			Name:                 "TestGrpcProxyVerifyKeyIsRejected",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"orchestration.enabled":                                                    "true",
+				"orchestration.ingress.grpc.enabled":                                       "true",
+				"global.tls.orchestration.grpc.enabled":                                    "true",
+				"global.tls.orchestration.grpc.cert.secret.existingSecret":                 "grpc-pem",
+				"global.tls.orchestration.grpc.proxyVerify.enabled":                        "true",
+				"global.tls.orchestration.grpc.proxyVerify.caSecret.secret.existingSecret": "upstream-ca",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), "global.tls.orchestration.grpc.proxyVerify is not a supported key")
+			},
+		},
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func requireIngressPathsNotEmpty(t *testing.T, ingress netv1.Ingress) {
+	require.NotEmpty(t, ingress.Spec.Rules, "Ingress %q has no rules", ingress.Name)
+	for i, rule := range ingress.Spec.Rules {
+		require.NotNil(t, rule.HTTP, "Ingress %q rule %d has no http block", ingress.Name, i)
+		require.NotEmpty(t, rule.HTTP.Paths,
+			"Ingress %q rule %d has an empty spec.rules[%d].http.paths, which the Kubernetes API server rejects with \"Required value\"", ingress.Name, i, i)
+	}
+}
+
+// TestOrchestrationOnlyRESTTLSIngressesAreInstallable renders both HTTP Ingress
+// templates for the narrowest REST-TLS topology — Orchestration is the only
+// routed component — and asserts that every Ingress the chart emits carries at
+// least one HTTP path, so the release is installable.
+func TestOrchestrationOnlyRESTTLSIngressesAreInstallable(t *testing.T) {
+	t.Parallel()
+
+	chartPath, err := filepath.Abs("../../../")
+	require.NoError(t, err)
+
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"orchestration.data.secondaryStorage.type":                 "elasticsearch",
+			"global.ingress.enabled":                                   "true",
+			"global.host":                                              "camunda.example.test",
+			"orchestration.enabled":                                    "true",
+			"orchestration.contextPath":                                "/orchestration",
+			"identity.enabled":                                         "false",
+			"optimize.enabled":                                         "false",
+			"connectors.enabled":                                       "false",
+			"webModeler.enabled":                                       "false",
+			"global.tls.orchestration.rest.enabled":                    "true",
+			"global.tls.orchestration.rest.cert.secret.existingSecret": "rest-keystore",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", "camunda-platform-"+strings.ToLower(random.UniqueId())),
+		Logger:         logger.Discard,
+	}
+
+	rendered := 0
+	for _, template := range []string{
+		"templates/common/ingress-http.yaml",
+		"templates/common/ingress-orchestration-http.yaml",
+	} {
+		output, err := helm.RenderTemplateE(t, options, chartPath, "camunda-platform-test", []string{template})
+		if err != nil {
+			// Helm reports a template that renders nothing as "could not find
+			// template", which is the expected outcome for the shared Ingress here.
+			require.Contains(t, err.Error(), "could not find template",
+				"unexpected render failure for %s", template)
+			continue
+		}
+
+		var ingress netv1.Ingress
+		helm.UnmarshalK8SYaml(t, output, &ingress)
+		requireIngressPathsNotEmpty(t, ingress)
+		rendered++
+	}
+
+	require.Equal(t, 1, rendered,
+		"only the dedicated HTTPS-backend Ingress should be rendered; the shared HTTP Ingress must be skipped rather than emitted without paths")
 }

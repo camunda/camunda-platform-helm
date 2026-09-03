@@ -1,0 +1,45 @@
+# Orchestration REST TLS enabled through orchestration.extraConfiguration rather
+# than global.tls.orchestration.rest.*, so the deployed cluster exercises the
+# YAML-config branch of camundaPlatform.orchestrationRESTTLSEnabled. The
+# global.tls.* scenarios (estls, estlr) only reach the env branch, because the
+# chart emits SERVER_SSL_ENABLED for them.
+#
+# Nothing here sets global.tls.orchestration.rest.*, so the chart mounts no cert
+# and emits no SSL env: the keystore is hand-wired below, which is what an
+# operator owning application.yaml actually does.
+orchestration:
+  extraConfiguration:
+    - file: orchestration-rest-tls.yaml
+      content: |
+        server:
+          ssl:
+            enabled: true
+            key-store: file:/usr/local/camunda/certificates/rest-appconfig/keystore.p12
+            key-store-type: PKCS12
+            key-alias: orchestration-rest
+  env:
+    # Keeps the fixture password out of the values file. Only the enabled
+    # toggle needs to live in YAML for this scenario to test what it claims.
+    - name: SERVER_SSL_KEY_STORE_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: orchestration-tls-keystore
+          key: keystore-password
+  extraVolumes:
+    - name: orchestration-rest-tls-keystore
+      secret:
+        secretName: orchestration-tls-keystore
+        defaultMode: 0400
+        items:
+          - key: keystore.p12
+            path: keystore.p12
+  extraVolumeMounts:
+    - name: orchestration-rest-tls-keystore
+      mountPath: /usr/local/camunda/certificates/rest-appconfig
+      readOnly: true
+global:
+  tls:
+    caBundle:
+      secret:
+        existingSecret: orchestration-tls
+        existingSecretKey: tls.crt

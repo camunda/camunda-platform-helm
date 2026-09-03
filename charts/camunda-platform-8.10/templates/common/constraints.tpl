@@ -212,6 +212,143 @@ Fail if there is no secondary storage type specified and if noSecondaryStorage i
 {{- end }}
 
 {{/*
+global.tls.orchestration footgun: enabling REST or gRPC TLS without providing
+the server cert material (either via the chart-managed `secret.existingSecret`
+or via an explicit cert path in `orchestration.env`) causes Spring Boot / the
+gRPC server to crash on startup. Fail loudly at render time instead.
+*/}}
+{{- if .Values.orchestration.enabled }}
+  {{- $envNames := list -}}
+  {{- range $e := (.Values.orchestration.env | default list) -}}
+    {{- $envNames = append $envNames ($e.name | default "") -}}
+  {{- end }}
+  {{- $restCertRef := include "camundaPlatform.orchestrationTLSCertRef" (dict "context" . "proto" "rest") | fromYaml -}}
+  {{- $grpcCertRef := include "camundaPlatform.orchestrationTLSCertRef" (dict "context" . "proto" "grpc") | fromYaml -}}
+  {{- $hasEnvFrom := not (empty .Values.orchestration.envFrom) -}}
+  {{/* An operator who enables TLS through orchestration.{configuration,extraConfiguration}
+       owns application.yaml and can declare the cert there, where no env var appears.
+       Treat that as cert material so a config-based opt-in is not failed for wiring
+       the chart cannot see. */}}
+  {{- $restCertInYaml := eq (include "camundaPlatform.appConfigHasCertMaterial" (dict
+      "configuration" .Values.orchestration.configuration
+      "extraConfiguration" .Values.orchestration.extraConfiguration
+      "prefix" (list "server" "ssl"))) "true" -}}
+  {{- $grpcCertInYaml := eq (include "camundaPlatform.appConfigHasCertMaterial" (dict
+      "configuration" .Values.orchestration.configuration
+      "extraConfiguration" .Values.orchestration.extraConfiguration
+      "prefix" (list "camunda" "api" "grpc" "ssl"))) "true" -}}
+  {{- if eq (include "camundaPlatform.orchestrationRESTTLSEnabled" .) "true" }}
+    {{- if not $restCertRef.name }}
+      {{- if not (or (has "SERVER_SSL_KEY_STORE" $envNames) (has "SERVER_SSL_CERTIFICATE" $envNames) $hasEnvFrom $restCertInYaml) }}
+        {{- $errorMessage := printf "%s %s %s"
+            "[camunda][error] Orchestration REST TLS is enabled but no server cert is configured."
+            "Set global.tls.orchestration.rest.cert.secret.existingSecret (recommended) or cert.secret.inlineSecret (PEM only) so the chart mounts the cert,"
+            "or hand-wire SERVER_SSL_KEY_STORE / SERVER_SSL_CERTIFICATE plus the matching orchestration.extraVolumes / extraVolumeMounts entries (or via orchestration.envFrom)."
+        -}}
+        {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
+      {{- end }}
+    {{- else }}
+      {{- $restManualCertEnv := list -}}
+      {{- range $n := (list "SERVER_SSL_CERTIFICATE" "SERVER_SSL_CERTIFICATE_PRIVATE_KEY" "SERVER_SSL_KEY_STORE") -}}
+        {{- if has $n $envNames -}}
+          {{- $restManualCertEnv = append $restManualCertEnv $n -}}
+        {{- end -}}
+      {{- end }}
+      {{- if $restManualCertEnv }}
+        {{- $errorMessage := printf "%s %s %s"
+            (printf "[camunda][error] Orchestration REST TLS has a chart-managed cert (global.tls.orchestration.rest.cert.secret) AND a manual cert path in orchestration.env: %s." (join ", " $restManualCertEnv))
+            "The chart emits the managed path first and appends orchestration.env last, so the manual entry wins (Kubernetes keeps the last duplicate) and points the server at a path the chart does not mount."
+            "Use one approach only: drop the orchestration.env entries to keep the chart-managed cert, or clear global.tls.orchestration.rest.cert.secret and hand-wire the cert with orchestration.extraVolumes / extraVolumeMounts."
+        -}}
+        {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
+      {{- end }}
+    {{- end }}
+    {{- $rest := .Values.global.tls.orchestration.rest -}}
+    {{- $restCertInline := and (eq ($rest.type | default "pkcs12") "pem") $rest.cert.secret.inlineSecret (not $rest.cert.secret.existingSecret) -}}
+    {{- if $restCertInline }}
+      {{- if not (or $rest.privateKey.secret.inlineSecret $rest.privateKey.secret.existingSecret) }}
+        {{- $errorMessage := printf "%s %s"
+            "[camunda][error] Orchestration REST TLS uses an inline PEM cert (global.tls.orchestration.rest.cert.secret.inlineSecret) but no private key is configured."
+            "Set global.tls.orchestration.rest.privateKey.secret.inlineSecret or privateKey.secret.existingSecret; the generated Secret needs a tls.key or the server crashes on startup."
+        -}}
+        {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
+      {{- end }}
+    {{- end }}
+  {{- end }}
+  {{- if eq (include "camundaPlatform.orchestrationGRPCTLSEnabled" .) "true" }}
+    {{- if not $grpcCertRef.name }}
+      {{- if not (or (has "CAMUNDA_API_GRPC_SSL_CERTIFICATE" $envNames) $hasEnvFrom $grpcCertInYaml) }}
+        {{- $errorMessage := printf "%s %s %s"
+            "[camunda][error] Orchestration gRPC TLS is enabled but no server cert is configured."
+            "Set global.tls.orchestration.grpc.cert.secret.existingSecret (recommended) or cert.secret.inlineSecret so the chart mounts the cert,"
+            "or hand-wire CAMUNDA_API_GRPC_SSL_CERTIFICATE plus the matching orchestration.extraVolumes / extraVolumeMounts entries (or via orchestration.envFrom)."
+        -}}
+        {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
+      {{- end }}
+    {{- else }}
+      {{- $grpcManualCertEnv := list -}}
+      {{- range $n := (list "CAMUNDA_API_GRPC_SSL_CERTIFICATE" "CAMUNDA_API_GRPC_SSL_CERTIFICATEPRIVATEKEY") -}}
+        {{- if has $n $envNames -}}
+          {{- $grpcManualCertEnv = append $grpcManualCertEnv $n -}}
+        {{- end -}}
+      {{- end }}
+      {{- if $grpcManualCertEnv }}
+        {{- $errorMessage := printf "%s %s %s"
+            (printf "[camunda][error] Orchestration gRPC TLS has a chart-managed cert (global.tls.orchestration.grpc.cert.secret) AND a manual cert path in orchestration.env: %s." (join ", " $grpcManualCertEnv))
+            "The chart emits the managed path first and appends orchestration.env last, so the manual entry wins (Kubernetes keeps the last duplicate) and points the server at a path the chart does not mount."
+            "Use one approach only: drop the orchestration.env entries to keep the chart-managed cert, or clear global.tls.orchestration.grpc.cert.secret and hand-wire the cert with orchestration.extraVolumes / extraVolumeMounts."
+        -}}
+        {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
+      {{- end }}
+    {{- end }}
+    {{- $grpc := .Values.global.tls.orchestration.grpc -}}
+    {{- $grpcCertInline := and $grpc.cert.secret.inlineSecret (not $grpc.cert.secret.existingSecret) -}}
+    {{- if $grpcCertInline }}
+      {{- if not (or $grpc.privateKey.secret.inlineSecret $grpc.privateKey.secret.existingSecret) }}
+        {{- $errorMessage := printf "%s %s"
+            "[camunda][error] Orchestration gRPC TLS uses an inline PEM cert (global.tls.orchestration.grpc.cert.secret.inlineSecret) but no private key is configured."
+            "Set global.tls.orchestration.grpc.privateKey.secret.inlineSecret or privateKey.secret.existingSecret; the generated Secret needs a tls.key or the server crashes on startup."
+        -}}
+        {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
+      {{- end }}
+    {{- end }}
+  {{- end }}
+  {{- $restCaRef := include "camundaPlatform.orchestrationProxyVerifyCaRef" . | fromYaml -}}
+  {{- if .Values.global.tls.orchestration.rest.proxyVerify.enabled }}
+    {{- if ne (include "camundaPlatform.orchestrationRESTTLSEnabled" .) "true" }}
+      {{- $errorMessage := printf "%s %s"
+          "[camunda][error] global.tls.orchestration.rest.proxyVerify.enabled is true but Orchestration REST TLS is not enabled."
+          "NGINX upstream verification only makes sense against a TLS backend; set global.tls.orchestration.rest.enabled: true (or wire SERVER_SSL_ENABLED=true via orchestration.env, or disable proxyVerify) to avoid emitting proxy-ssl-* annotations on a plaintext upstream."
+      -}}
+      {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
+    {{- end }}
+    {{- if not $restCaRef.name }}
+      {{- $errorMessage := printf "%s %s"
+          "[camunda][error] global.tls.orchestration.rest.proxyVerify.enabled is true but caSecret.secret.existingSecret / inlineSecret is empty."
+          "Provide a Secret (or inlineSecret) holding the CA bundle that NGINX should use to validate the Orchestration REST server cert."
+      -}}
+      {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
+    {{- end }}
+  {{- end }}
+  {{- if dig "grpc" "proxyVerify" nil (dig "tls" "orchestration" dict $values.global) }}
+    {{- $errorMessage := printf "%s %s %s"
+        "[camunda][error] global.tls.orchestration.grpc.proxyVerify is not a supported key."
+        "NGINX upstream verification is emitted as nginx.ingress.kubernetes.io/proxy-ssl-* annotations, which ingress-nginx renders as NGINX proxy_ssl_* directives; those apply to proxy_pass upstreams only."
+        "A GRPCS backend is served by grpc_pass, which needs grpc_ssl_* directives that ingress-nginx exposes no annotation for, so the gRPC upstream cert cannot be verified by the controller. Remove the key; global.tls.orchestration.rest.proxyVerify remains supported."
+    -}}
+    {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
+  {{- end }}
+  {{- /* Validate rest.type is one of pkcs12 / pem when a cert secret is referenced. */ -}}
+  {{- if and (eq (include "camundaPlatform.orchestrationRESTTLSEnabled" .) "true") $restCertRef.name }}
+    {{- $t := .Values.global.tls.orchestration.rest.type | default "pkcs12" -}}
+    {{- if not (has $t (list "pkcs12" "pem")) }}
+      {{- $errorMessage := printf "[camunda][error] global.tls.orchestration.rest.type=%q is not supported. Use one of: pkcs12, pem." $t -}}
+      {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
+    {{- end }}
+  {{- end }}
+{{- end }}
+
+{{/*
 Fail with a message if the auth type is not in the enums (KEYCLOAK, MICROSOFT, or GENERIC).
 */}}
 {{- if not (has (include "camundaPlatform.authIssuerType" .) (list "KEYCLOAK" "MICROSOFT" "GENERIC")) }}
@@ -533,13 +670,103 @@ The following values inside your values.yaml need to be set but were not:
           {{- $warningMessage := printf "%s %s %s"
               "[camunda][warning]"
               (printf "global.tls.caBundle is set, but %s.env sets JAVA_TOOL_OPTIONS directly." $c.comp)
-              "Kubernetes keeps the last duplicate env var, so this overrides the chart's truststore flags and JVM TLS trust will break (PKIX errors). Include the chart's flags in your value: '-Djavax.net.ssl.trustStore=/var/camunda/tls-truststore/cacerts -Djavax.net.ssl.trustStorePassword=changeit'. Components that expose a 'javaOpts' value (orchestration, optimize, web-modeler restapi) can set that instead — the chart appends its truststore flags to it."
+              "Kubernetes keeps the last duplicate env var, so this overrides the chart's truststore flags and JVM TLS trust will break (PKIX errors). Include the chart's flags in your value: '-Djavax.net.ssl.trustStore=/var/camunda/tls-truststore/cacerts -Djavax.net.ssl.trustStorePassword=changeit'. Orchestration and Optimize can set their 'javaOpts' values instead; the chart composes those values into JAVA_TOOL_OPTIONS. webModeler.restapi.javaOpts feeds JAVA_OPTIONS, not JAVA_TOOL_OPTIONS, so it is not an alternative for truststore flags."
           -}}
           {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
         {{- end }}
       {{- end }}
     {{- end }}
 
+  {{- end }}
+
+  {{/* Orchestration TLS detection guardrails: the chart derives ingress backend
+       protocols and in-cluster client endpoint schemes from
+       camundaPlatform.orchestrationRESTTLSEnabled / ...GRPCTLSEnabled. Those read
+       orchestration.env, global.tls.orchestration.*, and nested YAML keys in
+       orchestration.{configuration,extraConfiguration}. Two forms stay
+       unreadable at render time; warn rather than derive plaintext silently. */}}
+  {{- if .Values.orchestration.enabled }}
+    {{- $tlsProps := list
+        (dict "proto" "REST" "envName" "SERVER_SSL_ENABLED" "flag" "global.tls.orchestration.rest.enabled" "path" (list "server" "ssl" "enabled") "state" (include "camundaPlatform.orchestrationRESTTLSEnabled" .))
+        (dict "proto" "gRPC" "envName" "CAMUNDA_API_GRPC_SSL_ENABLED" "flag" "global.tls.orchestration.grpc.enabled" "path" (list "camunda" "api" "grpc" "ssl" "enabled") "state" (include "camundaPlatform.orchestrationGRPCTLSEnabled" .))
+    }}
+    {{- range $prop := $tlsProps }}
+
+      {{/* (W1) A dotted/relaxed key form Spring accepts but the chart's nested-key
+             walk cannot see. Only flagged while the derivation resolved to
+             plaintext, so a key the chart already detected never warns. Splits
+             yielding a single segment are skipped: a bare "enabled: true" line
+             matches unrelated config. */}}
+      {{- if ne $prop.state "true" }}
+        {{- $dottedHit := "" -}}
+        {{- $contents := list ($.Values.orchestration.configuration | default "") -}}
+        {{- range $entry := ($.Values.orchestration.extraConfiguration | default list) -}}
+          {{- $contents = append $contents ($entry.content | default "") -}}
+        {{- end -}}
+        {{- range $split := until (sub (len $prop.path) 1 | int) -}}
+          {{- $dotted := join "." (slice $prop.path $split) -}}
+          {{- $pattern := printf "(?m)^[ \t]*%s[ \t]*[:=][ \t]*[\"']?(?i)true" (replace "." "\\." $dotted) -}}
+          {{- range $content := $contents -}}
+            {{- if regexMatch $pattern $content -}}
+              {{- $dottedHit = $dotted -}}
+            {{- end -}}
+          {{- end -}}
+        {{- end -}}
+        {{- if $dottedHit }}
+          {{- $warningMessage := printf "%s %s %s"
+              "[camunda][warning]"
+              (printf "orchestration.configuration or orchestration.extraConfiguration appears to enable Orchestration %s TLS through the dotted key '%s', which the chart cannot read." $prop.proto $dottedHit)
+              (printf "The chart matches nested YAML keys only, so it still derives plaintext: the /orchestration ingress keeps an HTTP backend and in-cluster clients get an http:// or grpc:// endpoint against a TLS listener, which installs cleanly and then fails at connection time. Set %s: true, or add an orchestration.env entry for %s, or rewrite the key in nested YAML form." $prop.flag $prop.envName)
+          -}}
+          {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+        {{- end }}
+      {{- end }}
+
+      {{/* (W2) A valueFrom-sourced SSL toggle is unresolvable at render time, so the
+             chart falls through to the remaining sources. Precise: it fires only on
+             an env entry that actually names the SSL property. */}}
+      {{- range $e := ($.Values.orchestration.env | default list) }}
+        {{- if and (eq ($e.name | default "") $prop.envName) (not $e.value) $e.valueFrom }}
+          {{- $warningMessage := printf "%s %s %s"
+              "[camunda][warning]"
+              (printf "orchestration.env sets %s from a valueFrom reference, whose value the chart cannot read at render time." $prop.envName)
+              (printf "Orchestration %s TLS state therefore falls back to %s and the YAML config sources. If the referenced key resolves to a value that disagrees with that fallback, ingress backend protocols and in-cluster endpoint schemes will be derived for the wrong transport. Set the toggle literally and keep valueFrom for cert material only." $prop.proto $prop.flag)
+          -}}
+          {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+        {{- end }}
+      {{- end }}
+    {{- end }}
+
+    {{/* (W3) The split /orchestration Ingress forces backend-protocol: HTTPS over
+           any inherited annotation. Correct (an HTTP backend against a TLS
+           listener is SUPPORT-33090) but silent, and operators who set this
+           annotation by hand set it deliberately. */}}
+    {{- if eq (include "camundaPlatform.orchestrationRESTTLSEnabled" .) "true" }}
+      {{- $inherited := index (.Values.global.ingress.annotations | default dict) "nginx.ingress.kubernetes.io/backend-protocol" }}
+      {{- if and $inherited (ne (upper (toString $inherited)) "HTTPS") }}
+        {{- $warningMessage := printf "%s %s %s"
+            "[camunda][warning]"
+            (printf "global.ingress.annotations sets nginx.ingress.kubernetes.io/backend-protocol: %s, but Orchestration REST TLS is enabled." $inherited)
+            "The dedicated /orchestration Ingress overrides that value with HTTPS, because an HTTP backend against a TLS listener returns 'Bad Request: This combination of host and port requires TLS.'. Every other annotation and label in global.ingress is still inherited. Only the /orchestration route is overridden; other routes keep your value."
+        -}}
+        {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+      {{- end }}
+    {{- end }}
+  {{- end }}
+
+  {{/* Warn when Orchestration server TLS is enabled but no caBundle is set.
+       In-cluster Java clients (Web Modeler, Connectors) hit PKIX errors against
+       self-signed or private-CA certs when the JVM default truststore is used. */}}
+  {{- $orchestrationTLSOn := or
+      (eq (include "camundaPlatform.orchestrationRESTTLSEnabled" .) "true")
+      (eq (include "camundaPlatform.orchestrationGRPCTLSEnabled" .) "true") -}}
+  {{- if and $orchestrationTLSOn (ne (include "camundaPlatform.hasCaBundle" .) "true") }}
+    {{- $warningMessage := printf "%s %s %s"
+        "[camunda][warning]"
+        "global.tls.caBundle is not set. If the Orchestration cert is self-signed or from a private/internal CA, in-cluster Java clients (Web Modeler, Connectors) will fall back to the JVM default truststore and fail TLS handshakes."
+        "Set global.tls.caBundle.secret.existingSecret to the CA bundle. Ignore this if the cert is from a public CA already trusted by the JVM (Let's Encrypt, DigiCert, etc.)."
+    -}}
+    {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
   {{- end }}
 
   {{/* Warn when webModeler pusher secret is auto-generated */}}

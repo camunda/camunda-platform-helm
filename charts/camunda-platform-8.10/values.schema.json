@@ -404,6 +404,211 @@
                                     }
                                 }
                             }
+                        },
+                        "orchestration": {
+                            "type": "object",
+                            "properties": {
+                                "autoRollout": {
+                                    "type": "boolean",
+                                    "description": "opt-in automatic pod rollout on REST/gRPC cert rotation. When true, the chart stamps `checksum/orchestration-tls-{rest,grpc}` pod annotations derived from the configured Secrets so the next `helm upgrade` rolls Orchestration when the cert changes. OFF by default for the same reason as `global.tls.caBundle.autoRollout`: it uses `lookup` to read the Secret at upgrade time, which (a) REQUIRES the upgrading identity to have `get` on Secrets in the release namespace and (b) is inert under GitOps tools that render with `helm template`. When off (or in those cases), rotate the cert with `kubectl rollout restart`.",
+                                    "default": false
+                                },
+                                "rest": {
+                                    "type": "object",
+                                    "properties": {
+                                        "enabled": {
+                                            "type": "boolean",
+                                            "description": "if true, TLS is terminated at the Orchestration REST server.",
+                                            "default": false
+                                        },
+                                        "type": {
+                                            "type": "string",
+                                            "description": "defines the secret format. One of: pkcs12, pem.",
+                                            "default": "pkcs12"
+                                        },
+                                        "keyAlias": {
+                                            "type": "string",
+                                            "description": "can be used to specify the cert alias within a PKCS12 keystore.",
+                                            "default": ""
+                                        },
+                                        "cert": {
+                                            "type": "object",
+                                            "properties": {
+                                                "secret": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "inlineSecret": {
+                                                            "type": "string",
+                                                            "description": "can be used to provide the cert as a plain-text value for non-production usage. Only supported when `type: pem`; a PKCS12 keystore is binary and cannot be provided inline (use existingSecret for pkcs12).",
+                                                            "default": ""
+                                                        },
+                                                        "existingSecret": {
+                                                            "type": "string",
+                                                            "description": "can be used to reference an existing Kubernetes Secret containing the cert material. Empty disables the chart-managed wiring; the operator can still hand-wire via orchestration.extraVolumes and orchestration.env.",
+                                                            "default": ""
+                                                        },
+                                                        "existingSecretKey": {
+                                                            "type": "string",
+                                                            "description": "defines the key within the existing secret object. Smart default: tls.crt for PEM, keystore.p12 for PKCS12.",
+                                                            "default": ""
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "privateKey": {
+                                            "type": "object",
+                                            "properties": {
+                                                "secret": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "inlineSecret": {
+                                                            "type": "string",
+                                                            "description": "can be used to provide the private key as a plain-text value for non-production usage.",
+                                                            "default": ""
+                                                        },
+                                                        "existingSecret": {
+                                                            "type": "string",
+                                                            "description": "can be used to reference an existing Kubernetes Secret containing the PEM private key. When empty, defaults to cert.secret.existingSecret.",
+                                                            "default": ""
+                                                        },
+                                                        "existingSecretKey": {
+                                                            "type": "string",
+                                                            "description": "defines the key within the existing secret object.",
+                                                            "default": "tls.key"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "keystorePassword": {
+                                            "type": "object",
+                                            "properties": {
+                                                "secret": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "inlineSecret": {
+                                                            "type": "string",
+                                                            "description": "can be used to provide the keystore password as a plain-text value for non-production usage.",
+                                                            "default": ""
+                                                        },
+                                                        "existingSecret": {
+                                                            "type": "string",
+                                                            "description": "can be used to reference an existing Kubernetes Secret containing the keystore password. When empty, defaults to cert.secret.existingSecret.",
+                                                            "default": ""
+                                                        },
+                                                        "existingSecretKey": {
+                                                            "type": "string",
+                                                            "description": "defines the key within the existing secret object.",
+                                                            "default": "keystore-password"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "proxyVerify": {
+                                            "type": "object",
+                                            "properties": {
+                                                "enabled": {
+                                                    "type": "boolean",
+                                                    "description": "if true, NGINX verifies the upstream server cert against the CA bundle.",
+                                                    "default": false
+                                                },
+                                                "sniHost": {
+                                                    "type": "string",
+                                                    "description": "can be used to set the SNI hostname NGINX presents when verifying the upstream cert.",
+                                                    "default": ""
+                                                },
+                                                "caSecret": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "secret": {
+                                                            "type": "object",
+                                                            "properties": {
+                                                                "inlineSecret": {
+                                                                    "type": "string",
+                                                                    "description": "can be used to provide the CA bundle as a plain-text PEM value for non-production usage. The chart renders it into a generated Secret under the fixed \"ca.crt\" key NGINX reads.",
+                                                                    "default": ""
+                                                                },
+                                                                "existingSecret": {
+                                                                    "type": "string",
+                                                                    "description": "can be used to reference an existing Kubernetes Secret containing the CA bundle under the fixed \"ca.crt\" key required by nginx.ingress.kubernetes.io/proxy-ssl-secret.",
+                                                                    "default": ""
+                                                                }
+                                                            }
+                                                        },
+                                                        "namespace": {
+                                                            "type": "string",
+                                                            "description": "can be used when the CA Secret lives in a different namespace; ingress-nginx must be configured with `allow-cross-namespace-resources=true`.",
+                                                            "default": ""
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "grpc": {
+                                    "type": "object",
+                                    "properties": {
+                                        "enabled": {
+                                            "type": "boolean",
+                                            "description": "if true, TLS is terminated at the Orchestration gRPC server.",
+                                            "default": false
+                                        },
+                                        "cert": {
+                                            "type": "object",
+                                            "properties": {
+                                                "secret": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "inlineSecret": {
+                                                            "type": "string",
+                                                            "description": "can be used to provide the cert as a plain-text value for non-production usage.",
+                                                            "default": ""
+                                                        },
+                                                        "existingSecret": {
+                                                            "type": "string",
+                                                            "description": "can be used to reference an existing Kubernetes Secret containing the cert material. Empty disables the chart-managed wiring.",
+                                                            "default": ""
+                                                        },
+                                                        "existingSecretKey": {
+                                                            "type": "string",
+                                                            "description": "defines the key within the existing secret object.",
+                                                            "default": "tls.crt"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "privateKey": {
+                                            "type": "object",
+                                            "properties": {
+                                                "secret": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "inlineSecret": {
+                                                            "type": "string",
+                                                            "description": "can be used to provide the private key as a plain-text value for non-production usage.",
+                                                            "default": ""
+                                                        },
+                                                        "existingSecret": {
+                                                            "type": "string",
+                                                            "description": "can be used to reference an existing Kubernetes Secret containing the PEM private key. When empty, defaults to cert.secret.existingSecret.",
+                                                            "default": ""
+                                                        },
+                                                        "existingSecretKey": {
+                                                            "type": "string",
+                                                            "description": "defines the key within the existing secret object.",
+                                                            "default": "tls.key"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 },
