@@ -2105,16 +2105,18 @@ orchestration:
   # cluster has prerequisites and procedures this file cannot carry; see
   # https://docs.camunda.io/docs/self-managed/concepts/multi-region/dual-region/
   multiregion:
-    ## Fixed for the life of the cluster. Zoned brokers are identified by the composite
-    ## `<zone>_<index>`, numbered ones by a plain node ID, so switching an existing release
-    ## re-identifies every broker against Raft state written under the old IDs and the
-    ## members no longer recognise each other. Deploy a new cluster instead.
+    ## Zoned brokers are identified by the composite `<zone>_<index>`, while numbered
+    ## brokers use plain node IDs. Do not change existing broker identities in place.
+    ## Use keepUnzonedBrokers to retain the numbered StatefulSet while replacement zoned
+    ## brokers join the cluster.
     ## @param orchestration.multiregion.mode defines how a broker is told which region it is in. `numbered` derives it from the node ID, `zoned` from a zone name.
     mode: numbered
     ## @param orchestration.multiregion.zone can be used to define the zone of this Orchestration Cluster deployment when using zoned mode.
     zone: ""
     ## @param orchestration.multiregion.zones can be used to define the zones of the Orchestration Cluster when using zoned mode.
     zones: []
+    ## @param orchestration.multiregion.keepUnzonedBrokers also renders the legacy numeric-node-ID StatefulSet alongside the zoned ones, for use during a zone migration.
+    keepUnzonedBrokers: false
     ## @skip orchestration.multiregion.regions number of regions that this Camunda Platform instance is stretched across
     regions: 1
     ## @skip orchestration.multiregion.regionId unique id of the region. MUST start at 0 for the computation to work correctly. With 2 regions, you would have region 0 and 1.

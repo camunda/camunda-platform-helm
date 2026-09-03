@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/gruntwork-io/terratest/modules/helm"
+	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -1599,4 +1600,43 @@ func (s *StatefulSetTest) TestNumberedModeCompatibility() {
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *StatefulSetTest) TestKeepUnzonedBrokersDoesNotRestartZonedBrokers() {
+	zonedValues := map[string]string{
+		"orchestration.multiregion.mode":                      "zoned",
+		"orchestration.multiregion.zones[0].name":             "zone-a",
+		"orchestration.multiregion.zones[0].numberOfBrokers":  "3",
+		"orchestration.multiregion.zones[0].numberOfReplicas": "3",
+		"orchestration.multiregion.zones[0].priority":         "100",
+		"orchestration.multiregion.zone":                      "zone-a",
+		"orchestration.data.secondaryStorage.type":            "elasticsearch",
+	}
+
+	checksumFor := func(keepUnzoned string) string {
+		values := utils.MergeMaps(map[string]string{}, zonedValues)
+		values["orchestration.multiregion.keepUnzonedBrokers"] = keepUnzoned
+
+		output, err := helm.RenderTemplateE(s.T(), &helm.Options{
+			SetValues:      values,
+			KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+		}, s.chartPath, s.release, s.templates)
+		require.NoError(s.T(), err)
+
+		zonedName := s.release + "-zeebe-zone-a"
+		for _, doc := range strings.Split(output, "\n---\n") {
+			if !strings.Contains(doc, "name: "+zonedName+"\n") {
+				continue
+			}
+			var statefulSet appsv1.StatefulSet
+			helm.UnmarshalK8SYaml(s.T(), doc, &statefulSet)
+			return statefulSet.Spec.Template.Annotations["checksum/config"]
+		}
+		require.Failf(s.T(), "statefulset not found", "no StatefulSet named %q in render", zonedName)
+		return ""
+	}
+
+	withUnzoned := checksumFor("true")
+	require.NotEmpty(s.T(), withUnzoned)
+	require.Equal(s.T(), withUnzoned, checksumFor("false"))
 }
