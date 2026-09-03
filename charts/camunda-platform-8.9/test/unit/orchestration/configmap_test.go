@@ -211,6 +211,7 @@ func assertCustomHistorySettings(t *testing.T, output string, openSearch bool) {
 	var application camunda.OrchestrationApplicationYAML
 	helm.UnmarshalK8SYaml(t, output, &configmap)
 	require.NoError(t, yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &application))
+	require.NotContains(t, configmap.Data["application.yaml"], "camundaexporter:")
 
 	history := application.Camunda.Data.SecondaryStorage.Elasticsearch.History
 	if openSearch {
