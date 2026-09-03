@@ -1,5 +1,32 @@
 # Changelog
 
+## [12.13.4](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.7-12.13.3...camunda-platform-8.7-12.13.4) (2026-09-03)
+
+
+### Bug Fixes
+
+* stop exposing credentials in deployment output ([#6796](https://github.com/camunda/camunda-platform-helm/issues/6796)) ([df46015](https://github.com/camunda/camunda-platform-helm/commit/df460152d7606161360becd97e6265be9d26e295))
+
+
+### Documentation
+
+* document stable pod labels for Web Modeler anti-affinity rules ([#6931](https://github.com/camunda/camunda-platform-helm/issues/6931)) ([a374ffb](https://github.com/camunda/camunda-platform-helm/commit/a374ffb748e291947afe1874565870c4a744cc98))
+
+
+### Dependencies
+
+* update camunda-platform-images (patch) ([#6875](https://github.com/camunda/camunda-platform-helm/issues/6875)) ([f3d2215](https://github.com/camunda/camunda-platform-helm/commit/f3d22153b8e95e3349f02a2eb287f3dfb6c39f5a))
+* update camunda-platform-images (patch) ([#6993](https://github.com/camunda/camunda-platform-helm/issues/6993)) ([b02f60f](https://github.com/camunda/camunda-platform-helm/commit/b02f60fbcf9115be8e9b997fdb5ad42576afb82a))
+* update camunda-platform-images (patch) ([#7005](https://github.com/camunda/camunda-platform-helm/issues/7005)) ([a18abd0](https://github.com/camunda/camunda-platform-helm/commit/a18abd09d3cd717539791e74b7728f43a9a855dd))
+* update camunda/connectors-bundle docker tag to v8.7.24 ([#6963](https://github.com/camunda/camunda-platform-helm/issues/6963)) ([98db95c](https://github.com/camunda/camunda-platform-helm/commit/98db95cbdb4b4181b04e893f284575cf57135815))
+* update camunda/identity docker tag to v8.7.24 ([#6989](https://github.com/camunda/camunda-platform-helm/issues/6989)) ([3714865](https://github.com/camunda/camunda-platform-helm/commit/371486505eb2e2a0a28b2118fae660742c3538ec))
+* update camunda/zeebe docker tag to v8.7.38 ([#6995](https://github.com/camunda/camunda-platform-helm/issues/6995)) ([821eac6](https://github.com/camunda/camunda-platform-helm/commit/821eac6e38d9211320fc446dccfce3de305f2224))
+* update minor-updates (minor) ([#6936](https://github.com/camunda/camunda-platform-helm/issues/6936)) ([d9a1bfe](https://github.com/camunda/camunda-platform-helm/commit/d9a1bfe638bc454d75478bd49389ade83291a594))
+* update patch-updates (patch) ([#6872](https://github.com/camunda/camunda-platform-helm/issues/6872)) ([dba7942](https://github.com/camunda/camunda-platform-helm/commit/dba794262404ddc4d329e6306e932990c9111fc9))
+* update patch-updates (patch) ([#6923](https://github.com/camunda/camunda-platform-helm/issues/6923)) ([c9e6e67](https://github.com/camunda/camunda-platform-helm/commit/c9e6e6774fe84a904e87c249cf31db7c3d690b90))
+* update patch-updates (patch) ([#7007](https://github.com/camunda/camunda-platform-helm/issues/7007)) ([3b6ae47](https://github.com/camunda/camunda-platform-helm/commit/3b6ae4724dd3d625a574b6c797e5ec408eb56707))
+* update registry.camunda.cloud/keycloak-ee/keycloak docker tag to v26.7.2 ([#6930](https://github.com/camunda/camunda-platform-helm/issues/6930)) ([e9c539c](https://github.com/camunda/camunda-platform-helm/commit/e9c539c30c1d4d4affdccb4ccae953a990364b54))
+
 ## [12.13.3](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.7-12.13.2...camunda-platform-8.7-12.13.3) (2026-08-14)
 
 
