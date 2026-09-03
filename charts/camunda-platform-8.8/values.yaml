@@ -913,6 +913,7 @@ identity:
 
   ## External PostgreSQL configuration
   ## All of these values are only used when postgresql.enabled is set to false
+  ## A database is required whenever global.identity.auth.type is not "KEYCLOAK", and for Multi-Tenancy.
   ## @param identity.externalDatabase.enabled
   ## @param identity.externalDatabase.host Database host
   ## @param identity.externalDatabase.port Database port number

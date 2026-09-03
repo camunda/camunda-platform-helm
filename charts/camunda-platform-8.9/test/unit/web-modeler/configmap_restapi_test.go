@@ -246,6 +246,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectIdentityType
 		"global.identity.auth.enabled":                        "true",
 		"global.identity.auth.type":                           "MICROSOFT",
 		"global.identity.auth.identity.secret.existingSecret": "foo",
+		"identity.externalDatabase.enabled":                   "true",
 		"global.identity.auth.issuer":                         "https://login.microsoftonline.com/00000000-0000-0000-0000-000000000000/v2.0",
 		"global.identity.auth.issuerBackendUrl":               "https://login.microsoftonline.com/00000000-0000-0000-0000-000000000000/v2.0",
 		"global.identity.auth.authUrl":                        "https://login.microsoftonline.com/00000000-0000-0000-0000-000000000000/oauth2/v2.0/authorize",

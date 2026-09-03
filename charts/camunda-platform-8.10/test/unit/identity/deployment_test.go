@@ -1303,6 +1303,7 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 				"identity.enabled":                                       "true",
 				"global.identity.auth.enabled":                           "true",
 				"global.identity.auth.type":                              "GENERIC",
+				"identity.externalDatabase.enabled":                      "true",
 				"orchestration.enabled":                                  "false",
 				"optimize.enabled":                                       "false",
 				"global.identity.auth.optimize.alwaysRegister":           "true",

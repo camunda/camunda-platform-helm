@@ -149,7 +149,7 @@ Fail with a message if Multi-Tenancy is enabled and its requirements are not met
 Multi-Tenancy requirements: https://docs.camunda.io/docs/self-managed/concepts/multi-tenancy/
 */}}
 {{- if or .Values.identity.multitenancy.enabled .Values.global.multitenancy.enabled }}
-  {{- $identityDatabaseEnabled := .Values.identity.externalDatabase.enabled }}
+  {{- $identityDatabaseEnabled := eq (include "identity.databaseConfigured" .) "true" }}
   {{- if has false (list $identityAuthEnabled $identityDatabaseEnabled) }}
     {{- $errorMessage := printf "[camunda][error] %s %s %s"
         "The Multi-Tenancy feature \"identity.multitenancy\" requires Identity enabled and configured with database."
@@ -226,9 +226,21 @@ Fail with a message if the auth type is set to non-Keycloak and its requirements
 */}}
 {{- if has (include "camundaPlatform.authIssuerType" .) (list "MICROSOFT" "GENERIC") }}
   {{/*
-  TODO: Once refactor the auth issuers, we need to add more constraints here to validate the new auth types. 
+  TODO: Once refactor the auth issuers, we need to add more constraints here to validate the new auth types.
         More details: https://github.com/camunda/camunda-platform-helm/issues/4419
   */}}
+  {{- /* NOTE: Defer to the "identityPostgresql" keyRemoved constraint below when that key is still set. */ -}}
+  {{- if and (eq (include "camundaPlatform.identityEnabled" .) "true")
+             .Values.global.identity.auth.enabled
+             (not (hasKey .Values "identityPostgresql"))
+             (ne (include "identity.databaseConfigured" .) "true") }}
+    {{- $errorMessage := printf "[camunda][error] %s %s %s"
+        "Management Identity requires a database when \"global.identity.auth.type\" is not \"KEYCLOAK\"."
+        "Configure a database via \"identity.externalDatabase\","
+        "or disable Management Identity with \"identity.enabled: false\"."
+    -}}
+    {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
+  {{- end }}
 {{- end }}
 
 {{/*

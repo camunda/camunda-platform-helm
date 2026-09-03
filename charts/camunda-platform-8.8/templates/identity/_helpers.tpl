@@ -295,6 +295,49 @@ https://docs.bitnami.com/kubernetes/apps/keycloak/configuration/manage-passwords
 {{- end -}}
 
 {{/*
+[identity] Whether a database is reachable by Management Identity.
+Besides "identityPostgresql" and "identity.externalDatabase", a datasource can also be supplied out of
+band via "identity.env", "identity.envFrom", "identity.configuration", or "identity.extraConfiguration".
+*/}}
+{{- define "identity.databaseConfigured" -}}
+    {{- $configured := or .Values.identity.externalDatabase.enabled .Values.identityPostgresql.enabled -}}
+    {{- if or .Values.identity.envFrom (include "identity.databaseConfiguredInEnv" .) -}}
+        {{- $configured = true -}}
+    {{- end -}}
+    {{- if include "identity.databaseConfiguredInFiles" . -}}
+        {{- $configured = true -}}
+    {{- end -}}
+    {{- if $configured -}}true{{- else -}}false{{- end -}}
+{{- end -}}
+
+{{- define "identity.databaseConfiguredInEnv" -}}
+    {{- range .Values.identity.env -}}
+        {{- $name := .name | default "" -}}
+        {{- if or (hasPrefix "IDENTITY_DATABASE_" $name) (hasPrefix "SPRING_DATASOURCE_" $name) -}}
+            {{- print "true" -}}
+        {{- end -}}
+    {{- end -}}
+{{- end -}}
+
+{{- define "identity.databaseConfiguredInFiles" -}}
+    {{- $contents := list .Values.identity.configuration -}}
+    {{- if kindIs "slice" .Values.identity.extraConfiguration -}}
+        {{- range .Values.identity.extraConfiguration -}}
+            {{- $contents = append $contents .content -}}
+        {{- end -}}
+    {{- else -}}
+        {{- range $file, $content := .Values.identity.extraConfiguration -}}
+            {{- $contents = append $contents $content -}}
+        {{- end -}}
+    {{- end -}}
+    {{- range $contents -}}
+        {{- if contains "datasource" (. | default "" | lower) -}}
+            {{- print "true" -}}
+        {{- end -}}
+    {{- end -}}
+{{- end -}}
+
+{{/*
 [identity] Get the image pull secrets.
 */}}
 {{- define "identity.imagePullSecrets" -}}

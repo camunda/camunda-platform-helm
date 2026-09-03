@@ -57,6 +57,14 @@ global:
 
 identity:
   enabled: true
+  externalDatabase:
+    enabled: true
+    host: postgres.example.com
+    port: 5432
+    database: identity
+    username: identity
+    secret:
+      inlineSecret: test
 
 camundaHub:
   enabled: true

@@ -1008,6 +1008,7 @@ identity:
 
   ## External PostgreSQL configuration
   ## Identity requires an external PostgreSQL database; configure the connection here.
+  ## A database is required whenever global.identity.auth.type is not "KEYCLOAK", and for Multi-Tenancy.
   ## @param identity.externalDatabase.enabled
   ## @param identity.externalDatabase.host Database host
   ## @param identity.externalDatabase.port Database port number
