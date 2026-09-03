@@ -1271,10 +1271,10 @@ func (s *ConfigmapTemplateTest) TestBundledOperateTasklistZeebeClientTLS() {
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
-func (s *ConfigmapTemplateTest) TestLegacyConfigurationCompatibility() {
+func (s *ConfigmapTemplateTest) TestNumberedModeConfigurationCompatibility() {
 	testCases := []testhelpers.TestCase{
 		{
-			Name: "DefaultModeUsesLegacyNodeIDAndSingleRegionAdvertisedHost",
+			Name: "DefaultModeUsesPlainNodeIDAndSingleRegionAdvertisedHost",
 			Values: map[string]string{
 				"orchestration.profiles.broker": "true",
 			},
@@ -1288,9 +1288,9 @@ func (s *ConfigmapTemplateTest) TestLegacyConfigurationCompatibility() {
 			},
 		},
 		{
-			Name: "ExplicitLegacyModeUsesLegacyNodeIDAndMultiRegionAdvertisedHost",
+			Name: "ExplicitNumberedModeUsesPlainNodeIDAndMultiRegionAdvertisedHost",
 			Values: map[string]string{
-				"orchestration.multiregion.mode": "legacy",
+				"orchestration.multiregion.mode": "numbered",
 				"global.multiregion.regions":     "2",
 				"global.multiregion.regionId":    "1",
 				"orchestration.profiles.broker":  "true",
@@ -1305,9 +1305,9 @@ func (s *ConfigmapTemplateTest) TestLegacyConfigurationCompatibility() {
 			},
 		},
 		{
-			Name: "LegacyCustomConfigurationRemainsAuthoritative",
+			Name: "NumberedCustomConfigurationRemainsAuthoritative",
 			Values: map[string]string{
-				"orchestration.multiregion.mode": "legacy",
+				"orchestration.multiregion.mode": "numbered",
 				"orchestration.configuration":    "camunda:\n  cluster:\n    partition-count: 7\n",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -1480,10 +1480,10 @@ func (s *ConfigmapTemplateTest) TestZonedConfiguration() {
 			},
 		},
 		{
-			// Control for the two cases above: same inputs, legacy mode. Without it
+			// Control for the two cases above: same inputs, numbered mode. Without it
 			// they pass whether or not the zoned guard exists, since the exporter is
 			// also absent when Optimize does not ask for that database.
-			Name: "TestLegacySingleRegionStillEnablesTheElasticsearchExporter",
+			Name: "TestNumberedSingleRegionStillEnablesTheElasticsearchExporter",
 			Values: map[string]string{
 				"orchestration.exporters.rdbms.enabled":                         "true",
 				"orchestration.data.secondaryStorage.rdbms.url":                 "jdbc:postgresql://localhost:5432/camunda",
@@ -1502,10 +1502,10 @@ func (s *ConfigmapTemplateTest) TestZonedConfiguration() {
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
-func (s *ConfigmapTemplateTest) TestZonedModeRejectsLegacyRegionSettings() {
+func (s *ConfigmapTemplateTest) TestZonedModeRejectsNumberedRegionSettings() {
 	testCases := []testhelpers.TestCase{
 		{
-			Name: "TestZonedModeRejectsLegacyRegions",
+			Name: "TestZonedModeRejectsNumberedRegions",
 			Values: map[string]string{
 				"orchestration.multiregion.mode":    "zoned",
 				"orchestration.multiregion.regions": "2",
