@@ -1795,6 +1795,14 @@ func synthesizeReleaseEntry(repoRoot string, entry matrix.Entry, rel matrix.Topo
 		Features:     features,
 		Dependencies: rel.ResolvedDependencies,
 	}
+	// The scenario's post-infra hook provisions the shared infrastructure the whole
+	// topology then deploys onto, so it belongs to the Hub release: that is the one
+	// release every other one depends on, and running it per release would repeat
+	// the provisioning once per namespace. PostDeploy is deliberately NOT carried
+	// here - runTopologyPostDeployHook runs it once after the whole topology is up.
+	if rel.Role == "hub" {
+		releaseEntry.PostInfra = entry.PostInfra
+	}
 	// e2e is a topology-level concern, not a per-release one: a release's deploy returns while later
 	// releases are still undeployed, so testing here would test a partial topology (and would repeat
 	// for every orchestration release). runTopologyEntry runs the legs once the whole topology is up.
