@@ -2061,10 +2061,11 @@ integration:
               - chart-version: "8.7"
                 role: orchestration
                 namespace-suffix: orchd
-                values: features/multinamespace-orchestration.yaml
                 depends-on: hub
                 identity: keycloak-external
                 persistence: elasticsearch-external
+                features:
+                  - multinamespace-orchestration
                 env:
                   ORCH_CONNECTORS_CLIENT_ID: connectors-orchd
                   ORCH_OPTIMIZE_AUDIENCE: optimize-orchd-api
