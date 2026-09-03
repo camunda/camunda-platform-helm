@@ -1485,6 +1485,8 @@ func synthesizeReleaseEntry(repoRoot string, entry matrix.Entry, rel matrix.Topo
 	}
 	if rel.Role == "orchestration" {
 		releaseEntry.PostDeploy = entry.PostDeploy
+	} else if rel.Role == "hub" {
+		releaseEntry.PostInfra = entry.PostInfra
 	}
 	return releaseEntry
 }
