@@ -153,6 +153,17 @@ install-time warning for the dotted-key and `valueFrom` cases rather than derivi
 plaintext silently. If you hit one, set `global.tls.orchestration.*` or add the
 matching `orchestration.env` entry.
 
+### Connectors and Optimize follow the same rules
+
+`camundaPlatform.connectorsTLSEnabled` and the Optimize equivalent resolve
+`server.ssl.enabled` from the same four sources in the same order, substituting
+`connectors.*` / `optimize.*` for `orchestration.*` and
+`global.tls.connectors.enabled` / `global.tls.optimize.enabled` for the
+Orchestration flag. Connectors TLS state drives the container probe schemes and
+the in-cluster Connectors URL; Optimize TLS state drives its probe schemes and
+its dedicated `/optimize` Ingress backend. The same non-detections and the same
+install-time warnings apply to both.
+
 ### Migrating from a hand-managed `/orchestration` Ingress
 
 Enabling REST TLS makes the chart render its own `/orchestration` Ingress. If you

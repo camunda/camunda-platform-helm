@@ -29,6 +29,10 @@ integration:
       shortname: estlc
       tier: 2
       enabled: true
+    - id: connectors-tls
+      shortname: cotls
+      tier: 2
+      enabled: true
     - id: opensearch
       shortname: oske
       tier: 2

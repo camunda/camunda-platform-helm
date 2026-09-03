@@ -348,6 +348,40 @@ gRPC server to crash on startup. Fail loudly at render time instead.
   {{- end }}
 {{- end }}
 
+{{/* Connectors TLS requires chart-managed or explicitly hand-wired cert material. */}}
+{{- if .Values.connectors.enabled }}
+  {{- $envNames := list -}}
+  {{- range $e := (.Values.connectors.env | default list) -}}
+    {{- $envNames = append $envNames ($e.name | default "") -}}
+  {{- end }}
+  {{- if eq (include "camundaPlatform.connectorsTLSEnabled" .) "true" }}
+    {{- $chartMountsCert := and .Values.global.tls.connectors.enabled .Values.global.tls.connectors.cert.secret.existingSecret -}}
+    {{- $handWiredCert := or (has "SERVER_SSL_KEY_STORE" $envNames) (has "SERVER_SSL_CERTIFICATE" $envNames) -}}
+    {{/* An operator who enables TLS through connectors.{configuration,extraConfiguration}
+         owns application.yaml and declares the cert there, where no env var appears. */}}
+    {{- $certInYaml := eq (include "camundaPlatform.appConfigHasCertMaterial" (dict
+        "configuration" .Values.connectors.configuration
+        "extraConfiguration" .Values.connectors.extraConfiguration
+        "prefix" (list "server" "ssl"))) "true" -}}
+    {{- $handWiredCert = or $handWiredCert $certInYaml -}}
+    {{- if not (or $chartMountsCert $handWiredCert) }}
+      {{- $errorMessage := printf "%s %s %s"
+          "[camunda][error] Connectors TLS is enabled but no server cert is configured."
+          "Set global.tls.connectors.enabled: true together with global.tls.connectors.cert.secret.existingSecret (recommended) so the chart mounts the cert -- note that existingSecret alone is NOT mounted unless global.tls.connectors.enabled is also true (e.g. when TLS is enabled only via connectors.env's SERVER_SSL_ENABLED=true),"
+          "or hand-wire SERVER_SSL_KEY_STORE / SERVER_SSL_CERTIFICATE plus the matching connectors.extraVolumes / extraVolumeMounts entries."
+      -}}
+      {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
+    {{- end }}
+  {{- end }}
+  {{- if and (eq (include "camundaPlatform.connectorsTLSEnabled" .) "true") .Values.global.tls.connectors.cert.secret.existingSecret }}
+    {{- $t := .Values.global.tls.connectors.type | default "pkcs12" -}}
+    {{- if not (has $t (list "pkcs12" "pem")) }}
+      {{- $errorMessage := printf "[camunda][error] global.tls.connectors.type=%q is not supported. Use one of: pkcs12, pem." $t -}}
+      {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
+    {{- end }}
+  {{- end }}
+{{- end }}
+
 {{/*
 Fail with a message if the auth type is not in the enums (KEYCLOAK, MICROSOFT, or GENERIC).
 */}}
@@ -754,6 +788,56 @@ The following values inside your values.yaml need to be set but were not:
     {{- end }}
   {{- end }}
 
+  {{/* Connectors TLS detection guardrails: probe schemes and the in-cluster
+       Connectors URL are derived from camundaPlatform.connectorsTLSEnabled, which
+       reads connectors.env, global.tls.connectors.enabled, and nested YAML keys in
+       connectors.{configuration,extraConfiguration}. Warn about the two forms it
+       cannot read rather than deriving plaintext silently. */}}
+  {{- if .Values.connectors.enabled }}
+    {{- $connectorsTLS := include "camundaPlatform.connectorsTLSEnabled" . }}
+
+    {{/* (W1) A dotted/relaxed key form the nested-key walk cannot see. Splits
+           yielding a single segment are skipped: a bare "enabled: true" line
+           matches unrelated config. */}}
+    {{- if ne $connectorsTLS "true" }}
+      {{- $sslPath := list "server" "ssl" "enabled" -}}
+      {{- $dottedHit := "" -}}
+      {{- $contents := list (.Values.connectors.configuration | default "") -}}
+      {{- range $entry := (.Values.connectors.extraConfiguration | default list) -}}
+        {{- $contents = append $contents ($entry.content | default "") -}}
+      {{- end -}}
+      {{- range $split := until (sub (len $sslPath) 1 | int) -}}
+        {{- $dotted := join "." (slice $sslPath $split) -}}
+        {{- $pattern := printf "(?m)^[ \t]*%s[ \t]*[:=][ \t]*[\"']?(?i)true" (replace "." "\\." $dotted) -}}
+        {{- range $content := $contents -}}
+          {{- if regexMatch $pattern $content -}}
+            {{- $dottedHit = $dotted -}}
+          {{- end -}}
+        {{- end -}}
+      {{- end -}}
+      {{- if $dottedHit }}
+        {{- $warningMessage := printf "%s %s %s"
+            "[camunda][warning]"
+            (printf "connectors.configuration or connectors.extraConfiguration appears to enable Connectors TLS through the dotted key '%s', which the chart cannot read." $dottedHit)
+            "The chart matches nested YAML keys only, so it still derives plaintext: the Connectors probes stay on HTTP scheme and in-cluster clients get an http:// Connectors URL against a TLS listener, which installs cleanly and then fails at connection time. Set global.tls.connectors.enabled: true, or add a connectors.env entry for SERVER_SSL_ENABLED, or rewrite the key in nested YAML form."
+        -}}
+        {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+      {{- end }}
+    {{- end }}
+
+    {{/* (W2) A valueFrom-sourced SSL toggle is unresolvable at render time. */}}
+    {{- range $e := (.Values.connectors.env | default list) }}
+      {{- if and (eq ($e.name | default "") "SERVER_SSL_ENABLED") (not $e.value) $e.valueFrom }}
+        {{- $warningMessage := printf "%s %s %s"
+            "[camunda][warning]"
+            "connectors.env sets SERVER_SSL_ENABLED from a valueFrom reference, whose value the chart cannot read at render time."
+            "Connectors TLS state therefore falls back to global.tls.connectors.enabled and the YAML config sources. If the referenced key resolves to a value that disagrees with that fallback, probe schemes and the in-cluster Connectors URL will be derived for the wrong transport. Set the toggle literally and keep valueFrom for cert material only."
+        -}}
+        {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+      {{- end }}
+    {{- end }}
+  {{- end }}
+
   {{/* Warn when Orchestration server TLS is enabled but no caBundle is set.
        In-cluster Java clients (Web Modeler, Connectors) hit PKIX errors against
        self-signed or private-CA certs when the JVM default truststore is used. */}}
@@ -767,6 +851,27 @@ The following values inside your values.yaml need to be set but were not:
         "Set global.tls.caBundle.secret.existingSecret to the CA bundle. Ignore this if the cert is from a public CA already trusted by the JVM (Let's Encrypt, DigiCert, etc.)."
     -}}
     {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+  {{- end }}
+
+  {{/* Warn when Connectors server TLS is enabled but no caBundle is set. */}}
+  {{- if and (eq (include "camundaPlatform.connectorsTLSEnabled" .) "true") (ne (include "camundaPlatform.hasCaBundle" .) "true") }}
+    {{- $warningMessage := printf "%s %s %s"
+        "[camunda][warning]"
+        "global.tls.caBundle is not set. If the Connectors cert is self-signed or from a private/internal CA, in-cluster Java callers will fall back to the JVM default truststore and fail TLS handshakes."
+        "Set global.tls.caBundle.secret.existingSecret to the CA bundle. Ignore this if the cert is from a public CA already trusted by the JVM (Let's Encrypt, DigiCert, etc.)."
+    -}}
+    {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+  {{- end }}
+
+  {{- if and .Values.global.gateway.enabled (not .Values.global.gateway.external) }}
+    {{- if and .Values.connectors.enabled (eq (include "camundaPlatform.connectorsTLSEnabled" .) "true") }}
+      {{- $warningMessage := printf "%s %s %s"
+          "[camunda][warning]"
+          "Connectors TLS is enabled (the Connectors pod now serves HTTPS only), but the chart's Gateway API HTTPRoute forwards plain HTTP to the Connectors Service's serverPort."
+          "Inbound routing to Connectors (e.g. external webhooks) will break until you configure a BackendTLSPolicy (Gateway API v1.0+) targeting the Connectors Service, so the gateway re-encrypts traffic to the TLS-only pod."
+      -}}
+      {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+    {{- end }}
   {{- end }}
 
   {{/* Warn when webModeler pusher secret is auto-generated */}}
