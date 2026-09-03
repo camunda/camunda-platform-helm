@@ -4685,6 +4685,11 @@
                                 }
                             }
                         },
+                        "keepUnzonedBrokers": {
+                            "type": "boolean",
+                            "description": "also renders the legacy numeric-node-ID StatefulSet alongside the zoned ones, for use during a zone migration.",
+                            "default": false
+                        },
                         "regions": {
                             "type": [
                                 "integer",

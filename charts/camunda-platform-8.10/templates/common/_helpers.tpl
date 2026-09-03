@@ -2696,6 +2696,7 @@ numbered pair without declaring the zoned ones. constraints.tpl rejects setting 
         "mode" ($orch.mode | default "numbered")
         "zone" ($orch.zone | default "")
         "zones" ($orch.zones | default list)
+        "keepUnzonedBrokers" ($orch.keepUnzonedBrokers | default false)
         "regions" ($orch.regions | default 1)
         "regionId" ($orch.regionId | default 0)
       | toJson -}}
@@ -2708,6 +2709,7 @@ numbered pair without declaring the zoned ones. constraints.tpl rejects setting 
         "mode" "numbered"
         "zone" ""
         "zones" list
+        "keepUnzonedBrokers" false
         "regions" ($global.regions | default 1)
         "regionId" ($global.regionId | default 0)
       | toJson -}}

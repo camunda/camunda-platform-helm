@@ -89,11 +89,27 @@ camunda:
         {{- end }}
     {{- end }}
     # zeebe.broker.cluster
-    {{- /* NOTE: one zone or one region is one headless Service, which the chart can address
-         itself. Beyond that it cannot know how brokers reach each other, so the list is the
-         user's to provide. Keyed on the mode, not on the zone count, because the zone list
-         is only meaningful in zoned mode. */ -}}
-    {{- if ne (include "camundaPlatform.multiregionSpread" $) "true" }}
+    {{- /* NOTE: zoned brokers all live in-cluster (the single-cluster multi-AZ case this
+         mode targets), so every zone's headless Service is addressable and the full list
+         can be generated. A zoned release scoped to one cross-cluster zone (dual-region)
+         cannot resolve the other regions' zones from in-cluster DNS; override the whole
+         list via CAMUNDA_CLUSTER_INITIALCONTACTPOINTS in that case, same escape hatch as
+         legacy multi-region. */ -}}
+    {{- if eq (include "orchestration.zoned" .) "true" }}
+    initial-contact-points:
+    {{- range $mr.zones }}
+    {{- $zoneName := .name }}
+    {{- $zoneFullname := printf "%s-%s" (include "orchestration.fullname" $) $zoneName }}
+    {{- range untilStep 0 (int .numberOfBrokers) 1 }}
+      - {{ $zoneFullname }}-{{ . }}.{{ $zoneFullname }}:{{ $.Values.orchestration.service.internalPort }}
+    {{- end }}
+    {{- end }}
+    {{- if $mr.keepUnzonedBrokers }}
+    {{- range untilStep 0 (int $.Values.orchestration.clusterSize) 1 }}
+      - {{ include "orchestration.fullname" $ }}-{{ . }}.{{ include "orchestration.fullname" $ }}:{{ $.Values.orchestration.service.internalPort }}
+    {{- end }}
+    {{- end }}
+    {{- else if ne (include "camundaPlatform.multiregionSpread" $) "true" }}
     initial-contact-points:
     {{- range (untilStep 0 (int (include "orchestration.clusterSize" $)) 1) }}
       - {{ include "orchestration.fullname" $ }}-{{ . }}.${K8S_SERVICE_NAME}:{{ $.Values.orchestration.service.internalPort }}

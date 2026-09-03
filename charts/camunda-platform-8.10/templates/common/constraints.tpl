@@ -463,9 +463,10 @@ no quorum can reach.
 {{- end }}
 
 {{/*
-Fail if zoned mode does not describe the zone this release belongs to. The zone list
-is what assigns broker node IDs and partition replicas, so a release whose own zone is
-missing from it would take the IDs of the first zone and collide with it.
+Fail if zoned mode does not describe the zone this release belongs to. A release renders
+exactly one zone, so the zone is what selects this release's broker count and node IDs.
+The zone list is what assigns broker node IDs and partition replicas, so a release whose
+own zone is missing from it would take the IDs of the first zone and collide with it.
 */}}
 {{- if eq $mr.mode "zoned" }}
   {{- $zone := $mr.zone -}}
@@ -479,6 +480,13 @@ missing from it would take the IDs of the first zone and collide with it.
   {{- if not (has $zone $names) }}
     {{- fail (printf "[camunda][error] %s.zone %q is not declared in %s.zones (%s)." $mrKey $zone $mrKey (join ", " $names)) -}}
   {{- end }}
+{{- end }}
+
+{{/*
+R7: keepUnzonedBrokers only makes sense as a migration staging knob on top of zoned mode.
+*/}}
+{{- if and $mr.keepUnzonedBrokers (ne $mr.mode "zoned") }}
+  {{- fail (printf "[camunda][error] %s.keepUnzonedBrokers requires %s.mode=zoned." $mrKey $mrKey) -}}
 {{- end }}
 
 {{/*

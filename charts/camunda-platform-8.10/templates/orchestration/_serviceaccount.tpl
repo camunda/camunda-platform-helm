@@ -1,0 +1,21 @@
+{{- define "orchestration.serviceAccountManifest" -}}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "orchestration.serviceAccountName" . }}
+  labels:
+    {{- include "common.tplvalues.merge-overwrite" (dict
+      "values" (list
+        (include "orchestration.labels" .)
+        .Values.orchestration.serviceAccount.labels
+      )
+      "context" .
+    ) | nindent 4 }}
+  {{- $secretStoreAnnotations := fromYaml (include "camundaPlatform.secretStore.serviceAccountAnnotations" .) }}
+  {{- $annotations := mergeOverwrite (deepCopy (.Values.orchestration.serviceAccount.annotations | default dict)) $secretStoreAnnotations }}
+  {{- with $annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+automountServiceAccountToken: {{ .Values.orchestration.serviceAccount.automountServiceAccountToken }}
+{{- end -}}
