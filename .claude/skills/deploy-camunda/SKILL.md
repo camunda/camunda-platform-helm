@@ -175,8 +175,10 @@ deploy-camunda matrix run \
   --timeout 15 \
   --yes
 
-# CI-parity overrides: --extra-helm-arg, --extra-helm-set, --namespace-override
+# CI-parity overrides: --extra-helm-arg, --extra-helm-set
 ```
+
+For local runs, use `--namespace-prefix` and let `deploy-camunda` create the namespace and secrets. `--namespace-override` is for CI jobs that pre-provision the namespace; local live runs require `--namespace-prepared` because this mode disables automatic ExternalSecrets.
 
 GKE matrix runs require `--ingress-base-domain-gke ci.distro.ultrawombat.com` — the host is computed per-namespace from that base domain; without it, `${CAMUNDA_HOSTNAME}` substitution in `base.yaml` fails with `missing required environment variables: CAMUNDA_HOSTNAME`.
 
