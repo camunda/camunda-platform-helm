@@ -94,7 +94,7 @@ deploy-camunda matrix run \
   --flow-filter install --platform gke \
   --ingress-base-domain-gke ci.distro.ultrawombat.com
 
-# CI-parity overrides: --extra-helm-arg, --extra-helm-set, --namespace-override
+# CI-parity overrides: --extra-helm-arg, --extra-helm-set
 ```
 
 GKE matrix runs require `--ingress-base-domain-gke` — the host is computed per-namespace from that base domain; without it, `${CAMUNDA_HOSTNAME}` substitution in `base.yaml` fails with `missing required environment variables: CAMUNDA_HOSTNAME`.

@@ -42,6 +42,38 @@ func TestMatrixRunExtraValuesFlag(t *testing.T) {
 	}
 }
 
+func TestValidateNamespaceOverride(t *testing.T) {
+	tests := []struct {
+		name              string
+		namespaceOverride string
+		namespacePrepared bool
+		readOnly          bool
+		githubActions     string
+		wantErr           string
+	}{
+		{name: "computed namespace"},
+		{name: "local override rejected", namespaceOverride: "existing", wantErr: "replace --namespace-override NAME with --namespace-prefix NAME"},
+		{name: "local prepared override", namespaceOverride: "existing", namespacePrepared: true},
+		{name: "dry run override", namespaceOverride: "existing", readOnly: true},
+		{name: "GitHub Actions override", namespaceOverride: "existing", githubActions: "true"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateNamespaceOverride(tt.namespaceOverride, tt.namespacePrepared, tt.readOnly, tt.githubActions)
+			if tt.wantErr == "" {
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
+				return
+			}
+			if err == nil || !strings.Contains(err.Error(), tt.wantErr) {
+				t.Fatalf("error = %v, want substring %q", err, tt.wantErr)
+			}
+		})
+	}
+}
+
 func TestValidateChartRefFlags(t *testing.T) {
 	tests := []struct {
 		name            string

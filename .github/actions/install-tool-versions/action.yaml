@@ -28,44 +28,73 @@ runs:
         echo "⭐ Filtered .tool-versions content:"
         cat .tool-versions
 
-    - name: Determine ASDF_DIR
+    - name: Determine asdf paths
       shell: bash
       run: |
         set -euo pipefail
-        # Compute a safe ASDF_DIR that works on both hosted runners and containers
-        # Common locations:
-        #   - /home/runner: GitHub hosted runners
-        #   - /github/home: Container jobs (e.g., Playwright image)
-        #   - $HOME: User's actual home directory
-        
         home=""
         for candidate in "$HOME" "/github/home" "/home/runner"; do
           if [[ -n "$candidate" && -d "$candidate" && -w "$candidate" ]]; then
             home="$candidate"
-            echo "✅ Using home directory: $home"
             break
           fi
         done
-        
         if [[ -z "$home" ]]; then
-          echo "⚠️ No writable home directory found, using /tmp/asdf-home"
           home="/tmp/asdf-home"
           mkdir -p "$home"
         fi
-        
-        # Only set the env var - do NOT create .asdf directory!
-        # The asdf-vm/actions/install action needs to clone it as a git repo.
-        # If we create an empty dir, it tries to "update" instead of "install" and fails.
-        echo "ASDF_DIR=$home/.asdf" >> "$GITHUB_ENV"
+        echo "ASDF_BIN_DIR=$home/.cache/asdf/0.20.0/bin" >> "$GITHUB_ENV"
+        echo "ASDF_DATA_DIR=$home/.asdf" >> "$GITHUB_ENV"
 
-    - name: Restore cache
+    - name: Restore asdf cache
+      id: restore-asdf-cache
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+      with:
+        path: ${{ env.ASDF_BIN_DIR }}
+        key: ${{ runner.os }}-${{ runner.arch }}-asdf-0.20.0
+
+    - name: Install asdf
+      if: steps.restore-asdf-cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        set -euo pipefail
+        case "${RUNNER_OS}-${RUNNER_ARCH}" in
+          Linux-X64) asset="linux-amd64"; checksum="9c25e1af7cc4c9d59ff3736eba14fd000480c32929258f80d8c5a8b290ebee14" ;;
+          Linux-ARM64) asset="linux-arm64"; checksum="bbc1889886a9826ce3f57f56e4bae575767a4af3d35d649d62116ee14334e59a" ;;
+          macOS-X64) asset="darwin-amd64"; checksum="8217f33fd165131546aa034f3dabd1a6978cced71c271b4079b4f880965554c1" ;;
+          macOS-ARM64) asset="darwin-arm64"; checksum="cc94a8cb12bd9692cd760ca184291552fd7206cf8306e51e4de45db94eea3cb5" ;;
+          *) echo "Unsupported runner: ${RUNNER_OS}-${RUNNER_ARCH}" >&2; exit 1 ;;
+        esac
+        archive="$RUNNER_TEMP/asdf-v0.20.0-${asset}.tar.gz"
+        curl --fail --location --retry 5 --retry-all-errors --retry-delay 5 \
+          --output "$archive" "https://github.com/asdf-vm/asdf/releases/download/v0.20.0/asdf-v0.20.0-${asset}.tar.gz"
+        actual="$(shasum -a 256 "$archive" | cut -d ' ' -f 1)"
+        [[ "$actual" == "$checksum" ]] || { echo "asdf checksum mismatch: expected $checksum, got $actual" >&2; exit 1; }
+        mkdir -p "$ASDF_BIN_DIR"
+        tar -xzf "$archive" -C "$ASDF_BIN_DIR"
+
+    - name: Add asdf to PATH
+      shell: bash
+      run: |
+        echo "$ASDF_BIN_DIR" >> "$GITHUB_PATH"
+        echo "$ASDF_DATA_DIR/shims" >> "$GITHUB_PATH"
+
+    - name: Save asdf cache
+      if: steps.restore-asdf-cache.outputs.cache-hit != 'true'
+      continue-on-error: true
+      uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+      with:
+        path: ${{ env.ASDF_BIN_DIR }}
+        key: ${{ runner.os }}-${{ runner.arch }}-asdf-0.20.0
+
+    - name: Restore tools cache
       id: restore-tools-cache
       uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
       with:
-        path: ${{ env.ASDF_DIR }}
-        key: ${{ runner.os }}-tools-${{ hashFiles('.tool-versions') }}
+        path: ${{ env.ASDF_DATA_DIR }}
+        key: ${{ runner.os }}-asdf-0.20.0-tools-${{ hashFiles('.tool-versions') }}
 
-    - name: Install asdf and tools
+    - name: Install tools
       uses: asdf-vm/actions/install@b7bcd026f18772e44fe1026d729e1611cc435d47 # v4
       id: asdf-install
       continue-on-error: true
@@ -75,34 +104,20 @@ runs:
         # Used by asdf-make: https://github.com/yacchi/asdf-make/blob/2b8c33adca11b79158298f1e35fe6a9ea363b6b0/lib/utils.bash#L7
         MAKE_CUSTOM_MIRROR: https://ftpmirror.gnu.org/
       with:
-        # TODO: Upgrade to 0.16 when it's supported in the GHA.
-        asdf_branch: v0.15.0
+        skip_install: true
 
     - name: Retry failed tool installations
       if: steps.asdf-install.outcome == 'failure'
       shell: bash
       env:
-        ASDF_DIR: ${{ env.ASDF_DIR }}
+        ASDF_DATA_DIR: ${{ env.ASDF_DATA_DIR }}
       run: |
         set -uo pipefail  # Note: no -e so we can capture exit codes
         MAX_RETRIES=5
         FAILED_TOOLS=()
-        asdf_dir="${ASDF_DIR:-$HOME/.asdf}"
+        asdf_dir="${ASDF_DATA_DIR:-$HOME/.asdf}"
 
         echo "⚠️ Initial asdf install failed, retrying..."
-
-        # Check if asdf itself needs to be installed
-        if [[ ! -f "$asdf_dir/asdf.sh" ]]; then
-          echo "📦 asdf not found at $asdf_dir, installing it first..."
-          # Remove any partial/empty directory that might exist
-          rm -rf "$asdf_dir"
-          # Clone asdf
-          git clone https://github.com/asdf-vm/asdf.git "$asdf_dir" --branch v0.15.0
-          echo "✅ asdf installed successfully"
-        fi
-
-        # Source asdf
-        . "$asdf_dir/asdf.sh"
 
         while IFS= read -r line; do
           [[ -z "$line" || "$line" =~ ^# ]] && continue
@@ -178,10 +193,10 @@ runs:
       if: always()
       shell: bash
       env:
-        ASDF_DIR: ${{ env.ASDF_DIR }}
+        ASDF_DATA_DIR: ${{ env.ASDF_DATA_DIR }}
       run: |
         set -euo pipefail
-        root="${ASDF_DIR:-$HOME/.asdf}/downloads"
+        root="${ASDF_DATA_DIR:-$HOME/.asdf}/downloads"
         if [ -d "$root" ]; then
           echo "=== asdf installer logs under $root ==="
           # Group each log in the Actions UI
@@ -194,11 +209,11 @@ runs:
           echo "No asdf downloads dir at $root"
         fi
 
-    - name: Save cache
+    - name: Save tools cache
       uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
       with:
-        path: ${{ env.ASDF_DIR }}
-        key: ${{ runner.os }}-tools-${{ hashFiles('.tool-versions') }}
+        path: ${{ env.ASDF_DATA_DIR }}
+        key: ${{ runner.os }}-asdf-0.20.0-tools-${{ hashFiles('.tool-versions') }}
 
     - name: List installed versions
       shell: bash
