@@ -15,9 +15,22 @@
 package main
 
 import (
+	"reflect"
 	"testing"
 	"time"
 )
+
+func TestValuesUseLightweightTestResources(t *testing.T) {
+	got := values("normal")
+	hub := got["camundaHub"].(map[string]any)
+	want := map[string]any{"requests": map[string]any{"cpu": "10m", "memory": "16Mi"}}
+	for _, component := range []string{"restapi", "websockets"} {
+		resources := hub[component].(map[string]any)["resources"]
+		if !reflect.DeepEqual(resources, want) {
+			t.Fatalf("%s resources = %v, want %v", component, resources, want)
+		}
+	}
+}
 
 func TestFluxReference(t *testing.T) {
 	tests := []struct {

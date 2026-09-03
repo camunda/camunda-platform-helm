@@ -187,11 +187,13 @@ func values(phase string) map[string]any {
 			"enabled": true, "upgrade": map[string]any{"phase": phase},
 			"restapi": map[string]any{
 				"replicas": 2, "mail": map[string]any{"fromAddress": "test@example.com"},
+				"resources": map[string]any{"requests": map[string]any{"cpu": "10m", "memory": "16Mi"}},
 				"pusher": map[string]any{
 					"secret": map[string]any{"inlineSecret": "gitops-test-secret"},
 					"client": map[string]any{"secret": map[string]any{"inlineSecret": "gitops-test-key"}},
 				},
 			},
+			"websockets": map[string]any{"resources": map[string]any{"requests": map[string]any{"cpu": "10m", "memory": "16Mi"}}},
 		},
 		"webModeler": map[string]any{
 			"image": map[string]any{"tag": "1.36.1"},
@@ -215,6 +217,8 @@ func helmSetArgs(phase string) []string {
 	sets := []string{
 		"camundaHub.enabled=true", "camundaHub.upgrade.phase=" + phase,
 		"camundaHub.restapi.replicas=2", "camundaHub.restapi.mail.fromAddress=test@example.com",
+		"camundaHub.restapi.resources.requests.cpu=10m", "camundaHub.restapi.resources.requests.memory=16Mi",
+		"camundaHub.websockets.resources.requests.cpu=10m", "camundaHub.websockets.resources.requests.memory=16Mi",
 		"camundaHub.restapi.pusher.secret.inlineSecret=gitops-test-secret", "camundaHub.restapi.pusher.client.secret.inlineSecret=gitops-test-key",
 		"global.identity.service.url=http://identity", "identity.enabled=false", "orchestration.enabled=false",
 		"connectors.enabled=false", "optimize.enabled=false",
