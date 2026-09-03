@@ -43,8 +43,8 @@ data:
   application.yaml: |
     {{- (include (print $.Template.BasePath "/orchestration/files/_application.yaml") $) | indent 4 }}
   {{- end }}
+  {{- if and .Values.orchestration.log4j2 (ne (include "camundaPlatform.extraConfigHasFile" (dict "extraConfiguration" .Values.orchestration.extraConfiguration "file" "log4j2.xml")) "true") }}
   log4j2.xml: |
-  {{- if .Values.orchestration.log4j2 }}
     {{ .Values.orchestration.log4j2 | indent 4 | trim }}
   {{- end }}
 

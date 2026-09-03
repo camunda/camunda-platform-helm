@@ -289,15 +289,15 @@ jobs:
           chart_path="charts/camunda-platform-${{ steps.package.outputs.chart_dir_id }}"
           head_ref="${{ steps.release-please.outputs.head_ref }}"
 
+          make helm.repos-add
+          make helm.dependency-update chartPath="${chart_path}"
+
           # In dry-run no release-please branch exists; generate against the
           # dev-SHA checkout instead to keep real coverage of the generators.
           if [[ "${DRY_RUN}" != "true" ]]; then
             git fetch origin "${head_ref}"
             git checkout "${head_ref}"
           fi
-
-          make helm.repos-add
-          make helm.dependency-update chartPath="${chart_path}"
 
           # Chart.yaml release annotations + RELEASE-NOTES.md (body + image footer).
           /tmp/release-tools release-notes --main "${chart_path}"
