@@ -70,5 +70,5 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
-    - kind: fixed
-      description: "Stop exposing credentials in deployment output"
+    - kind: added
+      description: "Add generic appProtocol support for Service ports in 8.8"
