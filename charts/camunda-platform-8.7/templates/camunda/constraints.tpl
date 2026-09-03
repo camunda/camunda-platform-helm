@@ -224,19 +224,36 @@ The following values inside your values.yaml need to be set but were not:
     {{- end }}
   {{- end }}
 
-  {{/* regexFind trims the Bitnami "-debian-12-rN" / rebuild-date suffix so
-       semverCompare receives a parseable version. */}}
+  {{/* CVE-2026-18963 is fixed in Keycloak 26.7.2. regexFind pulls the version out of a
+       tag that may carry a "bitnami-" or "quay-" prefix and a "-debian-12-rN" or
+       rebuild-date suffix, so semverCompare receives a parseable version. The moving
+       aliases of the Bitnami line ("26", "bitnami-26", "bitnami-latest",
+       "latest-bitnami") carry no version at all, yet resolve to a frozen bitnamilegacy
+       build that is affected and stays affected, so they are matched by name:
+       https://github.com/camunda/keycloak/blob/main/.github/workflows/build-images.yml */}}
   {{- if .Values.identityKeycloak.enabled }}
     {{- $keycloakImage := .Values.identityKeycloak.image }}
-    {{- $keycloakVersion := regexFind "^[0-9]+\\.[0-9]+\\.[0-9]+" (($keycloakImage).tag | toString) }}
-    {{- if and $keycloakVersion (semverCompare "<26.7.2" $keycloakVersion) }}
+    {{- $keycloakTag := (($keycloakImage).tag | toString) }}
+    {{- $keycloakVersion := regexFind "[0-9]+\\.[0-9]+\\.[0-9]+" $keycloakTag }}
+    {{- /* On "camunda/keycloak" the "quay-*" tags and the plain "latest" alias track
+           upstream Keycloak and are still maintained; every other tag of that repository
+           belongs to the frozen Bitnami line. */}}
+    {{- $onFrozenLine := and (eq (($keycloakImage).repository | toString) "camunda/keycloak")
+        (not (hasPrefix "quay-" $keycloakTag)) (ne $keycloakTag "latest") }}
+    {{- $frozenAlias := and $onFrozenLine (not $keycloakVersion)
+        (regexMatch "^(bitnami-)?[0-9]+$|^(bitnami-latest|latest-bitnami)$" $keycloakTag) }}
+    {{- if or $frozenAlias (and $keycloakVersion (semverCompare "<26.7.2" $keycloakVersion)) }}
+      {{- $affectedImage := printf "is pinned to %s, which is" $keycloakVersion }}
+      {{- if $frozenAlias }}
+        {{- $affectedImage = printf "uses the moving tag \"%s\", which resolves to a frozen Bitnami build that is" $keycloakTag }}
+      {{- end }}
       {{- $frozenLineNote := "" }}
-      {{- if eq (($keycloakImage).repository | toString) "camunda/keycloak" }}
+      {{- if $onFrozenLine }}
         {{- $frozenLineNote = " The Bitnami-based \"camunda/keycloak\" tags this chart defaults to are frozen on the discontinued bitnamilegacy base and will not receive the fix." }}
       {{- end }}
       {{- $warningMessage := printf "%s %s%s %s %s"
           "[camunda][warning]"
-          (printf "SECURITY: the bundled Keycloak image is pinned to %s, which is affected by CVE-2026-18963, a critical password-reset flaw enabling account takeover. It is fixed in Keycloak 26.7.2." $keycloakVersion)
+          (printf "SECURITY: the bundled Keycloak image %s affected by CVE-2026-18963, a critical password-reset flaw enabling account takeover. It is fixed in Keycloak 26.7.2." $affectedImage)
           $frozenLineNote
           "Recommended: migrate this subchart to the Keycloak Operator, which replaces its StatefulSet: https://docs.camunda.io/docs/self-managed/deployment/helm/operational-tasks/migration-from-bitnami/"
           "Enterprise customers can instead deploy with the chart's \"values-enterprise.yaml\", which pins a patched Bitnami-based \"keycloak-ee/keycloak\" image along with the registry pull secret it requires. Details: https://github.com/camunda/camunda-platform-helm/issues/6987"
