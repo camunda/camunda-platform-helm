@@ -254,7 +254,8 @@ Priority: new .secret.* keys > legacy existingSecret/existingSecretKey > identit
 {{/*
 [identity] Whether a database is reachable by Management Identity.
 Besides "identityPostgresql" and "identity.externalDatabase", a datasource can also be supplied out of
-band via "identity.env", "identity.envFrom", "identity.configuration", or "identity.extraConfiguration".
+band via "identity.env", "identity.envFrom", or a "spring.datasource" block in
+"identity.configuration" or a spring-imported "identity.extraConfiguration" entry.
 */}}
 {{- define "identity.databaseConfigured" -}}
     {{- $configured := or .Values.identity.externalDatabase.enabled .Values.identityPostgresql.enabled -}}
@@ -276,20 +277,40 @@ band via "identity.env", "identity.envFrom", "identity.configuration", or "ident
     {{- end -}}
 {{- end -}}
 
-{{- define "identity.databaseConfiguredInFiles" -}}
-    {{- $contents := list .Values.identity.configuration -}}
-    {{- if kindIs "slice" .Values.identity.extraConfiguration -}}
-        {{- range .Values.identity.extraConfiguration -}}
-            {{- $contents = append $contents .content -}}
+{{- define "identity.datasourceInText" -}}
+    {{- $content := .content | default "" -}}
+    {{- $parsed := $content | fromYaml -}}
+    {{- $unparsable := or (not (kindIs "map" $parsed)) (and (eq (len (keys $parsed)) 1) (hasKey $parsed "Error")) -}}
+    {{- $found := "" -}}
+    {{- if $unparsable -}}
+        {{- if regexMatch "(?m)^[ \t]*spring\\.datasource[.:=]" $content -}}
+            {{- $found = "true" -}}
         {{- end -}}
     {{- else -}}
-        {{- range $file, $content := .Values.identity.extraConfiguration -}}
-            {{- $contents = append $contents $content -}}
+        {{- range $key, $value := $parsed -}}
+            {{- if or (eq $key "spring.datasource") (hasPrefix "spring.datasource." $key) -}}
+                {{- $found = "true" -}}
+            {{- else if and (eq $key "spring") (kindIs "map" $value) -}}
+                {{- range $springKey, $_ := $value -}}
+                    {{- if or (eq $springKey "datasource") (hasPrefix "datasource." $springKey) -}}
+                        {{- $found = "true" -}}
+                    {{- end -}}
+                {{- end -}}
+            {{- end -}}
         {{- end -}}
     {{- end -}}
-    {{- range $contents -}}
-        {{- if contains "datasource" (. | default "" | lower) -}}
-            {{- print "true" -}}
+    {{- $found -}}
+{{- end -}}
+
+{{- define "identity.databaseConfiguredInFiles" -}}
+    {{- if include "identity.datasourceInText" (dict "content" .Values.identity.configuration) -}}
+        {{- print "true" -}}
+    {{- end -}}
+    {{- range .Values.identity.extraConfiguration -}}
+        {{- if not (and (hasKey . "springImport") (eq .springImport false)) -}}
+            {{- if include "identity.datasourceInText" (dict "content" .content) -}}
+                {{- print "true" -}}
+            {{- end -}}
         {{- end -}}
     {{- end -}}
 {{- end -}}

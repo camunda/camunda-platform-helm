@@ -297,7 +297,9 @@ https://docs.bitnami.com/kubernetes/apps/keycloak/configuration/manage-passwords
 {{/*
 [identity] Whether a database is reachable by Management Identity.
 Besides "identityPostgresql" and "identity.externalDatabase", a datasource can also be supplied out of
-band via "identity.env", "identity.envFrom", "identity.configuration", or "identity.extraConfiguration".
+band via "identity.env", "identity.envFrom", or a "spring.datasource" block in
+"identity.configuration". "identity.extraConfiguration" does not count: this chart version mounts
+those files without adding them to "spring.config.import", so Identity never loads them.
 */}}
 {{- define "identity.databaseConfigured" -}}
     {{- $configured := or .Values.identity.externalDatabase.enabled .Values.identityPostgresql.enabled -}}
@@ -319,22 +321,33 @@ band via "identity.env", "identity.envFrom", "identity.configuration", or "ident
     {{- end -}}
 {{- end -}}
 
-{{- define "identity.databaseConfiguredInFiles" -}}
-    {{- $contents := list .Values.identity.configuration -}}
-    {{- if kindIs "slice" .Values.identity.extraConfiguration -}}
-        {{- range .Values.identity.extraConfiguration -}}
-            {{- $contents = append $contents .content -}}
+{{- define "identity.datasourceInText" -}}
+    {{- $content := .content | default "" -}}
+    {{- $parsed := $content | fromYaml -}}
+    {{- $unparsable := or (not (kindIs "map" $parsed)) (and (eq (len (keys $parsed)) 1) (hasKey $parsed "Error")) -}}
+    {{- $found := "" -}}
+    {{- if $unparsable -}}
+        {{- if regexMatch "(?m)^[ \t]*spring\\.datasource[.:=]" $content -}}
+            {{- $found = "true" -}}
         {{- end -}}
     {{- else -}}
-        {{- range $file, $content := .Values.identity.extraConfiguration -}}
-            {{- $contents = append $contents $content -}}
+        {{- range $key, $value := $parsed -}}
+            {{- if or (eq $key "spring.datasource") (hasPrefix "spring.datasource." $key) -}}
+                {{- $found = "true" -}}
+            {{- else if and (eq $key "spring") (kindIs "map" $value) -}}
+                {{- range $springKey, $_ := $value -}}
+                    {{- if or (eq $springKey "datasource") (hasPrefix "datasource." $springKey) -}}
+                        {{- $found = "true" -}}
+                    {{- end -}}
+                {{- end -}}
+            {{- end -}}
         {{- end -}}
     {{- end -}}
-    {{- range $contents -}}
-        {{- if contains "datasource" (. | default "" | lower) -}}
-            {{- print "true" -}}
-        {{- end -}}
-    {{- end -}}
+    {{- $found -}}
+{{- end -}}
+
+{{- define "identity.databaseConfiguredInFiles" -}}
+    {{- include "identity.datasourceInText" (dict "content" .Values.identity.configuration) -}}
 {{- end -}}
 
 {{/*
