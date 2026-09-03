@@ -1412,8 +1412,19 @@ jobs:
           ROSA_USER:        ${{ secrets[inputs.username] }}
           ROSA_PASS:        ${{ secrets[inputs.password] }}
           CI_DEPLOYMENT_TTL: ${{ env.CI_DEPLOYMENT_TTL }}
+          # No PLAYWRIGHT_E2E_RETRIES override here on purpose: the suite runs
+          # with each chart's configured retries (test/e2e/playwright.config.ts),
+          # same as the blocking e2e jobs. #6441 set this to "0" because the
+          # Integration Tests Gate re-runs the matrix once, but the gate cannot
+          # reach this job -- it is continue-on-error, and GitHub reports such
+          # jobs as a soft failure, so a run whose only failures are soft
+          # concludes `success` and is never retried (see
+          # scripts/integration-tests-gate/README.md, "continue-on-error jobs").
+          # With no retry at either level a single flaky test reddened the
+          # shadow job on nearly every run, and an observation job configured
+          # more harshly than the thing it is observing cannot answer the
+          # question it exists to answer.
           PLAYWRIGHT_POD_RETRY_MAX_ATTEMPTS: "1"
-          PLAYWRIGHT_E2E_RETRIES: "0"
         with:
           binary-artifact-name: ${{ inputs.binary-artifact-name }}
           camunda-helm-git-ref: ${{ inputs.camunda-helm-git-ref }}
