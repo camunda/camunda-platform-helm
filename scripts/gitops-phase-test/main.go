@@ -73,6 +73,11 @@ type endpoints struct {
 	} `json:"subsets"`
 }
 
+type diagnosticCommand struct {
+	name string
+	args []string
+}
+
 type helmRelease struct {
 	Metadata struct {
 		Generation int64 `json:"generation"`
@@ -104,7 +109,11 @@ func main() {
 
 	for _, phase := range []string{"normal", "quiesce", "migrate", "normal"} {
 		must(cfg.apply(phase))
-		must(waitForPhase(cfg, phase))
+		if err := waitForPhase(cfg, phase); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			dumpDiagnostics(cfg)
+			os.Exit(1)
+		}
 		fmt.Printf("phase %s converged through %s\n", phase, cfg.controller)
 	}
 }
@@ -274,10 +283,34 @@ func waitForPhase(cfg config, phase string) error {
 }
 
 func phaseTimeout(controller string) time.Duration {
-	if controller == "flux" {
-		return 10 * time.Minute
-	}
 	return 5 * time.Minute
+}
+
+func dumpDiagnostics(cfg config) {
+	commands := []diagnosticCommand{
+		{name: "workload resources", args: []string{"kubectl", "-n", cfg.namespace, "get", "deployments,replicasets,pods,services,endpoints", "-o", "wide"}},
+		{name: "REST API deployment", args: []string{"kubectl", "-n", cfg.namespace, "get", "deployment", release + "-web-modeler-restapi", "-o", "yaml"}},
+		{name: "REST API replica sets", args: []string{"kubectl", "-n", cfg.namespace, "get", "replicasets", "-l", "app.kubernetes.io/component=restapi", "-o", "yaml"}},
+		{name: "REST API pods", args: []string{"kubectl", "-n", cfg.namespace, "get", "pods", "-l", "app.kubernetes.io/component=restapi", "-o", "yaml"}},
+		{name: "namespace events", args: []string{"kubectl", "-n", cfg.namespace, "get", "events", "--sort-by=.metadata.creationTimestamp"}},
+		{name: "Helm history", args: []string{"helm", "-n", cfg.namespace, "history", release}},
+		{name: "Helm values", args: []string{"helm", "-n", cfg.namespace, "get", "values", release, "--all"}},
+		{name: "Helm manifest", args: []string{"helm", "-n", cfg.namespace, "get", "manifest", release}},
+	}
+	if cfg.controller == "flux" {
+		commands = append(commands,
+			diagnosticCommand{name: "Flux resources", args: []string{"kubectl", "-n", "flux-system", "get", "gitrepository,helmchart,helmrelease", "-o", "yaml"}},
+			diagnosticCommand{name: "Flux source-controller logs", args: []string{"kubectl", "-n", "flux-system", "logs", "deployment/source-controller", "--all-containers=true"}},
+			diagnosticCommand{name: "Flux helm-controller logs", args: []string{"kubectl", "-n", "flux-system", "logs", "deployment/helm-controller", "--all-containers=true"}},
+		)
+	}
+
+	for _, command := range commands {
+		fmt.Printf("\n===== %s =====\n", command.name)
+		if err := run(nil, command.args[0], command.args[1:]...); err != nil {
+			fmt.Fprintf(os.Stderr, "diagnostic %q failed: %v\n", command.name, err)
+		}
+	}
 }
 
 func controllerConverged(cfg config) error {

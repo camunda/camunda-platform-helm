@@ -21,7 +21,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        controller: ${{ fromJSON(github.event_name == 'merge_group' && '["helm","argocd","flux"]' || '["helm"]') }}
+        controller: ${{ fromJSON(github.event_name == 'merge_group' && '["helm","argocd","flux"]' || '["helm","flux"]') }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7
         with:
@@ -64,10 +64,19 @@ jobs:
       - name: Test lifecycle reconciliation
         working-directory: scripts/gitops-phase-test
         run: |
+          set -o pipefail
           go run . \
             --controller "${{ matrix.controller }}" \
             --revision "${{ inputs.camunda-helm-git-ref }}" \
-            --revision-ref-name "${{ inputs.camunda-helm-git-ref-name }}"
+            --revision-ref-name "${{ inputs.camunda-helm-git-ref-name }}" \
+            2>&1 | tee "${RUNNER_TEMP}/gitops-phase-${{ matrix.controller }}.log"
+
+      - name: Upload lifecycle diagnostics
+        if: failure()
+        uses: ./.github/actions/upload-artifact-retry
+        with:
+          name: gitops-phase-${{ matrix.controller }}-diagnostics
+          path: ${{ runner.temp }}/gitops-phase-${{ matrix.controller }}.log
 
       - name: Delete KIND cluster
         if: always()

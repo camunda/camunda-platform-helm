@@ -94,7 +94,7 @@ func TestPhaseTimeout(t *testing.T) {
 	for controller, want := range map[string]time.Duration{
 		"helm":   5 * time.Minute,
 		"argocd": 5 * time.Minute,
-		"flux":   10 * time.Minute,
+		"flux":   5 * time.Minute,
 	} {
 		if got := phaseTimeout(controller); got != want {
 			t.Fatalf("phaseTimeout(%q) = %s, want %s", controller, got, want)
