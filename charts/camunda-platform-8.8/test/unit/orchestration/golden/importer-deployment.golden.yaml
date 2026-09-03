@@ -83,8 +83,6 @@ spec:
             
           envFrom:
             - configMapRef:
-                name: camunda-platform-test-documentstore-env-vars
-            - configMapRef:
                 name: camunda-platform-test-zeebe-migration-importer-env-vars
           readinessProbe:
             httpGet:
