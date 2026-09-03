@@ -1522,9 +1522,9 @@ func (s *StatefulSetTest) TestZonedMode() {
 		},
 		{
 			// The resolver falls back to the deprecated block when the orchestration
-			// one is untouched. Legacy fields only: zoned mode never shipped under
+			// one is untouched. The numbering pair only: zoned mode never shipped under
 			// global.multiregion, and setting both blocks is rejected outright.
-			Name:                    "TestLegacyFieldsStillResolveFromTheDeprecatedGlobalBlock",
+			Name:                    "TestNumberedFieldsStillResolveFromTheDeprecatedGlobalBlock",
 			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.clusterSize=4"},
 			Values: map[string]string{
 				"global.multiregion.regions":  "2",
@@ -1559,10 +1559,10 @@ func (s *StatefulSetTest) TestZonedMode() {
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
-func (s *StatefulSetTest) TestLegacyModeCompatibility() {
+func (s *StatefulSetTest) TestNumberedModeCompatibility() {
 	testCases := []testhelpers.TestCase{
 		{
-			Name:                    "DefaultModeUsesLegacyReplicaDivision",
+			Name:                    "DefaultModeUsesNumberedReplicaDivision",
 			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.clusterSize=3"},
 			Values: map[string]string{
 				"global.multiregion.regions":  "1",
@@ -1579,10 +1579,10 @@ func (s *StatefulSetTest) TestLegacyModeCompatibility() {
 			},
 		},
 		{
-			Name:                    "ExplicitLegacyModeUsesLegacyReplicaDivision",
+			Name:                    "ExplicitNumberedModeUsesNumberedReplicaDivision",
 			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.clusterSize=6"},
 			Values: map[string]string{
-				"orchestration.multiregion.mode": "legacy",
+				"orchestration.multiregion.mode": "numbered",
 				"global.multiregion.regions":     "2",
 				"global.multiregion.regionId":    "1",
 			},

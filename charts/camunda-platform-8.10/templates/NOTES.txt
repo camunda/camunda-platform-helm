@@ -26,7 +26,7 @@
   - Multi-region deployment detected ({{ if eq (include "orchestration.zoned" .) "true" }}zones: {{ len $mr.zones }}{{ else }}regions: {{ $mr.regions }}{{ end }})
     {{- if eq (include "orchestration.zoned" .) "true" }}
     ℹ️  Zoned mode is fixed for the life of the cluster: brokers are identified as
-    <zone>_<index>, so switching an existing release between legacy and zoned
+    <zone>_<index>, so switching an existing release between numbered and zoned
     re-identifies every broker against its existing Raft state. Deploy a new cluster.
     {{- end }}
     ℹ️  You must configure initial contact points manually via environment variable:

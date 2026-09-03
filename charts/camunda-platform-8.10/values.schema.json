@@ -1016,7 +1016,7 @@
                 "multiregion": {
                     "type": "object",
                     "additionalProperties": false,
-                    "description": "DEPRECATED, use orchestration.multiregion. Only the legacy regions and regionId settings remain here; zoned mode is configured under orchestration.multiregion.",
+                    "description": "DEPRECATED, use orchestration.multiregion. Only the regions and regionId settings remain here; zoned mode is configured under orchestration.multiregion.",
                     "default": {},
                     "properties": {
                         "regions": {
@@ -4241,10 +4241,10 @@
                     "properties": {
                         "mode": {
                             "type": "string",
-                            "description": "defines the multi-region configuration mode. Possible values: `legacy` or `zoned`.",
-                            "default": "legacy",
+                            "description": "defines how a broker is told which region it is in. `numbered` derives it from the node ID, `zoned` from a zone name.",
+                            "default": "numbered",
                             "enum": [
-                                "legacy",
+                                "numbered",
                                 "zoned"
                             ]
                         },
