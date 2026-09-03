@@ -89,6 +89,9 @@ func TestCamundaHubUpgradePhases(t *testing.T) {
 			if testCase.phase == "migrate" {
 				require.Zero(t, restapiDeployment.Spec.Strategy.RollingUpdate.MaxSurge.IntValue())
 				require.Equal(t, "100%", restapiDeployment.Spec.Strategy.RollingUpdate.MaxUnavailable.StrVal)
+			} else {
+				require.Equal(t, "25%", restapiDeployment.Spec.Strategy.RollingUpdate.MaxSurge.StrVal)
+				require.Equal(t, "25%", restapiDeployment.Spec.Strategy.RollingUpdate.MaxUnavailable.StrVal)
 			}
 			require.Equal(t, testCase.phase, restapiDeployment.Spec.Template.Labels["camunda.io/upgrade-phase"])
 

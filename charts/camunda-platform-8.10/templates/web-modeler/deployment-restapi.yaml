@@ -17,10 +17,10 @@ metadata:
 spec:
   strategy:
     type: {{ $deploymentStrategy }}
-    {{- if and (eq $deploymentStrategy "RollingUpdate") (eq $upgradePhase "migrate") }}
+    {{- if eq $deploymentStrategy "RollingUpdate" }}
     rollingUpdate:
-      maxSurge: 0
-      maxUnavailable: 100%
+      maxSurge: {{ ternary 0 "25%" (eq $upgradePhase "migrate") }}
+      maxUnavailable: {{ ternary "100%" "25%" (eq $upgradePhase "migrate") }}
     {{- end }}
   replicas: {{ ternary 0 (ternary 1 $hub.restapi.replicas (eq $upgradePhase "migrate")) (eq $upgradePhase "quiesce") }}
   selector:
