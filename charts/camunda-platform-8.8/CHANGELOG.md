@@ -1,5 +1,30 @@
 # Changelog
 
+## [13.13.0](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.8-13.12.8...camunda-platform-8.8-13.13.0) (2026-09-03)
+
+
+### Features
+
+* add generic appProtocol support for Service ports in 8.8 ([#6663](https://github.com/camunda/camunda-platform-helm/issues/6663)) ([593cd89](https://github.com/camunda/camunda-platform-helm/commit/593cd899877108bb8e4378b11e5d9fba8d2aa586))
+
+
+### Documentation
+
+* document stable pod labels for Web Modeler anti-affinity rules ([#6931](https://github.com/camunda/camunda-platform-helm/issues/6931)) ([a374ffb](https://github.com/camunda/camunda-platform-helm/commit/a374ffb748e291947afe1874565870c4a744cc98))
+
+
+### Dependencies
+
+* update camunda-platform-digests ([#6948](https://github.com/camunda/camunda-platform-helm/issues/6948)) ([8cca5c3](https://github.com/camunda/camunda-platform-helm/commit/8cca5c3a283da452806ed142c6e9e358099a5796))
+* update camunda-platform-images (patch) ([#6991](https://github.com/camunda/camunda-platform-helm/issues/6991)) ([f7fd20f](https://github.com/camunda/camunda-platform-helm/commit/f7fd20f6f18a9966e260e9ea1a7daa2f9849ec69))
+* update camunda-platform-images (patch) ([#6993](https://github.com/camunda/camunda-platform-helm/issues/6993)) ([b02f60f](https://github.com/camunda/camunda-platform-helm/commit/b02f60fbcf9115be8e9b997fdb5ad42576afb82a))
+* update camunda-platform-images (patch) ([#7005](https://github.com/camunda/camunda-platform-helm/issues/7005)) ([a18abd0](https://github.com/camunda/camunda-platform-helm/commit/a18abd09d3cd717539791e74b7728f43a9a855dd))
+* update camunda/connectors-bundle docker tag to v8.8.18 ([#6980](https://github.com/camunda/camunda-platform-helm/issues/6980)) ([8752ff7](https://github.com/camunda/camunda-platform-helm/commit/8752ff737d70d18e047d021ac885a5139c192baa))
+* update patch-updates (patch) ([#6983](https://github.com/camunda/camunda-platform-helm/issues/6983)) ([8cdb1ad](https://github.com/camunda/camunda-platform-helm/commit/8cdb1ad23ab7e13f108eea5d4874b7aa8edbe5cb))
+* update patch-updates (patch) ([#6992](https://github.com/camunda/camunda-platform-helm/issues/6992)) ([5aa6614](https://github.com/camunda/camunda-platform-helm/commit/5aa6614093a79567e36116793845b1fc87bf8748))
+* update patch-updates (patch) ([#6994](https://github.com/camunda/camunda-platform-helm/issues/6994)) ([23d294a](https://github.com/camunda/camunda-platform-helm/commit/23d294a661df5f2ddb9834a92cefa632008ea9fb))
+* update patch-updates (patch) ([#7007](https://github.com/camunda/camunda-platform-helm/issues/7007)) ([3b6ae47](https://github.com/camunda/camunda-platform-helm/commit/3b6ae4724dd3d625a574b6c797e5ec408eb56707))
+
 ## [13.12.8](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.8-13.12.7...camunda-platform-8.8-13.12.8) (2026-08-24)
 
 
