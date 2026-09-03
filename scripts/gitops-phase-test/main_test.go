@@ -14,7 +14,10 @@
 
 package main
 
-import "testing"
+import (
+	"testing"
+	"time"
+)
 
 func TestFluxReference(t *testing.T) {
 	tests := []struct {
@@ -84,5 +87,17 @@ func TestHelmReleaseConverged(t *testing.T) {
 	notReady.Status.Conditions[0].Status = "False"
 	if err := helmReleaseConverged(notReady); err == nil {
 		t.Fatal("expected non-ready condition to fail")
+	}
+}
+
+func TestPhaseTimeout(t *testing.T) {
+	for controller, want := range map[string]time.Duration{
+		"helm":   5 * time.Minute,
+		"argocd": 5 * time.Minute,
+		"flux":   10 * time.Minute,
+	} {
+		if got := phaseTimeout(controller); got != want {
+			t.Fatalf("phaseTimeout(%q) = %s, want %s", controller, got, want)
+		}
 	}
 }

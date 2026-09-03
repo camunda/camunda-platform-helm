@@ -224,7 +224,7 @@ func helmSetArgs(phase string) []string {
 }
 
 func waitForPhase(cfg config, phase string) error {
-	deadline := time.Now().Add(5 * time.Minute)
+	deadline := time.Now().Add(phaseTimeout(cfg.controller))
 	for time.Now().Before(deadline) {
 		rest, err := getDeployment(cfg.namespace, release+"-web-modeler-restapi")
 		if err != nil {
@@ -271,6 +271,13 @@ func waitForPhase(cfg config, phase string) error {
 		time.Sleep(5 * time.Second)
 	}
 	return fmt.Errorf("timed out waiting for phase %q: %s", phase, phaseStatus(cfg.namespace))
+}
+
+func phaseTimeout(controller string) time.Duration {
+	if controller == "flux" {
+		return 10 * time.Minute
+	}
+	return 5 * time.Minute
 }
 
 func controllerConverged(cfg config) error {
