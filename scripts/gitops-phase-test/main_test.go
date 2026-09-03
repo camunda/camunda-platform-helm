@@ -50,3 +50,39 @@ func TestFluxReference(t *testing.T) {
 		})
 	}
 }
+
+func TestControllerConvergedForNonFlux(t *testing.T) {
+	for _, controller := range []string{"helm", "argocd"} {
+		if err := controllerConverged(config{controller: controller}); err != nil {
+			t.Fatalf("controllerConverged(%q): %v", controller, err)
+		}
+	}
+}
+
+func TestHelmReleaseConverged(t *testing.T) {
+	ready := helmRelease{}
+	ready.Metadata.Generation = 4
+	ready.Status.ObservedGeneration = 4
+	ready.Status.Conditions = append(ready.Status.Conditions, struct {
+		Type    string `json:"type"`
+		Status  string `json:"status"`
+		Reason  string `json:"reason"`
+		Message string `json:"message"`
+	}{Type: "Ready", Status: "True"})
+
+	if err := helmReleaseConverged(ready); err != nil {
+		t.Fatalf("ready HelmRelease: %v", err)
+	}
+
+	stale := ready
+	stale.Status.ObservedGeneration = 3
+	if err := helmReleaseConverged(stale); err == nil {
+		t.Fatal("expected stale generation to fail")
+	}
+
+	notReady := ready
+	notReady.Status.Conditions[0].Status = "False"
+	if err := helmReleaseConverged(notReady); err == nil {
+		t.Fatal("expected non-ready condition to fail")
+	}
+}

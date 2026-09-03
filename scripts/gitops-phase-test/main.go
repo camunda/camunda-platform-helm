@@ -73,6 +73,21 @@ type endpoints struct {
 	} `json:"subsets"`
 }
 
+type helmRelease struct {
+	Metadata struct {
+		Generation int64 `json:"generation"`
+	} `json:"metadata"`
+	Status struct {
+		ObservedGeneration int64 `json:"observedGeneration"`
+		Conditions         []struct {
+			Type    string `json:"type"`
+			Status  string `json:"status"`
+			Reason  string `json:"reason"`
+			Message string `json:"message"`
+		} `json:"conditions"`
+	} `json:"status"`
+}
+
 func main() {
 	var cfg config
 	flag.StringVar(&cfg.controller, "controller", "helm", "helm, argocd, or flux")
@@ -89,7 +104,7 @@ func main() {
 
 	for _, phase := range []string{"normal", "quiesce", "migrate", "normal"} {
 		must(cfg.apply(phase))
-		must(waitForPhase(cfg.namespace, phase))
+		must(waitForPhase(cfg, phase))
 		fmt.Printf("phase %s converged through %s\n", phase, cfg.controller)
 	}
 }
@@ -125,6 +140,7 @@ func (c config) apply(phase string) error {
 		}
 		return applyJSON(manifest)
 	case "flux":
+		reconcileAt := time.Now().UTC().Format(time.RFC3339Nano)
 		source := map[string]any{
 			"apiVersion": "source.toolkit.fluxcd.io/v1", "kind": "GitRepository",
 			"metadata": map[string]any{"name": release, "namespace": "flux-system"},
@@ -135,7 +151,7 @@ func (c config) apply(phase string) error {
 		}
 		releaseManifest := map[string]any{
 			"apiVersion": "helm.toolkit.fluxcd.io/v2", "kind": "HelmRelease",
-			"metadata": map[string]any{"name": release, "namespace": "flux-system"},
+			"metadata": map[string]any{"name": release, "namespace": "flux-system", "annotations": map[string]any{"reconcile.fluxcd.io/requestedAt": reconcileAt}},
 			"spec": map[string]any{
 				"interval": "1m", "releaseName": release, "targetNamespace": c.namespace,
 				"chart":   map[string]any{"spec": map[string]any{"chart": "./" + c.chartPath, "sourceRef": map[string]any{"kind": "GitRepository", "name": release, "namespace": "flux-system"}}},
@@ -207,15 +223,15 @@ func helmSetArgs(phase string) []string {
 	return args
 }
 
-func waitForPhase(namespace, phase string) error {
+func waitForPhase(cfg config, phase string) error {
 	deadline := time.Now().Add(5 * time.Minute)
 	for time.Now().Before(deadline) {
-		rest, err := getDeployment(namespace, release+"-web-modeler-restapi")
+		rest, err := getDeployment(cfg.namespace, release+"-web-modeler-restapi")
 		if err != nil {
 			time.Sleep(5 * time.Second)
 			continue
 		}
-		websockets, err := getDeployment(namespace, release+"-web-modeler-websockets")
+		websockets, err := getDeployment(cfg.namespace, release+"-web-modeler-websockets")
 		if err != nil {
 			time.Sleep(5 * time.Second)
 			continue
@@ -227,22 +243,26 @@ func waitForPhase(namespace, phase string) error {
 			expectedRest, expectedWebsockets = 1, 0
 		}
 		if deploymentConverged(rest, expectedRest, phase) && deploymentConverged(websockets, expectedWebsockets, phase) && rest.Spec.Strategy.Type == "RollingUpdate" {
-			if err := assertServiceSelector(namespace, release+"-web-modeler-restapi"); err != nil {
+			if err := controllerConverged(cfg); err != nil {
+				time.Sleep(5 * time.Second)
+				continue
+			}
+			if err := assertServiceSelector(cfg.namespace, release+"-web-modeler-restapi"); err != nil {
 				return err
 			}
-			if err := assertServiceSelector(namespace, release+"-web-modeler-websockets"); err != nil {
+			if err := assertServiceSelector(cfg.namespace, release+"-web-modeler-websockets"); err != nil {
 				return err
 			}
-			if err := assertPhasePods(namespace, phase, expectedRest+expectedWebsockets); err != nil {
+			if err := assertPhasePods(cfg.namespace, phase, expectedRest+expectedWebsockets); err != nil {
 				time.Sleep(5 * time.Second)
 				continue
 			}
 			expectEndpoints := phase == "normal"
-			if err := assertEndpoints(namespace, release+"-web-modeler-restapi", expectEndpoints); err != nil {
+			if err := assertEndpoints(cfg.namespace, release+"-web-modeler-restapi", expectEndpoints); err != nil {
 				time.Sleep(5 * time.Second)
 				continue
 			}
-			if err := assertEndpoints(namespace, release+"-web-modeler-websockets", expectEndpoints); err != nil {
+			if err := assertEndpoints(cfg.namespace, release+"-web-modeler-websockets", expectEndpoints); err != nil {
 				time.Sleep(5 * time.Second)
 				continue
 			}
@@ -250,7 +270,62 @@ func waitForPhase(namespace, phase string) error {
 		}
 		time.Sleep(5 * time.Second)
 	}
-	return fmt.Errorf("timed out waiting for phase %q", phase)
+	return fmt.Errorf("timed out waiting for phase %q: %s", phase, phaseStatus(cfg.namespace))
+}
+
+func controllerConverged(cfg config) error {
+	if cfg.controller != "flux" {
+		return nil
+	}
+	data, err := output("kubectl", "-n", "flux-system", "get", "helmrelease", release, "-o", "json")
+	if err != nil {
+		return err
+	}
+	var value helmRelease
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	return helmReleaseConverged(value)
+}
+
+func helmReleaseConverged(value helmRelease) error {
+	if value.Status.ObservedGeneration != value.Metadata.Generation {
+		return fmt.Errorf("HelmRelease generation %d has not been observed", value.Metadata.Generation)
+	}
+	for _, condition := range value.Status.Conditions {
+		if condition.Type == "Ready" && condition.Status == "True" {
+			return nil
+		}
+	}
+	return fmt.Errorf("HelmRelease generation %d is not ready", value.Metadata.Generation)
+}
+
+func phaseStatus(namespace string) string {
+	parts := make([]string, 0, 3)
+	for _, name := range []string{release + "-web-modeler-restapi", release + "-web-modeler-websockets"} {
+		value, err := getDeployment(namespace, name)
+		if err != nil {
+			parts = append(parts, fmt.Sprintf("%s: %v", name, err))
+			continue
+		}
+		parts = append(parts, fmt.Sprintf("%s: generation=%d/%d replicas=%d/%d updated=%d ready=%d available=%d phase=%q",
+			name, value.Status.ObservedGeneration, value.Metadata.Generation, value.Status.Replicas, value.Spec.Replicas,
+			value.Status.UpdatedReplicas, value.Status.ReadyReplicas, value.Status.AvailableReplicas,
+			value.Spec.Template.Metadata.Labels["camunda.io/upgrade-phase"]))
+	}
+	data, err := output("kubectl", "-n", "flux-system", "get", "helmrelease", release, "-o", "json")
+	if err == nil {
+		var value helmRelease
+		if json.Unmarshal(data, &value) == nil {
+			conditions := make([]string, 0, len(value.Status.Conditions))
+			for _, condition := range value.Status.Conditions {
+				conditions = append(conditions, fmt.Sprintf("%s=%s/%s: %s", condition.Type, condition.Status, condition.Reason, condition.Message))
+			}
+			parts = append(parts, fmt.Sprintf("HelmRelease: generation=%d/%d conditions=[%s]",
+				value.Status.ObservedGeneration, value.Metadata.Generation, strings.Join(conditions, "; ")))
+		}
+	}
+	return strings.Join(parts, "; ")
 }
 
 func deploymentConverged(value deployment, replicas int32, phase string) bool {
