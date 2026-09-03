@@ -67,7 +67,8 @@ Fail with a message if the auth type is set to non-Keycloak and its requirements
   */}}
   {{- if and .Values.identity.enabled
              .Values.global.identity.auth.enabled
-             (ne (include "identity.databaseConfigured" .) "true") }}
+             (ne (include "identity.chartManagedDatabase" .) "true")
+             (ne (include "identity.opaqueConfiguration" .) "true") }}
     {{- $errorMessage := printf "[camunda][error] %s %s %s"
         "Management Identity requires a database when \"global.identity.auth.type\" is not \"KEYCLOAK\"."
         "Enable the built-in PostgreSQL chart via \"identityPostgresql\" or configure an external database"

@@ -233,7 +233,8 @@ Fail with a message if the auth type is set to non-Keycloak and its requirements
   {{- if and (eq (include "camundaPlatform.identityEnabled" .) "true")
              .Values.global.identity.auth.enabled
              (not (hasKey .Values "identityPostgresql"))
-             (ne (include "identity.databaseConfigured" .) "true") }}
+             (ne (include "identity.chartManagedDatabase" .) "true")
+             (ne (include "identity.opaqueConfiguration" .) "true") }}
     {{- $errorMessage := printf "[camunda][error] %s %s %s"
         "Management Identity requires a database when \"global.identity.auth.type\" is not \"KEYCLOAK\"."
         "Configure a database via \"identity.externalDatabase\","

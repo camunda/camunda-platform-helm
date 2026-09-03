@@ -185,66 +185,24 @@ Keycloak helpers
 {{- end -}}
 
 {{/*
-[identity] Whether a database is reachable by Management Identity.
-Besides "identity.externalDatabase", a datasource can also be supplied out of band via
-"identity.env", "identity.envFrom", or a "spring.datasource" block in "identity.configuration"
-or a spring-imported "identity.extraConfiguration" entry.
+[identity] Whether this chart configures the Management Identity datasource itself.
+Only chart-managed sources count, because only those are rendered into the Identity
+configuration by the templates in this directory.
 */}}
-{{- define "identity.databaseConfigured" -}}
-    {{- $configured := .Values.identity.externalDatabase.enabled -}}
-    {{- if or .Values.identity.envFrom (include "identity.databaseConfiguredInEnv" .) -}}
-        {{- $configured = true -}}
-    {{- end -}}
-    {{- if include "identity.databaseConfiguredInFiles" . -}}
-        {{- $configured = true -}}
-    {{- end -}}
-    {{- if $configured -}}true{{- else -}}false{{- end -}}
+{{- define "identity.chartManagedDatabase" -}}
+    {{- if .Values.identity.externalDatabase.enabled -}}true{{- else -}}false{{- end -}}
 {{- end -}}
 
-{{- define "identity.databaseConfiguredInEnv" -}}
-    {{- range .Values.identity.env -}}
-        {{- $name := .name | default "" -}}
-        {{- if or (hasPrefix "IDENTITY_DATABASE_" $name) (hasPrefix "SPRING_DATASOURCE_" $name) -}}
-            {{- print "true" -}}
-        {{- end -}}
-    {{- end -}}
-{{- end -}}
-
-{{- define "identity.datasourceInText" -}}
-    {{- $content := .content | default "" -}}
-    {{- $parsed := $content | fromYaml -}}
-    {{- $unparsable := or (not (kindIs "map" $parsed)) (and (eq (len (keys $parsed)) 1) (hasKey $parsed "Error")) -}}
-    {{- $found := "" -}}
-    {{- if $unparsable -}}
-        {{- if regexMatch "(?m)^[ \t]*spring\\.datasource[.:=]" $content -}}
-            {{- $found = "true" -}}
-        {{- end -}}
-    {{- else -}}
-        {{- range $key, $value := $parsed -}}
-            {{- if or (eq $key "spring.datasource") (hasPrefix "spring.datasource." $key) -}}
-                {{- $found = "true" -}}
-            {{- else if and (eq $key "spring") (kindIs "map" $value) -}}
-                {{- range $springKey, $_ := $value -}}
-                    {{- if or (eq $springKey "datasource") (hasPrefix "datasource." $springKey) -}}
-                        {{- $found = "true" -}}
-                    {{- end -}}
-                {{- end -}}
-            {{- end -}}
-        {{- end -}}
-    {{- end -}}
-    {{- $found -}}
-{{- end -}}
-
-{{- define "identity.databaseConfiguredInFiles" -}}
-    {{- if include "identity.datasourceInText" (dict "content" .Values.identity.configuration) -}}
-        {{- print "true" -}}
-    {{- end -}}
-    {{- $extraConfig := .Values.identity.extraConfiguration -}}
-    {{- range $helper := list "camundaPlatform.extraConfigHasPath" "camundaPlatform.extraConfigHasDottedPath" "camundaPlatform.extraConfigHasRawKeyPrefix" -}}
-        {{- if eq (include $helper (dict "extraConfiguration" $extraConfig "path" (list "spring" "datasource"))) "true" -}}
-            {{- print "true" -}}
-        {{- end -}}
-    {{- end -}}
+{{/*
+[identity] Whether Management Identity configuration is extended through the chart's generic
+extension points. Their contents are opaque at render time: "env" and "envFrom" can carry
+SPRING_APPLICATION_JSON, JAVA_TOOL_OPTIONS or any SPRING_DATASOURCE_* binding, a referenced
+Secret or ConfigMap cannot be read at all, and "configuration" and "extraConfiguration" can be
+multi-document and profile-aware. Constraints that cannot prove the resulting runtime state
+stand down while any of these is in use.
+*/}}
+{{- define "identity.opaqueConfiguration" -}}
+    {{- if or .Values.identity.env .Values.identity.envFrom .Values.identity.configuration .Values.identity.extraConfiguration -}}true{{- else -}}false{{- end -}}
 {{- end -}}
 
 {{/*
