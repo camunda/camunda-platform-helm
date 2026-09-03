@@ -465,6 +465,10 @@ missing from it would take the IDs of the first zone and collide with it.
     {{- fail (printf "[camunda][error] %s.zone %q is not declared in %s.zones (%s)." $mrKey $zone $mrKey (join ", " $names)) -}}
   {{- end }}
 {{- end }}
+
+{{- if and $mr.keepUnzonedBrokers (ne $mr.mode "zoned") }}
+  {{- fail (printf "[camunda][error] %s.keepUnzonedBrokers requires %s.mode=zoned." $mrKey $mrKey) -}}
+{{- end }}
 {{- end }}
 
 {{/*

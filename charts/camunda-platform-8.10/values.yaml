@@ -2290,10 +2290,10 @@ orchestration:
   # cluster has prerequisites and procedures this file cannot carry; see
   # https://docs.camunda.io/docs/self-managed/concepts/multi-region/dual-region/
   multiregion:
-    ## Fixed for the life of the cluster. Zoned brokers are identified by the composite
-    ## `<zone>_<index>`, numbered ones by a plain node ID, so switching an existing release
-    ## re-identifies every broker against Raft state written under the old IDs and the
-    ## members no longer recognise each other. Deploy a new cluster instead.
+    ## Zoned brokers are identified by the composite `<zone>_<index>`, while numbered
+    ## brokers use plain node IDs. Do not change existing broker identities in place.
+    ## Use keepUnzonedBrokers to retain the numbered StatefulSet while replacement zoned
+    ## brokers join the cluster.
     ## @param orchestration.multiregion.mode selects how a broker learns which failure domain it belongs to. `numbered` derives a region from the node ID, `zoned` takes a zone name.
     mode: numbered
     ## @param orchestration.multiregion.zone can be used to define the zone of this Orchestration Cluster deployment when using zoned mode.
@@ -2304,6 +2304,8 @@ orchestration:
     ## @extra orchestration.multiregion.zones[0].priority priority of this zone in the leader election. Must be at least `1`.
     ## @param orchestration.multiregion.zones can be used to define the zones of the Orchestration Cluster when using zoned mode. Each entry requires `name`, `numberOfBrokers`, `numberOfReplicas` and `priority`; the list is summed into `clusterSize` and `replicationFactor`, so it describes every zone, not just the local one.
     zones: []
+    ## @param orchestration.multiregion.keepUnzonedBrokers also renders the legacy numeric-node-ID StatefulSet alongside the zoned ones, for use during a zone migration.
+    keepUnzonedBrokers: false
     ## @skip orchestration.multiregion.regions number of regions that this Camunda Platform instance is stretched across
     regions: 1
     ## @skip orchestration.multiregion.regionId unique id of the region. MUST start at 0 for the computation to work correctly. With 2 regions, you would have region 0 and 1.
