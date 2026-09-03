@@ -1,0 +1,5 @@
+identity:
+  env:
+    - name: SPRING_APPLICATION_JSON
+      value: |
+        {"spring":{"datasource":{"url":"jdbc:postgresql://postgres.example.com/identity","username":"identity","password":"secret"}}}

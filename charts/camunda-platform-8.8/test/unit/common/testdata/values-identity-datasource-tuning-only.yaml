@@ -1,0 +1,4 @@
+identity:
+  env:
+    - name: SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE
+      value: "20"

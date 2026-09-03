@@ -16,6 +16,7 @@ package camunda
 
 import (
 	"camunda-platform/test/unit/testhelpers"
+	"path/filepath"
 	"testing"
 )
 
@@ -41,7 +42,7 @@ func (s *ConstraintTemplateTest) TestIdentityDatabaseRequiredForNonKeycloakAuth(
 	testCases := []testhelpers.TestCase{
 		{
 			Name:   "GenericAuthWithoutDatabaseFails",
-			Values: identityOidcValues(nil),
+			Values: identityOidcValues(map[string]string{}),
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().ErrorContains(err, "Management Identity requires a database")
 			},
@@ -65,7 +66,15 @@ func (s *ConstraintTemplateTest) TestIdentityDatabaseRequiredForNonKeycloakAuth(
 			},
 		},
 		{
-			Name: "GenericAuthWithDatabaseEnvRenders",
+			Name:        "GenericAuthWithSpringApplicationJsonStandsDown",
+			Values:      identityOidcValues(nil),
+			ValuesFiles: []string{filepath.Join(s.chartPath, "test/unit/common/testdata/values-identity-spring-application-json.yaml")},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+			},
+		},
+		{
+			Name: "GenericAuthWithDatasourceEnvStandsDown",
 			Values: identityOidcValues(map[string]string{
 				"identity.env[0].name":  "IDENTITY_DATABASE_HOST",
 				"identity.env[0].value": "postgres.example.com",
@@ -75,17 +84,25 @@ func (s *ConstraintTemplateTest) TestIdentityDatabaseRequiredForNonKeycloakAuth(
 			},
 		},
 		{
-			Name: "GenericAuthWithUnrelatedEnvFails",
+			Name:        "GenericAuthWithTuningOnlyDatasourceEnvStandsDown",
+			Values:      identityOidcValues(nil),
+			ValuesFiles: []string{filepath.Join(s.chartPath, "test/unit/common/testdata/values-identity-datasource-tuning-only.yaml")},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+			},
+		},
+		{
+			Name: "GenericAuthWithUnrelatedEnvStandsDown",
 			Values: identityOidcValues(map[string]string{
 				"identity.env[0].name":  "TZ",
 				"identity.env[0].value": "UTC",
 			}),
 			Verifier: func(t *testing.T, output string, err error) {
-				s.Require().ErrorContains(err, "Management Identity requires a database")
+				s.Require().NoError(err)
 			},
 		},
 		{
-			Name: "GenericAuthWithEnvFromRenders",
+			Name: "GenericAuthWithEnvFromStandsDown",
 			Values: identityOidcValues(map[string]string{
 				"identity.envFrom[0].secretRef.name": "identity-database",
 			}),
@@ -94,7 +111,7 @@ func (s *ConstraintTemplateTest) TestIdentityDatabaseRequiredForNonKeycloakAuth(
 			},
 		},
 		{
-			Name: "GenericAuthWithDatasourceInConfigurationRenders",
+			Name: "GenericAuthWithConfigurationStandsDown",
 			Values: identityOidcValues(map[string]string{
 				"identity.configuration": "spring:\n  datasource:\n    url: jdbc:postgresql://postgres.example.com/identity",
 			}),
@@ -103,59 +120,21 @@ func (s *ConstraintTemplateTest) TestIdentityDatabaseRequiredForNonKeycloakAuth(
 			},
 		},
 		{
-			Name: "GenericAuthWithDatasourceInExtraConfigurationRenders",
+			Name: "GenericAuthWithMultiDocumentExtraConfigurationStandsDown",
 			Values: identityOidcValues(map[string]string{
 				"identity.extraConfiguration[0].file":    "datasource.yaml",
-				"identity.extraConfiguration[0].content": "spring:\n  datasource:\n    url: jdbc:postgresql://postgres.example.com/identity",
+				"identity.extraConfiguration[0].content": "server:\n  port: 8084\n---\nspring:\n  datasource:\n    url: jdbc:postgresql://postgres.example.com/identity",
 			}),
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().NoError(err)
 			},
 		},
 		{
-			Name: "GenericAuthWithDottedDatasourceInConfigurationRenders",
+			Name: "GenericAuthWithNonImportedExtraConfigurationStandsDown",
 			Values: identityOidcValues(map[string]string{
-				"identity.configuration": "spring.datasource.url: jdbc:postgresql://postgres.example.com/identity",
-			}),
-			Verifier: func(t *testing.T, output string, err error) {
-				s.Require().NoError(err)
-			},
-		},
-		{
-			Name: "GenericAuthWithUnrelatedConfigurationFails",
-			Values: identityOidcValues(map[string]string{
-				"identity.configuration": "logging:\n  level:\n    root: INFO # datasource audit marker",
-			}),
-			Verifier: func(t *testing.T, output string, err error) {
-				s.Require().ErrorContains(err, "Management Identity requires a database")
-			},
-		},
-		{
-			Name: "GenericAuthWithNonImportedDatasourceFileFails",
-			Values: identityOidcValues(map[string]string{
-				"identity.extraConfiguration[0].file":         "notes.txt",
-				"identity.extraConfiguration[0].content":      "datasource audit marker",
+				"identity.extraConfiguration[0].file":         "log4j2.xml",
+				"identity.extraConfiguration[0].content":      "<Configuration/>",
 				"identity.extraConfiguration[0].springImport": "false",
-			}),
-			Verifier: func(t *testing.T, output string, err error) {
-				s.Require().ErrorContains(err, "Management Identity requires a database")
-			},
-		},
-		{
-			Name: "GenericAuthWithUnrelatedExtraConfigurationFails",
-			Values: identityOidcValues(map[string]string{
-				"identity.extraConfiguration[0].file":    "log.yaml",
-				"identity.extraConfiguration[0].content": "logging:\n  level:\n    root: INFO",
-			}),
-			Verifier: func(t *testing.T, output string, err error) {
-				s.Require().ErrorContains(err, "Management Identity requires a database")
-			},
-		},
-		{
-			Name: "GenericAuthWithDatasourcePropertiesFileRenders",
-			Values: identityOidcValues(map[string]string{
-				"identity.extraConfiguration[0].file":    "datasource.properties",
-				"identity.extraConfiguration[0].content": "spring.datasource.url=jdbc:postgresql://postgres.example.com/identity",
 			}),
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().NoError(err)
@@ -192,6 +171,15 @@ func (s *ConstraintTemplateTest) TestIdentityDatabaseRequiredForNonKeycloakAuth(
 			},
 		},
 		{
+			Name: "GenericAuthWithIdentityAuthDisabledRenders",
+			Values: identityOidcValues(map[string]string{
+				"global.identity.auth.enabled": "false",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+			},
+		},
+		{
 			Name: "MultiTenancyWithoutIdentityDatabaseFails",
 			Values: map[string]string{
 				"orchestration.data.secondaryStorage.type": "elasticsearch",
@@ -217,12 +205,16 @@ func (s *ConstraintTemplateTest) TestIdentityDatabaseRequiredForNonKeycloakAuth(
 			},
 		},
 		{
-			Name: "GenericAuthWithIdentityAuthDisabledRenders",
-			Values: identityOidcValues(map[string]string{
-				"global.identity.auth.enabled": "false",
-			}),
+			Name: "MultiTenancyWithOpaqueConfigurationStillFails",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"identity.enabled":                         "true",
+				"global.identity.auth.enabled":             "true",
+				"global.multitenancy.enabled":              "true",
+				"identity.envFrom[0].configMapRef.name":    "proxy-settings",
+			},
 			Verifier: func(t *testing.T, output string, err error) {
-				s.Require().NoError(err)
+				s.Require().ErrorContains(err, "Multi-Tenancy feature")
 			},
 		},
 	}
