@@ -170,6 +170,64 @@ func (s *ConfigMapWarningsTemplateTest) TestBundledKeycloakCveWarning() {
 			},
 		},
 		{
+			Name: "TestPrefixedFrozenTagWarns",
+			// The upstream publish workflow also tags the frozen build as "bitnami-<version>".
+			Values: mergeMaps(baseValues, map[string]string{
+				"identityKeycloak.image.tag": "bitnami-26.3.3",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().Contains(configmap.Data["warnings"], "CVE-2026-18963")
+			},
+		},
+		{
+			Name: "TestMovingFrozenAliasWarns",
+			// "bitnami-26" carries no version, but it resolves to the frozen 26.3.3 build.
+			Values: mergeMaps(baseValues, map[string]string{
+				"identityKeycloak.image.tag": "bitnami-26",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				warnings := configmap.Data["warnings"]
+				s.Require().Contains(warnings, "CVE-2026-18963")
+				s.Require().Contains(warnings, `uses the moving tag "bitnami-26"`)
+				s.Require().Contains(warnings, "frozen on the discontinued bitnamilegacy base")
+			},
+		},
+		{
+			Name: "TestLatestBitnamiAliasWarns",
+			// The frozen line also moves under "bitnami-latest" and "latest-bitnami".
+			Values: mergeMaps(baseValues, map[string]string{
+				"identityKeycloak.image.tag": "latest-bitnami",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().Contains(configmap.Data["warnings"], "CVE-2026-18963")
+			},
+		},
+		{
+			Name: "TestMaintainedQuayAliasDoesNotWarn",
+			// The "quay-*" tags track upstream Keycloak and are still maintained.
+			Values: mergeMaps(baseValues, map[string]string{
+				"identityKeycloak.image.tag": "quay-26",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				// A no-warning render produces no manifest, which --show-only reports as a
+				// missing template; any other error means the render broke for an unrelated
+				// reason and must not pass as "no warning".
+				if err != nil {
+					s.Require().Contains(err.Error(), "could not find template")
+				}
+				s.Require().NotContains(output, "CVE-2026-18963")
+			},
+		},
+		{
 			Name: "TestOverriddenRepositoryOmitsFrozenLineClaim",
 			Values: mergeMaps(baseValues, map[string]string{
 				"identityKeycloak.image.repository": "acme/keycloak",
@@ -226,7 +284,7 @@ func (s *ConfigMapWarningsTemplateTest) TestBundledKeycloakCveWarning() {
 			},
 		},
 		{
-			Name: "TestUnparseableTagDoesNotWarn",
+			Name: "TestMaintainedLatestTagDoesNotWarn",
 			Values: mergeMaps(baseValues, map[string]string{
 				"identityKeycloak.image.tag": "latest",
 			}),
