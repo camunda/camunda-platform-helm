@@ -38,7 +38,7 @@ integration:
       enabled: true
     - id: shadow-e2e
       shortname: shde2
-      tier: 2
+      tier: 1 # TEMPORARY: exercise shadow-e2e in PR CI, revert before merge
       enabled: true
     - id: keycloak-original-install
       shortname: keyco
