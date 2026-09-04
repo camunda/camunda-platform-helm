@@ -214,6 +214,12 @@ func registerDeclarativePostInfraHook(flags *config.RuntimeFlags, hook *Lifecycl
 	return registerDeclarativeHook(flags, hook, hookPostInfra, &flags.PostInfraHooks, repoRoot, appVersion, scenario)
 }
 
+// RegisterDeclarativePostInfraHook registers a post-infra hook for callers
+// that execute a synthesized matrix entry outside the standard runner path.
+func RegisterDeclarativePostInfraHook(flags *config.RuntimeFlags, hook *LifecycleHook, repoRoot, appVersion, scenario string) error {
+	return registerDeclarativePostInfraHook(flags, hook, repoRoot, appVersion, scenario)
+}
+
 // registerDeclarativePostDeployHook is a thin shim that pins the slot and kind
 // for post-deploy registrations.
 func registerDeclarativePostDeployHook(flags *config.RuntimeFlags, hook *LifecycleHook, repoRoot, appVersion, scenario string) error {
