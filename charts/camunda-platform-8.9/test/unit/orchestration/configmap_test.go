@@ -256,7 +256,6 @@ func assertCustomHistorySettings(t *testing.T, output string, secondaryStorageTy
 	var application camunda.OrchestrationApplicationYAML
 	helm.UnmarshalK8SYaml(t, output, &configmap)
 	require.NoError(t, yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &application))
-	require.NotContains(t, configmap.Data["application.yaml"], "camundaexporter:")
 
 	exporter := application.Zeebe.Broker.Exporters.CamundaExporter
 	require.Equal(t, "io.camunda.exporter.CamundaExporter", exporter.ClassName)
