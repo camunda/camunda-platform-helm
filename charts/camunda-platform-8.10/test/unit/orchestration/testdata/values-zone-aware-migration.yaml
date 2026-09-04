@@ -9,7 +9,17 @@ orchestration:
     zone: zone-a
     zones:
       - name: zone-a
-        numberOfBrokers: 3
-        numberOfReplicas: 3
+        numberOfBrokers: 1
+        numberOfReplicas: 1
         priority: 100
+      - name: zone-b
+        numberOfBrokers: 1
+        numberOfReplicas: 1
+        priority: 90
+      - name: zone-c
+        numberOfBrokers: 1
+        numberOfReplicas: 1
+        priority: 80
     keepUnzonedBrokers: true
+    regions: 3
+    regionId: 1
