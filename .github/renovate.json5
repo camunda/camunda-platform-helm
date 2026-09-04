@@ -369,6 +369,7 @@
       versioning: 'regex:^(?<major>\\d+)(.(?<minor>\\d+))(.(?<patch>\\d+))(-(?<prerelease>alpha[1-9]))$',
     },
     {
+      description: 'Digest pins age against the tag\'s tag_last_pushed, not the digest, so a SNAPSHOT tag re-pushed hourly can never satisfy a release-age soak; snapshot pins carry none.',
       enabled: true,
       groupName: 'camunda-platform-digests',
       matchPackageNames: [
@@ -388,6 +389,24 @@
       schedule: ['at any time'],
       prCreation: 'immediate',
       addLabels: ['camunda-platform', 'priority-high'],
+    },
+    {
+      description: 'Release tags and latest are expected to be immutable; a moved digest there is a re-publish, so hold it for six hours before pinning.',
+      matchPackageNames: [
+        '/.*camunda.*/',
+      ],
+      matchDatasources: [
+        'helm',
+        'docker',
+        'regex',
+      ],
+      matchFileNames: [
+        'charts/camunda-platform-8.8/values-digest.yaml',
+        'charts/camunda-platform-8.9/values-digest.yaml',
+        'charts/camunda-platform-8.10/values-digest.yaml',
+      ],
+      matchUpdateTypes: ['digest'],
+      matchCurrentValue: '!/SNAPSHOT/',
       minimumReleaseAge: '6 hours',
     },
     {
