@@ -17,5 +17,8 @@ set -euo pipefail
 
 : "${TEST_NAMESPACE:?TEST_NAMESPACE must be set}"
 
+kubectl patch statefulset elasticsearch-master -n "${TEST_NAMESPACE}" --type=json \
+  -p='[{"op":"remove","path":"/spec/template/spec/containers/0/lifecycle"}]'
+kubectl rollout status statefulset/elasticsearch-master -n "${TEST_NAMESPACE}" --timeout=10m
 kubectl exec -n "${TEST_NAMESPACE}" statefulset/elasticsearch-master -- \
   curl -fsS -X DELETE "http://localhost:9200/_index_template/camunda-ci-auto-expand-replicas"
