@@ -725,8 +725,240 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 
 				s.Require().Contains(podContainers, expectedContainer)
 			},
+		}, {
+			Name: "TestAppIntegrationsNotConfiguredByDefault",
+			Values: map[string]string{
+				"connectors.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				// then
+				for _, envvar := range deployment.Spec.Template.Spec.Containers[0].Env {
+					s.Require().False(strings.HasPrefix(envvar.Name, "APP_INTEGRATIONS_"), envvar.Name)
+				}
+			},
+		}, {
+			Name: "TestAppIntegrationsApiKeyInlineSecret",
+			Values: map[string]string{
+				"connectors.enabled":                                    "true",
+				"connectors.appIntegrations.baseUrl":                    "https://app-integrations.example.com",
+				"connectors.appIntegrations.apiKey.secret.inlineSecret": "api-key-value",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				// then
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				s.Require().Contains(env, corev1.EnvVar{Name: "APP_INTEGRATIONS_BASE_URL", Value: "https://app-integrations.example.com"})
+				s.Require().Contains(env, corev1.EnvVar{Name: "APP_INTEGRATIONS_API_KEY", Value: "api-key-value"})
+				s.requireNoEnvVarNamed(env, "APP_INTEGRATIONS_CLUSTER_ID")
+			},
+		}, {
+			Name: "TestAppIntegrationsApiKeyExistingSecret",
+			Values: map[string]string{
+				"connectors.enabled":                                         "true",
+				"connectors.appIntegrations.baseUrl":                         "https://app-integrations.example.com",
+				"connectors.appIntegrations.apiKey.secret.existingSecret":    "app-integrations-secret",
+				"connectors.appIntegrations.apiKey.secret.existingSecretKey": "api-key",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				// then
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				s.Require().Contains(env, corev1.EnvVar{
+					Name: "APP_INTEGRATIONS_API_KEY",
+					ValueFrom: &corev1.EnvVarSource{
+						SecretKeyRef: &corev1.SecretKeySelector{
+							LocalObjectReference: corev1.LocalObjectReference{Name: "app-integrations-secret"},
+							Key:                  "api-key",
+						},
+					},
+				})
+			},
+		}, {
+			Name: "TestAppIntegrationsClusterId",
+			Values: map[string]string{
+				"connectors.enabled":                                    "true",
+				"connectors.appIntegrations.baseUrl":                    "https://app-integrations.example.com",
+				"connectors.appIntegrations.clusterId":                  "11111111-2222-3333-4444-555555555555",
+				"connectors.appIntegrations.apiKey.secret.inlineSecret": "api-key-value",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				// then
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				s.Require().Contains(env, corev1.EnvVar{Name: "APP_INTEGRATIONS_CLUSTER_ID", Value: "11111111-2222-3333-4444-555555555555"})
+			},
+		}, {
+			Name: "TestAppIntegrationsEmptyClusterIdIsOmitted",
+			Values: map[string]string{
+				"connectors.enabled":                                    "true",
+				"connectors.appIntegrations.baseUrl":                    "https://app-integrations.example.com",
+				"connectors.appIntegrations.clusterId":                  "",
+				"connectors.appIntegrations.apiKey.secret.inlineSecret": "api-key-value",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				// then
+				s.requireNoEnvVarNamed(deployment.Spec.Template.Spec.Containers[0].Env, "APP_INTEGRATIONS_CLUSTER_ID")
+			},
+		}, {
+			Name: "TestAppIntegrationsOauth",
+			Values: map[string]string{
+				"connectors.enabled":                                        "true",
+				"connectors.appIntegrations.baseUrl":                        "https://app-integrations.example.com",
+				"connectors.appIntegrations.clusterId":                      "11111111-2222-3333-4444-555555555555",
+				"connectors.appIntegrations.oauth.tokenEndpoint":            "https://idp.example.com/oauth/token",
+				"connectors.appIntegrations.oauth.clientId":                 "app-integrations-client",
+				"connectors.appIntegrations.oauth.audience":                 "app-integrations-api",
+				"connectors.appIntegrations.oauth.scopes":                   "messages.write",
+				"connectors.appIntegrations.oauth.clientAuthentication":     "basicAuthHeader",
+				"connectors.appIntegrations.oauth.secret.existingSecret":    "app-integrations-oauth",
+				"connectors.appIntegrations.oauth.secret.existingSecretKey": "client-secret",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				// then
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				s.Require().Contains(env, corev1.EnvVar{Name: "APP_INTEGRATIONS_CLUSTER_ID", Value: "11111111-2222-3333-4444-555555555555"})
+				s.Require().Contains(env, corev1.EnvVar{Name: "APP_INTEGRATIONS_OAUTH_TOKEN_ENDPOINT", Value: "https://idp.example.com/oauth/token"})
+				s.Require().Contains(env, corev1.EnvVar{Name: "APP_INTEGRATIONS_OAUTH_CLIENT_ID", Value: "app-integrations-client"})
+				s.Require().Contains(env, corev1.EnvVar{Name: "APP_INTEGRATIONS_OAUTH_AUDIENCE", Value: "app-integrations-api"})
+				s.Require().Contains(env, corev1.EnvVar{Name: "APP_INTEGRATIONS_OAUTH_SCOPES", Value: "messages.write"})
+				s.Require().Contains(env, corev1.EnvVar{Name: "APP_INTEGRATIONS_OAUTH_CLIENT_AUTHENTICATION", Value: "basicAuthHeader"})
+				s.Require().Contains(env, corev1.EnvVar{
+					Name: "APP_INTEGRATIONS_OAUTH_CLIENT_SECRET",
+					ValueFrom: &corev1.EnvVarSource{
+						SecretKeyRef: &corev1.SecretKeySelector{
+							LocalObjectReference: corev1.LocalObjectReference{Name: "app-integrations-oauth"},
+							Key:                  "client-secret",
+						},
+					},
+				})
+			},
+		}, {
+			Name: "TestAppIntegrationsCompleteOauthSuppressesApiKey",
+			Values: map[string]string{
+				"connectors.enabled":                                    "true",
+				"connectors.appIntegrations.baseUrl":                    "https://app-integrations.example.com",
+				"connectors.appIntegrations.clusterId":                  "11111111-2222-3333-4444-555555555555",
+				"connectors.appIntegrations.apiKey.secret.inlineSecret": "api-key-value",
+				"connectors.appIntegrations.oauth.tokenEndpoint":        "https://idp.example.com/oauth/token",
+				"connectors.appIntegrations.oauth.clientId":             "app-integrations-client",
+				"connectors.appIntegrations.oauth.secret.inlineSecret":  "client-secret-value",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				// then - the runtime would ignore the API key, so it is not placed in the pod environment
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				s.Require().Contains(env, corev1.EnvVar{Name: "APP_INTEGRATIONS_OAUTH_CLIENT_SECRET", Value: "client-secret-value"})
+				s.requireNoEnvVarNamed(env, "APP_INTEGRATIONS_API_KEY")
+			},
+		}, {
+			Name: "TestAppIntegrationsApiKeyPathOmitsOauthEnvVars",
+			Values: map[string]string{
+				"connectors.enabled":                                    "true",
+				"connectors.appIntegrations.baseUrl":                    "https://app-integrations.example.com",
+				"connectors.appIntegrations.apiKey.secret.inlineSecret": "api-key-value",
+				"connectors.appIntegrations.oauth.audience":             "app-integrations-api",
+				"connectors.appIntegrations.oauth.scopes":               "messages.write",
+				"connectors.appIntegrations.oauth.clientAuthentication": "basicAuthHeader",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				// then - OAuth is not the selected mechanism, so none of its settings reach the pod
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				s.Require().Contains(env, corev1.EnvVar{Name: "APP_INTEGRATIONS_API_KEY", Value: "api-key-value"})
+				for _, envvar := range env {
+					s.Require().False(strings.HasPrefix(envvar.Name, "APP_INTEGRATIONS_OAUTH_"), envvar.Name)
+				}
+			},
+		}, {
+			Name: "TestAppIntegrationsEmptyOauthOptionalsAreOmitted",
+			Values: map[string]string{
+				"connectors.enabled":                                   "true",
+				"connectors.appIntegrations.baseUrl":                   "https://app-integrations.example.com",
+				"connectors.appIntegrations.clusterId":                 "11111111-2222-3333-4444-555555555555",
+				"connectors.appIntegrations.oauth.tokenEndpoint":       "https://idp.example.com/oauth/token",
+				"connectors.appIntegrations.oauth.clientId":            "app-integrations-client",
+				"connectors.appIntegrations.oauth.secret.inlineSecret": "client-secret-value",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				// then
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				s.requireNoEnvVarNamed(env, "APP_INTEGRATIONS_OAUTH_AUDIENCE")
+				s.requireNoEnvVarNamed(env, "APP_INTEGRATIONS_OAUTH_SCOPES")
+				s.requireNoEnvVarNamed(env, "APP_INTEGRATIONS_OAUTH_CLIENT_AUTHENTICATION")
+				s.requireNoEnvVarNamed(env, "APP_INTEGRATIONS_API_KEY")
+			},
+		}, {
+			Name: "TestAppIntegrationsPartialOauthFails",
+			Values: map[string]string{
+				"connectors.enabled":                             "true",
+				"connectors.appIntegrations.baseUrl":             "https://app-integrations.example.com",
+				"connectors.appIntegrations.oauth.tokenEndpoint": "https://idp.example.com/oauth/token",
+				"connectors.appIntegrations.oauth.clientId":      "app-integrations-client",
+			},
+			Expected: map[string]string{
+				"ERROR": "The App Integrations connector OAuth configuration is incomplete.",
+			},
+		}, {
+			Name: "TestAppIntegrationsOauthWithoutClusterIdFails",
+			Values: map[string]string{
+				"connectors.enabled":                                   "true",
+				"connectors.appIntegrations.baseUrl":                   "https://app-integrations.example.com",
+				"connectors.appIntegrations.oauth.tokenEndpoint":       "https://idp.example.com/oauth/token",
+				"connectors.appIntegrations.oauth.clientId":            "app-integrations-client",
+				"connectors.appIntegrations.oauth.secret.inlineSecret": "client-secret-value",
+			},
+			Expected: map[string]string{
+				"ERROR": "The App Integrations connector is configured to authenticate with OAuth but no cluster id is set.",
+			},
+		}, {
+			Name: "TestAppIntegrationsBaseUrlWithoutCredentialsFails",
+			Values: map[string]string{
+				"connectors.enabled":                 "true",
+				"connectors.appIntegrations.baseUrl": "https://app-integrations.example.com",
+			},
+			Expected: map[string]string{
+				"ERROR": "The App Integrations connector has a base URL but no credentials.",
+			},
+		}, {
+			Name: "TestAppIntegrationsExistingSecretWithoutKeyFails",
+			Values: map[string]string{
+				"connectors.enabled":                                      "true",
+				"connectors.appIntegrations.baseUrl":                      "https://app-integrations.example.com",
+				"connectors.appIntegrations.apiKey.secret.existingSecret": "app-integrations-secret",
+			},
+			Expected: map[string]string{
+				"ERROR": "The App Integrations connector has a base URL but no credentials.",
+			},
 		},
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *DeploymentTemplateTest) requireNoEnvVarNamed(env []corev1.EnvVar, name string) {
+	for _, envvar := range env {
+		s.Require().NotEqual(name, envvar.Name)
+	}
 }

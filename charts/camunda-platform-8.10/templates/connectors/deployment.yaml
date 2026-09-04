@@ -57,6 +57,42 @@ spec:
                 "config" $connectorsAuthSecret
             ) | nindent 12 }}
             {{- end }}
+            {{- if eq (include "connectors.hasAppIntegrations" .) "true" }}
+            - name: APP_INTEGRATIONS_BASE_URL
+              value: {{ .Values.connectors.appIntegrations.baseUrl | quote }}
+            {{- with .Values.connectors.appIntegrations.clusterId }}
+            - name: APP_INTEGRATIONS_CLUSTER_ID
+              value: {{ . | quote }}
+            {{- end }}
+            {{- if eq (include "connectors.hasAppIntegrationsOauth" .) "true" }}
+            {{- $appIntegrationsOauth := .Values.connectors.appIntegrations.oauth }}
+            - name: APP_INTEGRATIONS_OAUTH_TOKEN_ENDPOINT
+              value: {{ $appIntegrationsOauth.tokenEndpoint | quote }}
+            - name: APP_INTEGRATIONS_OAUTH_CLIENT_ID
+              value: {{ $appIntegrationsOauth.clientId | quote }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "APP_INTEGRATIONS_OAUTH_CLIENT_SECRET"
+                "config" $appIntegrationsOauth
+            ) | nindent 12 }}
+            {{- with $appIntegrationsOauth.audience }}
+            - name: APP_INTEGRATIONS_OAUTH_AUDIENCE
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with $appIntegrationsOauth.scopes }}
+            - name: APP_INTEGRATIONS_OAUTH_SCOPES
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with $appIntegrationsOauth.clientAuthentication }}
+            - name: APP_INTEGRATIONS_OAUTH_CLIENT_AUTHENTICATION
+              value: {{ . | quote }}
+            {{- end }}
+            {{- else }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "APP_INTEGRATIONS_API_KEY"
+                "config" .Values.connectors.appIntegrations.apiKey
+            ) | nindent 12 }}
+            {{- end }}
+            {{- end }}
             {{- if and .Values.global.documentStore.type.aws.enabled (not .Values.global.documentStore.type.aws.irsa.enabled) }}
             - name: AWS_ACCESS_KEY_ID
               {{- include "camundaPlatform.emitAwsDocumentStoreSecret" (dict
