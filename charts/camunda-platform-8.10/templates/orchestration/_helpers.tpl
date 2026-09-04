@@ -17,17 +17,26 @@
 {{- end -}}
 
 {{/*
-[orchestration] Zone-suffixed fullname, used for the per-zone StatefulSet, its governing
-headless Service, ServiceAccount, ConfigMap and PodDisruptionBudget. Falls back to the
-plain fullname whenever the context is not zone-scoped: numbered mode, the retained unzoned
-StatefulSet during a migration, and every resource shared across zones.
+[orchestration] Zone-suffixed fullname, used for per-zone resources and contact points.
+Takes a dict with the root context and an optional explicit zone.
 */}}
 {{- define "orchestration.zoneFullname" -}}
+{{- $fullname := include "orchestration.fullname" .context -}}
+{{- if .zone -}}
+{{- /* NOTE: StatefulSet Pod hostnames are limited to 63 characters; reserve "-998" for up to 999 brokers. */ -}}
+{{- $nameLength := 59 -}}
+{{- $suffix := printf "-%s" .zone -}}
+{{- $prefixLength := sub $nameLength (len $suffix) -}}
+{{- printf "%s%s" ($fullname | trunc (int $prefixLength) | trimSuffix "-") $suffix -}}
+{{- else -}}
+{{- $fullname -}}
+{{- end -}}
+{{- end -}}
+
+{{- define "orchestration.scopedZone" -}}
 {{- $mr := include "camundaPlatform.multiregion" . | fromYaml -}}
 {{- if and .ZoneScoped $mr.zone -}}
-{{- printf "%s-%s" (include "orchestration.fullname" .) $mr.zone | trunc 63 | trimSuffix "-" -}}
-{{- else -}}
-{{- include "orchestration.fullname" . -}}
+{{- $mr.zone -}}
 {{- end -}}
 {{- end -}}
 
@@ -233,7 +242,7 @@ camunda.io/zone: {{ $mr.zone }}
 */}}
 {{- define "orchestration.serviceAccountName" -}}
     {{- if .Values.orchestration.serviceAccount.enabled -}}
-        {{- default (include "orchestration.zoneFullname" .) .Values.orchestration.serviceAccount.name -}}
+        {{- default (include "orchestration.zoneFullname" (dict "context" . "zone" (include "orchestration.scopedZone" .))) .Values.orchestration.serviceAccount.name -}}
     {{- else -}}
         {{- default "default" .Values.orchestration.serviceAccount.name -}}
     {{- end -}}
@@ -595,7 +604,7 @@ Service names.
 [orchestration] Define Orchestration Cluster service name - Headless.
 */}}
 {{- define "orchestration.serviceNameHeadless" }}
-    {{- include "orchestration.zoneFullname" . -}}
+    {{- include "orchestration.zoneFullname" (dict "context" . "zone" (include "orchestration.scopedZone" .)) -}}
 {{- end -}}
 
 {{/*

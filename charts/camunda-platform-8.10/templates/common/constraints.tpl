@@ -443,7 +443,7 @@ migration they preserve the retained numbered StatefulSet's replicas and broker 
 {{- end }}
 
 {{/*
-Fail if a zone name repeats, or if a zone claims more replicas than it has brokers.
+Fail if a zone name is invalid or repeats, or if a zone claims more replicas than it has brokers.
 
 A duplicate name collapses two zones into one member-ID namespace, which is the broker
 collision this mode exists to prevent. A zone cannot hold more replicas of a partition
@@ -453,6 +453,15 @@ no quorum can reach.
 {{- if eq $mr.mode "zoned" }}
   {{- $seen := list -}}
   {{- range $mr.zones -}}
+    {{- if not (regexMatch "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$" .name) }}
+      {{- fail (printf "[camunda][error] %s.zones entry %q must be an RFC 1123 label." $mrKey .name) -}}
+    {{- end }}
+    {{- if gt (len .name) 32 }}
+      {{- fail (printf "[camunda][error] %s.zones entry %q must be no longer than 32 characters." $mrKey .name) -}}
+    {{- end }}
+    {{- if gt (int .numberOfBrokers) 999 }}
+      {{- fail (printf "[camunda][error] %s.zones entry %q cannot configure more than 999 brokers." $mrKey .name) -}}
+    {{- end }}
     {{- if has .name $seen }}
       {{- fail (printf "[camunda][error] %s.zones declares %q twice; zone names are broker member ID prefixes and must be unique." $mrKey .name) -}}
     {{- end }}

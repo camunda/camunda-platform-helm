@@ -98,8 +98,7 @@ camunda:
     {{- if eq (include "orchestration.zoned" .) "true" }}
     initial-contact-points:
     {{- range $mr.zones }}
-    {{- $zoneName := .name }}
-    {{- $zoneFullname := printf "%s-%s" (include "orchestration.fullname" $) $zoneName | trunc 63 | trimSuffix "-" }}
+    {{- $zoneFullname := include "orchestration.zoneFullname" (dict "context" $ "zone" .name) }}
     {{- range untilStep 0 (int .numberOfBrokers) 1 }}
       - {{ $zoneFullname }}-{{ . }}.{{ $zoneFullname }}:{{ $.Values.orchestration.service.internalPort }}
     {{- end }}

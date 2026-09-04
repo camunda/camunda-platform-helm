@@ -4,7 +4,7 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ include "orchestration.zoneFullname" . }}
+  name: {{ include "orchestration.zoneFullname" (dict "context" . "zone" (include "orchestration.scopedZone" .)) }}
   labels:
     {{- include "orchestration.labels" . | nindent 4 }}
   annotations:
@@ -310,7 +310,7 @@ spec:
         {{- end }}
         - name: config
           configMap:
-            name: {{ include "orchestration.zoneFullname" . }}-configuration
+            name: {{ include "orchestration.zoneFullname" (dict "context" . "zone" (include "orchestration.scopedZone" .)) }}-configuration
             defaultMode: {{ .Values.orchestration.configMap.defaultMode }}
         - name: exporters
           emptyDir: {}

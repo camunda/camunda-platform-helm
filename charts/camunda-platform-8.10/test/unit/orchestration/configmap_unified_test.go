@@ -1356,6 +1356,28 @@ func (s *ConfigmapTemplateTest) TestZonedConfiguration() {
 			},
 		},
 		{
+			Name: "TestLongFullnameKeepsContactPointZoneSuffixesDistinct",
+			Values: map[string]string{
+				"orchestration.fullnameOverride":                      "camunda-production-orchestration-cluster-emea-primary-zeebe",
+				"orchestration.multiregion.mode":                      "zoned",
+				"orchestration.multiregion.zone":                      "zone-a",
+				"orchestration.multiregion.zones[0].name":             "zone-a",
+				"orchestration.multiregion.zones[0].numberOfBrokers":  "1",
+				"orchestration.multiregion.zones[0].numberOfReplicas": "1",
+				"orchestration.multiregion.zones[0].priority":         "100",
+				"orchestration.multiregion.zones[1].name":             "zone-b",
+				"orchestration.multiregion.zones[1].numberOfBrokers":  "1",
+				"orchestration.multiregion.zones[1].numberOfReplicas": "1",
+				"orchestration.multiregion.zones[1].priority":         "90",
+				"orchestration.profiles.broker":                       "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "camunda-production-orchestration-cluster-emea-primar-zone-a-0.camunda-production-orchestration-cluster-emea-primar-zone-a:26502")
+				require.Contains(t, output, "camunda-production-orchestration-cluster-emea-primar-zone-b-0.camunda-production-orchestration-cluster-emea-primar-zone-b:26502")
+			},
+		},
+		{
 			Name: "TestZonedNodeIdIsTheIndexInsideTheZone",
 			Values: map[string]string{
 				"orchestration.multiregion.mode":                      "zoned",
@@ -1472,8 +1494,8 @@ func (s *ConfigmapTemplateTest) TestZonedConfiguration() {
 				"orchestration.data.secondaryStorage.rdbms.url":                 "jdbc:postgresql://localhost:5432/camunda",
 				"orchestration.data.secondaryStorage.rdbms.username":            "camunda",
 				"orchestration.data.secondaryStorage.rdbms.secret.inlineSecret": "my-password",
-				"optimize.enabled":                        "true",
-				"optimize.database.elasticsearch.enabled": "true",
+				"optimize.enabled":                                              "true",
+				"optimize.database.elasticsearch.enabled":                       "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
@@ -1564,6 +1586,51 @@ func (s *ConfigmapTemplateTest) TestZonedModeRejectsNumberedRegionSettings() {
 			},
 			Expected: map[string]string{
 				"ERROR": "require orchestration.multiregion.mode=zoned",
+			},
+		},
+		{
+			Name: "TestZonedModeRejectsInvalidZoneNames",
+			Values: map[string]string{
+				"orchestration.multiregion.mode":                      "zoned",
+				"orchestration.multiregion.zone":                      "region_A",
+				"orchestration.multiregion.zones[0].name":             "region_A",
+				"orchestration.multiregion.zones[0].numberOfBrokers":  "1",
+				"orchestration.multiregion.zones[0].numberOfReplicas": "1",
+				"orchestration.multiregion.zones[0].priority":         "100",
+				"orchestration.profiles.broker":                       "true",
+			},
+			Expected: map[string]string{
+				"ERROR": "must be an RFC 1123 label.",
+			},
+		},
+		{
+			Name: "TestZonedModeRejectsZoneNamesThatCannotRetainAResourcePrefix",
+			Values: map[string]string{
+				"orchestration.multiregion.mode":                      "zoned",
+				"orchestration.multiregion.zone":                      strings.Repeat("a", 33),
+				"orchestration.multiregion.zones[0].name":             strings.Repeat("a", 33),
+				"orchestration.multiregion.zones[0].numberOfBrokers":  "1",
+				"orchestration.multiregion.zones[0].numberOfReplicas": "1",
+				"orchestration.multiregion.zones[0].priority":         "100",
+				"orchestration.profiles.broker":                       "true",
+			},
+			Expected: map[string]string{
+				"ERROR": "must be no longer than 32 characters",
+			},
+		},
+		{
+			Name: "TestZonedModeRejectsMoreThan999BrokersPerZone",
+			Values: map[string]string{
+				"orchestration.multiregion.mode":                      "zoned",
+				"orchestration.multiregion.zone":                      "zone-a",
+				"orchestration.multiregion.zones[0].name":             "zone-a",
+				"orchestration.multiregion.zones[0].numberOfBrokers":  "1000",
+				"orchestration.multiregion.zones[0].numberOfReplicas": "1",
+				"orchestration.multiregion.zones[0].priority":         "100",
+				"orchestration.profiles.broker":                       "true",
+			},
+			Expected: map[string]string{
+				"ERROR": "cannot configure more than 999 brokers",
 			},
 		},
 		{
