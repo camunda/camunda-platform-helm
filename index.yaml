@@ -4,6 +4,133 @@ entries:
   - annotations:
       artifacthub.io/changes: |
         - kind: added
+          description: "Add orchestration.secretStore for centralized secret resolution"
+        - kind: added
+          description: "Add generic appProtocol support for Service ports in 8.10"
+        - kind: added
+          description: "Configure Optimize via camunda.security.* for CSL"
+        - kind: added
+          description: "Rename Web Modeler Keycloak preset roles to Hub in 8.10"
+        - kind: added
+          description: "Add Camunda Hub database migration phases"
+        - kind: added
+          description: "First-class global.tls.orchestration.{rest,grpc} surface"
+        - kind: added
+          description: "First-class TLS for Connectors"
+        - kind: changed
+          description: "Read merged Hub values across the remaining templates"
+        - kind: changed
+          description: "Remove deprecated global elasticsearch and opensearch values from 8.10 chart"
+        - kind: changed
+          description: "Rename web modeler play to test mode"
+        - kind: changed
+          description: "Remove redundant camundaexporter from zeebe.broker.exporters"
+        - kind: fixed
+          description: "Document defaultRoles.admin.clients in orchestration values schema [ready]"
+        - kind: fixed
+          description: "Read external URLs from global.host when using the gateway api"
+        - kind: fixed
+          description: "Allow root path as optimize client redirect uri in identity configmap"
+        - kind: fixed
+          description: "Document camundaHub override maps in values schema [ready]"
+        - kind: fixed
+          description: "Bump camunda-platform-8.10 identity image tag to 8.10.0-alpha4.2"
+        - kind: fixed
+          description: "Align legacy exporter with its component datastore source"
+        - kind: fixed
+          description: "Back Connectors and Identity /tmp with a per-pod ephemeral volume"
+        - kind: fixed
+          description: "Preserve Hub securityContext and resource defaults on partial override"
+        - kind: fixed
+          description: "Back Optimize /tmp with emptyDir to fix persistence double-mount"
+        - kind: fixed
+          description: "Stop exposing credentials in deployment output"
+        - kind: fixed
+          description: "Warn on inert console config keys and enforce deprecation-key coverage"
+        - kind: fixed
+          description: "Stop emitting orchestration log4j2.xml twice when extraConfiguration supplies it"
+      artifacthub.io/containsSecurityUpdates: "false"
+      artifacthub.io/images: |
+        - image: docker.io/camunda/camunda:8.10.0-alpha5
+        - image: docker.io/camunda/connectors-bundle:8.10.0-alpha5
+        - image: docker.io/camunda/hub-websockets:8.10.0-alpha5
+        - image: docker.io/camunda/hub:8.10.0-alpha5
+        - image: docker.io/camunda/identity:8.10.0-alpha5
+        - image: docker.io/camunda/optimize:8.10.0-alpha5
+      artifacthub.io/links: |
+        - name: Camunda 8 docs
+          url: https://docs.camunda.io/
+        - name: Camunda 8 Self-Managed docs
+          url: https://docs.camunda.io/docs/self-managed/about-self-managed/
+        - name: Camunda 8 Self-Managed Helm charts
+          url: https://github.com/camunda/camunda-platform-helm
+      artifacthub.io/prerelease: "true"
+      camunda.io/chart-images: |
+        docker.io/camunda/camunda:8.10.0-alpha5
+        docker.io/camunda/connectors-bundle:8.10.0-alpha5
+        docker.io/camunda/hub-websockets:8.10.0-alpha5
+        docker.io/camunda/hub:8.10.0-alpha5
+        docker.io/camunda/identity:8.10.0-alpha5
+        docker.io/camunda/optimize:8.10.0-alpha5
+      camunda.io/component-image-versions: |
+        camunda: 8.10.0-alpha5
+        managementIdentity: 8.10.0-alpha5
+        optimize: 8.10.0-alpha5
+        webModeler: 8.10.0-alpha5
+        connectors: 8.10.0-alpha5
+        console: N/A
+      camunda.io/helmCLIVersion: 4.2.4
+      camunda.io/imageOverrides: |
+        orchestration: 8.10.0-alpha5
+        console: not included
+        modeler: 8.10.0-alpha5
+        connectors: 8.10.0-alpha5
+        optimize: 8.10.0-alpha5
+        identity: 8.10.0-alpha5
+    apiVersion: v2
+    appVersion: 8.10.x
+    created: "2026-09-04T12:24:47.969064958Z"
+    dependencies:
+    - name: common
+      repository: file://../common-2
+      version: 2.x.x
+    description: 'Camunda 8 Self-Managed Helm charts. Camunda''s process automation
+      platform allows developers to design, automate and improve processes. '
+    digest: 0ab486fffd5680f64a3bf3394b7d9c41644e2fe63bf4c322ab734d6fc301bd35
+    home: https://docs.camunda.io/docs/self-managed/about-self-managed/
+    icon: https://helm.camunda.io/imgs/camunda.svg
+    keywords:
+    - automation
+    - business-rules
+    - bpm
+    - bpmn
+    - camunda-platform
+    - decision-engine
+    - dmn
+    - modeling
+    - orchestration
+    - process-automation
+    - process-engine
+    - process-orchestration
+    - workflow
+    - workflow-engine
+    maintainers:
+    - email: eamonn.moloney@camunda.com
+      name: eamonnmoloney
+    - email: immanuel.monma@camunda.com
+      name: hisImminence
+    - email: balazs.kenez@camunda.com
+      name: bkenez
+    name: camunda-platform
+    sources:
+    - https://github.com/camunda/camunda-platform-helm
+    type: application
+    urls:
+    - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-8.10-15.0.0-alpha5/camunda-platform-15.0.0-alpha5.tgz
+    version: 15.0.0-alpha5
+  - annotations:
+      artifacthub.io/changes: |
+        - kind: added
           description: "Make Gateway API listener port and route sectionName configurable"
         - kind: added
           description: "Support S3-compatible endpoints in AWS document store"
@@ -32321,4 +32448,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2026-09-03T08:41:44.21118444Z"
+generated: "2026-09-04T12:24:47.969959735Z"
