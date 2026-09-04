@@ -16,6 +16,42 @@
 {{- eq (include "camundaPlatform.multiregion" . | fromYaml).mode "zoned" -}}
 {{- end -}}
 
+{{- define "orchestration.renderManifest" -}}
+{{- $root := .context -}}
+{{- $ctx := dict
+    "Values" (deepCopy $root.Values)
+    "Release" $root.Release
+    "Chart" $root.Chart
+    "Capabilities" $root.Capabilities
+    "Template" $root.Template
+    "Files" $root.Files
+    "Zone" (.zone | default "")
+-}}
+{{- if .migrationLegacy }}
+{{- $_ := set $ctx "MigrationLegacy" true -}}
+{{- $_ := set $ctx.Values.orchestration.multiregion "mode" "numbered" -}}
+{{- end }}
+{{- if .disableLegacy }}
+{{- $_ := set $ctx.Values.orchestration.multiregion "keepUnzonedBrokers" false -}}
+{{- end }}
+{{- include .manifest $ctx -}}
+{{- end -}}
+
+{{- define "orchestration.renderZoneAware" -}}
+{{- $context := .context -}}
+{{- if eq (include "orchestration.zoned" $context) "true" -}}
+{{- $mr := include "camundaPlatform.multiregion" $context | fromYaml -}}
+---
+{{ include "orchestration.renderManifest" (dict "manifest" .manifest "context" $context "zone" $mr.zone) }}
+{{- if or $mr.keepUnzonedBrokers .renderUnzoned }}
+---
+{{ include "orchestration.renderManifest" (dict "manifest" .manifest "context" $context "migrationLegacy" true) }}
+{{- end }}
+{{- else -}}
+{{ include .manifest $context }}
+{{- end -}}
+{{- end -}}
+
 {{/*
 [orchestration] Zone-suffixed fullname, used for per-zone resources and contact points.
 Takes a dict with the root context and an optional explicit zone.
@@ -34,10 +70,7 @@ Takes a dict with the root context and an optional explicit zone.
 {{- end -}}
 
 {{- define "orchestration.scopedZone" -}}
-{{- $mr := include "camundaPlatform.multiregion" . | fromYaml -}}
-{{- if and .ZoneScoped $mr.zone -}}
-{{- $mr.zone -}}
-{{- end -}}
+{{- if .Zone }}{{ .Zone }}{{ end -}}
 {{- end -}}
 
 {{/*
@@ -47,9 +80,12 @@ brokers: the only thing that flag adds to a zoned ConfigMap is the numbered fami
 `initial-contact-points`, which a broker reads once at bootstrap and never again.
 */}}
 {{- define "orchestration.configChecksum" -}}
-{{- $ctx := dict "Values" (deepCopy .Values) "Release" .Release "Chart" .Chart "Capabilities" .Capabilities "Template" .Template "Files" .Files "ZoneScoped" .ZoneScoped -}}
-{{- $_ := set $ctx.Values.orchestration.multiregion "keepUnzonedBrokers" false -}}
-{{- include "orchestration.configmapManifest" $ctx | sha256sum -}}
+{{- include "orchestration.renderManifest" (dict
+    "manifest" "orchestration.configmapManifest"
+    "context" .
+    "zone" .Zone
+    "disableLegacy" true
+) | sha256sum -}}
 {{- end -}}
 
 {{/*
@@ -176,10 +212,9 @@ app.kubernetes.io/version: {{ include "camundaPlatform.versionLabel" (dict
     {{- include "orchestration.brokerLabel" . }}
     {{- "\n" }}
     {{- include "orchestration.versionLabel" . }}
-    {{- $mr := include "camundaPlatform.multiregion" . | fromYaml -}}
-    {{- if and .ZoneScoped $mr.zone }}
+    {{- if .Zone }}
     {{- "\n" }}
-camunda.io/zone: {{ $mr.zone }}
+camunda.io/zone: {{ .Zone }}
     {{- end }}
 {{- end -}}
 
@@ -204,10 +239,9 @@ camunda.io/zone: {{ $mr.zone }}
     {{- /* NOTE: StatefulSet.spec.selector is immutable, so the retained unzoned
          StatefulSet during a migration must keep its selector exactly as before —
          the zone label is only ever added, never removed from an existing render. */ -}}
-    {{- $mr := include "camundaPlatform.multiregion" . | fromYaml -}}
-    {{- if and .ZoneScoped $mr.zone }}
+    {{- if .Zone }}
     {{- "\n" }}
-camunda.io/zone: {{ $mr.zone }}
+camunda.io/zone: {{ .Zone }}
     {{- end }}
 {{- end -}}
 

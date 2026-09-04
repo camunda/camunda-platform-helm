@@ -2,20 +2,5 @@
 The headless service is used for Zeebe brokers Pod-to-Pod communication.
 */}}
 {{- if eq (include "camundaPlatform.orchestrationEnabled" .) "true" -}}
-{{- if eq (include "orchestration.zoned" .) "true" -}}
-{{- $ctx := dict "Values" (deepCopy $.Values) "Release" $.Release "Chart" $.Chart "Capabilities" $.Capabilities "Template" $.Template "Files" $.Files "ZoneScoped" true }}
----
-{{ include "orchestration.serviceHeadless" $ctx }}
-{{- /* Always keep a zone-agnostic headless Service aggregating every broker,
-     decoupled from keepUnzonedBrokers — gRPC clients that rely on this Service
-     for client-side load balancing must keep working before, during, and after
-     a zone migration, not just while the legacy StatefulSet is retained. It also
-     governs the retained unzoned StatefulSet, whose serviceName is the plain
-     fullname. */ -}}
-{{ "" }}
----
-{{ include "orchestration.serviceHeadless" $ }}
-{{- else -}}
-{{ include "orchestration.serviceHeadless" . }}
-{{- end -}}
+{{- include "orchestration.renderZoneAware" (dict "manifest" "orchestration.serviceHeadless" "context" . "renderUnzoned" true) -}}
 {{- end -}}

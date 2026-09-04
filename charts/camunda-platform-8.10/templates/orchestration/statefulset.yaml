@@ -1,16 +1,3 @@
 {{- if eq (include "camundaPlatform.orchestrationEnabled" .) "true" -}}
-{{- if eq (include "orchestration.zoned" .) "true" -}}
-{{- $mr := include "camundaPlatform.multiregion" . | fromYaml -}}
-{{- $ctx := dict "Values" (deepCopy $.Values) "Release" $.Release "Chart" $.Chart "Capabilities" $.Capabilities "Template" $.Template "Files" $.Files "ZoneScoped" true }}
----
-{{ include "orchestration.statefulset" $ctx }}
-{{- if $mr.keepUnzonedBrokers }}
-{{- $unzonedCtx := dict "Values" (deepCopy $.Values) "Release" $.Release "Chart" $.Chart "Capabilities" $.Capabilities "Template" $.Template "Files" $.Files }}
-{{- $_ := set $unzonedCtx.Values.orchestration.multiregion "mode" "numbered" }}
----
-{{ include "orchestration.statefulset" $unzonedCtx }}
-{{ end }}
-{{- else -}}
-{{ include "orchestration.statefulset" . }}
-{{- end -}}
+{{- include "orchestration.renderZoneAware" (dict "manifest" "orchestration.statefulset" "context" .) -}}
 {{- end -}}
