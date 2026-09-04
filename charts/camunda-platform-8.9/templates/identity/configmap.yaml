@@ -55,6 +55,7 @@ data:
                   definition: read:*
         {{- end }}
         console:
+          {{- if .Values.console.enabled }}
           applications:
             - name: "Console"
               id: ${CAMUNDA_CONSOLE_CLIENT_ID:${VALUES_KEYCLOAK_INIT_CONSOLE_CLIENT_ID:console}}
@@ -74,6 +75,11 @@ data:
               permissions:
                 - audience: {{ include "console.authAudience" . | quote }}
                   definition: write:*
+          {{- else }}
+          applications: []
+          apis: []
+          roles: []
+          {{- end }}
         identity:
           apis:
             - name: "Camunda Identity Resource Server"
@@ -93,8 +99,8 @@ data:
                   definition: read
                 - audience: {{ include "identity.authAudience" . | quote }}
                   definition: write
-        {{- if .Values.optimize.enabled }}
         optimize:
+          {{- if .Values.optimize.enabled }}
           applications:
             - name: Optimize
               id: ${CAMUNDA_OPTIMIZE_CLIENT_ID:${VALUES_KEYCLOAK_INIT_OPTIMIZE_CLIENT_ID:optimize}}
@@ -117,7 +123,11 @@ data:
                   definition: write:*
                 - audience: {{ include "identity.authAudience" . | quote }}
                   definition: read:users
-        {{- end }}
+          {{- else }}
+          applications: []
+          apis: []
+          roles: []
+          {{- end }}
         {{- if eq (include "orchestration.authMethod" .) "oidc" }}
         orchestration:
           applications:
@@ -150,6 +160,7 @@ data:
                   definition: write:*
         {{- end }}
         webmodeler:
+          {{- if .Values.webModeler.enabled }}
           applications:
             - name: "Web Modeler"
               id: ${CAMUNDA_WEBMODELER_CLIENT_ID:${VALUES_KEYCLOAK_INIT_WEBMODELER_CLIENT_ID:web-modeler}}
@@ -193,6 +204,11 @@ data:
                   definition: write:*
                 - audience: {{ include "webModeler.authClientApiAudience" . | quote }}
                   definition: admin:*
+          {{- else }}
+          applications: []
+          apis: []
+          roles: []
+          {{- end }}
 
     {{- if .Values.global.identity.auth.enabled }}
     {{- if eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK"}}
@@ -209,8 +225,10 @@ data:
         connectors:
           secret: ${VALUES_KEYCLOAK_INIT_CONNECTORS_SECRET:}
         {{- end }}
+        {{- if .Values.console.enabled }}
         console:
           root-url: {{ tpl .Values.global.identity.auth.console.redirectUrl $ | quote }}
+        {{- end }}
         {{- if .Values.optimize.enabled }}
         optimize:
           secret: ${VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET:}
@@ -219,8 +237,10 @@ data:
         orchestration:
           secret: ${VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET:}
         {{- end }}
+        {{- if .Values.webModeler.enabled }}
         webmodeler:
           root-url: {{ tpl .Values.global.identity.auth.webModeler.redirectUrl $ | quote }}
+        {{- end }}
       clients:
       {{- if .Values.global.identity.auth.admin.enabled }}
         - id: {{ .Values.global.identity.auth.admin.clientId }}
@@ -244,10 +264,14 @@ data:
             - resourceServerId: optimize-api
               definition: write:*
             {{- end }}
+            {{- if .Values.webModeler.enabled }}
             - resourceServerId: web-modeler-api
               definition: write:*
+            {{- end }}
+            {{- if .Values.console.enabled }}
             - resourceServerId: console-api
               definition: write:*
+            {{- end }}
       {{- end }}
       {{- if .Values.identity.clients }}
         {{- range $index, $client := .Values.identity.clients }}
