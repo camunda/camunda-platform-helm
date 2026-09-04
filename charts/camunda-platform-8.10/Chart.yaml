@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 15.0.0-alpha4
+version: 15.0.0-alpha5
 appVersion: 8.10.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -39,7 +39,7 @@ maintainers:
     email: balazs.kenez@camunda.com
 annotations:
   artifacthub.io/prerelease: "true"
-  camunda.io/helmCLIVersion: "4.2.3"
+  camunda.io/helmCLIVersion: "4.2.4"
   artifacthub.io/links: |
     - name: Camunda 8 docs
       url: https://docs.camunda.io/
@@ -50,38 +50,48 @@ annotations:
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
     - kind: added
-      description: "Make Gateway API listener port and route sectionName configurable"
+      description: "Add orchestration.secretStore for centralized secret resolution"
     - kind: added
-      description: "Support S3-compatible endpoints in AWS document store"
+      description: "Add generic appProtocol support for Service ports in 8.10"
     - kind: added
-      description: "Add multi-namespace topology CI scenario"
+      description: "Configure Optimize via camunda.security.* for CSL"
     - kind: added
-      description: "Support shared and cross-namespace Gateway via global.gateway.name and namespace"
+      description: "Rename Web Modeler Keycloak preset roles to Hub in 8.10"
     - kind: added
-      description: "Support topologySpreadConstraints for zeebe brokers and gateway"
+      description: "Add Camunda Hub database migration phases"
     - kind: added
-      description: "Add opt-in orchestration.hub.ping values for authenticated Hub ping"
+      description: "First-class global.tls.orchestration.{rest,grpc} surface"
     - kind: added
-      description: "[TOPOLOGY 3/6] add topology-aware deployment contract"
-    - kind: added
-      description: "Add pod-level service account token automount control"
+      description: "First-class TLS for Connectors"
     - kind: changed
-      description: "Hoist camundaHub.webModeler.* and console overrides to the camundaHub.* parent"
+      description: "Read merged Hub values across the remaining templates"
+    - kind: changed
+      description: "Remove deprecated global elasticsearch and opensearch values from 8.10 chart"
+    - kind: changed
+      description: "Rename web modeler play to test mode"
+    - kind: changed
+      description: "Remove redundant camundaexporter from zeebe.broker.exporters"
     - kind: fixed
-      description: "Omit empty zeebe.broker.exporters map for no-exporter scenarios"
+      description: "Document defaultRoles.admin.clients in orchestration values schema [ready]"
     - kind: fixed
-      description: "Allow Web Modeler and Console with external management Identity"
+      description: "Read external URLs from global.host when using the gateway api"
     - kind: fixed
-      description: "Decouple requestBodySize from Zeebe maxMessageSize"
+      description: "Allow root path as optimize client redirect uri in identity configmap"
     - kind: fixed
-      description: "Correct console deprecation signals after hub consolidation"
+      description: "Document camundaHub override maps in values schema [ready]"
     - kind: fixed
-      description: "Normalize orchestration internal REST URL when contextPath is root"
+      description: "Bump camunda-platform-8.10 identity image tag to 8.10.0-alpha4.2"
     - kind: fixed
-      description: "Remove publishNotReadyAddresses from orchestration client-facing service"
+      description: "Align legacy exporter with its component datastore source"
     - kind: fixed
-      description: "Only use document store configuration where required"
+      description: "Back Connectors and Identity /tmp with a per-pod ephemeral volume"
     - kind: fixed
-      description: "Bind azure document store connection string to the unified config path"
+      description: "Preserve Hub securityContext and resource defaults on partial override"
     - kind: fixed
-      description: "Gate OpenSearch password env vars on effective backend"
+      description: "Back Optimize /tmp with emptyDir to fix persistence double-mount"
+    - kind: fixed
+      description: "Stop exposing credentials in deployment output"
+    - kind: fixed
+      description: "Warn on inert console config keys and enforce deprecation-key coverage"
+    - kind: fixed
+      description: "Stop emitting orchestration log4j2.xml twice when extraConfiguration supplies it"
