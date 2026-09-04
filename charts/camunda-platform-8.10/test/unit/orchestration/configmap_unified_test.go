@@ -1525,17 +1525,24 @@ func (s *ConfigmapTemplateTest) TestZonedConfiguration() {
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
-func (s *ConfigmapTemplateTest) TestZonedModeRejectsNumberedRegionSettings() {
+func (s *ConfigmapTemplateTest) TestZonedModeAllowsNumberedRegionSettingsAfterMigration() {
 	testCases := []testhelpers.TestCase{
 		{
-			Name: "TestZonedModeRejectsNumberedRegions",
+			Name: "TestZonedModeAllowsRetainedNumberedRegionsToBeRemovedWithKeepUnzonedBrokers",
 			Values: map[string]string{
-				"orchestration.multiregion.mode":    "zoned",
-				"orchestration.multiregion.regions": "2",
-				"orchestration.profiles.broker":     "true",
+				"orchestration.multiregion.mode":                      "zoned",
+				"orchestration.multiregion.zone":                      "region-a",
+				"orchestration.multiregion.zones[0].name":             "region-a",
+				"orchestration.multiregion.zones[0].numberOfBrokers":  "1",
+				"orchestration.multiregion.zones[0].numberOfReplicas": "1",
+				"orchestration.multiregion.zones[0].priority":         "100",
+				"orchestration.multiregion.keepUnzonedBrokers":        "false",
+				"orchestration.multiregion.regions":                   "2",
+				"orchestration.multiregion.regionId":                  "1",
+				"orchestration.profiles.broker":                       "true",
 			},
-			Expected: map[string]string{
-				"ERROR": "orchestration.multiregion.regions and orchestration.multiregion.regionId cannot be used with zoned mode",
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
 			},
 		},
 		{
