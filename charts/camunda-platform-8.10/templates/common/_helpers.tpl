@@ -2739,7 +2739,7 @@ it here rather than each spelling it out: the generated initial contact points, 
 legacy Optimize exporters, and the NOTES.txt warning.
 */}}
 {{- define "camundaPlatform.multiregionSpread" -}}
-{{- $mr := include "camundaPlatform.multiregion" . | fromYaml -}}
+{{- $mr := include "camundaPlatform.multiregion" . | fromJson -}}
 {{- if eq (include "orchestration.zoned" .) "true" -}}
   {{- gt (len $mr.zones) 1 -}}
 {{- else -}}

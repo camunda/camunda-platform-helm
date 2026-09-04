@@ -13,7 +13,7 @@
 {{- end -}}
 
 {{- define "orchestration.zoned" -}}
-{{- eq (include "camundaPlatform.multiregion" . | fromYaml).mode "zoned" -}}
+{{- eq (include "camundaPlatform.multiregion" . | fromJson).mode "zoned" -}}
 {{- end -}}
 
 {{/*
@@ -30,7 +30,7 @@ NOTE: takes a dict of "zones" and the zone "field" to total, not the root contex
 
 {{- define "orchestration.clusterSize" -}}
 {{- if eq (include "orchestration.zoned" .) "true" -}}
-  {{- include "orchestration.zoneSum" (dict "zones" (include "camundaPlatform.multiregion" $ | fromYaml).zones "field" "numberOfBrokers") -}}
+  {{- include "orchestration.zoneSum" (dict "zones" (include "camundaPlatform.multiregion" $ | fromJson).zones "field" "numberOfBrokers") -}}
 {{- else -}}
   {{- .Values.orchestration.clusterSize -}}
 {{- end -}}
@@ -38,14 +38,14 @@ NOTE: takes a dict of "zones" and the zone "field" to total, not the root contex
 
 {{- define "orchestration.replicationFactor" -}}
 {{- if eq (include "orchestration.zoned" .) "true" -}}
-  {{- include "orchestration.zoneSum" (dict "zones" (include "camundaPlatform.multiregion" $ | fromYaml).zones "field" "numberOfReplicas") -}}
+  {{- include "orchestration.zoneSum" (dict "zones" (include "camundaPlatform.multiregion" $ | fromJson).zones "field" "numberOfReplicas") -}}
 {{- else -}}
   {{- .Values.orchestration.replicationFactor -}}
 {{- end -}}
 {{- end -}}
 
 {{- define "orchestration.zoneBrokers" -}}
-{{- $mr := include "camundaPlatform.multiregion" $ | fromYaml -}}
+{{- $mr := include "camundaPlatform.multiregion" $ | fromJson -}}
 {{- $zoneBrokers := 0 -}}
 {{- range $mr.zones -}}
   {{- if eq .name $mr.zone -}}
@@ -56,7 +56,7 @@ NOTE: takes a dict of "zones" and the zone "field" to total, not the root contex
 {{- end -}}
 
 {{- define "orchestration.replicas" -}}
-{{- $mr := include "camundaPlatform.multiregion" $ | fromYaml -}}
+{{- $mr := include "camundaPlatform.multiregion" $ | fromJson -}}
 {{- if eq (include "orchestration.zoned" .) "true" -}}
 {{- include "orchestration.zoneBrokers" . -}}
 {{- else -}}

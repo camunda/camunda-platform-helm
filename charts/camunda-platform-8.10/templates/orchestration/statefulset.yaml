@@ -1,4 +1,4 @@
-{{- $mr := include "camundaPlatform.multiregion" $ | fromYaml -}}
+{{- $mr := include "camundaPlatform.multiregion" $ | fromJson -}}
 {{- if eq (include "camundaPlatform.orchestrationEnabled" .) "true" -}}
 {{- $tlsConfig := include "orchestration.effectiveTlsConfig" . | fromYaml -}}
 apiVersion: apps/v1
