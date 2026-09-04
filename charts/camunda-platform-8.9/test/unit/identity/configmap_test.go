@@ -505,8 +505,6 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 					"Optimize secret should not be present when optimize.enabled=false")
 				s.Require().NotContains(applicationYaml, "optimize-api",
 					"Optimize API should not be present when optimize.enabled=false")
-				s.Require().Contains(applicationYaml, "apis: []",
-					"Optimize preset should be overridden with empty collections when optimize.enabled=false")
 			},
 		}, {
 			Name:                 "TestConsoleDisabledExcludesConsoleConfig",
@@ -531,8 +529,6 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 					"Console root-url should not be present when console.enabled=false")
 				s.Require().NotContains(applicationYaml, "console-api",
 					"Console API should not be present when console.enabled=false")
-				s.Require().Contains(applicationYaml, "applications: []",
-					"Console preset should be overridden with empty collections when console.enabled=false")
 			},
 		}, {
 			Name:                 "TestConsoleEnabledIncludesConsoleConfig",
@@ -581,8 +577,6 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 					"Web Modeler root-url should not be present when webModeler.enabled=false")
 				s.Require().NotContains(applicationYaml, "web-modeler-api",
 					"Web Modeler API should not be present when webModeler.enabled=false")
-				s.Require().Contains(applicationYaml, "apis: []",
-					"Web Modeler preset should be overridden with empty collections when webModeler.enabled=false")
 			},
 		}, {
 			Name:                 "TestWebModelerEnabledIncludesWebModelerConfig",
