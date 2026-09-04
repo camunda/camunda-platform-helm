@@ -1,0 +1,15 @@
+orchestration:
+  data:
+    secondaryStorage:
+      type: elasticsearch
+  podDisruptionBudget:
+    enabled: true
+  multiregion:
+    mode: zoned
+    zone: zone-a
+    zones:
+      - name: zone-a
+        numberOfBrokers: 3
+        numberOfReplicas: 3
+        priority: 100
+    keepUnzonedBrokers: true
