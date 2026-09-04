@@ -16,7 +16,9 @@ package identity
 
 import (
 	"camunda-platform/test/unit/testhelpers"
+	"fmt"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -686,6 +688,80 @@ func (s *configMapSpringTemplateTest) TestExtraConfigurationSpringImport() {
 					"Second file content should be present in ConfigMap even with springImport: false")
 			},
 		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *configMapSpringTemplateTest) TestComponentEnablementSurfaces() {
+	components := []struct {
+		valuesKey string
+		presetKey string
+		api       string
+	}{
+		{"console", "console", "console-api"},
+		{"optimize", "optimize", "optimize-api"},
+		{"webModeler", "webmodeler", "web-modeler-api"},
+	}
+
+	testCases := []testhelpers.TestCase{}
+	for mask := 0; mask < 1<<len(components); mask++ {
+		enabled := map[string]bool{}
+		values := map[string]string{
+			"identity.enabled":                      "true",
+			"global.identity.auth.enabled":          "true",
+			"global.identity.auth.admin.enabled":    "true",
+			"global.security.authentication.method": "oidc",
+			"webModeler.restapi.mail.fromAddress":   "a@b.c",
+		}
+		name := "TestSurfaces"
+		for i, component := range components {
+			on := mask&(1<<i) != 0
+			enabled[component.valuesKey] = on
+			values[component.valuesKey+".enabled"] = strconv.FormatBool(on)
+			name += fmt.Sprintf("_%s=%t", component.valuesKey, on)
+		}
+
+		testCases = append(testCases, testhelpers.TestCase{
+			Name:                 name,
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values:               values,
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+
+				var config IdentityConfigYAML
+				s.Require().NoError(yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &config))
+
+				granted := map[string]bool{}
+				for _, client := range config.Keycloak.Clients {
+					for _, permission := range client.Permissions {
+						granted[permission.ResourceServerId] = true
+					}
+				}
+
+				for _, component := range components {
+					on := enabled[component.valuesKey]
+
+					preset, ok := config.Identity.ComponentPresets[component.presetKey]
+					s.Require().True(ok, "%s preset key should always render", component.presetKey)
+					if on {
+						s.Require().NotEmpty(preset.Applications, "%s applications with enabled=true", component.presetKey)
+						s.Require().NotEmpty(preset.Apis, "%s apis with enabled=true", component.presetKey)
+						s.Require().NotEmpty(preset.Roles, "%s roles with enabled=true", component.presetKey)
+					} else {
+						s.Require().Empty(preset.Applications, "%s applications with enabled=false", component.presetKey)
+						s.Require().Empty(preset.Apis, "%s apis with enabled=false", component.presetKey)
+						s.Require().Empty(preset.Roles, "%s roles with enabled=false", component.presetKey)
+					}
+
+					_, initialized := config.Keycloak.Init[component.presetKey]
+					s.Require().Equal(on, initialized, "keycloak.init.%s presence", component.presetKey)
+
+					s.Require().Equal(on, granted[component.api], "%s client permission grant", component.api)
+				}
+			},
+		})
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
