@@ -1,5 +1,84 @@
 # Changelog
 
+## [15.0.0-alpha5](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.10-15.0.0-alpha4...camunda-platform-8.10-15.0.0-alpha5) (2026-09-04)
+
+
+### ⚠ BREAKING CHANGES
+
+* remove deprecated global elasticsearch and opensearch values from 8.10 chart ([#6914](https://github.com/camunda/camunda-platform-helm/issues/6914))
+
+### Features
+
+* **8.10:** add Camunda Hub database migration phases ([#6788](https://github.com/camunda/camunda-platform-helm/issues/6788)) ([67fab8a](https://github.com/camunda/camunda-platform-helm/commit/67fab8ab8531396e1ed3056093f8b61860748081))
+* **8.10:** first-class global.tls.orchestration.{rest,grpc} surface ([#6423](https://github.com/camunda/camunda-platform-helm/issues/6423)) ([949cb66](https://github.com/camunda/camunda-platform-helm/commit/949cb66f283437cd351e492075322bb23d237008))
+* **8.10:** first-class TLS for Connectors ([#6425](https://github.com/camunda/camunda-platform-helm/issues/6425)) ([140574a](https://github.com/camunda/camunda-platform-helm/commit/140574affe0a927018bc40fa32dd2bf56e4e8f60))
+* add generic appProtocol support for Service ports in 8.10 ([#6605](https://github.com/camunda/camunda-platform-helm/issues/6605)) ([08553b6](https://github.com/camunda/camunda-platform-helm/commit/08553b68beb73b07240e5052c24e564b31052a21))
+* add orchestration.secretStore for centralized secret resolution ([#6721](https://github.com/camunda/camunda-platform-helm/issues/6721)) ([a14db00](https://github.com/camunda/camunda-platform-helm/commit/a14db0071cc1296eeb4875f4125028d83debff8d))
+* configure Optimize via camunda.security.* for CSL ([#6883](https://github.com/camunda/camunda-platform-helm/issues/6883)) ([b111b40](https://github.com/camunda/camunda-platform-helm/commit/b111b407f321cf6b8af78ece9905e2fd45e12535))
+* rename Web Modeler Keycloak preset roles to Hub in 8.10 ([#6896](https://github.com/camunda/camunda-platform-helm/issues/6896)) ([919096e](https://github.com/camunda/camunda-platform-helm/commit/919096ebfaa21f32a89145b3b73c20b9b069c730))
+
+
+### Bug Fixes
+
+* **8.10:** back Connectors and Identity /tmp with a per-pod ephemeral volume ([#6522](https://github.com/camunda/camunda-platform-helm/issues/6522)) ([1166702](https://github.com/camunda/camunda-platform-helm/commit/1166702e3994d04e44a5fc012978a369c37ad1ed))
+* **8.10:** back Optimize /tmp with emptyDir to fix persistence double-mount ([#6521](https://github.com/camunda/camunda-platform-helm/issues/6521)) ([bbe83e0](https://github.com/camunda/camunda-platform-helm/commit/bbe83e0180255e80e5c8e17818f4b78c5bea1d45))
+* **8.10:** preserve Hub securityContext and resource defaults on partial override ([#6849](https://github.com/camunda/camunda-platform-helm/issues/6849)) ([38ed60a](https://github.com/camunda/camunda-platform-helm/commit/38ed60a20abe343ee0ca3397bd6edde928abec2a))
+* align legacy exporter with its component datastore source ([#6840](https://github.com/camunda/camunda-platform-helm/issues/6840)) ([5e9744e](https://github.com/camunda/camunda-platform-helm/commit/5e9744e954d208995ea9fc48894fe9be77713ed1))
+* allow root path as optimize client redirect uri in identity configmap ([#6856](https://github.com/camunda/camunda-platform-helm/issues/6856)) ([4182750](https://github.com/camunda/camunda-platform-helm/commit/418275041bd09c2a784ec8ca9e3cc71ed1177fa4))
+* bump camunda-platform-8.10 identity image tag to 8.10.0-alpha4.2 ([#6859](https://github.com/camunda/camunda-platform-helm/issues/6859)) ([b628aad](https://github.com/camunda/camunda-platform-helm/commit/b628aad561b6dd21b034f85097a085c7127bc79b))
+* document camundaHub override maps in values schema [ready] ([#6801](https://github.com/camunda/camunda-platform-helm/issues/6801)) ([517ca0e](https://github.com/camunda/camunda-platform-helm/commit/517ca0e0398e050bed610dccbd4f049110f61272))
+* document defaultRoles.admin.clients in orchestration values schema [ready] ([#6560](https://github.com/camunda/camunda-platform-helm/issues/6560)) ([2e51819](https://github.com/camunda/camunda-platform-helm/commit/2e51819fe3ace0f9a2ea8ae3fb6ecfaa0eb997b0))
+* read external URLs from global.host when using the gateway api ([#6816](https://github.com/camunda/camunda-platform-helm/issues/6816)) ([92cb0a1](https://github.com/camunda/camunda-platform-helm/commit/92cb0a1e5f1cd151bae59a3656e41f907deb642e))
+* stop emitting orchestration log4j2.xml twice when extraConfiguration supplies it ([#6999](https://github.com/camunda/camunda-platform-helm/issues/6999)) ([0b14fab](https://github.com/camunda/camunda-platform-helm/commit/0b14fab38f2012fa661c1c1a63d7c94132b54ddc))
+* stop exposing credentials in deployment output ([#6796](https://github.com/camunda/camunda-platform-helm/issues/6796)) ([df46015](https://github.com/camunda/camunda-platform-helm/commit/df460152d7606161360becd97e6265be9d26e295))
+* warn on inert console config keys and enforce deprecation-key coverage ([#6557](https://github.com/camunda/camunda-platform-helm/issues/6557)) ([60109f4](https://github.com/camunda/camunda-platform-helm/commit/60109f4b4e2cf27f894bcd5ddaaf330dcb85a431))
+
+
+### Documentation
+
+* document stable pod labels for Web Modeler anti-affinity rules ([#6931](https://github.com/camunda/camunda-platform-helm/issues/6931)) ([a374ffb](https://github.com/camunda/camunda-platform-helm/commit/a374ffb748e291947afe1874565870c4a744cc98))
+
+
+### Dependencies
+
+* update camunda-platform-digests ([#6879](https://github.com/camunda/camunda-platform-helm/issues/6879)) ([afbb50e](https://github.com/camunda/camunda-platform-helm/commit/afbb50ee6c7b5192e7e466076b8dcfacfaa418ee))
+* update camunda-platform-digests ([#6882](https://github.com/camunda/camunda-platform-helm/issues/6882)) ([2040652](https://github.com/camunda/camunda-platform-helm/commit/204065268bb6d0618e980157724dd986d339c896))
+* update camunda-platform-digests ([#6895](https://github.com/camunda/camunda-platform-helm/issues/6895)) ([9a38e5a](https://github.com/camunda/camunda-platform-helm/commit/9a38e5aae94c40f2170236de8f7c05b60d67aea2))
+* update camunda-platform-digests ([#6939](https://github.com/camunda/camunda-platform-helm/issues/6939)) ([8bbcad9](https://github.com/camunda/camunda-platform-helm/commit/8bbcad939fd567801196ae71e03d56250cdf2a10))
+* update camunda-platform-digests ([#6948](https://github.com/camunda/camunda-platform-helm/issues/6948)) ([8cca5c3](https://github.com/camunda/camunda-platform-helm/commit/8cca5c3a283da452806ed142c6e9e358099a5796))
+* update camunda-platform-digests ([#6955](https://github.com/camunda/camunda-platform-helm/issues/6955)) ([fefa5c5](https://github.com/camunda/camunda-platform-helm/commit/fefa5c5ac87773230891b53f6bdf5e7b664f7fe6))
+* update camunda-platform-digests ([#6966](https://github.com/camunda/camunda-platform-helm/issues/6966)) ([c35f2c5](https://github.com/camunda/camunda-platform-helm/commit/c35f2c517f567147c38902722d32e9cd09729169))
+* update camunda-platform-digests ([#6978](https://github.com/camunda/camunda-platform-helm/issues/6978)) ([a06c368](https://github.com/camunda/camunda-platform-helm/commit/a06c368ca08087285d8b484d546bd9accbfc154b))
+* update camunda-platform-digests ([#6984](https://github.com/camunda/camunda-platform-helm/issues/6984)) ([db715dc](https://github.com/camunda/camunda-platform-helm/commit/db715dc126ca1ba4e72a06beef51abc9f215cdec))
+* update camunda-platform-digests ([#6990](https://github.com/camunda/camunda-platform-helm/issues/6990)) ([c1be048](https://github.com/camunda/camunda-platform-helm/commit/c1be048cdbe18e8d43e85be2a9da39ae9411a608))
+* update camunda-platform-digests ([#7026](https://github.com/camunda/camunda-platform-helm/issues/7026)) ([3c7c9d1](https://github.com/camunda/camunda-platform-helm/commit/3c7c9d11d614b704d14de4e3b1960f507e793010))
+* update camunda-platform-digests ([#7042](https://github.com/camunda/camunda-platform-helm/issues/7042)) ([d8dfa78](https://github.com/camunda/camunda-platform-helm/commit/d8dfa78d08efd336f79741d4b043e823333101ba))
+* update camunda-platform-images to v8.10.0-alpha5 ([#6996](https://github.com/camunda/camunda-platform-helm/issues/6996)) ([5eaa418](https://github.com/camunda/camunda-platform-helm/commit/5eaa418401c0816c24a22e0148d6d2e9158960d7))
+* update camunda/camunda:8.10-snapshot docker digest to 5b79899 ([#7041](https://github.com/camunda/camunda-platform-helm/issues/7041)) ([7fe52fc](https://github.com/camunda/camunda-platform-helm/commit/7fe52fc1b2205a2efc67d514a6fa3fcf16a5dd6f))
+* update camunda/connectors-bundle docker tag to v8.10.0-alpha5 ([#7040](https://github.com/camunda/camunda-platform-helm/issues/7040)) ([57e95d6](https://github.com/camunda/camunda-platform-helm/commit/57e95d67d28559f56c8c5062b8d3d2b666e0523d))
+* update camunda/connectors-bundle:8.10-snapshot docker digest to 0e83ce3 ([#6959](https://github.com/camunda/camunda-platform-helm/issues/6959)) ([0ecfdb8](https://github.com/camunda/camunda-platform-helm/commit/0ecfdb85450e9d26f0e44b782b04d80c44b3a25f))
+* update camunda/connectors-bundle:8.10-snapshot docker digest to 2988f35 ([#6811](https://github.com/camunda/camunda-platform-helm/issues/6811)) ([7ad923d](https://github.com/camunda/camunda-platform-helm/commit/7ad923df45fe2bbbd3b8d0ab4853e695f997acb0))
+* update camunda/connectors-bundle:8.10-snapshot docker digest to 3988cc0 ([#6956](https://github.com/camunda/camunda-platform-helm/issues/6956)) ([db2a555](https://github.com/camunda/camunda-platform-helm/commit/db2a5556e918f75a1706dd191450764ea64c9533))
+* update camunda/connectors-bundle:8.10-snapshot docker digest to 3d43d15 ([#6947](https://github.com/camunda/camunda-platform-helm/issues/6947)) ([b0275f8](https://github.com/camunda/camunda-platform-helm/commit/b0275f8b1d4dff6c3868db01cc50a7fde7fd8218))
+* update camunda/connectors-bundle:8.10-snapshot docker digest to 757ca7e ([#6911](https://github.com/camunda/camunda-platform-helm/issues/6911)) ([d396136](https://github.com/camunda/camunda-platform-helm/commit/d39613670b0989ffce0a31b1a65ec76dff0de7c5))
+* update camunda/connectors-bundle:8.10-snapshot docker digest to c0c6cc6 ([#6912](https://github.com/camunda/camunda-platform-helm/issues/6912)) ([b5c494d](https://github.com/camunda/camunda-platform-helm/commit/b5c494d23a79ba17105ed5fd55dbf2e05e3d21a7))
+* update camunda/connectors-bundle:8.10-snapshot docker digest to c205d99 ([#6892](https://github.com/camunda/camunda-platform-helm/issues/6892)) ([f9f683d](https://github.com/camunda/camunda-platform-helm/commit/f9f683da4cea47a13ae1fe6f75ee81ff4ac87189))
+* update camunda/connectors-bundle:8.10-snapshot docker digest to c7c4415 ([#7001](https://github.com/camunda/camunda-platform-helm/issues/7001)) ([051b2eb](https://github.com/camunda/camunda-platform-helm/commit/051b2eb965e5b4f109bbd428f9aa53e4408bc858))
+* update camunda/connectors-bundle:8.10-snapshot docker digest to dc9c8d6 ([#6951](https://github.com/camunda/camunda-platform-helm/issues/6951)) ([cbccff3](https://github.com/camunda/camunda-platform-helm/commit/cbccff34e209e293edbe5068b0008e830b60396f))
+* update camunda/optimize:8.10-snapshot docker digest to 7e45b26 ([#6815](https://github.com/camunda/camunda-platform-helm/issues/6815)) ([ec25293](https://github.com/camunda/camunda-platform-helm/commit/ec2529348152599bd4ddb7dff62f1688cbdacc41))
+* update minor-updates (minor) ([#6936](https://github.com/camunda/camunda-platform-helm/issues/6936)) ([d9a1bfe](https://github.com/camunda/camunda-platform-helm/commit/d9a1bfe638bc454d75478bd49389ade83291a594))
+* update patch-updates (patch) ([#6872](https://github.com/camunda/camunda-platform-helm/issues/6872)) ([dba7942](https://github.com/camunda/camunda-platform-helm/commit/dba794262404ddc4d329e6306e932990c9111fc9))
+* update patch-updates (patch) ([#6923](https://github.com/camunda/camunda-platform-helm/issues/6923)) ([c9e6e67](https://github.com/camunda/camunda-platform-helm/commit/c9e6e6774fe84a904e87c249cf31db7c3d690b90))
+* update patch-updates (patch) ([#7007](https://github.com/camunda/camunda-platform-helm/issues/7007)) ([3b6ae47](https://github.com/camunda/camunda-platform-helm/commit/3b6ae4724dd3d625a574b6c797e5ec408eb56707))
+
+
+### Refactors
+
+* **8.10:** read merged Hub values across the remaining templates ([#6850](https://github.com/camunda/camunda-platform-helm/issues/6850)) ([debd905](https://github.com/camunda/camunda-platform-helm/commit/debd9051c9b9f533c192ba44c75146f03312d60c))
+* **8.9,8.10:** remove redundant camundaexporter from zeebe.broker.exporters ([#6454](https://github.com/camunda/camunda-platform-helm/issues/6454)) ([8a99505](https://github.com/camunda/camunda-platform-helm/commit/8a99505a2e483c55c726a4cad83e8b0c6f4f6880))
+* remove deprecated global elasticsearch and opensearch values from 8.10 chart ([#6914](https://github.com/camunda/camunda-platform-helm/issues/6914)) ([10900c2](https://github.com/camunda/camunda-platform-helm/commit/10900c2f2f72c1cffbef83ae65a76673deb6eb05))
+* rename web modeler play to test mode ([#6946](https://github.com/camunda/camunda-platform-helm/issues/6946)) ([fe1391d](https://github.com/camunda/camunda-platform-helm/commit/fe1391d81f4a951592ffe681293d9085251b1148))
+
 ## [15.0.0-alpha4](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.10-15.0.0-alpha3...camunda-platform-8.10-15.0.0-alpha4) (2026-08-05)
 
 
