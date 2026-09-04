@@ -2740,7 +2740,7 @@ legacy Optimize exporters, and the NOTES.txt warning.
 */}}
 {{- define "camundaPlatform.multiregionSpread" -}}
 {{- $mr := include "camundaPlatform.multiregion" . | fromJson -}}
-{{- if eq (include "orchestration.zoned" .) "true" -}}
+{{- if eq $mr.mode "zoned" -}}
   {{- gt (len $mr.zones) 1 -}}
 {{- else -}}
   {{- gt (int $mr.regions) 1 -}}

@@ -2275,7 +2275,11 @@ orchestration:
     mode: numbered
     ## @param orchestration.multiregion.zone can be used to define the zone of this Orchestration Cluster deployment when using zoned mode.
     zone: ""
-    ## @param orchestration.multiregion.zones can be used to define the zones of the Orchestration Cluster when using zoned mode.
+    ## @extra orchestration.multiregion.zones[0].name name of the zone. It is the prefix of the composite broker member ID `<zone>_<index>`, must be an RFC 1123 label, and one of these names must be selected by `orchestration.multiregion.zone`.
+    ## @extra orchestration.multiregion.zones[0].numberOfBrokers number of brokers deployed in this zone. For the local zone it is also the StatefulSet replica count.
+    ## @extra orchestration.multiregion.zones[0].numberOfReplicas number of partition replicas this zone holds. Cannot exceed `numberOfBrokers`.
+    ## @extra orchestration.multiregion.zones[0].priority priority of this zone in the leader election.
+    ## @param orchestration.multiregion.zones can be used to define the zones of the Orchestration Cluster when using zoned mode. Each entry requires `name`, `numberOfBrokers`, `numberOfReplicas` and `priority`; the list is summed into `clusterSize` and `replicationFactor`, so it describes every zone, not just the local one.
     zones: []
     ## @skip orchestration.multiregion.regions number of regions that this Camunda Platform instance is stretched across
     regions: 1
