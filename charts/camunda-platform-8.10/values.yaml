@@ -1807,6 +1807,45 @@ connectors:
           ## @param connectors.security.authentication.oidc.secret.existingSecretKey defines the key within the existing secret object.
           existingSecretKey: ""
 
+  ## @extra connectors.appIntegrations configuration to let the App Integrations connector reach the App Integrations backend.
+  appIntegrations:
+    ## @param connectors.appIntegrations.baseUrl can be used to set the App Integrations backend base URL. Required to use the App Integrations connector, together with either `connectors.appIntegrations.apiKey` or `connectors.appIntegrations.oauth`.
+    baseUrl: ""
+    ## @param connectors.appIntegrations.clusterId can be used to set this orchestration cluster's UUID as registered in the App Integrations backend. Must be unique per Orchestration Cluster release. Required when authenticating with OAuth, optional when authenticating with an API key.
+    clusterId: ""
+
+    ## @extra connectors.appIntegrations.apiKey configuration to authenticate against the App Integrations backend with an API key. Omitted from the runtime when `connectors.appIntegrations.oauth` is fully configured, since OAuth takes precedence.
+    apiKey:
+      ## @extra connectors.appIntegrations.apiKey.secret configuration to provide the App Integrations API key.
+      secret:
+        ## @param connectors.appIntegrations.apiKey.secret.inlineSecret can be used to provide the API key as a plain-text value for non-production usage.
+        inlineSecret: ""
+        ## @param connectors.appIntegrations.apiKey.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the API key.
+        existingSecret: ""
+        ## @param connectors.appIntegrations.apiKey.secret.existingSecretKey defines the key within the existing secret object.
+        existingSecretKey: ""
+
+    ## @extra connectors.appIntegrations.oauth configuration to authenticate against the App Integrations backend with OAuth 2.0 client credentials. Takes precedence over `connectors.appIntegrations.apiKey`.
+    oauth:
+      ## @param connectors.appIntegrations.oauth.tokenEndpoint can be used to set the OAuth 2.0 token endpoint.
+      tokenEndpoint: ""
+      ## @param connectors.appIntegrations.oauth.clientId can be used to set the OAuth 2.0 client id.
+      clientId: ""
+      ## @param connectors.appIntegrations.oauth.audience can be used to set the identifier of the API the token is requested for. Only applied when `connectors.appIntegrations.oauth` is fully configured.
+      audience: ""
+      ## @param connectors.appIntegrations.oauth.scopes can be used to set the requested token scopes. Only applied when `connectors.appIntegrations.oauth` is fully configured.
+      scopes: ""
+      ## @param connectors.appIntegrations.oauth.clientAuthentication can be used to set how the client credentials are transmitted. Possible values: `credentialsBody` or `basicAuthHeader`. Only applied when `connectors.appIntegrations.oauth` is fully configured.
+      clientAuthentication: ""
+      ## @extra connectors.appIntegrations.oauth.secret configuration to provide the OAuth 2.0 client secret.
+      secret:
+        ## @param connectors.appIntegrations.oauth.secret.inlineSecret can be used to provide the client secret as a plain-text value for non-production usage.
+        inlineSecret: ""
+        ## @param connectors.appIntegrations.oauth.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the client secret.
+        existingSecret: ""
+        ## @param connectors.appIntegrations.oauth.secret.existingSecretKey defines the key within the existing secret object.
+        existingSecretKey: ""
+
   ## @extra connectors.image configuration to configure the Connectors image specifics
   # https://hub.docker.com/r/camunda/connectors-bundle/tags
   image:

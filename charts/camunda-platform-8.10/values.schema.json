@@ -3566,6 +3566,101 @@
                         }
                     }
                 },
+                "appIntegrations": {
+                    "type": "object",
+                    "properties": {
+                        "baseUrl": {
+                            "type": "string",
+                            "description": "can be used to set the App Integrations backend base URL. Required to use the App Integrations connector, together with either `connectors.appIntegrations.apiKey` or `connectors.appIntegrations.oauth`.",
+                            "default": ""
+                        },
+                        "clusterId": {
+                            "type": "string",
+                            "description": "can be used to set this orchestration cluster's UUID as registered in the App Integrations backend. Must be unique per Orchestration Cluster release. Required when authenticating with OAuth, optional when authenticating with an API key.",
+                            "default": ""
+                        },
+                        "apiKey": {
+                            "type": "object",
+                            "properties": {
+                                "secret": {
+                                    "type": "object",
+                                    "properties": {
+                                        "inlineSecret": {
+                                            "type": "string",
+                                            "description": "can be used to provide the API key as a plain-text value for non-production usage.",
+                                            "default": ""
+                                        },
+                                        "existingSecret": {
+                                            "type": "string",
+                                            "description": "can be used to reference an existing Kubernetes Secret containing the API key.",
+                                            "default": ""
+                                        },
+                                        "existingSecretKey": {
+                                            "type": "string",
+                                            "description": "defines the key within the existing secret object.",
+                                            "default": ""
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "oauth": {
+                            "type": "object",
+                            "properties": {
+                                "tokenEndpoint": {
+                                    "type": "string",
+                                    "description": "can be used to set the OAuth 2.0 token endpoint.",
+                                    "default": ""
+                                },
+                                "clientId": {
+                                    "type": "string",
+                                    "description": "can be used to set the OAuth 2.0 client id.",
+                                    "default": ""
+                                },
+                                "audience": {
+                                    "type": "string",
+                                    "description": "can be used to set the identifier of the API the token is requested for. Only applied when `connectors.appIntegrations.oauth` is fully configured.",
+                                    "default": ""
+                                },
+                                "scopes": {
+                                    "type": "string",
+                                    "description": "can be used to set the requested token scopes. Only applied when `connectors.appIntegrations.oauth` is fully configured.",
+                                    "default": ""
+                                },
+                                "clientAuthentication": {
+                                    "type": "string",
+                                    "description": "can be used to set how the client credentials are transmitted. Possible values: `credentialsBody` or `basicAuthHeader`. Only applied when `connectors.appIntegrations.oauth` is fully configured.",
+                                    "default": "",
+                                    "enum": [
+                                        "",
+                                        "credentialsBody",
+                                        "basicAuthHeader"
+                                    ]
+                                },
+                                "secret": {
+                                    "type": "object",
+                                    "properties": {
+                                        "inlineSecret": {
+                                            "type": "string",
+                                            "description": "can be used to provide the client secret as a plain-text value for non-production usage.",
+                                            "default": ""
+                                        },
+                                        "existingSecret": {
+                                            "type": "string",
+                                            "description": "can be used to reference an existing Kubernetes Secret containing the client secret.",
+                                            "default": ""
+                                        },
+                                        "existingSecretKey": {
+                                            "type": "string",
+                                            "description": "defines the key within the existing secret object.",
+                                            "default": ""
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
                 "image": {
                     "type": "object",
                     "properties": {

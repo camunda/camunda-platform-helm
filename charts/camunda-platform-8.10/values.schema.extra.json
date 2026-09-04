@@ -365,6 +365,21 @@
         },
         "connectors": {
             "properties": {
+                "appIntegrations": {
+                    "properties": {
+                        "oauth": {
+                            "properties": {
+                                "clientAuthentication": {
+                                    "enum": [
+                                        "",
+                                        "credentialsBody",
+                                        "basicAuthHeader"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
                 "automountServiceAccountToken": {
                     "type": ["boolean", "null"],
                     "description": "can be used to override the automatic mounting of the service account token at the pod level. When unset, the ServiceAccount configuration is used.",
