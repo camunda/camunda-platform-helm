@@ -25,7 +25,7 @@ StatefulSet during a migration, and every resource shared across zones.
 {{- define "orchestration.zoneFullname" -}}
 {{- $mr := include "camundaPlatform.multiregion" . | fromYaml -}}
 {{- if and .ZoneScoped $mr.zone -}}
-{{- printf "%s-%s" (include "orchestration.fullname" .) $mr.zone -}}
+{{- printf "%s-%s" (include "orchestration.fullname" .) $mr.zone | trunc 63 | trimSuffix "-" -}}
 {{- else -}}
 {{- include "orchestration.fullname" . -}}
 {{- end -}}
