@@ -1,0 +1,7 @@
+orchestration:
+  data:
+    secondaryStorage:
+      type: elasticsearch
+  configuration: |
+    server.ssl.enabled: true
+    server.ssl.certificate: /certs/rest/tls.crt

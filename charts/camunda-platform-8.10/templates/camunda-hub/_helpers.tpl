@@ -33,3 +33,14 @@ Enablement gates live in templates/common/_helpers.tpl ("camundaHub.webModelerEn
         {{- end -}}
     {{- end -}}
 {{- end -}}
+
+{{/*
+Returns the active Camunda Hub upgrade phase.
+*/}}
+{{- define "camundaHub.upgradePhase" -}}
+  {{- $phase := .Values.camundaHub.upgrade.phase | default "normal" -}}
+  {{- if not (has $phase (list "normal" "quiesce" "migrate")) -}}
+    {{- fail "camundaHub.upgrade.phase must be one of 'normal', 'quiesce', 'migrate'" -}}
+  {{- end -}}
+  {{- $phase -}}
+{{- end -}}

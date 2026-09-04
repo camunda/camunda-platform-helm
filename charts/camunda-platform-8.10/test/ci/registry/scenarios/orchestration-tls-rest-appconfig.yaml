@@ -1,0 +1,17 @@
+name: orchestration-tls-rest-appconfig
+auth: keycloak
+flows:
+  - install
+identity: keycloak
+persistence: elasticsearch
+features:
+  - orchestration-tls-rest-appconfig
+platforms:
+  - gke
+infra-type:
+  gke: distroci
+pre-install: orchestration-tls
+dependencies:
+  - keycloak
+  - elasticsearch
+  - postgresql

@@ -57,6 +57,7 @@ type PackageRule struct {
 	MatchManagers     []string `json:"matchManagers"`
 	MatchPackageNames []string `json:"matchPackageNames"`
 	MatchUpdateTypes  []string `json:"matchUpdateTypes"`
+	MatchCurrentValue string   `json:"matchCurrentValue"`
 	PRCreation        string   `json:"prCreation"`
 	MinimumReleaseAge string   `json:"minimumReleaseAge"`
 	AddLabels         []string `json:"addLabels"`
@@ -274,18 +275,67 @@ func TestGitHubActionsAutomergePolicy(t *testing.T) {
 func TestDigestUpdatePolicy(t *testing.T) {
 	config := readRenovateConfig(t)
 
-	for _, rule := range config.PackageRules {
-		if rule.GroupName != "camunda-platform-digests" {
-			continue
+	group, guard := digestRules(t, config)
+
+	assert.Contains(t, group.MatchUpdateTypes, "digest")
+	assert.Equal(t, "immediate", group.PRCreation,
+		"moving snapshot digests must not be held by the global not-pending policy")
+	assert.Empty(t, group.MatchCurrentValue)
+	assert.Empty(t, group.MinimumReleaseAge,
+		"a release-age soak on the group ages the tag, not the digest, and is never met by a re-pushed SNAPSHOT tag")
+
+	assert.Contains(t, guard.MatchUpdateTypes, "digest")
+	assert.Equal(t, group.MatchFileNames, guard.MatchFileNames)
+	assert.Equal(t, "!/SNAPSHOT/", guard.MatchCurrentValue)
+	assert.Equal(t, "6 hours", guard.MinimumReleaseAge,
+		"digest moves on release tags need time to detect re-published image hashes")
+}
+
+func TestSnapshotDigestPinsAreExemptFromReleaseAge(t *testing.T) {
+	root := repoRoot(t)
+	_, guard := digestRules(t, readRenovateConfig(t))
+
+	for _, version := range []string{"8.8", "8.9", "8.10"} {
+		path := filepath.Join(root, "charts", "camunda-platform-"+version, "values-digest.yaml")
+		contents, err := os.ReadFile(path)
+		require.NoError(t, err)
+
+		for image := range digestImageBlocks(t, contents) {
+			tag := image[strings.LastIndex(image, "@")+1:]
+			guarded := renovateCurrentValueMatches(t, guard.MatchCurrentValue, tag)
+			if strings.Contains(tag, "SNAPSHOT") {
+				assert.False(t, guarded, "%s: snapshot pin %s must not be held by minimumReleaseAge", path, image)
+			} else {
+				assert.True(t, guarded, "%s: release pin %s must keep the minimumReleaseAge guard", path, image)
+			}
 		}
-		assert.Contains(t, rule.MatchUpdateTypes, "digest")
-		assert.Equal(t, "immediate", rule.PRCreation,
-			"moving snapshot digests must not be held by the global not-pending policy")
-		assert.Equal(t, "6 hours", rule.MinimumReleaseAge,
-			"digest updates need time to detect retracted image hashes")
-		return
 	}
-	t.Fatal("camunda-platform-digests package rule not found")
+}
+
+func digestRules(t *testing.T, config RenovateConfig) (group PackageRule, guard PackageRule) {
+	t.Helper()
+	var groups, guards []PackageRule
+	for _, rule := range config.PackageRules {
+		switch {
+		case rule.GroupName == "camunda-platform-digests":
+			groups = append(groups, rule)
+		case rule.MinimumReleaseAge != "" && containsFile(rule.MatchFileNames, "values-digest.yaml"):
+			guards = append(guards, rule)
+		}
+	}
+	require.Len(t, groups, 1, "exactly one camunda-platform-digests group rule expected")
+	require.Len(t, guards, 1, "exactly one minimumReleaseAge rule for values-digest.yaml expected")
+	return groups[0], guards[0]
+}
+
+func renovateCurrentValueMatches(t *testing.T, pattern, value string) bool {
+	t.Helper()
+	negate := strings.HasPrefix(pattern, "!")
+	pattern = strings.TrimPrefix(pattern, "!")
+	require.True(t, strings.HasPrefix(pattern, "/") && strings.HasSuffix(pattern, "/"),
+		"matchCurrentValue %q must be a /regex/ pattern", pattern)
+	re := regexp.MustCompile(strings.TrimSuffix(strings.TrimPrefix(pattern, "/"), "/"))
+	return re.MatchString(value) != negate
 }
 
 func TestDigestRegexDoesNotCrossImageBlocks(t *testing.T) {

@@ -300,6 +300,7 @@ func newMatrixRunCommand() *cobra.Command {
 		extraHelmSets            []string
 		extraValues              []string
 		namespaceOverride        string
+		namespacePrepared        bool
 		shortnameExact           bool
 		tier                     int
 		chartRef                 string
@@ -511,6 +512,9 @@ Under the hood this invokes deploy.Execute() for each matrix entry.`,
 			}
 			if repoRoot == "" {
 				return fmt.Errorf("--repo-root is required (or set repoRoot in config, or run from within the repo)")
+			}
+			if err := validateNamespaceOverride(namespaceOverride, namespacePrepared, dryRun || coverage, os.Getenv("GITHUB_ACTIONS")); err != nil {
+				return err
 			}
 
 			// Validate ingress base domains early so the user gets immediate feedback.
@@ -877,7 +881,8 @@ Under the hood this invokes deploy.Execute() for each matrix entry.`,
 	f.StringArrayVar(&extraHelmArgs, "extra-helm-arg", nil, "Extra argument appended to every helm command (repeatable, e.g. --extra-helm-arg=--set-file=global.license.secret.inlineSecret=/tmp/license.txt)")
 	f.StringSliceVar(&extraHelmSets, "extra-helm-set", nil, "Extra helm --set key=value pair applied to every entry (comma-separated or repeatable, e.g. orchestration.upgrade.allowPreReleaseImages=true)")
 	f.StringArrayVar(&extraValues, "extra-values", nil, "Additional Helm values files appended last for every entry (repeatable; not comma-split — use the flag multiple times for multiple files). Engages digest-overlay strip; prefer over --extra-helm-arg=--values=. In two-step upgrade flows, applied to Step 2 only.")
-	f.StringVar(&namespaceOverride, "namespace-override", "", "Override the computed namespace for every entry (use with filters that narrow to a single entry — per-scenario CI workflows that pre-create the namespace).")
+	f.StringVar(&namespaceOverride, "namespace-override", "", "Deploy into one exact namespace that CI or another external process already provisioned. Disables automatic ExternalSecrets; local runs should use --namespace-prefix.")
+	f.BoolVar(&namespacePrepared, "namespace-prepared", false, "Confirm the exact namespace selected by --namespace-override already has required secrets, TLS, and pull secrets.")
 	f.StringVar(&chartRef, "chart-ref", "", "Override chart source with an OCI reference or .tgz path (e.g., oci://registry.camunda.cloud/team-distribution/camunda-platform). Values are still resolved from the local repo via --repo-root.")
 	f.StringVar(&chartRefVersion, "chart-version", "", "Chart version to install from --chart-ref (e.g., 13-rc-latest). Only meaningful when --chart-ref is set.")
 	f.IntVar(&tier, "tier", 0, "Filter entries by tier (1=PR CI, 2=merge-queue only; 0=all)")
@@ -1036,6 +1041,13 @@ func validateChartRefFlags(chartRef, chartRefVersion string) error {
 	}
 
 	return nil
+}
+
+func validateNamespaceOverride(namespaceOverride string, namespacePrepared, readOnly bool, githubActions string) error {
+	if namespaceOverride == "" || namespacePrepared || readOnly || strings.EqualFold(githubActions, "true") {
+		return nil
+	}
+	return fmt.Errorf("--namespace-override is only for an exact namespace that CI or another external process already provisioned; it disables automatic ExternalSecrets and expects required secrets, TLS, and pull secrets to exist. For a normal local run, replace --namespace-override NAME with --namespace-prefix NAME so deploy-camunda computes and provisions the namespace. If the exact namespace is already fully provisioned, add --namespace-prepared")
 }
 
 // validateChartRefVersionSpan rejects a --chart-ref override that would span

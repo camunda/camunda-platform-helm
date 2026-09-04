@@ -1,0 +1,13 @@
+global:
+  ingress:
+    enabled: true
+    className: nginx
+orchestration:
+  data:
+    secondaryStorage:
+      type: elasticsearch
+  enabled: true
+  contextPath: /orchestration
+optimize:
+  enabled: true
+  contextPath: /optimize

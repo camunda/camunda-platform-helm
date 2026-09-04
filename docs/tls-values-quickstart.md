@@ -111,6 +111,71 @@ Trust itself never depends on this flag — it only controls the rollout conveni
 > emits an install-time warning if the bundle is set while a datastore URL is still
 > `http://`.
 
+## How the chart detects Orchestration TLS
+
+Four rendered values depend on whether Orchestration REST or gRPC TLS is on: the
+dedicated `/orchestration` Ingress and its `backend-protocol`, the exclusion of
+`/orchestration` from the shared Ingress, the gRPC Ingress `GRPC` vs `GRPCS`
+backend, and the in-cluster endpoint schemes handed to Web Modeler and Connectors.
+
+The chart resolves that state from four sources, highest precedence first — the
+same order Spring applies, since the first two reach the container as environment
+variables and Spring ranks those above every `application.yaml` source:
+
+| Precedence | Source | Key |
+|---|---|---|
+| 1 | `orchestration.env` (last duplicate wins) | `SERVER_SSL_ENABLED` / `CAMUNDA_API_GRPC_SSL_ENABLED` |
+| 2 | `global.tls.orchestration.{rest,grpc}.enabled` | emitted as the env vars above |
+| 3 | `orchestration.extraConfiguration` | `server.ssl.enabled` / `camunda.api.grpc.ssl.enabled` |
+| 4 | `orchestration.configuration` | same keys |
+
+`global.tls.orchestration.*` is the supported route and the only one that also
+wires cert material, keystore passwords, volume mounts, and rotation rollout.
+
+### What the detection cannot see
+
+The two YAML sources are matched as **nested** keys, so these forms enable TLS in
+the running container while the chart still derives plaintext:
+
+- a flat dotted key, `server.ssl.enabled: true` written as one key
+- a relaxed-binding camelCase spelling
+- keys outside the first YAML document in a file
+- entries marked `springImport: false`, which are skipped by design
+
+`valueFrom` and `envFrom` are unresolvable at render time by definition: the chart
+cannot read a ConfigMap or Secret while templating, so a toggle sourced that way
+is not seen either.
+
+A wrong derivation fails closed, not open — you get a TLS handshake failure or
+`Bad Request: This combination of host and port requires TLS.`, never silent
+plaintext against a listener the chart reported as encrypted. The chart emits an
+install-time warning for the dotted-key and `valueFrom` cases rather than deriving
+plaintext silently. If you hit one, set `global.tls.orchestration.*` or add the
+matching `orchestration.env` entry.
+
+### Connectors and Optimize follow the same rules
+
+`camundaPlatform.connectorsTLSEnabled` and the Optimize equivalent resolve
+`server.ssl.enabled` from the same four sources in the same order, substituting
+`connectors.*` / `optimize.*` for `orchestration.*` and
+`global.tls.connectors.enabled` / `global.tls.optimize.enabled` for the
+Orchestration flag. Connectors TLS state drives the container probe schemes and
+the in-cluster Connectors URL; Optimize TLS state drives its probe schemes and
+its dedicated `/optimize` Ingress backend. The same non-detections and the same
+install-time warnings apply to both.
+
+### Migrating from a hand-managed `/orchestration` Ingress
+
+Enabling REST TLS makes the chart render its own `/orchestration` Ingress. If you
+already manage one by hand, delete it in the same change as the `helm upgrade`, or
+the two resources collide on the same host and path and the controller picks
+between them arbitrarily. The chart-managed resource inherits every
+`global.ingress.annotations` and `global.ingress.labels` entry, so custom auth,
+rate-limit, and security-header annotations carry over — except
+`nginx.ingress.kubernetes.io/backend-protocol`, which is forced to `HTTPS`
+because an HTTP backend against a TLS listener is the failure this Ingress exists
+to prevent. The chart warns when it overrides an inherited value.
+
 ## Common gotchas
 
 - **Java 21 defaults `trustStoreType` to PKCS12.** This overlay's init container copies the JDK system `cacerts` (PKCS12 on Java 21) and appends the user CA via `keytool -importcert` without changing the format — the chart-built truststore is PKCS12, and the chart helper relies on the JVM default by NOT setting `-Djavax.net.ssl.trustStoreType` for that path. If you instead supply your own legacy JKS via a per-component `tls.secret.existingSecret`, that path takes precedence and your `javaOpts` must set `-Djavax.net.ssl.trustStoreType=jks` explicitly.

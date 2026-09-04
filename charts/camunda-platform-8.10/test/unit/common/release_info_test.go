@@ -85,3 +85,45 @@ func (s *ReleaseInfoTest) TestKeycloakComponentEntry() {
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, nil, testCases)
 }
+
+// TestConnectorsURLScheme verifies the in-cluster Connectors URLs follow the
+// EFFECTIVE TLS state, including a connectors.env SERVER_SSL_ENABLED override
+// that wins over global.tls.connectors.enabled.
+func (s *ReleaseInfoTest) TestConnectorsURLScheme() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "ConnectorsUrlsHttpsWhenTlsEnabled",
+			Values: map[string]string{
+				"connectors.enabled":                               "true",
+				"global.tls.connectors.enabled":                    "true",
+				"global.tls.connectors.cert.secret.existingSecret": "connectors-ks",
+			},
+			Template: "templates/common/configmap-release.yaml",
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "https://camunda-platform-test-connectors.")
+				require.NotContains(t, output, "http://camunda-platform-test-connectors.")
+			},
+		},
+		{
+			Name: "ConnectorsUrlsHttpWhenEnvOverrideDisablesTls",
+			Values: map[string]string{
+				"connectors.enabled":                               "true",
+				"global.tls.connectors.enabled":                    "true",
+				"global.tls.connectors.cert.secret.existingSecret": "connectors-ks",
+				"connectors.env[0].name":                           "SERVER_SSL_ENABLED",
+			},
+			RenderTemplateExtraArgs: []string{
+				"--set-string", "connectors.env[0].value=false",
+			},
+			Template: "templates/common/configmap-release.yaml",
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "http://camunda-platform-test-connectors.")
+				require.NotContains(t, output, "https://camunda-platform-test-connectors.")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, nil, testCases)
+}

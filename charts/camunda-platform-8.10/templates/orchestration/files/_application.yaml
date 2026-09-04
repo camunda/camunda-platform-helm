@@ -279,6 +279,7 @@ camunda:
     zeebe:
       # Gateway address
       gatewayAddress: {{ include "orchestration.serviceNameGRPC" . | quote }}
+      {{- include "orchestration.operateTasklistZeebeSecurity" . | nindent 6 }}
     {{- if .Values.orchestration.history.retention.enabled }}
     archiver:
       ilmEnabled: true
@@ -304,6 +305,7 @@ camunda:
       # Gateway address
       gatewayAddress: {{ include "orchestration.serviceNameGRPC" . | quote }}
       restAddress: {{ include "camundaPlatform.orchestrationHTTPInternalURL" . | quote }}
+      {{- include "orchestration.operateTasklistZeebeSecurity" . | nindent 6 }}
     {{- if .Values.orchestration.history.retention.enabled }}
     archiver:
       ilmEnabled: true

@@ -366,6 +366,21 @@
         },
         "connectors": {
             "properties": {
+                "appIntegrations": {
+                    "properties": {
+                        "oauth": {
+                            "properties": {
+                                "clientAuthentication": {
+                                    "enum": [
+                                        "",
+                                        "credentialsBody",
+                                        "basicAuthHeader"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
                 "automountServiceAccountToken": {
                     "type": ["boolean", "null"],
                     "description": "can be used to override the automatic mounting of the service account token at the pod level. When unset, the ServiceAccount configuration is used.",
@@ -1502,6 +1517,20 @@
                     "description": "override values for the Camunda Hub service account; set values are deep-merged over the legacy webModeler.serviceAccount values, so a partial override keeps the sibling defaults. An explicit false, 0 or \"\" overrides the legacy value; an unset (null) key falls through to it. Maps merge key by key, while arrays replace the legacy list wholesale.",
                     "default": {},
                     "additionalProperties": true
+                },
+                "upgrade": {
+                    "type": "object",
+                    "properties": {
+                        "phase": {
+                            "type": "string",
+                            "enum": [
+                                "normal",
+                                "quiesce",
+                                "migrate"
+                            ],
+                            "default": "normal"
+                        }
+                    }
                 },
                 "persistence": {
                     "properties": {

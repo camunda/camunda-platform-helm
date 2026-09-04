@@ -264,7 +264,9 @@ global:
   ## flags (Kubernetes last-wins on duplicate env names). The chart cannot
   ## detect this at template time. Either include the truststore flags in
   ## your override (`-Djavax.net.ssl.trustStore=/var/camunda/tls-truststore/cacerts -Djavax.net.ssl.trustStorePassword=changeit`)
-  ## or use <component>.javaOpts (which the chart appends to, not replaces).
+  ## or use orchestration.javaOpts or optimize.javaOpts; the chart composes
+  ## those values into JAVA_TOOL_OPTIONS. webModeler.restapi.javaOpts feeds
+  ## JAVA_OPTIONS instead, so do not put truststore flags there.
   tls:
     ## @extra global.tls.caBundle Optional OS-level CA bundle for SSL_CERT_FILE
     caBundle:
@@ -300,6 +302,122 @@ global:
         seccompProfile:
           ## @param global.tls.caBundle.containerSecurityContext.seccompProfile.type
           type: RuntimeDefault
+
+    ## @extra global.tls.orchestration configuration of first-class TLS modes for the Orchestration component. REST (`SERVER_SSL_ENABLED`) and gRPC (`CAMUNDA_API_GRPC_SSL_ENABLED`) are independent server settings; setting either flag drives the Orchestration env var, the public NGINX ingress backend-protocol, and the in-cluster client schemes used by Web Modeler and Connectors. The optional `cert` sub-block additionally mounts the server cert material and points Orchestration at it. Explicit `orchestration.env` entries with the same name override these flags (last-wins). Client-side trust material still flows through `global.tls.caBundle`.
+    orchestration:
+      ## @param global.tls.orchestration.autoRollout opt-in automatic pod rollout on REST/gRPC cert rotation. When true, the chart stamps `checksum/orchestration-tls-{rest,grpc}` pod annotations derived from the configured Secrets so the next `helm upgrade` rolls Orchestration when the cert changes. OFF by default for the same reason as `global.tls.caBundle.autoRollout`: it uses `lookup` to read the Secret at upgrade time, which (a) REQUIRES the upgrading identity to have `get` on Secrets in the release namespace and (b) is inert under GitOps tools that render with `helm template`. When off (or in those cases), rotate the cert with `kubectl rollout restart`.
+      autoRollout: false
+      ## @extra global.tls.orchestration.rest configuration of TLS for the Orchestration REST server.
+      rest:
+        ## @param global.tls.orchestration.rest.enabled if true, TLS is terminated at the Orchestration REST server.
+        enabled: false
+        ## @param global.tls.orchestration.rest.type defines the secret format. One of: pkcs12, pem.
+        type: pkcs12
+        ## @param global.tls.orchestration.rest.keyAlias can be used to specify the cert alias within a PKCS12 keystore.
+        keyAlias: ""
+        ## @extra global.tls.orchestration.rest.cert configuration to provide the server certificate (PKCS12 keystore or PEM cert).
+        cert:
+          ## @extra global.tls.orchestration.rest.cert.secret configuration to provide the cert secret.
+          secret:
+            ## @param global.tls.orchestration.rest.cert.secret.inlineSecret can be used to provide the cert as a plain-text value for non-production usage. Only supported when `type: pem`; a PKCS12 keystore is binary and cannot be provided inline (use existingSecret for pkcs12).
+            inlineSecret: ""
+            ## @param global.tls.orchestration.rest.cert.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the cert material. Empty disables the chart-managed wiring; the operator can still hand-wire via orchestration.extraVolumes and orchestration.env.
+            existingSecret: ""
+            ## @param global.tls.orchestration.rest.cert.secret.existingSecretKey defines the key within the existing secret object. Smart default: tls.crt for PEM, keystore.p12 for PKCS12.
+            existingSecretKey: ""
+        ## @extra global.tls.orchestration.rest.privateKey configuration to provide the PEM private key (PEM mode only).
+        privateKey:
+          ## @extra global.tls.orchestration.rest.privateKey.secret configuration to provide the private key secret.
+          secret:
+            ## @param global.tls.orchestration.rest.privateKey.secret.inlineSecret can be used to provide the private key as a plain-text value for non-production usage.
+            inlineSecret: ""
+            ## @param global.tls.orchestration.rest.privateKey.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the PEM private key. When empty, defaults to cert.secret.existingSecret.
+            existingSecret: ""
+            ## @param global.tls.orchestration.rest.privateKey.secret.existingSecretKey defines the key within the existing secret object.
+            existingSecretKey: "tls.key"
+        ## @extra global.tls.orchestration.rest.keystorePassword configuration to provide the PKCS12 keystore password (PKCS12 mode only).
+        keystorePassword:
+          ## @extra global.tls.orchestration.rest.keystorePassword.secret configuration to provide the keystore password secret.
+          secret:
+            ## @param global.tls.orchestration.rest.keystorePassword.secret.inlineSecret can be used to provide the keystore password as a plain-text value for non-production usage.
+            inlineSecret: ""
+            ## @param global.tls.orchestration.rest.keystorePassword.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the keystore password. When empty, defaults to cert.secret.existingSecret.
+            existingSecret: ""
+            ## @param global.tls.orchestration.rest.keystorePassword.secret.existingSecretKey defines the key within the existing secret object.
+            existingSecretKey: "keystore-password"
+        ## @extra global.tls.orchestration.rest.proxyVerify configuration of NGINX upstream cert verification. REST only: it emits `nginx.ingress.kubernetes.io/proxy-ssl-*` annotations, which ingress-nginx renders as NGINX `proxy_ssl_*` directives. Those apply to `proxy_pass` upstreams only, so there is no equivalent for the gRPC ingress — a `GRPCS` backend uses `grpc_pass`, which needs `grpc_ssl_*` directives that ingress-nginx does not expose through any annotation.
+        proxyVerify:
+          ## @param global.tls.orchestration.rest.proxyVerify.enabled if true, NGINX verifies the upstream server cert against the CA bundle.
+          enabled: false
+          ## @param global.tls.orchestration.rest.proxyVerify.sniHost can be used to set the SNI hostname NGINX presents when verifying the upstream cert.
+          sniHost: ""
+          ## @extra global.tls.orchestration.rest.proxyVerify.caSecret configuration to provide the CA bundle Secret for upstream verification.
+          caSecret:
+            ## @extra global.tls.orchestration.rest.proxyVerify.caSecret.secret configuration to provide the CA bundle secret.
+            secret:
+              ## @param global.tls.orchestration.rest.proxyVerify.caSecret.secret.inlineSecret can be used to provide the CA bundle as a plain-text PEM value for non-production usage. The chart renders it into a generated Secret under the fixed "ca.crt" key NGINX reads.
+              inlineSecret: ""
+              ## @param global.tls.orchestration.rest.proxyVerify.caSecret.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the CA bundle under the fixed "ca.crt" key required by nginx.ingress.kubernetes.io/proxy-ssl-secret.
+              existingSecret: ""
+            ## @param global.tls.orchestration.rest.proxyVerify.caSecret.namespace can be used when the CA Secret lives in a different namespace; ingress-nginx must be configured with `allow-cross-namespace-resources=true`.
+            namespace: ""
+      ## @extra global.tls.orchestration.grpc configuration of TLS for the Orchestration gRPC server.
+      grpc:
+        ## @param global.tls.orchestration.grpc.enabled if true, TLS is terminated at the Orchestration gRPC server.
+        enabled: false
+        ## @extra global.tls.orchestration.grpc.cert configuration to provide the server certificate (PEM cert). The gRPC server accepts PEM only.
+        cert:
+          ## @extra global.tls.orchestration.grpc.cert.secret configuration to provide the cert secret.
+          secret:
+            ## @param global.tls.orchestration.grpc.cert.secret.inlineSecret can be used to provide the cert as a plain-text value for non-production usage.
+            inlineSecret: ""
+            ## @param global.tls.orchestration.grpc.cert.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the cert material. Empty disables the chart-managed wiring.
+            existingSecret: ""
+            ## @param global.tls.orchestration.grpc.cert.secret.existingSecretKey defines the key within the existing secret object.
+            existingSecretKey: "tls.crt"
+        ## @extra global.tls.orchestration.grpc.privateKey configuration to provide the PEM private key.
+        privateKey:
+          ## @extra global.tls.orchestration.grpc.privateKey.secret configuration to provide the private key secret.
+          secret:
+            ## @param global.tls.orchestration.grpc.privateKey.secret.inlineSecret can be used to provide the private key as a plain-text value for non-production usage.
+            inlineSecret: ""
+            ## @param global.tls.orchestration.grpc.privateKey.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the PEM private key. When empty, defaults to cert.secret.existingSecret.
+            existingSecret: ""
+            ## @param global.tls.orchestration.grpc.privateKey.secret.existingSecretKey defines the key within the existing secret object.
+            existingSecretKey: "tls.key"
+
+    ## @extra global.tls.connectors configuration of TLS for the Connectors HTTP server.
+    connectors:
+      ## @param global.tls.connectors.autoRollout if true, automatically rolls Connectors pods on certificate rotation. The chart stamps a `checksum/connectors-tls` pod annotation derived from the configured Secret so the next `helm upgrade` rolls Connectors when the cert changes. OFF by default for the same reason as `global.tls.caBundle.autoRollout`: it uses `lookup` to read the Secret at upgrade time, which (a) REQUIRES the upgrading identity to have `get` on Secrets in the release namespace and (b) is inert under GitOps tools that render with `helm template`. When off (or in those cases), rotate the cert with `kubectl rollout restart`.
+      autoRollout: false
+      ## @param global.tls.connectors.enabled if true, TLS is terminated at the Connectors HTTP server.
+      enabled: false
+      ## @param global.tls.connectors.type defines the secret format. One of: pkcs12, pem.
+      type: pkcs12
+      ## @param global.tls.connectors.keyAlias can be used to specify the cert alias within a PKCS12 keystore.
+      keyAlias: ""
+      ## @extra global.tls.connectors.cert configuration to provide the server certificate (PKCS12 keystore or PEM cert).
+      cert:
+        ## @extra global.tls.connectors.cert.secret configuration to provide the cert secret.
+        secret:
+          ## @param global.tls.connectors.cert.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the cert material. Empty disables the chart-managed wiring; the operator can still hand-wire via connectors.extraVolumes and connectors.env.
+          existingSecret: ""
+          ## @param global.tls.connectors.cert.secret.existingSecretKey defines the key within the existing secret object. Smart default: tls.crt for PEM, keystore.p12 for PKCS12.
+          existingSecretKey: ""
+      ## @extra global.tls.connectors.privateKey configuration to provide the PEM private key (PEM mode only).
+      privateKey:
+        ## @extra global.tls.connectors.privateKey.secret configuration to provide the private key secret.
+        secret:
+          ## @param global.tls.connectors.privateKey.secret.existingSecretKey defines the key within the existing secret object. In PEM mode, the cert and private key must live in the SAME Secret referenced by global.tls.connectors.cert.secret.existingSecret.
+          existingSecretKey: "tls.key"
+      ## @extra global.tls.connectors.keystorePassword configuration to provide the PKCS12 keystore password (PKCS12 mode only).
+      keystorePassword:
+        ## @extra global.tls.connectors.keystorePassword.secret configuration to provide the keystore password secret.
+        secret:
+          ## @param global.tls.connectors.keystorePassword.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the keystore password. When empty, defaults to cert.secret.existingSecret.
+          existingSecret: ""
+          ## @param global.tls.connectors.keystorePassword.secret.existingSecretKey defines the key within the existing secret object.
+          existingSecretKey: "keystore-password"
 
   # --------------------------------------------------------------------------
   # Identity / Authentication Modes
@@ -1083,6 +1201,11 @@ camundaHub:
   ## Equivalent to setting both webModeler.enabled=true and console.enabled=true on the legacy keys.
   enabled: false
 
+  ## @extra camundaHub.upgrade configuration for the 8.9 to 8.10 Camunda Hub database migration.
+  upgrade:
+    ## @param camundaHub.upgrade.phase defines the Camunda Hub lifecycle phase. Use `normal` for fresh installs and normal operation, `quiesce` to stop Hub workloads before taking a database backup, and `migrate` to run one Hub REST API pod for the startup database migration without serving traffic.
+    phase: normal
+
   ## @param camundaHub.contextPath [nullable] can be used to make Camunda Hub available on a custom sub-path. This 8.10 alpha override replaces camundaHub.webModeler.contextPath.
   contextPath:
 
@@ -1682,6 +1805,45 @@ connectors:
           ## @param connectors.security.authentication.oidc.secret.existingSecretKey defines the key within the existing secret object.
           existingSecretKey: ""
 
+  ## @extra connectors.appIntegrations configuration to let the App Integrations connector reach the App Integrations backend.
+  appIntegrations:
+    ## @param connectors.appIntegrations.baseUrl can be used to set the App Integrations backend base URL. Required to use the App Integrations connector, together with either `connectors.appIntegrations.apiKey` or `connectors.appIntegrations.oauth`.
+    baseUrl: ""
+    ## @param connectors.appIntegrations.clusterId can be used to set this orchestration cluster's UUID as registered in the App Integrations backend. Must be unique per Orchestration Cluster release. Required when authenticating with OAuth, optional when authenticating with an API key.
+    clusterId: ""
+
+    ## @extra connectors.appIntegrations.apiKey configuration to authenticate against the App Integrations backend with an API key. Omitted from the runtime when `connectors.appIntegrations.oauth` is fully configured, since OAuth takes precedence.
+    apiKey:
+      ## @extra connectors.appIntegrations.apiKey.secret configuration to provide the App Integrations API key.
+      secret:
+        ## @param connectors.appIntegrations.apiKey.secret.inlineSecret can be used to provide the API key as a plain-text value for non-production usage.
+        inlineSecret: ""
+        ## @param connectors.appIntegrations.apiKey.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the API key.
+        existingSecret: ""
+        ## @param connectors.appIntegrations.apiKey.secret.existingSecretKey defines the key within the existing secret object.
+        existingSecretKey: ""
+
+    ## @extra connectors.appIntegrations.oauth configuration to authenticate against the App Integrations backend with OAuth 2.0 client credentials. Takes precedence over `connectors.appIntegrations.apiKey`.
+    oauth:
+      ## @param connectors.appIntegrations.oauth.tokenEndpoint can be used to set the OAuth 2.0 token endpoint.
+      tokenEndpoint: ""
+      ## @param connectors.appIntegrations.oauth.clientId can be used to set the OAuth 2.0 client id.
+      clientId: ""
+      ## @param connectors.appIntegrations.oauth.audience can be used to set the identifier of the API the token is requested for. Only applied when `connectors.appIntegrations.oauth` is fully configured.
+      audience: ""
+      ## @param connectors.appIntegrations.oauth.scopes can be used to set the requested token scopes. Only applied when `connectors.appIntegrations.oauth` is fully configured.
+      scopes: ""
+      ## @param connectors.appIntegrations.oauth.clientAuthentication can be used to set how the client credentials are transmitted. Possible values: `credentialsBody` or `basicAuthHeader`. Only applied when `connectors.appIntegrations.oauth` is fully configured.
+      clientAuthentication: ""
+      ## @extra connectors.appIntegrations.oauth.secret configuration to provide the OAuth 2.0 client secret.
+      secret:
+        ## @param connectors.appIntegrations.oauth.secret.inlineSecret can be used to provide the client secret as a plain-text value for non-production usage.
+        inlineSecret: ""
+        ## @param connectors.appIntegrations.oauth.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the client secret.
+        existingSecret: ""
+        ## @param connectors.appIntegrations.oauth.secret.existingSecretKey defines the key within the existing secret object.
+        existingSecretKey: ""
+
   ## @extra connectors.image configuration to configure the Connectors image specifics
   # https://hub.docker.com/r/camunda/connectors-bundle/tags
   image:
@@ -1690,7 +1852,7 @@ connectors:
     ## @param connectors.image.repository defines which image repository to use
     repository: camunda/connectors-bundle
     ## @param connectors.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.10.0-alpha4
+    tag: 8.10.0-alpha5
     ## @param connectors.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param connectors.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -1760,8 +1922,8 @@ connectors:
   startupProbe:
     ## @param connectors.startupProbe.enabled if true, the startup probe is enabled in app container
     enabled: false
-    ## @param connectors.startupProbe.scheme defines the startup probe scheme used on calling the probePath
-    scheme: HTTP
+    ## @param connectors.startupProbe.scheme defines the probe scheme (HTTP or HTTPS) used when calling the probePath. Empty (default) auto-detects: HTTPS when Connectors TLS is enabled (global.tls.connectors), otherwise HTTP. Set explicitly to override the auto-detected scheme.
+    scheme: ""
     ## @param connectors.startupProbe.probePath defines the startup probe route used on the app
     probePath: /actuator/health/readiness
     ## @param connectors.startupProbe.initialDelaySeconds defines the number of seconds after the container has started before
@@ -1781,8 +1943,8 @@ connectors:
     # TODO: Enalbe the readiness again once the Zeebe client in Connectors is updated (it should be done before 8.8 release).
     ## @param connectors.readinessProbe.enabled if true, the readiness probe is enabled in app container
     enabled: true
-    ## @param connectors.readinessProbe.scheme defines the startup probe scheme used on calling the probePath
-    scheme: HTTP
+    ## @param connectors.readinessProbe.scheme defines the probe scheme (HTTP or HTTPS) used when calling the probePath. Empty (default) auto-detects: HTTPS when Connectors TLS is enabled (global.tls.connectors), otherwise HTTP. Set explicitly to override the auto-detected scheme.
+    scheme: ""
     ## @param connectors.readinessProbe.probePath defines the readiness probe route used on the app
     probePath: /actuator/health/readiness
     ## @param connectors.readinessProbe.initialDelaySeconds defines the number of seconds after the container has started before the probe is initiated.
@@ -1800,8 +1962,8 @@ connectors:
   livenessProbe:
     ## @param connectors.livenessProbe.enabled if true, the liveness probe is enabled in app container
     enabled: false
-    ## @param connectors.livenessProbe.scheme defines the startup probe scheme used on calling the probePath
-    scheme: HTTP
+    ## @param connectors.livenessProbe.scheme defines the probe scheme (HTTP or HTTPS) used when calling the probePath. Empty (default) auto-detects: HTTPS when Connectors TLS is enabled (global.tls.connectors), otherwise HTTP. Set explicitly to override the auto-detected scheme.
+    scheme: ""
     ## @param connectors.livenessProbe.probePath defines the liveness probe route used on the app
     probePath: /actuator/health/liveness
     ## @param connectors.livenessProbe.initialDelaySeconds defines the number of seconds after the container has started before

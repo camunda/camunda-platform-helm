@@ -16,6 +16,9 @@ metadata:
 spec:
   strategy:
     type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
   replicas: 1
   selector:
     matchLabels:
@@ -34,6 +37,7 @@ spec:
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
         app.kubernetes.io/component: restapi
+        camunda.io/upgrade-phase: "normal"
     spec:
       imagePullSecrets:
         []
