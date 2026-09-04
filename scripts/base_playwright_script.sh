@@ -532,8 +532,8 @@ _release_npm_lock() {
   log "Released npm install lock"
 }
 
-# Replace the npm-installed @camunda/e2e-test-suite with a copy of the local
-# checkout's dist/ so Playwright resolves test files from within the e2e
+# Replace the npm-installed @camunda/e2e-test-suite with a packed local build so
+# Playwright resolves test files and runtime dependencies from the e2e
 # node_modules tree (avoiding a second @playwright/test from the local
 # checkout's own node_modules).
 # The local checkout must have been built (npm run build) so dist/ exists.
@@ -566,12 +566,12 @@ _link_local_test_suite() {
     exit 1
   fi
 
-  local target="$test_suite_path/node_modules/@camunda/e2e-test-suite"
-  rm -rf "$target"
-  mkdir -p "$target"
-  cp "$local_dir/package.json" "$target/package.json"
-  cp -R "$local_dir/dist" "$target/dist"
-  info "Copied local test suite dist into $target from $local_dir"
+  local pack_dir tarball
+  pack_dir=$(mktemp -d)
+  tarball=$(npm pack "$local_dir" --ignore-scripts --silent --pack-destination "$pack_dir")
+  npm install "$pack_dir/$tarball" --no-save --ignore-scripts --package-lock=false --no-audit --no-fund
+  rm -rf "$pack_dir"
+  info "Installed local test suite package from $local_dir"
 }
 
 # Log the installed @camunda/e2e-test-suite version for debugging.
