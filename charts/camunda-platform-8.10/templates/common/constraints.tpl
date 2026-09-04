@@ -488,8 +488,8 @@ configmap-warnings.yaml, which renders the "<release>-warnings" ConfigMap on the
 */}}
 {{/*
 [camunda-platform] Warning text for a TLS toggle the chart cannot resolve because
-the winning YAML config document is gated by spring.config.activate. Shared by
-every component that derives probe schemes or ingress backend protocols from
+the winning YAML config value depends on runtime state. Shared by every
+component that derives probe schemes or ingress backend protocols from
 camundaPlatform.appConfigBoolState, so the diagnosis and the two exits are worded
 once. Returns the message only; the caller emits it inside
 camunda.constraints.warnings.
@@ -504,7 +504,7 @@ Usage:
 {{- define "camunda.constraints.unresolvedTLSConfigWarning" -}}
   {{- printf "%s %s %s"
       "[camunda][warning]"
-      (printf "%s.configuration or %s.extraConfiguration sets '%s' inside a spring.config.activate-conditioned YAML document, whose activation depends on the profile and cloud platform the container starts with and cannot be evaluated while templating." .valuesPrefix .valuesPrefix .dottedPath)
+      (printf "%s.configuration or %s.extraConfiguration sets '%s' to a runtime-dependent value, such as a Spring property placeholder or a value inside a spring.config.activate-conditioned YAML document, which cannot be evaluated while templating." .valuesPrefix .valuesPrefix .dottedPath)
       (printf "The chart therefore derives plaintext for %s, so probe schemes and ingress backend protocols are rendered for HTTP while the listener may start on TLS, which installs cleanly and then fails at connection time. Set %s: true, or add a literal %s.env entry for %s, to make the transport explicit." .component .flag .valuesPrefix .envName)
   -}}
 {{- end -}}
@@ -839,8 +839,8 @@ The following values inside your values.yaml need to be set but were not:
         {{- end }}
       {{- end }}
 
-      {{/* (W3) A spring.config.activate-conditioned document sets the toggle, so the
-             chart cannot tell whether Spring applies it and keeps deriving plaintext.
+      {{/* (W3) Runtime state controls the config value, so the chart cannot resolve
+             it and keeps deriving plaintext.
              Only flagged while the derivation resolved to plaintext, so an explicit
              flag or env entry that already settles the transport never warns. */}}
       {{- if ne $prop.state "true" }}
@@ -926,8 +926,8 @@ The following values inside your values.yaml need to be set but were not:
       {{- end }}
     {{- end }}
 
-    {{/* (W3) A spring.config.activate-conditioned document sets the toggle, so the
-           chart cannot tell whether Spring applies it and keeps deriving plaintext. */}}
+    {{/* (W3) Runtime state controls the config value, so the chart cannot resolve
+           it and keeps deriving plaintext. */}}
     {{- if ne $connectorsTLS "true" }}
       {{- $configState := include "camundaPlatform.appConfigBoolState" (dict
           "configuration" .Values.connectors.configuration
@@ -983,8 +983,8 @@ The following values inside your values.yaml need to be set but were not:
       {{- end }}
     {{- end }}
 
-    {{/* (W3) A spring.config.activate-conditioned document sets the toggle, so the
-           chart cannot tell whether Spring applies it and keeps deriving plaintext. */}}
+    {{/* (W3) Runtime state controls the config value, so the chart cannot resolve
+           it and keeps deriving plaintext. */}}
     {{- if ne $optimizeTLS "true" }}
       {{- $configState := include "camundaPlatform.appConfigBoolState" (dict
           "configuration" .Values.optimize.configuration

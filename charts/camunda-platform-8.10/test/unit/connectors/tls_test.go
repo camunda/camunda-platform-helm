@@ -630,6 +630,14 @@ func (s *ConnectorsTLSTest) TestTLSDetectionFromConfigSources() {
 				requireProbeScheme(t, output, corev1.URISchemeHTTP)
 			},
 		},
+		{
+			Name:        "TLS behind a property placeholder is unresolved — probes stay HTTP",
+			ValuesFiles: []string{"testdata/values-connectors-tls-placeholder.yaml"},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				requireProbeScheme(t, output, corev1.URISchemeHTTP)
+			},
+		},
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
@@ -675,7 +683,16 @@ func (s *ConnectorsTLSTest) TestTLSDetectionWarnings() {
 			ValuesFiles: []string{"testdata/values-connectors-tls-profile-activated.yaml"},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
-				require.Contains(t, output, "inside a spring.config.activate-conditioned YAML document")
+				require.Contains(t, output, "to a runtime-dependent value")
+				require.Contains(t, output, "derives plaintext for Connectors")
+			},
+		},
+		{
+			Name:        "placeholder-backed configuration warns",
+			ValuesFiles: []string{"testdata/values-connectors-tls-placeholder.yaml"},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "Spring property placeholder")
 				require.Contains(t, output, "derives plaintext for Connectors")
 			},
 		},
@@ -686,7 +703,7 @@ func (s *ConnectorsTLSTest) TestTLSDetectionWarnings() {
 			ValuesFiles: []string{"testdata/values-connectors-tls-later-document.yaml"},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
-				require.NotContains(t, output, "spring.config.activate-conditioned YAML document")
+				require.NotContains(t, output, "to a runtime-dependent value")
 			},
 		},
 	}

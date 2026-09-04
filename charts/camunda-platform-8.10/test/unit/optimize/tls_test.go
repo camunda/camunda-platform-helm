@@ -591,6 +591,16 @@ func (s *OptimizeTLSTest) TestTLSDetectionFromConfigSources() {
 			},
 		},
 		{
+			// Spring resolves a property placeholder when the container starts,
+			// so its value is a runtime decision like an activation condition.
+			Name:        "TLS behind a property placeholder is unresolved — probes stay HTTP",
+			ValuesFiles: []string{"testdata/values-optimize-tls-placeholder.yaml"},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				requireProbeScheme(t, output, corev1.URISchemeHTTP)
+			},
+		},
+		{
 			Name:        "explicit global TLS flag overrides an unresolved configuration",
 			ValuesFiles: []string{"testdata/values-optimize-tls-profile-activated.yaml"},
 			Values: map[string]string{
@@ -686,7 +696,7 @@ func (s *OptimizeTLSTest) TestTLSDetectionWarnings() {
 			ValuesFiles: []string{"testdata/values-optimize-tls-profile-activated.yaml"},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
-				require.Contains(t, output, "inside a spring.config.activate-conditioned YAML document")
+				require.Contains(t, output, "to a runtime-dependent value")
 				require.Contains(t, output, "derives plaintext for Optimize")
 			},
 		},
@@ -697,7 +707,7 @@ func (s *OptimizeTLSTest) TestTLSDetectionWarnings() {
 			ValuesFiles: []string{"testdata/values-optimize-tls-multi-document.yaml"},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
-				require.NotContains(t, output, "spring.config.activate-conditioned YAML document")
+				require.NotContains(t, output, "to a runtime-dependent value")
 			},
 		},
 		{
@@ -710,6 +720,15 @@ func (s *OptimizeTLSTest) TestTLSDetectionWarnings() {
 			Verifier: func(t *testing.T, output string, err error) {
 				require.Error(t, err)
 				require.Contains(t, err.Error(), "could not find template")
+			},
+		},
+		{
+			Name:        "placeholder-backed configuration warns",
+			ValuesFiles: []string{"testdata/values-optimize-tls-placeholder.yaml"},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "Spring property placeholder")
+				require.Contains(t, output, "derives plaintext for Optimize")
 			},
 		},
 		{
