@@ -1,16 +1,3 @@
 {{- if and (eq (include "camundaPlatform.orchestrationEnabled" .) "true") .Values.orchestration.podDisruptionBudget.enabled -}}
-{{- if eq (include "orchestration.zoned" .) "true" -}}
-{{- $mr := include "camundaPlatform.multiregion" . | fromYaml -}}
-{{- $ctx := dict "Values" (deepCopy $.Values) "Release" $.Release "Chart" $.Chart "Capabilities" $.Capabilities "Template" $.Template "Files" $.Files "ZoneScoped" true }}
----
-{{ include "orchestration.podDisruptionBudgetManifest" $ctx }}
-{{- if $mr.keepUnzonedBrokers }}
-{{- $unzonedCtx := dict "Values" (deepCopy $.Values) "Release" $.Release "Chart" $.Chart "Capabilities" $.Capabilities "Template" $.Template "Files" $.Files "MigrationLegacy" true }}
-{{- $_ := set $unzonedCtx.Values.orchestration.multiregion "mode" "numbered" }}
----
-{{ include "orchestration.podDisruptionBudgetManifest" $unzonedCtx }}
-{{ end }}
-{{- else -}}
-{{ include "orchestration.podDisruptionBudgetManifest" . }}
-{{- end -}}
+{{- include "orchestration.renderZoneAware" (dict "manifest" "orchestration.podDisruptionBudgetManifest" "context" .) -}}
 {{- end -}}

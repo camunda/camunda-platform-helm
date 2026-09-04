@@ -1,5 +1,5 @@
 {{- define "orchestration.configmapManifest" -}}
-{{- $mr := include "camundaPlatform.multiregion" $ | fromYaml -}}
+{{- $mr := include "camundaPlatform.multiregion" $ | fromJson -}}
 kind: ConfigMap
 metadata:
   name: {{ include "orchestration.zoneFullname" (dict "context" . "zone" (include "orchestration.scopedZone" .)) }}-configuration

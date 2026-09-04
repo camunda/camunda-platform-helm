@@ -1549,7 +1549,8 @@ func (s *ConfigmapTemplateTest) TestZonedModeRejectsNumberedRegionSettings() {
 			},
 		},
 		{
-			Name: "TestZonedModeRejectsInvalidZoneNames",
+			Name:                    "TestZonedModeRejectsInvalidZoneNames",
+			RenderTemplateExtraArgs: []string{"--skip-schema-validation"},
 			Values: map[string]string{
 				"orchestration.multiregion.mode":                      "zoned",
 				"orchestration.multiregion.zone":                      "region_A",
