@@ -528,7 +528,7 @@ jobs:
           # helm push with retry and re-auth (most common 401 failure point)
           harbor_retry "helm push" helm push "${HELM_PACKAGE}" "oci://${OCI_REGISTRY}"
 
-          cosign sign-blob -y ${HELM_PACKAGE} \
+          retry_cmd "cosign sign-blob" cosign sign-blob -y ${HELM_PACKAGE} \
             --bundle ".cr-release-packages/${{ env.CHART_RELEASE_COSIGN_BUNDLE_FILE }}"
 
           CHART_RELEASE_TAG_NAME="camunda-platform-${{ matrix.chart.version }}-${RELEASE_VERSION}"
