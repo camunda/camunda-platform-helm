@@ -136,6 +136,12 @@ func (s *OrchestrationTLSDetectionTest) TestConnectorsEndpointSchemes() {
 			Verifier:    plaintext,
 		},
 		{
+			Name:        "TestPlaceholderBackedTLSIsNotDetected",
+			ValuesFiles: orchestrationTLSFixture("placeholder"),
+			Values:      map[string]string{"connectors.enabled": "true"},
+			Verifier:    plaintext,
+		},
+		{
 			Name:        "TestSpringImportFalseIsNotDetected",
 			ValuesFiles: orchestrationTLSFixture("spring-import-false"),
 			Values:      map[string]string{"connectors.enabled": "true"},
@@ -379,7 +385,17 @@ func (s *OrchestrationTLSDetectionTest) TestDetectionWarnings() {
 			ValuesFiles: orchestrationTLSFixture("profile-activated"),
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
-				require.Contains(t, output, "inside a spring.config.activate-conditioned YAML document")
+				require.Contains(t, output, "to a runtime-dependent value")
+				require.Contains(t, output, "derives plaintext for Orchestration REST")
+				require.Contains(t, output, "derives plaintext for Orchestration gRPC")
+			},
+		},
+		{
+			Name:        "TestPlaceholderBackedTLSWarns",
+			ValuesFiles: orchestrationTLSFixture("placeholder"),
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "Spring property placeholder")
 				require.Contains(t, output, "derives plaintext for Orchestration REST")
 				require.Contains(t, output, "derives plaintext for Orchestration gRPC")
 			},
@@ -391,7 +407,7 @@ func (s *OrchestrationTLSDetectionTest) TestDetectionWarnings() {
 			ValuesFiles: orchestrationTLSFixture("later-document"),
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
-				require.NotContains(t, output, "spring.config.activate-conditioned YAML document")
+				require.NotContains(t, output, "to a runtime-dependent value")
 			},
 		},
 		{

@@ -877,10 +877,9 @@ a multi-document YAML source: documents are split on "---" and "..." separator
 lines and applied in order, so a later document overrides an earlier one for the
 keys it sets. "unset" means no document places a scalar at that path.
 
-"unresolved" means the document that wins the path carries a
-spring.config.activate condition. Whether Spring applies that document depends on
-the active profiles and cloud platform at runtime, which cannot be evaluated
-while templating, so callers must require an explicit chart flag or env var
+"unresolved" means the winning value depends on runtime state: either the
+document carries a spring.config.activate condition or the scalar is a Spring
+property placeholder. Callers must require an explicit chart flag or env var
 rather than derive a transport from it. A conditioned document that does not set
 the path is ignored, and an unconditional document after one wins outright.
 
@@ -912,9 +911,11 @@ Usage:
 {{- end -}}
 
 {{/*
-[camunda-platform] Returns "true", "false" or "unset" for a boolean key path
-inside one already-parsed YAML document. Walks nested map keys literally and
-ignores map, slice and null nodes, so only a scalar at the exact path resolves.
+[camunda-platform] Returns "true", "false", "unset" or "unresolved" for a
+boolean key path inside one already-parsed YAML document. Walks nested map keys
+literally and ignores map, slice and null nodes, so only a scalar at the exact
+path resolves. A Spring property placeholder is unresolved because its runtime
+value may differ from its default.
 Usage:
   {{ include "camundaPlatform.yamlDocBoolAt" (dict
     "document" $parsed
@@ -932,7 +933,12 @@ Usage:
     {{- end -}}
   {{- end -}}
   {{- if and $found (not (kindIs "invalid" $node)) (not (kindIs "map" $node)) (not (kindIs "slice" $node)) -}}
-    {{- $state = ternary "true" "false" (eq (lower (toString $node)) "true") -}}
+    {{- $value := trim (toString $node) -}}
+    {{- if regexMatch "^\\$\\{.*\\}$" $value -}}
+      {{- $state = "unresolved" -}}
+    {{- else -}}
+      {{- $state = ternary "true" "false" (eq (lower $value) "true") -}}
+    {{- end -}}
   {{- end -}}
   {{- $state -}}
 {{- end -}}
