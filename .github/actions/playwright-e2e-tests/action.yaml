@@ -72,6 +72,10 @@ inputs:
     description: Git ref of camunda/c8-cross-component-e2e-tests to build and use instead of npm latest.
     required: false
     default: ""
+  e2e-test-suite-token:
+    description: Token with read access to camunda/c8-cross-component-e2e-tests.
+    required: false
+    default: ""
   artifact-suffix:
     description: Unique suffix for reports from parallel topology suite legs.
     required: false
@@ -203,6 +207,7 @@ runs:
         repository: camunda/c8-cross-component-e2e-tests
         ref: ${{ inputs.e2e-test-suite-ref }}
         path: .e2e-test-suite
+        token: ${{ inputs.e2e-test-suite-token }}
 
     - name: Build E2E test suite
       if: inputs.e2e-test-suite-ref != ''
@@ -245,22 +250,6 @@ runs:
         ROSA_USER:        ${{ env.ROSA_USER }}
         ROSA_PASS:        ${{ env.ROSA_PASS }}
         CLUSTER_NAME:     ${{ env.INFRA_CLUSTER_NAME }}
-
-    - name: Checkout E2E test suite
-      if: inputs.e2e-test-suite-ref != ''
-      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      with:
-        repository: camunda/c8-cross-component-e2e-tests
-        ref: ${{ inputs.e2e-test-suite-ref }}
-        path: .e2e-test-suite
-        token: ${{ steps.cluster-auth.outputs.token }}
-
-    - name: Build E2E test suite
-      if: inputs.e2e-test-suite-ref != ''
-      shell: bash
-      run: |
-        npm ci --prefix "${GITHUB_WORKSPACE}/.e2e-test-suite"
-        npm run build --prefix "${GITHUB_WORKSPACE}/.e2e-test-suite"
 
     - name: Set test type vars
       id: test-type-vars
