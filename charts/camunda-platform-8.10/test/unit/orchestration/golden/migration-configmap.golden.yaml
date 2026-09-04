@@ -84,14 +84,22 @@ data:
           zone-aware:
             zones:
               - name: "zone-a"
-                number-of-brokers: 3
-                number-of-replicas: 3
+                number-of-brokers: 1
+                number-of-replicas: 1
                 priority: 100
+              - name: "zone-b"
+                number-of-brokers: 1
+                number-of-replicas: 1
+                priority: 90
+              - name: "zone-c"
+                number-of-brokers: 1
+                number-of-replicas: 1
+                priority: 80
         # zeebe.broker.cluster
         initial-contact-points:
           - camunda-platform-test-zeebe-zone-a-0.camunda-platform-test-zeebe-zone-a:26502
-          - camunda-platform-test-zeebe-zone-a-1.camunda-platform-test-zeebe-zone-a:26502
-          - camunda-platform-test-zeebe-zone-a-2.camunda-platform-test-zeebe-zone-a:26502
+          - camunda-platform-test-zeebe-zone-b-0.camunda-platform-test-zeebe-zone-b:26502
+          - camunda-platform-test-zeebe-zone-c-0.camunda-platform-test-zeebe-zone-c:26502
           - camunda-platform-test-zeebe-0.camunda-platform-test-zeebe:26502
           - camunda-platform-test-zeebe-1.camunda-platform-test-zeebe:26502
           - camunda-platform-test-zeebe-2.camunda-platform-test-zeebe:26502
@@ -233,7 +241,7 @@ data:
   startup.sh: |
     # The Node ID depends on the StatefulSet Pod's name so it cannot be templated in the StatefulSet level.
     # The value of "node-id" is calculated in the "startup.sh" file and exported as "VALUES_ORCHESTRATION_NODE_ID" env var.
-    export VALUES_ORCHESTRATION_NODE_ID="${VALUES_ORCHESTRATION_NODE_ID:-$[${K8S_NAME##*-} * 1 + 0]}"
+    export VALUES_ORCHESTRATION_NODE_ID="${VALUES_ORCHESTRATION_NODE_ID:-$[${K8S_NAME##*-} * 3 + 1]}"
     echo "export VALUES_ORCHESTRATION_NODE_ID=${VALUES_ORCHESTRATION_NODE_ID}"
 
     if [ "$ZEEBE_RESTORE" = "true" ]; then
@@ -292,10 +300,10 @@ data:
         replication-factor: "3"
         partition-count: "3"
         # zeebe.broker.cluster
-        initial-contact-points:
-          - camunda-platform-test-zeebe-0.${K8S_SERVICE_NAME}:26502
-          - camunda-platform-test-zeebe-1.${K8S_SERVICE_NAME}:26502
-          - camunda-platform-test-zeebe-2.${K8S_SERVICE_NAME}:26502
+        # Multi-region deployments: initial-contact-points must be provided manually via environment variable.
+        # Set CAMUNDA_CLUSTER_INITIALCONTACTPOINTS with fully-qualified domain names for all brokers across regions.
+        # Example: orchestration.env[0].name=CAMUNDA_CLUSTER_INITIALCONTACTPOINTS
+        #          orchestration.env[0].value=<pod>.<headless-service>.<namespace-0>.svc.cluster.local:26502,<pod>.<headless-service>.<namespace-1>.svc.cluster.local:26502,...
     
       api:
         grpc:
@@ -403,7 +411,7 @@ data:
     
         # zeebe.broker.network
         network:
-          advertisedHost: "${K8S_NAME}.${K8S_SERVICE_NAME}"
+          advertisedHost: "${K8S_NAME}.${K8S_SERVICE_NAME}.${K8S_NAMESPACE}.svc"
           host: 0.0.0.0
           commandApi:
             port: 26501

@@ -16,7 +16,7 @@ metadata:
     camunda.io/zone: zone-a
   annotations:
 spec:
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
       app: camunda-platform

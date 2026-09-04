@@ -84,14 +84,22 @@ data:
           zone-aware:
             zones:
               - name: "zone-a"
-                number-of-brokers: 3
-                number-of-replicas: 3
+                number-of-brokers: 1
+                number-of-replicas: 1
                 priority: 100
+              - name: "zone-b"
+                number-of-brokers: 1
+                number-of-replicas: 1
+                priority: 90
+              - name: "zone-c"
+                number-of-brokers: 1
+                number-of-replicas: 1
+                priority: 80
         # zeebe.broker.cluster
         initial-contact-points:
           - camunda-platform-test-zeebe-zone-a-0.camunda-platform-test-zeebe-zone-a:26502
-          - camunda-platform-test-zeebe-zone-a-1.camunda-platform-test-zeebe-zone-a:26502
-          - camunda-platform-test-zeebe-zone-a-2.camunda-platform-test-zeebe-zone-a:26502
+          - camunda-platform-test-zeebe-zone-b-0.camunda-platform-test-zeebe-zone-b:26502
+          - camunda-platform-test-zeebe-zone-c-0.camunda-platform-test-zeebe-zone-c:26502
     
       api:
         grpc:
