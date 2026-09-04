@@ -265,10 +265,11 @@ broker count without the diff naming the setting it ignored.
 {{- end }}
 
 {{/*
-Fail if zoned mode is combined with the region-based multiregion settings it replaces.
+Fail if zoned mode is combined with numbered-region settings outside migration. During
+migration they preserve the retained numbered StatefulSet's replicas and broker node IDs.
 */}}
-{{- if and (eq $mr.mode "zoned") (or (ne (int $mr.regions) 1) (ne (int $mr.regionId) 0)) }}
-  {{- fail (printf "[camunda][error] %s.regions and %s.regionId cannot be used with zoned mode." $mrKey $mrKey) -}}
+{{- if and (eq $mr.mode "zoned") (not $mr.keepUnzonedBrokers) (or (ne (int $mr.regions) 1) (ne (int $mr.regionId) 0)) }}
+  {{- fail (printf "[camunda][error] %s.regions and %s.regionId cannot be used with zoned mode unless %s.keepUnzonedBrokers is true." $mrKey $mrKey $mrKey) -}}
 {{- end }}
 
 {{/*
