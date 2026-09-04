@@ -1348,8 +1348,8 @@ func (s *ConfigmapTemplateTest) TestZonedConfiguration() {
 				require.Contains(t, output, "name: \"region-b\"")
 				require.Contains(t, output, "VALUES_ORCHESTRATION_NODE_ID:-${K8S_NAME##*-}")
 				require.Contains(t, output, "node-id: \"${VALUES_ORCHESTRATION_NODE_ID:}\"")
-				// Zoned brokers all live in-cluster, so the chart generates the
-				// full cross-zone contact point list itself.
+				// The generated topology includes every zone. Deployments across Kubernetes
+				// clusters can override these addresses with externally resolvable endpoints.
 				require.Contains(t, output, "initial-contact-points:")
 				require.Contains(t, output, "camunda-platform-test-zeebe-region-a-0.camunda-platform-test-zeebe-region-a:26502")
 				require.Contains(t, output, "camunda-platform-test-zeebe-region-b-0.camunda-platform-test-zeebe-region-b:26502")
@@ -1395,9 +1395,7 @@ func (s *ConfigmapTemplateTest) TestZonedConfiguration() {
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
-				// Zoned brokers all live in-cluster, so the chart can address every
-				// broker in every zone itself, whether the topology has one zone or
-				// many.
+				// A single-zone topology can use the generated in-cluster addresses.
 				require.Contains(t, output, "initial-contact-points:")
 				require.Contains(t, output, "camunda-platform-test-zeebe-region-a-0.camunda-platform-test-zeebe-region-a:26502")
 				require.Contains(t, output, "camunda-platform-test-zeebe-region-a-1.camunda-platform-test-zeebe-region-a:26502")
