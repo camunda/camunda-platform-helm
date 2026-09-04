@@ -2991,6 +2991,7 @@ departs from the chart default.
       (ne (default "numbered" .mode) "numbered")
       (ne (default "" .zone) "")
       (gt (len (default list .zones)) 0)
+      (default false .keepUnzonedBrokers)
       (ne (int (default 1 .regions)) 1)
       (ne (int (default 0 .regionId)) 0) -}}
 true
