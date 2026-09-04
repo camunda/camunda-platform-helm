@@ -11,7 +11,11 @@ spec:
   {{- else }}
   maxUnavailable: {{ .Values.orchestration.podDisruptionBudget.maxUnavailable }}
   {{- end }}
-  selector:
+  selector:{{- if .MigrationLegacy }}
+    matchExpressions:
+      - key: camunda.io/zone
+        operator: DoesNotExist
+{{- end }}
     matchLabels:
       {{- include "orchestration.matchLabels" . | nindent 6 }}
 {{- end -}}

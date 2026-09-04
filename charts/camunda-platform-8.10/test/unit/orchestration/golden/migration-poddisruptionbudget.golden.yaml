@@ -45,6 +45,9 @@ metadata:
 spec:
   maxUnavailable: 1
   selector:
+    matchExpressions:
+      - key: camunda.io/zone
+        operator: DoesNotExist
     matchLabels:
       app: camunda-platform
       app.kubernetes.io/name: camunda-platform
