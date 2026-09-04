@@ -242,7 +242,8 @@ jobs:
         if: ${{ !inputs.dry-run }}
         working-directory: .cr-release-packages
         run: |
-          cosign sign-blob -y "${{ steps.metadata.outputs.package_file }}" \
+          source "${GITHUB_WORKSPACE}/scripts/harbor-retry.sh"
+          retry_cmd "cosign sign-blob" cosign sign-blob -y "${{ steps.metadata.outputs.package_file }}" \
             --bundle "${{ steps.metadata.outputs.cosign_bundle }}"
 
       - name: Get Cosign Rekor log index
