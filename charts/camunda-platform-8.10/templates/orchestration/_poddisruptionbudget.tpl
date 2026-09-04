@@ -2,7 +2,7 @@
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
-  name: {{ include "orchestration.zoneFullname" . }}
+  name: {{ include "orchestration.zoneFullname" (dict "context" . "zone" (include "orchestration.scopedZone" .)) }}
   labels:
     {{- include "orchestration.labels" . | nindent 4 }}
 spec:

@@ -2423,6 +2423,30 @@ func (s *StatefulSetTest) TestZonedMode() {
 			},
 		},
 		{
+			Name: "TestZonedModePreservesTheZoneSuffixForLongNames",
+			Values: map[string]string{
+				"orchestration.fullnameOverride":                      "camunda-production-orchestration-cluster-emea-primary-zeebe",
+				"orchestration.multiregion.mode":                      "zoned",
+				"orchestration.multiregion.zone":                      "zone-b",
+				"orchestration.multiregion.zones[0].name":             "zone-a",
+				"orchestration.multiregion.zones[0].numberOfBrokers":  "1",
+				"orchestration.multiregion.zones[0].numberOfReplicas": "1",
+				"orchestration.multiregion.zones[0].priority":         "100",
+				"orchestration.multiregion.zones[1].name":             "zone-b",
+				"orchestration.multiregion.zones[1].numberOfBrokers":  "1",
+				"orchestration.multiregion.zones[1].numberOfReplicas": "1",
+				"orchestration.multiregion.zones[1].priority":         "90",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var statefulSet appsv1.StatefulSet
+				helm.UnmarshalK8SYaml(t, output, &statefulSet)
+
+				require.Equal(t, "camunda-production-orchestration-cluster-emea-primar-zone-b", statefulSet.Name)
+				require.LessOrEqual(t, len(statefulSet.Name+"-0"), 63)
+			},
+		},
+		{
 			// The resolver falls back to the deprecated block when the orchestration
 			// one is untouched. The numbering pair only: zoned mode never shipped under
 			// global.multiregion, and setting both blocks is rejected outright.
@@ -2456,6 +2480,34 @@ func (s *StatefulSetTest) TestZonedMode() {
 				require.Contains(t, err.Error(), "orchestration.multiregion and global.multiregion are both configured")
 			},
 		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *StatefulSetTest) TestZonedNameIsStableAcrossOrdinalWidth() {
+	expectedName := strings.Repeat("a", 52) + "-zone-a"
+	testCases := make([]testhelpers.TestCase, 0, 3)
+	for _, brokers := range []string{"9", "11", "999"} {
+		testCases = append(testCases, testhelpers.TestCase{
+			Name: "TestZonedNameWith" + brokers + "Brokers",
+			Values: map[string]string{
+				"orchestration.fullnameOverride":                      strings.Repeat("a", 63),
+				"orchestration.multiregion.mode":                      "zoned",
+				"orchestration.multiregion.zone":                      "zone-a",
+				"orchestration.multiregion.zones[0].name":             "zone-a",
+				"orchestration.multiregion.zones[0].numberOfBrokers":  brokers,
+				"orchestration.multiregion.zones[0].numberOfReplicas": "1",
+				"orchestration.multiregion.zones[0].priority":         "100",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var statefulSet appsv1.StatefulSet
+				helm.UnmarshalK8SYaml(t, output, &statefulSet)
+				require.Equal(t, expectedName, statefulSet.Name)
+				require.LessOrEqual(t, len(statefulSet.Name+"-998"), 63)
+			},
+		})
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)

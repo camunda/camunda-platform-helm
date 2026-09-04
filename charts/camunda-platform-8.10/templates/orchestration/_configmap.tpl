@@ -2,7 +2,7 @@
 {{- $mr := include "camundaPlatform.multiregion" $ | fromYaml -}}
 kind: ConfigMap
 metadata:
-  name: {{ include "orchestration.zoneFullname" . }}-configuration
+  name: {{ include "orchestration.zoneFullname" (dict "context" . "zone" (include "orchestration.scopedZone" .)) }}-configuration
   labels:
     {{- include "orchestration.labels" . | nindent 4 }}
 apiVersion: v1
