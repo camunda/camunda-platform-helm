@@ -6,7 +6,7 @@
 {{ include "orchestration.podDisruptionBudgetManifest" $ctx }}
 {{- if $mr.keepUnzonedBrokers }}
 {{- $unzonedCtx := dict "Values" (deepCopy $.Values) "Release" $.Release "Chart" $.Chart "Capabilities" $.Capabilities "Template" $.Template "Files" $.Files }}
-{{- $_ := set $unzonedCtx.Values.orchestration.multiregion "mode" "legacy" }}
+{{- $_ := set $unzonedCtx.Values.orchestration.multiregion "mode" "numbered" }}
 ---
 {{ include "orchestration.podDisruptionBudgetManifest" $unzonedCtx }}
 {{ end }}

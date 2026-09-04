@@ -2277,11 +2277,11 @@ orchestration:
     zone: ""
     ## @param orchestration.multiregion.zones can be used to define the zones of the Orchestration Cluster when using zoned mode.
     zones: []
-    ## @param orchestration.multiregion.keepUnzonedBrokers also renders the legacy numeric-node-ID StatefulSet alongside the zoned ones, for use during a zone migration.
+    ## @param orchestration.multiregion.keepUnzonedBrokers also renders the numbered broker StatefulSet alongside the zoned one during migration. Keep the previous regions and regionId values here until the numbered brokers are removed; move them from global.multiregion when migrating from the deprecated block.
     keepUnzonedBrokers: false
-    ## @skip orchestration.multiregion.regions number of regions that this Camunda Platform instance is stretched across
+    ## @skip orchestration.multiregion.regions number of regions that this Camunda Platform instance is stretched across. In zoned mode, retain the previous value only while keepUnzonedBrokers is true.
     regions: 1
-    ## @skip orchestration.multiregion.regionId unique id of the region. MUST start at 0 for the computation to work correctly. With 2 regions, you would have region 0 and 1.
+    ## @skip orchestration.multiregion.regionId unique id of the region. MUST start at 0 for the computation to work correctly. In zoned mode, retain the previous value only while keepUnzonedBrokers is true.
     regionId: 0
 
   ## @param orchestration.clusterSize defines the amount of brokers (=replicas), which are deployed via helm

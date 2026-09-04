@@ -19,7 +19,7 @@
 {{/*
 [orchestration] Zone-suffixed fullname, used for the per-zone StatefulSet, its governing
 headless Service, ServiceAccount, ConfigMap and PodDisruptionBudget. Falls back to the
-plain fullname whenever the context is not zone-scoped: legacy mode, the retained unzoned
+plain fullname whenever the context is not zone-scoped: numbered mode, the retained unzoned
 StatefulSet during a migration, and every resource shared across zones.
 */}}
 {{- define "orchestration.zoneFullname" -}}
@@ -34,7 +34,7 @@ StatefulSet during a migration, and every resource shared across zones.
 {{/*
 [orchestration] Pod-restarting checksum of this StatefulSet's ConfigMap. Rendered with
 `keepUnzonedBrokers` forced off, so dropping the migration flag does not roll the zoned
-brokers: the only thing that flag adds to a zoned ConfigMap is the legacy family of
+brokers: the only thing that flag adds to a zoned ConfigMap is the numbered family of
 `initial-contact-points`, which a broker reads once at bootstrap and never again.
 */}}
 {{- define "orchestration.configChecksum" -}}
