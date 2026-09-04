@@ -220,7 +220,7 @@ merged nowhere.
   {{- fail "[camunda][error] orchestration.multiregion and global.multiregion are both configured. global.multiregion is deprecated; keep orchestration.multiregion and remove the global block." -}}
 {{- end }}
 
-{{- $mr := include "camundaPlatform.multiregion" $ | fromYaml -}}
+{{- $mr := include "camundaPlatform.multiregion" $ | fromJson -}}
 {{- $mrKey := "orchestration.multiregion" -}}
 {{- if ne (include "camundaPlatform.multiregionConfigured" (.Values.orchestration.multiregion | default dict)) "true" -}}
   {{- $mrKey = "global.multiregion" -}}
@@ -1045,6 +1045,25 @@ The following values inside your values.yaml need to be set but were not:
         "Move the block and remove the global one; setting both fails the render."
     -}}
     {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+  {{- end }}
+
+  {{- if .Values.orchestration.profiles.broker }}
+    {{- if eq (include "orchestration.zoned" .) "true" }}
+      {{- $warningMessage := printf "%s %s %s"
+          "[camunda][warning]"
+          "\"orchestration.multiregion.mode\" is fixed for the life of the cluster: zoned brokers are identified by the composite \"<zone>_<index>\", numbered ones by a plain node ID."
+          "Switching an existing release between the two re-identifies every broker against Raft state written under its old ID, and the members stop recognising each other. Deploy a new cluster instead."
+      -}}
+      {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+    {{- end }}
+    {{- if eq (include "camundaPlatform.multiregionSpread" .) "true" }}
+      {{- $warningMessage := printf "%s %s %s"
+          "[camunda][warning]"
+          "This deployment spans more than one failure domain, so the chart cannot generate the broker bootstrap list: set CAMUNDA_CLUSTER_INITIALCONTACTPOINTS through \"orchestration.env\"."
+          "List every broker as <pod>.<headless-service>.<namespace>.svc.cluster.local:26502, comma-separated."
+      -}}
+      {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+    {{- end }}
   {{- end }}
 
   {{/* Camunda Hub consolidation deprecation warnings */}}
