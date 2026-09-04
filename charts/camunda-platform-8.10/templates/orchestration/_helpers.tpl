@@ -17,6 +17,33 @@
 {{- end -}}
 
 {{/*
+[orchestration] Zone-suffixed fullname, used for the per-zone StatefulSet, its governing
+headless Service, ServiceAccount, ConfigMap and PodDisruptionBudget. Falls back to the
+plain fullname whenever the context is not zone-scoped: numbered mode, the retained unzoned
+StatefulSet during a migration, and every resource shared across zones.
+*/}}
+{{- define "orchestration.zoneFullname" -}}
+{{- $mr := include "camundaPlatform.multiregion" . | fromYaml -}}
+{{- if and .ZoneScoped $mr.zone -}}
+{{- printf "%s-%s" (include "orchestration.fullname" .) $mr.zone | trunc 63 | trimSuffix "-" -}}
+{{- else -}}
+{{- include "orchestration.fullname" . -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+[orchestration] Pod-restarting checksum of this StatefulSet's ConfigMap. Rendered with
+`keepUnzonedBrokers` forced off, so dropping the migration flag does not roll the zoned
+brokers: the only thing that flag adds to a zoned ConfigMap is the numbered family of
+`initial-contact-points`, which a broker reads once at bootstrap and never again.
+*/}}
+{{- define "orchestration.configChecksum" -}}
+{{- $ctx := dict "Values" (deepCopy .Values) "Release" .Release "Chart" .Chart "Capabilities" .Capabilities "Template" .Template "Files" .Files "ZoneScoped" .ZoneScoped -}}
+{{- $_ := set $ctx.Values.orchestration.multiregion "keepUnzonedBrokers" false -}}
+{{- include "orchestration.configmapManifest" $ctx | sha256sum -}}
+{{- end -}}
+
+{{/*
 NOTE: takes a dict of "zones" and the zone "field" to total, not the root context.
 */}}
 {{- define "orchestration.zoneSum" -}}
@@ -140,6 +167,11 @@ app.kubernetes.io/version: {{ include "camundaPlatform.versionLabel" (dict
     {{- include "orchestration.brokerLabel" . }}
     {{- "\n" }}
     {{- include "orchestration.versionLabel" . }}
+    {{- $mr := include "camundaPlatform.multiregion" . | fromYaml -}}
+    {{- if and .ZoneScoped $mr.zone }}
+    {{- "\n" }}
+camunda.io/zone: {{ $mr.zone }}
+    {{- end }}
 {{- end -}}
 
 {{/*
@@ -160,6 +192,14 @@ app.kubernetes.io/version: {{ include "camundaPlatform.versionLabel" (dict
     {{- "\n" -}}
     {{/*    For backward compatibility, the component label is set to "zeebe-broker".*/}}
     {{- include "orchestration.brokerLabel" . }}
+    {{- /* NOTE: StatefulSet.spec.selector is immutable, so the retained unzoned
+         StatefulSet during a migration must keep its selector exactly as before —
+         the zone label is only ever added, never removed from an existing render. */ -}}
+    {{- $mr := include "camundaPlatform.multiregion" . | fromYaml -}}
+    {{- if and .ZoneScoped $mr.zone }}
+    {{- "\n" }}
+camunda.io/zone: {{ $mr.zone }}
+    {{- end }}
 {{- end -}}
 
 {{/*
@@ -193,7 +233,7 @@ app.kubernetes.io/version: {{ include "camundaPlatform.versionLabel" (dict
 */}}
 {{- define "orchestration.serviceAccountName" -}}
     {{- if .Values.orchestration.serviceAccount.enabled -}}
-        {{- default (include "orchestration.fullname" .) .Values.orchestration.serviceAccount.name -}}
+        {{- default (include "orchestration.zoneFullname" .) .Values.orchestration.serviceAccount.name -}}
     {{- else -}}
         {{- default "default" .Values.orchestration.serviceAccount.name -}}
     {{- end -}}
@@ -555,7 +595,7 @@ Service names.
 [orchestration] Define Orchestration Cluster service name - Headless.
 */}}
 {{- define "orchestration.serviceNameHeadless" }}
-    {{- include "orchestration.fullname" . -}}
+    {{- include "orchestration.zoneFullname" . -}}
 {{- end -}}
 
 {{/*

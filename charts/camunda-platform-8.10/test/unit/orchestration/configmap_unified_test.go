@@ -1276,7 +1276,11 @@ func (s *ConfigmapTemplateTest) TestZonedConfiguration() {
 				require.Contains(t, output, "name: \"region-b\"")
 				require.Contains(t, output, "VALUES_ORCHESTRATION_NODE_ID:-${K8S_NAME##*-}")
 				require.Contains(t, output, "node-id: \"${VALUES_ORCHESTRATION_NODE_ID:}\"")
-				require.NotContains(t, output, "initial-contact-points:")
+				// The generated topology includes every zone. Deployments across Kubernetes
+				// clusters can override these addresses with externally resolvable endpoints.
+				require.Contains(t, output, "initial-contact-points:")
+				require.Contains(t, output, "camunda-platform-test-zeebe-region-a-0.camunda-platform-test-zeebe-region-a:26502")
+				require.Contains(t, output, "camunda-platform-test-zeebe-region-b-0.camunda-platform-test-zeebe-region-b:26502")
 			},
 		},
 		{
@@ -1319,17 +1323,14 @@ func (s *ConfigmapTemplateTest) TestZonedConfiguration() {
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
-				// One zone is one cluster behind one headless Service, so the
-				// chart can address every broker itself, exactly as it does for a
-				// single-region deployment. Only a cluster spread over more than
-				// one zone needs the list handed to it from outside.
+				// A single-zone topology can use the generated in-cluster addresses.
 				require.Contains(t, output, "initial-contact-points:")
-				require.Contains(t, output, "camunda-platform-test-zeebe-0.${K8S_SERVICE_NAME}:26502")
-				require.Contains(t, output, "camunda-platform-test-zeebe-1.${K8S_SERVICE_NAME}:26502")
+				require.Contains(t, output, "camunda-platform-test-zeebe-region-a-0.camunda-platform-test-zeebe-region-a:26502")
+				require.Contains(t, output, "camunda-platform-test-zeebe-region-a-1.camunda-platform-test-zeebe-region-a:26502")
 				// Two brokers, so two contact points. The count comes from the zone
 				// list, not from `orchestration.clusterSize`, which is still on its
 				// default of three and would have produced a third.
-				require.NotContains(t, output, "camunda-platform-test-zeebe-2.${K8S_SERVICE_NAME}:26502")
+				require.NotContains(t, output, "camunda-platform-test-zeebe-region-a-2.camunda-platform-test-zeebe-region-a:26502")
 				require.Contains(t, output, "size: \"2\"")
 			},
 		},
@@ -1543,7 +1544,9 @@ func (s *ConfigmapTemplateTest) TestZonedModeRejectsNumberedRegionSettings() {
 			},
 		},
 		{
-			Name: "TestZonedModeRejectsAnEmptyZone",
+			// A release renders exactly one zone, so the zone it belongs to is not
+			// optional: without it the broker count and the node IDs are undefined.
+			Name: "TestZonedModeRequiresTheZone",
 			Values: map[string]string{
 				"orchestration.multiregion.mode":                      "zoned",
 				"orchestration.multiregion.zones[0].name":             "region-a",

@@ -1,17 +1,16 @@
-{{ if and (eq (include "camundaPlatform.orchestrationEnabled" .) "true") .Values.orchestration.podDisruptionBudget.enabled }}
-apiVersion: policy/v1
-kind: PodDisruptionBudget
-metadata:
-  name: {{ include "orchestration.fullname" . }}
-  labels:
-    {{- include "orchestration.labels" . | nindent 4 }}
-spec:
-  {{- if .Values.orchestration.podDisruptionBudget.minAvailable }}
-  minAvailable: {{ .Values.orchestration.podDisruptionBudget.minAvailable | default 0 }}
-  {{- else }}
-  maxUnavailable: {{ .Values.orchestration.podDisruptionBudget.maxUnavailable }}
-  {{- end }}
-  selector:
-    matchLabels:
-      {{- include "orchestration.matchLabels" . | nindent 6 }}
-{{- end }}
+{{- if and (eq (include "camundaPlatform.orchestrationEnabled" .) "true") .Values.orchestration.podDisruptionBudget.enabled -}}
+{{- if eq (include "orchestration.zoned" .) "true" -}}
+{{- $mr := include "camundaPlatform.multiregion" . | fromYaml -}}
+{{- $ctx := dict "Values" (deepCopy $.Values) "Release" $.Release "Chart" $.Chart "Capabilities" $.Capabilities "Template" $.Template "Files" $.Files "ZoneScoped" true }}
+---
+{{ include "orchestration.podDisruptionBudgetManifest" $ctx }}
+{{- if $mr.keepUnzonedBrokers }}
+{{- $unzonedCtx := dict "Values" (deepCopy $.Values) "Release" $.Release "Chart" $.Chart "Capabilities" $.Capabilities "Template" $.Template "Files" $.Files }}
+{{- $_ := set $unzonedCtx.Values.orchestration.multiregion "mode" "numbered" }}
+---
+{{ include "orchestration.podDisruptionBudgetManifest" $unzonedCtx }}
+{{ end }}
+{{- else -}}
+{{ include "orchestration.podDisruptionBudgetManifest" . }}
+{{- end -}}
+{{- end -}}

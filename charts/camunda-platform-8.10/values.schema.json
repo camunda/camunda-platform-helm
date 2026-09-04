@@ -4290,6 +4290,11 @@
                                 }
                             }
                         },
+                        "keepUnzonedBrokers": {
+                            "type": "boolean",
+                            "description": "also renders the numbered broker StatefulSet alongside the zoned one during migration. Keep the previous regions and regionId values here until the numbered brokers are removed; move them from global.multiregion when migrating from the deprecated block.",
+                            "default": false
+                        },
                         "regions": {
                             "type": [
                                 "integer",

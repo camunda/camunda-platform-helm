@@ -265,10 +265,11 @@ broker count without the diff naming the setting it ignored.
 {{- end }}
 
 {{/*
-Fail if zoned mode is combined with the region-based multiregion settings it replaces.
+Fail if zoned mode is combined with numbered-region settings outside migration. During
+migration they preserve the retained numbered StatefulSet's replicas and broker node IDs.
 */}}
-{{- if and (eq $mr.mode "zoned") (or (ne (int $mr.regions) 1) (ne (int $mr.regionId) 0)) }}
-  {{- fail (printf "[camunda][error] %s.regions and %s.regionId cannot be used with zoned mode." $mrKey $mrKey) -}}
+{{- if and (eq $mr.mode "zoned") (not $mr.keepUnzonedBrokers) (or (ne (int $mr.regions) 1) (ne (int $mr.regionId) 0)) }}
+  {{- fail (printf "[camunda][error] %s.regions and %s.regionId cannot be used with zoned mode unless %s.keepUnzonedBrokers is true." $mrKey $mrKey $mrKey) -}}
 {{- end }}
 
 {{/*
@@ -293,9 +294,10 @@ no quorum can reach.
 {{- end }}
 
 {{/*
-Fail if zoned mode does not describe the zone this release belongs to. The zone list
-is what assigns broker node IDs and partition replicas, so a release whose own zone is
-missing from it would take the IDs of the first zone and collide with it.
+Fail if zoned mode does not describe the zone this release belongs to. A release renders
+exactly one zone, so the zone is what selects this release's broker count and node IDs.
+The zone list is what assigns broker node IDs and partition replicas, so a release whose
+own zone is missing from it would take the IDs of the first zone and collide with it.
 */}}
 {{- if eq $mr.mode "zoned" }}
   {{- $zone := $mr.zone -}}
@@ -309,6 +311,13 @@ missing from it would take the IDs of the first zone and collide with it.
   {{- if not (has $zone $names) }}
     {{- fail (printf "[camunda][error] %s.zone %q is not declared in %s.zones (%s)." $mrKey $zone $mrKey (join ", " $names)) -}}
   {{- end }}
+{{- end }}
+
+{{/*
+R7: keepUnzonedBrokers only makes sense as a migration staging knob on top of zoned mode.
+*/}}
+{{- if and $mr.keepUnzonedBrokers (ne $mr.mode "zoned") }}
+  {{- fail (printf "[camunda][error] %s.keepUnzonedBrokers requires %s.mode=zoned." $mrKey $mrKey) -}}
 {{- end }}
 
 {{/*
