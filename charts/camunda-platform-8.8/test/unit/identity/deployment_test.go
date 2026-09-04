@@ -991,10 +991,10 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestConnectorsDisabledExcludesOidcSecretEnvVar",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"identity.enabled":                                               "true",
-				"global.identity.auth.enabled":                                   "true",
-				"global.security.authentication.method":                          "oidc",
-				"connectors.enabled":                                             "false",
+				"identity.enabled":                      "true",
+				"global.identity.auth.enabled":          "true",
+				"global.security.authentication.method": "oidc",
+				"connectors.enabled":                    "false",
 				"orchestration.security.authentication.oidc.existingSecret.name": "orchestration-oidc-secret",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
