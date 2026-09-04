@@ -76,6 +76,8 @@ func TestGoldenZoneAwareMigrationTemplateOrchestration(t *testing.T) {
 			name: "zoned",
 			setValues: map[string]string{
 				"orchestration.multiregion.keepUnzonedBrokers": "false",
+				"orchestration.multiregion.regions":            "1",
+				"orchestration.multiregion.regionId":           "0",
 			},
 		},
 	}
