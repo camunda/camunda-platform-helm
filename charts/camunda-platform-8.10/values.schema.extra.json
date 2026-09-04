@@ -927,7 +927,9 @@
                                     "name": {
                                         "type": "string",
                                         "minLength": 1,
-                                        "description": "Name of the zone. It is the prefix of the composite broker member ID \"<zone>_<node-id>\", and one of these names must be selected by orchestration.multiregion.zone."
+                                        "maxLength": 63,
+                                        "pattern": "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$",
+                                        "description": "Name of the zone. It is the prefix of the composite broker member ID \"<zone>_<node-id>\", and one of these names must be selected by orchestration.multiregion.zone. Restricted to an RFC 1123 label: an underscore would make the composite ID ambiguous, and the name is also used to derive per-zone resource and DNS names."
                                     },
                                     "numberOfBrokers": {
                                         "type": "integer",
