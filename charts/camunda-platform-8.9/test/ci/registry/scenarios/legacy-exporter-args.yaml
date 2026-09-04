@@ -1,0 +1,12 @@
+name: legacy-exporter-args
+auth: keycloak
+flows:
+  - install,upgrade-patch
+identity: keycloak
+persistence: elasticsearch
+features:
+  - legacy-exporter-args
+platforms:
+  - gke
+infra-type:
+  gke: distroci

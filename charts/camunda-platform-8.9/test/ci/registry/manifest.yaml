@@ -81,6 +81,13 @@ integration:
       shortname: cprst
       tier: 2
       enabled: true
+    # helm#7028 regression guard: legacy ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_*
+    # overrides must survive a patch upgrade. Step 1 installs the latest published 8.9
+    # patch, so this cell stays red until 14.9.1 replaces the broken 14.9.0 as that source.
+    - id: legacy-exporter-args
+      shortname: lgexp
+      tier: 2
+      enabled: true
     - id: keycloak-original-install-tier1
       shortname: keyco
       tier: 1

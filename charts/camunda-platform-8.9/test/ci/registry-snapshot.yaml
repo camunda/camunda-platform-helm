@@ -316,6 +316,21 @@ integration:
           persistence: elasticsearch
           features:
             - persistence
+        - name: legacy-exporter-args
+          enabled: true
+          shortname: lgexp
+          auth: keycloak
+          flow: install,upgrade-patch
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - legacy-exporter-args
         - name: keycloak-original
           enabled: true
           shortname: keyco
