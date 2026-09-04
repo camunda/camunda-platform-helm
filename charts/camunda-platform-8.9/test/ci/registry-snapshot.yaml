@@ -320,7 +320,7 @@ integration:
           enabled: true
           shortname: lgexp
           auth: keycloak
-          flow: install,upgrade-patch
+          flow: install
           platforms:
             - gke
           exclude: []

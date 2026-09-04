@@ -1,7 +1,9 @@
 name: legacy-exporter-args
 auth: keycloak
+# upgrade-patch is added once 14.9.1 is published: Step 1 installs the latest published
+# 8.9 patch, which is the broken 14.9.0 until then. See helm#7028.
 flows:
-  - install,upgrade-patch
+  - install
 identity: keycloak
 persistence: elasticsearch
 features:

@@ -81,9 +81,9 @@ integration:
       shortname: cprst
       tier: 2
       enabled: true
-    # helm#7028 regression guard: legacy ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_*
-    # overrides must survive a patch upgrade. Step 1 installs the latest published 8.9
-    # patch, so this cell stays red until 14.9.1 replaces the broken 14.9.0 as that source.
+    # helm#7028 regression guard: an install carrying legacy
+    # ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_* overrides must start. The upgrade-patch
+    # flow is added once 14.9.1 is published (see scenarios/legacy-exporter-args.yaml).
     - id: legacy-exporter-args
       shortname: lgexp
       tier: 2
