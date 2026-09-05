@@ -23,13 +23,23 @@ import (
 
 func writeValuesFile(t *testing.T, dir, name string) {
 	t.Helper()
-	path := filepath.Join(dir, "values", name)
+	path := filepath.Join(dir, "test", "integration", "scenarios", "chart-full-setup", "values", name)
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		t.Fatalf("mkdir: %v", err)
 	}
 	if err := os.WriteFile(path, []byte("{}\n"), 0o644); err != nil {
 		t.Fatalf("write: %v", err)
 	}
+}
+
+func newTopologyTestChart(t *testing.T) (string, string) {
+	t.Helper()
+	repoRoot := t.TempDir()
+	chartDir := filepath.Join(repoRoot, "charts", "camunda-platform-8.10")
+	if err := os.MkdirAll(chartDir, 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	return repoRoot, chartDir
 }
 
 func writeDepFile(t *testing.T, depsDir, id string) {
@@ -50,7 +60,7 @@ func TestTopologyValidate_NilIsNoop(t *testing.T) {
 }
 
 func TestTopologyValidate_Valid(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	depsDir := filepath.Join(t.TempDir(), "dependencies")
 	writeValuesFile(t, dir, "hub.yaml")
 	writeValuesFile(t, dir, "orchestration.yaml")
@@ -103,8 +113,61 @@ func TestTopologyValidate_Valid(t *testing.T) {
 	}
 }
 
+func TestTopologyValidate_UsesReleaseChartVersionValues(t *testing.T) {
+	repoRoot, parentChartDir := newTopologyTestChart(t)
+	releaseChartDir := filepath.Join(repoRoot, "charts", "camunda-platform-8.9")
+	if err := os.MkdirAll(releaseChartDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	writeValuesFile(t, parentChartDir, "hub.yaml")
+	writeValuesFile(t, releaseChartDir, "orchestration.yaml")
+	writeValuesFile(t, releaseChartDir, "identity/keycloak-external.yaml")
+	writeValuesFile(t, releaseChartDir, "persistence/elasticsearch.yaml")
+	writeValuesFile(t, releaseChartDir, "features/mixed.yaml")
+
+	top := &Topology{Name: "mixed", Releases: []TopologyRelease{
+		{Role: "hub", NamespaceSuffix: "hub", Values: "hub.yaml"},
+		{
+			ChartVersion:       "8.9",
+			Role:               "orchestration",
+			NamespaceSuffix:    "orcha",
+			Values:             "orchestration.yaml",
+			Identity:           "keycloak-external",
+			Persistence:        "elasticsearch",
+			Features:           []string{"mixed"},
+			ModelerClusterID:   "orcha",
+			ModelerClusterName: "Orchestration A",
+		},
+	}}
+
+	if err := top.Validate("ctx", parentChartDir, t.TempDir()); err != nil {
+		t.Fatalf("expected release values to resolve from chart 8.9: %v", err)
+	}
+	if err := os.Remove(filepath.Join(releaseChartDir, "test", "integration", "scenarios", "chart-full-setup", "values", "features", "mixed.yaml")); err != nil {
+		t.Fatal(err)
+	}
+	if err := top.Validate("ctx", parentChartDir, t.TempDir()); err == nil || !strings.Contains(err.Error(), "camunda-platform-8.9") {
+		t.Fatalf("expected missing 8.9 feature error, got %v", err)
+	}
+}
+
+func TestTopologyValidate_RejectsMissingOrUnsafeChartVersion(t *testing.T) {
+	_, chartDir := newTopologyTestChart(t)
+	writeValuesFile(t, chartDir, "hub.yaml")
+	for _, version := range []string{"8.404", "../8.9"} {
+		t.Run(version, func(t *testing.T) {
+			top := &Topology{Name: "bad-version", Releases: []TopologyRelease{
+				{ChartVersion: version, Role: "hub", NamespaceSuffix: "hub", Values: "hub.yaml"},
+			}}
+			if err := top.Validate("ctx", chartDir, t.TempDir()); err == nil || !strings.Contains(err.Error(), "chart-version") {
+				t.Fatalf("expected chart-version error, got %v", err)
+			}
+		})
+	}
+}
+
 func TestTopologyValidate_RequiresUniqueModelerClusters(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	writeValuesFile(t, dir, "hub.yaml")
 	writeValuesFile(t, dir, "orchestration.yaml")
 	top := &Topology{
@@ -123,7 +186,7 @@ func TestTopologyValidate_RequiresUniqueModelerClusters(t *testing.T) {
 }
 
 func TestTopologyValidate_RequiresOrchestrationRelease(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	writeValuesFile(t, dir, "hub.yaml")
 	top := &Topology{
 		Name: "hub-only",
@@ -139,7 +202,7 @@ func TestTopologyValidate_RequiresOrchestrationRelease(t *testing.T) {
 }
 
 func TestTopologyValidate_RequiresDNS1123NamespaceSuffix(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	writeValuesFile(t, dir, "hub.yaml")
 	writeValuesFile(t, dir, "orchestration.yaml")
 	top := &Topology{
@@ -157,7 +220,7 @@ func TestTopologyValidate_RequiresDNS1123NamespaceSuffix(t *testing.T) {
 }
 
 func TestTopologyValidate_MissingValuesFile(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	top := &Topology{
 		Name: "hub-1orch",
 		Releases: []TopologyRelease{
@@ -171,7 +234,7 @@ func TestTopologyValidate_MissingValuesFile(t *testing.T) {
 }
 
 func TestTopologyValidate_MissingIdentityLayer(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	writeValuesFile(t, dir, "hub.yaml")
 	top := &Topology{
 		Name: "bad-identity",
@@ -185,7 +248,7 @@ func TestTopologyValidate_MissingIdentityLayer(t *testing.T) {
 }
 
 func TestTopologyValidate_MissingPersistenceLayer(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	writeValuesFile(t, dir, "orchestration.yaml")
 	top := &Topology{
 		Name: "bad-persistence",
@@ -199,7 +262,7 @@ func TestTopologyValidate_MissingPersistenceLayer(t *testing.T) {
 }
 
 func TestTopologyValidate_MissingDependency(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	writeValuesFile(t, dir, "hub.yaml")
 	top := &Topology{
 		Name: "bad-dep",
@@ -213,7 +276,7 @@ func TestTopologyValidate_MissingDependency(t *testing.T) {
 }
 
 func TestTopologyValidate_NoHubRole(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	writeValuesFile(t, dir, "orchestration.yaml")
 	top := &Topology{
 		Name: "no-hub",
@@ -228,7 +291,7 @@ func TestTopologyValidate_NoHubRole(t *testing.T) {
 }
 
 func TestTopologyValidate_TwoHubRoles(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	writeValuesFile(t, dir, "hub.yaml")
 	top := &Topology{
 		Name: "two-hub",
@@ -243,7 +306,7 @@ func TestTopologyValidate_TwoHubRoles(t *testing.T) {
 }
 
 func TestTopologyValidate_DuplicateNamespaceSuffix(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	writeValuesFile(t, dir, "hub.yaml")
 	writeValuesFile(t, dir, "orchestration.yaml")
 	top := &Topology{
@@ -259,7 +322,7 @@ func TestTopologyValidate_DuplicateNamespaceSuffix(t *testing.T) {
 }
 
 func TestTopologyValidate_DependsOnUnknownRole(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	writeValuesFile(t, dir, "hub.yaml")
 	writeValuesFile(t, dir, "orchestration.yaml")
 	top := &Topology{
@@ -275,7 +338,7 @@ func TestTopologyValidate_DependsOnUnknownRole(t *testing.T) {
 }
 
 func TestTopologyValidate_InvalidRole(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	writeValuesFile(t, dir, "weird.yaml")
 	top := &Topology{
 		Name: "bad-role",
