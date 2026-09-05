@@ -1681,13 +1681,10 @@ jobs:
         run: |
           echo "Validating blob report ZIP files..."
 
-          # Check if download succeeded and directory exists with files
-          if [[ "${{ steps.download-reports.outcome }}" != "success" ]] || [[ ! -d "all-blob-reports" ]]; then
-            echo "⚠️ No blob reports were downloaded (download outcome: ${{ steps.download-reports.outcome }})"
-            mkdir -p all-blob-reports
-            exit 0
-          fi
-
+          # A failed or partial download (continue-on-error above) can leave a
+          # truncated .zip behind, so always run the corruption check rather
+          # than trusting the download outcome and skipping cleanup.
+          mkdir -p all-blob-reports
           cd all-blob-reports
 
           for zip_file in *.zip; do
@@ -1702,7 +1699,7 @@ jobs:
           done
 
           remaining_files=$(ls -1 *.zip 2>/dev/null | wc -l || echo "0")
-          echo "Valid blob reports remaining: $remaining_files"
+          echo "Valid blob reports remaining (download outcome: ${{ steps.download-reports.outcome }}): $remaining_files"
 
           if [[ "$remaining_files" -eq 0 ]]; then
             echo "⚠️ No valid blob reports found to merge"
