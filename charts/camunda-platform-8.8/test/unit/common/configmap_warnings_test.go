@@ -90,3 +90,42 @@ func (s *ConfigMapWarningsTemplateTest) TestDifferentValuesInputs() {
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
+
+func (s *ConfigMapWarningsTemplateTest) TestPvcAccessModesReadWriteOncePodWarning() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "ReadWriteOncePodTriggersWarning",
+			Values: map[string]string{
+				"orchestration.pvcAccessModes[0]": "ReadWriteOncePod",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().Contains(configmap.Data["warnings"],
+					"orchestration.pvcAccessModes is set to ReadWriteOncePod")
+			},
+		},
+		{
+			Name: "DefaultReadWriteOnceDoesNotTriggerWarning",
+			// Another warning must stay active so the ConfigMap still renders (it is omitted
+			// entirely when no warnings are present, see TestWarningsConfigMapAbsentWhenNoWarnings).
+			Values: map[string]string{
+				"identity.enabled":                                              "true",
+				"global.identity.auth.enabled":                                  "true",
+				"global.security.authentication.method":                         "oidc",
+				"connectors.security.authentication.oidc.secret.existingSecret": "foo",
+				"global.identity.auth.issuerBackendUrl":                         "http://keycloak:80/auth/realms/camunda-platform",
+				"global.testDeprecationFlags.existingSecretsMustBeSet":          "warning",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().NotContains(configmap.Data["warnings"], "pvcAccessModes")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
