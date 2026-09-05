@@ -1300,7 +1300,8 @@
                 },
                 "multiregion": {
                     "type": "object",
-                    "description": "Multi-region configuration for the Orchestration cluster. WARNING: get your configuration reviewed by Camunda before going to production — see https://docs.camunda.io/docs/self-managed/concepts/multi-region/dual-region/.",
+                    "additionalProperties": false,
+                    "description": "DEPRECATED, use orchestration.multiregion. Only the regions and regionId settings remain here; zoned mode is configured under orchestration.multiregion.",
                     "default": {},
                     "properties": {
                         "regions": {
@@ -4629,6 +4630,83 @@
                             }
                         }
                     }
+                },
+                "multiregion": {
+                    "type": "object",
+                    "properties": {
+                        "mode": {
+                            "type": "string",
+                            "description": "defines how a broker is told which region it is in. `numbered` derives it from the node ID, `zoned` from a zone name.",
+                            "default": "numbered",
+                            "enum": [
+                                "numbered",
+                                "zoned"
+                            ]
+                        },
+                        "zone": {
+                            "type": "string",
+                            "description": "can be used to define the zone of this Orchestration Cluster deployment when using zoned mode.",
+                            "default": ""
+                        },
+                        "zones": {
+                            "type": "array",
+                            "description": "can be used to define the zones of the Orchestration Cluster when using zoned mode.",
+                            "default": [],
+                            "items": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "required": [
+                                    "name",
+                                    "numberOfBrokers",
+                                    "numberOfReplicas",
+                                    "priority"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 63,
+                                        "pattern": "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$",
+                                        "description": "Name of the zone. It is the prefix of the composite broker member ID \"<zone>_<node-id>\", and one of these names must be selected by orchestration.multiregion.zone. Restricted to an RFC 1123 label: an underscore would make the composite ID ambiguous, and the name is also used to derive per-zone resource and DNS names."
+                                    },
+                                    "numberOfBrokers": {
+                                        "type": "integer",
+                                        "minimum": 1,
+                                        "description": "Number of brokers deployed in this zone. For the local zone it is also the StatefulSet replica count."
+                                    },
+                                    "numberOfReplicas": {
+                                        "type": "integer",
+                                        "minimum": 1,
+                                        "description": "Number of partition replicas this zone holds."
+                                    },
+                                    "priority": {
+                                        "type": "integer",
+                                        "minimum": 0,
+                                        "description": "Priority of this zone in the leader election."
+                                    }
+                                }
+                            }
+                        },
+                        "regions": {
+                            "type": [
+                                "integer",
+                                "string"
+                            ],
+                            "description": "Number of regions this Camunda Platform instance is stretched across.",
+                            "default": 1
+                        },
+                        "regionId": {
+                            "type": [
+                                "integer",
+                                "string"
+                            ],
+                            "description": "Unique id of the region. MUST start at 0 for the computation to work correctly. With 2 regions, you would have region 0 and 1.",
+                            "default": 0
+                        }
+                    },
+                    "additionalProperties": false,
+                    "description": "Multi-region configuration for the Orchestration cluster. WARNING: get your configuration reviewed by Camunda before going to production — see https://docs.camunda.io/docs/self-managed/concepts/multi-region/dual-region/.",
+                    "default": {}
                 },
                 "clusterSize": {
                     "type": "string",

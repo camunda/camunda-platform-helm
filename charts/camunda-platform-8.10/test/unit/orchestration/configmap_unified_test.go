@@ -1199,6 +1199,368 @@ func (s *ConfigmapTemplateTest) TestMultiRegionInitialContactPoints() {
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
+func (s *ConfigmapTemplateTest) TestNumberedModeConfigurationCompatibility() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "DefaultModeUsesPlainNodeIDAndSingleRegionAdvertisedHost",
+			Values: map[string]string{
+				"orchestration.profiles.broker": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "${K8S_NAME##*-} * 1 + 0")
+				require.Contains(t, output, "node-id: \"${VALUES_ORCHESTRATION_NODE_ID:}\"")
+				require.Contains(t, output, "advertisedHost: \"${K8S_NAME}.${K8S_SERVICE_NAME}\"")
+				require.NotContains(t, output, "CAMUNDA_CLUSTER_ZONE")
+				require.NotContains(t, output, "scheme: ZONE_AWARE")
+			},
+		},
+		{
+			Name: "ExplicitNumberedModeUsesPlainNodeIDAndMultiRegionAdvertisedHost",
+			Values: map[string]string{
+				"orchestration.multiregion.mode": "numbered",
+				"global.multiregion.regions":     "2",
+				"global.multiregion.regionId":    "1",
+				"orchestration.profiles.broker":  "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "${K8S_NAME##*-} * 2 + 1")
+				require.Contains(t, output, "node-id: \"${VALUES_ORCHESTRATION_NODE_ID:}\"")
+				require.Contains(t, output, "advertisedHost: \"${K8S_NAME}.${K8S_SERVICE_NAME}.${K8S_NAMESPACE}.svc\"")
+				require.NotContains(t, output, "CAMUNDA_CLUSTER_ZONE")
+				require.NotContains(t, output, "scheme: ZONE_AWARE")
+			},
+		},
+		{
+			Name: "NumberedCustomConfigurationRemainsAuthoritative",
+			Values: map[string]string{
+				"orchestration.multiregion.mode": "numbered",
+				"orchestration.configuration":    "camunda:\n  cluster:\n    partition-count: 7\n",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "partition-count: 7")
+				require.NotContains(t, output, "partition-count: \"3\"")
+				require.Contains(t, output, "${K8S_NAME##*-} * 1 + 0")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *ConfigmapTemplateTest) TestZonedConfiguration() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestApplicationYamlShouldContainZoneAwareConfiguration",
+			Values: map[string]string{
+				"orchestration.multiregion.mode":                      "zoned",
+				"orchestration.multiregion.zone":                      "region-a",
+				"orchestration.multiregion.zones[0].name":             "region-a",
+				"orchestration.multiregion.zones[0].numberOfBrokers":  "2",
+				"orchestration.multiregion.zones[0].numberOfReplicas": "2",
+				"orchestration.multiregion.zones[0].priority":         "100",
+				"orchestration.multiregion.zones[1].name":             "region-b",
+				"orchestration.multiregion.zones[1].numberOfBrokers":  "3",
+				"orchestration.multiregion.zones[1].numberOfReplicas": "3",
+				"orchestration.multiregion.zones[1].priority":         "50",
+				"orchestration.profiles.broker":                       "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "size: \"5\"")
+				require.Contains(t, output, "replication-factor: \"5\"")
+				require.Contains(t, output, "scheme: ZONE_AWARE")
+				require.Contains(t, output, "name: \"region-a\"")
+				require.Contains(t, output, "name: \"region-b\"")
+				require.Contains(t, output, "VALUES_ORCHESTRATION_NODE_ID:-${K8S_NAME##*-}")
+				require.Contains(t, output, "node-id: \"${VALUES_ORCHESTRATION_NODE_ID:}\"")
+				require.NotContains(t, output, "initial-contact-points:")
+			},
+		},
+		{
+			Name: "TestZonedNodeIdIsTheIndexInsideTheZone",
+			Values: map[string]string{
+				"orchestration.multiregion.mode":                      "zoned",
+				"orchestration.multiregion.zone":                      "region-b",
+				"orchestration.multiregion.zones[0].name":             "region-a",
+				"orchestration.multiregion.zones[0].numberOfBrokers":  "2",
+				"orchestration.multiregion.zones[0].numberOfReplicas": "2",
+				"orchestration.multiregion.zones[0].priority":         "100",
+				"orchestration.multiregion.zones[1].name":             "region-b",
+				"orchestration.multiregion.zones[1].numberOfBrokers":  "3",
+				"orchestration.multiregion.zones[1].numberOfReplicas": "3",
+				"orchestration.multiregion.zones[1].priority":         "50",
+				"orchestration.profiles.broker":                       "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				// Brokers are addressed as "<zone>_<node-id>", so region-b's three
+				// Pods are region-b_0, region-b_1 and region-b_2 whatever region-a
+				// declares before it. No cluster-wide offset applies.
+				require.Contains(t, output, "VALUES_ORCHESTRATION_NODE_ID:-${K8S_NAME##*-}")
+				require.NotContains(t, output, "${K8S_NAME##*-} +")
+				require.NotContains(t, output, "${K8S_NAME##*-} *")
+				require.Contains(t, output, "node-id: \"${VALUES_ORCHESTRATION_NODE_ID:}\"")
+				require.Contains(t, output, "size: \"5\"")
+			},
+		},
+		{
+			Name: "TestSingleZoneStillRendersItsInitialContactPoints",
+			Values: map[string]string{
+				"orchestration.multiregion.mode":                      "zoned",
+				"orchestration.multiregion.zone":                      "region-a",
+				"orchestration.multiregion.zones[0].name":             "region-a",
+				"orchestration.multiregion.zones[0].numberOfBrokers":  "2",
+				"orchestration.multiregion.zones[0].numberOfReplicas": "2",
+				"orchestration.multiregion.zones[0].priority":         "100",
+				"orchestration.profiles.broker":                       "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				// One zone is one cluster behind one headless Service, so the
+				// chart can address every broker itself, exactly as it does for a
+				// single-region deployment. Only a cluster spread over more than
+				// one zone needs the list handed to it from outside.
+				require.Contains(t, output, "initial-contact-points:")
+				require.Contains(t, output, "camunda-platform-test-zeebe-0.${K8S_SERVICE_NAME}:26502")
+				require.Contains(t, output, "camunda-platform-test-zeebe-1.${K8S_SERVICE_NAME}:26502")
+				// Two brokers, so two contact points. The count comes from the zone
+				// list, not from `orchestration.clusterSize`, which is still on its
+				// default of three and would have produced a third.
+				require.NotContains(t, output, "camunda-platform-test-zeebe-2.${K8S_SERVICE_NAME}:26502")
+				require.Contains(t, output, "size: \"2\"")
+			},
+		},
+		{
+			Name: "TestZonedModeDoesNotEnableLegacyElasticsearchExporter",
+			Values: map[string]string{
+				"orchestration.multiregion.mode":                                "zoned",
+				"orchestration.multiregion.zone":                                "region-a",
+				"orchestration.multiregion.zones[0].name":                       "region-a",
+				"orchestration.multiregion.zones[0].numberOfBrokers":            "2",
+				"orchestration.multiregion.zones[0].numberOfReplicas":           "2",
+				"orchestration.multiregion.zones[0].priority":                   "100",
+				"orchestration.multiregion.zones[1].name":                       "region-b",
+				"orchestration.multiregion.zones[1].numberOfBrokers":            "2",
+				"orchestration.multiregion.zones[1].numberOfReplicas":           "1",
+				"orchestration.multiregion.zones[1].priority":                   "50",
+				"orchestration.exporters.rdbms.enabled":                         "true",
+				"orchestration.data.secondaryStorage.rdbms.url":                 "jdbc:postgresql://localhost:5432/camunda",
+				"orchestration.data.secondaryStorage.rdbms.username":            "camunda",
+				"orchestration.data.secondaryStorage.rdbms.secret.inlineSecret": "my-password",
+				"optimize.enabled":                        "true",
+				"optimize.database.elasticsearch.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.NotContains(t, output, "io.camunda.zeebe.exporter.ElasticsearchExporter")
+			},
+		},
+		{
+			Name: "TestZonedModeDoesNotEnableLegacyOpenSearchExporter",
+			Values: map[string]string{
+				"orchestration.multiregion.mode":                                "zoned",
+				"orchestration.multiregion.zone":                                "region-a",
+				"orchestration.multiregion.zones[0].name":                       "region-a",
+				"orchestration.multiregion.zones[0].numberOfBrokers":            "2",
+				"orchestration.multiregion.zones[0].numberOfReplicas":           "2",
+				"orchestration.multiregion.zones[0].priority":                   "100",
+				"orchestration.multiregion.zones[1].name":                       "region-b",
+				"orchestration.multiregion.zones[1].numberOfBrokers":            "2",
+				"orchestration.multiregion.zones[1].numberOfReplicas":           "1",
+				"orchestration.multiregion.zones[1].priority":                   "50",
+				"orchestration.exporters.rdbms.enabled":                         "true",
+				"orchestration.data.secondaryStorage.rdbms.url":                 "jdbc:postgresql://localhost:5432/camunda",
+				"orchestration.data.secondaryStorage.rdbms.username":            "camunda",
+				"orchestration.data.secondaryStorage.rdbms.secret.inlineSecret": "my-password",
+				"optimize.enabled":                     "true",
+				"optimize.database.opensearch.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.NotContains(t, output, "io.camunda.zeebe.exporter.opensearch.OpensearchExporter")
+			},
+		},
+		{
+			// A single zone is one cluster, like a single region: it skews leaders
+			// inside a region rather than spreading across them, so it keeps the
+			// exporter that a genuinely spread cluster has to give up.
+			Name: "TestSingleZoneZonedModeKeepsTheElasticsearchExporter",
+			Values: map[string]string{
+				"orchestration.multiregion.mode":                                "zoned",
+				"orchestration.multiregion.zone":                                "region-a",
+				"orchestration.multiregion.zones[0].name":                       "region-a",
+				"orchestration.multiregion.zones[0].numberOfBrokers":            "2",
+				"orchestration.multiregion.zones[0].numberOfReplicas":           "2",
+				"orchestration.multiregion.zones[0].priority":                   "100",
+				"orchestration.exporters.rdbms.enabled":                         "true",
+				"orchestration.data.secondaryStorage.rdbms.url":                 "jdbc:postgresql://localhost:5432/camunda",
+				"orchestration.data.secondaryStorage.rdbms.username":            "camunda",
+				"orchestration.data.secondaryStorage.rdbms.secret.inlineSecret": "my-password",
+				"optimize.enabled":                        "true",
+				"optimize.database.elasticsearch.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "io.camunda.zeebe.exporter.ElasticsearchExporter")
+			},
+		},
+		{
+			// Control for the two cases above: same inputs, numbered mode. Without it
+			// they pass whether or not the zoned guard exists, since the exporter is
+			// also absent when Optimize does not ask for that database.
+			Name: "TestNumberedSingleRegionStillEnablesTheElasticsearchExporter",
+			Values: map[string]string{
+				"orchestration.exporters.rdbms.enabled":                         "true",
+				"orchestration.data.secondaryStorage.rdbms.url":                 "jdbc:postgresql://localhost:5432/camunda",
+				"orchestration.data.secondaryStorage.rdbms.username":            "camunda",
+				"orchestration.data.secondaryStorage.rdbms.secret.inlineSecret": "my-password",
+				"optimize.enabled":                        "true",
+				"optimize.database.elasticsearch.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "io.camunda.zeebe.exporter.ElasticsearchExporter")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *ConfigmapTemplateTest) TestZonedModeRejectsNumberedRegionSettings() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestZonedModeRejectsNumberedRegions",
+			Values: map[string]string{
+				"orchestration.multiregion.mode":    "zoned",
+				"orchestration.multiregion.regions": "2",
+				"orchestration.profiles.broker":     "true",
+			},
+			Expected: map[string]string{
+				"ERROR": "orchestration.multiregion.regions and orchestration.multiregion.regionId cannot be used with zoned mode",
+			},
+		},
+		{
+			Name:                    "TestZonedModeRejectsAClusterSizeItDerives",
+			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.clusterSize=6"},
+			Values: map[string]string{
+				"orchestration.multiregion.mode":                      "zoned",
+				"orchestration.multiregion.zone":                      "region-a",
+				"orchestration.multiregion.zones[0].name":             "region-a",
+				"orchestration.multiregion.zones[0].numberOfBrokers":  "2",
+				"orchestration.multiregion.zones[0].numberOfReplicas": "2",
+				"orchestration.multiregion.zones[0].priority":         "100",
+				"orchestration.multiregion.zones[1].name":             "region-b",
+				"orchestration.multiregion.zones[1].numberOfBrokers":  "2",
+				"orchestration.multiregion.zones[1].numberOfReplicas": "1",
+				"orchestration.multiregion.zones[1].priority":         "50",
+				"orchestration.profiles.broker":                       "true",
+			},
+			Expected: map[string]string{
+				"ERROR": "orchestration.clusterSize is 6 but orchestration.multiregion.zones sums to 4 brokers",
+			},
+		},
+		{
+			Name:                    "TestZonedModeRejectsAReplicationFactorItDerives",
+			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.replicationFactor=4"},
+			Values: map[string]string{
+				"orchestration.multiregion.mode":                      "zoned",
+				"orchestration.multiregion.zone":                      "region-a",
+				"orchestration.multiregion.zones[0].name":             "region-a",
+				"orchestration.multiregion.zones[0].numberOfBrokers":  "2",
+				"orchestration.multiregion.zones[0].numberOfReplicas": "2",
+				"orchestration.multiregion.zones[0].priority":         "100",
+				"orchestration.profiles.broker":                       "true",
+			},
+			Expected: map[string]string{
+				"ERROR": "orchestration.replicationFactor is 4 but orchestration.multiregion.zones sums to 2 replicas",
+			},
+		},
+		{
+			Name: "TestZonesWithoutZonedModeAreRejected",
+			Values: map[string]string{
+				"orchestration.multiregion.zone":                      "region-a",
+				"orchestration.multiregion.zones[0].name":             "region-a",
+				"orchestration.multiregion.zones[0].numberOfBrokers":  "2",
+				"orchestration.multiregion.zones[0].numberOfReplicas": "2",
+				"orchestration.multiregion.zones[0].priority":         "100",
+				"orchestration.profiles.broker":                       "true",
+			},
+			Expected: map[string]string{
+				"ERROR": "require orchestration.multiregion.mode=zoned",
+			},
+		},
+		{
+			Name: "TestZonedModeRejectsDuplicateZoneNames",
+			Values: map[string]string{
+				"orchestration.multiregion.mode":                      "zoned",
+				"orchestration.multiregion.zone":                      "region-a",
+				"orchestration.multiregion.zones[0].name":             "region-a",
+				"orchestration.multiregion.zones[0].numberOfBrokers":  "2",
+				"orchestration.multiregion.zones[0].numberOfReplicas": "1",
+				"orchestration.multiregion.zones[0].priority":         "100",
+				"orchestration.multiregion.zones[1].name":             "region-a",
+				"orchestration.multiregion.zones[1].numberOfBrokers":  "2",
+				"orchestration.multiregion.zones[1].numberOfReplicas": "1",
+				"orchestration.multiregion.zones[1].priority":         "50",
+				"orchestration.profiles.broker":                       "true",
+			},
+			Expected: map[string]string{
+				"ERROR": "declares \"region-a\" twice",
+			},
+		},
+		{
+			Name: "TestZonedModeRejectsMoreReplicasThanBrokers",
+			Values: map[string]string{
+				"orchestration.multiregion.mode":                      "zoned",
+				"orchestration.multiregion.zone":                      "region-a",
+				"orchestration.multiregion.zones[0].name":             "region-a",
+				"orchestration.multiregion.zones[0].numberOfBrokers":  "1",
+				"orchestration.multiregion.zones[0].numberOfReplicas": "3",
+				"orchestration.multiregion.zones[0].priority":         "100",
+				"orchestration.profiles.broker":                       "true",
+			},
+			Expected: map[string]string{
+				"ERROR": "asks for 3 replicas on 1 brokers",
+			},
+		},
+		{
+			Name: "TestZonedModeRejectsAnUndeclaredZone",
+			Values: map[string]string{
+				"orchestration.multiregion.mode":                      "zoned",
+				"orchestration.multiregion.zone":                      "region-c",
+				"orchestration.multiregion.zones[0].name":             "region-a",
+				"orchestration.multiregion.zones[0].numberOfBrokers":  "2",
+				"orchestration.multiregion.zones[0].numberOfReplicas": "2",
+				"orchestration.multiregion.zones[0].priority":         "100",
+				"orchestration.profiles.broker":                       "true",
+			},
+			Expected: map[string]string{
+				"ERROR": "orchestration.multiregion.zone \"region-c\" is not declared in orchestration.multiregion.zones",
+			},
+		},
+		{
+			Name: "TestZonedModeRejectsAnEmptyZone",
+			Values: map[string]string{
+				"orchestration.multiregion.mode":                      "zoned",
+				"orchestration.multiregion.zones[0].name":             "region-a",
+				"orchestration.multiregion.zones[0].numberOfBrokers":  "2",
+				"orchestration.multiregion.zones[0].numberOfReplicas": "2",
+				"orchestration.multiregion.zones[0].priority":         "100",
+				"orchestration.profiles.broker":                       "true",
+			},
+			Expected: map[string]string{
+				"ERROR": "orchestration.multiregion.zone must name the zone this release is deployed to",
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
 func (s *ConfigmapTemplateTest) TestBundledOperateTasklistZeebeClientTLS() {
 	testCases := []testhelpers.TestCase{
 		{

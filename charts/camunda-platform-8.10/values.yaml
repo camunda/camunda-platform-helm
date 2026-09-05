@@ -731,16 +731,14 @@ global:
         ## @param global.identity.auth.connectors.alwaysRegister if true, this Identity always provisions the Connectors Keycloak client, even when Connectors OIDC auth is not active in this release. Defaults to registering only when Connectors uses OIDC. Use for multi-namespace deployments where a central Identity registers a component that runs in another namespace.
         alwaysRegister: false
 
-  # Multiregion options for Zeebe
-  #
-  ## WARNING: Customers must develop and test the operational procedure described below in non-production environments based on the framework steps
-  # outlined by Camunda before applying them in production setups.
-  # Before advancing to production go-live, validating these procedures with Camunda is strongly recommended.
-  # Customers are solely responsible for detecting any regional failures and implementing the necessary operational procedure described.
+  # Multiregion options for Zeebe.
+  ## Deprecated since chart v15 (Camunda 8.10); remove in v16. Only the Orchestration
+  ## Cluster reads these keys, so they moved to `orchestration.multiregion`, which is
+  ## also where zoned mode is configured. Setting both blocks fails the render.
   multiregion:
-    ## @skip global.multiregion.regions number of regions that this Camunda Platform instance is stretched across
+    ## @skip global.multiregion.regions deprecated, use `orchestration.multiregion.regions`
     regions: 1
-    ## @skip global.multiregion.regionId unique id of the region. MUST start at 0 for the computation to work correctly. With 2 regions, you would have region 0 and 1.
+    ## @skip global.multiregion.regionId deprecated, use `orchestration.multiregion.regionId`
     regionId: 0
 
   ## Document Store Configuration
@@ -2264,6 +2262,29 @@ orchestration:
     api:
       ## @param orchestration.multitenancy.api.enabled if true, then enable multitenancy API used for tenant management.
       enabled: true
+
+  # Multiregion options for the Orchestration Cluster. Operating a multi-region
+  # cluster has prerequisites and procedures this file cannot carry; see
+  # https://docs.camunda.io/docs/self-managed/concepts/multi-region/dual-region/
+  multiregion:
+    ## Fixed for the life of the cluster. Zoned brokers are identified by the composite
+    ## `<zone>_<index>`, numbered ones by a plain node ID, so switching an existing release
+    ## re-identifies every broker against Raft state written under the old IDs and the
+    ## members no longer recognise each other. Deploy a new cluster instead.
+    ## @param orchestration.multiregion.mode defines how a broker is told which region it is in. `numbered` derives it from the node ID, `zoned` from a zone name.
+    mode: numbered
+    ## @param orchestration.multiregion.zone can be used to define the zone of this Orchestration Cluster deployment when using zoned mode.
+    zone: ""
+    ## @extra orchestration.multiregion.zones[0].name name of the zone. It is the prefix of the composite broker member ID `<zone>_<index>`, must be an RFC 1123 label, and one of these names must be selected by `orchestration.multiregion.zone`.
+    ## @extra orchestration.multiregion.zones[0].numberOfBrokers number of brokers deployed in this zone. For the local zone it is also the StatefulSet replica count.
+    ## @extra orchestration.multiregion.zones[0].numberOfReplicas number of partition replicas this zone holds. Cannot exceed `numberOfBrokers`.
+    ## @extra orchestration.multiregion.zones[0].priority priority of this zone in the leader election.
+    ## @param orchestration.multiregion.zones can be used to define the zones of the Orchestration Cluster when using zoned mode. Each entry requires `name`, `numberOfBrokers`, `numberOfReplicas` and `priority`; the list is summed into `clusterSize` and `replicationFactor`, so it describes every zone, not just the local one.
+    zones: []
+    ## @skip orchestration.multiregion.regions number of regions that this Camunda Platform instance is stretched across
+    regions: 1
+    ## @skip orchestration.multiregion.regionId unique id of the region. MUST start at 0 for the computation to work correctly. With 2 regions, you would have region 0 and 1.
+    regionId: 0
 
   ## @param orchestration.clusterSize defines the amount of brokers (=replicas), which are deployed via helm
   clusterSize: "3"

@@ -1,3 +1,4 @@
+{{- $mr := include "camundaPlatform.multiregion" $ | fromJson -}}
 {{- if eq (include "camundaPlatform.orchestrationEnabled" .) "true" -}}
 kind: ConfigMap
 metadata:
@@ -9,7 +10,14 @@ data:
   startup.sh: |
     # The Node ID depends on the StatefulSet Pod's name so it cannot be templated in the StatefulSet level.
     # The value of "node-id" is calculated in the "startup.sh" file and exported as "VALUES_ORCHESTRATION_NODE_ID" env var.
-    export VALUES_ORCHESTRATION_NODE_ID="${VALUES_ORCHESTRATION_NODE_ID:-$[${K8S_NAME##*-} * {{ .Values.global.multiregion.regions }} + {{ .Values.global.multiregion.regionId }}]}"
+    {{- if eq (include "orchestration.zoned" .) "true" }}
+    # Zone-aware brokers are identified by the composite member ID "<zone>_<node-id>",
+    # so the node ID is the index of the broker inside its own zone, 0 to
+    # numberOfBrokers-1. The zone name is what keeps it unique across the cluster.
+    export VALUES_ORCHESTRATION_NODE_ID="${VALUES_ORCHESTRATION_NODE_ID:-${K8S_NAME##*-}}"
+    {{- else }}
+    export VALUES_ORCHESTRATION_NODE_ID="${VALUES_ORCHESTRATION_NODE_ID:-$[${K8S_NAME##*-} * {{ $mr.regions }} + {{ $mr.regionId }}]}"
+    {{- end }}
     echo "export VALUES_ORCHESTRATION_NODE_ID=${VALUES_ORCHESTRATION_NODE_ID}"
 
     if [ "$ZEEBE_RESTORE" = "true" ]; then

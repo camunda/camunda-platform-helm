@@ -212,6 +212,87 @@ Fail if there is no secondary storage type specified and if noSecondaryStorage i
 {{- end }}
 
 {{/*
+Fail if the multi-region topology is described in both places at once. Picking one
+silently would deploy a topology the other block does not describe, and the two are
+merged nowhere.
+*/}}
+{{- if and (eq (include "camundaPlatform.multiregionConfigured" (.Values.orchestration.multiregion | default dict)) "true") (eq (include "camundaPlatform.multiregionConfigured" (.Values.global.multiregion | default dict)) "true") }}
+  {{- fail "[camunda][error] orchestration.multiregion and global.multiregion are both configured. global.multiregion is deprecated; keep orchestration.multiregion and remove the global block." -}}
+{{- end }}
+
+{{- $mr := include "camundaPlatform.multiregion" $ | fromJson -}}
+{{- $mrKey := "orchestration.multiregion" -}}
+{{- if ne (include "camundaPlatform.multiregionConfigured" (.Values.orchestration.multiregion | default dict)) "true" -}}
+  {{- $mrKey = "global.multiregion" -}}
+{{- end -}}
+
+{{/*
+Fail if the zone topology is described without selecting zoned mode. Nothing else
+rejects it: the zoned branches are all entered on the mode, so the zone list would be
+read by the contact-points gate alone, which suppresses the generated bootstrap list
+while the rest of the render stays single-region. The cluster then starts with no peers
+and no zone awareness, and helm reports success.
+*/}}
+{{- if and (ne $mr.mode "zoned") (or (ne $mr.zone "") (gt (len $mr.zones) 0)) }}
+  {{- fail (printf "[camunda][error] %s.zone and %s.zones require %s.mode=zoned." $mrKey $mrKey $mrKey) -}}
+{{- end }}
+
+{{/*
+Fail if zoned mode is combined with a cluster size or replication factor it derives.
+Both are summed from the zone list, so a value left over from a single-region release
+would be discarded in silence, and the StatefulSet would scale to the local zone's
+broker count without the diff naming the setting it ignored.
+*/}}
+{{- if eq $mr.mode "zoned" }}
+  {{/*
+  NOTE: rejects a value that contradicts the zone list, not any value at all. Helm cannot
+  distinguish a supplied default from the chart default, so a key still sitting on its
+  default is left alone; restating the derived total is allowed and self-documenting.
+  Comparing every value against the derived one would reject every install, since the
+  default differs from the zone sum on any real topology. The 3s below are those chart
+  defaults; keep them in sync with values.yaml.
+  */}}
+  {{- $size := int .Values.orchestration.clusterSize -}}
+  {{- $derivedSize := int (include "orchestration.clusterSize" .) -}}
+  {{- if and (ne $size 3) (ne $size $derivedSize) }}
+    {{- fail (printf "[camunda][error] orchestration.clusterSize is %d but %s.zones sums to %d brokers. In zoned mode the zone list is authoritative; remove the key or make it agree." $size $mrKey $derivedSize) -}}
+  {{- end }}
+  {{- $factor := int .Values.orchestration.replicationFactor -}}
+  {{- $derivedFactor := int (include "orchestration.replicationFactor" .) -}}
+  {{- if and (ne $factor 3) (ne $factor $derivedFactor) }}
+    {{- fail (printf "[camunda][error] orchestration.replicationFactor is %d but %s.zones sums to %d replicas. In zoned mode the zone list is authoritative; remove the key or make it agree." $factor $mrKey $derivedFactor) -}}
+  {{- end }}
+{{- end }}
+
+{{/*
+Fail if zoned mode is combined with the region-based multiregion settings it replaces.
+*/}}
+{{- if and (eq $mr.mode "zoned") (or (ne (int $mr.regions) 1) (ne (int $mr.regionId) 0)) }}
+  {{- fail (printf "[camunda][error] %s.regions and %s.regionId cannot be used with zoned mode." $mrKey $mrKey) -}}
+{{- end }}
+
+{{/*
+Fail if a zone name repeats, or if a zone claims more replicas than it has brokers.
+
+A duplicate name collapses two zones into one member-ID namespace, which is the broker
+collision this mode exists to prevent. A zone cannot hold more replicas of a partition
+than it has brokers to hold them on, and the sum would then promise a replication factor
+no quorum can reach.
+*/}}
+{{- if eq $mr.mode "zoned" }}
+  {{- $seen := list -}}
+  {{- range $mr.zones -}}
+    {{- if has .name $seen }}
+      {{- fail (printf "[camunda][error] %s.zones declares %q twice; zone names are broker member ID prefixes and must be unique." $mrKey .name) -}}
+    {{- end }}
+    {{- $seen = append $seen .name -}}
+    {{- if gt (int .numberOfReplicas) (int .numberOfBrokers) }}
+      {{- fail (printf "[camunda][error] %s.zones entry %q asks for %d replicas on %d brokers; a zone cannot hold more replicas than it has brokers." $mrKey .name (int .numberOfReplicas) (int .numberOfBrokers)) -}}
+    {{- end }}
+  {{- end }}
+{{- end }}
+
+{{/*
 global.tls.orchestration footgun: enabling REST or gRPC TLS without providing
 the server cert material (either via the chart-managed `secret.existingSecret`
 or via an explicit cert path in `orchestration.env`) causes Spring Boot / the
@@ -379,6 +460,25 @@ gRPC server to crash on startup. Fail loudly at render time instead.
       {{- $errorMessage := printf "[camunda][error] global.tls.connectors.type=%q is not supported. Use one of: pkcs12, pem." $t -}}
       {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
     {{- end }}
+  {{- end }}
+{{- end }}
+
+{{/*
+Fail if zoned mode does not describe the zone this release belongs to. The zone list
+is what assigns broker node IDs and partition replicas, so a release whose own zone is
+missing from it would take the IDs of the first zone and collide with it.
+*/}}
+{{- if eq $mr.mode "zoned" }}
+  {{- $zone := $mr.zone -}}
+  {{- if not $zone }}
+    {{- fail (printf "[camunda][error] %s.zone must name the zone this release is deployed to when using zoned mode." $mrKey) -}}
+  {{- end }}
+  {{- $names := list -}}
+  {{- range $mr.zones -}}
+    {{- $names = append $names .name -}}
+  {{- end -}}
+  {{- if not (has $zone $names) }}
+    {{- fail (printf "[camunda][error] %s.zone %q is not declared in %s.zones (%s)." $mrKey $zone $mrKey (join ", " $names)) -}}
   {{- end }}
 {{- end }}
 
@@ -932,6 +1032,35 @@ The following values inside your values.yaml need to be set but were not:
           "Web Modeler is using an auto-generated Pusher app key. This will produce a new random key on every 'helm upgrade', causing WebSocket authentication failures."
           "Please set 'webModeler.restapi.pusher.client.secret.existingSecret' (recommended) or 'webModeler.restapi.pusher.client.secret.inlineSecret'."
           "Auto-generation will be removed in a future release."
+      -}}
+      {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+    {{- end }}
+  {{- end }}
+
+  {{- if eq (include "camundaPlatform.multiregionConfigured" (.Values.global.multiregion | default dict)) "true" }}
+    {{- $warningMessage := printf "%s %s %s %s"
+        "[camunda][warning]"
+        "DEPRECATION: \"global.multiregion.*\" is deprecated and will be removed in chart v16 (Camunda 8.11)."
+        "Only the Orchestration Cluster reads these keys, so they moved to \"orchestration.multiregion.*\" with the same field names."
+        "Move the block and remove the global one; setting both fails the render."
+    -}}
+    {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+  {{- end }}
+
+  {{- if .Values.orchestration.profiles.broker }}
+    {{- if eq (include "orchestration.zoned" .) "true" }}
+      {{- $warningMessage := printf "%s %s %s"
+          "[camunda][warning]"
+          "\"orchestration.multiregion.mode\" is fixed for the life of the cluster: zoned brokers are identified by the composite \"<zone>_<index>\", numbered ones by a plain node ID."
+          "Switching an existing release between the two re-identifies every broker against Raft state written under its old ID, and the members stop recognising each other. Deploy a new cluster instead."
+      -}}
+      {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+    {{- end }}
+    {{- if eq (include "camundaPlatform.multiregionSpread" .) "true" }}
+      {{- $warningMessage := printf "%s %s %s"
+          "[camunda][warning]"
+          "This deployment spans more than one failure domain, so the chart cannot generate the broker bootstrap list: set CAMUNDA_CLUSTER_INITIALCONTACTPOINTS through \"orchestration.env\"."
+          "List every broker as <pod>.<headless-service>.<namespace>.svc.cluster.local:26502, comma-separated."
       -}}
       {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
     {{- end }}
