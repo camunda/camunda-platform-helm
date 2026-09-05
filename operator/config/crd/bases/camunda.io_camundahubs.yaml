@@ -1,0 +1,336 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.19.0
+  name: camundahubs.camunda.io
+spec:
+  group: camunda.io
+  names:
+    kind: CamundaHub
+    listKind: CamundaHubList
+    plural: camundahubs
+    shortNames:
+    - chub
+    singular: camundahub
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .status.helmRelease.chartVersion
+      name: Chart
+      type: string
+    - jsonPath: .status.helmRelease.status
+      name: Release
+      type: string
+    - jsonPath: .status.phase
+      name: Phase
+      type: string
+    - jsonPath: .status.conditions[?(@.type=="Ready")].status
+      name: Ready
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: |-
+          CamundaHub manages one Camunda Hub release: Management Identity plus Camunda Hub,
+          rendered from the camunda-platform chart with global.topology.mode set to hub.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: CamundaHubSpec is the desired state of a Camunda Hub release.
+            properties:
+              adoption:
+                description: AdoptionSpec controls takeover of a pre-existing Helm
+                  release.
+                properties:
+                  adoptExisting:
+                    description: |-
+                      AdoptExisting allows the operator to assume ownership of a Helm release it
+                      did not create, in place and without reinstalling. This is the migration
+                      path for customers already running the chart via the Helm CLI.
+                    type: boolean
+                type: object
+              chart:
+                description: ChartSource locates the camunda-platform chart to render.
+                properties:
+                  digest:
+                    description: |-
+                      Digest pins the chart by content digest. Required for reproducible
+                      disconnected installs; when set it takes precedence over Version.
+                    type: string
+                  name:
+                    default: camunda-platform
+                    description: Name is the chart name within the repository.
+                    type: string
+                  plainHTTP:
+                    description: |-
+                      PlainHTTP contacts the registry over HTTP instead of HTTPS, for a private
+                      registry that does not serve TLS.
+                    type: boolean
+                  pullSecretRef:
+                    description: |-
+                      PullSecretRef names a Secret of type kubernetes.io/dockerconfigjson used to
+                      authenticate against a private registry.
+                    properties:
+                      name:
+                        default: ""
+                        description: |-
+                          Name of the referent.
+                          This field is effectively required, but due to backwards compatibility is
+                          allowed to be empty. Instances of this type with an empty value here are
+                          almost certainly wrong.
+                          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                        type: string
+                    type: object
+                    x-kubernetes-map-type: atomic
+                  repository:
+                    description: Repository is an OCI reference such as oci://ghcr.io/camunda/team-distribution/camunda-platform.
+                    minLength: 1
+                    type: string
+                  version:
+                    description: Version is the chart SemVer, for example 15.0.0.
+                    minLength: 1
+                    type: string
+                required:
+                - repository
+                - version
+                type: object
+              deletionPolicy:
+                default: Retain
+                description: DeletionPolicy decides what happens to the Helm release
+                  when the CR is deleted.
+                enum:
+                - Retain
+                - Delete
+                type: string
+              drift:
+                default: Detect
+                description: DriftMode controls reaction to divergence between rendered
+                  and live state.
+                enum:
+                - Detect
+                - Correct
+                - "Off"
+                type: string
+              paused:
+                description: |-
+                  Paused stops all writes so an operator can take the release over with the
+                  Helm CLI without the controller fighting them.
+                type: boolean
+              release:
+                description: ReleaseSpec describes the Helm release the operator owns.
+                properties:
+                  atomic:
+                    default: true
+                    description: Atomic rolls back a failed install or upgrade.
+                    type: boolean
+                  createNamespace:
+                    description: CreateNamespace creates TargetNamespace when it does
+                      not exist.
+                    type: boolean
+                  name:
+                    description: Name of the Helm release. Defaults to the CamundaHub
+                      object name.
+                    type: string
+                  targetNamespace:
+                    description: TargetNamespace defaults to the CamundaHub object's
+                      namespace.
+                    type: string
+                  timeout:
+                    default: 15m
+                    description: |-
+                      Timeout for each Helm operation.
+
+                      A pointer so that omitempty actually omits it: metav1.Duration is a struct,
+                      which always serialises (as "0s"), and the API server only applies a default
+                      to a field that is absent.
+                    type: string
+                type: object
+              upgrade:
+                description: UpgradeSpec governs how the operator moves between chart
+                  revisions.
+                properties:
+                  approval:
+                    default: Manual
+                    description: |-
+                      Approval gates upgrades that change the chart version. Values-only changes
+                      always apply, because withholding them would leave the release diverged from
+                      its own spec.
+                    enum:
+                    - Automatic
+                    - Manual
+                    type: string
+                  approvedVersion:
+                    description: ApprovedVersion authorises one specific chart version
+                      under Manual approval.
+                    type: string
+                  backupVerified:
+                    description: |-
+                      BackupVerified is the human attestation that a Hub database backup exists.
+                      A phased upgrade will not leave the quiesce phase without it.
+                    type: boolean
+                  phased:
+                    description: |-
+                      Phased drives the chart's camundaHub.upgrade.phase state machine for the
+                      non-backward-compatible 8.9 to 8.10 Hub database migration. Ignored, with a
+                      warning, when the resolved chart does not declare that key.
+                    type: boolean
+                type: object
+              values:
+                description: |-
+                  Values are chart values passed through verbatim. They are validated against
+                  the resolved chart's own values.schema.json rather than duplicated as typed
+                  fields, so this API does not drift against the chart's values contract.
+                x-kubernetes-preserve-unknown-fields: true
+              valuesFrom:
+                items:
+                  description: |-
+                    ValuesSource references chart values held outside the CamundaHub object.
+                    Sources are merged in declaration order, and Spec.Values is merged last.
+                  properties:
+                    key:
+                      description: Key selects a single YAML document within the source.
+                        Defaults to values.yaml.
+                      type: string
+                    kind:
+                      enum:
+                      - ConfigMap
+                      - Secret
+                      type: string
+                    name:
+                      minLength: 1
+                      type: string
+                    optional:
+                      description: Optional tolerates a missing source instead of
+                        failing the reconcile.
+                      type: boolean
+                  required:
+                  - kind
+                  - name
+                  type: object
+                type: array
+            required:
+            - chart
+            type: object
+          status:
+            description: CamundaHubStatus is the observed state of a Camunda Hub release.
+            properties:
+              conditions:
+                items:
+                  description: Condition contains details for one aspect of the current
+                    state of this API Resource.
+                  properties:
+                    lastTransitionTime:
+                      description: |-
+                        lastTransitionTime is the last time the condition transitioned from one status to another.
+                        This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.
+                      format: date-time
+                      type: string
+                    message:
+                      description: |-
+                        message is a human readable message indicating details about the transition.
+                        This may be an empty string.
+                      maxLength: 32768
+                      type: string
+                    observedGeneration:
+                      description: |-
+                        observedGeneration represents the .metadata.generation that the condition was set based upon.
+                        For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+                        with respect to the current state of the instance.
+                      format: int64
+                      minimum: 0
+                      type: integer
+                    reason:
+                      description: |-
+                        reason contains a programmatic identifier indicating the reason for the condition's last transition.
+                        Producers of specific condition types may define expected values and meanings for this field,
+                        and whether the values are considered a guaranteed API.
+                        The value should be a CamelCase string.
+                        This field may not be empty.
+                      maxLength: 1024
+                      minLength: 1
+                      pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                      type: string
+                    status:
+                      description: status of the condition, one of True, False, Unknown.
+                      enum:
+                      - "True"
+                      - "False"
+                      - Unknown
+                      type: string
+                    type:
+                      description: type of condition in CamelCase or in foo.example.com/CamelCase.
+                      maxLength: 316
+                      pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - message
+                  - reason
+                  - status
+                  - type
+                  type: object
+                type: array
+                x-kubernetes-list-map-keys:
+                - type
+                x-kubernetes-list-type: map
+              helmRelease:
+                description: HelmReleaseStatus reports the Helm release backing this
+                  object.
+                properties:
+                  appVersion:
+                    type: string
+                  chartVersion:
+                    type: string
+                  name:
+                    type: string
+                  namespace:
+                    type: string
+                  revision:
+                    type: integer
+                  status:
+                    type: string
+                type: object
+              lastAppliedRevision:
+                description: LastAppliedRevision is chartVersion@valuesHash, the identity
+                  of what was last applied.
+                type: string
+              lastFailure:
+                type: string
+              manifestDigest:
+                description: ManifestDigest is a SHA-256 over the rendered manifest,
+                  used for drift detection.
+                type: string
+              observedGeneration:
+                format: int64
+                type: integer
+              phase:
+                description: Phase is the current camundaHub.upgrade.phase during
+                  a phased upgrade.
+                type: string
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}

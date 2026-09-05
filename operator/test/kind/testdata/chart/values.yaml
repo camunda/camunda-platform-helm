@@ -1,0 +1,13 @@
+replicas: 1
+message: initial
+
+# The operator refuses a chart with no topology-role support, so the fixture
+# declares it just as the real chart does.
+global:
+  topology:
+    mode: combined
+
+# Mirrors the contract added to the real chart by camunda-platform-helm#6788.
+camundaHub:
+  upgrade:
+    phase: normal
