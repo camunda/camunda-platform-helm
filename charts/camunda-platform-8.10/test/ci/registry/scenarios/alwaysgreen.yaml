@@ -10,6 +10,6 @@ infra-type:
   gke: alwaysgreen
 e2e-full-suite: true
 dependencies:
-  - keycloak
+  - keycloak-fixed-issuer
   - elasticsearch
   - postgresql
