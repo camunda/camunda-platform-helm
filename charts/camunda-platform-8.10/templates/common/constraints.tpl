@@ -382,6 +382,42 @@ gRPC server to crash on startup. Fail loudly at render time instead.
   {{- end }}
 {{- end }}
 
+{{/* Optimize server TLS requires chart-managed or explicitly hand-wired cert material.
+     Governs the SERVER-side identity only; the client-side ES/OS truststore
+     (`optimize.database.*.tls.secret.existingSecret`) is a separate surface. */}}
+{{- if .Values.optimize.enabled }}
+  {{- $envNames := list -}}
+  {{- range $e := (.Values.optimize.env | default list) -}}
+    {{- $envNames = append $envNames ($e.name | default "") -}}
+  {{- end }}
+  {{- if eq (include "camundaPlatform.optimizeServerTLSEnabled" .) "true" }}
+    {{- $chartMountsCert := and .Values.global.tls.optimize.enabled .Values.global.tls.optimize.cert.secret.existingSecret -}}
+    {{- $handWiredCert := or (has "SERVER_SSL_KEY_STORE" $envNames) (has "SERVER_SSL_CERTIFICATE" $envNames) -}}
+    {{/* An operator who enables TLS through optimize.{configuration,extraConfiguration}
+         owns application.yaml and declares the cert there, where no env var appears. */}}
+    {{- $certInYaml := eq (include "camundaPlatform.appConfigHasCertMaterial" (dict
+        "configuration" .Values.optimize.configuration
+        "extraConfiguration" .Values.optimize.extraConfiguration
+        "prefix" (list "server" "ssl"))) "true" -}}
+    {{- $handWiredCert = or $handWiredCert $certInYaml -}}
+    {{- if not (or $chartMountsCert $handWiredCert) }}
+      {{- $errorMessage := printf "%s %s %s"
+          "[camunda][error] Optimize server TLS is enabled but no server cert is configured."
+          "Set global.tls.optimize.enabled: true together with global.tls.optimize.cert.secret.existingSecret (recommended) so the chart mounts the cert -- note that existingSecret alone is NOT mounted unless global.tls.optimize.enabled is also true (e.g. when TLS is enabled only via optimize.env's SERVER_SSL_ENABLED=true),"
+          "or hand-wire SERVER_SSL_KEY_STORE / SERVER_SSL_CERTIFICATE plus the matching optimize.extraVolumes / extraVolumeMounts entries."
+      -}}
+      {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
+    {{- end }}
+  {{- end }}
+  {{- if and (eq (include "camundaPlatform.optimizeServerTLSEnabled" .) "true") .Values.global.tls.optimize.cert.secret.existingSecret }}
+    {{- $t := .Values.global.tls.optimize.type | default "pkcs12" -}}
+    {{- if not (has $t (list "pkcs12" "pem")) }}
+      {{- $errorMessage := printf "[camunda][error] global.tls.optimize.type=%q is not supported. Use one of: pkcs12, pem." $t -}}
+      {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
+    {{- end }}
+  {{- end }}
+{{- end }}
+
 {{/*
 Fail with a message if the auth type is not in the enums (KEYCLOAK, MICROSOFT, or GENERIC).
 */}}
@@ -488,6 +524,29 @@ Non-fatal deprecation/config warnings. Consumed by NOTES.txt (helm install/upgra
 configmap-warnings.yaml, which renders the "<release>-warnings" ConfigMap on the GitOps path
 (helm template / Argo CD / Flux). Feed new deprecations here so they reach both channels.
 */}}
+{{/*
+[camunda-platform] Warning text for a TLS toggle the chart cannot resolve because
+the winning YAML config value depends on runtime state. Shared by every
+component that derives probe schemes or ingress backend protocols from
+camundaPlatform.appConfigBoolState, so the diagnosis and the two exits are worded
+once. Returns the message only; the caller emits it inside
+camunda.constraints.warnings.
+Usage:
+  {{ include "camunda.constraints.unresolvedTLSConfigWarning" (dict
+    "component" "Orchestration REST"
+    "valuesPrefix" "orchestration"
+    "dottedPath" "server.ssl.enabled"
+    "flag" "global.tls.orchestration.rest.enabled"
+    "envName" "SERVER_SSL_ENABLED") }}
+*/}}
+{{- define "camunda.constraints.unresolvedTLSConfigWarning" -}}
+  {{- printf "%s %s %s"
+      "[camunda][warning]"
+      (printf "%s.configuration or %s.extraConfiguration sets '%s' to a runtime-dependent value, such as a Spring property placeholder or a value inside a spring.config.activate-conditioned YAML document, which cannot be evaluated while templating." .valuesPrefix .valuesPrefix .dottedPath)
+      (printf "The chart therefore derives plaintext for %s, so probe schemes and ingress backend protocols are rendered for HTTP while the listener may start on TLS, which installs cleanly and then fails at connection time. Set %s: true, or add a literal %s.env entry for %s, to make the transport explicit." .component .flag .valuesPrefix .envName)
+  -}}
+{{- end -}}
+
 {{- define "camunda.constraints.warnings" }}
   {{- $hubUpgradePhase := include "camundaHub.upgradePhase" . }}
   {{- if eq $hubUpgradePhase "quiesce" }}
@@ -611,6 +670,16 @@ The following values inside your values.yaml need to be set but were not:
         (printf "SECURITY: inlineSecret is set in: [%s]." (join ", " $inlineSecretSections))
         "This stores secrets as plain-text in the Helm values and is NOT suitable for production use."
         "For production environments, please use Kubernetes Secrets with 'secret.existingSecret' instead."
+    -}}
+    {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+  {{- end }}
+
+  {{- if and .Values.optimize.enabled (eq (include "camundaPlatform.optimizeServerTLSEnabled" .) "true") (ne (include "camundaPlatform.hasCaBundle" .) "true") -}}
+    {{- $warningMessage := printf "%s %s %s %s"
+        "[camunda][warning]"
+        "Optimize server TLS is enabled but global.tls.caBundle is not set."
+        "If the Optimize cert is self-signed or from a private/internal CA, in-cluster Java callers will fall back to the JVM default truststore and fail TLS handshakes."
+        "Set global.tls.caBundle.secret.existingSecret to the CA bundle."
     -}}
     {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
   {{- end }}
@@ -755,7 +824,7 @@ The following values inside your values.yaml need to be set but were not:
        protocols and in-cluster client endpoint schemes from
        camundaPlatform.orchestrationRESTTLSEnabled / ...GRPCTLSEnabled. Those read
        orchestration.env, global.tls.orchestration.*, and nested YAML keys in
-       orchestration.{configuration,extraConfiguration}. Two forms stay
+       orchestration.{configuration,extraConfiguration}. Three forms stay
        unreadable at render time; warn rather than derive plaintext silently. */}}
   {{- if .Values.orchestration.enabled }}
     {{- $tlsProps := list
@@ -807,9 +876,29 @@ The following values inside your values.yaml need to be set but were not:
           {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
         {{- end }}
       {{- end }}
+
+      {{/* (W3) Runtime state controls the config value, so the chart cannot resolve
+             it and keeps deriving plaintext.
+             Only flagged while the derivation resolved to plaintext, so an explicit
+             flag or env entry that already settles the transport never warns. */}}
+      {{- if ne $prop.state "true" }}
+        {{- $configState := include "camundaPlatform.appConfigBoolState" (dict
+            "configuration" $.Values.orchestration.configuration
+            "extraConfiguration" $.Values.orchestration.extraConfiguration
+            "path" $prop.path) }}
+        {{- if eq $configState "unresolved" }}
+          {{- $warningMessage := include "camunda.constraints.unresolvedTLSConfigWarning" (dict
+              "component" (printf "Orchestration %s" $prop.proto)
+              "valuesPrefix" "orchestration"
+              "dottedPath" (join "." $prop.path)
+              "flag" $prop.flag
+              "envName" $prop.envName) }}
+          {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+        {{- end }}
+      {{- end }}
     {{- end }}
 
-    {{/* (W3) The split /orchestration Ingress forces backend-protocol: HTTPS over
+    {{/* (W4) The split /orchestration Ingress forces backend-protocol: HTTPS over
            any inherited annotation. Correct (an HTTP backend against a TLS
            listener is SUPPORT-33090) but silent, and operators who set this
            annotation by hand set it deliberately. */}}
@@ -829,8 +918,8 @@ The following values inside your values.yaml need to be set but were not:
   {{/* Connectors TLS detection guardrails: probe schemes and the in-cluster
        Connectors URL are derived from camundaPlatform.connectorsTLSEnabled, which
        reads connectors.env, global.tls.connectors.enabled, and nested YAML keys in
-       connectors.{configuration,extraConfiguration}. Warn about the two forms it
-       cannot read rather than deriving plaintext silently. */}}
+       connectors.{configuration,extraConfiguration}. Warn about the three forms
+       it cannot read rather than deriving plaintext silently. */}}
   {{- if .Values.connectors.enabled }}
     {{- $connectorsTLS := include "camundaPlatform.connectorsTLSEnabled" . }}
 
@@ -874,6 +963,93 @@ The following values inside your values.yaml need to be set but were not:
         {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
       {{- end }}
     {{- end }}
+
+    {{/* (W3) Runtime state controls the config value, so the chart cannot resolve
+           it and keeps deriving plaintext. */}}
+    {{- if ne $connectorsTLS "true" }}
+      {{- $configState := include "camundaPlatform.appConfigBoolState" (dict
+          "configuration" .Values.connectors.configuration
+          "extraConfiguration" .Values.connectors.extraConfiguration
+          "path" (list "server" "ssl" "enabled")) }}
+      {{- if eq $configState "unresolved" }}
+        {{- $warningMessage := include "camunda.constraints.unresolvedTLSConfigWarning" (dict
+            "component" "Connectors"
+            "valuesPrefix" "connectors"
+            "dottedPath" "server.ssl.enabled"
+            "flag" "global.tls.connectors.enabled"
+            "envName" "SERVER_SSL_ENABLED") }}
+        {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+      {{- end }}
+    {{- end }}
+  {{- end }}
+
+  {{/* Optimize TLS detection guardrails: probe schemes and the /optimize Ingress
+       backend protocol are derived from
+       camundaPlatform.optimizeServerTLSEnabled, which reads optimize.env,
+       global.tls.optimize.enabled, and nested YAML keys in
+       optimize.{configuration,extraConfiguration}. Warn about the three forms it
+       cannot read rather than deriving plaintext silently. */}}
+  {{- if .Values.optimize.enabled }}
+    {{- $optimizeTLS := include "camundaPlatform.optimizeServerTLSEnabled" . }}
+
+    {{/* (W1) A dotted/relaxed key form the nested-key walk cannot see. Splits
+           yielding a single segment are skipped: a bare "enabled: true" line
+           matches unrelated config. */}}
+    {{- if ne $optimizeTLS "true" }}
+      {{- $sslPath := list "server" "ssl" "enabled" -}}
+      {{- $dottedHit := "" -}}
+      {{- $contents := list (.Values.optimize.configuration | default "") -}}
+      {{- range $entry := (.Values.optimize.extraConfiguration | default list) -}}
+        {{- $contents = append $contents ($entry.content | default "") -}}
+      {{- end -}}
+      {{- range $split := until (sub (len $sslPath) 1 | int) -}}
+        {{- $dotted := join "." (slice $sslPath $split) -}}
+        {{- $pattern := printf "(?m)^[ \t]*%s[ \t]*[:=][ \t]*[\"']?(?i)true" (replace "." "\\." $dotted) -}}
+        {{- range $content := $contents -}}
+          {{- if regexMatch $pattern $content -}}
+            {{- $dottedHit = $dotted -}}
+          {{- end -}}
+        {{- end -}}
+      {{- end -}}
+      {{- if $dottedHit }}
+        {{- $warningMessage := printf "%s %s %s"
+            "[camunda][warning]"
+            (printf "optimize.configuration or optimize.extraConfiguration appears to enable Optimize server TLS through the dotted key '%s', which the chart cannot read." $dottedHit)
+            "The chart matches nested YAML keys only, so it still derives plaintext: the Optimize probes stay on HTTP scheme and the /optimize ingress keeps an HTTP backend against a TLS listener, which installs cleanly and then fails at connection time. Set global.tls.optimize.enabled: true, or add an optimize.env entry for SERVER_SSL_ENABLED, or rewrite the key in nested YAML form."
+        -}}
+        {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+      {{- end }}
+    {{- end }}
+
+    {{/* (W3) Runtime state controls the config value, so the chart cannot resolve
+           it and keeps deriving plaintext. */}}
+    {{- if ne $optimizeTLS "true" }}
+      {{- $configState := include "camundaPlatform.appConfigBoolState" (dict
+          "configuration" .Values.optimize.configuration
+          "extraConfiguration" .Values.optimize.extraConfiguration
+          "path" (list "server" "ssl" "enabled")) }}
+      {{- if eq $configState "unresolved" }}
+        {{- $warningMessage := include "camunda.constraints.unresolvedTLSConfigWarning" (dict
+            "component" "Optimize"
+            "valuesPrefix" "optimize"
+            "dottedPath" "server.ssl.enabled"
+            "flag" "global.tls.optimize.enabled"
+            "envName" "SERVER_SSL_ENABLED") }}
+        {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+      {{- end }}
+    {{- end }}
+
+    {{/* (W2) A valueFrom-sourced SSL toggle is unresolvable at render time. */}}
+    {{- range $e := (.Values.optimize.env | default list) }}
+      {{- if and (eq ($e.name | default "") "SERVER_SSL_ENABLED") (not $e.value) $e.valueFrom }}
+        {{- $warningMessage := printf "%s %s %s"
+            "[camunda][warning]"
+            "optimize.env sets SERVER_SSL_ENABLED from a valueFrom reference, whose value the chart cannot read at render time."
+            "Optimize server TLS state therefore falls back to global.tls.optimize.enabled and the YAML config sources. If the referenced key resolves to a value that disagrees with that fallback, probe schemes and the /optimize ingress backend protocol will be derived for the wrong transport. Set the toggle literally and keep valueFrom for cert material only."
+        -}}
+        {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+      {{- end }}
+    {{- end }}
   {{- end }}
 
   {{/* Warn when Orchestration server TLS is enabled but no caBundle is set.
@@ -907,6 +1083,17 @@ The following values inside your values.yaml need to be set but were not:
           "[camunda][warning]"
           "Connectors TLS is enabled (the Connectors pod now serves HTTPS only), but the chart's Gateway API HTTPRoute forwards plain HTTP to the Connectors Service's serverPort."
           "Inbound routing to Connectors (e.g. external webhooks) will break until you configure a BackendTLSPolicy (Gateway API v1.0+) targeting the Connectors Service, so the gateway re-encrypts traffic to the TLS-only pod."
+      -}}
+      {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+    {{- end }}
+  {{- end }}
+
+  {{- if and .Values.global.gateway.enabled (not .Values.global.gateway.external) }}
+    {{- if and .Values.optimize.enabled (eq (include "camundaPlatform.optimizeServerTLSEnabled" .) "true") }}
+      {{- $warningMessage := printf "%s %s %s"
+          "[camunda][warning]"
+          "Optimize TLS is enabled (the Optimize pod now serves HTTPS only), but the chart's Gateway API HTTPRoute forwards plain HTTP to the Optimize Service's port."
+          "Inbound routing to the Optimize UI and REST API will break until you configure a BackendTLSPolicy (Gateway API v1.0+) targeting the Optimize Service, so the gateway re-encrypts traffic to the TLS-only pod."
       -}}
       {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
     {{- end }}
