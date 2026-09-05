@@ -54,12 +54,26 @@ If you want a flaky job to gate the merge queue at all, do NOT mark it
 `continue-on-error: true` — a run whose only failures are soft is
 `success` at the run level and is never retried.
 
-## Fork PRs
+## Untrusted PRs
 
-The gate is skipped on PRs from fork repositories. `GITHUB_TOKEN`
-on fork PRs has no `actions: write` scope, so `gh run rerun`
-would 403. For fork PRs, the matrix workflow's own status is the
-required signal.
+An untrusted PR is one raised from a fork repository or opened by
+`dependabot[bot]`. `GITHUB_TOKEN` on those events has no
+`actions: write` scope, so `gh run rerun` would 403.
+
+The workflow therefore splits into two mutually exclusive jobs that
+both publish the check name `Integration Tests Gate / gate`:
+
+- `gate` runs the retry logic. It is gated to same-repo,
+  non-Dependabot pull requests plus `merge_group` and
+  `workflow_dispatch` events.
+- `untrusted` is a no-op job that runs for fork and Dependabot pull
+  requests. It keeps the required check present and green without
+  requesting a privileged token.
+
+Because the required check is satisfied by the no-op job, no
+branch-protection or merge-queue change is needed. On untrusted PRs
+there are no retries, so the matrix workflow's own status is the real
+signal for those runs.
 
 ## Manual debugging
 
