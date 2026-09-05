@@ -1,4 +1,4 @@
-{{- if .Values.webModeler.enabled -}}
+{{- if eq (include "camundaPlatform.webModelerEnabled" .) "true" -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:

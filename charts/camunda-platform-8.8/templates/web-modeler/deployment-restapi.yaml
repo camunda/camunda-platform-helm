@@ -1,4 +1,4 @@
-{{- if .Values.webModeler.enabled -}}
+{{- if eq (include "camundaPlatform.webModelerEnabled" .) "true" -}}
 {{- $deploymentStrategy := .Values.webModeler.persistence.deploymentStrategy | default "RollingUpdate" -}}
 {{- if not (has $deploymentStrategy (list "RollingUpdate" "Recreate")) -}}
 {{- fail "webModeler.persistence.deploymentStrategy value must be one of 'RollingUpdate', 'Recreate'" -}}
