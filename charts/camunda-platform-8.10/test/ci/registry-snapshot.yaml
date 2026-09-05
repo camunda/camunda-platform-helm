@@ -701,6 +701,39 @@ integration:
             description: |
               Resolves a value from the mounted file secret store through the v2 gateway
               API and verifies that the runtime returns the expected value.
+        - name: secretstore-gcp
+          enabled: true
+          shortname: secgc
+          auth: basic
+          flow: install
+          platforms:
+            - gke
+          exclude:
+            - orchestration-grpc
+          tier: 2
+          infra-type:
+            gke: distroci
+          identity: basic
+          persistence: elasticsearch
+          features:
+            - secretstore-gcp
+          skip-e2e: true
+          dependencies:
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+          post-deploy:
+            script: post-deploy-secretstore-gcp.sh
+            description: |
+              Grants roles/secretmanager.secretAccessor on the camunda-ci-secretstore-token
+              fixture to this run's GKE workload principal, resolves the secret through the v2
+              gateway API, and revokes the binding on exit. Also asserts the Orchestration
+              ServiceAccount carries no iam.gke.io/gcp-service-account annotation and the
+              container sets no GOOGLE_APPLICATION_CREDENTIALS, so the value can only have
+              resolved through workload identity. Requires an authenticated gcloud.
         - name: rdbms-self-signed
           enabled: true
           shortname: rdbss
