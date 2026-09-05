@@ -16,8 +16,19 @@ const smTestDir = "./node_modules/@camunda/e2e-test-suite/dist/tests/SM-8.10";
 const hasSmSmokeSuite = fs.existsSync(
   path.resolve(__dirname, smTestDir, "smoke-tests.spec.js"),
 );
+const hasHubWebModelerSuite = fs.existsSync(
+  path.resolve(__dirname, smTestDir, "hub-web-modeler-smoke.spec.js"),
+);
 if (process.env.REQUIRE_SM_810_TEST_SUITE === "true" && !hasSmSmokeSuite) {
   throw new Error("The required SM-8.10 smoke test suite is not installed");
+}
+if (
+  process.env.REQUIRE_HUB_WEB_MODELER_TEST_SUITE === "true" &&
+  !hasHubWebModelerSuite
+) {
+  throw new Error(
+    "The required Hub and Web Modeler test suite is not installed",
+  );
 }
 const testDir = hasSmSmokeSuite ? smTestDir : "./empty-test-dir";
 
@@ -46,23 +57,25 @@ const auth0TestDir = path.resolve(
   "./node_modules/@camunda/e2e-test-suite/dist/tests/auth0",
 );
 
-export default defineConfig(makeShadowConfig({
-  version: "SM-8.10",
-  testDir,
-  includeSetupProject: true,
-  tasklistV2Header: true,
-  fullyParallel: true,
-  retries: 1,
-  timeout: 6 * 60 * 1000,
-  workers: "100%",
-  extraProjects: [
-    {
-      // Auth0 scenario: HTTP-level smoke that asserts each Camunda component
-      // route redirects to the Auth0 issuer with a well-formed authorize URL.
-      // No browser fixtures, no Keycloak admin — just request/response checks.
-      name: "auth0-smoke",
-      testDir: auth0TestDir,
-      testMatch: ["**/*.spec.{ts,js}"],
-    },
-  ],
-}));
+export default defineConfig(
+  makeShadowConfig({
+    version: "SM-8.10",
+    testDir,
+    includeSetupProject: true,
+    tasklistV2Header: true,
+    fullyParallel: true,
+    retries: 1,
+    timeout: 6 * 60 * 1000,
+    workers: "100%",
+    extraProjects: [
+      {
+        // Auth0 scenario: HTTP-level smoke that asserts each Camunda component
+        // route redirects to the Auth0 issuer with a well-formed authorize URL.
+        // No browser fixtures, no Keycloak admin — just request/response checks.
+        name: "auth0-smoke",
+        testDir: auth0TestDir,
+        testMatch: ["**/*.spec.{ts,js}"],
+      },
+    ],
+  }),
+);

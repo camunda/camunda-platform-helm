@@ -60,6 +60,26 @@ inputs:
     description: If true, run only the smoke-tests project. If false, run the full-suite project.
     required: false
     default: "true"
+  playwright-project:
+    description: Named Playwright project to run instead of smoke-tests or full-suite.
+    required: false
+    default: ""
+  test-chart-dir:
+    description: Chart directory whose Playwright config provides the test suite.
+    required: false
+    default: ""
+  e2e-test-suite-ref:
+    description: Git ref of camunda/c8-cross-component-e2e-tests to build and use instead of npm latest.
+    required: false
+    default: ""
+  e2e-test-suite-token:
+    description: Token with read access to camunda/c8-cross-component-e2e-tests.
+    required: false
+    default: ""
+  artifact-suffix:
+    description: Unique suffix for reports from parallel topology suite legs.
+    required: false
+    default: ""
   hub-namespace:
     description: >-
       For a multi-namespace topology scenario: the namespace running the
@@ -180,6 +200,22 @@ runs:
         chmod +x "${RUNNER_TEMP}/bin/deploy-camunda"
         echo "${RUNNER_TEMP}/bin" >> "$GITHUB_PATH"
 
+    - name: Checkout E2E test suite
+      if: inputs.e2e-test-suite-ref != ''
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      with:
+        repository: camunda/c8-cross-component-e2e-tests
+        ref: ${{ inputs.e2e-test-suite-ref }}
+        path: .e2e-test-suite
+        token: ${{ inputs.e2e-test-suite-token }}
+
+    - name: Build E2E test suite
+      if: inputs.e2e-test-suite-ref != ''
+      shell: bash
+      run: |
+        npm ci --prefix "${GITHUB_WORKSPACE}/.e2e-test-suite"
+        npm run build --prefix "${GITHUB_WORKSPACE}/.e2e-test-suite"
+
     - name: Set workflow vars
       id: vars
       uses: ./.github/actions/workflow-vars
@@ -215,22 +251,6 @@ runs:
         ROSA_PASS:        ${{ env.ROSA_PASS }}
         CLUSTER_NAME:     ${{ env.INFRA_CLUSTER_NAME }}
 
-    - name: Checkout E2E test suite
-      if: inputs.e2e-test-suite-ref != ''
-      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      with:
-        repository: camunda/c8-cross-component-e2e-tests
-        ref: ${{ inputs.e2e-test-suite-ref }}
-        path: .e2e-test-suite
-        token: ${{ steps.cluster-auth.outputs.token }}
-
-    - name: Build E2E test suite
-      if: inputs.e2e-test-suite-ref != ''
-      shell: bash
-      run: |
-        npm ci --prefix "${GITHUB_WORKSPACE}/.e2e-test-suite"
-        npm run build --prefix "${GITHUB_WORKSPACE}/.e2e-test-suite"
-
     - name: Set test type vars
       id: test-type-vars
       uses: ./.github/actions/test-type-vars
@@ -249,6 +269,7 @@ runs:
         TEST_AUTH_TYPE: ${{ inputs.auth }}
         HUB_NAMESPACE: ${{ inputs.hub-namespace }}
         REQUIRE_SM_810_TEST_SUITE: ${{ inputs.hub-namespace != '' }}
+        REQUIRE_HUB_WEB_MODELER_TEST_SUITE: ${{ inputs.playwright-project == 'hub-web-modeler' }}
       run: |
         cd "$GITHUB_WORKSPACE/scripts"
         # Unset KEYCLOAK_REALM to avoid conflicts with the integration tests
@@ -271,11 +292,17 @@ runs:
           SMOKE_FLAG=""
         fi
 
+        TEST_CHART_DIR="${{ inputs.test-chart-dir }}"
         E2E_ARGS=(--absolute-chart-path "${ABSOLUTE_TEST_CHART_DIR}" --namespace "${TEST_NAMESPACE}")
+        if [[ -n "$TEST_CHART_DIR" ]]; then
+          E2E_ARGS+=(--test-chart-path "${GITHUB_WORKSPACE}/charts/${TEST_CHART_DIR}")
+        fi
         [[ -n "$SMOKE_FLAG" ]] && E2E_ARGS+=("$SMOKE_FLAG")
         E2E_ARGS+=(--trace retain-on-failure --verbose)
         [[ -n "$EXTRA_FLAGS" ]] && E2E_ARGS+=("$EXTRA_FLAGS")
         [[ -n "$HUB_NAMESPACE" ]] && E2E_ARGS+=(--hub-namespace "${HUB_NAMESPACE}")
+        [[ -n "${{ inputs.playwright-project }}" ]] && E2E_ARGS+=(--playwright-project "${{ inputs.playwright-project }}")
+        [[ -n "${{ inputs.e2e-test-suite-ref }}" ]] && E2E_ARGS+=(--local-test-suite "${GITHUB_WORKSPACE}/.e2e-test-suite")
 
         ./run-e2e-tests.sh "${E2E_ARGS[@]}"
 
@@ -304,7 +331,7 @@ runs:
       if: ${{ !success() }}
       shell: bash
       run: |
-        raw="diagnostics-e2e-${{ inputs.identifier }}-${{ inputs.flow }}-${{ inputs.test-stage }}-${{ inputs.shard-index }}-${{ github.run_id }}-${{ github.run_attempt }}"
+        raw="diagnostics-e2e-${{ inputs.identifier }}-${{ inputs.flow }}-${{ inputs.test-stage }}-${{ inputs.shard-index }}-${{ inputs.artifact-suffix }}-${{ github.run_id }}-${{ github.run_attempt }}"
         echo "name=${raw//[^a-zA-Z0-9._-]/-}" >> "$GITHUB_OUTPUT"
 
     - name: Upload namespace diagnostics
@@ -320,8 +347,8 @@ runs:
       if: ${{ always() }}
       uses: ./.github/actions/upload-artifact-retry
       with:
-        name: blob-report-${{ inputs.identifier }}-${{ inputs.flow }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ inputs.test-stage }}-${{ inputs.shard-index }}
-        path: ${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/e2e/blob-report
+        name: blob-report-${{ inputs.identifier }}-${{ inputs.flow }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ inputs.test-stage }}-${{ inputs.shard-index }}-${{ inputs.artifact-suffix }}
+        path: ${{ inputs.test-chart-dir != '' && format('{0}/charts/{1}/test/e2e/blob-report', github.workspace, inputs.test-chart-dir) || format('{0}/test/e2e/blob-report', env.ABSOLUTE_TEST_CHART_DIR) }}
         retention-days: 1
 
     - name: Set report date
@@ -334,8 +361,8 @@ runs:
       if: ${{ always() }}
       uses: ./.github/actions/upload-artifact-retry
       with:
-        name: playwright-results-json-${{ github.run_id }}-${{ inputs.identifier }}-${{ inputs.flow }}-${{ inputs.distro-platform }}-${{ inputs.test-stage }}-${{ inputs.shard-index }}-${{ steps.report_date.outputs.date }}
-        path: ${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/e2e/test-results/playwright-results.json
+        name: playwright-results-json-${{ github.run_id }}-${{ inputs.identifier }}-${{ inputs.flow }}-${{ inputs.distro-platform }}-${{ inputs.test-stage }}-${{ inputs.shard-index }}-${{ inputs.artifact-suffix }}-${{ steps.report_date.outputs.date }}
+        path: ${{ inputs.test-chart-dir != '' && format('{0}/charts/{1}/test/e2e/test-results/playwright-results.json', github.workspace, inputs.test-chart-dir) || format('{0}/test/e2e/test-results/playwright-results.json', env.ABSOLUTE_TEST_CHART_DIR) }}
         if-no-files-found: warn
         retention-days: 5
 
@@ -343,9 +370,9 @@ runs:
       if: ${{ !success() }}
       uses: ./.github/actions/upload-artifact-retry
       with:
-        name: playwright-traces-${{ github.run_id }}-${{ inputs.identifier }}-${{ inputs.flow }}-${{ inputs.distro-platform }}-${{ inputs.test-stage }}-${{ inputs.shard-index }}-${{ steps.report_date.outputs.date }}
+        name: playwright-traces-${{ github.run_id }}-${{ inputs.identifier }}-${{ inputs.flow }}-${{ inputs.distro-platform }}-${{ inputs.test-stage }}-${{ inputs.shard-index }}-${{ inputs.artifact-suffix }}-${{ steps.report_date.outputs.date }}
         path: |
-          ${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/e2e/test-results/**/trace.zip
-          ${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/e2e/test-results/**/*.png
+          ${{ inputs.test-chart-dir != '' && format('{0}/charts/{1}/test/e2e/test-results/**/trace.zip', github.workspace, inputs.test-chart-dir) || format('{0}/test/e2e/test-results/**/trace.zip', env.ABSOLUTE_TEST_CHART_DIR) }}
+          ${{ inputs.test-chart-dir != '' && format('{0}/charts/{1}/test/e2e/test-results/**/*.png', github.workspace, inputs.test-chart-dir) || format('{0}/test/e2e/test-results/**/*.png', env.ABSOLUTE_TEST_CHART_DIR) }}
         if-no-files-found: ignore
         retention-days: 5

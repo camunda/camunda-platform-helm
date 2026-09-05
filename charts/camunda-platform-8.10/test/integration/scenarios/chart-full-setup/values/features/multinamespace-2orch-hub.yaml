@@ -11,7 +11,7 @@ global:
         namespace: "${ORCHA_NAMESPACE}"
         releaseName: integration
         host: "${ORCHA_HOST}"
-        version: "8.10.0-alpha3"
+        version: "8.10.0-alpha5"
         contextPaths:
           orchestration: /orchestration
           optimize: /optimize
@@ -44,7 +44,7 @@ global:
         namespace: "${ORCHB_NAMESPACE}"
         releaseName: integration
         host: "${ORCHB_HOST}"
-        version: "8.10.0-alpha3"
+        version: "8.9.18"
         contextPaths:
           orchestration: /orchestration
           optimize: /optimize
