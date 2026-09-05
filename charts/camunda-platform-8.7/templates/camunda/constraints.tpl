@@ -2,8 +2,43 @@
 A template to handle constraints.
 */}}
 
-{{- $identityEnabled := (or .Values.identity.enabled .Values.global.identity.service.url) }}
+{{- $identityEnabled := (or (eq (include "camundaPlatform.identityEnabled" .) "true") .Values.global.identity.service.url) }}
 {{- $identityAuthEnabled := (or $identityEnabled .Values.global.identity.auth.enabled) }}
+
+{{- $topologyMode := include "camundaPlatform.topologyMode" . }}
+{{- if not (has $topologyMode (list "combined" "orchestration")) }}
+  {{- fail (printf "[camunda][error] global.topology.mode must be one of combined or orchestration; got %q." $topologyMode) }}
+{{- end }}
+{{- if and (eq $topologyMode "orchestration") (not .Values.global.identity.auth.enabled) }}
+  {{- fail "[camunda][error] global.topology.mode=orchestration requires global.identity.auth.enabled=true." }}
+{{- end }}
+{{- if and (eq $topologyMode "orchestration") .Values.identity.enabled }}
+  {{- fail "[camunda][error] global.topology.mode=orchestration requires identity.enabled=false; configure global.identity.service.url to reach Management Identity." }}
+{{- end }}
+{{- if and (eq $topologyMode "orchestration") .Values.identityKeycloak.enabled }}
+  {{- fail "[camunda][error] global.topology.mode=orchestration requires identityKeycloak.enabled=false." }}
+{{- end }}
+{{- if and (eq $topologyMode "orchestration") .Values.identityPostgresql.enabled }}
+  {{- fail "[camunda][error] global.topology.mode=orchestration requires identityPostgresql.enabled=false." }}
+{{- end }}
+{{- if and (eq $topologyMode "orchestration") .Values.postgresql.enabled }}
+  {{- fail "[camunda][error] global.topology.mode=orchestration requires postgresql.enabled=false." }}
+{{- end }}
+{{- if and (eq $topologyMode "orchestration") .Values.executionIdentity.enabled }}
+  {{- fail "[camunda][error] global.topology.mode=orchestration requires executionIdentity.enabled=false." }}
+{{- end }}
+{{- if and (eq $topologyMode "orchestration") (empty .Values.global.identity.service.url) }}
+  {{- fail "[camunda][error] global.topology.mode=orchestration requires global.identity.service.url to reach Management Identity." }}
+{{- end }}
+{{- if and (eq $topologyMode "orchestration") (ne (include "camundaPlatform.zeebeEnabled" .) "true") }}
+  {{- fail "[camunda][error] global.topology.mode=orchestration requires zeebe.enabled=true." }}
+{{- end }}
+{{- if and (eq $topologyMode "orchestration") (ne (include "camundaPlatform.operateEnabled" .) "true") }}
+  {{- fail "[camunda][error] global.topology.mode=orchestration requires operate.enabled=true." }}
+{{- end }}
+{{- if and (eq $topologyMode "orchestration") (ne (include "camundaPlatform.tasklistEnabled" .) "true") }}
+  {{- fail "[camunda][error] global.topology.mode=orchestration requires tasklist.enabled=true." }}
+{{- end }}
 
 {{/*
 Fail with a message if Multi-Tenancy is enabled and its requirements are not met which are:
@@ -62,7 +97,7 @@ Fail with a message if adaptSecurityContext has any value other than "force" or 
 {{/*
 Fail with a message if Identity is disabled and identityKeycloak is enabled.
 */}}
-{{- if and (not .Values.identity.enabled) .Values.identityKeycloak.enabled }}
+{{- if and (ne (include "camundaPlatform.identityEnabled" .) "true") .Values.identityKeycloak.enabled }}
   {{- $errorMessage := "[camunda][error] Identity is disabled but identityKeycloak is enabled. Please ensure that if identityKeycloak is enabled, Identity must also be enabled."
   -}}
   {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
@@ -102,7 +137,7 @@ configmap-warnings.yaml, which renders the "<release>-warnings" ConfigMap on the
       {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "global.identity.auth.connectors.existingSecret.name" }}
     {{- end }}
 
-    {{ if and (.Values.global.identity.auth.enabled) (ne (upper .Values.global.identity.auth.type) "KEYCLOAK") (.Values.identity.enabled) (not  .Values.global.identity.auth.identity.existingSecret) }}
+    {{ if and (.Values.global.identity.auth.enabled) (ne (upper .Values.global.identity.auth.type) "KEYCLOAK") (eq (include "camundaPlatform.identityEnabled" .) "true") (not  .Values.global.identity.auth.identity.existingSecret) }}
       {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "global.identity.auth.identity.existingSecret.name" }}
     {{- end }}
 
@@ -138,7 +173,7 @@ configmap-warnings.yaml, which renders the "<release>-warnings" ConfigMap on the
       {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "identityPostgresql.auth.existingSecret" }}
     {{- end }}
 
-    {{ if and (.Values.webModeler.enabled) (not .Values.webModeler.restapi.mail.existingSecret) }}
+    {{ if and (eq (include "camundaPlatform.webModelerEnabled" .) "true") (not .Values.webModeler.restapi.mail.existingSecret) }}
       {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "webModeler.restapi.mail.existingSecret.name" }}
     {{- end }}
 
@@ -300,4 +335,3 @@ when global elasticsearch is enabled then either external elasticsearch should b
   {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
 {{- end }}
 */}}
-
