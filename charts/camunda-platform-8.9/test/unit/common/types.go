@@ -40,7 +40,28 @@ type ElasticsearchYAML struct {
 }
 
 type CamundaExporterYAML struct {
-	ClassName string `yaml:"className"`
+	ClassName string                  `yaml:"className"`
+	Args      CamundaExporterArgsYAML `yaml:"args"`
+}
+
+type CamundaExporterArgsYAML struct {
+	Connect CamundaExporterConnectYAML `yaml:"connect"`
+	History CamundaExporterHistoryYAML `yaml:"history"`
+}
+
+type CamundaExporterConnectYAML struct {
+	Type        string `yaml:"type"`
+	IndexPrefix string `yaml:"indexPrefix"`
+	AwsEnabled  bool   `yaml:"awsEnabled"`
+}
+
+type CamundaExporterHistoryYAML struct {
+	ElsRolloverDateFormat     string `yaml:"elsRolloverDateFormat"`
+	RolloverInterval          string `yaml:"rolloverInterval"`
+	RolloverBatchSize         int    `yaml:"rolloverBatchSize"`
+	WaitPeriodBeforeArchiving string `yaml:"waitPeriodBeforeArchiving"`
+	DelayBetweenRuns          int    `yaml:"delayBetweenRuns"`
+	MaximumDelayBetweenRuns   int    `yaml:"maxDelayBetweenRuns"`
 }
 
 type GatewayYAML struct {
@@ -87,13 +108,11 @@ type DocumentSecondaryStoreYAML struct {
 	History HistoryYAML `yaml:"history"`
 }
 
+// HistoryYAML mirrors camunda.data.secondary-storage.<store>.history, which carries only the
+// retention policy name on the 8.9 line; the archiver settings live in the legacy
+// zeebe.broker.exporters.camundaexporter.args.history block (see helm#7028).
 type HistoryYAML struct {
-	ElsRolloverDateFormat     string `yaml:"els-rollover-date-format"`
-	RolloverInterval          string `yaml:"rollover-interval"`
-	RolloverBatchSize         int    `yaml:"rollover-batch-size"`
-	WaitPeriodBeforeArchiving string `yaml:"wait-period-before-archiving"`
-	DelayBetweenRuns          int    `yaml:"delay-between-runs"`
-	MaximumDelayBetweenRuns   int    `yaml:"max-delay-between-runs"`
+	PolicyName string `yaml:"policy-name"`
 }
 
 type IdentityYAML struct {
