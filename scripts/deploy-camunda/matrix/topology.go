@@ -53,6 +53,10 @@ type Topology struct {
 // companions of their own (they consume the Hub release's shared
 // Elasticsearch and Identity/Keycloak cross-namespace by FQDN).
 type TopologyRelease struct {
+	// ChartVersion selects the local chart and values layers for this release.
+	// Empty inherits the parent matrix entry's version.
+	ChartVersion string `yaml:"chart-version,omitempty" json:"chartVersion,omitempty"`
+
 	// Role is either "hub" or "orchestration". Exactly one
 	// "hub" role must be declared per Topology.
 	Role string `yaml:"role" json:"role"`
@@ -111,10 +115,11 @@ type TopologyRelease struct {
 
 // Validate enforces Topology's load-time invariants:
 //   - at least one release is declared;
+//   - every release's chart-version resolves to a local chart directory;
 //   - every release's Values file resolves on disk under
-//     <chartFullSetupDir>/values/<Values>;
-//   - every release's Identity/Persistence layer (when set) resolves on disk
-//     under <chartFullSetupDir>/values/identity/ or .../persistence/;
+//     its selected chart's chart-full-setup values directory;
+//   - every release's Identity/Persistence/Features layers (when set) resolve
+//     under the selected chart's chart-full-setup values directory;
 //   - every release's Dependencies IDs (when set) resolve to a file under
 //     <depsDir>/<id>.yaml;
 //   - every release's DependsOn (when set) references a declared Role;
@@ -122,9 +127,13 @@ type TopologyRelease struct {
 //   - NamespaceSuffix values are unique and non-empty.
 //
 // ctx is prepended to error messages, e.g. `scenario "multinamespace": topology: ...`.
-func (t *Topology) Validate(ctx string, chartFullSetupDir string, depsDir string) error {
+func (t *Topology) Validate(ctx string, chartDir string, depsDir string) error {
 	if t == nil {
 		return nil
+	}
+	repoRoot, parentVersion, err := deriveRepoRootAndVersion(chartDir)
+	if err != nil {
+		return err
 	}
 	var problems []string
 
@@ -141,6 +150,20 @@ func (t *Topology) Validate(ctx string, chartFullSetupDir string, depsDir string
 
 	for i, r := range t.Releases {
 		label := fmt.Sprintf("%s: topology %q: release[%d] (role %q, namespace-suffix %q)", ctx, t.Name, i, r.Role, r.NamespaceSuffix)
+		chartVersion := r.ChartVersion
+		if chartVersion == "" {
+			chartVersion = parentVersion
+		}
+		releaseChartDir := chartDir
+		if isPlainFilename(chartVersion) {
+			releaseChartDir = filepath.Join(repoRoot, "charts", "camunda-platform-"+chartVersion)
+		}
+		chartFullSetupDir := filepath.Join(releaseChartDir, "test", "integration", "scenarios", "chart-full-setup")
+		if !isPlainFilename(chartVersion) {
+			problems = append(problems, fmt.Sprintf("%s: chart-version %q must not contain path separators", label, chartVersion))
+		} else if info, err := os.Stat(releaseChartDir); err != nil || !info.IsDir() {
+			problems = append(problems, fmt.Sprintf("%s: chart-version %q: missing local chart directory at %s", label, chartVersion, releaseChartDir))
+		}
 
 		switch r.Role {
 		case "hub":
@@ -199,6 +222,13 @@ func (t *Topology) Validate(ctx string, chartFullSetupDir string, depsDir string
 			persistencePath := filepath.Join(chartFullSetupDir, "values", "persistence", r.Persistence+".yaml")
 			if info, err := os.Stat(persistencePath); err != nil || info.IsDir() {
 				problems = append(problems, fmt.Sprintf("%s: persistence %q: missing values file at %s", label, r.Persistence, persistencePath))
+			}
+		}
+
+		for _, feature := range r.Features {
+			featurePath := filepath.Join(chartFullSetupDir, "values", "features", feature+".yaml")
+			if info, err := os.Stat(featurePath); err != nil || info.IsDir() {
+				problems = append(problems, fmt.Sprintf("%s: feature %q: missing values file at %s", label, feature, featurePath))
 			}
 		}
 

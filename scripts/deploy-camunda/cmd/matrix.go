@@ -1311,7 +1311,7 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 		rel := entry.Topology.Releases[i]
 		releaseCtx := contexts[i]
 
-		releaseEntry := synthesizeReleaseEntry(entry, rel, platform)
+		releaseEntry := synthesizeReleaseEntry(opts.RepoRoot, entry, rel, platform)
 		releaseOpts := synthesizeReleaseOpts(opts, platform, releaseCtx.Namespace)
 		if len(orchestrationIndices) > 1 {
 			hostKey := "HUB_HOST"
@@ -1438,9 +1438,13 @@ func topologyDeployOrder(releases []matrix.TopologyRelease) ([]int, error) {
 // carrying THAT release's own identity/persistence/features/dependencies
 // layer selection instead of the scenario-level (uniform) ones — the core of
 // the per-release layer fix. Extracted as a pure function for testability.
-func synthesizeReleaseEntry(entry matrix.Entry, rel matrix.TopologyRelease, platform string) matrix.Entry {
+func synthesizeReleaseEntry(repoRoot string, entry matrix.Entry, rel matrix.TopologyRelease, platform string) matrix.Entry {
 	features := append([]string(nil), rel.Features...)
 	var extraValues []string
+	version := rel.ChartVersion
+	if version == "" {
+		version = entry.Version
+	}
 
 	// rel.Values is the release's own overlay file. When it lives under
 	// values/features/ (the convention every multinamespace release uses),
@@ -1464,8 +1468,8 @@ func synthesizeReleaseEntry(entry matrix.Entry, rel matrix.TopologyRelease, plat
 	}
 
 	releaseEntry := matrix.Entry{
-		Version:      entry.Version,
-		ChartPath:    entry.ChartPath,
+		Version:      version,
+		ChartPath:    filepath.Join(repoRoot, "charts", "camunda-platform-"+version),
 		Scenario:     entry.Scenario,
 		Shortname:    entry.Shortname,
 		Auth:         entry.Auth,
