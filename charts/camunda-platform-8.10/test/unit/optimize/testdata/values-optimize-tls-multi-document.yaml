@@ -1,0 +1,11 @@
+optimize:
+  enabled: true
+  configuration: |
+    server:
+      port: 8083
+    ---
+    server:
+      ssl:
+        enabled: true
+        certificate: /certs/tls.crt
+        certificate-private-key: /certs/tls.key

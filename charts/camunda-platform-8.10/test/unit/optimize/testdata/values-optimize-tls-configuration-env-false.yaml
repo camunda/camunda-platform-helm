@@ -1,0 +1,10 @@
+optimize:
+  enabled: true
+  configuration: |
+    server:
+      ssl:
+        enabled: true
+        certificate: /certs/tls.crt
+  env:
+    - name: SERVER_SSL_ENABLED
+      value: "false"

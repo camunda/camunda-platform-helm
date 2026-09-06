@@ -1,0 +1,13 @@
+global:
+  tls:
+    optimize:
+      enabled: true
+      type: pkcs12
+      keyAlias: optimize-rest
+      cert:
+        secret:
+          existingSecret: optimize-tls-keystore
+          existingSecretKey: keystore.p12
+      keystorePassword:
+        secret:
+          existingSecretKey: keystore-password
