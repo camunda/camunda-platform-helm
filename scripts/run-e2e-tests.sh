@@ -27,11 +27,6 @@ validate_args() {
   local chart_path="$1"
   local namespace="$2"
   local kube_context="${3:-}"
-  local kubectl_cmd="kubectl"
-  
-  if [[ -n "$kube_context" ]]; then
-    kubectl_cmd="kubectl --context=$kube_context"
-  fi
   
   log "DEBUG: Validating arguments"
 
@@ -50,10 +45,7 @@ validate_args() {
     exit 1
   fi
 
-  if ! $kubectl_cmd get namespace "$namespace" > /dev/null 2>&1; then
-    echo "Error: namespace '$namespace' not found in the current Kubernetes context" >&2
-    exit 1
-  fi
+  validate_namespace_access "$namespace" "$kube_context"
   
   log "DEBUG: Arguments validated successfully"
 }
