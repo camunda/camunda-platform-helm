@@ -2680,3 +2680,69 @@ Usage:
 {{- get .appProtocols .portName -}}
 {{- end -}}
 {{- end -}}
+
+{{/*
+NOTE: resolves the multi-region block, preferring orchestration.multiregion over the
+deprecated global.multiregion, which only still carries regions and regionId. Whole-block
+precedence, never per field, so a topology cannot be assembled half from each. Absent
+fields fall back to the chart defaults, which is what lets the global block supply the
+numbered pair without declaring the zoned ones. constraints.tpl rejects setting both.
+*/}}
+{{- define "camundaPlatform.multiregion" -}}
+{{- $orch := .Values.orchestration.multiregion | default dict -}}
+{{- $global := .Values.global.multiregion | default dict -}}
+{{- if eq (include "camundaPlatform.multiregionConfigured" $orch) "true" -}}
+  {{- dict
+        "mode" ($orch.mode | default "numbered")
+        "zone" ($orch.zone | default "")
+        "zones" ($orch.zones | default list)
+        "regions" ($orch.regions | default 1)
+        "regionId" ($orch.regionId | default 0)
+      | toJson -}}
+{{- else -}}
+  {{- /* Only the numbered pair is read back from the deprecated block. mode, zone and
+       zones never shipped there, and honouring them would keep zoned mode reachable
+       through the spelling being removed in v16, which values.yaml and both schemas
+       already say it is not. */ -}}
+  {{- dict
+        "mode" "numbered"
+        "zone" ""
+        "zones" list
+        "regions" ($global.regions | default 1)
+        "regionId" ($global.regionId | default 0)
+      | toJson -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+NOTE: takes a multi-region block, not the root context. Emits "true" when any field
+departs from the chart default.
+*/}}
+{{- define "camundaPlatform.multiregionConfigured" -}}
+{{- if or
+      (ne (default "numbered" .mode) "numbered")
+      (ne (default "" .zone) "")
+      (gt (len (default list .zones)) 0)
+      (ne (int (default 1 .regions)) 1)
+      (ne (int (default 0 .regionId)) 0) -}}
+true
+{{- end -}}
+{{- end -}}
+
+{{/*
+NOTE: "true" when the cluster spans more than one failure domain, which is more than one
+zone in zoned mode and more than one region in numbered mode. Single-zone zoned counts as
+one cluster, the same as a single-region numbered one: it exists to skew leaders inside a
+region,
+not to spread across them. Three call sites depend on agreeing about this, so they read
+it here rather than each spelling it out: the generated initial contact points, the
+legacy Optimize exporters, and the NOTES.txt warning.
+*/}}
+{{- define "camundaPlatform.multiregionSpread" -}}
+{{- $mr := include "camundaPlatform.multiregion" . | fromJson -}}
+{{- if eq $mr.mode "zoned" -}}
+  {{- gt (len $mr.zones) 1 -}}
+{{- else -}}
+  {{- gt (int $mr.regions) 1 -}}
+{{- end -}}
+{{- end -}}
