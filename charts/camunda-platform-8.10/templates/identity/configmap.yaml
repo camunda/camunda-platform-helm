@@ -73,8 +73,13 @@ data:
                 {{- end }}
               root-url: {{ tpl $orchestration.redirectUrl $ | quote }}
               redirect-uris:
+                {{- if eq ($cluster.architecture | default "unified") "legacy" }}
+                - "/operate/identity-callback"
+                - "/tasklist/identity-callback"
+                {{- else }}
                 - "/login/oauth2/code/orchestration"
                 - "/sso-callback"
+                {{- end }}
           {{- end }}
           {{- if $optimize.enabled }}
             - name: {{ printf "Optimize %s" $displayName | quote }}

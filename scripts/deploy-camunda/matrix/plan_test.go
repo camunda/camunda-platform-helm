@@ -122,13 +122,13 @@ func TestPlanTopologyWorkflowMetadata(t *testing.T) {
 	if entry.IsTopology != "true" {
 		t.Errorf("isTopology = %q, want true", entry.IsTopology)
 	}
-	if entry.TopologyNamespaceSuffixes != `["hub","orcha","orchb","orchc"]` {
+	if entry.TopologyNamespaceSuffixes != `["hub","orcha","orchb","orchc","orchd"]` {
 		t.Errorf("topologyNamespaceSuffixes = %q", entry.TopologyNamespaceSuffixes)
 	}
 	if entry.TopologyHubSuffix != "hub" {
 		t.Errorf("topologyHubSuffix = %q, want hub", entry.TopologyHubSuffix)
 	}
-	wantSmoke := `[{"orchestration_suffix":"orcha","modeler_cluster_id":"orcha","modeler_cluster_name":"Orchestration A","shard_index":"1","chart_version":"8.10","chart_dir":"camunda-platform-8.10","suite":"orchestration","test_chart_dir":"camunda-platform-8.10","playwright_project":"topology-orchestration"},{"orchestration_suffix":"orchb","modeler_cluster_id":"orchb","modeler_cluster_name":"Orchestration B","shard_index":"2","chart_version":"8.9","chart_dir":"camunda-platform-8.9","suite":"orchestration","test_chart_dir":"camunda-platform-8.9","playwright_project":"topology-orchestration"},{"orchestration_suffix":"orchc","modeler_cluster_id":"orchc","modeler_cluster_name":"Orchestration C","shard_index":"3","chart_version":"8.8","chart_dir":"camunda-platform-8.8","suite":"orchestration","test_chart_dir":"camunda-platform-8.8","playwright_project":"topology-orchestration"}]`
+	wantSmoke := `[{"orchestration_suffix":"orcha","modeler_cluster_id":"orcha","modeler_cluster_name":"Orchestration A","shard_index":"1","chart_version":"8.10","chart_dir":"camunda-platform-8.10","suite":"orchestration","test_chart_dir":"camunda-platform-8.10","playwright_project":"topology-orchestration"},{"orchestration_suffix":"orchb","modeler_cluster_id":"orchb","modeler_cluster_name":"Orchestration B","shard_index":"2","chart_version":"8.9","chart_dir":"camunda-platform-8.9","suite":"orchestration","test_chart_dir":"camunda-platform-8.9","playwright_project":"topology-orchestration"},{"orchestration_suffix":"orchc","modeler_cluster_id":"orchc","modeler_cluster_name":"Orchestration C","shard_index":"3","chart_version":"8.8","chart_dir":"camunda-platform-8.8","suite":"orchestration","test_chart_dir":"camunda-platform-8.8","playwright_project":"topology-orchestration"},{"orchestration_suffix":"orchd","modeler_cluster_id":"orchd","modeler_cluster_name":"Orchestration D","shard_index":"4","chart_version":"8.7","chart_dir":"camunda-platform-8.7","suite":"orchestration","test_chart_dir":"camunda-platform-8.7","playwright_project":"topology-orchestration"}]`
 	if entry.TopologySmokeMatrix != wantSmoke {
 		t.Errorf("topologySmokeMatrix = %q, want %q", entry.TopologySmokeMatrix, wantSmoke)
 	}
