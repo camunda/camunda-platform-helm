@@ -22,3 +22,4 @@ spec:
       path: /actuator/prometheus
       port: management
       interval: 10s
+
