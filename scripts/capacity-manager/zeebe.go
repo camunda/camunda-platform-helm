@@ -36,8 +36,9 @@ func (id *BrokerID) UnmarshalJSON(data []byte) error {
 }
 
 type Partition struct {
-	ID    int    `json:"id"`
-	State string `json:"state"`
+	ID       int    `json:"id"`
+	State    string `json:"state"`
+	Priority int    `json:"priority"`
 }
 
 type Broker struct {
@@ -55,6 +56,39 @@ type Topology struct {
 	Brokers       []Broker `json:"brokers"`
 	PendingChange *Change  `json:"pendingChange"`
 	LastChange    *Change  `json:"lastChange"`
+}
+
+func (t Topology) PartitionCount() int {
+	partitions := map[int]struct{}{}
+	for _, broker := range t.Brokers {
+		if broker.State == "LEFT" {
+			continue
+		}
+		for _, partition := range broker.Partitions {
+			partitions[partition.ID] = struct{}{}
+		}
+	}
+	return len(partitions)
+}
+
+func (t Topology) PlacementBalanced() bool {
+	if len(t.Brokers) < 2 {
+		return true
+	}
+	min, max := -1, 0
+	for _, broker := range t.Brokers {
+		if broker.State == "LEFT" {
+			continue
+		}
+		count := len(broker.Partitions)
+		if min == -1 || count < min {
+			min = count
+		}
+		if count > max {
+			max = count
+		}
+	}
+	return max-min <= 1
 }
 
 func (t Topology) ActiveBrokerCount() int {

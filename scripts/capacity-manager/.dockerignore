@@ -1,4 +1,5 @@
 capacity-manager
 load-generator
 verify
+verify-partition-advisor
 *.log

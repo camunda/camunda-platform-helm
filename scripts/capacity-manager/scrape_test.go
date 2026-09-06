@@ -62,3 +62,15 @@ func TestDirectMetricsClientUsesMaximumPerSeriesRate(t *testing.T) {
 		t.Fatalf("unexpected maximum rate %v, %v", value, err)
 	}
 }
+
+func TestDirectMetricsClientReturnsMaximumGauge(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(response http.ResponseWriter, _ *http.Request) {
+		_, _ = fmt.Fprint(response, "test_gauge{partition=\"1\"} 0.4\ntest_gauge{partition=\"2\"} 0.9\n")
+	}))
+	defer server.Close()
+	client := &DirectMetricsClient{URL: server.URL, Client: server.Client()}
+	value, err := client.Gauge(context.Background(), "test_gauge")
+	if err != nil || value == nil || *value != 0.9 {
+		t.Fatalf("unexpected gauge %v, %v", value, err)
+	}
+}
