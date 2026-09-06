@@ -58,7 +58,7 @@ jobs:
     name: UnitTest Scripts
     runs-on: ubuntu-latest
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@2fa2e5ecfa1d82a6d2a93106bd43889f68500f4f # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@35aaec9b5e02286826f2139b5228312c6f894d6d # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Install tools
         uses: ./.github/actions/install-tool-versions
@@ -95,7 +95,7 @@ jobs:
     env:
       chartPath: "charts/${{ inputs.camunda-helm-dir }}"
     steps:
-    - uses: camunda/infra-global-github-actions/start-build-monitor@2fa2e5ecfa1d82a6d2a93106bd43889f68500f4f # main
+    - uses: camunda/infra-global-github-actions/start-build-monitor@35aaec9b5e02286826f2139b5228312c6f894d6d # main
     - name: ℹ️ Print workflow inputs ℹ️
       env:
         GITHUB_CONTEXT: ${{ toJson(inputs) }}
