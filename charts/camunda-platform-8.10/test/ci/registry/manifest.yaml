@@ -90,6 +90,10 @@ integration:
       shortname: secfl
       tier: 2
       enabled: true
+    - id: secretstore-gcp
+      shortname: secgc
+      tier: 2
+      enabled: true
     - id: rdbms-self-signed
       shortname: rdbss
       tier: 2
