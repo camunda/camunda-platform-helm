@@ -475,6 +475,17 @@ otherwise.
 {{- dig "index" "prefix" "" .Values.orchestration.exporters.zeebe | default .Values.optimize.database.opensearch.prefix | default "zeebe-record" -}}
 {{- end -}}
 
+{{- /*
+NOTE: matches the nested, dotted and raw-properties forms, as the camunda.secrets check in
+constraints.tpl does: one form alone lets a different YAML style slip past the check.
+*/ -}}
+{{- define "orchestration.physicalTenantsDeclared" -}}
+{{- $args := dict "extraConfiguration" .Values.orchestration.extraConfiguration "path" (list "camunda" "physical-tenants") -}}
+{{- if or (eq (include "camundaPlatform.extraConfigHasPathInAnyYamlDocument" $args) "true") (eq (include "camundaPlatform.extraConfigHasRawKeyPrefix" $args) "true") -}}
+true
+{{- end -}}
+{{- end -}}
+
 {{- define "orchestration.hasAppIntegrations" -}}
 {{- include "camundaPlatform.hasSecretConfig" (dict "config" .Values.orchestration.exporters.appIntegrations.apiKey) -}}
 {{- end -}}

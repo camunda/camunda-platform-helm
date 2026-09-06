@@ -1,0 +1,71 @@
+global:
+  security:
+    authentication:
+      method: oidc
+  identity:
+    auth:
+      enabled: true
+      type: KEYCLOAK
+      issuer: "https://hub.example.com/auth/realms/camunda-platform"
+      publicIssuerUrl: "https://hub.example.com/auth/realms/camunda-platform"
+      issuerBackendUrl: "http://keycloak.hub.svc:80/auth/realms/camunda-platform"
+    service:
+      url: http://identity.hub.svc:80/identity
+identity:
+  enabled: false
+camundaHub:
+  enabled: false
+webModeler:
+  enabled: false
+orchestration:
+  enabled: true
+  index:
+    prefix: orcha
+  data:
+    secondaryStorage:
+      type: elasticsearch
+      elasticsearch:
+        url: http://es:9200
+  extraConfiguration:
+    - file: physical-tenants.yaml
+      content: |
+        camunda:
+          physical-tenants:
+            default:
+              security:
+                authentication:
+                  providers:
+                    assigned:
+                      - oidc
+            tenanta:
+              cluster:
+                partitions-count: 3
+              data:
+                secondary-storage:
+                  elasticsearch:
+                    index-prefix: tenanta-orcha
+              security:
+                authentication:
+                  providers:
+                    assigned:
+                      - oidc
+                initialization:
+                  default-roles:
+                    admin:
+                      users:
+                        - demo
+            tenantb:
+              data:
+                secondary-storage:
+                  elasticsearch:
+                    index-prefix: tenantb-orcha
+              security:
+                authentication:
+                  providers:
+                    assigned:
+                      - oidc
+                initialization:
+                  default-roles:
+                    admin:
+                      users:
+                        - demo
