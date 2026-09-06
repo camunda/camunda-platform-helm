@@ -115,6 +115,32 @@ jobs:
 
       - name: CI Cleanup
         shell: bash
+        env:
+          NAMESPACE: ${{ inputs.namespace }}
         run: |
-          kubectl annotate ns ${{ inputs.namespace }} cleaner/ttl=1s --overwrite=true
-          kubectl annotate ns ${{ inputs.namespace }} janitor/ttl=1s --overwrite=true
+          set -euo pipefail
+
+          MAX_RETRIES=4
+          RETRY_DELAY=15
+
+          annotate_ttl() {
+            kubectl annotate ns "${NAMESPACE}" cleaner/ttl=1s --overwrite=true --request-timeout=30s &&
+            kubectl annotate ns "${NAMESPACE}" janitor/ttl=1s --overwrite=true --request-timeout=30s
+          }
+
+          # Backoff between attempts: 15s -> 30s -> 60s
+          for attempt in $(seq 1 ${MAX_RETRIES}); do
+            echo "=== Namespace cleanup attempt ${attempt}/${MAX_RETRIES} ==="
+            if annotate_ttl; then
+              echo "Namespace ${NAMESPACE} annotated for reaping on attempt ${attempt}"
+              exit 0
+            fi
+            if [[ ${attempt} -lt ${MAX_RETRIES} ]]; then
+              echo "Cleanup annotation failed; waiting ${RETRY_DELAY}s before retry..."
+              sleep ${RETRY_DELAY}
+              RETRY_DELAY=$((RETRY_DELAY * 2))
+            fi
+          done
+
+          echo "ERROR: failed to annotate namespace ${NAMESPACE} after ${MAX_RETRIES} attempts"
+          exit 1
