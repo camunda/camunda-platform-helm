@@ -67,6 +67,7 @@ Usage:
 
 Options:
   --absolute-chart-path ABSOLUTE_CHART_PATH   The absolute path to the chart directory.
+  --test-chart-path TEST_CHART_PATH           Chart directory whose Playwright config provides the test suite.
   --namespace NAMESPACE                       The namespace c8 is deployed into
   --kube-context KUBE_CONTEXT                 The Kubernetes context to use (optional).
   --show-html-report                          Show the HTML report after the tests have run.
@@ -79,6 +80,7 @@ Options:
   --rba                                       Run the rba tests
   --mt                                        Run the mt tests
   --auth0                                     Run the auth0-smoke project (Auth0 OIDC scenario)
+  --playwright-project PROJECT                Run a named Playwright project
   --playwright-debug                          Enable Playwright API debug logs and traces
   --video MODE                                Record video: on, off, retain-on-failure, on-first-retry (default: off)
   --trace MODE                                Record trace: on, off, retain-on-failure, on-first-retry (default: off)
@@ -98,6 +100,7 @@ EOF
 
 # Default values
 ABSOLUTE_CHART_PATH=""
+TEST_CHART_PATH=""
 NAMESPACE=""
 KUBE_CONTEXT=""
 SHOW_HTML_REPORT=false
@@ -111,6 +114,7 @@ IS_OPENSEARCH=false
 IS_RBA=false
 IS_MT=false
 IS_AUTH0=false
+PLAYWRIGHT_PROJECT=""
 PLAYWRIGHT_DEBUG=false
 VIDEO_MODE=""
 TRACE_MODE=""
@@ -125,6 +129,10 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --absolute-chart-path)
       ABSOLUTE_CHART_PATH="$2"
+      shift 2
+      ;;
+    --test-chart-path)
+      TEST_CHART_PATH="$2"
       shift 2
       ;;
     --namespace)
@@ -175,6 +183,10 @@ while [[ $# -gt 0 ]]; do
       IS_AUTH0=true
       shift
       ;;
+    --playwright-project)
+      PLAYWRIGHT_PROJECT="$2"
+      shift 2
+      ;;
     --playwright-debug)
       PLAYWRIGHT_DEBUG=true
       shift
@@ -220,7 +232,8 @@ log "DEBUG: Chart: $ABSOLUTE_CHART_PATH, Namespace: $NAMESPACE, KubeContext: $KU
 
 validate_args "$ABSOLUTE_CHART_PATH" "$NAMESPACE" "$KUBE_CONTEXT"
 
-TEST_SUITE_PATH="${ABSOLUTE_CHART_PATH%/}/test/e2e"
+TEST_SUITE_PATH="${TEST_CHART_PATH:-$ABSOLUTE_CHART_PATH}"
+TEST_SUITE_PATH="${TEST_SUITE_PATH%/}/test/e2e"
 hostname=$(get_ingress_hostname "$NAMESPACE" "$KUBE_CONTEXT")
 
 if [[ "$IS_CI" != "true" ]]; then
@@ -290,6 +303,7 @@ log "DEBUG: PLAYWRIGHT_HTML_REPORT='${PLAYWRIGHT_HTML_REPORT}'"
 
 # Build the rerun command for display on failure
 RERUN_CMD="./scripts/run-e2e-tests.sh --absolute-chart-path ${ABSOLUTE_CHART_PATH} --namespace ${NAMESPACE}"
+[[ -n "$TEST_CHART_PATH" ]] && RERUN_CMD+=" --test-chart-path ${TEST_CHART_PATH}"
 [[ -n "$KUBE_CONTEXT" ]] && RERUN_CMD+=" --kube-context ${KUBE_CONTEXT}"
 [[ -n "$TEST_EXCLUDE" ]] && RERUN_CMD+=" --test-exclude \"${TEST_EXCLUDE}\""
 [[ "$RUN_SMOKE_TESTS" == "true" ]] && RERUN_CMD+=" --run-smoke-tests"
@@ -297,11 +311,12 @@ RERUN_CMD="./scripts/run-e2e-tests.sh --absolute-chart-path ${ABSOLUTE_CHART_PAT
 [[ "$IS_RBA" == "true" ]] && RERUN_CMD+=" --rba"
 [[ "$IS_MT" == "true" ]] && RERUN_CMD+=" --mt"
 [[ "$IS_AUTH0" == "true" ]] && RERUN_CMD+=" --auth0"
+[[ -n "$PLAYWRIGHT_PROJECT" ]] && RERUN_CMD+=" --playwright-project ${PLAYWRIGHT_PROJECT}"
 [[ -n "$VIDEO_MODE" ]] && RERUN_CMD+=" --video ${VIDEO_MODE}"
 [[ -n "$TRACE_MODE" ]] && RERUN_CMD+=" --trace ${TRACE_MODE}"
 [[ -n "$RETRIES" ]] && RERUN_CMD+=" --retries ${RETRIES}"
 [[ -n "$LOCAL_TEST_SUITE" ]] && RERUN_CMD+=" --local-test-suite ${LOCAL_TEST_SUITE}"
 
-run_playwright_tests "$TEST_SUITE_PATH" "$SHOW_HTML_REPORT" "$SHARD_INDEX" "$SHARD_TOTAL" "blob" "$TEST_EXCLUDE" "$RUN_SMOKE_TESTS" "$PLAYWRIGHT_DEBUG" "$NAMESPACE" "$KUBE_CONTEXT" "$RERUN_CMD" "$IS_AUTH0"
+run_playwright_tests "$TEST_SUITE_PATH" "$SHOW_HTML_REPORT" "$SHARD_INDEX" "$SHARD_TOTAL" "blob" "$TEST_EXCLUDE" "$RUN_SMOKE_TESTS" "$PLAYWRIGHT_DEBUG" "$NAMESPACE" "$KUBE_CONTEXT" "$RERUN_CMD" "$IS_AUTH0" "$PLAYWRIGHT_PROJECT"
 
 log "DEBUG: E2E tests completed"

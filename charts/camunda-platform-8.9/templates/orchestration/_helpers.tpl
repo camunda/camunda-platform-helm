@@ -159,7 +159,7 @@ Authentication.
 */}}
 
 {{- define "orchestration.authMethod" -}}
-    {{- if not .Values.orchestration.enabled -}}
+    {{- if ne (include "camundaPlatform.orchestrationEnabled" .) "true" -}}
         none
     {{- else -}}
         {{- .Values.orchestration.security.authentication.method | default (
@@ -321,10 +321,10 @@ falls through to the shared global/secondary-storage sources otherwise.
 {{- define "orchestration.hasElasticsearchExporter" -}}
 {{- and
       (or
-        (and .Values.global.elasticsearch.enabled .Values.orchestration.exporters.rdbms.enabled .Values.optimize.enabled)
+        (and .Values.global.elasticsearch.enabled .Values.orchestration.exporters.rdbms.enabled (eq (include "camundaPlatform.optimizeEnabled" .) "true"))
         (or
           (and .Values.global.elasticsearch.enabled .Values.orchestration.exporters.zeebe.enabled)
-          (and (or .Values.global.elasticsearch.enabled .Values.optimize.database.elasticsearch.enabled) .Values.optimize.enabled)
+          (and (or .Values.global.elasticsearch.enabled .Values.optimize.database.elasticsearch.enabled) (eq (include "camundaPlatform.optimizeEnabled" .) "true"))
         )
       )
       (or
@@ -338,7 +338,7 @@ falls through to the shared global/secondary-storage sources otherwise.
 {{- and
       (or
         (and .Values.global.opensearch.enabled .Values.orchestration.exporters.zeebe.enabled)
-        (and (or .Values.global.opensearch.enabled .Values.optimize.database.opensearch.enabled) .Values.optimize.enabled)
+        (and (or .Values.global.opensearch.enabled .Values.optimize.database.opensearch.enabled) (eq (include "camundaPlatform.optimizeEnabled" .) "true"))
       )
       (or
         .Values.orchestration.exporters.zeebe.enabled
@@ -356,7 +356,7 @@ when no host resolves, the exporter keeps the secondary-storage/global compatibi
 {{- define "orchestration.legacyElasticsearchExporterUsesOptimizeSource" -}}
 {{- and
       (eq (include "orchestration.hasElasticsearchExporter" .) "true")
-      .Values.optimize.enabled
+      (eq (include "camundaPlatform.optimizeEnabled" .) "true")
       (ne (include "camundaPlatform.elasticsearchHost" .) "")
 -}}
 {{- end -}}
@@ -365,7 +365,7 @@ when no host resolves, the exporter keeps the secondary-storage/global compatibi
 {{- and
       (ne (include "orchestration.hasElasticsearchExporter" .) "true")
       (eq (include "orchestration.hasOpenSearchExporter" .) "true")
-      .Values.optimize.enabled
+      (eq (include "camundaPlatform.optimizeEnabled" .) "true")
       (ne (include "camundaPlatform.opensearchHost" .) "")
 -}}
 {{- end -}}

@@ -543,7 +543,7 @@ Web Modeler templates.
 */}}
 
 {{- define "camundaPlatform.getExternalURLModeler" -}}
-  {{- if .context.Values.webModeler.enabled -}}
+  {{- if eq (include "camundaPlatform.webModelerEnabled" .context) "true" -}}
     {{- if $.context.Values.global.ingress.enabled -}}
       {{ $proto := ternary "https" "http" .context.Values.global.ingress.tls.enabled -}}
       {{- if eq .component "websockets" }}
@@ -647,6 +647,34 @@ Identity Auth.
   {{- .Values.global.identity.auth.optimize.audience | default "optimize-api" -}}
 {{- end -}}
 
+{{- define "camundaPlatform.topologyMode" -}}
+  {{- dig "mode" "combined" (.Values.global.topology | default dict) -}}
+{{- end -}}
+
+{{- define "camundaPlatform.orchestrationEnabled" -}}
+  {{- if .Values.orchestration.enabled -}}true{{- else -}}false{{- end -}}
+{{- end -}}
+
+{{- define "camundaPlatform.connectorsEnabled" -}}
+  {{- if .Values.connectors.enabled -}}true{{- else -}}false{{- end -}}
+{{- end -}}
+
+{{- define "camundaPlatform.optimizeEnabled" -}}
+  {{- if .Values.optimize.enabled -}}true{{- else -}}false{{- end -}}
+{{- end -}}
+
+{{- define "camundaPlatform.identityEnabled" -}}
+  {{- if and .Values.identity.enabled (ne (include "camundaPlatform.topologyMode" .) "orchestration") -}}true{{- else -}}false{{- end -}}
+{{- end -}}
+
+{{- define "camundaPlatform.consoleEnabled" -}}
+  {{- if and .Values.console.enabled (ne (include "camundaPlatform.topologyMode" .) "orchestration") -}}true{{- else -}}false{{- end -}}
+{{- end -}}
+
+{{- define "camundaPlatform.webModelerEnabled" -}}
+  {{- if and .Values.webModeler.enabled (ne (include "camundaPlatform.topologyMode" .) "orchestration") -}}true{{- else -}}false{{- end -}}
+{{- end -}}
+
 
 {{/*
 ********************************************************************************
@@ -712,7 +740,7 @@ Zeebe templates.
 [camunda-platform] Zeebe Gateway REST internal URL.
 */}}
 {{ define "camundaPlatform.orchestrationHTTPInternalURL" }}
-  {{- if .Values.orchestration.enabled -}}
+  {{- if eq (include "camundaPlatform.orchestrationEnabled" .) "true" -}}
     {{-
       printf "%s://%s%s"
         (ternary "https" "http" (eq (include "camundaPlatform.orchestrationEnvIsTrue" (dict "context" . "name" "SERVER_SSL_ENABLED")) "true"))
@@ -726,7 +754,7 @@ Zeebe templates.
 [camunda-platform] Zeebe Gateway GRPC internal URL.
 */}}
 {{ define "camundaPlatform.orchestrationGRPCInternalURL" }}
-  {{- if .Values.orchestration.enabled -}}
+  {{- if eq (include "camundaPlatform.orchestrationEnabled" .) "true" -}}
     {{-
       printf "%s://%s"
         (ternary "grpcs" "grpc" (eq (include "camundaPlatform.orchestrationEnvIsTrue" (dict "context" . "name" "CAMUNDA_API_GRPC_SSL_ENABLED")) "true"))
@@ -768,7 +796,7 @@ Release templates.
   {{- $proto := ternary "https" "http" .Values.global.ingress.tls.enabled -}}
   {{- $baseURL := printf "%s://%s" $proto (tpl .Values.global.host $ | default (tpl .Values.global.ingress.host $)) }}
 
-  {{- if .Values.console.enabled }}
+  {{- if eq (include "camundaPlatform.consoleEnabled" .) "true" }}
   {{-  $proto := (lower .Values.console.readinessProbe.scheme) -}}
   {{- $baseURLInternal := printf "%s://%s.%s:%v" $proto (include "console.fullname" .) .Release.Namespace .Values.console.service.managementPort }}
   - name: Console
@@ -778,7 +806,7 @@ Release templates.
     readiness: {{ printf "%s%s" $baseURLInternal .Values.console.readinessProbe.probePath }}
     metrics: {{ printf "%s%s" $baseURLInternal .Values.console.metrics.prometheus }}
   {{- end }}
-  {{ if .Values.identity.enabled -}}
+  {{ if eq (include "camundaPlatform.identityEnabled" .) "true" -}}
   {{-  $proto := (lower .Values.identity.readinessProbe.scheme) -}}
   {{- $baseURLInternal := printf "%s://%s.%s:%v" $proto (include "identity.fullname" .) .Release.Namespace .Values.identity.service.metricsPort -}}
   - name: Keycloak
@@ -793,7 +821,7 @@ Release templates.
     metrics: {{ printf "%s%s" $baseURLInternal .Values.identity.metrics.prometheus }}
   {{- end }}
 
-  {{- if .Values.webModeler.enabled }}
+  {{- if eq (include "camundaPlatform.webModelerEnabled" .) "true" }}
   {{-  $proto := (lower .Values.webModeler.restapi.readinessProbe.scheme) -}}
   {{- $baseURLInternal := printf "%s://%s.%s:%v" $proto (include "webModeler.restapi.fullname" .) .Release.Namespace .Values.webModeler.restapi.service.managementPort }}
   - name: WebModeler
@@ -804,7 +832,7 @@ Release templates.
     metrics: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list .Values.webModeler.contextPath .Values.webModeler.restapi.metrics.prometheus)) }}
   {{- end }}
 
-  {{- if .Values.optimize.enabled }}
+  {{- if eq (include "camundaPlatform.optimizeEnabled" .) "true" }}
   {{-  $proto := (lower .Values.optimize.readinessProbe.scheme) -}}
   {{- $baseURLInternal := printf "%s://%s.%s" $proto (include "optimize.fullname" .) .Release.Namespace }}
   - name: Optimize
@@ -815,7 +843,7 @@ Release templates.
     metrics: {{ printf "%s:%v%s" $baseURLInternal .Values.optimize.service.managementPort .Values.optimize.metrics.prometheus }}
   {{- end }}
 
-  {{- if .Values.connectors.enabled }}
+  {{- if eq (include "camundaPlatform.connectorsEnabled" .) "true" }}
   {{-  $proto := (lower .Values.connectors.readinessProbe.scheme) -}}
   {{- $baseURLInternal := printf "%s://%s.%s" $proto (include "connectors.serviceName" .) .Release.Namespace }}
   - name: Connectors
@@ -826,7 +854,7 @@ Release templates.
     metrics: {{ printf "%s:%v%s" $baseURLInternal .Values.connectors.service.serverPort (include "camundaPlatform.joinpath" (list .Values.connectors.contextPath .Values.connectors.metrics.prometheus)) }}
   {{- end }}
 
-  {{- if .Values.orchestration.enabled }}
+  {{- if eq (include "camundaPlatform.orchestrationEnabled" .) "true" }}
   {{-  $proto := (lower .Values.orchestration.readinessProbe.scheme) -}}
   {{- $baseURLInternal := printf "%s://%s.%s:%v" $proto (include "orchestration.fullname" . | trimAll "\"") .Release.Namespace .Values.orchestration.service.managementPort }}
   - name: Operate
