@@ -79,6 +79,18 @@ type topologySmokeEntry struct {
 	ModelerClusterID    string `json:"modeler_cluster_id"`
 	ModelerClusterName  string `json:"modeler_cluster_name"`
 	ShardIndex          string `json:"shard_index"`
+	// Optimize is empty unless role "optimize" releases declare
+	// `serves: <orchestration_suffix>`. When populated, this leg's Optimize
+	// instances run in their own namespaces on the Hub host rather than in the
+	// orchestration namespace, so an e2e run must not derive an Optimize
+	// endpoint from OrchestrationSuffix. One entry per Physical Tenant served by
+	// this orchestration release, in declaration order.
+	Optimize []topologySmokeOptimize `json:"optimize,omitempty"`
+}
+
+type topologySmokeOptimize struct {
+	Suffix      string `json:"suffix"`
+	ContextPath string `json:"context_path"`
 }
 
 // PlanResult is the computed build matrix.
@@ -452,18 +464,29 @@ func planTopologyMetadata(topology *Topology) (string, string, string) {
 	smoke := []topologySmokeEntry{}
 	hubSuffix := ""
 	if topology != nil {
+		optimizeByServed := map[string][]topologySmokeOptimize{}
+		for _, release := range topology.Releases {
+			if release.Role == "optimize" && release.Serves != "" {
+				optimizeByServed[release.Serves] = append(optimizeByServed[release.Serves], topologySmokeOptimize{
+					Suffix:      release.NamespaceSuffix,
+					ContextPath: release.OptimizeContextPath,
+				})
+			}
+		}
 		for _, release := range topology.Releases {
 			suffixes = append(suffixes, release.NamespaceSuffix)
 			if release.Role == "hub" {
 				hubSuffix = release.NamespaceSuffix
 			}
 			if release.Role == "orchestration" {
-				smoke = append(smoke, topologySmokeEntry{
+				entry := topologySmokeEntry{
 					OrchestrationSuffix: release.NamespaceSuffix,
 					ModelerClusterID:    release.ModelerClusterID,
 					ModelerClusterName:  release.ModelerClusterName,
 					ShardIndex:          strconv.Itoa(len(smoke) + 1),
-				})
+				}
+				entry.Optimize = optimizeByServed[release.NamespaceSuffix]
+				smoke = append(smoke, entry)
 			}
 		}
 	}

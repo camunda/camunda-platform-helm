@@ -608,7 +608,8 @@ Identity Auth.
 */}}
 
 {{- define "camundaPlatform.authAudienceOptimize" -}}
-  {{- .Values.global.identity.auth.optimize.audience | default "optimize-api" -}}
+  {{- $oidc := dig "security" "authentication" "oidc" dict (.Values.optimize | default dict) -}}
+  {{- $oidc.audience | default .Values.global.identity.auth.optimize.audience | default "optimize-api" -}}
 {{- end -}}
 
 {{- define "camundaPlatform.topologySlug" -}}
@@ -638,11 +639,11 @@ Identity Auth.
 {{- end -}}
 
 {{- define "camundaPlatform.orchestrationEnabled" -}}
-  {{- if and .Values.orchestration.enabled (ne (include "camundaPlatform.topologyMode" .) "hub") -}}true{{- else -}}false{{- end -}}
+  {{- if and .Values.orchestration.enabled (not (has (include "camundaPlatform.topologyMode" .) (list "hub" "optimize"))) -}}true{{- else -}}false{{- end -}}
 {{- end -}}
 
 {{- define "camundaPlatform.connectorsEnabled" -}}
-  {{- if and .Values.connectors.enabled (ne (include "camundaPlatform.topologyMode" .) "hub") -}}true{{- else -}}false{{- end -}}
+  {{- if and .Values.connectors.enabled (not (has (include "camundaPlatform.topologyMode" .) (list "hub" "optimize"))) -}}true{{- else -}}false{{- end -}}
 {{- end -}}
 
 {{- define "camundaPlatform.optimizeEnabled" -}}
@@ -650,7 +651,7 @@ Identity Auth.
 {{- end -}}
 
 {{- define "camundaPlatform.identityEnabled" -}}
-  {{- if and .Values.identity.enabled (ne (include "camundaPlatform.topologyMode" .) "orchestration") -}}true{{- else -}}false{{- end -}}
+  {{- if and .Values.identity.enabled (not (has (include "camundaPlatform.topologyMode" .) (list "orchestration" "optimize"))) -}}true{{- else -}}false{{- end -}}
 {{- end -}}
 
 
@@ -673,7 +674,7 @@ Returns "true" if camundaHub.enabled OR webModeler.enabled.
 Usage: {{- if eq (include "camundaHub.webModelerEnabled" .) "true" }}
 */}}
 {{- define "camundaHub.webModelerEnabled" -}}
-  {{- if and (ne (include "camundaPlatform.topologyMode" .) "orchestration") (or .Values.camundaHub.enabled .Values.webModeler.enabled) -}}
+  {{- if and (not (has (include "camundaPlatform.topologyMode" .) (list "orchestration" "optimize"))) (or .Values.camundaHub.enabled .Values.webModeler.enabled) -}}
     true
   {{- else -}}
     false
@@ -687,7 +688,7 @@ Usage: {{- if eq (include "camundaHub.consoleEnabled" .) "true" }}
 */}}
 {{- define "camundaHub.consoleEnabled" -}}
   {{- $console := default (dict) .Values.console -}}
-  {{- if and (ne (include "camundaPlatform.topologyMode" .) "orchestration") (or .Values.camundaHub.enabled $console.enabled) -}}
+  {{- if and (not (has (include "camundaPlatform.topologyMode" .) (list "orchestration" "optimize"))) (or .Values.camundaHub.enabled $console.enabled) -}}
     true
   {{- else -}}
     false
@@ -2430,6 +2431,54 @@ Usage:
           {{- $dotted := join "." (slice $path $split) -}}
           {{- range $key, $_ := $node -}}
             {{- if or (eq $key $dotted) (hasPrefix (printf "%s." $dotted) $key) -}}
+              {{- $found = "true" -}}
+            {{- end -}}
+          {{- end -}}
+        {{- end -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- $found -}}
+{{- end -}}
+
+{{- /*
+NOTE: exact-leaf companion to extraConfigHasPath, for guards that need the value rather than
+the key: reports "true" only when a spring-imported <component>.extraConfiguration file binds
+the given path to a non-empty scalar. Presence is not enough where a guard exists because the
+value must reach the component - "api.jwtSetUri:" with no value parses as null, so the key is
+there and the endpoint still is not. Both YAML forms Spring accepts are matched by trying each
+split between nested keys and one dotted remainder, but the remainder must match the leaf
+exactly: unlike extraConfigHasPath, a subkey is a different key, not this value. Any entry
+carrying a usable value is enough, so no last-entry-wins ordering applies.
+Usage:
+{{ if eq (include "camundaPlatform.extraConfigHasNonEmptyValueAtPath" (dict
+  "extraConfiguration" .Values.optimize.extraConfiguration
+  "path" (list "api" "jwtSetUri"))) "true" }}
+*/ -}}
+{{- define "camundaPlatform.extraConfigHasNonEmptyValueAtPath" -}}
+{{- $found := "" -}}
+{{- $path := .path -}}
+{{- range .extraConfiguration -}}
+  {{- if not (and (hasKey . "springImport") (eq .springImport false)) -}}
+    {{- $parsed := (.content | default "" | fromYaml) -}}
+    {{- if kindIs "map" $parsed -}}
+      {{- range $split := until (len $path) -}}
+        {{- $node := $parsed -}}
+        {{- $ok := true -}}
+        {{- range $i := until $split -}}
+          {{- $step := index $path $i -}}
+          {{- if and $ok (kindIs "map" $node) (hasKey $node $step) -}}
+            {{- $node = index $node $step -}}
+          {{- else -}}
+            {{- $ok = false -}}
+          {{- end -}}
+        {{- end -}}
+        {{- if and $ok (kindIs "map" $node) -}}
+          {{- $dotted := join "." (slice $path $split) -}}
+          {{- if hasKey $node $dotted -}}
+            {{- $leaf := index $node $dotted -}}
+            {{- if and (not (kindIs "map" $leaf)) (not (kindIs "slice" $leaf)) (not (empty $leaf)) -}}
               {{- $found = "true" -}}
             {{- end -}}
           {{- end -}}
