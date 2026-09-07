@@ -52,8 +52,8 @@ func (s *normalizeSecretConfigTest) TestSecretHelperFunctionsWithOpenSearch() {
 		{
 			Name: "opensearch new style secret creates env vars",
 			Values: map[string]string{
-				"orchestration.enabled":                                                        "true",
-				"orchestration.data.secondaryStorage.type":                                     "opensearch",
+				"orchestration.enabled":                    "true",
+				"orchestration.data.secondaryStorage.type": "opensearch",
 				"orchestration.data.secondaryStorage.opensearch.auth.secret.existingSecret":    "my-opensearch-secret",
 				"orchestration.data.secondaryStorage.opensearch.auth.secret.existingSecretKey": "my-key",
 			},
