@@ -46,6 +46,8 @@ jobs:
           ref: ${{ github.event.pull_request.head.ref }}
           fetch-depth: 0
           token: "${{ steps.generate-github-token.outputs.token }}"
+          # Credentials are re-introduced only in the final push step.
+          persist-credentials: false
       - name: Configure curl and wget
         uses: ./.github/actions/setup-curl
       #
@@ -81,22 +83,52 @@ jobs:
       - name: Set vars
         run: |
           echo "CHANGED_CHARTS=$(ct list-changed | tr '\n' ' ')" | tee -a $GITHUB_ENV
+      # An empty chartPath is indistinguishable from an unset one in the Makefile, which
+      # then falls back to charts/camunda-platform-* and rewrites every chart version.
       - name: Update golden files
         run: |
-          chartPath="${CHANGED_CHARTS}" \
-            make go.update-golden-only
+          if [ -n "${CHANGED_CHARTS}" ]; then
+            chartPath="${CHANGED_CHARTS}" make go.update-golden-only
+          else
+            echo "No chart changes, skipping golden file update."
+          fi
       - name: Update README
         run: |
-          chartPath="${CHANGED_CHARTS}" \
-            make helm.readme-update
+          if [ -n "${CHANGED_CHARTS}" ]; then
+            chartPath="${CHANGED_CHARTS}" make helm.readme-update
+          else
+            echo "No chart changes, skipping README update."
+          fi
       - name: Update Schema
         run: |
-          chartPath="${CHANGED_CHARTS}" \
-            make helm.schema-update
+          if [ -n "${CHANGED_CHARTS}" ]; then
+            chartPath="${CHANGED_CHARTS}" make helm.schema-update
+          else
+            echo "No chart changes, skipping schema update."
+          fi
       - name: Git pull
         run: git pull --rebase --autostash .
       - uses: EndBug/add-and-commit@cc9c08ba6c8df3b93a8f2db63e89b98368ae2ae8 # v11.1.1
+        id: commit
         with:
           author_name: "distro-ci[bot]"
           author_email: "122795778+distro-ci[bot]@users.noreply.github.com"
           message: "chore: chart chores"
+          # Pushing is done by the next step; checkout does not persist credentials, so the
+          # action's own fetch and push must both be disabled.
+          fetch: false
+          push: false
+      - name: Push changes
+        if: steps.commit.outputs.committed == 'true'
+        env:
+          GH_APP_TOKEN: ${{ steps.generate-github-token.outputs.token }}
+          TARGET_REF: ${{ github.event.pull_request.head.ref }}
+        run: |
+          set -euo pipefail
+          # Credential is supplied per-command via a helper reading the step env, so the token is
+          # neither written to .git/config nor visible in the process arguments. hooksPath is
+          # neutralized so no repo-provided hook runs with the token in its environment.
+          git -c core.hooksPath=/dev/null \
+              -c credential.helper= \
+              -c credential.helper='!f() { echo username=x-access-token; echo "password=${GH_APP_TOKEN}"; }; f' \
+              push origin "HEAD:refs/heads/${TARGET_REF}"
