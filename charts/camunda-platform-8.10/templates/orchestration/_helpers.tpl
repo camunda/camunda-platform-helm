@@ -18,17 +18,13 @@
 
 {{- define "orchestration.renderManifest" -}}
 {{- $root := .context -}}
-{{- $ctx := dict
-    "Values" (deepCopy $root.Values)
-    "Release" $root.Release
-    "Chart" $root.Chart
-    "Capabilities" $root.Capabilities
-    "Template" $root.Template
-    "Files" $root.Files
-    "Zone" (.zone | default "")
--}}
+{{- $ctx := merge (dict) $root -}}
+{{- $_ := set $ctx "Values" (deepCopy $root.Values) -}}
+{{- $_ := set $ctx "OrchestrationRender" (dict
+    "zone" (.zone | default "")
+    "migrationLegacy" (.migrationLegacy | default false)
+) -}}
 {{- if .migrationLegacy }}
-{{- $_ := set $ctx "MigrationLegacy" true -}}
 {{- $_ := set $ctx.Values.orchestration.multiregion "mode" "numbered" -}}
 {{- end }}
 {{- if .disableLegacy }}
@@ -70,7 +66,7 @@ Takes a dict with the root context and an optional explicit zone.
 {{- end -}}
 
 {{- define "orchestration.scopedZone" -}}
-{{- if .Zone }}{{ .Zone }}{{ end -}}
+{{- if and .OrchestrationRender .OrchestrationRender.zone }}{{ .OrchestrationRender.zone }}{{ end -}}
 {{- end -}}
 
 {{/*
@@ -83,7 +79,7 @@ brokers: the only thing that flag adds to a zoned ConfigMap is the numbered fami
 {{- include "orchestration.renderManifest" (dict
     "manifest" "orchestration.configmapManifest"
     "context" .
-    "zone" .Zone
+    "zone" (include "orchestration.scopedZone" .)
     "disableLegacy" true
 ) | sha256sum -}}
 {{- end -}}
@@ -212,9 +208,9 @@ app.kubernetes.io/version: {{ include "camundaPlatform.versionLabel" (dict
     {{- include "orchestration.brokerLabel" . }}
     {{- "\n" }}
     {{- include "orchestration.versionLabel" . }}
-    {{- if .Zone }}
+    {{- if and .OrchestrationRender .OrchestrationRender.zone }}
     {{- "\n" }}
-camunda.io/zone: {{ .Zone }}
+camunda.io/zone: {{ .OrchestrationRender.zone }}
     {{- end }}
 {{- end -}}
 
@@ -239,9 +235,9 @@ camunda.io/zone: {{ .Zone }}
     {{- /* NOTE: StatefulSet.spec.selector is immutable, so the retained unzoned
          StatefulSet during a migration must keep its selector exactly as before —
          the zone label is only ever added, never removed from an existing render. */ -}}
-    {{- if .Zone }}
+    {{- if and .OrchestrationRender .OrchestrationRender.zone }}
     {{- "\n" }}
-camunda.io/zone: {{ .Zone }}
+camunda.io/zone: {{ .OrchestrationRender.zone }}
     {{- end }}
 {{- end -}}
 
