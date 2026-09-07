@@ -705,6 +705,53 @@ Fix: install the operator + CRDs cluster-wide **before** running
 provisions for you. See [Using operators](#using-operators) for how
 to wire an operator-provisioned dependency into a scenario.
 
+### Image cannot be pulled — the deploy aborts instead of timing out
+
+Symptom: the deploy stops after ~1 minute with
+
+```
+helm upgrade --install aborted early: unresolvable container image:
+image "registry.camunda.cloud/vendor-ee/postgresql:15.18.0-debian-12-r17" for
+container "postgresql" in pod "integration-postgresql-0" cannot be pulled ...
+```
+
+This is deliberate. An image the registry will not serve cannot become
+available inside the Helm timeout, so waiting the remaining 19 minutes only
+buys a `context deadline exceeded` that names neither the image nor the
+reason. Two guards produce this:
+
+- **Preflight (before any cluster mutation).** When the resolved values chain
+  includes the enterprise overlay (`values-enterprise.yaml`, reached as
+  `values/features/enterprise.yaml`), every image it pins completely
+  (`registry` + `repository` + `tag`) is resolved on `linux/amd64` — the index
+  *and* the per-platform child manifest it references. An index-only probe
+  passes when the child is missing, which is the exact failure mode of
+  [#6804](https://github.com/camunda/camunda-platform-helm/issues/6804).
+  Scenarios without the overlay make no registry calls at all.
+
+  Only one condition fails the preflight: the registry serves the index and then
+  denies the child that index advertises. Anything that merely prevents the
+  check from running — no Docker binary, no credentials, no network — is a
+  warning, because it says nothing about the images.
+- **In-flight guard (during `helm --wait`).** Pods are polled every 15s.
+  When the same container reports `ErrImagePull`/`ImagePullBackOff` with a
+  `not found` / `manifest unknown` registry message on two consecutive
+  polls, the wait is aborted and the error names the pod, container and
+  image.
+
+Auth failures are *not* treated as terminal — they are covered by the
+credential preflight and a retry can still fix them.
+
+Neither guard can make a broken deploy succeed; they only shorten one that
+was already doomed. To opt out:
+
+```bash
+# skip the preflight registry round-trips
+export DEPLOY_CAMUNDA_SKIP_IMAGE_MANIFEST_CHECK=true
+# let the wait run to its timeout instead of aborting
+export DEPLOY_CAMUNDA_IMAGE_PULL_GUARD=off
+```
+
 ### General diagnostics
 
 Two commands cover most first-pass debugging:

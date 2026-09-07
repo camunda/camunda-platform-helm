@@ -95,13 +95,23 @@ type PreflightOptions struct {
 	// SkipKubeReachability skips the network round-trip that pings the cluster
 	// (used in tests and when only static checks are wanted).
 	SkipKubeReachability bool
+	// SkipImageManifests skips the registry round-trips that assert pinned images
+	// are pullable. Also honored via DEPLOY_CAMUNDA_SKIP_IMAGE_MANIFEST_CHECK.
+	SkipImageManifests bool
 }
 
+// skipImageManifestsEnvVar lets an operator bypass the image manifest check
+// without a code change, for the case where the registry is known-degraded but
+// the deploy is wanted anyway.
+const skipImageManifestsEnvVar = "DEPLOY_CAMUNDA_SKIP_IMAGE_MANIFEST_CHECK"
+
 // Preflight runs all secrets/env checks against the merged flags and returns a
-// Report. It has no side effects: it never writes files, mutates the process
-// environment, or contacts the cluster beyond an optional read-only readiness
-// ping. Sources are resolved exactly as a deploy would see them — process
-// environment overlaid with the configured .env file.
+// Report. It has no side effects: it never writes files or mutates the process
+// environment. It performs two read-only network round-trips — an optional
+// cluster readiness ping, and registry manifest resolution for fully-pinned
+// images — each independently skippable via PreflightOptions. Sources are
+// resolved exactly as a deploy would see them — process environment overlaid
+// with the configured .env file.
 func Preflight(ctx context.Context, flags *config.RuntimeFlags, opts PreflightOptions) *Report {
 	r := &Report{}
 	// baseEnv is process env + .env + ExtraEnv. deployEnv additionally includes the
@@ -125,8 +135,21 @@ func Preflight(ctx context.Context, flags *config.RuntimeFlags, opts PreflightOp
 	r.Checks = append(r.Checks, checkVaultMapping(flags, baseEnv))
 	r.Checks = append(r.Checks, checkScenarioEnv(flags, deployEnv))
 	r.Checks = append(r.Checks, checkCompanionEnv(flags, deployEnv))
+	if !opts.SkipImageManifests && !envFlagEnabled(skipImageManifestsEnvVar) {
+		r.Checks = append(r.Checks, checkPinnedImages(ctx, resolvedScenarioValues(flags), defaultImagePlatform))
+	}
 
 	return r
+}
+
+// envFlagEnabled reports whether an env var is set to an affirmative value.
+func envFlagEnabled(name string) bool {
+	switch strings.ToLower(strings.TrimSpace(os.Getenv(name))) {
+	case "1", "true", "yes", "on":
+		return true
+	default:
+		return false
+	}
 }
 
 // effectiveEnv reproduces the env layering buildScenarioEnv uses for presence
@@ -362,22 +385,12 @@ func checkChartPath(flags *config.RuntimeFlags) Check {
 // soft warning rather than a hard fail so `doctor` is still useful when no
 // scenario/chart is configured yet.
 func checkScenarioEnv(flags *config.RuntimeFlags, envMap map[string]string) Check {
-	scenarioList := flags.Deployment.Scenarios
-	if len(scenarioList) == 0 && flags.Deployment.Scenario != "" {
-		for _, s := range strings.Split(flags.Deployment.Scenario, ",") {
-			if t := strings.TrimSpace(s); t != "" {
-				scenarioList = append(scenarioList, t)
-			}
-		}
-	}
+	scenarioList := scenarioNames(flags)
 	if len(scenarioList) == 0 || flags.Chart.ChartPath == "" {
 		return Check{Name: "scenario env vars", Status: StatusOK, Detail: "no scenario/chart configured to scan"}
 	}
 
-	scenarioDir := flags.Deployment.ScenarioPath
-	if scenarioDir == "" {
-		scenarioDir = filepath.Join(flags.Chart.ChartPath, "test/integration/scenarios/chart-full-setup")
-	}
+	scenarioDir := scenarioValuesDir(flags)
 
 	required := map[string]struct{}{}
 	var unresolved []string
@@ -426,6 +439,59 @@ func checkScenarioEnv(flags *config.RuntimeFlags, envMap map[string]string) Chec
 		Remediation: "set the listed vars (run with --interactive to be prompted, or `deploy-camunda config init`)",
 		Missing:     missing,
 	}
+}
+
+// scenarioNames returns the configured scenarios, honoring both the parsed
+// slice and the comma-separated string form.
+func scenarioNames(flags *config.RuntimeFlags) []string {
+	if len(flags.Deployment.Scenarios) > 0 {
+		return flags.Deployment.Scenarios
+	}
+	var out []string
+	for _, s := range strings.Split(flags.Deployment.Scenario, ",") {
+		if t := strings.TrimSpace(s); t != "" {
+			out = append(out, t)
+		}
+	}
+	return out
+}
+
+// scenarioValuesDir resolves the scenario directory, defaulting to the chart's
+// chart-full-setup tree.
+func scenarioValuesDir(flags *config.RuntimeFlags) string {
+	if flags.Deployment.ScenarioPath != "" {
+		return flags.Deployment.ScenarioPath
+	}
+	return filepath.Join(flags.Chart.ChartPath, "test/integration/scenarios/chart-full-setup")
+}
+
+// resolvedScenarioValues returns every values file a deploy would compose for
+// the configured scenarios. Resolution failures yield no files rather than an
+// error: checkScenarioEnv already reports them, and callers here treat an empty
+// result as "nothing to validate".
+func resolvedScenarioValues(flags *config.RuntimeFlags) []string {
+	scenarioList := scenarioNames(flags)
+	if len(scenarioList) == 0 || flags.Chart.ChartPath == "" {
+		return nil
+	}
+	scenarioDir := scenarioValuesDir(flags)
+
+	var out []string
+	seen := map[string]struct{}{}
+	for _, scenario := range scenarioList {
+		files, err := scenarioLayerFiles(flags, scenarioDir, scenario)
+		if err != nil {
+			continue
+		}
+		for _, f := range files {
+			if _, dup := seen[f]; dup {
+				continue
+			}
+			seen[f] = struct{}{}
+			out = append(out, f)
+		}
+	}
+	return out
 }
 
 // scenarioLayerFiles returns the full set of layered values files a deploy would
