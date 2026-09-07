@@ -4681,7 +4681,7 @@
                                     },
                                     "priority": {
                                         "type": "integer",
-                                        "minimum": 0,
+                                        "minimum": 1,
                                         "description": "Priority of this zone in the leader election."
                                     }
                                 }

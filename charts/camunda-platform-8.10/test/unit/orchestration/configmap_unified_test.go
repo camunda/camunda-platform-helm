@@ -1399,8 +1399,8 @@ func (s *ConfigmapTemplateTest) TestZonedConfiguration() {
 				"orchestration.data.secondaryStorage.rdbms.url":                 "jdbc:postgresql://localhost:5432/camunda",
 				"orchestration.data.secondaryStorage.rdbms.username":            "camunda",
 				"orchestration.data.secondaryStorage.rdbms.secret.inlineSecret": "my-password",
-				"optimize.enabled":                        "true",
-				"optimize.database.elasticsearch.enabled": "true",
+				"optimize.enabled":                                              "true",
+				"optimize.database.elasticsearch.enabled":                       "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
@@ -1525,6 +1525,21 @@ func (s *ConfigmapTemplateTest) TestZonedModeRejectsNumberedRegionSettings() {
 			},
 			Expected: map[string]string{
 				"ERROR": "asks for 3 replicas on 1 brokers",
+			},
+		},
+		{
+			Name: "TestZonedModeRejectsZeroPriority",
+			Values: map[string]string{
+				"orchestration.multiregion.mode":                      "zoned",
+				"orchestration.multiregion.zone":                      "region-a",
+				"orchestration.multiregion.zones[0].name":             "region-a",
+				"orchestration.multiregion.zones[0].numberOfBrokers":  "1",
+				"orchestration.multiregion.zones[0].numberOfReplicas": "1",
+				"orchestration.multiregion.zones[0].priority":         "0",
+				"orchestration.profiles.broker":                       "true",
+			},
+			Verifier: func(t *testing.T, _ string, err error) {
+				s.Require().ErrorContains(err, "/orchestration/multiregion/zones/0/priority': minimum: got 0, want 1")
 			},
 		},
 		{
