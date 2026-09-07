@@ -41,7 +41,6 @@ spec:
     spec:
       imagePullSecrets:
         []
-      initContainers:
       containers:
         - name: orchestration
           image: camunda/camunda:8.9.19
