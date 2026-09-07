@@ -13,7 +13,7 @@ Each Helm release manages one Kubernetes cluster and one local zone. Repeat the 
 - Set `orchestration.multiregion.zone` to the local zone for the release being upgraded.
 - Ensure the local Kubernetes cluster has enough capacity for both broker generations and their persistent volumes.
 - Back up the Helm values and confirm that the existing numbered StatefulSet and its PVCs are healthy.
-- For zones in different Kubernetes clusters, provide externally resolvable contact points through `CAMUNDA_CLUSTER_INITIALCONTACTPOINTS` instead of relying on the generated in-cluster DNS names:
+- For brokers owned by other Helm releases or Kubernetes clusters, provide externally resolvable contact points through `CAMUNDA_CLUSTER_INITIALCONTACTPOINTS`. The chart generates contact points only for resources owned by the local release:
 
   ```yaml
   orchestration:
@@ -51,7 +51,7 @@ helm upgrade <release> camunda/camunda-platform \
   --values <values-file>
 ```
 
-The release should now contain both the zone-suffixed StatefulSet and the retained numbered StatefulSet. The shared client-facing Services must select both broker generations, while the zone-specific StatefulSet and headless Service select only the local zoned brokers.
+The release should now contain both the zone-suffixed StatefulSet and the retained numbered StatefulSet. The shared client-facing Services must select both broker generations, while the zone-specific StatefulSet and headless Service select only the local zoned brokers. Both StatefulSets use the release's existing ServiceAccount.
 
 During this coexistence phase, the zoned configuration's `cluster.size` and `replication-factor` describe the zoned topology. The retained numbered brokers are temporary migration members and are not added to those derived values.
 
@@ -86,7 +86,7 @@ helm upgrade <release> camunda/camunda-platform \
   --values <values-file>
 ```
 
-This removes the retained numbered StatefulSet, ConfigMap, ServiceAccount, and PDB. The zoned StatefulSet pod template and configuration checksum must remain unchanged, so the zoned brokers must not restart solely because retention was disabled.
+This removes the retained numbered StatefulSet, ConfigMap, and PDB. The shared ServiceAccount remains in place. The zoned StatefulSet pod template and configuration checksum must remain unchanged, so the zoned brokers must not restart solely because retention was disabled.
 
 Do not delete the old PVCs yet. Confirm through the management API and the cluster state that every corresponding numbered broker has left the logical cluster, then remove the old PVCs manually according to the storage policy for the deployment.
 

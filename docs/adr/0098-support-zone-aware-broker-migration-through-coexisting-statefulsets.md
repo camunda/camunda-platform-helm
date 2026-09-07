@@ -49,11 +49,11 @@ The following constraints are normative:
 
 5. **Legacy manifest stability.** Entering the migration state MUST preserve the existing unzoned StatefulSet pod template, selector, name, governing Service, configuration, and broker identity. The Helm upgrade MUST NOT roll the existing brokers solely because zoned resources were added.
 
-6. **Zone-specific ownership.** Zoned StatefulSets and their governing headless Services MUST use zone-specific names and selectors. Their ConfigMaps, ServiceAccounts, and PodDisruptionBudgets MUST be independently addressable from the retained legacy resources.
+6. **Resource ownership.** Zoned StatefulSets and their governing headless Services MUST use zone-specific names and selectors. Their ConfigMaps and PodDisruptionBudgets MUST be independently addressable from the retained legacy resources. Both broker generations MUST use the release's existing ServiceAccount because it represents one workload identity and contains no generation-specific state.
 
 7. **Service continuity.** Shared client-facing Services MUST remain zone-agnostic and select both unzoned and zoned brokers in the local Kubernetes cluster during migration. Zone-specific labels MUST NOT be added to selectors that clients rely on to reach all local brokers.
 
-8. **Cross-cluster discovery.** The chart MAY generate Kubernetes DNS contact points for locally resolvable brokers. Operators MUST be able to override contact points with externally resolvable addresses for brokers in other Kubernetes clusters.
+8. **Cross-cluster discovery.** The chart MAY generate Kubernetes DNS contact points only for resources owned by the local release. Operators MUST provide externally resolvable contact points for brokers owned by other releases or Kubernetes clusters.
 
 9. **Explicit cluster transition.** Helm MUST only create and remove Kubernetes resources. Moving partitions, changing broker membership, and adopting zoned identities MUST remain explicit Orchestration management operations performed between Helm upgrades.
 
@@ -72,6 +72,7 @@ The initial implementation is scoped to `charts/camunda-platform-8.10` and the O
 - Existing clusters can adopt zone-aware broker identities without stopping processing.
 - Helm owns both temporary and final migration resources.
 - Existing brokers remain unchanged while replacement brokers join.
+- Both broker generations retain the same Kubernetes workload identity.
 - Shared Services preserve local client connectivity throughout the transition.
 - Each Kubernetes cluster can be migrated independently as part of a coordinated logical-cluster migration.
 - The final release state matches a normal zoned deployment and contains no migration-only workloads.
