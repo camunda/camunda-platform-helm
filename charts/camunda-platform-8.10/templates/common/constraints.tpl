@@ -373,6 +373,15 @@ merged nowhere.
   {{- fail "[camunda][error] orchestration.multiregion and global.multiregion are both configured. global.multiregion is deprecated; keep orchestration.multiregion and remove the global block." -}}
 {{- end }}
 
+{{- $reservedZoneLabel := "camunda.io/zone" -}}
+{{- if or
+  (hasKey (.Values.global.labels | default dict) $reservedZoneLabel)
+  (hasKey (.Values.global.commonLabels | default dict) $reservedZoneLabel)
+  (hasKey (.Values.orchestration.podLabels | default dict) $reservedZoneLabel)
+}}
+  {{- fail (printf "[camunda][error] %s is managed by the chart and cannot be configured in global.labels, global.commonLabels, or orchestration.podLabels." $reservedZoneLabel) }}
+{{- end }}
+
 {{- $mr := include "camundaPlatform.multiregion" $ | fromJson -}}
 {{- $mrKey := "orchestration.multiregion" -}}
 {{- if ne (include "camundaPlatform.multiregionConfigured" (.Values.orchestration.multiregion | default dict)) "true" -}}

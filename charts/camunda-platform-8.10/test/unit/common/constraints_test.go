@@ -100,6 +100,40 @@ func (s *ConstraintTemplateTest) TestDifferentValuesInputs() {
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
+func (s *ConstraintTemplateTest) TestZoneLabelConstraint() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestZoneLabelCannotBeSetInGlobalLabels",
+			Values: map[string]string{
+				"global.labels.camunda\\.io/zone": "wrong",
+			},
+			Expected: map[string]string{
+				"ERROR": "camunda.io/zone is managed by the chart",
+			},
+		},
+		{
+			Name: "TestZoneLabelCannotBeSetInGlobalCommonLabels",
+			Values: map[string]string{
+				"global.commonLabels.camunda\\.io/zone": "wrong",
+			},
+			Expected: map[string]string{
+				"ERROR": "camunda.io/zone is managed by the chart",
+			},
+		},
+		{
+			Name: "TestZoneLabelCannotBeSetInOrchestrationPodLabels",
+			Values: map[string]string{
+				"orchestration.podLabels.camunda\\.io/zone": "wrong",
+			},
+			Expected: map[string]string{
+				"ERROR": "camunda.io/zone is managed by the chart",
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
 func (s *ConstraintTemplateTest) TestSecondaryStorageConstraint() {
 	testCases := []testhelpers.TestCase{
 		{
