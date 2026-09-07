@@ -101,32 +101,53 @@ func (s *ConstraintTemplateTest) TestDifferentValuesInputs() {
 }
 
 func (s *ConstraintTemplateTest) TestZoneLabelConstraint() {
+	zonedValues := func() map[string]string {
+		return map[string]string{
+			"orchestration.multiregion.mode":                      "zoned",
+			"orchestration.multiregion.zone":                      "zone-a",
+			"orchestration.multiregion.zones[0].name":             "zone-a",
+			"orchestration.multiregion.zones[0].numberOfBrokers":  "3",
+			"orchestration.multiregion.zones[0].numberOfReplicas": "3",
+			"orchestration.multiregion.zones[0].priority":         "100",
+		}
+	}
+
+	globalLabels := zonedValues()
+	globalLabels["global.labels.camunda\\.io/zone"] = "wrong"
+	globalCommonLabels := zonedValues()
+	globalCommonLabels["global.commonLabels.camunda\\.io/zone"] = "wrong"
+	podLabels := zonedValues()
+	podLabels["orchestration.podLabels.camunda\\.io/zone"] = "wrong"
+
 	testCases := []testhelpers.TestCase{
 		{
-			Name: "TestZoneLabelCannotBeSetInGlobalLabels",
-			Values: map[string]string{
-				"global.labels.camunda\\.io/zone": "wrong",
-			},
+			Name:   "TestZoneLabelCannotBeSetInGlobalLabelsForZonedMode",
+			Values: globalLabels,
 			Expected: map[string]string{
-				"ERROR": "camunda.io/zone is managed by the chart",
+				"ERROR": "camunda.io/zone is managed by the chart in zoned mode",
 			},
 		},
 		{
-			Name: "TestZoneLabelCannotBeSetInGlobalCommonLabels",
-			Values: map[string]string{
-				"global.commonLabels.camunda\\.io/zone": "wrong",
-			},
+			Name:   "TestZoneLabelCannotBeSetInGlobalCommonLabelsForZonedMode",
+			Values: globalCommonLabels,
 			Expected: map[string]string{
-				"ERROR": "camunda.io/zone is managed by the chart",
+				"ERROR": "camunda.io/zone is managed by the chart in zoned mode",
 			},
 		},
 		{
-			Name: "TestZoneLabelCannotBeSetInOrchestrationPodLabels",
-			Values: map[string]string{
-				"orchestration.podLabels.camunda\\.io/zone": "wrong",
-			},
+			Name:   "TestZoneLabelCannotBeSetInOrchestrationPodLabelsForZonedMode",
+			Values: podLabels,
 			Expected: map[string]string{
-				"ERROR": "camunda.io/zone is managed by the chart",
+				"ERROR": "camunda.io/zone is managed by the chart in zoned mode",
+			},
+		},
+		{
+			Name: "TestZoneLabelCanBeSetInNumberedMode",
+			Values: map[string]string{
+				"global.labels.camunda\\.io/zone": "user-managed",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
 			},
 		},
 	}

@@ -373,16 +373,15 @@ merged nowhere.
   {{- fail "[camunda][error] orchestration.multiregion and global.multiregion are both configured. global.multiregion is deprecated; keep orchestration.multiregion and remove the global block." -}}
 {{- end }}
 
+{{- $mr := include "camundaPlatform.multiregion" $ | fromJson -}}
 {{- $reservedZoneLabel := "camunda.io/zone" -}}
-{{- if or
+{{- if and (eq $mr.mode "zoned") (or
   (hasKey (.Values.global.labels | default dict) $reservedZoneLabel)
   (hasKey (.Values.global.commonLabels | default dict) $reservedZoneLabel)
   (hasKey (.Values.orchestration.podLabels | default dict) $reservedZoneLabel)
-}}
-  {{- fail (printf "[camunda][error] %s is managed by the chart and cannot be configured in global.labels, global.commonLabels, or orchestration.podLabels." $reservedZoneLabel) }}
+) }}
+  {{- fail (printf "[camunda][error] %s is managed by the chart in zoned mode and cannot be configured in global.labels, global.commonLabels, or orchestration.podLabels." $reservedZoneLabel) }}
 {{- end }}
-
-{{- $mr := include "camundaPlatform.multiregion" $ | fromJson -}}
 {{- $mrKey := "orchestration.multiregion" -}}
 {{- if ne (include "camundaPlatform.multiregionConfigured" (.Values.orchestration.multiregion | default dict)) "true" -}}
   {{- $mrKey = "global.multiregion" -}}
@@ -1369,8 +1368,8 @@ The following values inside your values.yaml need to be set but were not:
     {{- if eq (include "orchestration.zoned" .) "true" }}
       {{- $warningMessage := printf "%s %s %s"
           "[camunda][warning]"
-          "\"orchestration.multiregion.mode\" is fixed for the life of the cluster: zoned brokers are identified by the composite \"<zone>_<index>\", numbered ones by a plain node ID."
-          "Switching an existing release between the two re-identifies every broker against Raft state written under its old ID, and the members stop recognising each other. Deploy a new cluster instead."
+          "Zoned brokers use composite \"<zone>_<index>\" identities, while unzoned brokers use numeric identities. Do not change existing broker identities in place."
+          "To migrate an existing release, retain the unzoned brokers with \"orchestration.multiregion.keepUnzonedBrokers=true\" and follow the zone-aware migration procedure."
       -}}
       {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
     {{- end }}

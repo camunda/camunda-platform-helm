@@ -11,7 +11,7 @@ spec:
   {{- else }}
   maxUnavailable: {{ .Values.orchestration.podDisruptionBudget.maxUnavailable }}
   {{- end }}
-  selector:{{- if and .OrchestrationRender .OrchestrationRender.migrationLegacy }}
+  selector:{{- if and .OrchestrationRender (eq .OrchestrationRender.scope "unzoned") }}
     matchExpressions:
       - key: camunda.io/zone
         operator: DoesNotExist
