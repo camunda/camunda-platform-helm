@@ -1,5 +1,24 @@
 # Changelog
 
+## [14.10.0](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.9-14.9.0...camunda-platform-8.9-14.10.0) (2026-09-07)
+
+
+### Features
+
+* **8.10:** add Camunda Hub database migration phases ([#6788](https://github.com/camunda/camunda-platform-helm/issues/6788)) ([67fab8a](https://github.com/camunda/camunda-platform-helm/commit/67fab8ab8531396e1ed3056093f8b61860748081))
+
+
+### Dependencies
+
+* update camunda-platform-images (patch) ([#7005](https://github.com/camunda/camunda-platform-helm/issues/7005)) ([a18abd0](https://github.com/camunda/camunda-platform-helm/commit/a18abd09d3cd717539791e74b7728f43a9a855dd))
+* update camunda-platform-images (patch) ([#7060](https://github.com/camunda/camunda-platform-helm/issues/7060)) ([0f2e375](https://github.com/camunda/camunda-platform-helm/commit/0f2e375e53f3290e8787d5cc6479e7bf8e0528b2))
+* update camunda-platform-images to v8.9.19 ([#7063](https://github.com/camunda/camunda-platform-helm/issues/7063)) ([6fe9c74](https://github.com/camunda/camunda-platform-helm/commit/6fe9c746b816e24661bcc51887f5dd24a0de89c6))
+* update camunda/console docker tag to v8.9.92 ([#7035](https://github.com/camunda/camunda-platform-helm/issues/7035)) ([55feb6b](https://github.com/camunda/camunda-platform-helm/commit/55feb6bd9c6aaad5453852b477e95586b641c45d))
+* update camunda/console docker tag to v8.9.93 ([#7048](https://github.com/camunda/camunda-platform-helm/issues/7048)) ([2062e3a](https://github.com/camunda/camunda-platform-helm/commit/2062e3a547927ec079f51c7d4207f4aa7406542d))
+* update patch-updates (patch) ([#7036](https://github.com/camunda/camunda-platform-helm/issues/7036)) ([6dac44a](https://github.com/camunda/camunda-platform-helm/commit/6dac44ac97b4996c73c615871758e20446cbbaf0))
+* update patch-updates (patch) ([#7050](https://github.com/camunda/camunda-platform-helm/issues/7050)) ([b866d85](https://github.com/camunda/camunda-platform-helm/commit/b866d8533454bd9f6f57ddc75a45a2a82c095082))
+* update patch-updates (patch) ([#7061](https://github.com/camunda/camunda-platform-helm/issues/7061)) ([23c0887](https://github.com/camunda/camunda-platform-helm/commit/23c08879f86c8e05affa94ed3020be36f5ea8bbb))
+
 ## [14.9.0](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.9-14.8.5...camunda-platform-8.9-14.9.0) (2026-09-01)
 
 
