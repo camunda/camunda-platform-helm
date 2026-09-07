@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">Support zone-aware broker migration through coexisting StatefulSets | Camunda Helm Charts</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:image" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7049/img/camunda-logo.svg"><meta data-rh="true" name="twitter:image" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7049/img/camunda-logo.svg"><meta data-rh="true" property="og:url" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7049/adr/support-zone-aware-broker-migration-through-coexisting-statefulsets"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Support zone-aware broker migration through coexisting StatefulSets | Camunda Helm Charts"><meta data-rh="true" name="description" content="- Status: proposed"><meta data-rh="true" property="og:description" content="- Status: proposed"><link data-rh="true" rel="icon" href="/camunda-platform-helm/pr-preview/pr-7049/img/camunda-logo.svg"><link data-rh="true" rel="canonical" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7049/adr/support-zone-aware-broker-migration-through-coexisting-statefulsets"><link data-rh="true" rel="alternate" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7049/adr/support-zone-aware-broker-migration-through-coexisting-statefulsets" hreflang="en"><link data-rh="true" rel="alternate" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7049/adr/support-zone-aware-broker-migration-through-coexisting-statefulsets" hreflang="x-default"><link rel="stylesheet" href="/camunda-platform-helm/pr-preview/pr-7049/assets/css/styles.3f6cd398.css">
-<script src="/camunda-platform-helm/pr-preview/pr-7049/assets/js/runtime~main.b9ea9817.js" defer="defer"></script>
-<script src="/camunda-platform-helm/pr-preview/pr-7049/assets/js/main.ba7ff409.js" defer="defer"></script>
+<script src="/camunda-platform-helm/pr-preview/pr-7049/assets/js/runtime~main.fa9c959b.js" defer="defer"></script>
+<script src="/camunda-platform-helm/pr-preview/pr-7049/assets/js/main.af937d6f.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -60,13 +60,13 @@
 <p><strong>Legacy manifest stability.</strong> Entering the migration state MUST preserve the existing unzoned StatefulSet pod template, selector, name, governing Service, configuration, and broker identity. The Helm upgrade MUST NOT roll the existing brokers solely because zoned resources were added.</p>
 </li>
 <li class="">
-<p><strong>Zone-specific ownership.</strong> Zoned StatefulSets and their governing headless Services MUST use zone-specific names and selectors. Their ConfigMaps, ServiceAccounts, and PodDisruptionBudgets MUST be independently addressable from the retained legacy resources.</p>
+<p><strong>Resource ownership.</strong> Zoned StatefulSets and their governing headless Services MUST use zone-specific names and selectors. Their ConfigMaps and PodDisruptionBudgets MUST be independently addressable from the retained legacy resources. Both broker generations MUST use the release&#x27;s existing ServiceAccount because it represents one workload identity and contains no generation-specific state.</p>
 </li>
 <li class="">
 <p><strong>Service continuity.</strong> Shared client-facing Services MUST remain zone-agnostic and select both unzoned and zoned brokers in the local Kubernetes cluster during migration. Zone-specific labels MUST NOT be added to selectors that clients rely on to reach all local brokers.</p>
 </li>
 <li class="">
-<p><strong>Cross-cluster discovery.</strong> The chart MAY generate Kubernetes DNS contact points for locally resolvable brokers. Operators MUST be able to override contact points with externally resolvable addresses for brokers in other Kubernetes clusters.</p>
+<p><strong>Cross-cluster discovery.</strong> The chart MAY generate Kubernetes DNS contact points only for resources owned by the local release. Operators MUST provide externally resolvable contact points for brokers owned by other releases or Kubernetes clusters.</p>
 </li>
 <li class="">
 <p><strong>Explicit cluster transition.</strong> Helm MUST only create and remove Kubernetes resources. Moving partitions, changing broker membership, and adopting zoned identities MUST remain explicit Orchestration management operations performed between Helm upgrades.</p>
@@ -90,6 +90,7 @@
 <li class="">Existing clusters can adopt zone-aware broker identities without stopping processing.</li>
 <li class="">Helm owns both temporary and final migration resources.</li>
 <li class="">Existing brokers remain unchanged while replacement brokers join.</li>
+<li class="">Both broker generations retain the same Kubernetes workload identity.</li>
 <li class="">Shared Services preserve local client connectivity throughout the transition.</li>
 <li class="">Each Kubernetes cluster can be migrated independently as part of a coordinated logical-cluster migration.</li>
 <li class="">The final release state matches a normal zoned deployment and contains no migration-only workloads.</li>
