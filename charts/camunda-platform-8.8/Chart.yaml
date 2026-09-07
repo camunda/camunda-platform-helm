@@ -69,6 +69,4 @@ annotations:
     - name: Camunda 8 Self-Managed Helm charts
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
-  artifacthub.io/changes: |
-    - kind: added
-      description: "Add generic appProtocol support for Service ports in 8.8"
+  artifacthub.io/changes: ""
