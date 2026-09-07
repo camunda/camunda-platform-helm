@@ -1454,8 +1454,8 @@ func (s *ConfigmapTemplateTest) TestZonedConfiguration() {
 				"orchestration.data.secondaryStorage.rdbms.url":                 "jdbc:postgresql://localhost:5432/camunda",
 				"orchestration.data.secondaryStorage.rdbms.username":            "camunda",
 				"orchestration.data.secondaryStorage.rdbms.secret.inlineSecret": "my-password",
-				"optimize.enabled":                                              "true",
-				"optimize.database.elasticsearch.enabled":                       "true",
+				"optimize.enabled":                        "true",
+				"optimize.database.elasticsearch.enabled": "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
@@ -1572,7 +1572,38 @@ func (s *ConfigmapTemplateTest) TestZonedModeAllowsNumberedRegionSettingsAfterMi
 			},
 		},
 		{
-			Name: "TestZonedModeRejectsZoneNamesThatCannotRetainAResourcePrefix",
+			Name: "TestZonedModeAcceptsZoneNamesThatFitResourceNames",
+			Values: map[string]string{
+				"orchestration.multiregion.mode":                      "zoned",
+				"orchestration.multiregion.zone":                      strings.Repeat("a", 32),
+				"orchestration.multiregion.zones[0].name":             strings.Repeat("a", 32),
+				"orchestration.multiregion.zones[0].numberOfBrokers":  "1",
+				"orchestration.multiregion.zones[0].numberOfReplicas": "1",
+				"orchestration.multiregion.zones[0].priority":         "100",
+				"orchestration.profiles.broker":                       "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+			},
+		},
+		{
+			Name: "TestSchemaRejectsZoneNamesLongerThanResourceNameLimit",
+			Values: map[string]string{
+				"orchestration.multiregion.mode":                      "zoned",
+				"orchestration.multiregion.zone":                      strings.Repeat("a", 33),
+				"orchestration.multiregion.zones[0].name":             strings.Repeat("a", 33),
+				"orchestration.multiregion.zones[0].numberOfBrokers":  "1",
+				"orchestration.multiregion.zones[0].numberOfReplicas": "1",
+				"orchestration.multiregion.zones[0].priority":         "100",
+				"orchestration.profiles.broker":                       "true",
+			},
+			Expected: map[string]string{
+				"ERROR": "maxLength: got 33, want 32",
+			},
+		},
+		{
+			Name:                    "TestZonedModeRejectsZoneNamesThatCannotRetainAResourcePrefix",
+			RenderTemplateExtraArgs: []string{"--skip-schema-validation"},
 			Values: map[string]string{
 				"orchestration.multiregion.mode":                      "zoned",
 				"orchestration.multiregion.zone":                      strings.Repeat("a", 33),
