@@ -78,3 +78,7 @@ func (c PrometheusClient) Query(ctx context.Context, query string) (*float64, er
 	}
 	return maximum, nil
 }
+
+func (c PrometheusClient) Gauge(ctx context.Context, query string) (*float64, error) {
+	return c.Query(ctx, query)
+}

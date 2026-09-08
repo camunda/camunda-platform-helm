@@ -48,3 +48,21 @@ scale-down samples. A 50 process-instances-per-second noop workload exceeded the
 approximately 0.4-3.6 records per second, so the scenario uses a calibrated 5 records-per-second
 scale-down threshold. The complete matrix scenario passed in 7m03s and retained the removed broker's
 PVC.
+
+## Partition Advisor
+
+The recommendation-only partition advisor can be enabled independently of broker autoscaling. It
+uses the runtime topology's unique partition count and sustained metric evidence to recommend a
+small partition increase. Recommendations never call the partition-scaling API.
+
+The GKE advisor scenario runs one broker and one partition under a 50 process-instances-per-second
+noop workload. A per-partition appended-record rate above 20 records per second for three consecutive
+samples produces an incremental recommendation. The verifier asserts that StatefulSet replicas,
+active broker count, runtime partition count, pending topology change, and last topology change ID
+remain unchanged. Advisor-only RBAC cannot patch StatefulSets.
+
+The GKE matrix scenario passed in 2m40s. Under 50 process instances per second, the measured
+partition record rate was approximately 258 records per second and produced a high-confidence
+incremental recommendation from one to two partitions. Runtime topology remained at one broker and
+one partition, no topology change was created, and Kubernetes authorization confirmed the advisor
+service account cannot patch the orchestration StatefulSet.

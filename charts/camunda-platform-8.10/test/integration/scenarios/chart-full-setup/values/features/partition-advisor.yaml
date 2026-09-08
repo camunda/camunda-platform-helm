@@ -1,0 +1,77 @@
+capacityManager:
+  enabled: true
+  image:
+    registry: registry.camunda.cloud
+    repository: team-distribution/capacity-manager
+    tag: sha-add89bf9be4768010e732666080a35365a6ea426
+    digest: sha256:e5d16ee4d35d454a483666b5237dc5c47ae82febdcd1b7c7470bb075935ca696
+    pullSecrets:
+      - name: registry-camunda-cloud
+  reconcileInterval: 5s
+  prometheusURL: http://integration-zeebe-0.integration-zeebe:9600/orchestration/actuator/prometheus
+  extraConfiguration:
+    - file: policy.json
+      content: |
+        {
+          "mode": "recommend",
+          "minBrokers": 1,
+          "maxBrokers": 1,
+          "partitionAdvisor": {
+            "enabled": true,
+            "maxRecommendedPartitions": 4,
+            "targetLoad": 20,
+            "loadMetric": "zeebe_log_appender_record_appended_total",
+            "loadMetricType": "counter-rate",
+            "ceilingSamples": 3
+          }
+        }
+
+orchestration:
+  clusterSize: "1"
+  partitionCount: "1"
+  replicationFactor: "1"
+  affinity: {}
+
+global:
+  extraManifests:
+    - |
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: integration-partition-load
+        labels:
+          app.kubernetes.io/component: partition-load
+      spec:
+        replicas: 1
+        selector:
+          matchLabels:
+            app.kubernetes.io/component: partition-load
+        template:
+          metadata:
+            labels:
+              app.kubernetes.io/component: partition-load
+          spec:
+            imagePullSecrets:
+              - name: registry-camunda-cloud
+            containers:
+              - name: load-generator
+                image: registry.camunda.cloud/team-distribution/capacity-manager@sha256:e5d16ee4d35d454a483666b5237dc5c47ae82febdcd1b7c7470bb075935ca696
+                imagePullPolicy: Always
+                command: ["/load-generator"]
+                args:
+                  - --url=http://integration-zeebe-gateway:8080/orchestration/v2
+                  - --username=demo
+                  - --password=demo
+                  - --rate=50
+                resources:
+                  requests:
+                    cpu: 50m
+                    memory: 32Mi
+                  limits:
+                    cpu: 500m
+                    memory: 128Mi
+                securityContext:
+                  allowPrivilegeEscalation: false
+                  readOnlyRootFilesystem: true
+                  runAsNonRoot: true
+                  runAsUser: 65532
