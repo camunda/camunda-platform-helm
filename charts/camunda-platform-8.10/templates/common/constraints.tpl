@@ -223,6 +223,7 @@ Either must bind the key to a non-empty value - the key alone leaves the same mi
     {{- $_ := set $seenIds $client.id true }}
   {{- end }}
   {{- $seenRoles := dict "ManagementIdentity" true "Orchestration" true "Optimize" true "Web Modeler" true "Web Modeler Admin" true "Hub" true "Hub Admin" true "Analyst" true "Console" true "DevOps" true }}
+  {{- $seenTopologySecretEnvNames := dict }}
   {{- $legacyIds := list }}
   {{- if .Values.global.identity.auth.connectors.alwaysRegister }}
     {{- $legacyIds = append $legacyIds (include "connectors.authClientId" .) }}
@@ -253,6 +254,12 @@ Either must bind the key to a non-empty value - the key alone leaves the same mi
     {{- range $componentName := list "orchestration" "optimize" "connectors" }}
       {{- $component := get ($cluster.components | default dict) $componentName | default dict }}
       {{- if $component.enabled }}
+        {{- $secretEnvName := printf "VALUES_TOPOLOGY_%s_%s_SECRET" (include "camundaPlatform.topologyEnvToken" $cluster.id) (upper $componentName) }}
+        {{- $componentLabel := printf "global.topology.clusters[%s].components.%s" $cluster.id $componentName }}
+        {{- if hasKey $seenTopologySecretEnvNames $secretEnvName }}
+          {{- fail (printf "[camunda][error] %s and %s generate the same topology secret environment variable %s." (get $seenTopologySecretEnvNames $secretEnvName) $componentLabel $secretEnvName) }}
+        {{- end }}
+        {{- $_ := set $seenTopologySecretEnvNames $secretEnvName $componentLabel }}
         {{- if empty $component.clientId }}
           {{- fail (printf "[camunda][error] global.topology.clusters[%s].components.%s requires clientId when enabled." $cluster.id $componentName) }}
         {{- end }}
@@ -277,6 +284,46 @@ Either must bind the key to a non-empty value - the key alone leaves the same mi
             {{- fail (printf "[camunda][error] duplicate or reserved topology role name %q." $component.roleName) }}
           {{- end }}
           {{- $_ := set $seenRoles $component.roleName true }}
+        {{- end }}
+      {{- end }}
+    {{- end }}
+    {{- $seenTenantIds := dict }}
+    {{- range $tenant := dig "physicalTenants" list $cluster }}
+      {{- if empty $tenant.id }}
+        {{- fail (printf "[camunda][error] every global.topology.clusters[%s].physicalTenants entry requires id." $cluster.id) }}
+      {{- end }}
+      {{- if not (regexMatch "^[a-z0-9]{1,64}$" ($tenant.id | toString)) }}
+        {{- fail (printf "[camunda][error] global.topology.clusters[%s].physicalTenants id %q must be lowercase alphanumeric with a maximum length of 64, matching the runtime tenant id." $cluster.id $tenant.id) }}
+      {{- end }}
+      {{- if hasKey $seenTenantIds ($tenant.id | toString) }}
+        {{- fail (printf "[camunda][error] duplicate global.topology.clusters[%s].physicalTenants id %q." $cluster.id $tenant.id) }}
+      {{- end }}
+      {{- $_ := set $seenTenantIds ($tenant.id | toString) true }}
+      {{- $tenantOptimize := dig "components" "optimize" dict $tenant }}
+      {{- if $tenantOptimize.enabled }}
+        {{- $secretEnvName := printf "VALUES_TOPOLOGY_%s_TENANT_%s_OPTIMIZE_SECRET" (include "camundaPlatform.topologyEnvToken" $cluster.id) (include "camundaPlatform.topologyEnvToken" $tenant.id) }}
+        {{- $tenantLabel := printf "global.topology.clusters[%s].physicalTenants[%s]" $cluster.id $tenant.id }}
+        {{- if hasKey $seenTopologySecretEnvNames $secretEnvName }}
+          {{- fail (printf "[camunda][error] %s and %s generate the same topology secret environment variable %s." (get $seenTopologySecretEnvNames $secretEnvName) $tenantLabel $secretEnvName) }}
+        {{- end }}
+        {{- $_ := set $seenTopologySecretEnvNames $secretEnvName $tenantLabel }}
+        {{- if or (empty $tenantOptimize.clientId) (empty $tenantOptimize.audience) (empty $tenantOptimize.redirectUrl) }}
+          {{- fail (printf "[camunda][error] global.topology.clusters[%s].physicalTenants[%s].components.optimize requires clientId, audience, and redirectUrl when enabled." $cluster.id $tenant.id) }}
+        {{- end }}
+        {{- range $id := list $tenantOptimize.clientId $tenantOptimize.audience }}
+          {{- if hasKey $seenIds $id }}
+            {{- fail (printf "[camunda][error] duplicate topology client or audience id %q." $id) }}
+          {{- end }}
+          {{- $_ := set $seenIds $id true }}
+        {{- end }}
+        {{- if and (eq (include "camundaPlatform.authIssuerType" $) "KEYCLOAK") (ne (include "camundaPlatform.hasSecretConfig" (dict "config" $tenantOptimize)) "true") }}
+          {{- fail (printf "[camunda][error] global.topology.clusters[%s].physicalTenants[%s].components.optimize requires a complete secret configuration when Management Identity administers Keycloak." $cluster.id $tenant.id) }}
+        {{- end }}
+        {{- if $tenantOptimize.roleName }}
+          {{- if hasKey $seenRoles $tenantOptimize.roleName }}
+            {{- fail (printf "[camunda][error] duplicate or reserved topology role name %q." $tenantOptimize.roleName) }}
+          {{- end }}
+          {{- $_ := set $seenRoles $tenantOptimize.roleName true }}
         {{- end }}
       {{- end }}
     {{- end }}
