@@ -8,7 +8,7 @@
 
 Camunda Orchestration brokers without zone awareness use numeric member IDs, while zoned brokers use composite member IDs such as `<zone>_<index>`. Broker identity is persisted in Raft and cluster metadata, so an existing broker cannot safely adopt a zoned identity in place.
 
-Migrating a running cluster therefore requires replacement brokers to run alongside the existing brokers while cluster membership and partition replicas move to the new identities. The Helm chart must own both generations during this transition, keep clients connected to all local brokers, and remove the legacy resources without restarting the zoned brokers.
+Migrating a running cluster therefore requires replacement brokers to run alongside the existing brokers while cluster membership and partition replicas move to the new identities. The Helm chart must own both generations during this transition, keep clients connected to all local brokers through stable Service DNS, and remove generation-specific legacy resources without restarting the zoned brokers.
 
 A logical Orchestration cluster may span multiple zones and Kubernetes clusters. Each Helm release owns the resources for one Kubernetes cluster and migrates only its local unzoned StatefulSet. The overall migration proceeds one zone at a time.
 
@@ -49,9 +49,9 @@ The following constraints are normative:
 
 5. **Legacy manifest stability.** Entering the migration state MUST preserve the existing unzoned StatefulSet pod template, selector, name, governing Service, configuration, and broker identity. The Helm upgrade MUST NOT roll the existing brokers solely because zoned resources were added.
 
-6. **Resource ownership.** Zoned StatefulSets and their governing headless Services MUST use zone-specific names and selectors. Their ConfigMaps and PodDisruptionBudgets MUST be independently addressable from the retained legacy resources. Both broker generations MUST use the release's existing ServiceAccount because it represents one workload identity and contains no generation-specific state.
+6. **Resource ownership.** Zoned StatefulSets and their governing headless Services MUST use zone-specific names and selectors. Their ConfigMaps and PodDisruptionBudgets MUST be independently addressable from the retained numbered resources. Both broker generations MUST use the release's existing ServiceAccount because it represents one workload identity and contains no generation-specific state. The unsuffixed headless Service is not the governing Service of the zoned StatefulSet and MUST keep its existing name.
 
-7. **Service continuity.** Shared client-facing Services MUST remain zone-agnostic and select both unzoned and zoned brokers in the local Kubernetes cluster during migration. Zone-specific labels MUST NOT be added to selectors that clients rely on to reach all local brokers.
+7. **Service continuity.** Shared client-facing Services MUST remain zone-agnostic and select both unzoned and zoned brokers in the local Kubernetes cluster during migration and after it. This includes the gateway Service and the unsuffixed headless broker Service (`orchestration.fullname`), which is the stable in-cluster DNS name used by Connectors and other clients. Zone-specific labels MUST NOT be added to selectors that clients rely on to reach all local brokers. That unsuffixed headless Service MUST also be rendered for a greenfield zoned install so the stable DNS name exists without a prior numbered deployment.
 
 8. **Cross-cluster discovery.** The chart MAY generate Kubernetes DNS contact points only for resources owned by the local release. Operators MUST provide externally resolvable contact points for brokers owned by other releases or Kubernetes clusters.
 
@@ -59,7 +59,7 @@ The following constraints are normative:
 
 10. **Sequential migration.** A multi-zone cluster MUST be migrated one zone at a time. The local zoned brokers MUST join and the local unzoned brokers MUST leave cluster membership before the next zone begins its migration.
 
-11. **Stable zoned workload.** Leaving the migration state MUST remove the retained legacy resources without changing the zoned StatefulSet pod template. Migration-only bootstrap contact points MUST NOT cause the zoned brokers to restart when legacy retention is disabled.
+11. **Stable zoned workload.** Leaving the migration state MUST remove the generation-specific retained resources (the numbered StatefulSet, its ConfigMap, and its PodDisruptionBudget) without changing the zoned StatefulSet pod template. The unsuffixed headless Service and the shared ServiceAccount MUST remain. Migration-only bootstrap contact points MUST NOT cause the zoned brokers to restart when legacy retention is disabled.
 
 12. **Persistent-volume cleanup.** Removing the legacy StatefulSet MUST NOT implicitly delete its persistent volume claims. Cleanup remains an explicit operator action after verifying that the corresponding brokers have left the logical cluster.
 
@@ -73,9 +73,9 @@ The initial implementation is scoped to `charts/camunda-platform-8.10` and the O
 - Helm owns both temporary and final migration resources.
 - Existing brokers remain unchanged while replacement brokers join.
 - Both broker generations retain the same Kubernetes workload identity.
-- Shared Services preserve local client connectivity throughout the transition.
+- Shared Services preserve local client connectivity throughout the transition and after it, because the unsuffixed headless Service keeps selecting zoned brokers.
 - Each Kubernetes cluster can be migrated independently as part of a coordinated logical-cluster migration.
-- The final release state matches a normal zoned deployment and contains no migration-only workloads.
+- The final release state matches a normal zoned deployment: generation-specific numbered workloads are gone, while the unsuffixed headless Service remains as the stable broker DNS name.
 
 ### Negative Consequences
 
@@ -85,6 +85,7 @@ The initial implementation is scoped to `charts/camunda-platform-8.10` and the O
 - Legacy persistent volume claims require explicit cleanup.
 - A partially completed migration leaves two broker generations running until the operator safely resumes or rolls back the procedure.
 - The chart must preserve migration-sensitive resource names, selectors, and checksums as compatibility contracts.
+- Zoned mode always renders both a zone-suffixed governing headless Service and the unsuffixed broker Service.
 
 ## Links
 
