@@ -90,3 +90,24 @@ func TestNotesTemplate(t *testing.T) {
 		})
 	}
 }
+
+func TestNotesSurfacesBundledKeycloakCveWarning(t *testing.T) {
+	t.Parallel()
+
+	chartPath, err := filepath.Abs("../../../")
+	require.NoError(t, err)
+	output, err := exec.Command("helm", "install", "keycloak-cve-notes-test", chartPath,
+		"--dry-run=client",
+		"--set", "identity.enabled=true",
+		"--set", "identityKeycloak.enabled=true",
+		"--set", "orchestration.data.secondaryStorage.type=elasticsearch",
+		"--set", "global.elasticsearch.enabled=true",
+		"--set", "global.elasticsearch.external=true",
+		"--set", "global.elasticsearch.url.host=elasticsearch",
+	).CombinedOutput()
+	require.NoError(t, err, string(output))
+
+	_, notes, found := strings.Cut(string(output), "\nNOTES:\n")
+	require.True(t, found)
+	require.Contains(t, notes, "CVE-2026-18963")
+}
