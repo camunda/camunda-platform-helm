@@ -250,7 +250,9 @@ broker count without the diff naming the setting it ignored.
   default is left alone; restating the derived total is allowed and self-documenting.
   Comparing every value against the derived one would reject every install, since the
   default differs from the zone sum on any real topology. The 3s below are those chart
-  defaults; keep them in sync with values.yaml.
+  defaults. Helm exposes no chart-default view (.Chart carries Chart.yaml, and .Files
+  excludes values.yaml and values.schema.json), so they cannot be read at render time;
+  TestZonedModeGuardMatchesChartDefaults fails if values.yaml and these literals desync.
   */}}
   {{- $size := int .Values.orchestration.clusterSize -}}
   {{- $derivedSize := int (include "orchestration.clusterSize" .) -}}
