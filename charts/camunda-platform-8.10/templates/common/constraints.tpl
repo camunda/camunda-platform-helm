@@ -212,6 +212,13 @@ Fail if there is no secondary storage type specified and if noSecondaryStorage i
 {{- end }}
 
 {{/*
+NOTE: only the Orchestration Cluster reads the multi-region topology, so none of these
+constraints applies to a release that does not deploy it. Left ungated they would fail an
+install that merely carries the values, which is the same reason the orchestration
+constraints further down are gated.
+*/}}
+{{- if eq (include "camundaPlatform.orchestrationEnabled" .) "true" }}
+{{/*
 Fail if the multi-region topology is described in both places at once. Picking one
 silently would deploy a topology the other block does not describe, and the two are
 merged nowhere.
@@ -292,6 +299,26 @@ no quorum can reach.
       {{- fail (printf "[camunda][error] %s.zones entry %q asks for %d replicas on %d brokers; a zone cannot hold more replicas than it has brokers." $mrKey .name (int .numberOfReplicas) (int .numberOfBrokers)) -}}
     {{- end }}
   {{- end }}
+{{- end }}
+
+{{/*
+Fail if zoned mode does not describe the zone this release belongs to. The zone list
+is what assigns broker node IDs and partition replicas, so a release whose own zone is
+missing from it would take the IDs of the first zone and collide with it.
+*/}}
+{{- if eq $mr.mode "zoned" }}
+  {{- $zone := $mr.zone -}}
+  {{- if not $zone }}
+    {{- fail (printf "[camunda][error] %s.zone must name the zone this release is deployed to when using zoned mode." $mrKey) -}}
+  {{- end }}
+  {{- $names := list -}}
+  {{- range $mr.zones -}}
+    {{- $names = append $names .name -}}
+  {{- end -}}
+  {{- if not (has $zone $names) }}
+    {{- fail (printf "[camunda][error] %s.zone %q is not declared in %s.zones (%s)." $mrKey $zone $mrKey (join ", " $names)) -}}
+  {{- end }}
+{{- end }}
 {{- end }}
 
 {{/*
@@ -462,25 +489,6 @@ gRPC server to crash on startup. Fail loudly at render time instead.
       {{- $errorMessage := printf "[camunda][error] global.tls.connectors.type=%q is not supported. Use one of: pkcs12, pem." $t -}}
       {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
     {{- end }}
-  {{- end }}
-{{- end }}
-
-{{/*
-Fail if zoned mode does not describe the zone this release belongs to. The zone list
-is what assigns broker node IDs and partition replicas, so a release whose own zone is
-missing from it would take the IDs of the first zone and collide with it.
-*/}}
-{{- if eq $mr.mode "zoned" }}
-  {{- $zone := $mr.zone -}}
-  {{- if not $zone }}
-    {{- fail (printf "[camunda][error] %s.zone must name the zone this release is deployed to when using zoned mode." $mrKey) -}}
-  {{- end }}
-  {{- $names := list -}}
-  {{- range $mr.zones -}}
-    {{- $names = append $names .name -}}
-  {{- end -}}
-  {{- if not (has $zone $names) }}
-    {{- fail (printf "[camunda][error] %s.zone %q is not declared in %s.zones (%s)." $mrKey $zone $mrKey (join ", " $names)) -}}
   {{- end }}
 {{- end }}
 

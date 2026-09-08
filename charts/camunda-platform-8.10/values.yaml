@@ -2271,7 +2271,7 @@ orchestration:
     ## `<zone>_<index>`, numbered ones by a plain node ID, so switching an existing release
     ## re-identifies every broker against Raft state written under the old IDs and the
     ## members no longer recognise each other. Deploy a new cluster instead.
-    ## @param orchestration.multiregion.mode defines how a broker is told which region it is in. `numbered` derives it from the node ID, `zoned` from a zone name.
+    ## @param orchestration.multiregion.mode selects how a broker learns which failure domain it belongs to. `numbered` derives a region from the node ID, `zoned` takes a zone name.
     mode: numbered
     ## @param orchestration.multiregion.zone can be used to define the zone of this Orchestration Cluster deployment when using zoned mode.
     zone: ""

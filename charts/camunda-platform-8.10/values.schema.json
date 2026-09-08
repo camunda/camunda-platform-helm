@@ -4636,7 +4636,7 @@
                     "properties": {
                         "mode": {
                             "type": "string",
-                            "description": "defines how a broker is told which region it is in. `numbered` derives it from the node ID, `zoned` from a zone name.",
+                            "description": "selects how a broker learns which failure domain it belongs to. `numbered` derives a region from the node ID, `zoned` takes a zone name.",
                             "default": "numbered",
                             "enum": [
                                 "numbered",
