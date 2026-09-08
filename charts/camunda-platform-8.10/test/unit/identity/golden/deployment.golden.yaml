@@ -40,7 +40,6 @@ spec:
     spec:
       imagePullSecrets:
         []
-      initContainers:
       containers:
         - name: camunda-platform
           image: camunda/identity:8.10.0-alpha4.2

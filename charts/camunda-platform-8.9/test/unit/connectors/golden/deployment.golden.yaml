@@ -40,7 +40,6 @@ spec:
     spec:
       imagePullSecrets:
         []
-      initContainers:
       containers:
         - name: connectors
           image: camunda/connectors-bundle:8.9.10
