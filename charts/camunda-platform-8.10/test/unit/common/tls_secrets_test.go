@@ -15,11 +15,16 @@
 package camunda
 
 import (
+	"maps"
+	"strconv"
 	"testing"
 
 	"camunda-platform/test/unit/testhelpers"
 
+	"github.com/gruntwork-io/terratest/modules/helm"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	corev1 "k8s.io/api/core/v1"
 )
 
 type tlsSecretsTest struct {
@@ -253,6 +258,141 @@ func (s *tlsSecretsTest) TestCaBundleChecksumAnnotationWebModeler() {
 			},
 			Unexpected: []string{"spec.template.metadata.annotations.checksum/ca-bundle"},
 		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *tlsSecretsTest) TestInitContainersRendering() {
+	workloads := []struct {
+		name          string
+		template      string
+		initKey       string
+		containerName string
+		values        map[string]string
+	}{
+		{
+			name: "connectors", template: "templates/connectors/deployment.yaml",
+			initKey: "connectors.initContainers", containerName: "connectors",
+			values: map[string]string{"connectors.enabled": "true"},
+		},
+		{
+			name: "identity", template: "templates/identity/deployment.yaml",
+			initKey: "identity.initContainers", containerName: "camunda-platform",
+		},
+		{
+			name: "orchestration", template: "templates/orchestration/statefulset.yaml",
+			initKey: "orchestration.initContainers", containerName: "orchestration",
+			values: map[string]string{"orchestration.enabled": "true"},
+		},
+		{
+			name: "orchestration-legacy", template: "templates/orchestration/statefulset.yaml",
+			initKey: "orchestration.extraInitContainers", containerName: "orchestration",
+			values: map[string]string{"orchestration.enabled": "true"},
+		},
+		{
+			name: "optimize", template: "templates/optimize/deployment.yaml",
+			initKey: "optimize.initContainers", containerName: "optimize",
+			values: map[string]string{"optimize.enabled": "true"},
+		},
+		{
+			name: "optimize-migration", template: "templates/optimize/deployment.yaml",
+			initKey: "optimize.initContainers", containerName: "optimize",
+			values: map[string]string{"optimize.enabled": "true", "optimize.migration.enabled": "true"},
+		},
+		{
+			name: "restapi", template: "templates/web-modeler/deployment-restapi.yaml",
+			initKey: "camundaHub.restapi.initContainers", containerName: "web-modeler-restapi",
+			values: map[string]string{
+				"camundaHub.enabled":                  "true",
+				"camundaHub.restapi.mail.fromAddress": "test@example.com",
+			},
+		},
+		{
+			name: "restapi-legacy", template: "templates/web-modeler/deployment-restapi.yaml",
+			initKey: "webModeler.restapi.initContainers", containerName: "web-modeler-restapi",
+			values: map[string]string{
+				"webModeler.enabled":                  "true",
+				"webModeler.restapi.mail.fromAddress": "test@example.com",
+			},
+		},
+	}
+
+	var testCases []testhelpers.TestCase
+	for _, workload := range workloads {
+		for _, scenario := range []struct {
+			name     string
+			caBundle bool
+			custom   bool
+		}{
+			{name: "empty"},
+			{name: "ca-only", caBundle: true},
+			{name: "custom-only", custom: true},
+			{name: "ca-and-custom", caBundle: true, custom: true},
+		} {
+			values := map[string]string{
+				"identity.enabled":                          "true",
+				"global.noSecondaryStorage":                 "false",
+				"global.tls.caBundle.secret.existingSecret": "",
+				"optimize.migration.enabled":                "false",
+			}
+			maps.Copy(values, workload.values)
+			var expectedNames []string
+			if scenario.caBundle {
+				values["global.tls.caBundle.secret.existingSecret"] = "test-ca-bundle"
+				expectedNames = append(expectedNames, "ca-bundle-truststore-init")
+			}
+			customContainer := corev1.Container{
+				Name: "custom-" + s.release, Image: "busybox:1.36",
+				Command: []string{"sh", "-c", "echo ready"},
+			}
+			if scenario.custom {
+				values[workload.initKey+"[0].name"] = "custom-{{ .Release.Name }}"
+				values[workload.initKey+"[0].image"] = customContainer.Image
+				for index, command := range customContainer.Command {
+					values[workload.initKey+"[0].command["+strconv.Itoa(index)+"]"] = command
+				}
+				if workload.initKey == "orchestration.initContainers" {
+					values["orchestration.extraInitContainers[0].name"] = "legacy-must-not-render"
+					values["orchestration.extraInitContainers[0].image"] = "busybox:1.36"
+				}
+				expectedNames = append(expectedNames, customContainer.Name)
+			}
+			if values["optimize.migration.enabled"] == "true" {
+				expectedNames = append(expectedNames, "migration")
+			}
+			testCase := testhelpers.TestCase{
+				Name: workload.name + "/" + scenario.name, Template: workload.template, Values: values,
+			}
+			if len(expectedNames) == 0 {
+				testCase.Expected = map[string]string{
+					"spec.template.spec.containers[0].name": workload.containerName,
+				}
+				testCase.Unexpected = []string{"spec.template.spec.initContainers"}
+			} else {
+				testCase.Verifier = func(t *testing.T, output string, err error) {
+					require.NoError(t, err)
+					var resource struct {
+						Spec struct {
+							Template corev1.PodTemplateSpec
+						}
+					}
+					helm.UnmarshalK8SYaml(t, output, &resource)
+					podSpec := resource.Spec.Template.Spec
+					require.NotEmpty(t, podSpec.Containers)
+					require.Equal(t, workload.containerName, podSpec.Containers[0].Name)
+					var actualNames []string
+					for _, container := range podSpec.InitContainers {
+						actualNames = append(actualNames, container.Name)
+					}
+					require.Equal(t, expectedNames, actualNames)
+					if scenario.custom {
+						require.Contains(t, podSpec.InitContainers, customContainer)
+					}
+				}
+			}
+			testCases = append(testCases, testCase)
+		}
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)

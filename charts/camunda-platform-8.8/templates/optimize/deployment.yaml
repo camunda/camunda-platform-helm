@@ -30,6 +30,7 @@ spec:
     spec:
       imagePullSecrets:
         {{- include "optimize.imagePullSecrets" . | nindent 8 }}
+      {{- if or (eq (include "camundaPlatform.hasCaBundle" .) "true") .Values.optimize.initContainers .Values.optimize.migration.enabled }}
       initContainers:
         {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
         {{- include "camundaPlatform.caBundleInitContainer" (dict "context" $ "image" (include "camundaPlatform.imageByParams" (dict "base" $.Values.global "overlay" $.Values.optimize))) | nindent 8 }}
@@ -134,6 +135,7 @@ spec:
             {{- .Values.optimize.extraVolumeMounts | toYaml | nindent 12 }}
             {{- end }}
         {{- end }}
+          {{- end }}
       containers:
         - name: optimize
           image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.optimize) }}
