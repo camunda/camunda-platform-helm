@@ -251,6 +251,14 @@
                 }
             }
         },
+        "capacityManager": {
+            "properties": {
+                "replicaOwnership": {
+                    "type": "string",
+                    "enum": ["", "capacityManager"]
+                }
+            }
+        },
         "console": {
             "deprecated": true,
             "properties": {

@@ -1,0 +1,15 @@
+{{- if .Values.capacityManager.enabled -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "capacityManager.fullname" . }}
+  labels: {{- include "capacityManager.labels" . | nindent 4 }}
+  annotations: {{- toYaml .Values.global.annotations | nindent 4 }}
+data:
+  {{- if .Values.capacityManager.extraConfiguration }}
+  {{- include "camundaPlatform.renderExtraConfiguration" (dict "extraConfig" .Values.capacityManager.extraConfiguration) }}
+  {{- else }}
+  policy.json: |
+    {"mode":"recommend","minBrokers":1,"maxBrokers":3}
+  {{- end }}
+{{- end -}}

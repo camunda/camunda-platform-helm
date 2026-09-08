@@ -1,0 +1,19 @@
+{{- if and .Values.capacityManager.enabled .Values.prometheusServiceMonitor.enabled -}}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "capacityManager.fullname" . }}
+  labels:
+    {{- include "capacityManager.labels" . | nindent 4 }}
+    {{- with .Values.prometheusServiceMonitor.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  selector:
+    matchLabels: {{- include "capacityManager.matchLabels" . | nindent 6 }}
+  endpoints:
+    - port: http
+      path: /metrics
+      honorLabels: true
+      interval: {{ .Values.prometheusServiceMonitor.scrapeInterval }}
+{{- end -}}
