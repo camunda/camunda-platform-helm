@@ -853,7 +853,7 @@ Release templates.
     version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.orchestration) }}
     urls:
       grpc: {{ include "camundaPlatform.orchestrationGRPCExternalURL" . }}
-      http: {{ include "camundaPlatform.orchestrationExternalURL" . }}
+      http: {{ include "camundaPlatform.orchestrationHTTPInternalURL" . }}
     readiness: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.readinessProbe.probePath)) }}
     metrics: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.metrics.prometheus)) }}
   {{- end }}
