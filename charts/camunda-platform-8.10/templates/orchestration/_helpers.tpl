@@ -12,6 +12,58 @@
     ) -}}
 {{- end -}}
 
+{{- define "orchestration.zoned" -}}
+{{- eq (include "camundaPlatform.multiregion" . | fromJson).mode "zoned" -}}
+{{- end -}}
+
+{{/*
+NOTE: takes a dict of "zones" and the zone "field" to total, not the root context.
+*/}}
+{{- define "orchestration.zoneSum" -}}
+{{- $total := 0 -}}
+{{- $field := .field -}}
+{{- range .zones -}}
+  {{- $total = add $total (int (index . $field)) -}}
+{{- end -}}
+{{- $total -}}
+{{- end -}}
+
+{{- define "orchestration.clusterSize" -}}
+{{- if eq (include "orchestration.zoned" .) "true" -}}
+  {{- include "orchestration.zoneSum" (dict "zones" (include "camundaPlatform.multiregion" $ | fromJson).zones "field" "numberOfBrokers") -}}
+{{- else -}}
+  {{- .Values.orchestration.clusterSize -}}
+{{- end -}}
+{{- end -}}
+
+{{- define "orchestration.replicationFactor" -}}
+{{- if eq (include "orchestration.zoned" .) "true" -}}
+  {{- include "orchestration.zoneSum" (dict "zones" (include "camundaPlatform.multiregion" $ | fromJson).zones "field" "numberOfReplicas") -}}
+{{- else -}}
+  {{- .Values.orchestration.replicationFactor -}}
+{{- end -}}
+{{- end -}}
+
+{{- define "orchestration.zoneBrokers" -}}
+{{- $mr := include "camundaPlatform.multiregion" $ | fromJson -}}
+{{- $zoneBrokers := 0 -}}
+{{- range $mr.zones -}}
+  {{- if eq .name $mr.zone -}}
+    {{- $zoneBrokers = int .numberOfBrokers -}}
+  {{- end -}}
+{{- end -}}
+{{- $zoneBrokers -}}
+{{- end -}}
+
+{{- define "orchestration.replicas" -}}
+{{- $mr := include "camundaPlatform.multiregion" $ | fromJson -}}
+{{- if eq (include "orchestration.zoned" .) "true" -}}
+{{- include "orchestration.zoneBrokers" . -}}
+{{- else -}}
+{{- div .Values.orchestration.clusterSize $mr.regions -}}
+{{- end -}}
+{{- end -}}
+
 {{/*
 [orchestration] Defines extra labels for orchestration.
 */}}
@@ -363,7 +415,7 @@ spring-imported orchestration.extraConfiguration file, override it.
       (eq (include "camundaPlatform.optimizeEnabled" .) "true")
       (or
         .Values.orchestration.exporters.zeebe.enabled
-        (lt (int (default 0 .Values.global.multiregion.regions)) 2)
+        (ne (include "camundaPlatform.multiregionSpread" .) "true")
       )
 -}}
 {{- end -}}
@@ -374,7 +426,7 @@ spring-imported orchestration.extraConfiguration file, override it.
       (eq (include "camundaPlatform.optimizeEnabled" .) "true")
       (or
         .Values.orchestration.exporters.zeebe.enabled
-        (lt (int (default 0 .Values.global.multiregion.regions)) 2)
+        (ne (include "camundaPlatform.multiregionSpread" .) "true")
       )
 -}}
 {{- end -}}

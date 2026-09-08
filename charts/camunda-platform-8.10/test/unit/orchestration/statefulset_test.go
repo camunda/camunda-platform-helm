@@ -2388,3 +2388,116 @@ func (s *StatefulSetTest) TestDocumentStoreEnvFromGatedByExtraConfiguration() {
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
+
+func (s *StatefulSetTest) TestZonedMode() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestZonedModeUsesLocalZoneBrokerCountAndEnvironmentVariable",
+			Values: map[string]string{
+				"orchestration.multiregion.mode":                      "zoned",
+				"orchestration.multiregion.zone":                      "region-b",
+				"orchestration.multiregion.zones[0].name":             "region-a",
+				"orchestration.multiregion.zones[0].numberOfBrokers":  "2",
+				"orchestration.multiregion.zones[0].numberOfReplicas": "2",
+				"orchestration.multiregion.zones[0].priority":         "100",
+				"orchestration.multiregion.zones[1].name":             "region-b",
+				"orchestration.multiregion.zones[1].numberOfBrokers":  "3",
+				"orchestration.multiregion.zones[1].numberOfReplicas": "3",
+				"orchestration.multiregion.zones[1].priority":         "50",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var statefulSet appsv1.StatefulSet
+				helm.UnmarshalK8SYaml(t, output, &statefulSet)
+
+				require.Equal(t, int32(3), *statefulSet.Spec.Replicas)
+				var zoneEnv *corev1.EnvVar
+				for i := range statefulSet.Spec.Template.Spec.Containers[0].Env {
+					if statefulSet.Spec.Template.Spec.Containers[0].Env[i].Name == "CAMUNDA_CLUSTER_ZONE" {
+						zoneEnv = &statefulSet.Spec.Template.Spec.Containers[0].Env[i]
+					}
+				}
+				require.NotNil(t, zoneEnv)
+				require.Equal(t, "region-b", zoneEnv.Value)
+			},
+		},
+		{
+			// The resolver falls back to the deprecated block when the orchestration
+			// one is untouched. The numbering pair only: zoned mode never shipped under
+			// global.multiregion, and setting both blocks is rejected outright.
+			Name:                    "TestNumberedFieldsStillResolveFromTheDeprecatedGlobalBlock",
+			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.clusterSize=4"},
+			Values: map[string]string{
+				"global.multiregion.regions":  "2",
+				"global.multiregion.regionId": "1",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var statefulSet appsv1.StatefulSet
+				helm.UnmarshalK8SYaml(t, output, &statefulSet)
+
+				require.Equal(t, int32(2), *statefulSet.Spec.Replicas)
+			},
+		},
+		{
+			Name: "TestZonedModeRejectsBothMultiregionBlocks",
+			Values: map[string]string{
+				"orchestration.multiregion.mode":                      "zoned",
+				"orchestration.multiregion.zone":                      "region-a",
+				"orchestration.multiregion.zones[0].name":             "region-a",
+				"orchestration.multiregion.zones[0].numberOfBrokers":  "2",
+				"orchestration.multiregion.zones[0].numberOfReplicas": "2",
+				"orchestration.multiregion.zones[0].priority":         "100",
+				"global.multiregion.regions":                          "2",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), "orchestration.multiregion and global.multiregion are both configured")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *StatefulSetTest) TestNumberedModeCompatibility() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name:                    "DefaultModeUsesNumberedReplicaDivision",
+			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.clusterSize=3"},
+			Values: map[string]string{
+				"global.multiregion.regions":  "1",
+				"global.multiregion.regionId": "0",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var statefulSet appsv1.StatefulSet
+				helm.UnmarshalK8SYaml(t, output, &statefulSet)
+				require.Equal(t, int32(3), *statefulSet.Spec.Replicas)
+				for _, env := range statefulSet.Spec.Template.Spec.Containers[0].Env {
+					require.NotEqual(t, "CAMUNDA_CLUSTER_ZONE", env.Name)
+				}
+			},
+		},
+		{
+			Name:                    "ExplicitNumberedModeUsesNumberedReplicaDivision",
+			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.clusterSize=6"},
+			Values: map[string]string{
+				"orchestration.multiregion.mode": "numbered",
+				"global.multiregion.regions":     "2",
+				"global.multiregion.regionId":    "1",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var statefulSet appsv1.StatefulSet
+				helm.UnmarshalK8SYaml(t, output, &statefulSet)
+				require.Equal(t, int32(3), *statefulSet.Spec.Replicas)
+				for _, env := range statefulSet.Spec.Template.Spec.Containers[0].Env {
+					require.NotEqual(t, "CAMUNDA_CLUSTER_ZONE", env.Name)
+				}
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
