@@ -31,7 +31,7 @@ dependencies:
     repository: "file://../common-2"
     version: 2.x.x
 maintainers:
-  - name: Camunda Services GmbH
+  - name: camunda
     url: https://camunda.com
 annotations:
   artifacthub.io/prerelease: "true"
