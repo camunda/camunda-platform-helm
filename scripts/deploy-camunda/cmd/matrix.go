@@ -1176,6 +1176,11 @@ func buildTopologyReleaseEnv(shared map[string]string, release matrix.TopologyRe
 		env["ORCH_ZEEBE_REST"] = env[token+"_ZEEBE_REST"]
 	}
 	if release.Role == "optimize" {
+		tenant := release.Tenant
+		if tenant == "" {
+			tenant = "default"
+		}
+		env["RELEASE_TENANT_ID"] = tenant
 		// RELEASE_-prefixed: buildScenarioEnv seeds this namespace from the process
 		// environment, where OPTIMIZE_CONTEXT_PATH is a name the Playwright suite reads
 		// (pages/SM-8.10/NavigationPage.ts). Keep the two namespaces from sharing a key.
@@ -1651,9 +1656,6 @@ func synthesizeReleaseEntry(entry matrix.Entry, rel matrix.TopologyRelease, plat
 		Persistence:  rel.Persistence,
 		Features:     features,
 		Dependencies: rel.ResolvedDependencies,
-	}
-	if rel.Role == "orchestration" {
-		releaseEntry.PostDeploy = entry.PostDeploy
 	}
 	// e2e is a topology-level concern, not a per-release one: a release's deploy returns while later
 	// releases are still undeployed, so testing here would test a partial topology (and would repeat

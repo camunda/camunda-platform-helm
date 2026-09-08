@@ -46,7 +46,7 @@ global:
   topology:
     ## @param global.topology.mode defines the role of this release in the deployment topology. Supported values are combined, hub, orchestration, and optimize. In optimize mode only Optimize is deployed, so a separate Optimize release can serve one Physical Tenant without sharing a release with the Orchestration Cluster; it requires optimize.enabled, global.noSecondaryStorage=false, an enabled database backend, Identity auth and URL set on the component or globally, and optimize.contextPath when routing is rendered.
     mode: combined
-    ## @param global.topology.clusters can be used by a Hub release to describe remote Orchestration Clusters. The chart uses these entries to generate Camunda Hub inventory and Management Identity presets.
+    ## @param global.topology.clusters can be used by a Hub release to describe remote Orchestration Clusters. The chart uses these entries to generate Camunda Hub inventory and Management Identity presets. Each entry may also declare physicalTenants, one per Physical Tenant that runs its own Optimize release, so that Optimize gets its own client and its own resource server rather than sharing the cluster's Optimize audience.
     clusters: []
     # - id: production-a
     #   name: Production A
@@ -86,6 +86,18 @@ global:
     #         inlineSecret: ""
     #         existingSecret: connectors-production-a-oidc
     #         existingSecretKey: client-secret
+    #   physicalTenants:
+    #     - id: tenanta
+    #       components:
+    #         optimize:
+    #           enabled: true
+    #           clientId: optimize-production-a-tenanta
+    #           audience: optimize-production-a-tenanta-api
+    #           redirectUrl: https://production-a.example.com/optimize-tenanta
+    #           secret:
+    #             inlineSecret: ""
+    #             existingSecret: optimize-production-a-tenanta-oidc
+    #             existingSecretKey: client-secret
 
   ## License configuration.
   ## @extra global.license
