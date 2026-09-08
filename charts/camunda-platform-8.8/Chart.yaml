@@ -53,6 +53,8 @@ dependencies:
     repository: "file://../common-2"
     version: 2.x.x
 maintainers:
+  - name: aabouzaid
+    email: ahmed.abouzaid@camunda.com
   - name: eamonnmoloney
     email: eamonn.moloney@camunda.com
   - name: hisImminence
