@@ -981,6 +981,38 @@ func (s *ConfigmapTemplateTest) TestHasLegacyElasticsearchExporter() {
 			},
 		},
 		{
+			// The backend the legacy exporters key off is the resolved one: an unset
+			// orchestration.data.secondaryStorage.type still resolves to elasticsearch through
+			// optimize.database.elasticsearch.enabled, so an explicit zeebe opt-in must not be
+			// silently dropped just because the type was never spelled out.
+			Name: "TestLegacyESExporterPresentForAnUnsetTypeResolvedByOptimizeDatabase",
+			Values: map[string]string{
+				"orchestration.exporters.zeebe.enabled":   "true",
+				"optimize.enabled":                        "false",
+				"optimize.database.elasticsearch.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "io.camunda.zeebe.exporter.ElasticsearchExporter",
+					"an unset secondaryStorage.type resolving to elasticsearch must still honor the zeebe exporter opt-in")
+			},
+		},
+		{
+			// Same shape on the OpenSearch side of the resolution.
+			Name: "TestLegacyOSExporterPresentForAnUnsetTypeResolvedByOptimizeDatabase",
+			Values: map[string]string{
+				"orchestration.exporters.zeebe.enabled": "true",
+				"optimize.enabled":                      "false",
+				"optimize.database.opensearch.enabled":  "true",
+				"optimize.database.opensearch.url.host": "opensearch.example.com",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "io.camunda.zeebe.exporter.opensearch.OpensearchExporter",
+					"an unset secondaryStorage.type resolving to opensearch must still honor the zeebe exporter opt-in")
+			},
+		},
+		{
 			Name: "TestLegacyESExporterAbsentWhenOnlyRdbmsNoOptimize",
 			Values: map[string]string{
 				"orchestration.data.secondaryStorage.type":                      "rdbms",

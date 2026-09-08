@@ -25,7 +25,9 @@ import (
 // "hub" release (Identity, Console, Web Modeler, bundled Keycloak)
 // plus one or more "orchestration" releases (Zeebe/Operate/Tasklist,
 // Connectors, Optimize) that share a single logical cluster via a central
-// Identity and a shared secondary storage backend.
+// Identity and a shared secondary storage backend, and optionally one or more
+// "optimize" releases that each run only Optimize against an orchestration
+// release's exported records.
 //
 // Scenarios without a Topology behave byte-for-byte as today — this field is
 // additive and opt-in (see registryScenario.Topology / CIScenario.Topology).
@@ -53,7 +55,7 @@ type Topology struct {
 // companions of their own (they consume the Hub release's shared
 // Elasticsearch and Identity/Keycloak cross-namespace by FQDN).
 type TopologyRelease struct {
-	// Role is either "hub" or "orchestration". Exactly one
+	// Role is "hub", "orchestration", or "optimize". Exactly one
 	// "hub" role must be declared per Topology.
 	Role string `yaml:"role" json:"role"`
 
@@ -62,9 +64,9 @@ type TopologyRelease struct {
 	// within the Topology.
 	NamespaceSuffix string `yaml:"namespace-suffix" json:"namespaceSuffix"`
 
-	// Values names the values file (relative to the scenario's
-	// chart-full-setup values dir) applied for this release.
-	Values string `yaml:"values" json:"values"`
+	// Values is rejected by Validate. A release's own overlay is a Feature
+	// layer: list it in Features instead.
+	Values string `yaml:"values,omitempty" json:"-"`
 
 	// DependsOn, when set, names the Role of a release that must be deployed
 	// (and, for "hub", ready) before this one.
@@ -101,6 +103,18 @@ type TopologyRelease struct {
 	ModelerClusterID   string `yaml:"modeler-cluster-id,omitempty" json:"modelerClusterId,omitempty"`
 	ModelerClusterName string `yaml:"modeler-cluster-name,omitempty" json:"modelerClusterName,omitempty"`
 
+	// Serves names the NamespaceSuffix of the orchestration release whose
+	// exported records this release reads. Required for Role == "optimize",
+	// rejected for any other role. It is what lets the topology smoke matrix
+	// map an orchestration leg to the Optimize instance that serves it, since
+	// an optimize release runs in its own namespace on the Hub host.
+	Serves string `yaml:"serves,omitempty" json:"serves,omitempty"`
+
+	// OptimizeContextPath is the ingress path this release's Optimize is served
+	// on, matching optimize.contextPath in its values layer. Required for
+	// Role == "optimize", rejected for any other role.
+	OptimizeContextPath string `yaml:"optimize-context-path,omitempty" json:"optimizeContextPath,omitempty"`
+
 	// ResolvedDependencies holds the fully-resolved companion chart specs
 	// for Dependencies, populated by LoadRegistry (mirroring how
 	// registryScenario.DependencyIDs resolves into CIScenario.Dependencies).
@@ -109,17 +123,44 @@ type TopologyRelease struct {
 	ResolvedDependencies []ChartDependency `yaml:"-" json:"-"`
 }
 
+// reservedTopologyEnvKeys are the substitution variables the topology driver
+// derives from a release's declaration (see buildTopologyReleaseEnv): the
+// orchestration leg a release is, and the context path and served orchestration
+// an optimize release reads. A release env entry may not name one. The driver
+// applies the derived value last so a stray entry cannot win, and this check
+// makes the attempt an error instead of a silently dropped key, because such an
+// entry means its author expected it to take effect.
+var reservedTopologyEnvKeys = []string{
+	"ORCH_NAMESPACE",
+	"ORCH_HOST",
+	"ORCH_ZEEBE_GRPC",
+	"ORCH_ZEEBE_REST",
+	"RELEASE_OPTIMIZE_CONTEXT_PATH",
+	"SERVED_NAMESPACE",
+	"SERVED_HOST",
+	"SERVED_ORCHESTRATION_INDEX_PREFIX",
+}
+
 // Validate enforces Topology's load-time invariants:
 //   - at least one release is declared;
-//   - every release's Values file resolves on disk under
-//     <chartFullSetupDir>/values/<Values>;
+//   - no release sets Values, which Features replaces;
+//   - every release declares at least one Features layer, and every one of them
+//     resolves on disk under <chartFullSetupDir>/values/features/<id>.yaml;
 //   - every release's Identity/Persistence layer (when set) resolves on disk
 //     under <chartFullSetupDir>/values/identity/ or .../persistence/;
 //   - every release's Dependencies IDs (when set) resolve to a file under
 //     <depsDir>/<id>.yaml;
-//   - every release's DependsOn (when set) references a declared Role;
+//   - every release's DependsOn (when set) references a declared Role, and is
+//     exactly "hub" for every Role == "optimize" release;
 //   - exactly one release has Role == "hub";
-//   - NamespaceSuffix values are unique and non-empty.
+//   - NamespaceSuffix values are unique and non-empty;
+//   - no release Env entry names a variable the topology driver derives
+//     (reservedTopologyEnvKeys);
+//   - every Role == "optimize" release's source feature layers follow its
+//     declaration through the topology-provided placeholders.
+//
+// Effective-value semantics are validated later by ValidateRendered against the
+// chart-rendered contract; Validate never reconstructs Helm's merged values.
 //
 // ctx is prepended to error messages, e.g. `scenario "multinamespace": topology: ...`.
 func (t *Topology) Validate(ctx string, chartFullSetupDir string, depsDir string) error {
@@ -161,8 +202,20 @@ func (t *Topology) Validate(ctx string, chartFullSetupDir string, depsDir string
 			} else {
 				modelerClusterNames[r.ModelerClusterName] = true
 			}
+		case "optimize":
+			if strings.TrimSpace(r.DependsOn) != "hub" {
+				problems = append(problems, fmt.Sprintf("%s: depends-on must be \"hub\" so the release deploys after the Management Identity that provisions its client, got %q", label, r.DependsOn))
+			}
+			if strings.TrimSpace(r.Serves) == "" {
+				problems = append(problems, fmt.Sprintf("%s: serves is required and must name the namespace-suffix of the orchestration release this Optimize reads", label))
+			}
+			if strings.TrimSpace(r.OptimizeContextPath) == "" {
+				problems = append(problems, fmt.Sprintf("%s: optimize-context-path is required and must match optimize.contextPath in the release's values layer", label))
+			} else if !strings.HasPrefix(r.OptimizeContextPath, "/") {
+				problems = append(problems, fmt.Sprintf("%s: optimize-context-path %q must start with \"/\"", label, r.OptimizeContextPath))
+			}
 		default:
-			problems = append(problems, fmt.Sprintf("%s: role must be \"hub\" or \"orchestration\", got %q", label, r.Role))
+			problems = append(problems, fmt.Sprintf("%s: role must be \"hub\", \"orchestration\", or \"optimize\", got %q", label, r.Role))
 		}
 		roles[r.Role] = true
 
@@ -179,12 +232,20 @@ func (t *Topology) Validate(ctx string, chartFullSetupDir string, depsDir string
 			problems = append(problems, fmt.Sprintf("%s: namespace-suffix %q is too long (max 12 chars, to keep <namespace>-<suffix> well within the 63-char Kubernetes limit)", label, r.NamespaceSuffix))
 		}
 
-		if strings.TrimSpace(r.Values) == "" {
-			problems = append(problems, fmt.Sprintf("%s: values is required", label))
-		} else {
-			valuesPath := filepath.Join(chartFullSetupDir, "values", r.Values)
-			if info, err := os.Stat(valuesPath); err != nil || info.IsDir() {
-				problems = append(problems, fmt.Sprintf("%s: values %q: missing values file at %s", label, r.Values, valuesPath))
+		if strings.TrimSpace(r.Values) != "" {
+			problems = append(problems, fmt.Sprintf("%s: values %q is no longer supported: drop the \"features/\" prefix and the \".yaml\" suffix and list it in features instead, so the layer goes through the same env-var substitution as every other feature layer", label, r.Values))
+		}
+		if len(r.Features) == 0 {
+			problems = append(problems, fmt.Sprintf("%s: features is required and must name at least this release's own overlay layer", label))
+		}
+		for _, featureID := range r.Features {
+			if !isPlainFilename(featureID) {
+				problems = append(problems, fmt.Sprintf("%s: feature reference %q must be a plain filename (no path separators)", label, featureID))
+				continue
+			}
+			featurePath := filepath.Join(chartFullSetupDir, "values", "features", featureID+".yaml")
+			if info, err := os.Stat(featurePath); err != nil || info.IsDir() {
+				problems = append(problems, fmt.Sprintf("%s: feature %q: missing values file at %s", label, featureID, featurePath))
 			}
 		}
 
@@ -221,13 +282,57 @@ func (t *Topology) Validate(ctx string, chartFullSetupDir string, depsDir string
 		problems = append(problems, fmt.Sprintf("%s: topology %q: at least one release with role \"orchestration\" is required", ctx, t.Name))
 	}
 
+	orchestrationSuffixes := map[string]bool{}
+	for _, r := range t.Releases {
+		if r.Role == "orchestration" {
+			orchestrationSuffixes[r.NamespaceSuffix] = true
+		}
+	}
+
+	optimizeContextPaths := map[string]string{}
+	for _, r := range t.Releases {
+		if r.Role != "optimize" || r.OptimizeContextPath == "" {
+			continue
+		}
+		if owner, seen := optimizeContextPaths[r.OptimizeContextPath]; seen {
+			problems = append(problems, fmt.Sprintf("%s: topology %q: optimize releases %q and %q share optimize-context-path %q; they are served on one host so their ingress paths would collide", ctx, t.Name, owner, r.NamespaceSuffix, r.OptimizeContextPath))
+			continue
+		}
+		optimizeContextPaths[r.OptimizeContextPath] = r.NamespaceSuffix
+	}
+
 	for i, r := range t.Releases {
+		if r.Role != "optimize" {
+			if r.Serves != "" {
+				problems = append(problems, fmt.Sprintf("%s: topology %q: release[%d] (role %q) must not set serves; it applies only to role \"optimize\"", ctx, t.Name, i, r.Role))
+			}
+			if r.OptimizeContextPath != "" {
+				problems = append(problems, fmt.Sprintf("%s: topology %q: release[%d] (role %q) must not set optimize-context-path; it applies only to role \"optimize\"", ctx, t.Name, i, r.Role))
+			}
+		} else if r.Serves != "" && !orchestrationSuffixes[r.Serves] {
+			problems = append(problems, fmt.Sprintf("%s: topology %q: release[%d] serves %q does not reference a declared orchestration release's namespace-suffix", ctx, t.Name, i, r.Serves))
+		}
+
+		for _, key := range reservedTopologyEnvKeys {
+			if _, taken := r.Env[key]; taken {
+				problems = append(problems, fmt.Sprintf("%s: topology %q: release[%d] env sets %s, which the topology driver derives from this release's declaration; the derived value wins, so the entry would never take effect - remove it and change the declaration instead", ctx, t.Name, i, key))
+			}
+		}
+
 		if r.DependsOn == "" {
 			continue
 		}
 		if !roles[r.DependsOn] {
 			problems = append(problems, fmt.Sprintf("%s: topology %q: release[%d] depends-on %q does not reference a declared role", ctx, t.Name, i, r.DependsOn))
 		}
+	}
+
+	for _, r := range t.Releases {
+		if r.Role != "optimize" {
+			continue
+		}
+		label := fmt.Sprintf("%s: topology %q: release (role %q, namespace-suffix %q)", ctx, t.Name, r.Role, r.NamespaceSuffix)
+		problems = append(problems, validateOptimizeLayerSources(label, r, chartFullSetupDir)...)
 	}
 
 	if len(problems) == 0 {
@@ -247,4 +352,22 @@ func isDNS1123Label(value string) bool {
 		return false
 	}
 	return true
+}
+
+// TopologyEnvToken renders a namespace-suffix as the prefix the topology driver
+// gives that release's cross-reference substitution variables, e.g. "opta" ->
+// "OPTA" in OPTA_OPTIMIZE_CONTEXT_PATH. The driver (buildTopologyCrossRefEnv in
+// cmd/matrix.go) and this package's cross-checks have to agree on the spelling,
+// or a validator would look up a variable no release publishes and pass
+// vacuously, so the rule lives here and the driver calls it.
+func TopologyEnvToken(value string) string {
+	var token strings.Builder
+	for _, r := range strings.ToUpper(value) {
+		if r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' {
+			token.WriteRune(r)
+		} else {
+			token.WriteByte('_')
+		}
+	}
+	return strings.Trim(token.String(), "_")
 }

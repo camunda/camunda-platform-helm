@@ -1,0 +1,121 @@
+# Hub namespace layer for the multinamespace-optimize topology (8.10).
+#
+# Same two-cluster inventory as features/multinamespace-2orch-hub.yaml, with one
+# difference: each cluster's Optimize runs as its own release on the Hub's
+# ingress host, so the registered redirect URL and the inventory context path
+# use HUB_HOST and OPTA/OPTB_OPTIMIZE_CONTEXT_PATH. The topology driver publishes
+# those from each optimize release's own "optimize-context-path" key, the same key
+# that becomes its optimize.contextPath, so the two cannot drift into an OIDC
+# callback mismatch.
+#
+# NOTE: avoid writing literal dollar-brace placeholder syntax in prose comments
+# in this file — the env var scanner (os.Expand-based) matches it anywhere in the
+# raw file content, including comments. Reference placeholder names in plain text
+# instead; the real placeholder syntax appears only in actual values below.
+
+global:
+  elasticsearch:
+    enabled: false
+  identity:
+    auth:
+      orchestration:
+        hubPingAuthorizationEnabled: true
+  topology:
+    mode: hub
+    clusters:
+      - id: orcha
+        name: Orchestration A
+        namespace: "${ORCHA_NAMESPACE}"
+        releaseName: integration
+        host: "${ORCHA_HOST}"
+        version: "8.10.0-alpha3"
+        contextPaths:
+          orchestration: /orchestration
+          optimize: "${OPTA_OPTIMIZE_CONTEXT_PATH}"
+          connectors: /connectors
+        components:
+          orchestration:
+            enabled: true
+            clientId: orchestration-orcha
+            audience: orchestration-orcha-api
+            redirectUrl: "https://${ORCHA_HOST}/orchestration"
+            secret:
+              existingSecret: integration-test-credentials
+              existingSecretKey: identity-orchestration-client-token
+          optimize:
+            enabled: true
+            clientId: optimize-orcha
+            audience: optimize-orcha-api
+            redirectUrl: "https://${HUB_HOST}${OPTA_OPTIMIZE_CONTEXT_PATH}"
+            secret:
+              existingSecret: integration-test-credentials
+              existingSecretKey: identity-optimize-client-token
+          connectors:
+            enabled: true
+            clientId: connectors-orcha
+            secret:
+              existingSecret: integration-test-credentials
+              existingSecretKey: identity-connectors-client-token
+      - id: orchb
+        name: Orchestration B
+        namespace: "${ORCHB_NAMESPACE}"
+        releaseName: integration
+        host: "${ORCHB_HOST}"
+        version: "8.10.0-alpha3"
+        contextPaths:
+          orchestration: /orchestration
+          optimize: "${OPTB_OPTIMIZE_CONTEXT_PATH}"
+          connectors: /connectors
+        components:
+          orchestration:
+            enabled: true
+            clientId: orchestration-orchb
+            audience: orchestration-orchb-api
+            redirectUrl: "https://${ORCHB_HOST}/orchestration"
+            secret:
+              existingSecret: integration-test-credentials
+              existingSecretKey: identity-orchestration-client-token
+          optimize:
+            enabled: true
+            clientId: optimize-orchb
+            audience: optimize-orchb-api
+            redirectUrl: "https://${HUB_HOST}${OPTB_OPTIMIZE_CONTEXT_PATH}"
+            secret:
+              existingSecret: integration-test-credentials
+              existingSecretKey: identity-optimize-client-token
+          connectors:
+            enabled: true
+            clientId: connectors-orchb
+            secret:
+              existingSecret: integration-test-credentials
+              existingSecretKey: identity-connectors-client-token
+
+identity:
+  clients:
+    - id: venom
+      name: Venom
+      secret:
+        existingSecret: integration-test-credentials
+        existingSecretKey: identity-admin-client-password
+      redirectUris: /dummy
+      rootUrl: http://dummy
+      type: confidential
+      permissions:
+        - resourceServerId: camunda-identity-resource-server
+          definition: read
+        - resourceServerId: camunda-identity-resource-server
+          definition: write
+        - resourceServerId: orchestration-orcha-api
+          definition: read:*
+        - resourceServerId: orchestration-orcha-api
+          definition: write:*
+        - resourceServerId: optimize-orcha-api
+          definition: write:*
+        - resourceServerId: orchestration-orchb-api
+          definition: read:*
+        - resourceServerId: orchestration-orchb-api
+          definition: write:*
+        - resourceServerId: optimize-orchb-api
+          definition: write:*
+        - resourceServerId: web-modeler-api
+          definition: write:*
