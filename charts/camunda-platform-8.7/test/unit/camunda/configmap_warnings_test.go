@@ -67,13 +67,207 @@ func (s *ConfigMapWarningsTemplateTest) TestDifferentValuesInputs() {
 		},
 		{
 			Name: "TestWarningsConfigMapAbsentWhenNoWarnings",
+			// identityKeycloak is enabled by default on 8.7 and its image is affected by
+			// CVE-2026-18963, so it must be disabled for a warning-free render.
 			Values: map[string]string{
 				"global.testDeprecationFlags.existingSecretsMustBeSet": "false",
+				"identityKeycloak.enabled":                             "false",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				// With no active warnings the helper renders nothing, so --show-only finds no manifest.
 				s.Require().Error(err)
 				s.Require().NotContains(output, "kind: ConfigMap")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *ConfigMapWarningsTemplateTest) TestBundledKeycloakCveWarning() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestAffectedVersionWarns",
+			Values: map[string]string{
+				"identityKeycloak.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().Contains(configmap.Data["warnings"], "CVE-2026-18963")
+			},
+		},
+		{
+			Name: "TestBitnamiRevisionSuffixIsParsed",
+			Values: map[string]string{
+				"identityKeycloak.enabled":   "true",
+				"identityKeycloak.image.tag": "26.3.3-debian-12-r0-2026-08-27-001",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().Contains(configmap.Data["warnings"], "CVE-2026-18963")
+			},
+		},
+		{
+			Name: "TestPrefixedFrozenTagWarns",
+			// The upstream publish workflow also tags the frozen build as "bitnami-<version>".
+			Values: map[string]string{
+				"identityKeycloak.enabled":   "true",
+				"identityKeycloak.image.tag": "bitnami-26.3.3",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().Contains(configmap.Data["warnings"], "CVE-2026-18963")
+			},
+		},
+		{
+			Name: "TestMovingFrozenAliasWarns",
+			// "bitnami-26" carries no version, but it resolves to the frozen 26.3.3 build.
+			Values: map[string]string{
+				"identityKeycloak.enabled":   "true",
+				"identityKeycloak.image.tag": "bitnami-26",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				warnings := configmap.Data["warnings"]
+				s.Require().Contains(warnings, "CVE-2026-18963")
+				s.Require().Contains(warnings, `uses the moving tag "bitnami-26"`)
+				s.Require().Contains(warnings, "frozen on the discontinued bitnamilegacy base")
+			},
+		},
+		{
+			Name: "TestLatestBitnamiAliasWarns",
+			// The frozen line also moves under "bitnami-latest" and "latest-bitnami".
+			Values: map[string]string{
+				"identityKeycloak.enabled":   "true",
+				"identityKeycloak.image.tag": "latest-bitnami",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().Contains(configmap.Data["warnings"], "CVE-2026-18963")
+			},
+		},
+		{
+			Name: "TestMaintainedQuayAliasDoesNotWarn",
+			// The "quay-*" tags track upstream Keycloak and are still maintained.
+			Values: map[string]string{
+				"identityKeycloak.enabled":   "true",
+				"identityKeycloak.image.tag": "quay-26",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				// A no-warning render produces no manifest, which --show-only reports as a
+				// missing template; any other error means the render broke for an unrelated
+				// reason and must not pass as "no warning".
+				if err != nil {
+					s.Require().Contains(err.Error(), "could not find template")
+				}
+				s.Require().NotContains(output, "CVE-2026-18963")
+			},
+		},
+		{
+			Name: "TestOverriddenRepositoryOmitsFrozenLineClaim",
+			Values: map[string]string{
+				"identityKeycloak.enabled":          "true",
+				"identityKeycloak.image.repository": "acme/keycloak",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				warnings := configmap.Data["warnings"]
+				s.Require().Contains(warnings, "CVE-2026-18963")
+				s.Require().NotContains(warnings, "frozen on the discontinued bitnamilegacy base")
+			},
+		},
+		{
+			Name: "TestLastAffectedVersionWarns",
+			Values: map[string]string{
+				"identityKeycloak.enabled":   "true",
+				"identityKeycloak.image.tag": "26.7.1",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().Contains(configmap.Data["warnings"], "CVE-2026-18963")
+			},
+		},
+		{
+			Name: "TestFixedVersionWithBitnamiSuffixDoesNotWarn",
+			Values: map[string]string{
+				"identityKeycloak.enabled":   "true",
+				"identityKeycloak.image.tag": "26.7.2-debian-12-r0",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				// A no-warning render produces no manifest, which --show-only reports as a
+				// missing template; any other error means the render broke for an unrelated
+				// reason and must not pass as "no warning".
+				if err != nil {
+					s.Require().Contains(err.Error(), "could not find template")
+				}
+				s.Require().NotContains(output, "CVE-2026-18963")
+			},
+		},
+		{
+			Name: "TestFixedVersionDoesNotWarn",
+			Values: map[string]string{
+				"identityKeycloak.enabled":   "true",
+				"identityKeycloak.image.tag": "26.7.2",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				// A no-warning render produces no manifest, which --show-only reports as a
+				// missing template; any other error means the render broke for an unrelated
+				// reason and must not pass as "no warning".
+				if err != nil {
+					s.Require().Contains(err.Error(), "could not find template")
+				}
+				s.Require().NotContains(output, "CVE-2026-18963")
+			},
+		},
+		{
+			Name: "TestMaintainedLatestTagDoesNotWarn",
+			Values: map[string]string{
+				"identityKeycloak.enabled":   "true",
+				"identityKeycloak.image.tag": "latest",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				// A no-warning render produces no manifest, which --show-only reports as a
+				// missing template; any other error means the render broke for an unrelated
+				// reason and must not pass as "no warning".
+				if err != nil {
+					s.Require().Contains(err.Error(), "could not find template")
+				}
+				s.Require().NotContains(output, "CVE-2026-18963")
+			},
+		},
+		{
+			Name: "TestDisabledKeycloakDoesNotWarn",
+			// Disabling the bundled subchart requires pointing the chart at an external
+			// Keycloak; without a URL the render fails in zeebe-gateway and the case would
+			// pass without ever exercising the warning.
+			Values: map[string]string{
+				"identityKeycloak.enabled":              "false",
+				"global.identity.keycloak.url.protocol": "https",
+				"global.identity.keycloak.url.host":     "keycloak.example.com",
+				"global.identity.keycloak.url.port":     "443",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				// A no-warning render produces no manifest, which --show-only reports as a
+				// missing template; any other error means the render broke for an unrelated
+				// reason and must not pass as "no warning".
+				if err != nil {
+					s.Require().Contains(err.Error(), "could not find template")
+				}
+				s.Require().NotContains(output, "CVE-2026-18963")
 			},
 		},
 	}
