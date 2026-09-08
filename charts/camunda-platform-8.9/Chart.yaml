@@ -53,7 +53,7 @@ dependencies:
     repository: "file://../common-2"
     version: 2.x.x
 maintainers:
-  - name: Camunda Services GmbH
+  - name: camunda
     url: https://camunda.com
 annotations:
   # Comma-separated list of supported Helm CLI versions; first entry is the minimum.
