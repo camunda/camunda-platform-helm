@@ -19,8 +19,17 @@
 {{- define "orchestration.renderManifest" -}}
 {{- $root := .context -}}
 {{- $scope := required "orchestration.renderManifest requires a scope" .scope -}}
-{{- $ctx := merge (dict) $root -}}
-{{- $_ := set $ctx "Values" (deepCopy $root.Values) -}}
+{{- if not (has $scope (list "current" "zoned" "unzoned")) -}}
+{{- fail (printf "orchestration.renderManifest received unsupported scope %q" $scope) -}}
+{{- end -}}
+{{- $ctx := dict
+    "Values" (deepCopy $root.Values)
+    "Release" $root.Release
+    "Chart" $root.Chart
+    "Capabilities" $root.Capabilities
+    "Template" $root.Template
+    "Files" $root.Files
+-}}
 {{- $_ := set $ctx "OrchestrationRender" (dict "scope" $scope "zone" (.zone | default "")) -}}
 {{- if eq $scope "unzoned" }}
 {{- $_ := set $ctx.Values.orchestration.multiregion "mode" "numbered" -}}
@@ -42,7 +51,7 @@
 {{ include "orchestration.renderManifest" (dict "manifest" .manifest "context" $context "scope" "unzoned") }}
 {{- end }}
 {{- else -}}
-{{ include .manifest $context }}
+{{ include "orchestration.renderManifest" (dict "manifest" .manifest "context" $context "scope" "current") }}
 {{- end -}}
 {{- end -}}
 
@@ -55,7 +64,7 @@
 ---
 {{ include "orchestration.renderManifest" (dict "manifest" "orchestration.serviceHeadless" "context" $context "scope" "unzoned") }}
 {{- else -}}
-{{ include "orchestration.serviceHeadless" $context }}
+{{ include "orchestration.renderManifest" (dict "manifest" "orchestration.serviceHeadless" "context" $context "scope" "current") }}
 {{- end -}}
 {{- end -}}
 
@@ -77,7 +86,12 @@ Takes a dict with the root context and an optional explicit zone.
 {{- end -}}
 
 {{- define "orchestration.scopedZone" -}}
-{{- if and .OrchestrationRender (eq .OrchestrationRender.scope "zoned") .OrchestrationRender.zone }}{{ .OrchestrationRender.zone }}{{ end -}}
+{{- if not .OrchestrationRender -}}
+{{- fail "orchestration.scopedZone requires an orchestration render scope" -}}
+{{- end -}}
+{{- if eq .OrchestrationRender.scope "zoned" -}}
+{{- required "[camunda][error] orchestration.multiregion.zone must name the zone this release is deployed to when using zoned mode" .OrchestrationRender.zone -}}
+{{- end -}}
 {{- end -}}
 
 {{/*
@@ -87,10 +101,7 @@ brokers: the only thing that flag adds to a zoned ConfigMap is the numbered fami
 `initial-contact-points`, which a broker reads once at bootstrap and never again.
 */}}
 {{- define "orchestration.configChecksum" -}}
-{{- $scope := "current" -}}
-{{- if .OrchestrationRender -}}
-{{- $scope = .OrchestrationRender.scope -}}
-{{- end -}}
+{{- $scope := required "orchestration.configChecksum requires an orchestration render scope" .OrchestrationRender.scope -}}
 {{- include "orchestration.renderManifest" (dict
     "manifest" "orchestration.configmapManifest"
     "context" .
