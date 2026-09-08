@@ -1,3 +1,4 @@
+{{- $mr := include "camundaPlatform.multiregion" $ | fromJson -}}
 {{/*
 This file name should start with an underscore to avoid rendering it as a template.
 It is included (imported) in the ConfigMap.
@@ -72,13 +73,29 @@ camunda:
     # The Node ID depends on the StatefulSet Pod's name so it cannot be templated in the StatefulSet level.
     # The value of "node-id" is calculated in the "startup.sh" file and exported as "VALUES_ORCHESTRATION_NODE_ID" env var.
     node-id: "${VALUES_ORCHESTRATION_NODE_ID:}"
-    size: {{ .Values.orchestration.clusterSize | quote }}
-    replication-factor: {{ .Values.orchestration.replicationFactor | quote }}
+    size: {{ include "orchestration.clusterSize" . | quote }}
+    replication-factor: {{ include "orchestration.replicationFactor" . | quote }}
     partition-count: {{ .Values.orchestration.partitionCount | quote }}
+    {{- if eq (include "orchestration.zoned" .) "true" }}
+    partitioning:
+      scheme: ZONE_AWARE
+      zone-aware:
+        zones:
+        {{- range $mr.zones }}
+          - name: {{ .name | quote }}
+            number-of-brokers: {{ .numberOfBrokers }}
+            number-of-replicas: {{ .numberOfReplicas }}
+            priority: {{ .priority }}
+        {{- end }}
+    {{- end }}
     # zeebe.broker.cluster
-    {{- if le (int .Values.global.multiregion.regions) 1 }}
+    {{- /* NOTE: one zone or one region is one headless Service, which the chart can address
+         itself. Beyond that it cannot know how brokers reach each other, so the list is the
+         user's to provide. Keyed on the mode, not on the zone count, because the zone list
+         is only meaningful in zoned mode. */ -}}
+    {{- if ne (include "camundaPlatform.multiregionSpread" $) "true" }}
     initial-contact-points:
-    {{- range (untilStep 0 (int .Values.orchestration.clusterSize) 1) }}
+    {{- range (untilStep 0 (int (include "orchestration.clusterSize" $)) 1) }}
       - {{ include "orchestration.fullname" $ }}-{{ . }}.${K8S_SERVICE_NAME}:{{ $.Values.orchestration.service.internalPort }}
     {{- end }}
     {{- else }}
@@ -315,7 +332,7 @@ zeebe:
 
     # zeebe.broker.network
     network:
-      {{- if gt (int .Values.global.multiregion.regions) 1 }}
+      {{- if or (eq (include "orchestration.zoned" .) "true") (gt (int $mr.regions) 1) }}
       advertisedHost: "${K8S_NAME}.${K8S_SERVICE_NAME}.${K8S_NAMESPACE}.svc"
       {{- else }}
       advertisedHost: "${K8S_NAME}.${K8S_SERVICE_NAME}"
