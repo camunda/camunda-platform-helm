@@ -342,3 +342,29 @@ func pollingDependencies(doHTTP func(*http.Request) (*http.Response, error), sle
 		},
 	}
 }
+
+// A malformed base URL used to reach http.NewRequestWithContext, whose error was discarded,
+// leaving a nil request that panicked on the very next header write. These URLs come from
+// scenario and cluster configuration, so the caller has to see an error it can report.
+func TestRequestBuildersRejectMalformedURLs(t *testing.T) {
+	t.Parallel()
+
+	// A control character is rejected by url.Parse, so the request is never constructed.
+	const malformed = "https://hub\x7f"
+	unreachable := func(*http.Request) (*http.Response, error) {
+		t.Fatal("no request should be issued when the URL cannot be parsed")
+		return nil, nil
+	}
+
+	_, err := clientToken(context.Background(), unreachable, malformed, "client", "secret")
+	require.ErrorContains(t, err, "build token request for client")
+
+	_, err = deployAcceptanceProcess(context.Background(), unreachable, malformed, "tenanta", "pt-accept", "token")
+	require.ErrorContains(t, err, "build deploy request for tenanta")
+
+	err = startAcceptanceProcess(context.Background(), unreachable, malformed, "tenanta", "123", "marker", "token")
+	require.ErrorContains(t, err, "build start request for tenanta")
+
+	_, _, err = httpGet(context.Background(), unreachable, malformed, "token")
+	require.ErrorContains(t, err, "build GET request for")
+}

@@ -421,7 +421,10 @@ func readSecret(ctx context.Context, deps acceptanceDependencies, opts physicalT
 
 func clientToken(ctx context.Context, doHTTP func(*http.Request) (*http.Response, error), hubURL, clientID, secret string) (string, error) {
 	form := url.Values{"grant_type": {"client_credentials"}, "client_id": {clientID}, "client_secret": {secret}}
-	req, _ := http.NewRequestWithContext(ctx, http.MethodPost, hubURL+"/auth/realms/camunda-platform/protocol/openid-connect/token", strings.NewReader(form.Encode()))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, hubURL+"/auth/realms/camunda-platform/protocol/openid-connect/token", strings.NewReader(form.Encode()))
+	if err != nil {
+		return "", fmt.Errorf("build token request for %s: %w", clientID, err)
+	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	body, status, err := doRequest(doHTTP, req)
 	if err != nil {
@@ -492,7 +495,10 @@ func deployAcceptanceProcess(ctx context.Context, doHTTP func(*http.Request) (*h
 	part, _ := writer.CreatePart(header)
 	fmt.Fprintf(part, `<?xml version="1.0" encoding="UTF-8"?><definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" targetNamespace="http://camunda.io/schema/1.0/bpmn"><process id="%s" name="%s" isExecutable="true"><startEvent id="start"/><sequenceFlow id="flow" sourceRef="start" targetRef="end"/><endEvent id="end"/></process></definitions>`, processID, processID)
 	_ = writer.Close()
-	req, _ := http.NewRequestWithContext(ctx, http.MethodPost, orchURL+tenantAPIPath(tenant)+"/deployments", &body)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, orchURL+tenantAPIPath(tenant)+"/deployments", &body)
+	if err != nil {
+		return "", fmt.Errorf("build deploy request for %s: %w", tenant, err)
+	}
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 	req.Header.Set("Authorization", "Bearer "+token)
 	response, status, err := doRequest(doHTTP, req)
@@ -517,7 +523,10 @@ func deployAcceptanceProcess(ctx context.Context, doHTTP func(*http.Request) (*h
 
 func startAcceptanceProcess(ctx context.Context, doHTTP func(*http.Request) (*http.Response, error), orchURL, tenant, key, marker, token string) error {
 	body, _ := json.Marshal(map[string]any{"processDefinitionKey": key, "variables": map[string]string{"physicalTenantAcceptanceMarker": marker}})
-	req, _ := http.NewRequestWithContext(ctx, http.MethodPost, orchURL+tenantAPIPath(tenant)+"/process-instances", bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, orchURL+tenantAPIPath(tenant)+"/process-instances", bytes.NewReader(body))
+	if err != nil {
+		return fmt.Errorf("build start request for %s: %w", tenant, err)
+	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+token)
 	response, status, err := doRequest(doHTTP, req)
@@ -597,7 +606,10 @@ func assertOptimizeExcludesSiblings(ctx context.Context, deps acceptanceDependen
 }
 
 func httpGet(ctx context.Context, doHTTP func(*http.Request) (*http.Response, error), target, token string) ([]byte, int, error) {
-	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, target, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, target, nil)
+	if err != nil {
+		return nil, 0, fmt.Errorf("build GET request for %s: %w", target, err)
+	}
 	if token != "" {
 		req.Header.Set("Authorization", "Bearer "+token)
 	}
