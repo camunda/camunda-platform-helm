@@ -149,33 +149,56 @@ func TestAuditEnterpriseImages(t *testing.T) {
 		}
 	})
 
-	t.Run("a variant is compared only when the target names one", func(t *testing.T) {
+	t.Run("arm64 variants are normalized in both directions", func(t *testing.T) {
 		shortenAuditRetryDelay(t)
-		const variantIndex = `{"manifests":[
-		  {"digest":"sha256:arm64v8","platform":{"os":"linux","architecture":"arm64","variant":"v8"}}
-		]}`
-		stubManifestInspect(t, func(string) ([]byte, error) { return []byte(variantIndex), nil })
-
-		for _, platform := range []string{"linux/arm64", "linux/arm64/v8"} {
-			got, err := AuditEnterpriseImages(context.Background(), entLayer(t, enterpriseValues), platform)
-			if err != nil {
-				t.Fatalf("%s: %v", platform, err)
+		// registry.camunda.cloud advertises arm64 without a variant; a hand-built
+		// index may carry the explicit v8. containerd treats the two as the same
+		// platform, so every combination below has to agree.
+		indexes := map[string]string{
+			"descriptor omits the variant": `{"manifests":[
+			  {"digest":"sha256:arm64","platform":{"os":"linux","architecture":"arm64"}}
+			]}`,
+			"descriptor names v8": `{"manifests":[
+			  {"digest":"sha256:arm64v8","platform":{"os":"linux","architecture":"arm64","variant":"v8"}}
+			]}`,
+		}
+		for name, index := range indexes {
+			for _, platform := range []string{"linux/arm64", "linux/arm64/v8", "linux/aarch64"} {
+				t.Run(name+" / "+platform, func(t *testing.T) {
+					stubManifestInspect(t, func(string) ([]byte, error) { return []byte(index), nil })
+					got, err := AuditEnterpriseImages(context.Background(), entLayer(t, enterpriseValues), platform)
+					if err != nil {
+						t.Fatalf("audit: %v", err)
+					}
+					for _, r := range got {
+						if !r.OK {
+							t.Errorf("%s must select the arm64 child: %s", platform, r.Detail)
+						}
+					}
+				})
 			}
-			for _, r := range got {
-				if !r.OK {
-					t.Errorf("%s should match the v8 entry: %s", platform, r.Detail)
+
+			t.Run(name+" / linux/arm64/v7 selects nothing", func(t *testing.T) {
+				stubManifestInspect(t, func(string) ([]byte, error) { return []byte(index), nil })
+				got, err := AuditEnterpriseImages(context.Background(), entLayer(t, enterpriseValues), "linux/arm64/v7")
+				if err != nil {
+					t.Fatalf("audit: %v", err)
 				}
-			}
+				for _, r := range got {
+					if r.OK {
+						t.Errorf("a genuinely different variant must not be reported as verified: %s", r.Ref)
+					}
+				}
+			})
 		}
+	})
 
-		got, err := AuditEnterpriseImages(context.Background(), entLayer(t, enterpriseValues), "linux/arm64/v7")
-		if err != nil {
-			t.Fatalf("audit: %v", err)
-		}
-		for _, r := range got {
-			if r.OK {
-				t.Errorf("a mismatched variant must not be reported as verified: %s", r.Ref)
-			}
+	t.Run("a bare os is rejected rather than resolved against the host", func(t *testing.T) {
+		// platforms.Parse("linux") succeeds by filling in the running host's
+		// architecture, which would mean different things on an amd64 runner and
+		// an arm64 workstation.
+		if err := ValidateImagePlatform("linux"); err == nil {
+			t.Fatal("a bare os must not be accepted")
 		}
 	})
 

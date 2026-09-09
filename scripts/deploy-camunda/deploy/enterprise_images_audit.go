@@ -21,6 +21,8 @@ import (
 	"os/exec"
 	"strings"
 	"time"
+
+	"github.com/containerd/platforms"
 )
 
 const DefaultImagePlatform = defaultImagePlatform
@@ -72,14 +74,14 @@ func AuditEnterpriseImages(ctx context.Context, valuesFile, platform string) ([]
 // so a typo reports itself once instead of as a green run that resolved only
 // indexes.
 func ValidateImagePlatform(platform string) error {
-	parts := strings.Split(platform, "/")
-	if len(parts) < 2 || len(parts) > 3 {
+	// The arity check must precede the parse: platforms.Parse("linux") succeeds
+	// by filling in the host architecture, which would resolve differently on an
+	// amd64 runner than on an arm64 workstation.
+	if n := len(strings.Split(platform, "/")); n < 2 || n > 3 {
 		return fmt.Errorf("platform %q must be os/arch or os/arch/variant", platform)
 	}
-	for _, p := range parts {
-		if strings.TrimSpace(p) == "" {
-			return fmt.Errorf("platform %q has an empty segment", platform)
-		}
+	if _, err := platforms.Parse(platform); err != nil {
+		return fmt.Errorf("platform %q: %w", platform, err)
 	}
 	return nil
 }

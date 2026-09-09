@@ -22,6 +22,8 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/containerd/platforms"
+	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 	"golang.org/x/sync/errgroup"
 
 	"scripts/camunda-core/pkg/executil"
@@ -183,23 +185,25 @@ func resolveImageForPlatform(ctx context.Context, ref, platform string) imageRes
 	return res
 }
 
-// childDigestForPlatform finds the descriptor matching "os/arch" or
-// "os/arch/variant". A variant is compared only when the target names one, so
-// "linux/arm64" still matches an index entry carrying "v8". The exact match
-// skips the "unknown/unknown" entries attestation manifests carry.
+// childDigestForPlatform finds the descriptor the target platform selects.
+// Matching is delegated to containerd's normalizing matcher, so a target of
+// "linux/arm64/v8" selects a descriptor that omits the variant, "linux/aarch64"
+// selects an arm64 descriptor, and "linux/arm64/v7" selects neither. The
+// "unknown/unknown" entries attestation manifests carry never match.
 func childDigestForPlatform(index imageIndex, platform string) (string, bool) {
-	want := strings.Split(platform, "/")
-	if len(want) < 2 || len(want) > 3 {
+	target, err := platforms.Parse(platform)
+	if err != nil {
 		return "", false
 	}
+	matcher := platforms.OnlyStrict(target)
 	for _, m := range index.Manifests {
-		if m.Platform.OS != want[0] || m.Platform.Architecture != want[1] {
-			continue
+		if matcher.Match(ocispec.Platform{
+			OS:           m.Platform.OS,
+			Architecture: m.Platform.Architecture,
+			Variant:      m.Platform.Variant,
+		}) {
+			return m.Digest, true
 		}
-		if len(want) == 3 && m.Platform.Variant != want[2] {
-			continue
-		}
-		return m.Digest, true
 	}
 	return "", false
 }
