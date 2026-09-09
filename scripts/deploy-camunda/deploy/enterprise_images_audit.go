@@ -29,16 +29,25 @@ type EnterpriseImageResult struct {
 	Ref    string
 	OK     bool
 	Detail string
+	// ChildDenied marks the camunda-platform-helm#6804 shape specifically: the
+	// registry served the index and then refused the child that index lists.
+	ChildDenied bool
 }
 
 const enterpriseImageAuditAttempts = 3
 
 var enterpriseImageAuditRetryDelay = 2 * time.Second
 
-func AuditEnterpriseImages(ctx context.Context, valuesFile, platform string) []EnterpriseImageResult {
-	images := collectPinnedImages([]string{valuesFile})
+func AuditEnterpriseImages(ctx context.Context, valuesFile, platform string) ([]EnterpriseImageResult, error) {
+	if err := ValidateImagePlatform(platform); err != nil {
+		return nil, err
+	}
+	images, loadErrs := collectPinnedImagesWithErrors([]string{valuesFile})
+	if len(loadErrs) > 0 {
+		return nil, errors.Join(loadErrs...)
+	}
 	if len(images) == 0 {
-		return nil
+		return nil, nil
 	}
 
 	resolutions := resolveImagesConcurrently(ctx, images, platform)
@@ -56,7 +65,23 @@ func AuditEnterpriseImages(ctx context.Context, valuesFile, platform string) []E
 	for _, res := range resolutions {
 		results = append(results, auditResult(res))
 	}
-	return results
+	return results, nil
+}
+
+// ValidateImagePlatform rejects a target the index match could never satisfy,
+// so a typo reports itself once instead of as a green run that resolved only
+// indexes.
+func ValidateImagePlatform(platform string) error {
+	parts := strings.Split(platform, "/")
+	if len(parts) < 2 || len(parts) > 3 {
+		return fmt.Errorf("platform %q must be os/arch or os/arch/variant", platform)
+	}
+	for _, p := range parts {
+		if strings.TrimSpace(p) == "" {
+			return fmt.Errorf("platform %q has an empty segment", platform)
+		}
+	}
+	return nil
 }
 
 func unresolvedImages(images []pinnedImage, resolutions []imageResolution) ([]pinnedImage, []int) {
@@ -88,10 +113,15 @@ func auditResult(res imageResolution) EnterpriseImageResult {
 		cause, reason = res.Unverified, "could not be verified"
 	}
 	if cause == nil {
+		if res.Indexed && res.Digest == "" {
+			return EnterpriseImageResult{Ref: res.Ref, Detail: fmt.Sprintf(
+				"%s: the index advertises no %s child; it carries %s",
+				res.Ref, res.Platform, strings.Join(res.Advertised, ", "))}
+		}
 		return EnterpriseImageResult{Ref: res.Ref, OK: true}
 	}
 	if res.Digest != "" {
-		return EnterpriseImageResult{Ref: res.Ref, Detail: fmt.Sprintf(
+		return EnterpriseImageResult{Ref: res.Ref, ChildDenied: res.Err != nil, Detail: fmt.Sprintf(
 			"%s on %s: child manifest %s %s: %s",
 			res.Ref, res.Platform, res.Digest, reason, causeText(cause))}
 	}

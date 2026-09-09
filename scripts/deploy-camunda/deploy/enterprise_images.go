@@ -62,10 +62,23 @@ var dockerManifestInspect = func(ctx context.Context, ref string) ([]byte, error
 // block that pins registry, repository and tag together, deduplicated and sorted.
 // The predicate mirrors the one `deploy-camunda check-enterprise-images` applies.
 func collectPinnedImages(valuesFiles []string) []pinnedImage {
+	images, _ := collectPinnedImagesWithErrors(valuesFiles)
+	return images
+}
+
+// collectPinnedImagesWithErrors is collectPinnedImages with the per-file load
+// failures it otherwise discards. An absent "image:" block is not a failure; an
+// unreadable or unparseable file is.
+func collectPinnedImagesWithErrors(valuesFiles []string) ([]pinnedImage, []error) {
 	seen := map[string]string{}
+	var errs []error
 	for _, file := range valuesFiles {
 		doc, err := loadValuesDoc(file)
-		if err != nil || doc == nil {
+		if err != nil {
+			errs = append(errs, fmt.Errorf("%s: %w", file, err))
+			continue
+		}
+		if doc == nil {
 			continue
 		}
 		walkImageBlocks(doc, func(_ string, img map[string]any) {
@@ -84,7 +97,7 @@ func collectPinnedImages(valuesFiles []string) []pinnedImage {
 		out = append(out, pinnedImage{Ref: ref, Source: source})
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].Ref < out[j].Ref })
-	return out
+	return out, errs
 }
 
 // fullyPinnedRef renders "registry/repository:tag" when all three are present
@@ -122,6 +135,8 @@ type imageResolution struct {
 	Source     string // values file the reference came from
 	Platform   string
 	Digest     string
+	Indexed    bool     // the reference resolved to a multi-platform index
+	Advertised []string // os/arch(/variant) entries the index carries
 	Err        error
 	Unverified error
 }
@@ -150,10 +165,12 @@ func resolveImageForPlatform(ctx context.Context, ref, platform string) imageRes
 	if len(index.Manifests) == 0 {
 		return res // single-platform image, nothing further to assert
 	}
+	res.Indexed = true
+	res.Advertised = advertisedPlatforms(index)
 
 	digest, ok := childDigestForPlatform(index, platform)
 	if !ok {
-		return res // not built for this platform
+		return res // the index advertises no child for this platform
 	}
 	res.Digest = digest
 
@@ -166,15 +183,40 @@ func resolveImageForPlatform(ctx context.Context, ref, platform string) imageRes
 	return res
 }
 
-// childDigestForPlatform finds the descriptor matching "os/arch". The exact
-// match skips the "unknown/unknown" entries attestation manifests carry.
+// childDigestForPlatform finds the descriptor matching "os/arch" or
+// "os/arch/variant". A variant is compared only when the target names one, so
+// "linux/arm64" still matches an index entry carrying "v8". The exact match
+// skips the "unknown/unknown" entries attestation manifests carry.
 func childDigestForPlatform(index imageIndex, platform string) (string, bool) {
+	want := strings.Split(platform, "/")
+	if len(want) < 2 || len(want) > 3 {
+		return "", false
+	}
 	for _, m := range index.Manifests {
-		if m.Platform.OS+"/"+m.Platform.Architecture == platform {
-			return m.Digest, true
+		if m.Platform.OS != want[0] || m.Platform.Architecture != want[1] {
+			continue
 		}
+		if len(want) == 3 && m.Platform.Variant != want[2] {
+			continue
+		}
+		return m.Digest, true
 	}
 	return "", false
+}
+
+// advertisedPlatforms renders the index's entries for a diagnostic, so a target
+// that matches nothing can be told apart from an image that is genuinely absent.
+func advertisedPlatforms(index imageIndex) []string {
+	out := make([]string, 0, len(index.Manifests))
+	for _, m := range index.Manifests {
+		p := m.Platform.OS + "/" + m.Platform.Architecture
+		if m.Platform.Variant != "" {
+			p += "/" + m.Platform.Variant
+		}
+		out = append(out, p)
+	}
+	sort.Strings(out)
+	return out
 }
 
 // imageCheckConcurrency bounds the parallel registry round-trips.

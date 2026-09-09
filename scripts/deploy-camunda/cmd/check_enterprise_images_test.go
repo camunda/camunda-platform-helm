@@ -44,10 +44,10 @@ func enterpriseRepo(t *testing.T, chartsWithOverlay ...string) string {
 	return root
 }
 
-func stubAudit(t *testing.T, fn func(valuesFile string) []deploy.EnterpriseImageResult) {
+func stubAudit(t *testing.T, fn func(valuesFile string) ([]deploy.EnterpriseImageResult, error)) {
 	t.Helper()
 	orig := auditEnterpriseImages
-	auditEnterpriseImages = func(_ context.Context, valuesFile, _ string) []deploy.EnterpriseImageResult {
+	auditEnterpriseImages = func(_ context.Context, valuesFile, _ string) ([]deploy.EnterpriseImageResult, error) {
 		return fn(valuesFile)
 	}
 	t.Cleanup(func() { auditEnterpriseImages = orig })
@@ -76,8 +76,8 @@ func runCheckEnterpriseImages(t *testing.T, args ...string) (string, error) {
 func TestCheckEnterpriseImagesCommand(t *testing.T) {
 	t.Run("every chart passing exits zero", func(t *testing.T) {
 		repo := enterpriseRepo(t, "camunda-platform-8.7", "camunda-platform-8.8")
-		stubAudit(t, func(string) []deploy.EnterpriseImageResult {
-			return []deploy.EnterpriseImageResult{{Ref: "reg/img:1", OK: true}}
+		stubAudit(t, func(string) ([]deploy.EnterpriseImageResult, error) {
+			return []deploy.EnterpriseImageResult{{Ref: "reg/img:1", OK: true}}, nil
 		})
 
 		out, err := runCheckEnterpriseImages(t, "--repo-root", repo)
@@ -97,23 +97,23 @@ func TestCheckEnterpriseImagesCommand(t *testing.T) {
 
 	t.Run("one failing chart still reports the passing ones and exits non-zero", func(t *testing.T) {
 		repo := enterpriseRepo(t, "camunda-platform-8.7", "camunda-platform-8.8")
-		stubAudit(t, func(valuesFile string) []deploy.EnterpriseImageResult {
+		stubAudit(t, func(valuesFile string) ([]deploy.EnterpriseImageResult, error) {
 			if strings.Contains(valuesFile, "8.7") {
 				return []deploy.EnterpriseImageResult{
-					{Ref: "reg/broken:1", Detail: "reg/broken:1 on linux/amd64: child manifest sha256:deadbeef not pullable"},
+					{Ref: "reg/broken:1", ChildDenied: true, Detail: "reg/broken:1 on linux/amd64: child manifest sha256:deadbeef not pullable"},
 					{Ref: "reg/other:2", Detail: "reg/other:2 on linux/amd64: could not be verified"},
 					{Ref: "reg/fine:3", OK: true},
-				}
+				}, nil
 			}
-			return []deploy.EnterpriseImageResult{{Ref: "reg/img:1", OK: true}}
+			return []deploy.EnterpriseImageResult{{Ref: "reg/img:1", OK: true}}, nil
 		})
 
 		out, err := runCheckEnterpriseImages(t, "--repo-root", repo)
 		if err == nil {
 			t.Fatalf("a broken image must fail the run:\n%s", out)
 		}
-		if !strings.Contains(err.Error(), "6804") {
-			t.Errorf("error should point at the tracking issue, got %v", err)
+		if !strings.Contains(out, "6804") {
+			t.Errorf("an image-level failure should point at the tracking issue:\n%s", out)
 		}
 		for _, want := range []string{
 			"✗ reg/broken:1 on linux/amd64: child manifest sha256:deadbeef not pullable",
@@ -130,9 +130,9 @@ func TestCheckEnterpriseImagesCommand(t *testing.T) {
 
 	t.Run("a chart without the overlay is skipped without a registry call", func(t *testing.T) {
 		repo := enterpriseRepo(t)
-		stubAudit(t, func(valuesFile string) []deploy.EnterpriseImageResult {
+		stubAudit(t, func(valuesFile string) ([]deploy.EnterpriseImageResult, error) {
 			t.Errorf("unexpected audit of %s", valuesFile)
-			return nil
+			return nil, nil
 		})
 
 		out, err := runCheckEnterpriseImages(t, "--repo-root", repo, "--chart-version", "8.7")
@@ -147,9 +147,9 @@ func TestCheckEnterpriseImagesCommand(t *testing.T) {
 	t.Run("an empty --chart-version is not a filter", func(t *testing.T) {
 		repo := enterpriseRepo(t, "camunda-platform-8.7", "camunda-platform-8.8")
 		var audited []string
-		stubAudit(t, func(valuesFile string) []deploy.EnterpriseImageResult {
+		stubAudit(t, func(valuesFile string) ([]deploy.EnterpriseImageResult, error) {
 			audited = append(audited, valuesFile)
-			return []deploy.EnterpriseImageResult{{Ref: "reg/img:1", OK: true}}
+			return []deploy.EnterpriseImageResult{{Ref: "reg/img:1", OK: true}}, nil
 		})
 
 		if out, err := runCheckEnterpriseImages(t, "--repo-root", repo, "--chart-version", ""); err != nil {
@@ -162,9 +162,9 @@ func TestCheckEnterpriseImagesCommand(t *testing.T) {
 
 	t.Run("a missing docker binary is one clear error, not one per image", func(t *testing.T) {
 		repo := enterpriseRepo(t, "camunda-platform-8.7")
-		stubAudit(t, func(valuesFile string) []deploy.EnterpriseImageResult {
+		stubAudit(t, func(valuesFile string) ([]deploy.EnterpriseImageResult, error) {
 			t.Errorf("unexpected audit of %s without docker", valuesFile)
-			return nil
+			return nil, nil
 		})
 		root := NewRootCommand()
 		root.AddCommand(newCheckEnterpriseImagesCommand())
@@ -180,6 +180,64 @@ func TestCheckEnterpriseImagesCommand(t *testing.T) {
 		}
 		if !strings.Contains(err.Error(), "docker is required") {
 			t.Errorf("error should name the missing tool, got %v", err)
+		}
+	})
+
+	t.Run("a chart whose overlay cannot be loaded fails without stopping the others", func(t *testing.T) {
+		repo := enterpriseRepo(t, "camunda-platform-8.7", "camunda-platform-8.8")
+		stubAudit(t, func(valuesFile string) ([]deploy.EnterpriseImageResult, error) {
+			if strings.Contains(valuesFile, "8.7") {
+				return nil, errors.New("yaml: line 3: found unexpected end of stream")
+			}
+			return []deploy.EnterpriseImageResult{{Ref: "reg/img:1", OK: true}}, nil
+		})
+
+		out, err := runCheckEnterpriseImages(t, "--repo-root", repo)
+		if err == nil {
+			t.Fatalf("an unloadable overlay must not report validation passed:\n%s", out)
+		}
+		for _, want := range []string{
+			"found unexpected end of stream",
+			"✗ camunda-platform-8.7 validation failed",
+			"✓ camunda-platform-8.8 validation passed",
+		} {
+			if !strings.Contains(out, want) {
+				t.Errorf("output missing %q:\n%s", want, out)
+			}
+		}
+		if strings.Contains(out, "camunda-platform-8.7 validation passed") {
+			t.Errorf("a load failure must never read as a pass:\n%s", out)
+		}
+		if strings.Contains(out, "6804") {
+			t.Errorf("a load failure is not the registry defect and must not cite it:\n%s", out)
+		}
+	})
+
+	t.Run("an image the index never advertised does not cite the registry defect", func(t *testing.T) {
+		repo := enterpriseRepo(t, "camunda-platform-8.7")
+		stubAudit(t, func(string) ([]deploy.EnterpriseImageResult, error) {
+			return []deploy.EnterpriseImageResult{
+				{Ref: "reg/img:1", Detail: "reg/img:1: the index advertises no linux/s390x child; it carries linux/amd64"},
+			}, nil
+		})
+
+		out, err := runCheckEnterpriseImages(t, "--repo-root", repo, "--platform", "linux/s390x")
+		if err == nil {
+			t.Fatalf("an unmatched platform must fail:\n%s", out)
+		}
+		if strings.Contains(out, "6804") {
+			t.Errorf("an index that never advertised the platform is not #6804:\n%s", out)
+		}
+	})
+
+	t.Run("a malformed platform is rejected before any chart is read", func(t *testing.T) {
+		repo := enterpriseRepo(t, "camunda-platform-8.7")
+		stubAudit(t, func(valuesFile string) ([]deploy.EnterpriseImageResult, error) {
+			t.Errorf("unexpected audit of %s", valuesFile)
+			return nil, nil
+		})
+		if _, err := runCheckEnterpriseImages(t, "--repo-root", repo, "--platform", "linux"); err == nil {
+			t.Fatal("a malformed --platform must fail the run")
 		}
 	})
 

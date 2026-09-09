@@ -44,7 +44,11 @@ func shortenAuditRetryDelay(t *testing.T) {
 
 func auditResults(t *testing.T, body string) []EnterpriseImageResult {
 	t.Helper()
-	return AuditEnterpriseImages(context.Background(), entLayer(t, body), "linux/amd64")
+	got, err := AuditEnterpriseImages(context.Background(), entLayer(t, body), "linux/amd64")
+	if err != nil {
+		t.Fatalf("audit: %v", err)
+	}
+	return got
 }
 
 func TestAuditEnterpriseImages(t *testing.T) {
@@ -114,7 +118,7 @@ func TestAuditEnterpriseImages(t *testing.T) {
 		}
 	})
 
-	t.Run("single-platform images and platforms never built stay OK", func(t *testing.T) {
+	t.Run("a single-platform manifest has no child to assert", func(t *testing.T) {
 		shortenAuditRetryDelay(t)
 		stubManifestInspect(t, func(string) ([]byte, error) { return []byte(`{"schemaVersion":2,"config":{}}`), nil })
 		for _, r := range auditResults(t, enterpriseValues) {
@@ -123,10 +127,83 @@ func TestAuditEnterpriseImages(t *testing.T) {
 			}
 		}
 
+	})
+
+	t.Run("an index advertising no child for the target fails and names what it carries", func(t *testing.T) {
+		shortenAuditRetryDelay(t)
 		stubManifestInspect(t, func(string) ([]byte, error) { return []byte(multiArchIndex), nil })
-		for _, r := range AuditEnterpriseImages(context.Background(), entLayer(t, enterpriseValues), "linux/s390x") {
-			if !r.OK {
-				t.Errorf("platform never built for %s must not fail: %s", r.Ref, r.Detail)
+
+		got, err := AuditEnterpriseImages(context.Background(), entLayer(t, enterpriseValues), "linux/s390x")
+		if err != nil {
+			t.Fatalf("audit: %v", err)
+		}
+		for _, r := range got {
+			if r.OK {
+				t.Fatalf("%s resolved only the index; the guardrail must not report that as verified", r.Ref)
+			}
+			for _, want := range []string{"advertises no linux/s390x child", "linux/amd64", "linux/arm64"} {
+				if !strings.Contains(r.Detail, want) {
+					t.Errorf("detail %q must contain %q", r.Detail, want)
+				}
+			}
+		}
+	})
+
+	t.Run("a variant is compared only when the target names one", func(t *testing.T) {
+		shortenAuditRetryDelay(t)
+		const variantIndex = `{"manifests":[
+		  {"digest":"sha256:arm64v8","platform":{"os":"linux","architecture":"arm64","variant":"v8"}}
+		]}`
+		stubManifestInspect(t, func(string) ([]byte, error) { return []byte(variantIndex), nil })
+
+		for _, platform := range []string{"linux/arm64", "linux/arm64/v8"} {
+			got, err := AuditEnterpriseImages(context.Background(), entLayer(t, enterpriseValues), platform)
+			if err != nil {
+				t.Fatalf("%s: %v", platform, err)
+			}
+			for _, r := range got {
+				if !r.OK {
+					t.Errorf("%s should match the v8 entry: %s", platform, r.Detail)
+				}
+			}
+		}
+
+		got, err := AuditEnterpriseImages(context.Background(), entLayer(t, enterpriseValues), "linux/arm64/v7")
+		if err != nil {
+			t.Fatalf("audit: %v", err)
+		}
+		for _, r := range got {
+			if r.OK {
+				t.Errorf("a mismatched variant must not be reported as verified: %s", r.Ref)
+			}
+		}
+	})
+
+	t.Run("a values file that cannot be parsed fails instead of reporting zero images", func(t *testing.T) {
+		got, err := AuditEnterpriseImages(context.Background(),
+			entLayer(t, "identityPostgresql:\n  image:\n   registry: \"unterminated\n"), "linux/amd64")
+		if err == nil {
+			t.Fatalf("a malformed overlay must not pass as an empty image set, got %v", got)
+		}
+		if got != nil {
+			t.Errorf("no image results should be reported alongside a load failure, got %v", got)
+		}
+	})
+
+	t.Run("a values file that cannot be read fails", func(t *testing.T) {
+		if _, err := AuditEnterpriseImages(context.Background(), "/nonexistent/values-enterprise.yaml", "linux/amd64"); err == nil {
+			t.Fatal("an unreadable overlay must fail the chart")
+		}
+	})
+
+	t.Run("a malformed platform is rejected before any registry call", func(t *testing.T) {
+		stubManifestInspect(t, func(ref string) ([]byte, error) {
+			t.Errorf("unexpected registry call for %s", ref)
+			return nil, nil
+		})
+		for _, platform := range []string{"", "linux", "linux/", "/amd64", "linux/arm64/v8/extra"} {
+			if _, err := AuditEnterpriseImages(context.Background(), entLayer(t, enterpriseValues), platform); err == nil {
+				t.Errorf("platform %q must be rejected", platform)
 			}
 		}
 	})
@@ -212,7 +289,10 @@ func TestAuditEnterpriseImages(t *testing.T) {
 
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel()
-		got := AuditEnterpriseImages(ctx, entLayer(t, enterpriseValues), "linux/amd64")
+		got, err := AuditEnterpriseImages(ctx, entLayer(t, enterpriseValues), "linux/amd64")
+		if err != nil {
+			t.Fatalf("audit: %v", err)
+		}
 		if len(got) != 3 {
 			t.Fatalf("got %d results, want 3", len(got))
 		}

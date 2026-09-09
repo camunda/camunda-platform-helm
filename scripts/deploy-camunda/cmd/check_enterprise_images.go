@@ -59,10 +59,16 @@ any chart references an image that is not pullable.`,
 		Args:          cobra.NoArgs,
 		SilenceUsage:  true,
 		SilenceErrors: true,
+		// Registry auditing needs no chart, namespace or release, so the root's
+		// deploy validation is replaced rather than excluded by name.
+		PersistentPreRunE: func(*cobra.Command, []string) error { return nil },
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 			defer stop()
 
+			if err := deploy.ValidateImagePlatform(platform); err != nil {
+				return err
+			}
 			if _, err := lookPath("docker"); err != nil {
 				return fmt.Errorf("docker is required to resolve image manifests: %w", err)
 			}
@@ -77,7 +83,7 @@ any chart references an image that is not pullable.`,
 			}
 
 			out := cmd.OutOrStdout()
-			failedCharts := 0
+			failedCharts, childDenials := 0, 0
 			for _, chart := range charts {
 				valuesFile := filepath.Join(root, "charts", chart, "values-enterprise.yaml")
 				if _, err := os.Stat(valuesFile); err != nil {
@@ -86,7 +92,12 @@ any chart references an image that is not pullable.`,
 				}
 
 				fmt.Fprintf(out, "\nValidating %s\n", chart)
-				results := auditEnterpriseImages(ctx, valuesFile, platform)
+				results, auditErr := auditEnterpriseImages(ctx, valuesFile, platform)
+				if auditErr != nil {
+					failedCharts++
+					fmt.Fprintf(out, "  ✗ %v\n✗ %s validation failed\n", auditErr, chart)
+					continue
+				}
 				failed := 0
 				for _, r := range results {
 					if r.OK {
@@ -94,6 +105,9 @@ any chart references an image that is not pullable.`,
 						continue
 					}
 					failed++
+					if r.ChildDenied {
+						childDenials++
+					}
 					fmt.Fprintf(out, "  ✗ %s\n", r.Detail)
 				}
 				if failed > 0 {
@@ -105,10 +119,12 @@ any chart references an image that is not pullable.`,
 			}
 
 			if failedCharts > 0 {
-				return fmt.Errorf(
-					"%d chart(s) reference enterprise images that are not pullable on %s; "+
-						"a pin change will not help — see camunda/camunda-platform-helm#6804",
-					failedCharts, platform)
+				if childDenials > 0 {
+					fmt.Fprintln(out, "\nWhen the registry serves an index but denies the child it advertises, "+
+						"a pin change will not help — see camunda/camunda-platform-helm#6804.")
+				}
+				return fmt.Errorf("%d of %d chart(s) failed enterprise image validation on %s",
+					failedCharts, len(charts), platform)
 			}
 			return nil
 		},

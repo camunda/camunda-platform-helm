@@ -7,6 +7,9 @@ name: Check values-enterprise.yaml
   pull_request:
     paths:
       - 'charts/camunda-platform-*/values-enterprise.yaml'
+      - 'scripts/deploy-camunda/cmd/check_enterprise_images.go'
+      - 'scripts/deploy-camunda/deploy/enterprise_images*.go'
+      - '.github/actions/setup-deploy-camunda/**'
       - '.github/workflows/check-values-enterprise.yaml'
   workflow_dispatch:
     inputs:
