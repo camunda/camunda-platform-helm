@@ -742,6 +742,13 @@ reason. Two guards produce this:
 Auth failures are *not* treated as terminal — they are covered by the
 credential preflight and a retry can still fix them.
 
+The same index-and-child probe runs standalone as `deploy-camunda
+check-enterprise-images`, which gates `values-enterprise.yaml` pull requests and
+runs daily against the real registry
+([workflow](../../.github/workflows/check-values-enterprise.yaml)). It differs
+from the preflight in one respect: there Docker and credentials are guaranteed,
+so an image it cannot verify fails the run instead of warning.
+
 Neither guard can make a broken deploy succeed; they only shorten one that
 was already doomed. To opt out:
 

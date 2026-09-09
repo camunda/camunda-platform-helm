@@ -107,6 +107,9 @@ func NewRootCommand() *cobra.Command {
 				if cmd.Name() == "triage" {
 					return nil
 				}
+				if cmd.Name() == "check-enterprise-images" {
+					return nil
+				}
 				// diagnostics is a read-only namespace dump; no chart config needed.
 				if cmd.Name() == "diagnostics" || (cmd.Parent() != nil && cmd.Parent().Name() == "diagnostics") {
 					return nil
@@ -593,6 +596,7 @@ func Execute() error {
 	rootCmd.AddCommand(newCICommand())
 	rootCmd.AddCommand(newE2EEnvCommand())
 	rootCmd.AddCommand(newTopologyCommand())
+	rootCmd.AddCommand(newCheckEnterpriseImagesCommand())
 	rootCmd.AddCommand(newVersionCommand())
 
 	err := rootCmd.Execute()

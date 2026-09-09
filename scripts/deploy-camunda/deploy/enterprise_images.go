@@ -60,7 +60,7 @@ var dockerManifestInspect = func(ctx context.Context, ref string) ([]byte, error
 
 // collectPinnedImages walks the given values layers and returns every image
 // block that pins registry, repository and tag together, deduplicated and sorted.
-// The predicate mirrors the yq expression in check-values-enterprise.sh.
+// The predicate mirrors the one `deploy-camunda check-enterprise-images` applies.
 func collectPinnedImages(valuesFiles []string) []pinnedImage {
 	seen := map[string]string{}
 	for _, file := range valuesFiles {
