@@ -271,10 +271,10 @@ spec:
             {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
             {{- include "camundaPlatform.caBundleEnv" . | nindent 12 }}
             {{- end }}
-            {{- /* Gated on the same helper the probes use, so an optimize.env
-                 SERVER_SSL_ENABLED=false override cannot leave HTTPS wiring in
-                 place while the probes fall back to plaintext. */}}
-            {{- if and (eq (include "camundaPlatform.optimizeServerTLSEnabled" .) "true") .Values.global.tls.optimize.enabled }}
+            {{- /* Gated on the same helper the probes, the Ingress backend and
+                 the in-cluster URLs derive from, so the wiring and the derived
+                 transport can never disagree. */}}
+            {{- if eq (include "camundaPlatform.optimizeServerTLSEnabled" .) "true" }}
             {{- if .Values.global.tls.optimize.cert.secret.existingSecret }}
             {{- /* Optimize is NOT a stock Spring Boot server here: OptimizeTomcatConfig
                  always installs its own HTTPS connector and builds the SSLHostConfig
@@ -287,7 +287,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: {{ coalesce .Values.global.tls.optimize.keystorePassword.secret.existingSecret .Values.global.tls.optimize.cert.secret.existingSecret }}
-                  key: {{ .Values.global.tls.optimize.keystorePassword.secret.existingSecretKey }}
+                  key: {{ .Values.global.tls.optimize.keystorePassword.secret.existingSecretKey | default "keystore-password" }}
             {{- /* Serve TLS on the container's existing named port and refuse
                  plaintext, matching how Connectors/Orchestration flip the scheme
                  of one port rather than exposing a second one. A non-positive

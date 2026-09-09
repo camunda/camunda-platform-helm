@@ -173,7 +173,7 @@ Default user: "{{ .Values.identity.firstUser.username }}". No password is config
 
 ## Optimize TLS
 
-- Server TLS: enabled ({{ .Values.global.tls.optimize.type | default "pkcs12" }} mode{{ if .Values.global.tls.optimize.cert.secret.existingSecret }}, secret: {{ .Values.global.tls.optimize.cert.secret.existingSecret }}{{ end }})
+- Server TLS: enabled (PKCS12 keystore{{ if .Values.global.tls.optimize.cert.secret.existingSecret }}, secret: {{ .Values.global.tls.optimize.cert.secret.existingSecret }}{{ end }}), plaintext HTTP disabled
 {{- if .Values.global.tls.optimize.autoRollout }}
 - autoRollout: on (cert content changes will roll Optimize on next helm upgrade; password-only rotations require manual `kubectl rollout restart`)
 {{- else }}

@@ -429,7 +429,7 @@ global:
       cert:
         ## @extra global.tls.optimize.cert.secret configuration to provide the cert secret.
         secret:
-          ## @param global.tls.optimize.cert.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the cert material. Empty disables the chart-managed wiring; the operator can still hand-wire via optimize.extraVolumes and optimize.env.
+          ## @param global.tls.optimize.cert.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the cert material. Empty disables the chart-managed wiring. Hand-wiring is still possible through optimize.extraVolumes plus optimize.env entries for CAMUNDA_OPTIMIZE_CONTAINER_KEYSTORE_LOCATION / CAMUNDA_OPTIMIZE_CONTAINER_KEYSTORE_PASSWORD (never SERVER_SSL_*, which the render rejects), but then the chart cannot see that TLS is on: also set optimize.startupProbe.scheme / readinessProbe.scheme / livenessProbe.scheme to HTTPS, and note the chart's Ingress keeps an HTTP backend for Optimize.
           existingSecret: ""
           ## @param global.tls.optimize.cert.secret.existingSecretKey defines the key within the existing secret object. Defaults to keystore.p12.
           existingSecretKey: ""

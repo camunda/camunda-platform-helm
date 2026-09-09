@@ -504,7 +504,10 @@ gRPC server to crash on startup. Fail loudly at render time instead.
        pod; fail the render with the working alternative instead. */}}
   {{- $sslEnvNames := list -}}
   {{- range $e := (.Values.optimize.env | default list) -}}
-    {{- if hasPrefix "SERVER_SSL" ($e.name | default "") -}}
+    {{/* Upper-cased before matching: Spring's relaxed binding maps
+         server_ssl_enabled just as it maps SERVER_SSL_ENABLED, so a
+         case-sensitive check would let the same footgun through. */}}
+    {{- if hasPrefix "SERVER_SSL" (upper ($e.name | default "")) -}}
       {{- $sslEnvNames = append $sslEnvNames $e.name -}}
     {{- end -}}
   {{- end }}
@@ -512,7 +515,7 @@ gRPC server to crash on startup. Fail loudly at render time instead.
     {{- $errorMessage := printf "%s %s %s"
         (printf "[camunda][error] optimize.env sets [%s], which the Optimize server does not support." (join ", " $sslEnvNames))
         "Optimize builds its TLS connector from container.keystore.* and never reads server.ssl.*; setting these makes Tomcat abort at startup with \"Multiple SSLHostConfig elements were provided for the host name [_default_]\"."
-        "Use global.tls.optimize.enabled with global.tls.optimize.cert.secret.existingSecret, or hand-wire CAMUNDA_OPTIMIZE_CONTAINER_KEYSTORE_LOCATION / CAMUNDA_OPTIMIZE_CONTAINER_KEYSTORE_PASSWORD plus the matching optimize.extraVolumes / extraVolumeMounts entries."
+        "Set global.tls.optimize.enabled with global.tls.optimize.cert.secret.existingSecret instead; that is the only path the chart's probe schemes and Ingress backend follow. Hand-wiring CAMUNDA_OPTIMIZE_CONTAINER_KEYSTORE_LOCATION / CAMUNDA_OPTIMIZE_CONTAINER_KEYSTORE_PASSWORD via optimize.env also works, but then you must set optimize.{startup,readiness,liveness}Probe.scheme to HTTPS yourself."
     -}}
     {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
   {{- end }}
@@ -527,7 +530,7 @@ gRPC server to crash on startup. Fail loudly at render time instead.
     {{- if not .Values.global.tls.optimize.cert.secret.existingSecret }}
       {{- $errorMessage := printf "%s %s"
           "[camunda][error] Optimize server TLS is enabled but no server cert is configured."
-          "Set global.tls.optimize.cert.secret.existingSecret to a Secret holding a PKCS12 keystore so the chart mounts it, or leave global.tls.optimize.enabled: false and hand-wire CAMUNDA_OPTIMIZE_CONTAINER_KEYSTORE_LOCATION / CAMUNDA_OPTIMIZE_CONTAINER_KEYSTORE_PASSWORD plus the matching optimize.extraVolumes / extraVolumeMounts entries."
+          "Set global.tls.optimize.cert.secret.existingSecret to a Secret holding a PKCS12 keystore so the chart mounts it. To manage the keystore yourself instead, leave global.tls.optimize.enabled: false, mount it through optimize.extraVolumes / extraVolumeMounts with optimize.env entries for CAMUNDA_OPTIMIZE_CONTAINER_KEYSTORE_LOCATION / CAMUNDA_OPTIMIZE_CONTAINER_KEYSTORE_PASSWORD, and set optimize.{startup,readiness,liveness}Probe.scheme to HTTPS -- the chart cannot detect that transport on its own."
       -}}
       {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
     {{- end }}

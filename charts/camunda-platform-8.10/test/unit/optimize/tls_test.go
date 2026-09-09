@@ -406,6 +406,19 @@ func (s *OptimizeTLSTest) TestServerSslIsRejected() {
 			},
 		},
 		{
+			// Spring's relaxed binding treats this as server.ssl.enabled too.
+			Name: "lower-cased server_ssl_enabled in optimize.env is rejected",
+			Values: map[string]string{
+				"optimize.enabled":     "true",
+				"optimize.env[0].name": "server_ssl_enabled",
+			},
+			RenderTemplateExtraArgs: []string{"--set-string", "optimize.env[0].value=true"},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), envMsg)
+			},
+		},
+		{
 			Name:        "nested server.ssl in optimize.configuration is rejected",
 			ValuesFiles: []string{"testdata/values-optimize-tls-configuration.yaml"},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -551,4 +564,104 @@ func (s *OptimizeTLSTest) TestTLSIngressBackend() {
 		s.T(), s.chartPath, s.release, s.namespace,
 		[]string{"templates/common/ingress-optimize-http.yaml"}, testCases,
 	)
+}
+
+// TestPlaintextConnectorIsDisabled covers the other half of moving TLS onto the
+// chart's single named port: the plaintext connector must go, or it stays
+// reachable inside the pod network on 8090, bypassing TLS entirely.
+//
+// The config file carries an explicit YAML null because that is the form
+// ConfigurationService resolves to Optional.empty() (its own disableHttpPort
+// test pins both `http:` and `http: null`), which drops the HTTP connector and
+// leaves RootUrlGenerator on the https prefix. The Deployment env var is the
+// fallback for releases that replace the file through optimize.configuration.
+func (s *OptimizeTLSTest) TestPlaintextConnectorIsDisabled() {
+	requireConfig := func(t *testing.T, output string) string {
+		var cm corev1.ConfigMap
+		helm.UnmarshalK8SYaml(t, output, &cm)
+		return cm.Data["environment-config.yaml"]
+	}
+
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "config file nulls the http port when TLS is on",
+			Values: map[string]string{
+				"optimize.enabled":                               "true",
+				"global.tls.optimize.enabled":                    "true",
+				"global.tls.optimize.cert.secret.existingSecret": "optimize-ks",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				cfg := requireConfig(t, output)
+				require.Contains(t, cfg, "ports:")
+				require.Contains(t, cfg, "http: ~")
+			},
+		},
+		{
+			Name: "http port is untouched when TLS is off",
+			Values: map[string]string{
+				"optimize.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.NotContains(t, requireConfig(t, output), "http: ~")
+			},
+		},
+		{
+			Name: "contextPath and the null http port coexist",
+			Values: map[string]string{
+				"optimize.enabled":                               "true",
+				"optimize.contextPath":                           "/optimize",
+				"global.tls.optimize.enabled":                    "true",
+				"global.tls.optimize.cert.secret.existingSecret": "optimize-ks",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				cfg := requireConfig(t, output)
+				require.Contains(t, cfg, `contextPath: "/optimize"`)
+				require.Contains(t, cfg, "http: ~")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(
+		s.T(), s.chartPath, s.release, s.namespace,
+		[]string{"templates/optimize/configmap.yaml"}, testCases,
+	)
+}
+
+// TestKeystorePasswordKeyFallback keeps an emptied password key from rendering
+// an empty secretKeyRef.key, which Helm accepts and the API server rejects.
+func (s *OptimizeTLSTest) TestKeystorePasswordKeyFallback() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "emptied password key falls back to the documented default",
+			Values: map[string]string{
+				"optimize.enabled":                               "true",
+				"global.tls.optimize.enabled":                    "true",
+				"global.tls.optimize.cert.secret.existingSecret": "optimize-ks",
+			},
+			RenderTemplateExtraArgs: []string{
+				"--set-string", "global.tls.optimize.keystorePassword.secret.existingSecretKey=",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(t, output, &deployment)
+
+				container := s.mainContainer(&deployment)
+				s.Require().Contains(container.Env, corev1.EnvVar{
+					Name: "CAMUNDA_OPTIMIZE_CONTAINER_KEYSTORE_PASSWORD",
+					ValueFrom: &corev1.EnvVarSource{
+						SecretKeyRef: &corev1.SecretKeySelector{
+							LocalObjectReference: corev1.LocalObjectReference{Name: "optimize-ks"},
+							Key:                  "keystore-password",
+						},
+					},
+				})
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
