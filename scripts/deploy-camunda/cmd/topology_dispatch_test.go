@@ -16,7 +16,10 @@ package cmd
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 
 	"scripts/deploy-camunda/config"
@@ -1032,5 +1035,106 @@ func TestTopologyReleaseHostKeyPinsOptimizeToHub(t *testing.T) {
 				t.Fatalf("topologyReleaseHostKey(%q, %q, %d) = %q, want %q", tc.role, tc.namespaceSuffix, tc.orchestrationCount, got, tc.want)
 			}
 		})
+	}
+}
+
+// writeTopologyHookScript writes a post-deploy script into the version-scoped pre-setup-scripts
+// directory RunDeclarativePostDeployHook resolves against, and returns the repo root holding it.
+func writeTopologyHookScript(t *testing.T, body string) string {
+	t.Helper()
+	repoRoot := t.TempDir()
+	scriptDir := filepath.Join(repoRoot, "charts", "camunda-platform-8.10", "test", "integration", "scenarios", "pre-setup-scripts")
+	if err := os.MkdirAll(scriptDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(scriptDir, "post-deploy-topology.sh"), []byte(body), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	return repoRoot
+}
+
+func topologyHookReleases() []preparedTopologyRelease {
+	return []preparedTopologyRelease{
+		{
+			release: matrix.TopologyRelease{Role: "hub", NamespaceSuffix: "hub"},
+			flags: &config.RuntimeFlags{
+				Deployment: config.DeploymentFlags{Namespace: "matrix-810-pt-hub"},
+				ExtraEnv:   map[string]string{"HUB_NAMESPACE": "matrix-810-pt-hub"},
+			},
+		},
+		{
+			release: matrix.TopologyRelease{Role: "orchestration", NamespaceSuffix: "orcha"},
+			flags: &config.RuntimeFlags{
+				Deployment: config.DeploymentFlags{Namespace: "matrix-810-pt-orcha"},
+				ExtraEnv: map[string]string{
+					"HUB_NAMESPACE":               "matrix-810-pt-hub",
+					"ORCH_NAMESPACE":              "matrix-810-pt-orcha",
+					"OPTTA_OPTIMIZE_CONTEXT_PATH": "/optimize-ta",
+				},
+			},
+		},
+	}
+}
+
+// The topology post-deploy hook must actually run once the whole topology is deployed.
+// synthesizeReleaseEntry clears PostDeploy on every synthesized release so it does not fire per
+// release against a half-built topology, which left it running nowhere at all: registration was
+// the only dispatch, and it was registered against a nil hook.
+func TestRunTopologyPostDeployHook_RunsAgainstOrchestrationRelease(t *testing.T) {
+	marker := filepath.Join(t.TempDir(), "hook-ran")
+	repoRoot := writeTopologyHookScript(t, "#!/bin/bash\nset -eu\n"+
+		`test "$TEST_NAMESPACE" = "matrix-810-pt-orcha"`+"\n"+
+		`test "$HUB_NAMESPACE" = "matrix-810-pt-hub"`+"\n"+
+		`test "$OPTTA_OPTIMIZE_CONTEXT_PATH" = "/optimize-ta"`+"\n"+
+		"touch "+marker+"\n")
+
+	entry := matrix.Entry{
+		Version:    "8.10",
+		Scenario:   "physicaltenants",
+		PostDeploy: &matrix.LifecycleHook{Script: "post-deploy-topology.sh", Description: "Topology-wide post-deploy assertions."},
+	}
+	if err := runTopologyPostDeployHook(context.Background(), entry, matrix.RunOptions{RepoRoot: repoRoot}, topologyHookReleases()); err != nil {
+		t.Fatalf("runTopologyPostDeployHook() error = %v", err)
+	}
+	if _, err := os.Stat(marker); err != nil {
+		t.Fatalf("post-deploy hook did not run: %v", err)
+	}
+}
+
+// A failing hook has to fail the topology entry. physicaltenants sets skip-e2e, so if the hook's
+// exit status were swallowed the scenario would report success having asserted nothing.
+func TestRunTopologyPostDeployHook_FailurePropagates(t *testing.T) {
+	repoRoot := writeTopologyHookScript(t, "#!/bin/bash\nexit 3\n")
+
+	entry := matrix.Entry{
+		Version:    "8.10",
+		Scenario:   "physicaltenants",
+		PostDeploy: &matrix.LifecycleHook{Script: "post-deploy-topology.sh", Description: "Topology-wide post-deploy assertions."},
+	}
+	err := runTopologyPostDeployHook(context.Background(), entry, matrix.RunOptions{RepoRoot: repoRoot}, topologyHookReleases())
+	if err == nil {
+		t.Fatal("runTopologyPostDeployHook() = nil, want the hook's failure to fail the topology entry")
+	}
+	if !strings.Contains(err.Error(), "post-deploy hook") {
+		t.Errorf("runTopologyPostDeployHook() error = %q, want it to name the post-deploy hook", err)
+	}
+}
+
+// A scenario without a post-deploy hook must stay a no-op.
+func TestRunTopologyPostDeployHook_NoHookIsNoop(t *testing.T) {
+	if err := runTopologyPostDeployHook(context.Background(), matrix.Entry{Version: "8.10", Scenario: "multinamespace"}, matrix.RunOptions{RepoRoot: t.TempDir()}, topologyHookReleases()); err != nil {
+		t.Fatalf("runTopologyPostDeployHook() with no hook error = %v", err)
+	}
+}
+
+// The hook inspects orchestration workloads, so it must target the orchestration release even
+// though the Hub deploys first and heads the prepared slice.
+func TestTopologyHookFlags_PrefersOrchestration(t *testing.T) {
+	flags := topologyHookFlags(topologyHookReleases())
+	if flags == nil || flags.EffectiveNamespace() != "matrix-810-pt-orcha" {
+		t.Fatalf("topologyHookFlags() namespace = %v, want the orchestration release's namespace", flags)
+	}
+	if topologyHookFlags(nil) != nil {
+		t.Error("topologyHookFlags(nil) should report that there is no release to run against")
 	}
 }
