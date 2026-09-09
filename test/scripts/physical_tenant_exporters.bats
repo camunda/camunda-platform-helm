@@ -1,7 +1,12 @@
 #!/usr/bin/env bats
 
 setup() {
-  ROOT="$(git -C "$(dirname "${BATS_TEST_FILENAME}")" rev-parse --show-toplevel)"
+  here="$(cd "$(dirname "${BATS_TEST_FILENAME}")" && pwd)"
+  if ROOT="$(git -C "$here" rev-parse --show-toplevel 2>/dev/null)"; then
+    :
+  else
+    ROOT="$(cd "$here/../.." && pwd)"
+  fi
   SCRIPT="$ROOT/charts/camunda-platform-8.10/test/integration/scenarios/pre-setup-scripts/post-deploy-physical-tenant-exporters.sh"
   eval "$(sed -n '/^partitions_are_healthy() {/,/^}/p' "$SCRIPT")"
 }
