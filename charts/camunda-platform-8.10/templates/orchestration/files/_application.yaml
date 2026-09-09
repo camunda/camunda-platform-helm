@@ -175,6 +175,15 @@ camunda:
         password: "${VALUES_ORCHESTRATION_DATA_SECONDARYSTORAGE_RDBMS_PASSWORD:}"
         {{- end }}
       {{- end }}
+    {{- if eq (include "orchestration.hasElasticsearchExporter" .) "true" }}
+    exporters:
+      elasticsearch:
+        className: "io.camunda.zeebe.exporter.ElasticsearchExporter"
+    {{- else if eq (include "orchestration.hasOpenSearchExporter" .) "true" }}
+    exporters:
+      opensearch:
+        className: "io.camunda.zeebe.exporter.opensearch.OpensearchExporter"
+    {{- end }}
 
   # Security configuration - Separated syntax.
   security:
