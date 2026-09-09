@@ -271,30 +271,33 @@ spec:
             {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
             {{- include "camundaPlatform.caBundleEnv" . | nindent 12 }}
             {{- end }}
-            {{- if .Values.global.tls.optimize.enabled }}
-            - name: SERVER_SSL_ENABLED
-              value: "true"
+            {{- /* Gated on the same helper the probes use, so an optimize.env
+                 SERVER_SSL_ENABLED=false override cannot leave HTTPS wiring in
+                 place while the probes fall back to plaintext. */}}
+            {{- if and (eq (include "camundaPlatform.optimizeServerTLSEnabled" .) "true") .Values.global.tls.optimize.enabled }}
             {{- if .Values.global.tls.optimize.cert.secret.existingSecret }}
-            {{- if eq (.Values.global.tls.optimize.type | default "pkcs12") "pem" }}
-            - name: SERVER_SSL_CERTIFICATE
+            {{- /* Optimize is NOT a stock Spring Boot server here: OptimizeTomcatConfig
+                 always installs its own HTTPS connector and builds the SSLHostConfig
+                 from container.keystore.*. Setting server.ssl.* (SERVER_SSL_*) makes
+                 Spring Boot add a SECOND SSLHostConfig for host _default_, and Tomcat
+                 rejects the duplicate at startup. So configure Optimize's own knobs. */}}
+            - name: CAMUNDA_OPTIMIZE_CONTAINER_KEYSTORE_LOCATION
               value: /usr/local/camunda/certificates/optimize/{{ include "camundaPlatform.optimizeServerSecretCertKey" . }}
-            - name: SERVER_SSL_CERTIFICATE_PRIVATE_KEY
-              value: /usr/local/camunda/certificates/optimize/{{ .Values.global.tls.optimize.privateKey.secret.existingSecretKey }}
-            {{- else }}
-            - name: SERVER_SSL_KEY_STORE
-              value: file:/usr/local/camunda/certificates/optimize/{{ include "camundaPlatform.optimizeServerSecretCertKey" . }}
-            - name: SERVER_SSL_KEY_STORE_TYPE
-              value: PKCS12
-            - name: SERVER_SSL_KEY_STORE_PASSWORD
+            - name: CAMUNDA_OPTIMIZE_CONTAINER_KEYSTORE_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: {{ coalesce .Values.global.tls.optimize.keystorePassword.secret.existingSecret .Values.global.tls.optimize.cert.secret.existingSecret }}
                   key: {{ .Values.global.tls.optimize.keystorePassword.secret.existingSecretKey }}
-            {{- with .Values.global.tls.optimize.keyAlias }}
-            - name: SERVER_SSL_KEY_ALIAS
-              value: {{ . | quote }}
-            {{- end }}
-            {{- end }}
+            {{- /* Serve TLS on the container's existing named port and refuse
+                 plaintext, matching how Connectors/Orchestration flip the scheme
+                 of one port rather than exposing a second one. A non-positive
+                 ports.http drops the HTTP connector (OptimizeTomcatConfig#getPort
+                 filters on port > 0); an explicit -1 is used instead of an empty
+                 value because the port is read through JsonPath as an Integer. */}}
+            - name: CAMUNDA_OPTIMIZE_CONTAINER_PORTS_HTTPS
+              value: "8090"
+            - name: CAMUNDA_OPTIMIZE_CONTAINER_PORTS_HTTP
+              value: "-1"
             {{- end }}
             {{- end }}
           {{- with .Values.optimize.env }}

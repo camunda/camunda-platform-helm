@@ -466,7 +466,7 @@ gRPC server to crash on startup. Fail loudly at render time instead.
   {{- end }}
   {{- if eq (include "camundaPlatform.connectorsTLSEnabled" .) "true" }}
     {{- $chartMountsCert := and .Values.global.tls.connectors.enabled .Values.global.tls.connectors.cert.secret.existingSecret -}}
-    {{- $handWiredCert := or (has "SERVER_SSL_KEY_STORE" $envNames) (has "SERVER_SSL_CERTIFICATE" $envNames) -}}
+    {{- $handWiredCert := or (has "CAMUNDA_OPTIMIZE_CONTAINER_KEYSTORE_LOCATION" $envNames) (has "SERVER_SSL_KEY_STORE" $envNames) (has "SERVER_SSL_CERTIFICATE" $envNames) -}}
     {{/* An operator who enables TLS through connectors.{configuration,extraConfiguration}
          owns application.yaml and declares the cert there, where no env var appears. */}}
     {{- $certInYaml := eq (include "camundaPlatform.appConfigHasCertMaterial" (dict
@@ -514,15 +514,33 @@ gRPC server to crash on startup. Fail loudly at render time instead.
       {{- $errorMessage := printf "%s %s %s"
           "[camunda][error] Optimize server TLS is enabled but no server cert is configured."
           "Set global.tls.optimize.enabled: true together with global.tls.optimize.cert.secret.existingSecret (recommended) so the chart mounts the cert -- note that existingSecret alone is NOT mounted unless global.tls.optimize.enabled is also true (e.g. when TLS is enabled only via optimize.env's SERVER_SSL_ENABLED=true),"
-          "or hand-wire SERVER_SSL_KEY_STORE / SERVER_SSL_CERTIFICATE plus the matching optimize.extraVolumes / extraVolumeMounts entries."
+          "or hand-wire CAMUNDA_OPTIMIZE_CONTAINER_KEYSTORE_LOCATION / CAMUNDA_OPTIMIZE_CONTAINER_KEYSTORE_PASSWORD plus the matching optimize.extraVolumes / extraVolumeMounts entries."
       -}}
       {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
     {{- end }}
   {{- end }}
   {{- if and (eq (include "camundaPlatform.optimizeServerTLSEnabled" .) "true") .Values.global.tls.optimize.cert.secret.existingSecret }}
     {{- $t := .Values.global.tls.optimize.type | default "pkcs12" -}}
-    {{- if not (has $t (list "pkcs12" "pem")) }}
-      {{- $errorMessage := printf "[camunda][error] global.tls.optimize.type=%q is not supported. Use one of: pkcs12, pem." $t -}}
+    {{- if not (has $t (list "pkcs12")) }}
+      {{/* Optimize builds its SSLHostConfig from container.keystore.* only
+           (OptimizeTomcatConfig#getSslHostConfig sets a keystore file plus
+           password), so a bare PEM cert/key pair cannot be loaded. Converting
+           PEM to PKCS12 is not possible at render time. */}}
+      {{- $errorMessage := printf "%s %s"
+          (printf "[camunda][error] global.tls.optimize.type=%q is not supported for the Optimize server." $t)
+          "Optimize loads its server cert from a PKCS12 keystore only. Use type: pkcs12 and package the cert/key with `openssl pkcs12 -export`."
+      -}}
+      {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
+    {{- end }}
+    {{/* keyAlias has no Optimize equivalent: the SSLHostConfigCertificate is
+         created with Type.UNDEFINED and only the keystore file and password are
+         set, so Tomcat picks the keystore's key itself. Failing here beats
+         silently serving a different cert than the operator selected. */}}
+    {{- if .Values.global.tls.optimize.keyAlias }}
+      {{- $errorMessage := printf "%s %s"
+          "[camunda][error] global.tls.optimize.keyAlias is not supported for the Optimize server."
+          "Optimize does not expose a key-alias setting, so Tomcat selects the key from the keystore. Provide a keystore holding exactly the intended key and unset keyAlias."
+      -}}
       {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
     {{- end }}
   {{- end }}

@@ -88,11 +88,15 @@ func (s *OptimizeTLSTest) TestTLSEnvAndVolumeWiring() {
 				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
 
 				container := s.mainContainer(&deployment)
-				s.Require().Contains(container.Env, corev1.EnvVar{Name: "SERVER_SSL_ENABLED", Value: "true"})
-				s.Require().Contains(container.Env, corev1.EnvVar{Name: "SERVER_SSL_KEY_STORE", Value: "file:/usr/local/camunda/certificates/optimize/keystore.p12"})
-				s.Require().Contains(container.Env, corev1.EnvVar{Name: "SERVER_SSL_KEY_STORE_TYPE", Value: "PKCS12"})
+				// Optimize installs its own HTTPS connector from container.keystore.*;
+				// server.ssl.* would add a duplicate SSLHostConfig and abort startup.
+				require.NotContains(t, output, "SERVER_SSL_")
+				s.Require().Contains(container.Env, corev1.EnvVar{Name: "CAMUNDA_OPTIMIZE_CONTAINER_KEYSTORE_LOCATION", Value: "/usr/local/camunda/certificates/optimize/keystore.p12"})
+				// TLS takes over the existing named port; plaintext is refused.
+				s.Require().Contains(container.Env, corev1.EnvVar{Name: "CAMUNDA_OPTIMIZE_CONTAINER_PORTS_HTTPS", Value: "8090"})
+				s.Require().Contains(container.Env, corev1.EnvVar{Name: "CAMUNDA_OPTIMIZE_CONTAINER_PORTS_HTTP", Value: "-1"})
 				s.Require().Contains(container.Env, corev1.EnvVar{
-					Name: "SERVER_SSL_KEY_STORE_PASSWORD",
+					Name: "CAMUNDA_OPTIMIZE_CONTAINER_KEYSTORE_PASSWORD",
 					ValueFrom: &corev1.EnvVarSource{
 						SecretKeyRef: &corev1.SecretKeySelector{
 							LocalObjectReference: corev1.LocalObjectReference{Name: "optimize-ks"},
@@ -122,13 +126,12 @@ func (s *OptimizeTLSTest) TestTLSEnvAndVolumeWiring() {
 			},
 		},
 		{
-			Name: "PKCS12 mode with keyAlias",
+			Name: "PKCS12 mode honors a custom keystore password key",
 			Values: map[string]string{
 				"optimize.enabled":                                              "true",
 				"global.tls.optimize.enabled":                                   "true",
 				"global.tls.optimize.cert.secret.existingSecret":                "optimize-ks",
 				"global.tls.optimize.keystorePassword.secret.existingSecretKey": "ks-pw",
-				"global.tls.optimize.keyAlias":                                  "optimize-rest",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
@@ -136,9 +139,8 @@ func (s *OptimizeTLSTest) TestTLSEnvAndVolumeWiring() {
 				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
 
 				container := s.mainContainer(&deployment)
-				s.Require().Contains(container.Env, corev1.EnvVar{Name: "SERVER_SSL_KEY_ALIAS", Value: "optimize-rest"})
 				s.Require().Contains(container.Env, corev1.EnvVar{
-					Name: "SERVER_SSL_KEY_STORE_PASSWORD",
+					Name: "CAMUNDA_OPTIMIZE_CONTAINER_KEYSTORE_PASSWORD",
 					ValueFrom: &corev1.EnvVarSource{
 						SecretKeyRef: &corev1.SecretKeySelector{
 							LocalObjectReference: corev1.LocalObjectReference{Name: "optimize-ks"},
@@ -149,7 +151,25 @@ func (s *OptimizeTLSTest) TestTLSEnvAndVolumeWiring() {
 			},
 		},
 		{
-			Name: "PEM mode auto-substitutes tls.crt when existingSecretKey left empty",
+			// Optimize's SSLHostConfigCertificate is built with Type.UNDEFINED and
+			// only a keystore file plus password, so there is nowhere to send an
+			// alias. Failing beats serving a cert the operator did not select.
+			Name: "keyAlias is rejected because Optimize has no key-alias setting",
+			Values: map[string]string{
+				"optimize.enabled":                               "true",
+				"global.tls.optimize.enabled":                    "true",
+				"global.tls.optimize.cert.secret.existingSecret": "optimize-ks",
+				"global.tls.optimize.keyAlias":                   "optimize-rest",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), "global.tls.optimize.keyAlias is not supported")
+			},
+		},
+		{
+			// Optimize loads its cert from a PKCS12 keystore only; a bare PEM
+			// cert/key pair cannot be converted at render time.
+			Name: "PEM type is rejected for the Optimize server",
 			Values: map[string]string{
 				"optimize.enabled":                               "true",
 				"global.tls.optimize.enabled":                    "true",
@@ -157,38 +177,15 @@ func (s *OptimizeTLSTest) TestTLSEnvAndVolumeWiring() {
 				"global.tls.optimize.type":                       "pem",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
-				require.NoError(t, err)
-				var deployment appsv1.Deployment
-				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
-
-				container := s.mainContainer(&deployment)
-				s.Require().Contains(container.Env, corev1.EnvVar{Name: "SERVER_SSL_CERTIFICATE", Value: "/usr/local/camunda/certificates/optimize/tls.crt"})
-				s.Require().Contains(container.Env, corev1.EnvVar{Name: "SERVER_SSL_CERTIFICATE_PRIVATE_KEY", Value: "/usr/local/camunda/certificates/optimize/tls.key"})
-				require.NotContains(t, output, "SERVER_SSL_KEY_STORE")
+				require.Error(t, err)
+				require.Contains(t, err.Error(), `global.tls.optimize.type="pem" is not supported for the Optimize server`)
 			},
 		},
 		{
-			Name: "PEM mode with explicit overridden keys",
-			Values: map[string]string{
-				"optimize.enabled":                                        "true",
-				"global.tls.optimize.enabled":                             "true",
-				"global.tls.optimize.cert.secret.existingSecret":          "optimize-pem",
-				"global.tls.optimize.type":                                "pem",
-				"global.tls.optimize.cert.secret.existingSecretKey":       "server.crt",
-				"global.tls.optimize.privateKey.secret.existingSecretKey": "server.key",
-			},
-			Verifier: func(t *testing.T, output string, err error) {
-				require.NoError(t, err)
-				var deployment appsv1.Deployment
-				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
-
-				container := s.mainContainer(&deployment)
-				s.Require().Contains(container.Env, corev1.EnvVar{Name: "SERVER_SSL_CERTIFICATE", Value: "/usr/local/camunda/certificates/optimize/server.crt"})
-				s.Require().Contains(container.Env, corev1.EnvVar{Name: "SERVER_SSL_CERTIFICATE_PRIVATE_KEY", Value: "/usr/local/camunda/certificates/optimize/server.key"})
-			},
-		},
-		{
-			Name: "Override precedence: explicit optimize.env wins last",
+			// The chart no longer emits SERVER_SSL_ENABLED (Optimize ignores it),
+			// so a false override simply turns the chart's HTTPS wiring off
+			// instead of being out-voted by a later entry.
+			Name: "optimize.env SERVER_SSL_ENABLED=false suppresses the chart's TLS wiring",
 			Values: map[string]string{
 				"optimize.enabled":                               "true",
 				"global.tls.optimize.enabled":                    "true",
@@ -204,15 +201,10 @@ func (s *OptimizeTLSTest) TestTLSEnvAndVolumeWiring() {
 				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
 
 				container := s.mainContainer(&deployment)
-				var positions []int
-				for i, e := range container.Env {
-					if e.Name == "SERVER_SSL_ENABLED" {
-						positions = append(positions, i)
-					}
+				for _, e := range container.Env {
+					s.Require().NotEqual("CAMUNDA_OPTIMIZE_CONTAINER_KEYSTORE_LOCATION", e.Name)
+					s.Require().NotEqual("CAMUNDA_OPTIMIZE_CONTAINER_PORTS_HTTPS", e.Name)
 				}
-				s.Require().Len(positions, 2, "both entries should be rendered so the user-supplied one wins last")
-				s.Require().Equal("true", container.Env[positions[0]].Value)
-				s.Require().Equal("false", container.Env[positions[1]].Value)
 			},
 		},
 		{

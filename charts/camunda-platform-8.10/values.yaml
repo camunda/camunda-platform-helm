@@ -425,17 +425,17 @@ global:
       autoRollout: false
       ## @param global.tls.optimize.enabled if true, TLS is terminated at the Optimize HTTP server.
       enabled: false
-      ## @param global.tls.optimize.type defines the secret format. One of: pkcs12, pem.
+      ## @param global.tls.optimize.type defines the secret format. Only pkcs12 is supported for the Optimize server: Optimize loads its server cert from a PKCS12 keystore (container.keystore.*) and cannot read a bare PEM cert/key pair. Setting anything else fails the render.
       type: pkcs12
-      ## @param global.tls.optimize.keyAlias can be used to specify the cert alias within a PKCS12 keystore.
+      ## @param global.tls.optimize.keyAlias NOT supported for the Optimize server and fails the render when set -- Optimize exposes no key-alias setting, so Tomcat selects the key from the keystore. Supply a keystore holding exactly the intended key.
       keyAlias: ""
-      ## @extra global.tls.optimize.cert configuration to provide the server certificate (PKCS12 keystore or PEM cert).
+      ## @extra global.tls.optimize.cert configuration to provide the server certificate as a PKCS12 keystore.
       cert:
         ## @extra global.tls.optimize.cert.secret configuration to provide the cert secret.
         secret:
           ## @param global.tls.optimize.cert.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the cert material. Empty disables the chart-managed wiring; the operator can still hand-wire via optimize.extraVolumes and optimize.env.
           existingSecret: ""
-          ## @param global.tls.optimize.cert.secret.existingSecretKey defines the key within the existing secret object. Smart default: tls.crt for PEM, keystore.p12 for PKCS12.
+          ## @param global.tls.optimize.cert.secret.existingSecretKey defines the key within the existing secret object. Defaults to keystore.p12.
           existingSecretKey: ""
       ## @extra global.tls.optimize.privateKey configuration to provide the PEM private key (PEM mode only).
       privateKey:
