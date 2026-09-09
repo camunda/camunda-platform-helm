@@ -420,7 +420,6 @@ data:
                   definition: read:users
                 - audience: {{ include "webModeler.authClientApiAudience" . | quote }}
                   definition: admin:clusters
-            {{- if or .Values.orchestration.hub.ping.endpoint .Values.global.identity.auth.orchestration.hubPingAuthorizationEnabled }}
             - name: "Hub API - Cluster Ping"
               description: "Grants create/update access to the CamundaHub API for the orchestration cluster ping"
               permissions:
@@ -428,7 +427,6 @@ data:
                   definition: create:*
                 - audience: {{ include "webModeler.authPublicApiAudience" . | quote }}
                   definition: update:*
-            {{- end }}
 
       {{- $pingClaimName := .Values.global.identity.auth.orchestration.hubPingClaimName -}}
       {{- $pingClaimValue := .Values.global.identity.auth.orchestration.hubPingClaimValue -}}

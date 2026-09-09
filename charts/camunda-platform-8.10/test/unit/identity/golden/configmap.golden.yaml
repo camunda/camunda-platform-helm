@@ -144,6 +144,13 @@ data:
                   definition: read:users
                 - audience: "web-modeler-api"
                   definition: admin:clusters
+            - name: "Hub API - Cluster Ping"
+              description: "Grants create/update access to the CamundaHub API for the orchestration cluster ping"
+              permissions:
+                - audience: "web-modeler-public-api"
+                  definition: create:*
+                - audience: "web-modeler-public-api"
+                  definition: update:*
     keycloak:
       url: "https://keycloak.example.com:8443/auth/"
       setup:
