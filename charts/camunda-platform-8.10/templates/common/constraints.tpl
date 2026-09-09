@@ -466,7 +466,7 @@ gRPC server to crash on startup. Fail loudly at render time instead.
   {{- end }}
   {{- if eq (include "camundaPlatform.connectorsTLSEnabled" .) "true" }}
     {{- $chartMountsCert := and .Values.global.tls.connectors.enabled .Values.global.tls.connectors.cert.secret.existingSecret -}}
-    {{- $handWiredCert := or (has "CAMUNDA_OPTIMIZE_CONTAINER_KEYSTORE_LOCATION" $envNames) (has "SERVER_SSL_KEY_STORE" $envNames) (has "SERVER_SSL_CERTIFICATE" $envNames) -}}
+    {{- $handWiredCert := or (has "SERVER_SSL_KEY_STORE" $envNames) (has "SERVER_SSL_CERTIFICATE" $envNames) -}}
     {{/* An operator who enables TLS through connectors.{configuration,extraConfiguration}
          owns application.yaml and declares the cert there, where no env var appears. */}}
     {{- $certInYaml := eq (include "camundaPlatform.appConfigHasCertMaterial" (dict
@@ -492,54 +492,62 @@ gRPC server to crash on startup. Fail loudly at render time instead.
   {{- end }}
 {{- end }}
 
-{{/* Optimize server TLS requires chart-managed or explicitly hand-wired cert material.
+{{/* Optimize server TLS is chart-managed only.
      Governs the SERVER-side identity only; the client-side ES/OS truststore
      (`optimize.database.*.tls.secret.existingSecret`) is a separate surface. */}}
 {{- if .Values.optimize.enabled }}
-  {{- $envNames := list -}}
+  {{/* Optimize ignores server.ssl.* -- OptimizeTomcatConfig always installs its
+       own HTTPS connector from container.keystore.* -- and Spring Boot reacting
+       to server.ssl.enabled adds a SECOND SSLHostConfig for host _default_,
+       which Tomcat rejects with "Host names must be unique" at startup. These
+       keys cannot enable TLS, so accepting them only produces a crash-looping
+       pod; fail the render with the working alternative instead. */}}
+  {{- $sslEnvNames := list -}}
   {{- range $e := (.Values.optimize.env | default list) -}}
-    {{- $envNames = append $envNames ($e.name | default "") -}}
+    {{- if hasPrefix "SERVER_SSL" ($e.name | default "") -}}
+      {{- $sslEnvNames = append $sslEnvNames $e.name -}}
+    {{- end -}}
   {{- end }}
-  {{- if eq (include "camundaPlatform.optimizeServerTLSEnabled" .) "true" }}
-    {{- $chartMountsCert := and .Values.global.tls.optimize.enabled .Values.global.tls.optimize.cert.secret.existingSecret -}}
-    {{- $handWiredCert := or (has "SERVER_SSL_KEY_STORE" $envNames) (has "SERVER_SSL_CERTIFICATE" $envNames) -}}
-    {{/* An operator who enables TLS through optimize.{configuration,extraConfiguration}
-         owns application.yaml and declares the cert there, where no env var appears. */}}
-    {{- $certInYaml := eq (include "camundaPlatform.appConfigHasCertMaterial" (dict
-        "configuration" .Values.optimize.configuration
-        "extraConfiguration" .Values.optimize.extraConfiguration
-        "prefix" (list "server" "ssl"))) "true" -}}
-    {{- $handWiredCert = or $handWiredCert $certInYaml -}}
-    {{- if not (or $chartMountsCert $handWiredCert) }}
-      {{- $errorMessage := printf "%s %s %s"
+  {{- if $sslEnvNames }}
+    {{- $errorMessage := printf "%s %s %s"
+        (printf "[camunda][error] optimize.env sets [%s], which the Optimize server does not support." (join ", " $sslEnvNames))
+        "Optimize builds its TLS connector from container.keystore.* and never reads server.ssl.*; setting these makes Tomcat abort at startup with \"Multiple SSLHostConfig elements were provided for the host name [_default_]\"."
+        "Use global.tls.optimize.enabled with global.tls.optimize.cert.secret.existingSecret, or hand-wire CAMUNDA_OPTIMIZE_CONTAINER_KEYSTORE_LOCATION / CAMUNDA_OPTIMIZE_CONTAINER_KEYSTORE_PASSWORD plus the matching optimize.extraVolumes / extraVolumeMounts entries."
+    -}}
+    {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
+  {{- end }}
+  {{- if eq (include "camundaPlatform.optimizeDeclaresServerSsl" .) "true" }}
+    {{- $errorMessage := printf "%s %s"
+        "[camunda][error] optimize.configuration or optimize.extraConfiguration declares server.ssl, which the Optimize server does not support."
+        "Optimize builds its TLS connector from container.keystore.* and never reads server.ssl.*; setting it makes Tomcat abort at startup on a duplicate SSLHostConfig. Use global.tls.optimize.* instead, or declare container.keystore.location / container.keystore.password."
+    -}}
+    {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
+  {{- end }}
+  {{- if .Values.global.tls.optimize.enabled }}
+    {{- if not .Values.global.tls.optimize.cert.secret.existingSecret }}
+      {{- $errorMessage := printf "%s %s"
           "[camunda][error] Optimize server TLS is enabled but no server cert is configured."
-          "Set global.tls.optimize.enabled: true together with global.tls.optimize.cert.secret.existingSecret (recommended) so the chart mounts the cert -- note that existingSecret alone is NOT mounted unless global.tls.optimize.enabled is also true (e.g. when TLS is enabled only via optimize.env's SERVER_SSL_ENABLED=true),"
-          "or hand-wire CAMUNDA_OPTIMIZE_CONTAINER_KEYSTORE_LOCATION / CAMUNDA_OPTIMIZE_CONTAINER_KEYSTORE_PASSWORD plus the matching optimize.extraVolumes / extraVolumeMounts entries."
+          "Set global.tls.optimize.cert.secret.existingSecret to a Secret holding a PKCS12 keystore so the chart mounts it, or leave global.tls.optimize.enabled: false and hand-wire CAMUNDA_OPTIMIZE_CONTAINER_KEYSTORE_LOCATION / CAMUNDA_OPTIMIZE_CONTAINER_KEYSTORE_PASSWORD plus the matching optimize.extraVolumes / extraVolumeMounts entries."
       -}}
       {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
     {{- end }}
-  {{- end }}
-  {{- if and (eq (include "camundaPlatform.optimizeServerTLSEnabled" .) "true") .Values.global.tls.optimize.cert.secret.existingSecret }}
+    {{/* `type` and `keyAlias` were removed from values.yaml: Optimize loads a
+         PKCS12 keystore only (OptimizeTomcatConfig#getSslHostConfig sets a
+         keystore file plus password, with the certificate created as
+         Type.UNDEFINED), so there is no PEM path and nowhere to send an alias.
+         A --set of either would otherwise be silently ignored. */}}
     {{- $t := .Values.global.tls.optimize.type | default "pkcs12" -}}
-    {{- if not (has $t (list "pkcs12")) }}
-      {{/* Optimize builds its SSLHostConfig from container.keystore.* only
-           (OptimizeTomcatConfig#getSslHostConfig sets a keystore file plus
-           password), so a bare PEM cert/key pair cannot be loaded. Converting
-           PEM to PKCS12 is not possible at render time. */}}
+    {{- if ne $t "pkcs12" }}
       {{- $errorMessage := printf "%s %s"
           (printf "[camunda][error] global.tls.optimize.type=%q is not supported for the Optimize server." $t)
-          "Optimize loads its server cert from a PKCS12 keystore only. Use type: pkcs12 and package the cert/key with `openssl pkcs12 -export`."
+          "Optimize loads its server cert from a PKCS12 keystore only, so this key was removed. Package the cert/key with `openssl pkcs12 -export` and drop global.tls.optimize.type."
       -}}
       {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
     {{- end }}
-    {{/* keyAlias has no Optimize equivalent: the SSLHostConfigCertificate is
-         created with Type.UNDEFINED and only the keystore file and password are
-         set, so Tomcat picks the keystore's key itself. Failing here beats
-         silently serving a different cert than the operator selected. */}}
     {{- if .Values.global.tls.optimize.keyAlias }}
       {{- $errorMessage := printf "%s %s"
           "[camunda][error] global.tls.optimize.keyAlias is not supported for the Optimize server."
-          "Optimize does not expose a key-alias setting, so Tomcat selects the key from the keystore. Provide a keystore holding exactly the intended key and unset keyAlias."
+          "Optimize exposes no key-alias setting, so Tomcat selects the key from the keystore and this key was removed. Provide a keystore holding exactly the intended key and drop global.tls.optimize.keyAlias."
       -}}
       {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
     {{- end }}
@@ -1106,75 +1114,6 @@ The following values inside your values.yaml need to be set but were not:
             "dottedPath" "server.ssl.enabled"
             "flag" "global.tls.connectors.enabled"
             "envName" "SERVER_SSL_ENABLED") }}
-        {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
-      {{- end }}
-    {{- end }}
-  {{- end }}
-
-  {{/* Optimize TLS detection guardrails: probe schemes and the /optimize Ingress
-       backend protocol are derived from
-       camundaPlatform.optimizeServerTLSEnabled, which reads optimize.env,
-       global.tls.optimize.enabled, and nested YAML keys in
-       optimize.{configuration,extraConfiguration}. Warn about the three forms it
-       cannot read rather than deriving plaintext silently. */}}
-  {{- if .Values.optimize.enabled }}
-    {{- $optimizeTLS := include "camundaPlatform.optimizeServerTLSEnabled" . }}
-
-    {{/* (W1) A dotted/relaxed key form the nested-key walk cannot see. Splits
-           yielding a single segment are skipped: a bare "enabled: true" line
-           matches unrelated config. */}}
-    {{- if ne $optimizeTLS "true" }}
-      {{- $sslPath := list "server" "ssl" "enabled" -}}
-      {{- $dottedHit := "" -}}
-      {{- $contents := list (.Values.optimize.configuration | default "") -}}
-      {{- range $entry := (.Values.optimize.extraConfiguration | default list) -}}
-        {{- $contents = append $contents ($entry.content | default "") -}}
-      {{- end -}}
-      {{- range $split := until (sub (len $sslPath) 1 | int) -}}
-        {{- $dotted := join "." (slice $sslPath $split) -}}
-        {{- $pattern := printf "(?m)^[ \t]*%s[ \t]*[:=][ \t]*[\"']?(?i)true" (replace "." "\\." $dotted) -}}
-        {{- range $content := $contents -}}
-          {{- if regexMatch $pattern $content -}}
-            {{- $dottedHit = $dotted -}}
-          {{- end -}}
-        {{- end -}}
-      {{- end -}}
-      {{- if $dottedHit }}
-        {{- $warningMessage := printf "%s %s %s"
-            "[camunda][warning]"
-            (printf "optimize.configuration or optimize.extraConfiguration appears to enable Optimize server TLS through the dotted key '%s', which the chart cannot read." $dottedHit)
-            "The chart matches nested YAML keys only, so it still derives plaintext: the Optimize probes stay on HTTP scheme and the /optimize ingress keeps an HTTP backend against a TLS listener, which installs cleanly and then fails at connection time. Set global.tls.optimize.enabled: true, or add an optimize.env entry for SERVER_SSL_ENABLED, or rewrite the key in nested YAML form."
-        -}}
-        {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
-      {{- end }}
-    {{- end }}
-
-    {{/* (W3) Runtime state controls the config value, so the chart cannot resolve
-           it and keeps deriving plaintext. */}}
-    {{- if ne $optimizeTLS "true" }}
-      {{- $configState := include "camundaPlatform.appConfigBoolState" (dict
-          "configuration" .Values.optimize.configuration
-          "extraConfiguration" .Values.optimize.extraConfiguration
-          "path" (list "server" "ssl" "enabled")) }}
-      {{- if eq $configState "unresolved" }}
-        {{- $warningMessage := include "camunda.constraints.unresolvedTLSConfigWarning" (dict
-            "component" "Optimize"
-            "valuesPrefix" "optimize"
-            "dottedPath" "server.ssl.enabled"
-            "flag" "global.tls.optimize.enabled"
-            "envName" "SERVER_SSL_ENABLED") }}
-        {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
-      {{- end }}
-    {{- end }}
-
-    {{/* (W2) A valueFrom-sourced SSL toggle is unresolvable at render time. */}}
-    {{- range $e := (.Values.optimize.env | default list) }}
-      {{- if and (eq ($e.name | default "") "SERVER_SSL_ENABLED") (not $e.value) $e.valueFrom }}
-        {{- $warningMessage := printf "%s %s %s"
-            "[camunda][warning]"
-            "optimize.env sets SERVER_SSL_ENABLED from a valueFrom reference, whose value the chart cannot read at render time."
-            "Optimize server TLS state therefore falls back to global.tls.optimize.enabled and the YAML config sources. If the referenced key resolves to a value that disagrees with that fallback, probe schemes and the /optimize ingress backend protocol will be derived for the wrong transport. Set the toggle literally and keep valueFrom for cert material only."
-        -}}
         {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
       {{- end }}
     {{- end }}

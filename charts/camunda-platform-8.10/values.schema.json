@@ -703,16 +703,6 @@
                                     "description": "if true, TLS is terminated at the Optimize HTTP server.",
                                     "default": false
                                 },
-                                "type": {
-                                    "type": "string",
-                                    "description": "defines the secret format. One of: pkcs12, pem.",
-                                    "default": "pkcs12"
-                                },
-                                "keyAlias": {
-                                    "type": "string",
-                                    "description": "can be used to specify the cert alias within a PKCS12 keystore.",
-                                    "default": ""
-                                },
                                 "cert": {
                                     "type": "object",
                                     "properties": {
@@ -726,23 +716,8 @@
                                                 },
                                                 "existingSecretKey": {
                                                     "type": "string",
-                                                    "description": "defines the key within the existing secret object. Smart default: tls.crt for PEM, keystore.p12 for PKCS12.",
+                                                    "description": "defines the key within the existing secret object. Defaults to keystore.p12.",
                                                     "default": ""
-                                                }
-                                            }
-                                        }
-                                    }
-                                },
-                                "privateKey": {
-                                    "type": "object",
-                                    "properties": {
-                                        "secret": {
-                                            "type": "object",
-                                            "properties": {
-                                                "existingSecretKey": {
-                                                    "type": "string",
-                                                    "description": "defines the key within the existing secret object. In PEM mode, the cert and private key must live in the SAME Secret referenced by global.tls.optimize.cert.secret.existingSecret.",
-                                                    "default": "tls.key"
                                                 }
                                             }
                                         }

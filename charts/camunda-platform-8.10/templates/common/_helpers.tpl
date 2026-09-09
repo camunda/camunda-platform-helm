@@ -1265,60 +1265,58 @@ Usage:
 {{- end -}}
 
 {{/*
-[camunda-platform] Returns "true" when Optimize server-side TLS is enabled. An
-explicit literal optimize.env entry for SERVER_SSL_ENABLED wins over
-global.tls.optimize.enabled. A valueFrom-sourced entry is unknown at render
-time, so the chart defers to the remaining sources rather than assuming a value.
+[camunda-platform] Returns "true" when Optimize server-side TLS is enabled.
 
-With neither env source set, optimize.extraConfiguration and then
-optimize.configuration are consulted for server.ssl.enabled through
-camundaPlatform.appConfigBoolState, so multi-document sources resolve in
-document order. A spring.config.activate-conditioned document resolves to
-"unresolved" and is treated as plaintext here, because its activation is a
-runtime decision; camunda.constraints.warnings then asks for an explicit flag
-or env entry.
+global.tls.optimize.enabled is the ONLY source. Unlike Orchestration and
+Connectors -- plain Spring Boot servers where server.ssl.* is authoritative --
+Optimize overrides Tomcat itself: OptimizeTomcatConfig always installs its own
+HTTPS connector built from container.keystore.*, and never consults
+server.ssl.*. Setting SERVER_SSL_ENABLED (or server.ssl.enabled in
+optimize.{configuration,extraConfiguration}) therefore cannot enable TLS here;
+it only makes Spring Boot register a second SSLHostConfig for host _default_,
+which Tomcat rejects at startup. camunda.constraints.errors fails the render on
+those keys, so there is no alternative source to detect.
 */}}
 {{- define "camundaPlatform.optimizeServerTLSEnabled" -}}
-  {{- $envValue := include "camundaPlatform.optimizeServerEnvLastValue" (dict "context" . "name" "SERVER_SSL_ENABLED") -}}
-  {{- if eq $envValue "true" -}}
-    true
-  {{- else if eq $envValue "false" -}}
-    false
-  {{- else if .Values.global.tls.optimize.enabled -}}
-    true
-  {{- else -}}
-    {{- $configState := include "camundaPlatform.appConfigBoolState" (dict
-        "configuration" .Values.optimize.configuration
-        "extraConfiguration" .Values.optimize.extraConfiguration
-        "path" (list "server" "ssl" "enabled")) -}}
-    {{- ternary "true" "false" (eq $configState "true") -}}
-  {{- end -}}
+  {{- ternary "true" "false" (.Values.global.tls.optimize.enabled | default false) -}}
 {{- end -}}
 
 {{/*
-[camunda-platform] Returns "true", "false", "unknown", or "unset" for the last
-matching optimize.env entry. "unknown" means the entry uses valueFrom.
+[camunda-platform] Returns "true" when optimize.{configuration,extraConfiguration}
+mentions server.ssl in any form. Optimize cannot serve TLS from those keys (see
+camundaPlatform.optimizeServerTLSEnabled), so camunda.constraints.errors fails
+the render on them rather than letting the operator believe TLS is on.
+
+Both spellings are matched: the nested-key walk covers `server: ssl: ...`
+documents, and a regex covers the dotted/relaxed forms (`server.ssl.enabled`,
+`server.ssl.key-store`) that the walk cannot see -- a silent miss here would be
+the exact "installs cleanly, fails at connection time" outcome the check exists
+to prevent.
 */}}
-{{- define "camundaPlatform.optimizeServerEnvLastValue" -}}
-  {{- $ctx := .context -}}
-  {{- $name := .name -}}
-  {{- $result := "unset" -}}
-  {{- range $env := $ctx.Values.optimize.env -}}
-    {{- if eq ($env.name | default "") $name -}}
-      {{- if $env.value -}}
-        {{- if eq (lower (tpl (toString $env.value) $ctx)) "true" -}}
-          {{- $result = "true" -}}
-        {{- else -}}
-          {{- $result = "false" -}}
-        {{- end -}}
-      {{- else if $env.valueFrom -}}
-        {{- $result = "unknown" -}}
-      {{- else -}}
-        {{- $result = "false" -}}
-      {{- end -}}
+{{- define "camundaPlatform.optimizeDeclaresServerSsl" -}}
+  {{- $found := "" -}}
+  {{- $contents := list (.Values.optimize.configuration | default "") -}}
+  {{- range $entry := (.Values.optimize.extraConfiguration | default list) -}}
+    {{- $contents = append $contents ($entry.content | default "") -}}
+  {{- end -}}
+  {{- range $content := $contents -}}
+    {{- if regexMatch "(?m)^[ \t]*server\\.ssl[A-Za-z0-9._-]*[ \t]*[:=]" $content -}}
+      {{- $found = "true" -}}
     {{- end -}}
   {{- end -}}
-  {{- $result -}}
+  {{- if eq (include "camundaPlatform.appConfigHasCertMaterial" (dict
+      "configuration" .Values.optimize.configuration
+      "extraConfiguration" .Values.optimize.extraConfiguration
+      "prefix" (list "server" "ssl"))) "true" -}}
+    {{- $found = "true" -}}
+  {{- end -}}
+  {{- if ne (include "camundaPlatform.appConfigBoolState" (dict
+      "configuration" .Values.optimize.configuration
+      "extraConfiguration" .Values.optimize.extraConfiguration
+      "path" (list "server" "ssl" "enabled"))) "unset" -}}
+    {{- $found = "true" -}}
+  {{- end -}}
+  {{- $found -}}
 {{- end -}}
 
 
@@ -2166,19 +2164,14 @@ checksum/connectors-tls: {{ join "" $hashes | sha256sum }}
 optimizeServerSecretCertKey
 Returns the Secret data key that holds the Optimize SERVER certificate. An
 explicit `cert.secret.existingSecretKey` wins verbatim; when empty it defaults
-to `tls.crt` in PEM mode (so cert-manager `kubernetes.io/tls` Secrets work out
-of the box) and `keystore.p12` in PKCS12 mode. Distinct from the legacy
+to `keystore.p12`, the only format Optimize can load. Distinct from the legacy
 `camundaPlatform.getTlsSecretKey`, which resolves the Optimize-as-CLIENT
 truststore key for ES/OS.
 */}}
 {{- define "camundaPlatform.optimizeServerSecretCertKey" -}}
-{{- $o := .Values.global.tls.optimize -}}
-{{- $type := $o.type | default "pkcs12" -}}
-{{- $key := $o.cert.secret.existingSecretKey -}}
+{{- $key := .Values.global.tls.optimize.cert.secret.existingSecretKey -}}
 {{- if $key -}}
 {{ $key }}
-{{- else if eq $type "pem" -}}
-tls.crt
 {{- else -}}
 keystore.p12
 {{- end -}}
@@ -2201,10 +2194,6 @@ Usage (inside the Optimize pod template's metadata.annotations):
 {{- $secret := lookup "v1" "Secret" .Release.Namespace $o.cert.secret.existingSecret -}}
 {{- $data := ($secret | default dict).data | default dict -}}
 {{- $hashes := list (get $data (include "camundaPlatform.optimizeServerSecretCertKey" .)) -}}
-{{- if eq ($o.type | default "pkcs12") "pem" -}}
-{{- $keyKey := $o.privateKey.secret.existingSecretKey | default "tls.key" -}}
-{{- $hashes = append $hashes (get $data $keyKey) -}}
-{{- end -}}
 checksum/optimize-tls: {{ join "" $hashes | sha256sum }}
 {{- end -}}
 {{- end -}}
