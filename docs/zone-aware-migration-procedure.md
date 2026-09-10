@@ -40,13 +40,17 @@ orchestration:
         numberOfBrokers: 3
         numberOfReplicas: 3
         priority: 90
+    # Keep the existing numbered-topology values during this phase.
+    regions: 2
+    regionId: 0
     keepUnzonedBrokers: true
 ```
 
-Keep the previous `regions` and `regionId` values while the numbered StatefulSet is retained. Upgrade the existing release:
+Replace the example `regions` and `regionId` values with the values used by the existing numbered brokers. If they are currently under `global.multiregion`, move them into `orchestration.multiregion` and remove the global block; configuring both blocks is rejected. Keep these values while the numbered StatefulSet is retained. Upgrade the existing release:
 
 ```bash
 helm upgrade <release> camunda/camunda-platform \
+  --version 15.x \
   --namespace <namespace> \
   --values <values-file>
 ```
@@ -95,10 +99,11 @@ orchestration:
     keepUnzonedBrokers: false
 ```
 
-The old `regions` and `regionId` values are no longer used by the zoned resources and may be removed or reset in the same upgrade. Upgrade the release again:
+The old `regions` and `regionId` values are no longer used by the zoned resources and may be removed or reset in the same upgrade. Upgrade the release again with the same chart line:
 
 ```bash
 helm upgrade <release> camunda/camunda-platform \
+  --version 15.x \
   --namespace <namespace> \
   --values <values-file>
 ```
