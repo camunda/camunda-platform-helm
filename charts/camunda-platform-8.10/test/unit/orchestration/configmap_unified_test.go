@@ -1180,6 +1180,80 @@ func (s *ConfigmapTemplateTest) TestLegacyZeebeExporterReplicas() {
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
+func (s *ConfigmapTemplateTest) TestLegacyZeebeExporterIndexPrefix() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "ESPrefixFallsBackToOptimizeSpellingByDefault",
+			Values: map[string]string{
+				"orchestration.exporters.zeebe.enabled":   "true",
+				"optimize.enabled":                        "true",
+				"optimize.database.elasticsearch.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "prefix: \"zeebe-record\"",
+					"an unset orchestration.exporters.zeebe.index.prefix must fall back to optimize.database.elasticsearch.prefix")
+			},
+		},
+		{
+			Name: "ESPrefixNewKeyWinsOverOptimizeSpelling",
+			Values: map[string]string{
+				"orchestration.exporters.zeebe.enabled":      "true",
+				"orchestration.exporters.zeebe.index.prefix": "orcha-records",
+				"optimize.enabled":                           "true",
+				"optimize.database.elasticsearch.enabled":    "true",
+				"optimize.database.elasticsearch.prefix":     "ignored-optimize-prefix",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "prefix: \"orcha-records\"",
+					"orchestration.exporters.zeebe.index.prefix must take precedence")
+				require.NotContains(t, output, "ignored-optimize-prefix",
+					"the Optimize-side spelling must not leak into the exporter config once the new key is set")
+			},
+		},
+		{
+			// The Elasticsearch cases above cover the writer key and Optimize fallback; these are
+			// their OpenSearch counterparts.
+			Name: "OSPrefixDefaultsToOptimizeSpelling",
+			Values: map[string]string{
+				"orchestration.exporters.zeebe.enabled": "true",
+				"optimize.enabled":                      "true",
+				"optimize.database.opensearch.enabled":  "true",
+				"optimize.database.opensearch.url.host": "opensearch.example.com",
+				"optimize.database.opensearch.prefix":   "optimize-os-records",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "io.camunda.zeebe.exporter.opensearch.OpensearchExporter")
+				require.Contains(t, output, "prefix: \"optimize-os-records\"",
+					"an unset orchestration.exporters.zeebe.index.prefix must fall back to optimize.database.opensearch.prefix")
+			},
+		},
+		{
+			Name: "OSPrefixNewKeyWinsOverOptimizeSpelling",
+			Values: map[string]string{
+				"orchestration.exporters.zeebe.enabled":      "true",
+				"orchestration.exporters.zeebe.index.prefix": "orcha-os-records",
+				"optimize.enabled":                           "true",
+				"optimize.database.opensearch.enabled":       "true",
+				"optimize.database.opensearch.url.host":      "opensearch.example.com",
+				"optimize.database.opensearch.prefix":        "ignored-optimize-prefix",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "io.camunda.zeebe.exporter.opensearch.OpensearchExporter")
+				require.Contains(t, output, "prefix: \"orcha-os-records\"",
+					"orchestration.exporters.zeebe.index.prefix must apply to the OpenSearch exporter too")
+				require.NotContains(t, output, "ignored-optimize-prefix",
+					"the Optimize-side spelling must not leak into the exporter config once the new key is set")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
 func (s *ConfigmapTemplateTest) TestMultiRegionInitialContactPoints() {
 	testCases := []testhelpers.TestCase{
 		{

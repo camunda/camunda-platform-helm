@@ -16,6 +16,12 @@
 #
 # This release deploys no Identity, Keycloak, Web Modeler, or Camunda Hub of
 # its own - auth and modeling are centralized in the Hub namespace.
+#
+# This layer configures auth only. global.topology.mode and whether the release
+# runs Optimize belong to the release's features layer, because they differ
+# between topologies that share this file: in multinamespace the orchestration
+# release runs Optimize in-release, while multinamespace-optimize and
+# physicaltenants give each Optimize its own release.
 
 global:
   host: "$CAMUNDA_HOSTNAME"
@@ -41,30 +47,12 @@ global:
         secret:
           existingSecret: "integration-test-credentials"
           existingSecretKey: "identity-admin-client-token"
-      optimize:
-        clientId: "${ORCH_OPTIMIZE_CLIENT_ID}"
-        audience: "${ORCH_OPTIMIZE_AUDIENCE}"
-        redirectUrl: "https://${ORCH_HOST}/optimize"
-        secret:
-          existingSecret: integration-test-credentials
-          existingSecretKey: identity-optimize-client-token
-  topology:
-    mode: orchestration
   security:
     authentication:
       method: oidc
 
 identity:
   enabled: false
-
-optimize:
-  enabled: true
-  database:
-    elasticsearch:
-      enabled: true
-  contextPath: "/optimize"
-  livenessProbe:
-    enabled: true
 
 connectors:
   security:
