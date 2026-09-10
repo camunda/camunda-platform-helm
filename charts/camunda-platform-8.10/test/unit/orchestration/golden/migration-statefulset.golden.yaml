@@ -166,6 +166,8 @@ spec:
         resources:
           requests:
             storage: "32Gi"
+
+
 ---
 # Source: camunda-platform/templates/orchestration/statefulset.yaml
 apiVersion: apps/v1
