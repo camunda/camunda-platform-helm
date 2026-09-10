@@ -284,7 +284,7 @@ Fail with a message if Multi-Tenancy is enabled and its requirements are not met
 - Identity Auth enabled for other apps.
 Multi-Tenancy requirements: https://docs.camunda.io/docs/self-managed/concepts/multi-tenancy/
 */}}
-{{- if or .Values.identity.multitenancy.enabled .Values.global.multitenancy.enabled }}
+{{- if and (ne $topologyMode "orchestration") (or .Values.identity.multitenancy.enabled .Values.global.multitenancy.enabled) }}
   {{- $identityDatabaseEnabled := .Values.identity.externalDatabase.enabled }}
   {{- if has false (list $identityAuthEnabled $identityDatabaseEnabled) }}
     {{- $errorMessage := printf "[camunda][error] %s %s %s"

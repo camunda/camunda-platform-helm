@@ -426,6 +426,32 @@ func TestOrchestrationTopologyMultiTenantOptimizeRequiresManagementIdentityURL(t
 	require.ErrorContains(t, err, "multi-tenant Optimize in global.topology.mode=orchestration requires optimize.identity.service.url or global.identity.service.url")
 }
 
+func TestOrchestrationTopologyMultiTenantOptimizeUsesExternalManagementIdentity(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "orchestration.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues: map[string]string{
+			"global.identity.service.url": "https://hub.example.com/identity",
+			"global.multitenancy.enabled": "true",
+		},
+	}
+
+	output, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/optimize/deployment.yaml"})
+	require.NoError(t, err)
+	require.Contains(t, output, "CAMUNDA_OPTIMIZE_MULTITENANCY_ENABLED")
+}
+
+func TestCombinedTopologyRejectsMultitenancyWithoutManagementIdentity(t *testing.T) {
+	options := &helm.Options{SetValues: map[string]string{
+		"global.multitenancy.enabled":              "true",
+		"identity.enabled":                         "false",
+		"orchestration.data.secondaryStorage.type": "elasticsearch",
+	}}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/optimize/deployment.yaml"})
+	require.ErrorContains(t, err, "requires Identity enabled and configured with database")
+}
+
 func TestOrchestrationTopologyUsesGlobalIdentityServiceURL(t *testing.T) {
 	valuesFile := filepath.Join("testdata", "orchestration.yaml")
 	options := &helm.Options{
