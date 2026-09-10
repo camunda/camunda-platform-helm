@@ -155,6 +155,38 @@ func Execute(ctx context.Context, flags *config.RuntimeFlags) error {
 	return executeSingleDeployment(ctx, flags)
 }
 
+// PrepareScenario builds the exact values chain used by deployment without
+// mutating the cluster. Multi-release callers prepare every release first.
+func PrepareScenario(ctx context.Context, scenarioCtx *ScenarioContext, flags *config.RuntimeFlags) (*PreparedScenario, error) {
+	if err := runFailFastPreflight(ctx, flags); err != nil {
+		return nil, err
+	}
+	return prepareScenarioValues(ctx, scenarioCtx, flags)
+}
+
+// ExecutePrepared deploys an already prepared canonical values chain.
+func ExecutePrepared(ctx context.Context, prepared *PreparedScenario, flags *config.RuntimeFlags) error {
+	if flags.OnPhase != nil {
+		flags.OnPhase("deploying")
+	}
+	return executeDeployment(ctx, prepared, flags).Error
+}
+
+func RenderPreparedTopologyContract(ctx context.Context, prepared *PreparedScenario, flags *config.RuntimeFlags) ([]byte, error) {
+	return deployer.RenderTopologyContract(ctx, types.Options{
+		ChartPath:   flags.Chart.ChartPath,
+		Chart:       flags.Chart.Chart,
+		Version:     flags.Chart.ChartVersion,
+		ReleaseName: prepared.ScenarioCtx.Release,
+		Namespace:   prepared.ScenarioCtx.Namespace,
+		IngressHost: prepared.ScenarioCtx.IngressHost,
+		KubeContext: flags.Test.KubeContext,
+		ValuesFiles: prepared.ValuesFiles,
+		SetPairs:    flags.Deployment.ExtraHelmSets,
+		ExtraArgs:   flags.Deployment.ExtraHelmArgs,
+	})
+}
+
 // executeParallelDeployments deploys multiple scenarios concurrently.
 func executeParallelDeployments(ctx context.Context, flags *config.RuntimeFlags) error {
 	logging.Logger.Info().
@@ -190,6 +222,11 @@ func executeParallelDeployments(ctx context.Context, flags *config.RuntimeFlags)
 		Msg("Phase 1: Preparing values for all scenarios sequentially")
 
 	prepared := make([]*PreparedScenario, 0, len(flags.Deployment.Scenarios))
+	defer func() {
+		for _, scenario := range prepared {
+			scenario.Cleanup()
+		}
+	}()
 	for _, scenario := range flags.Deployment.Scenarios {
 		scenarioCtx, err := generateScenarioContext(scenario, flags)
 		if err != nil {
@@ -209,7 +246,7 @@ func executeParallelDeployments(ctx context.Context, flags *config.RuntimeFlags)
 					Str("dir", prep.TempDir).
 					Str("scenario", prep.ScenarioCtx.ScenarioName).
 					Msg("🧹 Cleaning up prepared scenario temp dir due to preparation failure")
-				os.RemoveAll(prep.TempDir)
+				prep.Cleanup()
 			}
 			return fmt.Errorf("scenario %q failed during preparation: %w", scenario, err)
 		}
@@ -298,6 +335,7 @@ func executeSingleDeployment(ctx context.Context, flags *config.RuntimeFlags) er
 	if err != nil {
 		return fmt.Errorf("failed to prepare scenario: %w", err)
 	}
+	defer prepared.Cleanup()
 
 	// Phase 2: Deploy
 	if flags.OnPhase != nil {
@@ -355,15 +393,6 @@ func executeDeployment(ctx context.Context, prepared *PreparedScenario, flags *c
 		OrchestrationIndexPrefix: prepared.OrchestrationPrefix,
 		LayeredFiles:             prepared.LayeredFiles,
 	}
-
-	// Ensure temp directory is cleaned up when deployment completes
-	defer func() {
-		logging.Logger.Debug().
-			Str("dir", prepared.TempDir).
-			Str("scenario", scenarioCtx.ScenarioName).
-			Msg("🧹 [executeDeployment] cleaning up temporary directory")
-		os.RemoveAll(prepared.TempDir)
-	}()
 
 	logging.Logger.Info().
 		Str("scenario", scenarioCtx.ScenarioName).

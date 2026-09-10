@@ -25,6 +25,18 @@ import (
 	"time"
 )
 
+func TestAppendHelmValueArgsKeepsDeterministicSetsAndExtraArgsLast(t *testing.T) {
+	args := appendHelmValueArgs([]string{"template"}, types.Options{
+		ValuesFiles: []string{"base.yaml"},
+		SetPairs:    map[string]string{"z": "last-key", "a": "first-key"},
+		ExtraArgs:   []string{"--set", "a=override"},
+	})
+	want := "template -f base.yaml --set a=first-key --set z=last-key --set a=override"
+	if got := strings.Join(args, " "); got != want {
+		t.Fatalf("args = %q, want %q", got, want)
+	}
+}
+
 func TestHelmError_Error(t *testing.T) {
 	err := &HelmError{
 		Reason:  "helm upgrade --install failed",
