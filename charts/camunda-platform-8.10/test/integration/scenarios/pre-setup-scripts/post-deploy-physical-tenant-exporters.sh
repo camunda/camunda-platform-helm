@@ -32,10 +32,11 @@ fail() {
 }
 
 partitions_are_healthy() {
+  # Each tenant maps to an object keyed by partition id: {"tenanta":{"1":{...}}}.
   jq -e '
     (keys | sort) == ["default", "tenanta", "tenantb"]
     and all(.default, .tenanta, .tenantb;
-      type == "array"
+      (type == "object" or type == "array")
       and length > 0
       and all(.[]; .exporterPhase == "EXPORTING" and .exportedPosition >= 0))
   ' >/dev/null 2>&1
