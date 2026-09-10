@@ -429,7 +429,7 @@ integration:
             - identity
             - console
             - orchestration-grpc
-          tier: 2
+          tier: 1
           infra-type:
             eks: preemptible
             gke: distroci
