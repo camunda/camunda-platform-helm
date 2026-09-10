@@ -70,6 +70,25 @@ func (s *ConfigMapTemplateTest) TestDifferentValuesInputs() {
 				s.Require().Equal("http://keycloak:80/auth/realms/camunda-platform", configmap.Data["CAMUNDA_IDENTITY_ISSUER_BACKEND_URL"])
 			},
 		}, {
+			Name: "TestConfigMapOmitsIdentityBaseURLWithoutManagementIdentity",
+			Values: map[string]string{
+				"global.identity.auth.enabled":             "true",
+				"global.identity.auth.type":                "GENERIC",
+				"global.identity.auth.issuer":              "https://issuer.example.com",
+				"global.identity.auth.issuerBackendUrl":    "https://issuer.example.com",
+				"global.identity.auth.jwksUrl":             "https://issuer.example.com/certs",
+				"global.identity.service.url":              "",
+				"identity.enabled":                         "false",
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+				s.Require().NotContains(configmap.Data, "CAMUNDA_IDENTITY_BASEURL")
+				s.Require().Equal("https://issuer.example.com", configmap.Data["CAMUNDA_IDENTITY_ISSUER"])
+			},
+		}, {
 			Name: "TestConfigMapIdentityIssuerURLWithKeycloakURLSyntax",
 			Values: map[string]string{
 				"global.identity.auth.enabled":                                        "true",

@@ -555,11 +555,30 @@ func (s *AuthIdentityTemplateTest) TestIdentityConfigMapChecksumRestartsThePod()
 	s.Require().NotEqual(first, second, "changing the identity ConfigMap must change the checksum")
 }
 
+func (s *AuthIdentityTemplateTest) TestSharedIdentityConfigMapChecksumRestartsThePod() {
+	base := map[string]string{
+		"global.identity.service.url": "http://identity.example.com/identity",
+	}
+	changed := map[string]string{
+		"global.identity.service.url": "http://other-identity.example.com/identity",
+	}
+
+	first := s.checksumAnnotationNamed(s.render(base, []string{"templates/optimize/deployment.yaml"}), "checksum/config-shared-identity-env:")
+	second := s.checksumAnnotationNamed(s.render(changed, []string{"templates/optimize/deployment.yaml"}), "checksum/config-shared-identity-env:")
+
+	s.Require().NotEmpty(first, "the Deployment must annotate the shared identity ConfigMap checksum")
+	s.Require().NotEqual(first, second, "changing the shared identity ConfigMap must change the checksum")
+}
+
 func (s *AuthIdentityTemplateTest) checksumAnnotation(deployment string) string {
+	return s.checksumAnnotationNamed(deployment, "checksum/config-identity-env:")
+}
+
+func (s *AuthIdentityTemplateTest) checksumAnnotationNamed(deployment, name string) string {
 	for _, line := range strings.Split(deployment, "\n") {
 		trimmed := strings.TrimSpace(line)
-		if strings.HasPrefix(trimmed, "checksum/config-identity-env:") {
-			return strings.TrimSpace(strings.TrimPrefix(trimmed, "checksum/config-identity-env:"))
+		if strings.HasPrefix(trimmed, name) {
+			return strings.TrimSpace(strings.TrimPrefix(trimmed, name))
 		}
 	}
 	return ""
