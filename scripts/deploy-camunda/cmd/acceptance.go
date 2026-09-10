@@ -268,8 +268,7 @@ func runPhysicalTenantAcceptance(ctx context.Context, opts physicalTenantAccepta
 		return fail(errors.New("a physical tenant fell back to a BlockingExporter: an exporter id is enabled in the partition state but its configuration is missing"))
 	}
 	for _, tenant := range []string{"default", "tenanta", "tenantb"} {
-		matched, _ := regexp.MatchString(`broker\.exporter\.(elasticsearch|opensearch).*physicalTenant=`+regexp.QuoteMeta(tenant)+`[},]`, brokerLog)
-		if !matched {
+		if !legacyExporterOpened(brokerLog, tenant) {
 			return fail(fmt.Errorf("the legacy exporter never opened for physical tenant %q", tenant))
 		}
 	}
@@ -385,6 +384,23 @@ func waitForForwardPort(ctx context.Context, process acceptanceProcess, sleep fu
 		}
 	}
 	return "", fmt.Errorf("management port-forward never reported a local port: %s", strings.TrimSpace(process.Output()))
+}
+
+// A broker log line carries its MDC context -- including physicalTenant -- BEFORE the logger name,
+// so the two markers are matched independently rather than in one ordered expression. The trailing
+// [},] keeps a tenant id from matching a longer one that starts with it.
+func legacyExporterOpened(brokerLog, tenant string) bool {
+	tenantMarker := regexp.MustCompile(`physicalTenant=` + regexp.QuoteMeta(tenant) + `[},]`)
+	for _, line := range strings.Split(brokerLog, "\n") {
+		if !strings.Contains(line, "broker.exporter.elasticsearch") &&
+			!strings.Contains(line, "broker.exporter.opensearch") {
+			continue
+		}
+		if tenantMarker.MatchString(line) {
+			return true
+		}
+	}
+	return false
 }
 
 // The actuator keys each tenant by partition id: {"tenanta":{"1":{...}}}.

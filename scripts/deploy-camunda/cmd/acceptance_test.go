@@ -29,6 +29,53 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// Lines copied verbatim from the ptnt install job of merge-queue run 34497754979, where the
+// previous ordered regex matched none of them.
+const realBrokerLog = `[2026-09-10 16:39:06.252] [zb-fs-workers-2] [{actor-name=Exporter-1, actor-scheduler=Broker-0, partitionId=1, physicalTenant=tenanta}] INFO  	io.camunda.zeebe.broker.exporter.elasticsearch - Exporter opened
+[2026-09-10 16:39:06.291] [zb-fs-workers-0] [{actor-name=Exporter-1, actor-scheduler=Broker-0, partitionId=1, physicalTenant=default}] INFO  	io.camunda.zeebe.broker.exporter.elasticsearch - Exporter opened
+[2026-09-10 16:39:06.296] [zb-fs-workers-1] [{actor-name=Exporter-1, actor-scheduler=Broker-0, partitionId=1, physicalTenant=tenantb}] INFO  	io.camunda.zeebe.broker.exporter.elasticsearch - Exporter opened`
+
+func TestLegacyExporterOpened(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name      string
+		brokerLog string
+		tenant    string
+		want      bool
+	}{
+		{"real log, default", realBrokerLog, "default", true},
+		{"real log, tenanta", realBrokerLog, "tenanta", true},
+		{"real log, tenantb", realBrokerLog, "tenantb", true},
+		{"tenant absent from the log", realBrokerLog, "tenantc", false},
+		{"empty log", "", "default", false},
+		{
+			"tenant id is a prefix of the logged one",
+			"[{partitionId=1, physicalTenant=tenantalpha}] INFO io.camunda.zeebe.broker.exporter.elasticsearch - Exporter opened",
+			"tenanta",
+			false,
+		},
+		{
+			"opensearch logger is accepted too",
+			"[{partitionId=1, physicalTenant=default}] INFO io.camunda.zeebe.broker.exporter.opensearch - Exporter opened",
+			"default",
+			true,
+		},
+		{
+			"tenant on a line without the legacy exporter logger",
+			"[{partitionId=1, physicalTenant=default}] INFO io.camunda.exporter.CamundaExporter - Configuring exporter",
+			"default",
+			false,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			assert.Equal(t, test.want, legacyExporterOpened(test.brokerLog, test.tenant))
+		})
+	}
+}
+
 func TestPartitionsHealthy(t *testing.T) {
 	t.Parallel()
 
