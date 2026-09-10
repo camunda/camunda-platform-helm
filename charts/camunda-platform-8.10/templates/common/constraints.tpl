@@ -1315,19 +1315,32 @@ The following values inside your values.yaml need to be set but were not:
     {{- end }}
   {{- end }}
 
-  {{- if and .Values.global.ingress.enabled (not .Values.global.ingress.external) }}
-    {{- if or
-          (eq (include "camundaPlatform.orchestrationRESTTLSEnabled" .) "true")
-          (eq (include "camundaPlatform.orchestrationGRPCTLSEnabled" .) "true")
-          (eq (include "camundaPlatform.connectorsTLSEnabled" .) "true")
-          (eq (include "camundaPlatform.optimizeServerTLSEnabled" .) "true") }}
-      {{- $warningMessage := printf "%s %s %s"
-          "[camunda][warning]"
-          "Upstream TLS is enabled, so the chart annotates the Ingress with nginx.ingress.kubernetes.io/backend-protocol, which only ingress-nginx reads."
-          "On any other Ingress controller the upstream stays plaintext and routing to the TLS-only pod will break until you set that controller's equivalent, for example projectcontour.io/upstream-protocol.tls (or .h2 for gRPC) on the target Service with Contour."
-      -}}
-      {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
-    {{- end }}
+  {{- $httpTLSComponents := list }}
+  {{- if eq (include "camundaPlatform.orchestrationRESTTLSEnabled" .) "true" }}
+    {{- $httpTLSComponents = append $httpTLSComponents "global.tls.orchestration.rest" }}
+  {{- end }}
+  {{- if eq (include "camundaPlatform.connectorsTLSEnabled" .) "true" }}
+    {{- $httpTLSComponents = append $httpTLSComponents "global.tls.connectors" }}
+  {{- end }}
+  {{- if eq (include "camundaPlatform.optimizeServerTLSEnabled" .) "true" }}
+    {{- $httpTLSComponents = append $httpTLSComponents "global.tls.optimize" }}
+  {{- end }}
+  {{- if and .Values.global.ingress.enabled (not .Values.global.ingress.external) $httpTLSComponents (ne .Values.global.ingress.className "nginx") }}
+    {{- $warningMessage := printf "%s %s %s"
+        "[camunda][warning]"
+        (printf "%s enabled upstream TLS, so the chart annotates the Ingress with nginx.ingress.kubernetes.io/backend-protocol: HTTPS, but global.ingress.className is %q rather than nginx." (join ", " $httpTLSComponents) .Values.global.ingress.className)
+        "Only ingress-nginx reads that annotation, so on another controller the upstream stays plaintext and routing to the TLS-only pod breaks. Set your controller's equivalent, for example projectcontour.io/upstream-protocol.tls on the target Service with Contour."
+    -}}
+    {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+  {{- end }}
+
+  {{- if and .Values.orchestration.ingress.grpc.enabled (not .Values.orchestration.ingress.grpc.external) (eq (include "camundaPlatform.orchestrationGRPCTLSEnabled" .) "true") (ne .Values.orchestration.ingress.grpc.className "nginx") }}
+    {{- $warningMessage := printf "%s %s %s"
+        "[camunda][warning]"
+        (printf "global.tls.orchestration.grpc enabled upstream TLS, so the chart annotates the gRPC Ingress with nginx.ingress.kubernetes.io/backend-protocol: GRPCS, but orchestration.ingress.grpc.className is %q rather than nginx." .Values.orchestration.ingress.grpc.className)
+        "Only ingress-nginx reads that annotation, so on another controller the upstream stays plaintext and Zeebe gRPC breaks. Set your controller's equivalent, for example projectcontour.io/upstream-protocol.h2 on the Orchestration Service with Contour."
+    -}}
+    {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
   {{- end }}
 
   {{/* Warn when webModeler pusher secret is auto-generated */}}
