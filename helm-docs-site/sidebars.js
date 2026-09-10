@@ -93,6 +93,19 @@ const sidebars = {
       ],
     },
 
+    {
+      type: 'category',
+      label: 'Operator guides',
+      collapsible: false,
+      items: [
+        {
+          type: 'doc',
+          id: 'operator-guides/hub-and-physical-tenant-optimize',
+          label: 'Hub and Physical Tenant Optimize',
+        },
+      ],
+    },
+
     // ── Skills & Runbooks ─────────────────────────────────────────────────────
     {
       type: 'category',
