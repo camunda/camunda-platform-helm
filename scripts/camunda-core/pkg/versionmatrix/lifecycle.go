@@ -15,6 +15,7 @@
 package versionmatrix
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -64,7 +65,9 @@ func LoadChartVersionsConfig(path string) (*ChartVersionsConfig, error) {
 		return nil, fmt.Errorf("read %s: %w", path, err)
 	}
 	var cfg ChartVersionsConfig
-	if err := yaml.Unmarshal(data, &cfg); err != nil {
+	decoder := yaml.NewDecoder(bytes.NewReader(data))
+	decoder.KnownFields(true)
+	if err := decoder.Decode(&cfg); err != nil {
 		return nil, fmt.Errorf("parse %s: %w", path, err)
 	}
 	if err := cfg.Validate(); err != nil {
@@ -124,8 +127,8 @@ func (c *ChartVersionsConfig) LatestStable() (string, error) {
 
 func (c *ChartVersionsConfig) Validate() error {
 	var errs []string
-	if c.ChartAutomation.RoutineVersions == nil {
-		errs = append(errs, "chartAutomation.routineVersions is required (use [] to disable routine automation)")
+	if len(c.ChartAutomation.RoutineVersions) == 0 {
+		errs = append(errs, "chartAutomation.routineVersions must not be empty")
 	}
 	if len(c.CamundaSupportLifecycle) == 0 {
 		errs = append(errs, "camundaSupportLifecycle must not be empty")

@@ -62,6 +62,34 @@ func TestLoadChartVersionsConfigValid(t *testing.T) {
 	}
 }
 
+func TestLoadChartVersionsConfigRejectsUnknownFields(t *testing.T) {
+	t.Parallel()
+	for _, testCase := range []struct {
+		field string
+		typo  string
+	}{
+		{field: "chartAutomation", typo: "chartAutomaton"},
+		{field: "routineVersions", typo: "routineVersion"},
+		{field: "released", typo: "relesaed"},
+		{field: "stdSupportUntil", typo: "stdSupportUntill"},
+		{field: "eolSince", typo: "eolSicne"},
+	} {
+		t.Run(testCase.field, func(t *testing.T) {
+			content := strings.Replace(validYAML(), testCase.field+":", testCase.typo+":", 1)
+			cfg, err := loadFromString(t, content)
+			if err == nil {
+				t.Fatal("expected unknown field to fail decoding")
+			}
+			if want := "field " + testCase.typo + " not found"; !strings.Contains(err.Error(), want) {
+				t.Errorf("error %q does not contain %q", err, want)
+			}
+			if cfg != nil {
+				t.Error("invalid YAML returned a usable configuration")
+			}
+		})
+	}
+}
+
 func TestRoutineAutomationIndependentOfLifecycle(t *testing.T) {
 	t.Parallel()
 	cfg, err := loadFromString(t, `
@@ -128,10 +156,6 @@ func TestLifecycleReleaseSelection(t *testing.T) {
 	if got := cfg.BucketOf("8.10"); got != BucketSupportStandard {
 		t.Errorf("BucketOf(8.10) after GA = %q", got)
 	}
-	cfg.ChartAutomation.RoutineVersions = []string{}
-	if err := cfg.Validate(); err != nil {
-		t.Fatalf("empty routine list: %v", err)
-	}
 }
 
 func TestValidateFailures(t *testing.T) {
@@ -145,7 +169,15 @@ func TestValidateFailures(t *testing.T) {
 		},
 		"missing routine list": {
 			mutate: strings.Replace(validYAML(), `chartAutomation: { routineVersions: ["8.10", "8.9"] }`, `chartAutomation: {}`, 1),
-			want:   "chartAutomation.routineVersions is required",
+			want:   "chartAutomation.routineVersions must not be empty",
+		},
+		"empty routine list": {
+			mutate: strings.Replace(validYAML(), `["8.10", "8.9"]`, `[]`, 1),
+			want:   "chartAutomation.routineVersions must not be empty",
+		},
+		"null routine list": {
+			mutate: strings.Replace(validYAML(), `["8.10", "8.9"]`, `null`, 1),
+			want:   "chartAutomation.routineVersions must not be empty",
 		},
 		"support metadata missing released": {
 			mutate: strings.Replace(validYAML(),
