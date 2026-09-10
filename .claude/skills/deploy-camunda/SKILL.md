@@ -221,7 +221,7 @@ The `qa-*` scenarios have `image-tags: true`, which includes `base-image-tags.ya
 
 The default matrix includes only `chartAutomation.routineVersions` from `charts/chart-versions.yaml`, independently of support-lifecycle metadata. A version outside that list is reachable when named explicitly **and** its chart dir has a CI scenario registry (`test/ci/registry/manifest.yaml`). **8.6** uses this opt-in path. A lifecycle `eolSince` entry blocks matrix execution, including explicit requests.
 
-Every 8.6 scenario is `enabled: false`, so `--include-disabled` is mandatory — without it the run yields no entries.
+Every 8.6 scenario is `enabled: false`, so `--include-disabled` is mandatory. If no enabled entries match but disabled entries satisfy the same filters, `matrix run` returns an error directing you to re-run with `--include-disabled`. Unmatched filters retain the normal no-match diagnostic, and `matrix list` still lists no entries without opt-in.
 
 ```bash
 # Validate a patched image against the 8.6 chart

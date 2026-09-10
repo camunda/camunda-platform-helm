@@ -544,14 +544,27 @@ Under the hood this invokes deploy.Execute() for each matrix entry.`,
 				return err
 			}
 
-			entries = matrix.Filter(entries, matrix.FilterOptions{
+			filterOptions := matrix.FilterOptions{
 				ScenarioFilter:  scenarioFilter,
 				ShortnameFilter: shortnameFilter,
 				ShortnameExact:  shortnameExact,
 				FlowFilter:      flowFilter,
 				Platform:        platform,
 				Tier:            tier,
-			})
+			}
+			entries = matrix.Filter(entries, filterOptions)
+			if len(entries) == 0 && !includeDisabled {
+				withDisabled, err := matrix.Generate(repoRoot, matrix.GenerateOptions{
+					Versions:        versions,
+					IncludeDisabled: true,
+				})
+				if err != nil {
+					return err
+				}
+				if matches := matrix.Filter(withDisabled, filterOptions); len(matches) > 0 {
+					return fmt.Errorf("no enabled matrix entries matched the filters (versions=%v); matching scenarios are disabled; re-run with --include-disabled to include them", versions)
+				}
+			}
 
 			// Entries whose scenario declares a topology (multi-namespace
 			// deployment) fan out to N releases and are driven directly via
