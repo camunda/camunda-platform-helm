@@ -143,14 +143,28 @@ func Generate(repoRoot string, opts GenerateOptions) ([]Entry, error) {
 	activeVersions := cv.ActiveVersions()
 	var versions []string
 	if len(opts.Versions) > 0 {
-		// Validate requested versions are active
 		activeSet := make(map[string]bool)
 		for _, v := range activeVersions {
 			activeSet[v] = true
 		}
+		eolSet := make(map[string]bool)
+		for _, v := range cv.CamundaVersions.EndOfLife {
+			eolSet[v] = true
+		}
 		for _, v := range opts.Versions {
 			if !activeSet[v] {
-				return nil, fmt.Errorf("requested version %q is not active (active: %v)", v, activeVersions)
+				if eolSet[v] {
+					return nil, fmt.Errorf("requested version %q is end-of-life and cannot be tested; active versions: %v", v, activeVersions)
+				}
+				chartDir := filepath.Join(repoRoot, "charts", "camunda-platform-"+v)
+				if !HasRegistry(chartDir) {
+					return nil, fmt.Errorf(
+						"requested version %q is not active and has no CI scenario registry at %s;"+
+							" active versions: %v."+
+							" Deploy a single scenario directly instead:"+
+							" deploy-camunda --scenario charts/camunda-platform-%s/test/integration/scenarios/chart-full-setup",
+						v, filepath.Join(chartDir, "test", RegistryDirName, "manifest.yaml"), activeVersions, v)
+				}
 			}
 			versions = append(versions, v)
 		}
