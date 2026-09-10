@@ -57,6 +57,10 @@ integration:
       shortname: esoi
       tier: 1
       enabled: true
+    - id: oidc-defaults
+      shortname: esoid
+      tier: 2
+      enabled: true
     - id: auth0
       shortname: esa0
       tier: 1

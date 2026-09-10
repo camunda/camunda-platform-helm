@@ -1,0 +1,33 @@
+# External OIDC (Microsoft Entra) on default feature values.
+#
+# Deliberately the `oidc` scenario minus the `hub-ping` feature. Every other
+# scenario that puts Management Identity on a non-Keycloak issuer (`oidc`,
+# `auth0`) opts into hub-ping, which sets orchestration.hub.ping.endpoint and
+# so re-renders config the default path leaves out. That made the default
+# external-IdP install the one shape CI never deployed, and it is the shape
+# most customers run — camunda/identity#5152 shipped in 15.0.0-alpha4/alpha5
+# because of it.
+#
+# Do not add features here. The value of this scenario is that it deploys an
+# external IdP with the opt-in surface switched off.
+name: oidc-defaults
+auth: oidc
+flows:
+  - install
+identity: oidc
+persistence: elasticsearch
+features:
+  - postgresql-companion
+platforms:
+  - gke
+exclude:
+  - identity
+  - console
+  - orchestration-grpc
+infra-type:
+  eks: preemptible
+  gke: distroci
+skip-e2e: true
+dependencies:
+  - postgresql
+  - elasticsearch
