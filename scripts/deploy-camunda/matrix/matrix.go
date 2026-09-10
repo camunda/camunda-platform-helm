@@ -23,6 +23,7 @@ import (
 	"github.com/jwalton/gchalk"
 
 	"scripts/camunda-core/pkg/logging"
+	"scripts/camunda-core/pkg/versionmatrix"
 )
 
 // Entry represents a single matrix entry — one scenario + one flow + one platform combination.
@@ -147,13 +148,9 @@ func Generate(repoRoot string, opts GenerateOptions) ([]Entry, error) {
 		for _, v := range activeVersions {
 			activeSet[v] = true
 		}
-		eolSet := make(map[string]bool)
-		for _, v := range cv.CamundaVersions.EndOfLife {
-			eolSet[v] = true
-		}
 		for _, v := range opts.Versions {
 			if !activeSet[v] {
-				if eolSet[v] {
+				if cv.BucketOf(v) == versionmatrix.BucketEndOfLife {
 					return nil, fmt.Errorf("requested version %q is end-of-life and cannot be tested; active versions: %v", v, activeVersions)
 				}
 				chartDir := filepath.Join(repoRoot, "charts", "camunda-platform-"+v)

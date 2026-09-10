@@ -21,12 +21,11 @@ package releaseplease
 
 import (
 	"fmt"
-	"os"
 	"regexp"
 	"strconv"
 	"strings"
 
-	"gopkg.in/yaml.v3"
+	"scripts/camunda-core/pkg/versionmatrix"
 )
 
 var (
@@ -50,7 +49,7 @@ type Result struct {
 // Compute derives the release version, prerelease flag and dev tag.
 //
 //   - currentVersion: Chart.yaml .version.
-//   - stillAlpha: whether chartVersion is still listed under camundaVersions.alpha
+//   - stillAlpha: whether chartVersion has no lifecycle released date
 //     (see StillAlpha) — distinguishes a prerelease bump from an alpha→stable cut.
 //   - traceLog: the release-please dry-run trace (only consulted for a stable
 //     release where the version must be scraped).
@@ -120,25 +119,14 @@ func ScrapeTraceVersion(traceLog, chartDir string) string {
 	return ""
 }
 
-// StillAlpha reports whether chartVersion is listed under
-// .camundaVersions.alpha[] in chart-versions.yaml.
+// StillAlpha reports whether chartVersion has no lifecycle released date.
 func StillAlpha(chartVersionsPath, chartVersion string) (bool, error) {
-	data, err := os.ReadFile(chartVersionsPath)
+	versions, err := versionmatrix.LoadChartVersionsConfig(chartVersionsPath)
 	if err != nil {
-		return false, fmt.Errorf("read %s: %w", chartVersionsPath, err)
+		return false, err
 	}
-	var cv struct {
-		CamundaVersions struct {
-			Alpha []string `yaml:"alpha"`
-		} `yaml:"camundaVersions"`
+	if versions.BucketOf(chartVersion) == "" {
+		return false, fmt.Errorf("minor %s has no camundaSupportLifecycle entry", chartVersion)
 	}
-	if err := yaml.Unmarshal(data, &cv); err != nil {
-		return false, fmt.Errorf("parse %s: %w", chartVersionsPath, err)
-	}
-	for _, v := range cv.CamundaVersions.Alpha {
-		if v == chartVersion {
-			return true, nil
-		}
-	}
-	return false, nil
+	return versions.BucketOf(chartVersion) == versionmatrix.BucketAlpha, nil
 }

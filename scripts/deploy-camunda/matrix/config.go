@@ -22,38 +22,15 @@ import (
 	"strings"
 
 	"gopkg.in/yaml.v3"
+	"scripts/camunda-core/pkg/versionmatrix"
 )
 
 // ChartVersions holds the parsed content of charts/chart-versions.yaml.
-type ChartVersions struct {
-	CamundaVersions struct {
-		Alpha           []string `yaml:"alpha"`
-		SupportStandard []string `yaml:"supportStandard"`
-		SupportExtended []string `yaml:"supportExtended"`
-		EndOfLife       []string `yaml:"endOfLife"`
-	} `yaml:"camundaVersions"`
-}
-
-// ActiveVersions returns the list of active versions (alpha + supportStandard).
-func (cv *ChartVersions) ActiveVersions() []string {
-	var versions []string
-	versions = append(versions, cv.CamundaVersions.Alpha...)
-	versions = append(versions, cv.CamundaVersions.SupportStandard...)
-	return versions
-}
+type ChartVersions = versionmatrix.ChartVersionsConfig
 
 // LoadChartVersions reads and parses charts/chart-versions.yaml from the repo root.
 func LoadChartVersions(repoRoot string) (*ChartVersions, error) {
-	path := filepath.Join(repoRoot, "charts", "chart-versions.yaml")
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read chart-versions.yaml: %w", err)
-	}
-	var cv ChartVersions
-	if err := yaml.Unmarshal(data, &cv); err != nil {
-		return nil, fmt.Errorf("failed to parse chart-versions.yaml: %w", err)
-	}
-	return &cv, nil
+	return versionmatrix.LoadChartVersionsConfig(versionmatrix.ChartVersionsPath(repoRoot))
 }
 
 // CITestConfig holds the parsed content of a ci-test-config.yaml file.

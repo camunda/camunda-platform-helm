@@ -738,7 +738,7 @@ func extendedVersionByRegistry(t *testing.T, repoRoot string, hasRegistry bool) 
 	if err != nil {
 		t.Fatalf("LoadChartVersions: %v", err)
 	}
-	for _, v := range cv.CamundaVersions.SupportExtended {
+	for _, v := range cv.MinorsInBucket(versionmatrix.BucketSupportExtended) {
 		chartDir := filepath.Join(repoRoot, "charts", "camunda-platform-"+v)
 		if _, statErr := os.Stat(chartDir); statErr != nil {
 			continue
@@ -803,10 +803,11 @@ func TestGenerateEndOfLifeVersionRejected(t *testing.T) {
 	if err != nil {
 		t.Fatalf("LoadChartVersions: %v", err)
 	}
-	if len(cv.CamundaVersions.EndOfLife) == 0 {
+	eolVersions := cv.MinorsInBucket(versionmatrix.BucketEndOfLife)
+	if len(eolVersions) == 0 {
 		t.Skip("no endOfLife versions in chart-versions.yaml")
 	}
-	version := cv.CamundaVersions.EndOfLife[0]
+	version := eolVersions[0]
 
 	_, err = Generate(repoRoot, GenerateOptions{Versions: []string{version}})
 	if err == nil {
@@ -832,14 +833,7 @@ func TestLoadChartVersions(t *testing.T) {
 		t.Fatal("LoadChartVersions: no active versions")
 	}
 
-	// 8.10 should be alpha
-	found := false
-	for _, v := range cv.CamundaVersions.Alpha {
-		if v == "8.10" {
-			found = true
-		}
-	}
-	if !found {
+	if cv.BucketOf("8.10") != versionmatrix.BucketAlpha {
 		t.Error("LoadChartVersions: 8.10 not found in alpha")
 	}
 }

@@ -76,6 +76,22 @@ func TestPlanManualAllBuildsNonEmpty(t *testing.T) {
 	}
 }
 
+func TestPlanChartVersionsChangeBuildsRoutineVersions(t *testing.T) {
+	t.Parallel()
+	result, err := Plan(findRepoRoot(t), PlanOptions{
+		ActiveVersions: planActiveVersions,
+		ChangedFiles:   "charts/chart-versions.yaml",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantVersions := append([]string(nil), planActiveVersions...)
+	sort.Strings(wantVersions)
+	if got, want := strings.Join(result.Versions, ","), strings.Join(wantVersions, ","); got != want {
+		t.Errorf("versions = %s, want routine versions %s", got, want)
+	}
+}
+
 func TestPlanManualSingleVersion(t *testing.T) {
 	result, err := Plan(findRepoRoot(t), PlanOptions{ActiveVersions: planActiveVersions, ManualTrigger: "8.9"})
 	if err != nil {

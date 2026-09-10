@@ -17,21 +17,14 @@ package versionmatrix
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 )
 
 func validYAML() string {
 	return `
-camundaVersions:
-  alpha:
-    - "8.10"
-  supportStandard:
-    - "8.9"
-  supportExtended:
-    - "8.6"
-  endOfLife:
-    - "8.2"
+chartAutomation: { routineVersions: ["8.10", "8.9"] }
 camundaSupportLifecycle:
   "8.10": { note: "hub pointer" }
   "8.9":  { released: "2026-04-14", stdSupportUntil: "2027-10-13" }
@@ -69,42 +62,110 @@ func TestLoadChartVersionsConfigValid(t *testing.T) {
 	}
 }
 
+func TestRoutineAutomationIndependentOfLifecycle(t *testing.T) {
+	t.Parallel()
+	cfg, err := loadFromString(t, `
+chartAutomation:
+  routineVersions: ["8.10", "8.9", "8.7"]
+camundaSupportLifecycle:
+  "8.10": { note: "preview" }
+  "8.9": { released: "2026-04-14", stdSupportUntil: "2027-10-13" }
+  "8.7": { released: "2025-04-08", stdSupportUntil: "2026-10-13" }
+  "8.6": { released: "2024-10-08" }
+  "8.2": { released: "2022-10-11", eolSince: "2024-10-08", latestChart: "8.2.34" }
+`)
+	if err != nil {
+		t.Fatalf("LoadChartVersionsConfig: %v", err)
+	}
+	if got := cfg.ActiveVersions(); !slices.Equal(got, []string{"8.10", "8.9", "8.7"}) {
+		t.Fatalf("ActiveVersions = %v", got)
+	}
+	for minor, want := range map[string]string{
+		"8.10": BucketAlpha,
+		"8.9":  BucketSupportStandard,
+		"8.7":  BucketSupportStandard,
+		"8.6":  BucketSupportExtended,
+		"8.2":  BucketEndOfLife,
+	} {
+		if got := cfg.BucketOf(minor); got != want {
+			t.Errorf("BucketOf(%s) = %q, want %q", minor, got, want)
+		}
+	}
+	before, err := RenderIndex(cfg, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cfg.ChartAutomation.RoutineVersions = []string{"8.6"}
+	if err := cfg.Validate(); err != nil {
+		t.Fatal(err)
+	}
+	after, err := RenderIndex(cfg, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if before != after {
+		t.Error("routine automation membership changed the rendered version matrix")
+	}
+}
+
+func TestLifecycleReleaseSelection(t *testing.T) {
+	t.Parallel()
+	cfg, err := loadFromString(t, validYAML())
+	if err != nil {
+		t.Fatal(err)
+	}
+	cfg.ChartAutomation.RoutineVersions = []string{"8.6"}
+	if latest, err := cfg.LatestStable(); err != nil || latest != "8.9" {
+		t.Fatalf("LatestStable = %q, %v; want 8.9", latest, err)
+	}
+	cfg.CamundaSupportLifecycle["8.10"] = Lifecycle{Released: "2026-10-13", StdSupportUntil: "2028-04-12"}
+	if err := cfg.Validate(); err != nil {
+		t.Fatal(err)
+	}
+	if latest, err := cfg.LatestStable(); err != nil || latest != "8.10" {
+		t.Fatalf("LatestStable after GA = %q, %v; want 8.10", latest, err)
+	}
+	if got := cfg.BucketOf("8.10"); got != BucketSupportStandard {
+		t.Errorf("BucketOf(8.10) after GA = %q", got)
+	}
+	cfg.ChartAutomation.RoutineVersions = []string{}
+	if err := cfg.Validate(); err != nil {
+		t.Fatalf("empty routine list: %v", err)
+	}
+}
+
 func TestValidateFailures(t *testing.T) {
 	cases := map[string]struct {
 		mutate string
 		want   string
 	}{
-		"bucket minor without lifecycle entry": {
-			mutate: strings.Replace(validYAML(), `  "8.6":  { released: "2024-10-08" }`+"\n", "", 1),
-			want:   "8.6 has no camundaSupportLifecycle entry",
+		"routine minor without lifecycle entry": {
+			mutate: strings.Replace(validYAML(), `  "8.9":  { released: "2026-04-14", stdSupportUntil: "2027-10-13" }`+"\n", "", 1),
+			want:   "8.9 has no camundaSupportLifecycle entry",
 		},
-		"lifecycle entry without bucket": {
-			mutate: validYAML() + `  "7.9": { released: "2020-01-01" }` + "\n",
-			want:   "7.9 is not in any camundaVersions bucket",
+		"missing routine list": {
+			mutate: strings.Replace(validYAML(), `chartAutomation: { routineVersions: ["8.10", "8.9"] }`, `chartAutomation: {}`, 1),
+			want:   "chartAutomation.routineVersions is required",
 		},
-		"supportStandard missing stdSupportUntil": {
+		"support metadata missing released": {
 			mutate: strings.Replace(validYAML(),
 				`"8.9":  { released: "2026-04-14", stdSupportUntil: "2027-10-13" }`,
-				`"8.9":  { released: "2026-04-14" }`, 1),
-			want: "8.9 (supportStandard) is missing stdSupportUntil",
+				`"8.9":  { stdSupportUntil: "2027-10-13" }`, 1),
+			want: "8.9 has release metadata but is missing released",
 		},
-		"endOfLife missing eolSince": {
+		"eol metadata missing released": {
 			mutate: strings.Replace(validYAML(),
 				`"8.2":  { released: "2022-10-11", eolSince: "2024-10-08", latestChart: "8.2.34" }`,
-				`"8.2":  { released: "2022-10-11" }`, 1),
-			want: "8.2 (endOfLife) is missing eolSince",
+				`"8.2":  { eolSince: "2024-10-08", latestChart: "8.2.34" }`, 1),
+			want: "8.2 has release metadata but is missing released",
 		},
-		"non-alpha missing released": {
-			mutate: strings.Replace(validYAML(),
-				`"8.6":  { released: "2024-10-08" }`,
-				`"8.6":  { note: "x" }`, 1),
-			want: "8.6 (supportExtended) is missing released",
+		"eol routine minor": {
+			mutate: strings.Replace(validYAML(), `["8.10", "8.9"]`, `["8.10", "8.9", "8.2"]`, 1),
+			want:   "end-of-life minor 8.2 cannot have routine automation",
 		},
-		"minor in two buckets": {
-			mutate: strings.Replace(validYAML(),
-				"  supportExtended:\n    - \"8.6\"",
-				"  supportExtended:\n    - \"8.6\"\n    - \"8.9\"", 1),
-			want: "8.9 is listed in 2 buckets",
+		"duplicate routine minor": {
+			mutate: strings.Replace(validYAML(), `["8.10", "8.9"]`, `["8.10", "8.9", "8.9"]`, 1),
+			want:   "8.9 is repeated in chartAutomation.routineVersions",
 		},
 	}
 	for name, tc := range cases {

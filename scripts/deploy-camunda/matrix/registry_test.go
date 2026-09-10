@@ -450,7 +450,7 @@ func TestLoadRegistryCarriesExtraValues(t *testing.T) {
 func TestGenerate_PropagatesExtraValues(t *testing.T) {
 	dir, chartDir, regDir := syntheticChart(t)
 	writeFile(t, filepath.Join(dir, "charts", "chart-versions.yaml"),
-		"camundaVersions:\n  supportStandard:\n    - \"99.99\"\n")
+		"chartAutomation: {routineVersions: [\"99.99\"]}\ncamundaSupportLifecycle: {\"99.99\": {}}\n")
 	writeManifest(t, regDir, "    - id: alpha\n      shortname: alph\n      enabled: true\n")
 	writeFile(t, filepath.Join(regDir, "scenarios", "alpha.yaml"),
 		"name: alpha\nauth: keycloak\nflows: [install]\nidentity: keycloak\npersistence: elasticsearch\nplatforms: [gke]\nextra-values:\n  - values/extra/image.yaml\n")

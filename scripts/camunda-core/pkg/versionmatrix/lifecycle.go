@@ -18,13 +18,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"time"
 
 	"gopkg.in/yaml.v3"
 )
 
-// Lifecycle bucket names, mirroring the camundaVersions keys in
-// charts/chart-versions.yaml.
 const (
 	BucketAlpha           = "alpha"
 	BucketSupportStandard = "supportStandard"
@@ -43,17 +42,13 @@ type Lifecycle struct {
 	Note            string `yaml:"note"`
 }
 
-// Buckets mirrors the camundaVersions block of charts/chart-versions.yaml.
-type Buckets struct {
-	Alpha           []string `yaml:"alpha"`
-	SupportStandard []string `yaml:"supportStandard"`
-	SupportExtended []string `yaml:"supportExtended"`
-	EndOfLife       []string `yaml:"endOfLife"`
+type ChartAutomation struct {
+	RoutineVersions []string `yaml:"routineVersions"`
 }
 
 // ChartVersionsConfig is the parsed charts/chart-versions.yaml.
 type ChartVersionsConfig struct {
-	CamundaVersions         Buckets              `yaml:"camundaVersions"`
+	ChartAutomation         ChartAutomation      `yaml:"chartAutomation"`
 	CamundaSupportLifecycle map[string]Lifecycle `yaml:"camundaSupportLifecycle"`
 }
 
@@ -80,75 +75,79 @@ func LoadChartVersionsConfig(path string) (*ChartVersionsConfig, error) {
 
 // BucketOf returns the bucket name a minor is classified under, or "".
 func (c *ChartVersionsConfig) BucketOf(minor string) string {
-	for bucket, minors := range map[string][]string{
-		BucketAlpha:           c.CamundaVersions.Alpha,
-		BucketSupportStandard: c.CamundaVersions.SupportStandard,
-		BucketSupportExtended: c.CamundaVersions.SupportExtended,
-		BucketEndOfLife:       c.CamundaVersions.EndOfLife,
-	} {
-		for _, m := range minors {
-			if m == minor {
-				return bucket
-			}
-		}
+	lifecycle, ok := c.CamundaSupportLifecycle[minor]
+	if !ok {
+		return ""
 	}
-	return ""
+	switch {
+	case lifecycle.EOLSince != "":
+		return BucketEndOfLife
+	case lifecycle.Released == "":
+		return BucketAlpha
+	case lifecycle.StdSupportUntil != "":
+		return BucketSupportStandard
+	default:
+		return BucketSupportExtended
+	}
 }
 
-// AllMinors returns every minor listed in any bucket, in bucket order
-// (alpha, supportStandard, supportExtended, endOfLife).
 func (c *ChartVersionsConfig) AllMinors() []string {
-	var all []string
-	all = append(all, c.CamundaVersions.Alpha...)
-	all = append(all, c.CamundaVersions.SupportStandard...)
-	all = append(all, c.CamundaVersions.SupportExtended...)
-	all = append(all, c.CamundaVersions.EndOfLife...)
-	return all
+	minors := make([]string, 0, len(c.CamundaSupportLifecycle))
+	for minor := range c.CamundaSupportLifecycle {
+		minors = append(minors, minor)
+	}
+	return SortAppVersionsDescending(minors)
 }
 
-// Validate enforces the bucket ⟷ lifecycle contract:
-//
-//   - every minor in a bucket has a camundaSupportLifecycle entry;
-//   - every camundaSupportLifecycle key is classified in exactly one bucket;
-//   - supportStandard entries carry stdSupportUntil;
-//   - endOfLife entries carry eolSince;
-//   - supportStandard, supportExtended, and endOfLife entries carry released.
-//
-// Violations fail loudly so a lifecycle change cannot silently drop a minor
-// from the rendered matrix.
+func (c *ChartVersionsConfig) MinorsInBucket(bucket string) []string {
+	var minors []string
+	for _, minor := range c.AllMinors() {
+		if c.BucketOf(minor) == bucket {
+			minors = append(minors, minor)
+		}
+	}
+	return minors
+}
+
+func (c *ChartVersionsConfig) ActiveVersions() []string {
+	return slices.Clone(c.ChartAutomation.RoutineVersions)
+}
+
+func (c *ChartVersionsConfig) LatestStable() (string, error) {
+	for _, minor := range c.AllMinors() {
+		if c.CamundaSupportLifecycle[minor].Released != "" {
+			return minor, nil
+		}
+	}
+	return "", fmt.Errorf("camundaSupportLifecycle contains no released minor")
+}
+
 func (c *ChartVersionsConfig) Validate() error {
-	seen := map[string]int{}
-	for _, m := range c.AllMinors() {
-		seen[m]++
-	}
 	var errs []string
-	for m, n := range seen {
-		if n > 1 {
-			errs = append(errs, fmt.Sprintf("minor %s is listed in %d buckets", m, n))
+	if c.ChartAutomation.RoutineVersions == nil {
+		errs = append(errs, "chartAutomation.routineVersions is required (use [] to disable routine automation)")
+	}
+	if len(c.CamundaSupportLifecycle) == 0 {
+		errs = append(errs, "camundaSupportLifecycle must not be empty")
+	}
+	seen := map[string]bool{}
+	for _, minor := range c.ChartAutomation.RoutineVersions {
+		if seen[minor] {
+			errs = append(errs, fmt.Sprintf("minor %s is repeated in chartAutomation.routineVersions", minor))
+		}
+		seen[minor] = true
+		if _, ok := c.CamundaSupportLifecycle[minor]; !ok {
+			errs = append(errs, fmt.Sprintf("minor %s has no camundaSupportLifecycle entry", minor))
+		} else if c.BucketOf(minor) == BucketEndOfLife {
+			errs = append(errs, fmt.Sprintf("end-of-life minor %s cannot have routine automation", minor))
 		}
 	}
-	for _, m := range c.AllMinors() {
-		lc, ok := c.CamundaSupportLifecycle[m]
-		if !ok {
-			errs = append(errs, fmt.Sprintf("minor %s has no camundaSupportLifecycle entry", m))
-			continue
+	for _, minor := range c.AllMinors() {
+		lifecycle := c.CamundaSupportLifecycle[minor]
+		if lifecycle.Released == "" && (lifecycle.StdSupportUntil != "" || lifecycle.EOLSince != "" || lifecycle.LatestChart != "") {
+			errs = append(errs, fmt.Sprintf("minor %s has release metadata but is missing released", minor))
 		}
-		bucket := c.BucketOf(m)
-		if bucket != BucketAlpha && lc.Released == "" {
-			errs = append(errs, fmt.Sprintf("minor %s (%s) is missing released", m, bucket))
-		}
-		if bucket == BucketSupportStandard && lc.StdSupportUntil == "" {
-			errs = append(errs, fmt.Sprintf("minor %s (supportStandard) is missing stdSupportUntil", m))
-		}
-		if bucket == BucketEndOfLife && lc.EOLSince == "" {
-			errs = append(errs, fmt.Sprintf("minor %s (endOfLife) is missing eolSince", m))
-		}
-		errs = append(errs, lc.validateDates(m)...)
-	}
-	for m := range c.CamundaSupportLifecycle {
-		if _, ok := seen[m]; !ok {
-			errs = append(errs, fmt.Sprintf("camundaSupportLifecycle entry %s is not in any camundaVersions bucket", m))
-		}
+		errs = append(errs, lifecycle.validateDates(minor)...)
 	}
 	if len(errs) > 0 {
 		return fmt.Errorf("chart-versions lifecycle validation failed:\n  - %s", joinLines(errs))

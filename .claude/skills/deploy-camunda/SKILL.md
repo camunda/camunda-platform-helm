@@ -219,7 +219,7 @@ The `qa-*` scenarios have `image-tags: true`, which includes `base-image-tags.ya
 
 ## Extended-Support Versions (Opt-In)
 
-Extended-support chart versions are excluded from the default matrix. `matrix run` reaches one only when it is named explicitly **and** its chart dir has a CI scenario registry (`test/ci/registry/manifest.yaml`). Among extended-support versions only **8.6** has one; `endOfLife` versions are unreachable through every path.
+The default matrix includes only `chartAutomation.routineVersions` from `charts/chart-versions.yaml`, independently of support-lifecycle metadata. A version outside that list is reachable when named explicitly **and** its chart dir has a CI scenario registry (`test/ci/registry/manifest.yaml`). **8.6** uses this opt-in path. A lifecycle `eolSince` entry blocks matrix execution, including explicit requests.
 
 Every 8.6 scenario is `enabled: false`, so `--include-disabled` is mandatory — without it the run yields no entries.
 

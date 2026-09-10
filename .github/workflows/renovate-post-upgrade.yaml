@@ -86,18 +86,12 @@ jobs:
       #
       # Post Upgrade Tasks.
       #
-      # SUPPORTED_CHANGED = CHANGED_CHARTS minus out-of-support chart versions.
-      # The exclusion list is derived dynamically from charts/chart-versions.yaml
-      # (supportExtended + endOfLife), so updating that file is the only thing
-      # needed when a version transitions to end-of-support — no changes here.
       - name: Set vars
         run: |
           CHANGED_CHARTS=$(ct list-changed | tr '\n' ' ')
           echo "CHANGED_CHARTS=${CHANGED_CHARTS}" | tee -a $GITHUB_ENV
-          # Build exclude pattern from supportExtended + endOfLife in charts/chart-versions.yaml.
-          # Dots are escaped (8\.6 not 8.6) so the regex matches literal version strings only.
-          EXCLUDED_VERSIONS=$(yq '.camundaVersions.supportExtended + .camundaVersions.endOfLife | map(. | sub("\.", "\\.")) | join("|")' charts/chart-versions.yaml)
-          SUPPORTED_CHANGED=$(echo "${CHANGED_CHARTS}" | tr ' ' '\n' | grep -Ev "camunda-platform-(${EXCLUDED_VERSIONS})([^0-9]|$)" | tr '\n' ' ' | xargs || true)
+          ROUTINE_CHARTS=$(yq -r '.chartAutomation.routineVersions[] | "charts/camunda-platform-" + .' charts/chart-versions.yaml)
+          SUPPORTED_CHANGED=$(echo "${CHANGED_CHARTS}" | tr ' ' '\n' | grep -Fxf <(printf '%s\n' "$ROUTINE_CHARTS") | tr '\n' ' ' | xargs || true)
           echo "SUPPORTED_CHANGED=${SUPPORTED_CHANGED}" | tee -a $GITHUB_ENV
       - name: Run go mod tidy
         run: |

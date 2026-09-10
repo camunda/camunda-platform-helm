@@ -59,10 +59,12 @@ annotations:
     orchestration: custom
 `)
 	chartVersions := writeFile(t, dir, "chart-versions.yaml", `
-camundaVersions:
-  supportStandard:
-    - "8.10"
-    - "8.9"
+chartAutomation: { routineVersions: ["8.9"] }
+camundaSupportLifecycle: {
+"8.11": {},
+"8.10": { released: "2026-10-13", stdSupportUntil: "2028-04-12" },
+"8.9": { released: "2026-04-14", stdSupportUntil: "2027-10-13" }
+}
 `)
 	meta, err := ReadPackageMetadata(chartYAML, chartVersions)
 	if err != nil {
@@ -93,7 +95,7 @@ camundaVersions:
 		t.Error("HasImageOverrides should be true")
 	}
 	if meta.IsLatestStable == nil || !*meta.IsLatestStable {
-		t.Errorf("IsLatestStable should be true (8.10 == supportStandard[0])")
+		t.Errorf("IsLatestStable should be true (8.10 is the newest released minor)")
 	}
 }
 
@@ -106,10 +108,11 @@ annotations:
   camunda.io/component-image-versions: ""
 `)
 	chartVersions := writeFile(t, dir, "chart-versions.yaml", `
-camundaVersions:
-  supportStandard:
-    - "8.10"
-    - "8.9"
+chartAutomation: { routineVersions: ["8.9"] }
+camundaSupportLifecycle: {
+"8.10": { released: "2026-10-13", stdSupportUntil: "2028-04-12" },
+"8.9": { released: "2026-04-14", stdSupportUntil: "2027-10-13" }
+}
 `)
 	meta, err := ReadPackageMetadata(chartYAML, chartVersions)
 	if err != nil {
