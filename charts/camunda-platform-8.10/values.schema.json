@@ -689,6 +689,61 @@
                                     }
                                 }
                             }
+                        },
+                        "optimize": {
+                            "type": "object",
+                            "properties": {
+                                "autoRollout": {
+                                    "type": "boolean",
+                                    "description": "if true, enables automatic pod rollout on Optimize cert rotation. The chart stamps a `checksum/optimize-tls` pod annotation derived from the configured Secret so the next `helm upgrade` rolls Optimize when the cert changes. OFF by default for the same reason as `global.tls.caBundle.autoRollout`: it uses `lookup` to read the Secret at upgrade time, which (a) REQUIRES the upgrading identity to have `get` on Secrets in the release namespace and (b) is inert under GitOps tools that render with `helm template`. When off (or in those cases), rotate the cert with `kubectl rollout restart`.",
+                                    "default": false
+                                },
+                                "enabled": {
+                                    "type": "boolean",
+                                    "description": "if true, TLS is terminated at the Optimize HTTP server.",
+                                    "default": false
+                                },
+                                "cert": {
+                                    "type": "object",
+                                    "properties": {
+                                        "secret": {
+                                            "type": "object",
+                                            "properties": {
+                                                "existingSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to reference an existing Kubernetes Secret containing the cert material. Empty disables the chart-managed wiring. Hand-wiring is still possible through optimize.extraVolumes plus optimize.env entries for CAMUNDA_OPTIMIZE_CONTAINER_KEYSTORE_LOCATION / CAMUNDA_OPTIMIZE_CONTAINER_KEYSTORE_PASSWORD (never SERVER_SSL_*, which the render rejects), but then the chart cannot see that TLS is on: also set optimize.startupProbe.scheme / readinessProbe.scheme / livenessProbe.scheme to HTTPS, and note the chart's Ingress keeps an HTTP backend for Optimize.",
+                                                    "default": ""
+                                                },
+                                                "existingSecretKey": {
+                                                    "type": "string",
+                                                    "description": "defines the key within the existing secret object. Defaults to keystore.p12.",
+                                                    "default": ""
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "keystorePassword": {
+                                    "type": "object",
+                                    "properties": {
+                                        "secret": {
+                                            "type": "object",
+                                            "properties": {
+                                                "existingSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to reference an existing Kubernetes Secret containing the keystore password. When empty, defaults to cert.secret.existingSecret.",
+                                                    "default": ""
+                                                },
+                                                "existingSecretKey": {
+                                                    "type": "string",
+                                                    "description": "defines the key within the existing secret object.",
+                                                    "default": "keystore-password"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 },
@@ -6588,8 +6643,8 @@
                         },
                         "scheme": {
                             "type": "string",
-                            "description": "defines the startup probe schema used on calling the probePath",
-                            "default": "HTTP"
+                            "description": "defines the probe scheme (HTTP or HTTPS) used when calling the probePath. Empty (default) auto-detects: HTTPS when Optimize TLS is enabled (global.tls.optimize), otherwise HTTP. Set explicitly to override the auto-detected scheme.",
+                            "default": ""
                         },
                         "probePath": {
                             "type": "string",
@@ -6633,8 +6688,8 @@
                         },
                         "scheme": {
                             "type": "string",
-                            "description": "defines the startup probe schema used on calling the probePath",
-                            "default": "HTTP"
+                            "description": "defines the probe scheme (HTTP or HTTPS) used when calling the probePath. Empty (default) auto-detects: HTTPS when Optimize TLS is enabled (global.tls.optimize), otherwise HTTP. Set explicitly to override the auto-detected scheme.",
+                            "default": ""
                         },
                         "probePath": {
                             "type": "string",
@@ -6678,8 +6733,8 @@
                         },
                         "scheme": {
                             "type": "string",
-                            "description": "defines the startup probe schema used on calling the probePath",
-                            "default": "HTTP"
+                            "description": "defines the probe scheme (HTTP or HTTPS) used when calling the probePath. Empty (default) auto-detects: HTTPS when Optimize TLS is enabled (global.tls.optimize), otherwise HTTP. Set explicitly to override the auto-detected scheme.",
+                            "default": ""
                         },
                         "probePath": {
                             "type": "string",

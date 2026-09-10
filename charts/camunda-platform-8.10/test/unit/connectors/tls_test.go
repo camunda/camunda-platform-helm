@@ -610,12 +610,40 @@ func (s *ConnectorsTLSTest) TestTLSDetectionFromConfigSources() {
 				requireProbeScheme(t, output, corev1.URISchemeHTTP)
 			},
 		},
+		{
+			// Spring applies every document, so TLS outside the first one is
+			// still the effective state.
+			Name:        "TLS in a later YAML document — probes use HTTPS",
+			ValuesFiles: []string{"testdata/values-connectors-tls-later-document.yaml"},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				requireProbeScheme(t, output, corev1.URISchemeHTTPS)
+			},
+		},
+		{
+			// Activation is a runtime decision, so the chart must not derive a
+			// secure transport from a conditioned document.
+			Name:        "TLS in a profile-activated document is unresolved — probes stay HTTP",
+			ValuesFiles: []string{"testdata/values-connectors-tls-profile-activated.yaml"},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				requireProbeScheme(t, output, corev1.URISchemeHTTP)
+			},
+		},
+		{
+			Name:        "TLS behind a property placeholder is unresolved — probes stay HTTP",
+			ValuesFiles: []string{"testdata/values-connectors-tls-placeholder.yaml"},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				requireProbeScheme(t, output, corev1.URISchemeHTTP)
+			},
+		},
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
-// TestTLSDetectionWarnings pins the two diagnostics for config the derivation
+// TestTLSDetectionWarnings pins the three diagnostics for config the derivation
 // cannot read.
 func (s *ConnectorsTLSTest) TestTLSDetectionWarnings() {
 	testCases := []testhelpers.TestCase{
@@ -646,6 +674,36 @@ func (s *ConnectorsTLSTest) TestTLSDetectionWarnings() {
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
 				require.Contains(t, output, "connectors.env sets SERVER_SSL_ENABLED from a valueFrom reference")
+			},
+		},
+		{
+			// W3: activation is unknown while templating, so the operator is
+			// asked to make the transport explicit.
+			Name:        "profile-activated configuration warns",
+			ValuesFiles: []string{"testdata/values-connectors-tls-profile-activated.yaml"},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "to a runtime-dependent value")
+				require.Contains(t, output, "derives plaintext for Connectors")
+			},
+		},
+		{
+			Name:        "placeholder-backed configuration warns",
+			ValuesFiles: []string{"testdata/values-connectors-tls-placeholder.yaml"},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "Spring property placeholder")
+				require.Contains(t, output, "derives plaintext for Connectors")
+			},
+		},
+		{
+			// W3 must stay quiet for a multi-document source the chart reads in
+			// full: unconditional documents are resolved, not unresolved.
+			Name:        "multi-document configuration does not warn",
+			ValuesFiles: []string{"testdata/values-connectors-tls-later-document.yaml"},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.NotContains(t, output, "to a runtime-dependent value")
 			},
 		},
 	}

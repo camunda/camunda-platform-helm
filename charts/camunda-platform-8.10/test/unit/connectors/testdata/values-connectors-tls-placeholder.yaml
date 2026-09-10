@@ -1,0 +1,6 @@
+connectors:
+  enabled: true
+  configuration: |
+    server:
+      ssl:
+        enabled: ${TLS_ENABLED:true}

@@ -6,3 +6,6 @@ global:
     tls:
       enabled: true
       secretName: tls-secret
+
+orchestration:
+  contextPath: /orchestration
