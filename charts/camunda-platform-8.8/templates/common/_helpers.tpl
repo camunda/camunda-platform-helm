@@ -294,7 +294,7 @@ Get the external url for keycloak
     {{- $proto := ternary "https" "http" .Values.identityKeycloak.ingress.tls -}}
     {{- printf "%s://%s%s" $proto .Values.identityKeycloak.ingress.hostname .Values.identityKeycloak.httpRelativePath -}}
   {{ else if .Values.identityKeycloak.enabled -}}
-    {{- $proto := ternary "https" "http" .Values.global.ingress.tls.enabled -}}
+    {{- $proto := include "camundaPlatform.ingressProtocol" . -}}
     {{- printf "%s://%s%s" $proto ((tpl .Values.global.ingress.host $) | default "localhost:18080") .Values.global.identity.keycloak.contextPath -}}
   {{- end -}}
 {{- end -}}
@@ -344,7 +344,7 @@ Usage: {{ include "camundaPlatform.getExternalURL" (dict "component" "operate" "
 {{- define "camundaPlatform.getExternalURL" -}}
   {{- if (index .context.Values .component "enabled") -}}
     {{- if $.context.Values.global.ingress.enabled -}}
-      {{ $proto := ternary "https" "http" .context.Values.global.ingress.tls.enabled -}}
+      {{ $proto := include "camundaPlatform.ingressProtocol" .context -}}
       {{- printf "%s://%s%s" $proto (tpl .context.Values.global.ingress.host .context) (index .context.Values .component "contextPath") -}}
     {{- else -}}
       {{- $portMapping := (dict
@@ -437,7 +437,7 @@ Web Modeler templates.
 {{- define "camundaPlatform.getExternalURLModeler" -}}
   {{- if .context.Values.webModeler.enabled -}}
     {{- if $.context.Values.global.ingress.enabled -}}
-      {{ $proto := ternary "https" "http" .context.Values.global.ingress.tls.enabled -}}
+      {{ $proto := include "camundaPlatform.ingressProtocol" .context -}}
       {{- if eq .component "websockets" }}
         {{- printf "%s://%s%s" $proto (tpl .context.Values.global.ingress.host .context) (include "webModeler.websocketContextPath" .context) -}}
       {{- else -}}
@@ -572,11 +572,15 @@ Zeebe templates.
 */}}
 {{- define "camundaPlatform.orchestrationExternalURL" }}
   {{- if .Values.global.ingress.enabled -}}
-    {{ $proto := ternary "https" "http" .Values.global.ingress.tls.enabled -}}
+    {{ $proto := include "camundaPlatform.ingressProtocol" . -}}
     {{- printf "%s://%s%s" $proto (tpl .Values.global.ingress.host $) (include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath)) -}}
   {{- else -}}
     {{- printf "http://localhost:8088" -}}
   {{- end -}}
+{{- end -}}
+
+{{- define "camundaPlatform.ingressProtocol" -}}
+  {{- .Values.global.ingress.protocol | default (ternary "https" "http" .Values.global.ingress.tls.enabled) -}}
 {{- end -}}
 
 {{/*
@@ -644,9 +648,6 @@ Release templates.
   - dev
   custom-properties: []
   components:
-  {{- $proto := ternary "https" "http" .Values.global.ingress.tls.enabled -}}
-  {{- $baseURL := printf "%s://%s" $proto (tpl .Values.global.ingress.host $) }}
-
   {{- if .Values.console.enabled }}
   {{-  $proto := (lower .Values.console.readinessProbe.scheme) -}}
   {{- $baseURLInternal := printf "%s://%s.%s:%v" $proto (include "console.fullname" .) .Release.Namespace .Values.console.service.managementPort }}
@@ -732,7 +733,7 @@ Release templates.
     version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.orchestration) }}
     urls:
       grpc: {{ include "camundaPlatform.orchestrationGRPCExternalURL" . }}
-      http: {{ include "camundaPlatform.orchestrationHTTPInternalURL" . }}
+      http: {{ include "camundaPlatform.orchestrationExternalURL" . }}
     readiness: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.readinessProbe.probePath)) }}
     metrics: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.metrics.prometheus)) }}
   {{- end }}

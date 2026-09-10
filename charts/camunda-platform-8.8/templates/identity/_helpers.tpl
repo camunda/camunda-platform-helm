@@ -16,7 +16,7 @@
         {{ tpl .Values.identity.fullURL $ }}
     {{- else -}}
         {{- if .Values.global.ingress.enabled -}}
-            {{- $proto := ternary "https" "http" .Values.global.ingress.tls.enabled -}}
+            {{- $proto := include "camundaPlatform.ingressProtocol" . -}}
             {{- $host := .Values.global.ingress.host -}}
             {{- $path := .Values.identity.contextPath | default "" -}}
             {{- printf "%s://%s%s" $proto $host $path -}}
