@@ -31,6 +31,42 @@ by the DNS naming spec). If release name contains chart name it will be used as 
 {{- end -}}
 {{- end -}}
 
+{{- define "camundaPlatform.topologyMode" -}}
+  {{- dig "mode" "combined" (.Values.global.topology | default dict) -}}
+{{- end -}}
+
+{{- define "camundaPlatform.zeebeEnabled" -}}
+  {{- if .Values.zeebe.enabled -}}true{{- else -}}false{{- end -}}
+{{- end -}}
+
+{{- define "camundaPlatform.operateEnabled" -}}
+  {{- if .Values.operate.enabled -}}true{{- else -}}false{{- end -}}
+{{- end -}}
+
+{{- define "camundaPlatform.tasklistEnabled" -}}
+  {{- if .Values.tasklist.enabled -}}true{{- else -}}false{{- end -}}
+{{- end -}}
+
+{{- define "camundaPlatform.connectorsEnabled" -}}
+  {{- if .Values.connectors.enabled -}}true{{- else -}}false{{- end -}}
+{{- end -}}
+
+{{- define "camundaPlatform.optimizeEnabled" -}}
+  {{- if .Values.optimize.enabled -}}true{{- else -}}false{{- end -}}
+{{- end -}}
+
+{{- define "camundaPlatform.identityEnabled" -}}
+  {{- if and .Values.identity.enabled (ne (include "camundaPlatform.topologyMode" .) "orchestration") -}}true{{- else -}}false{{- end -}}
+{{- end -}}
+
+{{- define "camundaPlatform.consoleEnabled" -}}
+  {{- if and .Values.console.enabled (ne (include "camundaPlatform.topologyMode" .) "orchestration") -}}true{{- else -}}false{{- end -}}
+{{- end -}}
+
+{{- define "camundaPlatform.webModelerEnabled" -}}
+  {{- if and .Values.webModeler.enabled (ne (include "camundaPlatform.topologyMode" .) "orchestration") -}}true{{- else -}}false{{- end -}}
+{{- end -}}
+
 {{/*
 [camunda-platform] Create a default fully qualified app name for component.
 
@@ -511,7 +547,7 @@ Web Modeler templates.
 */}}
 
 {{- define "camundaPlatform.getExternalURLModeler" -}}
-  {{- if .context.Values.webModeler.enabled -}}
+  {{- if eq (include "camundaPlatform.webModelerEnabled" .context) "true" -}}
     {{- $ingress := .context.Values.webModeler.ingress }}
     {{- if index $ingress "enabled" }}
       {{- $proto := ternary "https" "http" (index $ingress .component "tls" "enabled") -}}
@@ -650,7 +686,7 @@ Release templates.
   {{- $proto := ternary "https" "http" .Values.global.ingress.tls.enabled -}}
   {{- $baseURL := printf "%s://%s" $proto .Values.global.ingress.host }}
 
-  {{- if .Values.console.enabled }}
+  {{- if eq (include "camundaPlatform.consoleEnabled" .) "true" }}
   {{- $baseURLInternal := printf "http://%s.%s:%v" (include "console.fullname" .) .Release.Namespace .Values.console.service.managementPort }}
   - name: Console
     id: console
@@ -659,7 +695,7 @@ Release templates.
     readiness: {{ printf "%s%s" $baseURLInternal .Values.console.readinessProbe.probePath }}
     metrics: {{ printf "%s%s" $baseURLInternal .Values.console.metrics.prometheus }}
   {{- end }}
-  {{ if .Values.identity.enabled -}}
+  {{ if eq (include "camundaPlatform.identityEnabled" .) "true" -}}
   {{- $baseURLInternal := printf "http://%s.%s:%v" (include "identity.fullname" .) .Release.Namespace .Values.identity.service.metricsPort -}}
   - name: Keycloak
     id: keycloak
@@ -714,7 +750,7 @@ Release templates.
     metrics: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list .Values.tasklist.contextPath .Values.tasklist.metrics.prometheus)) }}
   {{- end }}
 
-  {{- if .Values.webModeler.enabled }}
+  {{- if eq (include "camundaPlatform.webModelerEnabled" .) "true" }}
   {{- $baseURLInternal := printf "http://%s.%s:%v" (include "webModeler.webapp.fullname" .) .Release.Namespace .Values.webModeler.webapp.service.managementPort }}
   - name: WebModeler WebApp
     id: webModelerWebApp

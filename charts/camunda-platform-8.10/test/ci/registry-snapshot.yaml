@@ -1915,6 +1915,11 @@ integration:
           tier: 1
           infra-type:
             gke: distroci
+          post-infra:
+            script: post-infra-legacy-elasticsearch.sh
+            description: |
+              Removes the CI composable index template before deploying Optimize 8.7,
+              which creates overlapping legacy index templates.
           topology:
             name: hub-2orch
             releases:
@@ -1972,6 +1977,21 @@ integration:
                   ORCH_ORCHESTRATION_CLIENT_ID: orchestration-orchc
                 modeler-cluster-id: orchc
                 modeler-cluster-name: Orchestration C
+              - chart-version: "8.7"
+                role: orchestration
+                namespace-suffix: orchd
+                values: features/multinamespace-orchestration.yaml
+                depends-on: hub
+                identity: keycloak-external
+                persistence: elasticsearch-external
+                env:
+                  ORCH_CONNECTORS_CLIENT_ID: connectors-orchd
+                  ORCH_OPTIMIZE_AUDIENCE: optimize-orchd-api
+                  ORCH_OPTIMIZE_CLIENT_ID: optimize-orchd
+                  ORCH_ORCHESTRATION_AUDIENCE: orchestration-orchd-api
+                  ORCH_ORCHESTRATION_CLIENT_ID: orchestration-orchd
+                modeler-cluster-id: orchd
+                modeler-cluster-name: Orchestration D
             shared-storage: elasticsearch
             shared-storage-service: elasticsearch-master
     nightly:

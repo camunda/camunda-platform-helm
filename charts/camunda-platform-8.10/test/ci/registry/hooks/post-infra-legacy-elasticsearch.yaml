@@ -1,0 +1,4 @@
+script: post-infra-legacy-elasticsearch.sh
+description: |
+  Removes the CI composable index template before deploying Optimize 8.7,
+  which creates overlapping legacy index templates.

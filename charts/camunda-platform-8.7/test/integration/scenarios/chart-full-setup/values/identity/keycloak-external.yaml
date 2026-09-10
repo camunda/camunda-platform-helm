@@ -1,0 +1,84 @@
+# External Hub Identity and Keycloak configuration for an Orchestration release.
+global:
+  ingress:
+    enabled: true
+    className: nginx
+    host: "$CAMUNDA_HOSTNAME"
+    tls:
+      enabled: true
+    annotations:
+      external-dns.alpha.kubernetes.io/hostname: "{{ .Values.global.ingress.host }}"
+      external-dns.alpha.kubernetes.io/ttl: "60"
+  identity:
+    service:
+      url: "http://integration-identity.${HUB_NAMESPACE}.svc.cluster.local:80/identity"
+    keycloak:
+      url:
+        protocol: http
+        host: "keycloak.${HUB_NAMESPACE}.svc.cluster.local"
+        port: "80"
+    auth:
+      enabled: true
+      type: KEYCLOAK
+      issuerBackendUrl: "http://keycloak.${HUB_NAMESPACE}.svc.cluster.local:80/auth/realms/camunda-platform"
+      publicIssuerUrl: "https://${HUB_HOST}/auth/realms/camunda-platform"
+      operate:
+        clientId: "${ORCH_ORCHESTRATION_CLIENT_ID}"
+        audience: "${ORCH_ORCHESTRATION_AUDIENCE}"
+        redirectUrl: "https://${ORCH_HOST}/operate"
+        existingSecret:
+          name: integration-test-credentials
+        existingSecretKey: identity-operate-client-password
+      tasklist:
+        clientId: "${ORCH_ORCHESTRATION_CLIENT_ID}"
+        audience: "${ORCH_ORCHESTRATION_AUDIENCE}"
+        redirectUrl: "https://${ORCH_HOST}/tasklist"
+        existingSecret:
+          name: integration-test-credentials
+        existingSecretKey: identity-tasklist-client-password
+      zeebe:
+        clientId: "${ORCH_ORCHESTRATION_CLIENT_ID}"
+        audience: "${ORCH_ORCHESTRATION_AUDIENCE}"
+        existingSecret:
+          name: integration-test-credentials
+        existingSecretKey: identity-zeebe-client-password
+      optimize:
+        clientId: "${ORCH_OPTIMIZE_CLIENT_ID}"
+        audience: "${ORCH_OPTIMIZE_AUDIENCE}"
+        redirectUrl: "https://${ORCH_HOST}/optimize"
+        existingSecret:
+          name: integration-test-credentials
+        existingSecretKey: identity-optimize-client-password
+      connectors:
+        clientId: "${ORCH_CONNECTORS_CLIENT_ID}"
+        existingSecret:
+          name: integration-test-credentials
+        existingSecretKey: identity-connectors-client-password
+  topology:
+    mode: orchestration
+
+identity:
+  enabled: false
+identityKeycloak:
+  enabled: false
+identityPostgresql:
+  enabled: false
+postgresql:
+  enabled: false
+executionIdentity:
+  enabled: false
+
+console:
+  enabled: false
+webModeler:
+  enabled: false
+optimize:
+  enabled: true
+connectors:
+  enabled: true
+zeebe:
+  enabled: true
+operate:
+  enabled: true
+tasklist:
+  enabled: true

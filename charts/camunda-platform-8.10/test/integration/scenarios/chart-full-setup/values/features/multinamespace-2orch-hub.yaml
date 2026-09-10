@@ -105,6 +105,46 @@ global:
             secret:
               existingSecret: integration-test-credentials
               existingSecretKey: identity-connectors-client-token
+      - id: orchd
+        name: Orchestration D
+        namespace: "${ORCHD_NAMESPACE}"
+        releaseName: integration
+        host: "${ORCHD_HOST}"
+        version: "8.7.38"
+        architecture: legacy
+        contextPaths:
+          orchestration: ""
+          optimize: /optimize
+          connectors: /connectors
+        components:
+          orchestration:
+            enabled: true
+            clientId: orchestration-orchd
+            audience: orchestration-orchd-api
+            redirectUrl: "https://${ORCHD_HOST}"
+            serviceName: integration-zeebe
+            gatewayServiceName: integration-zeebe-gateway
+            operateServiceName: integration-operate
+            tasklistServiceName: integration-tasklist
+            restUrl: "http://integration-zeebe-gateway.${ORCHD_NAMESPACE}.svc.cluster.local:8080/zeebe"
+            readinessUrl: "http://integration-zeebe-gateway.${ORCHD_NAMESPACE}.svc.cluster.local:9600/zeebe/actuator/health/readiness"
+            secret:
+              existingSecret: integration-test-credentials
+              existingSecretKey: identity-orchestration-client-token
+          optimize:
+            enabled: true
+            clientId: optimize-orchd
+            audience: optimize-orchd-api
+            redirectUrl: "https://${ORCHD_HOST}/optimize"
+            secret:
+              existingSecret: integration-test-credentials
+              existingSecretKey: identity-optimize-client-token
+          connectors:
+            enabled: true
+            clientId: connectors-orchd
+            secret:
+              existingSecret: integration-test-credentials
+              existingSecretKey: identity-connectors-client-token
 
 identity:
   clients:
@@ -138,6 +178,12 @@ identity:
         - resourceServerId: orchestration-orchc-api
           definition: write:*
         - resourceServerId: optimize-orchc-api
+          definition: write:*
+        - resourceServerId: orchestration-orchd-api
+          definition: read:*
+        - resourceServerId: orchestration-orchd-api
+          definition: write:*
+        - resourceServerId: optimize-orchd-api
           definition: write:*
         - resourceServerId: web-modeler-api
           definition: write:*

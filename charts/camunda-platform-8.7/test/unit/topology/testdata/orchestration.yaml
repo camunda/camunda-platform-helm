@@ -1,0 +1,57 @@
+global:
+  ingress:
+    enabled: true
+    host: east.example.com
+  identity:
+    service:
+      url: http://camunda-identity.camunda-hub.svc.cluster.local:80/identity
+    keycloak:
+      url:
+        protocol: https
+        host: issuer.example.com
+        port: "443"
+    auth:
+      enabled: true
+      type: KEYCLOAK
+      operate:
+        existingSecret:
+          name: east-oidc
+      tasklist:
+        existingSecret:
+          name: east-oidc
+      zeebe:
+        existingSecret:
+          name: east-oidc
+      optimize:
+        existingSecret:
+          name: east-oidc
+      connectors:
+        existingSecret:
+          name: east-oidc
+  topology:
+    mode: orchestration
+
+identity:
+  enabled: false
+identityKeycloak:
+  enabled: false
+identityPostgresql:
+  enabled: false
+console:
+  enabled: true
+webModeler:
+  enabled: true
+postgresql:
+  enabled: false
+prometheusServiceMonitor:
+  enabled: true
+zeebe:
+  enabled: true
+operate:
+  enabled: true
+tasklist:
+  enabled: true
+optimize:
+  enabled: true
+connectors:
+  enabled: true
