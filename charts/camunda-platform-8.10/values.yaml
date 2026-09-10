@@ -206,13 +206,8 @@ global:
     className: nginx
     ## @param global.ingress.labels [object] can be used to define labels which will be applied to the global HTTP ingress resource
     labels: {}
-    ## @param global.ingress.annotations [object] defines the ingress related annotations, consumed mostly by the ingress controller
-    annotations:
-      nginx.ingress.kubernetes.io/ssl-redirect: "false"
-      nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
-      nginx.ingress.kubernetes.io/proxy-buffering: "on"
-      # The proxy-body-size should be the same size as global.config.requestBodySize.
-      nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    ## @param global.ingress.annotations [object] defines the ingress related annotations, consumed mostly by the ingress controller. Empty by default so that no controller-specific configuration is rendered onto the Ingress. With ingress-nginx, set `nginx.ingress.kubernetes.io/ssl-redirect: "false"`, `nginx.ingress.kubernetes.io/proxy-buffering: "on"`, `nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"` and `nginx.ingress.kubernetes.io/proxy-body-size`, which should match global.config.requestBodySize.
+    annotations: {}
     ## @param global.ingress.pathType can be used to define the Ingress path type. https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types
     pathType: Prefix
     ## @extra global.ingress.tls configuration for tls on the ingress resource https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
@@ -2442,14 +2437,8 @@ orchestration:
       className: nginx
       ## @param orchestration.ingress.grpc.labels [object] can be used to define labels which will be applied to the orchestration gRPC ingress resource
       labels: {}
-      ## @param orchestration.ingress.grpc.annotations [object] defines the ingress related annotations, consumed mostly by the ingress controller
-      ## @skip orchestration.ingress.grpc.annotations.nginx.ingress.kubernetes.io/ssl-redirect
-      ## @skip orchestration.ingress.grpc.annotations.nginx.ingress.kubernetes.io/backend-protocol
-      ## @skip orchestration.ingress.grpc.annotations.nginx.ingress.kubernetes.io/proxy-buffer-size
-      annotations:
-        nginx.ingress.kubernetes.io/ssl-redirect: "false"
-        nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
-        nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
+      ## @param orchestration.ingress.grpc.annotations [object] defines the ingress related annotations, consumed mostly by the ingress controller. Empty by default so that no controller-specific configuration is rendered onto the Ingress. With ingress-nginx, gRPC requires `nginx.ingress.kubernetes.io/backend-protocol: "GRPC"`; with Contour, set `projectcontour.io/upstream-protocol.h2c` on the Orchestration service instead.
+      annotations: {}
       ## @param orchestration.ingress.grpc.path defines the path which is associated with the Zeebe gateway's gRPC service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
       path: /
       ## @param orchestration.ingress.grpc.pathType can be used to define the Ingress path type. https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types
