@@ -1316,16 +1316,16 @@ The following values inside your values.yaml need to be set but were not:
   {{- end }}
 
   {{- $httpTLSComponents := list }}
-  {{- if and (eq (include "camundaPlatform.orchestrationEnabled" .) "true") .Values.orchestration.contextPath (eq (include "camundaPlatform.orchestrationRESTTLSEnabled" .) "true") }}
+  {{- if eq (include "camundaPlatform.orchestrationHTTPIngressRendered" .) "true" }}
     {{- $httpTLSComponents = append $httpTLSComponents "global.tls.orchestration.rest" }}
   {{- end }}
-  {{- if and (eq (include "camundaPlatform.connectorsEnabled" .) "true") .Values.connectors.contextPath (eq (include "camundaPlatform.connectorsTLSEnabled" .) "true") }}
+  {{- if eq (include "camundaPlatform.connectorsHTTPIngressRendered" .) "true" }}
     {{- $httpTLSComponents = append $httpTLSComponents "global.tls.connectors" }}
   {{- end }}
-  {{- if and (eq (include "camundaPlatform.optimizeEnabled" .) "true") .Values.optimize.contextPath (eq (include "camundaPlatform.optimizeServerTLSEnabled" .) "true") }}
+  {{- if eq (include "camundaPlatform.optimizeHTTPIngressRendered" .) "true" }}
     {{- $httpTLSComponents = append $httpTLSComponents "global.tls.optimize" }}
   {{- end }}
-  {{- if and .Values.global.ingress.enabled (not .Values.global.ingress.external) $httpTLSComponents (ne .Values.global.ingress.className "nginx") }}
+  {{- if and $httpTLSComponents (ne .Values.global.ingress.className "nginx") }}
     {{- $warningMessage := printf "%s %s %s"
         "[camunda][warning]"
         (printf "%s enabled upstream TLS, so the chart annotates the Ingress with nginx.ingress.kubernetes.io/backend-protocol: HTTPS, but global.ingress.className is %q rather than nginx." (join ", " $httpTLSComponents) .Values.global.ingress.className)
@@ -1334,7 +1334,7 @@ The following values inside your values.yaml need to be set but were not:
     {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
   {{- end }}
 
-  {{- if and (eq (include "camundaPlatform.orchestrationEnabled" .) "true") .Values.orchestration.ingress.grpc.enabled (not .Values.orchestration.ingress.grpc.external) (eq (include "camundaPlatform.orchestrationGRPCTLSEnabled" .) "true") (ne .Values.orchestration.ingress.grpc.className "nginx") }}
+  {{- if and (eq (include "camundaPlatform.grpcIngressRendered" .) "true") (eq (include "camundaPlatform.orchestrationGRPCTLSEnabled" .) "true") (ne .Values.orchestration.ingress.grpc.className "nginx") }}
     {{- $warningMessage := printf "%s %s %s"
         "[camunda][warning]"
         (printf "global.tls.orchestration.grpc enabled upstream TLS, so the chart annotates the gRPC Ingress with nginx.ingress.kubernetes.io/backend-protocol: GRPCS, but orchestration.ingress.grpc.className is %q rather than nginx." .Values.orchestration.ingress.grpc.className)

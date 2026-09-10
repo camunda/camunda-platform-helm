@@ -1283,6 +1283,27 @@ those keys, so there is no alternative source to detect.
 {{- end -}}
 
 {{/*
+[camunda-platform] Render conditions of the split upstream-TLS Ingress objects.
+Each mirrors the guard of the template named after it, so callers that need to
+reason about those manifests (constraints.tpl) cannot drift from what renders.
+*/}}
+{{- define "camundaPlatform.orchestrationHTTPIngressRendered" -}}
+  {{- ternary "true" "false" (and .Values.global.ingress.enabled (not .Values.global.ingress.external) (eq (include "camundaPlatform.orchestrationEnabled" .) "true") .Values.orchestration.contextPath (eq (include "camundaPlatform.orchestrationRESTTLSEnabled" .) "true") | not | not) -}}
+{{- end -}}
+
+{{- define "camundaPlatform.connectorsHTTPIngressRendered" -}}
+  {{- ternary "true" "false" (and .Values.global.ingress.enabled (not .Values.global.ingress.external) (eq (include "camundaPlatform.connectorsEnabled" .) "true") .Values.connectors.contextPath (eq (include "camundaPlatform.connectorsTLSEnabled" .) "true") | not | not) -}}
+{{- end -}}
+
+{{- define "camundaPlatform.optimizeHTTPIngressRendered" -}}
+  {{- ternary "true" "false" (and .Values.global.ingress.enabled (not .Values.global.ingress.external) (eq (include "camundaPlatform.optimizeEnabled" .) "true") .Values.optimize.contextPath (eq (include "camundaPlatform.optimizeServerTLSEnabled" .) "true") | not | not) -}}
+{{- end -}}
+
+{{- define "camundaPlatform.grpcIngressRendered" -}}
+  {{- ternary "true" "false" (and (eq (include "camundaPlatform.orchestrationEnabled" .) "true") .Values.orchestration.ingress.grpc.enabled (not .Values.orchestration.ingress.grpc.external) | not | not) -}}
+{{- end -}}
+
+{{/*
 [camunda-platform] Returns "true" when optimize.{configuration,extraConfiguration}
 mentions server.ssl in any form. Optimize cannot serve TLS from those keys (see
 camundaPlatform.optimizeServerTLSEnabled), so camunda.constraints.errors fails
