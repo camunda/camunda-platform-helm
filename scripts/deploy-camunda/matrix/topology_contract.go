@@ -133,6 +133,16 @@ type TopologyContractOptimize struct {
 }
 
 type TopologyContractCluster struct {
+	ID                  string                           `json:"id"`
+	OptimizeContextPath string                           `json:"optimizeContextPath"`
+	Optimize            TopologyContractOptimize         `json:"optimize"`
+	PhysicalTenants     []TopologyContractPhysicalTenant `json:"physicalTenants"`
+}
+
+// TopologyContractPhysicalTenant is one Physical Tenant's registration inside a cluster record. A
+// tenant that runs its own Optimize registers its client here rather than at cluster level, so the
+// cluster-level component describes only the default tenant.
+type TopologyContractPhysicalTenant struct {
 	ID                  string                   `json:"id"`
 	OptimizeContextPath string                   `json:"optimizeContextPath"`
 	Optimize            TopologyContractOptimize `json:"optimize"`
@@ -233,13 +243,34 @@ func validateRenderedOptimize(label string, topology *Topology, release Topology
 		}
 		return append(problems, validateStandaloneOptimize(label, optimize, hub, fmt.Sprintf("the Hub inventory, which has no cluster record with id %q", clusterID))...)
 	}
+
+	// A release naming a non-default tenant is registered under that tenant, not at cluster level:
+	// the cluster-level component describes the default tenant's Optimize. Validating a tenant
+	// release against the cluster record would compare it to a different client entirely.
 	registered := cluster.Optimize
+	advertisedContextPath := cluster.OptimizeContextPath
+	subject := "this cluster's Optimize"
 	location := fmt.Sprintf("global.topology.clusters[id=%q].components.optimize", clusterID)
-	if registered.ClientID != optimize.ClientID {
-		return append(problems, validateStandaloneOptimize(label, optimize, hub, fmt.Sprintf("the Hub registers this cluster's Optimize client id as %q (%s)", registered.ClientID, location))...)
+	if tenantID := release.Tenant; tenantID != "" && tenantID != "default" {
+		tenant := findPhysicalTenant(cluster, tenantID)
+		if tenant == nil {
+			return append(problems, validateStandaloneOptimize(label, optimize, hub, fmt.Sprintf("the Hub's cluster record %q, which declares no physicalTenants entry with id %q", clusterID, tenantID))...)
+		}
+		registered = tenant.Optimize
+		subject = fmt.Sprintf("physical tenant %q's Optimize", tenantID)
+		// A tenant record need not advertise its own context path; only compare one it states.
+		advertisedContextPath = tenant.OptimizeContextPath
+		if advertisedContextPath == "" {
+			advertisedContextPath = release.OptimizeContextPath
+		}
+		location = fmt.Sprintf("global.topology.clusters[id=%q].physicalTenants[id=%q].components.optimize", clusterID, tenantID)
 	}
-	if cluster.OptimizeContextPath != release.OptimizeContextPath {
-		problems = append(problems, fmt.Sprintf("%s: the Hub advertises this cluster's Optimize at %q, want %q", label, cluster.OptimizeContextPath, release.OptimizeContextPath))
+
+	if registered.ClientID != optimize.ClientID {
+		return append(problems, validateStandaloneOptimize(label, optimize, hub, fmt.Sprintf("the Hub registers %s client id as %q (%s)", subject, registered.ClientID, location))...)
+	}
+	if advertisedContextPath != release.OptimizeContextPath {
+		problems = append(problems, fmt.Sprintf("%s: the Hub advertises %s at %q, want %q", label, subject, advertisedContextPath, release.OptimizeContextPath))
 	}
 	if !registered.Enabled {
 		return append(problems, fmt.Sprintf("%s: %s.enabled must be true so the Hub provisions this Optimize release", label, location))
@@ -254,6 +285,17 @@ func validateRenderedOptimize(label string, topology *Topology, release Topology
 		problems = append(problems, secretMismatch(label, "Hub cluster record", registered.Secret, optimize.Secret))
 	}
 	return problems
+}
+
+// findPhysicalTenant returns the cluster's registration for tenantID, or nil when the Hub declares
+// no such tenant.
+func findPhysicalTenant(cluster *TopologyContractCluster, tenantID string) *TopologyContractPhysicalTenant {
+	for i := range cluster.PhysicalTenants {
+		if cluster.PhysicalTenants[i].ID == tenantID {
+			return &cluster.PhysicalTenants[i]
+		}
+	}
+	return nil
 }
 
 func validateStandaloneOptimize(label string, optimize TopologyContractOptimize, hub TopologyContract, registration string) []string {

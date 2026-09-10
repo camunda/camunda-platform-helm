@@ -85,6 +85,7 @@ on:
           - multinamespace
           - multinamespace-2orch
           - multinamespace-optimize
+          - physicaltenants
       test-enabled:
         description: Whether to run the IT tests
         required: false

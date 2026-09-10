@@ -89,6 +89,7 @@ type topologySmokeEntry struct {
 	// a list.
 	OptimizeSuffix      string `json:"optimize_suffix,omitempty"`
 	OptimizeContextPath string `json:"optimize_context_path,omitempty"`
+	TenantID            string `json:"tenant_id,omitempty"`
 }
 
 // PlanResult is the computed build matrix.
@@ -472,6 +473,7 @@ type TopologyE2ELeg struct {
 	// host and the e2e env must not derive its endpoint from OrchestrationSuffix.
 	OptimizeSuffix      string
 	OptimizeContextPath string
+	TenantID            string
 	ModelerClusterID    string
 	ModelerClusterName  string
 }
@@ -506,6 +508,10 @@ func TopologyE2ELegs(topology *Topology) []TopologyE2ELeg {
 			leg := base
 			leg.OptimizeSuffix = optimize.NamespaceSuffix
 			leg.OptimizeContextPath = optimize.OptimizeContextPath
+			leg.TenantID = optimize.Tenant
+			if leg.TenantID == "" {
+				leg.TenantID = "default"
+			}
 			legs = append(legs, leg)
 		}
 	}
@@ -532,6 +538,7 @@ func planTopologyMetadata(topology *Topology) (string, string, string) {
 			ShardIndex:          strconv.Itoa(i + 1),
 			OptimizeSuffix:      leg.OptimizeSuffix,
 			OptimizeContextPath: leg.OptimizeContextPath,
+			TenantID:            leg.TenantID,
 		})
 	}
 	suffixesJSON, _ := json.Marshal(suffixes)

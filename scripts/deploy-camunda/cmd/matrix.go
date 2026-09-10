@@ -1188,6 +1188,11 @@ func buildTopologyReleaseEnv(shared map[string]string, release matrix.TopologyRe
 		env["ORCH_ZEEBE_REST"] = env[token+"_ZEEBE_REST"]
 	}
 	if release.Role == "optimize" {
+		tenant := release.Tenant
+		if tenant == "" {
+			tenant = "default"
+		}
+		env["RELEASE_TENANT_ID"] = tenant
 		// RELEASE_-prefixed: buildScenarioEnv seeds this namespace from the process
 		// environment, where OPTIMIZE_CONTEXT_PATH is a name the Playwright suite reads
 		// (pages/SM-8.10/NavigationPage.ts). Keep the two namespaces from sharing a key.
@@ -1234,6 +1239,16 @@ func extractHelmSetValue(pairs []string, key string) string {
 		}
 	}
 	return value
+}
+
+// preparedTopologyRelease pairs a topology release with the flags and prepared scenario built for
+// it, so the deploy loop and the topology-level post-deploy hook can both address it.
+type preparedTopologyRelease struct {
+	release   matrix.TopologyRelease
+	flags     *config.RuntimeFlags
+	namespace string
+	prepared  *deploy.PreparedScenario
+	cleanup   func()
 }
 
 func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOptions) error {
@@ -1338,13 +1353,6 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 		return fmt.Errorf("topology entry %s/%s: %w", entry.Version, entry.Scenario, err)
 	}
 
-	type preparedTopologyRelease struct {
-		release   matrix.TopologyRelease
-		flags     *config.RuntimeFlags
-		namespace string
-		prepared  *deploy.PreparedScenario
-		cleanup   func()
-	}
 	preparedReleases := make([]preparedTopologyRelease, 0, len(order))
 	defer func() {
 		for _, release := range preparedReleases {
@@ -1421,7 +1429,51 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 		}
 	}
 
+	if err := runTopologyPostDeployHook(ctx, entry, opts, preparedReleases); err != nil {
+		return err
+	}
+
 	return runTopologyE2ELegs(ctx, entry, opts, platform, contexts, crossRefEnv, orchestrationIndices)
+}
+
+// runTopologyPostDeployHook runs the scenario's post-deploy hook once, after every release in the
+// topology has deployed. synthesizeReleaseEntry deliberately clears PostDeploy on each synthesized
+// release, so without this the hook is registered against nothing and never runs: the lifecycle
+// boundary of a topology hook is the whole topology, not any one release in it.
+//
+// It runs before, and independently of, the e2e legs. A topology that sets skip-e2e still has to
+// prove its post-deploy assertions - for physicaltenants the hook is the only per-tenant Optimize
+// coverage there is, because the browser suite cannot express it yet.
+func runTopologyPostDeployHook(ctx context.Context, entry matrix.Entry, opts matrix.RunOptions, releases []preparedTopologyRelease) error {
+	if entry.PostDeploy == nil {
+		return nil
+	}
+	flags := topologyHookFlags(releases)
+	if flags == nil {
+		return fmt.Errorf("topology entry %s/%s: post-deploy hook declared but the topology prepared no release to run it against", entry.Version, entry.Scenario)
+	}
+	if err := matrix.RunDeclarativePostDeployHook(ctx, flags, entry.PostDeploy, opts.RepoRoot, entry.Version, entry.Scenario); err != nil {
+		return fmt.Errorf("topology entry %s/%s: post-deploy hook: %w", entry.Version, entry.Scenario, err)
+	}
+	return nil
+}
+
+// topologyHookFlags picks the release a topology-level hook runs against. Hook scripts read
+// TEST_NAMESPACE as the namespace to inspect workloads in, and they inspect the orchestration
+// release (Zeebe partitions, exporters), so the orchestration release's flags are the ones to use;
+// its ExtraEnv already carries the whole cross-reference env, so the Hub and per-Optimize values
+// the scripts also read resolve from it. With more than one orchestration release the first in
+// deploy order wins, matching ORCH_NAMESPACE, which is only set for a single-orchestration topology.
+func topologyHookFlags(releases []preparedTopologyRelease) *config.RuntimeFlags {
+	for _, release := range releases {
+		if release.release.Role == "orchestration" {
+			return release.flags
+		}
+	}
+	if len(releases) > 0 {
+		return releases[0].flags
+	}
+	return nil
 }
 
 // runTopologyE2ELegs runs e2e once the entire topology is deployed. Reaching this point means every
@@ -1663,9 +1715,6 @@ func synthesizeReleaseEntry(entry matrix.Entry, rel matrix.TopologyRelease, plat
 		Persistence:  rel.Persistence,
 		Features:     features,
 		Dependencies: rel.ResolvedDependencies,
-	}
-	if rel.Role == "orchestration" {
-		releaseEntry.PostDeploy = entry.PostDeploy
 	}
 	// e2e is a topology-level concern, not a per-release one: a release's deploy returns while later
 	// releases are still undeployed, so testing here would test a partial topology (and would repeat
