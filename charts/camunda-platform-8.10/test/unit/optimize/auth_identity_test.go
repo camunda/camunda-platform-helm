@@ -1139,12 +1139,7 @@ func (s *AuthIdentityTemplateTest) TestKeycloakWithoutABackendUrlDerivesNoJwksUr
 	s.Require().Contains(out, `jwtSetUri: "https://issuer.example.com/certs"`)
 }
 
-// A component-scoped Optimize identity is configured on a release that runs no Management Identity
-// of its own, so the in-release default CAMUNDA_IDENTITY_BASEURL points at a Service that is never
-// deployed. Optimize reaches Identity for authorizations rather than for token validation, so a
-// valid issuer and JWKS let it start and report ready and only the first authorization lookup fails
-// - which is why this is rejected at render time rather than left to the deploy to discover.
-func (s *AuthIdentityTemplateTest) TestComponentScopedIdentityRequiresAReachableIdentityUrl() {
+func (s *AuthIdentityTemplateTest) TestComponentScopedIdentityOnlyRequiresIdentityUrlForMultitenancy() {
 	values := map[string]string{
 		"global.identity.auth.enabled":                           "false",
 		"identity.enabled":                                       "false",
@@ -1156,10 +1151,15 @@ func (s *AuthIdentityTemplateTest) TestComponentScopedIdentityRequiresAReachable
 		"optimize.security.authentication.oidc.issuerBackendUrl": "https://idp.example.com/realms/camunda",
 		"optimize.security.authentication.oidc.jwksUrl":          "https://idp.example.com/realms/camunda/protocol/openid-connect/certs",
 	}
-	_, err := helm.RenderTemplateE(s.T(), &helm.Options{SetValues: values}, s.chartPath, s.release,
+	out, err := helm.RenderTemplateE(s.T(), &helm.Options{SetValues: values}, s.chartPath, s.release,
 		[]string{"templates/optimize/configmap-identity-env.yaml"})
-	s.Require().Error(err)
-	s.Require().Contains(err.Error(), "neither optimize.identity.service.url nor global.identity.service.url names one")
+	s.Require().NoError(err)
+	s.Require().NotContains(out, "CAMUNDA_IDENTITY_BASEURL")
+
+	values["optimize.multitenancy.enabled"] = "true"
+	_, err = helm.RenderTemplateE(s.T(), &helm.Options{SetValues: values}, s.chartPath, s.release,
+		[]string{"templates/optimize/configmap-identity-env.yaml"})
+	s.Require().ErrorContains(err, "multi-tenant Optimize requires a Management Identity URL")
 
 	// The component-scoped URL answers it, and is the value Optimize is then given.
 	component := map[string]string{}
@@ -1167,7 +1167,7 @@ func (s *AuthIdentityTemplateTest) TestComponentScopedIdentityRequiresAReachable
 		component[k] = v
 	}
 	component["optimize.identity.service.url"] = "http://identity.hub.svc:80/identity"
-	out, err := helm.RenderTemplateE(s.T(), &helm.Options{SetValues: component}, s.chartPath, s.release,
+	out, err = helm.RenderTemplateE(s.T(), &helm.Options{SetValues: component}, s.chartPath, s.release,
 		[]string{"templates/optimize/configmap-identity-env.yaml"})
 	s.Require().NoError(err)
 	s.Require().Contains(out, `CAMUNDA_IDENTITY_BASEURL: "http://identity.hub.svc:80/identity"`)
@@ -1194,6 +1194,7 @@ func (s *AuthIdentityTemplateTest) TestReleaseSuppliedIdentityUrlEnvAnswersTheGu
 		"global.identity.auth.enabled":                           "false",
 		"identity.enabled":                                       "false",
 		"optimize.enabled":                                       "true",
+		"optimize.multitenancy.enabled":                          "true",
 		"orchestration.data.secondaryStorage.type":               "elasticsearch",
 		"optimize.security.authentication.method":                "oidc",
 		"optimize.security.authentication.oidc.type":             "GENERIC",
@@ -1225,7 +1226,7 @@ func (s *AuthIdentityTemplateTest) TestReleaseSuppliedIdentityUrlEnvAnswersTheGu
 		"optimize.env[0].value": "",
 	})}, s.chartPath, s.release, []string{"templates/optimize/deployment.yaml"})
 	s.Require().Error(err)
-	s.Require().Contains(err.Error(), "neither optimize.identity.service.url nor global.identity.service.url names one")
+	s.Require().Contains(err.Error(), "multi-tenant Optimize requires a Management Identity URL")
 
 	// A declared envFrom source answers it too, and only the declaration says one carries it.
 	declared := with(map[string]string{
@@ -1240,5 +1241,5 @@ func (s *AuthIdentityTemplateTest) TestReleaseSuppliedIdentityUrlEnvAnswersTheGu
 	_, err = helm.RenderTemplateE(s.T(), &helm.Options{SetValues: declared}, s.chartPath, s.release,
 		[]string{"templates/optimize/deployment.yaml"})
 	s.Require().Error(err)
-	s.Require().Contains(err.Error(), "neither optimize.identity.service.url nor global.identity.service.url names one")
+	s.Require().Contains(err.Error(), "multi-tenant Optimize requires a Management Identity URL")
 }
