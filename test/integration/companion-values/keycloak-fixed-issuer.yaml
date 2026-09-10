@@ -3,8 +3,8 @@
 # Identical to keycloak.yaml apart from KC_HOSTNAME. The base chart passes
 # --hostname-strict=false, so Keycloak derives its issuer from the request host:
 # a caller reaching the internal Service gets an internal issuer while a browser
-# reaching the ingress gets the public one. Physical Tenants require the
-# Orchestration Cluster to validate a single issuer-uri, which no request-derived
+# reaching the ingress gets the public one. The Orchestration Cluster validates
+# the refresh_token grant against a single issuer, which no request-derived
 # issuer can satisfy for both callers, so this variant pins one.
 #
 # KC_HOSTNAME must include the /auth path. Keycloak 26 builds frontend URLs from
