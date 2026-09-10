@@ -508,3 +508,63 @@ func containsString(values []string, expected string) bool {
 	}
 	return false
 }
+
+// jsNamedGroup matches the JavaScript named-capture syntax used by Renovate,
+// which Go's regexp spells `(?P<name>`.
+var jsNamedGroup = regexp.MustCompile(`\(\?<`)
+
+// TestAlphaVersioningRegexAcceptsAlphaTags compiles each alpha versioning regex
+// declared in renovate.json5 and asserts which tag shapes it accepts.
+func TestAlphaVersioningRegexAcceptsAlphaTags(t *testing.T) {
+	root := repoRoot(t)
+	configPath := filepath.Join(root, ".github", "renovate.json5")
+
+	configBytes, err := os.ReadFile(configPath)
+	require.NoError(t, err, "failed to read renovate.json5")
+
+	var config RenovateConfig
+	err = json5.Unmarshal(configBytes, &config)
+	require.NoError(t, err, "failed to parse renovate.json5 as JSON5")
+
+	tagCases := []struct {
+		tag      string
+		accepted bool
+	}{
+		{"8.10.0-alpha1", true},
+		{"8.10.0-alpha5", true},
+		{"8.10.0-alpha10", true},
+		{"8.10.0-alpha42", true},
+		{"8.10.0", false},
+		{"8.10.0-alpha3-rc1", false},
+		{"8.10.0-alpha4.2", false},
+		{"8.10.0-SNAPSHOT", false},
+		{"8x10y0-alpha5", false},
+		{"8-10-0-alpha5", false},
+	}
+
+	var checked int
+	for _, rule := range config.PackageRules {
+		if !strings.Contains(rule.Versioning, "alpha") {
+			continue
+		}
+		pattern, found := strings.CutPrefix(rule.Versioning, "regex:")
+		if !found {
+			continue
+		}
+
+		re, err := regexp.Compile(jsNamedGroup.ReplaceAllString(pattern, "(?P<"))
+		require.NoError(t, err, "alpha versioning regex does not compile: %s", pattern)
+		checked++
+
+		for _, tc := range tagCases {
+			assert.Equalf(t, tc.accepted, re.MatchString(tc.tag),
+				"regex %s\ntag %q: expected accepted=%v\n\n"+
+					"Renovate silently stops offering updates for a tag this regex "+
+					"cannot parse, so widening or narrowing it changes which releases "+
+					"are tracked.", pattern, tc.tag, tc.accepted)
+		}
+	}
+
+	require.NotZero(t, checked, "no alpha versioning regex found in renovate.json5 — "+
+		"the rules moved or the `regex:` prefix changed, and this test is no longer covering them")
+}
