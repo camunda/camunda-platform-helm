@@ -70,7 +70,7 @@ Authentication.
 */}}
 
 {{- define "connectors.authMethod" -}}
-    {{- if not .Values.connectors.enabled -}}
+    {{- if ne (include "camundaPlatform.connectorsEnabled" .) "true" -}}
         none
     {{- else -}}
         {{- .Values.connectors.security.authentication.method | default (

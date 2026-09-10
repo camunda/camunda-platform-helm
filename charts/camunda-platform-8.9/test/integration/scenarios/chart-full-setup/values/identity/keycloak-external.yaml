@@ -1,0 +1,87 @@
+# External Hub Identity and Keycloak configuration for an Orchestration release.
+global:
+  ingress:
+    enabled: true
+    className: nginx
+    host: "$CAMUNDA_HOSTNAME"
+    tls:
+      enabled: true
+    annotations:
+      external-dns.alpha.kubernetes.io/hostname: "{{ .Values.global.ingress.host }}"
+      external-dns.alpha.kubernetes.io/ttl: "60"
+  identity:
+    service:
+      url: "http://integration-identity.${HUB_NAMESPACE}.svc.cluster.local:80/identity"
+    keycloak:
+      url:
+        protocol: http
+        host: "keycloak.${HUB_NAMESPACE}.svc.cluster.local"
+        port: "80"
+    auth:
+      enabled: true
+      type: KEYCLOAK
+      issuerBackendUrl: "http://keycloak.${HUB_NAMESPACE}.svc.cluster.local:80/auth/realms/camunda-platform"
+      publicIssuerUrl: "https://${HUB_HOST}/auth/realms/camunda-platform"
+      optimize:
+        clientId: "${ORCH_OPTIMIZE_CLIENT_ID}"
+        audience: "${ORCH_OPTIMIZE_AUDIENCE}"
+        redirectUrl: "https://${ORCH_HOST}/optimize"
+        secret:
+          existingSecret: integration-test-credentials
+          existingSecretKey: identity-optimize-client-token
+  security:
+    authentication:
+      method: oidc
+  topology:
+    mode: orchestration
+
+identity:
+  enabled: false
+identityKeycloak:
+  enabled: false
+identityPostgresql:
+  enabled: false
+webModelerPostgresql:
+  enabled: false
+
+optimize:
+  enabled: true
+  database:
+    elasticsearch:
+      enabled: true
+  contextPath: /optimize
+  livenessProbe:
+    enabled: true
+
+connectors:
+  security:
+    authentication:
+      oidc:
+        clientId: "${ORCH_CONNECTORS_CLIENT_ID}"
+        secret:
+          existingSecret: integration-test-credentials
+          existingSecretKey: identity-connectors-client-token
+
+orchestration:
+  enabled: true
+  security:
+    initialization:
+      defaultRoles:
+        admin:
+          users:
+            - demo
+          clients:
+            - venom
+    authentication:
+      authenticationRefreshInterval: PT30S
+      oidc:
+        clientId: "${ORCH_ORCHESTRATION_CLIENT_ID}"
+        audience: "${ORCH_ORCHESTRATION_AUDIENCE}"
+        redirectUrl: "https://${ORCH_HOST}/orchestration"
+        secret:
+          existingSecret: integration-test-credentials
+          existingSecretKey: identity-orchestration-client-token
+        backwardsCompatibleAudiences:
+          - operate-api
+          - tasklist-api
+          - zeebe-api

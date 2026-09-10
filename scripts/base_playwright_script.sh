@@ -532,8 +532,8 @@ _release_npm_lock() {
   log "Released npm install lock"
 }
 
-# Replace the npm-installed @camunda/e2e-test-suite with a copy of the local
-# checkout's dist/ so Playwright resolves test files from within the e2e
+# Replace the npm-installed @camunda/e2e-test-suite with a packed local build so
+# Playwright resolves test files and runtime dependencies from the e2e
 # node_modules tree (avoiding a second @playwright/test from the local
 # checkout's own node_modules).
 # The local checkout must have been built (npm run build) so dist/ exists.
@@ -566,12 +566,12 @@ _link_local_test_suite() {
     exit 1
   fi
 
-  local target="$test_suite_path/node_modules/@camunda/e2e-test-suite"
-  rm -rf "$target"
-  mkdir -p "$target"
-  cp "$local_dir/package.json" "$target/package.json"
-  cp -R "$local_dir/dist" "$target/dist"
-  info "Copied local test suite dist into $target from $local_dir"
+  local pack_dir tarball
+  pack_dir=$(mktemp -d)
+  tarball=$(npm pack "$local_dir" --ignore-scripts --silent --pack-destination "$pack_dir")
+  npm install "$pack_dir/$tarball" --no-save --ignore-scripts --package-lock=false --no-audit --no-fund
+  rm -rf "$pack_dir"
+  info "Installed local test suite package from $local_dir"
 }
 
 # Log the installed @camunda/e2e-test-suite version for debugging.
@@ -1044,6 +1044,7 @@ run_playwright_tests() {
   local kube_context="${10:-}"  # Optional: kubernetes context
   local rerun_cmd="${11:-}"  # Optional: command to rerun tests locally
   local is_auth0="${12:-false}"  # Optional: select auth0-smoke project (Auth0 OIDC scenario)
+  local playwright_project="${13:-}"  # Optional: select a named Playwright project
 
   log "Smoke tests: $run_smoke_tests"
   log "Reporter: $reporter"
@@ -1071,8 +1072,10 @@ run_playwright_tests() {
   # auth0 scenario can never run the QA-owned smoke-tests.spec.js (which
   # depends on a Keycloak admin) — it has its own auth0-smoke project that
   # speaks Auth0 OIDC instead.
-  local project="full-suite"
-  if [[ "$is_auth0" == "true" ]]; then
+  local project="${playwright_project:-full-suite}"
+  if [[ -n "$playwright_project" ]]; then
+    info "Running Playwright project: $project"
+  elif [[ "$is_auth0" == "true" ]]; then
     project="auth0-smoke"
     info "Running Auth0 OIDC smoke tests..."
   elif [[ "$run_smoke_tests" == "true" ]]; then
@@ -1096,7 +1099,7 @@ run_playwright_tests() {
   [[ -n "${PLAYWRIGHT_E2E_RETRIES:-}" ]] && playwright_args+=(--retries="$PLAYWRIGHT_E2E_RETRIES")
   # smoke-tests uses a low worker count by default; other projects keep the
   # config default unless PLAYWRIGHT_E2E_WORKERS is set.
-  if [[ "$project" == "smoke-tests" ]]; then
+  if [[ "$project" == "smoke-tests" || "$project" == "hub-web-modeler" ]]; then
     playwright_args+=(--workers="${PLAYWRIGHT_E2E_WORKERS:-2}")
   elif [[ -n "${PLAYWRIGHT_E2E_WORKERS:-}" ]]; then
     playwright_args+=(--workers="$PLAYWRIGHT_E2E_WORKERS")

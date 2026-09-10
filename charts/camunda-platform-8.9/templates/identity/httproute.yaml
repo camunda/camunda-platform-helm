@@ -39,7 +39,7 @@ spec:
       port: {{ include "identity.keycloak.port" . }}
 ---
 {{- end }}
-{{- if .Values.identity.enabled }}
+{{- if eq (include "camundaPlatform.identityEnabled" .) "true" }}
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:

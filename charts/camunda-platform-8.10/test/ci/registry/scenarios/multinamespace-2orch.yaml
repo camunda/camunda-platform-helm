@@ -4,7 +4,6 @@ flows:
   - install
 platforms:
   - gke
-skip-e2e: true
 infra-type:
   gke: distroci
 topology:
@@ -38,6 +37,7 @@ topology:
         ORCH_OPTIMIZE_AUDIENCE: optimize-orcha-api
         ORCH_CONNECTORS_CLIENT_ID: connectors-orcha
     - role: orchestration
+      chart-version: "8.9"
       namespace-suffix: orchb
       modeler-cluster-id: orchb
       modeler-cluster-name: Orchestration B

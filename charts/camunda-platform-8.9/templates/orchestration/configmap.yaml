@@ -1,4 +1,4 @@
-{{- if .Values.orchestration.enabled -}}
+{{- if eq (include "camundaPlatform.orchestrationEnabled" .) "true" -}}
 kind: ConfigMap
 metadata:
   name: {{ include "orchestration.fullname" . }}-configuration

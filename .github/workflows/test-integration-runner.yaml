@@ -1466,6 +1466,7 @@ jobs:
     timeout-minutes: 40
     strategy:
       fail-fast: false
+      max-parallel: 4
       matrix:
         include: ${{ fromJson(inputs.topology-smoke-matrix) }}
     permissions:
@@ -1520,6 +1521,21 @@ jobs:
             secret/data/products/distribution/ci DISTRO_CI_GCP_SERVICE_ACCOUNT;
           exportEnv: false
 
+      - name: Generate E2E repository token
+        id: e2e-repository-token
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
+        with:
+          github-app-id-vault-key: GITHUB_APP_ID
+          github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/quality-assurance-ci
+          github-app-private-key-vault-key: GITHUB_APP_SECRET
+          github-app-private-key-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/quality-assurance-ci
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-url: ${{ secrets.VAULT_ADDR }}
+          owner: camunda
+          repositories: c8-cross-component-e2e-tests
+
       - name: Run Playwright E2E Tests (multi-namespace topology)
         uses: ./.github/actions/playwright-e2e-tests
         env:
@@ -1534,6 +1550,7 @@ jobs:
         with:
           camunda-helm-git-ref: ${{ inputs.camunda-helm-git-ref }}
           camunda-helm-dir: ${{ matrix.chart_dir }}
+          test-chart-dir: ${{ matrix.test_chart_dir }}
           camunda-helm-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
           flow: ${{ inputs.flow }}
           distro-platform: ${{ inputs.distro-platform }}
@@ -1549,7 +1566,11 @@ jobs:
           test-stage: after-install
           shard-index: ${{ matrix.shard_index }}
           scenario: ${{ inputs.scenario }}
-          run-smoke-tests: "true"
+          run-smoke-tests: "false"
+          playwright-project: ${{ matrix.playwright_project }}
+          e2e-test-suite-ref: topology-hub-web-modeler-suite
+          e2e-test-suite-token: ${{ steps.e2e-repository-token.outputs.token }}
+          artifact-suffix: ${{ matrix.orchestration_suffix }}-${{ matrix.suite }}
       - name: Observe build status
         if: always()
         continue-on-error: true

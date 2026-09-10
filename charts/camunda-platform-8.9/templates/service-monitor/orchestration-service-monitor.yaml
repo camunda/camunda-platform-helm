@@ -1,4 +1,4 @@
-{{- if and .Values.prometheusServiceMonitor.enabled .Values.orchestration.enabled -}}
+{{- if and .Values.prometheusServiceMonitor.enabled (eq (include "camundaPlatform.orchestrationEnabled" .) "true") -}}
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:

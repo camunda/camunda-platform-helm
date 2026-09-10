@@ -11,6 +11,10 @@ export default defineConfig({
       testMatch: ["**/smoke-tests.spec.{ts,js}"],
     },
     {
+      name: "topology-orchestration",
+      testMatch: ["**/topology-orchestration-smoke.spec.{ts,js}"],
+    },
+    {
       name: "full-suite",
       testMatch: ["**/*.spec.{ts,js}"],
       // cluster-variables requires Vault-managed secrets not available in PR CI.

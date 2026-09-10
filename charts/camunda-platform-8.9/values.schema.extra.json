@@ -104,6 +104,17 @@
                         }
                     }
                 },
+                "topology": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                        "mode": {
+                            "type": "string",
+                            "enum": ["combined", "orchestration"],
+                            "default": "combined"
+                        }
+                    }
+                },
                 "testDeprecationFlags": {
                     "type": "object",
                     "description": "internal flags used by chart tests to assert deprecation behavior.",
