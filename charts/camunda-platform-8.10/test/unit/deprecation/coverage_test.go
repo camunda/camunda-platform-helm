@@ -331,3 +331,90 @@ func isCovered(key string, covered map[string]struct{}, executable string) bool 
 
 	return false
 }
+
+const deprecationMarker = "(DEPRECATED)"
+
+var deprecatedIncludePattern = regexp.MustCompile(`(?s)include\s+"camundaPlatform\.keyDeprecated"\s*\(dict(.*?)\)\s*\}\}`)
+
+var paramDocPattern = regexp.MustCompile(`(?m)^\s*##\s*@(?:param|extra)\s+(\S+)(.*)$`)
+
+func TestDeprecatedKeysDocumentedWithMarker(t *testing.T) {
+	t.Parallel()
+
+	constraintsBytes, err := os.ReadFile(constraintsTplPath)
+	require.NoError(t, err)
+
+	deprecated := parseDeprecatedKeys(stripHelmComments(string(constraintsBytes)))
+	require.NotEmpty(t, deprecated, "no keyDeprecated registrations found in constraints.tpl")
+
+	docs, err := parseDocumentedParams(currentValuesPath)
+	require.NoError(t, err)
+
+	var undeclared, unmarked []string
+	for key := range deprecated {
+		description, ok := docs[key]
+		if !ok {
+			undeclared = append(undeclared, key)
+			continue
+		}
+		if !strings.Contains(description, deprecationMarker) {
+			unmarked = append(unmarked, key)
+		}
+	}
+
+	sort.Strings(undeclared)
+	sort.Strings(unmarked)
+
+	for _, key := range undeclared {
+		t.Errorf("key %q has a keyDeprecated warning but no @param/@extra line in values.yaml: restore the declaration so users can find it before removal", key)
+	}
+	for _, key := range unmarked {
+		t.Errorf("key %q has a keyDeprecated warning but its values.yaml @param/@extra line lacks the %s marker", key, deprecationMarker)
+	}
+}
+
+func TestParseDeprecatedKeysExcludesRemovedKeys(t *testing.T) {
+	t.Parallel()
+
+	input := `
+{{ include "camundaPlatform.keyDeprecated" (dict
+  "condition" true
+  "oldName" "foo.deprecated"
+  "migration" "bar") }}
+{{ include "camundaPlatform.keyRemoved" (dict
+  "condition" true
+  "oldName" "foo.removed") }}
+`
+	deprecated := parseDeprecatedKeys(stripHelmComments(input))
+
+	_, deprecatedOK := deprecated["foo.deprecated"]
+	require.True(t, deprecatedOK, "keyDeprecated oldName should be collected")
+	_, removedOK := deprecated["foo.removed"]
+	require.False(t, removedOK, "keyRemoved oldName must not be collected")
+}
+
+func parseDeprecatedKeys(executable string) map[string]struct{} {
+	keys := make(map[string]struct{})
+	for _, block := range deprecatedIncludePattern.FindAllStringSubmatch(executable, -1) {
+		if match := oldNamePattern.FindStringSubmatch(block[1]); match != nil {
+			keys[match[1]] = struct{}{}
+		}
+	}
+	return keys
+}
+
+func parseDocumentedParams(path string) (map[string]string, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	docs := make(map[string]string)
+	for _, match := range paramDocPattern.FindAllStringSubmatch(string(data), -1) {
+		if _, seen := docs[match[1]]; seen {
+			continue
+		}
+		docs[match[1]] = match[2]
+	}
+	return docs, nil
+}
