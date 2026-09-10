@@ -387,8 +387,9 @@ func waitForForwardPort(ctx context.Context, process acceptanceProcess, sleep fu
 	return "", fmt.Errorf("management port-forward never reported a local port: %s", strings.TrimSpace(process.Output()))
 }
 
+// The actuator keys each tenant by partition id: {"tenanta":{"1":{...}}}.
 func partitionsHealthy(body []byte) bool {
-	var partitions map[string][]partitionState
+	var partitions map[string]map[string]partitionState
 	if json.Unmarshal(body, &partitions) != nil || len(partitions) != 3 {
 		return false
 	}
