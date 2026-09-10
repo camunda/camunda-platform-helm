@@ -293,10 +293,9 @@ false
 
 {{/*
 [optimize] Whether the Identity base URL may reach the container without this chart resolving it.
-The identity env ConfigMap always states CAMUNDA_IDENTITY_BASEURL, but the Deployment lists
-optimize.env and optimize.envFrom after it, so either supersedes what the chart resolved - and as
-everywhere else here, an envFrom source counts only once the release declares the variable it
-carries.
+The Deployment lists optimize.env and optimize.envFrom after the identity env ConfigMap, so either
+supersedes what the chart resolved - and as everywhere else here, an envFrom source counts only once
+the release declares the variable it carries.
 */}}
 {{- define "optimize.identityUrlMayComeFromEnv" -}}
   {{- $names := splitList " " (include "optimize.identityUrlEnvNames" .) -}}
