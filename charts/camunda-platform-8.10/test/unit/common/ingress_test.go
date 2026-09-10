@@ -245,6 +245,23 @@ func (s *IngressTemplateTest) TestDifferentValuesInputs() {
 			},
 		},
 		{
+			Name:                 "TestHttpIngressEmitsNoControllerSpecificAnnotationsByDefault",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"global.ingress.enabled":    "true",
+				"orchestration.contextPath": "/orchestration",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var ingress netv1.Ingress
+				helm.UnmarshalK8SYaml(t, output, &ingress)
+
+				for _, a := range []string{"ssl-redirect", "proxy-buffering", "proxy-buffer-size", "proxy-body-size"} {
+					s.Require().NotContains(ingress.Annotations, "nginx.ingress.kubernetes.io/"+a,
+						"the chart must not ship ingress-nginx annotation defaults; they are opt-in since camunda/camunda-platform-helm#6410")
+				}
+			},
+		},
+		{
 			Name:                 "TestHttpIngressLabelMergeOverwrite",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
@@ -796,7 +813,7 @@ func (s *GrpcIngressTemplateTest) TestDifferentValuesInputs() {
 			},
 		},
 		{
-			Name:                 "TestGrpcIngressUsesPlaintextBackendProtocolByDefault",
+			Name:                 "TestGrpcIngressEmitsNoBackendProtocolByDefault",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
 				"orchestration.enabled":              "true",
@@ -808,7 +825,8 @@ func (s *GrpcIngressTemplateTest) TestDifferentValuesInputs() {
 				var ingress netv1.Ingress
 				helm.UnmarshalK8SYaml(t, output, &ingress)
 
-				s.Require().NotEqual("GRPCS", ingress.Annotations["nginx.ingress.kubernetes.io/backend-protocol"])
+				s.Require().NotContains(ingress.Annotations, "nginx.ingress.kubernetes.io/backend-protocol",
+					"the chart must not ship an ingress-nginx backend-protocol default; it is opt-in since camunda/camunda-platform-helm#6410")
 			},
 		},
 		{
