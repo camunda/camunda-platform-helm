@@ -1,4 +1,4 @@
-{{- if .Values.identity.enabled -}}
+{{- if eq (include "camundaPlatform.identityEnabled" .) "true" -}}
 apiVersion: v1
 kind: Service
 metadata:

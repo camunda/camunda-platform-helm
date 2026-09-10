@@ -1,4 +1,4 @@
-{{- if and .Values.orchestration.enabled .Values.orchestration.ingress.grpc.enabled -}}
+{{- if and (eq (include "camundaPlatform.orchestrationEnabled" .) "true") .Values.orchestration.ingress.grpc.enabled -}}
 {{- if not .Values.orchestration.ingress.grpc.external -}}
 apiVersion: networking.k8s.io/v1
 kind: Ingress

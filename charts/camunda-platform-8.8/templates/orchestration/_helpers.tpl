@@ -189,7 +189,7 @@ Authentication.
 */}}
 
 {{- define "orchestration.authMethod" -}}
-    {{- if .Values.orchestration.enabled -}}
+    {{- if eq (include "camundaPlatform.orchestrationEnabled" .) "true" -}}
         {{- .Values.orchestration.security.authentication.method | default (
             .Values.global.security.authentication.method | default "none"
         ) -}}

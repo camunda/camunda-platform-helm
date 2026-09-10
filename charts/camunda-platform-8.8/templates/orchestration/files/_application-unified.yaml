@@ -274,7 +274,7 @@ zeebe:
     {{- if and
       (or
         (and .Values.global.elasticsearch.enabled .Values.orchestration.exporters.zeebe.enabled)
-        (and .Values.global.elasticsearch.enabled .Values.optimize.enabled)
+        (and .Values.global.elasticsearch.enabled (eq (include "camundaPlatform.optimizeEnabled" .) "true"))
         (and .Values.global.elasticsearch.enabled .Values.orchestration.migration.data.enabled)
       )
       (or
@@ -303,7 +303,7 @@ zeebe:
     {{- else if and
       (or
         (and .Values.global.opensearch.enabled .Values.orchestration.exporters.zeebe.enabled)
-        (and .Values.global.opensearch.enabled .Values.optimize.enabled)
+        (and .Values.global.opensearch.enabled (eq (include "camundaPlatform.optimizeEnabled" .) "true"))
         (and .Values.global.opensearch.enabled .Values.orchestration.migration.data.enabled)
       )
       (or

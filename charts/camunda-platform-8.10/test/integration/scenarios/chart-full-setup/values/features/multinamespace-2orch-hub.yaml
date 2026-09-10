@@ -72,6 +72,39 @@ global:
             secret:
               existingSecret: integration-test-credentials
               existingSecretKey: identity-connectors-client-token
+      - id: orchc
+        name: Orchestration C
+        namespace: "${ORCHC_NAMESPACE}"
+        releaseName: integration
+        host: "${ORCHC_HOST}"
+        version: "8.8.17"
+        contextPaths:
+          orchestration: /orchestration
+          optimize: /optimize
+          connectors: /connectors
+        components:
+          orchestration:
+            enabled: true
+            clientId: orchestration-orchc
+            audience: orchestration-orchc-api
+            redirectUrl: "https://${ORCHC_HOST}/orchestration"
+            secret:
+              existingSecret: integration-test-credentials
+              existingSecretKey: identity-orchestration-client-token
+          optimize:
+            enabled: true
+            clientId: optimize-orchc
+            audience: optimize-orchc-api
+            redirectUrl: "https://${ORCHC_HOST}/optimize"
+            secret:
+              existingSecret: integration-test-credentials
+              existingSecretKey: identity-optimize-client-token
+          connectors:
+            enabled: true
+            clientId: connectors-orchc
+            secret:
+              existingSecret: integration-test-credentials
+              existingSecretKey: identity-connectors-client-token
 
 identity:
   clients:
@@ -99,6 +132,12 @@ identity:
         - resourceServerId: orchestration-orchb-api
           definition: write:*
         - resourceServerId: optimize-orchb-api
+          definition: write:*
+        - resourceServerId: orchestration-orchc-api
+          definition: read:*
+        - resourceServerId: orchestration-orchc-api
+          definition: write:*
+        - resourceServerId: optimize-orchc-api
           definition: write:*
         - resourceServerId: web-modeler-api
           definition: write:*

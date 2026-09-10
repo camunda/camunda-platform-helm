@@ -82,7 +82,7 @@ Authentication.
 */}}
 
 {{- define "connectors.authMethod" -}}
-    {{- if .Values.connectors.enabled -}}
+    {{- if eq (include "camundaPlatform.connectorsEnabled" .) "true" -}}
         {{- .Values.connectors.security.authentication.method | default (
             .Values.global.security.authentication.method | default "none"
         ) -}}

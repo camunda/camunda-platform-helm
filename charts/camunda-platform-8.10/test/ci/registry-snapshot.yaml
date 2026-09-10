@@ -1957,6 +1957,21 @@ integration:
                   ORCH_ORCHESTRATION_CLIENT_ID: orchestration-orchb
                 modeler-cluster-id: orchb
                 modeler-cluster-name: Orchestration B
+              - chart-version: "8.8"
+                role: orchestration
+                namespace-suffix: orchc
+                values: features/multinamespace-orchestration.yaml
+                depends-on: hub
+                identity: keycloak-external
+                persistence: elasticsearch-external
+                env:
+                  ORCH_CONNECTORS_CLIENT_ID: connectors-orchc
+                  ORCH_OPTIMIZE_AUDIENCE: optimize-orchc-api
+                  ORCH_OPTIMIZE_CLIENT_ID: optimize-orchc
+                  ORCH_ORCHESTRATION_AUDIENCE: orchestration-orchc-api
+                  ORCH_ORCHESTRATION_CLIENT_ID: orchestration-orchc
+                modeler-cluster-id: orchc
+                modeler-cluster-name: Orchestration C
             shared-storage: elasticsearch
             shared-storage-service: elasticsearch-master
     nightly:

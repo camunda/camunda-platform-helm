@@ -1,4 +1,4 @@
-{{- if .Values.orchestration.enabled -}}
+{{- if eq (include "camundaPlatform.orchestrationEnabled" .) "true" -}}
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
