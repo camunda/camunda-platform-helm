@@ -1315,6 +1315,21 @@ The following values inside your values.yaml need to be set but were not:
     {{- end }}
   {{- end }}
 
+  {{- if and .Values.global.ingress.enabled (not .Values.global.ingress.external) }}
+    {{- if or
+          (eq (include "camundaPlatform.orchestrationRESTTLSEnabled" .) "true")
+          (eq (include "camundaPlatform.orchestrationGRPCTLSEnabled" .) "true")
+          (eq (include "camundaPlatform.connectorsTLSEnabled" .) "true")
+          (eq (include "camundaPlatform.optimizeServerTLSEnabled" .) "true") }}
+      {{- $warningMessage := printf "%s %s %s"
+          "[camunda][warning]"
+          "Upstream TLS is enabled, so the chart annotates the Ingress with nginx.ingress.kubernetes.io/backend-protocol, which only ingress-nginx reads."
+          "On any other Ingress controller the upstream stays plaintext and routing to the TLS-only pod will break until you set that controller's equivalent, for example projectcontour.io/upstream-protocol.tls (or .h2 for gRPC) on the target Service with Contour."
+      -}}
+      {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+    {{- end }}
+  {{- end }}
+
   {{/* Warn when webModeler pusher secret is auto-generated */}}
   {{- if eq (include "camundaHub.webModelerEnabled" .) "true" }}
     {{- $pusher := mustMergeOverwrite (deepCopy .Values.webModeler.restapi.pusher) (.Values.camundaHub.restapi.pusher | default dict) }}

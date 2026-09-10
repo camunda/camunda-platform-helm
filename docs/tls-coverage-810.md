@@ -65,6 +65,7 @@ Status legend:
 | External gRPC client → Zeebe gateway | ✅ | `orchestration.ingress.grpc.tls.{enabled,secretName}` | Configured at the ingress, not the pod |
 | GatewayAPI deployments | ✅ | `global.gateway.tls.{enabled,secretName}` | When using the GatewayAPI controller path |
 | External webhook / HTTP client → Connectors HTTP (inbound) | 🟢 | `global.tls.connectors` (PKCS12 or PEM); TLS terminates at the Connectors Spring Boot pod on `connectors.service.serverPort` | New in this PR. Under the Gateway API `HTTPRoute` used in 8.10, a `BackendTLSPolicy` (Gateway API v1.0+) targeting the Connectors Service is required so the gateway re-encrypts to the TLS-only pod. |
+| Ingress controller → TLS-enabled pod (upstream re-encryption) | 🟡 | `nginx.ingress.kubernetes.io/backend-protocol`, emitted by the chart on the split HTTPS/GRPCS Ingress objects | ingress-nginx only. Other Ingress controllers ignore the annotation and keep the upstream plaintext, so routing to the TLS-only pod breaks. With Contour set `projectcontour.io/upstream-protocol.tls` (or `.h2` for gRPC) on the target Service; other controllers have their own equivalent. The chart emits a render-time `[camunda][warning]` whenever upstream TLS is combined with the Ingress path. |
 
 ### 3. Component → identity / OIDC issuer
 
