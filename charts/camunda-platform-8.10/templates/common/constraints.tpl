@@ -386,6 +386,15 @@ merged nowhere.
 {{- if ne (include "camundaPlatform.multiregionConfigured" (.Values.orchestration.multiregion | default dict)) "true" -}}
   {{- $mrKey = "global.multiregion" -}}
 {{- end -}}
+{{- if and $mr.keepUnzonedBrokers (eq $mr.mode "zoned") }}
+  {{- $orchestrationMultiregion := .Values.orchestration.multiregion | default dict -}}
+  {{- if or
+    (empty (get $orchestrationMultiregion "regions"))
+    (and (kindIs "string" (get $orchestrationMultiregion "regionId")) (empty (get $orchestrationMultiregion "regionId")))
+  }}
+    {{- fail "[camunda][error] orchestration.multiregion.keepUnzonedBrokers requires both orchestration.multiregion.regions and orchestration.multiregion.regionId to preserve the numbered broker identity." -}}
+  {{- end }}
+{{- end }}
 
 {{/*
 Fail if the zone topology is described without selecting zoned mode. Nothing else

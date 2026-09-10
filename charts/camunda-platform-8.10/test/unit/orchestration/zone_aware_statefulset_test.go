@@ -250,6 +250,8 @@ func (s *StatefulSetTest) TestKeepUnzonedBrokersDoesNotRestartZonedBrokers() {
 		"orchestration.multiregion.zones[0].numberOfReplicas": "3",
 		"orchestration.multiregion.zones[0].priority":         "100",
 		"orchestration.multiregion.zone":                      "zone-a",
+		"orchestration.multiregion.regions":                   "1",
+		"orchestration.multiregion.regionId":                  "0",
 		"orchestration.data.secondaryStorage.type":            "elasticsearch",
 	}
 

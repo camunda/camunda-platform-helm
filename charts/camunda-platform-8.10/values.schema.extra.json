@@ -981,18 +981,20 @@
                         "regions": {
                             "type": [
                                 "integer",
-                                "string"
+                                "string",
+                                "null"
                             ],
                             "description": "Number of regions this Camunda Platform instance is stretched across.",
-                            "default": 1
+                            "default": null
                         },
                         "regionId": {
                             "type": [
                                 "integer",
-                                "string"
+                                "string",
+                                "null"
                             ],
                             "description": "Unique id of the region. MUST start at 0 for the computation to work correctly. With 2 regions, you would have region 0 and 1.",
-                            "default": 0
+                            "default": null
                         }
                     }
                 },

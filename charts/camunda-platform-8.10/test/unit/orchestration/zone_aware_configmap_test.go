@@ -202,6 +202,22 @@ func (s *ConfigmapTemplateTest) TestZonedConfiguration() {
 func (s *ConfigmapTemplateTest) TestZonedModeAllowsNumberedRegionSettingsAfterMigration() {
 	testCases := []testhelpers.TestCase{
 		{
+			Name: "TestMigrationRequiresThePreviousNumberedRegionSettings",
+			Values: map[string]string{
+				"orchestration.multiregion.mode":                      "zoned",
+				"orchestration.multiregion.zone":                      "region-a",
+				"orchestration.multiregion.zones[0].name":             "region-a",
+				"orchestration.multiregion.zones[0].numberOfBrokers":  "1",
+				"orchestration.multiregion.zones[0].numberOfReplicas": "1",
+				"orchestration.multiregion.zones[0].priority":         "100",
+				"orchestration.multiregion.keepUnzonedBrokers":        "true",
+				"orchestration.profiles.broker":                       "true",
+			},
+			Expected: map[string]string{
+				"ERROR": "requires both orchestration.multiregion.regions and orchestration.multiregion.regionId",
+			},
+		},
+		{
 			Name: "TestZonedModeAllowsRetainedNumberedRegionsToBeRemovedWithKeepUnzonedBrokers",
 			Values: map[string]string{
 				"orchestration.multiregion.mode":                      "zoned",

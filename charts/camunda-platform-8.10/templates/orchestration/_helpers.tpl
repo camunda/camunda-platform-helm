@@ -101,6 +101,9 @@ brokers: the only thing that flag adds to a zoned ConfigMap is the numbered fami
 `initial-contact-points`, which a broker reads once at bootstrap and never again.
 */}}
 {{- define "orchestration.configChecksum" -}}
+{{- if not .OrchestrationRender -}}
+{{- fail "orchestration.configChecksum requires an orchestration render scope" -}}
+{{- end -}}
 {{- $scope := required "orchestration.configChecksum requires an orchestration render scope" .OrchestrationRender.scope -}}
 {{- include "orchestration.renderManifest" (dict
     "manifest" "orchestration.configmapManifest"
