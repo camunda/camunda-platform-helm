@@ -59,14 +59,31 @@ Verify that the existing numbered pods were not restarted and that the new zoned
 
 ## 2. Move the local zone through the management API
 
-Use the Orchestration management API to move the local zone's partition distribution and broker membership to the zoned brokers:
+Use the [Orchestration management API](https://docs.camunda.io/docs/self-managed/components/orchestration-cluster/zeebe/operations/management-api/) to move the local zone's partition distribution and broker membership to the zoned brokers. Use the [REST API reference](https://docs.camunda.io/docs/apis-tools/orchestration-cluster-api-rest/orchestration-cluster-api-rest-swagger/) for the request and response schemas.
 
-- Update partition distribution with `PUT /actuator/cluster/partition-distribution`.
-- Update zone membership with `PUT /actuator/cluster/zones`.
+Update the partition distribution with `PUT /actuator/cluster/partition-distribution`. The `config.zones` order is significant for this migration: node `0` is assigned to the first zone, node `1` to the second, and so on, wrapping around the list. For example, for a two-zone cluster where the existing numbered nodes should alternate between `zone-a` and `zone-b`:
 
-Use the API documentation and the response from the running Orchestration cluster to construct the request bodies. Do not remove the numbered brokers from Kubernetes until the zoned brokers are ready and the management API reports that the local partitions and broker membership have moved.
+```json
+{
+  "config": {
+    "type": "ZONE_AWARE",
+    "zones": [
+      {"name": "zone-a", "numberOfReplicas": 3, "priority": 100},
+      {"name": "zone-b", "numberOfReplicas": 3, "priority": 90}
+    ]
+  }
+}
+```
 
-Repeat the management API operation until the local numbered brokers no longer own partitions and are no longer members of the logical cluster.
+Apply the local zone membership with `PUT /actuator/cluster/zones`:
+
+```json
+{"zone": "zone-a"}
+```
+
+Use the complete topology and the order intended for this one-time migration; do not remove the numbered brokers from Kubernetes until the zoned brokers are ready and the management API reports that the local partitions and broker membership have moved. Repeat the management API operation until the local numbered brokers no longer own partitions and are no longer members of the logical cluster.
+
+Before disabling `keepUnzonedBrokers`, query `GET /actuator/cluster` and confirm that no local numbered broker remains in `brokers` and that no numbered broker owns a partition. If the migration is incomplete, leave `keepUnzonedBrokers: true` and continue or roll back the management API changes. Setting it back to `true` re-renders the numbered resources while their PVCs remain available.
 
 ## 3. Remove the retained numbered resources
 
@@ -97,8 +114,8 @@ For the next Kubernetes cluster:
 1. Use the same complete zone topology.
 2. Set `orchestration.multiregion.zone` to the next local zone.
 3. Set `keepUnzonedBrokers: true` for that release.
-4. Run the management API migration for the local zone.
-5. Set `keepUnzonedBrokers: false` after the local numbered brokers leave membership.
+4. Run the management API migration for the local zone, following step 2 above.
+5. Confirm the numbered brokers have left membership and own no partitions, then set `keepUnzonedBrokers: false`. If the migration is incomplete, keep the flag enabled or set it back to `true` to retain the numbered resources while their PVCs remain available.
 6. Clean up the old PVCs only after the migration is verified.
 
 Do not migrate multiple zones concurrently unless the deployment has an independently verified operational procedure for that topology.
