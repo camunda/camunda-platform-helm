@@ -14,8 +14,6 @@
 # instead; the real placeholder syntax appears only in actual values below.
 
 global:
-  elasticsearch:
-    enabled: false
   identity:
     auth:
       orchestration:
