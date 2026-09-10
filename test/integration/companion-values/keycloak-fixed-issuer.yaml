@@ -1,0 +1,55 @@
+# Companion values for internal-keycloak-26 with a pinned frontend URL.
+#
+# Identical to keycloak.yaml apart from KC_HOSTNAME. The base chart passes
+# --hostname-strict=false, so Keycloak derives its issuer from the request host:
+# a caller reaching the internal Service gets an internal issuer while a browser
+# reaching the ingress gets the public one. The Orchestration Cluster validates
+# the refresh_token grant against a single issuer, which no request-derived
+# issuer can satisfy for both callers, so this variant pins one.
+#
+# KC_HOSTNAME must include the /auth path. Keycloak 26 builds frontend URLs from
+# the pinned hostname URL alone and does not append --http-relative-path to it, so
+# omitting the path yields https://<host>/realms/... and no longer matches the
+# chart's publicIssuerUrl, https://<host>/auth/realms/camunda-platform. Verified
+# against Keycloak 26.3.3 by reading the discovery document both ways.
+
+fullnameOverride: keycloak
+
+image:
+  registry: quay.io
+  repository: keycloak/keycloak
+  tag: "26.3.3"
+
+auth:
+  adminUser: admin
+  existingSecret: integration-test-credentials
+  passwordSecretKey: identity-keycloak-admin-password
+
+httpRelativePath: "/auth/"
+proxy: edge
+
+extraEnv:
+  - name: KC_HOSTNAME
+    value: "https://${CAMUNDA_HOSTNAME}/auth"
+
+resources:
+  requests:
+    cpu: 200m
+    memory: 512Mi
+  limits:
+    cpu: "1"
+    memory: 1Gi
+
+postgresql:
+  enabled: true
+  auth:
+    database: keycloak
+    username: keycloak
+    password: "keycloak-ci-password"
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
