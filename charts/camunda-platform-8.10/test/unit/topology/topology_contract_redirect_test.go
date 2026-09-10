@@ -82,3 +82,113 @@ func TestTopologyContractResolvesRedirectTemplatesInReleaseContext(t *testing.T)
 	require.Contains(t, output, "rootUrl: https://hub.example.test/tenant-optimize")
 	require.Contains(t, output, "- https://hub.example.test/tenant-optimize/callback")
 }
+
+// A Physical Tenant running its own Optimize registers under the cluster's physicalTenants rather
+// than at cluster level. The contract carried only the cluster-level component, so the consumer
+// validating it reported every non-default tenant's Optimize as unprovisioned.
+func TestTopologyContractCarriesPhysicalTenantOptimizeRegistrations(t *testing.T) {
+	options := &helm.Options{
+		ValuesFiles: []string{filepath.Join("testdata", "hub-keycloak.yaml")},
+		SetValues: map[string]string{
+			"global.host": "hub.example.test",
+			"global.topology.clusters[0].contextPaths.optimize":                        "/optimize-east",
+			"global.topology.clusters[0].components.optimize.enabled":                  "true",
+			"global.topology.clusters[0].components.optimize.clientId":                 "optimize-east",
+			"global.topology.clusters[0].components.optimize.audience":                 "optimize-east-api",
+			"global.topology.clusters[0].components.optimize.redirectUrl":              `https://{{ .Values.global.host }}/optimize-east`,
+			"global.topology.clusters[0].components.optimize.secret.existingSecret":    "east-oidc",
+			"global.topology.clusters[0].components.optimize.secret.existingSecretKey": "optimize-secret",
+
+			"global.topology.clusters[0].physicalTenants[0].id":                                           "ta",
+			"global.topology.clusters[0].physicalTenants[0].components.optimize.enabled":                  "true",
+			"global.topology.clusters[0].physicalTenants[0].components.optimize.clientId":                 "optimize-east-ta",
+			"global.topology.clusters[0].physicalTenants[0].components.optimize.audience":                 "optimize-east-ta-api",
+			"global.topology.clusters[0].physicalTenants[0].components.optimize.redirectUrl":              `https://{{ .Values.global.host }}/optimize-east-ta`,
+			"global.topology.clusters[0].physicalTenants[0].components.optimize.secret.existingSecret":    "east-oidc",
+			"global.topology.clusters[0].physicalTenants[0].components.optimize.secret.existingSecretKey": "optimize-ta-secret",
+
+			"orchestration.data.secondaryStorage.type": "elasticsearch",
+		},
+	}
+	output := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{
+		"templates/common/topology-contract.yaml",
+	}, "--api-versions", "camunda.io/topology-contract")
+
+	var contractDocument struct {
+		Data map[string]string `yaml:"data"`
+	}
+	for _, document := range splitDocuments(output) {
+		if contains(document, "topology-contract") {
+			helm.UnmarshalK8SYaml(t, document, &contractDocument)
+		}
+	}
+	var contract struct {
+		Hub struct {
+			Clusters []struct {
+				ID              string `json:"id"`
+				PhysicalTenants []struct {
+					ID       string `json:"id"`
+					Optimize struct {
+						Enabled     bool   `json:"enabled"`
+						ClientID    string `json:"clientId"`
+						Audience    string `json:"audience"`
+						RedirectURL string `json:"redirectUrl"`
+						Secret      struct {
+							Kind string `json:"kind"`
+							Name string `json:"name"`
+							Key  string `json:"key"`
+						} `json:"secret"`
+					} `json:"optimize"`
+				} `json:"physicalTenants"`
+			} `json:"clusters"`
+		} `json:"hub"`
+	}
+	require.NoError(t, json.Unmarshal([]byte(contractDocument.Data["contract.json"]), &contract))
+	require.Len(t, contract.Hub.Clusters, 1)
+	tenants := contract.Hub.Clusters[0].PhysicalTenants
+	require.Len(t, tenants, 1, "the cluster's Physical Tenant must appear in the contract")
+	require.Equal(t, "ta", tenants[0].ID)
+	require.True(t, tenants[0].Optimize.Enabled)
+	require.Equal(t, "optimize-east-ta", tenants[0].Optimize.ClientID)
+	require.Equal(t, "optimize-east-ta-api", tenants[0].Optimize.Audience)
+	// Resolved in the release's context, like every other redirect in this contract.
+	require.Equal(t, "https://hub.example.test/optimize-east-ta", tenants[0].Optimize.RedirectURL)
+	require.Equal(t, "ref", tenants[0].Optimize.Secret.Kind)
+	require.Equal(t, "east-oidc", tenants[0].Optimize.Secret.Name)
+	require.Equal(t, "optimize-ta-secret", tenants[0].Optimize.Secret.Key)
+}
+
+// A cluster without Physical Tenants must keep rendering exactly as before.
+func TestTopologyContractOmitsPhysicalTenantsWhenNoneAreDeclared(t *testing.T) {
+	options := &helm.Options{
+		ValuesFiles: []string{filepath.Join("testdata", "hub-keycloak.yaml")},
+		SetValues: map[string]string{
+			"global.host": "hub.example.test",
+			"orchestration.data.secondaryStorage.type": "elasticsearch",
+		},
+	}
+	output := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{
+		"templates/common/topology-contract.yaml",
+	}, "--api-versions", "camunda.io/topology-contract")
+
+	var contractDocument struct {
+		Data map[string]string `yaml:"data"`
+	}
+	for _, document := range splitDocuments(output) {
+		if contains(document, "topology-contract") {
+			helm.UnmarshalK8SYaml(t, document, &contractDocument)
+		}
+	}
+	var contract struct {
+		Hub struct {
+			Clusters []struct {
+				PhysicalTenants []struct {
+					ID string `json:"id"`
+				} `json:"physicalTenants"`
+			} `json:"clusters"`
+		} `json:"hub"`
+	}
+	require.NoError(t, json.Unmarshal([]byte(contractDocument.Data["contract.json"]), &contract))
+	require.Len(t, contract.Hub.Clusters, 1)
+	require.Empty(t, contract.Hub.Clusters[0].PhysicalTenants)
+}
