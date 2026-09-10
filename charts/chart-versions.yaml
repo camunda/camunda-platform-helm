@@ -15,6 +15,11 @@ camundaVersions:
   supportStandard:
     - "8.9"
     - "8.8"
+    # 8.7 stays here past its stdSupportUntil to keep chart releases and CI coverage alive for
+    # extended-support cases. Moving it to supportExtended drops it from ActiveVersions (CI
+    # matrix, dev packages, release verification), excludes it from the Renovate post-upgrade
+    # chores, and renders it in the version matrix as a frozen single-chart row. Reconcile
+    # against the ESUP Case Registry at each minor chore; move it once no case needs it.
     - "8.7"
   supportExtended:
     - "8.6"

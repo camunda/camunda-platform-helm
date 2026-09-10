@@ -212,6 +212,9 @@ Assuming `current alpha is 8.9` (which will become `stable`) and the `new alpha 
 1. Update [`charts/chart-versions.yaml`](https://github.com/camunda/camunda-platform-helm/blob/main/charts/chart-versions.yaml) —
    both the `camundaVersions` buckets and the matching `camundaSupportLifecycle` entries
    (release/support/EOL dates; the version-matrix renderer fails loudly when they diverge).
+   Before moving a minor out of `supportStandard`, reconcile it against the ESUP Case Registry:
+   a minor with an active case keeps its chart releases and CI coverage and must stay in
+   `supportStandard` (see the comment on that list in `chart-versions.yaml`).
 2. Update Release-Please config and manifest in `.github/config/release-please/`.
 3. Update [`renovate.json5`](https://github.com/camunda/camunda-platform-helm/blob/main/.github/renovate.json5).
 4. Update GitHub Actions with version choices (search for `type: choice`).
