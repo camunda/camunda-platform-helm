@@ -113,6 +113,35 @@ func (s *OrchestrationTLSDetectionTest) TestConnectorsEndpointSchemes() {
 			Verifier:    plaintext,
 		},
 		{
+			// Spring applies every document of a multi-document source, so TLS
+			// declared outside the first one is still the effective state.
+			Name:        "TestTLSInLaterDocumentYieldsSecureSchemes",
+			ValuesFiles: orchestrationTLSFixture("later-document"),
+			Values:      map[string]string{"connectors.enabled": "true"},
+			Verifier:    secure,
+		},
+		{
+			// Later documents override earlier ones for the keys they set.
+			Name:        "TestLaterDocumentOverridesEarlierTLS",
+			ValuesFiles: orchestrationTLSFixture("later-document-overrides"),
+			Values:      map[string]string{"connectors.enabled": "true"},
+			Verifier:    plaintext,
+		},
+		{
+			// A spring.config.activate condition is a runtime decision, so the
+			// chart must not derive a secure transport from it.
+			Name:        "TestProfileActivatedTLSIsNotDetected",
+			ValuesFiles: orchestrationTLSFixture("profile-activated"),
+			Values:      map[string]string{"connectors.enabled": "true"},
+			Verifier:    plaintext,
+		},
+		{
+			Name:        "TestPlaceholderBackedTLSIsNotDetected",
+			ValuesFiles: orchestrationTLSFixture("placeholder"),
+			Values:      map[string]string{"connectors.enabled": "true"},
+			Verifier:    plaintext,
+		},
+		{
 			Name:        "TestSpringImportFalseIsNotDetected",
 			ValuesFiles: orchestrationTLSFixture("spring-import-false"),
 			Values:      map[string]string{"connectors.enabled": "true"},
@@ -182,6 +211,34 @@ func (s *OrchestrationTLSDetectionTest) TestGRPCIngressBackendProtocol() {
 				var ingress netv1.Ingress
 				helm.UnmarshalK8SYaml(t, output, &ingress)
 				require.Equal(t, "GRPCS", ingress.Annotations[backendProtocolAnnotation])
+			},
+		},
+		{
+			Name:        "TestTLSInLaterDocumentYieldsGRPCS",
+			ValuesFiles: orchestrationTLSFixture("later-document"),
+			Values: map[string]string{
+				"orchestration.ingress.grpc.enabled": "true",
+				"orchestration.ingress.grpc.host":    "grpc.example.com",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var ingress netv1.Ingress
+				helm.UnmarshalK8SYaml(t, output, &ingress)
+				require.Equal(t, "GRPCS", ingress.Annotations[backendProtocolAnnotation])
+			},
+		},
+		{
+			Name:        "TestProfileActivatedTLSYieldsGRPC",
+			ValuesFiles: orchestrationTLSFixture("profile-activated"),
+			Values: map[string]string{
+				"orchestration.ingress.grpc.enabled": "true",
+				"orchestration.ingress.grpc.host":    "grpc.example.com",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var ingress netv1.Ingress
+				helm.UnmarshalK8SYaml(t, output, &ingress)
+				require.Equal(t, "GRPC", ingress.Annotations[backendProtocolAnnotation])
 			},
 		},
 		{
@@ -272,7 +329,7 @@ func (s *OrchestrationTLSDetectionTest) TestOrchestrationPathIsNeverDuplicated()
 	}
 }
 
-// TestDetectionWarnings covers the three Phase 1 diagnostics. They exist because
+// TestDetectionWarnings covers the four detection diagnostics. They exist because
 // the derivation cannot read every form Spring accepts, and a wrong derivation
 // installs cleanly and then fails at connection time.
 func (s *OrchestrationTLSDetectionTest) TestDetectionWarnings() {
@@ -322,7 +379,52 @@ func (s *OrchestrationTLSDetectionTest) TestDetectionWarnings() {
 			},
 		},
 		{
-			// W3: the split Ingress overrides an inherited backend-protocol.
+			// W3: a spring.config.activate-conditioned document sets the toggle,
+			// so whether Spring applies it is unknown while templating.
+			Name:        "TestProfileActivatedTLSWarns",
+			ValuesFiles: orchestrationTLSFixture("profile-activated"),
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "to a runtime-dependent value")
+				require.Contains(t, output, "derives plaintext for Orchestration REST")
+				require.Contains(t, output, "derives plaintext for Orchestration gRPC")
+			},
+		},
+		{
+			Name:        "TestPlaceholderBackedTLSWarns",
+			ValuesFiles: orchestrationTLSFixture("placeholder"),
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "Spring property placeholder")
+				require.Contains(t, output, "derives plaintext for Orchestration REST")
+				require.Contains(t, output, "derives plaintext for Orchestration gRPC")
+			},
+		},
+		{
+			// W3 must stay quiet for a multi-document source the chart now reads
+			// in full: unconditional documents are resolved, not unresolved.
+			Name:        "TestTLSInLaterDocumentDoesNotWarn",
+			ValuesFiles: orchestrationTLSFixture("later-document"),
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.NotContains(t, output, "to a runtime-dependent value")
+			},
+		},
+		{
+			// W3 is precise: a multi-document source that never mentions TLS must
+			// not draw a TLS warning at all.
+			// helm --show-only errors instead of emitting nothing when the
+			// warnings ConfigMap renders empty, which is the shape of "no
+			// warning at all".
+			Name:        "TestMultiDocumentWithoutTLSDoesNotWarn",
+			ValuesFiles: orchestrationTLSFixture("multi-document-plain"),
+			Verifier: func(t *testing.T, output string, err error) {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), "could not find template")
+			},
+		},
+		{
+			// W4: the split Ingress overrides an inherited backend-protocol.
 			Name:        "TestOverriddenBackendProtocolWarns",
 			ValuesFiles: orchestrationTLSFixture("ingress-inheritance"),
 			Verifier: func(t *testing.T, output string, err error) {

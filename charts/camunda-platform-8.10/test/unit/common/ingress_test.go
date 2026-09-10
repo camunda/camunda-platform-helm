@@ -16,6 +16,7 @@ package camunda
 
 import (
 	"camunda-platform/test/unit/testhelpers"
+	"camunda-platform/test/unit/utils"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -124,9 +125,9 @@ func (s *IngressTemplateTest) TestDifferentValuesInputs() {
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
 				"global.ingress.enabled":                                   "true",
-				"orchestration.contextPath":                                "/orchestration",
 				"optimize.enabled":                                         "true",
 				"optimize.contextPath":                                     "/optimize",
+				"orchestration.contextPath":                                "/orchestration",
 				"global.tls.orchestration.rest.enabled":                    "true",
 				"global.tls.orchestration.rest.cert.secret.existingSecret": "rest-ks",
 			},
@@ -157,6 +158,21 @@ func (s *IngressTemplateTest) TestDifferentValuesInputs() {
 				s.Require().Error(err,
 					"the shared HTTP Ingress must not be rendered when no route remains — an Ingress with an empty spec.rules[].http.paths is rejected by the Kubernetes API server")
 				s.Require().NotContains(output, "kind: Ingress")
+			},
+		},
+		{
+			Name: "TestIngressOmitsOptimizeWhenServerTLSIsEnabled",
+			Values: map[string]string{
+				"global.ingress.enabled":                         "true",
+				"optimize.enabled":                               "true",
+				"optimize.contextPath":                           "/optimize",
+				"orchestration.contextPath":                      "/orchestration",
+				"global.tls.optimize.enabled":                    "true",
+				"global.tls.optimize.cert.secret.existingSecret": "optimize-ks",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.NotContains(t, output, "path: /optimize")
 			},
 		},
 		{
@@ -274,10 +290,10 @@ func (s *IngressTemplateTest) TestDifferentValuesInputs() {
 			Name: "TestHttpIngressOmitsOrchestrationPathWithServerTLS",
 			Values: map[string]string{
 				"global.ingress.enabled":     "true",
-				"orchestration.enabled":      "true",
-				"orchestration.contextPath":  "/orchestration",
 				"optimize.enabled":           "true",
 				"optimize.contextPath":       "/optimize",
+				"orchestration.enabled":      "true",
+				"orchestration.contextPath":  "/orchestration",
 				"orchestration.env[0].name":  "SERVER_SSL_ENABLED",
 				"orchestration.env[1].name":  "SERVER_SSL_KEY_STORE",
 				"orchestration.env[1].value": "file:/usr/local/camunda/certificates/orchestration/rest/keystore.p12",
@@ -293,6 +309,122 @@ func (s *IngressTemplateTest) TestDifferentValuesInputs() {
 				var ingress netv1.Ingress
 				helm.UnmarshalK8SYaml(t, output, &ingress)
 				requireIngressPathsNotEmpty(t, ingress)
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+type OptimizeHttpIngressTemplateTest struct {
+	suite.Suite
+	chartPath string
+	release   string
+	namespace string
+	templates []string
+}
+
+func TestOptimizeHttpIngressTemplate(t *testing.T) {
+	t.Parallel()
+
+	chartPath, err := filepath.Abs("../../../")
+	require.NoError(t, err)
+
+	suite.Run(t, &OptimizeHttpIngressTemplateTest{
+		chartPath: chartPath,
+		release:   "camunda-platform-test",
+		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
+		templates: []string{"templates/common/ingress-optimize-http.yaml"},
+	})
+}
+
+func TestGoldenOptimizeHttpIngress(t *testing.T) {
+	t.Parallel()
+
+	chartPath, err := filepath.Abs("../../../")
+	require.NoError(t, err)
+
+	suite.Run(t, &utils.TemplateGoldenTest{
+		ChartPath:      chartPath,
+		Release:        "camunda-platform-test",
+		Namespace:      "camunda-platform-test",
+		GoldenFileName: "optimize-http-ingress",
+		Templates:      []string{"templates/common/ingress-optimize-http.yaml"},
+		SetValues: map[string]string{
+			"global.ingress.enabled":                         "true",
+			"global.host":                                    "camunda.example.com",
+			"optimize.enabled":                               "true",
+			"optimize.contextPath":                           "/optimize",
+			"global.tls.optimize.enabled":                    "true",
+			"global.tls.optimize.cert.secret.existingSecret": "optimize-ks",
+		},
+	})
+}
+
+func (s *OptimizeHttpIngressTemplateTest) TestDifferentValuesInputs() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestOptimizeHttpIngressWithServerTLS",
+			Values: map[string]string{
+				"global.ingress.enabled":                         "true",
+				"global.host":                                    "camunda.example.com",
+				"global.ingress.tls.enabled":                     "true",
+				"global.ingress.tls.secretName":                  "public-tls",
+				"global.ingress.annotations.test-annotation":     "test-value",
+				"optimize.enabled":                               "true",
+				"optimize.contextPath":                           "/optimize",
+				"global.tls.optimize.enabled":                    "true",
+				"global.tls.optimize.cert.secret.existingSecret": "optimize-ks",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+
+				var ingress netv1.Ingress
+				helm.UnmarshalK8SYaml(t, output, &ingress)
+
+				require.Equal(t, "camunda-platform-test-optimize-http", ingress.Name)
+				require.Equal(t, "HTTPS", ingress.Annotations["nginx.ingress.kubernetes.io/backend-protocol"])
+				require.Equal(t, "test-value", ingress.Annotations["test-annotation"])
+				require.Equal(t, "camunda.example.com", ingress.Spec.Rules[0].Host)
+				require.Equal(t, "/optimize", ingress.Spec.Rules[0].HTTP.Paths[0].Path)
+				require.Equal(t, "camunda-platform-test-optimize", ingress.Spec.Rules[0].HTTP.Paths[0].Backend.Service.Name)
+				require.Equal(t, int32(80), ingress.Spec.Rules[0].HTTP.Paths[0].Backend.Service.Port.Number)
+				require.Equal(t, "public-tls", ingress.Spec.TLS[0].SecretName)
+			},
+		},
+		{
+			// Asserting on the suite template keeps this scoped: helm
+			// --show-only errors instead of emitting nothing when a template
+			// renders empty, so that error is the assertion. Rendering the
+			// whole chart instead would make the negative assertion far
+			// broader than the behaviour under test.
+			Name: "TestOptimizeHttpIngressDisabledWithoutServerTLS",
+			Values: map[string]string{
+				"global.ingress.enabled": "true",
+				"optimize.enabled":       "true",
+				"optimize.contextPath":   "/optimize",
+			},
+			Expected: map[string]string{
+				"ERROR": "could not find template templates/common/ingress-optimize-http.yaml in chart",
+			},
+		},
+		{
+			Name: "TestOptimizeHttpIngressTLSWithoutHostOmitsHosts",
+			Values: map[string]string{
+				"global.ingress.enabled":                         "true",
+				"global.ingress.tls.enabled":                     "true",
+				"global.ingress.tls.secretName":                  "public-tls",
+				"optimize.enabled":                               "true",
+				"optimize.contextPath":                           "/optimize",
+				"global.tls.optimize.enabled":                    "true",
+				"global.tls.optimize.cert.secret.existingSecret": "optimize-ks",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var ingress netv1.Ingress
+				helm.UnmarshalK8SYaml(t, output, &ingress)
+				require.Empty(t, ingress.Spec.TLS[0].Hosts)
+				require.Equal(t, "public-tls", ingress.Spec.TLS[0].SecretName)
 			},
 		},
 	}
@@ -358,19 +490,17 @@ func (s *OrchestrationHttpIngressTemplateTest) TestDifferentValuesInputs() {
 			},
 		},
 		{
+			// Same scoping as the Optimize case above: the suite template
+			// failing to render is the assertion, not a chart-wide
+			// NotContains.
 			Name: "TestOrchestrationHttpIngressDisabledWithoutServerTLS",
-			CaseTemplates: &testhelpers.CaseTemplate{
-				Templates: nil,
-			},
 			Values: map[string]string{
 				"global.ingress.enabled":    "true",
 				"orchestration.enabled":     "true",
 				"orchestration.contextPath": "/orchestration",
 			},
-			Verifier: func(t *testing.T, output string, err error) {
-				require.NoError(t, err)
-
-				require.NotContains(t, output, "name: camunda-platform-test-orchestration-http")
+			Expected: map[string]string{
+				"ERROR": "could not find template templates/common/ingress-orchestration-http.yaml in chart",
 			},
 		},
 		{

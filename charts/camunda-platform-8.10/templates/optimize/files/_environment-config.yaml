@@ -3,9 +3,25 @@ This file name should start with an underscore to avoid rendering it as a templa
 It is included (imported) in the ConfigMap.
 */}}
 {{- define "optimize.defaultConfig" -}}
-{{- if .Values.optimize.contextPath }}
+{{- $optimizeTLS := eq (include "camundaPlatform.optimizeServerTLSEnabled" .) "true" -}}
+{{- if or .Values.optimize.contextPath $optimizeTLS }}
 container:
+  {{- if .Values.optimize.contextPath }}
   contextPath: {{ .Values.optimize.contextPath | quote }}
+  {{- end }}
+  {{- if $optimizeTLS }}
+  ports:
+    {{- /* Optimize serves TLS on the chart's single named port, so the plaintext
+         connector has to go. An explicit YAML null is the form
+         ConfigurationService resolves to Optional.empty(), which drops the HTTP
+         connector AND keeps RootUrlGenerator on the https prefix -- a numeric
+         sentinel like -1 is "present" there and yields "http://host:-1". The
+         CAMUNDA_OPTIMIZE_CONTAINER_PORTS_HTTP=-1 env var in the Deployment is
+         the fallback for releases that replace this file wholesale through
+         optimize.configuration; without it HTTP would keep 8090 and collide
+         with the HTTPS connector. */}}
+    http: ~
+  {{- end }}
 {{- end }}
 zeebe:
   enabled: true

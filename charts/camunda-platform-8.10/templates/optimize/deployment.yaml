@@ -25,6 +25,7 @@ spec:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/optimize/configmap.yaml") . | sha256sum }}
         {{- with (include "camundaPlatform.caBundleChecksumAnnotation" .) }}{{ . | nindent 8 }}{{- end }}
+        {{- with (include "camundaPlatform.optimizeServerTLSChecksumAnnotation" .) }}{{ . | nindent 8 }}{{- end }}
       {{- if .Values.optimize.podAnnotations }}
         {{- tpl (toYaml .Values.optimize.podAnnotations) $ | nindent 8 }}
       {{- end }}
@@ -270,6 +271,35 @@ spec:
             {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
             {{- include "camundaPlatform.caBundleEnv" . | nindent 12 }}
             {{- end }}
+            {{- /* Gated on the same helper the probes, the Ingress backend and
+                 the in-cluster URLs derive from, so the wiring and the derived
+                 transport can never disagree. */}}
+            {{- if eq (include "camundaPlatform.optimizeServerTLSEnabled" .) "true" }}
+            {{- if .Values.global.tls.optimize.cert.secret.existingSecret }}
+            {{- /* Optimize is NOT a stock Spring Boot server here: OptimizeTomcatConfig
+                 always installs its own HTTPS connector and builds the SSLHostConfig
+                 from container.keystore.*. Setting server.ssl.* (SERVER_SSL_*) makes
+                 Spring Boot add a SECOND SSLHostConfig for host _default_, and Tomcat
+                 rejects the duplicate at startup. So configure Optimize's own knobs. */}}
+            - name: CAMUNDA_OPTIMIZE_CONTAINER_KEYSTORE_LOCATION
+              value: /usr/local/camunda/certificates/optimize/{{ include "camundaPlatform.optimizeServerSecretCertKey" . }}
+            - name: CAMUNDA_OPTIMIZE_CONTAINER_KEYSTORE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ coalesce .Values.global.tls.optimize.keystorePassword.secret.existingSecret .Values.global.tls.optimize.cert.secret.existingSecret }}
+                  key: {{ .Values.global.tls.optimize.keystorePassword.secret.existingSecretKey | default "keystore-password" }}
+            {{- /* Serve TLS on the container's existing named port and refuse
+                 plaintext, matching how Connectors/Orchestration flip the scheme
+                 of one port rather than exposing a second one. A non-positive
+                 ports.http drops the HTTP connector (OptimizeTomcatConfig#getPort
+                 filters on port > 0); an explicit -1 is used instead of an empty
+                 value because the port is read through JsonPath as an Integer. */}}
+            - name: CAMUNDA_OPTIMIZE_CONTAINER_PORTS_HTTPS
+              value: "8090"
+            - name: CAMUNDA_OPTIMIZE_CONTAINER_PORTS_HTTP
+              value: "-1"
+            {{- end }}
+            {{- end }}
           {{- with .Values.optimize.env }}
             {{- tpl (toYaml .) $ | nindent 12 }}
           {{- end }}
@@ -304,7 +334,7 @@ spec:
           startupProbe:
             httpGet:
               path: {{ include "camundaPlatform.joinpath" (list .Values.optimize.contextPath .Values.optimize.startupProbe.probePath) }}
-              scheme: {{ .Values.optimize.startupProbe.scheme }}
+              scheme: {{ .Values.optimize.startupProbe.scheme | default (ternary "HTTPS" "HTTP" (eq (include "camundaPlatform.optimizeServerTLSEnabled" .) "true")) }}
               port: http
             initialDelaySeconds: {{ .Values.optimize.startupProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.optimize.startupProbe.periodSeconds }}
@@ -316,7 +346,7 @@ spec:
           readinessProbe:
             httpGet:
               path: {{ include "camundaPlatform.joinpath" (list .Values.optimize.contextPath .Values.optimize.readinessProbe.probePath) }}
-              scheme: {{ .Values.optimize.readinessProbe.scheme }}
+              scheme: {{ .Values.optimize.readinessProbe.scheme | default (ternary "HTTPS" "HTTP" (eq (include "camundaPlatform.optimizeServerTLSEnabled" .) "true")) }}
               port: http
             initialDelaySeconds: {{ .Values.optimize.readinessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.optimize.readinessProbe.periodSeconds }}
@@ -328,7 +358,7 @@ spec:
           livenessProbe:
             httpGet:
               path: {{ include "camundaPlatform.joinpath" (list .Values.optimize.contextPath .Values.optimize.livenessProbe.probePath) }}
-              scheme: {{ .Values.optimize.livenessProbe.scheme }}
+              scheme: {{ .Values.optimize.livenessProbe.scheme | default (ternary "HTTPS" "HTTP" (eq (include "camundaPlatform.optimizeServerTLSEnabled" .) "true")) }}
               port: http
             initialDelaySeconds: {{ .Values.optimize.livenessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.optimize.livenessProbe.periodSeconds }}
@@ -360,6 +390,11 @@ spec:
             {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
             {{- include "camundaPlatform.caBundleVolumeMount" . | nindent 12 }}
             {{- include "camundaPlatform.caBundleTruststoreVolumeMount" . | nindent 12 }}
+            {{- end }}
+            {{- if and .Values.global.tls.optimize.enabled .Values.global.tls.optimize.cert.secret.existingSecret }}
+            - name: optimize-server-tls
+              mountPath: /usr/local/camunda/certificates/optimize
+              readOnly: true
             {{- end }}
             {{- if .Values.global.documentStore.type.gcp.enabled }}
             - name: gcp-credentials-volume
@@ -405,6 +440,12 @@ spec:
         {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
         {{- include "camundaPlatform.caBundleVolume" . | nindent 8 }}
         {{- include "camundaPlatform.caBundleTruststoreVolume" . | nindent 8 }}
+        {{- end }}
+        {{- if and .Values.global.tls.optimize.enabled .Values.global.tls.optimize.cert.secret.existingSecret }}
+        - name: optimize-server-tls
+          secret:
+            secretName: {{ .Values.global.tls.optimize.cert.secret.existingSecret }}
+            defaultMode: 0440
         {{- end }}
         {{- if .Values.optimize.extraVolumes }}
         {{- .Values.optimize.extraVolumes | toYaml | nindent 8 }}

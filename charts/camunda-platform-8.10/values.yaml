@@ -419,6 +419,29 @@ global:
           ## @param global.tls.connectors.keystorePassword.secret.existingSecretKey defines the key within the existing secret object.
           existingSecretKey: "keystore-password"
 
+    ## @extra global.tls.optimize configuration of TLS for the Optimize HTTP server. This server-side TLS is independent of the client-side `optimize.database.elasticsearch.tls.secret.existingSecret` / `optimize.database.opensearch.tls.secret.existingSecret` truststore wiring, which secures Optimize's outbound connection to its secondary storage; both can be used together. Client-side trust material for in-cluster callers still flows through `global.tls.caBundle`.
+    optimize:
+      ## @param global.tls.optimize.autoRollout if true, enables automatic pod rollout on Optimize cert rotation. The chart stamps a `checksum/optimize-tls` pod annotation derived from the configured Secret so the next `helm upgrade` rolls Optimize when the cert changes. OFF by default for the same reason as `global.tls.caBundle.autoRollout`: it uses `lookup` to read the Secret at upgrade time, which (a) REQUIRES the upgrading identity to have `get` on Secrets in the release namespace and (b) is inert under GitOps tools that render with `helm template`. When off (or in those cases), rotate the cert with `kubectl rollout restart`.
+      autoRollout: false
+      ## @param global.tls.optimize.enabled if true, TLS is terminated at the Optimize HTTP server.
+      enabled: false
+      ## @extra global.tls.optimize.cert configuration to provide the server certificate as a PKCS12 keystore. Unlike global.tls.orchestration.rest and global.tls.connectors, there is no `type` or `keyAlias` key here: Optimize builds its TLS connector from container.keystore.*, which accepts a keystore file and password only -- never a PEM cert/key pair, and with no way to select a key by alias.
+      cert:
+        ## @extra global.tls.optimize.cert.secret configuration to provide the cert secret.
+        secret:
+          ## @param global.tls.optimize.cert.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the cert material. Empty disables the chart-managed wiring. Hand-wiring is still possible through optimize.extraVolumes plus optimize.env entries for CAMUNDA_OPTIMIZE_CONTAINER_KEYSTORE_LOCATION / CAMUNDA_OPTIMIZE_CONTAINER_KEYSTORE_PASSWORD (never SERVER_SSL_*, which the render rejects), but then the chart cannot see that TLS is on: also set optimize.startupProbe.scheme / readinessProbe.scheme / livenessProbe.scheme to HTTPS, and note the chart's Ingress keeps an HTTP backend for Optimize.
+          existingSecret: ""
+          ## @param global.tls.optimize.cert.secret.existingSecretKey defines the key within the existing secret object. Defaults to keystore.p12.
+          existingSecretKey: ""
+      ## @extra global.tls.optimize.keystorePassword configuration to provide the PKCS12 keystore password.
+      keystorePassword:
+        ## @extra global.tls.optimize.keystorePassword.secret configuration to provide the keystore password secret.
+        secret:
+          ## @param global.tls.optimize.keystorePassword.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the keystore password. When empty, defaults to cert.secret.existingSecret.
+          existingSecret: ""
+          ## @param global.tls.optimize.keystorePassword.secret.existingSecretKey defines the key within the existing secret object.
+          existingSecretKey: "keystore-password"
+
   # --------------------------------------------------------------------------
   # Identity / Authentication Modes
   #
@@ -3037,8 +3060,8 @@ optimize:
   startupProbe:
     ## @param optimize.startupProbe.enabled if true, the startup probe is enabled in app container
     enabled: false
-    ## @param optimize.startupProbe.scheme defines the startup probe schema used on calling the probePath
-    scheme: HTTP
+    ## @param optimize.startupProbe.scheme defines the probe scheme (HTTP or HTTPS) used when calling the probePath. Empty (default) auto-detects: HTTPS when Optimize TLS is enabled (global.tls.optimize), otherwise HTTP. Set explicitly to override the auto-detected scheme.
+    scheme: ""
     ## @param optimize.startupProbe.probePath defines the startup probe route used on the app
     probePath: /api/readyz
     ## @param optimize.startupProbe.initialDelaySeconds defines the number of seconds after the container has started before
@@ -3057,8 +3080,8 @@ optimize:
   readinessProbe:
     ## @param optimize.readinessProbe.enabled if true, the readiness probe is enabled in app container
     enabled: true
-    ## @param optimize.readinessProbe.scheme defines the startup probe schema used on calling the probePath
-    scheme: HTTP
+    ## @param optimize.readinessProbe.scheme defines the probe scheme (HTTP or HTTPS) used when calling the probePath. Empty (default) auto-detects: HTTPS when Optimize TLS is enabled (global.tls.optimize), otherwise HTTP. Set explicitly to override the auto-detected scheme.
+    scheme: ""
     ## @param optimize.readinessProbe.probePath defines the readiness probe route used on the app
     probePath: /api/readyz
     ## @param optimize.readinessProbe.initialDelaySeconds defines the number of seconds after the container has started before
@@ -3077,8 +3100,8 @@ optimize:
   livenessProbe:
     ## @param optimize.livenessProbe.enabled if true, the liveness probe is enabled in app container
     enabled: false
-    ## @param optimize.livenessProbe.scheme defines the startup probe schema used on calling the probePath
-    scheme: HTTP
+    ## @param optimize.livenessProbe.scheme defines the probe scheme (HTTP or HTTPS) used when calling the probePath. Empty (default) auto-detects: HTTPS when Optimize TLS is enabled (global.tls.optimize), otherwise HTTP. Set explicitly to override the auto-detected scheme.
+    scheme: ""
     ## @param optimize.livenessProbe.probePath defines the liveness probe route used on the app
     probePath: /api/readyz
     ## @param optimize.livenessProbe.initialDelaySeconds defines the number of seconds after the container has started before
