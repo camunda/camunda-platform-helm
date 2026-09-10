@@ -420,6 +420,28 @@ func (s *ConfigMapWarningsTemplateTest) TestIngressUpstreamTLSControllerWarning(
 			},
 		},
 		{
+			// The split HTTPS Ingress only renders when the component is enabled and
+			// has a contextPath, so TLS alone must not trigger the warning.
+			Name: "TestUpstreamTLSOnAComponentWithNoRouteDoesNotWarn",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":       "elasticsearch",
+				"global.ingress.enabled":                         "true",
+				"global.ingress.className":                       "contour",
+				"global.host":                                    "camunda.example.com",
+				"optimize.enabled":                               "false",
+				"global.tls.optimize.enabled":                    "true",
+				"global.tls.optimize.cert.secret.existingSecret": "optimize-ks",
+				"global.identity.auth.console.clientId":          "some-console-client",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().Contains(configmap.Data["warnings"], "global.identity.auth.console")
+				s.Require().NotContains(configmap.Data["warnings"], warning)
+			},
+		},
+		{
 			Name: "TestNonNginxClassWithoutUpstreamTLSDoesNotWarn",
 			Values: map[string]string{
 				"orchestration.data.secondaryStorage.type": "elasticsearch",
