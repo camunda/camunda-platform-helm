@@ -15,10 +15,29 @@
 package deploy
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	"scripts/deploy-camunda/config"
 )
+
+func TestPreparedScenarioCleanupIsIdempotent(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "prepared")
+	if err := os.Mkdir(path, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	prepared := &PreparedScenario{TempDir: path}
+	prepared.Cleanup()
+	prepared.Cleanup()
+	if prepared.TempDir != "" {
+		t.Fatalf("TempDir = %q, want empty", prepared.TempDir)
+	}
+	if _, err := os.Stat(path); !os.IsNotExist(err) {
+		t.Fatalf("prepared directory still exists: %v", err)
+	}
+}
 
 func TestPinScenarioPrefixes_SetsAllFields(t *testing.T) {
 	flags := &config.RuntimeFlags{

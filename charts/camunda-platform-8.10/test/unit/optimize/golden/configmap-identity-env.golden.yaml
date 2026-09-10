@@ -1,0 +1,19 @@
+---
+# Source: camunda-platform/templates/optimize/configmap-identity-env.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: camunda-platform-test-optimize-identity-env-vars
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: camunda-platform-test
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+  annotations:
+    {}
+data:
+  CAMUNDA_IDENTITY_BASEURL: "http://identity.tenant.svc/identity"
+  CAMUNDA_IDENTITY_TYPE: "KEYCLOAK"
+  CAMUNDA_IDENTITY_ISSUER: "https://tenant-issuer.example.com/realms/camunda"
+  CAMUNDA_IDENTITY_ISSUER_BACKEND_URL: "http://keycloak.tenant.svc:8080/realms/camunda"

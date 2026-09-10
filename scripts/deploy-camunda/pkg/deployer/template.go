@@ -78,3 +78,21 @@ func renderTemplates(ctx context.Context, o types.Options) error {
 	logging.Logger.Info().Str("outputDir", outputDir).Msg("Templates rendered successfully")
 	return nil
 }
+
+func RenderTopologyContract(ctx context.Context, o types.Options) ([]byte, error) {
+	chartArg := o.Chart
+	if chartArg == "" {
+		chartArg = filepath.Clean(o.ChartPath)
+	}
+	args := []string{"template", o.ReleaseName, chartArg, "-n", o.Namespace, "--api-versions", "camunda.io/topology-contract", "--show-only", "templates/common/topology-contract.yaml"}
+	if o.Chart != "" && o.Version != "" {
+		args = append(args, "--version", o.Version)
+	}
+	args = append(args, composeKubeArgs(o.Kubeconfig, o.KubeContext)...)
+	args = appendHelmValueArgs(args, o)
+	out, err := helm.RunCapture(ctx, args, "")
+	if err != nil {
+		return nil, fmt.Errorf("helm topology contract render failed: %w", err)
+	}
+	return out, nil
+}

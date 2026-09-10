@@ -1,0 +1,49 @@
+# Orchestration namespace layer for the multinamespace-optimize topology (8.10).
+#
+# Same shape as features/multinamespace-orchestration.yaml, minus the in-release
+# Optimize: in this topology each Optimize runs as its own release with
+# global.topology.mode=optimize (see features/multinamespace-optimize.yaml), so
+# an Optimize storage change never rolls this release's orchestration
+# StatefulSet.
+#
+# NOTE: avoid writing literal dollar-brace placeholder syntax in prose comments
+# in this file — the env var scanner (os.Expand-based) matches it anywhere in
+# the raw file content, including comments. Reference placeholder names in plain
+# text instead; the real placeholder syntax appears only in actual values below.
+#
+# Auth (Identity/Keycloak wiring, pointed at the Hub namespace) is owned by
+# identity/keycloak-external.yaml via the release's `identity` layer selection.
+# The secondary storage backend is the Elasticsearch companion deployed once
+# into the Hub namespace, referenced here by FQDN via the
+# EXTERNAL_ELASTICSEARCH_* env vars.
+
+orchestration:
+  data:
+    secondaryStorage:
+      type: elasticsearch
+      elasticsearch:
+        url: "${EXTERNAL_ELASTICSEARCH_SCHEME}://${EXTERNAL_ELASTICSEARCH_HOST}:${EXTERNAL_ELASTICSEARCH_PORT}"
+  index:
+    prefix: $ORCHESTRATION_INDEX_PREFIX
+  exporters:
+    # Optimize reads zeebe-record indices, so this release must run the legacy
+    # exporter even though no Optimize workload lives here.
+    zeebe:
+      enabled: true
+
+# Both orchestration releases share one Elasticsearch, so the legacy exporter
+# needs a per-release prefix or their records collide. optimize.database is the
+# chart's only key for it (templates/orchestration/files/_application.yaml
+# renders the legacy exporter prefix from it) and applies even with no Optimize
+# workload in this release. The Optimize releases read this same value via the
+# topology driver's <SUFFIX>_ORCHESTRATION_INDEX_PREFIX cross-ref env.
+optimize:
+  # identity/keycloak-external.yaml enables Optimize for the single-release
+  # multinamespace topologies; in this one Optimize is its own release.
+  enabled: false
+  database:
+    elasticsearch:
+      prefix: $ORCHESTRATION_INDEX_PREFIX
+
+connectors:
+  enabled: true

@@ -76,7 +76,7 @@ func testTopologyReleases() []matrix.TopologyRelease {
 		{
 			Role:            "hub",
 			NamespaceSuffix: "hub",
-			Values:          "features/multinamespace-hub.yaml",
+			Features:        []string{"multinamespace-hub"},
 			Identity:        "keycloak",
 			Dependencies:    []string{"keycloak", "postgresql", "elasticsearch"},
 			ResolvedDependencies: []matrix.ChartDependency{
@@ -88,7 +88,7 @@ func testTopologyReleases() []matrix.TopologyRelease {
 		{
 			Role:            "orchestration",
 			NamespaceSuffix: "orcha",
-			Values:          "features/multinamespace-orchestration.yaml",
+			Features:        []string{"multinamespace-orchestration"},
 			Identity:        "keycloak-external",
 			Persistence:     "elasticsearch-external",
 			DependsOn:       "hub",
@@ -96,7 +96,7 @@ func testTopologyReleases() []matrix.TopologyRelease {
 		{
 			Role:            "orchestration",
 			NamespaceSuffix: "orchb",
-			Values:          "features/multinamespace-orchestration.yaml",
+			Features:        []string{"multinamespace-orchestration"},
 			Identity:        "keycloak-external",
 			Persistence:     "elasticsearch-external",
 			DependsOn:       "hub",
@@ -177,19 +177,6 @@ func TestSynthesizeReleaseEntry_OrchestrationHasNoDependencies(t *testing.T) {
 	hubEntry := synthesizeReleaseEntry(baseEntry, releases[0], "gke")
 	if hubEntry.PostDeploy != nil {
 		t.Errorf("Hub PostDeploy = %v, want nil so the hook runs after orchestration", hubEntry.PostDeploy)
-	}
-}
-
-func TestSynthesizeReleaseEntry_NonFeatureValuesFallsBackToExtraValues(t *testing.T) {
-	baseEntry := matrix.Entry{Version: "8.10", ChartPath: "charts/camunda-platform-8.10", Scenario: "multinamespace"}
-	rel := matrix.TopologyRelease{Role: "hub", NamespaceSuffix: "hub", Values: "legacy/some-overlay.yaml"}
-
-	got := synthesizeReleaseEntry(baseEntry, rel, "gke")
-	if len(got.Features) != 0 {
-		t.Errorf("Features = %v, want empty for a non-features/ values path", got.Features)
-	}
-	if len(got.ExtraValues) != 1 {
-		t.Fatalf("ExtraValues = %v, want a single fallback entry", got.ExtraValues)
 	}
 }
 
@@ -381,6 +368,138 @@ func TestBuildTopologyReleaseEnv_SelectsLocalOrchestrationReferences(t *testing.
 	}
 	if got := env["ORCH_ORCHESTRATION_CLIENT_ID"]; got != "orchestration-orchb" {
 		t.Errorf("ORCH_ORCHESTRATION_CLIENT_ID = %q", got)
+	}
+}
+
+func TestBuildTopologyReleaseEnv_PublishesServedReferencesForOptimize(t *testing.T) {
+	shared := map[string]string{
+		"ORCHA_NAMESPACE":                  "ns-orcha",
+		"ORCHA_HOST":                       "orcha.example.com",
+		"ORCHA_ORCHESTRATION_INDEX_PREFIX": "job-orcha",
+		"ORCHB_NAMESPACE":                  "ns-orchb",
+		"ORCHB_HOST":                       "orchb.example.com",
+		"ORCHB_ORCHESTRATION_INDEX_PREFIX": "job-orchb",
+	}
+	release := matrix.TopologyRelease{
+		Role:                "optimize",
+		NamespaceSuffix:     "optb",
+		Serves:              "orchb",
+		OptimizeContextPath: "/optimize-orchb",
+	}
+
+	env := buildTopologyReleaseEnv(shared, release)
+	if got := env["SERVED_ORCHESTRATION_INDEX_PREFIX"]; got != "job-orchb" {
+		t.Errorf("SERVED_ORCHESTRATION_INDEX_PREFIX = %q, want the prefix of the release named by serves", got)
+	}
+	if got := env["SERVED_NAMESPACE"]; got != "ns-orchb" {
+		t.Errorf("SERVED_NAMESPACE = %q", got)
+	}
+	if got := env["RELEASE_OPTIMIZE_CONTEXT_PATH"]; got != "/optimize-orchb" {
+		t.Errorf("RELEASE_OPTIMIZE_CONTEXT_PATH = %q", got)
+	}
+}
+
+// Repointing serves must repoint the records this Optimize reads. The values
+// layer names SERVED_ORCHESTRATION_INDEX_PREFIX rather than a per-release token,
+// so the declaration is the only place the mapping is written.
+func TestBuildTopologyReleaseEnv_ServedPrefixFollowsServes(t *testing.T) {
+	shared := map[string]string{
+		"ORCHA_ORCHESTRATION_INDEX_PREFIX": "job-orcha",
+		"ORCHB_ORCHESTRATION_INDEX_PREFIX": "job-orchb",
+	}
+	base := matrix.TopologyRelease{Role: "optimize", NamespaceSuffix: "opta", OptimizeContextPath: "/optimize-a"}
+
+	servesA := base
+	servesA.Serves = "orcha"
+	servesB := base
+	servesB.Serves = "orchb"
+
+	if got := buildTopologyReleaseEnv(shared, servesA)["SERVED_ORCHESTRATION_INDEX_PREFIX"]; got != "job-orcha" {
+		t.Errorf("serves=orcha gave prefix %q", got)
+	}
+	if got := buildTopologyReleaseEnv(shared, servesB)["SERVED_ORCHESTRATION_INDEX_PREFIX"]; got != "job-orchb" {
+		t.Errorf("serves=orchb gave prefix %q", got)
+	}
+}
+
+func TestBuildTopologyReleaseEnv_OmitsOptimizeKeysForOtherRoles(t *testing.T) {
+	env := buildTopologyReleaseEnv(map[string]string{}, matrix.TopologyRelease{
+		Role:            "orchestration",
+		NamespaceSuffix: "orcha",
+	})
+	for _, key := range []string{"RELEASE_OPTIMIZE_CONTEXT_PATH", "SERVED_ORCHESTRATION_INDEX_PREFIX", "SERVED_NAMESPACE"} {
+		if _, exists := env[key]; exists {
+			t.Errorf("%s must not be published for a non-optimize release", key)
+		}
+	}
+}
+
+// The keys derived from the declaration are authoritative: a release env entry
+// naming one is applied first and overwritten, so a topology author cannot
+// deploy a context path or reader prefix that disagrees with
+// optimize-context-path/serves and with the smoke matrix.
+// matrix.Topology.Validate rejects the entry outright; this covers the ordering
+// that makes the rejection safe to rely on.
+func TestBuildTopologyReleaseEnv_DerivedKeysOutrankReleaseEnv(t *testing.T) {
+	shared := map[string]string{
+		"ORCHA_NAMESPACE":                  "ns-orcha",
+		"ORCHA_HOST":                       "orcha.example.com",
+		"ORCHA_ORCHESTRATION_INDEX_PREFIX": "job-orcha",
+	}
+	release := matrix.TopologyRelease{
+		Role:                "optimize",
+		NamespaceSuffix:     "opta",
+		Serves:              "orcha",
+		OptimizeContextPath: "/optimize-orcha",
+		Env: map[string]string{
+			"RELEASE_OPTIMIZE_CONTEXT_PATH":     "/optimize-stale",
+			"SERVED_ORCHESTRATION_INDEX_PREFIX": "job-somewhere-else",
+			"SERVED_NAMESPACE":                  "ns-somewhere-else",
+			"SERVED_HOST":                       "somewhere.example.com",
+		},
+	}
+
+	env := buildTopologyReleaseEnv(shared, release)
+	for key, want := range map[string]string{
+		"RELEASE_OPTIMIZE_CONTEXT_PATH":     "/optimize-orcha",
+		"SERVED_ORCHESTRATION_INDEX_PREFIX": "job-orcha",
+		"SERVED_NAMESPACE":                  "ns-orcha",
+		"SERVED_HOST":                       "orcha.example.com",
+	} {
+		if got := env[key]; got != want {
+			t.Errorf("%s = %q, want the derived %q", key, got, want)
+		}
+	}
+}
+
+func TestBuildTopologyReleaseEnv_DerivedOrchestrationKeysOutrankReleaseEnv(t *testing.T) {
+	shared := map[string]string{
+		"ORCHA_NAMESPACE":  "ns-orcha",
+		"ORCHA_HOST":       "orcha.example.com",
+		"ORCHA_ZEEBE_GRPC": "grpc://orcha:26500",
+		"ORCHA_ZEEBE_REST": "http://orcha:8080",
+	}
+	release := matrix.TopologyRelease{
+		Role:            "orchestration",
+		NamespaceSuffix: "orcha",
+		Env: map[string]string{
+			"ORCH_NAMESPACE":  "ns-stale",
+			"ORCH_HOST":       "stale.example.com",
+			"ORCH_ZEEBE_GRPC": "grpc://stale:26500",
+			"ORCH_ZEEBE_REST": "http://stale:8080",
+		},
+	}
+
+	env := buildTopologyReleaseEnv(shared, release)
+	for key, want := range map[string]string{
+		"ORCH_NAMESPACE":  "ns-orcha",
+		"ORCH_HOST":       "orcha.example.com",
+		"ORCH_ZEEBE_GRPC": "grpc://orcha:26500",
+		"ORCH_ZEEBE_REST": "http://orcha:8080",
+	} {
+		if got := env[key]; got != want {
+			t.Errorf("%s = %q, want the derived %q", key, got, want)
+		}
 	}
 }
 
@@ -862,5 +981,29 @@ func TestRunTopologyEntry_RejectsCleanup(t *testing.T) {
 	err := runTopologyEntry(context.Background(), entry, opts)
 	if err == nil {
 		t.Fatal("expected error when --cleanup is set, got nil")
+	}
+}
+
+func TestTopologyReleaseHostKeyPinsOptimizeToHub(t *testing.T) {
+	cases := []struct {
+		name               string
+		role               string
+		namespaceSuffix    string
+		orchestrationCount int
+		want               string
+	}{
+		{"optimize with one orchestration", "optimize", "opta", 1, "HUB_HOST"},
+		{"optimize with several orchestrations", "optimize", "opta", 2, "HUB_HOST"},
+		{"hub with one orchestration keeps default", "hub", "hub", 1, ""},
+		{"orchestration with one orchestration keeps default", "orchestration", "orcha", 1, ""},
+		{"orchestration with several orchestrations", "orchestration", "orcha", 2, "ORCHA_HOST"},
+		{"hub with several orchestrations", "hub", "hub", 2, "HUB_HOST"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := topologyReleaseHostKey(tc.role, tc.namespaceSuffix, tc.orchestrationCount); got != tc.want {
+				t.Fatalf("topologyReleaseHostKey(%q, %q, %d) = %q, want %q", tc.role, tc.namespaceSuffix, tc.orchestrationCount, got, tc.want)
+			}
+		})
 	}
 }

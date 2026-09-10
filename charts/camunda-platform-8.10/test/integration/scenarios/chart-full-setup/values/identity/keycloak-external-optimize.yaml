@@ -1,0 +1,49 @@
+# External-Keycloak identity layer for Optimize-only releases (8.10)
+# Layer 3 (auth method), per-release override: used ONLY by releases with
+# role "optimize" in the multinamespace-optimize topology.
+#
+# Unlike identity/keycloak-external.yaml, this layer configures no
+# Orchestration Cluster or Connectors auth — an Optimize release runs neither.
+# It points at the bundled Keycloak/Identity running in the Hub namespace,
+# reached cross-namespace by FQDN.
+#
+# Every auth value is set on the optimize component rather than under global:
+# an Optimize-only release deploys one component, so a release-shared global is
+# a value with a single reader. Which components run is a role concern and lives
+# in the features layer, not here.
+#
+# Cross-namespace env placeholders (resolved at deploy time by
+# deploy.GenerateTopologyContexts, injected via ExtraEnv before render, see
+# scripts/deploy-camunda/cmd/matrix.go's runTopologyEntry):
+#   HUB_NAMESPACE  - the Hub release's namespace
+#   HUB_HOST       - the Hub release's ingress host, shared by these releases
+#
+# The Optimize client id, audience, redirect URL, context path, and index
+# prefixes are per release and come from the matching
+# features/multinamespace-optimize-<suffix>.yaml layer.
+
+global:
+  host: "$CAMUNDA_HOSTNAME"
+  ingress:
+    enabled: true
+    className: nginx
+    tls:
+      enabled: true
+      # A wildcard certificate will be used.
+    annotations:
+      external-dns.alpha.kubernetes.io/hostname: "{{ .Values.global.host }}"
+      external-dns.alpha.kubernetes.io/ttl: "60"
+  topology:
+    mode: optimize
+
+optimize:
+  identity:
+    service:
+      url: "http://integration-identity.${HUB_NAMESPACE}.svc.cluster.local:80/identity"
+  security:
+    authentication:
+      method: oidc
+      oidc:
+        type: KEYCLOAK
+        issuer: "https://${HUB_HOST}/auth/realms/camunda-platform"
+        issuerBackendUrl: "http://keycloak.${HUB_NAMESPACE}.svc.cluster.local:80/auth/realms/camunda-platform"
