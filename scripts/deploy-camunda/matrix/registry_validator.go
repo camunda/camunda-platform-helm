@@ -255,7 +255,7 @@ func (v *RegistryValidator) Validate(cfg *CITestConfig) error {
 			checkPersistence(label, scn.Persistence)
 		}
 		if scn.Topology != nil {
-			if err := scn.Topology.Validate(label, chartFullSetupDir, registryDepsDir); err != nil {
+			if err := scn.Topology.Validate(label, v.ChartDir, registryDepsDir); err != nil {
 				problems = append(problems, err.Error())
 			}
 		}

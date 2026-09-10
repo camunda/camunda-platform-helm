@@ -16,6 +16,7 @@ package cmd
 
 import (
 	"context"
+	"path/filepath"
 	"reflect"
 	"testing"
 
@@ -114,7 +115,7 @@ func TestSynthesizeReleaseEntry_HubCarriesOwnLayers(t *testing.T) {
 	}
 	releases := testTopologyReleases()
 
-	hubEntry := synthesizeReleaseEntry(baseEntry, releases[0], "gke")
+	hubEntry := synthesizeReleaseEntry("/repo", baseEntry, releases[0], "gke")
 
 	if hubEntry.Identity != "keycloak" {
 		t.Errorf("Hub Identity = %q, want %q", hubEntry.Identity, "keycloak")
@@ -154,7 +155,7 @@ func TestSynthesizeReleaseEntry_OrchestrationHasNoDependencies(t *testing.T) {
 	releases := testTopologyReleases()
 
 	for _, rel := range releases[1:] {
-		orchEntry := synthesizeReleaseEntry(baseEntry, rel, "gke")
+		orchEntry := synthesizeReleaseEntry("/repo", baseEntry, rel, "gke")
 		if orchEntry.Identity != "keycloak-external" {
 			t.Errorf("orchestration Identity = %q, want %q", orchEntry.Identity, "keycloak-external")
 		}
@@ -174,7 +175,7 @@ func TestSynthesizeReleaseEntry_OrchestrationHasNoDependencies(t *testing.T) {
 			t.Errorf("orchestration release %q PostDeploy = %v, want scenario hook", rel.NamespaceSuffix, orchEntry.PostDeploy)
 		}
 	}
-	hubEntry := synthesizeReleaseEntry(baseEntry, releases[0], "gke")
+	hubEntry := synthesizeReleaseEntry("/repo", baseEntry, releases[0], "gke")
 	if hubEntry.PostDeploy != nil {
 		t.Errorf("Hub PostDeploy = %v, want nil so the hook runs after orchestration", hubEntry.PostDeploy)
 	}
@@ -184,12 +185,30 @@ func TestSynthesizeReleaseEntry_NonFeatureValuesFallsBackToExtraValues(t *testin
 	baseEntry := matrix.Entry{Version: "8.10", ChartPath: "charts/camunda-platform-8.10", Scenario: "multinamespace"}
 	rel := matrix.TopologyRelease{Role: "hub", NamespaceSuffix: "hub", Values: "legacy/some-overlay.yaml"}
 
-	got := synthesizeReleaseEntry(baseEntry, rel, "gke")
+	got := synthesizeReleaseEntry("/repo", baseEntry, rel, "gke")
 	if len(got.Features) != 0 {
 		t.Errorf("Features = %v, want empty for a non-features/ values path", got.Features)
 	}
 	if len(got.ExtraValues) != 1 {
 		t.Fatalf("ExtraValues = %v, want a single fallback entry", got.ExtraValues)
+	}
+}
+
+func TestSynthesizeReleaseEntry_UsesReleaseChartVersion(t *testing.T) {
+	baseEntry := matrix.Entry{Version: "8.10", ChartPath: "/elsewhere/camunda-platform-8.10"}
+	rel := matrix.TopologyRelease{ChartVersion: "8.9"}
+
+	got := synthesizeReleaseEntry("/repo", baseEntry, rel, "gke")
+	if got.Version != "8.9" {
+		t.Errorf("Version = %q, want 8.9", got.Version)
+	}
+	if got.ChartPath != filepath.Join("/repo", "charts", "camunda-platform-8.9") {
+		t.Errorf("ChartPath = %q", got.ChartPath)
+	}
+
+	inherited := synthesizeReleaseEntry("/repo", baseEntry, matrix.TopologyRelease{}, "gke")
+	if inherited.Version != "8.10" || inherited.ChartPath != filepath.Join("/repo", "charts", "camunda-platform-8.10") {
+		t.Errorf("inherited chart = %s at %s", inherited.Version, inherited.ChartPath)
 	}
 }
 
