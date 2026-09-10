@@ -1,0 +1,132 @@
+# Orchestration namespace layer for the physicaltenants topology (8.10).
+#
+# One Orchestration Cluster hosting two Physical Tenants beside the always-present
+# default tenant, with Optimize deployed as its own release per tenant (see
+# features/physicaltenants-optimize-*.yaml).
+#
+# NOTE: avoid writing literal dollar-brace placeholder syntax in prose comments
+# in this file — the env var scanner (os.Expand-based) matches it anywhere in
+# the raw file content, including comments. Reference placeholder names in plain
+# text instead; the real placeholder syntax appears only in actual values below.
+#
+# Tenant index prefixes are derived from this release's own
+# ORCHESTRATION_INDEX_PREFIX so the Optimize releases can reconstruct them from
+# the topology driver's ORCHA_ORCHESTRATION_INDEX_PREFIX cross-ref env without a
+# second source of truth.
+
+global:
+  identity:
+    auth:
+      # The exact "iss" the companion Keycloak mints. Required once Physical
+      # Tenants are configured: the cluster then validates "iss" on every token,
+      # and the chart deliberately does not infer this from publicIssuerUrl. The
+      # dependency keycloak-fixed-issuer pins KC_HOSTNAME to this same value, so
+      # in-cluster callers and browsers present one issuer.
+      issuer: "https://${HUB_HOST}/auth/realms/camunda-platform"
+
+orchestration:
+  data:
+    secondaryStorage:
+      type: elasticsearch
+      elasticsearch:
+        url: "${EXTERNAL_ELASTICSEARCH_SCHEME}://${EXTERNAL_ELASTICSEARCH_HOST}:${EXTERNAL_ELASTICSEARCH_PORT}"
+  index:
+    prefix: $ORCHESTRATION_INDEX_PREFIX
+  exporters:
+    # Optimize reads zeebe-record indices, so this release runs the legacy
+    # exporter even though no Optimize workload lives here. Each tenant's own
+    # exporter is declared per tenant below, keyed by that tenant's prefix.
+    zeebe:
+      enabled: true
+  extraConfiguration:
+    - file: physical-tenants.yaml
+      content: |
+        camunda:
+          physical-tenants:
+            # The default tenant needs an explicit exporter: declaring any tenant
+            # stops it inheriting zeebe.broker.exporters from the root, and it
+            # would then silently stop exporting the records its own Optimize
+            # reads. Its prefix is the root prefix, distinct from every tenant's.
+            default:
+              data:
+                exporters-assigned:
+                  - elasticsearch
+                exporters:
+                  elasticsearch:
+                    className: "io.camunda.zeebe.exporter.ElasticsearchExporter"
+                    args:
+                      url: "${EXTERNAL_ELASTICSEARCH_SCHEME}://${EXTERNAL_ELASTICSEARCH_HOST}:${EXTERNAL_ELASTICSEARCH_PORT}"
+                      index:
+                        prefix: "${ORCHESTRATION_INDEX_PREFIX}"
+                        numberOfReplicas: "1"
+              security:
+                authentication:
+                  providers:
+                    assigned:
+                      - oidc
+            tenanta:
+              data:
+                secondary-storage:
+                  elasticsearch:
+                    index-prefix: "${ORCHESTRATION_INDEX_PREFIX}-ta"
+                exporters-assigned:
+                  - elasticsearch
+                exporters:
+                  elasticsearch:
+                    className: "io.camunda.zeebe.exporter.ElasticsearchExporter"
+                    args:
+                      url: "${EXTERNAL_ELASTICSEARCH_SCHEME}://${EXTERNAL_ELASTICSEARCH_HOST}:${EXTERNAL_ELASTICSEARCH_PORT}"
+                      index:
+                        prefix: "${ORCHESTRATION_INDEX_PREFIX}-ta"
+                        numberOfReplicas: "1"
+              security:
+                authentication:
+                  providers:
+                    assigned:
+                      - oidc
+                initialization:
+                  default-roles:
+                    admin:
+                      clients:
+                        - venom
+                      users:
+                        - demo
+            tenantb:
+              data:
+                secondary-storage:
+                  elasticsearch:
+                    index-prefix: "${ORCHESTRATION_INDEX_PREFIX}-tb"
+                exporters-assigned:
+                  - elasticsearch
+                exporters:
+                  elasticsearch:
+                    className: "io.camunda.zeebe.exporter.ElasticsearchExporter"
+                    args:
+                      url: "${EXTERNAL_ELASTICSEARCH_SCHEME}://${EXTERNAL_ELASTICSEARCH_HOST}:${EXTERNAL_ELASTICSEARCH_PORT}"
+                      index:
+                        prefix: "${ORCHESTRATION_INDEX_PREFIX}-tb"
+                        numberOfReplicas: "1"
+              security:
+                authentication:
+                  providers:
+                    assigned:
+                      - oidc
+                initialization:
+                  default-roles:
+                    admin:
+                      clients:
+                        - venom
+                      users:
+                        - demo
+
+optimize:
+  # identity/keycloak-external.yaml enables Optimize for the single-release
+  # multinamespace topologies; here each tenant gets its own Optimize release.
+  enabled: false
+  database:
+    elasticsearch:
+      # Root legacy exporter prefix, serving the default Physical Tenant only.
+      prefix: $ORCHESTRATION_INDEX_PREFIX
+
+connectors:
+  enabled: true
