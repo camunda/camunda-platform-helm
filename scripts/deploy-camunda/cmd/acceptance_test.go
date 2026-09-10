@@ -37,11 +37,14 @@ func TestPartitionsHealthy(t *testing.T) {
 		body string
 		want bool
 	}{
-		{"healthy", `{"default":[{"exporterPhase":"EXPORTING","exportedPosition":1}],"tenanta":[{"exporterPhase":"EXPORTING","exportedPosition":2}],"tenantb":[{"exporterPhase":"EXPORTING","exportedPosition":3}]}`, true},
-		{"missing tenant", `{"default":[{"exporterPhase":"EXPORTING","exportedPosition":1}],"tenanta":[{"exporterPhase":"EXPORTING","exportedPosition":2}]}`, false},
-		{"empty tenant", `{"default":[{"exporterPhase":"EXPORTING","exportedPosition":1}],"tenanta":[],"tenantb":[{"exporterPhase":"EXPORTING","exportedPosition":3}]}`, false},
-		{"blocked", `{"default":[{"exporterPhase":"EXPORTING","exportedPosition":1}],"tenanta":[{"exporterPhase":"EXPORTING","exportedPosition":2}],"tenantb":[{"exporterPhase":"EXPORTING","exportedPosition":-1}]}`, false},
-		{"extra tenant", `{"default":[{"exporterPhase":"EXPORTING","exportedPosition":1}],"tenanta":[{"exporterPhase":"EXPORTING","exportedPosition":2}],"tenantb":[{"exporterPhase":"EXPORTING","exportedPosition":3}],"other":[]}`, false},
+		{"healthy", `{"default":{"1":{"exporterPhase":"EXPORTING","exportedPosition":908}},"tenanta":{"1":{"exporterPhase":"EXPORTING","exportedPosition":164}},"tenantb":{"1":{"exporterPhase":"EXPORTING","exportedPosition":164}}}`, true},
+		{"several partitions per tenant", `{"default":{"1":{"exporterPhase":"EXPORTING","exportedPosition":908},"2":{"exporterPhase":"EXPORTING","exportedPosition":12}},"tenanta":{"1":{"exporterPhase":"EXPORTING","exportedPosition":164}},"tenantb":{"1":{"exporterPhase":"EXPORTING","exportedPosition":164}}}`, true},
+		{"missing tenant", `{"default":{"1":{"exporterPhase":"EXPORTING","exportedPosition":908}},"tenanta":{"1":{"exporterPhase":"EXPORTING","exportedPosition":164}}}`, false},
+		{"empty tenant", `{"default":{"1":{"exporterPhase":"EXPORTING","exportedPosition":908}},"tenanta":{},"tenantb":{"1":{"exporterPhase":"EXPORTING","exportedPosition":164}}}`, false},
+		{"not exporting", `{"default":{"1":{"exporterPhase":"EXPORTING","exportedPosition":908}},"tenanta":{"1":{"exporterPhase":"EXPORTING","exportedPosition":164}},"tenantb":{"1":{"exporterPhase":"PAUSED","exportedPosition":164}}}`, false},
+		{"blocked", `{"default":{"1":{"exporterPhase":"EXPORTING","exportedPosition":908}},"tenanta":{"1":{"exporterPhase":"EXPORTING","exportedPosition":164}},"tenantb":{"1":{"exporterPhase":"EXPORTING","exportedPosition":-1}}}`, false},
+		{"extra tenant", `{"default":{"1":{"exporterPhase":"EXPORTING","exportedPosition":908}},"tenanta":{"1":{"exporterPhase":"EXPORTING","exportedPosition":164}},"tenantb":{"1":{"exporterPhase":"EXPORTING","exportedPosition":164}},"other":{}}`, false},
+		{"array shape is not what the actuator returns", `{"default":[{"exporterPhase":"EXPORTING","exportedPosition":908}],"tenanta":[{"exporterPhase":"EXPORTING","exportedPosition":164}],"tenantb":[{"exporterPhase":"EXPORTING","exportedPosition":164}]}`, false},
 		{"invalid JSON", `{`, false},
 	}
 	for _, test := range tests {
@@ -275,7 +278,7 @@ func TestRunPhysicalTenantAcceptance(t *testing.T) {
 			case req.URL.Host == "127.0.0.1:43123" && path == "/orchestration/actuator":
 				return testResponse(http.StatusOK, "{}"), nil
 			case req.URL.Host == "127.0.0.1:43123" && path == "/orchestration/actuator/partitions":
-				return testResponse(http.StatusOK, `{"default":[{"exporterPhase":"EXPORTING","exportedPosition":1}],"tenanta":[{"exporterPhase":"EXPORTING","exportedPosition":2}],"tenantb":[{"exporterPhase":"EXPORTING","exportedPosition":3}]}`), nil
+				return testResponse(http.StatusOK, `{"default":{"1":{"exporterPhase":"EXPORTING","exportedPosition":908}},"tenanta":{"1":{"exporterPhase":"EXPORTING","exportedPosition":164}},"tenantb":{"1":{"exporterPhase":"EXPORTING","exportedPosition":164}}}`), nil
 			case strings.HasSuffix(path, "/protocol/openid-connect/token"):
 				require.NoError(t, req.ParseForm())
 				clientID := req.Form.Get("client_id")
