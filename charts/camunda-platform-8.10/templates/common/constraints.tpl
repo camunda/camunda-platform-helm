@@ -388,9 +388,11 @@ merged nowhere.
 {{- end -}}
 {{- if and $mr.keepUnzonedBrokers (eq $mr.mode "zoned") }}
   {{- $orchestrationMultiregion := .Values.orchestration.multiregion | default dict -}}
+  {{- $regionId := get $orchestrationMultiregion "regionId" -}}
   {{- if or
     (empty (get $orchestrationMultiregion "regions"))
-    (and (kindIs "string" (get $orchestrationMultiregion "regionId")) (empty (get $orchestrationMultiregion "regionId")))
+    (kindIs "invalid" $regionId)
+    (and (kindIs "string" $regionId) (empty $regionId))
   }}
     {{- fail "[camunda][error] orchestration.multiregion.keepUnzonedBrokers requires both orchestration.multiregion.regions and orchestration.multiregion.regionId to preserve the numbered broker identity." -}}
   {{- end }}

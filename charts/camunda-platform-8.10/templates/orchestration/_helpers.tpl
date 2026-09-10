@@ -94,12 +94,7 @@ Takes a dict with the root context and an optional explicit zone.
 {{- end -}}
 {{- end -}}
 
-{{/*
-[orchestration] Pod-restarting checksum of this StatefulSet's ConfigMap. Rendered with
-`keepUnzonedBrokers` forced off, so dropping the migration flag does not roll the zoned
-brokers: the only thing that flag adds to a zoned ConfigMap is the numbered family of
-`initial-contact-points`, which a broker reads once at bootstrap and never again.
-*/}}
+{{- /* NOTE: Render the checksum with migration-only contact points removed. */ -}}
 {{- define "orchestration.configChecksum" -}}
 {{- if not .OrchestrationRender -}}
 {{- fail "orchestration.configChecksum requires an orchestration render scope" -}}

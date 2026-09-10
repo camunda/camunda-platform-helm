@@ -255,15 +255,18 @@ func (s *StatefulSetTest) TestKeepUnzonedBrokersDoesNotRestartZonedBrokers() {
 		"orchestration.data.secondaryStorage.type":            "elasticsearch",
 	}
 
-	checksumFor := func(keepUnzoned string) string {
+	renderFor := func(keepUnzoned string) appsv1.StatefulSet {
 		values := utils.MergeMaps(map[string]string{}, zonedValues)
 		values["orchestration.multiregion.keepUnzonedBrokers"] = keepUnzoned
 
-		statefulSet := s.renderStatefulSet(values, s.release+"-zeebe-zone-a")
-		return statefulSet.Spec.Template.Annotations["checksum/config"]
+		return s.renderStatefulSet(values, s.release+"-zeebe-zone-a")
 	}
 
-	withUnzoned := checksumFor("true")
-	require.NotEmpty(s.T(), withUnzoned)
-	require.Equal(s.T(), withUnzoned, checksumFor("false"))
+	withUnzoned := renderFor("true")
+	withoutUnzoned := renderFor("false")
+	withChecksum := withUnzoned.Spec.Template.Annotations["checksum/config"]
+	withoutChecksum := withoutUnzoned.Spec.Template.Annotations["checksum/config"]
+	require.NotEmpty(s.T(), withChecksum)
+	require.Equal(s.T(), withChecksum, withoutChecksum)
+	require.Equal(s.T(), withUnzoned.Spec.Template, withoutUnzoned.Spec.Template)
 }

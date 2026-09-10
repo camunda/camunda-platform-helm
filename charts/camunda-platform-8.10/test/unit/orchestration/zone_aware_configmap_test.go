@@ -218,6 +218,69 @@ func (s *ConfigmapTemplateTest) TestZonedModeAllowsNumberedRegionSettingsAfterMi
 			},
 		},
 		{
+			Name: "TestMigrationRejectsMissingRegionId",
+			Values: map[string]string{
+				"orchestration.multiregion.mode":                      "zoned",
+				"orchestration.multiregion.zone":                      "region-a",
+				"orchestration.multiregion.zones[0].name":             "region-a",
+				"orchestration.multiregion.zones[0].numberOfBrokers":  "1",
+				"orchestration.multiregion.zones[0].numberOfReplicas": "1",
+				"orchestration.multiregion.zones[0].priority":         "100",
+				"orchestration.multiregion.keepUnzonedBrokers":        "true",
+				"orchestration.multiregion.regions":                   "2",
+				"orchestration.profiles.broker":                       "true",
+			},
+			Expected: map[string]string{
+				"ERROR": "requires both orchestration.multiregion.regions and orchestration.multiregion.regionId",
+			},
+		},
+		{
+			Name: "TestMigrationRejectsEmptyRegionId",
+			Values: map[string]string{
+				"orchestration.multiregion.mode":                      "zoned",
+				"orchestration.multiregion.zone":                      "region-a",
+				"orchestration.multiregion.zones[0].name":             "region-a",
+				"orchestration.multiregion.zones[0].numberOfBrokers":  "1",
+				"orchestration.multiregion.zones[0].numberOfReplicas": "1",
+				"orchestration.multiregion.zones[0].priority":         "100",
+				"orchestration.multiregion.keepUnzonedBrokers":        "true",
+				"orchestration.multiregion.regions":                   "2",
+				"orchestration.multiregion.regionId":                  "",
+				"orchestration.profiles.broker":                       "true",
+			},
+			Expected: map[string]string{
+				"ERROR": "requires both orchestration.multiregion.regions and orchestration.multiregion.regionId",
+			},
+		},
+		{
+			Name: "TestZonedModeRejectsRetentionInNumberedMode",
+			Values: map[string]string{
+				"orchestration.multiregion.keepUnzonedBrokers": "true",
+				"orchestration.profiles.broker":                "true",
+			},
+			Expected: map[string]string{
+				"ERROR": "orchestration.multiregion.keepUnzonedBrokers requires orchestration.multiregion.mode=zoned",
+			},
+		},
+		{
+			Name: "TestMigrationAcceptsRegionIdZero",
+			Values: map[string]string{
+				"orchestration.multiregion.mode":                      "zoned",
+				"orchestration.multiregion.zone":                      "region-a",
+				"orchestration.multiregion.zones[0].name":             "region-a",
+				"orchestration.multiregion.zones[0].numberOfBrokers":  "1",
+				"orchestration.multiregion.zones[0].numberOfReplicas": "1",
+				"orchestration.multiregion.zones[0].priority":         "100",
+				"orchestration.multiregion.keepUnzonedBrokers":        "true",
+				"orchestration.multiregion.regions":                   "2",
+				"orchestration.multiregion.regionId":                  "0",
+				"orchestration.profiles.broker":                       "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+			},
+		},
+		{
 			Name: "TestZonedModeAllowsRetainedNumberedRegionsToBeRemovedWithKeepUnzonedBrokers",
 			Values: map[string]string{
 				"orchestration.multiregion.mode":                      "zoned",
@@ -379,6 +442,21 @@ func (s *ConfigmapTemplateTest) TestZonedModeAllowsNumberedRegionSettingsAfterMi
 			},
 			Expected: map[string]string{
 				"ERROR": "declares \"region-a\" twice",
+			},
+		},
+		{
+			Name: "TestZonedModeRejectsZeroPriority",
+			Values: map[string]string{
+				"orchestration.multiregion.mode":                      "zoned",
+				"orchestration.multiregion.zone":                      "region-a",
+				"orchestration.multiregion.zones[0].name":             "region-a",
+				"orchestration.multiregion.zones[0].numberOfBrokers":  "1",
+				"orchestration.multiregion.zones[0].numberOfReplicas": "1",
+				"orchestration.multiregion.zones[0].priority":         "0",
+				"orchestration.profiles.broker":                       "true",
+			},
+			Verifier: func(t *testing.T, _ string, err error) {
+				require.ErrorContains(t, err, "/orchestration/multiregion/zones/0/priority': minimum: got 0, want 1")
 			},
 		},
 		{
