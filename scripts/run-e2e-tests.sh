@@ -58,6 +58,50 @@ validate_args() {
   log "DEBUG: Arguments validated successfully"
 }
 
+resolve_deploy_camunda() {
+  # An asdf `reshim golang` leaves a ~/.asdf/shims/deploy-camunda that only resolves for the golang
+  # version the binary was installed under. When .tool-versions pins a different version the shim
+  # exits non-zero for every invocation while still shadowing a working $GOPATH/bin build, so probe
+  # candidates by running one instead of trusting `command -v`.
+  local candidate
+  for candidate in "${DEPLOY_CAMUNDA:-}" "$(command -v deploy-camunda 2> /dev/null)" \
+    "$(go env GOPATH 2> /dev/null)/bin/deploy-camunda" "$HOME/go/bin/deploy-camunda"; do
+    if [[ -n "$candidate" && -x "$candidate" ]] && "$candidate" e2e-env --help > /dev/null 2>&1; then
+      echo "$candidate"
+      return 0
+    fi
+  done
+  return 1
+}
+
+build_rerun_cmd() {
+  # Reconstructs the invocation from the parsed arguments so a failing run prints a
+  # command that reproduces it. Reads the same globals the run itself used; the
+  # topology arguments come from the *_ARG snapshots taken before "$ENV_FILE" was
+  # sourced, since that file replaces OPTIMIZE_CONTEXT_PATH with an absolute URL.
+  local -a cmd=(./scripts/run-e2e-tests.sh --absolute-chart-path "$ABSOLUTE_CHART_PATH" --namespace "$NAMESPACE")
+  [[ -n "$KUBE_CONTEXT" ]] && cmd+=(--kube-context "$KUBE_CONTEXT")
+  [[ -n "$TEST_EXCLUDE" ]] && cmd+=(--test-exclude "$TEST_EXCLUDE")
+  [[ "$RUN_SMOKE_TESTS" == "true" ]] && cmd+=(--run-smoke-tests)
+  [[ "$IS_OPENSEARCH" == "true" ]] && cmd+=(--opensearch)
+  [[ "$IS_RBA" == "true" ]] && cmd+=(--rba)
+  [[ "$IS_MT" == "true" ]] && cmd+=(--mt)
+  [[ "$IS_AUTH0" == "true" ]] && cmd+=(--auth0)
+  [[ -n "$VIDEO_MODE" ]] && cmd+=(--video "$VIDEO_MODE")
+  [[ -n "$TRACE_MODE" ]] && cmd+=(--trace "$TRACE_MODE")
+  [[ -n "$RETRIES" ]] && cmd+=(--retries "$RETRIES")
+  [[ -n "$LOCAL_TEST_SUITE" ]] && cmd+=(--local-test-suite "$LOCAL_TEST_SUITE")
+  # Without these a failing topology leg prints a rerun command that targets an
+  # orchestration-only environment: it cannot reproduce the failure, and it would skip
+  # Optimize again rather than reporting it.
+  [[ -n "$HUB_NAMESPACE_ARG" ]] && cmd+=(--hub-namespace "$HUB_NAMESPACE_ARG")
+  [[ -n "$OPTIMIZE_NAMESPACE_ARG" ]] && cmd+=(--optimize-namespace "$OPTIMIZE_NAMESPACE_ARG")
+  [[ -n "$OPTIMIZE_CONTEXT_PATH_ARG" ]] && cmd+=(--optimize-context-path "$OPTIMIZE_CONTEXT_PATH_ARG")
+  [[ -n "$MODELER_CLUSTER_NAME_ARG" ]] && cmd+=(--modeler-cluster-name "$MODELER_CLUSTER_NAME_ARG")
+  printf '%q ' "${cmd[@]}"
+  printf '\n'
+}
+
 usage() {
   cat << EOF
 This script runs the integration tests for the Camunda Platform Helm chart.
@@ -87,6 +131,12 @@ Options:
   --hub-namespace NAMESPACE                   For a multi-namespace topology: the namespace running the central
                                                Identity/Keycloak. --namespace is then the orchestration namespace.
                                                Requires deploy-camunda on PATH (used to merge the .env).
+  --optimize-namespace NAMESPACE              For a topology whose Optimize runs as its own release: the namespace
+                                               running it. Without this, Optimize is derived from --namespace and
+                                               every Optimize spec is skipped. Requires --hub-namespace.
+  --optimize-context-path PATH                 Ingress path that Optimize release is served on, e.g. /optimize-orcha.
+  --modeler-cluster-name NAME                  For a topology with several orchestration releases: the cluster this leg
+                                               must deploy to in the Hub's Web Modeler.
   -v | --verbose                              Show verbose output.
   -h | --help                                 Show this help message and exit.
 EOF
@@ -117,6 +167,9 @@ TRACE_MODE=""
 RETRIES=""
 LOCAL_TEST_SUITE=""
 HUB_NAMESPACE=""
+OPTIMIZE_NAMESPACE=""
+OPTIMIZE_CONTEXT_PATH=""
+MODELER_CLUSTER_NAME_ARG=""
 
 check_required_cmds
 
@@ -199,6 +252,18 @@ while [[ $# -gt 0 ]]; do
       HUB_NAMESPACE="$2"
       shift 2
       ;;
+    --optimize-namespace)
+      OPTIMIZE_NAMESPACE="$2"
+      shift 2
+      ;;
+    --optimize-context-path)
+      OPTIMIZE_CONTEXT_PATH="$2"
+      shift 2
+      ;;
+    --modeler-cluster-name)
+      MODELER_CLUSTER_NAME_ARG="$2"
+      shift 2
+      ;;
     -v | --verbose)
       VERBOSE=true
       shift
@@ -219,6 +284,24 @@ log "DEBUG: Starting run-e2e-tests.sh"
 log "DEBUG: Chart: $ABSOLUTE_CHART_PATH, Namespace: $NAMESPACE, KubeContext: $KUBE_CONTEXT"
 
 validate_args "$ABSOLUTE_CHART_PATH" "$NAMESPACE" "$KUBE_CONTEXT"
+
+# The Optimize flags are only read on the topology path below, which is selected by
+# --hub-namespace. Without this guard they are silently dropped, render-e2e-env.sh sets
+# IS_OPTIMIZE=false, and the suite reports success having skipped every Optimize spec --
+# precisely the silent gap the flags exist to close.
+if [[ -z "$HUB_NAMESPACE" ]] && { [[ -n "$OPTIMIZE_NAMESPACE" ]] || [[ -n "$OPTIMIZE_CONTEXT_PATH" ]]; }; then
+  echo "Error: --optimize-namespace/--optimize-context-path require --hub-namespace." >&2
+  echo "       They are read only on the multi-namespace topology path; without it they would be" >&2
+  echo "       ignored and the run would silently skip Optimize coverage while still passing." >&2
+  exit 1
+fi
+
+# Snapshot the topology targeting args before "$ENV_FILE" is sourced below. That file sets
+# OPTIMIZE_CONTEXT_PATH to an absolute URL, which would otherwise replace the ingress path the
+# caller passed in the rerun command printed on failure.
+HUB_NAMESPACE_ARG="$HUB_NAMESPACE"
+OPTIMIZE_NAMESPACE_ARG="$OPTIMIZE_NAMESPACE"
+OPTIMIZE_CONTEXT_PATH_ARG="$OPTIMIZE_CONTEXT_PATH"
 
 TEST_SUITE_PATH="${ABSOLUTE_CHART_PATH%/}/test/e2e"
 hostname=$(get_ingress_hostname "$NAMESPACE" "$KUBE_CONTEXT")
@@ -249,9 +332,21 @@ log "DEBUG: Test suite path: $TEST_SUITE_PATH"
 ENV_FILE="${TEST_SUITE_PATH%/}/.env.${NAMESPACE}"
 trap 'rm -f "$ENV_FILE"' EXIT
 
+# The suite resolves this itself as `process.env.OPTIMIZE_CONTEXT_PATH ?? '/optimize'`, and `??` does
+# not fall back on an empty string. Assigning "" above keeps any inherited export flag, so clear the
+# name outright rather than leaving it exported and empty; the topology path sets it in $ENV_FILE.
+[[ -z "$OPTIMIZE_CONTEXT_PATH" ]] && unset OPTIMIZE_CONTEXT_PATH
+
 if [[ -n "$HUB_NAMESPACE" ]]; then
   log "DEBUG: Multi-namespace topology - merging orchestration ($NAMESPACE) + Hub ($HUB_NAMESPACE) into $ENV_FILE"
-  deploy-camunda e2e-env merge \
+  DEPLOY_CAMUNDA_BIN=$(resolve_deploy_camunda) || {
+    echo "Error: no working deploy-camunda found; refusing to run tests against an unmerged env." >&2
+    echo "       Tried \$DEPLOY_CAMUNDA, PATH ($(command -v deploy-camunda || echo 'not found')), and \$GOPATH/bin." >&2
+    echo "       Build it with 'make install.deploy-camunda', or set DEPLOY_CAMUNDA to a working binary." >&2
+    exit 1
+  }
+  log "DEBUG: Using deploy-camunda at $DEPLOY_CAMUNDA_BIN"
+  "$DEPLOY_CAMUNDA_BIN" e2e-env merge \
     --orchestration-namespace "$NAMESPACE" \
     --hub-namespace "$HUB_NAMESPACE" \
     --absolute-chart-path "$ABSOLUTE_CHART_PATH" \
@@ -259,7 +354,16 @@ if [[ -n "$HUB_NAMESPACE" ]]; then
     --ci="$IS_CI" \
     --run-smoke-tests="$RUN_SMOKE_TESTS" \
     --render-script "$SCRIPT_DIR/render-e2e-env.sh" \
-    ${KUBE_CONTEXT:+--kube-context "$KUBE_CONTEXT"}
+    ${OPTIMIZE_NAMESPACE:+--optimize-namespace "$OPTIMIZE_NAMESPACE"} \
+    ${OPTIMIZE_CONTEXT_PATH:+--optimize-context-path "$OPTIMIZE_CONTEXT_PATH"} \
+    ${KUBE_CONTEXT:+--kube-context "$KUBE_CONTEXT"} || {
+    # This script does not run under `set -e`, so without this guard a failed merge falls through and
+    # Playwright runs against a stale or orchestration-only .env: Modeler and Identity point at the
+    # wrong host and the setup project times out, which reads as a product failure rather than a
+    # missing merge.
+    echo "Error: '$DEPLOY_CAMUNDA_BIN e2e-env merge' failed; refusing to run tests against an unmerged env." >&2
+    exit 1
+  }
 else
   render_env_file "$ENV_FILE" "$TEST_SUITE_PATH" "$hostname" "$NAMESPACE" "$IS_CI" "$IS_OPENSEARCH" "$IS_RBA" "$IS_MT" "$RUN_SMOKE_TESTS" "$KUBE_CONTEXT" "$IS_AUTH0"
 fi
@@ -281,6 +385,7 @@ export PLAYWRIGHT_HTML_REPORT="${TEST_SUITE_PATH}/playwright-report/${NAMESPACE}
 [[ -n "$TRACE_MODE" ]] && export PLAYWRIGHT_E2E_TRACE="$TRACE_MODE"
 [[ -n "$RETRIES" ]] && export PLAYWRIGHT_E2E_RETRIES="$RETRIES"
 [[ -n "$LOCAL_TEST_SUITE" ]] && export PLAYWRIGHT_E2E_LOCAL_TEST_SUITE="$LOCAL_TEST_SUITE"
+[[ -n "$MODELER_CLUSTER_NAME_ARG" ]] && export MODELER_CLUSTER_NAME="$MODELER_CLUSTER_NAME_ARG"
 
 log "$TEST_SUITE_PATH"
 log "Running smoke tests: $RUN_SMOKE_TESTS"
@@ -289,18 +394,7 @@ log "DEBUG: ENV_FILE='${ENV_FILE}'"
 log "DEBUG: PLAYWRIGHT_HTML_REPORT='${PLAYWRIGHT_HTML_REPORT}'"
 
 # Build the rerun command for display on failure
-RERUN_CMD="./scripts/run-e2e-tests.sh --absolute-chart-path ${ABSOLUTE_CHART_PATH} --namespace ${NAMESPACE}"
-[[ -n "$KUBE_CONTEXT" ]] && RERUN_CMD+=" --kube-context ${KUBE_CONTEXT}"
-[[ -n "$TEST_EXCLUDE" ]] && RERUN_CMD+=" --test-exclude \"${TEST_EXCLUDE}\""
-[[ "$RUN_SMOKE_TESTS" == "true" ]] && RERUN_CMD+=" --run-smoke-tests"
-[[ "$IS_OPENSEARCH" == "true" ]] && RERUN_CMD+=" --opensearch"
-[[ "$IS_RBA" == "true" ]] && RERUN_CMD+=" --rba"
-[[ "$IS_MT" == "true" ]] && RERUN_CMD+=" --mt"
-[[ "$IS_AUTH0" == "true" ]] && RERUN_CMD+=" --auth0"
-[[ -n "$VIDEO_MODE" ]] && RERUN_CMD+=" --video ${VIDEO_MODE}"
-[[ -n "$TRACE_MODE" ]] && RERUN_CMD+=" --trace ${TRACE_MODE}"
-[[ -n "$RETRIES" ]] && RERUN_CMD+=" --retries ${RETRIES}"
-[[ -n "$LOCAL_TEST_SUITE" ]] && RERUN_CMD+=" --local-test-suite ${LOCAL_TEST_SUITE}"
+RERUN_CMD="$(build_rerun_cmd)"
 
 run_playwright_tests "$TEST_SUITE_PATH" "$SHOW_HTML_REPORT" "$SHARD_INDEX" "$SHARD_TOTAL" "blob" "$TEST_EXCLUDE" "$RUN_SMOKE_TESTS" "$PLAYWRIGHT_DEBUG" "$NAMESPACE" "$KUBE_CONTEXT" "$RERUN_CMD" "$IS_AUTH0"
 

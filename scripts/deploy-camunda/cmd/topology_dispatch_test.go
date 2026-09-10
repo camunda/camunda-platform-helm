@@ -148,6 +148,26 @@ func TestSynthesizeReleaseEntry_HubCarriesOwnLayers(t *testing.T) {
 	}
 }
 
+// e2e must never run inside the deploy loop: a release's deploy returns while later releases are
+// still undeployed, so a leg run here would test a partial topology, and would repeat for every
+// orchestration release. runTopologyEntry runs the legs after the whole topology is up.
+func TestSynthesizeReleaseEntry_NoRoleRunsE2EDuringDeploy(t *testing.T) {
+	baseEntry := matrix.Entry{
+		Version:   "8.10",
+		ChartPath: "charts/camunda-platform-8.10",
+		Scenario:  "multinamespace",
+		Shortname: "mns",
+		Auth:      "keycloak",
+	}
+
+	for _, rel := range testTopologyReleases() {
+		entry := synthesizeReleaseEntry(baseEntry, rel, "gke")
+		if !entry.SkipE2E {
+			t.Errorf("role %q: SkipE2E = false, want true (e2e is a topology-level phase)", rel.Role)
+		}
+	}
+}
+
 func TestSynthesizeReleaseEntry_OrchestrationHasNoDependencies(t *testing.T) {
 	hook := &matrix.LifecycleHook{Script: "post-deploy-hub-ping.sh"}
 	baseEntry := matrix.Entry{Version: "8.10", ChartPath: "charts/camunda-platform-8.10", Scenario: "multinamespace", Shortname: "mns", Auth: "keycloak", PostDeploy: hook}
