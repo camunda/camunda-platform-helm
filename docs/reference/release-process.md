@@ -41,7 +41,7 @@ The charts are built, linted, and tested on every push to the main branch. The r
 
 **What happens:**
 
-1. Builds dev packages for all **active** chart versions (alpha + standard support).
+1. Builds dev packages for all chart versions selected by `chartAutomation.routineVersions`.
 2. Computes the release version using `release-please --dry-run`.
 3. Applies release transformations (removes dev comments, badges).
 4. Generates release notes using the `release-tools release-notes` command.
@@ -186,9 +186,9 @@ graph TD
 - `13.x` = Camunda 8.8
 - `14.x` = Camunda 8.9
 
-## Supported Versions
+## Routine Chart Automation
 
-Active chart versions are defined in [`charts/chart-versions.yaml`](https://github.com/camunda/camunda-platform-helm/blob/main/charts/chart-versions.yaml).
+`chartAutomation.routineVersions` in [`charts/chart-versions.yaml`](https://github.com/camunda/camunda-platform-helm/blob/main/charts/chart-versions.yaml) selects routine CI, dev packaging, artifact verification, and maintenance chores. Lifecycle metadata is independent and controls the existing version-matrix display. An ESUP case requires routine Helm chart automation only when its agreed delivery scope includes that maintenance; component-only cases can use explicit ad-hoc validation without joining the routine list.
 
 ## Minor Version Chores
 
@@ -210,8 +210,12 @@ Assuming `current alpha is 8.9` (which will become `stable`) and the `new alpha 
 **Configuration files updates:**
 
 1. Update [`charts/chart-versions.yaml`](https://github.com/camunda/camunda-platform-helm/blob/main/charts/chart-versions.yaml) —
-   both the `camundaVersions` buckets and the matching `camundaSupportLifecycle` entries
-   (release/support/EOL dates; the version-matrix renderer fails loudly when they diverge).
+   set `released` and `stdSupportUntil` in `camundaSupportLifecycle` for the minor becoming GA.
+   The presence of `released` switches release tooling from prerelease to stable selection.
+   Add the new alpha's lifecycle entry without `released`, and add it to `chartAutomation.routineVersions`.
+   Reconcile routine membership against the ESUP Case Registry's Helm chart delivery scope;
+   keep a minor in the routine list while that scope requires continued chart maintenance.
+   Do not remove lifecycle dates when removing a minor from routine automation.
 2. Update Release-Please config and manifest in `.github/config/release-please/`.
 3. Update [`renovate.json5`](https://github.com/camunda/camunda-platform-helm/blob/main/.github/renovate.json5).
 4. Update GitHub Actions with version choices (search for `type: choice`).

@@ -210,7 +210,7 @@ func latestChartCell(app string, entries []ChartEntry, lc Lifecycle) string {
 }
 
 // RenderIndex renders the top-level version-matrix/README.md: one section per
-// active minor (alpha + supportStandard, newest first) with its
+// active minor (derived from lifecycle metadata, newest first) with its
 // indexTableLimit newest chart versions and a link to the full per-minor
 // matrix, then one compact table each for extended-support and end-of-life
 // minors. entriesByApp values must be sorted newest-first.
@@ -218,7 +218,7 @@ func RenderIndex(cfg *ChartVersionsConfig, entriesByApp map[string][]ChartEntry)
 	var b strings.Builder
 	b.WriteString(indexHeader)
 
-	active := append(append([]string{}, cfg.CamundaVersions.Alpha...), cfg.CamundaVersions.SupportStandard...)
+	active := append(cfg.MinorsInBucket(BucketAlpha), cfg.MinorsInBucket(BucketSupportStandard)...)
 	supportNotePending := true
 	for _, app := range SortAppVersionsDescending(active) {
 		lc := cfg.CamundaSupportLifecycle[app]
@@ -245,7 +245,7 @@ func RenderIndex(cfg *ChartVersionsConfig, entriesByApp map[string][]ChartEntry)
 		fmt.Fprintf(&b, "\n[All %d chart versions for Camunda %s →](./camunda-%s/)\n", len(entries), app, app)
 	}
 
-	if minors := cfg.CamundaVersions.SupportExtended; len(minors) > 0 {
+	if minors := cfg.MinorsInBucket(BucketSupportExtended); len(minors) > 0 {
 		b.WriteString("\n## Extended support\n\n")
 		b.WriteString("| Camunda | Released | Latest chart | Full matrix |\n|---|---|---|---|\n")
 		for _, app := range SortAppVersionsDescending(minors) {
@@ -255,7 +255,7 @@ func RenderIndex(cfg *ChartVersionsConfig, entriesByApp map[string][]ChartEntry)
 		}
 	}
 
-	if minors := cfg.CamundaVersions.EndOfLife; len(minors) > 0 {
+	if minors := cfg.MinorsInBucket(BucketEndOfLife); len(minors) > 0 {
 		b.WriteString("\n## End of life — no longer supported\n\n")
 		b.WriteString("| Camunda | EOL since | Last chart | Full matrix |\n|---|---|---|---|\n")
 		for _, app := range SortAppVersionsDescending(minors) {

@@ -1,0 +1,11 @@
+name: opensearch
+auth: keycloak
+flows:
+  - install
+identity: keycloak
+persistence: opensearch
+platforms:
+  - gke
+infra-type:
+  gke: distroci
+skip-e2e: true
