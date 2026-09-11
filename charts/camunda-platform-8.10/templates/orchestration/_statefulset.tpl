@@ -483,9 +483,21 @@ spec:
            before a migration starts, which is what keeps that upgrade from rolling it. */ -}}
       {{- $aff := deepCopy . -}}
       {{- $op := ternary "Exists" "DoesNotExist" (eq $.OrchestrationRender.scope "zoned") -}}
+      {{- $broker := include "orchestration.brokerName" $ -}}
       {{- range $term := ((($aff.podAntiAffinity).requiredDuringSchedulingIgnoredDuringExecution) | default list) -}}
       {{- $sel := index $term "labelSelector" -}}
+      {{- $selectsBroker := false -}}
+      {{- range $expr := (($sel.matchExpressions) | default list) -}}
+      {{- if and (eq $expr.key "app.kubernetes.io/component") (has $broker ($expr.values | default list)) -}}
+      {{- $selectsBroker = true -}}
+      {{- end -}}
+      {{- end -}}
+      {{- if eq (dig "app.kubernetes.io/component" "" (($sel.matchLabels) | default dict)) $broker -}}
+      {{- $selectsBroker = true -}}
+      {{- end -}}
+      {{- if $selectsBroker -}}
       {{- $_ := set $sel "matchExpressions" (append (($sel.matchExpressions) | default list) (dict "key" "camunda.io/zone" "operator" $op)) -}}
+      {{- end -}}
       {{- end }}
       affinity:
         {{- toYamlPretty $aff | nindent 8 }}

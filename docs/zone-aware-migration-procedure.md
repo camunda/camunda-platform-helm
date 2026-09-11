@@ -11,7 +11,7 @@ Each Helm release manages one Kubernetes cluster and one local zone. Repeat the 
 - Confirm that the Orchestration image supports zone-aware clustering and the management API operations used below.
 - Prepare the complete, identical `orchestration.multiregion.zones` topology for every participating release.
 - Set `orchestration.multiregion.zone` to the local zone for the release being upgraded.
-- Ensure the local Kubernetes cluster can schedule both broker generations at once. The default pod anti-affinity is hard and keyed on hostname, and both generations carry the same `app.kubernetes.io/component` label, so each zoned broker needs its own schedulable node in addition to the nodes the numbered brokers already occupy, for the duration of the migration. On a fixed node pool, scale it up before starting and back down after step 3; with a cluster autoscaler the extra nodes are provisioned on demand. Also ensure there is room for both generations' persistent volumes.
+- Ensure the local Kubernetes cluster has room for both broker generations and their persistent volumes for the duration of the migration. The chart scopes the broker anti-affinity per generation, so a zoned broker may share a node with the numbered broker it replaces, but the node still needs the capacity for both.
 - Back up the Helm values and confirm that the existing numbered StatefulSet and its PVCs are healthy.
 - For brokers owned by other Helm releases or Kubernetes clusters, provide externally resolvable contact points through `CAMUNDA_CLUSTER_INITIALCONTACTPOINTS`. The chart generates contact points only for resources owned by the local release:
 
@@ -22,9 +22,15 @@ Each Helm release manages one Kubernetes cluster and one local zone. Repeat the 
         value: <fully-qualified-broker-addresses-for-all-zones>
   ```
 
-## 1. Start the migration for one zone
+## 1. Upgrade the chart, then start the migration for one zone
 
-Set zoned mode and retain the existing numbered brokers:
+Upgrade to the chart version that supports the migration **before** enabling it, as a separate
+`helm upgrade` with the values unchanged. That upgrade adds the per-generation anti-affinity term
+to the broker pod template and rolls the numbered brokers once, which is an ordinary chart
+upgrade. Enabling the migration in the same upgrade would move that roll into step 1, where the
+retained brokers are supposed to stay untouched. Wait for the rollout to settle before continuing.
+
+Then set zoned mode and retain the existing numbered brokers:
 
 ```yaml
 orchestration:

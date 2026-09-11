@@ -30,9 +30,15 @@ NAMESPACE="${1:-zone-aware-migration}"
 RELEASE="${RELEASE:-zam}"
 TIMEOUT="${TIMEOUT:-5m}"
 
+CREATED_NAMESPACE=false
+CREATED_RELEASE=false
+
 cleanup() {
-    helm uninstall "${RELEASE}" --namespace "${NAMESPACE}" >/dev/null 2>&1 || true
-    kubectl delete namespace "${NAMESPACE}" --wait=false >/dev/null 2>&1 || true
+    [ "${CREATED_RELEASE}" = true ] \
+        && helm uninstall "${RELEASE}" --namespace "${NAMESPACE}" >/dev/null 2>&1
+    [ "${CREATED_NAMESPACE}" = true ] \
+        && kubectl delete namespace "${NAMESPACE}" --wait=false >/dev/null 2>&1
+    return 0
 }
 trap cleanup EXIT
 
@@ -46,9 +52,16 @@ pod_uid() {
     kubectl get pod "$1" --namespace "${NAMESPACE}" -o jsonpath='{.metadata.uid}' 2>/dev/null || true
 }
 
-kubectl create namespace "${NAMESPACE}" >/dev/null 2>&1 || true
+kubectl get namespace "${NAMESPACE}" >/dev/null 2>&1 \
+    && fail "namespace ${NAMESPACE} already exists; refusing to reuse and delete it"
+helm status "${RELEASE}" --namespace "${NAMESPACE}" >/dev/null 2>&1 \
+    && fail "release ${RELEASE} already exists in ${NAMESPACE}"
+
+kubectl create namespace "${NAMESPACE}" >/dev/null
+CREATED_NAMESPACE=true
 
 echo "==> Installing the pre-migration numbered cluster"
+CREATED_RELEASE=true
 helm install "${RELEASE}" "${CHART_DIR}" \
     --namespace "${NAMESPACE}" \
     --values "${SCRIPT_DIR}/values-numbered.yaml" \
