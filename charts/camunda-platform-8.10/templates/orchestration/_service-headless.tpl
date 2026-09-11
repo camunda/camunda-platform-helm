@@ -52,5 +52,5 @@ spec:
     {{ .Values.orchestration.service.extraPorts | toYaml | nindent 4 }}
     {{- end }}
   selector:
-    {{- include "orchestration.matchLabels" . | nindent 4 }}
+    {{- include "orchestration.serviceMatchLabels" . | nindent 4 }}
 {{- end -}}

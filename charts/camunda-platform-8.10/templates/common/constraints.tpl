@@ -423,11 +423,18 @@ merged nowhere.
 {{- $mr := include "camundaPlatform.multiregion" $ | fromJson -}}
 {{- $reservedZoneLabel := "camunda.io/zone" -}}
 {{- if and (eq $mr.mode "zoned") (or
-  (hasKey (.Values.global.labels | default dict) $reservedZoneLabel)
   (hasKey (.Values.global.commonLabels | default dict) $reservedZoneLabel)
   (hasKey (.Values.orchestration.podLabels | default dict) $reservedZoneLabel)
 ) }}
-  {{- fail (printf "[camunda][error] %s is managed by the chart in zoned mode and cannot be configured in global.labels, global.commonLabels, or orchestration.podLabels." $reservedZoneLabel) }}
+  {{- fail (printf "[camunda][error] %s is managed by the chart in zoned mode and cannot be configured in global.commonLabels or orchestration.podLabels." $reservedZoneLabel) }}
+{{- end }}
+{{- $reservedGenerationLabel := "camunda.io/broker-generation" -}}
+{{- if or
+  (hasKey (.Values.global.labels | default dict) $reservedGenerationLabel)
+  (hasKey (.Values.global.commonLabels | default dict) $reservedGenerationLabel)
+  (hasKey (.Values.orchestration.podLabels | default dict) $reservedGenerationLabel)
+}}
+  {{- fail (printf "[camunda][error] %s is managed by the chart and cannot be configured in global.labels, global.commonLabels, or orchestration.podLabels." $reservedGenerationLabel) }}
 {{- end }}
 {{- $mrKey := "orchestration.multiregion" -}}
 {{- if ne (include "camundaPlatform.multiregionConfigured" (.Values.orchestration.multiregion | default dict)) "true" -}}

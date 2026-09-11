@@ -232,14 +232,15 @@ app.kubernetes.io/version: {{ include "camundaPlatform.versionLabel" (dict
 (version depending). These labels shouldn't be used on matchLabels selector, since the selectors are immutable.
 */}}
 {{- define "orchestration.generationLabel" -}}
-{{- /* NOTE: chart-owned, and deliberately not camunda.io/zone: that key is user-writable
-     through global.labels and podLabels, and the anti-affinity and PodDisruptionBudget
-     selectors below stop matching if a pod carries it unexpectedly. */ -}}
 camunda.io/broker-generation: {{ if and .OrchestrationRender (eq .OrchestrationRender.scope "zoned") }}zoned{{ else }}numbered{{ end }}
 {{- end -}}
 
 {{- define "orchestration.labels" -}}
-    {{- include "camundaPlatform.labels" . }}
+    {{- $labels := include "camundaPlatform.labels" . -}}
+    {{- if and .OrchestrationRender (eq .OrchestrationRender.scope "zoned") (hasKey (.Values.global.labels | default dict) "camunda.io/zone") -}}
+      {{- $labels = omit ($labels | fromYaml) "camunda.io/zone" | toYaml -}}
+    {{- end -}}
+    {{- $labels }}
     {{- "\n" }}
     {{- include "orchestration.brokerLabel" . }}
     {{- "\n" }}
@@ -266,15 +267,31 @@ camunda.io/zone: {{ .OrchestrationRender.zone }}
 [orchestration] Defines match labels for orchestration, which are extended by sub-charts and should be used in matchLabels selectors.
 */}}
 {{- define "orchestration.matchLabels" -}}
-    {{- include "camundaPlatform.matchLabels" . }}
+    {{- $labels := include "camundaPlatform.matchLabels" . -}}
+    {{- if and .OrchestrationRender (eq .OrchestrationRender.scope "zoned") (hasKey (.Values.global.labels | default dict) "camunda.io/zone") -}}
+      {{- $labels = omit ($labels | fromYaml) "camunda.io/zone" | toYaml -}}
+    {{- end -}}
+    {{- $labels }}
     {{- "\n" -}}
     {{/*    For backward compatibility, the component label is set to "zeebe-broker".*/}}
     {{- include "orchestration.brokerLabel" . }}
     {{- /* NOTE: StatefulSet.spec.selector is immutable, so only zoned renders receive the zone label. */ -}}
     {{- if and .OrchestrationRender (eq .OrchestrationRender.scope "zoned") .OrchestrationRender.zone }}
     {{- "\n" }}
+    {{- include "orchestration.generationLabel" . }}
+    {{- "\n" }}
 camunda.io/zone: {{ .OrchestrationRender.zone }}
     {{- end }}
+{{- end -}}
+
+{{- define "orchestration.serviceMatchLabels" -}}
+{{- $labels := include "orchestration.matchLabels" . -}}
+{{- if or (and (not .OrchestrationRender) (eq (include "orchestration.zoned" .) "true")) (and .OrchestrationRender (eq .OrchestrationRender.scope "unzoned")) -}}
+{{- if hasKey ($labels | fromYaml) "camunda.io/zone" -}}
+{{- $labels = omit ($labels | fromYaml) "camunda.io/zone" | toYaml -}}
+{{- end -}}
+{{- end -}}
+{{- $labels -}}
 {{- end -}}
 
 {{/*

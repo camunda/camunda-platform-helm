@@ -26,6 +26,7 @@ spec:
       app.kubernetes.io/managed-by: Helm
       app.kubernetes.io/part-of: camunda-platform
       app.kubernetes.io/component: zeebe-broker
+      camunda.io/broker-generation: zoned
       
       camunda.io/zone: zone-a
   serviceName: "camunda-platform-test-zeebe-zone-a"
