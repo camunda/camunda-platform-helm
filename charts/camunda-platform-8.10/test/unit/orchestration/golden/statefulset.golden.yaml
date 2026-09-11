@@ -145,6 +145,8 @@ spec:
                     operator: In
                     values:
                       - zeebe-broker
+                  - key: camunda.io/zone
+                    operator: DoesNotExist
               topologyKey: kubernetes.io/hostname
   volumeClaimTemplates:
     - apiVersion: v1

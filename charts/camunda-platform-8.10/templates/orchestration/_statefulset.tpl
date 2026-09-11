@@ -475,8 +475,20 @@ spec:
         {{- toYamlPretty . | nindent 8 }}
       {{- end }}
       {{- with .Values.orchestration.affinity }}
+      {{- /* NOTE: both broker generations carry the same component label, so a hostname
+           anti-affinity written against it makes them repel each other and a zoned broker
+           cannot be placed beside the numbered one it replaces. The zone term scopes each
+           generation to its own kind: the retained brokers have no zone, the zoned ones do.
+           Rendered for every scope so the retained pod template is already carrying it
+           before a migration starts, which is what keeps that upgrade from rolling it. */ -}}
+      {{- $aff := deepCopy . -}}
+      {{- $op := ternary "Exists" "DoesNotExist" (eq $.OrchestrationRender.scope "zoned") -}}
+      {{- range $term := ((($aff.podAntiAffinity).requiredDuringSchedulingIgnoredDuringExecution) | default list) -}}
+      {{- $sel := index $term "labelSelector" -}}
+      {{- $_ := set $sel "matchExpressions" (append (($sel.matchExpressions) | default list) (dict "key" "camunda.io/zone" "operator" $op)) -}}
+      {{- end }}
       affinity:
-        {{- toYamlPretty . | nindent 8 }}
+        {{- toYamlPretty $aff | nindent 8 }}
       {{- end }}
       {{- with .Values.orchestration.tolerations }}
       tolerations:
