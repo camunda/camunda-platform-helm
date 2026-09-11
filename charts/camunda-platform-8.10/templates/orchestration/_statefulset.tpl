@@ -475,12 +475,7 @@ spec:
         {{- toYamlPretty . | nindent 8 }}
       {{- end }}
       {{- with .Values.orchestration.affinity }}
-      {{- /* NOTE: both broker generations carry the same component label, so a hostname
-           anti-affinity written against it makes them repel each other and a zoned broker
-           cannot be placed beside the numbered one it replaces. The zone term scopes each
-           generation to its own kind: the retained brokers have no zone, the zoned ones do.
-           Rendered for every scope so the retained pod template is already carrying it
-           before a migration starts, which is what keeps that upgrade from rolling it. */ -}}
+      {{- /* NOTE: Scope positive broker-only selectors to the rendered generation. */ -}}
       {{- $aff := deepCopy . -}}
       {{- $gen := ternary "zoned" "numbered" (eq $.OrchestrationRender.scope "zoned") -}}
       {{- $broker := include "orchestration.brokerName" $ -}}
@@ -488,7 +483,7 @@ spec:
       {{- $sel := index $term "labelSelector" -}}
       {{- $selectsBroker := false -}}
       {{- range $expr := (($sel.matchExpressions) | default list) -}}
-      {{- if and (eq $expr.key "app.kubernetes.io/component") (has $broker ($expr.values | default list)) -}}
+      {{- if and (eq $expr.key "app.kubernetes.io/component") (eq $expr.operator "In") (eq (len ($expr.values | default list)) 1) (has $broker ($expr.values | default list)) -}}
       {{- $selectsBroker = true -}}
       {{- end -}}
       {{- end -}}
