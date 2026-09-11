@@ -193,7 +193,7 @@ jobs:
           echo "package_file=${package_name}" | tee -a $GITHUB_OUTPUT
           
           # Extract version, app_version (appVersion, .x-stripped), prerelease,
-          # is_latest_stable (vs chart-versions.yaml supportStandard[0]),
+          # is_latest_stable (vs the newest released minor in chart-versions.yaml),
           # chart_dir_id, release_tag, the cosign file names and the
           # component-image-versions annotation from the package's Chart.yaml.
           tar -xzf "${package_file}" camunda-platform/Chart.yaml -O > /tmp/Chart.yaml

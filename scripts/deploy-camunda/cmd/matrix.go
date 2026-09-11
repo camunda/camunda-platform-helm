@@ -165,7 +165,7 @@ func newMatrixListCommand() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "list",
-		Short: "List the CI test matrix for all active chart versions",
+		Short: "List the CI test matrix for routine chart versions",
 		Long: `List the full CI test matrix generated from chart-versions.yaml,
 ci-test-config.yaml (PR scenarios only), and permitted-flows.yaml.
 
@@ -544,14 +544,27 @@ Under the hood this invokes deploy.Execute() for each matrix entry.`,
 				return err
 			}
 
-			entries = matrix.Filter(entries, matrix.FilterOptions{
+			filterOptions := matrix.FilterOptions{
 				ScenarioFilter:  scenarioFilter,
 				ShortnameFilter: shortnameFilter,
 				ShortnameExact:  shortnameExact,
 				FlowFilter:      flowFilter,
 				Platform:        platform,
 				Tier:            tier,
-			})
+			}
+			entries = matrix.Filter(entries, filterOptions)
+			if len(entries) == 0 && !includeDisabled {
+				withDisabled, err := matrix.Generate(repoRoot, matrix.GenerateOptions{
+					Versions:        versions,
+					IncludeDisabled: true,
+				})
+				if err != nil {
+					return err
+				}
+				if matches := matrix.Filter(withDisabled, filterOptions); len(matches) > 0 {
+					return fmt.Errorf("no enabled matrix entries matched the filters (versions=%v); matching scenarios are disabled; re-run with --include-disabled to include them", versions)
+				}
+			}
 
 			// Entries whose scenario declares a topology (multi-namespace
 			// deployment) fan out to N releases and are driven directly via
@@ -950,7 +963,7 @@ func registerMatrixShortnameCompletion(cmd *cobra.Command) {
 }
 
 // registerMatrixVersionsCompletion adds tab completion for the --versions flag.
-// It reads chart-versions.yaml and offers active versions (alpha + supportStandard).
+// It reads chart-versions.yaml and offers versions selected for routine automation.
 func registerMatrixVersionsCompletion(cmd *cobra.Command) {
 	_ = cmd.RegisterFlagCompletionFunc("versions", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		repoRoot, _ := cmd.Flags().GetString("repo-root")
