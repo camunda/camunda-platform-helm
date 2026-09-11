@@ -9,6 +9,8 @@ on:
       - "charts/camunda-platform-8.10/values.yaml"
       - "charts/camunda-platform-8.10/values.schema.json"
       - "charts/camunda-platform-8.10/test/integration/scenarios/zone-aware-migration/**"
+      - "scripts/zone-aware-migration/**"
+      - "Makefile"
       - ".github/workflows/test-zone-aware-migration.yaml"
   workflow_dispatch: {}
 
@@ -35,6 +37,7 @@ jobs:
             kind
             kubectl
             helm
+            golang
 
       # Single node: an anti-affinity that is not scoped per generation only fails to
       # schedule when there is nowhere else to place the zoned broker.
@@ -48,7 +51,7 @@ jobs:
         run: make helm.dependency-update
 
       - name: Verify the migration sequence
-        run: ${{ env.chartPath }}/test/integration/scenarios/zone-aware-migration/verify-zone-aware-migration.sh
+        run: make test.zone-aware-migration
 
       - name: Collect diagnostics
         if: failure()
