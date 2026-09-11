@@ -1819,6 +1819,7 @@ jobs:
 
       - name: Download deploy-camunda binary
         timeout-minutes: 3
+        continue-on-error: true # A sustained artifact-service outage must not skip the namespace-reaping steps below.
         uses: ./.github/actions/download-artifact-retry
         with:
           name: ${{ inputs.binary-artifact-name }}
@@ -1826,7 +1827,9 @@ jobs:
 
       - name: Add deploy-camunda to PATH
         run: |
-          chmod +x "${RUNNER_TEMP}/bin/deploy-camunda"
+          if [ -f "${RUNNER_TEMP}/bin/deploy-camunda" ]; then
+            chmod +x "${RUNNER_TEMP}/bin/deploy-camunda"
+          fi
           echo "${RUNNER_TEMP}/bin" >> "$GITHUB_PATH"
 
       - name: CI Setup - ℹ️ Set workflow vars for both install and upgrade ℹ️
