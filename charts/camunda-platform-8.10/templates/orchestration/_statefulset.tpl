@@ -482,7 +482,7 @@ spec:
            Rendered for every scope so the retained pod template is already carrying it
            before a migration starts, which is what keeps that upgrade from rolling it. */ -}}
       {{- $aff := deepCopy . -}}
-      {{- $op := ternary "Exists" "DoesNotExist" (eq $.OrchestrationRender.scope "zoned") -}}
+      {{- $gen := ternary "zoned" "numbered" (eq $.OrchestrationRender.scope "zoned") -}}
       {{- $broker := include "orchestration.brokerName" $ -}}
       {{- range $term := ((($aff.podAntiAffinity).requiredDuringSchedulingIgnoredDuringExecution) | default list) -}}
       {{- $sel := index $term "labelSelector" -}}
@@ -496,7 +496,7 @@ spec:
       {{- $selectsBroker = true -}}
       {{- end -}}
       {{- if $selectsBroker -}}
-      {{- $_ := set $sel "matchExpressions" (append (($sel.matchExpressions) | default list) (dict "key" "camunda.io/zone" "operator" $op)) -}}
+      {{- $_ := set $sel "matchExpressions" (append (($sel.matchExpressions) | default list) (dict "key" "camunda.io/broker-generation" "operator" "In" "values" (list $gen))) -}}
       {{- end -}}
       {{- end }}
       affinity:

@@ -92,8 +92,8 @@ func (s *PodDisruptionBudgetTest) TestDifferentValuesInputs() {
 						continue
 					}
 					require.Len(t, podDisruptionBudget.Spec.Selector.MatchExpressions, 1)
-					require.Equal(t, "camunda.io/zone", podDisruptionBudget.Spec.Selector.MatchExpressions[0].Key)
-					require.Equal(t, metav1.LabelSelectorOpDoesNotExist, podDisruptionBudget.Spec.Selector.MatchExpressions[0].Operator)
+					require.Equal(t, "camunda.io/broker-generation", podDisruptionBudget.Spec.Selector.MatchExpressions[0].Key)
+					require.Equal(t, metav1.LabelSelectorOpIn, podDisruptionBudget.Spec.Selector.MatchExpressions[0].Operator)
 					return
 				}
 				require.Fail(t, "unzoned PodDisruptionBudget was not rendered")

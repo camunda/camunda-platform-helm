@@ -11,6 +11,7 @@ metadata:
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: zeebe-broker
     app.kubernetes.io/version: "8.10.0-alpha5"
+    camunda.io/broker-generation: zoned
     
     camunda.io/zone: zone-a
 apiVersion: v1

@@ -13,8 +13,9 @@ spec:
   {{- end }}
   selector:{{- if and .OrchestrationRender (eq .OrchestrationRender.scope "unzoned") }}
     matchExpressions:
-      - key: camunda.io/zone
-        operator: DoesNotExist
+      - key: camunda.io/broker-generation
+        operator: In
+        values: [numbered]
 {{- end }}
     matchLabels:
       {{- include "orchestration.matchLabels" . | nindent 6 }}

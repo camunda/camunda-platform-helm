@@ -12,6 +12,7 @@ metadata:
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: zeebe-broker
     app.kubernetes.io/version: "8.10.0-alpha5"
+    camunda.io/broker-generation: zoned
     
     camunda.io/zone: zone-a
 spec:
@@ -42,12 +43,14 @@ metadata:
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: zeebe-broker
     app.kubernetes.io/version: "8.10.0-alpha5"
+    camunda.io/broker-generation: numbered
 spec:
   maxUnavailable: 1
   selector:
     matchExpressions:
-      - key: camunda.io/zone
-        operator: DoesNotExist
+      - key: camunda.io/broker-generation
+        operator: In
+        values: [numbered]
     matchLabels:
       app: camunda-platform
       app.kubernetes.io/name: camunda-platform

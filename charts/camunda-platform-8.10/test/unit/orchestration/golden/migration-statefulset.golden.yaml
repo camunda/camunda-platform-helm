@@ -12,6 +12,7 @@ metadata:
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: zeebe-broker
     app.kubernetes.io/version: "8.10.0-alpha5"
+    camunda.io/broker-generation: zoned
     
     camunda.io/zone: zone-a
   annotations:
@@ -41,6 +42,7 @@ spec:
         app.kubernetes.io/part-of: camunda-platform
         app.kubernetes.io/component: zeebe-broker
         app.kubernetes.io/version: "8.10.0-alpha5"
+        camunda.io/broker-generation: zoned
         
         camunda.io/zone: zone-a
       annotations:
@@ -153,8 +155,10 @@ spec:
                     operator: In
                     values:
                       - zeebe-broker
-                  - key: camunda.io/zone
-                    operator: Exists
+                  - key: camunda.io/broker-generation
+                    operator: In
+                    values:
+                      - zoned
               topologyKey: kubernetes.io/hostname
   volumeClaimTemplates:
     - apiVersion: v1
@@ -184,6 +188,7 @@ metadata:
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: zeebe-broker
     app.kubernetes.io/version: "8.10.0-alpha5"
+    camunda.io/broker-generation: numbered
   annotations:
 spec:
   replicas: 1
@@ -209,6 +214,7 @@ spec:
         app.kubernetes.io/part-of: camunda-platform
         app.kubernetes.io/component: zeebe-broker
         app.kubernetes.io/version: "8.10.0-alpha5"
+        camunda.io/broker-generation: numbered
       annotations:
     spec:
       imagePullSecrets:
@@ -317,8 +323,10 @@ spec:
                     operator: In
                     values:
                       - zeebe-broker
-                  - key: camunda.io/zone
-                    operator: DoesNotExist
+                  - key: camunda.io/broker-generation
+                    operator: In
+                    values:
+                      - numbered
               topologyKey: kubernetes.io/hostname
   volumeClaimTemplates:
     - apiVersion: v1

@@ -231,12 +231,21 @@ app.kubernetes.io/version: {{ include "camundaPlatform.versionLabel" (dict
 [orchestration] Define common labels for orchestration, combining the match labels and transient labels, which might change on updating
 (version depending). These labels shouldn't be used on matchLabels selector, since the selectors are immutable.
 */}}
+{{- define "orchestration.generationLabel" -}}
+{{- /* NOTE: chart-owned, and deliberately not camunda.io/zone: that key is user-writable
+     through global.labels and podLabels, and the anti-affinity and PodDisruptionBudget
+     selectors below stop matching if a pod carries it unexpectedly. */ -}}
+camunda.io/broker-generation: {{ if and .OrchestrationRender (eq .OrchestrationRender.scope "zoned") }}zoned{{ else }}numbered{{ end }}
+{{- end -}}
+
 {{- define "orchestration.labels" -}}
     {{- include "camundaPlatform.labels" . }}
     {{- "\n" }}
     {{- include "orchestration.brokerLabel" . }}
     {{- "\n" }}
     {{- include "orchestration.versionLabel" . }}
+    {{- "\n" }}
+    {{- include "orchestration.generationLabel" . }}
     {{- if and .OrchestrationRender (eq .OrchestrationRender.scope "zoned") .OrchestrationRender.zone }}
     {{- "\n" }}
 camunda.io/zone: {{ .OrchestrationRender.zone }}

@@ -5542,7 +5542,7 @@
                 },
                 "podLabels": {
                     "type": "object",
-                    "description": "can be used to define extra broker pod labels. Supports templating (e.g., {{ .Release.Name }}). The key `camunda.io/zone` is reserved: the chart assigns it from `orchestration.multiregion.zone` and scopes the broker anti-affinity and PodDisruptionBudget selectors on it, so setting it here is rejected.",
+                    "description": "can be used to define extra broker pod labels. Supports templating (e.g., {{ .Release.Name }}).",
                     "default": {}
                 },
                 "podDisruptionBudget": {

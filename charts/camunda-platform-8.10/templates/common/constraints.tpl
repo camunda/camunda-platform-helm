@@ -542,15 +542,6 @@ missing from it would take the IDs of the first zone and collide with it.
   {{- fail (printf "[camunda][error] %s.keepUnzonedBrokers requires %s.mode=zoned." $mrKey $mrKey) -}}
 {{- end }}
 
-{{/*
-The chart owns camunda.io/zone: it is what the broker anti-affinity and the retained
-PodDisruptionBudget use to tell the two generations apart. A pod carrying it outside a zoned
-render makes the numbered selectors stop matching, which silently drops the separation they
-ask for instead of failing.
-*/}}
-{{- if hasKey (.Values.orchestration.podLabels | default dict) "camunda.io/zone" }}
-  {{- fail "[camunda][error] orchestration.podLabels must not set \"camunda.io/zone\": the chart assigns it from orchestration.multiregion.zone and uses it to scope broker selectors. Use a different label key." -}}
-{{- end }}
 {{- end }}
 
 {{/*

@@ -2618,7 +2618,7 @@ orchestration:
 
   ## @param orchestration.podAnnotations can be used to define extra broker pod annotations. Supports templating (e.g., {{ .Release.Name }}).
   podAnnotations: {}
-  ## @param orchestration.podLabels can be used to define extra broker pod labels. Supports templating (e.g., {{ .Release.Name }}). The key `camunda.io/zone` is reserved: the chart assigns it from `orchestration.multiregion.zone` and scopes the broker anti-affinity and PodDisruptionBudget selectors on it, so setting it here is rejected.
+  ## @param orchestration.podLabels can be used to define extra broker pod labels. Supports templating (e.g., {{ .Release.Name }}).
   podLabels: {}
   ## @extra orchestration.podDisruptionBudget configuration to configure a pod disruption budget for the broker pods https://kubernetes.io/docs/tasks/run-application/configure-pdb/
   podDisruptionBudget:

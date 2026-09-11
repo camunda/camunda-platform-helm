@@ -546,21 +546,3 @@ func (s *ConfigmapTemplateTest) TestMigrationContactPoints() {
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
-
-// camunda.io/zone is the chart's discriminant between broker generations. A pod carrying it
-// outside a zoned render makes the numbered anti-affinity and PodDisruptionBudget selectors
-// stop matching, which drops the separation they ask for without failing anything.
-func (s *ConfigmapTemplateTest) TestZoneLabelIsReservedForTheChart() {
-	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, []testhelpers.TestCase{
-		{
-			Name: "TestRejectsZoneLabelInPodLabels",
-			Values: map[string]string{
-				`orchestration.podLabels.camunda\.io/zone`: "zone-a",
-				"orchestration.data.secondaryStorage.type": "elasticsearch",
-			},
-			Expected: map[string]string{
-				"ERROR": `orchestration.podLabels must not set "camunda.io/zone"`,
-			},
-		},
-	})
-}
