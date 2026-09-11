@@ -420,6 +420,10 @@ broker count without the diff naming the setting it ignored.
   NOTE: rejects a value that contradicts the zone list, not any value at all. Helm cannot
   distinguish a supplied default from the chart default, so a key still sitting on its
   default is left alone; restating the derived total is allowed and self-documenting.
+  Both checks are skipped while keepUnzonedBrokers is set: until the numbered generation
+  is removed, these two values still describe it. clusterSize divided by regions is the
+  retained StatefulSet's replica count and replicationFactor is rendered into its
+  ConfigMap, so forcing them to the zone totals would resize and restart it.
   Comparing every value against the derived one would reject every install, since the
   default differs from the zone sum on any real topology. The 3s below are those chart
   defaults. Helm exposes no chart-default view (.Chart carries Chart.yaml, and .Files
@@ -428,12 +432,12 @@ broker count without the diff naming the setting it ignored.
   */}}
   {{- $size := int .Values.orchestration.clusterSize -}}
   {{- $derivedSize := int (include "orchestration.clusterSize" .) -}}
-  {{- if and (ne $size 3) (ne $size $derivedSize) }}
+  {{- if and (not $mr.keepUnzonedBrokers) (ne $size 3) (ne $size $derivedSize) }}
     {{- fail (printf "[camunda][error] orchestration.clusterSize is %d but %s.zones sums to %d brokers. In zoned mode the zone list is authoritative; remove the key or make it agree." $size $mrKey $derivedSize) -}}
   {{- end }}
   {{- $factor := int .Values.orchestration.replicationFactor -}}
   {{- $derivedFactor := int (include "orchestration.replicationFactor" .) -}}
-  {{- if and (ne $factor 3) (ne $factor $derivedFactor) }}
+  {{- if and (not $mr.keepUnzonedBrokers) (ne $factor 3) (ne $factor $derivedFactor) }}
     {{- fail (printf "[camunda][error] orchestration.replicationFactor is %d but %s.zones sums to %d replicas. In zoned mode the zone list is authoritative; remove the key or make it agree." $factor $mrKey $derivedFactor) -}}
   {{- end }}
 {{- end }}

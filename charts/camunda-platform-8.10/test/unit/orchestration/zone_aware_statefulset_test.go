@@ -15,6 +15,8 @@
 package orchestration
 
 import (
+	"fmt"
+
 	"camunda-platform/test/unit/testhelpers"
 	"camunda-platform/test/unit/utils"
 	"strings"
@@ -269,4 +271,70 @@ func (s *StatefulSetTest) TestKeepUnzonedBrokersDoesNotRestartZonedBrokers() {
 	require.NotEmpty(s.T(), withChecksum)
 	require.Equal(s.T(), withChecksum, withoutChecksum)
 	require.Equal(s.T(), withUnzoned.Spec.Template, withoutUnzoned.Spec.Template)
+}
+
+// While keepUnzonedBrokers is set, clusterSize and replicationFactor still describe the
+// numbered generation: clusterSize divided by regions is the retained StatefulSet's replica
+// count, and replicationFactor is rendered into its ConfigMap. Forcing them to the zone
+// totals would resize and restart the brokers the migration exists to preserve, so the
+// zoned constraints must stand down until retention is disabled.
+func (s *StatefulSetTest) TestMigrationKeepsNumberedSizingValues() {
+	// clusterSize and replicationFactor are string-typed in the schema, so they have to go
+	// through --set-string rather than --set.
+	strValues := map[string]string{
+		"orchestration.clusterSize":       "4",
+		"orchestration.replicationFactor": "2",
+	}
+	numbered := map[string]string{
+		"orchestration.multiregion.regions":        "2",
+		"orchestration.multiregion.regionId":       "0",
+		"orchestration.data.secondaryStorage.type": "elasticsearch",
+	}
+
+	render := func(values map[string]string, name string) appsv1.StatefulSet {
+		output, err := helm.RenderTemplateE(s.T(), &helm.Options{
+			SetValues: values, SetStrValues: strValues,
+		}, s.chartPath, s.release, s.templates)
+		require.NoError(s.T(), err)
+		for _, doc := range strings.Split(output, "\n---\n") {
+			if !strings.Contains(doc, "name: "+name+"\n") {
+				continue
+			}
+			var sts appsv1.StatefulSet
+			helm.UnmarshalK8SYaml(s.T(), doc, &sts)
+			return sts
+		}
+		require.Failf(s.T(), "statefulset not found", "no StatefulSet named %q", name)
+		return appsv1.StatefulSet{}
+	}
+
+	before := render(numbered, s.release+"-zeebe")
+
+	// One zone and several zones take different paths: a single zone is one failure domain, so
+	// the chart still generates initial-contact-points, while more than one hands that to the
+	// operator. The retained generation must be untouched either way.
+	for _, zoneCount := range []int{1, 2, 3} {
+		migrating := utils.MergeMaps(numbered, map[string]string{
+			"orchestration.multiregion.mode":               "zoned",
+			"orchestration.multiregion.zone":               "zone-a",
+			"orchestration.multiregion.keepUnzonedBrokers": "true",
+		})
+		for i := 0; i < zoneCount; i++ {
+			prefix := fmt.Sprintf("orchestration.multiregion.zones[%d].", i)
+			migrating[prefix+"name"] = fmt.Sprintf("zone-%c", rune('a'+i))
+			migrating[prefix+"numberOfBrokers"] = "2"
+			migrating[prefix+"numberOfReplicas"] = "1"
+			migrating[prefix+"priority"] = fmt.Sprintf("%d", 100-i*10)
+		}
+
+		retained := render(migrating, s.release+"-zeebe")
+		require.Equalf(s.T(), *before.Spec.Replicas, *retained.Spec.Replicas,
+			"entering migration with %d zone(s) must not resize the retained StatefulSet", zoneCount)
+		require.Equalf(s.T(), before.Spec.Template, retained.Spec.Template,
+			"entering migration with %d zone(s) must not change the retained pod template", zoneCount)
+
+		zoned := render(migrating, s.release+"-zeebe-zone-a")
+		require.Equalf(s.T(), int32(2), *zoned.Spec.Replicas,
+			"zoned StatefulSet takes its replicas from its own zone entry, %d zone(s)", zoneCount)
+	}
 }

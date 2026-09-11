@@ -11,7 +11,7 @@ Each Helm release manages one Kubernetes cluster and one local zone. Repeat the 
 - Confirm that the Orchestration image supports zone-aware clustering and the management API operations used below.
 - Prepare the complete, identical `orchestration.multiregion.zones` topology for every participating release.
 - Set `orchestration.multiregion.zone` to the local zone for the release being upgraded.
-- Ensure the local Kubernetes cluster has enough capacity for both broker generations and their persistent volumes.
+- Ensure the local Kubernetes cluster can schedule both broker generations at once. The default pod anti-affinity is hard and keyed on hostname, and both generations carry the same `app.kubernetes.io/component` label, so each zoned broker needs its own schedulable node in addition to the nodes the numbered brokers already occupy, for the duration of the migration. On a fixed node pool, scale it up before starting and back down after step 3; with a cluster autoscaler the extra nodes are provisioned on demand. Also ensure there is room for both generations' persistent volumes.
 - Back up the Helm values and confirm that the existing numbered StatefulSet and its PVCs are healthy.
 - For brokers owned by other Helm releases or Kubernetes clusters, provide externally resolvable contact points through `CAMUNDA_CLUSTER_INITIALCONTACTPOINTS`. The chart generates contact points only for resources owned by the local release:
 
@@ -59,7 +59,7 @@ The release should now contain both the zone-suffixed StatefulSet and the retain
 
 During this coexistence phase, the zoned configuration's `cluster.size` and `replication-factor` describe the zoned topology. The retained numbered brokers are temporary migration members and are not added to those derived values.
 
-Verify that the existing numbered pods were not restarted and that the new zoned pods become ready before continuing.
+Verify that the new zoned pods become ready before continuing. The existing numbered pods may roll if you changed `CAMUNDA_CLUSTER_INITIALCONTACTPOINTS`, because `orchestration.env` applies to both generations; that is expected. What must hold is that they come back with the same node IDs and their existing volumes, which is what preserves their identity.
 
 ## 2. Move the local zone through the management API
 
@@ -99,7 +99,7 @@ orchestration:
     keepUnzonedBrokers: false
 ```
 
-The old `regions` and `regionId` values are no longer used by the zoned resources and may be removed or reset in the same upgrade. Upgrade the release again with the same chart line:
+The old `regions` and `regionId` values are no longer used by the zoned resources and may be removed or reset in the same upgrade. Set `orchestration.clusterSize` and `orchestration.replicationFactor` to the zone-list totals, or remove them, in this same upgrade: while `keepUnzonedBrokers` was enabled they described the retained numbered generation, and the zoned constraints now require them to agree with the zone list. Upgrade the release again with the same chart line:
 
 ```bash
 helm upgrade <release> camunda/camunda-platform \
