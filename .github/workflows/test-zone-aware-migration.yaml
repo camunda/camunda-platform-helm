@@ -1,0 +1,52 @@
+name: "Test - Zone-aware migration"
+
+on:
+  pull_request:
+    paths:
+      - "charts/camunda-platform-8.10/templates/orchestration/**"
+      - "charts/camunda-platform-8.10/templates/common/constraints.tpl"
+      - "charts/camunda-platform-8.10/test/integration/scenarios/zone-aware-migration/**"
+      - ".github/workflows/test-zone-aware-migration.yaml"
+  workflow_dispatch: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  zone-aware-migration:
+    name: Zone-aware migration - KIND
+    runs-on: ubuntu-latest
+    env:
+      chartPath: charts/camunda-platform-8.10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Install tools
+        uses: ./.github/actions/install-tool-versions
+        with:
+          tools: |
+            kind
+            kubectl
+            helm
+
+      # Single node: an anti-affinity that is not scoped per generation only fails to
+      # schedule when there is nowhere else to place the zoned broker.
+      - name: Create KIND cluster
+        run: kind create cluster --name zone-aware-migration --wait 120s
+
+      - name: Add helm repos
+        run: make helm.repos-add
+
+      - name: Get Helm dependency
+        run: make helm.dependency-update
+
+      - name: Verify the migration sequence
+        run: ${{ env.chartPath }}/test/integration/scenarios/zone-aware-migration/verify-zone-aware-migration.sh
+
+      - name: Collect diagnostics
+        if: failure()
+        run: make diagnostics.print namespace=zone-aware-migration
