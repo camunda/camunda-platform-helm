@@ -1,0 +1,42 @@
+name: Test - Autofix Publisher
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - .github/workflows/chart-chores.yaml
+      - .github/workflows/renovate-post-upgrade.yaml
+      - .github/workflows/commit-generated-template.yaml
+      - .github/workflows/test-autofix-publisher.yaml
+      - scripts/autofix-publisher/**
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/chart-chores.yaml
+      - .github/workflows/renovate-post-upgrade.yaml
+      - .github/workflows/commit-generated-template.yaml
+      - .github/workflows/test-autofix-publisher.yaml
+      - scripts/autofix-publisher/**
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with:
+          go-version-file: scripts/autofix-publisher/go.mod
+          cache-dependency-path: scripts/autofix-publisher/go.sum
+      - name: Test publisher security contracts
+        working-directory: scripts/autofix-publisher
+        run: go test -race -count=1 ./...

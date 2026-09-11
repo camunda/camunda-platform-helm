@@ -3,6 +3,7 @@
 name: Renovate - Post Upgrade Tasks
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - 'renovate/*'
@@ -23,39 +24,19 @@ permissions:
 
 jobs:
   run:
+    if: startsWith(github.ref_name, 'renovate/')
     name: Update golden files
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     permissions:
-      id-token: write
+      contents: read
+    outputs:
+      committed: ${{ steps.commit.outputs.committed }}
     steps:
-      - name: Import Vault secrets for Harbor
-        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
-        id: vault-harbor
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secrets: |
-            secret/data/products/distribution/ci GH_APP_ID_DISTRO_CI;
-            secret/data/products/distribution/ci GH_APP_PRIVATE_KEY_DISTRO_CI;
-          exportEnv: false
-      #
-      # Checkout.
-      #
-      - name: Generate GitHub token
-        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
-        id: generate-github-token
-        with:
-          app_id: ${{ steps.vault-harbor.outputs.GH_APP_ID_DISTRO_CI }}
-          private_key: ${{ steps.vault-harbor.outputs.GH_APP_PRIVATE_KEY_DISTRO_CI }}
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          token: '${{ steps.generate-github-token.outputs.token }}'
-          repository: ${{ github.event.pull_request.head.repo.full_name }}
-          ref: ${{ github.event.pull_request.head.ref }}
+          ref: ${{ github.sha }}
           fetch-depth: 0
-          # Credentials are re-introduced only in the final push step.
           persist-credentials: false
       - name: Configure curl and wget
         uses: ./.github/actions/setup-curl
@@ -93,12 +74,12 @@ jobs:
       - name: Set vars
         run: |
           CHANGED_CHARTS=$(ct list-changed | tr '\n' ' ')
-          echo "CHANGED_CHARTS=${CHANGED_CHARTS}" | tee -a $GITHUB_ENV
+          echo "CHANGED_CHARTS=${CHANGED_CHARTS}" | tee -a "$GITHUB_ENV"
           # Build exclude pattern from supportExtended + endOfLife in charts/chart-versions.yaml.
           # Dots are escaped (8\.6 not 8.6) so the regex matches literal version strings only.
           EXCLUDED_VERSIONS=$(yq '.camundaVersions.supportExtended + .camundaVersions.endOfLife | map(. | sub("\.", "\\.")) | join("|")' charts/chart-versions.yaml)
           SUPPORTED_CHANGED=$(echo "${CHANGED_CHARTS}" | tr ' ' '\n' | grep -Ev "camunda-platform-(${EXCLUDED_VERSIONS})([^0-9]|$)" | tr '\n' ' ' | xargs || true)
-          echo "SUPPORTED_CHANGED=${SUPPORTED_CHANGED}" | tee -a $GITHUB_ENV
+          echo "SUPPORTED_CHANGED=${SUPPORTED_CHANGED}" | tee -a "$GITHUB_ENV"
       - name: Run go mod tidy
         run: |
           set -euo pipefail
@@ -133,29 +114,40 @@ jobs:
           else
             echo "No supported chart changes, skipping schema update."
           fi
-      - name: Git pull
-        run: git pull --rebase --autostash .
       - uses: EndBug/add-and-commit@cc9c08ba6c8df3b93a8f2db63e89b98368ae2ae8 # v11.1.1
         id: commit
         with:
           author_name: "renovate[bot]"
           author_email: "29139614+renovate[bot]@users.noreply.github.com"
           message: "chore(deps): post upgrade tasks - go mod tidy, update golden files, readme, and schema"
-          # Pushing is done by the next step; checkout does not persist credentials, so the
-          # action's own fetch and push must both be disabled.
           fetch: false
           push: false
-      - name: Push changes
+      - name: Export generated commit
         if: steps.commit.outputs.committed == 'true'
         env:
-          GH_APP_TOKEN: ${{ steps.generate-github-token.outputs.token }}
-          TARGET_REF: ${{ github.ref_name }}
+          BASE_SHA: ${{ github.sha }}
         run: |
-          set -euo pipefail
-          # Credential is supplied per-command via a helper reading the step env, so the token is
-          # neither written to .git/config nor visible in the process arguments. hooksPath is
-          # neutralized so no repo-provided hook runs with the token in its environment.
-          git -c core.hooksPath=/dev/null \
-              -c credential.helper= \
-              -c credential.helper='!f() { echo username=x-access-token; echo "password=${GH_APP_TOKEN}"; }; f' \
-              push origin "HEAD:refs/heads/${TARGET_REF}"
+          git bundle create "$RUNNER_TEMP/changes.bundle" HEAD "^${BASE_SHA}"
+      - name: Upload generated commit
+        if: steps.commit.outputs.committed == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: renovate-chores-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/changes.bundle
+          if-no-files-found: error
+          retention-days: 1
+
+  push:
+    needs: run
+    if: needs.run.outputs.committed == 'true'
+    permissions: {}
+    uses: ./.github/workflows/commit-generated-template.yaml
+    with:
+      artifact-name: renovate-chores-${{ github.run_id }}-${{ github.run_attempt }}
+      base-sha: ${{ github.sha }}
+      target-ref: ${{ github.ref_name }}
+      update-modules: true
+    secrets:
+      VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
+      VAULT_ROLE_ID: ${{ secrets.VAULT_ROLE_ID }}
+      VAULT_SECRET_ID: ${{ secrets.VAULT_SECRET_ID }}
