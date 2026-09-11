@@ -477,27 +477,8 @@ spec:
         {{- toYamlPretty . | nindent 8 }}
       {{- end }}
       {{- with .Values.orchestration.affinity }}
-      {{- /* NOTE: Scope positive broker-only selectors to the rendered generation. */ -}}
-      {{- $aff := deepCopy . -}}
-      {{- $gen := ternary "zoned" "numbered" (eq $.OrchestrationRender.scope "zoned") -}}
-      {{- $broker := include "orchestration.brokerName" $ -}}
-      {{- range $term := ((($aff.podAntiAffinity).requiredDuringSchedulingIgnoredDuringExecution) | default list) -}}
-      {{- $sel := index $term "labelSelector" -}}
-      {{- $selectsBroker := false -}}
-      {{- range $expr := (($sel.matchExpressions) | default list) -}}
-      {{- if and (eq $expr.key "app.kubernetes.io/component") (eq $expr.operator "In") (eq (len ($expr.values | default list)) 1) (has $broker ($expr.values | default list)) -}}
-      {{- $selectsBroker = true -}}
-      {{- end -}}
-      {{- end -}}
-      {{- if eq (dig "app.kubernetes.io/component" "" (($sel.matchLabels) | default dict)) $broker -}}
-      {{- $selectsBroker = true -}}
-      {{- end -}}
-      {{- if $selectsBroker -}}
-      {{- $_ := set $sel "matchExpressions" (append (($sel.matchExpressions) | default list) (dict "key" "camunda.io/broker-generation" "operator" "In" "values" (list $gen))) -}}
-      {{- end -}}
-      {{- end }}
       affinity:
-        {{- toYamlPretty $aff | nindent 8 }}
+        {{- tpl (toYaml .) $ | fromYaml | toYamlPretty | nindent 8 }}
       {{- end }}
       {{- with .Values.orchestration.tolerations }}
       tolerations:

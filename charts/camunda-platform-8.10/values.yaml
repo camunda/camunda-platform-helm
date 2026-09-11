@@ -2725,12 +2725,13 @@ orchestration:
   nodeSelector: {}
   ## @param orchestration.tolerations can be used to define pod toleration's https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
   tolerations: []
-  ## @extra orchestration.affinity can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
-  # The default defined PodAntiAffinity allows constraining on which nodes the pods are scheduled on https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#inter-pod-affinity-and-anti-affinity
-  # It uses a hard requirement for scheduling and works based on the pod labels
+  ## @extra orchestration.affinity can be used to define pod affinity or anti-affinity. By default, brokers from the same generation are scheduled on different nodes. https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
   ## @skip orchestration.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[0].key
   ## @skip orchestration.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[0].operator
   ## @skip orchestration.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[0].values
+  ## @skip orchestration.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[1].key
+  ## @skip orchestration.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[1].operator
+  ## @skip orchestration.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[1].values
   ## @skip orchestration.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].topologyKey
   affinity:
     podAntiAffinity:
@@ -2739,9 +2740,12 @@ orchestration:
             matchExpressions:
               - key: "app.kubernetes.io/component"
                 operator: In
-                # NOTE: The value is set to "zeebe-broker" for backward compatibility between 8.7 and 8.8.
                 values:
                   - zeebe-broker
+              - key: "camunda.io/broker-generation"
+                operator: In
+                values:
+                  - '{{ ternary "zoned" "numbered" (eq .OrchestrationRender.scope "zoned") }}'
           topologyKey: "kubernetes.io/hostname"
 
   ## @param orchestration.topologySpreadConstraints can be used to define how broker pods are spread across topology domains https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/
