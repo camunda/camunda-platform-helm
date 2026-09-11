@@ -1818,7 +1818,7 @@ jobs:
         run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
 
       - name: Download deploy-camunda binary
-        timeout-minutes: 10
+        timeout-minutes: 3
         uses: ./.github/actions/download-artifact-retry
         with:
           name: ${{ inputs.binary-artifact-name }}

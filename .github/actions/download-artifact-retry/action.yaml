@@ -24,7 +24,7 @@ runs:
     - name: Back off before attempt 2
       if: steps.attempt-1.outcome == 'failure'
       shell: bash
-      run: sleep 15
+      run: sleep 5
 
     - name: Download ${{ inputs.name }} (attempt 2)
       id: attempt-2
@@ -38,7 +38,7 @@ runs:
     - name: Back off before attempt 3
       if: steps.attempt-1.outcome == 'failure' && steps.attempt-2.outcome == 'failure'
       shell: bash
-      run: sleep 45
+      run: sleep 15
 
     - name: Download ${{ inputs.name }} (attempt 3)
       if: steps.attempt-1.outcome == 'failure' && steps.attempt-2.outcome == 'failure'
