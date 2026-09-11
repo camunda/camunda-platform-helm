@@ -675,6 +675,28 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 					"admin permissions should not reference the literal default optimize-api once a custom audience is set")
 			},
 		}, {
+			// Regression test for camunda/identity#5152: the cluster-ping role must always
+			// render, since Identity's bundled mapping rule that targets it is not conditional.
+			// Only the mapping rule itself stays gated behind the hub-ping opt-in.
+			Name: "TestClusterPingRoleAlwaysRendersRegardlessOfHubPing",
+			Values: map[string]string{
+				"identity.enabled":                      "true",
+				"global.identity.auth.enabled":          "true",
+				"global.security.authentication.method": "oidc",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+
+				applicationYaml := configmap.Data["application.yaml"]
+				s.Require().Contains(applicationYaml, "Hub API - Cluster Ping",
+					"the cluster-ping role must always be provisioned, since the bundled "+
+						"identity.mapping-rules entry that targets it is not conditional")
+				s.Require().NotContains(applicationYaml, "Hub API - Cluster Ping Access",
+					"the cluster-ping mapping rule itself should stay opt-in via "+
+						"orchestration.hub.ping / hubPingAuthorizationEnabled")
+			},
+		}, {
 			Name: "TestHubPingAddsOrchestrationPermissionsAndMappingRule",
 			Values: map[string]string{
 				"identity.enabled":                                               "true",
