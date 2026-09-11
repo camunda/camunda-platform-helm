@@ -1287,7 +1287,9 @@ integration:
           dependencies:
             - chart: charts/internal-keycloak-26
               release-name: keycloak
-              values-file: test/integration/companion-values/keycloak.yaml
+              values-file: test/integration/companion-values/keycloak-fixed-issuer.yaml
+              env-vars:
+                - CAMUNDA_HOSTNAME
             - chart: elastic/elasticsearch
               version: 8.5.1
               release-name: elasticsearch
@@ -2011,7 +2013,6 @@ integration:
           tier: 2
           infra-type:
             gke: distroci
-          skip-e2e: true
           topology:
             name: hub-2orch-2optimize
             releases:
@@ -2063,6 +2064,7 @@ integration:
                 features:
                   - multinamespace-optimize-a
                 serves: orcha
+                tenant: default
                 optimize-context-path: /optimize-orcha
               - role: optimize
                 namespace-suffix: optb
@@ -2072,7 +2074,87 @@ integration:
                 features:
                   - multinamespace-optimize-b
                 serves: orchb
+                tenant: default
                 optimize-context-path: /optimize-orchb
+            shared-storage: elasticsearch
+            shared-storage-service: elasticsearch-master
+        - name: physicaltenants
+          enabled: true
+          shortname: ptnt
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            gke: distroci
+          skip-e2e: true
+          post-deploy:
+            script: post-deploy-physical-tenant-exporters.sh
+            description: |
+              After the complete topology is ready, asserts that default, tenanta, and
+              tenantb export; deploys one process through each Physical Tenant route; proves
+              each Optimize imports only its own process; and proves sibling client tokens
+              are rejected.
+          topology:
+            name: hub-1orch-2tenants
+            releases:
+              - role: hub
+                namespace-suffix: hub
+                identity: keycloak
+                features:
+                  - multinamespace-reset-clients
+                  - physicaltenants-hub
+                dependencies:
+                  - keycloak-fixed-issuer
+                  - postgresql
+                  - elasticsearch
+              - role: orchestration
+                namespace-suffix: orcha
+                depends-on: hub
+                identity: keycloak-external
+                persistence: elasticsearch-external
+                features:
+                  - physicaltenants-orchestration
+                env:
+                  ORCH_CONNECTORS_CLIENT_ID: connectors-orcha
+                  ORCH_OPTIMIZE_AUDIENCE: optimize-orcha-api
+                  ORCH_OPTIMIZE_CLIENT_ID: optimize-orcha-ta
+                  ORCH_ORCHESTRATION_AUDIENCE: orchestration-orcha-api
+                  ORCH_ORCHESTRATION_CLIENT_ID: orchestration-orcha
+                modeler-cluster-id: orcha
+                modeler-cluster-name: Orchestration A
+              - role: optimize
+                namespace-suffix: optdefault
+                depends-on: hub
+                identity: keycloak-external-optimize
+                persistence: elasticsearch-external
+                features:
+                  - physicaltenants-optimize-default
+                serves: orcha
+                tenant: default
+                optimize-context-path: /optimize-orcha-default
+              - role: optimize
+                namespace-suffix: optta
+                depends-on: hub
+                identity: keycloak-external-optimize
+                persistence: elasticsearch-external
+                features:
+                  - physicaltenants-optimize-ta
+                serves: orcha
+                tenant: tenanta
+                optimize-context-path: /optimize-orcha-ta
+              - role: optimize
+                namespace-suffix: opttb
+                depends-on: hub
+                identity: keycloak-external-optimize
+                persistence: elasticsearch-external
+                features:
+                  - physicaltenants-optimize-tb
+                serves: orcha
+                tenant: tenantb
+                optimize-context-path: /optimize-orcha-tb
             shared-storage: elasticsearch
             shared-storage-service: elasticsearch-master
     nightly:

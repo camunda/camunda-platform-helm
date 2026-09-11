@@ -1188,6 +1188,11 @@ func buildTopologyReleaseEnv(shared map[string]string, release matrix.TopologyRe
 		env["ORCH_ZEEBE_REST"] = env[token+"_ZEEBE_REST"]
 	}
 	if release.Role == "optimize" {
+		tenant := release.Tenant
+		if tenant == "" {
+			tenant = "default"
+		}
+		env["RELEASE_TENANT_ID"] = tenant
 		// RELEASE_-prefixed: buildScenarioEnv seeds this namespace from the process
 		// environment, where OPTIMIZE_CONTEXT_PATH is a name the Playwright suite reads
 		// (pages/SM-8.10/NavigationPage.ts). Keep the two namespaces from sharing a key.
@@ -1234,6 +1239,16 @@ func extractHelmSetValue(pairs []string, key string) string {
 		}
 	}
 	return value
+}
+
+// preparedTopologyRelease pairs a topology release with the flags and prepared scenario built for
+// it, so the deploy loop and the topology-level post-deploy hook can both address it.
+type preparedTopologyRelease struct {
+	release   matrix.TopologyRelease
+	flags     *config.RuntimeFlags
+	namespace string
+	prepared  *deploy.PreparedScenario
+	cleanup   func()
 }
 
 func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOptions) error {
@@ -1338,13 +1353,6 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 		return fmt.Errorf("topology entry %s/%s: %w", entry.Version, entry.Scenario, err)
 	}
 
-	type preparedTopologyRelease struct {
-		release   matrix.TopologyRelease
-		flags     *config.RuntimeFlags
-		namespace string
-		prepared  *deploy.PreparedScenario
-		cleanup   func()
-	}
 	preparedReleases := make([]preparedTopologyRelease, 0, len(order))
 	defer func() {
 		for _, release := range preparedReleases {
@@ -1421,6 +1429,158 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 		}
 	}
 
+	if err := runTopologyPostDeployHook(ctx, entry, opts, preparedReleases); err != nil {
+		return err
+	}
+
+	return runTopologyE2ELegs(ctx, entry, opts, platform, contexts, crossRefEnv, orchestrationIndices)
+}
+
+// runTopologyPostDeployHook runs the scenario's post-deploy hook once, after every release in the
+// topology has deployed. synthesizeReleaseEntry deliberately clears PostDeploy on each synthesized
+// release, so without this the hook is registered against nothing and never runs: the lifecycle
+// boundary of a topology hook is the whole topology, not any one release in it.
+//
+// It runs before, and independently of, the e2e legs. A topology that sets skip-e2e still has to
+// prove its post-deploy assertions - for physicaltenants the hook is the only per-tenant Optimize
+// coverage there is, because the browser suite cannot express it yet.
+func runTopologyPostDeployHook(ctx context.Context, entry matrix.Entry, opts matrix.RunOptions, releases []preparedTopologyRelease) error {
+	if entry.PostDeploy == nil {
+		return nil
+	}
+	flags := topologyHookFlags(releases)
+	if flags == nil {
+		return fmt.Errorf("topology entry %s/%s: post-deploy hook declared but the topology prepared no release to run it against", entry.Version, entry.Scenario)
+	}
+	if err := matrix.RunDeclarativePostDeployHook(ctx, flags, entry.PostDeploy, opts.RepoRoot, entry.Version, entry.Scenario); err != nil {
+		return fmt.Errorf("topology entry %s/%s: post-deploy hook: %w", entry.Version, entry.Scenario, err)
+	}
+	return nil
+}
+
+// topologyHookFlags picks the release a topology-level hook runs against. Hook scripts read
+// TEST_NAMESPACE as the namespace to inspect workloads in, and they inspect the orchestration
+// release (Zeebe partitions, exporters), so the orchestration release's flags are the ones to use;
+// its ExtraEnv already carries the whole cross-reference env, so the Hub and per-Optimize values
+// the scripts also read resolve from it. With more than one orchestration release the first in
+// deploy order wins, matching ORCH_NAMESPACE, which is only set for a single-orchestration topology.
+func topologyHookFlags(releases []preparedTopologyRelease) *config.RuntimeFlags {
+	for _, release := range releases {
+		if release.release.Role == "orchestration" {
+			return release.flags
+		}
+	}
+	if len(releases) > 0 {
+		return releases[0].flags
+	}
+	return nil
+}
+
+// runTopologyE2ELegs runs e2e once the entire topology is deployed. Reaching this point means every
+// release's helm install returned successfully, and helm --wait already gated each one on workload
+// readiness, so the topology is up.
+//
+// Legs come from matrix.TopologyE2ELegs, the same computation that produces the CI smoke matrix, so
+// a local run and a CI run agree on how many legs a topology has and which namespaces each targets.
+// Legs run sequentially and every failure is collected: one tenant's failure must not hide another's
+// result.
+func runTopologyE2ELegs(
+	ctx context.Context,
+	entry matrix.Entry,
+	opts matrix.RunOptions,
+	platform string,
+	contexts []*deploy.ScenarioContext,
+	crossRefEnv map[string]string,
+	orchestrationIndices []int,
+) error {
+	if !opts.TestE2E && !opts.TestAll {
+		return nil
+	}
+	if entry.SkipE2E {
+		fmt.Fprintf(os.Stdout, "topology %s: e2e skipped (skip-e2e)\n", entry.Scenario)
+		return nil
+	}
+
+	legs := matrix.TopologyE2ELegs(entry.Topology)
+	if len(legs) == 0 {
+		return nil
+	}
+
+	// Namespaces are only knowable per release index, so map each release's suffix to its context.
+	nsBySuffix := map[string]string{}
+	relBySuffix := map[string]matrix.TopologyRelease{}
+	hubNamespace := ""
+	for i, rel := range entry.Topology.Releases {
+		nsBySuffix[rel.NamespaceSuffix] = contexts[i].Namespace
+		relBySuffix[rel.NamespaceSuffix] = rel
+		if rel.Role == "hub" {
+			hubNamespace = contexts[i].Namespace
+		}
+	}
+	// Without the Hub namespace, run-e2e-tests.sh renders the env from the orchestration namespace
+	// alone, so Web Modeler, Management Identity and Keycloak resolve to the orchestration host where
+	// they do not exist and the setup project times out before any test runs.
+	if hubNamespace == "" {
+		return fmt.Errorf("topology %s: no hub release, so the e2e env cannot resolve Identity, Keycloak or Web Modeler", entry.Scenario)
+	}
+
+	var failures []string
+	for _, leg := range legs {
+		orchestrationNamespace := nsBySuffix[leg.OrchestrationSuffix]
+		if orchestrationNamespace == "" {
+			failures = append(failures, fmt.Sprintf("leg %q: no deployed namespace for that orchestration release", leg.OrchestrationSuffix))
+			continue
+		}
+		optimizeNamespace := ""
+		if leg.OptimizeSuffix != "" {
+			optimizeNamespace = nsBySuffix[leg.OptimizeSuffix]
+			if optimizeNamespace == "" {
+				failures = append(failures, fmt.Sprintf("leg %q: no deployed namespace for optimize release %q", leg.OrchestrationSuffix, leg.OptimizeSuffix))
+				continue
+			}
+		}
+
+		rel := relBySuffix[leg.OrchestrationSuffix]
+		releaseEntry := synthesizeReleaseEntry(entry, rel, platform)
+		releaseOpts := synthesizeReleaseOpts(opts, platform, orchestrationNamespace)
+		if hostKey := topologyReleaseHostKey(rel.Role, rel.NamespaceSuffix, len(orchestrationIndices)); hostKey != "" {
+			if host := crossRefEnv[hostKey]; host != "" {
+				releaseOpts.ExtraHelmSets = append(releaseOpts.ExtraHelmSets, "global.host="+host)
+			}
+		}
+
+		flags, namespace, _, _, cleanup, buildErr := matrix.BuildEntryFlags(releaseEntry, releaseOpts)
+		if buildErr != nil {
+			cleanup()
+			failures = append(failures, fmt.Sprintf("leg %q: build flags: %v", leg.OrchestrationSuffix, buildErr))
+			continue
+		}
+		applyTopologyReleaseOverrides(flags, buildTopologyReleaseEnv(crossRefEnv, rel))
+		// synthesizeReleaseEntry disables e2e for the deploy loop; re-enable it for this leg only.
+		flags.Test.RunE2ETests = true
+		flags.Test.HubNamespace = hubNamespace
+		flags.Test.OptimizeNamespace = optimizeNamespace
+		flags.Test.OptimizeContextPath = leg.OptimizeContextPath
+		flags.Test.ModelerClusterName = leg.ModelerClusterName
+
+		testErr := deploy.RunTests(ctx, flags, namespace)
+		cleanup()
+
+		label := leg.OrchestrationSuffix
+		if leg.OptimizeSuffix != "" {
+			label = fmt.Sprintf("%s+%s", leg.OrchestrationSuffix, leg.OptimizeSuffix)
+		}
+		status := "OK"
+		if testErr != nil {
+			status = fmt.Sprintf("FAILED: %v", testErr)
+			failures = append(failures, fmt.Sprintf("leg %q: %v", label, testErr))
+		}
+		fmt.Fprintf(os.Stdout, "topology e2e %s/%s (namespace %s): %s\n", entry.Scenario, label, namespace, status)
+	}
+
+	if len(failures) > 0 {
+		return fmt.Errorf("topology %s: e2e failed for %d of %d legs:\n  - %s", entry.Scenario, len(failures), len(legs), strings.Join(failures, "\n  - "))
+	}
 	return nil
 }
 
@@ -1556,9 +1716,10 @@ func synthesizeReleaseEntry(entry matrix.Entry, rel matrix.TopologyRelease, plat
 		Features:     features,
 		Dependencies: rel.ResolvedDependencies,
 	}
-	if rel.Role == "orchestration" {
-		releaseEntry.PostDeploy = entry.PostDeploy
-	}
+	// e2e is a topology-level concern, not a per-release one: a release's deploy returns while later
+	// releases are still undeployed, so testing here would test a partial topology (and would repeat
+	// for every orchestration release). runTopologyEntry runs the legs once the whole topology is up.
+	releaseEntry.SkipE2E = true
 	return releaseEntry
 }
 
