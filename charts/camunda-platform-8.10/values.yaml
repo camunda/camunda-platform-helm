@@ -2308,9 +2308,9 @@ orchestration:
     ## brokers join the cluster.
     ## @param orchestration.multiregion.mode selects how a broker learns which failure domain it belongs to. `numbered` derives a region from the node ID, `zoned` takes a zone name.
     mode: numbered
-    ## @param orchestration.multiregion.zone can be used to define the zone of this Orchestration Cluster deployment when using zoned mode.
+    ## @param orchestration.multiregion.zone can be used to define the zone of this Orchestration Cluster deployment when using zoned mode. Must be an RFC 1123 label of at most 32 characters to fit zone-suffixed resource names.
     zone: ""
-    ## @extra orchestration.multiregion.zones[0].name name of the zone. It is the prefix of the composite broker member ID `<zone>_<index>`, must be an RFC 1123 label, and one of these names must be selected by `orchestration.multiregion.zone`.
+    ## @extra orchestration.multiregion.zones[0].name name of the zone. It is the prefix of the composite broker member ID `<zone>_<index>`, must be an RFC 1123 label of at most 32 characters to fit zone-suffixed resource names, and one of these names must be selected by `orchestration.multiregion.zone`.
     ## @extra orchestration.multiregion.zones[0].numberOfBrokers number of brokers deployed in this zone. For the local zone it is also the StatefulSet replica count.
     ## @extra orchestration.multiregion.zones[0].numberOfReplicas number of partition replicas this zone holds. Cannot exceed `numberOfBrokers`.
     ## @extra orchestration.multiregion.zones[0].priority priority of this zone in the leader election. Must be at least `1`.
