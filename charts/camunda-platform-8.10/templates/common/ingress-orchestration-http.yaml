@@ -15,7 +15,7 @@ metadata:
     {{- $restProxyVerify := include "camundaPlatform.orchestrationProxyVerifyAnnotations" . | fromYaml }}
     {{- include "common.tplvalues.merge-overwrite" (dict
       "values" (list
-        .Values.global.ingress.annotations
+        (include "camundaPlatform.ingressAnnotations" . | fromYaml)
         (dict "nginx.ingress.kubernetes.io/backend-protocol" "HTTPS")
         ($restProxyVerify | default (dict))
       )

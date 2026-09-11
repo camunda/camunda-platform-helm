@@ -270,6 +270,11 @@
                             "description": "Ingress.className defines the class or configuration of ingress which should be used by the controller",
                             "default": "nginx"
                         },
+                        "nginxCompatAnnotations": {
+                            "type": "boolean",
+                            "description": "if true, the chart injects the ingress-nginx annotations it used to ship as values defaults (`ssl-redirect`, `proxy-buffering`, `proxy-buffer-size` and `proxy-body-size` on the HTTP Ingress, `ssl-redirect`, `backend-protocol` and `proxy-buffer-size` on the gRPC Ingress). DEPRECATED since 15.0.0; the shim is removed in the next major and the annotations become opt-in. Set it to false to render controller-neutral Ingress objects today, and set whatever your own controller needs through the annotations values instead.",
+                            "default": true
+                        },
                         "pathType": {
                             "type": "string",
                             "description": "can be used to define the Ingress path type. https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types",

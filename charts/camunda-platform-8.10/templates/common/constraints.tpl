@@ -1315,6 +1315,15 @@ The following values inside your values.yaml need to be set but were not:
     {{- end }}
   {{- end }}
 
+  {{- if and (eq (include "camundaPlatform.nginxCompatAnnotationsInjecting" .) "true") (or (and .Values.global.ingress.enabled (not .Values.global.ingress.external)) (eq (include "camundaPlatform.grpcIngressRendered" .) "true")) }}
+    {{- $warningMessage := printf "%s %s %s"
+        "[camunda][warning]"
+        "DEPRECATION: global.ingress.nginxCompatAnnotations is enabled, so the chart still injects the ingress-nginx annotations it used to ship as values defaults. They render whatever ingress controller you run, and only ingress-nginx reads them."
+        "The shim is removed in the next major. Set whatever your controller needs through global.ingress.annotations and orchestration.ingress.grpc.annotations, then set global.ingress.nginxCompatAnnotations to false."
+    -}}
+    {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+  {{- end }}
+
   {{- $httpTLSComponents := list }}
   {{- if eq (include "camundaPlatform.orchestrationHTTPIngressRendered" .) "true" }}
     {{- $httpTLSComponents = append $httpTLSComponents "global.tls.orchestration.rest" }}

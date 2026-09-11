@@ -1287,6 +1287,61 @@ those keys, so there is no alternative source to detect.
 Each mirrors the guard of the template named after it, so callers that need to
 reason about those manifests (constraints.tpl) cannot drift from what renders.
 */}}
+{{/*
+[camunda-platform] The ingress-nginx annotation sets the chart used to ship as
+values defaults. Injected only while global.ingress.nginxCompatAnnotations is on;
+user-provided keys win over them.
+*/}}
+{{- define "camundaPlatform.legacyNginxIngressAnnotations" -}}
+nginx.ingress.kubernetes.io/ssl-redirect: "false"
+nginx.ingress.kubernetes.io/proxy-buffering: "on"
+nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
+nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+{{- end -}}
+
+{{- define "camundaPlatform.legacyNginxGrpcIngressAnnotations" -}}
+nginx.ingress.kubernetes.io/ssl-redirect: "false"
+nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
+nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
+{{- end -}}
+
+{{- define "camundaPlatform.ingressAnnotations" -}}
+  {{- $user := .Values.global.ingress.annotations | default dict -}}
+  {{- $compat := dict -}}
+  {{- if .Values.global.ingress.nginxCompatAnnotations -}}
+    {{- $compat = include "camundaPlatform.legacyNginxIngressAnnotations" . | fromYaml -}}
+  {{- end -}}
+  {{- toYaml (mergeOverwrite (deepCopy $compat) $user) -}}
+{{- end -}}
+
+{{- define "camundaPlatform.grpcIngressAnnotations" -}}
+  {{- $user := .Values.orchestration.ingress.grpc.annotations | default dict -}}
+  {{- $compat := dict -}}
+  {{- if .Values.global.ingress.nginxCompatAnnotations -}}
+    {{- $compat = include "camundaPlatform.legacyNginxGrpcIngressAnnotations" . | fromYaml -}}
+  {{- end -}}
+  {{- toYaml (mergeOverwrite (deepCopy $compat) $user) -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] "true" when the compatibility shim actually contributes a key
+the user has not set, which is the condition the deprecation warning reports.
+*/}}
+{{- define "camundaPlatform.nginxCompatAnnotationsInjecting" -}}
+  {{- $injecting := false -}}
+  {{- if .Values.global.ingress.nginxCompatAnnotations -}}
+    {{- $user := .Values.global.ingress.annotations | default dict -}}
+    {{- range $key, $value := (include "camundaPlatform.legacyNginxIngressAnnotations" . | fromYaml) -}}
+      {{- if not (hasKey $user $key) -}}{{- $injecting = true -}}{{- end -}}
+    {{- end -}}
+    {{- $grpcUser := .Values.orchestration.ingress.grpc.annotations | default dict -}}
+    {{- range $key, $value := (include "camundaPlatform.legacyNginxGrpcIngressAnnotations" . | fromYaml) -}}
+      {{- if not (hasKey $grpcUser $key) -}}{{- $injecting = true -}}{{- end -}}
+    {{- end -}}
+  {{- end -}}
+  {{- ternary "true" "false" $injecting -}}
+{{- end -}}
+
 {{- define "camundaPlatform.orchestrationHTTPIngressRendered" -}}
   {{- ternary "true" "false" (and .Values.global.ingress.enabled (not .Values.global.ingress.external) (eq (include "camundaPlatform.orchestrationEnabled" .) "true") .Values.orchestration.contextPath (eq (include "camundaPlatform.orchestrationRESTTLSEnabled" .) "true") | not | not) -}}
 {{- end -}}

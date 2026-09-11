@@ -355,6 +355,65 @@ func (s *ConfigMapWarningsTemplateTest) TestGlobalIdentityAuthConsoleDeprecation
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
+func (s *ConfigMapWarningsTemplateTest) TestNginxCompatAnnotationsDeprecationWarning() {
+	const warning = "global.ingress.nginxCompatAnnotations is enabled"
+
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestShimOnWithAnIngressWarns",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"global.ingress.enabled":                   "true",
+				"global.host":                              "camunda.example.com",
+				"orchestration.contextPath":                "/",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				warnings := configmap.Data["warnings"]
+				s.Require().Contains(warnings, warning)
+				s.Require().Contains(warnings, "removed in the next major")
+			},
+		},
+		{
+			Name: "TestShimOffDoesNotWarn",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"global.ingress.enabled":                   "true",
+				"global.ingress.nginxCompatAnnotations":    "false",
+				"global.host":                              "camunda.example.com",
+				"orchestration.contextPath":                "/",
+				"global.identity.auth.console.clientId":    "some-console-client",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().Contains(configmap.Data["warnings"], "global.identity.auth.console")
+				s.Require().NotContains(configmap.Data["warnings"], warning)
+			},
+		},
+		{
+			// No Ingress is rendered, so the shim injects nothing worth reporting.
+			Name: "TestShimOnWithoutAnyIngressDoesNotWarn",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"global.identity.auth.console.clientId":    "some-console-client",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().Contains(configmap.Data["warnings"], "global.identity.auth.console")
+				s.Require().NotContains(configmap.Data["warnings"], warning)
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
 func (s *ConfigMapWarningsTemplateTest) TestIngressUpstreamTLSControllerWarning() {
 	const warning = "Only ingress-nginx reads that annotation"
 
