@@ -1807,23 +1807,6 @@ jobs:
       deployments: write
       packages: read
     steps:
-      # Put deploy-camunda on PATH before failed-pods-info so its Go
-      # `diagnostics print` path runs here too, rather than the reduced kubectl
-      # fallback. download-artifact needs no workspace checkout.
-      - name: Download deploy-camunda binary
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
-        with:
-          name: ${{ inputs.binary-artifact-name }}
-          path: ${{ runner.temp }}/bin
-      - name: Add deploy-camunda to PATH
-        run: |
-          chmod +x "${RUNNER_TEMP}/bin/deploy-camunda"
-          echo "${RUNNER_TEMP}/bin" >> "$GITHUB_PATH"
-
-      - name: CI Cleanup - 🚨 Get failed Pods info 🚨
-        if: failure()
-        uses: ./.github/actions/failed-pods-info
-
       - name: CI Setup - Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -1833,6 +1816,18 @@ jobs:
 
       - name: CI Setup - Configure Git safe directory
         run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+
+      - name: Download deploy-camunda binary
+        timeout-minutes: 10
+        uses: ./.github/actions/download-artifact-retry
+        with:
+          name: ${{ inputs.binary-artifact-name }}
+          path: ${{ runner.temp }}/bin
+
+      - name: Add deploy-camunda to PATH
+        run: |
+          chmod +x "${RUNNER_TEMP}/bin/deploy-camunda"
+          echo "${RUNNER_TEMP}/bin" >> "$GITHUB_PATH"
 
       - name: CI Setup - ℹ️ Set workflow vars for both install and upgrade ℹ️
         id: vars
@@ -1895,6 +1890,10 @@ jobs:
           ROSA_USER:        ${{ secrets[inputs.username] }}
           ROSA_PASS:        ${{ secrets[inputs.password] }}
           CLUSTER_NAME:     ${{ env.INFRA_CLUSTER_NAME }}
+
+      - name: CI Cleanup - 🚨 Get failed Pods info 🚨
+        if: failure()
+        uses: ./.github/actions/failed-pods-info
 
       - name: Collect failed topology diagnostics
         if: needs.e2e-topology-smoke.result == 'failure' && inputs.is-topology

@@ -1,0 +1,48 @@
+name: Download artifact with retry
+description: Downloads an artifact, retrying on transient GitHub artifact-service faults. Fails if every attempt fails.
+
+inputs:
+  name:
+    description: Artifact name
+    required: true
+  path:
+    description: Destination directory for the downloaded artifact
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Download ${{ inputs.name }} (attempt 1)
+      id: attempt-1
+      continue-on-error: true
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      with:
+        name: ${{ inputs.name }}
+        path: ${{ inputs.path }}
+
+    - name: Back off before attempt 2
+      if: steps.attempt-1.outcome == 'failure'
+      shell: bash
+      run: sleep 15
+
+    - name: Download ${{ inputs.name }} (attempt 2)
+      id: attempt-2
+      if: steps.attempt-1.outcome == 'failure'
+      continue-on-error: true
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      with:
+        name: ${{ inputs.name }}
+        path: ${{ inputs.path }}
+
+    - name: Back off before attempt 3
+      if: steps.attempt-1.outcome == 'failure' && steps.attempt-2.outcome == 'failure'
+      shell: bash
+      run: sleep 45
+
+    - name: Download ${{ inputs.name }} (attempt 3)
+      if: steps.attempt-1.outcome == 'failure' && steps.attempt-2.outcome == 'failure'
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      with:
+        name: ${{ inputs.name }}
+        path: ${{ inputs.path }}
