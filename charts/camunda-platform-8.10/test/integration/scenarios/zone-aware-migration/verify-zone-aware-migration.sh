@@ -20,5 +20,8 @@ CHART_DIR="$(cd "${CHART_DIR}" && pwd)"
 REPO_ROOT="$(cd "${CHART_DIR}/../.." && pwd)"
 
 export CHART_DIR
+if [[ -n "${BASE_CHART_DIR:-}" ]]; then
+  export BASE_CHART_DIR="$(cd "${BASE_CHART_DIR}" && pwd)"
+fi
 cd "${REPO_ROOT}/scripts/zone-aware-migration"
 exec go run . "$@"

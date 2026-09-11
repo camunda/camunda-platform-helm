@@ -39,6 +39,12 @@ jobs:
             helm
             golang
 
+      - name: Checkout pre-change chart
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.event.pull_request.base.sha || 'main' }}
+          path: .migration-base
+
       # Single node: an anti-affinity that is not scoped per generation only fails to
       # schedule when there is nowhere else to place the zoned broker.
       - name: Create KIND cluster
@@ -51,7 +57,11 @@ jobs:
         run: make helm.dependency-update
 
       - name: Verify the migration sequence
-        run: make test.zone-aware-migration
+        env:
+          BASE_CHART_DIR: ${{ github.workspace }}/.migration-base/charts/camunda-platform-8.10
+        run: |
+          make -C .migration-base helm.dependency-update chartPath=charts/camunda-platform-8.10
+          make test.zone-aware-migration
 
       - name: Collect diagnostics
         if: failure()

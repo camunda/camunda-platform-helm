@@ -26,11 +26,12 @@ import (
 var errHelp = errors.New("help requested")
 
 type config struct {
-	chartDir    string
-	scenarioDir string
-	namespace   string
-	release     string
-	timeout     string
+	chartDir     string
+	baseChartDir string
+	scenarioDir  string
+	namespace    string
+	release      string
+	timeout      string
 }
 
 func parseConfig(args []string, lookupEnv func(string) string, stderr io.Writer) (config, error) {
@@ -46,16 +47,17 @@ func parseConfig(args []string, lookupEnv func(string) string, stderr io.Writer)
 		return config{}, fmt.Errorf("get working directory: %w", err)
 	}
 	cfg := config{
-		chartDir:  envOrDefault(lookupEnv, "CHART_DIR", filepath.Join(cwd, "charts/camunda-platform-8.10")),
-		namespace: "zone-aware-migration",
-		release:   envOrDefault(lookupEnv, "RELEASE", "zam"),
-		timeout:   envOrDefault(lookupEnv, "TIMEOUT", "5m"),
+		chartDir:     envOrDefault(lookupEnv, "CHART_DIR", filepath.Join(cwd, "charts/camunda-platform-8.10")),
+		baseChartDir: lookupEnv("BASE_CHART_DIR"),
+		namespace:    "zone-aware-migration",
+		release:      envOrDefault(lookupEnv, "RELEASE", "zam"),
+		timeout:      envOrDefault(lookupEnv, "TIMEOUT", "5m"),
 	}
 	flags := flag.NewFlagSet("zone-aware-migration", flag.ContinueOnError)
 	flags.SetOutput(stderr)
 	flags.Usage = func() {
 		fmt.Fprintln(stderr, "Usage: zone-aware-migration [namespace]")
-		fmt.Fprintln(stderr, "Environment: CHART_DIR, RELEASE, TIMEOUT")
+		fmt.Fprintln(stderr, "Environment: CHART_DIR, BASE_CHART_DIR (optional pre-upgrade chart), RELEASE, TIMEOUT")
 	}
 	if err := flags.Parse(args); err != nil {
 		if errors.Is(err, flag.ErrHelp) {

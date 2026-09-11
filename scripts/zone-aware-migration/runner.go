@@ -53,6 +53,15 @@ func (r runner) run(ctx context.Context) (err error) {
 		return fmt.Errorf("install numbered cluster: %w", err)
 	}
 	owned.release = true
+	if r.cfg.baseChartDir != "" {
+		if err := r.rollout(ctx, r.cfg.release+"-zeebe"); err != nil {
+			return err
+		}
+		args := []string{"upgrade", r.cfg.release, r.cfg.chartDir, "--namespace", r.cfg.namespace, "--values", filepath.Join(r.cfg.scenarioDir, "values-numbered.yaml"), "--timeout", r.cfg.timeout}
+		if _, err := r.command(ctx, "helm", args...); err != nil {
+			return fmt.Errorf("upgrade numbered chart before migration: %w", err)
+		}
+	}
 	if err := r.verifyMigration(ctx); err != nil {
 		return err
 	}
@@ -140,7 +149,11 @@ func (r runner) cleanup(ctx context.Context, owned ownership) error {
 }
 
 func (r runner) installArgs() []string {
-	return []string{"install", r.cfg.release, r.cfg.chartDir, "--namespace", r.cfg.namespace, "--values", filepath.Join(r.cfg.scenarioDir, "values-numbered.yaml"), "--timeout", r.cfg.timeout}
+	chartDir := r.cfg.chartDir
+	if r.cfg.baseChartDir != "" {
+		chartDir = r.cfg.baseChartDir
+	}
+	return []string{"install", r.cfg.release, chartDir, "--namespace", r.cfg.namespace, "--values", filepath.Join(r.cfg.scenarioDir, "values-numbered.yaml"), "--timeout", r.cfg.timeout}
 }
 
 func (r runner) migrationArgs(keep bool) []string {

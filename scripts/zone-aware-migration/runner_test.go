@@ -132,6 +132,24 @@ func successfulFake() *fakeCommander {
 	}, errors: map[string]error{}}
 }
 
+func TestRunner_upgradesBaseChartBeforeRecordingMigrationUID(t *testing.T) {
+	cmd := successfulFake()
+	cfg := testConfig()
+	cfg.baseChartDir = "/base-chart"
+	r := runner{cfg: cfg, command: cmd.run}
+	if err := r.run(context.Background()); err != nil {
+		t.Fatalf("run base upgrade: %v", err)
+	}
+	install := commandIndex(cmd.commands, "helm install zam /base-chart --namespace fresh --values /scenario/values-numbered.yaml --timeout 5m")
+	baseWait := commandIndexAfter(cmd.commands, "kubectl rollout status statefulset/zam-zeebe --namespace fresh --timeout 5m", install)
+	upgrade := commandIndexAfter(cmd.commands, "helm upgrade zam /chart --namespace fresh --values /scenario/values-numbered.yaml --timeout 5m", baseWait)
+	headWait := commandIndexAfter(cmd.commands, "kubectl rollout status statefulset/zam-zeebe --namespace fresh --timeout 5m", upgrade)
+	uid := commandIndexAfter(cmd.commands, "kubectl get pod zam-zeebe-0 --namespace fresh -o jsonpath={.metadata.uid}", headWait)
+	if install < 0 || baseWait < 0 || upgrade < 0 || headWait < 0 || uid < 0 {
+		t.Fatalf("base install and settled chart-only upgrade must precede migration UID: %v", cmd.commands)
+	}
+}
+
 func testConfig() config {
 	return config{chartDir: "/chart", scenarioDir: "/scenario", namespace: "fresh", release: "zam", timeout: "5m"}
 }
