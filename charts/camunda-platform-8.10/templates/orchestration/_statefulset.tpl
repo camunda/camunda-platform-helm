@@ -25,7 +25,9 @@ spec:
       labels:
         {{- include "orchestration.labels" . | nindent 8 }}
         {{- if .Values.orchestration.podLabels }}
-        {{- tpl (toYaml .Values.orchestration.podLabels) $ | nindent 8 }}
+        {{- $podLabels := tpl (toYaml .Values.orchestration.podLabels) $ | fromYaml -}}
+        {{- include "camundaPlatform.validateBrokerLabels" (dict "labels" $podLabels "zonedPodLabels" (eq .OrchestrationRender.scope "zoned")) -}}
+        {{- toYaml $podLabels | nindent 8 }}
         {{- end }}
       annotations:
         checksum/config: {{ include "orchestration.configChecksum" . }}

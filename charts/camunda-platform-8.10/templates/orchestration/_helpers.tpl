@@ -237,6 +237,7 @@ camunda.io/broker-generation: {{ if and .OrchestrationRender (eq .OrchestrationR
 
 {{- define "orchestration.labels" -}}
     {{- $labels := include "camundaPlatform.labels" . -}}
+    {{- include "camundaPlatform.validateBrokerLabels" (dict "labels" ($labels | fromYaml) "zonedPodLabels" false) -}}
     {{- if and .OrchestrationRender (eq .OrchestrationRender.scope "zoned") (hasKey (.Values.global.labels | default dict) "camunda.io/zone") -}}
       {{- $labels = omit ($labels | fromYaml) "camunda.io/zone" | toYaml -}}
     {{- end -}}

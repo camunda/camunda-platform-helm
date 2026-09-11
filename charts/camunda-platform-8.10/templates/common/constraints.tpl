@@ -2,6 +2,15 @@
 A template to handle constraints.
 */}}
 
+{{- define "camundaPlatform.validateBrokerLabels" -}}
+{{- if hasKey .labels "camunda.io/broker-generation" -}}
+{{- fail "[camunda][error] camunda.io/broker-generation is managed by the chart and cannot be configured in user labels." -}}
+{{- end -}}
+{{- if and .zonedPodLabels (hasKey .labels "camunda.io/zone") -}}
+{{- fail "[camunda][error] camunda.io/zone is managed by the chart in zoned mode and cannot be configured in orchestration.podLabels." -}}
+{{- end -}}
+{{- end -}}
+
 {{/*
 Fail with a message if the Helm CLI version is less than v4.
 Chart 15.x (Camunda 8.10) requires Helm v4 or later.
