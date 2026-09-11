@@ -11,9 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# Step 1 of docs/zone-aware-migration-procedure.md: zoned mode with the numbered brokers
-# retained. clusterSize, replicationFactor, regions and regionId keep their numbered values,
-# which is what preserves the retained generation.
+# Zoned mode with the numbered brokers retained. clusterSize, replicationFactor, regions and
+# regionId keep their numbered values, which is what preserves the retained generation.
 orchestration:
   multiregion:
     mode: zoned
