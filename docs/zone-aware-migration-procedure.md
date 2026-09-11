@@ -122,11 +122,12 @@ Do not delete the old PVCs yet. Confirm through the management API and the clust
 
 For the next Kubernetes cluster:
 
-1. Use the same complete zone topology.
-2. Set `orchestration.multiregion.zone` to the next local zone.
-3. Set `keepUnzonedBrokers: true` for that release.
-4. Run the management API migration for the local zone, following step 2 above.
-5. Confirm the numbered brokers have left membership and own no partitions, then set `keepUnzonedBrokers: false`. If the migration is incomplete, keep the flag enabled or set it back to `true` to retain the numbered resources while their PVCs remain available.
-6. Clean up the old PVCs only after the migration is verified.
+1. Upgrade that release to the same chart version first, with its values unchanged, and wait for the rollout to settle. As in step 1, this is what keeps the anti-affinity rollout out of the migration upgrade.
+2. Use the same complete zone topology.
+3. Set `orchestration.multiregion.zone` to the next local zone.
+4. Set `keepUnzonedBrokers: true` for that release.
+5. Run the management API migration for the local zone, following step 2 above.
+6. Confirm the numbered brokers have left membership and own no partitions, then set `keepUnzonedBrokers: false`. If the migration is incomplete, keep the flag enabled or set it back to `true` to retain the numbered resources while their PVCs remain available.
+7. Clean up the old PVCs only after the migration is verified.
 
 Do not migrate multiple zones concurrently unless the deployment has an independently verified operational procedure for that topology.

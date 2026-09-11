@@ -83,6 +83,9 @@ helm upgrade "${RELEASE}" "${CHART_DIR}" \
     --timeout "${TIMEOUT}" >/dev/null
 
 kubectl rollout status "statefulset/${RELEASE}-zeebe-zone-a" --namespace "${NAMESPACE}" --timeout "${TIMEOUT}"
+# Settle the retained StatefulSet too: reading its pod UID before its controller has
+# reconciled would pass even if this upgrade had changed the pod template.
+kubectl rollout status "statefulset/${RELEASE}-zeebe" --namespace "${NAMESPACE}" --timeout "${TIMEOUT}"
 
 # The retained brokers must survive the upgrade untouched. A different UID means the pod was
 # recreated, which loses the Raft state the migration exists to preserve.
@@ -116,6 +119,7 @@ helm upgrade "${RELEASE}" "${CHART_DIR}" \
     --timeout "${TIMEOUT}" >/dev/null
 
 kubectl wait --for=delete "statefulset/${RELEASE}-zeebe" --namespace "${NAMESPACE}" --timeout "${TIMEOUT}" 2>/dev/null || true
+kubectl rollout status "statefulset/${RELEASE}-zeebe-zone-a" --namespace "${NAMESPACE}" --timeout "${TIMEOUT}"
 kubectl get "statefulset/${RELEASE}-zeebe" --namespace "${NAMESPACE}" >/dev/null 2>&1 \
     && fail "the numbered StatefulSet survived disabling keepUnzonedBrokers"
 

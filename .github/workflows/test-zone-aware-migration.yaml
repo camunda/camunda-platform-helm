@@ -5,6 +5,9 @@ on:
     paths:
       - "charts/camunda-platform-8.10/templates/orchestration/**"
       - "charts/camunda-platform-8.10/templates/common/constraints.tpl"
+      - "charts/camunda-platform-8.10/templates/common/_helpers.tpl"
+      - "charts/camunda-platform-8.10/values.yaml"
+      - "charts/camunda-platform-8.10/values.schema.json"
       - "charts/camunda-platform-8.10/test/integration/scenarios/zone-aware-migration/**"
       - ".github/workflows/test-zone-aware-migration.yaml"
   workflow_dispatch: {}
