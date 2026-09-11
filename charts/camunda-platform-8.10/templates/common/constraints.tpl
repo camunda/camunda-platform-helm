@@ -1315,7 +1315,7 @@ The following values inside your values.yaml need to be set but were not:
     {{- end }}
   {{- end }}
 
-  {{- if and (eq (include "camundaPlatform.nginxCompatAnnotationsInjecting" .) "true") (or (and .Values.global.ingress.enabled (not .Values.global.ingress.external)) (eq (include "camundaPlatform.grpcIngressRendered" .) "true")) }}
+  {{- if or (eq (include "camundaPlatform.nginxCompatHTTPInjecting" .) "true") (eq (include "camundaPlatform.nginxCompatGRPCInjecting" .) "true") }}
     {{- $warningMessage := printf "%s %s %s"
         "[camunda][warning]"
         "DEPRECATION: global.ingress.nginxCompatAnnotations is enabled, so the chart still injects the ingress-nginx annotations it used to ship as values defaults. They render whatever ingress controller you run, and only ingress-nginx reads them."

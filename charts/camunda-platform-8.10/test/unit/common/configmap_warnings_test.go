@@ -395,6 +395,71 @@ func (s *ConfigMapWarningsTemplateTest) TestNginxCompatAnnotationsDeprecationWar
 			},
 		},
 		{
+			Name:        "TestGrpcOnlyReleaseWithEveryGrpcKeySetDoesNotWarn",
+			ValuesFiles: []string{"testdata/values-nginx-compat-grpc-keys-set.yaml"},
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"orchestration.ingress.grpc.host":          "zeebe.example.com",
+				"global.identity.auth.console.clientId":    "some-console-client",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().Contains(configmap.Data["warnings"], "global.identity.auth.console")
+				s.Require().NotContains(configmap.Data["warnings"], warning)
+			},
+		},
+		{
+			Name:        "TestHttpOnlyReleaseWithEveryHttpKeySetDoesNotWarn",
+			ValuesFiles: []string{"testdata/values-nginx-compat-http-keys-set.yaml"},
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"global.host":                           "camunda.example.com",
+				"orchestration.contextPath":             "/",
+				"global.identity.auth.console.clientId": "some-console-client",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().Contains(configmap.Data["warnings"], "global.identity.auth.console")
+				s.Require().NotContains(configmap.Data["warnings"], warning)
+			},
+		},
+		{
+			// ingress-http.yaml is skipped when no component contributes a path,
+			// so the shim reaches no rendered object.
+			Name: "TestIngressEnabledWithoutHttpPathsDoesNotWarn",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"global.ingress.enabled":                   "true",
+				"global.host":                              "camunda.example.com",
+				"global.identity.auth.console.clientId":    "some-console-client",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().Contains(configmap.Data["warnings"], "global.identity.auth.console")
+				s.Require().NotContains(configmap.Data["warnings"], warning)
+			},
+		},
+		{
+			Name: "TestGrpcRouteWithShimActiveWarns",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"orchestration.ingress.grpc.enabled":       "true",
+				"orchestration.ingress.grpc.host":          "zeebe.example.com",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().Contains(configmap.Data["warnings"], warning)
+			},
+		},
+		{
 			// No Ingress is rendered, so the shim injects nothing worth reporting.
 			Name: "TestShimOnWithoutAnyIngressDoesNotWarn",
 			Values: map[string]string{
