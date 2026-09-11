@@ -503,8 +503,8 @@ no quorum can reach.
     {{- if not (regexMatch "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$" .name) }}
       {{- fail (printf "[camunda][error] %s.zones entry %q must be an RFC 1123 label." $mrKey .name) -}}
     {{- end }}
-    {{- if gt (len .name) 63 }}
-      {{- fail (printf "[camunda][error] %s.zones entry %q must be no longer than 63 characters." $mrKey .name) -}}
+    {{- if gt (len .name) 32 }}
+      {{- fail (printf "[camunda][error] %s.zones entry %q must be no longer than 32 characters." $mrKey .name) -}}
     {{- end }}
     {{- if gt (int .numberOfBrokers) 999 }}
       {{- fail (printf "[camunda][error] %s.zones entry %q cannot configure more than 999 brokers." $mrKey .name) -}}

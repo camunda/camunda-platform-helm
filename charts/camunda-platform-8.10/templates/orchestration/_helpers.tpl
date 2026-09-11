@@ -78,8 +78,8 @@ Takes a dict with the root context and an optional explicit zone.
 {{- /* NOTE: StatefulSet Pod hostnames are limited to 63 characters; reserve "-998" for up to 999 brokers. */ -}}
 {{- $nameLength := 59 -}}
 {{- $suffix := printf "-%s" .zone -}}
-{{- $prefixLength := max 0 (sub $nameLength (len $suffix)) -}}
-{{- printf "%s%s" ($fullname | trunc (int $prefixLength) | trimSuffix "-") $suffix | trunc $nameLength -}}
+{{- $prefixLength := sub $nameLength (len $suffix) -}}
+{{- printf "%s%s" ($fullname | trunc (int $prefixLength) | trimSuffix "-") $suffix -}}
 {{- else -}}
 {{- $fullname -}}
 {{- end -}}
