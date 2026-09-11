@@ -279,12 +279,6 @@ func (s *StatefulSetTest) TestKeepUnzonedBrokersDoesNotRestartZonedBrokers() {
 // totals would resize and restart the brokers the migration exists to preserve, so the
 // zoned constraints must stand down until retention is disabled.
 func (s *StatefulSetTest) TestMigrationKeepsNumberedSizingValues() {
-	// clusterSize and replicationFactor are string-typed in the schema, so they have to go
-	// through --set-string rather than --set.
-	strValues := map[string]string{
-		"orchestration.clusterSize":       "4",
-		"orchestration.replicationFactor": "2",
-	}
 	numbered := map[string]string{
 		"orchestration.multiregion.regions":        "2",
 		"orchestration.multiregion.regionId":       "0",
@@ -292,9 +286,10 @@ func (s *StatefulSetTest) TestMigrationKeepsNumberedSizingValues() {
 	}
 
 	render := func(values map[string]string, name string) appsv1.StatefulSet {
-		output, err := helm.RenderTemplateE(s.T(), &helm.Options{
-			SetValues: values, SetStrValues: strValues,
-		}, s.chartPath, s.release, s.templates)
+		output, err := testhelpers.RenderTestCaseE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testhelpers.TestCase{
+			Values:                  values,
+			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.clusterSize=4,orchestration.replicationFactor=2"},
+		})
 		require.NoError(s.T(), err)
 		for _, doc := range strings.Split(output, "\n---\n") {
 			if !strings.Contains(doc, "name: "+name+"\n") {
