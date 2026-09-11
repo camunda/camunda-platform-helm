@@ -451,13 +451,30 @@ merged nowhere.
 {{- end -}}
 {{- if and $mr.keepUnzonedBrokers (eq $mr.mode "zoned") }}
   {{- $orchestrationMultiregion := .Values.orchestration.multiregion | default dict -}}
-  {{- $regionId := get $orchestrationMultiregion "regionId" -}}
   {{- if or
-    (empty (get $orchestrationMultiregion "regions"))
-    (kindIs "invalid" $regionId)
-    (and (kindIs "string" $regionId) (empty $regionId))
+    (not (hasKey $orchestrationMultiregion "regions"))
+    (not (hasKey $orchestrationMultiregion "regionId"))
+    (eq (get $orchestrationMultiregion "regionId" | toString) "")
   }}
     {{- fail "[camunda][error] orchestration.multiregion.keepUnzonedBrokers requires both orchestration.multiregion.regions and orchestration.multiregion.regionId to preserve the numbered broker identity." -}}
+  {{- end }}
+  {{- $regionsRaw := get $orchestrationMultiregion "regions" | toString -}}
+  {{- $regionIdRaw := get $orchestrationMultiregion "regionId" | toString -}}
+  {{- $clusterSizeRaw := .Values.orchestration.clusterSize | toString -}}
+  {{- if or (not (regexMatch "^[0-9]+$" $regionsRaw)) (le (int $regionsRaw) 0) }}
+    {{- fail "[camunda][error] orchestration.multiregion.regions must be a positive integer when orchestration.multiregion.keepUnzonedBrokers=true." -}}
+  {{- end }}
+  {{- if not (regexMatch "^[0-9]+$" $regionIdRaw) }}
+    {{- fail "[camunda][error] orchestration.multiregion.regionId must be an integer greater than or equal to zero when orchestration.multiregion.keepUnzonedBrokers=true." -}}
+  {{- end }}
+  {{- if ge (int $regionIdRaw) (int $regionsRaw) }}
+    {{- fail "[camunda][error] orchestration.multiregion.regionId must be less than orchestration.multiregion.regions when orchestration.multiregion.keepUnzonedBrokers=true." -}}
+  {{- end }}
+  {{- if or (not (regexMatch "^[0-9]+$" $clusterSizeRaw)) (le (int $clusterSizeRaw) 0) }}
+    {{- fail "[camunda][error] orchestration.clusterSize must be a positive integer when orchestration.multiregion.keepUnzonedBrokers=true." -}}
+  {{- end }}
+  {{- if ne (mod (int $clusterSizeRaw) (int $regionsRaw)) 0 }}
+    {{- fail "[camunda][error] orchestration.clusterSize must be divisible by orchestration.multiregion.regions when orchestration.multiregion.keepUnzonedBrokers=true." -}}
   {{- end }}
 {{- end }}
 

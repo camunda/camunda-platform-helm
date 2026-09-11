@@ -263,7 +263,8 @@ func (s *ConfigmapTemplateTest) TestZonedModeAllowsNumberedRegionSettingsAfterMi
 			},
 		},
 		{
-			Name: "TestMigrationAcceptsRegionIdZero",
+			Name:                    "TestMigrationAcceptsRegionIdZero",
+			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.clusterSize=4"},
 			Values: map[string]string{
 				"orchestration.multiregion.mode":                      "zoned",
 				"orchestration.multiregion.zone":                      "region-a",
