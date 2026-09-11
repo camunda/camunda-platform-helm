@@ -55,13 +55,13 @@ helm search repo camunda/camunda-platform --devel --versions
 
 | Helm Chart | Camunda | Released | Helm CLI | Helm Values | Release Notes |
 |---|---|---|---|---|---|
+| [12.13.6](./camunda-8.7/#helm-chart-12136) | 8.7.39 | _pending_ | [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/12.13.6?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.7-12.13.6) |
 | [12.13.5](./camunda-8.7/#helm-chart-12135) | 8.7.39 | 2026-09-08 | [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/12.13.5?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.7-12.13.5) |
 | [12.13.4](./camunda-8.7/#helm-chart-12134) | 8.7.38 | 2026-09-03 | [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/12.13.4?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.7-12.13.4) |
 | [12.13.3](./camunda-8.7/#helm-chart-12133) | 8.7.37 | 2026-08-14 | [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/12.13.3?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.7-12.13.3) |
 | [12.13.2](./camunda-8.7/#helm-chart-12132) | 8.7.36 | 2026-08-06 | [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/12.13.2?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.7-12.13.2) |
-| [12.13.1](./camunda-8.7/#helm-chart-12131) | 8.7.35 | 2026-07-09 | [3.20.2](https://github.com/helm/helm/releases/tag/v3.20.2) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/12.13.1?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.7-12.13.1) |
 
-[All 40 chart versions for Camunda 8.7 →](./camunda-8.7/)
+[All 41 chart versions for Camunda 8.7 →](./camunda-8.7/)
 
 ## Extended support
 
