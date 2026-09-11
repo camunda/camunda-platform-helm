@@ -1,0 +1,12 @@
+# Step 1 of docs/zone-aware-migration-procedure.md: zoned mode with the numbered brokers
+# retained. clusterSize, replicationFactor, regions and regionId keep their numbered values,
+# which is what preserves the retained generation.
+orchestration:
+  multiregion:
+    mode: zoned
+    zone: zone-a
+    zones:
+      - {name: zone-a, numberOfBrokers: 1, numberOfReplicas: 1, priority: 100}
+    keepUnzonedBrokers: true
+    regions: 2
+    regionId: 0

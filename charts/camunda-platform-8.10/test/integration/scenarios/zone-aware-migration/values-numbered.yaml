@@ -1,0 +1,24 @@
+# Pre-migration state: a numbered cluster, sized so one broker per generation fits on a
+# single node. Probes and images are trimmed so the sequence runs in seconds; this test is
+# about resource identity across the upgrade, not about the broker starting up.
+global:
+  noSecondaryStorage: true
+connectors: {enabled: false}
+identity: {enabled: false}
+optimize: {enabled: false}
+webModeler: {enabled: false}
+camundaHub: {enabled: false}
+orchestration:
+  image: {repository: busybox, tag: "1.36"}
+  command: ["sh", "-c", "sleep 3600"]
+  startupProbe: {enabled: false}
+  readinessProbe: {enabled: false}
+  livenessProbe: {enabled: false}
+  pvcSize: 64Mi
+  resources:
+    requests: {cpu: 10m, memory: 32Mi}
+    limits: {cpu: 100m, memory: 128Mi}
+  clusterSize: "2"
+  replicationFactor: "1"
+  partitionCount: "1"
+  multiregion: {regions: 2, regionId: 0}
