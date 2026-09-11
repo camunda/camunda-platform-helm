@@ -52,3 +52,31 @@ func TestGoldenDefaultsTemplateCompanionKeycloakPostgresql(t *testing.T) {
 		Templates:      []string{"templates/postgresql-statefulset.yaml"},
 	})
 }
+
+func TestGoldenARMSchedulingTemplateCompanionKeycloakPostgresql(test *testing.T) {
+	test.Parallel()
+
+	chartPath, err := filepath.Abs("../../../../internal-keycloak-26")
+	require.NoError(test, err)
+
+	suite.Run(test, &utils.TemplateGoldenTest{
+		ChartPath:      chartPath,
+		Release:        "camunda-platform-test",
+		Namespace:      "camunda-platform",
+		GoldenFileName: "internal-keycloak-26-postgresql-statefulset-arm",
+		Templates:      []string{"templates/postgresql-statefulset.yaml"},
+		SetValues: map[string]string{
+			"nodeSelector.workload":               "arm-processor",
+			"tolerations[0].key":                  "workload",
+			"tolerations[0].operator":             "Equal",
+			"tolerations[0].value":                "arm-processor",
+			"tolerations[0].effect":               "NoSchedule",
+			"tolerations[1].key":                  "kubernetes.io/arch",
+			"tolerations[1].operator":             "Equal",
+			"tolerations[1].value":                "arm64",
+			"tolerations[1].effect":               "NoSchedule",
+			"postgresql.storage.storageClassName": "hyperdisk-balanced",
+			"postgresql.storage.size":             "4Gi",
+		},
+	})
+}
