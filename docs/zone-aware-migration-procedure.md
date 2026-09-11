@@ -8,6 +8,13 @@ Each Helm release manages one Kubernetes cluster and one local zone. Repeat the 
 
 ## Prerequisites
 
+> [!WARNING]
+> Suspend node drains, node autoscaler scale-down, and other maintenance that evicts broker pods before enabling migration. Keep these activities suspended across the participating Kubernetes clusters until the numbered brokers have left the logical cluster, their retained workloads have been removed, and the zoned cluster is healthy.
+>
+> When PodDisruptionBudgets (PDBs) are enabled, the numbered and zoned generations have independent budgets during coexistence. With `maxUnavailable: 1` on each PDB, Kubernetes can allow one voluntary eviction from each generation concurrently; there is no shared one-pod disruption limit. If those pods hold voting replicas of the same partition, the combined disruption could remove its quorum and interrupt processing. The independent budgets are confirmed by the rendered resources; quorum loss during a real broker migration has not been reproduced by the migration test, which uses placeholder containers.
+>
+> PDBs track Kubernetes pod readiness, not partition placement or broker membership. They do not coordinate disruption budgets across releases or Kubernetes clusters, and do not prevent node failures or direct pod deletion. This operational precaution does not change the PDBs or guarantee partition quorum. The deliberate removal of numbered workloads in step 3 remains part of the migration and must follow the management API checks below.
+
 - Confirm that the Orchestration image supports zone-aware clustering and the management API operations used below.
 - Prepare the complete, identical `orchestration.multiregion.zones` topology for every participating release.
 - Set `orchestration.multiregion.zone` to the local zone for the release being upgraded.
