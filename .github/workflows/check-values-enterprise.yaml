@@ -7,7 +7,9 @@ name: Check values-enterprise.yaml
   pull_request:
     paths:
       - 'charts/camunda-platform-*/values-enterprise.yaml'
-      - 'scripts/check-values-enterprise.sh'
+      - 'scripts/deploy-camunda/cmd/check_enterprise_images.go'
+      - 'scripts/deploy-camunda/deploy/enterprise_images*.go'
+      - '.github/actions/setup-deploy-camunda/**'
       - '.github/workflows/check-values-enterprise.yaml'
   workflow_dispatch:
     inputs:
@@ -32,16 +34,8 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Install tools
-        uses: ./.github/actions/install-tool-versions
-        with:
-          tools: |
-            yq
-
-      - name: Install jq
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y jq
+      - name: Setup deploy-camunda
+        uses: ./.github/actions/setup-deploy-camunda
 
       - name: Import secrets
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc  # v4.0.0
@@ -63,14 +57,10 @@ jobs:
           username: ${{ steps.secrets.outputs.HARBOR_REGISTRY_USER }}
           password: ${{ steps.secrets.outputs.HARBOR_REGISTRY_PASSWORD }}
 
-      - name: Run validation script
+      - name: Run validation
         run: |
-          if [[ -n "${{ inputs.chart-version }}" ]]; then
-            bash scripts/check-values-enterprise.sh \
-              "${{ inputs.chart-version }}"
-          else
-            bash scripts/check-values-enterprise.sh
-          fi
+          deploy-camunda check-enterprise-images \
+            --chart-version "${{ inputs.chart-version }}"
 
       - name: Comment on PR (if validation failed)
         if: failure() && github.event_name == 'pull_request'

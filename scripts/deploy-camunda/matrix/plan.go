@@ -166,7 +166,6 @@ var deployRelevantScriptDirs = []string{
 var deployRelevantScriptFiles = []string{
 	"base_playwright_script.sh",
 	"check-no-plaintext-datastore.sh",
-	"check-values-enterprise.sh",
 	"check-values-latest.sh",
 	"deploy-camunda.sh",
 	"dns-fallback.cjs",
