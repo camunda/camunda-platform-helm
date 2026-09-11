@@ -596,6 +596,7 @@ func Execute() error {
 	rootCmd.AddCommand(newCICommand())
 	rootCmd.AddCommand(newE2EEnvCommand())
 	rootCmd.AddCommand(newTopologyCommand())
+	rootCmd.AddCommand(newCheckEnterpriseImagesCommand())
 	rootCmd.AddCommand(newVersionCommand())
 	rootCmd.AddCommand(newAcceptanceCommand())
 
