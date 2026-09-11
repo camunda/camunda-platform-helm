@@ -14,7 +14,7 @@ metadata:
     app.kubernetes.io/version: "8.10.0-alpha5"
     camunda.io/broker-generation: zoned
     
-    camunda.io/zone: zone-a
+    camunda.io/zone: "zone-a"
 spec:
   maxUnavailable: 1
   selector:
@@ -27,4 +27,4 @@ spec:
       app.kubernetes.io/component: zeebe-broker
       camunda.io/broker-generation: zoned
       
-      camunda.io/zone: zone-a
+      camunda.io/zone: "zone-a"

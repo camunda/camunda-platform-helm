@@ -250,7 +250,7 @@ camunda.io/broker-generation: {{ if and .OrchestrationRender (eq .OrchestrationR
     {{- include "orchestration.generationLabel" . }}
     {{- if and .OrchestrationRender (eq .OrchestrationRender.scope "zoned") .OrchestrationRender.zone }}
     {{- "\n" }}
-camunda.io/zone: {{ .OrchestrationRender.zone }}
+camunda.io/zone: {{ .OrchestrationRender.zone | quote }}
     {{- end }}
 {{- end -}}
 
@@ -281,7 +281,7 @@ camunda.io/zone: {{ .OrchestrationRender.zone }}
     {{- "\n" }}
     {{- include "orchestration.generationLabel" . }}
     {{- "\n" }}
-camunda.io/zone: {{ .OrchestrationRender.zone }}
+camunda.io/zone: {{ .OrchestrationRender.zone | quote }}
     {{- end }}
 {{- end -}}
 
