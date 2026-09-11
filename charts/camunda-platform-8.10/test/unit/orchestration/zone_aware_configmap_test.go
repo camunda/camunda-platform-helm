@@ -380,34 +380,34 @@ func (s *ConfigmapTemplateTest) TestZonedModeAllowsNumberedRegionSettingsAfterMi
 			},
 		},
 		{
-			Name: "TestSchemaRejectsZoneNamesLongerThanResourceNameLimit",
+			Name: "TestSchemaRejectsZoneNamesLongerThanADNSLabel",
 			Values: map[string]string{
 				"orchestration.multiregion.mode":                      "zoned",
-				"orchestration.multiregion.zone":                      strings.Repeat("a", 33),
-				"orchestration.multiregion.zones[0].name":             strings.Repeat("a", 33),
+				"orchestration.multiregion.zone":                      strings.Repeat("a", 64),
+				"orchestration.multiregion.zones[0].name":             strings.Repeat("a", 64),
 				"orchestration.multiregion.zones[0].numberOfBrokers":  "1",
 				"orchestration.multiregion.zones[0].numberOfReplicas": "1",
 				"orchestration.multiregion.zones[0].priority":         "100",
 				"orchestration.profiles.broker":                       "true",
 			},
 			Expected: map[string]string{
-				"ERROR": "maxLength: got 33, want 32",
+				"ERROR": "maxLength: got 64, want 63",
 			},
 		},
 		{
-			Name:                    "TestZonedModeRejectsZoneNamesThatCannotRetainAResourcePrefix",
+			Name:                    "TestZonedModeRejectsZoneNamesLongerThanADNSLabel",
 			RenderTemplateExtraArgs: []string{"--skip-schema-validation"},
 			Values: map[string]string{
 				"orchestration.multiregion.mode":                      "zoned",
-				"orchestration.multiregion.zone":                      strings.Repeat("a", 33),
-				"orchestration.multiregion.zones[0].name":             strings.Repeat("a", 33),
+				"orchestration.multiregion.zone":                      strings.Repeat("a", 64),
+				"orchestration.multiregion.zones[0].name":             strings.Repeat("a", 64),
 				"orchestration.multiregion.zones[0].numberOfBrokers":  "1",
 				"orchestration.multiregion.zones[0].numberOfReplicas": "1",
 				"orchestration.multiregion.zones[0].priority":         "100",
 				"orchestration.profiles.broker":                       "true",
 			},
 			Expected: map[string]string{
-				"ERROR": "must be no longer than 32 characters",
+				"ERROR": "must be no longer than 63 characters",
 			},
 		},
 		{
