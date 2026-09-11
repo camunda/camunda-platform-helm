@@ -1318,8 +1318,8 @@ The following values inside your values.yaml need to be set but were not:
   {{- if or (eq (include "camundaPlatform.nginxCompatHTTPInjecting" .) "true") (eq (include "camundaPlatform.nginxCompatGRPCInjecting" .) "true") }}
     {{- $warningMessage := printf "%s %s %s"
         "[camunda][warning]"
-        "DEPRECATION: global.ingress.nginxCompatAnnotations is enabled, so the chart still injects the ingress-nginx annotations it used to ship as values defaults. They render whatever ingress controller you run, and only ingress-nginx reads them."
-        "The shim is removed in the next major. Set whatever your controller needs through global.ingress.annotations and orchestration.ingress.grpc.annotations, then set global.ingress.nginxCompatAnnotations to false."
+        "DEPRECATION: global.compatibility.nginx.renderAnnotations is enabled, so the chart still injects the ingress-nginx annotations it used to ship as values defaults. They render whatever ingress controller you run, and only ingress-nginx reads them."
+        "The shim is removed in the next major. Set whatever your controller needs through global.ingress.annotations and orchestration.ingress.grpc.annotations, then set global.compatibility.nginx.renderAnnotations to false."
     -}}
     {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
   {{- end }}

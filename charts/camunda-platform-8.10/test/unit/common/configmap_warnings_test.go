@@ -356,7 +356,7 @@ func (s *ConfigMapWarningsTemplateTest) TestGlobalIdentityAuthConsoleDeprecation
 }
 
 func (s *ConfigMapWarningsTemplateTest) TestNginxCompatAnnotationsDeprecationWarning() {
-	const warning = "global.ingress.nginxCompatAnnotations is enabled"
+	const warning = "global.compatibility.nginx.renderAnnotations is enabled"
 
 	testCases := []testhelpers.TestCase{
 		{
@@ -381,7 +381,7 @@ func (s *ConfigMapWarningsTemplateTest) TestNginxCompatAnnotationsDeprecationWar
 			Values: map[string]string{
 				"orchestration.data.secondaryStorage.type": "elasticsearch",
 				"global.ingress.enabled":                   "true",
-				"global.ingress.nginxCompatAnnotations":    "false",
+				"global.compatibility.nginx.renderAnnotations":    "false",
 				"global.host":                              "camunda.example.com",
 				"orchestration.contextPath":                "/",
 				"global.identity.auth.console.clientId":    "some-console-client",

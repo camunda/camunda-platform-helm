@@ -249,7 +249,7 @@ func (s *IngressTemplateTest) TestDifferentValuesInputs() {
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
 				"global.ingress.enabled":                "true",
-				"global.ingress.nginxCompatAnnotations": "false",
+				"global.compatibility.nginx.renderAnnotations": "false",
 				"orchestration.contextPath":             "/orchestration",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -853,7 +853,7 @@ func (s *GrpcIngressTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"orchestration.enabled":                 "true",
 				"orchestration.ingress.grpc.enabled":    "true",
-				"global.ingress.nginxCompatAnnotations": "false",
+				"global.compatibility.nginx.renderAnnotations": "false",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)

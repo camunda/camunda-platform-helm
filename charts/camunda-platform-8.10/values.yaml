@@ -108,6 +108,13 @@ global:
       ##
       adaptSecurityContext: disabled
 
+    ## Compatibility adaptations for ingress-nginx
+    ##
+    nginx:
+      ## @param global.compatibility.nginx.renderAnnotations if true, the chart injects the ingress-nginx annotations it used to ship as values defaults (`ssl-redirect`, `proxy-buffering`, `proxy-buffer-size` and `proxy-body-size` on the HTTP Ingress, `ssl-redirect`, `backend-protocol` and `proxy-buffer-size` on the gRPC Ingress). DEPRECATED since 15.0.0; the shim is removed in the next major and the annotations become opt-in. Set it to false to stop the chart injecting them, and set whatever your own controller needs through the annotations values instead.
+      ##
+      renderAnnotations: true
+
   ## @extra global.config Config used in various places.
   config:
     ## @param global.config.requestBodySize defines the maximum request body size for file uploads and HTTP form posts.
@@ -206,10 +213,8 @@ global:
     className: nginx
     ## @param global.ingress.labels [object] can be used to define labels which will be applied to the global HTTP ingress resource
     labels: {}
-    ## @param global.ingress.annotations [object] defines the ingress related annotations, consumed mostly by the ingress controller. Empty by default; keys set here always win over the ingress-nginx compatibility set described in global.ingress.nginxCompatAnnotations.
+    ## @param global.ingress.annotations [object] defines the ingress related annotations, consumed mostly by the ingress controller. Empty by default; keys set here always win over the ingress-nginx compatibility set described in global.compatibility.nginx.renderAnnotations.
     annotations: {}
-    ## @param global.ingress.nginxCompatAnnotations if true, the chart injects the ingress-nginx annotations it used to ship as values defaults (`ssl-redirect`, `proxy-buffering`, `proxy-buffer-size` and `proxy-body-size` on the HTTP Ingress, `ssl-redirect`, `backend-protocol` and `proxy-buffer-size` on the gRPC Ingress). DEPRECATED since 15.0.0; the shim is removed in the next major and the annotations become opt-in. Set it to false to render controller-neutral Ingress objects today, and set whatever your own controller needs through the annotations values instead.
-    nginxCompatAnnotations: true
     ## @param global.ingress.pathType can be used to define the Ingress path type. https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types
     pathType: Prefix
     ## @extra global.ingress.tls configuration for tls on the ingress resource https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
@@ -2439,7 +2444,7 @@ orchestration:
       className: nginx
       ## @param orchestration.ingress.grpc.labels [object] can be used to define labels which will be applied to the orchestration gRPC ingress resource
       labels: {}
-      ## @param orchestration.ingress.grpc.annotations [object] defines the ingress related annotations, consumed mostly by the ingress controller. Empty by default; keys set here always win over the ingress-nginx compatibility set described in global.ingress.nginxCompatAnnotations. With Contour, gRPC is declared with `projectcontour.io/upstream-protocol.h2c` on the Orchestration service listing the gRPC port, not with an annotation here.
+      ## @param orchestration.ingress.grpc.annotations [object] defines the ingress related annotations, consumed mostly by the ingress controller. Empty by default; keys set here always win over the ingress-nginx compatibility set described in global.compatibility.nginx.renderAnnotations. With Contour, gRPC is declared with `projectcontour.io/upstream-protocol.h2c` on the Orchestration service listing the gRPC port, not with an annotation here.
       annotations: {}
       ## @param orchestration.ingress.grpc.path defines the path which is associated with the Zeebe gateway's gRPC service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
       path: /
