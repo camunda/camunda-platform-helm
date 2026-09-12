@@ -1,0 +1,16 @@
+name: orchestration-entra
+auth: oidc
+flows:
+  - install
+identity: oidc
+persistence: elasticsearch
+features:
+  - orchestration-entra
+platforms:
+  - gke
+infra-type:
+  gke: distroci
+skip-e2e: true
+post-deploy: orchestration-entra
+dependencies:
+  - elasticsearch

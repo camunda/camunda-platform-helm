@@ -957,6 +957,30 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
+func (s *DeploymentTemplateTest) TestSharedIdentityConfigMapChecksumRestartsThePod() {
+	values := map[string]string{
+		"connectors.enabled":                       "true",
+		"global.identity.auth.enabled":             "true",
+		"global.identity.auth.issuerBackendUrl":    "https://issuer.example.com",
+		"global.identity.service.url":              "https://identity.example.com",
+		"orchestration.data.secondaryStorage.type": "elasticsearch",
+	}
+	render := func() appsv1.Deployment {
+		output, err := helm.RenderTemplateE(s.T(), &helm.Options{SetValues: values}, s.chartPath, s.release, s.templates)
+		s.Require().NoError(err)
+		var deployment appsv1.Deployment
+		helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+		return deployment
+	}
+
+	first := render().Spec.Template.Annotations["checksum/config-identity-env"]
+	values["global.identity.service.url"] = "https://other-identity.example.com"
+	second := render().Spec.Template.Annotations["checksum/config-identity-env"]
+
+	s.Require().NotEmpty(first)
+	s.Require().NotEqual(first, second)
+}
+
 func (s *DeploymentTemplateTest) requireNoEnvVarNamed(env []corev1.EnvVar, name string) {
 	for _, envvar := range env {
 		s.Require().NotEqual(name, envvar.Name)

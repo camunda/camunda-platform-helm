@@ -1,0 +1,53 @@
+global:
+  topology:
+    mode: orchestration
+  multitenancy:
+    enabled: false
+  identity:
+    auth:
+      optimize: null
+
+identity:
+  enabled: false
+
+optimize:
+  enabled: true
+  security:
+    authentication:
+      method: oidc
+      oidc:
+        type: MICROSOFT
+        issuer: https://login.microsoftonline.com/$ENTRA_APP_DIRECTORY_ID/v2.0
+        issuerBackendUrl: https://login.microsoftonline.com/$ENTRA_APP_DIRECTORY_ID/v2.0
+        jwksUrl: https://login.microsoftonline.com/$ENTRA_APP_DIRECTORY_ID/discovery/v2.0/keys
+        clientId: $ENTRA_APP_CLIENT_ID
+        audience: $ENTRA_APP_CLIENT_ID
+        redirectUrl: "https://{{ .Values.global.host }}/optimize"
+        secret:
+          existingSecret: integration-test-credentials
+          existingSecretKey: entra-child-app-client-secret
+
+orchestration:
+  security:
+    authentication:
+      oidc:
+        clientIdClaim: azp
+    initialization:
+      defaultRoles:
+        connectors:
+          clients:
+            - $CONNECTORS_CLIENT_ID
+      authorizations:
+        - ownerType: CLIENT
+          ownerId: $VENOM_CLIENT_ID
+          resourceType: RESOURCE
+          resourceId: "*"
+          permissions:
+            - CREATE
+        - ownerType: CLIENT
+          ownerId: $VENOM_CLIENT_ID
+          resourceType: PROCESS_DEFINITION
+          resourceId: "*"
+          permissions:
+            - READ_PROCESS_DEFINITION
+            - READ_PROCESS_INSTANCE
