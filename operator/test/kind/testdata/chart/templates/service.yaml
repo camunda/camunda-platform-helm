@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-hub
+spec:
+  # Pinned to "normal" regardless of the active phase, so the migration pod runs
+  # without ever receiving traffic.
+  selector:
+    app: {{ .Release.Name }}-hub
+    camunda.io/upgrade-phase: normal
+  ports:
+    - port: 80
+      targetPort: 8080

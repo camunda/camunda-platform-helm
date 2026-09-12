@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-hub-topology
+data:
+  # Proves the operator forced the hub role into the values it rendered with.
+  topologyMode: {{ dig "topology" "mode" "unset" (.Values.global | default dict) | quote }}
