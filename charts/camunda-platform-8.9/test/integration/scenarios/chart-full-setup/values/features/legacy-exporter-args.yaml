@@ -1,0 +1,9 @@
+# Reproduces the customer shape from helm#7028: legacy Camunda exporter arguments
+# injected as environment variables. Spring merges these into
+# zeebe.broker.exporters.camundaexporter, which the chart must keep registering with a
+# className — otherwise the broker refuses to start with "Expected to find a 'className'
+# configured for the exporter".
+orchestration:
+  env:
+    - name: ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_HISTORY_ROLLOVERBATCHSIZE
+      value: "321"

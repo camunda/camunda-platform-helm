@@ -81,6 +81,13 @@ integration:
       shortname: cprst
       tier: 2
       enabled: true
+    # helm#7028 regression guard: an install carrying legacy
+    # ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_* overrides must start. The upgrade-patch
+    # flow is added once 14.9.1 is published (see scenarios/legacy-exporter-args.yaml).
+    - id: legacy-exporter-args
+      shortname: lgexp
+      tier: 2
+      enabled: true
     - id: keycloak-original-install-tier1
       shortname: keyco
       tier: 1
