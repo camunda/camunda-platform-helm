@@ -245,6 +245,41 @@ func (s *IngressTemplateTest) TestDifferentValuesInputs() {
 			},
 		},
 		{
+			Name:                 "TestHttpIngressEmitsNoControllerSpecificAnnotationsWhenCompatShimIsOff",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"global.ingress.enabled":                "true",
+				"global.compatibility.nginx.renderAnnotations": "false",
+				"orchestration.contextPath":             "/orchestration",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var ingress netv1.Ingress
+				helm.UnmarshalK8SYaml(t, output, &ingress)
+
+				for _, a := range []string{"ssl-redirect", "proxy-buffering", "proxy-buffer-size", "proxy-body-size"} {
+					s.Require().NotContains(ingress.Annotations, "nginx.ingress.kubernetes.io/"+a,
+						"opting out of the shim must render a controller-neutral Ingress (camunda/camunda-platform-helm#6410)")
+				}
+			},
+		},
+		{
+			Name:                 "TestHttpIngressKeepsControllerAnnotationsWhileCompatShimIsOn",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"global.ingress.enabled":    "true",
+				"orchestration.contextPath": "/orchestration",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var ingress netv1.Ingress
+				helm.UnmarshalK8SYaml(t, output, &ingress)
+
+				for _, a := range []string{"ssl-redirect", "proxy-buffering", "proxy-buffer-size", "proxy-body-size"} {
+					s.Require().Contains(ingress.Annotations, "nginx.ingress.kubernetes.io/"+a,
+						"the shim is on by default, so upgrading users must not lose their ingress-nginx configuration")
+				}
+			},
+		},
+		{
 			Name:                 "TestHttpIngressLabelMergeOverwrite",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
@@ -796,7 +831,7 @@ func (s *GrpcIngressTemplateTest) TestDifferentValuesInputs() {
 			},
 		},
 		{
-			Name:                 "TestGrpcIngressUsesPlaintextBackendProtocolByDefault",
+			Name:                 "TestGrpcIngressKeepsBackendProtocolWhileCompatShimIsOn",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
 				"orchestration.enabled":              "true",
@@ -808,7 +843,44 @@ func (s *GrpcIngressTemplateTest) TestDifferentValuesInputs() {
 				var ingress netv1.Ingress
 				helm.UnmarshalK8SYaml(t, output, &ingress)
 
-				s.Require().NotEqual("GRPCS", ingress.Annotations["nginx.ingress.kubernetes.io/backend-protocol"])
+				s.Require().Equal("GRPC", ingress.Annotations["nginx.ingress.kubernetes.io/backend-protocol"],
+					"the compatibility shim is on by default, so ingress-nginx users must not lose gRPC on upgrade")
+			},
+		},
+		{
+			Name:                 "TestGrpcIngressEmitsNoAnnotationsWhenCompatShimIsOff",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"orchestration.enabled":                 "true",
+				"orchestration.ingress.grpc.enabled":    "true",
+				"global.compatibility.nginx.renderAnnotations": "false",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+
+				var ingress netv1.Ingress
+				helm.UnmarshalK8SYaml(t, output, &ingress)
+
+				for _, a := range []string{"backend-protocol", "ssl-redirect", "proxy-buffer-size"} {
+					s.Require().NotContains(ingress.Annotations, "nginx.ingress.kubernetes.io/"+a)
+				}
+			},
+		},
+		{
+			Name:                 "TestGrpcIngressUserAnnotationWinsOverCompatShim",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"orchestration.enabled":              "true",
+				"orchestration.ingress.grpc.enabled": "true",
+				"orchestration.ingress.grpc.annotations.nginx\\.ingress\\.kubernetes\\.io/proxy-buffer-size": "256k",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+
+				var ingress netv1.Ingress
+				helm.UnmarshalK8SYaml(t, output, &ingress)
+
+				s.Require().Equal("256k", ingress.Annotations["nginx.ingress.kubernetes.io/proxy-buffer-size"])
 			},
 		},
 		{

@@ -354,3 +354,252 @@ func (s *ConfigMapWarningsTemplateTest) TestGlobalIdentityAuthConsoleDeprecation
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
+
+func (s *ConfigMapWarningsTemplateTest) TestNginxCompatAnnotationsDeprecationWarning() {
+	const warning = "global.compatibility.nginx.renderAnnotations is enabled"
+
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestShimOnWithAnIngressWarns",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"global.ingress.enabled":                   "true",
+				"global.host":                              "camunda.example.com",
+				"orchestration.contextPath":                "/",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				warnings := configmap.Data["warnings"]
+				s.Require().Contains(warnings, warning)
+				s.Require().Contains(warnings, "removed in the next major")
+			},
+		},
+		{
+			Name: "TestShimOffDoesNotWarn",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"global.ingress.enabled":                   "true",
+				"global.compatibility.nginx.renderAnnotations":    "false",
+				"global.host":                              "camunda.example.com",
+				"orchestration.contextPath":                "/",
+				"global.identity.auth.console.clientId":    "some-console-client",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().Contains(configmap.Data["warnings"], "global.identity.auth.console")
+				s.Require().NotContains(configmap.Data["warnings"], warning)
+			},
+		},
+		{
+			Name:        "TestGrpcOnlyReleaseWithEveryGrpcKeySetDoesNotWarn",
+			ValuesFiles: []string{"testdata/values-nginx-compat-grpc-keys-set.yaml"},
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"orchestration.ingress.grpc.host":          "zeebe.example.com",
+				"global.identity.auth.console.clientId":    "some-console-client",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().Contains(configmap.Data["warnings"], "global.identity.auth.console")
+				s.Require().NotContains(configmap.Data["warnings"], warning)
+			},
+		},
+		{
+			Name:        "TestHttpOnlyReleaseWithEveryHttpKeySetDoesNotWarn",
+			ValuesFiles: []string{"testdata/values-nginx-compat-http-keys-set.yaml"},
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"global.host":                           "camunda.example.com",
+				"orchestration.contextPath":             "/",
+				"global.identity.auth.console.clientId": "some-console-client",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().Contains(configmap.Data["warnings"], "global.identity.auth.console")
+				s.Require().NotContains(configmap.Data["warnings"], warning)
+			},
+		},
+		{
+			// ingress-http.yaml is skipped when no component contributes a path,
+			// so the shim reaches no rendered object.
+			Name: "TestIngressEnabledWithoutHttpPathsDoesNotWarn",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"global.ingress.enabled":                   "true",
+				"global.host":                              "camunda.example.com",
+				"global.identity.auth.console.clientId":    "some-console-client",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().Contains(configmap.Data["warnings"], "global.identity.auth.console")
+				s.Require().NotContains(configmap.Data["warnings"], warning)
+			},
+		},
+		{
+			Name: "TestGrpcRouteWithShimActiveWarns",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"orchestration.ingress.grpc.enabled":       "true",
+				"orchestration.ingress.grpc.host":          "zeebe.example.com",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().Contains(configmap.Data["warnings"], warning)
+			},
+		},
+		{
+			// No Ingress is rendered, so the shim injects nothing worth reporting.
+			Name: "TestShimOnWithoutAnyIngressDoesNotWarn",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"global.identity.auth.console.clientId":    "some-console-client",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().Contains(configmap.Data["warnings"], "global.identity.auth.console")
+				s.Require().NotContains(configmap.Data["warnings"], warning)
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *ConfigMapWarningsTemplateTest) TestIngressUpstreamTLSControllerWarning() {
+	const warning = "Only ingress-nginx reads that annotation"
+
+	restTLS := map[string]string{
+		"orchestration.data.secondaryStorage.type":                 "elasticsearch",
+		"global.ingress.enabled":                                   "true",
+		"global.host":                                              "camunda.example.com",
+		"orchestration.contextPath":                                "/",
+		"global.tls.orchestration.rest.enabled":                    "true",
+		"global.tls.orchestration.rest.cert.secret.existingSecret": "orchestration-ks",
+	}
+	withClassName := func(class string) map[string]string {
+		values := map[string]string{"global.ingress.className": class}
+		for k, v := range restTLS {
+			values[k] = v
+		}
+		return values
+	}
+
+	testCases := []testhelpers.TestCase{
+		{
+			Name:   "TestNonNginxClassWithUpstreamTLSNamesTheComponentAndClass",
+			Values: withClassName("contour"),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().True(strings.HasSuffix(configmap.Name, "-warnings"))
+				warnings := configmap.Data["warnings"]
+				s.Require().Contains(warnings, warning)
+				s.Require().Contains(warnings, "global.tls.orchestration.rest")
+				s.Require().Contains(warnings, `global.ingress.className is "contour"`)
+				s.Require().Contains(warnings, "projectcontour.io/upstream-protocol.tls")
+			},
+		},
+		{
+			// ingress-nginx is the one controller the annotation works on, so the
+			// warning must stay silent there rather than firing for everyone.
+			Name:   "TestNginxClassWithUpstreamTLSDoesNotWarn",
+			Values: withClassName("nginx"),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				s.Require().NotContains(output, warning)
+			},
+		},
+		{
+			Name: "TestGRPCIngressIsCheckedOnItsOwnClassAndGate",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":                 "elasticsearch",
+				"orchestration.ingress.grpc.enabled":                       "true",
+				"orchestration.ingress.grpc.className":                     "contour",
+				"orchestration.ingress.grpc.host":                          "zeebe.example.com",
+				"global.tls.orchestration.grpc.enabled":                    "true",
+				"global.tls.orchestration.grpc.cert.secret.existingSecret": "orchestration-crt",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				warnings := configmap.Data["warnings"]
+				s.Require().Contains(warnings, warning)
+				s.Require().Contains(warnings, "projectcontour.io/upstream-protocol.h2")
+			},
+		},
+		{
+			// The split HTTPS Ingress only renders when the component is enabled and
+			// has a contextPath, so TLS alone must not trigger the warning.
+			Name: "TestUpstreamTLSOnAComponentWithNoRouteDoesNotWarn",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":       "elasticsearch",
+				"global.ingress.enabled":                         "true",
+				"global.ingress.className":                       "contour",
+				"global.host":                                    "camunda.example.com",
+				"optimize.enabled":                               "false",
+				"global.tls.optimize.enabled":                    "true",
+				"global.tls.optimize.cert.secret.existingSecret": "optimize-ks",
+				"global.identity.auth.console.clientId":          "some-console-client",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().Contains(configmap.Data["warnings"], "global.identity.auth.console")
+				s.Require().NotContains(configmap.Data["warnings"], warning)
+			},
+		},
+		{
+			Name: "TestNonNginxClassWithoutUpstreamTLSDoesNotWarn",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"global.ingress.enabled":                   "true",
+				"global.ingress.className":                 "contour",
+				"global.host":                              "camunda.example.com",
+				"orchestration.contextPath":                "/",
+				"global.identity.auth.console.clientId":    "some-console-client",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().Contains(configmap.Data["warnings"], "global.identity.auth.console")
+				s.Require().NotContains(configmap.Data["warnings"], warning)
+			},
+		},
+		{
+			Name: "TestUpstreamTLSWithoutAnyIngressDoesNotWarn",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":                 "elasticsearch",
+				"global.tls.orchestration.rest.enabled":                    "true",
+				"global.tls.orchestration.rest.cert.secret.existingSecret": "orchestration-ks",
+				"global.identity.auth.console.clientId":                    "some-console-client",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().Contains(configmap.Data["warnings"], "global.identity.auth.console")
+				s.Require().NotContains(configmap.Data["warnings"], warning)
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
