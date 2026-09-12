@@ -4702,7 +4702,9 @@
                         "zone": {
                             "type": "string",
                             "description": "can be used to define the zone of this Orchestration Cluster deployment when using zoned mode.",
-                            "default": ""
+                            "default": "",
+                            "maxLength": 32,
+                            "pattern": "^$|^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
                         },
                         "zones": {
                             "type": "array",
@@ -4721,7 +4723,7 @@
                                     "name": {
                                         "type": "string",
                                         "minLength": 1,
-                                        "maxLength": 63,
+                                        "maxLength": 32,
                                         "pattern": "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$",
                                         "description": "Name of the zone. It is the prefix of the composite broker member ID \"<zone>_<node-id>\", and one of these names must be selected by orchestration.multiregion.zone. Restricted to an RFC 1123 label: an underscore would make the composite ID ambiguous, and the name is also used to derive per-zone resource and DNS names."
                                     },
@@ -4743,21 +4745,28 @@
                                 }
                             }
                         },
+                        "keepUnzonedBrokers": {
+                            "type": "boolean",
+                            "description": "also renders the numbered broker StatefulSet alongside the zoned one during migration. Keep the previous regions and regionId values here until the numbered brokers are removed; move them from global.multiregion when migrating from the deprecated block.",
+                            "default": false
+                        },
                         "regions": {
                             "type": [
                                 "integer",
-                                "string"
+                                "string",
+                                "null"
                             ],
                             "description": "Number of regions this Camunda Platform instance is stretched across.",
-                            "default": 1
+                            "default": null
                         },
                         "regionId": {
                             "type": [
                                 "integer",
-                                "string"
+                                "string",
+                                "null"
                             ],
                             "description": "Unique id of the region. MUST start at 0 for the computation to work correctly. With 2 regions, you would have region 0 and 1.",
-                            "default": 0
+                            "default": null
                         }
                     },
                     "additionalProperties": false,

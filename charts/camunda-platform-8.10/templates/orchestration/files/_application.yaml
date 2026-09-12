@@ -89,11 +89,25 @@ camunda:
         {{- end }}
     {{- end }}
     # zeebe.broker.cluster
-    {{- /* NOTE: one zone or one region is one headless Service, which the chart can address
-         itself. Beyond that it cannot know how brokers reach each other, so the list is the
-         user's to provide. Keyed on the mode, not on the zone count, because the zone list
-         is only meaningful in zoned mode. */ -}}
+    {{- if eq (include "orchestration.zoned" .) "true" }}
+    {{- if or $mr.keepUnzonedBrokers (ne (include "camundaPlatform.multiregionSpread" $) "true") }}
+    initial-contact-points:
     {{- if ne (include "camundaPlatform.multiregionSpread" $) "true" }}
+    {{- $zoneFullname := include "orchestration.zoneFullname" (dict "context" $ "zone" $mr.zone) }}
+    {{- range untilStep 0 (int (include "orchestration.zoneBrokers" $)) 1 }}
+      - {{ $zoneFullname }}-{{ . }}.{{ $zoneFullname }}:{{ $.Values.orchestration.service.internalPort }}
+    {{- end }}
+    {{- end }}
+    {{- if $mr.keepUnzonedBrokers }}
+    {{- range untilStep 0 (int (include "orchestration.numberedReplicas" $)) 1 }}
+      - {{ include "orchestration.fullname" $ }}-{{ . }}.{{ include "orchestration.fullname" $ }}:{{ $.Values.orchestration.service.internalPort }}
+    {{- end }}
+    {{- end }}
+    {{- else }}
+    # Multi-zone deployments: initial-contact-points must be provided manually via environment variable.
+    # Set CAMUNDA_CLUSTER_INITIALCONTACTPOINTS with fully-qualified domain names for all brokers across zones.
+    {{- end }}
+    {{- else if ne (include "camundaPlatform.multiregionSpread" $) "true" }}
     initial-contact-points:
     {{- range (untilStep 0 (int (include "orchestration.clusterSize" $)) 1) }}
       - {{ include "orchestration.fullname" $ }}-{{ . }}.${K8S_SERVICE_NAME}:{{ $.Values.orchestration.service.internalPort }}

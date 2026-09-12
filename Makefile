@@ -51,6 +51,15 @@ install.ci-result-cache:
 build.release-tools:
 	cd scripts/release-tools && go mod tidy && go build .
 
+.PHONY: build.zone-aware-migration
+build.zone-aware-migration:
+	cd scripts/zone-aware-migration && go build .
+
+.PHONY: test.zone-aware-migration
+test.zone-aware-migration:
+	cd scripts/zone-aware-migration && go test -race ./...
+	$(chartPath)/test/integration/scenarios/zone-aware-migration/verify-zone-aware-migration.sh
+
 .PHONY: install.release-tools
 install.release-tools:
 	cd scripts/release-tools && go mod tidy && go install .

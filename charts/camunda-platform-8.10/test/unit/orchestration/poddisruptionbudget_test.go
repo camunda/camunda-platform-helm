@@ -26,6 +26,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	v1 "k8s.io/api/policy/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestGoldenPodDisruptionBudgetDefaults(t *testing.T) {
@@ -68,6 +69,36 @@ func TestDeploymentTemplate(t *testing.T) {
 
 func (s *PodDisruptionBudgetTest) TestDifferentValuesInputs() {
 	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestMigrationScopesTheUnzonedPDBToUnzonedPods",
+			Values: map[string]string{
+				"orchestration.podDisruptionBudget.enabled":           "true",
+				"orchestration.multiregion.mode":                      "zoned",
+				"orchestration.multiregion.zone":                      "zone-a",
+				"orchestration.multiregion.zones[0].name":             "zone-a",
+				"orchestration.multiregion.zones[0].numberOfBrokers":  "1",
+				"orchestration.multiregion.zones[0].numberOfReplicas": "1",
+				"orchestration.multiregion.zones[0].priority":         "100",
+				"orchestration.multiregion.keepUnzonedBrokers":        "true",
+				"orchestration.multiregion.regions":                   "1",
+				"orchestration.multiregion.regionId":                  "0",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				for _, document := range strings.Split(output, "\n---\n") {
+					var podDisruptionBudget v1.PodDisruptionBudget
+					helm.UnmarshalK8SYaml(t, document, &podDisruptionBudget)
+					if podDisruptionBudget.Name != "camunda-platform-test-zeebe" {
+						continue
+					}
+					require.Len(t, podDisruptionBudget.Spec.Selector.MatchExpressions, 1)
+					require.Equal(t, "camunda.io/broker-generation", podDisruptionBudget.Spec.Selector.MatchExpressions[0].Key)
+					require.Equal(t, metav1.LabelSelectorOpIn, podDisruptionBudget.Spec.Selector.MatchExpressions[0].Operator)
+					return
+				}
+				require.Fail(t, "unzoned PodDisruptionBudget was not rendered")
+			},
+		},
 		{
 			Name: "TestContainerMinAvailableMutualExclusiveWithMaxUnavailable",
 			Values: map[string]string{
