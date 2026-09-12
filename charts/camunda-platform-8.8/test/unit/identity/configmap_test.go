@@ -16,7 +16,9 @@ package identity
 
 import (
 	"camunda-platform/test/unit/testhelpers"
+	"fmt"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -485,7 +487,178 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 				s.Require().NotContains(applicationYaml, "optimize-api",
 					"Optimize API should not be present when optimize.enabled=false")
 			},
+		}, {
+			Name:                 "TestConsoleDisabledExcludesConsoleConfig",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"identity.enabled":                         "true",
+				"global.identity.auth.enabled":             "true",
+				"global.identity.auth.admin.enabled":       "true",
+				"global.identity.auth.console.redirectUrl": "https://console.example.com",
+				"global.security.authentication.method":    "oidc",
+				"console.enabled":                          "false",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+
+				applicationYaml := configmap.Data["application.yaml"]
+
+				s.Require().NotContains(applicationYaml, "VALUES_KEYCLOAK_INIT_CONSOLE_CLIENT_ID",
+					"Console client should not be present when console.enabled=false")
+				s.Require().NotContains(applicationYaml, "https://console.example.com",
+					"Console root-url should not be present when console.enabled=false")
+				s.Require().NotContains(applicationYaml, "console-api",
+					"Console API should not be present when console.enabled=false")
+			},
+		}, {
+			Name:                 "TestConsoleEnabledIncludesConsoleConfig",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"identity.enabled":                         "true",
+				"global.identity.auth.enabled":             "true",
+				"global.identity.auth.admin.enabled":       "true",
+				"global.identity.auth.console.redirectUrl": "https://console.example.com",
+				"global.security.authentication.method":    "oidc",
+				"console.enabled":                          "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+
+				applicationYaml := configmap.Data["application.yaml"]
+
+				s.Require().Contains(applicationYaml, "VALUES_KEYCLOAK_INIT_CONSOLE_CLIENT_ID",
+					"Console client should be present when console.enabled=true")
+				s.Require().Contains(applicationYaml, "https://console.example.com",
+					"Console root-url should be present when console.enabled=true")
+				s.Require().Contains(applicationYaml, "console-api",
+					"Console API should be present when console.enabled=true")
+			},
+		}, {
+			Name:                 "TestWebModelerDisabledExcludesWebModelerConfig",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"identity.enabled":                            "true",
+				"global.identity.auth.enabled":                "true",
+				"global.identity.auth.admin.enabled":          "true",
+				"global.identity.auth.webModeler.redirectUrl": "https://modeler.example.com",
+				"global.security.authentication.method":       "oidc",
+				"webModeler.enabled":                          "false",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+
+				applicationYaml := configmap.Data["application.yaml"]
+
+				s.Require().NotContains(applicationYaml, "VALUES_KEYCLOAK_INIT_WEBMODELER_CLIENT_ID",
+					"Web Modeler client should not be present when webModeler.enabled=false")
+				s.Require().NotContains(applicationYaml, "https://modeler.example.com",
+					"Web Modeler root-url should not be present when webModeler.enabled=false")
+				s.Require().NotContains(applicationYaml, "web-modeler-api",
+					"Web Modeler API should not be present when webModeler.enabled=false")
+			},
+		}, {
+			Name:                 "TestWebModelerEnabledIncludesWebModelerConfig",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"identity.enabled":                            "true",
+				"global.identity.auth.enabled":                "true",
+				"global.identity.auth.admin.enabled":          "true",
+				"global.identity.auth.webModeler.redirectUrl": "https://modeler.example.com",
+				"global.security.authentication.method":       "oidc",
+				"webModeler.enabled":                          "true",
+				"webModeler.restapi.mail.fromAddress":         "a@b.c",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+
+				applicationYaml := configmap.Data["application.yaml"]
+
+				s.Require().Contains(applicationYaml, "VALUES_KEYCLOAK_INIT_WEBMODELER_CLIENT_ID",
+					"Web Modeler client should be present when webModeler.enabled=true")
+				s.Require().Contains(applicationYaml, "https://modeler.example.com",
+					"Web Modeler root-url should be present when webModeler.enabled=true")
+				s.Require().Contains(applicationYaml, "web-modeler-api",
+					"Web Modeler API should be present when webModeler.enabled=true")
+			},
 		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *configMapSpringTemplateTest) TestComponentEnablementSurfaces() {
+	components := []struct {
+		valuesKey string
+		presetKey string
+		api       string
+	}{
+		{"console", "console", "console-api"},
+		{"optimize", "optimize", "optimize-api"},
+		{"webModeler", "webmodeler", "web-modeler-api"},
+	}
+
+	testCases := []testhelpers.TestCase{}
+	for mask := 0; mask < 1<<len(components); mask++ {
+		enabled := map[string]bool{}
+		values := map[string]string{
+			"identity.enabled":                      "true",
+			"global.identity.auth.enabled":          "true",
+			"global.identity.auth.admin.enabled":    "true",
+			"global.security.authentication.method": "oidc",
+			"webModeler.restapi.mail.fromAddress":   "a@b.c",
+		}
+		name := "TestSurfaces"
+		for i, component := range components {
+			on := mask&(1<<i) != 0
+			enabled[component.valuesKey] = on
+			values[component.valuesKey+".enabled"] = strconv.FormatBool(on)
+			name += fmt.Sprintf("_%s=%t", component.valuesKey, on)
+		}
+
+		testCases = append(testCases, testhelpers.TestCase{
+			Name:                 name,
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values:               values,
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+
+				var config IdentityConfigYAML
+				s.Require().NoError(yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &config))
+
+				granted := map[string]bool{}
+				for _, client := range config.Keycloak.Clients {
+					for _, permission := range client.Permissions {
+						granted[permission.ResourceServerId] = true
+					}
+				}
+
+				for _, component := range components {
+					on := enabled[component.valuesKey]
+
+					preset, ok := config.Identity.ComponentPresets[component.presetKey]
+					s.Require().True(ok, "%s preset key should always render", component.presetKey)
+					if on {
+						s.Require().NotEmpty(preset.Applications, "%s applications with enabled=true", component.presetKey)
+						s.Require().NotEmpty(preset.Apis, "%s apis with enabled=true", component.presetKey)
+						s.Require().NotEmpty(preset.Roles, "%s roles with enabled=true", component.presetKey)
+					} else {
+						s.Require().Empty(preset.Applications, "%s applications with enabled=false", component.presetKey)
+						s.Require().Empty(preset.Apis, "%s apis with enabled=false", component.presetKey)
+						s.Require().Empty(preset.Roles, "%s roles with enabled=false", component.presetKey)
+					}
+
+					_, initialized := config.Keycloak.Init[component.presetKey]
+					s.Require().Equal(on, initialized, "keycloak.init.%s presence", component.presetKey)
+
+					s.Require().Equal(on, granted[component.api], "%s client permission grant", component.api)
+				}
+			},
+		})
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
