@@ -1712,3 +1712,70 @@ func (s *ConfigmapTemplateTest) TestCamundaExporterHonorsAutoconfigureFromExtraC
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
+
+func (s *ConfigmapTemplateTest) TestUnifiedExporterClassNameMirrorsLegacyExporter() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestElasticsearchExporterClassNameRenderedInUnifiedConfig",
+			Values: map[string]string{
+				"optimize.enabled":                        "true",
+				"optimize.database.elasticsearch.enabled": "true",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.exporters.elasticsearch.className":         "io.camunda.zeebe.exporter.ElasticsearchExporter",
+				"configmapApplication.zeebe.broker.exporters.elasticsearch.className":         "io.camunda.zeebe.exporter.ElasticsearchExporter",
+				"configmapApplication.zeebe.broker.exporters.elasticsearch.args.index.prefix": "zeebe-record",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+				var app map[string]any
+				require.NoError(t, yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &app))
+				exporters := app["camunda"].(map[string]any)["data"].(map[string]any)["exporters"].(map[string]any)
+				require.Equal(t, map[string]any{"className": "io.camunda.zeebe.exporter.ElasticsearchExporter"}, exporters["elasticsearch"])
+				require.NotContains(t, exporters, "opensearch")
+			},
+		},
+		{
+			Name: "TestOpenSearchExporterClassNameRenderedInUnifiedConfig",
+			Values: map[string]string{
+				"optimize.enabled":                                   "true",
+				"optimize.database.elasticsearch.enabled":            "false",
+				"optimize.database.opensearch.enabled":               "true",
+				"optimize.database.opensearch.url.host":              "opensearch.example.com",
+				"orchestration.data.secondaryStorage.type":           "opensearch",
+				"orchestration.data.secondaryStorage.opensearch.url": "https://opensearch.example.com:443",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.exporters.opensearch.className": "io.camunda.zeebe.exporter.opensearch.OpensearchExporter",
+				"configmapApplication.zeebe.broker.exporters.opensearch.className": "io.camunda.zeebe.exporter.opensearch.OpensearchExporter",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+				var app map[string]any
+				require.NoError(t, yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &app))
+				exporters := app["camunda"].(map[string]any)["data"].(map[string]any)["exporters"].(map[string]any)
+				require.Equal(t, map[string]any{"className": "io.camunda.zeebe.exporter.opensearch.OpensearchExporter"}, exporters["opensearch"])
+				require.NotContains(t, exporters, "elasticsearch")
+			},
+		},
+		{
+			Name:   "TestUnifiedExportersAbsentWithoutLegacyExporter",
+			Values: map[string]string{},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+				var app map[string]any
+				require.NoError(t, yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &app))
+				require.NotContains(t, app["camunda"].(map[string]any)["data"].(map[string]any), "exporters")
+				require.NotContains(t, app["zeebe"].(map[string]any)["broker"].(map[string]any), "exporters")
+			},
+		},
+	}
+
+	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
