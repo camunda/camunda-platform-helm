@@ -51,6 +51,18 @@ install.ci-result-cache:
 build.release-tools:
 	cd scripts/release-tools && go mod tidy && go build .
 
+.PHONY: build.capacity-manager
+build.capacity-manager:
+	cd scripts/capacity-manager && go build ./cmd/capacity-manager
+
+.PHONY: test.capacity-manager
+test.capacity-manager:
+	cd scripts/capacity-manager && go test ./...
+
+.PHONY: build-image.capacity-manager
+build-image.capacity-manager:
+	docker build -f scripts/capacity-manager/Dockerfile -t capacity-manager:local scripts/capacity-manager
+
 .PHONY: install.release-tools
 install.release-tools:
 	cd scripts/release-tools && go mod tidy && go install .
