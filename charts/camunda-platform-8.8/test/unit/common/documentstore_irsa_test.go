@@ -75,6 +75,26 @@ func hasAwsSecretAccessKeyEnvVar(containers []corev1.Container) bool {
 	return false
 }
 
+func requireNoGcpCredentialWiring(t *testing.T, podSpec corev1.PodSpec) {
+	t.Helper()
+	for _, containers := range [][]corev1.Container{podSpec.InitContainers, podSpec.Containers} {
+		for _, container := range containers {
+			for _, env := range container.Env {
+				require.NotEqual(t, "GOOGLE_APPLICATION_CREDENTIALS", env.Name,
+					"GOOGLE_APPLICATION_CREDENTIALS should never be present")
+			}
+			for _, volumeMount := range container.VolumeMounts {
+				require.NotEqual(t, "gcp-credentials-volume", volumeMount.Name,
+					"gcp-credentials-volume should never be mounted")
+			}
+		}
+	}
+	for _, volume := range podSpec.Volumes {
+		require.NotEqual(t, "gcp-credentials-volume", volume.Name,
+			"gcp-credentials-volume should never be present")
+	}
+}
+
 // Helper function to check if any container references the shared documentstore-env-vars ConfigMap via envFrom
 func hasDocumentStoreEnvFromRef(containers []corev1.Container) bool {
 	for _, container := range containers {
@@ -142,6 +162,16 @@ func awsDocumentStoreValuesWithoutSecret() map[string]string {
 	return values
 }
 
+func gcpDocumentStoreValues() map[string]string {
+	values := baseValues()
+	values["global.documentStore.activeStoreId"] = "gcp"
+	values["global.documentStore.type.gcp.enabled"] = "true"
+	values["global.documentStore.type.gcp.bucket"] = "test-bucket"
+	values["global.documentStore.type.gcp.secret.existingSecret"] = "gcp-credentials"
+	values["global.documentStore.type.gcp.secret.existingSecretKey"] = "credentials.json"
+	return values
+}
+
 func (s *documentStoreIRSATest) TestOrchestrationStatefulSetWithIRSA() {
 	testCases := []testhelpers.TestCase{
 		{
@@ -181,18 +211,17 @@ func (s *documentStoreIRSATest) TestOrchestrationStatefulSetWithIRSA() {
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
-func (s *documentStoreIRSATest) TestOrchestrationImporterWithIRSA() {
-	valuesIRSA := awsDocumentStoreValuesWithIRSA(true)
-	valuesIRSA["orchestration.migration.data.enabled"] = "true"
-
-	valuesWithCredentials := awsDocumentStoreValuesWithIRSA(false)
-	valuesWithCredentials["orchestration.migration.data.enabled"] = "true"
+func (s *documentStoreIRSATest) TestOrchestrationImporterNeverGetsDocumentStoreCreds() {
+	values := awsDocumentStoreValuesWithIRSA(false)
+	values["orchestration.migration.data.enabled"] = "true"
+	valuesGCP := gcpDocumentStoreValues()
+	valuesGCP["orchestration.migration.data.enabled"] = "true"
 
 	testCases := []testhelpers.TestCase{
 		{
-			Name:     "Importer: AWS credentials should NOT be injected when irsa.enabled is true (IRSA mode)",
+			Name:     "Importer: document-store AWS credentials and envFrom should never be injected",
 			Template: "templates/orchestration/importer-deployment.yaml",
-			Values:   valuesIRSA,
+			Values:   values,
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
 				var deployment appsv1.Deployment
@@ -200,25 +229,23 @@ func (s *documentStoreIRSATest) TestOrchestrationImporterWithIRSA() {
 
 				containers := deployment.Spec.Template.Spec.Containers
 				require.False(t, hasAwsAccessKeyIdEnvVar(containers),
-					"AWS_ACCESS_KEY_ID should NOT be present when irsa.enabled is true")
+					"AWS_ACCESS_KEY_ID should never be present on the migration importer")
 				require.False(t, hasAwsSecretAccessKeyEnvVar(containers),
-					"AWS_SECRET_ACCESS_KEY should NOT be present when irsa.enabled is true")
+					"AWS_SECRET_ACCESS_KEY should never be present on the migration importer")
+				require.False(t, hasDocumentStoreEnvFromRef(containers),
+					"the migration importer should never reference the documentstore-env-vars ConfigMap")
 			},
 		},
 		{
-			Name:     "Importer: AWS credentials SHOULD be injected when irsa.enabled is false",
+			Name:     "Importer: GCP document-store credentials should never be injected",
 			Template: "templates/orchestration/importer-deployment.yaml",
-			Values:   valuesWithCredentials,
+			Values:   valuesGCP,
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
 				var deployment appsv1.Deployment
 				helm.UnmarshalK8SYaml(t, output, &deployment)
 
-				containers := deployment.Spec.Template.Spec.Containers
-				require.True(t, hasAwsAccessKeyIdEnvVar(containers),
-					"AWS_ACCESS_KEY_ID should be present when irsa.enabled is false")
-				require.True(t, hasAwsSecretAccessKeyEnvVar(containers),
-					"AWS_SECRET_ACCESS_KEY should be present when irsa.enabled is false")
+				requireNoGcpCredentialWiring(t, deployment.Spec.Template.Spec)
 			},
 		},
 	}
@@ -226,7 +253,7 @@ func (s *documentStoreIRSATest) TestOrchestrationImporterWithIRSA() {
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
-// connectors, console, identity, optimize and web-modeler-webapp are not
+// connectors, console, identity, and web-modeler-webapp are not
 // document-store consumers (camunda-platform-helm#3741) - these guard against
 // the config ever being re-introduced.
 
@@ -258,31 +285,10 @@ func (s *documentStoreIRSATest) TestConsoleNeverGetsDocumentStoreCreds() {
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
-// Connectors reads the AWS credentials as ambient AWS SDK config for connector tasks, so they stay;
-// it never reads the document-store ConfigMap, whose only other payload (AWS_REGION) it cannot
-// consume either - AwsUtils.extractRegionOrDefault takes the region from the element template.
-func (s *documentStoreIRSATest) TestConnectorsWithIRSA() {
+func (s *documentStoreIRSATest) TestConnectorsNeverGetsDocumentStoreCreds() {
 	testCases := []testhelpers.TestCase{
 		{
-			Name:     "Connectors: AWS credentials should NOT be injected when irsa.enabled is true (IRSA mode)",
-			Template: "templates/connectors/deployment.yaml",
-			Values:   awsDocumentStoreValuesWithIRSA(true),
-			Verifier: func(t *testing.T, output string, err error) {
-				require.NoError(t, err)
-				var deployment appsv1.Deployment
-				helm.UnmarshalK8SYaml(t, output, &deployment)
-
-				containers := deployment.Spec.Template.Spec.Containers
-				require.False(t, hasAwsAccessKeyIdEnvVar(containers),
-					"AWS_ACCESS_KEY_ID should NOT be present when irsa.enabled is true")
-				require.False(t, hasAwsSecretAccessKeyEnvVar(containers),
-					"AWS_SECRET_ACCESS_KEY should NOT be present when irsa.enabled is true")
-				require.False(t, hasDocumentStoreEnvFromRef(containers),
-					"connectors should not reference the documentstore-env-vars ConfigMap")
-			},
-		},
-		{
-			Name:     "Connectors: AWS credentials SHOULD be injected when irsa.enabled is false",
+			Name:     "Connectors: document-store AWS credentials and envFrom should never be injected",
 			Template: "templates/connectors/deployment.yaml",
 			Values:   awsDocumentStoreValuesWithIRSA(false),
 			Verifier: func(t *testing.T, output string, err error) {
@@ -291,12 +297,24 @@ func (s *documentStoreIRSATest) TestConnectorsWithIRSA() {
 				helm.UnmarshalK8SYaml(t, output, &deployment)
 
 				containers := deployment.Spec.Template.Spec.Containers
-				require.True(t, hasAwsAccessKeyIdEnvVar(containers),
-					"AWS_ACCESS_KEY_ID should be present when irsa.enabled is false")
-				require.True(t, hasAwsSecretAccessKeyEnvVar(containers),
-					"AWS_SECRET_ACCESS_KEY should be present when irsa.enabled is false")
+				require.False(t, hasAwsAccessKeyIdEnvVar(containers),
+					"AWS_ACCESS_KEY_ID should never be present on connectors")
+				require.False(t, hasAwsSecretAccessKeyEnvVar(containers),
+					"AWS_SECRET_ACCESS_KEY should never be present on connectors")
 				require.False(t, hasDocumentStoreEnvFromRef(containers),
-					"connectors should not reference the documentstore-env-vars ConfigMap")
+					"connectors should never reference the documentstore-env-vars ConfigMap")
+			},
+		},
+		{
+			Name:     "Connectors: GCP document-store credentials should never be injected",
+			Template: "templates/connectors/deployment.yaml",
+			Values:   gcpDocumentStoreValues(),
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(t, output, &deployment)
+
+				requireNoGcpCredentialWiring(t, deployment.Spec.Template.Spec)
 			},
 		},
 	}
