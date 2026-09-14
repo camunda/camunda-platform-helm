@@ -1,6 +1,6 @@
 # Support zone-aware broker migration through coexisting StatefulSets
 
-- Status: proposed
+- Status: accepted
 - Date: 2026-09-04
 - Decision-makers: Distribution team, Distributed Systems team
 
