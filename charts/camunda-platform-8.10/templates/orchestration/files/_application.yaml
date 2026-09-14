@@ -238,6 +238,27 @@ camunda:
     multiTenancy:
       checksEnabled: {{ include "orchestration.multitenancyChecksEnabled" . }}
       apiEnabled: {{ include "orchestration.multitenancyApiEnabled" . }}
+  # Webapp UI locations announced via the /.well-known/camunda/webapps discovery endpoint
+  # (camunda/camunda#46649). Absolute URLs derived from the ingress configuration take
+  # precedence over the cluster's relative-path fallback; disabled webapps are never announced.
+  # Mirrors orchestration.enabledProfiles: with global.noSecondaryStorage the Operate/Tasklist
+  # profiles are dropped, so they are not announced either. An absolute URL is set only when the
+  # chart knows a real external host; in the localhost fallback (no ingress/gateway) the endpoint's
+  # relative-path default is strictly better, as it resolves against the origin the client used.
+  {{- $operateEnabled := and .Values.orchestration.profiles.operate (not .Values.global.noSecondaryStorage) }}
+  {{- $tasklistEnabled := and .Values.orchestration.profiles.tasklist (not .Values.global.noSecondaryStorage) }}
+  {{- $externalHostKnown := and (or .Values.global.ingress.enabled .Values.global.gateway.enabled) (tpl .Values.global.host .) }}
+  webapps:
+    operate:
+      enabled: {{ $operateEnabled }}
+      {{- if and $operateEnabled $externalHostKnown }}
+      url: {{ include "camundaPlatform.operateExternalURL" . | quote }}
+      {{- end }}
+    tasklist:
+      enabled: {{ $tasklistEnabled }}
+      {{- if and $tasklistEnabled $externalHostKnown }}
+      url: {{ include "camundaPlatform.tasklistExternalURL" . | quote }}
+      {{- end }}
   {{- if .Values.orchestration.hub.ping.endpoint }}
   hub:
     ping:
