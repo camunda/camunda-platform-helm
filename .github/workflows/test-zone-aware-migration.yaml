@@ -60,7 +60,7 @@ jobs:
         env:
           BASE_CHART_DIR: ${{ github.workspace }}/.migration-base/charts/camunda-platform-8.10
         run: |
-          make -C .migration-base helm.dependency-update chartPath=charts/camunda-platform-8.10
+          make helm.dependency-update chartPath="$BASE_CHART_DIR"
           make test.zone-aware-migration
 
       - name: Collect diagnostics
