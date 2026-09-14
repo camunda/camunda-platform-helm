@@ -795,7 +795,7 @@ global:
         ## @param global.documentStore.type.inmemory.class Fully qualified class name for the in-memory document store provider.
         class: "io.camunda.document.store.inmemory.InMemoryDocumentStoreProvider"
       azure:
-        ## @extra global.documentStore.type.azure.connectionString configuration to provide the Azure Blob Storage connection string.
+        ## @extra global.documentStore.type.azure.connectionString configuration to provide the Azure Blob Storage connection string for Camunda 8.9.18 and newer. The secret is injected as `DOCUMENT_STORE_<ID>_CONNECTION_STRING`, where ID is the uppercased `global.documentStore.activeStoreId`. Configure the provider class, container, and optional endpoint through `orchestration.env` using `DOCUMENT_STORE_<ID>_*` variables; Spring `extraConfiguration` is not supported for document stores in 8.9.
         connectionString:
           ## @extra global.documentStore.type.azure.connectionString.secret configuration to provide the Azure connection string as a secret.
           secret:

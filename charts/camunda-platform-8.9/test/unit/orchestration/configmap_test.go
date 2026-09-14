@@ -128,6 +128,46 @@ func TestGoldenConfigmapWithRDBMSEnabled(t *testing.T) {
 	})
 }
 
+func (s *ConfigmapLegacyTemplateTest) TestAzureDocumentStoreDoesNotRenderSpringProperties() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "existing Azure secret",
+			Values: map[string]string{
+				"global.documentStore.activeStoreId":                                     "azure",
+				"global.documentStore.type.azure.connectionString.secret.existingSecret": "azure-credentials",
+			},
+		},
+		{
+			Name: "inline Azure secret with a custom store ID",
+			Values: map[string]string{
+				"global.documentStore.activeStoreId":                                   "az1",
+				"global.documentStore.type.azure.connectionString.secret.inlineSecret": "test-connection-string",
+			},
+		},
+		{
+			Name: "no Azure secret",
+			Values: map[string]string{
+				"global.documentStore.activeStoreId": "azure",
+			},
+		},
+	}
+	for caseIndex := range testCases {
+		testCases[caseIndex].Verifier = func(t *testing.T, output string, err error) {
+			s.Require().NoError(err)
+			var configmap corev1.ConfigMap
+			helm.UnmarshalK8SYaml(t, output, &configmap)
+			s.Require().Contains(configmap.Data, "application.yaml")
+			var configuration map[string]map[string]any
+			s.Require().NoError(yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configuration))
+			s.Require().Contains(configuration, "camunda")
+			s.Require().Contains(configuration["camunda"], "license")
+			s.Require().NotContains(configuration["camunda"], "document")
+		}
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
 func (s *ConfigmapLegacyTemplateTest) TestDifferentValuesInputs() {
 	testCases := []testhelpers.TestCase{
 		{
