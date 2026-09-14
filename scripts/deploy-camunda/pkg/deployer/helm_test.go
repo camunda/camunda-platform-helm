@@ -18,6 +18,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"scripts/deploy-camunda/pkg/types"
 	"strings"
 	"sync/atomic"
@@ -135,16 +137,17 @@ func stubHelm(
 
 func TestDeployCompanionChart(t *testing.T) {
 	tests := []struct {
-		name        string
-		cc          types.CompanionChart
-		opts        types.Options
-		runErr      error
-		repoAddErr  error
-		repoUpdErr  error
-		wantErr     string   // substring expected in error message; empty = no error
-		wantArgs    []string // substrings expected in the helm run args
-		notWantArgs []string // substrings that must NOT appear in helm run args
-		wantRepoAdd bool     // expect helmRepoAdd to be called
+		name          string
+		cc            types.CompanionChart
+		opts          types.Options
+		runErr        error
+		repoAddErr    error
+		repoUpdErr    error
+		valuesContent string
+		wantErr       string   // substring expected in error message; empty = no error
+		wantArgs      []string // substrings expected in the helm run args
+		notWantArgs   []string // substrings that must NOT appear in helm run args
+		wantRepoAdd   bool     // expect helmRepoAdd to be called
 	}{
 		{
 			name: "remote chart with version and repo registration",
@@ -316,7 +319,7 @@ func TestDeployCompanionChart(t *testing.T) {
 			wantArgs: []string{"--set", "persistence.storageClass=hyperdisk-balanced"},
 		},
 		{
-			name: "keycloak companion is excluded from the storage class override",
+			name: "keycloak postgresql storage class override",
 			cc: types.CompanionChart{
 				ChartRef:    "internal-keycloak-26",
 				ReleaseName: "keycloak",
@@ -325,7 +328,60 @@ func TestDeployCompanionChart(t *testing.T) {
 				Namespace:             "ns",
 				CompanionStorageClass: "hyperdisk-balanced",
 			},
-			notWantArgs: []string{"hyperdisk-balanced"},
+			wantArgs: []string{"--set", "postgresql.storage.storageClassName=hyperdisk-balanced", "postgresql.storage.size=4Gi"},
+		},
+		{
+			name:          "keycloak raises an undersized hyperdisk volume",
+			cc:            types.CompanionChart{ChartRef: "internal-keycloak-26", ReleaseName: "keycloak"},
+			opts:          types.Options{Namespace: "ns", CompanionStorageClass: "hyperdisk-balanced"},
+			valuesContent: "postgresql:\n  storage:\n    size: 2Gi\n",
+			wantArgs:      []string{"postgresql.storage.size=4Gi"},
+		},
+		{
+			name:          "keycloak preserves a larger hyperdisk volume",
+			cc:            types.CompanionChart{ChartRef: "internal-keycloak-26", ReleaseName: "keycloak"},
+			opts:          types.Options{Namespace: "ns", CompanionStorageClass: "hyperdisk-balanced"},
+			valuesContent: "postgresql:\n  storage:\n    size: 8Gi\n",
+			wantArgs:      []string{"postgresql.storage.storageClassName=hyperdisk-balanced"},
+			notWantArgs:   []string{"postgresql.storage.size="},
+		},
+		{
+			name:          "keycloak preserves a minimum-sized hyperdisk volume",
+			cc:            types.CompanionChart{ChartRef: "internal-keycloak-26", ReleaseName: "keycloak"},
+			opts:          types.Options{Namespace: "ns", CompanionStorageClass: "hyperdisk-balanced"},
+			valuesContent: "postgresql:\n  storage:\n    size: 4096Mi\n",
+			notWantArgs:   []string{"postgresql.storage.size="},
+		},
+		{
+			name:          "keycloak rejects an invalid hyperdisk storage quantity",
+			cc:            types.CompanionChart{ChartRef: "internal-keycloak-26", ReleaseName: "keycloak"},
+			opts:          types.Options{Namespace: "ns", CompanionStorageClass: "hyperdisk-balanced"},
+			valuesContent: "postgresql:\n  storage:\n    size: invalid\n",
+			wantErr:       "parse keycloak postgresql storage size",
+		},
+		{
+			name:    "keycloak reports unreadable storage values",
+			cc:      types.CompanionChart{ChartRef: "internal-keycloak-26", ReleaseName: "keycloak", ValuesFile: "/nonexistent/6833-keycloak-values.yaml"},
+			opts:    types.Options{Namespace: "ns", CompanionStorageClass: "hyperdisk-balanced"},
+			wantErr: "read keycloak companion values",
+		},
+		{
+			name:          "keycloak reports malformed storage values",
+			cc:            types.CompanionChart{ChartRef: "internal-keycloak-26", ReleaseName: "keycloak"},
+			opts:          types.Options{Namespace: "ns", CompanionStorageClass: "hyperdisk-balanced"},
+			valuesContent: "postgresql: [",
+			wantErr:       "parse keycloak companion values",
+		},
+		{
+			name: "keycloak preserves the configured storage class without an override",
+			cc: types.CompanionChart{
+				ChartRef:    "internal-keycloak-26",
+				ReleaseName: "keycloak",
+				ValuesFile:  "/tmp/keycloak-values.yaml",
+			},
+			opts:        types.Options{Namespace: "ns"},
+			wantArgs:    []string{"-f", "/tmp/keycloak-values.yaml"},
+			notWantArgs: []string{"--set", "storageClassName"},
 		},
 		{
 			name: "unmarshalable tolerations value propagates as HelmError",
@@ -344,6 +400,12 @@ func TestDeployCompanionChart(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			if tt.valuesContent != "" {
+				tt.cc.ValuesFile = filepath.Join(t.TempDir(), "values.yaml")
+				if err := os.WriteFile(tt.cc.ValuesFile, []byte(tt.valuesContent), 0o600); err != nil {
+					t.Fatal(err)
+				}
+			}
 			var capturedArgs []string
 			repoAddCalled := false
 

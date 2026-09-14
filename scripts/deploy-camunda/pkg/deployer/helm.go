@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"path/filepath"
 	"scripts/camunda-core/pkg/helm"
 	"scripts/camunda-core/pkg/logging"
@@ -28,6 +29,8 @@ import (
 	"time"
 
 	"golang.org/x/sync/errgroup"
+	"gopkg.in/yaml.v3"
+	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 // Package-level function variables for helm operations. These default to the
@@ -255,15 +258,41 @@ func formatArgs(args []string) string {
 var companionRepoMu sync.Mutex
 
 // companionStorageClassPaths maps a companion release name to the Helm value
-// that sets the storage class on its claim template. Only companions whose pods
-// follow CompanionNodeSelector onto the infra pool belong here: the pool's
-// machine type constrains which disk types can attach, so their PVCs must use a
-// compatible class. The keycloak companion's postgresql StatefulSet is
-// deliberately absent — it declares no nodeSelector, so it stays on the default
-// pool where the cluster default class works.
+// that sets the storage class on its claim template.
 var companionStorageClassPaths = map[string]string{
 	"elasticsearch": "volumeClaimTemplate.storageClassName",
+	"keycloak":      "postgresql.storage.storageClassName",
 	"postgresql":    "persistence.storageClass",
+}
+
+func keycloakPostgresqlStorageMinimum(valuesFile string) (string, error) {
+	var values struct {
+		Postgresql struct {
+			Storage struct {
+				Size string `yaml:"size"`
+			} `yaml:"storage"`
+		} `yaml:"postgresql"`
+	}
+	if valuesFile != "" {
+		content, err := os.ReadFile(valuesFile)
+		if err != nil {
+			return "", fmt.Errorf("read keycloak companion values: %w", err)
+		}
+		if err := yaml.Unmarshal(content, &values); err != nil {
+			return "", fmt.Errorf("parse keycloak companion values: %w", err)
+		}
+	}
+	minimum := resource.MustParse("4Gi")
+	if values.Postgresql.Storage.Size != "" {
+		requested, err := resource.ParseQuantity(values.Postgresql.Storage.Size)
+		if err != nil {
+			return "", fmt.Errorf("parse keycloak postgresql storage size: %w", err)
+		}
+		if requested.Cmp(minimum) >= 0 {
+			return "", nil
+		}
+	}
+	return minimum.String(), nil
 }
 
 // deployCompanionCharts deploys all configured companion charts concurrently,
@@ -361,6 +390,15 @@ func deployCompanionChart(ctx context.Context, cc types.CompanionChart, o types.
 	}
 	if path, ok := companionStorageClassPaths[cc.ReleaseName]; ok && o.CompanionStorageClass != "" {
 		args = append(args, "--set", path+"="+o.CompanionStorageClass)
+	}
+	if cc.ReleaseName == "keycloak" && o.CompanionStorageClass == "hyperdisk-balanced" {
+		minimum, err := keycloakPostgresqlStorageMinimum(cc.ValuesFile)
+		if err != nil {
+			return &HelmError{Reason: "resolve keycloak postgresql storage minimum", Cause: err}
+		}
+		if minimum != "" {
+			args = append(args, "--set", "postgresql.storage.size="+minimum)
+		}
 	}
 
 	// Companion charts always pass --wait (see the args above), independently of o.Wait.

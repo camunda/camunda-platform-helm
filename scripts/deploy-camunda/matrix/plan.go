@@ -28,8 +28,7 @@ import (
 // PlanOptions carries the inputs of the generate-chart-matrix composite
 // action: the changed-files trigger context plus the manual overrides.
 type PlanOptions struct {
-	// ActiveVersions are the active chart versions (chart-versions.yaml
-	// supportStandard), e.g. ["8.7", "8.8", "8.9", "8.10"].
+	// ActiveVersions are the routine chart versions from chartAutomation.routineVersions.
 	ActiveVersions []string
 	// ChangedFiles is the raw changed-files list (whitespace-separated, as
 	// emitted by tj-actions/changed-files with dir_names:true).
@@ -167,7 +166,6 @@ var deployRelevantScriptDirs = []string{
 var deployRelevantScriptFiles = []string{
 	"base_playwright_script.sh",
 	"check-no-plaintext-datastore.sh",
-	"check-values-enterprise.sh",
 	"check-values-latest.sh",
 	"deploy-camunda.sh",
 	"dns-fallback.cjs",
@@ -217,6 +215,10 @@ var buildAllTriggers = []buildAllTrigger{
 	{
 		Pattern:     regexp.MustCompile(`^test/e2e/`),
 		Description: "test/e2e/ (shared Playwright config)",
+	},
+	{
+		Pattern:     regexp.MustCompile(`^charts/chart-versions\.yaml$`),
+		Description: "charts/chart-versions.yaml (routine chart automation)",
 	},
 }
 

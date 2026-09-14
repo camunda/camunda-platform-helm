@@ -17,6 +17,8 @@ package chartmeta
 import (
 	"fmt"
 	"strings"
+
+	"scripts/camunda-core/pkg/versionmatrix"
 )
 
 // ChartImagesAnnotation is the Chart.yaml annotation holding the chart's full
@@ -51,12 +53,11 @@ type PackageMetadata struct {
 	CosignVerify      string // camunda-platform-{Version}-cosign-verify.sh
 	ImageVersions     string // camunda.io/component-image-versions annotation ("" if absent)
 	HasImageOverrides bool   // whether the camunda.io/imageOverrides annotation is present/non-empty
-	IsLatestStable    *bool  // AppVersion == chart-versions supportStandard[0]; nil when not evaluated
+	IsLatestStable    *bool  // AppVersion == newest released minor; nil when not evaluated
 }
 
 // ReadPackageMetadata parses the extracted chartYAMLPath. When chartVersionsPath
-// is non-empty it also computes IsLatestStable against
-// .camundaVersions.supportStandard[0].
+// is non-empty it also computes IsLatestStable from lifecycle release metadata.
 func ReadPackageMetadata(chartYAMLPath, chartVersionsPath string) (PackageMetadata, error) {
 	m, err := readValues(chartYAMLPath)
 	if err != nil {
@@ -88,7 +89,11 @@ func ReadPackageMetadata(chartYAMLPath, chartVersionsPath string) (PackageMetada
 		HasImageOverrides: imageOverrides != "",
 	}
 	if chartVersionsPath != "" {
-		latest, err := latestSupportStandard(chartVersionsPath)
+		versions, err := versionmatrix.LoadChartVersionsConfig(chartVersionsPath)
+		if err != nil {
+			return meta, err
+		}
+		latest, err := versions.LatestStable()
 		if err != nil {
 			return meta, err
 		}
@@ -107,20 +112,4 @@ func stripDotX(s string) string {
 		}
 	}
 	return s
-}
-
-// latestSupportStandard returns .camundaVersions.supportStandard[0] from a
-// chart-versions.yaml, the "latest stable" Camunda minor.
-func latestSupportStandard(path string) (string, error) {
-	cv, err := readValues(path)
-	if err != nil {
-		return "", fmt.Errorf("read %s: %w", path, err)
-	}
-	camundaVersions, _ := cv["camundaVersions"].(map[string]any)
-	arr, _ := camundaVersions["supportStandard"].([]any)
-	if len(arr) == 0 {
-		return "", fmt.Errorf("camundaVersions.supportStandard is empty in %s", path)
-	}
-	s, _ := scalarString(arr[0])
-	return s, nil
 }

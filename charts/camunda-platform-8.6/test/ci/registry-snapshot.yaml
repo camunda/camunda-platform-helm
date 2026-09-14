@@ -1,0 +1,53 @@
+integration:
+  vars:
+    tasksBaseDir: ../../../test/integration/scenarios
+    valuesBaseDir: integration/scenarios
+    chartsBaseDir: ../../../..
+  case:
+    pr:
+      scenario:
+        - name: elasticsearch
+          enabled: false
+          shortname: es
+          auth: keycloak
+          flow: install,upgrade-patch
+          platforms:
+            - gke
+            - eks
+          exclude: []
+          infra-type:
+            eks: preemptible
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
+          skip-e2e: true
+        - name: opensearch
+          enabled: false
+          shortname: os
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: opensearch
+          skip-e2e: true
+        - name: multitenancy
+          enabled: false
+          shortname: mt
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - multitenancy
+          skip-e2e: true
+    nightly:
+      scenario: []
