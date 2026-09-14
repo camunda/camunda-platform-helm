@@ -418,6 +418,39 @@ integration:
             description: |
               Waits for the authenticated Orchestration Cluster ping to register its
               uniquely named cluster in Hub's database.
+        - name: oidc-defaults
+          enabled: true
+          shortname: esoid
+          auth: oidc
+          flow: install
+          platforms:
+            - gke
+          exclude:
+            - identity
+            - console
+            - orchestration-grpc
+          tier: 1
+          infra-type:
+            eks: preemptible
+            gke: distroci
+          identity: oidc
+          persistence: elasticsearch
+          features:
+            - postgresql-companion
+          skip-e2e: true
+          dependencies:
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
         - name: auth0
           enabled: true
           shortname: esa0
