@@ -1,0 +1,16 @@
+global:
+  topology:
+    mode: hub
+  security:
+    authentication:
+      method: oidc
+  identity:
+    auth:
+      issuerBackendUrl: https://keycloak.example.com/realms/camunda
+identity:
+  enabled: true
+camundaHub:
+  enabled: true
+  restapi:
+    mail:
+      fromAddress: noreply@example.com

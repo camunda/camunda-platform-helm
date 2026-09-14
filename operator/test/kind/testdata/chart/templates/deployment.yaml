@@ -1,0 +1,28 @@
+{{- $phase := .Values.camundaHub.upgrade.phase | default "normal" -}}
+{{- if not (has $phase (list "normal" "quiesce" "migrate")) -}}
+  {{- fail "camundaHub.upgrade.phase must be one of 'normal', 'quiesce', 'migrate'" -}}
+{{- end -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-hub
+  labels:
+    app: {{ .Release.Name }}-hub
+spec:
+  # quiesce stops all writers; migrate runs exactly one pod for the startup
+  # migration; normal restores the configured replica count.
+  replicas: {{ ternary 0 (ternary 1 (int .Values.replicas) (eq $phase "migrate")) (eq $phase "quiesce") }}
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-hub
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-hub
+        camunda.io/upgrade-phase: {{ $phase | quote }}
+      annotations:
+        camunda.io/test-message: {{ .Values.message | quote }}
+    spec:
+      containers:
+        - name: pause
+          image: registry.k8s.io/pause:3.9

@@ -442,3 +442,62 @@ release.set-prs-version-label:
 
 .PHONY: precommit.chores
 precommit.chores: helm.lint helm.readme-update helm.schema-update go.update-golden-only-lite
+
+#########################################################
+######### Operator (experimental)
+#########################################################
+
+# The operator drives the same chart through the Helm v4 Go SDK. Its SDK version
+# must equal the helm CLI version in .tool-versions or rendering parity breaks;
+# operator.test asserts that.
+operatorPath ?= operator
+controllerGen ?= sigs.k8s.io/controller-tools/cmd/controller-gen@v0.19.0
+
+.PHONY: operator.generate
+operator.generate:
+	cd $(operatorPath) && go run $(controllerGen) \
+		object:headerFile=hack/boilerplate.go.txt paths=./api/...
+
+.PHONY: operator.manifests
+operator.manifests:
+	cd $(operatorPath) && go run $(controllerGen) \
+		crd rbac:roleName=camunda-hub-operator paths=./... \
+		output:crd:artifacts:config=config/crd/bases \
+		output:rbac:artifacts:config=config/rbac
+
+.PHONY: operator.build
+operator.build:
+	cd $(operatorPath) && go build ./...
+
+.PHONY: operator.test
+operator.test: helm.dependency-update
+	cd $(operatorPath) && go test ./...
+
+.PHONY: operator.fmt
+operator.fmt:
+	cd $(operatorPath) && go fmt ./...
+
+# operator.test-kind: build-tagged suite that runs the operator against a real
+# cluster. Needs a reachable Kubernetes context; create one with
+# `kind create cluster`. Kept out of operator.test so `go test ./...` stays
+# cluster-free.
+.PHONY: operator.test-kind
+operator.test-kind:
+	cd $(operatorPath) && go test -tags kind -count=1 -timeout 15m ./test/kind/
+
+# operator.oci-registry-up / -down: a throwaway plain-HTTP registry holding the
+# fixture chart, so the OCI resolution path is covered. Without it that one test
+# skips.
+.PHONY: operator.oci-registry-up
+operator.oci-registry-up:
+	docker rm -f camunda-operator-registry 2>/dev/null || true
+	docker run -d --name camunda-operator-registry -p 5555:5000 registry:2
+	sleep 3
+	helm package $(operatorPath)/test/kind/testdata/chart -d $(operatorPath)/.oci-tmp
+	helm push $(operatorPath)/.oci-tmp/camunda-platform-0.0.1-test.tgz \
+		oci://localhost:5555/charts --plain-http
+	rm -rf $(operatorPath)/.oci-tmp
+
+.PHONY: operator.oci-registry-down
+operator.oci-registry-down:
+	docker rm -f camunda-operator-registry 2>/dev/null || true

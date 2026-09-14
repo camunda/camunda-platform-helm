@@ -1,0 +1,13 @@
+# A stand-in for the real camunda-platform chart.
+#
+# The name matters: the operator refuses to adopt a release installed from any
+# other chart, so a fixture that stands in for it must carry the same name. The
+# real chart is exercised by the parity suite; this one keeps the kind tests fast
+# and independent of registry access, so they measure the operator rather than
+# the chart.
+apiVersion: v2
+name: camunda-platform
+description: Test fixture standing in for the Camunda platform chart
+type: application
+version: 0.0.1-test
+appVersion: "8.10.0-test"

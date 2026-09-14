@@ -1,0 +1,147 @@
+name: "Test - Operator"
+
+# Tests the experimental Camunda Hub operator under operator/.
+#
+# Separate from test-chart-version.yaml on purpose: that workflow builds a
+# chart-version matrix and gates its jobs behind a charts-relevance filter, so a
+# PR touching only operator/ would produce an empty matrix and skip verification
+# entirely. Same reasoning as repo-go-format.yaml and repo-license-headers.yaml.
+#
+# gofmt and licence headers are NOT re-checked here. Those two gates are
+# repo-wide and unfiltered, so they already cover operator/**.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - "operator/**"
+      # The parity suite renders this chart, so a chart change can break it.
+      - "charts/camunda-platform-8.10/**"
+      # Parity holds only while the Helm SDK and CLI versions match.
+      - ".tool-versions"
+      - "Makefile"
+      - ".github/workflows/test-operator.yaml"
+  merge_group:
+    types: [checks_requested]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  operator:
+    name: Operator - build and test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@2fa2e5ecfa1d82a6d2a93106bd43889f68500f4f # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Install tools
+        uses: ./.github/actions/install-tool-versions
+        with:
+          tools: |
+            golang
+            helm
+            kind
+            kubectl
+
+      - name: Configure curl and wget
+        uses: ./.github/actions/setup-curl
+
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+            ~/.asdf/installs/golang/*/packages/pkg/mod
+          key: ${{ runner.os }}-go-operator-${{ hashFiles('operator/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-operator-
+            ${{ runner.os }}-go-
+
+      - name: Build
+        run: |
+          make operator.build
+
+      - name: Vet
+        run: |
+          cd operator && go vet ./...
+
+      # The CRD, RBAC and deepcopy files are generated. Regenerating them here and
+      # failing on any diff is what stops a hand-edited or stale artifact from
+      # being merged.
+      - name: Check generated artifacts are up to date
+        run: |
+          make operator.generate
+          make operator.manifests
+          if ! git diff --exit-code -- operator/; then
+            echo "::error::Generated operator artifacts are stale. Run 'make operator.generate operator.manifests' and commit the result."
+            exit 1
+          fi
+
+      - name: Add helm repos
+        run: |
+          make helm.repos-add
+
+      # The parity suite renders the real 8.10 chart, which needs its common
+      # dependency vendored first.
+      - name: Get Helm dependency
+        run: |
+          make helm.dependency-update chartPath=charts/camunda-platform-8.10
+
+      - name: ⭐️ Test ⭐️
+        run: |
+          cd operator && go test ./...
+
+      # The unit suites prove the operator decides not to write; only a real
+      # cluster proves an adopted release keeps the same pods. The suite uses a
+      # fixture chart, so it needs no Camunda images and runs in seconds.
+      - name: Create KIND cluster
+        run: |
+          kind create cluster --name camunda-operator
+          kubectl config use-context kind-camunda-operator
+
+      # A plain-HTTP registry so the OCI chart-resolution path is covered; without
+      # it that test skips and the path every real deployment uses goes untested.
+      - name: Start OCI registry
+        run: |
+          make operator.oci-registry-up
+
+      - name: ⭐️ Test against Kubernetes ⭐️
+        env:
+          OCI_REGISTRY: localhost:5555
+          # Pulls camunda/identity and camunda/hub-websockets from Docker Hub to
+          # prove the operator's rendered pod specs are kubelet-acceptable. Unset
+          # this if Docker Hub rate limits become a problem on shared runners; the
+          # repository's other kind workflow authenticates for the same reason.
+          RUN_REAL_IMAGES: "1"
+        run: |
+          make operator.test-kind
+
+      - name: Stop OCI registry
+        if: always()
+        continue-on-error: true
+        run: |
+          make operator.oci-registry-down
+
+      - name: Delete KIND cluster
+        if: always()
+        continue-on-error: true
+        run: |
+          kind delete cluster --name camunda-operator
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_jwt_path: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwt_role: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwt_audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
