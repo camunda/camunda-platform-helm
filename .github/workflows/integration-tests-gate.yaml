@@ -81,10 +81,50 @@ jobs:
       - name: Test
         run: make mcp.test
 
+  untrusted:
+    name: gate
+    needs: [mcp-changes, mcp-test]
+    if: >-
+      ${{
+        always() &&
+        github.event_name == 'pull_request' && (
+          github.event.pull_request.head.repo.full_name != github.repository ||
+          github.event.pull_request.user.login == 'dependabot[bot]'
+        )
+      }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Verify MCP tests passed or were correctly skipped
+        env:
+          MCP_CHANGES_RESULT: ${{ needs.mcp-changes.result }}
+          MCP_TEST_RESULT: ${{ needs.mcp-test.result }}
+        run: |
+          if [[ "$MCP_CHANGES_RESULT" != "success" ]]; then
+            echo "::error::MCP change detection did not succeed ($MCP_CHANGES_RESULT)"
+            exit 1
+          fi
+          if [[ "$MCP_TEST_RESULT" != "success" && "$MCP_TEST_RESULT" != "skipped" ]]; then
+            echo "::error::MCP tests did not pass or skip correctly ($MCP_TEST_RESULT)"
+            exit 1
+          fi
+          echo "MCP gate OK (changes: $MCP_CHANGES_RESULT, test: $MCP_TEST_RESULT)"
+
+      - run: echo "Integration retries are disabled for untrusted pull requests."
+
   gate:
     name: gate
     needs: [mcp-changes, mcp-test]
-    if: always()
+    if: >-
+      ${{
+        always() && (
+          github.event_name != 'pull_request' || (
+            github.event.pull_request.head.repo.full_name == github.repository &&
+            github.event.pull_request.user.login != 'dependabot[bot]'
+          )
+        )
+      }}
     runs-on: ubuntu-latest
     permissions:
       actions: write
@@ -128,8 +168,4 @@ jobs:
           MG_HEAD_SHA: ${{ github.event.merge_group.head_sha }}
           OVERRIDE_SHA: ${{ inputs.sha }}
           OVERRIDE_EVENT: ${{ inputs.event }}
-          IS_FORK: >-
-            ${{ github.event_name == 'pull_request' &&
-                github.event.pull_request.head.repo.full_name
-                != github.repository }}
         run: go run .
