@@ -56,6 +56,36 @@ func TestGoldenDefaultsTemplateOrchestration(t *testing.T) {
 	}
 }
 
+func TestGoldenAzureDocumentStoreTemplate(t *testing.T) {
+	t.Parallel()
+
+	chartPath, err := filepath.Abs("../../../")
+	require.NoError(t, err)
+
+	suite.Run(t, &utils.TemplateGoldenTest{
+		ChartPath:      chartPath,
+		Release:        "camunda-platform-test",
+		Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
+		GoldenFileName: "azure-documentstore",
+		Templates: []string{
+			"templates/common/configmap-documentstore.yaml",
+			"templates/orchestration/configmap.yaml",
+			"templates/orchestration/statefulset.yaml",
+		},
+		SetValues: map[string]string{
+			"orchestration.data.secondaryStorage.type":                                  "elasticsearch",
+			"global.documentStore.activeStoreId":                                        "az1",
+			"global.documentStore.type.azure.connectionString.secret.existingSecret":    "azure-credentials",
+			"global.documentStore.type.azure.connectionString.secret.existingSecretKey": "connection-string",
+			"orchestration.env[0].name":                                                 "DOCUMENT_STORE_AZ1_CLASS",
+			"orchestration.env[0].value":                                                "io.camunda.document.store.azure.AzureBlobDocumentStoreProvider",
+			"orchestration.env[1].name":                                                 "DOCUMENT_STORE_AZ1_CONTAINER",
+			"orchestration.env[1].value":                                                "documents",
+		},
+		IgnoredLines: []string{`\s+checksum/.+?:\s+.*`},
+	})
+}
+
 func TestGoldenDefaultsTemplateOrchestrationMigrationIdentity(t *testing.T) {
 	t.Parallel()
 
