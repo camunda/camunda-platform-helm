@@ -4,6 +4,14 @@
             "properties": {
                 "ingress": {
                     "properties": {
+                        "protocol": {
+                            "type": "string",
+                            "enum": [
+                                "",
+                                "http",
+                                "https"
+                            ]
+                        },
                         "annotations": {
                             "type": "object",
                             "description": "defines the ingress related annotations, consumed mostly by the ingress controller",
