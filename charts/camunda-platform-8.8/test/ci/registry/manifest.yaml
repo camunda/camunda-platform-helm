@@ -62,6 +62,7 @@ integration:
       enabled: false
     - id: elasticsearch-self-signed-os-trust
       shortname: esot
+      tier: 2
       enabled: true
     - id: keycloak-original-upgrade-tier2
       shortname: keyc
@@ -95,7 +96,7 @@ integration:
       enabled: false
     - id: keycloak-original-install-tier1
       shortname: keyco
-      tier: 1
+      tier: 2
       enabled: true
     - id: alwaysgreen
       shortname: agrn

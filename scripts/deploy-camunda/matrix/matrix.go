@@ -120,7 +120,9 @@ type FilterOptions struct {
 	FlowFilter string
 	// Platform limits output to entries targeting this platform.
 	Platform string
-	// Tier limits output to entries with this specific tier (1 or 2). Zero means no filter.
+	// Tier limits output to entries with this specific tier (1 or 2). Zero means
+	// no filter. An entry that declares no tier matches no tier filter — it is
+	// reachable only through the unfiltered matrix the merge queue runs.
 	Tier int
 }
 
@@ -323,7 +325,7 @@ func filterEntries(entries []Entry, opts FilterOptions) []Entry {
 
 	var filtered []Entry
 	for _, e := range entries {
-		if opts.Tier > 0 && e.Tier != 0 && e.Tier != opts.Tier {
+		if opts.Tier > 0 && e.Tier != opts.Tier {
 			continue
 		}
 		if len(scenarioFilters) > 0 && !matchesAny(e.Scenario, scenarioFilters) {
