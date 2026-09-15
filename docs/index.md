@@ -34,6 +34,12 @@ Looking for end-user installation docs? See the [official Camunda docs](https://
 | [Testing](./reference/testing.md) | Unit tests, golden files, property tests, license headers |
 | [GitHub Actions Workflows](./reference/github-actions-workflows.md) | Overview of every CI/CD workflow |
 
+## Operator guides
+
+| Page | Description |
+|---|---|
+| [One Hub with multiple clusters and Optimize releases](./operator-guides/hub-and-physical-tenant-optimize.md) | Release, OIDC, and storage isolation for default and Physical Tenant Optimize deployments |
+
 ## Skills & Runbooks
 
 | Page | Description |

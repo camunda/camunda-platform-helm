@@ -28,8 +28,7 @@ import (
 // PlanOptions carries the inputs of the generate-chart-matrix composite
 // action: the changed-files trigger context plus the manual overrides.
 type PlanOptions struct {
-	// ActiveVersions are the active chart versions (chart-versions.yaml
-	// supportStandard), e.g. ["8.7", "8.8", "8.9", "8.10"].
+	// ActiveVersions are the routine chart versions from chartAutomation.routineVersions.
 	ActiveVersions []string
 	// ChangedFiles is the raw changed-files list (whitespace-separated, as
 	// emitted by tj-actions/changed-files with dir_names:true).
@@ -89,6 +88,7 @@ type topologySmokeEntry struct {
 	// a list.
 	OptimizeSuffix      string `json:"optimize_suffix,omitempty"`
 	OptimizeContextPath string `json:"optimize_context_path,omitempty"`
+	TenantID            string `json:"tenant_id,omitempty"`
 }
 
 // PlanResult is the computed build matrix.
@@ -166,7 +166,6 @@ var deployRelevantScriptDirs = []string{
 var deployRelevantScriptFiles = []string{
 	"base_playwright_script.sh",
 	"check-no-plaintext-datastore.sh",
-	"check-values-enterprise.sh",
 	"check-values-latest.sh",
 	"deploy-camunda.sh",
 	"dns-fallback.cjs",
@@ -216,6 +215,10 @@ var buildAllTriggers = []buildAllTrigger{
 	{
 		Pattern:     regexp.MustCompile(`^test/e2e/`),
 		Description: "test/e2e/ (shared Playwright config)",
+	},
+	{
+		Pattern:     regexp.MustCompile(`^charts/chart-versions\.yaml$`),
+		Description: "charts/chart-versions.yaml (routine chart automation)",
 	},
 }
 
@@ -472,6 +475,7 @@ type TopologyE2ELeg struct {
 	// host and the e2e env must not derive its endpoint from OrchestrationSuffix.
 	OptimizeSuffix      string
 	OptimizeContextPath string
+	TenantID            string
 	ModelerClusterID    string
 	ModelerClusterName  string
 }
@@ -506,6 +510,10 @@ func TopologyE2ELegs(topology *Topology) []TopologyE2ELeg {
 			leg := base
 			leg.OptimizeSuffix = optimize.NamespaceSuffix
 			leg.OptimizeContextPath = optimize.OptimizeContextPath
+			leg.TenantID = optimize.Tenant
+			if leg.TenantID == "" {
+				leg.TenantID = "default"
+			}
 			legs = append(legs, leg)
 		}
 	}
@@ -532,6 +540,7 @@ func planTopologyMetadata(topology *Topology) (string, string, string) {
 			ShardIndex:          strconv.Itoa(i + 1),
 			OptimizeSuffix:      leg.OptimizeSuffix,
 			OptimizeContextPath: leg.OptimizeContextPath,
+			TenantID:            leg.TenantID,
 		})
 	}
 	suffixesJSON, _ := json.Marshal(suffixes)

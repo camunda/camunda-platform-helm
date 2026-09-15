@@ -35,6 +35,28 @@
   {{- range $cluster := (.Values.global.topology.clusters | default list) -}}
     {{- $component := dig "components" "optimize" dict $cluster -}}
     {{- $contextPaths := $cluster.contextPaths | default dict -}}
+    {{- /*
+      A Physical Tenant running its own Optimize registers under the cluster's physicalTenants,
+      not at cluster level, so its client is invisible to a contract that reads only the
+      cluster-level component. Carry each tenant record through, or the consumer validating this
+      contract reports every non-default tenant's Optimize as unprovisioned.
+    */ -}}
+    {{- $tenants := list -}}
+    {{- range $tenant := (dig "physicalTenants" list $cluster) -}}
+      {{- $tenantComponent := dig "components" "optimize" dict $tenant -}}
+      {{- $tenantContextPaths := $tenant.contextPaths | default dict -}}
+      {{- $tenants = append $tenants (dict
+          "id" ($tenant.id | default "" | toString)
+          "optimizeContextPath" ($tenantContextPaths.optimize | default "" | toString)
+          "optimize" (dict
+            "enabled" (dig "enabled" false $tenantComponent)
+            "clientId" ($tenantComponent.clientId | default "" | toString)
+            "audience" ($tenantComponent.audience | default "" | toString)
+            "redirectUrl" (tpl ($tenantComponent.redirectUrl | default "" | toString) $)
+            "secret" (include "camundaPlatform.topologyContractSecret" (dict "secret" ($tenantComponent.secret | default dict)) | fromJson)
+          )
+      ) -}}
+    {{- end -}}
     {{- $clusters = append $clusters (dict
         "id" ($cluster.id | default "" | toString)
         "optimizeContextPath" ($contextPaths.optimize | default "" | toString)
@@ -45,6 +67,7 @@
           "redirectUrl" (tpl ($component.redirectUrl | default "" | toString) $)
           "secret" (include "camundaPlatform.topologyContractSecret" (dict "secret" ($component.secret | default dict)) | fromJson)
         )
+        "physicalTenants" $tenants
     ) -}}
   {{- end -}}
   {{- $clients := list -}}

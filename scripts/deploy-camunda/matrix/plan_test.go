@@ -76,6 +76,22 @@ func TestPlanManualAllBuildsNonEmpty(t *testing.T) {
 	}
 }
 
+func TestPlanChartVersionsChangeBuildsRoutineVersions(t *testing.T) {
+	t.Parallel()
+	result, err := Plan(findRepoRoot(t), PlanOptions{
+		ActiveVersions: planActiveVersions,
+		ChangedFiles:   "charts/chart-versions.yaml",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantVersions := append([]string(nil), planActiveVersions...)
+	sort.Strings(wantVersions)
+	if got, want := strings.Join(result.Versions, ","), strings.Join(wantVersions, ","); got != want {
+		t.Errorf("versions = %s, want routine versions %s", got, want)
+	}
+}
+
 func TestPlanManualSingleVersion(t *testing.T) {
 	result, err := Plan(findRepoRoot(t), PlanOptions{ActiveVersions: planActiveVersions, ManualTrigger: "8.9"})
 	if err != nil {
@@ -151,7 +167,7 @@ func TestPlanTopologySmokeMatrixMapsOptimizeReleases(t *testing.T) {
 	if entry.TopologyNamespaceSuffixes != `["hub","orcha","orchb","opta","optb"]` {
 		t.Errorf("topologyNamespaceSuffixes = %q", entry.TopologyNamespaceSuffixes)
 	}
-	wantSmoke := `[{"orchestration_suffix":"orcha","modeler_cluster_id":"orcha","modeler_cluster_name":"Orchestration A","shard_index":"1","optimize_suffix":"opta","optimize_context_path":"/optimize-orcha"},{"orchestration_suffix":"orchb","modeler_cluster_id":"orchb","modeler_cluster_name":"Orchestration B","shard_index":"2","optimize_suffix":"optb","optimize_context_path":"/optimize-orchb"}]`
+	wantSmoke := `[{"orchestration_suffix":"orcha","modeler_cluster_id":"orcha","modeler_cluster_name":"Orchestration A","shard_index":"1","optimize_suffix":"opta","optimize_context_path":"/optimize-orcha","tenant_id":"default"},{"orchestration_suffix":"orchb","modeler_cluster_id":"orchb","modeler_cluster_name":"Orchestration B","shard_index":"2","optimize_suffix":"optb","optimize_context_path":"/optimize-orchb","tenant_id":"default"}]`
 	if entry.TopologySmokeMatrix != wantSmoke {
 		t.Errorf("topologySmokeMatrix = %q, want %q", entry.TopologySmokeMatrix, wantSmoke)
 	}
@@ -623,8 +639,8 @@ func TestTopologyE2ELegs(t *testing.T) {
 	orchestration := func(suffix string) TopologyRelease {
 		return TopologyRelease{Role: "orchestration", NamespaceSuffix: suffix, ModelerClusterID: suffix}
 	}
-	optimize := func(suffix, serves, path string) TopologyRelease {
-		return TopologyRelease{Role: "optimize", NamespaceSuffix: suffix, Serves: serves, OptimizeContextPath: path}
+	optimize := func(suffix, serves, tenant, path string) TopologyRelease {
+		return TopologyRelease{Role: "optimize", NamespaceSuffix: suffix, Serves: serves, Tenant: tenant, OptimizeContextPath: path}
 	}
 	hub := TopologyRelease{Role: "hub", NamespaceSuffix: "hub"}
 
@@ -653,12 +669,12 @@ func TestTopologyE2ELegs(t *testing.T) {
 			topology: &Topology{Releases: []TopologyRelease{
 				hub,
 				orchestration("orcha"), orchestration("orchb"),
-				optimize("opta", "orcha", "/optimize-orcha"),
-				optimize("optb", "orchb", "/optimize-orchb"),
+				optimize("opta", "orcha", "default", "/optimize-orcha"),
+				optimize("optb", "orchb", "default", "/optimize-orchb"),
 			}},
 			want: []TopologyE2ELeg{
-				{OrchestrationSuffix: "orcha", ModelerClusterID: "orcha", OptimizeSuffix: "opta", OptimizeContextPath: "/optimize-orcha"},
-				{OrchestrationSuffix: "orchb", ModelerClusterID: "orchb", OptimizeSuffix: "optb", OptimizeContextPath: "/optimize-orchb"},
+				{OrchestrationSuffix: "orcha", ModelerClusterID: "orcha", OptimizeSuffix: "opta", OptimizeContextPath: "/optimize-orcha", TenantID: "default"},
+				{OrchestrationSuffix: "orchb", ModelerClusterID: "orchb", OptimizeSuffix: "optb", OptimizeContextPath: "/optimize-orchb", TenantID: "default"},
 			},
 		},
 		{
@@ -669,12 +685,12 @@ func TestTopologyE2ELegs(t *testing.T) {
 			topology: &Topology{Releases: []TopologyRelease{
 				hub,
 				orchestration("orcha"),
-				optimize("optta", "orcha", "/optimize-orcha-ta"),
-				optimize("opttb", "orcha", "/optimize-orcha-tb"),
+				optimize("optta", "orcha", "tenanta", "/optimize-orcha-ta"),
+				optimize("opttb", "orcha", "tenantb", "/optimize-orcha-tb"),
 			}},
 			want: []TopologyE2ELeg{
-				{OrchestrationSuffix: "orcha", ModelerClusterID: "orcha", OptimizeSuffix: "optta", OptimizeContextPath: "/optimize-orcha-ta"},
-				{OrchestrationSuffix: "orcha", ModelerClusterID: "orcha", OptimizeSuffix: "opttb", OptimizeContextPath: "/optimize-orcha-tb"},
+				{OrchestrationSuffix: "orcha", ModelerClusterID: "orcha", OptimizeSuffix: "optta", OptimizeContextPath: "/optimize-orcha-ta", TenantID: "tenanta"},
+				{OrchestrationSuffix: "orcha", ModelerClusterID: "orcha", OptimizeSuffix: "opttb", OptimizeContextPath: "/optimize-orcha-tb", TenantID: "tenantb"},
 			},
 		},
 		{
@@ -682,7 +698,7 @@ func TestTopologyE2ELegs(t *testing.T) {
 			// so it must not silently become a leg.
 			name: "optimize release without serves is ignored",
 			topology: &Topology{Releases: []TopologyRelease{
-				hub, orchestration("orcha"), optimize("opta", "", "/optimize"),
+				hub, orchestration("orcha"), optimize("opta", "", "default", "/optimize"),
 			}},
 			want: []TopologyE2ELeg{{OrchestrationSuffix: "orcha", ModelerClusterID: "orcha"}},
 		},
@@ -700,5 +716,19 @@ func TestTopologyE2ELegs(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestPlanTopologyMetadataIncludesTenantID(t *testing.T) {
+	topology := &Topology{Releases: []TopologyRelease{
+		{Role: "hub", NamespaceSuffix: "hub"},
+		{Role: "orchestration", NamespaceSuffix: "orcha", ModelerClusterID: "cluster-a", ModelerClusterName: "Cluster A"},
+		{Role: "optimize", NamespaceSuffix: "opta", Serves: "orcha", Tenant: "tenant-a", OptimizeContextPath: "/optimize-a"},
+	}}
+
+	_, _, smoke := planTopologyMetadata(topology)
+	want := `[{"orchestration_suffix":"orcha","modeler_cluster_id":"cluster-a","modeler_cluster_name":"Cluster A","shard_index":"1","optimize_suffix":"opta","optimize_context_path":"/optimize-a","tenant_id":"tenant-a"}]`
+	if smoke != want {
+		t.Fatalf("smoke matrix = %s, want %s", smoke, want)
 	}
 }

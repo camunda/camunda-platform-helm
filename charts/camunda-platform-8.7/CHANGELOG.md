@@ -1,5 +1,18 @@
 # Changelog
 
+## [12.13.6](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.7-12.13.5...camunda-platform-8.7-12.13.6) (2026-09-11)
+
+
+### Bug Fixes
+
+* warn that the bundled Keycloak image line is frozen and affected by CVE-2026-18963 ([#6998](https://github.com/camunda/camunda-platform-helm/issues/6998)) ([a075fa1](https://github.com/camunda/camunda-platform-helm/commit/a075fa1c82b9aa20c2541ff95e967cedd1cda560))
+
+
+### Dependencies
+
+* update camunda-platform-images (patch) ([#7127](https://github.com/camunda/camunda-platform-helm/issues/7127)) ([8dde99d](https://github.com/camunda/camunda-platform-helm/commit/8dde99d60b20fd57236d46dbfbbe8e0be5ccf1ba))
+* update camunda/optimize docker tag to v8.7.28 ([#7158](https://github.com/camunda/camunda-platform-helm/issues/7158)) ([5d5ac54](https://github.com/camunda/camunda-platform-helm/commit/5d5ac544206e4d91293dc234b87e3204e00ea180))
+
 ## [12.13.5](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.7-12.13.4...camunda-platform-8.7-12.13.5) (2026-09-08)
 
 

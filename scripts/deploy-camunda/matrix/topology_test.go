@@ -1637,3 +1637,125 @@ func inlineSecretOn(layer, value string) string {
 	}
 	return strings.Join(out, "\n")
 }
+
+// physicalTenantsTopology mirrors the shipped physicaltenants scenario: one Orchestration Cluster
+// whose default tenant and two named Physical Tenants each run their own Optimize release.
+func physicalTenantsTopology() *Topology {
+	return &Topology{
+		Name: "hub-1orch-2tenants",
+		Releases: []TopologyRelease{
+			{Role: "hub", NamespaceSuffix: "hub", Features: []string{"physicaltenants-hub"}},
+			{Role: "orchestration", NamespaceSuffix: "orcha", ModelerClusterID: "orcha", ModelerClusterName: "Orchestration A", DependsOn: "hub"},
+			{Role: "optimize", NamespaceSuffix: "optdefault", Serves: "orcha", Tenant: "default", OptimizeContextPath: "/optimize-default", DependsOn: "hub"},
+			{Role: "optimize", NamespaceSuffix: "optta", Serves: "orcha", Tenant: "tenanta", OptimizeContextPath: "/optimize-ta", DependsOn: "hub"},
+			{Role: "optimize", NamespaceSuffix: "opttb", Serves: "orcha", Tenant: "tenantb", OptimizeContextPath: "/optimize-tb", DependsOn: "hub"},
+		},
+	}
+}
+
+func tenantOptimizeContract(tenant, contextPath string) TopologyContractOptimize {
+	return TopologyContractOptimize{
+		Enabled:     true,
+		ContextPath: contextPath,
+		Backend:     "elasticsearch",
+		IndexPrefix: "job-orcha-" + tenant,
+		ClientID:    "optimize-orcha-" + tenant,
+		Audience:    "optimize-orcha-" + tenant + "-api",
+		RedirectURL: "https://hub.test" + contextPath,
+		Secret:      TopologyContractSecret{Kind: "ref", Name: "integration-test-credentials", Key: "identity-optimize-" + tenant + "-client-token"},
+	}
+}
+
+// renderedPhysicalTenants builds the contracts the chart renders for that scenario: the default
+// tenant's Optimize registers at cluster level, and each named tenant registers under the cluster's
+// physicalTenants.
+func renderedPhysicalTenants(top *Topology) []RenderedTopologyRelease {
+	def := tenantOptimizeContract("default", "/optimize-default")
+	ta := tenantOptimizeContract("tenanta", "/optimize-ta")
+	tb := tenantOptimizeContract("tenantb", "/optimize-tb")
+
+	var hub, orchestration TopologyContract
+	hub.Hub.AuthType = "KEYCLOAK"
+	hub.Hub.ClustersDeclared = true
+	hub.Hub.Clusters = []TopologyContractCluster{{
+		ID:                  "orcha",
+		OptimizeContextPath: def.ContextPath,
+		Optimize:            def,
+		PhysicalTenants: []TopologyContractPhysicalTenant{
+			{ID: "tenanta", Optimize: ta},
+			{ID: "tenantb", Optimize: tb},
+		},
+	}}
+	orchestration.Orchestration.ElasticsearchIndexPrefix = "job-orcha"
+
+	return []RenderedTopologyRelease{
+		{Release: top.Releases[0], Contract: hub},
+		{Release: top.Releases[1], Contract: orchestration},
+		{Release: top.Releases[2], Contract: TopologyContract{Optimize: def}},
+		{Release: top.Releases[3], Contract: TopologyContract{Optimize: ta}},
+		{Release: top.Releases[4], Contract: TopologyContract{Optimize: tb}},
+	}
+}
+
+// A Physical Tenant's Optimize registers under the cluster's physicalTenants, not at cluster level.
+// While the contract carried only the cluster-level registration, every non-default tenant was
+// rejected as unprovisioned before a single release was deployed.
+func TestTopologyValidateRenderedAcceptsPhysicalTenantRegistrations(t *testing.T) {
+	top := physicalTenantsTopology()
+	if err := top.ValidateRendered("ctx", renderedPhysicalTenants(top)); err != nil {
+		t.Fatalf("physical tenant registrations should validate: %v", err)
+	}
+}
+
+// The tenant record has to be selected by the release's tenant, not merely be present somewhere:
+// validating tenanta's release against tenantb's registration would let a mismatch through.
+func TestTopologyValidateRenderedSelectsTheTenantNamedByTheRelease(t *testing.T) {
+	top := physicalTenantsTopology()
+	rendered := renderedPhysicalTenants(top)
+	cluster := &rendered[0].Contract.Hub.Clusters[0]
+	cluster.PhysicalTenants[0].Optimize.Audience = "optimize-orcha-somewhere-else-api"
+
+	err := top.ValidateRendered("ctx", rendered)
+	if err == nil {
+		t.Fatal("expected the tenanta audience mismatch to be reported")
+	}
+	if !strings.Contains(err.Error(), "tenanta") {
+		t.Errorf("error should name the tenant whose registration disagrees, got %v", err)
+	}
+	if strings.Contains(err.Error(), "tenantb") {
+		t.Errorf("tenantb registration is unchanged and must not be reported, got %v", err)
+	}
+}
+
+// A tenant the Hub never registered must be reported, not silently validated against the cluster's
+// default-tenant record.
+func TestTopologyValidateRenderedRejectsUnregisteredPhysicalTenant(t *testing.T) {
+	top := physicalTenantsTopology()
+	rendered := renderedPhysicalTenants(top)
+	cluster := &rendered[0].Contract.Hub.Clusters[0]
+	cluster.PhysicalTenants = cluster.PhysicalTenants[:1]
+
+	err := top.ValidateRendered("ctx", rendered)
+	if err == nil {
+		t.Fatal("expected the missing tenantb registration to be reported")
+	}
+	if !strings.Contains(err.Error(), "physicalTenants") || !strings.Contains(err.Error(), "tenantb") {
+		t.Errorf("error should name the missing physicalTenants entry, got %v", err)
+	}
+}
+
+// The default tenant keeps registering at cluster level, so it must not be looked up among the
+// physicalTenants entries.
+func TestTopologyValidateRenderedKeepsDefaultTenantOnTheClusterRecord(t *testing.T) {
+	top := physicalTenantsTopology()
+	rendered := renderedPhysicalTenants(top)
+	rendered[0].Contract.Hub.Clusters[0].Optimize.ClientID = "optimize-orcha-renamed"
+
+	err := top.ValidateRendered("ctx", rendered)
+	if err == nil {
+		t.Fatal("expected the default tenant's client id mismatch to be reported")
+	}
+	if !strings.Contains(err.Error(), "this cluster's Optimize client id") {
+		t.Errorf("default tenant should be validated against the cluster record, got %v", err)
+	}
+}

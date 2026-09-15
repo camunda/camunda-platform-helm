@@ -1,0 +1,37 @@
+# Optimize-only release for the default Physical Tenant.
+
+global:
+  topology:
+    mode: optimize
+
+optimize:
+  enabled: true
+  livenessProbe:
+    enabled: true
+  security:
+    authentication:
+      oidc:
+        clientId: "optimize-orcha-default"
+        audience: "optimize-orcha-default-api"
+        redirectUrl: "https://${HUB_HOST}${RELEASE_OPTIMIZE_CONTEXT_PATH}"
+        secret:
+          existingSecret: integration-test-credentials
+          existingSecretKey: identity-optimize-default-client-token
+  contextPath: "${RELEASE_OPTIMIZE_CONTEXT_PATH}"
+  extraConfiguration:
+    - file: acceptance-api.yaml
+      content: |
+        api:
+          jwtAuthForApiEnabled: true
+          audience: optimize-orcha-default-api
+  database:
+    elasticsearch:
+      enabled: true
+      external: true
+      url:
+        protocol: "${EXTERNAL_ELASTICSEARCH_SCHEME}"
+        host: "${EXTERNAL_ELASTICSEARCH_HOST}"
+      prefix: "${SERVED_ORCHESTRATION_INDEX_PREFIX}"
+  env:
+    - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SETTINGS_INDEX_PREFIX
+      value: "${OPTIMIZE_INDEX_PREFIX}-default"

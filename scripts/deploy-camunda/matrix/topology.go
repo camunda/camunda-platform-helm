@@ -110,6 +110,10 @@ type TopologyRelease struct {
 	// an optimize release runs in its own namespace on the Hub host.
 	Serves string `yaml:"serves,omitempty" json:"serves,omitempty"`
 
+	// Tenant is the physical tenant this Optimize release serves. The empty
+	// value keeps the single-tenant default contract.
+	Tenant string `yaml:"tenant,omitempty" json:"tenant,omitempty"`
+
 	// OptimizeContextPath is the ingress path this release's Optimize is served
 	// on, matching optimize.contextPath in its values layer. Required for
 	// Role == "optimize", rejected for any other role.

@@ -306,7 +306,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				var deployment appsv1.Deployment
 				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
 
-				s.Require().Equal(s.imageRepo()+":8.10.0-alpha3-rc1", deployment.Spec.Template.Spec.Containers[0].Image)
+				s.Require().Equal(s.imageRepo()+":8.10.0-alpha5", deployment.Spec.Template.Spec.Containers[0].Image)
 			},
 		}, {
 			Name: "TestContainerOverwriteImageTag",

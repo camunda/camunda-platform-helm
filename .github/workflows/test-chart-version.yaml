@@ -15,8 +15,6 @@ on:
         options:
           - none
           - "all"
-          - "8.4"
-          - "8.5"
           - "8.6"
           - "8.7"
           - "8.8"
@@ -78,6 +76,7 @@ on:
           - keycloak-mt
           - keycloak-original
           - keycloak-rba
+          - multitenancy
           - oidc
           - opensearch
           - shadow-e2e
@@ -85,6 +84,7 @@ on:
           - multinamespace
           - multinamespace-2orch
           - multinamespace-optimize
+          - physicaltenants
       test-enabled:
         description: Whether to run the IT tests
         required: false

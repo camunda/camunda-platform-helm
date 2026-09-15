@@ -217,6 +217,88 @@ deploy-camunda matrix run \
 
 The `qa-*` scenarios have `image-tags: true`, which includes `base-image-tags.yaml` (with `$E2E_TESTS_*_IMAGE_TAG` placeholders) and excludes `values-digest.yaml`. The `--env-file` provides the actual values for substitution via `buildScenarioEnv()`. In CI, the workflow converts the `VALUES_CONFIG` JSON to a `.env` file using `jq` before calling `deploy-camunda`.
 
+## Extended-Support Versions (Opt-In)
+
+The default matrix includes only `chartAutomation.routineVersions` from `charts/chart-versions.yaml`, independently of support-lifecycle metadata. A version outside that list is reachable when named explicitly **and** its chart dir has a CI scenario registry (`test/ci/registry/manifest.yaml`). **8.6** uses this opt-in path. A lifecycle `eolSince` entry blocks matrix execution, including explicit requests.
+
+Every 8.6 scenario is `enabled: false`, so `--include-disabled` is mandatory. If no enabled entries match but disabled entries satisfy the same filters, `matrix run` returns an error directing you to re-run with `--include-disabled`. Unmatched filters retain the normal no-match diagnostic, and `matrix list` still lists no entries without opt-in.
+
+```bash
+# Validate a patched image against the 8.6 chart
+deploy-camunda matrix run \
+  --repo-root . \
+  --versions 8.6 \
+  --include-disabled \
+  --shortname-filter es \
+  --shortname-exact \
+  --flow-filter install \
+  --platform gke \
+  --ingress-base-domain-gke ci.distro.ultrawombat.com \
+  --extra-values /tmp/patched-image.yaml \
+  --ensure-docker-registry \
+  --docker-username "$HARBOR_USERNAME" \
+  --docker-password "$HARBOR_PASSWORD" \
+  --yes
+```
+
+Deliberately no `--cleanup`: that is the flag that deletes the namespace *after* the run, and a verification run needs it to survive so the pod can be inspected afterwards (below). Delete it yourself when done — `kubectl delete namespace <ns>`.
+
+`--delete-namespace` is a different thing: it deletes the namespace *before* deploying each entry, for a clean slate (internally `DeleteNamespaceFirst`). Omit it when an existing deployment must be preserved — `upgrade-patch` relies on that, and `runner_upgrade.go:320` forces it false for Step 2 because the namespace must persist from Step 1. So a namespace surviving an `upgrade-patch` run is expected when `--cleanup` is not set, not a bug.
+
+Expect the install to take ~4-5 minutes and to look broken in the middle of it: optimize's `migration` init container enters `CrashLoopBackOff` with `java.net.ConnectException: Connection refused` until the Elasticsearch cluster reports `status: green`. There is no readiness gate between them, so it retries until ES is up and then proceeds. Confirm ES before treating an optimize crashloop as a real failure:
+
+```bash
+kubectl exec -n $NS integration-elasticsearch-master-0 -- \
+  curl -s localhost:9200/_cluster/health | jq .status
+```
+
+8.6 shortnames: `es` (Keycloak + Elasticsearch), `os` (Keycloak + OpenSearch), `mt` (adds the `multitenancy` feature). `es` also carries `upgrade-patch` on `gke` and `eks`; the others are `install`/`gke` only.
+
+**`kcor` does not exist for 8.6 and is not needed.** The `keycloak-original-install` scenario (`kcor`/`keyco`) is defined only in the 8.8 and 8.9 registries. Use `es` instead — it selects the same configuration that matters for validating an image: Keycloak identity with Elasticsearch persistence. `--shortname-filter` matches by substring, so pair it with `--shortname-exact`. On 8.9 a bare `--shortname-filter es` returns 9 entries (`eske`, `esoi`, `esss`, `esot`, `esarm`); against 8.6's current three shortnames it happens to be unambiguous, but the exact flag keeps the invocation correct if the registry gains one.
+
+**Image override:** put the component's full image coordinates in the `--extra-values` file, including `pullSecrets`.
+
+```yaml
+identity:
+  image:
+    registry: registry.camunda.cloud
+    repository: team-identity/identity
+    tag: <patched-tag>
+    pullSecrets:
+      - name: index-docker-io
+      - name: registry-camunda-cloud
+global:
+  image:
+    pullSecrets:
+      - name: index-docker-io
+      - name: registry-camunda-cloud
+```
+
+Component-level pull-secret resolution is **exclusive**, not merged: setting `identity.image.pullSecrets` makes the chart ignore `global.image.pullSecrets` for that component. A global-only override therefore drops the secret and the pod lands in `ImagePullBackOff`.
+
+A digest overlay cannot shadow the tag here — 8.6 simply ships no `values-digest.yaml` (only 8.8/8.9/8.10 do). Matrix runs do select the digest overlay by default (`resolveChartRootOverlays`, `matrix/runner.go:79`), so on the versions that have one, `neutralizeOverriddenDigests` (`deploy/digest_overlay.go:51`, wired at `deploy/values.go:890`) strips the digest of any component whose image coordinates `--extra-values` overrides, so the tag still wins.
+
+**These scenarios never run e2e, even with `--test-e2e` or `--test-all`.** All three set `skip-e2e: true`, and the runner computes `RunE2ETests: (opts.TestE2E || opts.TestAll) && !entry.SkipE2E` (`matrix/runner_execute.go:250`) — the scenario flag wins unconditionally. This is deliberate: the cross-component e2e suite ships no `SM-8.6` fixture directory, and its Keycloak admin-console login locators do not match 8.6's older console. Verify a deploy by inspecting the running pod instead — image contents, startup logs, and the OIDC discovery document:
+
+```bash
+NS=<namespace>
+kubectl get pod -n $NS -l app.kubernetes.io/component=identity \
+  -o jsonpath='{range .items[*]}{.status.containerStatuses[0].image}{"\n"}{.status.containerStatuses[0].imageID}{"\n"}{end}'
+kubectl logs -n $NS -l app.kubernetes.io/component=identity | grep -iE "error|exception"
+curl -sk "https://$NS.ci.distro.ultrawombat.com/auth/realms/camunda-platform/.well-known/openid-configuration" | jq .issuer
+```
+
+The OIDC path uses the fixed `camunda-platform` realm — `values/identity/keycloak.yaml` hardcodes `publicIssuerUrl: .../auth/realms/camunda-platform` on every chart version. The per-scenario `realm:` value the run summary prints (e.g. `elasticsearch-0760899c`) is not a Keycloak realm path; using it returns `Realm does not exist`.
+
+For an extended-support version with **no** registry, `matrix run` fails with an error naming the missing manifest and pointing at the single-scenario path, which needs no registry:
+
+```bash
+deploy-camunda \
+  --scenario charts/camunda-platform-8.5/test/integration/scenarios/chart-full-setup \
+  --identity keycloak --persistence elasticsearch \
+  --namespace $NS --release $RELEASE
+```
+
 ## Render Without Deploying
 
 Debug values merging without touching the cluster:

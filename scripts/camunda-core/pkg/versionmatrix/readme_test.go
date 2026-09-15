@@ -196,12 +196,7 @@ func TestChartTableRowMissingFacts(t *testing.T) {
 // testConfig builds a ChartVersionsConfig covering all four buckets.
 func testConfig() *ChartVersionsConfig {
 	return &ChartVersionsConfig{
-		CamundaVersions: Buckets{
-			Alpha:           []string{"8.10"},
-			SupportStandard: []string{"8.9", "8.8"},
-			SupportExtended: []string{"8.6"},
-			EndOfLife:       []string{"8.2"},
-		},
+		ChartAutomation: ChartAutomation{RoutineVersions: []string{"8.10", "8.9", "8.8"}},
 		CamundaSupportLifecycle: map[string]Lifecycle{
 			"8.10": {Note: "Deploys Camunda Hub — see the [Hub documentation](https://example.invalid/hub)."},
 			"8.9":  {Released: "2026-04-14", StdSupportUntil: "2027-10-13"},

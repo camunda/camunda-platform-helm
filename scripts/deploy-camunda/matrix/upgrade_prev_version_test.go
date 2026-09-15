@@ -69,6 +69,12 @@ func TestUpgradeMinorPrevVersionDimensions(t *testing.T) {
 			t.Fatalf("LoadRegistry(%s): %v", version, err)
 		}
 
+		if !slices.ContainsFunc(cfg.Integration.Case.PR.Scenarios, func(s CIScenario) bool {
+			return slices.Contains(strings.Split(s.Flow, ","), "upgrade-minor")
+		}) {
+			continue
+		}
+
 		ids := mustListPrev(t, prevScenarioDir, scenarios.ListIdentities)
 		pers := mustListPrev(t, prevScenarioDir, scenarios.ListPersistence)
 		plats := mustListPrev(t, prevScenarioDir, scenarios.ListPlatforms)
