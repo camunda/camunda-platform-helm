@@ -135,7 +135,7 @@
                     "properties": {
                         "annotations": {
                             "type": "object",
-                            "description": "defines the ingress related annotations, consumed mostly by the ingress controller",
+                            "description": "defines the ingress related annotations, consumed mostly by the ingress controller. Empty by default; keys set here always win over the ingress-nginx compatibility set described in global.compatibility.nginx.renderAnnotations.",
                             "default": {},
                             "additionalProperties": {
                                 "type": ["string", "null"]
@@ -1047,7 +1047,7 @@
                             "properties": {
                                 "annotations": {
                                     "type": "object",
-                                    "description": "defines the ingress related annotations, consumed mostly by the ingress controller",
+                                    "description": "defines the ingress related annotations, consumed mostly by the ingress controller. Empty by default; keys set here always win over the ingress-nginx compatibility set described in global.compatibility.nginx.renderAnnotations. With Contour, gRPC is declared with `projectcontour.io/upstream-protocol.h2c` on the Orchestration service listing the gRPC port, not with an annotation here.",
                                     "default": {},
                                     "additionalProperties": {
                                         "type": ["string", "null"]
