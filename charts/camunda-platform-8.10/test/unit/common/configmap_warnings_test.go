@@ -509,9 +509,33 @@ func (s *ConfigMapWarningsTemplateTest) TestIngressUpstreamTLSControllerWarning(
 				s.Require().True(strings.HasSuffix(configmap.Name, "-warnings"))
 				warnings := configmap.Data["warnings"]
 				s.Require().Contains(warnings, warning)
-				s.Require().Contains(warnings, "global.tls.orchestration.rest")
+				s.Require().Contains(warnings, "Upstream TLS is enabled for the Orchestration REST server")
 				s.Require().Contains(warnings, `global.ingress.className is "contour"`)
 				s.Require().Contains(warnings, "projectcontour.io/upstream-protocol.tls")
+			},
+		},
+		{
+			// TLS can be switched on through the env var or the application config,
+			// not just the global.tls flag, so the message must describe the
+			// component rather than naming a value the operator may never have set.
+			Name:        "TestUpstreamTLSFromEnvNamesTheComponentNotTheFlag",
+			ValuesFiles: []string{"testdata/values-orchestration-rest-tls-via-env.yaml"},
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":                 "elasticsearch",
+				"global.ingress.enabled":                                   "true",
+				"global.ingress.className":                                 "contour",
+				"global.host":                                              "camunda.example.com",
+				"global.tls.orchestration.rest.cert.secret.existingSecret": "orchestration-ks",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				warnings := configmap.Data["warnings"]
+				s.Require().Contains(warnings, warning)
+				s.Require().Contains(warnings, "Upstream TLS is enabled for the Orchestration REST server")
+				s.Require().NotContains(warnings, "global.tls.orchestration.rest enabled",
+					"TLS came from the env var here, so the warning must not attribute it to the flag")
 			},
 		},
 		{
