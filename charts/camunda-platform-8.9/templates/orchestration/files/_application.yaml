@@ -376,7 +376,7 @@ zeebe:
             {{- if .Values.orchestration.index.prefix }}
             indexPrefix: {{ .Values.orchestration.index.prefix | quote }}
             {{- end }}
-            awsEnabled: {{ or .Values.orchestration.data.secondaryStorage.opensearch.aws.enabled .Values.global.opensearch.aws.enabled }}
+            awsEnabled: {{ include "orchestration.camundaExporterAwsEnabled" . }}
           history:
             elsRolloverDateFormat: {{ .Values.orchestration.history.elsRolloverDateFormat | quote }}
             rolloverInterval: {{ .Values.orchestration.history.rolloverInterval | quote }}

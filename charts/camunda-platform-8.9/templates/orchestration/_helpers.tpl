@@ -328,7 +328,26 @@ refuses to start. See helm#7028. The 8.10 application merges legacy exporter arg
 the registration stays removed there.
 */ -}}
 {{- define "orchestration.hasCamundaExporter" -}}
-{{- and (not (eq (include "orchestration.secondaryStorage" .) "none")) .Values.orchestration.exporters.camunda.enabled (not .Values.orchestration.exporters.rdbms.enabled) -}}
+{{- and
+      (or
+        (eq (include "orchestration.secondaryStorage" .) "elasticsearch")
+        (eq (include "orchestration.secondaryStorage" .) "opensearch")
+      )
+      .Values.orchestration.exporters.camunda.enabled
+-}}
+{{- end -}}
+
+{{- /*
+NOTE: the sources mirror the store-specific `aws-enabled` values of the unified
+`camunda.data.secondary-storage` block; `orchestration.hasCamundaExporter` restricts this helper to
+the elasticsearch and opensearch types, so the else branch is the elasticsearch source.
+*/ -}}
+{{- define "orchestration.camundaExporterAwsEnabled" -}}
+{{- if eq (include "orchestration.secondaryStorage" .) "opensearch" -}}
+{{- or .Values.orchestration.data.secondaryStorage.opensearch.aws.enabled .Values.global.opensearch.aws.enabled -}}
+{{- else -}}
+{{- .Values.orchestration.data.secondaryStorage.elasticsearch.aws.enabled -}}
+{{- end -}}
 {{- end -}}
 
 {{- define "orchestration.hasElasticsearchExporter" -}}

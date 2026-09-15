@@ -223,6 +223,42 @@ func (s *ConfigmapLegacyTemplateTest) TestDifferentValuesInputs() {
 				assertCamundaExporterAutoconfiguration(t, output, false)
 			},
 		},
+		{
+			Name: "TestCamundaExporterAwsModeFollowsElasticsearchSecondaryStorage",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":                      "elasticsearch",
+				"orchestration.data.secondaryStorage.elasticsearch.aws.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				assertCamundaExporterConnect(t, output, "elasticsearch", true)
+			},
+		},
+		{
+			Name: "TestCamundaExporterAwsModeFollowsOpenSearchSecondaryStorage",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "opensearch",
+				"global.opensearch.aws.enabled":            "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				assertCamundaExporterConnect(t, output, "opensearch", true)
+			},
+		},
+		{
+			Name: "TestCamundaExporterIsNotRegisteredForRDBMSSecondaryStorage",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "rdbms",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+
+				require.NotContains(t, configmap.Data["application.yaml"], "camundaexporter:")
+			},
+		},
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
@@ -249,6 +285,17 @@ func assertCamundaExporterAutoconfiguration(t *testing.T, output string, expecte
 
 	require.Contains(t, applicationYaml, fmt.Sprintf("autoconfigure-camunda-exporter: %t", expected))
 	require.Equal(t, expected, application.Camunda.Data.SecondaryStorage.AutoconfigureCamundaExporter)
+}
+
+func assertCamundaExporterConnect(t *testing.T, output string, expectedType string, expectedAwsEnabled bool) {
+	var configmap corev1.ConfigMap
+	var application camunda.OrchestrationApplicationYAML
+	helm.UnmarshalK8SYaml(t, output, &configmap)
+	require.NoError(t, yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &application))
+
+	connect := application.Zeebe.Broker.Exporters.CamundaExporter.Args.Connect
+	require.Equal(t, expectedType, connect.Type)
+	require.Equal(t, expectedAwsEnabled, connect.AwsEnabled)
 }
 
 func assertCustomHistorySettings(t *testing.T, output string, secondaryStorageType string) {
