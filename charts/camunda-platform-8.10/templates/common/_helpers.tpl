@@ -1283,6 +1283,146 @@ those keys, so there is no alternative source to detect.
 {{- end -}}
 
 {{/*
+[camunda-platform] Render conditions of the split upstream-TLS Ingress objects.
+Each mirrors the guard of the template named after it, so callers that need to
+reason about those manifests (constraints.tpl) cannot drift from what renders.
+*/}}
+{{/*
+[camunda-platform] The ingress-nginx annotation sets the chart used to ship as
+values defaults. Injected only while global.compatibility.nginx.renderAnnotations is on;
+user-provided keys win over them. A user value of null drops the key,
+the removal semantics these maps had while they shipped the defaults. Override detection runs on
+a tpl-resolved copy, because the callers evaluate these maps and a templated key
+would otherwise miss its compatibility counterpart and render twice. Only the
+copy is resolved here, so the caller still evaluates each user entry once.
+*/}}
+{{/*
+[camunda-platform] A user annotation map with its keys resolved. The callers
+render these maps through tpl, so a templated key only becomes its compatibility
+counterpart afterwards; both the render helpers and the warning predicates match
+against this so they cannot disagree about what the shim contributes.
+*/}}
+{{- define "camundaPlatform.resolvedUserAnnotations" -}}
+  {{- $user := .annotations | default dict -}}
+  {{- if $user -}}
+    {{- tpl (toYaml $user) .context -}}
+  {{- else -}}
+    {{- "{}" -}}
+  {{- end -}}
+{{- end -}}
+
+{{- define "camundaPlatform.legacyNginxIngressAnnotations" -}}
+nginx.ingress.kubernetes.io/ssl-redirect: "false"
+nginx.ingress.kubernetes.io/proxy-buffering: "on"
+nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
+nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+{{- end -}}
+
+{{- define "camundaPlatform.legacyNginxGrpcIngressAnnotations" -}}
+nginx.ingress.kubernetes.io/ssl-redirect: "false"
+nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
+nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
+{{- end -}}
+
+{{- define "camundaPlatform.ingressAnnotations" -}}
+  {{- $user := .Values.global.ingress.annotations | default dict -}}
+  {{- $resolved := include "camundaPlatform.resolvedUserAnnotations" (dict "annotations" $user "context" .) | fromYaml -}}
+  {{- $compat := dict -}}
+  {{- if .Values.global.compatibility.nginx.renderAnnotations -}}
+    {{- $compat = include "camundaPlatform.legacyNginxIngressAnnotations" . | fromYaml -}}
+  {{- end -}}
+  {{- $rendered := dict -}}
+  {{- range $key, $value := $compat -}}
+    {{- if not (hasKey $resolved $key) -}}
+      {{- $_ := set $rendered $key $value -}}
+    {{- end -}}
+  {{- end -}}
+  {{- range $key, $value := $user -}}
+    {{- if not (kindIs "invalid" $value) -}}
+      {{- $_ := set $rendered $key $value -}}
+    {{- end -}}
+  {{- end -}}
+  {{- toYaml $rendered -}}
+{{- end -}}
+
+{{- define "camundaPlatform.grpcIngressAnnotations" -}}
+  {{- $user := .Values.orchestration.ingress.grpc.annotations | default dict -}}
+  {{- $resolved := include "camundaPlatform.resolvedUserAnnotations" (dict "annotations" $user "context" .) | fromYaml -}}
+  {{- $compat := dict -}}
+  {{- if .Values.global.compatibility.nginx.renderAnnotations -}}
+    {{- $compat = include "camundaPlatform.legacyNginxGrpcIngressAnnotations" . | fromYaml -}}
+  {{- end -}}
+  {{- $rendered := dict -}}
+  {{- range $key, $value := $compat -}}
+    {{- if not (hasKey $resolved $key) -}}
+      {{- $_ := set $rendered $key $value -}}
+    {{- end -}}
+  {{- end -}}
+  {{- range $key, $value := $user -}}
+    {{- if not (kindIs "invalid" $value) -}}
+      {{- $_ := set $rendered $key $value -}}
+    {{- end -}}
+  {{- end -}}
+  {{- toYaml $rendered -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] "true" when the compatibility shim contributes a key the user
+has not set, on a route that actually renders. Split per map because the HTTP and
+gRPC Ingress objects read different annotation values and render on their own
+gates, so neither can speak for the other.
+*/}}
+{{- define "camundaPlatform.sharedHTTPIngressRendered" -}}
+  {{- ternary "true" "false" (and .Values.global.ingress.enabled (not .Values.global.ingress.external) (include "camundaPlatform.ingressHTTPPaths" . | trim) | not | not) -}}
+{{- end -}}
+
+{{- define "camundaPlatform.nginxCompatHTTPInjecting" -}}
+  {{- $injecting := false -}}
+  {{- if .Values.global.compatibility.nginx.renderAnnotations -}}
+    {{- if or
+          (eq (include "camundaPlatform.sharedHTTPIngressRendered" .) "true")
+          (eq (include "camundaPlatform.orchestrationHTTPIngressRendered" .) "true")
+          (eq (include "camundaPlatform.connectorsHTTPIngressRendered" .) "true")
+          (eq (include "camundaPlatform.optimizeHTTPIngressRendered" .) "true") -}}
+      {{- $user := .Values.global.ingress.annotations | default dict -}}
+      {{- $resolved := include "camundaPlatform.resolvedUserAnnotations" (dict "annotations" $user "context" .) | fromYaml -}}
+      {{- range $key, $value := (include "camundaPlatform.legacyNginxIngressAnnotations" . | fromYaml) -}}
+        {{- if not (hasKey $resolved $key) -}}{{- $injecting = true -}}{{- end -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+  {{- ternary "true" "false" $injecting -}}
+{{- end -}}
+
+{{- define "camundaPlatform.nginxCompatGRPCInjecting" -}}
+  {{- $injecting := false -}}
+  {{- if and .Values.global.compatibility.nginx.renderAnnotations (eq (include "camundaPlatform.grpcIngressRendered" .) "true") -}}
+    {{- $user := .Values.orchestration.ingress.grpc.annotations | default dict -}}
+    {{- $resolved := include "camundaPlatform.resolvedUserAnnotations" (dict "annotations" $user "context" .) | fromYaml -}}
+    {{- range $key, $value := (include "camundaPlatform.legacyNginxGrpcIngressAnnotations" . | fromYaml) -}}
+      {{- if not (hasKey $resolved $key) -}}{{- $injecting = true -}}{{- end -}}
+    {{- end -}}
+  {{- end -}}
+  {{- ternary "true" "false" $injecting -}}
+{{- end -}}
+
+{{- define "camundaPlatform.orchestrationHTTPIngressRendered" -}}
+  {{- ternary "true" "false" (and .Values.global.ingress.enabled (not .Values.global.ingress.external) (eq (include "camundaPlatform.orchestrationEnabled" .) "true") .Values.orchestration.contextPath (eq (include "camundaPlatform.orchestrationRESTTLSEnabled" .) "true") | not | not) -}}
+{{- end -}}
+
+{{- define "camundaPlatform.connectorsHTTPIngressRendered" -}}
+  {{- ternary "true" "false" (and .Values.global.ingress.enabled (not .Values.global.ingress.external) (eq (include "camundaPlatform.connectorsEnabled" .) "true") .Values.connectors.contextPath (eq (include "camundaPlatform.connectorsTLSEnabled" .) "true") | not | not) -}}
+{{- end -}}
+
+{{- define "camundaPlatform.optimizeHTTPIngressRendered" -}}
+  {{- ternary "true" "false" (and .Values.global.ingress.enabled (not .Values.global.ingress.external) (eq (include "camundaPlatform.optimizeEnabled" .) "true") .Values.optimize.contextPath (eq (include "camundaPlatform.optimizeServerTLSEnabled" .) "true") | not | not) -}}
+{{- end -}}
+
+{{- define "camundaPlatform.grpcIngressRendered" -}}
+  {{- ternary "true" "false" (and (eq (include "camundaPlatform.orchestrationEnabled" .) "true") .Values.orchestration.ingress.grpc.enabled (not .Values.orchestration.ingress.grpc.external) | not | not) -}}
+{{- end -}}
+
+{{/*
 [camunda-platform] Returns "true" when optimize.{configuration,extraConfiguration}
 mentions server.ssl in any form. Optimize cannot serve TLS from those keys (see
 camundaPlatform.optimizeServerTLSEnabled), so camunda.constraints.errors fails
