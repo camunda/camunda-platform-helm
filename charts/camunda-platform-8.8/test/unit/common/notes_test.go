@@ -43,3 +43,27 @@ func TestNotesTemplate(t *testing.T) {
 	require.Contains(t, notes, "intentionally omitted")
 	require.NotContains(t, notes, "credential-output-canary-do-not-print")
 }
+
+func TestNotesIngressProtocolOverride(t *testing.T) {
+	t.Parallel()
+
+	chartPath, err := filepath.Abs("../../../")
+	require.NoError(t, err)
+	output, err := exec.Command("helm", "install", "ingress-protocol-test", chartPath,
+		"--dry-run=client",
+		"--set", "global.ingress.enabled=true",
+		"--set", "global.ingress.tls.enabled=false",
+		"--set", "global.ingress.protocol=https",
+		"--set", "global.ingress.host=camunda.example.com",
+		"--set", "orchestration.data.secondaryStorage.type=elasticsearch",
+		"--set", "global.elasticsearch.enabled=true",
+		"--set", "global.elasticsearch.external=true",
+		"--set", "global.elasticsearch.url.host=elasticsearch",
+	).CombinedOutput()
+	require.NoError(t, err, string(output))
+
+	_, notes, found := strings.Cut(string(output), "\nNOTES:\n")
+	require.True(t, found)
+	require.Contains(t, notes, "- Camunda REST API: https://camunda.example.com")
+	require.NotContains(t, notes, "- Camunda REST API: http://camunda.example.com")
+}

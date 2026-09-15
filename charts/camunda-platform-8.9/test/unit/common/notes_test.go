@@ -62,6 +62,17 @@ func TestNotesTemplate(t *testing.T) {
 			expected:    "No password is configured",
 			notExpected: "stored in Kubernetes Secret",
 		},
+		{
+			name: "ingress protocol override",
+			values: []string{
+				"global.ingress.enabled=true",
+				"global.ingress.tls.enabled=false",
+				"global.ingress.protocol=https",
+				"global.ingress.host=camunda.example.com",
+			},
+			expected:    "- Camunda REST API: https://camunda.example.com",
+			notExpected: "- Camunda REST API: http://camunda.example.com",
+		},
 	}
 
 	for _, testCase := range testCases {
