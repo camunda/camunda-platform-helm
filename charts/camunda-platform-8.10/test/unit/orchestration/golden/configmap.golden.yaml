@@ -20,17 +20,23 @@ data:
     echo "export VALUES_ORCHESTRATION_NODE_ID=${VALUES_ORCHESTRATION_NODE_ID}"
 
     if [ "$ZEEBE_RESTORE" = "true" ]; then
-      if [ "${ZEEBE_RESTORE_FROM_BACKUP_ID:-}" ]; then
-        exec restore --backupId="${ZEEBE_RESTORE_FROM_BACKUP_ID}"
-      elif [ "${ZEEBE_RESTORE_FROM_TIMESTAMP:-}" ] && [ "${ZEEBE_RESTORE_TO_TIMESTAMP:-}" ]; then
-        exec restore --from="${ZEEBE_RESTORE_FROM_TIMESTAMP}" --to="${ZEEBE_RESTORE_TO_TIMESTAMP}"
-      elif [ "${ZEEBE_RESTORE_FROM_TIMESTAMP:-}" ]; then
-        exec restore --from="${ZEEBE_RESTORE_FROM_TIMESTAMP}"
-      elif [ "${ZEEBE_RESTORE_TO_TIMESTAMP:-}" ]; then
-        exec restore --to="${ZEEBE_RESTORE_TO_TIMESTAMP}"
-      else
-        exec restore
+      RESTORE_ARGS=()
+      if [ "${ZEEBE_RESTORE_ALL_TENANTS:-}" = "true" ]; then
+        RESTORE_ARGS+=("--allTenants")
       fi
+      if [ "${ZEEBE_RESTORE_TENANT_ID:-}" ]; then
+        RESTORE_ARGS+=("--tenantId=${ZEEBE_RESTORE_TENANT_ID}")
+      fi
+      if [ "${ZEEBE_RESTORE_FROM_BACKUP_ID:-}" ]; then
+        RESTORE_ARGS+=("--backupId=${ZEEBE_RESTORE_FROM_BACKUP_ID}")
+      elif [ "${ZEEBE_RESTORE_FROM_TIMESTAMP:-}" ] && [ "${ZEEBE_RESTORE_TO_TIMESTAMP:-}" ]; then
+        RESTORE_ARGS+=("--from=${ZEEBE_RESTORE_FROM_TIMESTAMP}" "--to=${ZEEBE_RESTORE_TO_TIMESTAMP}")
+      elif [ "${ZEEBE_RESTORE_FROM_TIMESTAMP:-}" ]; then
+        RESTORE_ARGS+=("--from=${ZEEBE_RESTORE_FROM_TIMESTAMP}")
+      elif [ "${ZEEBE_RESTORE_TO_TIMESTAMP:-}" ]; then
+        RESTORE_ARGS+=("--to=${ZEEBE_RESTORE_TO_TIMESTAMP}")
+      fi
+      exec restore "${RESTORE_ARGS[@]}"
     else
       exec camunda
     fi
@@ -198,4 +204,3 @@ data:
         # zeebe.broker.cluster
         cluster:
           clusterName: camunda-platform-test-zeebe
-    
