@@ -100,6 +100,78 @@ func (s *ConstraintTemplateTest) TestDifferentValuesInputs() {
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
+func (s *ConstraintTemplateTest) TestZoneLabelConstraint() {
+	zonedValues := func() map[string]string {
+		return map[string]string{
+			"orchestration.multiregion.mode":                      "zoned",
+			"orchestration.multiregion.zone":                      "zone-a",
+			"orchestration.multiregion.zones[0].name":             "zone-a",
+			"orchestration.multiregion.zones[0].numberOfBrokers":  "3",
+			"orchestration.multiregion.zones[0].numberOfReplicas": "3",
+			"orchestration.multiregion.zones[0].priority":         "100",
+		}
+	}
+
+	globalLabels := zonedValues()
+	globalLabels["global.labels.camunda\\.io/zone"] = "wrong"
+	globalCommonLabels := zonedValues()
+	globalCommonLabels["global.commonLabels.camunda\\.io/zone"] = "wrong"
+	podLabels := zonedValues()
+	podLabels["orchestration.podLabels.camunda\\.io/zone"] = "wrong"
+
+	testCases := []testhelpers.TestCase{
+		{
+			Name:   "TestLegacyZoneLabelCanRemainInGlobalLabelsForZonedMode",
+			Values: globalLabels,
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+			},
+		},
+		{
+			Name:   "TestZoneLabelCannotBeSetInGlobalCommonLabelsForZonedMode",
+			Values: globalCommonLabels,
+			Expected: map[string]string{
+				"ERROR": "camunda.io/zone is managed by the chart in zoned mode",
+			},
+		},
+		{
+			Name:   "TestZoneLabelCannotBeSetInOrchestrationPodLabelsForZonedMode",
+			Values: podLabels,
+			Expected: map[string]string{
+				"ERROR": "camunda.io/zone is managed by the chart in zoned mode",
+			},
+		},
+		{
+			Name: "TestZoneLabelCanBeSetInNumberedMode",
+			Values: map[string]string{
+				"global.labels.camunda\\.io/zone": "user-managed",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *ConstraintTemplateTest) TestBrokerGenerationLabelConstraint() {
+	testCases := make([]testhelpers.TestCase, 0, 3)
+	for _, valuesKey := range []string{"global.labels", "global.commonLabels", "orchestration.podLabels"} {
+		testCases = append(testCases, testhelpers.TestCase{
+			Name: "TestBrokerGenerationLabelCannotBeSetIn" + strings.ReplaceAll(valuesKey, ".", "_"),
+			Values: map[string]string{
+				valuesKey + ".camunda\\.io/broker-generation": "user-managed",
+			},
+			Expected: map[string]string{
+				"ERROR": "camunda.io/broker-generation is managed by the chart",
+			},
+		})
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
 func (s *ConstraintTemplateTest) TestSecondaryStorageConstraint() {
 	testCases := []testhelpers.TestCase{
 		{

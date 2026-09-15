@@ -38,6 +38,7 @@ type TemplateGoldenTest struct {
 	Templates      []string
 	IgnoredLines   []string
 	SetValues      map[string]string
+	ValuesFiles    []string
 	ExtraHelmArgs  []string
 }
 
@@ -74,6 +75,7 @@ func (s *TemplateGoldenTest) TestContainerGoldenTestDefaults() {
 	options := &helm.Options{
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.Namespace),
 		SetValues:      values,
+		ValuesFiles:    s.ValuesFiles,
 		Logger:         logger.Discard,
 	}
 	output := helm.RenderTemplate(s.T(), options, s.ChartPath, s.Release, s.Templates, s.ExtraHelmArgs...)
