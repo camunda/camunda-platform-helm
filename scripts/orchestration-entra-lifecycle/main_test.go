@@ -28,6 +28,17 @@ import (
 	"time"
 )
 
+type roundTripperFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripperFunc) RoundTrip(req *http.Request) (*http.Response, error) {
+	return f(req)
+}
+
+func entraCredentialsSecret() []byte {
+	encode := func(value string) string { return base64.StdEncoding.EncodeToString([]byte(value)) }
+	return []byte(`{"data":{"client-id":"` + encode("id") + `","client-secret":"` + encode("secret") + `","audience":"` + encode("api") + `"}}`)
+}
+
 func TestHTTPClientRejectsRedirects(t *testing.T) {
 	redirectTarget := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
 		t.Fatal("redirect target must not receive credentials")
@@ -50,7 +61,13 @@ func TestHTTPClientRejectsRedirects(t *testing.T) {
 }
 
 func TestAcquireTokenSendsExpectedFormWithoutExposingCredentials(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	tokenURL := "https://login.microsoftonline.com/11111111-2222-3333-4444-555555555555/oauth2/v2.0/token"
+	requests := 0
+	transport := roundTripperFunc(func(r *http.Request) (*http.Response, error) {
+		requests++
+		if r.URL.String() != tokenURL {
+			t.Fatalf("credentials were sent to %q", r.URL.String())
+		}
 		if r.Method != http.MethodPost || r.Header.Get("Content-Type") != "application/x-www-form-urlencoded" {
 			t.Fatalf("unexpected request: %s %s", r.Method, r.Header.Get("Content-Type"))
 		}
@@ -65,19 +82,17 @@ func TestAcquireTokenSendsExpectedFormWithoutExposingCredentials(t *testing.T) {
 		if form.Get("client_id") != "id" || form.Get("client_secret") != "secret" || form.Get("scope") != "api/.default" || form.Get("grant_type") != "client_credentials" {
 			t.Fatalf("unexpected token form: %v", form)
 		}
-		_, _ = io.WriteString(w, `{"access_token":"token"}`)
-	}))
-	defer server.Close()
+		return &http.Response{StatusCode: http.StatusOK, Header: make(http.Header), Body: io.NopCloser(strings.NewReader(`{"access_token":"token"}`)), Request: r}, nil
+	})
 
-	encode := func(value string) string { return base64.StdEncoding.EncodeToString([]byte(value)) }
-	secret := []byte(`{"data":{"client-id":"` + encode("id") + `","client-secret":"` + encode("secret") + `","audience":"` + encode("api") + `"}}`)
+	secret := entraCredentialsSecret()
 	v := &verifier{
 		cfg:        config{release: "integration"},
-		httpClient: newHTTPClient(http.DefaultTransport),
+		httpClient: newHTTPClient(transport),
 		kubectl: func(_ context.Context, _ string, args ...string) ([]byte, error) {
 			joined := strings.Join(args, " ")
 			if strings.Contains(joined, "get configmap") {
-				return []byte(server.URL), nil
+				return []byte(tokenURL), nil
 			}
 			if strings.Contains(joined, "get secret") {
 				return secret, nil
@@ -90,6 +105,63 @@ func TestAcquireTokenSendsExpectedFormWithoutExposingCredentials(t *testing.T) {
 	}
 	if v.token != "token" {
 		t.Fatalf("unexpected token %q", v.token)
+	}
+	if requests != 1 {
+		t.Fatalf("expected exactly one token request, got %d", requests)
+	}
+}
+
+func TestAcquireTokenRejectsUntrustedTokenURL(t *testing.T) {
+	v := &verifier{
+		cfg: config{release: "integration"},
+		httpClient: newHTTPClient(roundTripperFunc(func(r *http.Request) (*http.Response, error) {
+			t.Fatalf("credentials were sent to %q", r.URL.String())
+			return nil, nil
+		})),
+		kubectl: func(_ context.Context, _ string, args ...string) ([]byte, error) {
+			joined := strings.Join(args, " ")
+			if strings.Contains(joined, "get configmap") {
+				return []byte("https://attacker.example.com/tenant/oauth2/v2.0/token"), nil
+			}
+			t.Fatalf("the Entra credentials secret was read for an untrusted token URL: %s", joined)
+			return nil, nil
+		},
+	}
+	err := v.acquireToken(context.Background())
+	if err == nil || !strings.Contains(err.Error(), "Entra token URL must be") {
+		t.Fatalf("expected token URL rejection, got %v", err)
+	}
+	if v.token != "" {
+		t.Fatalf("unexpected token %q", v.token)
+	}
+}
+
+func TestEntraTokenURL(t *testing.T) {
+	tokenURL := "https://login.microsoftonline.com/11111111-2222-3333-4444-555555555555/oauth2/v2.0/token"
+	if got, err := entraTokenURL("  " + tokenURL + "\n"); err != nil || got != tokenURL {
+		t.Fatalf("got %q err %v", got, err)
+	}
+	if _, err := entraTokenURL("https://LOGIN.MICROSOFTONLINE.COM/tenant/oauth2/v2.0/token"); err != nil {
+		t.Fatalf("host comparison must be case insensitive: %v", err)
+	}
+	for _, raw := range []string{
+		"",
+		"   ",
+		"://not a url",
+		"http://login.microsoftonline.com/tenant/oauth2/v2.0/token",
+		"https://attacker.example.com/tenant/oauth2/v2.0/token",
+		"https://login.microsoftonline.com.attacker.example.com/tenant/oauth2/v2.0/token",
+		"https://login.microsoftonline.com@attacker.example.com/tenant/oauth2/v2.0/token",
+		"https://login.microsoftonline.com:8443/tenant/oauth2/v2.0/token",
+		"https://login.microsoftonline.com/oauth2/v2.0/token",
+		"https://login.microsoftonline.com//oauth2/v2.0/token",
+		"https://login.microsoftonline.com/tenant/oauth2/v2.0/authorize",
+		"https://login.microsoftonline.com/tenant/oauth2/v2.0/token?next=https://attacker.example.com",
+		"https://login.microsoftonline.com/tenant/oauth2/v2.0/token/../../../evil",
+	} {
+		if _, err := entraTokenURL(raw); err == nil {
+			t.Fatalf("expected rejection for %q", raw)
+		}
 	}
 }
 
@@ -142,9 +214,7 @@ func TestAbsenceAssertions(t *testing.T) {
 }
 
 func TestParseCredentials(t *testing.T) {
-	encode := func(value string) string { return base64.StdEncoding.EncodeToString([]byte(value)) }
-	raw := []byte(`{"data":{"client-id":"` + encode("id") + `","client-secret":"` + encode("secret") + `","audience":"` + encode("api") + `"}}`)
-	id, secret, audience, err := parseCredentials(raw)
+	id, secret, audience, err := parseCredentials(entraCredentialsSecret())
 	if err != nil {
 		t.Fatal(err)
 	}
