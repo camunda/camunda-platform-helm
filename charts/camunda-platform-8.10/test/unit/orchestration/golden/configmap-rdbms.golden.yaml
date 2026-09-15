@@ -195,3 +195,4 @@ data:
         # zeebe.broker.cluster
         cluster:
           clusterName: camunda-platform-test-zeebe
+    
