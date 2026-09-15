@@ -305,7 +305,10 @@
                             "description": "defines the ingress related annotations, consumed mostly by the ingress controller",
                             "default": {},
                             "additionalProperties": {
-                                "type": "string"
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
                             }
                         },
                         "labels": {
@@ -5187,7 +5190,10 @@
                                     "description": "defines the ingress related annotations, consumed mostly by the ingress controller",
                                     "default": {},
                                     "additionalProperties": {
-                                        "type": "string"
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ]
                                     }
                                 },
                                 "labels": {

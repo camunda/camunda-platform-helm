@@ -1290,7 +1290,8 @@ reason about those manifests (constraints.tpl) cannot drift from what renders.
 {{/*
 [camunda-platform] The ingress-nginx annotation sets the chart used to ship as
 values defaults. Injected only while global.compatibility.nginx.renderAnnotations is on;
-user-provided keys win over them.
+user-provided keys win over them. A user value of null drops the key,
+the removal semantics these maps had while they shipped the defaults.
 */}}
 {{- define "camundaPlatform.legacyNginxIngressAnnotations" -}}
 nginx.ingress.kubernetes.io/ssl-redirect: "false"
@@ -1311,7 +1312,14 @@ nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
   {{- if .Values.global.compatibility.nginx.renderAnnotations -}}
     {{- $compat = include "camundaPlatform.legacyNginxIngressAnnotations" . | fromYaml -}}
   {{- end -}}
-  {{- toYaml (mergeOverwrite (deepCopy $compat) $user) -}}
+  {{- $merged := mergeOverwrite (deepCopy $compat) $user -}}
+  {{- $rendered := dict -}}
+  {{- range $key, $value := $merged -}}
+    {{- if not (kindIs "invalid" $value) -}}
+      {{- $_ := set $rendered $key $value -}}
+    {{- end -}}
+  {{- end -}}
+  {{- toYaml $rendered -}}
 {{- end -}}
 
 {{- define "camundaPlatform.grpcIngressAnnotations" -}}
@@ -1320,7 +1328,14 @@ nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
   {{- if .Values.global.compatibility.nginx.renderAnnotations -}}
     {{- $compat = include "camundaPlatform.legacyNginxGrpcIngressAnnotations" . | fromYaml -}}
   {{- end -}}
-  {{- toYaml (mergeOverwrite (deepCopy $compat) $user) -}}
+  {{- $merged := mergeOverwrite (deepCopy $compat) $user -}}
+  {{- $rendered := dict -}}
+  {{- range $key, $value := $merged -}}
+    {{- if not (kindIs "invalid" $value) -}}
+      {{- $_ := set $rendered $key $value -}}
+    {{- end -}}
+  {{- end -}}
+  {{- toYaml $rendered -}}
 {{- end -}}
 
 {{/*

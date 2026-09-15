@@ -248,9 +248,9 @@ func (s *IngressTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestHttpIngressEmitsNoControllerSpecificAnnotationsWhenCompatShimIsOff",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"global.ingress.enabled":                "true",
+				"global.ingress.enabled":                       "true",
 				"global.compatibility.nginx.renderAnnotations": "false",
-				"orchestration.contextPath":             "/orchestration",
+				"orchestration.contextPath":                    "/orchestration",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var ingress netv1.Ingress
@@ -260,6 +260,28 @@ func (s *IngressTemplateTest) TestDifferentValuesInputs() {
 					s.Require().NotContains(ingress.Annotations, "nginx.ingress.kubernetes.io/"+a,
 						"opting out of the shim must render a controller-neutral Ingress (camunda/camunda-platform-helm#6410)")
 				}
+			},
+		},
+		{
+			// Same null-removal path as the gRPC map, on the shared HTTP Ingress:
+			// the nulled keys go, the rest of the compatibility set stays.
+			Name:                 "TestHttpIngressNullPerKeyRemovesOnlyThoseCompatAnnotations",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			ValuesFiles:          []string{"testdata/values-http-annotations-null-per-key.yaml"},
+			Values: map[string]string{
+				"orchestration.contextPath": "/orchestration",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+
+				var ingress netv1.Ingress
+				helm.UnmarshalK8SYaml(t, output, &ingress)
+
+				for _, a := range []string{"ssl-redirect", "proxy-body-size"} {
+					s.Require().NotContains(ingress.Annotations, "nginx.ingress.kubernetes.io/"+a)
+				}
+				s.Require().Equal("on", ingress.Annotations["nginx.ingress.kubernetes.io/proxy-buffering"])
+				s.Require().Equal("128k", ingress.Annotations["nginx.ingress.kubernetes.io/proxy-buffer-size"])
 			},
 		},
 		{
@@ -851,8 +873,8 @@ func (s *GrpcIngressTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestGrpcIngressEmitsNoAnnotationsWhenCompatShimIsOff",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"orchestration.enabled":                 "true",
-				"orchestration.ingress.grpc.enabled":    "true",
+				"orchestration.enabled":                        "true",
+				"orchestration.ingress.grpc.enabled":           "true",
 				"global.compatibility.nginx.renderAnnotations": "false",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -864,6 +886,43 @@ func (s *GrpcIngressTemplateTest) TestDifferentValuesInputs() {
 				for _, a := range []string{"backend-protocol", "ssl-redirect", "proxy-buffer-size"} {
 					s.Require().NotContains(ingress.Annotations, "nginx.ingress.kubernetes.io/"+a)
 				}
+			},
+		},
+		{
+			// Removing a key with null was valid while these annotations shipped as
+			// values defaults, so it must keep working once the shim supplies them.
+			Name:                 "TestGrpcIngressNullPerKeyRemovesCompatAnnotation",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			ValuesFiles:          []string{"testdata/values-grpc-annotations-null-per-key.yaml"},
+			Values: map[string]string{
+				"orchestration.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+
+				var ingress netv1.Ingress
+				helm.UnmarshalK8SYaml(t, output, &ingress)
+
+				for _, a := range []string{"backend-protocol", "ssl-redirect", "proxy-buffer-size"} {
+					s.Require().NotContains(ingress.Annotations, "nginx.ingress.kubernetes.io/"+a)
+				}
+			},
+		},
+		{
+			Name:                 "TestGrpcIngressNullWholeAnnotationMapRenders",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			ValuesFiles:          []string{"testdata/values-grpc-annotations-null-whole-map.yaml"},
+			Values: map[string]string{
+				"orchestration.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+
+				var ingress netv1.Ingress
+				helm.UnmarshalK8SYaml(t, output, &ingress)
+
+				s.Require().Equal("GRPC", ingress.Annotations["nginx.ingress.kubernetes.io/backend-protocol"],
+					"a null map is empty, not a removal of every key, so the shim still applies")
 			},
 		},
 		{
