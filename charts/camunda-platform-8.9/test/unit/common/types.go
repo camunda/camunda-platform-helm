@@ -108,9 +108,6 @@ type DocumentSecondaryStoreYAML struct {
 	History HistoryYAML `yaml:"history"`
 }
 
-// HistoryYAML mirrors camunda.data.secondary-storage.<store>.history, which carries only the
-// retention policy name on the 8.9 line; the archiver settings live in the legacy
-// zeebe.broker.exporters.camundaexporter.args.history block (see helm#7028).
 type HistoryYAML struct {
 	PolicyName string `yaml:"policy-name"`
 }

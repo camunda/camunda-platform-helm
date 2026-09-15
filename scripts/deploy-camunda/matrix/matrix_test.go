@@ -555,10 +555,7 @@ func TestGenerateWithRealConfigs(t *testing.T) {
 		t.Errorf("Generate: expected entries for at least 2 versions, got %d: %v", len(versions), versions)
 	}
 
-	// Verify no denied flows leaked through. Derived from permitted-flows.yaml rather than
-	// hardcoded: the deny rules move as minors are released (upgrade-patch was denied for
-	// 8.9 while it was unreleased, and now only for 8.10), and a hardcoded copy silently
-	// goes stale because it only fires once a scenario declares the flow.
+	// Verify no denied flows leaked through, using permitted-flows.yaml as the source of truth.
 	pf, err := LoadPermittedFlows(repoRoot)
 	if err != nil {
 		t.Fatalf("LoadPermittedFlows: %v", err)

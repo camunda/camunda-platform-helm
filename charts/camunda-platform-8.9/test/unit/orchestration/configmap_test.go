@@ -131,10 +131,7 @@ func TestGoldenConfigmapWithRDBMSEnabled(t *testing.T) {
 func (s *ConfigmapLegacyTemplateTest) TestDifferentValuesInputs() {
 	testCases := []testhelpers.TestCase{
 		{
-			// The explicit registration must stay: customers on the released 8.9 line inject
-			// ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_* overrides that Spring merges into
-			// this map, and the broker refuses to start when the entry has args but no
-			// className. See helm#7028.
+			// Regression: helm#7028.
 			Name:   "TestContainerShouldContainExporterClassPerDefault",
 			Values: map[string]string{},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -149,8 +146,7 @@ func (s *ConfigmapLegacyTemplateTest) TestDifferentValuesInputs() {
 			},
 		},
 		{
-			// A legacy args override on its own cannot supply a className, so the chart must
-			// keep rendering one alongside it. See helm#7028.
+			// Regression: helm#7028.
 			Name: "TestExporterClassIsRenderedAlongsideLegacyArgsOverride",
 			Values: map[string]string{
 				"orchestration.env[0].name":  "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_HISTORY_ELSROLLOVERDATEFORMAT",
@@ -182,8 +178,6 @@ func (s *ConfigmapLegacyTemplateTest) TestDifferentValuesInputs() {
 			},
 		},
 		{
-			// The archiver settings belong to the legacy exporter args on the 8.9 line; the
-			// unified secondary-storage history block carries only the retention policy name.
 			Name: "TestUnifiedHistoryCarriesOnlyRetentionPolicyName",
 			Values: map[string]string{
 				"orchestration.data.secondaryStorage.type":    "elasticsearch",
