@@ -197,7 +197,7 @@
                 "multiregion": {
                     "type": "object",
                     "additionalProperties": false,
-                    "description": "DEPRECATED, use orchestration.multiregion. Only the regions and regionId settings remain here; zoned mode is configured under orchestration.multiregion.",
+                    "description": "DEPRECATED, use orchestration.clusterTopology. Only the regions and regionId settings remain here; zoned mode is configured under orchestration.clusterTopology.",
                     "default": {},
                     "properties": {
                         "regions": {
@@ -917,10 +917,10 @@
         },
         "orchestration": {
             "properties": {
-                "multiregion": {
+                "clusterTopology": {
                     "type": "object",
                     "additionalProperties": false,
-                    "description": "Multi-region configuration for the Orchestration cluster. WARNING: get your configuration reviewed by Camunda before going to production — see https://docs.camunda.io/docs/self-managed/concepts/multi-region/dual-region/.",
+                    "description": "Topology of the Orchestration cluster: how its brokers are grouped into failure domains. WARNING: get your configuration reviewed by Camunda before going to production — see https://docs.camunda.io/docs/self-managed/concepts/multi-region/dual-region/.",
                     "default": {},
                     "properties": {
                         "mode": {
@@ -956,7 +956,7 @@
                                         "minLength": 1,
                                         "maxLength": 63,
                                         "pattern": "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$",
-                                        "description": "Name of the zone. It is the prefix of the composite broker member ID \"<zone>_<node-id>\", and one of these names must be selected by orchestration.multiregion.zone. Restricted to an RFC 1123 label: an underscore would make the composite ID ambiguous, and the name is also used to derive per-zone resource and DNS names."
+                                        "description": "Name of the zone. It is the prefix of the composite broker member ID \"<zone>_<node-id>\", and one of these names must be selected by orchestration.clusterTopology.zone. Restricted to an RFC 1123 label: an underscore would make the composite ID ambiguous, and the name is also used to derive per-zone resource and DNS names."
                                     },
                                     "numberOfBrokers": {
                                         "type": "integer",

@@ -2394,16 +2394,16 @@ func (s *StatefulSetTest) TestZonedMode() {
 		{
 			Name: "TestZonedModeUsesLocalZoneBrokerCountAndEnvironmentVariable",
 			Values: map[string]string{
-				"orchestration.multiregion.mode":                      "zoned",
-				"orchestration.multiregion.zone":                      "region-b",
-				"orchestration.multiregion.zones[0].name":             "region-a",
-				"orchestration.multiregion.zones[0].numberOfBrokers":  "2",
-				"orchestration.multiregion.zones[0].numberOfReplicas": "2",
-				"orchestration.multiregion.zones[0].priority":         "100",
-				"orchestration.multiregion.zones[1].name":             "region-b",
-				"orchestration.multiregion.zones[1].numberOfBrokers":  "3",
-				"orchestration.multiregion.zones[1].numberOfReplicas": "3",
-				"orchestration.multiregion.zones[1].priority":         "50",
+				"orchestration.clusterTopology.mode":                      "zoned",
+				"orchestration.clusterTopology.zone":                      "region-b",
+				"orchestration.clusterTopology.zones[0].name":             "region-a",
+				"orchestration.clusterTopology.zones[0].numberOfBrokers":  "2",
+				"orchestration.clusterTopology.zones[0].numberOfReplicas": "2",
+				"orchestration.clusterTopology.zones[0].priority":         "100",
+				"orchestration.clusterTopology.zones[1].name":             "region-b",
+				"orchestration.clusterTopology.zones[1].numberOfBrokers":  "3",
+				"orchestration.clusterTopology.zones[1].numberOfReplicas": "3",
+				"orchestration.clusterTopology.zones[1].priority":         "50",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
@@ -2440,19 +2440,19 @@ func (s *StatefulSetTest) TestZonedMode() {
 			},
 		},
 		{
-			Name: "TestZonedModeRejectsBothMultiregionBlocks",
+			Name: "TestZonedModeRejectsBothTopologyBlocks",
 			Values: map[string]string{
-				"orchestration.multiregion.mode":                      "zoned",
-				"orchestration.multiregion.zone":                      "region-a",
-				"orchestration.multiregion.zones[0].name":             "region-a",
-				"orchestration.multiregion.zones[0].numberOfBrokers":  "2",
-				"orchestration.multiregion.zones[0].numberOfReplicas": "2",
-				"orchestration.multiregion.zones[0].priority":         "100",
+				"orchestration.clusterTopology.mode":                      "zoned",
+				"orchestration.clusterTopology.zone":                      "region-a",
+				"orchestration.clusterTopology.zones[0].name":             "region-a",
+				"orchestration.clusterTopology.zones[0].numberOfBrokers":  "2",
+				"orchestration.clusterTopology.zones[0].numberOfReplicas": "2",
+				"orchestration.clusterTopology.zones[0].priority":         "100",
 				"global.multiregion.regions":                          "2",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.Error(t, err)
-				require.Contains(t, err.Error(), "orchestration.multiregion and global.multiregion are both configured")
+				require.Contains(t, err.Error(), "orchestration.clusterTopology and global.multiregion are both configured")
 			},
 		},
 	}
@@ -2483,7 +2483,7 @@ func (s *StatefulSetTest) TestNumberedModeCompatibility() {
 			Name:                    "ExplicitNumberedModeUsesNumberedReplicaDivision",
 			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.clusterSize=6"},
 			Values: map[string]string{
-				"orchestration.multiregion.mode": "numbered",
+				"orchestration.clusterTopology.mode": "numbered",
 				"global.multiregion.regions":     "2",
 				"global.multiregion.regionId":    "1",
 			},

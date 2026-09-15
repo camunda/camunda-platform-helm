@@ -2948,16 +2948,16 @@ Usage:
 {{- end -}}
 
 {{/*
-NOTE: resolves the multi-region block, preferring orchestration.multiregion over the
+NOTE: resolves the multi-region block, preferring orchestration.clusterTopology over the
 deprecated global.multiregion, which only still carries regions and regionId. Whole-block
 precedence, never per field, so a topology cannot be assembled half from each. Absent
 fields fall back to the chart defaults, which is what lets the global block supply the
 numbered pair without declaring the zoned ones. constraints.tpl rejects setting both.
 */}}
-{{- define "camundaPlatform.multiregion" -}}
-{{- $orch := .Values.orchestration.multiregion | default dict -}}
+{{- define "camundaPlatform.clusterTopology" -}}
+{{- $orch := .Values.orchestration.clusterTopology | default dict -}}
 {{- $global := .Values.global.multiregion | default dict -}}
-{{- if eq (include "camundaPlatform.multiregionConfigured" $orch) "true" -}}
+{{- if eq (include "camundaPlatform.clusterTopologyConfigured" $orch) "true" -}}
   {{- dict
         "mode" ($orch.mode | default "numbered")
         "zone" ($orch.zone | default "")
@@ -2984,7 +2984,7 @@ numbered pair without declaring the zoned ones. constraints.tpl rejects setting 
 NOTE: takes a multi-region block, not the root context. Emits "true" when any field
 departs from the chart default.
 */}}
-{{- define "camundaPlatform.multiregionConfigured" -}}
+{{- define "camundaPlatform.clusterTopologyConfigured" -}}
 {{- if or
       (ne (default "numbered" .mode) "numbered")
       (ne (default "" .zone) "")
@@ -3004,11 +3004,11 @@ not to spread across them. Three call sites depend on agreeing about this, so th
 it here rather than each spelling it out: the generated initial contact points, the
 legacy Optimize exporters, and the NOTES.txt warning.
 */}}
-{{- define "camundaPlatform.multiregionSpread" -}}
-{{- $mr := include "camundaPlatform.multiregion" . | fromJson -}}
-{{- if eq $mr.mode "zoned" -}}
-  {{- gt (len $mr.zones) 1 -}}
+{{- define "camundaPlatform.clusterTopologySpread" -}}
+{{- $topology := include "camundaPlatform.clusterTopology" . | fromJson -}}
+{{- if eq $topology.mode "zoned" -}}
+  {{- gt (len $topology.zones) 1 -}}
 {{- else -}}
-  {{- gt (int $mr.regions) 1 -}}
+  {{- gt (int $topology.regions) 1 -}}
 {{- end -}}
 {{- end -}}
