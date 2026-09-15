@@ -20,9 +20,11 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/gruntwork-io/terratest/modules/helm"
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	corev1 "k8s.io/api/core/v1"
 )
 
 type ZoneAwareServiceAccountTest struct {
@@ -107,4 +109,30 @@ func (s *ZoneAwareServiceAccountTest) TestBothBrokerGenerationsUseTheSharedServi
 		s.T(), s.chartPath, s.release, s.namespace,
 		[]string{"templates/orchestration/statefulset.yaml"}, testCases,
 	)
+}
+
+func (s *ZoneAwareServiceAccountTest) TestSharedServiceAccountHasNoGeneration() {
+	for _, mode := range []string{"numbered", "migration", "zoned"} {
+		testCase := testhelpers.TestCase{
+			Name:   mode,
+			Values: map[string]string{"orchestration.serviceAccount.labels.owner": "platform"},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var account corev1.ServiceAccount
+				helm.UnmarshalK8SYaml(t, output, &account)
+				require.Equal(t, s.release+"-zeebe", account.Name)
+				require.Equal(t, "platform", account.Labels["owner"])
+				require.NotContains(t, account.Labels, "camunda.io/broker-generation")
+				require.NotContains(t, account.Labels, "camunda.io/zone")
+			},
+		}
+		if mode != "numbered" {
+			testCase.ValuesFiles = []string{s.valuesFile}
+			testCase.Values["orchestration.multiregion.keepUnzonedBrokers"] = "true"
+			if mode == "zoned" {
+				testCase.Values["orchestration.multiregion.keepUnzonedBrokers"] = "false"
+			}
+		}
+		testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, []testhelpers.TestCase{testCase})
+	}
 }
