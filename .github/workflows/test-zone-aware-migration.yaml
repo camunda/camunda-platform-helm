@@ -8,6 +8,7 @@ on:
       - "charts/camunda-platform-8.10/templates/common/_helpers.tpl"
       - "charts/camunda-platform-8.10/values.yaml"
       - "charts/camunda-platform-8.10/values.schema.json"
+      - "charts/camunda-platform-8.10/values.schema.extra.json"
       - "charts/camunda-platform-8.10/test/integration/scenarios/zone-aware-migration/**"
       - "scripts/zone-aware-migration/**"
       - "Makefile"
