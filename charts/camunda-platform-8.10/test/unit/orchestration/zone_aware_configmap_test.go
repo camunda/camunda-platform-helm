@@ -48,7 +48,10 @@ func (s *ConfigmapTemplateTest) TestZonedConfiguration() {
 				require.Contains(t, output, "name: \"region-b\"")
 				require.Contains(t, output, "VALUES_ORCHESTRATION_NODE_ID:-${K8S_NAME##*-}")
 				require.Contains(t, output, "node-id: \"${VALUES_ORCHESTRATION_NODE_ID:}\"")
-				require.NotContains(t, output, "initial-contact-points:")
+				require.Contains(t, output, "initial-contact-points:")
+				require.Contains(t, output, "camunda-platform-test-zeebe-region-a-0.camunda-platform-test-zeebe-region-a:26502")
+				require.Contains(t, output, "camunda-platform-test-zeebe-region-a-1.camunda-platform-test-zeebe-region-a:26502")
+				require.NotContains(t, output, "camunda-platform-test-zeebe-region-b")
 			},
 		},
 		{
@@ -514,7 +517,7 @@ func (s *ConfigmapTemplateTest) TestZonedModeAllowsNumberedRegionSettingsAfterMi
 func (s *ConfigmapTemplateTest) TestMigrationContactPoints() {
 	testCases := []testhelpers.TestCase{
 		{
-			Name: "TestMigrationUsesOnlyRetainedLocalBrokers",
+			Name: "TestMigrationUsesOnlyLocalBrokerContactPoints",
 			Values: map[string]string{
 				"orchestration.multiregion.mode":                      "zoned",
 				"orchestration.multiregion.zone":                      "zone-a",

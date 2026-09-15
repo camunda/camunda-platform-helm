@@ -1470,12 +1470,21 @@ The following values inside your values.yaml need to be set but were not:
       {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
     {{- end }}
     {{- if eq (include "camundaPlatform.multiregionSpread" .) "true" }}
+      {{- if eq (include "orchestration.zoned" .) "true" }}
+      {{- $warningMessage := printf "%s %s %s"
+          "[camunda][warning]"
+          "This deployment spans more than one failure domain. The generated configuration includes contact points for this release's local zoned brokers and, during migration, retained numbered brokers."
+          "To discover brokers in other zones, set the complete local and remote contact-point list through CAMUNDA_CLUSTER_INITIALCONTACTPOINTS in \"orchestration.env\"."
+      -}}
+      {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+      {{- else }}
       {{- $warningMessage := printf "%s %s %s"
           "[camunda][warning]"
           "This deployment spans more than one failure domain, so the chart cannot generate the broker bootstrap list: set CAMUNDA_CLUSTER_INITIALCONTACTPOINTS through \"orchestration.env\"."
           "List every broker as <pod>.<headless-service>.<namespace>.svc.cluster.local:26502, comma-separated."
       -}}
       {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+      {{- end }}
     {{- end }}
   {{- end }}
 
