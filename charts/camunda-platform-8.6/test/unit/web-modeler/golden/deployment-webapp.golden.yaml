@@ -123,4 +123,3 @@ spec:
         runAsNonRoot: true
         seccompProfile:
           type: RuntimeDefault
-
