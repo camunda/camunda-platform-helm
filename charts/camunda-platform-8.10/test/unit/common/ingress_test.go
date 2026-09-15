@@ -285,6 +285,23 @@ func (s *IngressTemplateTest) TestDifferentValuesInputs() {
 			},
 		},
 		{
+			Name:                 "TestHttpIngressTemplatedAnnotationKeyOverridesCompatOnce",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			ValuesFiles:          []string{"testdata/values-http-annotation-templated-key.yaml"},
+			Values: map[string]string{
+				"orchestration.contextPath": "/orchestration",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+
+				var ingress netv1.Ingress
+				helm.UnmarshalK8SYaml(t, output, &ingress)
+
+				s.Require().Equal("user-wins", ingress.Annotations["nginx.ingress.kubernetes.io/ssl-redirect"])
+				s.Require().Equal(1, strings.Count(output, "nginx.ingress.kubernetes.io/ssl-redirect"))
+			},
+		},
+		{
 			Name:                 "TestHttpIngressKeepsControllerAnnotationsWhileCompatShimIsOn",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
@@ -906,6 +923,26 @@ func (s *GrpcIngressTemplateTest) TestDifferentValuesInputs() {
 				for _, a := range []string{"backend-protocol", "ssl-redirect", "proxy-buffer-size"} {
 					s.Require().NotContains(ingress.Annotations, "nginx.ingress.kubernetes.io/"+a)
 				}
+			},
+		},
+		{
+			// The callers tpl the rendered map, so a templated key is only recognised
+			// as an override once resolved; otherwise it renders beside the shim key
+			// and YAML last-wins hands the shim the win the docs promise the user.
+			Name:                 "TestGrpcIngressTemplatedAnnotationKeyOverridesCompatOnce",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			ValuesFiles:          []string{"testdata/values-grpc-annotation-templated-key.yaml"},
+			Values: map[string]string{
+				"orchestration.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+
+				var ingress netv1.Ingress
+				helm.UnmarshalK8SYaml(t, output, &ingress)
+
+				s.Require().Equal("user-wins", ingress.Annotations["nginx.ingress.kubernetes.io/backend-protocol"])
+				s.Require().Equal(1, strings.Count(output, "nginx.ingress.kubernetes.io/backend-protocol"))
 			},
 		},
 		{

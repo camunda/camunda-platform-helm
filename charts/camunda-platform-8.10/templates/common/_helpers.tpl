@@ -1291,7 +1291,10 @@ reason about those manifests (constraints.tpl) cannot drift from what renders.
 [camunda-platform] The ingress-nginx annotation sets the chart used to ship as
 values defaults. Injected only while global.compatibility.nginx.renderAnnotations is on;
 user-provided keys win over them. A user value of null drops the key,
-the removal semantics these maps had while they shipped the defaults.
+the removal semantics these maps had while they shipped the defaults. Override detection runs on
+a tpl-resolved copy, because the callers evaluate these maps and a templated key
+would otherwise miss its compatibility counterpart and render twice. Only the
+copy is resolved here, so the caller still evaluates each user entry once.
 */}}
 {{- define "camundaPlatform.legacyNginxIngressAnnotations" -}}
 nginx.ingress.kubernetes.io/ssl-redirect: "false"
@@ -1308,13 +1311,21 @@ nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
 
 {{- define "camundaPlatform.ingressAnnotations" -}}
   {{- $user := .Values.global.ingress.annotations | default dict -}}
+  {{- $resolved := dict -}}
+  {{- if $user -}}
+    {{- $resolved = tpl (toYaml $user) . | fromYaml -}}
+  {{- end -}}
   {{- $compat := dict -}}
   {{- if .Values.global.compatibility.nginx.renderAnnotations -}}
     {{- $compat = include "camundaPlatform.legacyNginxIngressAnnotations" . | fromYaml -}}
   {{- end -}}
-  {{- $merged := mergeOverwrite (deepCopy $compat) $user -}}
   {{- $rendered := dict -}}
-  {{- range $key, $value := $merged -}}
+  {{- range $key, $value := $compat -}}
+    {{- if not (hasKey $resolved $key) -}}
+      {{- $_ := set $rendered $key $value -}}
+    {{- end -}}
+  {{- end -}}
+  {{- range $key, $value := $user -}}
     {{- if not (kindIs "invalid" $value) -}}
       {{- $_ := set $rendered $key $value -}}
     {{- end -}}
@@ -1324,13 +1335,21 @@ nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
 
 {{- define "camundaPlatform.grpcIngressAnnotations" -}}
   {{- $user := .Values.orchestration.ingress.grpc.annotations | default dict -}}
+  {{- $resolved := dict -}}
+  {{- if $user -}}
+    {{- $resolved = tpl (toYaml $user) . | fromYaml -}}
+  {{- end -}}
   {{- $compat := dict -}}
   {{- if .Values.global.compatibility.nginx.renderAnnotations -}}
     {{- $compat = include "camundaPlatform.legacyNginxGrpcIngressAnnotations" . | fromYaml -}}
   {{- end -}}
-  {{- $merged := mergeOverwrite (deepCopy $compat) $user -}}
   {{- $rendered := dict -}}
-  {{- range $key, $value := $merged -}}
+  {{- range $key, $value := $compat -}}
+    {{- if not (hasKey $resolved $key) -}}
+      {{- $_ := set $rendered $key $value -}}
+    {{- end -}}
+  {{- end -}}
+  {{- range $key, $value := $user -}}
     {{- if not (kindIs "invalid" $value) -}}
       {{- $_ := set $rendered $key $value -}}
     {{- end -}}

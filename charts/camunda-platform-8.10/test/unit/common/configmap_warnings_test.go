@@ -568,6 +568,51 @@ func (s *ConfigMapWarningsTemplateTest) TestIngressUpstreamTLSControllerWarning(
 			},
 		},
 		{
+			// Connectors and Optimize reach the warning through their own
+			// *HTTPIngressRendered gates, so each needs a rendered-route case of its
+			// own; drift in one gate would otherwise silently drop the warning.
+			Name: "TestConnectorsRenderedRouteWithUpstreamTLSNamesConnectors",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":         "elasticsearch",
+				"global.ingress.enabled":                           "true",
+				"global.ingress.className":                         "contour",
+				"global.host":                                      "camunda.example.com",
+				"connectors.enabled":                               "true",
+				"connectors.contextPath":                           "/connectors",
+				"global.tls.connectors.enabled":                    "true",
+				"global.tls.connectors.cert.secret.existingSecret": "connectors-ks",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				warnings := configmap.Data["warnings"]
+				s.Require().Contains(warnings, warning)
+				s.Require().Contains(warnings, "Upstream TLS is enabled for Connectors")
+			},
+		},
+		{
+			Name: "TestOptimizeRenderedRouteWithUpstreamTLSNamesOptimize",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":       "elasticsearch",
+				"global.ingress.enabled":                         "true",
+				"global.ingress.className":                       "contour",
+				"global.host":                                    "camunda.example.com",
+				"optimize.enabled":                               "true",
+				"optimize.contextPath":                           "/optimize",
+				"global.tls.optimize.enabled":                    "true",
+				"global.tls.optimize.cert.secret.existingSecret": "optimize-ks",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				warnings := configmap.Data["warnings"]
+				s.Require().Contains(warnings, warning)
+				s.Require().Contains(warnings, "Upstream TLS is enabled for Optimize")
+			},
+		},
+		{
 			// The split HTTPS Ingress only renders when the component is enabled and
 			// has a contextPath, so TLS alone must not trigger the warning.
 			Name: "TestUpstreamTLSOnAComponentWithNoRouteDoesNotWarn",
