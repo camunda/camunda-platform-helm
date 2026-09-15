@@ -379,12 +379,12 @@ func (s *ConfigMapWarningsTemplateTest) TestNginxCompatAnnotationsDeprecationWar
 		{
 			Name: "TestShimOffDoesNotWarn",
 			Values: map[string]string{
-				"orchestration.data.secondaryStorage.type": "elasticsearch",
-				"global.ingress.enabled":                   "true",
-				"global.compatibility.nginx.renderAnnotations":    "false",
-				"global.host":                              "camunda.example.com",
-				"orchestration.contextPath":                "/",
-				"global.identity.auth.console.clientId":    "some-console-client",
+				"orchestration.data.secondaryStorage.type":     "elasticsearch",
+				"global.ingress.enabled":                       "true",
+				"global.compatibility.nginx.renderAnnotations": "false",
+				"global.host":                           "camunda.example.com",
+				"orchestration.contextPath":             "/",
+				"global.identity.auth.console.clientId": "some-console-client",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().NoError(err)
