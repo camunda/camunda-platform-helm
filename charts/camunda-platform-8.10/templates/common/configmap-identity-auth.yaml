@@ -6,7 +6,9 @@ metadata:
   labels: {{- include "camundaPlatform.labels" . | nindent 4 }}
   annotations: {{- toYaml .Values.global.annotations | nindent 4 }}
 data:
+  {{- if or (eq (include "camundaPlatform.identityEnabled" .) "true") .Values.global.identity.service.url }}
   CAMUNDA_IDENTITY_BASEURL: {{ include "camundaPlatform.identityURL" . | quote }}
+  {{- end }}
   CAMUNDA_IDENTITY_TYPE: {{ include "camundaPlatform.authIssuerType" . | quote }}
   CAMUNDA_IDENTITY_ISSUER: {{ include "camundaPlatform.authIssuerUrlWithFallback" . | quote }}
   CAMUNDA_IDENTITY_ISSUER_BACKEND_URL: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}

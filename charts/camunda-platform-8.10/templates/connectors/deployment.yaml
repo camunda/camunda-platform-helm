@@ -20,6 +20,9 @@ spec:
         {{- end }}
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/connectors/configmap.yaml") . | sha256sum }}
+        {{- if .Values.global.identity.auth.enabled }}
+        checksum/config-identity-env: {{ include (print $.Template.BasePath "/common/configmap-identity-auth.yaml") . | sha256sum }}
+        {{- end }}
         {{- with (include "camundaPlatform.caBundleChecksumAnnotation" .) }}{{ . | nindent 8 }}{{- end }}
         {{- with (include "camundaPlatform.connectorsTLSChecksumAnnotation" .) }}{{ . | nindent 8 }}{{- end }}
       {{- if .Values.connectors.podAnnotations }}
