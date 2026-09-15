@@ -41,6 +41,8 @@ const (
 	longAttempts  = 60
 	shortDelay    = 5 * time.Second
 	longDelay     = 10 * time.Second
+
+	entraTokenHost = "login.microsoftonline.com"
 )
 
 type config struct {
@@ -190,9 +192,9 @@ func (v *verifier) acquireToken(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	tokenURL := strings.TrimSpace(string(tokenURLRaw))
-	if tokenURL == "" {
-		return errors.New("Entra token URL annotation is empty")
+	tokenURL, err := entraTokenURL(string(tokenURLRaw))
+	if err != nil {
+		return err
 	}
 
 	secretRaw, err := v.kube(ctx, "get", "secret", "venom-entra-credentials", "-o", "json")
@@ -493,6 +495,25 @@ func assertDataKeyAbsent(raw []byte, key string) error {
 		return fmt.Errorf("found forbidden key %s", key)
 	}
 	return nil
+}
+
+func entraTokenURL(raw string) (string, error) {
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" {
+		return "", errors.New("Entra token URL annotation is empty")
+	}
+	parsed, err := url.Parse(trimmed)
+	if err != nil {
+		return "", errors.New("Entra token URL annotation is not a valid URL")
+	}
+	segments := strings.Split(strings.TrimPrefix(parsed.EscapedPath(), "/"), "/")
+	if parsed.Scheme != "https" || !strings.EqualFold(parsed.Host, entraTokenHost) || parsed.User != nil ||
+		parsed.RawQuery != "" || parsed.Fragment != "" ||
+		len(segments) != 4 || segments[0] == "" ||
+		segments[1] != "oauth2" || segments[2] != "v2.0" || segments[3] != "token" {
+		return "", fmt.Errorf("Entra token URL must be https://%s/<tenant>/oauth2/v2.0/token, got %s", entraTokenHost, parsed.Redacted())
+	}
+	return parsed.String(), nil
 }
 
 func parseCredentials(raw []byte) (string, string, string, error) {
