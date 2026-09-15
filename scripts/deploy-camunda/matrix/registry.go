@@ -55,6 +55,24 @@ type registryManifestEntry struct {
 	Enabled   bool   `yaml:"enabled"`
 }
 
+// validateManifestTier accepts tier 1 and 2, plus an absent tier (0) on a
+// disabled entry. An enabled entry must declare a tier: an untiered entry
+// matches no --tier filter, so it is reachable only through the unfiltered
+// matrix and never through tier-scoped selection.
+func validateManifestTier(entry registryManifestEntry) error {
+	switch entry.Tier {
+	case 1, 2:
+		return nil
+	case 0:
+		if !entry.Enabled {
+			return nil
+		}
+		return fmt.Errorf("manifest scenario %q is enabled but declares no tier: set tier 1 (PR CI) or 2 (merge-queue only)", entry.ID)
+	default:
+		return fmt.Errorf("manifest scenario %q declares tier %d: supported values are 1 (PR CI) and 2 (merge-queue only)", entry.ID, entry.Tier)
+	}
+}
+
 // registryScenario is the parsed shape of <registry>/scenarios/<id>.yaml.
 // Mirrors CIScenario field-for-field except:
 //   - Flow is plural (Flows) — the loader fans out to N CIScenario entries.
@@ -178,6 +196,9 @@ func LoadRegistry(chartDir string) (*CITestConfig, error) {
 	for _, entry := range manifest.Integration.Scenarios {
 		if !isPlainFilename(entry.ID) {
 			return nil, fmt.Errorf("manifest scenario id %q must be a plain filename (no path separators)", entry.ID)
+		}
+		if err := validateManifestTier(entry); err != nil {
+			return nil, err
 		}
 		scnPath := filepath.Join(scenariosDir, entry.ID+".yaml")
 		scnData, err := os.ReadFile(scnPath)
