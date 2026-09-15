@@ -1296,6 +1296,21 @@ a tpl-resolved copy, because the callers evaluate these maps and a templated key
 would otherwise miss its compatibility counterpart and render twice. Only the
 copy is resolved here, so the caller still evaluates each user entry once.
 */}}
+{{/*
+[camunda-platform] A user annotation map with its keys resolved. The callers
+render these maps through tpl, so a templated key only becomes its compatibility
+counterpart afterwards; both the render helpers and the warning predicates match
+against this so they cannot disagree about what the shim contributes.
+*/}}
+{{- define "camundaPlatform.resolvedUserAnnotations" -}}
+  {{- $user := .annotations | default dict -}}
+  {{- if $user -}}
+    {{- tpl (toYaml $user) .context -}}
+  {{- else -}}
+    {{- "{}" -}}
+  {{- end -}}
+{{- end -}}
+
 {{- define "camundaPlatform.legacyNginxIngressAnnotations" -}}
 nginx.ingress.kubernetes.io/ssl-redirect: "false"
 nginx.ingress.kubernetes.io/proxy-buffering: "on"
@@ -1311,10 +1326,7 @@ nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
 
 {{- define "camundaPlatform.ingressAnnotations" -}}
   {{- $user := .Values.global.ingress.annotations | default dict -}}
-  {{- $resolved := dict -}}
-  {{- if $user -}}
-    {{- $resolved = tpl (toYaml $user) . | fromYaml -}}
-  {{- end -}}
+  {{- $resolved := include "camundaPlatform.resolvedUserAnnotations" (dict "annotations" $user "context" .) | fromYaml -}}
   {{- $compat := dict -}}
   {{- if .Values.global.compatibility.nginx.renderAnnotations -}}
     {{- $compat = include "camundaPlatform.legacyNginxIngressAnnotations" . | fromYaml -}}
@@ -1335,10 +1347,7 @@ nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
 
 {{- define "camundaPlatform.grpcIngressAnnotations" -}}
   {{- $user := .Values.orchestration.ingress.grpc.annotations | default dict -}}
-  {{- $resolved := dict -}}
-  {{- if $user -}}
-    {{- $resolved = tpl (toYaml $user) . | fromYaml -}}
-  {{- end -}}
+  {{- $resolved := include "camundaPlatform.resolvedUserAnnotations" (dict "annotations" $user "context" .) | fromYaml -}}
   {{- $compat := dict -}}
   {{- if .Values.global.compatibility.nginx.renderAnnotations -}}
     {{- $compat = include "camundaPlatform.legacyNginxGrpcIngressAnnotations" . | fromYaml -}}
@@ -1376,8 +1385,9 @@ gates, so neither can speak for the other.
           (eq (include "camundaPlatform.connectorsHTTPIngressRendered" .) "true")
           (eq (include "camundaPlatform.optimizeHTTPIngressRendered" .) "true") -}}
       {{- $user := .Values.global.ingress.annotations | default dict -}}
+      {{- $resolved := include "camundaPlatform.resolvedUserAnnotations" (dict "annotations" $user "context" .) | fromYaml -}}
       {{- range $key, $value := (include "camundaPlatform.legacyNginxIngressAnnotations" . | fromYaml) -}}
-        {{- if not (hasKey $user $key) -}}{{- $injecting = true -}}{{- end -}}
+        {{- if not (hasKey $resolved $key) -}}{{- $injecting = true -}}{{- end -}}
       {{- end -}}
     {{- end -}}
   {{- end -}}
@@ -1388,13 +1398,14 @@ gates, so neither can speak for the other.
   {{- $injecting := false -}}
   {{- if and .Values.global.compatibility.nginx.renderAnnotations (eq (include "camundaPlatform.grpcIngressRendered" .) "true") -}}
     {{- $user := .Values.orchestration.ingress.grpc.annotations | default dict -}}
+    {{- $resolved := include "camundaPlatform.resolvedUserAnnotations" (dict "annotations" $user "context" .) | fromYaml -}}
     {{- range $key, $value := (include "camundaPlatform.legacyNginxGrpcIngressAnnotations" . | fromYaml) -}}
-      {{- if not (hasKey $user $key) -}}{{- $injecting = true -}}{{- end -}}
+      {{- if not (hasKey $resolved $key) -}}{{- $injecting = true -}}{{- end -}}
     {{- end -}}
   {{- end -}}
   {{- ternary "true" "false" $injecting -}}
 {{- end -}}
-    
+
 {{- define "camundaPlatform.orchestrationHTTPIngressRendered" -}}
   {{- ternary "true" "false" (and .Values.global.ingress.enabled (not .Values.global.ingress.external) (eq (include "camundaPlatform.orchestrationEnabled" .) "true") .Values.orchestration.contextPath (eq (include "camundaPlatform.orchestrationRESTTLSEnabled" .) "true") | not | not) -}}
 {{- end -}}

@@ -446,6 +446,24 @@ func (s *ConfigMapWarningsTemplateTest) TestNginxCompatAnnotationsDeprecationWar
 			},
 		},
 		{
+			// The predicate must match the keys the renderer will actually produce:
+			// supplied through templated keys, these still cover the whole legacy
+			// set, so the shim contributes nothing and must not claim otherwise.
+			Name:        "TestTemplatedKeysCoveringTheLegacySetDoNotWarn",
+			ValuesFiles: []string{"testdata/values-grpc-annotations-templated-keys-complete.yaml"},
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"global.identity.auth.console.clientId":    "some-console-client",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().Contains(configmap.Data["warnings"], "global.identity.auth.console")
+				s.Require().NotContains(configmap.Data["warnings"], warning)
+			},
+		},
+		{
 			Name: "TestGrpcRouteWithShimActiveWarns",
 			Values: map[string]string{
 				"orchestration.data.secondaryStorage.type": "elasticsearch",
