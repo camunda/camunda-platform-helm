@@ -2301,10 +2301,12 @@ orchestration:
   # How partition replicas are distributed across brokers, and how brokers are
   # grouped into failure domains.
   #
-  # Mirrors the engine configuration `camunda.cluster.partitioning`: `scheme` is
-  # `io.camunda.configuration.Partitioning.Scheme` (`FIXED`, `ROUND_ROBIN`,
-  # `ZONE_AWARE`) lower-cased and hyphenated, and each `zones` entry is
-  # `io.camunda.configuration.Zone`.
+  # Mirrors the engine configuration `camunda.cluster.partitioning`. The chart
+  # exposes two of the engine's schemes, lower-cased and hyphenated from
+  # `io.camunda.configuration.Partitioning.Scheme`: `ROUND_ROBIN` and
+  # `ZONE_AWARE`. The engine's third scheme, `FIXED`, is not wired into the
+  # templates; set it through `orchestration.extraConfiguration` if you need it.
+  # Each `zones` entry is `io.camunda.configuration.Zone`.
   #
   # `partitioning` is the settled product term. The cluster API previously spelled
   # the same object `partition-distribution`; that endpoint is being renamed to
@@ -2323,7 +2325,7 @@ orchestration:
     ##
     ## `round-robin` is the engine default and is not rendered into the application
     ## configuration; only `zone-aware` emits `camunda.cluster.partitioning.scheme`.
-    ## @param orchestration.partitioning.scheme partitioning scheme, mirroring the engine enum `camunda.cluster.partitioning.scheme`. `round-robin` leaves brokers on plain numeric node IDs, `zone-aware` identifies them as `<zone>_<index>` and places partition replicas across the declared zones.
+    ## @param orchestration.partitioning.scheme partitioning scheme. `round-robin` leaves brokers on plain numeric node IDs, `zone-aware` identifies them as `<zone>_<index>` and places partition replicas across the declared zones. These are two of the schemes accepted by `camunda.cluster.partitioning.scheme`; the engine also accepts `FIXED`, which this chart does not render.
     scheme: round-robin
     ## @param orchestration.partitioning.zone can be used to define the zone of this Orchestration Cluster deployment when using the `zone-aware` scheme.
     zone: ""

@@ -4692,7 +4692,7 @@
                     "properties": {
                         "scheme": {
                             "type": "string",
-                            "description": "partitioning scheme, mirroring the engine enum camunda.cluster.partitioning.scheme. `round-robin` leaves brokers on plain numeric node IDs, `zone-aware` identifies them as `<zone>_<index>` and places replicas across the declared zones.",
+                            "description": "partitioning scheme. `round-robin` leaves brokers on plain numeric node IDs, `zone-aware` identifies them as `<zone>_<index>` and places replicas across the declared zones. These are two of the schemes accepted by camunda.cluster.partitioning.scheme; the engine also accepts FIXED, which this chart does not render.",
                             "default": "round-robin",
                             "enum": [
                                 "round-robin",

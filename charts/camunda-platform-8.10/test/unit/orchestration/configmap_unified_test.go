@@ -1339,6 +1339,35 @@ func (s *ConfigmapTemplateTest) TestNumberedModeConfigurationCompatibility() {
 			},
 		},
 		{
+			// The round-robin behaviour above is driven through the deprecated
+			// global.multiregion block. This covers the same ground through the
+			// orchestration.partitioning block, so a regression that ignores its
+			// regions/regionId is caught rather than passing on a render check.
+			Name: "RoundRobinViaPartitioningBlockDrivesNodeIDAndSizing",
+			Values: map[string]string{
+				"orchestration.partitioning.regions":  "2",
+				"orchestration.partitioning.regionId": "1",
+				"orchestration.profiles.broker":       "true",
+			},
+			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.clusterSize=6"},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				// node id is derived from the block, not from global.multiregion
+				require.Contains(t, output, "${K8S_NAME##*-} * 2 + 1")
+				require.Contains(t, output, "node-id: \"${VALUES_ORCHESTRATION_NODE_ID:}\"")
+				// cluster-wide sizing is the values key, untouched by round-robin
+				require.Contains(t, output, "size: \"6\"")
+				// cross-region advertised host, not the single-region short form
+				require.Contains(t, output, "advertisedHost: \"${K8S_NAME}.${K8S_SERVICE_NAME}.${K8S_NAMESPACE}.svc\"")
+				// more than one failure domain, so the chart refuses to guess the bootstrap list
+				require.NotContains(t, output, "initial-contact-points:")
+				require.Contains(t, output, "Multi-region deployments: initial-contact-points must be provided manually")
+				// round-robin is the engine default and is not rendered
+				require.NotContains(t, output, "scheme: ZONE_AWARE")
+				require.NotContains(t, output, "CAMUNDA_CLUSTER_ZONE")
+			},
+		},
+		{
 			Name: "NumberedCustomConfigurationRemainsAuthoritative",
 			Values: map[string]string{
 				"orchestration.partitioning.scheme": "round-robin",

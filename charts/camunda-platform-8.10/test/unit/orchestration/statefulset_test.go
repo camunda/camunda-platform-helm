@@ -2440,6 +2440,24 @@ func (s *StatefulSetTest) TestZonedMode() {
 			},
 		},
 		{
+			// The StatefulSet is sized clusterSize/regions under round-robin. Driving it
+			// from orchestration.partitioning rather than the deprecated global block so
+			// a regression that ignores the new key is caught here too.
+			Name: "TestRoundRobinViaPartitioningBlockDividesReplicasAcrossRegions",
+			Values: map[string]string{
+				"orchestration.partitioning.regions":  "2",
+				"orchestration.partitioning.regionId": "1",
+			},
+			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.clusterSize=6"},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var sts appsv1.StatefulSet
+				helm.UnmarshalK8SYaml(t, output, &sts)
+				require.NotNil(t, sts.Spec.Replicas)
+				require.Equal(t, int32(3), *sts.Spec.Replicas)
+			},
+		},
+		{
 			Name: "TestZonedModeRejectsBothTopologyBlocks",
 			Values: map[string]string{
 				"orchestration.partitioning.scheme":                    "zone-aware",
