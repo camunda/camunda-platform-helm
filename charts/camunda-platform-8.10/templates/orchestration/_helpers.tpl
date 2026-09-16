@@ -17,51 +17,20 @@
 {{- end -}}
 
 {{/*
-NOTE: takes a dict of "zones" and the zone "field" to total, not the root context.
+NOTE: the sizing below is resolved once by camundaPlatform.partitioning, which decides the
+scheme and derives the totals from the zone list or the values keys. These read the result
+rather than branching on the scheme again.
 */}}
-{{- define "orchestration.zoneSum" -}}
-{{- $total := 0 -}}
-{{- $field := .field -}}
-{{- range .zones -}}
-  {{- $total = add $total (int (index . $field)) -}}
-{{- end -}}
-{{- $total -}}
-{{- end -}}
-
 {{- define "orchestration.clusterSize" -}}
-{{- if eq (include "orchestration.zoneAware" .) "true" -}}
-  {{- include "orchestration.zoneSum" (dict "zones" (include "camundaPlatform.partitioning" $ | fromJson).zones "field" "numberOfBrokers") -}}
-{{- else -}}
-  {{- .Values.orchestration.clusterSize -}}
-{{- end -}}
+{{- (include "camundaPlatform.partitioning" . | fromJson).clusterSize -}}
 {{- end -}}
 
 {{- define "orchestration.replicationFactor" -}}
-{{- if eq (include "orchestration.zoneAware" .) "true" -}}
-  {{- include "orchestration.zoneSum" (dict "zones" (include "camundaPlatform.partitioning" $ | fromJson).zones "field" "numberOfReplicas") -}}
-{{- else -}}
-  {{- .Values.orchestration.replicationFactor -}}
-{{- end -}}
-{{- end -}}
-
-{{- define "orchestration.zoneBrokers" -}}
-{{- $partitioning := include "camundaPlatform.partitioning" $ | fromJson -}}
-{{- $zoneBrokers := 0 -}}
-{{- range $partitioning.zones -}}
-  {{- if eq .name $partitioning.zone -}}
-    {{- $zoneBrokers = int .numberOfBrokers -}}
-  {{- end -}}
-{{- end -}}
-{{- $zoneBrokers -}}
+{{- (include "camundaPlatform.partitioning" . | fromJson).replicationFactor -}}
 {{- end -}}
 
 {{- define "orchestration.replicas" -}}
-{{- $partitioning := include "camundaPlatform.partitioning" $ | fromJson -}}
-{{- if eq (include "orchestration.zoneAware" .) "true" -}}
-{{- include "orchestration.zoneBrokers" . -}}
-{{- else -}}
-{{- div .Values.orchestration.clusterSize $partitioning.regions -}}
-{{- end -}}
+{{- (include "camundaPlatform.partitioning" . | fromJson).localReplicas -}}
 {{- end -}}
 
 {{/*

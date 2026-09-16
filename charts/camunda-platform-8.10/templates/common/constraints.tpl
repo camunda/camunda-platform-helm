@@ -474,6 +474,33 @@ Fail if the zone-aware scheme is combined with the region-numbering settings it 
 {{- end }}
 
 {{/*
+Fail if the round-robin numbering cannot describe a consistent cluster. Node IDs are
+derived as "<ordinal> * regions + regionId", so a region numbered outside its own range
+takes the node IDs of another region, and a region count below 1 renders a negative
+StatefulSet replica count.
+
+NOTE: the region count is read from the raw values, not from the resolved dict. Both
+blocks default it through "| default 1", and 0 is falsy in Go templates, so a typed 0
+reaches the resolver as 1; "regions: 0" on its own also reads as an unconfigured block
+and falls through to global.multiregion. Neither is visible after resolution.
+
+NOTE: a clusterSize the region count does not divide is the same class of fault and is
+deliberately not rejected here; see #7196.
+*/}}
+{{- if ne $partitioning.scheme "zone-aware" }}
+  {{- range $key, $raw := dict "orchestration.partitioning" (.Values.orchestration.partitioning | default dict) "global.multiregion" (.Values.global.multiregion | default dict) }}
+    {{- if and (hasKey $raw "regions") (lt (int $raw.regions) 1) }}
+      {{- fail (printf "[camunda][error] %s.regions is %d; a cluster spans at least one region." $key (int $raw.regions)) -}}
+    {{- end }}
+  {{- end }}
+  {{- $regions := int $partitioning.regions -}}
+  {{- $regionId := int $partitioning.regionId -}}
+  {{- if or (lt $regionId 0) (ge $regionId $regions) }}
+    {{- fail (printf "[camunda][error] %s.regionId is %d but %s.regions is %d; regionId numbers this region and must be between 0 and %d, or its brokers take the node IDs of another region." $partitioningKey $regionId $partitioningKey $regions (sub $regions 1)) -}}
+  {{- end }}
+{{- end }}
+
+{{/*
 Fail if a zone name repeats, or if a zone claims more replicas than it has brokers.
 
 A duplicate name collapses two zones into one member-ID namespace, which is the broker
