@@ -335,6 +335,14 @@ func runPhysicalTenantAcceptance(ctx context.Context, opts physicalTenantAccepta
 		}
 	}
 	for source, token := range tokens {
+		// venom is the shared test client and carries the Web Modeler client API
+		// audience, which Optimize accepts unconditionally, so it reaches every
+		// release here and would fail this check for a reason unrelated to tenant
+		// wiring. Skipping it means the one credential shaped like a real cross-tenant
+		// leak is also the one credential this check never sees. Remove the skip when
+		// https://github.com/camunda/camunda-platform-helm/issues/7186 lands; until
+		// then the static equivalent is TestAudienceIsolationTemplate in
+		// charts/camunda-platform-8.10/test/unit/common/audience_isolation_test.go.
 		if source == "venom" {
 			continue
 		}
