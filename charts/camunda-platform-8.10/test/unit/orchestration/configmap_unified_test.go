@@ -1711,6 +1711,68 @@ func (s *ConfigmapTemplateTest) TestZonedModeRejectsNumberedRegionSettings() {
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
+func (s *ConfigmapTemplateTest) TestRoundRobinRejectsInconsistentNumbering() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestRoundRobinRejectsARegionIdAtTheRegionCount",
+			Values: map[string]string{
+				"orchestration.partitioning.regions":  "2",
+				"orchestration.partitioning.regionId": "2",
+				"orchestration.profiles.broker":       "true",
+			},
+			Expected: map[string]string{
+				"ERROR": "orchestration.partitioning.regionId is 2 but orchestration.partitioning.regions is 2; regionId numbers this region and must be between 0 and 1",
+			},
+		},
+		{
+			Name: "TestRoundRobinRejectsANegativeRegionId",
+			Values: map[string]string{
+				"orchestration.partitioning.regions":  "2",
+				"orchestration.partitioning.regionId": "-1",
+				"orchestration.profiles.broker":       "true",
+			},
+			Expected: map[string]string{
+				"ERROR": "orchestration.partitioning.regionId is -1 but orchestration.partitioning.regions is 2",
+			},
+		},
+		{
+			Name: "TestRoundRobinRejectsANegativeRegionCount",
+			Values: map[string]string{
+				"orchestration.partitioning.regions": "-2",
+				"orchestration.profiles.broker":      "true",
+			},
+			Expected: map[string]string{
+				"ERROR": "orchestration.partitioning.regions is -2; a cluster spans at least one region",
+			},
+		},
+		{
+			Name: "TestDeprecatedNumberingIsGuardedUnderItsOwnKey",
+			Values: map[string]string{
+				"global.multiregion.regions":    "2",
+				"global.multiregion.regionId":   "5",
+				"orchestration.profiles.broker": "true",
+			},
+			Expected: map[string]string{
+				"ERROR": "global.multiregion.regionId is 5 but global.multiregion.regions is 2",
+			},
+		},
+		{
+			Name: "TestRoundRobinAcceptsTheLastRegion",
+			Values: map[string]string{
+				"orchestration.partitioning.regions":  "2",
+				"orchestration.partitioning.regionId": "1",
+				"orchestration.profiles.broker":       "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "* 2 + 1]")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
 func (s *ConfigmapTemplateTest) TestBundledOperateTasklistZeebeClientTLS() {
 	testCases := []testhelpers.TestCase{
 		{
