@@ -519,7 +519,7 @@ func (s *ConstraintTemplateTest) TestGlobalDatastoreTreesRemovedGate() {
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
-func (s *ConstraintTemplateTest) TestOrchestrationPartitionDistributionKeyRenamedGuard() {
+func (s *ConstraintTemplateTest) TestOrchestrationPartitioningKeyRenamedGuard() {
 	testCases := []testhelpers.TestCase{
 		{
 			Name: "TestOldMultiregionKeyFails",
@@ -528,7 +528,7 @@ func (s *ConstraintTemplateTest) TestOrchestrationPartitionDistributionKeyRename
 				"orchestration.multiregion.mode":           "zoned",
 			},
 			Expected: map[string]string{
-				"ERROR": `The Helm values file key changed from "orchestration.multiregion" to "orchestration.partitionDistribution".`,
+				"ERROR": `The Helm values file key changed from "orchestration.multiregion" to "orchestration.partitioning".`,
 			},
 		},
 		{
@@ -538,14 +538,14 @@ func (s *ConstraintTemplateTest) TestOrchestrationPartitionDistributionKeyRename
 				"orchestration.multiregion.regions":        "2",
 			},
 			Expected: map[string]string{
-				"ERROR": `The Helm values file key changed from "orchestration.multiregion" to "orchestration.partitionDistribution".`,
+				"ERROR": `The Helm values file key changed from "orchestration.multiregion" to "orchestration.partitioning".`,
 			},
 		},
 		{
-			Name: "TestNewPartitionDistributionKeyRendersOk",
+			Name: "TestNewPartitioningKeyRendersOk",
 			Values: map[string]string{
-				"orchestration.data.secondaryStorage.type":    "elasticsearch",
-				"orchestration.partitionDistribution.regions": "2",
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"orchestration.partitioning.regions":       "2",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().Nil(err)

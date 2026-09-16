@@ -2394,16 +2394,16 @@ func (s *StatefulSetTest) TestZonedMode() {
 		{
 			Name: "TestZonedModeUsesLocalZoneBrokerCountAndEnvironmentVariable",
 			Values: map[string]string{
-				"orchestration.partitionDistribution.scheme":                    "zone-aware",
-				"orchestration.partitionDistribution.zone":                      "region-b",
-				"orchestration.partitionDistribution.zones[0].name":             "region-a",
-				"orchestration.partitionDistribution.zones[0].numberOfBrokers":  "2",
-				"orchestration.partitionDistribution.zones[0].numberOfReplicas": "2",
-				"orchestration.partitionDistribution.zones[0].priority":         "100",
-				"orchestration.partitionDistribution.zones[1].name":             "region-b",
-				"orchestration.partitionDistribution.zones[1].numberOfBrokers":  "3",
-				"orchestration.partitionDistribution.zones[1].numberOfReplicas": "3",
-				"orchestration.partitionDistribution.zones[1].priority":         "50",
+				"orchestration.partitioning.scheme":                    "zone-aware",
+				"orchestration.partitioning.zone":                      "region-b",
+				"orchestration.partitioning.zones[0].name":             "region-a",
+				"orchestration.partitioning.zones[0].numberOfBrokers":  "2",
+				"orchestration.partitioning.zones[0].numberOfReplicas": "2",
+				"orchestration.partitioning.zones[0].priority":         "100",
+				"orchestration.partitioning.zones[1].name":             "region-b",
+				"orchestration.partitioning.zones[1].numberOfBrokers":  "3",
+				"orchestration.partitioning.zones[1].numberOfReplicas": "3",
+				"orchestration.partitioning.zones[1].priority":         "50",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
@@ -2442,17 +2442,17 @@ func (s *StatefulSetTest) TestZonedMode() {
 		{
 			Name: "TestZonedModeRejectsBothTopologyBlocks",
 			Values: map[string]string{
-				"orchestration.partitionDistribution.scheme":                    "zone-aware",
-				"orchestration.partitionDistribution.zone":                      "region-a",
-				"orchestration.partitionDistribution.zones[0].name":             "region-a",
-				"orchestration.partitionDistribution.zones[0].numberOfBrokers":  "2",
-				"orchestration.partitionDistribution.zones[0].numberOfReplicas": "2",
-				"orchestration.partitionDistribution.zones[0].priority":         "100",
-				"global.multiregion.regions":                                    "2",
+				"orchestration.partitioning.scheme":                    "zone-aware",
+				"orchestration.partitioning.zone":                      "region-a",
+				"orchestration.partitioning.zones[0].name":             "region-a",
+				"orchestration.partitioning.zones[0].numberOfBrokers":  "2",
+				"orchestration.partitioning.zones[0].numberOfReplicas": "2",
+				"orchestration.partitioning.zones[0].priority":         "100",
+				"global.multiregion.regions":                           "2",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.Error(t, err)
-				require.Contains(t, err.Error(), "orchestration.partitionDistribution and global.multiregion are both configured")
+				require.Contains(t, err.Error(), "orchestration.partitioning and global.multiregion are both configured")
 			},
 		},
 	}
@@ -2483,9 +2483,9 @@ func (s *StatefulSetTest) TestNumberedModeCompatibility() {
 			Name:                    "ExplicitNumberedModeUsesNumberedReplicaDivision",
 			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.clusterSize=6"},
 			Values: map[string]string{
-				"orchestration.partitionDistribution.scheme": "round-robin",
-				"global.multiregion.regions":                 "2",
-				"global.multiregion.regionId":                "1",
+				"orchestration.partitioning.scheme": "round-robin",
+				"global.multiregion.regions":        "2",
+				"global.multiregion.regionId":       "1",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
