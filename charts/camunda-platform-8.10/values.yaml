@@ -2323,10 +2323,12 @@ orchestration:
 
   ## @param orchestration.clusterSize defines the amount of brokers (=replicas), which are deployed via helm
   clusterSize: "3"
-  ## Key has a dependency to orchestration.partitioning in multi-region setups. Do not remove.
+  ## Not derived by orchestration.partitioning; read as-is in both round-robin and zoned
+  ## multi-region setups. Do not remove.
   ## @param orchestration.partitionCount defines how many partitions are set up in the cluster
   partitionCount: "3"
-  ## Key has a dependency to orchestration.partitioning in multi-region setups. Do not remove.
+  ## Ignored by orchestration.partitioning in zoned mode (derived from the zone list instead);
+  ## still read as-is in round-robin multi-region setups. Do not remove.
   ## @param orchestration.replicationFactor defines how each partition is replicated, the value defines the number of nodes
   replicationFactor: "3"
   ## @param orchestration.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/components/orchestration-cluster/core-settings/configuration/properties/ for more details.
