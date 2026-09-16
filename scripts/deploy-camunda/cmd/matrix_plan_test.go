@@ -61,3 +61,24 @@ func TestMatrixPlanRejectsInvalidTier(t *testing.T) {
 		t.Fatalf("error = %v, want invalid --tier error", err)
 	}
 }
+
+// TestMatrixPlanRejectsOutOfRangeTier pins the guard on numeric-but-unsupported
+// values. Without it a positive out-of-range tier plans zero jobs and a negative
+// one plans the full matrix, both exiting 0 so the workflow reports success.
+func TestMatrixPlanRejectsOutOfRangeTier(t *testing.T) {
+	for _, tier := range []string{"3", "-1"} {
+		t.Run("tier "+tier, func(t *testing.T) {
+			command := newMatrixPlanCommand()
+			command.SetArgs([]string{
+				"--repo-root", t.TempDir(),
+				"--active-versions", "8.10",
+				"--tier", tier,
+			})
+			command.SilenceErrors = true
+			command.SilenceUsage = true
+			if err := command.Execute(); err == nil || !strings.Contains(err.Error(), "invalid --tier") {
+				t.Fatalf("error = %v, want invalid --tier error", err)
+			}
+		})
+	}
+}

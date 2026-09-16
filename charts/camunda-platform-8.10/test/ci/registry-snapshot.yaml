@@ -282,6 +282,7 @@ integration:
           platforms:
             - gke
           exclude: []
+          tier: 2
           infra-type:
             gke: distroci
           identity: keycloak
@@ -318,6 +319,7 @@ integration:
           platforms:
             - gke
           exclude: []
+          tier: 2
           infra-type:
             gke: distroci
           identity: keycloak
@@ -390,7 +392,7 @@ integration:
             - identity
             - console
             - orchestration-grpc
-          tier: 1
+          tier: 2
           infra-type:
             eks: preemptible
             gke: distroci
@@ -429,7 +431,7 @@ integration:
             - identity
             - console
             - orchestration-grpc
-          tier: 1
+          tier: 2
           infra-type:
             eks: preemptible
             gke: distroci
@@ -464,6 +466,7 @@ integration:
           platforms:
             - gke
           exclude: []
+          tier: 2
           infra-type:
             eks: preemptible
             gke: distroci
@@ -495,6 +498,7 @@ integration:
           platforms:
             - gke
           exclude: []
+          tier: 2
           infra-type:
             eks: preemptible
             gke: distroci
@@ -673,7 +677,7 @@ integration:
                 - RDBMS_POSTGRESQL_USERNAME
                 - RDBMS_POSTGRESQL_PASSWORD
         - name: documentstore
-          enabled: true
+          enabled: false
           shortname: docstr
           auth: keycloak
           flow: ""
@@ -2035,8 +2039,6 @@ integration:
                   - multinamespace-optimize-orchestration
                 env:
                   ORCH_CONNECTORS_CLIENT_ID: connectors-orcha
-                  ORCH_OPTIMIZE_AUDIENCE: optimize-orcha-api
-                  ORCH_OPTIMIZE_CLIENT_ID: optimize-orcha
                   ORCH_ORCHESTRATION_AUDIENCE: orchestration-orcha-api
                   ORCH_ORCHESTRATION_CLIENT_ID: orchestration-orcha
                 modeler-cluster-id: orcha
@@ -2050,8 +2052,6 @@ integration:
                   - multinamespace-optimize-orchestration
                 env:
                   ORCH_CONNECTORS_CLIENT_ID: connectors-orchb
-                  ORCH_OPTIMIZE_AUDIENCE: optimize-orchb-api
-                  ORCH_OPTIMIZE_CLIENT_ID: optimize-orchb
                   ORCH_ORCHESTRATION_AUDIENCE: orchestration-orchb-api
                   ORCH_ORCHESTRATION_CLIENT_ID: orchestration-orchb
                 modeler-cluster-id: orchb
@@ -2119,8 +2119,6 @@ integration:
                   - physicaltenants-orchestration
                 env:
                   ORCH_CONNECTORS_CLIENT_ID: connectors-orcha
-                  ORCH_OPTIMIZE_AUDIENCE: optimize-orcha-api
-                  ORCH_OPTIMIZE_CLIENT_ID: optimize-orcha-ta
                   ORCH_ORCHESTRATION_AUDIENCE: orchestration-orcha-api
                   ORCH_ORCHESTRATION_CLIENT_ID: orchestration-orcha
                 modeler-cluster-id: orcha

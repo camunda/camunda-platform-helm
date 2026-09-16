@@ -176,6 +176,7 @@ integration:
           platforms:
             - gke
           exclude: []
+          tier: 2
           infra-type:
             gke: distroci
           identity: keycloak
@@ -259,7 +260,7 @@ integration:
               repo-name: opensearch
               repo-url: https://opensearch-project.github.io/helm-charts/
         - name: documentstore
-          enabled: true
+          enabled: false
           shortname: docstr
           auth: keycloak
           flow: ""
@@ -344,7 +345,7 @@ integration:
           platforms:
             - gke
           exclude: []
-          tier: 1
+          tier: 2
           infra-type:
             gke: distroci
           identity: keycloak
