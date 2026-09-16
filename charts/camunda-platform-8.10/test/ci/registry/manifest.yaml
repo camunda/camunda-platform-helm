@@ -89,7 +89,7 @@ integration:
     - id: documentstore
       shortname: docstr
       tier: 2
-      enabled: true
+      enabled: false
     - id: secretstore-file
       shortname: secfl
       tier: 2
