@@ -1357,7 +1357,7 @@
                 "multiregion": {
                     "type": "object",
                     "additionalProperties": false,
-                    "description": "DEPRECATED, use orchestration.clusterTopology. Only the regions and regionId settings remain here; zoned mode is configured under orchestration.clusterTopology.",
+                    "description": "DEPRECATED, use orchestration.partitioning. Only the regions and regionId settings remain here; the zone-aware scheme is configured under orchestration.partitioning.",
                     "default": {},
                     "properties": {
                         "regions": {
@@ -4687,26 +4687,26 @@
                         }
                     }
                 },
-                "clusterTopology": {
+                "partitioning": {
                     "type": "object",
                     "properties": {
-                        "mode": {
+                        "scheme": {
                             "type": "string",
-                            "description": "selects how a broker learns which failure domain it belongs to. `numbered` derives a region from the node ID, `zoned` takes a zone name.",
-                            "default": "numbered",
+                            "description": "partitioning scheme, mirroring the engine enum camunda.cluster.partitioning.scheme. `round-robin` leaves brokers on plain numeric node IDs, `zone-aware` identifies them as `<zone>_<index>` and places replicas across the declared zones.",
+                            "default": "round-robin",
                             "enum": [
-                                "numbered",
-                                "zoned"
+                                "round-robin",
+                                "zone-aware"
                             ]
                         },
                         "zone": {
                             "type": "string",
-                            "description": "can be used to define the zone of this Orchestration Cluster deployment when using zoned mode.",
+                            "description": "can be used to define the zone of this Orchestration Cluster deployment when using the zone-aware scheme.",
                             "default": ""
                         },
                         "zones": {
                             "type": "array",
-                            "description": "can be used to define the zones of the Orchestration Cluster when using zoned mode.",
+                            "description": "can be used to define the zones of the Orchestration Cluster when using the zone-aware scheme.",
                             "default": [],
                             "items": {
                                 "type": "object",
@@ -4723,7 +4723,7 @@
                                         "minLength": 1,
                                         "maxLength": 63,
                                         "pattern": "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$",
-                                        "description": "Name of the zone. It is the prefix of the composite broker member ID \"<zone>_<node-id>\", and one of these names must be selected by orchestration.clusterTopology.zone. Restricted to an RFC 1123 label: an underscore would make the composite ID ambiguous, and the name is also used to derive per-zone resource and DNS names."
+                                        "description": "Name of the zone. It is the prefix of the composite broker member ID \"<zone>_<node-id>\", and one of these names must be selected by orchestration.partitioning.zone. Restricted to an RFC 1123 label: an underscore would make the composite ID ambiguous, and the name is also used to derive per-zone resource and DNS names."
                                     },
                                     "numberOfBrokers": {
                                         "type": "integer",
@@ -4761,7 +4761,7 @@
                         }
                     },
                     "additionalProperties": false,
-                    "description": "Topology of the Orchestration cluster: how its brokers are grouped into failure domains. WARNING: get your configuration reviewed by Camunda before going to production — see https://docs.camunda.io/docs/self-managed/concepts/multi-region/dual-region/.",
+                    "description": "How partitions are distributed across brokers, and how brokers are grouped into failure domains. Mirrors the engine property camunda.cluster.partitioning. WARNING: get your configuration reviewed by Camunda before going to production — see https://docs.camunda.io/docs/self-managed/concepts/multi-region/dual-region/.",
                     "default": {}
                 },
                 "clusterSize": {

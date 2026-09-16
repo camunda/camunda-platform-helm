@@ -12,8 +12,8 @@
     ) -}}
 {{- end -}}
 
-{{- define "orchestration.zoned" -}}
-{{- eq (include "camundaPlatform.clusterTopology" . | fromJson).mode "zoned" -}}
+{{- define "orchestration.zoneAware" -}}
+{{- eq (include "camundaPlatform.partitioning" . | fromJson).scheme "zone-aware" -}}
 {{- end -}}
 
 {{/*
@@ -29,26 +29,26 @@ NOTE: takes a dict of "zones" and the zone "field" to total, not the root contex
 {{- end -}}
 
 {{- define "orchestration.clusterSize" -}}
-{{- if eq (include "orchestration.zoned" .) "true" -}}
-  {{- include "orchestration.zoneSum" (dict "zones" (include "camundaPlatform.clusterTopology" $ | fromJson).zones "field" "numberOfBrokers") -}}
+{{- if eq (include "orchestration.zoneAware" .) "true" -}}
+  {{- include "orchestration.zoneSum" (dict "zones" (include "camundaPlatform.partitioning" $ | fromJson).zones "field" "numberOfBrokers") -}}
 {{- else -}}
   {{- .Values.orchestration.clusterSize -}}
 {{- end -}}
 {{- end -}}
 
 {{- define "orchestration.replicationFactor" -}}
-{{- if eq (include "orchestration.zoned" .) "true" -}}
-  {{- include "orchestration.zoneSum" (dict "zones" (include "camundaPlatform.clusterTopology" $ | fromJson).zones "field" "numberOfReplicas") -}}
+{{- if eq (include "orchestration.zoneAware" .) "true" -}}
+  {{- include "orchestration.zoneSum" (dict "zones" (include "camundaPlatform.partitioning" $ | fromJson).zones "field" "numberOfReplicas") -}}
 {{- else -}}
   {{- .Values.orchestration.replicationFactor -}}
 {{- end -}}
 {{- end -}}
 
 {{- define "orchestration.zoneBrokers" -}}
-{{- $topology := include "camundaPlatform.clusterTopology" $ | fromJson -}}
+{{- $partitioning := include "camundaPlatform.partitioning" $ | fromJson -}}
 {{- $zoneBrokers := 0 -}}
-{{- range $topology.zones -}}
-  {{- if eq .name $topology.zone -}}
+{{- range $partitioning.zones -}}
+  {{- if eq .name $partitioning.zone -}}
     {{- $zoneBrokers = int .numberOfBrokers -}}
   {{- end -}}
 {{- end -}}
@@ -56,11 +56,11 @@ NOTE: takes a dict of "zones" and the zone "field" to total, not the root contex
 {{- end -}}
 
 {{- define "orchestration.replicas" -}}
-{{- $topology := include "camundaPlatform.clusterTopology" $ | fromJson -}}
-{{- if eq (include "orchestration.zoned" .) "true" -}}
+{{- $partitioning := include "camundaPlatform.partitioning" $ | fromJson -}}
+{{- if eq (include "orchestration.zoneAware" .) "true" -}}
 {{- include "orchestration.zoneBrokers" . -}}
 {{- else -}}
-{{- div .Values.orchestration.clusterSize $topology.regions -}}
+{{- div .Values.orchestration.clusterSize $partitioning.regions -}}
 {{- end -}}
 {{- end -}}
 
@@ -423,7 +423,7 @@ and reading the raw key instead would silently drop an explicit orchestration.ex
       )
       (or
         .Values.orchestration.exporters.zeebe.enabled
-        (ne (include "camundaPlatform.clusterTopologySpread" .) "true")
+        (ne (include "camundaPlatform.spansFailureDomains" .) "true")
       )
 -}}
 {{- end -}}
@@ -436,7 +436,7 @@ and reading the raw key instead would silently drop an explicit orchestration.ex
       )
       (or
         .Values.orchestration.exporters.zeebe.enabled
-        (ne (include "camundaPlatform.clusterTopologySpread" .) "true")
+        (ne (include "camundaPlatform.spansFailureDomains" .) "true")
       )
 -}}
 {{- end -}}

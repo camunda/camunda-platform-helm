@@ -33,7 +33,7 @@ Chart 15.x (Camunda 8.10) requires Helm v4 or later.
 {{- $identityEnabled := (or (eq (include "camundaPlatform.identityEnabled" .) "true") .Values.global.identity.service.url) }}
 
 {{- $topologyMode := include "camundaPlatform.topologyMode" . }}
-{{- $topology := .Values.global.topology | default dict }}
+{{- $partitioning := .Values.global.topology | default dict }}
 {{- if not (has $topologyMode (list "combined" "hub" "orchestration" "optimize")) }}
   {{- fail (printf "[camunda][error] global.topology.mode must be one of combined, hub, orchestration, or optimize; got %q." $topologyMode) }}
 {{- end }}
@@ -242,7 +242,7 @@ Either must bind the key to a non-empty value - the key alone leaves the same mi
     {{- end }}
     {{- $_ := set $seenIds $legacyId true }}
   {{- end }}
-  {{- range $cluster := $topology.clusters }}
+  {{- range $cluster := $partitioning.clusters }}
     {{- $slug := include "camundaPlatform.topologySlug" $cluster.id }}
     {{- if or (empty $cluster.id) (empty $slug) (empty $cluster.namespace) (empty $cluster.releaseName) (empty $cluster.host) (empty $cluster.version) }}
       {{- fail "[camunda][error] every global.topology.clusters entry requires id, namespace, releaseName, host, and version." }}
@@ -420,7 +420,7 @@ topology without saying so.
 {{ include "camundaPlatform.keyRenamed" (dict
   "condition" (hasKey .Values.orchestration "multiregion")
   "oldName" "orchestration.multiregion"
-  "newName" "orchestration.clusterTopology"
+  "newName" "orchestration.partitioning"
 ) }}
 
 {{/*
@@ -428,34 +428,34 @@ Fail if the multi-region topology is described in both places at once. Picking o
 silently would deploy a topology the other block does not describe, and the two are
 merged nowhere.
 */}}
-{{- if and (eq (include "camundaPlatform.clusterTopologyConfigured" (.Values.orchestration.clusterTopology | default dict)) "true") (eq (include "camundaPlatform.clusterTopologyConfigured" (.Values.global.multiregion | default dict)) "true") }}
-  {{- fail "[camunda][error] orchestration.clusterTopology and global.multiregion are both configured. global.multiregion is deprecated; keep orchestration.clusterTopology and remove the global block." -}}
+{{- if and (eq (include "camundaPlatform.partitioningConfigured" (.Values.orchestration.partitioning | default dict)) "true") (eq (include "camundaPlatform.partitioningConfigured" (.Values.global.multiregion | default dict)) "true") }}
+  {{- fail "[camunda][error] orchestration.partitioning and global.multiregion are both configured. global.multiregion is deprecated; keep orchestration.partitioning and remove the global block." -}}
 {{- end }}
 
-{{- $topology := include "camundaPlatform.clusterTopology" $ | fromJson -}}
-{{- $topologyKey := "orchestration.clusterTopology" -}}
-{{- if ne (include "camundaPlatform.clusterTopologyConfigured" (.Values.orchestration.clusterTopology | default dict)) "true" -}}
-  {{- $topologyKey = "global.multiregion" -}}
+{{- $partitioning := include "camundaPlatform.partitioning" $ | fromJson -}}
+{{- $partitioningKey := "orchestration.partitioning" -}}
+{{- if ne (include "camundaPlatform.partitioningConfigured" (.Values.orchestration.partitioning | default dict)) "true" -}}
+  {{- $partitioningKey = "global.multiregion" -}}
 {{- end -}}
 
 {{/*
-Fail if the zone topology is described without selecting zoned mode. Nothing else
+Fail if the zone topology is described without selecting the zone-aware scheme. Nothing else
 rejects it: the zoned branches are all entered on the mode, so the zone list would be
 read by the contact-points gate alone, which suppresses the generated bootstrap list
 while the rest of the render stays single-region. The cluster then starts with no peers
 and no zone awareness, and helm reports success.
 */}}
-{{- if and (ne $topology.mode "zoned") (or (ne $topology.zone "") (gt (len $topology.zones) 0)) }}
-  {{- fail (printf "[camunda][error] %s.zone and %s.zones require %s.mode=zoned." $topologyKey $topologyKey $topologyKey) -}}
+{{- if and (ne $partitioning.scheme "zone-aware") (or (ne $partitioning.zone "") (gt (len $partitioning.zones) 0)) }}
+  {{- fail (printf "[camunda][error] %s.zone and %s.zones require %s.scheme=zone-aware." $partitioningKey $partitioningKey $partitioningKey) -}}
 {{- end }}
 
 {{/*
-Fail if zoned mode is combined with a cluster size or replication factor it derives.
+Fail if the zone-aware scheme is combined with a cluster size or replication factor it derives.
 Both are summed from the zone list, so a value left over from a single-region release
 would be discarded in silence, and the StatefulSet would scale to the local zone's
 broker count without the diff naming the setting it ignored.
 */}}
-{{- if eq $topology.mode "zoned" }}
+{{- if eq $partitioning.scheme "zone-aware" }}
   {{/*
   NOTE: rejects a value that contradicts the zone list, not any value at all. Helm cannot
   distinguish a supplied default from the chart default, so a key still sitting on its
@@ -469,20 +469,20 @@ broker count without the diff naming the setting it ignored.
   {{- $size := int .Values.orchestration.clusterSize -}}
   {{- $derivedSize := int (include "orchestration.clusterSize" .) -}}
   {{- if and (ne $size 3) (ne $size $derivedSize) }}
-    {{- fail (printf "[camunda][error] orchestration.clusterSize is %d but %s.zones sums to %d brokers. In zoned mode the zone list is authoritative; remove the key or make it agree." $size $topologyKey $derivedSize) -}}
+    {{- fail (printf "[camunda][error] orchestration.clusterSize is %d but %s.zones sums to %d brokers. With the zone-aware scheme the zone list is authoritative; remove the key or make it agree." $size $partitioningKey $derivedSize) -}}
   {{- end }}
   {{- $factor := int .Values.orchestration.replicationFactor -}}
   {{- $derivedFactor := int (include "orchestration.replicationFactor" .) -}}
   {{- if and (ne $factor 3) (ne $factor $derivedFactor) }}
-    {{- fail (printf "[camunda][error] orchestration.replicationFactor is %d but %s.zones sums to %d replicas. In zoned mode the zone list is authoritative; remove the key or make it agree." $factor $topologyKey $derivedFactor) -}}
+    {{- fail (printf "[camunda][error] orchestration.replicationFactor is %d but %s.zones sums to %d replicas. With the zone-aware scheme the zone list is authoritative; remove the key or make it agree." $factor $partitioningKey $derivedFactor) -}}
   {{- end }}
 {{- end }}
 
 {{/*
-Fail if zoned mode is combined with the region-numbering settings it replaces.
+Fail if the zone-aware scheme is combined with the region-numbering settings it replaces.
 */}}
-{{- if and (eq $topology.mode "zoned") (or (ne (int $topology.regions) 1) (ne (int $topology.regionId) 0)) }}
-  {{- fail (printf "[camunda][error] %s.regions and %s.regionId cannot be used with zoned mode." $topologyKey $topologyKey) -}}
+{{- if and (eq $partitioning.scheme "zone-aware") (or (ne (int $partitioning.regions) 1) (ne (int $partitioning.regionId) 0)) }}
+  {{- fail (printf "[camunda][error] %s.regions and %s.regionId cannot be used with the zone-aware scheme." $partitioningKey $partitioningKey) -}}
 {{- end }}
 
 {{/*
@@ -493,35 +493,35 @@ collision this mode exists to prevent. A zone cannot hold more replicas of a par
 than it has brokers to hold them on, and the sum would then promise a replication factor
 no quorum can reach.
 */}}
-{{- if eq $topology.mode "zoned" }}
+{{- if eq $partitioning.scheme "zone-aware" }}
   {{- $seen := list -}}
-  {{- range $topology.zones -}}
+  {{- range $partitioning.zones -}}
     {{- if has .name $seen }}
-      {{- fail (printf "[camunda][error] %s.zones declares %q twice; zone names are broker member ID prefixes and must be unique." $topologyKey .name) -}}
+      {{- fail (printf "[camunda][error] %s.zones declares %q twice; zone names are broker member ID prefixes and must be unique." $partitioningKey .name) -}}
     {{- end }}
     {{- $seen = append $seen .name -}}
     {{- if gt (int .numberOfReplicas) (int .numberOfBrokers) }}
-      {{- fail (printf "[camunda][error] %s.zones entry %q asks for %d replicas on %d brokers; a zone cannot hold more replicas than it has brokers." $topologyKey .name (int .numberOfReplicas) (int .numberOfBrokers)) -}}
+      {{- fail (printf "[camunda][error] %s.zones entry %q asks for %d replicas on %d brokers; a zone cannot hold more replicas than it has brokers." $partitioningKey .name (int .numberOfReplicas) (int .numberOfBrokers)) -}}
     {{- end }}
   {{- end }}
 {{- end }}
 
 {{/*
-Fail if zoned mode does not describe the zone this release belongs to. The zone list
+Fail if the zone-aware scheme does not describe the zone this release belongs to. The zone list
 is what assigns broker node IDs and partition replicas, so a release whose own zone is
 missing from it would take the IDs of the first zone and collide with it.
 */}}
-{{- if eq $topology.mode "zoned" }}
-  {{- $zone := $topology.zone -}}
+{{- if eq $partitioning.scheme "zone-aware" }}
+  {{- $zone := $partitioning.zone -}}
   {{- if not $zone }}
-    {{- fail (printf "[camunda][error] %s.zone must name the zone this release is deployed to when using zoned mode." $topologyKey) -}}
+    {{- fail (printf "[camunda][error] %s.zone must name the zone this release is deployed to when using the zone-aware scheme." $partitioningKey) -}}
   {{- end }}
   {{- $names := list -}}
-  {{- range $topology.zones -}}
+  {{- range $partitioning.zones -}}
     {{- $names = append $names .name -}}
   {{- end -}}
   {{- if not (has $zone $names) }}
-    {{- fail (printf "[camunda][error] %s.zone %q is not declared in %s.zones (%s)." $topologyKey $zone $topologyKey (join ", " $names)) -}}
+    {{- fail (printf "[camunda][error] %s.zone %q is not declared in %s.zones (%s)." $partitioningKey $zone $partitioningKey (join ", " $names)) -}}
   {{- end }}
 {{- end }}
 {{- end }}
@@ -1399,26 +1399,26 @@ The following values inside your values.yaml need to be set but were not:
     {{- end }}
   {{- end }}
 
-  {{- if eq (include "camundaPlatform.clusterTopologyConfigured" (.Values.global.multiregion | default dict)) "true" }}
+  {{- if eq (include "camundaPlatform.partitioningConfigured" (.Values.global.multiregion | default dict)) "true" }}
     {{- $warningMessage := printf "%s %s %s %s"
         "[camunda][warning]"
         "DEPRECATION: \"global.multiregion.*\" is deprecated and will be removed in chart v16 (Camunda 8.11)."
-        "Only the Orchestration Cluster reads these keys, so they moved to \"orchestration.clusterTopology.*\" with the same field names."
+        "Only the Orchestration Cluster reads these keys, so they moved to \"orchestration.partitioning.*\" with the same field names."
         "Move the block and remove the global one; setting both fails the render."
     -}}
     {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
   {{- end }}
 
   {{- if .Values.orchestration.profiles.broker }}
-    {{- if eq (include "orchestration.zoned" .) "true" }}
+    {{- if eq (include "orchestration.zoneAware" .) "true" }}
       {{- $warningMessage := printf "%s %s %s"
           "[camunda][warning]"
-          "\"orchestration.clusterTopology.mode\" is fixed for the life of the cluster: zoned brokers are identified by the composite \"<zone>_<index>\", numbered ones by a plain node ID."
+          "\"orchestration.partitioning.scheme\" is fixed for the life of the cluster: zone-aware brokers are identified by the composite \"<zone>_<index>\", round-robin ones by a plain node ID."
           "Switching an existing release between the two re-identifies every broker against Raft state written under its old ID, and the members stop recognising each other. Deploy a new cluster instead."
       -}}
       {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
     {{- end }}
-    {{- if eq (include "camundaPlatform.clusterTopologySpread" .) "true" }}
+    {{- if eq (include "camundaPlatform.spansFailureDomains" .) "true" }}
       {{- $warningMessage := printf "%s %s %s"
           "[camunda][warning]"
           "This deployment spans more than one failure domain, so the chart cannot generate the broker bootstrap list: set CAMUNDA_CLUSTER_INITIALCONTACTPOINTS through \"orchestration.env\"."

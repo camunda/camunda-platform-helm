@@ -2948,18 +2948,18 @@ Usage:
 {{- end -}}
 
 {{/*
-NOTE: resolves the multi-region block, preferring orchestration.clusterTopology over the
+NOTE: resolves the multi-region block, preferring orchestration.partitioning over the
 deprecated global.multiregion, which only still carries regions and regionId. Whole-block
 precedence, never per field, so a topology cannot be assembled half from each. Absent
 fields fall back to the chart defaults, which is what lets the global block supply the
 numbered pair without declaring the zoned ones. constraints.tpl rejects setting both.
 */}}
-{{- define "camundaPlatform.clusterTopology" -}}
-{{- $orch := .Values.orchestration.clusterTopology | default dict -}}
+{{- define "camundaPlatform.partitioning" -}}
+{{- $orch := .Values.orchestration.partitioning | default dict -}}
 {{- $global := .Values.global.multiregion | default dict -}}
-{{- if eq (include "camundaPlatform.clusterTopologyConfigured" $orch) "true" -}}
+{{- if eq (include "camundaPlatform.partitioningConfigured" $orch) "true" -}}
   {{- dict
-        "mode" ($orch.mode | default "numbered")
+        "scheme" ($orch.scheme | default "round-robin")
         "zone" ($orch.zone | default "")
         "zones" ($orch.zones | default list)
         "regions" ($orch.regions | default 1)
@@ -2967,11 +2967,11 @@ numbered pair without declaring the zoned ones. constraints.tpl rejects setting 
       | toJson -}}
 {{- else -}}
   {{- /* Only the numbered pair is read back from the deprecated block. mode, zone and
-       zones never shipped there, and honouring them would keep zoned mode reachable
+       zones never shipped there, and honouring them would keep the zone-aware scheme reachable
        through the spelling being removed in v16, which values.yaml and both schemas
        already say it is not. */ -}}
   {{- dict
-        "mode" "numbered"
+        "scheme" "round-robin"
         "zone" ""
         "zones" list
         "regions" ($global.regions | default 1)
@@ -2984,9 +2984,9 @@ numbered pair without declaring the zoned ones. constraints.tpl rejects setting 
 NOTE: takes a multi-region block, not the root context. Emits "true" when any field
 departs from the chart default.
 */}}
-{{- define "camundaPlatform.clusterTopologyConfigured" -}}
+{{- define "camundaPlatform.partitioningConfigured" -}}
 {{- if or
-      (ne (default "numbered" .mode) "numbered")
+      (ne (default "round-robin" .scheme) "round-robin")
       (ne (default "" .zone) "")
       (gt (len (default list .zones)) 0)
       (ne (int (default 1 .regions)) 1)
@@ -2997,18 +2997,18 @@ true
 
 {{/*
 NOTE: "true" when the cluster spans more than one failure domain, which is more than one
-zone in zoned mode and more than one region in numbered mode. Single-zone zoned counts as
+zone with the zone-aware scheme and more than one region with round-robin. A single zone counts as
 one cluster, the same as a single-region numbered one: it exists to skew leaders inside a
 region,
 not to spread across them. Three call sites depend on agreeing about this, so they read
 it here rather than each spelling it out: the generated initial contact points, the
 legacy Optimize exporters, and the NOTES.txt warning.
 */}}
-{{- define "camundaPlatform.clusterTopologySpread" -}}
-{{- $topology := include "camundaPlatform.clusterTopology" . | fromJson -}}
-{{- if eq $topology.mode "zoned" -}}
-  {{- gt (len $topology.zones) 1 -}}
+{{- define "camundaPlatform.spansFailureDomains" -}}
+{{- $partitioning := include "camundaPlatform.partitioning" . | fromJson -}}
+{{- if eq $partitioning.scheme "zone-aware" -}}
+  {{- gt (len $partitioning.zones) 1 -}}
 {{- else -}}
-  {{- gt (int $topology.regions) 1 -}}
+  {{- gt (int $partitioning.regions) 1 -}}
 {{- end -}}
 {{- end -}}

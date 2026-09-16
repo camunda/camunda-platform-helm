@@ -528,7 +528,7 @@ func (s *ConstraintTemplateTest) TestOrchestrationClusterTopologyKeyRenamedGuard
 				"orchestration.multiregion.mode":           "zoned",
 			},
 			Expected: map[string]string{
-				"ERROR": `The Helm values file key changed from "orchestration.multiregion" to "orchestration.clusterTopology".`,
+				"ERROR": `The Helm values file key changed from "orchestration.multiregion" to "orchestration.partitioning".`,
 			},
 		},
 		{
@@ -538,14 +538,14 @@ func (s *ConstraintTemplateTest) TestOrchestrationClusterTopologyKeyRenamedGuard
 				"orchestration.multiregion.regions":        "2",
 			},
 			Expected: map[string]string{
-				"ERROR": `The Helm values file key changed from "orchestration.multiregion" to "orchestration.clusterTopology".`,
+				"ERROR": `The Helm values file key changed from "orchestration.multiregion" to "orchestration.partitioning".`,
 			},
 		},
 		{
 			Name: "TestNewClusterTopologyKeyRendersOk",
 			Values: map[string]string{
 				"orchestration.data.secondaryStorage.type": "elasticsearch",
-				"orchestration.clusterTopology.regions":    "2",
+				"orchestration.partitioning.regions":    "2",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().Nil(err)
