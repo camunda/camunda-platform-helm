@@ -1746,6 +1746,26 @@ func (s *ConfigmapTemplateTest) TestRoundRobinRejectsInconsistentNumbering() {
 			},
 		},
 		{
+			Name: "TestRoundRobinRejectsZeroRegions",
+			Values: map[string]string{
+				"orchestration.partitioning.regions": "0",
+				"orchestration.profiles.broker":      "true",
+			},
+			Expected: map[string]string{
+				"ERROR": "orchestration.partitioning.regions is 0; a cluster spans at least one region",
+			},
+		},
+		{
+			Name: "TestDeprecatedZeroRegionsIsGuardedUnderItsOwnKey",
+			Values: map[string]string{
+				"global.multiregion.regions":    "0",
+				"orchestration.profiles.broker": "true",
+			},
+			Expected: map[string]string{
+				"ERROR": "global.multiregion.regions is 0; a cluster spans at least one region",
+			},
+		},
+		{
 			Name: "TestDeprecatedNumberingIsGuardedUnderItsOwnKey",
 			Values: map[string]string{
 				"global.multiregion.regions":    "2",
