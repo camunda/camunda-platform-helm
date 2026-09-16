@@ -2948,16 +2948,16 @@ Usage:
 {{- end -}}
 
 {{/*
-NOTE: resolves the multi-region block, preferring orchestration.partitioning over the
+NOTE: resolves the multi-region block, preferring orchestration.partitionDistribution over the
 deprecated global.multiregion, which only still carries regions and regionId. Whole-block
 precedence, never per field, so a topology cannot be assembled half from each. Absent
 fields fall back to the chart defaults, which is what lets the global block supply the
 numbered pair without declaring the zoned ones. constraints.tpl rejects setting both.
 */}}
-{{- define "camundaPlatform.partitioning" -}}
-{{- $orch := .Values.orchestration.partitioning | default dict -}}
+{{- define "camundaPlatform.partitionDistribution" -}}
+{{- $orch := .Values.orchestration.partitionDistribution | default dict -}}
 {{- $global := .Values.global.multiregion | default dict -}}
-{{- if eq (include "camundaPlatform.partitioningConfigured" $orch) "true" -}}
+{{- if eq (include "camundaPlatform.partitionDistributionConfigured" $orch) "true" -}}
   {{- dict
         "scheme" ($orch.scheme | default "round-robin")
         "zone" ($orch.zone | default "")
@@ -2984,7 +2984,7 @@ numbered pair without declaring the zoned ones. constraints.tpl rejects setting 
 NOTE: takes a multi-region block, not the root context. Emits "true" when any field
 departs from the chart default.
 */}}
-{{- define "camundaPlatform.partitioningConfigured" -}}
+{{- define "camundaPlatform.partitionDistributionConfigured" -}}
 {{- if or
       (ne (default "round-robin" .scheme) "round-robin")
       (ne (default "" .zone) "")
@@ -3005,10 +3005,10 @@ it here rather than each spelling it out: the generated initial contact points, 
 legacy Optimize exporters, and the NOTES.txt warning.
 */}}
 {{- define "camundaPlatform.spansFailureDomains" -}}
-{{- $partitioning := include "camundaPlatform.partitioning" . | fromJson -}}
-{{- if eq $partitioning.scheme "zone-aware" -}}
-  {{- gt (len $partitioning.zones) 1 -}}
+{{- $partitionDistribution := include "camundaPlatform.partitionDistribution" . | fromJson -}}
+{{- if eq $partitionDistribution.scheme "zone-aware" -}}
+  {{- gt (len $partitionDistribution.zones) 1 -}}
 {{- else -}}
-  {{- gt (int $partitioning.regions) 1 -}}
+  {{- gt (int $partitionDistribution.regions) 1 -}}
 {{- end -}}
 {{- end -}}

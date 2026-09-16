@@ -13,7 +13,7 @@
 {{- end -}}
 
 {{- define "orchestration.zoneAware" -}}
-{{- eq (include "camundaPlatform.partitioning" . | fromJson).scheme "zone-aware" -}}
+{{- eq (include "camundaPlatform.partitionDistribution" . | fromJson).scheme "zone-aware" -}}
 {{- end -}}
 
 {{/*
@@ -30,7 +30,7 @@ NOTE: takes a dict of "zones" and the zone "field" to total, not the root contex
 
 {{- define "orchestration.clusterSize" -}}
 {{- if eq (include "orchestration.zoneAware" .) "true" -}}
-  {{- include "orchestration.zoneSum" (dict "zones" (include "camundaPlatform.partitioning" $ | fromJson).zones "field" "numberOfBrokers") -}}
+  {{- include "orchestration.zoneSum" (dict "zones" (include "camundaPlatform.partitionDistribution" $ | fromJson).zones "field" "numberOfBrokers") -}}
 {{- else -}}
   {{- .Values.orchestration.clusterSize -}}
 {{- end -}}
@@ -38,17 +38,17 @@ NOTE: takes a dict of "zones" and the zone "field" to total, not the root contex
 
 {{- define "orchestration.replicationFactor" -}}
 {{- if eq (include "orchestration.zoneAware" .) "true" -}}
-  {{- include "orchestration.zoneSum" (dict "zones" (include "camundaPlatform.partitioning" $ | fromJson).zones "field" "numberOfReplicas") -}}
+  {{- include "orchestration.zoneSum" (dict "zones" (include "camundaPlatform.partitionDistribution" $ | fromJson).zones "field" "numberOfReplicas") -}}
 {{- else -}}
   {{- .Values.orchestration.replicationFactor -}}
 {{- end -}}
 {{- end -}}
 
 {{- define "orchestration.zoneBrokers" -}}
-{{- $partitioning := include "camundaPlatform.partitioning" $ | fromJson -}}
+{{- $partitionDistribution := include "camundaPlatform.partitionDistribution" $ | fromJson -}}
 {{- $zoneBrokers := 0 -}}
-{{- range $partitioning.zones -}}
-  {{- if eq .name $partitioning.zone -}}
+{{- range $partitionDistribution.zones -}}
+  {{- if eq .name $partitionDistribution.zone -}}
     {{- $zoneBrokers = int .numberOfBrokers -}}
   {{- end -}}
 {{- end -}}
@@ -56,11 +56,11 @@ NOTE: takes a dict of "zones" and the zone "field" to total, not the root contex
 {{- end -}}
 
 {{- define "orchestration.replicas" -}}
-{{- $partitioning := include "camundaPlatform.partitioning" $ | fromJson -}}
+{{- $partitionDistribution := include "camundaPlatform.partitionDistribution" $ | fromJson -}}
 {{- if eq (include "orchestration.zoneAware" .) "true" -}}
 {{- include "orchestration.zoneBrokers" . -}}
 {{- else -}}
-{{- div .Values.orchestration.clusterSize $partitioning.regions -}}
+{{- div .Values.orchestration.clusterSize $partitionDistribution.regions -}}
 {{- end -}}
 {{- end -}}
 
