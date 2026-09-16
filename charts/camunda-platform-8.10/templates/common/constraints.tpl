@@ -484,11 +484,20 @@ blocks default it through "| default 1", and 0 is falsy in Go templates, so a ty
 reaches the resolver as 1; "regions: 0" on its own also reads as an unconfigured block
 and falls through to global.multiregion. Neither is visible after resolution.
 
+NOTE: orchestration.partitioning is scanned unconditionally because a sub-1 count there
+is what makes the block read as unconfigured in the first place. The deprecated block is
+scanned only when it is the one in effect, so an inert leftover cannot fail a render that
+is driven entirely by orchestration.partitioning.
+
 NOTE: a clusterSize the region count does not divide is the same class of fault and is
 deliberately not rejected here; see #7196.
 */}}
 {{- if ne $partitioning.scheme "zone-aware" }}
-  {{- range $key, $raw := dict "orchestration.partitioning" (.Values.orchestration.partitioning | default dict) "global.multiregion" (.Values.global.multiregion | default dict) }}
+  {{- $rawBlocks := dict "orchestration.partitioning" (.Values.orchestration.partitioning | default dict) -}}
+  {{- if eq $partitioningKey "global.multiregion" -}}
+    {{- $_ := set $rawBlocks "global.multiregion" (.Values.global.multiregion | default dict) -}}
+  {{- end -}}
+  {{- range $key, $raw := $rawBlocks }}
     {{- if and (hasKey $raw "regions") (lt (int $raw.regions) 1) }}
       {{- fail (printf "[camunda][error] %s.regions is %d; a cluster spans at least one region." $key (int $raw.regions)) -}}
     {{- end }}

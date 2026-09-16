@@ -1788,6 +1788,39 @@ func (s *ConfigmapTemplateTest) TestRoundRobinRejectsInconsistentNumbering() {
 				require.Contains(t, output, "* 2 + 1]")
 			},
 		},
+		{
+			Name:                    "TestRoundRobinRejectsZeroRegionsWrittenAsAString",
+			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.partitioning.regions=0"},
+			Values: map[string]string{
+				"orchestration.profiles.broker": "true",
+			},
+			Expected: map[string]string{
+				"ERROR": "orchestration.partitioning.regions is 0; a cluster spans at least one region",
+			},
+		},
+		{
+			Name:                    "TestDeprecatedZeroRegionsWrittenAsAStringIsGuarded",
+			RenderTemplateExtraArgs: []string{"--set-string", "global.multiregion.regions=0"},
+			Values: map[string]string{
+				"orchestration.profiles.broker": "true",
+			},
+			Expected: map[string]string{
+				"ERROR": "global.multiregion.regions is 0; a cluster spans at least one region",
+			},
+		},
+		{
+			Name: "TestInertDeprecatedRegionCountDoesNotFailAnOrchestrationDrivenRender",
+			Values: map[string]string{
+				"orchestration.partitioning.regions":  "3",
+				"orchestration.partitioning.regionId": "1",
+				"global.multiregion.regions":          "0",
+				"orchestration.profiles.broker":       "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "* 3 + 1]")
+			},
+		},
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)

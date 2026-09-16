@@ -2963,8 +2963,8 @@ numbered pair without declaring the zoned ones. constraints.tpl rejects setting 
         "scheme" ($orch.scheme | default "round-robin")
         "zone" ($orch.zone | default "")
         "zones" ($orch.zones | default list)
-        "regions" ($orch.regions | default 1)
-        "regionId" ($orch.regionId | default 0) -}}
+        "regions" (int ($orch.regions | default 1) | default 1)
+        "regionId" (int ($orch.regionId | default 0)) -}}
 {{- else -}}
   {{- /* Only the numbered pair is read back from the deprecated block. mode, zone and
        zones never shipped there, and honouring them would keep the zone-aware scheme reachable
@@ -2974,8 +2974,8 @@ numbered pair without declaring the zoned ones. constraints.tpl rejects setting 
         "scheme" "round-robin"
         "zone" ""
         "zones" list
-        "regions" ($global.regions | default 1)
-        "regionId" ($global.regionId | default 0) -}}
+        "regions" (int ($global.regions | default 1) | default 1)
+        "regionId" (int ($global.regionId | default 0)) -}}
 {{- end -}}
 {{- /* Derive everything a consumer needs, so the scheme is decided here rather than
      re-asked at each call site. The counts are stringified because the dict is round-tripped
