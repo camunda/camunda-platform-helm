@@ -260,7 +260,7 @@ integration:
               repo-name: opensearch
               repo-url: https://opensearch-project.github.io/helm-charts/
         - name: documentstore
-          enabled: false
+          enabled: true
           shortname: docstr
           auth: keycloak
           flow: ""

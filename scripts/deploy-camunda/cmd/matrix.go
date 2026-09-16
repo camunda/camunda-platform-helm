@@ -899,7 +899,7 @@ Under the hood this invokes deploy.Execute() for each matrix entry.`,
 	f.StringVar(&kubeContextEKS, "kube-context-eks", "", "Kubernetes context for EKS entries")
 	f.StringVar(&ingressBaseDomain, "ingress-base-domain", "", "Fallback base DNS zone used to compute each entry's public URL — joined into CAMUNDA_HOSTNAME as <namespace>.<base>. Set to the DNS zone the target cluster's ingress controller serves, e.g. `ci.distro.ultrawombat.com` (Camunda CI) or `apps.mycompany.example`. Overridden per-platform by --ingress-base-domain-gke/--ingress-base-domain-eks.")
 	f.StringVar(&ingressBaseDomainGKE, "ingress-base-domain-gke", "", "Ingress base domain for GKE entries (e.g., ci.distro.ultrawombat.com)")
-	f.StringVar(&ingressBaseDomainEKS, "ingress-base-domain-eks", "", "Ingress base domain for EKS entries (e.g., distribution.aws.camunda.cloud)")
+	f.StringVar(&ingressBaseDomainEKS, "ingress-base-domain-eks", "", "Ingress base domain for EKS entries (e.g., distribution.camunda.ie)")
 	f.IntVar(&maxParallel, "max-parallel", 1, "Maximum number of entries to run concurrently (1 = sequential)")
 	f.StringVar(&envFile, "env-file", "", "Default .env file for all versions (overridden by --env-file-X.Y)")
 	f.StringVar(&envFile86, "env-file-8.6", "", "Path to .env file for 8.6 entries")

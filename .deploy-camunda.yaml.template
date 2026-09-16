@@ -214,7 +214,7 @@ deployments:
   # --- Per-platform ingress domains ---------------------------------------
   # ingressBaseDomains:
   #   gke: ci.distro.ultrawombat.com
-  #   eks: distribution.aws.camunda.cloud
+  #   eks: distribution.camunda.ie
 
   # --- Per-platform vault-backed secrets ----------------------------------
   # useVaultBackedSecrets: false         # Global default

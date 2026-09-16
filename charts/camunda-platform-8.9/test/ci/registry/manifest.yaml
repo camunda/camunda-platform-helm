@@ -70,7 +70,7 @@ integration:
     - id: documentstore
       shortname: docstr
       tier: 2
-      enabled: false
+      enabled: true
     - id: rdbms-external
       shortname: rdbme
       enabled: false

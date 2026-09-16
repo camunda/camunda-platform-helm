@@ -30,7 +30,7 @@ import (
 // ValidIngressBaseDomains lists the allowed base domains for ingress hosts.
 var ValidIngressBaseDomains = []string{
 	"ci.distro.ultrawombat.com",
-	"distribution.aws.camunda.cloud",
+	"distribution.camunda.ie",
 }
 
 const (

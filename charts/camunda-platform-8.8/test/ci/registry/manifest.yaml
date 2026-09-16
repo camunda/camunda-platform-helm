@@ -82,7 +82,7 @@ integration:
     - id: documentstore
       shortname: docstr
       tier: 2
-      enabled: false
+      enabled: true
     - id: no-secondary-storage
       shortname: nosec
       tier: 2
