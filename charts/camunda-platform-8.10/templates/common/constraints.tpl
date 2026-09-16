@@ -412,18 +412,6 @@ constraints further down are gated.
 */}}
 {{- if eq (include "camundaPlatform.orchestrationEnabled" .) "true" }}
 {{/*
-Fail if the pre-rename spelling is still in use. The block is read by name, and the shipped
-schema sets no additionalProperties:false on orchestration (#4564), so the old key would
-otherwise be ignored and the render would fall back to the default single-region numbered
-topology without saying so.
-*/}}
-{{ include "camundaPlatform.keyRenamed" (dict
-  "condition" (hasKey .Values.orchestration "multiregion")
-  "oldName" "orchestration.multiregion"
-  "newName" "orchestration.partitioning"
-) }}
-
-{{/*
 Fail if the multi-region topology is described in both places at once. Picking one
 silently would deploy a topology the other block does not describe, and the two are
 merged nowhere.
