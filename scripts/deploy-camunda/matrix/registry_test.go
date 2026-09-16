@@ -352,7 +352,7 @@ func TestRegistryValidatorExemptsSiblingInvokedHelper(t *testing.T) {
 // via filepath.Join.
 func TestLoadRegistryRejectsPathTraversalHookID(t *testing.T) {
 	_, chartDir, regDir := syntheticChart(t)
-	writeManifest(t, regDir, "    - id: bad\n      shortname: bad\n      enabled: true\n")
+	writeManifest(t, regDir, "    - id: bad\n      shortname: bad\n      tier: 1\n      enabled: true\n")
 	writeFile(t, filepath.Join(regDir, "scenarios", "bad.yaml"),
 		"name: bad\nflows: [install]\npre-install: ../evil\n")
 
@@ -368,7 +368,7 @@ func TestLoadRegistryRejectsPathTraversalHookID(t *testing.T) {
 func TestRegistryValidatorRejectsDeniedFlow(t *testing.T) {
 	dir, chartDir, regDir := syntheticChart(t)
 	writePermittedFlows(t, dir, "rules:\n  - match: ==99.99\n    deny: [install]\n")
-	writeManifest(t, regDir, "    - id: a\n      shortname: a\n      enabled: true\n")
+	writeManifest(t, regDir, "    - id: a\n      shortname: a\n      tier: 1\n      enabled: true\n")
 	writeFile(t, filepath.Join(regDir, "scenarios", "a.yaml"),
 		"name: a\nflows: [install]\nplatforms: [gke]\n")
 
@@ -384,7 +384,7 @@ func TestRegistryValidatorRejectsDeniedFlow(t *testing.T) {
 // guard from one branch is caught.
 func TestLoadRegistryRejectsPathTraversalDepID(t *testing.T) {
 	_, chartDir, regDir := syntheticChart(t)
-	writeManifest(t, regDir, "    - id: bad\n      shortname: bad\n      enabled: true\n")
+	writeManifest(t, regDir, "    - id: bad\n      shortname: bad\n      tier: 1\n      enabled: true\n")
 	writeFile(t, filepath.Join(regDir, "scenarios", "bad.yaml"),
 		"name: bad\nflows: [install]\ndependencies:\n  - ../evil\n")
 
@@ -399,11 +399,72 @@ func TestLoadRegistryRejectsPathTraversalDepID(t *testing.T) {
 // scenarios/ directory.
 func TestLoadRegistryRejectsPathTraversalManifestID(t *testing.T) {
 	_, chartDir, regDir := syntheticChart(t)
-	writeManifest(t, regDir, "    - id: ../evil\n      enabled: true\n")
+	writeManifest(t, regDir, "    - id: ../evil\n      tier: 1\n      enabled: true\n")
 
 	_, err := LoadRegistry(chartDir)
 	if err == nil || !strings.Contains(err.Error(), "plain filename") {
 		t.Fatalf("want plain-filename rejection on manifest ID, got: %v", err)
+	}
+}
+
+// TestLoadRegistryRejectsUnusableTier covers the tier invariant the strict
+// --tier filter depends on. An enabled entry with no tier, or any entry whose
+// tier is outside {1,2}, is unreachable through tier-scoped selection, so the
+// loader rejects it instead of letting it drop out of the PR gate silently.
+func TestLoadRegistryRejectsUnusableTier(t *testing.T) {
+	scenarioYAML := "name: a\nauth: keycloak\nflows: [install]\nidentity: keycloak\npersistence: elasticsearch\nplatforms: [gke]\n"
+
+	cases := []struct {
+		name     string
+		entry    string
+		wantErr  bool
+		wantText string
+	}{
+		{
+			name:     "enabled without tier",
+			entry:    "    - id: a\n      shortname: a\n      enabled: true\n",
+			wantErr:  true,
+			wantText: "enabled but declares no tier",
+		},
+		{
+			name:     "tier above the supported range",
+			entry:    "    - id: a\n      shortname: a\n      tier: 3\n      enabled: true\n",
+			wantErr:  true,
+			wantText: "declares tier 3",
+		},
+		{
+			name:     "negative tier",
+			entry:    "    - id: a\n      shortname: a\n      tier: -1\n      enabled: false\n",
+			wantErr:  true,
+			wantText: "declares tier -1",
+		},
+		{
+			name:  "disabled entries may omit the tier",
+			entry: "    - id: a\n      shortname: a\n      enabled: false\n",
+		},
+		{
+			name:  "tier 2 accepted",
+			entry: "    - id: a\n      shortname: a\n      tier: 2\n      enabled: true\n",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, chartDir, regDir := syntheticChart(t)
+			writeManifest(t, regDir, tc.entry)
+			writeFile(t, filepath.Join(regDir, "scenarios", "a.yaml"), scenarioYAML)
+
+			_, err := LoadRegistry(chartDir)
+			if tc.wantErr {
+				if err == nil || !strings.Contains(err.Error(), tc.wantText) {
+					t.Fatalf("want error containing %q, got: %v", tc.wantText, err)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("LoadRegistry: %v", err)
+			}
+		})
 	}
 }
 
@@ -412,7 +473,7 @@ func TestLoadRegistryRejectsPathTraversalManifestID(t *testing.T) {
 // assembled CIScenario so it can be threaded into the deploy values chain.
 func TestLoadRegistryCarriesExtraValues(t *testing.T) {
 	_, chartDir, regDir := syntheticChart(t)
-	writeManifest(t, regDir, "    - id: alpha\n      shortname: alph\n      enabled: true\n")
+	writeManifest(t, regDir, "    - id: alpha\n      shortname: alph\n      tier: 1\n      enabled: true\n")
 	writeFile(t, filepath.Join(regDir, "scenarios", "alpha.yaml"),
 		"name: alpha\nauth: keycloak\nflows: [install]\nidentity: keycloak\npersistence: elasticsearch\nplatforms: [gke]\nextra-values:\n  - values/extra/image.yaml\n  - values/extra/tuning.yaml\n")
 	// The validator (run inside LoadRegistry) resolves relative extra-values
@@ -451,7 +512,7 @@ func TestGenerate_PropagatesExtraValues(t *testing.T) {
 	dir, chartDir, regDir := syntheticChart(t)
 	writeFile(t, filepath.Join(dir, "charts", "chart-versions.yaml"),
 		"chartAutomation: {routineVersions: [\"99.99\"]}\ncamundaSupportLifecycle: {\"99.99\": {}}\n")
-	writeManifest(t, regDir, "    - id: alpha\n      shortname: alph\n      enabled: true\n")
+	writeManifest(t, regDir, "    - id: alpha\n      shortname: alph\n      tier: 1\n      enabled: true\n")
 	writeFile(t, filepath.Join(regDir, "scenarios", "alpha.yaml"),
 		"name: alpha\nauth: keycloak\nflows: [install]\nidentity: keycloak\npersistence: elasticsearch\nplatforms: [gke]\nextra-values:\n  - values/extra/image.yaml\n")
 	extraDir := filepath.Join(chartDir, "test", "integration", "scenarios", "chart-full-setup", "values", "extra")
@@ -490,7 +551,7 @@ func TestLoadRegistryRejectsMalformedManifest(t *testing.T) {
 // scenarios/<id>.yaml file.
 func TestLoadRegistryRejectsMissingScenarioFile(t *testing.T) {
 	_, chartDir, regDir := syntheticChart(t)
-	writeManifest(t, regDir, "    - id: missing\n      enabled: true\n")
+	writeManifest(t, regDir, "    - id: missing\n      tier: 1\n      enabled: true\n")
 
 	_, err := LoadRegistry(chartDir)
 	if err == nil || !strings.Contains(err.Error(), "read scenario") {
@@ -545,7 +606,7 @@ func TestRegistryValidatorRejectsUnmitigatedBitnamiPersistenceDrop(t *testing.T)
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			_, chartDir, regDir, _ := syntheticChartWithPrevious(t, depsWithoutElasticsearch, depsWithElasticsearch)
-			writeManifest(t, regDir, "    - id: a\n      shortname: a\n      enabled: true\n")
+			writeManifest(t, regDir, "    - id: a\n      shortname: a\n      tier: 1\n      enabled: true\n")
 			writeFile(t, filepath.Join(regDir, "scenarios", "a.yaml"),
 				"name: a\nflows: ["+tc.flow+"]\nplatforms: [gke]\npersistence: elasticsearch\n")
 
@@ -587,7 +648,7 @@ func TestRegistryValidatorExemptsMitigatedBitnamiPersistenceDrop(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			_, chartDir, regDir, _ := syntheticChartWithPrevious(t, depsWithoutElasticsearch, depsWithElasticsearch)
-			writeManifest(t, regDir, "    - id: a\n      shortname: a\n      enabled: true\n")
+			writeManifest(t, regDir, "    - id: a\n      shortname: a\n      tier: 1\n      enabled: true\n")
 			writeFile(t, filepath.Join(regDir, "scenarios", "a.yaml"), tc.scenario)
 			if tc.withHook {
 				writeFile(t, filepath.Join(regDir, "hooks", "mig.yaml"),
@@ -605,7 +666,7 @@ func TestRegistryValidatorExemptsMitigatedBitnamiPersistenceDrop(t *testing.T) {
 
 func TestRegistryValidatorAcceptsUpgradePersistenceWhenStillBundled(t *testing.T) {
 	_, chartDir, regDir, _ := syntheticChartWithPrevious(t, depsWithElasticsearch, depsWithElasticsearch)
-	writeManifest(t, regDir, "    - id: a\n      shortname: a\n      enabled: true\n")
+	writeManifest(t, regDir, "    - id: a\n      shortname: a\n      tier: 1\n      enabled: true\n")
 	writeFile(t, filepath.Join(regDir, "scenarios", "a.yaml"),
 		"name: a\nflows: [upgrade-minor]\nplatforms: [gke]\npersistence: elasticsearch\n")
 
@@ -617,7 +678,7 @@ func TestRegistryValidatorAcceptsUpgradePersistenceWhenStillBundled(t *testing.T
 func TestRegistryValidatorRejectsUpgradePersistenceMissingFromPreviousVersion(t *testing.T) {
 	_, chartDir, regDir, _ := syntheticChartWithPrevious(t, depsWithElasticsearch, depsWithElasticsearch)
 	writePersistence(t, chartDir, "rdbms-self-signed", "")
-	writeManifest(t, regDir, "    - id: a\n      shortname: a\n      enabled: true\n")
+	writeManifest(t, regDir, "    - id: a\n      shortname: a\n      tier: 1\n      enabled: true\n")
 	writeFile(t, filepath.Join(regDir, "scenarios", "a.yaml"),
 		"name: a\nflows: [upgrade-minor]\nplatforms: [gke]\npersistence: rdbms-self-signed\n")
 
@@ -630,7 +691,7 @@ func TestRegistryValidatorRejectsUpgradePersistenceMissingFromPreviousVersion(t 
 func TestRegistryValidatorExemptsModularUpgradePersistenceMissingFromPreviousVersion(t *testing.T) {
 	_, chartDir, regDir, _ := syntheticChartWithPrevious(t, depsWithElasticsearch, depsWithElasticsearch)
 	writePersistence(t, chartDir, "rdbms-self-signed", "")
-	writeManifest(t, regDir, "    - id: a\n      shortname: a\n      enabled: true\n")
+	writeManifest(t, regDir, "    - id: a\n      shortname: a\n      tier: 1\n      enabled: true\n")
 	writeFile(t, filepath.Join(regDir, "scenarios", "a.yaml"),
 		"name: a\nflows: [modular-upgrade-minor]\nplatforms: [gke]\npersistence: rdbms-self-signed\n")
 
@@ -641,7 +702,7 @@ func TestRegistryValidatorExemptsModularUpgradePersistenceMissingFromPreviousVer
 
 func TestRegistryValidatorAcceptsUpgradePersistenceWithoutPreviousVersion(t *testing.T) {
 	_, chartDir, regDir := syntheticChart(t)
-	writeManifest(t, regDir, "    - id: a\n      shortname: a\n      enabled: true\n")
+	writeManifest(t, regDir, "    - id: a\n      shortname: a\n      tier: 1\n      enabled: true\n")
 	writeFile(t, filepath.Join(regDir, "scenarios", "a.yaml"),
 		"name: a\nflows: [upgrade-minor]\nplatforms: [gke]\npersistence: elasticsearch\n")
 

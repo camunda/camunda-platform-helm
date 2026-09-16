@@ -5,7 +5,7 @@ description: Validate a PR locally before marking it Ready-for-Review — map th
 
 # PR Ready-for-Review Validation
 
-PR CI runs **tier-1 only** (~5 deploys, the `eske` baseline). The full matrix (~33 deploys) runs in the **merge queue** and rejects any PR whose diff exercises a non-baseline variant (OpenSearch, RDBMS, auth, document store, hub-legacy, ARM Elasticsearch, no-secondary-storage) and fails. Run the minimum correct scenario set locally before marking the PR Ready-for-Review.
+PR CI runs **tier-1 only** (7 deploys, the `eske` baseline). The full matrix (81 deploys) runs in the **merge queue** and rejects any PR whose diff exercises a non-baseline variant (OpenSearch, RDBMS, auth, document store, hub, TLS, ARM Elasticsearch, no-secondary-storage) and fails. Run the minimum correct scenario set locally before marking the PR Ready-for-Review.
 
 ## Prerequisites
 
@@ -23,38 +23,41 @@ PR CI runs **tier-1 only** (~5 deploys, the `eske` baseline). The full matrix (~
 
 ## Tier Reference
 
-Authoritative source: `tier:` and `enabled:` live in the composable registry `charts/camunda-platform-<v>/test/ci/registry/manifest.yaml` (8.6 predates the registry and has no active CI). The table below is a snapshot — re-derive with the source-agnostic CLI:
+Authoritative source: `tier:` and `enabled:` live in the composable registry `charts/camunda-platform-<v>/test/ci/registry/manifest.yaml` (8.6 predates the registry and has no active CI). Per-version shortname lists are deliberately **not** duplicated here — they go stale. Derive them:
 
 ```bash
-deploy-camunda matrix list --tier 2 --versions <v>
+deploy-camunda matrix list --tier 1                 # the PR gate, every version
+deploy-camunda matrix list --tier 2 --versions <v>  # merge-queue variants for one version
+deploy-camunda matrix list --versions <v>           # everything the merge queue runs
 ```
 
-**Tier 1:** `eske` on every version. 8.9 covers both `install` and `upgrade-minor`.
+A scenario that declares no `tier:` matches neither filter and is reachable only through the unfiltered matrix, so `--tier 1` plus `--tier 2` equals the full set only while every enabled scenario carries an explicit tier.
 
-**Enabled tier-2 (merge-queue set):**
-
-| Version | Shortnames |
-|---|---|
-| 8.7  | `kemt`, `kerba`, `esoi`, `keyc`, `osem`, `entv` |
-| 8.8  | `esoi`, `esarm`, `osem`, `docstr`, `entv` |
-| 8.9  | `osem`, `esoi`, `kemt`, `kerba`, `keorg`, `gatkc`, `esarm`, `nosec`, `docstr`, `rdbms`, `entv` |
-| 8.10 | `osem`, `keorg`, `gatkc`, `esarm`, `nosec`, `docstr`, `rdbms`, `huble`, `entv` |
-
-`osex` (external AWS OpenSearch, #6119) and `oske` (Bitnami OpenSearch subchart, #6121) are defined but currently disabled.
+**Tier 1:** `eske` on every version, plus `keyco` on 8.7 and 8.10. 8.9's `eske` covers both `install` and `upgrade-minor`; every other tier-1 entry is `install` on GKE.
 
 **Variant decoder:**
 
 | Shortname | Meaning |
 |---|---|
-| `osem` | OpenSearch embedded (OS analog to `eske`) |
-| `esoi` | Elasticsearch OIDC |
-| `rdbms` | RDBMS persistence |
-| `ke*` | Keycloak variants: `kemt` `keycloak-mt`, `kerba` `keycloak-rba`, `keorg` `keycloak-original`, `keyc` `keycloak` (plain) |
+| `eske` | Elasticsearch + Keycloak on GKE — the baseline |
+| `oske` | OpenSearch (`osem` on 8.7, which predates the rename) |
+| `osss` / `osot` | OpenSearch with a self-signed cert; `-os-trust` variant trusts the OS-level bundle |
+| `esot` | Elasticsearch self-signed with OS-level trust (8.8, 8.9) |
+| `estls` / `estlr` / `estlc` | orchestration TLS; `-rest` and `-rest-appconfig` variants |
+| `cotls` / `optls` | Connectors TLS, Optimize TLS |
+| `esoi` | Elasticsearch OIDC (Microsoft Entra) |
+| `esa0` | Auth0 as the external IdP (8.10) |
+| `rdbms` / `rdbss` / `rdbme` | RDBMS persistence; self-signed and external variants |
+| `ke*` | Keycloak variants: `kemt` `keycloak-mt`, `kerba` `keycloak-rba`, `keorg`/`keyco`/`keyc` `keycloak-original` |
 | `gatkc` | gateway + Keycloak auth path |
 | `nosec` | `noSecondaryStorage` (no Elasticsearch; `persistence: no-elasticsearch`, still uses Keycloak auth) |
 | `esarm` | ARM Elasticsearch |
 | `docstr` | document store feature |
-| `huble` | hub-legacy feature |
+| `cprst` / `cprsu` | component-persistence, install and upgrade |
+| `secfl` | file-backed secret store |
+| `hub*` | Camunda Hub shapes: `huble`/`hublu` legacy, `hubmu` mixed, `hubwo` web-modeler-only, `hubco` console-only, `hubde` double-enable, `hubpi` pinned images, `hubdb` external DB |
+| `mns` / `mns2` / `mnop` / `ptnt` | multi-namespace topologies and physical tenants |
+| `shde2` | shadow E2E |
 | `entv` | enterprise values overlay (`values-enterprise.yaml`) |
 
 ## Select Scenarios
@@ -70,7 +73,7 @@ Default: tier-1 on every affected version. Add tier-2 entries only when the diff
 | Document store feature 8.8+ | `eske` + `docstr` per version |
 | Hub change on 8.10 | `eske` + `huble` |
 | `_helpers.tpl` change | tier-1 all versions + `nosec`, `docstr` |
-| `values-enterprise.yaml` or enterprise image tags | `entv` on each version where it is defined (8.10 only until backports land) |
+| `values-enterprise.yaml` or enterprise image tags | `entv` — defined and enabled on 8.7 and 8.9 only; 8.8 defines it but leaves it `enabled: false`, and 8.10 does not define it at all |
 
 **Skip the matrix** for `.github/workflows/*` (run `actionlint`), `scripts/` Go tooling (`make go.test`), Dockerfile-only (`hadolint`, `docker build --target`), compose-only (`docker compose config`), docs-only.
 
