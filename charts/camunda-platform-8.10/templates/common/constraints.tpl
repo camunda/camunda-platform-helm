@@ -33,7 +33,7 @@ Chart 15.x (Camunda 8.10) requires Helm v4 or later.
 {{- $identityEnabled := (or (eq (include "camundaPlatform.identityEnabled" .) "true") .Values.global.identity.service.url) }}
 
 {{- $topologyMode := include "camundaPlatform.topologyMode" . }}
-{{- $partitioning := .Values.global.topology | default dict }}
+{{- $topology := .Values.global.topology | default dict }}
 {{- if not (has $topologyMode (list "combined" "hub" "orchestration" "optimize")) }}
   {{- fail (printf "[camunda][error] global.topology.mode must be one of combined, hub, orchestration, or optimize; got %q." $topologyMode) }}
 {{- end }}
@@ -242,7 +242,7 @@ Either must bind the key to a non-empty value - the key alone leaves the same mi
     {{- end }}
     {{- $_ := set $seenIds $legacyId true }}
   {{- end }}
-  {{- range $cluster := $partitioning.clusters }}
+  {{- range $cluster := $topology.clusters }}
     {{- $slug := include "camundaPlatform.topologySlug" $cluster.id }}
     {{- if or (empty $cluster.id) (empty $slug) (empty $cluster.namespace) (empty $cluster.releaseName) (empty $cluster.host) (empty $cluster.version) }}
       {{- fail "[camunda][error] every global.topology.clusters entry requires id, namespace, releaseName, host, and version." }}
