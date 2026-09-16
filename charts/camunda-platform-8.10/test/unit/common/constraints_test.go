@@ -519,7 +519,7 @@ func (s *ConstraintTemplateTest) TestGlobalDatastoreTreesRemovedGate() {
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
-func (s *ConstraintTemplateTest) TestOrchestrationClusterTopologyKeyRenamedGuard() {
+func (s *ConstraintTemplateTest) TestOrchestrationPartitioningKeyRenamedGuard() {
 	testCases := []testhelpers.TestCase{
 		{
 			Name: "TestOldMultiregionKeyFails",
@@ -542,10 +542,10 @@ func (s *ConstraintTemplateTest) TestOrchestrationClusterTopologyKeyRenamedGuard
 			},
 		},
 		{
-			Name: "TestNewClusterTopologyKeyRendersOk",
+			Name: "TestNewPartitioningKeyRendersOk",
 			Values: map[string]string{
 				"orchestration.data.secondaryStorage.type": "elasticsearch",
-				"orchestration.partitioning.regions":    "2",
+				"orchestration.partitioning.regions":       "2",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().Nil(err)

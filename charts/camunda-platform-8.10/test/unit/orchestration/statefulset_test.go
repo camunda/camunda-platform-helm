@@ -2394,7 +2394,7 @@ func (s *StatefulSetTest) TestZonedMode() {
 		{
 			Name: "TestZonedModeUsesLocalZoneBrokerCountAndEnvironmentVariable",
 			Values: map[string]string{
-				"orchestration.partitioning.scheme":                      "zone-aware",
+				"orchestration.partitioning.scheme":                    "zone-aware",
 				"orchestration.partitioning.zone":                      "region-b",
 				"orchestration.partitioning.zones[0].name":             "region-a",
 				"orchestration.partitioning.zones[0].numberOfBrokers":  "2",
@@ -2442,13 +2442,13 @@ func (s *StatefulSetTest) TestZonedMode() {
 		{
 			Name: "TestZonedModeRejectsBothTopologyBlocks",
 			Values: map[string]string{
-				"orchestration.partitioning.scheme":                      "zone-aware",
+				"orchestration.partitioning.scheme":                    "zone-aware",
 				"orchestration.partitioning.zone":                      "region-a",
 				"orchestration.partitioning.zones[0].name":             "region-a",
 				"orchestration.partitioning.zones[0].numberOfBrokers":  "2",
 				"orchestration.partitioning.zones[0].numberOfReplicas": "2",
 				"orchestration.partitioning.zones[0].priority":         "100",
-				"global.multiregion.regions":                          "2",
+				"global.multiregion.regions":                           "2",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.Error(t, err)
@@ -2484,8 +2484,8 @@ func (s *StatefulSetTest) TestNumberedModeCompatibility() {
 			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.clusterSize=6"},
 			Values: map[string]string{
 				"orchestration.partitioning.scheme": "round-robin",
-				"global.multiregion.regions":     "2",
-				"global.multiregion.regionId":    "1",
+				"global.multiregion.regions":        "2",
+				"global.multiregion.regionId":       "1",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
