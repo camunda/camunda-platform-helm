@@ -673,7 +673,7 @@ integration:
                 - RDBMS_POSTGRESQL_USERNAME
                 - RDBMS_POSTGRESQL_PASSWORD
         - name: documentstore
-          enabled: true
+          enabled: false
           shortname: docstr
           auth: keycloak
           flow: ""
