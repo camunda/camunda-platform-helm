@@ -53,6 +53,7 @@ integration:
       enabled: false
     - id: elasticsearch-self-signed-os-trust
       shortname: esot
+      tier: 2
       enabled: true
     - id: gateway-keycloak
       shortname: gatkc
@@ -90,7 +91,7 @@ integration:
       enabled: true
     - id: keycloak-original-install-tier1
       shortname: keyco
-      tier: 1
+      tier: 2
       enabled: true
     - id: alwaysgreen
       shortname: agrn
