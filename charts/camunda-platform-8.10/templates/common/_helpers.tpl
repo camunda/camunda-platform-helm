@@ -2978,8 +2978,9 @@ numbered pair without declaring the zoned ones. constraints.tpl rejects setting 
         "regionId" ($global.regionId | default 0) -}}
 {{- end -}}
 {{- /* Derive everything a consumer needs, so the scheme is decided here rather than
-     re-asked at each call site. Stored as strings: the dict is round-tripped through
-     JSON, which would otherwise turn the counts into floats. */ -}}
+     re-asked at each call site. The counts are stringified because the dict is round-tripped
+     through JSON, which types them as floats on the way back; the rendered output is the same
+     either way at these magnitudes, this just keeps the type explicit at the boundary. */ -}}
 {{- if eq $resolved.scheme "zone-aware" -}}
   {{- $brokers := 0 -}}
   {{- $replicas := 0 -}}
