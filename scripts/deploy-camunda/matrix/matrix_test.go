@@ -418,24 +418,37 @@ func TestFilter(t *testing.T) {
 
 	t.Run("tier filter returns only matching tier", func(t *testing.T) {
 		got := Filter(tieredEntries, FilterOptions{Tier: 1})
-		if len(got) != 3 {
-			t.Errorf("Filter(tier=1): got %d entries, want 3 (2 tier-1 + 1 untiered)", len(got))
+		if len(got) != 2 {
+			t.Errorf("Filter(tier=1): got %d entries, want 2 tier-1 entries", len(got))
 		}
 		for _, e := range got {
-			if e.Tier != 1 && e.Tier != 0 {
+			if e.Tier != 1 {
 				t.Errorf("Filter(tier=1): unexpected tier %d for %s", e.Tier, e.Shortname)
 			}
 		}
 	})
 
-	t.Run("tier filter 2 returns tier-2 and untiered", func(t *testing.T) {
+	t.Run("tier filter 2 returns only tier-2", func(t *testing.T) {
 		got := Filter(tieredEntries, FilterOptions{Tier: 2})
-		if len(got) != 3 {
-			t.Errorf("Filter(tier=2): got %d entries, want 3 (2 tier-2 + 1 untiered)", len(got))
+		if len(got) != 2 {
+			t.Errorf("Filter(tier=2): got %d entries, want 2 tier-2 entries", len(got))
 		}
 		for _, e := range got {
-			if e.Tier != 2 && e.Tier != 0 {
+			if e.Tier != 2 {
 				t.Errorf("Filter(tier=2): unexpected tier %d for %s", e.Tier, e.Shortname)
+			}
+		}
+	})
+
+	// An entry with no declared tier is merge-queue-only: the merge queue runs the
+	// unfiltered matrix, so it must not leak into the tier-1 PR gate.
+	t.Run("untiered entry matches no tier filter", func(t *testing.T) {
+		for _, tier := range []int{1, 2} {
+			got := Filter(tieredEntries, FilterOptions{Tier: tier})
+			for _, e := range got {
+				if e.Shortname == "notier" {
+					t.Errorf("Filter(tier=%d): untiered entry %q must not match a tier filter", tier, e.Shortname)
+				}
 			}
 		}
 	})
