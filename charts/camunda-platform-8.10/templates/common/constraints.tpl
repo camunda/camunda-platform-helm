@@ -30,7 +30,15 @@ Chart 15.x (Camunda 8.10) requires Helm v4 or later.
   "newName" "global.identity.auth.camundaHub.*"
 ) }}
 
-{{- $identityEnabled := (or (eq (include "camundaPlatform.identityEnabled" .) "true") .Values.global.identity.service.url) }}
+{{/*
+Must be a real boolean, not a truthy value: the Multi-Tenancy guard below
+tests it via $identityAuthEnabled with `has false`, which never matches a
+non-empty string such as global.identity.service.url.
+*/}}
+{{- $identityEnabled := false }}
+{{- if or (eq (include "camundaPlatform.identityEnabled" .) "true") (not (empty .Values.global.identity.service.url)) }}
+  {{- $identityEnabled = true }}
+{{- end }}
 
 {{- $topologyMode := include "camundaPlatform.topologyMode" . }}
 {{- $topology := .Values.global.topology | default dict }}
@@ -332,7 +340,16 @@ Either must bind the key to a non-empty value - the key alone leaves the same mi
     {{- end }}
   {{- end }}
 {{- end }}
-{{- $identityAuthEnabled := (or $identityEnabled .Values.global.identity.auth.enabled) }}
+{{/*
+Identity counting as "auth enabled" requires BOTH Identity to be reachable
+AND global.identity.auth.enabled to be set, which is what the guard's own
+error message tells the user. Computed with `or`, it treated Identity as
+auth-enabled whenever Identity or an external Identity URL was configured.
+*/}}
+{{- $identityAuthEnabled := false }}
+{{- if and $identityEnabled .Values.global.identity.auth.enabled }}
+  {{- $identityAuthEnabled = true }}
+{{- end }}
 
 {{/*
 Fail with a message if Multi-Tenancy is enabled and its requirements are not met which are:

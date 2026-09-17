@@ -1144,3 +1144,45 @@ func TestPhysicalTenantsIgnoredWhenNotSpringImported(t *testing.T) {
 	output := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{"templates/orchestration/configmap.yaml"})
 	require.Contains(t, output, "jwk-set-uri:")
 }
+
+// TestMultiTenancyRequiresIdentityAuthEnabled pins the Multi-Tenancy guard's
+// dependence on real booleans. The orchestration fixture sets
+// global.identity.service.url, pointing at the Hub's Management Identity, while
+// global.identity.auth.enabled is false here — exactly the shape the guard's
+// error message says must be rejected. While $identityAuthEnabled was computed
+// with `or`, it evaluated to that URL string, `has false` never matched it, and
+// Multi-Tenancy rendered with auth disabled.
+func TestMultiTenancyRequiresIdentityAuthEnabled(t *testing.T) {
+	options := &helm.Options{
+		ValuesFiles: []string{filepath.Join("testdata", "orchestration.yaml")},
+		SetValues: map[string]string{
+			"global.topology.mode":              "combined",
+			"global.identity.auth.enabled":      "false",
+			"global.multitenancy.enabled":       "true",
+			"identity.externalDatabase.enabled": "true",
+		},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/orchestration/configmap.yaml"})
+	require.ErrorContains(t, err, "Multi-Tenancy feature")
+}
+
+// TestMultiTenancyAllowsIdentityAuthEnabled is the positive half of the guard:
+// with Identity enabled, auth enabled and an external database configured, the
+// same values must render. Without it, tightening `or` to `and` could pass the
+// test above by rejecting every Multi-Tenancy configuration.
+func TestMultiTenancyAllowsIdentityAuthEnabled(t *testing.T) {
+	options := &helm.Options{
+		ValuesFiles: []string{filepath.Join("testdata", "orchestration.yaml")},
+		SetValues: map[string]string{
+			"global.topology.mode":              "combined",
+			"global.identity.auth.enabled":      "true",
+			"global.multitenancy.enabled":       "true",
+			"identity.enabled":                  "true",
+			"identity.externalDatabase.enabled": "true",
+		},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/orchestration/configmap.yaml"})
+	require.NoError(t, err)
+}
