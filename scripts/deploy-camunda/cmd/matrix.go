@@ -1282,6 +1282,9 @@ func extractHelmSetValue(pairs []string, key string) string {
 	return value
 }
 
+// prepareScenarioFn indirects deploy.PrepareScenario so a test can substitute a per-release stub.
+var prepareScenarioFn = deploy.PrepareScenario
+
 // preparedTopologyRelease pairs a topology release with the flags and prepared scenario built for
 // it, so the deploy loop and the topology-level post-deploy hook can both address it.
 type preparedTopologyRelease struct {
@@ -1452,7 +1455,8 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 			cleanup()
 			return fmt.Errorf("topology release %s/%s (namespace-suffix %q): register post-deploy hook: %w", entry.Scenario, rel.Role, rel.NamespaceSuffix, err)
 		}
-		prepared, prepareErr := deploy.PrepareScenario(ctx, releaseCtx, flags)
+		releaseCtx.IngressHost = flags.ResolveIngressHostname()
+		prepared, prepareErr := prepareScenarioFn(ctx, releaseCtx, flags)
 		if prepareErr != nil {
 			cleanup()
 			return fmt.Errorf("topology release %s/%s (namespace-suffix %q) prepare failed: %w", entry.Scenario, rel.Role, rel.NamespaceSuffix, prepareErr)

@@ -16,6 +16,7 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -1223,6 +1224,97 @@ func TestTopologyChartPaths(t *testing.T) {
 			got := topologyChartPaths(tt.releases)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("topologyChartPaths() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+// TestTopologyReleaseContextsPopulateIngressHost pins down that every release
+// in a multi-namespace topology is handed to deploy.PrepareScenario with a
+// ScenarioContext whose IngressHost is the host that release's OWN resolved
+// flags produce. deploy/values.go buildScenarioEnv only emits
+// CAMUNDA_HOSTNAME when ScenarioContext.IngressHost is non-empty, so an empty
+// one silently strips the hostname from every topology release.
+//
+// The body drives the REAL runTopologyEntry and observes the seam it prepares
+// each release through (prepareScenarioFn), so the assertion sees exactly the
+// (ScenarioContext, RuntimeFlags) pair production hands deploy.PrepareScenario.
+// The stub fails every release, which aborts the driver before any helm or
+// cluster call.
+//
+// Both host modes are covered: per-release namespace-derived hosts, and the
+// explicit shared-host override CI passes as --extra-helm-set global.host=.
+func TestTopologyReleaseContextsPopulateIngressHost(t *testing.T) {
+	releases := testTopologyReleases()
+	baseEntry := matrix.Entry{
+		Version:   "8.10",
+		ChartPath: "charts/camunda-platform-8.10",
+		Scenario:  "multinamespace",
+		Shortname: "mns",
+		Auth:      "keycloak",
+		Flow:      "install",
+		Topology:  &matrix.Topology{Name: "multinamespace", Releases: releases},
+	}
+
+	cases := []struct {
+		name string
+		opts matrix.RunOptions
+	}{
+		{
+			name: "per-release namespace-derived hosts",
+			opts: matrix.RunOptions{
+				RepoRoot:           "/repo",
+				NamespacePrefix:    "matrix",
+				IngressBaseDomains: map[string]string{"gke": "ci.distro.ultrawombat.com"},
+				IngressBaseDomain:  "ci.distro.ultrawombat.com",
+			},
+		},
+		{
+			name: "explicit shared global.host override",
+			opts: matrix.RunOptions{
+				RepoRoot:        "/repo",
+				NamespacePrefix: "matrix",
+				ExtraHelmSets:   []string{"global.host=abc123-mns.ci.distro.ultrawombat.com"},
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			errStubPrepare := errors.New("prepare stubbed out: this test never deploys")
+
+			type preparedRelease struct {
+				namespace   string
+				ingressHost string
+				wantHost    string
+			}
+			var recorded []preparedRelease
+
+			original := prepareScenarioFn
+			t.Cleanup(func() { prepareScenarioFn = original })
+			prepareScenarioFn = func(_ context.Context, scenarioCtx *deploy.ScenarioContext, flags *config.RuntimeFlags) (*deploy.PreparedScenario, error) {
+				recorded = append(recorded, preparedRelease{
+					namespace:   scenarioCtx.Namespace,
+					ingressHost: scenarioCtx.IngressHost,
+					wantHost:    flags.ResolveIngressHostname(),
+				})
+				return nil, errStubPrepare
+			}
+
+			// Every release fails to prepare, so the returned error is the stub's own
+			// and carries no signal. The recorded pairs are the subject.
+			_ = runTopologyEntry(context.Background(), baseEntry, tc.opts)
+
+			if len(recorded) == 0 {
+				t.Fatal("prepareScenarioFn was never called — runTopologyEntry aborted before preparing any release, so the invariant was never exercised")
+			}
+			for _, rec := range recorded {
+				if rec.wantHost == "" {
+					t.Fatalf("release %q: flags.ResolveIngressHostname() is empty — the fixture does not exercise a real host", rec.namespace)
+				}
+				if rec.ingressHost != rec.wantHost {
+					t.Errorf("release %q: ScenarioContext.IngressHost = %q, want %q — buildScenarioEnv only emits CAMUNDA_HOSTNAME when this is non-empty", rec.namespace, rec.ingressHost, rec.wantHost)
+				}
 			}
 		})
 	}
