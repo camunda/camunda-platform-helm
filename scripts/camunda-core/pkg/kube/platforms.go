@@ -21,7 +21,9 @@ import (
 	"scripts/camunda-core/pkg/logging"
 	"time"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 type PlatformSecretsProvider interface {
@@ -156,6 +158,10 @@ func applyExternalSecretsOther(ctx context.Context, client *Client, repoRoot, ch
 func applySecretsForEKS(ctx context.Context, client *Client, repoRoot, chartPath, namespace, externalSecretsStore string) error {
 	stub := filepath.Join(repoRoot, ".github", "config", "replicate-from", "replicate-from-eks-tls.yaml")
 
+	if err := deleteExternalSecretsTargeting(ctx, client, namespace, secretNameTLS); err != nil {
+		return err
+	}
+
 	if err := applyManifestIfExists(ctx, client, namespace, stub, "EKS TLS replicate-from stub"); err != nil {
 		return fmt.Errorf("apply EKS TLS replicate-from stub: %w", err)
 	}
@@ -210,6 +216,37 @@ func waitForReplicatedSecret(ctx context.Context, client *Client, namespace, sec
 	}
 
 	return fmt.Errorf("secret %q in namespace %q was not populated by the replicator", secretName, namespace)
+}
+
+// A namespace carried over from before the move to replication still holds the ExternalSecret
+// that reconciled the Vault snapshot into the same Secret. Left in place it would overwrite the
+// replicated certificate, or race the replicator for it.
+func deleteExternalSecretsTargeting(ctx context.Context, client *Client, namespace, targetSecret string) error {
+	list, err := client.dynamicClient.Resource(externalSecretGVR).Namespace(namespace).List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return fmt.Errorf("list ExternalSecrets in %q: %w", namespace, err)
+	}
+
+	for _, item := range list.Items {
+		name, found, err := unstructured.NestedString(item.Object, "spec", "target", "name")
+		if err != nil || !found || name != targetSecret {
+			continue
+		}
+
+		logging.Logger.Debug().
+			Str("namespace", namespace).
+			Str("externalSecret", item.GetName()).
+			Str("target", targetSecret).
+			Msg("removing stale ExternalSecret so it cannot overwrite the replicated secret")
+
+		err = client.dynamicClient.Resource(externalSecretGVR).Namespace(namespace).
+			Delete(ctx, item.GetName(), metav1.DeleteOptions{})
+		if err != nil && !apierrors.IsNotFound(err) {
+			return fmt.Errorf("delete stale ExternalSecret %q in %q: %w", item.GetName(), namespace, err)
+		}
+	}
+
+	return nil
 }
 
 func emptyKeys(data map[string][]byte, keys []string) []string {

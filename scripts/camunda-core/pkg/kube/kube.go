@@ -1018,13 +1018,13 @@ func checkIfExternalSecretsCRDExists(ctx context.Context, client *Client) (bool,
 	return hasCRD, nil
 }
 
-func waitExternalSecretsReady(ctx context.Context, client *Client, namespace string, timeout time.Duration) error {
-	externalSecretGVR := schema.GroupVersionResource{
-		Group:    "external-secrets.io",
-		Version:  "v1",
-		Resource: "externalsecrets",
-	}
+var externalSecretGVR = schema.GroupVersionResource{
+	Group:    "external-secrets.io",
+	Version:  "v1",
+	Resource: "externalsecrets",
+}
 
+func waitExternalSecretsReady(ctx context.Context, client *Client, namespace string, timeout time.Duration) error {
 	list, err := client.dynamicClient.Resource(externalSecretGVR).Namespace(namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to list ExternalSecrets: %w", err)
