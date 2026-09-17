@@ -42,6 +42,8 @@ global:
               existingSecretKey: identity-orchestration-client-token
           optimize:
             enabled: true
+            namespace: "${OPTA_NAMESPACE}"
+            host: "${HUB_HOST}"
             clientId: optimize-orcha
             audience: optimize-orcha-api
             redirectUrl: "https://${HUB_HOST}${OPTA_OPTIMIZE_CONTEXT_PATH}"
@@ -75,6 +77,8 @@ global:
               existingSecretKey: identity-orchestration-client-token
           optimize:
             enabled: true
+            namespace: "${OPTB_NAMESPACE}"
+            host: "${HUB_HOST}"
             clientId: optimize-orchb
             audience: optimize-orchb-api
             redirectUrl: "https://${HUB_HOST}${OPTB_OPTIMIZE_CONTEXT_PATH}"

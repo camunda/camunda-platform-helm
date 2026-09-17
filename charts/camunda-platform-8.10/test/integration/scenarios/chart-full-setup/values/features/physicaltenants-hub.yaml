@@ -37,6 +37,8 @@ global:
               existingSecretKey: identity-orchestration-client-token
           optimize:
             enabled: true
+            namespace: "${OPTDEFAULT_NAMESPACE}"
+            host: "${HUB_HOST}"
             clientId: optimize-orcha-default
             audience: optimize-orcha-default-api
             redirectUrl: "https://${HUB_HOST}${OPTDEFAULT_OPTIMIZE_CONTEXT_PATH}"
@@ -52,6 +54,8 @@ global:
               existingSecretKey: identity-connectors-client-token
         physicalTenants:
           - id: tenanta
+            contextPaths:
+              optimize: "${OPTTA_OPTIMIZE_CONTEXT_PATH}"
             components:
               optimize:
                 enabled: true
@@ -63,6 +67,8 @@ global:
                   existingSecret: integration-test-credentials
                   existingSecretKey: identity-optimize-tenanta-client-token
           - id: tenantb
+            contextPaths:
+              optimize: "${OPTTB_OPTIMIZE_CONTEXT_PATH}"
             components:
               optimize:
                 enabled: true

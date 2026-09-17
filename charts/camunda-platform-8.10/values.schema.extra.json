@@ -1618,6 +1618,9 @@
                 "roleName": {"type": "string"},
                 "secret": {"$ref": "#/$defs/topologySecret"},
                 "serviceName": {"type": "string"},
+                "namespace": {"type": "string"},
+                "releaseName": {"type": "string"},
+                "host": {"type": "string"},
                 "webappUrl": {"type": "string", "pattern": "^$|^https?://[^\\s]+$"},
                 "readinessUrl": {"type": "string", "pattern": "^$|^https?://[^\\s]+$"}
             }
@@ -1681,6 +1684,13 @@
             "required": ["id", "components"],
             "properties": {
                 "id": {"type": "string", "pattern": "^[a-z0-9]{1,64}$"},
+                "contextPaths": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                        "optimize": {"type": "string", "pattern": "^$|^/"}
+                    }
+                },
                 "components": {
                     "type": "object",
                     "additionalProperties": false,

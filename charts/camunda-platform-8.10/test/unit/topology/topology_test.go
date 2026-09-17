@@ -1144,3 +1144,89 @@ func TestPhysicalTenantsIgnoredWhenNotSpringImported(t *testing.T) {
 	output := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{"templates/orchestration/configmap.yaml"})
 	require.Contains(t, output, "jwk-set-uri:")
 }
+
+// An Optimize release deployed separately from its Orchestration Cluster runs under its own release
+// name, in its own namespace, behind its own host. The inventory derived all three from the cluster
+// record, so Web Modeler probed a Service that does not exist there and reported Optimize unhealthy.
+func TestHubTopologyOptimizeEndpointsFollowItsOwnRelease(t *testing.T) {
+	options := &helm.Options{
+		ValuesFiles: []string{filepath.Join("testdata", "hub-generic.yaml")},
+		SetValues: map[string]string{
+			"global.topology.clusters[0].contextPaths.optimize":           "/optimize-east",
+			"global.topology.clusters[0].components.optimize.namespace":   "camunda-east-optimize",
+			"global.topology.clusters[0].components.optimize.releaseName": "optimize",
+			"global.topology.clusters[0].components.optimize.host":        "hub.example.com",
+		},
+	}
+
+	output := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{"templates/web-modeler/configmap-restapi.yaml"})
+	// releaseName "optimize" already contains the component name, so topologyComponentFullname does
+	// not append it.
+	require.Contains(t, output, `readiness: "http://optimize.camunda-east-optimize.svc.cluster.local:80/optimize-east/api/readyz"`)
+	require.Contains(t, output, `webapp: "https://hub.example.com/optimize-east"`)
+	require.NotContains(t, output, "optimize.camunda-east.svc.cluster.local")
+}
+
+// The three locator fields are optional: a cluster that runs Optimize inside its own release must
+// keep deriving every Optimize URL from the cluster record exactly as before.
+func TestHubTopologyOptimizeEndpointsDefaultToTheClusterRecord(t *testing.T) {
+	options := &helm.Options{
+		ValuesFiles: []string{filepath.Join("testdata", "hub-generic.yaml")},
+		SetValues:   map[string]string{"global.topology.clusters[0].contextPaths.optimize": "/optimize-east"},
+	}
+
+	output := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{"templates/web-modeler/configmap-restapi.yaml"})
+	require.Contains(t, output, `readiness: "http://camunda-optimize.camunda-east.svc.cluster.local:80/optimize-east/api/readyz"`)
+	require.Contains(t, output, `webapp: "https://east.example.com/optimize-east"`)
+}
+
+// An explicit URL override still wins over the locator fields, so an operator who already pinned one
+// is not silently re-pointed by them.
+func TestHubTopologyOptimizeExplicitUrlsOutrankLocatorFields(t *testing.T) {
+	options := &helm.Options{
+		ValuesFiles: []string{filepath.Join("testdata", "hub-generic.yaml")},
+		SetValues: map[string]string{
+			"global.topology.clusters[0].components.optimize.namespace":    "camunda-east-optimize",
+			"global.topology.clusters[0].components.optimize.host":         "hub.example.com",
+			"global.topology.clusters[0].components.optimize.webappUrl":    "https://apps.example.com/optimize",
+			"global.topology.clusters[0].components.optimize.readinessUrl": "https://health.example.com/optimize",
+		},
+	}
+
+	output := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{"templates/web-modeler/configmap-restapi.yaml"})
+	require.Contains(t, output, "https://apps.example.com/optimize")
+	require.Contains(t, output, "https://health.example.com/optimize")
+	require.NotContains(t, output, "camunda-east-optimize.svc.cluster.local")
+}
+
+// Web Modeler reads the cluster inventory from its ConfigMap once at startup, so an upgrade that
+// only corrects a cluster's endpoints leaves the running pod serving the stale inventory unless the
+// Deployment carries a checksum of that ConfigMap. The golden harness strips checksum lines, so
+// this is the only guard against the annotation being dropped.
+func TestHubTopologyInventoryChangeRestartsWebModeler(t *testing.T) {
+	render := func(namespace string) string {
+		options := &helm.Options{
+			ValuesFiles: []string{filepath.Join("testdata", "hub-generic.yaml")},
+			SetValues: map[string]string{
+				"global.topology.clusters[0].components.optimize.namespace": namespace,
+			},
+		}
+		return helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{"templates/web-modeler/deployment-restapi.yaml"})
+	}
+
+	checksum := func(deployment string) string {
+		for _, line := range strings.Split(deployment, "\n") {
+			trimmed := strings.TrimSpace(line)
+			if after, ok := strings.CutPrefix(trimmed, "checksum/config:"); ok {
+				return strings.TrimSpace(after)
+			}
+		}
+		return ""
+	}
+
+	first := checksum(render("camunda-east-optimize"))
+	second := checksum(render("camunda-east-optimize-b"))
+
+	require.NotEmpty(t, first, "the restapi Deployment must annotate its ConfigMap checksum")
+	require.NotEqual(t, first, second, "changing the cluster inventory must change the checksum")
+}
