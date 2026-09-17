@@ -1,0 +1,14 @@
+---
+# Pulled from the cert-manager certificate infra-core maintains in camunda-ci-eks.
+# The local name is what the chart mounts and stays stable across domain changes;
+# only the source coordinates follow infra-core's naming.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: aws-camunda-cloud-tls
+  annotations:
+    replicator.v1.mittwald.de/replicate-from: distribution/distribution-aws-camunda-cloud-tls
+type: kubernetes.io/tls
+stringData:
+  tls.crt: ""
+  tls.key: ""
