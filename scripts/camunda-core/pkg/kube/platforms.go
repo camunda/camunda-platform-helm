@@ -167,7 +167,7 @@ func applySecretsForEKS(ctx context.Context, client *Client, repoRoot, chartPath
 		return err
 	}
 
-	if err := applyManifestIfExists(ctx, client, namespace, stub, "EKS TLS replicate-from stub"); err != nil {
+	if err := applyManifestFile(ctx, client, namespace, stub); err != nil {
 		return fmt.Errorf("apply EKS TLS replicate-from stub: %w", err)
 	}
 
@@ -196,23 +196,30 @@ const (
 // The stub is applied with empty tls.crt/tls.key, so existence is not enough: the secret is
 // only usable once the replicator has copied values in.
 func waitForReplicatedSecret(ctx context.Context, client *Client, namespace, secretName string, keys ...string) error {
-	var missing []string
+	var (
+		missing  []string
+		notFound bool
+	)
 
 	err := wait.PollUntilContextTimeout(ctx, replicatedSecretInterval, replicatedSecretTimeout, true,
 		func(ctx context.Context) (bool, error) {
 			secret, err := client.clientset.CoreV1().Secrets(namespace).Get(ctx, secretName, metav1.GetOptions{})
 			if err != nil {
 				if apierrors.IsNotFound(err) {
-					missing = keys
+					notFound = true
 					return false, nil
 				}
 				return false, err
 			}
 
+			notFound = false
 			missing = emptyKeys(secret.Data, keys)
 			return len(missing) == 0, nil
 		})
 	if err != nil {
+		if notFound {
+			return fmt.Errorf("secret %q was never created in namespace %q: %w", secretName, namespace, err)
+		}
 		return fmt.Errorf("secret %q in namespace %q was not populated by the replicator (still empty: %v): %w",
 			secretName, namespace, missing, err)
 	}
