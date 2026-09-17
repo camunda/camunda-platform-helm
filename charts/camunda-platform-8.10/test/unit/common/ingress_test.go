@@ -285,6 +285,24 @@ func (s *IngressTemplateTest) TestDifferentValuesInputs() {
 			},
 		},
 		{
+			Name:                 "TestHttpIngressNullWholeAnnotationMapRendersNoCompatAnnotations",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			ValuesFiles:          []string{"testdata/values-http-annotations-null-whole-map.yaml"},
+			Values: map[string]string{
+				"orchestration.contextPath": "/orchestration",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+
+				var ingress netv1.Ingress
+				helm.UnmarshalK8SYaml(t, output, &ingress)
+
+				for _, a := range []string{"ssl-redirect", "proxy-buffering", "proxy-buffer-size", "proxy-body-size"} {
+					s.Require().NotContains(ingress.Annotations, "nginx.ingress.kubernetes.io/"+a)
+				}
+			},
+		},
+		{
 			Name:                 "TestHttpIngressTemplatedAnnotationKeyOverridesCompatOnce",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			ValuesFiles:          []string{"testdata/values-http-annotation-templated-key.yaml"},
@@ -946,7 +964,10 @@ func (s *GrpcIngressTemplateTest) TestDifferentValuesInputs() {
 			},
 		},
 		{
-			Name:                 "TestGrpcIngressNullWholeAnnotationMapRenders",
+			// Nulling the whole map removed it during coalescing, and the pre-shim
+			// template passed that missing map to `with`, so nothing rendered. The
+			// shim must not refill a map the operator deleted.
+			Name:                 "TestGrpcIngressNullWholeAnnotationMapRendersNoCompatAnnotations",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			ValuesFiles:          []string{"testdata/values-grpc-annotations-null-whole-map.yaml"},
 			Values: map[string]string{
@@ -958,8 +979,9 @@ func (s *GrpcIngressTemplateTest) TestDifferentValuesInputs() {
 				var ingress netv1.Ingress
 				helm.UnmarshalK8SYaml(t, output, &ingress)
 
-				s.Require().Equal("GRPC", ingress.Annotations["nginx.ingress.kubernetes.io/backend-protocol"],
-					"a null map is empty, not a removal of every key, so the shim still applies")
+				for _, a := range []string{"backend-protocol", "ssl-redirect", "proxy-buffer-size"} {
+					s.Require().NotContains(ingress.Annotations, "nginx.ingress.kubernetes.io/"+a)
+				}
 			},
 		},
 		{

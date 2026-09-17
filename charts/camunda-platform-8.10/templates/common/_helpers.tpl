@@ -1325,7 +1325,9 @@ nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
 {{- end -}}
 
 {{- define "camundaPlatform.ingressAnnotations" -}}
-  {{- $user := .Values.global.ingress.annotations | default dict -}}
+  {{- $raw := .Values.global.ingress.annotations -}}
+  {{- if not (kindIs "invalid" $raw) -}}
+  {{- $user := $raw | default dict -}}
   {{- $resolved := include "camundaPlatform.resolvedUserAnnotations" (dict "annotations" $user "context" .) | fromYaml -}}
   {{- $compat := dict -}}
   {{- if .Values.global.compatibility.nginx.renderAnnotations -}}
@@ -1343,10 +1345,13 @@ nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
     {{- end -}}
   {{- end -}}
   {{- toYaml $rendered -}}
+  {{- end -}}
 {{- end -}}
 
 {{- define "camundaPlatform.grpcIngressAnnotations" -}}
-  {{- $user := .Values.orchestration.ingress.grpc.annotations | default dict -}}
+  {{- $raw := .Values.orchestration.ingress.grpc.annotations -}}
+  {{- if not (kindIs "invalid" $raw) -}}
+  {{- $user := $raw | default dict -}}
   {{- $resolved := include "camundaPlatform.resolvedUserAnnotations" (dict "annotations" $user "context" .) | fromYaml -}}
   {{- $compat := dict -}}
   {{- if .Values.global.compatibility.nginx.renderAnnotations -}}
@@ -1364,6 +1369,7 @@ nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
     {{- end -}}
   {{- end -}}
   {{- toYaml $rendered -}}
+  {{- end -}}
 {{- end -}}
 
 {{/*
@@ -1384,11 +1390,12 @@ gates, so neither can speak for the other.
           (eq (include "camundaPlatform.orchestrationHTTPIngressRendered" .) "true")
           (eq (include "camundaPlatform.connectorsHTTPIngressRendered" .) "true")
           (eq (include "camundaPlatform.optimizeHTTPIngressRendered" .) "true") -}}
-      {{- $user := .Values.global.ingress.annotations | default dict -}}
+      {{- $raw := .Values.global.ingress.annotations -}}
+      {{- $user := $raw | default dict -}}
       {{- $resolved := include "camundaPlatform.resolvedUserAnnotations" (dict "annotations" $user "context" .) | fromYaml -}}
-      {{- range $key, $value := (include "camundaPlatform.legacyNginxIngressAnnotations" . | fromYaml) -}}
+      {{- if not (kindIs "invalid" $raw) -}}{{- range $key, $value := (include "camundaPlatform.legacyNginxIngressAnnotations" . | fromYaml) -}}
         {{- if not (hasKey $resolved $key) -}}{{- $injecting = true -}}{{- end -}}
-      {{- end -}}
+      {{- end -}}{{- end -}}
     {{- end -}}
   {{- end -}}
   {{- ternary "true" "false" $injecting -}}
@@ -1397,11 +1404,12 @@ gates, so neither can speak for the other.
 {{- define "camundaPlatform.nginxCompatGRPCInjecting" -}}
   {{- $injecting := false -}}
   {{- if and .Values.global.compatibility.nginx.renderAnnotations (eq (include "camundaPlatform.grpcIngressRendered" .) "true") -}}
-    {{- $user := .Values.orchestration.ingress.grpc.annotations | default dict -}}
+    {{- $raw := .Values.orchestration.ingress.grpc.annotations -}}
+      {{- $user := $raw | default dict -}}
     {{- $resolved := include "camundaPlatform.resolvedUserAnnotations" (dict "annotations" $user "context" .) | fromYaml -}}
-    {{- range $key, $value := (include "camundaPlatform.legacyNginxGrpcIngressAnnotations" . | fromYaml) -}}
+    {{- if not (kindIs "invalid" $raw) -}}{{- range $key, $value := (include "camundaPlatform.legacyNginxGrpcIngressAnnotations" . | fromYaml) -}}
       {{- if not (hasKey $resolved $key) -}}{{- $injecting = true -}}{{- end -}}
-    {{- end -}}
+    {{- end -}}{{- end -}}
   {{- end -}}
   {{- ternary "true" "false" $injecting -}}
 {{- end -}}
