@@ -16,7 +16,9 @@ package identity
 
 import (
 	"camunda-platform/test/unit/testhelpers"
+	"fmt"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -675,14 +677,13 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 					"admin permissions should not reference the literal default optimize-api once a custom audience is set")
 			},
 		}, {
-			// Regression test for camunda/identity#5152: the cluster-ping role must always
-			// render, since Identity's bundled mapping rule that targets it is not conditional.
-			// Only the mapping rule itself stays gated behind the hub-ping opt-in.
-			Name: "TestClusterPingRoleAlwaysRendersRegardlessOfHubPing",
+			Name: "TestClusterPingRoleRendersForEnabledHubRegardlessOfHubPing",
 			Values: map[string]string{
 				"identity.enabled":                      "true",
 				"global.identity.auth.enabled":          "true",
 				"global.security.authentication.method": "oidc",
+				"camundaHub.enabled":                    "true",
+				"webModeler.restapi.mail.fromAddress":   "test@example.com",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var configmap corev1.ConfigMap
@@ -690,8 +691,7 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 
 				applicationYaml := configmap.Data["application.yaml"]
 				s.Require().Contains(applicationYaml, "Hub API - Cluster Ping",
-					"the cluster-ping role must always be provisioned, since the bundled "+
-						"identity.mapping-rules entry that targets it is not conditional")
+					"enabled Hub must include the cluster-ping role")
 				s.Require().NotContains(applicationYaml, "Hub API - Cluster Ping Access",
 					"the cluster-ping mapping rule itself should stay opt-in via "+
 						"orchestration.hub.ping / hubPingAuthorizationEnabled")
@@ -775,6 +775,160 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 				s.Require().Contains(applicationYaml, "claim-value: \"orchestration-client\"")
 			},
 		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *configMapSpringTemplateTest) TestComponentEnablementSurfaces() {
+	type registrationCase struct {
+		name               string
+		values             map[string]string
+		hubRegistered      bool
+		optimizeRegistered bool
+		topology           bool
+	}
+	scenarios := []registrationCase{
+		{
+			name:               "OptimizeAlwaysRegister",
+			values:             map[string]string{"global.identity.auth.optimize.alwaysRegister": "true"},
+			optimizeRegistered: true,
+		},
+		{
+			name:          "RemoteHubPingEndpoint",
+			values:        map[string]string{"orchestration.hub.ping.endpoint": "https://hub.example.com/api/v1/clusters"},
+			hubRegistered: true,
+		},
+		{
+			name: "RemoteHubPingAuthorization",
+			values: map[string]string{
+				"global.identity.auth.orchestration.hubPingAuthorizationEnabled": "true",
+				"global.identity.auth.orchestration.hubPingClaimName":            "azp",
+				"global.identity.auth.orchestration.hubPingClaimValue":           "remote-orchestration",
+			},
+			hubRegistered: true,
+		},
+		{
+			name:     "HubTopologySuppressesLocalOptimize",
+			values:   map[string]string{"optimize.enabled": "true"},
+			topology: true,
+		},
+		{
+			name:               "HubTopologyOptimizeAlwaysRegister",
+			values:             map[string]string{"global.identity.auth.optimize.alwaysRegister": "true"},
+			optimizeRegistered: true,
+			topology:           true,
+		},
+	}
+	for mask := 0; mask < 8; mask++ {
+		hubEnabled := mask&1 != 0
+		webModelerEnabled := mask&2 != 0
+		optimizeEnabled := mask&4 != 0
+		scenarios = append(scenarios, registrationCase{
+			name: fmt.Sprintf("Hub=%t_WebModeler=%t_Optimize=%t", hubEnabled, webModelerEnabled, optimizeEnabled),
+			values: map[string]string{
+				"camundaHub.enabled": strconv.FormatBool(hubEnabled),
+				"webModeler.enabled": strconv.FormatBool(webModelerEnabled),
+				"optimize.enabled":   strconv.FormatBool(optimizeEnabled),
+			},
+			hubRegistered:      hubEnabled || webModelerEnabled,
+			optimizeRegistered: optimizeEnabled,
+		})
+	}
+
+	testCases := []testhelpers.TestCase{}
+	for _, authType := range []string{"keycloak", "generic"} {
+		for _, scenario := range scenarios {
+			values := map[string]string{
+				"identity.enabled":                         "true",
+				"global.identity.auth.enabled":             "true",
+				"global.identity.auth.admin.enabled":       "true",
+				"global.identity.auth.admin.clientId":      "registration-admin",
+				"global.identity.auth.type":                authType,
+				"global.identity.auth.issuerBackendUrl":    "https://issuer.example.com",
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"orchestration.enabled":                    "false",
+				"connectors.enabled":                       "false",
+				"optimize.enabled":                         "false",
+				"camundaHub.enabled":                       "false",
+				"webModeler.enabled":                       "false",
+				"webModeler.restapi.mail.fromAddress":      "test@example.com",
+			}
+			for key, value := range scenario.values {
+				values[key] = value
+			}
+			var valuesFiles []string
+			if scenario.topology {
+				valuesFiles = []string{filepath.Join(s.chartPath, "test/unit/topology/testdata/hub-physical-tenants.yaml")}
+			}
+			testCases = append(testCases, testhelpers.TestCase{
+				Name:        scenario.name + "_" + authType,
+				Values:      values,
+				ValuesFiles: valuesFiles,
+				Verifier: func(t *testing.T, output string, err error) {
+					s.Require().NoError(err)
+					var configmap corev1.ConfigMap
+					helm.UnmarshalK8SYaml(t, output, &configmap)
+					var config IdentityConfigYAML
+					s.Require().NoError(yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &config))
+					s.Require().NotEmpty(config.Identity.ComponentPresets["identity"].Apis)
+
+					granted := map[string]bool{}
+					if authType == "keycloak" {
+						s.Require().NotNil(config.Keycloak)
+						s.Require().Len(config.Keycloak.Clients, 1)
+						s.Require().Equal("registration-admin", config.Keycloak.Clients[0].Id)
+						for _, permission := range config.Keycloak.Clients[0].Permissions {
+							granted[permission.ResourceServerId] = true
+						}
+						s.Require().True(granted["camunda-identity-resource-server"])
+					} else {
+						s.Require().Nil(config.Keycloak)
+					}
+
+					for _, component := range []struct {
+						presetKey  string
+						api        string
+						registered bool
+					}{
+						{"webmodeler", "web-modeler-api", scenario.hubRegistered},
+						{"optimize", "optimize-api", scenario.optimizeRegistered},
+					} {
+						preset, present := config.Identity.ComponentPresets[component.presetKey]
+						s.Require().True(present, "%s preset must override Identity's defaults", component.presetKey)
+						for field, entries := range map[string][]map[string]any{
+							"applications": preset.Applications,
+							"apis":         preset.Apis,
+							"roles":        preset.Roles,
+						} {
+							s.Require().NotNil(entries, "%s.%s must be an explicit list", component.presetKey, field)
+							if component.registered {
+								s.Require().NotEmpty(entries, "%s.%s", component.presetKey, field)
+							} else {
+								s.Require().Empty(entries, "%s.%s", component.presetKey, field)
+							}
+						}
+						if config.Keycloak != nil {
+							_, initialized := config.Keycloak.Init[component.presetKey]
+							s.Require().Equal(component.registered, initialized, "keycloak.init.%s", component.presetKey)
+							s.Require().Equal(component.registered, granted[component.api], "%s admin grant", component.api)
+						}
+					}
+					if scenario.topology {
+						var audiences []any
+						for _, api := range config.Identity.ComponentPresets["topology-east"].Apis {
+							audiences = append(audiences, api["audience"])
+						}
+						s.Require().Contains(audiences, "optimize-east-api")
+						s.Require().Contains(audiences, "optimize-east-ta-api")
+						s.Require().Contains(audiences, "optimize-east-tb-api")
+						if config.Keycloak != nil {
+							s.Require().Contains(config.Keycloak.Init, "topology-east")
+						}
+					}
+				},
+			})
+		}
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
