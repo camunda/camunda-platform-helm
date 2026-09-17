@@ -18,7 +18,14 @@ set -euo pipefail
 NAMESPACE="${TEST_NAMESPACE:?TEST_NAMESPACE must be set}"
 RELEASE="${RELEASE_NAME:-integration}"
 RESOLVE_USER="${SECRET_STORE_RESOLVE_USER:-demo}"
+
+# The lifecycle runner invokes hooks under `bash -x`, which traces the expansion below
+# into the job log. Drop xtrace across the credential read and restore the caller's state.
+xtrace_was_on=0
+case $- in *x*) xtrace_was_on=1 ;; esac
+{ set +x; } 2>/dev/null
 RESOLVE_PASSWORD="${SECRET_STORE_RESOLVE_PASSWORD:-demo}"
+if (( xtrace_was_on )); then set -x; fi
 
 # Owned by camunda/team-distribution:
 # infrastructure/gcp/camunda-distribution/gke-distro-ci/secret-store/README.md
@@ -44,24 +51,37 @@ for tool in gcloud jq curl; do
 done
 
 # The fixture carries no standing accessor binding, so the grant below is the only
-# thing that lets this run read it. Revoked on exit so a failed run leaks nothing.
+# thing that lets this run read it. The expiry condition bounds the binding on the
+# kill paths that never reach the trap, and must be byte-identical on add and remove
+# or gcloud matches no binding.
+GRANT_EXPIRY="$(date -u -d '+2 hours' +%Y-%m-%dT%H:%M:%SZ 2>/dev/null \
+  || date -u -v+2H +%Y-%m-%dT%H:%M:%SZ)"
+GRANT_CONDITION="expression=request.time < timestamp(\"${GRANT_EXPIRY}\"),title=ci-secretstore-run"
+
 # shellcheck disable=SC2329 # invoked indirectly via trap
 revoke_binding() {
   gcloud secrets remove-iam-policy-binding "${SECRET_ID}" \
     --project "${GCP_PROJECT}" \
     --role roles/secretmanager.secretAccessor \
     --member "${PRINCIPAL}" \
+    --condition "${GRANT_CONDITION}" \
     --quiet >/dev/null 2>&1 || \
-    echo "WARNING: could not revoke ${PRINCIPAL} from ${SECRET_ID}; check the fixture IAM policy." >&2
+    echo "WARNING: removed no accessor binding for ${PRINCIPAL} on ${SECRET_ID}; any binding created by this run expires at ${GRANT_EXPIRY}." >&2
 }
 
-echo "Granting roles/secretmanager.secretAccessor on ${SECRET_ID} to the per-run principal."
+# Installed before the grant so a signal arriving mid-gcloud still revokes. INT and
+# TERM exit instead of resuming, which is what lets the EXIT trap run on cancellation.
+trap revoke_binding EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+
+echo "Granting roles/secretmanager.secretAccessor on ${SECRET_ID} to the per-run principal until ${GRANT_EXPIRY}."
 gcloud secrets add-iam-policy-binding "${SECRET_ID}" \
   --project "${GCP_PROJECT}" \
   --role roles/secretmanager.secretAccessor \
   --member "${PRINCIPAL}" \
+  --condition "${GRANT_CONDITION}" \
   --quiet >/dev/null
-trap revoke_binding EXIT
 
 # The chart must reach GCP as the workload principal granted above. A ServiceAccount
 # annotation or a mounted key would mean the value resolved through some other identity
@@ -108,8 +128,9 @@ for attempt in {1..60}; do
   }
 
   # --max-time bounds a gateway that accepts the connection and never answers; without it
-  # the retry budget does not hold because curl never returns.
-  response="$(curl --silent --show-error --max-time 10 \
+  # the retry budget does not hold because curl never returns. The subshell drops xtrace
+  # so the lifecycle runner's `bash -x` cannot trace --user into the job log.
+  response="$( { set +x; } 2>/dev/null; curl --silent --show-error --max-time 10 \
     --user "${RESOLVE_USER}:${RESOLVE_PASSWORD}" \
     --header 'Content-Type: application/json' \
     --data "{\"references\":[\"camunda.secrets.${SECRET_ID}\"]}" \
