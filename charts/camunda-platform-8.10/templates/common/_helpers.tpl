@@ -1294,7 +1294,8 @@ on, for keys the user has not set. A null value drops its key; a null map is
 rendered as no annotations at all. Entries are emitted already evaluated.
 */}}
 {{/*
-[camunda-platform] A user annotation map with its keys and values evaluated.
+[camunda-platform] A user annotation map evaluated for key comparison only.
+The rendered map keeps the unevaluated entries, which the callers evaluate.
 */}}
 {{- define "camundaPlatform.resolvedUserAnnotations" -}}
   {{- $user := .annotations | default dict -}}
@@ -1333,7 +1334,7 @@ nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
       {{- $_ := set $rendered $key $value -}}
     {{- end -}}
   {{- end -}}
-  {{- range $key, $value := $resolved -}}
+  {{- range $key, $value := $user -}}
     {{- if not (kindIs "invalid" $value) -}}
       {{- $_ := set $rendered $key $value -}}
     {{- end -}}
@@ -1357,7 +1358,7 @@ nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
       {{- $_ := set $rendered $key $value -}}
     {{- end -}}
   {{- end -}}
-  {{- range $key, $value := $resolved -}}
+  {{- range $key, $value := $user -}}
     {{- if not (kindIs "invalid" $value) -}}
       {{- $_ := set $rendered $key $value -}}
     {{- end -}}

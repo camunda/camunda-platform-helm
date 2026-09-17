@@ -301,6 +301,22 @@ func (s *IngressTemplateTest) TestDifferentValuesInputs() {
 			},
 		},
 		{
+			Name:                 "TestHttpIngressEvaluatesAnnotationTemplatesOnce",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			ValuesFiles:          []string{"testdata/values-http-annotation-nested-template.yaml"},
+			Values: map[string]string{
+				"orchestration.contextPath": "/orchestration",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+
+				var ingress netv1.Ingress
+				helm.UnmarshalK8SYaml(t, output, &ingress)
+
+				s.Require().Equal("{{ .Release.Name }}", ingress.Annotations["example.com/nested"])
+			},
+		},
+		{
 			Name:                 "TestHttpIngressTemplatedAnnotationKeyOverridesCompatOnce",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			ValuesFiles:          []string{"testdata/values-http-annotation-templated-key.yaml"},
