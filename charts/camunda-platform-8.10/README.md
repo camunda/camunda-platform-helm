@@ -75,15 +75,11 @@ See [Camunda 8 reference architectures](https://docs.camunda.io/docs/next/self-m
 
 ## Dependencies
 
-
 The Camunda 8 Helm chart internalizes all Camunda components within a single chart. The Orchestration cluster—combining Zeebe, Operate, and Tasklist—is managed directly by the main chart and is not implemented as sub-charts. Other components such as Optimize, Identity, Connectors, and Web Modeler are also internalized.
 
-Three third-party dependencies—Keycloak, PostgreSQL, and Elasticsearch—are managed as sub-charts or vendored charts. These are included for convenience and can be enabled or disabled as needed.
+The chart's only Helm dependency is `common`, a library chart that provides shared template helpers and does not deploy workloads.
 
-**Key points:**
-- All Camunda components, including the Orchestration cluster, are internalized and not listed as sub-charts.
-- Keycloak, PostgreSQL, and Elasticsearch are provided as sub-charts or vendored charts.
-- Values for these dependencies can be set directly in the main values file, using their respective keys (e.g., `identityKeycloak`, `identityPostgresql`, `elasticsearch`).
+From 8.10, third-party infrastructure such as Keycloak or another OIDC provider, PostgreSQL, and Elasticsearch or OpenSearch must be provisioned externally. Configure the backing services required by the Camunda components you enable. See the [migration from Bitnami guide](https://docs.camunda.io/docs/self-managed/deployment/helm/operational-tasks/migration-from-bitnami/) for details.
 
 ## Versioning
 
