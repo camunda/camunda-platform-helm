@@ -76,6 +76,17 @@ func (f *ImagePullFailure) Error() string {
 	)
 }
 
+// streakKey identifies the failure across polls so repeat observations of the
+// same unresolvable image can be counted.
+func (f *ImagePullFailure) streakKey() string {
+	return f.Pod + "/" + f.Container + "/" + f.Image
+}
+
+// abortReason replaces the generic Helm failure reason.
+func (f *ImagePullFailure) abortReason() string {
+	return "helm upgrade --install aborted early: unresolvable container image"
+}
+
 // terminalPullReasons are the kubelet waiting reasons that *may* denote an
 // unresolvable image. They are necessary but not sufficient — kubelet also uses
 // them for registry throttling and for auth failures — so a message match is
@@ -140,20 +151,20 @@ func imagePullGuardEnabled() bool {
 	}
 }
 
-// imagePullGuard aborts an in-flight Helm wait when a pod hits a terminal image
-// pull failure.
+// imagePullGuard aborts an in-flight Helm wait when a pod reaches a terminal
+// state that the wait can never recover from.
 type imagePullGuard struct {
 	cancel context.CancelFunc
 	done   chan struct{}
 
 	mu      sync.Mutex
-	failure *ImagePullFailure
+	failure terminalPodFailure
 }
 
 // startImagePullGuard derives a cancellable context for the Helm run and starts
 // watching pods in the release namespace. The returned context is cancelled once
-// a terminal image pull failure is confirmed, which kills the helm child process.
-// The parent context is left untouched.
+// a terminal pod failure is confirmed, which kills the helm child process. The
+// parent context is left untouched.
 func startImagePullGuard(ctx context.Context, o types.Options) (context.Context, *imagePullGuard) {
 	guardCtx, cancel := context.WithCancel(ctx)
 	g := &imagePullGuard{cancel: cancel, done: make(chan struct{})}
@@ -183,11 +194,9 @@ func startImagePullGuard(ctx context.Context, o types.Options) (context.Context,
 		g.mu.Unlock()
 
 		logging.Logger.Error().
-			Str("pod", failure.Pod).
-			Str("container", failure.Container).
-			Str("image", failure.Image).
-			Str("reason", failure.Reason).
-			Msg("Aborting the Helm wait: image cannot be pulled")
+			Err(failure).
+			Str("reason", failure.abortReason()).
+			Msg("Aborting the Helm wait: a pod reached a terminal state")
 		cancel()
 	}()
 
@@ -205,7 +214,7 @@ func noopImagePullGuard() *imagePullGuard {
 // Stop shuts the guard down and reports the terminal failure it observed, if
 // any. Idempotent and safe to call concurrently: cancel tolerates repeat calls,
 // and the unconditional receive on done orders every caller after the watcher.
-func (g *imagePullGuard) Stop() *ImagePullFailure {
+func (g *imagePullGuard) Stop() terminalPodFailure {
 	g.cancel()
 	<-g.done
 
@@ -225,7 +234,7 @@ type imagePullWatchDeps struct {
 // watchTerminalImagePull polls until the same terminal failure has been observed
 // threshold times in a row, or the context ends. A failed list neither confirms
 // nor clears a failure, so it resets the streak.
-func watchTerminalImagePull(ctx context.Context, deps imagePullWatchDeps, namespace string) *ImagePullFailure {
+func watchTerminalImagePull(ctx context.Context, deps imagePullWatchDeps, namespace string) terminalPodFailure {
 	if namespace == "" {
 		return nil
 	}
@@ -254,7 +263,7 @@ func watchTerminalImagePull(ctx context.Context, deps imagePullWatchDeps, namesp
 			continue
 		}
 
-		key := failure.Pod + "/" + failure.Container + "/" + failure.Image
+		key := failure.streakKey()
 		if key != lastKey {
 			lastKey, streak = key, 0
 		}
@@ -263,22 +272,6 @@ func watchTerminalImagePull(ctx context.Context, deps imagePullWatchDeps, namesp
 			return failure
 		}
 	}
-}
-
-// firstTerminalFailure returns the terminal failure of the alphabetically first
-// affected pod, keeping the streak key stable across polls.
-func firstTerminalFailure(pods *corev1.PodList) *ImagePullFailure {
-	var chosen *ImagePullFailure
-	for i := range pods.Items {
-		failure, ok := terminalImagePullFailure(&pods.Items[i])
-		if !ok {
-			continue
-		}
-		if chosen == nil || failure.Pod < chosen.Pod {
-			chosen = failure
-		}
-	}
-	return chosen
 }
 
 // sleepCtx waits for d, or returns early if the context ends.
