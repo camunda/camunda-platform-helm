@@ -123,6 +123,16 @@ runs:
         else
           echo "🔧 Running in EKS mode — replicated certificate plus vault-backed credentials"
 
+          # A namespace carried over from before this change still holds the ExternalSecret that
+          # reconciled the Vault snapshot into the same Secret. Left in place it would overwrite
+          # the replicated certificate, or race the replicator for it.
+          stale_tls_es="$(kubectl get externalsecret -n "$TEST_NAMESPACE" -o json 2>/dev/null | \
+            jq -r '.items[] | select(.spec.target.name == "aws-camunda-cloud-tls") | .metadata.name')"
+          if [[ -n "$stale_tls_es" ]]; then
+            echo "🧹 Removing stale ExternalSecrets targeting aws-camunda-cloud-tls: $(tr '\n' ' ' <<< "$stale_tls_es")"
+            echo "$stale_tls_es" | xargs kubectl delete externalsecret -n "$TEST_NAMESPACE" --ignore-not-found
+          fi
+
           # The TLS certificate is replicated from the cert-manager one infra-core maintains,
           # rather than read from a Vault snapshot that nothing refreshed.
           apply_external_secret_with_retry \
