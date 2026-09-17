@@ -352,7 +352,6 @@ func generateTopologyContexts(scenario string, releases []TopologyRelease, flags
 	}
 
 	baseNamespace := flags.EffectiveNamespace()
-	resolvedHost := flags.ResolveIngressHostname()
 	normalizedScenario := normalizeIdentifierPart(scenario)
 
 	contexts := make([]*ScenarioContext, 0, len(releases))
@@ -362,19 +361,12 @@ func generateTopologyContexts(scenario string, releases []TopologyRelease, flags
 			return nil, fmt.Errorf("generateTopologyContexts: scenario %q: %w", scenario, err)
 		}
 		suffix := namespaceDerivedSuffix(namespace)
-
-		ingressHost := ""
-		if resolvedHost != "" {
-			ingressHost = fmt.Sprintf("%s-%s", rel.NamespaceSuffix, resolvedHost)
-		}
-
 		realmName := generateCompactRealmName(normalizeIdentifierPart(namespace), normalizedScenario, suffix)
 
 		contexts = append(contexts, &ScenarioContext{
 			ScenarioName:             scenario,
 			Namespace:                namespace,
 			Release:                  "integration",
-			IngressHost:              ingressHost,
 			KeycloakRealm:            realmName,
 			OptimizeIndexPrefix:      fmt.Sprintf("opt-%s-%s", normalizedScenario, suffix),
 			OrchestrationIndexPrefix: orchestrationPrefix(normalizedScenario, suffix),
