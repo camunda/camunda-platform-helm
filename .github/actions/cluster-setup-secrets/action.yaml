@@ -133,6 +133,8 @@ runs:
             echo "$stale_tls_es" | xargs kubectl delete externalsecret -n "$TEST_NAMESPACE" --ignore-not-found
           fi
 
+          kubectl delete secret aws-camunda-cloud-tls -n "$TEST_NAMESPACE" --ignore-not-found
+
           # The TLS certificate is replicated from the cert-manager one infra-core maintains,
           # rather than read from a Vault snapshot that nothing refreshed.
           apply_external_secret_with_retry \
