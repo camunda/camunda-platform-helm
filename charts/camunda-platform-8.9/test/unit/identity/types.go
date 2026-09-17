@@ -16,14 +16,16 @@ package identity
 
 type IdentityConfigYAML struct {
 	Identity IdentityYAML `yaml:"identity"`
+	Keycloak KeycloakYAML `yaml:"keycloak"`
 	Server   ServerYAML   `yaml:"server"`
 	Spring   SpringYAML   `yaml:"spring"`
 }
 
 type IdentityYAML struct {
-	Url          string           `yaml:"url"`
-	Flags        FlagsYAML        `yaml:"flags"`
-	AuthProvider AuthProviderYAML `yaml:"authProvider"`
+	Url              string                         `yaml:"url"`
+	Flags            FlagsYAML                      `yaml:"flags"`
+	AuthProvider     AuthProviderYAML               `yaml:"authProvider"`
+	ComponentPresets map[string]ComponentPresetYAML `yaml:"component-presets"`
 }
 
 type AuthProviderYAML struct {
@@ -49,4 +51,25 @@ type SpringYAML struct {
 type DataSourceYAML struct {
 	Url      string `yaml:"url"`
 	Username string `yaml:"username"`
+}
+
+type ComponentPresetYAML struct {
+	Applications []map[string]any `yaml:"applications"`
+	Apis         []map[string]any `yaml:"apis"`
+	Roles        []map[string]any `yaml:"roles"`
+}
+
+type KeycloakPermissionYAML struct {
+	ResourceServerId string `yaml:"resourceServerId"`
+	Definition       string `yaml:"definition"`
+}
+
+type KeycloakClientYAML struct {
+	Id          string                   `yaml:"id"`
+	Permissions []KeycloakPermissionYAML `yaml:"permissions"`
+}
+
+type KeycloakYAML struct {
+	Init    map[string]any       `yaml:"init"`
+	Clients []KeycloakClientYAML `yaml:"clients"`
 }

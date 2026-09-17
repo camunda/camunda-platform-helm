@@ -1557,12 +1557,6 @@ The following values inside your values.yaml need to be set but were not:
       "condition" (ne (.Values.orchestration.ioThreadCount | toString) "3")
       "oldName" "orchestration.ioThreadCount" "migration" $orchestrationExtra) }}
     {{ include "camundaPlatform.keyDeprecated" (dict
-      "condition" (ne (.Values.orchestration.partitionCount | toString) "3")
-      "oldName" "orchestration.partitionCount" "migration" $orchestrationExtra) }}
-    {{ include "camundaPlatform.keyDeprecated" (dict
-      "condition" (ne (.Values.orchestration.replicationFactor | toString) "3")
-      "oldName" "orchestration.replicationFactor" "migration" $orchestrationExtra) }}
-    {{ include "camundaPlatform.keyDeprecated" (dict
       "condition" (ne (.Values.orchestration.history.delayBetweenRuns | toString) "2000")
       "oldName" "orchestration.history.delayBetweenRuns" "migration" $orchestrationExtra) }}
     {{ include "camundaPlatform.keyDeprecated" (dict

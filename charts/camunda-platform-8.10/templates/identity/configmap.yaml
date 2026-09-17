@@ -1,4 +1,5 @@
 {{- if eq (include "camundaPlatform.identityEnabled" .) "true" }}
+{{- $registerHub := or (eq (include "camundaHub.webModelerEnabled" .) "true") .Values.global.identity.auth.orchestration.hubPingAuthorizationEnabled (not (empty .Values.orchestration.hub.ping.endpoint)) }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -257,8 +258,8 @@ data:
                   definition: read
                 - audience: {{ include "identity.authAudience" . | quote }}
                   definition: write
-        {{- if or .Values.global.identity.auth.optimize.alwaysRegister (and (ne (include "camundaPlatform.topologyMode" .) "hub") .Values.optimize.enabled) }}
         optimize:
+          {{- if or .Values.global.identity.auth.optimize.alwaysRegister (and (ne (include "camundaPlatform.topologyMode" .) "hub") .Values.optimize.enabled) }}
           applications:
             - name: Optimize
               id: ${CAMUNDA_OPTIMIZE_CLIENT_ID:${VALUES_KEYCLOAK_INIT_OPTIMIZE_CLIENT_ID:optimize}}
@@ -287,7 +288,11 @@ data:
               permissions:
                 - audience: {{ include "camundaPlatform.authAudienceOptimize" . | quote }}
                   definition: write:*
-        {{- end }}
+          {{- else }}
+          applications: []
+          apis: []
+          roles: []
+          {{- end }}
         {{- if or .Values.global.identity.auth.orchestration.alwaysRegister (and (ne (include "camundaPlatform.topologyMode" .) "hub") (or .Values.global.identity.auth.orchestration.hubPingAuthorizationEnabled (eq (include "orchestration.authMethod" .) "oidc"))) }}
         orchestration:
           applications:
@@ -326,6 +331,7 @@ data:
                   definition: write:*
         {{- end }}
         webmodeler:
+          {{- if $registerHub }}
           applications:
             - name: "Hub"
               id: ${CAMUNDA_WEBMODELER_CLIENT_ID:${VALUES_KEYCLOAK_INIT_WEBMODELER_CLIENT_ID:web-modeler}}
@@ -427,6 +433,11 @@ data:
                   definition: create:*
                 - audience: {{ include "webModeler.authPublicApiAudience" . | quote }}
                   definition: update:*
+          {{- else }}
+          applications: []
+          apis: []
+          roles: []
+          {{- end }}
 
       {{- $pingClaimName := .Values.global.identity.auth.orchestration.hubPingClaimName -}}
       {{- $pingClaimValue := .Values.global.identity.auth.orchestration.hubPingClaimValue -}}
@@ -497,8 +508,10 @@ data:
         orchestration:
           secret: ${VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET:}
         {{- end }}
+        {{- if $registerHub }}
         webmodeler:
           root-url: {{ tpl (or .Values.global.identity.auth.camundaHub.redirectUrl .Values.global.identity.auth.webModeler.redirectUrl) $ | quote }}
+        {{- end }}
       clients:
       {{- if .Values.global.identity.auth.admin.enabled }}
         - id: {{ .Values.global.identity.auth.admin.clientId }}
@@ -522,8 +535,10 @@ data:
             - resourceServerId: {{ include "camundaPlatform.authAudienceOptimize" . | quote }}
               definition: write:*
             {{- end }}
+            {{- if $registerHub }}
             - resourceServerId: web-modeler-api
               definition: write:*
+            {{- end }}
       {{- end }}
       {{- if .Values.identity.clients }}
         {{- range $index, $client := .Values.identity.clients }}
