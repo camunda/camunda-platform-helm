@@ -1706,6 +1706,38 @@ func (s *ConfigmapTemplateTest) TestZonedModeRejectsNumberedRegionSettings() {
 				"ERROR": "orchestration.partitioning.zone must name the zone this release is deployed to",
 			},
 		},
+		{
+			Name: "TestZonedModeRejectsZeroRegions",
+			Values: map[string]string{
+				"orchestration.partitioning.scheme":                    "zone-aware",
+				"orchestration.partitioning.zone":                      "region-a",
+				"orchestration.partitioning.regions":                   "0",
+				"orchestration.partitioning.zones[0].name":             "region-a",
+				"orchestration.partitioning.zones[0].numberOfBrokers":  "2",
+				"orchestration.partitioning.zones[0].numberOfReplicas": "2",
+				"orchestration.partitioning.zones[0].priority":         "100",
+				"orchestration.profiles.broker":                        "true",
+			},
+			Expected: map[string]string{
+				"ERROR": "orchestration.partitioning.regions is 0; a cluster spans at least one region",
+			},
+		},
+		{
+			Name:                    "TestZonedModeRejectsZeroRegionsWrittenAsAString",
+			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.partitioning.regions=0"},
+			Values: map[string]string{
+				"orchestration.partitioning.scheme":                    "zone-aware",
+				"orchestration.partitioning.zone":                      "region-a",
+				"orchestration.partitioning.zones[0].name":             "region-a",
+				"orchestration.partitioning.zones[0].numberOfBrokers":  "2",
+				"orchestration.partitioning.zones[0].numberOfReplicas": "2",
+				"orchestration.partitioning.zones[0].priority":         "100",
+				"orchestration.profiles.broker":                        "true",
+			},
+			Expected: map[string]string{
+				"ERROR": "orchestration.partitioning.regions is 0; a cluster spans at least one region",
+			},
+		},
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
