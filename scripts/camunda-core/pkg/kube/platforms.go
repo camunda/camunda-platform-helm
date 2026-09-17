@@ -163,6 +163,10 @@ func applySecretsForEKS(ctx context.Context, client *Client, repoRoot, chartPath
 		return err
 	}
 
+	if err := deleteSecretIfExists(ctx, client, namespace, secretNameTLS); err != nil {
+		return err
+	}
+
 	if err := applyManifestIfExists(ctx, client, namespace, stub, "EKS TLS replicate-from stub"); err != nil {
 		return fmt.Errorf("apply EKS TLS replicate-from stub: %w", err)
 	}
@@ -217,6 +221,14 @@ func waitForReplicatedSecret(ctx context.Context, client *Client, namespace, sec
 		Str("namespace", namespace).
 		Str("secret", secretName).
 		Msg("secret populated by the replicator")
+	return nil
+}
+
+func deleteSecretIfExists(ctx context.Context, client *Client, namespace, name string) error {
+	err := client.clientset.CoreV1().Secrets(namespace).Delete(ctx, name, metav1.DeleteOptions{})
+	if err != nil && !apierrors.IsNotFound(err) {
+		return fmt.Errorf("delete secret %q in %q: %w", name, namespace, err)
+	}
 	return nil
 }
 

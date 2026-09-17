@@ -19,6 +19,8 @@ import (
 	"slices"
 	"testing"
 
+	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -115,5 +117,34 @@ func TestDeleteExternalSecretsTargeting(t *testing.T) {
 	}
 	if !slices.Equal(left, []string{"external-secret-credentials"}) {
 		t.Fatalf("remaining ExternalSecrets = %v, want [external-secret-credentials]", left)
+	}
+}
+
+func TestDeleteSecretIfExistsClearsReplicatedSecret(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	client := newTestClient(&corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "aws-camunda-cloud-tls",
+			Namespace: "ns",
+			Annotations: map[string]string{
+				"replicator.v1.mittwald.de/replicated-from-version": "12345",
+			},
+		},
+		Data: map[string][]byte{"tls.crt": []byte("cert"), "tls.key": []byte("key")},
+	})
+
+	if err := deleteSecretIfExists(ctx, client, "ns", "aws-camunda-cloud-tls"); err != nil {
+		t.Fatalf("deleteSecretIfExists() error = %v", err)
+	}
+
+	_, err := client.clientset.CoreV1().Secrets("ns").Get(ctx, "aws-camunda-cloud-tls", metav1.GetOptions{})
+	if !apierrors.IsNotFound(err) {
+		t.Fatalf("secret survived the delete, so the stub would blank it in place; err = %v", err)
+	}
+
+	if err := deleteSecretIfExists(ctx, client, "ns", "aws-camunda-cloud-tls"); err != nil {
+		t.Fatalf("deleteSecretIfExists() on an absent secret error = %v", err)
 	}
 }
