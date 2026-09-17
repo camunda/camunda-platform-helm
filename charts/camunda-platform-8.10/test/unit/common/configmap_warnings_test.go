@@ -428,8 +428,6 @@ func (s *ConfigMapWarningsTemplateTest) TestNginxCompatAnnotationsDeprecationWar
 			},
 		},
 		{
-			// ingress-http.yaml is skipped when no component contributes a path,
-			// so the shim reaches no rendered object.
 			Name: "TestIngressEnabledWithoutHttpPathsDoesNotWarn",
 			Values: map[string]string{
 				"orchestration.data.secondaryStorage.type": "elasticsearch",
@@ -446,9 +444,6 @@ func (s *ConfigMapWarningsTemplateTest) TestNginxCompatAnnotationsDeprecationWar
 			},
 		},
 		{
-			// The predicate must match the keys the renderer will actually produce:
-			// supplied through templated keys, these still cover the whole legacy
-			// set, so the shim contributes nothing and must not claim otherwise.
 			Name:        "TestTemplatedKeysCoveringTheLegacySetDoNotWarn",
 			ValuesFiles: []string{"testdata/values-grpc-annotations-templated-keys-complete.yaml"},
 			Values: map[string]string{
@@ -478,7 +473,6 @@ func (s *ConfigMapWarningsTemplateTest) TestNginxCompatAnnotationsDeprecationWar
 			},
 		},
 		{
-			// No Ingress is rendered, so the shim injects nothing worth reporting.
 			Name: "TestShimOnWithoutAnyIngressDoesNotWarn",
 			Values: map[string]string{
 				"orchestration.data.secondaryStorage.type": "elasticsearch",
@@ -533,9 +527,6 @@ func (s *ConfigMapWarningsTemplateTest) TestIngressUpstreamTLSControllerWarning(
 			},
 		},
 		{
-			// TLS can be switched on through the env var or the application config,
-			// not just the global.tls flag, so the message must describe the
-			// component rather than naming a value the operator may never have set.
 			Name:        "TestUpstreamTLSFromEnvNamesTheComponentNotTheFlag",
 			ValuesFiles: []string{"testdata/values-orchestration-rest-tls-via-env.yaml"},
 			Values: map[string]string{
@@ -557,8 +548,6 @@ func (s *ConfigMapWarningsTemplateTest) TestIngressUpstreamTLSControllerWarning(
 			},
 		},
 		{
-			// ingress-nginx is the one controller the annotation works on, so the
-			// warning must stay silent there rather than firing for everyone.
 			Name:   "TestNginxClassWithUpstreamTLSDoesNotWarn",
 			Values: withClassName("nginx"),
 			Verifier: func(t *testing.T, output string, err error) {
@@ -586,9 +575,6 @@ func (s *ConfigMapWarningsTemplateTest) TestIngressUpstreamTLSControllerWarning(
 			},
 		},
 		{
-			// Connectors and Optimize reach the warning through their own
-			// *HTTPIngressRendered gates, so each needs a rendered-route case of its
-			// own; drift in one gate would otherwise silently drop the warning.
 			Name: "TestConnectorsRenderedRouteWithUpstreamTLSNamesConnectors",
 			Values: map[string]string{
 				"orchestration.data.secondaryStorage.type":         "elasticsearch",
@@ -631,8 +617,6 @@ func (s *ConfigMapWarningsTemplateTest) TestIngressUpstreamTLSControllerWarning(
 			},
 		},
 		{
-			// The split HTTPS Ingress only renders when the component is enabled and
-			// has a contextPath, so TLS alone must not trigger the warning.
 			Name: "TestUpstreamTLSOnAComponentWithNoRouteDoesNotWarn",
 			Values: map[string]string{
 				"orchestration.data.secondaryStorage.type":       "elasticsearch",

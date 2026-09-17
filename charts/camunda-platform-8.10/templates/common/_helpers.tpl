@@ -1289,18 +1289,12 @@ reason about those manifests (constraints.tpl) cannot drift from what renders.
 */}}
 {{/*
 [camunda-platform] The ingress-nginx annotation sets the chart used to ship as
-values defaults. Injected only while global.compatibility.nginx.renderAnnotations is on;
-user-provided keys win over them. A user value of null drops the key,
-the removal semantics these maps had while they shipped the defaults. Override detection runs on
-a tpl-resolved copy, because the callers evaluate these maps and a templated key
-would otherwise miss its compatibility counterpart and render twice. Only the
-copy is resolved here, so the caller still evaluates each user entry once.
+values defaults. Injected while global.compatibility.nginx.renderAnnotations is
+on, for keys the user has not set. A null value drops its key; a null map is
+rendered as no annotations at all. Entries are emitted already evaluated.
 */}}
 {{/*
-[camunda-platform] A user annotation map with its keys resolved. The callers
-render these maps through tpl, so a templated key only becomes its compatibility
-counterpart afterwards; both the render helpers and the warning predicates match
-against this so they cannot disagree about what the shim contributes.
+[camunda-platform] A user annotation map with its keys and values evaluated.
 */}}
 {{- define "camundaPlatform.resolvedUserAnnotations" -}}
   {{- $user := .annotations | default dict -}}
@@ -1339,7 +1333,7 @@ nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
       {{- $_ := set $rendered $key $value -}}
     {{- end -}}
   {{- end -}}
-  {{- range $key, $value := $user -}}
+  {{- range $key, $value := $resolved -}}
     {{- if not (kindIs "invalid" $value) -}}
       {{- $_ := set $rendered $key $value -}}
     {{- end -}}
@@ -1363,7 +1357,7 @@ nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
       {{- $_ := set $rendered $key $value -}}
     {{- end -}}
   {{- end -}}
-  {{- range $key, $value := $user -}}
+  {{- range $key, $value := $resolved -}}
     {{- if not (kindIs "invalid" $value) -}}
       {{- $_ := set $rendered $key $value -}}
     {{- end -}}
@@ -1374,9 +1368,7 @@ nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
 
 {{/*
 [camunda-platform] "true" when the compatibility shim contributes a key the user
-has not set, on a route that actually renders. Split per map because the HTTP and
-gRPC Ingress objects read different annotation values and render on their own
-gates, so neither can speak for the other.
+has not set, on a route that renders. One predicate per annotation map.
 */}}
 {{- define "camundaPlatform.sharedHTTPIngressRendered" -}}
   {{- ternary "true" "false" (and .Values.global.ingress.enabled (not .Values.global.ingress.external) (include "camundaPlatform.ingressHTTPPaths" . | trim) | not | not) -}}

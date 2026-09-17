@@ -263,8 +263,6 @@ func (s *IngressTemplateTest) TestDifferentValuesInputs() {
 			},
 		},
 		{
-			// Same null-removal path as the gRPC map, on the shared HTTP Ingress:
-			// the nulled keys go, the rest of the compatibility set stays.
 			Name:                 "TestHttpIngressNullPerKeyRemovesOnlyThoseCompatAnnotations",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			ValuesFiles:          []string{"testdata/values-http-annotations-null-per-key.yaml"},
@@ -924,8 +922,6 @@ func (s *GrpcIngressTemplateTest) TestDifferentValuesInputs() {
 			},
 		},
 		{
-			// Removing a key with null was valid while these annotations shipped as
-			// values defaults, so it must keep working once the shim supplies them.
 			Name:                 "TestGrpcIngressNullPerKeyRemovesCompatAnnotation",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			ValuesFiles:          []string{"testdata/values-grpc-annotations-null-per-key.yaml"},
@@ -944,9 +940,6 @@ func (s *GrpcIngressTemplateTest) TestDifferentValuesInputs() {
 			},
 		},
 		{
-			// The callers tpl the rendered map, so a templated key is only recognised
-			// as an override once resolved; otherwise it renders beside the shim key
-			// and YAML last-wins hands the shim the win the docs promise the user.
 			Name:                 "TestGrpcIngressTemplatedAnnotationKeyOverridesCompatOnce",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			ValuesFiles:          []string{"testdata/values-grpc-annotation-templated-key.yaml"},
@@ -964,9 +957,6 @@ func (s *GrpcIngressTemplateTest) TestDifferentValuesInputs() {
 			},
 		},
 		{
-			// Nulling the whole map removed it during coalescing, and the pre-shim
-			// template passed that missing map to `with`, so nothing rendered. The
-			// shim must not refill a map the operator deleted.
 			Name:                 "TestGrpcIngressNullWholeAnnotationMapRendersNoCompatAnnotations",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			ValuesFiles:          []string{"testdata/values-grpc-annotations-null-whole-map.yaml"},
