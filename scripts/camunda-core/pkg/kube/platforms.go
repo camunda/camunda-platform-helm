@@ -24,6 +24,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 type PlatformSecretsProvider interface {
@@ -184,38 +185,39 @@ func applySecretsForEKS(ctx context.Context, client *Client, repoRoot, chartPath
 const (
 	externalSecretsReadyTimeout = 600 * time.Second
 
-	replicatedSecretAttempts = 30
-	replicatedSecretInterval = 10 * time.Second
+	replicatedSecretInterval = 5 * time.Second
+	replicatedSecretTimeout  = 300 * time.Second
 )
 
 // The stub is applied with empty tls.crt/tls.key, so existence is not enough: the secret is
 // only usable once the replicator has copied values in.
 func waitForReplicatedSecret(ctx context.Context, client *Client, namespace, secretName string, keys ...string) error {
-	for range replicatedSecretAttempts {
-		secret, err := client.clientset.CoreV1().Secrets(namespace).Get(ctx, secretName, metav1.GetOptions{})
-		if err == nil {
-			missing := emptyKeys(secret.Data, keys)
-			if len(missing) == 0 {
-				logging.Logger.Debug().
-					Str("namespace", namespace).
-					Str("secret", secretName).
-					Msg("secret populated by the replicator")
-				return nil
-			}
-			logging.Logger.Debug().
-				Str("secret", secretName).
-				Strs("emptyKeys", missing).
-				Msg("waiting for the replicator to populate the secret")
-		}
+	var missing []string
 
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case <-time.After(replicatedSecretInterval):
-		}
+	err := wait.PollUntilContextTimeout(ctx, replicatedSecretInterval, replicatedSecretTimeout, true,
+		func(ctx context.Context) (bool, error) {
+			secret, err := client.clientset.CoreV1().Secrets(namespace).Get(ctx, secretName, metav1.GetOptions{})
+			if err != nil {
+				if apierrors.IsNotFound(err) {
+					missing = keys
+					return false, nil
+				}
+				return false, err
+			}
+
+			missing = emptyKeys(secret.Data, keys)
+			return len(missing) == 0, nil
+		})
+	if err != nil {
+		return fmt.Errorf("secret %q in namespace %q was not populated by the replicator (still empty: %v): %w",
+			secretName, namespace, missing, err)
 	}
 
-	return fmt.Errorf("secret %q in namespace %q was not populated by the replicator", secretName, namespace)
+	logging.Logger.Debug().
+		Str("namespace", namespace).
+		Str("secret", secretName).
+		Msg("secret populated by the replicator")
+	return nil
 }
 
 // A namespace carried over from before the move to replication still holds the ExternalSecret
