@@ -103,6 +103,9 @@ type GenerateOptions struct {
 	Versions []string
 	// IncludeDisabled includes disabled scenarios in the output.
 	IncludeDisabled bool
+	// Platform is the requested execution platform. Scenarios that declare no platforms
+	// adopt it, so their infra-type resolves for the platform they will actually run on.
+	Platform string
 }
 
 // FilterOptions controls post-generation filtering.
@@ -223,11 +226,11 @@ func Generate(repoRoot string, opts GenerateOptions) ([]Entry, error) {
 			}
 
 			// Create one entry per permitted flow per platform.
-			// If no platforms are specified, create one entry with an empty platform
-			// (defaults to "gke" at execution time via resolvePlatform).
+			// If no platforms are specified, the entry adopts the requested platform
+			// (empty when none was requested, which resolvePlatform defaults to "gke").
 			platforms := scenario.Platforms
 			if len(platforms) == 0 {
-				platforms = []string{""}
+				platforms = []string{opts.Platform}
 			}
 
 			for _, flow := range permittedFlows {
