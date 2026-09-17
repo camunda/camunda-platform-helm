@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -32,8 +33,22 @@ type job struct {
 	With        map[string]string `yaml:"with"`
 }
 
+type workflowInput struct {
+	Default bool `yaml:"default"`
+}
+
+type workflowCall struct {
+	Inputs map[string]workflowInput `yaml:"inputs"`
+}
+
+type workflowTriggers struct {
+	WorkflowCall workflowCall `yaml:"workflow_call"`
+}
+
 type workflow struct {
-	Jobs map[string]job `yaml:"jobs"`
+	On          workflowTriggers  `yaml:"on"`
+	Permissions map[string]string `yaml:"permissions"`
+	Jobs        map[string]job    `yaml:"jobs"`
 }
 
 func loadWorkflow(test *testing.T, name string) workflow {
@@ -60,6 +75,23 @@ func namedStep(test *testing.T, owner job, name string) step {
 	return step{}
 }
 
+func workflowInputBool(test *testing.T, provider workflow, caller job, name string) bool {
+	test.Helper()
+	input, ok := provider.On.WorkflowCall.Inputs[name]
+	if !ok {
+		test.Fatalf("workflow input %q not found", name)
+	}
+	value, ok := caller.With[name]
+	if !ok {
+		return input.Default
+	}
+	parsed, err := strconv.ParseBool(value)
+	if err != nil {
+		test.Fatalf("workflow input %q has non-boolean value %q", name, value)
+	}
+	return parsed
+}
+
 type fixture struct {
 	test        *testing.T
 	root        string
@@ -70,6 +102,7 @@ type fixture struct {
 	tip         string
 	environment []string
 	publisher   job
+	modules     bool
 }
 
 func commandOutput(test *testing.T, directory string, environment []string, executable string, arguments ...string) (string, error) {
@@ -100,14 +133,24 @@ func writeFile(test *testing.T, filename, content string, mode os.FileMode) {
 	}
 }
 
-func newFixture(test *testing.T) *fixture {
+func newFixture(test *testing.T, callerWorkflow string) *fixture {
 	test.Helper()
 	root := test.TempDir()
+	provider := loadWorkflow(test, "commit-generated-template.yaml")
+	publisher := provider.Jobs["push"]
 	result := &fixture{
 		test: test, root: root, producer: filepath.Join(root, "producer"),
 		remote: filepath.Join(root, "remote.git"), runner: filepath.Join(root, "runner"),
-		publisher:   loadWorkflow(test, "commit-generated-template.yaml").Jobs["push"],
-		environment: []string{"PATH=" + os.Getenv("PATH"), "HOME=" + root, "GIT_CONFIG_NOSYSTEM=1", "GIT_CONFIG_GLOBAL=/dev/null", "GIT_NO_REPLACE_OBJECTS=1", "GIT_TERMINAL_PROMPT=0"},
+		publisher: publisher,
+		modules:   workflowInputBool(test, provider, loadWorkflow(test, callerWorkflow).Jobs["push"], "update-modules"),
+		environment: []string{
+			"PATH=" + os.Getenv("PATH"), "HOME=" + root, "GIT_TERMINAL_PROMPT=0",
+		},
+	}
+	for name, value := range publisher.Env {
+		if !strings.Contains(value, "${{") {
+			result.environment = append(result.environment, name+"="+value)
+		}
 	}
 	result.git(root, "init", "--bare", result.remote)
 	result.git(root, "init", "--initial-branch=canary", result.producer)
@@ -132,43 +175,43 @@ func (fixture *fixture) bundle() {
 	fixture.git(fixture.producer, "bundle", "create", filepath.Join(fixture.runner, "generated/changes.bundle"), "HEAD", "^"+fixture.base)
 }
 
-func (fixture *fixture) execute(name string, modules bool) (string, error) {
+func (fixture *fixture) execute(name string) (string, error) {
 	fixture.test.Helper()
 	script := namedStep(fixture.test, fixture.publisher, name)
-	moduleFlag := "false"
-	if modules {
-		moduleFlag = "true"
-	}
 	environment := append(append([]string{}, fixture.environment...),
 		"RUNNER_TEMP="+fixture.runner, "BASE_SHA="+fixture.base, "TARGET_REF=canary", "TARGET_URL="+fixture.remote,
-		"ALLOWED_PATHS="+script.Env["ALLOWED_PATHS"], "UPDATE_MODULES="+moduleFlag, "GH_APP_TOKEN=dummy-not-a-secret")
+		"ALLOWED_PATHS="+script.Env["ALLOWED_PATHS"], "UPDATE_MODULES="+strconv.FormatBool(fixture.modules), "GH_APP_TOKEN=dummy-not-a-secret")
 	return commandOutput(fixture.test, fixture.root, environment, "/bin/bash", "--noprofile", "--norc", "-e", "-o", "pipefail", "-c", script.Run)
 }
 
 func TestGeneratedCommitPolicy(test *testing.T) {
 	for _, scenario := range []struct {
-		name    string
-		file    string
-		mode    os.FileMode
-		modules bool
-		valid   bool
+		name           string
+		file           string
+		mode           os.FileMode
+		callerWorkflow string
+		valid          bool
 	}{
 		{name: "readme", file: "charts/camunda-platform-8.10/README.md", valid: true},
 		{name: "schema", file: "charts/camunda-platform-8.10/values.schema.json", valid: true},
 		{name: "golden", file: "charts/camunda-platform-8.10/test/unit/orchestration/golden/configmap.golden.yaml", valid: true},
 		{name: "registry", file: "charts/camunda-platform-8.9/test/ci/registry-snapshot.yaml", valid: true},
 		{name: "lock", file: "charts/camunda-platform-8.10/Chart.lock", valid: true},
-		{name: "renovate-modules", file: "scripts/deploy-camunda/go.mod", modules: true, valid: true},
-		{name: "renovate-chart-sums", file: "charts/camunda-platform-8.9/go.sum", modules: true, valid: true},
+		{name: "renovate-modules", file: "scripts/deploy-camunda/go.mod", callerWorkflow: "renovate-post-upgrade.yaml", valid: true},
+		{name: "renovate-chart-sums", file: "charts/camunda-platform-8.9/go.sum", callerWorkflow: "renovate-post-upgrade.yaml", valid: true},
 		{name: "chart-modules-denied", file: "scripts/deploy-camunda/go.mod"},
 		{name: "workflow", file: ".github/workflows/changed.yaml"},
-		{name: "script", file: "scripts/deploy-camunda/main.go", modules: true},
+		{name: "script", file: "scripts/deploy-camunda/main.go", callerWorkflow: "renovate-post-upgrade.yaml"},
 		{name: "chart-template", file: "charts/camunda-platform-8.10/templates/configmap.yaml"},
 		{name: "executable", file: "charts/camunda-platform-8.10/README.md", mode: 0755},
 		{name: "newline", file: "charts/camunda-platform-8.10/test/unit/orchestration/golden/bad\nfile.yaml"},
 	} {
 		test.Run(scenario.name, func(test *testing.T) {
-			fixture := newFixture(test)
+			callerWorkflow := scenario.callerWorkflow
+			if callerWorkflow == "" {
+				callerWorkflow = "chart-chores.yaml"
+			}
+			fixture := newFixture(test, callerWorkflow)
 			mode := scenario.mode
 			if mode == 0 {
 				mode = 0644
@@ -179,12 +222,12 @@ func TestGeneratedCommitPolicy(test *testing.T) {
 				test.Fatal(err)
 			}
 			fixture.bundle()
-			output, err := fixture.execute("Validate generated commit", scenario.modules)
+			output, err := fixture.execute("Validate generated commit")
 			if (err == nil) != scenario.valid {
 				test.Fatalf("valid=%t error=%v output=%q", scenario.valid, err, output)
 			}
 			if scenario.valid {
-				output, err = fixture.execute("Push generated commit", scenario.modules)
+				output, err = fixture.execute("Push generated commit")
 				if err != nil {
 					test.Fatalf("push: %v output=%q", err, output)
 				}
@@ -197,7 +240,7 @@ func TestGeneratedCommitPolicy(test *testing.T) {
 }
 
 func TestProducerStateDoesNotCrossBoundary(test *testing.T) {
-	fixture := newFixture(test)
+	fixture := newFixture(test, "chart-chores.yaml")
 	marker := filepath.Join(fixture.root, "credential-observed")
 	observer := "#!/bin/sh\nif [ -n \"${GH_APP_TOKEN-}\" ]; then printf observed > \"" + marker + "\"; fi\n"
 	writeFile(test, filepath.Join(fixture.producer, ".git/hooks/pre-push"), observer, 0755)
@@ -210,7 +253,7 @@ func TestProducerStateDoesNotCrossBoundary(test *testing.T) {
 	writeFile(test, filepath.Join(fixture.producer, "charts/camunda-platform-8.10/README.md"), "generated\n", 0644)
 	fixture.bundle()
 	for _, operation := range []string{"Validate generated commit", "Push generated commit"} {
-		if output, err := fixture.execute(operation, false); err != nil {
+		if output, err := fixture.execute(operation); err != nil {
 			test.Fatalf("%s: %v output=%q", operation, err, output)
 		}
 	}
@@ -234,7 +277,7 @@ func TestProducerStateDoesNotCrossBoundary(test *testing.T) {
 func TestBinaryAndDeletion(test *testing.T) {
 	for _, operation := range []string{"binary", "delete"} {
 		test.Run(operation, func(test *testing.T) {
-			fixture := newFixture(test)
+			fixture := newFixture(test, "chart-chores.yaml")
 			filename := filepath.Join(fixture.producer, "charts/camunda-platform-8.10/README.md")
 			if operation == "binary" {
 				writeFile(test, filename, "generated\x00binary\n", 0644)
@@ -243,7 +286,7 @@ func TestBinaryAndDeletion(test *testing.T) {
 			}
 			fixture.bundle()
 			for _, name := range []string{"Validate generated commit", "Push generated commit"} {
-				if output, err := fixture.execute(name, false); err != nil {
+				if output, err := fixture.execute(name); err != nil {
 					test.Fatalf("%s: %v output=%q", name, err, output)
 				}
 			}
@@ -257,7 +300,7 @@ func TestBinaryAndDeletion(test *testing.T) {
 func TestRejectInvalidBundles(test *testing.T) {
 	for _, scenario := range []string{"extra-commit", "empty-commit", "symlink", "malformed", "oversized", "wrong-base", "merge"} {
 		test.Run(scenario, func(test *testing.T) {
-			fixture := newFixture(test)
+			fixture := newFixture(test, "chart-chores.yaml")
 			filename := filepath.Join(fixture.producer, "charts/camunda-platform-8.10/README.md")
 			if scenario != "empty-commit" {
 				writeFile(test, filename, "generated\n", 0644)
@@ -290,7 +333,7 @@ func TestRejectInvalidBundles(test *testing.T) {
 				fixture.git(fixture.producer, "update-ref", "HEAD", merge)
 				fixture.git(fixture.producer, "bundle", "create", bundle, "HEAD", "^"+fixture.base)
 			}
-			if output, err := fixture.execute("Validate generated commit", false); err == nil {
+			if output, err := fixture.execute("Validate generated commit"); err == nil {
 				test.Fatalf("accepted invalid bundle: %q", output)
 			}
 		})
@@ -300,11 +343,11 @@ func TestRejectInvalidBundles(test *testing.T) {
 func TestRejectMovedBranch(test *testing.T) {
 	for _, moment := range []string{"before-validation", "after-validation", "deleted"} {
 		test.Run(moment, func(test *testing.T) {
-			fixture := newFixture(test)
+			fixture := newFixture(test, "chart-chores.yaml")
 			writeFile(test, filepath.Join(fixture.producer, "charts/camunda-platform-8.10/README.md"), "generated\n", 0644)
 			fixture.bundle()
 			if moment != "before-validation" {
-				if output, err := fixture.execute("Validate generated commit", false); err != nil {
+				if output, err := fixture.execute("Validate generated commit"); err != nil {
 					test.Fatalf("validate: %v output=%q", err, output)
 				}
 			}
@@ -319,7 +362,7 @@ func TestRejectMovedBranch(test *testing.T) {
 			if moment == "before-validation" {
 				operation = "Validate generated commit"
 			}
-			if output, err := fixture.execute(operation, false); err == nil {
+			if output, err := fixture.execute(operation); err == nil {
 				test.Fatalf("accepted moved branch: %q", output)
 			}
 			if moment != "deleted" && fixture.git(fixture.remote, "rev-parse", "refs/heads/canary") != concurrent {
@@ -330,10 +373,18 @@ func TestRejectMovedBranch(test *testing.T) {
 }
 
 func TestCredentialIsolationContract(test *testing.T) {
-	for filename, producerName := range map[string]string{"chart-chores.yaml": "chores", "renovate-post-upgrade.yaml": "run"} {
-		test.Run(filename, func(test *testing.T) {
-			workflow := loadWorkflow(test, filename)
-			producer := workflow.Jobs[producerName]
+	providerWorkflow := loadWorkflow(test, "commit-generated-template.yaml")
+	for _, scenario := range []struct {
+		filename      string
+		producerName  string
+		updateModules bool
+	}{
+		{filename: "chart-chores.yaml", producerName: "chores"},
+		{filename: "renovate-post-upgrade.yaml", producerName: "run", updateModules: true},
+	} {
+		test.Run(scenario.filename, func(test *testing.T) {
+			workflow := loadWorkflow(test, scenario.filename)
+			producer := workflow.Jobs[scenario.producerName]
 			if len(producer.Permissions) != 1 || producer.Permissions["contents"] != "read" {
 				test.Fatal("producer must have only contents:read")
 			}
@@ -355,15 +406,55 @@ func TestCredentialIsolationContract(test *testing.T) {
 				}
 			}
 			publisher := workflow.Jobs["push"]
-			if publisher.Needs != producerName || !strings.Contains(publisher.If, ".outputs.committed == 'true'") {
+			if publisher.Needs != scenario.producerName || !strings.Contains(publisher.If, ".outputs.committed == 'true'") {
 				test.Fatal("publisher must require a producer commit")
+			}
+			if publisher.Permissions == nil || len(publisher.Permissions) != 0 {
+				test.Fatal("caller publisher must explicitly disable token permissions")
 			}
 			if publisher.Uses != "./.github/workflows/commit-generated-template.yaml" {
 				test.Fatal("publisher must use the isolated workflow")
 			}
+			if updateModules := workflowInputBool(test, providerWorkflow, publisher, "update-modules"); updateModules != scenario.updateModules {
+				test.Fatalf("update-modules=%t, want %t", updateModules, scenario.updateModules)
+			}
 		})
 	}
-	provider := loadWorkflow(test, "commit-generated-template.yaml").Jobs["push"]
+	if providerWorkflow.Permissions == nil || len(providerWorkflow.Permissions) != 0 {
+		test.Fatal("publisher workflow must explicitly disable token permissions")
+	}
+	input, ok := providerWorkflow.On.WorkflowCall.Inputs["update-modules"]
+	if !ok || input.Default {
+		test.Fatal("update-modules must default to false")
+	}
+	provider := providerWorkflow.Jobs["push"]
+	if provider.Permissions == nil || len(provider.Permissions) != 0 {
+		test.Fatal("publisher job must explicitly disable token permissions")
+	}
+	if provider.If != "inputs.target-ref != 'main' && !startsWith(inputs.target-ref, 'stable/') && !startsWith(inputs.target-ref, 'release-please--')" {
+		test.Fatal("publisher must refuse protected target branches")
+	}
+	for name, expected := range map[string]string{
+		"GIT_CONFIG_NOSYSTEM":    "1",
+		"GIT_CONFIG_GLOBAL":      "/dev/null",
+		"GIT_NO_REPLACE_OBJECTS": "1",
+	} {
+		if provider.Env[name] != expected {
+			test.Fatalf("publisher environment %s=%q, want %q", name, provider.Env[name], expected)
+		}
+	}
+	validate := namedStep(test, provider, "Validate generated commit")
+	if validate.Env["UPDATE_MODULES"] != "${{ inputs.update-modules }}" {
+		test.Fatal("publisher must pass update-modules into validation")
+	}
+	vault := namedStep(test, provider, "Import GitHub App credentials")
+	if vault.With["exportEnv"] != "false" {
+		test.Fatal("Vault secrets must not be exported to the job environment")
+	}
+	token := namedStep(test, provider, "Generate repository-scoped token")
+	if token.With["repositories"] != `["${{ github.event.repository.name }}"]` || token.With["permissions"] != `{"contents":"write"}` {
+		test.Fatal("GitHub App token must be scoped to this repository with contents:write")
+	}
 	validated := false
 	for _, current := range provider.Steps {
 		if current.Name == "Validate generated commit" {
