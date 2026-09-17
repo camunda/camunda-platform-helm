@@ -19,18 +19,18 @@ permissions:
 jobs:
   chores:
     if: >-
-      ${{
+      (github.event_name == 'workflow_dispatch' || (
         github.event.pull_request.head.repo.full_name == github.repository &&
-        github.event.pull_request.user.login != 'dependabot[bot]' &&
-        !startsWith(github.head_ref, 'renovate/') &&
-        !startsWith(github.head_ref, 'release-please--')
-      }}
+        github.event.pull_request.user.login != 'dependabot[bot]'
+      )) &&
+      !startsWith(github.head_ref || github.ref_name, 'renovate/') &&
+      !startsWith(github.head_ref || github.ref_name, 'release-please--') &&
+      (github.head_ref || github.ref_name) != 'main'
     name: Chart chores
     runs-on: ubuntu-latest
     timeout-minutes: 60
     permissions:
-      contents: write
-      pull-requests: write
+      contents: read
     outputs:
       committed: ${{ steps.commit.outputs.committed }}
     steps:
