@@ -31,15 +31,20 @@ global:
         components:
           optimize: # Optimize for the default tenant
             enabled: true
+            namespace: production-a-optimize-default
+            host: hub.example.com
+            enabled: true
             clientId: optimize-production-a-default
             audience: optimize-production-a-default-api
             roleName: Optimize production-a default
-            redirectUrl: https://production-a.example.com/optimize-default
+            redirectUrl: https://hub.example.com/optimize-default
             secret:
               existingSecret: optimize-production-a-default-oidc
               existingSecretKey: client-secret
         physicalTenants:
           - id: tenanta
+            contextPaths:
+              optimize: /optimize-tenanta
             components:
               optimize:
                 enabled: true
@@ -55,7 +60,19 @@ global:
 Give every Optimize release its own OIDC client ID, audience, role name, redirect
 URL, and secret. Set the same client ID, audience, redirect URL, and secret on that
 tenant's Optimize release under `optimize.security.authentication.oidc`. Setting a
-dedicated `roleName` avoids adding the audience to the shared `Optimize` role.
+dedicated `roleName` avoids adding the audience to the shared `Optimize` role. Set
+the tenant record's `contextPaths.optimize` to that release's `optimize.contextPath`,
+so the Hub advertises the tenant's Optimize where its ingress serves it; the
+cluster-level `contextPaths.optimize` advertises only the default tenant.
+
+A cluster record's `namespace`, `releaseName`, and `host` describe the Orchestration
+Cluster. An Optimize release deployed separately does not share them, so set
+`components.optimize.namespace`, `.releaseName`, and `.host` to that release's own
+values. The Hub derives the Optimize service URL it health-checks and the webapp URL it
+links to from those three; left unset they fall back to the cluster's and the Hub probes
+a Service that does not exist in the Orchestration Cluster's namespace. `serviceName`,
+`readinessUrl`, and `webappUrl` remain available to pin a full value directly, and take
+precedence when set.
 
 ## Isolate all four index prefix families
 

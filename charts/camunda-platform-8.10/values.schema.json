@@ -7594,6 +7594,15 @@
                 "serviceName": {
                     "type": "string"
                 },
+                "namespace": {
+                    "type": "string"
+                },
+                "releaseName": {
+                    "type": "string"
+                },
+                "host": {
+                    "type": "string"
+                },
                 "webappUrl": {
                     "type": "string",
                     "pattern": "^$|^https?://(?:[^\\s{}]|\\{\\{[^}]*\\}\\})+$"
@@ -7736,6 +7745,16 @@
                 "name": {
                     "type": "string",
                     "minLength": 1
+                },
+                "contextPaths": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                        "optimize": {
+                            "type": "string",
+                            "pattern": "^$|^/"
+                        }
+                    }
                 },
                 "components": {
                     "type": "object",
