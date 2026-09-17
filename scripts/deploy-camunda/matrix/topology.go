@@ -272,35 +272,41 @@ func (t *Topology) Validate(ctx string, chartDir string, depsDir string) error {
 			problems = append(problems, fmt.Sprintf("%s: namespace-suffix %q is too long (max 12 chars, to keep <namespace>-<suffix> well within the 63-char Kubernetes limit)", label, r.NamespaceSuffix))
 		}
 
+		valuesDir := filepath.Join(chartFullSetupDir, "values")
+
 		if strings.TrimSpace(r.Values) != "" {
 			problems = append(problems, fmt.Sprintf("%s: values %q is no longer supported: drop the \"features/\" prefix and the \".yaml\" suffix and list it in features instead, so the layer goes through the same env-var substitution as every other feature layer", label, r.Values))
 		}
 		if len(r.Features) == 0 {
 			problems = append(problems, fmt.Sprintf("%s: features is required and must name at least this release's own overlay layer", label))
 		}
+
+		// identity/persistence/features name a values layer by bare ID, which is
+		// interpolated straight into a path. Require plain filenames the same way
+		// dependency IDs do, so an ID such as "../identity/keycloak" cannot escape
+		// its layer directory and silently validate (and later deploy) an
+		// unrelated file. kind names the layer in errors; dirName is its directory.
+		checkLayer := func(kind, dirName, id string) {
+			if !isPlainFilename(id) {
+				problems = append(problems, fmt.Sprintf("%s: %s reference %q must be a plain filename (no path separators)", label, kind, id))
+				return
+			}
+			layerPath := filepath.Join(valuesDir, dirName, id+".yaml")
+			if info, err := os.Stat(layerPath); err != nil || info.IsDir() {
+				problems = append(problems, fmt.Sprintf("%s: %s %q: missing values file at %s", label, kind, id, layerPath))
+			}
+		}
+
 		for _, featureID := range r.Features {
-			if !isPlainFilename(featureID) {
-				problems = append(problems, fmt.Sprintf("%s: feature reference %q must be a plain filename (no path separators)", label, featureID))
-				continue
-			}
-			featurePath := filepath.Join(chartFullSetupDir, "values", "features", featureID+".yaml")
-			if info, err := os.Stat(featurePath); err != nil || info.IsDir() {
-				problems = append(problems, fmt.Sprintf("%s: feature %q: missing values file at %s", label, featureID, featurePath))
-			}
+			checkLayer("feature", "features", featureID)
 		}
 
 		if r.Identity != "" {
-			identityPath := filepath.Join(chartFullSetupDir, "values", "identity", r.Identity+".yaml")
-			if info, err := os.Stat(identityPath); err != nil || info.IsDir() {
-				problems = append(problems, fmt.Sprintf("%s: identity %q: missing values file at %s", label, r.Identity, identityPath))
-			}
+			checkLayer("identity", "identity", r.Identity)
 		}
 
 		if r.Persistence != "" {
-			persistencePath := filepath.Join(chartFullSetupDir, "values", "persistence", r.Persistence+".yaml")
-			if info, err := os.Stat(persistencePath); err != nil || info.IsDir() {
-				problems = append(problems, fmt.Sprintf("%s: persistence %q: missing values file at %s", label, r.Persistence, persistencePath))
-			}
+			checkLayer("persistence", "persistence", r.Persistence)
 		}
 
 		for _, depID := range r.Dependencies {
@@ -383,6 +389,24 @@ func (t *Topology) Validate(ctx string, chartDir string, depsDir string) error {
 		return nil
 	}
 	return fmt.Errorf("%s", strings.Join(problems, "\n  - "))
+}
+
+// isContainedRelativePath reports whether value is a non-empty relative path
+// that stays inside the directory it is joined onto. Used for topology fields
+// that legitimately contain a subdirectory, where isPlainFilename is too
+// strict but filepath.Join would still happily follow "..".
+func isContainedRelativePath(value string) bool {
+	if value == "" || filepath.IsAbs(value) {
+		return false
+	}
+	if strings.ContainsRune(value, '\\') {
+		return false
+	}
+	cleaned := filepath.Clean(value)
+	if cleaned == "." || cleaned == ".." || strings.HasPrefix(cleaned, ".."+string(filepath.Separator)) {
+		return false
+	}
+	return true
 }
 
 func isDNS1123Label(value string) bool {

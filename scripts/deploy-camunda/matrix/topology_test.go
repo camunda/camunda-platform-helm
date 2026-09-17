@@ -1837,3 +1837,85 @@ func TestTopologyValidateRenderedKeepsDefaultTenantOnTheClusterRecord(t *testing
 		t.Errorf("default tenant should be validated against the cluster record, got %v", err)
 	}
 }
+
+// validHubAndOrchestration returns the minimal pair of releases that satisfies
+// every non-path invariant in Topology.Validate, so a test can make a single
+// path field the only possible source of a problem.
+func validHubAndOrchestration(hub, orch TopologyRelease) []TopologyRelease {
+	if hub.Role == "" {
+		hub.Role = "hub"
+	}
+	if hub.NamespaceSuffix == "" {
+		hub.NamespaceSuffix = "hub"
+	}
+	if len(hub.Features) == 0 {
+		hub.Features = []string{"hub"}
+	}
+	if orch.Role == "" {
+		orch.Role = "orchestration"
+	}
+	if orch.NamespaceSuffix == "" {
+		orch.NamespaceSuffix = "orcha"
+	}
+	if len(orch.Features) == 0 {
+		orch.Features = []string{"orchestration"}
+	}
+	if orch.ModelerClusterID == "" {
+		orch.ModelerClusterID = "orchestration"
+	}
+	if orch.ModelerClusterName == "" {
+		orch.ModelerClusterName = "orchestration"
+	}
+	return []TopologyRelease{hub, orch}
+}
+
+// TestTopologyValidate_RejectsTraversalInFeature pins the guard the #7008
+// review asked for: a feature ID is interpolated into values/features/<id>.yaml,
+// so "../identity/keycloak" resolves to the identity layer instead. The identity
+// file is planted deliberately and the topology is otherwise valid, so without
+// the plain-filename check this topology validates clean against a file it
+// never named.
+func TestTopologyValidate_RejectsTraversalInFeature(t *testing.T) {
+	_, dir := newTopologyTestChart(t)
+	writeValuesFile(t, dir, "features/hub.yaml")
+	writeValuesFile(t, dir, "features/orchestration.yaml")
+	writeValuesFile(t, dir, filepath.Join("identity", "keycloak.yaml"))
+	top := &Topology{
+		Name: "traversal-feature",
+		Releases: validHubAndOrchestration(
+			TopologyRelease{Features: []string{"../identity/keycloak"}},
+			TopologyRelease{},
+		),
+	}
+	err := top.Validate("ctx", dir, t.TempDir())
+	if err == nil || !strings.Contains(err.Error(), "plain filename") {
+		t.Fatalf("want plain-filename rejection for feature ID, got: %v", err)
+	}
+}
+
+// TestTopologyValidate_RejectsTraversalInIdentityAndPersistence covers the two
+// sibling layer fields, which share the feature ID's path-join shape.
+func TestTopologyValidate_RejectsTraversalInIdentityAndPersistence(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		hub  TopologyRelease
+	}{
+		{"identity", TopologyRelease{Identity: "../features/leak"}},
+		{"persistence", TopologyRelease{Persistence: "../features/leak"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			_, dir := newTopologyTestChart(t)
+			writeValuesFile(t, dir, "features/hub.yaml")
+			writeValuesFile(t, dir, "features/orchestration.yaml")
+			writeValuesFile(t, dir, filepath.Join("features", "leak.yaml"))
+			top := &Topology{
+				Name:     "traversal-" + tc.name,
+				Releases: validHubAndOrchestration(tc.hub, TopologyRelease{}),
+			}
+			err := top.Validate("ctx", dir, t.TempDir())
+			if err == nil || !strings.Contains(err.Error(), "plain filename") {
+				t.Fatalf("want plain-filename rejection for %s reference, got: %v", tc.name, err)
+			}
+		})
+	}
+}
