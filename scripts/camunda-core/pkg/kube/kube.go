@@ -765,7 +765,7 @@ const (
 	secretNameTLS = "aws-camunda-cloud-tls"
 )
 
-func ApplyExternalSecretsAndCerts(ctx context.Context, kubeconfig, kubeContext, platform, repoRoot, chartPath, namespace, namespacePrefix, externalSecretsStore string) error {
+func ApplyExternalSecretsAndCerts(ctx context.Context, kubeconfig, kubeContext, platform, repoRoot, chartPath, namespace, externalSecretsStore string) error {
 	platform = strings.ToLower(strings.TrimSpace(platform))
 
 	logging.Logger.Debug().
@@ -789,20 +789,12 @@ func ApplyExternalSecretsAndCerts(ctx context.Context, kubeconfig, kubeContext, 
 		return nil
 	}
 
-	provider, err := NewPlatformSecretsProvider(platform, repoRoot, chartPath, namespacePrefix, externalSecretsStore)
+	provider, err := NewPlatformSecretsProvider(platform, repoRoot, chartPath, externalSecretsStore)
 	if err != nil {
 		return err
 	}
 
 	return provider.Apply(ctx, client, namespace)
-}
-
-func computeEKSSourceNamespace(namespacePrefix string) string {
-	prefix := strings.TrimSpace(namespacePrefix)
-	if prefix == "" {
-		return "certs"
-	}
-	return prefix + "-certs"
 }
 
 func applyManifestIfExists(ctx context.Context, client *Client, namespace, filePath, description string) error {

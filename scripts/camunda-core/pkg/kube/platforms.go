@@ -19,11 +19,9 @@ import (
 	"fmt"
 	"path/filepath"
 	"scripts/camunda-core/pkg/logging"
-	"strings"
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	corev1apply "k8s.io/client-go/applyconfigurations/core/v1"
 )
 
 type PlatformSecretsProvider interface {
@@ -51,17 +49,16 @@ func (p *ROSASecretsProvider) Apply(ctx context.Context, client *Client, namespa
 }
 
 type EKSSecretsProvider struct {
-	NamespacePrefix      string
 	RepoRoot             string
 	ChartPath            string
 	ExternalSecretsStore string
 }
 
 func (p *EKSSecretsProvider) Apply(ctx context.Context, client *Client, namespace string) error {
-	return applySecretsForEKS(ctx, client, p.RepoRoot, p.ChartPath, namespace, p.NamespacePrefix, p.ExternalSecretsStore)
+	return applySecretsForEKS(ctx, client, p.RepoRoot, p.ChartPath, namespace, p.ExternalSecretsStore)
 }
 
-func NewPlatformSecretsProvider(platform, repoRoot, chartPath, namespacePrefix, externalSecretsStore string) (PlatformSecretsProvider, error) {
+func NewPlatformSecretsProvider(platform, repoRoot, chartPath, externalSecretsStore string) (PlatformSecretsProvider, error) {
 	switch platform {
 	case platformGKE:
 		return &GKESecretsProvider{
@@ -77,7 +74,6 @@ func NewPlatformSecretsProvider(platform, repoRoot, chartPath, namespacePrefix, 
 		}, nil
 	case platformEKS:
 		return &EKSSecretsProvider{
-			NamespacePrefix:      namespacePrefix,
 			RepoRoot:             repoRoot,
 			ChartPath:            chartPath,
 			ExternalSecretsStore: externalSecretsStore,
@@ -157,17 +153,15 @@ func applyExternalSecretsOther(ctx context.Context, client *Client, repoRoot, ch
 	return nil
 }
 
-func applySecretsForEKS(ctx context.Context, client *Client, repoRoot, chartPath, namespace, namespacePrefix, externalSecretsStore string) error {
-	srcNamespace := computeEKSSourceNamespace(namespacePrefix)
+func applySecretsForEKS(ctx context.Context, client *Client, repoRoot, chartPath, namespace, externalSecretsStore string) error {
+	stub := filepath.Join(repoRoot, ".github", "config", "replicate-from", "replicate-from-eks-tls.yaml")
 
-	logging.Logger.Debug().
-		Str("srcNamespace", srcNamespace).
-		Str("destNamespace", namespace).
-		Str("secret", secretNameTLS).
-		Msg("copying TLS secret for EKS")
+	if err := applyManifestIfExists(ctx, client, namespace, stub, "EKS TLS replicate-from stub"); err != nil {
+		return fmt.Errorf("apply EKS TLS replicate-from stub: %w", err)
+	}
 
-	if err := copySecretBetweenNamespaces(ctx, client, srcNamespace, secretNameTLS, namespace); err != nil {
-		return fmt.Errorf("copy TLS secret from %s to %s: %w", srcNamespace, namespace, err)
+	if err := waitForReplicatedSecret(ctx, client, namespace, secretNameTLS, "tls.crt", "tls.key"); err != nil {
+		return fmt.Errorf("%w (source is the replicate-from annotation in %s)", err, stub)
 	}
 
 	if err := applyExternalSecretsOther(ctx, client, repoRoot, chartPath, namespace, externalSecretsStore); err != nil {
@@ -181,43 +175,49 @@ func applySecretsForEKS(ctx context.Context, client *Client, repoRoot, chartPath
 	return nil
 }
 
-const externalSecretsReadyTimeout = 600 * time.Second
+const (
+	externalSecretsReadyTimeout = 600 * time.Second
 
-func copySecretBetweenNamespaces(ctx context.Context, client *Client, srcNamespace, secretName, destNamespace string) error {
-	logging.Logger.Debug().
-		Str("srcNamespace", srcNamespace).
-		Str("destNamespace", destNamespace).
-		Str("secret", secretName).
-		Msg("copying secret between namespaces")
+	replicatedSecretAttempts = 30
+	replicatedSecretInterval = 10 * time.Second
+)
 
-	secret, err := client.clientset.CoreV1().Secrets(srcNamespace).Get(ctx, secretName, metav1.GetOptions{})
-	if err != nil {
-		return fmt.Errorf("failed to get secret %s in namespace %s: %w", secretName, srcNamespace, err)
-	}
-
-	logging.Logger.Debug().
-		Str("secret", secretName).
-		Str("destNamespace", destNamespace).
-		Msg("applying copied secret to destination namespace")
-
-	secretApply := corev1apply.Secret(secretName, destNamespace).
-		WithLabels(secret.Labels).
-		WithAnnotations(secret.Annotations).
-		WithType(secret.Type).
-		WithData(secret.Data)
-
-	_, err = client.clientset.CoreV1().Secrets(destNamespace).Apply(
-		ctx,
-		secretApply,
-		defaultApplyOptions(),
-	)
-	if err != nil {
-		// Check if error is due to namespace termination
-		if strings.Contains(err.Error(), "is being terminated") || strings.Contains(err.Error(), "because it is being terminated") {
-			return fmt.Errorf("failed to apply copied secret %q to namespace %q: namespace is currently being deleted, please wait for deletion to complete or use a different namespace: %w", secretName, destNamespace, err)
+// The stub is applied with empty tls.crt/tls.key, so existence is not enough: the secret is
+// only usable once the replicator has copied values in.
+func waitForReplicatedSecret(ctx context.Context, client *Client, namespace, secretName string, keys ...string) error {
+	for range replicatedSecretAttempts {
+		secret, err := client.clientset.CoreV1().Secrets(namespace).Get(ctx, secretName, metav1.GetOptions{})
+		if err == nil {
+			missing := emptyKeys(secret.Data, keys)
+			if len(missing) == 0 {
+				logging.Logger.Debug().
+					Str("namespace", namespace).
+					Str("secret", secretName).
+					Msg("secret populated by the replicator")
+				return nil
+			}
+			logging.Logger.Debug().
+				Str("secret", secretName).
+				Strs("emptyKeys", missing).
+				Msg("waiting for the replicator to populate the secret")
 		}
-		return fmt.Errorf("failed to apply copied secret %q to namespace %q: %w", secretName, destNamespace, err)
+
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(replicatedSecretInterval):
+		}
 	}
 
-	return nil
+	return fmt.Errorf("secret %q in namespace %q was not populated by the replicator", secretName, namespace)
+}
+
+func emptyKeys(data map[string][]byte, keys []string) []string {
+	var missing []string
+	for _, key := range keys {
+		if len(data[key]) == 0 {
+			missing = append(missing, key)
+		}
+	}
+	return missing
 }
