@@ -80,6 +80,10 @@ func TestOrchestrationTopologyConstraints(t *testing.T) {
 		{"identity enabled", map[string]string{"identity.enabled": "true"}, "requires identity.enabled=false"},
 		{"identity URL empty", map[string]string{"global.identity.service.url": ""}, "requires global.identity.service.url"},
 		{"orchestration disabled", map[string]string{"orchestration.enabled": "false"}, "requires orchestration.enabled=true"},
+		// The Hub-plane databases belong to the Hub release; an orchestration
+		// release reaches Management Identity over the network instead.
+		{"identity postgresql enabled", map[string]string{"identityPostgresql.enabled": "true"}, "requires identityPostgresql.enabled=false"},
+		{"web modeler postgresql enabled", map[string]string{"webModelerPostgresql.enabled": "true"}, "requires webModelerPostgresql.enabled=false"},
 	}
 
 	for _, test := range tests {
@@ -116,4 +120,55 @@ func TestCombinedTopologyPreservesEnabledValues(t *testing.T) {
 		require.NoError(t, err)
 		require.Contains(t, output, "kind: Service")
 	}
+}
+
+// TestMultiTenancyRequiresIdentityAuthEnabled pins the Multi-Tenancy guard's
+// dependence on real booleans. global.identity.service.url is set (pointing at
+// the Hub's Management Identity) while global.identity.auth.enabled is false,
+// which is exactly the shape the guard's error message says must be rejected.
+// While $identityAuthEnabled was computed with `or`, it evaluated to the URL
+// string, `has false` never matched it, and Multi-Tenancy rendered with auth
+// disabled.
+func TestMultiTenancyRequiresIdentityAuthEnabled(t *testing.T) {
+	t.Parallel()
+
+	options := &helm.Options{
+		ValuesFiles: []string{filepath.Join("testdata", "orchestration.yaml")},
+		SetValues: map[string]string{
+			"global.topology.mode":         "combined",
+			"global.identity.auth.enabled": "false",
+			"global.multitenancy.enabled":  "true",
+			"identityPostgresql.enabled":   "true",
+			// Out of scope here, and combined mode demands its mail config.
+			"webModeler.enabled": "false",
+			"console.enabled":    "false",
+		},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/orchestration/configmap-unified.yaml"})
+	require.ErrorContains(t, err, "Multi-Tenancy feature")
+}
+
+// TestMultiTenancyAllowsIdentityAuthEnabled is the positive half of the guard:
+// with Identity reachable, auth enabled and a database configured, the same
+// values must render. Without it, tightening `or` to `and` could pass the test
+// above by rejecting every Multi-Tenancy configuration.
+func TestMultiTenancyAllowsIdentityAuthEnabled(t *testing.T) {
+	t.Parallel()
+
+	options := &helm.Options{
+		ValuesFiles: []string{filepath.Join("testdata", "orchestration.yaml")},
+		SetValues: map[string]string{
+			"global.topology.mode":         "combined",
+			"global.identity.auth.enabled": "true",
+			"global.multitenancy.enabled":  "true",
+			"identity.enabled":             "true",
+			"identityPostgresql.enabled":   "true",
+			"webModeler.enabled":           "false",
+			"console.enabled":              "false",
+		},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/orchestration/configmap-unified.yaml"})
+	require.NoError(t, err)
 }
