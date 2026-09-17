@@ -68,6 +68,14 @@ inputs:
     description: Chart directory whose Playwright config provides the test suite.
     required: false
     default: ""
+  e2e-test-suite-ref:
+    description: >
+      Git ref of camunda/c8-cross-component-e2e-tests to build and use instead
+      of npm latest. Prefer an immutable full commit SHA over a branch name:
+      npm lifecycle and build scripts from this ref execute on the runner, so
+      a mutable ref lets whoever can move it run arbitrary code here.
+    required: false
+    default: ""
   e2e-test-suite-token:
     description: Token with read access to camunda/c8-cross-component-e2e-tests.
     required: false
@@ -117,15 +125,6 @@ inputs:
       Name of the uploaded deploy-camunda binary artifact to download. When set, the
       binary is placed on PATH for multi-namespace credential merging and for the
       on-failure namespace diagnostics capture. Empty skips the download.
-    required: false
-    default: ""
-  e2e-test-suite-ref:
-    description: >
-      Ref of camunda/c8-cross-component-e2e-tests to check out and build in place
-      of the suite baked into the runner image. Empty (the default) skips both the
-      checkout and the build. Pass an immutable full commit SHA rather than a
-      branch name: npm lifecycle and build scripts from this ref execute on the
-      runner, so a mutable ref lets whoever can move it run arbitrary code here.
     required: false
     default: ""
 runs:
@@ -232,18 +231,21 @@ runs:
         ref: ${{ inputs.e2e-test-suite-ref }}
         path: .e2e-test-suite
         token: ${{ inputs.e2e-test-suite-token }}
-        # The suite is only read and built here; nothing pushes from it. Without
-        # this, the token stays in .e2e-test-suite/.git/config for every later
-        # step in the job, including the npm build below.
+        # The suite is only read and built here; nothing pushes from it.
+        # Without this, the caller's token is left in
+        # .e2e-test-suite/.git/config for every later step in the job,
+        # including the npm build below.
         persist-credentials: false
 
     - name: Build E2E test suite
       if: inputs.e2e-test-suite-ref != ''
       shell: bash
-      # Callers set the cluster and GitHub App secrets as env on the step that
-      # uses this composite action, so every step here inherits them regardless
-      # of ordering. npm ci and npm run build execute package scripts from the
+      # Callers set the cluster, Vault and GitHub App secrets as env on the
+      # step that uses this composite action, so every step here inherits
+      # them. npm ci and npm run build execute package scripts from the
       # checked-out suite, so blank those inherited values out for this step.
+      # Nothing before this point needs them, and cluster-auth below
+      # re-receives what it needs from the caller.
       env:
         GH_APP_ID: ""
         GH_APP_KEY: ""

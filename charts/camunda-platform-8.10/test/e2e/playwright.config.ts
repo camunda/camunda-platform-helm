@@ -13,12 +13,21 @@ dotenv.config();
 // TODO: Remove the fallback once QA publishes the SM-8.10 e2e test suite
 //  in the @camunda/e2e-test-suite npm package.
 const smTestDir = "./node_modules/@camunda/e2e-test-suite/dist/tests/SM-8.10";
-const hasSmSmokeSuite = fs.existsSync(
-  path.resolve(__dirname, smTestDir, "smoke-tests.spec.js"),
+const suiteInstalled = (spec: string) =>
+  fs.existsSync(path.resolve(__dirname, smTestDir, spec));
+
+// Entry-point specs for the projects makeShadowConfig declares. Every project
+// resolves its testMatch against the single testDir below, so the directory
+// has to be chosen on whether ANY of these is installed. Keying it off the
+// Keycloak smoke suite alone sent the whole config to ./empty-test-dir
+// whenever that one spec was absent, leaving e.g. the hub-web-modeler project
+// with "no tests found" even though its spec was sitting in smTestDir.
+const hasSmSmokeSuite = suiteInstalled("smoke-tests.spec.js");
+const hasHubWebModelerSuite = suiteInstalled("hub-web-modeler-smoke.spec.js");
+const hasTopologyOrchestrationSuite = suiteInstalled(
+  "topology-orchestration-smoke.spec.js",
 );
-const hasHubWebModelerSuite = fs.existsSync(
-  path.resolve(__dirname, smTestDir, "hub-web-modeler-smoke.spec.js"),
-);
+
 if (process.env.REQUIRE_SM_810_TEST_SUITE === "true" && !hasSmSmokeSuite) {
   throw new Error("The required SM-8.10 smoke test suite is not installed");
 }
@@ -30,7 +39,12 @@ if (
     "The required Hub and Web Modeler test suite is not installed",
   );
 }
-const testDir = hasSmSmokeSuite ? smTestDir : "./empty-test-dir";
+
+// A suite that is required but missing has already thrown above, so presence
+// is the whole condition here.
+const hasAnySuite =
+  hasSmSmokeSuite || hasHubWebModelerSuite || hasTopologyOrchestrationSuite;
+const testDir = hasAnySuite ? smTestDir : "./empty-test-dir";
 
 // When SM-8.10 is missing, create a fallback directory with a single skipped
 // test so Playwright exits with code 0 instead of failing on "No tests found".

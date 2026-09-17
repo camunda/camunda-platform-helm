@@ -2,8 +2,22 @@
 A template to handle constraints.
 */}}
 
-{{- $identityEnabled := (or (eq (include "camundaPlatform.identityEnabled" .) "true") .Values.global.identity.service.url) }}
-{{- $identityAuthEnabled := (or $identityEnabled .Values.global.identity.auth.enabled) }}
+{{/*
+Both of these must be real booleans, not truthy values: the Multi-Tenancy
+guard below tests them with `has false`, which never matches a non-empty
+string such as global.identity.service.url. And Identity counting as
+"auth enabled" requires BOTH Identity to be reachable AND
+global.identity.auth.enabled to be set, which is what the guard's own error
+message tells the user.
+*/}}
+{{- $identityEnabled := false }}
+{{- if or (eq (include "camundaPlatform.identityEnabled" .) "true") (not (empty .Values.global.identity.service.url)) }}
+  {{- $identityEnabled = true }}
+{{- end }}
+{{- $identityAuthEnabled := false }}
+{{- if and $identityEnabled .Values.global.identity.auth.enabled }}
+  {{- $identityAuthEnabled = true }}
+{{- end }}
 
 {{- $topologyMode := include "camundaPlatform.topologyMode" . }}
 {{- if not (has $topologyMode (list "combined" "orchestration")) }}
@@ -20,6 +34,18 @@ A template to handle constraints.
 {{- end }}
 {{- if and (eq $topologyMode "orchestration") (ne (include "camundaPlatform.orchestrationEnabled" .) "true") }}
   {{- fail "[camunda][error] global.topology.mode=orchestration requires orchestration.enabled=true." }}
+{{- end }}
+{{/*
+The Hub-plane databases belong to the release that runs Management Identity
+and Web Modeler. An orchestration-mode release reaches those over the network
+via global.identity.service.url, so leaving either PostgreSQL chart enabled
+silently deploys a second, unused Hub database per workload release.
+*/}}
+{{- if and (eq $topologyMode "orchestration") .Values.identityPostgresql.enabled }}
+  {{- fail "[camunda][error] global.topology.mode=orchestration requires identityPostgresql.enabled=false; the Management Identity database belongs to the Hub release." }}
+{{- end }}
+{{- if and (eq $topologyMode "orchestration") .Values.webModelerPostgresql.enabled }}
+  {{- fail "[camunda][error] global.topology.mode=orchestration requires webModelerPostgresql.enabled=false; the Web Modeler database belongs to the Hub release." }}
 {{- end }}
 
 {{/*
