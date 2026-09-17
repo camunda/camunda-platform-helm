@@ -911,3 +911,53 @@ func writeFile(t *testing.T, path, body string) {
 		t.Fatalf("write %s: %v", path, err)
 	}
 }
+
+// TestRegistryValidatorRejectsPathTraversalFeature covers the scenario-level
+// feature ID, the sibling of the per-release override Topology.Validate
+// guards. The planted persistence layer is what "../persistence/elasticsearch"
+// resolves to from values/features/, so before the guard the stat succeeded
+// and the scenario validated against a file it never named.
+func TestRegistryValidatorRejectsPathTraversalFeature(t *testing.T) {
+	_, chartDir, regDir := syntheticChart(t)
+	writeManifest(t, regDir, "    - id: bad\n      shortname: bad\n      tier: 1\n      enabled: true\n")
+	writeFile(t, filepath.Join(regDir, "scenarios", "bad.yaml"),
+		"name: bad\nauth: keycloak\nflows: [install]\nplatforms: [gke]\npersistence: elasticsearch\nfeatures:\n  - ../persistence/elasticsearch\n")
+
+	_, err := LoadRegistry(chartDir)
+	if err == nil || !strings.Contains(err.Error(), "plain filename") {
+		t.Fatalf("want plain-filename rejection on feature ID, got: %v", err)
+	}
+}
+
+// TestRegistryValidatorRejectsPathTraversalPersistence covers the
+// scenario-level persistence ID. "../features/leak" resolves out of
+// values/persistence/ into the features dir, where the layer is planted.
+func TestRegistryValidatorRejectsPathTraversalPersistence(t *testing.T) {
+	_, chartDir, regDir := syntheticChart(t)
+	writeFile(t, filepath.Join(chartDir, "test", "integration", "scenarios",
+		"chart-full-setup", "values", "features", "leak.yaml"), "{}\n")
+	writeManifest(t, regDir, "    - id: bad\n      shortname: bad\n      tier: 1\n      enabled: true\n")
+	writeFile(t, filepath.Join(regDir, "scenarios", "bad.yaml"),
+		"name: bad\nauth: keycloak\nflows: [install]\nplatforms: [gke]\npersistence: ../features/leak\n")
+
+	_, err := LoadRegistry(chartDir)
+	if err == nil || !strings.Contains(err.Error(), "plain filename") {
+		t.Fatalf("want plain-filename rejection on persistence ID, got: %v", err)
+	}
+}
+
+// TestRegistryValidatorAcceptsPlainFeatureAndPersistence is the positive
+// control: the guard must not reject the ordinary bare IDs every real scenario
+// uses.
+func TestRegistryValidatorAcceptsPlainFeatureAndPersistence(t *testing.T) {
+	_, chartDir, regDir := syntheticChart(t)
+	writeFile(t, filepath.Join(chartDir, "test", "integration", "scenarios",
+		"chart-full-setup", "values", "features", "multitenancy.yaml"), "{}\n")
+	writeManifest(t, regDir, "    - id: good\n      shortname: good\n      tier: 1\n      enabled: true\n")
+	writeFile(t, filepath.Join(regDir, "scenarios", "good.yaml"),
+		"name: good\nauth: keycloak\nflows: [install]\nplatforms: [gke]\npersistence: elasticsearch\nfeatures:\n  - multitenancy\n")
+
+	if _, err := LoadRegistry(chartDir); err != nil {
+		t.Fatalf("plain feature and persistence IDs should validate, got: %v", err)
+	}
+}
