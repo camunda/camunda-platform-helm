@@ -1,0 +1,98 @@
+name: Commit generated files
+
+on:
+  workflow_call:
+    inputs:
+      artifact-name:
+        required: true
+        type: string
+      base-sha:
+        required: true
+        type: string
+      target-ref:
+        required: true
+        type: string
+      update-modules:
+        default: false
+        type: boolean
+    secrets:
+      VAULT_ADDR:
+        required: true
+      VAULT_ROLE_ID:
+        required: true
+      VAULT_SECRET_ID:
+        required: true
+
+permissions: {}
+
+jobs:
+  push:
+    if: inputs.target-ref != 'main' && !startsWith(inputs.target-ref, 'stable/') && !startsWith(inputs.target-ref, 'release-please--')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions: {}
+    env:
+      BASE_SHA: ${{ inputs.base-sha }}
+      TARGET_REF: ${{ inputs.target-ref }}
+      TARGET_URL: ${{ github.server_url }}/${{ github.repository }}.git
+      GIT_CONFIG_NOSYSTEM: '1'
+      GIT_CONFIG_GLOBAL: /dev/null
+      GIT_NO_REPLACE_OBJECTS: '1'
+    steps:
+      - name: Download commit bundle
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: ${{ inputs.artifact-name }}
+          path: ${{ runner.temp }}/generated
+      - name: Validate generated commit
+        env:
+          ALLOWED_PATHS: '^charts/camunda-platform-[^/[:cntrl:]]+/(README\.md|values\.schema\.json|Chart\.lock|test/ci/registry-snapshot\.yaml|test/unit/[^/[:cntrl:]]+/(golden/[^/[:cntrl:]]+\.yaml|testdata/[^/[:cntrl:]]+\.golden\.yaml))$'
+          UPDATE_MODULES: ${{ inputs.update-modules }}
+        run: |
+          set -euo pipefail
+          if [ "$UPDATE_MODULES" = true ]; then ALLOWED_PATHS="$ALLOWED_PATHS|^(charts|scripts)/([^/[:cntrl:]]+/)*go\.(mod|sum)$"; fi
+          [[ "$BASE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          git check-ref-format "refs/heads/${TARGET_REF}"
+          test "$(wc -c < "$RUNNER_TEMP/generated/changes.bundle")" -le 52428800
+          git init --bare "$RUNNER_TEMP/publish.git"
+          cd "$RUNNER_TEMP/publish.git"
+          git fetch --no-tags "$TARGET_URL" "$BASE_SHA"
+          git bundle verify "$RUNNER_TEMP/generated/changes.bundle"
+          git -c fetch.fsckObjects=true fetch --no-tags "$RUNNER_TEMP/generated/changes.bundle" HEAD:refs/heads/generated
+          test "$(git rev-list --parents -n 1 refs/heads/generated)" = "$(git rev-parse refs/heads/generated) $BASE_SHA"
+          git diff-tree --no-commit-id --no-renames -r --name-only -z "$BASE_SHA" refs/heads/generated > "$RUNNER_TEMP/paths"
+          test -s "$RUNNER_TEMP/paths"
+          if grep -zvE "$ALLOWED_PATHS" "$RUNNER_TEMP/paths" > /dev/null; then echo 'Generated commit contains forbidden paths'; exit 1; fi
+          git diff-tree --no-commit-id --no-renames -r --raw "$BASE_SHA" refs/heads/generated > "$RUNNER_TEMP/modes"
+          if grep -vE '^:[0-7]{6} (100644|000000) ' "$RUNNER_TEMP/modes" > /dev/null; then echo 'Generated commit contains forbidden file modes'; exit 1; fi
+          test "$(git ls-remote "$TARGET_URL" "refs/heads/${TARGET_REF}" | cut -f1)" = "$BASE_SHA"
+      - name: Import GitHub App credentials
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        id: vault
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/distribution/ci GH_APP_ID_DISTRO_CI;
+            secret/data/products/distribution/ci GH_APP_PRIVATE_KEY_DISTRO_CI;
+          exportEnv: false
+      - name: Generate repository-scoped token
+        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
+        id: token
+        with:
+          app_id: ${{ steps.vault.outputs.GH_APP_ID_DISTRO_CI }}
+          private_key: ${{ steps.vault.outputs.GH_APP_PRIVATE_KEY_DISTRO_CI }}
+          repositories: '["${{ github.event.repository.name }}"]'
+          permissions: '{"contents":"write"}'
+      - name: Push generated commit
+        env:
+          GH_APP_TOKEN: ${{ steps.token.outputs.token }}
+        run: |
+          set -euo pipefail
+          # shellcheck disable=SC2016
+          git -C "$RUNNER_TEMP/publish.git" -c core.hooksPath=/dev/null \
+            -c credential.helper= \
+            -c credential.helper='!f() { echo username=x-access-token; echo "password=${GH_APP_TOKEN}"; }; f' \
+            push --force-with-lease="refs/heads/${TARGET_REF}:${BASE_SHA}" "$TARGET_URL" "refs/heads/generated:refs/heads/${TARGET_REF}"
