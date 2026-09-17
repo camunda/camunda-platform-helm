@@ -1,0 +1,22 @@
+# Do not add features: this scenario covers an external IdP at default values.
+name: oidc-defaults
+auth: oidc
+flows:
+  - install
+identity: oidc
+persistence: elasticsearch
+features:
+  - postgresql-companion
+platforms:
+  - gke
+exclude:
+  - identity
+  - console
+  - orchestration-grpc
+infra-type:
+  eks: preemptible
+  gke: distroci
+skip-e2e: true
+dependencies:
+  - postgresql
+  - elasticsearch
