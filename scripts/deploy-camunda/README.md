@@ -133,6 +133,7 @@ The most common starting points on chart 8.10:
 | `orchestration-tls.yaml` | Full mTLS between orchestration components. | keycloak | elasticsearch | install |
 | `no-secondary-storage.yaml` | Camunda without an Elasticsearch back-end. | keycloak | no-elasticsearch | install |
 | `alwaysgreen.yaml` | Canary/smoke scenario. | keycloak | elasticsearch | install |
+| `physicaltenants.yaml` | Multi-release topology (5 releases: hub, 1 orchestration, 3 optimize). Shortname `ptnt`. Tier 2. | keycloak | elasticsearch | install |
 
 [^flow-empty]: `documentstore.yaml` declares `flows: [""]`, which the
     runner normalises to `install` — see `matrix/runner.go`.
@@ -157,6 +158,37 @@ Full list (47 scenarios on 8.10):
 
 ```bash
 ls charts/camunda-platform-8.10/test/ci/registry/scenarios/
+```
+
+### Topology scenarios (multi-release)
+
+A topology scenario is a single matrix entry that fans out to N Helm releases, each in its own namespace, following a declared dependency order. Every release automatically receives its own `CAMUNDA_HOSTNAME`. Preflight validation reports all unpreparable releases in one invocation, and missing secret-mapping variables emit one summary line per release.
+
+Four topology scenarios exist on chart 8.10:
+- `mns` (`multinamespace`)
+- `mns2` (`multinamespace-2orch`)
+- `mnop` (`multinamespace-optimize`)
+- `ptnt` (`physicaltenants`)
+
+`ptnt` deploys 5 releases: 1 hub, 1 orchestration, and 3 optimize (default plus two per-tenant). The shortname `ptnt` is not guessable from "physicaltenants".
+
+`deploy-camunda matrix list --versions 8.10` shows the `SHORT` column but not per-release counts. `physicaltenants` is tier 2, so `matrix list --tier 1` hides it. To preview release counts, run with `--dry-run`:
+
+```bash
+# Preview topology fan-out (prints e.g. "8.10/physicaltenants (ptnt): 5 releases")
+deploy-camunda matrix run --repo-root . --versions 8.10 \
+  --shortname-filter ptnt --shortname-exact --dry-run
+```
+
+`matrix run` has no `--ttl` flag — that flag exists only on the root `deploy-camunda` command. For a matrix or topology run, set `DEPLOY_CAMUNDA_TTL=8h` in the environment (default 60m).
+
+Deploy `ptnt` to GKE:
+
+```bash
+deploy-camunda matrix run --repo-root . --versions 8.10 \
+  --shortname-filter ptnt --shortname-exact --flow-filter install --platform gke \
+  --ingress-base-domain-gke <your-zone> --namespace-prefix <prefix> \
+  --ensure-docker-registry --timeout 15 --yes
 ```
 
 ## Customising a scenario
@@ -788,6 +820,46 @@ For a full command reference and operational patterns, see
 | `deploy-camunda config env [--show-origin] [--unmask]` | Show effective env variables with provenance. |
 | `deploy-camunda config set/get/list/use/create/show` | Manage deployment profiles. |
 | `deploy-camunda watch --namespace <ns>` | Poll a running deploy and diagnose CrashLoopBackOff / ImagePullBackOff live. |
+
+### Matrix flags reference
+
+| Flag | Default | Purpose |
+| --- | --- | --- |
+| `--scenario-filter` | `""` | Filter scenarios by substring match (comma-separated for multiple). |
+| `--shortname-exact` | `false` | Treat `--shortname-filter` values as exact matches instead of substrings. |
+| `--format` | `"table"` | Output format for `matrix list` (`table`, `json`). |
+| `--tier` | `0` | Filter entries by tier (1=PR CI, 2=merge-queue only, 0=all). |
+| `--dry-run` | `false` | Log what would be deployed without touching the cluster. |
+| `--coverage` | `false` | Show layer-breakdown report of tested configurations without deploying. |
+| `--test-e2e` | `false` | Run e2e tests after each deployment. |
+| `--test-all` | `false` | Run all e2e tests after each deployment. |
+| `--stop-on-failure` | `false` | Stop matrix execution on first failure instead of draining remaining entries. |
+| `--kube-context` | `""` | Default Kubernetes context for all platforms. |
+| `--kube-context-gke` | `""` | Kubernetes context for GKE entries. |
+| `--kube-context-eks` | `""` | Kubernetes context for EKS entries. |
+| `--ingress-base-domain-gke` | `""` | Ingress base domain for GKE entries (e.g. `ci.distro.ultrawombat.com`). |
+| `--ingress-base-domain-eks` | `""` | Ingress base domain for EKS entries (e.g. `distribution.aws.camunda.cloud`). |
+| `--max-parallel` | `1` | Maximum number of matrix entries to deploy concurrently. |
+| `--env-file-8.6` | `""` | Path to `.env` file for 8.6 entries. |
+| `--env-file-8.7` | `""` | Path to `.env` file for 8.7 entries. |
+| `--env-file-8.8` | `""` | Path to `.env` file for 8.8 entries. |
+| `--env-file-8.9` | `""` | Path to `.env` file for 8.9 entries. |
+| `--skip-dependency-update` | `false` | Skip `helm dependency update` before deploying. |
+| `--use-vault-backed-secrets` | `false` | Use vault-backed external secrets for all platforms. |
+| `--use-vault-backed-secrets-gke` | `false` | Use vault-backed external secrets for GKE entries. |
+| `--use-vault-backed-secrets-eks` | `false` | Use vault-backed external secrets for EKS entries. |
+| `--upgrade-from-version` | `""` | Override auto-resolved base chart version for upgrade flows (e.g. `13.5.0`). |
+| `--use-latest` | `false` | Use `values-latest.yaml` from chart root instead of `values-digest.yaml`. |
+| `--use-qa` | `false` | Force `base-qa` layer inclusion for all entries regardless of scenario config. |
+| `--force-image-overrides` | `false` | Bypass OCI immutability guard to allow chart-root image overlays when `--chart-ref` is set. |
+| `--yes` | `false` | Skip confirmation prompts (e.g. e2e threshold warning). |
+| `--log-dir` | `""` | Write logs to directory and display live status table. |
+| `--extra-helm-arg` | `[]` | Extra argument appended to every helm command (repeatable). |
+| `--extra-helm-set` | `[]` | Extra helm `--set key=value` applied to every entry (repeatable or comma-separated). |
+| `--chart-ref` | `""` | Override chart source with an OCI reference or `.tgz` archive path. |
+| `--chart-version` | `""` | Chart version to install when `--chart-ref` is set. |
+| `--wait-ingress-ready` | `false` | Fail entry if ingress host is not publicly DNS-resolvable and HTTP-reachable after deploy. |
+| `--ingress-ready-timeout` | `8` | Timeout in minutes for `--wait-ingress-ready`. |
 
 ## Watch internals
 
