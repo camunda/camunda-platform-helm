@@ -15,9 +15,12 @@
 package mapper
 
 import (
+	"bytes"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"reflect"
+	"scripts/camunda-core/pkg/logging"
 	"testing"
 )
 
@@ -104,4 +107,147 @@ func TestGenerateStrictFailsOnMissing(t *testing.T) {
 	if err := GenerateStrict("ci/path PRESENT,MISSING;", "s", out, full); err != nil {
 		t.Errorf("GenerateStrict should succeed when all vars set, got %v", err)
 	}
+}
+
+// perVarMissingWarnMsg is the message currently emitted by generate() for
+// EVERY unset/empty mapped variable (mapper.go ~L95). The planned fix demotes
+// this to Debug and folds the detail into the existing summary event instead.
+const perVarMissingWarnMsg = "Environment variable empty or missing, omitting from secret"
+
+type capturedLogEvent struct {
+	Level       string   `json:"level"`
+	Message     string   `json:"message"`
+	Var         string   `json:"var"`
+	Missing     *int     `json:"missing"`
+	MissingVars []string `json:"missingVars"`
+}
+
+func decodeLogEvents(t *testing.T, raw []byte) []capturedLogEvent {
+	t.Helper()
+	var events []capturedLogEvent
+	for _, line := range bytes.Split(raw, []byte("\n")) {
+		line = bytes.TrimSpace(line)
+		if len(line) == 0 {
+			continue
+		}
+		var ev capturedLogEvent
+		if err := json.Unmarshal(line, &ev); err != nil {
+			t.Fatalf("decode log line %q: %v", line, err)
+		}
+		events = append(events, ev)
+	}
+	return events
+}
+
+func containsAll(haystack, want []string) bool {
+	for _, w := range want {
+		found := false
+		for _, h := range haystack {
+			if h == w {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return false
+		}
+	}
+	return true
+}
+
+// TestMapper_MissingVarsSummarisedNotPerVariable locks the intended fix for the
+// per-variable Warn log spam in generate() (mapper.go ~L95): at default/Info
+// level, missing variables must be reported ONCE via the existing summary
+// event (mapper.go ~L103), carrying both a `missing` count and a `missingVars`
+// list, with per-variable events demoted to Debug (still visible when Debug
+// is explicitly enabled) and no warn summary at all when nothing is missing.
+func TestMapper_MissingVarsSummarisedNotPerVariable(t *testing.T) {
+	const mapping = "ci/path PRESENT_VAR,MISSING_VAR_1,MISSING_VAR_2;"
+	overrides := map[string]string{"PRESENT_VAR": "value"}
+	expectedMissing := []string{"MISSING_VAR_1", "MISSING_VAR_2"}
+
+	t.Run("default level summarises missing vars without per-variable warns", func(t *testing.T) {
+		var buf bytes.Buffer
+		if err := logging.Setup(logging.Options{Writer: &buf, UseJSON: true, ColorEnabled: false}); err != nil {
+			t.Fatalf("logging.Setup: %v", err)
+		}
+
+		out := filepath.Join(t.TempDir(), "secret.yaml")
+		if err := Generate(mapping, "s", out, overrides); err != nil {
+			t.Fatalf("Generate: %v", err)
+		}
+
+		events := decodeLogEvents(t, buf.Bytes())
+
+		for _, ev := range events {
+			if ev.Message == perVarMissingWarnMsg {
+				t.Errorf("unexpected per-variable warn event at default level: %+v", ev)
+			}
+		}
+
+		var warnEvents []capturedLogEvent
+		for _, ev := range events {
+			if ev.Level == "warn" {
+				warnEvents = append(warnEvents, ev)
+			}
+		}
+		if len(warnEvents) != 1 {
+			t.Fatalf("expected exactly one warn event, got %d: %+v", len(warnEvents), warnEvents)
+		}
+
+		summary := warnEvents[0]
+		if summary.Missing == nil || *summary.Missing != len(expectedMissing) {
+			t.Errorf("summary warn event field 'missing' = %v, want %d", summary.Missing, len(expectedMissing))
+		}
+		if !containsAll(summary.MissingVars, expectedMissing) {
+			t.Errorf("summary warn event field 'missingVars' = %v, want to contain %v", summary.MissingVars, expectedMissing)
+		}
+	})
+
+	t.Run("debug level still exposes per-variable detail", func(t *testing.T) {
+		var buf bytes.Buffer
+		if err := logging.Setup(logging.Options{Writer: &buf, UseJSON: true, ColorEnabled: false, LevelString: "debug"}); err != nil {
+			t.Fatalf("logging.Setup: %v", err)
+		}
+
+		out := filepath.Join(t.TempDir(), "secret.yaml")
+		if err := Generate(mapping, "s", out, overrides); err != nil {
+			t.Fatalf("Generate: %v", err)
+		}
+
+		events := decodeLogEvents(t, buf.Bytes())
+
+		var perVarVars []string
+		for _, ev := range events {
+			if ev.Message == perVarMissingWarnMsg {
+				perVarVars = append(perVarVars, ev.Var)
+			}
+		}
+		if len(perVarVars) != len(expectedMissing) {
+			t.Fatalf("expected %d per-variable debug events, got %d: %v", len(expectedMissing), len(perVarVars), perVarVars)
+		}
+		if !containsAll(perVarVars, expectedMissing) {
+			t.Errorf("per-variable debug events var= %v, want to contain %v", perVarVars, expectedMissing)
+		}
+	})
+
+	t.Run("nothing missing emits no warn summary", func(t *testing.T) {
+		var buf bytes.Buffer
+		if err := logging.Setup(logging.Options{Writer: &buf, UseJSON: true, ColorEnabled: false}); err != nil {
+			t.Fatalf("logging.Setup: %v", err)
+		}
+
+		out := filepath.Join(t.TempDir(), "secret.yaml")
+		allPresent := map[string]string{"PRESENT_VAR": "value"}
+		if err := Generate("ci/path PRESENT_VAR;", "s", out, allPresent); err != nil {
+			t.Fatalf("Generate: %v", err)
+		}
+
+		events := decodeLogEvents(t, buf.Bytes())
+		for _, ev := range events {
+			if ev.Level == "warn" {
+				t.Errorf("unexpected warn event when nothing is missing: %+v", ev)
+			}
+		}
+	})
 }
