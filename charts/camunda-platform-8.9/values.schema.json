@@ -3233,7 +3233,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be used to set the Docker image tag for the WebModeler images",
-                            "default": "8.9.8"
+                            "default": "8.9.9"
                         },
                         "pullSecrets": {
                             "type": "array",
@@ -6906,7 +6906,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.9.19"
+                            "default": "8.9.21"
                         },
                         "digest": {
                             "type": "string",
