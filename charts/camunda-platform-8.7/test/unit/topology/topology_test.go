@@ -50,7 +50,7 @@ func TestTopologyTemplate(t *testing.T) {
 		release:   "camunda",
 		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
 		// The release ConfigMap renders in every mode, so it is enough to
-		// reach the constraints in templates/common/constraints.tpl.
+		// reach the constraints in templates/camunda/constraints.tpl.
 		templates: []string{"templates/camunda/configmap-release.yaml"},
 	})
 }
