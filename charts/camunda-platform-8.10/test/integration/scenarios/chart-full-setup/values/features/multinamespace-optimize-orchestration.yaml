@@ -17,6 +17,10 @@
 # into the Hub namespace, referenced here by FQDN via the
 # EXTERNAL_ELASTICSEARCH_* env vars.
 
+global:
+  topology:
+    mode: orchestration
+
 orchestration:
   data:
     secondaryStorage:
@@ -27,23 +31,21 @@ orchestration:
     prefix: $ORCHESTRATION_INDEX_PREFIX
   exporters:
     # Optimize reads zeebe-record indices, so this release must run the legacy
-    # exporter even though no Optimize workload lives here.
+    # exporter even though no Optimize workload lives here. Both orchestration
+    # releases share one Elasticsearch, so the prefix must be per-release or
+    # their records collide. Each Optimize release reads this same value back
+    # through its own optimize.database.elasticsearch.prefix, supplied by the
+    # topology driver's per-suffix ORCHESTRATION_INDEX_PREFIX cross-ref env.
     zeebe:
       enabled: true
+      index:
+        prefix: $ORCHESTRATION_INDEX_PREFIX
 
-# Both orchestration releases share one Elasticsearch, so the legacy exporter
-# needs a per-release prefix or their records collide. optimize.database is the
-# chart's only key for it (templates/orchestration/files/_application.yaml
-# renders the legacy exporter prefix from it) and applies even with no Optimize
-# workload in this release. The Optimize releases read this same value via the
-# topology driver's <SUFFIX>_ORCHESTRATION_INDEX_PREFIX cross-ref env.
 optimize:
-  # identity/keycloak-external.yaml enables Optimize for the single-release
-  # multinamespace topologies; in this one Optimize is its own release.
+  # base.yaml enables Optimize for every CI scenario; in this topology each
+  # Optimize is its own release. The legacy exporter this release runs is
+  # configured above, under orchestration.exporters.zeebe.index.prefix.
   enabled: false
-  database:
-    elasticsearch:
-      prefix: $ORCHESTRATION_INDEX_PREFIX
 
 connectors:
   enabled: true

@@ -15,6 +15,8 @@
 # second source of truth.
 
 global:
+  topology:
+    mode: orchestration
   identity:
     auth:
       # The exact "iss" the companion Keycloak mints. Required once Physical
@@ -38,6 +40,10 @@ orchestration:
     # exporter is declared per tenant below, keyed by that tenant's prefix.
     zeebe:
       enabled: true
+      # Serves the default Physical Tenant. Each declared tenant carries its own
+      # exporter prefix in the imported file below.
+      index:
+        prefix: $ORCHESTRATION_INDEX_PREFIX
   extraConfiguration:
     - file: physical-tenants.yaml
       content: |
@@ -120,13 +126,11 @@ orchestration:
                         - demo
 
 optimize:
-  # identity/keycloak-external.yaml enables Optimize for the single-release
-  # multinamespace topologies; here each tenant gets its own Optimize release.
+  # base.yaml enables Optimize for every CI scenario; here each tenant gets its
+  # own Optimize release instead (features/physicaltenants-optimize-*.yaml).
+  # The legacy exporter this release runs is configured above, under
+  # orchestration.exporters.zeebe.index.prefix.
   enabled: false
-  database:
-    elasticsearch:
-      # Root legacy exporter prefix, serving the default Physical Tenant only.
-      prefix: $ORCHESTRATION_INDEX_PREFIX
 
 connectors:
   enabled: true

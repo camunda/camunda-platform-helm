@@ -32,19 +32,19 @@ func (s *ConfigmapTemplateTest) TestMultiZoneBootstrapSurvivesCleanup() {
 		testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, []testhelpers.TestCase{{
 			Name: fmt.Sprintf("retention-%t", keep),
 			Values: map[string]string{
-				"orchestration.multiregion.mode":                      "zoned",
-				"orchestration.multiregion.zone":                      "zone-a",
-				"orchestration.multiregion.keepUnzonedBrokers":        fmt.Sprint(keep),
-				"orchestration.multiregion.regions":                   "1",
-				"orchestration.multiregion.regionId":                  "0",
-				"orchestration.multiregion.zones[0].name":             "zone-a",
-				"orchestration.multiregion.zones[0].numberOfBrokers":  "2",
-				"orchestration.multiregion.zones[0].numberOfReplicas": "2",
-				"orchestration.multiregion.zones[0].priority":         "100",
-				"orchestration.multiregion.zones[1].name":             "remote-zone",
-				"orchestration.multiregion.zones[1].numberOfBrokers":  "1",
-				"orchestration.multiregion.zones[1].numberOfReplicas": "1",
-				"orchestration.multiregion.zones[1].priority":         "90",
+				"orchestration.partitioning.scheme":                    "zone-aware",
+				"orchestration.partitioning.zone":                      "zone-a",
+				"orchestration.partitioning.keepUnzonedBrokers":        fmt.Sprint(keep),
+				"orchestration.partitioning.regions":                   "1",
+				"orchestration.partitioning.regionId":                  "0",
+				"orchestration.partitioning.zones[0].name":             "zone-a",
+				"orchestration.partitioning.zones[0].numberOfBrokers":  "2",
+				"orchestration.partitioning.zones[0].numberOfReplicas": "2",
+				"orchestration.partitioning.zones[0].priority":         "100",
+				"orchestration.partitioning.zones[1].name":             "remote-zone",
+				"orchestration.partitioning.zones[1].numberOfBrokers":  "1",
+				"orchestration.partitioning.zones[1].numberOfReplicas": "1",
+				"orchestration.partitioning.zones[1].priority":         "90",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
@@ -83,24 +83,24 @@ func (s *ConfigmapTemplateTest) TestMultiZoneBootstrapSurvivesCleanup() {
 
 func (s *StatefulSetTest) TestMultiZoneCleanupPreservesPodTemplateAndContactOverride() {
 	values := map[string]string{
-		"orchestration.multiregion.mode":                      "zoned",
-		"orchestration.multiregion.zone":                      "zone-a",
-		"orchestration.multiregion.keepUnzonedBrokers":        "true",
-		"orchestration.multiregion.regions":                   "1",
-		"orchestration.multiregion.regionId":                  "0",
-		"orchestration.multiregion.zones[0].name":             "zone-a",
-		"orchestration.multiregion.zones[0].numberOfBrokers":  "2",
-		"orchestration.multiregion.zones[0].numberOfReplicas": "2",
-		"orchestration.multiregion.zones[0].priority":         "100",
-		"orchestration.multiregion.zones[1].name":             "zone-b",
-		"orchestration.multiregion.zones[1].numberOfBrokers":  "1",
-		"orchestration.multiregion.zones[1].numberOfReplicas": "1",
-		"orchestration.multiregion.zones[1].priority":         "90",
-		"orchestration.env[0].name":                           "CAMUNDA_CLUSTER_INITIALCONTACTPOINTS",
-		"orchestration.env[0].value":                          "remote.example:26502",
+		"orchestration.partitioning.scheme":                    "zone-aware",
+		"orchestration.partitioning.zone":                      "zone-a",
+		"orchestration.partitioning.keepUnzonedBrokers":        "true",
+		"orchestration.partitioning.regions":                   "1",
+		"orchestration.partitioning.regionId":                  "0",
+		"orchestration.partitioning.zones[0].name":             "zone-a",
+		"orchestration.partitioning.zones[0].numberOfBrokers":  "2",
+		"orchestration.partitioning.zones[0].numberOfReplicas": "2",
+		"orchestration.partitioning.zones[0].priority":         "100",
+		"orchestration.partitioning.zones[1].name":             "zone-b",
+		"orchestration.partitioning.zones[1].numberOfBrokers":  "1",
+		"orchestration.partitioning.zones[1].numberOfReplicas": "1",
+		"orchestration.partitioning.zones[1].priority":         "90",
+		"orchestration.env[0].name":                            "CAMUNDA_CLUSTER_INITIALCONTACTPOINTS",
+		"orchestration.env[0].value":                           "remote.example:26502",
 	}
 	before := s.renderStatefulSet(values, s.release+"-zeebe-zone-a")
-	values["orchestration.multiregion.keepUnzonedBrokers"] = "false"
+	values["orchestration.partitioning.keepUnzonedBrokers"] = "false"
 	after := s.renderStatefulSet(values, s.release+"-zeebe-zone-a")
 	s.Require().NotEmpty(before.Spec.Template.Annotations["checksum/config"])
 	s.Require().Equal(before.Spec.Template, after.Spec.Template)

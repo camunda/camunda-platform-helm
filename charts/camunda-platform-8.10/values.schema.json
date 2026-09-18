@@ -1357,7 +1357,7 @@
                 "multiregion": {
                     "type": "object",
                     "additionalProperties": false,
-                    "description": "DEPRECATED, use orchestration.multiregion. Only the regions and regionId settings remain here; zoned mode is configured under orchestration.multiregion.",
+                    "description": "DEPRECATED, use orchestration.partitioning. Only the regions and regionId settings remain here; the zone-aware scheme is configured under orchestration.partitioning.",
                     "default": {},
                     "properties": {
                         "regions": {
@@ -1365,7 +1365,7 @@
                                 "integer",
                                 "string"
                             ],
-                            "description": "Number of regions this Camunda Platform instance is stretched across.",
+                            "description": "Number of regions this Camunda Platform instance is stretched across. Must be at least 1; the render fails otherwise.",
                             "default": 1
                         },
                         "regionId": {
@@ -1373,7 +1373,7 @@
                                 "integer",
                                 "string"
                             ],
-                            "description": "Unique id of the region. MUST start at 0 for the computation to work correctly. With 2 regions, you would have region 0 and 1.",
+                            "description": "Unique id of the region. MUST start at 0 for the computation to work correctly. With 2 regions, you would have region 0 and 1. A value outside 0 to regions - 1 fails the render, since node IDs are derived as <ordinal> * regions + regionId.",
                             "default": 0
                         }
                     }
@@ -4687,28 +4687,28 @@
                         }
                     }
                 },
-                "multiregion": {
+                "partitioning": {
                     "type": "object",
                     "properties": {
-                        "mode": {
+                        "scheme": {
                             "type": "string",
-                            "description": "selects how a broker learns which failure domain it belongs to. `numbered` derives a region from the node ID, `zoned` takes a zone name.",
-                            "default": "numbered",
+                            "description": "partitioning scheme. `round-robin` leaves brokers on plain numeric node IDs, `zone-aware` identifies them as `<zone>_<index>` and places replicas across the declared zones. These are two of the schemes accepted by camunda.cluster.partitioning.scheme; the engine also accepts FIXED, which this chart does not render.",
+                            "default": "round-robin",
                             "enum": [
-                                "numbered",
-                                "zoned"
+                                "round-robin",
+                                "zone-aware"
                             ]
                         },
                         "zone": {
                             "type": "string",
-                            "description": "can be used to define the zone of this Orchestration Cluster deployment when using zoned mode.",
+                            "description": "can be used to define the zone of this Orchestration Cluster deployment when using the zone-aware scheme. Must be an RFC 1123 label of at most 32 characters to fit zone-suffixed resource names.",
                             "default": "",
                             "maxLength": 32,
                             "pattern": "^$|^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
                         },
                         "zones": {
                             "type": "array",
-                            "description": "can be used to define the zones of the Orchestration Cluster when using zoned mode.",
+                            "description": "can be used to define the zones of the Orchestration Cluster when using the zone-aware scheme.",
                             "default": [],
                             "items": {
                                 "type": "object",
@@ -4725,7 +4725,7 @@
                                         "minLength": 1,
                                         "maxLength": 32,
                                         "pattern": "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$",
-                                        "description": "Name of the zone. It is the prefix of the composite broker member ID \"<zone>_<node-id>\", and one of these names must be selected by orchestration.multiregion.zone. Restricted to an RFC 1123 label: an underscore would make the composite ID ambiguous, and the name is also used to derive per-zone resource and DNS names."
+                                        "description": "Name of the zone. It is the prefix of the composite broker member ID \"<zone>_<node-id>\", and one of these names must be selected by orchestration.partitioning.zone. Restricted to an RFC 1123 label: an underscore would make the composite ID ambiguous, and the name is also used to derive per-zone resource and DNS names."
                                     },
                                     "numberOfBrokers": {
                                         "type": "integer",
@@ -4747,7 +4747,7 @@
                         },
                         "keepUnzonedBrokers": {
                             "type": "boolean",
-                            "description": "also renders the numbered broker StatefulSet alongside the zoned one during migration. Keep the previous regions and regionId values here until the numbered brokers are removed; move them from global.multiregion when migrating from the deprecated block.",
+                            "description": "also renders the round-robin broker StatefulSet alongside the zoned one during migration. Keep the previous regions and regionId values here until the round-robin brokers are removed; move them from global.multiregion when migrating from the deprecated block.",
                             "default": false
                         },
                         "regions": {
@@ -4756,7 +4756,7 @@
                                 "string",
                                 "null"
                             ],
-                            "description": "Number of regions this Camunda Platform instance is stretched across.",
+                            "description": "Number of regions this Camunda Platform instance is stretched across. Must be at least 1; the render fails otherwise. With the zone-aware scheme, set the previous value while keepUnzonedBrokers is true.",
                             "default": null
                         },
                         "regionId": {
@@ -4765,12 +4765,12 @@
                                 "string",
                                 "null"
                             ],
-                            "description": "Unique id of the region. MUST start at 0 for the computation to work correctly. With 2 regions, you would have region 0 and 1.",
+                            "description": "Unique id of the region. MUST start at 0 for the computation to work correctly. With 2 regions, you would have region 0 and 1. A value outside 0 to regions - 1 fails the render, since node IDs are derived as <ordinal> * regions + regionId. With the zone-aware scheme, set the previous value while keepUnzonedBrokers is true.",
                             "default": null
                         }
                     },
                     "additionalProperties": false,
-                    "description": "Multi-region configuration for the Orchestration cluster. WARNING: get your configuration reviewed by Camunda before going to production — see https://docs.camunda.io/docs/self-managed/concepts/multi-region/dual-region/.",
+                    "description": "How partition replicas are distributed across brokers, and how brokers are grouped into failure domains. Mirrors the engine configuration camunda.cluster.partitioning. This does not set the number of partitions, which is orchestration.partitionCount; it sets how the replicas of those partitions are placed. WARNING: get your configuration reviewed by Camunda before going to production — see https://docs.camunda.io/docs/self-managed/concepts/multi-region/dual-region/.",
                     "default": {}
                 },
                 "clusterSize": {
@@ -4780,12 +4780,12 @@
                 },
                 "partitionCount": {
                     "type": "string",
-                    "description": "(DEPRECATED) defines how many partitions are set up in the cluster",
+                    "description": "defines how many partitions are set up in the cluster",
                     "default": "3"
                 },
                 "replicationFactor": {
                     "type": "string",
-                    "description": "(DEPRECATED) defines how each partition is replicated, the value defines the number of nodes",
+                    "description": "defines how each partition is replicated, the value defines the number of nodes",
                     "default": "3"
                 },
                 "env": {
@@ -5835,6 +5835,16 @@
                                     ],
                                     "description": "(DEPRECATED) can be used to specify the number of replicas for the legacy Zeebe Elasticsearch and OpenSearch exporter indices. Defaults to orchestration.index.replicas.",
                                     "default": null
+                                },
+                                "index": {
+                                    "type": "object",
+                                    "properties": {
+                                        "prefix": {
+                                            "type": "string",
+                                            "description": "defines the index prefix the legacy Zeebe exporter writes, for whichever of Elasticsearch or OpenSearch is in use. Set it on the release running the Orchestration Cluster. When empty, \"optimize.database.elasticsearch.prefix\" (or its OpenSearch equivalent) is used instead.",
+                                            "default": ""
+                                        }
+                                    }
                                 }
                             }
                         },
@@ -5875,7 +5885,7 @@
                     "properties": {
                         "prefix": {
                             "type": "string",
-                            "description": "(DEPRECATED) if specified, defines an index prefix in Elasticsearch/OpenSearch for Orchestration Cluster indices. For ES/OS exporters or Optimize use the \"optimize.database.elasticsearch.prefix\" or OpenSearch equivalent.",
+                            "description": "(DEPRECATED) if specified, defines an index prefix in Elasticsearch/OpenSearch for Orchestration Cluster indices. This does not apply to the legacy Zeebe exporter, which is configured by \"orchestration.exporters.zeebe.index.prefix\", nor to the indices Optimize reads, which are named by \"optimize.database.elasticsearch.prefix\" or the OpenSearch equivalent.",
                             "default": ""
                         },
                         "replicas": {
@@ -6268,7 +6278,7 @@
                                 },
                                 "prefix": {
                                     "type": "string",
-                                    "description": "(DEPRECATED) defines the prefix which is used by the old Zeebe Elasticsearch Exporter to create Elasticsearch indexes and consumed by Optimize.",
+                                    "description": "(DEPRECATED) defines the prefix of the Elasticsearch indexes Optimize reads. The exporter writing them is configured by \"orchestration.exporters.zeebe.index.prefix\"; keep the two equal.",
                                     "default": "zeebe-record"
                                 }
                             }
@@ -6368,7 +6378,7 @@
                                 },
                                 "prefix": {
                                     "type": "string",
-                                    "description": "(DEPRECATED) defines the prefix which is used by the old Zeebe OpenSearch Exporter to create OpenSearch indexes and consumed by Optimize.",
+                                    "description": "(DEPRECATED) defines the prefix of the OpenSearch indexes Optimize reads. The exporter writing them is configured by \"orchestration.exporters.zeebe.index.prefix\"; keep the two equal.",
                                     "default": "zeebe-record"
                                 }
                             }

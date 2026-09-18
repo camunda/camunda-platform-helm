@@ -12,8 +12,8 @@
     ) -}}
 {{- end -}}
 
-{{- define "orchestration.zoned" -}}
-{{- eq (include "camundaPlatform.multiregion" . | fromJson).mode "zoned" -}}
+{{- define "orchestration.zoneAware" -}}
+{{- eq (include "camundaPlatform.partitioning" . | fromJson).scheme "zone-aware" -}}
 {{- end -}}
 
 {{- define "orchestration.renderManifest" -}}
@@ -32,21 +32,21 @@
 -}}
 {{- $_ := set $ctx "OrchestrationRender" (dict "scope" $scope "zone" (.zone | default "")) -}}
 {{- if eq $scope "unzoned" }}
-{{- $_ := set $ctx.Values.orchestration.multiregion "mode" "numbered" -}}
+{{- $_ := set $ctx.Values.orchestration.partitioning "scheme" "round-robin" -}}
 {{- end }}
 {{- if hasKey . "keepUnzonedBrokers" }}
-{{- $_ := set $ctx.Values.orchestration.multiregion "keepUnzonedBrokers" .keepUnzonedBrokers -}}
+{{- $_ := set $ctx.Values.orchestration.partitioning "keepUnzonedBrokers" .keepUnzonedBrokers -}}
 {{- end }}
 {{- include .manifest $ctx -}}
 {{- end -}}
 
 {{- define "orchestration.renderBrokerGenerations" -}}
 {{- $context := .context -}}
-{{- if eq (include "orchestration.zoned" $context) "true" -}}
-{{- $mr := include "camundaPlatform.multiregion" $context | fromJson -}}
+{{- if eq (include "orchestration.zoneAware" $context) "true" -}}
+{{- $partitioning := include "camundaPlatform.partitioning" $context | fromJson -}}
 ---
-{{ include "orchestration.renderManifest" (dict "manifest" .manifest "context" $context "scope" "zoned" "zone" $mr.zone) }}
-{{- if $mr.keepUnzonedBrokers }}
+{{ include "orchestration.renderManifest" (dict "manifest" .manifest "context" $context "scope" "zoned" "zone" $partitioning.zone) }}
+{{- if $partitioning.keepUnzonedBrokers }}
 ---
 {{ include "orchestration.renderManifest" (dict "manifest" .manifest "context" $context "scope" "unzoned") }}
 {{- end }}
@@ -57,10 +57,10 @@
 
 {{- define "orchestration.renderHeadlessServices" -}}
 {{- $context := .context -}}
-{{- if eq (include "orchestration.zoned" $context) "true" -}}
-{{- $mr := include "camundaPlatform.multiregion" $context | fromJson -}}
+{{- if eq (include "orchestration.zoneAware" $context) "true" -}}
+{{- $partitioning := include "camundaPlatform.partitioning" $context | fromJson -}}
 ---
-{{ include "orchestration.renderManifest" (dict "manifest" "orchestration.serviceHeadless" "context" $context "scope" "zoned" "zone" $mr.zone) }}
+{{ include "orchestration.renderManifest" (dict "manifest" "orchestration.serviceHeadless" "context" $context "scope" "zoned" "zone" $partitioning.zone) }}
 ---
 {{ include "orchestration.renderManifest" (dict "manifest" "orchestration.serviceHeadless" "context" $context "scope" "unzoned") }}
 {{- else -}}
@@ -90,7 +90,7 @@ Takes a dict with the root context and an optional explicit zone.
 {{- fail "orchestration.scopedZone requires an orchestration render scope" -}}
 {{- end -}}
 {{- if eq .OrchestrationRender.scope "zoned" -}}
-{{- required "[camunda][error] orchestration.multiregion.zone must name the zone this release is deployed to when using zoned mode" .OrchestrationRender.zone -}}
+{{- required "[camunda][error] orchestration.partitioning.zone must name the zone this release is deployed to when using zoned mode" .OrchestrationRender.zone -}}
 {{- end -}}
 {{- end -}}
 
@@ -110,55 +110,25 @@ Takes a dict with the root context and an optional explicit zone.
 {{- end -}}
 
 {{/*
-NOTE: takes a dict of "zones" and the zone "field" to total, not the root context.
+NOTE: the sizing below is resolved once by camundaPlatform.partitioning, which decides the
+scheme and derives the totals from the zone list or the values keys. These read the result
+rather than branching on the scheme again.
 */}}
-{{- define "orchestration.zoneSum" -}}
-{{- $total := 0 -}}
-{{- $field := .field -}}
-{{- range .zones -}}
-  {{- $total = add $total (int (index . $field)) -}}
-{{- end -}}
-{{- $total -}}
-{{- end -}}
-
 {{- define "orchestration.clusterSize" -}}
-{{- if eq (include "orchestration.zoned" .) "true" -}}
-  {{- include "orchestration.zoneSum" (dict "zones" (include "camundaPlatform.multiregion" $ | fromJson).zones "field" "numberOfBrokers") -}}
-{{- else -}}
-  {{- .Values.orchestration.clusterSize -}}
-{{- end -}}
+{{- (include "camundaPlatform.partitioning" . | fromJson).clusterSize -}}
 {{- end -}}
 
 {{- define "orchestration.replicationFactor" -}}
-{{- if eq (include "orchestration.zoned" .) "true" -}}
-  {{- include "orchestration.zoneSum" (dict "zones" (include "camundaPlatform.multiregion" $ | fromJson).zones "field" "numberOfReplicas") -}}
-{{- else -}}
-  {{- .Values.orchestration.replicationFactor -}}
-{{- end -}}
-{{- end -}}
-
-{{- define "orchestration.zoneBrokers" -}}
-{{- $mr := include "camundaPlatform.multiregion" $ | fromJson -}}
-{{- $zoneBrokers := 0 -}}
-{{- range $mr.zones -}}
-  {{- if eq .name $mr.zone -}}
-    {{- $zoneBrokers = int .numberOfBrokers -}}
-  {{- end -}}
-{{- end -}}
-{{- $zoneBrokers -}}
+{{- (include "camundaPlatform.partitioning" . | fromJson).replicationFactor -}}
 {{- end -}}
 
 {{- define "orchestration.numberedReplicas" -}}
-{{- $mr := include "camundaPlatform.multiregion" $ | fromJson -}}
-{{- div .Values.orchestration.clusterSize $mr.regions -}}
+{{- $partitioning := include "camundaPlatform.partitioning" $ | fromJson -}}
+{{- div (int .Values.orchestration.clusterSize) (int $partitioning.regions) -}}
 {{- end -}}
 
 {{- define "orchestration.replicas" -}}
-{{- if eq (include "orchestration.zoned" .) "true" -}}
-{{- include "orchestration.zoneBrokers" . -}}
-{{- else -}}
-{{- include "orchestration.numberedReplicas" . -}}
-{{- end -}}
+{{- (include "camundaPlatform.partitioning" . | fromJson).localReplicas -}}
 {{- end -}}
 
 {{/*
@@ -289,7 +259,7 @@ camunda.io/zone: {{ .OrchestrationRender.zone | quote }}
 
 {{- define "orchestration.serviceMatchLabels" -}}
 {{- $labels := include "orchestration.matchLabels" . -}}
-{{- if or (and (not .OrchestrationRender) (eq (include "orchestration.zoned" .) "true")) (and .OrchestrationRender (eq .OrchestrationRender.scope "unzoned")) -}}
+{{- if or (and (not .OrchestrationRender) (eq (include "orchestration.zoneAware" .) "true")) (and .OrchestrationRender (eq .OrchestrationRender.scope "unzoned")) -}}
 {{- if hasKey ($labels | fromYaml) "camunda.io/zone" -}}
 {{- $labels = omit ($labels | fromYaml) "camunda.io/zone" | toYaml -}}
 {{- end -}}
@@ -558,7 +528,7 @@ and reading the raw key instead would silently drop an explicit orchestration.ex
       )
       (or
         .Values.orchestration.exporters.zeebe.enabled
-        (ne (include "camundaPlatform.multiregionSpread" .) "true")
+        (ne (include "camundaPlatform.spansFailureDomains" .) "true")
       )
 -}}
 {{- end -}}
@@ -571,7 +541,7 @@ and reading the raw key instead would silently drop an explicit orchestration.ex
       )
       (or
         .Values.orchestration.exporters.zeebe.enabled
-        (ne (include "camundaPlatform.multiregionSpread" .) "true")
+        (ne (include "camundaPlatform.spansFailureDomains" .) "true")
       )
 -}}
 {{- end -}}

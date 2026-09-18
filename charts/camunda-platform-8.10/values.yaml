@@ -768,12 +768,12 @@ global:
 
   # Multiregion options for Zeebe.
   ## Deprecated since chart v15 (Camunda 8.10); remove in v16. Only the Orchestration
-  ## Cluster reads these keys, so they moved to `orchestration.multiregion`, which is
-  ## also where zoned mode is configured. Setting both blocks fails the render.
+  ## Cluster reads these keys, so they moved to `orchestration.partitioning`, which is
+  ## also where the zone-aware scheme is configured. Setting both blocks fails the render.
   multiregion:
-    ## @skip global.multiregion.regions deprecated, use `orchestration.multiregion.regions`
+    ## @skip global.multiregion.regions deprecated, use `orchestration.partitioning.regions`. Must be at least 1; the render fails otherwise.
     regions: 1
-    ## @skip global.multiregion.regionId deprecated, use `orchestration.multiregion.regionId`
+    ## @skip global.multiregion.regionId deprecated, use `orchestration.partitioning.regionId`. Must be between 0 and regions - 1; the render fails otherwise.
     regionId: 0
 
   ## Document Store Configuration
@@ -2298,36 +2298,60 @@ orchestration:
       ## @param orchestration.multitenancy.api.enabled (DEPRECATED) if true, then enable multitenancy API used for tenant management.
       enabled: true
 
-  # Multiregion options for the Orchestration Cluster. Operating a multi-region
-  # cluster has prerequisites and procedures this file cannot carry; see
+  # How partition replicas are distributed across brokers, and how brokers are
+  # grouped into failure domains.
+  #
+  # Mirrors the engine configuration `camunda.cluster.partitioning`. The chart
+  # exposes two of the engine's schemes, lower-cased and hyphenated from
+  # `io.camunda.configuration.Partitioning.Scheme`: `ROUND_ROBIN` and
+  # `ZONE_AWARE`. The engine's third scheme, `FIXED`, is not wired into the
+  # templates; set it through `orchestration.extraConfiguration` if you need it.
+  # Each `zones` entry is `io.camunda.configuration.Zone`.
+  #
+  # `partitioning` is the settled product term. The cluster API previously spelled
+  # the same object `partition-distribution`; that endpoint is being renamed to
+  # `/cluster/partitioning` so configuration and API agree. This block does NOT set
+  # the number of partitions -- that is `orchestration.partitionCount` -- it sets how
+  # the replicas of those partitions are placed.
+  #
+  # Operating across more than one failure domain has prerequisites and procedures
+  # this file cannot carry; see
   # https://docs.camunda.io/docs/self-managed/concepts/multi-region/dual-region/
-  multiregion:
-    ## Zoned brokers are identified by the composite `<zone>_<index>`, while numbered
-    ## brokers use plain node IDs. Do not change existing broker identities in place.
-    ## Use keepUnzonedBrokers to retain the numbered StatefulSet while replacement zoned
-    ## brokers join the cluster.
-    ## @param orchestration.multiregion.mode selects how a broker learns which failure domain it belongs to. `numbered` derives a region from the node ID, `zoned` takes a zone name.
-    mode: numbered
-    ## @param orchestration.multiregion.zone can be used to define the zone of this Orchestration Cluster deployment when using zoned mode. Must be an RFC 1123 label of at most 32 characters to fit zone-suffixed resource names.
+  partitioning:
+    ## Fixed for the life of the cluster. Zone-aware brokers are identified by the composite
+    ## `<zone>_<index>`, round-robin ones by a plain node ID, so switching an existing release
+    ## re-identifies every broker against Raft state written under the old IDs. Retain the
+    ## round-robin brokers with `keepUnzonedBrokers` and follow the zone-aware migration
+    ## procedure to convert one in place.
+    ##
+    ## `round-robin` is the engine default and is not rendered into the application
+    ## configuration; only `zone-aware` emits `camunda.cluster.partitioning.scheme`.
+    ## @param orchestration.partitioning.scheme partitioning scheme. `round-robin` leaves brokers on plain numeric node IDs, `zone-aware` identifies them as `<zone>_<index>` and places partition replicas across the declared zones. These are two of the schemes accepted by `camunda.cluster.partitioning.scheme`; the engine also accepts `FIXED`, which this chart does not render.
+    scheme: round-robin
+    ## @param orchestration.partitioning.zone can be used to define the zone of this Orchestration Cluster deployment when using the `zone-aware` scheme. Must be an RFC 1123 label of at most 32 characters to fit zone-suffixed resource names.
     zone: ""
-    ## @extra orchestration.multiregion.zones[0].name name of the zone. It is the prefix of the composite broker member ID `<zone>_<index>`, must be an RFC 1123 label of at most 32 characters to fit zone-suffixed resource names, and one of these names must be selected by `orchestration.multiregion.zone`.
-    ## @extra orchestration.multiregion.zones[0].numberOfBrokers number of brokers deployed in this zone. For the local zone it is also the StatefulSet replica count.
-    ## @extra orchestration.multiregion.zones[0].numberOfReplicas number of partition replicas this zone holds. Cannot exceed `numberOfBrokers`.
-    ## @extra orchestration.multiregion.zones[0].priority priority of this zone in the leader election. Must be at least `1`.
-    ## @param orchestration.multiregion.zones can be used to define the zones of the Orchestration Cluster when using zoned mode. Each entry requires `name`, `numberOfBrokers`, `numberOfReplicas` and `priority`; the list is summed into `clusterSize` and `replicationFactor`, so it describes every zone, not just the local one.
+    ## @extra orchestration.partitioning.zones[0].name name of the zone. It is the prefix of the composite broker member ID `<zone>_<index>`, must be an RFC 1123 label of at most 32 characters to fit zone-suffixed resource names, and one of these names must be selected by `orchestration.partitioning.zone`.
+    ## @extra orchestration.partitioning.zones[0].numberOfBrokers number of brokers deployed in this zone. For the local zone it is also the StatefulSet replica count.
+    ## @extra orchestration.partitioning.zones[0].numberOfReplicas number of partition replicas this zone holds. Cannot exceed `numberOfBrokers`.
+    ## @extra orchestration.partitioning.zones[0].priority priority of this zone in the leader election. Must be at least `1`.
+    ## @param orchestration.partitioning.zones can be used to define the zones of the Orchestration Cluster when using the `zone-aware` scheme. Each entry requires `name`, `numberOfBrokers`, `numberOfReplicas` and `priority`; the list is summed into `clusterSize` and `replicationFactor`, so it describes every zone, not just the local one.
     zones: []
-    ## @param orchestration.multiregion.keepUnzonedBrokers also renders the numbered broker StatefulSet alongside the zoned one during migration. Keep the previous regions and regionId values here until the numbered brokers are removed; move them from global.multiregion when migrating from the deprecated block.
+    ## @param orchestration.partitioning.keepUnzonedBrokers also renders the round-robin broker StatefulSet alongside the zoned one during migration. Keep the previous regions and regionId values here until the round-robin brokers are removed; move them from global.multiregion when migrating from the deprecated block.
     keepUnzonedBrokers: false
-    ## @skip orchestration.multiregion.regions number of regions that this Camunda Platform instance is stretched across. In zoned mode, set the previous value while keepUnzonedBrokers is true.
+    ## @skip orchestration.partitioning.regions number of regions that this Camunda Platform instance is stretched across. Must be at least 1; the render fails otherwise. With the zone-aware scheme, set the previous value while keepUnzonedBrokers is true.
     regions: null
-    ## @skip orchestration.multiregion.regionId unique id of the region. MUST start at 0 for the computation to work correctly. In zoned mode, set the previous value while keepUnzonedBrokers is true.
+    ## @skip orchestration.partitioning.regionId unique id of the region. MUST start at 0 for the computation to work correctly. With 2 regions, you would have region 0 and 1. A value outside 0 to regions - 1 fails the render, since node IDs are derived as `<ordinal> * regions + regionId`. With the zone-aware scheme, set the previous value while keepUnzonedBrokers is true.
     regionId: null
 
   ## @param orchestration.clusterSize defines the amount of brokers (=replicas), which are deployed via helm
   clusterSize: "3"
-  ## @param orchestration.partitionCount (DEPRECATED) defines how many partitions are set up in the cluster
+  ## Not derived by orchestration.partitioning; read as-is in both round-robin and zoned
+  ## multi-region setups. Do not remove.
+  ## @param orchestration.partitionCount defines how many partitions are set up in the cluster
   partitionCount: "3"
-  ## @param orchestration.replicationFactor (DEPRECATED) defines how each partition is replicated, the value defines the number of nodes
+  ## Ignored by orchestration.partitioning in zoned mode (derived from the zone list instead);
+  ## still read as-is in round-robin multi-region setups. Do not remove.
+  ## @param orchestration.replicationFactor defines how each partition is replicated, the value defines the number of nodes
   replicationFactor: "3"
   ## @param orchestration.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/components/orchestration-cluster/core-settings/configuration/properties/ for more details.
   env: []
@@ -2767,6 +2791,10 @@ orchestration:
       enabled: false
       ## @param orchestration.exporters.zeebe.replicas [default: ~] (DEPRECATED) can be used to specify the number of replicas for the legacy Zeebe Elasticsearch and OpenSearch exporter indices. Defaults to orchestration.index.replicas.
       replicas: ~
+      ## @extra orchestration.exporters.zeebe.index configuration of the indices the legacy Zeebe exporter writes.
+      index:
+        ## @param orchestration.exporters.zeebe.index.prefix defines the index prefix the legacy Zeebe exporter writes, for whichever of Elasticsearch or OpenSearch is in use. Set it on the release running the Orchestration Cluster. When empty, "optimize.database.elasticsearch.prefix" (or its OpenSearch equivalent) is used instead.
+        prefix: ""
     appIntegrations:
       apiKey:
         secret:
@@ -2777,7 +2805,7 @@ orchestration:
           ## @param orchestration.exporters.appIntegrations.apiKey.secret.existingSecretKey defines the key within the existing Kubernetes Secret.
           existingSecretKey: ""
   index:
-    ## @param orchestration.index.prefix (DEPRECATED) if specified, defines an index prefix in Elasticsearch/OpenSearch for Orchestration Cluster indices. For ES/OS exporters or Optimize use the "optimize.database.elasticsearch.prefix" or OpenSearch equivalent.
+    ## @param orchestration.index.prefix (DEPRECATED) if specified, defines an index prefix in Elasticsearch/OpenSearch for Orchestration Cluster indices. This does not apply to the legacy Zeebe exporter, which is configured by "orchestration.exporters.zeebe.index.prefix", nor to the indices Optimize reads, which are named by "optimize.database.elasticsearch.prefix" or the OpenSearch equivalent.
     prefix: ""
     ## @param orchestration.index.replicas (DEPRECATED) can be used to specify the number of replicas for Orchestration Cluster indices.
     replicas: 1
@@ -2953,7 +2981,7 @@ optimize:
         protocol: http
         host: "{{ .Release.Name }}-elasticsearch"
         port: 9200
-      ## @param optimize.database.elasticsearch.prefix (DEPRECATED) defines the prefix which is used by the old Zeebe Elasticsearch Exporter to create Elasticsearch indexes and consumed by Optimize.
+      ## @param optimize.database.elasticsearch.prefix (DEPRECATED) defines the prefix of the Elasticsearch indexes Optimize reads. The exporter writing them is configured by "orchestration.exporters.zeebe.index.prefix"; keep the two equal.
       prefix: "zeebe-record"
     # Opensearch configuration which is shared between the sub charts
     ## @extra optimize.database.opensearch
@@ -2993,7 +3021,7 @@ optimize:
         protocol: https
         host: ""
         port: 443
-      ## @param optimize.database.opensearch.prefix (DEPRECATED) defines the prefix which is used by the old Zeebe OpenSearch Exporter to create OpenSearch indexes and consumed by Optimize.
+      ## @param optimize.database.opensearch.prefix (DEPRECATED) defines the prefix of the OpenSearch indexes Optimize reads. The exporter writing them is configured by "orchestration.exporters.zeebe.index.prefix"; keep the two equal.
       prefix: "zeebe-record"
 
 

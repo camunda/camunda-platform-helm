@@ -58,16 +58,16 @@ func TestServiceContinuityTemplate(t *testing.T) {
 
 func (s *ServiceContinuityTest) TestSharedServicesSelectBothBrokerGenerations() {
 	values := map[string]string{
-		"global.labels.camunda\\.io/zone":                     "legacy-zone",
-		"orchestration.multiregion.mode":                      "zoned",
-		"orchestration.multiregion.zone":                      "zone-a",
-		"orchestration.multiregion.zones[0].name":             "zone-a",
-		"orchestration.multiregion.zones[0].numberOfBrokers":  "1",
-		"orchestration.multiregion.zones[0].numberOfReplicas": "1",
-		"orchestration.multiregion.zones[0].priority":         "100",
-		"orchestration.multiregion.keepUnzonedBrokers":        "true",
-		"orchestration.multiregion.regions":                   "1",
-		"orchestration.multiregion.regionId":                  "0",
+		"global.labels.camunda\\.io/zone":                      "legacy-zone",
+		"orchestration.partitioning.scheme":                    "zone-aware",
+		"orchestration.partitioning.zone":                      "zone-a",
+		"orchestration.partitioning.zones[0].name":             "zone-a",
+		"orchestration.partitioning.zones[0].numberOfBrokers":  "1",
+		"orchestration.partitioning.zones[0].numberOfReplicas": "1",
+		"orchestration.partitioning.zones[0].priority":         "100",
+		"orchestration.partitioning.keepUnzonedBrokers":        "true",
+		"orchestration.partitioning.regions":                   "1",
+		"orchestration.partitioning.regionId":                  "0",
 	}
 
 	output, err := testhelpers.RenderTestCaseE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testhelpers.TestCase{Values: values})

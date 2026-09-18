@@ -30,12 +30,12 @@ func (s *StatefulSetTest) TestZoneLabelsRemainStrings() {
 		testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, []testhelpers.TestCase{{
 			Name: zone,
 			Values: map[string]string{
-				"orchestration.multiregion.mode":                      "zoned",
-				"orchestration.multiregion.zones[0].numberOfBrokers":  "1",
-				"orchestration.multiregion.zones[0].numberOfReplicas": "1",
-				"orchestration.multiregion.zones[0].priority":         "100",
+				"orchestration.partitioning.scheme":                    "zone-aware",
+				"orchestration.partitioning.zones[0].numberOfBrokers":  "1",
+				"orchestration.partitioning.zones[0].numberOfReplicas": "1",
+				"orchestration.partitioning.zones[0].priority":         "100",
 			},
-			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.multiregion.zone=" + zone + ",orchestration.multiregion.zones[0].name=" + zone},
+			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.partitioning.zone=" + zone + ",orchestration.partitioning.zones[0].name=" + zone},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
 				jsonOutput, err := yaml.YAMLToJSON([]byte(output))

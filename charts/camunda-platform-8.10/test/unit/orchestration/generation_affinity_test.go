@@ -44,13 +44,13 @@ func (s *StatefulSetTest) TestGenerationAffinitySelectors() {
 				affinity := corev1.Affinity{PodAntiAffinity: &corev1.PodAntiAffinity{RequiredDuringSchedulingIgnoredDuringExecution: []corev1.PodAffinityTerm{term}}}
 				encoded, err := json.Marshal(affinity)
 				s.Require().NoError(err)
-				values := map[string]string{"orchestration.multiregion.mode": mode}
+				values := map[string]string{"orchestration.partitioning.scheme": mode}
 				if mode == "zoned" {
-					values["orchestration.multiregion.zone"] = "zone-a"
-					values["orchestration.multiregion.zones[0].name"] = "zone-a"
-					values["orchestration.multiregion.zones[0].numberOfBrokers"] = "1"
-					values["orchestration.multiregion.zones[0].numberOfReplicas"] = "1"
-					values["orchestration.multiregion.zones[0].priority"] = "100"
+					values["orchestration.partitioning.zone"] = "zone-a"
+					values["orchestration.partitioning.zones[0].name"] = "zone-a"
+					values["orchestration.partitioning.zones[0].numberOfBrokers"] = "1"
+					values["orchestration.partitioning.zones[0].numberOfReplicas"] = "1"
+					values["orchestration.partitioning.zones[0].priority"] = "100"
 				}
 				testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, []testhelpers.TestCase{{
 					Name: tc.name, Values: values,
@@ -75,12 +75,12 @@ func (s *StatefulSetTest) TestDefaultAffinityScopesBrokerGeneration() {
 	}{
 		{name: "numbered", generation: "numbered", values: map[string]string{}},
 		{name: "zoned", generation: "zoned", values: map[string]string{
-			"orchestration.multiregion.mode":                      "zoned",
-			"orchestration.multiregion.zone":                      "zone-a",
-			"orchestration.multiregion.zones[0].name":             "zone-a",
-			"orchestration.multiregion.zones[0].numberOfBrokers":  "1",
-			"orchestration.multiregion.zones[0].numberOfReplicas": "1",
-			"orchestration.multiregion.zones[0].priority":         "100",
+			"orchestration.partitioning.scheme":                    "zone-aware",
+			"orchestration.partitioning.zone":                      "zone-a",
+			"orchestration.partitioning.zones[0].name":             "zone-a",
+			"orchestration.partitioning.zones[0].numberOfBrokers":  "1",
+			"orchestration.partitioning.zones[0].numberOfReplicas": "1",
+			"orchestration.partitioning.zones[0].priority":         "100",
 		}},
 	} {
 		s.Run(tc.name, func() {

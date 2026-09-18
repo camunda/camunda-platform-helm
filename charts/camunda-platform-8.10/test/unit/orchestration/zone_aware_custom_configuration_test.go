@@ -28,13 +28,13 @@ const customApplication = "custom:\n  owner: operator\n"
 
 func (s *ConfigmapTemplateTest) TestZonedCustomConfigurationOwnership() {
 	zonedValues := map[string]string{
-		"orchestration.multiregion.mode":                      "zoned",
-		"orchestration.multiregion.zone":                      "zone-a",
-		"orchestration.multiregion.zones[0].name":             "zone-a",
-		"orchestration.multiregion.zones[0].numberOfBrokers":  "2",
-		"orchestration.multiregion.zones[0].numberOfReplicas": "2",
-		"orchestration.multiregion.zones[0].priority":         "100",
-		"orchestration.profiles.broker":                       "true",
+		"orchestration.partitioning.scheme":                    "zone-aware",
+		"orchestration.partitioning.zone":                      "zone-a",
+		"orchestration.partitioning.zones[0].name":             "zone-a",
+		"orchestration.partitioning.zones[0].numberOfBrokers":  "2",
+		"orchestration.partitioning.zones[0].numberOfReplicas": "2",
+		"orchestration.partitioning.zones[0].priority":         "100",
+		"orchestration.profiles.broker":                        "true",
 	}
 
 	testCases := []testhelpers.TestCase{

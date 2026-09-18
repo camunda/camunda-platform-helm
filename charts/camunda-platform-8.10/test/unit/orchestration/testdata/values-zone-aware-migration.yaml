@@ -4,8 +4,8 @@ orchestration:
       type: elasticsearch
   podDisruptionBudget:
     enabled: true
-  multiregion:
-    mode: zoned
+  partitioning:
+    scheme: zone-aware
     zone: zone-a
     zones:
       - name: zone-a

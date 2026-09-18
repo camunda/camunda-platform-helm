@@ -7,7 +7,7 @@ A template to handle constraints.
 {{- fail "[camunda][error] camunda.io/broker-generation is managed by the chart and cannot be configured in user labels." -}}
 {{- end -}}
 {{- if and .zonedPodLabels (hasKey .labels "camunda.io/zone") -}}
-{{- fail "[camunda][error] camunda.io/zone is managed by the chart in zoned mode and cannot be configured in orchestration.podLabels." -}}
+{{- fail "[camunda][error] camunda.io/zone is managed by the chart with the zone-aware scheme and cannot be configured in orchestration.podLabels." -}}
 {{- end -}}
 {{- end -}}
 
@@ -425,17 +425,17 @@ Fail if the multi-region topology is described in both places at once. Picking o
 silently would deploy a topology the other block does not describe, and the two are
 merged nowhere.
 */}}
-{{- if and (eq (include "camundaPlatform.multiregionConfigured" (.Values.orchestration.multiregion | default dict)) "true") (eq (include "camundaPlatform.multiregionConfigured" (.Values.global.multiregion | default dict)) "true") }}
-  {{- fail "[camunda][error] orchestration.multiregion and global.multiregion are both configured. global.multiregion is deprecated; keep orchestration.multiregion and remove the global block." -}}
+{{- if and (eq (include "camundaPlatform.partitioningConfigured" (.Values.orchestration.partitioning | default dict)) "true") (eq (include "camundaPlatform.partitioningConfigured" (.Values.global.multiregion | default dict)) "true") }}
+  {{- fail "[camunda][error] orchestration.partitioning and global.multiregion are both configured. global.multiregion is deprecated; keep orchestration.partitioning and remove the global block." -}}
 {{- end }}
 
-{{- $mr := include "camundaPlatform.multiregion" $ | fromJson -}}
+{{- $partitioning := include "camundaPlatform.partitioning" $ | fromJson -}}
 {{- $reservedZoneLabel := "camunda.io/zone" -}}
-{{- if and (eq $mr.mode "zoned") (or
+{{- if and (eq $partitioning.scheme "zone-aware") (or
   (hasKey (.Values.global.commonLabels | default dict) $reservedZoneLabel)
   (hasKey (.Values.orchestration.podLabels | default dict) $reservedZoneLabel)
 ) }}
-  {{- fail (printf "[camunda][error] %s is managed by the chart in zoned mode and cannot be configured in global.commonLabels or orchestration.podLabels." $reservedZoneLabel) }}
+  {{- fail (printf "[camunda][error] %s is managed by the chart with the zone-aware scheme and cannot be configured in global.commonLabels or orchestration.podLabels." $reservedZoneLabel) }}
 {{- end }}
 {{- $reservedGenerationLabel := "camunda.io/broker-generation" -}}
 {{- if or
@@ -445,57 +445,57 @@ merged nowhere.
 }}
   {{- fail (printf "[camunda][error] %s is managed by the chart and cannot be configured in global.labels, global.commonLabels, or orchestration.podLabels." $reservedGenerationLabel) }}
 {{- end }}
-{{- $mrKey := "orchestration.multiregion" -}}
-{{- if ne (include "camundaPlatform.multiregionConfigured" (.Values.orchestration.multiregion | default dict)) "true" -}}
-  {{- $mrKey = "global.multiregion" -}}
+{{- $partitioningKey := "orchestration.partitioning" -}}
+{{- if ne (include "camundaPlatform.partitioningConfigured" (.Values.orchestration.partitioning | default dict)) "true" -}}
+  {{- $partitioningKey = "global.multiregion" -}}
 {{- end -}}
-{{- if and $mr.keepUnzonedBrokers (eq $mr.mode "zoned") }}
-  {{- $orchestrationMultiregion := .Values.orchestration.multiregion | default dict -}}
+{{- if and $partitioning.keepUnzonedBrokers (eq $partitioning.scheme "zone-aware") }}
+  {{- $orchestrationMultiregion := .Values.orchestration.partitioning | default dict -}}
   {{- if or
     (not (hasKey $orchestrationMultiregion "regions"))
     (not (hasKey $orchestrationMultiregion "regionId"))
     (eq (get $orchestrationMultiregion "regionId" | toString) "")
   }}
-    {{- fail "[camunda][error] orchestration.multiregion.keepUnzonedBrokers requires both orchestration.multiregion.regions and orchestration.multiregion.regionId to preserve the numbered broker identity." -}}
+    {{- fail "[camunda][error] orchestration.partitioning.keepUnzonedBrokers requires both orchestration.partitioning.regions and orchestration.partitioning.regionId to preserve the numbered broker identity." -}}
   {{- end }}
   {{- $regionsRaw := get $orchestrationMultiregion "regions" | toString -}}
   {{- $regionIdRaw := get $orchestrationMultiregion "regionId" | toString -}}
   {{- $clusterSizeRaw := .Values.orchestration.clusterSize | toString -}}
   {{- if or (not (regexMatch "^[0-9]+$" $regionsRaw)) (le (int $regionsRaw) 0) }}
-    {{- fail "[camunda][error] orchestration.multiregion.regions must be a positive integer when orchestration.multiregion.keepUnzonedBrokers=true." -}}
+    {{- fail "[camunda][error] orchestration.partitioning.regions must be a positive integer when orchestration.partitioning.keepUnzonedBrokers=true." -}}
   {{- end }}
   {{- if not (regexMatch "^[0-9]+$" $regionIdRaw) }}
-    {{- fail "[camunda][error] orchestration.multiregion.regionId must be an integer greater than or equal to zero when orchestration.multiregion.keepUnzonedBrokers=true." -}}
+    {{- fail "[camunda][error] orchestration.partitioning.regionId must be an integer greater than or equal to zero when orchestration.partitioning.keepUnzonedBrokers=true." -}}
   {{- end }}
   {{- if ge (int $regionIdRaw) (int $regionsRaw) }}
-    {{- fail "[camunda][error] orchestration.multiregion.regionId must be less than orchestration.multiregion.regions when orchestration.multiregion.keepUnzonedBrokers=true." -}}
+    {{- fail "[camunda][error] orchestration.partitioning.regionId must be less than orchestration.partitioning.regions when orchestration.partitioning.keepUnzonedBrokers=true." -}}
   {{- end }}
   {{- if or (not (regexMatch "^[0-9]+$" $clusterSizeRaw)) (le (int $clusterSizeRaw) 0) }}
-    {{- fail "[camunda][error] orchestration.clusterSize must be a positive integer when orchestration.multiregion.keepUnzonedBrokers=true." -}}
+    {{- fail "[camunda][error] orchestration.clusterSize must be a positive integer when orchestration.partitioning.keepUnzonedBrokers=true." -}}
   {{- end }}
   {{- if ne (mod (int $clusterSizeRaw) (int $regionsRaw)) 0 }}
-    {{- fail "[camunda][error] orchestration.clusterSize must be divisible by orchestration.multiregion.regions when orchestration.multiregion.keepUnzonedBrokers=true." -}}
+    {{- fail "[camunda][error] orchestration.clusterSize must be divisible by orchestration.partitioning.regions when orchestration.partitioning.keepUnzonedBrokers=true." -}}
   {{- end }}
 {{- end }}
 
 {{/*
-Fail if the zone topology is described without selecting zoned mode. Nothing else
+Fail if the zone topology is described without selecting the zone-aware scheme. Nothing else
 rejects it: the zoned branches are all entered on the mode, so the zone list would be
 read by the contact-points gate alone, which suppresses the generated bootstrap list
 while the rest of the render stays single-region. The cluster then starts with no peers
 and no zone awareness, and helm reports success.
 */}}
-{{- if and (ne $mr.mode "zoned") (or (ne $mr.zone "") (gt (len $mr.zones) 0)) }}
-  {{- fail (printf "[camunda][error] %s.zone and %s.zones require %s.mode=zoned." $mrKey $mrKey $mrKey) -}}
+{{- if and (ne $partitioning.scheme "zone-aware") (or (ne $partitioning.zone "") (gt (len $partitioning.zones) 0)) }}
+  {{- fail (printf "[camunda][error] %s.zone and %s.zones require %s.scheme=zone-aware." $partitioningKey $partitioningKey $partitioningKey) -}}
 {{- end }}
 
 {{/*
-Fail if zoned mode is combined with a cluster size or replication factor it derives.
+Fail if the zone-aware scheme is combined with a cluster size or replication factor it derives.
 Both are summed from the zone list, so a value left over from a single-region release
 would be discarded in silence, and the StatefulSet would scale to the local zone's
 broker count without the diff naming the setting it ignored.
 */}}
-{{- if eq $mr.mode "zoned" }}
+{{- if eq $partitioning.scheme "zone-aware" }}
   {{/*
   NOTE: rejects a value that contradicts the zone list, not any value at all. Helm cannot
   distinguish a supplied default from the chart default, so a key still sitting on its
@@ -512,13 +512,63 @@ broker count without the diff naming the setting it ignored.
   */}}
   {{- $size := int .Values.orchestration.clusterSize -}}
   {{- $derivedSize := int (include "orchestration.clusterSize" .) -}}
-  {{- if and (not $mr.keepUnzonedBrokers) (ne $size 3) (ne $size $derivedSize) }}
-    {{- fail (printf "[camunda][error] orchestration.clusterSize is %d but %s.zones sums to %d brokers. In zoned mode the zone list is authoritative; remove the key or make it agree." $size $mrKey $derivedSize) -}}
+  {{- if and (not $partitioning.keepUnzonedBrokers) (ne $size 3) (ne $size $derivedSize) }}
+    {{- fail (printf "[camunda][error] orchestration.clusterSize is %d but %s.zones sums to %d brokers. With the zone-aware scheme the zone list is authoritative; remove the key or make it agree." $size $partitioningKey $derivedSize) -}}
   {{- end }}
   {{- $factor := int .Values.orchestration.replicationFactor -}}
   {{- $derivedFactor := int (include "orchestration.replicationFactor" .) -}}
-  {{- if and (not $mr.keepUnzonedBrokers) (ne $factor 3) (ne $factor $derivedFactor) }}
-    {{- fail (printf "[camunda][error] orchestration.replicationFactor is %d but %s.zones sums to %d replicas. In zoned mode the zone list is authoritative; remove the key or make it agree." $factor $mrKey $derivedFactor) -}}
+  {{- if and (not $partitioning.keepUnzonedBrokers) (ne $factor 3) (ne $factor $derivedFactor) }}
+    {{- fail (printf "[camunda][error] orchestration.replicationFactor is %d but %s.zones sums to %d replicas. With the zone-aware scheme the zone list is authoritative; remove the key or make it agree." $factor $partitioningKey $derivedFactor) -}}
+  {{- end }}
+{{- end }}
+
+{{/*
+Fail if the zone-aware scheme is combined with the region-numbering settings it replaces.
+While keepUnzonedBrokers is set the pair still describes the retained numbered generation,
+so the guard stands down until retention is off.
+*/}}
+{{- if and (eq $partitioning.scheme "zone-aware") (not $partitioning.keepUnzonedBrokers) (or (ne (int $partitioning.regions) 1) (ne (int $partitioning.regionId) 0)) }}
+  {{- fail (printf "[camunda][error] %s.regions and %s.regionId cannot be used with the zone-aware scheme." $partitioningKey $partitioningKey) -}}
+{{- end }}
+
+{{/*
+Fail if the region count is below 1, under any scheme. Round-robin divides the cluster
+size by it and numbers node IDs with it; zone-aware requires it to be exactly 1, and the
+guard above cannot see a sub-1 value because the resolver has already normalised it.
+
+NOTE: the count is read from the raw values, not from the resolved dict. Both blocks
+default it through "| default 1", and 0 is falsy in Go templates, so a typed 0 reaches
+the resolver as 1; "regions: 0" on its own also reads as an unconfigured block and falls
+through to global.multiregion. Neither is visible after resolution.
+
+NOTE: orchestration.partitioning is scanned unconditionally because a sub-1 count there
+is what makes the block read as unconfigured in the first place. The deprecated block is
+scanned only when it is the one in effect, so an inert leftover cannot fail a render that
+is driven entirely by orchestration.partitioning.
+*/}}
+{{- $rawBlocks := dict "orchestration.partitioning" (.Values.orchestration.partitioning | default dict) -}}
+{{- if eq $partitioningKey "global.multiregion" -}}
+  {{- $_ := set $rawBlocks "global.multiregion" (.Values.global.multiregion | default dict) -}}
+{{- end -}}
+{{- range $key, $raw := $rawBlocks }}
+  {{- if and (hasKey $raw "regions") (lt (int $raw.regions) 1) }}
+    {{- fail (printf "[camunda][error] %s.regions is %d; a cluster spans at least one region." $key (int $raw.regions)) -}}
+  {{- end }}
+{{- end }}
+
+{{/*
+Fail if the round-robin numbering cannot describe a consistent cluster. Node IDs are
+derived as "<ordinal> * regions + regionId", so a region numbered outside its own range
+takes the node IDs of another region.
+
+NOTE: a clusterSize the region count does not divide is the same class of fault and is
+deliberately not rejected here; see #7196.
+*/}}
+{{- if ne $partitioning.scheme "zone-aware" }}
+  {{- $regions := int $partitioning.regions -}}
+  {{- $regionId := int $partitioning.regionId -}}
+  {{- if or (lt $regionId 0) (ge $regionId $regions) }}
+    {{- fail (printf "[camunda][error] %s.regionId is %d but %s.regions is %d; regionId numbers this region and must be between 0 and %d, or its brokers take the node IDs of another region." $partitioningKey $regionId $partitioningKey $regions (sub $regions 1)) -}}
   {{- end }}
 {{- end }}
 
@@ -530,49 +580,49 @@ collision this mode exists to prevent. A zone cannot hold more replicas of a par
 than it has brokers to hold them on, and the sum would then promise a replication factor
 no quorum can reach.
 */}}
-{{- if eq $mr.mode "zoned" }}
+{{- if eq $partitioning.scheme "zone-aware" }}
   {{- $seen := list -}}
-  {{- range $mr.zones -}}
+  {{- range $partitioning.zones -}}
     {{- if not (regexMatch "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$" .name) }}
-      {{- fail (printf "[camunda][error] %s.zones entry %q must be an RFC 1123 label." $mrKey .name) -}}
+      {{- fail (printf "[camunda][error] %s.zones entry %q must be an RFC 1123 label." $partitioningKey .name) -}}
     {{- end }}
     {{- if gt (len .name) 32 }}
-      {{- fail (printf "[camunda][error] %s.zones entry %q must be no longer than 32 characters." $mrKey .name) -}}
+      {{- fail (printf "[camunda][error] %s.zones entry %q must be no longer than 32 characters." $partitioningKey .name) -}}
     {{- end }}
     {{- if gt (int .numberOfBrokers) 999 }}
-      {{- fail (printf "[camunda][error] %s.zones entry %q cannot configure more than 999 brokers." $mrKey .name) -}}
+      {{- fail (printf "[camunda][error] %s.zones entry %q cannot configure more than 999 brokers." $partitioningKey .name) -}}
     {{- end }}
     {{- if has .name $seen }}
-      {{- fail (printf "[camunda][error] %s.zones declares %q twice; zone names are broker member ID prefixes and must be unique." $mrKey .name) -}}
+      {{- fail (printf "[camunda][error] %s.zones declares %q twice; zone names are broker member ID prefixes and must be unique." $partitioningKey .name) -}}
     {{- end }}
     {{- $seen = append $seen .name -}}
     {{- if gt (int .numberOfReplicas) (int .numberOfBrokers) }}
-      {{- fail (printf "[camunda][error] %s.zones entry %q asks for %d replicas on %d brokers; a zone cannot hold more replicas than it has brokers." $mrKey .name (int .numberOfReplicas) (int .numberOfBrokers)) -}}
+      {{- fail (printf "[camunda][error] %s.zones entry %q asks for %d replicas on %d brokers; a zone cannot hold more replicas than it has brokers." $partitioningKey .name (int .numberOfReplicas) (int .numberOfBrokers)) -}}
     {{- end }}
   {{- end }}
 {{- end }}
 
 {{/*
-Fail if zoned mode does not describe the zone this release belongs to. The zone list
+Fail if the zone-aware scheme does not describe the zone this release belongs to. The zone list
 is what assigns broker node IDs and partition replicas, so a release whose own zone is
 missing from it would take the IDs of the first zone and collide with it.
 */}}
-{{- if eq $mr.mode "zoned" }}
-  {{- $zone := $mr.zone -}}
+{{- if eq $partitioning.scheme "zone-aware" }}
+  {{- $zone := $partitioning.zone -}}
   {{- if not $zone }}
-    {{- fail (printf "[camunda][error] %s.zone must name the zone this release is deployed to when using zoned mode." $mrKey) -}}
+    {{- fail (printf "[camunda][error] %s.zone must name the zone this release is deployed to when using the zone-aware scheme." $partitioningKey) -}}
   {{- end }}
   {{- $names := list -}}
-  {{- range $mr.zones -}}
+  {{- range $partitioning.zones -}}
     {{- $names = append $names .name -}}
   {{- end -}}
   {{- if not (has $zone $names) }}
-    {{- fail (printf "[camunda][error] %s.zone %q is not declared in %s.zones (%s)." $mrKey $zone $mrKey (join ", " $names)) -}}
+    {{- fail (printf "[camunda][error] %s.zone %q is not declared in %s.zones (%s)." $partitioningKey $zone $partitioningKey (join ", " $names)) -}}
   {{- end }}
 {{- end }}
 
-{{- if and $mr.keepUnzonedBrokers (ne $mr.mode "zoned") }}
-  {{- fail (printf "[camunda][error] %s.keepUnzonedBrokers requires %s.mode=zoned." $mrKey $mrKey) -}}
+{{- if and $partitioning.keepUnzonedBrokers (ne $partitioning.scheme "zone-aware") }}
+  {{- fail (printf "[camunda][error] %s.keepUnzonedBrokers requires %s.scheme=zone-aware." $partitioningKey $partitioningKey) -}}
 {{- end }}
 
 {{- end }}
@@ -1450,27 +1500,27 @@ The following values inside your values.yaml need to be set but were not:
     {{- end }}
   {{- end }}
 
-  {{- if eq (include "camundaPlatform.multiregionConfigured" (.Values.global.multiregion | default dict)) "true" }}
+  {{- if eq (include "camundaPlatform.partitioningConfigured" (.Values.global.multiregion | default dict)) "true" }}
     {{- $warningMessage := printf "%s %s %s %s"
         "[camunda][warning]"
         "DEPRECATION: \"global.multiregion.*\" is deprecated and will be removed in chart v16 (Camunda 8.11)."
-        "Only the Orchestration Cluster reads these keys, so they moved to \"orchestration.multiregion.*\" with the same field names."
+        "Only the Orchestration Cluster reads these keys, so they moved to \"orchestration.partitioning.*\" with the same field names."
         "Move the block and remove the global one; setting both fails the render."
     -}}
     {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
   {{- end }}
 
   {{- if .Values.orchestration.profiles.broker }}
-    {{- if eq (include "orchestration.zoned" .) "true" }}
+    {{- if eq (include "orchestration.zoneAware" .) "true" }}
       {{- $warningMessage := printf "%s %s %s"
           "[camunda][warning]"
-          "Zoned brokers use composite \"<zone>_<index>\" identities, while unzoned brokers use numeric identities. Do not change existing broker identities in place."
-          "To migrate an existing release, retain the unzoned brokers with \"orchestration.multiregion.keepUnzonedBrokers=true\" and follow the zone-aware migration procedure."
+          "\"orchestration.partitioning.scheme\" is fixed for the life of the cluster: zone-aware brokers are identified by the composite \"<zone>_<index>\", round-robin ones by a plain node ID."
+          "Switching an existing release between the two re-identifies every broker against Raft state written under its old ID. To convert one in place, retain the round-robin brokers with \"orchestration.partitioning.keepUnzonedBrokers=true\" and follow the zone-aware migration procedure."
       -}}
       {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
     {{- end }}
-    {{- if eq (include "camundaPlatform.multiregionSpread" .) "true" }}
-      {{- if eq (include "orchestration.zoned" .) "true" }}
+    {{- if eq (include "camundaPlatform.spansFailureDomains" .) "true" }}
+      {{- if eq (include "orchestration.zoneAware" .) "true" }}
       {{- $warningMessage := printf "%s %s %s"
           "[camunda][warning]"
           "This deployment spans more than one failure domain. The generated configuration includes contact points for this release's local zoned brokers and, during migration, retained numbered brokers."
@@ -1591,12 +1641,6 @@ The following values inside your values.yaml need to be set but were not:
     {{ include "camundaPlatform.keyDeprecated" (dict
       "condition" (ne (.Values.orchestration.ioThreadCount | toString) "3")
       "oldName" "orchestration.ioThreadCount" "migration" $orchestrationExtra) }}
-    {{ include "camundaPlatform.keyDeprecated" (dict
-      "condition" (ne (.Values.orchestration.partitionCount | toString) "3")
-      "oldName" "orchestration.partitionCount" "migration" $orchestrationExtra) }}
-    {{ include "camundaPlatform.keyDeprecated" (dict
-      "condition" (ne (.Values.orchestration.replicationFactor | toString) "3")
-      "oldName" "orchestration.replicationFactor" "migration" $orchestrationExtra) }}
     {{ include "camundaPlatform.keyDeprecated" (dict
       "condition" (ne (.Values.orchestration.history.delayBetweenRuns | toString) "2000")
       "oldName" "orchestration.history.delayBetweenRuns" "migration" $orchestrationExtra) }}
@@ -1870,103 +1914,6 @@ Ingress and Gateway API should not be enabled at the same time.
 
 {{/*
 *******************************************************************************
-Camunda 8.8 cycle deprecated keys (removed in 8.9).
-*******************************************************************************
-Fail with a message when old values syntax is used.
-Chart Version: 14.0.0
-*******************************************************************************
-*/}}
-
-{{/*
-*******************************************************************************
-Global - License
-*******************************************************************************
-*/}}
-
-{{ include "camundaPlatform.keyRemoved" (dict
-  "condition" (hasKey .Values.global.license "key")
-  "oldName" "global.license.key"
-) }}
-
-{{ include "camundaPlatform.keyRemoved" (dict
-  "condition" (hasKey .Values.global.license "existingSecret")
-  "oldName" "global.license.existingSecret"
-) }}
-
-{{ include "camundaPlatform.keyRemoved" (dict
-  "condition" (hasKey .Values.global.license "existingSecretKey")
-  "oldName" "global.license.existingSecretKey"
-) }}
-
-{{/*
-*******************************************************************************
-Global - Identity Auth
-*******************************************************************************
-*/}}
-
-{{ include "camundaPlatform.keyRemoved" (dict
-  "condition" (hasKey .Values.global.identity.auth.admin "existingSecret")
-  "oldName" "global.identity.auth.admin.existingSecret"
-) }}
-
-{{ include "camundaPlatform.keyRemoved" (dict
-  "condition" (hasKey .Values.global.identity.auth.admin "existingSecretKey")
-  "oldName" "global.identity.auth.admin.existingSecretKey"
-) }}
-
-{{ include "camundaPlatform.keyRemoved" (dict
-  "condition" (hasKey .Values.global.identity.auth.identity "existingSecret")
-  "oldName" "global.identity.auth.identity.existingSecret"
-) }}
-
-{{ include "camundaPlatform.keyRemoved" (dict
-  "condition" (hasKey .Values.global.identity.auth.identity "existingSecretKey")
-  "oldName" "global.identity.auth.identity.existingSecretKey"
-) }}
-
-{{ include "camundaPlatform.keyRemoved" (dict
-  "condition" (hasKey .Values.global.identity.auth.optimize "existingSecret")
-  "oldName" "global.identity.auth.optimize.existingSecret"
-) }}
-
-{{ include "camundaPlatform.keyRemoved" (dict
-  "condition" (hasKey .Values.global.identity.auth.optimize "existingSecretKey")
-  "oldName" "global.identity.auth.optimize.existingSecretKey"
-) }}
-
-{{/*
-*******************************************************************************
-Global - Document Store
-*******************************************************************************
-*/}}
-
-{{ include "camundaPlatform.keyRemoved" (dict
-  "condition" (hasKey .Values.global.documentStore.type.aws "existingSecret")
-  "oldName" "global.documentStore.type.aws.existingSecret"
-) }}
-
-{{ include "camundaPlatform.keyRemoved" (dict
-  "condition" (hasKey .Values.global.documentStore.type.aws "accessKeyIdKey")
-  "oldName" "global.documentStore.type.aws.accessKeyIdKey"
-) }}
-
-{{ include "camundaPlatform.keyRemoved" (dict
-  "condition" (hasKey .Values.global.documentStore.type.aws "secretAccessKeyKey")
-  "oldName" "global.documentStore.type.aws.secretAccessKeyKey"
-) }}
-
-{{ include "camundaPlatform.keyRemoved" (dict
-  "condition" (hasKey .Values.global.documentStore.type.gcp "existingSecret")
-  "oldName" "global.documentStore.type.gcp.existingSecret"
-) }}
-
-{{ include "camundaPlatform.keyRemoved" (dict
-  "condition" (hasKey .Values.global.documentStore.type.gcp "credentialsKey")
-  "oldName" "global.documentStore.type.gcp.credentialsKey"
-) }}
-
-{{/*
-*******************************************************************************
 Orchestration - Secret Store
 *******************************************************************************
 */}}
@@ -2171,126 +2118,6 @@ Orchestration - Secret Store
     {{- end -}}
   {{- end -}}
 {{- end -}}
-
-{{/*
-*******************************************************************************
-Identity
-*******************************************************************************
-*/}}
-
-{{- if eq (include "camundaPlatform.identityEnabled" .) "true" -}}
-
-{{ include "camundaPlatform.keyRemoved" (dict
-  "condition" (hasKey .Values.identity.firstUser "password")
-  "oldName" "identity.firstUser.password"
-) }}
-
-{{ include "camundaPlatform.keyRemoved" (dict
-  "condition" (hasKey .Values.identity.firstUser "existingSecret")
-  "oldName" "identity.firstUser.existingSecret"
-) }}
-
-{{ include "camundaPlatform.keyRemoved" (dict
-  "condition" (hasKey .Values.identity.firstUser "existingSecretKey")
-  "oldName" "identity.firstUser.existingSecretKey"
-) }}
-
-{{ include "camundaPlatform.keyRemoved" (dict
-  "condition" (hasKey .Values.identity.externalDatabase "password")
-  "oldName" "identity.externalDatabase.password"
-) }}
-
-{{ include "camundaPlatform.keyRemoved" (dict
-  "condition" (hasKey .Values.identity.externalDatabase "existingSecret")
-  "oldName" "identity.externalDatabase.existingSecret"
-) }}
-
-{{ include "camundaPlatform.keyRemoved" (dict
-  "condition" (hasKey .Values.identity.externalDatabase "existingSecretPasswordKey")
-  "oldName" "identity.externalDatabase.existingSecretPasswordKey"
-) }}
-
-{{- end }}
-
-{{/*
-*******************************************************************************
-Connectors
-*******************************************************************************
-*/}}
-
-{{- if eq (include "camundaPlatform.connectorsEnabled" .) "true" -}}
-
-{{ include "camundaPlatform.keyRemoved" (dict
-  "condition" (hasKey .Values.connectors.security.authentication.oidc "existingSecret")
-  "oldName" "connectors.security.authentication.oidc.existingSecret"
-) }}
-
-{{ include "camundaPlatform.keyRemoved" (dict
-  "condition" (hasKey .Values.connectors.security.authentication.oidc "existingSecretKey")
-  "oldName" "connectors.security.authentication.oidc.existingSecretKey"
-) }}
-
-{{- end }}
-
-{{/*
-*******************************************************************************
-Orchestration
-*******************************************************************************
-*/}}
-
-{{- if eq (include "camundaPlatform.orchestrationEnabled" .) "true" -}}
-
-{{ include "camundaPlatform.keyRemoved" (dict
-  "condition" (hasKey .Values.orchestration.security.authentication.oidc "existingSecret")
-  "oldName" "orchestration.security.authentication.oidc.existingSecret"
-) }}
-
-{{ include "camundaPlatform.keyRemoved" (dict
-  "condition" (hasKey .Values.orchestration.security.authentication.oidc "existingSecretKey")
-  "oldName" "orchestration.security.authentication.oidc.existingSecretKey"
-) }}
-
-{{- end }}
-
-{{/*
-*******************************************************************************
-Web Modeler
-*******************************************************************************
-*/}}
-
-{{- if eq (include "camundaHub.webModelerEnabled" .) "true" -}}
-
-{{ include "camundaPlatform.keyRemoved" (dict
-  "condition" (hasKey .Values.webModeler.restapi.externalDatabase "password")
-  "oldName" "webModeler.restapi.externalDatabase.password"
-) }}
-
-{{ include "camundaPlatform.keyRemoved" (dict
-  "condition" (hasKey .Values.webModeler.restapi.externalDatabase "existingSecret")
-  "oldName" "webModeler.restapi.externalDatabase.existingSecret"
-) }}
-
-{{ include "camundaPlatform.keyRemoved" (dict
-  "condition" (hasKey .Values.webModeler.restapi.externalDatabase "existingSecretPasswordKey")
-  "oldName" "webModeler.restapi.externalDatabase.existingSecretPasswordKey"
-) }}
-
-{{ include "camundaPlatform.keyRemoved" (dict
-  "condition" (hasKey .Values.webModeler.restapi.mail "smtpPassword")
-  "oldName" "webModeler.restapi.mail.smtpPassword"
-) }}
-
-{{ include "camundaPlatform.keyRemoved" (dict
-  "condition" (hasKey .Values.webModeler.restapi.mail "existingSecret")
-  "oldName" "webModeler.restapi.mail.existingSecret"
-) }}
-
-{{ include "camundaPlatform.keyRemoved" (dict
-  "condition" (hasKey .Values.webModeler.restapi.mail "existingSecretPasswordKey")
-  "oldName" "webModeler.restapi.mail.existingSecretPasswordKey"
-) }}
-
-{{- end }}
 
 {{/*
 *******************************************************************************

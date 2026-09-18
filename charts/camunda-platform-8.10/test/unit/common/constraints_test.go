@@ -103,12 +103,12 @@ func (s *ConstraintTemplateTest) TestDifferentValuesInputs() {
 func (s *ConstraintTemplateTest) TestZoneLabelConstraint() {
 	zonedValues := func() map[string]string {
 		return map[string]string{
-			"orchestration.multiregion.mode":                      "zoned",
-			"orchestration.multiregion.zone":                      "zone-a",
-			"orchestration.multiregion.zones[0].name":             "zone-a",
-			"orchestration.multiregion.zones[0].numberOfBrokers":  "3",
-			"orchestration.multiregion.zones[0].numberOfReplicas": "3",
-			"orchestration.multiregion.zones[0].priority":         "100",
+			"orchestration.partitioning.scheme":                    "zone-aware",
+			"orchestration.partitioning.zone":                      "zone-a",
+			"orchestration.partitioning.zones[0].name":             "zone-a",
+			"orchestration.partitioning.zones[0].numberOfBrokers":  "3",
+			"orchestration.partitioning.zones[0].numberOfReplicas": "3",
+			"orchestration.partitioning.zones[0].priority":         "100",
 		}
 	}
 
@@ -131,14 +131,14 @@ func (s *ConstraintTemplateTest) TestZoneLabelConstraint() {
 			Name:   "TestZoneLabelCannotBeSetInGlobalCommonLabelsForZonedMode",
 			Values: globalCommonLabels,
 			Expected: map[string]string{
-				"ERROR": "camunda.io/zone is managed by the chart in zoned mode",
+				"ERROR": "camunda.io/zone is managed by the chart with the zone-aware scheme",
 			},
 		},
 		{
 			Name:   "TestZoneLabelCannotBeSetInOrchestrationPodLabelsForZonedMode",
 			Values: podLabels,
 			Expected: map[string]string{
-				"ERROR": "camunda.io/zone is managed by the chart in zoned mode",
+				"ERROR": "camunda.io/zone is managed by the chart with the zone-aware scheme",
 			},
 		},
 		{

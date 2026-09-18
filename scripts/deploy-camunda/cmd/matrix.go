@@ -53,6 +53,18 @@ func newMatrixCommand() *cobra.Command {
 	return matrixCmd
 }
 
+// validateTierFlag accepts 0 (no tier filter), 1, and 2; every other value is
+// an error. Without this, a positive out-of-range tier silently filters the
+// matrix down to nothing and a negative one disables filtering entirely.
+func validateTierFlag(tier int) error {
+	switch tier {
+	case 0, 1, 2:
+		return nil
+	default:
+		return fmt.Errorf("invalid --tier %d: supported values are 1 (PR CI), 2 (merge-queue only), or 0 for no filter", tier)
+	}
+}
+
 // newMatrixPlanCommand creates the "matrix plan" subcommand. It replaces
 // scripts/generate-chart-matrix.sh + generate-chart-matrix.jq: it decides
 // which chart versions a change set affects and emits the GitHub Actions
@@ -98,6 +110,9 @@ version, and chart-only changes build just the affected versions.`,
 					return fmt.Errorf("invalid --tier %q: %w", tier, err)
 				}
 				tierValue = parsed
+			}
+			if err := validateTierFlag(tierValue); err != nil {
+				return err
 			}
 
 			result, err := matrix.Plan(repoRoot, matrix.PlanOptions{
@@ -201,6 +216,10 @@ This command does not require cluster access.`,
 			}
 			if repoRoot == "" {
 				return fmt.Errorf("--repo-root is required (or set repoRoot in config, or run from within the repo)")
+			}
+
+			if err := validateTierFlag(tier); err != nil {
+				return err
 			}
 
 			entries, err := matrix.Generate(repoRoot, matrix.GenerateOptions{
@@ -534,6 +553,10 @@ Under the hood this invokes deploy.Execute() for each matrix entry.`,
 				if !config.IsValidIngressBaseDomain(ingressBaseDomainEKS) {
 					return fmt.Errorf("--ingress-base-domain-eks must be one of: %s", strings.Join(config.ValidIngressBaseDomains, ", "))
 				}
+			}
+
+			if err := validateTierFlag(tier); err != nil {
+				return err
 			}
 
 			entries, err := matrix.Generate(repoRoot, matrix.GenerateOptions{

@@ -1,5 +1,5 @@
 {{- define "orchestration.statefulset" -}}
-{{- $mr := include "camundaPlatform.multiregion" $ | fromJson -}}
+{{- $partitioning := include "camundaPlatform.partitioning" $ | fromJson -}}
 {{- $tlsConfig := include "orchestration.effectiveTlsConfig" . | fromYaml -}}
 apiVersion: apps/v1
 kind: StatefulSet
@@ -109,9 +109,9 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name
-            {{- if eq (include "orchestration.zoned" .) "true" }}
+            {{- if eq (include "orchestration.zoneAware" .) "true" }}
             - name: CAMUNDA_CLUSTER_ZONE
-              value: {{ $mr.zone | quote }}
+              value: {{ $partitioning.zone | quote }}
             {{- end }}
             {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
             {{- include "camundaPlatform.caBundleEnv" . | nindent 12 }}

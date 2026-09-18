@@ -1,5 +1,5 @@
 {{- define "orchestration.configmapManifest" -}}
-{{- $mr := include "camundaPlatform.multiregion" $ | fromJson -}}
+{{- $partitioning := include "camundaPlatform.partitioning" $ | fromJson -}}
 kind: ConfigMap
 metadata:
   name: {{ include "orchestration.zoneFullname" (dict "context" . "zone" (include "orchestration.scopedZone" .)) }}-configuration
@@ -10,28 +10,34 @@ data:
   startup.sh: |
     # The Node ID depends on the StatefulSet Pod's name so it cannot be templated in the StatefulSet level.
     # The value of "node-id" is calculated in the "startup.sh" file and exported as "VALUES_ORCHESTRATION_NODE_ID" env var.
-    {{- if eq (include "orchestration.zoned" .) "true" }}
+    {{- if eq (include "orchestration.zoneAware" .) "true" }}
     # Zone-aware brokers are identified by the composite member ID "<zone>_<node-id>",
     # so the node ID is the index of the broker inside its own zone, 0 to
     # numberOfBrokers-1. The zone name is what keeps it unique across the cluster.
     export VALUES_ORCHESTRATION_NODE_ID="${VALUES_ORCHESTRATION_NODE_ID:-${K8S_NAME##*-}}"
     {{- else }}
-    export VALUES_ORCHESTRATION_NODE_ID="${VALUES_ORCHESTRATION_NODE_ID:-$[${K8S_NAME##*-} * {{ $mr.regions }} + {{ $mr.regionId }}]}"
+    export VALUES_ORCHESTRATION_NODE_ID="${VALUES_ORCHESTRATION_NODE_ID:-$[${K8S_NAME##*-} * {{ $partitioning.regions }} + {{ $partitioning.regionId }}]}"
     {{- end }}
     echo "export VALUES_ORCHESTRATION_NODE_ID=${VALUES_ORCHESTRATION_NODE_ID}"
 
     if [ "$ZEEBE_RESTORE" = "true" ]; then
-      if [ "${ZEEBE_RESTORE_FROM_BACKUP_ID:-}" ]; then
-        exec restore --backupId="${ZEEBE_RESTORE_FROM_BACKUP_ID}"
-      elif [ "${ZEEBE_RESTORE_FROM_TIMESTAMP:-}" ] && [ "${ZEEBE_RESTORE_TO_TIMESTAMP:-}" ]; then
-        exec restore --from="${ZEEBE_RESTORE_FROM_TIMESTAMP}" --to="${ZEEBE_RESTORE_TO_TIMESTAMP}"
-      elif [ "${ZEEBE_RESTORE_FROM_TIMESTAMP:-}" ]; then
-        exec restore --from="${ZEEBE_RESTORE_FROM_TIMESTAMP}"
-      elif [ "${ZEEBE_RESTORE_TO_TIMESTAMP:-}" ]; then
-        exec restore --to="${ZEEBE_RESTORE_TO_TIMESTAMP}"
-      else
-        exec restore
+      RESTORE_ARGS=()
+      if [ "${ZEEBE_RESTORE_ALL_TENANTS:-}" = "true" ]; then
+        RESTORE_ARGS+=("--allTenants")
       fi
+      if [ "${ZEEBE_RESTORE_TENANT_ID:-}" ]; then
+        RESTORE_ARGS+=("--tenantId=${ZEEBE_RESTORE_TENANT_ID}")
+      fi
+      if [ "${ZEEBE_RESTORE_FROM_BACKUP_ID:-}" ]; then
+        RESTORE_ARGS+=("--backupId=${ZEEBE_RESTORE_FROM_BACKUP_ID}")
+      elif [ "${ZEEBE_RESTORE_FROM_TIMESTAMP:-}" ] && [ "${ZEEBE_RESTORE_TO_TIMESTAMP:-}" ]; then
+        RESTORE_ARGS+=("--from=${ZEEBE_RESTORE_FROM_TIMESTAMP}" "--to=${ZEEBE_RESTORE_TO_TIMESTAMP}")
+      elif [ "${ZEEBE_RESTORE_FROM_TIMESTAMP:-}" ]; then
+        RESTORE_ARGS+=("--from=${ZEEBE_RESTORE_FROM_TIMESTAMP}")
+      elif [ "${ZEEBE_RESTORE_TO_TIMESTAMP:-}" ]; then
+        RESTORE_ARGS+=("--to=${ZEEBE_RESTORE_TO_TIMESTAMP}")
+      fi
+      exec restore "${RESTORE_ARGS[@]}"
     else
       exec camunda
     fi
