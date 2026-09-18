@@ -65,4 +65,10 @@ annotations:
     - name: Camunda 8 Self-Managed Helm charts
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
-  artifacthub.io/changes: ""
+  artifacthub.io/changes: |
+    - kind: changed
+      description: "Omit empty init container blocks"
+    - kind: fixed
+      description: "Warn that the bundled Keycloak image line is frozen and affected by CVE-2026-18963"
+    - kind: fixed
+      description: "Stop management identity from provisioning disabled components"
