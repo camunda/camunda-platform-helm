@@ -11,11 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# Zoned mode with the numbered brokers retained. clusterSize, replicationFactor, regions and
+# The zone-aware scheme with the round-robin brokers retained. clusterSize, replicationFactor, regions and
 # regionId keep their numbered values, which is what preserves the retained generation.
 orchestration:
-  multiregion:
-    mode: zoned
+  partitioning:
+    scheme: zone-aware
     zone: zone-a
     zones:
       - {name: zone-a, numberOfBrokers: 1, numberOfReplicas: 1, priority: 100}
