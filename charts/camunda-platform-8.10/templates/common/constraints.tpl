@@ -474,25 +474,39 @@ Fail if the zone-aware scheme is combined with the region-numbering settings it 
 {{- end }}
 
 {{/*
+Fail if the region count is below 1, under any scheme. Round-robin divides the cluster
+size by it and numbers node IDs with it; zone-aware requires it to be exactly 1, and the
+guard above cannot see a sub-1 value because the resolver has already normalised it.
+
+NOTE: the count is read from the raw values, not from the resolved dict. Both blocks
+default it through "| default 1", and 0 is falsy in Go templates, so a typed 0 reaches
+the resolver as 1; "regions: 0" on its own also reads as an unconfigured block and falls
+through to global.multiregion. Neither is visible after resolution.
+
+NOTE: orchestration.partitioning is scanned unconditionally because a sub-1 count there
+is what makes the block read as unconfigured in the first place. The deprecated block is
+scanned only when it is the one in effect, so an inert leftover cannot fail a render that
+is driven entirely by orchestration.partitioning.
+*/}}
+{{- $rawBlocks := dict "orchestration.partitioning" (.Values.orchestration.partitioning | default dict) -}}
+{{- if eq $partitioningKey "global.multiregion" -}}
+  {{- $_ := set $rawBlocks "global.multiregion" (.Values.global.multiregion | default dict) -}}
+{{- end -}}
+{{- range $key, $raw := $rawBlocks }}
+  {{- if and (hasKey $raw "regions") (lt (int $raw.regions) 1) }}
+    {{- fail (printf "[camunda][error] %s.regions is %d; a cluster spans at least one region." $key (int $raw.regions)) -}}
+  {{- end }}
+{{- end }}
+
+{{/*
 Fail if the round-robin numbering cannot describe a consistent cluster. Node IDs are
 derived as "<ordinal> * regions + regionId", so a region numbered outside its own range
-takes the node IDs of another region, and a region count below 1 renders a negative
-StatefulSet replica count.
-
-NOTE: the region count is read from the raw values, not from the resolved dict. Both
-blocks default it through "| default 1", and 0 is falsy in Go templates, so a typed 0
-reaches the resolver as 1; "regions: 0" on its own also reads as an unconfigured block
-and falls through to global.multiregion. Neither is visible after resolution.
+takes the node IDs of another region.
 
 NOTE: a clusterSize the region count does not divide is the same class of fault and is
 deliberately not rejected here; see #7196.
 */}}
 {{- if ne $partitioning.scheme "zone-aware" }}
-  {{- range $key, $raw := dict "orchestration.partitioning" (.Values.orchestration.partitioning | default dict) "global.multiregion" (.Values.global.multiregion | default dict) }}
-    {{- if and (hasKey $raw "regions") (lt (int $raw.regions) 1) }}
-      {{- fail (printf "[camunda][error] %s.regions is %d; a cluster spans at least one region." $key (int $raw.regions)) -}}
-    {{- end }}
-  {{- end }}
   {{- $regions := int $partitioning.regions -}}
   {{- $regionId := int $partitioning.regionId -}}
   {{- if or (lt $regionId 0) (ge $regionId $regions) }}
