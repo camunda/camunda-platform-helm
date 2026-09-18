@@ -541,6 +541,11 @@ default it through "| default 1", and 0 is falsy in Go templates, so a typed 0 r
 the resolver as 1; "regions: 0" on its own also reads as an unconfigured block and falls
 through to global.multiregion. Neither is visible after resolution.
 
+NOTE: a nil count is skipped. The chart default is null, which means "unset" and is what
+keepUnzonedBrokers checks for with hasKey; Helm only drops that key when it comes from the
+chart defaults, so passing values.yaml back through "-f" keeps it present and nil, and
+"int nil" would otherwise read as 0 here.
+
 NOTE: orchestration.partitioning is scanned unconditionally because a sub-1 count there
 is what makes the block read as unconfigured in the first place. The deprecated block is
 scanned only when it is the one in effect, so an inert leftover cannot fail a render that
@@ -551,7 +556,7 @@ is driven entirely by orchestration.partitioning.
   {{- $_ := set $rawBlocks "global.multiregion" (.Values.global.multiregion | default dict) -}}
 {{- end -}}
 {{- range $key, $raw := $rawBlocks }}
-  {{- if and (hasKey $raw "regions") (lt (int $raw.regions) 1) }}
+  {{- if and (hasKey $raw "regions") (not (kindIs "invalid" $raw.regions)) (lt (int $raw.regions) 1) }}
     {{- fail (printf "[camunda][error] %s.regions is %d; a cluster spans at least one region." $key (int $raw.regions)) -}}
   {{- end }}
 {{- end }}
