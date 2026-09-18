@@ -275,11 +275,8 @@ func (s *PartitioningResolutionTest) TestSpansFailureDomainsBoundary() {
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
-// qualifiedAdvertisedHost is derived alongside spansFailureDomains and deliberately disagrees
-// with it on one input: a single-zone zone-aware release advertises the fully qualified name
-// while the chart still generates the bootstrap list. Collapsing the two into one predicate
-// would render the short host there, so this pins the divergence and the single-region case
-// that anchors the other end of the predicate.
+// Contract: a single-zone zone-aware release qualifies the advertised host and still receives a
+// generated bootstrap list; round-robin at one region is the only input that keeps the short host.
 func (s *PartitioningResolutionTest) TestQualifiedAdvertisedHostDivergesFromSpansFailureDomains() {
 	const qualified = "advertisedHost: \"${K8S_NAME}.${K8S_SERVICE_NAME}.${K8S_NAMESPACE}.svc\""
 	const short = "advertisedHost: \"${K8S_NAME}.${K8S_SERVICE_NAME}\""
@@ -304,8 +301,6 @@ func (s *PartitioningResolutionTest) TestQualifiedAdvertisedHostDivergesFromSpan
 			},
 		},
 		{
-			// the alternate contract: round-robin at one region is the only case that keeps the
-			// short host, so a predicate stuck on true would show up here
 			Name: "SingleRegionKeepsTheShortHost",
 			Values: map[string]string{
 				"orchestration.data.secondaryStorage.type": "elasticsearch",
@@ -324,9 +319,9 @@ func (s *PartitioningResolutionTest) TestQualifiedAdvertisedHostDivergesFromSpan
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
-// The resolved dict is round-tripped through JSON, so every number comes back a float64 and
-// Go prints those with %g. configmap.yaml puts regions and regionId straight into shell
-// arithmetic, where the exponent form Go switches to at 1e6 is not a number.
+// Contract: regions and regionId reach configmap.yaml's shell arithmetic as decimal integers.
+// Both values are at or above 1e6, the magnitude at which an unstringified count would switch to
+// exponent notation, so either conversion regresses on its own.
 func (s *PartitioningResolutionTest) TestRegionCountsRenderAsDecimalIntegers() {
 	testCases := []testhelpers.TestCase{
 		{
@@ -334,12 +329,12 @@ func (s *PartitioningResolutionTest) TestRegionCountsRenderAsDecimalIntegers() {
 			Values: map[string]string{
 				"orchestration.data.secondaryStorage.type": "elasticsearch",
 				"orchestration.profiles.broker":            "true",
-				"orchestration.partitioning.regions":       "1000000",
-				"orchestration.partitioning.regionId":      "999999",
+				"orchestration.partitioning.regions":       "1000001",
+				"orchestration.partitioning.regionId":      "1000000",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
-				require.Contains(t, output, "${K8S_NAME##*-} * 1000000 + 999999")
+				require.Contains(t, output, "${K8S_NAME##*-} * 1000001 + 1000000")
 				require.NotContains(t, output, "e+06")
 			},
 		},
