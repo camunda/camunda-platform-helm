@@ -483,15 +483,22 @@ default it through "| default 1", and 0 is falsy in Go templates, so a typed 0 r
 the resolver as 1; a sub-1 count on its own also reads as an unconfigured block and falls
 through to global.multiregion. Neither is visible after resolution.
 
-NOTE: each block carries its own field name. orchestration.partitioning spells the count
-numberOfZones; the deprecated global block still spells it regions and keeps that spelling
-for the releases already on it.
-
 NOTE: orchestration.partitioning is scanned unconditionally because a sub-1 count there
 is what makes the block read as unconfigured in the first place. The deprecated block is
 scanned only when it is the one in effect, so an inert leftover cannot fail a render that
 is driven entirely by orchestration.partitioning.
 */}}
+{{- /* NOTE: reached with --skip-schema-validation, where additionalProperties does not
+     run. partitioningConfigured accepts the deprecated spelling, so the old pair would
+     select this block while the resolver reads only the new names. */ -}}
+{{- $renamed := dict "regions" "numberOfZones" "regionId" "zoneIndex" -}}
+{{- $orchRaw := .Values.orchestration.partitioning | default dict -}}
+{{- range $old, $current := $renamed }}
+  {{- if hasKey $orchRaw $old }}
+    {{- fail (printf "[camunda][error] orchestration.partitioning.%s was renamed to orchestration.partitioning.%s." $old $current) -}}
+  {{- end }}
+{{- end }}
+
 {{- $rawBlocks := list (dict "key" "orchestration.partitioning" "field" "numberOfZones" "raw" (.Values.orchestration.partitioning | default dict)) -}}
 {{- if eq $partitioningKey "global.multiregion" -}}
   {{- $rawBlocks = append $rawBlocks (dict "key" "global.multiregion" "field" "regions" "raw" (.Values.global.multiregion | default dict)) -}}
@@ -1447,7 +1454,7 @@ The following values inside your values.yaml need to be set but were not:
     {{- $warningMessage := printf "%s %s %s %s"
         "[camunda][warning]"
         "DEPRECATION: \"global.multiregion.*\" is deprecated and will be removed in chart v16 (Camunda 8.11)."
-        "Only the Orchestration Cluster reads these keys, so they moved to \"orchestration.partitioning.*\" with the same field names."
+        "Only the Orchestration Cluster reads these keys, so they moved to \"orchestration.partitioning.*\", where regions is now numberOfZones and regionId is now zoneIndex."
         "Move the block and remove the global one; setting both fails the render."
     -}}
     {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
