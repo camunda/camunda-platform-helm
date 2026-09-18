@@ -2948,45 +2948,70 @@ Usage:
 {{- end -}}
 
 {{/*
-NOTE: resolves the multi-region block, preferring orchestration.multiregion over the
+NOTE: resolves the multi-region block, preferring orchestration.partitioning over the
 deprecated global.multiregion, which only still carries regions and regionId. Whole-block
 precedence, never per field, so a topology cannot be assembled half from each. Absent
 fields fall back to the chart defaults, which is what lets the global block supply the
 numbered pair without declaring the zoned ones. constraints.tpl rejects setting both.
 */}}
-{{- define "camundaPlatform.multiregion" -}}
-{{- $orch := .Values.orchestration.multiregion | default dict -}}
+{{- define "camundaPlatform.partitioning" -}}
+{{- $orch := .Values.orchestration.partitioning | default dict -}}
 {{- $global := .Values.global.multiregion | default dict -}}
-{{- if eq (include "camundaPlatform.multiregionConfigured" $orch) "true" -}}
-  {{- dict
-        "mode" ($orch.mode | default "numbered")
+{{- $resolved := dict -}}
+{{- if eq (include "camundaPlatform.partitioningConfigured" $orch) "true" -}}
+  {{- $resolved = dict
+        "scheme" ($orch.scheme | default "round-robin")
         "zone" ($orch.zone | default "")
         "zones" ($orch.zones | default list)
-        "regions" ($orch.regions | default 1)
-        "regionId" ($orch.regionId | default 0)
-      | toJson -}}
+        "regions" (int ($orch.regions | default 1) | default 1)
+        "regionId" (int ($orch.regionId | default 0)) -}}
 {{- else -}}
   {{- /* Only the numbered pair is read back from the deprecated block. mode, zone and
-       zones never shipped there, and honouring them would keep zoned mode reachable
+       zones never shipped there, and honouring them would keep the zone-aware scheme reachable
        through the spelling being removed in v16, which values.yaml and both schemas
        already say it is not. */ -}}
-  {{- dict
-        "mode" "numbered"
+  {{- $resolved = dict
+        "scheme" "round-robin"
         "zone" ""
         "zones" list
-        "regions" ($global.regions | default 1)
-        "regionId" ($global.regionId | default 0)
-      | toJson -}}
+        "regions" (int ($global.regions | default 1) | default 1)
+        "regionId" (int ($global.regionId | default 0)) -}}
 {{- end -}}
+{{- /* Derive everything a consumer needs, so the scheme is decided here rather than
+     re-asked at each call site. The counts are stringified because the dict is round-tripped
+     through JSON, which types them as floats on the way back; the rendered output is the same
+     either way at these magnitudes, this just keeps the type explicit at the boundary. */ -}}
+{{- if eq $resolved.scheme "zone-aware" -}}
+  {{- $brokers := 0 -}}
+  {{- $replicas := 0 -}}
+  {{- $local := 0 -}}
+  {{- range $resolved.zones -}}
+    {{- $brokers = add $brokers (int .numberOfBrokers) -}}
+    {{- $replicas = add $replicas (int .numberOfReplicas) -}}
+    {{- if eq .name $resolved.zone -}}
+      {{- $local = int .numberOfBrokers -}}
+    {{- end -}}
+  {{- end -}}
+  {{- $_ := set $resolved "clusterSize" (toString $brokers) -}}
+  {{- $_ := set $resolved "replicationFactor" (toString $replicas) -}}
+  {{- $_ := set $resolved "localReplicas" (toString $local) -}}
+  {{- $_ := set $resolved "spansFailureDomains" (gt (len $resolved.zones) 1) -}}
+{{- else -}}
+  {{- $_ := set $resolved "clusterSize" (toString .Values.orchestration.clusterSize) -}}
+  {{- $_ := set $resolved "replicationFactor" (toString .Values.orchestration.replicationFactor) -}}
+  {{- $_ := set $resolved "localReplicas" (toString (div .Values.orchestration.clusterSize $resolved.regions)) -}}
+  {{- $_ := set $resolved "spansFailureDomains" (gt (int $resolved.regions) 1) -}}
+{{- end -}}
+{{- $resolved | toJson -}}
 {{- end -}}
 
 {{/*
 NOTE: takes a multi-region block, not the root context. Emits "true" when any field
 departs from the chart default.
 */}}
-{{- define "camundaPlatform.multiregionConfigured" -}}
+{{- define "camundaPlatform.partitioningConfigured" -}}
 {{- if or
-      (ne (default "numbered" .mode) "numbered")
+      (ne (default "round-robin" .scheme) "round-robin")
       (ne (default "" .zone) "")
       (gt (len (default list .zones)) 0)
       (ne (int (default 1 .regions)) 1)
@@ -2997,18 +3022,13 @@ true
 
 {{/*
 NOTE: "true" when the cluster spans more than one failure domain, which is more than one
-zone in zoned mode and more than one region in numbered mode. Single-zone zoned counts as
+zone with the zone-aware scheme and more than one region with round-robin. A single zone counts as
 one cluster, the same as a single-region numbered one: it exists to skew leaders inside a
 region,
 not to spread across them. Three call sites depend on agreeing about this, so they read
 it here rather than each spelling it out: the generated initial contact points, the
 legacy Optimize exporters, and the NOTES.txt warning.
 */}}
-{{- define "camundaPlatform.multiregionSpread" -}}
-{{- $mr := include "camundaPlatform.multiregion" . | fromJson -}}
-{{- if eq $mr.mode "zoned" -}}
-  {{- gt (len $mr.zones) 1 -}}
-{{- else -}}
-  {{- gt (int $mr.regions) 1 -}}
-{{- end -}}
+{{- define "camundaPlatform.spansFailureDomains" -}}
+{{- (include "camundaPlatform.partitioning" . | fromJson).spansFailureDomains -}}
 {{- end -}}

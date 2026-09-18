@@ -12,56 +12,25 @@
     ) -}}
 {{- end -}}
 
-{{- define "orchestration.zoned" -}}
-{{- eq (include "camundaPlatform.multiregion" . | fromJson).mode "zoned" -}}
+{{- define "orchestration.zoneAware" -}}
+{{- eq (include "camundaPlatform.partitioning" . | fromJson).scheme "zone-aware" -}}
 {{- end -}}
 
 {{/*
-NOTE: takes a dict of "zones" and the zone "field" to total, not the root context.
+NOTE: the sizing below is resolved once by camundaPlatform.partitioning, which decides the
+scheme and derives the totals from the zone list or the values keys. These read the result
+rather than branching on the scheme again.
 */}}
-{{- define "orchestration.zoneSum" -}}
-{{- $total := 0 -}}
-{{- $field := .field -}}
-{{- range .zones -}}
-  {{- $total = add $total (int (index . $field)) -}}
-{{- end -}}
-{{- $total -}}
-{{- end -}}
-
 {{- define "orchestration.clusterSize" -}}
-{{- if eq (include "orchestration.zoned" .) "true" -}}
-  {{- include "orchestration.zoneSum" (dict "zones" (include "camundaPlatform.multiregion" $ | fromJson).zones "field" "numberOfBrokers") -}}
-{{- else -}}
-  {{- .Values.orchestration.clusterSize -}}
-{{- end -}}
+{{- (include "camundaPlatform.partitioning" . | fromJson).clusterSize -}}
 {{- end -}}
 
 {{- define "orchestration.replicationFactor" -}}
-{{- if eq (include "orchestration.zoned" .) "true" -}}
-  {{- include "orchestration.zoneSum" (dict "zones" (include "camundaPlatform.multiregion" $ | fromJson).zones "field" "numberOfReplicas") -}}
-{{- else -}}
-  {{- .Values.orchestration.replicationFactor -}}
-{{- end -}}
-{{- end -}}
-
-{{- define "orchestration.zoneBrokers" -}}
-{{- $mr := include "camundaPlatform.multiregion" $ | fromJson -}}
-{{- $zoneBrokers := 0 -}}
-{{- range $mr.zones -}}
-  {{- if eq .name $mr.zone -}}
-    {{- $zoneBrokers = int .numberOfBrokers -}}
-  {{- end -}}
-{{- end -}}
-{{- $zoneBrokers -}}
+{{- (include "camundaPlatform.partitioning" . | fromJson).replicationFactor -}}
 {{- end -}}
 
 {{- define "orchestration.replicas" -}}
-{{- $mr := include "camundaPlatform.multiregion" $ | fromJson -}}
-{{- if eq (include "orchestration.zoned" .) "true" -}}
-{{- include "orchestration.zoneBrokers" . -}}
-{{- else -}}
-{{- div .Values.orchestration.clusterSize $mr.regions -}}
-{{- end -}}
+{{- (include "camundaPlatform.partitioning" . | fromJson).localReplicas -}}
 {{- end -}}
 
 {{/*
@@ -423,7 +392,7 @@ and reading the raw key instead would silently drop an explicit orchestration.ex
       )
       (or
         .Values.orchestration.exporters.zeebe.enabled
-        (ne (include "camundaPlatform.multiregionSpread" .) "true")
+        (ne (include "camundaPlatform.spansFailureDomains" .) "true")
       )
 -}}
 {{- end -}}
@@ -436,7 +405,7 @@ and reading the raw key instead would silently drop an explicit orchestration.ex
       )
       (or
         .Values.orchestration.exporters.zeebe.enabled
-        (ne (include "camundaPlatform.multiregionSpread" .) "true")
+        (ne (include "camundaPlatform.spansFailureDomains" .) "true")
       )
 -}}
 {{- end -}}
