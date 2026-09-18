@@ -416,7 +416,7 @@ Fail if the multi-region topology is described in both places at once. Picking o
 silently would deploy a topology the other block does not describe, and the two are
 merged nowhere.
 */}}
-{{- if and (eq (include "camundaPlatform.partitioningConfigured" (.Values.orchestration.partitioning | default dict)) "true") (eq (include "camundaPlatform.partitioningConfigured" (.Values.global.multiregion | default dict)) "true") }}
+{{- if and (eq (include "camundaPlatform.partitioningConfigured" (.Values.orchestration.partitioning | default dict)) "true") (eq (include "camundaPlatform.deprecatedMultiregionConfigured" (.Values.global.multiregion | default dict)) "true") }}
   {{- fail "[camunda][error] orchestration.partitioning and global.multiregion are both configured. global.multiregion is deprecated; keep orchestration.partitioning and remove the global block." -}}
 {{- end }}
 
@@ -489,13 +489,18 @@ scanned only when it is the one in effect, so an inert leftover cannot fail a re
 is driven entirely by orchestration.partitioning.
 */}}
 {{- /* NOTE: reached with --skip-schema-validation, where additionalProperties does not
-     run. partitioningConfigured accepts the deprecated spelling, so the old pair would
-     select this block while the resolver reads only the new names. */ -}}
+     run, so each block rejects the other block's spelling here. */ -}}
 {{- $renamed := dict "regions" "numberOfZones" "regionId" "zoneIndex" -}}
 {{- $orchRaw := .Values.orchestration.partitioning | default dict -}}
 {{- range $old, $current := $renamed }}
   {{- if hasKey $orchRaw $old }}
     {{- fail (printf "[camunda][error] orchestration.partitioning.%s was renamed to orchestration.partitioning.%s." $old $current) -}}
+  {{- end }}
+{{- end }}
+{{- $globalRaw := .Values.global.multiregion | default dict -}}
+{{- range $current, $deprecated := dict "numberOfZones" "regions" "zoneIndex" "regionId" }}
+  {{- if hasKey $globalRaw $current }}
+    {{- fail (printf "[camunda][error] global.multiregion.%s does not exist; the deprecated block spells it global.multiregion.%s, and %s lives under orchestration.partitioning." $current $deprecated $current) -}}
   {{- end }}
 {{- end }}
 
@@ -1450,7 +1455,7 @@ The following values inside your values.yaml need to be set but were not:
     {{- end }}
   {{- end }}
 
-  {{- if eq (include "camundaPlatform.partitioningConfigured" (.Values.global.multiregion | default dict)) "true" }}
+  {{- if eq (include "camundaPlatform.deprecatedMultiregionConfigured" (.Values.global.multiregion | default dict)) "true" }}
     {{- $warningMessage := printf "%s %s %s %s"
         "[camunda][warning]"
         "DEPRECATION: \"global.multiregion.*\" is deprecated and will be removed in chart v16 (Camunda 8.11)."
