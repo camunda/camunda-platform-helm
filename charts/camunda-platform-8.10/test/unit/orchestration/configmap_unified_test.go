@@ -1743,6 +1743,48 @@ func (s *ConfigmapTemplateTest) TestZonedModeRejectsNumberedRegionSettings() {
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
+func (s *ConfigmapTemplateTest) TestRenamedRegionKeysAreRejectedWithoutSchemaValidation() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name:                    "TestRegionsIsRejected",
+			RenderTemplateExtraArgs: []string{"--skip-schema-validation"},
+			Values: map[string]string{
+				"orchestration.partitioning.regions": "2",
+				"orchestration.profiles.broker":      "true",
+			},
+			Expected: map[string]string{
+				"ERROR": "orchestration.partitioning.regions was renamed to orchestration.partitioning.numberOfZones",
+			},
+		},
+		{
+			Name:                    "TestRegionIdIsRejected",
+			RenderTemplateExtraArgs: []string{"--skip-schema-validation"},
+			Values: map[string]string{
+				"orchestration.partitioning.regionId": "1",
+				"orchestration.profiles.broker":       "true",
+			},
+			Expected: map[string]string{
+				"ERROR": "orchestration.partitioning.regionId was renamed to orchestration.partitioning.zoneIndex",
+			},
+		},
+		{
+			Name:                    "TestDeprecatedGlobalBlockKeepsItsSpelling",
+			RenderTemplateExtraArgs: []string{"--skip-schema-validation"},
+			Values: map[string]string{
+				"global.multiregion.regions":    "2",
+				"global.multiregion.regionId":   "1",
+				"orchestration.profiles.broker": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "* 2 + 1]")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
 func (s *ConfigmapTemplateTest) TestRoundRobinRejectsInconsistentNumbering() {
 	testCases := []testhelpers.TestCase{
 		{
