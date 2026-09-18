@@ -3015,7 +3015,18 @@ departs from the chart default.
       (ne (default "" .zone) "")
       (gt (len (default list .zones)) 0)
       (ne (int (default 1 .numberOfZones)) 1)
-      (ne (int (default 0 .zoneIndex)) 0)
+      (ne (int (default 0 .zoneIndex)) 0) -}}
+true
+{{- end -}}
+{{- end -}}
+
+{{/*
+NOTE: the deprecated block only ever carried the numbering pair, under its own spelling.
+Kept separate from camundaPlatform.partitioningConfigured so neither block can be marked
+configured by a key its own resolver branch does not read.
+*/}}
+{{- define "camundaPlatform.deprecatedMultiregionConfigured" -}}
+{{- if or
       (ne (int (default 1 .regions)) 1)
       (ne (int (default 0 .regionId)) 0) -}}
 true
