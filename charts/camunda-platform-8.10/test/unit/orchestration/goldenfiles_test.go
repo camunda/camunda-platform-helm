@@ -51,3 +51,50 @@ func TestGoldenDefaultsTemplateOrchestration(t *testing.T) {
 		})
 	}
 }
+
+// The goldens above render the chart defaults, which means the round-robin scheme. Nothing
+// byte-pins the zone-aware branch, so a drift in what camundaPlatform.partitioning derives
+// from the zone list would only be caught by whichever assertion happened to name the value.
+// These pin the two resources the derivation actually reaches: the configuration, which
+// carries the summed cluster size and replication factor and the zone list itself, and the
+// StatefulSet, whose replica count comes from the local zone.
+//
+// The zone list is deliberately asymmetric. Equal zones would still match after a change that
+// totalled the wrong field or picked the wrong zone.
+func TestGoldenZoneAwareTemplateOrchestration(t *testing.T) {
+	t.Parallel()
+
+	chartPath, err := filepath.Abs("../../../")
+	require.NoError(t, err)
+
+	zoneAware := map[string]string{
+		"orchestration.partitioning.scheme":                    "zone-aware",
+		"orchestration.partitioning.zone":                      "london",
+		"orchestration.partitioning.zones[0].name":             "paris",
+		"orchestration.partitioning.zones[0].numberOfBrokers":  "4",
+		"orchestration.partitioning.zones[0].numberOfReplicas": "3",
+		"orchestration.partitioning.zones[0].priority":         "3",
+		"orchestration.partitioning.zones[1].name":             "london",
+		"orchestration.partitioning.zones[1].numberOfBrokers":  "2",
+		"orchestration.partitioning.zones[1].numberOfReplicas": "2",
+		"orchestration.partitioning.zones[1].priority":         "2",
+		"orchestration.partitioning.zones[2].name":             "dublin",
+		"orchestration.partitioning.zones[2].numberOfBrokers":  "1",
+		"orchestration.partitioning.zones[2].numberOfReplicas": "1",
+		"orchestration.partitioning.zones[2].priority":         "1",
+	}
+
+	for _, name := range []string{"configmap", "statefulset"} {
+		suite.Run(t, &utils.TemplateGoldenTest{
+			ChartPath:      chartPath,
+			Release:        "camunda-platform-test",
+			Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
+			GoldenFileName: name + "-zone-aware",
+			Templates:      []string{"templates/orchestration/" + name + ".yaml"},
+			SetValues:      zoneAware,
+			IgnoredLines: []string{
+				`\s+checksum/.+?:\s+.*`, // ignore configmap checksum.
+			},
+		})
+	}
+}

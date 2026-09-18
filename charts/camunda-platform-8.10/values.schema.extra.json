@@ -197,7 +197,7 @@
                 "multiregion": {
                     "type": "object",
                     "additionalProperties": false,
-                    "description": "DEPRECATED, use orchestration.multiregion. Only the regions and regionId settings remain here; zoned mode is configured under orchestration.multiregion.",
+                    "description": "DEPRECATED, use orchestration.partitioning. Only the regions and regionId settings remain here; the zone-aware scheme is configured under orchestration.partitioning.",
                     "default": {},
                     "properties": {
                         "regions": {
@@ -205,7 +205,7 @@
                                 "integer",
                                 "string"
                             ],
-                            "description": "Number of regions this Camunda Platform instance is stretched across.",
+                            "description": "Number of regions this Camunda Platform instance is stretched across. Must be at least 1; the render fails otherwise.",
                             "default": 1
                         },
                         "regionId": {
@@ -213,7 +213,7 @@
                                 "integer",
                                 "string"
                             ],
-                            "description": "Unique id of the region. MUST start at 0 for the computation to work correctly. With 2 regions, you would have region 0 and 1.",
+                            "description": "Unique id of the region. MUST start at 0 for the computation to work correctly. With 2 regions, you would have region 0 and 1. A value outside 0 to regions - 1 fails the render, since node IDs are derived as <ordinal> * regions + regionId.",
                             "default": 0
                         }
                     }
@@ -917,29 +917,29 @@
         },
         "orchestration": {
             "properties": {
-                "multiregion": {
+                "partitioning": {
                     "type": "object",
                     "additionalProperties": false,
-                    "description": "Multi-region configuration for the Orchestration cluster. WARNING: get your configuration reviewed by Camunda before going to production — see https://docs.camunda.io/docs/self-managed/concepts/multi-region/dual-region/.",
+                    "description": "How partition replicas are distributed across brokers, and how brokers are grouped into failure domains. Mirrors the engine configuration camunda.cluster.partitioning. This does not set the number of partitions, which is orchestration.partitionCount; it sets how the replicas of those partitions are placed. WARNING: get your configuration reviewed by Camunda before going to production — see https://docs.camunda.io/docs/self-managed/concepts/multi-region/dual-region/.",
                     "default": {},
                     "properties": {
-                        "mode": {
+                        "scheme": {
                             "type": "string",
                             "enum": [
-                                "numbered",
-                                "zoned"
+                                "round-robin",
+                                "zone-aware"
                             ],
-                            "description": "selects how a broker learns which failure domain it belongs to. `numbered` derives a region from the node ID, `zoned` takes a zone name.",
-                            "default": "numbered"
+                            "description": "partitioning scheme. `round-robin` leaves brokers on plain numeric node IDs, `zone-aware` identifies them as `<zone>_<index>` and places replicas across the declared zones. These are two of the schemes accepted by camunda.cluster.partitioning.scheme; the engine also accepts FIXED, which this chart does not render.",
+                            "default": "round-robin"
                         },
                         "zone": {
                             "type": "string",
-                            "description": "can be used to define the zone of this Orchestration Cluster deployment when using zoned mode.",
+                            "description": "can be used to define the zone of this Orchestration Cluster deployment when using the zone-aware scheme.",
                             "default": ""
                         },
                         "zones": {
                             "type": "array",
-                            "description": "can be used to define the zones of the Orchestration Cluster when using zoned mode.",
+                            "description": "can be used to define the zones of the Orchestration Cluster when using the zone-aware scheme.",
                             "default": [],
                             "items": {
                                 "type": "object",
@@ -956,7 +956,7 @@
                                         "minLength": 1,
                                         "maxLength": 63,
                                         "pattern": "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$",
-                                        "description": "Name of the zone. It is the prefix of the composite broker member ID \"<zone>_<node-id>\", and one of these names must be selected by orchestration.multiregion.zone. Restricted to an RFC 1123 label: an underscore would make the composite ID ambiguous, and the name is also used to derive per-zone resource and DNS names."
+                                        "description": "Name of the zone. It is the prefix of the composite broker member ID \"<zone>_<node-id>\", and one of these names must be selected by orchestration.partitioning.zone. Restricted to an RFC 1123 label: an underscore would make the composite ID ambiguous, and the name is also used to derive per-zone resource and DNS names."
                                     },
                                     "numberOfBrokers": {
                                         "type": "integer",
@@ -981,7 +981,7 @@
                                 "integer",
                                 "string"
                             ],
-                            "description": "Number of regions this Camunda Platform instance is stretched across.",
+                            "description": "Number of regions this Camunda Platform instance is stretched across. Must be at least 1; the render fails otherwise.",
                             "default": 1
                         },
                         "regionId": {
@@ -989,7 +989,7 @@
                                 "integer",
                                 "string"
                             ],
-                            "description": "Unique id of the region. MUST start at 0 for the computation to work correctly. With 2 regions, you would have region 0 and 1.",
+                            "description": "Unique id of the region. MUST start at 0 for the computation to work correctly. With 2 regions, you would have region 0 and 1. A value outside 0 to regions - 1 fails the render, since node IDs are derived as <ordinal> * regions + regionId.",
                             "default": 0
                         }
                     }

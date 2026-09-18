@@ -768,12 +768,12 @@ global:
 
   # Multiregion options for Zeebe.
   ## Deprecated since chart v15 (Camunda 8.10); remove in v16. Only the Orchestration
-  ## Cluster reads these keys, so they moved to `orchestration.multiregion`, which is
-  ## also where zoned mode is configured. Setting both blocks fails the render.
+  ## Cluster reads these keys, so they moved to `orchestration.partitioning`, which is
+  ## also where the zone-aware scheme is configured. Setting both blocks fails the render.
   multiregion:
-    ## @skip global.multiregion.regions deprecated, use `orchestration.multiregion.regions`
+    ## @skip global.multiregion.regions deprecated, use `orchestration.partitioning.regions`. Must be at least 1; the render fails otherwise.
     regions: 1
-    ## @skip global.multiregion.regionId deprecated, use `orchestration.multiregion.regionId`
+    ## @skip global.multiregion.regionId deprecated, use `orchestration.partitioning.regionId`. Must be between 0 and regions - 1; the render fails otherwise.
     regionId: 0
 
   ## Document Store Configuration
@@ -2298,27 +2298,46 @@ orchestration:
       ## @param orchestration.multitenancy.api.enabled (DEPRECATED) if true, then enable multitenancy API used for tenant management.
       enabled: true
 
-  # Multiregion options for the Orchestration Cluster. Operating a multi-region
-  # cluster has prerequisites and procedures this file cannot carry; see
+  # How partition replicas are distributed across brokers, and how brokers are
+  # grouped into failure domains.
+  #
+  # Mirrors the engine configuration `camunda.cluster.partitioning`. The chart
+  # exposes two of the engine's schemes, lower-cased and hyphenated from
+  # `io.camunda.configuration.Partitioning.Scheme`: `ROUND_ROBIN` and
+  # `ZONE_AWARE`. The engine's third scheme, `FIXED`, is not wired into the
+  # templates; set it through `orchestration.extraConfiguration` if you need it.
+  # Each `zones` entry is `io.camunda.configuration.Zone`.
+  #
+  # `partitioning` is the settled product term. The cluster API previously spelled
+  # the same object `partition-distribution`; that endpoint is being renamed to
+  # `/cluster/partitioning` so configuration and API agree. This block does NOT set
+  # the number of partitions -- that is `orchestration.partitionCount` -- it sets how
+  # the replicas of those partitions are placed.
+  #
+  # Operating across more than one failure domain has prerequisites and procedures
+  # this file cannot carry; see
   # https://docs.camunda.io/docs/self-managed/concepts/multi-region/dual-region/
-  multiregion:
-    ## Fixed for the life of the cluster. Zoned brokers are identified by the composite
-    ## `<zone>_<index>`, numbered ones by a plain node ID, so switching an existing release
+  partitioning:
+    ## Fixed for the life of the cluster. Zone-aware brokers are identified by the composite
+    ## `<zone>_<index>`, round-robin ones by a plain node ID, so switching an existing release
     ## re-identifies every broker against Raft state written under the old IDs and the
     ## members no longer recognise each other. Deploy a new cluster instead.
-    ## @param orchestration.multiregion.mode selects how a broker learns which failure domain it belongs to. `numbered` derives a region from the node ID, `zoned` takes a zone name.
-    mode: numbered
-    ## @param orchestration.multiregion.zone can be used to define the zone of this Orchestration Cluster deployment when using zoned mode.
+    ##
+    ## `round-robin` is the engine default and is not rendered into the application
+    ## configuration; only `zone-aware` emits `camunda.cluster.partitioning.scheme`.
+    ## @param orchestration.partitioning.scheme partitioning scheme. `round-robin` leaves brokers on plain numeric node IDs, `zone-aware` identifies them as `<zone>_<index>` and places partition replicas across the declared zones. These are two of the schemes accepted by `camunda.cluster.partitioning.scheme`; the engine also accepts `FIXED`, which this chart does not render.
+    scheme: round-robin
+    ## @param orchestration.partitioning.zone can be used to define the zone of this Orchestration Cluster deployment when using the `zone-aware` scheme.
     zone: ""
-    ## @extra orchestration.multiregion.zones[0].name name of the zone. It is the prefix of the composite broker member ID `<zone>_<index>`, must be an RFC 1123 label, and one of these names must be selected by `orchestration.multiregion.zone`.
-    ## @extra orchestration.multiregion.zones[0].numberOfBrokers number of brokers deployed in this zone. For the local zone it is also the StatefulSet replica count.
-    ## @extra orchestration.multiregion.zones[0].numberOfReplicas number of partition replicas this zone holds. Cannot exceed `numberOfBrokers`.
-    ## @extra orchestration.multiregion.zones[0].priority priority of this zone in the leader election. Must be at least `1`.
-    ## @param orchestration.multiregion.zones can be used to define the zones of the Orchestration Cluster when using zoned mode. Each entry requires `name`, `numberOfBrokers`, `numberOfReplicas` and `priority`; the list is summed into `clusterSize` and `replicationFactor`, so it describes every zone, not just the local one.
+    ## @extra orchestration.partitioning.zones[0].name name of the zone. It is the prefix of the composite broker member ID `<zone>_<index>`, must be an RFC 1123 label, and one of these names must be selected by `orchestration.partitioning.zone`.
+    ## @extra orchestration.partitioning.zones[0].numberOfBrokers number of brokers deployed in this zone. For the local zone it is also the StatefulSet replica count.
+    ## @extra orchestration.partitioning.zones[0].numberOfReplicas number of partition replicas this zone holds. Cannot exceed `numberOfBrokers`.
+    ## @extra orchestration.partitioning.zones[0].priority priority of this zone in the leader election. Must be at least `1`.
+    ## @param orchestration.partitioning.zones can be used to define the zones of the Orchestration Cluster when using the `zone-aware` scheme. Each entry requires `name`, `numberOfBrokers`, `numberOfReplicas` and `priority`; the list is summed into `clusterSize` and `replicationFactor`, so it describes every zone, not just the local one.
     zones: []
-    ## @skip orchestration.multiregion.regions number of regions that this Camunda Platform instance is stretched across
+    ## @skip orchestration.partitioning.regions number of regions that this Camunda Platform instance is stretched across. Must be at least 1; the render fails otherwise.
     regions: 1
-    ## @skip orchestration.multiregion.regionId unique id of the region. MUST start at 0 for the computation to work correctly. With 2 regions, you would have region 0 and 1.
+    ## @skip orchestration.partitioning.regionId unique id of the region. MUST start at 0 for the computation to work correctly. With 2 regions, you would have region 0 and 1. A value outside 0 to regions - 1 fails the render, since node IDs are derived as `<ordinal> * regions + regionId`.
     regionId: 0
 
   ## @param orchestration.clusterSize defines the amount of brokers (=replicas), which are deployed via helm
