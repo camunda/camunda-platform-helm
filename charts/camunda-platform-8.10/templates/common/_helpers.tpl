@@ -2980,10 +2980,9 @@ numbered pair without declaring the zoned ones. constraints.tpl rejects setting 
 {{- /* Derive everything a consumer needs, so the scheme is decided here rather than
      re-asked at each call site.
 
-     NOTE: qualifiedAdvertisedHost is deliberately not spansFailureDomains. Every zone-aware
-     release advertises the fully qualified name, a single-zone one included, while
-     spansFailureDomains stays false there so the chart still generates the bootstrap list.
-     A single-zone zone-aware release is the only input the two disagree on. */ -}}
+     NOTE: qualifiedAdvertisedHost is true for every zone-aware release and, under round-robin,
+     above one region. It parts from spansFailureDomains on a single-zone zone-aware release,
+     which qualifies the host but still gets a generated bootstrap list. */ -}}
 {{- if eq $resolved.scheme "zone-aware" -}}
   {{- $brokers := 0 -}}
   {{- $replicas := 0 -}}
@@ -3007,11 +3006,8 @@ numbered pair without declaring the zoned ones. constraints.tpl rejects setting 
   {{- $_ := set $resolved "spansFailureDomains" (gt (int $resolved.regions) 1) -}}
   {{- $_ := set $resolved "qualifiedAdvertisedHost" (gt (int $resolved.regions) 1) -}}
 {{- end -}}
-{{- /* NOTE: regions and regionId leave as strings, like the other top-level counts; the per-zone
-     ones are not touched. The dict is round-tripped through JSON, which types numbers as floats
-     on the way back, and Go prints a float64 with %g, so from 1e6 up an unstringified count would
-     render in exponent form. configmap.yaml puts regions and regionId straight into shell
-     arithmetic, where "1e+06" is not a number. */ -}}
+{{- /* NOTE: regions and regionId leave as strings, like the other top-level counts; the
+     per-zone ones are not touched. */ -}}
 {{- $_ := set $resolved "regions" (toString $resolved.regions) -}}
 {{- $_ := set $resolved "regionId" (toString $resolved.regionId) -}}
 {{- $resolved | toJson -}}
