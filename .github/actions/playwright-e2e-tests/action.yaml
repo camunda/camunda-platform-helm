@@ -223,6 +223,20 @@ runs:
         chmod +x "${RUNNER_TEMP}/bin/deploy-camunda"
         echo "${RUNNER_TEMP}/bin" >> "$GITHUB_PATH"
 
+    - name: Validate E2E test suite ref
+      if: inputs.e2e-test-suite-ref != ''
+      shell: bash
+      # The suite's npm lifecycle scripts run on the runner and the suite itself executes with
+      # cluster credentials in scope, so the ref has to be immutable. Enforce it here rather than
+      # relying on callers to read the input description.
+      env:
+        E2E_TEST_SUITE_REF: ${{ inputs.e2e-test-suite-ref }}
+      run: |
+        if [[ ! "${E2E_TEST_SUITE_REF}" =~ ^[0-9a-f]{40}$ ]]; then
+          echo "::error::e2e-test-suite-ref must be a full 40-character commit SHA, got '${E2E_TEST_SUITE_REF}'."
+          exit 1
+        fi
+
     - name: Checkout E2E test suite
       if: inputs.e2e-test-suite-ref != ''
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
