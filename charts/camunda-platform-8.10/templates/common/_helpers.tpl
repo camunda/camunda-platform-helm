@@ -2983,7 +2983,7 @@ numbered pair without declaring the zoned ones. constraints.tpl rejects setting 
      NOTE: qualifiedAdvertisedHost is deliberately not spansFailureDomains. Every zone-aware
      release advertises the fully qualified name, a single-zone one included, while
      spansFailureDomains stays false there so the chart still generates the bootstrap list.
-     The two only agree under round-robin. */ -}}
+     A single-zone zone-aware release is the only input the two disagree on. */ -}}
 {{- if eq $resolved.scheme "zone-aware" -}}
   {{- $brokers := 0 -}}
   {{- $replicas := 0 -}}
