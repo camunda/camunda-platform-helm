@@ -16,7 +16,7 @@ data:
     # numberOfBrokers-1. The zone name is what keeps it unique across the cluster.
     export VALUES_ORCHESTRATION_NODE_ID="${VALUES_ORCHESTRATION_NODE_ID:-${K8S_NAME##*-}}"
     {{- else }}
-    export VALUES_ORCHESTRATION_NODE_ID="${VALUES_ORCHESTRATION_NODE_ID:-$[${K8S_NAME##*-} * {{ $partitioning.regions }} + {{ $partitioning.regionId }}]}"
+    export VALUES_ORCHESTRATION_NODE_ID="${VALUES_ORCHESTRATION_NODE_ID:-$[${K8S_NAME##*-} * {{ $partitioning.numberOfZones }} + {{ $partitioning.zoneIndex }}]}"
     {{- end }}
     echo "export VALUES_ORCHESTRATION_NODE_ID=${VALUES_ORCHESTRATION_NODE_ID}"
 

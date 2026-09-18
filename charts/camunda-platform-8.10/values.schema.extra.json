@@ -3,7 +3,9 @@
         "secretStoreFileEntries": {
             "type": "object",
             "propertyNames": {
-                "enum": ["default"]
+                "enum": [
+                    "default"
+                ]
             },
             "additionalProperties": {
                 "type": "object",
@@ -30,14 +32,23 @@
         "secretStoreAwsEntries": {
             "type": "object",
             "propertyNames": {
-                "enum": ["default"]
+                "enum": [
+                    "default"
+                ]
             },
             "additionalProperties": {
                 "type": "object",
                 "properties": {
-                    "region": {"type": "string"},
-                    "pathPrefix": {"type": "string"},
-                    "roleArn": {"type": "string", "minLength": 1}
+                    "region": {
+                        "type": "string"
+                    },
+                    "pathPrefix": {
+                        "type": "string"
+                    },
+                    "roleArn": {
+                        "type": "string",
+                        "minLength": 1
+                    }
                 },
                 "additionalProperties": false
             }
@@ -45,15 +56,28 @@
         "secretStoreGcpEntries": {
             "type": "object",
             "propertyNames": {
-                "enum": ["default"]
+                "enum": [
+                    "default"
+                ]
             },
             "additionalProperties": {
                 "type": "object",
                 "properties": {
-                    "projectId": {"type": "string", "minLength": 1},
-                    "pathPrefix": {"type": "string"},
-                    "endpoint": {"type": "string", "minLength": 1},
-                    "gcpServiceAccount": {"type": "string", "minLength": 1}
+                    "projectId": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "pathPrefix": {
+                        "type": "string"
+                    },
+                    "endpoint": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "gcpServiceAccount": {
+                        "type": "string",
+                        "minLength": 1
+                    }
                 },
                 "additionalProperties": false
             }
@@ -61,24 +85,38 @@
         "secretStoreProviderSet": {
             "type": "object",
             "properties": {
-                "file": {"$ref": "#/definitions/secretStoreFileEntries"},
-                "aws": {"$ref": "#/definitions/secretStoreAwsEntries"},
-                "gcp": {"$ref": "#/definitions/secretStoreGcpEntries"}
+                "file": {
+                    "$ref": "#/definitions/secretStoreFileEntries"
+                },
+                "aws": {
+                    "$ref": "#/definitions/secretStoreAwsEntries"
+                },
+                "gcp": {
+                    "$ref": "#/definitions/secretStoreGcpEntries"
+                }
             },
             "additionalProperties": false
         },
         "secretStore": {
             "type": "object",
             "properties": {
-                "file": {"$ref": "#/definitions/secretStoreFileEntries"},
-                "aws": {"$ref": "#/definitions/secretStoreAwsEntries"},
-                "gcp": {"$ref": "#/definitions/secretStoreGcpEntries"},
+                "file": {
+                    "$ref": "#/definitions/secretStoreFileEntries"
+                },
+                "aws": {
+                    "$ref": "#/definitions/secretStoreAwsEntries"
+                },
+                "gcp": {
+                    "$ref": "#/definitions/secretStoreGcpEntries"
+                },
                 "physicalTenants": {
                     "type": "object",
                     "propertyNames": {
                         "pattern": "^[a-zA-Z0-9_-]{1,64}$"
                     },
-                    "additionalProperties": {"$ref": "#/definitions/secretStoreProviderSet"}
+                    "additionalProperties": {
+                        "$ref": "#/definitions/secretStoreProviderSet"
+                    }
                 }
             },
             "additionalProperties": false
@@ -94,17 +132,26 @@
                                 "aws": {
                                     "properties": {
                                         "forcePathStyle": {
-                                            "type": ["boolean", "null"],
+                                            "type": [
+                                                "boolean",
+                                                "null"
+                                            ],
                                             "description": "(Optional) Force path-style addressing on the S3 client. Set to true or false. When unset, the env var is not emitted and the SDK default (virtual-hosted style) is used; set to true when using a custom endpoint that requires path-style addressing (e.g. MinIO, Ceph RGW).",
                                             "default": null
                                         },
                                         "chunkedEncodingEnabled": {
-                                            "type": ["boolean", "null"],
+                                            "type": [
+                                                "boolean",
+                                                "null"
+                                            ],
                                             "description": "(Optional) Enable AWS chunked transfer encoding. Set to false for S3-compatible backends that do not support it (e.g. Garage). When unset, the SDK default (true) is used.",
                                             "default": null
                                         },
                                         "supportLegacyMd5": {
-                                            "type": ["boolean", "null"],
+                                            "type": [
+                                                "boolean",
+                                                "null"
+                                            ],
                                             "description": "(Optional) Add MD5 checksum plugin to the S3 client for MD5 checksum backward compatibility. Set to true to enable. When unset, the plugin is not added.",
                                             "default": null
                                         }
@@ -120,7 +167,12 @@
                     "properties": {
                         "mode": {
                             "type": "string",
-                            "enum": ["combined", "hub", "orchestration", "optimize"],
+                            "enum": [
+                                "combined",
+                                "hub",
+                                "orchestration",
+                                "optimize"
+                            ],
                             "default": "combined"
                         },
                         "clusters": {
@@ -382,7 +434,10 @@
                     }
                 },
                 "automountServiceAccountToken": {
-                    "type": ["boolean", "null"],
+                    "type": [
+                        "boolean",
+                        "null"
+                    ],
                     "description": "can be used to override the automatic mounting of the service account token at the pod level. When unset, the ServiceAccount configuration is used.",
                     "default": null
                 },
@@ -516,7 +571,10 @@
         "identity": {
             "properties": {
                 "automountServiceAccountToken": {
-                    "type": ["boolean", "null"],
+                    "type": [
+                        "boolean",
+                        "null"
+                    ],
                     "description": "can be used to override the automatic mounting of the service account token at the pod level. When unset, the ServiceAccount configuration is used.",
                     "default": null
                 },
@@ -656,7 +714,11 @@
                         "authentication": {
                             "properties": {
                                 "method": {
-                                    "enum": ["", "oidc", "none"]
+                                    "enum": [
+                                        "",
+                                        "oidc",
+                                        "none"
+                                    ]
                                 },
                                 "oidc": {
                                     "properties": {
@@ -679,7 +741,10 @@
                     }
                 },
                 "automountServiceAccountToken": {
-                    "type": ["boolean", "null"],
+                    "type": [
+                        "boolean",
+                        "null"
+                    ],
                     "description": "can be used to override the automatic mounting of the service account token at the pod level. When unset, the ServiceAccount configuration is used.",
                     "default": null
                 },
@@ -920,7 +985,7 @@
                 "partitioning": {
                     "type": "object",
                     "additionalProperties": false,
-                    "description": "How partition replicas are distributed across brokers, and how brokers are grouped into failure domains. Mirrors the engine configuration camunda.cluster.partitioning. This does not set the number of partitions, which is orchestration.partitionCount; it sets how the replicas of those partitions are placed. WARNING: get your configuration reviewed by Camunda before going to production — see https://docs.camunda.io/docs/self-managed/concepts/multi-region/dual-region/.",
+                    "description": "How partition replicas are distributed across brokers, and how brokers are grouped into failure domains. Mirrors the engine configuration camunda.cluster.partitioning. This does not set the number of partitions, which is orchestration.partitionCount; it sets how the replicas of those partitions are placed. WARNING: get your configuration reviewed by Camunda before going to production \u2014 see https://docs.camunda.io/docs/self-managed/concepts/multi-region/dual-region/.",
                     "default": {},
                     "properties": {
                         "scheme": {
@@ -976,26 +1041,29 @@
                                 }
                             }
                         },
-                        "regions": {
+                        "numberOfZones": {
                             "type": [
                                 "integer",
                                 "string"
                             ],
-                            "description": "Number of regions this Camunda Platform instance is stretched across. Must be at least 1; the render fails otherwise.",
+                            "description": "Number of failure domains this Camunda Platform instance is stretched across. Must be at least 1; the render fails otherwise.",
                             "default": 1
                         },
-                        "regionId": {
+                        "zoneIndex": {
                             "type": [
                                 "integer",
                                 "string"
                             ],
-                            "description": "Unique id of the region. MUST start at 0 for the computation to work correctly. With 2 regions, you would have region 0 and 1. A value outside 0 to regions - 1 fails the render, since node IDs are derived as <ordinal> * regions + regionId.",
+                            "description": "Zero-based index of the zone this release is deployed to, under the round-robin scheme. A value outside 0 to numberOfZones - 1 fails the render, since node IDs are derived as <ordinal> * numberOfZones + zoneIndex.",
                             "default": 0
                         }
                     }
                 },
                 "automountServiceAccountToken": {
-                    "type": ["boolean", "null"],
+                    "type": [
+                        "boolean",
+                        "null"
+                    ],
                     "description": "can be used to override the automatic mounting of the service account token at the pod level. When unset, the ServiceAccount configuration is used.",
                     "default": null
                 },
@@ -1500,12 +1568,18 @@
             "additionalProperties": true,
             "properties": {
                 "contextPath": {
-                    "type": ["string", "null"],
+                    "type": [
+                        "string",
+                        "null"
+                    ],
                     "description": "can be used to make Camunda Hub available on a custom sub-path. This 8.10 alpha override replaces camundaHub.webModeler.contextPath.",
                     "default": null
                 },
                 "automountServiceAccountToken": {
-                    "type": ["boolean", "null"],
+                    "type": [
+                        "boolean",
+                        "null"
+                    ],
                     "description": "can be used to override the automatic mounting of the service account token at the pod level. When unset, the ServiceAccount configuration is used.",
                     "default": null
                 },
@@ -1582,110 +1656,236 @@
             "type": "object",
             "additionalProperties": false,
             "properties": {
-                "inlineSecret": {"type": "string"},
-                "existingSecret": {"type": "string"},
-                "existingSecretKey": {"type": "string"}
+                "inlineSecret": {
+                    "type": "string"
+                },
+                "existingSecret": {
+                    "type": "string"
+                },
+                "existingSecretKey": {
+                    "type": "string"
+                }
             }
         },
         "topologyOrchestrationComponent": {
             "type": "object",
             "additionalProperties": false,
             "properties": {
-                "enabled": {"type": "boolean"},
-                "clientId": {"type": "string"},
-                "audience": {"type": "string"},
-                "redirectUrl": {"type": "string"},
-                "roleName": {"type": "string"},
-                "secret": {"$ref": "#/$defs/topologySecret"},
-                "serviceName": {"type": "string"},
-                "gatewayServiceName": {"type": "string"},
-                "readinessUrl": {"type": "string", "pattern": "^$|^https?://[^\\s]+$"},
-                "restUrl": {"type": "string", "pattern": "^$|^https?://[^\\s]+$"},
-                "grpcUrl": {"type": "string", "pattern": "^$|^grpcs?://[^\\s]+$"},
-                "operateUrl": {"type": "string", "pattern": "^$|^https?://[^\\s]+$"},
-                "tasklistUrl": {"type": "string", "pattern": "^$|^https?://[^\\s]+$"},
-                "adminUrl": {"type": "string", "pattern": "^$|^https?://[^\\s]+$"}
+                "enabled": {
+                    "type": "boolean"
+                },
+                "clientId": {
+                    "type": "string"
+                },
+                "audience": {
+                    "type": "string"
+                },
+                "redirectUrl": {
+                    "type": "string"
+                },
+                "roleName": {
+                    "type": "string"
+                },
+                "secret": {
+                    "$ref": "#/$defs/topologySecret"
+                },
+                "serviceName": {
+                    "type": "string"
+                },
+                "gatewayServiceName": {
+                    "type": "string"
+                },
+                "readinessUrl": {
+                    "type": "string",
+                    "pattern": "^$|^https?://[^\\s]+$"
+                },
+                "restUrl": {
+                    "type": "string",
+                    "pattern": "^$|^https?://[^\\s]+$"
+                },
+                "grpcUrl": {
+                    "type": "string",
+                    "pattern": "^$|^grpcs?://[^\\s]+$"
+                },
+                "operateUrl": {
+                    "type": "string",
+                    "pattern": "^$|^https?://[^\\s]+$"
+                },
+                "tasklistUrl": {
+                    "type": "string",
+                    "pattern": "^$|^https?://[^\\s]+$"
+                },
+                "adminUrl": {
+                    "type": "string",
+                    "pattern": "^$|^https?://[^\\s]+$"
+                }
             }
         },
         "topologyOptimizeComponent": {
             "type": "object",
             "additionalProperties": false,
             "properties": {
-                "enabled": {"type": "boolean"},
-                "clientId": {"type": "string"},
-                "audience": {"type": "string"},
-                "redirectUrl": {"type": "string", "pattern": "^$|^https?://(?:[^\\s{}]|\\{\\{[^}]*\\}\\})+$"},
-                "roleName": {"type": "string"},
-                "secret": {"$ref": "#/$defs/topologySecret"},
-                "serviceName": {"type": "string"},
-                "webappUrl": {"type": "string", "pattern": "^$|^https?://[^\\s]+$"},
-                "readinessUrl": {"type": "string", "pattern": "^$|^https?://[^\\s]+$"}
+                "enabled": {
+                    "type": "boolean"
+                },
+                "clientId": {
+                    "type": "string"
+                },
+                "audience": {
+                    "type": "string"
+                },
+                "redirectUrl": {
+                    "type": "string",
+                    "pattern": "^$|^https?://(?:[^\\s{}]|\\{\\{[^}]*\\}\\})+$"
+                },
+                "roleName": {
+                    "type": "string"
+                },
+                "secret": {
+                    "$ref": "#/$defs/topologySecret"
+                },
+                "serviceName": {
+                    "type": "string"
+                },
+                "webappUrl": {
+                    "type": "string",
+                    "pattern": "^$|^https?://[^\\s]+$"
+                },
+                "readinessUrl": {
+                    "type": "string",
+                    "pattern": "^$|^https?://[^\\s]+$"
+                }
             }
         },
         "topologyConnectorsComponent": {
             "type": "object",
             "additionalProperties": false,
             "properties": {
-                "enabled": {"type": "boolean"},
-                "clientId": {"type": "string"},
-                "secret": {"$ref": "#/$defs/topologySecret"},
-                "serviceName": {"type": "string"},
-                "restUrl": {"type": "string", "pattern": "^$|^https?://[^\\s]+$"},
-                "readinessUrl": {"type": "string", "pattern": "^$|^https?://[^\\s]+$"}
+                "enabled": {
+                    "type": "boolean"
+                },
+                "clientId": {
+                    "type": "string"
+                },
+                "secret": {
+                    "$ref": "#/$defs/topologySecret"
+                },
+                "serviceName": {
+                    "type": "string"
+                },
+                "restUrl": {
+                    "type": "string",
+                    "pattern": "^$|^https?://[^\\s]+$"
+                },
+                "readinessUrl": {
+                    "type": "string",
+                    "pattern": "^$|^https?://[^\\s]+$"
+                }
             }
         },
         "topologyComponents": {
             "type": "object",
             "additionalProperties": false,
             "properties": {
-                "orchestration": {"$ref": "#/$defs/topologyOrchestrationComponent"},
-                "optimize": {"$ref": "#/$defs/topologyOptimizeComponent"},
-                "connectors": {"$ref": "#/$defs/topologyConnectorsComponent"}
+                "orchestration": {
+                    "$ref": "#/$defs/topologyOrchestrationComponent"
+                },
+                "optimize": {
+                    "$ref": "#/$defs/topologyOptimizeComponent"
+                },
+                "connectors": {
+                    "$ref": "#/$defs/topologyConnectorsComponent"
+                }
             }
         },
         "topologyCluster": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["id", "namespace", "releaseName", "host", "version", "components"],
+            "required": [
+                "id",
+                "namespace",
+                "releaseName",
+                "host",
+                "version",
+                "components"
+            ],
             "properties": {
-                "id": {"type": "string", "pattern": "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"},
-                "name": {"type": "string"},
-                "namespace": {"type": "string"},
-                "releaseName": {"type": "string"},
-                "host": {"type": "string"},
-                "version": {"type": "string"},
+                "id": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "namespace": {
+                    "type": "string"
+                },
+                "releaseName": {
+                    "type": "string"
+                },
+                "host": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "string"
+                },
                 "authorizations": {
                     "type": "object",
                     "additionalProperties": false,
-                    "properties": {"enabled": {"type": "boolean"}}
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean"
+                        }
+                    }
                 },
                 "contextPaths": {
                     "type": "object",
                     "additionalProperties": false,
                     "properties": {
-                        "orchestration": {"type": "string", "pattern": "^$|^/"},
-                        "optimize": {"type": "string", "pattern": "^$|^/"},
-                        "connectors": {"type": "string", "pattern": "^$|^/"}
+                        "orchestration": {
+                            "type": "string",
+                            "pattern": "^$|^/"
+                        },
+                        "optimize": {
+                            "type": "string",
+                            "pattern": "^$|^/"
+                        },
+                        "connectors": {
+                            "type": "string",
+                            "pattern": "^$|^/"
+                        }
                     }
                 },
-                "components": {"$ref": "#/$defs/topologyComponents"},
+                "components": {
+                    "$ref": "#/$defs/topologyComponents"
+                },
                 "physicalTenants": {
                     "type": "array",
-                    "items": {"$ref": "#/$defs/topologyPhysicalTenant"}
+                    "items": {
+                        "$ref": "#/$defs/topologyPhysicalTenant"
+                    }
                 }
             }
         },
         "topologyPhysicalTenant": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["id", "components"],
+            "required": [
+                "id",
+                "components"
+            ],
             "properties": {
-                "id": {"type": "string", "pattern": "^[a-z0-9]{1,64}$"},
+                "id": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9]{1,64}$"
+                },
                 "components": {
                     "type": "object",
                     "additionalProperties": false,
                     "properties": {
-                        "optimize": {"$ref": "#/$defs/topologyOptimizeComponent"}
+                        "optimize": {
+                            "$ref": "#/$defs/topologyOptimizeComponent"
+                        }
                     }
                 }
             }
