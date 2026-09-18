@@ -275,8 +275,6 @@ func (s *PartitioningResolutionTest) TestSpansFailureDomainsBoundary() {
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
-// Contract: a single-zone zone-aware release qualifies the advertised host and still receives a
-// generated bootstrap list; round-robin at one region is the only input that keeps the short host.
 func (s *PartitioningResolutionTest) TestQualifiedAdvertisedHostDivergesFromSpansFailureDomains() {
 	const qualified = "advertisedHost: \"${K8S_NAME}.${K8S_SERVICE_NAME}.${K8S_NAMESPACE}.svc\""
 	const short = "advertisedHost: \"${K8S_NAME}.${K8S_SERVICE_NAME}\""
@@ -319,9 +317,6 @@ func (s *PartitioningResolutionTest) TestQualifiedAdvertisedHostDivergesFromSpan
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
-// Contract: numberOfZones and zoneIndex reach configmap.yaml's shell arithmetic as decimal
-// integers. Both values are at or above 1e6, the magnitude at which an unstringified count would
-// switch to exponent notation, so either conversion regresses on its own.
 func (s *PartitioningResolutionTest) TestRegionCountsRenderAsDecimalIntegers() {
 	testCases := []testhelpers.TestCase{
 		{
