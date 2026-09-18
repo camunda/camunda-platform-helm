@@ -274,3 +274,76 @@ func (s *PartitioningResolutionTest) TestSpansFailureDomainsBoundary() {
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
+
+// qualifiedAdvertisedHost is derived alongside spansFailureDomains and deliberately disagrees
+// with it on one input: a single-zone zone-aware release advertises the fully qualified name
+// while the chart still generates the bootstrap list. Collapsing the two into one predicate
+// would render the short host there, so this pins the divergence and the single-region case
+// that anchors the other end of the predicate.
+func (s *PartitioningResolutionTest) TestQualifiedAdvertisedHostDivergesFromSpansFailureDomains() {
+	const qualified = "advertisedHost: \"${K8S_NAME}.${K8S_SERVICE_NAME}.${K8S_NAMESPACE}.svc\""
+	const short = "advertisedHost: \"${K8S_NAME}.${K8S_SERVICE_NAME}\""
+
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "SingleZoneQualifiesTheHostAndStillGeneratesContactPoints",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":             "elasticsearch",
+				"orchestration.profiles.broker":                        "true",
+				"orchestration.partitioning.scheme":                    "zone-aware",
+				"orchestration.partitioning.zone":                      "only",
+				"orchestration.partitioning.zones[0].name":             "only",
+				"orchestration.partitioning.zones[0].numberOfBrokers":  "3",
+				"orchestration.partitioning.zones[0].numberOfReplicas": "3",
+				"orchestration.partitioning.zones[0].priority":         "1",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, qualified)
+				require.Contains(t, output, "initial-contact-points:")
+			},
+		},
+		{
+			// the alternate contract: round-robin at one region is the only case that keeps the
+			// short host, so a predicate stuck on true would show up here
+			Name: "SingleRegionKeepsTheShortHost",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"orchestration.profiles.broker":            "true",
+				"orchestration.partitioning.numberOfZones": "1",
+				"orchestration.partitioning.zoneIndex":     "0",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, short)
+				require.NotContains(t, output, qualified)
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+// The resolved dict is round-tripped through JSON, so every number comes back a float64 and
+// Go prints those with %g. configmap.yaml puts numberOfZones and zoneIndex straight into shell
+// arithmetic, where the exponent form Go switches to at 1e6 is not a number.
+func (s *PartitioningResolutionTest) TestRegionCountsRenderAsDecimalIntegers() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "LargeRegionCountKeepsDecimalNotation",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"orchestration.profiles.broker":            "true",
+				"orchestration.partitioning.numberOfZones": "1000000",
+				"orchestration.partitioning.zoneIndex":     "999999",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "${K8S_NAME##*-} * 1000000 + 999999")
+				require.NotContains(t, output, "e+06")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
