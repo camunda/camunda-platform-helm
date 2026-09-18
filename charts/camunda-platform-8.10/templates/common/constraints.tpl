@@ -467,10 +467,10 @@ broker count without the diff naming the setting it ignored.
 {{- end }}
 
 {{/*
-Fail if the zone-aware scheme is combined with the region-numbering settings it replaces.
+Fail if the zone-aware scheme is combined with the round-robin numbering it replaces.
 */}}
-{{- if and (eq $partitioning.scheme "zone-aware") (or (ne (int $partitioning.regions) 1) (ne (int $partitioning.regionId) 0)) }}
-  {{- fail (printf "[camunda][error] %s.regions and %s.regionId cannot be used with the zone-aware scheme." $partitioningKey $partitioningKey) -}}
+{{- if and (eq $partitioning.scheme "zone-aware") (or (ne (int $partitioning.numberOfZones) 1) (ne (int $partitioning.zoneIndex) 0)) }}
+  {{- fail (printf "[camunda][error] %s.numberOfZones and %s.zoneIndex cannot be used with the zone-aware scheme; the zone list describes the topology instead." $partitioningKey $partitioningKey) -}}
 {{- end }}
 
 {{/*
@@ -480,37 +480,52 @@ guard above cannot see a sub-1 value because the resolver has already normalised
 
 NOTE: the count is read from the raw values, not from the resolved dict. Both blocks
 default it through "| default 1", and 0 is falsy in Go templates, so a typed 0 reaches
-the resolver as 1; "regions: 0" on its own also reads as an unconfigured block and falls
+the resolver as 1; a sub-1 count on its own also reads as an unconfigured block and falls
 through to global.multiregion. Neither is visible after resolution.
+
+NOTE: each block carries its own field name. orchestration.partitioning spells the count
+numberOfZones; the deprecated global block still spells it regions and keeps that spelling
+for the releases already on it.
 
 NOTE: orchestration.partitioning is scanned unconditionally because a sub-1 count there
 is what makes the block read as unconfigured in the first place. The deprecated block is
 scanned only when it is the one in effect, so an inert leftover cannot fail a render that
 is driven entirely by orchestration.partitioning.
 */}}
-{{- $rawBlocks := dict "orchestration.partitioning" (.Values.orchestration.partitioning | default dict) -}}
+{{- $rawBlocks := list (dict "key" "orchestration.partitioning" "field" "numberOfZones" "raw" (.Values.orchestration.partitioning | default dict)) -}}
 {{- if eq $partitioningKey "global.multiregion" -}}
-  {{- $_ := set $rawBlocks "global.multiregion" (.Values.global.multiregion | default dict) -}}
+  {{- $rawBlocks = append $rawBlocks (dict "key" "global.multiregion" "field" "regions" "raw" (.Values.global.multiregion | default dict)) -}}
 {{- end -}}
-{{- range $key, $raw := $rawBlocks }}
-  {{- if and (hasKey $raw "regions") (lt (int $raw.regions) 1) }}
-    {{- fail (printf "[camunda][error] %s.regions is %d; a cluster spans at least one region." $key (int $raw.regions)) -}}
+{{- range $block := $rawBlocks }}
+  {{- if hasKey $block.raw $block.field }}
+    {{- $count := get $block.raw $block.field -}}
+    {{- if lt (int $count) 1 }}
+      {{- fail (printf "[camunda][error] %s.%s is %d; a cluster spans at least one zone." $block.key $block.field (int $count)) -}}
+    {{- end }}
   {{- end }}
 {{- end }}
 
 {{/*
 Fail if the round-robin numbering cannot describe a consistent cluster. Node IDs are
-derived as "<ordinal> * regions + regionId", so a region numbered outside its own range
-takes the node IDs of another region.
+derived as "<ordinal> * numberOfZones + zoneIndex", so a zone indexed outside its own
+range takes the node IDs of another zone.
 
-NOTE: a clusterSize the region count does not divide is the same class of fault and is
+NOTE: a clusterSize the zone count does not divide is the same class of fault and is
 deliberately not rejected here; see #7196.
 */}}
 {{- if ne $partitioning.scheme "zone-aware" }}
-  {{- $regions := int $partitioning.regions -}}
-  {{- $regionId := int $partitioning.regionId -}}
-  {{- if or (lt $regionId 0) (ge $regionId $regions) }}
-    {{- fail (printf "[camunda][error] %s.regionId is %d but %s.regions is %d; regionId numbers this region and must be between 0 and %d, or its brokers take the node IDs of another region." $partitioningKey $regionId $partitioningKey $regions (sub $regions 1)) -}}
+  {{- /* NOTE: the message names the keys of whichever block is in effect. The deprecated
+       block still spells the pair regions/regionId. */ -}}
+  {{- $countField := "numberOfZones" -}}
+  {{- $indexField := "zoneIndex" -}}
+  {{- if eq $partitioningKey "global.multiregion" -}}
+    {{- $countField = "regions" -}}
+    {{- $indexField = "regionId" -}}
+  {{- end -}}
+  {{- $zoneCount := int $partitioning.numberOfZones -}}
+  {{- $zoneIndex := int $partitioning.zoneIndex -}}
+  {{- if or (lt $zoneIndex 0) (ge $zoneIndex $zoneCount) }}
+    {{- fail (printf "[camunda][error] %s.%s is %d but %s.%s is %d; %s addresses this zone and must be between 0 and %d, or its brokers take the node IDs of another zone." $partitioningKey $indexField $zoneIndex $partitioningKey $countField $zoneCount $indexField (sub $zoneCount 1)) -}}
   {{- end }}
 {{- end }}
 

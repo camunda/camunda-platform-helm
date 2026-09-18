@@ -2963,8 +2963,8 @@ numbered pair without declaring the zoned ones. constraints.tpl rejects setting 
         "scheme" ($orch.scheme | default "round-robin")
         "zone" ($orch.zone | default "")
         "zones" ($orch.zones | default list)
-        "regions" (int ($orch.regions | default 1) | default 1)
-        "regionId" (int ($orch.regionId | default 0)) -}}
+        "numberOfZones" (int ($orch.numberOfZones | default 1) | default 1)
+        "zoneIndex" (int ($orch.zoneIndex | default 0)) -}}
 {{- else -}}
   {{- /* Only the numbered pair is read back from the deprecated block. mode, zone and
        zones never shipped there, and honouring them would keep the zone-aware scheme reachable
@@ -2974,8 +2974,8 @@ numbered pair without declaring the zoned ones. constraints.tpl rejects setting 
         "scheme" "round-robin"
         "zone" ""
         "zones" list
-        "regions" (int ($global.regions | default 1) | default 1)
-        "regionId" (int ($global.regionId | default 0)) -}}
+        "numberOfZones" (int ($global.regions | default 1) | default 1)
+        "zoneIndex" (int ($global.regionId | default 0)) -}}
 {{- end -}}
 {{- /* Derive everything a consumer needs, so the scheme is decided here rather than
      re-asked at each call site. The counts are stringified because the dict is round-tripped
@@ -2999,8 +2999,8 @@ numbered pair without declaring the zoned ones. constraints.tpl rejects setting 
 {{- else -}}
   {{- $_ := set $resolved "clusterSize" (toString .Values.orchestration.clusterSize) -}}
   {{- $_ := set $resolved "replicationFactor" (toString .Values.orchestration.replicationFactor) -}}
-  {{- $_ := set $resolved "localReplicas" (toString (div .Values.orchestration.clusterSize $resolved.regions)) -}}
-  {{- $_ := set $resolved "spansFailureDomains" (gt (int $resolved.regions) 1) -}}
+  {{- $_ := set $resolved "localReplicas" (toString (div .Values.orchestration.clusterSize $resolved.numberOfZones)) -}}
+  {{- $_ := set $resolved "spansFailureDomains" (gt (int $resolved.numberOfZones) 1) -}}
 {{- end -}}
 {{- $resolved | toJson -}}
 {{- end -}}
@@ -3014,6 +3014,8 @@ departs from the chart default.
       (ne (default "round-robin" .scheme) "round-robin")
       (ne (default "" .zone) "")
       (gt (len (default list .zones)) 0)
+      (ne (int (default 1 .numberOfZones)) 1)
+      (ne (int (default 0 .zoneIndex)) 0)
       (ne (int (default 1 .regions)) 1)
       (ne (int (default 0 .regionId)) 0) -}}
 true
