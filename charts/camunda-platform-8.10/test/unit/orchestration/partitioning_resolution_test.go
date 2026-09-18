@@ -299,6 +299,20 @@ func (s *PartitioningResolutionTest) TestQualifiedAdvertisedHostDivergesFromSpan
 			},
 		},
 		{
+			Name: "MultiRegionQualifiesTheHost",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"orchestration.profiles.broker":            "true",
+				"orchestration.partitioning.regions":       "2",
+				"orchestration.partitioning.regionId":      "0",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, qualified)
+				require.NotContains(t, output, short)
+			},
+		},
+		{
 			Name: "SingleRegionKeepsTheShortHost",
 			Values: map[string]string{
 				"orchestration.data.secondaryStorage.type": "elasticsearch",
