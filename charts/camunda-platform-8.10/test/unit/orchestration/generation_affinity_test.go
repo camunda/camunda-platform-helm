@@ -28,7 +28,7 @@ import (
 )
 
 func (s *StatefulSetTest) TestGenerationAffinitySelectors() {
-	for _, mode := range []string{"numbered", "zoned"} {
+	for _, mode := range []string{"round-robin", "zone-aware"} {
 		for _, tc := range []struct {
 			name     string
 			selector *metav1.LabelSelector
@@ -45,7 +45,7 @@ func (s *StatefulSetTest) TestGenerationAffinitySelectors() {
 				encoded, err := json.Marshal(affinity)
 				s.Require().NoError(err)
 				values := map[string]string{"orchestration.partitioning.scheme": mode}
-				if mode == "zoned" {
+				if mode == "zone-aware" {
 					values["orchestration.partitioning.zone"] = "zone-a"
 					values["orchestration.partitioning.zones[0].name"] = "zone-a"
 					values["orchestration.partitioning.zones[0].numberOfBrokers"] = "1"

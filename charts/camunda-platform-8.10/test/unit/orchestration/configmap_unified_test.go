@@ -1459,12 +1459,12 @@ func (s *ConfigmapTemplateTest) TestZonedConfiguration() {
 				// single-region deployment. Only a cluster spread over more than
 				// one zone needs the list handed to it from outside.
 				require.Contains(t, output, "initial-contact-points:")
-				require.Contains(t, output, "camunda-platform-test-zeebe-0.${K8S_SERVICE_NAME}:26502")
-				require.Contains(t, output, "camunda-platform-test-zeebe-1.${K8S_SERVICE_NAME}:26502")
+				require.Contains(t, output, "camunda-platform-test-zeebe-region-a-0.camunda-platform-test-zeebe-region-a:26502")
+				require.Contains(t, output, "camunda-platform-test-zeebe-region-a-1.camunda-platform-test-zeebe-region-a:26502")
 				// Two brokers, so two contact points. The count comes from the zone
 				// list, not from `orchestration.clusterSize`, which is still on its
 				// default of three and would have produced a third.
-				require.NotContains(t, output, "camunda-platform-test-zeebe-2.${K8S_SERVICE_NAME}:26502")
+				require.NotContains(t, output, "camunda-platform-test-zeebe-region-a-2.camunda-platform-test-zeebe-region-a:26502")
 				require.Contains(t, output, "size: \"2\"")
 			},
 		},
@@ -1570,9 +1570,14 @@ func (s *ConfigmapTemplateTest) TestZonedModeRejectsNumberedRegionSettings() {
 		{
 			Name: "TestZonedModeRejectsNumberedRegions",
 			Values: map[string]string{
-				"orchestration.partitioning.scheme":  "zone-aware",
-				"orchestration.partitioning.regions": "2",
-				"orchestration.profiles.broker":      "true",
+				"orchestration.partitioning.scheme":                    "zone-aware",
+				"orchestration.partitioning.zone":                      "region-a",
+				"orchestration.partitioning.zones[0].name":             "region-a",
+				"orchestration.partitioning.zones[0].numberOfBrokers":  "3",
+				"orchestration.partitioning.zones[0].numberOfReplicas": "3",
+				"orchestration.partitioning.zones[0].priority":         "100",
+				"orchestration.partitioning.regions":                   "2",
+				"orchestration.profiles.broker":                        "true",
 			},
 			Expected: map[string]string{
 				"ERROR": "orchestration.partitioning.regions and orchestration.partitioning.regionId cannot be used with the zone-aware scheme",

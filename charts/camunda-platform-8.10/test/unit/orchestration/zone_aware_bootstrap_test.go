@@ -27,7 +27,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-func (s *ConfigmapTemplateTest) TestMultiZoneBootstrapSurvivesCleanup() {
+func (s *ConfigmapTemplateTest) TestMultiZoneBootstrapEndsWithCleanup() {
 	for _, keep := range []bool{true, false} {
 		testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, []testhelpers.TestCase{{
 			Name: fmt.Sprintf("retention-%t", keep),
@@ -72,6 +72,8 @@ func (s *ConfigmapTemplateTest) TestMultiZoneBootstrapSurvivesCleanup() {
 						for i := 0; i < 3; i++ {
 							want = append(want, fmt.Sprintf("%s-zeebe-%d.%s-zeebe:26502", s.release, i, s.release))
 						}
+					} else {
+						want = nil
 					}
 					require.Equal(t, want, application.Camunda.Cluster.Contacts)
 				}

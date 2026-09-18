@@ -82,7 +82,7 @@ func (s *ConfigmapTemplateTest) TestZonedModeAllowsNumberedRegionSettingsAfterMi
 				"orchestration.profiles.broker":                 "true",
 			},
 			Expected: map[string]string{
-				"ERROR": "orchestration.partitioning.keepUnzonedBrokers requires orchestration.partitioning.scheme=zoned",
+				"ERROR": "orchestration.partitioning.keepUnzonedBrokers requires orchestration.partitioning.scheme=zone-aware",
 			},
 		},
 		{
@@ -105,7 +105,7 @@ func (s *ConfigmapTemplateTest) TestZonedModeAllowsNumberedRegionSettingsAfterMi
 			},
 		},
 		{
-			Name: "TestZonedModeAllowsRetainedNumberedRegionsToBeRemovedWithKeepUnzonedBrokers",
+			Name: "TestRetainedNumberedRegionsMustBeClearedOnceRetentionIsOff",
 			Values: map[string]string{
 				"orchestration.partitioning.scheme":                    "zone-aware",
 				"orchestration.partitioning.zone":                      "region-a",
@@ -118,8 +118,8 @@ func (s *ConfigmapTemplateTest) TestZonedModeAllowsNumberedRegionSettingsAfterMi
 				"orchestration.partitioning.regionId":                  "1",
 				"orchestration.profiles.broker":                        "true",
 			},
-			Verifier: func(t *testing.T, output string, err error) {
-				require.NoError(t, err)
+			Expected: map[string]string{
+				"ERROR": "orchestration.partitioning.regions and orchestration.partitioning.regionId cannot be used with the zone-aware scheme",
 			},
 		},
 		{
