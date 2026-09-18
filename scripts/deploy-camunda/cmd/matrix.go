@@ -16,6 +16,7 @@ package cmd
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -1464,15 +1465,20 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 		if err != nil {
 			return fmt.Errorf("topology release %s/%s contract render failed: %w", entry.Scenario, release.release.Role, err)
 		}
-		var document struct {
-			Data map[string]string `yaml:"data"`
-		}
-		if err := yaml.Unmarshal(manifest, &document); err != nil {
-			return fmt.Errorf("topology release %s/%s contract manifest decode failed: %w", entry.Scenario, release.release.Role, err)
-		}
 		var contract matrix.TopologyContract
-		if err := json.Unmarshal([]byte(document.Data["contract.json"]), &contract); err != nil {
-			return fmt.Errorf("topology release %s/%s contract decode failed: %w", entry.Scenario, release.release.Role, err)
+		// Charts older than 8.10 publish no contract template, so a release pinned to one
+		// renders nothing here. Record the zero contract: ValidateRendered reads these only
+		// to check optimize releases, and reports a mismatch if one actually needed this data.
+		if len(bytes.TrimSpace(manifest)) > 0 {
+			var document struct {
+				Data map[string]string `yaml:"data"`
+			}
+			if err := yaml.Unmarshal(manifest, &document); err != nil {
+				return fmt.Errorf("topology release %s/%s contract manifest decode failed: %w", entry.Scenario, release.release.Role, err)
+			}
+			if err := json.Unmarshal([]byte(document.Data["contract.json"]), &contract); err != nil {
+				return fmt.Errorf("topology release %s/%s contract decode failed: %w", entry.Scenario, release.release.Role, err)
+			}
 		}
 		rendered = append(rendered, matrix.RenderedTopologyRelease{Release: release.release, Contract: contract})
 	}
