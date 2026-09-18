@@ -2978,9 +2978,12 @@ numbered pair without declaring the zoned ones. constraints.tpl rejects setting 
         "regionId" (int ($global.regionId | default 0)) -}}
 {{- end -}}
 {{- /* Derive everything a consumer needs, so the scheme is decided here rather than
-     re-asked at each call site. The counts are stringified because the dict is round-tripped
-     through JSON, which types them as floats on the way back; the rendered output is the same
-     either way at these magnitudes, this just keeps the type explicit at the boundary. */ -}}
+     re-asked at each call site.
+
+     NOTE: qualifiedAdvertisedHost is deliberately not spansFailureDomains. Every zone-aware
+     release advertises the fully qualified name, a single-zone one included, while
+     spansFailureDomains stays false there so the chart still generates the bootstrap list.
+     The two only agree under round-robin. */ -}}
 {{- if eq $resolved.scheme "zone-aware" -}}
   {{- $brokers := 0 -}}
   {{- $replicas := 0 -}}
@@ -2996,12 +2999,20 @@ numbered pair without declaring the zoned ones. constraints.tpl rejects setting 
   {{- $_ := set $resolved "replicationFactor" (toString $replicas) -}}
   {{- $_ := set $resolved "localReplicas" (toString $local) -}}
   {{- $_ := set $resolved "spansFailureDomains" (gt (len $resolved.zones) 1) -}}
+  {{- $_ := set $resolved "qualifiedAdvertisedHost" true -}}
 {{- else -}}
   {{- $_ := set $resolved "clusterSize" (toString .Values.orchestration.clusterSize) -}}
   {{- $_ := set $resolved "replicationFactor" (toString .Values.orchestration.replicationFactor) -}}
   {{- $_ := set $resolved "localReplicas" (toString (div .Values.orchestration.clusterSize $resolved.regions)) -}}
   {{- $_ := set $resolved "spansFailureDomains" (gt (int $resolved.regions) 1) -}}
+  {{- $_ := set $resolved "qualifiedAdvertisedHost" (gt (int $resolved.regions) 1) -}}
 {{- end -}}
+{{- /* NOTE: every count leaves as a string. The dict is round-tripped through JSON, which
+     types numbers as floats on the way back, and Go prints a float64 with %g, so from 1e6 up
+     an unstringified count would render in exponent form. configmap.yaml puts regions and
+     regionId straight into shell arithmetic, where "1e+06" is not a number. */ -}}
+{{- $_ := set $resolved "regions" (toString $resolved.regions) -}}
+{{- $_ := set $resolved "regionId" (toString $resolved.regionId) -}}
 {{- $resolved | toJson -}}
 {{- end -}}
 

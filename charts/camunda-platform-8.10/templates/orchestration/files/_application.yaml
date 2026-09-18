@@ -332,7 +332,7 @@ zeebe:
 
     # zeebe.broker.network
     network:
-      {{- if or (eq (include "orchestration.zoneAware" .) "true") (gt (int $partitioning.regions) 1) }}
+      {{- if $partitioning.qualifiedAdvertisedHost }}
       advertisedHost: "${K8S_NAME}.${K8S_SERVICE_NAME}.${K8S_NAMESPACE}.svc"
       {{- else }}
       advertisedHost: "${K8S_NAME}.${K8S_SERVICE_NAME}"
