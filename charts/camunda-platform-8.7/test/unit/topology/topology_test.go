@@ -171,6 +171,54 @@ func (s *TopologyTest) TestOrchestrationTopologyConstraints() {
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
+// TestMultiTenancyRequiresIdentityAuth pins the Multi-Tenancy guard's
+// dependence on real booleans, the gap 8.8, 8.9 and 8.10 already closed.
+// global.identity.service.url is set (pointing at the Hub's Management
+// Identity) while global.identity.auth.enabled is false, which is exactly the
+// shape the guard's own error message says must be rejected. While
+// $identityAuthEnabled was computed with `or`, it evaluated to the URL string,
+// `has false` never matched it, and Multi-Tenancy rendered with auth disabled.
+//
+// The positive case is the other half: without it, tightening `or` to `and`
+// could pass the negative case by rejecting every Multi-Tenancy configuration.
+func (s *TopologyTest) TestMultiTenancyRequiresIdentityAuth() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestMultiTenancyRejectsAuthDisabled",
+			Values: map[string]string{
+				"global.topology.mode":         "combined",
+				"global.identity.auth.enabled": "false",
+				"global.multitenancy.enabled":  "true",
+				"identityPostgresql.enabled":   "true",
+				// Out of scope here, and combined mode demands its mail config.
+				"webModeler.enabled": "false",
+				"console.enabled":    "false",
+			},
+			Expected: map[string]string{"ERROR": "Multi-Tenancy feature"},
+		}, {
+			Name: "TestMultiTenancyAllowsAuthEnabled",
+			Values: map[string]string{
+				"global.topology.mode":         "combined",
+				"global.identity.auth.enabled": "true",
+				"global.multitenancy.enabled":  "true",
+				"identity.enabled":             "true",
+				"identityPostgresql.enabled":   "true",
+				"webModeler.enabled":           "false",
+				"console.enabled":              "false",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+			},
+		},
+	}
+
+	for i := range testCases {
+		testCases[i].RenderTemplateExtraArgs = orchestrationValues
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
 // TestCombinedTopologyPreservesEnabledValues is the counterweight to the
 // constraints above: switching the same values back to combined mode must
 // leave the Hub-plane components deployable.
