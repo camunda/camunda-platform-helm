@@ -2981,7 +2981,7 @@ numbered pair without declaring the zoned ones. constraints.tpl rejects setting 
      re-asked at each call site.
 
      NOTE: qualifiedAdvertisedHost is true for every zone-aware release and, under round-robin,
-     above one region. It parts from spansFailureDomains on a single-zone zone-aware release,
+     above one region. It differs from spansFailureDomains on a single-zone zone-aware release,
      which qualifies the host but still gets a generated bootstrap list. */ -}}
 {{- if eq $resolved.scheme "zone-aware" -}}
   {{- $brokers := 0 -}}
