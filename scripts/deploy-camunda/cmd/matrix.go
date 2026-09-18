@@ -24,6 +24,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"scripts/camunda-core/pkg/ghactions"
+	"scripts/camunda-core/pkg/helm"
 	"scripts/camunda-core/pkg/logging"
 	"scripts/deploy-camunda/config"
 	"scripts/deploy-camunda/deploy"
@@ -1287,6 +1288,28 @@ type preparedTopologyRelease struct {
 	cleanup   func()
 }
 
+// topologyChartPaths returns the distinct local chart directories the topology's
+// releases render from, in deploy order. A release pinning its own chart-version
+// contributes a second directory, which is why this is not simply the entry's
+// chart path. Releases rendered from an external chart reference (OCI or .tgz)
+// have nothing to vendor locally and are skipped.
+func topologyChartPaths(releases []preparedTopologyRelease) []string {
+	seen := make(map[string]struct{}, len(releases))
+	paths := make([]string, 0, len(releases))
+	for _, release := range releases {
+		if release.flags == nil || release.flags.Chart.Chart != "" || release.flags.Chart.ChartPath == "" {
+			continue
+		}
+		chartPath := release.flags.Chart.ChartPath
+		if _, ok := seen[chartPath]; ok {
+			continue
+		}
+		seen[chartPath] = struct{}{}
+		paths = append(paths, chartPath)
+	}
+	return paths
+}
+
 func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOptions) error {
 	platform := entry.Platform
 	if platform == "" {
@@ -1427,6 +1450,12 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 			return fmt.Errorf("topology release %s/%s (namespace-suffix %q) prepare failed: %w", entry.Scenario, rel.Role, rel.NamespaceSuffix, prepareErr)
 		}
 		preparedReleases = append(preparedReleases, preparedTopologyRelease{release: rel, flags: flags, namespace: namespace, prepared: prepared, cleanup: cleanup})
+	}
+
+	for _, chartPath := range topologyChartPaths(preparedReleases) {
+		if err := helm.EnsureDependencies(ctx, chartPath); err != nil {
+			return fmt.Errorf("topology entry %s/%s: %w", entry.Version, entry.Scenario, err)
+		}
 	}
 
 	rendered := make([]matrix.RenderedTopologyRelease, 0, len(preparedReleases))

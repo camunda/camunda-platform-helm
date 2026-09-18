@@ -1156,3 +1156,64 @@ func TestTopologyHookFlags_PrefersOrchestration(t *testing.T) {
 		t.Error("topologyHookFlags(nil) should report that there is no release to run against")
 	}
 }
+
+// A topology renders every release's contract before any of them deploys, so the
+// chart directories the render needs must already have their subchart dependencies
+// vendored. CI vendors only the matrix entry's own chart version, which left a
+// release pinning chart-version to render against an empty charts/ directory and
+// fail with "missing in charts/ directory: keycloak, postgresql, ...".
+// topologyChartPaths is what turns that into one EnsureDependencies call per chart.
+func TestTopologyChartPaths(t *testing.T) {
+	chart := func(chartPath, chartRef string) preparedTopologyRelease {
+		return preparedTopologyRelease{
+			flags: &config.RuntimeFlags{
+				Chart: config.ChartFlags{ChartPath: chartPath, Chart: chartRef},
+			},
+		}
+	}
+
+	tests := []struct {
+		name     string
+		releases []preparedTopologyRelease
+		want     []string
+	}{
+		{
+			name: "a pinned chart-version contributes its own chart directory",
+			releases: []preparedTopologyRelease{
+				chart("/repo/charts/camunda-platform-8.10", ""),
+				chart("/repo/charts/camunda-platform-8.10", ""),
+				chart("/repo/charts/camunda-platform-8.9", ""),
+			},
+			want: []string{"/repo/charts/camunda-platform-8.10", "/repo/charts/camunda-platform-8.9"},
+		},
+		{
+			name: "a uniform topology yields the single shared chart directory",
+			releases: []preparedTopologyRelease{
+				chart("/repo/charts/camunda-platform-8.10", ""),
+				chart("/repo/charts/camunda-platform-8.10", ""),
+			},
+			want: []string{"/repo/charts/camunda-platform-8.10"},
+		},
+		{
+			name: "an external chart reference has nothing to vendor locally",
+			releases: []preparedTopologyRelease{
+				chart("/repo/charts/camunda-platform-8.10", "oci://registry/camunda/camunda-platform"),
+			},
+			want: []string{},
+		},
+		{
+			name:     "releases without flags or a chart path are skipped",
+			releases: []preparedTopologyRelease{{}, chart("", "")},
+			want:     []string{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := topologyChartPaths(tt.releases)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("topologyChartPaths() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

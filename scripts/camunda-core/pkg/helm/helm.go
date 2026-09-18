@@ -18,12 +18,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"scripts/camunda-core/pkg/executil"
 	"scripts/camunda-core/pkg/logging"
 	"strings"
 	"sync"
 	"time"
+
+	"gopkg.in/yaml.v3"
 )
 
 func Run(ctx context.Context, args []string, workDir string) error {
@@ -166,6 +170,79 @@ func RepoUpdate(ctx context.Context) error {
 		return fmt.Errorf("helm repo update failed: %w", err)
 	}
 	return nil
+}
+
+// MissingVendoredDependencies returns the names of the chart's declared
+// dependencies that are not vendored under <chartPath>/charts, in Chart.yaml
+// order. A dependency counts as vendored when charts/ holds either an expanded
+// <name>/ directory or a <name>-<version>.tgz package, which are the two shapes
+// `helm dependency update` produces and `helm template` accepts. A chart with no
+// Chart.yaml dependencies returns no names.
+func MissingVendoredDependencies(chartPath string) ([]string, error) {
+	raw, err := os.ReadFile(filepath.Join(chartPath, "Chart.yaml"))
+	if err != nil {
+		return nil, fmt.Errorf("read Chart.yaml in %s: %w", chartPath, err)
+	}
+	var chart struct {
+		Dependencies []struct {
+			Name string `yaml:"name"`
+		} `yaml:"dependencies"`
+	}
+	if err := yaml.Unmarshal(raw, &chart); err != nil {
+		return nil, fmt.Errorf("parse Chart.yaml in %s: %w", chartPath, err)
+	}
+
+	var missing []string
+	for _, dependency := range chart.Dependencies {
+		if dependency.Name == "" {
+			continue
+		}
+		vendored, err := dependencyVendored(chartPath, dependency.Name)
+		if err != nil {
+			return nil, err
+		}
+		if !vendored {
+			missing = append(missing, dependency.Name)
+		}
+	}
+	return missing, nil
+}
+
+// dependencyVendored reports whether charts/<name> or charts/<name>-*.tgz exists.
+func dependencyVendored(chartPath, name string) (bool, error) {
+	expanded := filepath.Join(chartPath, "charts", name)
+	if info, err := os.Stat(expanded); err == nil {
+		if info.IsDir() {
+			return true, nil
+		}
+	} else if !os.IsNotExist(err) {
+		return false, fmt.Errorf("stat %s: %w", expanded, err)
+	}
+
+	matches, err := filepath.Glob(filepath.Join(chartPath, "charts", name+"-*.tgz"))
+	if err != nil {
+		return false, fmt.Errorf("glob vendored package for %s in %s: %w", name, chartPath, err)
+	}
+	return len(matches) > 0, nil
+}
+
+// EnsureDependencies vendors the chart's declared dependencies when any of them
+// are missing from <chartPath>/charts, and is a no-op when they are all present.
+// Unlike DependencyUpdate it is safe to call on an already-vendored chart: it
+// costs one Chart.yaml read and no network access.
+func EnsureDependencies(ctx context.Context, chartPath string) error {
+	missing, err := MissingVendoredDependencies(chartPath)
+	if err != nil {
+		return err
+	}
+	if len(missing) == 0 {
+		return nil
+	}
+	logging.Logger.Info().
+		Str("chartPath", chartPath).
+		Strs("missing", missing).
+		Msg("vendoring missing subchart dependencies before render")
+	return DependencyUpdate(ctx, chartPath)
 }
 
 func cleanTempCharts(ctx context.Context, chartPath string) error {
