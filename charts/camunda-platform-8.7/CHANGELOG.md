@@ -1,5 +1,15 @@
 # Changelog
 
+## [12.13.7](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.7-12.13.6...camunda-platform-8.7-12.13.7) (2026-09-18)
+
+
+### Dependencies
+
+* update camunda-platform-images (patch) ([#7214](https://github.com/camunda/camunda-platform-helm/issues/7214)) ([93d9e57](https://github.com/camunda/camunda-platform-helm/commit/93d9e57f494b4a944ed895a52b94cc9a5f3c383c))
+* update camunda-platform-images (patch) ([#7217](https://github.com/camunda/camunda-platform-helm/issues/7217)) ([6de0235](https://github.com/camunda/camunda-platform-helm/commit/6de02357784d177418fee0a9d425e6df2e03b129))
+* update camunda-platform-images (patch) ([#7233](https://github.com/camunda/camunda-platform-helm/issues/7233)) ([d433476](https://github.com/camunda/camunda-platform-helm/commit/d4334766e51afdf37db8fc611484dcb7bbdac435))
+* update registry.camunda.cloud/keycloak-ee/keycloak docker tag to v26.7.4 ([#7208](https://github.com/camunda/camunda-platform-helm/issues/7208)) ([2fe0317](https://github.com/camunda/camunda-platform-helm/commit/2fe0317bf46f42513c63d42656ff532a3e62e9de))
+
 ## [12.13.6](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.7-12.13.5...camunda-platform-8.7-12.13.6) (2026-09-11)
 
 
