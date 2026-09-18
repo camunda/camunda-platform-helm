@@ -3155,10 +3155,11 @@ numbered pair without declaring the zoned ones. constraints.tpl rejects setting 
   {{- $_ := set $resolved "spansFailureDomains" (gt (int $resolved.numberOfZones) 1) -}}
   {{- $_ := set $resolved "qualifiedAdvertisedHost" (gt (int $resolved.numberOfZones) 1) -}}
 {{- end -}}
-{{- /* NOTE: every count leaves as a string. The dict is round-tripped through JSON, which
-     types numbers as floats on the way back, and Go prints a float64 with %g, so from 1e6 up
-     an unstringified count would render in exponent form. configmap.yaml puts numberOfZones
-     and zoneIndex straight into shell arithmetic, where "1e+06" is not a number. */ -}}
+{{- /* NOTE: numberOfZones and zoneIndex leave as strings, like the other top-level counts; the
+     per-zone ones are not touched. The dict is round-tripped through JSON, which types numbers as
+     floats on the way back, and Go prints a float64 with %g, so from 1e6 up an unstringified count
+     would render in exponent form. configmap.yaml puts numberOfZones and zoneIndex straight into
+     shell arithmetic, where "1e+06" is not a number. */ -}}
 {{- $_ := set $resolved "numberOfZones" (toString $resolved.numberOfZones) -}}
 {{- $_ := set $resolved "zoneIndex" (toString $resolved.zoneIndex) -}}
 {{- $resolved | toJson -}}
