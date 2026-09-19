@@ -55,6 +55,10 @@ type Topology struct {
 // companions of their own (they consume the Hub release's shared
 // Elasticsearch and Identity/Keycloak cross-namespace by FQDN).
 type TopologyRelease struct {
+	// ChartVersion selects the local chart and values layers for this release.
+	// Empty inherits the parent matrix entry's version.
+	ChartVersion string `yaml:"chart-version,omitempty" json:"chartVersion,omitempty"`
+
 	// Role is "hub", "orchestration", or "optimize". Exactly one
 	// "hub" role must be declared per Topology.
 	Role string `yaml:"role" json:"role"`
@@ -145,13 +149,35 @@ var reservedTopologyEnvKeys = []string{
 	"SERVED_ORCHESTRATION_INDEX_PREFIX",
 }
 
+// releaseChartPaths resolves the chart a single topology release runs against.
+// A release that pins no chart-version inherits parentVersion. chartVersion is
+// reported so callers can name it in errors, and safe is false when the pinned
+// value is not a plain filename (so it must not be joined into a path).
+func releaseChartPaths(repoRoot, parentChartDir, parentVersion string, r TopologyRelease) (chartVersion, releaseChartDir, chartFullSetupDir string, safe bool) {
+	chartVersion = r.ChartVersion
+	if chartVersion == "" {
+		chartVersion = parentVersion
+	}
+	safe = isPlainFilename(chartVersion)
+	releaseChartDir = parentChartDir
+	if safe {
+		releaseChartDir = filepath.Join(repoRoot, "charts", "camunda-platform-"+chartVersion)
+	}
+	chartFullSetupDir = filepath.Join(releaseChartDir, "test", "integration", "scenarios", "chart-full-setup")
+	return chartVersion, releaseChartDir, chartFullSetupDir, safe
+}
+
 // Validate enforces Topology's load-time invariants:
 //   - at least one release is declared;
+//   - every release's chart-version is a plain filename that resolves to a
+//     local chart directory under <repoRoot>/charts/camunda-platform-<version>;
 //   - no release sets Values, which Features replaces;
 //   - every release declares at least one Features layer, and every one of them
-//     resolves on disk under <chartFullSetupDir>/values/features/<id>.yaml;
+//     resolves on disk under its selected chart's
+//     chart-full-setup/values/features/<id>.yaml;
 //   - every release's Identity/Persistence layer (when set) resolves on disk
-//     under <chartFullSetupDir>/values/identity/ or .../persistence/;
+//     under its selected chart's chart-full-setup values/identity/ or
+//     .../persistence/;
 //   - every release's Dependencies IDs (when set) resolve to a file under
 //     <depsDir>/<id>.yaml;
 //   - every release's DependsOn (when set) references a declared Role, and is
@@ -167,9 +193,13 @@ var reservedTopologyEnvKeys = []string{
 // chart-rendered contract; Validate never reconstructs Helm's merged values.
 //
 // ctx is prepended to error messages, e.g. `scenario "multinamespace": topology: ...`.
-func (t *Topology) Validate(ctx string, chartFullSetupDir string, depsDir string) error {
+func (t *Topology) Validate(ctx string, chartDir string, depsDir string) error {
 	if t == nil {
 		return nil
+	}
+	repoRoot, parentVersion, err := deriveRepoRootAndVersion(chartDir)
+	if err != nil {
+		return err
 	}
 	var problems []string
 
@@ -186,6 +216,12 @@ func (t *Topology) Validate(ctx string, chartFullSetupDir string, depsDir string
 
 	for i, r := range t.Releases {
 		label := fmt.Sprintf("%s: topology %q: release[%d] (role %q, namespace-suffix %q)", ctx, t.Name, i, r.Role, r.NamespaceSuffix)
+		chartVersion, releaseChartDir, chartFullSetupDir, chartVersionSafe := releaseChartPaths(repoRoot, chartDir, parentVersion, r)
+		if !chartVersionSafe {
+			problems = append(problems, fmt.Sprintf("%s: chart-version %q must not contain path separators", label, chartVersion))
+		} else if info, err := os.Stat(releaseChartDir); err != nil || !info.IsDir() {
+			problems = append(problems, fmt.Sprintf("%s: chart-version %q: missing local chart directory at %s", label, chartVersion, releaseChartDir))
+		}
 
 		switch r.Role {
 		case "hub":
@@ -236,35 +272,41 @@ func (t *Topology) Validate(ctx string, chartFullSetupDir string, depsDir string
 			problems = append(problems, fmt.Sprintf("%s: namespace-suffix %q is too long (max 12 chars, to keep <namespace>-<suffix> well within the 63-char Kubernetes limit)", label, r.NamespaceSuffix))
 		}
 
+		valuesDir := filepath.Join(chartFullSetupDir, "values")
+
 		if strings.TrimSpace(r.Values) != "" {
 			problems = append(problems, fmt.Sprintf("%s: values %q is no longer supported: drop the \"features/\" prefix and the \".yaml\" suffix and list it in features instead, so the layer goes through the same env-var substitution as every other feature layer", label, r.Values))
 		}
 		if len(r.Features) == 0 {
 			problems = append(problems, fmt.Sprintf("%s: features is required and must name at least this release's own overlay layer", label))
 		}
+
+		// identity/persistence/features name a values layer by bare ID, which is
+		// interpolated straight into a path. Require plain filenames the same way
+		// dependency IDs do, so an ID such as "../identity/keycloak" cannot escape
+		// its layer directory and silently validate (and later deploy) an
+		// unrelated file. kind names the layer in errors; dirName is its directory.
+		checkLayer := func(kind, dirName, id string) {
+			if !isPlainFilename(id) {
+				problems = append(problems, fmt.Sprintf("%s: %s reference %q must be a plain filename (no path separators)", label, kind, id))
+				return
+			}
+			layerPath := filepath.Join(valuesDir, dirName, id+".yaml")
+			if info, err := os.Stat(layerPath); err != nil || info.IsDir() {
+				problems = append(problems, fmt.Sprintf("%s: %s %q: missing values file at %s", label, kind, id, layerPath))
+			}
+		}
+
 		for _, featureID := range r.Features {
-			if !isPlainFilename(featureID) {
-				problems = append(problems, fmt.Sprintf("%s: feature reference %q must be a plain filename (no path separators)", label, featureID))
-				continue
-			}
-			featurePath := filepath.Join(chartFullSetupDir, "values", "features", featureID+".yaml")
-			if info, err := os.Stat(featurePath); err != nil || info.IsDir() {
-				problems = append(problems, fmt.Sprintf("%s: feature %q: missing values file at %s", label, featureID, featurePath))
-			}
+			checkLayer("feature", "features", featureID)
 		}
 
 		if r.Identity != "" {
-			identityPath := filepath.Join(chartFullSetupDir, "values", "identity", r.Identity+".yaml")
-			if info, err := os.Stat(identityPath); err != nil || info.IsDir() {
-				problems = append(problems, fmt.Sprintf("%s: identity %q: missing values file at %s", label, r.Identity, identityPath))
-			}
+			checkLayer("identity", "identity", r.Identity)
 		}
 
 		if r.Persistence != "" {
-			persistencePath := filepath.Join(chartFullSetupDir, "values", "persistence", r.Persistence+".yaml")
-			if info, err := os.Stat(persistencePath); err != nil || info.IsDir() {
-				problems = append(problems, fmt.Sprintf("%s: persistence %q: missing values file at %s", label, r.Persistence, persistencePath))
-			}
+			checkLayer("persistence", "persistence", r.Persistence)
 		}
 
 		for _, depID := range r.Dependencies {
@@ -336,13 +378,35 @@ func (t *Topology) Validate(ctx string, chartFullSetupDir string, depsDir string
 			continue
 		}
 		label := fmt.Sprintf("%s: topology %q: release (role %q, namespace-suffix %q)", ctx, t.Name, r.Role, r.NamespaceSuffix)
-		problems = append(problems, validateOptimizeLayerSources(label, r, chartFullSetupDir)...)
+		_, _, releaseChartFullSetupDir, safe := releaseChartPaths(repoRoot, chartDir, parentVersion, r)
+		if !safe {
+			continue
+		}
+		problems = append(problems, validateOptimizeLayerSources(label, r, releaseChartFullSetupDir)...)
 	}
 
 	if len(problems) == 0 {
 		return nil
 	}
 	return fmt.Errorf("%s", strings.Join(problems, "\n  - "))
+}
+
+// isContainedRelativePath reports whether value is a non-empty relative path
+// that stays inside the directory it is joined onto. Used for topology fields
+// that legitimately contain a subdirectory, where isPlainFilename is too
+// strict but filepath.Join would still happily follow "..".
+func isContainedRelativePath(value string) bool {
+	if value == "" || filepath.IsAbs(value) {
+		return false
+	}
+	if strings.ContainsRune(value, '\\') {
+		return false
+	}
+	cleaned := filepath.Clean(value)
+	if cleaned == "." || cleaned == ".." || strings.HasPrefix(cleaned, ".."+string(filepath.Separator)) {
+		return false
+	}
+	return true
 }
 
 func isDNS1123Label(value string) bool {
