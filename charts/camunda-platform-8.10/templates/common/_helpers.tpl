@@ -2978,9 +2978,11 @@ numbered pair without declaring the zoned ones. constraints.tpl rejects setting 
         "regionId" (int ($global.regionId | default 0)) -}}
 {{- end -}}
 {{- /* Derive everything a consumer needs, so the scheme is decided here rather than
-     re-asked at each call site. The counts are stringified because the dict is round-tripped
-     through JSON, which types them as floats on the way back; the rendered output is the same
-     either way at these magnitudes, this just keeps the type explicit at the boundary. */ -}}
+     re-asked at each call site.
+
+     NOTE: qualifiedAdvertisedHost is true for every zone-aware release and, under round-robin,
+     above one region. It differs from spansFailureDomains on a single-zone zone-aware release,
+     which qualifies the host but still gets a generated bootstrap list. */ -}}
 {{- if eq $resolved.scheme "zone-aware" -}}
   {{- $brokers := 0 -}}
   {{- $replicas := 0 -}}
@@ -2996,12 +2998,18 @@ numbered pair without declaring the zoned ones. constraints.tpl rejects setting 
   {{- $_ := set $resolved "replicationFactor" (toString $replicas) -}}
   {{- $_ := set $resolved "localReplicas" (toString $local) -}}
   {{- $_ := set $resolved "spansFailureDomains" (gt (len $resolved.zones) 1) -}}
+  {{- $_ := set $resolved "qualifiedAdvertisedHost" true -}}
 {{- else -}}
   {{- $_ := set $resolved "clusterSize" (toString .Values.orchestration.clusterSize) -}}
   {{- $_ := set $resolved "replicationFactor" (toString .Values.orchestration.replicationFactor) -}}
   {{- $_ := set $resolved "localReplicas" (toString (div .Values.orchestration.clusterSize $resolved.regions)) -}}
   {{- $_ := set $resolved "spansFailureDomains" (gt (int $resolved.regions) 1) -}}
+  {{- $_ := set $resolved "qualifiedAdvertisedHost" (gt (int $resolved.regions) 1) -}}
 {{- end -}}
+{{- /* NOTE: regions and regionId leave as strings, like the other top-level counts; the
+     per-zone ones are not touched. */ -}}
+{{- $_ := set $resolved "regions" (toString $resolved.regions) -}}
+{{- $_ := set $resolved "regionId" (toString $resolved.regionId) -}}
 {{- $resolved | toJson -}}
 {{- end -}}
 
