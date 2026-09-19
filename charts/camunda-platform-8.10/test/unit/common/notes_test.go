@@ -56,6 +56,28 @@ func TestNotesTemplate(t *testing.T) {
 			expected:    "No password is configured",
 			notExpected: "stored in Kubernetes Secret",
 		},
+		{
+			name:        "round-robin across more than one zone",
+			values:      []string{"orchestration.partitioning.numberOfZones=2", "orchestration.partitioning.zoneIndex=0"},
+			expected:    "zones: 2",
+			notExpected: "regions: 2",
+		},
+		{
+			name: "zone-aware reports the declared zone count",
+			values: []string{
+				"orchestration.partitioning.scheme=zone-aware",
+				"orchestration.partitioning.zone=zone-a",
+				"orchestration.partitioning.zones[0].name=zone-a",
+				"orchestration.partitioning.zones[0].numberOfBrokers=1",
+				"orchestration.partitioning.zones[0].numberOfReplicas=1",
+				"orchestration.partitioning.zones[0].priority=1",
+				"orchestration.partitioning.zones[1].name=zone-b",
+				"orchestration.partitioning.zones[1].numberOfBrokers=1",
+				"orchestration.partitioning.zones[1].numberOfReplicas=1",
+				"orchestration.partitioning.zones[1].priority=2",
+			},
+			expected: "zones: 2",
+		},
 	}
 
 	for _, testCase := range testCases {

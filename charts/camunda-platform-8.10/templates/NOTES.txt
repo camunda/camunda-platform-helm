@@ -26,7 +26,7 @@
          so every user-facing warning stays in one place. */ -}}
     {{- $zoned := eq (include "orchestration.zoneAware" .) "true" -}}
     {{- if and (eq (include "camundaPlatform.spansFailureDomains" .) "true") .Values.orchestration.profiles.broker }}
-  - Multi-region deployment detected ({{ if $zoned }}zones: {{ len $partitioning.zones }}{{ else }}regions: {{ $partitioning.regions }}{{ end }})
+  - Multi-region deployment detected ({{ if $zoned }}zones: {{ len $partitioning.zones }}{{ else }}zones: {{ $partitioning.numberOfZones }}{{ end }})
     {{- end }}
   {{- end }}
 - Optimize:
