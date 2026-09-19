@@ -1,0 +1,60 @@
+global:
+  ingress:
+    enabled: true
+    host: east.example.com
+  security:
+    authentication:
+      method: oidc
+  identity:
+    service:
+      url: http://camunda-identity.camunda-hub.svc.cluster.local:80/identity
+    auth:
+      enabled: true
+      type: GENERIC
+      issuer: https://issuer.example.com
+      optimize:
+        clientId: optimize-east
+        audience: optimize-east-api
+        redirectUrl: https://east.example.com/optimize
+        secret:
+          existingSecret: east-oidc
+          existingSecretKey: optimize-secret
+  topology:
+    mode: orchestration
+
+identity:
+  enabled: false
+identityKeycloak:
+  enabled: false
+identityPostgresql:
+  enabled: false
+console:
+  enabled: true
+webModeler:
+  enabled: true
+webModelerPostgresql:
+  enabled: false
+prometheusServiceMonitor:
+  enabled: true
+orchestration:
+  enabled: true
+  security:
+    authentication:
+      oidc:
+        clientId: orchestration-east
+        audience: orchestration-east-api
+        redirectUrl: https://east.example.com/orchestration
+        secret:
+          existingSecret: east-oidc
+          existingSecretKey: orchestration-secret
+optimize:
+  enabled: true
+connectors:
+  enabled: true
+  security:
+    authentication:
+      oidc:
+        clientId: connectors-east
+        secret:
+          existingSecret: east-oidc
+          existingSecretKey: connectors-secret
