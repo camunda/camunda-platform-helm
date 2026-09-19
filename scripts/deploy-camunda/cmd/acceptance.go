@@ -335,6 +335,15 @@ func runPhysicalTenantAcceptance(ctx context.Context, opts physicalTenantAccepta
 		}
 	}
 	for source, token := range tokens {
+		// venom is the integration harness's admin client. features/physicaltenants-hub.yaml
+		// grants it write:* on every Optimize resource server in this topology, so reaching
+		// all of them is expected and says nothing about tenant isolation.
+		//
+		// The blind spot is narrower than the skip: every token here belongs to one release
+		// and carries that release's own audience, so none of them exercises an audience
+		// shared across releases. TestAudienceIsolationTemplate in
+		// charts/camunda-platform-8.10/test/unit/common/audience_isolation_test.go covers
+		// that statically.
 		if source == "venom" {
 			continue
 		}
