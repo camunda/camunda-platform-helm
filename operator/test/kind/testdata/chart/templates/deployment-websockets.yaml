@@ -1,0 +1,22 @@
+{{- $phase := .Values.camundaHub.upgrade.phase | default "normal" -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-hub-websockets
+  labels:
+    app: {{ .Release.Name }}-hub-websockets
+spec:
+  # Websockets serve traffic only in normal; they take no part in the migration.
+  replicas: {{ ternary 1 0 (eq $phase "normal") }}
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-hub-websockets
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-hub-websockets
+        camunda.io/upgrade-phase: {{ $phase | quote }}
+    spec:
+      containers:
+        - name: pause
+          image: registry.k8s.io/pause:3.9

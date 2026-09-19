@@ -1,0 +1,27 @@
+# Minimal values that render the hub topology role deterministically.
+#
+# The Pusher credentials are pinned because the chart generates them with
+# randAlphaNum when unset, which would make any render-to-render comparison
+# fail for reasons unrelated to parity.
+global:
+  topology:
+    mode: hub
+  security:
+    authentication:
+      method: oidc
+  identity:
+    auth:
+      issuerBackendUrl: https://keycloak.example.com/realms/camunda
+identity:
+  enabled: true
+camundaHub:
+  enabled: true
+  restapi:
+    mail:
+      fromAddress: noreply@example.com
+    pusher:
+      secret:
+        inlineSecret: parity-pusher-app-secret
+      client:
+        secret:
+          inlineSecret: parity-pusher-app-key
