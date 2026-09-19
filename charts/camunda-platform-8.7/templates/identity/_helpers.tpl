@@ -13,7 +13,7 @@ Create a default fully qualified app name.
 {{- end -}}
 
 {{ define "identity.internalUrl" }}
-  {{- if .Values.identity.enabled -}}
+  {{- if eq (include "camundaPlatform.identityEnabled" .) "true" -}}
     {{-
       printf "http://%s:%v%s"
         (include "identity.fullname" .)
