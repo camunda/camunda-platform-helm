@@ -89,10 +89,10 @@ func generate(mapping, secretName, outputPath string, strict bool, envOverrides 
 		}
 		val := lookupEnv(name)
 		if val == "" {
-			// The Secret would silently omit this key — warn so it isn't
-			// discovered later as a missing env var inside a crashing pod.
+			// Detail is emitted at debug; the summary below names every missing
+			// var so the Secret's omitted keys stay discoverable in one line.
 			missing = append(missing, name)
-			logging.Logger.Warn().Str("var", name).Msg("Environment variable empty or missing, omitting from secret")
+			logging.Logger.Debug().Str("var", name).Msg("Environment variable empty or missing, omitting from secret")
 			continue
 		}
 		stringData[name] = val
@@ -100,7 +100,11 @@ func generate(mapping, secretName, outputPath string, strict bool, envOverrides 
 	if len(missing) > 0 && strict {
 		return fmt.Errorf("strict mode: %d mapped variable(s) unset or empty: %s", len(missing), strings.Join(missing, ", "))
 	}
-	logging.Logger.Info().Int("mappedCount", len(stringData)).Int("missing", len(missing)).Msg("Mapped environment variables to secret")
+	summary := logging.Logger.Info()
+	if len(missing) > 0 {
+		summary = logging.Logger.Warn().Strs("missingVars", missing)
+	}
+	summary.Int("mappedCount", len(stringData)).Int("missing", len(missing)).Msg("Mapped environment variables to secret")
 
 	// Build Labels
 	labels := map[string]string{

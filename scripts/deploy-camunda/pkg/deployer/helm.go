@@ -190,15 +190,15 @@ func guardedContext(ctx context.Context, o types.Options, waits bool) (context.C
 // guardedReason replaces the generic failure reason when the guard is what ended
 // the run, so the error names the actual problem instead of the Helm exit.
 func guardedReason(defaultReason string, guard *imagePullGuard) string {
-	if guard.Stop() != nil {
-		return "helm upgrade --install aborted early: unresolvable container image"
+	if failure := guard.Stop(); failure != nil {
+		return failure.abortReason()
 	}
 	return defaultReason
 }
 
-// guardedCause substitutes the observed image pull failure for the Helm process
-// error. Cancelling the context kills helm, so runErr would otherwise read
-// "signal: killed", which explains nothing.
+// guardedCause substitutes the observed terminal pod failure for the Helm
+// process error. Cancelling the context kills helm, so runErr would otherwise
+// read "signal: killed", which explains nothing.
 func guardedCause(runErr error, guard *imagePullGuard) error {
 	if failure := guard.Stop(); failure != nil {
 		return failure
