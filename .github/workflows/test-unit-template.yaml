@@ -65,6 +65,7 @@ jobs:
         with:
           tools: |
             bats
+            yq
       - name: Install bats-assert
         run: |
           git clone https://github.com/bats-core/bats-assert.git test/test_helper/bats-assert

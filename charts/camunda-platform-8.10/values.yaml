@@ -2320,25 +2320,28 @@ orchestration:
   partitioning:
     ## Fixed for the life of the cluster. Zone-aware brokers are identified by the composite
     ## `<zone>_<index>`, round-robin ones by a plain node ID, so switching an existing release
-    ## re-identifies every broker against Raft state written under the old IDs and the
-    ## members no longer recognise each other. Deploy a new cluster instead.
+    ## re-identifies every broker against Raft state written under the old IDs. Retain the
+    ## round-robin brokers with `keepUnzonedBrokers` and follow the zone-aware migration
+    ## procedure to convert one in place.
     ##
     ## `round-robin` is the engine default and is not rendered into the application
     ## configuration; only `zone-aware` emits `camunda.cluster.partitioning.scheme`.
     ## @param orchestration.partitioning.scheme partitioning scheme. `round-robin` leaves brokers on plain numeric node IDs, `zone-aware` identifies them as `<zone>_<index>` and places partition replicas across the declared zones. These are two of the schemes accepted by `camunda.cluster.partitioning.scheme`; the engine also accepts `FIXED`, which this chart does not render.
     scheme: round-robin
-    ## @param orchestration.partitioning.zone can be used to define the zone of this Orchestration Cluster deployment when using the `zone-aware` scheme.
+    ## @param orchestration.partitioning.zone can be used to define the zone of this Orchestration Cluster deployment when using the `zone-aware` scheme. Must be an RFC 1123 label of at most 32 characters to fit zone-suffixed resource names.
     zone: ""
-    ## @extra orchestration.partitioning.zones[0].name name of the zone. It is the prefix of the composite broker member ID `<zone>_<index>`, must be an RFC 1123 label, and one of these names must be selected by `orchestration.partitioning.zone`.
+    ## @extra orchestration.partitioning.zones[0].name name of the zone. It is the prefix of the composite broker member ID `<zone>_<index>`, must be an RFC 1123 label of at most 32 characters to fit zone-suffixed resource names, and one of these names must be selected by `orchestration.partitioning.zone`.
     ## @extra orchestration.partitioning.zones[0].numberOfBrokers number of brokers deployed in this zone. For the local zone it is also the StatefulSet replica count.
     ## @extra orchestration.partitioning.zones[0].numberOfReplicas number of partition replicas this zone holds. Cannot exceed `numberOfBrokers`.
     ## @extra orchestration.partitioning.zones[0].priority priority of this zone in the leader election. Must be at least `1`.
     ## @param orchestration.partitioning.zones can be used to define the zones of the Orchestration Cluster when using the `zone-aware` scheme. Each entry requires `name`, `numberOfBrokers`, `numberOfReplicas` and `priority`; the list is summed into `clusterSize` and `replicationFactor`, so it describes every zone, not just the local one.
     zones: []
-    ## @skip orchestration.partitioning.regions number of regions that this Camunda Platform instance is stretched across. Must be at least 1; the render fails otherwise.
-    regions: 1
-    ## @skip orchestration.partitioning.regionId unique id of the region. MUST start at 0 for the computation to work correctly. With 2 regions, you would have region 0 and 1. A value outside 0 to regions - 1 fails the render, since node IDs are derived as `<ordinal> * regions + regionId`.
-    regionId: 0
+    ## @param orchestration.partitioning.keepUnzonedBrokers also renders the round-robin broker StatefulSet alongside the zoned one during migration. Keep the previous regions and regionId values here until the round-robin brokers are removed; move them from global.multiregion when migrating from the deprecated block.
+    keepUnzonedBrokers: false
+    ## @skip orchestration.partitioning.regions number of regions that this Camunda Platform instance is stretched across. Must be at least 1; the render fails otherwise. With the zone-aware scheme, set the previous value while keepUnzonedBrokers is true.
+    regions: null
+    ## @skip orchestration.partitioning.regionId unique id of the region. MUST start at 0 for the computation to work correctly. With 2 regions, you would have region 0 and 1. A value outside 0 to regions - 1 fails the render, since node IDs are derived as `<ordinal> * regions + regionId`. With the zone-aware scheme, set the previous value while keepUnzonedBrokers is true.
+    regionId: null
 
   ## @param orchestration.clusterSize defines the amount of brokers (=replicas), which are deployed via helm
   clusterSize: "3"
@@ -2746,12 +2749,13 @@ orchestration:
   nodeSelector: {}
   ## @param orchestration.tolerations can be used to define pod toleration's https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
   tolerations: []
-  ## @extra orchestration.affinity can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
-  # The default defined PodAntiAffinity allows constraining on which nodes the pods are scheduled on https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#inter-pod-affinity-and-anti-affinity
-  # It uses a hard requirement for scheduling and works based on the pod labels
+  ## @extra orchestration.affinity can be used to define pod affinity or anti-affinity. By default, brokers from the same generation are scheduled on different nodes. https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
   ## @skip orchestration.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[0].key
   ## @skip orchestration.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[0].operator
   ## @skip orchestration.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[0].values
+  ## @skip orchestration.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[1].key
+  ## @skip orchestration.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[1].operator
+  ## @skip orchestration.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[1].values
   ## @skip orchestration.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].topologyKey
   affinity:
     podAntiAffinity:
@@ -2760,9 +2764,12 @@ orchestration:
             matchExpressions:
               - key: "app.kubernetes.io/component"
                 operator: In
-                # NOTE: The value is set to "zeebe-broker" for backward compatibility between 8.7 and 8.8.
                 values:
                   - zeebe-broker
+              - key: "camunda.io/broker-generation"
+                operator: In
+                values:
+                  - '{{ ternary "zoned" "numbered" (eq .OrchestrationRender.scope "zoned") }}'
           topologyKey: "kubernetes.io/hostname"
 
   ## @param orchestration.topologySpreadConstraints can be used to define how broker pods are spread across topology domains https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/

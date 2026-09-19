@@ -91,9 +91,20 @@ camunda:
     # zeebe.broker.cluster
     {{- /* NOTE: one zone or one region is one headless Service, which the chart can address
          itself. Beyond that it cannot know how brokers reach each other, so the list is the
-         user's to provide. Keyed on the mode, not on the zone count, because the zone list
-         is only meaningful with the zone-aware scheme. */ -}}
-    {{- if ne (include "camundaPlatform.spansFailureDomains" $) "true" }}
+         user's to provide. Retention is the exception: the zoned brokers and the round-robin
+         ones they replace share this release, so the chart can still name both. */ -}}
+    {{- if and (eq (include "orchestration.zoneAware" .) "true") (or (ne (include "camundaPlatform.spansFailureDomains" $) "true") $partitioning.keepUnzonedBrokers) }}
+    initial-contact-points:
+    {{- $zoneFullname := include "orchestration.zoneFullname" (dict "context" $ "zone" $partitioning.zone) }}
+    {{- range untilStep 0 (int (include "orchestration.replicas" $)) 1 }}
+      - {{ $zoneFullname }}-{{ . }}.{{ $zoneFullname }}:{{ $.Values.orchestration.service.internalPort }}
+    {{- end }}
+    {{- if $partitioning.keepUnzonedBrokers }}
+    {{- range untilStep 0 (int (include "orchestration.numberedReplicas" $)) 1 }}
+      - {{ include "orchestration.fullname" $ }}-{{ . }}.{{ include "orchestration.fullname" $ }}:{{ $.Values.orchestration.service.internalPort }}
+    {{- end }}
+    {{- end }}
+    {{- else if ne (include "camundaPlatform.spansFailureDomains" $) "true" }}
     initial-contact-points:
     {{- range (untilStep 0 (int (include "orchestration.clusterSize" $)) 1) }}
       - {{ include "orchestration.fullname" $ }}-{{ . }}.${K8S_SERVICE_NAME}:{{ $.Values.orchestration.service.internalPort }}

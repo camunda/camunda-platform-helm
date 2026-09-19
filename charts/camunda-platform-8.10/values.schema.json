@@ -4701,8 +4701,10 @@
                         },
                         "zone": {
                             "type": "string",
-                            "description": "can be used to define the zone of this Orchestration Cluster deployment when using the zone-aware scheme.",
-                            "default": ""
+                            "description": "can be used to define the zone of this Orchestration Cluster deployment when using the zone-aware scheme. Must be an RFC 1123 label of at most 32 characters to fit zone-suffixed resource names.",
+                            "default": "",
+                            "maxLength": 32,
+                            "pattern": "^$|^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
                         },
                         "zones": {
                             "type": "array",
@@ -4721,7 +4723,7 @@
                                     "name": {
                                         "type": "string",
                                         "minLength": 1,
-                                        "maxLength": 63,
+                                        "maxLength": 32,
                                         "pattern": "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$",
                                         "description": "Name of the zone. It is the prefix of the composite broker member ID \"<zone>_<node-id>\", and one of these names must be selected by orchestration.partitioning.zone. Restricted to an RFC 1123 label: an underscore would make the composite ID ambiguous, and the name is also used to derive per-zone resource and DNS names."
                                     },
@@ -4743,21 +4745,28 @@
                                 }
                             }
                         },
+                        "keepUnzonedBrokers": {
+                            "type": "boolean",
+                            "description": "also renders the round-robin broker StatefulSet alongside the zoned one during migration. Keep the previous regions and regionId values here until the round-robin brokers are removed; move them from global.multiregion when migrating from the deprecated block.",
+                            "default": false
+                        },
                         "regions": {
                             "type": [
                                 "integer",
-                                "string"
+                                "string",
+                                "null"
                             ],
-                            "description": "Number of regions this Camunda Platform instance is stretched across. Must be at least 1; the render fails otherwise.",
-                            "default": 1
+                            "description": "Number of regions this Camunda Platform instance is stretched across. Must be at least 1; the render fails otherwise. With the zone-aware scheme, set the previous value while keepUnzonedBrokers is true.",
+                            "default": null
                         },
                         "regionId": {
                             "type": [
                                 "integer",
-                                "string"
+                                "string",
+                                "null"
                             ],
-                            "description": "Unique id of the region. MUST start at 0 for the computation to work correctly. With 2 regions, you would have region 0 and 1. A value outside 0 to regions - 1 fails the render, since node IDs are derived as <ordinal> * regions + regionId.",
-                            "default": 0
+                            "description": "Unique id of the region. MUST start at 0 for the computation to work correctly. With 2 regions, you would have region 0 and 1. A value outside 0 to regions - 1 fails the render, since node IDs are derived as <ordinal> * regions + regionId. With the zone-aware scheme, set the previous value while keepUnzonedBrokers is true.",
+                            "default": null
                         }
                     },
                     "additionalProperties": false,

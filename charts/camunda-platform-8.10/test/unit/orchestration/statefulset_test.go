@@ -2422,6 +2422,30 @@ func (s *StatefulSetTest) TestZonedMode() {
 			},
 		},
 		{
+			Name: "TestZonedModePreservesTheZoneSuffixForLongNames",
+			Values: map[string]string{
+				"orchestration.fullnameOverride":                       "camunda-production-orchestration-cluster-emea-primary-zeebe",
+				"orchestration.partitioning.scheme":                    "zone-aware",
+				"orchestration.partitioning.zone":                      "zone-b",
+				"orchestration.partitioning.zones[0].name":             "zone-a",
+				"orchestration.partitioning.zones[0].numberOfBrokers":  "1",
+				"orchestration.partitioning.zones[0].numberOfReplicas": "1",
+				"orchestration.partitioning.zones[0].priority":         "100",
+				"orchestration.partitioning.zones[1].name":             "zone-b",
+				"orchestration.partitioning.zones[1].numberOfBrokers":  "1",
+				"orchestration.partitioning.zones[1].numberOfReplicas": "1",
+				"orchestration.partitioning.zones[1].priority":         "90",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var statefulSet appsv1.StatefulSet
+				helm.UnmarshalK8SYaml(t, output, &statefulSet)
+
+				require.Equal(t, "camunda-production-orchestration-cluster-emea-primar-zone-b", statefulSet.Name)
+				require.LessOrEqual(t, len(statefulSet.Name+"-0"), 63)
+			},
+		},
+		{
 			// The resolver falls back to the deprecated block when the orchestration
 			// one is untouched. The numbering pair only: zoned mode never shipped under
 			// global.multiregion, and setting both blocks is rejected outright.
