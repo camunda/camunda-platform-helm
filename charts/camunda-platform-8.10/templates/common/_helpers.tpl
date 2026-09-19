@@ -1543,7 +1543,9 @@ required by camunda.modeler.clusters (introduced in 8.10 Hub/WebModeler).
 {{- $connectorsPath := include "camundaPlatform.topologyContextPath" (dig "contextPaths" "connectors" "" $cluster) }}
 {{- $orchestrationName := $orchestration.serviceName | default (include "camundaPlatform.topologyComponentFullname" (dict "releaseName" $cluster.releaseName "componentName" "zeebe")) }}
 {{- $gatewayName := $orchestration.gatewayServiceName | default (printf "%s-gateway" $orchestrationName) }}
-{{- $optimizeName := $optimize.serviceName | default (include "camundaPlatform.topologyComponentFullname" (dict "releaseName" $cluster.releaseName "componentName" "optimize")) }}
+{{- $optimizeName := $optimize.serviceName | default (include "camundaPlatform.topologyComponentFullname" (dict "releaseName" ($optimize.releaseName | default $cluster.releaseName) "componentName" "optimize")) }}
+{{- $optimizeNamespace := $optimize.namespace | default $cluster.namespace }}
+{{- $optimizeHost := $optimize.host | default $cluster.host }}
 {{- $connectorsName := $connectors.serviceName | default (include "camundaPlatform.topologyComponentFullname" (dict "releaseName" $cluster.releaseName "componentName" "connectors")) }}
 - id: {{ $cluster.id | quote }}
   name: {{ ($cluster.name | default $cluster.id) | quote }}
@@ -1557,8 +1559,8 @@ required by camunda.modeler.clusters (introduced in 8.10 Hub/WebModeler).
     type: optimize
     version: {{ $cluster.version | quote }}
     urls:
-      webapp: {{ $optimize.webappUrl | default (printf "https://%s%s" $cluster.host $optimizePath) | quote }}
-      readiness: {{ $optimize.readinessUrl | default (printf "http://%s.%s.svc.cluster.local:80%s/api/readyz" $optimizeName $cluster.namespace $optimizePath) | quote }}
+      webapp: {{ $optimize.webappUrl | default (printf "https://%s%s" $optimizeHost $optimizePath) | quote }}
+      readiness: {{ $optimize.readinessUrl | default (printf "http://%s.%s.svc.cluster.local:80%s/api/readyz" $optimizeName $optimizeNamespace $optimizePath) | quote }}
   {{- end }}
   {{- if $connectors.enabled }}
   - name: Connectors

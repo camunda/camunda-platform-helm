@@ -251,6 +251,7 @@ func validateRenderedOptimize(label string, topology *Topology, release Topology
 	advertisedContextPath := cluster.OptimizeContextPath
 	subject := "this cluster's Optimize"
 	location := fmt.Sprintf("global.topology.clusters[id=%q].components.optimize", clusterID)
+	contextPathLocation := fmt.Sprintf("global.topology.clusters[id=%q].contextPaths.optimize", clusterID)
 	if tenantID := release.Tenant; tenantID != "" && tenantID != "default" {
 		tenant := findPhysicalTenant(cluster, tenantID)
 		if tenant == nil {
@@ -258,18 +259,17 @@ func validateRenderedOptimize(label string, topology *Topology, release Topology
 		}
 		registered = tenant.Optimize
 		subject = fmt.Sprintf("physical tenant %q's Optimize", tenantID)
-		// A tenant record need not advertise its own context path; only compare one it states.
 		advertisedContextPath = tenant.OptimizeContextPath
-		if advertisedContextPath == "" {
-			advertisedContextPath = release.OptimizeContextPath
-		}
 		location = fmt.Sprintf("global.topology.clusters[id=%q].physicalTenants[id=%q].components.optimize", clusterID, tenantID)
+		contextPathLocation = fmt.Sprintf("global.topology.clusters[id=%q].physicalTenants[id=%q].contextPaths.optimize", clusterID, tenantID)
 	}
 
 	if registered.ClientID != optimize.ClientID {
 		return append(problems, validateStandaloneOptimize(label, optimize, hub, fmt.Sprintf("the Hub registers %s client id as %q (%s)", subject, registered.ClientID, location))...)
 	}
-	if advertisedContextPath != release.OptimizeContextPath {
+	if advertisedContextPath == "" {
+		problems = append(problems, fmt.Sprintf("%s: the Hub advertises no path for %s, so nothing links to it; set %s to %q", label, subject, contextPathLocation, release.OptimizeContextPath))
+	} else if advertisedContextPath != release.OptimizeContextPath {
 		problems = append(problems, fmt.Sprintf("%s: the Hub advertises %s at %q, want %q", label, subject, advertisedContextPath, release.OptimizeContextPath))
 	}
 	if !registered.Enabled {
