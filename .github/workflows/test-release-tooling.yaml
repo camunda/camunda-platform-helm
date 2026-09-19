@@ -4,7 +4,7 @@ name: "Test - Release Tooling"
 
 # Gates the Go that the release and chart-validate pipelines depend on
 # (scripts/camunda-core + scripts/release-tools + scripts/validate-values-schema
-# + scripts/deploy-camunda).
+# + scripts/deploy-camunda + scripts/orchestration-entra-lifecycle).
 # Deliberately UNFILTERED: the tooling's behavior is
 # coupled to inputs that live outside scripts/ (charts/**/values*.yaml,
 # charts/chart-versions.yaml, the committed version-matrix, the release-please
@@ -67,6 +67,12 @@ jobs:
 
       - name: validate-values-schema — vet + test
         working-directory: scripts/validate-values-schema
+        run: |
+          go vet ./...
+          go test ./...
+
+      - name: orchestration-entra-lifecycle — vet + test
+        working-directory: scripts/orchestration-entra-lifecycle
         run: |
           go vet ./...
           go test ./...
