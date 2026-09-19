@@ -225,6 +225,7 @@ This command does not require cluster access.`,
 			entries, err := matrix.Generate(repoRoot, matrix.GenerateOptions{
 				Versions:        versions,
 				IncludeDisabled: includeDisabled,
+				Platform:        platform,
 			})
 			if err != nil {
 				return err
@@ -562,6 +563,7 @@ Under the hood this invokes deploy.Execute() for each matrix entry.`,
 			entries, err := matrix.Generate(repoRoot, matrix.GenerateOptions{
 				Versions:        versions,
 				IncludeDisabled: includeDisabled,
+				Platform:        platform,
 			})
 			if err != nil {
 				return err
@@ -580,6 +582,7 @@ Under the hood this invokes deploy.Execute() for each matrix entry.`,
 				withDisabled, err := matrix.Generate(repoRoot, matrix.GenerateOptions{
 					Versions:        versions,
 					IncludeDisabled: true,
+					Platform:        platform,
 				})
 				if err != nil {
 					return err

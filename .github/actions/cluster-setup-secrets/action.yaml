@@ -65,6 +65,28 @@ runs:
           return 1
         }
 
+        # The replicate-from stub is created with empty tls.crt/tls.key, so presence is not
+        # enough: wait until the replicator has actually written values into them.
+        wait_for_replicated_secret() {
+          local namespace="$1" secret_name="$2"
+          shift 2
+          local key empty_keys
+          for _ in {1..30}; do
+            empty_keys=""
+            for key in "$@"; do
+              kubectl get secret "$secret_name" -n "$namespace" -o json 2>/dev/null \
+                | jq -e --arg key "$key" '(.data[$key] // "") | length > 0' >/dev/null \
+                || empty_keys="$empty_keys $key"
+            done
+            test -n "$empty_keys" || { echo "✅ Secret $secret_name replicated with non-empty $*"; return 0; }
+            echo "⏳ Waiting for $secret_name to be populated by the replicator:$empty_keys"
+            sleep 10
+          done
+          echo "❌ Secret $secret_name still has empty keys:$empty_keys"
+          echo "   Source is distribution/distribution-aws-camunda-cloud-tls in camunda-ci-eks."
+          return 1
+        }
+
         if [[ "$DISTRO_PLATFORM" == "gke" || "$DISTRO_PLATFORM" == "rosa" ]]; then
           echo "🔧 Applying external secret certificates for $DISTRO_PLATFORM"
           apply_external_secret_with_retry \
@@ -99,12 +121,26 @@ runs:
           wait_for_secret_keys "$TEST_NAMESPACE" integration-test-credentials
 
         else
-          echo "🔧 Running in EKS mode — using vault-backed ExternalSecrets"
+          echo "🔧 Running in EKS mode — replicated certificate plus vault-backed credentials"
 
-          # Apply EKS TLS certificate ExternalSecret (creates aws-camunda-cloud-tls secret from Vault)
+          # A namespace carried over from before this change still holds the ExternalSecret that
+          # reconciled the Vault snapshot into the same Secret. Left in place it would overwrite
+          # the replicated certificate, or race the replicator for it.
+          stale_tls_es="$(kubectl get externalsecret -n "$TEST_NAMESPACE" -o json 2>/dev/null | \
+            jq -r '.items[] | select(.spec.target.name == "aws-camunda-cloud-tls") | .metadata.name')"
+          if [[ -n "$stale_tls_es" ]]; then
+            echo "🧹 Removing stale ExternalSecrets targeting aws-camunda-cloud-tls: $(tr '\n' ' ' <<< "$stale_tls_es")"
+            echo "$stale_tls_es" | xargs kubectl delete externalsecret -n "$TEST_NAMESPACE" --ignore-not-found
+          fi
+
+          kubectl delete secret aws-camunda-cloud-tls -n "$TEST_NAMESPACE" --ignore-not-found
+
+          # The TLS certificate is replicated from the cert-manager one infra-core maintains,
+          # rather than read from a Vault snapshot that nothing refreshed.
           apply_external_secret_with_retry \
-            ".github/config/external-secret/external-secret-certificates-vault.yaml" \
+            ".github/config/replicate-from/replicate-from-eks-tls.yaml" \
             "$TEST_NAMESPACE"
+          wait_for_replicated_secret "$TEST_NAMESPACE" aws-camunda-cloud-tls tls.crt tls.key
 
           # Apply credentials secrets (creates integration-test secret, for backward compat)
           apply_external_secret_with_retry \

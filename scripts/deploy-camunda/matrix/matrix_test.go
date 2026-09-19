@@ -2425,3 +2425,57 @@ func TestAppendScenarioExtraValues(t *testing.T) {
 		t.Errorf("empty ExtraValues should pass global through unchanged, got %v", out)
 	}
 }
+
+func TestGeneratePlatformlessScenarioAdoptsRequestedPlatform(t *testing.T) {
+	repoRoot := findRepoRoot(t)
+
+	cases := []struct {
+		name          string
+		platform      string
+		wantPlatform  string
+		wantInfraType string
+	}{
+		{
+			name:          "no platform requested keeps the gke default",
+			platform:      "",
+			wantPlatform:  "",
+			wantInfraType: "distroci",
+		},
+		{
+			name:          "eks requested resolves the eks pool",
+			platform:      "eks",
+			wantPlatform:  "eks",
+			wantInfraType: "preemptible",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			entries, err := Generate(repoRoot, GenerateOptions{
+				Versions:        []string{"8.10"},
+				IncludeDisabled: true,
+				Platform:        tc.platform,
+			})
+			if err != nil {
+				t.Fatalf("Generate: %v", err)
+			}
+
+			var found bool
+			for _, e := range entries {
+				if e.Scenario != "elasticsearch-basic" {
+					continue
+				}
+				found = true
+				if e.Platform != tc.wantPlatform {
+					t.Errorf("Platform = %q, want %q", e.Platform, tc.wantPlatform)
+				}
+				if e.InfraType != tc.wantInfraType {
+					t.Errorf("InfraType = %q, want %q: a pool belonging to another platform leaves the pod unschedulable", e.InfraType, tc.wantInfraType)
+				}
+			}
+			if !found {
+				t.Fatal("no elasticsearch-basic entry generated")
+			}
+		})
+	}
+}
