@@ -9,7 +9,7 @@ gke:
   namespace-prefix: camunda
 
 eks:
-  ingress-hostname-base: distribution.aws.camunda.cloud
+  ingress-hostname-base: distribution.camunda.ie
   namespace-prefix: distribution
   cluster-name: camunda-ci-eks
   aws-profile: distribution
