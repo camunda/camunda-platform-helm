@@ -6,22 +6,22 @@ console:
   # https://hub.docker.com/r/camunda/console/tags
   image:
     repository: camunda/console
-    tag: 8.9.95
-    digest: "sha256:bba4351b42e5b5adc174e117547cdc99f6f494b77c03d00bf91de8cc36559d2f"
+    tag: 8.9.108
+    digest: "sha256:b1e21dcc4e17fde6c8558c1230f64cd5d0d3ec9cf453a02c6814d0bd7d52672e"
 
 connectors:
   # https://hub.docker.com/r/camunda/connectors-bundle/tags
   image:
     repository: camunda/connectors-bundle
-    tag: 8.9.10
-    digest: "sha256:01a77c965bcd110c180f4b6192f1c9ebce3ad887806a6412397781603a7ae42e"
+    tag: 8.9.12
+    digest: "sha256:40de0e429ad1814de84abfe047df28fc8919bce531a2078c928b46d2d6c31712"
 
 optimize:
   # https://hub.docker.com/r/camunda/optimize/tags
   image:
     repository: camunda/optimize
-    tag: 8.9.19
-    digest: "sha256:25485330c26480a8b107fa6efddf0d9a3fa6616de9ff60ec86c6fea4eb555dae"
+    tag: 8.9.21
+    digest: "sha256:d58adabf5b4a4b25537778b08c2b2cafdaab0d8bc7daec359d1b00a8e7e914da"
 
 #
 # Web Modeler
@@ -32,15 +32,15 @@ webModeler:
   restapi:
     image:
       repository: camunda/web-modeler-restapi
-      tag: 8.9.8
-      digest: "sha256:b64219cc848275342077793110c19246627fb558ddea9256c1fccb5759724be7"
+      tag: 8.9.9
+      digest: "sha256:c2cc6939817a181a3122621d762b9145ff9196b8e72ac4e26c8e0bbd520e9114"
 
   # https://hub.docker.com/r/camunda/web-modeler-websockets/tags
   websockets:
     image:
       repository: camunda/web-modeler-websockets
-      tag: 8.9.8
-      digest: "sha256:ec6ece178a5d218e69ff193b2262dfba810f3665696b75895a38478ef9cff3d8"
+      tag: 8.9.9
+      digest: "sha256:c9421bb26441bc4cdd3808779e66bd4471f845d8fcf385d005de1612b2adb38e"
 
 #
 # Orchestration Cluster
@@ -50,8 +50,8 @@ orchestration:
   # https://hub.docker.com/r/camunda/camunda/tags
   image:
     repository: camunda/camunda
-    tag: 8.9.19
-    digest: "sha256:ff98013af0b78ef7e02e296cccd9fd9d94a6356fea62e9cdfcea121a4e1c14b2"
+    tag: 8.9.21
+    digest: "sha256:3aa3bb82cb1efc5f096861cc47c955362cfb6596c6bdc61f3f274c5b91ea55e0"
 
 #
 # Identity
