@@ -1,0 +1,4 @@
+script: post-deploy-documentstore-minio.sh
+description: |
+  Verifies document upload, download, and deletion through Orchestration and
+  validates a presigned MinIO URL before and after deleting the document.
