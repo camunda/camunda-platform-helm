@@ -999,7 +999,7 @@
                     "properties": {
                         "activeStoreId": {
                             "type": "string",
-                            "description": "defines the default document store instance ID. This value must match the configured store instance ID.",
+                            "description": "defines the default document store instance ID. This value must match the configured store instance ID. See https://docs.camunda.io/docs/8.9/self-managed/concepts/document-handling/configuration/helm/",
                             "default": "inmemory",
                             "pattern": "^[A-Za-z0-9.-]+$"
                         },
