@@ -60,6 +60,22 @@ export function makeShadowConfig(opts: {
         },
       }
     : {};
+  const tasklistV1Use = opts.tasklistV2Header
+    ? {
+        use: {
+          extraHTTPHeaders: {
+            "X-Test-Tasklist-Version": "v1",
+          },
+        },
+      }
+    : {};
+  const fullSuiteIgnore = [
+    "**/cluster-variables.spec.{ts,js}",
+    "**/test-setup.spec.{ts,js}",
+    ...(opts.extraTestIgnore ?? []),
+  ];
+  const excludedTitles =
+    "Connector Secrets User Flow|Custom Tags|Custom Properties";
 
   return {
     testDir:
@@ -70,28 +86,35 @@ export function makeShadowConfig(opts: {
         name: "smoke-tests",
         testMatch: ["**/smoke-tests.spec.{ts,js}"],
       },
-      ...(
-        includeSetupProject
-          ? [
-              {
-                name: "full-suite-setup",
-                testMatch: ["**/test-setup.spec.{ts,js}"],
-                ...tasklistV2Use,
-              },
-            ]
-          : []
-      ),
+      ...(includeSetupProject
+        ? [
+            {
+              name: "full-suite-setup",
+              testMatch: ["**/test-setup.spec.{ts,js}"],
+              ...tasklistV2Use,
+            },
+            {
+              name: "full-suite-v1-setup",
+              testMatch: ["**/test-setup.spec.{ts,js}"],
+              ...tasklistV1Use,
+            },
+          ]
+        : []),
       {
         name: "full-suite",
         dependencies: includeSetupProject ? ["full-suite-setup"] : undefined,
         testMatch: ["**/*.spec.{ts,js}"],
-        testIgnore: [
-          "**/cluster-variables.spec.{ts,js}",
-          "**/test-setup.spec.{ts,js}",
-          ...(opts.extraTestIgnore ?? []),
-        ],
-        grep: /^(?!.*(@tasklistV1|Connector Secrets User Flow|Custom Tags|Custom Properties)).*$/,
+        testIgnore: fullSuiteIgnore,
+        grep: new RegExp(`^(?!.*(@tasklistV1|${excludedTitles})).*$`),
         ...tasklistV2Use,
+      },
+      {
+        name: "full-suite-v1",
+        dependencies: includeSetupProject ? ["full-suite-v1-setup"] : undefined,
+        testMatch: ["**/*.spec.{ts,js}"],
+        testIgnore: fullSuiteIgnore,
+        grep: new RegExp(`^(?!.*(@tasklistV2|${excludedTitles})).*$`),
+        ...tasklistV1Use,
       },
       ...(opts.extraProjects ?? []),
     ],

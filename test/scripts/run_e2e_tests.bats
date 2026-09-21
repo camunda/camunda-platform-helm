@@ -80,6 +80,15 @@ teardown() {
   IS_RBA="false"
   IS_MT="false"
   IS_AUTH0="false"
+  PLAYWRIGHT_PROJECT="full-suite-v1"
+  FILE_PATTERN="tasklist/**/*.spec.js"
+  IS_RBA_OVERRIDE="true"
+  IS_MT_OVERRIDE="false"
+  IS_DS_OVERRIDE="true"
+  IS_LICENSE_KEY_OVERRIDE="true"
+  IS_MIGRATION_OVERRIDE="false"
+  IS_OPENSEARCH_OVERRIDE="true"
+  MCP_GATEWAY_ENABLED_OVERRIDE="true"
   VIDEO_MODE=""
   TRACE_MODE=""
   RETRIES=""
@@ -100,6 +109,13 @@ teardown() {
   [[ "$output" == *"--optimize-namespace matrix-810-mns-opt-orcha"* ]]
   [[ "$output" == *"--optimize-context-path /optimize-orcha"* ]]
   [[ "$output" == *"--modeler-cluster-name Orchestration\\ A"* ]]
+  [[ "$output" == *"--playwright-project full-suite-v1"* ]]
+  [[ "$output" == *"--file-pattern tasklist/\\*\\*/\\*.spec.js"* ]]
+  [[ "$output" == *"--is-rba true"* ]]
+  [[ "$output" == *"--is-ds true"* ]]
+  [[ "$output" == *"--is-license-key true"* ]]
+  [[ "$output" == *"--is-opensearch true"* ]]
+  [[ "$output" == *"--mcp-gateway-enabled true"* ]]
 }
 
 @test "the rerun command omits topology flags for an ordinary single-namespace run" {
@@ -112,6 +128,15 @@ teardown() {
   IS_RBA="false"
   IS_MT="false"
   IS_AUTH0="false"
+  PLAYWRIGHT_PROJECT=""
+  FILE_PATTERN=""
+  IS_RBA_OVERRIDE=""
+  IS_MT_OVERRIDE=""
+  IS_DS_OVERRIDE=""
+  IS_LICENSE_KEY_OVERRIDE=""
+  IS_MIGRATION_OVERRIDE=""
+  IS_OPENSEARCH_OVERRIDE=""
+  MCP_GATEWAY_ENABLED_OVERRIDE=""
   VIDEO_MODE=""
   TRACE_MODE=""
   RETRIES=""

@@ -86,6 +86,44 @@ on:
         required: false
         default: false
         type: boolean
+      e2e-playwright-project:
+        description: Explicit Playwright project. Empty preserves legacy scenario inference.
+        required: false
+        default: ""
+        type: string
+      e2e-file-pattern:
+        description: Optional Playwright test file pattern.
+        required: false
+        default: ""
+        type: string
+      e2e-is-rba:
+        required: false
+        default: false
+        type: boolean
+      e2e-is-mt:
+        required: false
+        default: false
+        type: boolean
+      e2e-is-ds:
+        required: false
+        default: false
+        type: boolean
+      e2e-is-license-key:
+        required: false
+        default: false
+        type: boolean
+      e2e-is-migration:
+        required: false
+        default: false
+        type: boolean
+      e2e-is-opensearch:
+        required: false
+        default: false
+        type: boolean
+      e2e-mcp-gateway-enabled:
+        required: false
+        default: false
+        type: boolean
       wait-ingress-ready:
         description: "Gate deploy success on the ingress host becoming publicly DNS-resolvable + HTTP-reachable. Opt-in; external reusable-workflow consumers default to false."
         required: false
@@ -1341,6 +1379,15 @@ jobs:
           shard-index: ${{ matrix.shard_index }}
           scenario: ${{ inputs.scenario }}
           run-smoke-tests: ${{ matrix.suite == 'smoke' }}
+          playwright-project: ${{ inputs.e2e-playwright-project }}
+          file-pattern: ${{ inputs.e2e-file-pattern }}
+          is-rba: ${{ inputs.e2e-is-rba }}
+          is-mt: ${{ inputs.e2e-is-mt }}
+          is-ds: ${{ inputs.e2e-is-ds }}
+          is-license-key: ${{ inputs.e2e-is-license-key }}
+          is-migration: ${{ inputs.e2e-is-migration }}
+          is-opensearch: ${{ inputs.e2e-is-opensearch }}
+          mcp-gateway-enabled: ${{ inputs.e2e-mcp-gateway-enabled }}
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -1431,6 +1478,15 @@ jobs:
           test-stage: after-install
           shard-index: "1"
           scenario: ${{ inputs.scenario }}
+          playwright-project: ${{ inputs.e2e-playwright-project }}
+          file-pattern: ${{ inputs.e2e-file-pattern }}
+          is-rba: ${{ inputs.e2e-is-rba }}
+          is-mt: ${{ inputs.e2e-is-mt }}
+          is-ds: ${{ inputs.e2e-is-ds }}
+          is-license-key: ${{ inputs.e2e-is-license-key }}
+          is-migration: ${{ inputs.e2e-is-migration }}
+          is-opensearch: ${{ inputs.e2e-is-opensearch }}
+          mcp-gateway-enabled: ${{ inputs.e2e-mcp-gateway-enabled }}
           run-smoke-tests: "false"
       - name: Observe build status
         if: always()
@@ -1646,6 +1702,15 @@ jobs:
           test-stage: after-upgrade
           shard-index: ${{ matrix.shardIndex }}
           scenario: ${{ inputs.scenario }}
+          playwright-project: ${{ inputs.e2e-playwright-project }}
+          file-pattern: ${{ inputs.e2e-file-pattern }}
+          is-rba: ${{ inputs.e2e-is-rba }}
+          is-mt: ${{ inputs.e2e-is-mt }}
+          is-ds: ${{ inputs.e2e-is-ds }}
+          is-license-key: ${{ inputs.e2e-is-license-key }}
+          is-migration: ${{ inputs.e2e-is-migration }}
+          is-opensearch: ${{ inputs.e2e-is-opensearch }}
+          mcp-gateway-enabled: ${{ inputs.e2e-mcp-gateway-enabled }}
       - name: Observe build status
         if: always()
         continue-on-error: true

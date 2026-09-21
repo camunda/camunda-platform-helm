@@ -69,6 +69,44 @@ on:
         required: false
         default: false
         type: boolean
+      e2e-playwright-project:
+        description: Explicit Playwright project. Empty preserves legacy scenario inference.
+        required: false
+        default: ""
+        type: string
+      e2e-file-pattern:
+        description: Optional Playwright test file pattern.
+        required: false
+        default: ""
+        type: string
+      e2e-is-rba:
+        required: false
+        default: false
+        type: boolean
+      e2e-is-mt:
+        required: false
+        default: false
+        type: boolean
+      e2e-is-ds:
+        required: false
+        default: false
+        type: boolean
+      e2e-is-license-key:
+        required: false
+        default: false
+        type: boolean
+      e2e-is-migration:
+        required: false
+        default: false
+        type: boolean
+      e2e-is-opensearch:
+        required: false
+        default: false
+        type: boolean
+      e2e-mcp-gateway-enabled:
+        required: false
+        default: false
+        type: boolean
       wait-ingress-ready:
         description: "Gate deploy success on the ingress host becoming publicly DNS-resolvable + HTTP-reachable. Opt-in; external reusable-workflow consumers default to false."
         required: false
@@ -379,6 +417,15 @@ jobs:
       flow: ${{ matrix.scenario.flow }}
       test-enabled: ${{ inputs.test-enabled }}
       e2e-enabled: ${{ inputs.e2e-enabled }}
+      e2e-playwright-project: ${{ inputs.e2e-playwright-project }}
+      e2e-file-pattern: ${{ inputs.e2e-file-pattern }}
+      e2e-is-rba: ${{ inputs.e2e-is-rba }}
+      e2e-is-mt: ${{ inputs.e2e-is-mt }}
+      e2e-is-ds: ${{ inputs.e2e-is-ds }}
+      e2e-is-license-key: ${{ inputs.e2e-is-license-key }}
+      e2e-is-migration: ${{ inputs.e2e-is-migration }}
+      e2e-is-opensearch: ${{ inputs.e2e-is-opensearch }}
+      e2e-mcp-gateway-enabled: ${{ inputs.e2e-mcp-gateway-enabled }}
       wait-ingress-ready: ${{ inputs.wait-ingress-ready }}
       ingress-ready-timeout: ${{ inputs.ingress-ready-timeout }}
       extra-values: ${{ inputs.extra-values }}

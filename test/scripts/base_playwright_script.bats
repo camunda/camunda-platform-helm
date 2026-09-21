@@ -38,3 +38,32 @@ kubectl() {
   [[ "$output" != *"grpc-camunda.example.com"* ]]
   [ "${lines[${#lines[@]} - 1]}" = "camunda.example.com" ]
 }
+
+@test "explicit project and file pattern are passed to Playwright" {
+  _setup_playwright_environment() { :; }
+  _install_playwright_browsers() { :; }
+  _log_e2e_suite_version() { :; }
+  _run_playwright_with_retry() {
+    printf '%s\n' "$@"
+  }
+  _handle_playwright_result() { return "$1"; }
+
+  run run_playwright_tests /tmp/e2e false 1 1 blob "" false false "" "" "rerun" false full-suite-v1 "tasklist/special flow/**/*[ab].spec.js"
+
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"--project=full-suite-v1"* ]]
+  [[ " ${lines[*]} " == *" tasklist/special flow/**/*[ab].spec.js "* ]]
+  [[ "$output" != *"--pass-with-no-tests"* ]]
+}
+
+@test "zero-test Playwright failure is preserved" {
+  _setup_playwright_environment() { :; }
+  _install_playwright_browsers() { :; }
+  _log_e2e_suite_version() { :; }
+  _run_playwright_with_retry() { return 1; }
+  _handle_playwright_result() { return "$1"; }
+
+  run run_playwright_tests /tmp/e2e false 1 1 blob "" false false "" "" "rerun" false full-suite "missing/**/*.spec.js"
+
+  [ "$status" -eq 1 ]
+}
