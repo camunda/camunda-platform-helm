@@ -41,8 +41,42 @@ func newCICommand() *cobra.Command {
 	ciCmd.AddCommand(newCIIntegrationMatrixCommand())
 	ciCmd.AddCommand(newCIE2EMatrixCommand())
 	ciCmd.AddCommand(newCIE2ERunConfigCommand())
+	ciCmd.AddCommand(newCIE2EPartitionsCommand())
+	ciCmd.AddCommand(newCIMigrationDataCommand())
 
 	return ciCmd
+}
+
+func newCIE2EPartitionsCommand() *cobra.Command {
+	var repoRoot, version string
+	cmd := &cobra.Command{
+		Use:   "e2e-partitions",
+		Short: "Resolve the scheduled Self-Managed E2E partition matrix",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			root := repoRoot
+			if root == "" {
+				detected, err := config.DetectRepoRoot()
+				if err != nil {
+					return err
+				}
+				root = detected
+			}
+			partitions, err := matrix.ResolveE2EPartitions(root, version)
+			if err != nil {
+				return err
+			}
+			output, err := matrix.E2EPartitionsJSON(partitions)
+			if err != nil {
+				return err
+			}
+			fmt.Fprintln(cmd.OutOrStdout(), output)
+			return nil
+		},
+	}
+	cmd.Flags().StringVar(&repoRoot, "repo-root", "", "repository root; auto-detected when empty")
+	cmd.Flags().StringVar(&version, "version", "", "Camunda minor version, e.g. 8.9")
+	_ = cmd.MarkFlagRequired("version")
+	return cmd
 }
 
 // newCIE2EMatrixCommand creates the "ci e2e-matrix" subcommand. It resolves the

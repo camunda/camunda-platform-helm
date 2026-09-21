@@ -47,6 +47,29 @@ func shouldExtractBitnamiPGPasswords(targetVersion string) bool {
 	return compareVersions(targetVersion, "8.10") < 0
 }
 
+func runUpgradeInstallPhase(phase string) bool {
+	return phase != "upgrade"
+}
+
+func runUpgradeTargetPhase(phase string) bool {
+	return phase != "install"
+}
+
+func upgradeInstallImageTags(phase string, imageTags bool) bool {
+	return phase == "install" && imageTags
+}
+
+func validateUpgradeRelease(ctx context.Context, flags *config.RuntimeFlags) error {
+	args := []string{"status", flags.Deployment.Release, "--namespace", flags.EffectiveNamespace()}
+	if flags.Test.KubeContext != "" {
+		args = append(args, "--kube-context", flags.Test.KubeContext)
+	}
+	if _, err := helm.RunCapture(ctx, args, ""); err != nil {
+		return fmt.Errorf("upgrade phase requires existing release %q in namespace %q: %w", flags.Deployment.Release, flags.EffectiveNamespace(), err)
+	}
+	return nil
+}
+
 // filterKnownFeatures splits want into features present in available and those
 // that are not, preserving the original order of want in both results.
 func filterKnownFeatures(want, available []string) (kept, dropped []string) {
@@ -179,110 +202,125 @@ func executeTwoStepUpgrade(ctx context.Context, entry Entry, flags *config.Runti
 		Str("optPrefix", flags.Index.OptimizeIndexPrefix).
 		Msg("Two-step upgrade: pinned index prefixes and realm for both steps")
 
-	// --- Step 1: Install old version from Helm repo ---
-	if flags.OnPhase != nil {
-		flags.OnPhase("step-1")
-	}
-	logging.Logger.Info().
-		Str("step", "1/2").
-		Str("action", "install").
-		Str("chart", versionmatrix.DefaultHelmChartRef).
-		Str("version", fromVersion).
-		Msg("Step 1: Installing previous chart version from Helm repo")
-
-	// Ensure the Camunda Helm repo is registered and up-to-date.
-	if err := helm.RepoAdd(ctx, versionmatrix.DefaultHelmRepoName, versionmatrix.DefaultHelmRepoURL); err != nil {
-		return fmt.Errorf("step 1: helm repo add: %w", err)
-	}
-	if err := helm.RepoUpdate(ctx); err != nil {
-		return fmt.Errorf("step 1: helm repo update: %w", err)
-	}
-
-	// Clone flags for Step 1: deploy from repo instead of local chart path.
-	// Detach hook slices: a plain `*flags` copy shares the backing arrays with
-	// the parent, so a subsequent append (when cap > len) would mutate flags
-	// and leak Step 1-only hooks into Step 2's later shallow copy.
-	step1Flags := *flags
-	step1Flags.PreInstallHooks = append([]func(context.Context) error(nil), flags.PreInstallHooks...)
-	step1Flags.PostDeployHooks = append([]func(context.Context) error(nil), flags.PostDeployHooks...)
-	step1Flags.Chart.Chart = versionmatrix.DefaultHelmChartRef
-	step1Flags.Chart.ChartVersion = fromVersion
-	step1Flags.Chart.ChartPath = "" // Use repo chart, not local path.
-	step1Flags.Deployment.Flow = "install"
-	step1Flags.Selection.UpgradeFlow = false     // Step 1 is a fresh install, no base-upgrade.yaml.
-	step1Flags.Chart.ChartRootOverlays = nil     // Step 1 installs old version from repo — no chart-root overlays.
-	step1Flags.Chart.SkipDependencyUpdate = true // Repo charts don't need local dep update.
-	// Step 1 installs the previously released chart; both global --extra-values
-	// (e.g. per-PR image tag) and scenario-declared extra-values belong to Step 2
-	// only — they are combined in flags.Deployment.ExtraValues, which this nils.
-	step1Flags.Deployment.ExtraValues = nil
-	step1Flags.Test.RunE2ETests = false // Don't run tests after Step 1.
-	step1Flags.Test.RunAllTests = false
-	step1Flags.Deployment.WaitIngressReady = false // No ingress gate on the throwaway Step 1 install.
-	step1Flags.Deployment.IngressReadyTimeoutMinutes = 0
-	step1Flags.Deployment.DeleteNamespaceFirst = flags.Deployment.DeleteNamespaceFirst // Only delete on Step 1.
-
-	// For upgrade-minor, Step 1 uses the PREVIOUS app version's values files.
-	// In CI, test-type-vars sets CHART_PATH to charts/camunda-platform-<previous> for
-	// the install step of upgrade-minor, so values files come from the older chart.
-	// For upgrade-patch, Step 1 uses the current chart's values (same app version).
-	step1AppVersion := entry.Version
-	if entry.Flow == "upgrade-minor" {
-		prevVersion, err := versionmatrix.PreviousAppVersion(entry.Version)
-		if err != nil {
-			return fmt.Errorf("step 1: resolve previous app version for %s: %w", entry.Version, err)
+	if runUpgradeInstallPhase(opts.UpgradePhase) {
+		// --- Step 1: Install old version from Helm repo ---
+		if flags.OnPhase != nil {
+			flags.OnPhase("step-1")
 		}
-		step1AppVersion = prevVersion
-		prevChartDir := filepath.Join(opts.RepoRoot, "charts", "camunda-platform-"+prevVersion)
-		prevScenarioDir := filepath.Join(prevChartDir, "test/integration/scenarios/chart-full-setup")
-		step1Flags.Deployment.ScenarioPath = prevScenarioDir
+		logging.Logger.Info().
+			Str("step", "1/2").
+			Str("action", "install").
+			Str("chart", versionmatrix.DefaultHelmChartRef).
+			Str("version", fromVersion).
+			Msg("Step 1: Installing previous chart version from Helm repo")
+
+		// Ensure the Camunda Helm repo is registered and up-to-date.
+		if err := helm.RepoAdd(ctx, versionmatrix.DefaultHelmRepoName, versionmatrix.DefaultHelmRepoURL); err != nil {
+			return fmt.Errorf("step 1: helm repo add: %w", err)
+		}
+		if err := helm.RepoUpdate(ctx); err != nil {
+			return fmt.Errorf("step 1: helm repo update: %w", err)
+		}
+
+		// Clone flags for Step 1: deploy from repo instead of local chart path.
+		// Detach hook slices: a plain `*flags` copy shares the backing arrays with
+		// the parent, so a subsequent append (when cap > len) would mutate flags
+		// and leak Step 1-only hooks into Step 2's later shallow copy.
+		step1Flags := *flags
+		step1Flags.PreInstallHooks = append([]func(context.Context) error(nil), flags.PreInstallHooks...)
+		step1Flags.PostDeployHooks = append([]func(context.Context) error(nil), flags.PostDeployHooks...)
+		step1Flags.Chart.Chart = versionmatrix.DefaultHelmChartRef
+		step1Flags.Chart.ChartVersion = fromVersion
+		step1Flags.Chart.ChartPath = "" // Use repo chart, not local path.
+		step1Flags.Deployment.Flow = "install"
+		step1Flags.Selection.UpgradeFlow = false // Step 1 is a fresh install, no base-upgrade.yaml.
+		step1Flags.Selection.ImageTags = upgradeInstallImageTags(opts.UpgradePhase, flags.Selection.ImageTags)
+		step1Flags.Chart.ChartRootOverlays = nil     // Step 1 installs old version from repo, not local overlays.
+		step1Flags.Chart.SkipDependencyUpdate = true // Repo charts don't need local dep update.
+		// Step 1 installs the previously released chart; both global --extra-values
+		// (e.g. per-PR image tag) and scenario-declared extra-values belong to Step 2
+		// only — they are combined in flags.Deployment.ExtraValues, which this nils.
+		step1Flags.Deployment.ExtraValues = nil
+		step1Flags.Test.RunE2ETests = false // Don't run tests after Step 1.
+		step1Flags.Test.RunAllTests = false
+		step1Flags.Deployment.WaitIngressReady = false // No ingress gate on the throwaway Step 1 install.
+		step1Flags.Deployment.IngressReadyTimeoutMinutes = 0
+		step1Flags.Deployment.DeleteNamespaceFirst = flags.Deployment.DeleteNamespaceFirst // Only delete on Step 1.
+
+		// For upgrade-minor, Step 1 uses the PREVIOUS app version's values files.
+		// In CI, test-type-vars sets CHART_PATH to charts/camunda-platform-<previous> for
+		// the install step of upgrade-minor, so values files come from the older chart.
+		// For upgrade-patch, Step 1 uses the current chart's values (same app version).
+		step1AppVersion := entry.Version
+		if entry.Flow == "upgrade-minor" {
+			prevVersion, err := versionmatrix.PreviousAppVersion(entry.Version)
+			if err != nil {
+				return fmt.Errorf("step 1: resolve previous app version for %s: %w", entry.Version, err)
+			}
+			step1AppVersion = prevVersion
+			prevChartDir := filepath.Join(opts.RepoRoot, "charts", "camunda-platform-"+prevVersion)
+			prevScenarioDir := filepath.Join(prevChartDir, "test/integration/scenarios/chart-full-setup")
+			step1Flags.Deployment.ScenarioPath = prevScenarioDir
+
+			logging.Logger.Info().
+				Str("flow", entry.Flow).
+				Str("previousVersion", prevVersion).
+				Str("scenarioDir", prevScenarioDir).
+				Msg("Step 1: using previous app version's values files (matching CI behavior)")
+
+			// Features new to the target version have no values file in the previous
+			// version's scenario dir; drop them from Step 1 (Step 2 applies the full
+			// set against the current chart). Reassigns the slice header on the copy,
+			// so the parent flags' Features are unaffected.
+			if len(step1Flags.Selection.Features) > 0 {
+				prevFeatures, err := scenarios.ListFeatures(prevScenarioDir)
+				if err != nil {
+					return fmt.Errorf("step 1: list features for %s: %w", prevVersion, err)
+				}
+				kept, dropped := filterKnownFeatures(step1Flags.Selection.Features, prevFeatures)
+				step1Flags.Selection.Features = kept
+				if len(dropped) > 0 {
+					logging.Logger.Info().
+						Str("previousVersion", prevVersion).
+						Strs("dropped", dropped).
+						Strs("kept", kept).
+						Msg("Step 1: dropped features absent from previous version (applied in Step 2)")
+				}
+			}
+		}
+
+		// --- Pre-install lifecycle hook (Step 1 of two-step upgrade) ---
+		// Hook is registered against step1Flags so it fires before the Step 1 helm install.
+		// The app version being installed in Step 1 scopes script/fixture lookup
+		// (previous version for upgrade-minor, current for upgrade-patch).
+		// Append (do not nil-then-append): upstream hooks like the OIDC venom-secret
+		// hook were registered against flags before the *flags shallow copy and must
+		// fire in Step 1 too (helm install needs the secret already in the namespace).
+		if err := registerDeclarativePreInstallHook(&step1Flags, entry.PreInstall, opts.RepoRoot, step1AppVersion, entry.Scenario); err != nil {
+			return err
+		}
+
+		if err := deploy.Execute(ctx, &step1Flags); err != nil {
+			return fmt.Errorf("step 1: install %s@%s failed: %w", versionmatrix.DefaultHelmChartRef, fromVersion, err)
+		}
 
 		logging.Logger.Info().
-			Str("flow", entry.Flow).
-			Str("previousVersion", prevVersion).
-			Str("scenarioDir", prevScenarioDir).
-			Msg("Step 1: using previous app version's values files (matching CI behavior)")
+			Str("step", "1/2").
+			Str("version", fromVersion).
+			Msg("Step 1 complete: previous version installed successfully")
 
-		// Features new to the target version have no values file in the previous
-		// version's scenario dir; drop them from Step 1 (Step 2 applies the full
-		// set against the current chart). Reassigns the slice header on the copy,
-		// so the parent flags' Features are unaffected.
-		if len(step1Flags.Selection.Features) > 0 {
-			prevFeatures, err := scenarios.ListFeatures(prevScenarioDir)
-			if err != nil {
-				return fmt.Errorf("step 1: list features for %s: %w", prevVersion, err)
-			}
-			kept, dropped := filterKnownFeatures(step1Flags.Selection.Features, prevFeatures)
-			step1Flags.Selection.Features = kept
-			if len(dropped) > 0 {
-				logging.Logger.Info().
-					Str("previousVersion", prevVersion).
-					Strs("dropped", dropped).
-					Strs("kept", kept).
-					Msg("Step 1: dropped features absent from previous version (applied in Step 2)")
-			}
+		if opts.UpgradePhase == "install" {
+			return nil
 		}
 	}
-
-	// --- Pre-install lifecycle hook (Step 1 of two-step upgrade) ---
-	// Hook is registered against step1Flags so it fires before the Step 1 helm install.
-	// The app version being installed in Step 1 scopes script/fixture lookup
-	// (previous version for upgrade-minor, current for upgrade-patch).
-	// Append (do not nil-then-append): upstream hooks like the OIDC venom-secret
-	// hook were registered against flags before the *flags shallow copy and must
-	// fire in Step 1 too (helm install needs the secret already in the namespace).
-	if err := registerDeclarativePreInstallHook(&step1Flags, entry.PreInstall, opts.RepoRoot, step1AppVersion, entry.Scenario); err != nil {
-		return err
+	if !runUpgradeTargetPhase(opts.UpgradePhase) {
+		return nil
 	}
-
-	if err := deploy.Execute(ctx, &step1Flags); err != nil {
-		return fmt.Errorf("step 1: install %s@%s failed: %w", versionmatrix.DefaultHelmChartRef, fromVersion, err)
+	if opts.UpgradePhase == "upgrade" {
+		if err := validateUpgradeRelease(ctx, flags); err != nil {
+			return err
+		}
 	}
-
-	logging.Logger.Info().
-		Str("step", "1/2").
-		Str("version", fromVersion).
-		Msg("Step 1 complete: previous version installed successfully")
 
 	// --- Pre-upgrade lifecycle hook ---
 	// Runs the declarative pre-upgrade hook (integration.flows.<flow>.pre-upgrade)

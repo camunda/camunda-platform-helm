@@ -116,6 +116,11 @@ on:
         required: false
         default: false
         type: boolean
+      pre-upgrade-migration:
+        description: Run migration smoke tests and data loading against the previous version before upgrade.
+        required: false
+        default: false
+        type: boolean
       e2e-is-opensearch:
         required: false
         default: false
@@ -658,7 +663,7 @@ jobs:
         # The install job only deploys for plain `install` flow; for upgrade-patch /
         # upgrade-minor it stops after pre-install setup so the upgrade job can take
         # over a clean (but pre-secret-configured) namespace.
-        if: inputs.flow == 'install'
+        if: inputs.flow == 'install' || inputs.pre-upgrade-migration
         env:
           TEST_CHART_FLOW: ${{ inputs.flow }}
           # CAMUNDA_HOSTNAME is required by layered values (e.g. base.yaml contains $CAMUNDA_HOSTNAME)
@@ -749,6 +754,17 @@ jobs:
           # source of truth while non-image test config (index prefixes, etc.) stays available.
           ENV_FILE_ARGS=()
           if [[ -n "${VALUES_CONFIG:-}" && "${VALUES_CONFIG}" != "{}" ]]; then
+            if [[ "${{ inputs.pre-upgrade-migration }}" == "true" ]]; then
+              VALUES_CONFIG="$(jq -c \
+                --arg previous "${{ inputs.camunda-version-previous }}-SNAPSHOT" \
+                --arg previousWebModeler "${{ inputs.camunda-version-previous }}" '
+                with_entries(
+                  if .key == "E2E_TESTS_WEBMODELER_IMAGE_TAG" then .value = $previousWebModeler
+                  elif .key | endswith("_IMAGE_TAG") then .value = $previous
+                  else . end
+                )
+              ' <<< "${VALUES_CONFIG}")"
+            fi
             if [[ -n "${HELM_CHART_VERSION:-}" && "${FORCE_IMAGE_OVERRIDES}" != "true" ]]; then
               echo "::notice::OCI artifact immutability mode: stripping *_IMAGE_TAG values from values-config"
               echo "${VALUES_CONFIG}" | jq -r 'to_entries[] | select((.key | endswith("_IMAGE_TAG")) | not) | "\(.key)=\(.value)"' > /tmp/values-config.env
@@ -793,6 +809,11 @@ jobs:
             INGRESS_READY_ARGS+=(--wait-ingress-ready --ingress-ready-timeout "$INGRESS_READY_TIMEOUT")
           fi
 
+          UPGRADE_PHASE_ARGS=()
+          if [[ "${{ inputs.pre-upgrade-migration }}" == "true" ]]; then
+            UPGRADE_PHASE_ARGS=(--upgrade-phase install)
+          fi
+
           deploy-camunda matrix run \
             --repo-root "${GITHUB_WORKSPACE}" \
             --include-disabled \
@@ -807,6 +828,7 @@ jobs:
             --timeout 20 \
             --extra-helm-set "global.host=${{ steps.setup.outputs.ingress-host }}" \
             ${INGRESS_READY_ARGS[@]+"${INGRESS_READY_ARGS[@]}"} \
+            ${UPGRADE_PHASE_ARGS[@]+"${UPGRADE_PHASE_ARGS[@]}"} \
             ${FORCE_IMAGE_OVERRIDE_ARGS[@]+"${FORCE_IMAGE_OVERRIDE_ARGS[@]}"} \
             ${ENV_FILE_ARGS[@]+"${ENV_FILE_ARGS[@]}"} \
             ${CHART_REF_ARGS[@]+"${CHART_REF_ARGS[@]}"} \
@@ -901,8 +923,77 @@ jobs:
           secret_vault_jwt_role: ${{ secrets.VAULT_JWT_ROLE }}
           secret_vault_jwt_audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
+  pre-upgrade-migration:
+    name: Migration setup on previous version - ${{ inputs.shortname }}
+    needs: [install]
+    if: ${{ inputs.pre-upgrade-migration && needs.install.result == 'success' }}
+    runs-on: gcp-core-32-longrunning-big-ssd
+    container:
+      image: ghcr.io/camunda/team-distribution/playwright-runner:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+      options: --ipc=host --user root
+    permissions:
+      contents: read
+      id-token: write
+      deployments: write
+      packages: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: camunda/camunda-platform-helm
+          ref: ${{ inputs.camunda-helm-git-ref }}
+      - name: Import Vault secrets
+        id: test-credentials-secret
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/distribution/ci DISTRO_CI_GCP_GKE_CLUSTER_NAME;
+            secret/data/products/distribution/ci DISTRO_CI_GCP_GKE_CLUSTER_LOCATION;
+            secret/data/products/distribution/ci DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER;
+            secret/data/products/distribution/ci DISTRO_CI_GCP_SERVICE_ACCOUNT;
+          exportEnv: false
+      - name: Run migration smoke tests on previous version
+        uses: ./.github/actions/playwright-e2e-tests
+        env:
+          GH_APP_ID: ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
+          GH_APP_KEY: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI_MANAGE_GH_ENVS }}
+          GKE_CLUSTER_NAME: ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_GKE_CLUSTER_NAME }}
+          GKE_CLUSTER_LOC: ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_GKE_CLUSTER_LOCATION }}
+          GKE_WIP: ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          GKE_SA: ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_SERVICE_ACCOUNT }}
+          CI_DEPLOYMENT_TTL: ${{ env.CI_DEPLOYMENT_TTL }}
+        with:
+          binary-artifact-name: ${{ inputs.binary-artifact-name }}
+          camunda-helm-git-ref: ${{ inputs.camunda-helm-git-ref }}
+          camunda-helm-dir: camunda-platform-${{ inputs.camunda-version-previous }}
+          flow: ${{ inputs.flow }}
+          distro-platform: ${{ inputs.distro-platform }}
+          infra-type: ${{ inputs.infra-type }}
+          identifier: ${{ inputs.identifier }}
+          namespace-prefix: ${{ inputs.namespace-prefix }}
+          namespace-override: ${{ needs.install.outputs.vars-namespace }}
+          deployment-ttl: ${{ env.CI_DEPLOYMENT_TTL }}
+          auth: ${{ inputs.auth }}
+          auth-data: ${{ inputs.auth-data }}
+          test-stage: pre-upgrade
+          playwright-project: migration-smoke
+          file-pattern: smoke-tests.spec.ts
+          is-migration: "true"
+      - name: Load migration data
+        run: |
+          deploy-camunda ci migration-data \
+            --chart-path "$GITHUB_WORKSPACE/charts/camunda-platform-${{ inputs.camunda-version-previous }}" \
+            --namespace "${{ needs.install.outputs.vars-namespace }}"
+
   upgrade:
-    if: always() && github.event.action != 'closed' && (needs.install.result == 'success' || needs.install.result == 'skipped') && inputs.flow != 'install'
+    if: ${{ always() && github.event.action != 'closed' && (needs.install.result == 'success' || needs.install.result == 'skipped') && (!inputs.pre-upgrade-migration || needs.pre-upgrade-migration.result == 'success') && inputs.flow != 'install' }}
     name: upgrade for ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
     runs-on: ubuntu-latest
     timeout-minutes: 40
@@ -915,7 +1006,7 @@ jobs:
     defaults:
       run:
         shell: bash
-    needs: [install]
+    needs: [install, pre-upgrade-migration]
     outputs:
       vars-identifier: ${{ steps.setup.outputs.identifier }}
       vars-ingress-host: ${{ steps.setup.outputs.ingress-host }}
@@ -1112,6 +1203,7 @@ jobs:
           INFRA_TYPE: ${{ inputs.infra-type }}
           WAIT_INGRESS_READY: ${{ inputs.wait-ingress-ready }}
           INGRESS_READY_TIMEOUT: ${{ inputs.ingress-ready-timeout }}
+          PRE_UPGRADE_MIGRATION: ${{ inputs.pre-upgrade-migration }}
           EXTRA_VALUES: ${{ inputs.extra-values }}
           # Selection + composition model environment variables.
           TEST_IDENTITY: ${{ inputs.test-identity }}
@@ -1231,6 +1323,11 @@ jobs:
             INGRESS_READY_ARGS+=(--wait-ingress-ready --ingress-ready-timeout "$INGRESS_READY_TIMEOUT")
           fi
 
+          PRE_UPGRADE_ARGS=()
+          if [[ "$PRE_UPGRADE_MIGRATION" == "true" ]]; then
+            PRE_UPGRADE_ARGS=(--upgrade-phase upgrade)
+          fi
+
           deploy-camunda matrix run \
             --repo-root "${GITHUB_WORKSPACE}" \
             --include-disabled \
@@ -1245,6 +1342,7 @@ jobs:
             --timeout 20 \
             --extra-helm-set "global.host=${{ steps.setup.outputs.ingress-host }}" \
             ${INGRESS_READY_ARGS[@]+"${INGRESS_READY_ARGS[@]}"} \
+            ${PRE_UPGRADE_ARGS[@]+"${PRE_UPGRADE_ARGS[@]}"} \
             ${FORCE_IMAGE_OVERRIDE_ARGS[@]+"${FORCE_IMAGE_OVERRIDE_ARGS[@]}"} \
             ${ENV_FILE_ARGS[@]+"${ENV_FILE_ARGS[@]}"} \
             ${CHART_REF_ARGS[@]+"${CHART_REF_ARGS[@]}"} \

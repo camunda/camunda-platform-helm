@@ -179,4 +179,7 @@ type RunOptions struct {
 	// IngressReadyTimeoutMinutes bounds how long WaitIngressReady polls before
 	// failing. When <= 0, config.DefaultIngressReadyTimeoutMinutes is used.
 	IngressReadyTimeoutMinutes int
+	// UpgradePhase limits a two-step upgrade to "install" or "upgrade".
+	// Empty runs both steps.
+	UpgradePhase string
 }

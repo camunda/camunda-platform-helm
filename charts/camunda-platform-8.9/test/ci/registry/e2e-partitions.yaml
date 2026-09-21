@@ -1,0 +1,51 @@
+version: "8.9"
+partitions:
+  - id: standard-v2
+    scenario: qa-elasticsearch-upg-install
+    flow: install
+    playwright-project: full-suite
+  - id: tasklist-v1
+    scenario: qa-elasticsearch-tasklist-v1
+    flow: install
+    playwright-project: full-suite-v1
+  - id: rba
+    scenario: qa-elasticsearch-rba
+    flow: install
+    playwright-project: full-suite
+    file-pattern: rba-enabled-user-flows.spec.ts
+    is-rba: true
+  - id: mt
+    scenario: qa-elasticsearch-mt
+    flow: install
+    playwright-project: full-suite
+    file-pattern: mt-enabled-user-flows.spec.ts
+    is-mt: true
+  - id: document
+    scenario: qa-document-store
+    flow: install
+    playwright-project: full-suite
+    file-pattern: document-handling-user-flows.spec.ts
+    is-ds: true
+  - id: license
+    scenario: qa-license
+    flow: install
+    playwright-project: full-suite
+    file-pattern: license-key-user-flows.spec.ts
+    is-license-key: true
+  - id: mcp
+    scenario: qa-elasticsearch-mcp
+    flow: install
+    playwright-project: full-suite
+    file-pattern: orchestration-cluster-mcp-server/
+    mcp-gateway-enabled: true
+  - id: migration
+    scenario: qa-elasticsearch-upg-install
+    flow: upgrade-minor
+    playwright-project: full-suite
+    file-pattern: migration-path-user-flows.spec.ts
+    is-migration: true
+  - id: opensearch
+    scenario: qa-opensearch
+    flow: install
+    playwright-project: full-suite
+    is-opensearch: true

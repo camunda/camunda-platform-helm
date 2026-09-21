@@ -1,0 +1,108 @@
+name: "Test - SM 8.9 E2E Partitions"
+
+on:
+  schedule:
+    - cron: "20 4 * * *"
+  workflow_dispatch:
+    inputs:
+      camunda-helm-git-ref:
+        description: Helm repository ref to test
+        required: false
+        default: main
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'workflow_dispatch' && inputs.camunda-helm-git-ref || 'main' }}
+  cancel-in-progress: false
+
+jobs:
+  partitions:
+    name: Resolve partitions
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.camunda-helm-git-ref || 'main' }}
+      - name: Setup deploy-camunda
+        uses: ./.github/actions/setup-deploy-camunda
+      - name: Resolve partition matrix
+        id: matrix
+        run: echo "matrix=$(deploy-camunda ci e2e-partitions --repo-root "$GITHUB_WORKSPACE" --version 8.9)" >> "$GITHUB_OUTPUT"
+
+  e2e:
+    name: ${{ matrix.partition.id }}
+    needs: partitions
+    strategy:
+      fail-fast: false
+      matrix:
+        partition: ${{ fromJson(needs.partitions.outputs.matrix) }}
+    permissions:
+      contents: read
+      id-token: write
+      deployments: write
+      packages: read
+      statuses: write
+    secrets: inherit
+    uses: ./.github/workflows/test-integration-template.yaml
+    with:
+      identifier: sm89-${{ matrix.partition.id }}-${{ github.run_id }}-${{ github.run_attempt }}
+      camunda-helm-dir: camunda-platform-8.9
+      camunda-helm-git-ref: ${{ github.event_name == 'workflow_dispatch' && inputs.camunda-helm-git-ref || 'main' }}
+      camunda-version-previous: "8.8"
+      deployment-ttl: 12h
+      platforms: gke
+      infra-type: ${{ matrix.partition.infra_type }}
+      flows: ${{ matrix.partition.flow }}
+      test-enabled: true
+      e2e-enabled: true
+      scenario: ${{ matrix.partition.scenario }}
+      shortname: ${{ matrix.partition.shortname }}
+      auth: ${{ matrix.partition.auth }}
+      test-identity: ${{ matrix.partition.identity }}
+      test-persistence: ${{ matrix.partition.persistence }}
+      test-features: ${{ matrix.partition.features }}
+      test-qa: ${{ matrix.partition.qa }}
+      test-upgrade: ${{ matrix.partition.flow != 'install' }}
+      include-image-tags: ${{ matrix.partition.image_tags }}
+      values-digest: ${{ 'false' }}
+      values-config: >-
+        {"E2E_TESTS_ORCHESTRATION_IMAGE_TAG":"8.9-SNAPSHOT","E2E_TESTS_OPTIMIZE_IMAGE_TAG":"8.9-SNAPSHOT","E2E_TESTS_WEBMODELER_IMAGE_TAG":"SNAPSHOT","E2E_TESTS_CONSOLE_IMAGE_TAG":"8.9-SNAPSHOT","E2E_TESTS_IDENTITY_IMAGE_TAG":"8.9-SNAPSHOT","E2E_TESTS_CONNECTORS_IMAGE_TAG":"8.9-SNAPSHOT"}
+      e2e-playwright-project: ${{ matrix.partition.playwright_project }}
+      e2e-file-pattern: ${{ matrix.partition.file_pattern }}
+      e2e-is-rba: ${{ matrix.partition.is_rba }}
+      e2e-is-mt: ${{ matrix.partition.is_mt }}
+      e2e-is-ds: ${{ matrix.partition.is_ds }}
+      e2e-is-license-key: ${{ matrix.partition.is_license_key }}
+      e2e-is-migration: ${{ matrix.partition.is_migration }}
+      pre-upgrade-migration: ${{ matrix.partition.is_migration }}
+      e2e-is-opensearch: ${{ matrix.partition.is_opensearch }}
+      e2e-mcp-gateway-enabled: ${{ matrix.partition.mcp_gateway_enabled }}
+      wait-ingress-ready: true
+      ingress-ready-timeout: 12
+      always-delete-namespace: false
+
+  summary:
+    name: Partition summary
+    if: always()
+    needs: [partitions, e2e]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Write summary
+        env:
+          PARTITIONS_RESULT: ${{ needs.partitions.result }}
+          E2E_RESULT: ${{ needs.e2e.result }}
+        run: |
+          {
+            echo "## SM 8.9 E2E partitions"
+            echo
+            echo "| Stage | Result |"
+            echo "| --- | --- |"
+            echo "| Registry | ${PARTITIONS_RESULT} |"
+            echo "| Nine active partitions | ${E2E_RESULT} |"
+          } >> "$GITHUB_STEP_SUMMARY"
