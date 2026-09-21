@@ -126,13 +126,16 @@ func TestSM89PartitionWorkflowWiresMigrationPreparation(t *testing.T) {
 	for _, want := range []string{
 		"type: choice",
 		"--partition \"$PARTITION\"",
-		"ref: ${{ github.event.repository.default_branch }}",
-		"uses: camunda/camunda-platform-helm/.github/workflows/test-integration-template.yaml@main",
-		"camunda-helm-git-ref: ${{ github.event.repository.default_branch }}",
+		"ref: ${{ github.sha }}",
+		"uses: ./.github/workflows/test-integration-template.yaml",
+		"camunda-helm-git-ref: ${{ github.sha }}",
 	} {
 		if !bytes.Contains(data, []byte(want)) {
 			t.Errorf("trusted workflow dispatch does not contain %q", want)
 		}
+	}
+	if bytes.Contains(data, []byte("camunda/camunda-platform-helm/.github/workflows/test-integration-template.yaml@main")) {
+		t.Error("partition workflow must invoke the reusable workflow from the triggering revision")
 	}
 
 	template, err := os.ReadFile(filepath.Join(repoRoot, ".github/workflows/test-integration-template.yaml"))

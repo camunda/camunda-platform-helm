@@ -56,6 +56,15 @@ teardown() {
 
 @test "topology CI forwards the explicit E2E execution contract" {
   workflow="$ROOT/.github/workflows/test-integration-runner.yaml"
+  action_block="$(awk '
+    /^  e2e-topology-smoke:/ { in_job = 1; next }
+    in_job && /^  [[:alnum:]_-]+:/ { exit }
+    in_job && /^        uses: \.\/\.github\/actions\/playwright-e2e-tests$/ { in_action = 1 }
+    in_action && /^      - / { exit }
+    in_action { print }
+  ' "$workflow")"
+
+  [[ "$action_block" == *"uses: ./.github/actions/playwright-e2e-tests"* ]]
 
   for input in \
     playwright-project:e2e-playwright-project \
@@ -67,7 +76,7 @@ teardown() {
     is-migration:e2e-is-migration \
     is-opensearch:e2e-is-opensearch \
     mcp-gateway-enabled:e2e-mcp-gateway-enabled; do
-    run grep -F "${input%%:*}: \${{ inputs.${input#*:} }}" "$workflow"
+    run grep -F "${input%%:*}: \${{ inputs.${input#*:} }}" <<< "$action_block"
     [ "$status" -eq 0 ]
   done
 }
