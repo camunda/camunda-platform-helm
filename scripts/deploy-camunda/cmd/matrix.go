@@ -25,6 +25,7 @@ import (
 	"path/filepath"
 	"scripts/camunda-core/pkg/ghactions"
 	"scripts/camunda-core/pkg/logging"
+	"scripts/camunda-core/pkg/versionmatrix"
 	"scripts/deploy-camunda/config"
 	"scripts/deploy-camunda/deploy"
 	"scripts/deploy-camunda/matrix"
@@ -328,6 +329,7 @@ func newMatrixRunCommand() *cobra.Command {
 		chartRefVersion          string
 		waitIngressReady         bool
 		ingressReadyTimeout      int
+		upgradePhase             string
 	)
 
 	cmd := &cobra.Command{
@@ -386,7 +388,13 @@ Under the hood this invokes deploy.Execute() for each matrix entry.`,
   deploy-camunda config init --from-example getting-started
   deploy-camunda matrix run --versions 8.10 --shortname-filter keyco`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			return validateChartRefFlags(chartRef, chartRefVersion)
+			if err := validateChartRefFlags(chartRef, chartRefVersion); err != nil {
+				return err
+			}
+			if upgradePhase != "" && upgradePhase != "install" && upgradePhase != "upgrade" {
+				return fmt.Errorf("--upgrade-phase must be install or upgrade")
+			}
+			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Create a signal-aware context so that Ctrl+C (SIGINT) and
@@ -576,6 +584,13 @@ Under the hood this invokes deploy.Execute() for each matrix entry.`,
 				Tier:            tier,
 			}
 			entries = matrix.Filter(entries, filterOptions)
+			if upgradePhase != "" {
+				for _, entry := range entries {
+					if !versionmatrix.IsTwoStepUpgradeFlow(entry.Flow) {
+						return fmt.Errorf("--upgrade-phase requires a two-step upgrade flow, got %q", entry.Flow)
+					}
+				}
+			}
 			if len(entries) == 0 && !includeDisabled {
 				withDisabled, err := matrix.Generate(repoRoot, matrix.GenerateOptions{
 					Versions:        versions,
@@ -822,6 +837,7 @@ Under the hood this invokes deploy.Execute() for each matrix entry.`,
 				ForceImageOverrides:        forceImageOverrides,
 				WaitIngressReady:           waitIngressReady,
 				IngressReadyTimeoutMinutes: ingressReadyTimeout,
+				UpgradePhase:               upgradePhase,
 				ExtraHelmArgs:              extraHelmArgs,
 				ExtraHelmSets:              extraHelmSets,
 				ExtraValues:                extraValues,
@@ -936,6 +952,7 @@ Under the hood this invokes deploy.Execute() for each matrix entry.`,
 	f.IntVar(&tier, "tier", 0, "Filter entries by tier (1=PR CI, 2=merge-queue only; 0=all)")
 	f.BoolVar(&waitIngressReady, "wait-ingress-ready", false, "After a successful helm install/upgrade, fail the entry unless its ingress host becomes publicly DNS-resolvable and HTTP-reachable within --ingress-ready-timeout")
 	f.IntVar(&ingressReadyTimeout, "ingress-ready-timeout", config.DefaultIngressReadyTimeoutMinutes, "Timeout in minutes for --wait-ingress-ready")
+	f.StringVar(&upgradePhase, "upgrade-phase", "", "Run only the install or upgrade phase of a two-step upgrade")
 
 	registerMatrixShortnameCompletion(cmd)
 	registerMatrixVersionsCompletion(cmd)

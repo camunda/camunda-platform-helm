@@ -2,9 +2,10 @@ name: qa-elasticsearch-upg
 auth: keycloak
 flows:
   - install
-  - upgrade-minor
 identity: keycloak
 persistence: elasticsearch
+features:
+  - mcp
 platforms:
   - gke
 infra-type:
