@@ -139,6 +139,9 @@ integration:
     - id: qa-elasticsearch-upg-install
       shortname: qaelupg
       enabled: false
+    - id: qa-elasticsearch-mcp
+      shortname: qaelmcp
+      enabled: false
     - id: qa-elasticsearch-upg-modular
       shortname: qaelupg
       enabled: false

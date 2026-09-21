@@ -11,6 +11,15 @@ export default defineConfig({
       testMatch: ["**/smoke-tests.spec.{ts,js}"],
     },
     {
+      name: "migration-setup",
+      testMatch: ["**/test-setup.spec.{ts,js}"],
+    },
+    {
+      name: "migration-smoke",
+      testMatch: ["**/smoke-tests.spec.{ts,js}"],
+      dependencies: ["migration-setup"],
+    },
+    {
       name: "full-suite",
       testMatch: ["**/*.spec.{ts,js}"],
       // cluster-variables requires Vault-managed secrets not available in PR CI.

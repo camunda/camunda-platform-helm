@@ -63,10 +63,10 @@ resolve_deploy_camunda() {
   # version the binary was installed under. When .tool-versions pins a different version the shim
   # exits non-zero for every invocation while still shadowing a working $GOPATH/bin build, so probe
   # candidates by running one instead of trusting `command -v`.
-  local candidate
+  local candidate required_command="${1:-e2e-env}"
   for candidate in "${DEPLOY_CAMUNDA:-}" "$(command -v deploy-camunda 2> /dev/null)" \
     "$(go env GOPATH 2> /dev/null)/bin/deploy-camunda" "$HOME/go/bin/deploy-camunda"; do
-    if [[ -n "$candidate" && -x "$candidate" ]] && "$candidate" e2e-env --help > /dev/null 2>&1; then
+    if [[ -n "$candidate" && -x "$candidate" ]] && { [[ "$required_command" == "e2e-run-config" ]] && "$candidate" ci e2e-run-config --help > /dev/null 2>&1 || [[ "$required_command" == "e2e-env" ]] && "$candidate" e2e-env --help > /dev/null 2>&1; }; then
       echo "$candidate"
       return 0
     fi
@@ -196,7 +196,7 @@ check_required_cmds
 for arg in "$@"; do
   case "$arg" in
     --playwright-project|--file-pattern|--is-rba|--is-mt|--is-ds|--is-license-key|--is-migration|--is-opensearch|--mcp-gateway-enabled)
-      DEPLOY_CAMUNDA_BIN=$(resolve_deploy_camunda) || { echo "Error: deploy-camunda is required for explicit E2E execution controls." >&2; exit 1; }
+      DEPLOY_CAMUNDA_BIN=$(resolve_deploy_camunda e2e-run-config) || { echo "Error: deploy-camunda with ci e2e-run-config is required for explicit E2E execution controls." >&2; exit 1; }
       E2E_RUN_CONFIG=$("$DEPLOY_CAMUNDA_BIN" ci e2e-run-config "$@") || exit 1
       eval "$E2E_RUN_CONFIG"
       break

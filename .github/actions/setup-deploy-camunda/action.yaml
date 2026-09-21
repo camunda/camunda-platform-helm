@@ -7,7 +7,7 @@ runs:
     - name: Check runner deploy-camunda binary
       id: runner-binary
       shell: bash
-      run: echo "present=$([ -n "${RUNNER_TEMP:-}" ] && [ -x "$RUNNER_TEMP/bin/deploy-camunda" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+      run: echo "present=$([ -n "${RUNNER_TEMP:-}" ] && [ -x "$RUNNER_TEMP/bin/deploy-camunda" ] && "$RUNNER_TEMP/bin/deploy-camunda" ci e2e-run-config --help >/dev/null 2>&1 && echo true || echo false)" >> "$GITHUB_OUTPUT"
     - name: Restore deploy-camunda binary
       if: steps.runner-binary.outputs.present != 'true'
       uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
@@ -17,7 +17,7 @@ runs:
     - name: Check deploy-camunda binary
       id: binary-check
       shell: bash
-      run: echo "present=$([ -x "$GITHUB_WORKSPACE/.local-bin/deploy-camunda" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+      run: echo "present=$([ -x "$GITHUB_WORKSPACE/.local-bin/deploy-camunda" ] && "$GITHUB_WORKSPACE/.local-bin/deploy-camunda" ci e2e-run-config --help >/dev/null 2>&1 && echo true || echo false)" >> "$GITHUB_OUTPUT"
     - name: Setup Go
       if: steps.runner-binary.outputs.present != 'true' && steps.binary-check.outputs.present != 'true'
       uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7

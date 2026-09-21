@@ -99,6 +99,11 @@ on:
         required: false
         default: false
         type: boolean
+      pre-upgrade-migration:
+        description: Run migration smoke tests and data loading against the previous version before upgrade.
+        required: false
+        default: false
+        type: boolean
       e2e-is-opensearch:
         required: false
         default: false
@@ -424,6 +429,7 @@ jobs:
       e2e-is-ds: ${{ inputs.e2e-is-ds }}
       e2e-is-license-key: ${{ inputs.e2e-is-license-key }}
       e2e-is-migration: ${{ inputs.e2e-is-migration }}
+      pre-upgrade-migration: ${{ inputs.pre-upgrade-migration }}
       e2e-is-opensearch: ${{ inputs.e2e-is-opensearch }}
       e2e-mcp-gateway-enabled: ${{ inputs.e2e-mcp-gateway-enabled }}
       wait-ingress-ready: ${{ inputs.wait-ingress-ready }}

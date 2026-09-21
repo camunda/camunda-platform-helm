@@ -15,6 +15,7 @@
 package matrix
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -24,6 +25,7 @@ import (
 
 	"scripts/camunda-core/pkg/scenarios"
 	"scripts/camunda-core/pkg/versionmatrix"
+	"scripts/deploy-camunda/config"
 )
 
 // TestUpgradeMinorPrevVersionDimensions asserts that every upgrade-minor
@@ -190,6 +192,55 @@ func TestFilterKnownFeatures(t *testing.T) {
 	}
 	if !slices.Equal(want, []string{"postgresql-companion", "documentstore", "persistence"}) {
 		t.Errorf("want slice mutated: %v", want)
+	}
+}
+
+func TestUpgradePhaseSelection(t *testing.T) {
+	tests := []struct {
+		phase       string
+		wantInstall bool
+		wantUpgrade bool
+	}{
+		{phase: "", wantInstall: true, wantUpgrade: true},
+		{phase: "install", wantInstall: true, wantUpgrade: false},
+		{phase: "upgrade", wantInstall: false, wantUpgrade: true},
+	}
+	for _, test := range tests {
+		if got := runUpgradeInstallPhase(test.phase); got != test.wantInstall {
+			t.Errorf("runUpgradeInstallPhase(%q) = %t, want %t", test.phase, got, test.wantInstall)
+		}
+		if got := runUpgradeTargetPhase(test.phase); got != test.wantUpgrade {
+			t.Errorf("runUpgradeTargetPhase(%q) = %t, want %t", test.phase, got, test.wantUpgrade)
+		}
+	}
+}
+
+func TestUpgradeInstallImageTags(t *testing.T) {
+	if !upgradeInstallImageTags("install", true) {
+		t.Fatal("an explicit install phase must preserve previous-version image tags")
+	}
+	for _, phase := range []string{"", "upgrade"} {
+		if upgradeInstallImageTags(phase, true) {
+			t.Fatalf("phase %q must use the released previous-version images", phase)
+		}
+	}
+	if upgradeInstallImageTags("install", false) {
+		t.Fatal("an install phase must not enable image tags absent from the scenario")
+	}
+}
+
+func TestValidateUpgradeReleaseFailsWhenReleaseIsMissing(t *testing.T) {
+	dir := t.TempDir()
+	helmPath := filepath.Join(dir, "helm")
+	if err := os.WriteFile(helmPath, []byte("#!/bin/sh\nexit 1\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", dir+string(os.PathListSeparator)+os.Getenv("PATH"))
+	flags := &config.RuntimeFlags{
+		Deployment: config.DeploymentFlags{Namespace: "migration-ns", Release: "integration"},
+	}
+	if err := validateUpgradeRelease(context.Background(), flags); err == nil {
+		t.Fatal("expected a missing release to stop the upgrade phase")
 	}
 }
 

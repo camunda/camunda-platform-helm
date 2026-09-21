@@ -596,6 +596,36 @@ integration:
           enabled: false
           shortname: qaelupg
           auth: keycloak
+          flow: upgrade-minor
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: qa-workloads
+          identity: keycloak
+          persistence: elasticsearch
+          qa: true
+          image-tags: true
+        - name: qa-elasticsearch-upg
+          enabled: false
+          shortname: qaelmcp
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: qa-workloads
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - mcp
+          qa: true
+          image-tags: true
+        - name: qa-elasticsearch-upg
+          enabled: false
+          shortname: qaelupg
+          auth: keycloak
           flow: modular-upgrade-minor
           platforms:
             - gke
