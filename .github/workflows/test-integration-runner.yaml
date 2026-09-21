@@ -305,6 +305,12 @@ env:
   # Vars with "CI_" prefix are used in the CI workflow only.
   # Vars with "TEST_" prefix are used in the test runner tool (Task).
   CI_DEPLOYMENT_TTL: ${{ inputs.deployment-ttl }}
+  IS_TOPOLOGY: ${{ inputs.is-topology }}
+  # Floor for the deploy-time cleaner/janitor TTL of a topology scenario, which holds
+  # one namespace set across sequentially-run e2e legs. Must exceed install plus every
+  # leg; at ~10m install and ~25m per leg, 4h covers the four-leg mns2 chain with room
+  # for queueing. Applied only when no explicit deployment-ttl was requested.
+  TOPOLOGY_MIN_TTL: 4h
   # The Helm repo which is used during the upgrade flow.
   TEST_CHART_REPO: ${{ inputs.camunda-helm-repo }}
   # Docker Hub auth to avoid image pull rate limit.
@@ -734,8 +740,15 @@ jobs:
 
           # Give deploy-camunda the requested namespace TTL; without this it stamps its 60m
           # default onto cleaner/janitor, so 12h nightly clusters get reaped after an hour.
-          # Empty falls back to deploy-camunda's 60m default.
+          # A topology scenario runs its e2e legs sequentially, one namespace set for the
+          # whole chain, so 60m expires mid-run; TOPOLOGY_MIN_TTL covers the chain. Only
+          # the deploy-time annotation is raised — CI_DEPLOYMENT_TTL stays as it was, so
+          # the cleanup job still stamps ttl=1s and the namespaces are reaped at the end
+          # of the run rather than lingering for the full TTL.
           export DEPLOY_CAMUNDA_TTL="${CI_DEPLOYMENT_TTL:-}"
+          if [[ -z "$DEPLOY_CAMUNDA_TTL" && "$IS_TOPOLOGY" == "true" ]]; then
+            export DEPLOY_CAMUNDA_TTL="$TOPOLOGY_MIN_TTL"
+          fi
 
           # The workflow input is `number` type, so reject empty/fractional/negative
           # (any non-digit matches *[!0-9]*) and then zero before it reaches the
@@ -823,17 +836,10 @@ jobs:
 
       - name: Collect topology namespace diagnostics
         if: failure() && inputs.is-topology
-        env:
-          TOPOLOGY_NAMESPACE_SUFFIXES: ${{ inputs.topology-namespace-suffixes }}
-        run: |
-          mkdir -p diagnostics
-          while IFS= read -r suffix; do
-            ns="$(deploy-camunda topology namespace --base "$TEST_NAMESPACE" --suffix "$suffix")"
-            if [[ "$(kubectl get ns "$ns" --ignore-not-found -o name)" == "" ]]; then
-              continue
-            fi
-            deploy-camunda diagnostics print --namespace "$ns" >"diagnostics/topology-${suffix}.log" 2>&1 || true
-          done < <(jq -r '.[]' <<<"$TOPOLOGY_NAMESPACE_SUFFIXES")
+        uses: ./.github/actions/topology-diagnostics
+        with:
+          base-namespace: ${{ env.TEST_NAMESPACE }}
+          suffixes: ${{ inputs.topology-namespace-suffixes }}
 
       - name: Compute diagnostics artifact name
         if: failure()
@@ -1172,8 +1178,15 @@ jobs:
 
           # Give deploy-camunda the requested namespace TTL; without this it stamps its 60m
           # default onto cleaner/janitor, so 12h nightly clusters get reaped after an hour.
-          # Empty falls back to deploy-camunda's 60m default.
+          # A topology scenario runs its e2e legs sequentially, one namespace set for the
+          # whole chain, so 60m expires mid-run; TOPOLOGY_MIN_TTL covers the chain. Only
+          # the deploy-time annotation is raised — CI_DEPLOYMENT_TTL stays as it was, so
+          # the cleanup job still stamps ttl=1s and the namespaces are reaped at the end
+          # of the run rather than lingering for the full TTL.
           export DEPLOY_CAMUNDA_TTL="${CI_DEPLOYMENT_TTL:-}"
+          if [[ -z "$DEPLOY_CAMUNDA_TTL" && "$IS_TOPOLOGY" == "true" ]]; then
+            export DEPLOY_CAMUNDA_TTL="$TOPOLOGY_MIN_TTL"
+          fi
 
           # The workflow input is `number` type, so reject empty/fractional/negative
           # (any non-digit matches *[!0-9]*) and then zero before it reaches the
@@ -1922,16 +1935,10 @@ jobs:
 
       - name: Collect failed topology diagnostics
         if: needs.e2e-topology-smoke.result == 'failure' && inputs.is-topology
-        env:
-          TOPOLOGY_NAMESPACE_SUFFIXES: ${{ inputs.topology-namespace-suffixes }}
-        run: |
-          mkdir -p diagnostics
-          while IFS= read -r suffix; do
-            ns="$(deploy-camunda topology namespace --base "$TEST_NAMESPACE" --suffix "$suffix")"
-            if [[ "$(kubectl get ns "$ns" --ignore-not-found -o name)" != "" ]]; then
-              deploy-camunda diagnostics print --namespace "$ns" >"diagnostics/topology-${suffix}.log" 2>&1 || true
-            fi
-          done < <(jq -r '.[]' <<<"$TOPOLOGY_NAMESPACE_SUFFIXES")
+        uses: ./.github/actions/topology-diagnostics
+        with:
+          base-namespace: ${{ env.TEST_NAMESPACE }}
+          suffixes: ${{ inputs.topology-namespace-suffixes }}
 
       - name: Upload failed topology diagnostics
         if: needs.e2e-topology-smoke.result == 'failure' && inputs.is-topology
@@ -1940,6 +1947,9 @@ jobs:
           name: topology-diagnostics-${{ inputs.identifier }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: diagnostics/
           retention-days: 14
+          # The collection step always writes a summary, so an empty bundle here
+          # means collection itself did not run.
+          if-no-files-found: error
 
       - name: CI Cleanup - Cleanup GitHub deployment
         if: always() && (env.CI_DEPLOYMENT_TTL == '' || inputs.distro-type != 'kubernetes')
