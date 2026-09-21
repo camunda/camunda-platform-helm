@@ -1398,7 +1398,7 @@ jobs:
   playwright-e2e-tests-after-install:
     name: Playwright e2e ${{ matrix.suite }} after install - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }} (${{ matrix.shard_index }} of ${{ matrix.shard_total }})
     needs: [install]
-    runs-on: ${{ matrix.suite == 'full' && 'gcp-core-32-longrunning-big-ssd' || 'gcp-core-8-release' }}
+    runs-on: ${{ (matrix.suite == 'full' || startsWith(inputs.e2e-playwright-project, 'full-suite')) && 'gcp-core-32-longrunning-big-ssd' || 'gcp-core-8-release' }}
     container:
       image: ghcr.io/camunda/team-distribution/playwright-runner:latest
       credentials:
@@ -1410,7 +1410,7 @@ jobs:
         shell: bash
     if: ${{ inputs.test-enabled && inputs.e2e-enabled && inputs.flow == 'install' && !inputs.skip-e2e && !inputs.is-topology }}
     continue-on-error: ${{ !matrix.blocking }}
-    timeout-minutes: ${{ matrix.suite == 'full' && 50 || 25 }}
+    timeout-minutes: ${{ (matrix.suite == 'full' || startsWith(inputs.e2e-playwright-project, 'full-suite')) && 50 || 25 }}
     strategy:
       fail-fast: false
       # Legs share one deployment and smoke-tests.spec.js runs in both projects,
@@ -1621,7 +1621,7 @@ jobs:
   e2e-topology-smoke:
     name: "[topology] e2e smoke - ${{ inputs.shortname }} - ${{ matrix.orchestration_suffix }}"
     needs: [install]
-    runs-on: gcp-core-8-release
+    runs-on: ${{ startsWith(inputs.e2e-playwright-project, 'full-suite') && 'gcp-core-32-longrunning-big-ssd' || 'gcp-core-8-release' }}
     container:
       image: ghcr.io/camunda/team-distribution/playwright-runner:latest
       credentials:
@@ -1632,7 +1632,7 @@ jobs:
       run:
         shell: bash
     if: ${{ inputs.test-enabled && inputs.e2e-enabled && !inputs.skip-e2e && inputs.is-topology && inputs.flow == 'install' }}
-    timeout-minutes: 40
+    timeout-minutes: ${{ startsWith(inputs.e2e-playwright-project, 'full-suite') && 50 || 40 }}
     strategy:
       fail-fast: false
       # One leg per Optimize instance can share an orchestration_suffix, so legs
@@ -1756,7 +1756,7 @@ jobs:
   playwright-e2e-tests-after-upgrade:
     name: Playwright e2e after upgrade - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }} (${{ matrix.shardIndex }} of ${{ matrix.shardTotal }})
     needs: [upgrade]
-    runs-on: gcp-core-8-release
+    runs-on: ${{ startsWith(inputs.e2e-playwright-project, 'full-suite') && 'gcp-core-32-longrunning-big-ssd' || 'gcp-core-8-release' }}
     container:
       image: ghcr.io/camunda/team-distribution/playwright-runner:latest
       credentials:
@@ -1767,7 +1767,7 @@ jobs:
       run:
         shell: bash
     if: ${{ inputs.test-enabled && inputs.e2e-enabled && inputs.flow != 'install' && !inputs.skip-e2e }}
-    timeout-minutes: 40
+    timeout-minutes: ${{ startsWith(inputs.e2e-playwright-project, 'full-suite') && 50 || 40 }}
     strategy:
       fail-fast: false
       matrix:

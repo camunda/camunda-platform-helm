@@ -174,3 +174,25 @@ func TestCIE2EPartitionsRejectsUnknownVersion(t *testing.T) {
 		t.Fatal("expected missing 8.8 partition registry to fail")
 	}
 }
+
+func TestExplicitFullSuiteUsesFullRunnerSizing(t *testing.T) {
+	repoRoot, err := filepath.Abs("../../..")
+	if err != nil {
+		t.Fatal(err)
+	}
+	runner, err := os.ReadFile(filepath.Join(repoRoot, ".github/workflows/test-integration-runner.yaml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for expression, want := range map[string]int{
+		"runs-on: ${{ (matrix.suite == 'full' || startsWith(inputs.e2e-playwright-project, 'full-suite')) && 'gcp-core-32-longrunning-big-ssd' || 'gcp-core-8-release' }}": 1,
+		"timeout-minutes: ${{ (matrix.suite == 'full' || startsWith(inputs.e2e-playwright-project, 'full-suite')) && 50 || 25 }}":                                          1,
+		"runs-on: ${{ startsWith(inputs.e2e-playwright-project, 'full-suite') && 'gcp-core-32-longrunning-big-ssd' || 'gcp-core-8-release' }}":                             2,
+		"timeout-minutes: ${{ startsWith(inputs.e2e-playwright-project, 'full-suite') && 50 || 40 }}":                                                                      2,
+	} {
+		if got := bytes.Count(runner, []byte(expression)); got != want {
+			t.Errorf("workflow contains %d copies of %q, want %d", got, expression, want)
+		}
+	}
+}
