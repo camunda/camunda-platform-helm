@@ -1586,12 +1586,6 @@ jobs:
           scenario: ${{ inputs.scenario }}
           run-smoke-tests: "false"
           playwright-project: ${{ matrix.playwright_project }}
-          # Pinned to an immutable commit rather than the branch: npm lifecycle and build
-          # scripts from this ref run on the runner, and the suite itself then executes with
-          # cluster credentials and the job's OIDC token in scope. A mutable ref would let
-          # anyone who can move the branch run code in that privileged phase.
-          # camunda/c8-cross-component-e2e-tests topology-hub-web-modeler-suite
-          e2e-test-suite-ref: e3c5e1c0e96b1c87a760e24b17ebed31e605c2a9
           e2e-test-suite-token: ${{ steps.e2e-repository-token.outputs.token }}
           artifact-suffix: ${{ matrix.orchestration_suffix }}-${{ matrix.suite }}
       - name: Observe build status
