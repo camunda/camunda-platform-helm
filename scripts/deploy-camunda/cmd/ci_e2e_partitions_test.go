@@ -64,6 +64,42 @@ func TestCIE2EPartitionsWritesSM89JSON(t *testing.T) {
 	}
 }
 
+func TestCIE2EPartitionsSelectsOnePartition(t *testing.T) {
+	repoRoot, err := filepath.Abs("../../..")
+	if err != nil {
+		t.Fatal(err)
+	}
+	command := newCIE2EPartitionsCommand()
+	var output bytes.Buffer
+	command.SetOut(&output)
+	command.SetArgs([]string{"--repo-root", repoRoot, "--version", "8.9", "--partition", "mcp"})
+	if err := command.Execute(); err != nil {
+		t.Fatalf("execute e2e-partitions: %v", err)
+	}
+
+	var partitions []matrix.E2EPartition
+	if err := json.Unmarshal(output.Bytes(), &partitions); err != nil {
+		t.Fatalf("decode output: %v", err)
+	}
+	if len(partitions) != 1 || partitions[0].ID != "mcp" {
+		t.Fatalf("partitions = %+v, want only mcp", partitions)
+	}
+}
+
+func TestCIE2EPartitionsRejectsUnknownPartition(t *testing.T) {
+	repoRoot, err := filepath.Abs("../../..")
+	if err != nil {
+		t.Fatal(err)
+	}
+	command := newCIE2EPartitionsCommand()
+	command.SilenceErrors = true
+	command.SilenceUsage = true
+	command.SetArgs([]string{"--repo-root", repoRoot, "--version", "8.9", "--partition", "unknown"})
+	if err := command.Execute(); err == nil {
+		t.Fatal("expected unknown partition to fail")
+	}
+}
+
 func TestSM89PartitionWorkflowWiresMigrationPreparation(t *testing.T) {
 	repoRoot, err := filepath.Abs("../../..")
 	if err != nil {
@@ -83,6 +119,20 @@ func TestSM89PartitionWorkflowWiresMigrationPreparation(t *testing.T) {
 	}
 	if bytes.Contains(data, []byte("blocked-reason")) || !bytes.Contains(data, []byte("Nine active partitions")) {
 		t.Error("workflow does not report all nine runnable partitions")
+	}
+	if bytes.Contains(data, []byte("inputs.camunda-helm-git-ref")) || bytes.Contains(data, []byte("description: Helm repository ref to test")) {
+		t.Error("workflow dispatch must not accept a Helm repository ref")
+	}
+	for _, want := range []string{
+		"type: choice",
+		"--partition \"$PARTITION\"",
+		"ref: ${{ github.event.repository.default_branch }}",
+		"uses: camunda/camunda-platform-helm/.github/workflows/test-integration-template.yaml@main",
+		"camunda-helm-git-ref: ${{ github.event.repository.default_branch }}",
+	} {
+		if !bytes.Contains(data, []byte(want)) {
+			t.Errorf("trusted workflow dispatch does not contain %q", want)
+		}
 	}
 
 	template, err := os.ReadFile(filepath.Join(repoRoot, ".github/workflows/test-integration-template.yaml"))
