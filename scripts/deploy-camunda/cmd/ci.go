@@ -48,7 +48,7 @@ func newCICommand() *cobra.Command {
 }
 
 func newCIE2EPartitionsCommand() *cobra.Command {
-	var repoRoot, version string
+	var repoRoot, version, partition string
 	cmd := &cobra.Command{
 		Use:   "e2e-partitions",
 		Short: "Resolve the scheduled Self-Managed E2E partition matrix",
@@ -65,6 +65,18 @@ func newCIE2EPartitionsCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			if partition != "" && partition != "all" {
+				selected := partitions[:0]
+				for _, candidate := range partitions {
+					if candidate.ID == partition {
+						selected = append(selected, candidate)
+					}
+				}
+				if len(selected) == 0 {
+					return fmt.Errorf("unknown E2E partition %q", partition)
+				}
+				partitions = selected
+			}
 			output, err := matrix.E2EPartitionsJSON(partitions)
 			if err != nil {
 				return err
@@ -75,6 +87,7 @@ func newCIE2EPartitionsCommand() *cobra.Command {
 	}
 	cmd.Flags().StringVar(&repoRoot, "repo-root", "", "repository root; auto-detected when empty")
 	cmd.Flags().StringVar(&version, "version", "", "Camunda minor version, e.g. 8.9")
+	cmd.Flags().StringVar(&partition, "partition", "all", "partition ID to select, or all")
 	_ = cmd.MarkFlagRequired("version")
 	return cmd
 }
