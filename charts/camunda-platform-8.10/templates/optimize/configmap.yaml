@@ -31,8 +31,8 @@ data:
         authentication:
           method: "oidc"
           oidc:
-            username-claim: {{ .Values.orchestration.security.authentication.oidc.usernameClaim | quote }}
-            client-id-claim: {{ .Values.orchestration.security.authentication.oidc.clientIdClaim | quote }}
+            username-claim: "preferred_username"
+            client-id-claim: "client_id"
             client-id: {{ include "optimize.authClientId" . | quote }}
             client-secret: ${VALUES_OPTIMIZE_CLIENT_SECRET:}
             audiences:

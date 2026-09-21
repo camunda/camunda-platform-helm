@@ -262,7 +262,7 @@ func (s *ConfigMapTemplateTest) TestOidcClaimsInApplicationCcsm() {
 			},
 		},
 		{
-			Name: "TestOverriddenClaims",
+			Name: "TestClaimsIndependentOfOrchestrationOverrides",
 			Values: map[string]string{
 				"identity.enabled":             "true",
 				"optimize.enabled":             "true",
@@ -276,8 +276,8 @@ func (s *ConfigMapTemplateTest) TestOidcClaimsInApplicationCcsm() {
 				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 
 				applicationCcsmYaml := configmap.Data["application-ccsm.yaml"]
-				s.Require().Contains(applicationCcsmYaml, `username-claim: "upn"`)
-				s.Require().Contains(applicationCcsmYaml, `client-id-claim: "azp"`)
+				s.Require().Contains(applicationCcsmYaml, `username-claim: "preferred_username"`)
+				s.Require().Contains(applicationCcsmYaml, `client-id-claim: "client_id"`)
 			},
 		},
 	}
