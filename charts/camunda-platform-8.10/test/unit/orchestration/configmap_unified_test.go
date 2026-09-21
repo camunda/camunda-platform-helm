@@ -1785,6 +1785,28 @@ func (s *ConfigmapTemplateTest) TestRenamedRegionKeysAreRejectedWithoutSchemaVal
 				require.Contains(t, output, "* 2 + 1]")
 			},
 		},
+		{
+			Name:                    "TestNumberOfZonesIsRejectedUnderTheDeprecatedBlock",
+			RenderTemplateExtraArgs: []string{"--skip-schema-validation"},
+			Values: map[string]string{
+				"global.multiregion.numberOfZones": "2",
+				"orchestration.profiles.broker":    "true",
+			},
+			Expected: map[string]string{
+				"ERROR": "global.multiregion.numberOfZones does not exist; the deprecated block spells it global.multiregion.regions",
+			},
+		},
+		{
+			Name:                    "TestZoneIndexIsRejectedUnderTheDeprecatedBlock",
+			RenderTemplateExtraArgs: []string{"--skip-schema-validation"},
+			Values: map[string]string{
+				"global.multiregion.zoneIndex":  "1",
+				"orchestration.profiles.broker": "true",
+			},
+			Expected: map[string]string{
+				"ERROR": "global.multiregion.zoneIndex does not exist; the deprecated block spells it global.multiregion.regionId",
+			},
+		},
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
