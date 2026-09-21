@@ -75,7 +75,14 @@ teardown() {
 @test "explicit SM 8.10 selection requires the installed package suite" {
   action="$ROOT/.github/actions/playwright-e2e-tests/action.yaml"
 
-  run grep -F "REQUIRE_SM_810_TEST_SUITE: \${{ inputs.hub-namespace != '' || (inputs.playwright-project != '' && inputs.playwright-project != 'auth0-smoke') || inputs.file-pattern != '' }}" "$action"
+  run grep -F "REQUIRE_SM_810_TEST_SUITE: \${{ inputs.hub-namespace != '' || (inputs.playwright-project != 'auth0-smoke' && (inputs.playwright-project != '' || inputs.file-pattern != '')) }}" "$action"
+  [ "$status" -eq 0 ]
+}
+
+@test "the E2E action sets up deploy-camunda when no binary artifact is supplied" {
+  action="$ROOT/.github/actions/playwright-e2e-tests/action.yaml"
+
+  run grep -F 'uses: ./.github/actions/setup-deploy-camunda' "$action"
   [ "$status" -eq 0 ]
 }
 

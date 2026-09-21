@@ -44,7 +44,10 @@ func TestWriteE2ERunConfig(t *testing.T) {
 
 func TestWriteE2ERunConfigDoesNotRequireSM810SuiteForAuth0(t *testing.T) {
 	var out bytes.Buffer
-	require.NoError(t, writeE2ERunConfig(&out, []string{"--playwright-project", "auth0-smoke"}))
+	require.NoError(t, writeE2ERunConfig(&out, []string{
+		"--playwright-project", "auth0-smoke",
+		"--file-pattern", "auth0/**/*.spec.ts",
+	}))
 	assert.Contains(t, out.String(), "REQUIRE_SM_810_TEST_SUITE_OVERRIDE='false'")
 }
 
