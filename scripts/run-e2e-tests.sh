@@ -181,13 +181,6 @@ IS_MT=false
 IS_AUTH0=false
 PLAYWRIGHT_PROJECT=""
 FILE_PATTERN=""
-IS_RBA_OVERRIDE=""
-IS_MT_OVERRIDE=""
-IS_DS_OVERRIDE=""
-IS_LICENSE_KEY_OVERRIDE=""
-IS_MIGRATION_OVERRIDE=""
-IS_OPENSEARCH_OVERRIDE=""
-MCP_GATEWAY_ENABLED_OVERRIDE=""
 PLAYWRIGHT_DEBUG=false
 VIDEO_MODE=""
 TRACE_MODE=""
@@ -199,6 +192,17 @@ OPTIMIZE_CONTEXT_PATH=""
 MODELER_CLUSTER_NAME_ARG=""
 
 check_required_cmds
+
+for arg in "$@"; do
+  case "$arg" in
+    --playwright-project|--file-pattern|--is-rba|--is-mt|--is-ds|--is-license-key|--is-migration|--is-opensearch|--mcp-gateway-enabled)
+      DEPLOY_CAMUNDA_BIN=$(resolve_deploy_camunda) || { echo "Error: deploy-camunda is required for explicit E2E execution controls." >&2; exit 1; }
+      E2E_RUN_CONFIG=$("$DEPLOY_CAMUNDA_BIN" ci e2e-run-config "$@") || exit 1
+      eval "$E2E_RUN_CONFIG"
+      break
+      ;;
+  esac
+done
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -254,42 +258,6 @@ while [[ $# -gt 0 ]]; do
     --auth0)
       IS_AUTH0=true
       shift
-      ;;
-    --playwright-project)
-      PLAYWRIGHT_PROJECT="$2"
-      shift 2
-      ;;
-    --file-pattern)
-      FILE_PATTERN="$2"
-      shift 2
-      ;;
-    --is-rba)
-      IS_RBA_OVERRIDE="$2"
-      shift 2
-      ;;
-    --is-mt)
-      IS_MT_OVERRIDE="$2"
-      shift 2
-      ;;
-    --is-ds)
-      IS_DS_OVERRIDE="$2"
-      shift 2
-      ;;
-    --is-license-key)
-      IS_LICENSE_KEY_OVERRIDE="$2"
-      shift 2
-      ;;
-    --is-migration)
-      IS_MIGRATION_OVERRIDE="$2"
-      shift 2
-      ;;
-    --is-opensearch)
-      IS_OPENSEARCH_OVERRIDE="$2"
-      shift 2
-      ;;
-    --mcp-gateway-enabled)
-      MCP_GATEWAY_ENABLED_OVERRIDE="$2"
-      shift 2
       ;;
     --playwright-debug)
       PLAYWRIGHT_DEBUG=true
@@ -348,9 +316,9 @@ log "DEBUG: Chart: $ABSOLUTE_CHART_PATH, Namespace: $NAMESPACE, KubeContext: $KU
 
 validate_args "$ABSOLUTE_CHART_PATH" "$NAMESPACE" "$KUBE_CONTEXT"
 
-[[ -n "$IS_RBA_OVERRIDE" ]] && IS_RBA="$IS_RBA_OVERRIDE"
-[[ -n "$IS_MT_OVERRIDE" ]] && IS_MT="$IS_MT_OVERRIDE"
-[[ -n "$IS_OPENSEARCH_OVERRIDE" ]] && IS_OPENSEARCH="$IS_OPENSEARCH_OVERRIDE"
+if declare -F apply_e2e_execution_env > /dev/null; then
+  apply_e2e_execution_env
+fi
 
 # The Optimize flags are only read on the topology path below, which is selected by
 # --hub-namespace. Without this guard they are silently dropped, render-e2e-env.sh sets
@@ -442,13 +410,9 @@ set -a
 source "$ENV_FILE"
 set +a
 
-[[ -n "$IS_RBA_OVERRIDE" ]] && export IS_RBA="$IS_RBA_OVERRIDE"
-[[ -n "$IS_MT_OVERRIDE" ]] && export IS_MT="$IS_MT_OVERRIDE"
-[[ -n "$IS_DS_OVERRIDE" ]] && export IS_DS="$IS_DS_OVERRIDE"
-[[ -n "$IS_LICENSE_KEY_OVERRIDE" ]] && export IS_LICENSE_KEY="$IS_LICENSE_KEY_OVERRIDE"
-[[ -n "$IS_MIGRATION_OVERRIDE" ]] && export IS_MIGRATION="$IS_MIGRATION_OVERRIDE"
-[[ -n "$IS_OPENSEARCH_OVERRIDE" ]] && export IS_OPENSEARCH="$IS_OPENSEARCH_OVERRIDE"
-[[ -n "$MCP_GATEWAY_ENABLED_OVERRIDE" ]] && export MCP_GATEWAY_ENABLED="$MCP_GATEWAY_ENABLED_OVERRIDE"
+if declare -F apply_e2e_execution_env > /dev/null; then
+  apply_e2e_execution_env
+fi
 
 # ── Namespace-scoped Playwright output directories ──
 # Playwright defaults test artifacts to <cwd>/test-results and HTML reports to

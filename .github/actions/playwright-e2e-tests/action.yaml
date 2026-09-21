@@ -303,7 +303,7 @@ runs:
         E2E_IS_MIGRATION: ${{ inputs.is-migration }}
         E2E_IS_OPENSEARCH: ${{ inputs.is-opensearch }}
         E2E_MCP_GATEWAY_ENABLED: ${{ inputs.mcp-gateway-enabled }}
-        REQUIRE_SM_810_TEST_SUITE: ${{ inputs.hub-namespace != '' }}
+        REQUIRE_SM_810_TEST_SUITE: ${{ inputs.hub-namespace != '' || (inputs.playwright-project != '' && inputs.playwright-project != 'auth0-smoke') || inputs.file-pattern != '' }}
       run: |
         cd "$GITHUB_WORKSPACE/scripts"
         # Unset KEYCLOAK_REALM to avoid conflicts with the integration tests

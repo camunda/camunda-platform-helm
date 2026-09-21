@@ -1635,6 +1635,15 @@ jobs:
           shard-index: ${{ matrix.shard_index }}
           scenario: ${{ inputs.scenario }}
           run-smoke-tests: "true"
+          playwright-project: ${{ inputs.e2e-playwright-project }}
+          file-pattern: ${{ inputs.e2e-file-pattern }}
+          is-rba: ${{ inputs.e2e-is-rba }}
+          is-mt: ${{ inputs.e2e-is-mt }}
+          is-ds: ${{ inputs.e2e-is-ds }}
+          is-license-key: ${{ inputs.e2e-is-license-key }}
+          is-migration: ${{ inputs.e2e-is-migration }}
+          is-opensearch: ${{ inputs.e2e-is-opensearch }}
+          mcp-gateway-enabled: ${{ inputs.e2e-mcp-gateway-enabled }}
       - name: Observe build status
         if: always()
         continue-on-error: true
