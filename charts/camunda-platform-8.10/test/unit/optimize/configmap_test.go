@@ -242,6 +242,49 @@ func (s *ConfigMapTemplateTest) TestDatabaseOverrides() {
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
+func (s *ConfigMapTemplateTest) TestOidcClaimsInApplicationCcsm() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestDefaultClaims",
+			Values: map[string]string{
+				"identity.enabled":             "true",
+				"optimize.enabled":             "true",
+				"global.identity.auth.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+				applicationCcsmYaml := configmap.Data["application-ccsm.yaml"]
+				s.Require().Contains(applicationCcsmYaml, `username-claim: "preferred_username"`)
+				s.Require().Contains(applicationCcsmYaml, `client-id-claim: "client_id"`)
+			},
+		},
+		{
+			Name: "TestOverriddenClaims",
+			Values: map[string]string{
+				"identity.enabled":             "true",
+				"optimize.enabled":             "true",
+				"global.identity.auth.enabled": "true",
+				"orchestration.security.authentication.oidc.usernameClaim": "upn",
+				"orchestration.security.authentication.oidc.clientIdClaim": "azp",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+				applicationCcsmYaml := configmap.Data["application-ccsm.yaml"]
+				s.Require().Contains(applicationCcsmYaml, `username-claim: "upn"`)
+				s.Require().Contains(applicationCcsmYaml, `client-id-claim: "azp"`)
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
 func (s *ConfigMapTemplateTest) TestExtraConfigurationSpringImport() {
 	testCases := []testhelpers.TestCase{
 		{
