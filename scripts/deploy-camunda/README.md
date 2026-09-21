@@ -759,6 +759,16 @@ export DEPLOY_CAMUNDA_SKIP_IMAGE_MANIFEST_CHECK=true
 export DEPLOY_CAMUNDA_IMAGE_PULL_GUARD=off
 ```
 
+### Running pods remain unready
+
+When a waiting Helm install or upgrade fails, the error includes a best-effort
+summary of running, unready containers belonging to that release: namespace,
+pod, container, restart count, and the latest matching readiness-probe failure
+event when available. Main and companion releases use the same reporting path.
+Collection has a five-second budget and preserves the original Helm error if
+the Kubernetes API or events are unavailable. It does not shorten the Helm
+timeout, infer dependency failures, or require the separate `watch` command.
+
 ### General diagnostics
 
 Two commands cover most first-pass debugging:

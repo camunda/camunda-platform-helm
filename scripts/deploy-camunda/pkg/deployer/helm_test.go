@@ -25,6 +25,9 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestAppendHelmValueArgsKeepsDeterministicSetsAndExtraArgsLast(t *testing.T) {
@@ -124,6 +127,10 @@ func stubHelm(
 	repoUpdateFn func(ctx context.Context) error,
 ) func() {
 	origCapturing, origAdd, origUpdate, origWait := helmRunCapturing, helmRepoAdd, helmRepoUpdate, helmWaitFlag
+	origReadiness := newReadinessClient
+	newReadinessClient = func(string, string) (readinessClient, error) {
+		return nil, errors.New("no diagnostic client in Helm unit tests")
+	}
 	helmRunCapturing = func(ctx context.Context, args []string, workDir string) (string, error) {
 		return "", runFn(ctx, args, workDir)
 	}
@@ -132,6 +139,159 @@ func stubHelm(
 	helmWaitFlag = func(context.Context) string { return "--wait" }
 	return func() {
 		helmRunCapturing, helmRepoAdd, helmRepoUpdate, helmWaitFlag = origCapturing, origAdd, origUpdate, origWait
+		newReadinessClient = origReadiness
+	}
+}
+
+type fakeReadinessClient struct {
+	pods     *corev1.PodList
+	events   *corev1.EventList
+	podErr   error
+	eventErr error
+}
+
+func (client fakeReadinessClient) ListPods(ctx context.Context, _ string) (*corev1.PodList, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	return client.pods, client.podErr
+}
+
+func (client fakeReadinessClient) ListEvents(context.Context, string) (*corev1.EventList, error) {
+	return client.events, client.eventErr
+}
+
+func TestHelmFailureReadinessSummary(t *testing.T) {
+	t.Setenv(imagePullGuardEnvVar, "off")
+	started := time.Now().Add(-10 * time.Minute)
+	pod := corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{Name: "integration-identity", UID: "pod-uid", Labels: map[string]string{"app.kubernetes.io/instance": "integration"}},
+		Status: corev1.PodStatus{
+			Phase: corev1.PodRunning,
+			ContainerStatuses: []corev1.ContainerStatus{{Name: "identity", State: corev1.ContainerState{
+				Running: &corev1.ContainerStateRunning{StartedAt: metav1.NewTime(started)},
+			}}},
+		},
+	}
+	event := corev1.Event{
+		InvolvedObject: corev1.ObjectReference{Kind: "Pod", UID: pod.UID, FieldPath: "spec.containers{identity}"},
+		Reason:         "Unhealthy", Message: "Readiness probe failed: HTTP probe failed with statuscode: 503",
+		LastTimestamp: metav1.Now(),
+	}
+	for _, test := range []struct {
+		name       string
+		mutate     func(*corev1.Pod, *corev1.Event)
+		podErr     error
+		eventErr   error
+		companion  bool
+		noWait     bool
+		success    bool
+		wantDetail bool
+		wantEvent  bool
+	}{
+		{name: "running unready timeout", wantDetail: true, wantEvent: true},
+		{name: "companion uses its own release", companion: true, wantDetail: true, wantEvent: true},
+		{name: "events forbidden", eventErr: errors.New("forbidden"), wantDetail: true},
+		{name: "pods forbidden", podErr: errors.New("forbidden")},
+		{name: "different pod UID", mutate: func(_ *corev1.Pod, event *corev1.Event) { event.InvolvedObject.UID = "old-pod" }, wantDetail: true},
+		{name: "event before current container", mutate: func(_ *corev1.Pod, event *corev1.Event) {
+			event.LastTimestamp = metav1.NewTime(started.Add(-time.Minute))
+		}, wantDetail: true},
+		{name: "no event timestamp", mutate: func(_ *corev1.Pod, event *corev1.Event) { event.LastTimestamp = metav1.Time{} }, wantDetail: true},
+		{name: "different container", mutate: func(_ *corev1.Pod, event *corev1.Event) { event.InvolvedObject.FieldPath = "spec.containers{sidecar}" }, wantDetail: true},
+		{name: "liveness failure", mutate: func(_ *corev1.Pod, event *corev1.Event) { event.Message = "Liveness probe failed: HTTP 500" }, wantDetail: true},
+		{name: "ready", mutate: func(pod *corev1.Pod, _ *corev1.Event) { pod.Status.ContainerStatuses[0].Ready = true }},
+		{name: "other release", mutate: func(pod *corev1.Pod, _ *corev1.Event) { pod.Labels["app.kubernetes.io/instance"] = "other" }},
+		{name: "legacy release label", mutate: func(pod *corev1.Pod, _ *corev1.Event) { pod.Labels = map[string]string{"release": "integration"} }, wantDetail: true, wantEvent: true},
+		{name: "unlabelled pod", mutate: func(pod *corev1.Pod, _ *corev1.Event) { pod.Labels = nil }},
+		{name: "terminating", mutate: func(pod *corev1.Pod, _ *corev1.Event) { now := metav1.Now(); pod.DeletionTimestamp = &now }},
+		{name: "completed", mutate: func(pod *corev1.Pod, _ *corev1.Event) { pod.Status.Phase = corev1.PodSucceeded }},
+		{name: "not waiting", noWait: true},
+		{name: "success", success: true},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			currentPod, currentEvent := pod.DeepCopy(), event.DeepCopy()
+			if test.mutate != nil {
+				test.mutate(currentPod, currentEvent)
+			}
+			exitErr := errors.New("exit status 1")
+			restore := stubHelm(func(context.Context, []string, string) error {
+				if test.success {
+					return nil
+				}
+				return exitErr
+			}, nil, nil)
+			t.Cleanup(restore)
+			newReadinessClient = func(string, string) (readinessClient, error) {
+				if test.success || test.noWait {
+					t.Fatal("must not collect diagnostics")
+				}
+				return fakeReadinessClient{pods: podList(*currentPod), events: &corev1.EventList{Items: []corev1.Event{*currentEvent}}, podErr: test.podErr, eventErr: test.eventErr}, nil
+			}
+			ctx, cancel := context.WithCancel(context.Background())
+			cancel()
+			opts := types.Options{ReleaseName: "integration", Namespace: "issue7210", Wait: !test.noWait}
+			var err error
+			if test.companion {
+				opts.ReleaseName, opts.Wait = "main-release", false
+				err = deployCompanionChart(ctx, types.CompanionChart{ReleaseName: "integration"}, opts)
+			} else {
+				err = upgradeInstall(ctx, opts)
+			}
+			if test.success {
+				if err != nil {
+					t.Fatal(err)
+				}
+				return
+			}
+			var helmErr *HelmError
+			if !errors.As(err, &helmErr) || !errors.Is(err, exitErr) {
+				t.Fatalf("original error lost: %v", err)
+			}
+			if got := strings.Contains(err.Error(), "still not ready"); got != test.wantDetail {
+				t.Fatalf("readiness detail=%t, error=%v", got, err)
+			}
+			if got := strings.Contains(err.Error(), "last probe failure"); got != test.wantEvent {
+				t.Fatalf("probe event=%t, error=%v", got, err)
+			}
+			if test.wantDetail {
+				for _, want := range []string{"issue7210", "integration-identity", "identity", "Running, Ready=false, restarts=0"} {
+					if !strings.Contains(err.Error(), want) {
+						t.Errorf("missing %q: %v", want, err)
+					}
+				}
+			}
+		})
+	}
+}
+
+func TestLastReadinessFailure(t *testing.T) {
+	t.Parallel()
+	now := time.Now()
+	pod := corev1.Pod{ObjectMeta: metav1.ObjectMeta{UID: "uid"}}
+	container := corev1.ContainerStatus{Name: "app", State: corev1.ContainerState{
+		Running: &corev1.ContainerStateRunning{StartedAt: metav1.NewTime(now.Add(-time.Hour))},
+	}}
+	event := corev1.Event{
+		InvolvedObject: corev1.ObjectReference{Kind: "Pod", UID: pod.UID, FieldPath: "spec.containers{app}"},
+		Reason:         "Unhealthy", Message: "Readiness probe failed: older",
+		LastTimestamp: metav1.NewTime(now.Add(-time.Minute)),
+	}
+	latest := *event.DeepCopy()
+	latest.Message = "Readiness probe failed: latest"
+	latest.Series = &corev1.EventSeries{LastObservedTime: metav1.NewMicroTime(now)}
+	eventTime := *event.DeepCopy()
+	eventTime.EventTime = metav1.NewMicroTime(now.Add(-time.Second))
+	for _, events := range []*corev1.EventList{
+		{Items: []corev1.Event{latest, event, eventTime}},
+		{Items: []corev1.Event{event, eventTime, latest}},
+	} {
+		if got := lastReadinessFailure(pod, container, events); got != latest.Message {
+			t.Fatalf("latest probe failure = %q, want %q", got, latest.Message)
+		}
+	}
+	if got := lastReadinessFailure(pod, container, nil); got != "" {
+		t.Fatalf("missing events must not invent a failure: %q", got)
 	}
 }
 
