@@ -842,13 +842,15 @@ Fail with a message if Web Modeler is enabled but management Identity is not ena
   {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
 {{- end }}
 
-{{- $hubRestapiPodLabels := or .Values.camundaHub.restapi.podLabels .Values.webModeler.restapi.podLabels | default dict }}
-{{- $hubWebsocketsPodLabels := or .Values.camundaHub.websockets.podLabels .Values.webModeler.websockets.podLabels | default dict }}
+{{- $hub := .Values.webModeler }}
+{{- if eq (include "camundaHub.webModelerEnabled" .) "true" }}
+  {{- $hub = include "camundaHub.values" . | fromYaml }}
+{{- end }}
 {{- if or
   (hasKey (.Values.global.labels | default dict) "camunda.io/upgrade-phase")
   (hasKey (.Values.global.commonLabels | default dict) "camunda.io/upgrade-phase")
-  (hasKey $hubRestapiPodLabels "camunda.io/upgrade-phase")
-  (hasKey $hubWebsocketsPodLabels "camunda.io/upgrade-phase")
+  (hasKey ($hub.restapi.podLabels | default dict) "camunda.io/upgrade-phase")
+  (hasKey ($hub.websockets.podLabels | default dict) "camunda.io/upgrade-phase")
 }}
   {{- fail "[camunda][error] The pod label camunda.io/upgrade-phase is reserved for Camunda Hub upgrade lifecycle traffic isolation and cannot be overridden." }}
 {{- end }}
@@ -1166,17 +1168,16 @@ The following values inside your values.yaml need to be set but were not:
 
     {{/* (3) A component-level JAVA_TOOL_OPTIONS env entry overrides (last-wins) the
            chart's truststore flags, silently breaking JVM trust. */}}
-    {{/* webModeler.restapi env uses `or` to mirror deployment-restapi.yaml's own
-         env coalescing (camundaHub takes precedence; only that one list is
-         applied). We check exactly the list the deployment uses, so we never warn
-         about a JAVA_TOOL_OPTIONS in the ignored list — that would be a false
-         alarm since it is not applied. */}}
+    {{- $hubWarnings := .Values.webModeler }}
+    {{- if eq (include "camundaHub.webModelerEnabled" .) "true" }}
+      {{- $hubWarnings = include "camundaHub.values" . | fromYaml }}
+    {{- end }}
     {{- $envComponents := list
         (dict "comp" "orchestration" "env" .Values.orchestration.env)
         (dict "comp" "optimize" "env" .Values.optimize.env)
         (dict "comp" "connectors" "env" .Values.connectors.env)
         (dict "comp" "identity" "env" .Values.identity.env)
-        (dict "comp" "webModeler.restapi" "env" (or .Values.camundaHub.restapi.env .Values.webModeler.restapi.env))
+        (dict "comp" "webModeler.restapi" "env" $hubWarnings.restapi.env)
     }}
     {{- range $c := $envComponents }}
       {{- range $e := $c.env }}
