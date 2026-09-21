@@ -15,14 +15,211 @@
 package matrix
 
 import (
+	"bytes"
+	"context"
 	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
+
+	"scripts/camunda-core/pkg/logging"
+	"scripts/camunda-core/pkg/scenarios"
+	"scripts/deploy-camunda/config"
+
+	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v3"
 )
 
 const registryGoodChartDir = "testdata/registry-good/charts/camunda-platform-99.99"
+
+func TestResolveScenarioFallback(t *testing.T) {
+	for _, testCase := range []struct {
+		name      string
+		chart     string
+		scenarios []string
+	}{
+		{"no registry", t.TempDir(), []string{"keycloak-original"}},
+		{"legacy alias", absChartDir(t), []string{"keycloak-original"}},
+		{"free form", absChartDir(t), []string{"custom-rba"}},
+		{"parallel unchanged", absChartDir(t), []string{"alpha", "beta"}},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			flags := config.RuntimeFlags{
+				Chart:      config.ChartFlags{ChartPath: testCase.chart},
+				Deployment: config.DeploymentFlags{Scenarios: testCase.scenarios},
+				Selection:  config.SelectionFlags{Features: []string{"custom"}},
+			}
+			before := flags
+			require.NoError(t, ResolveScenario(&flags, nil))
+			require.Equal(t, before, flags)
+		})
+	}
+}
+
+func TestResolveScenarioDisabledAndAmbiguous(t *testing.T) {
+	flags := &config.RuntimeFlags{
+		Chart:      config.ChartFlags{ChartPath: absChartDir(t)},
+		Deployment: config.DeploymentFlags{Scenarios: []string{"gamma"}, Platform: "gke", Flow: "install"},
+	}
+	require.NoError(t, ResolveScenario(flags, nil))
+	require.True(t, flags.SelectionResolved)
+	repoRoot := t.TempDir()
+	require.NoError(t, os.CopyFS(repoRoot, os.DirFS("testdata/registry-good")))
+	chart := filepath.Join(repoRoot, "charts", "camunda-platform-99.99")
+	manifestPath := filepath.Join(chart, "test", RegistryDirName, "manifest.yaml")
+	data, err := os.ReadFile(manifestPath)
+	require.NoError(t, err)
+	var manifest registryManifest
+	require.NoError(t, yaml.Unmarshal(data, &manifest))
+	manifest.Integration.Scenarios = append(manifest.Integration.Scenarios, registryManifestEntry{ID: "alpha", Shortname: "other", Enabled: true, Tier: 1})
+	data, err = yaml.Marshal(manifest)
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(manifestPath, data, 0644))
+	flags = &config.RuntimeFlags{
+		Chart:      config.ChartFlags{ChartPath: chart},
+		Deployment: config.DeploymentFlags{Scenarios: []string{"alpha"}, Platform: "gke", Flow: "install"},
+	}
+	require.ErrorContains(t, ResolveScenario(flags, nil), "ambiguous")
+}
+
+func TestResolveScenarioInvalidMatch(t *testing.T) {
+	for _, testCase := range []struct{ name, scenario, flow, platform, want string }{
+		{"flow", "alpha", "upgrade-patch", "gke", "no registry entry"},
+		{"platform", "alpha", "install", "eks", "no registry entry"},
+		{"matrix lifecycle", "beta", "install", "gke", "use matrix run"},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			flags := &config.RuntimeFlags{
+				Chart:      config.ChartFlags{ChartPath: absChartDir(t)},
+				Deployment: config.DeploymentFlags{Scenarios: []string{testCase.scenario}, Flow: testCase.flow, Platform: testCase.platform},
+			}
+			require.ErrorContains(t, ResolveScenario(flags, nil), testCase.want)
+			require.False(t, flags.SelectionResolved)
+		})
+	}
+	chart := filepath.Join(t.TempDir(), "charts", "camunda-platform-99.99")
+	manifest := filepath.Join(chart, "test", RegistryDirName, "manifest.yaml")
+	require.NoError(t, os.MkdirAll(filepath.Dir(manifest), 0755))
+	require.NoError(t, os.WriteFile(manifest, []byte("invalid: ["), 0644))
+	require.ErrorContains(t, ResolveScenario(&config.RuntimeFlags{
+		Chart:      config.ChartFlags{ChartPath: chart},
+		Deployment: config.DeploymentFlags{Scenarios: []string{"arbitrary"}},
+	}, nil), "parse manifest")
+}
+
+func TestResolveScenarioDeclaredFeatureAndScript(t *testing.T) {
+	repoRoot := t.TempDir()
+	require.NoError(t, os.CopyFS(repoRoot, os.DirFS("testdata/registry-good")))
+	chart := filepath.Join(repoRoot, "charts", "camunda-platform-99.99")
+	registryDir := filepath.Join(chart, "test", RegistryDirName)
+	scenarioFile := filepath.Join(registryDir, "scenarios", "alpha.yaml")
+	data, err := os.ReadFile(scenarioFile)
+	require.NoError(t, err)
+	var scenario registryScenario
+	require.NoError(t, yaml.Unmarshal(data, &scenario))
+	scenario.Features = []string{"synthetic-feature"}
+	scenario.PreInstallID = "observe"
+	data, err = yaml.Marshal(scenario)
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(scenarioFile, data, 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(registryDir, "hooks", "observe.yaml"), []byte("script: observe.sh\ndescription: Record hook invocation\n"), 0644))
+	marker := filepath.Join(repoRoot, "observed")
+	script := "printf '%s\\n' \"$TEST_NAMESPACE\" \"$NAMESPACE\" \"$RELEASE_NAME\" \"$KUBE_CONTEXT\" > \"" + marker + "\"\n"
+	require.NoError(t, os.WriteFile(filepath.Join(chart, "test/integration/scenarios/pre-setup-scripts/observe.sh"), []byte(script), 0644))
+	flags := &config.RuntimeFlags{
+		Chart:      config.ChartFlags{ChartPath: chart},
+		Deployment: config.DeploymentFlags{Scenarios: []string{"alpha"}, Namespace: "test", NamespacePrefix: "prefix", Release: "integration"},
+		Test:       config.TestFlags{KubeContext: "test-context"},
+	}
+	require.NoError(t, ResolveScenario(flags, nil))
+	require.Equal(t, []string{"synthetic-feature"}, flags.Selection.Features)
+	require.Len(t, flags.CompanionCharts, 2)
+	require.Len(t, flags.PreInstallHooks, 1)
+	_, err = os.Stat(marker)
+	require.True(t, os.IsNotExist(err), "resolution must not run the hook")
+	require.NoError(t, flags.PreInstallHooks[0](context.Background()))
+	data, err = os.ReadFile(marker)
+	require.NoError(t, err)
+	require.Equal(t, "prefix-test\nprefix-test\nintegration\ntest-context\n", string(data))
+}
+
+func TestResolveScenarioOverrideWarning(t *testing.T) {
+	var output bytes.Buffer
+	previous := logging.Logger
+	logging.Logger = previous.Output(&output)
+	t.Cleanup(func() { logging.Logger = previous })
+	flags := &config.RuntimeFlags{
+		Chart:        config.ChartFlags{ChartPath: absChartDir(t)},
+		Deployment:   config.DeploymentFlags{Scenarios: []string{"alpha"}},
+		Selection:    config.SelectionFlags{Persistence: "custom-persistence"},
+		ChangedFlags: map[string]bool{"persistence": true},
+	}
+	require.NoError(t, ResolveScenario(flags, nil))
+	require.Contains(t, output.String(), `persistence: registry=\"elasticsearch\" effective=\"custom-persistence\"`)
+	flags.Selection.Persistence = "elasticsearch"
+	output.Reset()
+	require.NoError(t, ResolveScenario(flags, nil))
+	require.Empty(t, output.String())
+}
+
+func TestResolveScenarioOptimizeTLS(t *testing.T) {
+	repoRoot, err := filepath.Abs("../../..")
+	if err != nil {
+		t.Fatal(err)
+	}
+	entries, err := Generate(repoRoot, GenerateOptions{Versions: []string{"8.10"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	entries = Filter(entries, FilterOptions{ShortnameFilter: "optls", ShortnameExact: true, FlowFilter: "install", Platform: "gke"})
+	if len(entries) != 1 {
+		t.Fatalf("expected one optimize-tls entry, got %d", len(entries))
+	}
+	entry := entries[0]
+	matrixFlags, _, _, _, cleanup, err := BuildEntryFlags(entry, RunOptions{RepoRoot: repoRoot})
+	defer cleanup()
+	if err != nil {
+		t.Fatal(err)
+	}
+	flags := &config.RuntimeFlags{
+		Chart:      config.ChartFlags{ChartPath: entry.ChartPath},
+		Deployment: config.DeploymentFlags{Scenario: entry.Scenario, Scenarios: []string{entry.Scenario}, Platform: "gke", Flow: "install"},
+	}
+	if err := ResolveScenario(flags, nil); err != nil {
+		t.Fatal(err)
+	}
+	if !flags.SelectionResolved || !reflect.DeepEqual(flags.Selection, matrixFlags.Selection) {
+		t.Fatalf("plain selection %+v differs from matrix %+v", flags.Selection, matrixFlags.Selection)
+	}
+	require.Equal(t, matrixFlags.Deployment.ScenarioPath, flags.Deployment.ScenarioPath)
+	if len(flags.CompanionCharts) != 3 || !reflect.DeepEqual(flags.CompanionCharts, matrixFlags.CompanionCharts) {
+		t.Fatalf("plain companions %+v differ from matrix %+v", flags.CompanionCharts, matrixFlags.CompanionCharts)
+	}
+	if entry.PreInstall == nil || entry.PreInstall.Script != "pre-install-optimize-tls.sh" || len(flags.PreInstallHooks) != 1 {
+		t.Fatal("optimize-tls pre-install script was not registered")
+	}
+	scenarioDir := filepath.Join(entry.ChartPath, "test/integration/scenarios/chart-full-setup")
+	resolved, err := scenarios.BuildDeploymentConfig(scenarioDir, entry.Scenario, scenarios.BuilderOverrides{
+		Resolved: flags.SelectionResolved, Identity: flags.Selection.Identity,
+		Persistence: flags.Selection.Persistence, Features: flags.Selection.Features,
+		Platform: flags.Deployment.Platform, InfraType: flags.Selection.InfraType,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	files, err := resolved.ResolvePaths(scenarioDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	found := false
+	for _, filename := range files {
+		found = found || strings.HasSuffix(filename, "values/features/optimize-tls.yaml")
+	}
+	if !found {
+		t.Fatalf("TLS layer missing: %v", files)
+	}
+}
 
 // absChartDir resolves the testdata chart directory once per test.
 func absChartDir(t *testing.T) string {

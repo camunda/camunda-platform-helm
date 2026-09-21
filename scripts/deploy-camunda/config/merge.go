@@ -218,6 +218,8 @@ type RuntimeFlags struct {
 	Deprecated DeprecatedFlags
 	Index      IndexPrefixFlags
 
+	SelectionResolved bool
+
 	// Cross-cutting / runtime fields that don't belong to a single domain.
 	LogLevel    string
 	EnvFile     string
@@ -427,7 +429,7 @@ func ApplyActiveDeployment(rc *RootConfig, active string, flags *RuntimeFlags) e
 	MergeBoolField(&flags.Selection.QA, dep.QA, rc.QA, changed, "qa")
 	MergeBoolField(&flags.Selection.ImageTags, dep.ImageTags, rc.ImageTags, changed, "image-tags")
 	MergeBoolField(&flags.Selection.UpgradeFlow, dep.UpgradeFlow, rc.UpgradeFlow, changed, "upgrade-flow")
-	MergeStringSliceField(&flags.Selection.Features, dep.Features, rc.Features)
+	mergeSelectionFeatures(flags, dep.Features, rc.Features)
 
 	// Slice fields
 	MergeStringSliceField(&flags.Deployment.ExtraValues, dep.ExtraValues, rc.ExtraValues)
@@ -507,7 +509,7 @@ func applyRootDefaults(rc *RootConfig, flags *RuntimeFlags) error {
 	MergeBoolField(&flags.Selection.QA, nil, rc.QA, changed, "qa")
 	MergeBoolField(&flags.Selection.ImageTags, nil, rc.ImageTags, changed, "image-tags")
 	MergeBoolField(&flags.Selection.UpgradeFlow, nil, rc.UpgradeFlow, changed, "upgrade-flow")
-	MergeStringSliceField(&flags.Selection.Features, nil, rc.Features)
+	mergeSelectionFeatures(flags, nil, rc.Features)
 
 	MergeStringSliceField(&flags.Deployment.ExtraValues, nil, rc.ExtraValues)
 
@@ -730,6 +732,59 @@ func synthesizeScenarioName(flags *RuntimeFlags) string {
 // If configPath is empty, it resolves the default config location.
 // The includeEnv parameter controls whether environment variable overrides are applied.
 // The returned ConfigResolution describes where the config was found (or not).
+func mergeSelectionFeatures(flags *RuntimeFlags, deployment, root []string) {
+	if flags.ChangedFlags["features"] {
+		return
+	}
+	if deployment != nil {
+		flags.Selection.Features = append([]string{}, deployment...)
+	} else if root != nil {
+		flags.Selection.Features = append([]string{}, root...)
+	}
+}
+
+func ApplySelectionDefaults(flags *RuntimeFlags, defaults SelectionFlags, root *RootConfig) error {
+	merged := RuntimeFlags{Selection: defaults}
+	if root != nil {
+		if err := ApplyActiveDeployment(root, root.Current, &merged); err != nil {
+			return err
+		}
+	}
+	if flags.ChangedFlags["identity"] || flags.ChangedFlags["values-auth"] {
+		merged.Selection.Identity = flags.Selection.Identity
+	}
+	if flags.ChangedFlags["persistence"] || flags.ChangedFlags["values-backend"] {
+		merged.Selection.Persistence = flags.Selection.Persistence
+	}
+	if flags.ChangedFlags["test-platform"] || flags.ChangedFlags["values-infra"] {
+		merged.Selection.TestPlatform = flags.Selection.TestPlatform
+	}
+	if flags.ChangedFlags["features"] || flags.ChangedFlags["values-features"] {
+		merged.Selection.Features = append([]string{}, flags.Selection.Features...)
+	}
+	if flags.ChangedFlags["qa"] || flags.ChangedFlags["values-qa"] {
+		merged.Selection.QA = flags.Selection.QA
+	}
+	if flags.ChangedFlags["image-tags"] {
+		merged.Selection.ImageTags = flags.Selection.ImageTags
+	}
+	if flags.ChangedFlags["upgrade-flow"] {
+		merged.Selection.UpgradeFlow = flags.Selection.UpgradeFlow
+	}
+	if flags.ChangedFlags["values-features"] {
+		legacy := RuntimeFlags{Deprecated: flags.Deprecated}
+		legacy.MigrateDeprecatedFlags()
+		if legacy.Selection.Persistence != "" {
+			merged.Selection.Persistence = flags.Selection.Persistence
+		}
+		if legacy.Selection.UpgradeFlow {
+			merged.Selection.UpgradeFlow = flags.Selection.UpgradeFlow
+		}
+	}
+	flags.Selection = merged.Selection
+	return nil
+}
+
 func LoadAndMerge(configPath string, includeEnv bool, flags *RuntimeFlags) (*RootConfig, *ConfigResolution, error) {
 	res, err := ResolvePath(configPath)
 	if err != nil {

@@ -14,7 +14,53 @@
 
 package config
 
-import "testing"
+import (
+	"github.com/stretchr/testify/require"
+	"testing"
+)
+
+func TestApplySelectionDefaults(t *testing.T) {
+	t.Parallel()
+	disabled := false
+	defaults := SelectionFlags{Identity: "keycloak", Persistence: "elasticsearch", Features: []string{"registry"}, QA: true, ImageTags: true, UpgradeFlow: true}
+	root := &RootConfig{DeploySpecConfig: DeploySpecConfig{Identity: "basic", Features: []string{"root"}}}
+	flags := &RuntimeFlags{}
+	require.NoError(t, ApplySelectionDefaults(flags, defaults, nil))
+	require.Equal(t, defaults, flags.Selection)
+	require.NoError(t, ApplySelectionDefaults(flags, defaults, root))
+	require.Equal(t, "basic", flags.Selection.Identity)
+	require.Equal(t, []string{"root"}, flags.Selection.Features)
+	root.Deployments = map[string]DeploymentConfig{
+		"only": {DeploySpecConfig: DeploySpecConfig{Identity: "oidc", Features: []string{}, QA: &disabled, ImageTags: &disabled, UpgradeFlow: &disabled}},
+	}
+	require.NoError(t, ApplySelectionDefaults(flags, defaults, root))
+	require.Equal(t, "oidc", flags.Selection.Identity)
+	require.Empty(t, flags.Selection.Features)
+	require.False(t, flags.Selection.QA)
+	require.False(t, flags.Selection.ImageTags)
+	require.False(t, flags.Selection.UpgradeFlow)
+	flags.Selection = SelectionFlags{Identity: "hybrid", Persistence: "custom", Features: []string{"cli"}, TestPlatform: "eks"}
+	flags.ChangedFlags = map[string]bool{"identity": true, "persistence": true, "features": true, "test-platform": true, "qa": true, "image-tags": true, "upgrade-flow": true}
+	want := flags.Selection
+	require.NoError(t, ApplySelectionDefaults(flags, defaults, root))
+	require.Equal(t, want, flags.Selection)
+	flags.Selection.Features = []string{}
+	require.NoError(t, ApplySelectionDefaults(flags, defaults, root))
+	require.Empty(t, flags.Selection.Features)
+	root.Deployments = nil
+	require.NoError(t, ApplySelectionDefaults(flags, defaults, root))
+	require.Empty(t, flags.Selection.Features, "empty CLI features must override nonempty root features")
+	flags = &RuntimeFlags{
+		Deprecated:   DeprecatedFlags{ValuesAuth: "basic", ValuesFeatures: []string{"rdbms", "upgrade", "custom"}},
+		ChangedFlags: map[string]bool{"values-auth": true, "values-features": true},
+	}
+	flags.MigrateDeprecatedFlags()
+	require.NoError(t, ApplySelectionDefaults(flags, defaults, nil))
+	require.Equal(t, "basic", flags.Selection.Identity)
+	require.Equal(t, "rdbms", flags.Selection.Persistence)
+	require.Equal(t, []string{"custom"}, flags.Selection.Features)
+	require.True(t, flags.Selection.UpgradeFlow)
+}
 
 // allStringPtrs returns a MatrixRunFlags with every *string/*int/*bool field
 // pointing at fresh zero values, so ApplyMatrixRunConfig can dereference them

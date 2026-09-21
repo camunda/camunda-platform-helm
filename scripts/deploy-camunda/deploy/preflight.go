@@ -518,6 +518,7 @@ func scenarioLayerFiles(flags *config.RuntimeFlags, scenarioDir, scenario string
 		platform = flags.Deployment.Platform
 	}
 	deployConfig, err := scenarios.BuildDeploymentConfig(scenarioDir, scenario, scenarios.BuilderOverrides{
+		Resolved:     flags.SelectionResolved,
 		Identity:     flags.Selection.Identity,
 		Persistence:  flags.Selection.Persistence,
 		Platform:     platform,

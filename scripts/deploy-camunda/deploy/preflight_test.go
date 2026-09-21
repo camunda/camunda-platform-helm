@@ -22,7 +22,42 @@ import (
 	"testing"
 
 	"scripts/deploy-camunda/config"
+
+	"github.com/stretchr/testify/require"
 )
+
+func TestResolvedSelectionPreflightAndPreparation(t *testing.T) {
+	directory := t.TempDir()
+	for _, relative := range []string{"base", "identity/keycloak", "persistence/elasticsearch", "platform/gke", "features/custom"} {
+		filename := filepath.Join(directory, "values", relative+".yaml")
+		require.NoError(t, os.MkdirAll(filepath.Dir(filename), 0755))
+		require.NoError(t, os.WriteFile(filename, []byte("{}\n"), 0644))
+	}
+	for _, features := range [][]string{nil, {"custom"}} {
+		flags := &config.RuntimeFlags{
+			Chart:             config.ChartFlags{ChartPath: directory},
+			Deployment:        config.DeploymentFlags{ScenarioPath: directory, Platform: "gke"},
+			Selection:         config.SelectionFlags{Identity: "keycloak", Persistence: "elasticsearch", Features: features},
+			SelectionResolved: true,
+			EnvFile:           filepath.Join(directory, "absent.env"),
+		}
+		const scenario = "qa-multitenancy-upgrade"
+		files, err := scenarioLayerFiles(flags, directory, scenario)
+		require.NoError(t, err)
+		prepared, err := prepareScenarioValues(context.Background(), &ScenarioContext{ScenarioName: scenario, Namespace: "test", Release: "integration"}, flags)
+		require.NoError(t, err)
+		t.Cleanup(prepared.Cleanup)
+		var relativeFiles []string
+		for _, filename := range files {
+			relative, err := filepath.Rel(directory, filename)
+			require.NoError(t, err)
+			relativeFiles = append(relativeFiles, relative)
+		}
+		require.Equal(t, relativeFiles, prepared.LayeredFiles)
+		require.Len(t, prepared.LayeredFiles, 4+len(features))
+		require.NotContains(t, prepared.LayeredFiles, "values/features/multitenancy.yaml")
+	}
+}
 
 func TestPresence(t *testing.T) {
 	envMap := map[string]string{"SET": "v", "EMPTY": ""}

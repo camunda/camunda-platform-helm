@@ -18,6 +18,11 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
+	"strings"
+
+	"scripts/camunda-core/pkg/logging"
+	"scripts/deploy-camunda/config"
 
 	"gopkg.in/yaml.v3"
 )
@@ -297,4 +302,94 @@ func LoadRegistry(chartDir string) (*CITestConfig, error) {
 		return nil, err
 	}
 	return &cfg, nil
+}
+
+func ResolveScenario(flags *config.RuntimeFlags, root *config.RootConfig) error {
+	if len(flags.Deployment.Scenarios) != 1 || flags.Chart.ChartPath == "" {
+		return nil
+	}
+	manifest := filepath.Join(flags.Chart.ChartPath, "test", RegistryDirName, "manifest.yaml")
+	if _, err := os.Stat(manifest); os.IsNotExist(err) {
+		return nil
+	} else if err != nil {
+		return fmt.Errorf("read scenario registry: %w", err)
+	}
+	registry, err := LoadRegistry(flags.Chart.ChartPath)
+	if err != nil {
+		return err
+	}
+	name := flags.Deployment.Scenarios[0]
+	flow := config.FirstNonEmpty(flags.Deployment.Flow, "install")
+	platform := config.FirstNonEmpty(flags.Selection.TestPlatform, flags.Deployment.Platform, "gke")
+	var matched *CIScenario
+	known := false
+	for _, scenario := range registry.Integration.Case.PR.Scenarios {
+		if scenario.Name != name {
+			continue
+		}
+		known = true
+		if config.FirstNonEmpty(scenario.Flow, "install") != flow ||
+			(len(scenario.Platforms) > 0 && !slices.Contains(scenario.Platforms, platform)) {
+			continue
+		}
+		if matched != nil {
+			return fmt.Errorf("scenario %q is ambiguous for flow %q and platform %q; use matrix run", name, flow, platform)
+		}
+		matched = &scenario
+	}
+	if matched == nil {
+		if known {
+			return fmt.Errorf("scenario %q has no registry entry for flow %q and platform %q; use a declared combination", name, flow, platform)
+		}
+		return nil
+	}
+	if matched.Topology != nil || matched.PostInfra != nil || matched.PostDeploy != nil {
+		return fmt.Errorf("scenario %q requires matrix lifecycle orchestration; use matrix run", name)
+	}
+	if hooks := registry.Integration.Flows[flow]; hooks != nil && hooks.PreUpgrade != nil {
+		return fmt.Errorf("scenario %q flow %q requires a pre-upgrade hook; use matrix run", name, flow)
+	}
+	repoRoot, version, err := deriveRepoRootAndVersion(flags.Chart.ChartPath)
+	if err != nil {
+		return err
+	}
+	defaults := config.SelectionFlags{
+		Identity: matched.Identity, Persistence: matched.Persistence,
+		Features:  append([]string(nil), matched.Features...),
+		InfraType: resolveInfraType(matched.InfraType, platform),
+		QA:        matched.QA, ImageTags: matched.ImageTags, UpgradeFlow: matched.Upgrade,
+	}
+	if err := config.ApplySelectionDefaults(flags, defaults, root); err != nil {
+		return err
+	}
+	flags.SelectionResolved = true
+	if flags.Deployment.ScenarioPath == "" {
+		flags.Deployment.ScenarioPath = filepath.Join(flags.Chart.ChartPath, "test/integration/scenarios/chart-full-setup")
+	}
+	flags.CompanionCharts = companionChartsForEntry(Entry{Dependencies: matched.Dependencies}, repoRoot)
+	if err := registerDeclarativePreInstallHook(flags, matched.PreInstall, repoRoot, version, name); err != nil {
+		return err
+	}
+	if differences := selectionDifferences(defaults, flags.Selection); len(differences) > 0 {
+		logging.Logger.Warn().Str("scenario", name).Strs("overrides", differences).
+			Msg("Registry scenario overridden; deployment differs from its declaration")
+	}
+	return nil
+}
+
+func selectionDifferences(declared, effective config.SelectionFlags) []string {
+	var differences []string
+	for _, field := range []struct{ name, declared, effective string }{
+		{"identity", declared.Identity, effective.Identity},
+		{"persistence", declared.Persistence, effective.Persistence},
+		{"features", strings.Join(declared.Features, ","), strings.Join(effective.Features, ",")},
+		{"qa", fmt.Sprint(declared.QA), fmt.Sprint(effective.QA)},
+		{"image-tags", fmt.Sprint(declared.ImageTags), fmt.Sprint(effective.ImageTags)},
+		{"upgrade-flow", fmt.Sprint(declared.UpgradeFlow), fmt.Sprint(effective.UpgradeFlow)},
+	} {
+		if field.declared != field.effective {
+			differences = append(differences, fmt.Sprintf("%s: registry=%q effective=%q", field.name, field.declared, field.effective))
+		}
+	}
+	return differences
 }

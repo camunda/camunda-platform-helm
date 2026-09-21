@@ -26,6 +26,7 @@ import (
 	"scripts/deploy-camunda/config"
 	"scripts/deploy-camunda/deploy"
 	"scripts/deploy-camunda/format"
+	"scripts/deploy-camunda/matrix"
 	"scripts/prepare-helm-values/pkg/env"
 	"strings"
 	"syscall"
@@ -70,6 +71,7 @@ func isUsageError(err error) bool {
 
 // NewRootCommand creates the root command.
 func NewRootCommand() *cobra.Command {
+	var rootConfig *config.RootConfig
 	rootCmd := &cobra.Command{
 		Use:           "deploy-camunda",
 		Short:         "Deploy Camunda Platform with prepared Helm values",
@@ -157,10 +159,11 @@ func NewRootCommand() *cobra.Command {
 			})
 
 			// Load config and merge with flags first to get envFile from config
-			_, cfgRes, err := config.LoadAndMerge(configFile, true, &flags)
+			loadedConfig, cfgRes, err := config.LoadAndMerge(configFile, true, &flags)
 			if err != nil {
 				return err
 			}
+			rootConfig = loadedConfig
 			// Hand the resolved config path to the preflight via flags.
 			if cfgRes != nil {
 				flags.ConfigPath = cfgRes.Path
@@ -231,6 +234,9 @@ func NewRootCommand() *cobra.Command {
 			}
 
 			return nil
+		},
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			return matrix.ResolveScenario(&flags, rootConfig)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Create a signal-aware context so that Ctrl+C (SIGINT) and
