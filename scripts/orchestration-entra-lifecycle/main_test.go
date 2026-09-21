@@ -181,7 +181,18 @@ func TestRequestSendsBearerToken(t *testing.T) {
 }
 
 func TestSelectIngress(t *testing.T) {
-	raw := []byte(`{"items":[{"spec":{"rules":[{"host":"grpc-camunda.example.com"}]},"status":{"loadBalancer":{"ingress":[{"ip":"1.1.1.1"}]}}},{"spec":{"rules":[{"host":"camunda.example.com"}]},"status":{"loadBalancer":{"ingress":[{"ip":"2.2.2.2"}]}}}]}`)
+	raw := []byte(`{
+		"items": [
+			{
+				"spec": {"rules": [{"host": "grpc-camunda.example.com"}]},
+				"status": {"loadBalancer": {"ingress": [{"ip": "1.1.1.1"}]}}
+			},
+			{
+				"spec": {"rules": [{"host": "camunda.example.com"}]},
+				"status": {"loadBalancer": {"ingress": [{"ip": "2.2.2.2"}]}}
+			}
+		]
+	}`)
 	host, ip, err := selectIngress(raw)
 	if err != nil {
 		t.Fatal(err)

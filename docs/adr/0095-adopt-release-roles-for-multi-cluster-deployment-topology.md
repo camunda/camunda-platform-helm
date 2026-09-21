@@ -84,8 +84,8 @@ deployment contract.
   Hub updates.
 - **Adopt explicit release roles with Hub-owned cluster inventory (chosen).** Each release declares
   its role. The Hub release owns remote cluster records used for central registration and Hub
-  inventory; orchestration releases retain their existing component values and point to the Hub
-  service.
+  inventory; orchestration releases retain their existing component values and connect either to
+  the Hub service or directly to an external OIDC provider.
 
 ## Decision Outcome
 
@@ -109,8 +109,11 @@ The following constraints are normative:
    `orchestration`, `connectors`, `optimize`, authentication, persistence, and Kubernetes workload
    values remain authoritative. The release MUST NOT declare sibling orchestration clusters.
 6. **Management Identity connection.** An orchestration release MUST disable its local Management
-   Identity workload and MUST provide a reachable `global.identity.service.url`. Authentication
-   values in the workload release MUST match the corresponding Hub cluster record.
+   Identity workload. It MAY omit `global.identity.service.url` when its components authenticate
+   directly with an external OIDC provider. A component that calls Management Identity MUST still
+   have a reachable URL; in particular, multi-tenant Optimize requires
+   `optimize.identity.service.url` or `global.identity.service.url` to resolve authorized tenants.
+   Authentication values in the workload release MUST match the corresponding Hub cluster record.
 7. **OIDC topology.** Hub topology connections represented in Camunda Hub MUST use OIDC bearer
    tokens. Client IDs, audiences, role names, and generated Hub cluster IDs MUST be unique across
    built-in, legacy, custom, and topology-managed resources.
