@@ -23,6 +23,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestRequestMigrationToken(t *testing.T) {
@@ -114,22 +115,32 @@ func TestWaitForMigrationAdminRoleRefreshesTokenAfterAssignment(t *testing.T) {
 	}
 }
 
-func TestWaitForMigrationAdminRoleAcceptsExistingMembership(t *testing.T) {
+func TestWaitForMigrationAdminRoleRefreshesTokenForExistingMembership(t *testing.T) {
+	tokenRequests := 0
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/token" {
-			_, _ = io.WriteString(w, `{"access_token":"token"}`)
+			tokenRequests++
+			_, _ = io.WriteString(w, `{"access_token":"token-`+string(rune('0'+tokenRequests))+`"}`)
 			return
+		}
+		if r.Header.Get("Authorization") != "Bearer token-1" {
+			t.Errorf("authorization = %q", r.Header.Get("Authorization"))
 		}
 		w.WriteHeader(http.StatusConflict)
 	}))
 	defer server.Close()
 
-	token, err := waitForMigrationAdminRole(context.Background(), server.URL+"/orchestration", server.URL+"/token", "secret", 1, 0, 0)
+	propagationDelay := 20 * time.Millisecond
+	started := time.Now()
+	token, err := waitForMigrationAdminRole(context.Background(), server.URL+"/orchestration", server.URL+"/token", "secret", 1, 0, propagationDelay)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if token != "token" {
-		t.Fatalf("token = %q, want token", token)
+	if token != "token-2" || tokenRequests != 2 {
+		t.Fatalf("token = %q, token requests = %d, want fresh token", token, tokenRequests)
+	}
+	if elapsed := time.Since(started); elapsed < propagationDelay {
+		t.Fatalf("elapsed = %v, want at least propagation delay %v", elapsed, propagationDelay)
 	}
 }
 
