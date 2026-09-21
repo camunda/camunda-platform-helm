@@ -121,6 +121,31 @@ func TestPlanManualScenarioExact(t *testing.T) {
 	}
 }
 
+func TestPlanManualScenarioFailsWhenSelectedVersionHasNoEntries(t *testing.T) {
+	_, err := Plan(findRepoRoot(t), PlanOptions{
+		ActiveVersions: planActiveVersions,
+		ManualTrigger:  "8.9",
+		ManualScenario: "shadow-e2e",
+	})
+	if err == nil || !strings.Contains(err.Error(), `manual scenario "shadow-e2e" produced no matrix entries for selected versions: 8.9`) {
+		t.Fatalf("err = %v, want empty manual-scenario matrix error", err)
+	}
+}
+
+func TestPlanManualScenarioCanMatchAnotherSelectedVersion(t *testing.T) {
+	result, err := Plan(findRepoRoot(t), PlanOptions{
+		ActiveVersions: planActiveVersions,
+		ManualTrigger:  "8.10",
+		ManualScenario: "shadow-e2e",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(result.Include) == 0 {
+		t.Fatal("expected shadow-e2e entries for 8.10")
+	}
+}
+
 func TestPlanTopologyWorkflowMetadata(t *testing.T) {
 	result, err := Plan(findRepoRoot(t), PlanOptions{
 		ActiveVersions: planActiveVersions,

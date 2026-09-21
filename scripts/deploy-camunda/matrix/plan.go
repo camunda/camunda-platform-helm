@@ -233,7 +233,12 @@ func Plan(repoRoot string, opts PlanOptions) (PlanResult, error) {
 	if err != nil {
 		return PlanResult{}, err
 	}
+	manualScenario := opts.ManualScenario
+	manualScenarioSelected := manualScenario != "" && manualScenario != "none" && manualScenario != "all"
 	if len(versions) == 0 {
+		if manualScenarioSelected {
+			return PlanResult{}, fmt.Errorf("manual scenario %q produced no matrix entries because no chart versions were selected", manualScenario)
+		}
 		return PlanResult{}, nil
 	}
 
@@ -242,8 +247,7 @@ func Plan(repoRoot string, opts PlanOptions) (PlanResult, error) {
 		return PlanResult{}, err
 	}
 
-	manualScenario := opts.ManualScenario
-	includeDisabled := manualScenario != "" && manualScenario != "none" && manualScenario != "all"
+	includeDisabled := manualScenarioSelected
 
 	var result PlanResult
 	for _, version := range versions {
@@ -285,6 +289,9 @@ func Plan(repoRoot string, opts PlanOptions) (PlanResult, error) {
 		}
 
 		result.Include = append(result.Include, groupPlanEntries(version, kept)...)
+	}
+	if manualScenarioSelected && len(result.Include) == 0 {
+		return PlanResult{}, fmt.Errorf("manual scenario %q produced no matrix entries for selected versions: %s", manualScenario, strings.Join(versions, ", "))
 	}
 
 	seen := map[string]bool{}
