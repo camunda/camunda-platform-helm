@@ -1332,6 +1332,13 @@ jobs:
         with:
           repository: camunda/camunda-platform-helm
           ref: ${{ inputs.camunda-helm-git-ref }}
+      - name: Verify E2E action compatibility
+        if: inputs.e2e-playwright-project != '' || inputs.e2e-file-pattern != ''
+        run: |
+          if ! grep -q '^  playwright-project:' .github/actions/playwright-e2e-tests/action.yaml; then
+            echo "::error::camunda-helm-git-ref '${{ inputs.camunda-helm-git-ref }}' predates the explicit E2E execution contract required by this workflow revision. Use a compatible Helm ref."
+            exit 1
+          fi
       - name: Import Vault secrets
         if: inputs.distro-platform == 'gke'
         id: test-credentials-secret
@@ -1430,6 +1437,14 @@ jobs:
         with:
           repository: camunda/camunda-platform-helm
           ref: ${{ inputs.camunda-helm-git-ref }}
+
+      - name: Verify E2E action compatibility
+        if: inputs.e2e-playwright-project != '' || inputs.e2e-file-pattern != ''
+        run: |
+          if ! grep -q '^  playwright-project:' .github/actions/playwright-e2e-tests/action.yaml; then
+            echo "::error::camunda-helm-git-ref '${{ inputs.camunda-helm-git-ref }}' predates the explicit E2E execution contract required by this workflow revision. Use a compatible Helm ref."
+            exit 1
+          fi
 
       - name: Import Vault secrets
         id: test-credentials-secret
@@ -1540,6 +1555,14 @@ jobs:
         with:
           repository: camunda/camunda-platform-helm
           ref: ${{ inputs.camunda-helm-git-ref }}
+
+      - name: Verify E2E action compatibility
+        if: inputs.e2e-playwright-project != '' || inputs.e2e-file-pattern != ''
+        run: |
+          if ! grep -q '^  playwright-project:' .github/actions/playwright-e2e-tests/action.yaml; then
+            echo "::error::camunda-helm-git-ref '${{ inputs.camunda-helm-git-ref }}' predates the explicit E2E execution contract required by this workflow revision. Use a compatible Helm ref."
+            exit 1
+          fi
 
       - name: Resolve base namespace and derive Hub namespace
         id: base-vars
@@ -1655,6 +1678,14 @@ jobs:
         with:
           repository: camunda/camunda-platform-helm
           ref: ${{ inputs.camunda-helm-git-ref }}
+
+      - name: Verify E2E action compatibility
+        if: inputs.e2e-playwright-project != '' || inputs.e2e-file-pattern != ''
+        run: |
+          if ! grep -q '^  playwright-project:' .github/actions/playwright-e2e-tests/action.yaml; then
+            echo "::error::camunda-helm-git-ref '${{ inputs.camunda-helm-git-ref }}' predates the explicit E2E execution contract required by this workflow revision. Use a compatible Helm ref."
+            exit 1
+          fi
 
       - name: Import Vault secrets
         if: inputs.distro-platform == 'gke'

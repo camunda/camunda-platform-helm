@@ -38,6 +38,7 @@ export function makeShadowConfig(opts: {
   includeSetupProject?: boolean;
   extraTestIgnore?: Array<string | RegExp>;
   tasklistV2Header?: boolean;
+  includeTasklistV1Projects?: boolean;
   extraProjects?: Project[];
   fullyParallel?: boolean;
   retries?: number;
@@ -60,15 +61,13 @@ export function makeShadowConfig(opts: {
         },
       }
     : {};
-  const tasklistV1Use = opts.tasklistV2Header
-    ? {
-        use: {
-          extraHTTPHeaders: {
-            "X-Test-Tasklist-Version": "v1",
-          },
-        },
-      }
-    : {};
+  const tasklistV1Use = {
+    use: {
+      extraHTTPHeaders: {
+        "X-Test-Tasklist-Version": "v1",
+      },
+    },
+  };
   const fullSuiteIgnore = [
     "**/cluster-variables.spec.{ts,js}",
     "**/test-setup.spec.{ts,js}",
@@ -76,6 +75,29 @@ export function makeShadowConfig(opts: {
   ];
   const excludedTitles =
     "Connector Secrets User Flow|Custom Tags|Custom Properties";
+  const tasklistV1Projects = opts.includeTasklistV1Projects
+    ? [
+        ...(includeSetupProject
+          ? [
+              {
+                name: "full-suite-v1-setup",
+                testMatch: ["**/test-setup.spec.{ts,js}"],
+                ...tasklistV1Use,
+              },
+            ]
+          : []),
+        {
+          name: "full-suite-v1",
+          dependencies: includeSetupProject
+            ? ["full-suite-v1-setup"]
+            : undefined,
+          testMatch: ["**/*.spec.{ts,js}"],
+          testIgnore: fullSuiteIgnore,
+          grep: new RegExp(`^(?!.*(@tasklistV2|${excludedTitles})).*$`),
+          ...tasklistV1Use,
+        },
+      ]
+    : [];
 
   return {
     testDir:
@@ -93,11 +115,6 @@ export function makeShadowConfig(opts: {
               testMatch: ["**/test-setup.spec.{ts,js}"],
               ...tasklistV2Use,
             },
-            {
-              name: "full-suite-v1-setup",
-              testMatch: ["**/test-setup.spec.{ts,js}"],
-              ...tasklistV1Use,
-            },
           ]
         : []),
       {
@@ -108,14 +125,7 @@ export function makeShadowConfig(opts: {
         grep: new RegExp(`^(?!.*(@tasklistV1|${excludedTitles})).*$`),
         ...tasklistV2Use,
       },
-      {
-        name: "full-suite-v1",
-        dependencies: includeSetupProject ? ["full-suite-v1-setup"] : undefined,
-        testMatch: ["**/*.spec.{ts,js}"],
-        testIgnore: fullSuiteIgnore,
-        grep: new RegExp(`^(?!.*(@tasklistV2|${excludedTitles})).*$`),
-        ...tasklistV1Use,
-      },
+      ...tasklistV1Projects,
       ...(opts.extraProjects ?? []),
     ],
     fullyParallel: opts.fullyParallel ?? false,
