@@ -39,7 +39,7 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
         with:
-          ref: ${{ github.event.repository.default_branch }}
+          ref: ${{ github.sha }}
       - name: Setup deploy-camunda
         uses: ./.github/actions/setup-deploy-camunda
       - name: Resolve partition matrix
@@ -62,11 +62,11 @@ jobs:
       packages: read
       statuses: write
     secrets: inherit
-    uses: camunda/camunda-platform-helm/.github/workflows/test-integration-template.yaml@main
+    uses: ./.github/workflows/test-integration-template.yaml
     with:
       identifier: sm89-${{ matrix.partition.id }}-${{ github.run_id }}-${{ github.run_attempt }}
       camunda-helm-dir: camunda-platform-8.9
-      camunda-helm-git-ref: ${{ github.event.repository.default_branch }}
+      camunda-helm-git-ref: ${{ github.sha }}
       camunda-version-previous: "8.8"
       deployment-ttl: 12h
       platforms: gke
