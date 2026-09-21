@@ -76,7 +76,7 @@ func writeE2ERunConfig(w io.Writer, args []string) error {
 			return err
 		}
 	}
-	requireSM810Suite := values["FILE_PATTERN"] != "" || values["PLAYWRIGHT_PROJECT"] != "" && values["PLAYWRIGHT_PROJECT"] != "auth0-smoke"
+	requireSM810Suite := values["PLAYWRIGHT_PROJECT"] != "auth0-smoke" && (values["PLAYWRIGHT_PROJECT"] != "" || values["FILE_PATTERN"] != "")
 	if _, err := fmt.Fprintf(w, "REQUIRE_SM_810_TEST_SUITE_OVERRIDE=%s\n", quoteBash(fmt.Sprintf("%t", requireSM810Suite))); err != nil {
 		return err
 	}
