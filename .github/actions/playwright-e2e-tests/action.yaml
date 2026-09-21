@@ -383,6 +383,8 @@ runs:
       shell: bash
       env:
         TEST_NAMESPACE: ${{ env.TEST_NAMESPACE }}
+        HUB_NAMESPACE: ${{ inputs.hub-namespace }}
+        OPTIMIZE_NAMESPACE: ${{ inputs.optimize-namespace }}
       run: |
         mkdir -p "${GITHUB_WORKSPACE}/e2e-diagnostics"
         out="${GITHUB_WORKSPACE}/e2e-diagnostics/namespace-diagnostics.txt"
@@ -390,8 +392,14 @@ runs:
           echo "deploy-camunda not on PATH; no diagnostics captured" | tee "$out"
           exit 0
         fi
+        # Repeated --namespace covers every namespace of a topology scenario;
+        # deploy-camunda de-duplicates, so these collapse to one dump when the
+        # hub and Optimize namespaces are unset or equal to TEST_NAMESPACE.
+        DIAG_ARGS=(--namespace "${TEST_NAMESPACE}")
+        [[ -n "$HUB_NAMESPACE" ]] && DIAG_ARGS+=(--namespace "${HUB_NAMESPACE}")
+        [[ -n "$OPTIMIZE_NAMESPACE" ]] && DIAG_ARGS+=(--namespace "${OPTIMIZE_NAMESPACE}")
         deploy-camunda diagnostics print \
-          --namespace "${TEST_NAMESPACE}" \
+          "${DIAG_ARGS[@]}" \
           --include-ready \
           > "$out" 2>&1 || true
         echo "::group::Namespace diagnostics"
