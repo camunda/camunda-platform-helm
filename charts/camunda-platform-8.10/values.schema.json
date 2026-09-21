@@ -10,7 +10,7 @@
                     "properties": {
                         "mode": {
                             "type": "string",
-                            "description": "defines the role of this release in the deployment topology. Supported values are combined, hub, orchestration, and optimize. In optimize mode only Optimize is deployed, so a separate Optimize release can serve one Physical Tenant without sharing a release with the Orchestration Cluster; it requires optimize.enabled, global.noSecondaryStorage=false, an enabled database backend, Identity auth and URL set on the component or globally, and optimize.contextPath when routing is rendered.",
+                            "description": "defines the role of this release in the deployment topology. Supported values are combined, hub, orchestration, and optimize. Orchestration mode can authenticate directly with an external OIDC provider without a Management Identity URL, except when an enabled component calls Management Identity; multi-tenant Optimize requires optimize.identity.service.url or global.identity.service.url to resolve authorized tenants. In optimize mode only Optimize is deployed, so a separate Optimize release can serve one Physical Tenant without sharing a release with the Orchestration Cluster; it requires optimize.enabled, global.noSecondaryStorage=false, an enabled database backend, Identity auth and URL set on the component or globally, and optimize.contextPath when routing is rendered.",
                             "default": "combined",
                             "enum": [
                                 "combined",
