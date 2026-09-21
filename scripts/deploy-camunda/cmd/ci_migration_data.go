@@ -180,9 +180,7 @@ func waitForMigrationAdminRole(ctx context.Context, orchestrationURL, tokenURL, 
 				response.Body.Close()
 				if readErr != nil {
 					lastError = readErr.Error()
-				} else if response.StatusCode == http.StatusConflict {
-					return token, nil
-				} else if response.StatusCode >= 200 && response.StatusCode < 300 {
+				} else if response.StatusCode == http.StatusConflict || (response.StatusCode >= 200 && response.StatusCode < 300) {
 					if err := waitForMigrationRetry(ctx, propagationDelay); err != nil {
 						return "", err
 					}

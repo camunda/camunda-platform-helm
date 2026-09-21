@@ -74,7 +74,7 @@ type E2EPartition struct {
 
 func ResolveE2EPartitions(repoRoot, version string) ([]E2EPartition, error) {
 	chartDir := filepath.Join(repoRoot, "charts", "camunda-platform-"+version)
-	path := filepath.Join(chartDir, "test", RegistryDirName, E2EPartitionsFileName)
+	path := filepath.Join(chartDir, "test", "ci", E2EPartitionsFileName)
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("read e2e partition registry %s: %w", path, err)
