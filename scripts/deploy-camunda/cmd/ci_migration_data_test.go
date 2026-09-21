@@ -47,6 +47,30 @@ func TestRequestMigrationToken(t *testing.T) {
 	}
 }
 
+func TestRequestMigrationTokenRetriesTransientFailure(t *testing.T) {
+	attempts := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		attempts++
+		if attempts == 1 {
+			http.Error(w, "temporarily unavailable", http.StatusServiceUnavailable)
+			return
+		}
+		_, _ = io.WriteString(w, `{"access_token":"retried-token"}`)
+	}))
+	defer server.Close()
+
+	token, err := requestMigrationToken(context.Background(), server.URL, "secret")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if attempts != 2 {
+		t.Fatalf("attempts = %d, want 2", attempts)
+	}
+	if token != "retried-token" {
+		t.Fatalf("token = %q, want retried-token", token)
+	}
+}
+
 func TestRetryMigrationRequestRetriesUntilSuccess(t *testing.T) {
 	attempts := 0
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
