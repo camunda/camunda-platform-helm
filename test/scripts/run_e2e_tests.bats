@@ -79,10 +79,48 @@ teardown() {
   [ "$status" -eq 0 ]
 }
 
-@test "the E2E action sets up deploy-camunda when no binary artifact is supplied" {
+@test "the E2E action requires an e2e-run-config compatible deploy-camunda" {
   action="$ROOT/.github/actions/playwright-e2e-tests/action.yaml"
+  setup_action="$ROOT/.github/actions/setup-deploy-camunda/action.yaml"
 
   run grep -F 'uses: ./.github/actions/setup-deploy-camunda' "$action"
+  [ "$status" -eq 0 ]
+
+  run grep -F 'deploy-camunda" ci e2e-run-config --help' "$setup_action"
+  [ "$status" -eq 0 ]
+
+  run grep -F 'resolve_deploy_camunda e2e-run-config' "$SCRIPT"
+  [ "$status" -eq 0 ]
+}
+
+@test "explicit controls skip a deploy-camunda without e2e-run-config" {
+  mkdir -p "$TMPDIR_TEST/old" "$TMPDIR_TEST/current/bin"
+  cat > "$TMPDIR_TEST/old/deploy-camunda" << 'EOF'
+#!/usr/bin/env bash
+exit 1
+EOF
+  cat > "$TMPDIR_TEST/current/bin/deploy-camunda" << 'EOF'
+#!/usr/bin/env bash
+if [[ "$*" == "ci e2e-run-config --help" ]]; then
+  exit 0
+fi
+exit 1
+EOF
+  cat > "$TMPDIR_TEST/old/go" << EOF
+#!/usr/bin/env bash
+printf '%s\n' '$TMPDIR_TEST/current'
+EOF
+  chmod +x "$TMPDIR_TEST/old/deploy-camunda" "$TMPDIR_TEST/old/go" "$TMPDIR_TEST/current/bin/deploy-camunda"
+  export DEPLOY_CAMUNDA="$TMPDIR_TEST/old/deploy-camunda"
+  export PATH="$TMPDIR_TEST/old:/usr/bin:/bin"
+  hash -r
+  eval "$(sed -n '/^resolve_deploy_camunda() {/,/^}/p' "$SCRIPT")"
+
+  run resolve_deploy_camunda e2e-run-config
+
+  [ "$status" -eq 0 ]
+  [ "$output" != "$TMPDIR_TEST/old/deploy-camunda" ]
+  run "$output" ci e2e-run-config --help
   [ "$status" -eq 0 ]
 }
 
