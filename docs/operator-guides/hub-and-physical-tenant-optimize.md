@@ -33,7 +33,6 @@ global:
             enabled: true
             namespace: production-a-optimize-default
             host: hub.example.com
-            enabled: true
             clientId: optimize-production-a-default
             audience: optimize-production-a-default-api
             roleName: Optimize production-a default

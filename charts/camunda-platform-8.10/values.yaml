@@ -77,10 +77,9 @@ global:
     #       namespace: camunda-production-a-optimize
     #       releaseName: optimize
     #       host: hub.example.com
-    #       enabled: true
     #       clientId: optimize-production-a
     #       audience: optimize-production-a-api
-    #       redirectUrl: https://production-a.example.com/optimize
+    #       redirectUrl: https://hub.example.com/optimize
     #       secret:
     #         inlineSecret: ""
     #         existingSecret: optimize-production-a-oidc
