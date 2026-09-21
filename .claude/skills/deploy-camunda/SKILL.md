@@ -54,11 +54,16 @@ of wasted time (pods stuck in `ImagePullBackOff`, missing ingress, helm errors):
    ```
    Both are needed when `ensureDockerHub` and `ensureDockerRegistry` are `true` in `.deploy-camunda.yaml`.
 
-2. **kubectl context** — confirm you're targeting the right cluster.
+2. **Kubernetes context** — set the target once and pass it to every command.
    ```bash
-   kubectl config current-context
-   # Expected for GKE: gke_camunda-distribution_europe-west1-b_distro-ci
+   CTX=gke_camunda-distribution_europe-west1-b_distro-ci
+   kubectl --context "$CTX" cluster-info
    ```
+
+   Do not rely on the mutable current context. Use `--kube-context-gke "$CTX"` for a GKE matrix
+   run, `--kube-context "$CTX"` for a single deploy or watcher, and `--context "$CTX"` for
+   `kubectl`. A watcher pointed at another cluster will misleadingly report an empty namespace and
+   a missing Helm release while the real deployment fails elsewhere.
 
 3. **Helm dependencies** — must be up to date for the target chart version.
    ```bash
@@ -74,6 +79,15 @@ of wasted time (pods stuck in `ImagePullBackOff`, missing ingress, helm errors):
    # Single deploy: set explicitly
    export CAMUNDA_HOSTNAME=my-test-ns.ci.distro.ultrawombat.com
    ```
+
+5. **External secret store** — verify the store installed on the target cluster before selecting a
+   backend:
+   ```bash
+   kubectl --context "$CTX" get clustersecretstores.external-secrets.io
+   ```
+   Use `--use-vault-backed-secrets-gke` only when `vault-backend` exists. The normal `distro-ci`
+   store is `distribution-team`; selecting Vault there leaves ExternalSecrets unready and blocks
+   the deployment before Helm creates the main release.
 
 ## Deploy a Single Scenario
 
@@ -329,21 +343,30 @@ When a Helm install gets stuck, the default `helm install --wait --timeout 10m` 
 ```bash
 # Terminal 1: deploy via matrix run
 deploy-camunda matrix run --repo-root . --versions 8.10 \
-  --shortname-filter keyco --platform gke --delete-namespace --timeout 10 --yes
+  --shortname-filter keyco --platform gke \
+  --kube-context-gke "$CTX" --delete-namespace --timeout 10 --yes
 
 # Terminal 2: watch (start immediately, it waits for pods to appear)
 deploy-camunda watch \
   --namespace matrix-810-keyco-inst-gke \
   --release integration \
+  --kube-context "$CTX" \
+  --abort-confidence 0.85 \
   --interval 30
 
-# For single (non-matrix) deploys, same shape: watch --namespace <ns> --release <rel> --interval 30
+# For single deploys, use the same explicit context on both deploy and watch.
 ```
 
 The watcher prints a diagnosis on each tick and exits when all pods reach Running/Ready. Verdicts:
 - **wait** — pods are starting normally, keep polling.
 - **investigate** — something looks off (slow startup, pending PVCs), diagnosis printed.
 - **abort** — unrecoverable failure detected (wrong image, missing secret). Use `--abort-confidence 0.85` to auto-exit when the agent is confident (default 0 disables auto-abort).
+
+The watcher sees cluster snapshots, not the stdout or exit status of the separate deploy process.
+If it repeatedly reports an empty namespace or `release not found`, inspect the deploy output and
+run `kubectl --context "$CTX" get events -n <ns>`. The deploy may be blocked before Helm, for example
+while waiting for an ExternalSecret. An `investigate` verdict is informational and does not stop the
+watcher.
 
 **Prerequisites:** `claude` or `opencode` must be on `PATH`. The watcher does NOT call any API directly — it shells out to whichever CLI is installed and uses that CLI's existing auth and model configuration.
 

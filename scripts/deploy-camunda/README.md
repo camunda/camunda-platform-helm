@@ -36,8 +36,10 @@ button without becoming a Helm-values expert.
 
 Before your first run:
 
-- **`kubectl`** on your PATH, pointed at the cluster you want to deploy
-  into. Confirm with `kubectl config current-context`.
+- **`kubectl`** on your PATH. Set the intended context in a shell variable and verify it directly,
+  for example `CTX=gke_camunda-distribution_europe-west1-b_distro-ci` followed by
+  `kubectl --context "$CTX" cluster-info`. Pass the same context explicitly to the deploy, watcher,
+  and diagnostic commands rather than relying on the mutable current context.
 - **Helm 3.x** on your PATH (`helm version`).
 - **`deploy-camunda` binary installed** — from the repo root:
 
@@ -787,7 +789,7 @@ For a full command reference and operational patterns, see
 | `deploy-camunda doctor [--fix]` | Preflight checklist. |
 | `deploy-camunda config env [--show-origin] [--unmask]` | Show effective env variables with provenance. |
 | `deploy-camunda config set/get/list/use/create/show` | Manage deployment profiles. |
-| `deploy-camunda watch --namespace <ns>` | Poll a running deploy and diagnose CrashLoopBackOff / ImagePullBackOff live. |
+| `deploy-camunda watch --namespace <ns> --kube-context <ctx>` | Poll a running deploy and diagnose CrashLoopBackOff / ImagePullBackOff live. Use the same explicit context as the deploy. |
 
 ## Watch internals
 
@@ -801,6 +803,12 @@ For a full command reference and operational patterns, see
    - `wait` — keep polling silently.
    - `investigate` — print diagnosis, keep polling.
    - `abort` — print diagnosis; auto-exit non-zero only if `confidence` is at or above `--abort-confidence` (default 0 disables auto-abort).
+
+The watcher does not observe the deploy process itself. It can only infer progress from resources in
+the selected cluster and namespace. Repeated empty snapshots or `release not found` messages can
+mean the deploy is blocked before Helm, including while waiting for ExternalSecrets. Confirm that
+the watcher uses the deploy's exact context, inspect the deploy output, and check namespace events.
+Use `--abort-confidence 0.85` when the watcher should stop on a high-confidence terminal diagnosis.
 
 **Verdict schema** (the skill must produce exactly this shape):
 
