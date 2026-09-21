@@ -228,12 +228,12 @@ runs:
       with:
         name: ${{ inputs.binary-artifact-name }}
         path: ${{ runner.temp }}/bin
-    - name: Add deploy-camunda to PATH
+    - name: Prepare downloaded deploy-camunda binary
       if: inputs.binary-artifact-name != ''
       shell: bash
-      run: |
-        chmod +x "${RUNNER_TEMP}/bin/deploy-camunda"
-        echo "${RUNNER_TEMP}/bin" >> "$GITHUB_PATH"
+      run: chmod +x "${RUNNER_TEMP}/bin/deploy-camunda"
+    - name: Setup deploy-camunda
+      uses: ./.github/actions/setup-deploy-camunda
 
     - name: Set workflow vars
       id: vars
@@ -303,7 +303,7 @@ runs:
         E2E_IS_MIGRATION: ${{ inputs.is-migration }}
         E2E_IS_OPENSEARCH: ${{ inputs.is-opensearch }}
         E2E_MCP_GATEWAY_ENABLED: ${{ inputs.mcp-gateway-enabled }}
-        REQUIRE_SM_810_TEST_SUITE: ${{ inputs.hub-namespace != '' || (inputs.playwright-project != '' && inputs.playwright-project != 'auth0-smoke') || inputs.file-pattern != '' }}
+        REQUIRE_SM_810_TEST_SUITE: ${{ inputs.hub-namespace != '' || (inputs.playwright-project != 'auth0-smoke' && (inputs.playwright-project != '' || inputs.file-pattern != '')) }}
       run: |
         cd "$GITHUB_WORKSPACE/scripts"
         # Unset KEYCLOAK_REALM to avoid conflicts with the integration tests
