@@ -54,6 +54,31 @@ teardown() {
   [ "$status" -eq 0 ]
 }
 
+@test "topology CI forwards the explicit E2E execution contract" {
+  workflow="$ROOT/.github/workflows/test-integration-runner.yaml"
+
+  for input in \
+    playwright-project:e2e-playwright-project \
+    file-pattern:e2e-file-pattern \
+    is-rba:e2e-is-rba \
+    is-mt:e2e-is-mt \
+    is-ds:e2e-is-ds \
+    is-license-key:e2e-is-license-key \
+    is-migration:e2e-is-migration \
+    is-opensearch:e2e-is-opensearch \
+    mcp-gateway-enabled:e2e-mcp-gateway-enabled; do
+    run grep -F "${input%%:*}: \${{ inputs.${input#*:} }}" "$workflow"
+    [ "$status" -eq 0 ]
+  done
+}
+
+@test "explicit SM 8.10 selection requires the installed package suite" {
+  action="$ROOT/.github/actions/playwright-e2e-tests/action.yaml"
+
+  run grep -F "REQUIRE_SM_810_TEST_SUITE: \${{ inputs.hub-namespace != '' || (inputs.playwright-project != '' && inputs.playwright-project != 'auth0-smoke') || inputs.file-pattern != '' }}" "$action"
+  [ "$status" -eq 0 ]
+}
+
 @test "--optimize-namespace without --hub-namespace is rejected" {
   run "$SCRIPT" --absolute-chart-path "$CHART_PATH" --namespace test-ns \
     --optimize-namespace opt-ns --optimize-context-path /optimize-orcha

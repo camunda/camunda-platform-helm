@@ -42,6 +42,7 @@ func newCICommand() *cobra.Command {
 	ciCmd.AddCommand(newCIE2EMatrixCommand())
 	ciCmd.AddCommand(newCIE2EPartitionsCommand())
 	ciCmd.AddCommand(newCIMigrationDataCommand())
+	ciCmd.AddCommand(newCIE2ERunConfigCommand())
 
 	return ciCmd
 }
