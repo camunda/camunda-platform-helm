@@ -234,22 +234,29 @@ Authentication.
 {{/*
 [camunda-platform] Auth issuer public URL which used externally for Camunda apps (with a fallback to
 publicIssuerUrl, and from there to global.identity.keycloak.url). This chart bundles no Keycloak
-subchart; global.identity.keycloak.url names an external Keycloak's own address, reachable the same
-way from a browser as from inside the cluster, so reusing authIssuerBackendUrl's derivation here is
-correct -- unlike the old bundled-Keycloak shape, there is no separate internal-only route to leak.
+subchart, so global.identity.keycloak.url ordinarily names an external Keycloak's own address,
+browser-reachable the same way it's cluster-reachable -- unlike the old bundled-Keycloak shape,
+there is no separate internal-only route to leak there. The fallback deliberately does NOT reuse
+authIssuerBackendUrl as a whole: that helper's issuerBackendUrl override is documented as the
+cluster-internal counterpart of publicIssuerUrl (values.yaml, split-horizon DNS), so inheriting it
+here would put an explicitly-internal address in the public-facing slot. The fallback is also
+skipped outright when global.identity.keycloak.internal is true: in that mode keycloak.url.host is
+itself an in-cluster address the chart proxies through its own Ingress, and the public route is
+camundaPlatform.keycloakExternalURL instead -- deriving one from the other belongs to a follow-up
+that also fixes that call site, not this fallback.
 Without this fallback, a release that sets only global.identity.keycloak.url (and neither issuer nor
 publicIssuerUrl) renders authorization-uri as the relative path "/protocol/openid-connect/auth" --
 unlike jwk-set-uri/token-uri in the same block, which derive from authIssuerBackendUrl and already
-have this fallback -- and camunda-security-library 1.0.2+ rejects a relative authorization-uri at
-startup.
+have an (unconditional) equivalent fallback -- and camunda-security-library 1.0.2+ rejects a
+relative authorization-uri at startup.
 */}}
 {{- define "camundaPlatform.authIssuerUrlWithFallback" -}}
   {{- if .Values.global.identity.auth.issuer -}}
     {{- tpl .Values.global.identity.auth.issuer . -}}
   {{- else if .Values.global.identity.auth.publicIssuerUrl -}}
     {{- tpl .Values.global.identity.auth.publicIssuerUrl . -}}
-  {{- else -}}
-    {{- include "camundaPlatform.authIssuerBackendUrl" . -}}
+  {{- else if not .Values.global.identity.keycloak.internal -}}
+    {{- include "camundaPlatform.keycloakUrlDerivedIssuer" . -}}
   {{- end -}}
 {{- end -}}
 
@@ -261,12 +268,16 @@ startup.
 {{- end -}}
 
 {{/*
-[camunda-platform] Auth issuer backend URL which used internally for Camunda apps.
+[camunda-platform] Constructs a Keycloak issuer URL from global.identity.keycloak.url, for a
+release configured against an external Keycloak (this chart bundles none). Callers gate this
+themselves: it is only the internal-vs-public host that differs, and only when
+global.identity.keycloak.internal is true -- in that mode keycloak.url.host is itself an
+in-cluster address the chart proxies through its own Ingress (see
+camundaPlatform.keycloakExternalURL), not a route a browser or an out-of-cluster caller can
+reach directly.
 */}}
-{{- define "camundaPlatform.authIssuerBackendUrl" -}}
-  {{- if .Values.global.identity.auth.issuerBackendUrl -}}
-    {{- tpl .Values.global.identity.auth.issuerBackendUrl . -}}
-  {{- else if and (eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK") (.Values.global.identity.keycloak.url).host -}}
+{{- define "camundaPlatform.keycloakUrlDerivedIssuer" -}}
+  {{- if and (eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK") (.Values.global.identity.keycloak.url).host -}}
     {{-
       printf "%s://%s:%v%s"
         .Values.global.identity.keycloak.url.protocol
@@ -274,6 +285,17 @@ startup.
         .Values.global.identity.keycloak.url.port
         (include "camundaPlatform.joinpath" (list .Values.global.identity.keycloak.contextPath .Values.global.identity.keycloak.realm))
     -}}
+  {{- end -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] Auth issuer backend URL which used internally for Camunda apps.
+*/}}
+{{- define "camundaPlatform.authIssuerBackendUrl" -}}
+  {{- if .Values.global.identity.auth.issuerBackendUrl -}}
+    {{- tpl .Values.global.identity.auth.issuerBackendUrl . -}}
+  {{- else -}}
+    {{- include "camundaPlatform.keycloakUrlDerivedIssuer" . -}}
   {{- end -}}
 {{- end -}}
 
