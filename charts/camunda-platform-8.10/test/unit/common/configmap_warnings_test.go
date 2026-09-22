@@ -674,3 +674,65 @@ func (s *ConfigMapWarningsTemplateTest) TestIngressUpstreamTLSControllerWarning(
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
+
+func (s *ConfigMapWarningsTemplateTest) TestMigrationDisruptionBudgetWarning() {
+	zonedMigrationValues := func() map[string]string {
+		return map[string]string{
+			"orchestration.data.secondaryStorage.type":             "elasticsearch",
+			"orchestration.profiles.broker":                        "true",
+			"orchestration.partitioning.scheme":                    "zone-aware",
+			"orchestration.partitioning.zone":                      "zone-a",
+			"orchestration.partitioning.zones[0].name":             "zone-a",
+			"orchestration.partitioning.zones[0].numberOfBrokers":  "1",
+			"orchestration.partitioning.zones[0].numberOfReplicas": "1",
+			"orchestration.partitioning.zones[0].priority":         "100",
+			"orchestration.partitioning.keepUnzonedBrokers":        "true",
+		}
+	}
+	const warning = "covered by one PodDisruptionBudget each"
+
+	retainedWithBudget := zonedMigrationValues()
+	retainedWithBudget["orchestration.podDisruptionBudget.enabled"] = "true"
+
+	retainedWithoutBudget := zonedMigrationValues()
+	retainedWithoutBudget["orchestration.podDisruptionBudget.enabled"] = "false"
+
+	budgetWithoutRetention := zonedMigrationValues()
+	budgetWithoutRetention["orchestration.partitioning.keepUnzonedBrokers"] = "false"
+	budgetWithoutRetention["orchestration.podDisruptionBudget.enabled"] = "true"
+
+	testCases := []testhelpers.TestCase{
+		{
+			Name:   "TestRetentionWithADisruptionBudgetWarns",
+			Values: retainedWithBudget,
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().Contains(configmap.Data["warnings"], warning)
+			},
+		},
+		{
+			Name:   "TestRetentionWithoutADisruptionBudgetDoesNotWarn",
+			Values: retainedWithoutBudget,
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().NotContains(configmap.Data["warnings"], warning)
+			},
+		},
+		{
+			Name:   "TestADisruptionBudgetWithoutRetentionDoesNotWarn",
+			Values: budgetWithoutRetention,
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().NotContains(configmap.Data["warnings"], warning)
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}

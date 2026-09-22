@@ -1593,6 +1593,14 @@ The following values inside your values.yaml need to be set but were not:
       -}}
       {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
     {{- end }}
+    {{- if and (eq (include "orchestration.zoneAware" .) "true") (include "camundaPlatform.partitioning" . | fromJson).keepUnzonedBrokers .Values.orchestration.podDisruptionBudget.enabled }}
+      {{- $warningMessage := printf "%s %s %s"
+          "[camunda][warning]"
+          "While \"orchestration.partitioning.keepUnzonedBrokers\" is set, the retained and zoned broker generations are covered by one PodDisruptionBudget each, so voluntary disruption can evict one broker from each generation at the same time while both share a single Raft quorum."
+          "Suspend node drains, cluster autoscaling and other eviction-producing maintenance for the duration of the coexistence window."
+      -}}
+      {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+    {{- end }}
     {{- if eq (include "camundaPlatform.spansFailureDomains" .) "true" }}
       {{- if and (eq (include "orchestration.zoneAware" .) "true") (include "camundaPlatform.partitioning" . | fromJson).keepUnzonedBrokers }}
       {{- $warningMessage := printf "%s %s %s"
