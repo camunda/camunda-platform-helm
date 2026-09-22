@@ -6,9 +6,8 @@ platforms:
   - gke
 infra-type:
   gke: distroci
-# Repository-owned post-deploy acceptance covers physical routing and Optimize
-# import. The external browser suite does not support tenant routing yet.
-skip-e2e: true
+# Repository-owned acceptance covers runtime routing and Optimize isolation;
+# the browser suite covers Hub environment discovery and deployment.
 post-deploy: physicaltenants-exporters
 topology:
   name: hub-1orch-2tenants
