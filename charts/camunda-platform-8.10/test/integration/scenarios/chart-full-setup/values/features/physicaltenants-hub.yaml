@@ -56,6 +56,7 @@ global:
               existingSecretKey: identity-connectors-client-token
         physicalTenants:
           - id: tenanta
+            name: Tenant A
             components:
               optimize:
                 enabled: true
@@ -67,6 +68,7 @@ global:
                   existingSecret: integration-test-credentials
                   existingSecretKey: identity-optimize-tenanta-client-token
           - id: tenantb
+            name: Tenant B
             components:
               optimize:
                 enabled: true
@@ -77,6 +79,20 @@ global:
                 secret:
                   existingSecret: integration-test-credentials
                   existingSecretKey: identity-optimize-tenantb-client-token
+
+camundaHub:
+  restapi:
+    image:
+      registry: registry.camunda.cloud
+      repository: team-hub/hub-restapi-self-managed
+      digest: sha256:e8273691d0c45337d90d83a5037dab2cb87aabac254e4d7587e59bd1ad29a5ed
+    extraConfiguration:
+      - file: environments.yaml
+        content: |
+          camunda:
+            hub:
+              feature:
+                environments-enabled: true
 
 identity:
   clients:
