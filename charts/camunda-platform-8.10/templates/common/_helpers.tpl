@@ -232,13 +232,24 @@ Authentication.
 */}}
 
 {{/*
-[camunda-platform] Auth issuer public URL which used externally for Camunda apps (with a fallback to publicIssuerUrl).
+[camunda-platform] Auth issuer public URL which used externally for Camunda apps (with a fallback to
+publicIssuerUrl, and from there to global.identity.keycloak.url). This chart bundles no Keycloak
+subchart; global.identity.keycloak.url names an external Keycloak's own address, reachable the same
+way from a browser as from inside the cluster, so reusing authIssuerBackendUrl's derivation here is
+correct -- unlike the old bundled-Keycloak shape, there is no separate internal-only route to leak.
+Without this fallback, a release that sets only global.identity.keycloak.url (and neither issuer nor
+publicIssuerUrl) renders authorization-uri as the relative path "/protocol/openid-connect/auth" --
+unlike jwk-set-uri/token-uri in the same block, which derive from authIssuerBackendUrl and already
+have this fallback -- and camunda-security-library 1.0.2+ rejects a relative authorization-uri at
+startup.
 */}}
 {{- define "camundaPlatform.authIssuerUrlWithFallback" -}}
   {{- if .Values.global.identity.auth.issuer -}}
     {{- tpl .Values.global.identity.auth.issuer . -}}
-  {{- else -}}
+  {{- else if .Values.global.identity.auth.publicIssuerUrl -}}
     {{- tpl .Values.global.identity.auth.publicIssuerUrl . -}}
+  {{- else -}}
+    {{- include "camundaPlatform.authIssuerBackendUrl" . -}}
   {{- end -}}
 {{- end -}}
 
