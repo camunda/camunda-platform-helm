@@ -2441,7 +2441,7 @@ func (s *StatefulSetTest) TestZonedMode() {
 				var statefulSet appsv1.StatefulSet
 				helm.UnmarshalK8SYaml(t, output, &statefulSet)
 
-				require.Equal(t, "camunda-production-orchestration-cluster-emea-primar-zone-b", statefulSet.Name)
+				require.Equal(t, "camunda-production-orchestration-cluster-emea-931c40-zone-b", statefulSet.Name)
 				require.LessOrEqual(t, len(statefulSet.Name+"-0"), 63)
 			},
 		},

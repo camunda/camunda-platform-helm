@@ -29,7 +29,7 @@ import (
 )
 
 func (s *StatefulSetTest) TestZonedNameIsStableAcrossOrdinalWidth() {
-	expectedName := strings.Repeat("a", 52) + "-zone-a"
+	var expectedName string
 	testCases := make([]testhelpers.TestCase, 0, 3)
 	for _, brokers := range []string{"9", "11", "999"} {
 		testCases = append(testCases, testhelpers.TestCase{
@@ -47,8 +47,12 @@ func (s *StatefulSetTest) TestZonedNameIsStableAcrossOrdinalWidth() {
 				require.NoError(t, err)
 				var statefulSet appsv1.StatefulSet
 				helm.UnmarshalK8SYaml(t, output, &statefulSet)
-				require.Equal(t, expectedName, statefulSet.Name)
+				require.True(t, strings.HasSuffix(statefulSet.Name, "-zone-a"))
 				require.LessOrEqual(t, len(statefulSet.Name+"-998"), 63)
+				if expectedName == "" {
+					expectedName = statefulSet.Name
+				}
+				require.Equal(t, expectedName, statefulSet.Name)
 			},
 		})
 	}
@@ -207,4 +211,30 @@ func (s *StatefulSetTest) TestScopedRenderKeepsTheSubchartsBuiltin() {
 			require.Equal(s.T(), "map", sts.Spec.Template.Labels["probe"])
 		})
 	}
+}
+
+func (s *StatefulSetTest) TestTruncatedZonedNamesStayUniquePerRelease() {
+	zone := strings.Repeat("z", 32)
+	renderName := func(fullname string) string {
+		output, err := testhelpers.RenderTestCaseE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testhelpers.TestCase{
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":             "elasticsearch",
+				"orchestration.fullnameOverride":                       fullname,
+				"orchestration.partitioning.scheme":                    "zone-aware",
+				"orchestration.partitioning.zone":                      zone,
+				"orchestration.partitioning.zones[0].name":             zone,
+				"orchestration.partitioning.zones[0].numberOfBrokers":  "1",
+				"orchestration.partitioning.zones[0].numberOfReplicas": "1",
+				"orchestration.partitioning.zones[0].priority":         "100",
+			},
+		})
+		require.NoError(s.T(), err)
+		var statefulSet appsv1.StatefulSet
+		helm.UnmarshalK8SYaml(s.T(), strings.Split(output, "\n---\n")[0], &statefulSet)
+		require.LessOrEqual(s.T(), len(statefulSet.Name+"-998"), 63)
+		return statefulSet.Name
+	}
+
+	shared := strings.Repeat("c", 40)
+	require.NotEqual(s.T(), renderName(shared+"-alpha"), renderName(shared+"-beta"))
 }

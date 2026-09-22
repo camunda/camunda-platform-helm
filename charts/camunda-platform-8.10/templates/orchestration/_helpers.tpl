@@ -69,8 +69,15 @@ Takes a dict with the root context and an optional explicit zone.
 {{- /* NOTE: StatefulSet Pod hostnames are limited to 63 characters; reserve "-998" for up to 999 brokers. */ -}}
 {{- $nameLength := 59 -}}
 {{- $suffix := printf "-%s" .zone -}}
-{{- $prefixLength := sub $nameLength (len $suffix) -}}
-{{- printf "%s%s" ($fullname | trunc (int $prefixLength) | trimSuffix "-") $suffix -}}
+{{- $prefixLength := int (sub $nameLength (len $suffix)) -}}
+{{- if le (len $fullname) $prefixLength -}}
+{{- printf "%s%s" $fullname $suffix -}}
+{{- else -}}
+{{- /* NOTE: a truncated prefix is not unique across releases, so the last 7 characters
+carry a digest of the untruncated name instead of more of the prefix. */ -}}
+{{- $digest := $fullname | sha256sum | trunc 6 -}}
+{{- printf "%s-%s%s" ($fullname | trunc (int (sub $prefixLength 7)) | trimSuffix "-") $digest $suffix -}}
+{{- end -}}
 {{- else -}}
 {{- $fullname -}}
 {{- end -}}
