@@ -33,7 +33,9 @@ func (f *fakeCommander) run(_ context.Context, name string, args ...string) (str
 	command := strings.Join(append([]string{name}, args...), " ")
 	f.commands = append(f.commands, command)
 	if queued, ok := f.sequences[command]; ok && len(queued) > 0 {
-		f.sequences[command] = queued[1:]
+		if len(queued) > 1 {
+			f.sequences[command] = queued[1:]
+		}
 		return queued[0], f.errors[command]
 	}
 	return f.outputs[command], f.errors[command]
@@ -125,7 +127,7 @@ func TestRunner_cleansUpResourcesItCreatedAfterSuccess(t *testing.T) {
 func TestRunner_assertsGatewayMembershipAcrossTheMigration(t *testing.T) {
 	cmd := successfulFake()
 	cmd.sequences[gatewayEndpoints] = []string{"zam-zeebe-0", "zam-zeebe-zone-a-0"}
-	runner := runner{cfg: testConfig(), command: cmd.run}
+	runner := runner{cfg: impatientConfig(), command: cmd.run}
 
 	err := runner.run(context.Background())
 
@@ -137,7 +139,7 @@ func TestRunner_assertsGatewayMembershipAcrossTheMigration(t *testing.T) {
 func TestRunner_rejectsARetainedPodStillBehindTheGatewayAfterCleanup(t *testing.T) {
 	cmd := successfulFake()
 	cmd.sequences[gatewayEndpoints] = []string{"zam-zeebe-0 zam-zeebe-zone-a-0", "zam-zeebe-0 zam-zeebe-zone-a-0"}
-	runner := runner{cfg: testConfig(), command: cmd.run}
+	runner := runner{cfg: impatientConfig(), command: cmd.run}
 
 	err := runner.run(context.Background())
 
@@ -198,6 +200,26 @@ func TestRunner_upgradesBaseChartBeforeRecordingMigrationUID(t *testing.T) {
 
 func testConfig() config {
 	return config{chartDir: "/chart", scenarioDir: "/scenario", namespace: "fresh", release: "zam", timeout: "5m"}
+}
+
+func impatientConfig() config {
+	cfg := testConfig()
+	cfg.timeout = "0s"
+	return cfg
+}
+
+func TestRunner_retriesGatewayMembershipWhileTheRetainedEndpointDrains(t *testing.T) {
+	cmd := successfulFake()
+	cmd.sequences[gatewayEndpoints] = []string{
+		"zam-zeebe-0 zam-zeebe-zone-a-0",
+		"zam-zeebe-0 zam-zeebe-zone-a-0",
+		"zam-zeebe-zone-a-0",
+	}
+	runner := runner{cfg: testConfig(), command: cmd.run}
+
+	if err := runner.run(context.Background()); err != nil {
+		t.Fatalf("a draining endpoint must be retried, not failed: %v", err)
+	}
 }
 
 func envLookup(values map[string]string) func(string) string {

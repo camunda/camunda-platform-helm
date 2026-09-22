@@ -115,7 +115,7 @@ func (r runner) verifyMigration(ctx context.Context) error {
 	if err := r.assertValue(ctx, zonedPod, "{.status.phase}", "Running"); err != nil {
 		return err
 	}
-	if err := r.assertServiceMembers(ctx, r.cfg.release+"-zeebe-gateway", []string{numberedPod, zonedPod}, nil); err != nil {
+	if err := r.waitForServiceMembers(ctx, r.cfg.release+"-zeebe-gateway", []string{numberedPod, zonedPod}, nil); err != nil {
 		return err
 	}
 	zonedUID, err := r.podValue(ctx, zonedPod, "{.metadata.uid}")
@@ -140,7 +140,7 @@ func (r runner) verifyMigration(ctx context.Context) error {
 	if err := r.assertValue(ctx, zonedPod, "{.metadata.uid}", zonedUID); err != nil {
 		return err
 	}
-	if err := r.assertServiceMembers(ctx, r.cfg.release+"-zeebe-gateway", []string{zonedPod}, []string{numberedPod}); err != nil {
+	if err := r.waitForServiceMembers(ctx, r.cfg.release+"-zeebe-gateway", []string{zonedPod}, []string{numberedPod}); err != nil {
 		return err
 	}
 	return r.assertPresent(ctx, "pvc/data-"+numberedPod)

@@ -182,9 +182,6 @@ func (s *ServiceTest) TestDifferentValuesInputs() {
 func (s *ServiceTest) TestZonedModeKeepsTheClientServiceZoneFree() {
 	testCases := []testhelpers.TestCase{
 		{
-			// The retained unzoned brokers hold every partition until the API stage
-			// completes, so a zone label on this selector drops them out of the
-			// client endpoints mid-migration.
 			Name: "TestGatewayServiceSelectorHasNoZoneLabel",
 			Values: map[string]string{
 				"orchestration.partitioning.scheme":                    "zone-aware",

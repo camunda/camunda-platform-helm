@@ -4760,7 +4760,7 @@
                         },
                         "keepUnzonedBrokers": {
                             "type": "boolean",
-                            "description": "also renders the round-robin broker StatefulSet alongside the zoned one during migration. Keep the previous numberOfZones and zoneIndex values here until the round-robin brokers are removed; move them from global.multiregion when migrating from the deprecated block.",
+                            "description": "also renders the round-robin broker StatefulSet alongside the zoned one during migration. Upgrade to this chart version with the flag still off and wait for the round-robin rollout to settle before enabling it: doing both in one `helm upgrade` moves an ordinary chart upgrade's pod roll into the migration and restarts the brokers the migration exists to preserve. Keep the previous numberOfZones and zoneIndex values here until the round-robin brokers are removed; move them from global.multiregion when migrating from the deprecated block.",
                             "default": false
                         },
                         "numberOfZones": {

@@ -16,9 +16,11 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"slices"
 	"strings"
+	"time"
 )
 
 func (r runner) rollout(ctx context.Context, statefulSet string) error {
@@ -85,6 +87,8 @@ func (r runner) assertPresent(ctx context.Context, resource string) error {
 	return nil
 }
 
+const serviceMemberPollInterval = 2 * time.Second
+
 func (r runner) serviceMembers(ctx context.Context, service string) ([]string, error) {
 	value, err := r.command(ctx, "kubectl", "get", "endpoints/"+service, "--namespace", r.cfg.namespace, "-o", "jsonpath={.subsets[*].addresses[*].targetRef.name}")
 	if err != nil {
@@ -109,4 +113,26 @@ func (r runner) assertServiceMembers(ctx context.Context, service string, want, 
 		}
 	}
 	return nil
+}
+
+func (r runner) waitForServiceMembers(ctx context.Context, service string, want, absent []string) error {
+	deadline, err := time.ParseDuration(r.cfg.timeout)
+	if err != nil {
+		return fmt.Errorf("parse timeout %q: %w", r.cfg.timeout, err)
+	}
+	start := time.Now()
+	for {
+		lastErr := r.assertServiceMembers(ctx, service, want, absent)
+		if lastErr == nil {
+			return nil
+		}
+		if time.Since(start) >= deadline {
+			return lastErr
+		}
+		select {
+		case <-ctx.Done():
+			return errors.Join(lastErr, ctx.Err())
+		case <-time.After(serviceMemberPollInterval):
+		}
+	}
 }

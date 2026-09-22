@@ -11,9 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# Pre-migration state: a numbered cluster, sized so one broker per generation fits on a
-# single node. Probes and images are trimmed so the sequence runs in seconds; this test is
-# about resource identity across the upgrade, not about the broker starting up.
 global:
   noSecondaryStorage: true
 connectors: {enabled: false}
