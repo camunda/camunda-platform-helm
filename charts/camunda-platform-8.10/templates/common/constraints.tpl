@@ -1598,6 +1598,14 @@ The following values inside your values.yaml need to be set but were not:
       -}}
       {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
     {{- end }}
+    {{- if and (eq (include "orchestration.zoneAware" .) "true") .Values.orchestration.configuration }}
+      {{- $warningMessage := printf "%s %s %s"
+          "[camunda][warning]"
+          "\"orchestration.configuration\" replaces the whole generated application.yaml, so the zone-aware partitioning block, the derived cluster size and replication factor and the generated bootstrap contact points are NOT applied; the Kubernetes resources stay zoned while the broker reads the supplied configuration."
+          "Supply every zoned cluster key yourself, or use \"orchestration.extraConfiguration\" to override additively and keep the generated block."
+      -}}
+      {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+    {{- end }}
     {{- if and (eq (include "orchestration.zoneAware" .) "true") (include "camundaPlatform.partitioning" . | fromJson).keepUnzonedBrokers .Values.orchestration.podDisruptionBudget.enabled }}
       {{- $warningMessage := printf "%s %s %s"
           "[camunda][warning]"
