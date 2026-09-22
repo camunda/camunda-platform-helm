@@ -649,6 +649,31 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedAuthOIDC() {
 			},
 		},
 		{
+			Name: "TestApplicationYamlShouldNotLeakInternalKeycloakUrlAsPublicIssuer",
+			Values: map[string]string{
+				"identity.enabled":                                       "true",
+				"global.identity.auth.enabled":                           "true",
+				"global.identity.keycloak.internal":                      "true",
+				"global.identity.keycloak.url.protocol":                  "https",
+				"global.identity.keycloak.url.host":                      "keycloak.internal.svc.cluster.local",
+				"global.identity.keycloak.url.port":                      "8443",
+				"global.identity.keycloak.auth.adminUser":                "admin",
+				"global.identity.keycloak.auth.secret.existingSecret":    "kc-secret",
+				"global.identity.keycloak.auth.secret.existingSecretKey": "password",
+				"orchestration.security.authentication.method":           "oidc",
+				"orchestration.security.authentication.oidc.redirectUrl": "https://redirect.com/orchestration",
+			},
+			Expected: map[string]string{
+				// Regression guard: global.identity.keycloak.internal=true means keycloak.url.host is an
+				// in-cluster address the chart proxies through its own Ingress (camundaPlatform.keycloakExternalURL
+				// names the real browser-facing route), so the keycloak.url-derived fallback must NOT apply here.
+				// authorization-uri keeps rendering the relative path rather than leaking the internal host.
+				"configmapApplication.camunda.security.authentication.oidc.authorization-uri": "/protocol/openid-connect/auth",
+				"configmapApplication.camunda.security.authentication.oidc.jwk-set-uri":       "https://keycloak.internal.svc.cluster.local:8443/auth/realms/camunda-platform/protocol/openid-connect/certs",
+				"configmapApplication.camunda.security.authentication.oidc.token-uri":         "https://keycloak.internal.svc.cluster.local:8443/auth/realms/camunda-platform/protocol/openid-connect/token",
+			},
+		},
+		{
 			Name: "TestApplicationYamlShouldContainAuthOIDCWithIssuerUrlAndKeycloakDisabled",
 			Values: map[string]string{
 				"identity.enabled":                                       "false",
