@@ -98,6 +98,10 @@ integration:
       shortname: docstr
       tier: 2
       enabled: false
+    - id: documentstore-minio
+      shortname: docmi
+      tier: 2
+      enabled: true
     - id: secretstore-file
       shortname: secfl
       tier: 2

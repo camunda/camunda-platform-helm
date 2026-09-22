@@ -741,6 +741,41 @@ integration:
               values-file: test/integration/companion-values/elasticsearch.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
+        - name: documentstore-minio
+          enabled: true
+          shortname: docmi
+          auth: basic
+          flow: install
+          platforms:
+            - gke
+          exclude:
+            - orchestration-grpc
+          tier: 2
+          infra-type:
+            gke: distroci
+          identity: basic
+          persistence: elasticsearch
+          features:
+            - documentstore-minio
+          skip-e2e: true
+          dependencies:
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+          pre-install:
+            fixtures:
+              - documentstore-minio.yaml
+            description: |
+              Provisions namespace-local MinIO with ephemeral storage, test credentials,
+              and a Job creating the documents bucket before document-store acceptance checks.
+          post-deploy:
+            script: post-deploy-documentstore-minio.sh
+            description: |
+              Verifies document upload, download, and deletion through Orchestration and
+              validates a presigned MinIO URL before and after deleting the document.
         - name: secretstore-file
           enabled: true
           shortname: secfl
