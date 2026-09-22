@@ -253,7 +253,7 @@ integration:
             - no-secondary-storage
           skip-e2e: true
         - name: documentstore
-          enabled: false
+          enabled: true
           shortname: docstr
           auth: keycloak
           flow: ""

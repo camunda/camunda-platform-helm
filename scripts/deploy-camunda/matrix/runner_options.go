@@ -61,13 +61,13 @@ type RunOptions struct {
 	// Defaults to config.DefaultKeycloakProtocol when empty.
 	KeycloakProtocol string
 	// IngressBaseDomains maps platform names to ingress base domains, e.g.,
-	// {"gke": "ci.distro.ultrawombat.com", "eks": "distribution.aws.camunda.cloud"}
+	// {"gke": "ci.distro.ultrawombat.com", "eks": "distribution.camunda.ie"}
 	// When an entry's platform matches a key, that domain is used for ingress hostname construction.
 	IngressBaseDomains map[string]string
 	// IngressBaseDomain is a fallback base domain for ingress hosts used when no
 	// platform-specific domain is configured. If both IngressBaseDomains and
 	// IngressBaseDomain are set, the platform-specific domain takes priority.
-	// Valid values: ci.distro.ultrawombat.com, distribution.aws.camunda.cloud
+	// Valid values: ci.distro.ultrawombat.com, distribution.camunda.ie
 	IngressBaseDomain string
 	// LogLevel controls the log verbosity for each entry's deployment.
 	// Valid values: debug, info, warn, error. Defaults to "info" if empty.
