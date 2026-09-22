@@ -773,9 +773,9 @@ global:
   ## Cluster reads these keys, so they moved to `orchestration.partitioning`, which is
   ## also where the zone-aware scheme is configured. Setting both blocks fails the render.
   multiregion:
-    ## @skip global.multiregion.regions deprecated, use `orchestration.partitioning.regions`. Must be at least 1; the render fails otherwise.
+    ## @skip global.multiregion.regions deprecated, use `orchestration.partitioning.numberOfZones`. Must be at least 1; the render fails otherwise.
     regions: 1
-    ## @skip global.multiregion.regionId deprecated, use `orchestration.partitioning.regionId`. Must be between 0 and regions - 1; the render fails otherwise.
+    ## @skip global.multiregion.regionId deprecated, use `orchestration.partitioning.zoneIndex`. Must be between 0 and regions - 1; the render fails otherwise.
     regionId: 0
 
   ## Document Store Configuration
@@ -2337,10 +2337,10 @@ orchestration:
     ## @extra orchestration.partitioning.zones[0].priority priority of this zone in the leader election. Must be at least `1`.
     ## @param orchestration.partitioning.zones can be used to define the zones of the Orchestration Cluster when using the `zone-aware` scheme. Each entry requires `name`, `numberOfBrokers`, `numberOfReplicas` and `priority`; the list is summed into `clusterSize` and `replicationFactor`, so it describes every zone, not just the local one.
     zones: []
-    ## @skip orchestration.partitioning.regions number of regions that this Camunda Platform instance is stretched across. Must be at least 1; the render fails otherwise.
-    regions: 1
-    ## @skip orchestration.partitioning.regionId unique id of the region. MUST start at 0 for the computation to work correctly. With 2 regions, you would have region 0 and 1. A value outside 0 to regions - 1 fails the render, since node IDs are derived as `<ordinal> * regions + regionId`.
-    regionId: 0
+    ## @skip orchestration.partitioning.numberOfZones number of failure domains this Camunda Platform instance is stretched across. Under `round-robin` the zones are anonymous and addressed by index; under `zone-aware` they are named in `zones`. Must be at least 1; the render fails otherwise.
+    numberOfZones: 1
+    ## @skip orchestration.partitioning.zoneIndex zero-based index of the zone this release is deployed to, under the `round-robin` scheme. With `numberOfZones: 2` you would have index 0 and 1. A value outside 0 to numberOfZones - 1 fails the render, since node IDs are derived as `<ordinal> * numberOfZones + zoneIndex`.
+    zoneIndex: 0
 
   ## @param orchestration.clusterSize defines the amount of brokers (=replicas), which are deployed via helm
   clusterSize: "3"

@@ -2445,8 +2445,8 @@ func (s *StatefulSetTest) TestZonedMode() {
 			// a regression that ignores the new key is caught here too.
 			Name: "TestRoundRobinViaPartitioningBlockDividesReplicasAcrossRegions",
 			Values: map[string]string{
-				"orchestration.partitioning.regions":  "2",
-				"orchestration.partitioning.regionId": "1",
+				"orchestration.partitioning.numberOfZones": "2",
+				"orchestration.partitioning.zoneIndex":     "1",
 			},
 			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.clusterSize=6"},
 			Verifier: func(t *testing.T, output string, err error) {
