@@ -115,13 +115,28 @@ func (v *RegistryValidator) Validate(cfg *CITestConfig) error {
 	}
 
 	// Feature and dependency values-file resolution.
+	//
+	// Both IDs are interpolated straight into a path, so they must be plain
+	// filenames — the same requirement hook scripts, fixtures and dependency
+	// IDs already carry. Without it an ID such as "../persistence/elasticsearch"
+	// escapes its layer directory and validates a file the scenario never
+	// named. Topology.Validate enforces the same rule for the per-release
+	// overrides of these fields.
 	checkFeature := func(ctx, feature string) {
+		if !isPlainFilename(feature) {
+			problems = append(problems, fmt.Sprintf("%s: feature reference %q must be a plain filename (no path separators)", ctx, feature))
+			return
+		}
 		fPath := filepath.Join(featuresDir, feature+".yaml")
 		if info, err := os.Stat(fPath); err != nil || info.IsDir() {
 			problems = append(problems, fmt.Sprintf("%s: feature %q: missing values file at %s", ctx, feature, fPath))
 		}
 	}
 	checkPersistence := func(ctx, persistence string) {
+		if !isPlainFilename(persistence) {
+			problems = append(problems, fmt.Sprintf("%s: persistence reference %q must be a plain filename (no path separators)", ctx, persistence))
+			return
+		}
 		pPath := filepath.Join(persistenceDir, persistence+".yaml")
 		if info, err := os.Stat(pPath); err != nil || info.IsDir() {
 			problems = append(problems, fmt.Sprintf("%s: persistence %q: missing values file at %s", ctx, persistence, pPath))
@@ -179,6 +194,11 @@ func (v *RegistryValidator) Validate(cfg *CITestConfig) error {
 
 	checkUpgradePersistence := func(ctx string, scn CIScenario, effectiveFlow string) {
 		if scn.Persistence == "" {
+			return
+		}
+		// checkPersistence already reports the traversal; bail out here rather
+		// than resolving the escaped path against the previous version's dir.
+		if !isPlainFilename(scn.Persistence) {
 			return
 		}
 		if effectiveFlow != "upgrade-minor" && !versionmatrix.IsUpgradeOnlyFlow(effectiveFlow) {
@@ -255,7 +275,7 @@ func (v *RegistryValidator) Validate(cfg *CITestConfig) error {
 			checkPersistence(label, scn.Persistence)
 		}
 		if scn.Topology != nil {
-			if err := scn.Topology.Validate(label, chartFullSetupDir, registryDepsDir); err != nil {
+			if err := scn.Topology.Validate(label, v.ChartDir, registryDepsDir); err != nil {
 				problems = append(problems, err.Error())
 			}
 		}

@@ -103,6 +103,15 @@ inputs:
       on-failure namespace diagnostics capture. Empty skips the download.
     required: false
     default: ""
+  e2e-test-suite-ref:
+    description: >
+      Ref of camunda/c8-cross-component-e2e-tests to check out and build in place
+      of the suite baked into the runner image. Empty (the default) skips both the
+      checkout and the build. Pass an immutable full commit SHA rather than a
+      branch name: npm lifecycle and build scripts from this ref execute on the
+      runner, so a mutable ref lets whoever can move it run arbitrary code here.
+    required: false
+    default: ""
 runs:
   using: composite
   steps:
@@ -233,6 +242,45 @@ runs:
         ROSA_USER:        ${{ env.ROSA_USER }}
         ROSA_PASS:        ${{ env.ROSA_PASS }}
         CLUSTER_NAME:     ${{ env.INFRA_CLUSTER_NAME }}
+
+    - name: Checkout E2E test suite
+      if: inputs.e2e-test-suite-ref != ''
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      with:
+        repository: camunda/c8-cross-component-e2e-tests
+        ref: ${{ inputs.e2e-test-suite-ref }}
+        path: .e2e-test-suite
+        token: ${{ steps.cluster-auth.outputs.token }}
+        # The suite is only read and built here; nothing pushes from it. Without
+        # this, the App token stays in .e2e-test-suite/.git/config for every
+        # later step in the job, including the npm build below.
+        persist-credentials: false
+
+    - name: Build E2E test suite
+      if: inputs.e2e-test-suite-ref != ''
+      shell: bash
+      # Callers set the cluster and GitHub App secrets as env on the step that
+      # uses this composite action, so every step here inherits them. npm ci and
+      # npm run build execute package scripts from the checked-out suite, so
+      # blank those inherited values out for this step; cluster-auth has already
+      # run and the test step below re-receives what it needs from the caller.
+      env:
+        GH_APP_ID: ""
+        GH_APP_KEY: ""
+        GKE_CLUSTER_NAME: ""
+        GKE_CLUSTER_LOC: ""
+        GKE_WIP: ""
+        GKE_SA: ""
+        ROSA_URL: ""
+        ROSA_USER: ""
+        ROSA_PASS: ""
+        INFRA_CLUSTER_NAME: ""
+        VAULT_ADDR: ""
+        VAULT_ROLE_ID: ""
+        VAULT_SECRET_ID: ""
+      run: |
+        npm ci --prefix "${GITHUB_WORKSPACE}/.e2e-test-suite"
+        npm run build --prefix "${GITHUB_WORKSPACE}/.e2e-test-suite"
 
     - name: Set test type vars
       id: test-type-vars
