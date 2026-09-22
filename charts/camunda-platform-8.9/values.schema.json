@@ -5,6 +5,21 @@
         "global": {
             "type": "object",
             "properties": {
+                "topology": {
+                    "type": "object",
+                    "properties": {
+                        "mode": {
+                            "type": "string",
+                            "description": "defines the role of this release in the deployment topology. Supported values are combined and orchestration.",
+                            "default": "combined",
+                            "enum": [
+                                "combined",
+                                "orchestration"
+                            ]
+                        }
+                    },
+                    "additionalProperties": false
+                },
                 "license": {
                     "type": "object",
                     "properties": {
@@ -2633,7 +2648,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be used to set the Docker image tag for the Console image",
-                            "default": "8.9.108"
+                            "default": "8.9.110"
                         },
                         "digest": {
                             "type": "string",
@@ -4780,7 +4795,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.9.10"
+                            "default": "8.9.12"
                         },
                         "digest": {
                             "type": "string",

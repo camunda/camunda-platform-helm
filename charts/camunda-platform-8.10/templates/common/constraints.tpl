@@ -39,7 +39,15 @@ Chart 15.x (Camunda 8.10) requires Helm v4 or later.
   "newName" "global.identity.auth.camundaHub.*"
 ) }}
 
-{{- $identityEnabled := (or (eq (include "camundaPlatform.identityEnabled" .) "true") .Values.global.identity.service.url) }}
+{{/*
+Must be a real boolean, not a truthy value: the Multi-Tenancy guard below
+tests it via $identityAuthEnabled with `has false`, which never matches a
+non-empty string such as global.identity.service.url.
+*/}}
+{{- $identityEnabled := false }}
+{{- if or (eq (include "camundaPlatform.identityEnabled" .) "true") (not (empty .Values.global.identity.service.url)) }}
+  {{- $identityEnabled = true }}
+{{- end }}
 
 {{- $topologyMode := include "camundaPlatform.topologyMode" . }}
 {{- $topology := .Values.global.topology | default dict }}
@@ -341,7 +349,16 @@ Either must bind the key to a non-empty value - the key alone leaves the same mi
     {{- end }}
   {{- end }}
 {{- end }}
-{{- $identityAuthEnabled := (or $identityEnabled .Values.global.identity.auth.enabled) }}
+{{/*
+Identity counting as "auth enabled" requires BOTH Identity to be reachable
+AND global.identity.auth.enabled to be set, which is what the guard's own
+error message tells the user. Computed with `or`, it treated Identity as
+auth-enabled whenever Identity or an external Identity URL was configured.
+*/}}
+{{- $identityAuthEnabled := false }}
+{{- if and $identityEnabled .Values.global.identity.auth.enabled }}
+  {{- $identityAuthEnabled = true }}
+{{- end }}
 
 {{/*
 Fail with a message if Multi-Tenancy is enabled and its requirements are not met which are:
@@ -425,7 +442,7 @@ Fail if the multi-region topology is described in both places at once. Picking o
 silently would deploy a topology the other block does not describe, and the two are
 merged nowhere.
 */}}
-{{- if and (eq (include "camundaPlatform.partitioningConfigured" (.Values.orchestration.partitioning | default dict)) "true") (eq (include "camundaPlatform.partitioningConfigured" (.Values.global.multiregion | default dict)) "true") }}
+{{- if and (eq (include "camundaPlatform.partitioningConfigured" (.Values.orchestration.partitioning | default dict)) "true") (eq (include "camundaPlatform.deprecatedMultiregionConfigured" (.Values.global.multiregion | default dict)) "true") }}
   {{- fail "[camunda][error] orchestration.partitioning and global.multiregion are both configured. global.multiregion is deprecated; keep orchestration.partitioning and remove the global block." -}}
 {{- end }}
 
@@ -450,31 +467,24 @@ merged nowhere.
   {{- $partitioningKey = "global.multiregion" -}}
 {{- end -}}
 {{- if and $partitioning.keepUnzonedBrokers (eq $partitioning.scheme "zone-aware") }}
-  {{- $orchestrationMultiregion := .Values.orchestration.partitioning | default dict -}}
-  {{- if or
-    (not (hasKey $orchestrationMultiregion "regions"))
-    (not (hasKey $orchestrationMultiregion "regionId"))
-    (eq (get $orchestrationMultiregion "regionId" | toString) "")
-  }}
-    {{- fail "[camunda][error] orchestration.partitioning.keepUnzonedBrokers requires both orchestration.partitioning.regions and orchestration.partitioning.regionId to preserve the numbered broker identity." -}}
-  {{- end }}
-  {{- $regionsRaw := get $orchestrationMultiregion "regions" | toString -}}
-  {{- $regionIdRaw := get $orchestrationMultiregion "regionId" | toString -}}
+  {{- $orchRaw := .Values.orchestration.partitioning | default dict -}}
+  {{- $zoneCountRaw := get $orchRaw "numberOfZones" | toString -}}
+  {{- $zoneIndexRaw := get $orchRaw "zoneIndex" | toString -}}
   {{- $clusterSizeRaw := .Values.orchestration.clusterSize | toString -}}
-  {{- if or (not (regexMatch "^[0-9]+$" $regionsRaw)) (le (int $regionsRaw) 0) }}
-    {{- fail "[camunda][error] orchestration.partitioning.regions must be a positive integer when orchestration.partitioning.keepUnzonedBrokers=true." -}}
+  {{- if or (not (regexMatch "^[0-9]+$" $zoneCountRaw)) (le (int $zoneCountRaw) 0) }}
+    {{- fail "[camunda][error] orchestration.partitioning.numberOfZones must be a positive integer when orchestration.partitioning.keepUnzonedBrokers=true." -}}
   {{- end }}
-  {{- if not (regexMatch "^[0-9]+$" $regionIdRaw) }}
-    {{- fail "[camunda][error] orchestration.partitioning.regionId must be an integer greater than or equal to zero when orchestration.partitioning.keepUnzonedBrokers=true." -}}
+  {{- if not (regexMatch "^[0-9]+$" $zoneIndexRaw) }}
+    {{- fail "[camunda][error] orchestration.partitioning.zoneIndex must be an integer greater than or equal to zero when orchestration.partitioning.keepUnzonedBrokers=true." -}}
   {{- end }}
-  {{- if ge (int $regionIdRaw) (int $regionsRaw) }}
-    {{- fail "[camunda][error] orchestration.partitioning.regionId must be less than orchestration.partitioning.regions when orchestration.partitioning.keepUnzonedBrokers=true." -}}
+  {{- if ge (int $zoneIndexRaw) (int $zoneCountRaw) }}
+    {{- fail "[camunda][error] orchestration.partitioning.zoneIndex must be less than orchestration.partitioning.numberOfZones when orchestration.partitioning.keepUnzonedBrokers=true." -}}
   {{- end }}
   {{- if or (not (regexMatch "^[0-9]+$" $clusterSizeRaw)) (le (int $clusterSizeRaw) 0) }}
     {{- fail "[camunda][error] orchestration.clusterSize must be a positive integer when orchestration.partitioning.keepUnzonedBrokers=true." -}}
   {{- end }}
-  {{- if ne (mod (int $clusterSizeRaw) (int $regionsRaw)) 0 }}
-    {{- fail "[camunda][error] orchestration.clusterSize must be divisible by orchestration.partitioning.regions when orchestration.partitioning.keepUnzonedBrokers=true." -}}
+  {{- if ne (mod (int $clusterSizeRaw) (int $zoneCountRaw)) 0 }}
+    {{- fail "[camunda][error] orchestration.clusterSize must be divisible by orchestration.partitioning.numberOfZones when orchestration.partitioning.keepUnzonedBrokers=true." -}}
   {{- end }}
 {{- end }}
 
@@ -523,12 +533,12 @@ broker count without the diff naming the setting it ignored.
 {{- end }}
 
 {{/*
-Fail if the zone-aware scheme is combined with the region-numbering settings it replaces.
-While keepUnzonedBrokers is set the pair still describes the retained numbered generation,
-so the guard stands down until retention is off.
+Fail if the zone-aware scheme is combined with the round-robin numbering it replaces.
+The guard stands down while keepUnzonedBrokers is set, where the pair still describes the
+retained round-robin generation.
 */}}
-{{- if and (eq $partitioning.scheme "zone-aware") (not $partitioning.keepUnzonedBrokers) (or (ne (int $partitioning.regions) 1) (ne (int $partitioning.regionId) 0)) }}
-  {{- fail (printf "[camunda][error] %s.regions and %s.regionId cannot be used with the zone-aware scheme." $partitioningKey $partitioningKey) -}}
+{{- if and (eq $partitioning.scheme "zone-aware") (not $partitioning.keepUnzonedBrokers) (or (ne (int $partitioning.numberOfZones) 1) (ne (int $partitioning.zoneIndex) 0)) }}
+  {{- fail (printf "[camunda][error] %s.numberOfZones and %s.zoneIndex cannot be used with the zone-aware scheme; the zone list describes the topology instead." $partitioningKey $partitioningKey) -}}
 {{- end }}
 
 {{/*
@@ -538,42 +548,64 @@ guard above cannot see a sub-1 value because the resolver has already normalised
 
 NOTE: the count is read from the raw values, not from the resolved dict. Both blocks
 default it through "| default 1", and 0 is falsy in Go templates, so a typed 0 reaches
-the resolver as 1; "regions: 0" on its own also reads as an unconfigured block and falls
+the resolver as 1; a sub-1 count on its own also reads as an unconfigured block and falls
 through to global.multiregion. Neither is visible after resolution.
-
-NOTE: a nil count is skipped. The chart default is null, which means "unset" and is what
-keepUnzonedBrokers checks for with hasKey; Helm only drops that key when it comes from the
-chart defaults, so passing values.yaml back through "-f" keeps it present and nil, and
-"int nil" would otherwise read as 0 here.
 
 NOTE: orchestration.partitioning is scanned unconditionally because a sub-1 count there
 is what makes the block read as unconfigured in the first place. The deprecated block is
 scanned only when it is the one in effect, so an inert leftover cannot fail a render that
 is driven entirely by orchestration.partitioning.
 */}}
-{{- $rawBlocks := dict "orchestration.partitioning" (.Values.orchestration.partitioning | default dict) -}}
+{{- /* NOTE: reached with --skip-schema-validation, where additionalProperties does not
+     run, so each block rejects the other block's spelling here. */ -}}
+{{- $renamed := dict "regions" "numberOfZones" "regionId" "zoneIndex" -}}
+{{- $orchRaw := .Values.orchestration.partitioning | default dict -}}
+{{- range $old, $current := $renamed }}
+  {{- if hasKey $orchRaw $old }}
+    {{- fail (printf "[camunda][error] orchestration.partitioning.%s was renamed to orchestration.partitioning.%s." $old $current) -}}
+  {{- end }}
+{{- end }}
+{{- $globalRaw := .Values.global.multiregion | default dict -}}
+{{- range $current, $deprecated := dict "numberOfZones" "regions" "zoneIndex" "regionId" }}
+  {{- if hasKey $globalRaw $current }}
+    {{- fail (printf "[camunda][error] global.multiregion.%s does not exist; the deprecated block spells it global.multiregion.%s, and %s lives under orchestration.partitioning." $current $deprecated $current) -}}
+  {{- end }}
+{{- end }}
+
+{{- $rawBlocks := list (dict "key" "orchestration.partitioning" "field" "numberOfZones" "raw" (.Values.orchestration.partitioning | default dict)) -}}
 {{- if eq $partitioningKey "global.multiregion" -}}
-  {{- $_ := set $rawBlocks "global.multiregion" (.Values.global.multiregion | default dict) -}}
+  {{- $rawBlocks = append $rawBlocks (dict "key" "global.multiregion" "field" "regions" "raw" (.Values.global.multiregion | default dict)) -}}
 {{- end -}}
-{{- range $key, $raw := $rawBlocks }}
-  {{- if and (hasKey $raw "regions") (not (kindIs "invalid" $raw.regions)) (lt (int $raw.regions) 1) }}
-    {{- fail (printf "[camunda][error] %s.regions is %d; a cluster spans at least one region." $key (int $raw.regions)) -}}
+{{- range $block := $rawBlocks }}
+  {{- if hasKey $block.raw $block.field }}
+    {{- $count := get $block.raw $block.field -}}
+    {{- if lt (int $count) 1 }}
+      {{- fail (printf "[camunda][error] %s.%s is %d; a cluster spans at least one zone." $block.key $block.field (int $count)) -}}
+    {{- end }}
   {{- end }}
 {{- end }}
 
 {{/*
 Fail if the round-robin numbering cannot describe a consistent cluster. Node IDs are
-derived as "<ordinal> * regions + regionId", so a region numbered outside its own range
-takes the node IDs of another region.
+derived as "<ordinal> * numberOfZones + zoneIndex", so a zone indexed outside its own
+range takes the node IDs of another zone.
 
-NOTE: a clusterSize the region count does not divide is the same class of fault and is
+NOTE: a clusterSize the zone count does not divide is the same class of fault and is
 deliberately not rejected here; see #7196.
 */}}
 {{- if ne $partitioning.scheme "zone-aware" }}
-  {{- $regions := int $partitioning.regions -}}
-  {{- $regionId := int $partitioning.regionId -}}
-  {{- if or (lt $regionId 0) (ge $regionId $regions) }}
-    {{- fail (printf "[camunda][error] %s.regionId is %d but %s.regions is %d; regionId numbers this region and must be between 0 and %d, or its brokers take the node IDs of another region." $partitioningKey $regionId $partitioningKey $regions (sub $regions 1)) -}}
+  {{- /* NOTE: the message names the keys of whichever block is in effect. The deprecated
+       block still spells the pair regions/regionId. */ -}}
+  {{- $countField := "numberOfZones" -}}
+  {{- $indexField := "zoneIndex" -}}
+  {{- if eq $partitioningKey "global.multiregion" -}}
+    {{- $countField = "regions" -}}
+    {{- $indexField = "regionId" -}}
+  {{- end -}}
+  {{- $zoneCount := int $partitioning.numberOfZones -}}
+  {{- $zoneIndex := int $partitioning.zoneIndex -}}
+  {{- if or (lt $zoneIndex 0) (ge $zoneIndex $zoneCount) }}
+    {{- fail (printf "[camunda][error] %s.%s is %d but %s.%s is %d; %s addresses this zone and must be between 0 and %d, or its brokers take the node IDs of another zone." $partitioningKey $indexField $zoneIndex $partitioningKey $countField $zoneCount $indexField (sub $zoneCount 1)) -}}
   {{- end }}
 {{- end }}
 
@@ -1480,6 +1512,43 @@ The following values inside your values.yaml need to be set but were not:
     {{- end }}
   {{- end }}
 
+  {{- if or (eq (include "camundaPlatform.nginxCompatHTTPInjecting" .) "true") (eq (include "camundaPlatform.nginxCompatGRPCInjecting" .) "true") }}
+    {{- $warningMessage := printf "%s %s %s"
+        "[camunda][warning]"
+        "DEPRECATION: global.compatibility.nginx.renderAnnotations is enabled, so the chart still injects the ingress-nginx annotations it used to ship as values defaults. They render whatever ingress controller you run, and only ingress-nginx reads them."
+        "The shim is removed in the next major. Set whatever your controller needs through global.ingress.annotations and orchestration.ingress.grpc.annotations, then set global.compatibility.nginx.renderAnnotations to false."
+    -}}
+    {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+  {{- end }}
+
+  {{- $httpTLSComponents := list }}
+  {{- if eq (include "camundaPlatform.orchestrationHTTPIngressRendered" .) "true" }}
+    {{- $httpTLSComponents = append $httpTLSComponents "the Orchestration REST server" }}
+  {{- end }}
+  {{- if eq (include "camundaPlatform.connectorsHTTPIngressRendered" .) "true" }}
+    {{- $httpTLSComponents = append $httpTLSComponents "Connectors" }}
+  {{- end }}
+  {{- if eq (include "camundaPlatform.optimizeHTTPIngressRendered" .) "true" }}
+    {{- $httpTLSComponents = append $httpTLSComponents "Optimize" }}
+  {{- end }}
+  {{- if and $httpTLSComponents (ne .Values.global.ingress.className "nginx") }}
+    {{- $warningMessage := printf "%s %s %s"
+        "[camunda][warning]"
+        (printf "Upstream TLS is enabled for %s, so the chart annotates the Ingress with nginx.ingress.kubernetes.io/backend-protocol: HTTPS, but global.ingress.className is %q rather than nginx." (join ", " $httpTLSComponents) .Values.global.ingress.className)
+        "Only ingress-nginx reads that annotation, so on another controller the upstream stays plaintext and routing to the TLS-only pod breaks. Set your controller's equivalent, for example projectcontour.io/upstream-protocol.tls on the target Service with Contour."
+    -}}
+    {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+  {{- end }}
+
+  {{- if and (eq (include "camundaPlatform.grpcIngressRendered" .) "true") (eq (include "camundaPlatform.orchestrationGRPCTLSEnabled" .) "true") (ne .Values.orchestration.ingress.grpc.className "nginx") }}
+    {{- $warningMessage := printf "%s %s %s"
+        "[camunda][warning]"
+        (printf "Upstream TLS is enabled for the Orchestration gRPC server, so the chart annotates the gRPC Ingress with nginx.ingress.kubernetes.io/backend-protocol: GRPCS, but orchestration.ingress.grpc.className is %q rather than nginx." .Values.orchestration.ingress.grpc.className)
+        "Only ingress-nginx reads that annotation, so on another controller the upstream stays plaintext and Zeebe gRPC breaks. Set your controller's equivalent, for example projectcontour.io/upstream-protocol.h2 on the Orchestration Service with Contour."
+    -}}
+    {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+  {{- end }}
+
   {{/* Warn when webModeler pusher secret is auto-generated */}}
   {{- if eq (include "camundaHub.webModelerEnabled" .) "true" }}
     {{- $pusher := mustMergeOverwrite (deepCopy .Values.webModeler.restapi.pusher) (.Values.camundaHub.restapi.pusher | default dict) }}
@@ -1505,11 +1574,11 @@ The following values inside your values.yaml need to be set but were not:
     {{- end }}
   {{- end }}
 
-  {{- if eq (include "camundaPlatform.partitioningConfigured" (.Values.global.multiregion | default dict)) "true" }}
+  {{- if eq (include "camundaPlatform.deprecatedMultiregionConfigured" (.Values.global.multiregion | default dict)) "true" }}
     {{- $warningMessage := printf "%s %s %s %s"
         "[camunda][warning]"
         "DEPRECATION: \"global.multiregion.*\" is deprecated and will be removed in chart v16 (Camunda 8.11)."
-        "Only the Orchestration Cluster reads these keys, so they moved to \"orchestration.partitioning.*\" with the same field names."
+        "Only the Orchestration Cluster reads these keys, so they moved to \"orchestration.partitioning.*\", where regions is now numberOfZones and regionId is now zoneIndex."
         "Move the block and remove the global one; setting both fails the render."
     -}}
     {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}

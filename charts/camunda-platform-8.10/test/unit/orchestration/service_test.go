@@ -194,8 +194,8 @@ func (s *ServiceTest) TestZonedModeKeepsTheClientServiceZoneFree() {
 				"orchestration.partitioning.zones[0].numberOfReplicas": "3",
 				"orchestration.partitioning.zones[0].priority":         "100",
 				"orchestration.partitioning.keepUnzonedBrokers":        "true",
-				"orchestration.partitioning.regions":                   "1",
-				"orchestration.partitioning.regionId":                  "0",
+				"orchestration.partitioning.numberOfZones":             "1",
+				"orchestration.partitioning.zoneIndex":                 "0",
 				"orchestration.data.secondaryStorage.type":             "elasticsearch",
 			},
 			Verifier: func(t *testing.T, output string, err error) {

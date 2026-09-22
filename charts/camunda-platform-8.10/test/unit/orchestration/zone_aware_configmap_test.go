@@ -25,7 +25,7 @@ import (
 func (s *ConfigmapTemplateTest) TestZonedModeAllowsNumberedRegionSettingsAfterMigration() {
 	testCases := []testhelpers.TestCase{
 		{
-			Name: "TestMigrationRequiresThePreviousNumberedRegionSettings",
+			Name: "TestMigrationAcceptsTheDefaultSingleZoneNumbering",
 			Values: map[string]string{
 				"orchestration.partitioning.scheme":                    "zone-aware",
 				"orchestration.partitioning.zone":                      "region-a",
@@ -36,12 +36,13 @@ func (s *ConfigmapTemplateTest) TestZonedModeAllowsNumberedRegionSettingsAfterMi
 				"orchestration.partitioning.keepUnzonedBrokers":        "true",
 				"orchestration.profiles.broker":                        "true",
 			},
-			Expected: map[string]string{
-				"ERROR": "requires both orchestration.partitioning.regions and orchestration.partitioning.regionId",
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
 			},
 		},
 		{
-			Name: "TestMigrationRejectsMissingRegionId",
+			Name:                    "TestMigrationDefaultsZoneIndexToZero",
+			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.clusterSize=4"},
 			Values: map[string]string{
 				"orchestration.partitioning.scheme":                    "zone-aware",
 				"orchestration.partitioning.zone":                      "region-a",
@@ -50,15 +51,15 @@ func (s *ConfigmapTemplateTest) TestZonedModeAllowsNumberedRegionSettingsAfterMi
 				"orchestration.partitioning.zones[0].numberOfReplicas": "1",
 				"orchestration.partitioning.zones[0].priority":         "100",
 				"orchestration.partitioning.keepUnzonedBrokers":        "true",
-				"orchestration.partitioning.regions":                   "2",
+				"orchestration.partitioning.numberOfZones":             "2",
 				"orchestration.profiles.broker":                        "true",
 			},
-			Expected: map[string]string{
-				"ERROR": "requires both orchestration.partitioning.regions and orchestration.partitioning.regionId",
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
 			},
 		},
 		{
-			Name: "TestMigrationRejectsEmptyRegionId",
+			Name: "TestMigrationRejectsEmptyZoneIndex",
 			Values: map[string]string{
 				"orchestration.partitioning.scheme":                    "zone-aware",
 				"orchestration.partitioning.zone":                      "region-a",
@@ -67,12 +68,12 @@ func (s *ConfigmapTemplateTest) TestZonedModeAllowsNumberedRegionSettingsAfterMi
 				"orchestration.partitioning.zones[0].numberOfReplicas": "1",
 				"orchestration.partitioning.zones[0].priority":         "100",
 				"orchestration.partitioning.keepUnzonedBrokers":        "true",
-				"orchestration.partitioning.regions":                   "2",
-				"orchestration.partitioning.regionId":                  "",
+				"orchestration.partitioning.numberOfZones":             "2",
+				"orchestration.partitioning.zoneIndex":                 "",
 				"orchestration.profiles.broker":                        "true",
 			},
 			Expected: map[string]string{
-				"ERROR": "requires both orchestration.partitioning.regions and orchestration.partitioning.regionId",
+				"ERROR": "orchestration.partitioning.zoneIndex must be an integer greater than or equal to zero",
 			},
 		},
 		{
@@ -96,8 +97,8 @@ func (s *ConfigmapTemplateTest) TestZonedModeAllowsNumberedRegionSettingsAfterMi
 				"orchestration.partitioning.zones[0].numberOfReplicas": "1",
 				"orchestration.partitioning.zones[0].priority":         "100",
 				"orchestration.partitioning.keepUnzonedBrokers":        "true",
-				"orchestration.partitioning.regions":                   "2",
-				"orchestration.partitioning.regionId":                  "0",
+				"orchestration.partitioning.numberOfZones":             "2",
+				"orchestration.partitioning.zoneIndex":                 "0",
 				"orchestration.profiles.broker":                        "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -114,12 +115,12 @@ func (s *ConfigmapTemplateTest) TestZonedModeAllowsNumberedRegionSettingsAfterMi
 				"orchestration.partitioning.zones[0].numberOfReplicas": "1",
 				"orchestration.partitioning.zones[0].priority":         "100",
 				"orchestration.partitioning.keepUnzonedBrokers":        "false",
-				"orchestration.partitioning.regions":                   "2",
-				"orchestration.partitioning.regionId":                  "1",
+				"orchestration.partitioning.numberOfZones":             "2",
+				"orchestration.partitioning.zoneIndex":                 "1",
 				"orchestration.profiles.broker":                        "true",
 			},
 			Expected: map[string]string{
-				"ERROR": "orchestration.partitioning.regions and orchestration.partitioning.regionId cannot be used with the zone-aware scheme",
+				"ERROR": "orchestration.partitioning.numberOfZones and orchestration.partitioning.zoneIndex cannot be used with the zone-aware scheme",
 			},
 		},
 		{
@@ -224,8 +225,8 @@ func (s *ConfigmapTemplateTest) TestMigrationContactPoints() {
 				"orchestration.partitioning.zones[2].numberOfReplicas": "1",
 				"orchestration.partitioning.zones[2].priority":         "80",
 				"orchestration.partitioning.keepUnzonedBrokers":        "true",
-				"orchestration.partitioning.regions":                   "3",
-				"orchestration.partitioning.regionId":                  "1",
+				"orchestration.partitioning.numberOfZones":             "3",
+				"orchestration.partitioning.zoneIndex":                 "1",
 				"orchestration.profiles.broker":                        "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {

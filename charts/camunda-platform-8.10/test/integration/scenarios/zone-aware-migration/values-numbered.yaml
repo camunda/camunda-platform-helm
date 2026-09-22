@@ -34,4 +34,4 @@ orchestration:
   clusterSize: "2"
   replicationFactor: "1"
   partitionCount: "1"
-  partitioning: {regions: 2, regionId: 0}
+  partitioning: {numberOfZones: 2, zoneIndex: 0}

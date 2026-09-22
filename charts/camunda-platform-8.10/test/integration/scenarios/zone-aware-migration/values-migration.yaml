@@ -11,8 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# The zone-aware scheme with the round-robin brokers retained. clusterSize, replicationFactor, regions and
-# regionId keep their numbered values, which is what preserves the retained generation.
 orchestration:
   partitioning:
     scheme: zone-aware
@@ -20,5 +18,5 @@ orchestration:
     zones:
       - {name: zone-a, numberOfBrokers: 1, numberOfReplicas: 1, priority: 100}
     keepUnzonedBrokers: true
-    regions: 2
-    regionId: 0
+    numberOfZones: 2
+    zoneIndex: 0

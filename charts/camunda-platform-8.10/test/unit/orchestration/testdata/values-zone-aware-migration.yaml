@@ -21,5 +21,5 @@ orchestration:
         numberOfReplicas: 1
         priority: 80
     keepUnzonedBrokers: true
-    regions: 3
-    regionId: 1
+    numberOfZones: 3
+    zoneIndex: 1

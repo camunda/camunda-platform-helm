@@ -111,7 +111,7 @@ camunda:
     {{- end }}
     {{- else }}
     # Multi-region deployments: initial-contact-points must be provided manually via environment variable.
-    # Set CAMUNDA_CLUSTER_INITIALCONTACTPOINTS with fully-qualified domain names for all brokers across regions.
+    # Set CAMUNDA_CLUSTER_INITIALCONTACTPOINTS with fully-qualified domain names for all brokers across zones.
     # Example: orchestration.env[0].name=CAMUNDA_CLUSTER_INITIALCONTACTPOINTS
     #          orchestration.env[0].value=<pod>.<headless-service>.<namespace-0>.svc.cluster.local:26502,<pod>.<headless-service>.<namespace-1>.svc.cluster.local:26502,...
     {{- end }}
@@ -343,7 +343,7 @@ zeebe:
 
     # zeebe.broker.network
     network:
-      {{- if or (eq (include "orchestration.zoneAware" .) "true") (gt (int $partitioning.regions) 1) }}
+      {{- if or (eq (include "orchestration.zoneAware" .) "true") (gt (int $partitioning.numberOfZones) 1) }}
       advertisedHost: "${K8S_NAME}.${K8S_SERVICE_NAME}.${K8S_NAMESPACE}.svc"
       {{- else }}
       advertisedHost: "${K8S_NAME}.${K8S_SERVICE_NAME}"

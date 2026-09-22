@@ -1,0 +1,7 @@
+global:
+  ingress:
+    enabled: true
+    className: contour
+    annotations:
+      nginx.ingress.kubernetes.io/ssl-redirect: null
+      nginx.ingress.kubernetes.io/proxy-body-size: null

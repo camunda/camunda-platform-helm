@@ -37,8 +37,8 @@ func (s *StatefulSetTest) TestMigrationSeparatesBrokerGenerationSelectors() {
 				"orchestration.partitioning.zones[0].numberOfReplicas": "1",
 				"orchestration.partitioning.zones[0].priority":         "100",
 				"orchestration.partitioning.keepUnzonedBrokers":        "true",
-				"orchestration.partitioning.regions":                   "1",
-				"orchestration.partitioning.regionId":                  "0",
+				"orchestration.partitioning.numberOfZones":             "1",
+				"orchestration.partitioning.zoneIndex":                 "0",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)

@@ -97,7 +97,7 @@ integration:
     - id: documentstore
       shortname: docstr
       tier: 2
-      enabled: false
+      enabled: true
     - id: secretstore-file
       shortname: secfl
       tier: 2
@@ -221,7 +221,7 @@ integration:
       enabled: true
     - id: multinamespace-2orch
       shortname: mns2
-      tier: 2
+      tier: 1
       enabled: true
     - id: multinamespace-optimize
       shortname: mnop

@@ -294,6 +294,36 @@ func TestTopologySchemaRejectsInvalidOptimizeRedirectUrl(t *testing.T) {
 	require.ErrorContains(t, err, "physicalTenants/0/components/optimize/redirectUrl': 'not-a-url' does not match pattern")
 }
 
+func TestHubTopologyRendersLegacySplitWorkloadEndpoints(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "hub-keycloak.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues: map[string]string{
+			"camundaHub.enabled":                                                       "true",
+			"camundaHub.restapi.mail.fromAddress":                                      "noreply@example.com",
+			"global.topology.clusters[0].architecture":                                 "legacy",
+			"global.topology.clusters[0].version":                                      "8.7.0",
+			"global.topology.clusters[0].components.orchestration.serviceName":         "camunda-zeebe",
+			"global.topology.clusters[0].components.orchestration.gatewayServiceName":  "camunda-zeebe-gateway",
+			"global.topology.clusters[0].components.orchestration.operateServiceName":  "camunda-operate",
+			"global.topology.clusters[0].components.orchestration.tasklistServiceName": "camunda-tasklist",
+		},
+	}
+
+	output := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{
+		"templates/identity/configmap.yaml",
+		"templates/web-modeler/configmap-restapi.yaml",
+	})
+	require.Contains(t, output, `http://camunda-operate.camunda-east.svc.cluster.local:9600/operate/actuator/health/readiness`)
+	require.Contains(t, output, `http://camunda-tasklist.camunda-east.svc.cluster.local:9600/tasklist/actuator/health/readiness`)
+	require.Contains(t, output, `http://camunda-zeebe-gateway.camunda-east.svc.cluster.local:9600/actuator/health/readiness`)
+	require.Contains(t, output, `type: zeebeGateway`)
+	require.Regexp(t, `version: "8\.7\.0"\s+authentication: "BEARER_TOKEN"\s+components:`, output)
+	require.Contains(t, output, `- "/operate/identity-callback"`)
+	require.Contains(t, output, `- "/tasklist/identity-callback"`)
+	require.NotContains(t, output, `type: admin`)
+}
+
 func TestHubTopologySuppressesDefaultWorkloadPlane(t *testing.T) {
 	output := render(t, "hub-generic.yaml")
 
@@ -1143,4 +1173,46 @@ func TestPhysicalTenantsIgnoredWhenNotSpringImported(t *testing.T) {
 
 	output := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{"templates/orchestration/configmap.yaml"})
 	require.Contains(t, output, "jwk-set-uri:")
+}
+
+// TestMultiTenancyRequiresIdentityAuthEnabled pins the Multi-Tenancy guard's
+// dependence on real booleans. The orchestration fixture sets
+// global.identity.service.url, pointing at the Hub's Management Identity, while
+// global.identity.auth.enabled is false here — exactly the shape the guard's
+// error message says must be rejected. While $identityAuthEnabled was computed
+// with `or`, it evaluated to that URL string, `has false` never matched it, and
+// Multi-Tenancy rendered with auth disabled.
+func TestMultiTenancyRequiresIdentityAuthEnabled(t *testing.T) {
+	options := &helm.Options{
+		ValuesFiles: []string{filepath.Join("testdata", "orchestration.yaml")},
+		SetValues: map[string]string{
+			"global.topology.mode":              "combined",
+			"global.identity.auth.enabled":      "false",
+			"global.multitenancy.enabled":       "true",
+			"identity.externalDatabase.enabled": "true",
+		},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/orchestration/configmap.yaml"})
+	require.ErrorContains(t, err, "Multi-Tenancy feature")
+}
+
+// TestMultiTenancyAllowsIdentityAuthEnabled is the positive half of the guard:
+// with Identity enabled, auth enabled and an external database configured, the
+// same values must render. Without it, tightening `or` to `and` could pass the
+// test above by rejecting every Multi-Tenancy configuration.
+func TestMultiTenancyAllowsIdentityAuthEnabled(t *testing.T) {
+	options := &helm.Options{
+		ValuesFiles: []string{filepath.Join("testdata", "orchestration.yaml")},
+		SetValues: map[string]string{
+			"global.topology.mode":              "combined",
+			"global.identity.auth.enabled":      "true",
+			"global.multitenancy.enabled":       "true",
+			"identity.enabled":                  "true",
+			"identity.externalDatabase.enabled": "true",
+		},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/orchestration/configmap.yaml"})
+	require.NoError(t, err)
 }

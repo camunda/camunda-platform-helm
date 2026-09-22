@@ -131,8 +131,8 @@ func (s *ZoneAwareServiceAccountTest) TestSharedServiceAccountHasNoGeneration() 
 			testCase.Values["orchestration.partitioning.keepUnzonedBrokers"] = "true"
 			if mode == "zoned" {
 				testCase.Values["orchestration.partitioning.keepUnzonedBrokers"] = "false"
-				testCase.Values["orchestration.partitioning.regions"] = "1"
-				testCase.Values["orchestration.partitioning.regionId"] = "0"
+				testCase.Values["orchestration.partitioning.numberOfZones"] = "1"
+				testCase.Values["orchestration.partitioning.zoneIndex"] = "0"
 			}
 		}
 		testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, []testhelpers.TestCase{testCase})

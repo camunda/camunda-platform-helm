@@ -1345,9 +1345,9 @@ func (s *ConfigmapTemplateTest) TestNumberedModeConfigurationCompatibility() {
 			// regions/regionId is caught rather than passing on a render check.
 			Name: "RoundRobinViaPartitioningBlockDrivesNodeIDAndSizing",
 			Values: map[string]string{
-				"orchestration.partitioning.regions":  "2",
-				"orchestration.partitioning.regionId": "1",
-				"orchestration.profiles.broker":       "true",
+				"orchestration.partitioning.numberOfZones": "2",
+				"orchestration.partitioning.zoneIndex":     "1",
+				"orchestration.profiles.broker":            "true",
 			},
 			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.clusterSize=6"},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -1576,11 +1576,11 @@ func (s *ConfigmapTemplateTest) TestZonedModeRejectsNumberedRegionSettings() {
 				"orchestration.partitioning.zones[0].numberOfBrokers":  "3",
 				"orchestration.partitioning.zones[0].numberOfReplicas": "3",
 				"orchestration.partitioning.zones[0].priority":         "100",
-				"orchestration.partitioning.regions":                   "2",
+				"orchestration.partitioning.numberOfZones":             "2",
 				"orchestration.profiles.broker":                        "true",
 			},
 			Expected: map[string]string{
-				"ERROR": "orchestration.partitioning.regions and orchestration.partitioning.regionId cannot be used with the zone-aware scheme",
+				"ERROR": "orchestration.partitioning.numberOfZones and orchestration.partitioning.zoneIndex cannot be used with the zone-aware scheme",
 			},
 		},
 		{
@@ -1716,7 +1716,7 @@ func (s *ConfigmapTemplateTest) TestZonedModeRejectsNumberedRegionSettings() {
 			Values: map[string]string{
 				"orchestration.partitioning.scheme":                    "zone-aware",
 				"orchestration.partitioning.zone":                      "region-a",
-				"orchestration.partitioning.regions":                   "0",
+				"orchestration.partitioning.numberOfZones":             "0",
 				"orchestration.partitioning.zones[0].name":             "region-a",
 				"orchestration.partitioning.zones[0].numberOfBrokers":  "2",
 				"orchestration.partitioning.zones[0].numberOfReplicas": "2",
@@ -1724,12 +1724,12 @@ func (s *ConfigmapTemplateTest) TestZonedModeRejectsNumberedRegionSettings() {
 				"orchestration.profiles.broker":                        "true",
 			},
 			Expected: map[string]string{
-				"ERROR": "orchestration.partitioning.regions is 0; a cluster spans at least one region",
+				"ERROR": "orchestration.partitioning.numberOfZones is 0; a cluster spans at least one zone",
 			},
 		},
 		{
 			Name:                    "TestZonedModeRejectsZeroRegionsWrittenAsAString",
-			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.partitioning.regions=0"},
+			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.partitioning.numberOfZones=0"},
 			Values: map[string]string{
 				"orchestration.partitioning.scheme":                    "zone-aware",
 				"orchestration.partitioning.zone":                      "region-a",
@@ -1740,7 +1740,49 @@ func (s *ConfigmapTemplateTest) TestZonedModeRejectsNumberedRegionSettings() {
 				"orchestration.profiles.broker":                        "true",
 			},
 			Expected: map[string]string{
-				"ERROR": "orchestration.partitioning.regions is 0; a cluster spans at least one region",
+				"ERROR": "orchestration.partitioning.numberOfZones is 0; a cluster spans at least one zone",
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *ConfigmapTemplateTest) TestRenamedRegionKeysAreRejectedWithoutSchemaValidation() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name:                    "TestRegionsIsRejected",
+			RenderTemplateExtraArgs: []string{"--skip-schema-validation"},
+			Values: map[string]string{
+				"orchestration.partitioning.regions": "2",
+				"orchestration.profiles.broker":      "true",
+			},
+			Expected: map[string]string{
+				"ERROR": "orchestration.partitioning.regions was renamed to orchestration.partitioning.numberOfZones",
+			},
+		},
+		{
+			Name:                    "TestRegionIdIsRejected",
+			RenderTemplateExtraArgs: []string{"--skip-schema-validation"},
+			Values: map[string]string{
+				"orchestration.partitioning.regionId": "1",
+				"orchestration.profiles.broker":       "true",
+			},
+			Expected: map[string]string{
+				"ERROR": "orchestration.partitioning.regionId was renamed to orchestration.partitioning.zoneIndex",
+			},
+		},
+		{
+			Name:                    "TestDeprecatedGlobalBlockKeepsItsSpelling",
+			RenderTemplateExtraArgs: []string{"--skip-schema-validation"},
+			Values: map[string]string{
+				"global.multiregion.regions":    "2",
+				"global.multiregion.regionId":   "1",
+				"orchestration.profiles.broker": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "* 2 + 1]")
 			},
 		},
 	}
@@ -1753,43 +1795,43 @@ func (s *ConfigmapTemplateTest) TestRoundRobinRejectsInconsistentNumbering() {
 		{
 			Name: "TestRoundRobinRejectsARegionIdAtTheRegionCount",
 			Values: map[string]string{
-				"orchestration.partitioning.regions":  "2",
-				"orchestration.partitioning.regionId": "2",
-				"orchestration.profiles.broker":       "true",
+				"orchestration.partitioning.numberOfZones": "2",
+				"orchestration.partitioning.zoneIndex":     "2",
+				"orchestration.profiles.broker":            "true",
 			},
 			Expected: map[string]string{
-				"ERROR": "orchestration.partitioning.regionId is 2 but orchestration.partitioning.regions is 2; regionId numbers this region and must be between 0 and 1",
+				"ERROR": "orchestration.partitioning.zoneIndex is 2 but orchestration.partitioning.numberOfZones is 2; zoneIndex addresses this zone and must be between 0 and 1",
 			},
 		},
 		{
 			Name: "TestRoundRobinRejectsANegativeRegionId",
 			Values: map[string]string{
-				"orchestration.partitioning.regions":  "2",
-				"orchestration.partitioning.regionId": "-1",
-				"orchestration.profiles.broker":       "true",
+				"orchestration.partitioning.numberOfZones": "2",
+				"orchestration.partitioning.zoneIndex":     "-1",
+				"orchestration.profiles.broker":            "true",
 			},
 			Expected: map[string]string{
-				"ERROR": "orchestration.partitioning.regionId is -1 but orchestration.partitioning.regions is 2",
+				"ERROR": "orchestration.partitioning.zoneIndex is -1 but orchestration.partitioning.numberOfZones is 2",
 			},
 		},
 		{
 			Name: "TestRoundRobinRejectsANegativeRegionCount",
 			Values: map[string]string{
-				"orchestration.partitioning.regions": "-2",
-				"orchestration.profiles.broker":      "true",
+				"orchestration.partitioning.numberOfZones": "-2",
+				"orchestration.profiles.broker":            "true",
 			},
 			Expected: map[string]string{
-				"ERROR": "orchestration.partitioning.regions is -2; a cluster spans at least one region",
+				"ERROR": "orchestration.partitioning.numberOfZones is -2; a cluster spans at least one zone",
 			},
 		},
 		{
 			Name: "TestRoundRobinRejectsZeroRegions",
 			Values: map[string]string{
-				"orchestration.partitioning.regions": "0",
-				"orchestration.profiles.broker":      "true",
+				"orchestration.partitioning.numberOfZones": "0",
+				"orchestration.profiles.broker":            "true",
 			},
 			Expected: map[string]string{
-				"ERROR": "orchestration.partitioning.regions is 0; a cluster spans at least one region",
+				"ERROR": "orchestration.partitioning.numberOfZones is 0; a cluster spans at least one zone",
 			},
 		},
 		{
@@ -1799,7 +1841,7 @@ func (s *ConfigmapTemplateTest) TestRoundRobinRejectsInconsistentNumbering() {
 				"orchestration.profiles.broker": "true",
 			},
 			Expected: map[string]string{
-				"ERROR": "global.multiregion.regions is 0; a cluster spans at least one region",
+				"ERROR": "global.multiregion.regions is 0; a cluster spans at least one zone",
 			},
 		},
 		{
@@ -1816,9 +1858,9 @@ func (s *ConfigmapTemplateTest) TestRoundRobinRejectsInconsistentNumbering() {
 		{
 			Name: "TestRoundRobinAcceptsTheLastRegion",
 			Values: map[string]string{
-				"orchestration.partitioning.regions":  "2",
-				"orchestration.partitioning.regionId": "1",
-				"orchestration.profiles.broker":       "true",
+				"orchestration.partitioning.numberOfZones": "2",
+				"orchestration.partitioning.zoneIndex":     "1",
+				"orchestration.profiles.broker":            "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
@@ -1827,12 +1869,12 @@ func (s *ConfigmapTemplateTest) TestRoundRobinRejectsInconsistentNumbering() {
 		},
 		{
 			Name:                    "TestRoundRobinRejectsZeroRegionsWrittenAsAString",
-			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.partitioning.regions=0"},
+			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.partitioning.numberOfZones=0"},
 			Values: map[string]string{
 				"orchestration.profiles.broker": "true",
 			},
 			Expected: map[string]string{
-				"ERROR": "orchestration.partitioning.regions is 0; a cluster spans at least one region",
+				"ERROR": "orchestration.partitioning.numberOfZones is 0; a cluster spans at least one zone",
 			},
 		},
 		{
@@ -1842,16 +1884,16 @@ func (s *ConfigmapTemplateTest) TestRoundRobinRejectsInconsistentNumbering() {
 				"orchestration.profiles.broker": "true",
 			},
 			Expected: map[string]string{
-				"ERROR": "global.multiregion.regions is 0; a cluster spans at least one region",
+				"ERROR": "global.multiregion.regions is 0; a cluster spans at least one zone",
 			},
 		},
 		{
 			Name: "TestInertDeprecatedRegionCountDoesNotFailAnOrchestrationDrivenRender",
 			Values: map[string]string{
-				"orchestration.partitioning.regions":  "3",
-				"orchestration.partitioning.regionId": "1",
-				"global.multiregion.regions":          "0",
-				"orchestration.profiles.broker":       "true",
+				"orchestration.partitioning.numberOfZones": "3",
+				"orchestration.partitioning.zoneIndex":     "1",
+				"global.multiregion.regions":               "0",
+				"orchestration.profiles.broker":            "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)

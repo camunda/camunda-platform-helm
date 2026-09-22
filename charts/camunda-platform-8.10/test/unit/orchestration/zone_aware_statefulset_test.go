@@ -77,8 +77,8 @@ func (s *StatefulSetTest) renderStatefulSet(values map[string]string, name strin
 func (s *StatefulSetTest) TestMigrationPreservesNumberedStatefulSet() {
 	baseValues := map[string]string{
 		"orchestration.partitioning.scheme":        "round-robin",
-		"orchestration.partitioning.regions":       "3",
-		"orchestration.partitioning.regionId":      "1",
+		"orchestration.partitioning.numberOfZones": "3",
+		"orchestration.partitioning.zoneIndex":     "1",
 		"orchestration.data.secondaryStorage.type": "elasticsearch",
 	}
 
@@ -114,8 +114,8 @@ func (s *StatefulSetTest) TestKeepUnzonedBrokersDoesNotRestartZonedBrokers() {
 		"orchestration.partitioning.zones[0].numberOfReplicas": "3",
 		"orchestration.partitioning.zones[0].priority":         "100",
 		"orchestration.partitioning.zone":                      "zone-a",
-		"orchestration.partitioning.regions":                   "1",
-		"orchestration.partitioning.regionId":                  "0",
+		"orchestration.partitioning.numberOfZones":             "1",
+		"orchestration.partitioning.zoneIndex":                 "0",
 		"orchestration.data.secondaryStorage.type":             "elasticsearch",
 	}
 
@@ -142,8 +142,8 @@ func (s *StatefulSetTest) TestKeepUnzonedBrokersDoesNotRestartZonedBrokers() {
 // zoned constraints must stand down until retention is disabled.
 func (s *StatefulSetTest) TestMigrationKeepsNumberedSizingValues() {
 	numbered := map[string]string{
-		"orchestration.partitioning.regions":       "2",
-		"orchestration.partitioning.regionId":      "0",
+		"orchestration.partitioning.numberOfZones": "2",
+		"orchestration.partitioning.zoneIndex":     "0",
 		"orchestration.data.secondaryStorage.type": "elasticsearch",
 	}
 

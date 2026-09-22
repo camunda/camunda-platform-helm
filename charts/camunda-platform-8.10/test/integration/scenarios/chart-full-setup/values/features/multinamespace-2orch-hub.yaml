@@ -1,3 +1,40 @@
+# Hub namespace layer for the two-orchestration topology (8.10).
+#
+# The hub release owns Identity, Console, Web Modeler and the bundled
+# Keycloak/PostgreSQL/Elasticsearch. Orchestration, Optimize and Connectors live
+# in the orchestration releases (orcha, orchb, orchc, orchd), so they must be
+# switched off here: base.yaml turns them on for every scenario, and nothing
+# else in this release's layer chain disables them.
+#
+# Web Modeler additionally needs dynamic cluster management so the topology
+# clusters are surfaced in the UI. Without it the Modeler home page never
+# renders its project controls and the topology-orchestration smoke test times
+# out in waitForModelerReady.
+#
+# NOTE: avoid writing literal dollar-sign placeholder syntax in prose comments
+# in this file - the env var scanner (os.Expand-based) matches it anywhere in
+# the raw file content, including comments, and an unset name is reported as a
+# "missing required environment variable" at prepare-values / deploy time.
+
+orchestration:
+  enabled: false
+
+webModeler:
+  restapi:
+    extraConfiguration:
+      - file: dynamic-cluster-management.yaml
+        content: |
+          camunda:
+            modeler:
+              feature:
+                dynamic-cluster-management-enabled: true
+
+optimize:
+  enabled: false
+
+connectors:
+  enabled: false
+
 global:
   identity:
     auth:
@@ -11,7 +48,7 @@ global:
         namespace: "${ORCHA_NAMESPACE}"
         releaseName: integration
         host: "${ORCHA_HOST}"
-        version: "8.10.0-alpha3"
+        version: "8.10.0-alpha5"
         contextPaths:
           orchestration: /orchestration
           optimize: /optimize
@@ -44,7 +81,7 @@ global:
         namespace: "${ORCHB_NAMESPACE}"
         releaseName: integration
         host: "${ORCHB_HOST}"
-        version: "8.10.0-alpha3"
+        version: "8.9.18"
         contextPaths:
           orchestration: /orchestration
           optimize: /optimize
@@ -69,6 +106,79 @@ global:
           connectors:
             enabled: true
             clientId: connectors-orchb
+            secret:
+              existingSecret: integration-test-credentials
+              existingSecretKey: identity-connectors-client-token
+      - id: orchc
+        name: Orchestration C
+        namespace: "${ORCHC_NAMESPACE}"
+        releaseName: integration
+        host: "${ORCHC_HOST}"
+        version: "8.8.17"
+        contextPaths:
+          orchestration: /orchestration
+          optimize: /optimize
+          connectors: /connectors
+        components:
+          orchestration:
+            enabled: true
+            clientId: orchestration-orchc
+            audience: orchestration-orchc-api
+            redirectUrl: "https://${ORCHC_HOST}/orchestration"
+            secret:
+              existingSecret: integration-test-credentials
+              existingSecretKey: identity-orchestration-client-token
+          optimize:
+            enabled: true
+            clientId: optimize-orchc
+            audience: optimize-orchc-api
+            redirectUrl: "https://${ORCHC_HOST}/optimize"
+            secret:
+              existingSecret: integration-test-credentials
+              existingSecretKey: identity-optimize-client-token
+          connectors:
+            enabled: true
+            clientId: connectors-orchc
+            secret:
+              existingSecret: integration-test-credentials
+              existingSecretKey: identity-connectors-client-token
+      - id: orchd
+        name: Orchestration D
+        namespace: "${ORCHD_NAMESPACE}"
+        releaseName: integration
+        host: "${ORCHD_HOST}"
+        version: "8.7.38"
+        architecture: legacy
+        contextPaths:
+          orchestration: ""
+          optimize: /optimize
+          connectors: /connectors
+        components:
+          orchestration:
+            enabled: true
+            clientId: orchestration-orchd
+            audience: orchestration-orchd-api
+            redirectUrl: "https://${ORCHD_HOST}"
+            serviceName: integration-zeebe
+            gatewayServiceName: integration-zeebe-gateway
+            operateServiceName: integration-operate
+            tasklistServiceName: integration-tasklist
+            restUrl: "http://integration-zeebe-gateway.${ORCHD_NAMESPACE}.svc.cluster.local:8080/zeebe"
+            readinessUrl: "http://integration-zeebe-gateway.${ORCHD_NAMESPACE}.svc.cluster.local:9600/zeebe/actuator/health/readiness"
+            secret:
+              existingSecret: integration-test-credentials
+              existingSecretKey: identity-orchestration-client-token
+          optimize:
+            enabled: true
+            clientId: optimize-orchd
+            audience: optimize-orchd-api
+            redirectUrl: "https://${ORCHD_HOST}/optimize"
+            secret:
+              existingSecret: integration-test-credentials
+              existingSecretKey: identity-optimize-client-token
+          connectors:
+            enabled: true
+            clientId: connectors-orchd
             secret:
               existingSecret: integration-test-credentials
               existingSecretKey: identity-connectors-client-token
@@ -99,6 +209,18 @@ identity:
         - resourceServerId: orchestration-orchb-api
           definition: write:*
         - resourceServerId: optimize-orchb-api
+          definition: write:*
+        - resourceServerId: orchestration-orchc-api
+          definition: read:*
+        - resourceServerId: orchestration-orchc-api
+          definition: write:*
+        - resourceServerId: optimize-orchc-api
+          definition: write:*
+        - resourceServerId: orchestration-orchd-api
+          definition: read:*
+        - resourceServerId: orchestration-orchd-api
+          definition: write:*
+        - resourceServerId: optimize-orchd-api
           definition: write:*
         - resourceServerId: web-modeler-api
           definition: write:*

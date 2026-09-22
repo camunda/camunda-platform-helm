@@ -76,7 +76,7 @@ type PlanEntry struct {
 type topologySmokeEntry struct {
 	OrchestrationSuffix string `json:"orchestration_suffix"`
 	ModelerClusterID    string `json:"modeler_cluster_id"`
-	ModelerClusterName  string `json:"modeler_cluster_name"`
+	ModelerClusterName  string `json:"modeler_cluster_name,omitempty"`
 	ShardIndex          string `json:"shard_index"`
 	// OptimizeSuffix and OptimizeContextPath are empty unless a role "optimize"
 	// release declares `serves: <orchestration_suffix>`. When set, this leg's
@@ -89,6 +89,17 @@ type topologySmokeEntry struct {
 	OptimizeSuffix      string `json:"optimize_suffix,omitempty"`
 	OptimizeContextPath string `json:"optimize_context_path,omitempty"`
 	TenantID            string `json:"tenant_id,omitempty"`
+	// ChartVersion/ChartDir are the chart this leg's orchestration release runs,
+	// so a topology can mix chart versions. Both are always populated: a release
+	// that pins no chart-version inherits the parent matrix entry's version.
+	ChartVersion string `json:"chart_version"`
+	ChartDir     string `json:"chart_dir"`
+	// Suite/TestChartDir/PlaywrightProject select the application suite this leg
+	// runs: the orchestration suite from the release's own chart, so a
+	// mixed-version topology tests each app against the chart it deploys.
+	Suite             string `json:"suite"`
+	TestChartDir      string `json:"test_chart_dir"`
+	PlaywrightProject string `json:"playwright_project"`
 }
 
 // PlanResult is the computed build matrix.
@@ -430,7 +441,7 @@ func groupPlanEntries(version string, entries []Entry) []PlanEntry {
 			infraEks = "preemptible"
 		}
 
-		topologyNamespaceSuffixes, topologyHubSuffix, topologySmokeMatrix := planTopologyMetadata(first.Topology)
+		topologyNamespaceSuffixes, topologyHubSuffix, topologySmokeMatrix := planTopologyMetadata(first.Version, first.Topology)
 
 		out = append(out, PlanEntry{
 			Version:                   version,
@@ -478,10 +489,23 @@ type TopologyE2ELeg struct {
 	TenantID            string
 	ModelerClusterID    string
 	ModelerClusterName  string
+	// ChartVersion/ChartDir are the chart this leg's orchestration release runs, so a topology can
+	// mix chart versions (e.g. an 8.10 Hub serving an 8.9 orchestration release). A release that
+	// pins no chart-version inherits parentVersion, so both are always populated.
+	ChartVersion string
+	ChartDir     string
+	// Suite names the application suite this leg runs. TestChartDir is the chart
+	// whose Playwright suite runs (the release's own chart) and
+	// PlaywrightProject is that suite's project.
+	Suite             string
+	TestChartDir      string
+	PlaywrightProject string
 }
 
 // TopologyE2ELegs computes the e2e legs for a topology. A nil topology yields no legs.
-func TopologyE2ELegs(topology *Topology) []TopologyE2ELeg {
+// parentVersion is the chart version of the matrix entry owning the topology; it is the chart
+// version of any release that does not pin its own.
+func TopologyE2ELegs(parentVersion string, topology *Topology) []TopologyE2ELeg {
 	if topology == nil {
 		return nil
 	}
@@ -496,15 +520,21 @@ func TopologyE2ELegs(topology *Topology) []TopologyE2ELeg {
 		if release.Role != "orchestration" {
 			continue
 		}
+		chartVersion := release.ChartVersion
+		if chartVersion == "" {
+			chartVersion = parentVersion
+		}
 		base := TopologyE2ELeg{
 			OrchestrationSuffix: release.NamespaceSuffix,
 			ModelerClusterID:    release.ModelerClusterID,
 			ModelerClusterName:  release.ModelerClusterName,
+			ChartVersion:        chartVersion,
+			ChartDir:            "camunda-platform-" + chartVersion,
 		}
+		targets := []TopologyE2ELeg{}
 		served := optimizeByServed[release.NamespaceSuffix]
 		if len(served) == 0 {
-			legs = append(legs, base)
-			continue
+			targets = append(targets, base)
 		}
 		for _, optimize := range served {
 			leg := base
@@ -514,13 +544,23 @@ func TopologyE2ELegs(topology *Topology) []TopologyE2ELeg {
 			if leg.TenantID == "" {
 				leg.TenantID = "default"
 			}
-			legs = append(legs, leg)
+			targets = append(targets, leg)
+		}
+		// One golden path per orchestration target: the orchestration application
+		// suite, run from the release's OWN chart. That is what makes a
+		// mixed-version topology test each orchestration app against the chart it
+		// actually deploys.
+		for _, target := range targets {
+			target.Suite = "orchestration"
+			target.TestChartDir = target.ChartDir
+			target.PlaywrightProject = "topology-orchestration"
+			legs = append(legs, target)
 		}
 	}
 	return legs
 }
 
-func planTopologyMetadata(topology *Topology) (string, string, string) {
+func planTopologyMetadata(parentVersion string, topology *Topology) (string, string, string) {
 	suffixes := []string{}
 	hubSuffix := ""
 	if topology != nil {
@@ -532,7 +572,7 @@ func planTopologyMetadata(topology *Topology) (string, string, string) {
 		}
 	}
 	smoke := []topologySmokeEntry{}
-	for i, leg := range TopologyE2ELegs(topology) {
+	for i, leg := range TopologyE2ELegs(parentVersion, topology) {
 		smoke = append(smoke, topologySmokeEntry{
 			OrchestrationSuffix: leg.OrchestrationSuffix,
 			ModelerClusterID:    leg.ModelerClusterID,
@@ -541,6 +581,11 @@ func planTopologyMetadata(topology *Topology) (string, string, string) {
 			OptimizeSuffix:      leg.OptimizeSuffix,
 			OptimizeContextPath: leg.OptimizeContextPath,
 			TenantID:            leg.TenantID,
+			ChartVersion:        leg.ChartVersion,
+			ChartDir:            leg.ChartDir,
+			Suite:               leg.Suite,
+			TestChartDir:        leg.TestChartDir,
+			PlaywrightProject:   leg.PlaywrightProject,
 		})
 	}
 	suffixesJSON, _ := json.Marshal(suffixes)

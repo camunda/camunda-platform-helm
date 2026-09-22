@@ -28,9 +28,28 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func writeValuesFile(t *testing.T, dir, name string) {
+// chartFullSetup is the scenarios dir Topology.Validate derives from a chart dir.
+func chartFullSetup(chartDir string) string {
+	return filepath.Join(chartDir, "test", "integration", "scenarios", "chart-full-setup")
+}
+
+// newTopologyTestChart builds <repoRoot>/charts/camunda-platform-8.10, the path
+// shape Validate needs to derive the repo root and the parent chart version.
+func newTopologyTestChart(t *testing.T) (string, string) {
 	t.Helper()
-	path := filepath.Join(dir, "values", name)
+	repoRoot := t.TempDir()
+	chartDir := filepath.Join(repoRoot, "charts", "camunda-platform-8.10")
+	if err := os.MkdirAll(chartDir, 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	return repoRoot, chartDir
+}
+
+// writeValuesFile writes a layer into chartDir's chart-full-setup values tree,
+// which is where Topology.Validate resolves a release's layers from.
+func writeValuesFile(t *testing.T, chartDir, name string) {
+	t.Helper()
+	path := filepath.Join(chartFullSetup(chartDir), "values", name)
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		t.Fatalf("mkdir: %v", err)
 	}
@@ -39,9 +58,9 @@ func writeValuesFile(t *testing.T, dir, name string) {
 	}
 }
 
-func writeLayer(t *testing.T, dir, name, content string) {
+func writeLayer(t *testing.T, chartDir, name, content string) {
 	t.Helper()
-	path := filepath.Join(dir, "values", name)
+	path := filepath.Join(chartFullSetup(chartDir), "values", name)
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		t.Fatalf("mkdir: %v", err)
 	}
@@ -95,15 +114,16 @@ func validatePreparedTest(t *testing.T, top *Topology, dir string) error {
 	}
 	rendered := make([]RenderedTopologyRelease, 0, len(top.Releases))
 	for i, release := range top.Releases {
-		paths := []string{filepath.Join(dir, "values", "base.yaml")}
+		valuesDir := filepath.Join(chartFullSetup(dir), "values")
+		paths := []string{filepath.Join(valuesDir, "base.yaml")}
 		if release.Identity != "" {
-			paths = append(paths, filepath.Join(dir, "values", "identity", release.Identity+".yaml"))
+			paths = append(paths, filepath.Join(valuesDir, "identity", release.Identity+".yaml"))
 		}
 		if release.Persistence != "" {
-			paths = append(paths, filepath.Join(dir, "values", "persistence", release.Persistence+".yaml"))
+			paths = append(paths, filepath.Join(valuesDir, "persistence", release.Persistence+".yaml"))
 		}
 		for _, feature := range release.Features {
-			paths = append(paths, filepath.Join(dir, "values", "features", feature+".yaml"))
+			paths = append(paths, filepath.Join(valuesDir, "features", feature+".yaml"))
 		}
 		var files []string
 		for j, path := range paths {
@@ -142,7 +162,7 @@ func validatePreparedTest(t *testing.T, top *Topology, dir string) error {
 		}
 		declared := false
 		for _, feature := range release.Features {
-			content, _ := os.ReadFile(filepath.Join(dir, "values", "features", feature+".yaml"))
+			content, _ := os.ReadFile(filepath.Join(chartFullSetup(dir), "values", "features", feature+".yaml"))
 			declared = declared || strings.Contains(string(content), "clusters:")
 		}
 		rendered[i].Contract.Hub.ClustersDeclared = declared
@@ -246,7 +266,7 @@ func TestTopologyValidate_NilIsNoop(t *testing.T) {
 }
 
 func TestTopologyValidate_Valid(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	depsDir := filepath.Join(t.TempDir(), "dependencies")
 	writeValuesFile(t, dir, "features/hub.yaml")
 	writeValuesFile(t, dir, "features/orchestration.yaml")
@@ -300,7 +320,7 @@ func TestTopologyValidate_Valid(t *testing.T) {
 }
 
 func TestTopologyValidate_ValidWithOptimizeReleases(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	depsDir := filepath.Join(t.TempDir(), "dependencies")
 	writeValuesFile(t, dir, "features/hub.yaml")
 	writeValuesFile(t, dir, "features/orchestration.yaml")
@@ -349,7 +369,7 @@ func TestTopologyValidate_ValidWithOptimizeReleases(t *testing.T) {
 }
 
 func TestTopologyValidate_OptimizeRoleNeedsNoModelerCluster(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	writeValuesFile(t, dir, "features/hub.yaml")
 	writeValuesFile(t, dir, "features/orchestration.yaml")
 	writeLayer(t, dir, "features/optimize.yaml", optimizeLayerFollowingDeclaration)
@@ -368,7 +388,7 @@ func TestTopologyValidate_OptimizeRoleNeedsNoModelerCluster(t *testing.T) {
 }
 
 func TestTopologyValidate_OptimizeRoleRequiresDependsOn(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	writeValuesFile(t, dir, "features/hub.yaml")
 	writeValuesFile(t, dir, "features/orchestration.yaml")
 	writeLayer(t, dir, "features/optimize.yaml", optimizeLayerFollowingDeclaration)
@@ -388,7 +408,7 @@ func TestTopologyValidate_OptimizeRoleRequiresDependsOn(t *testing.T) {
 }
 
 func TestTopologyValidate_OptimizeRoleRejectsNonHubDependsOn(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	writeValuesFile(t, dir, "features/hub.yaml")
 	writeValuesFile(t, dir, "features/orchestration.yaml")
 	writeLayer(t, dir, "features/optimize.yaml", optimizeLayerFollowingDeclaration)
@@ -408,7 +428,7 @@ func TestTopologyValidate_OptimizeRoleRejectsNonHubDependsOn(t *testing.T) {
 }
 
 func TestTopologyValidate_OptimizeRoleRequiresServesAndContextPath(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	writeValuesFile(t, dir, "features/hub.yaml")
 	writeValuesFile(t, dir, "features/orchestration.yaml")
 	writeLayer(t, dir, "features/optimize.yaml", optimizeLayerFollowingDeclaration)
@@ -428,7 +448,7 @@ func TestTopologyValidate_OptimizeRoleRequiresServesAndContextPath(t *testing.T)
 }
 
 func TestTopologyValidate_OptimizeServesMustNameOrchestrationRelease(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	writeValuesFile(t, dir, "features/hub.yaml")
 	writeValuesFile(t, dir, "features/orchestration.yaml")
 	writeLayer(t, dir, "features/optimize.yaml", optimizeLayerFollowingDeclaration)
@@ -448,7 +468,7 @@ func TestTopologyValidate_OptimizeServesMustNameOrchestrationRelease(t *testing.
 }
 
 func TestTopologyValidate_AcceptsOptimizeLayerFollowingDeclaration(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	writeValuesFile(t, dir, "features/hub.yaml")
 	writeValuesFile(t, dir, "features/orchestration.yaml")
 	writeLayer(t, dir, "features/optimize.yaml", optimizeLayerFollowingDeclaration)
@@ -460,7 +480,7 @@ func TestTopologyValidate_AcceptsOptimizeLayerFollowingDeclaration(t *testing.T)
 
 // Repointing serves must not leave the layer reading the old release's records.
 func TestTopologyValidate_RejectsOptimizeLayerPinnedToAnotherServesPrefix(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	writeValuesFile(t, dir, "features/hub.yaml")
 	writeValuesFile(t, dir, "features/orchestration.yaml")
 	writeLayer(t, dir, "features/optimize.yaml", `optimize:
@@ -477,7 +497,7 @@ func TestTopologyValidate_RejectsOptimizeLayerPinnedToAnotherServesPrefix(t *tes
 }
 
 func TestTopologyValidate_RejectsOptimizeLayerContextPathMismatch(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	writeValuesFile(t, dir, "features/hub.yaml")
 	writeValuesFile(t, dir, "features/orchestration.yaml")
 	writeLayer(t, dir, "features/optimize.yaml", `optimize:
@@ -494,7 +514,7 @@ func TestTopologyValidate_RejectsOptimizeLayerContextPathMismatch(t *testing.T) 
 }
 
 func TestTopologyValidate_RejectsOptimizeLayerOpensearchPrefixNotFollowingServes(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	writeValuesFile(t, dir, "features/hub.yaml")
 	writeValuesFile(t, dir, "features/orchestration.yaml")
 	writeLayer(t, dir, "features/optimize.yaml", `optimize:
@@ -511,7 +531,7 @@ func TestTopologyValidate_RejectsOptimizeLayerOpensearchPrefixNotFollowingServes
 }
 
 func TestTopologyValidate_RejectsOptimizeOnlyFieldsOnOtherRoles(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	writeValuesFile(t, dir, "features/hub.yaml")
 	writeValuesFile(t, dir, "features/orchestration.yaml")
 	top := &Topology{
@@ -528,8 +548,65 @@ func TestTopologyValidate_RejectsOptimizeOnlyFieldsOnOtherRoles(t *testing.T) {
 	}
 }
 
+// A release may pin its own chart-version so one topology can mix chart
+// versions; its layers must then resolve from THAT chart, not the parent's.
+func TestTopologyValidate_UsesReleaseChartVersionValues(t *testing.T) {
+	repoRoot, parentChartDir := newTopologyTestChart(t)
+	releaseChartDir := filepath.Join(repoRoot, "charts", "camunda-platform-8.9")
+	if err := os.MkdirAll(releaseChartDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	writeValuesFile(t, parentChartDir, "features/hub.yaml")
+	writeValuesFile(t, releaseChartDir, "features/orchestration.yaml")
+	writeValuesFile(t, releaseChartDir, "identity/keycloak-external.yaml")
+	writeValuesFile(t, releaseChartDir, "persistence/elasticsearch-external.yaml")
+
+	top := &Topology{Name: "mixed", Releases: []TopologyRelease{
+		{Role: "hub", NamespaceSuffix: "hub", Features: []string{"hub"}},
+		{
+			ChartVersion:       "8.9",
+			Role:               "orchestration",
+			NamespaceSuffix:    "orcha",
+			Features:           []string{"orchestration"},
+			Identity:           "keycloak-external",
+			Persistence:        "elasticsearch-external",
+			ModelerClusterID:   "orcha",
+			ModelerClusterName: "Orchestration A",
+			DependsOn:          "hub",
+		},
+	}}
+
+	if err := top.Validate("ctx", parentChartDir, t.TempDir()); err != nil {
+		t.Fatalf("expected the pinned release's layers to resolve from chart 8.9: %v", err)
+	}
+
+	// Removing the 8.9 layer must be reported against the 8.9 chart, proving the
+	// release resolved against its own chart rather than the parent's.
+	if err := os.Remove(filepath.Join(chartFullSetup(releaseChartDir), "values", "features", "orchestration.yaml")); err != nil {
+		t.Fatal(err)
+	}
+	if err := top.Validate("ctx", parentChartDir, t.TempDir()); err == nil || !strings.Contains(err.Error(), "camunda-platform-8.9") {
+		t.Fatalf("expected a missing-layer error naming chart 8.9, got %v", err)
+	}
+}
+
+func TestTopologyValidate_RejectsMissingOrUnsafeChartVersion(t *testing.T) {
+	_, chartDir := newTopologyTestChart(t)
+	writeValuesFile(t, chartDir, "features/hub.yaml")
+	for _, version := range []string{"8.404", "../8.9"} {
+		t.Run(version, func(t *testing.T) {
+			top := &Topology{Name: "bad-version", Releases: []TopologyRelease{
+				{ChartVersion: version, Role: "hub", NamespaceSuffix: "hub", Features: []string{"hub"}},
+			}}
+			if err := top.Validate("ctx", chartDir, t.TempDir()); err == nil || !strings.Contains(err.Error(), "chart-version") {
+				t.Fatalf("expected chart-version error, got %v", err)
+			}
+		})
+	}
+}
+
 func TestTopologyValidate_RequiresUniqueModelerClusters(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	writeValuesFile(t, dir, "features/hub.yaml")
 	writeValuesFile(t, dir, "features/orchestration.yaml")
 	top := &Topology{
@@ -548,7 +625,7 @@ func TestTopologyValidate_RequiresUniqueModelerClusters(t *testing.T) {
 }
 
 func TestTopologyValidate_RequiresOrchestrationRelease(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	writeValuesFile(t, dir, "features/hub.yaml")
 	top := &Topology{
 		Name: "hub-only",
@@ -564,7 +641,7 @@ func TestTopologyValidate_RequiresOrchestrationRelease(t *testing.T) {
 }
 
 func TestTopologyValidate_RequiresDNS1123NamespaceSuffix(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	writeValuesFile(t, dir, "features/hub.yaml")
 	writeValuesFile(t, dir, "features/orchestration.yaml")
 	top := &Topology{
@@ -582,7 +659,7 @@ func TestTopologyValidate_RequiresDNS1123NamespaceSuffix(t *testing.T) {
 }
 
 func TestTopologyValidate_MissingValuesFile(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	top := &Topology{
 		Name: "hub-1orch",
 		Releases: []TopologyRelease{
@@ -596,7 +673,7 @@ func TestTopologyValidate_MissingValuesFile(t *testing.T) {
 }
 
 func TestTopologyValidate_MissingIdentityLayer(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	writeValuesFile(t, dir, "features/hub.yaml")
 	top := &Topology{
 		Name: "bad-identity",
@@ -610,7 +687,7 @@ func TestTopologyValidate_MissingIdentityLayer(t *testing.T) {
 }
 
 func TestTopologyValidate_MissingPersistenceLayer(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	writeValuesFile(t, dir, "features/orchestration.yaml")
 	top := &Topology{
 		Name: "bad-persistence",
@@ -624,7 +701,7 @@ func TestTopologyValidate_MissingPersistenceLayer(t *testing.T) {
 }
 
 func TestTopologyValidate_MissingDependency(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	writeValuesFile(t, dir, "features/hub.yaml")
 	top := &Topology{
 		Name: "bad-dep",
@@ -638,7 +715,7 @@ func TestTopologyValidate_MissingDependency(t *testing.T) {
 }
 
 func TestTopologyValidate_NoHubRole(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	writeValuesFile(t, dir, "features/orchestration.yaml")
 	top := &Topology{
 		Name: "no-hub",
@@ -653,7 +730,7 @@ func TestTopologyValidate_NoHubRole(t *testing.T) {
 }
 
 func TestTopologyValidate_TwoHubRoles(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	writeValuesFile(t, dir, "features/hub.yaml")
 	top := &Topology{
 		Name: "two-hub",
@@ -668,7 +745,7 @@ func TestTopologyValidate_TwoHubRoles(t *testing.T) {
 }
 
 func TestTopologyValidate_DuplicateNamespaceSuffix(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	writeValuesFile(t, dir, "features/hub.yaml")
 	writeValuesFile(t, dir, "features/orchestration.yaml")
 	top := &Topology{
@@ -684,7 +761,7 @@ func TestTopologyValidate_DuplicateNamespaceSuffix(t *testing.T) {
 }
 
 func TestTopologyValidate_DependsOnUnknownRole(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	writeValuesFile(t, dir, "features/hub.yaml")
 	writeValuesFile(t, dir, "features/orchestration.yaml")
 	top := &Topology{
@@ -700,7 +777,7 @@ func TestTopologyValidate_DependsOnUnknownRole(t *testing.T) {
 }
 
 func TestTopologyValidate_InvalidRole(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	writeValuesFile(t, dir, "weird.yaml")
 	top := &Topology{
 		Name: "bad-role",
@@ -714,14 +791,15 @@ func TestTopologyValidate_InvalidRole(t *testing.T) {
 }
 
 func TestTopologyValidate_EmptyReleases(t *testing.T) {
+	_, dir := newTopologyTestChart(t)
 	top := &Topology{Name: "empty"}
-	if err := top.Validate("ctx", t.TempDir(), t.TempDir()); err == nil {
+	if err := top.Validate("ctx", dir, t.TempDir()); err == nil {
 		t.Fatal("expected error for empty releases")
 	}
 }
 
 func TestTopologyValidate_AllowsSeveralOptimizeReleasesPerOrchestration(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	writeValuesFile(t, dir, "features/hub.yaml")
 	writeValuesFile(t, dir, "features/orchestration.yaml")
 	writeLayer(t, dir, "features/optimize.yaml", optimizeLayerFollowingDeclaration)
@@ -741,7 +819,7 @@ func TestTopologyValidate_AllowsSeveralOptimizeReleasesPerOrchestration(t *testi
 }
 
 func TestTopologyValidate_RejectsDuplicateOptimizeContextPath(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	writeValuesFile(t, dir, "features/hub.yaml")
 	writeValuesFile(t, dir, "features/orchestration.yaml")
 	writeLayer(t, dir, "features/optimize.yaml", optimizeLayerFollowingDeclaration)
@@ -762,7 +840,7 @@ func TestTopologyValidate_RejectsDuplicateOptimizeContextPath(t *testing.T) {
 }
 
 func TestTopologyValidate_RejectsLegacyValuesKey(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	writeValuesFile(t, dir, "features/hub.yaml")
 	writeValuesFile(t, dir, "features/orchestration.yaml")
 	top := &Topology{
@@ -780,7 +858,7 @@ func TestTopologyValidate_RejectsLegacyValuesKey(t *testing.T) {
 }
 
 func TestTopologyValidate_RequiresFeatures(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	writeValuesFile(t, dir, "features/hub.yaml")
 	top := &Topology{
 		Name: "no-features",
@@ -797,7 +875,7 @@ func TestTopologyValidate_RequiresFeatures(t *testing.T) {
 }
 
 func TestTopologyValidate_RejectsMissingFeatureFile(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	writeValuesFile(t, dir, "features/hub.yaml")
 	top := &Topology{
 		Name: "missing-feature-file",
@@ -816,7 +894,7 @@ func TestTopologyValidate_RejectsMissingFeatureFile(t *testing.T) {
 // A dollar sign is not a declaration: an optimize layer that substitutes some
 // other variable follows nothing the topology states.
 func TestTopologyValidate_RejectsOptimizeLayerContextPathFromForeignPlaceholder(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	writeValuesFile(t, dir, "features/hub.yaml")
 	writeValuesFile(t, dir, "features/orchestration.yaml")
 	writeLayer(t, dir, "features/optimize.yaml", `optimize:
@@ -836,7 +914,7 @@ func TestTopologyValidate_RejectsOptimizeLayerContextPathFromForeignPlaceholder(
 // the next change to the declaration updates only one of the two. Being in sync
 // right now buys no exemption.
 func TestTopologyValidate_RejectsOptimizeLayerContextPathAsASynchronizedLiteral(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	writeValuesFile(t, dir, "features/hub.yaml")
 	writeValuesFile(t, dir, "features/orchestration.yaml")
 	writeLayer(t, dir, "features/optimize.yaml", `optimize:
@@ -855,7 +933,7 @@ func TestTopologyValidate_RejectsOptimizeLayerContextPathAsASynchronizedLiteral(
 // The placeholder has to lead the prefix, which is what makes repointing serves
 // repoint the records: a value that only mentions it further along does not.
 func TestTopologyValidate_RejectsOptimizeLayerPrefixNotLedByThePlaceholder(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	writeValuesFile(t, dir, "features/hub.yaml")
 	writeValuesFile(t, dir, "features/orchestration.yaml")
 	writeLayer(t, dir, "features/optimize.yaml", `optimize:
@@ -875,7 +953,7 @@ func TestTopologyValidate_RejectsOptimizeLayerPrefixNotLedByThePlaceholder(t *te
 // orchestration's records, so a suffix after the placeholder is the shape that
 // design needs.
 func TestTopologyValidate_AcceptsOptimizeLayerPrefixWithATenantSuffix(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	writeValuesFile(t, dir, "features/hub.yaml")
 	writeValuesFile(t, dir, "features/orchestration.yaml")
 	writeLayer(t, dir, "features/optimize.yaml", `optimize:
@@ -895,7 +973,7 @@ func TestTopologyValidate_AcceptsOptimizeLayerPrefixWithATenantSuffix(t *testing
 // same as "${NAME}-ta". Rejecting it would fail a layer the deploy expands
 // correctly.
 func TestTopologyValidate_AcceptsOptimizeLayerPrefixFromABareTerminatedPlaceholder(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	writeValuesFile(t, dir, "features/hub.yaml")
 	writeValuesFile(t, dir, "features/orchestration.yaml")
 	writeLayer(t, dir, "features/optimize.yaml", `optimize:
@@ -913,7 +991,7 @@ func TestTopologyValidate_AcceptsOptimizeLayerPrefixFromABareTerminatedPlacehold
 // A suffix that keeps the name going names a different variable, which os.Expand
 // resolves to the empty string, so it must not pass as a per-tenant suffix.
 func TestTopologyValidate_RejectsOptimizeLayerPrefixFromABareUnterminatedPlaceholder(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	writeValuesFile(t, dir, "features/hub.yaml")
 	writeValuesFile(t, dir, "features/orchestration.yaml")
 	writeLayer(t, dir, "features/optimize.yaml", `optimize:
@@ -932,7 +1010,7 @@ func TestTopologyValidate_RejectsOptimizeLayerPrefixFromABareUnterminatedPlaceho
 // A layer that states neither value is as wrong as one that hardcodes them: the
 // release inherits whatever a base layer left behind.
 func TestTopologyValidate_RejectsOptimizeLayerStatingNeitherValue(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	writeValuesFile(t, dir, "features/hub.yaml")
 	writeValuesFile(t, dir, "features/orchestration.yaml")
 	writeLayer(t, dir, "features/optimize.yaml", `optimize:
@@ -954,7 +1032,7 @@ func TestTopologyValidate_RejectsOptimizeLayerStatingNeitherValue(t *testing.T) 
 // declaration: buildTopologyReleaseEnv applies the derived value last, so the
 // entry could only mislead its author.
 func TestTopologyValidate_RejectsReleaseEnvShadowingDerivedKeys(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	writeValuesFile(t, dir, "features/hub.yaml")
 	writeValuesFile(t, dir, "features/orchestration.yaml")
 	writeLayer(t, dir, "features/optimize.yaml", optimizeLayerFollowingDeclaration)
@@ -972,7 +1050,7 @@ func TestTopologyValidate_RejectsReleaseEnvShadowingDerivedKeys(t *testing.T) {
 // Every other release env key stays free-form: the reserved list is exactly the
 // derived one.
 func TestTopologyValidate_AcceptsUnreservedReleaseEnv(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	writeValuesFile(t, dir, "features/hub.yaml")
 	writeValuesFile(t, dir, "features/orchestration.yaml")
 	writeLayer(t, dir, "features/optimize.yaml", optimizeLayerFollowingDeclaration)
@@ -1054,7 +1132,7 @@ optimize:
 // block does, so a release using it must be accepted rather than reported as
 // setting nothing.
 func TestTopologyValidate_AcceptsOptimizeIdentityFromTheGlobalFallback(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	writeLayer(t, dir, "features/hub.yaml", hubInventoryRegisteringOptimize)
 	writeValuesFile(t, dir, "features/orchestration.yaml")
 	writeLayer(t, dir, "features/optimize.yaml", optimizeLayerMatchingHubInventoryViaGlobal)
@@ -1068,7 +1146,7 @@ func TestTopologyValidate_AcceptsOptimizeIdentityFromTheGlobalFallback(t *testin
 // client id that disagrees with the Hub is exactly as broken as a component-scoped
 // one, and the message has to name the key that actually holds the wrong value.
 func TestTopologyValidate_RejectsOptimizeGlobalFallbackClientIdDisagreeingWithTheHub(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	writeLayer(t, dir, "features/hub.yaml", hubInventoryRegisteringOptimize)
 	writeValuesFile(t, dir, "features/orchestration.yaml")
 	writeLayer(t, dir, "features/optimize.yaml", strings.Replace(optimizeLayerMatchingHubInventoryViaGlobal, "clientId: optimize-orcha", "clientId: optimize-renamed", 1))
@@ -1083,7 +1161,7 @@ func TestTopologyValidate_RejectsOptimizeGlobalFallbackClientIdDisagreeingWithTh
 // optimize.effectiveAuthClientId, so a correct override must not be judged against
 // the stale global value it replaces.
 func TestTopologyValidate_OptimizeComponentIdentityOverridesTheGlobalFallback(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	writeLayer(t, dir, "features/hub.yaml", hubInventoryRegisteringOptimize)
 	writeValuesFile(t, dir, "features/orchestration.yaml")
 	writeLayer(t, dir, "features/optimize.yaml", strings.Replace(
@@ -1107,7 +1185,7 @@ func TestTopologyValidate_OptimizeComponentIdentityOverridesTheGlobalFallback(t 
 // standalone reference with no Secret name would report a secret the release never
 // sends.
 func TestTopologyValidate_OptimizeSecretKeyAloneRenamesTheInheritedSecret(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	writeLayer(t, dir, "features/hub.yaml", strings.Replace(hubInventoryRegisteringOptimize, "identity-optimize-client-token", "renamed-optimize-key", 1))
 	writeValuesFile(t, dir, "features/orchestration.yaml")
 	writeLayer(t, dir, "features/optimize.yaml", optimizeLayerMatchingHubInventoryViaGlobal+`  security:
@@ -1127,7 +1205,7 @@ func TestTopologyValidate_OptimizeSecretKeyAloneRenamesTheInheritedSecret(t *tes
 // sets the placeholder on the other backend leaves the release on the
 // "zeebe-record" fallback while looking correct.
 func TestTopologyValidate_RejectsOptimizePrefixSetOnTheDisabledBackend(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	writeLayer(t, dir, "base.yaml", "optimize:\n  database:\n    elasticsearch:\n      enabled: true\n")
 	writeValuesFile(t, dir, "features/hub.yaml")
 	writeValuesFile(t, dir, "features/orchestration.yaml")
@@ -1150,7 +1228,7 @@ func TestTopologyValidate_RejectsOptimizePrefixSetOnTheDisabledBackend(t *testin
 // The component-level switch enables a backend just as the global one does, and
 // the choice must follow it rather than assume Elasticsearch.
 func TestTopologyValidate_AcceptsOptimizePrefixOnTheEnabledOpensearchBackend(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	writeValuesFile(t, dir, "features/hub.yaml")
 	writeValuesFile(t, dir, "features/orchestration.yaml")
 	writeLayer(t, dir, "features/optimize.yaml", `optimize:
@@ -1169,7 +1247,7 @@ func TestTopologyValidate_AcceptsOptimizePrefixOnTheEnabledOpensearchBackend(t *
 // A later layer turning Elasticsearch off moves the release to OpenSearch, the
 // same way Helm's scalar precedence does, so the required key moves with it.
 func TestTopologyValidate_BackendChoiceFollowsTheLastLayerToStateIt(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	writeLayer(t, dir, "base.yaml", "global:\n  elasticsearch:\n    enabled: true\n")
 	writeLayer(t, dir, "persistence/opensearch.yaml", "global:\n  elasticsearch:\n    enabled: false\n  opensearch:\n    enabled: true\n")
 	writeValuesFile(t, dir, "features/hub.yaml")
@@ -1192,7 +1270,7 @@ func TestTopologyValidate_BackendChoiceFollowsTheLastLayerToStateIt(t *testing.T
 // live in two layers. Nothing but this cross-check couples them, and every
 // workload still reports ready when they disagree.
 func TestTopologyValidate_RejectsOptimizeClientIdDisagreeingWithTheHubInventory(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	writeLayer(t, dir, "features/hub.yaml", hubInventoryRegisteringOptimize)
 	writeValuesFile(t, dir, "features/orchestration.yaml")
 	writeLayer(t, dir, "features/optimize.yaml", strings.Replace(optimizeLayerMatchingHubInventory, "clientId: optimize-orcha", "clientId: optimize-renamed", 1))
@@ -1204,7 +1282,7 @@ func TestTopologyValidate_RejectsOptimizeClientIdDisagreeingWithTheHubInventory(
 }
 
 func TestTopologyValidate_RejectsOptimizeAudienceDisagreeingWithTheHubInventory(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	writeLayer(t, dir, "features/hub.yaml", hubInventoryRegisteringOptimize)
 	writeValuesFile(t, dir, "features/orchestration.yaml")
 	writeLayer(t, dir, "features/optimize.yaml", strings.Replace(optimizeLayerMatchingHubInventory, "audience: optimize-orcha-api", "audience: optimize-orcha", 1))
@@ -1218,7 +1296,7 @@ func TestTopologyValidate_RejectsOptimizeAudienceDisagreeingWithTheHubInventory(
 // A release that states no client id at all inherits the chart default, which is
 // never the client the Hub registered.
 func TestTopologyValidate_RejectsOptimizeStatingNoneOfTheRegisteredIdentity(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	writeLayer(t, dir, "features/hub.yaml", hubInventoryRegisteringOptimize)
 	writeValuesFile(t, dir, "features/orchestration.yaml")
 	writeLayer(t, dir, "features/optimize.yaml", `optimize:
@@ -1240,7 +1318,7 @@ func TestTopologyValidate_RejectsOptimizeStatingNoneOfTheRegisteredIdentity(t *t
 // declaration, so the cross-check has to resolve them rather than compare the raw
 // strings.
 func TestTopologyValidate_AcceptsOptimizeIdentityReachedThroughDifferentPlaceholders(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	writeLayer(t, dir, "features/hub.yaml", hubInventoryRegisteringOptimize)
 	writeValuesFile(t, dir, "features/orchestration.yaml")
 	writeLayer(t, dir, "features/optimize.yaml", optimizeLayerMatchingHubInventory)
@@ -1253,7 +1331,7 @@ func TestTopologyValidate_AcceptsOptimizeIdentityReachedThroughDifferentPlacehol
 // A redirect URL that resolves to a different path than the one Identity
 // registered fails only at login, so it has to fail here.
 func TestTopologyValidate_RejectsOptimizeRedirectUrlResolvingElsewhere(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	writeLayer(t, dir, "features/hub.yaml", hubInventoryRegisteringOptimize)
 	writeValuesFile(t, dir, "features/orchestration.yaml")
 	writeLayer(t, dir, "features/optimize.yaml", strings.Replace(
@@ -1270,7 +1348,7 @@ func TestTopologyValidate_RejectsOptimizeRedirectUrlResolvingElsewhere(t *testin
 // The inventory context path is what the Hub's Console and Web Modeler link to; a
 // stale one sends users to a path no ingress serves.
 func TestTopologyValidate_RejectsHubInventoryPathDisagreeingWithTheDeclaration(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	writeLayer(t, dir, "features/hub.yaml", strings.Replace(
 		hubInventoryRegisteringOptimize,
 		`optimize: "${OPTA_OPTIMIZE_CONTEXT_PATH}"`,
@@ -1363,7 +1441,7 @@ func writeTwoTenantLayers(t *testing.T, dir, hubLayer, tenantALayer, tenantBLaye
 }
 
 func TestTopologyValidate_AcceptsASecondTenantOptimizeProvisionedAsAnIdentityClient(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	writeTwoTenantLayers(t, dir, hubInventoryWithSecondOptimizeClient, optimizeLayerMatchingHubInventory, optimizeLayerSecondTenant)
 
 	if err := validatePreparedTest(t, twoTenantOptimizeTopology(), dir); err != nil {
@@ -1375,7 +1453,7 @@ func TestTopologyValidate_AcceptsASecondTenantOptimizeProvisionedAsAnIdentityCli
 // cluster record does name: that release's identity is still duplicated, and a
 // drift in it still fails only at login.
 func TestTopologyValidate_StillChecksTheRecordReleaseWhenASecondTenantServesTheSameOrchestration(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	drifted := strings.Replace(optimizeLayerMatchingHubInventory, "audience: optimize-orcha-api", "audience: optimize-renamed-api", 1)
 	writeTwoTenantLayers(t, dir, hubInventoryWithSecondOptimizeClient, drifted, optimizeLayerSecondTenant)
 
@@ -1386,7 +1464,7 @@ func TestTopologyValidate_StillChecksTheRecordReleaseWhenASecondTenantServesTheS
 }
 
 func TestTopologyValidate_RejectsASecondTenantOptimizeNothingProvisions(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	unprovisioned := strings.Replace(optimizeLayerSecondTenant, "clientId: optimize-orcha-b", "clientId: optimize-orcha-c", 1)
 	writeTwoTenantLayers(t, dir, hubInventoryWithSecondOptimizeClient, optimizeLayerMatchingHubInventory, unprovisioned)
 
@@ -1408,7 +1486,7 @@ func hubWithNonKeycloakIssuer(layer string) string {
 // all, so Identity has nowhere to send Optimize back to. The deploy cannot see it:
 // every workload reports ready and only the login fails.
 func TestTopologyValidate_RejectsASecondTenantOptimizeClientRegisteringNoRedirect(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	hub := strings.Replace(hubInventoryWithSecondOptimizeClient, "      rootUrl: \"https://${HUB_HOST}${OPTB_OPTIMIZE_CONTEXT_PATH}\"\n", "", 1)
 	writeTwoTenantLayers(t, dir, hub, optimizeLayerMatchingHubInventory, optimizeLayerSecondTenant)
 
@@ -1421,7 +1499,7 @@ func TestTopologyValidate_RejectsASecondTenantOptimizeClientRegisteringNoRedirec
 // A client with no permissions is minted no token for any resource server, so the
 // audience the release declares is unreachable rather than merely unmatched.
 func TestTopologyValidate_RejectsASecondTenantOptimizeClientWithNoPermissions(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	hub := strings.Replace(hubInventoryWithSecondOptimizeClient, "      permissions:\n        - resourceServerId: optimize-orcha-api\n          definition: write:*\n", "", 1)
 	writeTwoTenantLayers(t, dir, hub, optimizeLayerMatchingHubInventory, optimizeLayerSecondTenant)
 
@@ -1435,7 +1513,7 @@ func TestTopologyValidate_RejectsASecondTenantOptimizeClientWithNoPermissions(t 
 // grants access to nothing, so counting entries rather than usable servers would
 // let it through as a permission that merely fails to match.
 func TestTopologyValidate_RejectsASecondTenantOptimizeClientWhosePermissionsNameNoResourceServer(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	hub := strings.Replace(
 		hubInventoryWithSecondOptimizeClient,
 		"      permissions:\n        - resourceServerId: optimize-orcha-api\n          definition: write:*\n",
@@ -1455,7 +1533,7 @@ func TestTopologyValidate_RejectsASecondTenantOptimizeClientWhosePermissionsName
 // and the chart cannot see it. Requiring these fields here would fail a supported
 // topology, which is why both requirements above are scoped to Keycloak.
 func TestTopologyValidate_AcceptsAnIncompleteClientUnderANonKeycloakIssuer(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	hub := strings.Replace(hubInventoryWithSecondOptimizeClient, "      rootUrl: \"https://${HUB_HOST}${OPTB_OPTIMIZE_CONTEXT_PATH}\"\n", "", 1)
 	hub = strings.Replace(hub, "      permissions:\n        - resourceServerId: optimize-orcha-api\n          definition: write:*\n", "", 1)
 	writeTwoTenantLayers(t, dir, hubWithNonKeycloakIssuer(hub), optimizeLayerMatchingHubInventory, optimizeLayerSecondTenant)
@@ -1469,7 +1547,7 @@ func TestTopologyValidate_AcceptsAnIncompleteClientUnderANonKeycloakIssuer(t *te
 // relative ones against rootUrl, so an absolute entry is a complete registration
 // and an empty rootUrl beside one is correct rather than broken.
 func TestTopologyValidate_AcceptsASecondTenantOptimizeRedirectFromAnAbsoluteRedirectUri(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	hub := strings.Replace(
 		hubInventoryWithSecondOptimizeClient,
 		"      rootUrl: \"https://${HUB_HOST}${OPTB_OPTIMIZE_CONTEXT_PATH}\"\n      redirectUris: /api/authentication/callback\n",
@@ -1484,7 +1562,7 @@ func TestTopologyValidate_AcceptsASecondTenantOptimizeRedirectFromAnAbsoluteRedi
 }
 
 func TestTopologyValidate_RejectsASecondTenantOptimizeRedirectingOffItsRegisteredRootUrl(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	drifted := strings.Replace(optimizeLayerSecondTenant, "${RELEASE_OPTIMIZE_CONTEXT_PATH}\"\n        secret", "${OPTA_OPTIMIZE_CONTEXT_PATH}\"\n        secret", 1)
 	writeTwoTenantLayers(t, dir, hubInventoryWithSecondOptimizeClient, optimizeLayerMatchingHubInventory, drifted)
 
@@ -1498,7 +1576,7 @@ func TestTopologyValidate_RejectsASecondTenantOptimizeRedirectingOffItsRegistere
 }
 
 func TestTopologyValidate_RejectsASecondTenantOptimizeAudiencedToAnUnpermittedResourceServer(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	drifted := strings.Replace(optimizeLayerSecondTenant, "audience: optimize-orcha-api", "audience: optimize-orcha-b-api", 1)
 	writeTwoTenantLayers(t, dir, hubInventoryWithSecondOptimizeClient, optimizeLayerMatchingHubInventory, drifted)
 
@@ -1521,7 +1599,7 @@ const hubInventoryResetToNoClusters = `global:
 // stored copy when the new list has entries keeps checking registrations the
 // deploy no longer makes.
 func TestTopologyValidate_RejectsOptimizeWhoseHubClusterInventoryIsResetToEmpty(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	writeLayer(t, dir, "base.yaml", hubInventoryRegisteringOptimize)
 	writeLayer(t, dir, "features/hub.yaml", hubInventoryResetToNoClusters)
 	writeValuesFile(t, dir, "features/orchestration.yaml")
@@ -1537,7 +1615,7 @@ func TestTopologyValidate_RejectsOptimizeWhoseHubClusterInventoryIsResetToEmpty(
 // about the inventory rather than emptying it. Presence of the key is what has to
 // decide, not the length of the list it parses to.
 func TestTopologyValidate_AcceptsOptimizeWhoseLaterHubLayerLeavesTheInventoryAlone(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	writeLayer(t, dir, "base.yaml", hubInventoryRegisteringOptimize)
 	writeLayer(t, dir, "features/hub.yaml", "global:\n  topology:\n    mode: hub\n")
 	writeValuesFile(t, dir, "features/orchestration.yaml")
@@ -1551,7 +1629,7 @@ func TestTopologyValidate_AcceptsOptimizeWhoseLaterHubLayerLeavesTheInventoryAlo
 // identity.clients is replaced the same way, and it is the only place a second
 // tenant's Optimize can be provisioned.
 func TestTopologyValidate_RejectsSecondTenantOptimizeWhoseHubClientListIsResetToEmpty(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	writeLayer(t, dir, "base.yaml", hubInventoryWithSecondOptimizeClient)
 	writeTwoTenantLayers(t, dir, "identity:\n  clients: []\n", optimizeLayerMatchingHubInventory, optimizeLayerSecondTenant)
 
@@ -1565,7 +1643,7 @@ func TestTopologyValidate_RejectsSecondTenantOptimizeWhoseHubClientListIsResetTo
 // existing-Secret fields never looks at it: two different literals passed, and
 // Optimize authenticated with a secret Identity had not registered.
 func TestTopologyValidate_RejectsOptimizeInlineSecretDifferingFromTheHubInventory(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	writeLayer(t, dir, "features/hub.yaml", inlineSecretOn(hubInventoryRegisteringOptimize, "hub-registered-secret"))
 	writeValuesFile(t, dir, "features/orchestration.yaml")
 	writeLayer(t, dir, "features/optimize.yaml", inlineSecretOn(optimizeLayerMatchingHubInventory, "release-sent-secret"))
@@ -1580,7 +1658,7 @@ func TestTopologyValidate_RejectsOptimizeInlineSecretDifferingFromTheHubInventor
 }
 
 func TestTopologyValidate_AcceptsOptimizeInlineSecretMatchingTheHubInventory(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	writeLayer(t, dir, "features/hub.yaml", inlineSecretOn(hubInventoryRegisteringOptimize, "shared-secret"))
 	writeValuesFile(t, dir, "features/orchestration.yaml")
 	writeLayer(t, dir, "features/optimize.yaml", inlineSecretOn(optimizeLayerMatchingHubInventory, "shared-secret"))
@@ -1593,7 +1671,7 @@ func TestTopologyValidate_AcceptsOptimizeInlineSecretMatchingTheHubInventory(t *
 // An inline literal and a Secret reference cannot be shown to hold the same
 // value, and the Deployment sends only one of them.
 func TestTopologyValidate_RejectsOptimizeInlineSecretAgainstARegisteredSecretReference(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	writeLayer(t, dir, "features/hub.yaml", hubInventoryRegisteringOptimize)
 	writeValuesFile(t, dir, "features/orchestration.yaml")
 	writeLayer(t, dir, "features/optimize.yaml", inlineSecretOn(optimizeLayerMatchingHubInventory, "release-sent-secret"))
@@ -1607,7 +1685,7 @@ func TestTopologyValidate_RejectsOptimizeInlineSecretAgainstARegisteredSecretRef
 // The standalone-client path resolves the secret with inlineSecret first, the
 // order identity.clients[] is rendered in.
 func TestTopologyValidate_RejectsSecondTenantOptimizeInlineSecretDifferingFromItsIdentityClient(t *testing.T) {
-	dir := t.TempDir()
+	_, dir := newTopologyTestChart(t)
 	hubLayer := hubInventoryRegisteringOptimize + inlineSecretOn(
 		strings.TrimPrefix(hubInventoryWithSecondOptimizeClient, hubInventoryRegisteringOptimize),
 		"hub-registered-secret")
@@ -1757,5 +1835,87 @@ func TestTopologyValidateRenderedKeepsDefaultTenantOnTheClusterRecord(t *testing
 	}
 	if !strings.Contains(err.Error(), "this cluster's Optimize client id") {
 		t.Errorf("default tenant should be validated against the cluster record, got %v", err)
+	}
+}
+
+// validHubAndOrchestration returns the minimal pair of releases that satisfies
+// every non-path invariant in Topology.Validate, so a test can make a single
+// path field the only possible source of a problem.
+func validHubAndOrchestration(hub, orch TopologyRelease) []TopologyRelease {
+	if hub.Role == "" {
+		hub.Role = "hub"
+	}
+	if hub.NamespaceSuffix == "" {
+		hub.NamespaceSuffix = "hub"
+	}
+	if len(hub.Features) == 0 {
+		hub.Features = []string{"hub"}
+	}
+	if orch.Role == "" {
+		orch.Role = "orchestration"
+	}
+	if orch.NamespaceSuffix == "" {
+		orch.NamespaceSuffix = "orcha"
+	}
+	if len(orch.Features) == 0 {
+		orch.Features = []string{"orchestration"}
+	}
+	if orch.ModelerClusterID == "" {
+		orch.ModelerClusterID = "orchestration"
+	}
+	if orch.ModelerClusterName == "" {
+		orch.ModelerClusterName = "orchestration"
+	}
+	return []TopologyRelease{hub, orch}
+}
+
+// TestTopologyValidate_RejectsTraversalInFeature pins the guard the #7008
+// review asked for: a feature ID is interpolated into values/features/<id>.yaml,
+// so "../identity/keycloak" resolves to the identity layer instead. The identity
+// file is planted deliberately and the topology is otherwise valid, so without
+// the plain-filename check this topology validates clean against a file it
+// never named.
+func TestTopologyValidate_RejectsTraversalInFeature(t *testing.T) {
+	_, dir := newTopologyTestChart(t)
+	writeValuesFile(t, dir, "features/hub.yaml")
+	writeValuesFile(t, dir, "features/orchestration.yaml")
+	writeValuesFile(t, dir, filepath.Join("identity", "keycloak.yaml"))
+	top := &Topology{
+		Name: "traversal-feature",
+		Releases: validHubAndOrchestration(
+			TopologyRelease{Features: []string{"../identity/keycloak"}},
+			TopologyRelease{},
+		),
+	}
+	err := top.Validate("ctx", dir, t.TempDir())
+	if err == nil || !strings.Contains(err.Error(), "plain filename") {
+		t.Fatalf("want plain-filename rejection for feature ID, got: %v", err)
+	}
+}
+
+// TestTopologyValidate_RejectsTraversalInIdentityAndPersistence covers the two
+// sibling layer fields, which share the feature ID's path-join shape.
+func TestTopologyValidate_RejectsTraversalInIdentityAndPersistence(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		hub  TopologyRelease
+	}{
+		{"identity", TopologyRelease{Identity: "../features/leak"}},
+		{"persistence", TopologyRelease{Persistence: "../features/leak"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			_, dir := newTopologyTestChart(t)
+			writeValuesFile(t, dir, "features/hub.yaml")
+			writeValuesFile(t, dir, "features/orchestration.yaml")
+			writeValuesFile(t, dir, filepath.Join("features", "leak.yaml"))
+			top := &Topology{
+				Name:     "traversal-" + tc.name,
+				Releases: validHubAndOrchestration(tc.hub, TopologyRelease{}),
+			}
+			err := top.Validate("ctx", dir, t.TempDir())
+			if err == nil || !strings.Contains(err.Error(), "plain filename") {
+				t.Fatalf("want plain-filename rejection for %s reference, got: %v", tc.name, err)
+			}
+		})
 	}
 }

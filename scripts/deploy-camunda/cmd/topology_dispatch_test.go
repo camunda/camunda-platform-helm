@@ -117,7 +117,7 @@ func TestSynthesizeReleaseEntry_HubCarriesOwnLayers(t *testing.T) {
 	}
 	releases := testTopologyReleases()
 
-	hubEntry := synthesizeReleaseEntry(baseEntry, releases[0], "gke")
+	hubEntry := synthesizeReleaseEntry("/repo", baseEntry, releases[0], "gke")
 
 	if hubEntry.Identity != "keycloak" {
 		t.Errorf("Hub Identity = %q, want %q", hubEntry.Identity, "keycloak")
@@ -164,7 +164,7 @@ func TestSynthesizeReleaseEntry_NoRoleRunsE2EDuringDeploy(t *testing.T) {
 	}
 
 	for _, rel := range testTopologyReleases() {
-		entry := synthesizeReleaseEntry(baseEntry, rel, "gke")
+		entry := synthesizeReleaseEntry("/repo", baseEntry, rel, "gke")
 		if !entry.SkipE2E {
 			t.Errorf("role %q: SkipE2E = false, want true (e2e is a topology-level phase)", rel.Role)
 		}
@@ -172,12 +172,13 @@ func TestSynthesizeReleaseEntry_NoRoleRunsE2EDuringDeploy(t *testing.T) {
 }
 
 func TestSynthesizeReleaseEntry_OrchestrationHasNoDependenciesOrPostDeployHook(t *testing.T) {
-	hook := &matrix.LifecycleHook{Script: "post-deploy-hub-ping.sh"}
-	baseEntry := matrix.Entry{Version: "8.10", ChartPath: "charts/camunda-platform-8.10", Scenario: "multinamespace", Shortname: "mns", Auth: "keycloak", PostDeploy: hook}
+	postDeployHook := &matrix.LifecycleHook{Script: "post-deploy-hub-ping.sh"}
+	postInfraHook := &matrix.LifecycleHook{Script: "post-infra-legacy-elasticsearch.sh"}
+	baseEntry := matrix.Entry{Version: "8.10", ChartPath: "charts/camunda-platform-8.10", Scenario: "multinamespace", Shortname: "mns", Auth: "keycloak", PostDeploy: postDeployHook, PostInfra: postInfraHook}
 	releases := testTopologyReleases()
 
 	for _, rel := range releases[1:] {
-		orchEntry := synthesizeReleaseEntry(baseEntry, rel, "gke")
+		orchEntry := synthesizeReleaseEntry("/repo", baseEntry, rel, "gke")
 		if orchEntry.Identity != "keycloak-external" {
 			t.Errorf("orchestration Identity = %q, want %q", orchEntry.Identity, "keycloak-external")
 		}
@@ -196,10 +197,37 @@ func TestSynthesizeReleaseEntry_OrchestrationHasNoDependenciesOrPostDeployHook(t
 		if orchEntry.PostDeploy != nil {
 			t.Errorf("orchestration release %q PostDeploy = %v, want nil so the hook runs once at topology level", rel.NamespaceSuffix, orchEntry.PostDeploy)
 		}
+		if orchEntry.PostInfra != nil {
+			t.Errorf("orchestration release %q PostInfra = %v, want nil", rel.NamespaceSuffix, orchEntry.PostInfra)
+		}
 	}
-	hubEntry := synthesizeReleaseEntry(baseEntry, releases[0], "gke")
+	hubEntry := synthesizeReleaseEntry("/repo", baseEntry, releases[0], "gke")
 	if hubEntry.PostDeploy != nil {
 		t.Errorf("Hub PostDeploy = %v, want nil so the hook runs once at topology level", hubEntry.PostDeploy)
+	}
+	// The post-infra hook provisions the shared infrastructure the rest of the
+	// topology deploys onto, so it rides on the Hub release rather than being
+	// dropped (which left topology scenarios with no post-infra step at all).
+	if hubEntry.PostInfra != postInfraHook {
+		t.Errorf("Hub PostInfra = %v, want scenario hook", hubEntry.PostInfra)
+	}
+}
+
+func TestSynthesizeReleaseEntry_UsesReleaseChartVersion(t *testing.T) {
+	baseEntry := matrix.Entry{Version: "8.10", ChartPath: "/elsewhere/camunda-platform-8.10"}
+	rel := matrix.TopologyRelease{ChartVersion: "8.9"}
+
+	got := synthesizeReleaseEntry("/repo", baseEntry, rel, "gke")
+	if got.Version != "8.9" {
+		t.Errorf("Version = %q, want 8.9", got.Version)
+	}
+	if got.ChartPath != filepath.Join("/repo", "charts", "camunda-platform-8.9") {
+		t.Errorf("ChartPath = %q", got.ChartPath)
+	}
+
+	inherited := synthesizeReleaseEntry("/repo", baseEntry, matrix.TopologyRelease{}, "gke")
+	if inherited.Version != "8.10" || inherited.ChartPath != filepath.Join("/repo", "charts", "camunda-platform-8.10") {
+		t.Errorf("inherited chart = %s at %s", inherited.Version, inherited.ChartPath)
 	}
 }
 
@@ -1136,5 +1164,66 @@ func TestTopologyHookFlags_PrefersOrchestration(t *testing.T) {
 	}
 	if topologyHookFlags(nil) != nil {
 		t.Error("topologyHookFlags(nil) should report that there is no release to run against")
+	}
+}
+
+// A topology renders every release's contract before any of them deploys, so the
+// chart directories the render needs must already have their subchart dependencies
+// vendored. CI vendors only the matrix entry's own chart version, which left a
+// release pinning chart-version to render against an empty charts/ directory and
+// fail with "missing in charts/ directory: keycloak, postgresql, ...".
+// topologyChartPaths is what turns that into one EnsureDependencies call per chart.
+func TestTopologyChartPaths(t *testing.T) {
+	chart := func(chartPath, chartRef string) preparedTopologyRelease {
+		return preparedTopologyRelease{
+			flags: &config.RuntimeFlags{
+				Chart: config.ChartFlags{ChartPath: chartPath, Chart: chartRef},
+			},
+		}
+	}
+
+	tests := []struct {
+		name     string
+		releases []preparedTopologyRelease
+		want     []string
+	}{
+		{
+			name: "a pinned chart-version contributes its own chart directory",
+			releases: []preparedTopologyRelease{
+				chart("/repo/charts/camunda-platform-8.10", ""),
+				chart("/repo/charts/camunda-platform-8.10", ""),
+				chart("/repo/charts/camunda-platform-8.9", ""),
+			},
+			want: []string{"/repo/charts/camunda-platform-8.10", "/repo/charts/camunda-platform-8.9"},
+		},
+		{
+			name: "a uniform topology yields the single shared chart directory",
+			releases: []preparedTopologyRelease{
+				chart("/repo/charts/camunda-platform-8.10", ""),
+				chart("/repo/charts/camunda-platform-8.10", ""),
+			},
+			want: []string{"/repo/charts/camunda-platform-8.10"},
+		},
+		{
+			name: "an external chart reference has nothing to vendor locally",
+			releases: []preparedTopologyRelease{
+				chart("/repo/charts/camunda-platform-8.10", "oci://registry/camunda/camunda-platform"),
+			},
+			want: []string{},
+		},
+		{
+			name:     "releases without flags or a chart path are skipped",
+			releases: []preparedTopologyRelease{{}, chart("", "")},
+			want:     []string{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := topologyChartPaths(tt.releases)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("topologyChartPaths() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }

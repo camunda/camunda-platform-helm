@@ -82,6 +82,11 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 				"identity.enabled":              "true",
 				"identity.multitenancy.enabled": "true",
 				"identityPostgresql.enabled":    "true",
+				// Multi-Tenancy requires Identity auth, as values.yaml
+				// documents and the constraint in constraints.tpl now
+				// correctly enforces. This case rendered without it only
+				// while $identityAuthEnabled was computed with `or`.
+				"global.identity.auth.enabled": "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var configmap corev1.ConfigMap

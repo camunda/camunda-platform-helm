@@ -12,13 +12,13 @@ console:
   # https://hub.docker.com/r/camunda/console/tags
   image:
     repository: camunda/console
-    tag: 8.9.108
+    tag: 8.9.110
 
 connectors:
   # https://hub.docker.com/r/camunda/connectors-bundle/tags
   image:
     repository: camunda/connectors-bundle
-    tag: 8.9.10
+    tag: 8.9.12
 
 optimize:
   # https://hub.docker.com/r/camunda/optimize/tags

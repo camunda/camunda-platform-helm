@@ -96,7 +96,8 @@ func newDiagnosticsCommand() *cobra.Command {
 // --include-ready widens the describe+logs loop to every pod (kube.GetPodNames),
 // covering a Ready pod that is serving errors rather than crashing.
 func newDiagnosticsPrintCommand() *cobra.Command {
-	var namespace, kubeContext string
+	var namespaces []string
+	var kubeContext string
 	var tail int
 	var includeReady bool
 
@@ -114,6 +115,13 @@ By default only non-ready pods are described and their logs collected. Pass
 --include-ready to cover every pod in the namespace, which is what a
 Ready-but-misbehaving component (an HTTP 500 from a running pod) requires.
 
+--namespace may be repeated (or comma-separated). A topology scenario spreads
+one logical cluster over several namespaces, and the component that explains a
+failure is often not in the namespace whose test failed: an orchestration leg
+can fail purely because Identity or Web Modeler is unhealthy in the hub
+namespace. Passing every namespace of the topology captures all of them in one
+dump.
+
 All calls are best-effort: errors are printed inline and never abort the dump.`,
 		SilenceUsage:  true,
 		SilenceErrors: true,
@@ -127,23 +135,56 @@ All calls are best-effort: errors are printed inline and never abort the dump.`,
 			}); err != nil {
 				return err
 			}
-			if namespace == "" {
+			targets := dedupeNamespaces(namespaces)
+			if len(targets) == 0 {
 				return fmt.Errorf("--namespace is required")
 			}
 
-			printNamespaceDiagnostics(ctx, os.Stdout, defaultPodDiagnosticsSource(), kubeContext, namespace, tail, includeReady)
+			printTopologyDiagnostics(ctx, os.Stdout, defaultPodDiagnosticsSource(), kubeContext, targets, tail, includeReady)
 			return nil
 		},
 	}
 
 	f := cmd.Flags()
-	f.StringVarP(&namespace, "namespace", "n", "", "Namespace to inspect (required)")
+	f.StringSliceVarP(&namespaces, "namespace", "n", nil, "Namespace to inspect; repeat or comma-separate to cover every namespace of a multi-namespace topology (required)")
 	f.StringVar(&kubeContext, "kube-context", "", "Kubernetes context")
 	f.IntVar(&tail, "tail", 500, "Log tail lines per pod")
 	f.BoolVar(&includeReady, "include-ready", false, "Describe and collect logs for every pod, not just non-ready ones")
 	f.StringVarP(&flags.LogLevel, "log-level", "l", "info", "Log level")
 
 	return cmd
+}
+
+// dedupeNamespaces trims and de-duplicates the --namespace values, preserving
+// first-seen order. Topology callers build the list from separate inputs (test,
+// hub, optimize) that collapse to the same namespace in single-namespace
+// scenarios, so the same namespace must not be dumped twice.
+func dedupeNamespaces(namespaces []string) []string {
+	seen := make(map[string]bool, len(namespaces))
+	out := make([]string, 0, len(namespaces))
+	for _, ns := range namespaces {
+		ns = strings.TrimSpace(ns)
+		if ns == "" || seen[ns] {
+			continue
+		}
+		seen[ns] = true
+		out = append(out, ns)
+	}
+	return out
+}
+
+// printTopologyDiagnostics dumps every namespace in order. A banner separates
+// them only when there is more than one, so single-namespace output stays
+// exactly as it was for the callers that pass one namespace. Each namespace is
+// independent: one that cannot be reached still leaves the others captured.
+func printTopologyDiagnostics(ctx context.Context, w io.Writer, src podDiagnosticsSource, kubeContext string, namespaces []string, tail int, includeReady bool) {
+	multi := len(namespaces) > 1
+	for _, ns := range namespaces {
+		if multi {
+			fmt.Fprintf(w, "\n########## Namespace: %s ##########\n", ns)
+		}
+		printNamespaceDiagnostics(ctx, w, src, kubeContext, ns, tail, includeReady)
+	}
 }
 
 // printNamespaceDiagnostics writes the diagnostics dump to w. It is pure

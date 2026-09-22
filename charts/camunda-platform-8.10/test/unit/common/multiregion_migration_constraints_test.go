@@ -66,23 +66,23 @@ func (s *MultiregionMigrationConstraintTemplateTest) TestRetainedNumberedTopolog
 		value string
 		err   string
 	}{
-		{name: "regions noninteger", key: "orchestration.partitioning.regions", value: "3.5"},
-		{name: "regions negative", key: "orchestration.partitioning.regions", value: "-3", err: "orchestration.partitioning.regions must be a positive integer"},
-		{name: "regions zero", key: "orchestration.partitioning.regions", value: "0", err: "orchestration.partitioning.regions must be a positive integer"},
-		{name: "regionId noninteger", key: "orchestration.partitioning.regionId", value: "1.5", err: "orchestration.partitioning.regionId must be an integer"},
-		{name: "regionId negative", key: "orchestration.partitioning.regionId", value: "-1", err: "orchestration.partitioning.regionId must be an integer"},
-		{name: "regionId equal to regions", key: "orchestration.partitioning.regionId", value: "3", err: "orchestration.partitioning.regionId must be less than orchestration.partitioning.regions"},
+		{name: "numberOfZones noninteger", key: "orchestration.partitioning.numberOfZones", value: "3.5"},
+		{name: "numberOfZones negative", key: "orchestration.partitioning.numberOfZones", value: "-3", err: "orchestration.partitioning.numberOfZones must be a positive integer"},
+		{name: "numberOfZones zero", key: "orchestration.partitioning.numberOfZones", value: "0", err: "orchestration.partitioning.numberOfZones must be a positive integer"},
+		{name: "zoneIndex noninteger", key: "orchestration.partitioning.zoneIndex", value: "1.5", err: "orchestration.partitioning.zoneIndex must be an integer"},
+		{name: "zoneIndex negative", key: "orchestration.partitioning.zoneIndex", value: "-1", err: "orchestration.partitioning.zoneIndex must be an integer"},
+		{name: "zoneIndex equal to numberOfZones", key: "orchestration.partitioning.zoneIndex", value: "3", err: "orchestration.partitioning.zoneIndex must be less than orchestration.partitioning.numberOfZones"},
 		{name: "clusterSize noninteger", key: "orchestration.clusterSize", value: "6.5", err: "orchestration.clusterSize must be a positive integer"},
 		{name: "clusterSize negative", key: "orchestration.clusterSize", value: "-6", err: "orchestration.clusterSize must be a positive integer"},
 		{name: "clusterSize zero", key: "orchestration.clusterSize", value: "0", err: "orchestration.clusterSize must be a positive integer"},
-		{name: "clusterSize not divisible by regions", key: "orchestration.clusterSize", value: "5", err: "orchestration.clusterSize must be divisible by orchestration.partitioning.regions"},
+		{name: "clusterSize not divisible by numberOfZones", key: "orchestration.clusterSize", value: "5", err: "orchestration.clusterSize must be divisible by orchestration.partitioning.numberOfZones"},
 	}
 
 	testCases := make([]testhelpers.TestCase, 0, len(invalidCases)+2)
 	for _, testCase := range invalidCases {
 		values := zonedMigrationValues()
-		values["orchestration.partitioning.regions"] = "3"
-		values["orchestration.partitioning.regionId"] = "0"
+		values["orchestration.partitioning.numberOfZones"] = "3"
+		values["orchestration.partitioning.zoneIndex"] = "0"
 		renderArgs := []string{"--set-string", "orchestration.clusterSize=6"}
 		if testCase.key == "orchestration.clusterSize" {
 			renderArgs = []string{"--set-string", testCase.key + "=" + testCase.value}
@@ -105,10 +105,10 @@ func (s *MultiregionMigrationConstraintTemplateTest) TestRetainedNumberedTopolog
 	}
 
 	validIntegerValues := zonedMigrationValues()
-	validIntegerValues["orchestration.partitioning.regions"] = "3"
-	validIntegerValues["orchestration.partitioning.regionId"] = "0"
+	validIntegerValues["orchestration.partitioning.numberOfZones"] = "3"
+	validIntegerValues["orchestration.partitioning.zoneIndex"] = "0"
 	testCases = append(testCases, testhelpers.TestCase{
-		Name:                    "accepts integer topology inputs with regionId zero",
+		Name:                    "accepts integer topology inputs with zoneIndex zero",
 		Values:                  validIntegerValues,
 		RenderTemplateExtraArgs: []string{"--set-string", "orchestration.clusterSize=6"},
 		Verifier: func(t *testing.T, output string, err error) {
@@ -118,11 +118,11 @@ func (s *MultiregionMigrationConstraintTemplateTest) TestRetainedNumberedTopolog
 
 	validStringValues := zonedMigrationValues()
 	testCases = append(testCases, testhelpers.TestCase{
-		Name:   "accepts numeric string inputs with regionId zero",
+		Name:   "accepts numeric string inputs with zoneIndex zero",
 		Values: validStringValues,
 		RenderTemplateExtraArgs: []string{
-			"--set-string", "orchestration.partitioning.regions=3",
-			"--set-string", "orchestration.partitioning.regionId=0",
+			"--set-string", "orchestration.partitioning.numberOfZones=3",
+			"--set-string", "orchestration.partitioning.zoneIndex=0",
 			"--set-string", "orchestration.clusterSize=6",
 		},
 		Verifier: func(t *testing.T, output string, err error) {

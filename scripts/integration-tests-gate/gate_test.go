@@ -237,6 +237,27 @@ func TestResolveSHA(t *testing.T) {
 	}
 }
 
+func TestSelectWorkflowRun(t *testing.T) {
+	tests := []struct {
+		name string
+		runs []workflowRun
+		want string
+	}{
+		{"newest active", []workflowRun{{DatabaseID: 3}, {DatabaseID: 2, Conclusion: "success"}}, "3"},
+		{"skip cancelled duplicate", []workflowRun{{DatabaseID: 3, Conclusion: "cancelled"}, {DatabaseID: 2, Conclusion: "success"}}, "2"},
+		{"preserve newest failure", []workflowRun{{DatabaseID: 3, Conclusion: "failure"}, {DatabaseID: 2, Conclusion: "success"}}, "3"},
+		{"all cancelled", []workflowRun{{DatabaseID: 3, Conclusion: "cancelled"}, {DatabaseID: 2, Conclusion: "cancelled"}}, "3"},
+		{"no runs", nil, ""},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if got := selectWorkflowRun(test.runs); got != test.want {
+				t.Fatalf("got %q, want %q", got, test.want)
+			}
+		})
+	}
+}
+
 func TestDiscover_EventualVisibility(t *testing.T) {
 	c := &fakeClient{
 		t: t,

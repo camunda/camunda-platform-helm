@@ -124,7 +124,7 @@ rather than branching on the scheme again.
 
 {{- define "orchestration.numberedReplicas" -}}
 {{- $partitioning := include "camundaPlatform.partitioning" $ | fromJson -}}
-{{- div (int .Values.orchestration.clusterSize) (int $partitioning.regions) -}}
+{{- div (int .Values.orchestration.clusterSize) (int $partitioning.numberOfZones) -}}
 {{- end -}}
 
 {{- define "orchestration.replicas" -}}

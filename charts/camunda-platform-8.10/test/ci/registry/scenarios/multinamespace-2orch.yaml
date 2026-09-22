@@ -4,9 +4,9 @@ flows:
   - install
 platforms:
   - gke
-skip-e2e: true
 infra-type:
   gke: distroci
+post-infra: post-infra-legacy-elasticsearch
 topology:
   name: hub-2orch
   shared-storage: elasticsearch
@@ -39,6 +39,7 @@ topology:
         ORCH_OPTIMIZE_AUDIENCE: optimize-orcha-api
         ORCH_CONNECTORS_CLIENT_ID: connectors-orcha
     - role: orchestration
+      chart-version: "8.9"
       namespace-suffix: orchb
       modeler-cluster-id: orchb
       modeler-cluster-name: Orchestration B
@@ -54,3 +55,37 @@ topology:
         ORCH_OPTIMIZE_CLIENT_ID: optimize-orchb
         ORCH_OPTIMIZE_AUDIENCE: optimize-orchb-api
         ORCH_CONNECTORS_CLIENT_ID: connectors-orchb
+    - role: orchestration
+      chart-version: "8.8"
+      namespace-suffix: orchc
+      modeler-cluster-id: orchc
+      modeler-cluster-name: Orchestration C
+      identity: keycloak-external
+      persistence: elasticsearch-external
+      dependencies: []
+      features:
+        - multinamespace-orchestration
+      depends-on: hub
+      env:
+        ORCH_ORCHESTRATION_CLIENT_ID: orchestration-orchc
+        ORCH_ORCHESTRATION_AUDIENCE: orchestration-orchc-api
+        ORCH_OPTIMIZE_CLIENT_ID: optimize-orchc
+        ORCH_OPTIMIZE_AUDIENCE: optimize-orchc-api
+        ORCH_CONNECTORS_CLIENT_ID: connectors-orchc
+    - role: orchestration
+      chart-version: "8.7"
+      namespace-suffix: orchd
+      modeler-cluster-id: orchd
+      modeler-cluster-name: Orchestration D
+      identity: keycloak-external
+      persistence: elasticsearch-external
+      dependencies: []
+      features:
+        - multinamespace-orchestration
+      depends-on: hub
+      env:
+        ORCH_ORCHESTRATION_CLIENT_ID: orchestration-orchd
+        ORCH_ORCHESTRATION_AUDIENCE: orchestration-orchd-api
+        ORCH_OPTIMIZE_CLIENT_ID: optimize-orchd
+        ORCH_OPTIMIZE_AUDIENCE: optimize-orchd-api
+        ORCH_CONNECTORS_CLIENT_ID: connectors-orchd

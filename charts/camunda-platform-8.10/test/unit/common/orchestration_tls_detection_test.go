@@ -233,6 +233,7 @@ func (s *OrchestrationTLSDetectionTest) TestGRPCIngressBackendProtocol() {
 			Values: map[string]string{
 				"orchestration.ingress.grpc.enabled": "true",
 				"orchestration.ingress.grpc.host":    "grpc.example.com",
+				"orchestration.ingress.grpc.annotations.nginx\\.ingress\\.kubernetes\\.io/backend-protocol": "GRPC",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
@@ -247,6 +248,7 @@ func (s *OrchestrationTLSDetectionTest) TestGRPCIngressBackendProtocol() {
 			Values: map[string]string{
 				"orchestration.ingress.grpc.enabled": "true",
 				"orchestration.ingress.grpc.host":    "grpc.example.com",
+				"orchestration.ingress.grpc.annotations.nginx\\.ingress\\.kubernetes\\.io/backend-protocol": "GRPC",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)

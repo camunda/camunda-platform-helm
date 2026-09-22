@@ -123,8 +123,8 @@ func TestGoldenZoneAwareMigrationTemplateOrchestration(t *testing.T) {
 			name: "zoned",
 			setValues: map[string]string{
 				"orchestration.partitioning.keepUnzonedBrokers": "false",
-				"orchestration.partitioning.regions":            "1",
-				"orchestration.partitioning.regionId":           "0",
+				"orchestration.partitioning.numberOfZones":      "1",
+				"orchestration.partitioning.zoneIndex":          "0",
 			},
 		},
 	}

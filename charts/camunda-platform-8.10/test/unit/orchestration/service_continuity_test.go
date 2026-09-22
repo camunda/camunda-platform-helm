@@ -66,8 +66,8 @@ func (s *ServiceContinuityTest) TestSharedServicesSelectBothBrokerGenerations() 
 		"orchestration.partitioning.zones[0].numberOfReplicas": "1",
 		"orchestration.partitioning.zones[0].priority":         "100",
 		"orchestration.partitioning.keepUnzonedBrokers":        "true",
-		"orchestration.partitioning.regions":                   "1",
-		"orchestration.partitioning.regionId":                  "0",
+		"orchestration.partitioning.numberOfZones":             "1",
+		"orchestration.partitioning.zoneIndex":                 "0",
 	}
 
 	output, err := testhelpers.RenderTestCaseE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testhelpers.TestCase{Values: values})

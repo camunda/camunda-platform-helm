@@ -453,7 +453,6 @@ func executeDeployment(ctx context.Context, prepared *PreparedScenario, flags *c
 		DockerHubPassword:      flags.Docker.DockerHubPassword,
 		SkipDockerLogin:        flags.Docker.SkipDockerLogin,
 		Platform:               flags.Deployment.Platform,
-		NamespacePrefix:        flags.Deployment.NamespacePrefix,
 		RepoRoot:               flags.Chart.RepoRoot,
 		Identifier:             identifier,
 		TTL:                    resolveDeployTTL(flags.Deployment.TTL, os.Getenv("DEPLOY_CAMUNDA_TTL")),

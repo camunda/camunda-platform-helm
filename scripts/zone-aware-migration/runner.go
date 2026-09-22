@@ -159,7 +159,7 @@ func (r runner) installArgs() []string {
 func (r runner) migrationArgs(keep bool) []string {
 	args := []string{"upgrade", r.cfg.release, r.cfg.chartDir, "--namespace", r.cfg.namespace, "--values", filepath.Join(r.cfg.scenarioDir, "values-numbered.yaml"), "--values", filepath.Join(r.cfg.scenarioDir, "values-migration.yaml")}
 	if !keep {
-		args = append(args, "--set", "orchestration.partitioning.keepUnzonedBrokers=false", "--set", "orchestration.partitioning.regions=1", "--set-string", "orchestration.clusterSize=1", "--set-string", "orchestration.replicationFactor=1")
+		args = append(args, "--set", "orchestration.partitioning.keepUnzonedBrokers=false", "--set", "orchestration.partitioning.numberOfZones=1", "--set-string", "orchestration.clusterSize=1", "--set-string", "orchestration.replicationFactor=1")
 	}
 	return append(args, "--timeout", r.cfg.timeout)
 }

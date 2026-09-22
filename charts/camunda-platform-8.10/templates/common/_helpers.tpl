@@ -1283,6 +1283,147 @@ those keys, so there is no alternative source to detect.
 {{- end -}}
 
 {{/*
+[camunda-platform] Render conditions of the split upstream-TLS Ingress objects.
+Each mirrors the guard of the template named after it, so callers that need to
+reason about those manifests (constraints.tpl) cannot drift from what renders.
+*/}}
+{{/*
+[camunda-platform] The ingress-nginx annotation sets the chart used to ship as
+values defaults. Injected while global.compatibility.nginx.renderAnnotations is
+on, for keys the user has not set. A null value drops its key; a null map is
+rendered as no annotations at all. Entries are emitted already evaluated.
+*/}}
+{{/*
+[camunda-platform] A user annotation map evaluated for key comparison only.
+The rendered map keeps the unevaluated entries, which the callers evaluate.
+*/}}
+{{- define "camundaPlatform.resolvedUserAnnotations" -}}
+  {{- $user := .annotations | default dict -}}
+  {{- if $user -}}
+    {{- tpl (toYaml $user) .context -}}
+  {{- else -}}
+    {{- "{}" -}}
+  {{- end -}}
+{{- end -}}
+
+{{- define "camundaPlatform.legacyNginxIngressAnnotations" -}}
+nginx.ingress.kubernetes.io/ssl-redirect: "false"
+nginx.ingress.kubernetes.io/proxy-buffering: "on"
+nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
+nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+{{- end -}}
+
+{{- define "camundaPlatform.legacyNginxGrpcIngressAnnotations" -}}
+nginx.ingress.kubernetes.io/ssl-redirect: "false"
+nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
+nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
+{{- end -}}
+
+{{- define "camundaPlatform.ingressAnnotations" -}}
+  {{- $raw := .Values.global.ingress.annotations -}}
+  {{- if not (kindIs "invalid" $raw) -}}
+  {{- $user := $raw | default dict -}}
+  {{- $resolved := include "camundaPlatform.resolvedUserAnnotations" (dict "annotations" $user "context" .) | fromYaml -}}
+  {{- $compat := dict -}}
+  {{- if .Values.global.compatibility.nginx.renderAnnotations -}}
+    {{- $compat = include "camundaPlatform.legacyNginxIngressAnnotations" . | fromYaml -}}
+  {{- end -}}
+  {{- $rendered := dict -}}
+  {{- range $key, $value := $compat -}}
+    {{- if not (hasKey $resolved $key) -}}
+      {{- $_ := set $rendered $key $value -}}
+    {{- end -}}
+  {{- end -}}
+  {{- range $key, $value := $user -}}
+    {{- if not (kindIs "invalid" $value) -}}
+      {{- $_ := set $rendered $key $value -}}
+    {{- end -}}
+  {{- end -}}
+  {{- toYaml $rendered -}}
+  {{- end -}}
+{{- end -}}
+
+{{- define "camundaPlatform.grpcIngressAnnotations" -}}
+  {{- $raw := .Values.orchestration.ingress.grpc.annotations -}}
+  {{- if not (kindIs "invalid" $raw) -}}
+  {{- $user := $raw | default dict -}}
+  {{- $resolved := include "camundaPlatform.resolvedUserAnnotations" (dict "annotations" $user "context" .) | fromYaml -}}
+  {{- $compat := dict -}}
+  {{- if .Values.global.compatibility.nginx.renderAnnotations -}}
+    {{- $compat = include "camundaPlatform.legacyNginxGrpcIngressAnnotations" . | fromYaml -}}
+  {{- end -}}
+  {{- $rendered := dict -}}
+  {{- range $key, $value := $compat -}}
+    {{- if not (hasKey $resolved $key) -}}
+      {{- $_ := set $rendered $key $value -}}
+    {{- end -}}
+  {{- end -}}
+  {{- range $key, $value := $user -}}
+    {{- if not (kindIs "invalid" $value) -}}
+      {{- $_ := set $rendered $key $value -}}
+    {{- end -}}
+  {{- end -}}
+  {{- toYaml $rendered -}}
+  {{- end -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] "true" when the compatibility shim contributes a key the user
+has not set, on a route that renders. One predicate per annotation map.
+*/}}
+{{- define "camundaPlatform.sharedHTTPIngressRendered" -}}
+  {{- ternary "true" "false" (and .Values.global.ingress.enabled (not .Values.global.ingress.external) (include "camundaPlatform.ingressHTTPPaths" . | trim) | not | not) -}}
+{{- end -}}
+
+{{- define "camundaPlatform.nginxCompatHTTPInjecting" -}}
+  {{- $injecting := false -}}
+  {{- if .Values.global.compatibility.nginx.renderAnnotations -}}
+    {{- if or
+          (eq (include "camundaPlatform.sharedHTTPIngressRendered" .) "true")
+          (eq (include "camundaPlatform.orchestrationHTTPIngressRendered" .) "true")
+          (eq (include "camundaPlatform.connectorsHTTPIngressRendered" .) "true")
+          (eq (include "camundaPlatform.optimizeHTTPIngressRendered" .) "true") -}}
+      {{- $raw := .Values.global.ingress.annotations -}}
+      {{- $user := $raw | default dict -}}
+      {{- $resolved := include "camundaPlatform.resolvedUserAnnotations" (dict "annotations" $user "context" .) | fromYaml -}}
+      {{- if not (kindIs "invalid" $raw) -}}{{- range $key, $value := (include "camundaPlatform.legacyNginxIngressAnnotations" . | fromYaml) -}}
+        {{- if not (hasKey $resolved $key) -}}{{- $injecting = true -}}{{- end -}}
+      {{- end -}}{{- end -}}
+    {{- end -}}
+  {{- end -}}
+  {{- ternary "true" "false" $injecting -}}
+{{- end -}}
+
+{{- define "camundaPlatform.nginxCompatGRPCInjecting" -}}
+  {{- $injecting := false -}}
+  {{- if and .Values.global.compatibility.nginx.renderAnnotations (eq (include "camundaPlatform.grpcIngressRendered" .) "true") -}}
+    {{- $raw := .Values.orchestration.ingress.grpc.annotations -}}
+      {{- $user := $raw | default dict -}}
+    {{- $resolved := include "camundaPlatform.resolvedUserAnnotations" (dict "annotations" $user "context" .) | fromYaml -}}
+    {{- if not (kindIs "invalid" $raw) -}}{{- range $key, $value := (include "camundaPlatform.legacyNginxGrpcIngressAnnotations" . | fromYaml) -}}
+      {{- if not (hasKey $resolved $key) -}}{{- $injecting = true -}}{{- end -}}
+    {{- end -}}{{- end -}}
+  {{- end -}}
+  {{- ternary "true" "false" $injecting -}}
+{{- end -}}
+
+{{- define "camundaPlatform.orchestrationHTTPIngressRendered" -}}
+  {{- ternary "true" "false" (and .Values.global.ingress.enabled (not .Values.global.ingress.external) (eq (include "camundaPlatform.orchestrationEnabled" .) "true") .Values.orchestration.contextPath (eq (include "camundaPlatform.orchestrationRESTTLSEnabled" .) "true") | not | not) -}}
+{{- end -}}
+
+{{- define "camundaPlatform.connectorsHTTPIngressRendered" -}}
+  {{- ternary "true" "false" (and .Values.global.ingress.enabled (not .Values.global.ingress.external) (eq (include "camundaPlatform.connectorsEnabled" .) "true") .Values.connectors.contextPath (eq (include "camundaPlatform.connectorsTLSEnabled" .) "true") | not | not) -}}
+{{- end -}}
+
+{{- define "camundaPlatform.optimizeHTTPIngressRendered" -}}
+  {{- ternary "true" "false" (and .Values.global.ingress.enabled (not .Values.global.ingress.external) (eq (include "camundaPlatform.optimizeEnabled" .) "true") .Values.optimize.contextPath (eq (include "camundaPlatform.optimizeServerTLSEnabled" .) "true") | not | not) -}}
+{{- end -}}
+
+{{- define "camundaPlatform.grpcIngressRendered" -}}
+  {{- ternary "true" "false" (and (eq (include "camundaPlatform.orchestrationEnabled" .) "true") .Values.orchestration.ingress.grpc.enabled (not .Values.orchestration.ingress.grpc.external) | not | not) -}}
+{{- end -}}
+
+{{/*
 [camunda-platform] Returns "true" when optimize.{configuration,extraConfiguration}
 mentions server.ssl in any form. Optimize cannot serve TLS from those keys (see
 camundaPlatform.optimizeServerTLSEnabled), so camunda.constraints.errors fails
@@ -1538,19 +1679,24 @@ required by camunda.modeler.clusters (introduced in 8.10 Hub/WebModeler).
 {{- $orchestration := dig "components" "orchestration" dict $cluster }}
 {{- $optimize := dig "components" "optimize" dict $cluster }}
 {{- $connectors := dig "components" "connectors" dict $cluster }}
+{{- $legacy := eq ($cluster.architecture | default "unified") "legacy" }}
 {{- $orchestrationPath := include "camundaPlatform.topologyContextPath" (dig "contextPaths" "orchestration" "" $cluster) }}
 {{- $optimizePath := include "camundaPlatform.topologyContextPath" (dig "contextPaths" "optimize" "" $cluster) }}
 {{- $connectorsPath := include "camundaPlatform.topologyContextPath" (dig "contextPaths" "connectors" "" $cluster) }}
 {{- $orchestrationName := $orchestration.serviceName | default (include "camundaPlatform.topologyComponentFullname" (dict "releaseName" $cluster.releaseName "componentName" "zeebe")) }}
 {{- $gatewayName := $orchestration.gatewayServiceName | default (printf "%s-gateway" $orchestrationName) }}
+{{- $operateName := $orchestration.operateServiceName | default (include "camundaPlatform.topologyComponentFullname" (dict "releaseName" $cluster.releaseName "componentName" "operate")) }}
+{{- $tasklistName := $orchestration.tasklistServiceName | default (include "camundaPlatform.topologyComponentFullname" (dict "releaseName" $cluster.releaseName "componentName" "tasklist")) }}
 {{- $optimizeName := $optimize.serviceName | default (include "camundaPlatform.topologyComponentFullname" (dict "releaseName" $cluster.releaseName "componentName" "optimize")) }}
 {{- $connectorsName := $connectors.serviceName | default (include "camundaPlatform.topologyComponentFullname" (dict "releaseName" $cluster.releaseName "componentName" "connectors")) }}
 - id: {{ $cluster.id | quote }}
   name: {{ ($cluster.name | default $cluster.id) | quote }}
   version: {{ $cluster.version | quote }}
   authentication: "BEARER_TOKEN"
+  {{- if not $legacy }}
   authorizations:
     enabled: {{ dig "authorizations" "enabled" false $cluster }}
+  {{- end }}
   components:
   {{- if $optimize.enabled }}
   - name: Optimize
@@ -1574,26 +1720,28 @@ required by camunda.modeler.clusters (introduced in 8.10 Hub/WebModeler).
     version: {{ $cluster.version | quote }}
     urls:
       webapp: {{ $orchestration.operateUrl | default (printf "https://%s%s/operate" $cluster.host $orchestrationPath) | quote }}
-      readiness: {{ $orchestration.readinessUrl | default (printf "http://%s.%s.svc.cluster.local:9600%s/actuator/health/readiness" $orchestrationName $cluster.namespace $orchestrationPath) | quote }}
+      readiness: {{ $orchestration.operateReadinessUrl | default (ternary (printf "http://%s.%s.svc.cluster.local:9600/operate/actuator/health/readiness" $operateName $cluster.namespace) (printf "http://%s.%s.svc.cluster.local:9600%s/actuator/health/readiness" $orchestrationName $cluster.namespace $orchestrationPath) $legacy) | quote }}
   - name: Tasklist
     type: tasklist
     version: {{ $cluster.version | quote }}
     urls:
       webapp: {{ $orchestration.tasklistUrl | default (printf "https://%s%s/tasklist" $cluster.host $orchestrationPath) | quote }}
-      readiness: {{ $orchestration.readinessUrl | default (printf "http://%s.%s.svc.cluster.local:9600%s/actuator/health/readiness" $orchestrationName $cluster.namespace $orchestrationPath) | quote }}
+      readiness: {{ $orchestration.tasklistReadinessUrl | default (ternary (printf "http://%s.%s.svc.cluster.local:9600/tasklist/actuator/health/readiness" $tasklistName $cluster.namespace) (printf "http://%s.%s.svc.cluster.local:9600%s/actuator/health/readiness" $orchestrationName $cluster.namespace $orchestrationPath) $legacy) | quote }}
+  {{- if not $legacy }}
   - name: Orchestration Admin
     type: admin
     version: {{ $cluster.version | quote }}
     urls:
       webapp: {{ $orchestration.adminUrl | default (printf "https://%s%s/admin" $cluster.host $orchestrationPath) | quote }}
       readiness: {{ $orchestration.readinessUrl | default (printf "http://%s.%s.svc.cluster.local:9600%s/actuator/health/readiness" $orchestrationName $cluster.namespace $orchestrationPath) | quote }}
+  {{- end }}
   - name: Orchestration Cluster
-    type: orchestration
+    type: {{ ternary "zeebeGateway" "orchestration" $legacy }}
     version: {{ $cluster.version | quote }}
     urls:
       grpc: {{ $orchestration.grpcUrl | default (printf "grpc://%s.%s.svc.cluster.local:26500" $gatewayName $cluster.namespace) | quote }}
       rest: {{ $orchestration.restUrl | default (printf "http://%s.%s.svc.cluster.local:8080%s" $gatewayName $cluster.namespace $orchestrationPath) | quote }}
-      readiness: {{ $orchestration.readinessUrl | default (printf "http://%s.%s.svc.cluster.local:9600%s/actuator/health/readiness" $orchestrationName $cluster.namespace $orchestrationPath) | quote }}
+      readiness: {{ $orchestration.readinessUrl | default (ternary (printf "http://%s.%s.svc.cluster.local:9600/actuator/health/readiness" $gatewayName $cluster.namespace) (printf "http://%s.%s.svc.cluster.local:9600%s/actuator/health/readiness" $orchestrationName $cluster.namespace $orchestrationPath) $legacy) | quote }}
   {{- end }}
 {{- end }}
 {{- end -}}
@@ -2964,8 +3112,8 @@ numbered pair without declaring the zoned ones. constraints.tpl rejects setting 
         "zone" ($orch.zone | default "")
         "zones" ($orch.zones | default list)
         "keepUnzonedBrokers" ($orch.keepUnzonedBrokers | default false)
-        "regions" (int ($orch.regions | default 1) | default 1)
-        "regionId" (int ($orch.regionId | default 0)) -}}
+        "numberOfZones" (int ($orch.numberOfZones | default 1) | default 1)
+        "zoneIndex" (int ($orch.zoneIndex | default 0)) -}}
 {{- else -}}
   {{- /* Only the numbered pair is read back from the deprecated block. mode, zone and
        zones never shipped there, and honouring them would keep the zone-aware scheme reachable
@@ -2976,8 +3124,8 @@ numbered pair without declaring the zoned ones. constraints.tpl rejects setting 
         "zone" ""
         "zones" list
         "keepUnzonedBrokers" false
-        "regions" (int ($global.regions | default 1) | default 1)
-        "regionId" (int ($global.regionId | default 0)) -}}
+        "numberOfZones" (int ($global.regions | default 1) | default 1)
+        "zoneIndex" (int ($global.regionId | default 0)) -}}
 {{- end -}}
 {{- /* Derive everything a consumer needs, so the scheme is decided here rather than
      re-asked at each call site. The counts are stringified because the dict is round-tripped
@@ -3001,8 +3149,8 @@ numbered pair without declaring the zoned ones. constraints.tpl rejects setting 
 {{- else -}}
   {{- $_ := set $resolved "clusterSize" (toString .Values.orchestration.clusterSize) -}}
   {{- $_ := set $resolved "replicationFactor" (toString .Values.orchestration.replicationFactor) -}}
-  {{- $_ := set $resolved "localReplicas" (toString (div .Values.orchestration.clusterSize $resolved.regions)) -}}
-  {{- $_ := set $resolved "spansFailureDomains" (gt (int $resolved.regions) 1) -}}
+  {{- $_ := set $resolved "localReplicas" (toString (div .Values.orchestration.clusterSize $resolved.numberOfZones)) -}}
+  {{- $_ := set $resolved "spansFailureDomains" (gt (int $resolved.numberOfZones) 1) -}}
 {{- end -}}
 {{- $resolved | toJson -}}
 {{- end -}}
@@ -3017,6 +3165,19 @@ departs from the chart default.
       (ne (default "" .zone) "")
       (gt (len (default list .zones)) 0)
       (default false .keepUnzonedBrokers)
+      (ne (int (default 1 .numberOfZones)) 1)
+      (ne (int (default 0 .zoneIndex)) 0) -}}
+true
+{{- end -}}
+{{- end -}}
+
+{{/*
+NOTE: the deprecated block only ever carried the numbering pair, under its own spelling.
+Kept separate from camundaPlatform.partitioningConfigured so neither block can be marked
+configured by a key its own resolver branch does not read.
+*/}}
+{{- define "camundaPlatform.deprecatedMultiregionConfigured" -}}
+{{- if or
       (ne (int (default 1 .regions)) 1)
       (ne (int (default 0 .regionId)) 0) -}}
 true
