@@ -35,7 +35,12 @@ type ownership struct {
 
 func (r runner) run(ctx context.Context) (err error) {
 	owned := ownership{}
-	defer func() { err = errors.Join(err, r.cleanup(context.WithoutCancel(ctx), owned)) }()
+	defer func() {
+		if err != nil {
+			return
+		}
+		err = errors.Join(err, r.cleanup(context.WithoutCancel(ctx), owned))
+	}()
 
 	existing, err := r.command(ctx, "kubectl", "get", "namespace", r.cfg.namespace, "--ignore-not-found", "-o", "name")
 	if err != nil {
@@ -110,6 +115,9 @@ func (r runner) verifyMigration(ctx context.Context) error {
 	if err := r.assertValue(ctx, zonedPod, "{.status.phase}", "Running"); err != nil {
 		return err
 	}
+	if err := r.assertServiceMembers(ctx, r.cfg.release+"-zeebe-gateway", []string{numberedPod, zonedPod}, nil); err != nil {
+		return err
+	}
 	zonedUID, err := r.podValue(ctx, zonedPod, "{.metadata.uid}")
 	if err != nil {
 		return fmt.Errorf("zoned pod before cleanup: %w", err)
@@ -130,6 +138,9 @@ func (r runner) verifyMigration(ctx context.Context) error {
 		return err
 	}
 	if err := r.assertValue(ctx, zonedPod, "{.metadata.uid}", zonedUID); err != nil {
+		return err
+	}
+	if err := r.assertServiceMembers(ctx, r.cfg.release+"-zeebe-gateway", []string{zonedPod}, []string{numberedPod}); err != nil {
 		return err
 	}
 	return r.assertPresent(ctx, "pvc/data-"+numberedPod)

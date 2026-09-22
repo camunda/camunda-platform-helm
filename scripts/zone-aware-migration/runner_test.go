@@ -23,14 +23,19 @@ import (
 )
 
 type fakeCommander struct {
-	commands []string
-	outputs  map[string]string
-	errors   map[string]error
+	commands  []string
+	outputs   map[string]string
+	sequences map[string][]string
+	errors    map[string]error
 }
 
 func (f *fakeCommander) run(_ context.Context, name string, args ...string) (string, error) {
 	command := strings.Join(append([]string{name}, args...), " ")
 	f.commands = append(f.commands, command)
+	if queued, ok := f.sequences[command]; ok && len(queued) > 0 {
+		f.sequences[command] = queued[1:]
+		return queued[0], f.errors[command]
+	}
 	return f.outputs[command], f.errors[command]
 }
 
@@ -82,7 +87,7 @@ func TestRunner_rejectsExistingNamespaceWithoutCleanup(t *testing.T) {
 	}
 }
 
-func TestRunner_cleansOnlyResourcesItCreatedAfterFailure(t *testing.T) {
+func TestRunner_retainsResourcesAfterFailureSoDiagnosticsCanReadThem(t *testing.T) {
 	cmd := successfulFake()
 	install := "helm install zam /chart --namespace fresh --values /scenario/values-numbered.yaml --timeout 5m"
 	cmd.errors[install] = errors.New("install failed")
@@ -93,14 +98,51 @@ func TestRunner_cleansOnlyResourcesItCreatedAfterFailure(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected failure")
 	}
+	for _, command := range cmd.commands {
+		if strings.HasPrefix(command, "helm uninstall") || strings.HasPrefix(command, "kubectl delete namespace") {
+			t.Fatalf("failure path tore down the namespace before diagnostics: %v", cmd.commands)
+		}
+	}
+}
+
+func TestRunner_cleansUpResourcesItCreatedAfterSuccess(t *testing.T) {
+	cmd := successfulFake()
+	runner := runner{cfg: testConfig(), command: cmd.run}
+
+	if err := runner.run(context.Background()); err != nil {
+		t.Fatalf("run migration: %v", err)
+	}
+
 	wantLast := "kubectl delete namespace fresh --wait=false"
 	if cmd.commands[len(cmd.commands)-1] != wantLast {
 		t.Fatalf("last command = %q, want %q", cmd.commands[len(cmd.commands)-1], wantLast)
 	}
-	for _, command := range cmd.commands {
-		if strings.HasPrefix(command, "helm uninstall") {
-			t.Fatalf("unowned release cleanup: %v", cmd.commands)
-		}
+	if commandIndex(cmd.commands, "helm uninstall zam --namespace fresh") < 0 {
+		t.Fatalf("release was not uninstalled: %v", cmd.commands)
+	}
+}
+
+func TestRunner_assertsGatewayMembershipAcrossTheMigration(t *testing.T) {
+	cmd := successfulFake()
+	cmd.sequences[gatewayEndpoints] = []string{"zam-zeebe-0", "zam-zeebe-zone-a-0"}
+	runner := runner{cfg: testConfig(), command: cmd.run}
+
+	err := runner.run(context.Background())
+
+	if err == nil || !strings.Contains(err.Error(), "does not route to zam-zeebe-zone-a-0") {
+		t.Fatalf("expected a coexistence membership failure, got %v", err)
+	}
+}
+
+func TestRunner_rejectsARetainedPodStillBehindTheGatewayAfterCleanup(t *testing.T) {
+	cmd := successfulFake()
+	cmd.sequences[gatewayEndpoints] = []string{"zam-zeebe-0 zam-zeebe-zone-a-0", "zam-zeebe-0 zam-zeebe-zone-a-0"}
+	runner := runner{cfg: testConfig(), command: cmd.run}
+
+	err := runner.run(context.Background())
+
+	if err == nil || !strings.Contains(err.Error(), "still routes to zam-zeebe-0") {
+		t.Fatalf("expected a post-cleanup membership failure, got %v", err)
 	}
 }
 
@@ -120,10 +162,14 @@ func TestRunner_waitsForBothRolloutsBeforeComparingRetainedUID(t *testing.T) {
 	}
 }
 
+const gatewayEndpoints = "kubectl get endpoints/zam-zeebe-gateway --namespace fresh -o jsonpath={.subsets[*].addresses[*].targetRef.name}"
+
 func successfulFake() *fakeCommander {
 	uid := "kubectl get pod zam-zeebe-0 --namespace fresh -o jsonpath={.metadata.uid}"
 	zonedUID := "kubectl get pod zam-zeebe-zone-a-0 --namespace fresh -o jsonpath={.metadata.uid}"
-	return &fakeCommander{outputs: map[string]string{
+	return &fakeCommander{sequences: map[string][]string{
+		gatewayEndpoints: {"zam-zeebe-0 zam-zeebe-zone-a-0", "zam-zeebe-zone-a-0"},
+	}, outputs: map[string]string{
 		"kubectl get namespace fresh --ignore-not-found -o name": "",
 		uid: "numbered-uid", zonedUID: "zoned-uid",
 		"kubectl get statefulset/zam-zeebe --namespace fresh -o jsonpath={.spec.replicas}":                      "1",

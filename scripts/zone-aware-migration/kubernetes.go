@@ -17,6 +17,8 @@ package main
 import (
 	"context"
 	"fmt"
+	"slices"
+	"strings"
 )
 
 func (r runner) rollout(ctx context.Context, statefulSet string) error {
@@ -79,6 +81,32 @@ func (r runner) assertAbsent(ctx context.Context, resource string) error {
 func (r runner) assertPresent(ctx context.Context, resource string) error {
 	if _, err := r.command(ctx, "kubectl", "get", resource, "--namespace", r.cfg.namespace); err != nil {
 		return fmt.Errorf("required resource %s is absent: %w", resource, err)
+	}
+	return nil
+}
+
+func (r runner) serviceMembers(ctx context.Context, service string) ([]string, error) {
+	value, err := r.command(ctx, "kubectl", "get", "endpoints/"+service, "--namespace", r.cfg.namespace, "-o", "jsonpath={.subsets[*].addresses[*].targetRef.name}")
+	if err != nil {
+		return nil, fmt.Errorf("get endpoints of %s: %w", service, err)
+	}
+	return strings.Fields(value), nil
+}
+
+func (r runner) assertServiceMembers(ctx context.Context, service string, want, absent []string) error {
+	members, err := r.serviceMembers(ctx, service)
+	if err != nil {
+		return err
+	}
+	for _, pod := range want {
+		if !slices.Contains(members, pod) {
+			return fmt.Errorf("service %s does not route to %s, its ready members are %v", service, pod, members)
+		}
+	}
+	for _, pod := range absent {
+		if slices.Contains(members, pod) {
+			return fmt.Errorf("service %s still routes to %s, its ready members are %v", service, pod, members)
+		}
 	}
 	return nil
 }
