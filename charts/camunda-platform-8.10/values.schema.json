@@ -67,6 +67,16 @@
                                     "default": "disabled"
                                 }
                             }
+                        },
+                        "nginx": {
+                            "type": "object",
+                            "properties": {
+                                "renderAnnotations": {
+                                    "type": "boolean",
+                                    "description": "if true, the chart injects the ingress-nginx annotations it used to ship as values defaults (`ssl-redirect`, `proxy-buffering`, `proxy-buffer-size` and `proxy-body-size` on the HTTP Ingress, `ssl-redirect`, `backend-protocol` and `proxy-buffer-size` on the gRPC Ingress). DEPRECATED since 15.0.0; the shim is removed in the next major and the annotations become opt-in. Set it to false to stop the chart injecting them, and set whatever your own controller needs through the annotations values instead.",
+                                    "default": true
+                                }
+                            }
                         }
                     }
                 },
@@ -292,10 +302,13 @@
                         },
                         "annotations": {
                             "type": "object",
-                            "description": "defines the ingress related annotations, consumed mostly by the ingress controller",
+                            "description": "defines the ingress related annotations, consumed mostly by the ingress controller. Empty by default; keys set here always win over the ingress-nginx compatibility set described in global.compatibility.nginx.renderAnnotations.",
                             "default": {},
                             "additionalProperties": {
-                                "type": "string"
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
                             }
                         },
                         "labels": {
@@ -5174,10 +5187,13 @@
                                 },
                                 "annotations": {
                                     "type": "object",
-                                    "description": "defines the ingress related annotations, consumed mostly by the ingress controller",
+                                    "description": "defines the ingress related annotations, consumed mostly by the ingress controller. Empty by default; keys set here always win over the ingress-nginx compatibility set described in global.compatibility.nginx.renderAnnotations, which supplies `nginx.ingress.kubernetes.io/ssl-redirect: \"false\"`, `nginx.ingress.kubernetes.io/backend-protocol: \"GRPC\"` and `nginx.ingress.kubernetes.io/proxy-buffer-size: \"128k\"` here while it is on; set those three here to keep them once it is off. With Contour, gRPC is declared with `projectcontour.io/upstream-protocol.h2c` on the Orchestration service listing the gRPC port, not with an annotation here.",
                                     "default": {},
                                     "additionalProperties": {
-                                        "type": "string"
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ]
                                     }
                                 },
                                 "labels": {
