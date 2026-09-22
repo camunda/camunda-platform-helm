@@ -53,7 +53,7 @@ runs:
           local namespace="$1"
           local secret_name="$2"
           local expected_keys missing_keys
-          expected_keys="$(kubectl get externalsecret -n "$namespace" -o json | jq -r --arg secret "$secret_name" '.items[] | select(.spec.target.name == $secret) | .spec.data[]?.secretKey')"
+          expected_keys="$(kubectl get externalsecret -n "$namespace" -o json | jq -r --arg secret "$secret_name" '.items[] | select(.spec.target.name == $secret) | (.spec.data[]?.secretKey, (.spec.target.template.data? // {} | keys[]))')"
           test -n "$expected_keys" || { echo "❌ No ExternalSecret found for target Secret $secret_name"; return 1; }
           for _ in {1..30}; do
             missing_keys="$(while IFS= read -r key; do kubectl get secret "$secret_name" -n "$namespace" -o json 2>/dev/null | jq -e --arg key "$key" '.data[$key] // empty' >/dev/null || printf '%s\n' "$key"; done <<< "$expected_keys")"
