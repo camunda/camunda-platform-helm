@@ -29,6 +29,7 @@
     "Capabilities" $root.Capabilities
     "Template" $root.Template
     "Files" $root.Files
+    "Subcharts" $root.Subcharts
 -}}
 {{- $_ := set $ctx "OrchestrationRender" (dict "scope" $scope "zone" (.zone | default "")) -}}
 {{- if eq $scope "unzoned" }}

@@ -46,8 +46,6 @@ jobs:
           ref: ${{ github.event.pull_request.base.sha || 'main' }}
           path: .migration-base
 
-      # Single node: an anti-affinity that is not scoped per generation only fails to
-      # schedule when there is nowhere else to place the zoned broker.
       - name: Create KIND cluster
         run: kind create cluster --name zone-aware-migration --wait 120s
 

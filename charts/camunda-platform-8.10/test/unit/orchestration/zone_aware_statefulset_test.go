@@ -16,6 +16,7 @@ package orchestration
 
 import (
 	"fmt"
+	"path/filepath"
 
 	"camunda-platform/test/unit/testhelpers"
 	"camunda-platform/test/unit/utils"
@@ -135,11 +136,6 @@ func (s *StatefulSetTest) TestKeepUnzonedBrokersDoesNotRestartZonedBrokers() {
 	require.Equal(s.T(), withUnzoned.Spec.Template, withoutUnzoned.Spec.Template)
 }
 
-// While keepUnzonedBrokers is set, clusterSize and replicationFactor still describe the
-// numbered generation: clusterSize divided by regions is the retained StatefulSet's replica
-// count, and replicationFactor is rendered into its ConfigMap. Forcing them to the zone
-// totals would resize and restart the brokers the migration exists to preserve, so the
-// zoned constraints must stand down until retention is disabled.
 func (s *StatefulSetTest) TestMigrationKeepsNumberedSizingValues() {
 	numbered := map[string]string{
 		"orchestration.partitioning.numberOfZones": "2",
@@ -167,9 +163,6 @@ func (s *StatefulSetTest) TestMigrationKeepsNumberedSizingValues() {
 
 	before := render(numbered, s.release+"-zeebe")
 
-	// One zone and several zones take different paths: a single zone is one failure domain, so
-	// the chart still generates initial-contact-points, while more than one hands that to the
-	// operator. The retained generation must be untouched either way.
 	for _, zoneCount := range []int{1, 2, 3} {
 		migrating := utils.MergeMaps(numbered, map[string]string{
 			"orchestration.partitioning.scheme":             "zone-aware",
@@ -193,5 +186,25 @@ func (s *StatefulSetTest) TestMigrationKeepsNumberedSizingValues() {
 		zoned := render(migrating, s.release+"-zeebe-zone-a")
 		require.Equalf(s.T(), int32(2), *zoned.Spec.Replicas,
 			"zoned StatefulSet takes its replicas from its own zone entry, %d zone(s)", zoneCount)
+	}
+}
+
+func (s *StatefulSetTest) TestScopedRenderKeepsTheSubchartsBuiltin() {
+	for _, tc := range []struct {
+		name       string
+		valuesFile string
+	}{
+		{name: "TestUnzonedScopeResolvesSubcharts", valuesFile: "values-subcharts-probe.yaml"},
+		{name: "TestZonedScopeResolvesSubcharts", valuesFile: "values-subcharts-probe-zoned.yaml"},
+	} {
+		s.Run(tc.name, func() {
+			output, err := testhelpers.RenderTestCaseE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testhelpers.TestCase{
+				ValuesFiles: []string{filepath.Join(s.chartPath, "test/unit/orchestration/testdata", tc.valuesFile)},
+			})
+			require.NoError(s.T(), err)
+			var sts appsv1.StatefulSet
+			helm.UnmarshalK8SYaml(s.T(), strings.Split(output, "\n---\n")[0], &sts)
+			require.Equal(s.T(), "map", sts.Spec.Template.Labels["probe"])
+		})
 	}
 }
