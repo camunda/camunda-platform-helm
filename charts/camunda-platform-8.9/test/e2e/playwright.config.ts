@@ -12,6 +12,7 @@ export default defineConfig(
   makeShadowConfig({
     version: "SM-8.9",
     includeSetupProject: true,
+    includeTasklistV1Projects: true,
     extraTestIgnore: ["**/optimize-api-tests.spec.{ts,js}"],
     fullyParallel: true,
     retries: 2,

@@ -60,6 +60,42 @@ inputs:
     description: If true, run only the smoke-tests project. If false, run the full-suite project.
     required: false
     default: "true"
+  playwright-project:
+    description: Explicit Playwright project. Empty preserves legacy smoke/scenario selection.
+    required: false
+    default: ""
+  file-pattern:
+    description: Optional Playwright test file pattern.
+    required: false
+    default: ""
+  is-rba:
+    description: Explicit IS_RBA value. Used when an explicit project or file pattern is supplied.
+    required: false
+    default: "false"
+  is-mt:
+    description: Explicit IS_MT value. Used when an explicit project or file pattern is supplied.
+    required: false
+    default: "false"
+  is-ds:
+    description: Explicit IS_DS value. Used when an explicit project or file pattern is supplied.
+    required: false
+    default: "false"
+  is-license-key:
+    description: Explicit IS_LICENSE_KEY value. Used when an explicit project or file pattern is supplied.
+    required: false
+    default: "false"
+  is-migration:
+    description: Explicit IS_MIGRATION value. Used when an explicit project or file pattern is supplied.
+    required: false
+    default: "false"
+  is-opensearch:
+    description: Explicit IS_OPENSEARCH value. Used when an explicit project or file pattern is supplied.
+    required: false
+    default: "false"
+  mcp-gateway-enabled:
+    description: Explicit MCP_GATEWAY_ENABLED value. Used when an explicit project or file pattern is supplied.
+    required: false
+    default: "false"
   hub-namespace:
     description: >-
       For a multi-namespace topology scenario: the namespace running the
@@ -192,12 +228,12 @@ runs:
       with:
         name: ${{ inputs.binary-artifact-name }}
         path: ${{ runner.temp }}/bin
-    - name: Add deploy-camunda to PATH
+    - name: Prepare downloaded deploy-camunda binary
       if: inputs.binary-artifact-name != ''
       shell: bash
-      run: |
-        chmod +x "${RUNNER_TEMP}/bin/deploy-camunda"
-        echo "${RUNNER_TEMP}/bin" >> "$GITHUB_PATH"
+      run: chmod +x "${RUNNER_TEMP}/bin/deploy-camunda"
+    - name: Setup deploy-camunda
+      uses: ./.github/actions/setup-deploy-camunda
 
     - name: Set workflow vars
       id: vars
@@ -258,7 +294,16 @@ runs:
         E2E_ARG_OPTIMIZE_NAMESPACE: ${{ inputs.optimize-namespace }}
         E2E_ARG_OPTIMIZE_CONTEXT_PATH: ${{ inputs.optimize-context-path }}
         E2E_ARG_MODELER_CLUSTER_NAME: ${{ inputs.modeler-cluster-name }}
-        REQUIRE_SM_810_TEST_SUITE: ${{ inputs.hub-namespace != '' }}
+        E2E_PLAYWRIGHT_PROJECT: ${{ inputs.playwright-project }}
+        E2E_FILE_PATTERN: ${{ inputs.file-pattern }}
+        E2E_IS_RBA: ${{ inputs.is-rba }}
+        E2E_IS_MT: ${{ inputs.is-mt }}
+        E2E_IS_DS: ${{ inputs.is-ds }}
+        E2E_IS_LICENSE_KEY: ${{ inputs.is-license-key }}
+        E2E_IS_MIGRATION: ${{ inputs.is-migration }}
+        E2E_IS_OPENSEARCH: ${{ inputs.is-opensearch }}
+        E2E_MCP_GATEWAY_ENABLED: ${{ inputs.mcp-gateway-enabled }}
+        REQUIRE_SM_810_TEST_SUITE: ${{ inputs.hub-namespace != '' || (inputs.playwright-project != 'auth0-smoke' && (inputs.playwright-project != '' || inputs.file-pattern != '')) }}
       run: |
         cd "$GITHUB_WORKSPACE/scripts"
         # Unset KEYCLOAK_REALM to avoid conflicts with the integration tests
@@ -289,6 +334,19 @@ runs:
         [[ -n "$E2E_ARG_OPTIMIZE_NAMESPACE" ]] && E2E_ARGS+=(--optimize-namespace "${E2E_ARG_OPTIMIZE_NAMESPACE}")
         [[ -n "$E2E_ARG_OPTIMIZE_CONTEXT_PATH" ]] && E2E_ARGS+=(--optimize-context-path "${E2E_ARG_OPTIMIZE_CONTEXT_PATH}")
         [[ -n "$E2E_ARG_MODELER_CLUSTER_NAME" ]] && E2E_ARGS+=(--modeler-cluster-name "${E2E_ARG_MODELER_CLUSTER_NAME}")
+        if [[ -n "$E2E_PLAYWRIGHT_PROJECT" || -n "$E2E_FILE_PATTERN" ]]; then
+          [[ -n "$E2E_PLAYWRIGHT_PROJECT" ]] && E2E_ARGS+=(--playwright-project "$E2E_PLAYWRIGHT_PROJECT")
+          [[ -n "$E2E_FILE_PATTERN" ]] && E2E_ARGS+=(--file-pattern "$E2E_FILE_PATTERN")
+          E2E_ARGS+=(
+            --is-rba "$E2E_IS_RBA"
+            --is-mt "$E2E_IS_MT"
+            --is-ds "$E2E_IS_DS"
+            --is-license-key "$E2E_IS_LICENSE_KEY"
+            --is-migration "$E2E_IS_MIGRATION"
+            --is-opensearch "$E2E_IS_OPENSEARCH"
+            --mcp-gateway-enabled "$E2E_MCP_GATEWAY_ENABLED"
+          )
+        fi
 
         ./run-e2e-tests.sh "${E2E_ARGS[@]}"
 

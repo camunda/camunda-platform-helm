@@ -54,6 +54,38 @@ teardown() {
   [ "$status" -eq 0 ]
 }
 
+@test "topology CI forwards the explicit E2E execution contract" {
+  workflow="$ROOT/.github/workflows/test-integration-runner.yaml"
+
+  for input in \
+    playwright-project:e2e-playwright-project \
+    file-pattern:e2e-file-pattern \
+    is-rba:e2e-is-rba \
+    is-mt:e2e-is-mt \
+    is-ds:e2e-is-ds \
+    is-license-key:e2e-is-license-key \
+    is-migration:e2e-is-migration \
+    is-opensearch:e2e-is-opensearch \
+    mcp-gateway-enabled:e2e-mcp-gateway-enabled; do
+    run grep -F "${input%%:*}: \${{ inputs.${input#*:} }}" "$workflow"
+    [ "$status" -eq 0 ]
+  done
+}
+
+@test "explicit SM 8.10 selection requires the installed package suite" {
+  action="$ROOT/.github/actions/playwright-e2e-tests/action.yaml"
+
+  run grep -F "REQUIRE_SM_810_TEST_SUITE: \${{ inputs.hub-namespace != '' || (inputs.playwright-project != 'auth0-smoke' && (inputs.playwright-project != '' || inputs.file-pattern != '')) }}" "$action"
+  [ "$status" -eq 0 ]
+}
+
+@test "the E2E action sets up deploy-camunda when no binary artifact is supplied" {
+  action="$ROOT/.github/actions/playwright-e2e-tests/action.yaml"
+
+  run grep -F 'uses: ./.github/actions/setup-deploy-camunda' "$action"
+  [ "$status" -eq 0 ]
+}
+
 @test "--optimize-namespace without --hub-namespace is rejected" {
   run "$SCRIPT" --absolute-chart-path "$CHART_PATH" --namespace test-ns \
     --optimize-namespace opt-ns --optimize-context-path /optimize-orcha
@@ -80,6 +112,15 @@ teardown() {
   IS_RBA="false"
   IS_MT="false"
   IS_AUTH0="false"
+  PLAYWRIGHT_PROJECT="full-suite-v1"
+  FILE_PATTERN="tasklist/**/*.spec.js"
+  IS_RBA_OVERRIDE="true"
+  IS_MT_OVERRIDE="false"
+  IS_DS_OVERRIDE="true"
+  IS_LICENSE_KEY_OVERRIDE="true"
+  IS_MIGRATION_OVERRIDE="false"
+  IS_OPENSEARCH_OVERRIDE="true"
+  MCP_GATEWAY_ENABLED_OVERRIDE="true"
   VIDEO_MODE=""
   TRACE_MODE=""
   RETRIES=""
@@ -100,6 +141,13 @@ teardown() {
   [[ "$output" == *"--optimize-namespace matrix-810-mns-opt-orcha"* ]]
   [[ "$output" == *"--optimize-context-path /optimize-orcha"* ]]
   [[ "$output" == *"--modeler-cluster-name Orchestration\\ A"* ]]
+  [[ "$output" == *"--playwright-project full-suite-v1"* ]]
+  [[ "$output" == *"--file-pattern tasklist/\\*\\*/\\*.spec.js"* ]]
+  [[ "$output" == *"--is-rba true"* ]]
+  [[ "$output" == *"--is-ds true"* ]]
+  [[ "$output" == *"--is-license-key true"* ]]
+  [[ "$output" == *"--is-opensearch true"* ]]
+  [[ "$output" == *"--mcp-gateway-enabled true"* ]]
 }
 
 @test "the rerun command omits topology flags for an ordinary single-namespace run" {
@@ -112,6 +160,15 @@ teardown() {
   IS_RBA="false"
   IS_MT="false"
   IS_AUTH0="false"
+  PLAYWRIGHT_PROJECT=""
+  FILE_PATTERN=""
+  IS_RBA_OVERRIDE=""
+  IS_MT_OVERRIDE=""
+  IS_DS_OVERRIDE=""
+  IS_LICENSE_KEY_OVERRIDE=""
+  IS_MIGRATION_OVERRIDE=""
+  IS_OPENSEARCH_OVERRIDE=""
+  MCP_GATEWAY_ENABLED_OVERRIDE=""
   VIDEO_MODE=""
   TRACE_MODE=""
   RETRIES=""

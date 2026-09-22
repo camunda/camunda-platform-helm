@@ -40,6 +40,7 @@ func newCICommand() *cobra.Command {
 	ciCmd.AddCommand(newCIWorkflowVarsCommand())
 	ciCmd.AddCommand(newCIIntegrationMatrixCommand())
 	ciCmd.AddCommand(newCIE2EMatrixCommand())
+	ciCmd.AddCommand(newCIE2ERunConfigCommand())
 
 	return ciCmd
 }

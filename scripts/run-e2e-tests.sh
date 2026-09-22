@@ -87,6 +87,15 @@ build_rerun_cmd() {
   [[ "$IS_RBA" == "true" ]] && cmd+=(--rba)
   [[ "$IS_MT" == "true" ]] && cmd+=(--mt)
   [[ "$IS_AUTH0" == "true" ]] && cmd+=(--auth0)
+  [[ -n "$PLAYWRIGHT_PROJECT" ]] && cmd+=(--playwright-project "$PLAYWRIGHT_PROJECT")
+  [[ -n "$FILE_PATTERN" ]] && cmd+=(--file-pattern "$FILE_PATTERN")
+  [[ -n "$IS_RBA_OVERRIDE" ]] && cmd+=(--is-rba "$IS_RBA_OVERRIDE")
+  [[ -n "$IS_MT_OVERRIDE" ]] && cmd+=(--is-mt "$IS_MT_OVERRIDE")
+  [[ -n "$IS_DS_OVERRIDE" ]] && cmd+=(--is-ds "$IS_DS_OVERRIDE")
+  [[ -n "$IS_LICENSE_KEY_OVERRIDE" ]] && cmd+=(--is-license-key "$IS_LICENSE_KEY_OVERRIDE")
+  [[ -n "$IS_MIGRATION_OVERRIDE" ]] && cmd+=(--is-migration "$IS_MIGRATION_OVERRIDE")
+  [[ -n "$IS_OPENSEARCH_OVERRIDE" ]] && cmd+=(--is-opensearch "$IS_OPENSEARCH_OVERRIDE")
+  [[ -n "$MCP_GATEWAY_ENABLED_OVERRIDE" ]] && cmd+=(--mcp-gateway-enabled "$MCP_GATEWAY_ENABLED_OVERRIDE")
   [[ -n "$VIDEO_MODE" ]] && cmd+=(--video "$VIDEO_MODE")
   [[ -n "$TRACE_MODE" ]] && cmd+=(--trace "$TRACE_MODE")
   [[ -n "$RETRIES" ]] && cmd+=(--retries "$RETRIES")
@@ -123,6 +132,15 @@ Options:
   --rba                                       Run the rba tests
   --mt                                        Run the mt tests
   --auth0                                     Run the auth0-smoke project (Auth0 OIDC scenario)
+  --playwright-project PROJECT                Run an explicit Playwright project
+  --file-pattern PATTERN                      Select test files using a Playwright CLI pattern
+  --is-rba BOOLEAN                            Override IS_RBA for the test process
+  --is-mt BOOLEAN                             Override IS_MT for the test process
+  --is-ds BOOLEAN                             Override IS_DS for the test process
+  --is-license-key BOOLEAN                    Override IS_LICENSE_KEY for the test process
+  --is-migration BOOLEAN                      Override IS_MIGRATION for the test process
+  --is-opensearch BOOLEAN                     Override IS_OPENSEARCH for the test process
+  --mcp-gateway-enabled BOOLEAN               Override MCP_GATEWAY_ENABLED for the test process
   --playwright-debug                          Enable Playwright API debug logs and traces
   --video MODE                                Record video: on, off, retain-on-failure, on-first-retry (default: off)
   --trace MODE                                Record trace: on, off, retain-on-failure, on-first-retry (default: off)
@@ -161,6 +179,8 @@ IS_OPENSEARCH=false
 IS_RBA=false
 IS_MT=false
 IS_AUTH0=false
+PLAYWRIGHT_PROJECT=""
+FILE_PATTERN=""
 PLAYWRIGHT_DEBUG=false
 VIDEO_MODE=""
 TRACE_MODE=""
@@ -172,6 +192,17 @@ OPTIMIZE_CONTEXT_PATH=""
 MODELER_CLUSTER_NAME_ARG=""
 
 check_required_cmds
+
+for arg in "$@"; do
+  case "$arg" in
+    --playwright-project|--file-pattern|--is-rba|--is-mt|--is-ds|--is-license-key|--is-migration|--is-opensearch|--mcp-gateway-enabled)
+      DEPLOY_CAMUNDA_BIN=$(resolve_deploy_camunda) || { echo "Error: deploy-camunda is required for explicit E2E execution controls." >&2; exit 1; }
+      E2E_RUN_CONFIG=$("$DEPLOY_CAMUNDA_BIN" ci e2e-run-config "$@") || exit 1
+      eval "$E2E_RUN_CONFIG"
+      break
+      ;;
+  esac
+done
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -285,6 +316,10 @@ log "DEBUG: Chart: $ABSOLUTE_CHART_PATH, Namespace: $NAMESPACE, KubeContext: $KU
 
 validate_args "$ABSOLUTE_CHART_PATH" "$NAMESPACE" "$KUBE_CONTEXT"
 
+if declare -F apply_e2e_execution_env > /dev/null; then
+  apply_e2e_execution_env
+fi
+
 # The Optimize flags are only read on the topology path below, which is selected by
 # --hub-namespace. Without this guard they are silently dropped, render-e2e-env.sh sets
 # IS_OPTIMIZE=false, and the suite reports success having skipped every Optimize spec --
@@ -375,6 +410,10 @@ set -a
 source "$ENV_FILE"
 set +a
 
+if declare -F apply_e2e_execution_env > /dev/null; then
+  apply_e2e_execution_env
+fi
+
 # ── Namespace-scoped Playwright output directories ──
 # Playwright defaults test artifacts to <cwd>/test-results and HTML reports to
 # <cwd>/playwright-report.  When parallel entries cd into the same test suite
@@ -396,6 +435,6 @@ log "DEBUG: PLAYWRIGHT_HTML_REPORT='${PLAYWRIGHT_HTML_REPORT}'"
 # Build the rerun command for display on failure
 RERUN_CMD="$(build_rerun_cmd)"
 
-run_playwright_tests "$TEST_SUITE_PATH" "$SHOW_HTML_REPORT" "$SHARD_INDEX" "$SHARD_TOTAL" "blob" "$TEST_EXCLUDE" "$RUN_SMOKE_TESTS" "$PLAYWRIGHT_DEBUG" "$NAMESPACE" "$KUBE_CONTEXT" "$RERUN_CMD" "$IS_AUTH0"
+run_playwright_tests "$TEST_SUITE_PATH" "$SHOW_HTML_REPORT" "$SHARD_INDEX" "$SHARD_TOTAL" "blob" "$TEST_EXCLUDE" "$RUN_SMOKE_TESTS" "$PLAYWRIGHT_DEBUG" "$NAMESPACE" "$KUBE_CONTEXT" "$RERUN_CMD" "$IS_AUTH0" "$PLAYWRIGHT_PROJECT" "$FILE_PATTERN"
 
 log "DEBUG: E2E tests completed"

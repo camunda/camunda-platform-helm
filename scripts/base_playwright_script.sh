@@ -1044,6 +1044,8 @@ run_playwright_tests() {
   local kube_context="${10:-}"  # Optional: kubernetes context
   local rerun_cmd="${11:-}"  # Optional: command to rerun tests locally
   local is_auth0="${12:-false}"  # Optional: select auth0-smoke project (Auth0 OIDC scenario)
+  local requested_project="${13:-}"
+  local file_pattern="${14:-}"
 
   log "Smoke tests: $run_smoke_tests"
   log "Reporter: $reporter"
@@ -1072,7 +1074,10 @@ run_playwright_tests() {
   # depends on a Keycloak admin) — it has its own auth0-smoke project that
   # speaks Auth0 OIDC instead.
   local project="full-suite"
-  if [[ "$is_auth0" == "true" ]]; then
+  if [[ -n "$requested_project" ]]; then
+    project="$requested_project"
+    info "Running Playwright project ${project}..."
+  elif [[ "$is_auth0" == "true" ]]; then
     project="auth0-smoke"
     info "Running Auth0 OIDC smoke tests..."
   elif [[ "$run_smoke_tests" == "true" ]]; then
@@ -1089,6 +1094,7 @@ run_playwright_tests() {
     --shard="${shard_index}/${shard_total}"
     --reporter="$reporter,json"
   )
+  [[ -n "$file_pattern" ]] && playwright_args+=("$file_pattern")
   [[ -n "$test_exclude" ]] && playwright_args+=(--grep-invert="$test_exclude")
   [[ -n "$trace_flag" ]] && playwright_args+=($trace_flag)
   [[ -n "${PLAYWRIGHT_E2E_VIDEO:-}" ]] && playwright_args+=(--video="$PLAYWRIGHT_E2E_VIDEO")
