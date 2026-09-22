@@ -1,3 +1,40 @@
+# Hub namespace layer for the two-orchestration topology (8.10).
+#
+# The hub release owns Identity, Console, Web Modeler and the bundled
+# Keycloak/PostgreSQL/Elasticsearch. Orchestration, Optimize and Connectors live
+# in the orchestration releases (orcha, orchb, orchc, orchd), so they must be
+# switched off here: base.yaml turns them on for every scenario, and nothing
+# else in this release's layer chain disables them.
+#
+# Web Modeler additionally needs dynamic cluster management so the topology
+# clusters are surfaced in the UI. Without it the Modeler home page never
+# renders its project controls and the topology-orchestration smoke test times
+# out in waitForModelerReady.
+#
+# NOTE: avoid writing literal dollar-sign placeholder syntax in prose comments
+# in this file - the env var scanner (os.Expand-based) matches it anywhere in
+# the raw file content, including comments, and an unset name is reported as a
+# "missing required environment variable" at prepare-values / deploy time.
+
+orchestration:
+  enabled: false
+
+webModeler:
+  restapi:
+    extraConfiguration:
+      - file: dynamic-cluster-management.yaml
+        content: |
+          camunda:
+            modeler:
+              feature:
+                dynamic-cluster-management-enabled: true
+
+optimize:
+  enabled: false
+
+connectors:
+  enabled: false
+
 global:
   identity:
     auth:
@@ -11,7 +48,7 @@ global:
         namespace: "${ORCHA_NAMESPACE}"
         releaseName: integration
         host: "${ORCHA_HOST}"
-        version: "8.10.0-alpha3"
+        version: "8.10.0-alpha5"
         contextPaths:
           orchestration: /orchestration
           optimize: /optimize
@@ -44,7 +81,7 @@ global:
         namespace: "${ORCHB_NAMESPACE}"
         releaseName: integration
         host: "${ORCHB_HOST}"
-        version: "8.10.0-alpha3"
+        version: "8.9.18"
         contextPaths:
           orchestration: /orchestration
           optimize: /optimize

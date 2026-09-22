@@ -91,6 +91,8 @@ build_rerun_cmd() {
   [[ -n "$TRACE_MODE" ]] && cmd+=(--trace "$TRACE_MODE")
   [[ -n "$RETRIES" ]] && cmd+=(--retries "$RETRIES")
   [[ -n "$LOCAL_TEST_SUITE" ]] && cmd+=(--local-test-suite "$LOCAL_TEST_SUITE")
+  [[ -n "$TEST_CHART_PATH" ]] && cmd+=(--test-chart-path "$TEST_CHART_PATH")
+  [[ -n "$PLAYWRIGHT_PROJECT" ]] && cmd+=(--playwright-project "$PLAYWRIGHT_PROJECT")
   # Without these a failing topology leg prints a rerun command that targets an
   # orchestration-only environment: it cannot reproduce the failure, and it would skip
   # Optimize again rather than reporting it.
@@ -111,6 +113,7 @@ Usage:
 
 Options:
   --absolute-chart-path ABSOLUTE_CHART_PATH   The absolute path to the chart directory.
+  --test-chart-path TEST_CHART_PATH           Chart directory whose Playwright config provides the test suite.
   --namespace NAMESPACE                       The namespace c8 is deployed into
   --kube-context KUBE_CONTEXT                 The Kubernetes context to use (optional).
   --show-html-report                          Show the HTML report after the tests have run.
@@ -123,6 +126,7 @@ Options:
   --rba                                       Run the rba tests
   --mt                                        Run the mt tests
   --auth0                                     Run the auth0-smoke project (Auth0 OIDC scenario)
+  --playwright-project PROJECT                Run a named Playwright project
   --playwright-debug                          Enable Playwright API debug logs and traces
   --video MODE                                Record video: on, off, retain-on-failure, on-first-retry (default: off)
   --trace MODE                                Record trace: on, off, retain-on-failure, on-first-retry (default: off)
@@ -148,6 +152,7 @@ EOF
 
 # Default values
 ABSOLUTE_CHART_PATH=""
+TEST_CHART_PATH=""
 NAMESPACE=""
 KUBE_CONTEXT=""
 SHOW_HTML_REPORT=false
@@ -161,6 +166,7 @@ IS_OPENSEARCH=false
 IS_RBA=false
 IS_MT=false
 IS_AUTH0=false
+PLAYWRIGHT_PROJECT=""
 PLAYWRIGHT_DEBUG=false
 VIDEO_MODE=""
 TRACE_MODE=""
@@ -178,6 +184,10 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --absolute-chart-path)
       ABSOLUTE_CHART_PATH="$2"
+      shift 2
+      ;;
+    --test-chart-path)
+      TEST_CHART_PATH="$2"
       shift 2
       ;;
     --namespace)
@@ -227,6 +237,10 @@ while [[ $# -gt 0 ]]; do
     --auth0)
       IS_AUTH0=true
       shift
+      ;;
+    --playwright-project)
+      PLAYWRIGHT_PROJECT="$2"
+      shift 2
       ;;
     --playwright-debug)
       PLAYWRIGHT_DEBUG=true
@@ -303,7 +317,8 @@ HUB_NAMESPACE_ARG="$HUB_NAMESPACE"
 OPTIMIZE_NAMESPACE_ARG="$OPTIMIZE_NAMESPACE"
 OPTIMIZE_CONTEXT_PATH_ARG="$OPTIMIZE_CONTEXT_PATH"
 
-TEST_SUITE_PATH="${ABSOLUTE_CHART_PATH%/}/test/e2e"
+TEST_SUITE_PATH="${TEST_CHART_PATH:-$ABSOLUTE_CHART_PATH}"
+TEST_SUITE_PATH="${TEST_SUITE_PATH%/}/test/e2e"
 hostname=$(get_ingress_hostname "$NAMESPACE" "$KUBE_CONTEXT")
 
 if [[ "$IS_CI" != "true" ]]; then
@@ -396,6 +411,6 @@ log "DEBUG: PLAYWRIGHT_HTML_REPORT='${PLAYWRIGHT_HTML_REPORT}'"
 # Build the rerun command for display on failure
 RERUN_CMD="$(build_rerun_cmd)"
 
-run_playwright_tests "$TEST_SUITE_PATH" "$SHOW_HTML_REPORT" "$SHARD_INDEX" "$SHARD_TOTAL" "blob" "$TEST_EXCLUDE" "$RUN_SMOKE_TESTS" "$PLAYWRIGHT_DEBUG" "$NAMESPACE" "$KUBE_CONTEXT" "$RERUN_CMD" "$IS_AUTH0"
+run_playwright_tests "$TEST_SUITE_PATH" "$SHOW_HTML_REPORT" "$SHARD_INDEX" "$SHARD_TOTAL" "blob" "$TEST_EXCLUDE" "$RUN_SMOKE_TESTS" "$PLAYWRIGHT_DEBUG" "$NAMESPACE" "$KUBE_CONTEXT" "$RERUN_CMD" "$IS_AUTH0" "$PLAYWRIGHT_PROJECT"
 
 log "DEBUG: E2E tests completed"

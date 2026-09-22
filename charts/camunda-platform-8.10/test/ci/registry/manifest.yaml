@@ -221,7 +221,7 @@ integration:
       enabled: true
     - id: multinamespace-2orch
       shortname: mns2
-      tier: 2
+      tier: 1
       enabled: true
     - id: multinamespace-optimize
       shortname: mnop

@@ -425,3 +425,128 @@ func TestPrintNamespaceDiagnosticsToleratesUnsetCollectors(t *testing.T) {
 		t.Errorf("expected unset collectors to be labelled\n---\n%s", out)
 	}
 }
+
+func TestDedupeNamespaces(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name string
+		in   []string
+		want []string
+	}{
+		{"empty", nil, []string{}},
+		{"blanks dropped", []string{"", "  "}, []string{}},
+		{"trimmed", []string{" hub ", "orcha"}, []string{"hub", "orcha"}},
+		{"order preserved", []string{"orcha", "hub", "optb"}, []string{"orcha", "hub", "optb"}},
+		// Single-namespace scenarios pass the same namespace as test, hub and
+		// optimize; it must be dumped once.
+		{"duplicates collapsed", []string{"ns", "ns", "ns"}, []string{"ns"}},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			got := dedupeNamespaces(tc.in)
+			if len(got) != len(tc.want) {
+				t.Fatalf("dedupeNamespaces(%v) = %v, want %v", tc.in, got, tc.want)
+			}
+			for i := range got {
+				if got[i] != tc.want[i] {
+					t.Fatalf("dedupeNamespaces(%v) = %v, want %v", tc.in, got, tc.want)
+				}
+			}
+		})
+	}
+}
+
+// namespaceRecordingSource reports one distinctly-named pod per namespace so the
+// dump can be attributed back to the namespace it came from.
+func namespaceRecordingSource(seen *[]string) podDiagnosticsSource {
+	return podDiagnosticsSource{
+		GetPods: func(_ context.Context, _, ns string) (string, error) {
+			*seen = append(*seen, ns)
+			return ns + "-pod 0/1 Running", nil
+		},
+		GetNonReadyPods: func(_ context.Context, _, ns string) ([]string, error) {
+			return []string{ns + "-pod"}, nil
+		},
+		DescribePod:        func(_ context.Context, _, _, pod string) (string, error) { return "Name: " + pod, nil },
+		GetPodLogs:         func(_ context.Context, _, _, pod string, _ int) (string, error) { return pod + " log", nil },
+		GetPodLogsPrevious: func(_ context.Context, _, _, _ string, _ int) (string, error) { return "", nil },
+	}
+}
+
+func TestPrintTopologyDiagnosticsCoversEveryNamespace(t *testing.T) {
+	t.Parallel()
+
+	var seen []string
+	var buf bytes.Buffer
+	printTopologyDiagnostics(context.Background(), &buf, namespaceRecordingSource(&seen), "", []string{"hub", "orcha"}, 500, false)
+	out := buf.String()
+
+	if len(seen) != 2 || seen[0] != "hub" || seen[1] != "orcha" {
+		t.Fatalf("expected hub then orcha to be inspected, got %v", seen)
+	}
+	// The hub namespace is the one the old single-namespace capture missed: an
+	// orchestration leg can fail because Web Modeler or Identity is unhealthy there.
+	for _, want := range []string{
+		"########## Namespace: hub ##########",
+		"########## Namespace: orcha ##########",
+		"hub-pod log",
+		"orcha-pod log",
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("output missing %q:\n%s", want, out)
+		}
+	}
+}
+
+func TestPrintTopologyDiagnosticsSingleNamespaceOmitsBanner(t *testing.T) {
+	t.Parallel()
+
+	var seen []string
+	var single, direct bytes.Buffer
+	printTopologyDiagnostics(context.Background(), &single, namespaceRecordingSource(&seen), "", []string{"ns"}, 500, false)
+	printNamespaceDiagnostics(context.Background(), &direct, namespaceRecordingSource(&seen), "", "ns", 500, false)
+
+	// Single-namespace callers must keep byte-identical output.
+	if single.String() != direct.String() {
+		t.Errorf("single-namespace output changed:\n--- via topology ---\n%s\n--- direct ---\n%s", single.String(), direct.String())
+	}
+	if strings.Contains(single.String(), "##########") {
+		t.Errorf("banner should be omitted for a single namespace:\n%s", single.String())
+	}
+}
+
+func TestPrintTopologyDiagnosticsContinuesAfterUnreachableNamespace(t *testing.T) {
+	t.Parallel()
+
+	src := podDiagnosticsSource{
+		GetPods: func(_ context.Context, _, ns string) (string, error) {
+			if ns == "hub" {
+				return "", fmt.Errorf("namespaces \"hub\" is forbidden")
+			}
+			return ns + "-pod 0/1 Running", nil
+		},
+		GetNonReadyPods: func(_ context.Context, _, ns string) ([]string, error) {
+			if ns == "hub" {
+				return nil, fmt.Errorf("namespaces \"hub\" is forbidden")
+			}
+			return []string{ns + "-pod"}, nil
+		},
+		DescribePod:        func(_ context.Context, _, _, pod string) (string, error) { return "Name: " + pod, nil },
+		GetPodLogs:         func(_ context.Context, _, _, pod string, _ int) (string, error) { return pod + " log", nil },
+		GetPodLogsPrevious: func(_ context.Context, _, _, _ string, _ int) (string, error) { return "", nil },
+	}
+
+	var buf bytes.Buffer
+	printTopologyDiagnostics(context.Background(), &buf, src, "", []string{"hub", "orcha"}, 500, false)
+	out := buf.String()
+
+	if !strings.Contains(out, "is forbidden") {
+		t.Errorf("expected the hub error to be reported inline:\n%s", out)
+	}
+	// A namespace the runner cannot read must not cost us the ones it can.
+	if !strings.Contains(out, "orcha-pod log") {
+		t.Errorf("orcha diagnostics should still be captured:\n%s", out)
+	}
+}
