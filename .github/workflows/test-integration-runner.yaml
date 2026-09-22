@@ -357,7 +357,7 @@ jobs:
       TEST_CLUSTER_TYPE: ${{ inputs.distro-type || inputs.cluster-type }}
 
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@30eb11e253c345a4daee8f264dd03606d3002e11 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@1bab7578250d06c3ac57ba8e2ddfc65ac3f7880c # main
       - name: Info - ℹ️ Print workflow inputs ℹ️
         env:
           GITHUB_CONTEXT: ${{ toJson(inputs) }}
@@ -899,7 +899,7 @@ jobs:
       TEST_CLUSTER_TYPE: ${{ inputs.distro-type || inputs.cluster-type }}
 
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@30eb11e253c345a4daee8f264dd03606d3002e11 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@1bab7578250d06c3ac57ba8e2ddfc65ac3f7880c # main
       - name: Info - ℹ️ Print workflow inputs ℹ️
         env:
           GITHUB_CONTEXT: ${{ toJson(inputs) }}
@@ -1301,7 +1301,7 @@ jobs:
       deployments: write
       packages: read
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@30eb11e253c345a4daee8f264dd03606d3002e11 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@1bab7578250d06c3ac57ba8e2ddfc65ac3f7880c # main
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -1390,7 +1390,7 @@ jobs:
       deployments: write
       packages: read
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@30eb11e253c345a4daee8f264dd03606d3002e11 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@1bab7578250d06c3ac57ba8e2ddfc65ac3f7880c # main
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -1491,7 +1491,7 @@ jobs:
       deployments: write
       packages: read
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@30eb11e253c345a4daee8f264dd03606d3002e11 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@1bab7578250d06c3ac57ba8e2ddfc65ac3f7880c # main
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -1539,7 +1539,7 @@ jobs:
 
       - name: Generate E2E repository token
         id: e2e-repository-token
-        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@ee746fa695a43480b4294e944a6bf6e01b4f8459 # main
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@1bab7578250d06c3ac57ba8e2ddfc65ac3f7880c # main
         with:
           github-app-id-vault-key: GITHUB_APP_ID
           github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/quality-assurance-ci
@@ -1625,7 +1625,7 @@ jobs:
       deployments: write
       packages: read
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@30eb11e253c345a4daee8f264dd03606d3002e11 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@1bab7578250d06c3ac57ba8e2ddfc65ac3f7880c # main
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
