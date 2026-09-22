@@ -72,9 +72,14 @@ global:
     #         existingSecretKey: client-secret
     #     optimize:
     #       enabled: true
+    #       # namespace, releaseName, and host locate an Optimize deployed as its own release;
+    #       # each defaults to the cluster's value when omitted.
+    #       namespace: camunda-production-a-optimize
+    #       releaseName: optimize
+    #       host: hub.example.com
     #       clientId: optimize-production-a
     #       audience: optimize-production-a-api
-    #       redirectUrl: https://production-a.example.com/optimize
+    #       redirectUrl: https://hub.example.com/optimize
     #       secret:
     #         inlineSecret: ""
     #         existingSecret: optimize-production-a-oidc
@@ -88,6 +93,8 @@ global:
     #         existingSecretKey: client-secret
     #   physicalTenants:
     #     - id: tenanta
+    #       contextPaths:
+    #         optimize: /optimize-tenanta
     #       components:
     #         optimize:
     #           enabled: true
