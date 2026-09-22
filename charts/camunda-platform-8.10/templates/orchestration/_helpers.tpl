@@ -41,31 +41,21 @@
 {{- include .manifest $ctx -}}
 {{- end -}}
 
+{{- /* NOTE: alwaysRenderUnzoned keeps the retained generation's manifest rendering after
+retention is switched off, which the headless Service needs so broker DNS survives the
+cleanup upgrade. Everything else stops with the retained StatefulSet. */ -}}
 {{- define "orchestration.renderBrokerGenerations" -}}
 {{- $context := .context -}}
 {{- if eq (include "orchestration.zoneAware" $context) "true" -}}
 {{- $partitioning := include "camundaPlatform.partitioning" $context | fromJson -}}
 ---
 {{ include "orchestration.renderManifest" (dict "manifest" .manifest "context" $context "scope" "zoned" "zone" $partitioning.zone) }}
-{{- if $partitioning.keepUnzonedBrokers }}
+{{- if or .alwaysRenderUnzoned $partitioning.keepUnzonedBrokers }}
 ---
 {{ include "orchestration.renderManifest" (dict "manifest" .manifest "context" $context "scope" "unzoned") }}
 {{- end }}
 {{- else -}}
 {{ include "orchestration.renderManifest" (dict "manifest" .manifest "context" $context "scope" "current") }}
-{{- end -}}
-{{- end -}}
-
-{{- define "orchestration.renderHeadlessServices" -}}
-{{- $context := .context -}}
-{{- if eq (include "orchestration.zoneAware" $context) "true" -}}
-{{- $partitioning := include "camundaPlatform.partitioning" $context | fromJson -}}
----
-{{ include "orchestration.renderManifest" (dict "manifest" "orchestration.serviceHeadless" "context" $context "scope" "zoned" "zone" $partitioning.zone) }}
----
-{{ include "orchestration.renderManifest" (dict "manifest" "orchestration.serviceHeadless" "context" $context "scope" "unzoned") }}
-{{- else -}}
-{{ include "orchestration.renderManifest" (dict "manifest" "orchestration.serviceHeadless" "context" $context "scope" "current") }}
 {{- end -}}
 {{- end -}}
 
