@@ -42,6 +42,11 @@
 ## @section Global parameters
 ## @extra global
 global:
+  ## @extra global.topology configuration for how this Helm release participates in a Camunda deployment topology. The default combined mode preserves the existing single-release behavior.
+  topology:
+    ## @param global.topology.mode defines the role of this release in the deployment topology. Supported values are combined and orchestration.
+    mode: combined
+
   ## Secrets configuration.
   ## @extra global.secrets configuration for auto-generated secrets which is only used during the installation.
   secrets:
