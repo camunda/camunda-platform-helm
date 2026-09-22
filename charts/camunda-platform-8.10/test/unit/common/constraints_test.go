@@ -142,6 +142,13 @@ func (s *ConstraintTemplateTest) TestZoneLabelConstraint() {
 			},
 		},
 		{
+			Name:        "TestZoneLabelCannotBeSmuggledThroughATemplatedCommonLabelKey",
+			ValuesFiles: []string{filepath.Join(s.chartPath, "test/unit/common/testdata/values-zone-label-templated-key.yaml")},
+			Expected: map[string]string{
+				"ERROR": "camunda.io/zone is managed by the chart with the zone-aware scheme",
+			},
+		},
+		{
 			Name: "TestZoneLabelCanBeSetInNumberedMode",
 			Values: map[string]string{
 				"global.labels.camunda\\.io/zone": "user-managed",

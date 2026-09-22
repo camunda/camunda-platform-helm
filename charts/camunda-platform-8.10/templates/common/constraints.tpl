@@ -447,18 +447,23 @@ merged nowhere.
 {{- end }}
 
 {{- $partitioning := include "camundaPlatform.partitioning" $ | fromJson -}}
+{{- /* NOTE: camundaPlatform.labels and the pod template both pipe these maps through tpl,
+which templates the keys as well as the values, so the reserved names are looked up on the
+resolved maps. global.labels is rendered with a plain toYaml and stays raw. */ -}}
+{{- $resolvedCommonLabels := fromYaml (tpl (toYaml (.Values.global.commonLabels | default dict)) $) -}}
+{{- $resolvedPodLabels := fromYaml (tpl (toYaml (.Values.orchestration.podLabels | default dict)) $) -}}
 {{- $reservedZoneLabel := "camunda.io/zone" -}}
 {{- if and (eq $partitioning.scheme "zone-aware") (or
-  (hasKey (.Values.global.commonLabels | default dict) $reservedZoneLabel)
-  (hasKey (.Values.orchestration.podLabels | default dict) $reservedZoneLabel)
+  (hasKey $resolvedCommonLabels $reservedZoneLabel)
+  (hasKey $resolvedPodLabels $reservedZoneLabel)
 ) }}
   {{- fail (printf "[camunda][error] %s is managed by the chart with the zone-aware scheme and cannot be configured in global.commonLabels or orchestration.podLabels." $reservedZoneLabel) }}
 {{- end }}
 {{- $reservedGenerationLabel := "camunda.io/broker-generation" -}}
 {{- if or
   (hasKey (.Values.global.labels | default dict) $reservedGenerationLabel)
-  (hasKey (.Values.global.commonLabels | default dict) $reservedGenerationLabel)
-  (hasKey (.Values.orchestration.podLabels | default dict) $reservedGenerationLabel)
+  (hasKey $resolvedCommonLabels $reservedGenerationLabel)
+  (hasKey $resolvedPodLabels $reservedGenerationLabel)
 }}
   {{- fail (printf "[camunda][error] %s is managed by the chart and cannot be configured in global.labels, global.commonLabels, or orchestration.podLabels." $reservedGenerationLabel) }}
 {{- end }}
