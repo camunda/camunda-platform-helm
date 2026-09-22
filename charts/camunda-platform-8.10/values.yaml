@@ -88,6 +88,7 @@ global:
     #         existingSecretKey: client-secret
     #   physicalTenants:
     #     - id: tenanta
+    #       name: Tenant A
     #       components:
     #         optimize:
     #           enabled: true

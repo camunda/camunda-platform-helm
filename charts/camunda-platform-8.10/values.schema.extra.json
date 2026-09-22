@@ -1686,6 +1686,7 @@
             "required": ["id", "components"],
             "properties": {
                 "id": {"type": "string", "pattern": "^[a-z0-9]{1,64}$"},
+                "name": {"type": "string", "minLength": 1},
                 "components": {
                     "type": "object",
                     "additionalProperties": false,

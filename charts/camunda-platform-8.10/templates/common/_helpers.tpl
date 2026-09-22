@@ -1743,6 +1743,28 @@ required by camunda.modeler.clusters (introduced in 8.10 Hub/WebModeler).
       rest: {{ $orchestration.restUrl | default (printf "http://%s.%s.svc.cluster.local:8080%s" $gatewayName $cluster.namespace $orchestrationPath) | quote }}
       readiness: {{ $orchestration.readinessUrl | default (ternary (printf "http://%s.%s.svc.cluster.local:9600/actuator/health/readiness" $gatewayName $cluster.namespace) (printf "http://%s.%s.svc.cluster.local:9600%s/actuator/health/readiness" $orchestrationName $cluster.namespace $orchestrationPath) $legacy) | quote }}
   {{- end }}
+  {{- with (dig "physicalTenants" list $cluster) }}
+  physicalTenants:
+  {{- range $tenant := . }}
+  {{- $tenantOptimize := dig "components" "optimize" dict $tenant }}
+  - id: {{ $tenant.id | quote }}
+    {{- with $tenant.name }}
+    name: {{ . | quote }}
+    {{- end }}
+    components:
+    {{- if $tenantOptimize.enabled }}
+    - name: Optimize
+      type: optimize
+      version: {{ $cluster.version | quote }}
+      urls:
+        webapp: {{ $tenantOptimize.webappUrl | default $tenantOptimize.redirectUrl | quote }}
+        {{- with $tenantOptimize.readinessUrl }}
+        readiness: {{ . | quote }}
+        {{- end }}
+    {{- else }} []
+    {{- end }}
+  {{- end }}
+  {{- end }}
 {{- end }}
 {{- end -}}
 
