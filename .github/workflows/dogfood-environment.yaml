@@ -1,0 +1,229 @@
+# Docs: https://github.com/camunda/camunda-platform-helm/blob/main/docs/operator-guides/dogfood-environments.md
+name: "Dogfood - Environment"
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: |
+          deploy   - install, or upgrade in place if the environment already exists
+          upgrade  - upgrade in place; fails if the environment is not already deployed
+          status   - report namespaces, pod readiness, and URLs; changes nothing
+          uninstall - delete every namespace of the environment
+        required: true
+        default: status
+        type: choice
+        options:
+          - deploy
+          - upgrade
+          - status
+          - uninstall
+      environment:
+        description: Base namespace. Each release lands in <environment>-<suffix>.
+        required: false
+        default: dogfood
+        type: string
+      chart-version:
+        description: Chart version to deploy.
+        required: false
+        default: "8.10"
+        type: choice
+        options:
+          - "8.10"
+      confirm:
+        description: For `uninstall` only — repeat the environment name exactly.
+        required: false
+        default: ""
+        type: string
+  schedule:
+    # Nightly in-place upgrade so the dogfood environments track the chart.
+    - cron: "0 2 * * *"
+
+# Serialize every run against one environment: two concurrent Helm upgrades of
+# the same releases would race. Queue rather than cancel — cancelling mid-deploy
+# leaves a partially upgraded topology.
+concurrency:
+  group: dogfood-environment-${{ inputs.environment || 'dogfood' }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  DOGFOOD_ACTION: ${{ inputs.action || 'upgrade' }}
+  DOGFOOD_ENVIRONMENT: ${{ inputs.environment || 'dogfood' }}
+  DOGFOOD_CHART_VERSION: ${{ inputs.chart-version || '8.10' }}
+  DOGFOOD_SCENARIO: dogfood
+  DISTRO_PLATFORM: gke
+
+jobs:
+  run:
+    name: ${{ inputs.action || 'upgrade' }} - ${{ inputs.environment || 'dogfood' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    container:
+      image: ghcr.io/camunda/team-distribution/ci-runner:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+      options: --user root
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: CI Setup - Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: CI Setup - Configure Git safe directory
+        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+
+      - name: Setup deploy-camunda
+        uses: ./.github/actions/setup-deploy-camunda
+
+      - name: Guard - uninstall requires a matching confirmation
+        if: env.DOGFOOD_ACTION == 'uninstall'
+        env:
+          CONFIRM: ${{ inputs.confirm }}
+        run: |
+          if [[ "${CONFIRM}" != "${DOGFOOD_ENVIRONMENT}" ]]; then
+            echo "::error::uninstall requires the confirm input to repeat '${DOGFOOD_ENVIRONMENT}' exactly" >&2
+            exit 1
+          fi
+
+      # Provides cluster auth, Vault credentials, INFRA_INGRESS_HOSTNAME_BASE,
+      # CHART_PATH, and the Helm dependency update. Its computed TEST_NAMESPACE
+      # is per-run and unused here: the dogfood base namespace is stable and
+      # comes from the environment input instead.
+      - name: CI Setup - Shared integration test setup
+        id: setup
+        uses: ./.github/actions/integration-test-setup
+        with:
+          distro-platform: ${{ env.DISTRO_PLATFORM }}
+          identifier: ${{ env.DOGFOOD_ENVIRONMENT }}
+          camunda-helm-dir: camunda-platform-${{ env.DOGFOOD_CHART_VERSION }}
+          infra-type: distroci
+        env:
+          VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
+          VAULT_ROLE_ID: ${{ secrets.VAULT_ROLE_ID }}
+          VAULT_SECRET_ID: ${{ secrets.VAULT_SECRET_ID }}
+          GH_APP_ID: ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
+          GH_APP_KEY: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI_MANAGE_GH_ENVS }}
+          DISTRO_CI_DOCKER_USERNAME_DOCKERHUB: ${{ secrets.DISTRO_CI_DOCKER_USERNAME_DOCKERHUB }}
+          DISTRO_CI_DOCKER_PASSWORD_DOCKERHUB: ${{ secrets.DISTRO_CI_DOCKER_PASSWORD_DOCKERHUB }}
+
+      - name: Guard - upgrade requires an existing environment
+        if: env.DOGFOOD_ACTION == 'upgrade'
+        run: |
+          deploy-camunda topology status \
+            --repo-root "${GITHUB_WORKSPACE}" \
+            --version "${DOGFOOD_CHART_VERSION}" \
+            --scenario "${DOGFOOD_SCENARIO}" \
+            --base "${DOGFOOD_ENVIRONMENT}" \
+            --fail-on-missing
+
+      # `matrix run` deploys through `helm upgrade --install`, so deploy and
+      # upgrade are the same idempotent call against the same stable namespaces.
+      # The topology driver provisions ExternalSecrets and pull secrets into
+      # every release namespace itself, so cluster-setup-secrets must NOT run.
+      - name: Deploy the topology
+        if: env.DOGFOOD_ACTION == 'deploy' || env.DOGFOOD_ACTION == 'upgrade'
+        env:
+          TEST_DOCKER_USERNAME_CAMUNDA_CLOUD: ${{ steps.setup.outputs.TEST_DOCKER_USERNAME_CAMUNDA_CLOUD || steps.setup.outputs.NEXUS_USERNAME }}
+          TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD: ${{ steps.setup.outputs.TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD || steps.setup.outputs.NEXUS_PASSWORD }}
+          TEST_DOCKER_USERNAME: ${{ steps.setup.outputs.TEST_DOCKER_USERNAME }}
+          TEST_DOCKER_PASSWORD: ${{ steps.setup.outputs.TEST_DOCKER_PASSWORD }}
+          RDBMS_POSTGRESQL_USERNAME: ${{ steps.setup.outputs.RDBMS_POSTGRESQL_USERNAME }}
+          RDBMS_POSTGRESQL_PASSWORD: ${{ steps.setup.outputs.RDBMS_POSTGRESQL_PASSWORD }}
+        run: |
+          deploy-camunda matrix run \
+            --repo-root "${GITHUB_WORKSPACE}" \
+            --include-disabled \
+            --scenario-filter "${DOGFOOD_SCENARIO}" \
+            --flow-filter install \
+            --versions "${DOGFOOD_CHART_VERSION}" \
+            --platform "${DISTRO_PLATFORM}" \
+            --namespace-override "${DOGFOOD_ENVIRONMENT}" \
+            --skip-dependency-update=false \
+            --timeout 25 \
+            --log-level info
+
+      # deploy-camunda stamps every namespace it creates as ephemeral with a
+      # short cleaner/janitor TTL. Undo that or the cluster cleaner reaps the
+      # environment within the hour.
+      - name: Persist the namespaces
+        if: env.DOGFOOD_ACTION == 'deploy' || env.DOGFOOD_ACTION == 'upgrade'
+        run: |
+          deploy-camunda topology persist \
+            --repo-root "${GITHUB_WORKSPACE}" \
+            --version "${DOGFOOD_CHART_VERSION}" \
+            --scenario "${DOGFOOD_SCENARIO}" \
+            --base "${DOGFOOD_ENVIRONMENT}"
+
+      - name: Uninstall the topology
+        if: env.DOGFOOD_ACTION == 'uninstall'
+        env:
+          CONFIRM: ${{ inputs.confirm }}
+        run: |
+          deploy-camunda topology uninstall \
+            --repo-root "${GITHUB_WORKSPACE}" \
+            --version "${DOGFOOD_CHART_VERSION}" \
+            --scenario "${DOGFOOD_SCENARIO}" \
+            --base "${DOGFOOD_ENVIRONMENT}" \
+            --confirm "${CONFIRM}"
+
+      - name: Report status
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && env.DOGFOOD_ACTION != 'uninstall' }}
+        run: |
+          {
+            echo "## Dogfood environment \`${DOGFOOD_ENVIRONMENT}\` (chart ${DOGFOOD_CHART_VERSION})"
+            echo
+            deploy-camunda topology status \
+              --repo-root "${GITHUB_WORKSPACE}" \
+              --version "${DOGFOOD_CHART_VERSION}" \
+              --scenario "${DOGFOOD_SCENARIO}" \
+              --base "${DOGFOOD_ENVIRONMENT}" \
+              --ingress-base-domain "${INFRA_INGRESS_HOSTNAME_BASE}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Collect diagnostics
+        if: ${{ failure() && steps.setup.outcome == 'success' && env.DOGFOOD_ACTION != 'uninstall' }}
+        continue-on-error: true
+        run: |
+          mkdir -p diagnostics
+          while read -r ns; do
+            deploy-camunda diagnostics print --namespace "$ns" >"diagnostics/${ns}.log" 2>&1 || true
+          done < <(deploy-camunda topology namespaces \
+            --repo-root "${GITHUB_WORKSPACE}" \
+            --version "${DOGFOOD_CHART_VERSION}" \
+            --scenario "${DOGFOOD_SCENARIO}" \
+            --base "${DOGFOOD_ENVIRONMENT}")
+
+      - name: Upload diagnostics
+        if: ${{ failure() && steps.setup.outcome == 'success' && env.DOGFOOD_ACTION != 'uninstall' }}
+        continue-on-error: true
+        uses: ./.github/actions/upload-artifact-retry
+        with:
+          name: dogfood-diagnostics-${{ env.DOGFOOD_ENVIRONMENT }}-${{ github.run_id }}
+          path: diagnostics/
+
+      - name: 🚨 Notify the team via Slack 🚨
+        if: failure() && github.event_name == 'schedule'
+        uses: slackapi/slack-github-action@dcb1066f776dd043e64d0e8ba94ca15cc7e1875d # v4.0.0
+        with:
+          webhook: ${{ secrets.SLACK_DISTRO_TEAM_WEBHOOK }}
+          webhook-type: incoming-webhook
+          payload: |
+            blocks:
+              - type: header
+                text:
+                  type: plain_text
+                  text: Dogfood environment upgrade failed
+                  emoji: true
+              - type: section
+                text:
+                  type: mrkdwn
+                  text: |
+                    🚨 *Action Required* 🚨
+                    The nightly upgrade of the `${{ env.DOGFOOD_ENVIRONMENT }}` dogfood environment failed.
+                    <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View the run>

@@ -2188,6 +2188,121 @@ integration:
                 optimize-context-path: /optimize-orcha-tb
             shared-storage: elasticsearch
             shared-storage-service: elasticsearch-master
+        - name: dogfood
+          enabled: false
+          shortname: dogfd
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: distroci
+          skip-e2e: true
+          topology:
+            name: hub-3orch-dogfood
+            releases:
+              - role: hub
+                namespace-suffix: hub
+                identity: keycloak
+                features:
+                  - multinamespace-reset-clients
+                  - dogfood-hub
+                dependencies:
+                  - keycloak-fixed-issuer
+                  - postgresql
+                  - elasticsearch
+              - role: orchestration
+                namespace-suffix: plain
+                depends-on: hub
+                identity: keycloak-external
+                persistence: elasticsearch-external
+                features:
+                  - dogfood-orchestration-plain
+                env:
+                  ORCH_CONNECTORS_CLIENT_ID: connectors-plain
+                  ORCH_ORCHESTRATION_AUDIENCE: orchestration-plain-api
+                  ORCH_ORCHESTRATION_CLIENT_ID: orchestration-plain
+                modeler-cluster-id: plain
+                modeler-cluster-name: Dogfood Plain
+              - role: orchestration
+                namespace-suffix: mt
+                depends-on: hub
+                identity: keycloak-external
+                persistence: elasticsearch-external
+                features:
+                  - dogfood-orchestration-mt
+                env:
+                  ORCH_CONNECTORS_CLIENT_ID: connectors-mt
+                  ORCH_ORCHESTRATION_AUDIENCE: orchestration-mt-api
+                  ORCH_ORCHESTRATION_CLIENT_ID: orchestration-mt
+                modeler-cluster-id: mt
+                modeler-cluster-name: Dogfood Multitenancy
+              - role: orchestration
+                namespace-suffix: pt
+                depends-on: hub
+                identity: keycloak-external
+                persistence: elasticsearch-external
+                features:
+                  - dogfood-orchestration-pt
+                env:
+                  ORCH_CONNECTORS_CLIENT_ID: connectors-pt
+                  ORCH_ORCHESTRATION_AUDIENCE: orchestration-pt-api
+                  ORCH_ORCHESTRATION_CLIENT_ID: orchestration-pt
+                modeler-cluster-id: pt
+                modeler-cluster-name: Dogfood Physical Tenants
+              - role: optimize
+                namespace-suffix: optplain
+                depends-on: hub
+                identity: keycloak-external-optimize
+                persistence: elasticsearch-external
+                features:
+                  - dogfood-optimize-plain
+                serves: plain
+                tenant: default
+                optimize-context-path: /optimize-plain
+              - role: optimize
+                namespace-suffix: optmt
+                depends-on: hub
+                identity: keycloak-external-optimize
+                persistence: elasticsearch-external
+                features:
+                  - dogfood-optimize-mt
+                serves: mt
+                tenant: default
+                optimize-context-path: /optimize-mt
+              - role: optimize
+                namespace-suffix: optptdef
+                depends-on: hub
+                identity: keycloak-external-optimize
+                persistence: elasticsearch-external
+                features:
+                  - dogfood-optimize-pt-default
+                serves: pt
+                tenant: default
+                optimize-context-path: /optimize-pt-default
+              - role: optimize
+                namespace-suffix: optptta
+                depends-on: hub
+                identity: keycloak-external-optimize
+                persistence: elasticsearch-external
+                features:
+                  - dogfood-optimize-pt-ta
+                serves: pt
+                tenant: tenanta
+                optimize-context-path: /optimize-pt-tenanta
+              - role: optimize
+                namespace-suffix: optpttb
+                depends-on: hub
+                identity: keycloak-external-optimize
+                persistence: elasticsearch-external
+                features:
+                  - dogfood-optimize-pt-tb
+                serves: pt
+                tenant: tenantb
+                optimize-context-path: /optimize-pt-tenantb
+            shared-storage: elasticsearch
+            shared-storage-service: elasticsearch-master
     nightly:
       scenario: []
   flows:
