@@ -172,8 +172,9 @@ func TestSynthesizeReleaseEntry_NoRoleRunsE2EDuringDeploy(t *testing.T) {
 }
 
 func TestSynthesizeReleaseEntry_OrchestrationHasNoDependenciesOrPostDeployHook(t *testing.T) {
-	hook := &matrix.LifecycleHook{Script: "post-deploy-hub-ping.sh"}
-	baseEntry := matrix.Entry{Version: "8.10", ChartPath: "charts/camunda-platform-8.10", Scenario: "multinamespace", Shortname: "mns", Auth: "keycloak", PostDeploy: hook}
+	postDeployHook := &matrix.LifecycleHook{Script: "post-deploy-hub-ping.sh"}
+	postInfraHook := &matrix.LifecycleHook{Script: "post-infra-legacy-elasticsearch.sh"}
+	baseEntry := matrix.Entry{Version: "8.10", ChartPath: "charts/camunda-platform-8.10", Scenario: "multinamespace", Shortname: "mns", Auth: "keycloak", PostDeploy: postDeployHook, PostInfra: postInfraHook}
 	releases := testTopologyReleases()
 
 	for _, rel := range releases[1:] {
@@ -196,10 +197,19 @@ func TestSynthesizeReleaseEntry_OrchestrationHasNoDependenciesOrPostDeployHook(t
 		if orchEntry.PostDeploy != nil {
 			t.Errorf("orchestration release %q PostDeploy = %v, want nil so the hook runs once at topology level", rel.NamespaceSuffix, orchEntry.PostDeploy)
 		}
+		if orchEntry.PostInfra != nil {
+			t.Errorf("orchestration release %q PostInfra = %v, want nil", rel.NamespaceSuffix, orchEntry.PostInfra)
+		}
 	}
 	hubEntry := synthesizeReleaseEntry("/repo", baseEntry, releases[0], "gke")
 	if hubEntry.PostDeploy != nil {
 		t.Errorf("Hub PostDeploy = %v, want nil so the hook runs once at topology level", hubEntry.PostDeploy)
+	}
+	// The post-infra hook provisions the shared infrastructure the rest of the
+	// topology deploys onto, so it rides on the Hub release rather than being
+	// dropped (which left topology scenarios with no post-infra step at all).
+	if hubEntry.PostInfra != postInfraHook {
+		t.Errorf("Hub PostInfra = %v, want scenario hook", hubEntry.PostInfra)
 	}
 }
 
