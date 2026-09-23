@@ -38,3 +38,14 @@ kubectl() {
   [[ "$output" != *"grpc-camunda.example.com"* ]]
   [ "${lines[${#lines[@]} - 1]}" = "camunda.example.com" ]
 }
+
+@test "successful Playwright project returns when another project follows" {
+  _setup_playwright_environment() { :; }
+  _install_playwright_browsers() { :; }
+  _log_e2e_suite_version() { :; }
+  _run_playwright_with_retry() { return 0; }
+
+  run run_playwright_tests /tmp false 1 1 blob "" false false "" "" rerun false primary false
+
+  [ "$status" -eq 0 ]
+}
