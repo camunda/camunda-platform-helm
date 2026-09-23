@@ -1,40 +1,40 @@
-import { expect, test } from "@playwright/test";
+import { expect } from "@playwright/test";
+import { test } from "@camunda/e2e-test-suite/dist/fixtures/SM-8.10";
 
 type Environment = {
+  id: string;
   clusterId: string;
   physicalTenantId?: string;
   targetType: string;
 };
 
-test("Hub discovers the selected Physical Tenant", async ({ request }) => {
-  const baseURL = process.env.BASE_URL;
-  const clientSecret = process.env.DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET;
+const organizationId = "00000000-0000-0000-0000-000000000000";
+
+test("Hub deploys through the selected Physical Tenant environment", async ({
+  page,
+  navigationPage,
+}) => {
+  const webModelerURL = process.env.WEBMODELER_BASE_URL;
   const physicalTenantId = process.env.PHYSICAL_TENANT_ID;
-  expect(baseURL).toBeTruthy();
-  expect(clientSecret).toBeTruthy();
+  expect(webModelerURL).toBeTruthy();
   expect(physicalTenantId).toBeTruthy();
 
-  const tokenResponse = await request.post(
-    `${baseURL}/auth/realms/camunda-platform/protocol/openid-connect/token`,
-    {
-      form: {
-        client_id: "venom",
-        client_secret: clientSecret!,
-        grant_type: "client_credentials",
-      },
-    },
+  const authenticatedRequest = page.waitForRequest(
+    (request) =>
+      request.url().includes("/api/internal/v2/organizations/") &&
+      Boolean(request.headers().authorization),
   );
-  expect(tokenResponse.ok()).toBeTruthy();
-  const { access_token: accessToken } = (await tokenResponse.json()) as {
-    access_token: string;
-  };
+  await navigationPage.goToModeler();
+  const authorization = (await authenticatedRequest).headers().authorization;
+  expect(authorization).toBeTruthy();
+  const headers = { Authorization: authorization! };
 
-  const response = await request.get(
-    `${baseURL}/modeler/api/internal/v2/organizations/00000000-0000-0000-0000-000000000000/environments`,
-    { headers: { Authorization: `Bearer ${accessToken}` } },
+  const environmentsResponse = await page.request.get(
+    `${webModelerURL}/api/internal/v2/organizations/${organizationId}/environments`,
+    { headers },
   );
-  expect(response.ok()).toBeTruthy();
-  const environments = (await response.json()) as Environment[];
+  expect(environmentsResponse.ok()).toBeTruthy();
+  const environments = (await environmentsResponse.json()) as Environment[];
   const orchestrationEnvironments = environments.filter(
     ({ clusterId }) => clusterId === "orcha",
   );
@@ -52,9 +52,76 @@ test("Hub discovers the selected Physical Tenant", async ({ request }) => {
       })),
     ),
   );
-  expect(
-    orchestrationEnvironments.some(
-      (environment) => environment.physicalTenantId === physicalTenantId,
-    ),
-  ).toBeTruthy();
+  const environment = orchestrationEnvironments.find(
+    (candidate) => candidate.physicalTenantId === physicalTenantId,
+  );
+  expect(environment).toBeDefined();
+
+  const suffix = Date.now().toString(36);
+  await page.goto(`${webModelerURL}/workspaces/create`);
+  await page.getByLabel("Workspace name").fill(`Physical Tenant ${suffix}`);
+  const submit = page.locator('[data-test="workspace-wizard-submit"]');
+  await submit.click();
+  await expect(
+    page.locator('[data-test="step-members"][data-state="active"]'),
+  ).toBeVisible();
+  await submit.click();
+  await expect(
+    page.locator('[data-test="step-environments"][data-state="active"]'),
+  ).toBeVisible();
+  await submit.click();
+  await page.waitForURL(/\/workspaces\/[^/]+\/projects$/);
+  const workspaceId = new URL(page.url()).pathname.split("/").at(-2)!;
+
+  const assignmentResponse = await page.request.put(
+    `${webModelerURL}/api/internal/v2/workspaces/${workspaceId}/environments`,
+    { data: { environmentIds: [environment!.id] }, headers },
+  );
+  expect(assignmentResponse.ok()).toBeTruthy();
+
+  const projectResponse = await page.request.post(
+    `${webModelerURL}/api/internal/v2/projects`,
+    { data: { workspaceId, name: `Physical Tenant ${suffix}` }, headers },
+  );
+  expect(projectResponse.ok()).toBeTruthy();
+  const projectBody = (await projectResponse.json()) as {
+    data?: { id: string };
+    id?: string;
+  };
+  const projectId = projectBody.data?.id ?? projectBody.id;
+  expect(projectId).toBeTruthy();
+
+  const processId = `physical_tenant_${physicalTenantId}_${suffix}`;
+  const content = `<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" targetNamespace="http://camunda.io/schema/1.0/bpmn">
+  <process id="${processId}" name="${processId}" isExecutable="true">
+    <startEvent id="start" />
+  </process>
+</definitions>`;
+  const fileResponse = await page.request.post(
+    `${webModelerURL}/api/internal/v2/files`,
+    {
+      data: {
+        name: `${processId}.bpmn`,
+        content,
+        hubProjectId: projectId,
+        folderId: projectId,
+        type: "BPMN",
+      },
+      headers,
+    },
+  );
+  expect(fileResponse.ok()).toBeTruthy();
+  const fileBody = (await fileResponse.json()) as {
+    data?: { id: string };
+    id?: string;
+  };
+  const fileId = fileBody.data?.id ?? fileBody.id;
+  expect(fileId).toBeTruthy();
+
+  const deployResponse = await page.request.post(
+    `${webModelerURL}/api/internal/v2/files/${fileId}/deploy`,
+    { data: { environmentId: environment!.id }, headers },
+  );
+  expect(deployResponse.ok()).toBeTruthy();
 });

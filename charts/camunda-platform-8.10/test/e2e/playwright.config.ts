@@ -82,8 +82,13 @@ export default defineConfig(
     workers: "100%",
     extraProjects: [
       {
+        name: "topology-orchestration-local",
+        testDir: __dirname,
+        testMatch: ["topology-orchestration.spec.ts"],
+      },
+      {
         name: "physical-tenants",
-        dependencies: ["topology-orchestration"],
+        dependencies: ["topology-orchestration-local"],
         testDir: __dirname,
         testMatch: ["physical-tenants.spec.ts"],
       },
