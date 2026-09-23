@@ -50,6 +50,14 @@ func writeArgvEchoHelm(t *testing.T) {
 func TestRenderPreparedTopologyContract_OmitsIngressHostOption(t *testing.T) {
 	writeArgvEchoHelm(t)
 
+	chartPath := filepath.Join(t.TempDir(), "camunda-platform-8.10")
+	if err := os.MkdirAll(filepath.Join(chartPath, "templates", "common"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(chartPath, "templates", "common", "topology-contract.yaml"), nil, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
 	const host = "matrix-810-mns-hub.ci.distro.ultrawombat.com"
 	prepared := &PreparedScenario{
 		ScenarioCtx: &ScenarioContext{
@@ -60,7 +68,7 @@ func TestRenderPreparedTopologyContract_OmitsIngressHostOption(t *testing.T) {
 		},
 	}
 	flags := &config.RuntimeFlags{
-		Chart: config.ChartFlags{ChartPath: "charts/camunda-platform-8.10"},
+		Chart: config.ChartFlags{ChartPath: chartPath},
 		Deployment: config.DeploymentFlags{
 			ExtraHelmSets: map[string]string{"global.host": host},
 		},
