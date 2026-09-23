@@ -48,10 +48,13 @@ func TestE2EScriptArgs_ForwardsTopologyNamespaces(t *testing.T) {
 		"",
 		"elasticsearch-external",
 		topologyTarget{
-			HubNamespace:        "ns-hub",
-			OptimizeNamespace:   "ns-opta",
-			OptimizeContextPath: "/optimize-orcha",
-			ModelerClusterName:  "Orchestration A",
+			HubNamespace:                "ns-hub",
+			OptimizeNamespace:           "ns-opta",
+			OptimizeContextPath:         "/optimize-orcha",
+			ModelerClusterName:          "Orchestration A",
+			PlaywrightProject:           "topology-orchestration",
+			AdditionalPlaywrightProject: "physical-tenants",
+			PhysicalTenantID:            "tenanta",
 		},
 	)
 
@@ -61,6 +64,9 @@ func TestE2EScriptArgs_ForwardsTopologyNamespaces(t *testing.T) {
 		{"--optimize-namespace", "ns-opta"},
 		{"--optimize-context-path", "/optimize-orcha"},
 		{"--modeler-cluster-name", "Orchestration A"},
+		{"--playwright-project", "topology-orchestration"},
+		{"--additional-playwright-project", "physical-tenants"},
+		{"--physical-tenant-id", "tenanta"},
 		{"--kube-context", "gke-ctx"},
 	} {
 		if !hasFlagValue(args, tc.flag, tc.value) {

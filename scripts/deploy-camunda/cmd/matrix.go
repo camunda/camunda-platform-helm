@@ -1639,6 +1639,9 @@ func runTopologyE2ELegs(
 		flags.Test.OptimizeNamespace = optimizeNamespace
 		flags.Test.OptimizeContextPath = leg.OptimizeContextPath
 		flags.Test.ModelerClusterName = leg.ModelerClusterName
+		flags.Test.PlaywrightProject = leg.PlaywrightProject
+		flags.Test.AdditionalPlaywrightProject = leg.AdditionalPlaywrightProject
+		flags.Test.PhysicalTenantID = leg.TenantID
 
 		testErr := deploy.RunTests(ctx, flags, namespace)
 		cleanup()

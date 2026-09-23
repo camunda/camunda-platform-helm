@@ -708,13 +708,17 @@ func TestTopologyE2ELegs(t *testing.T) {
 			name: "one orchestration release serving two tenants yields two legs",
 			topology: &Topology{Releases: []TopologyRelease{
 				hub,
-				orchestration("orcha"),
+				func() TopologyRelease {
+					r := orchestration("orcha")
+					r.AdditionalPlaywrightProject = "physical-tenants"
+					return r
+				}(),
 				optimize("optta", "orcha", "tenanta", "/optimize-orcha-ta"),
 				optimize("opttb", "orcha", "tenantb", "/optimize-orcha-tb"),
 			}},
 			want: suiteLegs(
-				TopologyE2ELeg{OrchestrationSuffix: "orcha", ModelerClusterID: "orcha", OptimizeSuffix: "optta", OptimizeContextPath: "/optimize-orcha-ta", TenantID: "tenanta", ChartVersion: "8.10", ChartDir: "camunda-platform-8.10"},
-				TopologyE2ELeg{OrchestrationSuffix: "orcha", ModelerClusterID: "orcha", OptimizeSuffix: "opttb", OptimizeContextPath: "/optimize-orcha-tb", TenantID: "tenantb", ChartVersion: "8.10", ChartDir: "camunda-platform-8.10"},
+				TopologyE2ELeg{OrchestrationSuffix: "orcha", ModelerClusterID: "orcha", OptimizeSuffix: "optta", OptimizeContextPath: "/optimize-orcha-ta", TenantID: "tenanta", ChartVersion: "8.10", ChartDir: "camunda-platform-8.10", AdditionalPlaywrightProject: "physical-tenants"},
+				TopologyE2ELeg{OrchestrationSuffix: "orcha", ModelerClusterID: "orcha", OptimizeSuffix: "opttb", OptimizeContextPath: "/optimize-orcha-tb", TenantID: "tenantb", ChartVersion: "8.10", ChartDir: "camunda-platform-8.10", AdditionalPlaywrightProject: "physical-tenants"},
 			),
 		},
 		{
@@ -765,12 +769,12 @@ func TestTopologyE2ELegs(t *testing.T) {
 func TestPlanTopologyMetadataIncludesTenantID(t *testing.T) {
 	topology := &Topology{Releases: []TopologyRelease{
 		{Role: "hub", NamespaceSuffix: "hub"},
-		{Role: "orchestration", NamespaceSuffix: "orcha", ModelerClusterID: "cluster-a", ModelerClusterName: "Cluster A"},
+		{Role: "orchestration", NamespaceSuffix: "orcha", ModelerClusterID: "cluster-a", ModelerClusterName: "Cluster A", AdditionalPlaywrightProject: "physical-tenants"},
 		{Role: "optimize", NamespaceSuffix: "opta", Serves: "orcha", Tenant: "tenant-a", OptimizeContextPath: "/optimize-a"},
 	}}
 
 	_, _, smoke := planTopologyMetadata("8.10", topology)
-	want := `[{"orchestration_suffix":"orcha","modeler_cluster_id":"cluster-a","modeler_cluster_name":"Cluster A","shard_index":"1","optimize_suffix":"opta","optimize_context_path":"/optimize-a","tenant_id":"tenant-a","chart_version":"8.10","chart_dir":"camunda-platform-8.10","suite":"orchestration","test_chart_dir":"camunda-platform-8.10","playwright_project":"topology-orchestration"}]`
+	want := `[{"orchestration_suffix":"orcha","modeler_cluster_id":"cluster-a","modeler_cluster_name":"Cluster A","shard_index":"1","optimize_suffix":"opta","optimize_context_path":"/optimize-a","tenant_id":"tenant-a","chart_version":"8.10","chart_dir":"camunda-platform-8.10","suite":"orchestration","test_chart_dir":"camunda-platform-8.10","playwright_project":"topology-orchestration","additional_playwright_project":"physical-tenants"}]`
 	if smoke != want {
 		t.Fatalf("smoke matrix = %s, want %s", smoke, want)
 	}

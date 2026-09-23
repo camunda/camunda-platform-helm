@@ -160,7 +160,10 @@ type TestFlags struct {
 	// One Hub Web Modeler serves every orchestration release in a topology, so without it the suite
 	// deploys to whichever cluster Modeler preselects and a leg targeting any other release asserts
 	// against a cluster that never received the records.
-	ModelerClusterName string
+	ModelerClusterName          string
+	PlaywrightProject           string
+	AdditionalPlaywrightProject string
+	PhysicalTenantID            string
 }
 
 // SelectionFlags holds selection + composition model flags.

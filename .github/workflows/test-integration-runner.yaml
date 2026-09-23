@@ -332,7 +332,7 @@ jobs:
     if: github.event.action != 'closed' && inputs.flow != 'modular-upgrade-minor'
     name: install for ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 60
     container:
       image: ghcr.io/camunda/team-distribution/ci-runner:latest
       credentials:

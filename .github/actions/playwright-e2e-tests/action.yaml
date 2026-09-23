@@ -383,26 +383,11 @@ runs:
         [[ -n "$E2E_ARG_OPTIMIZE_CONTEXT_PATH" ]] && E2E_ARGS+=(--optimize-context-path "${E2E_ARG_OPTIMIZE_CONTEXT_PATH}")
         [[ -n "$E2E_ARG_MODELER_CLUSTER_NAME" ]] && E2E_ARGS+=(--modeler-cluster-name "${E2E_ARG_MODELER_CLUSTER_NAME}")
         [[ -n "${{ inputs.playwright-project }}" ]] && E2E_ARGS+=(--playwright-project "${{ inputs.playwright-project }}")
+        [[ -n "${{ inputs.additional-playwright-project }}" ]] && E2E_ARGS+=(--additional-playwright-project "${{ inputs.additional-playwright-project }}")
+        [[ -n "${{ inputs.physical-tenant-id }}" ]] && E2E_ARGS+=(--physical-tenant-id "${{ inputs.physical-tenant-id }}")
         [[ -n "${{ inputs.e2e-test-suite-ref }}" ]] && E2E_ARGS+=(--local-test-suite "${GITHUB_WORKSPACE}/.e2e-test-suite")
 
         ./run-e2e-tests.sh "${E2E_ARGS[@]}"
-        if [[ -n "${{ inputs.additional-playwright-project }}" ]]; then
-          ADDITIONAL_ARGS=()
-          skip_next=false
-          for arg in "${E2E_ARGS[@]}"; do
-            if [[ "$skip_next" == true ]]; then
-              skip_next=false
-              continue
-            fi
-            if [[ "$arg" == "--playwright-project" ]]; then
-              skip_next=true
-              continue
-            fi
-            ADDITIONAL_ARGS+=("$arg")
-          done
-          ADDITIONAL_ARGS+=(--playwright-project "${{ inputs.additional-playwright-project }}")
-          ./run-e2e-tests.sh "${ADDITIONAL_ARGS[@]}"
-        fi
 
     - name: Capture namespace diagnostics
       if: ${{ !success() }}
