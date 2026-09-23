@@ -139,10 +139,9 @@ test("Hub deploys through the selected Physical Tenant environment", async ({
   );
   expect(deployResponse.ok()).toBeTruthy();
 
-  const tokenRequest = await request.newContext();
-  let accessToken = "";
+  const authenticatedAPI = await request.newContext();
   try {
-    const tokenResponse = await tokenRequest.post(
+    const tokenResponse = await authenticatedAPI.post(
       `${keycloakURL}/realms/camunda-platform/protocol/openid-connect/token`,
       {
         form: {
@@ -154,63 +153,63 @@ test("Hub deploys through the selected Physical Tenant environment", async ({
     );
     expect(tokenResponse.ok()).toBeTruthy();
     const tokenBody = (await tokenResponse.json()) as { access_token: string };
-    accessToken = tokenBody.access_token;
-  } finally {
-    await tokenRequest.dispose();
-  }
-  const tenantPath =
-    physicalTenantId === "default"
-      ? ""
-      : `/physical-tenants/${physicalTenantId}`;
-  await expect
-    .poll(
-      async () => {
-        const searchResponse = await page.request.post(
-          `${baseURL}/orchestration${tenantPath}/v2/process-definitions/search`,
-          {
-            data: { filter: { processDefinitionId: processId } },
-            headers: { Authorization: `Bearer ${accessToken}` },
-          },
-        );
-        if (!searchResponse.ok()) {
-          return false;
-        }
-        const result = (await searchResponse.json()) as {
-          items?: Array<{ processDefinitionId?: string }>;
-        };
-        return result.items?.some(
-          (item) => item.processDefinitionId === processId,
-        );
-      },
-      { timeout: 120_000 },
-    )
-    .toBe(true);
-
-  await Promise.all(
-    ["default", "tenanta", "tenantb"]
-      .filter((id) => id !== physicalTenantId)
-      .map(async (siblingId) => {
-        const siblingPath =
-          siblingId === "default" ? "" : `/physical-tenants/${siblingId}`;
-        for (const delay of [0, 30_000, 30_000, 60_000]) {
-          await page.waitForTimeout(delay);
-          const siblingResponse = await page.request.post(
-            `${baseURL}/orchestration${siblingPath}/v2/process-definitions/search`,
+    const accessToken = tokenBody.access_token;
+    const tenantPath =
+      physicalTenantId === "default"
+        ? ""
+        : `/physical-tenants/${physicalTenantId}`;
+    await expect
+      .poll(
+        async () => {
+          const searchResponse = await authenticatedAPI.post(
+            `${baseURL}/orchestration${tenantPath}/v2/process-definitions/search`,
             {
               data: { filter: { processDefinitionId: processId } },
               headers: { Authorization: `Bearer ${accessToken}` },
             },
           );
-          expect(siblingResponse.ok()).toBeTruthy();
-          const siblingResult = (await siblingResponse.json()) as {
+          if (!searchResponse.ok()) {
+            return false;
+          }
+          const result = (await searchResponse.json()) as {
             items?: Array<{ processDefinitionId?: string }>;
           };
-          expect(
-            siblingResult.items?.some(
-              (item) => item.processDefinitionId === processId,
-            ) ?? false,
-          ).toBe(false);
-        }
-      }),
-  );
+          return result.items?.some(
+            (item) => item.processDefinitionId === processId,
+          );
+        },
+        { timeout: 120_000 },
+      )
+      .toBe(true);
+
+    await Promise.all(
+      ["default", "tenanta", "tenantb"]
+        .filter((id) => id !== physicalTenantId)
+        .map(async (siblingId) => {
+          const siblingPath =
+            siblingId === "default" ? "" : `/physical-tenants/${siblingId}`;
+          for (const delay of [0, 30_000, 30_000, 60_000]) {
+            await page.waitForTimeout(delay);
+            const siblingResponse = await authenticatedAPI.post(
+              `${baseURL}/orchestration${siblingPath}/v2/process-definitions/search`,
+              {
+                data: { filter: { processDefinitionId: processId } },
+                headers: { Authorization: `Bearer ${accessToken}` },
+              },
+            );
+            expect(siblingResponse.ok()).toBeTruthy();
+            const siblingResult = (await siblingResponse.json()) as {
+              items?: Array<{ processDefinitionId?: string }>;
+            };
+            expect(
+              siblingResult.items?.some(
+                (item) => item.processDefinitionId === processId,
+              ) ?? false,
+            ).toBe(false);
+          }
+        }),
+    );
+  } finally {
+    await authenticatedAPI.dispose();
+  }
 });
