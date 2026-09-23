@@ -235,3 +235,6 @@ integration:
       shortname: ptnt
       tier: 2
       enabled: true
+    - id: dogfood
+      shortname: dogfd
+      enabled: false

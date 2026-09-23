@@ -89,3 +89,23 @@ func TestListPods(t *testing.T) {
 		}
 	})
 }
+
+func TestNamespaceExists(t *testing.T) {
+	client := newTestClient(&corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "present"}})
+
+	exists, err := client.NamespaceExists(context.Background(), "present")
+	if err != nil {
+		t.Fatalf("NamespaceExists() error = %v", err)
+	}
+	if !exists {
+		t.Fatal("NamespaceExists() = false, want true")
+	}
+
+	exists, err = client.NamespaceExists(context.Background(), "absent")
+	if err != nil {
+		t.Fatalf("NamespaceExists() error = %v", err)
+	}
+	if exists {
+		t.Fatal("NamespaceExists() = true, want false")
+	}
+}

@@ -1,0 +1,190 @@
+# Hub namespace layer for the dogfood topology (8.10).
+#
+# One shared Hub plane (Management Identity, Camunda Hub, Web Modeler, Keycloak,
+# Elasticsearch) fronting three Orchestration Clusters:
+#   plain - no Physical Tenants, no logical multi-tenancy
+#   mt    - no Physical Tenants, logical multi-tenancy enabled
+#   pt    - two Physical Tenants beside default, logical multi-tenancy inside tenanta
+#
+# Every Optimize runs as its own release on the Hub ingress host, so each
+# cluster record's optimize entry describes only that cluster's default tenant
+# and each Physical Tenant registers its own Optimize under physicalTenants.
+#
+# NOTE: avoid writing literal dollar-brace placeholder syntax in prose comments
+# in this file — the env var scanner (os.Expand-based) matches it anywhere in the
+# raw file content, including comments. Reference placeholder names in plain text
+# instead; the real placeholder syntax appears only in actual values below.
+
+global:
+  identity:
+    auth:
+      orchestration:
+        hubPingAuthorizationEnabled: true
+  topology:
+    mode: hub
+    clusters:
+      - id: plain
+        name: Dogfood Plain
+        namespace: "${PLAIN_NAMESPACE}"
+        releaseName: integration
+        host: "${PLAIN_HOST}"
+        version: "8.10.0-alpha3"
+        contextPaths:
+          orchestration: /orchestration
+          optimize: "${OPTPLAIN_OPTIMIZE_CONTEXT_PATH}"
+          connectors: /connectors
+        components:
+          orchestration:
+            enabled: true
+            clientId: orchestration-plain
+            audience: orchestration-plain-api
+            redirectUrl: "https://${PLAIN_HOST}/orchestration"
+            secret:
+              existingSecret: integration-test-credentials
+              existingSecretKey: identity-orchestration-client-token
+          optimize:
+            enabled: true
+            clientId: optimize-plain
+            audience: optimize-plain-api
+            roleName: Optimize Dogfood Plain
+            redirectUrl: "https://${HUB_HOST}${OPTPLAIN_OPTIMIZE_CONTEXT_PATH}"
+            secret:
+              existingSecret: integration-test-credentials
+              existingSecretKey: identity-optimize-client-token
+          connectors:
+            enabled: true
+            clientId: connectors-plain
+            secret:
+              existingSecret: integration-test-credentials
+              existingSecretKey: identity-connectors-client-token
+      - id: mt
+        name: Dogfood Multitenancy
+        namespace: "${MT_NAMESPACE}"
+        releaseName: integration
+        host: "${MT_HOST}"
+        version: "8.10.0-alpha3"
+        contextPaths:
+          orchestration: /orchestration
+          optimize: "${OPTMT_OPTIMIZE_CONTEXT_PATH}"
+          connectors: /connectors
+        components:
+          orchestration:
+            enabled: true
+            clientId: orchestration-mt
+            audience: orchestration-mt-api
+            redirectUrl: "https://${MT_HOST}/orchestration"
+            secret:
+              existingSecret: integration-test-credentials
+              existingSecretKey: identity-orchestration-client-token
+          optimize:
+            enabled: true
+            clientId: optimize-mt
+            audience: optimize-mt-api
+            roleName: Optimize Dogfood Multitenancy
+            redirectUrl: "https://${HUB_HOST}${OPTMT_OPTIMIZE_CONTEXT_PATH}"
+            secret:
+              existingSecret: integration-test-credentials
+              existingSecretKey: identity-optimize-client-token
+          connectors:
+            enabled: true
+            clientId: connectors-mt
+            secret:
+              existingSecret: integration-test-credentials
+              existingSecretKey: identity-connectors-client-token
+      - id: pt
+        name: Dogfood Physical Tenants
+        namespace: "${PT_NAMESPACE}"
+        releaseName: integration
+        host: "${PT_HOST}"
+        version: "8.10.0-alpha3"
+        contextPaths:
+          orchestration: /orchestration
+          optimize: "${OPTPTDEF_OPTIMIZE_CONTEXT_PATH}"
+          connectors: /connectors
+        components:
+          orchestration:
+            enabled: true
+            clientId: orchestration-pt
+            audience: orchestration-pt-api
+            redirectUrl: "https://${PT_HOST}/orchestration"
+            secret:
+              existingSecret: integration-test-credentials
+              existingSecretKey: identity-orchestration-client-token
+          optimize:
+            enabled: true
+            clientId: optimize-pt-default
+            audience: optimize-pt-default-api
+            roleName: Optimize Dogfood pt default
+            redirectUrl: "https://${HUB_HOST}${OPTPTDEF_OPTIMIZE_CONTEXT_PATH}"
+            secret:
+              existingSecret: integration-test-credentials
+              existingSecretKey: identity-optimize-default-client-token
+          connectors:
+            enabled: true
+            clientId: connectors-pt
+            secret:
+              existingSecret: integration-test-credentials
+              existingSecretKey: identity-connectors-client-token
+        physicalTenants:
+          - id: tenanta
+            components:
+              optimize:
+                enabled: true
+                clientId: optimize-pt-tenanta
+                audience: optimize-pt-tenanta-api
+                roleName: Optimize Dogfood pt tenanta
+                redirectUrl: "https://${HUB_HOST}${OPTPTTA_OPTIMIZE_CONTEXT_PATH}"
+                secret:
+                  existingSecret: integration-test-credentials
+                  existingSecretKey: identity-optimize-tenanta-client-token
+          - id: tenantb
+            components:
+              optimize:
+                enabled: true
+                clientId: optimize-pt-tenantb
+                audience: optimize-pt-tenantb-api
+                roleName: Optimize Dogfood pt tenantb
+                redirectUrl: "https://${HUB_HOST}${OPTPTTB_OPTIMIZE_CONTEXT_PATH}"
+                secret:
+                  existingSecret: integration-test-credentials
+                  existingSecretKey: identity-optimize-tenantb-client-token
+
+identity:
+  clients:
+    - id: venom
+      name: Venom
+      secret:
+        existingSecret: integration-test-credentials
+        existingSecretKey: identity-admin-client-password
+      redirectUris: /dummy
+      rootUrl: http://dummy
+      type: confidential
+      permissions:
+        - resourceServerId: camunda-identity-resource-server
+          definition: read
+        - resourceServerId: camunda-identity-resource-server
+          definition: write
+        - resourceServerId: orchestration-plain-api
+          definition: read:*
+        - resourceServerId: orchestration-plain-api
+          definition: write:*
+        - resourceServerId: optimize-plain-api
+          definition: write:*
+        - resourceServerId: orchestration-mt-api
+          definition: read:*
+        - resourceServerId: orchestration-mt-api
+          definition: write:*
+        - resourceServerId: optimize-mt-api
+          definition: write:*
+        - resourceServerId: orchestration-pt-api
+          definition: read:*
+        - resourceServerId: orchestration-pt-api
+          definition: write:*
+        - resourceServerId: optimize-pt-default-api
+          definition: write:*
+        - resourceServerId: optimize-pt-tenanta-api
+          definition: write:*
+        - resourceServerId: optimize-pt-tenantb-api
+          definition: write:*
+        - resourceServerId: web-modeler-api
+          definition: write:*

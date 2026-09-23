@@ -184,6 +184,21 @@ func (c *Client) ListPods(ctx context.Context, namespace string) (*corev1.PodLis
 	return pods, nil
 }
 
+func (c *Client) NamespaceExists(ctx context.Context, namespace string) (bool, error) {
+	if namespace == "" {
+		return false, errors.New("namespace must not be empty")
+	}
+
+	_, err := c.clientset.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
+	if apierrors.IsNotFound(err) {
+		return false, nil
+	}
+	if err != nil {
+		return false, fmt.Errorf("failed to get namespace %q: %w", namespace, err)
+	}
+	return true, nil
+}
+
 func (c *Client) EnsureNamespace(ctx context.Context, namespace string) error {
 	if namespace == "" {
 		return errors.New("namespace must not be empty")

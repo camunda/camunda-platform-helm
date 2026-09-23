@@ -1,0 +1,57 @@
+# Orchestration namespace layer for the dogfood topology's "mt" cluster (8.10).
+#
+# No Physical Tenants, logical multi-tenancy enabled — the shape for exercising
+# logical tenants without the Physical Tenant split. Optimize runs as its own
+# release (features/dogfood-optimize-mt.yaml).
+#
+# NOTE: avoid writing literal dollar-brace placeholder syntax in prose comments
+# in this file — the env var scanner (os.Expand-based) matches it anywhere in the
+# raw file content, including comments. Reference placeholder names in plain text
+# instead; the real placeholder syntax appears only in actual values below.
+
+global:
+  topology:
+    mode: orchestration
+
+orchestration:
+  multitenancy:
+    checks:
+      enabled: true
+    api:
+      enabled: true
+  security:
+    authorizations:
+      enabled: true
+  hub:
+    ping:
+      endpoint: "http://integration-web-modeler-restapi.${HUB_NAMESPACE}/modeler/api/v1/clusters"
+      credentials:
+        tokenEndpoint: "https://${HUB_HOST}/auth/realms/camunda-platform/protocol/openid-connect/token"
+  extraConfiguration:
+    - file: hub-ping.yaml
+      content: |
+        camunda:
+          hub:
+            ping:
+              enabled: true
+              pingPeriod: 30s
+              properties:
+                verification: inherited-oidc-credentials
+  data:
+    secondaryStorage:
+      type: elasticsearch
+      elasticsearch:
+        url: "${EXTERNAL_ELASTICSEARCH_SCHEME}://${EXTERNAL_ELASTICSEARCH_HOST}:${EXTERNAL_ELASTICSEARCH_PORT}"
+  index:
+    prefix: $ORCHESTRATION_INDEX_PREFIX
+  exporters:
+    zeebe:
+      enabled: true
+      index:
+        prefix: $ORCHESTRATION_INDEX_PREFIX
+
+optimize:
+  enabled: false
+
+connectors:
+  enabled: true

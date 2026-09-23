@@ -1,0 +1,57 @@
+# Orchestration namespace layer for the dogfood topology's "plain" cluster (8.10).
+#
+# No Physical Tenants and no logical multi-tenancy — the baseline shape a
+# dogfooder compares the other two clusters against. Optimize runs as its own
+# release (features/dogfood-optimize-plain.yaml), so this release runs only the
+# legacy exporter that Optimize reads.
+#
+# NOTE: avoid writing literal dollar-brace placeholder syntax in prose comments
+# in this file — the env var scanner (os.Expand-based) matches it anywhere in the
+# raw file content, including comments. Reference placeholder names in plain text
+# instead; the real placeholder syntax appears only in actual values below.
+#
+# Auth (Identity/Keycloak wiring pointed at the Hub namespace) is owned by
+# identity/keycloak-external.yaml via this release's `identity` layer selection.
+
+global:
+  topology:
+    mode: orchestration
+
+orchestration:
+  hub:
+    ping:
+      endpoint: "http://integration-web-modeler-restapi.${HUB_NAMESPACE}/modeler/api/v1/clusters"
+      credentials:
+        tokenEndpoint: "https://${HUB_HOST}/auth/realms/camunda-platform/protocol/openid-connect/token"
+  extraConfiguration:
+    - file: hub-ping.yaml
+      content: |
+        camunda:
+          hub:
+            ping:
+              enabled: true
+              pingPeriod: 30s
+              properties:
+                verification: inherited-oidc-credentials
+  data:
+    secondaryStorage:
+      type: elasticsearch
+      elasticsearch:
+        url: "${EXTERNAL_ELASTICSEARCH_SCHEME}://${EXTERNAL_ELASTICSEARCH_HOST}:${EXTERNAL_ELASTICSEARCH_PORT}"
+  index:
+    prefix: $ORCHESTRATION_INDEX_PREFIX
+  exporters:
+    # All three clusters share one Elasticsearch, so the writer prefix is
+    # per-release. This release's Optimize reads the same value back through the
+    # topology driver's per-suffix ORCHESTRATION_INDEX_PREFIX cross-ref env.
+    zeebe:
+      enabled: true
+      index:
+        prefix: $ORCHESTRATION_INDEX_PREFIX
+
+optimize:
+  # base.yaml enables Optimize for every scenario; here it is its own release.
+  enabled: false
+
+connectors:
+  enabled: true
