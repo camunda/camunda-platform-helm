@@ -3128,7 +3128,11 @@ numbered pair without declaring the zoned ones. constraints.tpl rejects setting 
 {{- /* Derive everything a consumer needs, so the scheme is decided here rather than
      re-asked at each call site. The counts are stringified because the dict is round-tripped
      through JSON, which types them as floats on the way back; the rendered output is the same
-     either way at these magnitudes, this just keeps the type explicit at the boundary. */ -}}
+     either way at these magnitudes, this just keeps the type explicit at the boundary.
+
+     NOTE: qualifiedAdvertisedHost is true for every zone-aware release and, under round-robin,
+     above one region. It differs from spansFailureDomains on a single-zone zone-aware release,
+     which qualifies the host but still gets a generated bootstrap list. */ -}}
 {{- if eq $resolved.scheme "zone-aware" -}}
   {{- $brokers := 0 -}}
   {{- $replicas := 0 -}}
@@ -3144,12 +3148,17 @@ numbered pair without declaring the zoned ones. constraints.tpl rejects setting 
   {{- $_ := set $resolved "replicationFactor" (toString $replicas) -}}
   {{- $_ := set $resolved "localReplicas" (toString $local) -}}
   {{- $_ := set $resolved "spansFailureDomains" (gt (len $resolved.zones) 1) -}}
+  {{- $_ := set $resolved "qualifiedAdvertisedHost" true -}}
 {{- else -}}
   {{- $_ := set $resolved "clusterSize" (toString .Values.orchestration.clusterSize) -}}
   {{- $_ := set $resolved "replicationFactor" (toString .Values.orchestration.replicationFactor) -}}
   {{- $_ := set $resolved "localReplicas" (toString (div .Values.orchestration.clusterSize $resolved.numberOfZones)) -}}
   {{- $_ := set $resolved "spansFailureDomains" (gt (int $resolved.numberOfZones) 1) -}}
+  {{- $_ := set $resolved "qualifiedAdvertisedHost" (gt (int $resolved.numberOfZones) 1) -}}
 {{- end -}}
+{{- /* NOTE: the per-zone counts inside zones stay numeric; only the top-level pair is converted. */ -}}
+{{- $_ := set $resolved "numberOfZones" (toString $resolved.numberOfZones) -}}
+{{- $_ := set $resolved "zoneIndex" (toString $resolved.zoneIndex) -}}
 {{- $resolved | toJson -}}
 {{- end -}}
 

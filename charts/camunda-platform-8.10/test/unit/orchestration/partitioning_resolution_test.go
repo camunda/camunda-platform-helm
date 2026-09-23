@@ -274,3 +274,80 @@ func (s *PartitioningResolutionTest) TestSpansFailureDomainsBoundary() {
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
+
+func (s *PartitioningResolutionTest) TestQualifiedAdvertisedHostDivergesFromSpansFailureDomains() {
+	const qualified = "advertisedHost: \"${K8S_NAME}.${K8S_SERVICE_NAME}.${K8S_NAMESPACE}.svc\""
+	const short = "advertisedHost: \"${K8S_NAME}.${K8S_SERVICE_NAME}\""
+
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "SingleZoneQualifiesTheHostAndStillGeneratesContactPoints",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":             "elasticsearch",
+				"orchestration.profiles.broker":                        "true",
+				"orchestration.partitioning.scheme":                    "zone-aware",
+				"orchestration.partitioning.zone":                      "only",
+				"orchestration.partitioning.zones[0].name":             "only",
+				"orchestration.partitioning.zones[0].numberOfBrokers":  "3",
+				"orchestration.partitioning.zones[0].numberOfReplicas": "3",
+				"orchestration.partitioning.zones[0].priority":         "1",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, qualified)
+				require.Contains(t, output, "initial-contact-points:")
+			},
+		},
+		{
+			Name: "MultiRegionQualifiesTheHost",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"orchestration.profiles.broker":            "true",
+				"orchestration.partitioning.numberOfZones": "2",
+				"orchestration.partitioning.zoneIndex":     "0",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, qualified)
+				require.NotContains(t, output, short)
+			},
+		},
+		{
+			Name: "SingleRegionKeepsTheShortHost",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"orchestration.profiles.broker":            "true",
+				"orchestration.partitioning.numberOfZones": "1",
+				"orchestration.partitioning.zoneIndex":     "0",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, short)
+				require.NotContains(t, output, qualified)
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *PartitioningResolutionTest) TestRegionCountsRenderAsDecimalIntegers() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "LargeRegionCountKeepsDecimalNotation",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"orchestration.profiles.broker":            "true",
+				"orchestration.partitioning.numberOfZones": "1000001",
+				"orchestration.partitioning.zoneIndex":     "1000000",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "${K8S_NAME##*-} * 1000001 + 1000000")
+				require.NotContains(t, output, "e+06")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
