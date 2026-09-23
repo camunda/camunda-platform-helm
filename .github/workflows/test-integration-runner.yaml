@@ -583,16 +583,6 @@ jobs:
       # Deploy
       ##########################################################################################################
 
-      # upgrade-minor Step 1 installs the previous chart, whose pods read keys
-      # only its own credentials ExternalSecret defines; apply it before the current one.
-      - name: Cluster Setup - Configure previous chart's TLS Certificates/Secrets
-        if: inputs.flow == 'upgrade-minor' && inputs.camunda-version-previous != ''
-        uses: ./.github/actions/cluster-setup-secrets
-        with:
-          distro-platform: ${{ inputs.distro-platform }}
-          chart-path: charts/camunda-platform-${{ inputs.camunda-version-previous }}
-          namespace: ${{ env.TEST_NAMESPACE }}
-
       - name: Cluster Setup - Configure TLS Certificates/Secrets
         uses: ./.github/actions/cluster-setup-secrets
         with:
