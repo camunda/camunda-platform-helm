@@ -1,4 +1,4 @@
-import { expect } from "@playwright/test";
+import { expect, request } from "@playwright/test";
 import { test } from "@camunda/e2e-test-suite/dist/fixtures/SM-8.10";
 
 type Environment = {
@@ -139,20 +139,25 @@ test("Hub deploys through the selected Physical Tenant environment", async ({
   );
   expect(deployResponse.ok()).toBeTruthy();
 
-  const tokenResponse = await page.request.post(
-    `${keycloakURL}/realms/camunda-platform/protocol/openid-connect/token`,
-    {
-      form: {
-        client_id: "venom",
-        client_secret: clientSecret!,
-        grant_type: "client_credentials",
+  const tokenRequest = await request.newContext();
+  let accessToken = "";
+  try {
+    const tokenResponse = await tokenRequest.post(
+      `${keycloakURL}/realms/camunda-platform/protocol/openid-connect/token`,
+      {
+        form: {
+          client_id: "venom",
+          client_secret: clientSecret!,
+          grant_type: "client_credentials",
+        },
       },
-    },
-  );
-  expect(tokenResponse.ok()).toBeTruthy();
-  const { access_token: accessToken } = (await tokenResponse.json()) as {
-    access_token: string;
-  };
+    );
+    expect(tokenResponse.ok()).toBeTruthy();
+    const tokenBody = (await tokenResponse.json()) as { access_token: string };
+    accessToken = tokenBody.access_token;
+  } finally {
+    await tokenRequest.dispose();
+  }
   const tenantPath =
     physicalTenantId === "default"
       ? ""
