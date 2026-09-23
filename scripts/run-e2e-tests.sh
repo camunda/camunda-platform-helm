@@ -93,6 +93,8 @@ build_rerun_cmd() {
   [[ -n "$LOCAL_TEST_SUITE" ]] && cmd+=(--local-test-suite "$LOCAL_TEST_SUITE")
   [[ -n "$TEST_CHART_PATH" ]] && cmd+=(--test-chart-path "$TEST_CHART_PATH")
   [[ -n "$PLAYWRIGHT_PROJECT" ]] && cmd+=(--playwright-project "$PLAYWRIGHT_PROJECT")
+  [[ -n "$ADDITIONAL_PLAYWRIGHT_PROJECT" ]] && cmd+=(--additional-playwright-project "$ADDITIONAL_PLAYWRIGHT_PROJECT")
+  [[ -n "$PHYSICAL_TENANT_ID_ARG" ]] && cmd+=(--physical-tenant-id "$PHYSICAL_TENANT_ID_ARG")
   # Without these a failing topology leg prints a rerun command that targets an
   # orchestration-only environment: it cannot reproduce the failure, and it would skip
   # Optimize again rather than reporting it.
