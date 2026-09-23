@@ -1045,7 +1045,7 @@ run_playwright_tests() {
   local rerun_cmd="${11:-}"  # Optional: command to rerun tests locally
   local is_auth0="${12:-false}"  # Optional: select auth0-smoke project (Auth0 OIDC scenario)
   local playwright_project="${13:-}"  # Optional: select a named Playwright project
-  local should_exit="${14:-true}"  # Optional: return after success when another project follows
+  local additional_playwright_project="${14:-}"  # Optional: select a second named Playwright project
 
   log "Smoke tests: $run_smoke_tests"
   log "Reporter: $reporter"
@@ -1093,6 +1093,7 @@ run_playwright_tests() {
     --shard="${shard_index}/${shard_total}"
     --reporter="$reporter,json"
   )
+  [[ -n "$additional_playwright_project" ]] && playwright_args+=(--project="$additional_playwright_project")
   [[ -n "$test_exclude" ]] && playwright_args+=(--grep-invert="$test_exclude")
   [[ -n "$trace_flag" ]] && playwright_args+=($trace_flag)
   [[ -n "${PLAYWRIGHT_E2E_VIDEO:-}" ]] && playwright_args+=(--video="$PLAYWRIGHT_E2E_VIDEO")
@@ -1118,7 +1119,7 @@ run_playwright_tests() {
     npx playwright show-report "${PLAYWRIGHT_HTML_REPORT:-playwright-report}"
   fi
 
-  _handle_playwright_result "$playwright_rc" "All Playwright tests" "$rerun_cmd" "$should_exit"
+  _handle_playwright_result "$playwright_rc" "All Playwright tests" "$rerun_cmd" "true"
 }
 
 # Run playwright tests for hybrid auth - runs specific test files with a specific auth type
