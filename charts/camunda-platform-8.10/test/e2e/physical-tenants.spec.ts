@@ -75,15 +75,23 @@ test("Hub deploys through the selected Physical Tenant environment", async ({
   await expect(
     page.locator('[data-test="step-environments"][data-state="active"]'),
   ).toBeVisible();
+  const environmentName =
+    physicalTenantId === "default" ? "Orchestration A" : physicalTenantId!;
+  await page
+    .getByRole("button", {
+      name: `Select ${environmentName} (Orchestration A)`,
+    })
+    .click();
   await submit.click();
   await page.waitForURL(/\/workspaces\/[^/]+\/projects$/);
   const workspaceId = new URL(page.url()).pathname.split("/").at(-2)!;
-
-  const assignmentResponse = await page.request.put(
+  const assignmentResponse = await page.request.get(
     `${webModelerURL}/api/internal/v2/workspaces/${workspaceId}/environments`,
-    { data: { environmentIds: [environment!.id] }, headers },
+    { headers },
   );
   expect(assignmentResponse.ok()).toBeTruthy();
+  const assignments = (await assignmentResponse.json()) as Environment[];
+  expect(assignments.map(({ id }) => id)).toContain(environment!.id);
 
   const projectResponse = await page.request.post(
     `${webModelerURL}/api/internal/v2/projects`,
