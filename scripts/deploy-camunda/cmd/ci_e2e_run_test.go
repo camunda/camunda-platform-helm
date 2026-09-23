@@ -51,8 +51,8 @@ func TestReportE2ERunWritesOutputsAndFailsOnBlocking(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			_ = os.Remove(outputPath)
 			err := reportE2ERun(e2erun.Result{Legs: []e2erun.LegResult{
-				{Leg: e2erun.Leg{ID: "ok", Blocking: true}},
-				{Leg: e2erun.Leg{ID: "bad", Blocking: tc.blocking}, Err: errors.New("boom")},
+				{Leg: e2erun.Leg{ID: "ok", Blocking: true}, Category: e2erun.CategoryPassed},
+				{Leg: e2erun.Leg{ID: "bad", Blocking: tc.blocking}, Category: e2erun.CategoryTestsFailed, Err: errors.New("boom")},
 			}})
 			if (err != nil) != tc.wantErr {
 				t.Fatalf("err = %v, wantErr %t", err, tc.wantErr)
@@ -88,7 +88,7 @@ func TestCIE2ERunPlanWritesCountAndEnforcesMax(t *testing.T) {
 		t.Fatalf("plan: %v", err)
 	}
 	got, _ := os.ReadFile(outputPath)
-	if string(got) != "count=2\n" {
+	if string(got) != "count=2\nblocking=[true,false]\n" {
 		t.Fatalf("output = %q", got)
 	}
 

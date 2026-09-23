@@ -25,10 +25,13 @@ import (
 )
 
 type storedResult struct {
-	ID       string `json:"id"`
-	Blocking bool   `json:"blocking"`
-	Error    string `json:"error,omitempty"`
-	Duration string `json:"duration"`
+	ID       string     `json:"id"`
+	Blocking bool       `json:"blocking"`
+	Category string     `json:"category"`
+	Error    string     `json:"error,omitempty"`
+	Duration string     `json:"duration"`
+	Stats    *TestStats `json:"stats,omitempty"`
+	Warnings []string   `json:"warnings,omitempty"`
 }
 
 func resultPath(artifactsDir string, index int) string {
@@ -38,7 +41,10 @@ func resultPath(artifactsDir string, index int) string {
 // SaveResult records the outcome of leg index so a later Report call can
 // aggregate legs that ran in separate workflow steps.
 func SaveResult(artifactsDir string, index int, lr LegResult) error {
-	stored := storedResult{ID: lr.Leg.ID, Blocking: lr.Leg.Blocking, Duration: lr.Duration.String()}
+	stored := storedResult{
+		ID: lr.Leg.ID, Blocking: lr.Leg.Blocking, Category: lr.Category,
+		Duration: lr.Duration.String(), Stats: lr.Stats, Warnings: lr.Warnings,
+	}
 	if lr.Err != nil {
 		stored.Error = lr.Err.Error()
 	}
@@ -54,19 +60,23 @@ func SaveResult(artifactsDir string, index int, lr LegResult) error {
 }
 
 // LoadResults returns the outcome of every planned leg. A leg without a
-// recorded result, for example because its step never ran, counts as failed.
-func LoadResults(artifactsDir string, legs []Leg) Result {
+// recorded result counts as failed: not-run normally, cancelled when the job
+// was cancelled (jobStatus is the workflow's job.status).
+func LoadResults(artifactsDir string, legs []Leg, jobStatus string) Result {
 	result := Result{}
 	for i, leg := range legs {
 		lr := LegResult{Leg: leg}
 		data, err := os.ReadFile(resultPath(artifactsDir, i))
 		var stored storedResult
 		switch {
+		case err != nil && jobStatus == "cancelled":
+			lr.Err, lr.Category = errors.New("the job was cancelled before this leg recorded a result"), CategoryCancelled
 		case err != nil:
-			lr.Err = fmt.Errorf("no result recorded; the leg did not run")
+			lr.Err, lr.Category = fmt.Errorf("no result recorded; the leg step was skipped or errored before recording, see the E2E - 🧪 Run Playwright leg %d 🧪 step", i+1), CategoryNotRun
 		case json.Unmarshal(data, &stored) != nil || stored.ID != leg.ID:
-			lr.Err = fmt.Errorf("result file does not match the planned leg")
+			lr.Err, lr.Category = fmt.Errorf("result file does not match the planned leg"), CategoryNotRun
 		default:
+			lr.Category, lr.Stats, lr.Warnings = stored.Category, stored.Stats, stored.Warnings
 			if stored.Error != "" {
 				lr.Err = errors.New(stored.Error)
 			}

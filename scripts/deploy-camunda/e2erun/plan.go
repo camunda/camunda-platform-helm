@@ -147,6 +147,13 @@ func Plan(in PlanInput) ([]Leg, error) {
 			},
 		})
 	}
+	seen := map[string]bool{}
+	for _, leg := range legs {
+		if seen[leg.ID] {
+			return nil, fmt.Errorf("duplicate e2e leg id %q; legs would overwrite each other's reports", leg.ID)
+		}
+		seen[leg.ID] = true
+	}
 	return legs, nil
 }
 

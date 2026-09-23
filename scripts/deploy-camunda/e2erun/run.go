@@ -15,6 +15,7 @@
 package e2erun
 
 import (
+	"archive/zip"
 	"context"
 	"errors"
 	"fmt"
@@ -26,11 +27,31 @@ import (
 	"time"
 )
 
+// Leg outcome categories. They separate product failures from environment
+// failures so the report says where to look.
+const (
+	CategoryPassed          = "passed"
+	CategoryTestsFailed     = "tests-failed"
+	CategorySetupFailed     = "setup-failed"
+	CategoryPreflightFailed = "preflight-failed"
+	CategoryTimedOut        = "timed-out"
+	CategoryCancelled       = "cancelled"
+	CategoryNotRun          = "not-run"
+)
+
+const (
+	preflightTimeout   = time.Minute
+	diagnosticsTimeout = 5 * time.Minute
+)
+
 // ExecFunc runs one leg's script and returns its error.
 type ExecFunc func(ctx context.Context, leg Leg, args, env []string) error
 
 // DiagnosticsFunc writes namespace diagnostics for a failed leg to path.
 type DiagnosticsFunc func(ctx context.Context, leg Leg, path string) error
+
+// PreflightFunc checks that every namespace of a leg is reachable.
+type PreflightFunc func(ctx context.Context, leg Leg) error
 
 // Runner executes planned legs and collects their artifacts.
 type Runner struct {
@@ -41,6 +62,7 @@ type Runner struct {
 	Exclude      string
 	Exec         ExecFunc
 	Diagnostics  DiagnosticsFunc
+	Preflight    PreflightFunc
 	Log          io.Writer
 	// ScrubEnv names variables removed from every leg's environment.
 	ScrubEnv []string
@@ -50,8 +72,14 @@ type Runner struct {
 type LegResult struct {
 	Leg      Leg
 	Err      error
+	Category string
 	Duration time.Duration
+	Stats    *TestStats
+	Warnings []string
 }
+
+// Failed reports whether the leg did not pass.
+func (l LegResult) Failed() bool { return l.Err != nil }
 
 // Result is the outcome of all legs.
 type Result struct {
@@ -66,7 +94,7 @@ func (r Result) NonBlockingFailed() bool { return r.failed(false) }
 
 func (r Result) failed(blocking bool) bool {
 	for _, l := range r.Legs {
-		if l.Err != nil && l.Leg.Blocking == blocking {
+		if l.Failed() && l.Leg.Blocking == blocking {
 			return true
 		}
 	}
@@ -84,44 +112,95 @@ func (r Runner) Run(ctx context.Context, legs []Leg) Result {
 	return result
 }
 
-// RunLeg executes one leg, writes diagnostics when it fails and moves its
-// reports into ArtifactsDir.
+// RunLeg executes one leg, writes diagnostics when it fails, moves its reports
+// into ArtifactsDir and classifies the outcome.
 func (r Runner) RunLeg(ctx context.Context, leg Leg) LegResult {
-	fmt.Fprintf(r.Log, " %s (namespace %s, blocking %t)\n", leg.ID, leg.Namespace, leg.Blocking)
+	fmt.Fprintf(r.Log, " %s (namespace %s, blocking %t, timeout %s)\n", leg.ID, leg.Namespace, leg.Blocking, leg.Timeout)
+	start := time.Now()
+	lr := LegResult{Leg: leg}
+
+	if r.Preflight != nil {
+		pctx, cancel := context.WithTimeout(ctx, preflightTimeout)
+		err := r.Preflight(pctx, leg)
+		cancel()
+		if err != nil {
+			lr.Err, lr.Category = err, CategoryPreflightFailed
+			lr.Duration = time.Since(start).Round(time.Second)
+			r.logOutcome(lr)
+			return lr
+		}
+	}
+
 	if err := clearSuiteOutputs(leg); err != nil {
-		fmt.Fprintf(r.Log, "warning: %v\n", err)
+		lr.Warnings = append(lr.Warnings, err.Error())
 	}
 
 	legCtx, cancel := ctx, context.CancelFunc(func() {})
 	if leg.Timeout > 0 {
 		legCtx, cancel = context.WithTimeout(ctx, leg.Timeout)
 	}
-	start := time.Now()
 	err := r.Exec(legCtx, leg, ScriptArgs(leg, r.Scenario), r.env(leg))
-	if err != nil && errors.Is(legCtx.Err(), context.DeadlineExceeded) {
-		err = fmt.Errorf("timed out after %s: %w", leg.Timeout, err)
-	}
+	timedOut := errors.Is(legCtx.Err(), context.DeadlineExceeded)
 	cancel()
-	lr := LegResult{Leg: leg, Err: err, Duration: time.Since(start).Round(time.Second)}
+	lr.Duration = time.Since(start).Round(time.Second)
 
-	if err != nil && r.Diagnostics != nil {
+	collected, cErr := collectArtifacts(leg, r.ArtifactsDir)
+	lr.Warnings = append(lr.Warnings, collected...)
+	if cErr != nil {
+		lr.Warnings = append(lr.Warnings, "collect artifacts: "+cErr.Error())
+	}
+	stats, sErr := ReadTestStats(filepath.Join(r.ArtifactsDir, "test-results", leg.ID, "playwright-results.json"))
+	lr.Stats = stats
+
+	switch {
+	case err == nil:
+		lr.Category = CategoryPassed
+		switch {
+		case sErr != nil:
+			lr.Warnings = append(lr.Warnings, "no readable Playwright JSON results: "+sErr.Error())
+		case stats.Executed() == 0:
+			lr.Warnings = append(lr.Warnings, "the leg passed without executing a test; check the project name and --grep-invert exclusions")
+		}
+		if stats != nil && stats.Flaky > 0 {
+			lr.Warnings = append(lr.Warnings, fmt.Sprintf("%d flaky test(s) passed on retry: %s", stats.Flaky, firstN(stats.FlakyTests, 3)))
+		}
+	case ctx.Err() != nil:
+		lr.Err, lr.Category = fmt.Errorf("cancelled while running: %w", err), CategoryCancelled
+	case timedOut:
+		lr.Err, lr.Category = fmt.Errorf("exceeded its %s limit; the Playwright process group was stopped: %w", leg.Timeout, err), CategoryTimedOut
+	case stats != nil && (stats.Failed > 0 || stats.GlobalErrors > 0):
+		lr.Err, lr.Category = fmt.Errorf("%d failed, %d flaky, %d global error(s): %s", stats.Failed, stats.Flaky, stats.GlobalErrors, firstN(stats.FailedTests, 3)), CategoryTestsFailed
+	default:
+		lr.Err, lr.Category = fmt.Errorf("run-e2e-tests.sh failed (%v) before Playwright reported a failing test; check env rendering, ingress readiness and npm install in the step log", err), CategorySetupFailed
+	}
+
+	if lr.Failed() && r.Diagnostics != nil && ctx.Err() == nil {
 		path := filepath.Join(r.ArtifactsDir, "diagnostics", leg.ID+".txt")
 		if mkErr := os.MkdirAll(filepath.Dir(path), 0o755); mkErr == nil {
-			if dErr := r.Diagnostics(ctx, leg, path); dErr != nil {
-				fmt.Fprintf(r.Log, "warning: diagnostics for %s: %v\n", leg.ID, dErr)
+			dctx, dcancel := context.WithTimeout(ctx, diagnosticsTimeout)
+			if dErr := r.Diagnostics(dctx, leg, path); dErr != nil {
+				lr.Warnings = append(lr.Warnings, "namespace diagnostics incomplete: "+dErr.Error())
 			}
+			dcancel()
 		}
 	}
-	if cErr := collectArtifacts(leg, r.ArtifactsDir); cErr != nil {
-		fmt.Fprintf(r.Log, "warning: collect artifacts for %s: %v\n", leg.ID, cErr)
-	}
 
-	status := "passed"
-	if err != nil {
-		status = fmt.Sprintf("failed: %v", err)
-	}
-	fmt.Fprintf(r.Log, "<== e2e leg %s %s in %s\n", leg.ID, status, lr.Duration)
+	r.logOutcome(lr)
 	return lr
+}
+
+func (r Runner) logOutcome(lr LegResult) {
+	status := lr.Category
+	if lr.Err != nil {
+		status += ": " + lr.Err.Error()
+	}
+	if lr.Stats != nil {
+		status += fmt.Sprintf(" (tests: %s)", lr.Stats)
+	}
+	fmt.Fprintf(r.Log, "<== e2e leg %s %s in %s\n", lr.Leg.ID, status, lr.Duration)
+	for _, w := range lr.Warnings {
+		fmt.Fprintf(r.Log, "    warning: %s\n", w)
+	}
 }
 
 func (r Runner) env(leg Leg) []string {
@@ -153,7 +232,9 @@ func (r Runner) env(leg Leg) []string {
 	return env
 }
 
-// ScriptExec runs scripts/run-e2e-tests.sh from repoRoot/scripts.
+// ScriptExec runs scripts/run-e2e-tests.sh from repoRoot/scripts in its own
+// process group, so a timeout or cancellation stops Playwright and its browsers
+// rather than only the bash wrapper.
 func ScriptExec(repoRoot string, stdout, stderr io.Writer) ExecFunc {
 	return func(ctx context.Context, leg Leg, args, env []string) error {
 		dir := filepath.Join(repoRoot, "scripts")
@@ -163,7 +244,32 @@ func ScriptExec(repoRoot string, stdout, stderr io.Writer) ExecFunc {
 		cmd.Stdout = stdout
 		cmd.Stderr = stderr
 		cmd.WaitDelay = 30 * time.Second
-		return cmd.Run()
+		setProcessGroup(cmd)
+		err := cmd.Run()
+		killProcessGroup(cmd)
+		return err
+	}
+}
+
+// KubectlPreflight checks every namespace of a leg with kubectl, telling an
+// expired or missing cluster credential apart from a reaped namespace.
+func KubectlPreflight() PreflightFunc {
+	return func(ctx context.Context, leg Leg) error {
+		for _, ns := range leg.Namespaces() {
+			out, err := exec.CommandContext(ctx, "kubectl", "get", "namespace", ns, "-o", "name").CombinedOutput()
+			if err == nil {
+				continue
+			}
+			msg := firstLine(string(out))
+			if strings.Contains(msg, "NotFound") || strings.Contains(msg, "not found") {
+				return fmt.Errorf("namespace %s not found; its cleaner/janitor TTL may have reaped it", ns)
+			}
+			if msg == "" {
+				msg = err.Error()
+			}
+			return fmt.Errorf("cannot reach the cluster for namespace %s (credentials may have expired): %s", ns, msg)
+		}
+		return nil
 	}
 }
 
@@ -206,22 +312,35 @@ func clearSuiteOutputs(leg Leg) error {
 //
 //	<artifacts>/blob-report/<leg-id>-<file>   merged into one HTML report
 //	<artifacts>/test-results/<leg-id>/...     JSON results, traces, screenshots
-func collectArtifacts(leg Leg, artifactsDir string) error {
+//
+// A blob zip that does not open, left by a killed Playwright, is renamed to
+// *.corrupt so it cannot fail the merge of every other leg's report. The
+// returned strings are warnings for the leg result.
+func collectArtifacts(leg Leg, artifactsDir string) ([]string, error) {
 	dir := leg.SuiteDir()
+	var warnings []string
 	var errs []error
 
 	blobDir := filepath.Join(dir, "blob-report")
 	if entries, err := os.ReadDir(blobDir); err == nil {
 		target := filepath.Join(artifactsDir, "blob-report")
 		if err := os.MkdirAll(target, 0o755); err != nil {
-			return err
+			return nil, err
 		}
 		for _, e := range entries {
 			if e.IsDir() {
 				continue
 			}
-			if err := os.Rename(filepath.Join(blobDir, e.Name()), filepath.Join(target, leg.ID+"-"+e.Name())); err != nil {
+			dest := filepath.Join(target, leg.ID+"-"+e.Name())
+			if err := os.Rename(filepath.Join(blobDir, e.Name()), dest); err != nil {
 				errs = append(errs, err)
+				continue
+			}
+			if strings.HasSuffix(dest, ".zip") && !validZip(dest) {
+				if err := os.Rename(dest, dest+".corrupt"); err != nil {
+					errs = append(errs, err)
+				}
+				warnings = append(warnings, fmt.Sprintf("blob report %s is truncated and was left out of the merged HTML report", e.Name()))
 			}
 		}
 	} else if !os.IsNotExist(err) {
@@ -232,7 +351,7 @@ func collectArtifacts(leg Leg, artifactsDir string) error {
 	if _, err := os.Stat(results); err == nil {
 		target := filepath.Join(artifactsDir, "test-results", leg.ID)
 		if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
-			return err
+			return warnings, err
 		}
 		if err := os.RemoveAll(target); err != nil {
 			errs = append(errs, err)
@@ -243,19 +362,36 @@ func collectArtifacts(leg Leg, artifactsDir string) error {
 	} else if !os.IsNotExist(err) {
 		errs = append(errs, err)
 	}
-	return errors.Join(errs...)
+	return warnings, errors.Join(errs...)
 }
 
-// Summary renders a Markdown table of leg outcomes.
-func Summary(r Result) string {
-	var b strings.Builder
-	b.WriteString("## E2E legs\n\n| Leg | Namespace | Blocking | Result | Duration |\n|---|---|---|---|---|\n")
-	for _, l := range r.Legs {
-		status := "passed"
-		if l.Err != nil {
-			status = "failed"
-		}
-		fmt.Fprintf(&b, "| `%s` | `%s` | %t | %s | %s |\n", l.Leg.ID, l.Leg.Namespace, l.Leg.Blocking, status, l.Duration)
+func validZip(path string) bool {
+	r, err := zip.OpenReader(path)
+	if err != nil {
+		return false
 	}
-	return b.String()
+	_ = r.Close()
+	return true
+}
+
+func firstLine(s string) string {
+	s = strings.TrimSpace(s)
+	if i := strings.IndexByte(s, '\n'); i >= 0 {
+		s = s[:i]
+	}
+	const max = 300
+	if len(s) > max {
+		s = s[:max] + "..."
+	}
+	return s
+}
+
+func firstN(items []string, n int) string {
+	if len(items) == 0 {
+		return "no test titles recorded"
+	}
+	if len(items) <= n {
+		return strings.Join(items, "; ")
+	}
+	return strings.Join(items[:n], "; ") + fmt.Sprintf("; and %d more", len(items)-n)
 }

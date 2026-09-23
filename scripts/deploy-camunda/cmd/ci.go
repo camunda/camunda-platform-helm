@@ -17,10 +17,13 @@ package cmd
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"strconv"
+	"syscall"
 
 	"scripts/camunda-core/pkg/ciworkflow"
 	"scripts/camunda-core/pkg/ghactions"
@@ -67,6 +70,7 @@ func newCIE2ERunCommand() *cobra.Command {
 		legIndex     int
 		reportOnly   bool
 		maxLegs      int
+		jobStatus    string
 	)
 
 	cmd := &cobra.Command{
@@ -76,8 +80,8 @@ func newCIE2ERunCommand() *cobra.Command {
 
 Modes:
   (none)          run every leg sequentially, then report
-  --plan          write the leg count to $GITHUB_OUTPUT as 'count'
-  --leg-index N   run leg N and record its result; a test failure exits 0
+  --plan          write 'count' and a JSON 'blocking' array to $GITHUB_OUTPUT
+  --leg-index N   run leg N and record its result; exits 1 when the leg failed
   --report        aggregate recorded results; exits 1 when a blocking leg
                   failed or never recorded a result
 
@@ -115,6 +119,8 @@ to $GITHUB_OUTPUT and a leg table to $GITHUB_STEP_SUMMARY.`,
 			if err != nil {
 				return err
 			}
+			ctx, stop := signal.NotifyContext(cmd.Context(), syscall.SIGINT, syscall.SIGTERM)
+			defer stop()
 
 			switch {
 			case planOnly:
@@ -124,9 +130,21 @@ to $GITHUB_OUTPUT and a leg table to $GITHUB_STEP_SUMMARY.`,
 				for i, leg := range legs {
 					fmt.Fprintf(cmd.OutOrStdout(), "leg %d: %s (namespace %s, blocking %t)\n", i, leg.ID, leg.Namespace, leg.Blocking)
 				}
-				return ghactions.NewGitHubOutput().Set("count", strconv.Itoa(len(legs)))
+				blocking := make([]bool, len(legs))
+				for i, leg := range legs {
+					blocking[i] = leg.Blocking
+				}
+				blockingJSON, err := json.Marshal(blocking)
+				if err != nil {
+					return err
+				}
+				out := ghactions.NewGitHubOutput()
+				if err := out.Set("count", strconv.Itoa(len(legs))); err != nil {
+					return err
+				}
+				return out.Set("blocking", string(blockingJSON))
 			case reportOnly:
-				return reportE2ERun(e2erun.LoadResults(artifactsDir, legs))
+				return reportE2ERun(e2erun.LoadResults(artifactsDir, legs, jobStatus))
 			}
 
 			runner := e2erun.Runner{
@@ -138,6 +156,7 @@ to $GITHUB_OUTPUT and a leg table to $GITHUB_STEP_SUMMARY.`,
 				Exec:         e2erun.ScriptExec(in.RepoRoot, os.Stdout, os.Stderr),
 				Diagnostics:  e2erun.DeployCamundaDiagnostics(),
 				Log:          cmd.OutOrStdout(),
+				Preflight:    e2erun.KubectlPreflight(),
 				ScrubEnv:     e2erun.MappedEnvNames(scrubMapping),
 			}
 
@@ -145,16 +164,12 @@ to $GITHUB_OUTPUT and a leg table to $GITHUB_STEP_SUMMARY.`,
 				if legIndex >= len(legs) {
 					return fmt.Errorf("--leg-index %d out of range: %d legs planned", legIndex, len(legs))
 				}
-				lr := runner.RunLeg(cmd.Context(), legs[legIndex])
+				lr := runner.RunLeg(ctx, legs[legIndex])
 				if err := e2erun.SaveResult(artifactsDir, legIndex, lr); err != nil {
 					return fmt.Errorf("record result of leg %s: %w", lr.Leg.ID, err)
 				}
-				if lr.Err != nil {
-					level := "warning"
-					if lr.Leg.Blocking {
-						level = "error"
-					}
-					fmt.Fprintf(os.Stdout, "::%s::e2e leg %s failed: %v\n", level, lr.Leg.ID, lr.Err)
+				if lr.Failed() {
+					return fmt.Errorf("e2e leg %s %s: %w", lr.Leg.ID, lr.Category, lr.Err)
 				}
 				return nil
 			}
@@ -163,7 +178,7 @@ to $GITHUB_OUTPUT and a leg table to $GITHUB_STEP_SUMMARY.`,
 				fmt.Fprintln(cmd.OutOrStdout(), "no e2e legs to run")
 				return nil
 			}
-			return reportE2ERun(runner.Run(cmd.Context(), legs))
+			return reportE2ERun(runner.Run(ctx, legs))
 		},
 	}
 
@@ -185,6 +200,7 @@ to $GITHUB_OUTPUT and a leg table to $GITHUB_STEP_SUMMARY.`,
 	f.IntVar(&legIndex, "leg-index", -1, "run only this leg (0-based) and record its result")
 	f.BoolVar(&reportOnly, "report", false, "aggregate recorded leg results")
 	f.IntVar(&maxLegs, "max-legs", 0, "with --plan, fail when more legs are planned than this")
+	f.StringVar(&jobStatus, "job-status", "", "with --report, the workflow job.status; labels legs without results as cancelled when it is 'cancelled'")
 	_ = cmd.MarkFlagRequired("chart-dir")
 	_ = cmd.MarkFlagRequired("namespace")
 
@@ -192,17 +208,9 @@ to $GITHUB_OUTPUT and a leg table to $GITHUB_STEP_SUMMARY.`,
 }
 
 func reportE2ERun(result e2erun.Result) error {
-	for _, l := range result.Legs {
-		if l.Err == nil {
-			continue
-		}
-		level := "warning"
-		if l.Leg.Blocking {
-			level = "error"
-		}
-		fmt.Fprintf(os.Stdout, "::%s::e2e leg %s failed: %v\n", level, l.Leg.ID, l.Err)
+	for _, line := range e2erun.Annotations(result) {
+		fmt.Fprintln(os.Stdout, line)
 	}
-
 	if path := os.Getenv("GITHUB_STEP_SUMMARY"); path != "" {
 		if f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644); err == nil {
 			_, _ = f.WriteString(e2erun.Summary(result))

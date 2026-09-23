@@ -897,6 +897,7 @@ jobs:
 
       - name: E2E - Refresh cluster auth before leg 1
         if: ${{ !cancelled() && steps.deploy.outcome == 'success' && steps.e2e-plan.outcome == 'success' && fromJSON(steps.e2e-plan.outputs.count) > 0 && inputs.auth-data == '' }}
+        continue-on-error: true
         uses: ./.github/actions/cluster-auth
         with:
           platform: ${{ inputs.distro-platform }}
@@ -915,6 +916,7 @@ jobs:
 
       - name: E2E - 🧪 Run Playwright leg 1 🧪
         if: ${{ !cancelled() && steps.deploy.outcome == 'success' && steps.e2e-plan.outcome == 'success' && fromJSON(steps.e2e-plan.outputs.count) > 0 }}
+        continue-on-error: ${{ steps.e2e-plan.outputs.blocking != '' && !fromJSON(steps.e2e-plan.outputs.blocking)[0] }}
         env:
           CAMUNDA_HELM_DIR: ${{ inputs.camunda-helm-dir }}
           E2E_STAGE: ${{ inputs.flow == 'install' && 'after-install' || 'after-upgrade' }}
@@ -957,6 +959,7 @@ jobs:
 
       - name: E2E - Refresh cluster auth before leg 2
         if: ${{ !cancelled() && steps.deploy.outcome == 'success' && steps.e2e-plan.outcome == 'success' && fromJSON(steps.e2e-plan.outputs.count) > 1 && inputs.auth-data == '' }}
+        continue-on-error: true
         uses: ./.github/actions/cluster-auth
         with:
           platform: ${{ inputs.distro-platform }}
@@ -975,6 +978,7 @@ jobs:
 
       - name: E2E - 🧪 Run Playwright leg 2 🧪
         if: ${{ !cancelled() && steps.deploy.outcome == 'success' && steps.e2e-plan.outcome == 'success' && fromJSON(steps.e2e-plan.outputs.count) > 1 }}
+        continue-on-error: ${{ steps.e2e-plan.outputs.blocking != '' && !fromJSON(steps.e2e-plan.outputs.blocking)[1] }}
         env:
           CAMUNDA_HELM_DIR: ${{ inputs.camunda-helm-dir }}
           E2E_STAGE: ${{ inputs.flow == 'install' && 'after-install' || 'after-upgrade' }}
@@ -1017,6 +1021,7 @@ jobs:
 
       - name: E2E - Refresh cluster auth before leg 3
         if: ${{ !cancelled() && steps.deploy.outcome == 'success' && steps.e2e-plan.outcome == 'success' && fromJSON(steps.e2e-plan.outputs.count) > 2 && inputs.auth-data == '' }}
+        continue-on-error: true
         uses: ./.github/actions/cluster-auth
         with:
           platform: ${{ inputs.distro-platform }}
@@ -1035,6 +1040,7 @@ jobs:
 
       - name: E2E - 🧪 Run Playwright leg 3 🧪
         if: ${{ !cancelled() && steps.deploy.outcome == 'success' && steps.e2e-plan.outcome == 'success' && fromJSON(steps.e2e-plan.outputs.count) > 2 }}
+        continue-on-error: ${{ steps.e2e-plan.outputs.blocking != '' && !fromJSON(steps.e2e-plan.outputs.blocking)[2] }}
         env:
           CAMUNDA_HELM_DIR: ${{ inputs.camunda-helm-dir }}
           E2E_STAGE: ${{ inputs.flow == 'install' && 'after-install' || 'after-upgrade' }}
@@ -1077,6 +1083,7 @@ jobs:
 
       - name: E2E - Refresh cluster auth before leg 4
         if: ${{ !cancelled() && steps.deploy.outcome == 'success' && steps.e2e-plan.outcome == 'success' && fromJSON(steps.e2e-plan.outputs.count) > 3 && inputs.auth-data == '' }}
+        continue-on-error: true
         uses: ./.github/actions/cluster-auth
         with:
           platform: ${{ inputs.distro-platform }}
@@ -1095,6 +1102,7 @@ jobs:
 
       - name: E2E - 🧪 Run Playwright leg 4 🧪
         if: ${{ !cancelled() && steps.deploy.outcome == 'success' && steps.e2e-plan.outcome == 'success' && fromJSON(steps.e2e-plan.outputs.count) > 3 }}
+        continue-on-error: ${{ steps.e2e-plan.outputs.blocking != '' && !fromJSON(steps.e2e-plan.outputs.blocking)[3] }}
         env:
           CAMUNDA_HELM_DIR: ${{ inputs.camunda-helm-dir }}
           E2E_STAGE: ${{ inputs.flow == 'install' && 'after-install' || 'after-upgrade' }}
@@ -1137,6 +1145,7 @@ jobs:
 
       - name: E2E - Refresh cluster auth before leg 5
         if: ${{ !cancelled() && steps.deploy.outcome == 'success' && steps.e2e-plan.outcome == 'success' && fromJSON(steps.e2e-plan.outputs.count) > 4 && inputs.auth-data == '' }}
+        continue-on-error: true
         uses: ./.github/actions/cluster-auth
         with:
           platform: ${{ inputs.distro-platform }}
@@ -1155,6 +1164,7 @@ jobs:
 
       - name: E2E - 🧪 Run Playwright leg 5 🧪
         if: ${{ !cancelled() && steps.deploy.outcome == 'success' && steps.e2e-plan.outcome == 'success' && fromJSON(steps.e2e-plan.outputs.count) > 4 }}
+        continue-on-error: ${{ steps.e2e-plan.outputs.blocking != '' && !fromJSON(steps.e2e-plan.outputs.blocking)[4] }}
         env:
           CAMUNDA_HELM_DIR: ${{ inputs.camunda-helm-dir }}
           E2E_STAGE: ${{ inputs.flow == 'install' && 'after-install' || 'after-upgrade' }}
@@ -1197,6 +1207,7 @@ jobs:
 
       - name: E2E - Refresh cluster auth before leg 6
         if: ${{ !cancelled() && steps.deploy.outcome == 'success' && steps.e2e-plan.outcome == 'success' && fromJSON(steps.e2e-plan.outputs.count) > 5 && inputs.auth-data == '' }}
+        continue-on-error: true
         uses: ./.github/actions/cluster-auth
         with:
           platform: ${{ inputs.distro-platform }}
@@ -1215,6 +1226,7 @@ jobs:
 
       - name: E2E - 🧪 Run Playwright leg 6 🧪
         if: ${{ !cancelled() && steps.deploy.outcome == 'success' && steps.e2e-plan.outcome == 'success' && fromJSON(steps.e2e-plan.outputs.count) > 5 }}
+        continue-on-error: ${{ steps.e2e-plan.outputs.blocking != '' && !fromJSON(steps.e2e-plan.outputs.blocking)[5] }}
         env:
           CAMUNDA_HELM_DIR: ${{ inputs.camunda-helm-dir }}
           E2E_STAGE: ${{ inputs.flow == 'install' && 'after-install' || 'after-upgrade' }}
@@ -1257,6 +1269,7 @@ jobs:
 
       - name: E2E - Refresh cluster auth before leg 7
         if: ${{ !cancelled() && steps.deploy.outcome == 'success' && steps.e2e-plan.outcome == 'success' && fromJSON(steps.e2e-plan.outputs.count) > 6 && inputs.auth-data == '' }}
+        continue-on-error: true
         uses: ./.github/actions/cluster-auth
         with:
           platform: ${{ inputs.distro-platform }}
@@ -1275,6 +1288,7 @@ jobs:
 
       - name: E2E - 🧪 Run Playwright leg 7 🧪
         if: ${{ !cancelled() && steps.deploy.outcome == 'success' && steps.e2e-plan.outcome == 'success' && fromJSON(steps.e2e-plan.outputs.count) > 6 }}
+        continue-on-error: ${{ steps.e2e-plan.outputs.blocking != '' && !fromJSON(steps.e2e-plan.outputs.blocking)[6] }}
         env:
           CAMUNDA_HELM_DIR: ${{ inputs.camunda-helm-dir }}
           E2E_STAGE: ${{ inputs.flow == 'install' && 'after-install' || 'after-upgrade' }}
@@ -1317,6 +1331,7 @@ jobs:
 
       - name: E2E - Refresh cluster auth before leg 8
         if: ${{ !cancelled() && steps.deploy.outcome == 'success' && steps.e2e-plan.outcome == 'success' && fromJSON(steps.e2e-plan.outputs.count) > 7 && inputs.auth-data == '' }}
+        continue-on-error: true
         uses: ./.github/actions/cluster-auth
         with:
           platform: ${{ inputs.distro-platform }}
@@ -1335,6 +1350,7 @@ jobs:
 
       - name: E2E - 🧪 Run Playwright leg 8 🧪
         if: ${{ !cancelled() && steps.deploy.outcome == 'success' && steps.e2e-plan.outcome == 'success' && fromJSON(steps.e2e-plan.outputs.count) > 7 }}
+        continue-on-error: ${{ steps.e2e-plan.outputs.blocking != '' && !fromJSON(steps.e2e-plan.outputs.blocking)[7] }}
         env:
           CAMUNDA_HELM_DIR: ${{ inputs.camunda-helm-dir }}
           E2E_STAGE: ${{ inputs.flow == 'install' && 'after-install' || 'after-upgrade' }}
@@ -1416,6 +1432,7 @@ jobs:
             --exclude "${E2E_EXCLUDE}" \
             --scrub-vault-mapping "${E2E_SCRUB_VAULT_MAPPING}" \
             --artifacts-dir "${GITHUB_WORKSPACE}/e2e-artifacts" \
+            --job-status "${{ job.status }}" \
             --report
 
       - name: E2E - Merge HTML report
@@ -1424,7 +1441,10 @@ jobs:
         continue-on-error: true
         run: |
           command -v playwright > /dev/null 2>&1 || npm install -g playwright
-          playwright merge-reports --reporter html "${GITHUB_WORKSPACE}/e2e-artifacts/blob-report"
+          if ! playwright merge-reports --reporter html "${GITHUB_WORKSPACE}/e2e-artifacts/blob-report"; then
+            echo "::warning title=E2E HTML report::merging the blob reports failed; per-leg JSON results and traces are still uploaded"
+            exit 1
+          fi
 
       - name: E2E - Upload HTML report
         if: always() && steps.merge-report.outcome == 'success'
@@ -1435,11 +1455,13 @@ jobs:
           retention-days: 14
 
       - name: E2E - Upload Playwright JSON results
-        if: always() && steps.e2e.outcome != 'skipped'
+        if: always() && steps.e2e-plan.outcome == 'success'
         uses: ./.github/actions/upload-artifact-retry
         with:
           name: playwright-results-json-${{ github.run_id }}-${{ inputs.identifier }}-${{ inputs.flow }}-${{ inputs.distro-platform }}-${{ github.run_attempt }}
-          path: e2e-artifacts/test-results/*/playwright-results.json
+          path: |
+            e2e-artifacts/test-results/*/playwright-results.json
+            e2e-artifacts/results/*.json
           if-no-files-found: warn
           retention-days: 5
 
@@ -1521,6 +1543,11 @@ jobs:
           ROSA_USER:        ${{ secrets[inputs.username] }}
           ROSA_PASS:        ${{ secrets[inputs.password] }}
           CLUSTER_NAME:     ${{ env.INFRA_CLUSTER_NAME }}
+
+      - name: CI Cleanup - Warn when cleanup cannot reach the cluster
+        if: always() && env.TEST_NAMESPACE != '' && steps.cleanup-auth.outcome == 'failure'
+        run: |
+          echo "::warning title=Integration cleanup::could not re-authenticate to the cluster; namespace ${TEST_NAMESPACE} and its topology namespaces are left for the cleaner/janitor TTL (${CI_DEPLOYMENT_TTL:-1h}) and the Entra/Auth0 test clients may not be deleted"
 
       - name: CI Cleanup - Cleanup GitHub deployment
         if: always() && env.TEST_NAMESPACE != '' && (env.CI_DEPLOYMENT_TTL == '' || inputs.distro-type != 'kubernetes')

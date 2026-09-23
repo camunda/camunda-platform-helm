@@ -363,6 +363,18 @@ record-result
 
 `deploy-camunda ci e2e-run --plan` counts the legs, then each leg runs in its own step (`--leg-index N`) after the job refreshes its cluster credentials. The GKE kubeconfig token and the EKS tbot certificate expire after an hour, and deploy plus several legs take longer than that. Every leg runs even after an earlier one fails. `--report` then aggregates the results. A failed non-blocking leg is a warning. A failed blocking leg, or a blocking leg that recorded no result, fails the job after reports are uploaded and cleanup has run.
 
+Each leg ends in one of these categories, shown in the job summary and as run annotations:
+
+| Category | Meaning | Look at |
+|---|---|---|
+| `tests-failed` | Playwright reported failing tests or a global error | The failed test titles in the summary, then `playwright-traces-*` and `e2e-html-report-*` |
+| `setup-failed` | `run-e2e-tests.sh` failed before Playwright reported a failing test | The leg's step log: env rendering, ingress readiness, npm install |
+| `preflight-failed` | kubectl could not reach a leg namespace before it started | Expired cluster credentials, or a namespace reaped by its TTL |
+| `timed-out` | The leg exceeded its limit and its process group was stopped | `diagnostics-e2e-*` for the namespace state at that moment |
+| `cancelled` / `not-run` | The job was cancelled, or the leg step errored before recording a result | The leg's step log |
+
+A passing leg still gets a warning when it executed no tests, had flaky tests, produced no JSON results, or left a truncated blob report. Truncated blob reports are renamed to `*.corrupt` so the other legs' reports still merge. The summary lists test titles only, never error messages, because the job summary and annotations are not secret-masked. Full output stays in the masked step log.
+
 Deploy, test, and cleanup share one job so **Re-run failed jobs** restarts from a fresh deployment. On a rerun, the namespace setup step deletes and recreates the namespace because it carries the same `github-run-id` label.
 
 ### Test flows
