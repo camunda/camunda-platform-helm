@@ -3111,6 +3111,7 @@ numbered pair without declaring the zoned ones. constraints.tpl rejects setting 
         "scheme" ($orch.scheme | default "round-robin")
         "zone" ($orch.zone | default "")
         "zones" ($orch.zones | default list)
+        "keepUnzonedBrokers" ($orch.keepUnzonedBrokers | default false)
         "numberOfZones" (int ($orch.numberOfZones | default 1) | default 1)
         "zoneIndex" (int ($orch.zoneIndex | default 0)) -}}
 {{- else -}}
@@ -3122,6 +3123,7 @@ numbered pair without declaring the zoned ones. constraints.tpl rejects setting 
         "scheme" "round-robin"
         "zone" ""
         "zones" list
+        "keepUnzonedBrokers" false
         "numberOfZones" (int ($global.regions | default 1) | default 1)
         "zoneIndex" (int ($global.regionId | default 0)) -}}
 {{- end -}}
@@ -3171,6 +3173,7 @@ departs from the chart default.
       (ne (default "round-robin" .scheme) "round-robin")
       (ne (default "" .zone) "")
       (gt (len (default list .zones)) 0)
+      (default false .keepUnzonedBrokers)
       (ne (int (default 1 .numberOfZones)) 1)
       (ne (int (default 0 .zoneIndex)) 0) -}}
 true

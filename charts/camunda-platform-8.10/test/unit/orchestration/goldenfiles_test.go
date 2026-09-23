@@ -98,3 +98,51 @@ func TestGoldenZoneAwareTemplateOrchestration(t *testing.T) {
 		})
 	}
 }
+
+func TestGoldenZoneAwareMigrationTemplateOrchestration(t *testing.T) {
+	t.Parallel()
+
+	chartPath, err := filepath.Abs("../../../")
+	require.NoError(t, err)
+
+	templateNames := []string{
+		"service",
+		"service-headless",
+		"serviceaccount",
+		"statefulset",
+		"configmap",
+		"poddisruptionbudget",
+	}
+	valuesFile := filepath.Join(chartPath, "test/unit/orchestration/testdata/values-zone-aware-migration.yaml")
+	states := []struct {
+		name      string
+		setValues map[string]string
+	}{
+		{name: "migration"},
+		{
+			name: "zoned",
+			setValues: map[string]string{
+				"orchestration.partitioning.keepUnzonedBrokers": "false",
+				"orchestration.partitioning.numberOfZones":      "1",
+				"orchestration.partitioning.zoneIndex":          "0",
+			},
+		},
+	}
+
+	for _, state := range states {
+		for _, name := range templateNames {
+			suite.Run(t, &utils.TemplateGoldenTest{
+				ChartPath:      chartPath,
+				Release:        "camunda-platform-test",
+				Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
+				GoldenFileName: state.name + "-" + name,
+				Templates:      []string{"templates/orchestration/" + name + ".yaml"},
+				ValuesFiles:    []string{valuesFile},
+				SetValues:      state.setValues,
+				IgnoredLines: []string{
+					`\s+checksum/.+?:\s+.*`,
+				},
+			})
+		}
+	}
+}

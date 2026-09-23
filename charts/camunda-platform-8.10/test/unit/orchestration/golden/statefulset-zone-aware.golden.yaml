@@ -3,7 +3,7 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: camunda-platform-test-zeebe
+  name: camunda-platform-test-zeebe-london
   labels:
     app: camunda-platform
     app.kubernetes.io/name: camunda-platform
@@ -12,6 +12,9 @@ metadata:
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: zeebe-broker
     app.kubernetes.io/version: "8.10.0-alpha5"
+    camunda.io/broker-generation: zoned
+    
+    camunda.io/zone: "london"
   annotations:
 spec:
   replicas: 2
@@ -23,7 +26,10 @@ spec:
       app.kubernetes.io/managed-by: Helm
       app.kubernetes.io/part-of: camunda-platform
       app.kubernetes.io/component: zeebe-broker
-  serviceName: "camunda-platform-test-zeebe"
+      camunda.io/broker-generation: zoned
+      
+      camunda.io/zone: "london"
+  serviceName: "camunda-platform-test-zeebe-london"
   updateStrategy:
     type: RollingUpdate
   podManagementPolicy: Parallel
@@ -37,6 +43,9 @@ spec:
         app.kubernetes.io/part-of: camunda-platform
         app.kubernetes.io/component: zeebe-broker
         app.kubernetes.io/version: "8.10.0-alpha5"
+        camunda.io/broker-generation: zoned
+        
+        camunda.io/zone: "london"
       annotations:
     spec:
       imagePullSecrets:
@@ -62,7 +71,7 @@ spec:
                 fieldRef:
                   fieldPath: metadata.name
             - name: K8S_SERVICE_NAME
-              value: "camunda-platform-test-zeebe"
+              value: "camunda-platform-test-zeebe-london"
             - name: K8S_NAMESPACE
               valueFrom:
                 fieldRef:
@@ -126,7 +135,7 @@ spec:
       volumes:
         - name: config
           configMap:
-            name: camunda-platform-test-zeebe-configuration
+            name: camunda-platform-test-zeebe-london-configuration
             defaultMode: 492
         - name: exporters
           emptyDir: {}
@@ -147,6 +156,10 @@ spec:
                     operator: In
                     values:
                       - zeebe-broker
+                  - key: camunda.io/broker-generation
+                    operator: In
+                    values:
+                      - zoned
               topologyKey: kubernetes.io/hostname
   volumeClaimTemplates:
     - apiVersion: v1

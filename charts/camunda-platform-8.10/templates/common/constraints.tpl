@@ -2,6 +2,15 @@
 A template to handle constraints.
 */}}
 
+{{- define "camundaPlatform.validateBrokerLabels" -}}
+{{- if hasKey .labels "camunda.io/broker-generation" -}}
+{{- fail "[camunda][error] camunda.io/broker-generation is managed by the chart and cannot be configured in user labels." -}}
+{{- end -}}
+{{- if and .zonedPodLabels (hasKey .labels "camunda.io/zone") -}}
+{{- fail "[camunda][error] camunda.io/zone is managed by the chart with the zone-aware scheme and cannot be configured in orchestration.podLabels." -}}
+{{- end -}}
+{{- end -}}
+
 {{/*
 Fail with a message if the Helm CLI version is less than v4.
 Chart 15.x (Camunda 8.10) requires Helm v4 or later.
@@ -438,10 +447,51 @@ merged nowhere.
 {{- end }}
 
 {{- $partitioning := include "camundaPlatform.partitioning" $ | fromJson -}}
+{{- /* NOTE: camundaPlatform.labels and the pod template both pipe these maps through tpl,
+which templates the keys as well as the values, so the reserved names are looked up on the
+resolved maps. global.labels is rendered with a plain toYaml and stays raw. */ -}}
+{{- $resolvedCommonLabels := fromYaml (tpl (toYaml (.Values.global.commonLabels | default dict)) $) -}}
+{{- $resolvedPodLabels := fromYaml (tpl (toYaml (.Values.orchestration.podLabels | default dict)) $) -}}
+{{- $reservedZoneLabel := "camunda.io/zone" -}}
+{{- if and (eq $partitioning.scheme "zone-aware") (or
+  (hasKey $resolvedCommonLabels $reservedZoneLabel)
+  (hasKey $resolvedPodLabels $reservedZoneLabel)
+) }}
+  {{- fail (printf "[camunda][error] %s is managed by the chart with the zone-aware scheme and cannot be configured in global.commonLabels or orchestration.podLabels." $reservedZoneLabel) }}
+{{- end }}
+{{- $reservedGenerationLabel := "camunda.io/broker-generation" -}}
+{{- if or
+  (hasKey (.Values.global.labels | default dict) $reservedGenerationLabel)
+  (hasKey $resolvedCommonLabels $reservedGenerationLabel)
+  (hasKey $resolvedPodLabels $reservedGenerationLabel)
+}}
+  {{- fail (printf "[camunda][error] %s is managed by the chart and cannot be configured in global.labels, global.commonLabels, or orchestration.podLabels." $reservedGenerationLabel) }}
+{{- end }}
 {{- $partitioningKey := "orchestration.partitioning" -}}
 {{- if ne (include "camundaPlatform.partitioningConfigured" (.Values.orchestration.partitioning | default dict)) "true" -}}
   {{- $partitioningKey = "global.multiregion" -}}
 {{- end -}}
+{{- if and $partitioning.keepUnzonedBrokers (eq $partitioning.scheme "zone-aware") }}
+  {{- $orchRaw := .Values.orchestration.partitioning | default dict -}}
+  {{- $zoneCountRaw := get $orchRaw "numberOfZones" | toString -}}
+  {{- $zoneIndexRaw := get $orchRaw "zoneIndex" | toString -}}
+  {{- $clusterSizeRaw := .Values.orchestration.clusterSize | toString -}}
+  {{- if or (not (regexMatch "^[0-9]+$" $zoneCountRaw)) (le (int $zoneCountRaw) 0) }}
+    {{- fail "[camunda][error] orchestration.partitioning.numberOfZones must be a positive integer when orchestration.partitioning.keepUnzonedBrokers=true." -}}
+  {{- end }}
+  {{- if not (regexMatch "^[0-9]+$" $zoneIndexRaw) }}
+    {{- fail "[camunda][error] orchestration.partitioning.zoneIndex must be an integer greater than or equal to zero when orchestration.partitioning.keepUnzonedBrokers=true." -}}
+  {{- end }}
+  {{- if ge (int $zoneIndexRaw) (int $zoneCountRaw) }}
+    {{- fail "[camunda][error] orchestration.partitioning.zoneIndex must be less than orchestration.partitioning.numberOfZones when orchestration.partitioning.keepUnzonedBrokers=true." -}}
+  {{- end }}
+  {{- if or (not (regexMatch "^[0-9]+$" $clusterSizeRaw)) (le (int $clusterSizeRaw) 0) }}
+    {{- fail "[camunda][error] orchestration.clusterSize must be a positive integer when orchestration.partitioning.keepUnzonedBrokers=true." -}}
+  {{- end }}
+  {{- if ne (mod (int $clusterSizeRaw) (int $zoneCountRaw)) 0 }}
+    {{- fail "[camunda][error] orchestration.clusterSize must be divisible by orchestration.partitioning.numberOfZones when orchestration.partitioning.keepUnzonedBrokers=true." -}}
+  {{- end }}
+{{- end }}
 
 {{/*
 Fail if the zone topology is described without selecting the zone-aware scheme. Nothing else
@@ -465,6 +515,10 @@ broker count without the diff naming the setting it ignored.
   NOTE: rejects a value that contradicts the zone list, not any value at all. Helm cannot
   distinguish a supplied default from the chart default, so a key still sitting on its
   default is left alone; restating the derived total is allowed and self-documenting.
+  Both checks are skipped while keepUnzonedBrokers is set: until the numbered generation
+  is removed, these two values still describe it. clusterSize divided by regions is the
+  retained StatefulSet's replica count and replicationFactor is rendered into its
+  ConfigMap, so forcing them to the zone totals would resize and restart it.
   Comparing every value against the derived one would reject every install, since the
   default differs from the zone sum on any real topology. The 3s below are those chart
   defaults. Helm exposes no chart-default view (.Chart carries Chart.yaml, and .Files
@@ -473,20 +527,22 @@ broker count without the diff naming the setting it ignored.
   */}}
   {{- $size := int .Values.orchestration.clusterSize -}}
   {{- $derivedSize := int (include "orchestration.clusterSize" .) -}}
-  {{- if and (ne $size 3) (ne $size $derivedSize) }}
+  {{- if and (not $partitioning.keepUnzonedBrokers) (ne $size 3) (ne $size $derivedSize) }}
     {{- fail (printf "[camunda][error] orchestration.clusterSize is %d but %s.zones sums to %d brokers. With the zone-aware scheme the zone list is authoritative; remove the key or make it agree." $size $partitioningKey $derivedSize) -}}
   {{- end }}
   {{- $factor := int .Values.orchestration.replicationFactor -}}
   {{- $derivedFactor := int (include "orchestration.replicationFactor" .) -}}
-  {{- if and (ne $factor 3) (ne $factor $derivedFactor) }}
+  {{- if and (not $partitioning.keepUnzonedBrokers) (ne $factor 3) (ne $factor $derivedFactor) }}
     {{- fail (printf "[camunda][error] orchestration.replicationFactor is %d but %s.zones sums to %d replicas. With the zone-aware scheme the zone list is authoritative; remove the key or make it agree." $factor $partitioningKey $derivedFactor) -}}
   {{- end }}
 {{- end }}
 
 {{/*
 Fail if the zone-aware scheme is combined with the round-robin numbering it replaces.
+The guard stands down while keepUnzonedBrokers is set, where the pair still describes the
+retained round-robin generation.
 */}}
-{{- if and (eq $partitioning.scheme "zone-aware") (or (ne (int $partitioning.numberOfZones) 1) (ne (int $partitioning.zoneIndex) 0)) }}
+{{- if and (eq $partitioning.scheme "zone-aware") (not $partitioning.keepUnzonedBrokers) (or (ne (int $partitioning.numberOfZones) 1) (ne (int $partitioning.zoneIndex) 0)) }}
   {{- fail (printf "[camunda][error] %s.numberOfZones and %s.zoneIndex cannot be used with the zone-aware scheme; the zone list describes the topology instead." $partitioningKey $partitioningKey) -}}
 {{- end }}
 
@@ -559,7 +615,7 @@ deliberately not rejected here; see #7196.
 {{- end }}
 
 {{/*
-Fail if a zone name repeats, or if a zone claims more replicas than it has brokers.
+Fail if a zone name is invalid or repeats, or if a zone claims more replicas than it has brokers.
 
 A duplicate name collapses two zones into one member-ID namespace, which is the broker
 collision this mode exists to prevent. A zone cannot hold more replicas of a partition
@@ -569,6 +625,15 @@ no quorum can reach.
 {{- if eq $partitioning.scheme "zone-aware" }}
   {{- $seen := list -}}
   {{- range $partitioning.zones -}}
+    {{- if not (regexMatch "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$" .name) }}
+      {{- fail (printf "[camunda][error] %s.zones entry %q must be an RFC 1123 label." $partitioningKey .name) -}}
+    {{- end }}
+    {{- if gt (len .name) 32 }}
+      {{- fail (printf "[camunda][error] %s.zones entry %q must be no longer than 32 characters." $partitioningKey .name) -}}
+    {{- end }}
+    {{- if gt (int .numberOfBrokers) 999 }}
+      {{- fail (printf "[camunda][error] %s.zones entry %q cannot configure more than 999 brokers." $partitioningKey .name) -}}
+    {{- end }}
     {{- if has .name $seen }}
       {{- fail (printf "[camunda][error] %s.zones declares %q twice; zone names are broker member ID prefixes and must be unique." $partitioningKey .name) -}}
     {{- end }}
@@ -597,6 +662,11 @@ missing from it would take the IDs of the first zone and collide with it.
     {{- fail (printf "[camunda][error] %s.zone %q is not declared in %s.zones (%s)." $partitioningKey $zone $partitioningKey (join ", " $names)) -}}
   {{- end }}
 {{- end }}
+
+{{- if and $partitioning.keepUnzonedBrokers (ne $partitioning.scheme "zone-aware") }}
+  {{- fail (printf "[camunda][error] %s.keepUnzonedBrokers requires %s.scheme=zone-aware." $partitioningKey $partitioningKey) -}}
+{{- end }}
+
 {{- end }}
 
 {{/*
@@ -1524,17 +1594,42 @@ The following values inside your values.yaml need to be set but were not:
       {{- $warningMessage := printf "%s %s %s"
           "[camunda][warning]"
           "\"orchestration.partitioning.scheme\" is fixed for the life of the cluster: zone-aware brokers are identified by the composite \"<zone>_<index>\", round-robin ones by a plain node ID."
-          "Switching an existing release between the two re-identifies every broker against Raft state written under its old ID, and the members stop recognising each other. Deploy a new cluster instead."
+          "Switching an existing release between the two re-identifies every broker against Raft state written under its old ID. To convert one in place, retain the round-robin brokers with \"orchestration.partitioning.keepUnzonedBrokers=true\" and follow the zone-aware migration procedure."
+      -}}
+      {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+    {{- end }}
+    {{- if and (eq (include "orchestration.zoneAware" .) "true") .Values.orchestration.configuration }}
+      {{- $warningMessage := printf "%s %s %s"
+          "[camunda][warning]"
+          "\"orchestration.configuration\" replaces the whole generated application.yaml, so the zone-aware partitioning block, the derived cluster size and replication factor and the generated bootstrap contact points are NOT applied; the Kubernetes resources stay zoned while the broker reads the supplied configuration."
+          "Supply every zoned cluster key yourself, or use \"orchestration.extraConfiguration\" to override additively and keep the generated block."
+      -}}
+      {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+    {{- end }}
+    {{- if and (eq (include "orchestration.zoneAware" .) "true") (include "camundaPlatform.partitioning" . | fromJson).keepUnzonedBrokers .Values.orchestration.podDisruptionBudget.enabled }}
+      {{- $warningMessage := printf "%s %s %s"
+          "[camunda][warning]"
+          "While \"orchestration.partitioning.keepUnzonedBrokers\" is set, the retained and zoned broker generations are covered by one PodDisruptionBudget each, so voluntary disruption can evict one broker from each generation at the same time while both share a single Raft quorum."
+          "Suspend node drains, cluster autoscaling and other eviction-producing maintenance for the duration of the coexistence window."
       -}}
       {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
     {{- end }}
     {{- if eq (include "camundaPlatform.spansFailureDomains" .) "true" }}
+      {{- if and (eq (include "orchestration.zoneAware" .) "true") (include "camundaPlatform.partitioning" . | fromJson).keepUnzonedBrokers }}
+      {{- $warningMessage := printf "%s %s %s"
+          "[camunda][warning]"
+          "This deployment spans more than one failure domain. The generated configuration includes contact points for this release's local zoned brokers and, during migration, retained numbered brokers."
+          "To discover brokers in other zones, set the complete local and remote contact-point list through CAMUNDA_CLUSTER_INITIALCONTACTPOINTS in \"orchestration.env\"."
+      -}}
+      {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+      {{- else }}
       {{- $warningMessage := printf "%s %s %s"
           "[camunda][warning]"
           "This deployment spans more than one failure domain, so the chart cannot generate the broker bootstrap list: set CAMUNDA_CLUSTER_INITIALCONTACTPOINTS through \"orchestration.env\"."
           "List every broker as <pod>.<headless-service>.<namespace>.svc.cluster.local:26502, comma-separated."
       -}}
       {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+      {{- end }}
     {{- end }}
   {{- end }}
 
