@@ -36,7 +36,9 @@ data:
             audiences:
               - {{ include "optimize.authClientId" . | quote }}
               - {{ include "optimize.authAudience" . | quote }}
+              {{- if eq (include "camundaHub.webModelerEnabled" .) "true" }}
               - {{ (or .Values.global.identity.auth.camundaHub.clientApiAudience .Values.global.identity.auth.webModeler.clientApiAudience) | quote }}
+              {{- end }}
             {{- if (include "optimize.effectiveAuthIssuerUrl" .) }}
             issuer-uri: {{ include "optimize.effectiveAuthIssuerUrl" . | quote }}
             {{- else }}
