@@ -1703,7 +1703,7 @@ required by camunda.modeler.clusters (introduced in 8.10 Hub/WebModeler).
     type: optimize
     version: {{ $cluster.version | quote }}
     urls:
-      webapp: {{ $optimize.webappUrl | default (printf "https://%s%s" $cluster.host $optimizePath) | quote }}
+      webapp: {{ tpl ($optimize.webappUrl | default (printf "https://%s%s" $cluster.host $optimizePath)) $ | quote }}
       readiness: {{ $optimize.readinessUrl | default (printf "http://%s.%s.svc.cluster.local:80%s/api/readyz" $optimizeName $cluster.namespace $optimizePath) | quote }}
   {{- end }}
   {{- if $connectors.enabled }}

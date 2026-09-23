@@ -128,8 +128,10 @@ func TestHubTopologyRendersPhysicalTenantsInHubInventory(t *testing.T) {
 		SetValues: map[string]string{
 			"camundaHub.enabled": "true",
 			"global.host":        "hub.example.test",
-			"global.topology.clusters[0].physicalTenants[0].components.optimize.webappUrl": `https://{{ .Values.global.host }}/optimize-ta`,
-			"webModeler.restapi.mail.fromAddress":                                          "noreply@example.com",
+			"global.topology.clusters[0].components.optimize.webappUrl":                       `https://{{ .Values.global.host }}/optimize-default`,
+			"global.topology.clusters[0].physicalTenants[0].components.optimize.webappUrl":    `https://{{ .Values.global.host }}/optimize-ta`,
+			"global.topology.clusters[0].physicalTenants[0].components.optimize.readinessUrl": "https://ready.example.test/optimize-ta",
+			"webModeler.restapi.mail.fromAddress":                                             "noreply@example.com",
 		},
 	}
 	output := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{"templates/web-modeler/configmap-restapi.yaml"})
@@ -140,14 +142,21 @@ func TestHubTopologyRendersPhysicalTenantsInHubInventory(t *testing.T) {
 		Camunda struct {
 			Modeler struct {
 				Clusters []struct {
-					ID              string `yaml:"id"`
+					ID         string `yaml:"id"`
+					Components []struct {
+						Type string `yaml:"type"`
+						URLs struct {
+							Webapp string `yaml:"webapp"`
+						} `yaml:"urls"`
+					} `yaml:"components"`
 					PhysicalTenants []struct {
 						ID         string `yaml:"id"`
 						Name       string `yaml:"name"`
 						Components []struct {
 							Type string `yaml:"type"`
 							URLs struct {
-								Webapp string `yaml:"webapp"`
+								Webapp    string `yaml:"webapp"`
+								Readiness string `yaml:"readiness"`
 							} `yaml:"urls"`
 						} `yaml:"components"`
 					} `yaml:"physicalTenants"`
@@ -159,11 +168,13 @@ func TestHubTopologyRendersPhysicalTenantsInHubInventory(t *testing.T) {
 	require.Len(t, application.Camunda.Modeler.Clusters, 2)
 	cluster := application.Camunda.Modeler.Clusters[1]
 	require.Equal(t, "east", cluster.ID)
+	require.Equal(t, "https://hub.example.test/optimize-default", cluster.Components[0].URLs.Webapp)
 	require.Len(t, cluster.PhysicalTenants, 2)
 	require.Equal(t, "tenanta", cluster.PhysicalTenants[0].ID)
 	require.Equal(t, "Tenant A", cluster.PhysicalTenants[0].Name)
 	require.Equal(t, "optimize", cluster.PhysicalTenants[0].Components[0].Type)
 	require.Equal(t, "https://hub.example.test/optimize-ta", cluster.PhysicalTenants[0].Components[0].URLs.Webapp)
+	require.Equal(t, "https://ready.example.test/optimize-ta", cluster.PhysicalTenants[0].Components[0].URLs.Readiness)
 	require.Equal(t, "tenantb", cluster.PhysicalTenants[1].ID)
 }
 
