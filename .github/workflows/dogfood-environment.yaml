@@ -135,6 +135,7 @@ jobs:
           TEST_DOCKER_PASSWORD: ${{ steps.setup.outputs.TEST_DOCKER_PASSWORD }}
           RDBMS_POSTGRESQL_USERNAME: ${{ steps.setup.outputs.RDBMS_POSTGRESQL_USERNAME }}
           RDBMS_POSTGRESQL_PASSWORD: ${{ steps.setup.outputs.RDBMS_POSTGRESQL_PASSWORD }}
+          DEPLOY_CAMUNDA_TTL: 2h
         run: |
           deploy-camunda matrix run \
             --repo-root "${GITHUB_WORKSPACE}" \
@@ -144,7 +145,6 @@ jobs:
             --versions "${DOGFOOD_CHART_VERSION}" \
             --platform "${DISTRO_PLATFORM}" \
             --namespace-override "${DOGFOOD_ENVIRONMENT}" \
-            --ttl 2h \
             --skip-dependency-update=false \
             --timeout 25 \
             --log-level info
