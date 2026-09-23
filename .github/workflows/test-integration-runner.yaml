@@ -348,7 +348,7 @@ jobs:
     # `ci e2e-run` (smoke 25m, full 50m, topology 40m per leg, up to 8 legs)
     # and 80m for setup, auth refreshes, reports and cleanup, so a leg timeout
     # fires before the job is killed and the cleanup steps still run.
-    timeout-minutes: ${{ inputs.is-topology && 480 || ((inputs.scenario == 'shadow-e2e' || contains(inputs.e2e-matrix, '"suite":"full"')) && 150 || 90) }}
+    timeout-minutes: ${{ inputs.is-topology && 480 || ((inputs.scenario == 'shadow-e2e' || contains(inputs.e2e-matrix, '"suite":"full"')) && 200 || 150) }}
     container:
       image: ghcr.io/camunda/team-distribution/playwright-runner:latest
       credentials:
@@ -1616,6 +1616,7 @@ jobs:
             --log-level info
 
       - name: CI Cleanup
+        id: cleanup-namespace
         if: always() && env.TEST_NAMESPACE != '' && inputs.always-delete-namespace
         run: |
           kubectl annotate ns $TEST_NAMESPACE test-flow=${{ inputs.flow }} --overwrite || true
@@ -1635,6 +1636,7 @@ jobs:
           fi
 
       - name: CI Cleanup - Reap topology namespaces
+        id: cleanup-topology
         if: always() && env.TEST_NAMESPACE != '' && inputs.always-delete-namespace && inputs.is-topology
         run: |
           while IFS= read -r suffix; do
@@ -1659,7 +1661,7 @@ jobs:
 
       - name: CI Cleanup - Mark cleanup done
         id: cleanup-done
-        if: always()
+        if: always() && steps.cleanup-auth.outcome == 'success' && steps.cleanup-namespace.outcome != 'failure' && steps.cleanup-topology.outcome != 'failure'
         run: echo "done=true" >> "$GITHUB_OUTPUT"
 
       - name: Observe build status
