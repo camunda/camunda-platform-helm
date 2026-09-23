@@ -15,8 +15,14 @@ test("Hub deploys through the selected Physical Tenant environment", async ({
   navigationPage,
 }) => {
   const webModelerURL = process.env.WEBMODELER_BASE_URL;
+  const baseURL = process.env.BASE_URL;
+  const keycloakURL = process.env.KEYCLOAK_BASE_URL;
+  const clientSecret = process.env.DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET;
   const physicalTenantId = process.env.PHYSICAL_TENANT_ID;
   expect(webModelerURL).toBeTruthy();
+  expect(baseURL).toBeTruthy();
+  expect(keycloakURL).toBeTruthy();
+  expect(clientSecret).toBeTruthy();
   expect(physicalTenantId).toBeTruthy();
 
   const authenticatedRequest = page.waitForRequest(
@@ -124,4 +130,46 @@ test("Hub deploys through the selected Physical Tenant environment", async ({
     { data: { environmentId: environment!.id }, headers },
   );
   expect(deployResponse.ok()).toBeTruthy();
+
+  const tokenResponse = await page.request.post(
+    `${keycloakURL}/realms/camunda-platform/protocol/openid-connect/token`,
+    {
+      form: {
+        client_id: "venom",
+        client_secret: clientSecret!,
+        grant_type: "client_credentials",
+      },
+    },
+  );
+  expect(tokenResponse.ok()).toBeTruthy();
+  const { access_token: accessToken } = (await tokenResponse.json()) as {
+    access_token: string;
+  };
+  const tenantPath =
+    physicalTenantId === "default"
+      ? ""
+      : `/physical-tenants/${physicalTenantId}`;
+  await expect
+    .poll(
+      async () => {
+        const searchResponse = await page.request.post(
+          `${baseURL}/orchestration${tenantPath}/v2/process-definitions/search`,
+          {
+            data: { filter: { processDefinitionId: processId } },
+            headers: { Authorization: `Bearer ${accessToken}` },
+          },
+        );
+        if (!searchResponse.ok()) {
+          return false;
+        }
+        const result = (await searchResponse.json()) as {
+          items?: Array<{ processDefinitionId?: string }>;
+        };
+        return result.items?.some(
+          (item) => item.processDefinitionId === processId,
+        );
+      },
+      { timeout: 120_000 },
+    )
+    .toBe(true);
 });
