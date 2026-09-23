@@ -456,3 +456,86 @@ func (s *ConstraintTemplateTest) TestManagementIdentityExternalServiceUrl() {
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
+
+func (s *ConstraintTemplateTest) TestDocumentStoreActiveStoreIdConstraint() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "DocumentStoreActiveStoreIdAwsWithAwsEnabledShowsWarning",
+			Values: map[string]string{
+				"global.documentStore.activeStoreId":    "aws",
+				"global.documentStore.type.aws.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				s.Require().Contains(output, "[camunda][warning]")
+				s.Require().Contains(output, "global.documentStore.* will be used solely for document store configuration")
+			},
+		},
+		{
+			Name: "DocumentStoreActiveStoreIdGcpWithGcpEnabledShowsWarning",
+			Values: map[string]string{
+				"global.documentStore.activeStoreId":    "gcp",
+				"global.documentStore.type.gcp.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				s.Require().Contains(output, "[camunda][warning]")
+				s.Require().Contains(output, "global.documentStore.* will be used solely for document store configuration")
+			},
+		},
+		{
+			Name: "DocumentStoreActiveStoreIdAwsUppercaseWithAwsEnabledShowsWarning",
+			Values: map[string]string{
+				"global.documentStore.activeStoreId":    "AWS",
+				"global.documentStore.type.aws.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				s.Require().Contains(output, "[camunda][warning]")
+				s.Require().Contains(output, "global.documentStore.* will be used solely for document store configuration")
+			},
+		},
+		{
+			Name: "DocumentStoreActiveStoreIdAzureDoesNotShowWarning",
+			Values: map[string]string{
+				"global.documentStore.activeStoreId":    "azure",
+				"global.documentStore.type.aws.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				s.Require().NotContains(output, "global.documentStore.* will be used solely for document store configuration")
+			},
+		},
+		{
+			Name: "DocumentStoreActiveStoreIdAwsWithoutTypeEnabledDoesNotShowWarning",
+			Values: map[string]string{
+				"global.documentStore.activeStoreId": "aws",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				s.Require().NotContains(output, "global.documentStore.* will be used solely for document store configuration")
+			},
+		},
+		{
+			Name:   "DocumentStoreActiveStoreIdNotSetDoesNotShowWarning",
+			Values: map[string]string{},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				s.Require().NotContains(output, "global.documentStore.* will be used solely for document store configuration")
+			},
+		},
+		{
+			Name: "DocumentStoreActiveStoreIdOtherValueDoesNotShowWarning",
+			Values: map[string]string{
+				"global.documentStore.activeStoreId":    "custom",
+				"global.documentStore.type.aws.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				s.Require().NotContains(output, "global.documentStore.* will be used solely for document store configuration")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}

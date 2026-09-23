@@ -422,14 +422,16 @@ The following values inside your values.yaml need to be set but were not:
   {{/* camunda-platform-helm#6778: global.documentStore.type.* credentials also double as
        ambient AWS/GCP configuration for connectors, optimize, and web-modeler-restapi on this
        chart version. */}}
-  {{- if has (lower .Values.global.documentStore.activeStoreId) (list "aws" "gcp" "azure") }}
-    {{- $warningMessage := printf "%s %s %s %s"
-        "[camunda][warning]"
-        "DEPRECATION: Starting from Camunda 8.10 release, the global.documentStore.* will be used solely for document store configuration."
-        "If the key is currently being used for general AWS/GCP/Azure cloud configuration, please migrate those settings to the appropriate component-specific configuration."
-        "When upgrading to Camunda 8.10 or later, please refer to the migration guide: https://docs.camunda.io/docs/8.10/self-managed/upgrade/helm/"
-    -}}
-    {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+  {{- if or .Values.global.documentStore.type.aws.enabled .Values.global.documentStore.type.gcp.enabled }}
+    {{- if has (lower .Values.global.documentStore.activeStoreId) (list "aws" "gcp") }}
+      {{- $warningMessage := printf "%s %s %s %s"
+          "[camunda][warning]"
+          "DEPRECATION: Starting from Camunda 8.10 release, the global.documentStore.* will be used solely for document store configuration."
+          "If the key is currently being used for general AWS/GCP/Azure cloud configuration, please migrate those settings to the appropriate component-specific configuration."
+          "When upgrading to Camunda 8.10 or later, please refer to the migration guide: https://docs.camunda.io/docs/8.10/self-managed/upgrade/helm/"
+      -}}
+      {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+    {{- end }}
   {{- end }}
 {{- end }}
 
