@@ -280,7 +280,10 @@ func (s *ConfigmapLegacyTemplateTest) TestDifferentValuesInputs() {
 				var configmap corev1.ConfigMap
 				helm.UnmarshalK8SYaml(t, output, &configmap)
 
-				require.NotContains(t, configmap.Data["application.yaml"], "camundaexporter:")
+				applicationYaml := configmap.Data["application.yaml"]
+				require.NotContains(t, applicationYaml, "camundaexporter:")
+				require.Contains(t, applicationYaml, "autoconfigure-camunda-exporter: false")
+				require.NotContains(t, applicationYaml, "autoconfigure-camunda-exporter: true")
 			},
 		},
 		{
