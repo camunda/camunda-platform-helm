@@ -419,10 +419,6 @@ log "DEBUG: PLAYWRIGHT_HTML_REPORT='${PLAYWRIGHT_HTML_REPORT}'"
 # Build the rerun command for display on failure
 RERUN_CMD="$(build_rerun_cmd)"
 
-if [[ "$PLAYWRIGHT_PROJECT" == "physical-tenants" ]]; then
-  export REQUIRE_PHYSICAL_TENANTS_TEST_SUITE=true
-fi
-
 run_playwright_tests "$TEST_SUITE_PATH" "$SHOW_HTML_REPORT" "$SHARD_INDEX" "$SHARD_TOTAL" "blob" "$TEST_EXCLUDE" "$RUN_SMOKE_TESTS" "$PLAYWRIGHT_DEBUG" "$NAMESPACE" "$KUBE_CONTEXT" "$RERUN_CMD" "$IS_AUTH0" "$PLAYWRIGHT_PROJECT"
 
 log "DEBUG: E2E tests completed"
