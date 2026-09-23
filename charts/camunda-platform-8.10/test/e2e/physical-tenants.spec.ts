@@ -172,4 +172,27 @@ test("Hub deploys through the selected Physical Tenant environment", async ({
       { timeout: 120_000 },
     )
     .toBe(true);
+
+  for (const siblingId of ["default", "tenanta", "tenantb"].filter(
+    (id) => id !== physicalTenantId,
+  )) {
+    const siblingPath =
+      siblingId === "default" ? "" : `/physical-tenants/${siblingId}`;
+    const siblingResponse = await page.request.post(
+      `${baseURL}/orchestration${siblingPath}/v2/process-definitions/search`,
+      {
+        data: { filter: { processDefinitionId: processId } },
+        headers: { Authorization: `Bearer ${accessToken}` },
+      },
+    );
+    expect(siblingResponse.ok()).toBeTruthy();
+    const siblingResult = (await siblingResponse.json()) as {
+      items?: Array<{ processDefinitionId?: string }>;
+    };
+    expect(
+      siblingResult.items?.some(
+        (item) => item.processDefinitionId === processId,
+      ) ?? false,
+    ).toBe(false);
+  }
 });
