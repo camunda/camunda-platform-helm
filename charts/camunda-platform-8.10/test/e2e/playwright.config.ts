@@ -96,6 +96,7 @@ export default defineConfig(
     extraProjects: [
       {
         name: "physical-tenants",
+        dependencies: ["topology-orchestration"],
         testMatch: ["**/physical-tenants-user-flows.spec.{ts,js}"],
       },
       {
