@@ -19,10 +19,13 @@ import (
 	"encoding/hex"
 	"fmt"
 	"os"
+	"path/filepath"
+	"strconv"
 
 	"scripts/camunda-core/pkg/ciworkflow"
 	"scripts/camunda-core/pkg/ghactions"
 	"scripts/deploy-camunda/config"
+	"scripts/deploy-camunda/e2erun"
 	"scripts/deploy-camunda/matrix"
 
 	"github.com/spf13/cobra"
@@ -40,8 +43,122 @@ func newCICommand() *cobra.Command {
 	ciCmd.AddCommand(newCIWorkflowVarsCommand())
 	ciCmd.AddCommand(newCIIntegrationMatrixCommand())
 	ciCmd.AddCommand(newCIE2EMatrixCommand())
+	ciCmd.AddCommand(newCIE2ERunCommand())
 
 	return ciCmd
+}
+
+// newCIE2ERunCommand creates the "ci e2e-run" subcommand. It runs every e2e leg
+// of a scenario sequentially inside the job that deployed it, so re-running
+// the failed job redeploys before testing again. Every leg runs even after a
+// failure; the command fails only when a blocking leg failed.
+func newCIE2ERunCommand() *cobra.Command {
+	var (
+		in           e2erun.PlanInput
+		scenario     string
+		auth         string
+		exclude      string
+		artifactsDir string
+	)
+
+	cmd := &cobra.Command{
+		Use:   "e2e-run",
+		Short: "Run a scenario's e2e legs sequentially against its deployed namespace",
+		Long: `Run a scenario's e2e legs sequentially against its deployed namespace.
+
+Reports are moved out of the Playwright suite directory after each leg into
+--artifacts-dir (blob-report/, test-results/<leg>/, diagnostics/<leg>.txt).
+Outputs blocking-failed and non-blocking-failed to $GITHUB_OUTPUT and a leg
+table to $GITHUB_STEP_SUMMARY.`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if in.RepoRoot == "" {
+				detected, err := config.DetectRepoRoot()
+				if err != nil {
+					return err
+				}
+				in.RepoRoot = detected
+			}
+			root, err := filepath.Abs(in.RepoRoot)
+			if err != nil {
+				return err
+			}
+			in.RepoRoot = root
+			if artifactsDir, err = filepath.Abs(artifactsDir); err != nil {
+				return err
+			}
+
+			legs, err := e2erun.Plan(in)
+			if err != nil {
+				return err
+			}
+			if len(legs) == 0 {
+				fmt.Fprintln(cmd.OutOrStdout(), "no e2e legs to run")
+				return nil
+			}
+
+			runner := e2erun.Runner{
+				RepoRoot:     in.RepoRoot,
+				ArtifactsDir: artifactsDir,
+				Scenario:     scenario,
+				Auth:         auth,
+				Exclude:      exclude,
+				Exec:         e2erun.ScriptExec(in.RepoRoot, os.Stdout, os.Stderr),
+				Diagnostics:  e2erun.DeployCamundaDiagnostics(),
+				Log:          cmd.OutOrStdout(),
+			}
+			result := runner.Run(cmd.Context(), legs)
+			return reportE2ERun(result)
+		},
+	}
+
+	f := cmd.Flags()
+	f.StringVar(&in.RepoRoot, "repo-root", "", "repository root; auto-detected when empty")
+	f.StringVar(&in.ChartDir, "chart-dir", "", "chart directory name, e.g. camunda-platform-8.10")
+	f.StringVar(&in.Namespace, "namespace", "", "deployed namespace; the base namespace for topology legs")
+	f.StringVar(&in.Stage, "stage", "after-install", "test stage used in leg ids: after-install or after-upgrade")
+	f.StringVar(&in.SuiteLegs, "legs", "", "suite legs JSON from `ci e2e-matrix`")
+	f.StringVar(&in.TopologyLegs, "topology-legs", "", "topology smoke matrix JSON from `matrix plan`")
+	f.StringVar(&in.TopologyHubSuffix, "topology-hub-suffix", "", "namespace suffix of the topology Hub release")
+	f.BoolVar(&in.Shadow, "shadow", false, "append the non-blocking shadow full-suite leg")
+	f.StringVar(&scenario, "scenario", "", "scenario name; selects scenario-specific run-e2e-tests.sh flags")
+	f.StringVar(&auth, "auth", "", "authentication type exported as TEST_AUTH_TYPE")
+	f.StringVar(&exclude, "exclude", "", "test suites to exclude, exported as TEST_EXCLUDE")
+	f.StringVar(&artifactsDir, "artifacts-dir", "e2e-artifacts", "directory collecting reports of every leg")
+	_ = cmd.MarkFlagRequired("chart-dir")
+	_ = cmd.MarkFlagRequired("namespace")
+
+	return cmd
+}
+
+func reportE2ERun(result e2erun.Result) error {
+	for _, l := range result.Legs {
+		if l.Err == nil {
+			continue
+		}
+		level := "warning"
+		if l.Leg.Blocking {
+			level = "error"
+		}
+		fmt.Fprintf(os.Stdout, "::%s::e2e leg %s failed: %v\n", level, l.Leg.ID, l.Err)
+	}
+
+	if path := os.Getenv("GITHUB_STEP_SUMMARY"); path != "" {
+		if f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644); err == nil {
+			_, _ = f.WriteString(e2erun.Summary(result))
+			_ = f.Close()
+		}
+	}
+	out := ghactions.NewGitHubOutput()
+	if err := out.Set("blocking-failed", strconv.FormatBool(result.BlockingFailed())); err != nil {
+		return err
+	}
+	if err := out.Set("non-blocking-failed", strconv.FormatBool(result.NonBlockingFailed())); err != nil {
+		return err
+	}
+	if result.BlockingFailed() {
+		return fmt.Errorf("one or more blocking e2e legs failed")
+	}
+	return nil
 }
 
 // newCIE2EMatrixCommand creates the "ci e2e-matrix" subcommand. It resolves the

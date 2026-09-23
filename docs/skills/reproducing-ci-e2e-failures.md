@@ -10,7 +10,7 @@ title: "Skill: Reproducing CI E2E Failures Locally"
 
 ---
 
-When a PR check fails (e.g. `Playwright e2e after upgrade - upgrade-minor on gke - eske`), this guide walks you through pulling the logs and artifacts, decoding the scenario, and spinning up an identical local environment so you can iterate without waiting on CI.
+When a PR check fails (e.g. `deploy and test upgrade-minor on gke - eske`), this guide walks you through pulling the logs and artifacts, decoding the scenario, and spinning up an identical local environment so you can iterate without waiting on CI.
 
 Designed for application developers: you do not need deep Kubernetes knowledge — `deploy-camunda` handles cluster setup, and `gh` handles artifact retrieval.
 
@@ -101,10 +101,9 @@ Artifacts to prioritize for Playwright e2e failures:
 
 | Artifact suffix | Why you want it |
 |-----------------|-----------------|
-| `*-playwright-results-json` | Machine-readable test outcomes + error messages |
+| `playwright-results-json-*` | Machine-readable test outcomes + error messages, one directory per e2e leg |
 | `*-e2e-html-report` | Interactive report with screenshots, videos, traces |
 | `*-playwright-report-runner` | Runner-level summary |
-| `*-blob-report` | Raw Playwright blobs (large; only if merging reports) |
 
 ## Step 4 — Decode the Scenario Shortname
 

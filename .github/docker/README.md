@@ -84,14 +84,14 @@ docker build -t ghcr.io/camunda/team-distribution/keycloak-ci:latest .
 
 ## Usage in Workflows
 
-The images are used in `test-integration-runner.yaml` as job containers:
+The Playwright runner image is the job container of `test-integration-runner.yaml`, which deploys and tests a scenario in one job:
 
 ```yaml
 jobs:
-  install:
-    runs-on: ubuntu-latest
+  integration:
+    runs-on: gcp-core-8-release
     container:
-      image: ghcr.io/camunda/team-distribution/ci-runner:latest
+      image: ghcr.io/camunda/team-distribution/playwright-runner:latest
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}

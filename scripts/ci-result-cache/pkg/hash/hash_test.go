@@ -249,7 +249,7 @@ func TestCompute_E2EExecutionScriptsIncluded(t *testing.T) {
 	}
 }
 
-func TestCompute_PlaywrightE2ETestsActionIncluded(t *testing.T) {
+func TestCompute_IntegrationTestSetupActionIncluded(t *testing.T) {
 	tmpDir := t.TempDir()
 	chartDir := filepath.Join(tmpDir, "charts", "camunda-platform-8.9")
 	if err := os.MkdirAll(chartDir, 0o755); err != nil {
@@ -262,11 +262,11 @@ func TestCompute_PlaywrightE2ETestsActionIncluded(t *testing.T) {
 		t.Fatalf("first Compute: %v", err)
 	}
 
-	actionDir := filepath.Join(tmpDir, ".github", "actions", "playwright-e2e-tests")
+	actionDir := filepath.Join(tmpDir, ".github", "actions", "integration-test-setup")
 	if err := os.MkdirAll(actionDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	writeFile(t, filepath.Join(actionDir, "action.yaml"), "name: playwright-e2e-tests\n")
+	writeFile(t, filepath.Join(actionDir, "action.yaml"), "name: integration-test-setup\n")
 
 	hash2, err := Compute(tmpDir, "8.9")
 	if err != nil {
@@ -274,7 +274,7 @@ func TestCompute_PlaywrightE2ETestsActionIncluded(t *testing.T) {
 	}
 
 	if hash1 == hash2 {
-		t.Error("expected hash to change when playwright-e2e-tests/action.yaml is added")
+		t.Error("expected hash to change when integration-test-setup/action.yaml is added")
 	}
 }
 
