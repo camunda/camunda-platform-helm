@@ -64,6 +64,10 @@ inputs:
     description: Named Playwright project to run instead of smoke-tests or full-suite.
     required: false
     default: ""
+  physical-tenant-id:
+    description: Physical Tenant selected by this topology matrix leg.
+    required: false
+    default: ""
   test-chart-dir:
     description: Chart directory whose Playwright config provides the test suite.
     required: false
@@ -337,8 +341,10 @@ runs:
         E2E_ARG_OPTIMIZE_NAMESPACE: ${{ inputs.optimize-namespace }}
         E2E_ARG_OPTIMIZE_CONTEXT_PATH: ${{ inputs.optimize-context-path }}
         E2E_ARG_MODELER_CLUSTER_NAME: ${{ inputs.modeler-cluster-name }}
+        PHYSICAL_TENANT_ID: ${{ inputs.physical-tenant-id }}
         REQUIRE_SM_810_TEST_SUITE: ${{ inputs.hub-namespace != '' }}
         REQUIRE_HUB_WEB_MODELER_TEST_SUITE: ${{ inputs.playwright-project == 'hub-web-modeler' }}
+        REQUIRE_PHYSICAL_TENANTS_TEST_SUITE: ${{ inputs.playwright-project == 'physical-tenants' }}
       run: |
         cd "$GITHUB_WORKSPACE/scripts"
         # Unset KEYCLOAK_REALM to avoid conflicts with the integration tests
