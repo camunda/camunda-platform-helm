@@ -126,8 +126,10 @@ func TestHubTopologyRendersPhysicalTenantsInHubInventory(t *testing.T) {
 	options := &helm.Options{
 		ValuesFiles: []string{filepath.Join("testdata", "hub-physical-tenants.yaml")},
 		SetValues: map[string]string{
-			"camundaHub.enabled":                  "true",
-			"webModeler.restapi.mail.fromAddress": "noreply@example.com",
+			"camundaHub.enabled": "true",
+			"global.host":        "hub.example.test",
+			"global.topology.clusters[0].physicalTenants[0].components.optimize.redirectUrl": `https://{{ .Values.global.host }}/optimize-ta`,
+			"webModeler.restapi.mail.fromAddress":                                            "noreply@example.com",
 		},
 	}
 	output := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{"templates/web-modeler/configmap-restapi.yaml"})
@@ -161,7 +163,7 @@ func TestHubTopologyRendersPhysicalTenantsInHubInventory(t *testing.T) {
 	require.Equal(t, "tenanta", cluster.PhysicalTenants[0].ID)
 	require.Equal(t, "Tenant A", cluster.PhysicalTenants[0].Name)
 	require.Equal(t, "optimize", cluster.PhysicalTenants[0].Components[0].Type)
-	require.Equal(t, "https://east.example.com/optimize-ta", cluster.PhysicalTenants[0].Components[0].URLs.Webapp)
+	require.Equal(t, "https://hub.example.test/optimize-ta", cluster.PhysicalTenants[0].Components[0].URLs.Webapp)
 	require.Equal(t, "tenantb", cluster.PhysicalTenants[1].ID)
 }
 

@@ -1757,7 +1757,7 @@ required by camunda.modeler.clusters (introduced in 8.10 Hub/WebModeler).
       type: optimize
       version: {{ $cluster.version | quote }}
       urls:
-        webapp: {{ $tenantOptimize.webappUrl | default $tenantOptimize.redirectUrl | quote }}
+        webapp: {{ tpl ($tenantOptimize.webappUrl | default $tenantOptimize.redirectUrl) $ | quote }}
         {{- with $tenantOptimize.readinessUrl }}
         readiness: {{ . | quote }}
         {{- end }}
