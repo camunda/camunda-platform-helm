@@ -58,8 +58,9 @@ refuses to create an environment that is not already there.
 
 ## Local equivalent
 
-Requires a `gcloud` session for the CI GKE project and Harbor credentials in the
-Docker keychain (see the `gke-verification` skill for the pre-flight).
+Requires a `gcloud` session for the CI GKE project, Harbor credentials in the
+Docker keychain, and `DOCKERHUB_USERNAME` and `DOCKERHUB_PASSWORD` in the
+environment (see the `gke-verification` skill for the pre-flight).
 
 ```bash
 deploy-camunda matrix run \
@@ -70,6 +71,10 @@ deploy-camunda matrix run \
   --versions 8.10 \
   --platform gke \
   --namespace-override dogfood \
+  --namespace-prepared \
+  --ensure-docker-hub \
+  --dockerhub-username "${DOCKERHUB_USERNAME}" \
+  --dockerhub-password "${DOCKERHUB_PASSWORD}" \
   --ingress-base-domain-gke ci.distro.ultrawombat.com \
   --timeout 25
 ```

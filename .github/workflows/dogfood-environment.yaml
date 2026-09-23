@@ -46,10 +46,6 @@ concurrency:
   group: dogfood-environment-${{ inputs.environment || 'dogfood' }}
   cancel-in-progress: false
 
-permissions:
-  contents: read
-  id-token: write
-
 env:
   DOGFOOD_ACTION: ${{ inputs.action || 'upgrade' }}
   DOGFOOD_ENVIRONMENT: ${{ inputs.environment || 'dogfood' }}
@@ -62,6 +58,10 @@ jobs:
     name: ${{ inputs.action || 'upgrade' }} - ${{ inputs.environment || 'dogfood' }}
     runs-on: ubuntu-latest
     timeout-minutes: 75
+    permissions:
+      contents: read
+      id-token: write
+      packages: read
     container:
       image: ghcr.io/camunda/team-distribution/ci-runner:latest
       credentials:
@@ -144,6 +144,7 @@ jobs:
             --versions "${DOGFOOD_CHART_VERSION}" \
             --platform "${DISTRO_PLATFORM}" \
             --namespace-override "${DOGFOOD_ENVIRONMENT}" \
+            --ttl 2h \
             --skip-dependency-update=false \
             --timeout 25 \
             --log-level info
@@ -207,11 +208,24 @@ jobs:
           name: dogfood-diagnostics-${{ env.DOGFOOD_ENVIRONMENT }}-${{ github.run_id }}
           path: diagnostics/
 
+      - name: Import Slack webhook from Vault
+        if: failure() && github.event_name == 'schedule'
+        id: slack-secrets
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/distribution/ci SLACK_DISTRO_BOT_WEBHOOK;
+          exportEnv: false
+
       - name: 🚨 Notify the team via Slack 🚨
         if: failure() && github.event_name == 'schedule'
         uses: slackapi/slack-github-action@dcb1066f776dd043e64d0e8ba94ca15cc7e1875d # v4.0.0
         with:
-          webhook: ${{ secrets.SLACK_DISTRO_TEAM_WEBHOOK }}
+          webhook: ${{ steps.slack-secrets.outputs.SLACK_DISTRO_BOT_WEBHOOK }}
           webhook-type: incoming-webhook
           payload: |
             blocks:

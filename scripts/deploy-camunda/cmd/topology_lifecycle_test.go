@@ -16,12 +16,17 @@ package cmd
 
 import (
 	"bytes"
+	"context"
+	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 func TestResolveTopologyReleases_DerivesEveryDogfoodNamespace(t *testing.T) {
@@ -44,6 +49,7 @@ func TestResolveTopologyReleases_DerivesEveryDogfoodNamespace(t *testing.T) {
 		"optptta":  "dogfood-optptta",
 		"optpttb":  "dogfood-optpttb",
 	}, got)
+	assert.Equal(t, "/optimize-plain", releases[4].OptimizeContextPath)
 }
 
 func TestResolveTopologyReleases_RejectsAScenarioWithoutATopology(t *testing.T) {
@@ -112,6 +118,90 @@ func TestPodReadiness_CapsTheNotReadyList(t *testing.T) {
 
 	assert.Equal(t, 0, ready)
 	assert.Len(t, notReady, 5)
+}
+
+func TestPersistTopologyNamespaces_AttemptsEveryExistingNamespace(t *testing.T) {
+	releases := []topologyRelease{
+		{Namespace: "dogfood-hub"},
+		{Namespace: "dogfood-missing"},
+		{Namespace: "dogfood-failing"},
+		{Namespace: "dogfood-plain"},
+	}
+	var attempted []string
+	out := &bytes.Buffer{}
+
+	err := persistTopologyNamespaces(
+		context.Background(), out, releases, "8760h",
+		func(_ context.Context, namespace string) (bool, error) {
+			return namespace != "dogfood-missing", nil
+		},
+		func(_ context.Context, namespace string) error {
+			attempted = append(attempted, namespace)
+			if namespace == "dogfood-failing" {
+				return errors.New("apply failed")
+			}
+			return nil
+		},
+	)
+
+	require.Error(t, err)
+	assert.Equal(t, []string{"dogfood-hub", "dogfood-failing", "dogfood-plain"}, attempted)
+	assert.Contains(t, err.Error(), "dogfood-missing")
+	assert.Contains(t, err.Error(), "dogfood-failing")
+	assert.Contains(t, out.String(), "persisted dogfood-plain")
+}
+
+func TestWriteTopologyStatus_DistinguishesMissingFromAPIErrors(t *testing.T) {
+	releases := []topologyRelease{
+		{Role: "hub", Namespace: "dogfood-hub"},
+		{Role: "orchestration", Namespace: "dogfood-missing"},
+		{Role: "orchestration", Namespace: "dogfood-error"},
+	}
+	out := &bytes.Buffer{}
+
+	missing, unready, err := writeTopologyStatus(
+		context.Background(), out,
+		func(_ context.Context, namespace string) (*corev1.PodList, error) {
+			switch namespace {
+			case "dogfood-missing":
+				return nil, apierrors.NewNotFound(schema.GroupResource{Resource: "pods"}, namespace)
+			case "dogfood-error":
+				return nil, errors.New("temporary API failure")
+			default:
+				return &corev1.PodList{Items: []corev1.Pod{pod("ready", true)}}, nil
+			}
+		},
+		releases, "",
+	)
+
+	assert.Equal(t, 1, missing)
+	assert.Equal(t, 0, unready)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "dogfood-error")
+	assert.Contains(t, out.String(), "| orchestration | `dogfood-missing` | absent |")
+	assert.Contains(t, out.String(), "| orchestration | `dogfood-error` | error |")
+}
+
+func TestWriteTopologyStatus_UsesHubHostAndContextPathForOptimize(t *testing.T) {
+	releases := []topologyRelease{
+		{Role: "hub", Namespace: "dogfood-hub"},
+		{Role: "optimize", Namespace: "dogfood-optplain", OptimizeContextPath: "/optimize-plain"},
+	}
+	out := &bytes.Buffer{}
+
+	missing, unready, err := writeTopologyStatus(
+		context.Background(), out,
+		func(_ context.Context, namespace string) (*corev1.PodList, error) {
+			return &corev1.PodList{Items: []corev1.Pod{pod(fmt.Sprintf("%s-pod", namespace), true)}}, nil
+		},
+		releases, "example.com",
+	)
+
+	require.NoError(t, err)
+	assert.Zero(t, missing)
+	assert.Zero(t, unready)
+	assert.Contains(t, out.String(), "https://dogfood-hub.example.com/optimize-plain")
+	assert.NotContains(t, out.String(), "https://dogfood-optplain.example.com")
 }
 
 func TestNewTopologyUninstallCommand_RejectsAMismatchedConfirmation(t *testing.T) {
