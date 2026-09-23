@@ -346,9 +346,9 @@ jobs:
       }}
     # Sum of the deploy step cap (40m), the per-leg timeouts enforced by
     # `ci e2e-run` (smoke 25m, full 50m, topology 40m per leg, up to 8 legs)
-    # and setup/cleanup, so a leg timeout fires before the job is killed and
-    # the cleanup steps still run.
-    timeout-minutes: ${{ inputs.is-topology && 400 || ((inputs.scenario == 'shadow-e2e' || contains(inputs.e2e-matrix, '"suite":"full"')) && 150 || 90) }}
+    # and 80m for setup, auth refreshes, reports and cleanup, so a leg timeout
+    # fires before the job is killed and the cleanup steps still run.
+    timeout-minutes: ${{ inputs.is-topology && 480 || ((inputs.scenario == 'shadow-e2e' || contains(inputs.e2e-matrix, '"suite":"full"')) && 150 || 90) }}
     container:
       image: ghcr.io/camunda/team-distribution/playwright-runner:latest
       credentials:
@@ -434,8 +434,12 @@ jobs:
             oc version --client
             exit 0
           fi
-          curl -fsSL --retry 5 --retry-all-errors "https://mirror.openshift.com/pub/openshift-v4/clients/ocp/4.17.11/openshift-client-linux.tar.gz" \
-            | tar -xzf - -C /usr/local/bin oc
+          tarball=/tmp/openshift-client-linux-4.17.11.tar.gz
+          curl -fsSL --retry 5 --retry-all-errors -o "$tarball" \
+            "https://mirror.openshift.com/pub/openshift-v4/clients/ocp/4.17.11/openshift-client-linux-4.17.11.tar.gz"
+          echo "c1eed0fd5e1094249aa02697f747b639e5de1da55de5f23a1a3622394ebcb621  $tarball" | sha256sum --check
+          tar -xzf "$tarball" -C /usr/local/bin oc
+          rm -f "$tarball"
           oc version --client
 
       - name: CI Setup - Resolve Helm version
@@ -1754,6 +1758,7 @@ jobs:
         run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
 
       - name: Download deploy-camunda binary
+        id: download-binary
         timeout-minutes: 3
         continue-on-error: true # A sustained artifact-service outage must not skip the namespace-reaping steps below.
         uses: ./.github/actions/download-artifact-retry
@@ -1767,6 +1772,11 @@ jobs:
             chmod +x "${RUNNER_TEMP}/bin/deploy-camunda"
           fi
           echo "${RUNNER_TEMP}/bin" >> "$GITHUB_PATH"
+
+      - name: Build deploy-camunda when the artifact is unavailable
+        if: steps.download-binary.outcome != 'success'
+        continue-on-error: true
+        uses: ./.github/actions/setup-deploy-camunda
 
       - name: CI Setup - ℹ️ Set workflow vars for both install and upgrade ℹ️
         id: vars
