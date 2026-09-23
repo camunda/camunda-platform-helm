@@ -1586,7 +1586,6 @@ jobs:
           scenario: ${{ inputs.scenario }}
           run-smoke-tests: "false"
           playwright-project: ${{ inputs.scenario == 'physicaltenants' && 'physical-tenants' || matrix.playwright_project }}
-          e2e-test-suite-ref: ${{ inputs.scenario == 'physicaltenants' && '4ea02c1ac9b929899e8a4684fe90e9d9e3ca8d47' || '' }}
           e2e-test-suite-token: ${{ steps.e2e-repository-token.outputs.token }}
           artifact-suffix: ${{ matrix.orchestration_suffix }}-${{ matrix.suite }}
       - name: Observe build status
