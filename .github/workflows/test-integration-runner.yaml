@@ -1585,7 +1585,8 @@ jobs:
           shard-index: ${{ matrix.shard_index }}
           scenario: ${{ inputs.scenario }}
           run-smoke-tests: "false"
-          playwright-project: ${{ inputs.scenario == 'physicaltenants' && 'physical-tenants' || matrix.playwright_project }}
+          playwright-project: ${{ matrix.playwright_project }}
+          additional-playwright-project: ${{ inputs.scenario == 'physicaltenants' && 'physical-tenants' || '' }}
           e2e-test-suite-token: ${{ steps.e2e-repository-token.outputs.token }}
           artifact-suffix: ${{ matrix.orchestration_suffix }}-${{ matrix.suite }}
       - name: Observe build status

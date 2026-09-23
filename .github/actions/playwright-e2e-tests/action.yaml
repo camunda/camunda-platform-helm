@@ -64,6 +64,10 @@ inputs:
     description: Named Playwright project to run instead of smoke-tests or full-suite.
     required: false
     default: ""
+  additional-playwright-project:
+    description: Optional second named Playwright project to run after the primary project.
+    required: false
+    default: ""
   physical-tenant-id:
     description: Physical Tenant selected by this topology matrix leg.
     required: false
@@ -382,6 +386,23 @@ runs:
         [[ -n "${{ inputs.e2e-test-suite-ref }}" ]] && E2E_ARGS+=(--local-test-suite "${GITHUB_WORKSPACE}/.e2e-test-suite")
 
         ./run-e2e-tests.sh "${E2E_ARGS[@]}"
+        if [[ -n "${{ inputs.additional-playwright-project }}" ]]; then
+          ADDITIONAL_ARGS=()
+          skip_next=false
+          for arg in "${E2E_ARGS[@]}"; do
+            if [[ "$skip_next" == true ]]; then
+              skip_next=false
+              continue
+            fi
+            if [[ "$arg" == "--playwright-project" ]]; then
+              skip_next=true
+              continue
+            fi
+            ADDITIONAL_ARGS+=("$arg")
+          done
+          ADDITIONAL_ARGS+=(--playwright-project "${{ inputs.additional-playwright-project }}")
+          ./run-e2e-tests.sh "${ADDITIONAL_ARGS[@]}"
+        fi
 
     - name: Capture namespace diagnostics
       if: ${{ !success() }}
