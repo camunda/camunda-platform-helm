@@ -75,3 +75,46 @@ func TestReportE2ERunWritesOutputsAndFailsOnBlocking(t *testing.T) {
 		t.Fatalf("summary missing failed leg: %s", summary)
 	}
 }
+
+func TestCIE2ERunPlanWritesCountAndEnforcesMax(t *testing.T) {
+	legs := `[{"suite":"smoke","blocking":true,"shard_index":1,"shard_total":1},{"suite":"full","blocking":false,"shard_index":1,"shard_total":1}]`
+	base := []string{"--repo-root", t.TempDir(), "--chart-dir", "camunda-platform-8.10", "--namespace", "ns", "--legs", legs, "--plan"}
+
+	outputPath := filepath.Join(t.TempDir(), "out")
+	t.Setenv("GITHUB_OUTPUT", outputPath)
+	command := newCIE2ERunCommand()
+	command.SetArgs(append(base, "--max-legs", "2"))
+	if err := command.Execute(); err != nil {
+		t.Fatalf("plan: %v", err)
+	}
+	got, _ := os.ReadFile(outputPath)
+	if string(got) != "count=2\n" {
+		t.Fatalf("output = %q", got)
+	}
+
+	command = newCIE2ERunCommand()
+	command.SetArgs(append(base, "--max-legs", "1"))
+	if err := command.Execute(); err == nil {
+		t.Fatal("expected an error when more legs are planned than --max-legs")
+	}
+}
+
+func TestCIE2ERunReportFailsWhenBlockingLegDidNotRun(t *testing.T) {
+	t.Setenv("GITHUB_OUTPUT", filepath.Join(t.TempDir(), "out"))
+	t.Setenv("GITHUB_STEP_SUMMARY", "")
+	artifacts := t.TempDir()
+	command := newCIE2ERunCommand()
+	command.SetArgs([]string{"--repo-root", t.TempDir(), "--chart-dir", "camunda-platform-8.10", "--namespace", "ns",
+		"--legs", `[{"suite":"smoke","blocking":true,"shard_index":1,"shard_total":1}]`, "--artifacts-dir", artifacts, "--report"})
+	if err := command.Execute(); err == nil {
+		t.Fatal("expected report to fail for a blocking leg without a result")
+	}
+}
+
+func TestCIE2ERunRejectsOutOfRangeLegIndex(t *testing.T) {
+	command := newCIE2ERunCommand()
+	command.SetArgs([]string{"--repo-root", t.TempDir(), "--chart-dir", "camunda-platform-8.10", "--namespace", "ns", "--legs", "[]", "--leg-index", "0"})
+	if err := command.Execute(); err == nil {
+		t.Fatal("expected out-of-range error")
+	}
+}

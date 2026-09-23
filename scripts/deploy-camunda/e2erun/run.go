@@ -42,6 +42,8 @@ type Runner struct {
 	Exec         ExecFunc
 	Diagnostics  DiagnosticsFunc
 	Log          io.Writer
+	// ScrubEnv names variables removed from every leg's environment.
+	ScrubEnv []string
 }
 
 // LegResult is the outcome of one leg.
@@ -76,43 +78,50 @@ func (r Result) failed(blocking bool) bool {
 func (r Runner) Run(ctx context.Context, legs []Leg) Result {
 	result := Result{}
 	for i, leg := range legs {
-		fmt.Fprintf(r.Log, "==> e2e leg %d/%d %s (namespace %s, blocking %t)\n", i+1, len(legs), leg.ID, leg.Namespace, leg.Blocking)
-		if err := clearSuiteOutputs(leg); err != nil {
-			fmt.Fprintf(r.Log, "warning: %v\n", err)
-		}
-
-		legCtx, cancel := ctx, context.CancelFunc(func() {})
-		if leg.Timeout > 0 {
-			legCtx, cancel = context.WithTimeout(ctx, leg.Timeout)
-		}
-		start := time.Now()
-		err := r.Exec(legCtx, leg, ScriptArgs(leg, r.Scenario), r.env(leg))
-		if err != nil && errors.Is(legCtx.Err(), context.DeadlineExceeded) {
-			err = fmt.Errorf("timed out after %s: %w", leg.Timeout, err)
-		}
-		cancel()
-		lr := LegResult{Leg: leg, Err: err, Duration: time.Since(start).Round(time.Second)}
-
-		if err != nil && r.Diagnostics != nil {
-			path := filepath.Join(r.ArtifactsDir, "diagnostics", leg.ID+".txt")
-			if mkErr := os.MkdirAll(filepath.Dir(path), 0o755); mkErr == nil {
-				if dErr := r.Diagnostics(ctx, leg, path); dErr != nil {
-					fmt.Fprintf(r.Log, "warning: diagnostics for %s: %v\n", leg.ID, dErr)
-				}
-			}
-		}
-		if cErr := collectArtifacts(leg, r.ArtifactsDir); cErr != nil {
-			fmt.Fprintf(r.Log, "warning: collect artifacts for %s: %v\n", leg.ID, cErr)
-		}
-
-		status := "passed"
-		if err != nil {
-			status = fmt.Sprintf("failed: %v", err)
-		}
-		fmt.Fprintf(r.Log, "<== e2e leg %s %s in %s\n", leg.ID, status, lr.Duration)
-		result.Legs = append(result.Legs, lr)
+		fmt.Fprintf(r.Log, "==> e2e leg %d/%d", i+1, len(legs))
+		result.Legs = append(result.Legs, r.RunLeg(ctx, leg))
 	}
 	return result
+}
+
+// RunLeg executes one leg, writes diagnostics when it fails and moves its
+// reports into ArtifactsDir.
+func (r Runner) RunLeg(ctx context.Context, leg Leg) LegResult {
+	fmt.Fprintf(r.Log, " %s (namespace %s, blocking %t)\n", leg.ID, leg.Namespace, leg.Blocking)
+	if err := clearSuiteOutputs(leg); err != nil {
+		fmt.Fprintf(r.Log, "warning: %v\n", err)
+	}
+
+	legCtx, cancel := ctx, context.CancelFunc(func() {})
+	if leg.Timeout > 0 {
+		legCtx, cancel = context.WithTimeout(ctx, leg.Timeout)
+	}
+	start := time.Now()
+	err := r.Exec(legCtx, leg, ScriptArgs(leg, r.Scenario), r.env(leg))
+	if err != nil && errors.Is(legCtx.Err(), context.DeadlineExceeded) {
+		err = fmt.Errorf("timed out after %s: %w", leg.Timeout, err)
+	}
+	cancel()
+	lr := LegResult{Leg: leg, Err: err, Duration: time.Since(start).Round(time.Second)}
+
+	if err != nil && r.Diagnostics != nil {
+		path := filepath.Join(r.ArtifactsDir, "diagnostics", leg.ID+".txt")
+		if mkErr := os.MkdirAll(filepath.Dir(path), 0o755); mkErr == nil {
+			if dErr := r.Diagnostics(ctx, leg, path); dErr != nil {
+				fmt.Fprintf(r.Log, "warning: diagnostics for %s: %v\n", leg.ID, dErr)
+			}
+		}
+	}
+	if cErr := collectArtifacts(leg, r.ArtifactsDir); cErr != nil {
+		fmt.Fprintf(r.Log, "warning: collect artifacts for %s: %v\n", leg.ID, cErr)
+	}
+
+	status := "passed"
+	if err != nil {
+		status = fmt.Sprintf("failed: %v", err)
+	}
+	fmt.Fprintf(r.Log, "<== e2e leg %s %s in %s\n", leg.ID, status, lr.Duration)
+	return lr
 }
 
 func (r Runner) env(leg Leg) []string {
@@ -126,10 +135,14 @@ func (r Runner) env(leg Leg) []string {
 	for k, v := range leg.Env {
 		overrides[k] = v
 	}
+	drop := map[string]bool{"KEYCLOAK_REALM": true}
+	for _, k := range r.ScrubEnv {
+		drop[k] = true
+	}
 	env := []string{}
 	for _, kv := range os.Environ() {
 		key, _, _ := strings.Cut(kv, "=")
-		if _, replaced := overrides[key]; replaced || key == "KEYCLOAK_REALM" {
+		if _, replaced := overrides[key]; replaced || drop[key] {
 			continue
 		}
 		env = append(env, kv)

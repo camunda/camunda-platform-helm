@@ -48,10 +48,13 @@ func newCICommand() *cobra.Command {
 	return ciCmd
 }
 
-// newCIE2ERunCommand creates the "ci e2e-run" subcommand. It runs every e2e leg
-// of a scenario sequentially inside the job that deployed it, so re-running
-// the failed job redeploys before testing again. Every leg runs even after a
-// failure; the command fails only when a blocking leg failed.
+// newCIE2ERunCommand creates the "ci e2e-run" subcommand. It runs the e2e legs
+// of a scenario inside the job that deployed it, so re-running the failed job
+// redeploys before testing again.
+//
+// Without a mode flag it runs every leg and reports. In CI the workflow runs
+// --plan, then one --leg-index step per leg with cluster credentials refreshed
+// in between (the kubeconfig token expires after an hour), then --report.
 func newCIE2ERunCommand() *cobra.Command {
 	var (
 		in           e2erun.PlanInput
@@ -59,18 +62,39 @@ func newCIE2ERunCommand() *cobra.Command {
 		auth         string
 		exclude      string
 		artifactsDir string
+		scrubMapping string
+		planOnly     bool
+		legIndex     int
+		reportOnly   bool
+		maxLegs      int
 	)
 
 	cmd := &cobra.Command{
 		Use:   "e2e-run",
-		Short: "Run a scenario's e2e legs sequentially against its deployed namespace",
-		Long: `Run a scenario's e2e legs sequentially against its deployed namespace.
+		Short: "Run a scenario's e2e legs against its deployed namespace",
+		Long: `Run a scenario's e2e legs against its deployed namespace.
+
+Modes:
+  (none)          run every leg sequentially, then report
+  --plan          write the leg count to $GITHUB_OUTPUT as 'count'
+  --leg-index N   run leg N and record its result; a test failure exits 0
+  --report        aggregate recorded results; exits 1 when a blocking leg
+                  failed or never recorded a result
 
 Reports are moved out of the Playwright suite directory after each leg into
---artifacts-dir (blob-report/, test-results/<leg>/, diagnostics/<leg>.txt).
-Outputs blocking-failed and non-blocking-failed to $GITHUB_OUTPUT and a leg
-table to $GITHUB_STEP_SUMMARY.`,
+--artifacts-dir (blob-report/, test-results/<leg>/, diagnostics/<leg>.txt,
+results/<N>.json). The report writes blocking-failed and non-blocking-failed
+to $GITHUB_OUTPUT and a leg table to $GITHUB_STEP_SUMMARY.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			modes := 0
+			for _, set := range []bool{planOnly, legIndex >= 0, reportOnly} {
+				if set {
+					modes++
+				}
+			}
+			if modes > 1 {
+				return fmt.Errorf("--plan, --leg-index and --report are mutually exclusive")
+			}
 			if in.RepoRoot == "" {
 				detected, err := config.DetectRepoRoot()
 				if err != nil {
@@ -91,9 +115,18 @@ table to $GITHUB_STEP_SUMMARY.`,
 			if err != nil {
 				return err
 			}
-			if len(legs) == 0 {
-				fmt.Fprintln(cmd.OutOrStdout(), "no e2e legs to run")
-				return nil
+
+			switch {
+			case planOnly:
+				if maxLegs > 0 && len(legs) > maxLegs {
+					return fmt.Errorf("%d e2e legs planned but the workflow runs at most %d; add leg steps to test-integration-runner.yaml", len(legs), maxLegs)
+				}
+				for i, leg := range legs {
+					fmt.Fprintf(cmd.OutOrStdout(), "leg %d: %s (namespace %s, blocking %t)\n", i, leg.ID, leg.Namespace, leg.Blocking)
+				}
+				return ghactions.NewGitHubOutput().Set("count", strconv.Itoa(len(legs)))
+			case reportOnly:
+				return reportE2ERun(e2erun.LoadResults(artifactsDir, legs))
 			}
 
 			runner := e2erun.Runner{
@@ -105,9 +138,32 @@ table to $GITHUB_STEP_SUMMARY.`,
 				Exec:         e2erun.ScriptExec(in.RepoRoot, os.Stdout, os.Stderr),
 				Diagnostics:  e2erun.DeployCamundaDiagnostics(),
 				Log:          cmd.OutOrStdout(),
+				ScrubEnv:     e2erun.MappedEnvNames(scrubMapping),
 			}
-			result := runner.Run(cmd.Context(), legs)
-			return reportE2ERun(result)
+
+			if legIndex >= 0 {
+				if legIndex >= len(legs) {
+					return fmt.Errorf("--leg-index %d out of range: %d legs planned", legIndex, len(legs))
+				}
+				lr := runner.RunLeg(cmd.Context(), legs[legIndex])
+				if err := e2erun.SaveResult(artifactsDir, legIndex, lr); err != nil {
+					return fmt.Errorf("record result of leg %s: %w", lr.Leg.ID, err)
+				}
+				if lr.Err != nil {
+					level := "warning"
+					if lr.Leg.Blocking {
+						level = "error"
+					}
+					fmt.Fprintf(os.Stdout, "::%s::e2e leg %s failed: %v\n", level, lr.Leg.ID, lr.Err)
+				}
+				return nil
+			}
+
+			if len(legs) == 0 {
+				fmt.Fprintln(cmd.OutOrStdout(), "no e2e legs to run")
+				return nil
+			}
+			return reportE2ERun(runner.Run(cmd.Context(), legs))
 		},
 	}
 
@@ -124,6 +180,11 @@ table to $GITHUB_STEP_SUMMARY.`,
 	f.StringVar(&auth, "auth", "", "authentication type exported as TEST_AUTH_TYPE")
 	f.StringVar(&exclude, "exclude", "", "test suites to exclude, exported as TEST_EXCLUDE")
 	f.StringVar(&artifactsDir, "artifacts-dir", "e2e-artifacts", "directory collecting reports of every leg")
+	f.StringVar(&scrubMapping, "scrub-vault-mapping", "", "vault-action secrets list whose exported variables are removed from the test environment")
+	f.BoolVar(&planOnly, "plan", false, "only write the planned leg count to $GITHUB_OUTPUT")
+	f.IntVar(&legIndex, "leg-index", -1, "run only this leg (0-based) and record its result")
+	f.BoolVar(&reportOnly, "report", false, "aggregate recorded leg results")
+	f.IntVar(&maxLegs, "max-legs", 0, "with --plan, fail when more legs are planned than this")
 	_ = cmd.MarkFlagRequired("chart-dir")
 	_ = cmd.MarkFlagRequired("namespace")
 

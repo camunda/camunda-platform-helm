@@ -361,7 +361,7 @@ record-result
 - **`upgrade-*` flows:** `deploy-camunda matrix run` installs the previous version and upgrades to the current one, then one blocking smoke leg runs.
 - **`modular-upgrade-minor`:** upgrades the release an earlier install flow deployed, then one blocking smoke leg runs. The namespace is not recreated.
 
-`deploy-camunda ci e2e-run` runs the legs sequentially and runs every leg even after a failure. A failed non-blocking leg is reported as a warning; a failed blocking leg fails the job after reports are uploaded and cleanup has run.
+`deploy-camunda ci e2e-run --plan` counts the legs, then each leg runs in its own step (`--leg-index N`) after the job refreshes its cluster credentials. The GKE kubeconfig token and the EKS tbot certificate expire after an hour, and deploy plus several legs take longer than that. Every leg runs even after an earlier one fails. `--report` then aggregates the results. A failed non-blocking leg is a warning. A failed blocking leg, or a blocking leg that recorded no result, fails the job after reports are uploaded and cleanup has run.
 
 Deploy, test, and cleanup share one job so **Re-run failed jobs** restarts from a fresh deployment. On a rerun, the namespace setup step deletes and recreates the namespace because it carries the same `github-run-id` label.
 

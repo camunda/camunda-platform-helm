@@ -246,3 +246,56 @@ func assertFile(t *testing.T, path, content string) {
 	require.NoError(t, err)
 	assert.Equal(t, content, string(data))
 }
+
+func TestSaveAndLoadResultsTreatsMissingLegAsFailed(t *testing.T) {
+	dir := t.TempDir()
+	legs := []Leg{{ID: "a", Blocking: true}, {ID: "b", Blocking: false}, {ID: "c", Blocking: true}}
+	require.NoError(t, SaveResult(dir, 0, LegResult{Leg: legs[0], Duration: 3 * time.Second}))
+	require.NoError(t, SaveResult(dir, 1, LegResult{Leg: legs[1], Err: errors.New("boom")}))
+
+	result := LoadResults(dir, legs)
+	require.Len(t, result.Legs, 3)
+	assert.NoError(t, result.Legs[0].Err)
+	assert.Equal(t, 3*time.Second, result.Legs[0].Duration)
+	assert.EqualError(t, result.Legs[1].Err, "boom")
+	assert.ErrorContains(t, result.Legs[2].Err, "did not run")
+	assert.True(t, result.BlockingFailed())
+	assert.True(t, result.NonBlockingFailed())
+}
+
+func TestLoadResultsRejectsResultOfDifferentLeg(t *testing.T) {
+	dir := t.TempDir()
+	require.NoError(t, SaveResult(dir, 0, LegResult{Leg: Leg{ID: "other"}}))
+	result := LoadResults(dir, []Leg{{ID: "planned", Blocking: true}})
+	assert.ErrorContains(t, result.Legs[0].Err, "does not match")
+}
+
+func TestMappedEnvNames(t *testing.T) {
+	mapping := `
+secret/data/products/distribution/ci ENTRA_APP_CLIENT_ID;
+secret/data/products/distribution/ci HARBOR_REGISTRY_USER | TEST_DOCKER_USERNAME;
+
+secret/data/products/distribution/ci AUTH0_DOMAIN`
+	assert.Equal(t, []string{
+		"ENTRA_APP_CLIENT_ID", "ENTRA_APP_CLIENT_ID",
+		"TEST_DOCKER_USERNAME", "TEST_DOCKER_USERNAME",
+		"AUTH0_DOMAIN", "AUTH0_DOMAIN",
+	}, MappedEnvNames(mapping))
+	assert.Empty(t, MappedEnvNames(""))
+}
+
+func TestRunLegScrubsMappedSecrets(t *testing.T) {
+	t.Setenv("ENTRA_APP_CLIENT_SECRET", "s3cret")
+	t.Setenv("UNRELATED", "kept")
+	runner := Runner{
+		ArtifactsDir: t.TempDir(),
+		Log:          io.Discard,
+		ScrubEnv:     MappedEnvNames("secret/data/x ENTRA_APP_CLIENT_SECRET;"),
+		Exec: func(_ context.Context, _ Leg, _, env []string) error {
+			assert.Contains(t, env, "UNRELATED=kept")
+			assert.False(t, slices.ContainsFunc(env, func(kv string) bool { return strings.HasPrefix(kv, "ENTRA_APP_CLIENT_SECRET=") }))
+			return nil
+		},
+	}
+	require.NoError(t, runner.RunLeg(context.Background(), Leg{ID: "a", ChartPath: t.TempDir()}).Err)
+}

@@ -344,7 +344,11 @@ jobs:
         )
         || 'ubuntu-latest'
       }}
-    timeout-minutes: ${{ inputs.is-topology && 200 || ((inputs.scenario == 'shadow-e2e' || contains(inputs.e2e-matrix, '"suite":"full"')) && 150 || 90) }}
+    # Sum of the deploy step cap (40m), the per-leg timeouts enforced by
+    # `ci e2e-run` (smoke 25m, full 50m, topology 40m per leg, up to 8 legs)
+    # and setup/cleanup, so a leg timeout fires before the job is killed and
+    # the cleanup steps still run.
+    timeout-minutes: ${{ inputs.is-topology && 400 || ((inputs.scenario == 'shadow-e2e' || contains(inputs.e2e-matrix, '"suite":"full"')) && 150 || 90) }}
     container:
       image: ghcr.io/camunda/team-distribution/playwright-runner:latest
       credentials:
@@ -650,6 +654,8 @@ jobs:
           fi
 
       - name: Helm - 🌟 Deploy Camunda chart 🌟
+        id: deploy
+        timeout-minutes: 40
         # install deploys the current chart. upgrade-patch / upgrade-minor run the
         # two-step orchestration (install previous version + upgrade to current),
         # and modular-upgrade-minor upgrades the existing release.
@@ -843,8 +849,11 @@ jobs:
       # Test
       ##########################################################################################################
 
-      - name: E2E - 🧪 Run Playwright legs 🧪
-        id: e2e
+      # Each leg runs in its own step after refreshing cluster credentials: the
+      # GKE kubeconfig token and the EKS tbot certificate expire after an hour,
+      # and deploy plus several legs outlast that.
+      - name: E2E - Plan Playwright legs
+        id: e2e-plan
         if: inputs.test-enabled && ((inputs.e2e-enabled && !inputs.skip-e2e) || inputs.scenario == 'shadow-e2e')
         env:
           CAMUNDA_HELM_DIR: ${{ inputs.camunda-helm-dir }}
@@ -868,6 +877,7 @@ jobs:
           E2E_SCENARIO: ${{ inputs.scenario }}
           E2E_AUTH: ${{ inputs.auth }}
           E2E_EXCLUDE: ${{ inputs.exclude }}
+          E2E_SCRUB_VAULT_MAPPING: ${{ inputs.vault-secret-mapping }}
         run: |
           deploy-camunda ci e2e-run \
             --repo-root "${GITHUB_WORKSPACE}" \
@@ -881,7 +891,532 @@ jobs:
             --scenario "${E2E_SCENARIO}" \
             --auth "${E2E_AUTH}" \
             --exclude "${E2E_EXCLUDE}" \
-            --artifacts-dir "${GITHUB_WORKSPACE}/e2e-artifacts"
+            --scrub-vault-mapping "${E2E_SCRUB_VAULT_MAPPING}" \
+            --artifacts-dir "${GITHUB_WORKSPACE}/e2e-artifacts" \
+            --plan --max-legs 8
+
+      - name: E2E - Refresh cluster auth before leg 1
+        if: ${{ !cancelled() && steps.deploy.outcome == 'success' && steps.e2e-plan.outcome == 'success' && fromJSON(steps.e2e-plan.outputs.count) > 0 && inputs.auth-data == '' }}
+        uses: ./.github/actions/cluster-auth
+        with:
+          platform: ${{ inputs.distro-platform }}
+          auth-data: ${{ inputs.auth-data }}
+        env:
+          GH_APP_ID:        ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
+          GH_APP_KEY:       ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI_MANAGE_GH_ENVS }}
+          GKE_CLUSTER_NAME: ${{ steps.setup.outputs.GKE_CLUSTER_NAME }}
+          GKE_CLUSTER_LOC:  ${{ steps.setup.outputs.GKE_CLUSTER_LOC }}
+          GKE_WIP:          ${{ steps.setup.outputs.GKE_WIP }}
+          GKE_SA:           ${{ steps.setup.outputs.GKE_SA }}
+          ROSA_URL:         ${{ secrets[inputs.server-url] }}
+          ROSA_USER:        ${{ secrets[inputs.username] }}
+          ROSA_PASS:        ${{ secrets[inputs.password] }}
+          CLUSTER_NAME:     ${{ env.INFRA_CLUSTER_NAME }}
+
+      - name: E2E - 🧪 Run Playwright leg 1 🧪
+        if: ${{ !cancelled() && steps.deploy.outcome == 'success' && steps.e2e-plan.outcome == 'success' && fromJSON(steps.e2e-plan.outputs.count) > 0 }}
+        env:
+          CAMUNDA_HELM_DIR: ${{ inputs.camunda-helm-dir }}
+          E2E_STAGE: ${{ inputs.flow == 'install' && 'after-install' || 'after-upgrade' }}
+          # install runs the registry's legs; upgrade flows run one blocking smoke leg.
+          # A topology scenario runs its per-release legs instead.
+          E2E_SUITE_LEGS: >-
+            ${{
+              (inputs.e2e-enabled && !inputs.skip-e2e && !(inputs.flow == 'install' && inputs.is-topology))
+              && (inputs.flow == 'install' && inputs.e2e-matrix || '[{"suite":"smoke","blocking":true,"shard_index":1,"shard_total":1}]')
+              || '[]'
+            }}
+          E2E_TOPOLOGY_LEGS: >-
+            ${{
+              (inputs.e2e-enabled && !inputs.skip-e2e && inputs.flow == 'install' && inputs.is-topology)
+              && inputs.topology-smoke-matrix
+              || '[]'
+            }}
+          E2E_TOPOLOGY_HUB_SUFFIX: ${{ inputs.topology-hub-suffix }}
+          E2E_SHADOW: ${{ inputs.scenario == 'shadow-e2e' && inputs.flow == 'install' }}
+          E2E_SCENARIO: ${{ inputs.scenario }}
+          E2E_AUTH: ${{ inputs.auth }}
+          E2E_EXCLUDE: ${{ inputs.exclude }}
+          E2E_SCRUB_VAULT_MAPPING: ${{ inputs.vault-secret-mapping }}
+        run: |
+          deploy-camunda ci e2e-run \
+            --repo-root "${GITHUB_WORKSPACE}" \
+            --chart-dir "${CAMUNDA_HELM_DIR}" \
+            --namespace "${TEST_NAMESPACE}" \
+            --stage "${E2E_STAGE}" \
+            --legs "${E2E_SUITE_LEGS}" \
+            --topology-legs "${E2E_TOPOLOGY_LEGS}" \
+            --topology-hub-suffix "${E2E_TOPOLOGY_HUB_SUFFIX}" \
+            --shadow="${E2E_SHADOW}" \
+            --scenario "${E2E_SCENARIO}" \
+            --auth "${E2E_AUTH}" \
+            --exclude "${E2E_EXCLUDE}" \
+            --scrub-vault-mapping "${E2E_SCRUB_VAULT_MAPPING}" \
+            --artifacts-dir "${GITHUB_WORKSPACE}/e2e-artifacts" \
+            --leg-index 0
+
+      - name: E2E - Refresh cluster auth before leg 2
+        if: ${{ !cancelled() && steps.deploy.outcome == 'success' && steps.e2e-plan.outcome == 'success' && fromJSON(steps.e2e-plan.outputs.count) > 1 && inputs.auth-data == '' }}
+        uses: ./.github/actions/cluster-auth
+        with:
+          platform: ${{ inputs.distro-platform }}
+          auth-data: ${{ inputs.auth-data }}
+        env:
+          GH_APP_ID:        ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
+          GH_APP_KEY:       ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI_MANAGE_GH_ENVS }}
+          GKE_CLUSTER_NAME: ${{ steps.setup.outputs.GKE_CLUSTER_NAME }}
+          GKE_CLUSTER_LOC:  ${{ steps.setup.outputs.GKE_CLUSTER_LOC }}
+          GKE_WIP:          ${{ steps.setup.outputs.GKE_WIP }}
+          GKE_SA:           ${{ steps.setup.outputs.GKE_SA }}
+          ROSA_URL:         ${{ secrets[inputs.server-url] }}
+          ROSA_USER:        ${{ secrets[inputs.username] }}
+          ROSA_PASS:        ${{ secrets[inputs.password] }}
+          CLUSTER_NAME:     ${{ env.INFRA_CLUSTER_NAME }}
+
+      - name: E2E - 🧪 Run Playwright leg 2 🧪
+        if: ${{ !cancelled() && steps.deploy.outcome == 'success' && steps.e2e-plan.outcome == 'success' && fromJSON(steps.e2e-plan.outputs.count) > 1 }}
+        env:
+          CAMUNDA_HELM_DIR: ${{ inputs.camunda-helm-dir }}
+          E2E_STAGE: ${{ inputs.flow == 'install' && 'after-install' || 'after-upgrade' }}
+          # install runs the registry's legs; upgrade flows run one blocking smoke leg.
+          # A topology scenario runs its per-release legs instead.
+          E2E_SUITE_LEGS: >-
+            ${{
+              (inputs.e2e-enabled && !inputs.skip-e2e && !(inputs.flow == 'install' && inputs.is-topology))
+              && (inputs.flow == 'install' && inputs.e2e-matrix || '[{"suite":"smoke","blocking":true,"shard_index":1,"shard_total":1}]')
+              || '[]'
+            }}
+          E2E_TOPOLOGY_LEGS: >-
+            ${{
+              (inputs.e2e-enabled && !inputs.skip-e2e && inputs.flow == 'install' && inputs.is-topology)
+              && inputs.topology-smoke-matrix
+              || '[]'
+            }}
+          E2E_TOPOLOGY_HUB_SUFFIX: ${{ inputs.topology-hub-suffix }}
+          E2E_SHADOW: ${{ inputs.scenario == 'shadow-e2e' && inputs.flow == 'install' }}
+          E2E_SCENARIO: ${{ inputs.scenario }}
+          E2E_AUTH: ${{ inputs.auth }}
+          E2E_EXCLUDE: ${{ inputs.exclude }}
+          E2E_SCRUB_VAULT_MAPPING: ${{ inputs.vault-secret-mapping }}
+        run: |
+          deploy-camunda ci e2e-run \
+            --repo-root "${GITHUB_WORKSPACE}" \
+            --chart-dir "${CAMUNDA_HELM_DIR}" \
+            --namespace "${TEST_NAMESPACE}" \
+            --stage "${E2E_STAGE}" \
+            --legs "${E2E_SUITE_LEGS}" \
+            --topology-legs "${E2E_TOPOLOGY_LEGS}" \
+            --topology-hub-suffix "${E2E_TOPOLOGY_HUB_SUFFIX}" \
+            --shadow="${E2E_SHADOW}" \
+            --scenario "${E2E_SCENARIO}" \
+            --auth "${E2E_AUTH}" \
+            --exclude "${E2E_EXCLUDE}" \
+            --scrub-vault-mapping "${E2E_SCRUB_VAULT_MAPPING}" \
+            --artifacts-dir "${GITHUB_WORKSPACE}/e2e-artifacts" \
+            --leg-index 1
+
+      - name: E2E - Refresh cluster auth before leg 3
+        if: ${{ !cancelled() && steps.deploy.outcome == 'success' && steps.e2e-plan.outcome == 'success' && fromJSON(steps.e2e-plan.outputs.count) > 2 && inputs.auth-data == '' }}
+        uses: ./.github/actions/cluster-auth
+        with:
+          platform: ${{ inputs.distro-platform }}
+          auth-data: ${{ inputs.auth-data }}
+        env:
+          GH_APP_ID:        ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
+          GH_APP_KEY:       ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI_MANAGE_GH_ENVS }}
+          GKE_CLUSTER_NAME: ${{ steps.setup.outputs.GKE_CLUSTER_NAME }}
+          GKE_CLUSTER_LOC:  ${{ steps.setup.outputs.GKE_CLUSTER_LOC }}
+          GKE_WIP:          ${{ steps.setup.outputs.GKE_WIP }}
+          GKE_SA:           ${{ steps.setup.outputs.GKE_SA }}
+          ROSA_URL:         ${{ secrets[inputs.server-url] }}
+          ROSA_USER:        ${{ secrets[inputs.username] }}
+          ROSA_PASS:        ${{ secrets[inputs.password] }}
+          CLUSTER_NAME:     ${{ env.INFRA_CLUSTER_NAME }}
+
+      - name: E2E - 🧪 Run Playwright leg 3 🧪
+        if: ${{ !cancelled() && steps.deploy.outcome == 'success' && steps.e2e-plan.outcome == 'success' && fromJSON(steps.e2e-plan.outputs.count) > 2 }}
+        env:
+          CAMUNDA_HELM_DIR: ${{ inputs.camunda-helm-dir }}
+          E2E_STAGE: ${{ inputs.flow == 'install' && 'after-install' || 'after-upgrade' }}
+          # install runs the registry's legs; upgrade flows run one blocking smoke leg.
+          # A topology scenario runs its per-release legs instead.
+          E2E_SUITE_LEGS: >-
+            ${{
+              (inputs.e2e-enabled && !inputs.skip-e2e && !(inputs.flow == 'install' && inputs.is-topology))
+              && (inputs.flow == 'install' && inputs.e2e-matrix || '[{"suite":"smoke","blocking":true,"shard_index":1,"shard_total":1}]')
+              || '[]'
+            }}
+          E2E_TOPOLOGY_LEGS: >-
+            ${{
+              (inputs.e2e-enabled && !inputs.skip-e2e && inputs.flow == 'install' && inputs.is-topology)
+              && inputs.topology-smoke-matrix
+              || '[]'
+            }}
+          E2E_TOPOLOGY_HUB_SUFFIX: ${{ inputs.topology-hub-suffix }}
+          E2E_SHADOW: ${{ inputs.scenario == 'shadow-e2e' && inputs.flow == 'install' }}
+          E2E_SCENARIO: ${{ inputs.scenario }}
+          E2E_AUTH: ${{ inputs.auth }}
+          E2E_EXCLUDE: ${{ inputs.exclude }}
+          E2E_SCRUB_VAULT_MAPPING: ${{ inputs.vault-secret-mapping }}
+        run: |
+          deploy-camunda ci e2e-run \
+            --repo-root "${GITHUB_WORKSPACE}" \
+            --chart-dir "${CAMUNDA_HELM_DIR}" \
+            --namespace "${TEST_NAMESPACE}" \
+            --stage "${E2E_STAGE}" \
+            --legs "${E2E_SUITE_LEGS}" \
+            --topology-legs "${E2E_TOPOLOGY_LEGS}" \
+            --topology-hub-suffix "${E2E_TOPOLOGY_HUB_SUFFIX}" \
+            --shadow="${E2E_SHADOW}" \
+            --scenario "${E2E_SCENARIO}" \
+            --auth "${E2E_AUTH}" \
+            --exclude "${E2E_EXCLUDE}" \
+            --scrub-vault-mapping "${E2E_SCRUB_VAULT_MAPPING}" \
+            --artifacts-dir "${GITHUB_WORKSPACE}/e2e-artifacts" \
+            --leg-index 2
+
+      - name: E2E - Refresh cluster auth before leg 4
+        if: ${{ !cancelled() && steps.deploy.outcome == 'success' && steps.e2e-plan.outcome == 'success' && fromJSON(steps.e2e-plan.outputs.count) > 3 && inputs.auth-data == '' }}
+        uses: ./.github/actions/cluster-auth
+        with:
+          platform: ${{ inputs.distro-platform }}
+          auth-data: ${{ inputs.auth-data }}
+        env:
+          GH_APP_ID:        ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
+          GH_APP_KEY:       ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI_MANAGE_GH_ENVS }}
+          GKE_CLUSTER_NAME: ${{ steps.setup.outputs.GKE_CLUSTER_NAME }}
+          GKE_CLUSTER_LOC:  ${{ steps.setup.outputs.GKE_CLUSTER_LOC }}
+          GKE_WIP:          ${{ steps.setup.outputs.GKE_WIP }}
+          GKE_SA:           ${{ steps.setup.outputs.GKE_SA }}
+          ROSA_URL:         ${{ secrets[inputs.server-url] }}
+          ROSA_USER:        ${{ secrets[inputs.username] }}
+          ROSA_PASS:        ${{ secrets[inputs.password] }}
+          CLUSTER_NAME:     ${{ env.INFRA_CLUSTER_NAME }}
+
+      - name: E2E - 🧪 Run Playwright leg 4 🧪
+        if: ${{ !cancelled() && steps.deploy.outcome == 'success' && steps.e2e-plan.outcome == 'success' && fromJSON(steps.e2e-plan.outputs.count) > 3 }}
+        env:
+          CAMUNDA_HELM_DIR: ${{ inputs.camunda-helm-dir }}
+          E2E_STAGE: ${{ inputs.flow == 'install' && 'after-install' || 'after-upgrade' }}
+          # install runs the registry's legs; upgrade flows run one blocking smoke leg.
+          # A topology scenario runs its per-release legs instead.
+          E2E_SUITE_LEGS: >-
+            ${{
+              (inputs.e2e-enabled && !inputs.skip-e2e && !(inputs.flow == 'install' && inputs.is-topology))
+              && (inputs.flow == 'install' && inputs.e2e-matrix || '[{"suite":"smoke","blocking":true,"shard_index":1,"shard_total":1}]')
+              || '[]'
+            }}
+          E2E_TOPOLOGY_LEGS: >-
+            ${{
+              (inputs.e2e-enabled && !inputs.skip-e2e && inputs.flow == 'install' && inputs.is-topology)
+              && inputs.topology-smoke-matrix
+              || '[]'
+            }}
+          E2E_TOPOLOGY_HUB_SUFFIX: ${{ inputs.topology-hub-suffix }}
+          E2E_SHADOW: ${{ inputs.scenario == 'shadow-e2e' && inputs.flow == 'install' }}
+          E2E_SCENARIO: ${{ inputs.scenario }}
+          E2E_AUTH: ${{ inputs.auth }}
+          E2E_EXCLUDE: ${{ inputs.exclude }}
+          E2E_SCRUB_VAULT_MAPPING: ${{ inputs.vault-secret-mapping }}
+        run: |
+          deploy-camunda ci e2e-run \
+            --repo-root "${GITHUB_WORKSPACE}" \
+            --chart-dir "${CAMUNDA_HELM_DIR}" \
+            --namespace "${TEST_NAMESPACE}" \
+            --stage "${E2E_STAGE}" \
+            --legs "${E2E_SUITE_LEGS}" \
+            --topology-legs "${E2E_TOPOLOGY_LEGS}" \
+            --topology-hub-suffix "${E2E_TOPOLOGY_HUB_SUFFIX}" \
+            --shadow="${E2E_SHADOW}" \
+            --scenario "${E2E_SCENARIO}" \
+            --auth "${E2E_AUTH}" \
+            --exclude "${E2E_EXCLUDE}" \
+            --scrub-vault-mapping "${E2E_SCRUB_VAULT_MAPPING}" \
+            --artifacts-dir "${GITHUB_WORKSPACE}/e2e-artifacts" \
+            --leg-index 3
+
+      - name: E2E - Refresh cluster auth before leg 5
+        if: ${{ !cancelled() && steps.deploy.outcome == 'success' && steps.e2e-plan.outcome == 'success' && fromJSON(steps.e2e-plan.outputs.count) > 4 && inputs.auth-data == '' }}
+        uses: ./.github/actions/cluster-auth
+        with:
+          platform: ${{ inputs.distro-platform }}
+          auth-data: ${{ inputs.auth-data }}
+        env:
+          GH_APP_ID:        ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
+          GH_APP_KEY:       ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI_MANAGE_GH_ENVS }}
+          GKE_CLUSTER_NAME: ${{ steps.setup.outputs.GKE_CLUSTER_NAME }}
+          GKE_CLUSTER_LOC:  ${{ steps.setup.outputs.GKE_CLUSTER_LOC }}
+          GKE_WIP:          ${{ steps.setup.outputs.GKE_WIP }}
+          GKE_SA:           ${{ steps.setup.outputs.GKE_SA }}
+          ROSA_URL:         ${{ secrets[inputs.server-url] }}
+          ROSA_USER:        ${{ secrets[inputs.username] }}
+          ROSA_PASS:        ${{ secrets[inputs.password] }}
+          CLUSTER_NAME:     ${{ env.INFRA_CLUSTER_NAME }}
+
+      - name: E2E - 🧪 Run Playwright leg 5 🧪
+        if: ${{ !cancelled() && steps.deploy.outcome == 'success' && steps.e2e-plan.outcome == 'success' && fromJSON(steps.e2e-plan.outputs.count) > 4 }}
+        env:
+          CAMUNDA_HELM_DIR: ${{ inputs.camunda-helm-dir }}
+          E2E_STAGE: ${{ inputs.flow == 'install' && 'after-install' || 'after-upgrade' }}
+          # install runs the registry's legs; upgrade flows run one blocking smoke leg.
+          # A topology scenario runs its per-release legs instead.
+          E2E_SUITE_LEGS: >-
+            ${{
+              (inputs.e2e-enabled && !inputs.skip-e2e && !(inputs.flow == 'install' && inputs.is-topology))
+              && (inputs.flow == 'install' && inputs.e2e-matrix || '[{"suite":"smoke","blocking":true,"shard_index":1,"shard_total":1}]')
+              || '[]'
+            }}
+          E2E_TOPOLOGY_LEGS: >-
+            ${{
+              (inputs.e2e-enabled && !inputs.skip-e2e && inputs.flow == 'install' && inputs.is-topology)
+              && inputs.topology-smoke-matrix
+              || '[]'
+            }}
+          E2E_TOPOLOGY_HUB_SUFFIX: ${{ inputs.topology-hub-suffix }}
+          E2E_SHADOW: ${{ inputs.scenario == 'shadow-e2e' && inputs.flow == 'install' }}
+          E2E_SCENARIO: ${{ inputs.scenario }}
+          E2E_AUTH: ${{ inputs.auth }}
+          E2E_EXCLUDE: ${{ inputs.exclude }}
+          E2E_SCRUB_VAULT_MAPPING: ${{ inputs.vault-secret-mapping }}
+        run: |
+          deploy-camunda ci e2e-run \
+            --repo-root "${GITHUB_WORKSPACE}" \
+            --chart-dir "${CAMUNDA_HELM_DIR}" \
+            --namespace "${TEST_NAMESPACE}" \
+            --stage "${E2E_STAGE}" \
+            --legs "${E2E_SUITE_LEGS}" \
+            --topology-legs "${E2E_TOPOLOGY_LEGS}" \
+            --topology-hub-suffix "${E2E_TOPOLOGY_HUB_SUFFIX}" \
+            --shadow="${E2E_SHADOW}" \
+            --scenario "${E2E_SCENARIO}" \
+            --auth "${E2E_AUTH}" \
+            --exclude "${E2E_EXCLUDE}" \
+            --scrub-vault-mapping "${E2E_SCRUB_VAULT_MAPPING}" \
+            --artifacts-dir "${GITHUB_WORKSPACE}/e2e-artifacts" \
+            --leg-index 4
+
+      - name: E2E - Refresh cluster auth before leg 6
+        if: ${{ !cancelled() && steps.deploy.outcome == 'success' && steps.e2e-plan.outcome == 'success' && fromJSON(steps.e2e-plan.outputs.count) > 5 && inputs.auth-data == '' }}
+        uses: ./.github/actions/cluster-auth
+        with:
+          platform: ${{ inputs.distro-platform }}
+          auth-data: ${{ inputs.auth-data }}
+        env:
+          GH_APP_ID:        ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
+          GH_APP_KEY:       ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI_MANAGE_GH_ENVS }}
+          GKE_CLUSTER_NAME: ${{ steps.setup.outputs.GKE_CLUSTER_NAME }}
+          GKE_CLUSTER_LOC:  ${{ steps.setup.outputs.GKE_CLUSTER_LOC }}
+          GKE_WIP:          ${{ steps.setup.outputs.GKE_WIP }}
+          GKE_SA:           ${{ steps.setup.outputs.GKE_SA }}
+          ROSA_URL:         ${{ secrets[inputs.server-url] }}
+          ROSA_USER:        ${{ secrets[inputs.username] }}
+          ROSA_PASS:        ${{ secrets[inputs.password] }}
+          CLUSTER_NAME:     ${{ env.INFRA_CLUSTER_NAME }}
+
+      - name: E2E - 🧪 Run Playwright leg 6 🧪
+        if: ${{ !cancelled() && steps.deploy.outcome == 'success' && steps.e2e-plan.outcome == 'success' && fromJSON(steps.e2e-plan.outputs.count) > 5 }}
+        env:
+          CAMUNDA_HELM_DIR: ${{ inputs.camunda-helm-dir }}
+          E2E_STAGE: ${{ inputs.flow == 'install' && 'after-install' || 'after-upgrade' }}
+          # install runs the registry's legs; upgrade flows run one blocking smoke leg.
+          # A topology scenario runs its per-release legs instead.
+          E2E_SUITE_LEGS: >-
+            ${{
+              (inputs.e2e-enabled && !inputs.skip-e2e && !(inputs.flow == 'install' && inputs.is-topology))
+              && (inputs.flow == 'install' && inputs.e2e-matrix || '[{"suite":"smoke","blocking":true,"shard_index":1,"shard_total":1}]')
+              || '[]'
+            }}
+          E2E_TOPOLOGY_LEGS: >-
+            ${{
+              (inputs.e2e-enabled && !inputs.skip-e2e && inputs.flow == 'install' && inputs.is-topology)
+              && inputs.topology-smoke-matrix
+              || '[]'
+            }}
+          E2E_TOPOLOGY_HUB_SUFFIX: ${{ inputs.topology-hub-suffix }}
+          E2E_SHADOW: ${{ inputs.scenario == 'shadow-e2e' && inputs.flow == 'install' }}
+          E2E_SCENARIO: ${{ inputs.scenario }}
+          E2E_AUTH: ${{ inputs.auth }}
+          E2E_EXCLUDE: ${{ inputs.exclude }}
+          E2E_SCRUB_VAULT_MAPPING: ${{ inputs.vault-secret-mapping }}
+        run: |
+          deploy-camunda ci e2e-run \
+            --repo-root "${GITHUB_WORKSPACE}" \
+            --chart-dir "${CAMUNDA_HELM_DIR}" \
+            --namespace "${TEST_NAMESPACE}" \
+            --stage "${E2E_STAGE}" \
+            --legs "${E2E_SUITE_LEGS}" \
+            --topology-legs "${E2E_TOPOLOGY_LEGS}" \
+            --topology-hub-suffix "${E2E_TOPOLOGY_HUB_SUFFIX}" \
+            --shadow="${E2E_SHADOW}" \
+            --scenario "${E2E_SCENARIO}" \
+            --auth "${E2E_AUTH}" \
+            --exclude "${E2E_EXCLUDE}" \
+            --scrub-vault-mapping "${E2E_SCRUB_VAULT_MAPPING}" \
+            --artifacts-dir "${GITHUB_WORKSPACE}/e2e-artifacts" \
+            --leg-index 5
+
+      - name: E2E - Refresh cluster auth before leg 7
+        if: ${{ !cancelled() && steps.deploy.outcome == 'success' && steps.e2e-plan.outcome == 'success' && fromJSON(steps.e2e-plan.outputs.count) > 6 && inputs.auth-data == '' }}
+        uses: ./.github/actions/cluster-auth
+        with:
+          platform: ${{ inputs.distro-platform }}
+          auth-data: ${{ inputs.auth-data }}
+        env:
+          GH_APP_ID:        ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
+          GH_APP_KEY:       ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI_MANAGE_GH_ENVS }}
+          GKE_CLUSTER_NAME: ${{ steps.setup.outputs.GKE_CLUSTER_NAME }}
+          GKE_CLUSTER_LOC:  ${{ steps.setup.outputs.GKE_CLUSTER_LOC }}
+          GKE_WIP:          ${{ steps.setup.outputs.GKE_WIP }}
+          GKE_SA:           ${{ steps.setup.outputs.GKE_SA }}
+          ROSA_URL:         ${{ secrets[inputs.server-url] }}
+          ROSA_USER:        ${{ secrets[inputs.username] }}
+          ROSA_PASS:        ${{ secrets[inputs.password] }}
+          CLUSTER_NAME:     ${{ env.INFRA_CLUSTER_NAME }}
+
+      - name: E2E - 🧪 Run Playwright leg 7 🧪
+        if: ${{ !cancelled() && steps.deploy.outcome == 'success' && steps.e2e-plan.outcome == 'success' && fromJSON(steps.e2e-plan.outputs.count) > 6 }}
+        env:
+          CAMUNDA_HELM_DIR: ${{ inputs.camunda-helm-dir }}
+          E2E_STAGE: ${{ inputs.flow == 'install' && 'after-install' || 'after-upgrade' }}
+          # install runs the registry's legs; upgrade flows run one blocking smoke leg.
+          # A topology scenario runs its per-release legs instead.
+          E2E_SUITE_LEGS: >-
+            ${{
+              (inputs.e2e-enabled && !inputs.skip-e2e && !(inputs.flow == 'install' && inputs.is-topology))
+              && (inputs.flow == 'install' && inputs.e2e-matrix || '[{"suite":"smoke","blocking":true,"shard_index":1,"shard_total":1}]')
+              || '[]'
+            }}
+          E2E_TOPOLOGY_LEGS: >-
+            ${{
+              (inputs.e2e-enabled && !inputs.skip-e2e && inputs.flow == 'install' && inputs.is-topology)
+              && inputs.topology-smoke-matrix
+              || '[]'
+            }}
+          E2E_TOPOLOGY_HUB_SUFFIX: ${{ inputs.topology-hub-suffix }}
+          E2E_SHADOW: ${{ inputs.scenario == 'shadow-e2e' && inputs.flow == 'install' }}
+          E2E_SCENARIO: ${{ inputs.scenario }}
+          E2E_AUTH: ${{ inputs.auth }}
+          E2E_EXCLUDE: ${{ inputs.exclude }}
+          E2E_SCRUB_VAULT_MAPPING: ${{ inputs.vault-secret-mapping }}
+        run: |
+          deploy-camunda ci e2e-run \
+            --repo-root "${GITHUB_WORKSPACE}" \
+            --chart-dir "${CAMUNDA_HELM_DIR}" \
+            --namespace "${TEST_NAMESPACE}" \
+            --stage "${E2E_STAGE}" \
+            --legs "${E2E_SUITE_LEGS}" \
+            --topology-legs "${E2E_TOPOLOGY_LEGS}" \
+            --topology-hub-suffix "${E2E_TOPOLOGY_HUB_SUFFIX}" \
+            --shadow="${E2E_SHADOW}" \
+            --scenario "${E2E_SCENARIO}" \
+            --auth "${E2E_AUTH}" \
+            --exclude "${E2E_EXCLUDE}" \
+            --scrub-vault-mapping "${E2E_SCRUB_VAULT_MAPPING}" \
+            --artifacts-dir "${GITHUB_WORKSPACE}/e2e-artifacts" \
+            --leg-index 6
+
+      - name: E2E - Refresh cluster auth before leg 8
+        if: ${{ !cancelled() && steps.deploy.outcome == 'success' && steps.e2e-plan.outcome == 'success' && fromJSON(steps.e2e-plan.outputs.count) > 7 && inputs.auth-data == '' }}
+        uses: ./.github/actions/cluster-auth
+        with:
+          platform: ${{ inputs.distro-platform }}
+          auth-data: ${{ inputs.auth-data }}
+        env:
+          GH_APP_ID:        ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
+          GH_APP_KEY:       ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI_MANAGE_GH_ENVS }}
+          GKE_CLUSTER_NAME: ${{ steps.setup.outputs.GKE_CLUSTER_NAME }}
+          GKE_CLUSTER_LOC:  ${{ steps.setup.outputs.GKE_CLUSTER_LOC }}
+          GKE_WIP:          ${{ steps.setup.outputs.GKE_WIP }}
+          GKE_SA:           ${{ steps.setup.outputs.GKE_SA }}
+          ROSA_URL:         ${{ secrets[inputs.server-url] }}
+          ROSA_USER:        ${{ secrets[inputs.username] }}
+          ROSA_PASS:        ${{ secrets[inputs.password] }}
+          CLUSTER_NAME:     ${{ env.INFRA_CLUSTER_NAME }}
+
+      - name: E2E - 🧪 Run Playwright leg 8 🧪
+        if: ${{ !cancelled() && steps.deploy.outcome == 'success' && steps.e2e-plan.outcome == 'success' && fromJSON(steps.e2e-plan.outputs.count) > 7 }}
+        env:
+          CAMUNDA_HELM_DIR: ${{ inputs.camunda-helm-dir }}
+          E2E_STAGE: ${{ inputs.flow == 'install' && 'after-install' || 'after-upgrade' }}
+          # install runs the registry's legs; upgrade flows run one blocking smoke leg.
+          # A topology scenario runs its per-release legs instead.
+          E2E_SUITE_LEGS: >-
+            ${{
+              (inputs.e2e-enabled && !inputs.skip-e2e && !(inputs.flow == 'install' && inputs.is-topology))
+              && (inputs.flow == 'install' && inputs.e2e-matrix || '[{"suite":"smoke","blocking":true,"shard_index":1,"shard_total":1}]')
+              || '[]'
+            }}
+          E2E_TOPOLOGY_LEGS: >-
+            ${{
+              (inputs.e2e-enabled && !inputs.skip-e2e && inputs.flow == 'install' && inputs.is-topology)
+              && inputs.topology-smoke-matrix
+              || '[]'
+            }}
+          E2E_TOPOLOGY_HUB_SUFFIX: ${{ inputs.topology-hub-suffix }}
+          E2E_SHADOW: ${{ inputs.scenario == 'shadow-e2e' && inputs.flow == 'install' }}
+          E2E_SCENARIO: ${{ inputs.scenario }}
+          E2E_AUTH: ${{ inputs.auth }}
+          E2E_EXCLUDE: ${{ inputs.exclude }}
+          E2E_SCRUB_VAULT_MAPPING: ${{ inputs.vault-secret-mapping }}
+        run: |
+          deploy-camunda ci e2e-run \
+            --repo-root "${GITHUB_WORKSPACE}" \
+            --chart-dir "${CAMUNDA_HELM_DIR}" \
+            --namespace "${TEST_NAMESPACE}" \
+            --stage "${E2E_STAGE}" \
+            --legs "${E2E_SUITE_LEGS}" \
+            --topology-legs "${E2E_TOPOLOGY_LEGS}" \
+            --topology-hub-suffix "${E2E_TOPOLOGY_HUB_SUFFIX}" \
+            --shadow="${E2E_SHADOW}" \
+            --scenario "${E2E_SCENARIO}" \
+            --auth "${E2E_AUTH}" \
+            --exclude "${E2E_EXCLUDE}" \
+            --scrub-vault-mapping "${E2E_SCRUB_VAULT_MAPPING}" \
+            --artifacts-dir "${GITHUB_WORKSPACE}/e2e-artifacts" \
+            --leg-index 7
+
+      - name: E2E - Report Playwright legs
+        id: e2e
+        if: always() && steps.e2e-plan.outcome == 'success' && fromJSON(steps.e2e-plan.outputs.count) > 0
+        env:
+          CAMUNDA_HELM_DIR: ${{ inputs.camunda-helm-dir }}
+          E2E_STAGE: ${{ inputs.flow == 'install' && 'after-install' || 'after-upgrade' }}
+          # install runs the registry's legs; upgrade flows run one blocking smoke leg.
+          # A topology scenario runs its per-release legs instead.
+          E2E_SUITE_LEGS: >-
+            ${{
+              (inputs.e2e-enabled && !inputs.skip-e2e && !(inputs.flow == 'install' && inputs.is-topology))
+              && (inputs.flow == 'install' && inputs.e2e-matrix || '[{"suite":"smoke","blocking":true,"shard_index":1,"shard_total":1}]')
+              || '[]'
+            }}
+          E2E_TOPOLOGY_LEGS: >-
+            ${{
+              (inputs.e2e-enabled && !inputs.skip-e2e && inputs.flow == 'install' && inputs.is-topology)
+              && inputs.topology-smoke-matrix
+              || '[]'
+            }}
+          E2E_TOPOLOGY_HUB_SUFFIX: ${{ inputs.topology-hub-suffix }}
+          E2E_SHADOW: ${{ inputs.scenario == 'shadow-e2e' && inputs.flow == 'install' }}
+          E2E_SCENARIO: ${{ inputs.scenario }}
+          E2E_AUTH: ${{ inputs.auth }}
+          E2E_EXCLUDE: ${{ inputs.exclude }}
+          E2E_SCRUB_VAULT_MAPPING: ${{ inputs.vault-secret-mapping }}
+        run: |
+          deploy-camunda ci e2e-run \
+            --repo-root "${GITHUB_WORKSPACE}" \
+            --chart-dir "${CAMUNDA_HELM_DIR}" \
+            --namespace "${TEST_NAMESPACE}" \
+            --stage "${E2E_STAGE}" \
+            --legs "${E2E_SUITE_LEGS}" \
+            --topology-legs "${E2E_TOPOLOGY_LEGS}" \
+            --topology-hub-suffix "${E2E_TOPOLOGY_HUB_SUFFIX}" \
+            --shadow="${E2E_SHADOW}" \
+            --scenario "${E2E_SCENARIO}" \
+            --auth "${E2E_AUTH}" \
+            --exclude "${E2E_EXCLUDE}" \
+            --scrub-vault-mapping "${E2E_SCRUB_VAULT_MAPPING}" \
+            --artifacts-dir "${GITHUB_WORKSPACE}/e2e-artifacts" \
+            --report
 
       - name: E2E - Merge HTML report
         id: merge-report
