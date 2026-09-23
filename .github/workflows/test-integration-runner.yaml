@@ -362,6 +362,7 @@ jobs:
       vars-identifier: ${{ steps.setup.outputs.identifier }}
       vars-ingress-host: ${{ steps.setup.outputs.ingress-host }}
       vars-namespace: ${{ steps.setup.outputs.namespace }}
+      cleanup-done: ${{ steps.cleanup-done.outputs.done }}
     permissions:
       contents: read
       id-token: write
@@ -406,6 +407,17 @@ jobs:
         run: |
           chmod +x "${RUNNER_TEMP}/bin/deploy-camunda"
           echo "${RUNNER_TEMP}/bin" >> "$GITHUB_PATH"
+
+      # The binary is built from camunda-helm-git-ref, which can predate `ci e2e-run`.
+      - name: CI Setup - Check e2e runner support
+        if: inputs.test-enabled && ((inputs.e2e-enabled && !inputs.skip-e2e) || inputs.scenario == 'shadow-e2e')
+        env:
+          HELM_GIT_REF: ${{ inputs.camunda-helm-git-ref }}
+        run: |
+          if ! deploy-camunda ci e2e-run --help > /dev/null 2>&1; then
+            echo "::error title=Incompatible camunda-helm-git-ref::camunda-helm-git-ref '${HELM_GIT_REF}' builds a deploy-camunda without 'ci e2e-run', which this runner needs to run e2e. Rebase the ref onto camunda-platform-helm main, or set e2e-enabled: false."
+            exit 1
+          fi
 
       - name: Configure curl and wget
         uses: ./.github/actions/setup-curl
@@ -1641,6 +1653,11 @@ jobs:
             fi
           done < <(jq -r '.[]' <<< '${{ inputs.topology-namespace-suffixes }}')
 
+      - name: CI Cleanup - Mark cleanup done
+        id: cleanup-done
+        if: always()
+        run: echo "done=true" >> "$GITHUB_OUTPUT"
+
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -1703,3 +1720,201 @@ jobs:
             --flow "${{ inputs.flow }}" \
             --repo-root "${{ github.workspace }}" \
             --target-url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+  # Runs only when the integration job ended before its own cleanup steps
+  # finished (job timeout, cancellation, lost runner).
+  cleanup-fallback:
+    name: Cleanup fallback - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
+    needs: [integration]
+    if: ${{ always() && needs.integration.result != 'skipped' && needs.integration.outputs.cleanup-done != 'true' }}
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/camunda/team-distribution/ci-runner:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+      options: --user root
+    defaults:
+      run:
+        shell: bash
+    permissions:
+      contents: read
+      id-token: write
+      deployments: write
+      packages: read
+    steps:
+      - name: CI Setup - Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          # This is needed to load repo GH composite actions if the workflow triggered by workflow_call.
+          repository: camunda/camunda-platform-helm
+          ref: ${{ inputs.camunda-helm-git-ref }}
+
+      - name: CI Setup - Configure Git safe directory
+        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+
+      - name: Download deploy-camunda binary
+        timeout-minutes: 3
+        continue-on-error: true # A sustained artifact-service outage must not skip the namespace-reaping steps below.
+        uses: ./.github/actions/download-artifact-retry
+        with:
+          name: ${{ inputs.binary-artifact-name }}
+          path: ${{ runner.temp }}/bin
+
+      - name: Add deploy-camunda to PATH
+        run: |
+          if [ -f "${RUNNER_TEMP}/bin/deploy-camunda" ]; then
+            chmod +x "${RUNNER_TEMP}/bin/deploy-camunda"
+          fi
+          echo "${RUNNER_TEMP}/bin" >> "$GITHUB_PATH"
+
+      - name: CI Setup - ℹ️ Set workflow vars for both install and upgrade ℹ️
+        id: vars
+        uses: ./.github/actions/workflow-vars
+        with:
+          deployment-ttl: ${{ env.CI_DEPLOYMENT_TTL }}
+          setup-flow: ${{ inputs.flow }}
+          platform: ${{ inputs.distro-platform }}
+          identifier-base: ${{ inputs.identifier }}
+          chart-dir: ${{ inputs.camunda-helm-dir }}
+          chart-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
+          prefix: ${{ inputs.namespace-prefix }}
+
+      - name: CI Setup - Set test type vars
+        id: test-type-vars
+        uses: ./.github/actions/test-type-vars
+        with:
+          chart-dir: "${{ inputs.camunda-helm-dir }}"
+          infra-type: "${{ inputs.infra-type }}"
+          platform: "${{ inputs.distro-platform }}"
+          flow: "${{ inputs.flow }}"
+
+      - name: Import Vault secrets
+        if: inputs.distro-platform == 'gke'
+        id: test-credentials-secret
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/distribution/ci DISTRO_CI_GCP_GKE_CLUSTER_NAME;
+            secret/data/products/distribution/ci DISTRO_CI_GCP_GKE_CLUSTER_LOCATION;
+            secret/data/products/distribution/ci DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER;
+            secret/data/products/distribution/ci DISTRO_CI_GCP_SERVICE_ACCOUNT;
+            secret/data/products/distribution/ci AUTH0_DOMAIN;
+            secret/data/products/distribution/ci AUTH0_MGMT_CLIENT_ID;
+            secret/data/products/distribution/ci AUTH0_MGMT_CLIENT_SECRET;
+            secret/data/products/distribution/ci ENTRA_APP_CLIENT_ID;
+            secret/data/products/distribution/ci ENTRA_APP_CLIENT_SECRET;
+            secret/data/products/distribution/ci ENTRA_APP_OBJECT_ID;
+            secret/data/products/distribution/ci ENTRA_APP_DIRECTORY_ID;
+          exportEnv: false
+
+      - name: CI Setup - Authenticate to cluster
+        id: cluster-auth
+        uses: ./.github/actions/cluster-auth
+        with:
+          platform: ${{ inputs.distro-platform }}
+          auth-data: ${{ inputs.auth-data }}
+        env:
+          GH_APP_ID:        ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
+          GH_APP_KEY:       ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI_MANAGE_GH_ENVS }}
+          GKE_CLUSTER_NAME: ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_GKE_CLUSTER_NAME }}
+          GKE_CLUSTER_LOC:  ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_GKE_CLUSTER_LOCATION }}
+          GKE_WIP:          ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          GKE_SA:           ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_SERVICE_ACCOUNT }}
+          ROSA_URL:         ${{ secrets[inputs.server-url] }}
+          ROSA_USER:        ${{ secrets[inputs.username] }}
+          ROSA_PASS:        ${{ secrets[inputs.password] }}
+          CLUSTER_NAME:     ${{ env.INFRA_CLUSTER_NAME }}
+
+
+      - name: CI Cleanup - Cleanup GitHub deployment
+        if: always() && (env.CI_DEPLOYMENT_TTL == '' || inputs.distro-type != 'kubernetes')
+        continue-on-error: true # We don't want to fail if the deployment is not found.
+        uses: bobheadxi/deployments@648679e8e4915b27893bd7dbc35cb504dc915bc8 # v1
+        with:
+          step: delete-env
+          token: ${{ steps.cluster-auth.outputs.token }}
+          env: ${{ steps.vars.outputs.identifier }}
+          ref: ${{ inputs.caller-git-ref }}
+
+      - name: CI Cleanup - Delete venom Entra app registration
+        if: always() && (inputs.auth == 'oidc' || inputs.scenario == 'oidc' || inputs.test-identity == 'oidc')
+        continue-on-error: true
+        env:
+          ENTRA_APP_CLIENT_ID: ${{ steps.test-credentials-secret.outputs.ENTRA_APP_CLIENT_ID }}
+          ENTRA_APP_CLIENT_SECRET: ${{ steps.test-credentials-secret.outputs.ENTRA_APP_CLIENT_SECRET }}
+          ENTRA_APP_OBJECT_ID: ${{ steps.test-credentials-secret.outputs.ENTRA_APP_OBJECT_ID }}
+          ENTRA_APP_DIRECTORY_ID: ${{ steps.test-credentials-secret.outputs.ENTRA_APP_DIRECTORY_ID }}
+        run: |
+          deploy-camunda entra cleanup-venom-app \
+            --namespace "$TEST_NAMESPACE" \
+            --log-level info
+
+      - name: CI Cleanup - Delete Auth0 OIDC clients
+        # Mirrors the Entra cleanup above. The auth0 scenario provisions
+        # per-component first-party clients in the tenant via
+        # `auth0 ensure-clients`; namespace deletion does not touch the
+        # tenant, so without this step orphans accumulate across PR runs.
+        if: always() && inputs.scenario == 'auth0'
+        continue-on-error: true
+        env:
+          AUTH0_DOMAIN: ${{ steps.test-credentials-secret.outputs.AUTH0_DOMAIN }}
+          AUTH0_MGMT_CLIENT_ID: ${{ steps.test-credentials-secret.outputs.AUTH0_MGMT_CLIENT_ID }}
+          AUTH0_MGMT_CLIENT_SECRET: ${{ steps.test-credentials-secret.outputs.AUTH0_MGMT_CLIENT_SECRET }}
+        run: |
+          deploy-camunda auth0 cleanup-clients \
+            --namespace "$TEST_NAMESPACE" \
+            --domain "$AUTH0_DOMAIN" \
+            --log-level info
+
+      - name: CI Cleanup
+        if: always() && inputs.always-delete-namespace
+        env:
+          OPENSEARCH_USERNAME: ${{ steps.test-credentials-secret.outputs.OPENSEARCH_USERNAME }}
+          OPENSEARCH_PASSWORD: ${{ steps.test-credentials-secret.outputs.OPENSEARCH_PASSWORD }}
+        run: |
+          kubectl annotate ns $TEST_NAMESPACE test-flow=${{ inputs.flow }} --overwrite || true
+          kubectl annotate ns $TEST_NAMESPACE build-failed=true --overwrite || true
+
+          if [[ "$(kubectl get ns $TEST_NAMESPACE --ignore-not-found)" != "" && "${{ env.CI_DEPLOYMENT_TTL }}" == "" ]]; then
+            kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=1s --overwrite=true
+            kubectl annotate ns $TEST_NAMESPACE janitor/ttl=1s --overwrite=true
+          else
+            if [[ "${{ inputs.distro-type }}" == "kubernetes" && "${{ env.CI_DEPLOYMENT_TTL }}" != "" ]]; then
+              kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=${CI_DEPLOYMENT_TTL} --overwrite=true || true
+              kubectl annotate ns $TEST_NAMESPACE janitor/ttl=${CI_DEPLOYMENT_TTL} --overwrite=true || true
+            else
+              kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=1s --overwrite=true || true
+              kubectl annotate ns $TEST_NAMESPACE janitor/ttl=1s --overwrite=true || true
+            fi
+          fi
+
+      - name: CI Cleanup - Reap topology namespaces
+        if: always() && inputs.always-delete-namespace && inputs.is-topology
+        env:
+          OPENSEARCH_USERNAME: ${{ steps.test-credentials-secret.outputs.OPENSEARCH_USERNAME }}
+          OPENSEARCH_PASSWORD: ${{ steps.test-credentials-secret.outputs.OPENSEARCH_PASSWORD }}
+        run: |
+          while IFS= read -r suffix; do
+            ns="$(deploy-camunda topology namespace --base "$TEST_NAMESPACE" --suffix "$suffix")"
+
+            kubectl annotate ns "$ns" test-flow=${{ inputs.flow }} --overwrite || true
+            kubectl annotate ns "$ns" build-failed=true --overwrite || true
+
+            if [[ "$(kubectl get ns "$ns" --ignore-not-found)" != "" && "${{ env.CI_DEPLOYMENT_TTL }}" == "" ]]; then
+              kubectl annotate ns "$ns" cleaner/ttl=1s --overwrite=true || true
+              kubectl annotate ns "$ns" janitor/ttl=1s --overwrite=true || true
+            else
+              if [[ "${{ inputs.distro-type }}" == "kubernetes" && "${{ env.CI_DEPLOYMENT_TTL }}" != "" ]]; then
+                kubectl annotate ns "$ns" cleaner/ttl="${CI_DEPLOYMENT_TTL}" --overwrite=true || true
+                kubectl annotate ns "$ns" janitor/ttl="${CI_DEPLOYMENT_TTL}" --overwrite=true || true
+              else
+                kubectl annotate ns "$ns" cleaner/ttl=1s --overwrite=true || true
+                kubectl annotate ns "$ns" janitor/ttl=1s --overwrite=true || true
+              fi
+            fi
+          done < <(jq -r '.[]' <<< '${{ inputs.topology-namespace-suffixes }}')

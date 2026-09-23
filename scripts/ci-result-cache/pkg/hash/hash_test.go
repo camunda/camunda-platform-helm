@@ -328,3 +328,34 @@ func writeFile(t *testing.T, path, content string) {
 		t.Fatal(err)
 	}
 }
+
+func TestCompute_ClusterAuthActionsIncluded(t *testing.T) {
+	for _, action := range []string{"cluster-auth", "gke-login"} {
+		t.Run(action, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			chartDir := filepath.Join(tmpDir, "charts", "camunda-platform-8.9")
+			if err := os.MkdirAll(chartDir, 0o755); err != nil {
+				t.Fatal(err)
+			}
+			writeFile(t, filepath.Join(chartDir, "Chart.yaml"), "name: test\n")
+			actionDir := filepath.Join(tmpDir, ".github", "actions", action)
+			if err := os.MkdirAll(actionDir, 0o755); err != nil {
+				t.Fatal(err)
+			}
+			writeFile(t, filepath.Join(actionDir, "action.yaml"), "name: v1\n")
+
+			hash1, err := Compute(tmpDir, "8.9")
+			if err != nil {
+				t.Fatalf("first Compute: %v", err)
+			}
+			writeFile(t, filepath.Join(actionDir, "action.yaml"), "name: v2\n")
+			hash2, err := Compute(tmpDir, "8.9")
+			if err != nil {
+				t.Fatalf("second Compute: %v", err)
+			}
+			if hash1 == hash2 {
+				t.Errorf("expected hash to change when %s/action.yaml changes", action)
+			}
+		})
+	}
+}

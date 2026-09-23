@@ -349,13 +349,15 @@ The `matrix-data` input can override the file-based matrix entirely. The command
 
 > [`.github/workflows/test-integration-runner.yaml`](https://github.com/camunda/camunda-platform-helm/blob/main/.github/workflows/test-integration-runner.yaml)
 
-Executes a single shard (one platform + one flow) in one `integration` job, followed by `record-result`:
+Executes a single shard (one platform + one flow) in one `integration` job, followed by `record-result` and `cleanup-fallback`:
 
 ```
 integration: setup → deploy (install / upgrade) → e2e legs → reports → diagnostics → cleanup
-     ↓
-record-result
+     ├──→ record-result      (integration succeeded)
+     └──→ cleanup-fallback   (integration ended before its cleanup steps finished)
 ```
+
+`cleanup-fallback` runs when the job timed out, was cancelled, or lost its runner before setting its `cleanup-done` output. It deletes the Entra and Auth0 test clients and stamps the namespaces' reaping TTL, which the namespace TTL alone cannot cover.
 
 - **`install` flow:** deploy the current chart, then run the scenario's e2e legs from `deploy-camunda ci e2e-matrix` (smoke, and full when the scenario enables it). Topology scenarios run their per-release legs; `shadow-e2e` runs its non-blocking full suite.
 - **`upgrade-*` flows:** `deploy-camunda matrix run` installs the previous version and upgrades to the current one, then one blocking smoke leg runs.
