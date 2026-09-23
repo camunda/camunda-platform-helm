@@ -1441,10 +1441,21 @@ jobs:
         continue-on-error: true
         run: |
           command -v playwright > /dev/null 2>&1 || npm install -g playwright
-          if ! playwright merge-reports --reporter html "${GITHUB_WORKSPACE}/e2e-artifacts/blob-report"; then
-            echo "::warning title=E2E HTML report::merging the blob reports failed; per-leg JSON results and traces are still uploaded"
-            exit 1
+          BLOBS="${GITHUB_WORKSPACE}/e2e-artifacts/blob-report"
+          if playwright merge-reports --reporter html "$BLOBS"; then
+            exit 0
           fi
+          # Legs that recorded different test directories (mixed chart versions,
+          # or a leg that fell back to the empty suite) cannot share one report.
+          echo "::warning title=E2E HTML report::the combined merge failed; writing one HTML report per leg under playwright-report/<leg>/"
+          rm -rf playwright-report
+          rc=0
+          for leg in $(ls "$BLOBS"/*.zip | xargs -n1 basename | sed 's/-report.*\.zip$//' | sort -u); do
+            mkdir -p "/tmp/blob-$leg" && cp "$BLOBS/$leg"-report*.zip "/tmp/blob-$leg/"
+            PLAYWRIGHT_HTML_REPORT="playwright-report/$leg" playwright merge-reports --reporter html "/tmp/blob-$leg" || {
+              echo "::warning title=E2E HTML report::no HTML report for leg $leg"; rc=1; }
+          done
+          exit $rc
 
       - name: E2E - Upload HTML report
         if: always() && steps.merge-report.outcome == 'success'
