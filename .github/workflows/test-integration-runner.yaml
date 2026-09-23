@@ -1587,6 +1587,7 @@ jobs:
           ref: ${{ inputs.caller-git-ref }}
 
       - name: CI Cleanup - Delete venom Entra app registration
+        id: cleanup-entra
         if: always() && env.TEST_NAMESPACE != '' && (inputs.auth == 'oidc' || inputs.scenario == 'oidc' || inputs.test-identity == 'oidc')
         continue-on-error: true
         env:
@@ -1600,6 +1601,7 @@ jobs:
             --log-level info
 
       - name: CI Cleanup - Delete Auth0 OIDC clients
+        id: cleanup-auth0
         # The auth0 scenario provisions per-component first-party clients in the
         # tenant via `auth0 ensure-clients`; namespace deletion does not touch
         # the tenant, so without this step orphans accumulate across PR runs.
@@ -1661,7 +1663,10 @@ jobs:
 
       - name: CI Cleanup - Mark cleanup done
         id: cleanup-done
-        if: always() && steps.cleanup-auth.outcome == 'success' && steps.cleanup-namespace.outcome != 'failure' && steps.cleanup-topology.outcome != 'failure'
+        if: >-
+          always() && steps.cleanup-auth.outcome == 'success'
+          && steps.cleanup-entra.outcome != 'failure' && steps.cleanup-auth0.outcome != 'failure'
+          && steps.cleanup-namespace.outcome != 'failure' && steps.cleanup-topology.outcome != 'failure'
         run: echo "done=true" >> "$GITHUB_OUTPUT"
 
       - name: Observe build status
