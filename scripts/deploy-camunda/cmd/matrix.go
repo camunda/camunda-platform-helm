@@ -1639,8 +1639,7 @@ func runTopologyE2ELegs(
 		flags.Test.OptimizeNamespace = optimizeNamespace
 		flags.Test.OptimizeContextPath = leg.OptimizeContextPath
 		flags.Test.ModelerClusterName = leg.ModelerClusterName
-		flags.Test.PlaywrightProject = leg.PlaywrightProject
-		flags.Test.AdditionalPlaywrightProject = leg.AdditionalPlaywrightProject
+		flags.Test.PlaywrightProject = topologyPlaywrightProject(leg)
 		flags.Test.PhysicalTenantID = leg.TenantID
 
 		testErr := deploy.RunTests(ctx, flags, namespace)
@@ -1692,6 +1691,13 @@ func applyTopologyReleaseHostname(flags *config.RuntimeFlags, host string) {
 		flags.ExtraEnv = map[string]string{}
 	}
 	flags.ExtraEnv["CAMUNDA_HOSTNAME"] = host
+}
+
+func topologyPlaywrightProject(leg matrix.TopologyE2ELeg) string {
+	if leg.AdditionalPlaywrightProject != "" {
+		return leg.AdditionalPlaywrightProject
+	}
+	return leg.PlaywrightProject
 }
 
 // topologyReleaseHostKey names the crossRefEnv key whose value must be pushed

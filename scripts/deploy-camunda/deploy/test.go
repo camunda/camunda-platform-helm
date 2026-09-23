@@ -119,13 +119,12 @@ func RunTests(ctx context.Context, flags *config.RuntimeFlags, namespace string)
 		go func() {
 			defer wg.Done()
 			output, err := runE2ETests(testCtx, repoRoot, chartPath, namespace, flags.Test.KubeContext, flags.Test.TestExclude, flags.Selection.Persistence, topologyTarget{
-				HubNamespace:                flags.Test.HubNamespace,
-				OptimizeNamespace:           flags.Test.OptimizeNamespace,
-				OptimizeContextPath:         flags.Test.OptimizeContextPath,
-				ModelerClusterName:          flags.Test.ModelerClusterName,
-				PlaywrightProject:           flags.Test.PlaywrightProject,
-				AdditionalPlaywrightProject: flags.Test.AdditionalPlaywrightProject,
-				PhysicalTenantID:            flags.Test.PhysicalTenantID,
+				HubNamespace:        flags.Test.HubNamespace,
+				OptimizeNamespace:   flags.Test.OptimizeNamespace,
+				OptimizeContextPath: flags.Test.OptimizeContextPath,
+				ModelerClusterName:  flags.Test.ModelerClusterName,
+				PlaywrightProject:   flags.Test.PlaywrightProject,
+				PhysicalTenantID:    flags.Test.PhysicalTenantID,
 			}, flags.E2EOutputWriter)
 			resultCh <- TestResult{Type: "e2e", Error: err, Output: output}
 		}()
@@ -177,15 +176,14 @@ type topologyTarget struct {
 	OptimizeNamespace   string
 	OptimizeContextPath string
 	// ModelerClusterName selects this leg's cluster in the Hub's Web Modeler deploy dialog.
-	ModelerClusterName          string
-	PlaywrightProject           string
-	AdditionalPlaywrightProject string
-	PhysicalTenantID            string
+	ModelerClusterName string
+	PlaywrightProject  string
+	PhysicalTenantID   string
 }
 
 func (o topologyTarget) isSet() bool {
 	return o.HubNamespace != "" || o.OptimizeNamespace != "" || o.OptimizeContextPath != "" ||
-		o.ModelerClusterName != "" || o.PlaywrightProject != "" || o.AdditionalPlaywrightProject != "" ||
+		o.ModelerClusterName != "" || o.PlaywrightProject != "" ||
 		o.PhysicalTenantID != ""
 }
 
@@ -256,9 +254,6 @@ func e2eScriptArgs(chartPath, namespace, kubeContext, testExclude, persistence s
 	}
 	if topology.PlaywrightProject != "" {
 		args = append(args, "--playwright-project", topology.PlaywrightProject)
-	}
-	if topology.AdditionalPlaywrightProject != "" {
-		args = append(args, "--additional-playwright-project", topology.AdditionalPlaywrightProject)
 	}
 	if topology.PhysicalTenantID != "" {
 		args = append(args, "--physical-tenant-id", topology.PhysicalTenantID)

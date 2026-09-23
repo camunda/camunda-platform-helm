@@ -93,7 +93,6 @@ build_rerun_cmd() {
   [[ -n "$LOCAL_TEST_SUITE" ]] && cmd+=(--local-test-suite "$LOCAL_TEST_SUITE")
   [[ -n "$TEST_CHART_PATH" ]] && cmd+=(--test-chart-path "$TEST_CHART_PATH")
   [[ -n "$PLAYWRIGHT_PROJECT" ]] && cmd+=(--playwright-project "$PLAYWRIGHT_PROJECT")
-  [[ -n "$ADDITIONAL_PLAYWRIGHT_PROJECT" ]] && cmd+=(--additional-playwright-project "$ADDITIONAL_PLAYWRIGHT_PROJECT")
   [[ -n "$PHYSICAL_TENANT_ID_ARG" ]] && cmd+=(--physical-tenant-id "$PHYSICAL_TENANT_ID_ARG")
   # Without these a failing topology leg prints a rerun command that targets an
   # orchestration-only environment: it cannot reproduce the failure, and it would skip
@@ -129,7 +128,6 @@ Options:
   --mt                                        Run the mt tests
   --auth0                                     Run the auth0-smoke project (Auth0 OIDC scenario)
   --playwright-project PROJECT                Run a named Playwright project
-  --additional-playwright-project PROJECT     Run a second named Playwright project after the primary project
   --physical-tenant-id ID                     Physical Tenant selected by this topology leg
   --playwright-debug                          Enable Playwright API debug logs and traces
   --video MODE                                Record video: on, off, retain-on-failure, on-first-retry (default: off)
@@ -171,7 +169,6 @@ IS_RBA=false
 IS_MT=false
 IS_AUTH0=false
 PLAYWRIGHT_PROJECT=""
-ADDITIONAL_PLAYWRIGHT_PROJECT=""
 PHYSICAL_TENANT_ID_ARG=""
 PLAYWRIGHT_DEBUG=false
 VIDEO_MODE=""
@@ -246,10 +243,6 @@ while [[ $# -gt 0 ]]; do
       ;;
     --playwright-project)
       PLAYWRIGHT_PROJECT="$2"
-      shift 2
-      ;;
-    --additional-playwright-project)
-      ADDITIONAL_PLAYWRIGHT_PROJECT="$2"
       shift 2
       ;;
     --physical-tenant-id)
@@ -426,6 +419,10 @@ log "DEBUG: PLAYWRIGHT_HTML_REPORT='${PLAYWRIGHT_HTML_REPORT}'"
 # Build the rerun command for display on failure
 RERUN_CMD="$(build_rerun_cmd)"
 
-run_playwright_tests "$TEST_SUITE_PATH" "$SHOW_HTML_REPORT" "$SHARD_INDEX" "$SHARD_TOTAL" "blob" "$TEST_EXCLUDE" "$RUN_SMOKE_TESTS" "$PLAYWRIGHT_DEBUG" "$NAMESPACE" "$KUBE_CONTEXT" "$RERUN_CMD" "$IS_AUTH0" "$PLAYWRIGHT_PROJECT" "$ADDITIONAL_PLAYWRIGHT_PROJECT"
+if [[ "$PLAYWRIGHT_PROJECT" == "physical-tenants" ]]; then
+  export REQUIRE_PHYSICAL_TENANTS_TEST_SUITE=true
+fi
+
+run_playwright_tests "$TEST_SUITE_PATH" "$SHOW_HTML_REPORT" "$SHARD_INDEX" "$SHARD_TOTAL" "blob" "$TEST_EXCLUDE" "$RUN_SMOKE_TESTS" "$PLAYWRIGHT_DEBUG" "$NAMESPACE" "$KUBE_CONTEXT" "$RERUN_CMD" "$IS_AUTH0" "$PLAYWRIGHT_PROJECT"
 
 log "DEBUG: E2E tests completed"
