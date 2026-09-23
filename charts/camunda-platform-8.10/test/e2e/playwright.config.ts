@@ -27,9 +27,6 @@ const hasHubWebModelerSuite = suiteInstalled("hub-web-modeler-smoke.spec.js");
 const hasTopologyOrchestrationSuite = suiteInstalled(
   "topology-orchestration-smoke.spec.js",
 );
-const hasPhysicalTenantsSuite = suiteInstalled(
-  "physical-tenants-user-flows.spec.js",
-);
 
 if (process.env.REQUIRE_SM_810_TEST_SUITE === "true" && !hasSmSmokeSuite) {
   throw new Error("The required SM-8.10 smoke test suite is not installed");
@@ -42,20 +39,10 @@ if (
     "The required Hub and Web Modeler test suite is not installed",
   );
 }
-if (
-  process.env.REQUIRE_PHYSICAL_TENANTS_TEST_SUITE === "true" &&
-  !hasPhysicalTenantsSuite
-) {
-  throw new Error("The required Physical Tenant test suite is not installed");
-}
-
 // A suite that is required but missing has already thrown above, so presence
 // is the whole condition here.
 const hasAnySuite =
-  hasSmSmokeSuite ||
-  hasHubWebModelerSuite ||
-  hasTopologyOrchestrationSuite ||
-  hasPhysicalTenantsSuite;
+  hasSmSmokeSuite || hasHubWebModelerSuite || hasTopologyOrchestrationSuite;
 const testDir = hasAnySuite ? smTestDir : "./empty-test-dir";
 
 // When SM-8.10 is missing, create a fallback directory with a single skipped
@@ -97,7 +84,8 @@ export default defineConfig(
       {
         name: "physical-tenants",
         dependencies: ["topology-orchestration"],
-        testMatch: ["**/physical-tenants-user-flows.spec.{ts,js}"],
+        testDir: __dirname,
+        testMatch: ["physical-tenants.spec.ts"],
       },
       {
         // Auth0 scenario: HTTP-level smoke that asserts each Camunda component
