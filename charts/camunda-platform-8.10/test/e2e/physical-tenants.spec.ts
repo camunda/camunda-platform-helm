@@ -3,6 +3,7 @@ import { test } from "@camunda/e2e-test-suite/dist/fixtures/SM-8.10";
 
 type Environment = {
   id: string;
+  name: string;
   clusterId: string;
   physicalTenantId?: string;
   targetType: string;
@@ -14,6 +15,7 @@ test("Hub deploys through the selected Physical Tenant environment", async ({
   page,
   navigationPage,
 }) => {
+  test.slow();
   const webModelerURL = process.env.WEBMODELER_BASE_URL;
   const baseURL = process.env.BASE_URL;
   const keycloakURL = process.env.KEYCLOAK_BASE_URL;
@@ -75,11 +77,9 @@ test("Hub deploys through the selected Physical Tenant environment", async ({
   await expect(
     page.locator('[data-test="step-environments"][data-state="active"]'),
   ).toBeVisible();
-  const environmentName =
-    physicalTenantId === "default" ? "Orchestration A" : physicalTenantId!;
   await page
     .getByRole("button", {
-      name: `Select ${environmentName} (Orchestration A)`,
+      name: `Select ${environment!.name} (Orchestration A)`,
     })
     .click();
   await submit.click();
@@ -91,7 +91,7 @@ test("Hub deploys through the selected Physical Tenant environment", async ({
   );
   expect(assignmentResponse.ok()).toBeTruthy();
   const assignments = (await assignmentResponse.json()) as Environment[];
-  expect(assignments.map(({ id }) => id)).toContain(environment!.id);
+  expect(assignments.map(({ id }) => id)).toEqual([environment!.id]);
 
   const projectResponse = await page.request.post(
     `${webModelerURL}/api/internal/v2/projects`,
@@ -181,26 +181,31 @@ test("Hub deploys through the selected Physical Tenant environment", async ({
     )
     .toBe(true);
 
-  for (const siblingId of ["default", "tenanta", "tenantb"].filter(
-    (id) => id !== physicalTenantId,
-  )) {
-    const siblingPath =
-      siblingId === "default" ? "" : `/physical-tenants/${siblingId}`;
-    const siblingResponse = await page.request.post(
-      `${baseURL}/orchestration${siblingPath}/v2/process-definitions/search`,
-      {
-        data: { filter: { processDefinitionId: processId } },
-        headers: { Authorization: `Bearer ${accessToken}` },
-      },
-    );
-    expect(siblingResponse.ok()).toBeTruthy();
-    const siblingResult = (await siblingResponse.json()) as {
-      items?: Array<{ processDefinitionId?: string }>;
-    };
-    expect(
-      siblingResult.items?.some(
-        (item) => item.processDefinitionId === processId,
-      ) ?? false,
-    ).toBe(false);
-  }
+  await Promise.all(
+    ["default", "tenanta", "tenantb"]
+      .filter((id) => id !== physicalTenantId)
+      .map(async (siblingId) => {
+        const siblingPath =
+          siblingId === "default" ? "" : `/physical-tenants/${siblingId}`;
+        for (const delay of [0, 30_000, 30_000, 60_000]) {
+          await page.waitForTimeout(delay);
+          const siblingResponse = await page.request.post(
+            `${baseURL}/orchestration${siblingPath}/v2/process-definitions/search`,
+            {
+              data: { filter: { processDefinitionId: processId } },
+              headers: { Authorization: `Bearer ${accessToken}` },
+            },
+          );
+          expect(siblingResponse.ok()).toBeTruthy();
+          const siblingResult = (await siblingResponse.json()) as {
+            items?: Array<{ processDefinitionId?: string }>;
+          };
+          expect(
+            siblingResult.items?.some(
+              (item) => item.processDefinitionId === processId,
+            ) ?? false,
+          ).toBe(false);
+        }
+      }),
+  );
 });
