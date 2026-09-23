@@ -28,6 +28,7 @@ topology:
       namespace-suffix: orcha
       modeler-cluster-id: orcha
       modeler-cluster-name: Orchestration A
+      additional-playwright-project: physical-tenants
       identity: keycloak-external
       persistence: elasticsearch-external
       dependencies: []

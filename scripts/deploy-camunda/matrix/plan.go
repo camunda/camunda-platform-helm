@@ -97,9 +97,10 @@ type topologySmokeEntry struct {
 	// Suite/TestChartDir/PlaywrightProject select the application suite this leg
 	// runs: the orchestration suite from the release's own chart, so a
 	// mixed-version topology tests each app against the chart it deploys.
-	Suite             string `json:"suite"`
-	TestChartDir      string `json:"test_chart_dir"`
-	PlaywrightProject string `json:"playwright_project"`
+	Suite                       string `json:"suite"`
+	TestChartDir                string `json:"test_chart_dir"`
+	PlaywrightProject           string `json:"playwright_project"`
+	AdditionalPlaywrightProject string `json:"additional_playwright_project,omitempty"`
 }
 
 // PlanResult is the computed build matrix.
@@ -497,9 +498,10 @@ type TopologyE2ELeg struct {
 	// Suite names the application suite this leg runs. TestChartDir is the chart
 	// whose Playwright suite runs (the release's own chart) and
 	// PlaywrightProject is that suite's project.
-	Suite             string
-	TestChartDir      string
-	PlaywrightProject string
+	Suite                       string
+	TestChartDir                string
+	PlaywrightProject           string
+	AdditionalPlaywrightProject string
 }
 
 // TopologyE2ELegs computes the e2e legs for a topology. A nil topology yields no legs.
@@ -525,11 +527,12 @@ func TopologyE2ELegs(parentVersion string, topology *Topology) []TopologyE2ELeg 
 			chartVersion = parentVersion
 		}
 		base := TopologyE2ELeg{
-			OrchestrationSuffix: release.NamespaceSuffix,
-			ModelerClusterID:    release.ModelerClusterID,
-			ModelerClusterName:  release.ModelerClusterName,
-			ChartVersion:        chartVersion,
-			ChartDir:            "camunda-platform-" + chartVersion,
+			OrchestrationSuffix:         release.NamespaceSuffix,
+			ModelerClusterID:            release.ModelerClusterID,
+			ModelerClusterName:          release.ModelerClusterName,
+			AdditionalPlaywrightProject: release.AdditionalPlaywrightProject,
+			ChartVersion:                chartVersion,
+			ChartDir:                    "camunda-platform-" + chartVersion,
 		}
 		targets := []TopologyE2ELeg{}
 		served := optimizeByServed[release.NamespaceSuffix]
@@ -574,18 +577,19 @@ func planTopologyMetadata(parentVersion string, topology *Topology) (string, str
 	smoke := []topologySmokeEntry{}
 	for i, leg := range TopologyE2ELegs(parentVersion, topology) {
 		smoke = append(smoke, topologySmokeEntry{
-			OrchestrationSuffix: leg.OrchestrationSuffix,
-			ModelerClusterID:    leg.ModelerClusterID,
-			ModelerClusterName:  leg.ModelerClusterName,
-			ShardIndex:          strconv.Itoa(i + 1),
-			OptimizeSuffix:      leg.OptimizeSuffix,
-			OptimizeContextPath: leg.OptimizeContextPath,
-			TenantID:            leg.TenantID,
-			ChartVersion:        leg.ChartVersion,
-			ChartDir:            leg.ChartDir,
-			Suite:               leg.Suite,
-			TestChartDir:        leg.TestChartDir,
-			PlaywrightProject:   leg.PlaywrightProject,
+			OrchestrationSuffix:         leg.OrchestrationSuffix,
+			ModelerClusterID:            leg.ModelerClusterID,
+			ModelerClusterName:          leg.ModelerClusterName,
+			ShardIndex:                  strconv.Itoa(i + 1),
+			OptimizeSuffix:              leg.OptimizeSuffix,
+			OptimizeContextPath:         leg.OptimizeContextPath,
+			TenantID:                    leg.TenantID,
+			ChartVersion:                leg.ChartVersion,
+			ChartDir:                    leg.ChartDir,
+			Suite:                       leg.Suite,
+			TestChartDir:                leg.TestChartDir,
+			PlaywrightProject:           leg.PlaywrightProject,
+			AdditionalPlaywrightProject: leg.AdditionalPlaywrightProject,
 		})
 	}
 	suffixesJSON, _ := json.Marshal(suffixes)

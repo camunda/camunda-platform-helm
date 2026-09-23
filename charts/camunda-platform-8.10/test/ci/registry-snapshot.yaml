@@ -2262,6 +2262,7 @@ integration:
                   ORCH_ORCHESTRATION_CLIENT_ID: orchestration-orcha
                 modeler-cluster-id: orcha
                 modeler-cluster-name: Orchestration A
+                additional-playwright-project: physical-tenants
               - role: optimize
                 namespace-suffix: optdefault
                 depends-on: hub
