@@ -372,7 +372,8 @@ zeebe:
         className: "io.camunda.exporter.CamundaExporter"
         args:
           connect:
-            type: {{ include "orchestration.secondaryStorage" . | quote }}
+            {{- /* No `type` here: it is a legacy alias of camunda.data.secondary-storage.type
+                   and rendering both logs a deprecation WARN per request (SUPPORT-34757). */}}
             {{- if .Values.orchestration.index.prefix }}
             indexPrefix: {{ .Values.orchestration.index.prefix | quote }}
             {{- end }}

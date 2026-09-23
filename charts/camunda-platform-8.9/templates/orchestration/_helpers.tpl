@@ -320,12 +320,14 @@ falls through to the shared global/secondary-storage sources otherwise.
 
 {{- /*
 NOTE: 8.9 keeps the explicit CamundaExporter registration even though
-`camunda.data.secondary-storage.autoconfigure-camunda-exporter` auto-registers the same exporter
-(the redundancy costs a legacy-property warning at startup). Customers on the released 8.9 line
-inject legacy overrides as `ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_*` environment variables,
-which Spring merges into this same map; without the `className` this block supplies, the broker
-refuses to start. See helm#7028. The 8.10 application merges legacy exporter args on its own, so
-the registration stays removed there.
+`camunda.data.secondary-storage.autoconfigure-camunda-exporter` auto-registers the same exporter.
+Customers on the released 8.9 line inject legacy overrides as
+`ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_*` environment variables, which Spring merges into
+this same map; without the `className` this block supplies, the broker refuses to start. See
+helm#7028. The registration must not carry `args.connect.type`: that key is a legacy alias of
+`camunda.data.secondary-storage.type`, and rendering both makes UnifiedConfigurationHelper log a
+deprecation WARN on every REST request. See SUPPORT-34757 and camunda#62100. The 8.10 application
+merges legacy exporter args on its own, so the registration stays removed there.
 */ -}}
 {{- define "orchestration.hasCamundaExporter" -}}
 {{- and
@@ -334,6 +336,7 @@ the registration stays removed there.
         (eq (include "orchestration.secondaryStorage" .) "opensearch")
       )
       .Values.orchestration.exporters.camunda.enabled
+      (not .Values.orchestration.exporters.rdbms.enabled)
 -}}
 {{- end -}}
 
