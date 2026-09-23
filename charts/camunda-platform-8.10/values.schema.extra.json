@@ -1622,7 +1622,7 @@
                 "roleName": {"type": "string"},
                 "secret": {"$ref": "#/$defs/topologySecret"},
                 "serviceName": {"type": "string"},
-                "webappUrl": {"type": "string", "pattern": "^$|^https?://[^\\s]+$"},
+                "webappUrl": {"type": "string", "pattern": "^$|^https?://(?:[^\\s{}]|\\{\\{[^}]*\\}\\})+$"},
                 "readinessUrl": {"type": "string", "pattern": "^$|^https?://[^\\s]+$"}
             }
         },

@@ -128,8 +128,8 @@ func TestHubTopologyRendersPhysicalTenantsInHubInventory(t *testing.T) {
 		SetValues: map[string]string{
 			"camundaHub.enabled": "true",
 			"global.host":        "hub.example.test",
-			"global.topology.clusters[0].physicalTenants[0].components.optimize.redirectUrl": `https://{{ .Values.global.host }}/optimize-ta`,
-			"webModeler.restapi.mail.fromAddress":                                            "noreply@example.com",
+			"global.topology.clusters[0].physicalTenants[0].components.optimize.webappUrl": `https://{{ .Values.global.host }}/optimize-ta`,
+			"webModeler.restapi.mail.fromAddress":                                          "noreply@example.com",
 		},
 	}
 	output := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{"templates/web-modeler/configmap-restapi.yaml"})
