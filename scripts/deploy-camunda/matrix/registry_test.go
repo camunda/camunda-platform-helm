@@ -158,25 +158,29 @@ func TestResolveScenarioDeclaredFeatureAndScript(t *testing.T) {
 	var scenario registryScenario
 	require.NoError(t, yaml.Unmarshal(data, &scenario))
 	scenario.Features = []string{"synthetic-feature"}
+	scenario.ExtraValues = []string{"extra.yaml"}
 	scenario.Identity = ""
 	scenario.Persistence = ""
 	scenario.PreInstallID = "observe"
 	data, err = yaml.Marshal(scenario)
 	require.NoError(t, err)
 	require.NoError(t, os.WriteFile(scenarioFile, data, 0644))
+	extraValues := filepath.Join(chart, "test/integration/scenarios/chart-full-setup/extra.yaml")
+	require.NoError(t, os.WriteFile(extraValues, []byte("{}\n"), 0644))
 	require.NoError(t, os.WriteFile(filepath.Join(registryDir, "hooks", "observe.yaml"), []byte("script: observe.sh\ndescription: Record hook invocation\n"), 0644))
 	marker := filepath.Join(repoRoot, "observed")
 	script := "printf '%s\\n' \"$TEST_NAMESPACE\" \"$NAMESPACE\" \"$RELEASE_NAME\" \"$KUBE_CONTEXT\" > \"" + marker + "\"\n"
 	require.NoError(t, os.WriteFile(filepath.Join(chart, "test/integration/scenarios/pre-setup-scripts/observe.sh"), []byte(script), 0644))
 	flags := &config.RuntimeFlags{
 		Chart:      config.ChartFlags{ChartPath: chart},
-		Deployment: config.DeploymentFlags{Scenarios: []string{"alpha"}, Namespace: "test", NamespacePrefix: "prefix", Release: "integration"},
+		Deployment: config.DeploymentFlags{Scenarios: []string{"alpha"}, Namespace: "test", NamespacePrefix: "prefix", Release: "integration", ExtraValues: []string{"user.yaml"}},
 		Test:       config.TestFlags{KubeContext: "test-context"},
 	}
 	require.NoError(t, ResolveScenario(flags, nil))
 	require.Equal(t, []string{"synthetic-feature"}, flags.Selection.Features)
 	require.Equal(t, "keycloak", flags.Selection.Identity)
 	require.Equal(t, "elasticsearch", flags.Selection.Persistence)
+	require.Equal(t, []string{"user.yaml", extraValues}, flags.Deployment.ExtraValues)
 	require.Len(t, flags.CompanionCharts, 2)
 	require.Len(t, flags.PreInstallHooks, 1)
 	_, err = os.Stat(marker)

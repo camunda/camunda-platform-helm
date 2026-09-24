@@ -382,6 +382,7 @@ func ResolveScenario(flags *config.RuntimeFlags, root *config.RootConfig) error 
 	if flags.Deployment.ScenarioPath == "" {
 		flags.Deployment.ScenarioPath = filepath.Join(flags.Chart.ChartPath, "test/integration/scenarios/chart-full-setup")
 	}
+	flags.Deployment.ExtraValues = appendScenarioExtraValues(flags.Deployment.ExtraValues, Entry{ExtraValues: matched.ExtraValues}, flags.Deployment.ScenarioPath)
 	flags.CompanionCharts = companionChartsForEntry(Entry{Dependencies: matched.Dependencies}, repoRoot)
 	if err := registerDeclarativePreInstallHook(flags, matched.PreInstall, repoRoot, version, name); err != nil {
 		return err
