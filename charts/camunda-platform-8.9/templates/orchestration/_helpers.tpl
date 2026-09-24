@@ -319,13 +319,10 @@ falls through to the shared global/secondary-storage sources otherwise.
 
 
 {{- /*
-NOTE: 8.9 keeps the explicit CamundaExporter registration even though
-`camunda.data.secondary-storage.autoconfigure-camunda-exporter` auto-registers the same exporter
-(the redundancy costs a legacy-property warning at startup). Customers on the released 8.9 line
-inject legacy overrides as `ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_*` environment variables,
-which Spring merges into this same map; without the `className` this block supplies, the broker
-refuses to start. See helm#7028. The 8.10 application merges legacy exporter args on its own, so
-the registration stays removed there.
+NOTE: Renders the explicit CamundaExporter registration so legacy
+`ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_*` env overrides merge into a map that has a
+`className`. `args.connect.type` is omitted; `camunda.data.secondary-storage.type` supplies it.
+Skipped when the RDBMS exporter is enabled.
 */ -}}
 {{- define "orchestration.hasCamundaExporter" -}}
 {{- and
@@ -334,6 +331,7 @@ the registration stays removed there.
         (eq (include "orchestration.secondaryStorage" .) "opensearch")
       )
       .Values.orchestration.exporters.camunda.enabled
+      (not .Values.orchestration.exporters.rdbms.enabled)
 -}}
 {{- end -}}
 

@@ -167,14 +167,14 @@ func (s *ConfigmapLegacyTemplateTest) TestDifferentValuesInputs() {
 			Name:   "TestCustomHistorySettingsUseLegacyExporterArgsWithElasticsearch",
 			Values: customHistoryValues("elasticsearch"),
 			Verifier: func(t *testing.T, output string, err error) {
-				assertCustomHistorySettings(t, output, "elasticsearch")
+				assertCustomHistorySettings(t, output)
 			},
 		},
 		{
 			Name:   "TestCustomHistorySettingsUseLegacyExporterArgsWithOpenSearch",
 			Values: customHistoryValues("opensearch"),
 			Verifier: func(t *testing.T, output string, err error) {
-				assertCustomHistorySettings(t, output, "opensearch")
+				assertCustomHistorySettings(t, output)
 			},
 		},
 		{
@@ -225,7 +225,7 @@ func (s *ConfigmapLegacyTemplateTest) TestDifferentValuesInputs() {
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
-				assertCamundaExporterConnect(t, output, "elasticsearch", true)
+				assertCamundaExporterConnect(t, output, true)
 			},
 		},
 		{
@@ -236,7 +236,54 @@ func (s *ConfigmapLegacyTemplateTest) TestDifferentValuesInputs() {
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
-				assertCamundaExporterConnect(t, output, "opensearch", true)
+				assertCamundaExporterConnect(t, output, true)
+			},
+		},
+		{
+			// Regression: SUPPORT-34757. connect.type is a legacy alias of
+			// camunda.data.secondary-storage.type; rendering both makes
+			// UnifiedConfigurationHelper log a deprecation WARN on every REST request.
+			Name: "TestCamundaExporterOmitsLegacyConnectTypeButKeepsClassName",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+
+				var configmap corev1.ConfigMap
+				var application camunda.OrchestrationApplicationYAML
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+				applicationYaml := configmap.Data["application.yaml"]
+				require.NoError(t, yaml.Unmarshal([]byte(applicationYaml), &application))
+
+				exporter := application.Zeebe.Broker.Exporters.CamundaExporter
+				require.Equal(t, "io.camunda.exporter.CamundaExporter", exporter.ClassName)
+				require.Empty(t, exporter.Args.Connect.Type)
+				// The sole remaining occurrence is the unified
+				// camunda.data.secondary-storage.type. A second one means the legacy
+				// exporter alias is back.
+				require.Equal(t, 1, strings.Count(applicationYaml, "type: \"elasticsearch\""))
+			},
+		},
+		{
+			// Regression: the RDBMS guard dropped in helm#7044. An explicit
+			// secondaryStorage.type alongside the RDBMS exporter must not register
+			// CamundaExporter as well.
+			Name: "TestCamundaExporterIsNotRegisteredWhenRDBMSExporterEnabled",
+			Values: map[string]string{
+				"orchestration.exporters.rdbms.enabled":    "true",
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+
+				applicationYaml := configmap.Data["application.yaml"]
+				require.NotContains(t, applicationYaml, "camundaexporter:")
+				require.Contains(t, applicationYaml, "autoconfigure-camunda-exporter: false")
+				require.NotContains(t, applicationYaml, "autoconfigure-camunda-exporter: true")
 			},
 		},
 		{
@@ -281,18 +328,18 @@ func assertCamundaExporterAutoconfiguration(t *testing.T, output string, expecte
 	require.Equal(t, expected, application.Camunda.Data.SecondaryStorage.AutoconfigureCamundaExporter)
 }
 
-func assertCamundaExporterConnect(t *testing.T, output string, expectedType string, expectedAwsEnabled bool) {
+func assertCamundaExporterConnect(t *testing.T, output string, expectedAwsEnabled bool) {
 	var configmap corev1.ConfigMap
 	var application camunda.OrchestrationApplicationYAML
 	helm.UnmarshalK8SYaml(t, output, &configmap)
 	require.NoError(t, yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &application))
 
 	connect := application.Zeebe.Broker.Exporters.CamundaExporter.Args.Connect
-	require.Equal(t, expectedType, connect.Type)
+	require.Empty(t, connect.Type, "legacy connect.type must stay unrendered, see SUPPORT-34757")
 	require.Equal(t, expectedAwsEnabled, connect.AwsEnabled)
 }
 
-func assertCustomHistorySettings(t *testing.T, output string, secondaryStorageType string) {
+func assertCustomHistorySettings(t *testing.T, output string) {
 	var configmap corev1.ConfigMap
 	var application camunda.OrchestrationApplicationYAML
 	helm.UnmarshalK8SYaml(t, output, &configmap)
@@ -300,7 +347,7 @@ func assertCustomHistorySettings(t *testing.T, output string, secondaryStorageTy
 
 	exporter := application.Zeebe.Broker.Exporters.CamundaExporter
 	require.Equal(t, "io.camunda.exporter.CamundaExporter", exporter.ClassName)
-	require.Equal(t, secondaryStorageType, exporter.Args.Connect.Type)
+	require.Empty(t, exporter.Args.Connect.Type, "legacy connect.type must stay unrendered, see SUPPORT-34757")
 
 	history := exporter.Args.History
 	require.Equal(t, "yyyy-MM", history.ElsRolloverDateFormat)

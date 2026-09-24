@@ -100,7 +100,7 @@ camunda:
           processing: {{ .Values.orchestration.data.disk.freeSpace.processing | quote }}
           replication: {{ .Values.orchestration.data.disk.freeSpace.replication | quote }}
     secondary-storage:
-      autoconfigure-camunda-exporter: {{ .Values.orchestration.exporters.camunda.enabled }}
+      autoconfigure-camunda-exporter: {{ and .Values.orchestration.exporters.camunda.enabled (not .Values.orchestration.exporters.rdbms.enabled) }}
       type: {{ include "orchestration.secondaryStorage" . | quote -}}
       {{- if .Values.orchestration.history.retention.enabled }}
       retention:
@@ -372,7 +372,7 @@ zeebe:
         className: "io.camunda.exporter.CamundaExporter"
         args:
           connect:
-            type: {{ include "orchestration.secondaryStorage" . | quote }}
+            {{- /* Omit `type`; camunda.data.secondary-storage.type supplies it. */}}
             {{- if .Values.orchestration.index.prefix }}
             indexPrefix: {{ .Values.orchestration.index.prefix | quote }}
             {{- end }}

@@ -196,7 +196,6 @@ data:
             className: "io.camunda.exporter.CamundaExporter"
             args:
               connect:
-                type: "elasticsearch"
                 awsEnabled: false
               history:
                 elsRolloverDateFormat: "date"

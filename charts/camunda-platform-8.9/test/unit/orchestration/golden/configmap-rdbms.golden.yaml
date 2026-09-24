@@ -96,7 +96,7 @@ data:
               processing: "2GB"
               replication: "1GB"
         secondary-storage:
-          autoconfigure-camunda-exporter: true
+          autoconfigure-camunda-exporter: false
           type: "rdbms"
           rdbms:
             aws-enabled: true
