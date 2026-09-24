@@ -56,11 +56,16 @@ func Deploy(ctx context.Context, o types.Options) error {
 		return fmt.Errorf("failed to create kube client: %w", err)
 	}
 
+	// Read before EnsureNamespace: its server-side apply of an existing namespace
+	// uses the same field manager as the lifecycle stamping, so it drops the
+	// annotations lifecycleAnnotations needs to see.
+	existingAnnotations := readNamespaceAnnotations(ctx, kubeClient, o.Namespace)
+
 	if err := kubeClient.EnsureNamespace(ctx, o.Namespace); err != nil {
 		return err
 	}
 
-	if err := labelAndAnnotateNamespace(ctx, kubeClient, o.Namespace, o.Identifier, o.CIMetadata.Flow, o.TTL, o.CIMetadata.GithubRunID, o.CIMetadata.GithubJobID, o.CIMetadata.GithubOrg, o.CIMetadata.GithubRepo, o.CIMetadata.WorkflowURL); err != nil {
+	if err := labelAndAnnotateNamespace(ctx, kubeClient, o.Namespace, existingAnnotations, o.Identifier, o.CIMetadata.Flow, o.TTL, o.CIMetadata.GithubRunID, o.CIMetadata.GithubJobID, o.CIMetadata.GithubOrg, o.CIMetadata.GithubRepo, o.CIMetadata.WorkflowURL); err != nil {
 		// Non-fatal: namespace labels are CI housekeeping metadata (TTL, GitHub run IDs).
 		// On some clusters (e.g., EKS via Teleport) the user may lack namespace PATCH RBAC.
 		logging.Logger.Warn().Err(err).Str("namespace", o.Namespace).
