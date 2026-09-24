@@ -22,6 +22,7 @@ import (
 	"scripts/camunda-core/pkg/kube"
 	"scripts/camunda-core/pkg/logging"
 	"strings"
+	"time"
 
 	"gopkg.in/yaml.v3"
 )
@@ -70,6 +71,24 @@ func readNamespaceAnnotations(ctx context.Context, kubeClient *kube.Client, name
 		return nil, nil
 	}
 	return kubeClient.NamespaceAnnotations(ctx, namespace)
+}
+
+// retryNamespaceAnnotations retries readNamespaceAnnotations, returning the
+// last error once attempts run out.
+func retryNamespaceAnnotations(ctx context.Context, kubeClient *kube.Client, namespace string, attempts int, wait time.Duration) (map[string]string, error) {
+	var err error
+	for i := 0; i < attempts; i++ {
+		var annotations map[string]string
+		if annotations, err = readNamespaceAnnotations(ctx, kubeClient, namespace); err == nil {
+			return annotations, nil
+		}
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-time.After(wait):
+		}
+	}
+	return nil, err
 }
 
 // lifecycleAnnotations returns the cleaner/janitor annotations to stamp on a
