@@ -114,6 +114,12 @@ global:
     # Keycloak realm hardening, re-applied after every install and upgrade:
     # brute-force lockout and a minimum password length on both realms. Keycloak
     # stores these in its database, so no chart value can set them.
+    #
+    # It also gives the master realm the port-forward address as its frontend
+    # URL. The admin console logs in through the master realm at the server's
+    # frontend URL, which KC_HOSTNAME otherwise makes the public host, where the
+    # master realm is blocked; KC_HOSTNAME_ADMIN only moves the console itself.
+    # camunda-platform keeps the public issuer the clusters validate.
     - |
       apiVersion: batch/v1
       kind: Job
@@ -145,6 +151,7 @@ global:
                   - |
                     until /opt/keycloak/bin/kcadm.sh config credentials --server http://keycloak/auth --realm master --user admin --password "`cat /credentials/keycloak-admin-password`"; do sleep 10; done
                     until /opt/keycloak/bin/kcadm.sh get realms/camunda-platform --fields realm >/dev/null; do sleep 10; done
+                    /opt/keycloak/bin/kcadm.sh update realms/master -s 'attributes.frontendUrl=http://localhost:18080/auth'
                     /opt/keycloak/bin/kcadm.sh update realms/master -s bruteForceProtected=true -s permanentLockout=false -s failureFactor=10 -s waitIncrementSeconds=60 -s maxFailureWaitSeconds=900 -s maxDeltaTimeSeconds=43200 -s 'passwordPolicy=length(12) and notUsername'
                     /opt/keycloak/bin/kcadm.sh update realms/camunda-platform -s bruteForceProtected=true -s permanentLockout=false -s failureFactor=10 -s waitIncrementSeconds=60 -s maxFailureWaitSeconds=900 -s maxDeltaTimeSeconds=43200 -s 'passwordPolicy=length(12) and notUsername'
                     echo "realms hardened"
