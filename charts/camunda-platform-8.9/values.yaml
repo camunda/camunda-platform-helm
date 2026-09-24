@@ -544,8 +544,7 @@ global:
         #   protocol: "https"
         #   host: "keycloak.{{ .Release.Namespace }}.svc.cluster.local"
         #   port: "8443"
-      #  defines the endpoint of Keycloak which varies between Keycloak versions.
-      ## @param global.identity.keycloak.contextPath In Keycloak v16.x.x it's hard-coded as '/auth', but in v19.x.x it's '/'.
+      ## @param global.identity.keycloak.contextPath defines the path Identity uses to reach Keycloak. With bundled Keycloak enabled, also set identityKeycloak.httpRelativePath to the same path with a trailing slash.
       # Applies to: Internal Keycloak and External Keycloak. Not used in External OIDC.
       contextPath: "/auth"
       ## @param global.identity.keycloak.realm defines Keycloak realm path used for Camunda.
@@ -1374,11 +1373,9 @@ identityKeycloak:
   podSecurityContext:
     runAsNonRoot: true
     fsGroup: 1001
-  ## @param identityKeycloak.httpRelativePath (DEPRECATED) defines the context for Keycloak. This config is valid for Keycloak v19.x.x only
-  # where in Keycloak v16.x.x it's hard-coded as '/auth', but in v19.x.x it's configurable.
-  # NOTE: This should be the same as ".Values.global.identity.keycloak.contextPath" plus a trailing slash,
-  # but it cannot be referenced directly because of a bug in Helm (tested with Helm v3.9.3).
-  # NOTE: In Keycloak v23, accessing this path without the trailing slash will return "Internal Server Error".
+  ## @param identityKeycloak.httpRelativePath (DEPRECATED) defines the path served by bundled Keycloak. Set global.identity.keycloak.contextPath to the same path without a trailing slash; for root, use / here and an empty string for contextPath.
+  # These values are independent and must be configured together when changing the default path.
+  # https://docs.camunda.io/docs/8.9/self-managed/deployment/helm/configure/authentication-and-authorization/internal-keycloak/#configure-the-internal-keycloak-context-path
   httpRelativePath: /auth/
   ## @param identityKeycloak.extraEnvVars (DEPRECATED) can be used set extra environment variables to be set on Keycloak container.
   extraEnvVars: []
