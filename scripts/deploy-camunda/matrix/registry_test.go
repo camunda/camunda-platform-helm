@@ -33,6 +33,45 @@ import (
 
 const registryGoodChartDir = "testdata/registry-good/charts/camunda-platform-99.99"
 
+func TestResolveScenarioLegacyRegistryCompatibility(t *testing.T) {
+	repoRoot, err := filepath.Abs("../../..")
+	require.NoError(t, err)
+	t.Run("keycloak-original", func(t *testing.T) {
+		var output bytes.Buffer
+		previous := logging.Logger
+		logging.Logger = previous.Output(&output)
+		t.Cleanup(func() { logging.Logger = previous })
+		flags := config.RuntimeFlags{
+			Chart:      config.ChartFlags{ChartPath: filepath.Join(repoRoot, "charts", "camunda-platform-8.10")},
+			Deployment: config.DeploymentFlags{Scenarios: []string{"keycloak-original"}, Flow: "install", Platform: "gke"},
+		}
+		before := flags
+		require.NoError(t, ResolveScenario(&flags, nil))
+		require.Equal(t, before, flags)
+		require.Contains(t, output.String(), "hub-ping")
+		require.Contains(t, output.String(), "elasticsearch")
+		require.Contains(t, output.String(), "registry values are not applied")
+	})
+	for _, flow := range []string{"install", "upgrade-patch"} {
+		t.Run("oidc/"+flow, func(t *testing.T) {
+			flags := config.RuntimeFlags{
+				Chart:      config.ChartFlags{ChartPath: filepath.Join(repoRoot, "charts", "camunda-platform-8.7")},
+				Deployment: config.DeploymentFlags{Scenarios: []string{"oidc"}, Flow: flow, Platform: "gke"},
+			}
+			require.NoError(t, ResolveScenario(&flags, nil))
+			require.True(t, flags.SelectionResolved)
+			require.Equal(t, "oidc", flags.Selection.Identity)
+			require.Equal(t, "elasticsearch", flags.Selection.Persistence)
+			require.Empty(t, flags.Selection.Features)
+			_, err := scenarios.BuildDeploymentConfig(flags.Deployment.ScenarioPath, "oidc", scenarios.BuilderOverrides{
+				Resolved: true, Identity: flags.Selection.Identity, Persistence: flags.Selection.Persistence,
+				Platform: "gke", Flow: flow,
+			})
+			require.NoError(t, err)
+		})
+	}
+}
+
 func TestResolveScenarioFallback(t *testing.T) {
 	for _, testCase := range []struct {
 		name      string
@@ -119,6 +158,8 @@ func TestResolveScenarioDeclaredFeatureAndScript(t *testing.T) {
 	var scenario registryScenario
 	require.NoError(t, yaml.Unmarshal(data, &scenario))
 	scenario.Features = []string{"synthetic-feature"}
+	scenario.Identity = ""
+	scenario.Persistence = ""
 	scenario.PreInstallID = "observe"
 	data, err = yaml.Marshal(scenario)
 	require.NoError(t, err)
@@ -134,6 +175,8 @@ func TestResolveScenarioDeclaredFeatureAndScript(t *testing.T) {
 	}
 	require.NoError(t, ResolveScenario(flags, nil))
 	require.Equal(t, []string{"synthetic-feature"}, flags.Selection.Features)
+	require.Equal(t, "keycloak", flags.Selection.Identity)
+	require.Equal(t, "elasticsearch", flags.Selection.Persistence)
 	require.Len(t, flags.CompanionCharts, 2)
 	require.Len(t, flags.PreInstallHooks, 1)
 	_, err = os.Stat(marker)

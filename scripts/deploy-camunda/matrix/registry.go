@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	"scripts/camunda-core/pkg/logging"
+	"scripts/camunda-core/pkg/scenarios"
 	"scripts/deploy-camunda/config"
 
 	"gopkg.in/yaml.v3"
@@ -319,6 +320,17 @@ func ResolveScenario(flags *config.RuntimeFlags, root *config.RootConfig) error 
 		return err
 	}
 	name := flags.Deployment.Scenarios[0]
+	if name == "keycloak-original" {
+		for _, scenario := range registry.Integration.Case.PR.Scenarios {
+			if scenario.Name == name {
+				logging.Logger.Warn().Str("scenario", name).Str("registryVariant", scenario.Shortname).
+					Strs("features", scenario.Features).Interface("dependencies", scenario.Dependencies).
+					Interface("preInstall", scenario.PreInstall).
+					Msg("Legacy alias uses name-based configuration; registry values are not applied. Use matrix run to select a registry variant")
+			}
+		}
+		return nil
+	}
 	flow := config.FirstNonEmpty(flags.Deployment.Flow, "install")
 	platform := config.FirstNonEmpty(flags.Selection.TestPlatform, flags.Deployment.Platform, "gke")
 	var matched *CIScenario
@@ -328,7 +340,10 @@ func ResolveScenario(flags *config.RuntimeFlags, root *config.RootConfig) error 
 			continue
 		}
 		known = true
-		if config.FirstNonEmpty(scenario.Flow, "install") != flow ||
+		matchesFlow := slices.ContainsFunc(strings.Split(config.FirstNonEmpty(scenario.Flow, "install"), ","), func(declared string) bool {
+			return strings.TrimSpace(declared) == flow
+		})
+		if !matchesFlow ||
 			(len(scenario.Platforms) > 0 && !slices.Contains(scenario.Platforms, platform)) {
 			continue
 		}
@@ -353,8 +368,9 @@ func ResolveScenario(flags *config.RuntimeFlags, root *config.RootConfig) error 
 	if err != nil {
 		return err
 	}
+	legacy := scenarios.MapScenarioToConfig(name)
 	defaults := config.SelectionFlags{
-		Identity: matched.Identity, Persistence: matched.Persistence,
+		Identity: config.FirstNonEmpty(matched.Identity, legacy.Identity), Persistence: config.FirstNonEmpty(matched.Persistence, legacy.Persistence),
 		Features:  append([]string(nil), matched.Features...),
 		InfraType: resolveInfraType(matched.InfraType, platform),
 		QA:        matched.QA, ImageTags: matched.ImageTags, UpgradeFlow: matched.Upgrade,

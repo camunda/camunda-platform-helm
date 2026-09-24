@@ -92,9 +92,12 @@ deploy-camunda
 don't need to repeat the flags on the command line. Precedence is
 `CLI flag  >  active profile in config file  >  root config  >  defaults`,
 so ad-hoc overrides still work when you need them. For a matching registry
-scenario, its declaration supplies the defaults. Heuristic name matching is
-used only when the chart has no registry or the scenario name is unmatched,
-including legacy names such as `keycloak-original`.
+scenario, its declaration supplies the defaults. Older entries that omit
+identity or persistence retain the name-derived default for that field.
+Heuristic name matching is otherwise used when the chart has no registry or
+the scenario name is unmatched. The reserved `keycloak-original` legacy alias
+also retains name-based behavior, with warnings identifying registry values
+not applied; select its registry variants explicitly through `matrix run`.
 
 Feature overrides replace the declared list: `--features=` or `features: []`
 clears it. Explicit `false` overrides, such as `--qa=false`, also take
