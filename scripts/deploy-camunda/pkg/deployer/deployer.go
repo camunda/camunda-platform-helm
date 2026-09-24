@@ -24,6 +24,7 @@ import (
 	"scripts/camunda-core/pkg/logging"
 	"scripts/camunda-core/pkg/utils"
 	"scripts/deploy-camunda/pkg/types"
+	"time"
 )
 
 func Deploy(ctx context.Context, o types.Options) error {
@@ -66,11 +67,16 @@ func Deploy(ctx context.Context, o types.Options) error {
 	}
 
 	if readErr != nil {
-		// Stamping without knowing whether the namespace is persisted could put a
-		// short TTL on a long-lived one, which the cleaner deletes at once.
-		logging.Logger.Warn().Err(readErr).Str("namespace", o.Namespace).
-			Msg("cannot read namespace; leaving its labels and annotations unchanged")
-	} else if err := labelAndAnnotateNamespace(ctx, kubeClient, o.Namespace, existingAnnotations, o.Identifier, o.CIMetadata.Flow, o.TTL, o.CIMetadata.GithubRunID, o.CIMetadata.GithubJobID, o.CIMetadata.GithubOrg, o.CIMetadata.GithubRepo, o.CIMetadata.WorkflowURL); err != nil {
+		// A namespace just created may not be readable until RBAC propagates.
+		existingAnnotations, readErr = retryNamespaceAnnotations(ctx, kubeClient, o.Namespace, 5, 3*time.Second)
+	}
+	if readErr != nil {
+		// Without the lifecycle state, stamping could put a short TTL on a
+		// persisted namespace (deleted at once), and skipping it could leave an
+		// ephemeral one expiring mid-deploy. Neither is safe to continue with.
+		return fmt.Errorf("cannot read namespace %q to preserve its lifecycle TTL: %w", o.Namespace, readErr)
+	}
+	if err := labelAndAnnotateNamespace(ctx, kubeClient, o.Namespace, existingAnnotations, o.Identifier, o.CIMetadata.Flow, o.TTL, o.CIMetadata.GithubRunID, o.CIMetadata.GithubJobID, o.CIMetadata.GithubOrg, o.CIMetadata.GithubRepo, o.CIMetadata.WorkflowURL); err != nil {
 		// Non-fatal: namespace labels are CI housekeeping metadata (TTL, GitHub run IDs).
 		// On some clusters (e.g., EKS via Teleport) the user may lack namespace PATCH RBAC.
 		logging.Logger.Warn().Err(err).Str("namespace", o.Namespace).
