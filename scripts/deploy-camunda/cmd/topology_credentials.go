@@ -150,17 +150,31 @@ type topologyCredentialStore struct {
 	namespaceExists func(ctx context.Context, namespace string) (bool, error)
 }
 
+// firstExisting returns the first of namespaces that exists, or "".
+func firstExisting(ctx context.Context, store topologyCredentialStore, namespaces []string) (string, error) {
+	for _, ns := range namespaces {
+		exists, err := store.namespaceExists(ctx, ns)
+		if err != nil {
+			return "", err
+		}
+		if exists {
+			return ns, nil
+		}
+	}
+	return "", nil
+}
+
 // ensureCredentials makes sure the manifest's source Secret holds a value for
 // every property it reads, without ever changing an existing value.
 //
 // A missing source is created with a plain Create, so when two first-time runs
 // race, the loser re-reads the winner's values instead of overwriting them.
 //
-// guardNamespace names a namespace whose existence means the environment
-// already holds state initialised with some credentials. Generating a fresh
+// guardNamespaces are namespaces any one of which existing means the
+// environment already holds state initialised with some credentials. Generating a fresh
 // source then would hand every component values its databases and Keycloak do
 // not accept, so that case fails with the migration steps instead.
-func ensureCredentials(ctx context.Context, out io.Writer, manifest []byte, namespace, guardNamespace string, store topologyCredentialStore) error {
+func ensureCredentials(ctx context.Context, out io.Writer, manifest []byte, namespace string, guardNamespaces []string, store topologyCredentialStore) error {
 	src, err := parseCredentialSource(manifest)
 	if err != nil {
 		return err
@@ -169,29 +183,29 @@ func ensureCredentials(ctx context.Context, out io.Writer, manifest []byte, name
 	if err != nil {
 		return err
 	}
-	if existing == nil && guardNamespace != "" {
-		deployed, err := store.namespaceExists(ctx, guardNamespace)
+	if existing == nil {
+		deployed, err := firstExisting(ctx, store, guardNamespaces)
 		if err != nil {
 			return err
 		}
-		if deployed {
+		if deployed != "" {
 			return fmt.Errorf("source secret %s/%s does not exist but namespace %s does: the environment was initialised with other credentials. "+
 				"Rotate them to the new source in place first (PostgreSQL users, Keycloak admin and client secrets), or uninstall the environment, "+
-				"then create the source; generating it now would lock existing services out", namespace, src.Name, guardNamespace)
+				"then create the source; generating it now would lock existing services out", namespace, src.Name, deployed)
 		}
 	}
 	merged, created, err := planCredentials(existing, src.Properties, generateCredential)
 	if err != nil {
 		return err
 	}
-	if existing != nil && len(created) > 0 && guardNamespace != "" {
-		deployed, err := store.namespaceExists(ctx, guardNamespace)
+	if existing != nil && len(created) > 0 {
+		deployed, err := firstExisting(ctx, store, guardNamespaces)
 		if err != nil {
 			return err
 		}
-		if deployed {
+		if deployed != "" {
 			return fmt.Errorf("source secret %s/%s lacks %v while namespace %s exists: a value generated now would not match what that environment's services were initialised with. "+
-				"Add the missing properties with the values those services use (or rotate the services to new values first)", namespace, src.Name, created, guardNamespace)
+				"Add the missing properties with the values those services use (or rotate the services to new values first)", namespace, src.Name, created, deployed)
 		}
 	}
 	switch {
@@ -200,7 +214,7 @@ func ensureCredentials(ctx context.Context, out io.Writer, manifest []byte, name
 		err := store.create(ctx, namespace, src.Name, merged)
 		if apierrors.IsAlreadyExists(err) {
 			fmt.Fprintf(out, "%s/%s was created concurrently; using its values\n", namespace, src.Name)
-			return ensureCredentials(ctx, out, manifest, namespace, "", store)
+			return ensureCredentials(ctx, out, manifest, namespace, nil, store)
 		}
 		if err != nil {
 			return err
@@ -223,11 +237,11 @@ func ensureCredentials(ctx context.Context, out io.Writer, manifest []byte, name
 
 func newTopologyEnsureCredentialsCommand() *cobra.Command {
 	var (
-		manifestPath   string
-		base           string
-		namespace      string
-		guardNamespace string
-		kubeContext    string
+		manifestPath    string
+		base            string
+		namespace       string
+		guardNamespaces []string
+		kubeContext     string
 	)
 
 	cmd := &cobra.Command{
@@ -238,8 +252,8 @@ sure the one source Secret it reads from exists in the ClusterSecretStore's
 namespace with a random value for every property it references.
 
 Existing values are never changed, and no value is ever printed. With
---guard-namespace, a missing source or property is only generated while that
-namespace does not exist yet, i.e. for a fresh environment.`,
+--guard-namespace, a missing source or property is only generated while none of
+those namespaces exists yet, i.e. for a fresh environment.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			raw, err := os.ReadFile(manifestPath)
 			if err != nil {
@@ -253,7 +267,7 @@ namespace does not exist yet, i.e. for a fresh environment.`,
 			if err != nil {
 				return err
 			}
-			return ensureCredentials(cmd.Context(), cmd.OutOrStdout(), manifest, namespace, guardNamespace, topologyCredentialStore{
+			return ensureCredentials(cmd.Context(), cmd.OutOrStdout(), manifest, namespace, guardNamespaces, topologyCredentialStore{
 				get:             client.GetSecretData,
 				create:          client.CreateOpaqueSecret,
 				update:          client.AddSecretData,
@@ -265,7 +279,7 @@ namespace does not exist yet, i.e. for a fresh environment.`,
 	cmd.Flags().StringVar(&manifestPath, "manifest", "", "ExternalSecret manifest whose source secret to ensure")
 	cmd.Flags().StringVar(&base, "base", "", "topology base namespace, substituted for "+matrix.CredentialsManifestBaseToken+" in the manifest")
 	cmd.Flags().StringVar(&namespace, "secret-namespace", "distribution-team", "namespace the ClusterSecretStore reads source secrets from")
-	cmd.Flags().StringVar(&guardNamespace, "guard-namespace", "", "refuse to create a missing source while this namespace exists (the environment already holds state)")
+	cmd.Flags().StringSliceVar(&guardNamespaces, "guard-namespace", nil, "refuse to generate a missing source or property while any of these namespaces exists (repeatable; pass every namespace of the environment)")
 	cmd.Flags().StringVar(&kubeContext, "kube-context", "", "kubectl context (defaults to current)")
 	_ = cmd.MarkFlagRequired("manifest")
 	return cmd
