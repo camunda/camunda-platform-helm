@@ -79,7 +79,7 @@ func readNamespaceAnnotations(ctx context.Context, kubeClient *kube.Client, name
 // read says. Otherwise the decision uses reread, a read taken right before
 // stamping, so a namespace persisted by someone else since the deploy started
 // is seen as persisted; the initial read (taken before EnsureNamespace) is only
-// the fallback when that read fails. A Forbidden result means the lifecycle
+// the fallback when that read fails, and only if it showed the namespace persisted. A Forbidden result means the lifecycle
 // state is unknowable: stamp nothing rather than risk a short TTL on a
 // persisted namespace. Any other error is returned.
 func decideLifecycle(created bool, initial map[string]string, initialErr error, reread func() (map[string]string, error)) (map[string]string, bool, error) {
@@ -87,7 +87,9 @@ func decideLifecycle(created bool, initial map[string]string, initialErr error, 
 		return nil, true, nil
 	}
 	annotations, err := reread()
-	if err != nil && initialErr == nil && initial != nil {
+	if err != nil && initialErr == nil && initial["camunda.cloud/ephemeral"] == "false" {
+		// Only a persisted initial read is safe to reuse: it cannot have become
+		// "more persisted" since, whereas an ephemeral one may have been persisted.
 		annotations, err = initial, nil
 	}
 	switch {
