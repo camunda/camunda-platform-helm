@@ -282,6 +282,27 @@ global:
                   existingSecretKey: identity-optimize-tenantb-client-token
 
 identity:
+  # identity/keycloak.yaml waits on /auth/, which Keycloak redirects to the admin
+  # console on its public hostname; that path is blocked here, so wait on the
+  # master realm over the internal Service instead, which answers without a
+  # redirect.
+  initContainers:
+    - name: wait-for-keycloak
+      image: busybox:1.36
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+      command:
+        - sh
+        - -c
+        - |
+          echo "Waiting for Keycloak at keycloak:80/auth/realms/master ..."
+          until wget -q --spider --timeout=2 "http://keycloak:80/auth/realms/master"; do
+            sleep 2
+          done
+          echo "Keycloak is ready"
   # The hub PostgreSQL companion (postgresql-dogfood) reads this same key.
   externalDatabase:
     username: app
