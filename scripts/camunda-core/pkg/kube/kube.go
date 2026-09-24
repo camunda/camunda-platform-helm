@@ -585,6 +585,18 @@ func (c *Client) CreateOpaqueSecret(ctx context.Context, namespace, secretName s
 	return err
 }
 
+// AddSecretData merges keys into an existing secret with a JSON merge patch, so
+// keys it does not name stay exactly as they are, even if they changed after
+// the caller read the secret.
+func (c *Client) AddSecretData(ctx context.Context, namespace, secretName string, stringData map[string]string) error {
+	patch, err := json.Marshal(map[string]any{"stringData": stringData})
+	if err != nil {
+		return err
+	}
+	_, err = c.clientset.CoreV1().Secrets(namespace).Patch(ctx, secretName, types.MergePatchType, patch, metav1.PatchOptions{FieldManager: fieldManagerName})
+	return err
+}
+
 // GetSecretData reads a Kubernetes Secret and returns its data values as decoded strings.
 // If the secret does not exist, it returns (nil, nil) — callers should check for a nil map.
 // Only keys with non-empty values are included.
