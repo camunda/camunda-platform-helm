@@ -151,9 +151,11 @@ global:
                   - |
                     until /opt/keycloak/bin/kcadm.sh config credentials --server http://keycloak/auth --realm master --user admin --password "`cat /credentials/keycloak-admin-password`"; do sleep 10; done
                     until /opt/keycloak/bin/kcadm.sh get realms/camunda-platform --fields realm >/dev/null; do sleep 10; done
-                    /opt/keycloak/bin/kcadm.sh update realms/master -s 'attributes.frontendUrl=http://localhost:18080/auth'
                     /opt/keycloak/bin/kcadm.sh update realms/master -s bruteForceProtected=true -s permanentLockout=false -s failureFactor=10 -s waitIncrementSeconds=60 -s maxFailureWaitSeconds=900 -s maxDeltaTimeSeconds=43200 -s 'passwordPolicy=length(12) and notUsername'
                     /opt/keycloak/bin/kcadm.sh update realms/camunda-platform -s bruteForceProtected=true -s permanentLockout=false -s failureFactor=10 -s waitIncrementSeconds=60 -s maxFailureWaitSeconds=900 -s maxDeltaTimeSeconds=43200 -s 'passwordPolicy=length(12) and notUsername'
+                    # Last: changing the master realm's frontend URL changes its issuer,
+                    # which invalidates the admin token this session is using.
+                    /opt/keycloak/bin/kcadm.sh update realms/master -s 'attributes.frontendUrl=http://localhost:18080/auth'
                     echo "realms hardened"
                 volumeMounts:
                   - name: credentials
