@@ -49,21 +49,44 @@ func labelAndAnnotateNamespace(ctx context.Context, kubeClient *kube.Client, nam
 		labels["github-repo"] = ghRepo
 	}
 
-	// Build annotations map
-	if strings.TrimSpace(ttl) == "" {
-		ttl = "1h"
+	existing, err := kubeClient.NamespaceAnnotations(ctx, namespace)
+	if err != nil {
+		return err
 	}
-	annotations := map[string]string{
-		"cleaner/ttl":             ttl,
-		"janitor/ttl":             ttl,
-		"camunda.cloud/ephemeral": "true",
-	}
+	annotations := lifecycleAnnotations(existing, ttl)
 	if strings.TrimSpace(workflowURL) != "" {
 		annotations["github-workflow-run-url"] = workflowURL
 	}
 
 	// Use generic method to apply
 	return kubeClient.SetLabelsAndAnnotations(ctx, namespace, labels, annotations)
+}
+
+// lifecycleAnnotations returns the cleaner/janitor annotations to stamp on a
+// namespace a deploy is about to use. A namespace `topology persist` marked
+// long-lived (camunda.cloud/ephemeral=false) keeps its current values: the
+// cleaner measures a TTL from the namespace's creation, so stamping a short
+// TTL on an old namespace makes it expire at once. The values are re-applied
+// rather than omitted because an omitted server-side-apply field this manager
+// owns is removed, which would drop the persisted marker itself.
+func lifecycleAnnotations(existing map[string]string, ttl string) map[string]string {
+	if existing["camunda.cloud/ephemeral"] == "false" {
+		kept := map[string]string{"camunda.cloud/ephemeral": "false"}
+		for _, k := range []string{"cleaner/ttl", "janitor/ttl"} {
+			if v, ok := existing[k]; ok {
+				kept[k] = v
+			}
+		}
+		return kept
+	}
+	if strings.TrimSpace(ttl) == "" {
+		ttl = "1h"
+	}
+	return map[string]string{
+		"cleaner/ttl":             ttl,
+		"janitor/ttl":             ttl,
+		"camunda.cloud/ephemeral": "true",
+	}
 }
 
 // applyIntegrationTestCredentials applies integration test credentials from environment variable

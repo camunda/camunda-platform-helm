@@ -199,6 +199,15 @@ func (c *Client) NamespaceExists(ctx context.Context, namespace string) (bool, e
 	return true, nil
 }
 
+// NamespaceAnnotations returns the annotations of an existing namespace.
+func (c *Client) NamespaceAnnotations(ctx context.Context, namespace string) (map[string]string, error) {
+	ns, err := c.clientset.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get namespace %q: %w", namespace, err)
+	}
+	return ns.Annotations, nil
+}
+
 func (c *Client) EnsureNamespace(ctx context.Context, namespace string) error {
 	if namespace == "" {
 		return errors.New("namespace must not be empty")
