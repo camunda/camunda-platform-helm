@@ -21,11 +21,14 @@ global:
   # Hub hardening objects. Shell in these manifests avoids the dollar sign: the
   # values pipeline substitutes every dollar placeholder before Helm sees it.
   extraManifests:
-    # Keycloak's admin console, admin REST API and master realm are not
-    # reachable from the internet. More specific than the chart's /auth/ path,
-    # these routes go to a Service with no endpoints, so ingress-nginx answers
-    # 503 itself; unlike a source-IP allowlist, no forwarded header can bypass it.
-    # Operators reach the console with kubectl port-forward svc/keycloak.
+    # Keycloak's admin REST API and master realm (its login and token endpoints)
+    # are not reachable from the internet, so the admin console served from the
+    # public host can neither log in nor act. More specific than the chart's
+    # /auth/ path, these routes go to a Service with no endpoints, so
+    # ingress-nginx answers 503 itself; unlike a source-IP allowlist, no
+    # forwarded header can bypass it. The console's static page stays reachable:
+    # identity/keycloak.yaml waits for Keycloak by following /auth/ through its
+    # redirect to that page. Operators use kubectl port-forward svc/keycloak.
     - |
       apiVersion: v1
       kind: Service
@@ -51,7 +54,11 @@ global:
           - host: "${HUB_HOST}"
             http:
               paths:
-                - path: /auth/admin
+                - path: /auth/admin/realms
+                  pathType: Prefix
+                  backend:
+                    service: {name: keycloak-admin-blocked, port: {name: http}}
+                - path: /auth/admin/serverinfo
                   pathType: Prefix
                   backend:
                     service: {name: keycloak-admin-blocked, port: {name: http}}
@@ -282,27 +289,6 @@ global:
                   existingSecretKey: identity-optimize-tenantb-client-token
 
 identity:
-  # identity/keycloak.yaml waits on /auth/, which Keycloak redirects to the admin
-  # console on its public hostname; that path is blocked here, so wait on the
-  # master realm over the internal Service instead, which answers without a
-  # redirect.
-  initContainers:
-    - name: wait-for-keycloak
-      image: busybox:1.36
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        allowPrivilegeEscalation: false
-        readOnlyRootFilesystem: true
-      command:
-        - sh
-        - -c
-        - |
-          echo "Waiting for Keycloak at keycloak:80/auth/realms/master ..."
-          until wget -q --spider --timeout=2 "http://keycloak:80/auth/realms/master"; do
-            sleep 2
-          done
-          echo "Keycloak is ready"
   # The hub PostgreSQL companion (postgresql-dogfood) reads this same key.
   externalDatabase:
     username: app
