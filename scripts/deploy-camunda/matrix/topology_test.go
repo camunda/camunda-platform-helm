@@ -319,6 +319,23 @@ func TestTopologyValidate_Valid(t *testing.T) {
 	}
 }
 
+func TestRenderCredentialsManifest(t *testing.T) {
+	got, err := RenderCredentialsManifest([]byte("key: ${TOPOLOGY_BASE}-credentials\nother: ${TOPOLOGY_BASE}\n"), "dogfood")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != "key: dogfood-credentials\nother: dogfood\n" {
+		t.Errorf("got %q", got)
+	}
+	if _, err := RenderCredentialsManifest([]byte("key: ${TOPOLOGY_BASE}-credentials"), " "); err == nil {
+		t.Error("want an error when the token is present but no base is given")
+	}
+	plain := []byte("key: fixed-credentials")
+	if got, err := RenderCredentialsManifest(plain, ""); err != nil || string(got) != string(plain) {
+		t.Errorf("manifest without token: got %q, %v", got, err)
+	}
+}
+
 func TestTopologyValidate_CredentialsManifest(t *testing.T) {
 	repoRoot, dir := newTopologyTestChart(t)
 	depsDir := filepath.Join(t.TempDir(), "dependencies")

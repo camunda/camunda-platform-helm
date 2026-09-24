@@ -52,6 +52,23 @@ type Topology struct {
 	CredentialsManifest string `yaml:"credentials-manifest,omitempty" json:"credentialsManifest,omitempty"`
 }
 
+// CredentialsManifestBaseToken is replaced in a credentials-manifest by the
+// topology's base namespace, so each environment reads its own source Secret.
+const CredentialsManifestBaseToken = "${TOPOLOGY_BASE}"
+
+// RenderCredentialsManifest substitutes the base namespace into a
+// credentials-manifest. It fails when the manifest has the token but no base
+// is given, rather than read a source Secret literally named after the token.
+func RenderCredentialsManifest(content []byte, base string) ([]byte, error) {
+	if !strings.Contains(string(content), CredentialsManifestBaseToken) {
+		return content, nil
+	}
+	if strings.TrimSpace(base) == "" {
+		return nil, fmt.Errorf("credentials manifest uses %s but no base namespace was given", CredentialsManifestBaseToken)
+	}
+	return []byte(strings.ReplaceAll(string(content), CredentialsManifestBaseToken, base)), nil
+}
+
 // TopologyRelease is one namespace/release within a Topology. Each release
 // can select its own identity/persistence/features/dependencies layers —
 // e.g. the Hub release uses the bundled-Keycloak identity layer and

@@ -30,6 +30,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
 	"scripts/camunda-core/pkg/kube"
+	"scripts/deploy-camunda/matrix"
 )
 
 const (
@@ -182,6 +183,16 @@ func ensureCredentials(ctx context.Context, out io.Writer, manifest []byte, name
 	if err != nil {
 		return err
 	}
+	if existing != nil && len(created) > 0 && guardNamespace != "" {
+		deployed, err := store.namespaceExists(ctx, guardNamespace)
+		if err != nil {
+			return err
+		}
+		if deployed {
+			return fmt.Errorf("source secret %s/%s lacks %v while namespace %s exists: a value generated now would not match what that environment's services were initialised with. "+
+				"Add the missing properties with the values those services use (or rotate the services to new values first)", namespace, src.Name, created, guardNamespace)
+		}
+	}
 	switch {
 	case len(created) == 0:
 	case existing == nil:
@@ -208,6 +219,7 @@ func ensureCredentials(ctx context.Context, out io.Writer, manifest []byte, name
 func newTopologyEnsureCredentialsCommand() *cobra.Command {
 	var (
 		manifestPath   string
+		base           string
 		namespace      string
 		guardNamespace string
 		kubeContext    string
@@ -221,12 +233,16 @@ sure the one source Secret it reads from exists in the ClusterSecretStore's
 namespace with a random value for every property it references.
 
 Existing values are never changed, and no value is ever printed. With
---guard-namespace, a missing source is only created while that namespace does
-not exist yet, i.e. for a fresh environment.`,
+--guard-namespace, a missing source or property is only generated while that
+namespace does not exist yet, i.e. for a fresh environment.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			manifest, err := os.ReadFile(manifestPath)
+			raw, err := os.ReadFile(manifestPath)
 			if err != nil {
 				return fmt.Errorf("read manifest: %w", err)
+			}
+			manifest, err := matrix.RenderCredentialsManifest(raw, base)
+			if err != nil {
+				return err
 			}
 			client, err := kube.NewClient("", kubeContext)
 			if err != nil {
@@ -242,6 +258,7 @@ not exist yet, i.e. for a fresh environment.`,
 	}
 
 	cmd.Flags().StringVar(&manifestPath, "manifest", "", "ExternalSecret manifest whose source secret to ensure")
+	cmd.Flags().StringVar(&base, "base", "", "topology base namespace, substituted for "+matrix.CredentialsManifestBaseToken+" in the manifest")
 	cmd.Flags().StringVar(&namespace, "secret-namespace", "distribution-team", "namespace the ClusterSecretStore reads source secrets from")
 	cmd.Flags().StringVar(&guardNamespace, "guard-namespace", "", "refuse to create a missing source while this namespace exists (the environment already holds state)")
 	cmd.Flags().StringVar(&kubeContext, "kube-context", "", "kubectl context (defaults to current)")
