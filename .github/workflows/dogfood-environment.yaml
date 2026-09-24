@@ -135,7 +135,10 @@ jobs:
           TEST_DOCKER_PASSWORD: ${{ steps.setup.outputs.TEST_DOCKER_PASSWORD }}
           RDBMS_POSTGRESQL_USERNAME: ${{ steps.setup.outputs.RDBMS_POSTGRESQL_USERNAME }}
           RDBMS_POSTGRESQL_PASSWORD: ${{ steps.setup.outputs.RDBMS_POSTGRESQL_PASSWORD }}
-          DEPLOY_CAMUNDA_TTL: 2h
+          # The cluster cleaner deletes a namespace once its age since creation
+          # exceeds cleaner/ttl, so a short TTL stamped on an existing (older)
+          # namespace deletes it within a minute. Stamp the persisted TTL.
+          DEPLOY_CAMUNDA_TTL: 8760h
         run: |
           deploy-camunda matrix run \
             --repo-root "${GITHUB_WORKSPACE}" \
@@ -149,9 +152,8 @@ jobs:
             --timeout 25 \
             --log-level info
 
-      # deploy-camunda stamps every namespace it creates as ephemeral with a
-      # short cleaner/janitor TTL. Undo that or the cluster cleaner reaps the
-      # environment within the hour.
+      # deploy-camunda stamps namespaces it creates as ephemeral. Mark them
+      # persistent so later deploys keep their TTL instead of re-stamping it.
       - name: Persist the namespaces
         if: env.DOGFOOD_ACTION == 'deploy' || env.DOGFOOD_ACTION == 'upgrade'
         run: |

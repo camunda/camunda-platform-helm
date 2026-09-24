@@ -24,6 +24,7 @@ import (
 	"scripts/camunda-core/pkg/logging"
 	"scripts/camunda-core/pkg/utils"
 	"scripts/deploy-camunda/pkg/types"
+	"time"
 )
 
 func Deploy(ctx context.Context, o types.Options) error {
@@ -56,11 +57,26 @@ func Deploy(ctx context.Context, o types.Options) error {
 		return fmt.Errorf("failed to create kube client: %w", err)
 	}
 
-	if err := kubeClient.EnsureNamespace(ctx, o.Namespace); err != nil {
+	// Read before EnsureNamespace: its server-side apply of an existing namespace
+	// uses the same field manager as the lifecycle stamping, so it drops the
+	// annotations lifecycleAnnotations needs to see.
+	existingAnnotations, readErr := readNamespaceAnnotations(ctx, kubeClient, o.Namespace)
+
+	created, err := kubeClient.EnsureNamespaceCreated(ctx, o.Namespace)
+	if err != nil {
 		return err
 	}
 
-	if err := labelAndAnnotateNamespace(ctx, kubeClient, o.Namespace, o.Identifier, o.CIMetadata.Flow, o.TTL, o.CIMetadata.GithubRunID, o.CIMetadata.GithubJobID, o.CIMetadata.GithubOrg, o.CIMetadata.GithubRepo, o.CIMetadata.WorkflowURL); err != nil {
+	existingAnnotations, stamp, err := decideLifecycle(created, existingAnnotations, readErr, func() (map[string]string, error) {
+		return retryNamespaceAnnotations(ctx, kubeClient, o.Namespace, 5, 3*time.Second)
+	})
+	if err != nil {
+		return fmt.Errorf("cannot read namespace %q to preserve its lifecycle TTL: %w", o.Namespace, err)
+	}
+	if !stamp {
+		logging.Logger.Warn().Str("namespace", o.Namespace).
+			Msg("namespace is not readable; leaving its lifecycle TTL unchanged")
+	} else if err := labelAndAnnotateNamespace(ctx, kubeClient, o.Namespace, existingAnnotations, o.Identifier, o.CIMetadata.Flow, o.TTL, o.CIMetadata.GithubRunID, o.CIMetadata.GithubJobID, o.CIMetadata.GithubOrg, o.CIMetadata.GithubRepo, o.CIMetadata.WorkflowURL); err != nil {
 		// Non-fatal: namespace labels are CI housekeeping metadata (TTL, GitHub run IDs).
 		// On some clusters (e.g., EKS via Teleport) the user may lack namespace PATCH RBAC.
 		logging.Logger.Warn().Err(err).Str("namespace", o.Namespace).
