@@ -259,6 +259,33 @@ func TestBuildScenarioEnvSeedsKeycloakClientIDs(t *testing.T) {
 	})
 }
 
+// The topology driver gives each release its own ingress host through
+// flags.ExtraEnv["CAMUNDA_HOSTNAME"]. Values files before chart 8.10 take their
+// ingress host (global.ingress.host) only from $CAMUNDA_HOSTNAME, so ExtraEnv
+// must outrank the scenario context's host, or those releases fall back to the
+// shared CI hostname.
+func TestBuildScenarioEnvExtraEnvHostnameOutranksScenarioHost(t *testing.T) {
+	t.Chdir(t.TempDir())
+	t.Setenv("CAMUNDA_HOSTNAME", "ci-wide.example.com")
+	ctx := &ScenarioContext{IngressHost: "orchb-ci-wide.example.com"}
+
+	env, err := buildScenarioEnv(ctx, &config.RuntimeFlags{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := env["CAMUNDA_HOSTNAME"]; got != "orchb-ci-wide.example.com" {
+		t.Errorf("without ExtraEnv CAMUNDA_HOSTNAME = %q, want the scenario host", got)
+	}
+
+	env, err = buildScenarioEnv(ctx, &config.RuntimeFlags{ExtraEnv: map[string]string{"CAMUNDA_HOSTNAME": "ns-orchb.example.com"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := env["CAMUNDA_HOSTNAME"]; got != "ns-orchb.example.com" {
+		t.Errorf("CAMUNDA_HOSTNAME = %q, want the ExtraEnv release host", got)
+	}
+}
+
 func TestCheckChartPath(t *testing.T) {
 	dir := t.TempDir()
 
