@@ -15,8 +15,12 @@
 package deployer
 
 import (
+	"errors"
 	"reflect"
 	"testing"
+
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 func TestLifecycleAnnotations(t *testing.T) {
@@ -61,6 +65,48 @@ func TestLifecycleAnnotations(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			if got := lifecycleAnnotations(tc.existing, tc.ttl); !reflect.DeepEqual(got, tc.want) {
 				t.Errorf("got %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestDecideLifecycle(t *testing.T) {
+	persisted := map[string]string{"cleaner/ttl": "8760h", "camunda.cloud/ephemeral": "false"}
+	ephemeral := map[string]string{"cleaner/ttl": "1h", "camunda.cloud/ephemeral": "true"}
+	forbidden := apierrors.NewForbidden(schema.GroupResource{Resource: "namespaces"}, "ns", errors.New("no get"))
+	boom := errors.New("connection reset")
+	read := func(a map[string]string, err error) func() (map[string]string, error) {
+		return func() (map[string]string, error) { return a, err }
+	}
+	cases := []struct {
+		name       string
+		created    bool
+		initial    map[string]string
+		initialErr error
+		reread     func() (map[string]string, error)
+		want       map[string]string
+		wantStamp  bool
+		wantErr    bool
+	}{
+		{name: "created by this deploy is new, even if unreadable", created: true, reread: read(nil, forbidden), wantStamp: true},
+		{name: "persisted since the deploy started is seen as persisted", initial: ephemeral, reread: read(persisted, nil), want: persisted, wantStamp: true},
+		{name: "absent at first, created and persisted meanwhile", initial: nil, reread: read(persisted, nil), want: persisted, wantStamp: true},
+		{name: "recovers from an initial transient failure", initialErr: boom, reread: read(persisted, nil), want: persisted, wantStamp: true},
+		{name: "falls back to the initial read when the reread fails", initial: persisted, reread: read(nil, boom), want: persisted, wantStamp: true},
+		{name: "unreadable pre-existing namespace is left alone", initialErr: forbidden, reread: read(nil, forbidden), wantStamp: false},
+		{name: "any other persistent failure aborts the deploy", initialErr: boom, reread: read(nil, boom), wantErr: true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, stamp, err := decideLifecycle(tc.created, tc.initial, tc.initialErr, tc.reread)
+			if (err != nil) != tc.wantErr {
+				t.Fatalf("err = %v, wantErr %v", err, tc.wantErr)
+			}
+			if stamp != tc.wantStamp || !reflect.DeepEqual(got, tc.want) {
+				t.Errorf("got (%v, stamp=%v), want (%v, stamp=%v)", got, stamp, tc.want, tc.wantStamp)
+			}
+			if stamp && tc.want != nil && lifecycleAnnotations(got, "2h")["cleaner/ttl"] != "8760h" {
+				t.Error("a persisted namespace would be re-stamped with the deploy TTL")
 			}
 		})
 	}

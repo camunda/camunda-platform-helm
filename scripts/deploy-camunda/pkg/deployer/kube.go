@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"gopkg.in/yaml.v3"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
 // labelAndAnnotateNamespace adds Camunda/GitHub-specific labels and annotations
@@ -71,6 +72,32 @@ func readNamespaceAnnotations(ctx context.Context, kubeClient *kube.Client, name
 		return nil, nil
 	}
 	return kubeClient.NamespaceAnnotations(ctx, namespace)
+}
+
+// decideLifecycle settles which annotations lifecycleAnnotations should see and
+// whether to stamp at all. A namespace this deploy created is new whatever a
+// read says. Otherwise the decision uses reread, a read taken right before
+// stamping, so a namespace persisted by someone else since the deploy started
+// is seen as persisted; the initial read (taken before EnsureNamespace) is only
+// the fallback when that read fails. A Forbidden result means the lifecycle
+// state is unknowable: stamp nothing rather than risk a short TTL on a
+// persisted namespace. Any other error is returned.
+func decideLifecycle(created bool, initial map[string]string, initialErr error, reread func() (map[string]string, error)) (map[string]string, bool, error) {
+	if created {
+		return nil, true, nil
+	}
+	annotations, err := reread()
+	if err != nil && initialErr == nil && initial != nil {
+		annotations, err = initial, nil
+	}
+	switch {
+	case err == nil:
+		return annotations, true, nil
+	case apierrors.IsForbidden(err):
+		return nil, false, nil
+	default:
+		return nil, false, err
+	}
 }
 
 // retryNamespaceAnnotations retries readNamespaceAnnotations, returning the
