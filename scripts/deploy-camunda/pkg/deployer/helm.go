@@ -168,12 +168,12 @@ func upgradeInstall(ctx context.Context, o types.Options) error {
 	runCtx, guard := guardedContext(ctx, o, o.Wait)
 	defer guard.Stop()
 
-	_, runErr := helmRunWithRetry(runCtx, args)
+	stderr, runErr := helmRunWithRetry(runCtx, args)
 	if runErr != nil {
 		return &HelmError{
 			Reason:  guardedReason("helm upgrade --install failed", guard),
 			Command: "helm " + formatArgs(args),
-			Cause:   guardedCause(runErr, guard, o, o.ReleaseName, o.Wait),
+			Cause:   guardedCause(runErr, guard, o, o.ReleaseName, (o.Wait || o.Atomic) && helmWaitTimedOut(stderr)),
 		}
 	}
 	return nil
@@ -201,16 +201,36 @@ func guardedReason(defaultReason string, guard *imagePullGuard) string {
 // guardedCause substitutes the observed image pull failure for the Helm process
 // error. Cancelling the context kills helm, so runErr would otherwise read
 // "signal: killed", which explains nothing.
-func guardedCause(runErr error, guard *imagePullGuard, o types.Options, release string, waits bool) error {
+func guardedCause(runErr error, guard *imagePullGuard, o types.Options, release string, readinessTimeout bool) error {
 	if failure := guard.Stop(); failure != nil {
 		return failure
 	}
-	if waits {
+	if readinessTimeout {
 		if summary := collectReadinessSummary(o, release); summary != "" {
 			return fmt.Errorf("%w; %s", runErr, summary)
 		}
 	}
 	return runErr
+}
+
+func helmWaitTimedOut(stderr string) bool {
+	for _, line := range strings.Split(stderr, "\n") {
+		message, found := strings.CutPrefix(strings.TrimSpace(line), "Error: ")
+		if !found {
+			continue
+		}
+		message = strings.TrimPrefix(message, "UPGRADE FAILED: ")
+		message = strings.TrimPrefix(message, "INSTALLATION FAILED: ")
+		if strings.HasPrefix(message, "release ") {
+			if _, cause, found := strings.Cut(message, "due to atomic being set: "); found {
+				message = cause
+			}
+		}
+		if message == context.DeadlineExceeded.Error() || message == "timed out waiting for the condition" {
+			return true
+		}
+	}
+	return false
 }
 
 type readinessClient interface {
@@ -505,7 +525,7 @@ func deployCompanionChart(ctx context.Context, cc types.CompanionChart, o types.
 	runCtx, guard := guardedContext(ctx, o, true)
 	defer guard.Stop()
 
-	_, runErr := helmRunWithRetry(runCtx, args)
+	stderr, runErr := helmRunWithRetry(runCtx, args)
 	if runErr == nil {
 		return nil
 	}
@@ -513,6 +533,6 @@ func deployCompanionChart(ctx context.Context, cc types.CompanionChart, o types.
 		Reason: guardedReason(
 			fmt.Sprintf("companion chart %q helm upgrade --install failed", cc.ReleaseName), guard),
 		Command: "helm " + formatArgs(args),
-		Cause:   guardedCause(runErr, guard, o, cc.ReleaseName, true),
+		Cause:   guardedCause(runErr, guard, o, cc.ReleaseName, helmWaitTimedOut(stderr)),
 	}
 }

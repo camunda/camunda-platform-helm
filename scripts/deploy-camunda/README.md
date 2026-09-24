@@ -761,11 +761,13 @@ export DEPLOY_CAMUNDA_IMAGE_PULL_GUARD=off
 
 ### Running pods remain unready
 
-When a waiting Helm install or upgrade fails, the error includes a best-effort
-summary of running, unready containers belonging to that release: namespace,
+When Helm reports a wait timeout during install or upgrade, including waits
+implied by `--atomic`, the error includes a best-effort summary of running,
+unready containers belonging to that release: namespace,
 pod, container, restart count, and a readiness-failure indicator with reason
 `Unhealthy` when a matching event is available. Free-form event messages are
 omitted. Main and companion releases use the same reporting path.
+Template, authorization, and other unrelated Helm failures do not trigger collection.
 Collection has a five-second budget and preserves the original Helm error if
 the Kubernetes API or events are unavailable. It does not shorten the Helm
 timeout, infer dependency failures, or require the separate `watch` command.

@@ -181,16 +181,38 @@ func TestHelmFailureReadinessSummary(t *testing.T) {
 	for _, test := range []struct {
 		name         string
 		eventMessage string
+		helmStderr   string
 		mutate       func(*corev1.Pod, *corev1.Event)
 		podErr       error
 		eventErr     error
 		companion    bool
 		noWait       bool
+		atomic       bool
+		unrelated    bool
 		success      bool
 		wantDetail   bool
 		wantEvent    bool
 	}{
 		{name: "running unready timeout", wantDetail: true, wantEvent: true},
+		{name: "atomic implies waiting", noWait: true, atomic: true, wantDetail: true, wantEvent: true},
+		{name: "install wait timeout", helmStderr: "Error: INSTALLATION FAILED: context deadline exceeded", wantDetail: true, wantEvent: true},
+		{name: "bare wait timeout", helmStderr: "Error: context deadline exceeded", wantDetail: true, wantEvent: true},
+		{name: "wait timeout after warning", helmStderr: "WARNING: Kubernetes configuration file is group-readable\nError: UPGRADE FAILED: context deadline exceeded\n", wantDetail: true, wantEvent: true},
+		{name: "legacy wait timeout", helmStderr: "Error: INSTALLATION FAILED: timed out waiting for the condition", wantDetail: true, wantEvent: true},
+		{name: "atomic wait timeout", noWait: true, atomic: true,
+			helmStderr: "Error: UPGRADE FAILED: release integration failed, and has been rolled back due to atomic being set: context deadline exceeded",
+			wantDetail: true, wantEvent: true},
+		{name: "atomic install wait timeout", noWait: true, atomic: true,
+			helmStderr: "Error: release integration failed, and has been uninstalled due to atomic being set: context deadline exceeded",
+			wantDetail: true, wantEvent: true},
+		{name: "template failure", helmStderr: "Error: UPGRADE FAILED: template: chart/templates/deployment.yaml: missing value", unrelated: true},
+		{name: "timeout text in template failure", helmStderr: "Error: UPGRADE FAILED: template: context deadline exceeded", unrelated: true},
+		{name: "authorization failure", helmStderr: "Error: UPGRADE FAILED: secrets is forbidden", unrelated: true},
+		{name: "API request timeout", helmStderr: "Error: UPGRADE FAILED: Get \"https://api.example/version\": context deadline exceeded", unrelated: true},
+		{name: "empty stderr", helmStderr: "\n", unrelated: true},
+		{name: "unclassified process failure", helmStderr: "exit status 1", unrelated: true},
+		{name: "companion template failure", companion: true, helmStderr: "Error: INSTALLATION FAILED: template: missing value", unrelated: true},
+		{name: "atomic template failure", noWait: true, atomic: true, helmStderr: "Error: UPGRADE FAILED: template: missing value", unrelated: true},
 		{name: "companion uses its own release", companion: true, wantDetail: true, wantEvent: true},
 		{name: "probe output omitted", eventMessage: "Readiness probe failed: dummy-probe-token", wantDetail: true, wantEvent: true},
 		{name: "companion probe credentials omitted", companion: true,
@@ -230,15 +252,24 @@ func TestHelmFailureReadinessSummary(t *testing.T) {
 				return exitErr
 			}, nil, nil)
 			t.Cleanup(restore)
+			runHelm := helmRunCapturing
+			helmRunCapturing = func(ctx context.Context, args []string, workDir string) (string, error) {
+				_, err := runHelm(ctx, args, workDir)
+				stderr := test.helmStderr
+				if stderr == "" {
+					stderr = "Error: UPGRADE FAILED: context deadline exceeded"
+				}
+				return stderr, err
+			}
 			newReadinessClient = func(string, string) (readinessClient, error) {
-				if test.success || test.noWait {
+				if test.success || (test.noWait && !test.atomic) || test.unrelated {
 					t.Fatal("must not collect diagnostics")
 				}
 				return fakeReadinessClient{pods: podList(*currentPod), events: &corev1.EventList{Items: []corev1.Event{*currentEvent}}, podErr: test.podErr, eventErr: test.eventErr}, nil
 			}
 			ctx, cancel := context.WithCancel(context.Background())
 			cancel()
-			opts := types.Options{ReleaseName: "integration", Namespace: "issue7210", Wait: !test.noWait}
+			opts := types.Options{ReleaseName: "integration", Namespace: "issue7210", Wait: !test.noWait, Atomic: test.atomic}
 			var err error
 			if test.companion {
 				opts.ReleaseName, opts.Wait = "main-release", false
