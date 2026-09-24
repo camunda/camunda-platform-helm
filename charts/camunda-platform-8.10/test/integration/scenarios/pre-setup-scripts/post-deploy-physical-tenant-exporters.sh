@@ -20,7 +20,7 @@ args=(acceptance physical-tenant-exporters \
   --release "${RELEASE_NAME:-integration}" \
   --hub-namespace "${HUB_NAMESPACE:?HUB_NAMESPACE must be set}" \
   --hub-host "${HUB_HOST:?HUB_HOST must be set}" \
-  --orchestration-host "${HUB_HOST:?HUB_HOST must be set}" \
+  --orchestration-host "${ORCH_HOST:?ORCH_HOST must be set}" \
   --default-optimize-path "${OPTDEFAULT_OPTIMIZE_CONTEXT_PATH:?OPTDEFAULT_OPTIMIZE_CONTEXT_PATH must be set}" \
   --tenanta-optimize-path "${OPTTA_OPTIMIZE_CONTEXT_PATH:?OPTTA_OPTIMIZE_CONTEXT_PATH must be set}" \
   --tenantb-optimize-path "${OPTTB_OPTIMIZE_CONTEXT_PATH:?OPTTB_OPTIMIZE_CONTEXT_PATH must be set}")
