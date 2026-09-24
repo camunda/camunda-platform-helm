@@ -92,7 +92,8 @@ func TestDecideLifecycle(t *testing.T) {
 		{name: "persisted since the deploy started is seen as persisted", initial: ephemeral, reread: read(persisted, nil), want: persisted, wantStamp: true},
 		{name: "absent at first, created and persisted meanwhile", initial: nil, reread: read(persisted, nil), want: persisted, wantStamp: true},
 		{name: "recovers from an initial transient failure", initialErr: boom, reread: read(persisted, nil), want: persisted, wantStamp: true},
-		{name: "falls back to the initial read when the reread fails", initial: persisted, reread: read(nil, boom), want: persisted, wantStamp: true},
+		{name: "falls back to a persisted initial read when the reread fails", initial: persisted, reread: read(nil, boom), want: persisted, wantStamp: true},
+		{name: "never falls back to an ephemeral initial read", initial: ephemeral, reread: read(nil, boom), wantErr: true},
 		{name: "unreadable pre-existing namespace is left alone", initialErr: forbidden, reread: read(nil, forbidden), wantStamp: false},
 		{name: "any other persistent failure aborts the deploy", initialErr: boom, reread: read(nil, boom), wantErr: true},
 	}
