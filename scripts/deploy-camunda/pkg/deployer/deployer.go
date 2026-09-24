@@ -114,7 +114,7 @@ func Deploy(ctx context.Context, o types.Options) error {
 	}
 
 	if o.ExternalSecretsEnabled {
-		if err := kube.ApplyExternalSecretsAndCerts(ctx, o.Kubeconfig, o.KubeContext, o.Platform, o.RepoRoot, o.ChartPath, o.Namespace, o.ExternalSecretsStore); err != nil {
+		if err := kube.ApplyExternalSecretsAndCerts(ctx, o.Kubeconfig, o.KubeContext, o.Platform, o.RepoRoot, o.ChartPath, o.Namespace, o.ExternalSecretsStore, o.CredentialsManifest); err != nil {
 			return err
 		}
 	}

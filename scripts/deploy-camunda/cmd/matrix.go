@@ -1455,6 +1455,9 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 
 		applyTopologyReleaseOverrides(flags, buildTopologyReleaseEnv(crossRefEnv, rel))
 		applyTopologyReleaseHostname(flags, releaseHost)
+		if entry.Topology.CredentialsManifest != "" {
+			flags.Secrets.CredentialsManifest = filepath.Join(opts.RepoRoot, entry.Topology.CredentialsManifest)
+		}
 		if err := matrix.RegisterDeclarativePostInfraHook(flags, releaseEntry.PostInfra, opts.RepoRoot, releaseEntry.Version, releaseEntry.Scenario); err != nil {
 			cleanup()
 			return fmt.Errorf("topology release %s/%s (namespace-suffix %q): register post-infra hook: %w", entry.Scenario, rel.Role, rel.NamespaceSuffix, err)

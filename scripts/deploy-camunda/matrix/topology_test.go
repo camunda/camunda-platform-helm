@@ -319,6 +319,69 @@ func TestTopologyValidate_Valid(t *testing.T) {
 	}
 }
 
+func TestTopologyValidate_CredentialsManifest(t *testing.T) {
+	repoRoot, dir := newTopologyTestChart(t)
+	depsDir := filepath.Join(t.TempDir(), "dependencies")
+	writeValuesFile(t, dir, "features/hub.yaml")
+	writeValuesFile(t, dir, "features/orchestration.yaml")
+	writeValuesFile(t, dir, "identity/keycloak.yaml")
+	writeValuesFile(t, dir, "identity/keycloak-external.yaml")
+	writeValuesFile(t, dir, "persistence/elasticsearch-external.yaml")
+	writeDepFile(t, depsDir, "keycloak")
+	manifest := filepath.Join("charts", "camunda-platform-8.10", "creds.yaml")
+	if err := os.WriteFile(filepath.Join(repoRoot, manifest), []byte("kind: ExternalSecret\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	cases := []struct {
+		name    string
+		path    string
+		wantErr string
+	}{
+		{"existing relative path", manifest, ""},
+		{"missing file", "charts/camunda-platform-8.10/absent.yaml", "absent.yaml"},
+		{"absolute path", filepath.Join(repoRoot, manifest), "inside the repository"},
+		{"escapes repo", "../outside.yaml", "inside the repository"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			top := &Topology{
+				Name:                "hub-1orch",
+				CredentialsManifest: tc.path,
+				Releases: []TopologyRelease{
+					{
+						Role:            "hub",
+						NamespaceSuffix: "hub",
+						Features:        []string{"hub"},
+						Identity:        "keycloak",
+						Dependencies:    []string{"keycloak"},
+					},
+					{
+						Role:               "orchestration",
+						NamespaceSuffix:    "orcha",
+						ModelerClusterID:   "orcha",
+						ModelerClusterName: "Orchestration A",
+						Features:           []string{"orchestration"},
+						Identity:           "keycloak-external",
+						Persistence:        "elasticsearch-external",
+						DependsOn:          "hub",
+					},
+				},
+			}
+			err := top.Validate("ctx", dir, depsDir)
+			if tc.wantErr == "" {
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
+				return
+			}
+			if err == nil || !strings.Contains(err.Error(), tc.wantErr) {
+				t.Fatalf("err = %v, want it to mention %q", err, tc.wantErr)
+			}
+		})
+	}
+}
+
 func TestTopologyValidate_ValidWithOptimizeReleases(t *testing.T) {
 	_, dir := newTopologyTestChart(t)
 	depsDir := filepath.Join(t.TempDir(), "dependencies")

@@ -42,6 +42,11 @@ orchestration:
       type: elasticsearch
       elasticsearch:
         url: "${EXTERNAL_ELASTICSEARCH_SCHEME}://${EXTERNAL_ELASTICSEARCH_HOST}:${EXTERNAL_ELASTICSEARCH_PORT}"
+        auth:
+          username: elastic
+          secret:
+            existingSecret: integration-test-credentials
+            existingSecretKey: elasticsearch-password
   index:
     prefix: $ORCHESTRATION_INDEX_PREFIX
   exporters:
@@ -52,6 +57,11 @@ orchestration:
 
 optimize:
   enabled: false
+  # Not an Optimize setting here: the chart gives the legacy Elasticsearch
+  # exporter credentials only when this is true. Optimize stays disabled.
+  database:
+    elasticsearch:
+      external: true
 
 connectors:
   enabled: true

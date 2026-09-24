@@ -93,6 +93,9 @@ nodeSelector: {}
 ## @param tolerations can be used to tolerate node taints for Keycloak and bundled PostgreSQL pods.
 tolerations: []
 
+## @param affinity can be used to set affinity rules for the Keycloak pod.
+affinity: {}
+
 ## Bundled PostgreSQL for Keycloak's database.
 postgresql:
   ## @param postgresql.enabled Deploy a minimal PostgreSQL instance for Keycloak.
@@ -112,6 +115,8 @@ postgresql:
     existingSecret: ""
     ## @param postgresql.auth.passwordSecretKey Key in existing secret for the password.
     passwordSecretKey: "postgresql-password"
+  ## @param postgresql.affinity can be used to set affinity rules for the bundled PostgreSQL pod.
+  affinity: {}
   resources:
     requests:
       cpu: 100m

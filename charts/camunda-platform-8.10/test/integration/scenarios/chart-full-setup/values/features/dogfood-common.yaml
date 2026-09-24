@@ -1,0 +1,32 @@
+# Shared layer for every release of the long-lived dogfood topology (8.10).
+#
+# The dogfood environment is internet-facing and long-lived, unlike the CI
+# scenarios these layers otherwise serve, so it overrides a few CI defaults:
+#
+# - Every Ingress redirects HTTP to HTTPS. The chart's ingress-nginx
+#   compatibility set turns the redirect off, which let the Keycloak login form
+#   and the web apps be used over plain HTTP.
+# - Connectors does not report component details on its unauthenticated health
+#   endpoint.
+# - The broker has a PodDisruptionBudget, so the cluster autoscaler does not
+#   evict it to scale a spot node down. Spot reclaims ignore budgets; this only
+#   removes the voluntary disruptions.
+
+global:
+  ingress:
+    annotations:
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+
+orchestration:
+  ingress:
+    grpc:
+      annotations:
+        nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 1
+
+connectors:
+  env:
+    - name: MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS
+      value: "never"

@@ -10,6 +10,11 @@
 # the raw file content, including comments. Reference placeholder names in plain
 # text instead; the real placeholder syntax appears only in actual values below.
 #
+# Each tenant's exporter password is the ELASTICSEARCH_PASSWORD_REF placeholder.
+# The dogfood registry sets that variable to the Spring placeholder for
+# VALUES_ELASTICSEARCH_PASSWORD, which the chart fills from the
+# secondaryStorage auth secret at runtime, so the password never enters values.
+#
 # Tenant index prefixes are derived from this release's own
 # ORCHESTRATION_INDEX_PREFIX so each Optimize release can reconstruct them from
 # the topology driver's PT_ORCHESTRATION_INDEX_PREFIX cross-ref env without a
@@ -23,7 +28,7 @@ global:
       # The exact "iss" the Hub's Keycloak mints. Required once Physical Tenants
       # are configured: the cluster then validates "iss" on every token, and the
       # chart deliberately does not infer this from publicIssuerUrl. The
-      # keycloak-fixed-issuer dependency pins KC_HOSTNAME to this same value.
+      # keycloak-dogfood dependency pins KC_HOSTNAME to this same value.
       issuer: "https://${HUB_HOST}/auth/realms/camunda-platform"
 
 orchestration:
@@ -42,6 +47,11 @@ orchestration:
       type: elasticsearch
       elasticsearch:
         url: "${EXTERNAL_ELASTICSEARCH_SCHEME}://${EXTERNAL_ELASTICSEARCH_HOST}:${EXTERNAL_ELASTICSEARCH_PORT}"
+        auth:
+          username: elastic
+          secret:
+            existingSecret: integration-test-credentials
+            existingSecretKey: elasticsearch-password
   index:
     prefix: $ORCHESTRATION_INDEX_PREFIX
   exporters:
@@ -79,6 +89,9 @@ orchestration:
                     className: "io.camunda.zeebe.exporter.ElasticsearchExporter"
                     args:
                       url: "${EXTERNAL_ELASTICSEARCH_SCHEME}://${EXTERNAL_ELASTICSEARCH_HOST}:${EXTERNAL_ELASTICSEARCH_PORT}"
+                      authentication:
+                        username: elastic
+                        password: "${ELASTICSEARCH_PASSWORD_REF}"
                       index:
                         prefix: "${ORCHESTRATION_INDEX_PREFIX}"
                         numberOfReplicas: "1"
@@ -106,6 +119,9 @@ orchestration:
                     className: "io.camunda.zeebe.exporter.ElasticsearchExporter"
                     args:
                       url: "${EXTERNAL_ELASTICSEARCH_SCHEME}://${EXTERNAL_ELASTICSEARCH_HOST}:${EXTERNAL_ELASTICSEARCH_PORT}"
+                      authentication:
+                        username: elastic
+                        password: "${ELASTICSEARCH_PASSWORD_REF}"
                       index:
                         prefix: "${ORCHESTRATION_INDEX_PREFIX}-ta"
                         numberOfReplicas: "1"
@@ -135,6 +151,9 @@ orchestration:
                     className: "io.camunda.zeebe.exporter.ElasticsearchExporter"
                     args:
                       url: "${EXTERNAL_ELASTICSEARCH_SCHEME}://${EXTERNAL_ELASTICSEARCH_HOST}:${EXTERNAL_ELASTICSEARCH_PORT}"
+                      authentication:
+                        username: elastic
+                        password: "${ELASTICSEARCH_PASSWORD_REF}"
                       index:
                         prefix: "${ORCHESTRATION_INDEX_PREFIX}-tb"
                         numberOfReplicas: "1"
@@ -153,6 +172,11 @@ orchestration:
 
 optimize:
   enabled: false
+  # Not an Optimize setting here: the chart gives the legacy Elasticsearch
+  # exporter credentials only when this is true. Optimize stays disabled.
+  database:
+    elasticsearch:
+      external: true
 
 connectors:
   enabled: true
