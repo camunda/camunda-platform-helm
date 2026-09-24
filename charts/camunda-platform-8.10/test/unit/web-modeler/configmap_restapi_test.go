@@ -500,7 +500,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterFromSa
 
 			mgmtCluster := configmapApplication.Camunda.Modeler.Clusters[0]
 			s.Require().Equal("management-cluster", mgmtCluster.Id)
-			s.Require().Equal("hub", mgmtCluster.Name)
+			s.Require().Equal("Management Identity", mgmtCluster.Name)
 			s.Require().Equal(false, mgmtCluster.Authorizations.Enabled)
 			s.Require().Equal(tc.expectedAuthentication, mgmtCluster.Authentication)
 			var identityComp ComponentYAML
@@ -685,9 +685,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldUseClustersFromCustomC
 	s.Require().Equal("http://localhost:8088", configmapApplication.Camunda.Modeler.Clusters[2].Url.WebApp)
 }
 
-func (s *configmapRestAPITemplateTest) TestManagementClusterContainsBothIdentityAndWebModelerComponents() {
-	// management-cluster must include both identity and hub so that WebModeler
-	// can reach Identity and register itself as a known component.
+func (s *configmapRestAPITemplateTest) TestManagementClusterContainsOnlyIdentityComponent() {
 	values := maps.Clone(requiredValues)
 	maps.Insert(values, maps.All(map[string]string{
 		"global.ingress.enabled": "true",
@@ -710,22 +708,13 @@ func (s *configmapRestAPITemplateTest) TestManagementClusterContainsBothIdentity
 		s.Fail("Failed to unmarshal yaml. error=", err)
 	}
 
-	// then — management-cluster contains both identity and hub
+	// then
 	s.Require().GreaterOrEqual(len(configmapApplication.Camunda.Modeler.Clusters), 1)
 	mgmtCluster := configmapApplication.Camunda.Modeler.Clusters[0]
 	s.Require().Equal("management-cluster", mgmtCluster.Id)
 
-	var hasIdentity, hasHub bool
-	for _, c := range mgmtCluster.Components {
-		if c.Type == "identity" {
-			hasIdentity = true
-		}
-		if c.Type == "hub" {
-			hasHub = true
-		}
-	}
-	s.Require().True(hasIdentity, "management-cluster should contain an identity component")
-	s.Require().True(hasHub, "management-cluster should contain a hub component")
+	s.Require().Len(mgmtCluster.Components, 1)
+	s.Require().Equal("identity", mgmtCluster.Components[0].Type)
 }
 
 func (s *configmapRestAPITemplateTest) TestContainerShouldNotConfigureClustersIfZeebeDisabledAndNoCustomConfiguration() {
