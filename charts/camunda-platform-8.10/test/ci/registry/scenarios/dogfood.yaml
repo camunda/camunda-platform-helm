@@ -14,15 +14,20 @@ topology:
   name: hub-3orch-dogfood
   shared-storage: elasticsearch
   shared-storage-service: elasticsearch-master
+  # Every namespace gets integration-test-credentials from a dogfood-only source
+  # (one generated value per key) rather than the CI-wide one; the
+  # *-dogfood dependencies below read their passwords from it too.
+  credentials-manifest: charts/camunda-platform-8.10/test/integration/external-secrets/dogfood-credentials.yaml
   releases:
     - role: hub
       namespace-suffix: hub
       identity: keycloak
       dependencies:
-        - keycloak-fixed-issuer
-        - postgresql
-        - elasticsearch
+        - keycloak-dogfood
+        - postgresql-dogfood
+        - elasticsearch-dogfood
       features:
+        - dogfood-common
         - multinamespace-reset-clients
         - dogfood-hub
     - role: orchestration
@@ -33,6 +38,7 @@ topology:
       persistence: elasticsearch-external
       dependencies: []
       features:
+        - dogfood-common
         - dogfood-orchestration-plain
       depends-on: hub
       env:
@@ -47,6 +53,7 @@ topology:
       persistence: elasticsearch-external
       dependencies: []
       features:
+        - dogfood-common
         - dogfood-orchestration-mt
       depends-on: hub
       env:
@@ -61,12 +68,16 @@ topology:
       persistence: elasticsearch-external
       dependencies: []
       features:
+        - dogfood-common
         - dogfood-orchestration-pt
       depends-on: hub
       env:
         ORCH_ORCHESTRATION_CLIENT_ID: orchestration-pt
         ORCH_ORCHESTRATION_AUDIENCE: orchestration-pt-api
         ORCH_CONNECTORS_CLIENT_ID: connectors-pt
+        # Substituted once into the per-tenant exporters' password, leaving a Spring
+        # placeholder the chart resolves from the Elasticsearch auth secret at runtime.
+        ELASTICSEARCH_PASSWORD_REF: "${VALUES_ELASTICSEARCH_PASSWORD}"
     - role: optimize
       namespace-suffix: optplain
       serves: plain
@@ -76,6 +87,7 @@ topology:
       persistence: elasticsearch-external
       dependencies: []
       features:
+        - dogfood-common
         - dogfood-optimize-plain
       depends-on: hub
     - role: optimize
@@ -87,6 +99,7 @@ topology:
       persistence: elasticsearch-external
       dependencies: []
       features:
+        - dogfood-common
         - dogfood-optimize-mt
       depends-on: hub
     - role: optimize
@@ -98,6 +111,7 @@ topology:
       persistence: elasticsearch-external
       dependencies: []
       features:
+        - dogfood-common
         - dogfood-optimize-pt-default
       depends-on: hub
     - role: optimize
@@ -109,6 +123,7 @@ topology:
       persistence: elasticsearch-external
       dependencies: []
       features:
+        - dogfood-common
         - dogfood-optimize-pt-ta
       depends-on: hub
     - role: optimize
@@ -120,5 +135,6 @@ topology:
       persistence: elasticsearch-external
       dependencies: []
       features:
+        - dogfood-common
         - dogfood-optimize-pt-tb
       depends-on: hub

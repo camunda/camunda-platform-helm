@@ -789,7 +789,7 @@ const (
 	secretNameTLS = "aws-camunda-cloud-tls"
 )
 
-func ApplyExternalSecretsAndCerts(ctx context.Context, kubeconfig, kubeContext, platform, repoRoot, chartPath, namespace, externalSecretsStore string) error {
+func ApplyExternalSecretsAndCerts(ctx context.Context, kubeconfig, kubeContext, platform, repoRoot, chartPath, namespace, externalSecretsStore, credentialsManifest string) error {
 	platform = strings.ToLower(strings.TrimSpace(platform))
 
 	logging.Logger.Debug().
@@ -813,7 +813,7 @@ func ApplyExternalSecretsAndCerts(ctx context.Context, kubeconfig, kubeContext, 
 		return nil
 	}
 
-	provider, err := NewPlatformSecretsProvider(platform, repoRoot, chartPath, externalSecretsStore)
+	provider, err := NewPlatformSecretsProvider(platform, repoRoot, chartPath, externalSecretsStore, credentialsManifest)
 	if err != nil {
 		return err
 	}

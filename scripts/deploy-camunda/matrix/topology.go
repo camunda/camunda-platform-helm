@@ -45,6 +45,11 @@ type Topology struct {
 
 	// SharedStorageService is the Kubernetes Service name of the shared storage backend (defaults to SharedStorage/release name; elastic chart uses <clusterName>-master).
 	SharedStorageService string `yaml:"shared-storage-service,omitempty" json:"sharedStorageService,omitempty"`
+
+	// CredentialsManifest is a repo-root-relative ExternalSecret manifest applied
+	// to every release namespace in place of the chart's integration-test-credentials
+	// one, so a long-lived topology can source credentials that no CI namespace shares.
+	CredentialsManifest string `yaml:"credentials-manifest,omitempty" json:"credentialsManifest,omitempty"`
 }
 
 // TopologyRelease is one namespace/release within a Topology. Each release
@@ -205,6 +210,15 @@ func (t *Topology) Validate(ctx string, chartDir string, depsDir string) error {
 
 	if len(t.Releases) == 0 {
 		problems = append(problems, fmt.Sprintf("%s: topology %q: at least one release is required", ctx, t.Name))
+	}
+
+	if m := t.CredentialsManifest; m != "" {
+		clean := filepath.Clean(m)
+		if filepath.IsAbs(m) || clean == ".." || strings.HasPrefix(clean, ".."+string(filepath.Separator)) {
+			problems = append(problems, fmt.Sprintf("%s: topology %q: credentials-manifest %q must be a path inside the repository, relative to its root", ctx, t.Name, m))
+		} else if _, statErr := os.Stat(filepath.Join(repoRoot, clean)); statErr != nil {
+			problems = append(problems, fmt.Sprintf("%s: topology %q: credentials-manifest %q: %v", ctx, t.Name, m, statErr))
+		}
 	}
 
 	roles := map[string]bool{}
