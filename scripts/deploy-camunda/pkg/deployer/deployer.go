@@ -25,8 +25,6 @@ import (
 	"scripts/camunda-core/pkg/utils"
 	"scripts/deploy-camunda/pkg/types"
 	"time"
-
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
 func Deploy(ctx context.Context, o types.Options) error {
@@ -69,23 +67,14 @@ func Deploy(ctx context.Context, o types.Options) error {
 		return err
 	}
 
-	if created {
-		// This call created it, so it is new whatever a read would say.
-		existingAnnotations, readErr = nil, nil
-	} else if readErr != nil || existingAnnotations == nil {
-		// Read again: a namespace just created may be unreadable until RBAC
-		// propagates, and one that did not exist a moment ago may have been
-		// created (and persisted) by someone else since.
-		existingAnnotations, readErr = retryNamespaceAnnotations(ctx, kubeClient, o.Namespace, 5, 3*time.Second)
+	existingAnnotations, stamp, err := decideLifecycle(created, existingAnnotations, readErr, func() (map[string]string, error) {
+		return retryNamespaceAnnotations(ctx, kubeClient, o.Namespace, 5, 3*time.Second)
+	})
+	if err != nil {
+		return fmt.Errorf("cannot read namespace %q to preserve its lifecycle TTL: %w", o.Namespace, err)
 	}
-	if readErr != nil && !apierrors.IsForbidden(readErr) {
-		return fmt.Errorf("cannot read namespace %q to preserve its lifecycle TTL: %w", o.Namespace, readErr)
-	}
-	if readErr != nil {
-		// An identity that may create and patch but not read namespaces cannot
-		// tell a persisted namespace from a new one. Leave the lifecycle
-		// metadata as it is: stamping could delete a persisted namespace.
-		logging.Logger.Warn().Err(readErr).Str("namespace", o.Namespace).
+	if !stamp {
+		logging.Logger.Warn().Str("namespace", o.Namespace).
 			Msg("namespace is not readable; leaving its lifecycle TTL unchanged")
 	} else if err := labelAndAnnotateNamespace(ctx, kubeClient, o.Namespace, existingAnnotations, o.Identifier, o.CIMetadata.Flow, o.TTL, o.CIMetadata.GithubRunID, o.CIMetadata.GithubJobID, o.CIMetadata.GithubOrg, o.CIMetadata.GithubRepo, o.CIMetadata.WorkflowURL); err != nil {
 		// Non-fatal: namespace labels are CI housekeeping metadata (TTL, GitHub run IDs).
