@@ -64,11 +64,15 @@ func Deploy(ctx context.Context, o types.Options) error {
 	// annotations lifecycleAnnotations needs to see.
 	existingAnnotations, readErr := readNamespaceAnnotations(ctx, kubeClient, o.Namespace)
 
-	if err := kubeClient.EnsureNamespace(ctx, o.Namespace); err != nil {
+	created, err := kubeClient.EnsureNamespaceCreated(ctx, o.Namespace)
+	if err != nil {
 		return err
 	}
 
-	if readErr != nil || existingAnnotations == nil {
+	if created {
+		// This call created it, so it is new whatever a read would say.
+		existingAnnotations, readErr = nil, nil
+	} else if readErr != nil || existingAnnotations == nil {
 		// Read again: a namespace just created may be unreadable until RBAC
 		// propagates, and one that did not exist a moment ago may have been
 		// created (and persisted) by someone else since.

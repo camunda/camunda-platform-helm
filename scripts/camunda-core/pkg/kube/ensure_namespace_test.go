@@ -31,8 +31,12 @@ func TestEnsureNamespace_LeavesAnExistingNamespaceUntouched(t *testing.T) {
 	}})
 	c := &Client{clientset: cs}
 
-	if err := c.EnsureNamespace(context.Background(), "persisted"); err != nil {
+	created, err := c.EnsureNamespaceCreated(context.Background(), "persisted")
+	if err != nil {
 		t.Fatal(err)
+	}
+	if created {
+		t.Error("created = true for an existing namespace")
 	}
 
 	for _, a := range cs.Actions() {
@@ -52,8 +56,12 @@ func TestEnsureNamespace_LeavesAnExistingNamespaceUntouched(t *testing.T) {
 func TestEnsureNamespace_CreatesAMissingNamespace(t *testing.T) {
 	cs := fake.NewSimpleClientset()
 	c := &Client{clientset: cs}
-	if err := c.EnsureNamespace(context.Background(), "fresh"); err != nil {
+	created, err := c.EnsureNamespaceCreated(context.Background(), "fresh")
+	if err != nil {
 		t.Fatal(err)
+	}
+	if !created {
+		t.Error("created = false for a namespace this call created")
 	}
 	if _, err := cs.CoreV1().Namespaces().Get(context.Background(), "fresh", metav1.GetOptions{}); err != nil {
 		t.Fatalf("namespace not created: %v", err)
