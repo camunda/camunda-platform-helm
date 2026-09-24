@@ -4,7 +4,7 @@
 # Elasticsearch) fronting three Orchestration Clusters:
 #   plain - no Physical Tenants, no logical multi-tenancy
 #   mt    - no Physical Tenants, logical multi-tenancy enabled
-#   pt    - two Physical Tenants beside default, logical multi-tenancy inside tenanta
+#   pt    - two Physical Tenants beside default, logical multi-tenancy cluster-wide
 #
 # Every Optimize runs as its own release on the Hub ingress host, so each
 # cluster record's optimize entry describes only that cluster's default tenant
