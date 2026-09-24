@@ -133,6 +133,7 @@ jobs:
         run: |
           deploy-camunda topology ensure-credentials \
             --manifest "${GITHUB_WORKSPACE}/charts/camunda-platform-${DOGFOOD_CHART_VERSION}/test/integration/external-secrets/dogfood-credentials.yaml" \
+            --base "${DOGFOOD_ENVIRONMENT}" \
             --guard-namespace "${DOGFOOD_ENVIRONMENT}-hub"
 
       # `matrix run` deploys through `helm upgrade --install`, so deploy and

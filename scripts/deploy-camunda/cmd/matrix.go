@@ -1205,6 +1205,35 @@ func buildOrchestrationZeebeEnv(orchestrationCtx *deploy.ScenarioContext) map[st
 	}
 }
 
+// renderTopologyCredentialsManifest writes the topology's credentials-manifest,
+// with the base namespace substituted, to a temporary file the deployer can
+// apply, and returns a function that removes it.
+func renderTopologyCredentialsManifest(path, base string) (string, func(), error) {
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return "", func() {}, fmt.Errorf("read credentials manifest: %w", err)
+	}
+	rendered, err := matrix.RenderCredentialsManifest(content, base)
+	if err != nil {
+		return "", func() {}, err
+	}
+	f, err := os.CreateTemp("", "credentials-manifest-*.yaml")
+	if err != nil {
+		return "", func() {}, err
+	}
+	remove := func() { _ = os.Remove(f.Name()) }
+	if _, err := f.Write(rendered); err != nil {
+		f.Close()
+		remove()
+		return "", func() {}, err
+	}
+	if err := f.Close(); err != nil {
+		remove()
+		return "", func() {}, err
+	}
+	return f.Name(), remove, nil
+}
+
 // buildTopologyReleaseEnv layers a release's substitution namespace: shared
 // cross-release variables first, then the release's own env, and finally the
 // keys this driver derives from the topology declaration. The derived keys go
@@ -1457,7 +1486,13 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 
 		applyTopologyReleaseOverrides(flags, buildTopologyReleaseEnv(crossRefEnv, rel))
 		if entry.Topology.CredentialsManifest != "" {
-			flags.Secrets.CredentialsManifest = filepath.Join(opts.RepoRoot, entry.Topology.CredentialsManifest)
+			path, removeManifest, err := renderTopologyCredentialsManifest(filepath.Join(opts.RepoRoot, entry.Topology.CredentialsManifest), baseNamespace)
+			if err != nil {
+				cleanup()
+				return fmt.Errorf("topology release %s/%s (namespace-suffix %q): %w", entry.Scenario, rel.Role, rel.NamespaceSuffix, err)
+			}
+			defer removeManifest()
+			flags.Secrets.CredentialsManifest = path
 		}
 		if err := matrix.RegisterDeclarativePostInfraHook(flags, releaseEntry.PostInfra, opts.RepoRoot, releaseEntry.Version, releaseEntry.Scenario); err != nil {
 			cleanup()

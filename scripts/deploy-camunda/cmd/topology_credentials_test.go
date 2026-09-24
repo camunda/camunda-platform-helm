@@ -26,6 +26,8 @@ import (
 	"gopkg.in/yaml.v3"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+
+	"scripts/deploy-camunda/matrix"
 )
 
 const twoPropertyManifest = `
@@ -214,6 +216,27 @@ func TestEnsureCredentials_RefusesToCreateSourceForDeployedEnvironment(t *testin
 	}
 }
 
+func TestEnsureCredentials_RefusesToTopUpSourceForDeployedEnvironment(t *testing.T) {
+	f := &fakeCredentialAPI{store: map[string]string{"prop-a": "a"}, exists: true, nsExists: true}
+	err := ensureCredentials(context.Background(), &bytes.Buffer{}, []byte(twoPropertyManifest), "ns", "env-hub", f.api())
+	if err == nil || !strings.Contains(err.Error(), "prop-b") {
+		t.Fatalf("err = %v, want refusal naming the missing property", err)
+	}
+	if f.updates != 0 {
+		t.Error("must not write when refusing")
+	}
+}
+
+func TestEnsureCredentials_TopsUpSourceForFreshEnvironment(t *testing.T) {
+	f := &fakeCredentialAPI{store: map[string]string{"prop-a": "a"}, exists: true}
+	if err := ensureCredentials(context.Background(), &bytes.Buffer{}, []byte(twoPropertyManifest), "ns", "env-hub", f.api()); err != nil {
+		t.Fatal(err)
+	}
+	if f.updates != 1 || f.store["prop-a"] != "a" || f.store["prop-b"] == "" {
+		t.Errorf("updates=%d store=%v", f.updates, f.store)
+	}
+}
+
 func TestEnsureCredentials_ConcurrentCreateKeepsTheWinnersValues(t *testing.T) {
 	winner := map[string]string{"prop-a": "won-a", "prop-b": "won-b"}
 	f := &fakeCredentialAPI{raceOnce: winner}
@@ -244,9 +267,16 @@ func TestDogfoodCredentialsManifest_ReadsOneSourceWithDistinctProperties(t *test
 	if err != nil {
 		t.Fatal(err)
 	}
+	manifest, err = matrix.RenderCredentialsManifest(manifest, "dogfood")
+	if err != nil {
+		t.Fatal(err)
+	}
 	src, err := parseCredentialSource(manifest)
 	if err != nil {
 		t.Fatal(err)
+	}
+	if src.Name != "dogfood-credentials" {
+		t.Errorf("source for base dogfood = %q, want dogfood-credentials", src.Name)
 	}
 	if src.Name == "integration-test" {
 		t.Fatal("dogfood credentials must not read the CI-wide integration-test source")

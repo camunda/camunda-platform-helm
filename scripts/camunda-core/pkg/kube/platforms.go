@@ -142,38 +142,42 @@ func applyExternalSecretsOther(ctx context.Context, client *Client, repoRoot, ch
 		return fmt.Errorf("apply credentials secrets: %w", err)
 	}
 
-	if credentialsManifest != "" {
-		if !fileExists(credentialsManifest) {
-			return fmt.Errorf("credentials manifest %q does not exist", credentialsManifest)
-		}
-		if err := applyManifestFile(ctx, client, namespace, credentialsManifest); err != nil {
-			return fmt.Errorf("apply credentials manifest %s: %w", credentialsManifest, err)
-		}
-		logging.Logger.Debug().Str("file", credentialsManifest).Msg("applied scenario credentials external-secret")
+	file, err := integrationCredentialsManifest(chartPath, externalSecretDir, vaultSuffix, credentialsManifest, fileExists)
+	if err != nil {
+		return err
+	}
+	if file == "" {
+		logging.Logger.Debug().Msg("no integration-test external-secret manifest found (optional, continuing)")
 		return nil
 	}
-
-	// Determine which integration test credentials file to use based on external secrets store
-	integrationCredsFile := fmt.Sprintf("external-secret-integration-test-credentials%s.yaml", vaultSuffix)
-
-	chartSpecific := filepath.Join(chartPath, "test", "integration", "external-secrets", integrationCredsFile)
-	fallback := filepath.Join(externalSecretDir, integrationCredsFile)
-
-	if fileExists(chartSpecific) {
-		if err := applyManifestFile(ctx, client, namespace, chartSpecific); err != nil {
-			return fmt.Errorf("apply chart-specific integration-test credentials: %w", err)
-		}
-		logging.Logger.Debug().Str("file", chartSpecific).Msg("applied chart-specific integration-test external-secret")
-	} else if fileExists(fallback) {
-		if err := applyManifestFile(ctx, client, namespace, fallback); err != nil {
-			return fmt.Errorf("apply fallback integration-test credentials: %w", err)
-		}
-		logging.Logger.Debug().Str("file", fallback).Msg("applied fallback integration-test external-secret")
-	} else {
-		logging.Logger.Debug().Msg("no integration-test external-secret manifest found (optional, continuing)")
+	if err := applyManifestFile(ctx, client, namespace, file); err != nil {
+		return fmt.Errorf("apply integration-test credentials %s: %w", file, err)
 	}
-
+	logging.Logger.Debug().Str("file", file).Msg("applied integration-test credentials external-secret")
 	return nil
+}
+
+// integrationCredentialsManifest picks the one manifest that provides a
+// namespace's integration-test-credentials: the scenario's own when given (and
+// then never the CI one), otherwise the chart-specific file, otherwise the
+// shared fallback. An empty result means there is none to apply.
+func integrationCredentialsManifest(chartPath, externalSecretDir, vaultSuffix, credentialsManifest string, exists func(string) bool) (string, error) {
+	if credentialsManifest != "" {
+		if !exists(credentialsManifest) {
+			return "", fmt.Errorf("credentials manifest %q does not exist", credentialsManifest)
+		}
+		return credentialsManifest, nil
+	}
+	name := fmt.Sprintf("external-secret-integration-test-credentials%s.yaml", vaultSuffix)
+	for _, candidate := range []string{
+		filepath.Join(chartPath, "test", "integration", "external-secrets", name),
+		filepath.Join(externalSecretDir, name),
+	} {
+		if exists(candidate) {
+			return candidate, nil
+		}
+	}
+	return "", nil
 }
 
 func applySecretsForEKS(ctx context.Context, client *Client, repoRoot, chartPath, namespace, externalSecretsStore, credentialsManifest string) error {
