@@ -139,6 +139,7 @@ type fakeCredentialAPI struct {
 	updates    int
 	raceOnce   map[string]string
 	createErrs []error
+	lastUpdate map[string]string
 }
 
 func (f *fakeCredentialAPI) api() topologyCredentialStore {
@@ -160,7 +161,10 @@ func (f *fakeCredentialAPI) api() topologyCredentialStore {
 		},
 		update: func(_ context.Context, _, _ string, data map[string]string) error {
 			f.updates++
-			f.store = data
+			f.lastUpdate = data
+			for k, v := range data {
+				f.store[k] = v
+			}
 			return nil
 		},
 		namespaceExists: func(context.Context, string) (bool, error) { return f.nsExists, nil },
@@ -192,6 +196,16 @@ func TestEnsureCredentials_WritesOnlyWhenSomethingIsMissing(t *testing.T) {
 	}
 	if strings.Contains(out.String(), f.store["prop-b"]) {
 		t.Error("output must never contain a credential value")
+	}
+}
+
+func TestEnsureCredentials_WritesOnlyGeneratedKeys(t *testing.T) {
+	f := &fakeCredentialAPI{store: map[string]string{"prop-a": "a"}, exists: true}
+	if err := ensureCredentials(context.Background(), &bytes.Buffer{}, []byte(twoPropertyManifest), "ns", "", f.api()); err != nil {
+		t.Fatal(err)
+	}
+	if _, touched := f.lastUpdate["prop-a"]; touched || len(f.lastUpdate) != 1 || f.lastUpdate["prop-b"] == "" {
+		t.Errorf("update carried %v; it must contain only the generated prop-b, so a concurrently rotated prop-a is never rewritten", f.lastUpdate)
 	}
 }
 

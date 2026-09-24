@@ -143,8 +143,9 @@ func generateCredential() (string, error) {
 // topologyCredentialStore is the subset of the Kubernetes API ensureCredentials uses,
 // so tests can substitute it.
 type topologyCredentialStore struct {
-	get             func(ctx context.Context, namespace, name string) (map[string]string, error)
-	create          func(ctx context.Context, namespace, name string, data map[string]string) error
+	get    func(ctx context.Context, namespace, name string) (map[string]string, error)
+	create func(ctx context.Context, namespace, name string, data map[string]string) error
+	// update adds keys to an existing secret, leaving every other key untouched.
 	update          func(ctx context.Context, namespace, name string, data map[string]string) error
 	namespaceExists func(ctx context.Context, namespace string) (bool, error)
 }
@@ -205,7 +206,11 @@ func ensureCredentials(ctx context.Context, out io.Writer, manifest []byte, name
 			return err
 		}
 	default:
-		if err := store.update(ctx, namespace, src.Name, merged); err != nil {
+		added := make(map[string]string, len(created))
+		for _, k := range created {
+			added[k] = merged[k]
+		}
+		if err := store.update(ctx, namespace, src.Name, added); err != nil {
 			return err
 		}
 	}
@@ -251,7 +256,7 @@ namespace does not exist yet, i.e. for a fresh environment.`,
 			return ensureCredentials(cmd.Context(), cmd.OutOrStdout(), manifest, namespace, guardNamespace, topologyCredentialStore{
 				get:             client.GetSecretData,
 				create:          client.CreateOpaqueSecret,
-				update:          client.EnsureOpaqueSecret,
+				update:          client.AddSecretData,
 				namespaceExists: client.NamespaceExists,
 			})
 		},
