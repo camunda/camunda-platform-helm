@@ -26,10 +26,9 @@ global:
     # public host can neither log in nor act. More specific than the chart's
     # /auth/ path, these routes go to a Service with no endpoints, so
     # ingress-nginx answers 503 itself; unlike a source-IP allowlist, no
-    # forwarded header can bypass it. The console's static page stays reachable:
-    # identity/keycloak.yaml waits for Keycloak by following /auth/ through its
-    # redirect to that page. Operators use the console over kubectl port-forward
-    # svc/keycloak 18080:80 (keycloak-dogfood.yaml sets that as its admin URL).
+    # forwarded header can bypass it. Operators use the console over kubectl
+    # port-forward svc/keycloak 18080:80 (keycloak-dogfood.yaml sets that as its
+    # admin URL).
     - |
       apiVersion: v1
       kind: Service
