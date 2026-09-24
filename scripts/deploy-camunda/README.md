@@ -101,7 +101,9 @@ not applied; select its registry variants explicitly through `matrix run`.
 
 Feature overrides replace the declared list: `--features=` or `features: []`
 clears it. Explicit `false` overrides, such as `--qa=false`, also take
-precedence. Differences from the registry are logged with the declared and
+precedence. Deprecated CLI aliases override config values; when both flag forms
+are supplied, the modern selection flag wins.
+Differences from the registry are logged with the declared and
 effective values. Invalid registry data or an unsupported flow/platform
 combination fails instead of silently falling back.
 

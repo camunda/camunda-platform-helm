@@ -624,35 +624,36 @@ func (f *RuntimeFlags) HasExplicitLayeredConfig() bool {
 // MigrateDeprecatedFlags copies deprecated layered values flags to the new selection fields.
 // This is called during validation to ensure backward compatibility.
 func (f *RuntimeFlags) MigrateDeprecatedFlags() {
-	// Only migrate if new fields are not already set
-	if f.Selection.Identity == "" && f.Deprecated.ValuesAuth != "" {
+	if !f.ChangedFlags["identity"] && (f.Selection.Identity == "" || f.ChangedFlags["values-auth"]) && f.Deprecated.ValuesAuth != "" {
 		f.Selection.Identity = f.Deprecated.ValuesAuth
 	}
-	if f.Selection.Persistence == "" && f.Deprecated.ValuesBackend != "" {
+	if !f.ChangedFlags["persistence"] && (f.Selection.Persistence == "" || f.ChangedFlags["values-backend"]) && f.Deprecated.ValuesBackend != "" {
 		f.Selection.Persistence = f.Deprecated.ValuesBackend
 	}
-	if f.Selection.TestPlatform == "" && f.Deprecated.ValuesInfra != "" {
+	if !f.ChangedFlags["test-platform"] && (f.Selection.TestPlatform == "" || f.ChangedFlags["values-infra"]) && f.Deprecated.ValuesInfra != "" {
 		f.Selection.TestPlatform = f.Deprecated.ValuesInfra
 	}
-	if len(f.Selection.Features) == 0 && len(f.Deprecated.ValuesFeatures) > 0 {
+	if !f.ChangedFlags["features"] && (f.ChangedFlags["values-features"] || len(f.Selection.Features) == 0 && len(f.Deprecated.ValuesFeatures) > 0) {
+		f.Selection.Features = nil
 		// Filter out features that are now in other categories
 		for _, feature := range f.Deprecated.ValuesFeatures {
 			switch feature {
 			case "rdbms", "rdbms-external", "rdbms-oracle":
-				// These moved to persistence - only set if persistence not already set
-				if f.Selection.Persistence == "" {
+				if !f.ChangedFlags["persistence"] && (f.Selection.Persistence == "" || f.ChangedFlags["values-features"] && !f.ChangedFlags["values-backend"]) {
 					f.Selection.Persistence = feature
 				}
 			case "upgrade":
 				// This is now a separate flag
-				f.Selection.UpgradeFlow = true
+				if !f.ChangedFlags["upgrade-flow"] {
+					f.Selection.UpgradeFlow = true
+				}
 			default:
 				f.Selection.Features = append(f.Selection.Features, feature)
 			}
 		}
 	}
-	if !f.Selection.QA && f.Deprecated.ValuesQA {
-		f.Selection.QA = true
+	if !f.ChangedFlags["qa"] && (f.ChangedFlags["values-qa"] || !f.Selection.QA && f.Deprecated.ValuesQA) {
+		f.Selection.QA = f.Deprecated.ValuesQA
 	}
 }
 
@@ -771,7 +772,7 @@ func ApplySelectionDefaults(flags *RuntimeFlags, defaults SelectionFlags, root *
 	if flags.ChangedFlags["upgrade-flow"] {
 		merged.Selection.UpgradeFlow = flags.Selection.UpgradeFlow
 	}
-	if flags.ChangedFlags["values-features"] {
+	if flags.ChangedFlags["values-features"] && !flags.ChangedFlags["features"] {
 		legacy := RuntimeFlags{Deprecated: flags.Deprecated}
 		legacy.MigrateDeprecatedFlags()
 		if legacy.Selection.Persistence != "" {
