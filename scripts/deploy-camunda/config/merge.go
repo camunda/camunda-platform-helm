@@ -120,8 +120,12 @@ type DockerFlags struct {
 
 // SecretsFlags holds secrets-related configuration.
 type SecretsFlags struct {
-	ExternalSecrets       bool
-	ExternalSecretsStore  string
+	ExternalSecrets      bool
+	ExternalSecretsStore string
+	// CredentialsManifest is an absolute path to an ExternalSecret manifest that
+	// replaces the chart's integration-test-credentials one. Set by topology
+	// scenarios that declare credentials-manifest.
+	CredentialsManifest   string
 	VaultSecretMapping    string
 	AutoGenerateSecrets   bool
 	UseVaultBackedSecrets bool

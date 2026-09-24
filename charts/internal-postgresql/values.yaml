@@ -81,3 +81,6 @@ nodeSelector: {}
 
 ## @param tolerations Tolerations for PostgreSQL pods.
 tolerations: []
+
+## @param affinity Affinity rules for PostgreSQL pods.
+affinity: {}

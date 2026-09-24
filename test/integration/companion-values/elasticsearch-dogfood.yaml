@@ -1,0 +1,178 @@
+# Elasticsearch companion for the long-lived dogfood topology: elasticsearch.yaml
+# with X-Pack security on, so the shared cluster the dogfood namespaces write
+# into requires the elastic user's password (integration-test-credentials /
+# elasticsearch-password, generated per environment by ensure-credentials).
+#
+# The CI cluster does not enforce NetworkPolicy, so authentication is the only
+# thing keeping other namespaces out of this data.
+#
+# HTTP stays plain: every consumer is in-cluster, and TLS on HTTP would need a
+# truststore in all of them. Transport TLS is on because Elasticsearch refuses
+# to start with security enabled and transport TLS off outside single-node
+# discovery, which the chart's cluster.initial_master_nodes rules out. The
+# transport certificate is generated per pod start (generate-transport-cert):
+# this is a single node, so nothing else ever has to trust it.
+
+clusterName: "elasticsearch"
+
+replicas: 1
+minimumMasterNodes: 1
+
+protocol: http
+
+# The chart's readiness probe stores its "already started" marker at
+# /tmp/.es_start_file, which is lost whenever the pod is rescheduled onto
+# another node. A rescheduled pod therefore re-runs the startup branch and
+# blocks on _cluster/health?wait_for_status=<status>. Gate on yellow: all
+# primaries assigned, which is the strongest status a single-node cluster
+# reaches while any recovered index still carries a replica.
+clusterHealthCheckParams: "wait_for_status=yellow&timeout=1s"
+
+# Use ES 8.18.0 — the elastic/elasticsearch Helm chart 8.5.1 defaults to its
+# own app version (8.5.1) but Camunda 8.10 requires ES 8.6+ (specifically for
+# the unassignedPrimaryShards field in HealthResponse). The Bitnami subchart
+# this replaces bundled ES 8.18.0.
+imageTag: "8.18.0"
+
+# createCert=true would also force HTTP TLS through env vars that override
+# esConfig, so the chart's certificate is not used.
+createCert: false
+
+# The chart's own credentials Secret would hold a random password regenerated on
+# every upgrade. ELASTIC_PASSWORD comes from integration-test-credentials via
+# extraEnvs instead; extraEnvs is also the only env the keystore init container
+# gets, so the bootstrap password and the probe password stay the same value.
+secret:
+  enabled: false
+
+# Single-node disco + disable HTTP TLS + disable X-Pack security so Camunda
+# can talk to the cluster anonymously over plain HTTP (mirrors the OpenSearch
+# companion chart's "security disabled" stance).
+#
+# NOTE: discovery.type: single-node is NOT set here because the
+# elastic/elasticsearch chart injects cluster.initial_master_nodes via an env
+# var in the StatefulSet template, and ES 8.x rejects having both. With
+# replicas=1 the chart bootstraps correctly without the explicit single-node
+# setting.
+esConfig:
+  elasticsearch.yml: |
+    cluster.name: elasticsearch
+    network.host: 0.0.0.0
+    xpack.security.enabled: true
+    xpack.security.http.ssl.enabled: false
+    xpack.security.transport.ssl.enabled: true
+    xpack.security.transport.ssl.verification_mode: certificate
+    xpack.security.transport.ssl.keystore.path: /usr/share/elasticsearch/config/transport/node.p12
+    xpack.security.transport.ssl.truststore.path: /usr/share/elasticsearch/config/transport/node.p12
+    # Allow _reindex-from-remote to pull data from the source (bundled Bitnami)
+    # Elasticsearch during the Bitnami→companion migration (upgrade-minor flows).
+    # Harmless for install scenarios, which never issue a remote reindex.
+    reindex.remote.whitelist: "*:9200"
+
+extraInitContainers:
+  - name: generate-transport-cert
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.18.0
+    command:
+      - bash
+      - -ec
+      - |
+        rm -f /transport/ca.p12 /transport/node.p12
+        elasticsearch-certutil ca --silent --out /transport/ca.p12 --pass ""
+        elasticsearch-certutil cert --silent --ca /transport/ca.p12 --ca-pass "" --out /transport/node.p12 --pass ""
+        rm -f /transport/ca.p12
+    volumeMounts:
+      - name: transport-cert
+        mountPath: /transport
+
+extraVolumes:
+  - name: transport-cert
+    emptyDir: {}
+
+extraVolumeMounts:
+  - name: transport-cert
+    mountPath: /usr/share/elasticsearch/config/transport
+    readOnly: true
+
+extraEnvs:
+  - name: ES_JAVA_OPTS
+    value: "-Xms512m -Xmx512m"
+  - name: ELASTIC_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: integration-test-credentials
+        key: elasticsearch-password
+
+# Single-node clusters cannot allocate index replicas. Camunda components
+# create indices with number_of_replicas=1, which leaves every replica
+# unassigned, drives the cluster to yellow, and causes intermittent "all
+# shards failed" 503s on _search calls.
+#
+# auto_expand_replicas dynamically adjusts replicas based on cluster size:
+# on a 1-node cluster it settles at 0; on a 2-node cluster it scales to 1.
+# It overrides any explicit number_of_replicas setting.
+#
+# Priority MUST be lower than the application's own index templates:
+#   - Zeebe-record templates: priority 20 (define aliases for Optimize)
+#   - Operate/Tasklist/Camunda templates: priority 0
+# Setting priority=1 ensures:
+#   - Zeebe-record templates (p20) win → their aliases are applied correctly
+#   - Our template (p1) wins over operate/tasklist/camunda (p0) → auto_expand
+#     applies to those indices
+# Zeebe-record indices already set number_of_replicas=0 in their templates,
+# so they don't need auto_expand_replicas to be green on a single node.
+#
+# Index patterns are intentionally substring globs (e.g. "*operate*") rather
+# than prefix globs ("operate-*"). CI prepends $GITHUB_WORKFLOW_JOB_ID to
+# every component prefix, and deploy-camunda matrix uses shortened prefixes
+# ("op-*", "opt-*", "orch-*") for index naming.
+lifecycle:
+  postStart:
+    exec:
+      command:
+        - bash
+        - -c
+        - |
+          max=60
+          n=0
+          until curl -fsS -u "elastic:${ELASTIC_PASSWORD}" --connect-timeout 5 "http://localhost:9200/_cluster/health" >/dev/null 2>&1; do
+            n=$((n + 1))
+            if [ "$n" -ge "$max" ]; then
+              echo "elasticsearch not reachable after $max attempts" >&2
+              exit 1
+            fi
+            sleep 2
+          done
+          curl -fsS -u "elastic:${ELASTIC_PASSWORD}" --connect-timeout 5 -X PUT "http://localhost:9200/_index_template/camunda-ci-auto-expand-replicas" \
+            -H 'Content-Type: application/json' \
+            -d '{"index_patterns":["*operate*","*orchestration*","*optimize*","*tasklist*","*camunda*","*zeebe*","op-*","opt-*","orch-*"],"priority":1,"template":{"settings":{"index.auto_expand_replicas":"0-1"}}}'
+          # The index template above only applies at index-creation time, so it
+          # cannot fix indices recovered from the PV after a reschedule. Patch
+          # the recovered indices in place; non-fatal because a fresh volume has
+          # nothing to patch and system indices may reject the write.
+          curl -fsS -u "elastic:${ELASTIC_PASSWORD}" --connect-timeout 5 -X PUT \
+            "http://localhost:9200/_all/_settings?expand_wildcards=open&ignore_unavailable=true" \
+            -H 'Content-Type: application/json' \
+            -d '{"index.auto_expand_replicas":"0-1"}' || true
+
+resources:
+  requests:
+    cpu: "500m"
+    memory: "1Gi"
+  limits:
+    cpu: "1"
+    memory: "2Gi"
+
+volumeClaimTemplate:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 4Gi
+
+# Turns the chart's own PodDisruptionBudget off: it renders one only for a
+# non-zero value, and a non-zero value lets the autoscaler evict the only node.
+# features/dogfood-hub.yaml adds a minAvailable: 1 budget instead; two budgets
+# on one pod would make every eviction fail outright.
+maxUnavailable: 0
+
+podAnnotations:
+  cluster-autoscaler.kubernetes.io/safe-to-evict: "false"

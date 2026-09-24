@@ -2276,18 +2276,20 @@ integration:
                 namespace-suffix: hub
                 identity: keycloak
                 features:
+                  - dogfood-common
                   - multinamespace-reset-clients
                   - dogfood-hub
                 dependencies:
-                  - keycloak-fixed-issuer
-                  - postgresql
-                  - elasticsearch
+                  - keycloak-dogfood
+                  - postgresql-dogfood
+                  - elasticsearch-dogfood
               - role: orchestration
                 namespace-suffix: plain
                 depends-on: hub
                 identity: keycloak-external
                 persistence: elasticsearch-external
                 features:
+                  - dogfood-common
                   - dogfood-orchestration-plain
                 env:
                   ORCH_CONNECTORS_CLIENT_ID: connectors-plain
@@ -2301,6 +2303,7 @@ integration:
                 identity: keycloak-external
                 persistence: elasticsearch-external
                 features:
+                  - dogfood-common
                   - dogfood-orchestration-mt
                 env:
                   ORCH_CONNECTORS_CLIENT_ID: connectors-mt
@@ -2314,8 +2317,10 @@ integration:
                 identity: keycloak-external
                 persistence: elasticsearch-external
                 features:
+                  - dogfood-common
                   - dogfood-orchestration-pt
                 env:
+                  ELASTICSEARCH_PASSWORD_REF: ${VALUES_ELASTICSEARCH_PASSWORD}
                   ORCH_CONNECTORS_CLIENT_ID: connectors-pt
                   ORCH_ORCHESTRATION_AUDIENCE: orchestration-pt-api
                   ORCH_ORCHESTRATION_CLIENT_ID: orchestration-pt
@@ -2327,6 +2332,7 @@ integration:
                 identity: keycloak-external-optimize
                 persistence: elasticsearch-external
                 features:
+                  - dogfood-common
                   - dogfood-optimize-plain
                 serves: plain
                 tenant: default
@@ -2337,6 +2343,7 @@ integration:
                 identity: keycloak-external-optimize
                 persistence: elasticsearch-external
                 features:
+                  - dogfood-common
                   - dogfood-optimize-mt
                 serves: mt
                 tenant: default
@@ -2347,6 +2354,7 @@ integration:
                 identity: keycloak-external-optimize
                 persistence: elasticsearch-external
                 features:
+                  - dogfood-common
                   - dogfood-optimize-pt-default
                 serves: pt
                 tenant: default
@@ -2357,6 +2365,7 @@ integration:
                 identity: keycloak-external-optimize
                 persistence: elasticsearch-external
                 features:
+                  - dogfood-common
                   - dogfood-optimize-pt-ta
                 serves: pt
                 tenant: tenanta
@@ -2367,12 +2376,14 @@ integration:
                 identity: keycloak-external-optimize
                 persistence: elasticsearch-external
                 features:
+                  - dogfood-common
                   - dogfood-optimize-pt-tb
                 serves: pt
                 tenant: tenantb
                 optimize-context-path: /optimize-pt-tenantb
             shared-storage: elasticsearch
             shared-storage-service: elasticsearch-master
+            credentials-manifest: charts/camunda-platform-8.10/test/integration/external-secrets/dogfood-credentials.yaml
     nightly:
       scenario: []
   flows:

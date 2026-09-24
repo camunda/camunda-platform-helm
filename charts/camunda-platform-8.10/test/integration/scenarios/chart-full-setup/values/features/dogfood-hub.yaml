@@ -18,6 +18,156 @@
 # instead; the real placeholder syntax appears only in actual values below.
 
 global:
+  # Hub hardening objects. Shell in these manifests avoids the dollar sign: the
+  # values pipeline substitutes every dollar placeholder before Helm sees it.
+  extraManifests:
+    # Keycloak's admin REST API and master realm (its login and token endpoints)
+    # are not reachable from the internet, so the admin console served from the
+    # public host can neither log in nor act. More specific than the chart's
+    # /auth/ path, these routes go to a Service with no endpoints, so
+    # ingress-nginx answers 503 itself; unlike a source-IP allowlist, no
+    # forwarded header can bypass it. Operators use the console over kubectl
+    # port-forward svc/keycloak 18080:80 (keycloak-dogfood.yaml sets that as its
+    # admin URL).
+    - |
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: keycloak-admin-blocked
+      spec:
+        ports:
+          - name: http
+            port: 80
+    - |
+      apiVersion: networking.k8s.io/v1
+      kind: Ingress
+      metadata:
+        name: keycloak-admin-blocked
+        annotations:
+          nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      spec:
+        ingressClassName: nginx
+        tls:
+          - hosts: ["${HUB_HOST}"]
+            secretName: camunda-platform
+        rules:
+          - host: "${HUB_HOST}"
+            http:
+              paths:
+                - path: /auth/admin/realms
+                  pathType: Prefix
+                  backend:
+                    service: {name: keycloak-admin-blocked, port: {name: http}}
+                - path: /auth/admin/serverinfo
+                  pathType: Prefix
+                  backend:
+                    service: {name: keycloak-admin-blocked, port: {name: http}}
+                - path: /auth/realms/master
+                  pathType: Prefix
+                  backend:
+                    service: {name: keycloak-admin-blocked, port: {name: http}}
+    # Single-replica stateful pods: a budget of one keeps the cluster autoscaler
+    # from evicting them to scale a node down. Elasticsearch's is here too: its
+    # chart's own budget is turned off (elasticsearch-dogfood.yaml).
+    - |
+      apiVersion: policy/v1
+      kind: PodDisruptionBudget
+      metadata:
+        name: elasticsearch
+      spec:
+        minAvailable: 1
+        selector:
+          matchLabels:
+            app: elasticsearch-master
+    - |
+      apiVersion: policy/v1
+      kind: PodDisruptionBudget
+      metadata:
+        name: keycloak
+      spec:
+        minAvailable: 1
+        selector:
+          matchLabels:
+            app.kubernetes.io/name: internal-keycloak
+            app.kubernetes.io/component: keycloak
+    - |
+      apiVersion: policy/v1
+      kind: PodDisruptionBudget
+      metadata:
+        name: keycloak-postgresql
+      spec:
+        minAvailable: 1
+        selector:
+          matchLabels:
+            app.kubernetes.io/name: internal-keycloak
+            app.kubernetes.io/component: postgresql
+    - |
+      apiVersion: policy/v1
+      kind: PodDisruptionBudget
+      metadata:
+        name: postgresql
+      spec:
+        minAvailable: 1
+        selector:
+          matchLabels:
+            app.kubernetes.io/name: internal-postgresql
+    # Keycloak realm hardening, re-applied after every install and upgrade:
+    # brute-force lockout and a minimum password length on both realms. Keycloak
+    # stores these in its database, so no chart value can set them.
+    #
+    # It also gives the master realm the port-forward address as its frontend
+    # URL. The admin console logs in through the master realm at the server's
+    # frontend URL, which KC_HOSTNAME otherwise makes the public host, where the
+    # master realm is blocked; KC_HOSTNAME_ADMIN only moves the console itself.
+    # camunda-platform keeps the public issuer the clusters validate.
+    - |
+      apiVersion: batch/v1
+      kind: Job
+      metadata:
+        name: keycloak-realm-hardening
+        annotations:
+          helm.sh/hook: post-install,post-upgrade
+          helm.sh/hook-delete-policy: before-hook-creation
+      spec:
+        backoffLimit: 2
+        activeDeadlineSeconds: 900
+        ttlSecondsAfterFinished: 86400
+        template:
+          spec:
+            restartPolicy: Never
+            nodeSelector:
+              workload: distroci
+            tolerations:
+              - {key: workload, operator: Equal, value: distroci, effect: NoSchedule}
+            securityContext:
+              runAsNonRoot: true
+            containers:
+              - name: kcadm
+                image: quay.io/keycloak/keycloak:26.3.3
+                env:
+                  - {name: HOME, value: /tmp}
+                command: ["/bin/bash", "-ec"]
+                args:
+                  - |
+                    until /opt/keycloak/bin/kcadm.sh config credentials --server http://keycloak/auth --realm master --user admin --password "`cat /credentials/keycloak-admin-password`"; do sleep 10; done
+                    until /opt/keycloak/bin/kcadm.sh get realms/camunda-platform --fields realm >/dev/null; do sleep 10; done
+                    /opt/keycloak/bin/kcadm.sh update realms/master -s bruteForceProtected=true -s permanentLockout=false -s failureFactor=10 -s waitIncrementSeconds=60 -s maxFailureWaitSeconds=900 -s maxDeltaTimeSeconds=43200 -s 'passwordPolicy=length(12) and notUsername'
+                    /opt/keycloak/bin/kcadm.sh update realms/camunda-platform -s bruteForceProtected=true -s permanentLockout=false -s failureFactor=10 -s waitIncrementSeconds=60 -s maxFailureWaitSeconds=900 -s maxDeltaTimeSeconds=43200 -s 'passwordPolicy=length(12) and notUsername'
+                    # Last: changing the master realm's frontend URL changes its issuer,
+                    # which invalidates the admin token this session is using.
+                    /opt/keycloak/bin/kcadm.sh update realms/master -s 'attributes.frontendUrl=http://localhost:18080/auth'
+                    echo "realms hardened"
+                volumeMounts:
+                  - name: credentials
+                    mountPath: /credentials
+                    readOnly: true
+            volumes:
+              - name: credentials
+                secret:
+                  secretName: integration-test-credentials
+                  items:
+                    - key: identity-keycloak-admin-password
+                      path: keycloak-admin-password
   identity:
     auth:
       orchestration:
@@ -158,6 +308,13 @@ global:
                   existingSecretKey: identity-optimize-tenantb-client-token
 
 identity:
+  # The hub PostgreSQL companion (postgresql-dogfood) reads this same key.
+  externalDatabase:
+    username: app
+    secret:
+      inlineSecret: ""
+      existingSecret: integration-test-credentials
+      existingSecretKey: identity-postgresql-user-password
   clients:
     - id: venom
       name: Venom
@@ -196,3 +353,12 @@ identity:
           definition: write:*
         - resourceServerId: web-modeler-api
           definition: write:*
+
+webModeler:
+  restapi:
+    externalDatabase:
+      username: app
+      secret:
+        inlineSecret: ""
+        existingSecret: integration-test-credentials
+        existingSecretKey: identity-postgresql-user-password

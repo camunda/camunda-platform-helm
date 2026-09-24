@@ -1,0 +1,45 @@
+# PostgreSQL companion for the long-lived dogfood topology: postgresql.yaml
+# with the password read from integration-test-credentials
+# (identity-postgresql-user-password), generated per environment by
+# ensure-credentials, instead of the CI-wide RDBMS password.
+
+fullnameOverride: postgresql
+
+auth:
+  username: app
+  existingSecret: integration-test-credentials
+  passwordSecretKey: identity-postgresql-user-password
+  database: identity
+
+databases:
+  - identity
+  - webmodeler
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+podAnnotations:
+  cluster-autoscaler.kubernetes.io/safe-to-evict: "false"
+
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          topologyKey: kubernetes.io/hostname
+          labelSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values: [internal-keycloak, internal-postgresql]
+      - weight: 100
+        podAffinityTerm:
+          topologyKey: kubernetes.io/hostname
+          labelSelector:
+            matchLabels:
+              app: elasticsearch-master
