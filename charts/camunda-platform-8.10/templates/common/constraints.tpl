@@ -1623,11 +1623,11 @@ The following values inside your values.yaml need to be set but were not:
       -}}
       {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
       {{- else }}
-      {{- $warningMessage := printf "%s %s %s"
+        {{- $warningMessage := printf "%s %s %s"
           "[camunda][warning]"
           "This deployment spans more than one failure domain, so the chart cannot generate the broker bootstrap list: set CAMUNDA_CLUSTER_INITIALCONTACTPOINTS through \"orchestration.env\"."
-          "List every broker as <pod>.<headless-service>.<namespace>.svc.cluster.local:26502, comma-separated."
-      -}}
+          "One address per zone is enough, in whatever DNS form resolves between your zones: a contact point resolves to a single address, and a broker that reaches one live member discovers the rest through membership gossip."
+        -}}
       {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
       {{- end }}
     {{- end }}
