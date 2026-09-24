@@ -9,6 +9,8 @@
 # Every Optimize runs as its own release on the Hub ingress host, so each
 # cluster record's optimize entry describes only that cluster's default tenant
 # and each Physical Tenant registers its own Optimize under physicalTenants.
+# The chart defaults an optimize entry's webapp and readiness URLs to the
+# cluster's own host and namespace, so each entry sets both explicitly.
 #
 # NOTE: avoid writing literal dollar-brace placeholder syntax in prose comments
 # in this file — the env var scanner (os.Expand-based) matches it anywhere in the
@@ -44,6 +46,8 @@ global:
               existingSecretKey: identity-orchestration-client-token
           optimize:
             enabled: true
+            webappUrl: "https://${HUB_HOST}${OPTPLAIN_OPTIMIZE_CONTEXT_PATH}"
+            readinessUrl: "http://integration-optimize.${OPTPLAIN_NAMESPACE}.svc.cluster.local:80${OPTPLAIN_OPTIMIZE_CONTEXT_PATH}/api/readyz"
             clientId: optimize-plain
             audience: optimize-plain-api
             roleName: Optimize Dogfood Plain
@@ -78,6 +82,8 @@ global:
               existingSecretKey: identity-orchestration-client-token
           optimize:
             enabled: true
+            webappUrl: "https://${HUB_HOST}${OPTMT_OPTIMIZE_CONTEXT_PATH}"
+            readinessUrl: "http://integration-optimize.${OPTMT_NAMESPACE}.svc.cluster.local:80${OPTMT_OPTIMIZE_CONTEXT_PATH}/api/readyz"
             clientId: optimize-mt
             audience: optimize-mt-api
             roleName: Optimize Dogfood Multitenancy
@@ -112,6 +118,8 @@ global:
               existingSecretKey: identity-orchestration-client-token
           optimize:
             enabled: true
+            webappUrl: "https://${HUB_HOST}${OPTPTDEF_OPTIMIZE_CONTEXT_PATH}"
+            readinessUrl: "http://integration-optimize.${OPTPTDEF_NAMESPACE}.svc.cluster.local:80${OPTPTDEF_OPTIMIZE_CONTEXT_PATH}/api/readyz"
             clientId: optimize-pt-default
             audience: optimize-pt-default-api
             roleName: Optimize Dogfood pt default
