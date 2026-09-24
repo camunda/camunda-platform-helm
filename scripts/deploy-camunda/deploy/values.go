@@ -916,8 +916,7 @@ func prepareScenarioValues(ctx context.Context, scenarioCtx *ScenarioContext, fl
 		scenarioFiles = scenarioValueFiles
 	} else {
 		// Legacy path: let BuildValuesList resolve scenario files from tempDir.
-		// Pass nil for userValues — we handle ExtraValues in BuildValuesChain
-		// to maintain correct precedence (extra values before scenario, not after).
+		// Pass nil for userValues — we handle ExtraValues in BuildValuesChain.
 		legacyVals, legacyErr := deployer.BuildValuesList(tempDir, []string{scenarioCtx.ScenarioName}, flags.Auth.Auth, false, false, nil, processedCommonFiles)
 		if legacyErr != nil {
 			os.RemoveAll(tempDir)
