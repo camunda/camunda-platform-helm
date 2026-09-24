@@ -288,7 +288,7 @@ on:
         value: ${{ jobs.install.outputs.vars-ingress-host }}
       namespace:
         description: The namespace where the deployment is running.
-        value: ${{ jobs.install.outputs.vars-namespace || jobs.upgrade.outputs.vars-namespace }}
+        value: ${{ jobs.install.outputs.vars-namespace }}
 
 permissions:
   contents: read
