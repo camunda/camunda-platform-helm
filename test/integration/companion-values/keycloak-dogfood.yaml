@@ -1,5 +1,5 @@
 # Keycloak companion for the long-lived dogfood topology: keycloak-fixed-issuer.yaml
-# plus three dogfood-only changes.
+# plus four dogfood-only changes.
 #
 # - The database password comes from integration-test-credentials
 #   (identity-keycloak-postgresql-user-password), which ensure-credentials
@@ -10,6 +10,7 @@
 #   should not take the whole identity plane down at once.
 # - The cluster autoscaler may not evict these pods to scale a node down.
 #   Their PodDisruptionBudgets live in features/dogfood-hub.yaml.
+# - The admin console is served on a localhost admin URL, for port-forward use.
 #
 # keycloak-fixed-issuer.yaml is keycloak.yaml apart from KC_HOSTNAME. The base chart passes
 # --hostname-strict=false, so Keycloak derives its issuer from the request host:
@@ -42,6 +43,12 @@ proxy: edge
 extraEnv:
   - name: KC_HOSTNAME
     value: "https://${CAMUNDA_HOSTNAME}/auth"
+  # The admin console builds its URLs, including its master-realm login, from
+  # this instead of KC_HOSTNAME. The public host blocks the master realm and
+  # admin API (features/dogfood-hub.yaml), so the console only works through
+  # `kubectl -n <env>-hub port-forward svc/keycloak 18080:80`.
+  - name: KC_HOSTNAME_ADMIN
+    value: "http://localhost:18080/auth"
 
 resources:
   requests:
