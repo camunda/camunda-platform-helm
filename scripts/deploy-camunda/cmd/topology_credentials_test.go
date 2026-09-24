@@ -176,7 +176,7 @@ func TestEnsureCredentials_WritesOnlyWhenSomethingIsMissing(t *testing.T) {
 	f := &fakeCredentialAPI{store: map[string]string{"prop-a": "a", "prop-b": "b"}, exists: true}
 
 	var out bytes.Buffer
-	if err := ensureCredentials(ctx, &out, []byte(twoPropertyManifest), "ns", "", f.api()); err != nil {
+	if err := ensureCredentials(ctx, &out, []byte(twoPropertyManifest), "ns", nil, f.api()); err != nil {
 		t.Fatal(err)
 	}
 	if f.updates+f.creates != 0 {
@@ -188,7 +188,7 @@ func TestEnsureCredentials_WritesOnlyWhenSomethingIsMissing(t *testing.T) {
 
 	delete(f.store, "prop-b")
 	out.Reset()
-	if err := ensureCredentials(ctx, &out, []byte(twoPropertyManifest), "ns", "", f.api()); err != nil {
+	if err := ensureCredentials(ctx, &out, []byte(twoPropertyManifest), "ns", nil, f.api()); err != nil {
 		t.Fatal(err)
 	}
 	if f.updates != 1 || f.creates != 0 || f.store["prop-a"] != "a" || f.store["prop-b"] == "" {
@@ -201,7 +201,7 @@ func TestEnsureCredentials_WritesOnlyWhenSomethingIsMissing(t *testing.T) {
 
 func TestEnsureCredentials_WritesOnlyGeneratedKeys(t *testing.T) {
 	f := &fakeCredentialAPI{store: map[string]string{"prop-a": "a"}, exists: true}
-	if err := ensureCredentials(context.Background(), &bytes.Buffer{}, []byte(twoPropertyManifest), "ns", "", f.api()); err != nil {
+	if err := ensureCredentials(context.Background(), &bytes.Buffer{}, []byte(twoPropertyManifest), "ns", nil, f.api()); err != nil {
 		t.Fatal(err)
 	}
 	if _, touched := f.lastUpdate["prop-a"]; touched || len(f.lastUpdate) != 1 || f.lastUpdate["prop-b"] == "" {
@@ -211,7 +211,7 @@ func TestEnsureCredentials_WritesOnlyGeneratedKeys(t *testing.T) {
 
 func TestEnsureCredentials_CreatesMissingSourceForFreshEnvironment(t *testing.T) {
 	f := &fakeCredentialAPI{}
-	if err := ensureCredentials(context.Background(), &bytes.Buffer{}, []byte(twoPropertyManifest), "ns", "env-hub", f.api()); err != nil {
+	if err := ensureCredentials(context.Background(), &bytes.Buffer{}, []byte(twoPropertyManifest), "ns", []string{"env-hub"}, f.api()); err != nil {
 		t.Fatal(err)
 	}
 	if f.creates != 1 || f.updates != 0 || len(f.store) != 2 {
@@ -221,7 +221,7 @@ func TestEnsureCredentials_CreatesMissingSourceForFreshEnvironment(t *testing.T)
 
 func TestEnsureCredentials_RefusesToCreateSourceForDeployedEnvironment(t *testing.T) {
 	f := &fakeCredentialAPI{nsExists: true}
-	err := ensureCredentials(context.Background(), &bytes.Buffer{}, []byte(twoPropertyManifest), "ns", "env-hub", f.api())
+	err := ensureCredentials(context.Background(), &bytes.Buffer{}, []byte(twoPropertyManifest), "ns", []string{"env-hub"}, f.api())
 	if err == nil || !strings.Contains(err.Error(), "lock existing services out") {
 		t.Fatalf("err = %v, want refusal", err)
 	}
@@ -230,9 +230,22 @@ func TestEnsureCredentials_RefusesToCreateSourceForDeployedEnvironment(t *testin
 	}
 }
 
+func TestEnsureCredentials_GuardsOnAnySurvivingNamespace(t *testing.T) {
+	f := &fakeCredentialAPI{}
+	api := f.api()
+	api.namespaceExists = func(_ context.Context, ns string) (bool, error) { return ns == "env-plain", nil }
+	err := ensureCredentials(context.Background(), &bytes.Buffer{}, []byte(twoPropertyManifest), "ns", []string{"env-hub", "env-plain", "env-mt"}, api)
+	if err == nil || !strings.Contains(err.Error(), "env-plain") {
+		t.Fatalf("err = %v, want a refusal naming the surviving env-plain", err)
+	}
+	if f.creates+f.updates != 0 {
+		t.Error("must not write when refusing")
+	}
+}
+
 func TestEnsureCredentials_RefusesToTopUpSourceForDeployedEnvironment(t *testing.T) {
 	f := &fakeCredentialAPI{store: map[string]string{"prop-a": "a"}, exists: true, nsExists: true}
-	err := ensureCredentials(context.Background(), &bytes.Buffer{}, []byte(twoPropertyManifest), "ns", "env-hub", f.api())
+	err := ensureCredentials(context.Background(), &bytes.Buffer{}, []byte(twoPropertyManifest), "ns", []string{"env-hub"}, f.api())
 	if err == nil || !strings.Contains(err.Error(), "prop-b") {
 		t.Fatalf("err = %v, want refusal naming the missing property", err)
 	}
@@ -243,7 +256,7 @@ func TestEnsureCredentials_RefusesToTopUpSourceForDeployedEnvironment(t *testing
 
 func TestEnsureCredentials_TopsUpSourceForFreshEnvironment(t *testing.T) {
 	f := &fakeCredentialAPI{store: map[string]string{"prop-a": "a"}, exists: true}
-	if err := ensureCredentials(context.Background(), &bytes.Buffer{}, []byte(twoPropertyManifest), "ns", "env-hub", f.api()); err != nil {
+	if err := ensureCredentials(context.Background(), &bytes.Buffer{}, []byte(twoPropertyManifest), "ns", []string{"env-hub"}, f.api()); err != nil {
 		t.Fatal(err)
 	}
 	if f.updates != 1 || f.store["prop-a"] != "a" || f.store["prop-b"] == "" {
@@ -255,7 +268,7 @@ func TestEnsureCredentials_ConcurrentCreateKeepsTheWinnersValues(t *testing.T) {
 	winner := map[string]string{"prop-a": "won-a", "prop-b": "won-b"}
 	f := &fakeCredentialAPI{raceOnce: winner}
 	var out bytes.Buffer
-	if err := ensureCredentials(context.Background(), &out, []byte(twoPropertyManifest), "ns", "env-hub", f.api()); err != nil {
+	if err := ensureCredentials(context.Background(), &out, []byte(twoPropertyManifest), "ns", []string{"env-hub"}, f.api()); err != nil {
 		t.Fatal(err)
 	}
 	if f.store["prop-a"] != "won-a" || f.store["prop-b"] != "won-b" || f.updates != 0 {
@@ -270,7 +283,7 @@ func TestEnsureCredentials_PropagatesReadError(t *testing.T) {
 	api := topologyCredentialStore{
 		get: func(context.Context, string, string) (map[string]string, error) { return nil, errors.New("boom") },
 	}
-	if err := ensureCredentials(context.Background(), &bytes.Buffer{}, []byte(twoPropertyManifest), "ns", "", api); err == nil {
+	if err := ensureCredentials(context.Background(), &bytes.Buffer{}, []byte(twoPropertyManifest), "ns", nil, api); err == nil {
 		t.Fatal("want error")
 	}
 }
