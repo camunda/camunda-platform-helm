@@ -57,7 +57,7 @@ data:
         clusters:
           
           - id: "management-cluster"
-            name: "hub"
+            name: "Management Identity"
             version: "8.10.0-alpha5"
             authentication: "BASIC"
             authorizations:
@@ -69,12 +69,6 @@ data:
               urls:
                 webapp: "http://localhost:8080"
                 readiness: "http://camunda-platform-test-identity.camunda-platform:82/actuator/health"
-            - name: WebModeler
-              type: hub
-              version: "8.10.0-alpha5"
-              urls:
-                webapp: "http://localhost:8070"
-                readiness: "http://camunda-platform-test-web-modeler-restapi.camunda-platform:8091/health/readiness"
           - id: "default-cluster"
             name: "camunda-platform-test-zeebe"
             version: "8.10.0-alpha5"
