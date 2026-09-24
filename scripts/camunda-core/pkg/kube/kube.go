@@ -573,6 +573,18 @@ func (c *Client) createOrUpdateOpaqueSecret(ctx context.Context, namespace, secr
 	return nil
 }
 
+// CreateOpaqueSecret creates an Opaque secret and fails if it already exists,
+// so concurrent callers cannot overwrite each other's first write.
+func (c *Client) CreateOpaqueSecret(ctx context.Context, namespace, secretName string, stringData map[string]string) error {
+	secret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{Name: secretName, Namespace: namespace},
+		Type:       corev1.SecretTypeOpaque,
+		StringData: stringData,
+	}
+	_, err := c.clientset.CoreV1().Secrets(namespace).Create(ctx, secret, metav1.CreateOptions{})
+	return err
+}
+
 // GetSecretData reads a Kubernetes Secret and returns its data values as decoded strings.
 // If the secret does not exist, it returns (nil, nil) — callers should check for a nil map.
 // Only keys with non-empty values are included.

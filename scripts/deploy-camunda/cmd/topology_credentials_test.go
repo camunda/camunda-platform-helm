@@ -24,6 +24,8 @@ import (
 	"testing"
 
 	"gopkg.in/yaml.v3"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 const twoPropertyManifest = `
@@ -127,41 +129,111 @@ func TestGenerateCredential_LengthAndAlphabet(t *testing.T) {
 	}
 }
 
+type fakeCredentialAPI struct {
+	store      map[string]string
+	exists     bool
+	nsExists   bool
+	creates    int
+	updates    int
+	raceOnce   map[string]string
+	createErrs []error
+}
+
+func (f *fakeCredentialAPI) api() topologyCredentialStore {
+	return topologyCredentialStore{
+		get: func(context.Context, string, string) (map[string]string, error) {
+			if !f.exists {
+				return nil, nil
+			}
+			return f.store, nil
+		},
+		create: func(_ context.Context, _, _ string, data map[string]string) error {
+			f.creates++
+			if f.raceOnce != nil {
+				f.store, f.exists, f.raceOnce = f.raceOnce, true, nil
+				return apierrors.NewAlreadyExists(schema.GroupResource{Resource: "secrets"}, "src")
+			}
+			f.store, f.exists = data, true
+			return nil
+		},
+		update: func(_ context.Context, _, _ string, data map[string]string) error {
+			f.updates++
+			f.store = data
+			return nil
+		},
+		namespaceExists: func(context.Context, string) (bool, error) { return f.nsExists, nil },
+	}
+}
+
 func TestEnsureCredentials_WritesOnlyWhenSomethingIsMissing(t *testing.T) {
 	ctx := context.Background()
-	store := map[string]string{"prop-a": "a", "prop-b": "b"}
-	writes := 0
-	get := func(context.Context, string, string) (map[string]string, error) { return store, nil }
-	put := func(_ context.Context, _, _ string, data map[string]string) error { writes++; store = data; return nil }
+	f := &fakeCredentialAPI{store: map[string]string{"prop-a": "a", "prop-b": "b"}, exists: true}
 
 	var out bytes.Buffer
-	if err := ensureCredentials(ctx, &out, []byte(twoPropertyManifest), "ns", get, put); err != nil {
+	if err := ensureCredentials(ctx, &out, []byte(twoPropertyManifest), "ns", "", f.api()); err != nil {
 		t.Fatal(err)
 	}
-	if writes != 0 {
-		t.Errorf("writes = %d, want 0 when every property exists", writes)
+	if f.updates+f.creates != 0 {
+		t.Errorf("writes = %d, want 0 when every property exists", f.updates+f.creates)
 	}
 	if !strings.Contains(out.String(), "0 generated, 2 kept") {
 		t.Errorf("output = %q", out.String())
 	}
 
-	delete(store, "prop-b")
+	delete(f.store, "prop-b")
 	out.Reset()
-	if err := ensureCredentials(ctx, &out, []byte(twoPropertyManifest), "ns", get, put); err != nil {
+	if err := ensureCredentials(ctx, &out, []byte(twoPropertyManifest), "ns", "", f.api()); err != nil {
 		t.Fatal(err)
 	}
-	if writes != 1 || store["prop-a"] != "a" || store["prop-b"] == "" {
-		t.Errorf("writes=%d store=%v, want one write keeping prop-a and generating prop-b", writes, store)
+	if f.updates != 1 || f.creates != 0 || f.store["prop-a"] != "a" || f.store["prop-b"] == "" {
+		t.Errorf("updates=%d creates=%d store=%v, want one update keeping prop-a and generating prop-b", f.updates, f.creates, f.store)
 	}
-	if strings.Contains(out.String(), store["prop-b"]) {
+	if strings.Contains(out.String(), f.store["prop-b"]) {
 		t.Error("output must never contain a credential value")
 	}
 }
 
+func TestEnsureCredentials_CreatesMissingSourceForFreshEnvironment(t *testing.T) {
+	f := &fakeCredentialAPI{}
+	if err := ensureCredentials(context.Background(), &bytes.Buffer{}, []byte(twoPropertyManifest), "ns", "env-hub", f.api()); err != nil {
+		t.Fatal(err)
+	}
+	if f.creates != 1 || f.updates != 0 || len(f.store) != 2 {
+		t.Errorf("creates=%d updates=%d store=%d keys, want a single create with both properties", f.creates, f.updates, len(f.store))
+	}
+}
+
+func TestEnsureCredentials_RefusesToCreateSourceForDeployedEnvironment(t *testing.T) {
+	f := &fakeCredentialAPI{nsExists: true}
+	err := ensureCredentials(context.Background(), &bytes.Buffer{}, []byte(twoPropertyManifest), "ns", "env-hub", f.api())
+	if err == nil || !strings.Contains(err.Error(), "lock existing services out") {
+		t.Fatalf("err = %v, want refusal", err)
+	}
+	if f.creates+f.updates != 0 {
+		t.Error("must not write when refusing")
+	}
+}
+
+func TestEnsureCredentials_ConcurrentCreateKeepsTheWinnersValues(t *testing.T) {
+	winner := map[string]string{"prop-a": "won-a", "prop-b": "won-b"}
+	f := &fakeCredentialAPI{raceOnce: winner}
+	var out bytes.Buffer
+	if err := ensureCredentials(context.Background(), &out, []byte(twoPropertyManifest), "ns", "env-hub", f.api()); err != nil {
+		t.Fatal(err)
+	}
+	if f.store["prop-a"] != "won-a" || f.store["prop-b"] != "won-b" || f.updates != 0 {
+		t.Errorf("store=%v updates=%d, want the concurrently created values untouched", f.store, f.updates)
+	}
+	if !strings.Contains(out.String(), "created concurrently") {
+		t.Errorf("output = %q", out.String())
+	}
+}
+
 func TestEnsureCredentials_PropagatesReadError(t *testing.T) {
-	get := func(context.Context, string, string) (map[string]string, error) { return nil, errors.New("boom") }
-	put := func(context.Context, string, string, map[string]string) error { t.Fatal("must not write"); return nil }
-	if err := ensureCredentials(context.Background(), &bytes.Buffer{}, []byte(twoPropertyManifest), "ns", get, put); err == nil {
+	api := topologyCredentialStore{
+		get: func(context.Context, string, string) (map[string]string, error) { return nil, errors.New("boom") },
+	}
+	if err := ensureCredentials(context.Background(), &bytes.Buffer{}, []byte(twoPropertyManifest), "ns", "", api); err == nil {
 		t.Fatal("want error")
 	}
 }
