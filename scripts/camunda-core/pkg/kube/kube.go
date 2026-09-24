@@ -254,18 +254,11 @@ func (c *Client) EnsureNamespace(ctx context.Context, namespace string) error {
 		return nil
 	}
 
-	// Namespace exists, use Apply() to update it (requires patch permission)
-	logging.Logger.Debug().Str("namespace", namespace).Msg("applying namespace")
-	nsApply := corev1apply.Namespace(namespace)
-	_, err = c.clientset.CoreV1().Namespaces().Apply(ctx, nsApply, defaultApplyOptions())
-	if err != nil {
-		if apierrors.IsForbidden(err) {
-			return formatNamespacePermissionError("update", namespace, "patch", err)
-		}
-		return fmt.Errorf("failed to apply namespace %q (context=%q): %w", namespace, c.kubeContext, err)
-	}
-
-	logging.Logger.Debug().Str("namespace", namespace).Msg("namespace applied successfully")
+	// An existing namespace is left as it is. A server-side apply of an empty
+	// Namespace here would, under this client's field manager, drop the labels
+	// and annotations SetLabelsAndAnnotations applied earlier, including the TTL
+	// marker that keeps a persisted namespace from the cluster cleaner.
+	logging.Logger.Debug().Str("namespace", namespace).Msg("namespace exists")
 	return nil
 }
 
