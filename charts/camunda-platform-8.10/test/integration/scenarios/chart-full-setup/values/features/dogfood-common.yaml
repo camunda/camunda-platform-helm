@@ -6,8 +6,8 @@
 # - Every Ingress redirects HTTP to HTTPS. The chart's ingress-nginx
 #   compatibility set turns the redirect off, which let the Keycloak login form
 #   and the web apps be used over plain HTTP.
-# - Connectors does not report component details on its unauthenticated health
-#   endpoint.
+# - Connectors reports neither components nor details on its unauthenticated
+#   health endpoint.
 # - The broker has a PodDisruptionBudget, so the cluster autoscaler does not
 #   evict it to scale a spot node down. Spot reclaims ignore budgets; this only
 #   removes the voluntary disruptions.
@@ -29,4 +29,6 @@ orchestration:
 connectors:
   env:
     - name: MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS
+      value: "never"
+    - name: MANAGEMENT_ENDPOINT_HEALTH_SHOW_COMPONENTS
       value: "never"

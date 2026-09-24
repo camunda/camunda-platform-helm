@@ -67,8 +67,18 @@ global:
                   backend:
                     service: {name: keycloak-admin-blocked, port: {name: http}}
     # Single-replica stateful pods: a budget of one keeps the cluster autoscaler
-    # from evicting them to scale a node down. Elasticsearch has its own, from
-    # its chart.
+    # from evicting them to scale a node down. Elasticsearch's is here too: its
+    # chart's own budget is turned off (elasticsearch-dogfood.yaml).
+    - |
+      apiVersion: policy/v1
+      kind: PodDisruptionBudget
+      metadata:
+        name: elasticsearch
+      spec:
+        minAvailable: 1
+        selector:
+          matchLabels:
+            app: elasticsearch-master
     - |
       apiVersion: policy/v1
       kind: PodDisruptionBudget

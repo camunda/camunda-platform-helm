@@ -168,8 +168,10 @@ volumeClaimTemplate:
     requests:
       storage: 4Gi
 
-# The chart's own PodDisruptionBudget. With a single node, 0 keeps the cluster
-# autoscaler from evicting it to scale the node down.
+# Turns the chart's own PodDisruptionBudget off: it renders one only for a
+# non-zero value, and a non-zero value lets the autoscaler evict the only node.
+# features/dogfood-hub.yaml adds a minAvailable: 1 budget instead; two budgets
+# on one pod would make every eviction fail outright.
 maxUnavailable: 0
 
 podAnnotations:
