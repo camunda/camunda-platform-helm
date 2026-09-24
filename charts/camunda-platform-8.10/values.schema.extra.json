@@ -133,6 +133,20 @@
                 },
                 "ingress": {
                     "properties": {
+                        "publicPorts": {
+                            "properties": {
+                                "http": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 65535
+                                },
+                                "https": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 65535
+                                }
+                            }
+                        },
                         "annotations": {
                             "type": "object",
                             "description": "defines the ingress related annotations, consumed mostly by the ingress controller. Empty by default; keys set here always win over the ingress-nginx compatibility set described in global.compatibility.nginx.renderAnnotations.",

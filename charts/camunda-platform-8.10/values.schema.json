@@ -285,6 +285,25 @@
                             "description": "can be used to define the Ingress path type. https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types",
                             "default": "Prefix"
                         },
+                        "publicPorts": {
+                            "type": "object",
+                            "properties": {
+                                "http": {
+                                    "type": "integer",
+                                    "description": "defines the public port for Ingress endpoints with TLS disabled. Port 80 is omitted from HTTP URLs. Separate gRPC Ingress uses its own TLS setting, even when global.ingress.enabled is false.",
+                                    "default": 80,
+                                    "minimum": 1,
+                                    "maximum": 65535
+                                },
+                                "https": {
+                                    "type": "integer",
+                                    "description": "defines the public port for Ingress endpoints with TLS enabled. Port 443 is omitted from HTTPS URLs. Does not enable TLS; web Ingress uses global.ingress.tls.enabled and gRPC Ingress uses orchestration.ingress.grpc.tls.enabled.",
+                                    "default": 443,
+                                    "minimum": 1,
+                                    "maximum": 65535
+                                }
+                            }
+                        },
                         "tls": {
                             "type": "object",
                             "properties": {
@@ -1540,12 +1559,12 @@
                 },
                 "fullURL": {
                     "type": "string",
-                    "description": "can be used when Ingress is configured (for both multi and single domain setup).",
+                    "description": "can be used to set Identity's complete public URL, including scheme, port, and path. Overrides the derived runtime, login callback, and release-info URL. Supports templating.",
                     "default": ""
                 },
                 "contextPath": {
                     "type": "string",
-                    "description": "can be used to make Management Identity web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.",
+                    "description": "can be used to serve Management Identity under a custom sub-path. Requires HTTPS when non-empty.",
                     "default": ""
                 },
                 "podAnnotations": {
@@ -2920,12 +2939,12 @@
                         },
                         "publicHost": {
                             "type": "string",
-                            "description": "can be used to define the host on which the WebSockets server can be reached from the WebModeler client in the browser.",
+                            "description": "can be used to set the browser-facing WebSocket hostname. With global.ingress.enabled and a non-empty Modeler or Hub contextPath, global.host takes precedence. Set overrides through camundaHub.websockets.publicHost.",
                             "default": "localhost"
                         },
                         "publicPort": {
                             "type": "number",
-                            "description": "can be used to define the port number on which the WebSockets server can be reached from the WebModeler client in the browser.",
+                            "description": "can be used to set the browser-facing WebSocket port. With global.ingress.enabled and a non-empty Modeler or Hub contextPath, global.ingress.publicPorts and the Ingress TLS setting take precedence. Set overrides through camundaHub.websockets.publicPort.",
                             "default": 8085
                         },
                         "podAnnotations": {

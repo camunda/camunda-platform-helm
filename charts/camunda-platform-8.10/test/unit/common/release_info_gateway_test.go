@@ -53,6 +53,8 @@ func (s *ReleaseInfoGatewayTest) TestExternalURLsUseGlobalHost() {
 			Name: "GatewayTLSExternalURLsUseGlobalHostAndCustomPort",
 			Values: map[string]string{
 				"global.ingress.enabled":                   "false",
+				"global.ingress.publicPorts.http":          "18080",
+				"global.ingress.publicPorts.https":         "18443",
 				"global.gateway.enabled":                   "true",
 				"global.gateway.tls.enabled":               "true",
 				"global.gateway.tls.port":                  "8443",
@@ -133,6 +135,8 @@ func (s *ReleaseInfoGatewayTest) TestExternalURLsUseGlobalHost() {
 			Name: "PlaintextGatewayUsesCustomPortAndIgnoresInactiveIngressTLS",
 			Values: map[string]string{
 				"global.ingress.enabled":            "false",
+				"global.ingress.publicPorts.http":   "18080",
+				"global.ingress.publicPorts.https":  "18443",
 				"global.ingress.tls.enabled":        "true",
 				"global.gateway.enabled":            "true",
 				"global.gateway.port":               "8080",
