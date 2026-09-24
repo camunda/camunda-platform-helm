@@ -73,6 +73,7 @@ camunda:
     # The Node ID depends on the StatefulSet Pod's name so it cannot be templated in the StatefulSet level.
     # The value of "node-id" is calculated in the "startup.sh" file and exported as "VALUES_ORCHESTRATION_NODE_ID" env var.
     node-id: "${VALUES_ORCHESTRATION_NODE_ID:}"
+    name: {{ tpl .Values.global.zeebeClusterName . }}
     size: {{ include "orchestration.clusterSize" . | quote }}
     replication-factor: {{ include "orchestration.replicationFactor" . | quote }}
     partition-count: {{ .Values.orchestration.partitionCount | quote }}
@@ -111,10 +112,25 @@ camunda:
     {{- end }}
     {{- else }}
     # Multi-region deployments: initial-contact-points must be provided manually via environment variable.
-    # Set CAMUNDA_CLUSTER_INITIALCONTACTPOINTS with fully-qualified domain names for all brokers across zones.
+    # Set CAMUNDA_CLUSTER_INITIALCONTACTPOINTS with addresses that resolve across every zone.
+    # One entry per zone is enough: a contact point resolves to a single address, and a broker
+    # that reaches one live member discovers the rest through membership gossip. The DNS form
+    # depends on how the zones are connected, so the chart cannot generate it.
     # Example: orchestration.env[0].name=CAMUNDA_CLUSTER_INITIALCONTACTPOINTS
-    #          orchestration.env[0].value=<pod>.<headless-service>.<namespace-0>.svc.cluster.local:26502,<pod>.<headless-service>.<namespace-1>.svc.cluster.local:26502,...
+    #          orchestration.env[0].value=<zone-0-address>:26502,<zone-1-address>:26502,...
     {{- end }}
+
+    network:
+      {{- if $partitioning.qualifiedAdvertisedHost }}
+      advertised-host: "${K8S_NAME}.${K8S_SERVICE_NAME}.${K8S_NAMESPACE}.svc"
+      {{- else }}
+      advertised-host: "${K8S_NAME}.${K8S_SERVICE_NAME}"
+      {{- end }}
+      host: 0.0.0.0
+      command-api:
+        port: {{ .Values.orchestration.service.commandPort }}
+      internal-api:
+        port: {{ .Values.orchestration.service.internalPort }}
 
   api:
     grpc:
@@ -340,23 +356,6 @@ zeebe:
       enable: true
       multitenancy:
         enabled: {{ include "orchestration.multitenancyChecksEnabled" . }}
-
-    # zeebe.broker.network
-    network:
-      {{- if $partitioning.qualifiedAdvertisedHost }}
-      advertisedHost: "${K8S_NAME}.${K8S_SERVICE_NAME}.${K8S_NAMESPACE}.svc"
-      {{- else }}
-      advertisedHost: "${K8S_NAME}.${K8S_SERVICE_NAME}"
-      {{- end }}
-      host: 0.0.0.0
-      commandApi:
-        port: {{ .Values.orchestration.service.commandPort }}
-      internalApi:
-        port: {{ .Values.orchestration.service.internalPort }}
-
-    # zeebe.broker.cluster
-    cluster:
-      clusterName: {{ tpl .Values.global.zeebeClusterName . }}
 
     {{- if or
       (eq (include "orchestration.hasElasticsearchExporter" .) "true")
