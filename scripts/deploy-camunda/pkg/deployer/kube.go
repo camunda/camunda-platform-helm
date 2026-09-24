@@ -58,25 +58,18 @@ func labelAndAnnotateNamespace(ctx context.Context, kubeClient *kube.Client, nam
 	return kubeClient.SetLabelsAndAnnotations(ctx, namespace, labels, annotations)
 }
 
-// readNamespaceAnnotations returns an existing namespace's annotations, or nil
-// when it does not exist or cannot be read. Unreadable is treated like new, so
-// callers without namespace GET permission keep the previous stamping behavior.
-func readNamespaceAnnotations(ctx context.Context, kubeClient *kube.Client, namespace string) map[string]string {
+// readNamespaceAnnotations returns a namespace's annotations. A namespace that
+// does not exist yet reads as (nil, nil); any other failure is returned, so the
+// caller can leave lifecycle metadata alone rather than guess the namespace is new.
+func readNamespaceAnnotations(ctx context.Context, kubeClient *kube.Client, namespace string) (map[string]string, error) {
 	exists, err := kubeClient.NamespaceExists(ctx, namespace)
-	if err != nil || !exists {
-		if err != nil {
-			logging.Logger.Warn().Err(err).Str("namespace", namespace).
-				Msg("cannot read namespace; a persisted namespace's TTL cannot be preserved")
-		}
-		return nil
-	}
-	annotations, err := kubeClient.NamespaceAnnotations(ctx, namespace)
 	if err != nil {
-		logging.Logger.Warn().Err(err).Str("namespace", namespace).
-			Msg("cannot read namespace annotations; a persisted namespace's TTL cannot be preserved")
-		return nil
+		return nil, err
 	}
-	return annotations
+	if !exists {
+		return nil, nil
+	}
+	return kubeClient.NamespaceAnnotations(ctx, namespace)
 }
 
 // lifecycleAnnotations returns the cleaner/janitor annotations to stamp on a
