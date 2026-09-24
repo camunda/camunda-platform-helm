@@ -125,12 +125,15 @@ jobs:
       # The topology's credentials-manifest reads a dogfood-only source Secret in
       # the ClusterSecretStore's namespace. Create it, and generate any value it
       # lacks, before the deploy's ExternalSecrets try to read it. Existing
-      # values are kept: rotating one is a manual, coordinated operation.
+      # values are kept: rotating one is a manual, coordinated operation. A
+      # missing source is only created for a fresh environment: an existing hub
+      # namespace means its databases and Keycloak hold other credentials.
       - name: Ensure dogfood credentials
         if: env.DOGFOOD_ACTION == 'deploy' || env.DOGFOOD_ACTION == 'upgrade'
         run: |
           deploy-camunda topology ensure-credentials \
-            --manifest "${GITHUB_WORKSPACE}/charts/camunda-platform-${DOGFOOD_CHART_VERSION}/test/integration/external-secrets/dogfood-credentials.yaml"
+            --manifest "${GITHUB_WORKSPACE}/charts/camunda-platform-${DOGFOOD_CHART_VERSION}/test/integration/external-secrets/dogfood-credentials.yaml" \
+            --guard-namespace "${DOGFOOD_ENVIRONMENT}-hub"
 
       # `matrix run` deploys through `helm upgrade --install`, so deploy and
       # upgrade are the same idempotent call against the same stable namespaces.
