@@ -179,18 +179,23 @@ func TestHelmFailureReadinessSummary(t *testing.T) {
 		LastTimestamp: metav1.Now(),
 	}
 	for _, test := range []struct {
-		name       string
-		mutate     func(*corev1.Pod, *corev1.Event)
-		podErr     error
-		eventErr   error
-		companion  bool
-		noWait     bool
-		success    bool
-		wantDetail bool
-		wantEvent  bool
+		name         string
+		eventMessage string
+		mutate       func(*corev1.Pod, *corev1.Event)
+		podErr       error
+		eventErr     error
+		companion    bool
+		noWait       bool
+		success      bool
+		wantDetail   bool
+		wantEvent    bool
 	}{
 		{name: "running unready timeout", wantDetail: true, wantEvent: true},
 		{name: "companion uses its own release", companion: true, wantDetail: true, wantEvent: true},
+		{name: "probe output omitted", eventMessage: "Readiness probe failed: dummy-probe-token", wantDetail: true, wantEvent: true},
+		{name: "companion probe credentials omitted", companion: true,
+			eventMessage: "Readiness probe failed: Get \"https://probe-user:dummy-password@internal.example/ready?token=dummy-query-token\": unauthorized",
+			wantDetail:   true, wantEvent: true},
 		{name: "events forbidden", eventErr: errors.New("forbidden"), wantDetail: true},
 		{name: "pods forbidden", podErr: errors.New("forbidden")},
 		{name: "different pod UID", mutate: func(_ *corev1.Pod, event *corev1.Event) { event.InvolvedObject.UID = "old-pod" }, wantDetail: true},
@@ -211,6 +216,9 @@ func TestHelmFailureReadinessSummary(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			currentPod, currentEvent := pod.DeepCopy(), event.DeepCopy()
+			if test.eventMessage != "" {
+				currentEvent.Message = test.eventMessage
+			}
 			if test.mutate != nil {
 				test.mutate(currentPod, currentEvent)
 			}
@@ -253,6 +261,14 @@ func TestHelmFailureReadinessSummary(t *testing.T) {
 			}
 			if got := strings.Contains(err.Error(), "last probe failure"); got != test.wantEvent {
 				t.Fatalf("probe event=%t, error=%v", got, err)
+			}
+			if test.wantEvent && !strings.Contains(err.Error(), "readiness probe failed (reason=Unhealthy)") {
+				t.Error("missing structured readiness failure indicator")
+			}
+			for _, unexpected := range []string{currentEvent.Message, "dummy-probe-token", "probe-user", "dummy-password", "internal.example", "dummy-query-token"} {
+				if strings.Contains(err.Error(), unexpected) {
+					t.Errorf("probe event content %q must not appear in the error", unexpected)
+				}
 			}
 			if test.wantDetail {
 				for _, want := range []string{"issue7210", "integration-identity", "identity", "Running, Ready=false, restarts=0"} {

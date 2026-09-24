@@ -267,8 +267,8 @@ func collectReadinessSummary(o types.Options, release string) string {
 			}
 			detail := fmt.Sprintf("pod %q container %q: Running, Ready=false, restarts=%d",
 				pod.Name, container.Name, container.RestartCount)
-			if message := lastReadinessFailure(pod, container, events); message != "" {
-				detail += fmt.Sprintf(", last probe failure: %.512q", message)
+			if lastReadinessFailure(pod, container, events) != "" {
+				detail += ", last probe failure: readiness probe failed (reason=Unhealthy)"
 			}
 			details = append(details, detail)
 		}
