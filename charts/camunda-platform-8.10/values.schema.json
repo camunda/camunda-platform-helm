@@ -21,7 +21,7 @@
                         },
                         "clusters": {
                             "type": "array",
-                            "description": "can be used by a Hub release to describe remote Orchestration Clusters. The chart uses these entries to generate Camunda Hub inventory and Management Identity presets. Each entry may also declare physicalTenants, one per Physical Tenant that runs its own Optimize release, so that Optimize gets its own client and its own resource server rather than sharing the cluster's Optimize audience.",
+                            "description": "can be used by a Hub release to describe remote Orchestration Clusters. The chart uses these entries to generate Camunda Hub inventory and Management Identity presets. Each entry may also declare physicalTenants, whose optional name becomes the environment display name in Hub. A tenant that runs its own Optimize release declares that component here so Optimize gets its own client and resource server rather than sharing the cluster's Optimize audience.",
                             "default": [],
                             "items": {
                                 "$ref": "#/$defs/topologyCluster"
@@ -7567,7 +7567,7 @@
                 },
                 "webappUrl": {
                     "type": "string",
-                    "pattern": "^$|^https?://[^\\s]+$"
+                    "pattern": "^$|^https?://(?:[^\\s{}]|\\{\\{[^}]*\\}\\})+$"
                 },
                 "readinessUrl": {
                     "type": "string",
@@ -7703,6 +7703,10 @@
                 "id": {
                     "type": "string",
                     "pattern": "^[a-z0-9]{1,64}$"
+                },
+                "name": {
+                    "type": "string",
+                    "minLength": 1
                 },
                 "components": {
                     "type": "object",

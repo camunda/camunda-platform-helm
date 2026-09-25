@@ -1430,11 +1430,9 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 
 		releaseEntry := synthesizeReleaseEntry(opts.RepoRoot, entry, rel, platform)
 		releaseOpts := synthesizeReleaseOpts(opts, platform, releaseCtx.Namespace)
-		hostKey := topologyReleaseHostKey(rel.Role, rel.NamespaceSuffix, len(orchestrationIndices))
-		if hostKey != "" {
-			if host := crossRefEnv[hostKey]; host != "" {
-				releaseOpts.ExtraHelmSets = append(releaseOpts.ExtraHelmSets, "global.host="+host)
-			}
+		releaseHost := topologyReleaseHost(crossRefEnv, rel, len(orchestrationIndices))
+		if releaseHost != "" {
+			releaseOpts.ExtraHelmSets = append(releaseOpts.ExtraHelmSets, "global.host="+releaseHost)
 		}
 
 		flags, namespace, _, _, cleanup, buildErr := matrix.BuildEntryFlags(releaseEntry, releaseOpts)
@@ -1444,6 +1442,7 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 		}
 
 		applyTopologyReleaseOverrides(flags, buildTopologyReleaseEnv(crossRefEnv, rel))
+		applyTopologyReleaseHostname(flags, releaseHost)
 		if err := matrix.RegisterDeclarativePostInfraHook(flags, releaseEntry.PostInfra, opts.RepoRoot, releaseEntry.Version, releaseEntry.Scenario); err != nil {
 			cleanup()
 			return fmt.Errorf("topology release %s/%s (namespace-suffix %q): register post-infra hook: %w", entry.Scenario, rel.Role, rel.NamespaceSuffix, err)
@@ -1621,10 +1620,9 @@ func runTopologyE2ELegs(
 		rel := relBySuffix[leg.OrchestrationSuffix]
 		releaseEntry := synthesizeReleaseEntry(opts.RepoRoot, entry, rel, platform)
 		releaseOpts := synthesizeReleaseOpts(opts, platform, orchestrationNamespace)
-		if hostKey := topologyReleaseHostKey(rel.Role, rel.NamespaceSuffix, len(orchestrationIndices)); hostKey != "" {
-			if host := crossRefEnv[hostKey]; host != "" {
-				releaseOpts.ExtraHelmSets = append(releaseOpts.ExtraHelmSets, "global.host="+host)
-			}
+		releaseHost := topologyReleaseHost(crossRefEnv, rel, len(orchestrationIndices))
+		if releaseHost != "" {
+			releaseOpts.ExtraHelmSets = append(releaseOpts.ExtraHelmSets, "global.host="+releaseHost)
 		}
 
 		flags, namespace, _, _, cleanup, buildErr := matrix.BuildEntryFlags(releaseEntry, releaseOpts)
@@ -1634,6 +1632,7 @@ func runTopologyE2ELegs(
 			continue
 		}
 		applyTopologyReleaseOverrides(flags, buildTopologyReleaseEnv(crossRefEnv, rel))
+		applyTopologyReleaseHostname(flags, releaseHost)
 		// synthesizeReleaseEntry disables e2e for the deploy loop; re-enable it for this leg only.
 		flags.Test.RunE2ETests = true
 		flags.Test.HubNamespace = hubNamespace
@@ -1660,6 +1659,36 @@ func runTopologyE2ELegs(
 		return fmt.Errorf("topology %s: e2e failed for %d of %d legs:\n  - %s", entry.Scenario, len(failures), len(legs), strings.Join(failures, "\n  - "))
 	}
 	return nil
+}
+
+// topologyReleaseHost returns the ingress host the topology assigns to a
+// release, or "" when the release keeps BuildEntryFlags' default host.
+func topologyReleaseHost(crossRefEnv map[string]string, release matrix.TopologyRelease, orchestrationCount int) string {
+	key := topologyReleaseHostKey(release.Role, release.NamespaceSuffix, orchestrationCount)
+	if key == "" {
+		return ""
+	}
+	return crossRefEnv[key]
+}
+
+// applyTopologyReleaseHostname makes a topology-assigned host the release's
+// CAMUNDA_HOSTNAME as well as its global.host. Scenario values files take the
+// ingress host from $CAMUNDA_HOSTNAME, and charts before 8.10 read it from
+// global.ingress.host, which the global.host override does not reach (8.9
+// prefers global.ingress.host; 8.8 and 8.7 read nothing else). Without this,
+// every pre-8.10 orchestration release in a multi-orchestration topology kept
+// the one CI-wide hostname, so they all published the same external-dns name
+// instead of the per-release host the Hub inventory and e2e legs use.
+// flags.ExtraEnv outranks the scenario-derived CAMUNDA_HOSTNAME when values
+// files are rendered, so setting it here is enough.
+func applyTopologyReleaseHostname(flags *config.RuntimeFlags, host string) {
+	if host == "" {
+		return
+	}
+	if flags.ExtraEnv == nil {
+		flags.ExtraEnv = map[string]string{}
+	}
+	flags.ExtraEnv["CAMUNDA_HOSTNAME"] = host
 }
 
 // topologyReleaseHostKey names the crossRefEnv key whose value must be pushed

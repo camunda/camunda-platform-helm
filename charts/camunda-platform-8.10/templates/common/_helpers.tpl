@@ -1703,7 +1703,7 @@ required by camunda.modeler.clusters (introduced in 8.10 Hub/WebModeler).
     type: optimize
     version: {{ $cluster.version | quote }}
     urls:
-      webapp: {{ $optimize.webappUrl | default (printf "https://%s%s" $cluster.host $optimizePath) | quote }}
+      webapp: {{ tpl ($optimize.webappUrl | default (printf "https://%s%s" $cluster.host $optimizePath)) $ | quote }}
       readiness: {{ $optimize.readinessUrl | default (printf "http://%s.%s.svc.cluster.local:80%s/api/readyz" $optimizeName $cluster.namespace $optimizePath) | quote }}
   {{- end }}
   {{- if $connectors.enabled }}
@@ -1742,6 +1742,28 @@ required by camunda.modeler.clusters (introduced in 8.10 Hub/WebModeler).
       grpc: {{ $orchestration.grpcUrl | default (printf "grpc://%s.%s.svc.cluster.local:26500" $gatewayName $cluster.namespace) | quote }}
       rest: {{ $orchestration.restUrl | default (printf "http://%s.%s.svc.cluster.local:8080%s" $gatewayName $cluster.namespace $orchestrationPath) | quote }}
       readiness: {{ $orchestration.readinessUrl | default (ternary (printf "http://%s.%s.svc.cluster.local:9600/actuator/health/readiness" $gatewayName $cluster.namespace) (printf "http://%s.%s.svc.cluster.local:9600%s/actuator/health/readiness" $orchestrationName $cluster.namespace $orchestrationPath) $legacy) | quote }}
+  {{- end }}
+  {{- with (dig "physicalTenants" list $cluster) }}
+  physicalTenants:
+  {{- range $tenant := . }}
+  {{- $tenantOptimize := dig "components" "optimize" dict $tenant }}
+  - id: {{ $tenant.id | quote }}
+    {{- with $tenant.name }}
+    name: {{ . | quote }}
+    {{- end }}
+    components:
+    {{- if $tenantOptimize.enabled }}
+    - name: Optimize
+      type: optimize
+      version: {{ $cluster.version | quote }}
+      urls:
+        webapp: {{ tpl ($tenantOptimize.webappUrl | default $tenantOptimize.redirectUrl) $ | quote }}
+        {{- with $tenantOptimize.readinessUrl }}
+        readiness: {{ . | quote }}
+        {{- end }}
+    {{- else }} []
+    {{- end }}
+  {{- end }}
   {{- end }}
 {{- end }}
 {{- end -}}
