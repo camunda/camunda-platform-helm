@@ -2,6 +2,13 @@
     "properties": {
         "global": {
             "properties": {
+                "documentStore": {
+                    "properties": {
+                        "activeStoreId": {
+                            "pattern": "^[A-Za-z0-9.-]+$"
+                        }
+                    }
+                },
                 "ingress": {
                     "properties": {
                         "annotations": {

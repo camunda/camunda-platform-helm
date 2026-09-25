@@ -1114,7 +1114,7 @@
                     "properties": {
                         "activeStoreId": {
                             "type": "string",
-                            "description": "defines the default document store instance ID. When using extraConfiguration, this value must match the configured store instance ID.",
+                            "description": "defines the default document store instance ID. This value must match the configured store instance ID. See https://docs.camunda.io/docs/8.10/self-managed/concepts/document-handling/configuration/helm/",
                             "default": "inmemory"
                         },
                         "type": {

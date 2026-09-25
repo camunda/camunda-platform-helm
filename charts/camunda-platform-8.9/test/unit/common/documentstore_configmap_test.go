@@ -108,3 +108,41 @@ func (s *documentStoreConfigMapTest) TestDifferentValuesInputs() {
 
 	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
+
+func (s *documentStoreConfigMapTest) TestActiveStoreIDValidation() {
+	testCases := []testhelpers.TestCase{}
+	for _, storeID := range []string{"inmemory", "aws", "gcp", "azure", "az1", "AZ1", "az-1", "az.1", "1az"} {
+		testCases = append(testCases, testhelpers.TestCase{
+			Name: "valid " + storeID,
+			Values: map[string]string{
+				"global.documentStore.activeStoreId": storeID,
+			},
+			Expected: map[string]string{
+				"data.DOCUMENT_DEFAULT_STORE_ID": storeID,
+			},
+		})
+	}
+	for _, invalidID := range []struct {
+		name  string
+		value string
+	}{
+		{name: "underscore", value: "az_1"},
+		{name: "empty", value: ""},
+		{name: "space", value: "az 1"},
+		{name: "slash", value: "az/1"},
+	} {
+		testCases = append(testCases, testhelpers.TestCase{
+			Name: invalidID.name,
+			Values: map[string]string{
+				"global.documentStore.activeStoreId": invalidID.value,
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Error(err)
+				s.Require().Contains(err.Error(), "activeStoreId")
+				s.Require().Contains(err.Error(), "pattern")
+			},
+		})
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
