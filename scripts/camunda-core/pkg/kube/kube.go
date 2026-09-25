@@ -199,6 +199,13 @@ func (c *Client) NamespaceExists(ctx context.Context, namespace string) (bool, e
 	return true, nil
 }
 
+func (c *Client) ListEvents(ctx context.Context, namespace string) (*corev1.EventList, error) {
+	if namespace == "" {
+		return nil, errors.New("namespace must not be empty")
+	}
+	return c.clientset.CoreV1().Events(namespace).List(ctx, metav1.ListOptions{})
+}
+
 func (c *Client) EnsureNamespace(ctx context.Context, namespace string) error {
 	if namespace == "" {
 		return errors.New("namespace must not be empty")

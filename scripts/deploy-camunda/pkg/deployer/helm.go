@@ -21,6 +21,7 @@ import (
 	"os"
 	"path/filepath"
 	"scripts/camunda-core/pkg/helm"
+	"scripts/camunda-core/pkg/kube"
 	"scripts/camunda-core/pkg/logging"
 	"scripts/deploy-camunda/pkg/types"
 	"sort"
@@ -30,6 +31,7 @@ import (
 
 	"golang.org/x/sync/errgroup"
 	"gopkg.in/yaml.v3"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
@@ -166,12 +168,12 @@ func upgradeInstall(ctx context.Context, o types.Options) error {
 	runCtx, guard := guardedContext(ctx, o, o.Wait)
 	defer guard.Stop()
 
-	_, runErr := helmRunWithRetry(runCtx, args)
+	stderr, runErr := helmRunWithRetry(runCtx, args)
 	if runErr != nil {
 		return &HelmError{
 			Reason:  guardedReason("helm upgrade --install failed", guard),
 			Command: "helm " + formatArgs(args),
-			Cause:   guardedCause(runErr, guard),
+			Cause:   guardedCause(runErr, guard, o, o.ReleaseName, (o.Wait || o.Atomic) && helmWaitTimedOut(stderr)),
 		}
 	}
 	return nil
@@ -199,11 +201,129 @@ func guardedReason(defaultReason string, guard *imagePullGuard) string {
 // guardedCause substitutes the observed image pull failure for the Helm process
 // error. Cancelling the context kills helm, so runErr would otherwise read
 // "signal: killed", which explains nothing.
-func guardedCause(runErr error, guard *imagePullGuard) error {
+func guardedCause(runErr error, guard *imagePullGuard, o types.Options, release string, readinessTimeout bool) error {
 	if failure := guard.Stop(); failure != nil {
 		return failure
 	}
+	if readinessTimeout {
+		if summary := collectReadinessSummary(o, release); summary != "" {
+			return fmt.Errorf("%w; %s", runErr, summary)
+		}
+	}
 	return runErr
+}
+
+func helmWaitTimedOut(stderr string) bool {
+	for _, line := range strings.Split(stderr, "\n") {
+		message, found := strings.CutPrefix(strings.TrimSpace(line), "Error: ")
+		if !found {
+			continue
+		}
+		message = strings.TrimPrefix(message, "UPGRADE FAILED: ")
+		message = strings.TrimPrefix(message, "INSTALLATION FAILED: ")
+		if strings.HasPrefix(message, "release ") {
+			if _, cause, found := strings.Cut(message, "due to atomic being set: "); found {
+				message = cause
+			}
+		}
+		if message == context.DeadlineExceeded.Error() || message == "timed out waiting for the condition" {
+			return true
+		}
+	}
+	return false
+}
+
+type readinessClient interface {
+	podLister
+	ListEvents(context.Context, string) (*corev1.EventList, error)
+}
+
+var newReadinessClient = func(kubeconfig, kubeContext string) (readinessClient, error) {
+	return kube.NewClient(kubeconfig, kubeContext)
+}
+
+func collectReadinessSummary(o types.Options, release string) string {
+	if o.Namespace == "" || release == "" {
+		return ""
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	client, err := newReadinessClient(o.Kubeconfig, o.KubeContext)
+	if err != nil {
+		return ""
+	}
+	pods, err := client.ListPods(ctx, o.Namespace)
+	if err != nil || pods == nil {
+		return ""
+	}
+	var unready []corev1.Pod
+	for _, pod := range pods.Items {
+		instance := pod.Labels["app.kubernetes.io/instance"]
+		if instance == "" {
+			instance = pod.Labels["release"]
+		}
+		if instance != release || pod.DeletionTimestamp != nil || pod.Status.Phase != corev1.PodRunning {
+			continue
+		}
+		for _, container := range pod.Status.ContainerStatuses {
+			if container.State.Running != nil && !container.Ready {
+				unready = append(unready, pod)
+				break
+			}
+		}
+	}
+	if len(unready) == 0 {
+		return ""
+	}
+	events, err := client.ListEvents(ctx, o.Namespace)
+	if err != nil {
+		events = nil
+	}
+	var details []string
+	for _, pod := range unready {
+		for _, container := range pod.Status.ContainerStatuses {
+			if container.State.Running == nil || container.Ready {
+				continue
+			}
+			detail := fmt.Sprintf("pod %q container %q: Running, Ready=false, restarts=%d",
+				pod.Name, container.Name, container.RestartCount)
+			if lastReadinessFailure(pod, container, events) != "" {
+				detail += ", last probe failure: readiness probe failed (reason=Unhealthy)"
+			}
+			details = append(details, detail)
+		}
+	}
+	sort.Strings(details)
+	if len(details) > 5 {
+		details = append(details[:5], fmt.Sprintf("and %d more unready containers", len(details)-5))
+	}
+	return fmt.Sprintf("release %q in namespace %q still not ready: %s", release, o.Namespace, strings.Join(details, "; "))
+}
+
+func lastReadinessFailure(pod corev1.Pod, container corev1.ContainerStatus, events *corev1.EventList) string {
+	if events == nil || pod.UID == "" {
+		return ""
+	}
+	var latest time.Time
+	var message string
+	for _, event := range events.Items {
+		if event.InvolvedObject.UID != pod.UID || event.InvolvedObject.Kind != "Pod" ||
+			event.InvolvedObject.FieldPath != "spec.containers{"+container.Name+"}" ||
+			event.Reason != "Unhealthy" || !strings.HasPrefix(event.Message, "Readiness probe failed:") {
+			continue
+		}
+		observed := event.LastTimestamp.Time
+		if event.EventTime.Time.After(observed) {
+			observed = event.EventTime.Time
+		}
+		if event.Series != nil && event.Series.LastObservedTime.Time.After(observed) {
+			observed = event.Series.LastObservedTime.Time
+		}
+		if observed.After(latest) && !observed.Before(container.State.Running.StartedAt.Time) {
+			latest, message = observed, event.Message
+		}
+	}
+	return message
 }
 
 func appendHelmValueArgs(args []string, o types.Options) []string {
@@ -405,7 +525,7 @@ func deployCompanionChart(ctx context.Context, cc types.CompanionChart, o types.
 	runCtx, guard := guardedContext(ctx, o, true)
 	defer guard.Stop()
 
-	_, runErr := helmRunWithRetry(runCtx, args)
+	stderr, runErr := helmRunWithRetry(runCtx, args)
 	if runErr == nil {
 		return nil
 	}
@@ -413,6 +533,6 @@ func deployCompanionChart(ctx context.Context, cc types.CompanionChart, o types.
 		Reason: guardedReason(
 			fmt.Sprintf("companion chart %q helm upgrade --install failed", cc.ReleaseName), guard),
 		Command: "helm " + formatArgs(args),
-		Cause:   guardedCause(runErr, guard),
+		Cause:   guardedCause(runErr, guard, o, cc.ReleaseName, helmWaitTimedOut(stderr)),
 	}
 }
