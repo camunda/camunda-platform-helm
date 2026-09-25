@@ -71,6 +71,7 @@ data:
         # The Node ID depends on the StatefulSet Pod's name so it cannot be templated in the StatefulSet level.
         # The value of "node-id" is calculated in the "startup.sh" file and exported as "VALUES_ORCHESTRATION_NODE_ID" env var.
         node-id: "${VALUES_ORCHESTRATION_NODE_ID:}"
+        name: camunda-platform-test-zeebe
         size: "3"
         replication-factor: "3"
         partition-count: "3"
@@ -79,6 +80,14 @@ data:
           - camunda-platform-test-zeebe-0.${K8S_SERVICE_NAME}:26502
           - camunda-platform-test-zeebe-1.${K8S_SERVICE_NAME}:26502
           - camunda-platform-test-zeebe-2.${K8S_SERVICE_NAME}:26502
+    
+        network:
+          advertised-host: "${K8S_NAME}.${K8S_SERVICE_NAME}"
+          host: 0.0.0.0
+          command-api:
+            port: 26501
+          internal-api:
+            port: 26502
     
       api:
         grpc:
@@ -174,18 +183,5 @@ data:
           enable: true
           multitenancy:
             enabled: false
-    
-        # zeebe.broker.network
-        network:
-          advertisedHost: "${K8S_NAME}.${K8S_SERVICE_NAME}"
-          host: 0.0.0.0
-          commandApi:
-            port: 26501
-          internalApi:
-            port: 26502
-    
-        # zeebe.broker.cluster
-        cluster:
-          clusterName: camunda-platform-test-zeebe
     
   log4j2.xml: |

@@ -65,6 +65,7 @@ camunda:
     # The Node ID depends on the StatefulSet Pod's name so it cannot be templated in the StatefulSet level.
     # The value of "node-id" is calculated in the "startup.sh" file and exported as "VALUES_ORCHESTRATION_NODE_ID" env var.
     node-id: "${VALUES_ORCHESTRATION_NODE_ID:}"
+    name: {{ tpl .Values.global.zeebeClusterName . }}
     size: {{ .Values.orchestration.clusterSize | quote }}
     replication-factor: {{ .Values.orchestration.replicationFactor | quote }}
     partition-count: {{ .Values.orchestration.partitionCount | quote }}
@@ -80,6 +81,18 @@ camunda:
     # Example: orchestration.env[0].name=CAMUNDA_CLUSTER_INITIALCONTACTPOINTS
     #          orchestration.env[0].value=<pod>.<headless-service>.<namespace-0>.svc.cluster.local:26502,<pod>.<headless-service>.<namespace-1>.svc.cluster.local:26502,...
     {{- end }}
+
+    network:
+      {{- if gt (int .Values.global.multiregion.regions) 1 }}
+      advertised-host: "${K8S_NAME}.${K8S_SERVICE_NAME}.${K8S_NAMESPACE}.svc"
+      {{- else }}
+      advertised-host: "${K8S_NAME}.${K8S_SERVICE_NAME}"
+      {{- end }}
+      host: 0.0.0.0
+      command-api:
+        port: {{ .Values.orchestration.service.commandPort }}
+      internal-api:
+        port: {{ .Values.orchestration.service.internalPort }}
 
   api:
     grpc:
@@ -297,23 +310,6 @@ zeebe:
       enable: true
       multitenancy:
         enabled: {{ include "orchestration.multitenancyChecksEnabled" . }}
-
-    # zeebe.broker.network
-    network:
-      {{- if gt (int .Values.global.multiregion.regions) 1 }}
-      advertisedHost: "${K8S_NAME}.${K8S_SERVICE_NAME}.${K8S_NAMESPACE}.svc"
-      {{- else }}
-      advertisedHost: "${K8S_NAME}.${K8S_SERVICE_NAME}"
-      {{- end }}
-      host: 0.0.0.0
-      commandApi:
-        port: {{ .Values.orchestration.service.commandPort }}
-      internalApi:
-        port: {{ .Values.orchestration.service.internalPort }}
-
-    # zeebe.broker.cluster
-    cluster:
-      clusterName: {{ tpl .Values.global.zeebeClusterName . }}
 
     {{- if or
       (eq (include "orchestration.hasElasticsearchExporter" .) "true")

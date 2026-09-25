@@ -218,6 +218,49 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedOpenSearchAWS() 
 	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
+func (s *ConfigmapTemplateTest) TestClusterNetworkRendersUnifiedKeys() {
+	legacyKeys := []string{"clusterName:", "advertisedHost:", "commandApi:", "internalApi:"}
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestApplicationYamlShouldRenderUnifiedClusterAndNetworkKeys",
+			Values: map[string]string{
+				"global.zeebeClusterName":            "my-cluster",
+				"orchestration.service.commandPort":  "26511",
+				"orchestration.service.internalPort": "26512",
+				"orchestration.profiles.broker":      "true",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.cluster.name":                      "my-cluster",
+				"configmapApplication.camunda.cluster.network.host":              "0.0.0.0",
+				"configmapApplication.camunda.cluster.network.advertised-host":   "${K8S_NAME}.${K8S_SERVICE_NAME}",
+				"configmapApplication.camunda.cluster.network.command-api.port":  "26511",
+				"configmapApplication.camunda.cluster.network.internal-api.port": "26512",
+			},
+		},
+		{
+			Name: "TestApplicationYamlShouldRenderQualifiedAdvertisedHostForMultiRegion",
+			Values: map[string]string{
+				"global.multiregion.regions": "2",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.cluster.network.advertised-host": "${K8S_NAME}.${K8S_SERVICE_NAME}.${K8S_NAMESPACE}.svc",
+			},
+		},
+		{
+			Name:   "TestApplicationYamlShouldNotRenderLegacyClusterAndNetworkKeys",
+			Values: map[string]string{},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				for _, key := range legacyKeys {
+					require.NotContains(t, output, key)
+				}
+			},
+		},
+	}
+
+	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
 func (s *ConfigmapTemplateTest) TestLegacyExporterDatastoreSourceAlignment() {
 	distinctOpenSearchSources := map[string]string{
 		"optimize.enabled":                                                        "true",
