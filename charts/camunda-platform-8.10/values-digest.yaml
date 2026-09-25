@@ -60,4 +60,4 @@ identity:
   image:
     repository: camunda/identity
     tag: SNAPSHOT
-    digest: "sha256:4a7d4c0638a3fa8238c9eca65dba7dff868287968e3280c219f7630ba2e540bf"
+    digest: "sha256:b45fdfb7364b577d9e5a24b1bb47a0706eafec4b763ea81bf925ba30efd82e19"
