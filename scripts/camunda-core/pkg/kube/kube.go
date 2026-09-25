@@ -199,14 +199,30 @@ func (c *Client) NamespaceExists(ctx context.Context, namespace string) (bool, e
 	return true, nil
 }
 
+// NamespaceAnnotations returns the annotations of an existing namespace.
+func (c *Client) NamespaceAnnotations(ctx context.Context, namespace string) (map[string]string, error) {
+	ns, err := c.clientset.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get namespace %q: %w", namespace, err)
+	}
+	return ns.Annotations, nil
+}
+
 func (c *Client) EnsureNamespace(ctx context.Context, namespace string) error {
+	_, err := c.EnsureNamespaceCreated(ctx, namespace)
+	return err
+}
+
+// EnsureNamespaceCreated is EnsureNamespace that also reports whether this call
+// created the namespace.
+func (c *Client) EnsureNamespaceCreated(ctx context.Context, namespace string) (bool, error) {
 	if namespace == "" {
-		return errors.New("namespace must not be empty")
+		return false, errors.New("namespace must not be empty")
 	}
 
 	// Check if namespace exists and is terminating
 	if err := c.waitForNamespaceNotTerminating(ctx, namespace, 5*time.Minute); err != nil {
-		return err
+		return false, err
 	}
 
 	// Check if namespace exists
@@ -217,7 +233,7 @@ func (c *Client) EnsureNamespace(ctx context.Context, namespace string) error {
 		if apierrors.IsForbidden(err) {
 			namespaceExists = false // Assume it doesn't exist and try create
 		} else {
-			return fmt.Errorf("failed to check if namespace %q exists: %w", namespace, err)
+			return false, fmt.Errorf("failed to check if namespace %q exists: %w", namespace, err)
 		}
 	}
 
@@ -232,32 +248,25 @@ func (c *Client) EnsureNamespace(ctx context.Context, namespace string) error {
 		_, err := c.clientset.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
 		if err != nil {
 			if apierrors.IsForbidden(err) {
-				return formatNamespacePermissionError("create", namespace, "create", err)
+				return false, formatNamespacePermissionError("create", namespace, "create", err)
 			}
 			if apierrors.IsAlreadyExists(err) {
 				// Namespace was created between our check and create attempt
 				logging.Logger.Debug().Str("namespace", namespace).Msg("namespace already exists")
-				return nil
+				return false, nil
 			}
-			return fmt.Errorf("failed to create namespace %q (context=%q): %w", namespace, c.kubeContext, err)
+			return false, fmt.Errorf("failed to create namespace %q (context=%q): %w", namespace, c.kubeContext, err)
 		}
 		logging.Logger.Debug().Str("namespace", namespace).Msg("namespace created successfully")
-		return nil
+		return true, nil
 	}
 
-	// Namespace exists, use Apply() to update it (requires patch permission)
-	logging.Logger.Debug().Str("namespace", namespace).Msg("applying namespace")
-	nsApply := corev1apply.Namespace(namespace)
-	_, err = c.clientset.CoreV1().Namespaces().Apply(ctx, nsApply, defaultApplyOptions())
-	if err != nil {
-		if apierrors.IsForbidden(err) {
-			return formatNamespacePermissionError("update", namespace, "patch", err)
-		}
-		return fmt.Errorf("failed to apply namespace %q (context=%q): %w", namespace, c.kubeContext, err)
-	}
-
-	logging.Logger.Debug().Str("namespace", namespace).Msg("namespace applied successfully")
-	return nil
+	// An existing namespace is left as it is. A server-side apply of an empty
+	// Namespace here would, under this client's field manager, drop the labels
+	// and annotations SetLabelsAndAnnotations applied earlier, including the TTL
+	// marker that keeps a persisted namespace from the cluster cleaner.
+	logging.Logger.Debug().Str("namespace", namespace).Msg("namespace exists")
+	return false, nil
 }
 
 // waitForNamespaceNotTerminating checks if a namespace is terminating and waits for deletion to complete
