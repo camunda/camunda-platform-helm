@@ -1,6 +1,6 @@
 name: Integration test setup
 description: |
-  Shared setup steps for the install and upgrade jobs in test-integration-runner.
+  Shared setup steps for the integration job in test-integration-runner.
   Covers: Vault secret import, cluster authentication, workflow-vars, legacy-ingress
   computation, test-type-vars, Docker Hub login, and Helm dependency update.
 
@@ -139,6 +139,18 @@ outputs:
   RDBMS_POSTGRESQL_PASSWORD:
     description: RDBMS PostgreSQL password (rdbms scenarios)
     value: ${{ steps.test-credentials-secret.outputs.RDBMS_POSTGRESQL_PASSWORD }}
+  GKE_CLUSTER_NAME:
+    description: GKE cluster name, for re-authenticating later in the job
+    value: ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_GKE_CLUSTER_NAME }}
+  GKE_CLUSTER_LOC:
+    description: GKE cluster location
+    value: ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_GKE_CLUSTER_LOCATION }}
+  GKE_WIP:
+    description: GKE workload identity provider
+    value: ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER }}
+  GKE_SA:
+    description: GKE service account
+    value: ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_SERVICE_ACCOUNT }}
 
 # Secrets cannot be referenced directly inside a composite action.
 # Callers must forward the required secrets as environment variables using `env:` on the step.

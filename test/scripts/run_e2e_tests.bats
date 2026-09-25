@@ -40,17 +40,13 @@ teardown() {
   rm -rf "$TMPDIR_TEST"
 }
 
-@test "topology smoke CI passes the Modeler cluster through the action and CLI" {
+@test "topology smoke CI passes the topology legs to the e2e runner" {
   workflow="$ROOT/.github/workflows/test-integration-runner.yaml"
-  action="$ROOT/.github/actions/playwright-e2e-tests/action.yaml"
 
-  run grep -F 'modeler-cluster-name: ${{ matrix.modeler_cluster_name }}' "$workflow"
+  run grep -F '&& inputs.topology-smoke-matrix' "$workflow"
   [ "$status" -eq 0 ]
 
-  run grep -F 'E2E_ARG_MODELER_CLUSTER_NAME: ${{ inputs.modeler-cluster-name }}' "$action"
-  [ "$status" -eq 0 ]
-
-  run grep -F 'E2E_ARGS+=(--modeler-cluster-name "${E2E_ARG_MODELER_CLUSTER_NAME}")' "$action"
+  run grep -F -- '--topology-legs "${E2E_TOPOLOGY_LEGS}"' "$workflow"
   [ "$status" -eq 0 ]
 }
 

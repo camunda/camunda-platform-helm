@@ -21,7 +21,7 @@
 //   - The shared core package that deploy-camunda depends on (scripts/camunda-core/)
 //   - Specific workflow files used in the integration test path
 //   - The e2e execution scripts (scripts/run-e2e-tests.sh, scripts/render-e2e-env.sh)
-//     and the playwright-e2e-tests composite action
+//     and the integration-test-setup, cluster-auth and gke-login composite actions
 //
 // If any of these files change, the hash changes, invalidating cached results.
 package hash
@@ -46,7 +46,9 @@ var WorkflowFiles = []string{
 	".github/workflows/test-integration-template.yaml",
 	".github/workflows/test-integration-runner.yaml",
 	".github/actions/generate-chart-matrix/action.yaml",
-	".github/actions/playwright-e2e-tests/action.yaml",
+	".github/actions/integration-test-setup/action.yaml",
+	".github/actions/cluster-auth/action.yaml",
+	".github/actions/gke-login/action.yaml",
 }
 
 // Compute calculates a SHA-256 content hash for a given chart version.

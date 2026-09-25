@@ -349,24 +349,35 @@ The `matrix-data` input can override the file-based matrix entirely. The command
 
 > [`.github/workflows/test-integration-runner.yaml`](https://github.com/camunda/camunda-platform-helm/blob/main/.github/workflows/test-integration-runner.yaml)
 
-Executes a single shard (one platform + one flow). Job dependency graph:
+Executes a single shard (one platform + one flow) in one `integration` job, followed by `record-result` and `cleanup-fallback`:
 
 ```
-install ─────┬──→ upgrade ──────┬──→ playwright-ITs-after-upgrade ──┐
-             │                  └──→ playwright-e2e-after-upgrade ───┤
-             ├──→ playwright-ITs-after-install ─────────────────────┤
-             └──→ playwright-e2e-after-install ─────────────────────┤
-                                                                    ↓
-                                                          merge-e2e-reports
-                                                                    ↓
-                                                                cleanup
+integration: setup → deploy (install / upgrade) → e2e legs → reports → diagnostics → cleanup
+     ├──→ record-result      (integration succeeded)
+     └──→ cleanup-fallback   (integration ended before its cleanup steps finished)
 ```
 
-- **`install` flow:** install → tests → cleanup.
-- **`upgrade-*` flows:** install (old version) → upgrade (current version) → tests → cleanup.
-- **`modular-upgrade-minor`:** install skipped → upgrade only → tests → cleanup.
+`cleanup-fallback` runs when the job timed out, was cancelled, or lost its runner before setting its `cleanup-done` output. It deletes the Entra and Auth0 test clients and stamps the namespaces' reaping TTL, which the namespace TTL alone cannot cover.
 
-Each job runs in a fresh container and re-authenticates to the cluster independently. The Kubernetes namespace is the shared state between jobs.
+- **`install` flow:** deploy the current chart, then run the scenario's e2e legs from `deploy-camunda ci e2e-matrix` (smoke, and full when the scenario enables it). Topology scenarios run their per-release legs; `shadow-e2e` runs its non-blocking full suite.
+- **`upgrade-*` flows:** `deploy-camunda matrix run` installs the previous version and upgrades to the current one, then one blocking smoke leg runs.
+- **`modular-upgrade-minor`:** upgrades the release an earlier install flow deployed, then one blocking smoke leg runs. The namespace is not recreated.
+
+`deploy-camunda ci e2e-run --plan` counts the legs, then each leg runs in its own step (`--leg-index N`) after the job refreshes its cluster credentials. The GKE kubeconfig token and the EKS tbot certificate expire after an hour, and deploy plus several legs take longer than that. Every leg runs even after an earlier one fails. `--report` then aggregates the results. A failed non-blocking leg is a warning. A failed blocking leg, or a blocking leg that recorded no result, fails the job after reports are uploaded and cleanup has run.
+
+Each leg ends in one of these categories, shown in the job summary and as run annotations:
+
+| Category | Meaning | Look at |
+|---|---|---|
+| `tests-failed` | Playwright reported failing tests or a global error | The failed test titles in the summary, then `playwright-traces-*` and `e2e-html-report-*` |
+| `setup-failed` | `run-e2e-tests.sh` failed before Playwright reported a failing test | The leg's step log: env rendering, ingress readiness, npm install |
+| `preflight-failed` | kubectl could not reach a leg namespace before it started | Expired cluster credentials, or a namespace reaped by its TTL |
+| `timed-out` | The leg exceeded its limit and its process group was stopped | `diagnostics-e2e-*` for the namespace state at that moment |
+| `cancelled` / `not-run` | The job was cancelled, or the leg step errored before recording a result | The leg's step log |
+
+A passing leg still gets a warning when it executed no tests, had flaky tests, produced no JSON results, or left a truncated blob report. Truncated blob reports are renamed to `*.corrupt` so the other legs' reports still merge. The summary lists test titles only, never error messages, because the job summary and annotations are not secret-masked. Full output stays in the masked step log.
+
+Deploy, test, and cleanup share one job so **Re-run failed jobs** restarts from a fresh deployment. On a rerun, the namespace setup step deletes and recreates the namespace because it carries the same `github-run-id` label.
 
 ### Test flows
 
@@ -376,15 +387,15 @@ Fresh deployment of the current branch's chart. Validates the chart installs cle
 
 #### `upgrade-patch`
 
-Upgrade within the same minor version (e.g. `8.8.0 → 8.8.1`). The install job deploys the **latest released chart version** (via `camunda-helm-upgrade-version`), then the upgrade job upgrades to the current branch. A [pre-upgrade script](https://github.com/camunda/camunda-platform-helm/blob/main/charts/camunda-platform-8.8/test/integration/scenarios/pre-setup-scripts/pre-upgrade-patch.sh) handles incompatible resource cleanup (StatefulSets, PVCs).
+Upgrade within the same minor version (e.g. `8.8.0 → 8.8.1`). Step 1 deploys the **latest released chart version** (via `camunda-helm-upgrade-version`), then Step 2 upgrades to the current branch. A [pre-upgrade script](https://github.com/camunda/camunda-platform-helm/blob/main/charts/camunda-platform-8.8/test/integration/scenarios/pre-setup-scripts/pre-upgrade-patch.sh) handles incompatible resource cleanup (StatefulSets, PVCs).
 
 #### `upgrade-minor`
 
-Upgrade across minor versions (e.g. `8.7 → 8.8`). The install job deploys the **previous minor version** (via `camunda-version-previous`), then the upgrade job upgrades to the current version. For chart version 13+ (Camunda 8.13+), the upgrade automatically enables the data migrator.
+Upgrade across minor versions (e.g. `8.7 → 8.8`). Step 1 deploys the **previous minor version** (via `camunda-version-previous`), then Step 2 upgrades to the current version. For chart version 13+ (Camunda 8.13+), the upgrade automatically enables the data migrator.
 
 #### `modular-upgrade-minor`
 
-Component-by-component upgrade from a previous minor version. This flow **skips the install job** — it expects the namespace and Helm release to already exist from a prior deployment. It uses the same namespace (no suffix) as the install flow and runs only the upgrade job.
+Component-by-component upgrade from a previous minor version. This flow **skips the install step** — it expects the namespace and Helm release to already exist from a prior deployment. It uses the same namespace (no suffix) as the install flow and runs only the upgrade.
 
 > **Important:** This flow cannot be selected with `deploy-camunda matrix plan --manual-flow`. It must be passed directly to `test-integration-template.yaml`. When used alongside `install` in the same flows string (e.g. `"install,modular-upgrade-minor"`), the two run as independent shards with **no ordering guarantee**.
 

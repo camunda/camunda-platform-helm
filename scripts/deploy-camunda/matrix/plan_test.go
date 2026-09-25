@@ -308,7 +308,7 @@ func TestPlanActionChangeTriggersAll(t *testing.T) {
 	result, err := Plan(findRepoRoot(t), PlanOptions{
 		ActiveVersions: planActiveVersions,
 		ManualTrigger:  "none",
-		ChangedFiles:   ".github/actions/playwright-e2e-tests/action.yaml",
+		ChangedFiles:   ".github/actions/integration-test-setup/action.yaml",
 	})
 	if err != nil {
 		t.Fatal(err)
