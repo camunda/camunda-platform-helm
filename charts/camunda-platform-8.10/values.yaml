@@ -1222,7 +1222,7 @@ identity:
 #  #####  #    # #    #  ####  #    # #####  #    #   #     #  ####  #####
 ###############################################################################
 ## @section CamundaHub Parameters
-## @extra camundaHub configuration for Camunda Hub (WebModeler + Console).
+## @extra camundaHub configuration for Camunda Hub (WebModeler + Console). Its image, security, restapi, websockets, serviceAccount and persistence subtrees are not listed separately below: they accept the same keys as their webModeler.* counterparts in the WebModeler sections and are deep-merged over them, taking precedence. For example camundaHub.restapi.externalDatabase and camundaHub.restapi.mail accept the keys documented under webModeler.restapi.externalDatabase and webModeler.restapi.mail.
 ## When camundaHub.enabled is true, the Web Modeler component is deployed and
 ## the Console UI is enabled as a feature of the hub-restapi pod (Console is
 ## no longer a separate deployment in 8.10).
