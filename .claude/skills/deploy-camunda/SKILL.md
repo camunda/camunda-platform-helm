@@ -217,6 +217,37 @@ deploy-camunda matrix run \
 
 The `qa-*` scenarios have `image-tags: true`, which includes `base-image-tags.yaml` (with `$E2E_TESTS_*_IMAGE_TAG` placeholders) and excludes `values-digest.yaml`. The `--env-file` provides the actual values for substitution via `buildScenarioEnv()`. In CI, the workflow converts the `VALUES_CONFIG` JSON to a `.env` file using `jq` before calling `deploy-camunda`.
 
+## Topology Scenarios (Multi-Release)
+
+A topology scenario is a single matrix entry that fans out to N Helm releases, each in its own namespace, following a declared dependency order. Every release automatically receives its own `CAMUNDA_HOSTNAME`. Preflight validation reports all unpreparable releases in one invocation, and missing secret-mapping variables emit one summary line per release.
+
+Four topology scenarios exist on chart 8.10:
+- `mns` (`multinamespace`)
+- `mns2` (`multinamespace-2orch`)
+- `mnop` (`multinamespace-optimize`)
+- `ptnt` (`physicaltenants`)
+
+`ptnt` deploys 5 releases: 1 hub, 1 orchestration, and 3 optimize (default plus two per-tenant). The shortname `ptnt` is not guessable from "physicaltenants".
+
+**Discovery:** `deploy-camunda matrix list --versions 8.10` shows the `SHORT` column but not per-release counts. `physicaltenants` is tier 2, so `matrix list --tier 1` hides it. To preview release counts, run with `--dry-run`:
+
+```bash
+# Preview topology fan-out (prints e.g. "8.10/physicaltenants (ptnt): 5 releases")
+deploy-camunda matrix run --repo-root . --versions 8.10 \
+  --shortname-filter ptnt --shortname-exact --dry-run
+```
+
+**Namespace TTL:** `matrix run` has no `--ttl` flag — that flag exists only on the root `deploy-camunda` command. For a matrix or topology run, set `DEPLOY_CAMUNDA_TTL=8h` in the environment (default 60m).
+
+**Deploy `ptnt` to GKE:**
+
+```bash
+deploy-camunda matrix run --repo-root . --versions 8.10 \
+  --shortname-filter ptnt --shortname-exact --flow-filter install --platform gke \
+  --ingress-base-domain-gke <your-zone> --namespace-prefix <prefix> \
+  --ensure-docker-registry --timeout 15 --yes
+```
+
 ## Extended-Support Versions (Opt-In)
 
 The default matrix includes only `chartAutomation.routineVersions` from `charts/chart-versions.yaml`, independently of support-lifecycle metadata. A version outside that list is reachable when named explicitly **and** its chart dir has a CI scenario registry (`test/ci/registry/manifest.yaml`). **8.6** uses this opt-in path. A lifecycle `eolSince` entry blocks matrix execution, including explicit requests.
