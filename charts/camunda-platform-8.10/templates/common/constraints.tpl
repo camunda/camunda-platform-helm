@@ -467,10 +467,7 @@ resolved maps. global.labels is rendered with a plain toYaml and stays raw. */ -
 }}
   {{- fail (printf "[camunda][error] %s is managed by the chart and cannot be configured in global.labels, global.commonLabels, or orchestration.podLabels." $reservedGenerationLabel) }}
 {{- end }}
-{{- $partitioningKey := "orchestration.partitioning" -}}
-{{- if ne (include "camundaPlatform.partitioningConfigured" (.Values.orchestration.partitioning | default dict)) "true" -}}
-  {{- $partitioningKey = "global.multiregion" -}}
-{{- end -}}
+{{- $partitioningKey := $partitioning.sourceKey -}}
 {{- if and $partitioning.keepUnzonedBrokers (eq $partitioning.scheme "zone-aware") }}
   {{- $orchRaw := .Values.orchestration.partitioning | default dict -}}
   {{- $zoneCountRaw := get $orchRaw "numberOfZones" | toString -}}
@@ -547,7 +544,23 @@ retained round-robin generation.
 {{- end }}
 
 {{/*
-Fail if the region count is below 1, under any scheme. Round-robin divides the cluster
+Fail if either block carries the other block's spelling of the numbering pair. Reached with
+--skip-schema-validation, where additionalProperties does not run.
+*/}}
+{{- $renamed := dict "regions" "numberOfZones" "regionId" "zoneIndex" -}}
+{{- $orchRaw := .Values.orchestration.partitioning | default dict -}}
+{{- $globalRaw := .Values.global.multiregion | default dict -}}
+{{- range $deprecated, $current := $renamed }}
+  {{- if hasKey $orchRaw $deprecated }}
+    {{- fail (printf "[camunda][error] orchestration.partitioning.%s was renamed to orchestration.partitioning.%s." $deprecated $current) -}}
+  {{- end }}
+  {{- if hasKey $globalRaw $current }}
+    {{- fail (printf "[camunda][error] global.multiregion.%s does not exist; the deprecated block spells it global.multiregion.%s, and %s lives under orchestration.partitioning." $current $deprecated $current) -}}
+  {{- end }}
+{{- end }}
+
+{{/*
+Fail if the zone count is below 1, under any scheme. Round-robin divides the cluster
 size by it and numbers node IDs with it; zone-aware requires it to be exactly 1, and the
 guard above cannot see a sub-1 value because the resolver has already normalised it.
 
@@ -561,25 +574,9 @@ is what makes the block read as unconfigured in the first place. The deprecated 
 scanned only when it is the one in effect, so an inert leftover cannot fail a render that
 is driven entirely by orchestration.partitioning.
 */}}
-{{- /* NOTE: reached with --skip-schema-validation, where additionalProperties does not
-     run, so each block rejects the other block's spelling here. */ -}}
-{{- $renamed := dict "regions" "numberOfZones" "regionId" "zoneIndex" -}}
-{{- $orchRaw := .Values.orchestration.partitioning | default dict -}}
-{{- range $old, $current := $renamed }}
-  {{- if hasKey $orchRaw $old }}
-    {{- fail (printf "[camunda][error] orchestration.partitioning.%s was renamed to orchestration.partitioning.%s." $old $current) -}}
-  {{- end }}
-{{- end }}
-{{- $globalRaw := .Values.global.multiregion | default dict -}}
-{{- range $current, $deprecated := dict "numberOfZones" "regions" "zoneIndex" "regionId" }}
-  {{- if hasKey $globalRaw $current }}
-    {{- fail (printf "[camunda][error] global.multiregion.%s does not exist; the deprecated block spells it global.multiregion.%s, and %s lives under orchestration.partitioning." $current $deprecated $current) -}}
-  {{- end }}
-{{- end }}
-
-{{- $rawBlocks := list (dict "key" "orchestration.partitioning" "field" "numberOfZones" "raw" (.Values.orchestration.partitioning | default dict)) -}}
+{{- $rawBlocks := list (dict "key" "orchestration.partitioning" "field" "numberOfZones" "raw" $orchRaw) -}}
 {{- if eq $partitioningKey "global.multiregion" -}}
-  {{- $rawBlocks = append $rawBlocks (dict "key" "global.multiregion" "field" "regions" "raw" (.Values.global.multiregion | default dict)) -}}
+  {{- $rawBlocks = append $rawBlocks (dict "key" "global.multiregion" "field" "regions" "raw" $globalRaw) -}}
 {{- end -}}
 {{- range $block := $rawBlocks }}
   {{- if hasKey $block.raw $block.field }}
@@ -599,18 +596,10 @@ NOTE: a clusterSize the zone count does not divide is the same class of fault an
 deliberately not rejected here; see #7196.
 */}}
 {{- if ne $partitioning.scheme "zone-aware" }}
-  {{- /* NOTE: the message names the keys of whichever block is in effect. The deprecated
-       block still spells the pair regions/regionId. */ -}}
-  {{- $countField := "numberOfZones" -}}
-  {{- $indexField := "zoneIndex" -}}
-  {{- if eq $partitioningKey "global.multiregion" -}}
-    {{- $countField = "regions" -}}
-    {{- $indexField = "regionId" -}}
-  {{- end -}}
   {{- $zoneCount := int $partitioning.numberOfZones -}}
   {{- $zoneIndex := int $partitioning.zoneIndex -}}
   {{- if or (lt $zoneIndex 0) (ge $zoneIndex $zoneCount) }}
-    {{- fail (printf "[camunda][error] %s.%s is %d but %s.%s is %d; %s addresses this zone and must be between 0 and %d, or its brokers take the node IDs of another zone." $partitioningKey $indexField $zoneIndex $partitioningKey $countField $zoneCount $indexField (sub $zoneCount 1)) -}}
+    {{- fail (printf "[camunda][error] %s.%s is %d but %s.%s is %d; %s addresses this zone and must be between 0 and %d, or its brokers take the node IDs of another zone." $partitioningKey $partitioning.indexKey $zoneIndex $partitioningKey $partitioning.countKey $zoneCount $partitioning.indexKey (sub $zoneCount 1)) -}}
   {{- end }}
 {{- end }}
 

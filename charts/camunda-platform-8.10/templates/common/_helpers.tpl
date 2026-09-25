@@ -3123,6 +3123,9 @@ deprecated global.multiregion, which only still carries regions and regionId. Wh
 precedence, never per field, so a topology cannot be assembled half from each. Absent
 fields fall back to the chart defaults, which is what lets the global block supply the
 numbered pair without declaring the zoned ones. constraints.tpl rejects setting both.
+
+The resolved dict also carries the winning block's own key names as sourceKey, countKey and
+indexKey, so a constraint message names the keys the user actually set.
 */}}
 {{- define "camundaPlatform.partitioning" -}}
 {{- $orch := .Values.orchestration.partitioning | default dict -}}
@@ -3135,7 +3138,10 @@ numbered pair without declaring the zoned ones. constraints.tpl rejects setting 
         "zones" ($orch.zones | default list)
         "keepUnzonedBrokers" ($orch.keepUnzonedBrokers | default false)
         "numberOfZones" (int ($orch.numberOfZones | default 1) | default 1)
-        "zoneIndex" (int ($orch.zoneIndex | default 0)) -}}
+        "zoneIndex" (int ($orch.zoneIndex | default 0))
+        "sourceKey" "orchestration.partitioning"
+        "countKey" "numberOfZones"
+        "indexKey" "zoneIndex" -}}
 {{- else -}}
   {{- /* Only the numbered pair is read back from the deprecated block. mode, zone and
        zones never shipped there, and honouring them would keep the zone-aware scheme reachable
@@ -3147,7 +3153,10 @@ numbered pair without declaring the zoned ones. constraints.tpl rejects setting 
         "zones" list
         "keepUnzonedBrokers" false
         "numberOfZones" (int ($global.regions | default 1) | default 1)
-        "zoneIndex" (int ($global.regionId | default 0)) -}}
+        "zoneIndex" (int ($global.regionId | default 0))
+        "sourceKey" "global.multiregion"
+        "countKey" "regions"
+        "indexKey" "regionId" -}}
 {{- end -}}
 {{- /* Derive everything a consumer needs, so the scheme is decided here rather than
      re-asked at each call site. The counts are stringified because the dict is round-tripped
