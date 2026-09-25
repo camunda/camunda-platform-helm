@@ -22,8 +22,10 @@ global:
         releaseName: integration
         host: "${ORCHA_HOST}"
         # Hub rejects physical tenant components on a cluster below 8.10.0, and a
-        # pre-release such as 8.10.0-alphaN sorts below 8.10.0 in semver.
-        version: "8.10.0"
+        # pre-release such as 8.10.0-alphaN sorts below 8.10.0 in semver. 8.10.0 is
+        # not released yet, so declare the 8.10 snapshot line, which Hub compares by
+        # major.minor only.
+        version: "8.10-SNAPSHOT"
         contextPaths:
           orchestration: /orchestration
           optimize: "${OPTDEFAULT_OPTIMIZE_CONTEXT_PATH}"
