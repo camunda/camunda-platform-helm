@@ -27,6 +27,41 @@ import (
 	"time"
 )
 
+func TestRenderSkipsRegistrySideEffects(t *testing.T) {
+	directory := t.TempDir()
+	invocation := filepath.Join(directory, "helm-args")
+	script := "#!/bin/sh\n[ \"$1\" = template ] || exit 1\nprintf '%s\\n' \"$@\" > \"" + invocation + "\"\n"
+	if err := os.WriteFile(filepath.Join(directory, "helm"), []byte(script), 0755); err != nil {
+		t.Fatal(err)
+	}
+	for _, executable := range []string{"kubectl", "docker"} {
+		if err := os.WriteFile(filepath.Join(directory, executable), []byte("#!/bin/sh\nexit 1\n"), 0755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	t.Setenv("PATH", directory+string(os.PathListSeparator)+os.Getenv("PATH"))
+	err := Deploy(context.Background(), types.Options{
+		RenderTemplates: true, RenderOutputDir: filepath.Join(directory, "rendered"),
+		ChartPath: directory, Namespace: "test", ReleaseName: "integration",
+		EnsureDockerHub: true, ExternalSecretsEnabled: true,
+		CompanionCharts: []types.CompanionChart{{ChartRef: "must-not-install", ReleaseName: "dependency"}},
+		PreInstallHooks: []func(context.Context) error{func(context.Context) error {
+			t.Fatal("render executed a pre-install hook")
+			return nil
+		}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(invocation)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.HasPrefix(string(data), "template\nintegration\n") {
+		t.Fatalf("unexpected Helm invocation: %s", data)
+	}
+}
+
 func TestAppendHelmValueArgsKeepsDeterministicSetsAndExtraArgsLast(t *testing.T) {
 	args := appendHelmValueArgs([]string{"template"}, types.Options{
 		ValuesFiles: []string{"base.yaml"},

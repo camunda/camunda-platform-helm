@@ -10,8 +10,8 @@ Camunda cluster with one command instead of tracing a workflow file.
 The tool exposes the scenario catalog that Camunda CI already exercises
 (`charts/<version>/test/ci/registry/scenarios/*.yaml`). The mental model is:
 
-> **Pick a scenario → point it at your cluster → let deploy-camunda wire
-> everything (companion charts, secrets, ingress, values overlays) for you.**
+> **Pick a registry scenario, configure your cluster and credentials, then
+> deploy its declared values layers, companion charts and pre-install hook.**
 
 Scenarios are the source of truth for a "what does a Camunda deployment
 of type X look like" question. Each one declares:
@@ -22,11 +22,12 @@ of type X look like" question. Each one declares:
 - the platforms it runs on (`gke`, `eks`), and
 - companion charts it needs (Keycloak, PostgreSQL, Elasticsearch, …).
 
-You point `deploy-camunda` (or `deploy-camunda matrix run`) at a scenario
-via `--identity` + `--persistence` + optional `--features`, or by its
-canonical name via `--shortname-filter`. Anything not covered by an
-existing scenario is a couple of YAML lines in your own registry (see
-[Customising a scenario](#customising-a-scenario)).
+For a single deployment, use `deploy-camunda --scenario <name>` with the
+exact `name` declared in the selected chart's registry. For matrix execution,
+use `deploy-camunda matrix run --shortname-filter <shortname> --shortname-exact`.
+Selection flags (`--identity`, `--persistence`, `--features`) override the
+named scenario or compose values directly; free-form composition does not
+automatically discover companion charts or hooks.
 
 Who this is for: reliability engineers, load-test engineers, and any
 external Camunda team who needs a repeatable "give me a working Camunda"
@@ -90,7 +91,36 @@ deploy-camunda
 `deploy-camunda` reads your `.deploy-camunda.yaml` on every run — you
 don't need to repeat the flags on the command line. Precedence is
 `CLI flag  >  active profile in config file  >  root config  >  defaults`,
-so ad-hoc overrides still work when you need them.
+so ad-hoc overrides still work when you need them. For a matching registry
+scenario, its declaration supplies the defaults. Older entries that omit
+identity or persistence retain the name-derived default for that field.
+Heuristic name matching is otherwise used when the chart has no registry or
+the scenario name is unmatched. The reserved `keycloak-original` legacy alias
+also retains name-based behavior, with warnings identifying registry values
+not applied; select its registry variants explicitly through `matrix run`.
+
+Feature overrides replace the declared list: `--features=` or `features: []`
+clears it. Explicit `false` overrides, such as `--qa=false`, also take
+precedence. Deprecated CLI aliases override config values; when both flag forms
+are supplied, the modern selection flag wins.
+Differences from the registry are logged with the declared and
+effective values. Invalid registry data or an unsupported flow/platform
+combination fails instead of silently falling back.
+
+For example, deploy the `optimize-tls` scenario, including its TLS values
+layer, Keycloak/Elasticsearch/PostgreSQL companion charts and keystore hook:
+
+```bash
+deploy-camunda --chart-path charts/camunda-platform-8.10 \
+  --scenario optimize-tls --platform gke \
+  --namespace optimize-tls-test --release integration
+```
+
+Supply credentials and ingress settings through your config/environment.
+`--render-templates` resolves the same values but does not run hooks or install
+companion charts. Registry resolution applies to single-scenario deployments;
+comma-separated scenarios retain their existing name-based behavior. Use
+`matrix run` for topologies and scenarios requiring additional lifecycle stages.
 
 To run a specific canonical scenario by shortname (equivalent to what
 CI does), use `matrix run`:
@@ -99,7 +129,8 @@ CI does), use `matrix run`:
 deploy-camunda matrix run \
   --repo-root . \
   --versions 8.10 \
-  --shortname-filter keycloak-original \
+  --shortname-filter optls --shortname-exact \
+  --flow-filter install --platform gke \
   --ingress-base-domain <your-ingress-zone>
 ```
 

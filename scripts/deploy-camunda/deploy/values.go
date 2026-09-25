@@ -719,6 +719,7 @@ func prepareScenarioValues(ctx context.Context, scenarioCtx *ScenarioContext, fl
 			effectivePlatform = flags.Deployment.Platform
 		}
 		deployConfig, err := scenarios.BuildDeploymentConfig(effectiveScenarioDir, scenarioCtx.ScenarioName, scenarios.BuilderOverrides{
+			Resolved:     flags.SelectionResolved,
 			Identity:     flags.Selection.Identity,
 			Persistence:  flags.Selection.Persistence,
 			Platform:     effectivePlatform,

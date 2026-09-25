@@ -218,6 +218,8 @@ type RuntimeFlags struct {
 	Deprecated DeprecatedFlags
 	Index      IndexPrefixFlags
 
+	SelectionResolved bool
+
 	// Cross-cutting / runtime fields that don't belong to a single domain.
 	LogLevel    string
 	EnvFile     string
@@ -427,7 +429,7 @@ func ApplyActiveDeployment(rc *RootConfig, active string, flags *RuntimeFlags) e
 	MergeBoolField(&flags.Selection.QA, dep.QA, rc.QA, changed, "qa")
 	MergeBoolField(&flags.Selection.ImageTags, dep.ImageTags, rc.ImageTags, changed, "image-tags")
 	MergeBoolField(&flags.Selection.UpgradeFlow, dep.UpgradeFlow, rc.UpgradeFlow, changed, "upgrade-flow")
-	MergeStringSliceField(&flags.Selection.Features, dep.Features, rc.Features)
+	mergeSelectionFeatures(flags, dep.Features, rc.Features)
 
 	// Slice fields
 	MergeStringSliceField(&flags.Deployment.ExtraValues, dep.ExtraValues, rc.ExtraValues)
@@ -507,7 +509,7 @@ func applyRootDefaults(rc *RootConfig, flags *RuntimeFlags) error {
 	MergeBoolField(&flags.Selection.QA, nil, rc.QA, changed, "qa")
 	MergeBoolField(&flags.Selection.ImageTags, nil, rc.ImageTags, changed, "image-tags")
 	MergeBoolField(&flags.Selection.UpgradeFlow, nil, rc.UpgradeFlow, changed, "upgrade-flow")
-	MergeStringSliceField(&flags.Selection.Features, nil, rc.Features)
+	mergeSelectionFeatures(flags, nil, rc.Features)
 
 	MergeStringSliceField(&flags.Deployment.ExtraValues, nil, rc.ExtraValues)
 
@@ -622,35 +624,36 @@ func (f *RuntimeFlags) HasExplicitLayeredConfig() bool {
 // MigrateDeprecatedFlags copies deprecated layered values flags to the new selection fields.
 // This is called during validation to ensure backward compatibility.
 func (f *RuntimeFlags) MigrateDeprecatedFlags() {
-	// Only migrate if new fields are not already set
-	if f.Selection.Identity == "" && f.Deprecated.ValuesAuth != "" {
+	if !f.ChangedFlags["identity"] && (f.Selection.Identity == "" || f.ChangedFlags["values-auth"]) && f.Deprecated.ValuesAuth != "" {
 		f.Selection.Identity = f.Deprecated.ValuesAuth
 	}
-	if f.Selection.Persistence == "" && f.Deprecated.ValuesBackend != "" {
+	if !f.ChangedFlags["persistence"] && (f.Selection.Persistence == "" || f.ChangedFlags["values-backend"]) && f.Deprecated.ValuesBackend != "" {
 		f.Selection.Persistence = f.Deprecated.ValuesBackend
 	}
-	if f.Selection.TestPlatform == "" && f.Deprecated.ValuesInfra != "" {
+	if !f.ChangedFlags["test-platform"] && (f.Selection.TestPlatform == "" || f.ChangedFlags["values-infra"]) && f.Deprecated.ValuesInfra != "" {
 		f.Selection.TestPlatform = f.Deprecated.ValuesInfra
 	}
-	if len(f.Selection.Features) == 0 && len(f.Deprecated.ValuesFeatures) > 0 {
+	if !f.ChangedFlags["features"] && (f.ChangedFlags["values-features"] || len(f.Selection.Features) == 0 && len(f.Deprecated.ValuesFeatures) > 0) {
+		f.Selection.Features = nil
 		// Filter out features that are now in other categories
 		for _, feature := range f.Deprecated.ValuesFeatures {
 			switch feature {
 			case "rdbms", "rdbms-external", "rdbms-oracle":
-				// These moved to persistence - only set if persistence not already set
-				if f.Selection.Persistence == "" {
+				if !f.ChangedFlags["persistence"] && (f.Selection.Persistence == "" || f.ChangedFlags["values-features"] && !f.ChangedFlags["values-backend"]) {
 					f.Selection.Persistence = feature
 				}
 			case "upgrade":
 				// This is now a separate flag
-				f.Selection.UpgradeFlow = true
+				if !f.ChangedFlags["upgrade-flow"] {
+					f.Selection.UpgradeFlow = true
+				}
 			default:
 				f.Selection.Features = append(f.Selection.Features, feature)
 			}
 		}
 	}
-	if !f.Selection.QA && f.Deprecated.ValuesQA {
-		f.Selection.QA = true
+	if !f.ChangedFlags["qa"] && (f.ChangedFlags["values-qa"] || !f.Selection.QA && f.Deprecated.ValuesQA) {
+		f.Selection.QA = f.Deprecated.ValuesQA
 	}
 }
 
@@ -730,6 +733,59 @@ func synthesizeScenarioName(flags *RuntimeFlags) string {
 // If configPath is empty, it resolves the default config location.
 // The includeEnv parameter controls whether environment variable overrides are applied.
 // The returned ConfigResolution describes where the config was found (or not).
+func mergeSelectionFeatures(flags *RuntimeFlags, deployment, root []string) {
+	if flags.ChangedFlags["features"] {
+		return
+	}
+	if deployment != nil {
+		flags.Selection.Features = append([]string{}, deployment...)
+	} else if root != nil {
+		flags.Selection.Features = append([]string{}, root...)
+	}
+}
+
+func ApplySelectionDefaults(flags *RuntimeFlags, defaults SelectionFlags, root *RootConfig) error {
+	merged := RuntimeFlags{Selection: defaults}
+	if root != nil {
+		if err := ApplyActiveDeployment(root, root.Current, &merged); err != nil {
+			return err
+		}
+	}
+	if flags.ChangedFlags["identity"] || flags.ChangedFlags["values-auth"] {
+		merged.Selection.Identity = flags.Selection.Identity
+	}
+	if flags.ChangedFlags["persistence"] || flags.ChangedFlags["values-backend"] {
+		merged.Selection.Persistence = flags.Selection.Persistence
+	}
+	if flags.ChangedFlags["test-platform"] || flags.ChangedFlags["values-infra"] {
+		merged.Selection.TestPlatform = flags.Selection.TestPlatform
+	}
+	if flags.ChangedFlags["features"] || flags.ChangedFlags["values-features"] {
+		merged.Selection.Features = append([]string{}, flags.Selection.Features...)
+	}
+	if flags.ChangedFlags["qa"] || flags.ChangedFlags["values-qa"] {
+		merged.Selection.QA = flags.Selection.QA
+	}
+	if flags.ChangedFlags["image-tags"] {
+		merged.Selection.ImageTags = flags.Selection.ImageTags
+	}
+	if flags.ChangedFlags["upgrade-flow"] {
+		merged.Selection.UpgradeFlow = flags.Selection.UpgradeFlow
+	}
+	if flags.ChangedFlags["values-features"] && !flags.ChangedFlags["features"] {
+		legacy := RuntimeFlags{Deprecated: flags.Deprecated}
+		legacy.MigrateDeprecatedFlags()
+		if legacy.Selection.Persistence != "" {
+			merged.Selection.Persistence = flags.Selection.Persistence
+		}
+		if legacy.Selection.UpgradeFlow {
+			merged.Selection.UpgradeFlow = flags.Selection.UpgradeFlow
+		}
+	}
+	flags.Selection = merged.Selection
+	return nil
+}
+
 func LoadAndMerge(configPath string, includeEnv bool, flags *RuntimeFlags) (*RootConfig, *ConfigResolution, error) {
 	res, err := ResolvePath(configPath)
 	if err != nil {
