@@ -1316,7 +1316,7 @@ func (s *ConfigmapTemplateTest) TestNumberedModeConfigurationCompatibility() {
 				require.NoError(t, err)
 				require.Contains(t, output, "${K8S_NAME##*-} * 1 + 0")
 				require.Contains(t, output, "node-id: \"${VALUES_ORCHESTRATION_NODE_ID:}\"")
-				require.Contains(t, output, "advertisedHost: \"${K8S_NAME}.${K8S_SERVICE_NAME}\"")
+				require.Contains(t, output, "advertised-host: \"${K8S_NAME}.${K8S_SERVICE_NAME}\"")
 				require.NotContains(t, output, "CAMUNDA_CLUSTER_ZONE")
 				require.NotContains(t, output, "scheme: ZONE_AWARE")
 			},
@@ -1333,7 +1333,7 @@ func (s *ConfigmapTemplateTest) TestNumberedModeConfigurationCompatibility() {
 				require.NoError(t, err)
 				require.Contains(t, output, "${K8S_NAME##*-} * 2 + 1")
 				require.Contains(t, output, "node-id: \"${VALUES_ORCHESTRATION_NODE_ID:}\"")
-				require.Contains(t, output, "advertisedHost: \"${K8S_NAME}.${K8S_SERVICE_NAME}.${K8S_NAMESPACE}.svc\"")
+				require.Contains(t, output, "advertised-host: \"${K8S_NAME}.${K8S_SERVICE_NAME}.${K8S_NAMESPACE}.svc\"")
 				require.NotContains(t, output, "CAMUNDA_CLUSTER_ZONE")
 				require.NotContains(t, output, "scheme: ZONE_AWARE")
 			},
@@ -1358,7 +1358,7 @@ func (s *ConfigmapTemplateTest) TestNumberedModeConfigurationCompatibility() {
 				// cluster-wide sizing is the values key, untouched by round-robin
 				require.Contains(t, output, "size: \"6\"")
 				// cross-region advertised host, not the single-region short form
-				require.Contains(t, output, "advertisedHost: \"${K8S_NAME}.${K8S_SERVICE_NAME}.${K8S_NAMESPACE}.svc\"")
+				require.Contains(t, output, "advertised-host: \"${K8S_NAME}.${K8S_SERVICE_NAME}.${K8S_NAMESPACE}.svc\"")
 				// more than one failure domain, so the chart refuses to guess the bootstrap list
 				require.NotContains(t, output, "initial-contact-points:")
 				require.Contains(t, output, "Multi-region deployments: initial-contact-points must be provided manually")
