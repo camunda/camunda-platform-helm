@@ -726,7 +726,7 @@
                                 },
                                 "contextPath": {
                                     "type": "string",
-                                    "description": "In Keycloak v16.x.x it's hard-coded as '/auth', but in v19.x.x it's '/'.",
+                                    "description": "defines the path Identity uses to reach Keycloak. With bundled Keycloak enabled, also set identityKeycloak.httpRelativePath to the same path with a trailing slash.",
                                     "default": "/auth"
                                 },
                                 "realm": {
@@ -2522,7 +2522,7 @@
                 },
                 "httpRelativePath": {
                     "type": "string",
-                    "description": "(DEPRECATED) defines the context for Keycloak. This config is valid for Keycloak v19.x.x only",
+                    "description": "(DEPRECATED) defines the path served by bundled Keycloak. Set global.identity.keycloak.contextPath to the same path without a trailing slash; for root, use / here and an empty string for contextPath.",
                     "default": "/auth/"
                 },
                 "extraEnvVars": {
