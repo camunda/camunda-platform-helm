@@ -21,7 +21,7 @@ optimize:
   image:
     repository: camunda/optimize
     tag: 8.10-SNAPSHOT
-    digest: "sha256:67ac33c0cdd41a3664088e2e80ef24a40ffa073d9c6cfd39fb9c53737321535d"
+    digest: "sha256:f98049b4ce82821ac07890cad489821b682c32bb4c4ab114db0009df6aaec970"
 
 #
 # Web Modeler
@@ -49,7 +49,7 @@ orchestration:
   image:
     repository: camunda/camunda
     tag: 8.10-SNAPSHOT
-    digest: "sha256:e9f63bf3536838e218a3bcdb3baef1e53541477f111690d1989365b5c619d00a"
+    digest: "sha256:c3a63dd56ebc3d756d0672c4ae6c4c79929c8dcf12831518b493866212e9b78b"
 
 #
 # Identity
