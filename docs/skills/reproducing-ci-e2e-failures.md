@@ -53,9 +53,15 @@ gh auth login
 gcloud container clusters get-credentials distro-ci \
   --zone europe-west1-b \
   --project camunda-distribution
-# Verify:
-kubectl config current-context   # gke_camunda-distribution_europe-west1-b_distro-ci
+# Verify the intended context without changing or relying on the current context:
+CTX=gke_camunda-distribution_europe-west1-b_distro-ci
+kubectl --context "$CTX" cluster-info
 ```
+
+Pass this same context explicitly to every deployment, watcher, and diagnostic command. For a GKE
+matrix run use `--kube-context-gke "$CTX"`; for `deploy-camunda watch` use
+`--kube-context "$CTX"`; for `kubectl` use `--context "$CTX"`. Never assume a watcher inherits the
+context used by a separately running deployment.
 
 If you don't have access to the `distro-ci` cluster yet, request it in [#ask-self-managed](https://camunda.slack.com/archives/C03UR0V2R2M) on Slack.
 
@@ -139,9 +145,20 @@ deploy-camunda matrix run \
   --shortname-filter eske \
   --flow-filter upgrade-minor \
   --platform gke \
+  --kube-context-gke "$CTX" \
   --delete-namespace \
   --timeout 15 --yes
 ```
+
+Before adding `--use-vault-backed-secrets-gke`, verify that the cluster provides the required
+store:
+
+```bash
+kubectl --context "$CTX" get clustersecretstores.external-secrets.io
+```
+
+Use that option only when `vault-backend` appears. The normal `distro-ci` setup uses
+`distribution-team`; selecting the wrong backend blocks before the Helm release is created.
 
 Docker credentials must be exported first (`TEST_DOCKER_USERNAME{,_CAMUNDA_CLOUD}` and matching `_PASSWORD`).
 

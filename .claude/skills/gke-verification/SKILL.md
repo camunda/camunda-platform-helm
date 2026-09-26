@@ -22,11 +22,16 @@ Confirm these requirements before deploying — they are the most common source 
    echo $TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD   # should be non-empty
    ```
 
-2. **kubectl context is correct:**
+2. **Set and verify the target context explicitly:**
    ```bash
-   kubectl config current-context
-   # Expected for GKE: gke_camunda-distribution_europe-west1-b_distro-ci
+   CTX=gke_camunda-distribution_europe-west1-b_distro-ci
+   kubectl --context "$CTX" cluster-info
    ```
+
+   Do not rely on `kubectl config current-context`. Pass the same `--kube-context-gke "$CTX"`
+   to `matrix run`, `--kube-context "$CTX"` to `watch`, and `--context "$CTX"` to every
+   diagnostic `kubectl` command. Otherwise the deploy and watcher can silently inspect different
+   clusters.
 
 3. **Helm dependencies are up to date:**
    ```bash
@@ -36,6 +41,16 @@ Confirm these requirements before deploying — they are the most common source 
 4. **Ingress hostname** — for non-matrix deploys, set `CAMUNDA_HOSTNAME` or use `--ingress-hostname`.
    Matrix runs require `--ingress-base-domain-gke ci.distro.ultrawombat.com` (host computed
    per-namespace from that base domain; without it, values substitution fails on `CAMUNDA_HOSTNAME`).
+
+5. **External secret store matches the target cluster:**
+   ```bash
+   kubectl --context "$CTX" get clustersecretstores.external-secrets.io
+   ```
+
+   The `distro-ci` GKE cluster normally exposes `distribution-team`. Do not pass
+   `--use-vault-backed-secrets-gke` unless the target cluster exposes `vault-backend`; that flag
+   selects manifests which reference that exact store and the deploy waits for them before Helm
+   creates the release.
 
 `deploy-camunda doctor` automates these checks — see the `deploy-camunda` skill.
 
@@ -52,6 +67,7 @@ deploy-camunda matrix run \
   --versions 8.10 \
   --shortname-filter keyco \
   --platform gke \
+  --kube-context-gke "$CTX" \
   --ingress-base-domain-gke ci.distro.ultrawombat.com \
   --delete-namespace \
   --timeout 10 \
@@ -61,12 +77,20 @@ deploy-camunda matrix run \
 deploy-camunda watch \
   --namespace matrix-810-keyco-inst-gke \
   --release integration \
+  --kube-context "$CTX" \
+  --abort-confidence 0.85 \
   --interval 30
 ```
 
 The watcher exits automatically when all pods reach Running/Ready. If a pod enters
 CrashLoopBackOff or ImagePullBackOff, the watcher diagnoses the root cause and prints it
 immediately — no need to manually inspect events or logs.
+
+`watch` observes Kubernetes and Helm state only; it does not observe the separate
+`deploy-camunda matrix run` process. An empty namespace and `release not found` can mean the deploy
+is blocked in pre-Helm setup, such as waiting for ExternalSecrets. Treat a repeated `investigate`
+verdict as actionable and inspect the deploy output plus namespace events. Without
+`--abort-confidence`, verdicts are advisory and never terminate the watcher.
 
 The namespace naming convention is `matrix-<version>-<shortname>-<flow>-<platform>`.
 Use `deploy-camunda matrix list --repo-root . --versions 8.10` to find the exact
