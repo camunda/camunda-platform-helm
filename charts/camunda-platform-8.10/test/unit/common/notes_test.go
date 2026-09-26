@@ -30,11 +30,53 @@ func TestNotesTemplate(t *testing.T) {
 	require.NoError(t, err)
 
 	testCases := []struct {
-		name        string
-		values      []string
-		expected    string
-		notExpected string
+		name         string
+		values       []string
+		expected     string
+		notExpected  string
+		expectedURLs []string
 	}{
+		{
+			name: "custom HTTP ingress port",
+			values: []string{
+				"global.ingress.enabled=true", "global.host=camunda.example.com",
+				"global.ingress.publicPorts.http=8080", "global.ingress.publicPorts.https=8443",
+				"identity.enabled=true", "identity.contextPath=/identity",
+				"camundaHub.enabled=true", "camundaHub.contextPath=/modeler",
+				"camundaHub.restapi.mail.fromAddress=test@example.com",
+				"orchestration.ingress.grpc.enabled=true", "orchestration.ingress.grpc.host=grpc.example.com",
+			},
+			expected: "- Camunda REST API: http://camunda.example.com:8080",
+			expectedURLs: []string{
+				"- Identity: http://camunda.example.com:8080/identity",
+				"Ingress URLs use global.ingress.publicPorts. Configure ingress-controller listeners and host port forwarding separately.",
+				"Explicit full URLs and authentication redirect URLs are not rewritten.",
+				"- Camunda Hub: http://camunda.example.com:8080/modeler",
+				"- Camunda Hub WebSockets: http://camunda.example.com:8080/modeler-ws",
+				"- Camunda gRPC API: http://grpc.example.com:8080",
+			},
+		},
+		{
+			name: "custom HTTPS ingress port",
+			values: []string{
+				"global.ingress.enabled=true", "global.host=camunda.example.com", "global.ingress.tls.enabled=true",
+				"global.ingress.publicPorts.http=8080", "global.ingress.publicPorts.https=8443",
+				"identity.enabled=true", "identity.contextPath=/identity",
+				"camundaHub.enabled=true", "camundaHub.contextPath=/modeler",
+				"camundaHub.restapi.mail.fromAddress=test@example.com",
+				"orchestration.ingress.grpc.enabled=true", "orchestration.ingress.grpc.host=grpc.example.com",
+				"orchestration.ingress.grpc.tls.enabled=true",
+			},
+			expected: "- Camunda REST API: https://camunda.example.com:8443",
+			expectedURLs: []string{
+				"- Identity: https://camunda.example.com:8443/identity",
+				"Ingress URLs use global.ingress.publicPorts. Configure ingress-controller listeners and host port forwarding separately.",
+				"Explicit full URLs and authentication redirect URLs are not rewritten.",
+				"- Camunda Hub: https://camunda.example.com:8443/modeler",
+				"- Camunda Hub WebSockets: https://camunda.example.com:8443/modeler-ws",
+				"- Camunda gRPC API: https://grpc.example.com:8443",
+			},
+		},
 		{
 			name:        "inline secret",
 			values:      []string{"identity.firstUser.secret.inlineSecret=credential-output-canary-do-not-print"},
@@ -97,6 +139,9 @@ func TestNotesTemplate(t *testing.T) {
 			_, notes, found := strings.Cut(string(output), "\nNOTES:\n")
 			require.True(t, found)
 			require.Contains(t, notes, testCase.expected)
+			for _, expectedURL := range testCase.expectedURLs {
+				require.Contains(t, notes, expectedURL)
+			}
 			if testCase.notExpected != "" {
 				require.NotContains(t, notes, testCase.notExpected)
 			}

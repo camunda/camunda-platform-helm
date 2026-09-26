@@ -129,8 +129,12 @@ Default user: "{{ .Values.identity.firstUser.username }}". No password is config
 {{- end }}
 
 {{- if .Values.global.ingress.enabled }}
-{{ $proto := ternary "https" "http" .Values.global.ingress.tls.enabled -}}
-- Camunda REST API: {{ $proto }}://{{ tpl .Values.global.host $ }}
+- Camunda REST API: {{ include "camundaPlatform.ingressExternalURL" (dict "context" . "host" .Values.global.host "tlsEnabled" .Values.global.ingress.tls.enabled) }}
+{{- end }}
+
+{{- if or .Values.global.ingress.enabled .Values.orchestration.ingress.grpc.enabled }}
+Ingress URLs use global.ingress.publicPorts. Configure ingress-controller listeners and host port forwarding separately.
+Explicit full URLs and authentication redirect URLs are not rewritten.
 {{- end }}
 
 {{- if or .Values.global.tls.orchestration.rest.enabled .Values.global.tls.orchestration.grpc.enabled }}

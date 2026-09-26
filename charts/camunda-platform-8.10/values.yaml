@@ -230,6 +230,12 @@ global:
     annotations: {}
     ## @param global.ingress.pathType can be used to define the Ingress path type. https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types
     pathType: Prefix
+    ## @extra global.ingress.publicPorts configuration for the ports clients use to reach Ingress endpoints. Used by chart-derived URLs, Identity callbacks, and combined-ingress browser WebSocket connections. Does not configure listeners, Services, host port forwarding, or Gateway API. Explicit URLs and authentication redirect URLs are not rewritten.
+    publicPorts:
+      ## @param global.ingress.publicPorts.http defines the public port for Ingress endpoints with TLS disabled. Port 80 is omitted from HTTP URLs. Separate gRPC Ingress uses its own TLS setting, even when global.ingress.enabled is false.
+      http: 80
+      ## @param global.ingress.publicPorts.https defines the public port for Ingress endpoints with TLS enabled. Port 443 is omitted from HTTPS URLs. Does not enable TLS; web Ingress uses global.ingress.tls.enabled and gRPC Ingress uses orchestration.ingress.grpc.tls.enabled.
+      https: 443
     ## @extra global.ingress.tls configuration for tls on the ingress resource https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
     tls:
       ## @param global.ingress.tls.enabled if true, then tls is configured on the ingress resource. If enabled the Ingress.host need to be defined.
@@ -984,13 +990,10 @@ identity:
   sidecars: []
   ## @param identity.initContainers can be used to set up extra init containers for the application Pod
   initContainers: []
-  ## @param identity.fullURL can be used when Ingress is configured (for both multi and single domain setup).
+  ## @param identity.fullURL can be used to set Identity's complete public URL, including scheme, port, and path. Overrides the derived runtime, login callback, and release-info URL. Supports templating.
   fullURL: ""
 
-  # Note: Management Identity cannot be accessed over HTTP if a "contextPath" is configured.
-  #       Which means that Management Identity cannot be configured in combined Ingress without HTTPS.
-  #       To use Management Identity over HTTP, setup a separated Ingress using "identity.ingress" and don't set "contextPath".
-  ## @param identity.contextPath can be used to make Management Identity web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
+  ## @param identity.contextPath can be used to serve Management Identity under a custom sub-path. Requires HTTPS when non-empty.
   # contextPath: "/identity"
   contextPath: ""
 
@@ -1622,13 +1625,11 @@ webModeler:
     ## @param webModeler.websockets.initContainers can be used to set up extra init containers for the application Pod
     initContainers: []
 
-    ## @param webModeler.websockets.publicHost can be used to define the host on which the WebSockets server can be reached from the WebModeler client in the browser.
+    ## @param webModeler.websockets.publicHost can be used to set the browser-facing WebSocket hostname. With global.ingress.enabled and a non-empty Modeler or Hub contextPath, global.host takes precedence. Set overrides through camundaHub.websockets.publicHost.
     # The default value assumes that a port-forwarding to the websockets service has been created.
-    # Note: The host will only be used if the Ingress resource for WebModeler is disabled.
     publicHost: localhost
-    ## @param webModeler.websockets.publicPort can be used to define the port number on which the WebSockets server can be reached from the WebModeler client in the browser.
+    ## @param webModeler.websockets.publicPort can be used to set the browser-facing WebSocket port. With global.ingress.enabled and a non-empty Modeler or Hub contextPath, global.ingress.publicPorts and the Ingress TLS setting take precedence. Set overrides through camundaHub.websockets.publicPort.
     # The default value assumes that a port-forwarding to the websockets service on port 8085 has been created.
-    # Note: The port will only be used if the Ingress resource for WebModeler is disabled.
     publicPort: 8085
 
     ## @param webModeler.websockets.podAnnotations can be used to define extra websockets pod annotations. Supports templating (e.g., {{ .Release.Name }}).

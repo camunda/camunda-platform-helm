@@ -1985,13 +1985,13 @@ Gateway namespace and createGatewayResource are mutually exclusive.
 
 {{/*
 *******************************************************************************
-Ingress and Gateway API should not be enabled at the same time.
+Combined web Ingress and Gateway API are mutually exclusive.
 *******************************************************************************
 */}}
 {{- if and .Values.global.gateway.enabled .Values.global.ingress.enabled }}
   {{- $errorMessage := printf "[camunda][error] %s %s"
-      "Gateway API and Ingress cannot both be enabled at the same time."
-      "Please ensure that either \"global.gateway.enabled: true\" or \"global.ingress.enabled: true\" is set, but not both."
+      "Gateway API and combined web Ingress cannot both be enabled."
+      "Set either \"global.gateway.enabled: true\" or \"global.ingress.enabled: true\", not both. Gateway web routing can still use a separate orchestration gRPC Ingress."
   -}}
   {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
 {{- end }}
