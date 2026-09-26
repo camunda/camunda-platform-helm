@@ -254,12 +254,7 @@ func defaultRetryable(statusCode int, _ []byte, err error) bool {
 	return false
 }
 
-// servicePrincipalCreateRetryable extends defaultRetryable with the specific
-// 400 Request_BadRequest that Graph returns when a just-created appId isn't
-// yet visible to the /servicePrincipals endpoint — a known eventual-consistency
-// race, not a caller bug. Narrowly matched on error code + message to avoid
-// retrying legitimate 400s.
-func servicePrincipalCreateRetryable(statusCode int, body []byte, err error) bool {
+func servicePrincipalUpsertRetryable(statusCode int, body []byte, err error) bool {
 	if defaultRetryable(statusCode, body, err) {
 		return true
 	}
@@ -271,14 +266,7 @@ func servicePrincipalCreateRetryable(statusCode int, body []byte, err error) boo
 	return false
 }
 
-// postWithGraphRetry wraps graphPost with bounded exponential backoff. The
-// retryable predicate decides which non-2xx responses to retry; pass nil for
-// defaultRetryable. 2xx always short-circuits as success; anything the
-// predicate rejects is returned as a non-retryable error.
-//
-// On success it returns (body, statusCode, nil). On give-up it returns the
-// last status and body together with a wrapped error describing attempt count.
-func postWithGraphRetry(ctx context.Context, client *http.Client, token, path string, payload interface{}, op string, retryable retryPredicate) ([]byte, int, error) {
+func withGraphRetry(ctx context.Context, op string, retryable retryPredicate, request func() ([]byte, int, error)) ([]byte, int, error) {
 	if retryable == nil {
 		retryable = defaultRetryable
 	}
@@ -289,7 +277,7 @@ func postWithGraphRetry(ctx context.Context, client *http.Client, token, path st
 	)
 	backoff := retryBaseBackoff
 	for attempt := 1; attempt <= retryMaxAttempts; attempt++ {
-		body, statusCode, lastErr = graphPost(ctx, client, token, path, payload)
+		body, statusCode, lastErr = request()
 
 		if lastErr == nil && statusCode >= 200 && statusCode < 300 {
 			if attempt > 1 {
@@ -371,7 +359,7 @@ func graphPost(ctx context.Context, client *http.Client, token, path string, pay
 }
 
 // graphPatch performs a PATCH request to the Graph API.
-func graphPatch(ctx context.Context, client *http.Client, token, path string, payload interface{}) ([]byte, int, error) {
+func graphPatch(ctx context.Context, client *http.Client, token, path string, payload interface{}, headers http.Header) ([]byte, int, error) {
 	var bodyReader io.Reader
 	if payload != nil {
 		data, err := json.Marshal(payload)
@@ -390,6 +378,11 @@ func graphPatch(ctx context.Context, client *http.Client, token, path string, pa
 	}
 	req.Header.Set("Authorization", "Bearer "+token)
 	req.Header.Set("Content-Type", "application/json")
+	for name, values := range headers {
+		for _, value := range values {
+			req.Header.Add(name, value)
+		}
+	}
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -551,8 +544,9 @@ func rotateCredentials(ctx context.Context, client *http.Client, token, objectID
 		},
 	}
 
-	secretBody, statusCode, err := postWithGraphRetry(ctx, client, token,
-		fmt.Sprintf("/applications/%s/addPassword", objectID), addPayload, "addPassword", nil)
+	secretBody, statusCode, err := withGraphRetry(ctx, "addPassword", nil, func() ([]byte, int, error) {
+		return graphPost(ctx, client, token, fmt.Sprintf("/applications/%s/addPassword", objectID), addPayload)
+	})
 	if err != nil {
 		return "", fmt.Errorf("add password: %w", err)
 	}
@@ -573,57 +567,18 @@ func rotateCredentials(ctx context.Context, client *http.Client, token, objectID
 
 // ensureServicePrincipal ensures a service principal exists for the given appId.
 func ensureServicePrincipal(ctx context.Context, client *http.Client, token, appID string) error {
-	logging.Logger.Debug().Str("appId", appID).Msg("Checking for existing service principal")
-
-	// Check if service principal already exists.
-	path := fmt.Sprintf("/servicePrincipals?$filter=appId%%20eq%%20'%s'", url.PathEscape(appID))
-	body, err := graphGet(ctx, client, token, path)
+	path := fmt.Sprintf("/servicePrincipals(appId='%s')", url.PathEscape(appID))
+	_, statusCode, err := withGraphRetry(ctx, "upsertServicePrincipal", servicePrincipalUpsertRetryable, func() ([]byte, int, error) {
+		return graphPatch(ctx, client, token, path, map[string]string{}, http.Header{"Prefer": {"create-if-missing"}})
+	})
 	if err != nil {
-		return fmt.Errorf("search service principal: %w", err)
+		return fmt.Errorf("upsert service principal: %w", err)
+	}
+	if statusCode != http.StatusCreated && statusCode != http.StatusNoContent {
+		return fmt.Errorf("upsert service principal: unexpected status %d", statusCode)
 	}
 
-	var spResult struct {
-		Value []struct {
-			ID string `json:"id"`
-		} `json:"value"`
-	}
-	if err := json.Unmarshal(body, &spResult); err != nil {
-		return fmt.Errorf("parse service principal search: %w", err)
-	}
-
-	if len(spResult.Value) > 0 {
-		logging.Logger.Debug().Str("appId", appID).Str("spId", spResult.Value[0].ID).Msg("Service principal already exists")
-		return nil
-	}
-
-	// Create service principal. Graph's /servicePrincipals endpoint can lag
-	// behind a newly-created app registration and return 400 Request_BadRequest
-	// ("does not reference a valid application") for seconds after the app is
-	// visible via direct GET/POST on /applications/{objectId}. Retry narrowly
-	// on that specific error.
-	logging.Logger.Debug().Str("appId", appID).Msg("Creating new service principal")
-	spPayload := map[string]string{"appId": appID}
-	spBody, statusCode, err := postWithGraphRetry(ctx, client, token,
-		"/servicePrincipals", spPayload, "createServicePrincipal", servicePrincipalCreateRetryable)
-	if err != nil {
-		return fmt.Errorf("create service principal: %w", err)
-	}
-
-	var spCreateResult struct {
-		ID    string `json:"id"`
-		Error struct {
-			Code    string `json:"code"`
-			Message string `json:"message"`
-		} `json:"error"`
-	}
-	if err := json.Unmarshal(spBody, &spCreateResult); err != nil {
-		return fmt.Errorf("parse create service principal response: %w (status=%d)", err, statusCode)
-	}
-	if spCreateResult.ID == "" && spCreateResult.Error.Code != "" {
-		return fmt.Errorf("create service principal failed: %s: %s", spCreateResult.Error.Code, spCreateResult.Error.Message)
-	}
-
-	logging.Logger.Info().Str("appId", appID).Str("spId", spCreateResult.ID).Msg("Created service principal")
+	logging.Logger.Info().Str("appId", appID).Int("statusCode", statusCode).Msg("Ensured service principal")
 	return nil
 }
 
@@ -1090,7 +1045,7 @@ func UpdateRedirectURIs(ctx context.Context, opts RedirectURIOptions) error {
 		},
 	}
 
-	patchBody, statusCode, err := graphPatch(ctx, client, token, appPath, patchPayload)
+	patchBody, statusCode, err := graphPatch(ctx, client, token, appPath, patchPayload, nil)
 	if err != nil {
 		return fmt.Errorf("entra: PATCH redirect URIs: %w", err)
 	}
