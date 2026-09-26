@@ -16,6 +16,6 @@ export default defineConfig(
     fullyParallel: true,
     retries: 2,
     timeout: 10 * 60 * 1000,
-    workers: "100%",
+    workers: process.env.CI === "true" ? 4 : "100%",
   }),
 );
