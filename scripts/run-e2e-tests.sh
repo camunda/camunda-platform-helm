@@ -93,6 +93,7 @@ build_rerun_cmd() {
   [[ -n "$LOCAL_TEST_SUITE" ]] && cmd+=(--local-test-suite "$LOCAL_TEST_SUITE")
   [[ -n "$TEST_CHART_PATH" ]] && cmd+=(--test-chart-path "$TEST_CHART_PATH")
   [[ -n "$PLAYWRIGHT_PROJECT" ]] && cmd+=(--playwright-project "$PLAYWRIGHT_PROJECT")
+  [[ -n "$PHYSICAL_TENANT_ID_ARG" ]] && cmd+=(--physical-tenant-id "$PHYSICAL_TENANT_ID_ARG")
   # Without these a failing topology leg prints a rerun command that targets an
   # orchestration-only environment: it cannot reproduce the failure, and it would skip
   # Optimize again rather than reporting it.
@@ -127,6 +128,7 @@ Options:
   --mt                                        Run the mt tests
   --auth0                                     Run the auth0-smoke project (Auth0 OIDC scenario)
   --playwright-project PROJECT                Run a named Playwright project
+  --physical-tenant-id ID                     Physical Tenant selected by this topology leg
   --playwright-debug                          Enable Playwright API debug logs and traces
   --video MODE                                Record video: on, off, retain-on-failure, on-first-retry (default: off)
   --trace MODE                                Record trace: on, off, retain-on-failure, on-first-retry (default: off)
@@ -167,6 +169,7 @@ IS_RBA=false
 IS_MT=false
 IS_AUTH0=false
 PLAYWRIGHT_PROJECT=""
+PHYSICAL_TENANT_ID_ARG=""
 PLAYWRIGHT_DEBUG=false
 VIDEO_MODE=""
 TRACE_MODE=""
@@ -240,6 +243,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --playwright-project)
       PLAYWRIGHT_PROJECT="$2"
+      shift 2
+      ;;
+    --physical-tenant-id)
+      PHYSICAL_TENANT_ID_ARG="$2"
       shift 2
       ;;
     --playwright-debug)
@@ -401,6 +408,7 @@ export PLAYWRIGHT_HTML_REPORT="${TEST_SUITE_PATH}/playwright-report/${NAMESPACE}
 [[ -n "$RETRIES" ]] && export PLAYWRIGHT_E2E_RETRIES="$RETRIES"
 [[ -n "$LOCAL_TEST_SUITE" ]] && export PLAYWRIGHT_E2E_LOCAL_TEST_SUITE="$LOCAL_TEST_SUITE"
 [[ -n "$MODELER_CLUSTER_NAME_ARG" ]] && export MODELER_CLUSTER_NAME="$MODELER_CLUSTER_NAME_ARG"
+[[ -n "$PHYSICAL_TENANT_ID_ARG" ]] && export PHYSICAL_TENANT_ID="$PHYSICAL_TENANT_ID_ARG"
 
 log "$TEST_SUITE_PATH"
 log "Running smoke tests: $RUN_SMOKE_TESTS"
@@ -410,6 +418,10 @@ log "DEBUG: PLAYWRIGHT_HTML_REPORT='${PLAYWRIGHT_HTML_REPORT}'"
 
 # Build the rerun command for display on failure
 RERUN_CMD="$(build_rerun_cmd)"
+
+if [[ "$PLAYWRIGHT_PROJECT" == "physical-tenants" ]]; then
+  export REQUIRE_PHYSICAL_TENANTS_TEST_SUITE=true
+fi
 
 run_playwright_tests "$TEST_SUITE_PATH" "$SHOW_HTML_REPORT" "$SHARD_INDEX" "$SHARD_TOTAL" "blob" "$TEST_EXCLUDE" "$RUN_SMOKE_TESTS" "$PLAYWRIGHT_DEBUG" "$NAMESPACE" "$KUBE_CONTEXT" "$RERUN_CMD" "$IS_AUTH0" "$PLAYWRIGHT_PROJECT"
 

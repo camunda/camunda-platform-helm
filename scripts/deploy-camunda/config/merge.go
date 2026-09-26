@@ -161,6 +161,8 @@ type TestFlags struct {
 	// deploys to whichever cluster Modeler preselects and a leg targeting any other release asserts
 	// against a cluster that never received the records.
 	ModelerClusterName string
+	PlaywrightProject  string
+	PhysicalTenantID   string
 }
 
 // SelectionFlags holds selection + composition model flags.

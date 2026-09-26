@@ -104,8 +104,9 @@ type TopologyRelease struct {
 	// orchestration release can use distinct auth identifiers.
 	Env map[string]string `yaml:"env,omitempty" json:"env,omitempty"`
 
-	ModelerClusterID   string `yaml:"modeler-cluster-id,omitempty" json:"modelerClusterId,omitempty"`
-	ModelerClusterName string `yaml:"modeler-cluster-name,omitempty" json:"modelerClusterName,omitempty"`
+	ModelerClusterID            string `yaml:"modeler-cluster-id,omitempty" json:"modelerClusterId,omitempty"`
+	ModelerClusterName          string `yaml:"modeler-cluster-name,omitempty" json:"modelerClusterName,omitempty"`
+	AdditionalPlaywrightProject string `yaml:"additional-playwright-project,omitempty" json:"additionalPlaywrightProject,omitempty"`
 
 	// Serves names the NamespaceSuffix of the orchestration release whose
 	// exported records this release reads. Required for Role == "optimize",

@@ -291,3 +291,33 @@ func TestValidateChartRefVersionSpan(t *testing.T) {
 		})
 	}
 }
+
+func TestTopologyPlaywrightProject(t *testing.T) {
+	tests := []struct {
+		name string
+		leg  matrix.TopologyE2ELeg
+		want string
+	}{
+		{
+			name: "uses the topology project by default",
+			leg:  matrix.TopologyE2ELeg{PlaywrightProject: "topology-orchestration"},
+			want: "topology-orchestration",
+		},
+		{
+			name: "uses the dependent additional project when configured",
+			leg: matrix.TopologyE2ELeg{
+				PlaywrightProject:           "topology-orchestration",
+				AdditionalPlaywrightProject: "physical-tenants",
+			},
+			want: "physical-tenants",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := topologyPlaywrightProject(tt.leg); got != tt.want {
+				t.Fatalf("topologyPlaywrightProject() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}

@@ -1459,7 +1459,7 @@ jobs:
       run:
         shell: bash
     if: ${{ inputs.test-enabled && inputs.e2e-enabled && !inputs.skip-e2e && inputs.is-topology && inputs.flow == 'install' }}
-    timeout-minutes: 40
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       # One leg per Optimize instance can share an orchestration_suffix, so legs
@@ -1560,6 +1560,7 @@ jobs:
           optimize-namespace: "${{ matrix.optimize_suffix && format('{0}-{1}', steps.base-vars.outputs.namespace, matrix.optimize_suffix) || '' }}"
           optimize-context-path: "${{ matrix.optimize_context_path || '' }}"
           modeler-cluster-name: ${{ matrix.modeler_cluster_name }}
+          physical-tenant-id: ${{ matrix.tenant_id }}
           binary-artifact-name: ${{ inputs.binary-artifact-name }}
           deployment-ttl: ${{ env.CI_DEPLOYMENT_TTL }}
           auth: ${{ inputs.auth }}
@@ -1568,7 +1569,7 @@ jobs:
           shard-index: ${{ matrix.shard_index }}
           scenario: ${{ inputs.scenario }}
           run-smoke-tests: "false"
-          playwright-project: ${{ matrix.playwright_project }}
+          playwright-project: ${{ matrix.additional_playwright_project || matrix.playwright_project }}
           e2e-test-suite-token: ${{ steps.e2e-repository-token.outputs.token }}
           artifact-suffix: ${{ matrix.orchestration_suffix }}-${{ matrix.suite }}
       - name: Observe build status
