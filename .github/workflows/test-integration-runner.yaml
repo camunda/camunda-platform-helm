@@ -317,7 +317,6 @@ env:
   TEST_CREATE_DOCKER_LOGIN_SECRET: "TRUE"
   # OIDC.
   INITIAL_CLAIM_VALUE: ${{ inputs.initialClaimValue }}
-  # Mapping rule client IDs - defaults for Keycloak; overridden by entra.ensure-venom-app for OIDC.
   VENOM_CLIENT_ID: venom
   CONNECTORS_CLIENT_ID: connectors
   # Misc.
@@ -585,15 +584,6 @@ jobs:
           deploy-camunda entra update-redirect-uris \
             --ingress-host "$TEST_INGRESS_HOST" \
             --log-level info
-          deploy-camunda entra ensure-venom-app \
-            --namespace "$TEST_NAMESPACE" \
-            --log-level info | tee /tmp/entra-output.txt
-          # Capture VENOM_CLIENT_ID and CONNECTORS_CLIENT_ID from Go CLI stdout.
-          grep '^VENOM_CLIENT_ID=' /tmp/entra-output.txt >> "$GITHUB_ENV"
-          grep '^CONNECTORS_CLIENT_ID=' /tmp/entra-output.txt >> "$GITHUB_ENV"
-          # Also export for the current step.
-          eval "$(grep '^VENOM_CLIENT_ID=' /tmp/entra-output.txt)"
-          eval "$(grep '^CONNECTORS_CLIENT_ID=' /tmp/entra-output.txt)"
 
       - name: Helm - Install - Pre-install scenario tweaks
         timeout-minutes: 5
@@ -1032,12 +1022,6 @@ jobs:
           deploy-camunda entra update-redirect-uris \
             --ingress-host "$TEST_INGRESS_HOST" \
             --log-level info
-          deploy-camunda entra ensure-venom-app \
-            --namespace "$TEST_NAMESPACE" \
-            --log-level info | tee /tmp/entra-output.txt
-          # Capture VENOM_CLIENT_ID and CONNECTORS_CLIENT_ID from Go CLI stdout.
-          grep '^VENOM_CLIENT_ID=' /tmp/entra-output.txt >> "$GITHUB_ENV"
-          grep '^CONNECTORS_CLIENT_ID=' /tmp/entra-output.txt >> "$GITHUB_ENV"
 
       # NOTE: helm package + pre-upgrade scripts are handled by `deploy-camunda matrix run`.
       # The runner deploys directly from the chart directory (no `helm package` needed) and
