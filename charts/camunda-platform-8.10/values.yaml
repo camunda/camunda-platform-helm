@@ -1157,8 +1157,8 @@ identity:
     annotations: {}
     ## @param identity.serviceAccount.labels can be used to set the labels of the service account
     labels: {}
-    ## @param identity.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
-    automountServiceAccountToken: true
+    ## @param identity.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted. Identity does not call the Kubernetes API; set to true only if a sidecar or init container needs the default token.
+    automountServiceAccountToken: false
 
   ## @param identity.automountServiceAccountToken [nullable] can be used to override the automatic mounting of the service account token at the pod level. When unset, the ServiceAccount configuration is used.
   automountServiceAccountToken:
