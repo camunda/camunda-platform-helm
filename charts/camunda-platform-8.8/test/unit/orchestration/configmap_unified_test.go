@@ -327,6 +327,52 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedAuthOIDC() {
 	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
+func (s *ConfigmapTemplateTest) TestOIDCAudiencesIncludeWebModelerOnlyWhenEffectivelyEnabled() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestApplicationYamlShouldNotContainWebModelerAudienceWhenTopologySuppressesIt",
+			Values: map[string]string{
+				"global.identity.auth.enabled":                 "true",
+				"global.identity.service.url":                  "http://identity.example.com",
+				"global.topology.mode":                         "orchestration",
+				"orchestration.security.authentication.method": "oidc",
+				"webModeler.enabled":                           "true",
+				"webModeler.restapi.mail.fromAddress":          "noreply@example.com",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+
+				authConfig := configmap.Data["application.yaml"]
+				require.Contains(t, authConfig, `- "orchestration-api"`)
+				require.NotContains(t, authConfig, `- "web-modeler-api"`)
+			},
+		},
+		{
+			Name: "TestApplicationYamlShouldContainWebModelerAudienceWhenEffectivelyEnabled",
+			Values: map[string]string{
+				"global.identity.auth.enabled":                 "true",
+				"identity.enabled":                             "true",
+				"orchestration.security.authentication.method": "oidc",
+				"webModeler.enabled":                           "true",
+				"webModeler.restapi.mail.fromAddress":          "noreply@example.com",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+
+				authConfig := configmap.Data["application.yaml"]
+				require.Contains(t, authConfig, `- "orchestration-api"`)
+				require.Contains(t, authConfig, `- "web-modeler-api"`)
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
 func (s *ConfigmapTemplateTest) TestGroupsClaimConditionalRendering() {
 	testCases := []testhelpers.TestCase{
 		{

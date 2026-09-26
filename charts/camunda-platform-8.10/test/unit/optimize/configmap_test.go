@@ -422,7 +422,7 @@ func (s *ConfigMapTemplateTest) TestCamundaSecurityConfiguration() {
 			},
 		},
 		{
-			Name: "TestAudiencesCoverLoginClientApiAndHub",
+			Name: "TestAudiencesOmitHubWhenWebModelerAndCamundaHubDisabled",
 			Values: map[string]string{
 				"identity.enabled":             "true",
 				"optimize.enabled":             "true",
@@ -434,15 +434,36 @@ func (s *ConfigMapTemplateTest) TestCamundaSecurityConfiguration() {
 				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 
 				authConfig := configmap.Data["application-ccsm.yaml"]
+				s.Require().Contains(authConfig, "audiences:\n          - \"optimize\"\n          - \"optimize-api\"\n")
+				s.Require().NotContains(authConfig, `- "web-modeler-api"`)
+			},
+		},
+		{
+			Name: "TestAudiencesCoverLoginClientApiAndHubWhenWebModelerEnabled",
+			Values: map[string]string{
+				"identity.enabled":                    "true",
+				"optimize.enabled":                    "true",
+				"global.identity.auth.enabled":        "true",
+				"webModeler.enabled":                  "true",
+				"webModeler.restapi.mail.fromAddress": "noreply@example.com",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+				authConfig := configmap.Data["application-ccsm.yaml"]
 				s.Require().Contains(authConfig, "audiences:\n          - \"optimize\"\n          - \"optimize-api\"\n          - \"web-modeler-api\"")
 			},
 		},
 		{
-			Name: "TestCamundaHubAudienceOverridesWebModeler",
+			Name: "TestCamundaHubAudienceOverridesWebModelerWhenCamundaHubEnabled",
 			Values: map[string]string{
 				"identity.enabled":                                  "true",
 				"optimize.enabled":                                  "true",
 				"global.identity.auth.enabled":                      "true",
+				"camundaHub.enabled":                                "true",
+				"webModeler.restapi.mail.fromAddress":               "noreply@example.com",
 				"global.identity.auth.camundaHub.clientApiAudience": "camunda-hub-api",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
