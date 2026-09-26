@@ -1594,15 +1594,14 @@ required by camunda.modeler.clusters (introduced in 8.10 Hub/WebModeler).
 */}}
 {{- define "camundaPlatform.defaultWebModelerCluster" -}}
     {{- $hub := include "camundaHub.values" . | fromYaml -}}
-{{- if or (eq (include "camundaPlatform.identityEnabled" .) "true") (eq (include "camundaHub.webModelerEnabled" .) "true") }}
+{{- if eq (include "camundaPlatform.identityEnabled" .) "true" }}
 - id: "management-cluster"
-  name: "hub"
+  name: "Management Identity"
   version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" (dict "image" ($hub.image))) | quote }}
   authentication: {{ include "webModeler.authConfigValue" . | quote }}
   authorizations:
     enabled: false
   components:
-  {{- if eq (include "camundaPlatform.identityEnabled" .) "true" }}
   {{- $proto := (lower .Values.identity.readinessProbe.scheme) }}
   {{- $baseURLInternal := printf "%s://%s.%s:%v" $proto (include "identity.fullname" .) .Release.Namespace .Values.identity.service.metricsPort }}
   - name: Identity
@@ -1611,17 +1610,6 @@ required by camunda.modeler.clusters (introduced in 8.10 Hub/WebModeler).
     urls:
       webapp: {{ include "camundaPlatform.identityExternalURL" . | quote }}
       readiness: {{ printf "%s%s" $baseURLInternal .Values.identity.readinessProbe.probePath | quote }}
-  {{- end }}
-  {{- if eq (include "camundaHub.webModelerEnabled" .) "true" }}
-  {{- $proto := (lower $hub.restapi.readinessProbe.scheme) }}
-  {{- $baseURLInternal := printf "%s://%s.%s:%v" $proto (include "webModeler.restapi.fullname" .) .Release.Namespace $hub.restapi.service.managementPort }}
-  - name: WebModeler
-    type: hub
-    version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" (dict "image" ($hub.image))) | quote }}
-    urls:
-      webapp: {{ include "camundaPlatform.webModelerExternalURL" . | quote }}
-      readiness: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list $hub.contextPath $hub.restapi.readinessProbe.probePath)) | quote }}
-  {{- end }}
 {{- end }}
 {{- if or (eq (include "camundaPlatform.orchestrationEnabled" .) "true") (eq (include "camundaPlatform.optimizeEnabled" .) "true") (eq (include "camundaPlatform.connectorsEnabled" .) "true") }}
 - id: "default-cluster"
