@@ -105,3 +105,4 @@ spec:
         - name: console-configuration
           configMap:
             name: camunda-platform-test-console-configuration
+

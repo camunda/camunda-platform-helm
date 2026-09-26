@@ -14,3 +14,4 @@ metadata:
 apiVersion: v1
 data:
   gateway-log4j2.xml: |
+
