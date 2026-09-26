@@ -643,7 +643,10 @@ global:
       type: "KEYCLOAK"
 
       ## @param global.identity.auth.publicIssuerUrl defines the publicly-reachable token issuer URL.
-      # External Keycloak: browser-facing issuer URL used when issuer is not set. Recommended to set explicitly.
+      # External Keycloak: browser-facing issuer URL used when issuer is not set, auto-derived from
+      #   global.identity.keycloak.url if omitted (unless global.identity.keycloak.internal is true,
+      #   which needs it set explicitly since keycloak.url is then a cluster-internal address).
+      #   Recommended to set explicitly.
       # External OIDC: required when issuer is not set (generic OIDC pattern). Not consulted if issuer is set.
       publicIssuerUrl: ""
 
