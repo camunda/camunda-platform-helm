@@ -170,6 +170,22 @@ func TestCamundaHubUpgradePhaseLabelCannotBeOverridden(t *testing.T) {
 	}
 }
 
+func TestCamundaHubUpgradePhaseLabelCannotBeHiddenByPartialOverride(t *testing.T) {
+	chartPath, err := filepath.Abs("../../../")
+	require.NoError(t, err)
+
+	_, err = helm.RenderTemplateE(t, &helm.Options{SetValues: map[string]string{
+		"camundaHub.enabled":                                      "true",
+		"camundaHub.restapi.mail.fromAddress":                     "example@example.com",
+		"camundaHub.restapi.podLabels.hub-label":                  "hub-value",
+		"identity.enabled":                                        "true",
+		"orchestration.enabled":                                   "false",
+		"webModeler.restapi.podLabels.camunda\\.io/upgrade-phase": "normal",
+	}}, chartPath, "camunda-platform-test", []string{"templates/web-modeler/deployment-restapi.yaml"})
+
+	require.ErrorContains(t, err, "camunda.io/upgrade-phase is reserved")
+}
+
 func TestCamundaHubUpgradePhaseRendersGitOpsWarning(t *testing.T) {
 	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
