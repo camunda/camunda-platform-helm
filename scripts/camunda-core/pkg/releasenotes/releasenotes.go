@@ -67,11 +67,7 @@ func AppStripLastSegment(appVersion string) string {
 
 // HelmCLIVersion returns the camunda.io/helmCLIVersion annotation value for a
 // chart whose Camunda minor is appVersion ("8.8", "8.10", ...), given the
-// .tool-versions helm pin. Clamps by minor:
-//
-//   - 8.0–8.8: v3-only. If the pin is v4, clamp to 3.20.2; else the pin.
-//   - 8.9:     transitional. If the pin is v4, list "3.20.2,<pin>"; else the pin.
-//   - 8.10+:   the pin as-is.
+// .tool-versions helm pin.
 func HelmCLIVersion(appVersion, toolVersionsPin string) string {
 	isV4 := strings.HasPrefix(toolVersionsPin, "4")
 	if major, minor, ok := splitMajorMinor(appVersion); ok && major == 8 {
@@ -81,7 +77,7 @@ func HelmCLIVersion(appVersion, toolVersionsPin string) string {
 				return "3.20.2"
 			}
 			return toolVersionsPin
-		case minor == 9:
+		case minor == 9 || minor == 10:
 			if isV4 {
 				return "3.20.2," + toolVersionsPin
 			}
