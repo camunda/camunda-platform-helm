@@ -52,7 +52,7 @@ See [Camunda 8 reference architectures](https://docs.camunda.io/docs/next/self-m
 
 ## Requirements
 
-- [Helm](https://helm.sh/) >= 3.9.x
+- [Helm](https://helm.sh/) >= 3.10.x
 - Kubernetes >= 1.20+
 - Minimum cluster requirements include the following to run this chart with default settings.
   - All of these settings are configurable.
