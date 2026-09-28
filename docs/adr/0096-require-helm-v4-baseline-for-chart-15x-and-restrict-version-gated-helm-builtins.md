@@ -1,4 +1,4 @@
-# Require Helm v4 baseline for chart 15.x (8.10) and later, and restrict version-gated Helm built-ins
+# Support Helm CLI v3 and v4 for chart 15.x (8.10), and restrict version-gated Helm built-ins
 
 - Status: proposed
 - Date: 2026-08-18
@@ -6,52 +6,74 @@
 
 ## Context and Problem Statement
 
-Chart 15.x (Camunda 8.10) already ships a top-of-render guard
-(`charts/camunda-platform-8.10/templates/common/constraints.tpl:9-10`) intended to fail
-`helm template`/`helm install` when `.Capabilities.HelmVersion.Version` is below `4.0.0`. This
-guard only runs if the chart parses at all; chart 8.10 separately calls the Helm 3.17.0+ built-in
-`toYamlPretty` directly with no version guard, so on Helm CLIs older than 3.17.0 parsing fails
-before the guard executes (see Decision Outcome item 1 for the current-behavior gap this leaves).
-This was implemented in [#6156](https://github.com/camunda/camunda-platform-helm/pull/6156)
-(issue [#6137](https://github.com/camunda/camunda-platform-helm/issues/6137)) as part of the
-product-hub epic [camunda/product-hub#3555](https://github.com/camunda/product-hub/issues/3555)
-("Self-Managed: Helm 4"), which sets 8.9 (chart 14.x) as the last Helm-v3-supported minor and
-8.10+ as Helm-v4-only. That epic records the product/business decision and customer-facing
-commitments; no repo-level ADR captures the chart-engineering decision or the precedent it sets.
+Chart 15.x (Camunda 8.10) was made Helm CLI v4-only under the product-hub epic
+[camunda/product-hub#3555](https://github.com/camunda/product-hub/issues/3555) ("Self-Managed:
+Helm 4"), which set 8.9 (chart 14.x) as the last Helm-v3-supported minor and 8.10+ as Helm-v4-only,
+with Helm v3 security fixes then due to end on 2026-11-11. A top-of-render guard in
+`charts/camunda-platform-8.10/templates/common/constraints.tpl` failed every render on a Helm CLI
+older than 4.0.0 ([#6156](https://github.com/camunda/camunda-platform-helm/pull/6156), issue
+[#6137](https://github.com/camunda/camunda-platform-helm/issues/6137)), and an earlier revision of
+this ADR ([#6887](https://github.com/camunda/camunda-platform-helm/pull/6887)) recorded that v4
+baseline.
 
-Separately, charts 8.8 and 8.9 carry a helper, `camundaPlatform.toYamlPretty`
+[camunda/self-managed-experience#29](https://github.com/camunda/self-managed-experience/issues/29)
+reverses the baseline: chart 15.x supports Helm v3 and v4. Upstream Helm extended Helm v3 security
+fixes to 2027-02-10 ([Helm v3 end of life](https://helm.sh/blog/helm-v3-end-of-life/)), so the
+original rationale for dropping Helm v3 at 8.10 no longer holds, and users who have not moved to
+Helm v4 need to install 8.10, and upgrade to it from 8.9, with Helm v3
+([#7340](https://github.com/camunda/camunda-platform-helm/issues/7340)). Supporting Helm v3 again
+raises two questions: which Helm v3 releases a chart line supports, and how template code avoids
+depending on Helm features newer than that floor.
+
+Charts 8.8 and 8.9 carry a helper, `camundaPlatform.toYamlPretty`
 (`charts/camunda-platform-8.8/templates/common/_utilz.tpl:24-30` and
 `charts/camunda-platform-8.9/templates/common/_utilz.tpl:24-30`), that exists only because
 Helm's own built-in `toYamlPretty` function was introduced in Helm 3.17.0 — calling it directly
 on an older 3.x CLI is a parse-time "function not defined" error, not a graceful runtime
 fallback. The helper works around this with `tpl` (to defer evaluation past parse time) plus
-`semverCompare ">=3.17.0" ... else toYaml`. Chart 8.10 dropped the helper entirely once the v4
-floor made the fallback branch unreachable ([#6139](https://github.com/camunda/camunda-platform-helm/issues/6139)).
+`semverCompare ">=3.17.0" ... else toYaml`. Chart 8.10 dropped the helper when it adopted the v4
+floor ([#6169](https://github.com/camunda/camunda-platform-helm/pull/6169), issue
+[#6139](https://github.com/camunda/camunda-platform-helm/issues/6139)) and called `toYamlPretty`
+directly in `templates/orchestration/_statefulset.tpl`, so Helm v3 releases older than 3.17.0 failed
+at parse time, before any guard ran.
 
 This is a distinct failure class from the CLI-major-version question: Helm's built-in function
 surface is not stable even within v3, so any new template code that reaches for a built-in can
 unknowingly introduce a floor higher than the chart's declared minimum — discovered only when a
 user on an older-but-still-supported Helm CLI hits a parse error.
 
+The same holds for Helm behavior. Helm releases before 3.10 are built with Go older than 1.18, whose
+`text/template` evaluates every `and` argument instead of short-circuiting. Charts 12.x–15.x rely on
+short-circuit `and` (for example `charts/camunda-platform-8.10/templates/common/_helpers.tpl:1814`),
+so Helm 3.9 fails on them with nil-pointer errors, while Helm 3.10.0, the first release built with
+Go 1.18, renders them ([#7340](https://github.com/camunda/camunda-platform-helm/issues/7340),
+[#7341](https://github.com/camunda/camunda-platform-helm/issues/7341)). The 12.x, 13.x and 14.x READMEs
+nevertheless listed Helm 3.9 as their minimum.
+
 ### Applicability by version
 
-- Chart 15.x (8.10) and later: Helm CLI **must** be v4.0.0 or later. The `constraints.tpl` guard
-  enforces this today, verified against the supported predecessor CLI, Helm 3.20.2; it does not
-  reach CLIs older than 3.17.0, which fail earlier at template-parse time (Decision Outcome
-  item 1).
-- Chart 14.x (8.9) and earlier: existing Helm v3 support continues per the epic's stated
-  deprecation window (v3 bug fixes end 2026-07-08, security fixes end 2026-11-11). Per
-  [#5921](https://github.com/camunda/camunda-platform-helm/issues/5921), 8.8 and earlier test
-  Helm v3 only, 8.9 tests both v3 and v4, 8.10+ tests v4 only.
+- Chart 15.x (8.10): Helm CLI v3 (3.10 or later) and Helm CLI v4. On Helm v3 the chart warns
+  instead of failing (Decision Outcome item 1).
+- Chart 14.x (8.9) and earlier: existing Helm v3 support continues (Decision Outcome item 2), and
+  charts 12.x (8.7), 13.x (8.8) and 14.x (8.9) share the 3.10 floor.
+  [#5921](https://github.com/camunda/camunda-platform-helm/issues/5921) scoped CI to Helm v3 only
+  for 8.8 and earlier and to Helm v3 and v4 for 8.9; 8.10 also tests both.
+- Chart lines after 15.x: this ADR does not set their Helm CLI baseline; that is left to a later
+  decision.
 - The built-in-function restriction (Decision Outcome, item 3) applies to all currently
   maintained chart lines going forward, independent of the v3/v4 line.
 
 ## Decision Drivers
 
-- **Helm v3 EOL:** upstream bug fixes stop 2026-07-08, security fixes stop 2026-11-11 — shipping
-  new chart lines that depend on a soon-unpatched CLI conflicts with the "enterprise-grade"
-  positioning stated in the epic.
-- **Test/support matrix cost:** maintaining parallel v3/v4 CI coverage indefinitely splits QA
+- **Helm v3 support window:** upstream Helm v3 security fixes end on 2027-02-10, extended from
+  November 2026, and 3.22 is the final Helm v3 minor
+  ([Helm v3 end of life](https://helm.sh/blog/helm-v3-end-of-life/),
+  [#7346](https://github.com/camunda/camunda-platform-helm/issues/7346)). The v4-only baseline was
+  set against the earlier date.
+- **Users on Helm v3:** users who have not moved to Helm v4 need to install 8.10, and upgrade to it
+  from 8.9, with Helm v3; the v4 guard blocked both
+  ([#7340](https://github.com/camunda/camunda-platform-helm/issues/7340)).
+- **Test/support matrix cost:** every supported Helm CLI adds CI coverage to maintain, splitting QA
   capacity across an aging and a current CLI ([#5921](https://github.com/camunda/camunda-platform-helm/issues/5921)).
 - **Landmine prevention:** the `toYamlPretty` wrapper is a correct but fragile pattern (deferred
   `tpl` evaluation to dodge parse-time errors). It is non-obvious, easy to forget, and each new
@@ -61,28 +83,39 @@ user on an older-but-still-supported Helm CLI hits a parse error.
 
 ## Considered Options
 
-- **Continue implicit dual v3/v4 support indefinitely** — rejected: rides past upstream EOL,
-  keeps the CI matrix doubled, and does nothing to stop new version-gated built-ins from
-  accumulating.
+- **Keep the Helm v4 floor for chart 15.x** — rejected: it rests on Helm v3 security fixes ending in
+  November 2026, which upstream moved to 2027-02-10, and it blocks users who have not moved to
+  Helm v4 from installing 8.10 or upgrading to it from 8.9.
+- **Support Helm v3 implicitly, without a stated floor, notice, or targeted tests** — rejected: the
+  implicit floor was already wrong (the 12.x, 13.x and 14.x READMEs listed Helm 3.9, which cannot render
+  those charts), chart 15.x's direct `toYamlPretty` call raises it to 3.17.0, and it does nothing to
+  stop new version-gated built-ins from accumulating.
 - **Auto-detect and branch around every new built-in as it's introduced** — rejected: this is the
   status quo (`toYamlPretty`) and it does not scale; each occurrence is fragile, uses a
   non-obvious `tpl`-deferral trick, and is discovered reactively rather than prevented.
-- **Hard CLI-version floor per chart line, plus a policy against new version-gated built-ins
-  (chosen)** — makes the floor explicit and testable (`constraints.tpl` + unit test), and shifts
-  the function-availability problem from "wrap it" to "don't introduce it unless justified."
+- **Stated, tested Helm CLI support per chart line, plus a policy against new version-gated
+  built-ins (chosen)** — makes the floor explicit and testable (chart README plus the unit-test
+  Helm matrix), warns Helm v3 users instead of failing, and shifts the function-availability problem
+  from "wrap it" to "don't introduce it unless justified."
 
 ## Decision Outcome
 
-1. Chart 15.x (8.10) and later MUST require Helm CLI >= 4.0.0. A top-of-render `fail` guard for
-   this is already implemented in `constraints.tpl` and covered by
-   `charts/camunda-platform-8.10/test/unit/common/constraints_test.go`, verified against the
-   supported predecessor CLI, Helm 3.20.2. Chart 8.10 also calls the built-in `toYamlPretty`
-   directly (`templates/orchestration/statefulset.yaml`) with no version guard; on a Helm CLI
-   older than 3.17.0 this fails at template-parse time with `function "toYamlPretty" not defined`
-   before the guard ever executes, not with the guard's intended v4 message. This is a known gap
-   in the current implementation, not a claim that the guard covers the full `<4.0.0` range.
+Chart 15.x (8.10) supports Helm CLI v3 (3.10 or later) and Helm CLI v4, and new template code does
+not depend on a Helm built-in or behavior newer than its chart line's floor. The following
+constraints are normative:
+
+1. Chart 15.x (8.10) MUST support Helm CLI v3 (3.10 or later) and Helm CLI v4. A render MUST NOT
+   fail because of the Helm CLI major version. On Helm v3 the chart emits a non-blocking
+   `[camunda][warning]` through `camunda.constraints.warnings`, shown in NOTES and in the
+   `<release>-warnings` ConfigMap, that Helm v3 security fixes end on 2027-02-10 and that users
+   should upgrade to Helm v4 before then. The warning replaces the `fail` guard from
+   [#6156](https://github.com/camunda/camunda-platform-helm/pull/6156)
+   ([#7340](https://github.com/camunda/camunda-platform-helm/issues/7340)).
 2. Chart 14.x (8.9) and earlier MAY continue to support Helm v3 for the remainder of its
-   documented support window; no retroactive floor change.
+   documented support window. Charts 12.x (8.7), 13.x (8.8) and 14.x (8.9) document Helm 3.10 as their
+   minimum, the oldest release that renders them
+   ([#7341](https://github.com/camunda/camunda-platform-helm/issues/7341)), and chart 14.x emits the
+   same Helm v3 warning as 15.x ([#7342](https://github.com/camunda/camunda-platform-helm/issues/7342)).
 3. New template code MUST NOT depend on a Helm built-in function or behavior introduced later
    than the oldest Helm version the chart line currently claims to support. If no alternative
    exists, the usage MUST be wrapped so the unsupported-version path either fails with a clear
@@ -90,43 +123,88 @@ user on an older-but-still-supported Helm CLI hits a parse error.
    the wrapper MUST have a unit test exercising both the supported and unsupported paths against a
    deterministic Helm-version matrix (one CLI at or above the floor, one below the relevant
    function/floor boundary) rather than whichever Helm binary happens to be on `PATH` in CI.
-   `constraints_test.go` does not yet demonstrate this end-to-end — CI currently runs it only
-   against the repository's pinned Helm 4 CLI — so it is cited here as the guard-pattern precedent
-   to follow, not as an existing both-path test.
+   `camundaPlatform.toYamlPretty` is the fallback precedent: on Helm 3.17.0 and later it calls
+   `toYamlPretty` through `tpl`, and on older CLIs it falls back to `toYaml`. For charts 14.x and
+   15.x, the unit-test Helm matrix
+   ([#7344](https://github.com/camunda/camunda-platform-helm/issues/7344)) runs the Helm v3 warning
+   test and the Orchestration StatefulSet scheduling tests that render through the wrapper on Helm
+   3.10.3 and 3.22.0, and fails when a test selector matches no passing test. The regular unit job
+   runs the same tests on Helm v4.
 4. When a chart line's CLI floor rises enough to make a version-gated wrapper's fallback branch
-   unreachable, the wrapper MUST be removed rather than kept for symmetry (as done for
-   `toYamlPretty` in 8.10 — [#6139](https://github.com/camunda/camunda-platform-helm/issues/6139)).
+   unreachable, the wrapper MUST be removed rather than kept for symmetry. For
+   `camundaPlatform.toYamlPretty` in charts 13.x–15.x, the 3.10 floor is below the wrapper's 3.17.0
+   boundary, so the fallback is reachable and the wrapper stays:
+   [#7340](https://github.com/camunda/camunda-platform-helm/issues/7340) reinstates it in 15.x,
+   reverting its removal in [#6169](https://github.com/camunda/camunda-platform-helm/pull/6169)
+   ([#6139](https://github.com/camunda/camunda-platform-helm/issues/6139)).
 
-Applies first to chart 15.x (8.10), landed via [#6156](https://github.com/camunda/camunda-platform-helm/pull/6156)
-and [#6139](https://github.com/camunda/camunda-platform-helm/issues/6139). Item 3 is a forward
-rule for all chart lines from this ADR's acceptance date.
+Applies to chart 15.x (8.10) through the sub-issues of
+[camunda/self-managed-experience#29](https://github.com/camunda/self-managed-experience/issues/29):
+[#7340](https://github.com/camunda/camunda-platform-helm/issues/7340) replaces the guard with the
+warning and reinstates the wrapper;
+[#7343](https://github.com/camunda/camunda-platform-helm/issues/7343) runs the `orchestration-tls`
+install and `component-persistence-upgrade` upgrade-from-14.x integration scenarios on Helm v3, and
+the rest of the 15.x CI runs Helm v4;
+[#7344](https://github.com/camunda/camunda-platform-helm/issues/7344) adds the unit-test Helm matrix
+for charts 14.x and 15.x; [#7345](https://github.com/camunda/camunda-platform-helm/issues/7345)
+records Helm v3 and v4 in the `camunda.io/helmCLIVersion` annotation of 15.x releases; and
+[#7346](https://github.com/camunda/camunda-platform-helm/issues/7346) keeps the Helm v3 CI pins on
+the final v3 line, 3.22.x, through Renovate.
+[#7341](https://github.com/camunda/camunda-platform-helm/issues/7341) and
+[#7342](https://github.com/camunda/camunda-platform-helm/issues/7342) apply item 2 to charts 12.x, 13.x and
+14.x. Item 3 is a forward rule for all chart lines from this ADR's acceptance date.
 
 ### Positive Consequences
 
+- Users who have not moved to Helm v4 can install chart 15.x, and upgrade to it from 14.x, with
+  Helm v3 ([#7340](https://github.com/camunda/camunda-platform-helm/issues/7340),
+  [#7343](https://github.com/camunda/camunda-platform-helm/issues/7343)).
+- Helm v3 users of charts 14.x and 15.x get a non-blocking notice that Helm v3 security fixes end on
+  2027-02-10 ([#7340](https://github.com/camunda/camunda-platform-helm/issues/7340),
+  [#7342](https://github.com/camunda/camunda-platform-helm/issues/7342)).
 - A single, testable CLI-support statement per chart line replaces an implicit, function-by-
   function floor.
 - Removes latent parse-time failure risk from template code that unknowingly assumes a newer
   Helm built-in than the chart's stated floor.
-- Shrinks the CI matrix for 8.10+ to a single Helm CLI version ([#5921](https://github.com/camunda/camunda-platform-helm/issues/5921)).
+- Item 3's both-path test runs in CI: version-gated template code in charts 14.x and 15.x is tested
+  on pinned Helm CLIs below and above the relevant boundary, not on whichever Helm is on `PATH`
+  ([#7344](https://github.com/camunda/camunda-platform-helm/issues/7344)).
 
 ### Negative Consequences
 
-- Real breaking change for 8.10+ adopters still on Helm v3; requires the migration guide and
-  comms tracked in [camunda-docs#8846](https://github.com/camunda/camunda-docs/issues/8846) and
-  the epic's release-notes/blog-post commitments.
+- Helm v3 CI coverage for 15.x has to be maintained alongside Helm v4: two pinned integration scenarios and
+  the unit-test Helm matrix ([#7343](https://github.com/camunda/camunda-platform-helm/issues/7343),
+  [#7344](https://github.com/camunda/camunda-platform-helm/issues/7344)), with Helm v3 pins that
+  Renovate keeps on the final v3 line ([#7346](https://github.com/camunda/camunda-platform-helm/issues/7346)).
+- Helm v3 and v4 render the same 14.x and 15.x manifests except for blank lines, so golden files are
+  byte-compared on Helm v4 only, and Helm v3 unit coverage is limited to selected tests that decode
+  rendered objects ([#7344](https://github.com/camunda/camunda-platform-helm/issues/7344)).
+- The warning does not block: chart 15.x still renders on Helm v3 after 2027-02-10, when Helm v3
+  stops receiving security fixes. This ADR does not decide when chart 15.x drops Helm v3.
+- Below Helm 3.10, a render fails with a template nil-pointer error, not a message that names the
+  floor ([#7340](https://github.com/camunda/camunda-platform-helm/issues/7340),
+  [#7341](https://github.com/camunda/camunda-platform-helm/issues/7341)).
+- The reversal contradicts published statements: the docs
+  ([camunda-docs#8859](https://github.com/camunda/camunda-docs/pull/8859)), release notes, and blog
+  posts said that 8.10 requires Helm v4. Their correction is tracked in
+  [camunda/self-managed-experience#29](https://github.com/camunda/self-managed-experience/issues/29),
+  outside this repository.
 - Item 3 is a review-time policy, not a tooling-enforced one today — no lint step currently flags
   a newly introduced Helm built-in against the chart's declared floor. Reviewers must know the
   floor and check new template code against it manually until such tooling exists.
-- Chart 8.10's own `toYamlPretty` call is itself an unguarded instance of the pattern item 3
-  restricts: on Helm CLIs older than 3.17.0, `helm template`/`helm install` fails at parse time
-  with `function "toYamlPretty" not defined` instead of the `constraints.tpl` guard's intended v4
-  message. No fix is scoped in this ADR; it is recorded here as a known gap in the current
-  implementation.
 
 ## Links
 
-- Epic: [camunda/product-hub#3555](https://github.com/camunda/product-hub/issues/3555) — product/business decision and customer-facing commitments this ADR's item 1-2 records.
-- [#6137](https://github.com/camunda/camunda-platform-helm/issues/6137) / [#6156](https://github.com/camunda/camunda-platform-helm/pull/6156) — the `constraints.tpl` fail guard.
-- [#6139](https://github.com/camunda/camunda-platform-helm/issues/6139) — `toYamlPretty` compat wrapper removal, the motivating example for item 3.
+- [camunda/self-managed-experience#29](https://github.com/camunda/self-managed-experience/issues/29) — the decision to support Helm v3 and v4 in chart 15.x, and its implementation checklist across the chart, docs, and communications.
+- Epic: [camunda/product-hub#3555](https://github.com/camunda/product-hub/issues/3555) — the original product decision for a Helm v4-only 8.10; camunda/self-managed-experience#29 tracks amending its release notes and validation criteria.
+- [#7340](https://github.com/camunda/camunda-platform-helm/issues/7340) — chart 15.x: Helm v3 warning instead of the v4 guard, and the `toYamlPretty` wrapper reinstated.
+- [#7341](https://github.com/camunda/camunda-platform-helm/issues/7341) — charts 12.x, 13.x and 14.x: documented Helm minimum corrected from 3.9 to 3.10.
+- [#7342](https://github.com/camunda/camunda-platform-helm/issues/7342) — chart 14.x: the same Helm v3 warning.
+- [#7343](https://github.com/camunda/camunda-platform-helm/issues/7343) — chart 15.x: Helm v3 integration scenarios.
+- [#7344](https://github.com/camunda/camunda-platform-helm/issues/7344) — unit-test Helm matrix for charts 14.x and 15.x, the test harness for item 3.
+- [#7345](https://github.com/camunda/camunda-platform-helm/issues/7345) — release tooling records Helm v3 and v4 for chart 15.x.
+- [#7346](https://github.com/camunda/camunda-platform-helm/issues/7346) — Helm v3 CI pins on 3.22.x, updated by Renovate.
+- [#6137](https://github.com/camunda/camunda-platform-helm/issues/6137) / [#6156](https://github.com/camunda/camunda-platform-helm/pull/6156) — the Helm v4 `constraints.tpl` fail guard that #7340 replaces.
+- [#6139](https://github.com/camunda/camunda-platform-helm/issues/6139) / [#6169](https://github.com/camunda/camunda-platform-helm/pull/6169) — `toYamlPretty` compat wrapper removal from 8.10, the motivating example for item 3, which #7340 reverts.
 - [#5921](https://github.com/camunda/camunda-platform-helm/issues/5921) — CI matrix scoping per chart line.
 - [ADR-0081](0081-expose-helm-v4-compatibility-options-as-explicit-values.md) — related but distinct: opt-in Helm v4-compatible *rendering* flags for charts 8.6-8.9, not a CLI-version floor.
