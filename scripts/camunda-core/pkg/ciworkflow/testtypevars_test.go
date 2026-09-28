@@ -188,6 +188,113 @@ func TestComputeUnitBlock(t *testing.T) {
 	}
 }
 
+const helmCompatConfig = sampleConfig + `  helmCompat:
+    versions:
+      - "3.10.3"
+      - "3.22.0"
+    tests:
+      - name: Helm version constraint
+        package: common
+        run: 'TestConstraintTemplate/TestHelmVersionConstraint'
+      - name: Orchestration scheduling
+        package: orchestration
+        run: 'TestStatefulSetTemplate/TestDifferentValuesInputs/^TestContainerSet(NodeSelector|Affinity)$'
+`
+
+func TestComputeUnitHelmCompatMatrix(t *testing.T) {
+	root := writeConfig(t, "camunda-platform-8.10", helmCompatConfig, false)
+	got, err := Compute(TestTypeVarsInput{ChartDir: "camunda-platform-8.10", Flow: "install", RepoRoot: root})
+	if err != nil {
+		t.Fatalf("Compute: %v", err)
+	}
+	gotJSON, err := got.UnitHelmCompatMatrixJSON()
+	if err != nil {
+		t.Fatalf("UnitHelmCompatMatrixJSON: %v", err)
+	}
+	wantJSON := `[{"name":"Helm 3.10.3 - Helm version constraint","helmVersion":"3.10.3","package":"common","run":"TestConstraintTemplate/TestHelmVersionConstraint"},` +
+		`{"name":"Helm 3.10.3 - Orchestration scheduling","helmVersion":"3.10.3","package":"orchestration","run":"TestStatefulSetTemplate/TestDifferentValuesInputs/^TestContainerSet(NodeSelector|Affinity)$"},` +
+		`{"name":"Helm 3.22.0 - Helm version constraint","helmVersion":"3.22.0","package":"common","run":"TestConstraintTemplate/TestHelmVersionConstraint"},` +
+		`{"name":"Helm 3.22.0 - Orchestration scheduling","helmVersion":"3.22.0","package":"orchestration","run":"TestStatefulSetTemplate/TestDifferentValuesInputs/^TestContainerSet(NodeSelector|Affinity)$"}]`
+	if gotJSON != wantJSON {
+		t.Errorf("UnitHelmCompatMatrixJSON =\n  %s\nwant\n  %s", gotJSON, wantJSON)
+	}
+	if len(got.UnitMatrix) != 3 {
+		t.Errorf("UnitMatrix len = %d, want 3", len(got.UnitMatrix))
+	}
+}
+
+func TestComputeUnitHelmCompatAbsent(t *testing.T) {
+	root := writeConfig(t, "camunda-platform-8.10", sampleConfig, false)
+	got, err := Compute(TestTypeVarsInput{ChartDir: "camunda-platform-8.10", Flow: "install", RepoRoot: root})
+	if err != nil {
+		t.Fatalf("Compute: %v", err)
+	}
+	if len(got.UnitHelmCompatMatrix) != 0 {
+		t.Errorf("UnitHelmCompatMatrix = %+v, want empty", got.UnitHelmCompatMatrix)
+	}
+	gotJSON, err := got.UnitHelmCompatMatrixJSON()
+	if err != nil {
+		t.Fatalf("UnitHelmCompatMatrixJSON: %v", err)
+	}
+	if gotJSON != "[]" {
+		t.Errorf("UnitHelmCompatMatrixJSON = %s, want []", gotJSON)
+	}
+}
+
+func TestComputeUnitHelmCompatInvalid(t *testing.T) {
+	validTest := `
+    tests:
+      - name: Helm version constraint
+        package: common
+        run: TestConstraintTemplate/TestHelmVersionConstraint
+`
+	tests := []struct {
+		name    string
+		block   string
+		wantErr string
+	}{
+		{
+			name:    "versions without tests",
+			block:   "\n    versions:\n      - \"3.10.3\"\n",
+			wantErr: "needs both versions and tests",
+		},
+		{
+			name:    "tests without versions",
+			block:   validTest,
+			wantErr: "needs both versions and tests",
+		},
+		{
+			name:    "version with v prefix",
+			block:   "\n    versions:\n      - v3.10.3" + validTest,
+			wantErr: `"v3.10.3" is not a MAJOR.MINOR.PATCH Helm release`,
+		},
+		{
+			name:    "version without patch",
+			block:   "\n    versions:\n      - \"3.22\"" + validTest,
+			wantErr: `"3.22" is not a MAJOR.MINOR.PATCH Helm release`,
+		},
+		{
+			name:    "test without run",
+			block:   "\n    versions:\n      - \"3.10.3\"\n    tests:\n      - name: Broken\n        package: common\n",
+			wantErr: "needs name, package and run",
+		},
+		{
+			name:    "test with invalid run pattern",
+			block:   "\n    versions:\n      - \"3.10.3\"\n    tests:\n      - name: Broken\n        package: common\n        run: 'TestConstraintTemplate/(TestHelm'\n",
+			wantErr: `unit.helmCompat.tests entry "Broken": invalid -run pattern`,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			root := writeConfig(t, "camunda-platform-8.10", sampleConfig+"  helmCompat:"+tc.block, false)
+			_, err := Compute(TestTypeVarsInput{ChartDir: "camunda-platform-8.10", Flow: "install", RepoRoot: root})
+			if err == nil || !strings.Contains(err.Error(), tc.wantErr) {
+				t.Fatalf("Compute error = %v, want it to contain %q", err, tc.wantErr)
+			}
+		})
+	}
+}
+
 func TestComputeMissingConfig(t *testing.T) {
 	root := t.TempDir()
 	_, err := Compute(TestTypeVarsInput{ChartDir: "camunda-platform-8.10", Flow: "install", RepoRoot: root})
@@ -237,6 +344,26 @@ func TestEmit(t *testing.T) {
 	}
 	if !strings.Contains(out, `unit-matrix=[{"name":"Management"`) {
 		t.Errorf("out missing unit-matrix\n--- out ---\n%s", out)
+	}
+	if !strings.Contains(out, "unit-helm-compat-matrix=[]\n") {
+		t.Errorf("out missing empty unit-helm-compat-matrix\n--- out ---\n%s", out)
+	}
+}
+
+func TestEmitUnitHelmCompatMatrix(t *testing.T) {
+	root := writeConfig(t, "camunda-platform-8.10", helmCompatConfig, false)
+	v, err := Compute(TestTypeVarsInput{ChartDir: "camunda-platform-8.10", Flow: "install", RepoRoot: root})
+	if err != nil {
+		t.Fatalf("Compute: %v", err)
+	}
+	outFile := filepath.Join(t.TempDir(), "out")
+	if err := v.Emit(&ghactions.Writer{Path: filepath.Join(t.TempDir(), "env")}, &ghactions.Writer{Path: outFile}); err != nil {
+		t.Fatalf("Emit: %v", err)
+	}
+	out := readFile(t, outFile)
+	want := `unit-helm-compat-matrix=[{"name":"Helm 3.10.3 - Helm version constraint","helmVersion":"3.10.3","package":"common",`
+	if !strings.Contains(out, want) {
+		t.Errorf("out missing %q\n--- out ---\n%s", want, out)
 	}
 }
 

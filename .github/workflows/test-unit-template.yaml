@@ -40,6 +40,7 @@ jobs:
     outputs:
       unitTestEnabled: ${{ steps.test-type-vars.outputs.unitTestEnabled }}
       unitTestMatrix: ${{ steps.test-type-vars.outputs.unitTestMatrix }}
+      unitTestHelmCompatMatrix: ${{ steps.test-type-vars.outputs.unitTestHelmCompatMatrix }}
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       with:
@@ -50,9 +51,12 @@ jobs:
       with:
         chart-dir: "${{ inputs.camunda-helm-dir }}"
     - name: ℹ️ Print outputs ℹ️
+      env:
+        UNIT_TEST_HELM_COMPAT_MATRIX: ${{ steps.test-type-vars.outputs.unitTestHelmCompatMatrix }}
       run: |
         echo "unitTestEnabled: ${{ steps.test-type-vars.outputs.unitTestEnabled }}"
         echo "unitTestMatrix: ${{ steps.test-type-vars.outputs.unitTestMatrix }}"
+        echo "unitTestHelmCompatMatrix: ${UNIT_TEST_HELM_COMPAT_MATRIX}"
 
   unitScripts:
     name: UnitTest Scripts
@@ -152,3 +156,77 @@ jobs:
         secret_vault_jwt_path: ${{ secrets.VAULT_JWT_PATH }}
         secret_vault_jwt_role: ${{ secrets.VAULT_JWT_ROLE }}
         secret_vault_jwt_audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
+
+  unitHelmCompat:
+    name: Unit - ${{ matrix.test.name }}
+    if: ${{ needs.init.outputs.unitTestEnabled == 'true' && needs.init.outputs.unitTestHelmCompatMatrix != '[]' }}
+    needs: init
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        test: ${{ fromJson(needs.init.outputs.unitTestHelmCompatMatrix) }}
+    env:
+      chartPath: "charts/${{ inputs.camunda-helm-dir }}"
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Setup deploy-camunda
+        uses: ./.github/actions/setup-deploy-camunda
+      - name: Install tools
+        uses: ./.github/actions/install-tool-versions
+        with:
+          tools: |
+            golang
+            helm
+      - name: Configure curl and wget
+        uses: ./.github/actions/setup-curl
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+            ~/.asdf/installs/golang/*/packages/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+      - name: Add helm repos
+        run: |
+          make helm.repos-add
+      - name: Get Helm dependency
+        run: |
+          make helm.dependency-update
+      - name: Install Helm ${{ matrix.test.helmVersion }}
+        env:
+          HELM_VERSION: ${{ matrix.test.helmVersion }}
+        run: |
+          tarball="helm-v${HELM_VERSION}-linux-amd64.tar.gz"
+          curl -fsSL --retry 8 --retry-all-errors --retry-max-time 180 --connect-timeout 15 "https://get.helm.sh/${tarball}" -o "${RUNNER_TEMP}/${tarball}"
+          curl -fsSL --retry 8 --retry-all-errors --retry-max-time 180 --connect-timeout 15 "https://get.helm.sh/${tarball}.sha256sum" -o "${RUNNER_TEMP}/${tarball}.sha256sum"
+          (cd "${RUNNER_TEMP}" && sha256sum --check "${tarball}.sha256sum")
+          mkdir -p "${RUNNER_TEMP}/helm-v${HELM_VERSION}"
+          tar -xzf "${RUNNER_TEMP}/${tarball}" -C "${RUNNER_TEMP}/helm-v${HELM_VERSION}" --strip-components=1 linux-amd64/helm
+          echo "${RUNNER_TEMP}/helm-v${HELM_VERSION}" >> "$GITHUB_PATH"
+      - name: ⭐️ Test ⭐️
+        env:
+          CHART_DIR: ${{ inputs.camunda-helm-dir }}
+          HELM_VERSION: ${{ matrix.test.helmVersion }}
+          TEST_PACKAGE: ${{ matrix.test.package }}
+          TEST_RUN: ${{ matrix.test.run }}
+        run: |
+          deploy-camunda ci unit-test \
+            --chart-dir "${CHART_DIR}" \
+            --package "${TEST_PACKAGE}" \
+            --run "${TEST_RUN}" \
+            --helm-version "${HELM_VERSION}"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          job_name: "${{ github.job }}/${{ matrix.test.name }}"
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_jwt_path: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwt_role: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwt_audience: ${{ secrets.VAULT_JWT_AUDIENCE }}

@@ -150,6 +150,7 @@ func TestCITestTypeVarsWiring(t *testing.T) {
 	for _, want := range []string{
 		"unit-enabled=true\n",
 		`unit-matrix=[{"name":"core","packages":"test/unit/camunda"}]` + "\n",
+		"unit-helm-compat-matrix=[]\n",
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("GITHUB_OUTPUT missing %q; got:\n%s", want, out)
@@ -164,6 +165,55 @@ func TestCITestTypeVarsRequiresChartDir(t *testing.T) {
 	cmd.SilenceErrors = true
 	if err := cmd.Execute(); err == nil {
 		t.Fatal("expected error when --chart-dir is missing")
+	}
+}
+
+func TestCIUnitTestWiring(t *testing.T) {
+	repo := t.TempDir()
+	chartDir := "camunda-platform-8.10"
+	writeFile(t, filepath.Join(repo, "charts", chartDir, "go.mod"), "module example.com/chart\n\ngo 1.21\n")
+	writeFile(t, filepath.Join(repo, "charts", chartDir, "test", "unit", "common", "common_test.go"),
+		"package common\n\nimport \"testing\"\n\nfunc TestTop(t *testing.T) {\n\tt.Run(\"TestCase\", func(t *testing.T) {})\n}\n")
+	helmDir := t.TempDir()
+	writeFile(t, filepath.Join(helmDir, "helm"), "#!/bin/sh\necho v3.10.3\n")
+	if err := os.Chmod(filepath.Join(helmDir, "helm"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", helmDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+	t.Chdir(repo)
+
+	var stdout strings.Builder
+	root := NewRootCommand()
+	root.AddCommand(newCICommand())
+	root.SetOut(&stdout)
+	root.SetArgs([]string{
+		"ci", "unit-test",
+		"--chart-dir", chartDir,
+		"--package", "common",
+		"--run", "TestTop/TestCase",
+		"--helm-version", "3.10.3",
+	})
+	if err := root.Execute(); err != nil {
+		t.Fatalf("execute: %v\n%s", err, stdout.String())
+	}
+	for _, want := range []string{
+		"helm v3.10.3 (",
+		"--- PASS: TestTop/TestCase",
+		`1 passed test(s) match -run "TestTop/TestCase"`,
+	} {
+		if !strings.Contains(stdout.String(), want) {
+			t.Errorf("stdout missing %q; got:\n%s", want, stdout.String())
+		}
+	}
+}
+
+func TestCIUnitTestRequiresRun(t *testing.T) {
+	cmd := newCIUnitTestCommand()
+	cmd.SetArgs([]string{"--chart-dir", "camunda-platform-8.10", "--package", "common"})
+	cmd.SilenceUsage = true
+	cmd.SilenceErrors = true
+	if err := cmd.Execute(); err == nil || !strings.Contains(err.Error(), `required flag(s) "run" not set`) {
+		t.Fatalf("error = %v, want missing run error", err)
 	}
 }
 
