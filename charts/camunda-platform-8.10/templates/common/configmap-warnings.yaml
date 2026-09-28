@@ -1,4 +1,4 @@
-{{- $warnings := include "camunda.constraints.warnings" . | trim -}}
+{{- $warnings := regexReplaceAll "\n[[:space:]]*\n" (include "camunda.constraints.warnings" . | trim) "\n" -}}
 {{- if $warnings }}
 apiVersion: v1
 kind: ConfigMap
