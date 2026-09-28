@@ -159,7 +159,7 @@ jobs:
 
   unitHelmCompat:
     name: Unit - ${{ matrix.test.name }}
-    if: ${{ needs.init.outputs.unitTestEnabled == 'true' && needs.init.outputs.unitTestHelmCompatMatrix != '[]' }}
+    if: ${{ needs.init.outputs.unitTestEnabled == 'true' && needs.init.outputs.unitTestHelmCompatMatrix != '' && needs.init.outputs.unitTestHelmCompatMatrix != '[]' }}
     needs: init
     runs-on: ubuntu-latest
     strategy:
