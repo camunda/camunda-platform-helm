@@ -176,10 +176,7 @@ var reservedTopologyEnvKeys = []string{
 // reported so callers can name it in errors, and safe is false when the pinned
 // value is not a plain filename (so it must not be joined into a path).
 func releaseChartPaths(repoRoot, parentChartDir, parentVersion string, r TopologyRelease) (chartVersion, releaseChartDir, chartFullSetupDir string, safe bool) {
-	chartVersion = r.ChartVersion
-	if chartVersion == "" {
-		chartVersion = parentVersion
-	}
+	chartVersion = releaseChartVersion(parentVersion, r)
 	safe = isPlainFilename(chartVersion)
 	releaseChartDir = parentChartDir
 	if safe {
@@ -187,6 +184,13 @@ func releaseChartPaths(repoRoot, parentChartDir, parentVersion string, r Topolog
 	}
 	chartFullSetupDir = filepath.Join(releaseChartDir, "test", "integration", "scenarios", "chart-full-setup")
 	return chartVersion, releaseChartDir, chartFullSetupDir, safe
+}
+
+func releaseChartVersion(parentVersion string, r TopologyRelease) string {
+	if r.ChartVersion == "" {
+		return parentVersion
+	}
+	return r.ChartVersion
 }
 
 // Validate enforces Topology's load-time invariants:

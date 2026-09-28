@@ -162,6 +162,16 @@ on:
         required: false
         default: ""
         type: string
+      chart-versions:
+        description: "Comma-separated chart versions the scenario deploys, for cache result recording"
+        required: false
+        default: ""
+        type: string
+      e2e-test-suite-version:
+        description: "@camunda/e2e-test-suite version the e2e jobs install (empty installs latest)"
+        required: false
+        default: ""
+        type: string
 
 concurrency:
   group: ${{ github.workflow }}-${{ inputs.pr-number }}-${{ inputs.shortname }}-${{ inputs.flows }}-${{ inputs.camunda-version }}-${{ inputs.auth }}-${{ inputs.exclude }}-${{ inputs.platforms }}-${{ github.ref_name || github.ref }}
@@ -252,6 +262,8 @@ jobs:
       topology-smoke-matrix: ${{ inputs.topology-smoke-matrix }}
       helm-version: ${{ inputs.helm-version }}
       pr-head-sha: ${{ inputs.pr-head-sha }}
+      chart-versions: ${{ inputs.chart-versions }}
+      e2e-test-suite-version: ${{ inputs.e2e-test-suite-version }}
       camunda-version: ${{ inputs.camunda-version }}
       vault-secret-mapping: |
         secret/data/products/distribution/ci ENTRA_APP_CLIENT_ID;

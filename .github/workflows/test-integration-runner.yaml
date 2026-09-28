@@ -184,6 +184,16 @@ on:
         required: false
         default: ""
         type: string
+      chart-versions:
+        description: "Comma-separated chart versions the scenario deploys, for cache result recording"
+        required: false
+        default: ""
+        type: string
+      e2e-test-suite-version:
+        description: "@camunda/e2e-test-suite version the e2e jobs install (empty installs latest)"
+        required: false
+        default: ""
+        type: string
       camunda-version:
         description: "Camunda version (e.g., 8.9) for cache result recording"
         required: false
@@ -1336,6 +1346,7 @@ jobs:
           exclude: ${{ inputs.exclude }}
           test-stage: after-install
           shard-index: ${{ matrix.shard_index }}
+          e2e-test-suite-version: ${{ inputs.e2e-test-suite-version }}
           scenario: ${{ inputs.scenario }}
           run-smoke-tests: ${{ matrix.suite == 'smoke' }}
       - name: Observe build status
@@ -1426,6 +1437,7 @@ jobs:
           exclude: ${{ inputs.exclude }}
           test-stage: after-install
           shard-index: "1"
+          e2e-test-suite-version: ${{ inputs.e2e-test-suite-version }}
           scenario: ${{ inputs.scenario }}
           run-smoke-tests: "false"
       - name: Observe build status
@@ -1566,6 +1578,7 @@ jobs:
           auth-data: ${{ inputs.auth-data }}
           test-stage: after-install
           shard-index: ${{ matrix.shard_index }}
+          e2e-test-suite-version: ${{ inputs.e2e-test-suite-version }}
           scenario: ${{ inputs.scenario }}
           run-smoke-tests: "false"
           playwright-project: ${{ matrix.playwright_project }}
@@ -1660,6 +1673,7 @@ jobs:
           exclude: ${{ inputs.exclude }}
           test-stage: after-upgrade
           shard-index: ${{ matrix.shardIndex }}
+          e2e-test-suite-version: ${{ inputs.e2e-test-suite-version }}
           scenario: ${{ inputs.scenario }}
       - name: Observe build status
         if: always()
@@ -1765,7 +1779,9 @@ jobs:
         !contains(needs.*.result, 'failure') &&
         !contains(needs.*.result, 'cancelled') &&
         inputs.pr-head-sha != '' &&
-        inputs.camunda-version != ''
+        inputs.camunda-version != '' &&
+        inputs.chart-versions != '' &&
+        inputs.e2e-test-suite-version != ''
       }}
     runs-on: ubuntu-latest
     permissions:
@@ -1796,6 +1812,8 @@ jobs:
             --version "${{ inputs.camunda-version }}" \
             --shortname "${{ inputs.shortname }}" \
             --flow "${{ inputs.flow }}" \
+            --chart-versions "${{ inputs.chart-versions }}" \
+            --e2e-test-suite-version "${{ inputs.e2e-test-suite-version }}" \
             --repo-root "${{ github.workspace }}" \
             --target-url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 

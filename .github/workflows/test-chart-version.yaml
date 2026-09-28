@@ -102,6 +102,7 @@ jobs:
       camunda-versions: ${{ steps.generate-chart-versions.outputs.camunda-versions }}
       workspace: ${{ github.workspace }}
       pr-head-sha: ${{ steps.resolve-pr-sha.outputs.pr-head-sha }}
+      e2e-test-suite-version: ${{ steps.resolve-e2e-suite.outputs.version }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -115,6 +116,17 @@ jobs:
           manual-scenario: ${{ github.event.inputs.scenario || 'none' }}
           manual-flow: ${{ github.event.inputs.flows || 'none' }}
           tier: ${{ github.event_name == 'pull_request' && '1' || '' }}
+
+      - name: Resolve e2e test suite version
+        id: resolve-e2e-suite
+        run: |
+          version=$(npm view @camunda/e2e-test-suite version)
+          if [[ -z "$version" ]]; then
+            echo "::error::Could not resolve the @camunda/e2e-test-suite version"
+            exit 1
+          fi
+          echo "E2E test suite version: ${version}"
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
 
       # Resolve PR HEAD SHA for cache operations.
       # - pull_request: directly available from event context
@@ -166,6 +178,7 @@ jobs:
           ANNOTATED=$(echo '${{ steps.generate-chart-versions.outputs.matrix }}' | \
             /tmp/ci-result-cache annotate-matrix \
               --sha "${{ steps.resolve-pr-sha.outputs.pr-head-sha }}" \
+              --e2e-test-suite-version "${{ steps.resolve-e2e-suite.outputs.version }}" \
               --repo-root "${{ github.workspace }}")
           echo "matrix=${ANNOTATED}" >> "$GITHUB_OUTPUT"
 
@@ -286,6 +299,8 @@ jobs:
       helm-version: ${{ matrix.helmVersion }}
       cached: ${{ matrix.cached == 'true' }}
       pr-head-sha: ${{ needs.init.outputs.pr-head-sha }}
+      chart-versions: ${{ matrix.chartVersions }}
+      e2e-test-suite-version: ${{ needs.init.outputs.e2e-test-suite-version }}
 
   # Aggregation gate job that fails if any CI job fails.
   # Add this job's name ("CI Gate") to the ruleset's required status checks

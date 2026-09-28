@@ -43,17 +43,20 @@ Usage:
 }
 
 var (
-	annotateSHA      string
-	annotateRepoRoot string
-	annotateTTL      time.Duration
+	annotateSHA             string
+	annotateRepoRoot        string
+	annotateTTL             time.Duration
+	annotateE2ESuiteVersion string
 )
 
 func init() {
 	annotateMatrixCmd.Flags().StringVar(&annotateSHA, "sha", "", "PR HEAD commit SHA to check cached results against (required)")
 	annotateMatrixCmd.Flags().StringVar(&annotateRepoRoot, "repo-root", ".", "Repository root directory")
 	annotateMatrixCmd.Flags().DurationVar(&annotateTTL, "ttl", cache.DefaultTTL, "Maximum age of cached results")
+	annotateMatrixCmd.Flags().StringVar(&annotateE2ESuiteVersion, "e2e-test-suite-version", "", "@camunda/e2e-test-suite version this run executes (required)")
 
 	_ = annotateMatrixCmd.MarkFlagRequired("sha")
+	_ = annotateMatrixCmd.MarkFlagRequired("e2e-test-suite-version")
 }
 
 // matrixJSON represents the top-level matrix structure: {"include": [...]}
@@ -99,7 +102,6 @@ func runAnnotateMatrix(cmd *cobra.Command, args []string) error {
 		return json.NewEncoder(os.Stdout).Encode(matrix)
 	}
 
-	// Pre-compute content hashes per version (avoid recomputing for each entry).
 	hashCache := make(map[string]string)
 
 	cachedCount := 0
@@ -107,23 +109,23 @@ func runAnnotateMatrix(cmd *cobra.Command, args []string) error {
 		version, _ := entry["version"].(string)
 		shortname, _ := entry["shortname"].(string)
 		flow, _ := entry["flow"].(string)
+		chartVersions, _ := entry["chartVersions"].(string)
 
-		if version == "" || shortname == "" || flow == "" {
+		if version == "" || shortname == "" || flow == "" || chartVersions == "" {
 			matrix.Include[i]["cached"] = "false"
 			continue
 		}
 
-		// Get or compute the content hash for this version.
-		contentHash, ok := hashCache[version]
+		contentHash, ok := hashCache[chartVersions]
 		if !ok {
 			var hashErr error
-			contentHash, hashErr = hash.Compute(annotateRepoRoot, version)
+			contentHash, hashErr = hash.Compute(annotateRepoRoot, hash.ChartVersionsFromCSV(chartVersions), annotateE2ESuiteVersion)
 			if hashErr != nil {
-				fmt.Fprintf(os.Stderr, "Warning: cannot compute hash for version %s (%v), marking as uncached\n", version, hashErr)
+				fmt.Fprintf(os.Stderr, "Warning: cannot compute hash for chart versions %s (%v), marking as uncached\n", chartVersions, hashErr)
 				matrix.Include[i]["cached"] = "false"
 				continue
 			}
-			hashCache[version] = contentHash
+			hashCache[chartVersions] = contentHash
 		}
 
 		context := cache.StatusContext(version, shortname, flow)

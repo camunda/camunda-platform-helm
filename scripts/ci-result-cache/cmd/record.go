@@ -37,12 +37,14 @@ it persists across queue ejections.`,
 }
 
 var (
-	recordSHA       string
-	recordVersion   string
-	recordShortname string
-	recordFlow      string
-	recordRepoRoot  string
-	recordTargetURL string
+	recordSHA             string
+	recordVersion         string
+	recordShortname       string
+	recordFlow            string
+	recordRepoRoot        string
+	recordChartVersions   string
+	recordE2ESuiteVersion string
+	recordTargetURL       string
 )
 
 func init() {
@@ -51,16 +53,20 @@ func init() {
 	recordCmd.Flags().StringVar(&recordShortname, "shortname", "", "Scenario shortname (e.g., oske) (required)")
 	recordCmd.Flags().StringVar(&recordFlow, "flow", "", "Flow name (e.g., install, upgrade-minor) (required)")
 	recordCmd.Flags().StringVar(&recordRepoRoot, "repo-root", ".", "Repository root directory")
+	recordCmd.Flags().StringVar(&recordChartVersions, "chart-versions", "", "Comma-separated chart versions the scenario deploys (e.g., 8.10,8.9) (required)")
+	recordCmd.Flags().StringVar(&recordE2ESuiteVersion, "e2e-test-suite-version", "", "@camunda/e2e-test-suite version the scenario runs (required)")
 	recordCmd.Flags().StringVar(&recordTargetURL, "target-url", "", "URL to the CI run (optional, shown in GitHub UI)")
 
 	_ = recordCmd.MarkFlagRequired("sha")
 	_ = recordCmd.MarkFlagRequired("version")
 	_ = recordCmd.MarkFlagRequired("shortname")
 	_ = recordCmd.MarkFlagRequired("flow")
+	_ = recordCmd.MarkFlagRequired("chart-versions")
+	_ = recordCmd.MarkFlagRequired("e2e-test-suite-version")
 }
 
 func runRecord(cmd *cobra.Command, args []string) error {
-	contentHash, err := hash.Compute(recordRepoRoot, recordVersion)
+	contentHash, err := hash.Compute(recordRepoRoot, hash.ChartVersionsFromCSV(recordChartVersions), recordE2ESuiteVersion)
 	if err != nil {
 		return fmt.Errorf("computing content hash: %w", err)
 	}
