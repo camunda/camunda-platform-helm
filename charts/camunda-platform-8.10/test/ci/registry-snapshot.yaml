@@ -742,9 +742,9 @@ integration:
               values-file: test/integration/companion-values/elasticsearch.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
-        - name: documentstore-minio
+        - name: documentstore-s3-compatible
           enabled: true
-          shortname: docmi
+          shortname: docs3
           auth: basic
           flow: install
           platforms:
@@ -757,7 +757,7 @@ integration:
           identity: basic
           persistence: elasticsearch
           features:
-            - documentstore-minio
+            - documentstore-s3-compatible
           skip-e2e: true
           dependencies:
             - chart: elastic/elasticsearch
@@ -768,15 +768,16 @@ integration:
               repo-url: https://helm.elastic.co
           pre-install:
             fixtures:
-              - documentstore-minio.yaml
+              - documentstore-s3-compatible.yaml
             description: |
-              Provisions namespace-local MinIO with ephemeral storage, test credentials,
-              and a Job creating the documents bucket before document-store acceptance checks.
+              Provisions a namespace-local S3-compatible store (Garage) with ephemeral
+              storage, test credentials, and the documents bucket before document-store
+              acceptance checks.
           post-deploy:
-            script: post-deploy-documentstore-minio.sh
+            script: post-deploy-documentstore-s3-compatible.sh
             description: |
               Verifies document upload, download, and deletion through Orchestration and
-              validates a presigned MinIO URL before and after deleting the document.
+              validates a presigned S3-compatible URL before and after deleting the document.
         - name: secretstore-file
           enabled: true
           shortname: secfl

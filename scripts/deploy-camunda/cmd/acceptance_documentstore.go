@@ -31,7 +31,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const minioDocumentEndpoint = "http://documentstore-minio:9000"
+const s3CompatibleDocumentEndpoint = "http://documentstore-s3:9000"
 
 type documentStoreAcceptanceOptions struct {
 	namespace, release, kubeContext string
@@ -40,8 +40,8 @@ type documentStoreAcceptanceOptions struct {
 func newDocumentStoreAcceptanceCommand() *cobra.Command {
 	var opts documentStoreAcceptanceOptions
 	command := &cobra.Command{
-		Use:   "documentstore-minio",
-		Short: "Verify document operations against the MinIO CI fixture",
+		Use:   "documentstore-s3-compatible",
+		Short: "Verify document operations against the S3-compatible CI fixture",
 		Args:  cobra.NoArgs,
 		RunE: func(command *cobra.Command, _ []string) error {
 			if strings.TrimSpace(opts.namespace) == "" || strings.TrimSpace(opts.release) == "" {
@@ -67,14 +67,14 @@ func newDocumentStoreAcceptanceCommand() *cobra.Command {
 func runDocumentStoreAcceptance(ctx context.Context, opts documentStoreAcceptanceOptions, deps acceptanceDependencies) error {
 	ctx, cancel := context.WithTimeout(ctx, 8*time.Minute)
 	defer cancel()
-	args := kubectlArgs(opts.kubeContext, "-n", opts.namespace, "wait", "--for=condition=complete", "--timeout=300s", "job/documentstore-minio-bucket")
+	args := kubectlArgs(opts.kubeContext, "-n", opts.namespace, "wait", "--for=condition=available", "--timeout=300s", "deployment/documentstore-s3")
 	if output, err := deps.runCommand(ctx, "kubectl", args...); err != nil {
-		return fmt.Errorf("MinIO bucket initialization failed: %w: %s", err, output)
+		return fmt.Errorf("S3-compatible store not ready: %w: %s", err, output)
 	}
 	ports := make([]string, 0, 2)
 	for _, target := range []struct{ resource, port string }{
 		{"service/" + opts.release + "-zeebe-gateway", ":8080"},
-		{"service/documentstore-minio", ":9000"},
+		{"service/documentstore-s3", ":9000"},
 	} {
 		process, err := deps.startForward(ctx, []string{"-n", opts.namespace, "port-forward", target.resource, target.port})
 		if err != nil {
@@ -91,15 +91,15 @@ func runDocumentStoreAcceptance(ctx context.Context, opts documentStoreAcceptanc
 	if err := verifyDocumentStore(ctx, deps.doHTTP, apiURL, "127.0.0.1:"+ports[1]); err != nil {
 		return err
 	}
-	fmt.Fprintln(deps.out, "MinIO document upload, API download, presigned download, and deletion verified.")
+	fmt.Fprintln(deps.out, "S3-compatible document upload, API download, presigned download, and deletion verified.")
 	return nil
 }
 
-func verifyDocumentStore(ctx context.Context, doHTTP func(*http.Request) (*http.Response, error), apiURL, minioAddress string) error {
+func verifyDocumentStore(ctx context.Context, doHTTP func(*http.Request) (*http.Response, error), apiURL, storeAddress string) error {
 	payload := []byte("Camunda Helm S3-compatible document-store acceptance\n")
 	var upload bytes.Buffer
 	writer := multipart.NewWriter(&upload)
-	part, err := writer.CreateFormFile("file", "minio-acceptance.txt")
+	part, err := writer.CreateFormFile("file", "documentstore-acceptance.txt")
 	if err != nil {
 		return err
 	}
@@ -162,21 +162,21 @@ func verifyDocumentStore(ctx context.Context, doHTTP func(*http.Request) (*http.
 	if err != nil {
 		return errors.New("document link is not a valid URL")
 	}
-	if signedURL.Scheme+"://"+signedURL.Host != minioDocumentEndpoint || signedURL.User != nil ||
+	if signedURL.Scheme+"://"+signedURL.Host != s3CompatibleDocumentEndpoint || signedURL.User != nil ||
 		!strings.HasPrefix(signedURL.Path, "/documents/") || signedURL.Query().Get("X-Amz-Signature") == "" {
-		return errors.New("document link must be a signed path-style URL at the configured MinIO endpoint")
+		return errors.New("document link must be a signed path-style URL at the configured S3-compatible endpoint")
 	}
-	minioHost := signedURL.Host
-	signedURL.Host = minioAddress
-	requestMinio := func() ([]byte, int, error) {
+	storeHost := signedURL.Host
+	signedURL.Host = storeAddress
+	requestStore := func() ([]byte, int, error) {
 		request, err := http.NewRequestWithContext(ctx, http.MethodGet, signedURL.String(), nil)
 		if err != nil {
 			return nil, 0, err
 		}
-		request.Host = minioHost
+		request.Host = storeHost
 		return documentStoreResponse(doHTTP, request)
 	}
-	body, status, err = requestMinio()
+	body, status, err = requestStore()
 	if err != nil || status != http.StatusOK || !bytes.Equal(body, payload) {
 		return fmt.Errorf("presigned download: expected HTTP 200 and original content, got %d (error: %v)", status, err)
 	}
@@ -189,9 +189,9 @@ func verifyDocumentStore(ctx context.Context, doHTTP func(*http.Request) (*http.
 	if err != nil || status != http.StatusNotFound {
 		return fmt.Errorf("deleted document download: expected HTTP 404, got %d (error: %v)", status, err)
 	}
-	_, status, err = requestMinio()
+	_, status, err = requestStore()
 	if err != nil || status != http.StatusNotFound {
-		return fmt.Errorf("deleted MinIO object: expected HTTP 404, got %d (error: %v)", status, err)
+		return fmt.Errorf("deleted S3 object: expected HTTP 404, got %d (error: %v)", status, err)
 	}
 	return nil
 }

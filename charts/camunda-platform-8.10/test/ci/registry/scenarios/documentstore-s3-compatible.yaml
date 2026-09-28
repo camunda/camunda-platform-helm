@@ -1,4 +1,4 @@
-name: documentstore-minio
+name: documentstore-s3-compatible
 auth: basic
 flows:
   - install
@@ -6,14 +6,14 @@ identity: basic
 persistence: elasticsearch
 skip-e2e: true
 features:
-  - documentstore-minio
+  - documentstore-s3-compatible
 exclude:
   - orchestration-grpc
 platforms:
   - gke
 infra-type:
   gke: distroci
-pre-install: documentstore-minio
-post-deploy: documentstore-minio-verify
+pre-install: documentstore-s3-compatible
+post-deploy: documentstore-s3-compatible-verify
 dependencies:
   - elasticsearch

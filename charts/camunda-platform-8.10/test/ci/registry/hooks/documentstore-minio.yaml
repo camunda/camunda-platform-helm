@@ -1,5 +1,0 @@
-fixtures:
-  - documentstore-minio.yaml
-description: |
-  Provisions namespace-local MinIO with ephemeral storage, test credentials,
-  and a Job creating the documents bucket before document-store acceptance checks.

@@ -1,0 +1,6 @@
+fixtures:
+  - documentstore-s3-compatible.yaml
+description: |
+  Provisions a namespace-local S3-compatible store (Garage) with ephemeral
+  storage, test credentials, and the documents bucket before document-store
+  acceptance checks.

@@ -15,7 +15,7 @@
 
 set -euo pipefail
 
-deploy-camunda acceptance documentstore-minio \
+deploy-camunda acceptance documentstore-s3-compatible \
   --namespace "${TEST_NAMESPACE:?TEST_NAMESPACE must be set}" \
   --release "${RELEASE_NAME:-integration}" \
   --kube-context "${KUBE_CONTEXT:-}"

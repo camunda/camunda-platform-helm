@@ -39,32 +39,32 @@ func TestDocumentStoreAcceptance(t *testing.T) {
 		{name: "complete lifecycle with HTTP 201 link", linkStatus: http.StatusCreated},
 		{name: "link rejected", linkStatus: http.StatusInternalServerError, wantError: "document link"},
 		{name: "wrong API content", failure: "download", wantError: "document download"},
-		{name: "wrong backend", failure: "endpoint", wantError: "configured MinIO endpoint"},
+		{name: "wrong backend", failure: "endpoint", wantError: "configured S3-compatible endpoint"},
 		{name: "unsigned URL", failure: "signature", wantError: "signed path-style URL"},
 		{name: "wrong store", failure: "store", wantError: "aws storeId"},
 		{name: "missing content hash", failure: "hash", wantError: "contentHash"},
 		{name: "bad reference JSON", failure: "reference", wantError: "decode document reference"},
 		{name: "bad link JSON", failure: "link", wantError: "decode document link"},
-		{name: "wrong MinIO content", failure: "minio", wantError: "presigned download"},
+		{name: "wrong object content", failure: "object", wantError: "presigned download"},
 		{name: "delete rejected", failure: "delete", wantError: "document deletion"},
 		{name: "API still serves deleted document", failure: "api-delete", wantError: "deleted document download"},
-		{name: "MinIO object not deleted", failure: "minio-delete", wantError: "deleted MinIO object"},
+		{name: "object not deleted", failure: "object-delete", wantError: "deleted S3 object"},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			var payload []byte
-			deleted, minioReads, deletes := false, 0, 0
+			deleted, objectReads, deletes := false, 0, 0
 			doHTTP := func(request *http.Request) (*http.Response, error) {
 				if request.URL.Host == "127.0.0.1:9001" {
-					minioReads++
-					assert.Equal(t, "documentstore-minio:9000", request.Host)
+					objectReads++
+					assert.Equal(t, "documentstore-s3:9000", request.Host)
 					assert.Empty(t, request.Header.Get("Authorization"))
 					assert.Equal(t, "/documents/test-document", request.URL.Path)
 					assert.Equal(t, "test-signature", request.URL.Query().Get("X-Amz-Signature"))
-					if deleted && test.failure != "minio-delete" {
+					if deleted && test.failure != "object-delete" {
 						return testResponse(http.StatusNotFound, ""), nil
 					}
-					if test.failure == "minio" {
+					if test.failure == "object" {
 						return testResponse(http.StatusOK, "wrong content"), nil
 					}
 					return testResponse(http.StatusOK, string(payload)), nil
@@ -81,7 +81,7 @@ func TestDocumentStoreAcceptance(t *testing.T) {
 					file, header, err := request.FormFile("file")
 					require.NoError(t, err)
 					defer file.Close()
-					assert.Equal(t, "minio-acceptance.txt", header.Filename)
+					assert.Equal(t, "documentstore-acceptance.txt", header.Filename)
 					payload, err = io.ReadAll(file)
 					require.NoError(t, err)
 					if test.failure == "reference" {
@@ -113,12 +113,12 @@ func TestDocumentStoreAcceptance(t *testing.T) {
 					if test.failure == "link" {
 						return testResponse(http.StatusCreated, "{"), nil
 					}
-					target := minioDocumentEndpoint + "/documents/test-document?X-Amz-Signature=test-signature"
+					target := s3CompatibleDocumentEndpoint + "/documents/test-document?X-Amz-Signature=test-signature"
 					if test.failure == "endpoint" {
 						target = "https://s3.amazonaws.com/documents/test-document?X-Amz-Signature=test-signature"
 					}
 					if test.failure == "signature" {
-						target = minioDocumentEndpoint + "/documents/test-document"
+						target = s3CompatibleDocumentEndpoint + "/documents/test-document"
 					}
 					body, err := json.Marshal(map[string]string{"url": target})
 					require.NoError(t, err)
@@ -141,7 +141,7 @@ func TestDocumentStoreAcceptance(t *testing.T) {
 			if test.wantError == "" {
 				require.NoError(t, err)
 				assert.True(t, deleted)
-				assert.Equal(t, 2, minioReads)
+				assert.Equal(t, 2, objectReads)
 				assert.Equal(t, 1, deletes)
 			} else {
 				require.ErrorContains(t, err, test.wantError)
@@ -166,7 +166,7 @@ func TestDocumentStoreResponseRedactsSignedURL(t *testing.T) {
 
 func TestRunDocumentStoreAcceptanceCleansUp(t *testing.T) {
 	t.Parallel()
-	for _, failure := range []string{"bucket", "forward-start", "forward-dead", "upload"} {
+	for _, failure := range []string{"store", "forward-start", "forward-dead", "upload"} {
 		t.Run(failure, func(t *testing.T) {
 			t.Parallel()
 			var processes []*fakeAcceptanceProcess
@@ -176,9 +176,9 @@ func TestRunDocumentStoreAcceptanceCleansUp(t *testing.T) {
 					_, hasDeadline := ctx.Deadline()
 					assert.True(t, hasDeadline)
 					assert.Equal(t, "kubectl", name)
-					assert.Equal(t, []string{"--context", "test-cluster", "-n", "test-namespace", "wait", "--for=condition=complete", "--timeout=300s", "job/documentstore-minio-bucket"}, args)
-					if failure == "bucket" {
-						return nil, errors.New("bucket unavailable")
+					assert.Equal(t, []string{"--context", "test-cluster", "-n", "test-namespace", "wait", "--for=condition=available", "--timeout=300s", "deployment/documentstore-s3"}, args)
+					if failure == "store" {
+						return nil, errors.New("store unavailable")
 					}
 					return nil, nil
 				},
@@ -186,7 +186,7 @@ func TestRunDocumentStoreAcceptanceCleansUp(t *testing.T) {
 					if len(processes) == 0 {
 						assert.Equal(t, []string{"-n", "test-namespace", "port-forward", "service/integration-zeebe-gateway", ":8080"}, args)
 					} else {
-						assert.Equal(t, []string{"-n", "test-namespace", "port-forward", "service/documentstore-minio", ":9000"}, args)
+						assert.Equal(t, []string{"-n", "test-namespace", "port-forward", "service/documentstore-s3", ":9000"}, args)
 						if failure == "forward-start" {
 							return nil, errors.New("forward unavailable")
 						}
@@ -207,7 +207,7 @@ func TestRunDocumentStoreAcceptanceCleansUp(t *testing.T) {
 				namespace: "test-namespace", release: "integration", kubeContext: "test-cluster",
 			}, deps)
 			require.Error(t, err)
-			if failure == "bucket" {
+			if failure == "store" {
 				assert.Empty(t, processes)
 			} else {
 				assert.NotEmpty(t, processes)
@@ -222,9 +222,9 @@ func TestRunDocumentStoreAcceptanceCleansUp(t *testing.T) {
 func TestDocumentStoreAcceptanceCommand(t *testing.T) {
 	t.Parallel()
 	parent := newAcceptanceCommand()
-	command, _, err := parent.Find([]string{"documentstore-minio"})
+	command, _, err := parent.Find([]string{"documentstore-s3-compatible"})
 	require.NoError(t, err)
-	assert.Equal(t, "documentstore-minio", command.Name())
-	parent.SetArgs([]string{"documentstore-minio", "--namespace=", "--release=integration"})
+	assert.Equal(t, "documentstore-s3-compatible", command.Name())
+	parent.SetArgs([]string{"documentstore-s3-compatible", "--namespace=", "--release=integration"})
 	require.ErrorContains(t, parent.Execute(), "namespace and release are required")
 }
