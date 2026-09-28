@@ -560,6 +560,16 @@ The following values inside your values.yaml need to be set but were not:
       {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
     {{- end }}
   {{- end }}
+
+  {{- if not (semverCompare ">=4.0.0-0" .Capabilities.HelmVersion.Version) }}
+    {{- $warningMessage := printf "%s %s %s %s"
+        "[camunda][warning]"
+        (printf "Helm CLI %s detected." .Capabilities.HelmVersion.Version)
+        "Helm v3 receives security fixes only until February 10, 2027 (https://helm.sh/blog/helm-v3-end-of-life/)."
+        "Upgrade to Helm v4 before then: https://helm.sh/docs/overview"
+    -}}
+    {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+  {{- end }}
 {{- end }}
 
 {{/*
