@@ -15,7 +15,9 @@
 package renovateconfigcheck
 
 import (
+	"bytes"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -55,11 +57,13 @@ type PackageRule struct {
 	Versioning        string   `json:"versioning"`
 	MatchFileNames    []string `json:"matchFileNames"`
 	MatchManagers     []string `json:"matchManagers"`
+	MatchDepNames     []string `json:"matchDepNames"`
 	MatchPackageNames []string `json:"matchPackageNames"`
 	MatchUpdateTypes  []string `json:"matchUpdateTypes"`
 	MatchCurrentValue string   `json:"matchCurrentValue"`
 	PRCreation        string   `json:"prCreation"`
 	MinimumReleaseAge string   `json:"minimumReleaseAge"`
+	AllowedVersions   string   `json:"allowedVersions"`
 	AddLabels         []string `json:"addLabels"`
 	Schedule          []string `json:"schedule"`
 	Automerge         *bool    `json:"automerge"`
@@ -69,8 +73,9 @@ type PackageRule struct {
 }
 
 type CustomManager struct {
-	FileMatch    []string `json:"fileMatch"`
-	MatchStrings []string `json:"matchStrings"`
+	FileMatch       []string `json:"fileMatch"`
+	MatchStrings    []string `json:"matchStrings"`
+	DepNameTemplate string   `json:"depNameTemplate"`
 }
 
 // ChartYAML represents the relevant fields from Chart.yaml.
@@ -567,4 +572,107 @@ func TestAlphaVersioningRegexAcceptsAlphaTags(t *testing.T) {
 
 	require.NotZero(t, checked, "no alpha versioning regex found in renovate.json5 — "+
 		"the rules moved or the `regex:` prefix changed, and this test is no longer covering them")
+}
+
+func TestHelmV3UpdatePolicy(t *testing.T) {
+	t.Parallel()
+
+	var rules []PackageRule
+	for _, rule := range readRenovateConfig(t).PackageRules {
+		if containsString(rule.MatchDepNames, "helm/helm") {
+			rules = append(rules, rule)
+		}
+	}
+	require.Len(t, rules, 1, "exactly one helm/helm package rule expected")
+	assert.Equal(t, []string{"custom.regex"}, rules[0].MatchManagers)
+	assert.Equal(t, "<4.0.0", rules[0].AllowedVersions)
+}
+
+func TestHelmRegexTracksLatestHelmV3Pins(t *testing.T) {
+	t.Parallel()
+
+	root := repoRoot(t)
+	var managers []CustomManager
+	for _, manager := range readRenovateConfig(t).CustomManagers {
+		if manager.DepNameTemplate == "helm/helm" {
+			managers = append(managers, manager)
+		}
+	}
+	require.Len(t, managers, 1, "exactly one helm/helm custom manager expected")
+	manager := managers[0]
+
+	releaseNotes := "scripts/camunda-core/pkg/releasenotes/releasenotes.go"
+	source, err := os.ReadFile(filepath.Join(root, releaseNotes))
+	require.NoError(t, err)
+	assert.Len(t, helmRegexMatches(manager, releaseNotes, string(source)), 1,
+		"%s: the helmV3Version const must be tracked", releaseNotes)
+
+	var checked int
+	err = filepath.WalkDir(filepath.Join(root, "charts"), func(name string, entry fs.DirEntry, err error) error {
+		if err != nil || entry.IsDir() || filepath.Ext(name) != ".yaml" {
+			return err
+		}
+		contents, err := os.ReadFile(name)
+		if err != nil {
+			return err
+		}
+		if !bytes.Contains(contents, []byte("helmVersion")) && !bytes.Contains(contents, []byte("helmCompat")) {
+			return nil
+		}
+		rel, err := filepath.Rel(root, name)
+		if err != nil {
+			return err
+		}
+		checked++
+		assert.ElementsMatch(t, trackedHelmPins(t, contents), helmRegexMatches(manager, filepath.ToSlash(rel), string(contents)),
+			"%s: every Helm v3 pin except the helmCompat floor must be tracked", rel)
+		return nil
+	})
+	require.NoError(t, err)
+	require.NotZero(t, checked, "no helmVersion or helmCompat pins found under charts/")
+}
+
+func helmRegexMatches(manager CustomManager, name, contents string) []string {
+	for _, pattern := range manager.FileMatch {
+		if !regexp.MustCompile(pattern).MatchString(name) {
+			continue
+		}
+		var values []string
+		for _, matchString := range manager.MatchStrings {
+			re := regexp.MustCompile(matchString)
+			for _, match := range re.FindAllStringSubmatch(contents, -1) {
+				values = append(values, match[re.SubexpIndex("currentValue")])
+			}
+		}
+		return values
+	}
+	return nil
+}
+
+func trackedHelmPins(t *testing.T, contents []byte) []string {
+	t.Helper()
+	var document yaml.Node
+	require.NoError(t, yaml.Unmarshal(contents, &document))
+	var pins []string
+	var visit func(*yaml.Node)
+	visit = func(node *yaml.Node) {
+		for i := 0; node.Kind == yaml.MappingNode && i+1 < len(node.Content); i += 2 {
+			key, value := node.Content[i].Value, node.Content[i+1]
+			switch key {
+			case "helmVersion":
+				pins = append(pins, value.Value)
+			case "helmCompat":
+				var compat struct{ Versions []string }
+				require.NoError(t, value.Decode(&compat))
+				if len(compat.Versions) > 1 {
+					pins = append(pins, compat.Versions[1:]...)
+				}
+			}
+		}
+		for _, child := range node.Content {
+			visit(child)
+		}
+	}
+	visit(&document)
+	return pins
 }
