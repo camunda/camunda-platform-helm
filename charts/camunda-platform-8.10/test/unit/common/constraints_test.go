@@ -339,15 +339,14 @@ func helmMajorVersion() int {
 func (s *ConstraintTemplateTest) TestHelmVersionConstraint() {
 	testCases := []testhelpers.TestCase{
 		{
-			// .Capabilities.HelmVersion.Version is set by the running Helm binary, so this test
-			// branches on the detected major version to cover both paths without a fake binary.
-			Name:   "TestHelmVersionGuard",
+			Name:   "TestHelmVersionWarning",
 			Values: map[string]string{},
 			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
 				if helmMajorVersion() >= 4 {
-					s.Require().Nil(err)
+					s.Require().NotContains(output, "Helm v3 receives security fixes")
 				} else {
-					s.Require().ErrorContains(err, "requires Helm CLI v4")
+					s.Require().Contains(output, "Helm v3 receives security fixes")
 				}
 			},
 		},
