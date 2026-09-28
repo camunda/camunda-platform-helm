@@ -673,9 +673,15 @@ _setup_playwright_environment() {
   if [[ -f "package.json" ]] && grep -q '@camunda/e2e-test-suite' package.json 2>/dev/null; then
     local pre_hash=""
     [[ -f "package-lock.json" ]] && pre_hash=$(_portable_file_hash "package-lock.json")
-    info "Checking for newer @camunda/e2e-test-suite..."
-    # shellcheck disable=SC2086
-    npm update @camunda/e2e-test-suite $npm_flags 2>/dev/null || true
+    if [[ -n "${E2E_TEST_SUITE_VERSION:-}" ]]; then
+      info "Installing pinned @camunda/e2e-test-suite@${E2E_TEST_SUITE_VERSION}..."
+      # shellcheck disable=SC2086
+      npm install "@camunda/e2e-test-suite@${E2E_TEST_SUITE_VERSION}" --save-exact $npm_flags 2>/dev/null || true
+    else
+      info "Checking for newer @camunda/e2e-test-suite..."
+      # shellcheck disable=SC2086
+      npm update @camunda/e2e-test-suite $npm_flags 2>/dev/null || true
+    fi
     local post_hash=""
     [[ -f "package-lock.json" ]] && post_hash=$(_portable_file_hash "package-lock.json")
     if [[ "$pre_hash" != "$post_hash" ]]; then
