@@ -59,7 +59,8 @@ nevertheless listed Helm 3.9 as their minimum.
   [#5921](https://github.com/camunda/camunda-platform-helm/issues/5921) scoped CI to Helm v3 only
   for 8.8 and earlier and to Helm v3 and v4 for 8.9; 8.10 also tests both.
 - Chart lines after 15.x: this ADR does not set their Helm CLI baseline; that is left to a later
-  decision.
+  decision, which [#7360](https://github.com/camunda/camunda-platform-helm/issues/7360) tracks for
+  chart 16.x (8.11).
 - The built-in-function restriction (Decision Outcome, item 3) applies to all currently
   maintained chart lines going forward, independent of the v3/v4 line.
 
@@ -106,8 +107,8 @@ constraints are normative:
 
 1. Chart 15.x (8.10) MUST support Helm CLI v3 (3.10 or later) and Helm CLI v4. A render MUST NOT
    fail because of the Helm CLI major version. On Helm v3 the chart emits a non-blocking
-   `[camunda][warning]` through `camunda.constraints.warnings`, shown in NOTES and in the
-   `<release>-warnings` ConfigMap, that Helm v3 security fixes end on 2027-02-10 and that users
+   `[camunda][warning]` through `camunda.constraints.warnings`, shown in NOTES and in a ConfigMap
+   whose name ends in `-warnings`, that Helm v3 security fixes end on 2027-02-10 and that users
    should upgrade to Helm v4 before then. The warning replaces the `fail` guard from
    [#6156](https://github.com/camunda/camunda-platform-helm/pull/6156)
    ([#7340](https://github.com/camunda/camunda-platform-helm/issues/7340)).
@@ -125,11 +126,10 @@ constraints are normative:
    function/floor boundary) rather than whichever Helm binary happens to be on `PATH` in CI.
    `camundaPlatform.toYamlPretty` is the fallback precedent: on Helm 3.17.0 and later it calls
    `toYamlPretty` through `tpl`, and on older CLIs it falls back to `toYaml`. For charts 14.x and
-   15.x, the unit-test Helm matrix
-   ([#7344](https://github.com/camunda/camunda-platform-helm/issues/7344)) runs the Helm v3 warning
-   test and the Orchestration StatefulSet scheduling tests that render through the wrapper on Helm
-   3.10.3 and 3.22.0, and fails when a test selector matches no passing test. The regular unit job
-   runs the same tests on Helm v4.
+   15.x, [#7344](https://github.com/camunda/camunda-platform-helm/issues/7344) adds the unit-test
+   Helm matrix, which runs the Helm v3 warning test and the Orchestration StatefulSet scheduling
+   tests that render through the wrapper on Helm 3.10.3 and 3.22.x, and fails when a test selector
+   matches no passing test. The regular unit job runs the same tests on Helm v4.
 4. When a chart line's CLI floor rises enough to make a version-gated wrapper's fallback branch
    unreachable, the wrapper MUST be removed rather than kept for symmetry. For
    `camundaPlatform.toYamlPretty` in charts 13.x–15.x, the 3.10 floor is below the wrapper's 3.17.0
