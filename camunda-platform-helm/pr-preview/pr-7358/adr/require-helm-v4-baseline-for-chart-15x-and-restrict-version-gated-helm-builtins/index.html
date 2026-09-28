@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">Support Helm CLI v3 and v4 for chart 15.x (8.10), and restrict version-gated Helm built-ins | Camunda Helm Charts</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:image" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7358/img/camunda-logo.svg"><meta data-rh="true" name="twitter:image" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7358/img/camunda-logo.svg"><meta data-rh="true" property="og:url" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7358/adr/require-helm-v4-baseline-for-chart-15x-and-restrict-version-gated-helm-builtins"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Support Helm CLI v3 and v4 for chart 15.x (8.10), and restrict version-gated Helm built-ins | Camunda Helm Charts"><meta data-rh="true" name="description" content="- Status: proposed"><meta data-rh="true" property="og:description" content="- Status: proposed"><link data-rh="true" rel="icon" href="/camunda-platform-helm/pr-preview/pr-7358/img/camunda-logo.svg"><link data-rh="true" rel="canonical" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7358/adr/require-helm-v4-baseline-for-chart-15x-and-restrict-version-gated-helm-builtins"><link data-rh="true" rel="alternate" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7358/adr/require-helm-v4-baseline-for-chart-15x-and-restrict-version-gated-helm-builtins" hreflang="en"><link data-rh="true" rel="alternate" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7358/adr/require-helm-v4-baseline-for-chart-15x-and-restrict-version-gated-helm-builtins" hreflang="x-default"><link rel="stylesheet" href="/camunda-platform-helm/pr-preview/pr-7358/assets/css/styles.3f6cd398.css">
-<script src="/camunda-platform-helm/pr-preview/pr-7358/assets/js/runtime~main.ca0168f0.js" defer="defer"></script>
-<script src="/camunda-platform-helm/pr-preview/pr-7358/assets/js/main.7c88587a.js" defer="defer"></script>
+<script src="/camunda-platform-helm/pr-preview/pr-7358/assets/js/runtime~main.83cf149c.js" defer="defer"></script>
+<script src="/camunda-platform-helm/pr-preview/pr-7358/assets/js/main.5b644ced.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -66,7 +66,8 @@ charts 12.x (8.7), 13.x (8.8) and 14.x (8.9) share the 3.10 floor.
 <a href="https://github.com/camunda/camunda-platform-helm/issues/5921" target="_blank" rel="noopener noreferrer" class="">#5921</a> scoped CI to Helm v3 only
 for 8.8 and earlier and to Helm v3 and v4 for 8.9; 8.10 also tests both.</li>
 <li class="">Chart lines after 15.x: this ADR does not set their Helm CLI baseline; that is left to a later
-decision.</li>
+decision, which <a href="https://github.com/camunda/camunda-platform-helm/issues/7360" target="_blank" rel="noopener noreferrer" class="">#7360</a> tracks for
+chart 16.x (8.11).</li>
 <li class="">The built-in-function restriction (Decision Outcome, item 3) applies to all currently
 maintained chart lines going forward, independent of the v3/v4 line.</li>
 </ul>
@@ -112,8 +113,8 @@ constraints are normative:</p>
 <ol>
 <li class="">Chart 15.x (8.10) MUST support Helm CLI v3 (3.10 or later) and Helm CLI v4. A render MUST NOT
 fail because of the Helm CLI major version. On Helm v3 the chart emits a non-blocking
-<code>[camunda][warning]</code> through <code>camunda.constraints.warnings</code>, shown in NOTES and in the
-<code>&lt;release&gt;-warnings</code> ConfigMap, that Helm v3 security fixes end on 2027-02-10 and that users
+<code>[camunda][warning]</code> through <code>camunda.constraints.warnings</code>, shown in NOTES and in a ConfigMap
+whose name ends in <code>-warnings</code>, that Helm v3 security fixes end on 2027-02-10 and that users
 should upgrade to Helm v4 before then. The warning replaces the <code>fail</code> guard from
 <a href="https://github.com/camunda/camunda-platform-helm/pull/6156" target="_blank" rel="noopener noreferrer" class="">#6156</a>
 (<a href="https://github.com/camunda/camunda-platform-helm/issues/7340" target="_blank" rel="noopener noreferrer" class="">#7340</a>).</li>
@@ -131,11 +132,10 @@ deterministic Helm-version matrix (one CLI at or above the floor, one below the 
 function/floor boundary) rather than whichever Helm binary happens to be on <code>PATH</code> in CI.
 <code>camundaPlatform.toYamlPretty</code> is the fallback precedent: on Helm 3.17.0 and later it calls
 <code>toYamlPretty</code> through <code>tpl</code>, and on older CLIs it falls back to <code>toYaml</code>. For charts 14.x and
-15.x, the unit-test Helm matrix
-(<a href="https://github.com/camunda/camunda-platform-helm/issues/7344" target="_blank" rel="noopener noreferrer" class="">#7344</a>) runs the Helm v3 warning
-test and the Orchestration StatefulSet scheduling tests that render through the wrapper on Helm
-3.10.3 and 3.22.0, and fails when a test selector matches no passing test. The regular unit job
-runs the same tests on Helm v4.</li>
+15.x, <a href="https://github.com/camunda/camunda-platform-helm/issues/7344" target="_blank" rel="noopener noreferrer" class="">#7344</a> adds the unit-test
+Helm matrix, which runs the Helm v3 warning test and the Orchestration StatefulSet scheduling
+tests that render through the wrapper on Helm 3.10.3 and 3.22.x, and fails when a test selector
+matches no passing test. The regular unit job runs the same tests on Helm v4.</li>
 <li class="">When a chart line&#x27;s CLI floor rises enough to make a version-gated wrapper&#x27;s fallback branch
 unreachable, the wrapper MUST be removed rather than kept for symmetry. For
 <code>camundaPlatform.toYamlPretty</code> in charts 13.x–15.x, the 3.10 floor is below the wrapper&#x27;s 3.17.0
