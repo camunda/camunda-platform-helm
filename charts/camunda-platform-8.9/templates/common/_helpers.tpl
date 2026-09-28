@@ -797,7 +797,7 @@ Release templates.
   - dev
   custom-properties: []
   components:
-  {{- $proto := ternary "https" "http" .Values.global.ingress.tls.enabled -}}
+  {{- $proto := include "camundaPlatform.ingressProtocol" . -}}
   {{- $baseURL := printf "%s://%s" $proto (tpl .Values.global.host $ | default (tpl .Values.global.ingress.host $)) }}
 
   {{- if eq (include "camundaPlatform.consoleEnabled" .) "true" }}
