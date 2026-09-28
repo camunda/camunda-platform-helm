@@ -51,6 +51,7 @@ integration:
           persistence: elasticsearch
           features:
             - orchestration-tls
+          helmVersion: 3.22.0
           dependencies:
             - chart: charts/internal-keycloak-26
               release-name: keycloak
@@ -941,6 +942,7 @@ integration:
           features:
             - persistence
             - postgresql-companion
+          helmVersion: 3.22.0
           dependencies:
             - chart: charts/internal-keycloak-26
               release-name: keycloak
