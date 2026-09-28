@@ -27,6 +27,8 @@ global:
         releaseName: integration
         host: "${ORCHA_HOST}"
         version: "8.10.0-alpha3"
+        authorizations:
+          enabled: true
         contextPaths:
           orchestration: /orchestration
           optimize: "${OPTA_OPTIMIZE_CONTEXT_PATH}"
@@ -60,6 +62,8 @@ global:
         releaseName: integration
         host: "${ORCHB_HOST}"
         version: "8.10.0-alpha3"
+        authorizations:
+          enabled: true
         contextPaths:
           orchestration: /orchestration
           optimize: "${OPTB_OPTIMIZE_CONTEXT_PATH}"
