@@ -10,5 +10,5 @@ platforms:
   - gke
 infra-type:
   gke: distroci
-helmVersion: 3.20.2
+helmVersion: 3.22.0
 pre-install: orchestration-tls

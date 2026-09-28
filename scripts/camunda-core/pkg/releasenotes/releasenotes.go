@@ -65,6 +65,8 @@ func AppStripLastSegment(appVersion string) string {
 	return stripLastDotSegRe.ReplaceAllString(appVersion, "")
 }
 
+const helmV3Version = "3.22.0"
+
 // HelmCLIVersion returns the camunda.io/helmCLIVersion annotation value for a
 // chart whose Camunda minor is appVersion ("8.8", "8.10", ...), given the
 // .tool-versions helm pin.
@@ -74,12 +76,12 @@ func HelmCLIVersion(appVersion, toolVersionsPin string) string {
 		switch {
 		case minor >= 0 && minor <= 8:
 			if isV4 {
-				return "3.20.2"
+				return helmV3Version
 			}
 			return toolVersionsPin
 		case minor == 9 || minor == 10:
 			if isV4 {
-				return "3.20.2," + toolVersionsPin
+				return helmV3Version + "," + toolVersionsPin
 			}
 			return toolVersionsPin
 		}
