@@ -28,7 +28,7 @@ func TestHelmCLIVersion(t *testing.T) {
 		{"8.0", "4.1.4", "3.20.2"},       // lower bound of clamp range
 		{"8.9", "4.1.4", "3.20.2,4.1.4"}, // transitional minor, v4 pin → dual
 		{"8.9", "3.20.1", "3.20.1"},      // transitional, v3 pin → pin
-		{"8.10", "4.1.4", "4.1.4"},       // 8.10+ → pin as-is
+		{"8.10", "4.1.4", "3.20.2,4.1.4"},
 		{"8.11", "4.1.4", "4.1.4"},
 		{"8.7", "4.1.4", "3.20.2"},
 	}

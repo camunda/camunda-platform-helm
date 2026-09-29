@@ -56,8 +56,6 @@ maintainers:
   - name: camunda
     url: https://camunda.com
 annotations:
-  # Comma-separated list of supported Helm CLI versions; first entry is the minimum.
-  # 8.9 is the last chart minor that supports Helm v3 — listed alongside v4.
   camunda.io/helmCLIVersion: "3.20.2,4.3.0"
   artifacthub.io/links: |
     - name: Camunda 8 docs
