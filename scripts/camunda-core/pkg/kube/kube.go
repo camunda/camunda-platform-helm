@@ -24,6 +24,7 @@ import (
 	"os"
 	"os/exec"
 	"scripts/camunda-core/pkg/logging"
+	"strconv"
 	"strings"
 	"time"
 
@@ -1101,31 +1102,7 @@ func waitExternalSecretsReady(ctx context.Context, client *Client, namespace str
 				return false, err
 			}
 
-			status, found, err := unstructured.NestedMap(obj.Object, "status")
-			if err != nil || !found {
-				return false, nil
-			}
-
-			conditions, found, err := unstructured.NestedSlice(status, "conditions")
-			if err != nil || !found {
-				return false, nil
-			}
-
-			for _, cond := range conditions {
-				condMap, ok := cond.(map[string]any)
-				if !ok {
-					continue
-				}
-
-				condType, _, _ := unstructured.NestedString(condMap, "type")
-				condStatus, _, _ := unstructured.NestedString(condMap, "status")
-
-				if condType == "Ready" && condStatus == "True" {
-					return true, nil
-				}
-			}
-
-			return false, nil
+			return externalSecretSynced(obj), nil
 		})
 		if err != nil {
 			return fmt.Errorf("ExternalSecret %s not ready: %w", name, err)
@@ -1133,6 +1110,35 @@ func waitExternalSecretsReady(ctx context.Context, client *Client, namespace str
 	}
 
 	return nil
+}
+
+// externalSecretSynced reports whether the ExternalSecret is Ready for its
+// current spec. Ready=True alone is not enough: when an existing
+// ExternalSecret is re-applied with a different source, it keeps the Ready
+// condition from its previous sync until the controller reconciles the new
+// generation, and the target Secret still holds the old values. The
+// external-secrets controller records "<generation>-<metadata hash>" in
+// status.syncedResourceVersion after each successful sync, so the object is
+// only considered synced once that generation matches metadata.generation.
+func externalSecretSynced(obj *unstructured.Unstructured) bool {
+	synced, _, _ := unstructured.NestedString(obj.Object, "status", "syncedResourceVersion")
+	syncedGeneration, _, _ := strings.Cut(synced, "-")
+	if syncedGeneration != strconv.FormatInt(obj.GetGeneration(), 10) {
+		return false
+	}
+	conditions, _, _ := unstructured.NestedSlice(obj.Object, "status", "conditions")
+	for _, cond := range conditions {
+		condMap, ok := cond.(map[string]any)
+		if !ok {
+			continue
+		}
+		condType, _, _ := unstructured.NestedString(condMap, "type")
+		condStatus, _, _ := unstructured.NestedString(condMap, "status")
+		if condType == "Ready" && condStatus == "True" {
+			return true
+		}
+	}
+	return false
 }
 
 func fileExists(p string) bool {
