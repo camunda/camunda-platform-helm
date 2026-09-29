@@ -1,0 +1,21 @@
+# Orchestration-side component configuration for the multi-namespace topology.
+orchestration:
+  data:
+    secondaryStorage:
+      type: elasticsearch
+      elasticsearch:
+        url: "${EXTERNAL_ELASTICSEARCH_SCHEME}://${EXTERNAL_ELASTICSEARCH_HOST}:${EXTERNAL_ELASTICSEARCH_PORT}"
+  index:
+    prefix: $ORCHESTRATION_INDEX_PREFIX
+
+optimize:
+  enabled: true
+  database:
+    elasticsearch:
+      prefix: $ORCHESTRATION_INDEX_PREFIX
+  env:
+    - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SETTINGS_INDEX_PREFIX
+      value: $OPTIMIZE_INDEX_PREFIX
+
+connectors:
+  enabled: true

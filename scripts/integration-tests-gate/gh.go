@@ -17,6 +17,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"os/exec"
 	"strconv"
@@ -27,6 +28,11 @@ import (
 type ghCLI struct {
 	repo    string
 	timeout time.Duration
+}
+
+type workflowRun struct {
+	DatabaseID int64  `json:"databaseId"`
+	Conclusion string `json:"conclusion"`
 }
 
 func newGHCLI(repo string, timeout time.Duration) *ghCLI {
@@ -53,14 +59,33 @@ func (c *ghCLI) run(args ...string) (string, error) {
 }
 
 func (c *ghCLI) FindRun(workflow, sha, event string) (string, error) {
-	return c.run("run", "list",
+	out, err := c.run("run", "list",
 		"--repo", c.repo,
 		"--workflow", workflow,
 		"--commit", sha,
 		"--event", event,
-		"--limit", "1",
-		"--json", "databaseId",
-		"--jq", ".[0].databaseId // empty")
+		"--limit", "10",
+		"--json", "databaseId,conclusion")
+	if err != nil {
+		return "", err
+	}
+	var runs []workflowRun
+	if err := json.Unmarshal([]byte(out), &runs); err != nil {
+		return "", fmt.Errorf("parse workflow runs: %w", err)
+	}
+	return selectWorkflowRun(runs), nil
+}
+
+func selectWorkflowRun(runs []workflowRun) string {
+	for _, run := range runs {
+		if run.Conclusion != "cancelled" {
+			return strconv.FormatInt(run.DatabaseID, 10)
+		}
+	}
+	if len(runs) > 0 {
+		return strconv.FormatInt(runs[0].DatabaseID, 10)
+	}
+	return ""
 }
 
 func (c *ghCLI) RunURL(runID string) (string, error) {

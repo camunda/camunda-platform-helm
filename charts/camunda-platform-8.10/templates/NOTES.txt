@@ -1,3 +1,4 @@
+{{- $partitioning := include "camundaPlatform.partitioning" $ | fromJson -}}
 # (Chart version: {{ .Chart.Name }} {{ .Chart.Version }} - Camunda compatibility version: {{ .Chart.AppVersion }})
 
  ######     ###    ##     ## ##     ## ##    ## ########     ###
@@ -20,11 +21,12 @@
     {{- end }}
   - Zeebe Cluster Name: {{ tpl .Values.global.zeebeClusterName . | quote }}
   - Prometheus ServiceMonitor Enabled: {{ .Values.prometheusServiceMonitor.enabled }}
-    {{- if and (gt (int .Values.global.multiregion.regions) 1) .Values.orchestration.profiles.broker }}
-  - Multi-region deployment detected (regions: {{ .Values.global.multiregion.regions }})
-    ℹ️  You must configure initial contact points manually via environment variable:
-    Set orchestration.env with CAMUNDA_CLUSTER_INITIALCONTACTPOINTS
-    Example: <pod>.<headless-service>.<namespace>.svc.cluster.local:26502,<pod>.<headless-service>.<namespace>.svc.cluster.local:26502,...
+    {{- /* NOTE: status only. The zoned-immutability and manual-contact-point advisories
+         live in "camunda.constraints.warnings", which this file already renders below,
+         so every user-facing warning stays in one place. */ -}}
+    {{- $zoned := eq (include "orchestration.zoneAware" .) "true" -}}
+    {{- if and (eq (include "camundaPlatform.spansFailureDomains" .) "true") .Values.orchestration.profiles.broker }}
+  - Multi-region deployment detected ({{ if $zoned }}zones: {{ len $partitioning.zones }}{{ else }}zones: {{ $partitioning.numberOfZones }}{{ end }})
     {{- end }}
   {{- end }}
 - Optimize:
@@ -127,8 +129,12 @@ Default user: "{{ .Values.identity.firstUser.username }}". No password is config
 {{- end }}
 
 {{- if .Values.global.ingress.enabled }}
-{{ $proto := ternary "https" "http" .Values.global.ingress.tls.enabled -}}
-- Camunda REST API: {{ $proto }}://{{ tpl .Values.global.host $ }}
+- Camunda REST API: {{ include "camundaPlatform.ingressExternalURL" (dict "context" . "host" .Values.global.host "tlsEnabled" .Values.global.ingress.tls.enabled) }}
+{{- end }}
+
+{{- if or .Values.global.ingress.enabled .Values.orchestration.ingress.grpc.enabled }}
+Ingress URLs use global.ingress.publicPorts. Configure ingress-controller listeners and host port forwarding separately.
+Explicit full URLs and authentication redirect URLs are not rewritten.
 {{- end }}
 
 {{- if or .Values.global.tls.orchestration.rest.enabled .Values.global.tls.orchestration.grpc.enabled }}
@@ -165,6 +171,25 @@ Default user: "{{ .Values.identity.firstUser.username }}". No password is config
   NOTE: Connectors in 8.10 is exposed through the Gateway API `HTTPRoute`, not
   via an NGINX ingress. Intra-cluster TLS terminates at the Connectors pod;
   backend-protocol selection for the Gateway listener is a separate concern.
+{{- end }}
+
+{{- if and .Values.optimize.enabled .Values.global.tls.optimize.enabled }}
+
+## Optimize TLS
+
+- Server TLS: enabled (PKCS12 keystore{{ if .Values.global.tls.optimize.cert.secret.existingSecret }}, secret: {{ .Values.global.tls.optimize.cert.secret.existingSecret }}{{ end }}), plaintext HTTP disabled
+{{- if .Values.global.tls.optimize.autoRollout }}
+- autoRollout: on (cert content changes will roll Optimize on next helm upgrade; password-only rotations require manual `kubectl rollout restart`)
+{{- else }}
+- autoRollout: off (rotate manually with: kubectl rollout restart deployment/{{ include "optimize.fullname" . }})
+{{- end }}
+- Independent of the client-side `optimize.database.elasticsearch.tls.secret.existingSecret` /
+  `optimize.database.opensearch.tls.secret.existingSecret` truststore wiring used for
+  the Optimize → ES/OS connection direction; both can be configured together.
+
+  NOTE: With the chart-managed NGINX ingress, Optimize TLS is routed through a
+  dedicated HTTPS-backend Ingress. Gateway API users must separately configure
+  backend TLS with a BackendTLSPolicy or their implementation's equivalent.
 {{- end }}
 
 {{ if .Values.global.createReleaseInfo -}}

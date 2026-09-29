@@ -205,7 +205,7 @@ main() {
     else
         while IFS= read -r version; do
             charts+=("camunda-platform-${version}")
-        done < <(yq eval -r '.camundaVersions.alpha[], .camundaVersions.supportStandard[]' "${REPO_ROOT}/charts/chart-versions.yaml")
+        done < <(yq eval -r '.chartAutomation.routineVersions[]' "${REPO_ROOT}/charts/chart-versions.yaml")
     fi
     
     # Validate each chart

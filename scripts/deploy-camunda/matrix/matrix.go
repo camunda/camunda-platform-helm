@@ -23,6 +23,7 @@ import (
 	"github.com/jwalton/gchalk"
 
 	"scripts/camunda-core/pkg/logging"
+	"scripts/camunda-core/pkg/versionmatrix"
 )
 
 // Entry represents a single matrix entry — one scenario + one flow + one platform combination.
@@ -102,6 +103,9 @@ type GenerateOptions struct {
 	Versions []string
 	// IncludeDisabled includes disabled scenarios in the output.
 	IncludeDisabled bool
+	// Platform is the requested execution platform. Scenarios that declare no platforms
+	// adopt it, so their infra-type resolves for the platform they will actually run on.
+	Platform string
 }
 
 // FilterOptions controls post-generation filtering.
@@ -119,7 +123,9 @@ type FilterOptions struct {
 	FlowFilter string
 	// Platform limits output to entries targeting this platform.
 	Platform string
-	// Tier limits output to entries with this specific tier (1 or 2). Zero means no filter.
+	// Tier limits output to entries with this specific tier (1 or 2). Zero means
+	// no filter. An entry that declares no tier matches no tier filter — it is
+	// reachable only through the unfiltered matrix the merge queue runs.
 	Tier int
 }
 
@@ -143,14 +149,24 @@ func Generate(repoRoot string, opts GenerateOptions) ([]Entry, error) {
 	activeVersions := cv.ActiveVersions()
 	var versions []string
 	if len(opts.Versions) > 0 {
-		// Validate requested versions are active
 		activeSet := make(map[string]bool)
 		for _, v := range activeVersions {
 			activeSet[v] = true
 		}
 		for _, v := range opts.Versions {
 			if !activeSet[v] {
-				return nil, fmt.Errorf("requested version %q is not active (active: %v)", v, activeVersions)
+				if cv.BucketOf(v) == versionmatrix.BucketEndOfLife {
+					return nil, fmt.Errorf("requested version %q is end-of-life and cannot be tested; active versions: %v", v, activeVersions)
+				}
+				chartDir := filepath.Join(repoRoot, "charts", "camunda-platform-"+v)
+				if !HasRegistry(chartDir) {
+					return nil, fmt.Errorf(
+						"requested version %q is not active and has no CI scenario registry at %s;"+
+							" active versions: %v."+
+							" Deploy a single scenario directly instead:"+
+							" deploy-camunda --scenario charts/camunda-platform-%s/test/integration/scenarios/chart-full-setup",
+						v, filepath.Join(chartDir, "test", RegistryDirName, "manifest.yaml"), activeVersions, v)
+				}
 			}
 			versions = append(versions, v)
 		}
@@ -210,11 +226,11 @@ func Generate(repoRoot string, opts GenerateOptions) ([]Entry, error) {
 			}
 
 			// Create one entry per permitted flow per platform.
-			// If no platforms are specified, create one entry with an empty platform
-			// (defaults to "gke" at execution time via resolvePlatform).
+			// If no platforms are specified, the entry adopts the requested platform
+			// (empty when none was requested, which resolvePlatform defaults to "gke").
 			platforms := scenario.Platforms
 			if len(platforms) == 0 {
-				platforms = []string{""}
+				platforms = []string{opts.Platform}
 			}
 
 			for _, flow := range permittedFlows {
@@ -312,7 +328,7 @@ func filterEntries(entries []Entry, opts FilterOptions) []Entry {
 
 	var filtered []Entry
 	for _, e := range entries {
-		if opts.Tier > 0 && e.Tier != 0 && e.Tier != opts.Tier {
+		if opts.Tier > 0 && e.Tier != opts.Tier {
 			continue
 		}
 		if len(scenarioFilters) > 0 && !matchesAny(e.Scenario, scenarioFilters) {

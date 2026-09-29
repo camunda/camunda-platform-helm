@@ -176,6 +176,7 @@ integration:
           platforms:
             - gke
           exclude: []
+          tier: 2
           infra-type:
             gke: distroci
           identity: keycloak
@@ -344,7 +345,7 @@ integration:
           platforms:
             - gke
           exclude: []
-          tier: 1
+          tier: 2
           infra-type:
             gke: distroci
           identity: keycloak

@@ -10,17 +10,18 @@
                     "properties": {
                         "mode": {
                             "type": "string",
-                            "description": "defines the role of this release in the deployment topology. Supported values are combined, hub, and orchestration.",
+                            "description": "defines the role of this release in the deployment topology. Supported values are combined, hub, orchestration, and optimize. In optimize mode only Optimize is deployed, so a separate Optimize release can serve one Physical Tenant without sharing a release with the Orchestration Cluster; it requires optimize.enabled, global.noSecondaryStorage=false, an enabled database backend, Identity auth and URL set on the component or globally, and optimize.contextPath when routing is rendered.",
                             "default": "combined",
                             "enum": [
                                 "combined",
                                 "hub",
-                                "orchestration"
+                                "orchestration",
+                                "optimize"
                             ]
                         },
                         "clusters": {
                             "type": "array",
-                            "description": "can be used by a Hub release to describe remote Orchestration Clusters. The chart uses these entries to generate Camunda Hub inventory and Management Identity presets.",
+                            "description": "can be used by a Hub release to describe remote Orchestration Clusters. The chart uses these entries to generate Camunda Hub inventory and Management Identity presets. Each entry may also declare physicalTenants, whose optional name becomes the environment display name in Hub. A tenant that runs its own Optimize release declares that component here so Optimize gets its own client and resource server rather than sharing the cluster's Optimize audience.",
                             "default": [],
                             "items": {
                                 "$ref": "#/$defs/topologyCluster"
@@ -66,6 +67,16 @@
                                     "default": "disabled"
                                 }
                             }
+                        },
+                        "nginx": {
+                            "type": "object",
+                            "properties": {
+                                "renderAnnotations": {
+                                    "type": "boolean",
+                                    "description": "if true, the chart injects the ingress-nginx annotations it used to ship as values defaults (`ssl-redirect`, `proxy-buffering`, `proxy-buffer-size` and `proxy-body-size` on the HTTP Ingress, `ssl-redirect`, `backend-protocol` and `proxy-buffer-size` on the gRPC Ingress). DEPRECATED since 15.0.0; the shim is removed in the next major and the annotations become opt-in. Set it to false to stop the chart injecting them, and set whatever your own controller needs through the annotations values instead.",
+                                    "default": true
+                                }
+                            }
                         }
                     }
                 },
@@ -74,7 +85,7 @@
                     "properties": {
                         "requestBodySize": {
                             "type": "string",
-                            "description": "defines the maximum request body size for file uploads and HTTP form posts.",
+                            "description": "(DEPRECATED) defines the maximum request body size for file uploads and HTTP form posts.",
                             "default": "10MB"
                         }
                     }
@@ -274,6 +285,25 @@
                             "description": "can be used to define the Ingress path type. https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types",
                             "default": "Prefix"
                         },
+                        "publicPorts": {
+                            "type": "object",
+                            "properties": {
+                                "http": {
+                                    "type": "integer",
+                                    "description": "defines the public port for Ingress endpoints with TLS disabled. Port 80 is omitted from HTTP URLs. Separate gRPC Ingress uses its own TLS setting, even when global.ingress.enabled is false.",
+                                    "default": 80,
+                                    "minimum": 1,
+                                    "maximum": 65535
+                                },
+                                "https": {
+                                    "type": "integer",
+                                    "description": "defines the public port for Ingress endpoints with TLS enabled. Port 443 is omitted from HTTPS URLs. Does not enable TLS; web Ingress uses global.ingress.tls.enabled and gRPC Ingress uses orchestration.ingress.grpc.tls.enabled.",
+                                    "default": 443,
+                                    "minimum": 1,
+                                    "maximum": 65535
+                                }
+                            }
+                        },
                         "tls": {
                             "type": "object",
                             "properties": {
@@ -291,10 +321,13 @@
                         },
                         "annotations": {
                             "type": "object",
-                            "description": "defines the ingress related annotations, consumed mostly by the ingress controller",
+                            "description": "defines the ingress related annotations, consumed mostly by the ingress controller. Empty by default; keys set here always win over the ingress-nginx compatibility set described in global.compatibility.nginx.renderAnnotations.",
                             "default": {},
                             "additionalProperties": {
-                                "type": "string"
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
                             }
                         },
                         "labels": {
@@ -309,7 +342,7 @@
                 },
                 "zeebeClusterName": {
                     "type": "string",
-                    "description": "ZeebeClusterName defines the cluster name for the Zeebe cluster. All Zeebe pods get this prefix in their name and the brokers uses that as cluster name.",
+                    "description": "(DEPRECATED) ZeebeClusterName defines the cluster name for the Zeebe cluster. All Zeebe pods get this prefix in their name and the brokers uses that as cluster name.",
                     "default": "{{ .Release.Name }}-zeebe"
                 },
                 "tls": {
@@ -663,6 +696,61 @@
                                                     "type": "string",
                                                     "description": "defines the key within the existing secret object. In PEM mode, the cert and private key must live in the SAME Secret referenced by global.tls.connectors.cert.secret.existingSecret.",
                                                     "default": "tls.key"
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "keystorePassword": {
+                                    "type": "object",
+                                    "properties": {
+                                        "secret": {
+                                            "type": "object",
+                                            "properties": {
+                                                "existingSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to reference an existing Kubernetes Secret containing the keystore password. When empty, defaults to cert.secret.existingSecret.",
+                                                    "default": ""
+                                                },
+                                                "existingSecretKey": {
+                                                    "type": "string",
+                                                    "description": "defines the key within the existing secret object.",
+                                                    "default": "keystore-password"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "optimize": {
+                            "type": "object",
+                            "properties": {
+                                "autoRollout": {
+                                    "type": "boolean",
+                                    "description": "if true, enables automatic pod rollout on Optimize cert rotation. The chart stamps a `checksum/optimize-tls` pod annotation derived from the configured Secret so the next `helm upgrade` rolls Optimize when the cert changes. OFF by default for the same reason as `global.tls.caBundle.autoRollout`: it uses `lookup` to read the Secret at upgrade time, which (a) REQUIRES the upgrading identity to have `get` on Secrets in the release namespace and (b) is inert under GitOps tools that render with `helm template`. When off (or in those cases), rotate the cert with `kubectl rollout restart`.",
+                                    "default": false
+                                },
+                                "enabled": {
+                                    "type": "boolean",
+                                    "description": "if true, TLS is terminated at the Optimize HTTP server.",
+                                    "default": false
+                                },
+                                "cert": {
+                                    "type": "object",
+                                    "properties": {
+                                        "secret": {
+                                            "type": "object",
+                                            "properties": {
+                                                "existingSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to reference an existing Kubernetes Secret containing the cert material. Empty disables the chart-managed wiring. Hand-wiring is still possible through optimize.extraVolumes plus optimize.env entries for CAMUNDA_OPTIMIZE_CONTAINER_KEYSTORE_LOCATION / CAMUNDA_OPTIMIZE_CONTAINER_KEYSTORE_PASSWORD (never SERVER_SSL_*, which the render rejects), but then the chart cannot see that TLS is on: also set optimize.startupProbe.scheme / readinessProbe.scheme / livenessProbe.scheme to HTTPS, and note the chart's Ingress keeps an HTTP backend for Optimize.",
+                                                    "default": ""
+                                                },
+                                                "existingSecretKey": {
+                                                    "type": "string",
+                                                    "description": "defines the key within the existing secret object. Defaults to keystore.p12.",
+                                                    "default": ""
                                                 }
                                             }
                                         }
@@ -1045,7 +1133,7 @@
                     "properties": {
                         "activeStoreId": {
                             "type": "string",
-                            "description": "defines the default document store instance ID. When using extraConfiguration, this value must match the configured store instance ID.",
+                            "description": "defines the default document store instance ID. This value must match the configured store instance ID. See https://docs.camunda.io/docs/8.10/self-managed/concepts/document-handling/configuration/helm/",
                             "default": "inmemory"
                         },
                         "type": {
@@ -1071,7 +1159,7 @@
                                         },
                                         "storeId": {
                                             "type": "string",
-                                            "description": "Custom prefix for AWS. Default will generate env vars containing 'storeId' such as DOCUMENT_STORE_AWS_CLASS.",
+                                            "description": "(DEPRECATED) Custom prefix for AWS. Default will generate env vars containing 'storeId' such as DOCUMENT_STORE_AWS_CLASS.",
                                             "default": "AWS"
                                         },
                                         "region": {
@@ -1193,7 +1281,7 @@
                                         },
                                         "storeId": {
                                             "type": "string",
-                                            "description": "Custom prefix for GCP. Default will generate env vars containing 'storeId' such as DOCUMENT_STORE_GCP_CLASS.",
+                                            "description": "(DEPRECATED) Custom prefix for GCP. Default will generate env vars containing 'storeId' such as DOCUMENT_STORE_GCP_CLASS.",
                                             "default": "GCP"
                                         },
                                         "bucket": {
@@ -1243,7 +1331,7 @@
                                         },
                                         "storeId": {
                                             "type": "string",
-                                            "description": "Custom prefix for in-memory. Default will generate env vars containing 'storeId' such as DOCUMENT_STORE_INMEMORY_CLASS.",
+                                            "description": "(DEPRECATED) Custom prefix for in-memory. Default will generate env vars containing 'storeId' such as DOCUMENT_STORE_INMEMORY_CLASS.",
                                             "default": "INMEMORY"
                                         },
                                         "class": {
@@ -1300,7 +1388,8 @@
                 },
                 "multiregion": {
                     "type": "object",
-                    "description": "Multi-region configuration for the Orchestration cluster. WARNING: get your configuration reviewed by Camunda before going to production — see https://docs.camunda.io/docs/self-managed/concepts/multi-region/dual-region/.",
+                    "additionalProperties": false,
+                    "description": "DEPRECATED, use orchestration.partitioning. Only the regions and regionId settings remain here; the zone-aware scheme is configured under orchestration.partitioning.",
                     "default": {},
                     "properties": {
                         "regions": {
@@ -1308,7 +1397,7 @@
                                 "integer",
                                 "string"
                             ],
-                            "description": "Number of regions this Camunda Platform instance is stretched across.",
+                            "description": "Number of regions this Camunda Platform instance is stretched across. Must be at least 1; the render fails otherwise.",
                             "default": 1
                         },
                         "regionId": {
@@ -1316,7 +1405,7 @@
                                 "integer",
                                 "string"
                             ],
-                            "description": "Unique id of the region. MUST start at 0 for the computation to work correctly. With 2 regions, you would have region 0 and 1.",
+                            "description": "Unique id of the region. MUST start at 0 for the computation to work correctly. With 2 regions, you would have region 0 and 1. A value outside 0 to regions - 1 fails the render, since node IDs are derived as <ordinal> * regions + regionId.",
                             "default": 0
                         }
                     }
@@ -1431,7 +1520,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.10.0-alpha4.2"
+                            "default": "8.10.0-alpha5.1"
                         },
                         "digest": {
                             "type": "string",
@@ -1470,12 +1559,12 @@
                 },
                 "fullURL": {
                     "type": "string",
-                    "description": "can be used when Ingress is configured (for both multi and single domain setup).",
+                    "description": "can be used to set Identity's complete public URL, including scheme, port, and path. Overrides the derived runtime, login callback, and release-info URL. Supports templating.",
                     "default": ""
                 },
                 "contextPath": {
                     "type": "string",
-                    "description": "can be used to make Management Identity web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.",
+                    "description": "can be used to serve Management Identity under a custom sub-path. Requires HTTPS when non-empty.",
                     "default": ""
                 },
                 "podAnnotations": {
@@ -2219,7 +2308,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be used to set the Docker image tag for the WebModeler images",
-                            "default": "8.10.0-alpha3-rc1"
+                            "default": "8.10.0-alpha5"
                         },
                         "pullSecrets": {
                             "type": "array",
@@ -2334,22 +2423,22 @@
                             "properties": {
                                 "smtpHost": {
                                     "type": "string",
-                                    "description": "defines the host name of the SMTP server to be used by WebModeler",
+                                    "description": "(DEPRECATED) defines the host name of the SMTP server to be used by WebModeler",
                                     "default": ""
                                 },
                                 "smtpPort": {
                                     "type": "number",
-                                    "description": "defines the port number of the SMTP server",
+                                    "description": "(DEPRECATED) defines the port number of the SMTP server",
                                     "default": 587
                                 },
                                 "smtpUser": {
                                     "type": "string",
-                                    "description": "can be used to provide a user for the SMTP server",
+                                    "description": "(DEPRECATED) can be used to provide a user for the SMTP server",
                                     "default": ""
                                 },
                                 "smtpTlsEnabled": {
                                     "type": "boolean",
-                                    "description": "if true, enforces TLS encryption for SMTP connections (using STARTTLS)",
+                                    "description": "(DEPRECATED) if true, enforces TLS encryption for SMTP connections (using STARTTLS)",
                                     "default": true
                                 },
                                 "secret": {
@@ -2374,12 +2463,12 @@
                                 },
                                 "fromAddress": {
                                     "type": "string",
-                                    "description": "defines the email address that will be displayed as the sender of emails sent by WebModeler",
+                                    "description": "(DEPRECATED) defines the email address that will be displayed as the sender of emails sent by WebModeler",
                                     "default": ""
                                 },
                                 "fromName": {
                                     "type": "string",
-                                    "description": "defines the name that will be displayed as the sender of emails sent by WebModeler",
+                                    "description": "(DEPRECATED) defines the name that will be displayed as the sender of emails sent by WebModeler",
                                     "default": "Camunda 8"
                                 }
                             }
@@ -2850,12 +2939,12 @@
                         },
                         "publicHost": {
                             "type": "string",
-                            "description": "can be used to define the host on which the WebSockets server can be reached from the WebModeler client in the browser.",
+                            "description": "can be used to set the browser-facing WebSocket hostname. With global.ingress.enabled and a non-empty Modeler or Hub contextPath, global.host takes precedence. Set overrides through camundaHub.websockets.publicHost.",
                             "default": "localhost"
                         },
                         "publicPort": {
                             "type": "number",
-                            "description": "can be used to define the port number on which the WebSockets server can be reached from the WebModeler client in the browser.",
+                            "description": "can be used to set the browser-facing WebSocket port. With global.ingress.enabled and a non-empty Modeler or Hub contextPath, global.ingress.publicPorts and the Ingress TLS setting take precedence. Set overrides through camundaHub.websockets.publicPort.",
                             "default": 8085
                         },
                         "podAnnotations": {
@@ -4274,12 +4363,12 @@
                 },
                 "debug": {
                     "type": "boolean",
-                    "description": "if true, extra info is printed.",
+                    "description": "(DEPRECATED) if true, extra info is printed.",
                     "default": false
                 },
                 "profilesOverride": {
                     "type": "string",
-                    "description": "defines the override for the profiles as comma-separated string.",
+                    "description": "(DEPRECATED) defines the override for the profiles as comma-separated string.",
                     "default": "\"\""
                 },
                 "security": {
@@ -4295,12 +4384,12 @@
                                 },
                                 "unprotectedApi": {
                                     "type": "boolean",
-                                    "description": "if true, then allow unauthenticated API access.",
+                                    "description": "(DEPRECATED) if true, then allow unauthenticated API access.",
                                     "default": false
                                 },
                                 "authenticationRefreshInterval": {
                                     "type": "string",
-                                    "description": "defines the session's authentication refresh time, defaulted to PT30S.",
+                                    "description": "(DEPRECATED) defines the session's authentication refresh time, defaulted to PT30S.",
                                     "default": "PT30S"
                                 },
                                 "oidc": {
@@ -4333,22 +4422,22 @@
                                         },
                                         "usernameClaim": {
                                             "type": "string",
-                                            "description": "can be used to set username claim.",
+                                            "description": "(DEPRECATED) can be used to set username claim.",
                                             "default": "preferred_username"
                                         },
                                         "preferUsernameClaim": {
                                             "type": "boolean",
-                                            "description": "can be used to set OIDC prefer-username-claim.",
+                                            "description": "(DEPRECATED) can be used to set OIDC prefer-username-claim.",
                                             "default": false
                                         },
                                         "clientIdClaim": {
                                             "type": "string",
-                                            "description": "can be used to set client ID claim.",
+                                            "description": "(DEPRECATED) can be used to set client ID claim.",
                                             "default": "client_id"
                                         },
                                         "groupsClaim": {
                                             "type": "string",
-                                            "description": "can be used to set group claim.",
+                                            "description": "(DEPRECATED) can be used to set group claim.",
                                             "default": ""
                                         },
                                         "audience": {
@@ -4358,13 +4447,13 @@
                                         },
                                         "scope": {
                                             "type": "array",
-                                            "description": "defines a list of scopes to request in the OIDC token. If not set, it will use the application defaults.",
+                                            "description": "(DEPRECATED) defines a list of scopes to request in the OIDC token. If not set, it will use the application defaults.",
                                             "default": [],
                                             "items": {}
                                         },
                                         "backwardsCompatibleAudiences": {
                                             "type": "array",
-                                            "description": "defines audiences, which need to be set for backwards compatibility to allow the access the Orchestration Cluster. This is only important and set if you're coming from an earlier version",
+                                            "description": "(DEPRECATED) defines audiences, which need to be set for backwards compatibility to allow the access the Orchestration Cluster. This is only important and set if you're coming from an earlier version",
                                             "default": [],
                                             "items": {}
                                         },
@@ -4375,7 +4464,7 @@
                                         },
                                         "redirectUrl": {
                                             "type": "string",
-                                            "description": "defines the root (or redirect) URL, which is used by Keycloak to access Tasklist.",
+                                            "description": "(DEPRECATED) defines the root (or redirect) URL, which is used by Keycloak to access Tasklist.",
                                             "default": "http://localhost:8080"
                                         },
                                         "secret": {
@@ -4407,7 +4496,7 @@
                             "properties": {
                                 "enabled": {
                                     "type": "boolean",
-                                    "description": "if true, then enable authorizations checks in all applicable components.",
+                                    "description": "(DEPRECATED) if true, then enable authorizations checks in all applicable components.",
                                     "default": true
                                 }
                             }
@@ -4494,13 +4583,13 @@
                                 },
                                 "mappingRules": {
                                     "type": "array",
-                                    "description": "define mapping rules.",
+                                    "description": "(DEPRECATED) define mapping rules.",
                                     "default": [],
                                     "items": {}
                                 },
                                 "authorizations": {
                                     "type": "array",
-                                    "description": "define authorizations for Identity as Code.",
+                                    "description": "(DEPRECATED) define authorizations for Identity as Code.",
                                     "default": [],
                                     "items": {}
                                 }
@@ -4613,7 +4702,7 @@
                             "properties": {
                                 "enabled": {
                                     "type": "boolean",
-                                    "description": "if true, then enable multitenancy checks in all applicable components.",
+                                    "description": "(DEPRECATED) if true, then enable multitenancy checks in all applicable components.",
                                     "default": false
                                 }
                             }
@@ -4623,12 +4712,98 @@
                             "properties": {
                                 "enabled": {
                                     "type": "boolean",
-                                    "description": "if true, then enable multitenancy API used for tenant management.",
+                                    "description": "(DEPRECATED) if true, then enable multitenancy API used for tenant management.",
                                     "default": true
                                 }
                             }
                         }
                     }
+                },
+                "partitioning": {
+                    "type": "object",
+                    "properties": {
+                        "scheme": {
+                            "type": "string",
+                            "description": "partitioning scheme. `round-robin` leaves brokers on plain numeric node IDs, `zone-aware` identifies them as `<zone>_<index>` and places replicas across the declared zones. These are two of the schemes accepted by camunda.cluster.partitioning.scheme; the engine also accepts FIXED, which this chart does not render.",
+                            "default": "round-robin",
+                            "enum": [
+                                "round-robin",
+                                "zone-aware"
+                            ]
+                        },
+                        "zone": {
+                            "type": "string",
+                            "description": "can be used to define the zone of this Orchestration Cluster deployment when using the zone-aware scheme. Must be an RFC 1123 label of at most 32 characters to fit zone-suffixed resource names.",
+                            "default": "",
+                            "maxLength": 32,
+                            "pattern": "^$|^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
+                        },
+                        "zones": {
+                            "type": "array",
+                            "description": "can be used to define the zones of the Orchestration Cluster when using the zone-aware scheme.",
+                            "default": [],
+                            "items": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "required": [
+                                    "name",
+                                    "numberOfBrokers",
+                                    "numberOfReplicas",
+                                    "priority"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 32,
+                                        "pattern": "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$",
+                                        "description": "Name of the zone. It is the prefix of the composite broker member ID \"<zone>_<node-id>\", and one of these names must be selected by orchestration.partitioning.zone. Restricted to an RFC 1123 label: an underscore would make the composite ID ambiguous, and the name is also used to derive per-zone resource and DNS names."
+                                    },
+                                    "numberOfBrokers": {
+                                        "type": "integer",
+                                        "minimum": 1,
+                                        "description": "Number of brokers deployed in this zone. For the local zone it is also the StatefulSet replica count."
+                                    },
+                                    "numberOfReplicas": {
+                                        "type": "integer",
+                                        "minimum": 1,
+                                        "description": "Number of partition replicas this zone holds."
+                                    },
+                                    "priority": {
+                                        "type": "integer",
+                                        "minimum": 1,
+                                        "description": "Priority of this zone in the leader election."
+                                    }
+                                }
+                            }
+                        },
+                        "keepUnzonedBrokers": {
+                            "type": "boolean",
+                            "description": "also renders the round-robin broker StatefulSet alongside the zoned one during migration. Upgrade to this chart version with the flag still off and wait for the round-robin rollout to settle before enabling it: doing both in one `helm upgrade` moves an ordinary chart upgrade's pod roll into the migration and restarts the brokers the migration exists to preserve. Keep the previous numberOfZones and zoneIndex values here until the round-robin brokers are removed; move them from global.multiregion when migrating from the deprecated block.",
+                            "default": false
+                        },
+                        "numberOfZones": {
+                            "type": [
+                                "integer",
+                                "string",
+                                "null"
+                            ],
+                            "description": "Number of failure domains this Camunda Platform instance is stretched across. Must be at least 1; the render fails otherwise. Under the zone-aware scheme it must stay at 1 unless keepUnzonedBrokers is set, where it keeps describing the retained round-robin generation.",
+                            "default": 1
+                        },
+                        "zoneIndex": {
+                            "type": [
+                                "integer",
+                                "string",
+                                "null"
+                            ],
+                            "description": "Zero-based index of the zone this release is deployed to, under the round-robin scheme. A value outside 0 to numberOfZones - 1 fails the render, since node IDs are derived as <ordinal> * numberOfZones + zoneIndex. Under the zone-aware scheme it must stay at 0 unless keepUnzonedBrokers is set, where it keeps addressing the retained round-robin generation.",
+                            "default": 0
+                        }
+                    },
+                    "additionalProperties": false,
+                    "description": "How partition replicas are distributed across brokers, and how brokers are grouped into failure domains. Mirrors the engine configuration camunda.cluster.partitioning. This does not set the number of partitions, which is orchestration.partitionCount; it sets how the replicas of those partitions are placed. WARNING: get your configuration reviewed by Camunda before going to production — see https://docs.camunda.io/docs/self-managed/concepts/multi-region/dual-region/.",
+                    "default": {}
                 },
                 "clusterSize": {
                     "type": "string",
@@ -4778,12 +4953,12 @@
                 },
                 "logLevel": {
                     "type": "string",
-                    "description": "defines the log level which is used",
+                    "description": "(DEPRECATED) defines the log level which is used",
                     "default": "info"
                 },
                 "log4j2": {
                     "type": "string",
-                    "description": "can be used to overwrite the log4j2 configuration",
+                    "description": "(DEPRECATED) can be used to overwrite the log4j2 configuration",
                     "default": ""
                 },
                 "javaOpts": {
@@ -5040,10 +5215,13 @@
                                 },
                                 "annotations": {
                                     "type": "object",
-                                    "description": "defines the ingress related annotations, consumed mostly by the ingress controller",
+                                    "description": "defines the ingress related annotations, consumed mostly by the ingress controller. Empty by default; keys set here always win over the ingress-nginx compatibility set described in global.compatibility.nginx.renderAnnotations, which supplies `nginx.ingress.kubernetes.io/ssl-redirect: \"false\"`, `nginx.ingress.kubernetes.io/backend-protocol: \"GRPC\"` and `nginx.ingress.kubernetes.io/proxy-buffer-size: \"128k\"` here while it is on; set those three here to keep them once it is off. With Contour, gRPC is declared on the Orchestration Service listing the gRPC port rather than with an annotation here, using `projectcontour.io/upstream-protocol.h2c` while the gRPC upstream is plaintext and `projectcontour.io/upstream-protocol.h2` once it serves TLS; that state follows global.tls.orchestration.grpc.enabled or `camunda.api.grpc.ssl.enabled` in orchestration.configuration or extraConfiguration, and a CAMUNDA_API_GRPC_SSL_ENABLED entry in orchestration.env overrides both.",
                                     "default": {},
                                     "additionalProperties": {
-                                        "type": "string"
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ]
                                     }
                                 },
                                 "labels": {
@@ -5065,12 +5243,12 @@
                 },
                 "cpuThreadCount": {
                     "type": "string",
-                    "description": "defines how many threads can be used for the processing on each broker pod",
+                    "description": "(DEPRECATED) defines how many threads can be used for the processing on each broker pod",
                     "default": "3"
                 },
                 "ioThreadCount": {
                     "type": "string",
-                    "description": "defines how many threads can be used for the exporting on each broker pod",
+                    "description": "(DEPRECATED) defines how many threads can be used for the exporting on each broker pod",
                     "default": "3"
                 },
                 "resources": {
@@ -5148,7 +5326,7 @@
                     "properties": {
                         "snapshotPeriod": {
                             "type": "string",
-                            "description": "defines the period, after which a snapshot is created https://docs.camunda.io/docs/self-managed/zeebe-deployment/configuration/broker-config/#zeebebrokerdata",
+                            "description": "(DEPRECATED) defines the period, after which a snapshot is created https://docs.camunda.io/docs/self-managed/zeebe-deployment/configuration/broker-config/#zeebebrokerdata",
                             "default": "5m"
                         },
                         "disk": {
@@ -5159,12 +5337,12 @@
                                     "properties": {
                                         "processing": {
                                             "type": "string",
-                                            "description": "the minimum free space which should be available on the disk, before the broker stops processing commands https://docs.camunda.io/docs/self-managed/zeebe-deployment/configuration/broker-config/#zeebebrokerdatadiskfreespace",
+                                            "description": "(DEPRECATED) the minimum free space which should be available on the disk, before the broker stops processing commands https://docs.camunda.io/docs/self-managed/zeebe-deployment/configuration/broker-config/#zeebebrokerdatadiskfreespace",
                                             "default": "2GB"
                                         },
                                         "replication": {
                                             "type": "string",
-                                            "description": "the minimum free space which should be available on the disk, before the broker stops receicing replicated events https://docs.camunda.io/docs/self-managed/zeebe-deployment/configuration/broker-config/#zeebebrokerdatadiskfreespace",
+                                            "description": "(DEPRECATED) the minimum free space which should be available on the disk, before the broker stops receicing replicated events https://docs.camunda.io/docs/self-managed/zeebe-deployment/configuration/broker-config/#zeebebrokerdatadiskfreespace",
                                             "default": "1GB"
                                         }
                                     }
@@ -5662,7 +5840,7 @@
                             "properties": {
                                 "enabled": {
                                     "type": "boolean",
-                                    "description": "if true, enables the new Camunda exporter.",
+                                    "description": "(DEPRECATED) if true, enables the new Camunda exporter.",
                                     "default": true
                                 }
                             }
@@ -5692,6 +5870,16 @@
                                     ],
                                     "description": "(DEPRECATED) can be used to specify the number of replicas for the legacy Zeebe Elasticsearch and OpenSearch exporter indices. Defaults to orchestration.index.replicas.",
                                     "default": null
+                                },
+                                "index": {
+                                    "type": "object",
+                                    "properties": {
+                                        "prefix": {
+                                            "type": "string",
+                                            "description": "defines the index prefix the legacy Zeebe exporter writes, for whichever of Elasticsearch or OpenSearch is in use. Set it on the release running the Orchestration Cluster. When empty, \"optimize.database.elasticsearch.prefix\" (or its OpenSearch equivalent) is used instead.",
+                                            "default": ""
+                                        }
+                                    }
                                 }
                             }
                         },
@@ -5732,12 +5920,12 @@
                     "properties": {
                         "prefix": {
                             "type": "string",
-                            "description": "if specified, defines an index prefix in Elasticsearch/OpenSearch for Orchestration Cluster indices. For ES/OS exporters or Optimize use the \"optimize.database.elasticsearch.prefix\" or OpenSearch equivalent.",
+                            "description": "(DEPRECATED) if specified, defines an index prefix in Elasticsearch/OpenSearch for Orchestration Cluster indices. This does not apply to the legacy Zeebe exporter, which is configured by \"orchestration.exporters.zeebe.index.prefix\", nor to the indices Optimize reads, which are named by \"optimize.database.elasticsearch.prefix\" or the OpenSearch equivalent.",
                             "default": ""
                         },
                         "replicas": {
                             "type": "number",
-                            "description": "can be used to specify the number of replicas for Orchestration Cluster indices.",
+                            "description": "(DEPRECATED) can be used to specify the number of replicas for Orchestration Cluster indices.",
                             "default": 1
                         }
                     }
@@ -5747,17 +5935,17 @@
                     "properties": {
                         "enabled": {
                             "type": "boolean",
-                            "description": "if true, the ILM Policy is created and applied to the index templates.",
+                            "description": "(DEPRECATED) if true, the ILM Policy is created and applied to the index templates.",
                             "default": false
                         },
                         "minimumAge": {
                             "type": "string",
-                            "description": "defines how old the data must be, before the data is deleted as a duration.",
+                            "description": "(DEPRECATED) defines how old the data must be, before the data is deleted as a duration.",
                             "default": "30d"
                         },
                         "policyName": {
                             "type": "string",
-                            "description": "defines the name of the created and applied ILM policy.",
+                            "description": "(DEPRECATED) defines the name of the created and applied ILM policy.",
                             "default": "zeebe-record-retention-policy"
                         }
                     }
@@ -5800,27 +5988,27 @@
                             "properties": {
                                 "enabled": {
                                     "type": "boolean",
-                                    "description": "if true, applies ILM Policy to the archived orchestration indices (operate, tasklist, camunda).",
+                                    "description": "(DEPRECATED) if true, applies ILM Policy to the archived orchestration indices (operate, tasklist, camunda).",
                                     "default": false
                                 },
                                 "minimumAge": {
                                     "type": "string",
-                                    "description": "defines how old the data must be, before the data is deleted as a duration.",
+                                    "description": "(DEPRECATED) defines how old the data must be, before the data is deleted as a duration.",
                                     "default": "30d"
                                 },
                                 "policyName": {
                                     "type": "string",
-                                    "description": "defines the name of the created and applied ILM policy.",
+                                    "description": "(DEPRECATED) defines the name of the created and applied ILM policy.",
                                     "default": "camunda-history-retention-policy"
                                 },
                                 "usageMetricsMinimumAge": {
                                     "type": "string",
-                                    "description": "defines how old the usage metric indices must be before deletion (camunda-usage-metric, camunda-usage-metric-tu).",
+                                    "description": "(DEPRECATED) defines how old the usage metric indices must be before deletion (camunda-usage-metric, camunda-usage-metric-tu).",
                                     "default": "730d"
                                 },
                                 "usageMetricsPolicyName": {
                                     "type": "string",
-                                    "description": "defines the name of the created and applied ILM policy to usage metric indices.",
+                                    "description": "(DEPRECATED) defines the name of the created and applied ILM policy to usage metric indices.",
                                     "default": "camunda-usage-metrics-retention-policy"
                                 }
                             }
@@ -5834,7 +6022,7 @@
                 },
                 "extraConfiguration": {
                     "type": "array",
-                    "description": "if specified, contents will be used for any extra configuration files such as log4j2.xml",
+                    "description": "if specified, contents will be used for any extra configuration files such as log4j2.xml. Physical Tenants are declared here too, under `camunda.physical-tenants` per ADR-0091 - there is no `orchestration.physicalTenants` values key. The chart detects that key to render the issuer-uri form of the OIDC provider, which the Orchestration Cluster requires once tenants exist, and fails the render when a release that deploys Orchestration is not on OIDC or has no resolvable `global.identity.auth.issuer`. Give every tenant its own secondary-storage index prefix; declaring any tenant also stops the `default` tenant inheriting this release's root exporters, so `default` needs its own exporter entry.",
                     "default": [],
                     "items": {}
                 },
@@ -5864,7 +6052,7 @@
                     "properties": {
                         "allowPreReleaseImages": {
                             "type": "boolean",
-                            "description": "if true, allows the use of pre-release images for the orchestration cluster. Prerelease images are, by their nature, unstable and should be used with caution. This flag should only be used for testing purposes.",
+                            "description": "(DEPRECATED) if true, allows the use of pre-release images for the orchestration cluster. Prerelease images are, by their nature, unstable and should be used with caution. This flag should only be used for testing purposes.",
                             "default": false
                         }
                     }
@@ -5890,6 +6078,116 @@
                     "type": "boolean",
                     "description": "if true, the Optimize deployment and its related resources are deployed via a helm release",
                     "default": false
+                },
+                "identity": {
+                    "type": "object",
+                    "properties": {
+                        "service": {
+                            "type": "object",
+                            "properties": {
+                                "url": {
+                                    "type": "string",
+                                    "description": "can be used to override `global.identity.service.url`, the Management Identity this Optimize release reaches. Useful when an Optimize-only release targets a different Identity than the rest of a topology.",
+                                    "default": ""
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": {
+                    "type": "object",
+                    "properties": {
+                        "authentication": {
+                            "type": "object",
+                            "properties": {
+                                "method": {
+                                    "type": "string",
+                                    "description": "can be used to override whether this Optimize release authenticates, independently of `global.identity.auth.enabled`. Supported values are oidc and none. Empty follows `global.identity.auth.enabled`.",
+                                    "default": "",
+                                    "enum": [
+                                        "",
+                                        "oidc",
+                                        "none"
+                                    ]
+                                },
+                                "oidc": {
+                                    "type": "object",
+                                    "properties": {
+                                        "clientId": {
+                                            "type": "string",
+                                            "description": "can be used to override `global.identity.auth.optimize.clientId`. Set it on the release running Optimize so an Optimize-only release owns its own client without the shared global key.",
+                                            "default": ""
+                                        },
+                                        "type": {
+                                            "type": "string",
+                                            "description": "can be used to override `global.identity.auth.type` for this Optimize release.",
+                                            "default": ""
+                                        },
+                                        "issuer": {
+                                            "type": "string",
+                                            "description": "can be used to override `global.identity.auth.issuer` (or `global.identity.auth.publicIssuerUrl`) for this Optimize release. Set it to the exact \"iss\" claim the provider mints.",
+                                            "default": ""
+                                        },
+                                        "issuerBackendUrl": {
+                                            "type": "string",
+                                            "description": "can be used to override `global.identity.auth.issuerBackendUrl`, the cluster-internal route this Optimize uses to validate tokens.",
+                                            "default": ""
+                                        },
+                                        "jwksUrl": {
+                                            "type": "string",
+                                            "description": "can be used to override `global.identity.auth.jwksUrl`, the JWKS endpoint this Optimize fetches token signing keys from. Required for a non-Keycloak `type`, which has no endpoint layout to derive it from. Supports templating (e.g., {{ .Release.Name }}).",
+                                            "default": ""
+                                        },
+                                        "envFromProvides": {
+                                            "type": "array",
+                                            "description": "names the identity variables this release's `optimize.envFrom` sources supply, so the chart stops requiring them. Their keys are unreadable at render time, so presence alone exempts nothing, and a declaration with no `optimize.envFrom` source is rejected. Supported values are CAMUNDA_IDENTITY_ISSUER, CAMUNDA_IDENTITY_ISSUER_BACKEND_URL, SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI, VALUES_OPTIMIZE_CLIENT_SECRET and CAMUNDA_IDENTITY_BASEURL.",
+                                            "default": [],
+                                            "items": {
+                                                "type": "string",
+                                                "enum": [
+                                                    "CAMUNDA_IDENTITY_ISSUER",
+                                                    "CAMUNDA_IDENTITY_ISSUER_BACKEND_URL",
+                                                    "SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI",
+                                                    "VALUES_OPTIMIZE_CLIENT_SECRET",
+                                                    "CAMUNDA_IDENTITY_BASEURL"
+                                                ]
+                                            }
+                                        },
+                                        "audience": {
+                                            "type": "string",
+                                            "description": "can be used to override `global.identity.auth.optimize.audience`.",
+                                            "default": ""
+                                        },
+                                        "redirectUrl": {
+                                            "type": "string",
+                                            "description": "can be used to override `global.identity.auth.optimize.redirectUrl`. Supports templating (e.g., {{ .Release.Name }}).",
+                                            "default": ""
+                                        },
+                                        "secret": {
+                                            "type": "object",
+                                            "properties": {
+                                                "inlineSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to provide the client secret as a plain-text value for non-production usage.",
+                                                    "default": ""
+                                                },
+                                                "existingSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to reference an existing Kubernetes Secret containing the client secret.",
+                                                    "default": ""
+                                                },
+                                                "existingSecretKey": {
+                                                    "type": "string",
+                                                    "description": "defines the key within the existing secret object.",
+                                                    "default": ""
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 },
                 "image": {
                     "type": "object",
@@ -6015,7 +6313,7 @@
                                 },
                                 "prefix": {
                                     "type": "string",
-                                    "description": "defines the prefix which is used by the old Zeebe Elasticsearch Exporter to create Elasticsearch indexes and consumed by Optimize.",
+                                    "description": "(DEPRECATED) defines the prefix of the Elasticsearch indexes Optimize reads. The exporter writing them is configured by \"orchestration.exporters.zeebe.index.prefix\"; keep the two equal.",
                                     "default": "zeebe-record"
                                 }
                             }
@@ -6115,7 +6413,7 @@
                                 },
                                 "prefix": {
                                     "type": "string",
-                                    "description": "defines the prefix which is used by the old Zeebe OpenSearch Exporter to create OpenSearch indexes and consumed by Optimize.",
+                                    "description": "(DEPRECATED) defines the prefix of the OpenSearch indexes Optimize reads. The exporter writing them is configured by \"orchestration.exporters.zeebe.index.prefix\"; keep the two equal.",
                                     "default": "zeebe-record"
                                 }
                             }
@@ -6206,22 +6504,22 @@
                 },
                 "logLevel": {
                     "type": "string",
-                    "description": "configuration for the optimize runtime environment. https://docs.camunda.io/docs/self-managed/components/optimize/configuration/logging/",
+                    "description": "(DEPRECATED) configuration for the optimize runtime environment. https://docs.camunda.io/docs/self-managed/components/optimize/configuration/logging/",
                     "default": "info"
                 },
                 "upgradeLogLevel": {
                     "type": "string",
-                    "description": "sets the logging level for the Optimize update log. https://docs.camunda.io/docs/self-managed/components/optimize/configuration/logging/",
+                    "description": "(DEPRECATED) sets the logging level for the Optimize update log. https://docs.camunda.io/docs/self-managed/components/optimize/configuration/logging/",
                     "default": "info"
                 },
                 "esLogLevel": {
                     "type": "string",
-                    "description": "sets the logging level for Elasticsearch. https://docs.camunda.io/docs/self-managed/components/optimize/configuration/logging/",
+                    "description": "(DEPRECATED) sets the logging level for Elasticsearch. https://docs.camunda.io/docs/self-managed/components/optimize/configuration/logging/",
                     "default": "warn"
                 },
                 "partitionCount": {
                     "type": "string",
-                    "description": "defines how many Zeebe partitions are set up in the cluster and which should be imported by Optimize",
+                    "description": "(DEPRECATED) defines how many Zeebe partitions are set up in the cluster and which should be imported by Optimize",
                     "default": "3"
                 },
                 "env": {
@@ -6510,8 +6808,8 @@
                         },
                         "scheme": {
                             "type": "string",
-                            "description": "defines the startup probe schema used on calling the probePath",
-                            "default": "HTTP"
+                            "description": "defines the probe scheme (HTTP or HTTPS) used when calling the probePath. Empty (default) auto-detects: HTTPS when Optimize TLS is enabled (global.tls.optimize), otherwise HTTP. Set explicitly to override the auto-detected scheme.",
+                            "default": ""
                         },
                         "probePath": {
                             "type": "string",
@@ -6555,8 +6853,8 @@
                         },
                         "scheme": {
                             "type": "string",
-                            "description": "defines the startup probe schema used on calling the probePath",
-                            "default": "HTTP"
+                            "description": "defines the probe scheme (HTTP or HTTPS) used when calling the probePath. Empty (default) auto-detects: HTTPS when Optimize TLS is enabled (global.tls.optimize), otherwise HTTP. Set explicitly to override the auto-detected scheme.",
+                            "default": ""
                         },
                         "probePath": {
                             "type": "string",
@@ -6600,8 +6898,8 @@
                         },
                         "scheme": {
                             "type": "string",
-                            "description": "defines the startup probe schema used on calling the probePath",
-                            "default": "HTTP"
+                            "description": "defines the probe scheme (HTTP or HTTPS) used when calling the probePath. Empty (default) auto-detects: HTTPS when Optimize TLS is enabled (global.tls.optimize), otherwise HTTP. Set explicitly to override the auto-detected scheme.",
+                            "default": ""
                         },
                         "probePath": {
                             "type": "string",
@@ -6764,7 +7062,7 @@
                 },
                 "profiles": {
                     "type": "string",
-                    "description": "defines SPRING_ACTIVE_PROFILES",
+                    "description": "(DEPRECATED) defines SPRING_ACTIVE_PROFILES",
                     "default": "\"\""
                 },
                 "javaOpts": {
@@ -6777,7 +7075,7 @@
                     "properties": {
                         "enabled": {
                             "type": "boolean",
-                            "description": "if true, enables multitenancy in Optimize",
+                            "description": "(DEPRECATED) if true, enables multitenancy in Optimize",
                             "default": false
                         }
                     }
@@ -6790,12 +7088,12 @@
                             "properties": {
                                 "maxSize": {
                                     "type": "number",
-                                    "description": "defines the maximum number of entries in the cache",
+                                    "description": "(DEPRECATED) defines the maximum number of entries in the cache",
                                     "default": 10000
                                 },
                                 "minFetchIntervalSeconds": {
                                     "type": "number",
-                                    "description": "defines the minimum interval between fetches from the database for the cache",
+                                    "description": "(DEPRECATED) defines the minimum interval between fetches from the database for the cache",
                                     "default": 600000
                                 }
                             }
@@ -7220,7 +7518,21 @@
                 "gatewayServiceName": {
                     "type": "string"
                 },
+                "operateServiceName": {
+                    "type": "string"
+                },
+                "tasklistServiceName": {
+                    "type": "string"
+                },
                 "readinessUrl": {
+                    "type": "string",
+                    "pattern": "^$|^https?://[^\\s]+$"
+                },
+                "operateReadinessUrl": {
+                    "type": "string",
+                    "pattern": "^$|^https?://[^\\s]+$"
+                },
+                "tasklistReadinessUrl": {
                     "type": "string",
                     "pattern": "^$|^https?://[^\\s]+$"
                 },
@@ -7260,7 +7572,8 @@
                     "type": "string"
                 },
                 "redirectUrl": {
-                    "type": "string"
+                    "type": "string",
+                    "pattern": "^$|^https?://(?:[^\\s{}]|\\{\\{[^}]*\\}\\})+$"
                 },
                 "roleName": {
                     "type": "string"
@@ -7273,7 +7586,7 @@
                 },
                 "webappUrl": {
                     "type": "string",
-                    "pattern": "^$|^https?://[^\\s]+$"
+                    "pattern": "^$|^https?://(?:[^\\s{}]|\\{\\{[^}]*\\}\\})+$"
                 },
                 "readinessUrl": {
                     "type": "string",
@@ -7353,6 +7666,13 @@
                 "version": {
                     "type": "string"
                 },
+                "architecture": {
+                    "type": "string",
+                    "enum": [
+                        "unified",
+                        "legacy"
+                    ]
+                },
                 "authorizations": {
                     "type": "object",
                     "additionalProperties": false,
@@ -7382,6 +7702,39 @@
                 },
                 "components": {
                     "$ref": "#/$defs/topologyComponents"
+                },
+                "physicalTenants": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/topologyPhysicalTenant"
+                    }
+                }
+            }
+        },
+        "topologyPhysicalTenant": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+                "id",
+                "components"
+            ],
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9]{1,64}$"
+                },
+                "name": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "components": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                        "optimize": {
+                            "$ref": "#/$defs/topologyOptimizeComponent"
+                        }
+                    }
                 }
             }
         }

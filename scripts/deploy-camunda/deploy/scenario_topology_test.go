@@ -23,9 +23,9 @@ import (
 
 func topologyTestReleases() []TopologyRelease {
 	return []TopologyRelease{
-		{Role: "hub", NamespaceSuffix: "hub", Values: "multinamespace/hub.yaml"},
-		{Role: "orchestration", NamespaceSuffix: "orcha", Values: "multinamespace/orchestration.yaml", DependsOn: "hub"},
-		{Role: "orchestration", NamespaceSuffix: "orchb", Values: "multinamespace/orchestration.yaml", DependsOn: "hub"},
+		{Role: "hub", NamespaceSuffix: "hub"},
+		{Role: "orchestration", NamespaceSuffix: "orcha", DependsOn: "hub"},
+		{Role: "orchestration", NamespaceSuffix: "orchb", DependsOn: "hub"},
 	}
 }
 

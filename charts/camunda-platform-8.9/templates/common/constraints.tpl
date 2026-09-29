@@ -2,8 +2,51 @@
 A template to handle constraints.
 */}}
 
-{{- $identityEnabled := (or .Values.identity.enabled .Values.global.identity.service.url) }}
-{{- $identityAuthEnabled := (or $identityEnabled .Values.global.identity.auth.enabled) }}
+{{/*
+Both of these must be real booleans, not truthy values: the Multi-Tenancy
+guard below tests them with `has false`, which never matches a non-empty
+string such as global.identity.service.url. And Identity counting as
+"auth enabled" requires BOTH Identity to be reachable AND
+global.identity.auth.enabled to be set, which is what the guard's own error
+message tells the user.
+*/}}
+{{- $identityEnabled := false }}
+{{- if or (eq (include "camundaPlatform.identityEnabled" .) "true") (not (empty .Values.global.identity.service.url)) }}
+  {{- $identityEnabled = true }}
+{{- end }}
+{{- $identityAuthEnabled := false }}
+{{- if and $identityEnabled .Values.global.identity.auth.enabled }}
+  {{- $identityAuthEnabled = true }}
+{{- end }}
+
+{{- $topologyMode := include "camundaPlatform.topologyMode" . }}
+{{- if not (has $topologyMode (list "combined" "orchestration")) }}
+  {{- fail (printf "[camunda][error] global.topology.mode must be one of combined or orchestration; got %q." $topologyMode) }}
+{{- end }}
+{{- if and (eq $topologyMode "orchestration") (not .Values.global.identity.auth.enabled) }}
+  {{- fail "[camunda][error] global.topology.mode=orchestration requires global.identity.auth.enabled=true." }}
+{{- end }}
+{{- if and (eq $topologyMode "orchestration") .Values.identity.enabled }}
+  {{- fail "[camunda][error] global.topology.mode=orchestration requires identity.enabled=false; configure global.identity.service.url to reach Management Identity." }}
+{{- end }}
+{{- if and (eq $topologyMode "orchestration") (empty .Values.global.identity.service.url) }}
+  {{- fail "[camunda][error] global.topology.mode=orchestration requires global.identity.service.url to reach Management Identity." }}
+{{- end }}
+{{- if and (eq $topologyMode "orchestration") (ne (include "camundaPlatform.orchestrationEnabled" .) "true") }}
+  {{- fail "[camunda][error] global.topology.mode=orchestration requires orchestration.enabled=true." }}
+{{- end }}
+{{/*
+The Hub-plane databases belong to the release that runs Management Identity
+and Web Modeler. An orchestration-mode release reaches those over the network
+via global.identity.service.url, so leaving either PostgreSQL chart enabled
+silently deploys a second, unused Hub database per workload release.
+*/}}
+{{- if and (eq $topologyMode "orchestration") .Values.identityPostgresql.enabled }}
+  {{- fail "[camunda][error] global.topology.mode=orchestration requires identityPostgresql.enabled=false; the Management Identity database belongs to the Hub release." }}
+{{- end }}
+{{- if and (eq $topologyMode "orchestration") .Values.webModelerPostgresql.enabled }}
+  {{- fail "[camunda][error] global.topology.mode=orchestration requires webModelerPostgresql.enabled=false; the Web Modeler database belongs to the Hub release." }}
+{{- end }}
 
 {{/*
 Fail with a message if Multi-Tenancy is enabled and its requirements are not met which are:
@@ -28,7 +71,7 @@ Multi-Tenancy requirements: https://docs.camunda.io/docs/self-managed/concepts/m
 {{/*
 Fail if there is no secondary storage type specified and if noSecondaryStorage is not enabled.
 */}}
-{{- if and .Values.orchestration.enabled (eq (include "orchestration.secondaryStorage" .) "unset") }}
+{{- if and (eq (include "camundaPlatform.orchestrationEnabled" .) "true") (eq (include "orchestration.secondaryStorage" .) "unset") }}
   {{- fail "Please configure an expected secondary storage type under `orchestration.data.secondaryStorage.type`, available values are [elasticsearch, opensearch, rdbms]. For more details, see our documentation here: https://docs.camunda.io/docs/next/self-managed/concepts/secondary-storage/configuring-secondary-storage/" -}}
 {{- end }}
 
@@ -90,7 +133,7 @@ Fail with a message if adaptSecurityContext has any value other than "force" or 
 {{/*
 Fail with a message if Identity is disabled and identityKeycloak is enabled.
 */}}
-{{- if and (not .Values.identity.enabled) .Values.identityKeycloak.enabled }}
+{{- if and (ne (include "camundaPlatform.identityEnabled" .) "true") .Values.identityKeycloak.enabled }}
   {{- $errorMessage := printf "[camunda][error] %s %s"
       "Identity is disabled but identityKeycloak is enabled."
       "Please ensure that if identityKeycloak is enabled, Identity must also be enabled."
@@ -101,7 +144,7 @@ Fail with a message if Identity is disabled and identityKeycloak is enabled.
 {{/*
 Fail with a message if Console is enabled but management Identity is not enabled.
 */}}
-{{- if and .Values.console.enabled (not $identityEnabled) }}
+{{- if and (eq (include "camundaPlatform.consoleEnabled" .) "true") (not $identityEnabled) }}
   {{- $errorMessage := printf "[camunda][error] %s %s"
       "Console is enabled but management Identity is not configured."
       "Enable local management Identity with \"identity.enabled: true\", or point to an external management Identity via \"global.identity.service.url\"."
@@ -112,7 +155,7 @@ Fail with a message if Console is enabled but management Identity is not enabled
 {{/*
 Fail with a message if Web Modeler is enabled but management Identity is not enabled.
 */}}
-{{- if and .Values.webModeler.enabled (not $identityEnabled) }}
+{{- if and (eq (include "camundaPlatform.webModelerEnabled" .) "true") (not $identityEnabled) }}
   {{- $errorMessage := printf "[camunda][error] %s %s"
       "Web Modeler is enabled but management Identity is not configured."
       "Enable local management Identity with \"identity.enabled: true\", or point to an external management Identity via \"global.identity.service.url\"."
@@ -133,7 +176,7 @@ configmap-warnings.yaml, which renders the "<release>-warnings" ConfigMap on the
     {{- $existingSecretsNotConfigured := list }}
 
     {{ if .Values.global.identity.auth.enabled }}
-      {{ if and (.Values.connectors.enabled)
+      {{ if and (eq (include "camundaPlatform.connectorsEnabled" .) "true")
                 (eq (include "connectors.authMethod" .) "oidc")
                 (not .Values.connectors.security.authentication.oidc.secret.existingSecret) }}
         {{- $existingSecretsNotConfigured = append
@@ -141,7 +184,7 @@ configmap-warnings.yaml, which renders the "<release>-warnings" ConfigMap on the
       {{- end }}
 
       {{ if and (ne (include "camundaPlatform.authIssuerType" .) "KEYCLOAK")
-                (.Values.identity.enabled)
+                (eq (include "camundaPlatform.identityEnabled" .) "true")
                 (not .Values.global.identity.auth.identity.secret.existingSecret) }}
         {{- $existingSecretsNotConfigured = append
             $existingSecretsNotConfigured "global.identity.auth.identity.secret.existingSecret" }}
@@ -149,7 +192,7 @@ configmap-warnings.yaml, which renders the "<release>-warnings" ConfigMap on the
 
       {{- /* Console is a public client and does not require a secret */ -}}
 
-      {{ if and (.Values.orchestration.enabled)
+      {{ if and (eq (include "camundaPlatform.orchestrationEnabled" .) "true")
                 (eq (include "orchestration.authMethod" .) "oidc")
                 (not .Values.orchestration.security.authentication.oidc.secret.existingSecret) }}
         {{- $existingSecretsNotConfigured = append
@@ -158,7 +201,7 @@ configmap-warnings.yaml, which renders the "<release>-warnings" ConfigMap on the
     {{- end }}
 
   {{/* External Keycloak auth secret must be explicitly configured when using external Keycloak */}}
-  {{ if and (.Values.identity.enabled)
+  {{ if and (eq (include "camundaPlatform.identityEnabled" .) "true")
             (not .Values.identityKeycloak.enabled)
             (.Values.global.identity.keycloak.auth.adminUser)
             (not .Values.global.identity.keycloak.auth.secret.existingSecret) }}
@@ -430,7 +473,7 @@ The following values inside your values.yaml need to be set but were not:
            console.tls.certKeyFilename when caBundle is unset; once caBundle is
            set, NODE_EXTRA_CA_CERTS points at the bundle instead, so a configured
            certKeyFilename no longer contributes trust. */}}
-    {{- if and .Values.console.enabled .Values.console.tls.certKeyFilename }}
+    {{- if and (eq (include "camundaPlatform.consoleEnabled" .) "true") .Values.console.tls.certKeyFilename }}
       {{- $warningMessage := printf "%s %s %s"
           "[camunda][warning]"
           "global.tls.caBundle is set, so Console's NODE_EXTRA_CA_CERTS now points at the CA bundle and console.tls.certKeyFilename is no longer used for trust."
@@ -442,7 +485,7 @@ The following values inside your values.yaml need to be set but were not:
   {{- end }}
 
   {{/* Warn when webModeler pusher secret is auto-generated */}}
-  {{- if .Values.webModeler.enabled }}
+  {{- if eq (include "camundaPlatform.webModelerEnabled" .) "true" }}
     {{- $pusherSecret := .Values.webModeler.restapi.pusher.secret }}
     {{- if not (or $pusherSecret.existingSecret $pusherSecret.inlineSecret) }}
       {{- $warningMessage := printf "%s %s %s %s"
@@ -460,6 +503,59 @@ The following values inside your values.yaml need to be set but were not:
           "Web Modeler is using an auto-generated Pusher app key. This will produce a new random key on every 'helm upgrade', causing WebSocket authentication failures."
           "Please set 'webModeler.restapi.pusher.client.secret.existingSecret' (recommended) or 'webModeler.restapi.pusher.client.secret.inlineSecret'."
           "Auto-generation will be removed in a future release."
+      -}}
+      {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+    {{- end }}
+  {{- end }}
+
+  {{/* CVE-2026-18963 is fixed in Keycloak 26.7.2. regexFind pulls the version out of a
+       tag that may carry a "bitnami-" or "quay-" prefix and a "-debian-12-rN" or
+       rebuild-date suffix, so semverCompare receives a parseable version. The moving
+       aliases of the Bitnami line ("26", "bitnami-26", "bitnami-latest",
+       "latest-bitnami") carry no version at all, yet resolve to a frozen bitnamilegacy
+       build that is affected and stays affected, so they are matched by name:
+       https://github.com/camunda/keycloak/blob/main/.github/workflows/build-images.yml */}}
+  {{- if .Values.identityKeycloak.enabled }}
+    {{- $keycloakImage := .Values.identityKeycloak.image }}
+    {{- $keycloakTag := (($keycloakImage).tag | toString) }}
+    {{- $keycloakVersion := regexFind "[0-9]+\\.[0-9]+\\.[0-9]+" $keycloakTag }}
+    {{- /* On "camunda/keycloak" the "quay-*" tags and the plain "latest" alias track
+           upstream Keycloak and are still maintained; every other tag of that repository
+           belongs to the frozen Bitnami line. */}}
+    {{- $onFrozenLine := and (eq (($keycloakImage).repository | toString) "camunda/keycloak")
+        (not (hasPrefix "quay-" $keycloakTag)) (ne $keycloakTag "latest") }}
+    {{- $frozenAlias := and $onFrozenLine (not $keycloakVersion)
+        (regexMatch "^(bitnami-)?[0-9]+$|^(bitnami-latest|latest-bitnami)$" $keycloakTag) }}
+    {{- if or $frozenAlias (and $keycloakVersion (semverCompare "<26.7.2" $keycloakVersion)) }}
+      {{- $affectedImage := printf "is pinned to %s, which is" $keycloakVersion }}
+      {{- if $frozenAlias }}
+        {{- $affectedImage = printf "uses the moving tag \"%s\", which resolves to a frozen Bitnami build that is" $keycloakTag }}
+      {{- end }}
+      {{- $frozenLineNote := "" }}
+      {{- if $onFrozenLine }}
+        {{- $frozenLineNote = " The Bitnami-based \"camunda/keycloak\" tags this chart defaults to are frozen on the discontinued bitnamilegacy base and will not receive the fix." }}
+      {{- end }}
+      {{- $warningMessage := printf "%s %s%s %s %s"
+          "[camunda][warning]"
+          (printf "SECURITY: the bundled Keycloak image %s affected by CVE-2026-18963, a critical password-reset flaw enabling account takeover. It is fixed in Keycloak 26.7.2." $affectedImage)
+          $frozenLineNote
+          "Recommended: migrate this subchart to the Keycloak Operator, which replaces its StatefulSet: https://docs.camunda.io/docs/self-managed/deployment/helm/operational-tasks/migration-from-bitnami/"
+          "Enterprise customers can instead deploy with the chart's \"values-enterprise.yaml\", which pins a patched Bitnami-based \"keycloak-ee/keycloak\" image along with the registry pull secret it requires. Details: https://github.com/camunda/camunda-platform-helm/issues/6987"
+      -}}
+      {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+    {{- end }}
+  {{- end }}
+
+  {{/* camunda-platform-helm#6778: global.documentStore.type.* credentials also double as
+       ambient AWS/GCP configuration for connectors, optimize, and web-modeler-restapi on this
+       chart version. */}}
+  {{- if or .Values.global.documentStore.type.aws.enabled .Values.global.documentStore.type.gcp.enabled }}
+    {{- if has (lower .Values.global.documentStore.activeStoreId) (list "aws" "gcp") }}
+      {{- $warningMessage := printf "%s %s %s %s"
+          "[camunda][warning]"
+          "DEPRECATION: Starting from Camunda 8.10 release, the global.documentStore.* will be used solely for document store configuration."
+          "If the key is currently being used for general AWS/GCP/Azure cloud configuration, please migrate those settings to the appropriate component-specific configuration."
+          "When upgrading to Camunda 8.10 or later, please refer to the migration guide: https://docs.camunda.io/docs/8.10/self-managed/upgrade/helm/"
       -}}
       {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
     {{- end }}
@@ -773,7 +869,7 @@ Identity
 *******************************************************************************
 */}}
 
-{{- if .Values.identity.enabled -}}
+{{- if eq (include "camundaPlatform.identityEnabled" .) "true" -}}
 
 {{ include "camundaPlatform.keyRemoved" (dict
   "condition" (hasKey .Values.identity.firstUser "password")
@@ -813,7 +909,7 @@ Connectors
 *******************************************************************************
 */}}
 
-{{- if .Values.connectors.enabled -}}
+{{- if eq (include "camundaPlatform.connectorsEnabled" .) "true" -}}
 
 {{ include "camundaPlatform.keyRemoved" (dict
   "condition" (hasKey .Values.connectors.security.authentication.oidc "existingSecret")
@@ -833,7 +929,7 @@ Orchestration
 *******************************************************************************
 */}}
 
-{{- if .Values.orchestration.enabled -}}
+{{- if eq (include "camundaPlatform.orchestrationEnabled" .) "true" -}}
 
 {{ include "camundaPlatform.keyRemoved" (dict
   "condition" (hasKey .Values.orchestration.security.authentication.oidc "existingSecret")
@@ -853,7 +949,7 @@ Web Modeler
 *******************************************************************************
 */}}
 
-{{- if .Values.webModeler.enabled -}}
+{{- if eq (include "camundaPlatform.webModelerEnabled" .) "true" -}}
 
 {{ include "camundaPlatform.keyRemoved" (dict
   "condition" (hasKey .Values.webModeler.restapi.externalDatabase "password")

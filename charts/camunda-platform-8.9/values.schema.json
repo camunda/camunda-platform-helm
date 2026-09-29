@@ -5,6 +5,21 @@
         "global": {
             "type": "object",
             "properties": {
+                "topology": {
+                    "type": "object",
+                    "properties": {
+                        "mode": {
+                            "type": "string",
+                            "description": "defines the role of this release in the deployment topology. Supported values are combined and orchestration.",
+                            "default": "combined",
+                            "enum": [
+                                "combined",
+                                "orchestration"
+                            ]
+                        }
+                    },
+                    "additionalProperties": false
+                },
                 "license": {
                     "type": "object",
                     "properties": {
@@ -994,8 +1009,9 @@
                     "properties": {
                         "activeStoreId": {
                             "type": "string",
-                            "description": "The default document store to use. Valid values: inmemory, aws, gcp, and azure.",
-                            "default": "inmemory"
+                            "description": "defines the default document store instance ID. This value must match the configured store instance ID. See https://docs.camunda.io/docs/8.9/self-managed/concepts/document-handling/configuration/helm/",
+                            "default": "inmemory",
+                            "pattern": "^[A-Za-z0-9.-]+$"
                         },
                         "type": {
                             "type": "object",
@@ -1348,7 +1364,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.9.9"
+                            "default": "8.9.10"
                         },
                         "digest": {
                             "type": "string",
@@ -2643,7 +2659,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be used to set the Docker image tag for the Console image",
-                            "default": "8.9.95"
+                            "default": "8.9.116"
                         },
                         "digest": {
                             "type": "string",
@@ -3243,7 +3259,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be used to set the Docker image tag for the WebModeler images",
-                            "default": "8.9.8"
+                            "default": "8.9.9"
                         },
                         "pullSecrets": {
                             "type": "array",
@@ -4790,7 +4806,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.9.10"
+                            "default": "8.9.14"
                         },
                         "digest": {
                             "type": "string",
@@ -5628,7 +5644,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.9.19"
+                            "default": "8.9.21"
                         },
                         "digest": {
                             "type": "string",
@@ -6916,7 +6932,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.9.19"
+                            "default": "8.9.21"
                         },
                         "digest": {
                             "type": "string",

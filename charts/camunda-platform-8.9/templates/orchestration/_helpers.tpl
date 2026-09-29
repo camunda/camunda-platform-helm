@@ -159,7 +159,7 @@ Authentication.
 */}}
 
 {{- define "orchestration.authMethod" -}}
-    {{- if not .Values.orchestration.enabled -}}
+    {{- if ne (include "camundaPlatform.orchestrationEnabled" .) "true" -}}
         none
     {{- else -}}
         {{- .Values.orchestration.security.authentication.method | default (
@@ -318,13 +318,43 @@ falls through to the shared global/secondary-storage sources otherwise.
 {{- end -}}
 
 
+{{- /*
+NOTE: Renders the explicit CamundaExporter registration so legacy
+`ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_*` env overrides merge into a map that has a
+`className`. `args.connect.type` is omitted; `camunda.data.secondary-storage.type` supplies it.
+Skipped when the RDBMS exporter is enabled.
+*/ -}}
+{{- define "orchestration.hasCamundaExporter" -}}
+{{- and
+      (or
+        (eq (include "orchestration.secondaryStorage" .) "elasticsearch")
+        (eq (include "orchestration.secondaryStorage" .) "opensearch")
+      )
+      .Values.orchestration.exporters.camunda.enabled
+      (not .Values.orchestration.exporters.rdbms.enabled)
+-}}
+{{- end -}}
+
+{{- /*
+NOTE: the sources mirror the store-specific `aws-enabled` values of the unified
+`camunda.data.secondary-storage` block; `orchestration.hasCamundaExporter` restricts this helper to
+the elasticsearch and opensearch types, so the else branch is the elasticsearch source.
+*/ -}}
+{{- define "orchestration.camundaExporterAwsEnabled" -}}
+{{- if eq (include "orchestration.secondaryStorage" .) "opensearch" -}}
+{{- or .Values.orchestration.data.secondaryStorage.opensearch.aws.enabled .Values.global.opensearch.aws.enabled -}}
+{{- else -}}
+{{- .Values.orchestration.data.secondaryStorage.elasticsearch.aws.enabled -}}
+{{- end -}}
+{{- end -}}
+
 {{- define "orchestration.hasElasticsearchExporter" -}}
 {{- and
       (or
-        (and .Values.global.elasticsearch.enabled .Values.orchestration.exporters.rdbms.enabled .Values.optimize.enabled)
+        (and .Values.global.elasticsearch.enabled .Values.orchestration.exporters.rdbms.enabled (eq (include "camundaPlatform.optimizeEnabled" .) "true"))
         (or
           (and .Values.global.elasticsearch.enabled .Values.orchestration.exporters.zeebe.enabled)
-          (and (or .Values.global.elasticsearch.enabled .Values.optimize.database.elasticsearch.enabled) .Values.optimize.enabled)
+          (and (or .Values.global.elasticsearch.enabled .Values.optimize.database.elasticsearch.enabled) (eq (include "camundaPlatform.optimizeEnabled" .) "true"))
         )
       )
       (or
@@ -338,7 +368,7 @@ falls through to the shared global/secondary-storage sources otherwise.
 {{- and
       (or
         (and .Values.global.opensearch.enabled .Values.orchestration.exporters.zeebe.enabled)
-        (and (or .Values.global.opensearch.enabled .Values.optimize.database.opensearch.enabled) .Values.optimize.enabled)
+        (and (or .Values.global.opensearch.enabled .Values.optimize.database.opensearch.enabled) (eq (include "camundaPlatform.optimizeEnabled" .) "true"))
       )
       (or
         .Values.orchestration.exporters.zeebe.enabled
@@ -356,7 +386,7 @@ when no host resolves, the exporter keeps the secondary-storage/global compatibi
 {{- define "orchestration.legacyElasticsearchExporterUsesOptimizeSource" -}}
 {{- and
       (eq (include "orchestration.hasElasticsearchExporter" .) "true")
-      .Values.optimize.enabled
+      (eq (include "camundaPlatform.optimizeEnabled" .) "true")
       (ne (include "camundaPlatform.elasticsearchHost" .) "")
 -}}
 {{- end -}}
@@ -365,7 +395,7 @@ when no host resolves, the exporter keeps the secondary-storage/global compatibi
 {{- and
       (ne (include "orchestration.hasElasticsearchExporter" .) "true")
       (eq (include "orchestration.hasOpenSearchExporter" .) "true")
-      .Values.optimize.enabled
+      (eq (include "camundaPlatform.optimizeEnabled" .) "true")
       (ne (include "camundaPlatform.opensearchHost" .) "")
 -}}
 {{- end -}}
@@ -430,10 +460,6 @@ otherwise.
 
 {{- define "orchestration.hasAppIntegrations" -}}
 {{- include "camundaPlatform.hasSecretConfig" (dict "config" .Values.orchestration.exporters.appIntegrations.apiKey) -}}
-{{- end -}}
-
-{{- define "orchestration.hasAzureDocumentStore" -}}
-{{- include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.documentStore.type.azure.connectionString) -}}
 {{- end -}}
 
 

@@ -1,0 +1,54 @@
+name: Collect topology namespace diagnostics
+description: >
+  Dump diagnostics for every namespace of a multi-release topology scenario and
+  always record what was collected, so an empty bundle can never be mistaken for
+  a healthy run.
+
+inputs:
+  base-namespace:
+    description: Base namespace the topology suffixes hang off (TEST_NAMESPACE).
+    required: true
+  suffixes:
+    description: JSON array of topology release namespace suffixes.
+    required: true
+  out-dir:
+    description: Directory the per-namespace logs and the summary are written to.
+    required: false
+    default: diagnostics
+
+runs:
+  using: composite
+  steps:
+    - name: Collect topology namespace diagnostics
+      shell: bash
+      env:
+        BASE_NAMESPACE: ${{ inputs.base-namespace }}
+        TOPOLOGY_NAMESPACE_SUFFIXES: ${{ inputs.suffixes }}
+        OUT_DIR: ${{ inputs.out-dir }}
+      # The summary is written whether or not any namespace still exists: a
+      # reaped namespace produces no per-namespace log, and without the summary
+      # the upload has nothing to distinguish that from "never ran".
+      run: |
+        mkdir -p "$OUT_DIR"
+        summary="${OUT_DIR}/topology-collection-summary.txt"
+        {
+          echo "base namespace: ${BASE_NAMESPACE}"
+          echo "suffixes:       ${TOPOLOGY_NAMESPACE_SUFFIXES}"
+          echo "collected at:   $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          echo
+        } > "$summary"
+
+        while IFS= read -r suffix; do
+          ns="$(deploy-camunda topology namespace --base "$BASE_NAMESPACE" --suffix "$suffix")"
+          if [[ -z "$(kubectl get ns "$ns" --ignore-not-found -o name)" ]]; then
+            echo "::warning::topology namespace ${ns} no longer exists; no diagnostics collected for suffix ${suffix}. A namespace reaped by its cleaner/janitor TTL before collection runs is the usual cause."
+            echo "${suffix}: ABSENT (${ns}) - namespace gone before collection" >> "$summary"
+            continue
+          fi
+          deploy-camunda diagnostics print --namespace "$ns" >"${OUT_DIR}/topology-${suffix}.log" 2>&1 || true
+          echo "${suffix}: collected (${ns}) - topology-${suffix}.log" >> "$summary"
+        done < <(jq -r '.[]' <<<"$TOPOLOGY_NAMESPACE_SUFFIXES")
+
+        echo "::group::Topology diagnostics summary"
+        cat "$summary"
+        echo "::endgroup::"

@@ -1,0 +1,8 @@
+orchestration:
+  ingress:
+    grpc:
+      enabled: true
+      className: contour
+      host: zeebe.example.com
+      annotations:
+        '{{ "nginx.ingress.kubernetes.io/backend-protocol" }}': "user-wins"

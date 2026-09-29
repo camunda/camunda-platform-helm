@@ -128,10 +128,51 @@ func TestGoldenConfigmapWithRDBMSEnabled(t *testing.T) {
 	})
 }
 
+func (s *ConfigmapLegacyTemplateTest) TestAzureDocumentStoreDoesNotRenderSpringProperties() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "existing Azure secret",
+			Values: map[string]string{
+				"global.documentStore.activeStoreId":                                     "azure",
+				"global.documentStore.type.azure.connectionString.secret.existingSecret": "azure-credentials",
+			},
+		},
+		{
+			Name: "inline Azure secret with a custom store ID",
+			Values: map[string]string{
+				"global.documentStore.activeStoreId":                                   "az1",
+				"global.documentStore.type.azure.connectionString.secret.inlineSecret": "test-connection-string",
+			},
+		},
+		{
+			Name: "no Azure secret",
+			Values: map[string]string{
+				"global.documentStore.activeStoreId": "azure",
+			},
+		},
+	}
+	for caseIndex := range testCases {
+		testCases[caseIndex].Verifier = func(t *testing.T, output string, err error) {
+			s.Require().NoError(err)
+			var configmap corev1.ConfigMap
+			helm.UnmarshalK8SYaml(t, output, &configmap)
+			s.Require().Contains(configmap.Data, "application.yaml")
+			var configuration map[string]map[string]any
+			s.Require().NoError(yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configuration))
+			s.Require().Contains(configuration, "camunda")
+			s.Require().Contains(configuration["camunda"], "license")
+			s.Require().NotContains(configuration["camunda"], "document")
+		}
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
 func (s *ConfigmapLegacyTemplateTest) TestDifferentValuesInputs() {
 	testCases := []testhelpers.TestCase{
 		{
-			Name:   "TestExportersShouldBeEmptyByDefault",
+			// Regression: helm#7028.
+			Name:   "TestContainerShouldContainExporterClassPerDefault",
 			Values: map[string]string{},
 			Verifier: func(t *testing.T, output string, err error) {
 				var configmap corev1.ConfigMap
@@ -139,25 +180,63 @@ func (s *ConfigmapLegacyTemplateTest) TestDifferentValuesInputs() {
 				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 				helm.UnmarshalK8SYaml(s.T(), configmap.Data["application.yaml"], &configmapApplication)
 
-				// CamundaExporter is auto-registered via autoconfigure-camunda-exporter: true;
-				// the legacy zeebe.broker.exporters.camundaexporter entry must not be present.
-				s.Require().Empty(configmapApplication.Zeebe.Broker.Exporters.CamundaExporter.ClassName)
+				s.Require().Equal("io.camunda.exporter.CamundaExporter", configmapApplication.Zeebe.Broker.Exporters.CamundaExporter.ClassName)
 
 				s.Require().NotContains(configmap.Data["application.yaml"], "exporters: {}")
 			},
 		},
 		{
-			Name:   "TestCustomHistorySettingsUseUnifiedElasticsearchConfig",
-			Values: customHistoryValues("elasticsearch"),
+			// Regression: helm#7028.
+			Name: "TestExporterClassIsRenderedAlongsideLegacyArgsOverride",
+			Values: map[string]string{
+				"orchestration.env[0].name":  "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_HISTORY_ELSROLLOVERDATEFORMAT",
+				"orchestration.env[0].value": "yyyy-MM",
+			},
 			Verifier: func(t *testing.T, output string, err error) {
-				assertCustomHistorySettings(t, output, false)
+				require.NoError(t, err)
+
+				var configmap corev1.ConfigMap
+				var configmapApplication camunda.OrchestrationApplicationYAML
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				helm.UnmarshalK8SYaml(s.T(), configmap.Data["application.yaml"], &configmapApplication)
+
+				s.Require().Equal("io.camunda.exporter.CamundaExporter", configmapApplication.Zeebe.Broker.Exporters.CamundaExporter.ClassName)
 			},
 		},
 		{
-			Name:   "TestCustomHistorySettingsUseUnifiedOpenSearchConfig",
+			Name:   "TestCustomHistorySettingsUseLegacyExporterArgsWithElasticsearch",
+			Values: customHistoryValues("elasticsearch"),
+			Verifier: func(t *testing.T, output string, err error) {
+				assertCustomHistorySettings(t, output)
+			},
+		},
+		{
+			Name:   "TestCustomHistorySettingsUseLegacyExporterArgsWithOpenSearch",
 			Values: customHistoryValues("opensearch"),
 			Verifier: func(t *testing.T, output string, err error) {
-				assertCustomHistorySettings(t, output, true)
+				assertCustomHistorySettings(t, output)
+			},
+		},
+		{
+			Name: "TestUnifiedHistoryCarriesOnlyRetentionPolicyName",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":    "elasticsearch",
+				"orchestration.history.retention.enabled":     "true",
+				"orchestration.history.retention.policyName":  "custom-policy",
+				"orchestration.history.elsRolloverDateFormat": "yyyy-MM",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+
+				var configmap corev1.ConfigMap
+				var application camunda.OrchestrationApplicationYAML
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+				applicationYaml := configmap.Data["application.yaml"]
+				require.NoError(t, yaml.Unmarshal([]byte(applicationYaml), &application))
+
+				require.Equal(t, "custom-policy", application.Camunda.Data.SecondaryStorage.Elasticsearch.History.PolicyName)
+				require.NotContains(t, applicationYaml, "els-rollover-date-format:")
+				require.NotContains(t, applicationYaml, "rollover-batch-size:")
 			},
 		},
 		{
@@ -176,6 +255,89 @@ func (s *ConfigmapLegacyTemplateTest) TestDifferentValuesInputs() {
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
 				assertCamundaExporterAutoconfiguration(t, output, false)
+			},
+		},
+		{
+			Name: "TestCamundaExporterAwsModeFollowsElasticsearchSecondaryStorage",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":                      "elasticsearch",
+				"orchestration.data.secondaryStorage.elasticsearch.aws.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				assertCamundaExporterConnect(t, output, true)
+			},
+		},
+		{
+			Name: "TestCamundaExporterAwsModeFollowsOpenSearchSecondaryStorage",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "opensearch",
+				"global.opensearch.aws.enabled":            "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				assertCamundaExporterConnect(t, output, true)
+			},
+		},
+		{
+			// Regression: SUPPORT-34757. connect.type is a legacy alias of
+			// camunda.data.secondary-storage.type; rendering both makes
+			// UnifiedConfigurationHelper log a deprecation WARN on every REST request.
+			Name: "TestCamundaExporterOmitsLegacyConnectTypeButKeepsClassName",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+
+				var configmap corev1.ConfigMap
+				var application camunda.OrchestrationApplicationYAML
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+				applicationYaml := configmap.Data["application.yaml"]
+				require.NoError(t, yaml.Unmarshal([]byte(applicationYaml), &application))
+
+				exporter := application.Zeebe.Broker.Exporters.CamundaExporter
+				require.Equal(t, "io.camunda.exporter.CamundaExporter", exporter.ClassName)
+				require.Empty(t, exporter.Args.Connect.Type)
+				// The sole remaining occurrence is the unified
+				// camunda.data.secondary-storage.type. A second one means the legacy
+				// exporter alias is back.
+				require.Equal(t, 1, strings.Count(applicationYaml, "type: \"elasticsearch\""))
+			},
+		},
+		{
+			// Regression: the RDBMS guard dropped in helm#7044. An explicit
+			// secondaryStorage.type alongside the RDBMS exporter must not register
+			// CamundaExporter as well.
+			Name: "TestCamundaExporterIsNotRegisteredWhenRDBMSExporterEnabled",
+			Values: map[string]string{
+				"orchestration.exporters.rdbms.enabled":    "true",
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+
+				applicationYaml := configmap.Data["application.yaml"]
+				require.NotContains(t, applicationYaml, "camundaexporter:")
+				require.Contains(t, applicationYaml, "autoconfigure-camunda-exporter: false")
+				require.NotContains(t, applicationYaml, "autoconfigure-camunda-exporter: true")
+			},
+		},
+		{
+			Name: "TestCamundaExporterIsNotRegisteredForRDBMSSecondaryStorage",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "rdbms",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+
+				require.NotContains(t, configmap.Data["application.yaml"], "camundaexporter:")
 			},
 		},
 	}
@@ -206,17 +368,28 @@ func assertCamundaExporterAutoconfiguration(t *testing.T, output string, expecte
 	require.Equal(t, expected, application.Camunda.Data.SecondaryStorage.AutoconfigureCamundaExporter)
 }
 
-func assertCustomHistorySettings(t *testing.T, output string, openSearch bool) {
+func assertCamundaExporterConnect(t *testing.T, output string, expectedAwsEnabled bool) {
 	var configmap corev1.ConfigMap
 	var application camunda.OrchestrationApplicationYAML
 	helm.UnmarshalK8SYaml(t, output, &configmap)
 	require.NoError(t, yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &application))
-	require.NotContains(t, configmap.Data["application.yaml"], "camundaexporter:")
 
-	history := application.Camunda.Data.SecondaryStorage.Elasticsearch.History
-	if openSearch {
-		history = application.Camunda.Data.SecondaryStorage.OpenSearch.History
-	}
+	connect := application.Zeebe.Broker.Exporters.CamundaExporter.Args.Connect
+	require.Empty(t, connect.Type, "legacy connect.type must stay unrendered, see SUPPORT-34757")
+	require.Equal(t, expectedAwsEnabled, connect.AwsEnabled)
+}
+
+func assertCustomHistorySettings(t *testing.T, output string) {
+	var configmap corev1.ConfigMap
+	var application camunda.OrchestrationApplicationYAML
+	helm.UnmarshalK8SYaml(t, output, &configmap)
+	require.NoError(t, yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &application))
+
+	exporter := application.Zeebe.Broker.Exporters.CamundaExporter
+	require.Equal(t, "io.camunda.exporter.CamundaExporter", exporter.ClassName)
+	require.Empty(t, exporter.Args.Connect.Type, "legacy connect.type must stay unrendered, see SUPPORT-34757")
+
+	history := exporter.Args.History
 	require.Equal(t, "yyyy-MM", history.ElsRolloverDateFormat)
 	require.Equal(t, "2d", history.RolloverInterval)
 	require.Equal(t, 321, history.RolloverBatchSize)

@@ -1,3 +1,4 @@
+{{- $partitioning := include "camundaPlatform.partitioning" $ | fromJson -}}
 {{/*
 This file name should start with an underscore to avoid rendering it as a template.
 It is included (imported) in the ConfigMap.
@@ -72,18 +73,45 @@ camunda:
     # The Node ID depends on the StatefulSet Pod's name so it cannot be templated in the StatefulSet level.
     # The value of "node-id" is calculated in the "startup.sh" file and exported as "VALUES_ORCHESTRATION_NODE_ID" env var.
     node-id: "${VALUES_ORCHESTRATION_NODE_ID:}"
-    size: {{ .Values.orchestration.clusterSize | quote }}
-    replication-factor: {{ .Values.orchestration.replicationFactor | quote }}
+    size: {{ include "orchestration.clusterSize" . | quote }}
+    replication-factor: {{ include "orchestration.replicationFactor" . | quote }}
     partition-count: {{ .Values.orchestration.partitionCount | quote }}
+    {{- if eq (include "orchestration.zoneAware" .) "true" }}
+    partitioning:
+      scheme: ZONE_AWARE
+      zone-aware:
+        zones:
+        {{- range $partitioning.zones }}
+          - name: {{ .name | quote }}
+            number-of-brokers: {{ .numberOfBrokers }}
+            number-of-replicas: {{ .numberOfReplicas }}
+            priority: {{ .priority }}
+        {{- end }}
+    {{- end }}
     # zeebe.broker.cluster
-    {{- if le (int .Values.global.multiregion.regions) 1 }}
+    {{- /* NOTE: one zone or one region is one headless Service, which the chart can address
+         itself. Beyond that it cannot know how brokers reach each other, so the list is the
+         user's to provide. Retention is the exception: the zoned brokers and the round-robin
+         ones they replace share this release, so the chart can still name both. */ -}}
+    {{- if and (eq (include "orchestration.zoneAware" .) "true") (or (ne (include "camundaPlatform.spansFailureDomains" $) "true") $partitioning.keepUnzonedBrokers) }}
     initial-contact-points:
-    {{- range (untilStep 0 (int .Values.orchestration.clusterSize) 1) }}
+    {{- $zoneFullname := include "orchestration.zoneFullname" (dict "context" $ "zone" $partitioning.zone) }}
+    {{- range untilStep 0 (int (include "orchestration.replicas" $)) 1 }}
+      - {{ $zoneFullname }}-{{ . }}.{{ $zoneFullname }}:{{ $.Values.orchestration.service.internalPort }}
+    {{- end }}
+    {{- if $partitioning.keepUnzonedBrokers }}
+    {{- range untilStep 0 (int (include "orchestration.numberedReplicas" $)) 1 }}
+      - {{ include "orchestration.fullname" $ }}-{{ . }}.{{ include "orchestration.fullname" $ }}:{{ $.Values.orchestration.service.internalPort }}
+    {{- end }}
+    {{- end }}
+    {{- else if ne (include "camundaPlatform.spansFailureDomains" $) "true" }}
+    initial-contact-points:
+    {{- range (untilStep 0 (int (include "orchestration.clusterSize" $)) 1) }}
       - {{ include "orchestration.fullname" $ }}-{{ . }}.${K8S_SERVICE_NAME}:{{ $.Values.orchestration.service.internalPort }}
     {{- end }}
     {{- else }}
     # Multi-region deployments: initial-contact-points must be provided manually via environment variable.
-    # Set CAMUNDA_CLUSTER_INITIALCONTACTPOINTS with fully-qualified domain names for all brokers across regions.
+    # Set CAMUNDA_CLUSTER_INITIALCONTACTPOINTS with fully-qualified domain names for all brokers across zones.
     # Example: orchestration.env[0].name=CAMUNDA_CLUSTER_INITIALCONTACTPOINTS
     #          orchestration.env[0].value=<pod>.<headless-service>.<namespace-0>.svc.cluster.local:26502,<pod>.<headless-service>.<namespace-1>.svc.cluster.local:26502,...
     {{- end }}
@@ -158,6 +186,15 @@ camunda:
         password: "${VALUES_ORCHESTRATION_DATA_SECONDARYSTORAGE_RDBMS_PASSWORD:}"
         {{- end }}
       {{- end }}
+    {{- if eq (include "orchestration.hasElasticsearchExporter" .) "true" }}
+    exporters:
+      elasticsearch:
+        className: "io.camunda.zeebe.exporter.ElasticsearchExporter"
+    {{- else if eq (include "orchestration.hasOpenSearchExporter" .) "true" }}
+    exporters:
+      opensearch:
+        className: "io.camunda.zeebe.exporter.opensearch.OpensearchExporter"
+    {{- end }}
 
   # Security configuration - Separated syntax.
   security:
@@ -181,7 +218,9 @@ camunda:
           {{- end }}
           - {{ include "orchestration.authClientId" . | quote }}
           - {{ include "orchestration.authAudience" . | quote }}
+          {{- if eq (include "camundaHub.webModelerEnabled" .) "true" }}
           - {{ (or .Values.global.identity.auth.camundaHub.clientApiAudience .Values.global.identity.auth.webModeler.clientApiAudience) | quote }}
+          {{- end }}
         {{- if (include "orchestration.authIssuerUrl" .) }}
         issuer-uri: {{ include "orchestration.authIssuerUrl" . | quote }}
         {{- else }}
@@ -315,7 +354,7 @@ zeebe:
 
     # zeebe.broker.network
     network:
-      {{- if gt (int .Values.global.multiregion.regions) 1 }}
+      {{- if $partitioning.qualifiedAdvertisedHost }}
       advertisedHost: "${K8S_NAME}.${K8S_SERVICE_NAME}.${K8S_NAMESPACE}.svc"
       {{- else }}
       advertisedHost: "${K8S_NAME}.${K8S_SERVICE_NAME}"
@@ -349,7 +388,7 @@ zeebe:
           {{- end }}
           url: {{ include "camundaPlatform.legacyExporterElasticsearchURL" . | quote }}
           index:
-            prefix: {{ .Values.optimize.database.elasticsearch.prefix | default "zeebe-record" | quote }}
+            prefix: {{ include "orchestration.legacyExporterElasticsearchPrefix" . | quote }}
             numberOfReplicas: {{ ternary .Values.orchestration.index.replicas .Values.orchestration.exporters.zeebe.replicas (kindIs "invalid" .Values.orchestration.exporters.zeebe.replicas) | quote }}
           {{- if .Values.orchestration.retention.enabled }}
           retention:
@@ -368,7 +407,7 @@ zeebe:
           {{- end }}
           url: {{ include "camundaPlatform.legacyExporterOpensearchURL" . | quote }}
           index:
-            prefix: {{ .Values.optimize.database.opensearch.prefix | default "zeebe-record" | quote }}
+            prefix: {{ include "orchestration.legacyExporterOpenSearchPrefix" . | quote }}
             numberOfReplicas: {{ ternary .Values.orchestration.index.replicas .Values.orchestration.exporters.zeebe.replicas (kindIs "invalid" .Values.orchestration.exporters.zeebe.replicas) | quote }}
           {{- if eq (include "orchestration.legacyOpenSearchExporterAwsEnabled" .) "true" }}
           aws:

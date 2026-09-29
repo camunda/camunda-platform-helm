@@ -87,10 +87,10 @@ replicas: 1
 ## @param podAnnotations Additional annotations for Keycloak pods.
 podAnnotations: {}
 
-## @param nodeSelector Node selector for Keycloak pods.
+## @param nodeSelector can be used to select nodes for Keycloak and bundled PostgreSQL pods.
 nodeSelector: {}
 
-## @param tolerations Tolerations for Keycloak pods.
+## @param tolerations can be used to tolerate node taints for Keycloak and bundled PostgreSQL pods.
 tolerations: []
 
 ## Bundled PostgreSQL for Keycloak's database.

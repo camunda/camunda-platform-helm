@@ -19,6 +19,8 @@ import (
 	"camunda-platform/test/unit/testhelpers"
 	"camunda-platform/test/unit/utils"
 	"fmt"
+	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -175,9 +177,73 @@ func (s *ConfigmapLegacyTemplateTest) TestDifferentValuesInputs() {
 				assertCamundaExporterAutoconfiguration(t, output, false)
 			},
 		},
+		{
+			Name:   "TestRestoreSupportsTenantArguments",
+			Values: map[string]string{},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+
+				testCases := []struct {
+					name    string
+					env     string
+					wantArg string
+				}{
+					{
+						name:    "all tenants",
+						env:     "ZEEBE_RESTORE_ALL_TENANTS=true",
+						wantArg: "--allTenants",
+					},
+					{
+						name:    "specific tenant",
+						env:     "ZEEBE_RESTORE_TENANT_ID=tenant-a",
+						wantArg: "--tenantId=tenant-a",
+					},
+				}
+
+				for _, testCase := range testCases {
+					t.Run(testCase.name, func(t *testing.T) {
+						args := runRestoreStartupScript(t, configmap.Data["startup.sh"], testCase.env)
+						require.Equal(t, []string{testCase.wantArg, "--backupId=backup-1"}, args)
+					})
+				}
+			},
+		},
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func runRestoreStartupScript(t *testing.T, startupScript, restoreEnv string) []string {
+	t.Helper()
+
+	tempDir := t.TempDir()
+	startupPath := filepath.Join(tempDir, "startup.sh")
+	restorePath := filepath.Join(tempDir, "restore")
+	require.NoError(t, os.WriteFile(startupPath, []byte(startupScript), 0o755))
+	require.NoError(t, os.WriteFile(restorePath, []byte("#!/usr/bin/env bash\nprintf '%s\\n' \"$@\"\n"), 0o755))
+
+	command := exec.Command("bash", startupPath)
+	command.Env = []string{
+		"PATH=" + tempDir + ":" + os.Getenv("PATH"),
+		"K8S_NAME=orchestration-0",
+		"ZEEBE_RESTORE=true",
+		"ZEEBE_RESTORE_FROM_BACKUP_ID=backup-1",
+		restoreEnv,
+	}
+	output, err := command.CombinedOutput()
+	require.NoError(t, err, string(output))
+
+	var args []string
+	for line := range strings.Lines(string(output)) {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "--") {
+			args = append(args, line)
+		}
+	}
+	return args
 }
 
 func customHistoryValues(secondaryStorageType string) map[string]string {

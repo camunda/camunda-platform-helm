@@ -200,7 +200,7 @@ app.kubernetes.io/component: {{ .componentName }}
 {{- define "webModeler.publicWebsocketPort" -}}
     {{- $hub := include "camundaHub.values" . | fromYaml -}}
   {{- if and .Values.global.ingress.enabled $hub.contextPath }}
-    {{- .Values.global.ingress.tls.enabled | ternary "443" "80" }}
+    {{- include "camundaPlatform.ingressExternalPort" (dict "context" . "tlsEnabled" .Values.global.ingress.tls.enabled) -}}
   {{- else }}
     {{- $hub.websockets.publicPort }}
   {{- end }}

@@ -16,7 +16,10 @@ package cmd
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 
 	"scripts/deploy-camunda/config"
@@ -76,7 +79,7 @@ func testTopologyReleases() []matrix.TopologyRelease {
 		{
 			Role:            "hub",
 			NamespaceSuffix: "hub",
-			Values:          "features/multinamespace-hub.yaml",
+			Features:        []string{"multinamespace-hub"},
 			Identity:        "keycloak",
 			Dependencies:    []string{"keycloak", "postgresql", "elasticsearch"},
 			ResolvedDependencies: []matrix.ChartDependency{
@@ -88,7 +91,7 @@ func testTopologyReleases() []matrix.TopologyRelease {
 		{
 			Role:            "orchestration",
 			NamespaceSuffix: "orcha",
-			Values:          "features/multinamespace-orchestration.yaml",
+			Features:        []string{"multinamespace-orchestration"},
 			Identity:        "keycloak-external",
 			Persistence:     "elasticsearch-external",
 			DependsOn:       "hub",
@@ -96,7 +99,7 @@ func testTopologyReleases() []matrix.TopologyRelease {
 		{
 			Role:            "orchestration",
 			NamespaceSuffix: "orchb",
-			Values:          "features/multinamespace-orchestration.yaml",
+			Features:        []string{"multinamespace-orchestration"},
 			Identity:        "keycloak-external",
 			Persistence:     "elasticsearch-external",
 			DependsOn:       "hub",
@@ -114,7 +117,7 @@ func TestSynthesizeReleaseEntry_HubCarriesOwnLayers(t *testing.T) {
 	}
 	releases := testTopologyReleases()
 
-	hubEntry := synthesizeReleaseEntry(baseEntry, releases[0], "gke")
+	hubEntry := synthesizeReleaseEntry("/repo", baseEntry, releases[0], "gke")
 
 	if hubEntry.Identity != "keycloak" {
 		t.Errorf("Hub Identity = %q, want %q", hubEntry.Identity, "keycloak")
@@ -148,13 +151,34 @@ func TestSynthesizeReleaseEntry_HubCarriesOwnLayers(t *testing.T) {
 	}
 }
 
-func TestSynthesizeReleaseEntry_OrchestrationHasNoDependencies(t *testing.T) {
-	hook := &matrix.LifecycleHook{Script: "post-deploy-hub-ping.sh"}
-	baseEntry := matrix.Entry{Version: "8.10", ChartPath: "charts/camunda-platform-8.10", Scenario: "multinamespace", Shortname: "mns", Auth: "keycloak", PostDeploy: hook}
+// e2e must never run inside the deploy loop: a release's deploy returns while later releases are
+// still undeployed, so a leg run here would test a partial topology, and would repeat for every
+// orchestration release. runTopologyEntry runs the legs after the whole topology is up.
+func TestSynthesizeReleaseEntry_NoRoleRunsE2EDuringDeploy(t *testing.T) {
+	baseEntry := matrix.Entry{
+		Version:   "8.10",
+		ChartPath: "charts/camunda-platform-8.10",
+		Scenario:  "multinamespace",
+		Shortname: "mns",
+		Auth:      "keycloak",
+	}
+
+	for _, rel := range testTopologyReleases() {
+		entry := synthesizeReleaseEntry("/repo", baseEntry, rel, "gke")
+		if !entry.SkipE2E {
+			t.Errorf("role %q: SkipE2E = false, want true (e2e is a topology-level phase)", rel.Role)
+		}
+	}
+}
+
+func TestSynthesizeReleaseEntry_OrchestrationHasNoDependenciesOrPostDeployHook(t *testing.T) {
+	postDeployHook := &matrix.LifecycleHook{Script: "post-deploy-hub-ping.sh"}
+	postInfraHook := &matrix.LifecycleHook{Script: "post-infra-legacy-elasticsearch.sh"}
+	baseEntry := matrix.Entry{Version: "8.10", ChartPath: "charts/camunda-platform-8.10", Scenario: "multinamespace", Shortname: "mns", Auth: "keycloak", PostDeploy: postDeployHook, PostInfra: postInfraHook}
 	releases := testTopologyReleases()
 
 	for _, rel := range releases[1:] {
-		orchEntry := synthesizeReleaseEntry(baseEntry, rel, "gke")
+		orchEntry := synthesizeReleaseEntry("/repo", baseEntry, rel, "gke")
 		if orchEntry.Identity != "keycloak-external" {
 			t.Errorf("orchestration Identity = %q, want %q", orchEntry.Identity, "keycloak-external")
 		}
@@ -170,26 +194,40 @@ func TestSynthesizeReleaseEntry_OrchestrationHasNoDependencies(t *testing.T) {
 		if len(orchEntry.ExtraValues) != 0 {
 			t.Errorf("orchestration release %q ExtraValues = %v, want empty", rel.NamespaceSuffix, orchEntry.ExtraValues)
 		}
-		if orchEntry.PostDeploy != hook {
-			t.Errorf("orchestration release %q PostDeploy = %v, want scenario hook", rel.NamespaceSuffix, orchEntry.PostDeploy)
+		if orchEntry.PostDeploy != nil {
+			t.Errorf("orchestration release %q PostDeploy = %v, want nil so the hook runs once at topology level", rel.NamespaceSuffix, orchEntry.PostDeploy)
+		}
+		if orchEntry.PostInfra != nil {
+			t.Errorf("orchestration release %q PostInfra = %v, want nil", rel.NamespaceSuffix, orchEntry.PostInfra)
 		}
 	}
-	hubEntry := synthesizeReleaseEntry(baseEntry, releases[0], "gke")
+	hubEntry := synthesizeReleaseEntry("/repo", baseEntry, releases[0], "gke")
 	if hubEntry.PostDeploy != nil {
-		t.Errorf("Hub PostDeploy = %v, want nil so the hook runs after orchestration", hubEntry.PostDeploy)
+		t.Errorf("Hub PostDeploy = %v, want nil so the hook runs once at topology level", hubEntry.PostDeploy)
+	}
+	// The post-infra hook provisions the shared infrastructure the rest of the
+	// topology deploys onto, so it rides on the Hub release rather than being
+	// dropped (which left topology scenarios with no post-infra step at all).
+	if hubEntry.PostInfra != postInfraHook {
+		t.Errorf("Hub PostInfra = %v, want scenario hook", hubEntry.PostInfra)
 	}
 }
 
-func TestSynthesizeReleaseEntry_NonFeatureValuesFallsBackToExtraValues(t *testing.T) {
-	baseEntry := matrix.Entry{Version: "8.10", ChartPath: "charts/camunda-platform-8.10", Scenario: "multinamespace"}
-	rel := matrix.TopologyRelease{Role: "hub", NamespaceSuffix: "hub", Values: "legacy/some-overlay.yaml"}
+func TestSynthesizeReleaseEntry_UsesReleaseChartVersion(t *testing.T) {
+	baseEntry := matrix.Entry{Version: "8.10", ChartPath: "/elsewhere/camunda-platform-8.10"}
+	rel := matrix.TopologyRelease{ChartVersion: "8.9"}
 
-	got := synthesizeReleaseEntry(baseEntry, rel, "gke")
-	if len(got.Features) != 0 {
-		t.Errorf("Features = %v, want empty for a non-features/ values path", got.Features)
+	got := synthesizeReleaseEntry("/repo", baseEntry, rel, "gke")
+	if got.Version != "8.9" {
+		t.Errorf("Version = %q, want 8.9", got.Version)
 	}
-	if len(got.ExtraValues) != 1 {
-		t.Fatalf("ExtraValues = %v, want a single fallback entry", got.ExtraValues)
+	if got.ChartPath != filepath.Join("/repo", "charts", "camunda-platform-8.9") {
+		t.Errorf("ChartPath = %q", got.ChartPath)
+	}
+
+	inherited := synthesizeReleaseEntry("/repo", baseEntry, matrix.TopologyRelease{}, "gke")
+	if inherited.Version != "8.10" || inherited.ChartPath != filepath.Join("/repo", "charts", "camunda-platform-8.10") {
+		t.Errorf("inherited chart = %s at %s", inherited.Version, inherited.ChartPath)
 	}
 }
 
@@ -381,6 +419,185 @@ func TestBuildTopologyReleaseEnv_SelectsLocalOrchestrationReferences(t *testing.
 	}
 	if got := env["ORCH_ORCHESTRATION_CLIENT_ID"]; got != "orchestration-orchb" {
 		t.Errorf("ORCH_ORCHESTRATION_CLIENT_ID = %q", got)
+	}
+}
+
+func TestBuildTopologyReleaseEnv_PublishesServedReferencesForOptimize(t *testing.T) {
+	shared := map[string]string{
+		"ORCHA_NAMESPACE":                  "ns-orcha",
+		"ORCHA_HOST":                       "orcha.example.com",
+		"ORCHA_ORCHESTRATION_INDEX_PREFIX": "job-orcha",
+		"ORCHB_NAMESPACE":                  "ns-orchb",
+		"ORCHB_HOST":                       "orchb.example.com",
+		"ORCHB_ORCHESTRATION_INDEX_PREFIX": "job-orchb",
+	}
+	release := matrix.TopologyRelease{
+		Role:                "optimize",
+		NamespaceSuffix:     "optb",
+		Serves:              "orchb",
+		Tenant:              "tenantb",
+		OptimizeContextPath: "/optimize-orchb",
+	}
+
+	env := buildTopologyReleaseEnv(shared, release)
+	if got := env["SERVED_ORCHESTRATION_INDEX_PREFIX"]; got != "job-orchb" {
+		t.Errorf("SERVED_ORCHESTRATION_INDEX_PREFIX = %q, want the prefix of the release named by serves", got)
+	}
+	if got := env["SERVED_NAMESPACE"]; got != "ns-orchb" {
+		t.Errorf("SERVED_NAMESPACE = %q", got)
+	}
+	if got := env["RELEASE_OPTIMIZE_CONTEXT_PATH"]; got != "/optimize-orchb" {
+		t.Errorf("RELEASE_OPTIMIZE_CONTEXT_PATH = %q", got)
+	}
+	if got := env["RELEASE_TENANT_ID"]; got != "tenantb" {
+		t.Errorf("RELEASE_TENANT_ID = %q", got)
+	}
+}
+
+// Repointing serves must repoint the records this Optimize reads. The values
+// layer names SERVED_ORCHESTRATION_INDEX_PREFIX rather than a per-release token,
+// so the declaration is the only place the mapping is written.
+func TestBuildTopologyReleaseEnv_ServedPrefixFollowsServes(t *testing.T) {
+	shared := map[string]string{
+		"ORCHA_ORCHESTRATION_INDEX_PREFIX": "job-orcha",
+		"ORCHB_ORCHESTRATION_INDEX_PREFIX": "job-orchb",
+	}
+	base := matrix.TopologyRelease{Role: "optimize", NamespaceSuffix: "opta", Tenant: "default", OptimizeContextPath: "/optimize-a"}
+
+	servesA := base
+	servesA.Serves = "orcha"
+	servesB := base
+	servesB.Serves = "orchb"
+
+	if got := buildTopologyReleaseEnv(shared, servesA)["SERVED_ORCHESTRATION_INDEX_PREFIX"]; got != "job-orcha" {
+		t.Errorf("serves=orcha gave prefix %q", got)
+	}
+	if got := buildTopologyReleaseEnv(shared, servesB)["SERVED_ORCHESTRATION_INDEX_PREFIX"]; got != "job-orchb" {
+		t.Errorf("serves=orchb gave prefix %q", got)
+	}
+}
+
+func TestBuildTopologyReleaseEnv_OmitsOptimizeKeysForOtherRoles(t *testing.T) {
+	env := buildTopologyReleaseEnv(map[string]string{}, matrix.TopologyRelease{
+		Role:            "orchestration",
+		NamespaceSuffix: "orcha",
+	})
+	for _, key := range []string{"RELEASE_TENANT_ID", "RELEASE_OPTIMIZE_CONTEXT_PATH", "SERVED_ORCHESTRATION_INDEX_PREFIX", "SERVED_NAMESPACE"} {
+		if _, exists := env[key]; exists {
+			t.Errorf("%s must not be published for a non-optimize release", key)
+		}
+	}
+}
+
+// The keys derived from the declaration are authoritative: a release env entry
+// naming one is applied first and overwritten, so a topology author cannot
+// deploy a context path or reader prefix that disagrees with
+// optimize-context-path/serves and with the smoke matrix.
+// matrix.Topology.Validate rejects the entry outright; this covers the ordering
+// that makes the rejection safe to rely on.
+func TestBuildTopologyReleaseEnv_DerivedKeysOutrankReleaseEnv(t *testing.T) {
+	shared := map[string]string{
+		"ORCHA_NAMESPACE":                  "ns-orcha",
+		"ORCHA_HOST":                       "orcha.example.com",
+		"ORCHA_ORCHESTRATION_INDEX_PREFIX": "job-orcha",
+	}
+	release := matrix.TopologyRelease{
+		Role:                "optimize",
+		NamespaceSuffix:     "opta",
+		Serves:              "orcha",
+		Tenant:              "default",
+		OptimizeContextPath: "/optimize-orcha",
+		Env: map[string]string{
+			"RELEASE_TENANT_ID":                 "stale-tenant",
+			"RELEASE_OPTIMIZE_CONTEXT_PATH":     "/optimize-stale",
+			"SERVED_ORCHESTRATION_INDEX_PREFIX": "job-somewhere-else",
+			"SERVED_NAMESPACE":                  "ns-somewhere-else",
+			"SERVED_HOST":                       "somewhere.example.com",
+		},
+	}
+
+	env := buildTopologyReleaseEnv(shared, release)
+	for key, want := range map[string]string{
+		"RELEASE_TENANT_ID":                 "default",
+		"RELEASE_OPTIMIZE_CONTEXT_PATH":     "/optimize-orcha",
+		"SERVED_ORCHESTRATION_INDEX_PREFIX": "job-orcha",
+		"SERVED_NAMESPACE":                  "ns-orcha",
+		"SERVED_HOST":                       "orcha.example.com",
+	} {
+		if got := env[key]; got != want {
+			t.Errorf("%s = %q, want the derived %q", key, got, want)
+		}
+	}
+}
+
+func TestBuildTopologyReleaseEnv_DerivedOrchestrationKeysOutrankReleaseEnv(t *testing.T) {
+	shared := map[string]string{
+		"ORCHA_NAMESPACE":  "ns-orcha",
+		"ORCHA_HOST":       "orcha.example.com",
+		"ORCHA_ZEEBE_GRPC": "grpc://orcha:26500",
+		"ORCHA_ZEEBE_REST": "http://orcha:8080",
+	}
+	release := matrix.TopologyRelease{
+		Role:            "orchestration",
+		NamespaceSuffix: "orcha",
+		Env: map[string]string{
+			"ORCH_NAMESPACE":  "ns-stale",
+			"ORCH_HOST":       "stale.example.com",
+			"ORCH_ZEEBE_GRPC": "grpc://stale:26500",
+			"ORCH_ZEEBE_REST": "http://stale:8080",
+		},
+	}
+
+	env := buildTopologyReleaseEnv(shared, release)
+	for key, want := range map[string]string{
+		"ORCH_NAMESPACE":  "ns-orcha",
+		"ORCH_HOST":       "orcha.example.com",
+		"ORCH_ZEEBE_GRPC": "grpc://orcha:26500",
+		"ORCH_ZEEBE_REST": "http://orcha:8080",
+	} {
+		if got := env[key]; got != want {
+			t.Errorf("%s = %q, want the derived %q", key, got, want)
+		}
+	}
+}
+
+// In a multi-orchestration topology every orchestration release needs its own
+// CAMUNDA_HOSTNAME, not only its own global.host. Pre-8.10 scenario values set
+// global.ingress.host (and the external-dns hostname) from $CAMUNDA_HOSTNAME, so
+// without it the 8.9/8.8/8.7 legs of mns2 all shared the CI-wide host and the
+// browser could not resolve their Operate URL.
+func TestApplyTopologyReleaseHostname_PerOrchestrationRelease(t *testing.T) {
+	releases := testTopologyReleases()
+	contexts := []*deploy.ScenarioContext{
+		{Namespace: "matrix-810-mns-hub"},
+		{Namespace: "matrix-810-mns-orcha"},
+		{Namespace: "matrix-810-mns-orchb"},
+	}
+	crossRefEnv := map[string]string{}
+	addTopologyIngressHosts(crossRefEnv, matrix.RunOptions{IngressBaseDomain: "ci.example.com"}, "gke", contexts[0], releases[:3], contexts)
+
+	for i, want := range []string{"matrix-810-mns-hub.ci.example.com", "matrix-810-mns-orcha.ci.example.com", "matrix-810-mns-orchb.ci.example.com"} {
+		release := releases[i]
+		flags := &config.RuntimeFlags{ExtraEnv: map[string]string{"CAMUNDA_HOSTNAME": "ci-wide.example.com"}}
+		host := topologyReleaseHost(crossRefEnv, release, 2)
+		applyTopologyReleaseOverrides(flags, buildTopologyReleaseEnv(crossRefEnv, release))
+		applyTopologyReleaseHostname(flags, host)
+		if host != want {
+			t.Errorf("%s: topologyReleaseHost = %q, want %q", release.NamespaceSuffix, host, want)
+		}
+		if got := flags.ExtraEnv["CAMUNDA_HOSTNAME"]; got != want {
+			t.Errorf("%s: CAMUNDA_HOSTNAME = %q, want %q (must match the release's global.host)", release.NamespaceSuffix, got, want)
+		}
+	}
+}
+
+// A single-orchestration topology leaves the orchestration release on its
+// default host, so the helper must not touch CAMUNDA_HOSTNAME there.
+func TestApplyTopologyReleaseHostname_NoAssignedHostIsNoop(t *testing.T) {
+	flags := &config.RuntimeFlags{}
+	applyTopologyReleaseHostname(flags, topologyReleaseHost(map[string]string{"ORCHA_HOST": "orcha.example.com"}, matrix.TopologyRelease{Role: "orchestration", NamespaceSuffix: "orcha"}, 1))
+	if _, ok := flags.ExtraEnv["CAMUNDA_HOSTNAME"]; ok {
+		t.Errorf("CAMUNDA_HOSTNAME = %q, want unset for a single-orchestration release", flags.ExtraEnv["CAMUNDA_HOSTNAME"])
 	}
 }
 
@@ -862,5 +1079,191 @@ func TestRunTopologyEntry_RejectsCleanup(t *testing.T) {
 	err := runTopologyEntry(context.Background(), entry, opts)
 	if err == nil {
 		t.Fatal("expected error when --cleanup is set, got nil")
+	}
+}
+
+func TestTopologyReleaseHostKeyPinsOptimizeToHub(t *testing.T) {
+	cases := []struct {
+		name               string
+		role               string
+		namespaceSuffix    string
+		orchestrationCount int
+		want               string
+	}{
+		{"optimize with one orchestration", "optimize", "opta", 1, "HUB_HOST"},
+		{"optimize with several orchestrations", "optimize", "opta", 2, "HUB_HOST"},
+		{"hub with one orchestration keeps default", "hub", "hub", 1, ""},
+		{"orchestration with one orchestration keeps default", "orchestration", "orcha", 1, ""},
+		{"orchestration with several orchestrations", "orchestration", "orcha", 2, "ORCHA_HOST"},
+		{"hub with several orchestrations", "hub", "hub", 2, "HUB_HOST"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := topologyReleaseHostKey(tc.role, tc.namespaceSuffix, tc.orchestrationCount); got != tc.want {
+				t.Fatalf("topologyReleaseHostKey(%q, %q, %d) = %q, want %q", tc.role, tc.namespaceSuffix, tc.orchestrationCount, got, tc.want)
+			}
+		})
+	}
+}
+
+// writeTopologyHookScript writes a post-deploy script into the version-scoped pre-setup-scripts
+// directory RunDeclarativePostDeployHook resolves against, and returns the repo root holding it.
+func writeTopologyHookScript(t *testing.T, body string) string {
+	t.Helper()
+	repoRoot := t.TempDir()
+	scriptDir := filepath.Join(repoRoot, "charts", "camunda-platform-8.10", "test", "integration", "scenarios", "pre-setup-scripts")
+	if err := os.MkdirAll(scriptDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(scriptDir, "post-deploy-topology.sh"), []byte(body), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	return repoRoot
+}
+
+func topologyHookReleases() []preparedTopologyRelease {
+	return []preparedTopologyRelease{
+		{
+			release: matrix.TopologyRelease{Role: "hub", NamespaceSuffix: "hub"},
+			flags: &config.RuntimeFlags{
+				Deployment: config.DeploymentFlags{Namespace: "matrix-810-pt-hub"},
+				ExtraEnv:   map[string]string{"HUB_NAMESPACE": "matrix-810-pt-hub"},
+			},
+		},
+		{
+			release: matrix.TopologyRelease{Role: "orchestration", NamespaceSuffix: "orcha"},
+			flags: &config.RuntimeFlags{
+				Deployment: config.DeploymentFlags{Namespace: "matrix-810-pt-orcha"},
+				ExtraEnv: map[string]string{
+					"HUB_NAMESPACE":               "matrix-810-pt-hub",
+					"ORCH_NAMESPACE":              "matrix-810-pt-orcha",
+					"OPTTA_OPTIMIZE_CONTEXT_PATH": "/optimize-ta",
+				},
+			},
+		},
+	}
+}
+
+// The topology post-deploy hook must actually run once the whole topology is deployed.
+// synthesizeReleaseEntry clears PostDeploy on every synthesized release so it does not fire per
+// release against a half-built topology, which left it running nowhere at all: registration was
+// the only dispatch, and it was registered against a nil hook.
+func TestRunTopologyPostDeployHook_RunsAgainstOrchestrationRelease(t *testing.T) {
+	marker := filepath.Join(t.TempDir(), "hook-ran")
+	repoRoot := writeTopologyHookScript(t, "#!/bin/bash\nset -eu\n"+
+		`test "$TEST_NAMESPACE" = "matrix-810-pt-orcha"`+"\n"+
+		`test "$HUB_NAMESPACE" = "matrix-810-pt-hub"`+"\n"+
+		`test "$OPTTA_OPTIMIZE_CONTEXT_PATH" = "/optimize-ta"`+"\n"+
+		"touch "+marker+"\n")
+
+	entry := matrix.Entry{
+		Version:    "8.10",
+		Scenario:   "physicaltenants",
+		PostDeploy: &matrix.LifecycleHook{Script: "post-deploy-topology.sh", Description: "Topology-wide post-deploy assertions."},
+	}
+	if err := runTopologyPostDeployHook(context.Background(), entry, matrix.RunOptions{RepoRoot: repoRoot}, topologyHookReleases()); err != nil {
+		t.Fatalf("runTopologyPostDeployHook() error = %v", err)
+	}
+	if _, err := os.Stat(marker); err != nil {
+		t.Fatalf("post-deploy hook did not run: %v", err)
+	}
+}
+
+// A failing hook has to fail the topology entry. physicaltenants sets skip-e2e, so if the hook's
+// exit status were swallowed the scenario would report success having asserted nothing.
+func TestRunTopologyPostDeployHook_FailurePropagates(t *testing.T) {
+	repoRoot := writeTopologyHookScript(t, "#!/bin/bash\nexit 3\n")
+
+	entry := matrix.Entry{
+		Version:    "8.10",
+		Scenario:   "physicaltenants",
+		PostDeploy: &matrix.LifecycleHook{Script: "post-deploy-topology.sh", Description: "Topology-wide post-deploy assertions."},
+	}
+	err := runTopologyPostDeployHook(context.Background(), entry, matrix.RunOptions{RepoRoot: repoRoot}, topologyHookReleases())
+	if err == nil {
+		t.Fatal("runTopologyPostDeployHook() = nil, want the hook's failure to fail the topology entry")
+	}
+	if !strings.Contains(err.Error(), "post-deploy hook") {
+		t.Errorf("runTopologyPostDeployHook() error = %q, want it to name the post-deploy hook", err)
+	}
+}
+
+// A scenario without a post-deploy hook must stay a no-op.
+func TestRunTopologyPostDeployHook_NoHookIsNoop(t *testing.T) {
+	if err := runTopologyPostDeployHook(context.Background(), matrix.Entry{Version: "8.10", Scenario: "multinamespace"}, matrix.RunOptions{RepoRoot: t.TempDir()}, topologyHookReleases()); err != nil {
+		t.Fatalf("runTopologyPostDeployHook() with no hook error = %v", err)
+	}
+}
+
+// The hook inspects orchestration workloads, so it must target the orchestration release even
+// though the Hub deploys first and heads the prepared slice.
+func TestTopologyHookFlags_PrefersOrchestration(t *testing.T) {
+	flags := topologyHookFlags(topologyHookReleases())
+	if flags == nil || flags.EffectiveNamespace() != "matrix-810-pt-orcha" {
+		t.Fatalf("topologyHookFlags() namespace = %v, want the orchestration release's namespace", flags)
+	}
+	if topologyHookFlags(nil) != nil {
+		t.Error("topologyHookFlags(nil) should report that there is no release to run against")
+	}
+}
+
+// A topology renders every release's contract before any of them deploys, so the
+// chart directories the render needs must already have their subchart dependencies
+// vendored. CI vendors only the matrix entry's own chart version, which left a
+// release pinning chart-version to render against an empty charts/ directory and
+// fail with "missing in charts/ directory: keycloak, postgresql, ...".
+// topologyChartPaths is what turns that into one EnsureDependencies call per chart.
+func TestTopologyChartPaths(t *testing.T) {
+	chart := func(chartPath, chartRef string) preparedTopologyRelease {
+		return preparedTopologyRelease{
+			flags: &config.RuntimeFlags{
+				Chart: config.ChartFlags{ChartPath: chartPath, Chart: chartRef},
+			},
+		}
+	}
+
+	tests := []struct {
+		name     string
+		releases []preparedTopologyRelease
+		want     []string
+	}{
+		{
+			name: "a pinned chart-version contributes its own chart directory",
+			releases: []preparedTopologyRelease{
+				chart("/repo/charts/camunda-platform-8.10", ""),
+				chart("/repo/charts/camunda-platform-8.10", ""),
+				chart("/repo/charts/camunda-platform-8.9", ""),
+			},
+			want: []string{"/repo/charts/camunda-platform-8.10", "/repo/charts/camunda-platform-8.9"},
+		},
+		{
+			name: "a uniform topology yields the single shared chart directory",
+			releases: []preparedTopologyRelease{
+				chart("/repo/charts/camunda-platform-8.10", ""),
+				chart("/repo/charts/camunda-platform-8.10", ""),
+			},
+			want: []string{"/repo/charts/camunda-platform-8.10"},
+		},
+		{
+			name: "an external chart reference has nothing to vendor locally",
+			releases: []preparedTopologyRelease{
+				chart("/repo/charts/camunda-platform-8.10", "oci://registry/camunda/camunda-platform"),
+			},
+			want: []string{},
+		},
+		{
+			name:     "releases without flags or a chart path are skipped",
+			releases: []preparedTopologyRelease{{}, chart("", "")},
+			want:     []string{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := topologyChartPaths(tt.releases)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("topologyChartPaths() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }

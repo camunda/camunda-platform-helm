@@ -33,15 +33,21 @@ integration:
       shortname: cotls
       tier: 2
       enabled: true
+    - id: optimize-tls
+      shortname: optls
+      tier: 2
+      enabled: true
     - id: opensearch
       shortname: oske
       tier: 2
       enabled: true
     - id: opensearch-self-signed
       shortname: osss
+      tier: 2
       enabled: true
     - id: opensearch-self-signed-os-trust
       shortname: osot
+      tier: 2
       enabled: true
     - id: upgrade-migration
       shortname: eske-upgm
@@ -51,17 +57,23 @@ integration:
       enabled: false
     - id: oidc
       shortname: esoi
+      tier: 2
+      enabled: true
+    - id: oidc-defaults
+      shortname: esoid
       tier: 1
       enabled: true
     - id: auth0
       shortname: esa0
-      tier: 1
+      tier: 2
       enabled: true
     - id: keycloak-mt
       shortname: kemt
+      tier: 2
       enabled: true
     - id: keycloak-rba
       shortname: kerba
+      tier: 2
       enabled: true
     - id: keycloak-original-upgrade
       shortname: keyc
@@ -88,6 +100,10 @@ integration:
       enabled: true
     - id: secretstore-file
       shortname: secfl
+      tier: 2
+      enabled: true
+    - id: secretstore-gcp
+      shortname: secgc
       tier: 2
       enabled: true
     - id: rdbms-self-signed
@@ -209,5 +225,16 @@ integration:
       enabled: true
     - id: multinamespace-2orch
       shortname: mns2
+      tier: 1
+      enabled: true
+    - id: multinamespace-optimize
+      shortname: mnop
       tier: 2
       enabled: true
+    - id: physicaltenants
+      shortname: ptnt
+      tier: 2
+      enabled: true
+    - id: dogfood
+      shortname: dogfd
+      enabled: false

@@ -120,7 +120,7 @@
                     "properties": {
                         "mode": {
                             "type": "string",
-                            "enum": ["combined", "hub", "orchestration"],
+                            "enum": ["combined", "hub", "orchestration", "optimize"],
                             "default": "combined"
                         },
                         "clusters": {
@@ -133,12 +133,26 @@
                 },
                 "ingress": {
                     "properties": {
+                        "publicPorts": {
+                            "properties": {
+                                "http": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 65535
+                                },
+                                "https": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 65535
+                                }
+                            }
+                        },
                         "annotations": {
                             "type": "object",
-                            "description": "defines the ingress related annotations, consumed mostly by the ingress controller",
+                            "description": "defines the ingress related annotations, consumed mostly by the ingress controller. Empty by default; keys set here always win over the ingress-nginx compatibility set described in global.compatibility.nginx.renderAnnotations.",
                             "default": {},
                             "additionalProperties": {
-                                "type": "string"
+                                "type": ["string", "null"]
                             }
                         },
                         "labels": {
@@ -196,7 +210,8 @@
                 },
                 "multiregion": {
                     "type": "object",
-                    "description": "Multi-region configuration for the Orchestration cluster. WARNING: get your configuration reviewed by Camunda before going to production \u2014 see https://docs.camunda.io/docs/self-managed/concepts/multi-region/dual-region/.",
+                    "additionalProperties": false,
+                    "description": "DEPRECATED, use orchestration.partitioning. Only the regions and regionId settings remain here; the zone-aware scheme is configured under orchestration.partitioning.",
                     "default": {},
                     "properties": {
                         "regions": {
@@ -204,7 +219,7 @@
                                 "integer",
                                 "string"
                             ],
-                            "description": "Number of regions this Camunda Platform instance is stretched across.",
+                            "description": "Number of regions this Camunda Platform instance is stretched across. Must be at least 1; the render fails otherwise.",
                             "default": 1
                         },
                         "regionId": {
@@ -212,7 +227,7 @@
                                 "integer",
                                 "string"
                             ],
-                            "description": "Unique id of the region. MUST start at 0 for the computation to work correctly. With 2 regions, you would have region 0 and 1.",
+                            "description": "Unique id of the region. MUST start at 0 for the computation to work correctly. With 2 regions, you would have region 0 and 1. A value outside 0 to regions - 1 fails the render, since node IDs are derived as <ordinal> * regions + regionId.",
                             "default": 0
                         }
                     }
@@ -650,6 +665,33 @@
         },
         "optimize": {
             "properties": {
+                "security": {
+                    "properties": {
+                        "authentication": {
+                            "properties": {
+                                "method": {
+                                    "enum": ["", "oidc", "none"]
+                                },
+                                "oidc": {
+                                    "properties": {
+                                        "envFromProvides": {
+                                            "items": {
+                                                "type": "string",
+                                                "enum": [
+                                                    "CAMUNDA_IDENTITY_ISSUER",
+                                                    "CAMUNDA_IDENTITY_ISSUER_BACKEND_URL",
+                                                    "SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI",
+                                                    "VALUES_OPTIMIZE_CLIENT_SECRET",
+                                                    "CAMUNDA_IDENTITY_BASEURL"
+                                                ]
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
                 "automountServiceAccountToken": {
                     "type": ["boolean", "null"],
                     "description": "can be used to override the automatic mounting of the service account token at the pod level. When unset, the ServiceAccount configuration is used.",
@@ -889,6 +931,87 @@
         },
         "orchestration": {
             "properties": {
+                "partitioning": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "description": "How partition replicas are distributed across brokers, and how brokers are grouped into failure domains. Mirrors the engine configuration camunda.cluster.partitioning. This does not set the number of partitions, which is orchestration.partitionCount; it sets how the replicas of those partitions are placed. WARNING: get your configuration reviewed by Camunda before going to production — see https://docs.camunda.io/docs/self-managed/concepts/multi-region/dual-region/.",
+                    "default": {},
+                    "properties": {
+                        "scheme": {
+                            "type": "string",
+                            "enum": [
+                                "round-robin",
+                                "zone-aware"
+                            ],
+                            "description": "partitioning scheme. `round-robin` leaves brokers on plain numeric node IDs, `zone-aware` identifies them as `<zone>_<index>` and places replicas across the declared zones. These are two of the schemes accepted by camunda.cluster.partitioning.scheme; the engine also accepts FIXED, which this chart does not render.",
+                            "default": "round-robin"
+                        },
+                        "zone": {
+                            "type": "string",
+                            "maxLength": 32,
+                            "pattern": "^$|^[a-z0-9]([-a-z0-9]*[a-z0-9])?$",
+                            "description": "can be used to define the zone of this Orchestration Cluster deployment when using the zone-aware scheme. Must be an RFC 1123 label of at most 32 characters to fit zone-suffixed resource names.",
+                            "default": ""
+                        },
+                        "zones": {
+                            "type": "array",
+                            "description": "can be used to define the zones of the Orchestration Cluster when using the zone-aware scheme.",
+                            "default": [],
+                            "items": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "required": [
+                                    "name",
+                                    "numberOfBrokers",
+                                    "numberOfReplicas",
+                                    "priority"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 32,
+                                        "pattern": "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$",
+                                        "description": "Name of the zone. It is the prefix of the composite broker member ID \"<zone>_<node-id>\", and one of these names must be selected by orchestration.partitioning.zone. Restricted to an RFC 1123 label: an underscore would make the composite ID ambiguous, and the name is also used to derive per-zone resource and DNS names."
+                                    },
+                                    "numberOfBrokers": {
+                                        "type": "integer",
+                                        "minimum": 1,
+                                        "description": "Number of brokers deployed in this zone. For the local zone it is also the StatefulSet replica count."
+                                    },
+                                    "numberOfReplicas": {
+                                        "type": "integer",
+                                        "minimum": 1,
+                                        "description": "Number of partition replicas this zone holds."
+                                    },
+                                    "priority": {
+                                        "type": "integer",
+                                        "minimum": 1,
+                                        "description": "Priority of this zone in the leader election."
+                                    }
+                                }
+                            }
+                        },
+                        "numberOfZones": {
+                            "type": [
+                                "integer",
+                                "string",
+                                "null"
+                            ],
+                            "description": "Number of failure domains this Camunda Platform instance is stretched across. Must be at least 1; the render fails otherwise. Under the zone-aware scheme it must stay at 1 unless keepUnzonedBrokers is set, where it keeps describing the retained round-robin generation.",
+                            "default": 1
+                        },
+                        "zoneIndex": {
+                            "type": [
+                                "integer",
+                                "string",
+                                "null"
+                            ],
+                            "description": "Zero-based index of the zone this release is deployed to, under the round-robin scheme. A value outside 0 to numberOfZones - 1 fails the render, since node IDs are derived as <ordinal> * numberOfZones + zoneIndex. Under the zone-aware scheme it must stay at 0 unless keepUnzonedBrokers is set, where it keeps addressing the retained round-robin generation.",
+                            "default": 0
+                        }
+                    }
+                },
                 "automountServiceAccountToken": {
                     "type": ["boolean", "null"],
                     "description": "can be used to override the automatic mounting of the service account token at the pod level. When unset, the ServiceAccount configuration is used.",
@@ -942,10 +1065,10 @@
                             "properties": {
                                 "annotations": {
                                     "type": "object",
-                                    "description": "defines the ingress related annotations, consumed mostly by the ingress controller",
+                                    "description": "defines the ingress related annotations, consumed mostly by the ingress controller. Empty by default; keys set here always win over the ingress-nginx compatibility set described in global.compatibility.nginx.renderAnnotations, which supplies `nginx.ingress.kubernetes.io/ssl-redirect: \"false\"`, `nginx.ingress.kubernetes.io/backend-protocol: \"GRPC\"` and `nginx.ingress.kubernetes.io/proxy-buffer-size: \"128k\"` here while it is on; set those three here to keep them once it is off. With Contour, gRPC is declared on the Orchestration Service listing the gRPC port rather than with an annotation here, using `projectcontour.io/upstream-protocol.h2c` while the gRPC upstream is plaintext and `projectcontour.io/upstream-protocol.h2` once it serves TLS; that state follows global.tls.orchestration.grpc.enabled or `camunda.api.grpc.ssl.enabled` in orchestration.configuration or extraConfiguration, and a CAMUNDA_API_GRPC_SSL_ENABLED entry in orchestration.env overrides both.",
                                     "default": {},
                                     "additionalProperties": {
-                                        "type": "string"
+                                        "type": ["string", "null"]
                                     }
                                 },
                                 "labels": {
@@ -1494,7 +1617,11 @@
                 "secret": {"$ref": "#/$defs/topologySecret"},
                 "serviceName": {"type": "string"},
                 "gatewayServiceName": {"type": "string"},
+                "operateServiceName": {"type": "string"},
+                "tasklistServiceName": {"type": "string"},
                 "readinessUrl": {"type": "string", "pattern": "^$|^https?://[^\\s]+$"},
+                "operateReadinessUrl": {"type": "string", "pattern": "^$|^https?://[^\\s]+$"},
+                "tasklistReadinessUrl": {"type": "string", "pattern": "^$|^https?://[^\\s]+$"},
                 "restUrl": {"type": "string", "pattern": "^$|^https?://[^\\s]+$"},
                 "grpcUrl": {"type": "string", "pattern": "^$|^grpcs?://[^\\s]+$"},
                 "operateUrl": {"type": "string", "pattern": "^$|^https?://[^\\s]+$"},
@@ -1509,11 +1636,11 @@
                 "enabled": {"type": "boolean"},
                 "clientId": {"type": "string"},
                 "audience": {"type": "string"},
-                "redirectUrl": {"type": "string"},
+                "redirectUrl": {"type": "string", "pattern": "^$|^https?://(?:[^\\s{}]|\\{\\{[^}]*\\}\\})+$"},
                 "roleName": {"type": "string"},
                 "secret": {"$ref": "#/$defs/topologySecret"},
                 "serviceName": {"type": "string"},
-                "webappUrl": {"type": "string", "pattern": "^$|^https?://[^\\s]+$"},
+                "webappUrl": {"type": "string", "pattern": "^$|^https?://(?:[^\\s{}]|\\{\\{[^}]*\\}\\})+$"},
                 "readinessUrl": {"type": "string", "pattern": "^$|^https?://[^\\s]+$"}
             }
         },
@@ -1549,6 +1676,7 @@
                 "releaseName": {"type": "string"},
                 "host": {"type": "string"},
                 "version": {"type": "string"},
+                "architecture": {"type": "string", "enum": ["unified", "legacy"]},
                 "authorizations": {
                     "type": "object",
                     "additionalProperties": false,
@@ -1563,7 +1691,27 @@
                         "connectors": {"type": "string", "pattern": "^$|^/"}
                     }
                 },
-                "components": {"$ref": "#/$defs/topologyComponents"}
+                "components": {"$ref": "#/$defs/topologyComponents"},
+                "physicalTenants": {
+                    "type": "array",
+                    "items": {"$ref": "#/$defs/topologyPhysicalTenant"}
+                }
+            }
+        },
+        "topologyPhysicalTenant": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "components"],
+            "properties": {
+                "id": {"type": "string", "pattern": "^[a-z0-9]{1,64}$"},
+                "name": {"type": "string", "minLength": 1},
+                "components": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                        "optimize": {"$ref": "#/$defs/topologyOptimizeComponent"}
+                    }
+                }
             }
         }
     }

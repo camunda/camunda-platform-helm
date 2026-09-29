@@ -305,13 +305,18 @@ env:
   # Vars with "CI_" prefix are used in the CI workflow only.
   # Vars with "TEST_" prefix are used in the test runner tool (Task).
   CI_DEPLOYMENT_TTL: ${{ inputs.deployment-ttl }}
+  IS_TOPOLOGY: ${{ inputs.is-topology }}
+  # Floor for the deploy-time cleaner/janitor TTL of a topology scenario, which holds
+  # one namespace set across sequentially-run e2e legs. Must exceed install plus every
+  # leg; at ~10m install and ~25m per leg, 4h covers the four-leg mns2 chain with room
+  # for queueing. Applied only when no explicit deployment-ttl was requested.
+  TOPOLOGY_MIN_TTL: 4h
   # The Helm repo which is used during the upgrade flow.
   TEST_CHART_REPO: ${{ inputs.camunda-helm-repo }}
   # Docker Hub auth to avoid image pull rate limit.
   TEST_CREATE_DOCKER_LOGIN_SECRET: "TRUE"
   # OIDC.
   INITIAL_CLAIM_VALUE: ${{ inputs.initialClaimValue }}
-  # Mapping rule client IDs - defaults for Keycloak; overridden by entra.ensure-venom-app for OIDC.
   VENOM_CLIENT_ID: venom
   CONNECTORS_CLIENT_ID: connectors
   # Misc.
@@ -351,7 +356,7 @@ jobs:
       TEST_CLUSTER_TYPE: ${{ inputs.distro-type || inputs.cluster-type }}
 
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@35aaec9b5e02286826f2139b5228312c6f894d6d # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
       - name: Info - ℹ️ Print workflow inputs ℹ️
         env:
           GITHUB_CONTEXT: ${{ toJson(inputs) }}
@@ -579,15 +584,6 @@ jobs:
           deploy-camunda entra update-redirect-uris \
             --ingress-host "$TEST_INGRESS_HOST" \
             --log-level info
-          deploy-camunda entra ensure-venom-app \
-            --namespace "$TEST_NAMESPACE" \
-            --log-level info | tee /tmp/entra-output.txt
-          # Capture VENOM_CLIENT_ID and CONNECTORS_CLIENT_ID from Go CLI stdout.
-          grep '^VENOM_CLIENT_ID=' /tmp/entra-output.txt >> "$GITHUB_ENV"
-          grep '^CONNECTORS_CLIENT_ID=' /tmp/entra-output.txt >> "$GITHUB_ENV"
-          # Also export for the current step.
-          eval "$(grep '^VENOM_CLIENT_ID=' /tmp/entra-output.txt)"
-          eval "$(grep '^CONNECTORS_CLIENT_ID=' /tmp/entra-output.txt)"
 
       - name: Helm - Install - Pre-install scenario tweaks
         timeout-minutes: 5
@@ -734,8 +730,15 @@ jobs:
 
           # Give deploy-camunda the requested namespace TTL; without this it stamps its 60m
           # default onto cleaner/janitor, so 12h nightly clusters get reaped after an hour.
-          # Empty falls back to deploy-camunda's 60m default.
+          # A topology scenario runs its e2e legs sequentially, one namespace set for the
+          # whole chain, so 60m expires mid-run; TOPOLOGY_MIN_TTL covers the chain. Only
+          # the deploy-time annotation is raised — CI_DEPLOYMENT_TTL stays as it was, so
+          # the cleanup job still stamps ttl=1s and the namespaces are reaped at the end
+          # of the run rather than lingering for the full TTL.
           export DEPLOY_CAMUNDA_TTL="${CI_DEPLOYMENT_TTL:-}"
+          if [[ -z "$DEPLOY_CAMUNDA_TTL" && "$IS_TOPOLOGY" == "true" ]]; then
+            export DEPLOY_CAMUNDA_TTL="$TOPOLOGY_MIN_TTL"
+          fi
 
           # The workflow input is `number` type, so reject empty/fractional/negative
           # (any non-digit matches *[!0-9]*) and then zero before it reaches the
@@ -823,17 +826,10 @@ jobs:
 
       - name: Collect topology namespace diagnostics
         if: failure() && inputs.is-topology
-        env:
-          TOPOLOGY_NAMESPACE_SUFFIXES: ${{ inputs.topology-namespace-suffixes }}
-        run: |
-          mkdir -p diagnostics
-          while IFS= read -r suffix; do
-            ns="$(deploy-camunda topology namespace --base "$TEST_NAMESPACE" --suffix "$suffix")"
-            if [[ "$(kubectl get ns "$ns" --ignore-not-found -o name)" == "" ]]; then
-              continue
-            fi
-            deploy-camunda diagnostics print --namespace "$ns" >"diagnostics/topology-${suffix}.log" 2>&1 || true
-          done < <(jq -r '.[]' <<<"$TOPOLOGY_NAMESPACE_SUFFIXES")
+        uses: ./.github/actions/topology-diagnostics
+        with:
+          base-namespace: ${{ env.TEST_NAMESPACE }}
+          suffixes: ${{ inputs.topology-namespace-suffixes }}
 
       - name: Compute diagnostics artifact name
         if: failure()
@@ -893,7 +889,7 @@ jobs:
       TEST_CLUSTER_TYPE: ${{ inputs.distro-type || inputs.cluster-type }}
 
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@35aaec9b5e02286826f2139b5228312c6f894d6d # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
       - name: Info - ℹ️ Print workflow inputs ℹ️
         env:
           GITHUB_CONTEXT: ${{ toJson(inputs) }}
@@ -1026,12 +1022,6 @@ jobs:
           deploy-camunda entra update-redirect-uris \
             --ingress-host "$TEST_INGRESS_HOST" \
             --log-level info
-          deploy-camunda entra ensure-venom-app \
-            --namespace "$TEST_NAMESPACE" \
-            --log-level info | tee /tmp/entra-output.txt
-          # Capture VENOM_CLIENT_ID and CONNECTORS_CLIENT_ID from Go CLI stdout.
-          grep '^VENOM_CLIENT_ID=' /tmp/entra-output.txt >> "$GITHUB_ENV"
-          grep '^CONNECTORS_CLIENT_ID=' /tmp/entra-output.txt >> "$GITHUB_ENV"
 
       # NOTE: helm package + pre-upgrade scripts are handled by `deploy-camunda matrix run`.
       # The runner deploys directly from the chart directory (no `helm package` needed) and
@@ -1172,8 +1162,15 @@ jobs:
 
           # Give deploy-camunda the requested namespace TTL; without this it stamps its 60m
           # default onto cleaner/janitor, so 12h nightly clusters get reaped after an hour.
-          # Empty falls back to deploy-camunda's 60m default.
+          # A topology scenario runs its e2e legs sequentially, one namespace set for the
+          # whole chain, so 60m expires mid-run; TOPOLOGY_MIN_TTL covers the chain. Only
+          # the deploy-time annotation is raised — CI_DEPLOYMENT_TTL stays as it was, so
+          # the cleanup job still stamps ttl=1s and the namespaces are reaped at the end
+          # of the run rather than lingering for the full TTL.
           export DEPLOY_CAMUNDA_TTL="${CI_DEPLOYMENT_TTL:-}"
+          if [[ -z "$DEPLOY_CAMUNDA_TTL" && "$IS_TOPOLOGY" == "true" ]]; then
+            export DEPLOY_CAMUNDA_TTL="$TOPOLOGY_MIN_TTL"
+          fi
 
           # The workflow input is `number` type, so reject empty/fractional/negative
           # (any non-digit matches *[!0-9]*) and then zero before it reaches the
@@ -1288,7 +1285,7 @@ jobs:
       deployments: write
       packages: read
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@35aaec9b5e02286826f2139b5228312c6f894d6d # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -1377,7 +1374,7 @@ jobs:
       deployments: write
       packages: read
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@35aaec9b5e02286826f2139b5228312c6f894d6d # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -1413,7 +1410,6 @@ jobs:
           ROSA_PASS:        ${{ secrets[inputs.password] }}
           CI_DEPLOYMENT_TTL: ${{ env.CI_DEPLOYMENT_TTL }}
           PLAYWRIGHT_POD_RETRY_MAX_ATTEMPTS: "1"
-          PLAYWRIGHT_E2E_RETRIES: "0"
         with:
           binary-artifact-name: ${{ inputs.binary-artifact-name }}
           camunda-helm-git-ref: ${{ inputs.camunda-helm-git-ref }}
@@ -1466,6 +1462,10 @@ jobs:
     timeout-minutes: 40
     strategy:
       fail-fast: false
+      # One leg per Optimize instance can share an orchestration_suffix, so legs
+      # would otherwise run the stateful smoke suite against the same
+      # orchestration/Modeler deployment at once and interfere with each other.
+      max-parallel: 1
       matrix:
         include: ${{ fromJson(inputs.topology-smoke-matrix) }}
     permissions:
@@ -1474,7 +1474,7 @@ jobs:
       deployments: write
       packages: read
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@35aaec9b5e02286826f2139b5228312c6f894d6d # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -1520,6 +1520,21 @@ jobs:
             secret/data/products/distribution/ci DISTRO_CI_GCP_SERVICE_ACCOUNT;
           exportEnv: false
 
+      - name: Generate E2E repository token
+        id: e2e-repository-token
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
+        with:
+          github-app-id-vault-key: GITHUB_APP_ID
+          github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/quality-assurance-ci
+          github-app-private-key-vault-key: GITHUB_APP_SECRET
+          github-app-private-key-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/quality-assurance-ci
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-url: ${{ secrets.VAULT_ADDR }}
+          owner: camunda
+          repositories: c8-cross-component-e2e-tests
+
       - name: Run Playwright E2E Tests (multi-namespace topology)
         uses: ./.github/actions/playwright-e2e-tests
         env:
@@ -1530,10 +1545,10 @@ jobs:
           GKE_WIP:          ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER }}
           GKE_SA:           ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_SERVICE_ACCOUNT }}
           CI_DEPLOYMENT_TTL: ${{ env.CI_DEPLOYMENT_TTL }}
-          MODELER_CLUSTER_NAME: ${{ matrix.modeler_cluster_name }}
         with:
           camunda-helm-git-ref: ${{ inputs.camunda-helm-git-ref }}
-          camunda-helm-dir: ${{ inputs.camunda-helm-dir }}
+          camunda-helm-dir: ${{ matrix.chart_dir }}
+          test-chart-dir: ${{ matrix.test_chart_dir }}
           camunda-helm-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
           flow: ${{ inputs.flow }}
           distro-platform: ${{ inputs.distro-platform }}
@@ -1542,6 +1557,9 @@ jobs:
           namespace-prefix: ${{ inputs.namespace-prefix }}
           namespace-override: "${{ steps.base-vars.outputs.namespace }}-${{ matrix.orchestration_suffix }}"
           hub-namespace: "${{ steps.base-vars.outputs.namespace }}-${{ inputs.topology-hub-suffix }}"
+          optimize-namespace: "${{ matrix.optimize_suffix && format('{0}-{1}', steps.base-vars.outputs.namespace, matrix.optimize_suffix) || '' }}"
+          optimize-context-path: "${{ matrix.optimize_context_path || '' }}"
+          modeler-cluster-name: ${{ matrix.modeler_cluster_name }}
           binary-artifact-name: ${{ inputs.binary-artifact-name }}
           deployment-ttl: ${{ env.CI_DEPLOYMENT_TTL }}
           auth: ${{ inputs.auth }}
@@ -1549,7 +1567,10 @@ jobs:
           test-stage: after-install
           shard-index: ${{ matrix.shard_index }}
           scenario: ${{ inputs.scenario }}
-          run-smoke-tests: "true"
+          run-smoke-tests: "false"
+          playwright-project: ${{ matrix.playwright_project }}
+          e2e-test-suite-token: ${{ steps.e2e-repository-token.outputs.token }}
+          artifact-suffix: ${{ matrix.orchestration_suffix }}-${{ matrix.suite }}
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -1587,7 +1608,7 @@ jobs:
       deployments: write
       packages: read
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@35aaec9b5e02286826f2139b5228312c6f894d6d # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -1681,13 +1702,10 @@ jobs:
         run: |
           echo "Validating blob report ZIP files..."
 
-          # Check if download succeeded and directory exists with files
-          if [[ "${{ steps.download-reports.outcome }}" != "success" ]] || [[ ! -d "all-blob-reports" ]]; then
-            echo "⚠️ No blob reports were downloaded (download outcome: ${{ steps.download-reports.outcome }})"
-            mkdir -p all-blob-reports
-            exit 0
-          fi
-
+          # A failed or partial download (continue-on-error above) can leave a
+          # truncated .zip behind, so always run the corruption check rather
+          # than trusting the download outcome and skipping cleanup.
+          mkdir -p all-blob-reports
           cd all-blob-reports
 
           for zip_file in *.zip; do
@@ -1702,7 +1720,7 @@ jobs:
           done
 
           remaining_files=$(ls -1 *.zip 2>/dev/null | wc -l || echo "0")
-          echo "Valid blob reports remaining: $remaining_files"
+          echo "Valid blob reports remaining (download outcome: ${{ steps.download-reports.outcome }}): $remaining_files"
 
           if [[ "$remaining_files" -eq 0 ]]; then
             echo "⚠️ No valid blob reports found to merge"
@@ -1801,23 +1819,6 @@ jobs:
       deployments: write
       packages: read
     steps:
-      # Put deploy-camunda on PATH before failed-pods-info so its Go
-      # `diagnostics print` path runs here too, rather than the reduced kubectl
-      # fallback. download-artifact needs no workspace checkout.
-      - name: Download deploy-camunda binary
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
-        with:
-          name: ${{ inputs.binary-artifact-name }}
-          path: ${{ runner.temp }}/bin
-      - name: Add deploy-camunda to PATH
-        run: |
-          chmod +x "${RUNNER_TEMP}/bin/deploy-camunda"
-          echo "${RUNNER_TEMP}/bin" >> "$GITHUB_PATH"
-
-      - name: CI Cleanup - 🚨 Get failed Pods info 🚨
-        if: failure()
-        uses: ./.github/actions/failed-pods-info
-
       - name: CI Setup - Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -1827,6 +1828,21 @@ jobs:
 
       - name: CI Setup - Configure Git safe directory
         run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+
+      - name: Download deploy-camunda binary
+        timeout-minutes: 3
+        continue-on-error: true # A sustained artifact-service outage must not skip the namespace-reaping steps below.
+        uses: ./.github/actions/download-artifact-retry
+        with:
+          name: ${{ inputs.binary-artifact-name }}
+          path: ${{ runner.temp }}/bin
+
+      - name: Add deploy-camunda to PATH
+        run: |
+          if [ -f "${RUNNER_TEMP}/bin/deploy-camunda" ]; then
+            chmod +x "${RUNNER_TEMP}/bin/deploy-camunda"
+          fi
+          echo "${RUNNER_TEMP}/bin" >> "$GITHUB_PATH"
 
       - name: CI Setup - ℹ️ Set workflow vars for both install and upgrade ℹ️
         id: vars
@@ -1890,18 +1906,16 @@ jobs:
           ROSA_PASS:        ${{ secrets[inputs.password] }}
           CLUSTER_NAME:     ${{ env.INFRA_CLUSTER_NAME }}
 
+      - name: CI Cleanup - 🚨 Get failed Pods info 🚨
+        if: failure()
+        uses: ./.github/actions/failed-pods-info
+
       - name: Collect failed topology diagnostics
         if: needs.e2e-topology-smoke.result == 'failure' && inputs.is-topology
-        env:
-          TOPOLOGY_NAMESPACE_SUFFIXES: ${{ inputs.topology-namespace-suffixes }}
-        run: |
-          mkdir -p diagnostics
-          while IFS= read -r suffix; do
-            ns="$(deploy-camunda topology namespace --base "$TEST_NAMESPACE" --suffix "$suffix")"
-            if [[ "$(kubectl get ns "$ns" --ignore-not-found -o name)" != "" ]]; then
-              deploy-camunda diagnostics print --namespace "$ns" >"diagnostics/topology-${suffix}.log" 2>&1 || true
-            fi
-          done < <(jq -r '.[]' <<<"$TOPOLOGY_NAMESPACE_SUFFIXES")
+        uses: ./.github/actions/topology-diagnostics
+        with:
+          base-namespace: ${{ env.TEST_NAMESPACE }}
+          suffixes: ${{ inputs.topology-namespace-suffixes }}
 
       - name: Upload failed topology diagnostics
         if: needs.e2e-topology-smoke.result == 'failure' && inputs.is-topology
@@ -1910,6 +1924,9 @@ jobs:
           name: topology-diagnostics-${{ inputs.identifier }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: diagnostics/
           retention-days: 14
+          # The collection step always writes a summary, so an empty bundle here
+          # means collection itself did not run.
+          if-no-files-found: error
 
       - name: CI Cleanup - Cleanup GitHub deployment
         if: always() && (env.CI_DEPLOYMENT_TTL == '' || inputs.distro-type != 'kubernetes')

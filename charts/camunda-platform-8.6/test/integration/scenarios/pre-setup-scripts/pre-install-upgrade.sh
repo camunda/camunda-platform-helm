@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# orphan-ok: no-op placeholder for the upgrade flow; not invoked by the matrix runner.
 #
 # This script will run before the Camunda Helm chart install step in the "upgrade" flow.
 # Any necessary tasks should be performed here and removed after the release.

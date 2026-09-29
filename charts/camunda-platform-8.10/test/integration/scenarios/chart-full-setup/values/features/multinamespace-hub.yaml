@@ -35,9 +35,6 @@
 
 orchestration:
   enabled: false
-  hub:
-    ping:
-      endpoint: "http://integration-web-modeler-restapi.${HUB_NAMESPACE}/modeler/api/v1/clusters"
 
 webModeler:
   restapi:

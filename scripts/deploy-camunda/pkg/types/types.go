@@ -66,7 +66,6 @@ type Options struct {
 	ExternalSecretsEnabled bool
 	ExternalSecretsStore   string // external secrets store type (e.g., "vault-backend")
 	Platform               string // gke|rosa|eks
-	NamespacePrefix        string // for eks copy
 	RepoRoot               string // repo base for manifests
 
 	TLSSecretName string

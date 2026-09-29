@@ -1,0 +1,12 @@
+connectors:
+  enabled: true
+  configuration: |
+    spring:
+      config:
+        activate:
+          on-profile: prod
+    server:
+      ssl:
+        enabled: true
+        certificate: /certs/tls.crt
+        certificate-private-key: /certs/tls.key

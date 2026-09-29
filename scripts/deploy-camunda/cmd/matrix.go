@@ -16,13 +16,16 @@ package cmd
 
 import (
 	"bufio"
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 	"os/signal"
 	"path/filepath"
 	"scripts/camunda-core/pkg/ghactions"
+	"scripts/camunda-core/pkg/helm"
 	"scripts/camunda-core/pkg/logging"
 	"scripts/deploy-camunda/config"
 	"scripts/deploy-camunda/deploy"
@@ -35,6 +38,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"gopkg.in/yaml.v3"
 )
 
 // newMatrixCommand creates the matrix parent command with list and run subcommands.
@@ -49,6 +53,18 @@ func newMatrixCommand() *cobra.Command {
 	matrixCmd.AddCommand(newMatrixPlanCommand())
 
 	return matrixCmd
+}
+
+// validateTierFlag accepts 0 (no tier filter), 1, and 2; every other value is
+// an error. Without this, a positive out-of-range tier silently filters the
+// matrix down to nothing and a negative one disables filtering entirely.
+func validateTierFlag(tier int) error {
+	switch tier {
+	case 0, 1, 2:
+		return nil
+	default:
+		return fmt.Errorf("invalid --tier %d: supported values are 1 (PR CI), 2 (merge-queue only), or 0 for no filter", tier)
+	}
 }
 
 // newMatrixPlanCommand creates the "matrix plan" subcommand. It replaces
@@ -96,6 +112,9 @@ version, and chart-only changes build just the affected versions.`,
 					return fmt.Errorf("invalid --tier %q: %w", tier, err)
 				}
 				tierValue = parsed
+			}
+			if err := validateTierFlag(tierValue); err != nil {
+				return err
 			}
 
 			result, err := matrix.Plan(repoRoot, matrix.PlanOptions{
@@ -163,7 +182,7 @@ func newMatrixListCommand() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "list",
-		Short: "List the CI test matrix for all active chart versions",
+		Short: "List the CI test matrix for routine chart versions",
 		Long: `List the full CI test matrix generated from chart-versions.yaml,
 ci-test-config.yaml (PR scenarios only), and permitted-flows.yaml.
 
@@ -201,9 +220,14 @@ This command does not require cluster access.`,
 				return fmt.Errorf("--repo-root is required (or set repoRoot in config, or run from within the repo)")
 			}
 
+			if err := validateTierFlag(tier); err != nil {
+				return err
+			}
+
 			entries, err := matrix.Generate(repoRoot, matrix.GenerateOptions{
 				Versions:        versions,
 				IncludeDisabled: includeDisabled,
+				Platform:        platform,
 			})
 			if err != nil {
 				return err
@@ -534,22 +558,41 @@ Under the hood this invokes deploy.Execute() for each matrix entry.`,
 				}
 			}
 
+			if err := validateTierFlag(tier); err != nil {
+				return err
+			}
+
 			entries, err := matrix.Generate(repoRoot, matrix.GenerateOptions{
 				Versions:        versions,
 				IncludeDisabled: includeDisabled,
+				Platform:        platform,
 			})
 			if err != nil {
 				return err
 			}
 
-			entries = matrix.Filter(entries, matrix.FilterOptions{
+			filterOptions := matrix.FilterOptions{
 				ScenarioFilter:  scenarioFilter,
 				ShortnameFilter: shortnameFilter,
 				ShortnameExact:  shortnameExact,
 				FlowFilter:      flowFilter,
 				Platform:        platform,
 				Tier:            tier,
-			})
+			}
+			entries = matrix.Filter(entries, filterOptions)
+			if len(entries) == 0 && !includeDisabled {
+				withDisabled, err := matrix.Generate(repoRoot, matrix.GenerateOptions{
+					Versions:        versions,
+					IncludeDisabled: true,
+					Platform:        platform,
+				})
+				if err != nil {
+					return err
+				}
+				if matches := matrix.Filter(withDisabled, filterOptions); len(matches) > 0 {
+					return fmt.Errorf("no enabled matrix entries matched the filters (versions=%v); matching scenarios are disabled; re-run with --include-disabled to include them", versions)
+				}
+			}
 
 			// Entries whose scenario declares a topology (multi-namespace
 			// deployment) fan out to N releases and are driven directly via
@@ -592,50 +635,60 @@ Under the hood this invokes deploy.Execute() for each matrix entry.`,
 					// synthesizeReleaseOpts). Building it from the same flag
 					// variables here, rather than hand-picking a subset,
 					// is what prevents fields silently dropping for
-					// topology deploys (this fixed the 3rd and 4th such bug:
-					// IngressBaseDomains, HelmTimeout, and DeleteNamespaceFirst).
+					// topology deploys (this fixed the 3rd, 4th and 5th such
+					// bug: IngressBaseDomains, HelmTimeout,
+					// DeleteNamespaceFirst, and WaitIngressReady /
+					// IngressReadyTimeoutMinutes).
+					//
+					// Only LogDir and the On* display callbacks may legitimately
+					// differ from the matrix.Run(...) literal below: LogDir is
+					// re-derived there (timestamped subdirectory) and the
+					// callbacks drive a status table that topology runs do not
+					// render. Any other divergence is this bug again.
 					baseTopologyRunOpts := matrix.RunOptions{
-						DryRun:                dryRun,
-						Coverage:              coverage,
-						StopOnFailure:         stopOnFailure,
-						Cleanup:               cleanup,
-						DeleteNamespaceFirst:  deleteNamespace,
-						KubeContexts:          kubeContexts,
-						KubeContext:           kubeContext,
-						NamespacePrefix:       namespacePrefix,
-						Platform:              platform,
-						MaxParallel:           maxParallel,
-						TestE2E:               testE2E,
-						TestAll:               testAll,
-						RepoRoot:              repoRoot,
-						EnvFiles:              envFiles,
-						EnvFile:               envFile,
-						IngressBaseDomains:    ingressBaseDomains,
-						IngressBaseDomain:     ingressBaseDomain,
-						LogLevel:              logLevel,
-						SkipDependencyUpdate:  skipDependencyUpdate,
-						VaultBackedSecrets:    vaultBackedSecrets,
-						UseVaultBackedSecrets: useVaultBackedSecrets,
-						KeycloakHost:          keycloakHost,
-						KeycloakProtocol:      keycloakProtocol,
-						UpgradeFromVersion:    upgradeFromVersion,
-						HelmTimeout:           helmTimeout,
-						DockerUsername:        dockerUsername,
-						DockerPassword:        dockerPassword,
-						EnsureDockerRegistry:  ensureDockerRegistry || len(topologyEntries) > 0,
-						DockerHubUsername:     dockerHubUsername,
-						DockerHubPassword:     dockerHubPassword,
-						EnsureDockerHub:       ensureDockerHub,
-						UseLatest:             useLatest,
-						UseQA:                 useQA,
-						ForceImageOverrides:   forceImageOverrides,
-						ExtraHelmArgs:         extraHelmArgs,
-						ExtraHelmSets:         extraHelmSets,
-						ExtraValues:           extraValues,
-						NamespaceOverride:     namespaceOverride,
-						ChartRef:              chartRef,
-						ChartRefVersion:       chartRefVersion,
-						LogDir:                logDir,
+						DryRun:                     dryRun,
+						Coverage:                   coverage,
+						StopOnFailure:              stopOnFailure,
+						Cleanup:                    cleanup,
+						DeleteNamespaceFirst:       deleteNamespace,
+						KubeContexts:               kubeContexts,
+						KubeContext:                kubeContext,
+						NamespacePrefix:            namespacePrefix,
+						Platform:                   platform,
+						MaxParallel:                maxParallel,
+						TestE2E:                    testE2E,
+						TestAll:                    testAll,
+						RepoRoot:                   repoRoot,
+						EnvFiles:                   envFiles,
+						EnvFile:                    envFile,
+						IngressBaseDomains:         ingressBaseDomains,
+						IngressBaseDomain:          ingressBaseDomain,
+						LogLevel:                   logLevel,
+						SkipDependencyUpdate:       skipDependencyUpdate,
+						VaultBackedSecrets:         vaultBackedSecrets,
+						UseVaultBackedSecrets:      useVaultBackedSecrets,
+						KeycloakHost:               keycloakHost,
+						KeycloakProtocol:           keycloakProtocol,
+						UpgradeFromVersion:         upgradeFromVersion,
+						HelmTimeout:                helmTimeout,
+						DockerUsername:             dockerUsername,
+						DockerPassword:             dockerPassword,
+						EnsureDockerRegistry:       ensureDockerRegistry || len(topologyEntries) > 0,
+						DockerHubUsername:          dockerHubUsername,
+						DockerHubPassword:          dockerHubPassword,
+						EnsureDockerHub:            ensureDockerHub,
+						UseLatest:                  useLatest,
+						UseQA:                      useQA,
+						ForceImageOverrides:        forceImageOverrides,
+						ExtraHelmArgs:              extraHelmArgs,
+						ExtraHelmSets:              extraHelmSets,
+						ExtraValues:                extraValues,
+						NamespaceOverride:          namespaceOverride,
+						ChartRef:                   chartRef,
+						ChartRefVersion:            chartRefVersion,
+						WaitIngressReady:           waitIngressReady,
+						IngressReadyTimeoutMinutes: ingressReadyTimeout,
+						LogDir:                     logDir,
 					}
 
 					for _, e := range topologyEntries {
@@ -938,7 +991,7 @@ func registerMatrixShortnameCompletion(cmd *cobra.Command) {
 }
 
 // registerMatrixVersionsCompletion adds tab completion for the --versions flag.
-// It reads chart-versions.yaml and offers active versions (alpha + supportStandard).
+// It reads chart-versions.yaml and offers versions selected for routine automation.
 func registerMatrixVersionsCompletion(cmd *cobra.Command) {
 	_ = cmd.RegisterFlagCompletionFunc("versions", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		repoRoot, _ := cmd.Flags().GetString("repo-root")
@@ -1152,32 +1205,45 @@ func buildOrchestrationZeebeEnv(orchestrationCtx *deploy.ScenarioContext) map[st
 	}
 }
 
-func topologyEnvToken(value string) string {
-	var token strings.Builder
-	for _, r := range strings.ToUpper(value) {
-		if r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' {
-			token.WriteRune(r)
-		} else {
-			token.WriteByte('_')
-		}
-	}
-	return strings.Trim(token.String(), "_")
-}
-
+// buildTopologyReleaseEnv layers a release's substitution namespace: shared
+// cross-release variables first, then the release's own env, and finally the
+// keys this driver derives from the topology declaration. The derived keys go
+// last on purpose - they are the declaration's only copy, and a release env
+// entry that shadowed one would deploy a context path or reader prefix that
+// disagrees with optimize-context-path/serves and with the smoke matrix.
+// matrix.Topology.Validate rejects such an entry outright; this ordering keeps
+// the generated value authoritative even so.
 func buildTopologyReleaseEnv(shared map[string]string, release matrix.TopologyRelease) map[string]string {
 	env := make(map[string]string, len(shared)+len(release.Env)+4)
 	for key, value := range shared {
 		env[key] = value
 	}
+	for key, value := range release.Env {
+		env[key] = value
+	}
 	if release.Role == "orchestration" {
-		token := topologyEnvToken(release.NamespaceSuffix)
+		token := matrix.TopologyEnvToken(release.NamespaceSuffix)
 		env["ORCH_NAMESPACE"] = env[token+"_NAMESPACE"]
 		env["ORCH_HOST"] = env[token+"_HOST"]
 		env["ORCH_ZEEBE_GRPC"] = env[token+"_ZEEBE_GRPC"]
 		env["ORCH_ZEEBE_REST"] = env[token+"_ZEEBE_REST"]
 	}
-	for key, value := range release.Env {
-		env[key] = value
+	if release.Role == "optimize" {
+		tenant := release.Tenant
+		if tenant == "" {
+			tenant = "default"
+		}
+		env["RELEASE_TENANT_ID"] = tenant
+		// RELEASE_-prefixed: buildScenarioEnv seeds this namespace from the process
+		// environment, where OPTIMIZE_CONTEXT_PATH is a name the Playwright suite reads
+		// (pages/SM-8.10/NavigationPage.ts). Keep the two namespaces from sharing a key.
+		env["RELEASE_OPTIMIZE_CONTEXT_PATH"] = release.OptimizeContextPath
+		if release.Serves != "" {
+			token := matrix.TopologyEnvToken(release.Serves)
+			env["SERVED_NAMESPACE"] = env[token+"_NAMESPACE"]
+			env["SERVED_HOST"] = env[token+"_HOST"]
+			env["SERVED_ORCHESTRATION_INDEX_PREFIX"] = env[token+"_ORCHESTRATION_INDEX_PREFIX"]
+		}
 	}
 	return env
 }
@@ -1216,6 +1282,38 @@ func extractHelmSetValue(pairs []string, key string) string {
 	return value
 }
 
+// preparedTopologyRelease pairs a topology release with the flags and prepared scenario built for
+// it, so the deploy loop and the topology-level post-deploy hook can both address it.
+type preparedTopologyRelease struct {
+	release   matrix.TopologyRelease
+	flags     *config.RuntimeFlags
+	namespace string
+	prepared  *deploy.PreparedScenario
+	cleanup   func()
+}
+
+// topologyChartPaths returns the distinct local chart directories the topology's
+// releases render from, in deploy order. A release pinning its own chart-version
+// contributes a second directory, which is why this is not simply the entry's
+// chart path. Releases rendered from an external chart reference (OCI or .tgz)
+// have nothing to vendor locally and are skipped.
+func topologyChartPaths(releases []preparedTopologyRelease) []string {
+	seen := make(map[string]struct{}, len(releases))
+	paths := make([]string, 0, len(releases))
+	for _, release := range releases {
+		if release.flags == nil || release.flags.Chart.Chart != "" || release.flags.Chart.ChartPath == "" {
+			continue
+		}
+		chartPath := release.flags.Chart.ChartPath
+		if _, ok := seen[chartPath]; ok {
+			continue
+		}
+		seen[chartPath] = struct{}{}
+		paths = append(paths, chartPath)
+	}
+	return paths
+}
+
 func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOptions) error {
 	platform := entry.Platform
 	if platform == "" {
@@ -1241,7 +1339,6 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 		releases = append(releases, deploy.TopologyRelease{
 			Role:            r.Role,
 			NamespaceSuffix: r.NamespaceSuffix,
-			Values:          r.Values,
 			DependsOn:       r.DependsOn,
 		})
 	}
@@ -1261,12 +1358,16 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 
 	hubIdx := -1
 	var orchestrationIndices []int
+	var optimizeIndices []int
 	for i, r := range entry.Topology.Releases {
 		if r.Role == "hub" {
 			hubIdx = i
 		}
 		if r.Role == "orchestration" {
 			orchestrationIndices = append(orchestrationIndices, i)
+		}
+		if r.Role == "optimize" {
+			optimizeIndices = append(optimizeIndices, i)
 		}
 	}
 	if hubIdx == -1 {
@@ -1286,15 +1387,23 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 	// (8080) ports from orchestration.service.{grpcPort,httpPort}.
 	addTopologyIngressHosts(crossRefEnv, opts, platform, contexts[hubIdx], entry.Topology.Releases, contexts)
 	for _, i := range orchestrationIndices {
-		token := topologyEnvToken(entry.Topology.Releases[i].NamespaceSuffix)
+		token := matrix.TopologyEnvToken(entry.Topology.Releases[i].NamespaceSuffix)
 		crossRefEnv[token+"_NAMESPACE"] = contexts[i].Namespace
+		crossRefEnv[token+"_ORCHESTRATION_INDEX_PREFIX"] = contexts[i].OrchestrationIndexPrefix
 		for key, value := range buildOrchestrationZeebeEnv(contexts[i]) {
 			crossRefEnv[token+strings.TrimPrefix(key, "ORCH")] = value
 		}
 	}
+	for _, i := range optimizeIndices {
+		release := entry.Topology.Releases[i]
+		token := matrix.TopologyEnvToken(release.NamespaceSuffix)
+		crossRefEnv[token+"_NAMESPACE"] = contexts[i].Namespace
+		crossRefEnv[token+"_OPTIMIZE_CONTEXT_PATH"] = release.OptimizeContextPath
+	}
 	if len(orchestrationIndices) == 1 {
 		i := orchestrationIndices[0]
 		crossRefEnv["ORCH_NAMESPACE"] = contexts[i].Namespace
+		crossRefEnv["ORCH_ORCHESTRATION_INDEX_PREFIX"] = contexts[i].OrchestrationIndexPrefix
 		for key, value := range buildOrchestrationZeebeEnv(contexts[i]) {
 			crossRefEnv[key] = value
 		}
@@ -1307,18 +1416,23 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 		return fmt.Errorf("topology entry %s/%s: %w", entry.Version, entry.Scenario, err)
 	}
 
+	preparedReleases := make([]preparedTopologyRelease, 0, len(order))
+	defer func() {
+		for _, release := range preparedReleases {
+			release.prepared.Cleanup()
+			release.cleanup()
+		}
+	}()
+
 	for _, i := range order {
 		rel := entry.Topology.Releases[i]
 		releaseCtx := contexts[i]
 
-		releaseEntry := synthesizeReleaseEntry(entry, rel, platform)
+		releaseEntry := synthesizeReleaseEntry(opts.RepoRoot, entry, rel, platform)
 		releaseOpts := synthesizeReleaseOpts(opts, platform, releaseCtx.Namespace)
-		if len(orchestrationIndices) > 1 {
-			hostKey := "HUB_HOST"
-			if rel.Role == "orchestration" {
-				hostKey = topologyEnvToken(rel.NamespaceSuffix) + "_HOST"
-			}
-			releaseOpts.ExtraHelmSets = append(releaseOpts.ExtraHelmSets, "global.host="+crossRefEnv[hostKey])
+		releaseHost := topologyReleaseHost(crossRefEnv, rel, len(orchestrationIndices))
+		if releaseHost != "" {
+			releaseOpts.ExtraHelmSets = append(releaseOpts.ExtraHelmSets, "global.host="+releaseHost)
 		}
 
 		flags, namespace, _, _, cleanup, buildErr := matrix.BuildEntryFlags(releaseEntry, releaseOpts)
@@ -1328,26 +1442,275 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 		}
 
 		applyTopologyReleaseOverrides(flags, buildTopologyReleaseEnv(crossRefEnv, rel))
+		applyTopologyReleaseHostname(flags, releaseHost)
+		if err := matrix.RegisterDeclarativePostInfraHook(flags, releaseEntry.PostInfra, opts.RepoRoot, releaseEntry.Version, releaseEntry.Scenario); err != nil {
+			cleanup()
+			return fmt.Errorf("topology release %s/%s (namespace-suffix %q): register post-infra hook: %w", entry.Scenario, rel.Role, rel.NamespaceSuffix, err)
+		}
 		if err := matrix.RegisterDeclarativePostDeployHook(flags, releaseEntry.PostDeploy, opts.RepoRoot, releaseEntry.Version, releaseEntry.Scenario); err != nil {
 			cleanup()
 			return fmt.Errorf("topology release %s/%s (namespace-suffix %q): register post-deploy hook: %w", entry.Scenario, rel.Role, rel.NamespaceSuffix, err)
 		}
+		prepared, prepareErr := deploy.PrepareScenario(ctx, releaseCtx, flags)
+		if prepareErr != nil {
+			cleanup()
+			return fmt.Errorf("topology release %s/%s (namespace-suffix %q) prepare failed: %w", entry.Scenario, rel.Role, rel.NamespaceSuffix, prepareErr)
+		}
+		preparedReleases = append(preparedReleases, preparedTopologyRelease{release: rel, flags: flags, namespace: namespace, prepared: prepared, cleanup: cleanup})
+	}
 
-		deployErr := deploy.Execute(ctx, flags)
-		cleanup()
+	for _, chartPath := range topologyChartPaths(preparedReleases) {
+		if err := helm.EnsureDependencies(ctx, chartPath); err != nil {
+			return fmt.Errorf("topology entry %s/%s: %w", entry.Version, entry.Scenario, err)
+		}
+	}
+
+	rendered := make([]matrix.RenderedTopologyRelease, 0, len(preparedReleases))
+	for _, release := range preparedReleases {
+		manifest, err := deploy.RenderPreparedTopologyContract(ctx, release.prepared, release.flags)
+		if err != nil {
+			return fmt.Errorf("topology release %s/%s contract render failed: %w", entry.Scenario, release.release.Role, err)
+		}
+		var contract matrix.TopologyContract
+		// Charts older than 8.10 publish no contract template, so a release pinned to one
+		// renders nothing here. Record the zero contract: ValidateRendered reads these only
+		// to check optimize releases, and reports a mismatch if one actually needed this data.
+		if len(bytes.TrimSpace(manifest)) > 0 {
+			var document struct {
+				Data map[string]string `yaml:"data"`
+			}
+			if err := yaml.Unmarshal(manifest, &document); err != nil {
+				return fmt.Errorf("topology release %s/%s contract manifest decode failed: %w", entry.Scenario, release.release.Role, err)
+			}
+			if err := json.Unmarshal([]byte(document.Data["contract.json"]), &contract); err != nil {
+				return fmt.Errorf("topology release %s/%s contract decode failed: %w", entry.Scenario, release.release.Role, err)
+			}
+		}
+		rendered = append(rendered, matrix.RenderedTopologyRelease{Release: release.release, Contract: contract})
+	}
+	if err := entry.Topology.ValidateRendered(fmt.Sprintf("topology entry %s/%s", entry.Version, entry.Scenario), rendered); err != nil {
+		return err
+	}
+
+	for _, release := range preparedReleases {
+		deployErr := deploy.ExecutePrepared(ctx, release.prepared, release.flags)
 
 		status := "OK"
 		if deployErr != nil {
 			status = fmt.Sprintf("FAILED: %v", deployErr)
 		}
-		fmt.Fprintf(os.Stdout, "topology release %s/%s (namespace %s): %s\n", entry.Scenario, rel.Role, namespace, status)
+		fmt.Fprintf(os.Stdout, "topology release %s/%s (namespace %s): %s\n", entry.Scenario, release.release.Role, release.namespace, status)
 
 		if deployErr != nil {
-			return fmt.Errorf("topology release %s/%s (namespace-suffix %q) deploy failed: %w", entry.Scenario, rel.Role, rel.NamespaceSuffix, deployErr)
+			return fmt.Errorf("topology release %s/%s (namespace-suffix %q) deploy failed: %w", entry.Scenario, release.release.Role, release.release.NamespaceSuffix, deployErr)
 		}
 	}
 
+	if err := runTopologyPostDeployHook(ctx, entry, opts, preparedReleases); err != nil {
+		return err
+	}
+
+	return runTopologyE2ELegs(ctx, entry, opts, platform, contexts, crossRefEnv, orchestrationIndices)
+}
+
+// runTopologyPostDeployHook runs the scenario's post-deploy hook once, after every release in the
+// topology has deployed. synthesizeReleaseEntry deliberately clears PostDeploy on each synthesized
+// release, so without this the hook is registered against nothing and never runs: the lifecycle
+// boundary of a topology hook is the whole topology, not any one release in it.
+//
+// It runs before, and independently of, the e2e legs. A topology that sets skip-e2e still has to
+// prove its post-deploy assertions - for physicaltenants the hook is the only per-tenant Optimize
+// coverage there is, because the browser suite cannot express it yet.
+func runTopologyPostDeployHook(ctx context.Context, entry matrix.Entry, opts matrix.RunOptions, releases []preparedTopologyRelease) error {
+	if entry.PostDeploy == nil {
+		return nil
+	}
+	flags := topologyHookFlags(releases)
+	if flags == nil {
+		return fmt.Errorf("topology entry %s/%s: post-deploy hook declared but the topology prepared no release to run it against", entry.Version, entry.Scenario)
+	}
+	if err := matrix.RunDeclarativePostDeployHook(ctx, flags, entry.PostDeploy, opts.RepoRoot, entry.Version, entry.Scenario); err != nil {
+		return fmt.Errorf("topology entry %s/%s: post-deploy hook: %w", entry.Version, entry.Scenario, err)
+	}
 	return nil
+}
+
+// topologyHookFlags picks the release a topology-level hook runs against. Hook scripts read
+// TEST_NAMESPACE as the namespace to inspect workloads in, and they inspect the orchestration
+// release (Zeebe partitions, exporters), so the orchestration release's flags are the ones to use;
+// its ExtraEnv already carries the whole cross-reference env, so the Hub and per-Optimize values
+// the scripts also read resolve from it. With more than one orchestration release the first in
+// deploy order wins, matching ORCH_NAMESPACE, which is only set for a single-orchestration topology.
+func topologyHookFlags(releases []preparedTopologyRelease) *config.RuntimeFlags {
+	for _, release := range releases {
+		if release.release.Role == "orchestration" {
+			return release.flags
+		}
+	}
+	if len(releases) > 0 {
+		return releases[0].flags
+	}
+	return nil
+}
+
+// runTopologyE2ELegs runs e2e once the entire topology is deployed. Reaching this point means every
+// release's helm install returned successfully, and helm --wait already gated each one on workload
+// readiness, so the topology is up.
+//
+// Legs come from matrix.TopologyE2ELegs, the same computation that produces the CI smoke matrix, so
+// a local run and a CI run agree on how many legs a topology has and which namespaces each targets.
+// Legs run sequentially and every failure is collected: one tenant's failure must not hide another's
+// result.
+func runTopologyE2ELegs(
+	ctx context.Context,
+	entry matrix.Entry,
+	opts matrix.RunOptions,
+	platform string,
+	contexts []*deploy.ScenarioContext,
+	crossRefEnv map[string]string,
+	orchestrationIndices []int,
+) error {
+	if !opts.TestE2E && !opts.TestAll {
+		return nil
+	}
+	if entry.SkipE2E {
+		fmt.Fprintf(os.Stdout, "topology %s: e2e skipped (skip-e2e)\n", entry.Scenario)
+		return nil
+	}
+
+	legs := matrix.TopologyE2ELegs(entry.Version, entry.Topology)
+	if len(legs) == 0 {
+		return nil
+	}
+
+	// Namespaces are only knowable per release index, so map each release's suffix to its context.
+	nsBySuffix := map[string]string{}
+	relBySuffix := map[string]matrix.TopologyRelease{}
+	hubNamespace := ""
+	for i, rel := range entry.Topology.Releases {
+		nsBySuffix[rel.NamespaceSuffix] = contexts[i].Namespace
+		relBySuffix[rel.NamespaceSuffix] = rel
+		if rel.Role == "hub" {
+			hubNamespace = contexts[i].Namespace
+		}
+	}
+	// Without the Hub namespace, run-e2e-tests.sh renders the env from the orchestration namespace
+	// alone, so Web Modeler, Management Identity and Keycloak resolve to the orchestration host where
+	// they do not exist and the setup project times out before any test runs.
+	if hubNamespace == "" {
+		return fmt.Errorf("topology %s: no hub release, so the e2e env cannot resolve Identity, Keycloak or Web Modeler", entry.Scenario)
+	}
+
+	var failures []string
+	for _, leg := range legs {
+		orchestrationNamespace := nsBySuffix[leg.OrchestrationSuffix]
+		if orchestrationNamespace == "" {
+			failures = append(failures, fmt.Sprintf("leg %q: no deployed namespace for that orchestration release", leg.OrchestrationSuffix))
+			continue
+		}
+		optimizeNamespace := ""
+		if leg.OptimizeSuffix != "" {
+			optimizeNamespace = nsBySuffix[leg.OptimizeSuffix]
+			if optimizeNamespace == "" {
+				failures = append(failures, fmt.Sprintf("leg %q: no deployed namespace for optimize release %q", leg.OrchestrationSuffix, leg.OptimizeSuffix))
+				continue
+			}
+		}
+
+		rel := relBySuffix[leg.OrchestrationSuffix]
+		releaseEntry := synthesizeReleaseEntry(opts.RepoRoot, entry, rel, platform)
+		releaseOpts := synthesizeReleaseOpts(opts, platform, orchestrationNamespace)
+		releaseHost := topologyReleaseHost(crossRefEnv, rel, len(orchestrationIndices))
+		if releaseHost != "" {
+			releaseOpts.ExtraHelmSets = append(releaseOpts.ExtraHelmSets, "global.host="+releaseHost)
+		}
+
+		flags, namespace, _, _, cleanup, buildErr := matrix.BuildEntryFlags(releaseEntry, releaseOpts)
+		if buildErr != nil {
+			cleanup()
+			failures = append(failures, fmt.Sprintf("leg %q: build flags: %v", leg.OrchestrationSuffix, buildErr))
+			continue
+		}
+		applyTopologyReleaseOverrides(flags, buildTopologyReleaseEnv(crossRefEnv, rel))
+		applyTopologyReleaseHostname(flags, releaseHost)
+		// synthesizeReleaseEntry disables e2e for the deploy loop; re-enable it for this leg only.
+		flags.Test.RunE2ETests = true
+		flags.Test.HubNamespace = hubNamespace
+		flags.Test.OptimizeNamespace = optimizeNamespace
+		flags.Test.OptimizeContextPath = leg.OptimizeContextPath
+		flags.Test.ModelerClusterName = leg.ModelerClusterName
+
+		testErr := deploy.RunTests(ctx, flags, namespace)
+		cleanup()
+
+		label := leg.OrchestrationSuffix
+		if leg.OptimizeSuffix != "" {
+			label = fmt.Sprintf("%s+%s", leg.OrchestrationSuffix, leg.OptimizeSuffix)
+		}
+		status := "OK"
+		if testErr != nil {
+			status = fmt.Sprintf("FAILED: %v", testErr)
+			failures = append(failures, fmt.Sprintf("leg %q: %v", label, testErr))
+		}
+		fmt.Fprintf(os.Stdout, "topology e2e %s/%s (namespace %s): %s\n", entry.Scenario, label, namespace, status)
+	}
+
+	if len(failures) > 0 {
+		return fmt.Errorf("topology %s: e2e failed for %d of %d legs:\n  - %s", entry.Scenario, len(failures), len(legs), strings.Join(failures, "\n  - "))
+	}
+	return nil
+}
+
+// topologyReleaseHost returns the ingress host the topology assigns to a
+// release, or "" when the release keeps BuildEntryFlags' default host.
+func topologyReleaseHost(crossRefEnv map[string]string, release matrix.TopologyRelease, orchestrationCount int) string {
+	key := topologyReleaseHostKey(release.Role, release.NamespaceSuffix, orchestrationCount)
+	if key == "" {
+		return ""
+	}
+	return crossRefEnv[key]
+}
+
+// applyTopologyReleaseHostname makes a topology-assigned host the release's
+// CAMUNDA_HOSTNAME as well as its global.host. Scenario values files take the
+// ingress host from $CAMUNDA_HOSTNAME, and charts before 8.10 read it from
+// global.ingress.host, which the global.host override does not reach (8.9
+// prefers global.ingress.host; 8.8 and 8.7 read nothing else). Without this,
+// every pre-8.10 orchestration release in a multi-orchestration topology kept
+// the one CI-wide hostname, so they all published the same external-dns name
+// instead of the per-release host the Hub inventory and e2e legs use.
+// flags.ExtraEnv outranks the scenario-derived CAMUNDA_HOSTNAME when values
+// files are rendered, so setting it here is enough.
+func applyTopologyReleaseHostname(flags *config.RuntimeFlags, host string) {
+	if host == "" {
+		return
+	}
+	if flags.ExtraEnv == nil {
+		flags.ExtraEnv = map[string]string{}
+	}
+	flags.ExtraEnv["CAMUNDA_HOSTNAME"] = host
+}
+
+// topologyReleaseHostKey names the crossRefEnv key whose value must be pushed
+// into a release's global.host, or "" to leave global.host to BuildEntryFlags'
+// namespace-derived default.
+//
+// An "optimize" release is always pinned to the Hub host: its values layer
+// registers an OIDC redirect URL under HUB_HOST, so a namespace-derived host
+// would break the callback. Other roles keep the pre-existing behavior of
+// overriding only when several orchestration releases must be split across
+// distinct hosts.
+func topologyReleaseHostKey(role, namespaceSuffix string, orchestrationCount int) string {
+	if role == "optimize" {
+		return "HUB_HOST"
+	}
+	if orchestrationCount <= 1 {
+		return ""
+	}
+	if role == "orchestration" {
+		return matrix.TopologyEnvToken(namespaceSuffix) + "_HOST"
+	}
+	return "HUB_HOST"
 }
 
 func addTopologyIngressHosts(crossRefEnv map[string]string, opts matrix.RunOptions, platform string, hubCtx *deploy.ScenarioContext, releases []matrix.TopologyRelease, contexts []*deploy.ScenarioContext) {
@@ -1361,7 +1724,7 @@ func addTopologyIngressHosts(crossRefEnv map[string]string, opts matrix.RunOptio
 		crossRefEnv["HUB_HOST"] = sharedHost
 		for _, release := range releases {
 			if release.Role == "orchestration" {
-				crossRefEnv[topologyEnvToken(release.NamespaceSuffix)+"_HOST"] = sharedHost
+				crossRefEnv[matrix.TopologyEnvToken(release.NamespaceSuffix)+"_HOST"] = sharedHost
 				crossRefEnv["ORCH_HOST"] = sharedHost
 			}
 		}
@@ -1384,7 +1747,7 @@ func addTopologyIngressHosts(crossRefEnv map[string]string, opts matrix.RunOptio
 			IngressSubdomain:  contexts[i].Namespace,
 			IngressBaseDomain: baseDomain,
 		}).ResolveIngressHostname()
-		crossRefEnv[topologyEnvToken(release.NamespaceSuffix)+"_HOST"] = host
+		crossRefEnv[matrix.TopologyEnvToken(release.NamespaceSuffix)+"_HOST"] = host
 		if orchestrationCount == 1 {
 			crossRefEnv["ORCH_HOST"] = host
 		}
@@ -1438,34 +1801,24 @@ func topologyDeployOrder(releases []matrix.TopologyRelease) ([]int, error) {
 // carrying THAT release's own identity/persistence/features/dependencies
 // layer selection instead of the scenario-level (uniform) ones — the core of
 // the per-release layer fix. Extracted as a pure function for testability.
-func synthesizeReleaseEntry(entry matrix.Entry, rel matrix.TopologyRelease, platform string) matrix.Entry {
+func synthesizeReleaseEntry(repoRoot string, entry matrix.Entry, rel matrix.TopologyRelease, platform string) matrix.Entry {
+	// Feature layers go through the same env-var substitution pipeline as the
+	// identity and persistence layers (scenarios.BuildDeploymentConfig →
+	// values.Process), so a release's ${...} placeholders resolve before Helm
+	// sees them.
 	features := append([]string(nil), rel.Features...)
-	var extraValues []string
 
-	// rel.Values is the release's own overlay file. When it lives under
-	// values/features/ (the convention every multinamespace release uses),
-	// resolve it as a Feature layer instead of an ExtraValues file: Feature
-	// layers go through the SAME env-var substitution pipeline as
-	// identity/persistence layers (scenarios.BuildDeploymentConfig →
-	// values.Process), whereas ExtraValues files are passed straight into
-	// BuildValuesChain WITHOUT substitution. Feeding a topology release's
-	// ${...} placeholders (e.g. EXTERNAL_ELASTICSEARCH_HOST) through
-	// ExtraValues was the root cause of the live-GKE "does not exist" failure
-	// this fix addresses — Feature layers close that gap.
-	const featuresPrefix = "features/"
-	if strings.HasPrefix(rel.Values, featuresPrefix) {
-		featureName := strings.TrimSuffix(strings.TrimPrefix(rel.Values, featuresPrefix), ".yaml")
-		features = append(features, featureName)
-	} else if rel.Values != "" {
-		// Fallback for any release values file NOT under values/features/:
-		// still gets deployed, but its placeholders are only substituted if
-		// resolved another way (e.g. no placeholders at all).
-		extraValues = []string{filepath.Join("values", rel.Values)}
+	// A release may pin its own chart-version, so a topology can mix chart
+	// versions (e.g. an 8.10 Hub serving an 8.9 orchestration release). Empty
+	// inherits the parent matrix entry's version, which is the uniform case.
+	version := rel.ChartVersion
+	if version == "" {
+		version = entry.Version
 	}
 
 	releaseEntry := matrix.Entry{
-		Version:      entry.Version,
-		ChartPath:    entry.ChartPath,
+		Version:      version,
+		ChartPath:    filepath.Join(repoRoot, "charts", "camunda-platform-"+version),
 		Scenario:     entry.Scenario,
 		Shortname:    entry.Shortname,
 		Auth:         entry.Auth,
@@ -1477,11 +1830,19 @@ func synthesizeReleaseEntry(entry matrix.Entry, rel matrix.TopologyRelease, plat
 		Persistence:  rel.Persistence,
 		Features:     features,
 		Dependencies: rel.ResolvedDependencies,
-		ExtraValues:  extraValues,
 	}
-	if rel.Role == "orchestration" {
-		releaseEntry.PostDeploy = entry.PostDeploy
+	// The scenario's post-infra hook provisions the shared infrastructure the whole
+	// topology then deploys onto, so it belongs to the Hub release: that is the one
+	// release every other one depends on, and running it per release would repeat
+	// the provisioning once per namespace. PostDeploy is deliberately NOT carried
+	// here - runTopologyPostDeployHook runs it once after the whole topology is up.
+	if rel.Role == "hub" {
+		releaseEntry.PostInfra = entry.PostInfra
 	}
+	// e2e is a topology-level concern, not a per-release one: a release's deploy returns while later
+	// releases are still undeployed, so testing here would test a partial topology (and would repeat
+	// for every orchestration release). runTopologyEntry runs the legs once the whole topology is up.
+	releaseEntry.SkipE2E = true
 	return releaseEntry
 }
 

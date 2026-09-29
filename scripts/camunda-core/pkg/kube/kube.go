@@ -184,6 +184,28 @@ func (c *Client) ListPods(ctx context.Context, namespace string) (*corev1.PodLis
 	return pods, nil
 }
 
+func (c *Client) NamespaceExists(ctx context.Context, namespace string) (bool, error) {
+	if namespace == "" {
+		return false, errors.New("namespace must not be empty")
+	}
+
+	_, err := c.clientset.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
+	if apierrors.IsNotFound(err) {
+		return false, nil
+	}
+	if err != nil {
+		return false, fmt.Errorf("failed to get namespace %q: %w", namespace, err)
+	}
+	return true, nil
+}
+
+func (c *Client) ListEvents(ctx context.Context, namespace string) (*corev1.EventList, error) {
+	if namespace == "" {
+		return nil, errors.New("namespace must not be empty")
+	}
+	return c.clientset.CoreV1().Events(namespace).List(ctx, metav1.ListOptions{})
+}
+
 func (c *Client) EnsureNamespace(ctx context.Context, namespace string) error {
 	if namespace == "" {
 		return errors.New("namespace must not be empty")
@@ -765,7 +787,7 @@ const (
 	secretNameTLS = "aws-camunda-cloud-tls"
 )
 
-func ApplyExternalSecretsAndCerts(ctx context.Context, kubeconfig, kubeContext, platform, repoRoot, chartPath, namespace, namespacePrefix, externalSecretsStore string) error {
+func ApplyExternalSecretsAndCerts(ctx context.Context, kubeconfig, kubeContext, platform, repoRoot, chartPath, namespace, externalSecretsStore string) error {
 	platform = strings.ToLower(strings.TrimSpace(platform))
 
 	logging.Logger.Debug().
@@ -789,20 +811,12 @@ func ApplyExternalSecretsAndCerts(ctx context.Context, kubeconfig, kubeContext, 
 		return nil
 	}
 
-	provider, err := NewPlatformSecretsProvider(platform, repoRoot, chartPath, namespacePrefix, externalSecretsStore)
+	provider, err := NewPlatformSecretsProvider(platform, repoRoot, chartPath, externalSecretsStore)
 	if err != nil {
 		return err
 	}
 
 	return provider.Apply(ctx, client, namespace)
-}
-
-func computeEKSSourceNamespace(namespacePrefix string) string {
-	prefix := strings.TrimSpace(namespacePrefix)
-	if prefix == "" {
-		return "certs"
-	}
-	return prefix + "-certs"
 }
 
 func applyManifestIfExists(ctx context.Context, client *Client, namespace, filePath, description string) error {
@@ -1026,13 +1040,13 @@ func checkIfExternalSecretsCRDExists(ctx context.Context, client *Client) (bool,
 	return hasCRD, nil
 }
 
-func waitExternalSecretsReady(ctx context.Context, client *Client, namespace string, timeout time.Duration) error {
-	externalSecretGVR := schema.GroupVersionResource{
-		Group:    "external-secrets.io",
-		Version:  "v1",
-		Resource: "externalsecrets",
-	}
+var externalSecretGVR = schema.GroupVersionResource{
+	Group:    "external-secrets.io",
+	Version:  "v1",
+	Resource: "externalsecrets",
+}
 
+func waitExternalSecretsReady(ctx context.Context, client *Client, namespace string, timeout time.Duration) error {
 	list, err := client.dynamicClient.Resource(externalSecretGVR).Namespace(namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to list ExternalSecrets: %w", err)

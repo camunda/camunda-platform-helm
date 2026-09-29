@@ -9,6 +9,9 @@ global:
       enabled: true
       type: GENERIC
       issuer: https://issuer.example.com
+      # GENERIC has no endpoint layout to derive the JWKS endpoint from, and this
+      # fixture enables Optimize, which validates every token against it.
+      jwksUrl: https://issuer.example.com/protocol/openid-connect/certs
       optimize:
         clientId: optimize-east
         audience: optimize-east-api

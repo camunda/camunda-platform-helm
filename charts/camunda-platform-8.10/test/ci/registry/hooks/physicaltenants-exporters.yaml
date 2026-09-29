@@ -1,0 +1,6 @@
+script: post-deploy-physical-tenant-exporters.sh
+description: |
+  After the complete topology is ready, asserts that default, tenanta, and
+  tenantb export; deploys one process through each Physical Tenant route; proves
+  each Optimize imports only its own process; and proves sibling client tokens
+  are rejected.

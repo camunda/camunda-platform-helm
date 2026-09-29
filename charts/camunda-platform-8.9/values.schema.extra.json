@@ -2,6 +2,13 @@
     "properties": {
         "global": {
             "properties": {
+                "documentStore": {
+                    "properties": {
+                        "activeStoreId": {
+                            "pattern": "^[A-Za-z0-9.-]+$"
+                        }
+                    }
+                },
                 "ingress": {
                     "properties": {
                         "protocol": {
@@ -109,6 +116,17 @@
                             "type": "boolean",
                             "description": "allows the use of Camunda-built images that bundle additional tooling; passed through to Bitnami sub-charts.",
                             "default": true
+                        }
+                    }
+                },
+                "topology": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                        "mode": {
+                            "type": "string",
+                            "enum": ["combined", "orchestration"],
+                            "default": "combined"
                         }
                     }
                 },

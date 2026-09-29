@@ -42,12 +42,6 @@ management:
 camunda:
   license:
     key: "${VALUES_ORCHESTRATION_LICENSE_KEY}"
-  {{- if eq (include "orchestration.hasAzureDocumentStore" .) "true" }}
-  document:
-    store:
-      azure:
-        connection-string: "${VALUES_DOCUMENT_STORE_AZURE_CONNECTION_STRING:}"
-  {{- end }}
 
   system:
     cpu-thread-count: {{ .Values.orchestration.cpuThreadCount }}
@@ -100,7 +94,7 @@ camunda:
           processing: {{ .Values.orchestration.data.disk.freeSpace.processing | quote }}
           replication: {{ .Values.orchestration.data.disk.freeSpace.replication | quote }}
     secondary-storage:
-      autoconfigure-camunda-exporter: {{ .Values.orchestration.exporters.camunda.enabled }}
+      autoconfigure-camunda-exporter: {{ and .Values.orchestration.exporters.camunda.enabled (not .Values.orchestration.exporters.rdbms.enabled) }}
       type: {{ include "orchestration.secondaryStorage" . | quote -}}
       {{- if .Values.orchestration.history.retention.enabled }}
       retention:
@@ -116,16 +110,10 @@ camunda:
         password: "${VALUES_ELASTICSEARCH_PASSWORD:}"
         index-prefix: {{ .Values.orchestration.index.prefix | quote }}
         number-of-replicas: {{ .Values.orchestration.index.replicas | quote }}
+        {{- if .Values.orchestration.history.retention.enabled }}
         history:
-          els-rollover-date-format: {{ .Values.orchestration.history.elsRolloverDateFormat | quote }}
-          rollover-interval: {{ .Values.orchestration.history.rolloverInterval | quote }}
-          rollover-batch-size: {{ .Values.orchestration.history.rolloverBatchSize }}
-          wait-period-before-archiving: {{ .Values.orchestration.history.waitPeriodBeforeArchiving | quote }}
-          delay-between-runs: {{ .Values.orchestration.history.delayBetweenRuns }}
-          max-delay-between-runs: {{ .Values.orchestration.history.maxDelayBetweenRuns }}
-          {{- if .Values.orchestration.history.retention.enabled }}
           policy-name: {{ .Values.orchestration.history.retention.policyName | quote }}
-          {{- end }}
+        {{- end }}
       {{- end }}
       {{- if or .Values.global.opensearch.enabled .Values.optimize.database.opensearch.enabled (eq .Values.orchestration.data.secondaryStorage.type "opensearch") }}
       opensearch:
@@ -136,16 +124,10 @@ camunda:
         password: "${VALUES_OPENSEARCH_PASSWORD:}"
         index-prefix: {{ .Values.orchestration.index.prefix | quote }}
         number-of-replicas: {{ .Values.orchestration.index.replicas | quote }}
+        {{- if .Values.orchestration.history.retention.enabled }}
         history:
-          els-rollover-date-format: {{ .Values.orchestration.history.elsRolloverDateFormat | quote }}
-          rollover-interval: {{ .Values.orchestration.history.rolloverInterval | quote }}
-          rollover-batch-size: {{ .Values.orchestration.history.rolloverBatchSize }}
-          wait-period-before-archiving: {{ .Values.orchestration.history.waitPeriodBeforeArchiving | quote }}
-          delay-between-runs: {{ .Values.orchestration.history.delayBetweenRuns }}
-          max-delay-between-runs: {{ .Values.orchestration.history.maxDelayBetweenRuns }}
-          {{- if .Values.orchestration.history.retention.enabled }}
           policy-name: {{ .Values.orchestration.history.retention.policyName | quote }}
-          {{- end }}
+        {{- end }}
       {{- end }}
       {{- if .Values.orchestration.exporters.rdbms.enabled }}
       rdbms:
@@ -179,7 +161,9 @@ camunda:
           {{- end }}
           - {{ include "orchestration.authClientId" . | quote }}
           - {{ include "orchestration.authAudience" . | quote }}
+          {{- if eq (include "camundaPlatform.webModelerEnabled" .) "true" }}
           - {{ .Values.global.identity.auth.webModeler.clientApiAudience | quote }}
+          {{- end }}
         {{- if (include "orchestration.authIssuerUrl" .) }}
         issuer-uri: {{ include "orchestration.authIssuerUrl" . | quote }}
         {{- else }}
@@ -330,6 +314,7 @@ zeebe:
     {{- if or
       (eq (include "orchestration.hasElasticsearchExporter" .) "true")
       (eq (include "orchestration.hasOpenSearchExporter" .) "true")
+      (eq (include "orchestration.hasCamundaExporter" .) "true")
       (eq (include "orchestration.hasAppIntegrations" .) "true")
     }}
     # zeebe.broker.exporters
@@ -377,6 +362,24 @@ zeebe:
             minimumAge: {{ .Values.orchestration.retention.minimumAge | quote }}
             policyName: {{ .Values.orchestration.retention.policyName | quote }}
           {{- end }}
+    {{- end }}
+    {{- if eq (include "orchestration.hasCamundaExporter" .) "true" }}
+      camundaexporter:
+        className: "io.camunda.exporter.CamundaExporter"
+        args:
+          connect:
+            {{- /* Omit `type`; camunda.data.secondary-storage.type supplies it. */}}
+            {{- if .Values.orchestration.index.prefix }}
+            indexPrefix: {{ .Values.orchestration.index.prefix | quote }}
+            {{- end }}
+            awsEnabled: {{ include "orchestration.camundaExporterAwsEnabled" . }}
+          history:
+            elsRolloverDateFormat: {{ .Values.orchestration.history.elsRolloverDateFormat | quote }}
+            rolloverInterval: {{ .Values.orchestration.history.rolloverInterval | quote }}
+            rolloverBatchSize: {{ .Values.orchestration.history.rolloverBatchSize }}
+            waitPeriodBeforeArchiving: {{ .Values.orchestration.history.waitPeriodBeforeArchiving | quote }}
+            delayBetweenRuns: {{ .Values.orchestration.history.delayBetweenRuns }}
+            maxDelayBetweenRuns: {{ .Values.orchestration.history.maxDelayBetweenRuns }}
     {{- end }}
     {{- if eq (include "orchestration.hasAppIntegrations" .) "true" }}
       appIntegrations:

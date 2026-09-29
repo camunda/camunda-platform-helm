@@ -208,6 +208,43 @@ integration:
               Generates a self-signed certificate/key pair for the Connectors HTTP
               endpoint and packages it as a PKCS12 keystore in a `connectors-tls-keystore`
               Secret consumed by `global.tls.connectors.cert.secret.existingSecret`.
+        - name: optimize-tls
+          enabled: true
+          shortname: optls
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - optimize-tls
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+          pre-install:
+            script: pre-install-optimize-tls.sh
+            description: |
+              Generates a self-signed certificate/key pair for the Optimize HTTP
+              endpoint and packages it as a PKCS12 keystore in an `optimize-tls-keystore`
+              Secret consumed by `global.tls.optimize.cert.secret.existingSecret`.
         - name: opensearch
           enabled: true
           shortname: oske
@@ -245,6 +282,7 @@ integration:
           platforms:
             - gke
           exclude: []
+          tier: 2
           infra-type:
             gke: distroci
           identity: keycloak
@@ -281,6 +319,7 @@ integration:
           platforms:
             - gke
           exclude: []
+          tier: 2
           infra-type:
             gke: distroci
           identity: keycloak
@@ -353,7 +392,7 @@ integration:
             - identity
             - console
             - orchestration-grpc
-          tier: 1
+          tier: 2
           infra-type:
             eks: preemptible
             gke: distroci
@@ -381,6 +420,39 @@ integration:
             description: |
               Waits for the authenticated Orchestration Cluster ping to register its
               uniquely named cluster in Hub's database.
+        - name: oidc-defaults
+          enabled: true
+          shortname: esoid
+          auth: oidc
+          flow: install
+          platforms:
+            - gke
+          exclude:
+            - identity
+            - console
+            - orchestration-grpc
+          tier: 1
+          infra-type:
+            eks: preemptible
+            gke: distroci
+          identity: oidc
+          persistence: elasticsearch
+          features:
+            - postgresql-companion
+          skip-e2e: true
+          dependencies:
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
         - name: auth0
           enabled: true
           shortname: esa0
@@ -392,7 +464,7 @@ integration:
             - identity
             - console
             - orchestration-grpc
-          tier: 1
+          tier: 2
           infra-type:
             eks: preemptible
             gke: distroci
@@ -427,6 +499,7 @@ integration:
           platforms:
             - gke
           exclude: []
+          tier: 2
           infra-type:
             eks: preemptible
             gke: distroci
@@ -458,6 +531,7 @@ integration:
           platforms:
             - gke
           exclude: []
+          tier: 2
           infra-type:
             eks: preemptible
             gke: distroci
@@ -701,6 +775,39 @@ integration:
             description: |
               Resolves a value from the mounted file secret store through the v2 gateway
               API and verifies that the runtime returns the expected value.
+        - name: secretstore-gcp
+          enabled: true
+          shortname: secgc
+          auth: basic
+          flow: install
+          platforms:
+            - gke
+          exclude:
+            - orchestration-grpc
+          tier: 2
+          infra-type:
+            gke: distroci
+          identity: basic
+          persistence: elasticsearch
+          features:
+            - secretstore-gcp
+          skip-e2e: true
+          dependencies:
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+          post-deploy:
+            script: post-deploy-secretstore-gcp.sh
+            description: |
+              Grants roles/secretmanager.secretAccessor on the camunda-ci-secretstore-token
+              fixture to this run's GKE workload principal, resolves the secret through the v2
+              gateway API, and revokes the binding on exit. Also asserts the Orchestration
+              ServiceAccount carries no iam.gke.io/gcp-service-account annotation and the
+              container sets no GOOGLE_APPLICATION_CREDENTIALS, so the value can only have
+              resolved through workload identity. Requires an authenticated gcloud.
         - name: rdbms-self-signed
           enabled: true
           shortname: rdbss
@@ -1250,7 +1357,9 @@ integration:
           dependencies:
             - chart: charts/internal-keycloak-26
               release-name: keycloak
-              values-file: test/integration/companion-values/keycloak.yaml
+              values-file: test/integration/companion-values/keycloak-fixed-issuer.yaml
+              env-vars:
+                - CAMUNDA_HOSTNAME
             - chart: elastic/elasticsearch
               version: 8.5.1
               release-name: elasticsearch
@@ -1882,18 +1991,20 @@ integration:
             releases:
               - role: hub
                 namespace-suffix: hub
-                values: features/multinamespace-hub.yaml
                 identity: keycloak
+                features:
+                  - multinamespace-hub
                 dependencies:
                   - keycloak
                   - postgresql
                   - elasticsearch
               - role: orchestration
                 namespace-suffix: orcha
-                values: features/multinamespace-orchestration.yaml
                 depends-on: hub
                 identity: keycloak-external
                 persistence: elasticsearch-external
+                features:
+                  - multinamespace-orchestration
                 env:
                   ORCH_CONNECTORS_CLIENT_ID: connectors
                   ORCH_OPTIMIZE_AUDIENCE: optimize-api
@@ -1912,29 +2023,34 @@ integration:
           platforms:
             - gke
           exclude: []
-          tier: 2
+          tier: 1
           infra-type:
             gke: distroci
-          skip-e2e: true
+          post-infra:
+            script: post-infra-legacy-elasticsearch.sh
+            description: |
+              Removes the CI composable index template before deploying Optimize 8.7,
+              which creates overlapping legacy index templates.
           topology:
             name: hub-2orch
             releases:
               - role: hub
                 namespace-suffix: hub
-                values: features/multinamespace-2orch-hub.yaml
                 identity: keycloak
                 features:
                   - multinamespace-reset-clients
+                  - multinamespace-2orch-hub
                 dependencies:
                   - keycloak
                   - postgresql
                   - elasticsearch
               - role: orchestration
                 namespace-suffix: orcha
-                values: features/multinamespace-orchestration.yaml
                 depends-on: hub
                 identity: keycloak-external
                 persistence: elasticsearch-external
+                features:
+                  - multinamespace-orchestration
                 env:
                   ORCH_CONNECTORS_CLIENT_ID: connectors-orcha
                   ORCH_OPTIMIZE_AUDIENCE: optimize-orcha-api
@@ -1943,12 +2059,14 @@ integration:
                   ORCH_ORCHESTRATION_CLIENT_ID: orchestration-orcha
                 modeler-cluster-id: orcha
                 modeler-cluster-name: Orchestration A
-              - role: orchestration
+              - chart-version: "8.9"
+                role: orchestration
                 namespace-suffix: orchb
-                values: features/multinamespace-orchestration.yaml
                 depends-on: hub
                 identity: keycloak-external
                 persistence: elasticsearch-external
+                features:
+                  - multinamespace-orchestration
                 env:
                   ORCH_CONNECTORS_CLIENT_ID: connectors-orchb
                   ORCH_OPTIMIZE_AUDIENCE: optimize-orchb-api
@@ -1957,6 +2075,302 @@ integration:
                   ORCH_ORCHESTRATION_CLIENT_ID: orchestration-orchb
                 modeler-cluster-id: orchb
                 modeler-cluster-name: Orchestration B
+              - chart-version: "8.8"
+                role: orchestration
+                namespace-suffix: orchc
+                depends-on: hub
+                identity: keycloak-external
+                persistence: elasticsearch-external
+                features:
+                  - multinamespace-orchestration
+                env:
+                  ORCH_CONNECTORS_CLIENT_ID: connectors-orchc
+                  ORCH_OPTIMIZE_AUDIENCE: optimize-orchc-api
+                  ORCH_OPTIMIZE_CLIENT_ID: optimize-orchc
+                  ORCH_ORCHESTRATION_AUDIENCE: orchestration-orchc-api
+                  ORCH_ORCHESTRATION_CLIENT_ID: orchestration-orchc
+                modeler-cluster-id: orchc
+                modeler-cluster-name: Orchestration C
+              - chart-version: "8.7"
+                role: orchestration
+                namespace-suffix: orchd
+                depends-on: hub
+                identity: keycloak-external
+                persistence: elasticsearch-external
+                features:
+                  - multinamespace-orchestration
+                env:
+                  ORCH_CONNECTORS_CLIENT_ID: connectors-orchd
+                  ORCH_OPTIMIZE_AUDIENCE: optimize-orchd-api
+                  ORCH_OPTIMIZE_CLIENT_ID: optimize-orchd
+                  ORCH_ORCHESTRATION_AUDIENCE: orchestration-orchd-api
+                  ORCH_ORCHESTRATION_CLIENT_ID: orchestration-orchd
+                modeler-cluster-id: orchd
+                modeler-cluster-name: Orchestration D
+            shared-storage: elasticsearch
+            shared-storage-service: elasticsearch-master
+        - name: multinamespace-optimize
+          enabled: true
+          shortname: mnop
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            gke: distroci
+          topology:
+            name: hub-2orch-2optimize
+            releases:
+              - role: hub
+                namespace-suffix: hub
+                identity: keycloak
+                features:
+                  - multinamespace-reset-clients
+                  - multinamespace-optimize-hub
+                dependencies:
+                  - keycloak
+                  - postgresql
+                  - elasticsearch
+              - role: orchestration
+                namespace-suffix: orcha
+                depends-on: hub
+                identity: keycloak-external
+                persistence: elasticsearch-external
+                features:
+                  - multinamespace-optimize-orchestration
+                env:
+                  ORCH_CONNECTORS_CLIENT_ID: connectors-orcha
+                  ORCH_ORCHESTRATION_AUDIENCE: orchestration-orcha-api
+                  ORCH_ORCHESTRATION_CLIENT_ID: orchestration-orcha
+                modeler-cluster-id: orcha
+                modeler-cluster-name: Orchestration A
+              - role: orchestration
+                namespace-suffix: orchb
+                depends-on: hub
+                identity: keycloak-external
+                persistence: elasticsearch-external
+                features:
+                  - multinamespace-optimize-orchestration
+                env:
+                  ORCH_CONNECTORS_CLIENT_ID: connectors-orchb
+                  ORCH_ORCHESTRATION_AUDIENCE: orchestration-orchb-api
+                  ORCH_ORCHESTRATION_CLIENT_ID: orchestration-orchb
+                modeler-cluster-id: orchb
+                modeler-cluster-name: Orchestration B
+              - role: optimize
+                namespace-suffix: opta
+                depends-on: hub
+                identity: keycloak-external-optimize
+                persistence: elasticsearch-external
+                features:
+                  - multinamespace-optimize-a
+                serves: orcha
+                tenant: default
+                optimize-context-path: /optimize-orcha
+              - role: optimize
+                namespace-suffix: optb
+                depends-on: hub
+                identity: keycloak-external-optimize
+                persistence: elasticsearch-external
+                features:
+                  - multinamespace-optimize-b
+                serves: orchb
+                tenant: default
+                optimize-context-path: /optimize-orchb
+            shared-storage: elasticsearch
+            shared-storage-service: elasticsearch-master
+        - name: physicaltenants
+          enabled: true
+          shortname: ptnt
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            gke: distroci
+          skip-e2e: true
+          post-deploy:
+            script: post-deploy-physical-tenant-exporters.sh
+            description: |
+              After the complete topology is ready, asserts that default, tenanta, and
+              tenantb export; deploys one process through each Physical Tenant route; proves
+              each Optimize imports only its own process; and proves sibling client tokens
+              are rejected.
+          topology:
+            name: hub-1orch-2tenants
+            releases:
+              - role: hub
+                namespace-suffix: hub
+                identity: keycloak
+                features:
+                  - multinamespace-reset-clients
+                  - physicaltenants-hub
+                dependencies:
+                  - keycloak-fixed-issuer
+                  - postgresql
+                  - elasticsearch
+              - role: orchestration
+                namespace-suffix: orcha
+                depends-on: hub
+                identity: keycloak-external
+                persistence: elasticsearch-external
+                features:
+                  - physicaltenants-orchestration
+                env:
+                  ORCH_CONNECTORS_CLIENT_ID: connectors-orcha
+                  ORCH_ORCHESTRATION_AUDIENCE: orchestration-orcha-api
+                  ORCH_ORCHESTRATION_CLIENT_ID: orchestration-orcha
+                modeler-cluster-id: orcha
+                modeler-cluster-name: Orchestration A
+              - role: optimize
+                namespace-suffix: optdefault
+                depends-on: hub
+                identity: keycloak-external-optimize
+                persistence: elasticsearch-external
+                features:
+                  - physicaltenants-optimize-default
+                serves: orcha
+                tenant: default
+                optimize-context-path: /optimize-orcha-default
+              - role: optimize
+                namespace-suffix: optta
+                depends-on: hub
+                identity: keycloak-external-optimize
+                persistence: elasticsearch-external
+                features:
+                  - physicaltenants-optimize-ta
+                serves: orcha
+                tenant: tenanta
+                optimize-context-path: /optimize-orcha-ta
+              - role: optimize
+                namespace-suffix: opttb
+                depends-on: hub
+                identity: keycloak-external-optimize
+                persistence: elasticsearch-external
+                features:
+                  - physicaltenants-optimize-tb
+                serves: orcha
+                tenant: tenantb
+                optimize-context-path: /optimize-orcha-tb
+            shared-storage: elasticsearch
+            shared-storage-service: elasticsearch-master
+        - name: dogfood
+          enabled: false
+          shortname: dogfd
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: distroci
+          skip-e2e: true
+          topology:
+            name: hub-3orch-dogfood
+            releases:
+              - role: hub
+                namespace-suffix: hub
+                identity: keycloak
+                features:
+                  - multinamespace-reset-clients
+                  - dogfood-hub
+                dependencies:
+                  - keycloak-fixed-issuer
+                  - postgresql
+                  - elasticsearch
+              - role: orchestration
+                namespace-suffix: plain
+                depends-on: hub
+                identity: keycloak-external
+                persistence: elasticsearch-external
+                features:
+                  - dogfood-orchestration-plain
+                env:
+                  ORCH_CONNECTORS_CLIENT_ID: connectors-plain
+                  ORCH_ORCHESTRATION_AUDIENCE: orchestration-plain-api
+                  ORCH_ORCHESTRATION_CLIENT_ID: orchestration-plain
+                modeler-cluster-id: plain
+                modeler-cluster-name: Dogfood Plain
+              - role: orchestration
+                namespace-suffix: mt
+                depends-on: hub
+                identity: keycloak-external
+                persistence: elasticsearch-external
+                features:
+                  - dogfood-orchestration-mt
+                env:
+                  ORCH_CONNECTORS_CLIENT_ID: connectors-mt
+                  ORCH_ORCHESTRATION_AUDIENCE: orchestration-mt-api
+                  ORCH_ORCHESTRATION_CLIENT_ID: orchestration-mt
+                modeler-cluster-id: mt
+                modeler-cluster-name: Dogfood Multitenancy
+              - role: orchestration
+                namespace-suffix: pt
+                depends-on: hub
+                identity: keycloak-external
+                persistence: elasticsearch-external
+                features:
+                  - dogfood-orchestration-pt
+                env:
+                  ORCH_CONNECTORS_CLIENT_ID: connectors-pt
+                  ORCH_ORCHESTRATION_AUDIENCE: orchestration-pt-api
+                  ORCH_ORCHESTRATION_CLIENT_ID: orchestration-pt
+                modeler-cluster-id: pt
+                modeler-cluster-name: Dogfood Physical Tenants
+              - role: optimize
+                namespace-suffix: optplain
+                depends-on: hub
+                identity: keycloak-external-optimize
+                persistence: elasticsearch-external
+                features:
+                  - dogfood-optimize-plain
+                serves: plain
+                tenant: default
+                optimize-context-path: /optimize-plain
+              - role: optimize
+                namespace-suffix: optmt
+                depends-on: hub
+                identity: keycloak-external-optimize
+                persistence: elasticsearch-external
+                features:
+                  - dogfood-optimize-mt
+                serves: mt
+                tenant: default
+                optimize-context-path: /optimize-mt
+              - role: optimize
+                namespace-suffix: optptdef
+                depends-on: hub
+                identity: keycloak-external-optimize
+                persistence: elasticsearch-external
+                features:
+                  - dogfood-optimize-pt-default
+                serves: pt
+                tenant: default
+                optimize-context-path: /optimize-pt-default
+              - role: optimize
+                namespace-suffix: optptta
+                depends-on: hub
+                identity: keycloak-external-optimize
+                persistence: elasticsearch-external
+                features:
+                  - dogfood-optimize-pt-ta
+                serves: pt
+                tenant: tenanta
+                optimize-context-path: /optimize-pt-tenanta
+              - role: optimize
+                namespace-suffix: optpttb
+                depends-on: hub
+                identity: keycloak-external-optimize
+                persistence: elasticsearch-external
+                features:
+                  - dogfood-optimize-pt-tb
+                serves: pt
+                tenant: tenantb
+                optimize-context-path: /optimize-pt-tenantb
             shared-storage: elasticsearch
             shared-storage-service: elasticsearch-master
     nightly:

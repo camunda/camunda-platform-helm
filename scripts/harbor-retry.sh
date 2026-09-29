@@ -22,6 +22,7 @@
 # Usage:
 #   source scripts/harbor-retry.sh
 #   harbor_retry "helm push" helm push chart.tgz oci://registry/project
+#   retry_cmd "cosign sign-blob" cosign sign-blob -y chart.tgz --bundle chart.bundle
 #   harbor_login   # login with retry
 
 HARBOR_RETRY_MAX=${HARBOR_RETRY_MAX:-3}
@@ -65,6 +66,29 @@ harbor_retry() {
     if [[ ${attempt} -lt ${max_retries} ]]; then
       echo "::warning::${desc} failed on attempt ${attempt}, re-authenticating and retrying in ${retry_delay}s..."
       harbor_reauth || echo "::warning::Re-authentication also failed (attempt ${attempt}), will retry after backoff..."
+      sleep "${retry_delay}"
+      retry_delay=$((retry_delay * 2))
+    fi
+  done
+
+  echo "::error::${desc} failed after ${max_retries} attempts"
+  return 1
+}
+
+# Retry a command with exponential backoff, no re-auth.
+# Usage: retry_cmd <description> <command ...>
+retry_cmd() {
+  local desc="$1"; shift
+  local max_retries=${HARBOR_RETRY_MAX}
+  local retry_delay=${HARBOR_RETRY_DELAY}
+
+  for attempt in $(seq 1 "${max_retries}"); do
+    echo "=== ${desc} (attempt ${attempt}/${max_retries}) ==="
+    if "$@"; then
+      return 0
+    fi
+    if [[ ${attempt} -lt ${max_retries} ]]; then
+      echo "::warning::${desc} failed on attempt ${attempt}, retrying in ${retry_delay}s..."
       sleep "${retry_delay}"
       retry_delay=$((retry_delay * 2))
     fi

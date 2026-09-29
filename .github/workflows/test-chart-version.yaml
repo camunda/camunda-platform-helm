@@ -15,8 +15,6 @@ on:
         options:
           - none
           - "all"
-          - "8.4"
-          - "8.5"
           - "8.6"
           - "8.7"
           - "8.8"
@@ -64,26 +62,12 @@ on:
         default: ""
         type: string
       scenario:
-        description: Scenario
+        description: |
+          Scenario id from the chart's test/ci/registry, "all" to keep every scenario.
+          A scenario that matches nothing yields an empty matrix rather than a wrong run.
         required: false
         default: "elasticsearch"
-        type: choice
-        options:
-          - all
-          - component-persistence
-          - elasticsearch
-          - elasticsearch-arm
-          - elasticsearch-basic
-          - gateway-keycloak
-          - keycloak-mt
-          - keycloak-original
-          - keycloak-rba
-          - oidc
-          - opensearch
-          - shadow-e2e
-          - upgrade-migration
-          - multinamespace
-          - multinamespace-2orch
+        type: string
       test-enabled:
         description: Whether to run the IT tests
         required: false

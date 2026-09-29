@@ -1,5 +1,35 @@
 # Changelog
 
+## [12.13.8](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.7-12.13.7...camunda-platform-8.7-12.13.8) (2026-09-21)
+
+
+### Dependencies
+
+* update camunda-platform-images (patch) ([#7235](https://github.com/camunda/camunda-platform-helm/issues/7235)) ([218f3c2](https://github.com/camunda/camunda-platform-helm/commit/218f3c23925f035dcb95faab6f77ea61b1dab3b5))
+
+## [12.13.7](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.7-12.13.6...camunda-platform-8.7-12.13.7) (2026-09-18)
+
+
+### Dependencies
+
+* update camunda-platform-images (patch) ([#7214](https://github.com/camunda/camunda-platform-helm/issues/7214)) ([93d9e57](https://github.com/camunda/camunda-platform-helm/commit/93d9e57f494b4a944ed895a52b94cc9a5f3c383c))
+* update camunda-platform-images (patch) ([#7217](https://github.com/camunda/camunda-platform-helm/issues/7217)) ([6de0235](https://github.com/camunda/camunda-platform-helm/commit/6de02357784d177418fee0a9d425e6df2e03b129))
+* update camunda-platform-images (patch) ([#7233](https://github.com/camunda/camunda-platform-helm/issues/7233)) ([d433476](https://github.com/camunda/camunda-platform-helm/commit/d4334766e51afdf37db8fc611484dcb7bbdac435))
+* update registry.camunda.cloud/keycloak-ee/keycloak docker tag to v26.7.4 ([#7208](https://github.com/camunda/camunda-platform-helm/issues/7208)) ([2fe0317](https://github.com/camunda/camunda-platform-helm/commit/2fe0317bf46f42513c63d42656ff532a3e62e9de))
+
+## [12.13.6](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.7-12.13.5...camunda-platform-8.7-12.13.6) (2026-09-11)
+
+
+### Bug Fixes
+
+* warn that the bundled Keycloak image line is frozen and affected by CVE-2026-18963 ([#6998](https://github.com/camunda/camunda-platform-helm/issues/6998)) ([a075fa1](https://github.com/camunda/camunda-platform-helm/commit/a075fa1c82b9aa20c2541ff95e967cedd1cda560))
+
+
+### Dependencies
+
+* update camunda-platform-images (patch) ([#7127](https://github.com/camunda/camunda-platform-helm/issues/7127)) ([8dde99d](https://github.com/camunda/camunda-platform-helm/commit/8dde99d60b20fd57236d46dbfbbe8e0be5ccf1ba))
+* update camunda/optimize docker tag to v8.7.28 ([#7158](https://github.com/camunda/camunda-platform-helm/issues/7158)) ([5d5ac54](https://github.com/camunda/camunda-platform-helm/commit/5d5ac544206e4d91293dc234b87e3204e00ea180))
+
 ## [12.13.5](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.7-12.13.4...camunda-platform-8.7-12.13.5) (2026-09-08)
 
 

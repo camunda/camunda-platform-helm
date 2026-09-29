@@ -44,9 +44,9 @@
 global:
   ## @extra global.topology configuration for how this Helm release participates in a Camunda deployment topology. The default combined mode preserves the existing single-release behavior.
   topology:
-    ## @param global.topology.mode defines the role of this release in the deployment topology. Supported values are combined, hub, and orchestration.
+    ## @param global.topology.mode defines the role of this release in the deployment topology. Supported values are combined, hub, orchestration, and optimize. In optimize mode only Optimize is deployed, so a separate Optimize release can serve one Physical Tenant without sharing a release with the Orchestration Cluster; it requires optimize.enabled, global.noSecondaryStorage=false, an enabled database backend, Identity auth and URL set on the component or globally, and optimize.contextPath when routing is rendered.
     mode: combined
-    ## @param global.topology.clusters can be used by a Hub release to describe remote Orchestration Clusters. The chart uses these entries to generate Camunda Hub inventory and Management Identity presets.
+    ## @param global.topology.clusters can be used by a Hub release to describe remote Orchestration Clusters. The chart uses these entries to generate Camunda Hub inventory and Management Identity presets. Each entry may also declare physicalTenants, whose optional name becomes the environment display name in Hub. A tenant that runs its own Optimize release declares that component here so Optimize gets its own client and resource server rather than sharing the cluster's Optimize audience.
     clusters: []
     # - id: production-a
     #   name: Production A
@@ -86,6 +86,19 @@ global:
     #         inlineSecret: ""
     #         existingSecret: connectors-production-a-oidc
     #         existingSecretKey: client-secret
+    #   physicalTenants:
+    #     - id: tenanta
+    #       name: Tenant A
+    #       components:
+    #         optimize:
+    #           enabled: true
+    #           clientId: optimize-production-a-tenanta
+    #           audience: optimize-production-a-tenanta-api
+    #           redirectUrl: https://production-a.example.com/optimize-tenanta
+    #           secret:
+    #             inlineSecret: ""
+    #             existingSecret: optimize-production-a-tenanta-oidc
+    #             existingSecretKey: client-secret
 
   ## License configuration.
   ## @extra global.license
@@ -108,9 +121,16 @@ global:
       ##
       adaptSecurityContext: disabled
 
+    ## Compatibility adaptations for ingress-nginx
+    ##
+    nginx:
+      ## @param global.compatibility.nginx.renderAnnotations if true, the chart injects the ingress-nginx annotations it used to ship as values defaults (`ssl-redirect`, `proxy-buffering`, `proxy-buffer-size` and `proxy-body-size` on the HTTP Ingress, `ssl-redirect`, `backend-protocol` and `proxy-buffer-size` on the gRPC Ingress). DEPRECATED since 15.0.0; the shim is removed in the next major and the annotations become opt-in. Set it to false to stop the chart injecting them, and set whatever your own controller needs through the annotations values instead.
+      ##
+      renderAnnotations: true
+
   ## @extra global.config Config used in various places.
   config:
-    ## @param global.config.requestBodySize defines the maximum request body size for file uploads and HTTP form posts.
+    ## @param global.config.requestBodySize (DEPRECATED) defines the maximum request body size for file uploads and HTTP form posts.
     requestBodySize: 10MB
 
   ## Multitenancy configuration.
@@ -206,15 +226,16 @@ global:
     className: nginx
     ## @param global.ingress.labels [object] can be used to define labels which will be applied to the global HTTP ingress resource
     labels: {}
-    ## @param global.ingress.annotations [object] defines the ingress related annotations, consumed mostly by the ingress controller
-    annotations:
-      nginx.ingress.kubernetes.io/ssl-redirect: "false"
-      nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
-      nginx.ingress.kubernetes.io/proxy-buffering: "on"
-      # The proxy-body-size should be the same size as global.config.requestBodySize.
-      nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    ## @param global.ingress.annotations [object] defines the ingress related annotations, consumed mostly by the ingress controller. Empty by default; keys set here always win over the ingress-nginx compatibility set described in global.compatibility.nginx.renderAnnotations.
+    annotations: {}
     ## @param global.ingress.pathType can be used to define the Ingress path type. https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types
     pathType: Prefix
+    ## @extra global.ingress.publicPorts configuration for the ports clients use to reach Ingress endpoints. Used by chart-derived URLs, Identity callbacks, and combined-ingress browser WebSocket connections. Does not configure listeners, Services, host port forwarding, or Gateway API. Explicit URLs and authentication redirect URLs are not rewritten.
+    publicPorts:
+      ## @param global.ingress.publicPorts.http defines the public port for Ingress endpoints with TLS disabled. Port 80 is omitted from HTTP URLs. Separate gRPC Ingress uses its own TLS setting, even when global.ingress.enabled is false.
+      http: 80
+      ## @param global.ingress.publicPorts.https defines the public port for Ingress endpoints with TLS enabled. Port 443 is omitted from HTTPS URLs. Does not enable TLS; web Ingress uses global.ingress.tls.enabled and gRPC Ingress uses orchestration.ingress.grpc.tls.enabled.
+      https: 443
     ## @extra global.ingress.tls configuration for tls on the ingress resource https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
     tls:
       ## @param global.ingress.tls.enabled if true, then tls is configured on the ingress resource. If enabled the Ingress.host need to be defined.
@@ -222,7 +243,7 @@ global:
       ## @param global.ingress.tls.secretName defines the secret name which contains the TLS private key and certificate
       secretName: camunda-platform
 
-  ## @param global.zeebeClusterName ZeebeClusterName defines the cluster name for the Zeebe cluster. All Zeebe pods get this prefix in their name and the brokers uses that as cluster name.
+  ## @param global.zeebeClusterName (DEPRECATED) ZeebeClusterName defines the cluster name for the Zeebe cluster. All Zeebe pods get this prefix in their name and the brokers uses that as cluster name.
   zeebeClusterName: "{{ .Release.Name }}-zeebe"
 
   ## @section TLS / certificate trust
@@ -417,6 +438,29 @@ global:
           ## @param global.tls.connectors.keystorePassword.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the keystore password. When empty, defaults to cert.secret.existingSecret.
           existingSecret: ""
           ## @param global.tls.connectors.keystorePassword.secret.existingSecretKey defines the key within the existing secret object.
+          existingSecretKey: "keystore-password"
+
+    ## @extra global.tls.optimize configuration of TLS for the Optimize HTTP server. This server-side TLS is independent of the client-side `optimize.database.elasticsearch.tls.secret.existingSecret` / `optimize.database.opensearch.tls.secret.existingSecret` truststore wiring, which secures Optimize's outbound connection to its secondary storage; both can be used together. Client-side trust material for in-cluster callers still flows through `global.tls.caBundle`.
+    optimize:
+      ## @param global.tls.optimize.autoRollout if true, enables automatic pod rollout on Optimize cert rotation. The chart stamps a `checksum/optimize-tls` pod annotation derived from the configured Secret so the next `helm upgrade` rolls Optimize when the cert changes. OFF by default for the same reason as `global.tls.caBundle.autoRollout`: it uses `lookup` to read the Secret at upgrade time, which (a) REQUIRES the upgrading identity to have `get` on Secrets in the release namespace and (b) is inert under GitOps tools that render with `helm template`. When off (or in those cases), rotate the cert with `kubectl rollout restart`.
+      autoRollout: false
+      ## @param global.tls.optimize.enabled if true, TLS is terminated at the Optimize HTTP server.
+      enabled: false
+      ## @extra global.tls.optimize.cert configuration to provide the server certificate as a PKCS12 keystore. Unlike global.tls.orchestration.rest and global.tls.connectors, there is no `type` or `keyAlias` key here: Optimize builds its TLS connector from container.keystore.*, which accepts a keystore file and password only -- never a PEM cert/key pair, and with no way to select a key by alias.
+      cert:
+        ## @extra global.tls.optimize.cert.secret configuration to provide the cert secret.
+        secret:
+          ## @param global.tls.optimize.cert.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the cert material. Empty disables the chart-managed wiring. Hand-wiring is still possible through optimize.extraVolumes plus optimize.env entries for CAMUNDA_OPTIMIZE_CONTAINER_KEYSTORE_LOCATION / CAMUNDA_OPTIMIZE_CONTAINER_KEYSTORE_PASSWORD (never SERVER_SSL_*, which the render rejects), but then the chart cannot see that TLS is on: also set optimize.startupProbe.scheme / readinessProbe.scheme / livenessProbe.scheme to HTTPS, and note the chart's Ingress keeps an HTTP backend for Optimize.
+          existingSecret: ""
+          ## @param global.tls.optimize.cert.secret.existingSecretKey defines the key within the existing secret object. Defaults to keystore.p12.
+          existingSecretKey: ""
+      ## @extra global.tls.optimize.keystorePassword configuration to provide the PKCS12 keystore password.
+      keystorePassword:
+        ## @extra global.tls.optimize.keystorePassword.secret configuration to provide the keystore password secret.
+        secret:
+          ## @param global.tls.optimize.keystorePassword.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the keystore password. When empty, defaults to cert.secret.existingSecret.
+          existingSecret: ""
+          ## @param global.tls.optimize.keystorePassword.secret.existingSecretKey defines the key within the existing secret object.
           existingSecretKey: "keystore-password"
 
   # --------------------------------------------------------------------------
@@ -731,22 +775,20 @@ global:
         ## @param global.identity.auth.connectors.alwaysRegister if true, this Identity always provisions the Connectors Keycloak client, even when Connectors OIDC auth is not active in this release. Defaults to registering only when Connectors uses OIDC. Use for multi-namespace deployments where a central Identity registers a component that runs in another namespace.
         alwaysRegister: false
 
-  # Multiregion options for Zeebe
-  #
-  ## WARNING: Customers must develop and test the operational procedure described below in non-production environments based on the framework steps
-  # outlined by Camunda before applying them in production setups.
-  # Before advancing to production go-live, validating these procedures with Camunda is strongly recommended.
-  # Customers are solely responsible for detecting any regional failures and implementing the necessary operational procedure described.
+  # Multiregion options for Zeebe.
+  ## Deprecated since chart v15 (Camunda 8.10); remove in v16. Only the Orchestration
+  ## Cluster reads these keys, so they moved to `orchestration.partitioning`, which is
+  ## also where the zone-aware scheme is configured. Setting both blocks fails the render.
   multiregion:
-    ## @skip global.multiregion.regions number of regions that this Camunda Platform instance is stretched across
+    ## @skip global.multiregion.regions deprecated, use `orchestration.partitioning.numberOfZones`. Must be at least 1; the render fails otherwise.
     regions: 1
-    ## @skip global.multiregion.regionId unique id of the region. MUST start at 0 for the computation to work correctly. With 2 regions, you would have region 0 and 1.
+    ## @skip global.multiregion.regionId deprecated, use `orchestration.partitioning.zoneIndex`. Must be between 0 and regions - 1; the render fails otherwise.
     regionId: 0
 
   ## Document Store Configuration
   ## @extra global.documentStore These parameters are used to configure the document storage backend across all Camunda components.
   documentStore:
-    ## @param global.documentStore.activeStoreId defines the default document store instance ID. When using extraConfiguration, this value must match the configured store instance ID.
+    ## @param global.documentStore.activeStoreId defines the default document store instance ID. This value must match the configured store instance ID. See https://docs.camunda.io/docs/8.10/self-managed/concepts/document-handling/configuration/helm/
     activeStoreId: "inmemory"
     type:
       aws:
@@ -756,7 +798,7 @@ global:
         irsa:
           ## @param global.documentStore.type.aws.irsa.enabled if true, no static AWS credentials are injected into pods, so the AWS SDK resolves credentials through its default provider chain; this supports both IRSA and EKS Pod Identity. If false (default), credentials are required via existingSecret or accessKeyId/secretAccessKey configuration.
           enabled: false
-        ## @param global.documentStore.type.aws.storeId Custom prefix for AWS. Default will generate env vars containing 'storeId' such as DOCUMENT_STORE_AWS_CLASS.
+        ## @param global.documentStore.type.aws.storeId (DEPRECATED) Custom prefix for AWS. Default will generate env vars containing 'storeId' such as DOCUMENT_STORE_AWS_CLASS.
         storeId: "AWS"
         ## @param global.documentStore.type.aws.region AWS region for the S3 bucket. (example: us-east-1)
         region: ""
@@ -799,7 +841,7 @@ global:
       gcp:
         ## @param global.documentStore.type.gcp.enabled Enable GCP document store configuration.
         enabled: false
-        ## @param global.documentStore.type.gcp.storeId Custom prefix for GCP. Default will generate env vars containing 'storeId' such as DOCUMENT_STORE_GCP_CLASS.
+        ## @param global.documentStore.type.gcp.storeId (DEPRECATED) Custom prefix for GCP. Default will generate env vars containing 'storeId' such as DOCUMENT_STORE_GCP_CLASS.
         storeId: "GCP"
         ## @param global.documentStore.type.gcp.bucket Name of the GCP bucket.
         bucket: "your-gcp-bucket"
@@ -818,7 +860,7 @@ global:
       inmemory:
         ## @param global.documentStore.type.inmemory.enabled Enable in-memory document store configuration.
         enabled: true
-        ## @param global.documentStore.type.inmemory.storeId Custom prefix for in-memory. Default will generate env vars containing 'storeId' such as DOCUMENT_STORE_INMEMORY_CLASS.
+        ## @param global.documentStore.type.inmemory.storeId (DEPRECATED) Custom prefix for in-memory. Default will generate env vars containing 'storeId' such as DOCUMENT_STORE_INMEMORY_CLASS.
         storeId: "INMEMORY"
         ## @param global.documentStore.type.inmemory.class Fully qualified class name for the in-memory document store provider.
         class: "io.camunda.document.store.inmemory.InMemoryDocumentStoreProvider"
@@ -932,7 +974,7 @@ identity:
     ## @param identity.image.repository defines which image repository to use
     repository: camunda/identity
     ## @param identity.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.10.0-alpha4.2
+    tag: 8.10.0-alpha5.1
     ## @param identity.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param identity.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -948,13 +990,10 @@ identity:
   sidecars: []
   ## @param identity.initContainers can be used to set up extra init containers for the application Pod
   initContainers: []
-  ## @param identity.fullURL can be used when Ingress is configured (for both multi and single domain setup).
+  ## @param identity.fullURL can be used to set Identity's complete public URL, including scheme, port, and path. Overrides the derived runtime, login callback, and release-info URL. Supports templating.
   fullURL: ""
 
-  # Note: Management Identity cannot be accessed over HTTP if a "contextPath" is configured.
-  #       Which means that Management Identity cannot be configured in combined Ingress without HTTPS.
-  #       To use Management Identity over HTTP, setup a separated Ingress using "identity.ingress" and don't set "contextPath".
-  ## @param identity.contextPath can be used to make Management Identity web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
+  ## @param identity.contextPath can be used to serve Management Identity under a custom sub-path. Requires HTTPS when non-empty.
   # contextPath: "/identity"
   contextPath: ""
 
@@ -1281,7 +1320,7 @@ webModeler:
     registry: ""
     ## @param webModeler.image.tag can be used to set the Docker image tag for the WebModeler images
     # renovate: datasource=docker depName=camunda/hub
-    tag: 8.10.0-alpha3-rc1
+    tag: 8.10.0-alpha5
     ## @param webModeler.image.pullSecrets can be used to configure image pull secrets, see https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
@@ -1345,13 +1384,13 @@ webModeler:
 
     ## @extra webModeler.restapi.mail configuration for emails sent by WebModeler
     mail:
-      ## @param webModeler.restapi.mail.smtpHost defines the host name of the SMTP server to be used by WebModeler
+      ## @param webModeler.restapi.mail.smtpHost (DEPRECATED) defines the host name of the SMTP server to be used by WebModeler
       smtpHost: ""
-      ## @param webModeler.restapi.mail.smtpPort defines the port number of the SMTP server
+      ## @param webModeler.restapi.mail.smtpPort (DEPRECATED) defines the port number of the SMTP server
       smtpPort: 587
-      ## @param webModeler.restapi.mail.smtpUser can be used to provide a user for the SMTP server
+      ## @param webModeler.restapi.mail.smtpUser (DEPRECATED) can be used to provide a user for the SMTP server
       smtpUser: ""
-      ## @param webModeler.restapi.mail.smtpTlsEnabled if true, enforces TLS encryption for SMTP connections (using STARTTLS)
+      ## @param webModeler.restapi.mail.smtpTlsEnabled (DEPRECATED) if true, enforces TLS encryption for SMTP connections (using STARTTLS)
       smtpTlsEnabled: true
       ## @extra webModeler.restapi.mail.secret configuration to provide the SMTP password secret.
       secret:
@@ -1361,10 +1400,10 @@ webModeler:
         existingSecret: ""
         ## @param webModeler.restapi.mail.secret.existingSecretKey defines the key within the existing secret object.
         existingSecretKey: ""
-      ## @param webModeler.restapi.mail.fromAddress defines the email address that will be displayed as the sender of emails sent by WebModeler
+      ## @param webModeler.restapi.mail.fromAddress (DEPRECATED) defines the email address that will be displayed as the sender of emails sent by WebModeler
       # NOTE: This value is mandatory.
       fromAddress: ""
-      ## @param webModeler.restapi.mail.fromName defines the name that will be displayed as the sender of emails sent by WebModeler
+      ## @param webModeler.restapi.mail.fromName (DEPRECATED) defines the name that will be displayed as the sender of emails sent by WebModeler
       fromName: "Camunda 8"
     ## @extra webModeler.restapi.pusher configuration for Pusher integration
     pusher:
@@ -1404,8 +1443,8 @@ webModeler:
     podLabels: {}
 
     ## @extra webModeler.restapi.logging configuration for the restapi logging. This template will be directly included in the webModeler.restapi configuration YAML file
-    ## @param webModeler.restapi.logging.level.io.camunda.modeler https://docs.camunda.io/docs/self-managed/components/modeler/web-modeler/troubleshooting/troubleshoot-zeebe-connection/#how-can-i-debug-log-grpc--zeebe-communication
-    ## @param webModeler.restapi.logging.level.io.grpc
+    ## @param webModeler.restapi.logging.level.io.camunda.modeler (DEPRECATED) https://docs.camunda.io/docs/self-managed/components/modeler/web-modeler/troubleshooting/troubleshoot-zeebe-connection/#how-can-i-debug-log-grpc--zeebe-communication
+    ## @param webModeler.restapi.logging.level.io.grpc (DEPRECATED)
     logging:
       level:
         io.camunda.modeler: INFO
@@ -1586,13 +1625,11 @@ webModeler:
     ## @param webModeler.websockets.initContainers can be used to set up extra init containers for the application Pod
     initContainers: []
 
-    ## @param webModeler.websockets.publicHost can be used to define the host on which the WebSockets server can be reached from the WebModeler client in the browser.
+    ## @param webModeler.websockets.publicHost can be used to set the browser-facing WebSocket hostname. With global.ingress.enabled and a non-empty Modeler or Hub contextPath, global.host takes precedence. Set overrides through camundaHub.websockets.publicHost.
     # The default value assumes that a port-forwarding to the websockets service has been created.
-    # Note: The host will only be used if the Ingress resource for WebModeler is disabled.
     publicHost: localhost
-    ## @param webModeler.websockets.publicPort can be used to define the port number on which the WebSockets server can be reached from the WebModeler client in the browser.
+    ## @param webModeler.websockets.publicPort can be used to set the browser-facing WebSocket port. With global.ingress.enabled and a non-empty Modeler or Hub contextPath, global.ingress.publicPorts and the Ingress TLS setting take precedence. Set overrides through camundaHub.websockets.publicPort.
     # The default value assumes that a port-forwarding to the websockets service on port 8085 has been created.
-    # Note: The port will only be used if the Ingress resource for WebModeler is disabled.
     publicPort: 8085
 
     ## @param webModeler.websockets.podAnnotations can be used to define extra websockets pod annotations. Supports templating (e.g., {{ .Release.Name }}).
@@ -1878,7 +1915,7 @@ connectors:
   podLabels: {}
 
   ## @extra connectors.logging configuration for the Connectors logging. This template will be directly included in the connector configuration YAML file
-  ## @param connectors.logging.level.io.camunda.connector
+  ## @param connectors.logging.level.io.camunda.connector (DEPRECATED)
   logging:
     level:
       io.camunda.connector: INFO
@@ -2080,7 +2117,7 @@ orchestration:
   ## @param orchestration.enabled if true, the orchestration cluster deployment and its related resources are deployed via a helm release
   enabled: true
 
-  ## @param orchestration.debug if true, extra info is printed.
+  ## @param orchestration.debug (DEPRECATED) if true, extra info is printed.
   debug: false
 
   ## @param orchestration.profiles [object] defines which components of the orchestration orchestration are enabled (e.g., broker, admin, operate).
@@ -2090,7 +2127,7 @@ orchestration:
     operate: true
     tasklist: true
 
-  ## @param orchestration.profilesOverride [string] defines the override for the profiles as comma-separated string.
+  ## @param orchestration.profilesOverride [string] (DEPRECATED) defines the override for the profiles as comma-separated string.
   profilesOverride: ""
 
   security:
@@ -2101,9 +2138,9 @@ orchestration:
       # In External OIDC, must resolve to "oidc" (either set here or via global.security.authentication.method).
       # When set to "oidc", also configure oidc.clientId, audience, and secret below.
       method: ""
-      ## @param orchestration.security.authentication.unprotectedApi if true, then allow unauthenticated API access.
+      ## @param orchestration.security.authentication.unprotectedApi (DEPRECATED) if true, then allow unauthenticated API access.
       unprotectedApi: false
-      ## @param orchestration.security.authentication.authenticationRefreshInterval defines the session's authentication refresh time, defaulted to PT30S.
+      ## @param orchestration.security.authentication.authenticationRefreshInterval (DEPRECATED) defines the session's authentication refresh time, defaulted to PT30S.
       authenticationRefreshInterval: "PT30S"
 
       # @extra orchestration.security.authentication.oidc
@@ -2118,23 +2155,23 @@ orchestration:
         tokenUrl: ""
         ## @param orchestration.security.authentication.oidc.jwksUrl can be used to override `global.identity.auth.jwksUrl`. Only takes effect if `orchestration.security.authentication.oidc.issuer` or `global.identity.auth.issuer` are not set. Supports templating (e.g., {{ .Release.Name }}).
         jwksUrl: ""
-        ## @param orchestration.security.authentication.oidc.usernameClaim can be used to set username claim.
+        ## @param orchestration.security.authentication.oidc.usernameClaim (DEPRECATED) can be used to set username claim.
         usernameClaim: preferred_username
-        ## @param orchestration.security.authentication.oidc.preferUsernameClaim can be used to set OIDC prefer-username-claim.
+        ## @param orchestration.security.authentication.oidc.preferUsernameClaim (DEPRECATED) can be used to set OIDC prefer-username-claim.
         preferUsernameClaim: false
-        ## @param orchestration.security.authentication.oidc.clientIdClaim can be used to set client ID claim.
+        ## @param orchestration.security.authentication.oidc.clientIdClaim (DEPRECATED) can be used to set client ID claim.
         clientIdClaim: client_id
-        ## @param orchestration.security.authentication.oidc.groupsClaim can be used to set group claim.
+        ## @param orchestration.security.authentication.oidc.groupsClaim (DEPRECATED) can be used to set group claim.
         groupsClaim: ""
         ## @param orchestration.security.authentication.oidc.audience defines the audience, which is used by Orchestration Cluster.
         audience: orchestration-api
-        ## @param orchestration.security.authentication.oidc.scope defines a list of scopes to request in the OIDC token. If not set, it will use the application defaults.
+        ## @param orchestration.security.authentication.oidc.scope (DEPRECATED) defines a list of scopes to request in the OIDC token. If not set, it will use the application defaults.
         scope: []
-        ## @param orchestration.security.authentication.oidc.backwardsCompatibleAudiences defines audiences, which need to be set for backwards compatibility to allow the access the Orchestration Cluster. This is only important and set if you're coming from an earlier version
+        ## @param orchestration.security.authentication.oidc.backwardsCompatibleAudiences (DEPRECATED) defines audiences, which need to be set for backwards compatibility to allow the access the Orchestration Cluster. This is only important and set if you're coming from an earlier version
         backwardsCompatibleAudiences: []
         ## @param orchestration.security.authentication.oidc.clientId defines the client id, which is used by Orchestration Cluster in authentication flows.
         clientId: orchestration
-        ## @param orchestration.security.authentication.oidc.redirectUrl defines the root (or redirect) URL, which is used by Keycloak to access Tasklist.
+        ## @param orchestration.security.authentication.oidc.redirectUrl (DEPRECATED) defines the root (or redirect) URL, which is used by Keycloak to access Tasklist.
         # Should be publicly accessible, the default value works if a port-forward to Orchestration Cluster is created to 8080.
         # Can be overwritten if ingress is in use and an external IP is available.
         redirectUrl: "http://localhost:8080"
@@ -2150,7 +2187,7 @@ orchestration:
     ## Authorizations configuration.
     ## @extra orchestration.security.authorizations
     authorizations:
-      ## @param orchestration.security.authorizations.enabled if true, then enable authorizations checks in all applicable components.
+      ## @param orchestration.security.authorizations.enabled (DEPRECATED) if true, then enable authorizations checks in all applicable components.
       enabled: true
 
     ## Initialization configuration
@@ -2198,9 +2235,9 @@ orchestration:
           clients:
             ## @extra orchestration.security.initialization.defaultRoles.connectors.clients[0].connectors Needed for OIDC setup. Can be removed for basic auth. Define the connectors client with the connrectors role.
             - connectors
-      ## @param orchestration.security.initialization.mappingRules define mapping rules.
+      ## @param orchestration.security.initialization.mappingRules (DEPRECATED) define mapping rules.
       mappingRules: []
-      ## @param orchestration.security.initialization.authorizations define authorizations for Identity as Code.
+      ## @param orchestration.security.initialization.authorizations (DEPRECATED) define authorizations for Identity as Code.
       ## Use this to bootstrap authorization DB entries at application start, e.g. for machine clients (CI/CD).
       ## Ref: https://docs.camunda.io/docs/self-managed/components/orchestration-cluster/core-settings/configuration/identity-as-code/#configure-authorizations
       # Example:
@@ -2259,16 +2296,65 @@ orchestration:
   ## @extra orchestration.multitenancy
   multitenancy:
     checks:
-      ## @param orchestration.multitenancy.checks.enabled if true, then enable multitenancy checks in all applicable components.
+      ## @param orchestration.multitenancy.checks.enabled (DEPRECATED) if true, then enable multitenancy checks in all applicable components.
       enabled: false
     api:
-      ## @param orchestration.multitenancy.api.enabled if true, then enable multitenancy API used for tenant management.
+      ## @param orchestration.multitenancy.api.enabled (DEPRECATED) if true, then enable multitenancy API used for tenant management.
       enabled: true
+
+  # How partition replicas are distributed across brokers, and how brokers are
+  # grouped into failure domains.
+  #
+  # Mirrors the engine configuration `camunda.cluster.partitioning`. The chart
+  # exposes two of the engine's schemes, lower-cased and hyphenated from
+  # `io.camunda.configuration.Partitioning.Scheme`: `ROUND_ROBIN` and
+  # `ZONE_AWARE`. The engine's third scheme, `FIXED`, is not wired into the
+  # templates; set it through `orchestration.extraConfiguration` if you need it.
+  # Each `zones` entry is `io.camunda.configuration.Zone`.
+  #
+  # `partitioning` is the settled product term. The cluster API previously spelled
+  # the same object `partition-distribution`; that endpoint is being renamed to
+  # `/cluster/partitioning` so configuration and API agree. This block does NOT set
+  # the number of partitions -- that is `orchestration.partitionCount` -- it sets how
+  # the replicas of those partitions are placed.
+  #
+  # Operating across more than one failure domain has prerequisites and procedures
+  # this file cannot carry; see
+  # https://docs.camunda.io/docs/self-managed/concepts/multi-region/dual-region/
+  partitioning:
+    ## Fixed for the life of the cluster. Zone-aware brokers are identified by the composite
+    ## `<zone>_<index>`, round-robin ones by a plain node ID, so switching an existing release
+    ## re-identifies every broker against Raft state written under the old IDs. Retain the
+    ## round-robin brokers with `keepUnzonedBrokers` and follow the zone-aware migration
+    ## procedure to convert one in place.
+    ##
+    ## `round-robin` is the engine default and is not rendered into the application
+    ## configuration; only `zone-aware` emits `camunda.cluster.partitioning.scheme`.
+    ## @param orchestration.partitioning.scheme partitioning scheme. `round-robin` leaves brokers on plain numeric node IDs, `zone-aware` identifies them as `<zone>_<index>` and places partition replicas across the declared zones. These are two of the schemes accepted by `camunda.cluster.partitioning.scheme`; the engine also accepts `FIXED`, which this chart does not render.
+    scheme: round-robin
+    ## @param orchestration.partitioning.zone can be used to define the zone of this Orchestration Cluster deployment when using the `zone-aware` scheme. Must be an RFC 1123 label of at most 32 characters to fit zone-suffixed resource names.
+    zone: ""
+    ## @extra orchestration.partitioning.zones[0].name name of the zone. It is the prefix of the composite broker member ID `<zone>_<index>`, must be an RFC 1123 label of at most 32 characters to fit zone-suffixed resource names, and one of these names must be selected by `orchestration.partitioning.zone`.
+    ## @extra orchestration.partitioning.zones[0].numberOfBrokers number of brokers deployed in this zone. For the local zone it is also the StatefulSet replica count.
+    ## @extra orchestration.partitioning.zones[0].numberOfReplicas number of partition replicas this zone holds. Cannot exceed `numberOfBrokers`.
+    ## @extra orchestration.partitioning.zones[0].priority priority of this zone in the leader election. Must be at least `1`.
+    ## @param orchestration.partitioning.zones can be used to define the zones of the Orchestration Cluster when using the `zone-aware` scheme. Each entry requires `name`, `numberOfBrokers`, `numberOfReplicas` and `priority`; the list is summed into `clusterSize` and `replicationFactor`, so it describes every zone, not just the local one.
+    zones: []
+    ## @param orchestration.partitioning.keepUnzonedBrokers also renders the round-robin broker StatefulSet alongside the zoned one during migration. Upgrade to this chart version with the flag still off and wait for the round-robin rollout to settle before enabling it: doing both in one `helm upgrade` moves an ordinary chart upgrade's pod roll into the migration and restarts the brokers the migration exists to preserve. Keep the previous numberOfZones and zoneIndex values here until the round-robin brokers are removed; move them from global.multiregion when migrating from the deprecated block.
+    keepUnzonedBrokers: false
+    ## @skip orchestration.partitioning.numberOfZones number of failure domains this Camunda Platform instance is stretched across. Under `round-robin` the zones are anonymous and addressed by index; under `zone-aware` they are named in `zones`. Must be at least 1; the render fails otherwise. Under `zone-aware` it must stay at 1 unless `keepUnzonedBrokers` is set, where it keeps describing the retained round-robin generation.
+    numberOfZones: 1
+    ## @skip orchestration.partitioning.zoneIndex zero-based index of the zone this release is deployed to, under the `round-robin` scheme. With `numberOfZones: 2` you would have index 0 and 1. A value outside 0 to numberOfZones - 1 fails the render, since node IDs are derived as `<ordinal> * numberOfZones + zoneIndex`. Under `zone-aware` it must stay at 0 unless `keepUnzonedBrokers` is set, where it keeps addressing the retained round-robin generation.
+    zoneIndex: 0
 
   ## @param orchestration.clusterSize defines the amount of brokers (=replicas), which are deployed via helm
   clusterSize: "3"
+  ## Not derived by orchestration.partitioning; read as-is in both round-robin and zoned
+  ## multi-region setups. Do not remove.
   ## @param orchestration.partitionCount defines how many partitions are set up in the cluster
   partitionCount: "3"
+  ## Ignored by orchestration.partitioning in zoned mode (derived from the zone list instead);
+  ## still read as-is in round-robin multi-region setups. Do not remove.
   ## @param orchestration.replicationFactor defines how each partition is replicated, the value defines the number of nodes
   replicationFactor: "3"
   ## @param orchestration.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/components/orchestration-cluster/core-settings/configuration/properties/ for more details.
@@ -2286,9 +2372,9 @@ orchestration:
   ## @param orchestration.command can be used to override the default command provided by the container image. See https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/
   command: []
 
-  ## @param orchestration.logLevel defines the log level which is used
+  ## @param orchestration.logLevel (DEPRECATED) defines the log level which is used
   logLevel: info
-  ## @param orchestration.log4j2 can be used to overwrite the log4j2 configuration
+  ## @param orchestration.log4j2 (DEPRECATED) can be used to overwrite the log4j2 configuration
   log4j2: ""
   ## @param orchestration.javaOpts can be used to set java options
   javaOpts: >-
@@ -2398,14 +2484,8 @@ orchestration:
       className: nginx
       ## @param orchestration.ingress.grpc.labels [object] can be used to define labels which will be applied to the orchestration gRPC ingress resource
       labels: {}
-      ## @param orchestration.ingress.grpc.annotations [object] defines the ingress related annotations, consumed mostly by the ingress controller
-      ## @skip orchestration.ingress.grpc.annotations.nginx.ingress.kubernetes.io/ssl-redirect
-      ## @skip orchestration.ingress.grpc.annotations.nginx.ingress.kubernetes.io/backend-protocol
-      ## @skip orchestration.ingress.grpc.annotations.nginx.ingress.kubernetes.io/proxy-buffer-size
-      annotations:
-        nginx.ingress.kubernetes.io/ssl-redirect: "false"
-        nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
-        nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
+      ## @param orchestration.ingress.grpc.annotations [object] defines the ingress related annotations, consumed mostly by the ingress controller. Empty by default; keys set here always win over the ingress-nginx compatibility set described in global.compatibility.nginx.renderAnnotations, which supplies `nginx.ingress.kubernetes.io/ssl-redirect: "false"`, `nginx.ingress.kubernetes.io/backend-protocol: "GRPC"` and `nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"` here while it is on; set those three here to keep them once it is off. With Contour, gRPC is declared on the Orchestration Service listing the gRPC port rather than with an annotation here, using `projectcontour.io/upstream-protocol.h2c` while the gRPC upstream is plaintext and `projectcontour.io/upstream-protocol.h2` once it serves TLS; that state follows global.tls.orchestration.grpc.enabled or `camunda.api.grpc.ssl.enabled` in orchestration.configuration or extraConfiguration, and a CAMUNDA_API_GRPC_SSL_ENABLED entry in orchestration.env overrides both.
+      annotations: {}
       ## @param orchestration.ingress.grpc.path defines the path which is associated with the Zeebe gateway's gRPC service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
       path: /
       ## @param orchestration.ingress.grpc.pathType can be used to define the Ingress path type. https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types
@@ -2424,9 +2504,9 @@ orchestration:
   ## @param orchestration.contextPath can be used to make Orchestration Cluster web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
   contextPath: ""
 
-  ## @param orchestration.cpuThreadCount defines how many threads can be used for the processing on each broker pod
+  ## @param orchestration.cpuThreadCount (DEPRECATED) defines how many threads can be used for the processing on each broker pod
   cpuThreadCount: "3"
-  ## @param orchestration.ioThreadCount defines how many threads can be used for the exporting on each broker pod
+  ## @param orchestration.ioThreadCount (DEPRECATED) defines how many threads can be used for the exporting on each broker pod
   ioThreadCount: "3"
   ## @extra orchestration.resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
   ## @extra orchestration.resources.requests
@@ -2461,15 +2541,15 @@ orchestration:
   pvcSelector: {}
   ## @extra orchestration.data configuration to configure the data handling of the Zeebe broker pods
   data:
-    ## @param orchestration.data.snapshotPeriod defines the period, after which a snapshot is created https://docs.camunda.io/docs/self-managed/zeebe-deployment/configuration/broker-config/#zeebebrokerdata
+    ## @param orchestration.data.snapshotPeriod (DEPRECATED) defines the period, after which a snapshot is created https://docs.camunda.io/docs/self-managed/zeebe-deployment/configuration/broker-config/#zeebebrokerdata
     snapshotPeriod: "5m"
     ## @extra orchestration.data.disk configuration to configure the disk storage of the Zeebe broker pods
     disk:
       ## @extra orchestration.data.disk.freeSpace configuration to configure the free space handling of the Zeebe broker pods
       freeSpace:
-        ## @param orchestration.data.disk.freeSpace.processing the minimum free space which should be available on the disk, before the broker stops processing commands https://docs.camunda.io/docs/self-managed/zeebe-deployment/configuration/broker-config/#zeebebrokerdatadiskfreespace
+        ## @param orchestration.data.disk.freeSpace.processing (DEPRECATED) the minimum free space which should be available on the disk, before the broker stops processing commands https://docs.camunda.io/docs/self-managed/zeebe-deployment/configuration/broker-config/#zeebebrokerdatadiskfreespace
         processing: "2GB"
-        ## @param orchestration.data.disk.freeSpace.replication the minimum free space which should be available on the disk, before the broker stops receicing replicated events https://docs.camunda.io/docs/self-managed/zeebe-deployment/configuration/broker-config/#zeebebrokerdatadiskfreespace
+        ## @param orchestration.data.disk.freeSpace.replication (DEPRECATED) the minimum free space which should be available on the disk, before the broker stops receicing replicated events https://docs.camunda.io/docs/self-managed/zeebe-deployment/configuration/broker-config/#zeebebrokerdatadiskfreespace
         replication: "1GB"
     ## @extra orchestration.data.secondaryStorage configuration for secondary storage backend used by the orchestration cluster
     secondaryStorage:
@@ -2667,12 +2747,13 @@ orchestration:
   nodeSelector: {}
   ## @param orchestration.tolerations can be used to define pod toleration's https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
   tolerations: []
-  ## @extra orchestration.affinity can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
-  # The default defined PodAntiAffinity allows constraining on which nodes the pods are scheduled on https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#inter-pod-affinity-and-anti-affinity
-  # It uses a hard requirement for scheduling and works based on the pod labels
+  ## @extra orchestration.affinity can be used to define pod affinity or anti-affinity. By default, brokers from the same generation are scheduled on different nodes. https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
   ## @skip orchestration.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[0].key
   ## @skip orchestration.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[0].operator
   ## @skip orchestration.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[0].values
+  ## @skip orchestration.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[1].key
+  ## @skip orchestration.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[1].operator
+  ## @skip orchestration.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[1].values
   ## @skip orchestration.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].topologyKey
   affinity:
     podAntiAffinity:
@@ -2681,9 +2762,12 @@ orchestration:
             matchExpressions:
               - key: "app.kubernetes.io/component"
                 operator: In
-                # NOTE: The value is set to "zeebe-broker" for backward compatibility between 8.7 and 8.8.
                 values:
                   - zeebe-broker
+              - key: "camunda.io/broker-generation"
+                operator: In
+                values:
+                  - '{{ ternary "zoned" "numbered" (eq .OrchestrationRender.scope "zoned") }}'
           topologyKey: "kubernetes.io/hostname"
 
   ## @param orchestration.topologySpreadConstraints can be used to define how broker pods are spread across topology domains https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/
@@ -2694,7 +2778,7 @@ orchestration:
 
   ## @extra orchestration.exporters allows disabling inbuilt exporters.
   exporters:
-    ## @param orchestration.exporters.camunda.enabled if true, enables the new Camunda exporter.
+    ## @param orchestration.exporters.camunda.enabled (DEPRECATED) if true, enables the new Camunda exporter.
     camunda:
       enabled: true
     ## @param orchestration.exporters.rdbms.enabled if true, enables the new RDBMS exporter.
@@ -2703,6 +2787,12 @@ orchestration:
     ## @param orchestration.exporters.zeebe.enabled if true, enables the legacy Zeebe Elasticsearch and OpenSearch exporters.
     zeebe:
       enabled: false
+      ## @param orchestration.exporters.zeebe.replicas [default: ~] (DEPRECATED) can be used to specify the number of replicas for the legacy Zeebe Elasticsearch and OpenSearch exporter indices. Defaults to orchestration.index.replicas.
+      replicas: ~
+      ## @extra orchestration.exporters.zeebe.index configuration of the indices the legacy Zeebe exporter writes.
+      index:
+        ## @param orchestration.exporters.zeebe.index.prefix defines the index prefix the legacy Zeebe exporter writes, for whichever of Elasticsearch or OpenSearch is in use. Set it on the release running the Orchestration Cluster. When empty, "optimize.database.elasticsearch.prefix" (or its OpenSearch equivalent) is used instead.
+        prefix: ""
     appIntegrations:
       apiKey:
         secret:
@@ -2713,18 +2803,18 @@ orchestration:
           ## @param orchestration.exporters.appIntegrations.apiKey.secret.existingSecretKey defines the key within the existing Kubernetes Secret.
           existingSecretKey: ""
   index:
-    ## @param orchestration.index.prefix if specified, defines an index prefix in Elasticsearch/OpenSearch for Orchestration Cluster indices. For ES/OS exporters or Optimize use the "optimize.database.elasticsearch.prefix" or OpenSearch equivalent.
+    ## @param orchestration.index.prefix (DEPRECATED) if specified, defines an index prefix in Elasticsearch/OpenSearch for Orchestration Cluster indices. This does not apply to the legacy Zeebe exporter, which is configured by "orchestration.exporters.zeebe.index.prefix", nor to the indices Optimize reads, which are named by "optimize.database.elasticsearch.prefix" or the OpenSearch equivalent.
     prefix: ""
-    ## @param orchestration.index.replicas can be used to specify the number of replicas for Orchestration Cluster indices.
+    ## @param orchestration.index.replicas (DEPRECATED) can be used to specify the number of replicas for Orchestration Cluster indices.
     replicas: 1
 
   ## @extra orchestration.retention configuration to enable ILM Policy creation and application for Zeebe record (legacy Elasticsearch/Opensearch exporter) indices; controls their retention.
   retention:
-    ## @param orchestration.retention.enabled if true, the ILM Policy is created and applied to the index templates.
+    ## @param orchestration.retention.enabled (DEPRECATED) if true, the ILM Policy is created and applied to the index templates.
     enabled: false
-    ## @param orchestration.retention.minimumAge defines how old the data must be, before the data is deleted as a duration.
+    ## @param orchestration.retention.minimumAge (DEPRECATED) defines how old the data must be, before the data is deleted as a duration.
     minimumAge: 30d
-    ## @param orchestration.retention.policyName defines the name of the created and applied ILM policy.
+    ## @param orchestration.retention.policyName (DEPRECATED) defines the name of the created and applied ILM policy.
     policyName: zeebe-record-retention-policy
 
   ## @extra orchestration.history configuration for Camunda harmonized historical indices.
@@ -2749,21 +2839,21 @@ orchestration:
     maxDelayBetweenRuns: 60000
     ## @extra orchestration.history.retention configuration for retention of the Camunda harmonized historical indices.
     retention:
-      ## @param orchestration.history.retention.enabled if true, applies ILM Policy to the archived orchestration indices (operate, tasklist, camunda).
+      ## @param orchestration.history.retention.enabled (DEPRECATED) if true, applies ILM Policy to the archived orchestration indices (operate, tasklist, camunda).
       enabled: false
-      ## @param orchestration.history.retention.minimumAge defines how old the data must be, before the data is deleted as a duration.
+      ## @param orchestration.history.retention.minimumAge (DEPRECATED) defines how old the data must be, before the data is deleted as a duration.
       minimumAge: 30d
-      ## @param orchestration.history.retention.policyName defines the name of the created and applied ILM policy.
+      ## @param orchestration.history.retention.policyName (DEPRECATED) defines the name of the created and applied ILM policy.
       # NOTE: The value is set to "zeebe-record-retention-policy" for backward compatibility between 8.7 and 8.8.
       policyName: camunda-history-retention-policy
-      ## @param orchestration.history.retention.usageMetricsMinimumAge defines how old the usage metric indices must be before deletion (camunda-usage-metric, camunda-usage-metric-tu).
+      ## @param orchestration.history.retention.usageMetricsMinimumAge (DEPRECATED) defines how old the usage metric indices must be before deletion (camunda-usage-metric, camunda-usage-metric-tu).
       usageMetricsMinimumAge: 730d
-      ## @param orchestration.history.retention.usageMetricsPolicyName defines the name of the created and applied ILM policy to usage metric indices.
+      ## @param orchestration.history.retention.usageMetricsPolicyName (DEPRECATED) defines the name of the created and applied ILM policy to usage metric indices.
       usageMetricsPolicyName: camunda-usage-metrics-retention-policy
 
   ## @param orchestration.configuration if specified, contents will be used as the application.yaml
   configuration: ""
-  ## @param orchestration.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
+  ## @param orchestration.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml. Physical Tenants are declared here too, under `camunda.physical-tenants` per ADR-0091 - there is no `orchestration.physicalTenants` values key. The chart detects that key to render the issuer-uri form of the OIDC provider, which the Orchestration Cluster requires once tenants exist, and fails the render when a release that deploys Orchestration is not on OIDC or has no resolvable `global.identity.auth.issuer`. Give every tenant its own secondary-storage index prefix; declaring any tenant also stops the `default` tenant inheriting this release's root exporters, so `default` needs its own exporter entry.
   ## Each entry has: file (filename), content (file contents), and optional springImport (bool, default true).
   ## Set springImport to false to mount the file without adding it to spring.config.import (e.g. for log4j2.xml).
   extraConfiguration: []
@@ -2779,7 +2869,7 @@ orchestration:
 
   ## @exra orchestration.upgrade is a structure that holds upgrade specific configurations
   upgrade:
-    ## @param orchestration.upgrade.allowPreReleaseImages if true, allows the use of pre-release images for the orchestration cluster. Prerelease images are, by their nature, unstable and should be used with caution. This flag should only be used for testing purposes.
+    ## @param orchestration.upgrade.allowPreReleaseImages (DEPRECATED) if true, allows the use of pre-release images for the orchestration cluster. Prerelease images are, by their nature, unstable and should be used with caution. This flag should only be used for testing purposes.
     allowPreReleaseImages: false
 
 #############################################
@@ -2796,6 +2886,46 @@ orchestration:
 optimize:
   ## @param optimize.enabled if true, the Optimize deployment and its related resources are deployed via a helm release
   enabled: false
+
+  ## @extra optimize.identity configuration of the Management Identity this Optimize release calls.
+  identity:
+    ## @extra optimize.identity.service
+    service:
+      ## @param optimize.identity.service.url can be used to override `global.identity.service.url`, the Management Identity this Optimize release reaches. Useful when an Optimize-only release targets a different Identity than the rest of a topology.
+      url: ""
+
+  ## @extra optimize.security configuration of how this Optimize release authenticates.
+  security:
+    ## @extra optimize.security.authentication
+    authentication:
+      ## @param optimize.security.authentication.method can be used to override whether this Optimize release authenticates, independently of `global.identity.auth.enabled`. Supported values are oidc and none. Empty follows `global.identity.auth.enabled`.
+      method: ""
+      ## @extra optimize.security.authentication.oidc
+      oidc:
+        ## @param optimize.security.authentication.oidc.clientId can be used to override `global.identity.auth.optimize.clientId`. Set it on the release running Optimize so an Optimize-only release owns its own client without the shared global key.
+        clientId: ""
+        ## @param optimize.security.authentication.oidc.type can be used to override `global.identity.auth.type` for this Optimize release.
+        type: ""
+        ## @param optimize.security.authentication.oidc.issuer can be used to override `global.identity.auth.issuer` (or `global.identity.auth.publicIssuerUrl`) for this Optimize release. Set it to the exact "iss" claim the provider mints.
+        issuer: ""
+        ## @param optimize.security.authentication.oidc.issuerBackendUrl can be used to override `global.identity.auth.issuerBackendUrl`, the cluster-internal route this Optimize uses to validate tokens.
+        issuerBackendUrl: ""
+        ## @param optimize.security.authentication.oidc.jwksUrl can be used to override `global.identity.auth.jwksUrl`, the JWKS endpoint this Optimize fetches token signing keys from. Required for a non-Keycloak `type`, which has no endpoint layout to derive it from. Supports templating (e.g., {{ .Release.Name }}).
+        jwksUrl: ""
+        ## @param optimize.security.authentication.oidc.envFromProvides names the identity variables this release's `optimize.envFrom` sources supply, so the chart stops requiring them. Their keys are unreadable at render time, so presence alone exempts nothing, and a declaration with no `optimize.envFrom` source is rejected. Supported values are CAMUNDA_IDENTITY_ISSUER, CAMUNDA_IDENTITY_ISSUER_BACKEND_URL, SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI, VALUES_OPTIMIZE_CLIENT_SECRET and CAMUNDA_IDENTITY_BASEURL.
+        envFromProvides: []
+        ## @param optimize.security.authentication.oidc.audience can be used to override `global.identity.auth.optimize.audience`.
+        audience: ""
+        ## @param optimize.security.authentication.oidc.redirectUrl can be used to override `global.identity.auth.optimize.redirectUrl`. Supports templating (e.g., {{ .Release.Name }}).
+        redirectUrl: ""
+        ## @extra optimize.security.authentication.oidc.secret configuration to provide this release's Optimize client secret, overriding `global.identity.auth.optimize.secret`.
+        secret:
+          ## @param optimize.security.authentication.oidc.secret.inlineSecret can be used to provide the client secret as a plain-text value for non-production usage.
+          inlineSecret: ""
+          ## @param optimize.security.authentication.oidc.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the client secret.
+          existingSecret: ""
+          ## @param optimize.security.authentication.oidc.secret.existingSecretKey defines the key within the existing secret object.
+          existingSecretKey: ""
 
   ## @extra optimize.image configuration to configure the Optimize image specifics
   # https://hub.docker.com/r/camunda/optimize/tags
@@ -2849,7 +2979,7 @@ optimize:
         protocol: http
         host: "{{ .Release.Name }}-elasticsearch"
         port: 9200
-      ## @param optimize.database.elasticsearch.prefix defines the prefix which is used by the old Zeebe Elasticsearch Exporter to create Elasticsearch indexes and consumed by Optimize.
+      ## @param optimize.database.elasticsearch.prefix (DEPRECATED) defines the prefix of the Elasticsearch indexes Optimize reads. The exporter writing them is configured by "orchestration.exporters.zeebe.index.prefix"; keep the two equal.
       prefix: "zeebe-record"
     # Opensearch configuration which is shared between the sub charts
     ## @extra optimize.database.opensearch
@@ -2889,7 +3019,7 @@ optimize:
         protocol: https
         host: ""
         port: 443
-      ## @param optimize.database.opensearch.prefix defines the prefix which is used by the old Zeebe OpenSearch Exporter to create OpenSearch indexes and consumed by Optimize.
+      ## @param optimize.database.opensearch.prefix (DEPRECATED) defines the prefix of the OpenSearch indexes Optimize reads. The exporter writing them is configured by "orchestration.exporters.zeebe.index.prefix"; keep the two equal.
       prefix: "zeebe-record"
 
 
@@ -2934,14 +3064,14 @@ optimize:
   ## @param optimize.podLabels can be used to define extra Optimize pod labels. Supports templating (e.g., {{ .Release.Name }}).
   podLabels: {}
 
-  ## @param optimize.logLevel configuration for the optimize runtime environment. https://docs.camunda.io/docs/self-managed/components/optimize/configuration/logging/
+  ## @param optimize.logLevel (DEPRECATED) configuration for the optimize runtime environment. https://docs.camunda.io/docs/self-managed/components/optimize/configuration/logging/
   logLevel: info
-  ## @param optimize.upgradeLogLevel sets the logging level for the Optimize update log. https://docs.camunda.io/docs/self-managed/components/optimize/configuration/logging/
+  ## @param optimize.upgradeLogLevel (DEPRECATED) sets the logging level for the Optimize update log. https://docs.camunda.io/docs/self-managed/components/optimize/configuration/logging/
   upgradeLogLevel: info
-  ## @param optimize.esLogLevel sets the logging level for Elasticsearch. https://docs.camunda.io/docs/self-managed/components/optimize/configuration/logging/
+  ## @param optimize.esLogLevel (DEPRECATED) sets the logging level for Elasticsearch. https://docs.camunda.io/docs/self-managed/components/optimize/configuration/logging/
   esLogLevel: warn
 
-  ## @param optimize.partitionCount defines how many Zeebe partitions are set up in the cluster and which should be imported by Optimize
+  ## @param optimize.partitionCount (DEPRECATED) defines how many Zeebe partitions are set up in the cluster and which should be imported by Optimize
   partitionCount: "3"
   ## @param optimize.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/components/optimize/configuration/system-configuration/ for more details.
   env: []
@@ -3016,8 +3146,8 @@ optimize:
   startupProbe:
     ## @param optimize.startupProbe.enabled if true, the startup probe is enabled in app container
     enabled: false
-    ## @param optimize.startupProbe.scheme defines the startup probe schema used on calling the probePath
-    scheme: HTTP
+    ## @param optimize.startupProbe.scheme defines the probe scheme (HTTP or HTTPS) used when calling the probePath. Empty (default) auto-detects: HTTPS when Optimize TLS is enabled (global.tls.optimize), otherwise HTTP. Set explicitly to override the auto-detected scheme.
+    scheme: ""
     ## @param optimize.startupProbe.probePath defines the startup probe route used on the app
     probePath: /api/readyz
     ## @param optimize.startupProbe.initialDelaySeconds defines the number of seconds after the container has started before
@@ -3036,8 +3166,8 @@ optimize:
   readinessProbe:
     ## @param optimize.readinessProbe.enabled if true, the readiness probe is enabled in app container
     enabled: true
-    ## @param optimize.readinessProbe.scheme defines the startup probe schema used on calling the probePath
-    scheme: HTTP
+    ## @param optimize.readinessProbe.scheme defines the probe scheme (HTTP or HTTPS) used when calling the probePath. Empty (default) auto-detects: HTTPS when Optimize TLS is enabled (global.tls.optimize), otherwise HTTP. Set explicitly to override the auto-detected scheme.
+    scheme: ""
     ## @param optimize.readinessProbe.probePath defines the readiness probe route used on the app
     probePath: /api/readyz
     ## @param optimize.readinessProbe.initialDelaySeconds defines the number of seconds after the container has started before
@@ -3056,8 +3186,8 @@ optimize:
   livenessProbe:
     ## @param optimize.livenessProbe.enabled if true, the liveness probe is enabled in app container
     enabled: false
-    ## @param optimize.livenessProbe.scheme defines the startup probe schema used on calling the probePath
-    scheme: HTTP
+    ## @param optimize.livenessProbe.scheme defines the probe scheme (HTTP or HTTPS) used when calling the probePath. Empty (default) auto-detects: HTTPS when Optimize TLS is enabled (global.tls.optimize), otherwise HTTP. Set explicitly to override the auto-detected scheme.
+    scheme: ""
     ## @param optimize.livenessProbe.probePath defines the liveness probe route used on the app
     probePath: /api/readyz
     ## @param optimize.livenessProbe.initialDelaySeconds defines the number of seconds after the container has started before
@@ -3125,21 +3255,21 @@ optimize:
     annotations: {}
     ## @param optimize.persistence.selector can be used to define a label selector for the persistent volume claim
     selector: {}
-  ## @param optimize.profiles [string] defines SPRING_ACTIVE_PROFILES
+  ## @param optimize.profiles [string] (DEPRECATED) defines SPRING_ACTIVE_PROFILES
   profiles: "ccsm"
   ## @param optimize.javaOpts can be used to set java options for optimize
   javaOpts: ""
   ## @extra optimize.multitenancy options relating to multitenancy in optimize
   multitenancy:
-    ## @param optimize.multitenancy.enabled if true, enables multitenancy in Optimize
+    ## @param optimize.multitenancy.enabled (DEPRECATED) if true, enables multitenancy in Optimize
     enabled: false
   ## @extra optimize.caches options relating to caches in optimize
   caches:
     ## @extra optimize.caches.cloudTenantAuthorizations options relating to cloud tenant authorizations cache in optimize
     cloudTenantAuthorizations:
-      ## @param optimize.caches.cloudTenantAuthorizations.maxSize defines the maximum number of entries in the cache
+      ## @param optimize.caches.cloudTenantAuthorizations.maxSize (DEPRECATED) defines the maximum number of entries in the cache
       maxSize: 10000
-      ## @param optimize.caches.cloudTenantAuthorizations.minFetchIntervalSeconds defines the minimum interval between fetches from the database for the cache
+      ## @param optimize.caches.cloudTenantAuthorizations.minFetchIntervalSeconds (DEPRECATED) defines the minimum interval between fetches from the database for the cache
       minFetchIntervalSeconds: 600000
 
 #####################################################################

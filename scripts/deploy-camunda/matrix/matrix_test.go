@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -417,24 +418,37 @@ func TestFilter(t *testing.T) {
 
 	t.Run("tier filter returns only matching tier", func(t *testing.T) {
 		got := Filter(tieredEntries, FilterOptions{Tier: 1})
-		if len(got) != 3 {
-			t.Errorf("Filter(tier=1): got %d entries, want 3 (2 tier-1 + 1 untiered)", len(got))
+		if len(got) != 2 {
+			t.Errorf("Filter(tier=1): got %d entries, want 2 tier-1 entries", len(got))
 		}
 		for _, e := range got {
-			if e.Tier != 1 && e.Tier != 0 {
+			if e.Tier != 1 {
 				t.Errorf("Filter(tier=1): unexpected tier %d for %s", e.Tier, e.Shortname)
 			}
 		}
 	})
 
-	t.Run("tier filter 2 returns tier-2 and untiered", func(t *testing.T) {
+	t.Run("tier filter 2 returns only tier-2", func(t *testing.T) {
 		got := Filter(tieredEntries, FilterOptions{Tier: 2})
-		if len(got) != 3 {
-			t.Errorf("Filter(tier=2): got %d entries, want 3 (2 tier-2 + 1 untiered)", len(got))
+		if len(got) != 2 {
+			t.Errorf("Filter(tier=2): got %d entries, want 2 tier-2 entries", len(got))
 		}
 		for _, e := range got {
-			if e.Tier != 2 && e.Tier != 0 {
+			if e.Tier != 2 {
 				t.Errorf("Filter(tier=2): unexpected tier %d for %s", e.Tier, e.Shortname)
+			}
+		}
+	})
+
+	// An entry with no declared tier is merge-queue-only: the merge queue runs the
+	// unfiltered matrix, so it must not leak into the tier-1 PR gate.
+	t.Run("untiered entry matches no tier filter", func(t *testing.T) {
+		for _, tier := range []int{1, 2} {
+			got := Filter(tieredEntries, FilterOptions{Tier: tier})
+			for _, e := range got {
+				if e.Shortname == "notier" {
+					t.Errorf("Filter(tier=%d): untiered entry %q must not match a tier filter", tier, e.Shortname)
+				}
 			}
 		}
 	})
@@ -555,13 +569,14 @@ func TestGenerateWithRealConfigs(t *testing.T) {
 		t.Errorf("Generate: expected entries for at least 2 versions, got %d: %v", len(versions), versions)
 	}
 
-	// Verify no denied flows leaked through (must stay in sync with permitted-flows.yaml)
+	// Verify no denied flows leaked through, using permitted-flows.yaml as the source of truth.
+	pf, err := LoadPermittedFlows(repoRoot)
+	if err != nil {
+		t.Fatalf("LoadPermittedFlows: %v", err)
+	}
 	for _, e := range entries {
-		if e.Version == "8.9" && e.Flow == "upgrade-patch" {
-			t.Errorf("Generate: 8.9 entry has denied flow %q (scenario=%s)", e.Flow, e.Scenario)
-		}
-		if (e.Version == "8.6" || e.Version == "8.7") && e.Flow == "upgrade-minor" {
-			t.Errorf("Generate: %s entry has denied flow upgrade-minor (scenario=%s)", e.Version, e.Scenario)
+		if len(FilterFlows(pf, e.Version, []string{e.Flow})) == 0 {
+			t.Errorf("Generate: %s entry has denied flow %q (scenario=%s)", e.Version, e.Flow, e.Scenario)
 		}
 	}
 
@@ -632,6 +647,191 @@ func TestGenerateInvalidVersion(t *testing.T) {
 	}
 }
 
+func TestGenerate86RegistryContract(t *testing.T) {
+	repoRoot := findRepoRoot(t)
+	const version = "8.6"
+
+	chartDir := filepath.Join(repoRoot, "charts", "camunda-platform-"+version)
+	manifest := filepath.Join(chartDir, "test", RegistryDirName, "manifest.yaml")
+	if !HasRegistry(chartDir) {
+		t.Fatalf("chart %s has no CI scenario registry at %s: it is the only supported opt-in path for "+
+			"validating an extended-support %s chart through the matrix engine (issue #7039). "+
+			"Without it, matrix run against %s produces an empty matrix.",
+			version, manifest, version, version)
+	}
+
+	defaultEntries, err := Generate(repoRoot, GenerateOptions{Versions: []string{version}})
+	if err != nil {
+		t.Fatalf("Generate(versions=%s): %v", version, err)
+	}
+	if len(defaultEntries) != 0 {
+		t.Errorf("Generate(versions=%s): got %d entries, want 0: every %s scenario must stay enabled: false "+
+			"so the version is reachable only via --include-disabled",
+			version, len(defaultEntries), version)
+	}
+
+	wholeMatrix, err := Generate(repoRoot, GenerateOptions{})
+	if err != nil {
+		t.Fatalf("Generate(default matrix): %v", err)
+	}
+	for _, e := range wholeMatrix {
+		if e.Version == version {
+			t.Errorf("Generate(default matrix): %s scenario %q leaked into the default matrix", version, e.Scenario)
+		}
+	}
+
+	entries, err := Generate(repoRoot, GenerateOptions{
+		Versions:        []string{version},
+		IncludeDisabled: true,
+	})
+	if err != nil {
+		t.Fatalf("Generate(versions=%s, includeDisabled): %v", version, err)
+	}
+
+	type key struct{ shortname, flow, platform string }
+	want := map[key]string{
+		{"es", "install", "gke"}:       "elasticsearch",
+		{"es", "install", "eks"}:       "elasticsearch",
+		{"es", "upgrade-patch", "gke"}: "elasticsearch",
+		{"es", "upgrade-patch", "eks"}: "elasticsearch",
+		{"os", "install", "gke"}:       "opensearch",
+		{"mt", "install", "gke"}:       "multitenancy",
+	}
+
+	got := map[key]Entry{}
+	for _, e := range entries {
+		k := key{e.Shortname, e.Flow, e.Platform}
+		if prev, dup := got[k]; dup {
+			t.Errorf("%s: duplicate entry for %+v (scenarios %q and %q)", version, k, prev.Scenario, e.Scenario)
+		}
+		got[k] = e
+	}
+
+	for k, scenario := range want {
+		e, ok := got[k]
+		if !ok {
+			t.Errorf("%s: missing entry %+v (scenario %q)", version, k, scenario)
+			continue
+		}
+		if e.Scenario != scenario {
+			t.Errorf("%s %+v: scenario = %q, want %q", version, k, e.Scenario, scenario)
+		}
+		if !e.SkipE2E {
+			t.Errorf("%s %+v: skip-e2e = false, want true: the cross-component e2e suite ships no SM-%s fixtures",
+				version, k, version)
+		}
+		if e.Enabled {
+			t.Errorf("%s %+v: enabled = true, want false", version, k)
+		}
+	}
+	for k, e := range got {
+		if _, ok := want[k]; !ok {
+			t.Errorf("%s: unexpected entry %+v (scenario %q); update this contract deliberately", version, k, e.Scenario)
+		}
+	}
+
+	for k, e := range got {
+		if k.shortname != "es" {
+			continue
+		}
+		if e.Identity != "keycloak" {
+			t.Errorf("%s %+v: identity = %q, want keycloak", version, k, e.Identity)
+		}
+		if e.Persistence != "elasticsearch" {
+			t.Errorf("%s %+v: persistence = %q, want elasticsearch", version, k, e.Persistence)
+		}
+	}
+	if e, ok := got[key{"mt", "install", "gke"}]; ok && !slices.Contains(e.Features, "multitenancy") {
+		t.Errorf("%s mt: features = %v, want multitenancy", version, e.Features)
+	}
+}
+
+func extendedVersionByRegistry(t *testing.T, repoRoot string, hasRegistry bool) string {
+	t.Helper()
+	cv, err := LoadChartVersions(repoRoot)
+	if err != nil {
+		t.Fatalf("LoadChartVersions: %v", err)
+	}
+	for _, v := range cv.MinorsInBucket(versionmatrix.BucketSupportExtended) {
+		chartDir := filepath.Join(repoRoot, "charts", "camunda-platform-"+v)
+		if _, statErr := os.Stat(chartDir); statErr != nil {
+			continue
+		}
+		if HasRegistry(chartDir) == hasRegistry {
+			return v
+		}
+	}
+	return ""
+}
+
+func TestGenerateNonActiveVersionWithRegistry(t *testing.T) {
+	repoRoot := findRepoRoot(t)
+
+	version := extendedVersionByRegistry(t, repoRoot, true)
+	if version == "" {
+		t.Skip("no supportExtended version has a CI scenario registry")
+	}
+
+	if _, err := Generate(repoRoot, GenerateOptions{Versions: []string{version}}); err != nil {
+		t.Fatalf("Generate(versions=%s): %v", version, err)
+	}
+
+	entries, err := Generate(repoRoot, GenerateOptions{
+		Versions:        []string{version},
+		IncludeDisabled: true,
+	})
+	if err != nil {
+		t.Fatalf("Generate(versions=%s, includeDisabled): %v", version, err)
+	}
+	if len(entries) == 0 {
+		t.Fatalf("Generate(versions=%s, includeDisabled): got 0 entries, want the registry's scenarios", version)
+	}
+	for _, e := range entries {
+		if e.Version != version {
+			t.Errorf("Generate(versions=%s): unexpected version %s", version, e.Version)
+		}
+	}
+}
+
+func TestGenerateNonActiveVersionWithoutRegistryRejected(t *testing.T) {
+	repoRoot := findRepoRoot(t)
+
+	version := extendedVersionByRegistry(t, repoRoot, false)
+	if version == "" {
+		t.Skip("every supportExtended version with a chart dir has a CI scenario registry")
+	}
+
+	_, err := Generate(repoRoot, GenerateOptions{Versions: []string{version}})
+	if err == nil {
+		t.Fatalf("Generate(versions=%s): expected an error for a registry-less version, got nil", version)
+	}
+	if !strings.Contains(err.Error(), "no CI scenario registry") {
+		t.Errorf("Generate(versions=%s): error %q does not name the missing registry", version, err)
+	}
+}
+
+func TestGenerateEndOfLifeVersionRejected(t *testing.T) {
+	repoRoot := findRepoRoot(t)
+
+	cv, err := LoadChartVersions(repoRoot)
+	if err != nil {
+		t.Fatalf("LoadChartVersions: %v", err)
+	}
+	eolVersions := cv.MinorsInBucket(versionmatrix.BucketEndOfLife)
+	if len(eolVersions) == 0 {
+		t.Skip("no endOfLife versions in chart-versions.yaml")
+	}
+	version := eolVersions[0]
+
+	_, err = Generate(repoRoot, GenerateOptions{Versions: []string{version}})
+	if err == nil {
+		t.Fatalf("Generate(versions=%s): expected an error for an end-of-life version, got nil", version)
+	}
+	if !strings.Contains(err.Error(), "end-of-life") {
+		t.Errorf("Generate(versions=%s): error %q does not name end-of-life", version, err)
+	}
+}
+
 // --- Config loader tests ---
 
 func TestLoadChartVersions(t *testing.T) {
@@ -647,14 +847,7 @@ func TestLoadChartVersions(t *testing.T) {
 		t.Fatal("LoadChartVersions: no active versions")
 	}
 
-	// 8.10 should be alpha
-	found := false
-	for _, v := range cv.CamundaVersions.Alpha {
-		if v == "8.10" {
-			found = true
-		}
-	}
-	if !found {
+	if cv.BucketOf("8.10") != versionmatrix.BucketAlpha {
 		t.Error("LoadChartVersions: 8.10 not found in alpha")
 	}
 }
@@ -2230,5 +2423,59 @@ func TestAppendScenarioExtraValues(t *testing.T) {
 	// Nil per-scenario list leaves the global slice untouched.
 	if out := appendScenarioExtraValues([]string{"/tmp/g.yaml"}, Entry{}, scenarioDir); len(out) != 1 || out[0] != "/tmp/g.yaml" {
 		t.Errorf("empty ExtraValues should pass global through unchanged, got %v", out)
+	}
+}
+
+func TestGeneratePlatformlessScenarioAdoptsRequestedPlatform(t *testing.T) {
+	repoRoot := findRepoRoot(t)
+
+	cases := []struct {
+		name          string
+		platform      string
+		wantPlatform  string
+		wantInfraType string
+	}{
+		{
+			name:          "no platform requested keeps the gke default",
+			platform:      "",
+			wantPlatform:  "",
+			wantInfraType: "distroci",
+		},
+		{
+			name:          "eks requested resolves the eks pool",
+			platform:      "eks",
+			wantPlatform:  "eks",
+			wantInfraType: "preemptible",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			entries, err := Generate(repoRoot, GenerateOptions{
+				Versions:        []string{"8.10"},
+				IncludeDisabled: true,
+				Platform:        tc.platform,
+			})
+			if err != nil {
+				t.Fatalf("Generate: %v", err)
+			}
+
+			var found bool
+			for _, e := range entries {
+				if e.Scenario != "elasticsearch-basic" {
+					continue
+				}
+				found = true
+				if e.Platform != tc.wantPlatform {
+					t.Errorf("Platform = %q, want %q", e.Platform, tc.wantPlatform)
+				}
+				if e.InfraType != tc.wantInfraType {
+					t.Errorf("InfraType = %q, want %q: a pool belonging to another platform leaves the pod unschedulable", e.InfraType, tc.wantInfraType)
+				}
+			}
+			if !found {
+				t.Fatal("no elasticsearch-basic entry generated")
+			}
+		})
 	}
 }

@@ -1,4 +1,4 @@
-{{- if .Values.connectors.enabled -}}
+{{- if eq (include "camundaPlatform.connectorsEnabled" .) "true" -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:

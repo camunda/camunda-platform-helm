@@ -15,14 +15,258 @@
 package matrix
 
 import (
+	"bytes"
+	"context"
 	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
+
+	"scripts/camunda-core/pkg/logging"
+	"scripts/camunda-core/pkg/scenarios"
+	"scripts/deploy-camunda/config"
+
+	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v3"
 )
 
 const registryGoodChartDir = "testdata/registry-good/charts/camunda-platform-99.99"
+
+func TestResolveScenarioLegacyRegistryCompatibility(t *testing.T) {
+	repoRoot, err := filepath.Abs("../../..")
+	require.NoError(t, err)
+	t.Run("keycloak-original", func(t *testing.T) {
+		var output bytes.Buffer
+		previous := logging.Logger
+		logging.Logger = previous.Output(&output)
+		t.Cleanup(func() { logging.Logger = previous })
+		flags := config.RuntimeFlags{
+			Chart:      config.ChartFlags{ChartPath: filepath.Join(repoRoot, "charts", "camunda-platform-8.10")},
+			Deployment: config.DeploymentFlags{Scenarios: []string{"keycloak-original"}, Flow: "install", Platform: "gke"},
+		}
+		before := flags
+		require.NoError(t, ResolveScenario(&flags, nil))
+		require.Equal(t, before, flags)
+		require.Contains(t, output.String(), "hub-ping")
+		require.Contains(t, output.String(), "elasticsearch")
+		require.Contains(t, output.String(), "registry values are not applied")
+	})
+	for _, flow := range []string{"install", "upgrade-patch"} {
+		t.Run("oidc/"+flow, func(t *testing.T) {
+			flags := config.RuntimeFlags{
+				Chart:      config.ChartFlags{ChartPath: filepath.Join(repoRoot, "charts", "camunda-platform-8.7")},
+				Deployment: config.DeploymentFlags{Scenarios: []string{"oidc"}, Flow: flow, Platform: "gke"},
+			}
+			require.NoError(t, ResolveScenario(&flags, nil))
+			require.True(t, flags.SelectionResolved)
+			require.Equal(t, "oidc", flags.Selection.Identity)
+			require.Equal(t, "elasticsearch", flags.Selection.Persistence)
+			require.Empty(t, flags.Selection.Features)
+			_, err := scenarios.BuildDeploymentConfig(flags.Deployment.ScenarioPath, "oidc", scenarios.BuilderOverrides{
+				Resolved: true, Identity: flags.Selection.Identity, Persistence: flags.Selection.Persistence,
+				Platform: "gke", Flow: flow,
+			})
+			require.NoError(t, err)
+		})
+	}
+}
+
+func TestResolveScenarioFallback(t *testing.T) {
+	for _, testCase := range []struct {
+		name      string
+		chart     string
+		scenarios []string
+	}{
+		{"no registry", t.TempDir(), []string{"keycloak-original"}},
+		{"legacy alias", absChartDir(t), []string{"keycloak-original"}},
+		{"free form", absChartDir(t), []string{"custom-rba"}},
+		{"parallel unchanged", absChartDir(t), []string{"alpha", "beta"}},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			flags := config.RuntimeFlags{
+				Chart:      config.ChartFlags{ChartPath: testCase.chart},
+				Deployment: config.DeploymentFlags{Scenarios: testCase.scenarios},
+				Selection:  config.SelectionFlags{Features: []string{"custom"}},
+			}
+			before := flags
+			require.NoError(t, ResolveScenario(&flags, nil))
+			require.Equal(t, before, flags)
+		})
+	}
+}
+
+func TestResolveScenarioDisabledAndAmbiguous(t *testing.T) {
+	flags := &config.RuntimeFlags{
+		Chart:      config.ChartFlags{ChartPath: absChartDir(t)},
+		Deployment: config.DeploymentFlags{Scenarios: []string{"gamma"}, Platform: "gke", Flow: "install"},
+	}
+	require.NoError(t, ResolveScenario(flags, nil))
+	require.True(t, flags.SelectionResolved)
+	repoRoot := t.TempDir()
+	require.NoError(t, os.CopyFS(repoRoot, os.DirFS("testdata/registry-good")))
+	chart := filepath.Join(repoRoot, "charts", "camunda-platform-99.99")
+	manifestPath := filepath.Join(chart, "test", RegistryDirName, "manifest.yaml")
+	data, err := os.ReadFile(manifestPath)
+	require.NoError(t, err)
+	var manifest registryManifest
+	require.NoError(t, yaml.Unmarshal(data, &manifest))
+	manifest.Integration.Scenarios = append(manifest.Integration.Scenarios, registryManifestEntry{ID: "alpha", Shortname: "other", Enabled: true, Tier: 1})
+	data, err = yaml.Marshal(manifest)
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(manifestPath, data, 0644))
+	flags = &config.RuntimeFlags{
+		Chart:      config.ChartFlags{ChartPath: chart},
+		Deployment: config.DeploymentFlags{Scenarios: []string{"alpha"}, Platform: "gke", Flow: "install"},
+	}
+	require.ErrorContains(t, ResolveScenario(flags, nil), "ambiguous")
+}
+
+func TestResolveScenarioInvalidMatch(t *testing.T) {
+	for _, testCase := range []struct{ name, scenario, flow, platform, want string }{
+		{"flow", "alpha", "upgrade-patch", "gke", "no registry entry"},
+		{"platform", "alpha", "install", "eks", "no registry entry"},
+		{"matrix lifecycle", "beta", "install", "gke", "use matrix run"},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			flags := &config.RuntimeFlags{
+				Chart:      config.ChartFlags{ChartPath: absChartDir(t)},
+				Deployment: config.DeploymentFlags{Scenarios: []string{testCase.scenario}, Flow: testCase.flow, Platform: testCase.platform},
+			}
+			require.ErrorContains(t, ResolveScenario(flags, nil), testCase.want)
+			require.False(t, flags.SelectionResolved)
+		})
+	}
+	chart := filepath.Join(t.TempDir(), "charts", "camunda-platform-99.99")
+	manifest := filepath.Join(chart, "test", RegistryDirName, "manifest.yaml")
+	require.NoError(t, os.MkdirAll(filepath.Dir(manifest), 0755))
+	require.NoError(t, os.WriteFile(manifest, []byte("invalid: ["), 0644))
+	require.ErrorContains(t, ResolveScenario(&config.RuntimeFlags{
+		Chart:      config.ChartFlags{ChartPath: chart},
+		Deployment: config.DeploymentFlags{Scenarios: []string{"arbitrary"}},
+	}, nil), "parse manifest")
+}
+
+func TestResolveScenarioDeclaredFeatureAndScript(t *testing.T) {
+	repoRoot := t.TempDir()
+	require.NoError(t, os.CopyFS(repoRoot, os.DirFS("testdata/registry-good")))
+	chart := filepath.Join(repoRoot, "charts", "camunda-platform-99.99")
+	registryDir := filepath.Join(chart, "test", RegistryDirName)
+	scenarioFile := filepath.Join(registryDir, "scenarios", "alpha.yaml")
+	data, err := os.ReadFile(scenarioFile)
+	require.NoError(t, err)
+	var scenario registryScenario
+	require.NoError(t, yaml.Unmarshal(data, &scenario))
+	scenario.Features = []string{"synthetic-feature"}
+	scenario.ExtraValues = []string{"extra.yaml"}
+	scenario.Identity = ""
+	scenario.Persistence = ""
+	scenario.PreInstallID = "observe"
+	data, err = yaml.Marshal(scenario)
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(scenarioFile, data, 0644))
+	extraValues := filepath.Join(chart, "test/integration/scenarios/chart-full-setup/extra.yaml")
+	require.NoError(t, os.WriteFile(extraValues, []byte("{}\n"), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(registryDir, "hooks", "observe.yaml"), []byte("script: observe.sh\ndescription: Record hook invocation\n"), 0644))
+	marker := filepath.Join(repoRoot, "observed")
+	script := "printf '%s\\n' \"$TEST_NAMESPACE\" \"$NAMESPACE\" \"$RELEASE_NAME\" \"$KUBE_CONTEXT\" > \"" + marker + "\"\n"
+	require.NoError(t, os.WriteFile(filepath.Join(chart, "test/integration/scenarios/pre-setup-scripts/observe.sh"), []byte(script), 0644))
+	flags := &config.RuntimeFlags{
+		Chart:      config.ChartFlags{ChartPath: chart},
+		Deployment: config.DeploymentFlags{Scenarios: []string{"alpha"}, Namespace: "test", NamespacePrefix: "prefix", Release: "integration", ExtraValues: []string{"user.yaml"}},
+		Test:       config.TestFlags{KubeContext: "test-context"},
+	}
+	require.NoError(t, ResolveScenario(flags, nil))
+	require.Equal(t, []string{"synthetic-feature"}, flags.Selection.Features)
+	require.Equal(t, "keycloak", flags.Selection.Identity)
+	require.Equal(t, "elasticsearch", flags.Selection.Persistence)
+	require.Equal(t, []string{"user.yaml", extraValues}, flags.Deployment.ExtraValues)
+	require.Len(t, flags.CompanionCharts, 2)
+	require.Len(t, flags.PreInstallHooks, 1)
+	_, err = os.Stat(marker)
+	require.True(t, os.IsNotExist(err), "resolution must not run the hook")
+	require.NoError(t, flags.PreInstallHooks[0](context.Background()))
+	data, err = os.ReadFile(marker)
+	require.NoError(t, err)
+	require.Equal(t, "prefix-test\nprefix-test\nintegration\ntest-context\n", string(data))
+}
+
+func TestResolveScenarioOverrideWarning(t *testing.T) {
+	var output bytes.Buffer
+	previous := logging.Logger
+	logging.Logger = previous.Output(&output)
+	t.Cleanup(func() { logging.Logger = previous })
+	flags := &config.RuntimeFlags{
+		Chart:        config.ChartFlags{ChartPath: absChartDir(t)},
+		Deployment:   config.DeploymentFlags{Scenarios: []string{"alpha"}},
+		Selection:    config.SelectionFlags{Persistence: "custom-persistence"},
+		ChangedFlags: map[string]bool{"persistence": true},
+	}
+	require.NoError(t, ResolveScenario(flags, nil))
+	require.Contains(t, output.String(), `persistence: registry=\"elasticsearch\" effective=\"custom-persistence\"`)
+	flags.Selection.Persistence = "elasticsearch"
+	output.Reset()
+	require.NoError(t, ResolveScenario(flags, nil))
+	require.Empty(t, output.String())
+}
+
+func TestResolveScenarioOptimizeTLS(t *testing.T) {
+	repoRoot, err := filepath.Abs("../../..")
+	if err != nil {
+		t.Fatal(err)
+	}
+	entries, err := Generate(repoRoot, GenerateOptions{Versions: []string{"8.10"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	entries = Filter(entries, FilterOptions{ShortnameFilter: "optls", ShortnameExact: true, FlowFilter: "install", Platform: "gke"})
+	if len(entries) != 1 {
+		t.Fatalf("expected one optimize-tls entry, got %d", len(entries))
+	}
+	entry := entries[0]
+	matrixFlags, _, _, _, cleanup, err := BuildEntryFlags(entry, RunOptions{RepoRoot: repoRoot})
+	defer cleanup()
+	if err != nil {
+		t.Fatal(err)
+	}
+	flags := &config.RuntimeFlags{
+		Chart:      config.ChartFlags{ChartPath: entry.ChartPath},
+		Deployment: config.DeploymentFlags{Scenario: entry.Scenario, Scenarios: []string{entry.Scenario}, Platform: "gke", Flow: "install"},
+	}
+	if err := ResolveScenario(flags, nil); err != nil {
+		t.Fatal(err)
+	}
+	if !flags.SelectionResolved || !reflect.DeepEqual(flags.Selection, matrixFlags.Selection) {
+		t.Fatalf("plain selection %+v differs from matrix %+v", flags.Selection, matrixFlags.Selection)
+	}
+	require.Equal(t, matrixFlags.Deployment.ScenarioPath, flags.Deployment.ScenarioPath)
+	if len(flags.CompanionCharts) != 3 || !reflect.DeepEqual(flags.CompanionCharts, matrixFlags.CompanionCharts) {
+		t.Fatalf("plain companions %+v differ from matrix %+v", flags.CompanionCharts, matrixFlags.CompanionCharts)
+	}
+	if entry.PreInstall == nil || entry.PreInstall.Script != "pre-install-optimize-tls.sh" || len(flags.PreInstallHooks) != 1 {
+		t.Fatal("optimize-tls pre-install script was not registered")
+	}
+	scenarioDir := filepath.Join(entry.ChartPath, "test/integration/scenarios/chart-full-setup")
+	resolved, err := scenarios.BuildDeploymentConfig(scenarioDir, entry.Scenario, scenarios.BuilderOverrides{
+		Resolved: flags.SelectionResolved, Identity: flags.Selection.Identity,
+		Persistence: flags.Selection.Persistence, Features: flags.Selection.Features,
+		Platform: flags.Deployment.Platform, InfraType: flags.Selection.InfraType,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	files, err := resolved.ResolvePaths(scenarioDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	found := false
+	for _, filename := range files {
+		found = found || strings.HasSuffix(filename, "values/features/optimize-tls.yaml")
+	}
+	if !found {
+		t.Fatalf("TLS layer missing: %v", files)
+	}
+}
 
 // absChartDir resolves the testdata chart directory once per test.
 func absChartDir(t *testing.T) string {
@@ -352,7 +596,7 @@ func TestRegistryValidatorExemptsSiblingInvokedHelper(t *testing.T) {
 // via filepath.Join.
 func TestLoadRegistryRejectsPathTraversalHookID(t *testing.T) {
 	_, chartDir, regDir := syntheticChart(t)
-	writeManifest(t, regDir, "    - id: bad\n      shortname: bad\n      enabled: true\n")
+	writeManifest(t, regDir, "    - id: bad\n      shortname: bad\n      tier: 1\n      enabled: true\n")
 	writeFile(t, filepath.Join(regDir, "scenarios", "bad.yaml"),
 		"name: bad\nflows: [install]\npre-install: ../evil\n")
 
@@ -368,7 +612,7 @@ func TestLoadRegistryRejectsPathTraversalHookID(t *testing.T) {
 func TestRegistryValidatorRejectsDeniedFlow(t *testing.T) {
 	dir, chartDir, regDir := syntheticChart(t)
 	writePermittedFlows(t, dir, "rules:\n  - match: ==99.99\n    deny: [install]\n")
-	writeManifest(t, regDir, "    - id: a\n      shortname: a\n      enabled: true\n")
+	writeManifest(t, regDir, "    - id: a\n      shortname: a\n      tier: 1\n      enabled: true\n")
 	writeFile(t, filepath.Join(regDir, "scenarios", "a.yaml"),
 		"name: a\nflows: [install]\nplatforms: [gke]\n")
 
@@ -384,7 +628,7 @@ func TestRegistryValidatorRejectsDeniedFlow(t *testing.T) {
 // guard from one branch is caught.
 func TestLoadRegistryRejectsPathTraversalDepID(t *testing.T) {
 	_, chartDir, regDir := syntheticChart(t)
-	writeManifest(t, regDir, "    - id: bad\n      shortname: bad\n      enabled: true\n")
+	writeManifest(t, regDir, "    - id: bad\n      shortname: bad\n      tier: 1\n      enabled: true\n")
 	writeFile(t, filepath.Join(regDir, "scenarios", "bad.yaml"),
 		"name: bad\nflows: [install]\ndependencies:\n  - ../evil\n")
 
@@ -399,11 +643,72 @@ func TestLoadRegistryRejectsPathTraversalDepID(t *testing.T) {
 // scenarios/ directory.
 func TestLoadRegistryRejectsPathTraversalManifestID(t *testing.T) {
 	_, chartDir, regDir := syntheticChart(t)
-	writeManifest(t, regDir, "    - id: ../evil\n      enabled: true\n")
+	writeManifest(t, regDir, "    - id: ../evil\n      tier: 1\n      enabled: true\n")
 
 	_, err := LoadRegistry(chartDir)
 	if err == nil || !strings.Contains(err.Error(), "plain filename") {
 		t.Fatalf("want plain-filename rejection on manifest ID, got: %v", err)
+	}
+}
+
+// TestLoadRegistryRejectsUnusableTier covers the tier invariant the strict
+// --tier filter depends on. An enabled entry with no tier, or any entry whose
+// tier is outside {1,2}, is unreachable through tier-scoped selection, so the
+// loader rejects it instead of letting it drop out of the PR gate silently.
+func TestLoadRegistryRejectsUnusableTier(t *testing.T) {
+	scenarioYAML := "name: a\nauth: keycloak\nflows: [install]\nidentity: keycloak\npersistence: elasticsearch\nplatforms: [gke]\n"
+
+	cases := []struct {
+		name     string
+		entry    string
+		wantErr  bool
+		wantText string
+	}{
+		{
+			name:     "enabled without tier",
+			entry:    "    - id: a\n      shortname: a\n      enabled: true\n",
+			wantErr:  true,
+			wantText: "enabled but declares no tier",
+		},
+		{
+			name:     "tier above the supported range",
+			entry:    "    - id: a\n      shortname: a\n      tier: 3\n      enabled: true\n",
+			wantErr:  true,
+			wantText: "declares tier 3",
+		},
+		{
+			name:     "negative tier",
+			entry:    "    - id: a\n      shortname: a\n      tier: -1\n      enabled: false\n",
+			wantErr:  true,
+			wantText: "declares tier -1",
+		},
+		{
+			name:  "disabled entries may omit the tier",
+			entry: "    - id: a\n      shortname: a\n      enabled: false\n",
+		},
+		{
+			name:  "tier 2 accepted",
+			entry: "    - id: a\n      shortname: a\n      tier: 2\n      enabled: true\n",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, chartDir, regDir := syntheticChart(t)
+			writeManifest(t, regDir, tc.entry)
+			writeFile(t, filepath.Join(regDir, "scenarios", "a.yaml"), scenarioYAML)
+
+			_, err := LoadRegistry(chartDir)
+			if tc.wantErr {
+				if err == nil || !strings.Contains(err.Error(), tc.wantText) {
+					t.Fatalf("want error containing %q, got: %v", tc.wantText, err)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("LoadRegistry: %v", err)
+			}
+		})
 	}
 }
 
@@ -412,7 +717,7 @@ func TestLoadRegistryRejectsPathTraversalManifestID(t *testing.T) {
 // assembled CIScenario so it can be threaded into the deploy values chain.
 func TestLoadRegistryCarriesExtraValues(t *testing.T) {
 	_, chartDir, regDir := syntheticChart(t)
-	writeManifest(t, regDir, "    - id: alpha\n      shortname: alph\n      enabled: true\n")
+	writeManifest(t, regDir, "    - id: alpha\n      shortname: alph\n      tier: 1\n      enabled: true\n")
 	writeFile(t, filepath.Join(regDir, "scenarios", "alpha.yaml"),
 		"name: alpha\nauth: keycloak\nflows: [install]\nidentity: keycloak\npersistence: elasticsearch\nplatforms: [gke]\nextra-values:\n  - values/extra/image.yaml\n  - values/extra/tuning.yaml\n")
 	// The validator (run inside LoadRegistry) resolves relative extra-values
@@ -450,8 +755,8 @@ func TestLoadRegistryCarriesExtraValues(t *testing.T) {
 func TestGenerate_PropagatesExtraValues(t *testing.T) {
 	dir, chartDir, regDir := syntheticChart(t)
 	writeFile(t, filepath.Join(dir, "charts", "chart-versions.yaml"),
-		"camundaVersions:\n  supportStandard:\n    - \"99.99\"\n")
-	writeManifest(t, regDir, "    - id: alpha\n      shortname: alph\n      enabled: true\n")
+		"chartAutomation: {routineVersions: [\"99.99\"]}\ncamundaSupportLifecycle: {\"99.99\": {}}\n")
+	writeManifest(t, regDir, "    - id: alpha\n      shortname: alph\n      tier: 1\n      enabled: true\n")
 	writeFile(t, filepath.Join(regDir, "scenarios", "alpha.yaml"),
 		"name: alpha\nauth: keycloak\nflows: [install]\nidentity: keycloak\npersistence: elasticsearch\nplatforms: [gke]\nextra-values:\n  - values/extra/image.yaml\n")
 	extraDir := filepath.Join(chartDir, "test", "integration", "scenarios", "chart-full-setup", "values", "extra")
@@ -490,7 +795,7 @@ func TestLoadRegistryRejectsMalformedManifest(t *testing.T) {
 // scenarios/<id>.yaml file.
 func TestLoadRegistryRejectsMissingScenarioFile(t *testing.T) {
 	_, chartDir, regDir := syntheticChart(t)
-	writeManifest(t, regDir, "    - id: missing\n      enabled: true\n")
+	writeManifest(t, regDir, "    - id: missing\n      tier: 1\n      enabled: true\n")
 
 	_, err := LoadRegistry(chartDir)
 	if err == nil || !strings.Contains(err.Error(), "read scenario") {
@@ -545,7 +850,7 @@ func TestRegistryValidatorRejectsUnmitigatedBitnamiPersistenceDrop(t *testing.T)
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			_, chartDir, regDir, _ := syntheticChartWithPrevious(t, depsWithoutElasticsearch, depsWithElasticsearch)
-			writeManifest(t, regDir, "    - id: a\n      shortname: a\n      enabled: true\n")
+			writeManifest(t, regDir, "    - id: a\n      shortname: a\n      tier: 1\n      enabled: true\n")
 			writeFile(t, filepath.Join(regDir, "scenarios", "a.yaml"),
 				"name: a\nflows: ["+tc.flow+"]\nplatforms: [gke]\npersistence: elasticsearch\n")
 
@@ -587,7 +892,7 @@ func TestRegistryValidatorExemptsMitigatedBitnamiPersistenceDrop(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			_, chartDir, regDir, _ := syntheticChartWithPrevious(t, depsWithoutElasticsearch, depsWithElasticsearch)
-			writeManifest(t, regDir, "    - id: a\n      shortname: a\n      enabled: true\n")
+			writeManifest(t, regDir, "    - id: a\n      shortname: a\n      tier: 1\n      enabled: true\n")
 			writeFile(t, filepath.Join(regDir, "scenarios", "a.yaml"), tc.scenario)
 			if tc.withHook {
 				writeFile(t, filepath.Join(regDir, "hooks", "mig.yaml"),
@@ -605,7 +910,7 @@ func TestRegistryValidatorExemptsMitigatedBitnamiPersistenceDrop(t *testing.T) {
 
 func TestRegistryValidatorAcceptsUpgradePersistenceWhenStillBundled(t *testing.T) {
 	_, chartDir, regDir, _ := syntheticChartWithPrevious(t, depsWithElasticsearch, depsWithElasticsearch)
-	writeManifest(t, regDir, "    - id: a\n      shortname: a\n      enabled: true\n")
+	writeManifest(t, regDir, "    - id: a\n      shortname: a\n      tier: 1\n      enabled: true\n")
 	writeFile(t, filepath.Join(regDir, "scenarios", "a.yaml"),
 		"name: a\nflows: [upgrade-minor]\nplatforms: [gke]\npersistence: elasticsearch\n")
 
@@ -617,7 +922,7 @@ func TestRegistryValidatorAcceptsUpgradePersistenceWhenStillBundled(t *testing.T
 func TestRegistryValidatorRejectsUpgradePersistenceMissingFromPreviousVersion(t *testing.T) {
 	_, chartDir, regDir, _ := syntheticChartWithPrevious(t, depsWithElasticsearch, depsWithElasticsearch)
 	writePersistence(t, chartDir, "rdbms-self-signed", "")
-	writeManifest(t, regDir, "    - id: a\n      shortname: a\n      enabled: true\n")
+	writeManifest(t, regDir, "    - id: a\n      shortname: a\n      tier: 1\n      enabled: true\n")
 	writeFile(t, filepath.Join(regDir, "scenarios", "a.yaml"),
 		"name: a\nflows: [upgrade-minor]\nplatforms: [gke]\npersistence: rdbms-self-signed\n")
 
@@ -630,7 +935,7 @@ func TestRegistryValidatorRejectsUpgradePersistenceMissingFromPreviousVersion(t 
 func TestRegistryValidatorExemptsModularUpgradePersistenceMissingFromPreviousVersion(t *testing.T) {
 	_, chartDir, regDir, _ := syntheticChartWithPrevious(t, depsWithElasticsearch, depsWithElasticsearch)
 	writePersistence(t, chartDir, "rdbms-self-signed", "")
-	writeManifest(t, regDir, "    - id: a\n      shortname: a\n      enabled: true\n")
+	writeManifest(t, regDir, "    - id: a\n      shortname: a\n      tier: 1\n      enabled: true\n")
 	writeFile(t, filepath.Join(regDir, "scenarios", "a.yaml"),
 		"name: a\nflows: [modular-upgrade-minor]\nplatforms: [gke]\npersistence: rdbms-self-signed\n")
 
@@ -641,7 +946,7 @@ func TestRegistryValidatorExemptsModularUpgradePersistenceMissingFromPreviousVer
 
 func TestRegistryValidatorAcceptsUpgradePersistenceWithoutPreviousVersion(t *testing.T) {
 	_, chartDir, regDir := syntheticChart(t)
-	writeManifest(t, regDir, "    - id: a\n      shortname: a\n      enabled: true\n")
+	writeManifest(t, regDir, "    - id: a\n      shortname: a\n      tier: 1\n      enabled: true\n")
 	writeFile(t, filepath.Join(regDir, "scenarios", "a.yaml"),
 		"name: a\nflows: [upgrade-minor]\nplatforms: [gke]\npersistence: elasticsearch\n")
 
@@ -848,5 +1153,55 @@ func writeFile(t *testing.T, path, body string) {
 	t.Helper()
 	if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
 		t.Fatalf("write %s: %v", path, err)
+	}
+}
+
+// TestRegistryValidatorRejectsPathTraversalFeature covers the scenario-level
+// feature ID, the sibling of the per-release override Topology.Validate
+// guards. The planted persistence layer is what "../persistence/elasticsearch"
+// resolves to from values/features/, so before the guard the stat succeeded
+// and the scenario validated against a file it never named.
+func TestRegistryValidatorRejectsPathTraversalFeature(t *testing.T) {
+	_, chartDir, regDir := syntheticChart(t)
+	writeManifest(t, regDir, "    - id: bad\n      shortname: bad\n      tier: 1\n      enabled: true\n")
+	writeFile(t, filepath.Join(regDir, "scenarios", "bad.yaml"),
+		"name: bad\nauth: keycloak\nflows: [install]\nplatforms: [gke]\npersistence: elasticsearch\nfeatures:\n  - ../persistence/elasticsearch\n")
+
+	_, err := LoadRegistry(chartDir)
+	if err == nil || !strings.Contains(err.Error(), "plain filename") {
+		t.Fatalf("want plain-filename rejection on feature ID, got: %v", err)
+	}
+}
+
+// TestRegistryValidatorRejectsPathTraversalPersistence covers the
+// scenario-level persistence ID. "../features/leak" resolves out of
+// values/persistence/ into the features dir, where the layer is planted.
+func TestRegistryValidatorRejectsPathTraversalPersistence(t *testing.T) {
+	_, chartDir, regDir := syntheticChart(t)
+	writeFile(t, filepath.Join(chartDir, "test", "integration", "scenarios",
+		"chart-full-setup", "values", "features", "leak.yaml"), "{}\n")
+	writeManifest(t, regDir, "    - id: bad\n      shortname: bad\n      tier: 1\n      enabled: true\n")
+	writeFile(t, filepath.Join(regDir, "scenarios", "bad.yaml"),
+		"name: bad\nauth: keycloak\nflows: [install]\nplatforms: [gke]\npersistence: ../features/leak\n")
+
+	_, err := LoadRegistry(chartDir)
+	if err == nil || !strings.Contains(err.Error(), "plain filename") {
+		t.Fatalf("want plain-filename rejection on persistence ID, got: %v", err)
+	}
+}
+
+// TestRegistryValidatorAcceptsPlainFeatureAndPersistence is the positive
+// control: the guard must not reject the ordinary bare IDs every real scenario
+// uses.
+func TestRegistryValidatorAcceptsPlainFeatureAndPersistence(t *testing.T) {
+	_, chartDir, regDir := syntheticChart(t)
+	writeFile(t, filepath.Join(chartDir, "test", "integration", "scenarios",
+		"chart-full-setup", "values", "features", "multitenancy.yaml"), "{}\n")
+	writeManifest(t, regDir, "    - id: good\n      shortname: good\n      tier: 1\n      enabled: true\n")
+	writeFile(t, filepath.Join(regDir, "scenarios", "good.yaml"),
+		"name: good\nauth: keycloak\nflows: [install]\nplatforms: [gke]\npersistence: elasticsearch\nfeatures:\n  - multitenancy\n")
+
+	if _, err := LoadRegistry(chartDir); err != nil {
+		t.Fatalf("plain feature and persistence IDs should validate, got: %v", err)
 	}
 }

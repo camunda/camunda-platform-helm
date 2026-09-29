@@ -2,6 +2,15 @@
 A template to handle constraints.
 */}}
 
+{{- define "camundaPlatform.validateBrokerLabels" -}}
+{{- if hasKey .labels "camunda.io/broker-generation" -}}
+{{- fail "[camunda][error] camunda.io/broker-generation is managed by the chart and cannot be configured in user labels." -}}
+{{- end -}}
+{{- if and .zonedPodLabels (hasKey .labels "camunda.io/zone") -}}
+{{- fail "[camunda][error] camunda.io/zone is managed by the chart with the zone-aware scheme and cannot be configured in orchestration.podLabels." -}}
+{{- end -}}
+{{- end -}}
+
 {{/*
 Fail with a message if the Helm CLI version is less than v4.
 Chart 15.x (Camunda 8.10) requires Helm v4 or later.
@@ -30,12 +39,20 @@ Chart 15.x (Camunda 8.10) requires Helm v4 or later.
   "newName" "global.identity.auth.camundaHub.*"
 ) }}
 
-{{- $identityEnabled := (or (eq (include "camundaPlatform.identityEnabled" .) "true") .Values.global.identity.service.url) }}
+{{/*
+Must be a real boolean, not a truthy value: the Multi-Tenancy guard below
+tests it via $identityAuthEnabled with `has false`, which never matches a
+non-empty string such as global.identity.service.url.
+*/}}
+{{- $identityEnabled := false }}
+{{- if or (eq (include "camundaPlatform.identityEnabled" .) "true") (not (empty .Values.global.identity.service.url)) }}
+  {{- $identityEnabled = true }}
+{{- end }}
 
 {{- $topologyMode := include "camundaPlatform.topologyMode" . }}
 {{- $topology := .Values.global.topology | default dict }}
-{{- if not (has $topologyMode (list "combined" "hub" "orchestration")) }}
-  {{- fail (printf "[camunda][error] global.topology.mode must be one of combined, hub, or orchestration; got %q." $topologyMode) }}
+{{- if not (has $topologyMode (list "combined" "hub" "orchestration" "optimize")) }}
+  {{- fail (printf "[camunda][error] global.topology.mode must be one of combined, hub, orchestration, or optimize; got %q." $topologyMode) }}
 {{- end }}
 {{- if and (eq $topologyMode "hub") (ne (include "camundaPlatform.identityEnabled" .) "true") }}
   {{- fail "[camunda][error] global.topology.mode=hub requires identity.enabled=true." }}
@@ -51,6 +68,152 @@ Chart 15.x (Camunda 8.10) requires Helm v4 or later.
 {{- end }}
 {{- if and (eq $topologyMode "orchestration") (ne (include "camundaPlatform.orchestrationEnabled" .) "true") }}
   {{- fail "[camunda][error] global.topology.mode=orchestration requires orchestration.enabled=true." }}
+{{- end }}
+{{- if and (eq (include "camundaPlatform.orchestrationEnabled" .) "true") (eq (include "orchestration.physicalTenantsDeclared" .) "true") }}
+  {{- if ne (include "orchestration.authMethod" .) "oidc" }}
+    {{- fail "[camunda][error] camunda.physical-tenants in orchestration.extraConfiguration requires OIDC authentication; each tenant is assigned an OIDC provider." }}
+  {{- end }}
+  {{- if not (include "orchestration.authIssuerUrl" .) }}
+    {{- fail "[camunda][error] camunda.physical-tenants in orchestration.extraConfiguration requires global.identity.auth.issuer (or orchestration.security.authentication.oidc.issuer) to be set to the exact \"iss\" claim your identity provider mints. The Orchestration Cluster rejects a provider without issuerUri once tenants are configured, and it then validates \"iss\" on every token. This value cannot be derived: global.identity.auth.publicIssuerUrl and issuerBackendUrl are network routes, and a Keycloak started without a pinned hostname mints a different \"iss\" per route, so in-cluster callers and browsers would present different issuers. Pin your identity provider to one issuer (for Keycloak, KC_HOSTNAME) and set that value here." }}
+  {{- end }}
+{{- end }}
+{{- if eq $topologyMode "optimize" }}
+  {{- if not .Values.optimize.enabled }}
+    {{- fail "[camunda][error] global.topology.mode=optimize requires optimize.enabled=true." }}
+  {{- end }}
+  {{- if .Values.global.noSecondaryStorage }}
+    {{- fail "[camunda][error] global.topology.mode=optimize requires global.noSecondaryStorage=false; Optimize reads exported records from secondary storage." }}
+  {{- end }}
+  {{- $esEnabled := .Values.optimize.database.elasticsearch.enabled }}
+  {{- $osEnabled := .Values.optimize.database.opensearch.enabled }}
+  {{- if not (or $esEnabled $osEnabled) }}
+    {{- fail "[camunda][error] global.topology.mode=optimize requires optimize.database.elasticsearch.enabled or optimize.database.opensearch.enabled, with url.host addressing the secondary storage the Orchestration Cluster exports to. This chart bundles no Elasticsearch, and with neither backend enabled Optimize renders an empty connection node list and reaches no storage at all." }}
+  {{- end }}
+  {{- if and (or $esEnabled $osEnabled) (empty (include "optimize.effectiveDatabaseHost" .)) }}
+    {{- fail "[camunda][error] global.topology.mode=optimize requires a non-empty url.host for the enabled Optimize database backend. Elasticsearch takes precedence when both backends are enabled; without its host Optimize renders an unusable connection node and cannot reach secondary storage." }}
+  {{- end }}
+  {{- if ne (include "optimize.authEnabled" .) "true" }}
+    {{- fail "[camunda][error] global.topology.mode=optimize requires authentication; set optimize.security.authentication.method=oidc or global.identity.auth.enabled=true." }}
+  {{- end }}
+  {{- if and (empty (dig "identity" "service" "url" "" .Values.optimize)) (empty .Values.global.identity.service.url) }}
+    {{- fail "[camunda][error] global.topology.mode=optimize requires optimize.identity.service.url or global.identity.service.url to reach Management Identity; this release runs no Identity of its own, so the in-release default cannot apply." }}
+  {{- end }}
+  {{- $rendersIngress := and .Values.global.ingress.enabled (not .Values.global.ingress.external) }}
+  {{- $rendersGateway := and .Values.global.gateway.enabled (not .Values.global.gateway.external) }}
+  {{- if and (empty .Values.optimize.contextPath) (or $rendersIngress $rendersGateway) }}
+    {{- fail "[camunda][error] global.topology.mode=optimize requires optimize.contextPath when this chart renders the release's own routing: the shared Ingress emits an Optimize rule only when the context path is set, so an empty one leaves Optimize unreachable, and the HTTPRoute would match an empty path prefix. Set it to the sub-path this release is served on, or route to the Optimize Service yourself with global.ingress.enabled=false." }}
+  {{- end }}
+{{- end }}
+{{/*
+Applies beyond global.topology.mode=optimize, but only to a release that configures Optimize's own
+identity or authentication: such a config reaches the same empty issuer, and the same empty
+api.jwtSetUri, with no mode to signal it. A release that merely sets global.identity.auth.enabled is
+left alone - these checks are new, and turning an existing combined-mode render into a failed
+upgrade is a chart-wide change, tracked separately in issue #6929.
+
+An empty "iss" is only survivable while an issuer backend URL resolves, which is the External
+Keycloak shape: global.identity.keycloak.url.host derives every endpoint and the provider names the
+claim. This chart bundles no Keycloak, so global.identity.auth.enabled on its own resolves nothing
+and is not an exemption - it renders an empty issuer, an empty issuerBackendUrl and a relative
+jwtSetUri, which is the state this check exists to prevent.
+
+A release that supplies the issuer as container env is exempt: the Deployment lists optimize.env and
+optimize.envFrom after the ConfigMap this check guards, so the empty issuer never reaches the
+container. optimize.env is matched by name and value. An optimize.envFrom source only counts once
+the release names the variable in optimize.security.authentication.oidc.envFromProvides - its keys
+are unreadable at render time, so presence of a source proves nothing, and an unrelated ConfigMap
+must not buy an exemption from a check this load-bearing.
+
+optimize.extraConfiguration is not an issuer exemption: the identity env ConfigMap sets
+CAMUNDA_IDENTITY_ISSUER as container env, empty value included, and container env outranks every
+config file the release imports. api.jwtSetUri has no such env var, so file order decides it and
+both readable config sources are exemptions there: optimize.configuration, which replaces
+environment-config.yaml wholesale, and optimize.extraConfiguration, which Optimize imports after it.
+Either must bind the key to a non-empty value - the key alone leaves the same missing endpoint.
+*/}}
+{{- if and (eq (include "camundaPlatform.optimizeEnabled" .) "true") (eq (include "optimize.authEnabled" .) "true") }}
+  {{- if not (has (include "optimize.effectiveAuthType" .) (list "KEYCLOAK" "MICROSOFT" "GENERIC")) }}
+    {{- fail (printf "[camunda][error] Optimize OIDC issuer type must be one of KEYCLOAK, MICROSOFT, or GENERIC; got %q from optimize.security.authentication.oidc.type (or global.identity.auth.type)." (include "optimize.effectiveAuthType" .)) }}
+  {{- end }}
+  {{/*
+  A component-scoped method=oidc switches Optimize's authentication on without
+  switching Identity's provisioning on with it: templates/identity/deployment.yaml
+  and templates/identity/configmap.yaml keep every client, secret and permission
+  they register behind global.identity.auth.enabled. A release that runs Identity
+  itself therefore starts an Identity that provisions nothing while Optimize
+  presents a client to it, and only the first login fails.
+
+  Scoped to a release that runs its own Identity: an Optimize release pointed at a
+  Management Identity elsewhere is the supported shape, and that Identity's own
+  release is where global.identity.auth.enabled has to be true.
+  */}}
+  {{- if and (eq (include "camundaPlatform.identityEnabled" .) "true") (not .Values.global.identity.auth.enabled) }}
+    {{- fail "[camunda][error] Optimize authenticates with OIDC (optimize.security.authentication.method=oidc) while global.identity.auth.enabled=false, and this release runs Management Identity itself (identity.enabled=true). Identity registers clients only when global.identity.auth.enabled=true, so the Optimize client this release presents is never provisioned and Optimize starts ready but cannot complete a login. Set global.identity.auth.enabled=true so this Identity provisions it, or deploy Optimize as its own release (global.topology.mode=optimize) against a Management Identity that already provisions its client." }}
+  {{- end }}
+  {{- $declarableEnvNames := splitList " " (include "optimize.declarableEnvNames" .) }}
+  {{- range $declared := ((dig "security" "authentication" "oidc" "envFromProvides" list .Values.optimize) | default list) }}
+    {{- if not (has $declared $declarableEnvNames) }}
+      {{- fail (printf "[camunda][error] optimize.security.authentication.oidc.envFromProvides names %q, which exempts nothing: only %s are variables this chart would otherwise have to resolve. Remove it, or correct it to the variable your optimize.envFrom source actually carries." $declared (join ", " $declarableEnvNames)) }}
+    {{- end }}
+  {{- end }}
+  {{/*
+  The declaration describes optimize.envFrom, so it means nothing without one: with no source the
+  named variable has nowhere to arrive from, and taking the declaration at face value would exempt
+  the guards while the container still reads the empty value this chart rendered. Rejected here
+  rather than silently ignored, so its author is not left believing a guard was answered.
+  */}}
+  {{- if and (not (empty (dig "security" "authentication" "oidc" "envFromProvides" list .Values.optimize))) (empty .Values.optimize.envFrom) }}
+    {{- fail (printf "[camunda][error] optimize.security.authentication.oidc.envFromProvides names %s, but optimize.envFrom is empty, so no source can carry it and Optimize would read the empty value this chart renders. Add the ConfigMap or Secret reference to optimize.envFrom, or drop the declaration and set the value through this chart's own keys." (join ", " (dig "security" "authentication" "oidc" "envFromProvides" list .Values.optimize))) }}
+  {{- end }}
+  {{/* Scoped to releases that configure Optimize's own identity, per the block comment above. */}}
+  {{- if or (eq $topologyMode "optimize") (eq (include "optimize.hasComponentScopedAuth" .) "true") }}
+    {{- if and (empty (include "optimize.effectiveAuthIssuer" .)) (empty (include "optimize.effectiveAuthIssuerBackendUrl" .)) (ne (include "optimize.identityIssuerMayComeFromEnv" .) "true") }}
+      {{- fail "[camunda][error] Optimize with OIDC authentication requires optimize.security.authentication.oidc.issuer (or global.identity.auth.issuer, or global.identity.auth.publicIssuerUrl), set to the exact \"iss\" claim your identity provider mints; Optimize validates it on every token and renders an empty issuer otherwise. An External Keycloak may leave the issuer empty, but then global.identity.keycloak.url.host (or an explicit issuerBackendUrl) must resolve the provider instead." }}
+    {{- end }}
+    {{- if and (empty (include "optimize.effectiveAuthJwksUrl" .)) (ne (include "optimize.jwksSuppliedByRelease" .) "true") }}
+      {{- fail (printf "[camunda][error] Optimize with OIDC authentication and optimize.security.authentication.oidc.type=%s requires optimize.security.authentication.oidc.jwksUrl (or global.identity.auth.jwksUrl), naming the endpoint Optimize fetches token signing keys from. Only KEYCLOAK has an endpoint layout to derive it from, and only while an issuerBackendUrl resolves to append it to, so this release renders an empty api.jwtSetUri and can validate no token. A release that supplies it itself is exempt: set a non-empty api.jwtSetUri in optimize.configuration, which replaces the file this chart renders, or in an optimize.extraConfiguration file, which Optimize imports after it, or name %s in optimize.env or in optimize.security.authentication.oidc.envFromProvides." (include "optimize.effectiveAuthType" .) (include "optimize.jwksEnvNames" .)) }}
+    {{- end }}
+    {{/*
+    A component-scoped Optimize identity switches on the identity env ConfigMap, which always states
+    CAMUNDA_IDENTITY_BASEURL. With no Identity URL on either side that value falls back to
+    camundaPlatform.identityURL's in-release default, http://<release>-identity:<port> - an address
+    that resolves only where this release runs Management Identity itself. A release that runs none
+    therefore renders a Service name nothing serves, and because Optimize contacts Identity for
+    authorizations rather than for token validation, a valid issuer and JWKS still let it start and
+    report ready; only the first authorization lookup fails.
+
+    Scoped the same way as the issuer and JWKS checks above, to a release that configures Optimize's
+    own identity. camundaPlatform.identityEnabled is already false in orchestration and optimize
+    modes, so a release that runs no Identity of its own is caught whichever mode put it in that
+    position.
+
+    The release may answer this itself, as with every other guard here: CAMUNDA_IDENTITY_BASEURL in
+    optimize.env, or named in optimize.security.authentication.oidc.envFromProvides, is the value the
+    container reads instead of the ConfigMap's, so there is nothing left for the chart to resolve.
+    */}}
+    {{- if and
+          (ne (include "camundaPlatform.identityEnabled" .) "true")
+          (empty (dig "identity" "service" "url" "" .Values.optimize))
+          (empty .Values.global.identity.service.url)
+          (ne (include "optimize.identityUrlMayComeFromEnv" .) "true") }}
+      {{- fail (printf "[camunda][error] Optimize configures its own identity but this release runs no Management Identity (identity.enabled=false, or global.topology.mode=orchestration or optimize), and neither optimize.identity.service.url nor global.identity.service.url names one. %s would fall back to this chart's in-release default, http://<release>-identity:<port>, which no Service in this release answers, so Optimize starts and reports ready while every authorization lookup fails. Set optimize.identity.service.url (or global.identity.service.url) to the Management Identity this release authenticates against. A release that supplies it itself is exempt: name %s in optimize.env, or in optimize.security.authentication.oidc.envFromProvides." (include "optimize.identityUrlEnvNames" .) (include "optimize.identityUrlEnvNames" .)) }}
+    {{- end }}
+  {{- end }}
+  {{/*
+  A Secret reference without a key matches neither branch of
+  camundaPlatform.normalizeSecretConfiguration, and the Optimize Deployment passes no
+  defaultSecretName, so the whole env var would be dropped rather than mis-set.
+
+  Dropped, not mis-set, is also why the release may answer this itself: with nothing of the chart's
+  emitted for that variable, an optimize.env entry - a valueFrom secretKeyRef naming the key
+  directly, say - or a declared envFrom variable is the only VALUES_OPTIMIZE_CLIENT_SECRET the
+  container sees, and such a release is authenticating today. Failing it unconditionally would turn
+  a working deployment into a failed upgrade over a key it does not need.
+  */}}
+  {{- $optimizeAuthSecret := include "optimize.effectiveAuthSecret" . | fromYaml }}
+  {{- if and $optimizeAuthSecret.existingSecret (empty $optimizeAuthSecret.existingSecretKey) (ne (include "optimize.clientSecretMayComeFromEnv" .) "true") }}
+    {{- fail (printf "[camunda][error] Optimize with OIDC authentication requires an existingSecretKey alongside its existingSecret; set optimize.security.authentication.oidc.secret.existingSecretKey (or global.identity.auth.optimize.secret.existingSecretKey), naming the key inside the Secret that holds the client secret. Without it %s is dropped from the Deployment entirely and Optimize starts with no client secret. A release that supplies it itself is exempt: name %s in optimize.env, or in optimize.security.authentication.oidc.envFromProvides." (include "optimize.clientSecretEnvNames" .) (include "optimize.clientSecretEnvNames" .)) }}
+  {{- end }}
 {{- end }}
 {{- if eq $topologyMode "hub" }}
   {{- if ne (include "webModeler.authMethod" .) "oidc" }}
@@ -77,6 +240,7 @@ Chart 15.x (Camunda 8.10) requires Helm v4 or later.
     {{- $_ := set $seenIds $client.id true }}
   {{- end }}
   {{- $seenRoles := dict "ManagementIdentity" true "Orchestration" true "Optimize" true "Web Modeler" true "Web Modeler Admin" true "Hub" true "Hub Admin" true "Analyst" true "Console" true "DevOps" true }}
+  {{- $seenTopologySecretEnvNames := dict }}
   {{- $legacyIds := list }}
   {{- if .Values.global.identity.auth.connectors.alwaysRegister }}
     {{- $legacyIds = append $legacyIds (include "connectors.authClientId" .) }}
@@ -107,6 +271,12 @@ Chart 15.x (Camunda 8.10) requires Helm v4 or later.
     {{- range $componentName := list "orchestration" "optimize" "connectors" }}
       {{- $component := get ($cluster.components | default dict) $componentName | default dict }}
       {{- if $component.enabled }}
+        {{- $secretEnvName := printf "VALUES_TOPOLOGY_%s_%s_SECRET" (include "camundaPlatform.topologyEnvToken" $cluster.id) (upper $componentName) }}
+        {{- $componentLabel := printf "global.topology.clusters[%s].components.%s" $cluster.id $componentName }}
+        {{- if hasKey $seenTopologySecretEnvNames $secretEnvName }}
+          {{- fail (printf "[camunda][error] %s and %s generate the same topology secret environment variable %s." (get $seenTopologySecretEnvNames $secretEnvName) $componentLabel $secretEnvName) }}
+        {{- end }}
+        {{- $_ := set $seenTopologySecretEnvNames $secretEnvName $componentLabel }}
         {{- if empty $component.clientId }}
           {{- fail (printf "[camunda][error] global.topology.clusters[%s].components.%s requires clientId when enabled." $cluster.id $componentName) }}
         {{- end }}
@@ -134,12 +304,61 @@ Chart 15.x (Camunda 8.10) requires Helm v4 or later.
         {{- end }}
       {{- end }}
     {{- end }}
+    {{- $seenTenantIds := dict }}
+    {{- range $tenant := dig "physicalTenants" list $cluster }}
+      {{- if empty $tenant.id }}
+        {{- fail (printf "[camunda][error] every global.topology.clusters[%s].physicalTenants entry requires id." $cluster.id) }}
+      {{- end }}
+      {{- if not (regexMatch "^[a-z0-9]{1,64}$" ($tenant.id | toString)) }}
+        {{- fail (printf "[camunda][error] global.topology.clusters[%s].physicalTenants id %q must be lowercase alphanumeric with a maximum length of 64, matching the runtime tenant id." $cluster.id $tenant.id) }}
+      {{- end }}
+      {{- if hasKey $seenTenantIds ($tenant.id | toString) }}
+        {{- fail (printf "[camunda][error] duplicate global.topology.clusters[%s].physicalTenants id %q." $cluster.id $tenant.id) }}
+      {{- end }}
+      {{- $_ := set $seenTenantIds ($tenant.id | toString) true }}
+      {{- $tenantOptimize := dig "components" "optimize" dict $tenant }}
+      {{- if $tenantOptimize.enabled }}
+        {{- $secretEnvName := printf "VALUES_TOPOLOGY_%s_TENANT_%s_OPTIMIZE_SECRET" (include "camundaPlatform.topologyEnvToken" $cluster.id) (include "camundaPlatform.topologyEnvToken" $tenant.id) }}
+        {{- $tenantLabel := printf "global.topology.clusters[%s].physicalTenants[%s]" $cluster.id $tenant.id }}
+        {{- if hasKey $seenTopologySecretEnvNames $secretEnvName }}
+          {{- fail (printf "[camunda][error] %s and %s generate the same topology secret environment variable %s." (get $seenTopologySecretEnvNames $secretEnvName) $tenantLabel $secretEnvName) }}
+        {{- end }}
+        {{- $_ := set $seenTopologySecretEnvNames $secretEnvName $tenantLabel }}
+        {{- if or (empty $tenantOptimize.clientId) (empty $tenantOptimize.audience) (empty $tenantOptimize.redirectUrl) }}
+          {{- fail (printf "[camunda][error] global.topology.clusters[%s].physicalTenants[%s].components.optimize requires clientId, audience, and redirectUrl when enabled." $cluster.id $tenant.id) }}
+        {{- end }}
+        {{- range $id := list $tenantOptimize.clientId $tenantOptimize.audience }}
+          {{- if hasKey $seenIds $id }}
+            {{- fail (printf "[camunda][error] duplicate topology client or audience id %q." $id) }}
+          {{- end }}
+          {{- $_ := set $seenIds $id true }}
+        {{- end }}
+        {{- if and (eq (include "camundaPlatform.authIssuerType" $) "KEYCLOAK") (ne (include "camundaPlatform.hasSecretConfig" (dict "config" $tenantOptimize)) "true") }}
+          {{- fail (printf "[camunda][error] global.topology.clusters[%s].physicalTenants[%s].components.optimize requires a complete secret configuration when Management Identity administers Keycloak." $cluster.id $tenant.id) }}
+        {{- end }}
+        {{- if $tenantOptimize.roleName }}
+          {{- if hasKey $seenRoles $tenantOptimize.roleName }}
+            {{- fail (printf "[camunda][error] duplicate or reserved topology role name %q." $tenantOptimize.roleName) }}
+          {{- end }}
+          {{- $_ := set $seenRoles $tenantOptimize.roleName true }}
+        {{- end }}
+      {{- end }}
+    {{- end }}
     {{- if and (dig "components" "connectors" "enabled" false $cluster) (not (dig "components" "orchestration" "enabled" false $cluster)) }}
       {{- fail (printf "[camunda][error] global.topology.clusters[%s] enables Connectors without Orchestration." $cluster.id) }}
     {{- end }}
   {{- end }}
 {{- end }}
-{{- $identityAuthEnabled := (or $identityEnabled .Values.global.identity.auth.enabled) }}
+{{/*
+Identity counting as "auth enabled" requires BOTH Identity to be reachable
+AND global.identity.auth.enabled to be set, which is what the guard's own
+error message tells the user. Computed with `or`, it treated Identity as
+auth-enabled whenever Identity or an external Identity URL was configured.
+*/}}
+{{- $identityAuthEnabled := false }}
+{{- if and $identityEnabled .Values.global.identity.auth.enabled }}
+  {{- $identityAuthEnabled = true }}
+{{- end }}
 
 {{/*
 Fail with a message if Multi-Tenancy is enabled and its requirements are not met which are:
@@ -209,6 +428,234 @@ Fail if there is no secondary storage type specified and if noSecondaryStorage i
   {{- if or (and $pcs.existingSecret (not $pcs.existingSecretKey)) (and $pcs.existingSecretKey (not $pcs.existingSecret)) }}
     {{- fail "[camunda][error] orchestration.hub.ping.credentials.clientSecret.secret.existingSecret and orchestration.hub.ping.credentials.clientSecret.secret.existingSecretKey must be set together" -}}
   {{- end }}
+{{- end }}
+
+{{/*
+NOTE: only the Orchestration Cluster reads the multi-region topology, so none of these
+constraints applies to a release that does not deploy it. Left ungated they would fail an
+install that merely carries the values, which is the same reason the orchestration
+constraints further down are gated.
+*/}}
+{{- if eq (include "camundaPlatform.orchestrationEnabled" .) "true" }}
+{{/*
+Fail if the multi-region topology is described in both places at once. Picking one
+silently would deploy a topology the other block does not describe, and the two are
+merged nowhere.
+*/}}
+{{- if and (eq (include "camundaPlatform.partitioningConfigured" (.Values.orchestration.partitioning | default dict)) "true") (eq (include "camundaPlatform.deprecatedMultiregionConfigured" (.Values.global.multiregion | default dict)) "true") }}
+  {{- fail "[camunda][error] orchestration.partitioning and global.multiregion are both configured. global.multiregion is deprecated; keep orchestration.partitioning and remove the global block." -}}
+{{- end }}
+
+{{- $partitioning := include "camundaPlatform.partitioning" $ | fromJson -}}
+{{- /* NOTE: camundaPlatform.labels and the pod template both pipe these maps through tpl,
+which templates the keys as well as the values, so the reserved names are looked up on the
+resolved maps. global.labels is rendered with a plain toYaml and stays raw. */ -}}
+{{- $resolvedCommonLabels := fromYaml (tpl (toYaml (.Values.global.commonLabels | default dict)) $) -}}
+{{- $resolvedPodLabels := fromYaml (tpl (toYaml (.Values.orchestration.podLabels | default dict)) $) -}}
+{{- $reservedZoneLabel := "camunda.io/zone" -}}
+{{- if and (eq $partitioning.scheme "zone-aware") (or
+  (hasKey $resolvedCommonLabels $reservedZoneLabel)
+  (hasKey $resolvedPodLabels $reservedZoneLabel)
+) }}
+  {{- fail (printf "[camunda][error] %s is managed by the chart with the zone-aware scheme and cannot be configured in global.commonLabels or orchestration.podLabels." $reservedZoneLabel) }}
+{{- end }}
+{{- $reservedGenerationLabel := "camunda.io/broker-generation" -}}
+{{- if or
+  (hasKey (.Values.global.labels | default dict) $reservedGenerationLabel)
+  (hasKey $resolvedCommonLabels $reservedGenerationLabel)
+  (hasKey $resolvedPodLabels $reservedGenerationLabel)
+}}
+  {{- fail (printf "[camunda][error] %s is managed by the chart and cannot be configured in global.labels, global.commonLabels, or orchestration.podLabels." $reservedGenerationLabel) }}
+{{- end }}
+{{- $partitioningKey := $partitioning.sourceKey -}}
+{{- if and $partitioning.keepUnzonedBrokers (eq $partitioning.scheme "zone-aware") }}
+  {{- $orchRaw := .Values.orchestration.partitioning | default dict -}}
+  {{- $zoneCountRaw := get $orchRaw "numberOfZones" | toString -}}
+  {{- $zoneIndexRaw := get $orchRaw "zoneIndex" | toString -}}
+  {{- $clusterSizeRaw := .Values.orchestration.clusterSize | toString -}}
+  {{- if or (not (regexMatch "^[0-9]+$" $zoneCountRaw)) (le (int $zoneCountRaw) 0) }}
+    {{- fail "[camunda][error] orchestration.partitioning.numberOfZones must be a positive integer when orchestration.partitioning.keepUnzonedBrokers=true." -}}
+  {{- end }}
+  {{- if not (regexMatch "^[0-9]+$" $zoneIndexRaw) }}
+    {{- fail "[camunda][error] orchestration.partitioning.zoneIndex must be an integer greater than or equal to zero when orchestration.partitioning.keepUnzonedBrokers=true." -}}
+  {{- end }}
+  {{- if ge (int $zoneIndexRaw) (int $zoneCountRaw) }}
+    {{- fail "[camunda][error] orchestration.partitioning.zoneIndex must be less than orchestration.partitioning.numberOfZones when orchestration.partitioning.keepUnzonedBrokers=true." -}}
+  {{- end }}
+  {{- if or (not (regexMatch "^[0-9]+$" $clusterSizeRaw)) (le (int $clusterSizeRaw) 0) }}
+    {{- fail "[camunda][error] orchestration.clusterSize must be a positive integer when orchestration.partitioning.keepUnzonedBrokers=true." -}}
+  {{- end }}
+  {{- if ne (mod (int $clusterSizeRaw) (int $zoneCountRaw)) 0 }}
+    {{- fail "[camunda][error] orchestration.clusterSize must be divisible by orchestration.partitioning.numberOfZones when orchestration.partitioning.keepUnzonedBrokers=true." -}}
+  {{- end }}
+{{- end }}
+
+{{/*
+Fail if the zone topology is described without selecting the zone-aware scheme. Nothing else
+rejects it: the zoned branches are all entered on the mode, so the zone list would be
+read by the contact-points gate alone, which suppresses the generated bootstrap list
+while the rest of the render stays single-region. The cluster then starts with no peers
+and no zone awareness, and helm reports success.
+*/}}
+{{- if and (ne $partitioning.scheme "zone-aware") (or (ne $partitioning.zone "") (gt (len $partitioning.zones) 0)) }}
+  {{- fail (printf "[camunda][error] %s.zone and %s.zones require %s.scheme=zone-aware." $partitioningKey $partitioningKey $partitioningKey) -}}
+{{- end }}
+
+{{/*
+Fail if the zone-aware scheme is combined with a cluster size or replication factor it derives.
+Both are summed from the zone list, so a value left over from a single-region release
+would be discarded in silence, and the StatefulSet would scale to the local zone's
+broker count without the diff naming the setting it ignored.
+*/}}
+{{- if eq $partitioning.scheme "zone-aware" }}
+  {{/*
+  NOTE: rejects a value that contradicts the zone list, not any value at all. Helm cannot
+  distinguish a supplied default from the chart default, so a key still sitting on its
+  default is left alone; restating the derived total is allowed and self-documenting.
+  Both checks are skipped while keepUnzonedBrokers is set: until the numbered generation
+  is removed, these two values still describe it. clusterSize divided by regions is the
+  retained StatefulSet's replica count and replicationFactor is rendered into its
+  ConfigMap, so forcing them to the zone totals would resize and restart it.
+  Comparing every value against the derived one would reject every install, since the
+  default differs from the zone sum on any real topology. The 3s below are those chart
+  defaults. Helm exposes no chart-default view (.Chart carries Chart.yaml, and .Files
+  excludes values.yaml and values.schema.json), so they cannot be read at render time;
+  TestZonedModeGuardMatchesChartDefaults fails if values.yaml and these literals desync.
+  */}}
+  {{- $size := int .Values.orchestration.clusterSize -}}
+  {{- $derivedSize := int (include "orchestration.clusterSize" .) -}}
+  {{- if and (not $partitioning.keepUnzonedBrokers) (ne $size 3) (ne $size $derivedSize) }}
+    {{- fail (printf "[camunda][error] orchestration.clusterSize is %d but %s.zones sums to %d brokers. With the zone-aware scheme the zone list is authoritative; remove the key or make it agree." $size $partitioningKey $derivedSize) -}}
+  {{- end }}
+  {{- $factor := int .Values.orchestration.replicationFactor -}}
+  {{- $derivedFactor := int (include "orchestration.replicationFactor" .) -}}
+  {{- if and (not $partitioning.keepUnzonedBrokers) (ne $factor 3) (ne $factor $derivedFactor) }}
+    {{- fail (printf "[camunda][error] orchestration.replicationFactor is %d but %s.zones sums to %d replicas. With the zone-aware scheme the zone list is authoritative; remove the key or make it agree." $factor $partitioningKey $derivedFactor) -}}
+  {{- end }}
+{{- end }}
+
+{{/*
+Fail if the zone-aware scheme is combined with the round-robin numbering it replaces.
+The guard stands down while keepUnzonedBrokers is set, where the pair still describes the
+retained round-robin generation.
+*/}}
+{{- if and (eq $partitioning.scheme "zone-aware") (not $partitioning.keepUnzonedBrokers) (or (ne (int $partitioning.numberOfZones) 1) (ne (int $partitioning.zoneIndex) 0)) }}
+  {{- fail (printf "[camunda][error] %s.numberOfZones and %s.zoneIndex cannot be used with the zone-aware scheme; the zone list describes the topology instead." $partitioningKey $partitioningKey) -}}
+{{- end }}
+
+{{/*
+Fail if either block carries the other block's spelling of the numbering pair. Reached with
+--skip-schema-validation, where additionalProperties does not run.
+*/}}
+{{- $renamed := dict "regions" "numberOfZones" "regionId" "zoneIndex" -}}
+{{- $orchRaw := .Values.orchestration.partitioning | default dict -}}
+{{- $globalRaw := .Values.global.multiregion | default dict -}}
+{{- range $deprecated, $current := $renamed }}
+  {{- if hasKey $orchRaw $deprecated }}
+    {{- fail (printf "[camunda][error] orchestration.partitioning.%s was renamed to orchestration.partitioning.%s." $deprecated $current) -}}
+  {{- end }}
+  {{- if hasKey $globalRaw $current }}
+    {{- fail (printf "[camunda][error] global.multiregion.%s does not exist; the deprecated block spells it global.multiregion.%s, and %s lives under orchestration.partitioning." $current $deprecated $current) -}}
+  {{- end }}
+{{- end }}
+
+{{/*
+Fail if the zone count is below 1, under any scheme. Round-robin divides the cluster
+size by it and numbers node IDs with it; zone-aware requires it to be exactly 1, and the
+guard above cannot see a sub-1 value because the resolver has already normalised it.
+
+NOTE: the count is read from the raw values, not from the resolved dict. Both blocks
+default it through "| default 1", and 0 is falsy in Go templates, so a typed 0 reaches
+the resolver as 1; a sub-1 count on its own also reads as an unconfigured block and falls
+through to global.multiregion. Neither is visible after resolution.
+
+NOTE: orchestration.partitioning is scanned unconditionally because a sub-1 count there
+is what makes the block read as unconfigured in the first place. The deprecated block is
+scanned only when it is the one in effect, so an inert leftover cannot fail a render that
+is driven entirely by orchestration.partitioning.
+*/}}
+{{- $rawBlocks := list (dict "key" "orchestration.partitioning" "field" "numberOfZones" "raw" $orchRaw) -}}
+{{- if eq $partitioningKey "global.multiregion" -}}
+  {{- $rawBlocks = append $rawBlocks (dict "key" "global.multiregion" "field" "regions" "raw" $globalRaw) -}}
+{{- end -}}
+{{- range $block := $rawBlocks }}
+  {{- if hasKey $block.raw $block.field }}
+    {{- $count := get $block.raw $block.field -}}
+    {{- if lt (int $count) 1 }}
+      {{- fail (printf "[camunda][error] %s.%s is %d; a cluster spans at least one zone." $block.key $block.field (int $count)) -}}
+    {{- end }}
+  {{- end }}
+{{- end }}
+
+{{/*
+Fail if the round-robin numbering cannot describe a consistent cluster. Node IDs are
+derived as "<ordinal> * numberOfZones + zoneIndex", so a zone indexed outside its own
+range takes the node IDs of another zone.
+
+NOTE: a clusterSize the zone count does not divide is the same class of fault and is
+deliberately not rejected here; see #7196.
+*/}}
+{{- if ne $partitioning.scheme "zone-aware" }}
+  {{- $zoneCount := int $partitioning.numberOfZones -}}
+  {{- $zoneIndex := int $partitioning.zoneIndex -}}
+  {{- if or (lt $zoneIndex 0) (ge $zoneIndex $zoneCount) }}
+    {{- fail (printf "[camunda][error] %s.%s is %d but %s.%s is %d; %s addresses this zone and must be between 0 and %d, or its brokers take the node IDs of another zone." $partitioningKey $partitioning.indexKey $zoneIndex $partitioningKey $partitioning.countKey $zoneCount $partitioning.indexKey (sub $zoneCount 1)) -}}
+  {{- end }}
+{{- end }}
+
+{{/*
+Fail if a zone name is invalid or repeats, or if a zone claims more replicas than it has brokers.
+
+A duplicate name collapses two zones into one member-ID namespace, which is the broker
+collision this mode exists to prevent. A zone cannot hold more replicas of a partition
+than it has brokers to hold them on, and the sum would then promise a replication factor
+no quorum can reach.
+*/}}
+{{- if eq $partitioning.scheme "zone-aware" }}
+  {{- $seen := list -}}
+  {{- range $partitioning.zones -}}
+    {{- if not (regexMatch "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$" .name) }}
+      {{- fail (printf "[camunda][error] %s.zones entry %q must be an RFC 1123 label." $partitioningKey .name) -}}
+    {{- end }}
+    {{- if gt (len .name) 32 }}
+      {{- fail (printf "[camunda][error] %s.zones entry %q must be no longer than 32 characters." $partitioningKey .name) -}}
+    {{- end }}
+    {{- if gt (int .numberOfBrokers) 999 }}
+      {{- fail (printf "[camunda][error] %s.zones entry %q cannot configure more than 999 brokers." $partitioningKey .name) -}}
+    {{- end }}
+    {{- if has .name $seen }}
+      {{- fail (printf "[camunda][error] %s.zones declares %q twice; zone names are broker member ID prefixes and must be unique." $partitioningKey .name) -}}
+    {{- end }}
+    {{- $seen = append $seen .name -}}
+    {{- if gt (int .numberOfReplicas) (int .numberOfBrokers) }}
+      {{- fail (printf "[camunda][error] %s.zones entry %q asks for %d replicas on %d brokers; a zone cannot hold more replicas than it has brokers." $partitioningKey .name (int .numberOfReplicas) (int .numberOfBrokers)) -}}
+    {{- end }}
+  {{- end }}
+{{- end }}
+
+{{/*
+Fail if the zone-aware scheme does not describe the zone this release belongs to. The zone list
+is what assigns broker node IDs and partition replicas, so a release whose own zone is
+missing from it would take the IDs of the first zone and collide with it.
+*/}}
+{{- if eq $partitioning.scheme "zone-aware" }}
+  {{- $zone := $partitioning.zone -}}
+  {{- if not $zone }}
+    {{- fail (printf "[camunda][error] %s.zone must name the zone this release is deployed to when using the zone-aware scheme." $partitioningKey) -}}
+  {{- end }}
+  {{- $names := list -}}
+  {{- range $partitioning.zones -}}
+    {{- $names = append $names .name -}}
+  {{- end -}}
+  {{- if not (has $zone $names) }}
+    {{- fail (printf "[camunda][error] %s.zone %q is not declared in %s.zones (%s)." $partitioningKey $zone $partitioningKey (join ", " $names)) -}}
+  {{- end }}
+{{- end }}
+
+{{- if and $partitioning.keepUnzonedBrokers (ne $partitioning.scheme "zone-aware") }}
+  {{- fail (printf "[camunda][error] %s.keepUnzonedBrokers requires %s.scheme=zone-aware." $partitioningKey $partitioningKey) -}}
+{{- end }}
+
 {{- end }}
 
 {{/*
@@ -382,6 +829,71 @@ gRPC server to crash on startup. Fail loudly at render time instead.
   {{- end }}
 {{- end }}
 
+{{/* Optimize server TLS is chart-managed only.
+     Governs the SERVER-side identity only; the client-side ES/OS truststore
+     (`optimize.database.*.tls.secret.existingSecret`) is a separate surface. */}}
+{{- if .Values.optimize.enabled }}
+  {{/* Optimize ignores server.ssl.* -- OptimizeTomcatConfig always installs its
+       own HTTPS connector from container.keystore.* -- and Spring Boot reacting
+       to server.ssl.enabled adds a SECOND SSLHostConfig for host _default_,
+       which Tomcat rejects with "Host names must be unique" at startup. These
+       keys cannot enable TLS, so accepting them only produces a crash-looping
+       pod; fail the render with the working alternative instead. */}}
+  {{- $sslEnvNames := list -}}
+  {{- range $e := (.Values.optimize.env | default list) -}}
+    {{/* Upper-cased before matching: Spring's relaxed binding maps
+         server_ssl_enabled just as it maps SERVER_SSL_ENABLED, so a
+         case-sensitive check would let the same footgun through. */}}
+    {{- if hasPrefix "SERVER_SSL" (upper ($e.name | default "")) -}}
+      {{- $sslEnvNames = append $sslEnvNames $e.name -}}
+    {{- end -}}
+  {{- end }}
+  {{- if $sslEnvNames }}
+    {{- $errorMessage := printf "%s %s %s"
+        (printf "[camunda][error] optimize.env sets [%s], which the Optimize server does not support." (join ", " $sslEnvNames))
+        "Optimize builds its TLS connector from container.keystore.* and never reads server.ssl.*; setting these makes Tomcat abort at startup with \"Multiple SSLHostConfig elements were provided for the host name [_default_]\"."
+        "Set global.tls.optimize.enabled with global.tls.optimize.cert.secret.existingSecret instead; that is the only path the chart's probe schemes and Ingress backend follow. Hand-wiring CAMUNDA_OPTIMIZE_CONTAINER_KEYSTORE_LOCATION / CAMUNDA_OPTIMIZE_CONTAINER_KEYSTORE_PASSWORD via optimize.env also works, but then you must set optimize.{startup,readiness,liveness}Probe.scheme to HTTPS yourself."
+    -}}
+    {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
+  {{- end }}
+  {{- if eq (include "camundaPlatform.optimizeDeclaresServerSsl" .) "true" }}
+    {{- $errorMessage := printf "%s %s"
+        "[camunda][error] optimize.configuration or optimize.extraConfiguration declares server.ssl, which the Optimize server does not support."
+        "Optimize builds its TLS connector from container.keystore.* and never reads server.ssl.*; setting it makes Tomcat abort at startup on a duplicate SSLHostConfig. Use global.tls.optimize.* instead, or declare container.keystore.location / container.keystore.password."
+    -}}
+    {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
+  {{- end }}
+  {{- if .Values.global.tls.optimize.enabled }}
+    {{- if not .Values.global.tls.optimize.cert.secret.existingSecret }}
+      {{- $errorMessage := printf "%s %s"
+          "[camunda][error] Optimize server TLS is enabled but no server cert is configured."
+          "Set global.tls.optimize.cert.secret.existingSecret to a Secret holding a PKCS12 keystore so the chart mounts it. To manage the keystore yourself instead, leave global.tls.optimize.enabled: false, mount it through optimize.extraVolumes / extraVolumeMounts with optimize.env entries for CAMUNDA_OPTIMIZE_CONTAINER_KEYSTORE_LOCATION / CAMUNDA_OPTIMIZE_CONTAINER_KEYSTORE_PASSWORD, and set optimize.{startup,readiness,liveness}Probe.scheme to HTTPS -- the chart cannot detect that transport on its own."
+      -}}
+      {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
+    {{- end }}
+    {{/* `type` and `keyAlias` were removed from values.yaml: Optimize loads a
+         PKCS12 keystore only (OptimizeTomcatConfig#getSslHostConfig sets a
+         keystore file plus password, with the certificate created as
+         Type.UNDEFINED), so there is no PEM path and nowhere to send an alias.
+         A --set of either would otherwise be silently ignored. */}}
+    {{- $t := .Values.global.tls.optimize.type | default "pkcs12" -}}
+    {{- if ne $t "pkcs12" }}
+      {{- $errorMessage := printf "%s %s"
+          (printf "[camunda][error] global.tls.optimize.type=%q is not supported for the Optimize server." $t)
+          "Optimize loads its server cert from a PKCS12 keystore only, so this key was removed. Package the cert/key with `openssl pkcs12 -export` and drop global.tls.optimize.type."
+      -}}
+      {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
+    {{- end }}
+    {{- if .Values.global.tls.optimize.keyAlias }}
+      {{- $errorMessage := printf "%s %s"
+          "[camunda][error] global.tls.optimize.keyAlias is not supported for the Optimize server."
+          "Optimize exposes no key-alias setting, so Tomcat selects the key from the keystore and this key was removed. Provide a keystore holding exactly the intended key and drop global.tls.optimize.keyAlias."
+      -}}
+      {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
+    {{- end }}
+  {{- end }}
+{{- end }}
+
 {{/*
 Fail with a message if the auth type is not in the enums (KEYCLOAK, MICROSOFT, or GENERIC).
 */}}
@@ -488,6 +1000,29 @@ Non-fatal deprecation/config warnings. Consumed by NOTES.txt (helm install/upgra
 configmap-warnings.yaml, which renders the "<release>-warnings" ConfigMap on the GitOps path
 (helm template / Argo CD / Flux). Feed new deprecations here so they reach both channels.
 */}}
+{{/*
+[camunda-platform] Warning text for a TLS toggle the chart cannot resolve because
+the winning YAML config value depends on runtime state. Shared by every
+component that derives probe schemes or ingress backend protocols from
+camundaPlatform.appConfigBoolState, so the diagnosis and the two exits are worded
+once. Returns the message only; the caller emits it inside
+camunda.constraints.warnings.
+Usage:
+  {{ include "camunda.constraints.unresolvedTLSConfigWarning" (dict
+    "component" "Orchestration REST"
+    "valuesPrefix" "orchestration"
+    "dottedPath" "server.ssl.enabled"
+    "flag" "global.tls.orchestration.rest.enabled"
+    "envName" "SERVER_SSL_ENABLED") }}
+*/}}
+{{- define "camunda.constraints.unresolvedTLSConfigWarning" -}}
+  {{- printf "%s %s %s"
+      "[camunda][warning]"
+      (printf "%s.configuration or %s.extraConfiguration sets '%s' to a runtime-dependent value, such as a Spring property placeholder or a value inside a spring.config.activate-conditioned YAML document, which cannot be evaluated while templating." .valuesPrefix .valuesPrefix .dottedPath)
+      (printf "The chart therefore derives plaintext for %s, so probe schemes and ingress backend protocols are rendered for HTTP while the listener may start on TLS, which installs cleanly and then fails at connection time. Set %s: true, or add a literal %s.env entry for %s, to make the transport explicit." .component .flag .valuesPrefix .envName)
+  -}}
+{{- end -}}
+
 {{- define "camunda.constraints.warnings" }}
   {{- $hubUpgradePhase := include "camundaHub.upgradePhase" . }}
   {{- if eq $hubUpgradePhase "quiesce" }}
@@ -611,6 +1146,16 @@ The following values inside your values.yaml need to be set but were not:
         (printf "SECURITY: inlineSecret is set in: [%s]." (join ", " $inlineSecretSections))
         "This stores secrets as plain-text in the Helm values and is NOT suitable for production use."
         "For production environments, please use Kubernetes Secrets with 'secret.existingSecret' instead."
+    -}}
+    {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+  {{- end }}
+
+  {{- if and .Values.optimize.enabled (eq (include "camundaPlatform.optimizeServerTLSEnabled" .) "true") (ne (include "camundaPlatform.hasCaBundle" .) "true") -}}
+    {{- $warningMessage := printf "%s %s %s %s"
+        "[camunda][warning]"
+        "Optimize server TLS is enabled but global.tls.caBundle is not set."
+        "If the Optimize cert is self-signed or from a private/internal CA, in-cluster Java callers will fall back to the JVM default truststore and fail TLS handshakes."
+        "Set global.tls.caBundle.secret.existingSecret to the CA bundle."
     -}}
     {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
   {{- end }}
@@ -755,7 +1300,7 @@ The following values inside your values.yaml need to be set but were not:
        protocols and in-cluster client endpoint schemes from
        camundaPlatform.orchestrationRESTTLSEnabled / ...GRPCTLSEnabled. Those read
        orchestration.env, global.tls.orchestration.*, and nested YAML keys in
-       orchestration.{configuration,extraConfiguration}. Two forms stay
+       orchestration.{configuration,extraConfiguration}. Three forms stay
        unreadable at render time; warn rather than derive plaintext silently. */}}
   {{- if .Values.orchestration.enabled }}
     {{- $tlsProps := list
@@ -807,9 +1352,29 @@ The following values inside your values.yaml need to be set but were not:
           {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
         {{- end }}
       {{- end }}
+
+      {{/* (W3) Runtime state controls the config value, so the chart cannot resolve
+             it and keeps deriving plaintext.
+             Only flagged while the derivation resolved to plaintext, so an explicit
+             flag or env entry that already settles the transport never warns. */}}
+      {{- if ne $prop.state "true" }}
+        {{- $configState := include "camundaPlatform.appConfigBoolState" (dict
+            "configuration" $.Values.orchestration.configuration
+            "extraConfiguration" $.Values.orchestration.extraConfiguration
+            "path" $prop.path) }}
+        {{- if eq $configState "unresolved" }}
+          {{- $warningMessage := include "camunda.constraints.unresolvedTLSConfigWarning" (dict
+              "component" (printf "Orchestration %s" $prop.proto)
+              "valuesPrefix" "orchestration"
+              "dottedPath" (join "." $prop.path)
+              "flag" $prop.flag
+              "envName" $prop.envName) }}
+          {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+        {{- end }}
+      {{- end }}
     {{- end }}
 
-    {{/* (W3) The split /orchestration Ingress forces backend-protocol: HTTPS over
+    {{/* (W4) The split /orchestration Ingress forces backend-protocol: HTTPS over
            any inherited annotation. Correct (an HTTP backend against a TLS
            listener is SUPPORT-33090) but silent, and operators who set this
            annotation by hand set it deliberately. */}}
@@ -829,8 +1394,8 @@ The following values inside your values.yaml need to be set but were not:
   {{/* Connectors TLS detection guardrails: probe schemes and the in-cluster
        Connectors URL are derived from camundaPlatform.connectorsTLSEnabled, which
        reads connectors.env, global.tls.connectors.enabled, and nested YAML keys in
-       connectors.{configuration,extraConfiguration}. Warn about the two forms it
-       cannot read rather than deriving plaintext silently. */}}
+       connectors.{configuration,extraConfiguration}. Warn about the three forms
+       it cannot read rather than deriving plaintext silently. */}}
   {{- if .Values.connectors.enabled }}
     {{- $connectorsTLS := include "camundaPlatform.connectorsTLSEnabled" . }}
 
@@ -874,6 +1439,24 @@ The following values inside your values.yaml need to be set but were not:
         {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
       {{- end }}
     {{- end }}
+
+    {{/* (W3) Runtime state controls the config value, so the chart cannot resolve
+           it and keeps deriving plaintext. */}}
+    {{- if ne $connectorsTLS "true" }}
+      {{- $configState := include "camundaPlatform.appConfigBoolState" (dict
+          "configuration" .Values.connectors.configuration
+          "extraConfiguration" .Values.connectors.extraConfiguration
+          "path" (list "server" "ssl" "enabled")) }}
+      {{- if eq $configState "unresolved" }}
+        {{- $warningMessage := include "camunda.constraints.unresolvedTLSConfigWarning" (dict
+            "component" "Connectors"
+            "valuesPrefix" "connectors"
+            "dottedPath" "server.ssl.enabled"
+            "flag" "global.tls.connectors.enabled"
+            "envName" "SERVER_SSL_ENABLED") }}
+        {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+      {{- end }}
+    {{- end }}
   {{- end }}
 
   {{/* Warn when Orchestration server TLS is enabled but no caBundle is set.
@@ -912,6 +1495,54 @@ The following values inside your values.yaml need to be set but were not:
     {{- end }}
   {{- end }}
 
+  {{- if and .Values.global.gateway.enabled (not .Values.global.gateway.external) }}
+    {{- if and .Values.optimize.enabled (eq (include "camundaPlatform.optimizeServerTLSEnabled" .) "true") }}
+      {{- $warningMessage := printf "%s %s %s"
+          "[camunda][warning]"
+          "Optimize TLS is enabled (the Optimize pod now serves HTTPS only), but the chart's Gateway API HTTPRoute forwards plain HTTP to the Optimize Service's port."
+          "Inbound routing to the Optimize UI and REST API will break until you configure a BackendTLSPolicy (Gateway API v1.0+) targeting the Optimize Service, so the gateway re-encrypts traffic to the TLS-only pod."
+      -}}
+      {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+    {{- end }}
+  {{- end }}
+
+  {{- if or (eq (include "camundaPlatform.nginxCompatHTTPInjecting" .) "true") (eq (include "camundaPlatform.nginxCompatGRPCInjecting" .) "true") }}
+    {{- $warningMessage := printf "%s %s %s"
+        "[camunda][warning]"
+        "DEPRECATION: global.compatibility.nginx.renderAnnotations is enabled, so the chart still injects the ingress-nginx annotations it used to ship as values defaults. They render whatever ingress controller you run, and only ingress-nginx reads them."
+        "The shim is removed in the next major. Set whatever your controller needs through global.ingress.annotations and orchestration.ingress.grpc.annotations, then set global.compatibility.nginx.renderAnnotations to false."
+    -}}
+    {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+  {{- end }}
+
+  {{- $httpTLSComponents := list }}
+  {{- if eq (include "camundaPlatform.orchestrationHTTPIngressRendered" .) "true" }}
+    {{- $httpTLSComponents = append $httpTLSComponents "the Orchestration REST server" }}
+  {{- end }}
+  {{- if eq (include "camundaPlatform.connectorsHTTPIngressRendered" .) "true" }}
+    {{- $httpTLSComponents = append $httpTLSComponents "Connectors" }}
+  {{- end }}
+  {{- if eq (include "camundaPlatform.optimizeHTTPIngressRendered" .) "true" }}
+    {{- $httpTLSComponents = append $httpTLSComponents "Optimize" }}
+  {{- end }}
+  {{- if and $httpTLSComponents (ne .Values.global.ingress.className "nginx") }}
+    {{- $warningMessage := printf "%s %s %s"
+        "[camunda][warning]"
+        (printf "Upstream TLS is enabled for %s, so the chart annotates the Ingress with nginx.ingress.kubernetes.io/backend-protocol: HTTPS, but global.ingress.className is %q rather than nginx." (join ", " $httpTLSComponents) .Values.global.ingress.className)
+        "Only ingress-nginx reads that annotation, so on another controller the upstream stays plaintext and routing to the TLS-only pod breaks. Set your controller's equivalent, for example projectcontour.io/upstream-protocol.tls on the target Service with Contour."
+    -}}
+    {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+  {{- end }}
+
+  {{- if and (eq (include "camundaPlatform.grpcIngressRendered" .) "true") (eq (include "camundaPlatform.orchestrationGRPCTLSEnabled" .) "true") (ne .Values.orchestration.ingress.grpc.className "nginx") }}
+    {{- $warningMessage := printf "%s %s %s"
+        "[camunda][warning]"
+        (printf "Upstream TLS is enabled for the Orchestration gRPC server, so the chart annotates the gRPC Ingress with nginx.ingress.kubernetes.io/backend-protocol: GRPCS, but orchestration.ingress.grpc.className is %q rather than nginx." .Values.orchestration.ingress.grpc.className)
+        "Only ingress-nginx reads that annotation, so on another controller the upstream stays plaintext and Zeebe gRPC breaks. Set your controller's equivalent, for example projectcontour.io/upstream-protocol.h2 on the Orchestration Service with Contour."
+    -}}
+    {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+  {{- end }}
+
   {{/* Warn when webModeler pusher secret is auto-generated */}}
   {{- if eq (include "camundaHub.webModelerEnabled" .) "true" }}
     {{- $pusher := mustMergeOverwrite (deepCopy .Values.webModeler.restapi.pusher) (.Values.camundaHub.restapi.pusher | default dict) }}
@@ -934,6 +1565,60 @@ The following values inside your values.yaml need to be set but were not:
           "Auto-generation will be removed in a future release."
       -}}
       {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+    {{- end }}
+  {{- end }}
+
+  {{- if eq (include "camundaPlatform.deprecatedMultiregionConfigured" (.Values.global.multiregion | default dict)) "true" }}
+    {{- $warningMessage := printf "%s %s %s %s"
+        "[camunda][warning]"
+        "DEPRECATION: \"global.multiregion.*\" is deprecated and will be removed in chart v16 (Camunda 8.11)."
+        "Only the Orchestration Cluster reads these keys, so they moved to \"orchestration.partitioning.*\", where regions is now numberOfZones and regionId is now zoneIndex."
+        "Move the block and remove the global one; setting both fails the render."
+    -}}
+    {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+  {{- end }}
+
+  {{- if .Values.orchestration.profiles.broker }}
+    {{- if eq (include "orchestration.zoneAware" .) "true" }}
+      {{- $warningMessage := printf "%s %s %s"
+          "[camunda][warning]"
+          "\"orchestration.partitioning.scheme\" is fixed for the life of the cluster: zone-aware brokers are identified by the composite \"<zone>_<index>\", round-robin ones by a plain node ID."
+          "Switching an existing release between the two re-identifies every broker against Raft state written under its old ID. To convert one in place, retain the round-robin brokers with \"orchestration.partitioning.keepUnzonedBrokers=true\" and follow the zone-aware migration procedure."
+      -}}
+      {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+    {{- end }}
+    {{- if and (eq (include "orchestration.zoneAware" .) "true") .Values.orchestration.configuration }}
+      {{- $warningMessage := printf "%s %s %s"
+          "[camunda][warning]"
+          "\"orchestration.configuration\" replaces the whole generated application.yaml, so the zone-aware partitioning block, the derived cluster size and replication factor and the generated bootstrap contact points are NOT applied; the Kubernetes resources stay zoned while the broker reads the supplied configuration."
+          "Supply every zoned cluster key yourself, or use \"orchestration.extraConfiguration\" to override additively and keep the generated block."
+      -}}
+      {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+    {{- end }}
+    {{- if and (eq (include "orchestration.zoneAware" .) "true") (include "camundaPlatform.partitioning" . | fromJson).keepUnzonedBrokers .Values.orchestration.podDisruptionBudget.enabled }}
+      {{- $warningMessage := printf "%s %s %s"
+          "[camunda][warning]"
+          "While \"orchestration.partitioning.keepUnzonedBrokers\" is set, the retained and zoned broker generations are covered by one PodDisruptionBudget each, so voluntary disruption can evict one broker from each generation at the same time while both share a single Raft quorum."
+          "Suspend node drains, cluster autoscaling and other eviction-producing maintenance for the duration of the coexistence window."
+      -}}
+      {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+    {{- end }}
+    {{- if eq (include "camundaPlatform.spansFailureDomains" .) "true" }}
+      {{- if and (eq (include "orchestration.zoneAware" .) "true") (include "camundaPlatform.partitioning" . | fromJson).keepUnzonedBrokers }}
+      {{- $warningMessage := printf "%s %s %s"
+          "[camunda][warning]"
+          "This deployment spans more than one failure domain. The generated configuration includes contact points for this release's local zoned brokers and, during migration, retained numbered brokers."
+          "To discover brokers in other zones, set the complete local and remote contact-point list through CAMUNDA_CLUSTER_INITIALCONTACTPOINTS in \"orchestration.env\"."
+      -}}
+      {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+      {{- else }}
+      {{- $warningMessage := printf "%s %s %s"
+          "[camunda][warning]"
+          "This deployment spans more than one failure domain, so the chart cannot generate the broker bootstrap list: set CAMUNDA_CLUSTER_INITIALCONTACTPOINTS through \"orchestration.env\"."
+          "List every broker as <pod>.<headless-service>.<namespace>.svc.cluster.local:26502, comma-separated."
+      -}}
+      {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+      {{- end }}
     {{- end }}
   {{- end }}
 
@@ -1040,12 +1725,6 @@ The following values inside your values.yaml need to be set but were not:
     {{ include "camundaPlatform.keyDeprecated" (dict
       "condition" (ne (.Values.orchestration.ioThreadCount | toString) "3")
       "oldName" "orchestration.ioThreadCount" "migration" $orchestrationExtra) }}
-    {{ include "camundaPlatform.keyDeprecated" (dict
-      "condition" (ne (.Values.orchestration.partitionCount | toString) "3")
-      "oldName" "orchestration.partitionCount" "migration" $orchestrationExtra) }}
-    {{ include "camundaPlatform.keyDeprecated" (dict
-      "condition" (ne (.Values.orchestration.replicationFactor | toString) "3")
-      "oldName" "orchestration.replicationFactor" "migration" $orchestrationExtra) }}
     {{ include "camundaPlatform.keyDeprecated" (dict
       "condition" (ne (.Values.orchestration.history.delayBetweenRuns | toString) "2000")
       "oldName" "orchestration.history.delayBetweenRuns" "migration" $orchestrationExtra) }}
@@ -1306,113 +1985,16 @@ Gateway namespace and createGatewayResource are mutually exclusive.
 
 {{/*
 *******************************************************************************
-Ingress and Gateway API should not be enabled at the same time.
+Combined web Ingress and Gateway API are mutually exclusive.
 *******************************************************************************
 */}}
 {{- if and .Values.global.gateway.enabled .Values.global.ingress.enabled }}
   {{- $errorMessage := printf "[camunda][error] %s %s"
-      "Gateway API and Ingress cannot both be enabled at the same time."
-      "Please ensure that either \"global.gateway.enabled: true\" or \"global.ingress.enabled: true\" is set, but not both."
+      "Gateway API and combined web Ingress cannot both be enabled."
+      "Set either \"global.gateway.enabled: true\" or \"global.ingress.enabled: true\", not both. Gateway web routing can still use a separate orchestration gRPC Ingress."
   -}}
   {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
 {{- end }}
-
-{{/*
-*******************************************************************************
-Camunda 8.8 cycle deprecated keys (removed in 8.9).
-*******************************************************************************
-Fail with a message when old values syntax is used.
-Chart Version: 14.0.0
-*******************************************************************************
-*/}}
-
-{{/*
-*******************************************************************************
-Global - License
-*******************************************************************************
-*/}}
-
-{{ include "camundaPlatform.keyRemoved" (dict
-  "condition" (hasKey .Values.global.license "key")
-  "oldName" "global.license.key"
-) }}
-
-{{ include "camundaPlatform.keyRemoved" (dict
-  "condition" (hasKey .Values.global.license "existingSecret")
-  "oldName" "global.license.existingSecret"
-) }}
-
-{{ include "camundaPlatform.keyRemoved" (dict
-  "condition" (hasKey .Values.global.license "existingSecretKey")
-  "oldName" "global.license.existingSecretKey"
-) }}
-
-{{/*
-*******************************************************************************
-Global - Identity Auth
-*******************************************************************************
-*/}}
-
-{{ include "camundaPlatform.keyRemoved" (dict
-  "condition" (hasKey .Values.global.identity.auth.admin "existingSecret")
-  "oldName" "global.identity.auth.admin.existingSecret"
-) }}
-
-{{ include "camundaPlatform.keyRemoved" (dict
-  "condition" (hasKey .Values.global.identity.auth.admin "existingSecretKey")
-  "oldName" "global.identity.auth.admin.existingSecretKey"
-) }}
-
-{{ include "camundaPlatform.keyRemoved" (dict
-  "condition" (hasKey .Values.global.identity.auth.identity "existingSecret")
-  "oldName" "global.identity.auth.identity.existingSecret"
-) }}
-
-{{ include "camundaPlatform.keyRemoved" (dict
-  "condition" (hasKey .Values.global.identity.auth.identity "existingSecretKey")
-  "oldName" "global.identity.auth.identity.existingSecretKey"
-) }}
-
-{{ include "camundaPlatform.keyRemoved" (dict
-  "condition" (hasKey .Values.global.identity.auth.optimize "existingSecret")
-  "oldName" "global.identity.auth.optimize.existingSecret"
-) }}
-
-{{ include "camundaPlatform.keyRemoved" (dict
-  "condition" (hasKey .Values.global.identity.auth.optimize "existingSecretKey")
-  "oldName" "global.identity.auth.optimize.existingSecretKey"
-) }}
-
-{{/*
-*******************************************************************************
-Global - Document Store
-*******************************************************************************
-*/}}
-
-{{ include "camundaPlatform.keyRemoved" (dict
-  "condition" (hasKey .Values.global.documentStore.type.aws "existingSecret")
-  "oldName" "global.documentStore.type.aws.existingSecret"
-) }}
-
-{{ include "camundaPlatform.keyRemoved" (dict
-  "condition" (hasKey .Values.global.documentStore.type.aws "accessKeyIdKey")
-  "oldName" "global.documentStore.type.aws.accessKeyIdKey"
-) }}
-
-{{ include "camundaPlatform.keyRemoved" (dict
-  "condition" (hasKey .Values.global.documentStore.type.aws "secretAccessKeyKey")
-  "oldName" "global.documentStore.type.aws.secretAccessKeyKey"
-) }}
-
-{{ include "camundaPlatform.keyRemoved" (dict
-  "condition" (hasKey .Values.global.documentStore.type.gcp "existingSecret")
-  "oldName" "global.documentStore.type.gcp.existingSecret"
-) }}
-
-{{ include "camundaPlatform.keyRemoved" (dict
-  "condition" (hasKey .Values.global.documentStore.type.gcp "credentialsKey")
-  "oldName" "global.documentStore.type.gcp.credentialsKey"
-) }}
 
 {{/*
 *******************************************************************************
@@ -1620,126 +2202,6 @@ Orchestration - Secret Store
     {{- end -}}
   {{- end -}}
 {{- end -}}
-
-{{/*
-*******************************************************************************
-Identity
-*******************************************************************************
-*/}}
-
-{{- if eq (include "camundaPlatform.identityEnabled" .) "true" -}}
-
-{{ include "camundaPlatform.keyRemoved" (dict
-  "condition" (hasKey .Values.identity.firstUser "password")
-  "oldName" "identity.firstUser.password"
-) }}
-
-{{ include "camundaPlatform.keyRemoved" (dict
-  "condition" (hasKey .Values.identity.firstUser "existingSecret")
-  "oldName" "identity.firstUser.existingSecret"
-) }}
-
-{{ include "camundaPlatform.keyRemoved" (dict
-  "condition" (hasKey .Values.identity.firstUser "existingSecretKey")
-  "oldName" "identity.firstUser.existingSecretKey"
-) }}
-
-{{ include "camundaPlatform.keyRemoved" (dict
-  "condition" (hasKey .Values.identity.externalDatabase "password")
-  "oldName" "identity.externalDatabase.password"
-) }}
-
-{{ include "camundaPlatform.keyRemoved" (dict
-  "condition" (hasKey .Values.identity.externalDatabase "existingSecret")
-  "oldName" "identity.externalDatabase.existingSecret"
-) }}
-
-{{ include "camundaPlatform.keyRemoved" (dict
-  "condition" (hasKey .Values.identity.externalDatabase "existingSecretPasswordKey")
-  "oldName" "identity.externalDatabase.existingSecretPasswordKey"
-) }}
-
-{{- end }}
-
-{{/*
-*******************************************************************************
-Connectors
-*******************************************************************************
-*/}}
-
-{{- if eq (include "camundaPlatform.connectorsEnabled" .) "true" -}}
-
-{{ include "camundaPlatform.keyRemoved" (dict
-  "condition" (hasKey .Values.connectors.security.authentication.oidc "existingSecret")
-  "oldName" "connectors.security.authentication.oidc.existingSecret"
-) }}
-
-{{ include "camundaPlatform.keyRemoved" (dict
-  "condition" (hasKey .Values.connectors.security.authentication.oidc "existingSecretKey")
-  "oldName" "connectors.security.authentication.oidc.existingSecretKey"
-) }}
-
-{{- end }}
-
-{{/*
-*******************************************************************************
-Orchestration
-*******************************************************************************
-*/}}
-
-{{- if eq (include "camundaPlatform.orchestrationEnabled" .) "true" -}}
-
-{{ include "camundaPlatform.keyRemoved" (dict
-  "condition" (hasKey .Values.orchestration.security.authentication.oidc "existingSecret")
-  "oldName" "orchestration.security.authentication.oidc.existingSecret"
-) }}
-
-{{ include "camundaPlatform.keyRemoved" (dict
-  "condition" (hasKey .Values.orchestration.security.authentication.oidc "existingSecretKey")
-  "oldName" "orchestration.security.authentication.oidc.existingSecretKey"
-) }}
-
-{{- end }}
-
-{{/*
-*******************************************************************************
-Web Modeler
-*******************************************************************************
-*/}}
-
-{{- if eq (include "camundaHub.webModelerEnabled" .) "true" -}}
-
-{{ include "camundaPlatform.keyRemoved" (dict
-  "condition" (hasKey .Values.webModeler.restapi.externalDatabase "password")
-  "oldName" "webModeler.restapi.externalDatabase.password"
-) }}
-
-{{ include "camundaPlatform.keyRemoved" (dict
-  "condition" (hasKey .Values.webModeler.restapi.externalDatabase "existingSecret")
-  "oldName" "webModeler.restapi.externalDatabase.existingSecret"
-) }}
-
-{{ include "camundaPlatform.keyRemoved" (dict
-  "condition" (hasKey .Values.webModeler.restapi.externalDatabase "existingSecretPasswordKey")
-  "oldName" "webModeler.restapi.externalDatabase.existingSecretPasswordKey"
-) }}
-
-{{ include "camundaPlatform.keyRemoved" (dict
-  "condition" (hasKey .Values.webModeler.restapi.mail "smtpPassword")
-  "oldName" "webModeler.restapi.mail.smtpPassword"
-) }}
-
-{{ include "camundaPlatform.keyRemoved" (dict
-  "condition" (hasKey .Values.webModeler.restapi.mail "existingSecret")
-  "oldName" "webModeler.restapi.mail.existingSecret"
-) }}
-
-{{ include "camundaPlatform.keyRemoved" (dict
-  "condition" (hasKey .Values.webModeler.restapi.mail "existingSecretPasswordKey")
-  "oldName" "webModeler.restapi.mail.existingSecretPasswordKey"
-) }}
-
-{{- end }}
 
 {{/*
 *******************************************************************************

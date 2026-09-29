@@ -78,3 +78,43 @@ func renderTemplates(ctx context.Context, o types.Options) error {
 	logging.Logger.Info().Str("outputDir", outputDir).Msg("Templates rendered successfully")
 	return nil
 }
+
+// topologyContractTemplate is the chart-relative path of the ConfigMap template that carries a
+// release's topology contract.
+const topologyContractTemplate = "templates/common/topology-contract.yaml"
+
+// RenderTopologyContract renders a release's topology contract, or returns no manifest when the
+// chart does not publish one.
+//
+// Only 8.10 and newer ship topologyContractTemplate. Older charts still take part in a mixed
+// chart-version topology as workload-only orchestration releases, and `helm template --show-only`
+// fails the entire render when it names a template the chart does not have:
+//
+//	Error: could not find template templates/common/topology-contract.yaml in chart
+//
+// Report that absence as an empty manifest so the caller records an unreported contract, rather
+// than failing a scenario whose older releases were never expected to publish one.
+func RenderTopologyContract(ctx context.Context, o types.Options) ([]byte, error) {
+	chartArg := o.Chart
+	if chartArg == "" {
+		chartArg = filepath.Clean(o.ChartPath)
+		if _, err := os.Stat(filepath.Join(chartArg, topologyContractTemplate)); os.IsNotExist(err) {
+			logging.Logger.Info().
+				Str("chart", chartArg).
+				Str("release", o.ReleaseName).
+				Msg("Chart publishes no topology contract; treating it as unreported")
+			return nil, nil
+		}
+	}
+	args := []string{"template", o.ReleaseName, chartArg, "-n", o.Namespace, "--api-versions", "camunda.io/topology-contract", "--show-only", topologyContractTemplate}
+	if o.Chart != "" && o.Version != "" {
+		args = append(args, "--version", o.Version)
+	}
+	args = append(args, composeKubeArgs(o.Kubeconfig, o.KubeContext)...)
+	args = appendHelmValueArgs(args, o)
+	out, err := helm.RunCapture(ctx, args, "")
+	if err != nil {
+		return nil, fmt.Errorf("helm topology contract render failed: %w", err)
+	}
+	return out, nil
+}

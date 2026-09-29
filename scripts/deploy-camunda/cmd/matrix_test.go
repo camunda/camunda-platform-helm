@@ -15,11 +15,48 @@
 package cmd
 
 import (
+	"io"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
+	"scripts/camunda-core/pkg/logging"
+	"scripts/deploy-camunda/config"
 	"scripts/deploy-camunda/matrix"
+
+	"github.com/spf13/cobra"
+	"github.com/stretchr/testify/require"
 )
+
+func TestRootScenarioRegistryResolution(t *testing.T) {
+	previousFlags, previousConfig, previousLogger := flags, configFile, logging.Logger
+	t.Cleanup(func() { flags, configFile, logging.Logger = previousFlags, previousConfig, previousLogger })
+	flags = config.RuntimeFlags{}
+	chart, err := filepath.Abs("../../../charts/camunda-platform-8.10")
+	require.NoError(t, err)
+	directory := t.TempDir()
+	configPath := filepath.Join(directory, "config.yaml")
+	require.NoError(t, os.WriteFile(configPath, []byte("features: [documentstore]\nqa: true\n"), 0644))
+	command := NewRootCommand()
+	command.SetArgs([]string{
+		"--config", configPath, "--env-file", filepath.Join(directory, ".env"),
+		"--chart-path", chart, "--namespace", "test", "--release", "integration",
+		"--scenario", "optimize-tls", "--platform", "gke", "--features=", "--qa=false", "--log-level", "error",
+	})
+	called := false
+	command.RunE = func(*cobra.Command, []string) error {
+		called = true
+		require.True(t, flags.SelectionResolved)
+		require.Empty(t, flags.Selection.Features)
+		require.False(t, flags.Selection.QA)
+		require.Len(t, flags.CompanionCharts, 3)
+		require.Len(t, flags.PreInstallHooks, 1)
+		return nil
+	}
+	require.NoError(t, command.Execute())
+	require.True(t, called)
+}
 
 // Pins inc-5975: --extra-values must exist on `matrix run` so that
 // flags.Deployment.ExtraValues — the only input to the digest-overlay strip —
@@ -39,6 +76,60 @@ func TestMatrixRunExtraValuesFlag(t *testing.T) {
 	}
 	if got := flag.Value.String(); !strings.Contains(got, "/tmp/a.yaml") || !strings.Contains(got, "/tmp/b.yaml") {
 		t.Errorf("aggregated value %q missing entries", got)
+	}
+}
+
+func TestMatrixRunDisabledScenarioHint(t *testing.T) {
+	repoRoot, err := filepath.Abs("../../..")
+	if err != nil {
+		t.Fatal(err)
+	}
+	previousConfigFile := configFile
+	configFile = filepath.Join(t.TempDir(), "absent.yaml")
+	t.Cleanup(func() { configFile = previousConfigFile })
+
+	for _, testCase := range []struct {
+		name    string
+		version string
+		args    []string
+		wantErr string
+	}{
+		{name: "explicit version without opt-in", version: "8.6", wantErr: "matching scenarios are disabled; re-run with --include-disabled"},
+		{name: "matching filtered entry", version: "8.6", args: []string{"--shortname-filter", "es", "--shortname-exact", "--flow-filter", "install", "--platform", "gke"}, wantErr: "matching scenarios are disabled; re-run with --include-disabled"},
+		{name: "unknown shortname", version: "8.6", args: []string{"--shortname-filter", "missing"}, wantErr: "no matrix entries matched the filters"},
+		{name: "unknown scenario", version: "8.6", args: []string{"--scenario-filter", "missing"}, wantErr: "no matrix entries matched the filters"},
+		{name: "denied flow", version: "8.6", args: []string{"--flow-filter", "upgrade-minor"}, wantErr: "no matrix entries matched the filters"},
+		{name: "unsupported platform", version: "8.6", args: []string{"--shortname-filter", "es", "--platform", "rosa"}, wantErr: "no matrix entries matched the filters"},
+		{name: "opt-in with unmatched filter", version: "8.6", args: []string{"--include-disabled", "--shortname-filter", "missing"}, wantErr: "no matrix entries matched the filters"},
+		{name: "opt-in succeeds", version: "8.6", args: []string{"--include-disabled", "--shortname-filter", "es", "--shortname-exact", "--flow-filter", "install", "--platform", "gke"}},
+		{name: "enabled selection succeeds", version: "8.9", args: []string{"--shortname-filter", "eske", "--shortname-exact", "--flow-filter", "install", "--platform", "gke"}},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			command := newMatrixRunCommand()
+			command.SilenceErrors = true
+			command.SilenceUsage = true
+			command.SetOut(io.Discard)
+			command.SetErr(io.Discard)
+			command.SetArgs(append([]string{
+				"--repo-root", repoRoot,
+				"--env-file", os.DevNull,
+				"--versions", testCase.version,
+				"--coverage",
+			}, testCase.args...))
+			err := command.Execute()
+			if testCase.wantErr == "" {
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
+				return
+			}
+			if err == nil || !strings.Contains(err.Error(), testCase.wantErr) {
+				t.Fatalf("error = %v, want %q", err, testCase.wantErr)
+			}
+			if !strings.Contains(testCase.wantErr, "--include-disabled") && strings.Contains(err.Error(), "--include-disabled") {
+				t.Errorf("unmatched filters produced misleading opt-in hint: %v", err)
+			}
+		})
 	}
 }
 

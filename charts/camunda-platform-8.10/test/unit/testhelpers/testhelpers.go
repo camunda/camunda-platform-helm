@@ -327,9 +327,8 @@ func RunTestCasesE(t *testing.T, chartPath, release, namespace string, templates
 	}
 }
 
-func runTestCaseE(t *testing.T, chartPath, release, namespace string, templates []string, tc TestCase) {
-	require.NoError(t, validateTestCase(tc), "invalid test case %q", tc.Name)
-
+// RenderTestCaseE renders one test case with the standard unit-test Helm options.
+func RenderTestCaseE(t *testing.T, chartPath, release, namespace string, templates []string, tc TestCase) (string, error) {
 	var caseTemplates []string
 	if tc.Template != "" {
 		caseTemplates = []string{tc.Template}
@@ -338,7 +337,13 @@ func runTestCaseE(t *testing.T, chartPath, release, namespace string, templates 
 	} else {
 		caseTemplates = templates
 	}
-	output, err := renderTemplateE(t, chartPath, release, namespace, caseTemplates, tc.Values, tc.ValuesFiles, tc.HelmOptionsExtraArgs, tc.RenderTemplateExtraArgs)
+	return renderTemplateE(t, chartPath, release, namespace, caseTemplates, tc.Values, tc.ValuesFiles, tc.HelmOptionsExtraArgs, tc.RenderTemplateExtraArgs)
+}
+
+func runTestCaseE(t *testing.T, chartPath, release, namespace string, templates []string, tc TestCase) {
+	require.NoError(t, validateTestCase(tc), "invalid test case %q", tc.Name)
+
+	output, err := RenderTestCaseE(t, chartPath, release, namespace, templates, tc)
 	if err != nil {
 		t.Logf("Error during rendering: %v", err)
 	}

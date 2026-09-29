@@ -107,7 +107,7 @@ func TestScrapeTraceVersionGreedyStrip(t *testing.T) {
 func TestStillAlpha(t *testing.T) {
 	dir := t.TempDir()
 	p := filepath.Join(dir, "chart-versions.yaml")
-	if err := os.WriteFile(p, []byte("camundaVersions:\n  alpha:\n    - \"8.10\"\n  supportStandard:\n    - \"8.9\"\n"), 0o644); err != nil {
+	if err := os.WriteFile(p, []byte("chartAutomation: {routineVersions: [\"8.9\"]}\ncamundaSupportLifecycle:\n  \"8.10\": {}\n  \"8.9\": {released: \"2026-04-14\"}\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	yes, err := StillAlpha(p, "8.10")
@@ -117,5 +117,8 @@ func TestStillAlpha(t *testing.T) {
 	no, err := StillAlpha(p, "8.9")
 	if err != nil || no {
 		t.Errorf("8.9 should not be alpha: %v %v", no, err)
+	}
+	if _, err := StillAlpha(p, "9.99"); err == nil {
+		t.Error("unknown minor must not be treated as a GA transition")
 	}
 }

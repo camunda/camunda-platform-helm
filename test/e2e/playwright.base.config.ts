@@ -70,17 +70,24 @@ export function makeShadowConfig(opts: {
         name: "smoke-tests",
         testMatch: ["**/smoke-tests.spec.{ts,js}"],
       },
-      ...(
-        includeSetupProject
-          ? [
-              {
-                name: "full-suite-setup",
-                testMatch: ["**/test-setup.spec.{ts,js}"],
-                ...tasklistV2Use,
-              },
-            ]
-          : []
-      ),
+      {
+        name: "hub-web-modeler",
+        testMatch: ["**/hub-web-modeler-smoke.spec.{ts,js}"],
+      },
+      {
+        name: "topology-orchestration",
+        testMatch: ["**/topology-orchestration-smoke.spec.{ts,js}"],
+        ...tasklistV2Use,
+      },
+      ...(includeSetupProject
+        ? [
+            {
+              name: "full-suite-setup",
+              testMatch: ["**/test-setup.spec.{ts,js}"],
+              ...tasklistV2Use,
+            },
+          ]
+        : []),
       {
         name: "full-suite",
         dependencies: includeSetupProject ? ["full-suite-setup"] : undefined,

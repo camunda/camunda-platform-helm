@@ -12,6 +12,7 @@ metadata:
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: zeebe-broker
     app.kubernetes.io/version: "8.10.0-alpha5"
+    camunda.io/broker-generation: numbered
 spec:
   maxUnavailable: 1
   selector:

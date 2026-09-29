@@ -178,3 +178,33 @@ func (s *ServiceTest) TestDifferentValuesInputs() {
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
+
+func (s *ServiceTest) TestZonedModeKeepsTheClientServiceZoneFree() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestGatewayServiceSelectorHasNoZoneLabel",
+			Values: map[string]string{
+				"orchestration.partitioning.scheme":                    "zone-aware",
+				"orchestration.partitioning.zone":                      "zone-a",
+				"orchestration.partitioning.zones[0].name":             "zone-a",
+				"orchestration.partitioning.zones[0].numberOfBrokers":  "3",
+				"orchestration.partitioning.zones[0].numberOfReplicas": "3",
+				"orchestration.partitioning.zones[0].priority":         "100",
+				"orchestration.partitioning.keepUnzonedBrokers":        "true",
+				"orchestration.partitioning.numberOfZones":             "1",
+				"orchestration.partitioning.zoneIndex":                 "0",
+				"orchestration.data.secondaryStorage.type":             "elasticsearch",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var service coreV1.Service
+				helm.UnmarshalK8SYaml(t, output, &service)
+
+				require.Equal(t, "camunda-platform-test-zeebe-gateway", service.Name)
+				require.NotContains(t, service.Spec.Selector, "camunda.io/zone")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}

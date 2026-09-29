@@ -1,0 +1,13 @@
+{{- if and (eq (include "camundaPlatform.optimizeEnabled" .) "true") (eq (include "optimize.needsIdentityConfigMap" .) "true") }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "camundaPlatform.fullname" . }}-optimize-identity-env-vars
+  labels: {{- include "camundaPlatform.labels" . | nindent 4 }}
+  annotations: {{- toYaml .Values.global.annotations | nindent 4 }}
+data:
+  CAMUNDA_IDENTITY_BASEURL: {{ include "optimize.effectiveIdentityUrl" . | quote }}
+  CAMUNDA_IDENTITY_TYPE: {{ include "optimize.effectiveAuthType" . | quote }}
+  CAMUNDA_IDENTITY_ISSUER: {{ include "optimize.effectiveAuthIssuer" . | quote }}
+  CAMUNDA_IDENTITY_ISSUER_BACKEND_URL: {{ include "optimize.effectiveAuthIssuerBackendUrl" . | quote }}
+{{- end }}

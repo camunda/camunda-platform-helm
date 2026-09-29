@@ -1,0 +1,5 @@
+orchestration:
+  contextPath: /
+  env:
+    - name: SERVER_SSL_ENABLED
+      value: "true"

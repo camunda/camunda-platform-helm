@@ -1,4 +1,4 @@
-{{- if .Values.identity.enabled -}}
+{{- if eq (include "camundaPlatform.identityEnabled" .) "true" -}}
 {{- if .Values.identity.ingress.enabled -}}
 apiVersion: networking.k8s.io/v1
 kind: Ingress

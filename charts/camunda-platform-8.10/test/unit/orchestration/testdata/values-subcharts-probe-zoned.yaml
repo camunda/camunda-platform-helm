@@ -1,0 +1,14 @@
+orchestration:
+  data:
+    secondaryStorage:
+      type: elasticsearch
+  podLabels:
+    probe: '{{ kindOf .Subcharts }}'
+  partitioning:
+    scheme: zone-aware
+    zone: zone-a
+    zones:
+      - name: zone-a
+        numberOfBrokers: 1
+        numberOfReplicas: 1
+        priority: 100

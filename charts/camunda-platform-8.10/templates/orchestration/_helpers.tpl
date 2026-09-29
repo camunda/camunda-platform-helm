@@ -12,6 +12,123 @@
     ) -}}
 {{- end -}}
 
+{{- define "orchestration.zoneAware" -}}
+{{- eq (include "camundaPlatform.partitioning" . | fromJson).scheme "zone-aware" -}}
+{{- end -}}
+
+{{- define "orchestration.renderManifest" -}}
+{{- $root := .context -}}
+{{- $scope := required "orchestration.renderManifest requires a scope" .scope -}}
+{{- if not (has $scope (list "current" "zoned" "unzoned")) -}}
+{{- fail (printf "orchestration.renderManifest received unsupported scope %q" $scope) -}}
+{{- end -}}
+{{- $ctx := dict
+    "Values" (deepCopy $root.Values)
+    "Release" $root.Release
+    "Chart" $root.Chart
+    "Capabilities" $root.Capabilities
+    "Template" $root.Template
+    "Files" $root.Files
+    "Subcharts" $root.Subcharts
+-}}
+{{- $_ := set $ctx "OrchestrationRender" (dict "scope" $scope "zone" (.zone | default "")) -}}
+{{- if eq $scope "unzoned" }}
+{{- $_ := set $ctx.Values.orchestration.partitioning "scheme" "round-robin" -}}
+{{- end }}
+{{- if hasKey . "keepUnzonedBrokers" }}
+{{- $_ := set $ctx.Values.orchestration.partitioning "keepUnzonedBrokers" .keepUnzonedBrokers -}}
+{{- end }}
+{{- include .manifest $ctx -}}
+{{- end -}}
+
+{{- /* NOTE: alwaysRenderUnzoned keeps the retained generation's manifest rendering after
+retention is switched off, which the headless Service needs so broker DNS survives the
+cleanup upgrade. Everything else stops with the retained StatefulSet. */ -}}
+{{- define "orchestration.renderBrokerGenerations" -}}
+{{- $context := .context -}}
+{{- if eq (include "orchestration.zoneAware" $context) "true" -}}
+{{- $partitioning := include "camundaPlatform.partitioning" $context | fromJson -}}
+---
+{{ include "orchestration.renderManifest" (dict "manifest" .manifest "context" $context "scope" "zoned" "zone" $partitioning.zone) }}
+{{- if or .alwaysRenderUnzoned $partitioning.keepUnzonedBrokers }}
+---
+{{ include "orchestration.renderManifest" (dict "manifest" .manifest "context" $context "scope" "unzoned") }}
+{{- end }}
+{{- else -}}
+{{ include "orchestration.renderManifest" (dict "manifest" .manifest "context" $context "scope" "current") }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+[orchestration] Zone-suffixed fullname, used for per-zone resources and contact points.
+Takes a dict with the root context and an optional explicit zone.
+*/}}
+{{- define "orchestration.zoneFullname" -}}
+{{- $fullname := include "orchestration.fullname" .context -}}
+{{- if .zone -}}
+{{- /* NOTE: StatefulSet Pod hostnames are limited to 63 characters; reserve "-998" for up to 999 brokers. */ -}}
+{{- $nameLength := 59 -}}
+{{- $suffix := printf "-%s" .zone -}}
+{{- $prefixLength := int (sub $nameLength (len $suffix)) -}}
+{{- if le (len $fullname) $prefixLength -}}
+{{- printf "%s%s" $fullname $suffix -}}
+{{- else -}}
+{{- /* NOTE: a truncated prefix is not unique across releases, so the last 7 characters
+carry a digest of the untruncated name instead of more of the prefix. */ -}}
+{{- $digest := $fullname | sha256sum | trunc 6 -}}
+{{- printf "%s-%s%s" ($fullname | trunc (int (sub $prefixLength 7)) | trimSuffix "-") $digest $suffix -}}
+{{- end -}}
+{{- else -}}
+{{- $fullname -}}
+{{- end -}}
+{{- end -}}
+
+{{- define "orchestration.scopedZone" -}}
+{{- if not .OrchestrationRender -}}
+{{- fail "orchestration.scopedZone requires an orchestration render scope" -}}
+{{- end -}}
+{{- if eq .OrchestrationRender.scope "zoned" -}}
+{{- required "[camunda][error] orchestration.partitioning.zone must name the zone this release is deployed to when using zoned mode" .OrchestrationRender.zone -}}
+{{- end -}}
+{{- end -}}
+
+{{- /* NOTE: Render the checksum with migration-only contact points removed. */ -}}
+{{- define "orchestration.configChecksum" -}}
+{{- if not .OrchestrationRender -}}
+{{- fail "orchestration.configChecksum requires an orchestration render scope" -}}
+{{- end -}}
+{{- $scope := required "orchestration.configChecksum requires an orchestration render scope" .OrchestrationRender.scope -}}
+{{- include "orchestration.renderManifest" (dict
+    "manifest" "orchestration.configmapManifest"
+    "context" .
+    "scope" $scope
+    "zone" (include "orchestration.scopedZone" .)
+    "keepUnzonedBrokers" false
+) | sha256sum -}}
+{{- end -}}
+
+{{/*
+NOTE: the sizing below is resolved once by camundaPlatform.partitioning, which decides the
+scheme and derives the totals from the zone list or the values keys. These read the result
+rather than branching on the scheme again.
+*/}}
+{{- define "orchestration.clusterSize" -}}
+{{- (include "camundaPlatform.partitioning" . | fromJson).clusterSize -}}
+{{- end -}}
+
+{{- define "orchestration.replicationFactor" -}}
+{{- (include "camundaPlatform.partitioning" . | fromJson).replicationFactor -}}
+{{- end -}}
+
+{{- define "orchestration.numberedReplicas" -}}
+{{- $partitioning := include "camundaPlatform.partitioning" $ | fromJson -}}
+{{- div (int .Values.orchestration.clusterSize) (int $partitioning.numberOfZones) -}}
+{{- end -}}
+
+{{- define "orchestration.replicas" -}}
+{{- (include "camundaPlatform.partitioning" . | fromJson).localReplicas -}}
+{{- end -}}
+
 {{/*
 [orchestration] Defines extra labels for orchestration.
 */}}
@@ -82,12 +199,29 @@ app.kubernetes.io/version: {{ include "camundaPlatform.versionLabel" (dict
 [orchestration] Define common labels for orchestration, combining the match labels and transient labels, which might change on updating
 (version depending). These labels shouldn't be used on matchLabels selector, since the selectors are immutable.
 */}}
+{{- define "orchestration.generationLabel" -}}
+camunda.io/broker-generation: {{ if and .OrchestrationRender (eq .OrchestrationRender.scope "zoned") }}zoned{{ else }}numbered{{ end }}
+{{- end -}}
+
 {{- define "orchestration.labels" -}}
-    {{- include "camundaPlatform.labels" . }}
+    {{- $labels := include "camundaPlatform.labels" . -}}
+    {{- include "camundaPlatform.validateBrokerLabels" (dict "labels" ($labels | fromYaml) "zonedPodLabels" false) -}}
+    {{- if and .OrchestrationRender (eq .OrchestrationRender.scope "zoned") (hasKey (.Values.global.labels | default dict) "camunda.io/zone") -}}
+      {{- $labels = omit ($labels | fromYaml) "camunda.io/zone" | toYaml -}}
+    {{- end -}}
+    {{- $labels }}
     {{- "\n" }}
     {{- include "orchestration.brokerLabel" . }}
     {{- "\n" }}
     {{- include "orchestration.versionLabel" . }}
+    {{- if .OrchestrationRender }}
+    {{- "\n" }}
+    {{- include "orchestration.generationLabel" . }}
+    {{- end }}
+    {{- if and .OrchestrationRender (eq .OrchestrationRender.scope "zoned") .OrchestrationRender.zone }}
+    {{- "\n" }}
+camunda.io/zone: {{ .OrchestrationRender.zone | quote }}
+    {{- end }}
 {{- end -}}
 
 {{/*
@@ -104,10 +238,31 @@ app.kubernetes.io/version: {{ include "camundaPlatform.versionLabel" (dict
 [orchestration] Defines match labels for orchestration, which are extended by sub-charts and should be used in matchLabels selectors.
 */}}
 {{- define "orchestration.matchLabels" -}}
-    {{- include "camundaPlatform.matchLabels" . }}
+    {{- $labels := include "camundaPlatform.matchLabels" . -}}
+    {{- if and .OrchestrationRender (eq .OrchestrationRender.scope "zoned") (hasKey (.Values.global.labels | default dict) "camunda.io/zone") -}}
+      {{- $labels = omit ($labels | fromYaml) "camunda.io/zone" | toYaml -}}
+    {{- end -}}
+    {{- $labels }}
     {{- "\n" -}}
     {{/*    For backward compatibility, the component label is set to "zeebe-broker".*/}}
     {{- include "orchestration.brokerLabel" . }}
+    {{- /* NOTE: StatefulSet.spec.selector is immutable, so only zoned renders receive the zone label. */ -}}
+    {{- if and .OrchestrationRender (eq .OrchestrationRender.scope "zoned") .OrchestrationRender.zone }}
+    {{- "\n" }}
+    {{- include "orchestration.generationLabel" . }}
+    {{- "\n" }}
+camunda.io/zone: {{ .OrchestrationRender.zone | quote }}
+    {{- end }}
+{{- end -}}
+
+{{- define "orchestration.serviceMatchLabels" -}}
+{{- $labels := include "orchestration.matchLabels" . -}}
+{{- if or (and (not .OrchestrationRender) (eq (include "orchestration.zoneAware" .) "true")) (and .OrchestrationRender (eq .OrchestrationRender.scope "unzoned")) -}}
+{{- if hasKey ($labels | fromYaml) "camunda.io/zone" -}}
+{{- $labels = omit ($labels | fromYaml) "camunda.io/zone" | toYaml -}}
+{{- end -}}
+{{- end -}}
+{{- $labels -}}
 {{- end -}}
 
 {{/*
@@ -357,24 +512,34 @@ spring-imported orchestration.extraConfiguration file, override it.
 ) -}}
 {{- end -}}
 
+{{/*
+[orchestration] The backend the legacy exporters key off is the resolved one, via
+orchestration.secondaryStorage: an unset orchestration.data.secondaryStorage.type still resolves to
+elasticsearch or opensearch through optimize.database.<backend>.enabled,
+and reading the raw key instead would silently drop an explicit orchestration.exporters.zeebe opt-in.
+*/}}
 {{- define "orchestration.hasElasticsearchExporter" -}}
 {{- and
-      .Values.optimize.database.elasticsearch.enabled
-      (eq (include "camundaPlatform.optimizeEnabled" .) "true")
+      (or
+        (and (eq (include "orchestration.secondaryStorage" .) "elasticsearch") .Values.orchestration.exporters.zeebe.enabled)
+        (and .Values.optimize.database.elasticsearch.enabled (eq (include "camundaPlatform.optimizeEnabled" .) "true"))
+      )
       (or
         .Values.orchestration.exporters.zeebe.enabled
-        (lt (int (default 0 .Values.global.multiregion.regions)) 2)
+        (ne (include "camundaPlatform.spansFailureDomains" .) "true")
       )
 -}}
 {{- end -}}
 
 {{- define "orchestration.hasOpenSearchExporter" -}}
 {{- and
-      .Values.optimize.database.opensearch.enabled
-      (eq (include "camundaPlatform.optimizeEnabled" .) "true")
+      (or
+        (and (eq (include "orchestration.secondaryStorage" .) "opensearch") .Values.orchestration.exporters.zeebe.enabled)
+        (and .Values.optimize.database.opensearch.enabled (eq (include "camundaPlatform.optimizeEnabled" .) "true"))
+      )
       (or
         .Values.orchestration.exporters.zeebe.enabled
-        (lt (int (default 0 .Values.global.multiregion.regions)) 2)
+        (ne (include "camundaPlatform.spansFailureDomains" .) "true")
       )
 -}}
 {{- end -}}
@@ -456,6 +621,26 @@ otherwise.
 {{- end -}}
 {{- end -}}
 
+{{/* Effective writer prefixes exposed to topology contract validation. */}}
+{{- define "orchestration.legacyExporterElasticsearchPrefix" -}}
+{{- dig "index" "prefix" "" .Values.orchestration.exporters.zeebe | default .Values.optimize.database.elasticsearch.prefix | default "zeebe-record" -}}
+{{- end -}}
+
+{{- define "orchestration.legacyExporterOpenSearchPrefix" -}}
+{{- dig "index" "prefix" "" .Values.orchestration.exporters.zeebe | default .Values.optimize.database.opensearch.prefix | default "zeebe-record" -}}
+{{- end -}}
+
+{{- /*
+NOTE: matches the nested, dotted and raw-properties forms, as the camunda.secrets check in
+constraints.tpl does: one form alone lets a different YAML style slip past the check.
+*/ -}}
+{{- define "orchestration.physicalTenantsDeclared" -}}
+{{- $args := dict "extraConfiguration" .Values.orchestration.extraConfiguration "path" (list "camunda" "physical-tenants") -}}
+{{- if or (eq (include "camundaPlatform.extraConfigHasPathInAnyYamlDocument" $args) "true") (eq (include "camundaPlatform.extraConfigHasRawKeyPrefix" $args) "true") -}}
+true
+{{- end -}}
+{{- end -}}
+
 {{- define "orchestration.hasAppIntegrations" -}}
 {{- include "camundaPlatform.hasSecretConfig" (dict "config" .Values.orchestration.exporters.appIntegrations.apiKey) -}}
 {{- end -}}
@@ -503,7 +688,7 @@ Service names.
 [orchestration] Define Orchestration Cluster service name - Headless.
 */}}
 {{- define "orchestration.serviceNameHeadless" }}
-    {{- include "orchestration.fullname" . -}}
+    {{- include "orchestration.zoneFullname" (dict "context" . "zone" (include "orchestration.scopedZone" .)) -}}
 {{- end -}}
 
 {{/*

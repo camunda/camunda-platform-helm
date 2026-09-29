@@ -217,28 +217,60 @@ func TestUpgradeOnly_PreInstallHookRegistrationDetachesParent(t *testing.T) {
 	}
 }
 
-func TestRegisterDeclarativePostDeployHook(t *testing.T) {
+func TestRunDeclarativePostDeployHook_IncludesTopologyNamespaces(t *testing.T) {
 	repoRoot := t.TempDir()
 	scriptDir := filepath.Join(repoRoot, "charts", "camunda-platform-8.10", "test", "integration", "scenarios", "pre-setup-scripts")
 	if err := os.MkdirAll(scriptDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(scriptDir, "post-deploy-test.sh"), []byte("#!/bin/bash\n"), 0o755); err != nil {
+	marker := filepath.Join(t.TempDir(), "hook-ran")
+	script := "#!/bin/bash\nset -eu\n" +
+		`test "$TEST_NAMESPACE" = "matrix-810-mns-orcha"` + "\n" +
+		`test "$HUB_NAMESPACE" = "matrix-810-mns-hub"` + "\n" +
+		`test "$ORCH_NAMESPACE" = "matrix-810-mns-orcha"` + "\n" +
+		"touch " + marker + "\n"
+	if err := os.WriteFile(filepath.Join(scriptDir, "post-deploy-test.sh"), []byte(script), 0o755); err != nil {
 		t.Fatal(err)
 	}
 
-	flags := &config.RuntimeFlags{}
-	if err := RegisterDeclarativePostDeployHook(flags, &LifecycleHook{Script: "post-deploy-test.sh", Description: "Verify topology hook registration."}, repoRoot, "8.10", "topology"); err != nil {
-		t.Fatalf("RegisterDeclarativePostDeployHook() error = %v", err)
+	flags := &config.RuntimeFlags{
+		Deployment: config.DeploymentFlags{Namespace: "matrix-810-mns-orcha"},
+		ExtraEnv: map[string]string{
+			"HUB_NAMESPACE":  "matrix-810-mns-hub",
+			"ORCH_NAMESPACE": "matrix-810-mns-orcha",
+		},
 	}
-	if got := len(flags.PostDeployHooks); got != 1 {
-		t.Fatalf("len(PostDeployHooks) = %d, want 1", got)
+	if err := RunDeclarativePostDeployHook(context.Background(), flags, &LifecycleHook{Script: "post-deploy-test.sh", Description: "Verify topology hook execution."}, repoRoot, "8.10", "topology"); err != nil {
+		t.Fatalf("RunDeclarativePostDeployHook() error = %v", err)
+	}
+	if _, err := os.Stat(marker); err != nil {
+		t.Fatalf("post-deploy hook did not create marker: %v", err)
 	}
 }
 
 func TestResolveLifecycleEnv_IncludesTopologyNamespace(t *testing.T) {
-	flags := &config.RuntimeFlags{ExtraEnv: map[string]string{"HUB_NAMESPACE": "matrix-810-mns-hub"}}
-	if got := resolveLifecycleEnv(flags)["HUB_NAMESPACE"]; got != "matrix-810-mns-hub" {
+	flags := &config.RuntimeFlags{ExtraEnv: map[string]string{
+		"HUB_NAMESPACE":               "matrix-810-mns-hub",
+		"ORCH_NAMESPACE":              "matrix-810-mns-orcha",
+		"HUB_HOST":                    "hub.example.com",
+		"ORCH_HOST":                   "orch.example.com",
+		"OPTTA_OPTIMIZE_CONTEXT_PATH": "/optimize-ta",
+		"UNRELATED_TOPOLOGY_INTERNAL": "must-not-pass",
+	}}
+	got := resolveLifecycleEnv(flags)
+	if got := got["HUB_NAMESPACE"]; got != "matrix-810-mns-hub" {
 		t.Fatalf("HUB_NAMESPACE = %q, want matrix-810-mns-hub", got)
+	}
+	if got := got["ORCH_NAMESPACE"]; got != "matrix-810-mns-orcha" {
+		t.Fatalf("ORCH_NAMESPACE = %q, want matrix-810-mns-orcha", got)
+	}
+	if got["HUB_HOST"] != "hub.example.com" || got["ORCH_HOST"] != "orch.example.com" {
+		t.Fatalf("topology hosts missing from lifecycle env: %v", got)
+	}
+	if got["OPTTA_OPTIMIZE_CONTEXT_PATH"] != "/optimize-ta" {
+		t.Fatalf("Optimize context path missing from lifecycle env: %v", got)
+	}
+	if _, ok := got["UNRELATED_TOPOLOGY_INTERNAL"]; ok {
+		t.Fatalf("unrelated topology variable leaked into lifecycle env: %v", got)
 	}
 }

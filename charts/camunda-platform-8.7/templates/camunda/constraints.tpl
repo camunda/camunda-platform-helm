@@ -2,8 +2,57 @@
 A template to handle constraints.
 */}}
 
-{{- $identityEnabled := (or .Values.identity.enabled .Values.global.identity.service.url) }}
-{{- $identityAuthEnabled := (or $identityEnabled .Values.global.identity.auth.enabled) }}
+{{/*
+Both of these must be real booleans, not truthy values: the Multi-Tenancy
+guard below tests them with `has false`, which never matches a non-empty
+string such as global.identity.service.url. And Identity counting as
+"auth enabled" requires BOTH Identity to be reachable AND
+global.identity.auth.enabled to be set, which is what the guard's own error
+message tells the user.
+*/}}
+{{- $identityEnabled := false }}
+{{- if or (eq (include "camundaPlatform.identityEnabled" .) "true") (not (empty .Values.global.identity.service.url)) }}
+  {{- $identityEnabled = true }}
+{{- end }}
+{{- $identityAuthEnabled := false }}
+{{- if and $identityEnabled .Values.global.identity.auth.enabled }}
+  {{- $identityAuthEnabled = true }}
+{{- end }}
+
+{{- $topologyMode := include "camundaPlatform.topologyMode" . }}
+{{- if not (has $topologyMode (list "combined" "orchestration")) }}
+  {{- fail (printf "[camunda][error] global.topology.mode must be one of combined or orchestration; got %q." $topologyMode) }}
+{{- end }}
+{{- if and (eq $topologyMode "orchestration") (not .Values.global.identity.auth.enabled) }}
+  {{- fail "[camunda][error] global.topology.mode=orchestration requires global.identity.auth.enabled=true." }}
+{{- end }}
+{{- if and (eq $topologyMode "orchestration") .Values.identity.enabled }}
+  {{- fail "[camunda][error] global.topology.mode=orchestration requires identity.enabled=false; configure global.identity.service.url to reach Management Identity." }}
+{{- end }}
+{{- if and (eq $topologyMode "orchestration") .Values.identityKeycloak.enabled }}
+  {{- fail "[camunda][error] global.topology.mode=orchestration requires identityKeycloak.enabled=false." }}
+{{- end }}
+{{- if and (eq $topologyMode "orchestration") .Values.identityPostgresql.enabled }}
+  {{- fail "[camunda][error] global.topology.mode=orchestration requires identityPostgresql.enabled=false." }}
+{{- end }}
+{{- if and (eq $topologyMode "orchestration") .Values.postgresql.enabled }}
+  {{- fail "[camunda][error] global.topology.mode=orchestration requires postgresql.enabled=false." }}
+{{- end }}
+{{- if and (eq $topologyMode "orchestration") .Values.executionIdentity.enabled }}
+  {{- fail "[camunda][error] global.topology.mode=orchestration requires executionIdentity.enabled=false." }}
+{{- end }}
+{{- if and (eq $topologyMode "orchestration") (empty .Values.global.identity.service.url) }}
+  {{- fail "[camunda][error] global.topology.mode=orchestration requires global.identity.service.url to reach Management Identity." }}
+{{- end }}
+{{- if and (eq $topologyMode "orchestration") (ne (include "camundaPlatform.zeebeEnabled" .) "true") }}
+  {{- fail "[camunda][error] global.topology.mode=orchestration requires zeebe.enabled=true." }}
+{{- end }}
+{{- if and (eq $topologyMode "orchestration") (ne (include "camundaPlatform.operateEnabled" .) "true") }}
+  {{- fail "[camunda][error] global.topology.mode=orchestration requires operate.enabled=true." }}
+{{- end }}
+{{- if and (eq $topologyMode "orchestration") (ne (include "camundaPlatform.tasklistEnabled" .) "true") }}
+  {{- fail "[camunda][error] global.topology.mode=orchestration requires tasklist.enabled=true." }}
+{{- end }}
 
 {{/*
 Fail with a message if Multi-Tenancy is enabled and its requirements are not met which are:
@@ -62,7 +111,7 @@ Fail with a message if adaptSecurityContext has any value other than "force" or 
 {{/*
 Fail with a message if Identity is disabled and identityKeycloak is enabled.
 */}}
-{{- if and (not .Values.identity.enabled) .Values.identityKeycloak.enabled }}
+{{- if and (ne (include "camundaPlatform.identityEnabled" .) "true") .Values.identityKeycloak.enabled }}
   {{- $errorMessage := "[camunda][error] Identity is disabled but identityKeycloak is enabled. Please ensure that if identityKeycloak is enabled, Identity must also be enabled."
   -}}
   {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
@@ -102,7 +151,7 @@ configmap-warnings.yaml, which renders the "<release>-warnings" ConfigMap on the
       {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "global.identity.auth.connectors.existingSecret.name" }}
     {{- end }}
 
-    {{ if and (.Values.global.identity.auth.enabled) (ne (upper .Values.global.identity.auth.type) "KEYCLOAK") (.Values.identity.enabled) (not  .Values.global.identity.auth.identity.existingSecret) }}
+    {{ if and (.Values.global.identity.auth.enabled) (ne (upper .Values.global.identity.auth.type) "KEYCLOAK") (eq (include "camundaPlatform.identityEnabled" .) "true") (not  .Values.global.identity.auth.identity.existingSecret) }}
       {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "global.identity.auth.identity.existingSecret.name" }}
     {{- end }}
 
@@ -138,7 +187,7 @@ configmap-warnings.yaml, which renders the "<release>-warnings" ConfigMap on the
       {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "identityPostgresql.auth.existingSecret" }}
     {{- end }}
 
-    {{ if and (.Values.webModeler.enabled) (not .Values.webModeler.restapi.mail.existingSecret) }}
+    {{ if and (eq (include "camundaPlatform.webModelerEnabled" .) "true") (not .Values.webModeler.restapi.mail.existingSecret) }}
       {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "webModeler.restapi.mail.existingSecret.name" }}
     {{- end }}
 
@@ -223,6 +272,44 @@ The following values inside your values.yaml need to be set but were not:
       {{- end }}
     {{- end }}
   {{- end }}
+
+  {{/* CVE-2026-18963 is fixed in Keycloak 26.7.2. regexFind pulls the version out of a
+       tag that may carry a "bitnami-" or "quay-" prefix and a "-debian-12-rN" or
+       rebuild-date suffix, so semverCompare receives a parseable version. The moving
+       aliases of the Bitnami line ("26", "bitnami-26", "bitnami-latest",
+       "latest-bitnami") carry no version at all, yet resolve to a frozen bitnamilegacy
+       build that is affected and stays affected, so they are matched by name:
+       https://github.com/camunda/keycloak/blob/main/.github/workflows/build-images.yml */}}
+  {{- if .Values.identityKeycloak.enabled }}
+    {{- $keycloakImage := .Values.identityKeycloak.image }}
+    {{- $keycloakTag := (($keycloakImage).tag | toString) }}
+    {{- $keycloakVersion := regexFind "[0-9]+\\.[0-9]+\\.[0-9]+" $keycloakTag }}
+    {{- /* On "camunda/keycloak" the "quay-*" tags and the plain "latest" alias track
+           upstream Keycloak and are still maintained; every other tag of that repository
+           belongs to the frozen Bitnami line. */}}
+    {{- $onFrozenLine := and (eq (($keycloakImage).repository | toString) "camunda/keycloak")
+        (not (hasPrefix "quay-" $keycloakTag)) (ne $keycloakTag "latest") }}
+    {{- $frozenAlias := and $onFrozenLine (not $keycloakVersion)
+        (regexMatch "^(bitnami-)?[0-9]+$|^(bitnami-latest|latest-bitnami)$" $keycloakTag) }}
+    {{- if or $frozenAlias (and $keycloakVersion (semverCompare "<26.7.2" $keycloakVersion)) }}
+      {{- $affectedImage := printf "is pinned to %s, which is" $keycloakVersion }}
+      {{- if $frozenAlias }}
+        {{- $affectedImage = printf "uses the moving tag \"%s\", which resolves to a frozen Bitnami build that is" $keycloakTag }}
+      {{- end }}
+      {{- $frozenLineNote := "" }}
+      {{- if $onFrozenLine }}
+        {{- $frozenLineNote = " The Bitnami-based \"camunda/keycloak\" tags this chart defaults to are frozen on the discontinued bitnamilegacy base and will not receive the fix." }}
+      {{- end }}
+      {{- $warningMessage := printf "%s %s%s %s %s"
+          "[camunda][warning]"
+          (printf "SECURITY: the bundled Keycloak image %s affected by CVE-2026-18963, a critical password-reset flaw enabling account takeover. It is fixed in Keycloak 26.7.2." $affectedImage)
+          $frozenLineNote
+          "Recommended: migrate this subchart to the Keycloak Operator, which replaces its StatefulSet: https://docs.camunda.io/docs/self-managed/deployment/helm/operational-tasks/migration-from-bitnami/"
+          "Enterprise customers can instead deploy with the chart's \"values-enterprise.yaml\", which pins a patched Bitnami-based \"keycloak-ee/keycloak\" image along with the registry pull secret it requires. Details: https://github.com/camunda/camunda-platform-helm/issues/6987"
+      -}}
+      {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+    {{- end }}
+  {{- end }}
 {{- end }}
 
 
@@ -300,4 +387,3 @@ when global elasticsearch is enabled then either external elasticsearch should b
   {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
 {{- end }}
 */}}
-

@@ -1,0 +1,6 @@
+orchestration:
+  data:
+    secondaryStorage:
+      type: elasticsearch
+  podLabels:
+    probe: '{{ kindOf .Subcharts }}'

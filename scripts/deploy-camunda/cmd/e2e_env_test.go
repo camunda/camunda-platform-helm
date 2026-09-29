@@ -221,3 +221,128 @@ func TestMergeEnvOverridesIgnoresLinesWithoutEquals(t *testing.T) {
 		t.Fatalf("mergeEnvOverrides() = %q, want %q", got, want)
 	}
 }
+
+func TestAssertOptimizeEnabledRejectsDisabledOptimize(t *testing.T) {
+	merged := "CAMUNDA_OPTIMIZE_BASE_URL=https://hub.example.com/optimize-orcha\nIS_OPTIMIZE=false\n"
+
+	err := assertOptimizeEnabled(merged, "ns-opta")
+	if err == nil || !strings.Contains(err.Error(), "IS_OPTIMIZE=false") {
+		t.Fatalf("expected a hard failure when Optimize specs would be skipped, got %v", err)
+	}
+}
+
+func TestAssertOptimizeEnabledAcceptsOverriddenOptimize(t *testing.T) {
+	merged := mergeEnvOverrides(
+		"CAMUNDA_OPTIMIZE_BASE_URL=https://orcha.example.com/optimize\nIS_OPTIMIZE=false\n",
+		map[string]string{
+			"CAMUNDA_OPTIMIZE_BASE_URL": "https://hub.example.com/optimize-orcha",
+			"IS_OPTIMIZE":               "true",
+		},
+	)
+
+	if !strings.Contains(merged, "IS_OPTIMIZE=true") {
+		t.Fatalf("merge did not enable Optimize: %q", merged)
+	}
+	if !strings.Contains(merged, "CAMUNDA_OPTIMIZE_BASE_URL=https://hub.example.com/optimize-orcha") {
+		t.Fatalf("merge did not repoint Optimize at the Hub host: %q", merged)
+	}
+	if err := assertOptimizeEnabled(merged, "ns-opta"); err != nil {
+		t.Fatalf("expected the overridden env to pass, got %v", err)
+	}
+}
+
+// Both Optimize URL keys must be set and agree. CAMUNDA_OPTIMIZE_BASE_URL alone made the Optimize
+// specs pass while Basic Navigation and the all-apps smoke flow failed on an nginx 404, because
+// NavigationPage.goToOptimize navigates with OPTIMIZE_CONTEXT_PATH, whose default "/optimize" resolves
+// against the orchestration host rather than the Hub host where the Optimize release runs.
+func TestOptimizeEnvOverridesSetsBothUrlKeys(t *testing.T) {
+	got := optimizeEnvOverrides("hub.example.com", "/optimize-orcha")
+
+	want := "https://hub.example.com/optimize-orcha"
+	for _, key := range []string{"CAMUNDA_OPTIMIZE_BASE_URL", "OPTIMIZE_CONTEXT_PATH"} {
+		if got[key] != want {
+			t.Errorf("%s = %q, want %q", key, got[key], want)
+		}
+	}
+	if got["CAMUNDA_OPTIMIZE_BASE_URL"] != got["OPTIMIZE_CONTEXT_PATH"] {
+		t.Errorf("the two Optimize URL keys disagree: %q vs %q", got["CAMUNDA_OPTIMIZE_BASE_URL"], got["OPTIMIZE_CONTEXT_PATH"])
+	}
+	if got["IS_OPTIMIZE"] != "true" {
+		t.Errorf("IS_OPTIMIZE = %q, want \"true\"; every Optimize spec is guarded on it", got["IS_OPTIMIZE"])
+	}
+}
+
+// The URLs must be absolute: page.goto honours an absolute URL over Playwright's baseURL, which is the
+// orchestration host and therefore the wrong place to look for a separate Optimize release.
+func TestOptimizeEnvOverridesUsesAbsoluteUrls(t *testing.T) {
+	for _, v := range optimizeEnvOverrides("hub.example.com", "/optimize-orcha-ta") {
+		if v == "true" {
+			continue
+		}
+		if !strings.HasPrefix(v, "https://") {
+			t.Errorf("override %q must be an absolute URL", v)
+		}
+	}
+}
+
+func TestValidateOptimizeFlagsRejectsNamespaceWithoutContextPath(t *testing.T) {
+	err := validateOptimizeFlags("matrix-810-mns-opt-orcha", "")
+	if err == nil {
+		t.Fatal("expected an error when --optimize-namespace is set without --optimize-context-path")
+	}
+	if !strings.Contains(err.Error(), "must be set together") {
+		t.Fatalf("expected error to say the flags pair, got: %v", err)
+	}
+}
+
+func TestValidateOptimizeFlagsRejectsContextPathWithoutNamespace(t *testing.T) {
+	err := validateOptimizeFlags("", "/optimize-orcha")
+	if err == nil {
+		t.Fatal("expected an error when --optimize-context-path is set without --optimize-namespace")
+	}
+	if !strings.Contains(err.Error(), "must be set together") {
+		t.Fatalf("expected error to say the flags pair, got: %v", err)
+	}
+}
+
+func TestValidateOptimizeFlagsRejectsContextPathWithoutLeadingSlash(t *testing.T) {
+	err := validateOptimizeFlags("matrix-810-mns-opt-orcha", "optimize-orcha")
+	if err == nil {
+		t.Fatal("expected an error when --optimize-context-path has no leading slash")
+	}
+	if !strings.Contains(err.Error(), "must start with") {
+		t.Fatalf("expected error to name the missing leading slash, got: %v", err)
+	}
+}
+
+func TestValidateOptimizeFlagsAcceptsBothSetAndBothOmitted(t *testing.T) {
+	if err := validateOptimizeFlags("matrix-810-mns-opt-orcha", "/optimize-orcha"); err != nil {
+		t.Fatalf("expected a paired namespace and context path to validate, got: %v", err)
+	}
+	if err := validateOptimizeFlags("", ""); err != nil {
+		t.Fatalf("expected both flags omitted to validate, got: %v", err)
+	}
+}
+
+func TestE2EEnvMergeRejectsHalfConfiguredOptimizeBeforeRendering(t *testing.T) {
+	cmd := newE2EEnvMergeCommand()
+	cmd.SetArgs([]string{
+		"--orchestration-namespace", "matrix-810-mns-orcha",
+		"--hub-namespace", "matrix-810-mns-hub",
+		"--absolute-chart-path", "/workspace/charts/camunda-platform-8.10",
+		"--render-script", "/nonexistent/render-e2e-env.sh",
+		"--optimize-namespace", "matrix-810-mns-opt-orcha",
+	})
+	cmd.SilenceUsage = true
+	cmd.SilenceErrors = true
+
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected an error when only --optimize-namespace is supplied")
+	}
+	// The render script is deliberately bogus: the flag check must fail first,
+	// proving it runs before any cluster or filesystem work.
+	if !strings.Contains(err.Error(), "must be set together") {
+		t.Fatalf("expected the flag pairing error ahead of the render step, got: %v", err)
+	}
+}

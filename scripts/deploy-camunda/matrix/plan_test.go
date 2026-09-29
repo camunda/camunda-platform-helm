@@ -76,6 +76,22 @@ func TestPlanManualAllBuildsNonEmpty(t *testing.T) {
 	}
 }
 
+func TestPlanChartVersionsChangeBuildsRoutineVersions(t *testing.T) {
+	t.Parallel()
+	result, err := Plan(findRepoRoot(t), PlanOptions{
+		ActiveVersions: planActiveVersions,
+		ChangedFiles:   "charts/chart-versions.yaml",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantVersions := append([]string(nil), planActiveVersions...)
+	sort.Strings(wantVersions)
+	if got, want := strings.Join(result.Versions, ","), strings.Join(wantVersions, ","); got != want {
+		t.Errorf("versions = %s, want routine versions %s", got, want)
+	}
+}
+
 func TestPlanManualSingleVersion(t *testing.T) {
 	result, err := Plan(findRepoRoot(t), PlanOptions{ActiveVersions: planActiveVersions, ManualTrigger: "8.9"})
 	if err != nil {
@@ -122,15 +138,52 @@ func TestPlanTopologyWorkflowMetadata(t *testing.T) {
 	if entry.IsTopology != "true" {
 		t.Errorf("isTopology = %q, want true", entry.IsTopology)
 	}
-	if entry.TopologyNamespaceSuffixes != `["hub","orcha","orchb"]` {
+	if entry.TopologyNamespaceSuffixes != `["hub","orcha","orchb","orchc","orchd"]` {
 		t.Errorf("topologyNamespaceSuffixes = %q", entry.TopologyNamespaceSuffixes)
 	}
 	if entry.TopologyHubSuffix != "hub" {
 		t.Errorf("topologyHubSuffix = %q, want hub", entry.TopologyHubSuffix)
 	}
-	wantSmoke := `[{"orchestration_suffix":"orcha","modeler_cluster_id":"orcha","modeler_cluster_name":"Orchestration A","shard_index":"1"},{"orchestration_suffix":"orchb","modeler_cluster_id":"orchb","modeler_cluster_name":"Orchestration B","shard_index":"2"}]`
+	wantSmoke := `[{"orchestration_suffix":"orcha","modeler_cluster_id":"orcha","modeler_cluster_name":"Orchestration A","shard_index":"1","chart_version":"8.10","chart_dir":"camunda-platform-8.10","suite":"orchestration","test_chart_dir":"camunda-platform-8.10","playwright_project":"topology-orchestration"},{"orchestration_suffix":"orchb","modeler_cluster_id":"orchb","modeler_cluster_name":"Orchestration B","shard_index":"2","chart_version":"8.9","chart_dir":"camunda-platform-8.9","suite":"orchestration","test_chart_dir":"camunda-platform-8.9","playwright_project":"topology-orchestration"},{"orchestration_suffix":"orchc","modeler_cluster_id":"orchc","modeler_cluster_name":"Orchestration C","shard_index":"3","chart_version":"8.8","chart_dir":"camunda-platform-8.8","suite":"orchestration","test_chart_dir":"camunda-platform-8.8","playwright_project":"topology-orchestration"},{"orchestration_suffix":"orchd","modeler_cluster_id":"orchd","modeler_cluster_name":"Orchestration D","shard_index":"4","chart_version":"8.7","chart_dir":"camunda-platform-8.7","suite":"orchestration","test_chart_dir":"camunda-platform-8.7","playwright_project":"topology-orchestration"}]`
 	if entry.TopologySmokeMatrix != wantSmoke {
 		t.Errorf("topologySmokeMatrix = %q, want %q", entry.TopologySmokeMatrix, wantSmoke)
+	}
+}
+
+func TestPlanTopologySmokeMatrixMapsOptimizeReleases(t *testing.T) {
+	result, err := Plan(findRepoRoot(t), PlanOptions{
+		ActiveVersions: planActiveVersions,
+		ManualTrigger:  "8.10",
+		ManualScenario: "multinamespace-optimize",
+		ManualFlow:     "install",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(result.Include) != 1 {
+		t.Fatalf("entries = %d, want 1", len(result.Include))
+	}
+	entry := result.Include[0]
+	if entry.TopologyNamespaceSuffixes != `["hub","orcha","orchb","opta","optb"]` {
+		t.Errorf("topologyNamespaceSuffixes = %q", entry.TopologyNamespaceSuffixes)
+	}
+	wantSmoke := `[{"orchestration_suffix":"orcha","modeler_cluster_id":"orcha","modeler_cluster_name":"Orchestration A","shard_index":"1","optimize_suffix":"opta","optimize_context_path":"/optimize-orcha","tenant_id":"default","chart_version":"8.10","chart_dir":"camunda-platform-8.10","suite":"orchestration","test_chart_dir":"camunda-platform-8.10","playwright_project":"topology-orchestration"},{"orchestration_suffix":"orchb","modeler_cluster_id":"orchb","modeler_cluster_name":"Orchestration B","shard_index":"2","optimize_suffix":"optb","optimize_context_path":"/optimize-orchb","tenant_id":"default","chart_version":"8.10","chart_dir":"camunda-platform-8.10","suite":"orchestration","test_chart_dir":"camunda-platform-8.10","playwright_project":"topology-orchestration"}]`
+	if entry.TopologySmokeMatrix != wantSmoke {
+		t.Errorf("topologySmokeMatrix = %q, want %q", entry.TopologySmokeMatrix, wantSmoke)
+	}
+	if entry.SkipE2E != "false" {
+		t.Errorf("skipE2E = %q, want false now that the e2e runner consumes optimize_suffix", entry.SkipE2E)
+	}
+}
+
+func TestPlanTopologyMetadataUsesReleaseChartVersion(t *testing.T) {
+	_, _, smoke := planTopologyMetadata("8.10", &Topology{Releases: []TopologyRelease{
+		{Role: "orchestration", NamespaceSuffix: "current", ModelerClusterID: "current", ModelerClusterName: "Current"},
+		{ChartVersion: "8.9", Role: "orchestration", NamespaceSuffix: "previous", ModelerClusterID: "previous", ModelerClusterName: "Previous"},
+	}})
+	want := `[{"orchestration_suffix":"current","modeler_cluster_id":"current","modeler_cluster_name":"Current","shard_index":"1","chart_version":"8.10","chart_dir":"camunda-platform-8.10","suite":"orchestration","test_chart_dir":"camunda-platform-8.10","playwright_project":"topology-orchestration"},{"orchestration_suffix":"previous","modeler_cluster_id":"previous","modeler_cluster_name":"Previous","shard_index":"2","chart_version":"8.9","chart_dir":"camunda-platform-8.9","suite":"orchestration","test_chart_dir":"camunda-platform-8.9","playwright_project":"topology-orchestration"}]`
+	if smoke != want {
+		t.Fatalf("smoke = %s, want %s", smoke, want)
 	}
 }
 
@@ -589,4 +642,153 @@ func TestPlanTierFilter(t *testing.T) {
 	if len(tier1.Include) == 0 || len(tier1.Include) > len(all.Include) {
 		t.Errorf("tier-1 entries = %d, all = %d; want 0 < tier1 <= all", len(tier1.Include), len(all.Include))
 	}
+}
+
+// suiteLegs fills in the application suite TopologyE2ELegs runs for each
+// orchestration target: the orchestration suite, from the release's own chart.
+func suiteLegs(targets ...TopologyE2ELeg) []TopologyE2ELeg {
+	out := []TopologyE2ELeg{}
+	for _, target := range targets {
+		target.Suite = "orchestration"
+		target.TestChartDir = target.ChartDir
+		target.PlaywrightProject = "topology-orchestration"
+		out = append(out, target)
+	}
+	return out
+}
+
+// TopologyE2ELegs is the single source of truth for both the CI smoke matrix and the local runner's
+// post-deploy test phase, so these cases pin the leg count and per-leg targeting that both rely on.
+func TestTopologyE2ELegs(t *testing.T) {
+	orchestration := func(suffix string) TopologyRelease {
+		return TopologyRelease{Role: "orchestration", NamespaceSuffix: suffix, ModelerClusterID: suffix}
+	}
+	optimize := func(suffix, serves, tenant, path string) TopologyRelease {
+		return TopologyRelease{Role: "optimize", NamespaceSuffix: suffix, Serves: serves, Tenant: tenant, OptimizeContextPath: path}
+	}
+	hub := TopologyRelease{Role: "hub", NamespaceSuffix: "hub"}
+
+	cases := []struct {
+		name     string
+		topology *Topology
+		want     []TopologyE2ELeg
+	}{
+		{
+			name:     "nil topology yields no legs",
+			topology: nil,
+			want:     nil,
+		},
+		{
+			// Optimize runs in-release, so the leg must carry no Optimize fields and the e2e env
+			// keeps deriving its endpoint from the orchestration namespace.
+			name:     "in-release optimize yields one leg per orchestration release",
+			topology: &Topology{Releases: []TopologyRelease{hub, orchestration("orcha"), orchestration("orchb")}},
+			want: suiteLegs(
+				TopologyE2ELeg{OrchestrationSuffix: "orcha", ModelerClusterID: "orcha", ChartVersion: "8.10", ChartDir: "camunda-platform-8.10"},
+				TopologyE2ELeg{OrchestrationSuffix: "orchb", ModelerClusterID: "orchb", ChartVersion: "8.10", ChartDir: "camunda-platform-8.10"},
+			),
+		},
+		{
+			name: "one optimize release per orchestration release",
+			topology: &Topology{Releases: []TopologyRelease{
+				hub,
+				orchestration("orcha"), orchestration("orchb"),
+				optimize("opta", "orcha", "default", "/optimize-orcha"),
+				optimize("optb", "orchb", "default", "/optimize-orchb"),
+			}},
+			want: suiteLegs(
+				TopologyE2ELeg{OrchestrationSuffix: "orcha", ModelerClusterID: "orcha", OptimizeSuffix: "opta", OptimizeContextPath: "/optimize-orcha", TenantID: "default", ChartVersion: "8.10", ChartDir: "camunda-platform-8.10"},
+				TopologyE2ELeg{OrchestrationSuffix: "orchb", ModelerClusterID: "orchb", OptimizeSuffix: "optb", OptimizeContextPath: "/optimize-orchb", TenantID: "default", ChartVersion: "8.10", ChartDir: "camunda-platform-8.10"},
+			),
+		},
+		{
+			// The physicaltenants shape: one cluster serving two Physical Tenants. The suite reads a
+			// single CAMUNDA_OPTIMIZE_BASE_URL, so this must fan out to one leg per tenant rather
+			// than one leg carrying both.
+			name: "one orchestration release serving two tenants yields two legs",
+			topology: &Topology{Releases: []TopologyRelease{
+				hub,
+				orchestration("orcha"),
+				optimize("optta", "orcha", "tenanta", "/optimize-orcha-ta"),
+				optimize("opttb", "orcha", "tenantb", "/optimize-orcha-tb"),
+			}},
+			want: suiteLegs(
+				TopologyE2ELeg{OrchestrationSuffix: "orcha", ModelerClusterID: "orcha", OptimizeSuffix: "optta", OptimizeContextPath: "/optimize-orcha-ta", TenantID: "tenanta", ChartVersion: "8.10", ChartDir: "camunda-platform-8.10"},
+				TopologyE2ELeg{OrchestrationSuffix: "orcha", ModelerClusterID: "orcha", OptimizeSuffix: "opttb", OptimizeContextPath: "/optimize-orcha-tb", TenantID: "tenantb", ChartVersion: "8.10", ChartDir: "camunda-platform-8.10"},
+			),
+		},
+		{
+			// An optimize release without `serves` cannot be attributed to an orchestration release,
+			// so it must not silently become a leg.
+			name: "optimize release without serves is ignored",
+			topology: &Topology{Releases: []TopologyRelease{
+				hub, orchestration("orcha"), optimize("opta", "", "default", "/optimize"),
+			}},
+			want: suiteLegs(
+				TopologyE2ELeg{OrchestrationSuffix: "orcha", ModelerClusterID: "orcha", ChartVersion: "8.10", ChartDir: "camunda-platform-8.10"},
+			),
+		},
+		{
+			// A release pinning its own chart-version must carry THAT chart on its leg, so a
+			// mixed-version topology tests each release against the chart it actually runs.
+			name: "release chart-version overrides the inherited parent version",
+			topology: &Topology{Releases: []TopologyRelease{
+				hub,
+				orchestration("orcha"),
+				func() TopologyRelease {
+					r := orchestration("orchb")
+					r.ChartVersion = "8.9"
+					return r
+				}(),
+			}},
+			want: suiteLegs(
+				TopologyE2ELeg{OrchestrationSuffix: "orcha", ModelerClusterID: "orcha", ChartVersion: "8.10", ChartDir: "camunda-platform-8.10"},
+				TopologyE2ELeg{OrchestrationSuffix: "orchb", ModelerClusterID: "orchb", ChartVersion: "8.9", ChartDir: "camunda-platform-8.9"},
+			),
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := TopologyE2ELegs("8.10", tc.topology)
+			if len(got) != len(tc.want) {
+				t.Fatalf("legs = %d (%+v), want %d (%+v)", len(got), got, len(tc.want), tc.want)
+			}
+			for i := range tc.want {
+				if got[i] != tc.want[i] {
+					t.Errorf("leg[%d] = %+v, want %+v", i, got[i], tc.want[i])
+				}
+			}
+		})
+	}
+}
+
+func TestPlanTopologyMetadataIncludesTenantID(t *testing.T) {
+	topology := &Topology{Releases: []TopologyRelease{
+		{Role: "hub", NamespaceSuffix: "hub"},
+		{Role: "orchestration", NamespaceSuffix: "orcha", ModelerClusterID: "cluster-a", ModelerClusterName: "Cluster A"},
+		{Role: "optimize", NamespaceSuffix: "opta", Serves: "orcha", Tenant: "tenant-a", OptimizeContextPath: "/optimize-a"},
+	}}
+
+	_, _, smoke := planTopologyMetadata("8.10", topology)
+	want := `[{"orchestration_suffix":"orcha","modeler_cluster_id":"cluster-a","modeler_cluster_name":"Cluster A","shard_index":"1","optimize_suffix":"opta","optimize_context_path":"/optimize-a","tenant_id":"tenant-a","chart_version":"8.10","chart_dir":"camunda-platform-8.10","suite":"orchestration","test_chart_dir":"camunda-platform-8.10","playwright_project":"topology-orchestration"}]`
+	if smoke != want {
+		t.Fatalf("smoke matrix = %s, want %s", smoke, want)
+	}
+}
+
+func TestPlanTierOneIncludesMixedTopology(t *testing.T) {
+	result, err := Plan(findRepoRoot(t), PlanOptions{
+		ActiveVersions: planActiveVersions,
+		ManualTrigger:  "8.10",
+		Tier:           1,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, entry := range result.Include {
+		if entry.Scenario == "multinamespace-2orch" {
+			return
+		}
+	}
+	t.Fatal("tier-1 matrix does not include multinamespace-2orch")
 }

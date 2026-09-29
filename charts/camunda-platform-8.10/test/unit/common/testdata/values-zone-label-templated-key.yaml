@@ -1,0 +1,15 @@
+global:
+  commonLabels:
+    '{{ print "camunda.io/zone" }}': smuggled
+orchestration:
+  data:
+    secondaryStorage:
+      type: elasticsearch
+  partitioning:
+    scheme: zone-aware
+    zone: zone-a
+    zones:
+      - name: zone-a
+        numberOfBrokers: 1
+        numberOfReplicas: 1
+        priority: 100

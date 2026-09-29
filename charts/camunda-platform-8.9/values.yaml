@@ -42,6 +42,11 @@
 ## @section Global parameters
 ## @extra global
 global:
+  ## @extra global.topology configuration for how this Helm release participates in a Camunda deployment topology. The default combined mode preserves the existing single-release behavior.
+  topology:
+    ## @param global.topology.mode defines the role of this release in the deployment topology. Supported values are combined and orchestration.
+    mode: combined
+
   ## License configuration.
   ## @extra global.license
   license:
@@ -728,7 +733,7 @@ global:
   ## Document Store Configuration
   ## @extra global.documentStore These parameters are used to configure the document storage backend across all Camunda components.
   documentStore:
-    ## @param global.documentStore.activeStoreId The default document store to use. Valid values: inmemory, aws, gcp, and azure.
+    ## @param global.documentStore.activeStoreId defines the default document store instance ID. This value must match the configured store instance ID. See https://docs.camunda.io/docs/8.9/self-managed/concepts/document-handling/configuration/helm/
     activeStoreId: "inmemory"
     type:
       aws:
@@ -797,7 +802,7 @@ global:
         ## @param global.documentStore.type.inmemory.class Fully qualified class name for the in-memory document store provider.
         class: "io.camunda.document.store.inmemory.InMemoryDocumentStoreProvider"
       azure:
-        ## @extra global.documentStore.type.azure.connectionString configuration to provide the Azure Blob Storage connection string.
+        ## @extra global.documentStore.type.azure.connectionString configuration to provide the Azure Blob Storage connection string (Camunda 8.9.18+).
         connectionString:
           ## @extra global.documentStore.type.azure.connectionString.secret configuration to provide the Azure connection string as a secret.
           secret:
@@ -907,7 +912,7 @@ identity:
     ## @param identity.image.repository defines which image repository to use
     repository: camunda/identity
     ## @param identity.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.9.9
+    tag: 8.9.10
     ## @param identity.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param identity.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -1454,7 +1459,7 @@ console:
     ## @param console.image.repository defines which image repository to use
     repository: camunda/console
     ## @param console.image.tag can be used to set the Docker image tag for the Console image
-    tag: 8.9.95
+    tag: 8.9.116
     ## @param console.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param console.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -1683,7 +1688,7 @@ webModeler:
     registry: ""
     ## @param webModeler.image.tag can be used to set the Docker image tag for the WebModeler images
     # renovate: datasource=docker depName=camunda/web-modeler-restapi
-    tag: 8.9.8
+    tag: 8.9.9
     ## @param webModeler.image.pullSecrets can be used to configure image pull secrets, see https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
@@ -2298,7 +2303,7 @@ connectors:
     ## @param connectors.image.repository defines which image repository to use
     repository: camunda/connectors-bundle
     ## @param connectors.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.9.10
+    tag: 8.9.14
     ## @param connectors.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param connectors.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -2661,7 +2666,7 @@ orchestration:
     ## @param orchestration.image.repository defines which image repository to use
     repository: camunda/camunda
     ## @param orchestration.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.9.19
+    tag: 8.9.21
     ## @param orchestration.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param orchestration.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -3195,7 +3200,7 @@ optimize:
     ## @param optimize.image.repository defines which image repository to use
     repository: camunda/optimize
     ## @param optimize.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.9.19
+    tag: 8.9.21
     ## @param optimize.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param optimize.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod

@@ -1,4 +1,4 @@
-{{- if .Values.identity.enabled -}}
+{{- if eq (include "camundaPlatform.identityEnabled" .) "true" -}}
 
 {{/*
 A template to handel constraints.

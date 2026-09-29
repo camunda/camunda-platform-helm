@@ -22,6 +22,25 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+func TestListEvents(t *testing.T) {
+	t.Parallel()
+	client := newTestClient(
+		&corev1.Event{ObjectMeta: metav1.ObjectMeta{Name: "probe", Namespace: "target"}, Reason: "Unhealthy", Message: "Readiness probe failed: HTTP 503"},
+		&corev1.Event{ObjectMeta: metav1.ObjectMeta{Name: "other", Namespace: "other"}},
+	)
+	events, err := client.ListEvents(context.Background(), "target")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(events.Items) != 1 || events.Items[0].Name != "probe" || events.Items[0].Message != "Readiness probe failed: HTTP 503" {
+		t.Fatalf("unexpected events: %+v", events.Items)
+	}
+	_, err = client.ListEvents(context.Background(), "")
+	if err == nil {
+		t.Fatal("expected an error for an empty namespace")
+	}
+}
+
 func TestListPods(t *testing.T) {
 	pod := func(name, namespace string) *corev1.Pod {
 		return &corev1.Pod{ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace}}
@@ -88,4 +107,24 @@ func TestListPods(t *testing.T) {
 			t.Fatalf("got %d pods, want 0", len(pods.Items))
 		}
 	})
+}
+
+func TestNamespaceExists(t *testing.T) {
+	client := newTestClient(&corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "present"}})
+
+	exists, err := client.NamespaceExists(context.Background(), "present")
+	if err != nil {
+		t.Fatalf("NamespaceExists() error = %v", err)
+	}
+	if !exists {
+		t.Fatal("NamespaceExists() = false, want true")
+	}
+
+	exists, err = client.NamespaceExists(context.Background(), "absent")
+	if err != nil {
+		t.Fatalf("NamespaceExists() error = %v", err)
+	}
+	if exists {
+		t.Fatal("NamespaceExists() = true, want false")
+	}
 }

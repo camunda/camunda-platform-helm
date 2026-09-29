@@ -1,0 +1,6 @@
+global:
+  ingress:
+    enabled: true
+    className: contour
+    annotations:
+      '{{ "nginx.ingress.kubernetes.io/ssl-redirect" }}': "user-wins"

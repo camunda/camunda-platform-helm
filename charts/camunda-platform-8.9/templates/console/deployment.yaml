@@ -1,4 +1,4 @@
-{{- if .Values.console.enabled -}}
+{{- if eq (include "camundaPlatform.consoleEnabled" .) "true" -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:

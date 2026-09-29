@@ -65,6 +65,12 @@ spec:
             {{- if $connectors.enabled }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict "envName" (printf "VALUES_TOPOLOGY_%s_CONNECTORS_SECRET" $token) "config" $connectors) | nindent 12 }}
             {{- end }}
+            {{- range $tenant := dig "physicalTenants" list $cluster }}
+            {{- $tenantOptimize := dig "components" "optimize" dict $tenant }}
+            {{- if $tenantOptimize.enabled }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict "envName" (printf "VALUES_TOPOLOGY_%s_TENANT_%s_OPTIMIZE_SECRET" $token (include "camundaPlatform.topologyEnvToken" $tenant.id)) "config" $tenantOptimize) | nindent 12 }}
+            {{- end }}
+            {{- end }}
             {{- end }}
             {{- end }}
             {{- if or .Values.global.identity.auth.connectors.alwaysRegister (and (ne (include "camundaPlatform.topologyMode" .) "hub") (eq (include "connectors.authMethod" .) "oidc")) }}
@@ -84,12 +90,13 @@ spec:
               value: {{ include "orchestration.authClientId" . | quote }}
             {{- end }}
             {{- if or .Values.global.identity.auth.optimize.alwaysRegister (and (ne (include "camundaPlatform.topologyMode" .) "hub") .Values.optimize.enabled) }}
-            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+            {{- /* NOTE: the effective secret, matching the client id below and the Optimize Deployment. */ -}}
+            {{ include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName"       "VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET"
-                "config"        .Values.global.identity.auth.optimize
+                "config"        (include "optimize.authSecretConfig" . | fromYaml)
             ) | nindent 12 }}
             - name: CAMUNDA_OPTIMIZE_CLIENT_ID
-              value: {{ .Values.global.identity.auth.optimize.clientId | quote }}
+              value: {{ include "optimize.effectiveAuthClientId" . | quote }}
             {{- end }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName"           "VALUES_KEYCLOAK_SETUP_PASSWORD"
@@ -116,7 +123,7 @@ spec:
             {{- if or .Values.global.identity.auth.optimize.alwaysRegister (and (ne (include "camundaPlatform.topologyMode" .) "hub") .Values.optimize.enabled) }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
               "envName" "CAMUNDA_OPTIMIZE_SECRET"
-              "config" .Values.global.identity.auth.optimize
+              "config" (include "optimize.authSecretConfig" . | fromYaml)
             ) | nindent 12 }}
             {{- end }}
             {{- end }}

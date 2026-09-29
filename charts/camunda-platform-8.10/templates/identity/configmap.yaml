@@ -1,4 +1,5 @@
 {{- if eq (include "camundaPlatform.identityEnabled" .) "true" }}
+{{- $registerHub := or (eq (include "camundaHub.webModelerEnabled" .) "true") .Values.global.identity.auth.orchestration.hubPingAuthorizationEnabled (not (empty .Values.orchestration.hub.ping.endpoint)) }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -53,7 +54,13 @@ data:
         {{- $orchestration := dig "components" "orchestration" dict $cluster }}
         {{- $optimize := dig "components" "optimize" dict $cluster }}
         {{- $connectors := dig "components" "connectors" dict $cluster }}
-        {{- if or $orchestration.enabled $optimize.enabled $connectors.enabled }}
+        {{- $hasTenantOptimize := false }}
+        {{- range $tenant := dig "physicalTenants" list $cluster }}
+        {{- if dig "components" "optimize" "enabled" false $tenant }}
+          {{- $hasTenantOptimize = true }}
+        {{- end }}
+        {{- end }}
+        {{- if or $orchestration.enabled $optimize.enabled $connectors.enabled $hasTenantOptimize }}
         {{ printf "topology-%s" $slug | quote }}:
           applications:
           {{- if eq (include "camundaPlatform.authIssuerType" $) "KEYCLOAK" }}
@@ -73,18 +80,42 @@ data:
                 {{- end }}
               root-url: {{ tpl $orchestration.redirectUrl $ | quote }}
               redirect-uris:
+                {{- if eq ($cluster.architecture | default "unified") "legacy" }}
+                - "/operate/identity-callback"
+                - "/tasklist/identity-callback"
+                {{- else }}
                 - "/login/oauth2/code/orchestration"
                 - "/sso-callback"
+                {{- end }}
           {{- end }}
           {{- if $optimize.enabled }}
             - name: {{ printf "Optimize %s" $displayName | quote }}
               id: {{ $optimize.clientId | quote }}
               type: confidential
               secret: {{ printf "${VALUES_TOPOLOGY_%s_OPTIMIZE_SECRET:}" $token }}
+              permissions:
+                - audience: {{ $optimize.audience | quote }}
+                  definition: write:*
               root-url: {{ tpl $optimize.redirectUrl $ | quote }}
               redirect-uris:
                 - "/api/authentication/callback"
                 - "/"
+          {{- end }}
+          {{- range $tenant := dig "physicalTenants" list $cluster }}
+          {{- $tenantOptimize := dig "components" "optimize" dict $tenant }}
+          {{- if $tenantOptimize.enabled }}
+            - name: {{ printf "Optimize %s %s" $displayName $tenant.id | quote }}
+              id: {{ $tenantOptimize.clientId | quote }}
+              type: confidential
+              secret: {{ printf "${VALUES_TOPOLOGY_%s_TENANT_%s_OPTIMIZE_SECRET:}" $token (include "camundaPlatform.topologyEnvToken" $tenant.id) }}
+              permissions:
+                - audience: {{ $tenantOptimize.audience | quote }}
+                  definition: write:*
+              root-url: {{ tpl $tenantOptimize.redirectUrl $ | quote }}
+              redirect-uris:
+                - "/api/authentication/callback"
+                - "/"
+          {{- end }}
           {{- end }}
           {{- if $connectors.enabled }}
             - name: {{ printf "Connectors %s" $displayName | quote }}
@@ -113,6 +144,16 @@ data:
                 - definition: write:*
                   description: "Write permission"
           {{- end }}
+          {{- range $tenant := dig "physicalTenants" list $cluster }}
+          {{- $tenantOptimize := dig "components" "optimize" dict $tenant }}
+          {{- if $tenantOptimize.enabled }}
+            - name: {{ printf "Optimize %s %s API" $displayName $tenant.id | quote }}
+              audience: {{ $tenantOptimize.audience | quote }}
+              permissions:
+                - definition: write:*
+                  description: "Write permission"
+          {{- end }}
+          {{- end }}
           roles:
           {{- if and $orchestration.enabled $orchestration.roleName }}
             - name: {{ $orchestration.roleName | quote }}
@@ -135,6 +176,20 @@ data:
                   definition: read:users
           {{- else if $optimize.enabled }}
             {{- $hasSharedOptimizeRole = true }}
+          {{- end }}
+          {{- range $tenant := dig "physicalTenants" list $cluster }}
+          {{- $tenantOptimize := dig "components" "optimize" dict $tenant }}
+          {{- if and $tenantOptimize.enabled $tenantOptimize.roleName }}
+            - name: {{ $tenantOptimize.roleName | quote }}
+              description: {{ printf "Grants full access to Optimize %s %s" $displayName $tenant.id | quote }}
+              permissions:
+                - audience: {{ $tenantOptimize.audience | quote }}
+                  definition: write:*
+                - audience: {{ include "identity.authAudience" $ | quote }}
+                  definition: read:users
+          {{- else if $tenantOptimize.enabled }}
+            {{- $hasSharedOptimizeRole = true }}
+          {{- end }}
           {{- end }}
         {{- end }}
         {{- end }}
@@ -164,6 +219,13 @@ data:
               {{- if and $component.enabled (empty $component.roleName) }}
                 - audience: {{ $component.audience | quote }}
                   definition: write:*
+              {{- end }}
+              {{- range $tenant := dig "physicalTenants" list $cluster }}
+              {{- $tenantOptimize := dig "components" "optimize" dict $tenant }}
+              {{- if and $tenantOptimize.enabled (empty $tenantOptimize.roleName) }}
+                - audience: {{ $tenantOptimize.audience | quote }}
+                  definition: write:*
+              {{- end }}
               {{- end }}
               {{- end }}
                 - audience: {{ include "identity.authAudience" $ | quote }}
@@ -201,14 +263,14 @@ data:
                   definition: read
                 - audience: {{ include "identity.authAudience" . | quote }}
                   definition: write
-        {{- if or .Values.global.identity.auth.optimize.alwaysRegister (and (ne (include "camundaPlatform.topologyMode" .) "hub") .Values.optimize.enabled) }}
         optimize:
+          {{- if or .Values.global.identity.auth.optimize.alwaysRegister (and (ne (include "camundaPlatform.topologyMode" .) "hub") .Values.optimize.enabled) }}
           applications:
             - name: Optimize
               id: ${CAMUNDA_OPTIMIZE_CLIENT_ID:${VALUES_KEYCLOAK_INIT_OPTIMIZE_CLIENT_ID:optimize}}
               type: confidential
               secret: ${CAMUNDA_OPTIMIZE_SECRET:${VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET:}}
-              root-url: {{ tpl .Values.global.identity.auth.optimize.redirectUrl $ | quote }}
+              root-url: {{ tpl (include "optimize.effectiveAuthRedirectUrl" $) $ | quote }}
               redirect-uris:
                 - "/api/authentication/callback"
                 - "/"
@@ -231,7 +293,11 @@ data:
               permissions:
                 - audience: {{ include "camundaPlatform.authAudienceOptimize" . | quote }}
                   definition: write:*
-        {{- end }}
+          {{- else }}
+          applications: []
+          apis: []
+          roles: []
+          {{- end }}
         {{- if or .Values.global.identity.auth.orchestration.alwaysRegister (and (ne (include "camundaPlatform.topologyMode" .) "hub") (or .Values.global.identity.auth.orchestration.hubPingAuthorizationEnabled (eq (include "orchestration.authMethod" .) "oidc"))) }}
         orchestration:
           applications:
@@ -270,6 +336,7 @@ data:
                   definition: write:*
         {{- end }}
         webmodeler:
+          {{- if $registerHub }}
           applications:
             - name: "Hub"
               id: ${CAMUNDA_WEBMODELER_CLIENT_ID:${VALUES_KEYCLOAK_INIT_WEBMODELER_CLIENT_ID:web-modeler}}
@@ -364,7 +431,6 @@ data:
                   definition: read:users
                 - audience: {{ include "webModeler.authClientApiAudience" . | quote }}
                   definition: admin:clusters
-            {{- if or .Values.orchestration.hub.ping.endpoint .Values.global.identity.auth.orchestration.hubPingAuthorizationEnabled }}
             - name: "Hub API - Cluster Ping"
               description: "Grants create/update access to the CamundaHub API for the orchestration cluster ping"
               permissions:
@@ -372,7 +438,11 @@ data:
                   definition: create:*
                 - audience: {{ include "webModeler.authPublicApiAudience" . | quote }}
                   definition: update:*
-            {{- end }}
+          {{- else }}
+          applications: []
+          apis: []
+          roles: []
+          {{- end }}
 
       {{- $pingClaimName := .Values.global.identity.auth.orchestration.hubPingClaimName -}}
       {{- $pingClaimValue := .Values.global.identity.auth.orchestration.hubPingClaimValue -}}
@@ -411,7 +481,16 @@ data:
         {{- range $cluster := dig "clusters" list (.Values.global.topology | default dict) }}
         {{- $slug := include "camundaPlatform.topologySlug" $cluster.id }}
         {{- $components := $cluster.components | default dict }}
-        {{- if or (dig "orchestration" "enabled" false $components) (dig "optimize" "enabled" false $components) (dig "connectors" "enabled" false $components) }}
+        {{- $hasTenantOptimize := false }}
+        {{- range $tenant := dig "physicalTenants" list $cluster }}
+        {{- if dig "components" "optimize" "enabled" false $tenant }}
+          {{- $hasTenantOptimize = true }}
+        {{- end }}
+        {{- if and (dig "components" "optimize" "enabled" false $tenant) (empty (dig "components" "optimize" "roleName" "" $tenant)) }}
+          {{- $hasSharedTopologyRole = true }}
+        {{- end }}
+        {{- end }}
+        {{- if or (dig "orchestration" "enabled" false $components) (dig "optimize" "enabled" false $components) (dig "connectors" "enabled" false $components) $hasTenantOptimize }}
         {{ printf "topology-%s" $slug | quote }}: {}
         {{- end }}
         {{- if or (and (dig "components" "orchestration" "enabled" false $cluster) (empty (dig "components" "orchestration" "roleName" "" $cluster))) (and (dig "components" "optimize" "enabled" false $cluster) (empty (dig "components" "optimize" "roleName" "" $cluster))) }}
@@ -434,8 +513,10 @@ data:
         orchestration:
           secret: ${VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET:}
         {{- end }}
+        {{- if $registerHub }}
         webmodeler:
           root-url: {{ tpl (or .Values.global.identity.auth.camundaHub.redirectUrl .Values.global.identity.auth.webModeler.redirectUrl) $ | quote }}
+        {{- end }}
       clients:
       {{- if .Values.global.identity.auth.admin.enabled }}
         - id: {{ .Values.global.identity.auth.admin.clientId }}
@@ -459,8 +540,10 @@ data:
             - resourceServerId: {{ include "camundaPlatform.authAudienceOptimize" . | quote }}
               definition: write:*
             {{- end }}
+            {{- if $registerHub }}
             - resourceServerId: web-modeler-api
               definition: write:*
+            {{- end }}
       {{- end }}
       {{- if .Values.identity.clients }}
         {{- range $index, $client := .Values.identity.clients }}
@@ -469,8 +552,13 @@ data:
           {{- if ne $client.type "public" }}
           secret: ${VALUES_{{ $client.id | upper}}_CLIENT_SECRET:}
           {{- end }}
-          redirectUris: {{ $client.redirectUris }}
-          rootUrl: {{ $client.rootUrl }}
+          {{- if kindIs "slice" $client.redirectUris }}
+          redirectUris:
+            {{- tpl (toYaml $client.redirectUris) $ | nindent 12 }}
+          {{- else }}
+          redirectUris: {{ tpl ($client.redirectUris | toString) $ }}
+          {{- end }}
+          rootUrl: {{ tpl ($client.rootUrl | toString) $ }}
           type: {{ $client.type }}
           permissions:
             {{- with $client.permissions }}
@@ -507,6 +595,16 @@ data:
               {{- else }}
                 {{- $hasSharedOptimizeRole = true }}
               {{- end }}
+            {{- end }}
+            {{- range $tenant := dig "physicalTenants" list $cluster }}
+            {{- if (dig "components" "optimize" "enabled" false $tenant) }}
+              {{- $roleName := dig "components" "optimize" "roleName" "" $tenant }}
+              {{- if $roleName }}
+            - {{ $roleName | quote }}
+              {{- else }}
+                {{- $hasSharedOptimizeRole = true }}
+              {{- end }}
+            {{- end }}
             {{- end }}
             {{- end }}
             {{- if $hasSharedOrchestrationRole }}

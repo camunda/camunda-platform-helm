@@ -193,7 +193,7 @@ jobs:
           echo "package_file=${package_name}" | tee -a $GITHUB_OUTPUT
           
           # Extract version, app_version (appVersion, .x-stripped), prerelease,
-          # is_latest_stable (vs chart-versions.yaml supportStandard[0]),
+          # is_latest_stable (vs the newest released minor in chart-versions.yaml),
           # chart_dir_id, release_tag, the cosign file names and the
           # component-image-versions annotation from the package's Chart.yaml.
           tar -xzf "${package_file}" camunda-platform/Chart.yaml -O > /tmp/Chart.yaml
@@ -242,7 +242,8 @@ jobs:
         if: ${{ !inputs.dry-run }}
         working-directory: .cr-release-packages
         run: |
-          cosign sign-blob -y "${{ steps.metadata.outputs.package_file }}" \
+          source "${GITHUB_WORKSPACE}/scripts/harbor-retry.sh"
+          retry_cmd "cosign sign-blob" cosign sign-blob -y "${{ steps.metadata.outputs.package_file }}" \
             --bundle "${{ steps.metadata.outputs.cosign_bundle }}"
 
       - name: Get Cosign Rekor log index
@@ -624,7 +625,7 @@ jobs:
       - name: Shepherd release-please PR through merge queue
         id: merge-queue
         continue-on-error: true
-        uses: camunda/infra-global-github-actions/ensure-pr-passes-merge-queue@35aaec9b5e02286826f2139b5228312c6f894d6d # main
+        uses: camunda/infra-global-github-actions/ensure-pr-passes-merge-queue@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
         with:
           pr-number: ${{ needs.post-release.outputs.pr-number }}
           app-id: ${{ steps.secrets.outputs.GH_APP_ID_DISTRO_CI }}

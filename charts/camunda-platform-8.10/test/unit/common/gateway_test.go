@@ -265,7 +265,8 @@ func (s *GatewayTemplateTest) TestDifferentValuesInputs() {
 				"global.ingress.enabled":               "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
-				require.ErrorContains(t, err, "Gateway API and Ingress cannot both be enabled at the same time")
+				require.ErrorContains(t, err, "Gateway API and combined web Ingress cannot both be enabled")
+				require.ErrorContains(t, err, "Gateway web routing can still use a separate orchestration gRPC Ingress")
 			},
 		},
 		{

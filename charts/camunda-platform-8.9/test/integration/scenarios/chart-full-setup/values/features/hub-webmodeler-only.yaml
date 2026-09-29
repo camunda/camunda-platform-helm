@@ -5,6 +5,9 @@
 console:
   enabled: false
 
+identity:
+  clients: null
+
 webModeler:
   enabled: true
   contextPath: "/modeler"

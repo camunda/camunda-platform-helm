@@ -164,6 +164,95 @@ func (s *normalizeSecretConfigTest) TestAwsDocumentStoreSecretHelperFunctions() 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
+func (s *normalizeSecretConfigTest) TestAzureDocumentStoreSecretHelperFunctions() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "azure existing secret uses the legacy document store environment variable",
+			Values: map[string]string{
+				"global.documentStore.activeStoreId":                                        "azure",
+				"global.documentStore.type.azure.connectionString.secret.existingSecret":    "azure-credentials",
+				"global.documentStore.type.azure.connectionString.secret.existingSecretKey": "connection-string",
+				"orchestration.env[0].name":                                                 "DOCUMENT_STORE_AZURE_CLASS",
+				"orchestration.env[0].value":                                                "io.camunda.document.store.azure.AzureBlobDocumentStoreProvider",
+				"orchestration.env[1].name":                                                 "DOCUMENT_STORE_AZURE_CONTAINER",
+				"orchestration.env[1].value":                                                "documents",
+			},
+			Expected: map[string]string{
+				"spec.template.spec.containers[0].env[?(@.name=='DOCUMENT_STORE_AZURE_CONNECTION_STRING')].valueFrom.secretKeyRef.name": "azure-credentials",
+				"spec.template.spec.containers[0].env[?(@.name=='DOCUMENT_STORE_AZURE_CONNECTION_STRING')].valueFrom.secretKeyRef.key":  "connection-string",
+				"spec.template.spec.containers[0].env[?(@.name=='DOCUMENT_STORE_AZURE_CLASS')].value":                                   "io.camunda.document.store.azure.AzureBlobDocumentStoreProvider",
+				"spec.template.spec.containers[0].env[?(@.name=='DOCUMENT_STORE_AZURE_CONTAINER')].value":                               "documents",
+			},
+		},
+		{
+			Name: "azure inline secret uses the active custom store ID",
+			Values: map[string]string{
+				"global.documentStore.activeStoreId":                                   "az1",
+				"global.documentStore.type.azure.connectionString.secret.inlineSecret": "test-connection-string",
+			},
+			Expected: map[string]string{
+				"spec.template.spec.containers[0].env[?(@.name=='DOCUMENT_STORE_AZ1_CONNECTION_STRING')].value": "test-connection-string",
+			},
+		},
+		{
+			Name: "azure managed identity preserves provider environment without injecting a connection string",
+			Values: map[string]string{
+				"global.documentStore.activeStoreId": "azure",
+				"orchestration.env[0].name":          "DOCUMENT_STORE_AZURE_CLASS",
+				"orchestration.env[0].value":         "io.camunda.document.store.azure.AzureBlobDocumentStoreProvider",
+				"orchestration.env[1].name":          "DOCUMENT_STORE_AZURE_CONTAINER",
+				"orchestration.env[1].value":         "documents",
+				"orchestration.env[2].name":          "DOCUMENT_STORE_AZURE_ENDPOINT",
+				"orchestration.env[2].value":         "https://storage.example.com",
+			},
+			Expected: map[string]string{
+				"spec.template.spec.containers[0].env[?(@.name=='DOCUMENT_STORE_AZURE_CLASS')].value":     "io.camunda.document.store.azure.AzureBlobDocumentStoreProvider",
+				"spec.template.spec.containers[0].env[?(@.name=='DOCUMENT_STORE_AZURE_CONTAINER')].value": "documents",
+				"spec.template.spec.containers[0].env[?(@.name=='DOCUMENT_STORE_AZURE_ENDPOINT')].value":  "https://storage.example.com",
+			},
+			Unexpected: []string{"spec.template.spec.containers[0].env[?(@.name=='DOCUMENT_STORE_AZURE_CONNECTION_STRING')]"},
+		},
+		{
+			Name: "Azure credentials are not injected into Connectors",
+			CaseTemplates: &testhelpers.CaseTemplate{
+				Templates: []string{"templates/connectors/deployment.yaml"},
+			},
+			Values: map[string]string{
+				"connectors.enabled":                                                        "true",
+				"global.license.secret.inlineSecret":                                        "test-license",
+				"global.documentStore.activeStoreId":                                        "azure",
+				"global.documentStore.type.azure.connectionString.secret.existingSecret":    "azure-credentials",
+				"global.documentStore.type.azure.connectionString.secret.existingSecretKey": "connection-string",
+			},
+			Expected: map[string]string{
+				"spec.template.spec.containers[0].env[?(@.name=='CAMUNDA_LICENSE_KEY')].value": "test-license",
+			},
+			Unexpected: []string{"spec.template.spec.containers[0].env[?(@.name=='DOCUMENT_STORE_AZURE_CONNECTION_STRING')]"},
+		},
+	}
+
+	for _, storeID := range []string{"inmemory", "aws", "gcp", "azure", "az1"} {
+		testCases = append(testCases, testhelpers.TestCase{
+			Name: "no connection string for " + storeID + " without an Azure secret",
+			Values: map[string]string{
+				"global.documentStore.activeStoreId": storeID,
+			},
+			Expected: map[string]string{
+				"spec.template.spec.containers[0].env[?(@.name=='K8S_POD_NAME')].valueFrom.fieldRef.fieldPath": "metadata.name",
+			},
+			Unexpected: []string{
+				"spec.template.spec.containers[0].env[?(@.name=='DOCUMENT_STORE_" + strings.ToUpper(storeID) + "_CONNECTION_STRING')]",
+			},
+		})
+	}
+	for caseIndex := range testCases {
+		testCases[caseIndex].Unexpected = append(testCases[caseIndex].Unexpected,
+			"spec.template.spec.containers[0].env[?(@.name=='VALUES_DOCUMENT_STORE_AZURE_CONNECTION_STRING')]")
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
 func (s *normalizeSecretConfigTest) TestEmitVolumeFromSecretConfig() {
 	// Use orchestration statefulset template - the only remaining document-store
 	// consumer (camunda-platform-helm#3741 removed the wiring from connectors, which

@@ -1,5 +1,38 @@
 # Changelog
 
+## [14.10.1](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.9-14.10.0...camunda-platform-8.9-14.10.1) (2026-09-18)
+
+
+### Bug Fixes
+
+* **8.9:** keep camundaexporter registration for legacy exporter args ([#7044](https://github.com/camunda/camunda-platform-helm/issues/7044)) ([f7650de](https://github.com/camunda/camunda-platform-helm/commit/f7650de66d02979c3eff3167e24db03a89527df1))
+* stop management identity from provisioning disabled components ([#7051](https://github.com/camunda/camunda-platform-helm/issues/7051)) ([bf72b13](https://github.com/camunda/camunda-platform-helm/commit/bf72b1357f43b12f36159d9a05c2623caf5235da))
+* warn that the bundled Keycloak image line is frozen and affected by CVE-2026-18963 ([#6998](https://github.com/camunda/camunda-platform-helm/issues/6998)) ([a075fa1](https://github.com/camunda/camunda-platform-helm/commit/a075fa1c82b9aa20c2541ff95e967cedd1cda560))
+
+
+### Dependencies
+
+* update camunda-platform-images (patch) ([#7214](https://github.com/camunda/camunda-platform-helm/issues/7214)) ([93d9e57](https://github.com/camunda/camunda-platform-helm/commit/93d9e57f494b4a944ed895a52b94cc9a5f3c383c))
+* update camunda-platform-images (patch) ([#7217](https://github.com/camunda/camunda-platform-helm/issues/7217)) ([6de0235](https://github.com/camunda/camunda-platform-helm/commit/6de02357784d177418fee0a9d425e6df2e03b129))
+* update camunda-platform-images (patch) ([#7233](https://github.com/camunda/camunda-platform-helm/issues/7233)) ([d433476](https://github.com/camunda/camunda-platform-helm/commit/d4334766e51afdf37db8fc611484dcb7bbdac435))
+* update camunda/console docker tag to v8.9.100 ([#7168](https://github.com/camunda/camunda-platform-helm/issues/7168)) ([39c3967](https://github.com/camunda/camunda-platform-helm/commit/39c3967add3a11bbe7e81387d15b171e02fd8fc0))
+* update camunda/console docker tag to v8.9.101 ([#7170](https://github.com/camunda/camunda-platform-helm/issues/7170)) ([413e004](https://github.com/camunda/camunda-platform-helm/commit/413e004000441db27364b743e073fab992567be7))
+* update camunda/console docker tag to v8.9.102 ([#7171](https://github.com/camunda/camunda-platform-helm/issues/7171)) ([55d9c70](https://github.com/camunda/camunda-platform-helm/commit/55d9c7053aa32c21b0d69933b7b105ae121aed01))
+* update camunda/console docker tag to v8.9.103 ([#7172](https://github.com/camunda/camunda-platform-helm/issues/7172)) ([ccdeeaf](https://github.com/camunda/camunda-platform-helm/commit/ccdeeaf3b294f24f05dd775c4553e94ba320a7ba))
+* update camunda/console docker tag to v8.9.105 ([#7184](https://github.com/camunda/camunda-platform-helm/issues/7184)) ([0bf7a13](https://github.com/camunda/camunda-platform-helm/commit/0bf7a1318412c4b11bd5dcac37dbd267a3480f68))
+* update camunda/console docker tag to v8.9.107 ([#7227](https://github.com/camunda/camunda-platform-helm/issues/7227)) ([36a87f4](https://github.com/camunda/camunda-platform-helm/commit/36a87f48ef283b97de14c9c9d7d5f887ce9e7996))
+* update camunda/console docker tag to v8.9.94 ([#7101](https://github.com/camunda/camunda-platform-helm/issues/7101)) ([c398f6a](https://github.com/camunda/camunda-platform-helm/commit/c398f6a11d98db591fe6b5924818454f002574b9))
+* update camunda/console docker tag to v8.9.95 ([#7106](https://github.com/camunda/camunda-platform-helm/issues/7106)) ([a80133a](https://github.com/camunda/camunda-platform-helm/commit/a80133ad3364bcab8c435336edf04f49988ad11c))
+* update camunda/console docker tag to v8.9.95 ([#7107](https://github.com/camunda/camunda-platform-helm/issues/7107)) ([36e9673](https://github.com/camunda/camunda-platform-helm/commit/36e9673e3600e9d236d2b8f1f425f65a1e4650dc))
+* update camunda/console docker tag to v8.9.97 ([#7165](https://github.com/camunda/camunda-platform-helm/issues/7165)) ([d77f428](https://github.com/camunda/camunda-platform-helm/commit/d77f428d6f676c97dbe569aa72947a472f032757))
+* update camunda/console docker tag to v8.9.98 ([#7167](https://github.com/camunda/camunda-platform-helm/issues/7167)) ([211f790](https://github.com/camunda/camunda-platform-helm/commit/211f790181c788ccdab965fef0b2cd2175fd5b00))
+* update registry.camunda.cloud/keycloak-ee/keycloak docker tag to v26.7.4 ([#7208](https://github.com/camunda/camunda-platform-helm/issues/7208)) ([2fe0317](https://github.com/camunda/camunda-platform-helm/commit/2fe0317bf46f42513c63d42656ff532a3e62e9de))
+
+
+### Refactors
+
+* omit empty init container blocks ([#7082](https://github.com/camunda/camunda-platform-helm/issues/7082)) ([8aab0c7](https://github.com/camunda/camunda-platform-helm/commit/8aab0c74e89fc1586cdde2cd4ea4ecdfcb9301f8))
+
 ## [14.10.0](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.9-14.9.0...camunda-platform-8.9-14.10.0) (2026-09-07)
 
 

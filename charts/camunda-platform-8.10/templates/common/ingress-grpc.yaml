@@ -1,5 +1,4 @@
-{{- if and (eq (include "camundaPlatform.orchestrationEnabled" .) "true") .Values.orchestration.ingress.grpc.enabled -}}
-{{- if not .Values.orchestration.ingress.grpc.external -}}
+{{- if eq (include "camundaPlatform.grpcIngressRendered" .) "true" -}}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -12,7 +11,7 @@ metadata:
       )
       "context" .
     ) | nindent 4 }}
-{{- $grpcAnnotations := .Values.orchestration.ingress.grpc.annotations -}}
+{{- $grpcAnnotations := include "camundaPlatform.grpcIngressAnnotations" . | fromYaml -}}
 {{- if eq (include "camundaPlatform.orchestrationGRPCTLSEnabled" .) "true" -}}
 {{- $grpcAnnotations = mergeOverwrite (dict) $grpcAnnotations (dict "nginx.ingress.kubernetes.io/backend-protocol" "GRPCS") -}}
 {{- end -}}
@@ -51,5 +50,4 @@ spec:
       {{- end }}
     {{- end }}
   {{- end }}
-{{- end }}
 {{- end }}

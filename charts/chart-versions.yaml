@@ -1,6 +1,6 @@
 # ─── CI-internal ────────────────────────────────────────────────────────────
-# This file lists the supported Camunda chart versions and is consumed by CI,
-# release tooling, and Renovate. External users deploying Camunda 8
+# This file selects routine chart automation and records lifecycle metadata for
+# release tooling and the version matrix. External users deploying Camunda 8
 # Self-Managed do NOT need to edit it — read it via
 # `deploy-camunda matrix list` if you need to know which versions are active.
 #
@@ -9,32 +9,22 @@
 #
 # Maintainer update procedure: docs/reference/release-process.md ("Minor Version Chores").
 # ────────────────────────────────────────────────────────────────────────────
-camundaVersions:
-  alpha:
+chartAutomation:
+  routineVersions:
     - "8.10"
-  supportStandard:
     - "8.9"
     - "8.8"
     - "8.7"
-  supportExtended:
-    - "8.6"
-    - "8.5"
-    - "8.4"
-    - "8.3"
-  endOfLife:
-    - "8.2"
-    - "8.1"
-    - "8.0"
 
 # Per-minor support-lifecycle facts consumed by the version-matrix renderer
-# (release-tools version-matrix). Every minor listed in a camundaVersions
-# bucket needs an entry here — the renderer fails loudly otherwise.
-# Dates are ISO 8601. Field contract per bucket:
+# (release-tools version-matrix), independent of routine automation membership.
+# Dates are ISO 8601. Display groups are derived from field presence:
+#   alpha:           no released date; note optional
 #   supportStandard: released + stdSupportUntil
-#   supportExtended: released
-#   endOfLife:       released + eolSince (+ latestChart for minors whose
-#                    version-matrix.json no longer exists)
-#   alpha:           note only (optional)
+#   supportExtended: released without stdSupportUntil or eolSince
+#   endOfLife:       released + eolSince (takes precedence over stdSupportUntil)
+# latestChart supplies the last chart for minors without version-matrix.json.
+# Keep lifecycle dates when routine automation ends; GA chores populate released.
 camundaSupportLifecycle:
   # NOTE: repoint the Hub docs link from /next/ to the versioned /8.10/ path at 8.10 GA.
   "8.10":

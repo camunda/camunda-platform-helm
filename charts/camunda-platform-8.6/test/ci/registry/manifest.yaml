@@ -1,0 +1,15 @@
+integration:
+  vars:
+    tasksBaseDir: ../../../test/integration/scenarios
+    valuesBaseDir: integration/scenarios
+    chartsBaseDir: ../../../..
+  scenarios:
+    - id: elasticsearch
+      shortname: es
+      enabled: false
+    - id: opensearch
+      shortname: os
+      enabled: false
+    - id: multitenancy
+      shortname: mt
+      enabled: false

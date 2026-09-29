@@ -1,0 +1,12 @@
+# Cross-namespace external Elasticsearch configuration for an Orchestration release.
+elasticsearch:
+  enabled: false
+
+global:
+  elasticsearch:
+    enabled: true
+    external: true
+    url:
+      protocol: "${EXTERNAL_ELASTICSEARCH_SCHEME}"
+      host: "${EXTERNAL_ELASTICSEARCH_HOST}"
+      port: ${EXTERNAL_ELASTICSEARCH_PORT}
