@@ -856,3 +856,41 @@ func (s *ConfigMapWarningsTemplateTest) TestPvcAccessModesReadWriteOncePodWarnin
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
+
+func (s *ConfigMapWarningsTemplateTest) TestDefaultRolesMappingRulesDeprecationWarning() {
+	const adminWarning = `DEPRECATION: The Helm values file key "orchestration.security.initialization.defaultRoles.admin.mappingRules" is deprecated and will be removed in chart v16 (Camunda 8.11). Configure this via "orchestration.extraConfiguration" instead.`
+	const connectorsWarning = `DEPRECATION: The Helm values file key "orchestration.security.initialization.defaultRoles.connectors.mappingRules" is deprecated and will be removed in chart v16 (Camunda 8.11). Configure this via "orchestration.extraConfiguration" instead.`
+
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestDefaultRolesMappingRulesSetTriggersDeprecationWarnings",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":                                      "elasticsearch",
+				"orchestration.security.initialization.defaultRoles.admin.mappingRules[0]":      "admin-rule",
+				"orchestration.security.initialization.defaultRoles.connectors.mappingRules[0]": "connectors-rule",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+				require.Contains(t, configmap.Data["warnings"], adminWarning)
+				require.Contains(t, configmap.Data["warnings"], connectorsWarning)
+			},
+		},
+		{
+			Name: "TestDefaultRolesMappingRulesUnsetDoesNotTriggerDeprecationWarning",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"console.enabled":                          "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+				require.NotContains(t, configmap.Data["warnings"], "defaultRoles")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}

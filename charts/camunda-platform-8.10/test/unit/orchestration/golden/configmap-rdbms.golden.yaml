@@ -121,13 +121,11 @@ data:
         initialization:
           default-roles:
             admin:
-              mappingRules: []
               users:
               - demo
             connectors:
               clients:
               - connectors
-              mappingRules: []
               users:
               - connectors
           users:

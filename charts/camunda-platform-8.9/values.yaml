@@ -2628,17 +2628,13 @@ orchestration:
           email: demo@demo.com
       ## @extra orchestration.security.initialization.defaultRoles assigning initial users to default roles. More roles can be added to the dictionary: https://docs.camunda.io/docs/next/components/concepts/access-control/authorizations/#default-roles
       ## @param orchestration.security.initialization.defaultRoles.admin.users defines the initial users that will get the admin permission
-      ## @param orchestration.security.initialization.defaultRoles.admin.mappingRules defines the mapping rule IDs for role assignment
       ## @param orchestration.security.initialization.defaultRoles.connectors.users defines the initial users that will get the connectors permission
       ## @param orchestration.security.initialization.defaultRoles.connectors.clients define clients for the orchestration cluster.
-      ## @param orchestration.security.initialization.defaultRoles.connectors.mappingRules defines the mapping rule IDs for role assignment
       defaultRoles:
         admin:
-          mappingRules: []
           users:
             - demo
         connectors:
-          mappingRules: []
           users:
             ## @extra orchestration.security.initialization.defaultRoles.connectors.users[0].connectors Needed for basic auth setup. Can be removed for OIDC. Define the connectors user with the connectors role.
             - connectors

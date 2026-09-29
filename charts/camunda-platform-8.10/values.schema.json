@@ -4555,12 +4555,6 @@
                                                         "type": "string"
                                                     }
                                                 },
-                                                "mappingRules": {
-                                                    "type": "array",
-                                                    "description": "defines the mapping rule IDs for role assignment",
-                                                    "default": [],
-                                                    "items": {}
-                                                },
                                                 "clients": {
                                                     "type": "array",
                                                     "description": "defines the initial clients that will get the admin permission.",
@@ -4592,12 +4586,6 @@
                                                     "items": {
                                                         "type": "string"
                                                     }
-                                                },
-                                                "mappingRules": {
-                                                    "type": "array",
-                                                    "description": "defines the mapping rule IDs for role assignment",
-                                                    "default": [],
-                                                    "items": {}
                                                 }
                                             }
                                         }

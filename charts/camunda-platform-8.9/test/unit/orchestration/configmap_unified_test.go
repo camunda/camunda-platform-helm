@@ -857,7 +857,7 @@ func (s *ConfigmapTemplateTest) TestDefaultRolesMappingRulesRendering() {
 
 	testCases := []testhelpers.TestCase{
 		{
-			Name: "TestApplicationYamlShouldRenderEmptyDefaultRolesMappingRulesByDefault",
+			Name: "TestApplicationYamlShouldNotRenderDefaultRolesMappingRulesByDefault",
 			Values: map[string]string{
 				"orchestration.data.secondaryStorage.type": "elasticsearch",
 			},
