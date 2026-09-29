@@ -16,6 +16,7 @@ package camunda
 
 import (
 	"camunda-platform/test/unit/testhelpers"
+	"fmt"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -751,6 +752,61 @@ func (s *ConfigMapWarningsTemplateTest) TestMigrationDisruptionBudgetWarning() {
 				s.Require().NotContains(configmap.Data["warnings"], warning)
 			},
 		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *ConfigMapWarningsTemplateTest) TestFailureDomainContactPointsWarning() {
+	const warning = "This deployment spans more than one failure domain"
+
+	values := func(keepUnzonedBrokers bool, contactPointsSet bool) map[string]string {
+		result := map[string]string{
+			"orchestration.data.secondaryStorage.type": "elasticsearch",
+			"global.identity.auth.console.clientId":    "warning-anchor",
+		}
+		if keepUnzonedBrokers {
+			result["orchestration.profiles.broker"] = "true"
+			result["orchestration.partitioning.scheme"] = "zone-aware"
+			result["orchestration.partitioning.zone"] = "zone-a"
+			result["orchestration.partitioning.zones[0].name"] = "zone-a"
+			result["orchestration.partitioning.zones[0].numberOfBrokers"] = "1"
+			result["orchestration.partitioning.zones[0].numberOfReplicas"] = "1"
+			result["orchestration.partitioning.zones[0].priority"] = "100"
+			result["orchestration.partitioning.zones[1].name"] = "zone-b"
+			result["orchestration.partitioning.zones[1].numberOfBrokers"] = "1"
+			result["orchestration.partitioning.zones[1].numberOfReplicas"] = "1"
+			result["orchestration.partitioning.zones[1].priority"] = "50"
+			result["orchestration.partitioning.keepUnzonedBrokers"] = fmt.Sprint(keepUnzonedBrokers)
+		} else {
+			result["orchestration.partitioning.numberOfZones"] = "2"
+			result["orchestration.partitioning.zoneIndex"] = "0"
+		}
+		if contactPointsSet {
+			result["orchestration.env[0].name"] = "CAMUNDA_CLUSTER_INITIALCONTACTPOINTS"
+			result["orchestration.env[0].value"] = "camunda-zeebe-0.camunda-zeebe.default.svc.cluster.local:26502"
+		}
+		return result
+	}
+
+	verifyWarning := func(expected bool) func(t *testing.T, output string, err error) {
+		return func(t *testing.T, output string, err error) {
+			s.Require().NoError(err)
+			var configmap corev1.ConfigMap
+			helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+			if expected {
+				s.Require().Contains(configmap.Data["warnings"], warning)
+			} else {
+				s.Require().NotContains(configmap.Data["warnings"], warning)
+			}
+		}
+	}
+
+	testCases := []testhelpers.TestCase{
+		{Name: "Round-robin without contact points warns", Values: values(false, false), Verifier: verifyWarning(true)},
+		{Name: "Round-robin with contact points does not warn", Values: values(false, true), Verifier: verifyWarning(false)},
+		{Name: "Migration without contact points warns", Values: values(true, false), Verifier: verifyWarning(true)},
+		{Name: "Migration with contact points does not warn", Values: values(true, true), Verifier: verifyWarning(false)},
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
