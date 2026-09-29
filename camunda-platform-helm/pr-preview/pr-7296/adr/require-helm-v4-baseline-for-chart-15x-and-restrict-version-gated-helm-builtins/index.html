@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en" dir="ltr" class="docs-wrapper plugin-docs plugin-id-default docs-version-current docs-doc-page docs-doc-id-adr/require-helm-v4-baseline-for-chart-15x-and-restrict-version-gated-helm-builtins" data-has-hydrated="false">
+<head>
+<meta charset="UTF-8">
+<meta name="generator" content="Docusaurus v3.10.2">
+<title data-rh="true">Support Helm CLI v3 and v4 for chart 15.x (8.10), and restrict version-gated Helm built-ins | Camunda Helm Charts</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:image" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7296/img/camunda-logo.svg"><meta data-rh="true" name="twitter:image" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7296/img/camunda-logo.svg"><meta data-rh="true" property="og:url" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7296/adr/require-helm-v4-baseline-for-chart-15x-and-restrict-version-gated-helm-builtins"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Support Helm CLI v3 and v4 for chart 15.x (8.10), and restrict version-gated Helm built-ins | Camunda Helm Charts"><meta data-rh="true" name="description" content="- Status: proposed"><meta data-rh="true" property="og:description" content="- Status: proposed"><link data-rh="true" rel="icon" href="/camunda-platform-helm/pr-preview/pr-7296/img/camunda-logo.svg"><link data-rh="true" rel="canonical" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7296/adr/require-helm-v4-baseline-for-chart-15x-and-restrict-version-gated-helm-builtins"><link data-rh="true" rel="alternate" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7296/adr/require-helm-v4-baseline-for-chart-15x-and-restrict-version-gated-helm-builtins" hreflang="en"><link data-rh="true" rel="alternate" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7296/adr/require-helm-v4-baseline-for-chart-15x-and-restrict-version-gated-helm-builtins" hreflang="x-default"><link rel="stylesheet" href="/camunda-platform-helm/pr-preview/pr-7296/assets/css/styles.3f6cd398.css">
+<script src="/camunda-platform-helm/pr-preview/pr-7296/assets/js/runtime~main.cd7ba5a9.js" defer="defer"></script>
+<script src="/camunda-platform-helm/pr-preview/pr-7296/assets/js/main.0d38cc09.js" defer="defer"></script>
+</head>
+<body>
+<svg style="display: none;"><defs>
+<symbol id="theme-svg-external-link" viewBox="0 0 24 24"><path fill="currentColor" d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"/></symbol>
+</defs></svg>
+<script>!function(){var t=function(){try{return new URLSearchParams(window.location.search).get("docusaurus-theme")}catch(t){}}()||function(){try{return window.localStorage.getItem("theme")}catch(t){}}();document.documentElement.setAttribute("data-theme",t||"light"),document.documentElement.setAttribute("data-theme-choice",t||"light")}(),function(){try{const c=new URLSearchParams(window.location.search).entries();for(var[t,e]of c)if(t.startsWith("docusaurus-data-")){var a=t.replace("docusaurus-data-","data-");document.documentElement.setAttribute(a,e)}}catch(t){}}()</script><div id="__docusaurus"><link rel="preload" as="image" href="/camunda-platform-helm/pr-preview/pr-7296/img/camunda-logo.svg"><div role="region" aria-label="Skip to main content"><a class="skipToContent_fXgn" href="#__docusaurus_skipToContent_fallback">Skip to main content</a></div><nav aria-label="Main" class="theme-layout-navbar navbar navbar--fixed-top"><div class="navbar__inner"><div class="theme-layout-navbar-left navbar__items"><button aria-label="Toggle navigation bar" aria-expanded="false" class="navbar__toggle clean-btn" type="button"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><path stroke="currentColor" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2" d="M4 7h22M4 15h22M4 23h22"></path></svg></button><a class="navbar__brand" href="/camunda-platform-helm/pr-preview/pr-7296/"><div class="navbar__logo"><img src="/camunda-platform-helm/pr-preview/pr-7296/img/camunda-logo.svg" alt="Camunda Logo" class="themedComponent_mlkZ themedComponent--light_NVdE"><img src="/camunda-platform-helm/pr-preview/pr-7296/img/camunda-logo.svg" alt="Camunda Logo" class="themedComponent_mlkZ themedComponent--dark_xIcU"></div><b class="navbar__title text--truncate">Camunda Helm Charts</b></a><a class="navbar__item navbar__link" href="/camunda-platform-helm/pr-preview/pr-7296/">Docs</a></div><div class="theme-layout-navbar-right navbar__items navbar__items--right"><a href="https://github.com/camunda/camunda-platform-helm" target="_blank" rel="noopener noreferrer" class="navbar__item navbar__link">GitHub<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a><div class="toggle_vylO colorModeToggle_DEke"><button class="clean-btn toggleButton_gllP toggleButtonDisabled_aARS" type="button" disabled="" title="system mode" aria-label="Switch between dark and light mode (currently system mode)"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP lightToggleIcon_pyhR"><path fill="currentColor" d="M12,9c1.65,0,3,1.35,3,3s-1.35,3-3,3s-3-1.35-3-3S10.35,9,12,9 M12,7c-2.76,0-5,2.24-5,5s2.24,5,5,5s5-2.24,5-5 S14.76,7,12,7L12,7z M2,13l2,0c0.55,0,1-0.45,1-1s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S1.45,13,2,13z M20,13l2,0c0.55,0,1-0.45,1-1 s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S19.45,13,20,13z M11,2v2c0,0.55,0.45,1,1,1s1-0.45,1-1V2c0-0.55-0.45-1-1-1S11,1.45,11,2z M11,20v2c0,0.55,0.45,1,1,1s1-0.45,1-1v-2c0-0.55-0.45-1-1-1C11.45,19,11,19.45,11,20z M5.99,4.58c-0.39-0.39-1.03-0.39-1.41,0 c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0s0.39-1.03,0-1.41L5.99,4.58z M18.36,16.95 c-0.39-0.39-1.03-0.39-1.41,0c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0c0.39-0.39,0.39-1.03,0-1.41 L18.36,16.95z M19.42,5.99c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06c-0.39,0.39-0.39,1.03,0,1.41 s1.03,0.39,1.41,0L19.42,5.99z M7.05,18.36c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06 c-0.39,0.39-0.39,1.03,0,1.41s1.03,0.39,1.41,0L7.05,18.36z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP darkToggleIcon_wfgR"><path fill="currentColor" d="M9.37,5.51C9.19,6.15,9.1,6.82,9.1,7.5c0,4.08,3.32,7.4,7.4,7.4c0.68,0,1.35-0.09,1.99-0.27C17.45,17.19,14.93,19,12,19 c-3.86,0-7-3.14-7-7C5,9.07,6.81,6.55,9.37,5.51z M12,3c-4.97,0-9,4.03-9,9s4.03,9,9,9s9-4.03,9-9c0-0.46-0.04-0.92-0.1-1.36 c-0.98,1.37-2.58,2.26-4.4,2.26c-2.98,0-5.4-2.42-5.4-5.4c0-1.81,0.89-3.42,2.26-4.4C12.92,3.04,12.46,3,12,3L12,3z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP systemToggleIcon_QzmC"><path fill="currentColor" d="m12 21c4.971 0 9-4.029 9-9s-4.029-9-9-9-9 4.029-9 9 4.029 9 9 9zm4.95-13.95c1.313 1.313 2.05 3.093 2.05 4.95s-0.738 3.637-2.05 4.95c-1.313 1.313-3.093 2.05-4.95 2.05v-14c1.857 0 3.637 0.737 4.95 2.05z"></path></svg></button></div><div class="navbarSearchContainer_Bca1"><div class="navbar__search"><span aria-label="expand searchbar" role="button" class="search-icon" tabindex="0"></span><input id="search_input_react" type="search" placeholder="Loading..." aria-label="Search" class="navbar__search-input search-bar" disabled=""></div></div></div></div><div role="presentation" class="navbar-sidebar__backdrop"></div></nav><div id="__docusaurus_skipToContent_fallback" class="theme-layout-main main-wrapper mainWrapper_z2l0"><div class="docsWrapper_hBAB"><button aria-label="Scroll back to top" class="clean-btn theme-back-to-top-button backToTopButton_sjWU" type="button"></button><div class="docRoot_UBD9"><main class="docMainContainer_TBSr docMainContainerEnhanced_lQrH"><div class="container padding-top--md padding-bottom--lg"><div class="row"><div class="col docItemCol_VOVn"><div class="docItemContainer_Djhp"><article><div class="tocCollapsible_ETCw theme-doc-toc-mobile tocMobile_ITEo"><button type="button" class="clean-btn tocCollapsibleButton_TO0P">On this page</button></div><div class="theme-doc-markdown markdown"><header><h1>Support Helm CLI v3 and v4 for chart 15.x (8.10), and restrict version-gated Helm built-ins</h1></header>
+<ul>
+<li class="">Status: proposed</li>
+<li class="">Date: 2026-08-18</li>
+<li class="">Decision-makers: Immanuel Monma</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="context-and-problem-statement">Context and Problem Statement<a href="#context-and-problem-statement" class="hash-link" aria-label="Direct link to Context and Problem Statement" title="Direct link to Context and Problem Statement" translate="no">​</a></h2>
+<p>Chart 15.x (Camunda 8.10) was made Helm CLI v4-only under the product-hub epic
+<a href="https://github.com/camunda/product-hub/issues/3555" target="_blank" rel="noopener noreferrer" class="">camunda/product-hub#3555</a> (&quot;Self-Managed:
+Helm 4&quot;), which set 8.9 (chart 14.x) as the last Helm-v3-supported minor and 8.10+ as Helm-v4-only,
+with Helm v3 security fixes then due to end on 2026-11-11. A top-of-render guard in
+<code>charts/camunda-platform-8.10/templates/common/constraints.tpl</code> failed every render on a Helm CLI
+older than 4.0.0 (<a href="https://github.com/camunda/camunda-platform-helm/pull/6156" target="_blank" rel="noopener noreferrer" class="">#6156</a>, issue
+<a href="https://github.com/camunda/camunda-platform-helm/issues/6137" target="_blank" rel="noopener noreferrer" class="">#6137</a>), and an earlier revision of
+this ADR (<a href="https://github.com/camunda/camunda-platform-helm/pull/6887" target="_blank" rel="noopener noreferrer" class="">#6887</a>) recorded that v4
+baseline.</p>
+<p><a href="https://github.com/camunda/self-managed-experience/issues/29" target="_blank" rel="noopener noreferrer" class="">camunda/self-managed-experience#29</a>
+reverses the baseline: chart 15.x supports Helm v3 and v4. Upstream Helm extended Helm v3 security
+fixes to 2027-02-10 (<a href="https://helm.sh/blog/helm-v3-end-of-life/" target="_blank" rel="noopener noreferrer" class="">Helm v3 end of life</a>), so the
+original rationale for dropping Helm v3 at 8.10 no longer holds, and users who have not moved to
+Helm v4 need to install 8.10, and upgrade to it from 8.9, with Helm v3
+(<a href="https://github.com/camunda/camunda-platform-helm/issues/7340" target="_blank" rel="noopener noreferrer" class="">#7340</a>). Supporting Helm v3 again
+raises two questions: which Helm v3 releases a chart line supports, and how template code avoids
+depending on Helm features newer than that floor.</p>
+<p>Charts 8.8 and 8.9 carry a helper, <code>camundaPlatform.toYamlPretty</code>
+(<code>charts/camunda-platform-8.8/templates/common/_utilz.tpl:24-30</code> and
+<code>charts/camunda-platform-8.9/templates/common/_utilz.tpl:24-30</code>), that exists only because
+Helm&#x27;s own built-in <code>toYamlPretty</code> function was introduced in Helm 3.17.0 — calling it directly
+on an older 3.x CLI is a parse-time &quot;function not defined&quot; error, not a graceful runtime
+fallback. The helper works around this with <code>tpl</code> (to defer evaluation past parse time) plus
+<code>semverCompare &quot;&gt;=3.17.0&quot; ... else toYaml</code>. Chart 8.10 dropped the helper when it adopted the v4
+floor (<a href="https://github.com/camunda/camunda-platform-helm/pull/6169" target="_blank" rel="noopener noreferrer" class="">#6169</a>, issue
+<a href="https://github.com/camunda/camunda-platform-helm/issues/6139" target="_blank" rel="noopener noreferrer" class="">#6139</a>) and called <code>toYamlPretty</code>
+directly in <code>templates/orchestration/_statefulset.tpl</code>, so Helm v3 releases older than 3.17.0 failed
+at parse time, before any guard ran.</p>
+<p>This is a distinct failure class from the CLI-major-version question: Helm&#x27;s built-in function
+surface is not stable even within v3, so any new template code that reaches for a built-in can
+unknowingly introduce a floor higher than the chart&#x27;s declared minimum — discovered only when a
+user on an older-but-still-supported Helm CLI hits a parse error.</p>
+<p>The same holds for Helm behavior. Helm releases before 3.10 are built with Go older than 1.18, whose
+<code>text/template</code> evaluates every <code>and</code> argument instead of short-circuiting. Charts 12.x–15.x rely on
+short-circuit <code>and</code> (for example <code>charts/camunda-platform-8.10/templates/common/_helpers.tpl:1814</code>),
+so Helm 3.9 fails on them with nil-pointer errors, while Helm 3.10.0, the first release built with
+Go 1.18, renders them (<a href="https://github.com/camunda/camunda-platform-helm/issues/7340" target="_blank" rel="noopener noreferrer" class="">#7340</a>,
+<a href="https://github.com/camunda/camunda-platform-helm/issues/7341" target="_blank" rel="noopener noreferrer" class="">#7341</a>). The 12.x, 13.x and 14.x READMEs
+nevertheless listed Helm 3.9 as their minimum.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="applicability-by-version">Applicability by version<a href="#applicability-by-version" class="hash-link" aria-label="Direct link to Applicability by version" title="Direct link to Applicability by version" translate="no">​</a></h3>
+<ul>
+<li class="">Chart 15.x (8.10): Helm CLI v3 (3.10 or later) and Helm CLI v4. On Helm v3 the chart warns
+instead of failing (Decision Outcome item 1).</li>
+<li class="">Chart 14.x (8.9) and earlier: existing Helm v3 support continues (Decision Outcome item 2), and
+charts 12.x (8.7), 13.x (8.8) and 14.x (8.9) share the 3.10 floor.
+<a href="https://github.com/camunda/camunda-platform-helm/issues/5921" target="_blank" rel="noopener noreferrer" class="">#5921</a> scoped CI to Helm v3 only
+for 8.8 and earlier and to Helm v3 and v4 for 8.9; 8.10 also tests both.</li>
+<li class="">Chart lines after 15.x: this ADR does not set their Helm CLI baseline; that is left to a later
+decision, which <a href="https://github.com/camunda/camunda-platform-helm/issues/7360" target="_blank" rel="noopener noreferrer" class="">#7360</a> tracks for
+chart 16.x (8.11).</li>
+<li class="">The built-in-function restriction (Decision Outcome, item 3) applies to all currently
+maintained chart lines going forward, independent of the v3/v4 line.</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="decision-drivers">Decision Drivers<a href="#decision-drivers" class="hash-link" aria-label="Direct link to Decision Drivers" title="Direct link to Decision Drivers" translate="no">​</a></h2>
+<ul>
+<li class=""><strong>Helm v3 support window:</strong> upstream Helm v3 security fixes end on 2027-02-10, extended from
+November 2026, and 3.22 is the final Helm v3 minor
+(<a href="https://helm.sh/blog/helm-v3-end-of-life/" target="_blank" rel="noopener noreferrer" class="">Helm v3 end of life</a>,
+<a href="https://github.com/camunda/camunda-platform-helm/issues/7346" target="_blank" rel="noopener noreferrer" class="">#7346</a>). The v4-only baseline was
+set against the earlier date.</li>
+<li class=""><strong>Users on Helm v3:</strong> users who have not moved to Helm v4 need to install 8.10, and upgrade to it
+from 8.9, with Helm v3; the v4 guard blocked both
+(<a href="https://github.com/camunda/camunda-platform-helm/issues/7340" target="_blank" rel="noopener noreferrer" class="">#7340</a>).</li>
+<li class=""><strong>Test/support matrix cost:</strong> every supported Helm CLI adds CI coverage to maintain, splitting QA
+capacity across an aging and a current CLI (<a href="https://github.com/camunda/camunda-platform-helm/issues/5921" target="_blank" rel="noopener noreferrer" class="">#5921</a>).</li>
+<li class=""><strong>Landmine prevention:</strong> the <code>toYamlPretty</code> wrapper is a correct but fragile pattern (deferred
+<code>tpl</code> evaluation to dodge parse-time errors). It is non-obvious, easy to forget, and each new
+instance is normally discovered only when a user&#x27;s CLI is older than a template author assumed.</li>
+<li class=""><strong>Single, testable floor per chart line:</strong> a chart-line-wide &quot;requires Helm vX.Y+&quot; statement is
+easier to state, document, and enforce than an implicit floor that varies function-by-function.</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="considered-options">Considered Options<a href="#considered-options" class="hash-link" aria-label="Direct link to Considered Options" title="Direct link to Considered Options" translate="no">​</a></h2>
+<ul>
+<li class=""><strong>Keep the Helm v4 floor for chart 15.x</strong> — rejected: it rests on Helm v3 security fixes ending in
+November 2026, which upstream moved to 2027-02-10, and it blocks users who have not moved to
+Helm v4 from installing 8.10 or upgrading to it from 8.9.</li>
+<li class=""><strong>Support Helm v3 implicitly, without a stated floor, notice, or targeted tests</strong> — rejected: the
+implicit floor was already wrong (the 12.x, 13.x and 14.x READMEs listed Helm 3.9, which cannot render
+those charts), chart 15.x&#x27;s direct <code>toYamlPretty</code> call raises it to 3.17.0, and it does nothing to
+stop new version-gated built-ins from accumulating.</li>
+<li class=""><strong>Auto-detect and branch around every new built-in as it&#x27;s introduced</strong> — rejected: this is the
+status quo (<code>toYamlPretty</code>) and it does not scale; each occurrence is fragile, uses a
+non-obvious <code>tpl</code>-deferral trick, and is discovered reactively rather than prevented.</li>
+<li class=""><strong>Stated, tested Helm CLI support per chart line, plus a policy against new version-gated
+built-ins (chosen)</strong> — makes the floor explicit and testable (chart README plus the unit-test
+Helm matrix), warns Helm v3 users instead of failing, and shifts the function-availability problem
+from &quot;wrap it&quot; to &quot;don&#x27;t introduce it unless justified.&quot;</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="decision-outcome">Decision Outcome<a href="#decision-outcome" class="hash-link" aria-label="Direct link to Decision Outcome" title="Direct link to Decision Outcome" translate="no">​</a></h2>
+<p>Chart 15.x (8.10) supports Helm CLI v3 (3.10 or later) and Helm CLI v4, and new template code does
+not depend on a Helm built-in or behavior newer than its chart line&#x27;s floor. The following
+constraints are normative:</p>
+<ol>
+<li class="">Chart 15.x (8.10) MUST support Helm CLI v3 (3.10 or later) and Helm CLI v4. A render MUST NOT
+fail because of the Helm CLI major version. On Helm v3 the chart emits a non-blocking
+<code>[camunda][warning]</code> through <code>camunda.constraints.warnings</code>, shown in NOTES and in a ConfigMap
+whose name ends in <code>-warnings</code>, that Helm v3 security fixes end on 2027-02-10 and that users
+should upgrade to Helm v4 before then. The warning replaces the <code>fail</code> guard from
+<a href="https://github.com/camunda/camunda-platform-helm/pull/6156" target="_blank" rel="noopener noreferrer" class="">#6156</a>
+(<a href="https://github.com/camunda/camunda-platform-helm/issues/7340" target="_blank" rel="noopener noreferrer" class="">#7340</a>).</li>
+<li class="">Chart 14.x (8.9) and earlier MAY continue to support Helm v3 for the remainder of its
+documented support window. Charts 12.x (8.7), 13.x (8.8) and 14.x (8.9) document Helm 3.10 as their
+minimum, the oldest release that renders them
+(<a href="https://github.com/camunda/camunda-platform-helm/issues/7341" target="_blank" rel="noopener noreferrer" class="">#7341</a>), and chart 14.x emits the
+same Helm v3 warning as 15.x (<a href="https://github.com/camunda/camunda-platform-helm/issues/7342" target="_blank" rel="noopener noreferrer" class="">#7342</a>).</li>
+<li class="">New template code MUST NOT depend on a Helm built-in function or behavior introduced later
+than the oldest Helm version the chart line currently claims to support. If no alternative
+exists, the usage MUST be wrapped so the unsupported-version path either fails with a clear
+<code>fail</code> message (preferred, matching the <code>constraints.tpl</code> pattern) or falls back correctly, and
+the wrapper MUST have a unit test exercising both the supported and unsupported paths against a
+deterministic Helm-version matrix (one CLI at or above the floor, one below the relevant
+function/floor boundary) rather than whichever Helm binary happens to be on <code>PATH</code> in CI.
+<code>camundaPlatform.toYamlPretty</code> is the fallback precedent: on Helm 3.17.0 and later it calls
+<code>toYamlPretty</code> through <code>tpl</code>, and on older CLIs it falls back to <code>toYaml</code>. For charts 14.x and
+15.x, <a href="https://github.com/camunda/camunda-platform-helm/issues/7344" target="_blank" rel="noopener noreferrer" class="">#7344</a> adds the unit-test
+Helm matrix, which runs the Helm v3 warning test and the Orchestration StatefulSet scheduling
+tests that render through the wrapper on Helm 3.10.3 and 3.22.x, and fails when a test selector
+matches no passing test. The regular unit job runs the same tests on Helm v4.</li>
+<li class="">When a chart line&#x27;s CLI floor rises enough to make a version-gated wrapper&#x27;s fallback branch
+unreachable, the wrapper MUST be removed rather than kept for symmetry. For
+<code>camundaPlatform.toYamlPretty</code> in charts 13.x–15.x, the 3.10 floor is below the wrapper&#x27;s 3.17.0
+boundary, so the fallback is reachable and the wrapper stays:
+<a href="https://github.com/camunda/camunda-platform-helm/issues/7340" target="_blank" rel="noopener noreferrer" class="">#7340</a> reinstates it in 15.x,
+reverting its removal in <a href="https://github.com/camunda/camunda-platform-helm/pull/6169" target="_blank" rel="noopener noreferrer" class="">#6169</a>
+(<a href="https://github.com/camunda/camunda-platform-helm/issues/6139" target="_blank" rel="noopener noreferrer" class="">#6139</a>).</li>
+</ol>
+<p>Applies to chart 15.x (8.10) through the sub-issues of
+<a href="https://github.com/camunda/self-managed-experience/issues/29" target="_blank" rel="noopener noreferrer" class="">camunda/self-managed-experience#29</a>:
+<a href="https://github.com/camunda/camunda-platform-helm/issues/7340" target="_blank" rel="noopener noreferrer" class="">#7340</a> replaces the guard with the
+warning and reinstates the wrapper;
+<a href="https://github.com/camunda/camunda-platform-helm/issues/7343" target="_blank" rel="noopener noreferrer" class="">#7343</a> runs the <code>orchestration-tls</code>
+install and <code>component-persistence-upgrade</code> upgrade-from-14.x integration scenarios on Helm v3, and
+the rest of the 15.x CI runs Helm v4;
+<a href="https://github.com/camunda/camunda-platform-helm/issues/7344" target="_blank" rel="noopener noreferrer" class="">#7344</a> adds the unit-test Helm matrix
+for charts 14.x and 15.x; <a href="https://github.com/camunda/camunda-platform-helm/issues/7345" target="_blank" rel="noopener noreferrer" class="">#7345</a>
+records Helm v3 and v4 in the <code>camunda.io/helmCLIVersion</code> annotation of 15.x releases; and
+<a href="https://github.com/camunda/camunda-platform-helm/issues/7346" target="_blank" rel="noopener noreferrer" class="">#7346</a> keeps the Helm v3 CI pins on
+the final v3 line, 3.22.x, through Renovate.
+<a href="https://github.com/camunda/camunda-platform-helm/issues/7341" target="_blank" rel="noopener noreferrer" class="">#7341</a> and
+<a href="https://github.com/camunda/camunda-platform-helm/issues/7342" target="_blank" rel="noopener noreferrer" class="">#7342</a> apply item 2 to charts 12.x, 13.x and
+14.x. Item 3 is a forward rule for all chart lines from this ADR&#x27;s acceptance date.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="positive-consequences">Positive Consequences<a href="#positive-consequences" class="hash-link" aria-label="Direct link to Positive Consequences" title="Direct link to Positive Consequences" translate="no">​</a></h3>
+<ul>
+<li class="">Users who have not moved to Helm v4 can install chart 15.x, and upgrade to it from 14.x, with
+Helm v3 (<a href="https://github.com/camunda/camunda-platform-helm/issues/7340" target="_blank" rel="noopener noreferrer" class="">#7340</a>,
+<a href="https://github.com/camunda/camunda-platform-helm/issues/7343" target="_blank" rel="noopener noreferrer" class="">#7343</a>).</li>
+<li class="">Helm v3 users of charts 14.x and 15.x get a non-blocking notice that Helm v3 security fixes end on
+2027-02-10 (<a href="https://github.com/camunda/camunda-platform-helm/issues/7340" target="_blank" rel="noopener noreferrer" class="">#7340</a>,
+<a href="https://github.com/camunda/camunda-platform-helm/issues/7342" target="_blank" rel="noopener noreferrer" class="">#7342</a>).</li>
+<li class="">A single, testable CLI-support statement per chart line replaces an implicit, function-by-
+function floor.</li>
+<li class="">Removes latent parse-time failure risk from template code that unknowingly assumes a newer
+Helm built-in than the chart&#x27;s stated floor.</li>
+<li class="">Item 3&#x27;s both-path test runs in CI: version-gated template code in charts 14.x and 15.x is tested
+on pinned Helm CLIs below and above the relevant boundary, not on whichever Helm is on <code>PATH</code>
+(<a href="https://github.com/camunda/camunda-platform-helm/issues/7344" target="_blank" rel="noopener noreferrer" class="">#7344</a>).</li>
+</ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="negative-consequences">Negative Consequences<a href="#negative-consequences" class="hash-link" aria-label="Direct link to Negative Consequences" title="Direct link to Negative Consequences" translate="no">​</a></h3>
+<ul>
+<li class="">Helm v3 CI coverage for 15.x has to be maintained alongside Helm v4: two pinned integration scenarios and
+the unit-test Helm matrix (<a href="https://github.com/camunda/camunda-platform-helm/issues/7343" target="_blank" rel="noopener noreferrer" class="">#7343</a>,
+<a href="https://github.com/camunda/camunda-platform-helm/issues/7344" target="_blank" rel="noopener noreferrer" class="">#7344</a>), with Helm v3 pins that
+Renovate keeps on the final v3 line (<a href="https://github.com/camunda/camunda-platform-helm/issues/7346" target="_blank" rel="noopener noreferrer" class="">#7346</a>).</li>
+<li class="">Helm v3 and v4 render the same 14.x and 15.x manifests except for blank lines, so golden files are
+byte-compared on Helm v4 only, and Helm v3 unit coverage is limited to selected tests that decode
+rendered objects (<a href="https://github.com/camunda/camunda-platform-helm/issues/7344" target="_blank" rel="noopener noreferrer" class="">#7344</a>).</li>
+<li class="">The warning does not block: chart 15.x still renders on Helm v3 after 2027-02-10, when Helm v3
+stops receiving security fixes. This ADR does not decide when chart 15.x drops Helm v3.</li>
+<li class="">Below Helm 3.10, a render fails with a template nil-pointer error, not a message that names the
+floor (<a href="https://github.com/camunda/camunda-platform-helm/issues/7340" target="_blank" rel="noopener noreferrer" class="">#7340</a>,
+<a href="https://github.com/camunda/camunda-platform-helm/issues/7341" target="_blank" rel="noopener noreferrer" class="">#7341</a>).</li>
+<li class="">The reversal contradicts published statements: the docs
+(<a href="https://github.com/camunda/camunda-docs/pull/8859" target="_blank" rel="noopener noreferrer" class="">camunda-docs#8859</a>), release notes, and blog
+posts said that 8.10 requires Helm v4. Their correction is tracked in
+<a href="https://github.com/camunda/self-managed-experience/issues/29" target="_blank" rel="noopener noreferrer" class="">camunda/self-managed-experience#29</a>,
+outside this repository.</li>
+<li class="">Item 3 is a review-time policy, not a tooling-enforced one today — no lint step currently flags
+a newly introduced Helm built-in against the chart&#x27;s declared floor. Reviewers must know the
+floor and check new template code against it manually until such tooling exists.</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="links">Links<a href="#links" class="hash-link" aria-label="Direct link to Links" title="Direct link to Links" translate="no">​</a></h2>
+<ul>
+<li class=""><a href="https://github.com/camunda/self-managed-experience/issues/29" target="_blank" rel="noopener noreferrer" class="">camunda/self-managed-experience#29</a> — the decision to support Helm v3 and v4 in chart 15.x, and its implementation checklist across the chart, docs, and communications.</li>
+<li class="">Epic: <a href="https://github.com/camunda/product-hub/issues/3555" target="_blank" rel="noopener noreferrer" class="">camunda/product-hub#3555</a> — the original product decision for a Helm v4-only 8.10; camunda/self-managed-experience#29 tracks amending its release notes and validation criteria.</li>
+<li class=""><a href="https://github.com/camunda/camunda-platform-helm/issues/7340" target="_blank" rel="noopener noreferrer" class="">#7340</a> — chart 15.x: Helm v3 warning instead of the v4 guard, and the <code>toYamlPretty</code> wrapper reinstated.</li>
+<li class=""><a href="https://github.com/camunda/camunda-platform-helm/issues/7341" target="_blank" rel="noopener noreferrer" class="">#7341</a> — charts 12.x, 13.x and 14.x: documented Helm minimum corrected from 3.9 to 3.10.</li>
+<li class=""><a href="https://github.com/camunda/camunda-platform-helm/issues/7342" target="_blank" rel="noopener noreferrer" class="">#7342</a> — chart 14.x: the same Helm v3 warning.</li>
+<li class=""><a href="https://github.com/camunda/camunda-platform-helm/issues/7343" target="_blank" rel="noopener noreferrer" class="">#7343</a> — chart 15.x: Helm v3 integration scenarios.</li>
+<li class=""><a href="https://github.com/camunda/camunda-platform-helm/issues/7344" target="_blank" rel="noopener noreferrer" class="">#7344</a> — unit-test Helm matrix for charts 14.x and 15.x, the test harness for item 3.</li>
+<li class=""><a href="https://github.com/camunda/camunda-platform-helm/issues/7345" target="_blank" rel="noopener noreferrer" class="">#7345</a> — release tooling records Helm v3 and v4 for chart 15.x.</li>
+<li class=""><a href="https://github.com/camunda/camunda-platform-helm/issues/7346" target="_blank" rel="noopener noreferrer" class="">#7346</a> — Helm v3 CI pins on 3.22.x, updated by Renovate.</li>
+<li class=""><a href="https://github.com/camunda/camunda-platform-helm/issues/6137" target="_blank" rel="noopener noreferrer" class="">#6137</a> / <a href="https://github.com/camunda/camunda-platform-helm/pull/6156" target="_blank" rel="noopener noreferrer" class="">#6156</a> — the Helm v4 <code>constraints.tpl</code> fail guard that #7340 replaces.</li>
+<li class=""><a href="https://github.com/camunda/camunda-platform-helm/issues/6139" target="_blank" rel="noopener noreferrer" class="">#6139</a> / <a href="https://github.com/camunda/camunda-platform-helm/pull/6169" target="_blank" rel="noopener noreferrer" class="">#6169</a> — <code>toYamlPretty</code> compat wrapper removal from 8.10, the motivating example for item 3, which #7340 reverts.</li>
+<li class=""><a href="https://github.com/camunda/camunda-platform-helm/issues/5921" target="_blank" rel="noopener noreferrer" class="">#5921</a> — CI matrix scoping per chart line.</li>
+<li class=""><a class="" href="/camunda-platform-helm/pr-preview/pr-7296/adr/expose-helm-v4-compatibility-options-as-explicit-values">ADR-0081</a> — related but distinct: opt-in Helm v4-compatible <em>rendering</em> flags for charts 8.6-8.9, not a CLI-version floor.</li>
+</ul></div><footer class="theme-doc-footer docusaurus-mt-lg"><div class="row margin-top--sm theme-doc-footer-edit-meta-row"><div class="col noPrint_WFHX"><a href="https://github.com/camunda/camunda-platform-helm/edit/main/../docs/adr/0096-require-helm-v4-baseline-for-chart-15x-and-restrict-version-gated-helm-builtins.md" target="_blank" rel="noopener noreferrer" class="theme-edit-this-page"><svg fill="currentColor" height="20" width="20" viewBox="0 0 40 40" class="iconEdit_Z9Sw" aria-hidden="true"><g><path d="m34.5 11.7l-3 3.1-6.3-6.3 3.1-3q0.5-0.5 1.2-0.5t1.1 0.5l3.9 3.9q0.5 0.4 0.5 1.1t-0.5 1.2z m-29.5 17.1l18.4-18.5 6.3 6.3-18.4 18.4h-6.3v-6.2z"></path></g></svg>Edit this page</a></div><div class="col lastUpdated_JAkA"></div></div></footer></article><nav class="docusaurus-mt-lg pagination-nav" aria-label="Docs pages"></nav></div></div><div class="col col--3"><div class="tableOfContents_bqdL thin-scrollbar theme-doc-toc-desktop"><ul class="table-of-contents table-of-contents__left-border"><li><a href="#context-and-problem-statement" class="table-of-contents__link toc-highlight">Context and Problem Statement</a><ul><li><a href="#applicability-by-version" class="table-of-contents__link toc-highlight">Applicability by version</a></li></ul></li><li><a href="#decision-drivers" class="table-of-contents__link toc-highlight">Decision Drivers</a></li><li><a href="#considered-options" class="table-of-contents__link toc-highlight">Considered Options</a></li><li><a href="#decision-outcome" class="table-of-contents__link toc-highlight">Decision Outcome</a><ul><li><a href="#positive-consequences" class="table-of-contents__link toc-highlight">Positive Consequences</a></li><li><a href="#negative-consequences" class="table-of-contents__link toc-highlight">Negative Consequences</a></li></ul></li><li><a href="#links" class="table-of-contents__link toc-highlight">Links</a></li></ul></div></div></div></div></main></div></div></div><footer class="theme-layout-footer footer footer--dark"><div class="container container-fluid"><div class="row footer__links"><div class="theme-layout-footer-column col footer__col"><div class="footer__title">Docs</div><ul class="footer__items clean-list"><li class="footer__item"><a class="footer__link-item" href="/camunda-platform-helm/pr-preview/pr-7296/reference/release-process">Release Process</a></li><li class="footer__item"><a class="footer__link-item" href="/camunda-platform-helm/pr-preview/pr-7296/reference/github-actions-workflows">GitHub Actions Workflows</a></li><li class="footer__item"><a class="footer__link-item" href="/camunda-platform-helm/pr-preview/pr-7296/contribution-and-collaboration">Contribution &amp; Collaboration</a></li></ul></div><div class="theme-layout-footer-column col footer__col"><div class="footer__title">Community</div><ul class="footer__items clean-list"><li class="footer__item"><a href="https://github.com/camunda/camunda-platform-helm/issues" target="_blank" rel="noopener noreferrer" class="footer__link-item">GitHub Issues<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a></li><li class="footer__item"><a href="https://docs.camunda.io" target="_blank" rel="noopener noreferrer" class="footer__link-item">Camunda Docs<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a></li></ul></div><div class="theme-layout-footer-column col footer__col"><div class="footer__title">More</div><ul class="footer__items clean-list"><li class="footer__item"><a href="https://github.com/camunda/camunda-platform-helm" target="_blank" rel="noopener noreferrer" class="footer__link-item">GitHub<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a></li><li class="footer__item"><a href="https://artifacthub.io/packages/helm/camunda/camunda-platform" target="_blank" rel="noopener noreferrer" class="footer__link-item">Artifact Hub<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a></li></ul></div></div><div class="footer__bottom text--center"><div class="footer__copyright">Copyright © 2026 Camunda Services GmbH. Built with Docusaurus.</div></div></div></footer></div>
+</body>
+</html>
