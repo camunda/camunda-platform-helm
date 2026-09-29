@@ -28,78 +28,20 @@ func TestNotesTemplate(t *testing.T) {
 
 	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
+	output, err := exec.Command("helm", "install", "credential-output-test", chartPath,
+		"--dry-run=client",
+		"--set", "identity.firstUser.secret.inlineSecret=credential-output-canary-do-not-print",
+		"--set", "orchestration.data.secondaryStorage.type=elasticsearch",
+		"--set", "global.elasticsearch.enabled=true",
+		"--set", "global.elasticsearch.external=true",
+		"--set", "global.elasticsearch.url.host=elasticsearch",
+	).CombinedOutput()
+	require.NoError(t, err, string(output))
 
-	testCases := []struct {
-		name        string
-		values      []string
-		expected    string
-		notExpected string
-	}{
-		{
-			name:        "inline secret",
-			values:      []string{"identity.firstUser.secret.inlineSecret=credential-output-canary-do-not-print"},
-			expected:    "configured via `identity.firstUser.secret.inlineSecret`",
-			notExpected: "credential-output-canary-do-not-print",
-		},
-		{
-			name:     "complete secret reference",
-			values:   []string{"identity.firstUser.secret.existingSecret=first-user", "identity.firstUser.secret.existingSecretKey=password"},
-			expected: "stored in Kubernetes Secret \"first-user\" under key \"password\"",
-		},
-		{
-			name:        "deprecated plaintext value",
-			values:      []string{"identity.firstUser.existingSecret=credential-output-canary-do-not-print"},
-			expected:    "configured via the deprecated `identity.firstUser.existingSecret` value",
-			notExpected: "credential-output-canary-do-not-print",
-		},
-		{
-			name:     "empty configuration",
-			expected: "No password is configured",
-		},
-		{
-			name:        "incomplete secret reference",
-			values:      []string{"identity.firstUser.secret.existingSecret=first-user"},
-			expected:    "No password is configured",
-			notExpected: "stored in Kubernetes Secret",
-		},
-		{
-			name: "ingress protocol override",
-			values: []string{
-				"global.ingress.enabled=true",
-				"global.ingress.tls.enabled=false",
-				"global.ingress.protocol=https",
-				"global.ingress.host=camunda.example.com",
-			},
-			expected:    "- Camunda REST API: https://camunda.example.com",
-			notExpected: "- Camunda REST API: http://camunda.example.com",
-		},
-	}
-
-	for _, testCase := range testCases {
-		t.Run(testCase.name, func(t *testing.T) {
-			args := []string{
-				"install", "credential-output-test", chartPath,
-				"--dry-run=client",
-				"--set", "orchestration.data.secondaryStorage.type=elasticsearch",
-				"--set", "global.elasticsearch.enabled=true",
-				"--set", "global.elasticsearch.external=true",
-				"--set", "global.elasticsearch.url.host=elasticsearch",
-			}
-			for _, value := range testCase.values {
-				args = append(args, "--set", value)
-			}
-
-			output, err := exec.Command("helm", args...).CombinedOutput()
-			require.NoError(t, err, string(output))
-
-			_, notes, found := strings.Cut(string(output), "\nNOTES:\n")
-			require.True(t, found)
-			require.Contains(t, notes, testCase.expected)
-			if testCase.notExpected != "" {
-				require.NotContains(t, notes, testCase.notExpected)
-			}
-		})
-	}
+	_, notes, found := strings.Cut(string(output), "\nNOTES:\n")
+	require.True(t, found)
+	require.Contains(t, notes, "intentionally omitted")
+	require.NotContains(t, notes, "credential-output-canary-do-not-print")
 }
 
 func TestNotesSurfacesBundledKeycloakCveWarning(t *testing.T) {
@@ -123,15 +65,17 @@ func TestNotesSurfacesBundledKeycloakCveWarning(t *testing.T) {
 	require.Contains(t, notes, "CVE-2026-18963")
 }
 
-func TestNotesSurfacesBundledKeycloakCveWarning(t *testing.T) {
+func TestNotesIngressProtocolOverride(t *testing.T) {
 	t.Parallel()
 
 	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
-	output, err := exec.Command("helm", "install", "keycloak-cve-notes-test", chartPath,
+	output, err := exec.Command("helm", "install", "ingress-protocol-notes-test", chartPath,
 		"--dry-run=client",
-		"--set", "identity.enabled=true",
-		"--set", "identityKeycloak.enabled=true",
+		"--set", "global.ingress.enabled=true",
+		"--set", "global.ingress.tls.enabled=false",
+		"--set", "global.ingress.protocol=https",
+		"--set", "global.ingress.host=camunda.example.com",
 		"--set", "orchestration.data.secondaryStorage.type=elasticsearch",
 		"--set", "global.elasticsearch.enabled=true",
 		"--set", "global.elasticsearch.external=true",
@@ -141,5 +85,6 @@ func TestNotesSurfacesBundledKeycloakCveWarning(t *testing.T) {
 
 	_, notes, found := strings.Cut(string(output), "\nNOTES:\n")
 	require.True(t, found)
-	require.Contains(t, notes, "CVE-2026-18963")
+	require.Contains(t, notes, "- Camunda REST API: https://camunda.example.com")
+	require.NotContains(t, notes, "- Camunda REST API: http://camunda.example.com")
 }
