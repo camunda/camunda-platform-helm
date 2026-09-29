@@ -170,7 +170,7 @@ Default user: "{{ .Values.identity.firstUser.username }}". No password is config
 
 {{ include "camundaPlatform.releaseInfo" . }}
 
-{{ include "camunda.constraints.warnings" . | trim }}
+{{ regexReplaceAll "\n[[:space:]]*\n" (include "camunda.constraints.warnings" . | trim) "\n" }}
 
 {{ include "camundaPlatform.ReleaseHighlights" . }}
 

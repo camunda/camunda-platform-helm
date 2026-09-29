@@ -16,7 +16,9 @@ package camunda
 
 import (
 	"camunda-platform/test/unit/testhelpers"
+	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -533,6 +535,39 @@ func (s *ConstraintTemplateTest) TestDocumentStoreActiveStoreIdConstraint() {
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().NoError(err)
 				s.Require().NotContains(output, "global.documentStore.* will be used solely for document store configuration")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func helmMajorVersion() int {
+	out, err := exec.Command("helm", "version", "--template={{.Version}}").Output()
+	if err != nil {
+		return 0
+	}
+	vStr := strings.TrimPrefix(strings.TrimSpace(string(out)), "v")
+	parts := strings.SplitN(vStr, ".", 2)
+	if len(parts) == 0 {
+		return 0
+	}
+	major, _ := strconv.Atoi(parts[0])
+	return major
+}
+
+func (s *ConstraintTemplateTest) TestHelmVersionConstraint() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name:   "TestHelmVersionWarning",
+			Values: map[string]string{},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				if helmMajorVersion() >= 4 {
+					s.Require().NotContains(output, "Helm v3 receives security fixes")
+				} else {
+					s.Require().Contains(output, "Helm v3 receives security fixes")
+				}
 			},
 		},
 	}
