@@ -878,6 +878,20 @@ func (s *ConfigMapWarningsTemplateTest) TestDefaultRolesMappingRulesDeprecationW
 			},
 		},
 		{
+			Name: "TestCustomDefaultRoleMappingRulesTriggersDeprecationWarning",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":                                  "elasticsearch",
+				"orchestration.security.initialization.defaultRoles.custom.mappingRules[0]": "custom-rule",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+				require.Contains(t, configmap.Data["warnings"], `"orchestration.security.initialization.defaultRoles.custom.mappingRules" is deprecated`)
+				require.NotContains(t, configmap.Data["warnings"], "defaultRoles.admin.mappingRules")
+			},
+		},
+		{
 			Name: "TestDefaultRolesMappingRulesUnsetDoesNotTriggerDeprecationWarning",
 			Values: map[string]string{
 				"orchestration.data.secondaryStorage.type": "elasticsearch",
