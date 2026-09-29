@@ -26,3 +26,14 @@ unit:
       packages: web-modeler
     - name: Topology
       packages: topology
+  helmCompat:
+    versions:
+      - "3.10.3"
+      - "3.22.0"
+    tests:
+      - name: Helm version constraint
+        package: common
+        run: 'TestConstraintTemplate/TestHelmVersionConstraint'
+      - name: Orchestration scheduling
+        package: orchestration
+        run: 'TestStatefulSetTemplate/TestDifferentValuesInputs/^TestContainerSet(NodeSelector|Affinity|Tolerations|TopologySpreadConstraints)$'

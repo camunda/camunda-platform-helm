@@ -29,6 +29,9 @@ outputs:
   unitTestMatrix:
     description: JSON matrix of changed charts which will be used as input for GHA workflow matrix.
     value: ${{ steps.vars.outputs.unit-matrix }}
+  unitTestHelmCompatMatrix:
+    description: JSON matrix of unit test selections to run per pinned Helm CLI version; [] when the chart declares none.
+    value: ${{ steps.vars.outputs.unit-helm-compat-matrix }}
 
 runs:
   using: composite
