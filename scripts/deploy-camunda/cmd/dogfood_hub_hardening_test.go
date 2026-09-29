@@ -89,9 +89,29 @@ func TestDogfoodHub_BlocksKeycloakAdminPublicly(t *testing.T) {
 		}
 	}
 	sort.Strings(blocked)
-	want := []string{"/auth/admin/realms", "/auth/admin/serverinfo", "/auth/realms/master"}
+	want := []string{"/auth/admin", "/auth/realms/master"}
 	if strings.Join(blocked, ",") != strings.Join(want, ",") {
-		t.Errorf("blocked paths = %v, want exactly %v (anything broader breaks the camunda-platform realm or Identity's wait)", blocked, want)
+		t.Errorf("blocked paths = %v, want exactly %v (anything broader breaks the camunda-platform realm)", blocked, want)
+	}
+	// Prefix matching must cover the admin console pages as well as the admin
+	// REST API, and must leave the camunda-platform realm reachable.
+	covered := func(path string) bool {
+		for _, b := range blocked {
+			if path == b || strings.HasPrefix(path, b+"/") {
+				return true
+			}
+		}
+		return false
+	}
+	for _, p := range []string{"/auth/admin/", "/auth/admin/master/console/", "/auth/admin/realms/master", "/auth/admin/serverinfo", "/auth/realms/master/protocol/openid-connect/token"} {
+		if !covered(p) {
+			t.Errorf("%s must be blocked on the public host", p)
+		}
+	}
+	for _, p := range []string{"/auth/realms/camunda-platform/protocol/openid-connect/auth", "/auth/resources/"} {
+		if covered(p) {
+			t.Errorf("%s must stay reachable on the public host", p)
+		}
 	}
 	hasSelector, found := serviceHasSelector["keycloak-admin-blocked"]
 	if !found || hasSelector {
@@ -164,5 +184,118 @@ func TestDogfoodHub_HardensKeycloakRealms(t *testing.T) {
 	lines := strings.Split(strings.TrimSpace(script), "\n")
 	if len(lines) < 2 || !strings.Contains(lines[len(lines)-2], "attributes.frontendUrl=http://localhost:18080/auth") {
 		t.Error("setting the master realm frontend URL must be the last kcadm call: it changes the issuer and invalidates the session's token")
+	}
+}
+
+// Dogfood Elasticsearch runs with X-Pack security on because the CI cluster does
+// not enforce NetworkPolicy. Pin the auth contract end to end: the server takes
+// its elastic password from integration-test-credentials, every consumer reads
+// the same key, and the physical-tenant exporters keep a runtime Spring
+// placeholder instead of receiving the password in values.
+func TestDogfood_ElasticsearchAuthContract(t *testing.T) {
+	repo := filepath.Join("..", "..", "..")
+	read := func(parts ...string) string {
+		t.Helper()
+		raw, err := os.ReadFile(filepath.Join(append([]string{repo}, parts...)...))
+		if err != nil {
+			t.Fatal(err)
+		}
+		return string(raw)
+	}
+
+	var server struct {
+		ESConfig  map[string]string `yaml:"esConfig"`
+		ExtraEnvs []struct {
+			Name      string `yaml:"name"`
+			ValueFrom struct {
+				SecretKeyRef struct {
+					Name string `yaml:"name"`
+					Key  string `yaml:"key"`
+				} `yaml:"secretKeyRef"`
+			} `yaml:"valueFrom"`
+		} `yaml:"extraEnvs"`
+	}
+	if err := yaml.Unmarshal([]byte(read("test", "integration", "companion-values", "elasticsearch-dogfood.yaml")), &server); err != nil {
+		t.Fatal(err)
+	}
+	esYAML := server.ESConfig["elasticsearch.yml"]
+	if !strings.Contains(esYAML, "xpack.security.enabled: true") {
+		t.Error("elasticsearch-dogfood.yaml must enable X-Pack security")
+	}
+	if strings.Contains(esYAML, "reindex.remote.whitelist") {
+		t.Error("elasticsearch-dogfood.yaml must not allow remote reindex: dogfood is install-only")
+	}
+	var passwordRef string
+	for _, e := range server.ExtraEnvs {
+		if e.Name == "ELASTIC_PASSWORD" {
+			passwordRef = e.ValueFrom.SecretKeyRef.Name + "/" + e.ValueFrom.SecretKeyRef.Key
+		}
+	}
+	if passwordRef != "integration-test-credentials/elasticsearch-password" {
+		t.Errorf("ELASTIC_PASSWORD comes from %q, want integration-test-credentials/elasticsearch-password", passwordRef)
+	}
+
+	featuresDir := filepath.Join(repo, "charts", "camunda-platform-8.10", "test", "integration", "scenarios", "chart-full-setup", "values", "features")
+	consumers, err := filepath.Glob(filepath.Join(featuresDir, "dogfood-o*.yaml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(consumers) != 8 {
+		t.Fatalf("found %d dogfood orchestration/optimize layers, want 8: %v", len(consumers), consumers)
+	}
+	for _, path := range consumers {
+		raw, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		content := string(raw)
+		if !strings.Contains(content, "existingSecret: integration-test-credentials") ||
+			!strings.Contains(content, "existingSecretKey: elasticsearch-password") {
+			t.Errorf("%s: Elasticsearch auth must read integration-test-credentials/elasticsearch-password", filepath.Base(path))
+		}
+	}
+
+	pt := read("charts", "camunda-platform-8.10", "test", "integration", "scenarios", "chart-full-setup", "values", "features", "dogfood-orchestration-pt.yaml")
+	passwords := 0
+	for _, line := range strings.Split(pt, "\n") {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "password:") {
+			passwords++
+			if trimmed != `password: "${ELASTICSEARCH_PASSWORD_REF}"` {
+				t.Errorf("dogfood-orchestration-pt.yaml: exporter %q, want the ELASTICSEARCH_PASSWORD_REF placeholder", trimmed)
+			}
+		}
+	}
+	if passwords != 3 {
+		t.Errorf("dogfood-orchestration-pt.yaml: %d exporter passwords, want 3 (default, tenanta, tenantb)", passwords)
+	}
+
+	var scenario struct {
+		Topology struct {
+			Releases []struct {
+				NamespaceSuffix string            `yaml:"namespace-suffix"`
+				Env             map[string]string `yaml:"env"`
+			} `yaml:"releases"`
+		} `yaml:"topology"`
+	}
+	if err := yaml.Unmarshal([]byte(read("charts", "camunda-platform-8.10", "test", "ci", "registry", "scenarios", "dogfood.yaml")), &scenario); err != nil {
+		t.Fatal(err)
+	}
+	var ref string
+	for _, r := range scenario.Topology.Releases {
+		if r.NamespaceSuffix == "pt" {
+			ref = r.Env["ELASTICSEARCH_PASSWORD_REF"]
+		}
+	}
+	// The values pipeline expands placeholders in one os.Expand pass, so the
+	// Spring placeholder in the variable's value reaches the chart verbatim.
+	expanded := os.Expand(`password: "${ELASTICSEARCH_PASSWORD_REF}"`, func(name string) string {
+		if name == "ELASTICSEARCH_PASSWORD_REF" {
+			return ref
+		}
+		return "$" + name
+	})
+	if expanded != `password: "${VALUES_ELASTICSEARCH_PASSWORD}"` {
+		t.Errorf("pt exporter password renders as %s, want the runtime Spring placeholder VALUES_ELASTICSEARCH_PASSWORD", expanded)
 	}
 }

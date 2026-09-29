@@ -45,9 +45,8 @@ createCert: false
 secret:
   enabled: false
 
-# Single-node disco + disable HTTP TLS + disable X-Pack security so Camunda
-# can talk to the cluster anonymously over plain HTTP (mirrors the OpenSearch
-# companion chart's "security disabled" stance).
+# X-Pack security on with plain HTTP and transport TLS (see the header): every
+# client authenticates as a user with ELASTIC_PASSWORD; nothing is anonymous.
 #
 # NOTE: discovery.type: single-node is NOT set here because the
 # elastic/elasticsearch chart injects cluster.initial_master_nodes via an env
@@ -64,10 +63,10 @@ esConfig:
     xpack.security.transport.ssl.verification_mode: certificate
     xpack.security.transport.ssl.keystore.path: /usr/share/elasticsearch/config/transport/node.p12
     xpack.security.transport.ssl.truststore.path: /usr/share/elasticsearch/config/transport/node.p12
-    # Allow _reindex-from-remote to pull data from the source (bundled Bitnami)
-    # Elasticsearch during the Bitnami→companion migration (upgrade-minor flows).
-    # Harmless for install scenarios, which never issue a remote reindex.
-    reindex.remote.whitelist: "*:9200"
+    # No remote-reindex allowlist: the dogfood cluster is only ever installed,
+    # never migrated from a bundled Bitnami Elasticsearch, so remote reindex
+    # is not needed and would only let an authenticated caller make this node
+    # issue requests to arbitrary in-cluster hosts.
 
 extraInitContainers:
   - name: generate-transport-cert

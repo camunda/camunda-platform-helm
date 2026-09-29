@@ -21,9 +21,9 @@ global:
   # Hub hardening objects. Shell in these manifests avoids the dollar sign: the
   # values pipeline substitutes every dollar placeholder before Helm sees it.
   extraManifests:
-    # Keycloak's admin REST API and master realm (its login and token endpoints)
-    # are not reachable from the internet, so the admin console served from the
-    # public host can neither log in nor act. More specific than the chart's
+    # Keycloak's whole /auth/admin tree (the admin console pages and the admin
+    # REST API) and its master realm (login and token endpoints) are not
+    # reachable from the internet. More specific than the chart's
     # /auth/ path, these routes go to a Service with no endpoints, so
     # ingress-nginx answers 503 itself; unlike a source-IP allowlist, no
     # forwarded header can bypass it. Operators use the console over kubectl
@@ -54,11 +54,7 @@ global:
           - host: "${HUB_HOST}"
             http:
               paths:
-                - path: /auth/admin/realms
-                  pathType: Prefix
-                  backend:
-                    service: {name: keycloak-admin-blocked, port: {name: http}}
-                - path: /auth/admin/serverinfo
+                - path: /auth/admin
                   pathType: Prefix
                   backend:
                     service: {name: keycloak-admin-blocked, port: {name: http}}
