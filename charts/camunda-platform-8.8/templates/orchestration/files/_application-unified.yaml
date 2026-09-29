@@ -341,7 +341,6 @@ zeebe:
         className: "io.camunda.exporter.CamundaExporter"
         args:
           connect:
-            type: {{ include "orchestration.secondaryStorage" . | quote }}
             url: {{ .Values.global.elasticsearch.enabled | ternary (include "camundaPlatform.elasticsearchURL" .) (include "camundaPlatform.opensearchURL" .) | quote }}
             {{- if .Values.orchestration.index.prefix }}
             indexPrefix: {{ .Values.orchestration.index.prefix | quote }}
