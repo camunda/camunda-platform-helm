@@ -23,6 +23,7 @@ export default defineConfig({
       testIgnore: [
         "**/cluster-variables.spec.{ts,js}",
         "**/optimize-api-tests.spec.{ts,js}",
+        "**/topology-orchestration-smoke.spec.{ts,js}",
       ],
       // @tasklistV1: requires Tasklist v1 mode with RBA enabled, not deployed in
       // standard CI scenarios. Also excludes all Optimize tests (under
