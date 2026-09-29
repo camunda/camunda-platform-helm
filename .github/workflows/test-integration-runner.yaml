@@ -1739,7 +1739,14 @@ jobs:
           fi
 
           npm install -g playwright
-          npx playwright merge-reports --reporter html ./all-blob-reports
+          # Topology legs run suites from different chart test directories (8.10, 8.9, ...), and
+          # Playwright refuses to merge blob reports recorded under different testDirs unless a
+          # merge config names one. The checkout root contains every chart's test directory.
+          # A config file also moves the HTML report's default location, so pin it to the folder
+          # the upload step below reads.
+          echo "export default { testDir: '.' };" > playwright-merge.config.mjs
+          PLAYWRIGHT_HTML_OUTPUT_DIR="$PWD/playwright-report" \
+            npx playwright merge-reports -c playwright-merge.config.mjs --reporter html ./all-blob-reports
 
       - name: Upload HTML report
         uses: ./.github/actions/upload-artifact-retry
