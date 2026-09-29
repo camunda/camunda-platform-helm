@@ -9,4 +9,4 @@ platforms:
 infra-type:
   eks: preemptible
   gke: distroci
-helmVersion: 3.20.2
+helmVersion: 3.22.0

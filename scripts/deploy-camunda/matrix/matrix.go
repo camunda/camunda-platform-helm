@@ -83,7 +83,7 @@ type Entry struct {
 	// runner does not re-load ci-test-config.yaml at execution time.
 	PreUpgrade *LifecycleHook `json:"preUpgrade,omitempty"`
 	// HelmVersion, when non-empty, tells the integration workflow to install
-	// this Helm version via azure/setup-helm (overriding the pre-baked binary).
+	// this Helm version (overriding the pre-baked binary).
 	HelmVersion string `json:"helmVersion,omitempty"`
 
 	// PrefixKey overrides the scenario name for index prefix derivation.
