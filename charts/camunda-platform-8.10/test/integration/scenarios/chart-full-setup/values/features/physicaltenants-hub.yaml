@@ -82,10 +82,6 @@ global:
 
 camundaHub:
   restapi:
-    image:
-      registry: registry.camunda.cloud
-      repository: team-hub/hub-restapi-self-managed
-      digest: sha256:e8273691d0c45337d90d83a5037dab2cb87aabac254e4d7587e59bd1ad29a5ed
     extraConfiguration:
       - file: environments.yaml
         content: |
