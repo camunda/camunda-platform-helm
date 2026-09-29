@@ -834,6 +834,61 @@ func (s *ConfigmapTemplateTest) TestMappingRulesConditionalRendering() {
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
+func (s *ConfigmapTemplateTest) TestDefaultRolesMappingRulesRendering() {
+	type defaultRolesApplication struct {
+		Camunda struct {
+			Security struct {
+				Initialization struct {
+					DefaultRoles map[string]struct {
+						MappingRules []string `yaml:"mappingRules"`
+					} `yaml:"default-roles"`
+				} `yaml:"initialization"`
+			} `yaml:"security"`
+		} `yaml:"camunda"`
+	}
+
+	decode := func(t *testing.T, output string) defaultRolesApplication {
+		var configMap corev1.ConfigMap
+		helm.UnmarshalK8SYaml(t, output, &configMap)
+		var application defaultRolesApplication
+		require.NoError(t, yaml.Unmarshal([]byte(configMap.Data["application.yaml"]), &application))
+		return application
+	}
+
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestApplicationYamlShouldRenderEmptyDefaultRolesMappingRulesByDefault",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				roles := decode(t, output).Camunda.Security.Initialization.DefaultRoles
+				require.Contains(t, roles, "admin")
+				require.Contains(t, roles, "connectors")
+				require.Empty(t, roles["admin"].MappingRules)
+				require.Empty(t, roles["connectors"].MappingRules)
+			},
+		},
+		{
+			Name: "TestApplicationYamlShouldRenderDefaultRolesMappingRulesWhenSet",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":                                      "elasticsearch",
+				"orchestration.security.initialization.defaultRoles.admin.mappingRules[0]":      "admin-rule",
+				"orchestration.security.initialization.defaultRoles.connectors.mappingRules[0]": "connectors-rule",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				roles := decode(t, output).Camunda.Security.Initialization.DefaultRoles
+				require.Equal(t, []string{"admin-rule"}, roles["admin"].MappingRules)
+				require.Equal(t, []string{"connectors-rule"}, roles["connectors"].MappingRules)
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
 func (s *ConfigmapTemplateTest) TestUnprotectedApiConditionalRendering() {
 	testCases := []testhelpers.TestCase{
 		{
