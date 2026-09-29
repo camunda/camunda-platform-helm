@@ -1,8 +1,6 @@
 # Camunda 8 Helm Chart
 
 > [!IMPORTANT]
-> Camunda 8.10 (chart 15.x) requires the **Helm v4** CLI. Helm v3 is not supported.
-> Camunda 8.9 (chart 14.x) is the last minor that supports Helm v3.
 > No release-state migration is needed when switching the local CLI from v3 to v4
 > against an existing release — `helm` is client-side only and cluster state is unaffected.
 
@@ -66,7 +64,7 @@ See [Camunda 8 reference architectures](https://docs.camunda.io/docs/next/self-m
 
 ## Requirements
 
-- [Helm](https://helm.sh/) >= 4.0.x
+- [Helm](https://helm.sh/) >= 3.10.x
 - Kubernetes >= 1.20+
 - Minimum cluster requirements include the following to run this chart with default settings.
   - All of these settings are configurable.

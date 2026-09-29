@@ -103,6 +103,25 @@ func (s *ConfigMapWarningsTemplateTest) TestDifferentValuesInputs() {
 			},
 		},
 		{
+			Name: "TestWarningsAreNotSeparatedByBlankLines",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"orchestration.history.rolloverInterval":   "2d",
+				"orchestration.history.rolloverBatchSize":  "321",
+				"orchestration.history.delayBetweenRuns":   "4000",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				lines := strings.Split(configmap.Data["warnings"], "\n")
+				s.Require().GreaterOrEqual(len(lines), 3)
+				for _, line := range lines {
+					s.Require().NotEmpty(strings.TrimSpace(line))
+				}
+			},
+		},
+		{
 			Name: "TestWarningsConfigMapAbsentWhenNoWarnings",
 			Values: map[string]string{
 				"orchestration.data.secondaryStorage.type": "elasticsearch",

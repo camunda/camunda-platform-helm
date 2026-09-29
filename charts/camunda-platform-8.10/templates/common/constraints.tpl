@@ -11,14 +11,6 @@ A template to handle constraints.
 {{- end -}}
 {{- end -}}
 
-{{/*
-Fail with a message if the Helm CLI version is less than v4.
-Chart 15.x (Camunda 8.10) requires Helm v4 or later.
-*/}}
-{{- if not (semverCompare ">=4.0.0-0" .Capabilities.HelmVersion.Version) -}}
-{{- fail (printf "[camunda][error] Camunda chart 15.x (8.10) requires Helm CLI v4 or later. Detected Helm CLI version: %s. Please upgrade to Helm v4: https://helm.sh/docs/topics/v4_migration/" .Capabilities.HelmVersion.Version) -}}
-{{- end -}}
-
 {{- $values := .Values | toYaml | fromYaml }}
 
 {{ include "camundaPlatform.keyRenamed" (dict
@@ -1024,6 +1016,9 @@ Usage:
 {{- end -}}
 
 {{- define "camunda.constraints.warnings" }}
+  {{- if not (semverCompare ">=4.0.0-0" .Capabilities.HelmVersion.Version) }}
+    {{- printf "\n%s" (printf "[camunda][warning] Helm CLI %s detected. Helm v3 receives security fixes only until February 10, 2027 (https://helm.sh/blog/helm-v3-end-of-life/). Upgrade to Helm v4 before then: https://helm.sh/docs/overview" .Capabilities.HelmVersion.Version) }}
+  {{- end }}
   {{- $hubUpgradePhase := include "camundaHub.upgradePhase" . }}
   {{- if eq $hubUpgradePhase "quiesce" }}
     {{- printf "\n%s" "[camunda][warning] Camunda Hub is quiesced for the 8.9 to 8.10 database migration. Confirm all external writers are stopped and create a verified database backup before setting camundaHub.upgrade.phase to migrate." }}
