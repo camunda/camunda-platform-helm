@@ -233,8 +233,8 @@ func (t *Topology) Validate(ctx string, chartDir string, depsDir string) error {
 		clean := filepath.Clean(m)
 		if filepath.IsAbs(m) || clean == ".." || strings.HasPrefix(clean, ".."+string(filepath.Separator)) {
 			problems = append(problems, fmt.Sprintf("%s: topology %q: credentials-manifest %q must be a path inside the repository, relative to its root", ctx, t.Name, m))
-		} else if _, statErr := os.Stat(filepath.Join(repoRoot, clean)); statErr != nil {
-			problems = append(problems, fmt.Sprintf("%s: topology %q: credentials-manifest %q: %v", ctx, t.Name, m, statErr))
+		} else if err := credentialsManifestInsideRepo(repoRoot, clean); err != nil {
+			problems = append(problems, fmt.Sprintf("%s: topology %q: credentials-manifest %q: %v", ctx, t.Name, m, err))
 		}
 	}
 
@@ -469,4 +469,24 @@ func TopologyEnvToken(value string) string {
 		}
 	}
 	return strings.Trim(token.String(), "_")
+}
+
+// credentialsManifestInsideRepo checks that rel exists and that, after
+// resolving symlinks, it still lives inside repoRoot. A lexical check alone
+// would accept a repository symlink pointing outside the repository, which the
+// deployer would then read and apply.
+func credentialsManifestInsideRepo(repoRoot, rel string) error {
+	root, err := filepath.EvalSymlinks(repoRoot)
+	if err != nil {
+		return err
+	}
+	target, err := filepath.EvalSymlinks(filepath.Join(repoRoot, rel))
+	if err != nil {
+		return err
+	}
+	inside, err := filepath.Rel(root, target)
+	if err != nil || inside == ".." || strings.HasPrefix(inside, ".."+string(filepath.Separator)) || filepath.IsAbs(inside) {
+		return fmt.Errorf("resolves outside the repository (%s)", target)
+	}
+	return nil
 }

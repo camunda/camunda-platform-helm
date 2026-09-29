@@ -1205,6 +1205,23 @@ func buildOrchestrationZeebeEnv(orchestrationCtx *deploy.ScenarioContext) map[st
 	}
 }
 
+// applyTopologyCredentialsManifest points a topology release's deploy at the
+// topology's credentials-manifest (repository-relative), rendered for the base
+// namespace, so the deployer applies it instead of the CI-wide
+// integration-test credentials. With no manifest declared the flags are left
+// unchanged. The returned function removes the rendered file.
+func applyTopologyCredentialsManifest(flags *config.RuntimeFlags, repoRoot, manifest, base string) (func(), error) {
+	if manifest == "" {
+		return func() {}, nil
+	}
+	path, remove, err := renderTopologyCredentialsManifest(filepath.Join(repoRoot, manifest), base)
+	if err != nil {
+		return func() {}, err
+	}
+	flags.Secrets.CredentialsManifest = path
+	return remove, nil
+}
+
 // renderTopologyCredentialsManifest writes the topology's credentials-manifest,
 // with the base namespace substituted, to a temporary file the deployer can
 // apply, and returns a function that removes it.
@@ -1484,15 +1501,12 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 
 		applyTopologyReleaseOverrides(flags, buildTopologyReleaseEnv(crossRefEnv, rel))
 		applyTopologyReleaseHostname(flags, releaseHost)
-		if entry.Topology.CredentialsManifest != "" {
-			path, removeManifest, err := renderTopologyCredentialsManifest(filepath.Join(opts.RepoRoot, entry.Topology.CredentialsManifest), baseNamespace)
-			if err != nil {
-				cleanup()
-				return fmt.Errorf("topology release %s/%s (namespace-suffix %q): %w", entry.Scenario, rel.Role, rel.NamespaceSuffix, err)
-			}
-			defer removeManifest()
-			flags.Secrets.CredentialsManifest = path
+		removeManifest, err := applyTopologyCredentialsManifest(flags, opts.RepoRoot, entry.Topology.CredentialsManifest, baseNamespace)
+		if err != nil {
+			cleanup()
+			return fmt.Errorf("topology release %s/%s (namespace-suffix %q): %w", entry.Scenario, rel.Role, rel.NamespaceSuffix, err)
 		}
+		defer removeManifest()
 		if err := matrix.RegisterDeclarativePostInfraHook(flags, releaseEntry.PostInfra, opts.RepoRoot, releaseEntry.Version, releaseEntry.Scenario); err != nil {
 			cleanup()
 			return fmt.Errorf("topology release %s/%s (namespace-suffix %q): register post-infra hook: %w", entry.Scenario, rel.Role, rel.NamespaceSuffix, err)

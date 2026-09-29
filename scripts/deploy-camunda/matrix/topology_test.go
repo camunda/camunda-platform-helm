@@ -349,6 +349,18 @@ func TestTopologyValidate_CredentialsManifest(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(repoRoot, manifest), []byte("kind: ExternalSecret\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
+	outside := filepath.Join(t.TempDir(), "outside.yaml")
+	if err := os.WriteFile(outside, []byte("kind: Secret\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	escapingLink := filepath.Join("charts", "camunda-platform-8.10", "link-out.yaml")
+	if err := os.Symlink(outside, filepath.Join(repoRoot, escapingLink)); err != nil {
+		t.Fatal(err)
+	}
+	insideLink := filepath.Join("charts", "camunda-platform-8.10", "link-in.yaml")
+	if err := os.Symlink("creds.yaml", filepath.Join(repoRoot, insideLink)); err != nil {
+		t.Fatal(err)
+	}
 
 	cases := []struct {
 		name    string
@@ -356,6 +368,8 @@ func TestTopologyValidate_CredentialsManifest(t *testing.T) {
 		wantErr string
 	}{
 		{"existing relative path", manifest, ""},
+		{"symlink inside repo", insideLink, ""},
+		{"symlink escaping repo", escapingLink, "outside the repository"},
 		{"missing file", "charts/camunda-platform-8.10/absent.yaml", "absent.yaml"},
 		{"absolute path", filepath.Join(repoRoot, manifest), "inside the repository"},
 		{"escapes repo", "../outside.yaml", "inside the repository"},
