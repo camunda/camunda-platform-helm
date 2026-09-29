@@ -21,7 +21,7 @@ joins the PR or merge-queue matrix; the workflow reaches it with
 | hub | `<env>-hub` | Management Identity, Camunda Hub, Web Modeler, Keycloak, the shared Elasticsearch |
 | orchestration `plain` | `<env>-plain` | No Physical Tenants, no multi-tenancy |
 | orchestration `mt` | `<env>-mt` | No Physical Tenants, logical multi-tenancy enabled |
-| orchestration `pt` | `<env>-pt` | Physical Tenants `tenanta` and `tenantb` beside `default`; logical multi-tenancy inside `tenanta` only |
+| orchestration `pt` | `<env>-pt` | Physical Tenants `tenanta` and `tenantb` beside `default`; logical multi-tenancy enabled cluster-wide |
 | optimize | `<env>-optplain` | Optimize for `plain` |
 | optimize | `<env>-optmt` | Optimize for `mt` |
 | optimize | `<env>-optptdef` | Optimize for the `pt` cluster's `default` tenant |

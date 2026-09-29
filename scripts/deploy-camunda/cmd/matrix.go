@@ -1218,6 +1218,9 @@ func buildTopologyReleaseEnv(shared map[string]string, release matrix.TopologyRe
 	for key, value := range shared {
 		env[key] = value
 	}
+	if host := topologyReleaseServedHost(shared, release); host != "" {
+		env["CAMUNDA_HOSTNAME"] = host
+	}
 	for key, value := range release.Env {
 		env[key] = value
 	}
@@ -1246,6 +1249,15 @@ func buildTopologyReleaseEnv(shared map[string]string, release matrix.TopologyRe
 		}
 	}
 	return env
+}
+
+// topologyReleaseServedHost returns the public host a release is served on:
+// its own <TOKEN>_HOST for orchestration, HUB_HOST for hub and optimize.
+func topologyReleaseServedHost(shared map[string]string, release matrix.TopologyRelease) string {
+	if release.Role == "orchestration" {
+		return shared[matrix.TopologyEnvToken(release.NamespaceSuffix)+"_HOST"]
+	}
+	return shared["HUB_HOST"]
 }
 
 // resolveSharedStorageServiceName resolves the Kubernetes Service name of the
