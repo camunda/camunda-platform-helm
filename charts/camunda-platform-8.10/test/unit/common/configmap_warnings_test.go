@@ -783,7 +783,7 @@ func (s *ConfigMapWarningsTemplateTest) TestFailureDomainContactPointsWarning() 
 			result["orchestration.partitioning.zoneIndex"] = "0"
 		}
 		if contactPointsSet {
-			result["orchestration.env[0].name"] = "CAMUNDA_CLUSTER_INITIALCONTACTPOINTS"
+			result["orchestration.env[0].name"] = `\{\{ printf "CAMUNDA_CLUSTER_INITIALCONTACTPOINTS" \}\}`
 			result["orchestration.env[0].value"] = "camunda-zeebe-0.camunda-zeebe.default.svc.cluster.local:26502"
 		}
 		return result

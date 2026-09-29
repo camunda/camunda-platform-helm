@@ -1600,7 +1600,7 @@ The following values inside your values.yaml need to be set but were not:
     {{- end }}
     {{- $contactPointsSet := false }}
     {{- range $env := (.Values.orchestration.env | default list) }}
-      {{- if eq ($env.name | default "") "CAMUNDA_CLUSTER_INITIALCONTACTPOINTS" }}
+      {{- if eq (tpl ($env.name | default "") $) "CAMUNDA_CLUSTER_INITIALCONTACTPOINTS" }}
         {{- $contactPointsSet = true }}
       {{- end }}
     {{- end }}
