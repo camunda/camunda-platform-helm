@@ -539,7 +539,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterFromSa
 				s.Fail("Failed to unmarshal yaml. error=", err)
 			}
 
-			// then — two clusters: management-cluster (Identity + WebModeler) followed by default-cluster (Orchestration)
+			// then — two clusters: management-cluster (Identity) followed by default-cluster (Orchestration)
 			s.Require().Equal(2, len(configmapApplication.Camunda.Modeler.Clusters))
 
 			mgmtCluster := configmapApplication.Camunda.Modeler.Clusters[0]
@@ -573,6 +573,43 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterFromSa
 			s.Require().Equal("http://camunda-platform-test-zeebe-gateway:8090/orchestration", orchestrationComp.Urls.Rest)
 		})
 	}
+}
+
+func (s *configmapRestAPITemplateTest) TestContainerShouldOmitManagementClusterWhenIdentityDisabled() {
+	// given
+	values := maps.Clone(requiredValues)
+	maps.Insert(values, maps.All(map[string]string{
+		"identity.enabled":            "false",
+		"global.identity.service.url": "http://identity.external:8080",
+		"global.zeebeClusterName":     "test-zeebe",
+	}))
+	options := &helm.Options{
+		SetValues:      values,
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication WebModelerRestAPIApplicationYAML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	s.Require().NoError(err)
+
+	// then
+	s.Require().Len(configmapApplication.Camunda.Modeler.Clusters, 1)
+	defaultCluster := configmapApplication.Camunda.Modeler.Clusters[0]
+	s.Require().Equal("default-cluster", defaultCluster.Id)
+	s.Require().Equal("test-zeebe", defaultCluster.Name)
+	var orchestrationComp ComponentYAML
+	for _, c := range defaultCluster.Components {
+		if c.Type == "orchestration" {
+			orchestrationComp = c
+			break
+		}
+	}
+	s.Require().Equal("orchestration", orchestrationComp.Type)
 }
 
 func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterRestUrlWithoutTrailingSlashWhenContextPathIsRoot() {
