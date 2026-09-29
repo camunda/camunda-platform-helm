@@ -148,6 +148,34 @@ func (s *configmapWebAppTemplateTest) TestDifferentValuesInputs() {
 				s.Require().Equal(true, configmapApplication.Client.Pusher.ForceTLS)
 			},
 		}, {
+			Name: "TestContainerShouldSetCorrectClientPusherConfigurationWithIngressProtocolOverride",
+			Values: map[string]string{
+				"identity.enabled":                    "true",
+				"webModeler.enabled":                  "true",
+				"webModeler.restapi.mail.fromAddress": "example@example.com",
+				"webModeler.contextPath":              "/modeler",
+				"global.ingress.enabled":              "true",
+				"global.ingress.host":                 "c8.example.com",
+				"global.ingress.tls.enabled":          "false",
+				"global.ingress.protocol":             "https",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				var configmapApplication WebModelerWebAppTOML
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+				e := toml.Unmarshal([]byte(configmap.Data["application.toml"]), &configmapApplication)
+				if e != nil {
+					s.Fail("Failed to unmarshal yaml. error=", e)
+				}
+
+				// then
+				s.Require().Equal("c8.example.com", configmapApplication.Client.Pusher.Host)
+				s.Require().Equal("443", configmapApplication.Client.Pusher.Port)
+				s.Require().Equal("/modeler-ws", configmapApplication.Client.Pusher.Path)
+				s.Require().Equal(true, configmapApplication.Client.Pusher.ForceTLS)
+			},
+		}, {
 			Name: "TestContainerShouldSetCorrectIdentityServiceUrlWithFullnameOverride",
 			Values: map[string]string{
 				"identity.enabled":                    "true",
