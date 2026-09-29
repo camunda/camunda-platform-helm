@@ -307,6 +307,15 @@ NOTE: This is for Management Identity config, all new types will be supported vi
   {{- end -}}
 {{- end -}}
 
+{{/*
+[camunda-platform] Protocol clients use to reach the global Ingress. global.ingress.protocol
+overrides the default derived from global.ingress.tls.enabled, e.g. when TLS is terminated
+in front of the Ingress (OpenShift edge routes, external load balancers).
+*/}}
+{{- define "camundaPlatform.ingressProtocol" -}}
+  {{- .Values.global.ingress.protocol | default (ternary "https" "http" .Values.global.ingress.tls.enabled) -}}
+{{- end -}}
+
 {{- define "camundaPlatform.ingressExternalPort" -}}
   {{- $ports := .context.Values.global.ingress.publicPorts | default dict -}}
   {{- ternary ($ports.https | default 443) ($ports.http | default 80) .tlsEnabled -}}
@@ -350,9 +359,9 @@ the chart host + contextPath. Otherwise return the configured external Keycloak 
     {{- if and .Values.global.gateway.enabled (tpl .Values.global.host $) -}}
       {{- printf "%s%s" (include "camundaPlatform.gatewayExternalURL" (dict "context" . "host" .Values.global.host)) .Values.global.identity.keycloak.contextPath -}}
     {{- else if and .Values.global.ingress.enabled (tpl .Values.global.host $) -}}
-      {{- printf "%s%s" (include "camundaPlatform.ingressExternalURL" (dict "context" . "host" .Values.global.host "tlsEnabled" .Values.global.ingress.tls.enabled)) .Values.global.identity.keycloak.contextPath -}}
+      {{- printf "%s%s" (include "camundaPlatform.ingressExternalURL" (dict "context" . "host" .Values.global.host "tlsEnabled" (eq (include "camundaPlatform.ingressProtocol" .) "https"))) .Values.global.identity.keycloak.contextPath -}}
     {{- else -}}
-      {{- $proto := ternary "https" "http" .Values.global.ingress.tls.enabled -}}
+      {{- $proto := include "camundaPlatform.ingressProtocol" . -}}
       {{- printf "%s://%s%s" $proto ((tpl .Values.global.host $) | default "localhost:18080") .Values.global.identity.keycloak.contextPath -}}
     {{- end -}}
   {{- else if (.Values.global.identity.keycloak.url).host -}}
@@ -438,7 +447,7 @@ Usage: {{ include "camundaPlatform.getExternalURL" (dict "component" "identity" 
 {{- define "camundaPlatform.getExternalURL" -}}
   {{- if (index .context.Values .component "enabled") -}}
     {{- if $.context.Values.global.ingress.enabled -}}
-      {{- printf "%s%s" (include "camundaPlatform.ingressExternalURL" (dict "context" .context "host" .context.Values.global.host "tlsEnabled" .context.Values.global.ingress.tls.enabled)) (index .context.Values .component "contextPath") -}}
+      {{- printf "%s%s" (include "camundaPlatform.ingressExternalURL" (dict "context" .context "host" .context.Values.global.host "tlsEnabled" (eq (include "camundaPlatform.ingressProtocol" .context) "https"))) (index .context.Values .component "contextPath") -}}
     {{- else if and $.context.Values.global.gateway.enabled (tpl .context.Values.global.host .context) -}}
       {{- printf "%s%s" (include "camundaPlatform.gatewayExternalURL" (dict "context" .context "host" .context.Values.global.host)) (index .context.Values .component "contextPath") -}}
     {{- else -}}
@@ -527,7 +536,7 @@ Web Modeler templates.
   {{- if eq (include "camundaHub.webModelerEnabled" .context) "true" -}}
     {{- $hub := include "camundaHub.values" .context | fromYaml -}}
     {{- if $.context.Values.global.ingress.enabled -}}
-      {{- $baseURL := include "camundaPlatform.ingressExternalURL" (dict "context" .context "host" .context.Values.global.host "tlsEnabled" .context.Values.global.ingress.tls.enabled) -}}
+      {{- $baseURL := include "camundaPlatform.ingressExternalURL" (dict "context" .context "host" .context.Values.global.host "tlsEnabled" (eq (include "camundaPlatform.ingressProtocol" .context) "https")) -}}
       {{- if eq .component "websockets" }}
         {{- printf "%s%s" $baseURL (include "webModeler.websocketContextPath" .context) -}}
       {{- else -}}
@@ -744,7 +753,7 @@ Zeebe templates.
 */}}
 {{- define "camundaPlatform.orchestrationExternalURL" }}
   {{- if .Values.global.ingress.enabled -}}
-    {{- printf "%s%s" (include "camundaPlatform.ingressExternalURL" (dict "context" . "host" .Values.global.host "tlsEnabled" .Values.global.ingress.tls.enabled)) (include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath)) -}}
+    {{- printf "%s%s" (include "camundaPlatform.ingressExternalURL" (dict "context" . "host" .Values.global.host "tlsEnabled" (eq (include "camundaPlatform.ingressProtocol" .) "https"))) (include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath)) -}}
   {{- else if and .Values.global.gateway.enabled (tpl .Values.global.host $) -}}
     {{- printf "%s%s" (include "camundaPlatform.gatewayExternalURL" (dict "context" . "host" .Values.global.host)) (include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath)) -}}
   {{- else -}}
@@ -1499,7 +1508,7 @@ Release templates.
   - dev
   custom-properties: []
   components:
-  {{- $proto := ternary "https" "http" .Values.global.ingress.tls.enabled -}}
+  {{- $proto := include "camundaPlatform.ingressProtocol" . -}}
   {{- $baseURL := printf "%s://%s" $proto (tpl .Values.global.host $) }}
 
   {{- if eq (include "camundaPlatform.identityEnabled" .) "true" }}

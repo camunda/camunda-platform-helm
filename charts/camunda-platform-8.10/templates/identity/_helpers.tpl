@@ -15,7 +15,7 @@
     {{- if .Values.identity.fullURL -}}
         {{ tpl .Values.identity.fullURL $ }}
     {{- else if .Values.global.ingress.enabled -}}
-        {{- printf "%s%s" (include "camundaPlatform.ingressExternalURL" (dict "context" . "host" .Values.global.host "tlsEnabled" .Values.global.ingress.tls.enabled)) (.Values.identity.contextPath | default "") -}}
+        {{- printf "%s%s" (include "camundaPlatform.ingressExternalURL" (dict "context" . "host" .Values.global.host "tlsEnabled" (eq (include "camundaPlatform.ingressProtocol" .) "https"))) (.Values.identity.contextPath | default "") -}}
     {{- else -}}
         {{- if .Values.global.gateway.enabled -}}
             {{- $proto := ternary "https" "http" (or .Values.global.ingress.tls.enabled .Values.global.gateway.tls.enabled) -}}

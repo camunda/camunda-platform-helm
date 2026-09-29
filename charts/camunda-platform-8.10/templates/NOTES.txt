@@ -129,7 +129,7 @@ Default user: "{{ .Values.identity.firstUser.username }}". No password is config
 {{- end }}
 
 {{- if .Values.global.ingress.enabled }}
-- Camunda REST API: {{ include "camundaPlatform.ingressExternalURL" (dict "context" . "host" .Values.global.host "tlsEnabled" .Values.global.ingress.tls.enabled) }}
+- Camunda REST API: {{ include "camundaPlatform.ingressExternalURL" (dict "context" . "host" .Values.global.host "tlsEnabled" (eq (include "camundaPlatform.ingressProtocol" .) "https")) }}
 {{- end }}
 
 {{- if or .Values.global.ingress.enabled .Values.orchestration.ingress.grpc.enabled }}

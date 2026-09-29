@@ -78,6 +78,23 @@ func TestNotesTemplate(t *testing.T) {
 			},
 		},
 		{
+			name: "ingress protocol override",
+			values: []string{
+				"global.ingress.enabled=true", "global.host=camunda.example.com",
+				"global.ingress.tls.enabled=false", "global.ingress.protocol=https",
+				"identity.enabled=true", "identity.contextPath=/identity",
+				"camundaHub.enabled=true", "camundaHub.contextPath=/modeler",
+				"camundaHub.restapi.mail.fromAddress=test@example.com",
+			},
+			expected:    "- Camunda REST API: https://camunda.example.com",
+			notExpected: "- Camunda REST API: http://camunda.example.com",
+			expectedURLs: []string{
+				"- Identity: https://camunda.example.com/identity",
+				"- Camunda Hub: https://camunda.example.com/modeler",
+				"- Camunda Hub WebSockets: https://camunda.example.com/modeler-ws",
+			},
+		},
+		{
 			name:        "inline secret",
 			values:      []string{"identity.firstUser.secret.inlineSecret=credential-output-canary-do-not-print"},
 			expected:    "configured via `identity.firstUser.secret.inlineSecret`",

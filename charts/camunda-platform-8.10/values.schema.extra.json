@@ -133,6 +133,14 @@
                 },
                 "ingress": {
                     "properties": {
+                        "protocol": {
+                            "type": "string",
+                            "enum": [
+                                "",
+                                "http",
+                                "https"
+                            ]
+                        },
                         "publicPorts": {
                             "properties": {
                                 "http": {
