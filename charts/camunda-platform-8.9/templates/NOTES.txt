@@ -160,7 +160,7 @@ Default user: "{{ .Values.identity.firstUser.username }}". No password is config
 {{- end }}
 
 {{- if .Values.global.ingress.enabled }}
-{{ $proto := ternary "https" "http" .Values.global.ingress.tls.enabled -}}
+{{ $proto := include "camundaPlatform.ingressProtocol" . -}}
 - Camunda REST API: {{ $proto }}://{{ tpl .Values.global.ingress.host $ }}
 {{- end }}
 

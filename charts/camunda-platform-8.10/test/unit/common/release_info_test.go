@@ -17,6 +17,7 @@ package camunda
 import (
 	"camunda-platform/test/unit/testhelpers"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -116,18 +117,22 @@ func (s *ReleaseInfoTest) TestIngressExternalURLs() {
 	for _, input := range []struct {
 		name      string
 		tls       string
+		protocol  string
 		httpPort  string
 		httpsPort string
 		wantURL   string
 	}{
-		{"DefaultHTTP", "false", "80", "443", "http://camunda.example.com/identity"},
-		{"CustomHTTP", "false", "8080", "8443", "http://camunda.example.com:8080/identity"},
-		{"DefaultHTTPS", "true", "80", "443", "https://camunda.example.com/identity"},
-		{"CustomHTTPS", "true", "8080", "8443", "https://camunda.example.com:8443/identity"},
-		{"HTTPOn443", "false", "443", "443", "http://camunda.example.com:443/identity"},
-		{"HTTPSOn80", "true", "80", "80", "https://camunda.example.com:80/identity"},
-		{"MinimumPort", "false", "1", "443", "http://camunda.example.com:1/identity"},
-		{"MaximumPort", "true", "80", "65535", "https://camunda.example.com:65535/identity"},
+		{"DefaultHTTP", "false", "", "80", "443", "http://camunda.example.com/identity"},
+		{"CustomHTTP", "false", "", "8080", "8443", "http://camunda.example.com:8080/identity"},
+		{"DefaultHTTPS", "true", "", "80", "443", "https://camunda.example.com/identity"},
+		{"CustomHTTPS", "true", "", "8080", "8443", "https://camunda.example.com:8443/identity"},
+		{"HTTPOn443", "false", "", "443", "443", "http://camunda.example.com:443/identity"},
+		{"HTTPSOn80", "true", "", "80", "80", "https://camunda.example.com:80/identity"},
+		{"MinimumPort", "false", "", "1", "443", "http://camunda.example.com:1/identity"},
+		{"MaximumPort", "true", "", "80", "65535", "https://camunda.example.com:65535/identity"},
+		// TLS terminated in front of the Ingress (e.g. OpenShift edge routes).
+		{"ProtocolOverrideHTTPS", "false", "https", "8080", "8443", "https://camunda.example.com:8443/identity"},
+		{"ProtocolOverrideHTTP", "true", "http", "8080", "8443", "http://camunda.example.com:8080/identity"},
 	} {
 		testCases = append(testCases, testhelpers.TestCase{
 			Name: input.name,
@@ -135,6 +140,7 @@ func (s *ReleaseInfoTest) TestIngressExternalURLs() {
 				"global.host":                              "camunda.example.com",
 				"global.ingress.enabled":                   "true",
 				"global.ingress.tls.enabled":               input.tls,
+				"global.ingress.protocol":                  input.protocol,
 				"global.ingress.publicPorts.http":          input.httpPort,
 				"global.ingress.publicPorts.https":         input.httpsPort,
 				"identity.enabled":                         "true",
@@ -146,7 +152,7 @@ func (s *ReleaseInfoTest) TestIngressExternalURLs() {
 				"orchestration.data.secondaryStorage.type": "elasticsearch",
 				"orchestration.ingress.grpc.enabled":       "true",
 				"orchestration.ingress.grpc.host":          "grpc.{{ .Values.global.host }}",
-				"orchestration.ingress.grpc.tls.enabled":   input.tls,
+				"orchestration.ingress.grpc.tls.enabled":   strconv.FormatBool(strings.HasPrefix(input.wantURL, "https")),
 				"camundaHub.enabled":                       "true",
 				"camundaHub.contextPath":                   "/modeler",
 				"camundaHub.restapi.mail.fromAddress":      "test@example.com",

@@ -16,7 +16,7 @@
         {{ tpl .Values.identity.fullURL $ }}
     {{- else -}}
         {{- if or .Values.global.ingress.enabled .Values.global.gateway.enabled -}}
-            {{- $proto := ternary "https" "http" (or .Values.global.ingress.tls.enabled .Values.global.gateway.tls.enabled) -}}
+            {{- $proto := ternary (include "camundaPlatform.ingressProtocol" .) (ternary "https" "http" .Values.global.gateway.tls.enabled) .Values.global.ingress.enabled -}}
             {{- $host := (tpl .Values.global.host $ | default (tpl .Values.global.ingress.host $)) -}}
             {{- $path := .Values.identity.contextPath | default "" -}}
             {{- printf "%s://%s%s" $proto $host $path -}}

@@ -252,7 +252,7 @@ Define match labels for Web Modeler websockets to be used in matchLabels selecto
 */}}
 {{- define "webModeler.publicWebsocketPort" -}}
   {{- if and .Values.global.ingress.enabled .Values.webModeler.contextPath }}
-    {{- .Values.global.ingress.tls.enabled | ternary "443" "80" }}
+    {{- eq (include "camundaPlatform.ingressProtocol" .) "https" | ternary "443" "80" }}
   {{- else }}
     {{- .Values.webModeler.websockets.publicPort }}
   {{- end }}
@@ -263,7 +263,7 @@ Define match labels for Web Modeler websockets to be used in matchLabels selecto
 */}}
 {{- define "webModeler.websocketTlsEnabled" -}}
   {{- if and .Values.global.ingress.enabled .Values.webModeler.contextPath }}
-    {{- .Values.global.ingress.tls.enabled }}
+    {{- eq (include "camundaPlatform.ingressProtocol" .) "https" }}
   {{- else -}}
     false
   {{- end }}
