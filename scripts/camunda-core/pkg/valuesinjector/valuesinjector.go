@@ -186,6 +186,10 @@ func replaceImageTag(content string, componentName string, newTag string) (strin
 }
 
 // validateComponentImageTag confirms componentName.image.tag exists via YAML parse.
+func HasImageTag(content, componentName string) bool {
+	return validateComponentImageTag(content, componentName) == nil
+}
+
 func validateComponentImageTag(content string, componentName string) error {
 	var root yaml.Node
 	if err := yaml.Unmarshal([]byte(content), &root); err != nil {

@@ -284,6 +284,7 @@ jobs:
           # even when the artifact already exists.
           /tmp/release-tools image-overrides \
             --chart-version "${{ matrix.chart.version }}" \
+            --chart-versions-file "$(git rev-parse --show-toplevel)/charts/chart-versions.yaml" \
             --orchestration "${{ inputs.orchestration-image-tag }}" \
             --zeebe "${{ inputs.zeebe-image-tag }}" \
             --zeebe-gateway "${{ inputs.zeebe-gateway-image-tag }}" \

@@ -14,7 +14,12 @@
 
 package main
 
-import "testing"
+import (
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+)
 
 func TestBuildOverridesClassic_ZeebeLinksToGateway(t *testing.T) {
 	t.Setenv("ZEEBE_IMAGE_TAG", "8.7.99")
@@ -58,5 +63,59 @@ func TestBuildOverridesClassic_NoZeebeNoGateway(t *testing.T) {
 	}
 	if o.ZeebeGateway != nil {
 		t.Error("expected ZeebeGateway override to be nil")
+	}
+}
+
+func TestRunInjectValuesUpdatesValuesLatest(t *testing.T) {
+	dir := t.TempDir()
+	chartDir := filepath.Join(dir, "charts", "camunda-platform-8.10")
+	if err := os.MkdirAll(chartDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	values := "orchestration:\n  image:\n    tag: 8.10.0-alpha5\nconnectors:\n  image:\n    tag: 8.10.0-alpha5\n"
+	latest := "orchestration:\n  image:\n    repository: camunda/camunda\n    tag: SNAPSHOT\n"
+	for name, body := range map[string]string{"values.yaml": values, "values-latest.yaml": latest} {
+		if err := os.WriteFile(filepath.Join(chartDir, name), []byte(body), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	t.Chdir(dir)
+	t.Setenv("CHART_VERSION", "8.10")
+	t.Setenv("ORCHESTRATION_IMAGE_TAG", "8.10.0")
+	t.Setenv("CONNECTORS_IMAGE_TAG", "8.10.1")
+	t.Setenv("CONSOLE_IMAGE_TAG", "not included")
+
+	if err := runInjectValues(nil); err != nil {
+		t.Fatalf("runInjectValues: %v", err)
+	}
+	gotValues, _ := os.ReadFile(filepath.Join(chartDir, "values.yaml"))
+	if !strings.Contains(string(gotValues), "tag: 8.10.0\n") || !strings.Contains(string(gotValues), "tag: 8.10.1\n") {
+		t.Errorf("values.yaml not updated:\n%s", gotValues)
+	}
+	gotLatest, _ := os.ReadFile(filepath.Join(chartDir, "values-latest.yaml"))
+	if !strings.Contains(string(gotLatest), "tag: 8.10.0\n") || strings.Contains(string(gotLatest), "SNAPSHOT") {
+		t.Errorf("values-latest.yaml not updated:\n%s", gotLatest)
+	}
+}
+
+func TestRunImageOverridesRejectsGATagForAlphaMinor(t *testing.T) {
+	dir := t.TempDir()
+	cv := filepath.Join(dir, "chart-versions.yaml")
+	body := "chartAutomation: {routineVersions: [\"8.10\", \"8.9\"]}\ncamundaSupportLifecycle:\n  \"8.10\": {}\n  \"8.9\": {released: \"2026-04-14\"}\n"
+	if err := os.WriteFile(cv, []byte(body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("GITHUB_ENV", filepath.Join(dir, "env"))
+	out := filepath.Join(dir, "overrides.yaml")
+
+	err := runImageOverrides([]string{"--chart-version", "8.10", "--chart-versions-file", cv, "--orchestration", "8.10.0", "--out", out})
+	if err == nil || !strings.Contains(err.Error(), "no released date for 8.10") {
+		t.Errorf("GA tag for an alpha minor must fail, got %v", err)
+	}
+	if err := runImageOverrides([]string{"--chart-version", "8.10", "--chart-versions-file", cv, "--orchestration", "8.10.0-alpha6", "--out", out}); err != nil {
+		t.Errorf("alpha tag for an alpha minor: %v", err)
+	}
+	if err := runImageOverrides([]string{"--chart-version", "8.9", "--chart-versions-file", cv, "--orchestration", "8.9.23", "--out", out}); err != nil {
+		t.Errorf("GA tag for a released minor: %v", err)
 	}
 }
