@@ -5,13 +5,11 @@ on:
     paths:
       - '.github/renovate.json5'
       - 'charts/camunda-platform-*/Chart.yaml'
-      - 'charts/chart-versions.yaml'
       - 'scripts/renovate-config-check/**'
   pull_request:
     paths:
       - '.github/renovate.json5'
       - 'charts/camunda-platform-*/Chart.yaml'
-      - 'charts/chart-versions.yaml'
       - 'scripts/renovate-config-check/**'
   workflow_dispatch: {}
 
