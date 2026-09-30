@@ -405,6 +405,8 @@ if [[ "$PLAYWRIGHT_PROJECT" == "api" ]]; then
   export ZEEBE_VERSION
   export MT="$IS_MT"
   export REQUIRE_API_TEST_SUITE=true
+  # The chart's gRPC ingress host (orchestration.ingress.grpc) in the CI values.
+  export GRPC_ADDRESS="${GRPC_ADDRESS:-grpc-${hostname}:443}"
   if [[ "$TEST_AUTH_TYPE" == "basic" ]]; then
     # The chart's default initial admin (orchestration.security.initialization.users).
     export AUTH_METHOD=basic
@@ -428,7 +430,7 @@ if [[ "$PLAYWRIGHT_PROJECT" == "api" ]]; then
       export SECONDARY_CLIENT_ID="unprivileged" SECONDARY_CLIENT_SECRET
     fi
   fi
-  log "REST v2 API suite: ${BASE_URL} (version ${ZEEBE_VERSION}, auth ${AUTH_METHOD}, multi-tenancy ${MT})"
+  log "REST v2 API suite: ${BASE_URL}, gRPC ${GRPC_ADDRESS} (version ${ZEEBE_VERSION}, auth ${AUTH_METHOD}, multi-tenancy ${MT})"
 fi
 
 # ── Namespace-scoped Playwright output directories ──
