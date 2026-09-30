@@ -72,11 +72,6 @@ component/optimize:
         - 'charts/camunda-platform-*/templates/optimize/**'
         - 'charts/camunda-platform-*/charts/optimize/**'
 
-component/orchestration:
-  - changed-files:
-    - any-glob-to-any-file:
-        - 'charts/camunda-platform-*/templates/orchestration/**'
-
 component/monitoring:
   - changed-files:
     - any-glob-to-any-file:
