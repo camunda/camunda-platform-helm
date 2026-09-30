@@ -2908,7 +2908,7 @@ Usage:
       {{- end -}}
       {{- if $relaxed -}}
         {{- range $line := regexSplit "\n" $content -1 -}}
-          {{- $key := first (regexSplit "[:=]" (trim $line) 2) -}}
+          {{- $key := trim (first (regexSplit "[:=]" (trim $line) 2)) -}}
           {{- $normalizedKey := regexReplaceAll "[-_.]" (lower $key) "" -}}
           {{- if hasPrefix $normalizedPath $normalizedKey -}}
             {{- $found = "true" -}}

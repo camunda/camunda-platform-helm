@@ -1468,6 +1468,19 @@ func (s *ConfigmapTemplateTest) TestClusterEnvironmentOverrides() {
 			},
 		},
 		{
+			Name: "Imported spaced kebab properties cluster configuration suppresses matching unified default",
+			Values: map[string]string{
+				"orchestration.profiles.broker":               "true",
+				"orchestration.extraConfiguration[0].file":    "cluster.properties",
+				"orchestration.extraConfiguration[0].content": "zeebe.broker.cluster.cluster-name = imported\n",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				cluster := requireApplicationCluster(t, output)
+				requireNestedKeyAbsent(t, cluster, "name")
+			},
+		},
+		{
 			Name: "Declared envFrom cluster variable suppresses matching unified default",
 			Values: map[string]string{
 				"orchestration.profiles.broker":              "true",
@@ -1481,6 +1494,20 @@ func (s *ConfigmapTemplateTest) TestClusterEnvironmentOverrides() {
 				require.True(t, ok)
 				requireNestedKeyAbsent(t, network, "advertised-host")
 				require.Contains(t, network, "host")
+			},
+		},
+		{
+			Name: "Declared envFrom cluster variable without a source keeps the unified default",
+			Values: map[string]string{
+				"orchestration.profiles.broker":    "true",
+				"orchestration.envFromProvides[0]": "ZEEBE_BROKER_NETWORK_ADVERTISEDHOST",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				cluster := requireApplicationCluster(t, output)
+				network, ok := cluster["network"].(map[string]any)
+				require.True(t, ok)
+				require.Contains(t, network, "advertised-host")
 			},
 		},
 		{

@@ -3,8 +3,10 @@
 {{- range $env := (.Values.orchestration.env | default list) -}}
   {{- $_ := set $clusterEnv (tpl ($env.name | default "") $) true -}}
 {{- end -}}
-{{- range $envName := (.Values.orchestration.envFromProvides | default list) -}}
-  {{- $_ := set $clusterEnv $envName true -}}
+{{- if .Values.orchestration.envFrom -}}
+  {{- range $envName := (.Values.orchestration.envFromProvides | default list) -}}
+    {{- $_ := set $clusterEnv $envName true -}}
+  {{- end -}}
 {{- end -}}
 {{- $extraConfiguration := .Values.orchestration.extraConfiguration -}}
 {{/*
