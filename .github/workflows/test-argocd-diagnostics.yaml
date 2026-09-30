@@ -1,0 +1,23 @@
+name: Test - Argo CD Diagnostics
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/test-argocd-diagnostics.yaml
+      - .github/workflows/test-gitops-phase.yaml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  reproduce:
+    name: Reproduce merge-queue Argo failure
+    uses: ./.github/workflows/test-gitops-phase.yaml
+    with:
+      controllers: '["argocd"]'
+      camunda-helm-git-ref: 75f67e715f7e46817685521316a02a8733777964
+      camunda-helm-git-ref-name: refs/heads/gh-readonly-queue/main/pr-7373-081d199e2a7c2f9f6c9c308bc4849d6db0532941
