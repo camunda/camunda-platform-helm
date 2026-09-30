@@ -119,11 +119,11 @@ jobs:
 
       - name: Resolve e2e test suite version
         id: resolve-e2e-suite
+        if: steps.generate-chart-versions.outputs.camunda-versions != '[]'
         run: |
-          version=$(npm view @camunda/e2e-test-suite version)
-          if [[ -z "$version" ]]; then
-            echo "::error::Could not resolve the @camunda/e2e-test-suite version"
-            exit 1
+          if ! version=$(npm view @camunda/e2e-test-suite version) || [[ -z "$version" ]]; then
+            echo "::warning::Could not resolve the @camunda/e2e-test-suite version. E2E jobs install latest and the result cache is off for this run."
+            exit 0
           fi
           echo "E2E test suite version: ${version}"
           echo "version=${version}" >> "$GITHUB_OUTPUT"
@@ -157,7 +157,7 @@ jobs:
       # The gate is pr-head-sha != '' (set by resolve-pr-sha only for pull_request and
       # merge_group), so push/schedule/dispatch runs still execute the full matrix.
       - name: Setup Go for cache annotation
-        if: steps.resolve-pr-sha.outputs.pr-head-sha != ''
+        if: steps.resolve-pr-sha.outputs.pr-head-sha != '' && steps.resolve-e2e-suite.outputs.version != ''
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
         with:
           go-version-file: scripts/ci-result-cache/go.mod
@@ -169,7 +169,7 @@ jobs:
 
       - name: Annotate matrix with cache status
         id: annotate-cache
-        if: steps.resolve-pr-sha.outputs.pr-head-sha != ''
+        if: steps.resolve-pr-sha.outputs.pr-head-sha != '' && steps.resolve-e2e-suite.outputs.version != ''
         env:
           GITHUB_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
