@@ -255,10 +255,10 @@ func TestDeployAndStartAcceptanceProcess(t *testing.T) {
 		return testResponse(http.StatusNoContent, ""), nil
 	}
 
-	key, err := deployAcceptanceProcess(context.Background(), doHTTP, "https://orch", "tenanta", "pt-accept-tenanta", "venom-token")
+	key, err := deployAcceptanceProcess(context.Background(), doHTTP, noSleep, "https://orch", "tenanta", "pt-accept-tenanta", "venom-token")
 	require.NoError(t, err)
 	assert.Equal(t, "123", key)
-	require.NoError(t, startAcceptanceProcess(context.Background(), doHTTP, "https://orch", "tenanta", key, "marker", "venom-token"))
+	require.NoError(t, startAcceptanceProcess(context.Background(), doHTTP, noSleep, "https://orch", "tenanta", key, "marker", "venom-token"))
 }
 
 func TestReadSecretUsesContextAndDecodesValue(t *testing.T) {
@@ -409,12 +409,91 @@ func TestRequestBuildersRejectMalformedURLs(t *testing.T) {
 	_, err := clientToken(context.Background(), unreachable, malformed, "client", "secret")
 	require.ErrorContains(t, err, "build token request for client")
 
-	_, err = deployAcceptanceProcess(context.Background(), unreachable, malformed, "tenanta", "pt-accept", "token")
+	_, err = deployAcceptanceProcess(context.Background(), unreachable, noSleep, malformed, "tenanta", "pt-accept", "token")
 	require.ErrorContains(t, err, "build deploy request for tenanta")
 
-	err = startAcceptanceProcess(context.Background(), unreachable, malformed, "tenanta", "123", "marker", "token")
+	err = startAcceptanceProcess(context.Background(), unreachable, noSleep, malformed, "tenanta", "123", "marker", "token")
 	require.ErrorContains(t, err, "build start request for tenanta")
 
 	_, _, err = httpGet(context.Background(), unreachable, malformed, "token")
 	require.ErrorContains(t, err, "build GET request for")
+}
+
+func noSleep(context.Context, time.Duration) error { return nil }
+
+// A Physical Tenant can report healthy partitions while the gateway still answers 503 for a few
+// seconds (seen in the physicaltenants merge queue). Deploy and start must ride that out.
+func TestAcceptanceRequestsRetryTransientGatewayErrors(t *testing.T) {
+	t.Parallel()
+
+	unavailable := `{"title":"UNAVAILABLE","status":503,"detail":"Expected to handle request, but there was a connection error with one of the brokers"}`
+	var deploys, starts, sleeps int
+	doHTTP := func(req *http.Request) (*http.Response, error) {
+		body, err := io.ReadAll(req.Body)
+		require.NoError(t, err)
+		if strings.HasSuffix(req.URL.Path, "/deployments") {
+			deploys++
+			assert.Contains(t, string(body), "pt-accept-tenanta", "every attempt must resend the full deployment")
+			if deploys < 3 {
+				return testResponse(http.StatusServiceUnavailable, unavailable), nil
+			}
+			return testResponse(http.StatusOK, `{"deployments":[{"processDefinition":{"processDefinitionKey":"123"}}]}`), nil
+		}
+		starts++
+		assert.Contains(t, string(body), `"processDefinitionKey":"123"`)
+		if starts == 1 {
+			return nil, errors.New("connection reset by peer")
+		}
+		return testResponse(http.StatusOK, "{}"), nil
+	}
+	sleep := func(context.Context, time.Duration) error { sleeps++; return nil }
+
+	key, err := deployAcceptanceProcess(context.Background(), doHTTP, sleep, "https://orch", "tenanta", "pt-accept-tenanta", "token")
+	require.NoError(t, err)
+	assert.Equal(t, "123", key)
+	require.NoError(t, startAcceptanceProcess(context.Background(), doHTTP, sleep, "https://orch", "tenanta", key, "marker", "token"))
+	assert.Equal(t, 3, deploys)
+	assert.Equal(t, 2, starts)
+	assert.Equal(t, 3, sleeps)
+}
+
+func TestAcceptanceRequestsDoNotRetryClientErrors(t *testing.T) {
+	t.Parallel()
+
+	calls := 0
+	doHTTP := func(*http.Request) (*http.Response, error) {
+		calls++
+		return testResponse(http.StatusForbidden, `{"title":"FORBIDDEN"}`), nil
+	}
+	_, err := deployAcceptanceProcess(context.Background(), doHTTP, noSleep, "https://orch", "tenanta", "pt-accept", "token")
+	require.ErrorContains(t, err, "deploy tenanta process: HTTP 403")
+	assert.Equal(t, 1, calls)
+}
+
+func TestAcceptanceRequestsGiveUpAfterPersistentUnavailability(t *testing.T) {
+	t.Parallel()
+
+	calls := 0
+	doHTTP := func(*http.Request) (*http.Response, error) {
+		calls++
+		return testResponse(http.StatusServiceUnavailable, `{"title":"UNAVAILABLE"}`), nil
+	}
+	err := startAcceptanceProcess(context.Background(), doHTTP, noSleep, "https://orch", "tenanta", "123", "marker", "token")
+	require.ErrorContains(t, err, "start tenanta process: HTTP 503")
+	require.ErrorContains(t, err, "after 12 attempts")
+	assert.Equal(t, acceptanceRequestAttempts, calls)
+}
+
+func TestAcceptanceRequestsStopWhenContextIsCancelled(t *testing.T) {
+	t.Parallel()
+
+	calls := 0
+	doHTTP := func(*http.Request) (*http.Response, error) {
+		calls++
+		return testResponse(http.StatusServiceUnavailable, "{}"), nil
+	}
+	cancelled := func(context.Context, time.Duration) error { return context.Canceled }
+	_, err := deployAcceptanceProcess(context.Background(), doHTTP, cancelled, "https://orch", "tenanta", "pt-accept", "token")
+	require.ErrorIs(t, err, context.Canceled)
+	assert.Equal(t, 1, calls)
 }

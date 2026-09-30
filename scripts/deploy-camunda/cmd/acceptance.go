@@ -309,11 +309,11 @@ func runPhysicalTenantAcceptance(ctx context.Context, opts physicalTenantAccepta
 	processes := map[string]string{}
 	for _, tenant := range []string{"default", "tenanta", "tenantb"} {
 		processID := "pt-accept-" + tenant + "-" + runID
-		key, deployErr := deployAcceptanceProcess(ctx, deps.doHTTP, "https://"+opts.orchHost, tenant, processID, tokens["venom"])
+		key, deployErr := deployAcceptanceProcess(ctx, deps.doHTTP, deps.sleep, "https://"+opts.orchHost, tenant, processID, tokens["venom"])
 		if deployErr != nil {
 			return fail(deployErr)
 		}
-		if startErr := startAcceptanceProcess(ctx, deps.doHTTP, "https://"+opts.orchHost, tenant, key, processID, tokens["venom"]); startErr != nil {
+		if startErr := startAcceptanceProcess(ctx, deps.doHTTP, deps.sleep, "https://"+opts.orchHost, tenant, key, processID, tokens["venom"]); startErr != nil {
 			return fail(startErr)
 		}
 		processes[tenant] = processID
@@ -503,7 +503,7 @@ func tenantAPIPath(tenant string) string {
 	return "/orchestration/physical-tenants/" + tenant + "/v2"
 }
 
-func deployAcceptanceProcess(ctx context.Context, doHTTP func(*http.Request) (*http.Response, error), orchURL, tenant, processID, token string) (string, error) {
+func deployAcceptanceProcess(ctx context.Context, doHTTP func(*http.Request) (*http.Response, error), sleep func(context.Context, time.Duration) error, orchURL, tenant, processID, token string) (string, error) {
 	var body bytes.Buffer
 	writer := multipart.NewWriter(&body)
 	header := make(textproto.MIMEHeader)
@@ -512,18 +512,18 @@ func deployAcceptanceProcess(ctx context.Context, doHTTP func(*http.Request) (*h
 	part, _ := writer.CreatePart(header)
 	fmt.Fprintf(part, `<?xml version="1.0" encoding="UTF-8"?><definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" targetNamespace="http://camunda.io/schema/1.0/bpmn"><process id="%s" name="%s" isExecutable="true"><startEvent id="start"/><sequenceFlow id="flow" sourceRef="start" targetRef="end"/><endEvent id="end"/></process></definitions>`, processID, processID)
 	_ = writer.Close()
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, orchURL+tenantAPIPath(tenant)+"/deployments", &body)
+	payload := body.Bytes()
+	response, err := postAcceptanceRequest(ctx, doHTTP, sleep, fmt.Sprintf("deploy %s process", tenant), func() (*http.Request, error) {
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, orchURL+tenantAPIPath(tenant)+"/deployments", bytes.NewReader(payload))
+		if err != nil {
+			return nil, fmt.Errorf("build deploy request for %s: %w", tenant, err)
+		}
+		req.Header.Set("Content-Type", writer.FormDataContentType())
+		req.Header.Set("Authorization", "Bearer "+token)
+		return req, nil
+	})
 	if err != nil {
-		return "", fmt.Errorf("build deploy request for %s: %w", tenant, err)
-	}
-	req.Header.Set("Content-Type", writer.FormDataContentType())
-	req.Header.Set("Authorization", "Bearer "+token)
-	response, status, err := doRequest(doHTTP, req)
-	if err != nil {
-		return "", fmt.Errorf("deploy %s process: %w", tenant, err)
-	}
-	if status < 200 || status >= 300 {
-		return "", fmt.Errorf("deploy %s process: HTTP %d: %s", tenant, status, strings.TrimSpace(string(response)))
+		return "", err
 	}
 	var result struct {
 		Deployments []struct {
@@ -538,22 +538,58 @@ func deployAcceptanceProcess(ctx context.Context, doHTTP func(*http.Request) (*h
 	return result.Deployments[0].ProcessDefinition.Key, nil
 }
 
-func startAcceptanceProcess(ctx context.Context, doHTTP func(*http.Request) (*http.Response, error), orchURL, tenant, key, marker, token string) error {
+func startAcceptanceProcess(ctx context.Context, doHTTP func(*http.Request) (*http.Response, error), sleep func(context.Context, time.Duration) error, orchURL, tenant, key, marker, token string) error {
 	body, _ := json.Marshal(map[string]any{"processDefinitionKey": key, "variables": map[string]string{"physicalTenantAcceptanceMarker": marker}})
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, orchURL+tenantAPIPath(tenant)+"/process-instances", bytes.NewReader(body))
-	if err != nil {
-		return fmt.Errorf("build start request for %s: %w", tenant, err)
+	_, err := postAcceptanceRequest(ctx, doHTTP, sleep, fmt.Sprintf("start %s process", tenant), func() (*http.Request, error) {
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, orchURL+tenantAPIPath(tenant)+"/process-instances", bytes.NewReader(body))
+		if err != nil {
+			return nil, fmt.Errorf("build start request for %s: %w", tenant, err)
+		}
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", "Bearer "+token)
+		return req, nil
+	})
+	return err
+}
+
+const (
+	acceptanceRequestAttempts = 12
+	acceptanceRequestDelay    = 5 * time.Second
+)
+
+// postAcceptanceRequest sends a request built by build and returns the body of the first 2xx
+// response. A freshly started Physical Tenant can report its partitions healthy while the gateway
+// still answers 503 UNAVAILABLE ("connection error with one of the brokers") for a few seconds, so
+// transport errors and 502/503/504 are retried for up to about a minute. Any other status fails
+// at once, since retrying would not change a 4xx. Deploying the same resource again and starting
+// a second instance of the acceptance process are both harmless to the assertions that follow.
+func postAcceptanceRequest(ctx context.Context, doHTTP func(*http.Request) (*http.Response, error), sleep func(context.Context, time.Duration) error, what string, build func() (*http.Request, error)) ([]byte, error) {
+	var lastErr error
+	for attempt := 1; attempt <= acceptanceRequestAttempts; attempt++ {
+		req, err := build()
+		if err != nil {
+			return nil, err
+		}
+		response, status, err := doRequest(doHTTP, req)
+		switch {
+		case err != nil:
+			lastErr = fmt.Errorf("%s: %w", what, err)
+		case status >= 200 && status < 300:
+			return response, nil
+		default:
+			lastErr = fmt.Errorf("%s: HTTP %d: %s", what, status, strings.TrimSpace(string(response)))
+			if status != http.StatusBadGateway && status != http.StatusServiceUnavailable && status != http.StatusGatewayTimeout {
+				return nil, lastErr
+			}
+		}
+		if attempt == acceptanceRequestAttempts {
+			break
+		}
+		if err := sleep(ctx, acceptanceRequestDelay); err != nil {
+			return nil, err
+		}
 	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+token)
-	response, status, err := doRequest(doHTTP, req)
-	if err != nil {
-		return fmt.Errorf("start %s process: %w", tenant, err)
-	}
-	if status < 200 || status >= 300 {
-		return fmt.Errorf("start %s process: HTTP %d: %s", tenant, status, strings.TrimSpace(string(response)))
-	}
-	return nil
+	return nil, fmt.Errorf("%w (after %d attempts)", lastErr, acceptanceRequestAttempts)
 }
 
 func definitionsContain(body []byte, processID string) bool {
