@@ -384,7 +384,7 @@ global:
         #   protocol: "https"
         #   host: "keycloak.{{ .Release.Namespace }}.svc.cluster.local"
         #   port: "8443"
-      ## @param global.identity.keycloak.contextPath defines the path Identity uses to reach Keycloak. With bundled Keycloak enabled, also set identityKeycloak.httpRelativePath to the same path with a trailing slash.
+      ## @param global.identity.keycloak.contextPath defines the path Identity uses to reach Keycloak. With bundled Keycloak enabled, also set identityKeycloak.httpRelativePath to the same path with a trailing slash; for root, use an empty string here and / for httpRelativePath.
       contextPath: "/auth"
       ## @param global.identity.keycloak.realm defines Keycloak realm path used for Camunda.
       realm: "/realms/camunda-platform"

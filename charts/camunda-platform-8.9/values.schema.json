@@ -736,7 +736,7 @@
                                 },
                                 "contextPath": {
                                     "type": "string",
-                                    "description": "defines the path Identity uses to reach Keycloak. With bundled Keycloak enabled, also set identityKeycloak.httpRelativePath to the same path with a trailing slash.",
+                                    "description": "defines the path Identity uses to reach Keycloak. With bundled Keycloak enabled, also set identityKeycloak.httpRelativePath to the same path with a trailing slash; for root, use an empty string here and / for httpRelativePath.",
                                     "default": "/auth"
                                 },
                                 "realm": {

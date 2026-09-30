@@ -325,7 +325,7 @@ global:
   # Optional:
   #   global.identity.auth.publicIssuerUrl  - override public Keycloak URL
   #     (default works with port-forward; override when using ingress)
-  #   global.identity.keycloak.contextPath  - "/auth" (Keycloak v16) or "/" (v19+)
+  #   global.identity.keycloak.contextPath  - "/auth" (default); for root, use "" with identityKeycloak.httpRelativePath "/"
   #
   # No explicit OIDC endpoint URLs are needed; they are auto-derived.
   #
@@ -370,7 +370,7 @@ global:
   #
   # Optional:
   #   global.identity.keycloak.internal: true  - ExternalName svc for cross-namespace access
-  #   global.identity.keycloak.contextPath     - "/auth" (Keycloak v16) or "/" (v19+)
+  #   global.identity.keycloak.contextPath     - path served by the external Keycloak; "" for root
   #
   # Minimal snippet:
   #   identityKeycloak:
@@ -546,7 +546,7 @@ global:
         #   protocol: "https"
         #   host: "keycloak.{{ .Release.Namespace }}.svc.cluster.local"
         #   port: "8443"
-      ## @param global.identity.keycloak.contextPath defines the path Identity uses to reach Keycloak. With bundled Keycloak enabled, also set identityKeycloak.httpRelativePath to the same path with a trailing slash.
+      ## @param global.identity.keycloak.contextPath defines the path Identity uses to reach Keycloak. With bundled Keycloak enabled, also set identityKeycloak.httpRelativePath to the same path with a trailing slash; for root, use an empty string here and / for httpRelativePath.
       # Applies to: Internal Keycloak and External Keycloak. Not used in External OIDC.
       contextPath: "/auth"
       ## @param global.identity.keycloak.realm defines Keycloak realm path used for Camunda.
