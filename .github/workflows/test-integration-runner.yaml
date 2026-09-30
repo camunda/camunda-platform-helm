@@ -1282,6 +1282,12 @@ jobs:
     if: ${{ inputs.test-enabled && inputs.e2e-enabled && inputs.flow == 'install' && !inputs.skip-e2e && !inputs.is-topology }}
     continue-on-error: ${{ !matrix.blocking }}
     timeout-minutes: ${{ matrix.suite == 'full' && 50 || matrix.suite == 'api' && 40 || 25 }}
+    # One output per suite: a matrix leg that leaves an output unset does not
+    # overwrite the value another leg set.
+    outputs:
+      failed-smoke: ${{ steps.record-failure.outputs.failed-smoke }}
+      failed-full: ${{ steps.record-failure.outputs.failed-full }}
+      failed-api: ${{ steps.record-failure.outputs.failed-api }}
     strategy:
       fail-fast: false
       # Legs share one deployment and smoke-tests.spec.js runs in both projects,
@@ -1351,6 +1357,12 @@ jobs:
           run-smoke-tests: ${{ matrix.suite == 'smoke' }}
           playwright-project: ${{ matrix.suite == 'api' && 'api' || '' }}
           artifact-suffix: ${{ matrix.suite == 'api' && 'api' || '' }}
+      # continue-on-error reports a failed non-blocking leg as success in
+      # needs.*.result; record-result reads this output instead.
+      - name: Record non-blocking leg failure
+        id: record-failure
+        if: failure() && !matrix.blocking
+        run: echo "failed-${{ matrix.suite }}=true" >> "$GITHUB_OUTPUT"
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -1782,7 +1794,8 @@ jobs:
     name: Record cache result - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
     needs: [install, playwright-e2e-tests-after-install, playwright-e2e-tests-after-upgrade, merge-e2e-reports, e2e-topology-smoke]
     # Only record when:
-    # 1. All prerequisite jobs succeeded (or were skipped — e.g., e2e tests skipped for skip-e2e scenarios)
+    # 1. All prerequisite jobs succeeded (or were skipped — e.g., e2e tests skipped for skip-e2e scenarios),
+    #    including the non-blocking e2e legs, whose failure only shows in their failed-<suite> output
     #    Note: we check both 'failure' AND 'cancelled' to prevent false positives when
     #    tests are cancelled (e.g., timeout). A cancelled job result is 'cancelled', not 'failure'.
     # 2. PR HEAD SHA is available (set by the init job for merge_group and pull_request events)
@@ -1792,6 +1805,9 @@ jobs:
         !cancelled() &&
         !contains(needs.*.result, 'failure') &&
         !contains(needs.*.result, 'cancelled') &&
+        needs.playwright-e2e-tests-after-install.outputs.failed-smoke != 'true' &&
+        needs.playwright-e2e-tests-after-install.outputs.failed-full != 'true' &&
+        needs.playwright-e2e-tests-after-install.outputs.failed-api != 'true' &&
         inputs.pr-head-sha != '' &&
         inputs.camunda-version != '' &&
         inputs.chart-versions != '' &&
