@@ -152,6 +152,30 @@ func (s *ConfigMapWarningsTemplateTest) TestDifferentValuesInputs() {
 					"web-modeler restapi) can set that instead")
 			},
 		},
+		{
+			Name: "TestEmptyCamundaHubEnvIgnoresLegacyJavaToolOptions",
+			Values: map[string]string{
+				"camundaHub.enabled":                                   "true",
+				"camundaHub.restapi.mail.fromAddress":                  "example@example.com",
+				"global.testDeprecationFlags.existingSecretsMustBeSet": "warning",
+				"global.tls.caBundle.secret.existingSecret":            "camunda-ca-bundle",
+				"identity.enabled":                                     "true",
+				"orchestration.data.secondaryStorage.type":             "elasticsearch",
+				"webModeler.restapi.env[0].name":                       "JAVA_TOOL_OPTIONS",
+				"webModeler.restapi.env[0].value":                      "-Xmx1g",
+			},
+			RenderTemplateExtraArgs: []string{"--set-json", "camundaHub.restapi.env=[]"},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				// Positive anchor: warning evaluation ran for this release.
+				s.Require().Contains(configmap.Data["warnings"],
+					"webModeler.restapi.pusher.secret.existingSecret")
+				s.Require().NotContains(configmap.Data["warnings"],
+					"webModeler.restapi.env sets JAVA_TOOL_OPTIONS directly")
+			},
+		},
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
