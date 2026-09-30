@@ -119,9 +119,17 @@ green for one nightly cycle on `main`. Normative constraints:
    - Every referenced hook and dependency ID resolves to a file.
    - Scenario IDs and shortnames are unique.
    - Platform × flow tuples do not duplicate.
-   - Referenced basenames (hook manifests, hook scripts, dependency
-     values-files, scenario values-layer files, feature values-files)
-     resolve under `test/integration/scenarios/`.
+   - Referenced basenames (hook manifests, hook scripts, scenario
+     values-layer files, feature values-files) resolve under
+     `test/integration/scenarios/`.
+   - Dependency values-files are repository-root-relative paths that
+     resolve under the shared `test/integration/companion-values/`
+     tree. Companion charts (Elasticsearch, OpenSearch, Keycloak,
+     PostgreSQL) are not chart-version-specific, so every version's
+     `dependencies/<id>.yaml` references one shared copy instead of a
+     per-version duplicate. (Clarified 2026-09-29 to match the
+     implemented validator, `registry_validator.go` `checkDep`, and every
+     registered dependency since the registry landed.)
    - `extra-values` relative paths resolve under the scenario's
      `chart-full-setup/` dir and MUST NOT escape it via `..` traversal;
      absolute paths are runtime-supplied (e.g. per-PR image-tag overlay)

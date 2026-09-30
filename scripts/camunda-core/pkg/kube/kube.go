@@ -24,6 +24,7 @@ import (
 	"os"
 	"os/exec"
 	"scripts/camunda-core/pkg/logging"
+	"strconv"
 	"strings"
 	"time"
 
@@ -580,6 +581,30 @@ func (c *Client) createOrUpdateOpaqueSecret(ctx context.Context, namespace, secr
 	return nil
 }
 
+// CreateOpaqueSecret creates an Opaque secret and fails if it already exists,
+// so concurrent callers cannot overwrite each other's first write.
+func (c *Client) CreateOpaqueSecret(ctx context.Context, namespace, secretName string, stringData map[string]string) error {
+	secret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{Name: secretName, Namespace: namespace},
+		Type:       corev1.SecretTypeOpaque,
+		StringData: stringData,
+	}
+	_, err := c.clientset.CoreV1().Secrets(namespace).Create(ctx, secret, metav1.CreateOptions{})
+	return err
+}
+
+// AddSecretData merges keys into an existing secret with a JSON merge patch, so
+// keys it does not name stay exactly as they are, even if they changed after
+// the caller read the secret.
+func (c *Client) AddSecretData(ctx context.Context, namespace, secretName string, stringData map[string]string) error {
+	patch, err := json.Marshal(map[string]any{"stringData": stringData})
+	if err != nil {
+		return err
+	}
+	_, err = c.clientset.CoreV1().Secrets(namespace).Patch(ctx, secretName, types.MergePatchType, patch, metav1.PatchOptions{FieldManager: fieldManagerName})
+	return err
+}
+
 // GetSecretData reads a Kubernetes Secret and returns its data values as decoded strings.
 // If the secret does not exist, it returns (nil, nil) — callers should check for a nil map.
 // Only keys with non-empty values are included.
@@ -796,7 +821,7 @@ const (
 	secretNameTLS = "aws-camunda-cloud-tls"
 )
 
-func ApplyExternalSecretsAndCerts(ctx context.Context, kubeconfig, kubeContext, platform, repoRoot, chartPath, namespace, externalSecretsStore string) error {
+func ApplyExternalSecretsAndCerts(ctx context.Context, kubeconfig, kubeContext, platform, repoRoot, chartPath, namespace, externalSecretsStore, credentialsManifest string) error {
 	platform = strings.ToLower(strings.TrimSpace(platform))
 
 	logging.Logger.Debug().
@@ -820,7 +845,7 @@ func ApplyExternalSecretsAndCerts(ctx context.Context, kubeconfig, kubeContext, 
 		return nil
 	}
 
-	provider, err := NewPlatformSecretsProvider(platform, repoRoot, chartPath, externalSecretsStore)
+	provider, err := NewPlatformSecretsProvider(platform, repoRoot, chartPath, externalSecretsStore, credentialsManifest)
 	if err != nil {
 		return err
 	}
@@ -1077,31 +1102,7 @@ func waitExternalSecretsReady(ctx context.Context, client *Client, namespace str
 				return false, err
 			}
 
-			status, found, err := unstructured.NestedMap(obj.Object, "status")
-			if err != nil || !found {
-				return false, nil
-			}
-
-			conditions, found, err := unstructured.NestedSlice(status, "conditions")
-			if err != nil || !found {
-				return false, nil
-			}
-
-			for _, cond := range conditions {
-				condMap, ok := cond.(map[string]any)
-				if !ok {
-					continue
-				}
-
-				condType, _, _ := unstructured.NestedString(condMap, "type")
-				condStatus, _, _ := unstructured.NestedString(condMap, "status")
-
-				if condType == "Ready" && condStatus == "True" {
-					return true, nil
-				}
-			}
-
-			return false, nil
+			return externalSecretSynced(obj), nil
 		})
 		if err != nil {
 			return fmt.Errorf("ExternalSecret %s not ready: %w", name, err)
@@ -1109,6 +1110,35 @@ func waitExternalSecretsReady(ctx context.Context, client *Client, namespace str
 	}
 
 	return nil
+}
+
+// externalSecretSynced reports whether the ExternalSecret is Ready for its
+// current spec. Ready=True alone is not enough: when an existing
+// ExternalSecret is re-applied with a different source, it keeps the Ready
+// condition from its previous sync until the controller reconciles the new
+// generation, and the target Secret still holds the old values. The
+// external-secrets controller records "<generation>-<metadata hash>" in
+// status.syncedResourceVersion after each successful sync, so the object is
+// only considered synced once that generation matches metadata.generation.
+func externalSecretSynced(obj *unstructured.Unstructured) bool {
+	synced, _, _ := unstructured.NestedString(obj.Object, "status", "syncedResourceVersion")
+	syncedGeneration, _, _ := strings.Cut(synced, "-")
+	if syncedGeneration != strconv.FormatInt(obj.GetGeneration(), 10) {
+		return false
+	}
+	conditions, _, _ := unstructured.NestedSlice(obj.Object, "status", "conditions")
+	for _, cond := range conditions {
+		condMap, ok := cond.(map[string]any)
+		if !ok {
+			continue
+		}
+		condType, _, _ := unstructured.NestedString(condMap, "type")
+		condStatus, _, _ := unstructured.NestedString(condMap, "status")
+		if condType == "Ready" && condStatus == "True" {
+			return true
+		}
+	}
+	return false
 }
 
 func fileExists(p string) bool {

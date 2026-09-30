@@ -86,8 +86,10 @@ identity:
         - sh
         - -c
         - |
-          echo "Waiting for Keycloak at keycloak:80/auth/ ..."
-          until wget -q --spider --timeout=2 "http://keycloak:80/auth/"; do
+          # The master realm, not /auth/: /auth/ redirects to the admin
+          # console's hostname, which a pod may not be able to reach.
+          echo "Waiting for Keycloak at keycloak:80/auth/realms/master ..."
+          until wget -q --spider --timeout=2 "http://keycloak:80/auth/realms/master"; do
             sleep 2
           done
           echo "Keycloak is ready"

@@ -17,6 +17,7 @@ package kube
 import (
 	"context"
 	"reflect"
+	"strings"
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
@@ -65,5 +66,21 @@ func TestEnsureNamespace_CreatesAMissingNamespace(t *testing.T) {
 	}
 	if _, err := cs.CoreV1().Namespaces().Get(context.Background(), "fresh", metav1.GetOptions{}); err != nil {
 		t.Fatalf("namespace not created: %v", err)
+	}
+}
+
+func TestAddSecretData_LeavesOtherKeysAlone(t *testing.T) {
+	cs := fake.NewSimpleClientset(&corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{Name: "src", Namespace: "ns"},
+		Data:       map[string][]byte{"rotated": []byte("new-value")},
+	})
+	c := &Client{clientset: cs}
+	if err := c.AddSecretData(context.Background(), "ns", "src", map[string]string{"added": "x"}); err != nil {
+		t.Fatal(err)
+	}
+	for _, a := range cs.Actions() {
+		if p, ok := a.(interface{ GetPatch() []byte }); ok && strings.Contains(string(p.GetPatch()), "rotated") {
+			t.Errorf("patch %s names a key it did not add", p.GetPatch())
+		}
 	}
 }
