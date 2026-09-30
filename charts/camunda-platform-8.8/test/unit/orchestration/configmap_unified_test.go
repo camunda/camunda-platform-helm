@@ -416,3 +416,64 @@ func (s *ConfigmapTemplateTest) TestGroupsClaimConditionalRendering() {
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
+
+type camundaExporterApplication struct {
+	Camunda struct {
+		Data struct {
+			SecondaryStorage struct {
+				Type string `yaml:"type"`
+			} `yaml:"secondary-storage"`
+		} `yaml:"data"`
+	} `yaml:"camunda"`
+	Zeebe struct {
+		Broker struct {
+			Exporters struct {
+				CamundaExporter struct {
+					ClassName string `yaml:"className"`
+					Args      struct {
+						Connect map[string]any `yaml:"connect"`
+					} `yaml:"args"`
+				} `yaml:"camundaexporter"`
+			} `yaml:"exporters"`
+		} `yaml:"broker"`
+	} `yaml:"zeebe"`
+}
+
+func (s *ConfigmapTemplateTest) TestCamundaExporterOmitsLegacyConnectType() {
+	verify := func(expectedType string) func(t *testing.T, output string, err error) {
+		return func(t *testing.T, output string, err error) {
+			require.NoError(t, err)
+
+			var configMap corev1.ConfigMap
+			helm.UnmarshalK8SYaml(t, output, &configMap)
+			var application camundaExporterApplication
+			require.NoError(t, yaml.Unmarshal([]byte(configMap.Data["application.yaml"]), &application))
+
+			exporter := application.Zeebe.Broker.Exporters.CamundaExporter
+			require.Equal(t, expectedType, application.Camunda.Data.SecondaryStorage.Type)
+			require.Equal(t, "io.camunda.exporter.CamundaExporter", exporter.ClassName)
+			require.NotEmpty(t, exporter.Args.Connect["url"])
+			require.NotContains(t, exporter.Args.Connect, "type")
+		}
+	}
+
+	testCases := []testhelpers.TestCase{
+		{
+			Name:     "TestCamundaExporterOmitsLegacyConnectTypeElasticsearch",
+			Values:   map[string]string{},
+			Verifier: verify("elasticsearch"),
+		},
+		{
+			Name: "TestCamundaExporterOmitsLegacyConnectTypeOpenSearch",
+			Values: map[string]string{
+				"global.elasticsearch.enabled": "false",
+				"elasticsearch.enabled":        "false",
+				"global.opensearch.enabled":    "true",
+				"global.opensearch.url.host":   "opensearch.example.com",
+			},
+			Verifier: verify("opensearch"),
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
