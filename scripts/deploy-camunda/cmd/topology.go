@@ -34,6 +34,8 @@ func newTopologyCommand() *cobra.Command {
 	c.AddCommand(newTopologyStatusCommand())
 	c.AddCommand(newTopologyUninstallCommand())
 	c.AddCommand(newTopologyEnsureCredentialsCommand())
+	c.AddCommand(newTopologyReconcileCredentialsCommand())
+	c.AddCommand(newTopologyCredentialsChecksumCommand())
 	return c
 }
 

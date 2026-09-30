@@ -1,0 +1,455 @@
+// Copyright 2026 Camunda Services GmbH
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package cmd
+
+import (
+	"bytes"
+	"context"
+	"encoding/base64"
+	"encoding/json"
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+	"time"
+
+	corev1 "k8s.io/api/core/v1"
+
+	"scripts/deploy-camunda/matrix"
+)
+
+const reconcileManifest = `
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: creds-es
+spec:
+  target:
+    name: creds
+  data:
+    - secretKey: kc-admin
+      remoteRef: {key: src, property: kc-admin}
+    - secretKey: kc-db
+      remoteRef: {key: src, property: kc-db}
+    - secretKey: app-db
+      remoteRef: {key: src, property: app-db}
+    - secretKey: demo
+      remoteRef: {key: src, property: demo}
+`
+
+type exitErr int
+
+func (e exitErr) Error() string { return fmt.Sprintf("exit status %d", int(e)) }
+func (e exitErr) ExitCode() int { return int(e) }
+
+// fakeCluster models the few kubectl behaviours reconcile relies on:
+// ExternalSecret sync on annotate, Keycloak logins and users, PostgreSQL role
+// passwords, and a bootstrap-admin pod that creates its temporary admin.
+type fakeCluster struct {
+	namespaces map[string]bool
+	secrets    map[string]map[string]string
+	resources  map[string]bool
+	esoSync    bool
+	src        credentialSource
+	sourceRef  string
+	kc         map[string]string
+	pg         map[string]string
+	pods       map[string]string
+	sets       int
+	bootstraps int
+	applies    int
+}
+
+func newFakeCluster(t *testing.T) *fakeCluster {
+	src, err := parseCredentialSource([]byte(reconcileManifest))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return &fakeCluster{
+		namespaces: map[string]bool{"env-hub": true, "env-plain": true},
+		secrets: map[string]map[string]string{
+			"distribution-team/src": {"kc-admin": "new-admin", "kc-db": "new-kcdb", "app-db": "new-appdb", "demo": "new-demo"},
+			"env-hub/creds":         {"kc-admin": "old-admin", "kc-db": "old-kcdb", "app-db": "old-appdb", "demo": "old-demo"},
+			"env-plain/creds":       {"kc-admin": "old-admin", "kc-db": "old-kcdb", "app-db": "old-appdb", "demo": "old-demo"},
+		},
+		resources: map[string]bool{
+			"env-hub/deployment/keycloak":             true,
+			"env-hub/statefulset/keycloak-postgresql": true,
+			"env-hub/statefulset/postgresql":          true,
+		},
+		esoSync:   true,
+		src:       src,
+		sourceRef: "distribution-team/src",
+		kc:        map[string]string{"master/admin": "old-admin", "camunda-platform/demo": "old-demo"},
+		pg:        map[string]string{"env-hub/keycloak-postgresql/keycloak": "old-kcdb", "env-hub/postgresql/app": "old-appdb"},
+		pods:      map[string]string{},
+	}
+}
+
+func flagValue(args []string, flag string) string {
+	for i, a := range args {
+		if a == flag && i+1 < len(args) {
+			return args[i+1]
+		}
+	}
+	return ""
+}
+
+// scriptArgs returns the positional args after `sh -c <script> sh`.
+func scriptArgs(args []string) []string {
+	for i := 0; i+3 < len(args); i++ {
+		if args[i] == "sh" && args[i+1] == "-c" {
+			return args[i+4:]
+		}
+	}
+	return nil
+}
+
+func (f *fakeCluster) kubectl(_ context.Context, stdin []byte, args ...string) ([]byte, error) {
+	ns := flagValue(args, "-n")
+	in := strings.Split(strings.TrimSuffix(string(stdin), "\n"), "\n")
+	switch args[0] {
+	case "get":
+		switch args[1] {
+		case "namespace":
+			if f.namespaces[args[2]] {
+				return []byte("namespace/" + args[2]), nil
+			}
+			return nil, nil
+		case "secret":
+			data, ok := f.secrets[ns+"/"+args[2]]
+			if !ok {
+				return nil, nil
+			}
+			enc := map[string]string{}
+			for k, v := range data {
+				enc[k] = base64.StdEncoding.EncodeToString([]byte(v))
+			}
+			return json.Marshal(map[string]any{"data": enc})
+		case "pod":
+			return []byte(f.pods[ns+"/"+args[2]]), nil
+		case "deployment", "statefulset":
+			if !f.resources[ns+"/"+args[1]+"/"+args[2]] {
+				return nil, nil
+			}
+			if flagValue(args, "-o") == "json" {
+				return []byte(`{"spec":{"template":{"spec":{"containers":[{"name":"keycloak","image":"kc:26","env":[{"name":"KC_DB_URL","value":"jdbc:x"},{"name":"KC_HOSTNAME","value":"h"}]}]}}}}`), nil
+			}
+			return []byte(args[1] + "/" + args[2]), nil
+		}
+	case "apply":
+		f.applies++
+		return nil, nil
+	case "annotate":
+		if f.esoSync {
+			for target, keys := range f.src.Targets {
+				live := f.secrets[ns+"/"+target]
+				for key, prop := range keys {
+					live[key] = f.secrets[f.sourceRef][prop]
+				}
+			}
+		}
+		return nil, nil
+	case "create":
+		var obj struct {
+			Kind     string                `json:"kind"`
+			Metadata struct{ Name string } `json:"metadata"`
+			Data     map[string]string     `json:"stringData"`
+			Spec     corev1.PodSpec        `json:"spec"`
+		}
+		if err := json.Unmarshal(stdin, &obj); err != nil {
+			return nil, err
+		}
+		if obj.Kind == "Secret" {
+			f.secrets[ns+"/"+obj.Metadata.Name] = obj.Data
+			return nil, nil
+		}
+		f.bootstraps++
+		tmp := f.secrets[ns+"/"+obj.Metadata.Name]
+		f.kc["master/"+tmp["username"]] = tmp["password"]
+		f.pods[ns+"/"+obj.Metadata.Name] = "Succeeded"
+		return nil, nil
+	case "delete":
+		for _, a := range args[1:] {
+			if name, ok := strings.CutPrefix(a, "pod/"); ok {
+				delete(f.pods, ns+"/"+name)
+			}
+			if name, ok := strings.CutPrefix(a, "secret/"); ok {
+				delete(f.secrets, ns+"/"+name)
+			}
+		}
+		return nil, nil
+	case "logs":
+		return nil, nil
+	case "exec":
+		pos := scriptArgs(args)
+		target := args[4]
+		if strings.HasPrefix(target, "deployment/") {
+			mode, login := pos[0], pos[2]
+			if pw, ok := f.kc["master/"+login]; !ok || pw != in[0] {
+				return nil, exitErr(loginRejected)
+			}
+			if mode == "check" {
+				return nil, nil
+			}
+			key := pos[3] + "/" + pos[4]
+			if _, ok := f.kc[key]; !ok {
+				return []byte("absent\n"), nil
+			}
+			if mode == "delete-user" {
+				delete(f.kc, key)
+				return []byte("deleted\n"), nil
+			}
+			f.sets++
+			f.kc[key] = in[1]
+			return []byte("set\n"), nil
+		}
+		key := ns + "/" + strings.TrimPrefix(target, "statefulset/") + "/" + pos[1]
+		if pos[0] == "check" {
+			if f.pg[key] != in[0] {
+				return nil, exitErr(loginRejected)
+			}
+			return nil, nil
+		}
+		f.sets++
+		f.pg[key] = in[0]
+		return nil, nil
+	}
+	return nil, fmt.Errorf("unexpected kubectl %v", args)
+}
+
+func testStores() matrix.CredentialStores {
+	return matrix.CredentialStores{
+		NamespaceSuffix: "hub",
+		Secret:          "creds",
+		Postgres: []matrix.PostgresCredentialStore{
+			{StatefulSet: "keycloak-postgresql", User: "keycloak", Database: "keycloak", SecretKey: "kc-db"},
+			{StatefulSet: "postgresql", User: "app", Database: "identity", SecretKey: "app-db"},
+		},
+		Keycloak: &matrix.KeycloakCredentialStore{
+			Deployment: "keycloak", Container: "keycloak", URL: "http://localhost:8080/auth",
+			AdminUser: "admin", AdminSecretKey: "kc-admin",
+			Users: []matrix.KeycloakUserCredential{{Realm: "camunda-platform", Username: "demo", SecretKey: "demo"}},
+		},
+	}
+}
+
+func runReconcile(t *testing.T, f *fakeCluster) (string, error) {
+	t.Helper()
+	var out bytes.Buffer
+	clock := time.Unix(1_790_000_000, 0)
+	r := &credentialReconciler{
+		kubectl:  f.kubectl,
+		out:      &out,
+		poll:     time.Millisecond,
+		timeout:  time.Minute,
+		now:      func() time.Time { clock = clock.Add(10 * time.Second); return clock },
+		generate: generateCredential,
+	}
+	err := r.reconcile(context.Background(), reconcileInput{
+		manifest:   []byte(reconcileManifest),
+		src:        f.src,
+		sourceNS:   "distribution-team",
+		namespaces: []string{"env-hub", "env-plain", "env-mt"},
+		hubNS:      "env-hub",
+		stores:     testStores(),
+	})
+	return out.String(), err
+}
+
+func assertNoValues(t *testing.T, out string) {
+	t.Helper()
+	for _, v := range []string{"old-admin", "new-admin", "old-kcdb", "new-kcdb", "old-appdb", "new-appdb", "old-demo", "new-demo"} {
+		if strings.Contains(out, v) {
+			t.Fatalf("output leaks credential %q:\n%s", v, out)
+		}
+	}
+}
+
+func TestReconcileCredentials_RotatesEveryStoreToTheSource(t *testing.T) {
+	f := newFakeCluster(t)
+	out, err := runReconcile(t, f)
+	if err != nil {
+		t.Fatalf("reconcile: %v\n%s", err, out)
+	}
+	want := map[string]string{"master/admin": "new-admin", "camunda-platform/demo": "new-demo"}
+	for k, v := range want {
+		if f.kc[k] != v {
+			t.Errorf("keycloak %s not rotated", k)
+		}
+	}
+	if f.pg["env-hub/keycloak-postgresql/keycloak"] != "new-kcdb" || f.pg["env-hub/postgresql/app"] != "new-appdb" {
+		t.Errorf("postgres roles not rotated: %v", f.pg)
+	}
+	if f.secrets["env-plain/creds"]["kc-admin"] != "new-admin" {
+		t.Error("non-hub namespace was not synced")
+	}
+	if f.applies != 2 {
+		t.Errorf("applies = %d, want one per existing namespace (2)", f.applies)
+	}
+	if f.bootstraps != 0 {
+		t.Errorf("bootstraps = %d, want 0 when the previous admin password still works", f.bootstraps)
+	}
+	if !strings.Contains(out, "rotated from its previous value") {
+		t.Errorf("output = %q", out)
+	}
+	assertNoValues(t, out)
+}
+
+func TestReconcileCredentials_ResetsAdminThroughBootstrapWhenNoKnownPasswordWorks(t *testing.T) {
+	f := newFakeCluster(t)
+	f.kc["master/admin"] = "unknown"
+	out, err := runReconcile(t, f)
+	if err != nil {
+		t.Fatalf("reconcile: %v\n%s", err, out)
+	}
+	if f.bootstraps != 1 || f.kc["master/admin"] != "new-admin" {
+		t.Fatalf("bootstraps=%d admin rotated=%v", f.bootstraps, f.kc["master/admin"] == "new-admin")
+	}
+	for k := range f.kc {
+		if strings.Contains(k, "deploy-camunda-reconcile-") {
+			t.Errorf("temporary admin %s was left behind", k)
+		}
+	}
+	if len(f.pods) != 0 || f.secrets["env-hub/keycloak-reconcile-bootstrap"] != nil {
+		t.Errorf("bootstrap pod or secret left behind: pods=%v", f.pods)
+	}
+	assertNoValues(t, out)
+}
+
+func TestReconcileCredentials_LeavesCurrentStoresAlone(t *testing.T) {
+	f := newFakeCluster(t)
+	for k, v := range f.secrets["distribution-team/src"] {
+		f.secrets["env-hub/creds"][k] = v
+	}
+	f.kc["master/admin"] = "new-admin"
+	f.pg["env-hub/keycloak-postgresql/keycloak"] = "new-kcdb"
+	f.pg["env-hub/postgresql/app"] = "new-appdb"
+	out, err := runReconcile(t, f)
+	if err != nil {
+		t.Fatalf("reconcile: %v\n%s", err, out)
+	}
+	if f.sets != 1 {
+		t.Errorf("sets = %d, want only the managed user's idempotent set", f.sets)
+	}
+	if f.bootstraps != 0 {
+		t.Error("bootstrap must not run when the admin password is current")
+	}
+}
+
+func TestReconcileCredentials_FreshEnvironmentIsANoOp(t *testing.T) {
+	f := newFakeCluster(t)
+	f.namespaces = map[string]bool{}
+	out, err := runReconcile(t, f)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if f.applies != 0 || f.sets != 0 || !strings.Contains(out, "no credential store to reconcile") {
+		t.Errorf("applies=%d sets=%d out=%q", f.applies, f.sets, out)
+	}
+}
+
+func TestReconcileCredentials_FailsWithoutSource(t *testing.T) {
+	f := newFakeCluster(t)
+	delete(f.secrets, "distribution-team/src")
+	if _, err := runReconcile(t, f); err == nil || !strings.Contains(err.Error(), "run ensure-credentials first") {
+		t.Fatalf("err = %v", err)
+	}
+}
+
+func TestReconcileCredentials_FailsBeforeTouchingStoresWhenExternalSecretsDoNotSync(t *testing.T) {
+	f := newFakeCluster(t)
+	f.esoSync = false
+	_, err := runReconcile(t, f)
+	if err == nil || !strings.Contains(err.Error(), "did not sync") || !strings.Contains(err.Error(), "creds:kc-admin") {
+		t.Fatalf("err = %v", err)
+	}
+	if strings.Contains(err.Error(), "old-") || strings.Contains(err.Error(), "new-") {
+		t.Fatalf("error leaks a value: %v", err)
+	}
+	if f.sets != 0 || f.kc["master/admin"] != "old-admin" {
+		t.Error("stores must not change when the sync fails")
+	}
+}
+
+func TestReconcileCredentials_SkipsAbsentStores(t *testing.T) {
+	f := newFakeCluster(t)
+	delete(f.kc, "camunda-platform/demo")
+	delete(f.resources, "env-hub/statefulset/postgresql")
+	out, err := runReconcile(t, f)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out, "camunda-platform/demo absent") || !strings.Contains(out, "statefulset/postgresql absent") {
+		t.Errorf("output = %q", out)
+	}
+}
+
+func TestCredentialsChecksum(t *testing.T) {
+	src := credentialSource{Name: "src", Properties: []string{"a", "b"}}
+	one, err := credentialsChecksum(src, map[string]string{"a": "1", "b": "2", "unused": "x"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	same, _ := credentialsChecksum(src, map[string]string{"a": "1", "b": "2"})
+	other, _ := credentialsChecksum(src, map[string]string{"a": "1", "b": "3"})
+	if one != same || one == other || len(one) != 16 {
+		t.Errorf("one=%s same=%s other=%s", one, same, other)
+	}
+	if _, err := credentialsChecksum(src, map[string]string{"a": "1"}); err == nil {
+		t.Error("want an error for a missing property")
+	}
+}
+
+func TestDogfoodCredentialStores_KeysExistInTheManifest(t *testing.T) {
+	repoRoot := filepath.Join("..", "..", "..")
+	topology, err := loadScenarioTopology(repoRoot, "8.10", "dogfood")
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw, err := os.ReadFile(filepath.Join(repoRoot, topology.CredentialsManifest))
+	if err != nil {
+		t.Fatal(err)
+	}
+	manifest, err := matrix.RenderCredentialsManifest(raw, "dogfood")
+	if err != nil {
+		t.Fatal(err)
+	}
+	src, err := parseCredentialSource(manifest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := topology.CredentialStores
+	if s == nil {
+		t.Fatal("dogfood declares no credential-stores")
+	}
+	keys := src.Targets[s.Secret]
+	if keys == nil {
+		t.Fatalf("manifest writes no secret %q", s.Secret)
+	}
+	want := []string{s.Keycloak.AdminSecretKey}
+	for _, pg := range s.Postgres {
+		want = append(want, pg.SecretKey)
+	}
+	for _, u := range s.Keycloak.Users {
+		want = append(want, u.SecretKey)
+	}
+	for _, k := range want {
+		if keys[k] == "" {
+			t.Errorf("credential-stores key %q is not written by the manifest", k)
+		}
+	}
+}

@@ -175,3 +175,4 @@ maxUnavailable: 0
 
 podAnnotations:
   cluster-autoscaler.kubernetes.io/safe-to-evict: "false"
+  camunda.io/credentials-checksum: "${DOGFOOD_CREDENTIALS_CHECKSUM}"

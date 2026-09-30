@@ -18,6 +18,31 @@ topology:
   # (one generated value per key) rather than the CI-wide one; the
   # *-dogfood dependencies below read their passwords from it too.
   credentials-manifest: charts/camunda-platform-8.10/test/integration/external-secrets/dogfood-credentials.yaml
+  # Services that keep the password they were initialised with. The
+  # dogfood-environment workflow runs `topology reconcile-credentials` before
+  # each deploy to set them to the credentials-manifest's current values.
+  credential-stores:
+    namespace-suffix: hub
+    secret: integration-test-credentials
+    postgres:
+      - statefulset: keycloak-postgresql
+        user: keycloak
+        database: keycloak
+        secret-key: identity-keycloak-postgresql-user-password
+      - statefulset: postgresql
+        user: app
+        database: identity
+        secret-key: identity-postgresql-user-password
+    keycloak:
+      deployment: keycloak
+      container: keycloak
+      url: http://localhost:8080/auth
+      admin-user: admin
+      admin-secret-key: identity-keycloak-admin-password
+      users:
+        - realm: camunda-platform
+          username: demo
+          secret-key: identity-user-password
   releases:
     - role: hub
       namespace-suffix: hub
