@@ -61,14 +61,31 @@ console:
 	}
 }
 
-func TestComponentImageVersions810IsOrchestration(t *testing.T) {
-	dir := writeValuesFile(t, "orchestration:\n  image:\n    tag: 8.10.0\n")
+func TestComponentImageVersions810IsHub(t *testing.T) {
+	dir := writeValuesFile(t, `
+orchestration:
+  image:
+    tag: 8.10.1
+identity:
+  image:
+    tag: 8.10.2
+optimize:
+  image:
+    tag: 8.10.3
+webModeler:
+  image:
+    tag: 8.10.4
+connectors:
+  image:
+    tag: 8.10.5
+`)
 	got, err := ComponentImageVersions(dir, "8.10")
 	if err != nil {
 		t.Fatalf("ComponentImageVersions: %v", err)
 	}
-	if !strings.HasPrefix(got, "camunda: 8.10.0\n") {
-		t.Errorf("8.10 must use orchestration set, got:\n%s", got)
+	want := "camunda: 8.10.1\nmanagementIdentity: 8.10.2\noptimize: 8.10.3\nhub: 8.10.4\nconnectors: 8.10.5\n"
+	if got != want {
+		t.Errorf("got:\n%q\nwant:\n%q", got, want)
 	}
 }
 
@@ -105,20 +122,31 @@ func TestImageOverrides(t *testing.T) {
 	block, has := ImageOverrides([]ImageOverride{
 		{"orchestration", "8.8-custom"},
 		{"zeebe", ""},
+		{"console", "8.8.6"},
 		{"connectors", "1.2.3"},
 		{"identity", ""},
-	})
+	}, "8.8")
 	if !has {
 		t.Error("has should be true when any override is non-empty")
 	}
-	want := "orchestration: 8.8-custom\nconnectors: 1.2.3\n"
+	want := "orchestration: 8.8-custom\nconsole: 8.8.6\nconnectors: 1.2.3\n"
 	if block != want {
 		t.Errorf("block:\n%q\nwant:\n%q", block, want)
 	}
 
-	block, has = ImageOverrides([]ImageOverride{{"orchestration", ""}, {"zeebe", ""}})
+	block, has = ImageOverrides([]ImageOverride{{"orchestration", ""}, {"zeebe", ""}}, "8.8")
 	if has || block != "" {
 		t.Errorf("no overrides → empty block + has=false, got %q/%v", block, has)
+	}
+
+	block, has = ImageOverrides([]ImageOverride{{"orchestration", "8.10.0"}, {"console", "not included"}}, "8.10")
+	if !has || block != "orchestration: 8.10.0\n" {
+		t.Errorf("8.10 has no console component, got %q/%v", block, has)
+	}
+
+	block, has = ImageOverrides([]ImageOverride{{"console", "not included"}}, "8.10")
+	if has || block != "" {
+		t.Errorf("8.10 console-only override → empty block + has=false, got %q/%v", block, has)
 	}
 }
 

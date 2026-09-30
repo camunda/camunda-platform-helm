@@ -69,7 +69,6 @@ type ValuesYAML88 struct {
 // ValuesYAML89 has the same component structure as 8.8.
 type ValuesYAML89 = ValuesYAML88
 
-// ValuesYAML810 has the same component structure as 8.8.
 type ValuesYAML810 = ValuesYAML88
 
 // override pairs a component name with its (optional) image-tag override.

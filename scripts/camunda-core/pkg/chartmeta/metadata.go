@@ -37,6 +37,14 @@ var orchestrationComponents = []componentField{
 	{"console", "console.image.tag"},
 }
 
+var hubComponents = []componentField{
+	{"camunda", "orchestration.image.tag"},
+	{"managementIdentity", "identity.image.tag"},
+	{"optimize", "optimize.image.tag"},
+	{"hub", "webModeler.image.tag"},
+	{"connectors", "connectors.image.tag"},
+}
+
 // 8.6–8.7 classic architecture component set.
 var classicComponents = []componentField{
 	{"zeebe", "zeebe.image.tag"},
@@ -53,16 +61,18 @@ var classicComponents = []componentField{
 // annotation block from the chart's values.yaml: the version-gated `label: tag`
 // map of each component's image tag.
 //
-// camundaVersion is the chart's Camunda minor line ("8.8", "8.10", ...). 8.8+
-// uses the orchestration component set; 8.6–8.7 the classic set. A missing tag
-// renders as "N/A".
+// camundaVersion is the chart's Camunda minor line ("8.8", "8.10", ...). A
+// missing tag renders as "N/A".
 func ComponentImageVersions(chartDir, camundaVersion string) (string, error) {
 	values, err := readValues(filepath.Join(chartDir, "values.yaml"))
 	if err != nil {
 		return "", fmt.Errorf("read values.yaml: %w", err)
 	}
 	fields := classicComponents
-	if camundaMinorAtLeast(camundaVersion, 8) {
+	switch {
+	case camundaMinorAtLeast(camundaVersion, 10):
+		fields = hubComponents
+	case camundaMinorAtLeast(camundaVersion, 8):
 		fields = orchestrationComponents
 	}
 	var b strings.Builder
@@ -101,13 +111,14 @@ type ImageOverride struct {
 // ImageOverrides renders the non-empty overrides as a `key: value` YAML block
 // (the `camunda.io/imageOverrides` annotation source) and reports whether any
 // were provided. Entries keep the caller's slice order.
-func ImageOverrides(overrides []ImageOverride) (block string, has bool) {
+func ImageOverrides(overrides []ImageOverride, camundaVersion string) (block string, has bool) {
 	var b strings.Builder
 	for _, o := range overrides {
-		if o.Value != "" {
-			fmt.Fprintf(&b, "%s: %s\n", o.Key, o.Value)
-			has = true
+		if o.Value == "" || (o.Key == "console" && camundaMinorAtLeast(camundaVersion, 10)) {
+			continue
 		}
+		fmt.Fprintf(&b, "%s: %s\n", o.Key, o.Value)
+		has = true
 	}
 	return b.String(), has
 }
