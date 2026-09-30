@@ -1,4 +1,4 @@
-import { expect, request } from "@playwright/test";
+import { expect, request, type Request } from "@playwright/test";
 import { test } from "@camunda/e2e-test-suite/dist/fixtures/SM-8.10";
 
 type Environment = {
@@ -27,13 +27,26 @@ test("Hub deploys through the selected Physical Tenant environment", async ({
   expect(clientSecret).toBeTruthy();
   expect(physicalTenantId).toBeTruthy();
 
-  const authenticatedRequest = page.waitForRequest(
-    (request) =>
-      request.url().includes("/api/internal/v2/organizations/") &&
-      Boolean(request.headers().authorization),
-  );
+  // Capture Hub's first authenticated organization call from the request event. A
+  // page.waitForRequest started here would run its timeout through the whole login, so it
+  // expired while Hub was still booting. The listener records the header whenever the call
+  // happens; only if Hub has not made it by the time goToModeler returns do we wait, and that
+  // wait's timeout starts once Hub is up.
+  const isAuthenticatedOrganizationCall = (request: Request) =>
+    request.url().includes("/api/internal/v2/organizations/") &&
+    Boolean(request.headers().authorization);
+  let authorization: string | undefined;
+  const recordAuthorization = (request: Request) => {
+    if (!authorization && isAuthenticatedOrganizationCall(request)) {
+      authorization = request.headers().authorization;
+    }
+  };
+  page.on("request", recordAuthorization);
   await navigationPage.goToModeler();
-  const authorization = (await authenticatedRequest).headers().authorization;
+  authorization ??= (
+    await page.waitForRequest(isAuthenticatedOrganizationCall)
+  ).headers().authorization;
+  page.off("request", recordAuthorization);
   expect(authorization).toBeTruthy();
   const headers = { Authorization: authorization! };
 
