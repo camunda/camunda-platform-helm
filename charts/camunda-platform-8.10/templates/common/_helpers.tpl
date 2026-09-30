@@ -1598,7 +1598,7 @@ Release templates.
 ********************************************************************************
 Generate the default WebModeler cluster config using the new components[] schema.
 Mirrors camundaPlatform.releaseInfo component gating but outputs the new format
-required by camunda.modeler.clusters (introduced in 8.10 Hub/WebModeler).
+required by camunda.hub.clusters (introduced in 8.10 Hub/WebModeler).
 ********************************************************************************
 */}}
 {{- define "camundaPlatform.defaultWebModelerCluster" -}}

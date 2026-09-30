@@ -4,7 +4,7 @@ camundaHub:
       - file: dynamic-cluster-management.yaml
         content: |
           camunda:
-            modeler:
+            hub:
               feature:
                 dynamic-cluster-management-enabled: true
 

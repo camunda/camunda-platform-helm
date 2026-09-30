@@ -175,7 +175,7 @@ func (s *CamundaHubShimTemplateTest) TestEnablementMatrix() {
 
 			deployment := s.unmarshalDeployment(output)
 			s.Require().Equal(s.release+"-web-modeler-restapi", deployment.Name)
-			consoleEnv := envVarByName(deployment.Spec.Template.Spec.Containers[0].Env, "CAMUNDA_MODELER_FEATURE_CONSOLE_ENABLED")
+			consoleEnv := envVarByName(deployment.Spec.Template.Spec.Containers[0].Env, "CAMUNDA_HUB_FEATURE_CONSOLEENABLED")
 			if tc.expectConsoleEnvVar {
 				s.Require().NotNil(consoleEnv)
 				s.Require().Equal(tc.expectConsoleFlag, consoleEnv.Value)
@@ -586,7 +586,7 @@ func (s *CamundaHubShimTemplateTest) TestOIDCClientIDPreserved() {
 				"orchestration.data.secondaryStorage.type": "elasticsearch",
 			}
 			config := s.renderRestAPIConfigMap(values)
-			s.Require().Equal("web-modeler", config.Camunda.Modeler.OAuth2.ClientId)
+			s.Require().Equal("web-modeler", config.Camunda.Hub.OAuth2.ClientId)
 		})
 	}
 }
@@ -631,7 +631,7 @@ func (s *CamundaHubShimTemplateTest) TestConsoleFeatureFlagTracksShimHelper() {
 			output, err := s.renderWebModelerRestAPI(tc.values)
 			s.Require().NoError(err)
 			deployment := s.unmarshalDeployment(output)
-			consoleEnv := envVarByName(deployment.Spec.Template.Spec.Containers[0].Env, "CAMUNDA_MODELER_FEATURE_CONSOLE_ENABLED")
+			consoleEnv := envVarByName(deployment.Spec.Template.Spec.Containers[0].Env, "CAMUNDA_HUB_FEATURE_CONSOLEENABLED")
 			s.Require().NotNil(consoleEnv)
 			s.Require().Equal(tc.expected, consoleEnv.Value)
 		})

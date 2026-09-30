@@ -140,7 +140,7 @@ func TestHubTopologyRendersPhysicalTenantsInHubInventory(t *testing.T) {
 	helm.UnmarshalK8SYaml(t, output, &configMap)
 	var application struct {
 		Camunda struct {
-			Modeler struct {
+			Hub struct {
 				Clusters []struct {
 					ID         string `yaml:"id"`
 					Components []struct {
@@ -161,12 +161,12 @@ func TestHubTopologyRendersPhysicalTenantsInHubInventory(t *testing.T) {
 						} `yaml:"components"`
 					} `yaml:"physicalTenants"`
 				} `yaml:"clusters"`
-			} `yaml:"modeler"`
+			} `yaml:"hub"`
 		} `yaml:"camunda"`
 	}
 	require.NoError(t, yaml.Unmarshal([]byte(configMap.Data["application.yaml"]), &application))
-	require.Len(t, application.Camunda.Modeler.Clusters, 2)
-	cluster := application.Camunda.Modeler.Clusters[1]
+	require.Len(t, application.Camunda.Hub.Clusters, 2)
+	cluster := application.Camunda.Hub.Clusters[1]
 	require.Equal(t, "east", cluster.ID)
 	require.Equal(t, "https://hub.example.test/optimize-default", cluster.Components[0].URLs.Webapp)
 	require.Len(t, cluster.PhysicalTenants, 2)

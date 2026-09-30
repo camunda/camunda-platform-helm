@@ -892,7 +892,7 @@ Fail with a message if the auth type is set to non-Keycloak and its requirements
 */}}
 {{- if has (include "camundaPlatform.authIssuerType" .) (list "MICROSOFT" "GENERIC") }}
   {{/*
-  TODO: Once refactor the auth issuers, we need to add more constraints here to validate the new auth types. 
+  TODO: Once refactor the auth issuers, we need to add more constraints here to validate the new auth types.
         More details: https://github.com/camunda/camunda-platform-helm/issues/4419
   */}}
 {{- end }}
@@ -1095,7 +1095,7 @@ Usage:
       `
 [camunda][warning]
 DEPRECATION NOTICE: Starting from appVersion 8.7, the Camunda Helm chart will no longer automatically generate passwords for the Identity component.
-Users must provide passwords as Kubernetes secrets. 
+Users must provide passwords as Kubernetes secrets.
 In appVersion 8.6, this warning will appear if all necessary existingSecrets are not set.
 
 The following values inside your values.yaml need to be set but were not:
@@ -1112,7 +1112,7 @@ The following values inside your values.yaml need to be set but were not:
       `
 [camunda][error]
 DEPRECATION NOTICE: Starting from appVersion 8.7, the Camunda Helm chart will no longer automatically generate passwords for the Identity component.
-Users must provide passwords as Kubernetes secrets. 
+Users must provide passwords as Kubernetes secrets.
 
 The following values inside your values.yaml need to be set but were not:
       `
@@ -1870,8 +1870,8 @@ The following values inside your values.yaml need to be set but were not:
       "condition" (ne ($wm.restapi.mail.smtpPort | toString) "587")
       "oldName" "webModeler.restapi.mail.smtpPort" "migration" $wmExtra) }}
     {{ include "camundaPlatform.keyDeprecated" (dict
-      "condition" (ne (index $wm.restapi.logging.level "io.camunda.modeler" | toString) "INFO")
-      "oldName" "webModeler.restapi.logging.level.io.camunda.modeler" "migration" $wmExtra) }}
+      "condition" (ne (index $wm.restapi.logging.level "io.camunda.hub" | toString) "INFO")
+      "oldName" "webModeler.restapi.logging.level.io.camunda.hub" "migration" $wmExtra) }}
     {{ include "camundaPlatform.keyDeprecated" (dict
       "condition" (ne (index $wm.restapi.logging.level "io.grpc" | toString) "INFO")
       "oldName" "webModeler.restapi.logging.level.io.grpc" "migration" $wmExtra) }}
