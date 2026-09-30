@@ -1481,6 +1481,19 @@ func (s *ConfigmapTemplateTest) TestClusterEnvironmentOverrides() {
 			},
 		},
 		{
+			Name: "Imported similarly prefixed property keeps the unified default",
+			Values: map[string]string{
+				"orchestration.profiles.broker":               "true",
+				"orchestration.extraConfiguration[0].file":    "cluster.properties",
+				"orchestration.extraConfiguration[0].content": "zeebe.broker.cluster.clusterNameExtra=imported\n",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				cluster := requireApplicationCluster(t, output)
+				require.Equal(t, "camunda-platform-test-zeebe", cluster["name"])
+			},
+		},
+		{
 			Name: "Declared envFrom cluster variable suppresses matching unified default",
 			Values: map[string]string{
 				"orchestration.profiles.broker":              "true",

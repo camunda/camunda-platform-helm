@@ -2896,7 +2896,7 @@ Usage:
 {{- $found := "" -}}
 {{- $pattern := printf "(?m)^[ \t]*%s[.:=]" (join "\\." .path) -}}
 {{- $relaxed := .relaxed | default false -}}
-{{- $normalizedPath := regexReplaceAll "[-_.]" (lower (join "." .path)) "" -}}
+{{- $normalizedPath := regexReplaceAll "[-_]" (lower (join "." .path)) "" -}}
 {{- range .extraConfiguration -}}
   {{- if not (and (hasKey . "springImport") (eq .springImport false)) -}}
     {{- $content := .content | default "" -}}
@@ -2909,8 +2909,8 @@ Usage:
       {{- if $relaxed -}}
         {{- range $line := regexSplit "\n" $content -1 -}}
           {{- $key := trim (first (regexSplit "[:=]" (trim $line) 2)) -}}
-          {{- $normalizedKey := regexReplaceAll "[-_.]" (lower $key) "" -}}
-          {{- if hasPrefix $normalizedPath $normalizedKey -}}
+          {{- $normalizedKey := regexReplaceAll "[-_]" (lower $key) "" -}}
+          {{- if or (eq $normalizedPath $normalizedKey) (hasPrefix (printf "%s." $normalizedPath) $normalizedKey) -}}
             {{- $found = "true" -}}
           {{- end -}}
         {{- end -}}
