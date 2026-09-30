@@ -5,7 +5,6 @@ flows:
 post-deploy: hub-ping
 platforms:
   - gke
-skip-e2e: true
 infra-type:
   gke: distroci
 topology:
