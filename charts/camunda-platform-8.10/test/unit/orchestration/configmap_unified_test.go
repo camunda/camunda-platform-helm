@@ -1468,6 +1468,45 @@ func (s *ConfigmapTemplateTest) TestClusterEnvironmentOverrides() {
 			},
 		},
 		{
+			Name: "Imported nested legacy partitions-count suppresses matching unified default",
+			Values: map[string]string{
+				"orchestration.profiles.broker":               "true",
+				"orchestration.extraConfiguration[0].file":    "cluster.yaml",
+				"orchestration.extraConfiguration[0].content": "zeebe:\n  broker:\n    cluster:\n      partitions-count: 9\n",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				cluster := requireApplicationCluster(t, output)
+				requireNestedKeyAbsent(t, cluster, "partition-count")
+			},
+		},
+		{
+			Name: "Imported dotted legacy partitions-count suppresses matching unified default",
+			Values: map[string]string{
+				"orchestration.profiles.broker":               "true",
+				"orchestration.extraConfiguration[0].file":    "cluster.yaml",
+				"orchestration.extraConfiguration[0].content": "zeebe.broker.cluster.partitions-count: 9\n",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				cluster := requireApplicationCluster(t, output)
+				requireNestedKeyAbsent(t, cluster, "partition-count")
+			},
+		},
+		{
+			Name: "Imported properties legacy partitions-count suppresses matching unified default",
+			Values: map[string]string{
+				"orchestration.profiles.broker":               "true",
+				"orchestration.extraConfiguration[0].file":    "cluster.properties",
+				"orchestration.extraConfiguration[0].content": "zeebe.broker.cluster.partitions-count=9\n",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				cluster := requireApplicationCluster(t, output)
+				requireNestedKeyAbsent(t, cluster, "partition-count")
+			},
+		},
+		{
 			Name: "Imported spaced kebab properties cluster configuration suppresses matching unified default",
 			Values: map[string]string{
 				"orchestration.profiles.broker":               "true",
