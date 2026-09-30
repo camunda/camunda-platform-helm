@@ -109,6 +109,26 @@ func TestComponentImageVersions810HubPrefersCamundaHub(t *testing.T) {
 	}
 }
 
+func TestComponentImageVersions810HubEmptyTagUsesGlobal(t *testing.T) {
+	cases := []struct {
+		hubTag string
+		want   string
+	}{
+		{`""`, "hub: 8.10.2\n"},
+		{"null", "hub: 8.10.0\n"},
+	}
+	for _, c := range cases {
+		dir := writeValuesFile(t, "global:\n  image:\n    tag: 8.10.2\nwebModeler:\n  image:\n    tag: 8.10.0\ncamundaHub:\n  image:\n    tag: "+c.hubTag+"\n")
+		got, err := ComponentImageVersions(dir, "8.10")
+		if err != nil {
+			t.Fatalf("ComponentImageVersions: %v", err)
+		}
+		if !strings.Contains(got, c.want) {
+			t.Errorf("camundaHub.image.tag=%s: want %q, got:\n%s", c.hubTag, c.want, got)
+		}
+	}
+}
+
 func TestComponentImageVersionsClassicAndNA(t *testing.T) {
 	// 8.7 classic; missing tags render N/A.
 	dir := writeValuesFile(t, "zeebe:\n  image:\n    tag: 8.7.1\noperate:\n  image:\n    tag: 8.7.2\n")

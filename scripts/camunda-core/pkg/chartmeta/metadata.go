@@ -80,8 +80,13 @@ func ComponentImageVersions(chartDir, camundaVersion string) (string, error) {
 	var b strings.Builder
 	for _, f := range fields {
 		tag, ok := tagAt(values, f.path)
-		if fallback, has := tagFallbacks[f.path]; has && (!ok || tag == "") {
+		if fallback, has := tagFallbacks[f.path]; has && !ok {
 			tag, ok = tagAt(values, fallback)
+		}
+		if ok && tag == "" {
+			if global, hasGlobal := tagAt(values, "global.image.tag"); hasGlobal && global != "" {
+				tag = global
+			}
 		}
 		if !ok {
 			tag = "N/A"
