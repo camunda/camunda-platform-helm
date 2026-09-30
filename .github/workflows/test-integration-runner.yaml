@@ -1812,6 +1812,7 @@ jobs:
             --version "${{ inputs.camunda-version }}" \
             --shortname "${{ inputs.shortname }}" \
             --flow "${{ inputs.flow }}" \
+            --platform "${{ inputs.distro-platform }}" \
             --chart-versions "${{ inputs.chart-versions }}" \
             --e2e-test-suite-version "${{ inputs.e2e-test-suite-version }}" \
             --repo-root "${{ github.workspace }}" \

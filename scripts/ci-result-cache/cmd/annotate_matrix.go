@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"scripts/ci-result-cache/pkg/cache"
@@ -110,8 +111,9 @@ func runAnnotateMatrix(cmd *cobra.Command, args []string) error {
 		shortname, _ := entry["shortname"].(string)
 		flow, _ := entry["flow"].(string)
 		chartVersions, _ := entry["chartVersions"].(string)
+		platforms, _ := entry["platforms"].(string)
 
-		if version == "" || shortname == "" || flow == "" || chartVersions == "" {
+		if version == "" || shortname == "" || flow == "" || chartVersions == "" || platforms == "" {
 			matrix.Include[i]["cached"] = "false"
 			continue
 		}
@@ -128,8 +130,11 @@ func runAnnotateMatrix(cmd *cobra.Command, args []string) error {
 			hashCache[chartVersions] = contentHash
 		}
 
-		context := cache.StatusContext(version, shortname, flow)
-		if cache.Check(statuses, context, contentHash, annotateTTL) {
+		var contexts []string
+		for _, platform := range strings.Split(platforms, ",") {
+			contexts = append(contexts, cache.StatusContext(version, shortname, flow, platform))
+		}
+		if cache.CheckAll(statuses, contexts, contentHash, annotateTTL) {
 			matrix.Include[i]["cached"] = "true"
 			cachedCount++
 		} else {
