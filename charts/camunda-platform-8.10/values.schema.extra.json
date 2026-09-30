@@ -133,6 +133,28 @@
                 },
                 "ingress": {
                     "properties": {
+                        "protocol": {
+                            "type": "string",
+                            "enum": [
+                                "",
+                                "http",
+                                "https"
+                            ]
+                        },
+                        "publicPorts": {
+                            "properties": {
+                                "http": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 65535
+                                },
+                                "https": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 65535
+                                }
+                            }
+                        },
                         "annotations": {
                             "type": "object",
                             "description": "defines the ingress related annotations, consumed mostly by the ingress controller. Empty by default; keys set here always win over the ingress-nginx compatibility set described in global.compatibility.nginx.renderAnnotations.",
@@ -1653,7 +1675,7 @@
                 "roleName": {"type": "string"},
                 "secret": {"$ref": "#/$defs/topologySecret"},
                 "serviceName": {"type": "string"},
-                "webappUrl": {"type": "string", "pattern": "^$|^https?://[^\\s]+$"},
+                "webappUrl": {"type": "string", "pattern": "^$|^https?://(?:[^\\s{}]|\\{\\{[^}]*\\}\\})+$"},
                 "readinessUrl": {"type": "string", "pattern": "^$|^https?://[^\\s]+$"}
             }
         },
@@ -1717,6 +1739,7 @@
             "required": ["id", "components"],
             "properties": {
                 "id": {"type": "string", "pattern": "^[a-z0-9]{1,64}$"},
+                "name": {"type": "string", "minLength": 1},
                 "components": {
                     "type": "object",
                     "additionalProperties": false,

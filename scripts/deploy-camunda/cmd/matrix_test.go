@@ -21,8 +21,42 @@ import (
 	"strings"
 	"testing"
 
+	"scripts/camunda-core/pkg/logging"
+	"scripts/deploy-camunda/config"
 	"scripts/deploy-camunda/matrix"
+
+	"github.com/spf13/cobra"
+	"github.com/stretchr/testify/require"
 )
+
+func TestRootScenarioRegistryResolution(t *testing.T) {
+	previousFlags, previousConfig, previousLogger := flags, configFile, logging.Logger
+	t.Cleanup(func() { flags, configFile, logging.Logger = previousFlags, previousConfig, previousLogger })
+	flags = config.RuntimeFlags{}
+	chart, err := filepath.Abs("../../../charts/camunda-platform-8.10")
+	require.NoError(t, err)
+	directory := t.TempDir()
+	configPath := filepath.Join(directory, "config.yaml")
+	require.NoError(t, os.WriteFile(configPath, []byte("features: [documentstore]\nqa: true\n"), 0644))
+	command := NewRootCommand()
+	command.SetArgs([]string{
+		"--config", configPath, "--env-file", filepath.Join(directory, ".env"),
+		"--chart-path", chart, "--namespace", "test", "--release", "integration",
+		"--scenario", "optimize-tls", "--platform", "gke", "--features=", "--qa=false", "--log-level", "error",
+	})
+	called := false
+	command.RunE = func(*cobra.Command, []string) error {
+		called = true
+		require.True(t, flags.SelectionResolved)
+		require.Empty(t, flags.Selection.Features)
+		require.False(t, flags.Selection.QA)
+		require.Len(t, flags.CompanionCharts, 3)
+		require.Len(t, flags.PreInstallHooks, 1)
+		return nil
+	}
+	require.NoError(t, command.Execute())
+	require.True(t, called)
+}
 
 // Pins inc-5975: --extra-values must exist on `matrix run` so that
 // flags.Deployment.ExtraValues — the only input to the digest-overlay strip —

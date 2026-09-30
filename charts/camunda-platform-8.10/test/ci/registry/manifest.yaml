@@ -98,6 +98,10 @@ integration:
       shortname: docstr
       tier: 2
       enabled: true
+    - id: documentstore-s3-compatible
+      shortname: docs3
+      tier: 2
+      enabled: true
     - id: secretstore-file
       shortname: secfl
       tier: 2

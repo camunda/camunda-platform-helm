@@ -446,9 +446,10 @@ func MapScenarioToConfig(scenario string) *DeploymentConfig {
 	return config
 }
 
-// BuilderOverrides holds optional overrides applied on top of name-derived defaults.
-// Zero-value fields are ignored so callers only need to set the dimensions they care about.
+// BuilderOverrides supplies selections to BuildDeploymentConfig.
+// Resolved bypasses name-derived defaults; otherwise zero-value fields are ignored.
 type BuilderOverrides struct {
+	Resolved     bool
 	Identity     string   // keycloak, oidc, basic, hybrid
 	Persistence  string   // elasticsearch, opensearch, rdbms, rdbms-oracle
 	Platform     string   // effective platform (already resolved from TestPlatform/Platform)
@@ -464,8 +465,8 @@ type BuilderOverrides struct {
 }
 
 // BuildDeploymentConfig is the single canonical constructor for DeploymentConfig.
-// It derives defaults from the scenario name via MapScenarioToConfig, then applies
-// any non-zero overrides, and validates the result. All call-sites that previously
+// It uses resolved selections or derives defaults via MapScenarioToConfig, then
+// applies non-zero overrides and validates the result. All call-sites that previously
 // built a DeploymentConfig inline should use this function instead, eliminating
 // drift between the deploy, dry-run, and prepare-values code paths.
 //
@@ -480,7 +481,10 @@ type BuilderOverrides struct {
 // subdirectories at runtime, so no code change is required when values files are
 // added or removed. An empty or unresolvable scenariosDir is a hard error.
 func BuildDeploymentConfig(scenariosDir, scenario string, ov BuilderOverrides) (*DeploymentConfig, error) {
-	cfg := MapScenarioToConfig(scenario)
+	cfg := &DeploymentConfig{}
+	if !ov.Resolved {
+		cfg = MapScenarioToConfig(scenario)
+	}
 
 	// Apply non-zero overrides.
 	if ov.Identity != "" {
@@ -507,7 +511,7 @@ func BuildDeploymentConfig(scenariosDir, scenario string, ov BuilderOverrides) (
 	if ov.ImageTags {
 		cfg.ImageTags = true
 	}
-	if !ov.ImageTagsSet && !cfg.ImageTags && valuesConfigHasImageTags(ov.ValuesConfig) {
+	if !ov.Resolved && !ov.ImageTagsSet && !cfg.ImageTags && valuesConfigHasImageTags(ov.ValuesConfig) {
 		cfg.ImageTags = true
 	}
 	if ov.Upgrade {

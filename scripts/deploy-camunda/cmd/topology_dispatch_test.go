@@ -422,6 +422,36 @@ func TestBuildTopologyReleaseEnv_SelectsLocalOrchestrationReferences(t *testing.
 	}
 }
 
+func TestBuildTopologyReleaseEnv_SetsCamundaHostnameToServedHost(t *testing.T) {
+	shared := map[string]string{
+		"HUB_HOST":   "ns-hub.example.com",
+		"ORCHA_HOST": "ns-orcha.example.com",
+	}
+	cases := []struct {
+		name    string
+		release matrix.TopologyRelease
+		want    string
+	}{
+		{"hub", matrix.TopologyRelease{Role: "hub", NamespaceSuffix: "hub"}, "ns-hub.example.com"},
+		{"orchestration", matrix.TopologyRelease{Role: "orchestration", NamespaceSuffix: "orcha"}, "ns-orcha.example.com"},
+		{"optimize", matrix.TopologyRelease{Role: "optimize", NamespaceSuffix: "opta", Serves: "orcha"}, "ns-hub.example.com"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := buildTopologyReleaseEnv(shared, tc.release)["CAMUNDA_HOSTNAME"]; got != tc.want {
+				t.Errorf("CAMUNDA_HOSTNAME = %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestBuildTopologyReleaseEnv_OmitsCamundaHostnameWithoutHost(t *testing.T) {
+	env := buildTopologyReleaseEnv(map[string]string{}, matrix.TopologyRelease{Role: "hub", NamespaceSuffix: "hub"})
+	if _, ok := env["CAMUNDA_HOSTNAME"]; ok {
+		t.Errorf("CAMUNDA_HOSTNAME set to %q with no derived host; want it left to the process env", env["CAMUNDA_HOSTNAME"])
+	}
+}
+
 func TestBuildTopologyReleaseEnv_PublishesServedReferencesForOptimize(t *testing.T) {
 	shared := map[string]string{
 		"ORCHA_NAMESPACE":                  "ns-orcha",
@@ -558,6 +588,46 @@ func TestBuildTopologyReleaseEnv_DerivedOrchestrationKeysOutrankReleaseEnv(t *te
 		if got := env[key]; got != want {
 			t.Errorf("%s = %q, want the derived %q", key, got, want)
 		}
+	}
+}
+
+// In a multi-orchestration topology every orchestration release needs its own
+// CAMUNDA_HOSTNAME, not only its own global.host. Pre-8.10 scenario values set
+// global.ingress.host (and the external-dns hostname) from $CAMUNDA_HOSTNAME, so
+// without it the 8.9/8.8/8.7 legs of mns2 all shared the CI-wide host and the
+// browser could not resolve their Operate URL.
+func TestApplyTopologyReleaseHostname_PerOrchestrationRelease(t *testing.T) {
+	releases := testTopologyReleases()
+	contexts := []*deploy.ScenarioContext{
+		{Namespace: "matrix-810-mns-hub"},
+		{Namespace: "matrix-810-mns-orcha"},
+		{Namespace: "matrix-810-mns-orchb"},
+	}
+	crossRefEnv := map[string]string{}
+	addTopologyIngressHosts(crossRefEnv, matrix.RunOptions{IngressBaseDomain: "ci.example.com"}, "gke", contexts[0], releases[:3], contexts)
+
+	for i, want := range []string{"matrix-810-mns-hub.ci.example.com", "matrix-810-mns-orcha.ci.example.com", "matrix-810-mns-orchb.ci.example.com"} {
+		release := releases[i]
+		flags := &config.RuntimeFlags{ExtraEnv: map[string]string{"CAMUNDA_HOSTNAME": "ci-wide.example.com"}}
+		host := topologyReleaseHost(crossRefEnv, release, 2)
+		applyTopologyReleaseOverrides(flags, buildTopologyReleaseEnv(crossRefEnv, release))
+		applyTopologyReleaseHostname(flags, host)
+		if host != want {
+			t.Errorf("%s: topologyReleaseHost = %q, want %q", release.NamespaceSuffix, host, want)
+		}
+		if got := flags.ExtraEnv["CAMUNDA_HOSTNAME"]; got != want {
+			t.Errorf("%s: CAMUNDA_HOSTNAME = %q, want %q (must match the release's global.host)", release.NamespaceSuffix, got, want)
+		}
+	}
+}
+
+// A single-orchestration topology leaves the orchestration release on its
+// default host, so the helper must not touch CAMUNDA_HOSTNAME there.
+func TestApplyTopologyReleaseHostname_NoAssignedHostIsNoop(t *testing.T) {
+	flags := &config.RuntimeFlags{}
+	applyTopologyReleaseHostname(flags, topologyReleaseHost(map[string]string{"ORCHA_HOST": "orcha.example.com"}, matrix.TopologyRelease{Role: "orchestration", NamespaceSuffix: "orcha"}, 1))
+	if _, ok := flags.ExtraEnv["CAMUNDA_HOSTNAME"]; ok {
+		t.Errorf("CAMUNDA_HOSTNAME = %q, want unset for a single-orchestration release", flags.ExtraEnv["CAMUNDA_HOSTNAME"])
 	}
 }
 

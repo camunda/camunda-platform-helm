@@ -474,19 +474,19 @@ spec:
       {{- end }}
       {{- with .Values.orchestration.nodeSelector | default .Values.global.nodeSelector }}
       nodeSelector:
-        {{- toYamlPretty . | nindent 8 }}
+        {{- include "camundaPlatform.toYamlPretty" (dict "value" . "context" $) | nindent 8 }}
       {{- end }}
       {{- with .Values.orchestration.affinity }}
       affinity:
-        {{- tpl (toYaml .) $ | fromYaml | toYamlPretty | nindent 8 }}
+        {{- include "camundaPlatform.toYamlPretty" (dict "value" (tpl (toYaml .) $ | fromYaml) "context" $) | nindent 8 }}
       {{- end }}
       {{- with .Values.orchestration.tolerations }}
       tolerations:
-        {{- toYamlPretty . | nindent 8 }}
+        {{- include "camundaPlatform.toYamlPretty" (dict "value" . "context" $) | nindent 8 }}
       {{- end }}
       {{- with .Values.orchestration.topologySpreadConstraints }}
       topologySpreadConstraints:
-        {{- toYamlPretty . | nindent 8 }}
+        {{- include "camundaPlatform.toYamlPretty" (dict "value" . "context" $) | nindent 8 }}
       {{- end }}
   {{- if eq .Values.orchestration.persistenceType "disk" }}
   volumeClaimTemplates:

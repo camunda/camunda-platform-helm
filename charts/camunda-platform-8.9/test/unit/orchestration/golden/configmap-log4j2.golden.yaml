@@ -10,7 +10,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: zeebe-broker
-    app.kubernetes.io/version: "8.9.21"
+    app.kubernetes.io/version: "8.9.22"
 apiVersion: v1
 data:
   startup.sh: |
@@ -196,7 +196,6 @@ data:
             className: "io.camunda.exporter.CamundaExporter"
             args:
               connect:
-                type: "elasticsearch"
                 awsEnabled: false
               history:
                 elsRolloverDateFormat: "date"

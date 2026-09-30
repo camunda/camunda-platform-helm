@@ -19,6 +19,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"scripts/camunda-core/pkg/releasenotes"
 )
 
 // TestUpdateMatrixHardFailsOnMissingAnnotation pins the promote-rc invariant:
@@ -191,9 +193,8 @@ func TestUpdateMatrixAppRecordsReleaseFacts(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// 8.8 is v3-only: a v4 pin clamps to 3.20.2.
 	for _, want := range []string{
-		`"helm_cli": "3.20.2"`,
+		`"helm_cli": "` + releasenotes.HelmCLIVersion("8.8", "4.2.3") + `"`,
 		`"release_tag": "camunda-platform-8.8-13.4.0"`,
 	} {
 		if !strings.Contains(string(data), want) {

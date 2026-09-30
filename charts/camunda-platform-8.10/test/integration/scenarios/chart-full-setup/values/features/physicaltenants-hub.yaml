@@ -21,7 +21,11 @@ global:
         namespace: "${ORCHA_NAMESPACE}"
         releaseName: integration
         host: "${ORCHA_HOST}"
-        version: "8.10.0-alpha3"
+        # Hub rejects physical tenant components on a cluster below 8.10.0, and a
+        # pre-release such as 8.10.0-alphaN sorts below 8.10.0 in semver. 8.10.0 is
+        # not released yet, so declare the 8.10 snapshot line, which Hub compares by
+        # major.minor only.
+        version: "8.10-SNAPSHOT"
         contextPaths:
           orchestration: /orchestration
           optimize: "${OPTDEFAULT_OPTIMIZE_CONTEXT_PATH}"
@@ -52,6 +56,7 @@ global:
               existingSecretKey: identity-connectors-client-token
         physicalTenants:
           - id: tenanta
+            name: Tenant A
             components:
               optimize:
                 enabled: true
@@ -63,6 +68,7 @@ global:
                   existingSecret: integration-test-credentials
                   existingSecretKey: identity-optimize-tenanta-client-token
           - id: tenantb
+            name: Tenant B
             components:
               optimize:
                 enabled: true
@@ -73,6 +79,16 @@ global:
                 secret:
                   existingSecret: integration-test-credentials
                   existingSecretKey: identity-optimize-tenantb-client-token
+
+camundaHub:
+  restapi:
+    extraConfiguration:
+      - file: environments.yaml
+        content: |
+          camunda:
+            hub:
+              feature:
+                environments-enabled: true
 
 identity:
   clients:

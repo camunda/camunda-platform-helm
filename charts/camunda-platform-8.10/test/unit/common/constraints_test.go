@@ -339,15 +339,14 @@ func helmMajorVersion() int {
 func (s *ConstraintTemplateTest) TestHelmVersionConstraint() {
 	testCases := []testhelpers.TestCase{
 		{
-			// .Capabilities.HelmVersion.Version is set by the running Helm binary, so this test
-			// branches on the detected major version to cover both paths without a fake binary.
-			Name:   "TestHelmVersionGuard",
+			Name:   "TestHelmVersionWarning",
 			Values: map[string]string{},
 			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
 				if helmMajorVersion() >= 4 {
-					s.Require().Nil(err)
+					s.Require().NotContains(output, "Helm v3 receives security fixes")
 				} else {
-					s.Require().ErrorContains(err, "requires Helm CLI v4")
+					s.Require().Contains(output, "Helm v3 receives security fixes")
 				}
 			},
 		},
@@ -982,6 +981,56 @@ func (s *ConstraintTemplateTest) TestManagementIdentityExternalServiceUrl() {
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().ErrorContains(err, "Web Modeler is enabled but management Identity is not configured")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *ConstraintTemplateTest) TestPvcAccessModesReadWriteOncePodGuard() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "ReadWriteOncePodAloneRenders",
+			Values: map[string]string{
+				"orchestration.pvcAccessModes[0]": "ReadWriteOncePod",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+			},
+		},
+		{
+			Name: "ReadWriteOncePodWithAnotherAccessModeFails",
+			Values: map[string]string{
+				"orchestration.pvcAccessModes[0]": "ReadWriteOncePod",
+				"orchestration.pvcAccessModes[1]": "ReadWriteOnce",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().ErrorContains(err, "Kubernetes requires ReadWriteOncePod to be the only access mode in the list")
+			},
+		},
+		{
+			// pvcAccessModes is inert unless persistenceType renders a PVC, so an otherwise
+			// invalid combination must not block the install.
+			Name: "InvalidCombinationDoesNotFailWhenNoPvcIsRendered",
+			Values: map[string]string{
+				"orchestration.persistenceType":   "memory",
+				"orchestration.pvcAccessModes[0]": "ReadWriteOncePod",
+				"orchestration.pvcAccessModes[1]": "ReadWriteOnce",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+			},
+		},
+		{
+			Name: "InvalidCombinationDoesNotFailWhenOrchestrationDisabled",
+			Values: map[string]string{
+				"orchestration.enabled":           "false",
+				"orchestration.pvcAccessModes[0]": "ReadWriteOncePod",
+				"orchestration.pvcAccessModes[1]": "ReadWriteOnce",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
 			},
 		},
 	}

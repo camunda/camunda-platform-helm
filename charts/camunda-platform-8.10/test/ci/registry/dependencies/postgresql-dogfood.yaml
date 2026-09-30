@@ -1,0 +1,3 @@
+chart: charts/internal-postgresql
+release-name: postgresql
+values-file: test/integration/companion-values/postgresql-dogfood.yaml

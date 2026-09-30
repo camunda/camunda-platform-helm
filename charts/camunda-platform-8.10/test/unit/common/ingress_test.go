@@ -56,6 +56,37 @@ func TestIngressTemplate(t *testing.T) {
 func (s *IngressTemplateTest) TestDifferentValuesInputs() {
 	testCases := []testhelpers.TestCase{
 		{
+			Name: "PublicPortsDoNotChangeIngressRouting",
+			Values: map[string]string{
+				"global.ingress.enabled":           "true",
+				"global.ingress.tls.enabled":       "true",
+				"global.host":                      "camunda.example.com",
+				"global.ingress.publicPorts.http":  "8080",
+				"global.ingress.publicPorts.https": "8443",
+				"identity.enabled":                 "true",
+				"identity.contextPath":             "/identity",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var ingress netv1.Ingress
+				helm.UnmarshalK8SYaml(t, output, &ingress)
+				require.Len(t, ingress.Spec.Rules, 1)
+				require.Equal(t, "camunda.example.com", ingress.Spec.Rules[0].Host)
+				require.Len(t, ingress.Spec.TLS, 1)
+				require.Equal(t, []string{"camunda.example.com"}, ingress.Spec.TLS[0].Hosts)
+				require.NotNil(t, ingress.Spec.Rules[0].HTTP)
+				backends := make(map[string]netv1.IngressServiceBackend)
+				for _, ingressPath := range ingress.Spec.Rules[0].HTTP.Paths {
+					require.NotNil(t, ingressPath.Backend.Service)
+					backends[ingressPath.Path] = *ingressPath.Backend.Service
+				}
+				require.Equal(t, netv1.IngressServiceBackend{
+					Name: s.release + "-identity",
+					Port: netv1.ServiceBackendPort{Number: 80},
+				}, backends["/identity"])
+			},
+		},
+		{
 			Name:                 "TestIngressWithKeycloakChartIsDisabled",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{

@@ -65,6 +65,7 @@ type Options struct {
 
 	ExternalSecretsEnabled bool
 	ExternalSecretsStore   string // external secrets store type (e.g., "vault-backend")
+	CredentialsManifest    string // ExternalSecret manifest replacing the chart's integration-test-credentials one
 	Platform               string // gke|rosa|eks
 	RepoRoot               string // repo base for manifests
 

@@ -14,7 +14,121 @@
 
 package config
 
-import "testing"
+import (
+	"github.com/stretchr/testify/require"
+	"testing"
+)
+
+func TestApplySelectionDefaultsAliasPrecedence(t *testing.T) {
+	for _, profile := range []bool{false, true} {
+		for _, modern := range []bool{false, true} {
+			name := "root"
+			if profile {
+				name = "profile"
+			}
+			if modern {
+				name += "/modern"
+			}
+			t.Run(name, func(t *testing.T) {
+				disabled := false
+				spec := DeploySpecConfig{Identity: "basic", Persistence: "elasticsearch", Features: []string{"documentstore"}, TestPlatform: "gke", QA: &disabled}
+				root := &RootConfig{DeploySpecConfig: spec}
+				if profile {
+					root = &RootConfig{Deployments: map[string]DeploymentConfig{"dev": {DeploySpecConfig: spec}}}
+				}
+				flags := &RuntimeFlags{
+					Deprecated:   DeprecatedFlags{ValuesAuth: "oidc", ValuesBackend: "opensearch", ValuesFeatures: []string{"rdbms", "upgrade", "multitenancy"}, ValuesInfra: "eks", ValuesQA: true},
+					ChangedFlags: map[string]bool{"values-auth": true, "values-backend": true, "values-features": true, "values-infra": true, "values-qa": true},
+				}
+				want := SelectionFlags{Identity: "oidc", Persistence: "opensearch", Features: []string{"multitenancy"}, TestPlatform: "eks", QA: true, UpgradeFlow: true}
+				if modern {
+					want = SelectionFlags{Identity: "hybrid", Persistence: "rdbms-external", Features: []string{}, TestPlatform: "gke"}
+					flags.Selection = want
+					for _, flag := range []string{"identity", "persistence", "features", "test-platform", "qa", "upgrade-flow"} {
+						flags.ChangedFlags[flag] = true
+					}
+				}
+				require.NoError(t, ApplyActiveDeployment(root, root.Current, flags))
+				flags.MigrateDeprecatedFlags()
+				require.NoError(t, ApplySelectionDefaults(flags, SelectionFlags{Identity: "keycloak", Persistence: "elasticsearch"}, root))
+				require.Equal(t, want, flags.Selection)
+			})
+		}
+	}
+}
+
+func TestApplySelectionDefaultsAliasClearing(t *testing.T) {
+	enabled := true
+	root := &RootConfig{DeploySpecConfig: DeploySpecConfig{Persistence: "elasticsearch", Features: []string{"documentstore"}, QA: &enabled}}
+	defaults := SelectionFlags{Identity: "keycloak", Persistence: "opensearch"}
+	flags := &RuntimeFlags{ChangedFlags: map[string]bool{"values-features": true, "values-qa": true}}
+	require.NoError(t, ApplyActiveDeployment(root, root.Current, flags))
+	flags.MigrateDeprecatedFlags()
+	require.NoError(t, ApplySelectionDefaults(flags, defaults, root))
+	require.Empty(t, flags.Selection.Features)
+	require.False(t, flags.Selection.QA)
+	flags = &RuntimeFlags{
+		Deprecated:   DeprecatedFlags{ValuesFeatures: []string{"rdbms", "upgrade", "multitenancy"}},
+		ChangedFlags: map[string]bool{"values-features": true},
+	}
+	require.NoError(t, ApplyActiveDeployment(root, root.Current, flags))
+	flags.MigrateDeprecatedFlags()
+	require.NoError(t, ApplySelectionDefaults(flags, defaults, root))
+	require.Equal(t, "rdbms", flags.Selection.Persistence)
+	require.True(t, flags.Selection.UpgradeFlow)
+	flags = &RuntimeFlags{
+		Deprecated:   DeprecatedFlags{ValuesFeatures: []string{"rdbms", "upgrade"}},
+		ChangedFlags: map[string]bool{"values-features": true, "features": true},
+	}
+	flags.MigrateDeprecatedFlags()
+	require.NoError(t, ApplySelectionDefaults(flags, defaults, nil))
+	require.Empty(t, flags.Selection.Features)
+	require.Equal(t, "opensearch", flags.Selection.Persistence)
+	require.False(t, flags.Selection.UpgradeFlow)
+}
+
+func TestApplySelectionDefaults(t *testing.T) {
+	t.Parallel()
+	disabled := false
+	defaults := SelectionFlags{Identity: "keycloak", Persistence: "elasticsearch", Features: []string{"registry"}, QA: true, ImageTags: true, UpgradeFlow: true}
+	root := &RootConfig{DeploySpecConfig: DeploySpecConfig{Identity: "basic", Features: []string{"root"}}}
+	flags := &RuntimeFlags{}
+	require.NoError(t, ApplySelectionDefaults(flags, defaults, nil))
+	require.Equal(t, defaults, flags.Selection)
+	require.NoError(t, ApplySelectionDefaults(flags, defaults, root))
+	require.Equal(t, "basic", flags.Selection.Identity)
+	require.Equal(t, []string{"root"}, flags.Selection.Features)
+	root.Deployments = map[string]DeploymentConfig{
+		"only": {DeploySpecConfig: DeploySpecConfig{Identity: "oidc", Features: []string{}, QA: &disabled, ImageTags: &disabled, UpgradeFlow: &disabled}},
+	}
+	require.NoError(t, ApplySelectionDefaults(flags, defaults, root))
+	require.Equal(t, "oidc", flags.Selection.Identity)
+	require.Empty(t, flags.Selection.Features)
+	require.False(t, flags.Selection.QA)
+	require.False(t, flags.Selection.ImageTags)
+	require.False(t, flags.Selection.UpgradeFlow)
+	flags.Selection = SelectionFlags{Identity: "hybrid", Persistence: "custom", Features: []string{"cli"}, TestPlatform: "eks"}
+	flags.ChangedFlags = map[string]bool{"identity": true, "persistence": true, "features": true, "test-platform": true, "qa": true, "image-tags": true, "upgrade-flow": true}
+	want := flags.Selection
+	require.NoError(t, ApplySelectionDefaults(flags, defaults, root))
+	require.Equal(t, want, flags.Selection)
+	flags.Selection.Features = []string{}
+	require.NoError(t, ApplySelectionDefaults(flags, defaults, root))
+	require.Empty(t, flags.Selection.Features)
+	root.Deployments = nil
+	require.NoError(t, ApplySelectionDefaults(flags, defaults, root))
+	require.Empty(t, flags.Selection.Features, "empty CLI features must override nonempty root features")
+	flags = &RuntimeFlags{
+		Deprecated:   DeprecatedFlags{ValuesAuth: "basic", ValuesFeatures: []string{"rdbms", "upgrade", "custom"}},
+		ChangedFlags: map[string]bool{"values-auth": true, "values-features": true},
+	}
+	flags.MigrateDeprecatedFlags()
+	require.NoError(t, ApplySelectionDefaults(flags, defaults, nil))
+	require.Equal(t, "basic", flags.Selection.Identity)
+	require.Equal(t, "rdbms", flags.Selection.Persistence)
+	require.Equal(t, []string{"custom"}, flags.Selection.Features)
+	require.True(t, flags.Selection.UpgradeFlow)
+}
 
 // allStringPtrs returns a MatrixRunFlags with every *string/*int/*bool field
 // pointing at fresh zero values, so ApplyMatrixRunConfig can dereference them

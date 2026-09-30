@@ -901,6 +901,35 @@ func containsSuffix(s, suffix string) bool {
 	return len(s) >= len(suffix) && s[len(s)-len(suffix):] == suffix
 }
 
+func TestBuildDeploymentConfig_ResolvedSelection(t *testing.T) {
+	t.Parallel()
+	scenariosDir := t.TempDir()
+	for _, relative := range []string{"identity/keycloak", "persistence/elasticsearch", "platform/gke", "features/custom"} {
+		filename := filepath.Join(scenariosDir, "values", relative+".yaml")
+		if err := os.MkdirAll(filepath.Dir(filename), 0755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filename, []byte("{}\n"), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for _, features := range [][]string{nil, {}, {"custom"}} {
+		cfg, err := BuildDeploymentConfig(scenariosDir, "qa-multitenancy-upgrade", BuilderOverrides{
+			Resolved: true, Identity: "keycloak", Persistence: "elasticsearch", Platform: "gke",
+			Features: features, ValuesConfig: `{"E2E_TESTS_ORCHESTRATION_IMAGE_TAG":"snapshot"}`,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if cfg.QA || cfg.Upgrade || cfg.ImageTags || len(cfg.Features) != len(features) {
+			t.Fatalf("name-derived settings leaked into resolved selection: %+v", cfg)
+		}
+	}
+	if _, err := BuildDeploymentConfig(scenariosDir, "elasticsearch", BuilderOverrides{Resolved: true}); err == nil {
+		t.Fatal("missing required registry selections must fail validation")
+	}
+}
+
 func TestBuildDeploymentConfig_ImageTagsAutoDetection(t *testing.T) {
 	tests := []struct {
 		name          string

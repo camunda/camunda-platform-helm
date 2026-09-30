@@ -255,6 +255,16 @@
                             "description": "if true, an ingress resource is deployed. Only useful if an ingress controller is available, like Ingress-NGINX.",
                             "default": false
                         },
+                        "protocol": {
+                            "type": "string",
+                            "description": "can be used to set the protocol in external URLs. Defaults to https when global.ingress.tls.enabled is true, otherwise http.",
+                            "default": "",
+                            "enum": [
+                                "",
+                                "http",
+                                "https"
+                            ]
+                        },
                         "external": {
                             "type": "boolean",
                             "description": "if true, the Ingress object will not be rendered. This setting is used when a non-Ingress resource, like a service mesh, is used to access the cluster.",
@@ -726,7 +736,7 @@
                                 },
                                 "contextPath": {
                                     "type": "string",
-                                    "description": "In Keycloak v16.x.x it's hard-coded as '/auth', but in v19.x.x it's '/'.",
+                                    "description": "defines the path Identity uses to reach Keycloak. With bundled Keycloak enabled, also set identityKeycloak.httpRelativePath to the same path with a trailing slash; for root, use an empty string here and / for httpRelativePath.",
                                     "default": "/auth"
                                 },
                                 "realm": {
@@ -999,8 +1009,9 @@
                     "properties": {
                         "activeStoreId": {
                             "type": "string",
-                            "description": "The default document store to use. Valid values: inmemory, aws, gcp, and azure.",
-                            "default": "inmemory"
+                            "description": "defines the default document store instance ID. This value must match the configured store instance ID. See https://docs.camunda.io/docs/8.9/self-managed/concepts/document-handling/configuration/helm/",
+                            "default": "inmemory",
+                            "pattern": "^[A-Za-z0-9.-]+$"
                         },
                         "type": {
                             "type": "object",
@@ -1353,7 +1364,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.9.9"
+                            "default": "8.9.10"
                         },
                         "digest": {
                             "type": "string",
@@ -2521,7 +2532,7 @@
                 },
                 "httpRelativePath": {
                     "type": "string",
-                    "description": "(DEPRECATED) defines the context for Keycloak. This config is valid for Keycloak v19.x.x only",
+                    "description": "(DEPRECATED) defines the path served by bundled Keycloak. Set global.identity.keycloak.contextPath to the same path without a trailing slash; for root, use / here and an empty string for contextPath.",
                     "default": "/auth/"
                 },
                 "extraEnvVars": {
@@ -2648,7 +2659,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be used to set the Docker image tag for the Console image",
-                            "default": "8.9.111"
+                            "default": "8.9.116"
                         },
                         "digest": {
                             "type": "string",
@@ -3248,7 +3259,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be used to set the Docker image tag for the WebModeler images",
-                            "default": "8.9.9"
+                            "default": "8.9.10"
                         },
                         "pullSecrets": {
                             "type": "array",
@@ -4795,7 +4806,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.9.12"
+                            "default": "8.9.14"
                         },
                         "digest": {
                             "type": "string",
@@ -5633,7 +5644,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.9.21"
+                            "default": "8.9.22"
                         },
                         "digest": {
                             "type": "string",
@@ -6921,7 +6932,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.9.21"
+                            "default": "8.9.22"
                         },
                         "digest": {
                             "type": "string",

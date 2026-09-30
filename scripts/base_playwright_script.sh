@@ -1089,9 +1089,9 @@ run_playwright_tests() {
   local -a playwright_args=(
     npx playwright test
     --project="$project"
-    --shard="${shard_index}/${shard_total}"
     --reporter="$reporter,json"
   )
+  [[ "$shard_total" -gt 1 ]] && playwright_args+=(--shard="${shard_index}/${shard_total}")
   [[ -n "$test_exclude" ]] && playwright_args+=(--grep-invert="$test_exclude")
   [[ -n "$trace_flag" ]] && playwright_args+=($trace_flag)
   [[ -n "${PLAYWRIGHT_E2E_VIDEO:-}" ]] && playwright_args+=(--video="$PLAYWRIGHT_E2E_VIDEO")

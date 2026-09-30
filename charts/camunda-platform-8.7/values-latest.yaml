@@ -19,25 +19,25 @@ connectors:
   # https://hub.docker.com/r/camunda/connectors-bundle/tags
   image:
     repository: camunda/connectors-bundle
-    tag: 8.7.27
+    tag: 8.7.28
 
 operate:
   # https://hub.docker.com/r/camunda/operate/tags
   image:
     repository: camunda/operate
-    tag: 8.7.41
+    tag: 8.7.42
 
 optimize:
   # https://hub.docker.com/r/camunda/optimize/tags
   image:
     repository: camunda/optimize
-    tag: 8.7.28
+    tag: 8.7.29
 
 tasklist:
   # https://hub.docker.com/r/camunda/tasklist/tags
   image:
     repository: camunda/tasklist
-    tag: 8.7.41
+    tag: 8.7.42
 
 webModeler:
   # https://hub.docker.com/r/camunda/web-modeler-restapi
@@ -49,13 +49,13 @@ zeebe:
   # https://hub.docker.com/r/camunda/zeebe/tags
   image:
     repository: camunda/zeebe
-    tag: 8.7.41
+    tag: 8.7.42
 
 zeebeGateway:
   # https://hub.docker.com/r/camunda/zeebe/tags
   image:
     repository: camunda/zeebe
-    tag: 8.7.41
+    tag: 8.7.42
 
 #
 # Identity
@@ -65,7 +65,7 @@ identity:
   # https://hub.docker.com/r/camunda/identity/tags
   image:
     repository: camunda/identity
-    tag: 8.7.24
+    tag: 8.7.25
 
 identityKeycloak:
   # https://hub.docker.com/r/bitnami/keycloak/tags

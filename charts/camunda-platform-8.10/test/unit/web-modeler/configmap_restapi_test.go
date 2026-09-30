@@ -65,6 +65,50 @@ func TestRestAPIConfigmapTemplate(t *testing.T) {
 	})
 }
 
+func (s *configmapRestAPITemplateTest) TestIngressPublicWebsocketPort() {
+	var testCases []testhelpers.TestCase
+	for _, input := range []struct {
+		name        string
+		ingress     string
+		tls         string
+		contextPath string
+		wantPort    string
+	}{
+		{"HTTP", "true", "false", "/modeler", "8080"},
+		{"HTTPS", "true", "true", "/modeler", "8443"},
+		{"DisabledIngress", "false", "false", "/modeler", "9085"},
+		{"WithoutContextPath", "true", "true", "", "9085"},
+	} {
+		testCases = append(testCases, testhelpers.TestCase{
+			Name: input.name,
+			Values: map[string]string{
+				"camundaHub.enabled":                          "true",
+				"identity.enabled":                            "true",
+				"camundaHub.contextPath":                      input.contextPath,
+				"camundaHub.restapi.mail.fromAddress":         "test@example.com",
+				"camundaHub.websockets.publicPort":            "9085",
+				"global.host":                                 "camunda.example.com",
+				"global.ingress.enabled":                      input.ingress,
+				"global.ingress.tls.enabled":                  input.tls,
+				"global.ingress.publicPorts.http":             "8080",
+				"global.ingress.publicPorts.https":            "8443",
+				"global.identity.auth.camundaHub.redirectUrl": "https://explicit.example.com:9443/modeler",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var configMap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configMap)
+				var application WebModelerRestAPIApplicationYAML
+				require.NoError(t, yaml.Unmarshal([]byte(configMap.Data["application.yaml"]), &application))
+				require.Equal(t, input.wantPort, application.Camunda.Modeler.Pusher.Client.Port)
+				require.Equal(t, input.ingress == "true" && input.tls == "true" && input.contextPath != "", application.Camunda.Modeler.Pusher.Client.ForceTLS)
+				require.Equal(t, "https://explicit.example.com:9443/modeler", application.Camunda.Modeler.Server.Url)
+			},
+		})
+	}
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectAuthClientApiAudience() {
 	// given
 	values := maps.Clone(requiredValues)

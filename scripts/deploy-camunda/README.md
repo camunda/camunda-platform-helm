@@ -10,8 +10,8 @@ Camunda cluster with one command instead of tracing a workflow file.
 The tool exposes the scenario catalog that Camunda CI already exercises
 (`charts/<version>/test/ci/registry/scenarios/*.yaml`). The mental model is:
 
-> **Pick a scenario → point it at your cluster → let deploy-camunda wire
-> everything (companion charts, secrets, ingress, values overlays) for you.**
+> **Pick a registry scenario, configure your cluster and credentials, then
+> deploy its declared values layers, companion charts and pre-install hook.**
 
 Scenarios are the source of truth for a "what does a Camunda deployment
 of type X look like" question. Each one declares:
@@ -22,11 +22,12 @@ of type X look like" question. Each one declares:
 - the platforms it runs on (`gke`, `eks`), and
 - companion charts it needs (Keycloak, PostgreSQL, Elasticsearch, …).
 
-You point `deploy-camunda` (or `deploy-camunda matrix run`) at a scenario
-via `--identity` + `--persistence` + optional `--features`, or by its
-canonical name via `--shortname-filter`. Anything not covered by an
-existing scenario is a couple of YAML lines in your own registry (see
-[Customising a scenario](#customising-a-scenario)).
+For a single deployment, use `deploy-camunda --scenario <name>` with the
+exact `name` declared in the selected chart's registry. For matrix execution,
+use `deploy-camunda matrix run --shortname-filter <shortname> --shortname-exact`.
+Selection flags (`--identity`, `--persistence`, `--features`) override the
+named scenario or compose values directly; free-form composition does not
+automatically discover companion charts or hooks.
 
 Who this is for: reliability engineers, load-test engineers, and any
 external Camunda team who needs a repeatable "give me a working Camunda"
@@ -90,7 +91,36 @@ deploy-camunda
 `deploy-camunda` reads your `.deploy-camunda.yaml` on every run — you
 don't need to repeat the flags on the command line. Precedence is
 `CLI flag  >  active profile in config file  >  root config  >  defaults`,
-so ad-hoc overrides still work when you need them.
+so ad-hoc overrides still work when you need them. For a matching registry
+scenario, its declaration supplies the defaults. Older entries that omit
+identity or persistence retain the name-derived default for that field.
+Heuristic name matching is otherwise used when the chart has no registry or
+the scenario name is unmatched. The reserved `keycloak-original` legacy alias
+also retains name-based behavior, with warnings identifying registry values
+not applied; select its registry variants explicitly through `matrix run`.
+
+Feature overrides replace the declared list: `--features=` or `features: []`
+clears it. Explicit `false` overrides, such as `--qa=false`, also take
+precedence. Deprecated CLI aliases override config values; when both flag forms
+are supplied, the modern selection flag wins.
+Differences from the registry are logged with the declared and
+effective values. Invalid registry data or an unsupported flow/platform
+combination fails instead of silently falling back.
+
+For example, deploy the `optimize-tls` scenario, including its TLS values
+layer, Keycloak/Elasticsearch/PostgreSQL companion charts and keystore hook:
+
+```bash
+deploy-camunda --chart-path charts/camunda-platform-8.10 \
+  --scenario optimize-tls --platform gke \
+  --namespace optimize-tls-test --release integration
+```
+
+Supply credentials and ingress settings through your config/environment.
+`--render-templates` resolves the same values but does not run hooks or install
+companion charts. Registry resolution applies to single-scenario deployments;
+comma-separated scenarios retain their existing name-based behavior. Use
+`matrix run` for topologies and scenarios requiring additional lifecycle stages.
 
 To run a specific canonical scenario by shortname (equivalent to what
 CI does), use `matrix run`:
@@ -99,7 +129,8 @@ CI does), use `matrix run`:
 deploy-camunda matrix run \
   --repo-root . \
   --versions 8.10 \
-  --shortname-filter keycloak-original \
+  --shortname-filter optls --shortname-exact \
+  --flow-filter install --platform gke \
   --ingress-base-domain <your-ingress-zone>
 ```
 
@@ -400,6 +431,29 @@ Environment exposed to each hook type differs:
   `$NAMESPACE` / `$RELEASE_NAME` substituted before server-side apply,
   plus the same passthrough list. They don't see `TEST_NAMESPACE` or
   `KUBE_CONTEXT` — the runner supplies the target context directly.
+
+### S3-compatible document-store acceptance (8.10)
+
+The tier-2 `docs3` scenario provisions a namespace-local S3-compatible store
+(Garage) with an ephemeral documents bucket. Its blocking post-deploy hook checks
+upload, download, and deletion through Orchestration, plus signed-URL access
+directly against the store. The fixture uses test-only credentials and is not
+exposed through ingress. The full-platform Playwright suite is skipped for this
+Orchestration-only scenario.
+
+```bash
+deploy-camunda matrix run --versions 8.10 --shortname-filter docs3 --shortname-exact \
+  --flow-filter install --platform gke --namespace-prefix docs3-check \
+  --ingress-base-domain-gke ci.distro.ultrawombat.com
+
+# Re-run the acceptance check against an existing scenario namespace.
+deploy-camunda acceptance documentstore-s3-compatible \
+  --namespace docs3-check-810-docs3-inst-gke --release integration
+```
+
+The check uses the scenario's basic-auth `demo` user. Both services are reached
+through temporary port-forwards; store requests retain the signed Host header.
+Delete the scenario namespace after testing to remove its fixtures and data.
 
 ### Wiring the Elastic (ECK) operator as a fixture
 
@@ -758,6 +812,19 @@ export DEPLOY_CAMUNDA_SKIP_IMAGE_MANIFEST_CHECK=true
 # let the wait run to its timeout instead of aborting
 export DEPLOY_CAMUNDA_IMAGE_PULL_GUARD=off
 ```
+
+### Running pods remain unready
+
+When Helm reports a wait timeout during install or upgrade, including waits
+implied by `--atomic`, the error includes a best-effort summary of running,
+unready containers belonging to that release: namespace,
+pod, container, restart count, and a readiness-failure indicator with reason
+`Unhealthy` when a matching event is available. Free-form event messages are
+omitted. Main and companion releases use the same reporting path.
+Template, authorization, and other unrelated Helm failures do not trigger collection.
+Collection has a five-second budget and preserves the original Helm error if
+the Kubernetes API or events are unavailable. It does not shorten the Helm
+timeout, infer dependency failures, or require the separate `watch` command.
 
 ### General diagnostics
 

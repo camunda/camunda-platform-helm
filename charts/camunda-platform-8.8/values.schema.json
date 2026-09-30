@@ -212,6 +212,16 @@
                             "description": "if true, an ingress resource is deployed. Only useful if an ingress controller is available, like Ingress-NGINX.",
                             "default": false
                         },
+                        "protocol": {
+                            "type": "string",
+                            "description": "can be used to set the protocol in external URLs. Defaults to https when global.ingress.tls.enabled is true, otherwise http.",
+                            "default": "",
+                            "enum": [
+                                "",
+                                "http",
+                                "https"
+                            ]
+                        },
                         "external": {
                             "type": "boolean",
                             "description": "if true, the Ingress object will not be rendered. This setting is used when a non-Ingress resource, like a service mesh, is used to access the cluster.",
@@ -683,7 +693,7 @@
                                 },
                                 "contextPath": {
                                     "type": "string",
-                                    "description": "In Keycloak v16.x.x it's hard-coded as '/auth', but in v19.x.x it's '/'.",
+                                    "description": "defines the path Identity uses to reach Keycloak. With bundled Keycloak enabled, also set identityKeycloak.httpRelativePath to the same path with a trailing slash; for root, use an empty string here and / for httpRelativePath.",
                                     "default": "/auth"
                                 },
                                 "realm": {
@@ -1320,7 +1330,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.17"
+                            "default": "8.8.18"
                         },
                         "digest": {
                             "type": "string",
@@ -2502,7 +2512,7 @@
                 },
                 "httpRelativePath": {
                     "type": "string",
-                    "description": "defines the context for Keycloak. This config is valid for Keycloak v19.x.x only",
+                    "description": "defines the path served by bundled Keycloak. Set global.identity.keycloak.contextPath to the same path without a trailing slash; for root, use / here and an empty string for contextPath.",
                     "default": "/auth/"
                 },
                 "extraEnvVars": {
@@ -5294,7 +5304,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.21"
+                            "default": "8.8.22"
                         },
                         "digest": {
                             "type": "string",
@@ -6155,7 +6165,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.39"
+                            "default": "8.8.40"
                         },
                         "digest": {
                             "type": "string",
@@ -7613,7 +7623,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.39"
+                            "default": "8.8.40"
                         },
                         "digest": {
                             "type": "string",

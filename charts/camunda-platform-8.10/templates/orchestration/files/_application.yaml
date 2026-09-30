@@ -238,6 +238,15 @@ camunda:
         password: "${VALUES_ORCHESTRATION_DATA_SECONDARYSTORAGE_RDBMS_PASSWORD:}"
         {{- end }}
       {{- end }}
+    {{- if eq (include "orchestration.hasElasticsearchExporter" .) "true" }}
+    exporters:
+      elasticsearch:
+        className: "io.camunda.zeebe.exporter.ElasticsearchExporter"
+    {{- else if eq (include "orchestration.hasOpenSearchExporter" .) "true" }}
+    exporters:
+      opensearch:
+        className: "io.camunda.zeebe.exporter.opensearch.OpensearchExporter"
+    {{- end }}
 
   # Security configuration - Separated syntax.
   security:
@@ -261,7 +270,9 @@ camunda:
           {{- end }}
           - {{ include "orchestration.authClientId" . | quote }}
           - {{ include "orchestration.authAudience" . | quote }}
+          {{- if eq (include "camundaHub.webModelerEnabled" .) "true" }}
           - {{ (or .Values.global.identity.auth.camundaHub.clientApiAudience .Values.global.identity.auth.webModeler.clientApiAudience) | quote }}
+          {{- end }}
         {{- if (include "orchestration.authIssuerUrl" .) }}
         issuer-uri: {{ include "orchestration.authIssuerUrl" . | quote }}
         {{- else }}

@@ -52,6 +52,62 @@ func TestSpringConfigMapTemplate(t *testing.T) {
 	})
 }
 
+func (s *configMapSpringTemplateTest) TestIngressPublicURL() {
+	var testCases []testhelpers.TestCase
+	for _, input := range []struct {
+		name    string
+		ingress string
+		tls     string
+		fullURL string
+		wantURL string
+	}{
+		{"HTTP", "true", "false", "", "http://camunda.example.com:8080/identity"},
+		{"HTTPS", "true", "true", "", "https://camunda.example.com:8443/identity"},
+		{"ExplicitURL", "true", "true", "https://id-{{ .Release.Name }}.example.com:9443/custom", "https://id-camunda-platform-test.example.com:9443/custom"},
+		{"DisabledIngress", "false", "false", "", "http://localhost:8084"},
+	} {
+		testCases = append(testCases, testhelpers.TestCase{
+			Name: input.name,
+			Values: map[string]string{
+				"identity.enabled":                 "true",
+				"identity.contextPath":             "/identity",
+				"identity.fullURL":                 input.fullURL,
+				"global.host":                      "camunda.example.com",
+				"global.ingress.enabled":           input.ingress,
+				"global.ingress.tls.enabled":       input.tls,
+				"global.ingress.publicPorts.http":  "8080",
+				"global.ingress.publicPorts.https": "8443",
+				"global.gateway.enabled":           "false",
+				"global.gateway.tls.enabled":       "true",
+				"global.identity.auth.enabled":     "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var configMap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configMap)
+				var application IdentityConfigYAML
+				require.NoError(t, yaml.Unmarshal([]byte(configMap.Data["application.yaml"]), &application))
+				require.Equal(t, input.wantURL, application.Identity.Url)
+				var callbackConfig struct {
+					Keycloak struct {
+						Environment struct {
+							Clients []struct {
+								RootURL      string   `yaml:"root-url"`
+								RedirectURIs []string `yaml:"redirect-uris"`
+							} `yaml:"clients"`
+						} `yaml:"environment"`
+					} `yaml:"keycloak"`
+				}
+				require.NoError(t, yaml.Unmarshal([]byte(configMap.Data["application.yaml"]), &callbackConfig))
+				require.Len(t, callbackConfig.Keycloak.Environment.Clients, 1)
+				require.Equal(t, input.wantURL, callbackConfig.Keycloak.Environment.Clients[0].RootURL)
+				require.Equal(t, []string{"/auth/login-callback"}, callbackConfig.Keycloak.Environment.Clients[0].RedirectURIs)
+			},
+		})
+	}
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
 func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 	testCases := []testhelpers.TestCase{
 		{

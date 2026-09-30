@@ -308,6 +308,32 @@ NOTE: This is for Management Identity config, all new types will be supported vi
 {{- end -}}
 
 {{/*
+[camunda-platform] Protocol clients use to reach the global Ingress. global.ingress.protocol
+overrides the default derived from global.ingress.tls.enabled, e.g. when TLS is terminated
+in front of the Ingress (OpenShift edge routes, external load balancers).
+*/}}
+{{- define "camundaPlatform.ingressProtocol" -}}
+  {{- .Values.global.ingress.protocol | default (ternary "https" "http" .Values.global.ingress.tls.enabled) -}}
+{{- end -}}
+
+{{- define "camundaPlatform.ingressExternalPort" -}}
+  {{- $ports := .context.Values.global.ingress.publicPorts | default dict -}}
+  {{- ternary ($ports.https | default 443) ($ports.http | default 80) .tlsEnabled -}}
+{{- end -}}
+
+{{- define "camundaPlatform.ingressExternalURL" -}}
+  {{- $proto := ternary "https" "http" .tlsEnabled -}}
+  {{- $port := include "camundaPlatform.ingressExternalPort" . -}}
+  {{- $defaultPort := ternary 443 80 .tlsEnabled -}}
+  {{- $host := tpl .host .context -}}
+  {{- if eq (int $port) $defaultPort -}}
+    {{- printf "%s://%s" $proto $host -}}
+  {{- else -}}
+    {{- printf "%s://%s:%v" $proto $host $port -}}
+  {{- end -}}
+{{- end -}}
+
+{{/*
 [camunda-platform] Gateway external URL prefix.
 */}}
 {{- define "camundaPlatform.gatewayExternalURL" -}}
@@ -332,8 +358,10 @@ the chart host + contextPath. Otherwise return the configured external Keycloak 
   {{- if .Values.global.identity.keycloak.internal -}}
     {{- if and .Values.global.gateway.enabled (tpl .Values.global.host $) -}}
       {{- printf "%s%s" (include "camundaPlatform.gatewayExternalURL" (dict "context" . "host" .Values.global.host)) .Values.global.identity.keycloak.contextPath -}}
+    {{- else if and .Values.global.ingress.enabled (tpl .Values.global.host $) -}}
+      {{- printf "%s%s" (include "camundaPlatform.ingressExternalURL" (dict "context" . "host" .Values.global.host "tlsEnabled" (eq (include "camundaPlatform.ingressProtocol" .) "https"))) .Values.global.identity.keycloak.contextPath -}}
     {{- else -}}
-      {{- $proto := ternary "https" "http" .Values.global.ingress.tls.enabled -}}
+      {{- $proto := include "camundaPlatform.ingressProtocol" . -}}
       {{- printf "%s://%s%s" $proto ((tpl .Values.global.host $) | default "localhost:18080") .Values.global.identity.keycloak.contextPath -}}
     {{- end -}}
   {{- else if (.Values.global.identity.keycloak.url).host -}}
@@ -419,8 +447,7 @@ Usage: {{ include "camundaPlatform.getExternalURL" (dict "component" "identity" 
 {{- define "camundaPlatform.getExternalURL" -}}
   {{- if (index .context.Values .component "enabled") -}}
     {{- if $.context.Values.global.ingress.enabled -}}
-      {{ $proto := ternary "https" "http" .context.Values.global.ingress.tls.enabled -}}
-      {{- printf "%s://%s%s" $proto (tpl .context.Values.global.host .context) (index .context.Values .component "contextPath") -}}
+      {{- printf "%s%s" (include "camundaPlatform.ingressExternalURL" (dict "context" .context "host" .context.Values.global.host "tlsEnabled" (eq (include "camundaPlatform.ingressProtocol" .context) "https"))) (index .context.Values .component "contextPath") -}}
     {{- else if and $.context.Values.global.gateway.enabled (tpl .context.Values.global.host .context) -}}
       {{- printf "%s%s" (include "camundaPlatform.gatewayExternalURL" (dict "context" .context "host" .context.Values.global.host)) (index .context.Values .component "contextPath") -}}
     {{- else -}}
@@ -509,11 +536,11 @@ Web Modeler templates.
   {{- if eq (include "camundaHub.webModelerEnabled" .context) "true" -}}
     {{- $hub := include "camundaHub.values" .context | fromYaml -}}
     {{- if $.context.Values.global.ingress.enabled -}}
-      {{ $proto := ternary "https" "http" .context.Values.global.ingress.tls.enabled -}}
+      {{- $baseURL := include "camundaPlatform.ingressExternalURL" (dict "context" .context "host" .context.Values.global.host "tlsEnabled" (eq (include "camundaPlatform.ingressProtocol" .context) "https")) -}}
       {{- if eq .component "websockets" }}
-        {{- printf "%s://%s%s" $proto (tpl .context.Values.global.host .context) (include "webModeler.websocketContextPath" .context) -}}
+        {{- printf "%s%s" $baseURL (include "webModeler.websocketContextPath" .context) -}}
       {{- else -}}
-        {{- printf "%s://%s%s" $proto (tpl .context.Values.global.host .context) $hub.contextPath -}}
+        {{- printf "%s%s" $baseURL $hub.contextPath -}}
       {{- end -}}
     {{- else if and $.context.Values.global.gateway.enabled (tpl .context.Values.global.host .context) -}}
       {{- $baseURL := include "camundaPlatform.gatewayExternalURL" (dict "context" .context "host" .context.Values.global.host) -}}
@@ -597,7 +624,11 @@ Usage: {{ include "camundaPlatform.identitySecretName" (dict "context" . "compon
 [camunda-platform] Identity external URL.
 */}}
 {{- define "camundaPlatform.identityExternalURL" }}
-  {{- printf "%s" (include "camundaPlatform.getExternalURL" (dict "component" "identity" "context" .)) -}}
+  {{- if and .Values.identity.enabled .Values.identity.fullURL -}}
+    {{- include "identity.externalUrl" . -}}
+  {{- else -}}
+    {{- include "camundaPlatform.getExternalURL" (dict "component" "identity" "context" .) -}}
+  {{- end -}}
 {{- end -}}
 
 
@@ -722,8 +753,7 @@ Zeebe templates.
 */}}
 {{- define "camundaPlatform.orchestrationExternalURL" }}
   {{- if .Values.global.ingress.enabled -}}
-    {{ $proto := ternary "https" "http" .Values.global.ingress.tls.enabled -}}
-    {{- printf "%s://%s%s" $proto (tpl .Values.global.host $) (include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath)) -}}
+    {{- printf "%s%s" (include "camundaPlatform.ingressExternalURL" (dict "context" . "host" .Values.global.host "tlsEnabled" (eq (include "camundaPlatform.ingressProtocol" .) "https"))) (include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath)) -}}
   {{- else if and .Values.global.gateway.enabled (tpl .Values.global.host $) -}}
     {{- printf "%s%s" (include "camundaPlatform.gatewayExternalURL" (dict "context" . "host" .Values.global.host)) (include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath)) -}}
   {{- else -}}
@@ -737,6 +767,8 @@ Zeebe templates.
 {{- define "camundaPlatform.orchestrationGRPCExternalURL" -}}
   {{- if and .Values.global.gateway.enabled .Values.orchestration.gateway.grpc.enabled (tpl .Values.global.host $) -}}
     {{- include "camundaPlatform.gatewayExternalURL" (dict "context" . "host" .Values.orchestration.gateway.grpc.host) -}}
+  {{- else if and .Values.orchestration.ingress.grpc.enabled (tpl .Values.orchestration.ingress.grpc.host .) -}}
+    {{- include "camundaPlatform.ingressExternalURL" (dict "context" . "host" .Values.orchestration.ingress.grpc.host "tlsEnabled" .Values.orchestration.ingress.grpc.tls.enabled) -}}
   {{- else -}}
     {{ $proto := ternary "https" "http" .Values.orchestration.ingress.grpc.tls.enabled -}}
     {{- printf "%s://%s" $proto (tpl .Values.orchestration.ingress.grpc.host . | default "localhost:26500") -}}
@@ -1476,7 +1508,7 @@ Release templates.
   - dev
   custom-properties: []
   components:
-  {{- $proto := ternary "https" "http" .Values.global.ingress.tls.enabled -}}
+  {{- $proto := include "camundaPlatform.ingressProtocol" . -}}
   {{- $baseURL := printf "%s://%s" $proto (tpl .Values.global.host $) }}
 
   {{- if eq (include "camundaPlatform.identityEnabled" .) "true" }}
@@ -1703,7 +1735,7 @@ required by camunda.modeler.clusters (introduced in 8.10 Hub/WebModeler).
     type: optimize
     version: {{ $cluster.version | quote }}
     urls:
-      webapp: {{ $optimize.webappUrl | default (printf "https://%s%s" $cluster.host $optimizePath) | quote }}
+      webapp: {{ tpl ($optimize.webappUrl | default (printf "https://%s%s" $cluster.host $optimizePath)) $ | quote }}
       readiness: {{ $optimize.readinessUrl | default (printf "http://%s.%s.svc.cluster.local:80%s/api/readyz" $optimizeName $cluster.namespace $optimizePath) | quote }}
   {{- end }}
   {{- if $connectors.enabled }}
@@ -1742,6 +1774,28 @@ required by camunda.modeler.clusters (introduced in 8.10 Hub/WebModeler).
       grpc: {{ $orchestration.grpcUrl | default (printf "grpc://%s.%s.svc.cluster.local:26500" $gatewayName $cluster.namespace) | quote }}
       rest: {{ $orchestration.restUrl | default (printf "http://%s.%s.svc.cluster.local:8080%s" $gatewayName $cluster.namespace $orchestrationPath) | quote }}
       readiness: {{ $orchestration.readinessUrl | default (ternary (printf "http://%s.%s.svc.cluster.local:9600/actuator/health/readiness" $gatewayName $cluster.namespace) (printf "http://%s.%s.svc.cluster.local:9600%s/actuator/health/readiness" $orchestrationName $cluster.namespace $orchestrationPath) $legacy) | quote }}
+  {{- end }}
+  {{- with (dig "physicalTenants" list $cluster) }}
+  physicalTenants:
+  {{- range $tenant := . }}
+  {{- $tenantOptimize := dig "components" "optimize" dict $tenant }}
+  - id: {{ $tenant.id | quote }}
+    {{- with $tenant.name }}
+    name: {{ . | quote }}
+    {{- end }}
+    components:
+    {{- if $tenantOptimize.enabled }}
+    - name: Optimize
+      type: optimize
+      version: {{ $cluster.version | quote }}
+      urls:
+        webapp: {{ tpl ($tenantOptimize.webappUrl | default $tenantOptimize.redirectUrl) $ | quote }}
+        {{- with $tenantOptimize.readinessUrl }}
+        readiness: {{ . | quote }}
+        {{- end }}
+    {{- else }} []
+    {{- end }}
+  {{- end }}
   {{- end }}
 {{- end }}
 {{- end -}}
@@ -3136,6 +3190,9 @@ deprecated global.multiregion, which only still carries regions and regionId. Wh
 precedence, never per field, so a topology cannot be assembled half from each. Absent
 fields fall back to the chart defaults, which is what lets the global block supply the
 numbered pair without declaring the zoned ones. constraints.tpl rejects setting both.
+
+The resolved dict also carries the winning block's own key names as sourceKey, countKey and
+indexKey, so a constraint message names the keys the user actually set.
 */}}
 {{- define "camundaPlatform.partitioning" -}}
 {{- $orch := .Values.orchestration.partitioning | default dict -}}
@@ -3148,7 +3205,10 @@ numbered pair without declaring the zoned ones. constraints.tpl rejects setting 
         "zones" ($orch.zones | default list)
         "keepUnzonedBrokers" ($orch.keepUnzonedBrokers | default false)
         "numberOfZones" (int ($orch.numberOfZones | default 1) | default 1)
-        "zoneIndex" (int ($orch.zoneIndex | default 0)) -}}
+        "zoneIndex" (int ($orch.zoneIndex | default 0))
+        "sourceKey" "orchestration.partitioning"
+        "countKey" "numberOfZones"
+        "indexKey" "zoneIndex" -}}
 {{- else -}}
   {{- /* Only the numbered pair is read back from the deprecated block. mode, zone and
        zones never shipped there, and honouring them would keep the zone-aware scheme reachable
@@ -3160,7 +3220,10 @@ numbered pair without declaring the zoned ones. constraints.tpl rejects setting 
         "zones" list
         "keepUnzonedBrokers" false
         "numberOfZones" (int ($global.regions | default 1) | default 1)
-        "zoneIndex" (int ($global.regionId | default 0)) -}}
+        "zoneIndex" (int ($global.regionId | default 0))
+        "sourceKey" "global.multiregion"
+        "countKey" "regions"
+        "indexKey" "regionId" -}}
 {{- end -}}
 {{- /* Derive everything a consumer needs, so the scheme is decided here rather than
      re-asked at each call site. The counts are stringified because the dict is round-tripped

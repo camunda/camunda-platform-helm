@@ -21,7 +21,7 @@
                         },
                         "clusters": {
                             "type": "array",
-                            "description": "can be used by a Hub release to describe remote Orchestration Clusters. The chart uses these entries to generate Camunda Hub inventory and Management Identity presets. Each entry may also declare physicalTenants, one per Physical Tenant that runs its own Optimize release, so that Optimize gets its own client and its own resource server rather than sharing the cluster's Optimize audience.",
+                            "description": "can be used by a Hub release to describe remote Orchestration Clusters. The chart uses these entries to generate Camunda Hub inventory and Management Identity presets. Each entry may also declare physicalTenants, whose optional name becomes the environment display name in Hub. A tenant that runs its own Optimize release declares that component here so Optimize gets its own client and resource server rather than sharing the cluster's Optimize audience.",
                             "default": [],
                             "items": {
                                 "$ref": "#/$defs/topologyCluster"
@@ -270,6 +270,16 @@
                             "description": "if true, an ingress resource is deployed. Only useful if an ingress controller is available, like Ingress-NGINX.",
                             "default": false
                         },
+                        "protocol": {
+                            "type": "string",
+                            "description": "can be used to set the protocol in external URLs. Defaults to https when global.ingress.tls.enabled is true, otherwise http. Also selects which global.ingress.publicPorts entry is used. Does not configure TLS on the Ingress resource.",
+                            "default": "",
+                            "enum": [
+                                "",
+                                "http",
+                                "https"
+                            ]
+                        },
                         "external": {
                             "type": "boolean",
                             "description": "if true, the Ingress object will not be rendered. This setting is used when a non-Ingress resource, like a service mesh, is used to access the cluster.",
@@ -284,6 +294,25 @@
                             "type": "string",
                             "description": "can be used to define the Ingress path type. https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types",
                             "default": "Prefix"
+                        },
+                        "publicPorts": {
+                            "type": "object",
+                            "properties": {
+                                "http": {
+                                    "type": "integer",
+                                    "description": "defines the public port for Ingress endpoints with TLS disabled. Port 80 is omitted from HTTP URLs. Separate gRPC Ingress uses its own TLS setting, even when global.ingress.enabled is false.",
+                                    "default": 80,
+                                    "minimum": 1,
+                                    "maximum": 65535
+                                },
+                                "https": {
+                                    "type": "integer",
+                                    "description": "defines the public port for Ingress endpoints with TLS enabled. Port 443 is omitted from HTTPS URLs. Does not enable TLS; web Ingress uses global.ingress.tls.enabled and gRPC Ingress uses orchestration.ingress.grpc.tls.enabled.",
+                                    "default": 443,
+                                    "minimum": 1,
+                                    "maximum": 65535
+                                }
+                            }
                         },
                         "tls": {
                             "type": "object",
@@ -1114,7 +1143,7 @@
                     "properties": {
                         "activeStoreId": {
                             "type": "string",
-                            "description": "defines the default document store instance ID. When using extraConfiguration, this value must match the configured store instance ID.",
+                            "description": "defines the default document store instance ID. This value must match the configured store instance ID. See https://docs.camunda.io/docs/8.10/self-managed/concepts/document-handling/configuration/helm/",
                             "default": "inmemory"
                         },
                         "type": {
@@ -1540,12 +1569,12 @@
                 },
                 "fullURL": {
                     "type": "string",
-                    "description": "can be used when Ingress is configured (for both multi and single domain setup).",
+                    "description": "can be used to set Identity's complete public URL, including scheme, port, and path. Overrides the derived runtime, login callback, and release-info URL. Supports templating.",
                     "default": ""
                 },
                 "contextPath": {
                     "type": "string",
-                    "description": "can be used to make Management Identity web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.",
+                    "description": "can be used to serve Management Identity under a custom sub-path. Requires HTTPS when non-empty.",
                     "default": ""
                 },
                 "podAnnotations": {
@@ -2031,8 +2060,8 @@
                         },
                         "automountServiceAccountToken": {
                             "type": "boolean",
-                            "description": "can be used to control whether the service account token should be automatically mounted",
-                            "default": true
+                            "description": "can be used to control whether the service account token should be automatically mounted. Identity does not call the Kubernetes API; set to true only if a sidecar or init container needs the default token.",
+                            "default": false
                         }
                     }
                 },
@@ -2920,12 +2949,12 @@
                         },
                         "publicHost": {
                             "type": "string",
-                            "description": "can be used to define the host on which the WebSockets server can be reached from the WebModeler client in the browser.",
+                            "description": "can be used to set the browser-facing WebSocket hostname. With global.ingress.enabled and a non-empty Modeler or Hub contextPath, global.host takes precedence. Set overrides through camundaHub.websockets.publicHost.",
                             "default": "localhost"
                         },
                         "publicPort": {
                             "type": "number",
-                            "description": "can be used to define the port number on which the WebSockets server can be reached from the WebModeler client in the browser.",
+                            "description": "can be used to set the browser-facing WebSocket port. With global.ingress.enabled and a non-empty Modeler or Hub contextPath, global.ingress.publicPorts and the Ingress TLS setting take precedence. Set overrides through camundaHub.websockets.publicPort.",
                             "default": 8085
                         },
                         "podAnnotations": {
@@ -7597,7 +7626,7 @@
                 },
                 "webappUrl": {
                     "type": "string",
-                    "pattern": "^$|^https?://[^\\s]+$"
+                    "pattern": "^$|^https?://(?:[^\\s{}]|\\{\\{[^}]*\\}\\})+$"
                 },
                 "readinessUrl": {
                     "type": "string",
@@ -7733,6 +7762,10 @@
                 "id": {
                     "type": "string",
                     "pattern": "^[a-z0-9]{1,64}$"
+                },
+                "name": {
+                    "type": "string",
+                    "minLength": 1
                 },
                 "components": {
                     "type": "object",

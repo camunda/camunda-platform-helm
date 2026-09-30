@@ -113,6 +113,25 @@ func (s *ReleaseInfoGatewayTest) TestExternalURLsUseGlobalHost() {
 			},
 		},
 		{
+			Name: "ProtocolOverrideUsesHTTPSWhenIngressTLSIsDisabled",
+			Values: map[string]string{
+				"global.ingress.enabled":                   "true",
+				"global.ingress.tls.enabled":               "false",
+				"global.ingress.protocol":                  "https",
+				"global.ingress.host":                      "camunda.example.com",
+				"identity.enabled":                         "true",
+				"identityKeycloak.enabled":                 "true",
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+			},
+			Template: "templates/common/configmap-release.yaml",
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "http: https://camunda.example.com")
+				require.Contains(t, output, "url: https://camunda.example.com/operate")
+				require.Contains(t, output, "url: https://camunda.example.com/tasklist")
+			},
+		},
+		{
 			Name: "GatewayWithoutGRPCRouteUsesLocalEndpoint",
 			Values: map[string]string{
 				"global.ingress.enabled":        "false",

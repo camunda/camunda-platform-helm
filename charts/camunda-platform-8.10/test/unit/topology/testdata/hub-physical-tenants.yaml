@@ -45,6 +45,7 @@ global:
               existingSecretKey: optimize-secret
         physicalTenants:
           - id: tenanta
+            name: Tenant A
             components:
               optimize:
                 enabled: true

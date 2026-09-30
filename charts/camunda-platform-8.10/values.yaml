@@ -46,7 +46,7 @@ global:
   topology:
     ## @param global.topology.mode defines the role of this release in the deployment topology. Supported values are combined, hub, orchestration, and optimize. In optimize mode only Optimize is deployed, so a separate Optimize release can serve one Physical Tenant without sharing a release with the Orchestration Cluster; it requires optimize.enabled, global.noSecondaryStorage=false, an enabled database backend, Identity auth and URL set on the component or globally, and optimize.contextPath when routing is rendered.
     mode: combined
-    ## @param global.topology.clusters can be used by a Hub release to describe remote Orchestration Clusters. The chart uses these entries to generate Camunda Hub inventory and Management Identity presets. Each entry may also declare physicalTenants, one per Physical Tenant that runs its own Optimize release, so that Optimize gets its own client and its own resource server rather than sharing the cluster's Optimize audience.
+    ## @param global.topology.clusters can be used by a Hub release to describe remote Orchestration Clusters. The chart uses these entries to generate Camunda Hub inventory and Management Identity presets. Each entry may also declare physicalTenants, whose optional name becomes the environment display name in Hub. A tenant that runs its own Optimize release declares that component here so Optimize gets its own client and resource server rather than sharing the cluster's Optimize audience.
     clusters: []
     # - id: production-a
     #   name: Production A
@@ -88,6 +88,7 @@ global:
     #         existingSecretKey: client-secret
     #   physicalTenants:
     #     - id: tenanta
+    #       name: Tenant A
     #       components:
     #         optimize:
     #           enabled: true
@@ -219,6 +220,8 @@ global:
   ingress:
     ## @param global.ingress.enabled if true, an ingress resource is deployed. Only useful if an ingress controller is available, like Ingress-NGINX.
     enabled: false
+    ## @param global.ingress.protocol can be used to set the protocol in external URLs. Defaults to https when global.ingress.tls.enabled is true, otherwise http. Also selects which global.ingress.publicPorts entry is used. Does not configure TLS on the Ingress resource.
+    protocol: ""
     ## @param global.ingress.external if true, the Ingress object will not be rendered. This setting is used when a non-Ingress resource, like a service mesh, is used to access the cluster.
     external: false
     ## @param global.ingress.className Ingress.className defines the class or configuration of ingress which should be used by the controller
@@ -229,6 +232,12 @@ global:
     annotations: {}
     ## @param global.ingress.pathType can be used to define the Ingress path type. https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types
     pathType: Prefix
+    ## @extra global.ingress.publicPorts configuration for the ports clients use to reach Ingress endpoints. Used by chart-derived URLs, Identity callbacks, and combined-ingress browser WebSocket connections. Does not configure listeners, Services, host port forwarding, or Gateway API. Explicit URLs and authentication redirect URLs are not rewritten.
+    publicPorts:
+      ## @param global.ingress.publicPorts.http defines the public port for Ingress endpoints with TLS disabled. Port 80 is omitted from HTTP URLs. Separate gRPC Ingress uses its own TLS setting, even when global.ingress.enabled is false.
+      http: 80
+      ## @param global.ingress.publicPorts.https defines the public port for Ingress endpoints with TLS enabled. Port 443 is omitted from HTTPS URLs. Does not enable TLS; web Ingress uses global.ingress.tls.enabled and gRPC Ingress uses orchestration.ingress.grpc.tls.enabled.
+      https: 443
     ## @extra global.ingress.tls configuration for tls on the ingress resource https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
     tls:
       ## @param global.ingress.tls.enabled if true, then tls is configured on the ingress resource. If enabled the Ingress.host need to be defined.
@@ -781,7 +790,7 @@ global:
   ## Document Store Configuration
   ## @extra global.documentStore These parameters are used to configure the document storage backend across all Camunda components.
   documentStore:
-    ## @param global.documentStore.activeStoreId defines the default document store instance ID. When using extraConfiguration, this value must match the configured store instance ID.
+    ## @param global.documentStore.activeStoreId defines the default document store instance ID. This value must match the configured store instance ID. See https://docs.camunda.io/docs/8.10/self-managed/concepts/document-handling/configuration/helm/
     activeStoreId: "inmemory"
     type:
       aws:
@@ -983,13 +992,10 @@ identity:
   sidecars: []
   ## @param identity.initContainers can be used to set up extra init containers for the application Pod
   initContainers: []
-  ## @param identity.fullURL can be used when Ingress is configured (for both multi and single domain setup).
+  ## @param identity.fullURL can be used to set Identity's complete public URL, including scheme, port, and path. Overrides the derived runtime, login callback, and release-info URL. Supports templating.
   fullURL: ""
 
-  # Note: Management Identity cannot be accessed over HTTP if a "contextPath" is configured.
-  #       Which means that Management Identity cannot be configured in combined Ingress without HTTPS.
-  #       To use Management Identity over HTTP, setup a separated Ingress using "identity.ingress" and don't set "contextPath".
-  ## @param identity.contextPath can be used to make Management Identity web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
+  ## @param identity.contextPath can be used to serve Management Identity under a custom sub-path. Requires HTTPS when non-empty.
   # contextPath: "/identity"
   contextPath: ""
 
@@ -1153,8 +1159,8 @@ identity:
     annotations: {}
     ## @param identity.serviceAccount.labels can be used to set the labels of the service account
     labels: {}
-    ## @param identity.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
-    automountServiceAccountToken: true
+    ## @param identity.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted. Identity does not call the Kubernetes API; set to true only if a sidecar or init container needs the default token.
+    automountServiceAccountToken: false
 
   ## @param identity.automountServiceAccountToken [nullable] can be used to override the automatic mounting of the service account token at the pod level. When unset, the ServiceAccount configuration is used.
   automountServiceAccountToken:
@@ -1621,13 +1627,11 @@ webModeler:
     ## @param webModeler.websockets.initContainers can be used to set up extra init containers for the application Pod
     initContainers: []
 
-    ## @param webModeler.websockets.publicHost can be used to define the host on which the WebSockets server can be reached from the WebModeler client in the browser.
+    ## @param webModeler.websockets.publicHost can be used to set the browser-facing WebSocket hostname. With global.ingress.enabled and a non-empty Modeler or Hub contextPath, global.host takes precedence. Set overrides through camundaHub.websockets.publicHost.
     # The default value assumes that a port-forwarding to the websockets service has been created.
-    # Note: The host will only be used if the Ingress resource for WebModeler is disabled.
     publicHost: localhost
-    ## @param webModeler.websockets.publicPort can be used to define the port number on which the WebSockets server can be reached from the WebModeler client in the browser.
+    ## @param webModeler.websockets.publicPort can be used to set the browser-facing WebSocket port. With global.ingress.enabled and a non-empty Modeler or Hub contextPath, global.ingress.publicPorts and the Ingress TLS setting take precedence. Set overrides through camundaHub.websockets.publicPort.
     # The default value assumes that a port-forwarding to the websockets service on port 8085 has been created.
-    # Note: The port will only be used if the Ingress resource for WebModeler is disabled.
     publicPort: 8085
 
     ## @param webModeler.websockets.podAnnotations can be used to define extra websockets pod annotations. Supports templating (e.g., {{ .Release.Name }}).
@@ -2530,6 +2534,10 @@ orchestration:
   ## @param orchestration.pvcSize defines the persistent volume claim size, which is used by each broker pod https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims
   pvcSize: "32Gi"
   ## @param orchestration.pvcAccessModes can be used to configure the persistent volume claim access mode https://kubernetes.io/docs/concepts/storage/persistent-volumes/#access-modes
+  # For a storage-layer single-writer guarantee (instead of relying on pod anti-affinity alone), set
+  # this to ["ReadWriteOncePod"]. This requires a CSI driver that supports ReadWriteOncePod, and it
+  # must be the only access mode in the list. PersistentVolumeClaim accessModes are immutable, so this
+  # only takes effect for new installs / new PVCs, not via "helm upgrade" on an existing StatefulSet.
   pvcAccessModes: ["ReadWriteOnce"]
   ## @param orchestration.pvcStorageClassName can be used to set the storage class name which should be used by the persistent volume claim.
   # It is recommended to use a storage class, which is backed with a SSD. Set to "-" to disable use of default storage class.

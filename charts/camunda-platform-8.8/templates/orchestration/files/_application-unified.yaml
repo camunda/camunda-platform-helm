@@ -117,7 +117,9 @@ camunda:
           {{- end }}
           - {{ include "orchestration.authClientId" . | quote }}
           - {{ include "orchestration.authAudience" . | quote }}
+          {{- if eq (include "camundaPlatform.webModelerEnabled" .) "true" }}
           - {{ .Values.global.identity.auth.webModeler.clientApiAudience | quote }}
+          {{- end }}
         {{- if (include "orchestration.authIssuerUrl" .) }}
         issuer-uri: {{ include "orchestration.authIssuerUrl" . | quote }}
         {{- else }}
@@ -339,7 +341,7 @@ zeebe:
         className: "io.camunda.exporter.CamundaExporter"
         args:
           connect:
-            type: {{ include "orchestration.secondaryStorage" . | quote }}
+            {{- /* Omit `type`; camunda.data.secondary-storage.type supplies it. */}}
             url: {{ .Values.global.elasticsearch.enabled | ternary (include "camundaPlatform.elasticsearchURL" .) (include "camundaPlatform.opensearchURL" .) | quote }}
             {{- if .Values.orchestration.index.prefix }}
             indexPrefix: {{ .Values.orchestration.index.prefix | quote }}

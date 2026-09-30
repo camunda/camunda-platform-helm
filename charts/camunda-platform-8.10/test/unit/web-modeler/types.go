@@ -98,13 +98,20 @@ type AudienceYAML struct {
 }
 
 type ClusterYAML struct {
-	Id             string             `yaml:"id"`
-	Name           string             `yaml:"name"`
-	Version        string             `yaml:"version"`
-	Authentication string             `yaml:"authentication"`
-	Url            UrlYAML            `yaml:"url"`
-	Authorizations AuthorizationsYAML `yaml:"authorizations"`
-	Components     []ComponentYAML    `yaml:"components"`
+	Id              string               `yaml:"id"`
+	Name            string               `yaml:"name"`
+	Version         string               `yaml:"version"`
+	Authentication  string               `yaml:"authentication"`
+	Url             UrlYAML              `yaml:"url"`
+	Authorizations  AuthorizationsYAML   `yaml:"authorizations"`
+	Components      []ComponentYAML      `yaml:"components"`
+	PhysicalTenants []PhysicalTenantYAML `yaml:"physicalTenants"`
+}
+
+type PhysicalTenantYAML struct {
+	Id         string          `yaml:"id"`
+	Name       string          `yaml:"name"`
+	Components []ComponentYAML `yaml:"components"`
 }
 
 type ComponentYAML struct {

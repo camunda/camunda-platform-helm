@@ -1008,6 +1008,43 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectClientPusher
 	s.Require().Equal(true, configmapApplication.Camunda.Modeler.Pusher.Client.ForceTLS)
 }
 
+func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectClientPusherConfigurationWithIngressProtocolOverride() {
+	// given
+	values := map[string]string{
+		"identity.enabled":             "true",
+		"global.identity.auth.enabled": "true",
+		"global.elasticsearch.enabled": "true",
+		"elasticsearch.enabled":        "true",
+		"webModeler.contextPath":       "/modeler",
+		"global.ingress.enabled":       "true",
+		"global.ingress.host":          "c8.example.com",
+		"global.ingress.tls.enabled":   "false",
+		"global.ingress.protocol":      "https",
+	}
+	maps.Insert(values, maps.All(requiredValues))
+	options := &helm.Options{
+		SetValues:      values,
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication WebModelerRestAPIApplicationYAML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	if err != nil {
+		s.Fail("Failed to unmarshal yaml. error=", err)
+	}
+
+	// then
+	s.Require().Equal("c8.example.com", configmapApplication.Camunda.Modeler.Pusher.Client.Host)
+	s.Require().Equal("443", configmapApplication.Camunda.Modeler.Pusher.Client.Port)
+	s.Require().Equal("/modeler-ws", configmapApplication.Camunda.Modeler.Pusher.Client.Path)
+	s.Require().Equal(true, configmapApplication.Camunda.Modeler.Pusher.Client.ForceTLS)
+}
+
 func (s *configmapRestAPITemplateTest) TestGlobalIngressHostTemplating() {
 	testCases := []testhelpers.TestCase{
 		{

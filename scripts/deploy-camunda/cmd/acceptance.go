@@ -129,7 +129,7 @@ func newAcceptanceCommand() *cobra.Command {
 		}
 		return validatePhysicalTenantOptions(opts)
 	}
-	parent.AddCommand(cmd)
+	parent.AddCommand(cmd, newDocumentStoreAcceptanceCommand())
 	return parent
 }
 

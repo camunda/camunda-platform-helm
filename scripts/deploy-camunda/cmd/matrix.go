@@ -1205,6 +1205,52 @@ func buildOrchestrationZeebeEnv(orchestrationCtx *deploy.ScenarioContext) map[st
 	}
 }
 
+// applyTopologyCredentialsManifest points a topology release's deploy at the
+// topology's credentials-manifest (repository-relative), rendered for the base
+// namespace, so the deployer applies it instead of the CI-wide
+// integration-test credentials. With no manifest declared the flags are left
+// unchanged. The returned function removes the rendered file.
+func applyTopologyCredentialsManifest(flags *config.RuntimeFlags, repoRoot, manifest, base string) (func(), error) {
+	if manifest == "" {
+		return func() {}, nil
+	}
+	path, remove, err := renderTopologyCredentialsManifest(filepath.Join(repoRoot, manifest), base)
+	if err != nil {
+		return func() {}, err
+	}
+	flags.Secrets.CredentialsManifest = path
+	return remove, nil
+}
+
+// renderTopologyCredentialsManifest writes the topology's credentials-manifest,
+// with the base namespace substituted, to a temporary file the deployer can
+// apply, and returns a function that removes it.
+func renderTopologyCredentialsManifest(path, base string) (string, func(), error) {
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return "", func() {}, fmt.Errorf("read credentials manifest: %w", err)
+	}
+	rendered, err := matrix.RenderCredentialsManifest(content, base)
+	if err != nil {
+		return "", func() {}, err
+	}
+	f, err := os.CreateTemp("", "credentials-manifest-*.yaml")
+	if err != nil {
+		return "", func() {}, err
+	}
+	remove := func() { _ = os.Remove(f.Name()) }
+	if _, err := f.Write(rendered); err != nil {
+		f.Close()
+		remove()
+		return "", func() {}, err
+	}
+	if err := f.Close(); err != nil {
+		remove()
+		return "", func() {}, err
+	}
+	return f.Name(), remove, nil
+}
+
 // buildTopologyReleaseEnv layers a release's substitution namespace: shared
 // cross-release variables first, then the release's own env, and finally the
 // keys this driver derives from the topology declaration. The derived keys go
@@ -1217,6 +1263,9 @@ func buildTopologyReleaseEnv(shared map[string]string, release matrix.TopologyRe
 	env := make(map[string]string, len(shared)+len(release.Env)+4)
 	for key, value := range shared {
 		env[key] = value
+	}
+	if host := topologyReleaseServedHost(shared, release); host != "" {
+		env["CAMUNDA_HOSTNAME"] = host
 	}
 	for key, value := range release.Env {
 		env[key] = value
@@ -1246,6 +1295,15 @@ func buildTopologyReleaseEnv(shared map[string]string, release matrix.TopologyRe
 		}
 	}
 	return env
+}
+
+// topologyReleaseServedHost returns the public host a release is served on:
+// its own <TOKEN>_HOST for orchestration, HUB_HOST for hub and optimize.
+func topologyReleaseServedHost(shared map[string]string, release matrix.TopologyRelease) string {
+	if release.Role == "orchestration" {
+		return shared[matrix.TopologyEnvToken(release.NamespaceSuffix)+"_HOST"]
+	}
+	return shared["HUB_HOST"]
 }
 
 // resolveSharedStorageServiceName resolves the Kubernetes Service name of the
@@ -1430,11 +1488,9 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 
 		releaseEntry := synthesizeReleaseEntry(opts.RepoRoot, entry, rel, platform)
 		releaseOpts := synthesizeReleaseOpts(opts, platform, releaseCtx.Namespace)
-		hostKey := topologyReleaseHostKey(rel.Role, rel.NamespaceSuffix, len(orchestrationIndices))
-		if hostKey != "" {
-			if host := crossRefEnv[hostKey]; host != "" {
-				releaseOpts.ExtraHelmSets = append(releaseOpts.ExtraHelmSets, "global.host="+host)
-			}
+		releaseHost := topologyReleaseHost(crossRefEnv, rel, len(orchestrationIndices))
+		if releaseHost != "" {
+			releaseOpts.ExtraHelmSets = append(releaseOpts.ExtraHelmSets, "global.host="+releaseHost)
 		}
 
 		flags, namespace, _, _, cleanup, buildErr := matrix.BuildEntryFlags(releaseEntry, releaseOpts)
@@ -1444,6 +1500,13 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 		}
 
 		applyTopologyReleaseOverrides(flags, buildTopologyReleaseEnv(crossRefEnv, rel))
+		applyTopologyReleaseHostname(flags, releaseHost)
+		removeManifest, err := applyTopologyCredentialsManifest(flags, opts.RepoRoot, entry.Topology.CredentialsManifest, baseNamespace)
+		if err != nil {
+			cleanup()
+			return fmt.Errorf("topology release %s/%s (namespace-suffix %q): %w", entry.Scenario, rel.Role, rel.NamespaceSuffix, err)
+		}
+		defer removeManifest()
 		if err := matrix.RegisterDeclarativePostInfraHook(flags, releaseEntry.PostInfra, opts.RepoRoot, releaseEntry.Version, releaseEntry.Scenario); err != nil {
 			cleanup()
 			return fmt.Errorf("topology release %s/%s (namespace-suffix %q): register post-infra hook: %w", entry.Scenario, rel.Role, rel.NamespaceSuffix, err)
@@ -1621,10 +1684,9 @@ func runTopologyE2ELegs(
 		rel := relBySuffix[leg.OrchestrationSuffix]
 		releaseEntry := synthesizeReleaseEntry(opts.RepoRoot, entry, rel, platform)
 		releaseOpts := synthesizeReleaseOpts(opts, platform, orchestrationNamespace)
-		if hostKey := topologyReleaseHostKey(rel.Role, rel.NamespaceSuffix, len(orchestrationIndices)); hostKey != "" {
-			if host := crossRefEnv[hostKey]; host != "" {
-				releaseOpts.ExtraHelmSets = append(releaseOpts.ExtraHelmSets, "global.host="+host)
-			}
+		releaseHost := topologyReleaseHost(crossRefEnv, rel, len(orchestrationIndices))
+		if releaseHost != "" {
+			releaseOpts.ExtraHelmSets = append(releaseOpts.ExtraHelmSets, "global.host="+releaseHost)
 		}
 
 		flags, namespace, _, _, cleanup, buildErr := matrix.BuildEntryFlags(releaseEntry, releaseOpts)
@@ -1634,6 +1696,7 @@ func runTopologyE2ELegs(
 			continue
 		}
 		applyTopologyReleaseOverrides(flags, buildTopologyReleaseEnv(crossRefEnv, rel))
+		applyTopologyReleaseHostname(flags, releaseHost)
 		// synthesizeReleaseEntry disables e2e for the deploy loop; re-enable it for this leg only.
 		flags.Test.RunE2ETests = true
 		flags.Test.HubNamespace = hubNamespace
@@ -1660,6 +1723,36 @@ func runTopologyE2ELegs(
 		return fmt.Errorf("topology %s: e2e failed for %d of %d legs:\n  - %s", entry.Scenario, len(failures), len(legs), strings.Join(failures, "\n  - "))
 	}
 	return nil
+}
+
+// topologyReleaseHost returns the ingress host the topology assigns to a
+// release, or "" when the release keeps BuildEntryFlags' default host.
+func topologyReleaseHost(crossRefEnv map[string]string, release matrix.TopologyRelease, orchestrationCount int) string {
+	key := topologyReleaseHostKey(release.Role, release.NamespaceSuffix, orchestrationCount)
+	if key == "" {
+		return ""
+	}
+	return crossRefEnv[key]
+}
+
+// applyTopologyReleaseHostname makes a topology-assigned host the release's
+// CAMUNDA_HOSTNAME as well as its global.host. Scenario values files take the
+// ingress host from $CAMUNDA_HOSTNAME, and charts before 8.10 read it from
+// global.ingress.host, which the global.host override does not reach (8.9
+// prefers global.ingress.host; 8.8 and 8.7 read nothing else). Without this,
+// every pre-8.10 orchestration release in a multi-orchestration topology kept
+// the one CI-wide hostname, so they all published the same external-dns name
+// instead of the per-release host the Hub inventory and e2e legs use.
+// flags.ExtraEnv outranks the scenario-derived CAMUNDA_HOSTNAME when values
+// files are rendered, so setting it here is enough.
+func applyTopologyReleaseHostname(flags *config.RuntimeFlags, host string) {
+	if host == "" {
+		return
+	}
+	if flags.ExtraEnv == nil {
+		flags.ExtraEnv = map[string]string{}
+	}
+	flags.ExtraEnv["CAMUNDA_HOSTNAME"] = host
 }
 
 // topologyReleaseHostKey names the crossRefEnv key whose value must be pushed

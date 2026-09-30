@@ -37,6 +37,7 @@ func newCICommand() *cobra.Command {
 	}
 
 	ciCmd.AddCommand(newCITestTypeVarsCommand())
+	ciCmd.AddCommand(newCIUnitTestCommand())
 	ciCmd.AddCommand(newCIWorkflowVarsCommand())
 	ciCmd.AddCommand(newCIIntegrationMatrixCommand())
 	ciCmd.AddCommand(newCIE2EMatrixCommand())
@@ -301,6 +302,28 @@ Environment variables:
 	cmd.Flags().StringVar(&valuesEnterprise, "values-enterprise", "false", `"true" to enable enterprise values`)
 	cmd.Flags().StringVar(&valuesDigest, "values-digest", "false", `"true" to enable digest values when present`)
 	_ = cmd.MarkFlagRequired("chart-dir")
+
+	return cmd
+}
+
+func newCIUnitTestCommand() *cobra.Command {
+	var in ciworkflow.UnitTestInput
+
+	cmd := &cobra.Command{
+		Use:   "unit-test",
+		Short: "Run selected chart unit tests and fail when no test matches the selection",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return ciworkflow.RunUnitTest(cmd.Context(), in, cmd.OutOrStdout(), cmd.ErrOrStderr())
+		},
+	}
+
+	cmd.Flags().StringVar(&in.ChartDir, "chart-dir", "", "chart directory name, e.g. camunda-platform-8.10")
+	cmd.Flags().StringVar(&in.Package, "package", "", "package under charts/<chart-dir>/test/unit, e.g. common")
+	cmd.Flags().StringVar(&in.Run, "run", "", "go test -run pattern")
+	cmd.Flags().StringVar(&in.HelmVersion, "helm-version", "", "Helm release the helm on PATH must report, e.g. 3.10.3")
+	_ = cmd.MarkFlagRequired("chart-dir")
+	_ = cmd.MarkFlagRequired("package")
+	_ = cmd.MarkFlagRequired("run")
 
 	return cmd
 }
