@@ -1420,6 +1420,7 @@ integration:
           identity: keycloak
           persistence: elasticsearch
           e2e-full-suite: true
+          e2e-api-suite: true
           dependencies:
             - chart: charts/internal-keycloak-26
               release-name: keycloak

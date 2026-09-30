@@ -106,6 +106,8 @@ type registryScenario struct {
 	E2EFullSuite         bool  `yaml:"e2e-full-suite,omitempty"`
 	E2ESmokeBlocking     *bool `yaml:"e2e-smoke-blocking,omitempty"`
 	E2EFullSuiteBlocking *bool `yaml:"e2e-full-suite-blocking,omitempty"`
+	E2EAPISuite          bool  `yaml:"e2e-api-suite,omitempty"`
+	E2EAPISuiteBlocking  *bool `yaml:"e2e-api-suite-blocking,omitempty"`
 
 	PreInstallID  string   `yaml:"pre-install,omitempty"`
 	PostInfraID   string   `yaml:"post-infra,omitempty"`
@@ -289,6 +291,8 @@ func LoadRegistry(chartDir string) (*CITestConfig, error) {
 				E2EFullSuite:         rscn.E2EFullSuite,
 				E2ESmokeBlocking:     rscn.E2ESmokeBlocking,
 				E2EFullSuiteBlocking: rscn.E2EFullSuiteBlocking,
+				E2EAPISuite:          rscn.E2EAPISuite,
+				E2EAPISuiteBlocking:  rscn.E2EAPISuiteBlocking,
 				Dependencies:         append([]ChartDependency(nil), deps...),
 				PrefixKey:            rscn.PrefixKey,
 				PreInstall:           preInstall,

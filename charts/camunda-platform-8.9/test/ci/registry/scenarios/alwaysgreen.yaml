@@ -9,3 +9,4 @@ platforms:
 infra-type:
   gke: alwaysgreen
 e2e-full-suite: true
+e2e-api-suite: true

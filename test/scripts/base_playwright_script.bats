@@ -168,3 +168,42 @@ slow_path_e2e_suite_dir() {
 
   [[ "$output" == *"npm update @camunda/e2e-test-suite"* ]]
 }
+
+stub_admin_role_check() {
+  local script_dir="$BATS_TEST_TMPDIR/node_modules/@camunda/e2e-test-suite/scripts"
+  mkdir -p "$script_dir"
+  printf '#!/usr/bin/env bash\necho admin-role-check-ran\nexit %s\n' "$1" > "$script_dir/wait-for-orchestration-admin-role.sh"
+}
+
+@test "the api project runs the clock project too, on four workers, after the admin-role check" {
+  stub_playwright_run
+  stub_admin_role_check 0
+
+  run run_playwright_tests "$BATS_TEST_TMPDIR" false 1 1 blob "" false false "" "" "" false api
+
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"admin-role-check-ran"*"playwright-arg: --project=api"* ]]
+  [[ "$output" == *"playwright-arg: --project=clock"* ]]
+  [[ "$output" == *"playwright-arg: --workers=4"* ]]
+}
+
+@test "a failed admin-role check fails the api run" {
+  stub_playwright_run
+  stub_admin_role_check 1
+  _handle_playwright_result() { echo "result: $1 $2"; }
+
+  run run_playwright_tests "$BATS_TEST_TMPDIR" false 1 1 blob "" false false "" "" "" false api
+
+  [[ "$output" == *"result: 1 REST v2 API suite admin-role readiness check"* ]]
+}
+
+@test "browser projects skip the admin-role check" {
+  stub_playwright_run
+  stub_admin_role_check 0
+
+  run run_playwright_tests "$BATS_TEST_TMPDIR" false 1 1 blob "" false false "" "" "" false full-suite
+
+  [ "$status" -eq 0 ]
+  [[ "$output" != *"admin-role-check-ran"* ]]
+  [[ "$output" != *"--project=clock"* ]]
+}

@@ -363,6 +363,7 @@ integration:
           identity: keycloak
           persistence: elasticsearch
           e2e-full-suite: true
+          e2e-api-suite: true
         - name: keycloak-original
           enabled: false
           shortname: kcor

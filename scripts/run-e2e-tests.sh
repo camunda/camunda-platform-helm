@@ -127,7 +127,7 @@ Options:
   --rba                                       Run the rba tests
   --mt                                        Run the mt tests
   --auth0                                     Run the auth0-smoke project (Auth0 OIDC scenario)
-  --playwright-project PROJECT                Run a named Playwright project
+  --playwright-project PROJECT                Run a named Playwright project ("api" runs the REST v2 API suite)
   --physical-tenant-id ID                     Physical Tenant selected by this topology leg
   --playwright-debug                          Enable Playwright API debug logs and traces
   --video MODE                                Record video: on, off, retain-on-failure, on-first-retry (default: off)
@@ -396,6 +396,27 @@ set -a
 # shellcheck disable=SC1090
 source "$ENV_FILE"
 set +a
+
+# ── REST v2 API suite (--playwright-project api) ──
+# Variables are the ones tests/api/README.md in @camunda/e2e-test-suite documents.
+if [[ "$PLAYWRIGHT_PROJECT" == "api" ]]; then
+  export BASE_URL="${PLAYWRIGHT_BASE_URL%/}/orchestration"
+  export TOKEN_URL="$OAUTH_URL"
+  export CLIENT_ID="venom"
+  CLIENT_SECRET="$(resolve_env_password "$NAMESPACE" "VALUES_VENOM_CLIENT_SECRET" "$KUBE_CONTEXT")"
+  if [[ -z "$CLIENT_SECRET" ]]; then
+    echo "Error: could not resolve the venom client secret (VALUES_VENOM_CLIENT_SECRET) in namespace $NAMESPACE" >&2
+    exit 1
+  fi
+  mask_secret "$CLIENT_SECRET"
+  export CLIENT_SECRET
+  ZEEBE_VERSION="$(grep -oE '[0-9]+\.[0-9]+' <<< "$MINOR_VERSION" | head -1)"
+  export ZEEBE_VERSION
+  export MT="$IS_MT"
+  export AUTH_METHOD=oauth2
+  export REQUIRE_API_TEST_SUITE=true
+  log "REST v2 API suite: ${BASE_URL} (version ${ZEEBE_VERSION}, multi-tenancy ${MT})"
+fi
 
 # ── Namespace-scoped Playwright output directories ──
 # Playwright defaults test artifacts to <cwd>/test-results and HTML reports to

@@ -32,6 +32,10 @@ func fullLeg(blocking bool) E2ELeg {
 	return E2ELeg{Suite: SuiteFull, Blocking: blocking, ShardIndex: 1, ShardTotal: 1}
 }
 
+func apiLeg(blocking bool) E2ELeg {
+	return E2ELeg{Suite: SuiteAPI, Blocking: blocking, ShardIndex: 1, ShardTotal: 1}
+}
+
 func TestResolveE2ELegsFromRegistry(t *testing.T) {
 	root, err := filepath.Abs(registryGoodRepoRoot)
 	if err != nil {
@@ -45,11 +49,11 @@ func TestResolveE2ELegsFromRegistry(t *testing.T) {
 	}{
 		// alpha declares nothing: the historical single blocking smoke leg.
 		{"defaults to blocking smoke", "alpha", []E2ELeg{smokeLeg(true)}},
-		// beta inverts both blocking defaults, proving the *bool overrides apply
+		// beta inverts every blocking default, proving the *bool overrides apply
 		// in both directions rather than only turning blocking off.
-		{"honors both blocking overrides", "beta", []E2ELeg{smokeLeg(false), fullLeg(true)}},
-		// gamma opts into the full suite and leaves blocking alone.
-		{"full suite defaults to non-blocking", "gamma", []E2ELeg{smokeLeg(true), fullLeg(false)}},
+		{"honors every blocking override", "beta", []E2ELeg{smokeLeg(false), fullLeg(true), apiLeg(true)}},
+		// gamma opts into the full and API suites and leaves blocking alone.
+		{"full and api suites default to non-blocking", "gamma", []E2ELeg{smokeLeg(true), fullLeg(false), apiLeg(false)}},
 		{"unknown scenario falls back", "not-a-scenario", []E2ELeg{smokeLeg(true)}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -65,7 +69,8 @@ func TestResolveE2ELegsFromRegistry(t *testing.T) {
 }
 
 // Smoke must always be the first leg: the workflow serializes legs with
-// max-parallel 1, so ordering decides which suite reports first.
+// max-parallel 1, so ordering decides which suite reports first. The API leg
+// comes last.
 func TestResolveE2ELegsOrdersSmokeFirst(t *testing.T) {
 	root, err := filepath.Abs(registryGoodRepoRoot)
 	if err != nil {
@@ -75,8 +80,8 @@ func TestResolveE2ELegsOrdersSmokeFirst(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ResolveE2ELegs: %v", err)
 	}
-	if len(legs) != 2 || legs[0].Suite != SuiteSmoke || legs[1].Suite != SuiteFull {
-		t.Errorf("legs = %+v, want smoke then full", legs)
+	if len(legs) != 3 || legs[0].Suite != SuiteSmoke || legs[1].Suite != SuiteFull || legs[2].Suite != SuiteAPI {
+		t.Errorf("legs = %+v, want smoke, then full, then api", legs)
 	}
 }
 
@@ -113,7 +118,8 @@ func TestResolveE2ELegsSkipE2E(t *testing.T) {
 }
 
 // The real registries drive the AlwaysGreen gate: alwaysgreen runs a blocking
-// smoke leg plus a non-blocking full leg on every active version.
+// smoke leg plus a non-blocking full leg on every active version, and a
+// non-blocking API leg on every version the REST v2 API suite covers (8.8+).
 func TestResolveE2ELegsAlwaysgreenAcrossVersions(t *testing.T) {
 	repoRoot := findRepoRoot(t)
 	for _, version := range planActiveVersions {
@@ -121,7 +127,11 @@ func TestResolveE2ELegsAlwaysgreenAcrossVersions(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: ResolveE2ELegs: %v", version, err)
 		}
-		if want := []E2ELeg{smokeLeg(true), fullLeg(false)}; !reflect.DeepEqual(got, want) {
+		want := []E2ELeg{smokeLeg(true), fullLeg(false)}
+		if version != "8.7" {
+			want = append(want, apiLeg(false))
+		}
+		if !reflect.DeepEqual(got, want) {
 			t.Errorf("%s: alwaysgreen = %+v, want %+v", version, got, want)
 		}
 	}
@@ -129,7 +139,7 @@ func TestResolveE2ELegsAlwaysgreenAcrossVersions(t *testing.T) {
 
 // Every scenario in every real registry must resolve to legs matching its own
 // declarations — no legs when skip-e2e, a blocking smoke leg otherwise, plus a
-// full leg only when opted in. Asserting the invariant rather than naming
+// full or API leg only when opted in. Asserting the invariant rather than naming
 // scenarios keeps this honest as the registries change.
 func TestResolveE2ELegsMatchRealRegistryDeclarations(t *testing.T) {
 	repoRoot := findRepoRoot(t)
@@ -147,6 +157,9 @@ func TestResolveE2ELegsMatchRealRegistryDeclarations(t *testing.T) {
 				if scn.E2EFullSuite {
 					want = append(want, fullLeg(e2eBlocking(scn.E2EFullSuiteBlocking, defaultFullBlocking)))
 				}
+				if scn.E2EAPISuite {
+					want = append(want, apiLeg(e2eBlocking(scn.E2EAPISuiteBlocking, defaultAPIBlocking)))
+				}
 			}
 
 			got, err := ResolveE2ELegs(repoRoot, "camunda-platform-"+version, scn.Shortname, scn.Name)
@@ -157,8 +170,8 @@ func TestResolveE2ELegsMatchRealRegistryDeclarations(t *testing.T) {
 				continue
 			}
 			if !reflect.DeepEqual(got, want) {
-				t.Errorf("%s/%s: legs = %+v, want %+v (skip-e2e=%v full-suite=%v)",
-					version, scn.Name, got, want, scn.SkipE2E, scn.E2EFullSuite)
+				t.Errorf("%s/%s: legs = %+v, want %+v (skip-e2e=%v full-suite=%v api-suite=%v)",
+					version, scn.Name, got, want, scn.SkipE2E, scn.E2EFullSuite, scn.E2EAPISuite)
 			}
 		}
 	}

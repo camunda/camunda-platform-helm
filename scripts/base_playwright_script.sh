@@ -1102,6 +1102,11 @@ run_playwright_tests() {
     --project="$project"
     --reporter="$reporter,json"
   )
+  if [[ "$project" == "api" ]]; then
+    playwright_args+=(--project=clock)
+    bash "${test_suite_path%/}/node_modules/@camunda/e2e-test-suite/scripts/wait-for-orchestration-admin-role.sh" ||
+      _handle_playwright_result 1 "REST v2 API suite admin-role readiness check" "$rerun_cmd" "true"
+  fi
   [[ "$shard_total" -gt 1 ]] && playwright_args+=(--shard="${shard_index}/${shard_total}")
   [[ -n "$test_exclude" ]] && playwright_args+=(--grep-invert="$test_exclude")
   [[ -n "$trace_flag" ]] && playwright_args+=($trace_flag)
@@ -1112,6 +1117,8 @@ run_playwright_tests() {
   # config default unless PLAYWRIGHT_E2E_WORKERS is set.
   if [[ "$project" == "smoke-tests" || "$project" == "hub-web-modeler" ]]; then
     playwright_args+=(--workers="${PLAYWRIGHT_E2E_WORKERS:-2}")
+  elif [[ "$project" == "api" ]]; then
+    playwright_args+=(--workers="${PLAYWRIGHT_E2E_WORKERS:-4}")
   elif [[ -n "${PLAYWRIGHT_E2E_WORKERS:-}" ]]; then
     playwright_args+=(--workers="$PLAYWRIGHT_E2E_WORKERS")
   fi

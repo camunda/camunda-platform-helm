@@ -358,6 +358,7 @@ integration:
           identity: keycloak
           persistence: elasticsearch
           e2e-full-suite: true
+          e2e-api-suite: true
         - name: shadow-e2e
           enabled: true
           shortname: shde2
