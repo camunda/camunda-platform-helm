@@ -141,11 +141,15 @@ type fakeCredentialAPI struct {
 	raceOnce   map[string]string
 	createErrs []error
 	lastUpdate map[string]string
+	live       map[string]map[string]string
 }
 
 func (f *fakeCredentialAPI) api() topologyCredentialStore {
 	return topologyCredentialStore{
-		get: func(context.Context, string, string) (map[string]string, error) {
+		get: func(_ context.Context, ns, name string) (map[string]string, error) {
+			if data, ok := f.live[ns+"/"+name]; ok {
+				return data, nil
+			}
 			if !f.exists {
 				return nil, nil
 			}
@@ -286,6 +290,68 @@ func TestEnsureCredentials_PropagatesReadError(t *testing.T) {
 	}
 	if err := ensureCredentials(context.Background(), &bytes.Buffer{}, []byte(twoPropertyManifest), "ns", nil, api); err == nil {
 		t.Fatal("want error")
+	}
+}
+
+func TestParseCredentialSource_MapsTargetKeysToProperties(t *testing.T) {
+	src, err := parseCredentialSource([]byte(twoPropertyManifest))
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := map[string]string{"a": "prop-b", "b": "prop-a", "c": "prop-a"}
+	got := src.Targets["creds"]
+	if len(src.Targets) != 1 || len(got) != len(want) {
+		t.Fatalf("Targets = %v, want creds -> %v", src.Targets, want)
+	}
+	for k, v := range want {
+		if got[k] != v {
+			t.Errorf("Targets[creds][%s] = %q, want %q", k, got[k], v)
+		}
+	}
+}
+
+func TestEnsureCredentials_RefusesSourceThatDiffersFromDeployedTarget(t *testing.T) {
+	f := &fakeCredentialAPI{
+		store:    map[string]string{"prop-a": "new-a", "prop-b": "new-b"},
+		exists:   true,
+		nsExists: true,
+		live:     map[string]map[string]string{"env-hub/creds": {"a": "new-b", "b": "old-a"}},
+	}
+	var out bytes.Buffer
+	err := ensureCredentials(context.Background(), &out, []byte(twoPropertyManifest), "ns", []string{"env-hub"}, f.api())
+	if err == nil || !strings.Contains(err.Error(), "env-hub/creds:b") || strings.Contains(err.Error(), "creds:a") {
+		t.Fatalf("err = %v, want a refusal naming only env-hub/creds:b", err)
+	}
+	for _, v := range []string{"new-a", "old-a", "new-b"} {
+		if strings.Contains(err.Error(), v) || strings.Contains(out.String(), v) {
+			t.Fatalf("a credential value leaked: %v / %q", err, out.String())
+		}
+	}
+	if f.creates+f.updates != 0 {
+		t.Error("must not write when refusing")
+	}
+}
+
+func TestEnsureCredentials_AcceptsSourceMatchingDeployedTarget(t *testing.T) {
+	f := &fakeCredentialAPI{
+		store:    map[string]string{"prop-a": "a", "prop-b": "b"},
+		exists:   true,
+		nsExists: true,
+		live:     map[string]map[string]string{"env-hub/creds": {"a": "b", "b": "a", "unmapped": "x"}},
+	}
+	if err := ensureCredentials(context.Background(), &bytes.Buffer{}, []byte(twoPropertyManifest), "ns", []string{"env-hub"}, f.api()); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestEnsureCredentials_IgnoresDriftInMissingNamespaces(t *testing.T) {
+	f := &fakeCredentialAPI{
+		store:  map[string]string{"prop-a": "a", "prop-b": "b"},
+		exists: true,
+		live:   map[string]map[string]string{"env-hub/creds": {"b": "stale"}},
+	}
+	if err := ensureCredentials(context.Background(), &bytes.Buffer{}, []byte(twoPropertyManifest), "ns", []string{"env-hub"}, f.api()); err != nil {
+		t.Fatal(err)
 	}
 }
 

@@ -39,9 +39,16 @@ const (
 )
 
 type externalSecretDoc struct {
-	Kind string `yaml:"kind"`
+	Kind     string `yaml:"kind"`
+	Metadata struct {
+		Name string `yaml:"name"`
+	} `yaml:"metadata"`
 	Spec struct {
+		Target struct {
+			Name string `yaml:"name"`
+		} `yaml:"target"`
 		Data []struct {
+			SecretKey string `yaml:"secretKey"`
 			RemoteRef struct {
 				Key      string `yaml:"key"`
 				Property string `yaml:"property"`
@@ -51,10 +58,12 @@ type externalSecretDoc struct {
 }
 
 // credentialSource is the single source Secret an ExternalSecret manifest reads
-// from, and every property it reads.
+// from, every property it reads, and, per target Secret, which source property
+// each target key receives.
 type credentialSource struct {
 	Name       string
 	Properties []string
+	Targets    map[string]map[string]string
 }
 
 // parseCredentialSource reads every ExternalSecret document in manifest and
@@ -64,6 +73,7 @@ func parseCredentialSource(manifest []byte) (credentialSource, error) {
 	dec := yaml.NewDecoder(bytes.NewReader(manifest))
 	names := map[string]bool{}
 	props := map[string]bool{}
+	targets := map[string]map[string]string{}
 	for {
 		var doc externalSecretDoc
 		err := dec.Decode(&doc)
@@ -76,12 +86,22 @@ func parseCredentialSource(manifest []byte) (credentialSource, error) {
 		if doc.Kind != "ExternalSecret" {
 			continue
 		}
+		target := doc.Spec.Target.Name
+		if target == "" {
+			target = doc.Metadata.Name
+		}
 		for _, d := range doc.Spec.Data {
 			if d.RemoteRef.Key == "" || d.RemoteRef.Property == "" {
 				return credentialSource{}, errors.New("every spec.data entry needs remoteRef.key and remoteRef.property")
 			}
 			names[d.RemoteRef.Key] = true
 			props[d.RemoteRef.Property] = true
+			if target != "" && d.SecretKey != "" {
+				if targets[target] == nil {
+					targets[target] = map[string]string{}
+				}
+				targets[target][d.SecretKey] = d.RemoteRef.Property
+			}
 		}
 	}
 	if len(names) != 1 {
@@ -92,7 +112,7 @@ func parseCredentialSource(manifest []byte) (credentialSource, error) {
 		sort.Strings(found)
 		return credentialSource{}, fmt.Errorf("manifest must read from exactly one source secret, found %d: %v", len(names), found)
 	}
-	src := credentialSource{}
+	src := credentialSource{Targets: targets}
 	for n := range names {
 		src.Name = n
 	}
@@ -164,6 +184,45 @@ func firstExisting(ctx context.Context, store topologyCredentialStore, namespace
 	return "", nil
 }
 
+// credentialDrift returns "namespace/secret:key" for every key of an existing
+// target Secret in namespaces whose value differs from the source property it
+// is mapped from. Missing namespaces, target Secrets, and keys are skipped.
+func credentialDrift(ctx context.Context, store topologyCredentialStore, src credentialSource, source map[string]string, namespaces []string) ([]string, error) {
+	targetNames := make([]string, 0, len(src.Targets))
+	for t := range src.Targets {
+		targetNames = append(targetNames, t)
+	}
+	sort.Strings(targetNames)
+	var drift []string
+	for _, ns := range namespaces {
+		exists, err := store.namespaceExists(ctx, ns)
+		if err != nil {
+			return nil, err
+		}
+		if !exists {
+			continue
+		}
+		for _, target := range targetNames {
+			live, err := store.get(ctx, ns, target)
+			if err != nil {
+				return nil, err
+			}
+			keys := make([]string, 0, len(src.Targets[target]))
+			for k := range src.Targets[target] {
+				keys = append(keys, k)
+			}
+			sort.Strings(keys)
+			for _, key := range keys {
+				v, ok := live[key]
+				if ok && v != source[src.Targets[target][key]] {
+					drift = append(drift, fmt.Sprintf("%s/%s:%s", ns, target, key))
+				}
+			}
+		}
+	}
+	return drift, nil
+}
+
 // ensureCredentials makes sure the manifest's source Secret holds a value for
 // every property it reads, without ever changing an existing value.
 //
@@ -197,6 +256,17 @@ func ensureCredentials(ctx context.Context, out io.Writer, manifest []byte, name
 	merged, created, err := planCredentials(existing, src.Properties, generateCredential)
 	if err != nil {
 		return err
+	}
+	if existing != nil {
+		drift, err := credentialDrift(ctx, store, src, existing, guardNamespaces)
+		if err != nil {
+			return err
+		}
+		if len(drift) > 0 {
+			return fmt.Errorf("source secret %s/%s does not match the credentials the environment's services were initialised with (%v): "+
+				"applying it would lock them out. Rotate the services to the source values in place first (PostgreSQL users, Keycloak admin and client secrets), "+
+				"or set those source properties to the values the environment uses", namespace, src.Name, drift)
+		}
 	}
 	if existing != nil && len(created) > 0 {
 		deployed, err := firstExisting(ctx, store, guardNamespaces)
@@ -253,7 +323,9 @@ namespace with a random value for every property it references.
 
 Existing values are never changed, and no value is ever printed. With
 --guard-namespace, a missing source or property is only generated while none of
-those namespaces exists yet, i.e. for a fresh environment.`,
+those namespaces exists yet, i.e. for a fresh environment, and an existing
+source is refused when a target Secret in any of those namespaces holds a
+different value for a key it maps.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			raw, err := os.ReadFile(manifestPath)
 			if err != nil {
