@@ -447,7 +447,7 @@ func groupPlanEntries(version string, entries []Entry) []PlanEntry {
 
 		out = append(out, PlanEntry{
 			Version:                   version,
-			ChartVersions:             strings.Join(TopologyChartVersions(version, first.Topology), ","),
+			ChartVersions:             strings.Join(planChartVersions(version, first), ","),
 			CamundaVersionPrevious:    previousMinor(version),
 			Case:                      "pr",
 			Platforms:                 platformsCSV,
@@ -560,10 +560,13 @@ func TopologyE2ELegs(parentVersion string, topology *Topology) []TopologyE2ELeg 
 	return legs
 }
 
-func TopologyChartVersions(parentVersion string, topology *Topology) []string {
+func planChartVersions(parentVersion string, e Entry) []string {
 	versions := []string{parentVersion}
-	if topology != nil {
-		for _, release := range topology.Releases {
+	if e.Flow == "upgrade-minor" {
+		versions = append(versions, previousMinor(parentVersion))
+	}
+	if e.Topology != nil {
+		for _, release := range e.Topology.Releases {
 			versions = append(versions, releaseChartVersion(parentVersion, release))
 		}
 	}
