@@ -87,6 +87,19 @@ identity:
           definition: write:*
         - resourceServerId: console-api
           definition: write:*
+    - id: unprivileged
+      name: Unprivileged
+      secret:
+        existingSecret: integration-test-credentials
+        existingSecretKey: identity-admin-client-password
+      redirectUris: /dummy
+      rootUrl: http://dummy
+      type: confidential
+      permissions:
+        - resourceServerId: orchestration-api
+          definition: read:*
+        - resourceServerId: orchestration-api
+          definition: write:*
 
 optimize:
   enabled: true

@@ -64,7 +64,11 @@ The API leg runs the `api` and `clock` projects that `test/e2e/playwright.api-pr
 `@camunda/e2e-test-suite` (`dist/tests/api/projects.js`), authenticated as the `venom` admin client.
 `run-e2e-tests.sh --playwright-project api` sets the suite's variables (`BASE_URL` with
 `/orchestration`, `TOKEN_URL`, `CLIENT_ID`/`CLIENT_SECRET`, `ZEEBE_VERSION`, `MT`), and the runner
-waits on the package's `wait-for-orchestration-admin-role.sh` before starting it.
+waits on the package's `wait-for-orchestration-admin-role.sh` before starting it. The role-less
+`unprivileged` client in `values/base.yaml` becomes `SECONDARY_CLIENT_ID`, which turns on the suite's
+authorization-enforcement tests. A scenario with `auth: basic` runs the suite as the chart's default
+`demo` admin instead (`AUTH_METHOD=basic`), which also covers the local-user endpoints. The API leg
+ignores the scenario's `exclude` list.
 
 The blocking fields are tri-state: omit them to keep the default, since `e2e-smoke-blocking`
 defaults to *true* and an absent key must not read as false.

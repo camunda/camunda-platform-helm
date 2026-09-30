@@ -92,6 +92,7 @@ integration:
           identity: basic
           persistence: elasticsearch
           helmVersion: 3.22.0
+          e2e-api-suite: true
         - name: oidc
           enabled: true
           shortname: esoi

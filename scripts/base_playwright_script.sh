@@ -1104,11 +1104,13 @@ run_playwright_tests() {
   )
   if [[ "$project" == "api" ]]; then
     playwright_args+=(--project=clock)
-    bash "${test_suite_path%/}/node_modules/@camunda/e2e-test-suite/scripts/wait-for-orchestration-admin-role.sh" ||
-      _handle_playwright_result 1 "REST v2 API suite admin-role readiness check" "$rerun_cmd" "true"
+    if [[ "${AUTH_METHOD:-oauth2}" == "oauth2" ]]; then
+      bash "${test_suite_path%/}/node_modules/@camunda/e2e-test-suite/scripts/wait-for-orchestration-admin-role.sh" ||
+        _handle_playwright_result 1 "REST v2 API suite admin-role readiness check" "$rerun_cmd" "true"
+    fi
   fi
   [[ "$shard_total" -gt 1 ]] && playwright_args+=(--shard="${shard_index}/${shard_total}")
-  [[ -n "$test_exclude" ]] && playwright_args+=(--grep-invert="$test_exclude")
+  [[ -n "$test_exclude" && "$project" != "api" ]] && playwright_args+=(--grep-invert="$test_exclude")
   [[ -n "$trace_flag" ]] && playwright_args+=($trace_flag)
   [[ -n "${PLAYWRIGHT_E2E_VIDEO:-}" ]] && playwright_args+=(--video="$PLAYWRIGHT_E2E_VIDEO")
   [[ -n "${PLAYWRIGHT_E2E_TRACE:-}" ]] && playwright_args+=(--trace="$PLAYWRIGHT_E2E_TRACE")

@@ -401,21 +401,34 @@ set +a
 # Variables are the ones tests/api/README.md in @camunda/e2e-test-suite documents.
 if [[ "$PLAYWRIGHT_PROJECT" == "api" ]]; then
   export BASE_URL="${PLAYWRIGHT_BASE_URL%/}/orchestration"
-  export TOKEN_URL="$OAUTH_URL"
-  export CLIENT_ID="venom"
-  CLIENT_SECRET="$(resolve_env_password "$NAMESPACE" "VALUES_VENOM_CLIENT_SECRET" "$KUBE_CONTEXT")"
-  if [[ -z "$CLIENT_SECRET" ]]; then
-    echo "Error: could not resolve the venom client secret (VALUES_VENOM_CLIENT_SECRET) in namespace $NAMESPACE" >&2
-    exit 1
-  fi
-  mask_secret "$CLIENT_SECRET"
-  export CLIENT_SECRET
   ZEEBE_VERSION="$(grep -oE '[0-9]+\.[0-9]+' <<< "$MINOR_VERSION" | head -1)"
   export ZEEBE_VERSION
   export MT="$IS_MT"
-  export AUTH_METHOD=oauth2
   export REQUIRE_API_TEST_SUITE=true
-  log "REST v2 API suite: ${BASE_URL} (version ${ZEEBE_VERSION}, multi-tenancy ${MT})"
+  if [[ "$TEST_AUTH_TYPE" == "basic" ]]; then
+    # The chart's default initial admin (orchestration.security.initialization.users).
+    export AUTH_METHOD=basic
+    export BASIC_AUTH_USER="${BASIC_AUTH_USER:-demo}"
+    export BASIC_AUTH_PASSWORD="${BASIC_AUTH_PASSWORD:-demo}"
+  else
+    export AUTH_METHOD=oauth2
+    export TOKEN_URL="$OAUTH_URL"
+    export CLIENT_ID="venom"
+    CLIENT_SECRET="$(resolve_env_password "$NAMESPACE" "VALUES_VENOM_CLIENT_SECRET" "$KUBE_CONTEXT")"
+    if [[ -z "$CLIENT_SECRET" ]]; then
+      echo "Error: could not resolve the venom client secret (VALUES_VENOM_CLIENT_SECRET) in namespace $NAMESPACE" >&2
+      exit 1
+    fi
+    mask_secret "$CLIENT_SECRET"
+    export CLIENT_SECRET
+    # The CI values' role-less "unprivileged" client, for the suite's authorization-enforcement tests.
+    SECONDARY_CLIENT_SECRET="$(resolve_env_password "$NAMESPACE" "VALUES_UNPRIVILEGED_CLIENT_SECRET" "$KUBE_CONTEXT")"
+    if [[ -n "$SECONDARY_CLIENT_SECRET" ]]; then
+      mask_secret "$SECONDARY_CLIENT_SECRET"
+      export SECONDARY_CLIENT_ID="unprivileged" SECONDARY_CLIENT_SECRET
+    fi
+  fi
+  log "REST v2 API suite: ${BASE_URL} (version ${ZEEBE_VERSION}, auth ${AUTH_METHOD}, multi-tenancy ${MT})"
 fi
 
 # ── Namespace-scoped Playwright output directories ──

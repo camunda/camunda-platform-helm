@@ -92,6 +92,7 @@ integration:
             gke: distroci
           identity: basic
           persistence: elasticsearch
+          e2e-api-suite: true
         - name: oidc
           enabled: true
           shortname: esoi

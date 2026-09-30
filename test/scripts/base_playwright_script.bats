@@ -207,3 +207,32 @@ stub_admin_role_check() {
   [[ "$output" != *"admin-role-check-ran"* ]]
   [[ "$output" != *"--project=clock"* ]]
 }
+
+@test "a basic-auth api run skips the OIDC admin-role check" {
+  stub_playwright_run
+  stub_admin_role_check 0
+
+  AUTH_METHOD=basic run run_playwright_tests "$BATS_TEST_TMPDIR" false 1 1 blob "" false false "" "" "" false api
+
+  [ "$status" -eq 0 ]
+  [[ "$output" != *"admin-role-check-ran"* ]]
+  [[ "$output" == *"playwright-arg: --project=clock"* ]]
+}
+
+@test "the api project ignores the scenario's browser exclude list" {
+  stub_playwright_run
+  stub_admin_role_check 0
+
+  run run_playwright_tests "$BATS_TEST_TMPDIR" false 1 1 blob "identity|console" false false "" "" "" false api
+
+  [ "$status" -eq 0 ]
+  [[ "$output" != *"--grep-invert"* ]]
+}
+
+@test "browser projects still apply the exclude list" {
+  stub_playwright_run
+
+  run run_playwright_tests "$BATS_TEST_TMPDIR" false 1 1 blob "identity|console" false false "" "" "" false full-suite
+
+  [[ "$output" == *"playwright-arg: --grep-invert=identity|console"* ]]
+}

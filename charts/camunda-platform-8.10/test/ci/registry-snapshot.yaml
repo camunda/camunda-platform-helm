@@ -375,6 +375,7 @@ integration:
             gke: distroci
           identity: basic
           persistence: elasticsearch
+          e2e-api-suite: true
           dependencies:
             - chart: elastic/elasticsearch
               version: 8.5.1
