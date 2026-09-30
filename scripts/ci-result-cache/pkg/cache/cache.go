@@ -15,7 +15,7 @@
 // Package cache manages CI result caching via GitHub commit statuses.
 //
 // Each cached result is stored as a commit status on the PR HEAD commit with:
-//   - Context: "ci-cache/{version}/{shortname}/{flow}"
+//   - Context: "ci-cache/{version}/{shortname}/{flow}/{platform}"
 //   - Description: "hash:{sha256},ts:{unix_timestamp}"
 //   - State: "success" (cached pass) or "pending" (invalidated)
 //
@@ -39,8 +39,8 @@ import (
 const DefaultTTL = 24 * time.Hour
 
 // StatusContext returns the commit status context string for a scenario.
-func StatusContext(version, shortname, flow string) string {
-	return fmt.Sprintf("ci-cache/%s/%s/%s", version, shortname, flow)
+func StatusContext(version, shortname, flow, platform string) string {
+	return fmt.Sprintf("ci-cache/%s/%s/%s/%s", version, shortname, flow, platform)
 }
 
 // Entry represents a cached CI result.
@@ -242,4 +242,16 @@ func Check(statuses []commitStatus, context, currentHash string, ttl time.Durati
 		return true
 	}
 	return false // no status found
+}
+
+func CheckAll(statuses []commitStatus, contexts []string, currentHash string, ttl time.Duration) bool {
+	if len(contexts) == 0 {
+		return false
+	}
+	for _, context := range contexts {
+		if !Check(statuses, context, currentHash, ttl) {
+			return false
+		}
+	}
+	return true
 }
