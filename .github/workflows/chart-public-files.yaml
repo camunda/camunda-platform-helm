@@ -47,6 +47,7 @@ jobs:
               camunda_version="$(echo ${chart_id} | cut -d '-' -f 3)";
               camunda_values_dir="camunda-platform/values/camunda-${camunda_version}";
               mkdir -p "${camunda_values_dir}";
+              rm -f "${camunda_values_dir}"/values-*.yaml;
               # Copy all extra values files.
               cp -a ${chart_id}/values-*.yaml ${camunda_values_dir}/;
           done

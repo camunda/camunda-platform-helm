@@ -33,3 +33,4 @@ values/
 # Go.
 go.mod
 go.sum
+release-please-trace.log
