@@ -184,7 +184,7 @@ func (s *RestapiDeploymentTemplateTest) TestDifferentValuesInputs() {
 				env := deployment.Spec.Template.Spec.Containers[0].Env
 				s.Require().Contains(env,
 					corev1.EnvVar{
-						Name: "RESTAPI_MAIL_PASSWORD",
+						Name: "SPRING_MAIL_PASSWORD",
 						ValueFrom: &corev1.EnvVarSource{
 							SecretKeyRef: &corev1.SecretKeySelector{
 								LocalObjectReference: corev1.LocalObjectReference{Name: "camunda-platform-test-web-modeler-restapi"},
@@ -211,7 +211,7 @@ func (s *RestapiDeploymentTemplateTest) TestDifferentValuesInputs() {
 				env := deployment.Spec.Template.Spec.Containers[0].Env
 				s.Require().Contains(env,
 					corev1.EnvVar{
-						Name: "RESTAPI_MAIL_PASSWORD",
+						Name: "SPRING_MAIL_PASSWORD",
 						ValueFrom: &corev1.EnvVarSource{
 							SecretKeyRef: &corev1.SecretKeySelector{
 								LocalObjectReference: corev1.LocalObjectReference{Name: "my-secret"},
@@ -238,7 +238,7 @@ func (s *RestapiDeploymentTemplateTest) TestDifferentValuesInputs() {
 				env := deployment.Spec.Template.Spec.Containers[0].Env
 				s.Require().Contains(env,
 					corev1.EnvVar{
-						Name: "RESTAPI_MAIL_PASSWORD",
+						Name: "SPRING_MAIL_PASSWORD",
 						ValueFrom: &corev1.EnvVarSource{
 							SecretKeyRef: &corev1.SecretKeySelector{
 								LocalObjectReference: corev1.LocalObjectReference{Name: "my-secret"},
@@ -428,15 +428,15 @@ func (s *RestapiDeploymentTemplateTest) TestDifferentValuesInputs() {
 
 				var pusherKeyEnv *corev1.EnvVar
 				for _, env := range deployment.Spec.Template.Spec.Containers[0].Env {
-					if env.Name == "RESTAPI_PUSHER_KEY" {
+					if env.Name == "CAMUNDA_HUB_PUSHER_KEY" {
 						pusherKeyEnv = &env
 						break
 					}
 				}
 
-				s.Require().NotNil(pusherKeyEnv, "RESTAPI_PUSHER_KEY env var should exist")
-				s.Require().NotNil(pusherKeyEnv.ValueFrom, "RESTAPI_PUSHER_KEY should use valueFrom")
-				s.Require().NotNil(pusherKeyEnv.ValueFrom.SecretKeyRef, "RESTAPI_PUSHER_KEY should use secretKeyRef")
+				s.Require().NotNil(pusherKeyEnv, "CAMUNDA_HUB_PUSHER_KEY env var should exist")
+				s.Require().NotNil(pusherKeyEnv.ValueFrom, "CAMUNDA_HUB_PUSHER_KEY should use valueFrom")
+				s.Require().NotNil(pusherKeyEnv.ValueFrom.SecretKeyRef, "CAMUNDA_HUB_PUSHER_KEY should use secretKeyRef")
 				s.Require().Equal("my-custom-app-key-secret", pusherKeyEnv.ValueFrom.SecretKeyRef.Name)
 				s.Require().Equal("my-pusher-app-key", pusherKeyEnv.ValueFrom.SecretKeyRef.Key)
 			},
@@ -454,15 +454,15 @@ func (s *RestapiDeploymentTemplateTest) TestDifferentValuesInputs() {
 
 				var pusherKeyEnv *corev1.EnvVar
 				for _, env := range deployment.Spec.Template.Spec.Containers[0].Env {
-					if env.Name == "RESTAPI_PUSHER_KEY" {
+					if env.Name == "CAMUNDA_HUB_PUSHER_KEY" {
 						pusherKeyEnv = &env
 						break
 					}
 				}
 
-				s.Require().NotNil(pusherKeyEnv, "RESTAPI_PUSHER_KEY env var should exist")
+				s.Require().NotNil(pusherKeyEnv, "CAMUNDA_HUB_PUSHER_KEY env var should exist")
 				s.Require().Equal("my-inline-app-key-value", pusherKeyEnv.Value)
-				s.Require().Nil(pusherKeyEnv.ValueFrom, "RESTAPI_PUSHER_KEY should not use valueFrom for inline values")
+				s.Require().Nil(pusherKeyEnv.ValueFrom, "CAMUNDA_HUB_PUSHER_KEY should not use valueFrom for inline values")
 			},
 		},
 	}
