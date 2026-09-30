@@ -1602,11 +1602,10 @@ required by camunda.modeler.clusters (introduced in 8.10 Hub/WebModeler).
 ********************************************************************************
 */}}
 {{- define "camundaPlatform.defaultWebModelerCluster" -}}
-    {{- $hub := include "camundaHub.values" . | fromYaml -}}
 {{- if eq (include "camundaPlatform.identityEnabled" .) "true" }}
 - id: "management-cluster"
   name: "Management Identity"
-  version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" (dict "image" ($hub.image))) | quote }}
+  version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.identity) | quote }}
   authentication: {{ include "webModeler.authConfigValue" . | quote }}
   authorizations:
     enabled: false

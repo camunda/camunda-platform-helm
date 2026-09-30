@@ -555,6 +555,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterFromSa
 				}
 			}
 			s.Require().Equal("identity", identityComp.Type)
+			s.Require().Equal(identityComp.Version, mgmtCluster.Version)
 
 			defaultCluster := configmapApplication.Camunda.Modeler.Clusters[1]
 			s.Require().Equal("default-cluster", defaultCluster.Id)
