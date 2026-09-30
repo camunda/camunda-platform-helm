@@ -27,6 +27,8 @@ type componentField struct {
 	path  string
 }
 
+var tagFallbacks = map[string]string{"camundaHub.image.tag": "webModeler.image.tag"}
+
 // 8.8+ "orchestration" architecture component set.
 var orchestrationComponents = []componentField{
 	{"camunda", "orchestration.image.tag"},
@@ -41,7 +43,7 @@ var hubComponents = []componentField{
 	{"camunda", "orchestration.image.tag"},
 	{"managementIdentity", "identity.image.tag"},
 	{"optimize", "optimize.image.tag"},
-	{"hub", "webModeler.image.tag"},
+	{"hub", "camundaHub.image.tag"},
 	{"connectors", "connectors.image.tag"},
 }
 
@@ -77,15 +79,24 @@ func ComponentImageVersions(chartDir, camundaVersion string) (string, error) {
 	}
 	var b strings.Builder
 	for _, f := range fields {
-		tag := "N/A"
-		if v := valueAt(values, f.path); v != nil {
-			if s, ok := scalarString(v); ok {
-				tag = s
-			}
+		tag, ok := tagAt(values, f.path)
+		if fallback, has := tagFallbacks[f.path]; has && (!ok || tag == "") {
+			tag, ok = tagAt(values, fallback)
+		}
+		if !ok {
+			tag = "N/A"
 		}
 		fmt.Fprintf(&b, "%s: %s\n", f.label, tag)
 	}
 	return b.String(), nil
+}
+
+func tagAt(values map[string]any, path string) (string, bool) {
+	v := valueAt(values, path)
+	if v == nil {
+		return "", false
+	}
+	return scalarString(v)
 }
 
 // camundaMinorAtLeast reports whether the minor of an "8.<minor>" version is >= min.

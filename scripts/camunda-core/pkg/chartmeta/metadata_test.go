@@ -89,6 +89,26 @@ connectors:
 	}
 }
 
+func TestComponentImageVersions810HubPrefersCamundaHub(t *testing.T) {
+	dir := writeValuesFile(t, "webModeler:\n  image:\n    tag: 8.10.0\ncamundaHub:\n  image:\n    tag: 8.10.1\n")
+	got, err := ComponentImageVersions(dir, "8.10")
+	if err != nil {
+		t.Fatalf("ComponentImageVersions: %v", err)
+	}
+	if !strings.Contains(got, "hub: 8.10.1\n") {
+		t.Errorf("camundaHub.image.tag must win over webModeler.image.tag, got:\n%s", got)
+	}
+
+	dir = writeValuesFile(t, "webModeler:\n  image:\n    tag: 8.10.0\ncamundaHub:\n  image: {}\n")
+	got, err = ComponentImageVersions(dir, "8.10")
+	if err != nil {
+		t.Fatalf("ComponentImageVersions: %v", err)
+	}
+	if !strings.Contains(got, "hub: 8.10.0\n") {
+		t.Errorf("empty camundaHub.image must fall back to webModeler.image.tag, got:\n%s", got)
+	}
+}
+
 func TestComponentImageVersionsClassicAndNA(t *testing.T) {
 	// 8.7 classic; missing tags render N/A.
 	dir := writeValuesFile(t, "zeebe:\n  image:\n    tag: 8.7.1\noperate:\n  image:\n    tag: 8.7.2\n")
