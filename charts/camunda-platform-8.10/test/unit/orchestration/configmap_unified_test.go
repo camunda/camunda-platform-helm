@@ -1429,6 +1429,45 @@ func (s *ConfigmapTemplateTest) TestClusterEnvironmentOverrides() {
 			},
 		},
 		{
+			Name: "Imported nested kebab cluster configuration suppresses matching unified default",
+			Values: map[string]string{
+				"orchestration.profiles.broker":               "true",
+				"orchestration.extraConfiguration[0].file":    "cluster.yaml",
+				"orchestration.extraConfiguration[0].content": "zeebe:\n  broker:\n    cluster:\n      cluster-name: imported\n",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				cluster := requireApplicationCluster(t, output)
+				requireNestedKeyAbsent(t, cluster, "name")
+			},
+		},
+		{
+			Name: "Imported dotted kebab cluster configuration suppresses matching unified default",
+			Values: map[string]string{
+				"orchestration.profiles.broker":               "true",
+				"orchestration.extraConfiguration[0].file":    "cluster.yaml",
+				"orchestration.extraConfiguration[0].content": "zeebe.broker.cluster.cluster-name: imported\n",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				cluster := requireApplicationCluster(t, output)
+				requireNestedKeyAbsent(t, cluster, "name")
+			},
+		},
+		{
+			Name: "Imported kebab properties cluster configuration suppresses matching unified default",
+			Values: map[string]string{
+				"orchestration.profiles.broker":               "true",
+				"orchestration.extraConfiguration[0].file":    "cluster.properties",
+				"orchestration.extraConfiguration[0].content": "zeebe.broker.cluster.cluster-name=imported\n",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				cluster := requireApplicationCluster(t, output)
+				requireNestedKeyAbsent(t, cluster, "name")
+			},
+		},
+		{
 			Name: "Imported later YAML document suppresses matching unified default",
 			Values: map[string]string{
 				"orchestration.profiles.broker":               "true",
