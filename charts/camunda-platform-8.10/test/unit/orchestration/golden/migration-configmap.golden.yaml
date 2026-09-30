@@ -308,8 +308,9 @@ data:
         replication-factor: "3"
         partition-count: "3"
         # zeebe.broker.cluster
-        # Multi-region deployments: initial-contact-points must be provided manually via environment variable.
-        # Set CAMUNDA_CLUSTER_INITIALCONTACTPOINTS with addresses that resolve across every zone.
+        # Multi-region deployments: initial-contact-points must be provided manually.
+        # Set camunda.cluster.initial-contact-points through orchestration.extraConfiguration or
+        # CAMUNDA_CLUSTER_INITIALCONTACTPOINTS through orchestration.env with addresses that resolve across every zone.
         # One entry per zone is enough: a contact point resolves to a single address, and a broker
         # that reaches one live member discovers the rest through membership gossip. The DNS form
         # depends on how the zones are connected, so the chart cannot generate it.

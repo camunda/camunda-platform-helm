@@ -1619,13 +1619,13 @@ The following values inside your values.yaml need to be set but were not:
       {{- $warningMessage := printf "%s %s %s"
           "[camunda][warning]"
           "This deployment spans more than one failure domain. The generated configuration includes contact points for this release's local zoned brokers and, during migration, retained numbered brokers."
-          "To discover brokers in other zones, set the complete local and remote contact-point list through CAMUNDA_CLUSTER_INITIALCONTACTPOINTS in \"orchestration.env\"."
+          "To discover brokers in other zones, set the complete local and remote contact-point list through camunda.cluster.initial-contact-points in \"orchestration.extraConfiguration\", or CAMUNDA_CLUSTER_INITIALCONTACTPOINTS in \"orchestration.env\"."
       -}}
       {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
       {{- else }}
         {{- $warningMessage := printf "%s %s %s"
           "[camunda][warning]"
-          "This deployment spans more than one failure domain, so the chart cannot generate the broker bootstrap list: set CAMUNDA_CLUSTER_INITIALCONTACTPOINTS through \"orchestration.env\"."
+          "This deployment spans more than one failure domain, so the chart cannot generate the broker bootstrap list: set camunda.cluster.initial-contact-points through \"orchestration.extraConfiguration\", or CAMUNDA_CLUSTER_INITIALCONTACTPOINTS through \"orchestration.env\"."
           "One address per zone is enough, in whatever DNS form resolves between your zones: a contact point resolves to a single address, and a broker that reaches one live member discovers the rest through membership gossip."
         -}}
       {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}

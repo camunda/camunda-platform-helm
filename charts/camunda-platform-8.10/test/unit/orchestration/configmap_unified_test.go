@@ -878,6 +878,19 @@ func requireNestedKeyAbsent(t *testing.T, root map[string]any, path ...string) {
 	}
 }
 
+func requireApplicationCluster(t *testing.T, output string) map[string]any {
+	var configMap corev1.ConfigMap
+	helm.UnmarshalK8SYaml(t, output, &configMap)
+
+	var application map[string]any
+	require.NoError(t, yaml.Unmarshal([]byte(configMap.Data["application.yaml"]), &application))
+	camunda, ok := application["camunda"].(map[string]any)
+	require.True(t, ok)
+	cluster, ok := camunda["cluster"].(map[string]any)
+	require.True(t, ok)
+	return cluster
+}
+
 func (s *ConfigmapTemplateTest) TestRDBMSDoesNotUseExporterProperties() {
 	rdbmsValues := map[string]string{
 		"orchestration.exporters.rdbms.enabled":                              "true",
@@ -1336,22 +1349,20 @@ func (s *ConfigmapTemplateTest) TestClusterEnvironmentOverrides() {
 				"orchestration.env[3].name":     "ZEEBE_BROKER_NETWORK_INTERNALAPI_PORT",
 				"orchestration.env[4].name":     "ZEEBE_BROKER_CLUSTER_NODEID",
 				"orchestration.env[5].name":     "ZEEBE_BROKER_CLUSTER_CLUSTERNAME",
-				"orchestration.env[6].name":     "ZEEBE_BROKER_CLUSTER_CLUSTERSIZE",
-				"orchestration.env[7].name":     "ZEEBE_BROKER_CLUSTER_REPLICATIONFACTOR",
-				"orchestration.env[8].name":     "ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT",
-				"orchestration.env[9].name":     "ZEEBE_BROKER_CLUSTER_INITIALCONTACTPOINTS",
+				"orchestration.env[6].name":     "ZEEBE_BROKER_CLUSTER_REPLICATIONFACTOR",
+				"orchestration.env[7].name":     "ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT",
+				"orchestration.env[8].name":     "ZEEBE_BROKER_CLUSTER_INITIALCONTACTPOINTS",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
-				require.NotContains(t, output, "advertised-host:")
-				require.NotContains(t, output, "node-id:")
-				require.NotContains(t, output, "command-api:")
-				require.NotContains(t, output, "internal-api:")
-				require.NotContains(t, output, "    name: camunda-platform-test-zeebe")
-				require.NotContains(t, output, "size: \"3\"")
-				require.NotContains(t, output, "replication-factor: \"3\"")
-				require.NotContains(t, output, "partition-count: \"3\"")
-				require.NotContains(t, output, "initial-contact-points:")
+				cluster := requireApplicationCluster(t, output)
+				require.EqualValues(t, "3", cluster["size"])
+				requireNestedKeyAbsent(t, cluster, "node-id")
+				requireNestedKeyAbsent(t, cluster, "name")
+				requireNestedKeyAbsent(t, cluster, "replication-factor")
+				requireNestedKeyAbsent(t, cluster, "partition-count")
+				requireNestedKeyAbsent(t, cluster, "initial-contact-points")
+				requireNestedKeyAbsent(t, cluster, "network")
 			},
 		},
 		{
@@ -1364,22 +1375,41 @@ func (s *ConfigmapTemplateTest) TestClusterEnvironmentOverrides() {
 				"orchestration.env[3].name":     "CAMUNDA_CLUSTER_NETWORK_INTERNALAPI_PORT",
 				"orchestration.env[4].name":     "CAMUNDA_CLUSTER_NODEID",
 				"orchestration.env[5].name":     "CAMUNDA_CLUSTER_NAME",
-				"orchestration.env[6].name":     "CAMUNDA_CLUSTER_SIZE",
-				"orchestration.env[7].name":     "CAMUNDA_CLUSTER_REPLICATIONFACTOR",
-				"orchestration.env[8].name":     "CAMUNDA_CLUSTER_PARTITIONCOUNT",
-				"orchestration.env[9].name":     "CAMUNDA_CLUSTER_INITIALCONTACTPOINTS",
+				"orchestration.env[6].name":     "CAMUNDA_CLUSTER_REPLICATIONFACTOR",
+				"orchestration.env[7].name":     "CAMUNDA_CLUSTER_PARTITIONCOUNT",
+				"orchestration.env[8].name":     "CAMUNDA_CLUSTER_INITIALCONTACTPOINTS",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
-				require.NotContains(t, output, "advertised-host:")
-				require.NotContains(t, output, "node-id:")
-				require.NotContains(t, output, "command-api:")
-				require.NotContains(t, output, "internal-api:")
-				require.NotContains(t, output, "    name: camunda-platform-test-zeebe")
-				require.NotContains(t, output, "size: \"3\"")
-				require.NotContains(t, output, "replication-factor: \"3\"")
-				require.NotContains(t, output, "partition-count: \"3\"")
-				require.NotContains(t, output, "initial-contact-points:")
+				cluster := requireApplicationCluster(t, output)
+				require.EqualValues(t, "3", cluster["size"])
+				requireNestedKeyAbsent(t, cluster, "node-id")
+				requireNestedKeyAbsent(t, cluster, "name")
+				requireNestedKeyAbsent(t, cluster, "replication-factor")
+				requireNestedKeyAbsent(t, cluster, "partition-count")
+				requireNestedKeyAbsent(t, cluster, "initial-contact-points")
+				requireNestedKeyAbsent(t, cluster, "network")
+			},
+		},
+		{
+			Name: "Imported legacy cluster configuration suppresses matching unified defaults",
+			Values: map[string]string{
+				"orchestration.profiles.broker":                    "true",
+				"orchestration.extraConfiguration[0].file":         "cluster.yaml",
+				"orchestration.extraConfiguration[0].content":      "zeebe:\n  broker:\n    cluster:\n      clusterName: imported\n    network:\n      advertisedHost: imported.example.com\n",
+				"orchestration.extraConfiguration[1].file":         "mounted-only.yaml",
+				"orchestration.extraConfiguration[1].springImport": "false",
+				"orchestration.extraConfiguration[1].content":      "zeebe:\n  broker:\n    cluster:\n      clusterSize: 9\n",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				cluster := requireApplicationCluster(t, output)
+				require.NotContains(t, cluster, "name")
+				require.EqualValues(t, "3", cluster["size"])
+				network, ok := cluster["network"].(map[string]any)
+				require.True(t, ok)
+				require.NotContains(t, network, "advertised-host")
+				require.Contains(t, network, "host")
 			},
 		},
 	}
