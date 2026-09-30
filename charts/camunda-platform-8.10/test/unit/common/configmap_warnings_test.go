@@ -801,3 +801,63 @@ func (s *ConfigMapWarningsTemplateTest) TestZonedFullConfigurationWarning() {
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
+
+func (s *ConfigMapWarningsTemplateTest) TestContactPointWarningHonorsEnvFromDeclarations() {
+	const warning = "chart cannot generate the broker bootstrap list"
+
+	values := func() map[string]string {
+		return map[string]string{
+			"orchestration.data.secondaryStorage.type":             "elasticsearch",
+			"orchestration.profiles.broker":                        "true",
+			"orchestration.partitioning.scheme":                    "zone-aware",
+			"orchestration.partitioning.zone":                      "zone-a",
+			"orchestration.partitioning.zones[0].name":             "zone-a",
+			"orchestration.partitioning.zones[0].numberOfBrokers":  "1",
+			"orchestration.partitioning.zones[0].numberOfReplicas": "1",
+			"orchestration.partitioning.zones[0].priority":         "100",
+			"orchestration.partitioning.zones[1].name":             "zone-b",
+			"orchestration.partitioning.zones[1].numberOfBrokers":  "1",
+			"orchestration.partitioning.zones[1].numberOfReplicas": "1",
+			"orchestration.partitioning.zones[1].priority":         "50",
+		}
+	}
+
+	modernDeclaration := values()
+	modernDeclaration["orchestration.envFrom[0].configMapRef.name"] = "cluster-environment"
+	modernDeclaration["orchestration.envFromProvides[0]"] = "CAMUNDA_CLUSTER_INITIALCONTACTPOINTS"
+
+	legacyDeclaration := values()
+	legacyDeclaration["orchestration.envFrom[0].secretRef.name"] = "cluster-environment"
+	legacyDeclaration["orchestration.envFromProvides[0]"] = "ZEEBE_BROKER_CLUSTER_INITIALCONTACTPOINTS"
+
+	testCases := []testhelpers.TestCase{
+		{
+			Name:   "Missing contact point declaration warns",
+			Values: values(),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().Contains(configmap.Data["warnings"], warning)
+			},
+		},
+		{
+			Name:   "Modern envFrom contact point declaration suppresses warning",
+			Values: modernDeclaration,
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				s.Require().NotContains(output, warning)
+			},
+		},
+		{
+			Name:   "Legacy envFrom contact point declaration suppresses warning",
+			Values: legacyDeclaration,
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				s.Require().NotContains(output, warning)
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
