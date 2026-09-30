@@ -61,14 +61,71 @@ console:
 	}
 }
 
-func TestComponentImageVersions810IsOrchestration(t *testing.T) {
-	dir := writeValuesFile(t, "orchestration:\n  image:\n    tag: 8.10.0\n")
+func TestComponentImageVersions810IsHub(t *testing.T) {
+	dir := writeValuesFile(t, `
+orchestration:
+  image:
+    tag: 8.10.1
+identity:
+  image:
+    tag: 8.10.2
+optimize:
+  image:
+    tag: 8.10.3
+webModeler:
+  image:
+    tag: 8.10.4
+connectors:
+  image:
+    tag: 8.10.5
+`)
 	got, err := ComponentImageVersions(dir, "8.10")
 	if err != nil {
 		t.Fatalf("ComponentImageVersions: %v", err)
 	}
-	if !strings.HasPrefix(got, "camunda: 8.10.0\n") {
-		t.Errorf("8.10 must use orchestration set, got:\n%s", got)
+	want := "camunda: 8.10.1\nmanagementIdentity: 8.10.2\noptimize: 8.10.3\nhub: 8.10.4\nconnectors: 8.10.5\n"
+	if got != want {
+		t.Errorf("got:\n%q\nwant:\n%q", got, want)
+	}
+}
+
+func TestComponentImageVersions810HubPrefersCamundaHub(t *testing.T) {
+	dir := writeValuesFile(t, "webModeler:\n  image:\n    tag: 8.10.0\ncamundaHub:\n  image:\n    tag: 8.10.1\n")
+	got, err := ComponentImageVersions(dir, "8.10")
+	if err != nil {
+		t.Fatalf("ComponentImageVersions: %v", err)
+	}
+	if !strings.Contains(got, "hub: 8.10.1\n") {
+		t.Errorf("camundaHub.image.tag must win over webModeler.image.tag, got:\n%s", got)
+	}
+
+	dir = writeValuesFile(t, "webModeler:\n  image:\n    tag: 8.10.0\ncamundaHub:\n  image: {}\n")
+	got, err = ComponentImageVersions(dir, "8.10")
+	if err != nil {
+		t.Fatalf("ComponentImageVersions: %v", err)
+	}
+	if !strings.Contains(got, "hub: 8.10.0\n") {
+		t.Errorf("empty camundaHub.image must fall back to webModeler.image.tag, got:\n%s", got)
+	}
+}
+
+func TestComponentImageVersions810HubEmptyTagUsesGlobal(t *testing.T) {
+	cases := []struct {
+		hubTag string
+		want   string
+	}{
+		{`""`, "hub: 8.10.2\n"},
+		{"null", "hub: 8.10.0\n"},
+	}
+	for _, c := range cases {
+		dir := writeValuesFile(t, "global:\n  image:\n    tag: 8.10.2\nwebModeler:\n  image:\n    tag: 8.10.0\ncamundaHub:\n  image:\n    tag: "+c.hubTag+"\n")
+		got, err := ComponentImageVersions(dir, "8.10")
+		if err != nil {
+			t.Fatalf("ComponentImageVersions: %v", err)
+		}
+		if !strings.Contains(got, c.want) {
+			t.Errorf("camundaHub.image.tag=%s: want %q, got:\n%s", c.hubTag, c.want, got)
+		}
 	}
 }
 
@@ -105,20 +162,31 @@ func TestImageOverrides(t *testing.T) {
 	block, has := ImageOverrides([]ImageOverride{
 		{"orchestration", "8.8-custom"},
 		{"zeebe", ""},
+		{"console", "8.8.6"},
 		{"connectors", "1.2.3"},
 		{"identity", ""},
-	})
+	}, "8.8")
 	if !has {
 		t.Error("has should be true when any override is non-empty")
 	}
-	want := "orchestration: 8.8-custom\nconnectors: 1.2.3\n"
+	want := "orchestration: 8.8-custom\nconsole: 8.8.6\nconnectors: 1.2.3\n"
 	if block != want {
 		t.Errorf("block:\n%q\nwant:\n%q", block, want)
 	}
 
-	block, has = ImageOverrides([]ImageOverride{{"orchestration", ""}, {"zeebe", ""}})
+	block, has = ImageOverrides([]ImageOverride{{"orchestration", ""}, {"zeebe", ""}}, "8.8")
 	if has || block != "" {
 		t.Errorf("no overrides → empty block + has=false, got %q/%v", block, has)
+	}
+
+	block, has = ImageOverrides([]ImageOverride{{"orchestration", "8.10.0"}, {"console", "not included"}}, "8.10")
+	if !has || block != "orchestration: 8.10.0\n" {
+		t.Errorf("8.10 has no console component, got %q/%v", block, has)
+	}
+
+	block, has = ImageOverrides([]ImageOverride{{"console", "not included"}}, "8.10")
+	if has || block != "" {
+		t.Errorf("8.10 console-only override → empty block + has=false, got %q/%v", block, has)
 	}
 }
 

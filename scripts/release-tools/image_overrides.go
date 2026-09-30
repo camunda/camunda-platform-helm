@@ -33,18 +33,19 @@ var overrideKeys = []string{
 // runImageOverrides collects the *-image-tag inputs into the
 // `camunda.io/imageOverrides` annotation source and records whether any were provided.
 //
-//	release-tools image-overrides --orchestration <tag> --zeebe <tag> ... --out /tmp/image-overrides.yaml
+//	release-tools image-overrides --chart-version <minor> --orchestration <tag> --zeebe <tag> ... --out /tmp/image-overrides.yaml
 //
 // Writes HAS_IMAGE_OVERRIDES=<bool> to $GITHUB_ENV and, when any override is
 // present, the YAML block to --out.
 func runImageOverrides(args []string) error {
 	fs := flag.NewFlagSet("image-overrides", flag.ContinueOnError)
-	var out string
+	var out, chartVersion string
 	vals := make(map[string]*string, len(overrideKeys))
 	for _, k := range overrideKeys {
 		vals[k] = fs.String(k, "", "image tag override for "+k)
 	}
 	fs.StringVar(&out, "out", "/tmp/image-overrides.yaml", "file to write the overrides YAML block to when any are present")
+	fs.StringVar(&chartVersion, "chart-version", "", "Camunda minor line of the chart, e.g. 8.10")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -53,7 +54,7 @@ func runImageOverrides(args []string) error {
 	for _, k := range overrideKeys {
 		overrides = append(overrides, chartmeta.ImageOverride{Key: k, Value: *vals[k]})
 	}
-	block, has := chartmeta.ImageOverrides(overrides)
+	block, has := chartmeta.ImageOverrides(overrides, chartVersion)
 
 	if err := newGitHubEnv().set("HAS_IMAGE_OVERRIDES", strconv.FormatBool(has)); err != nil {
 		return err

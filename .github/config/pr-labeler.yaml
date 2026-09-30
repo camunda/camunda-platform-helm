@@ -87,6 +87,7 @@ component/web-modeler:
   - changed-files:
     - any-glob-to-any-file:
         - 'charts/camunda-platform-*/templates/web-modeler/**'
+        - 'charts/camunda-platform-*/templates/camunda-hub/**'
 
 component/zeebe:
   - changed-files:

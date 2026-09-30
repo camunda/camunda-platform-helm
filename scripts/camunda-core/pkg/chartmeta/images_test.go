@@ -103,6 +103,37 @@ webModeler:
 	}
 }
 
+func TestImageSetCamundaHubOverridesWebModeler(t *testing.T) {
+	dir := writeValues(t, `
+webModeler:
+  image:
+    tag: 8.10.0
+  restapi:
+    image:
+      repository: camunda/hub
+  websockets:
+    image:
+      repository: camunda/hub-websockets
+camundaHub:
+  image:
+    tag: 8.10.1
+  websockets:
+    image:
+      repository: null
+`)
+	got, err := ImageSet(dir)
+	if err != nil {
+		t.Fatalf("ImageSet: %v", err)
+	}
+	want := []string{
+		"docker.io/camunda/hub-websockets:8.10.1",
+		"docker.io/camunda/hub:8.10.1",
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("ImageSet camundaHub:\n got: %v\nwant: %v", got, want)
+	}
+}
+
 func TestImageSetHostQualifiedRegistryNotPrefixed(t *testing.T) {
 	// A component with an explicit registry host must not get a docker.io/ prefix.
 	dir := writeValues(t, `
