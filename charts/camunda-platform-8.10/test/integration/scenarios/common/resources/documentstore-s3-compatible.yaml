@@ -1,0 +1,128 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/v1.31.1-standalone-strict/all.json
+apiVersion: v1
+kind: Secret
+metadata:
+  name: documentstore-s3
+  namespace: $NAMESPACE
+type: Opaque
+stringData:
+  access-key: documentstore-integration-test
+  secret-key: documentstore-integration-test-secret
+  rpc-secret: 19530a4678a2346e71e7a86fe7befebc50d5cfd0834602e157db98f6237a8885
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/v1.31.1-standalone-strict/all.json
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: documentstore-s3-config
+  namespace: $NAMESPACE
+data:
+  garage.toml: |
+    metadata_dir = "/var/lib/garage/meta"
+    data_dir = "/var/lib/garage/data"
+    db_engine = "sqlite"
+    replication_factor = 1
+    rpc_bind_addr = "[::]:3901"
+    rpc_public_addr = "127.0.0.1:3901"
+
+    [s3_api]
+    s3_region = "us-east-1"
+    api_bind_addr = "[::]:3900"
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/v1.31.1-standalone-strict/all.json
+apiVersion: v1
+kind: Service
+metadata:
+  name: documentstore-s3
+  namespace: $NAMESPACE
+spec:
+  selector:
+    app.kubernetes.io/name: documentstore-s3
+  ports:
+    - name: s3
+      port: 9000
+      targetPort: s3
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/v1.31.1-standalone-strict/all.json
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: documentstore-s3
+  namespace: $NAMESPACE
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: documentstore-s3
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: documentstore-s3
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: garage
+          image: dxflrs/garage:v2.4.1@sha256:9c96caa2612d3411acc5b0e6701fb238dbfba33e533a6d7d3d811a4b12d0d020
+          command: [/garage]
+          args: [server, --single-node, --default-bucket]
+          ports:
+            - name: s3
+              containerPort: 3900
+          env:
+            - name: GARAGE_RPC_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: documentstore-s3
+                  key: rpc-secret
+            - name: GARAGE_DEFAULT_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: documentstore-s3
+                  key: access-key
+            - name: GARAGE_DEFAULT_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: documentstore-s3
+                  key: secret-key
+            - name: GARAGE_DEFAULT_BUCKET
+              value: documents
+          readinessProbe:
+            tcpSocket:
+              port: s3
+            periodSeconds: 2
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 512Mi
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/garage
+            - name: tmp
+              mountPath: /tmp
+            - name: config
+              mountPath: /etc/garage.toml
+              subPath: garage.toml
+              readOnly: true
+      volumes:
+        - name: data
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}
+        - name: config
+          configMap:
+            name: documentstore-s3-config

@@ -432,6 +432,29 @@ Environment exposed to each hook type differs:
   plus the same passthrough list. They don't see `TEST_NAMESPACE` or
   `KUBE_CONTEXT` — the runner supplies the target context directly.
 
+### S3-compatible document-store acceptance (8.10)
+
+The tier-2 `docs3` scenario provisions a namespace-local S3-compatible store
+(Garage) with an ephemeral documents bucket. Its blocking post-deploy hook checks
+upload, download, and deletion through Orchestration, plus signed-URL access
+directly against the store. The fixture uses test-only credentials and is not
+exposed through ingress. The full-platform Playwright suite is skipped for this
+Orchestration-only scenario.
+
+```bash
+deploy-camunda matrix run --versions 8.10 --shortname-filter docs3 --shortname-exact \
+  --flow-filter install --platform gke --namespace-prefix docs3-check \
+  --ingress-base-domain-gke ci.distro.ultrawombat.com
+
+# Re-run the acceptance check against an existing scenario namespace.
+deploy-camunda acceptance documentstore-s3-compatible \
+  --namespace docs3-check-810-docs3-inst-gke --release integration
+```
+
+The check uses the scenario's basic-auth `demo` user. Both services are reached
+through temporary port-forwards; store requests retain the signed Host header.
+Delete the scenario namespace after testing to remove its fixtures and data.
+
 ### Wiring the Elastic (ECK) operator as a fixture
 
 There is no ECK-backed persistence scenario shipped today (all 8.10
