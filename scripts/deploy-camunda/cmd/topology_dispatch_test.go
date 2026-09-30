@@ -1032,6 +1032,57 @@ func TestTopologyDeployOrder_HubFirst(t *testing.T) {
 	}
 }
 
+func TestTopologyDeployWaves_DeploysIndependentReleasesTogether(t *testing.T) {
+	waves, err := topologyDeployWaves(testTopologyReleases())
+	if err != nil {
+		t.Fatalf("topologyDeployWaves() unexpected error: %v", err)
+	}
+	want := [][]int{{0}, {1, 2}}
+	if !reflect.DeepEqual(waves, want) {
+		t.Fatalf("topologyDeployWaves() = %v, want %v", waves, want)
+	}
+}
+
+func TestDeployTopologyWaves_ParallelizesEachWave(t *testing.T) {
+	releases := map[int]preparedTopologyRelease{
+		0: {release: matrix.TopologyRelease{Role: "hub", NamespaceSuffix: "hub"}, namespace: "mns-hub", prepared: &deploy.PreparedScenario{}},
+		1: {release: matrix.TopologyRelease{Role: "orchestration", NamespaceSuffix: "orcha"}, namespace: "mns-orcha", prepared: &deploy.PreparedScenario{}},
+		2: {release: matrix.TopologyRelease{Role: "orchestration", NamespaceSuffix: "orchb"}, namespace: "mns-orchb", prepared: &deploy.PreparedScenario{}},
+	}
+	waves := [][]int{{0}, {1, 2}}
+	hubDone := make(chan struct{})
+	orchestrationStarted := make(chan struct{}, 2)
+	releaseOrchestration := make(chan struct{})
+
+	errCh := make(chan error, 1)
+	go func() {
+		errCh <- deployTopologyWaves(context.Background(), "multinamespace-2orch", waves, releases,
+			func(_ context.Context, prepared *deploy.PreparedScenario, _ *config.RuntimeFlags) error {
+				switch prepared {
+				case releases[0].prepared:
+					close(hubDone)
+					return nil
+				default:
+					select {
+					case <-hubDone:
+					default:
+						t.Error("orchestration deployment started before the hub completed")
+					}
+					orchestrationStarted <- struct{}{}
+					<-releaseOrchestration
+					return nil
+				}
+			})
+	}()
+
+	<-orchestrationStarted
+	<-orchestrationStarted
+	close(releaseOrchestration)
+	if err := <-errCh; err != nil {
+		t.Fatalf("deployTopologyWaves() error = %v", err)
+	}
+}
+
 func TestTopologyDeployOrder_ChainedDependency(t *testing.T) {
 	releases := []matrix.TopologyRelease{
 		{Role: "orchestration", NamespaceSuffix: "orchb", DependsOn: "hub"},

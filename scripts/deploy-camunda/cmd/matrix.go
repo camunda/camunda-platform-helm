@@ -19,6 +19,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -33,6 +34,7 @@ import (
 	"scripts/prepare-helm-values/pkg/env"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -1469,12 +1471,14 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 
 	// Deploy order honors each release's depends-on (Hub, which the
 	// orchestration releases depend on, therefore deploys first).
-	order, err := topologyDeployOrder(entry.Topology.Releases)
+	waves, err := topologyDeployWaves(entry.Topology.Releases)
 	if err != nil {
 		return fmt.Errorf("topology entry %s/%s: %w", entry.Version, entry.Scenario, err)
 	}
+	order := flattenTopologyDeployWaves(waves)
 
 	preparedReleases := make([]preparedTopologyRelease, 0, len(order))
+	preparedByIndex := make(map[int]preparedTopologyRelease, len(order))
 	defer func() {
 		for _, release := range preparedReleases {
 			release.prepared.Cleanup()
@@ -1520,7 +1524,9 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 			cleanup()
 			return fmt.Errorf("topology release %s/%s (namespace-suffix %q) prepare failed: %w", entry.Scenario, rel.Role, rel.NamespaceSuffix, prepareErr)
 		}
-		preparedReleases = append(preparedReleases, preparedTopologyRelease{release: rel, flags: flags, namespace: namespace, prepared: prepared, cleanup: cleanup})
+		preparedRelease := preparedTopologyRelease{release: rel, flags: flags, namespace: namespace, prepared: prepared, cleanup: cleanup}
+		preparedReleases = append(preparedReleases, preparedRelease)
+		preparedByIndex[i] = preparedRelease
 	}
 
 	for _, chartPath := range topologyChartPaths(preparedReleases) {
@@ -1556,18 +1562,8 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 		return err
 	}
 
-	for _, release := range preparedReleases {
-		deployErr := deploy.ExecutePrepared(ctx, release.prepared, release.flags)
-
-		status := "OK"
-		if deployErr != nil {
-			status = fmt.Sprintf("FAILED: %v", deployErr)
-		}
-		fmt.Fprintf(os.Stdout, "topology release %s/%s (namespace %s): %s\n", entry.Scenario, release.release.Role, release.namespace, status)
-
-		if deployErr != nil {
-			return fmt.Errorf("topology release %s/%s (namespace-suffix %q) deploy failed: %w", entry.Scenario, release.release.Role, release.release.NamespaceSuffix, deployErr)
-		}
+	if err := deployTopologyWaves(ctx, entry.Scenario, waves, preparedByIndex, deploy.ExecutePrepared); err != nil {
+		return err
 	}
 
 	if err := runTopologyPostDeployHook(ctx, entry, opts, preparedReleases); err != nil {
@@ -1623,7 +1619,7 @@ func topologyHookFlags(releases []preparedTopologyRelease) *config.RuntimeFlags 
 //
 // Legs come from matrix.TopologyE2ELegs, the same computation that produces the CI smoke matrix, so
 // a local run and a CI run agree on how many legs a topology has and which namespaces each targets.
-// Legs run sequentially and every failure is collected: one tenant's failure must not hide another's
+// Legs run concurrently and every failure is collected: one tenant's failure must not hide another's
 // result.
 func runTopologyE2ELegs(
 	ctx context.Context,
@@ -1665,19 +1661,32 @@ func runTopologyE2ELegs(
 		return fmt.Errorf("topology %s: no hub release, so the e2e env cannot resolve Identity, Keycloak or Web Modeler", entry.Scenario)
 	}
 
-	var failures []string
-	for _, leg := range legs {
+	type e2eResult struct {
+		label     string
+		namespace string
+		err       error
+	}
+	results := make([]e2eResult, len(legs))
+	runConcurrently(len(legs), func(i int) {
+		leg := legs[i]
+		result := e2eResult{label: leg.OrchestrationSuffix}
+		if leg.OptimizeSuffix != "" {
+			result.label = fmt.Sprintf("%s+%s", leg.OrchestrationSuffix, leg.OptimizeSuffix)
+		}
+		results[i] = result
+
 		orchestrationNamespace := nsBySuffix[leg.OrchestrationSuffix]
 		if orchestrationNamespace == "" {
-			failures = append(failures, fmt.Sprintf("leg %q: no deployed namespace for that orchestration release", leg.OrchestrationSuffix))
-			continue
+			results[i].err = fmt.Errorf("no deployed namespace for that orchestration release")
+			return
 		}
+		results[i].namespace = orchestrationNamespace
 		optimizeNamespace := ""
 		if leg.OptimizeSuffix != "" {
 			optimizeNamespace = nsBySuffix[leg.OptimizeSuffix]
 			if optimizeNamespace == "" {
-				failures = append(failures, fmt.Sprintf("leg %q: no deployed namespace for optimize release %q", leg.OrchestrationSuffix, leg.OptimizeSuffix))
-				continue
+				results[i].err = fmt.Errorf("no deployed namespace for optimize release %q", leg.OptimizeSuffix)
+				return
 			}
 		}
 
@@ -1692,9 +1701,10 @@ func runTopologyE2ELegs(
 		flags, namespace, _, _, cleanup, buildErr := matrix.BuildEntryFlags(releaseEntry, releaseOpts)
 		if buildErr != nil {
 			cleanup()
-			failures = append(failures, fmt.Sprintf("leg %q: build flags: %v", leg.OrchestrationSuffix, buildErr))
-			continue
+			results[i].err = fmt.Errorf("build flags: %w", buildErr)
+			return
 		}
+		defer cleanup()
 		applyTopologyReleaseOverrides(flags, buildTopologyReleaseEnv(crossRefEnv, rel))
 		applyTopologyReleaseHostname(flags, releaseHost)
 		// synthesizeReleaseEntry disables e2e for the deploy loop; re-enable it for this leg only.
@@ -1704,19 +1714,18 @@ func runTopologyE2ELegs(
 		flags.Test.OptimizeContextPath = leg.OptimizeContextPath
 		flags.Test.ModelerClusterName = leg.ModelerClusterName
 
-		testErr := deploy.RunTests(ctx, flags, namespace)
-		cleanup()
+		results[i].namespace = namespace
+		results[i].err = deploy.RunTests(ctx, flags, namespace)
+	})
 
-		label := leg.OrchestrationSuffix
-		if leg.OptimizeSuffix != "" {
-			label = fmt.Sprintf("%s+%s", leg.OrchestrationSuffix, leg.OptimizeSuffix)
-		}
+	var failures []string
+	for _, result := range results {
 		status := "OK"
-		if testErr != nil {
-			status = fmt.Sprintf("FAILED: %v", testErr)
-			failures = append(failures, fmt.Sprintf("leg %q: %v", label, testErr))
+		if result.err != nil {
+			status = fmt.Sprintf("FAILED: %v", result.err)
+			failures = append(failures, fmt.Sprintf("leg %q: %v", result.label, result.err))
 		}
-		fmt.Fprintf(os.Stdout, "topology e2e %s/%s (namespace %s): %s\n", entry.Scenario, label, namespace, status)
+		fmt.Fprintf(os.Stdout, "topology e2e %s/%s (namespace %s): %s\n", entry.Scenario, result.label, result.namespace, status)
 	}
 
 	if len(failures) > 0 {
@@ -1818,13 +1827,7 @@ func addTopologyIngressHosts(crossRefEnv map[string]string, opts matrix.RunOptio
 	}
 }
 
-// topologyDeployOrder returns release indices in a depends-on-respecting order:
-// a release whose DependsOn names another release's Role is always emitted after
-// that release. Ties break by declaration order, so the Hub release the
-// orchestration releases depend on is deployed first. Errors on a cycle or an
-// unresolvable dependency (Topology.Validate already rejects unknown roles, so
-// this is defense-in-depth).
-func topologyDeployOrder(releases []matrix.TopologyRelease) ([]int, error) {
+func topologyDeployWaves(releases []matrix.TopologyRelease) ([][]int, error) {
 	roleIdx := make(map[string]int, len(releases))
 	for i, r := range releases {
 		if r.Role != "" {
@@ -1834,9 +1837,10 @@ func topologyDeployOrder(releases []matrix.TopologyRelease) ([]int, error) {
 		}
 	}
 	emitted := make([]bool, len(releases))
-	order := make([]int, 0, len(releases))
-	for len(order) < len(releases) {
-		progressed := false
+	waves := make([][]int, 0, len(releases))
+	emittedCount := 0
+	for emittedCount < len(releases) {
+		var wave []int
 		for i, r := range releases {
 			if emitted[i] {
 				continue
@@ -1850,15 +1854,77 @@ func topologyDeployOrder(releases []matrix.TopologyRelease) ([]int, error) {
 					continue
 				}
 			}
-			order = append(order, i)
-			emitted[i] = true
-			progressed = true
+			wave = append(wave, i)
 		}
-		if !progressed {
+		if len(wave) == 0 {
 			return nil, fmt.Errorf("topology depends-on graph has a cycle or unresolvable dependency")
 		}
+		for _, i := range wave {
+			emitted[i] = true
+			emittedCount++
+		}
+		waves = append(waves, wave)
 	}
-	return order, nil
+	return waves, nil
+}
+
+func flattenTopologyDeployWaves(waves [][]int) []int {
+	var order []int
+	for _, wave := range waves {
+		order = append(order, wave...)
+	}
+	return order
+}
+
+func topologyDeployOrder(releases []matrix.TopologyRelease) ([]int, error) {
+	waves, err := topologyDeployWaves(releases)
+	if err != nil {
+		return nil, err
+	}
+	return flattenTopologyDeployWaves(waves), nil
+}
+
+func runConcurrently(count int, run func(int)) {
+	var wg sync.WaitGroup
+	wg.Add(count)
+	for i := 0; i < count; i++ {
+		go func() {
+			defer wg.Done()
+			run(i)
+		}()
+	}
+	wg.Wait()
+}
+
+func deployTopologyWaves(
+	ctx context.Context,
+	scenario string,
+	waves [][]int,
+	releases map[int]preparedTopologyRelease,
+	execute func(context.Context, *deploy.PreparedScenario, *config.RuntimeFlags) error,
+) error {
+	for _, wave := range waves {
+		errs := make([]error, len(wave))
+		runConcurrently(len(wave), func(i int) {
+			release := releases[wave[i]]
+			errs[i] = execute(ctx, release.prepared, release.flags)
+		})
+
+		var failures []error
+		for i, releaseIndex := range wave {
+			release := releases[releaseIndex]
+			status := "OK"
+			if errs[i] != nil {
+				status = fmt.Sprintf("FAILED: %v", errs[i])
+				failures = append(failures, fmt.Errorf("topology release %s/%s (namespace-suffix %q) deploy failed: %w", scenario, release.release.Role, release.release.NamespaceSuffix, errs[i]))
+			}
+			fmt.Fprintf(os.Stdout, "topology release %s/%s (namespace %s): %s\n", scenario, release.release.Role, release.namespace, status)
+		}
+		if len(failures) > 0 {
+			return errors.Join(failures...)
+		}
+	}
+	return nil
 }
 
 // synthesizeReleaseEntry builds the matrix.Entry for one topology release,
