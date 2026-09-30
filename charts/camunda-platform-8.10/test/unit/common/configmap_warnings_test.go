@@ -147,13 +147,12 @@ func (s *ConfigMapWarningsTemplateTest) TestDifferentValuesInputs() {
 			},
 			RenderTemplateExtraArgs: []string{"--set-json", "camundaHub.restapi.env=[]"},
 			Verifier: func(t *testing.T, output string, err error) {
-				if err != nil {
-					s.Require().ErrorContains(err, "could not find template templates/common/configmap-warnings.yaml in chart")
-					return
-				}
 				s.Require().NoError(err)
 				var configmap corev1.ConfigMap
 				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				// Positive anchor: warning evaluation ran for this release.
+				s.Require().Contains(configmap.Data["warnings"],
+					"webModeler.restapi.pusher.secret.existingSecret")
 				s.Require().NotContains(configmap.Data["warnings"],
 					"webModeler.restapi.env sets JAVA_TOOL_OPTIONS directly")
 			},
