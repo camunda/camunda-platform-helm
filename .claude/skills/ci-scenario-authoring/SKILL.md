@@ -70,6 +70,9 @@ waits on the package's `wait-for-orchestration-admin-role.sh` before starting it
 authorization-enforcement tests. A scenario with `auth: basic` runs the suite as the chart's default
 `demo` admin instead (`AUTH_METHOD=basic`), which also covers the local-user endpoints. The API leg
 ignores the scenario's `exclude` list.
+It also points the suite's component smokes at Identity, Console, Web Modeler and Connectors
+(`API_*_URL`, from the `.env` base URLs); `venom` holds the `web-modeler-public-api` permissions
+that the Web Modeler spec needs on 8.9 and 8.10.
 
 The blocking fields are tri-state: omit them to keep the default, since `e2e-smoke-blocking`
 defaults to *true* and an absent key must not read as false.

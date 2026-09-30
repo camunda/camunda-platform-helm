@@ -87,6 +87,12 @@ identity:
           definition: write:*
         - resourceServerId: console-api
           definition: write:*
+        - resourceServerId: web-modeler-public-api
+          definition: read:*
+        - resourceServerId: web-modeler-public-api
+          definition: create:*
+        - resourceServerId: web-modeler-public-api
+          definition: delete:*
     - id: unprivileged
       name: Unprivileged
       secret:

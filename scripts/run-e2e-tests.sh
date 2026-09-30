@@ -407,6 +407,7 @@ if [[ "$PLAYWRIGHT_PROJECT" == "api" ]]; then
   export REQUIRE_API_TEST_SUITE=true
   # The chart's gRPC ingress host (orchestration.ingress.grpc) in the CI values.
   export GRPC_ADDRESS="${GRPC_ADDRESS:-grpc-${hostname}:443}"
+  export API_CONNECTORS_URL="${API_CONNECTORS_URL:-${CONNECTORS_BASE_URL%/inbound}}"
   if [[ "$TEST_AUTH_TYPE" == "basic" ]]; then
     # The chart's default initial admin (orchestration.security.initialization.users).
     export AUTH_METHOD=basic
@@ -415,6 +416,9 @@ if [[ "$PLAYWRIGHT_PROJECT" == "api" ]]; then
   else
     export AUTH_METHOD=oauth2
     export TOKEN_URL="$OAUTH_URL"
+    export API_IDENTITY_URL="${API_IDENTITY_URL:-$IDENTITY_BASE_URL}"
+    export API_CONSOLE_URL="${API_CONSOLE_URL:-$CONSOLE_BASE_URL}"
+    export API_WEB_MODELER_URL="${API_WEB_MODELER_URL:-$WEBMODELER_BASE_URL}"
     export CLIENT_ID="venom"
     CLIENT_SECRET="$(resolve_env_password "$NAMESPACE" "VALUES_VENOM_CLIENT_SECRET" "$KUBE_CONTEXT")"
     if [[ -z "$CLIENT_SECRET" ]]; then
