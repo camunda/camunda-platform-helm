@@ -111,7 +111,6 @@ data:
         # depends on how the zones are connected, so the chart cannot generate it.
         # Example: orchestration.env[0].name=CAMUNDA_CLUSTER_INITIALCONTACTPOINTS
         #          orchestration.env[0].value=<zone-0-address>:26502,<zone-1-address>:26502,...
-    
         network:
           advertised-host: "${K8S_NAME}.${K8S_SERVICE_NAME}.${K8S_NAMESPACE}.svc"
           host: 0.0.0.0

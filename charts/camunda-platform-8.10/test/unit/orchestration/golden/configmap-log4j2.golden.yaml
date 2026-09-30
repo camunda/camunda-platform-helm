@@ -87,7 +87,6 @@ data:
           - camunda-platform-test-zeebe-0.${K8S_SERVICE_NAME}:26502
           - camunda-platform-test-zeebe-1.${K8S_SERVICE_NAME}:26502
           - camunda-platform-test-zeebe-2.${K8S_SERVICE_NAME}:26502
-    
         network:
           advertised-host: "${K8S_NAME}.${K8S_SERVICE_NAME}"
           host: 0.0.0.0

@@ -1305,6 +1305,88 @@ func (s *ConfigmapTemplateTest) TestMultiRegionInitialContactPoints() {
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
+func (s *ConfigmapTemplateTest) TestClusterEnvironmentOverrides() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "Unified cluster defaults render without environment overrides",
+			Values: map[string]string{
+				"orchestration.profiles.broker": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "advertised-host: \"${K8S_NAME}.${K8S_SERVICE_NAME}\"")
+				require.Contains(t, output, "node-id: \"${VALUES_ORCHESTRATION_NODE_ID:}\"")
+				require.Contains(t, output, "command-api:")
+				require.Contains(t, output, "internal-api:")
+				require.Contains(t, output, "    name: camunda-platform-test-zeebe")
+				require.Contains(t, output, "size: \"3\"")
+				require.Contains(t, output, "replication-factor: \"3\"")
+				require.Contains(t, output, "partition-count: \"3\"")
+				require.Contains(t, output, "port: 26501")
+				require.Contains(t, output, "port: 26502")
+			},
+		},
+		{
+			Name: "Legacy cluster environment overrides suppress unified defaults",
+			Values: map[string]string{
+				"orchestration.profiles.broker": "true",
+				"orchestration.env[0].name":     `\{\{ printf "ZEEBE_BROKER_NETWORK_ADVERTISEDHOST" \}\}`,
+				"orchestration.env[1].name":     "ZEEBE_BROKER_NETWORK_HOST",
+				"orchestration.env[2].name":     "ZEEBE_BROKER_NETWORK_COMMANDAPI_PORT",
+				"orchestration.env[3].name":     "ZEEBE_BROKER_NETWORK_INTERNALAPI_PORT",
+				"orchestration.env[4].name":     "ZEEBE_BROKER_CLUSTER_NODEID",
+				"orchestration.env[5].name":     "ZEEBE_BROKER_CLUSTER_CLUSTERNAME",
+				"orchestration.env[6].name":     "ZEEBE_BROKER_CLUSTER_CLUSTERSIZE",
+				"orchestration.env[7].name":     "ZEEBE_BROKER_CLUSTER_REPLICATIONFACTOR",
+				"orchestration.env[8].name":     "ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT",
+				"orchestration.env[9].name":     "ZEEBE_BROKER_CLUSTER_INITIALCONTACTPOINTS",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.NotContains(t, output, "advertised-host:")
+				require.NotContains(t, output, "node-id:")
+				require.NotContains(t, output, "command-api:")
+				require.NotContains(t, output, "internal-api:")
+				require.NotContains(t, output, "    name: camunda-platform-test-zeebe")
+				require.NotContains(t, output, "size: \"3\"")
+				require.NotContains(t, output, "replication-factor: \"3\"")
+				require.NotContains(t, output, "partition-count: \"3\"")
+				require.NotContains(t, output, "initial-contact-points:")
+			},
+		},
+		{
+			Name: "Unified cluster environment overrides suppress unified defaults",
+			Values: map[string]string{
+				"orchestration.profiles.broker": "true",
+				"orchestration.env[0].name":     "CAMUNDA_CLUSTER_NETWORK_ADVERTISEDHOST",
+				"orchestration.env[1].name":     "CAMUNDA_CLUSTER_NETWORK_HOST",
+				"orchestration.env[2].name":     "CAMUNDA_CLUSTER_NETWORK_COMMANDAPI_PORT",
+				"orchestration.env[3].name":     "CAMUNDA_CLUSTER_NETWORK_INTERNALAPI_PORT",
+				"orchestration.env[4].name":     "CAMUNDA_CLUSTER_NODEID",
+				"orchestration.env[5].name":     "CAMUNDA_CLUSTER_NAME",
+				"orchestration.env[6].name":     "CAMUNDA_CLUSTER_SIZE",
+				"orchestration.env[7].name":     "CAMUNDA_CLUSTER_REPLICATIONFACTOR",
+				"orchestration.env[8].name":     "CAMUNDA_CLUSTER_PARTITIONCOUNT",
+				"orchestration.env[9].name":     "CAMUNDA_CLUSTER_INITIALCONTACTPOINTS",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.NotContains(t, output, "advertised-host:")
+				require.NotContains(t, output, "node-id:")
+				require.NotContains(t, output, "command-api:")
+				require.NotContains(t, output, "internal-api:")
+				require.NotContains(t, output, "    name: camunda-platform-test-zeebe")
+				require.NotContains(t, output, "size: \"3\"")
+				require.NotContains(t, output, "replication-factor: \"3\"")
+				require.NotContains(t, output, "partition-count: \"3\"")
+				require.NotContains(t, output, "initial-contact-points:")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
 func (s *ConfigmapTemplateTest) TestNumberedModeConfigurationCompatibility() {
 	testCases := []testhelpers.TestCase{
 		{
