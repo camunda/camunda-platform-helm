@@ -821,7 +821,7 @@ func (s *ConfigMapWarningsTemplateTest) TestZonedFullConfigurationWarning() {
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
-func (s *ConfigMapWarningsTemplateTest) TestContactPointWarningHonorsEnvFromDeclarations() {
+func (s *ConfigMapWarningsTemplateTest) TestContactPointWarningHonorsOperatorDeclarations() {
 	const warning = "chart cannot generate the broker bootstrap list"
 
 	values := func() map[string]string {
@@ -849,6 +849,17 @@ func (s *ConfigMapWarningsTemplateTest) TestContactPointWarningHonorsEnvFromDecl
 	legacyDeclaration["orchestration.envFrom[0].secretRef.name"] = "cluster-environment"
 	legacyDeclaration["orchestration.envFromProvides[0]"] = "ZEEBE_BROKER_CLUSTER_INITIALCONTACTPOINTS"
 
+	directEnvDeclaration := values()
+	directEnvDeclaration["orchestration.env[0].name"] = `\{\{ printf "CAMUNDA_CLUSTER_INITIALCONTACTPOINTS" \}\}`
+	directEnvDeclaration["orchestration.env[0].value"] = "zone-a.example:26502"
+
+	extraConfigurationDeclaration := values()
+	extraConfigurationDeclaration["orchestration.extraConfiguration[0].file"] = "cluster.yaml"
+	extraConfigurationDeclaration["orchestration.extraConfiguration[0].content"] = "camunda:\n  cluster:\n    initial-contact-points: zone-a.example:26502\n"
+
+	configurationDeclaration := values()
+	configurationDeclaration["orchestration.configuration"] = "camunda:\n  cluster:\n    initial-contact-points: zone-a.example:26502\n"
+
 	testCases := []testhelpers.TestCase{
 		{
 			Name:   "Missing contact point declaration warns",
@@ -871,6 +882,30 @@ func (s *ConfigMapWarningsTemplateTest) TestContactPointWarningHonorsEnvFromDecl
 		{
 			Name:   "Legacy envFrom contact point declaration suppresses warning",
 			Values: legacyDeclaration,
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				s.Require().NotContains(output, warning)
+			},
+		},
+		{
+			Name:   "Templated direct env contact point declaration suppresses warning",
+			Values: directEnvDeclaration,
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				s.Require().NotContains(output, warning)
+			},
+		},
+		{
+			Name:   "Extra configuration contact point declaration suppresses warning",
+			Values: extraConfigurationDeclaration,
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				s.Require().NotContains(output, warning)
+			},
+		},
+		{
+			Name:   "Complete configuration suppresses warning",
+			Values: configurationDeclaration,
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().NoError(err)
 				s.Require().NotContains(output, warning)

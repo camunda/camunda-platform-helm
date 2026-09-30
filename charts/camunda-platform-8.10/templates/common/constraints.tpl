@@ -1615,12 +1615,7 @@ The following values inside your values.yaml need to be set but were not:
       -}}
       {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
     {{- end }}
-    {{- $contactPointsFromEnvFrom := and
-          (not (empty .Values.orchestration.envFrom))
-          (or
-            (has "CAMUNDA_CLUSTER_INITIALCONTACTPOINTS" (.Values.orchestration.envFromProvides | default list))
-            (has "ZEEBE_BROKER_CLUSTER_INITIALCONTACTPOINTS" (.Values.orchestration.envFromProvides | default list))) -}}
-    {{- if and (eq (include "camundaPlatform.spansFailureDomains" .) "true") (not $contactPointsFromEnvFrom) }}
+    {{- if and (eq (include "camundaPlatform.spansFailureDomains" .) "true") (ne (include "orchestration.contactPointsConfigured" .) "true") }}
       {{- if and (eq (include "orchestration.zoneAware" .) "true") (include "camundaPlatform.partitioning" . | fromJson).keepUnzonedBrokers }}
       {{- $warningMessage := printf "%s %s %s"
           "[camunda][warning]"

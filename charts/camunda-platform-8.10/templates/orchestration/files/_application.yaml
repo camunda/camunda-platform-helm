@@ -114,7 +114,7 @@ camunda:
          itself. Beyond that it cannot know how brokers reach each other, so the list is the
          user's to provide. Retention is the exception: the zoned brokers and the round-robin
          ones they replace share this release, so the chart can still name both. */ -}}
-    {{- if or (hasKey $clusterEnv "CAMUNDA_CLUSTER_INITIALCONTACTPOINTS") (hasKey $clusterEnv "ZEEBE_BROKER_CLUSTER_INITIALCONTACTPOINTS") (eq (include "camundaPlatform.appConfigMentionsPath" (dict "extraConfiguration" $extraConfiguration "path" (list "camunda" "cluster" "initial-contact-points"))) "true") (eq (include "camundaPlatform.appConfigMentionsPath" (dict "extraConfiguration" $extraConfiguration "path" (list "zeebe" "broker" "cluster" "initialContactPoints"))) "true") }}
+    {{- if eq (include "orchestration.contactPointsConfigured" .) "true" }}
     {{- else if and (eq (include "orchestration.zoneAware" .) "true") (or (ne (include "camundaPlatform.spansFailureDomains" $) "true") $partitioning.keepUnzonedBrokers) }}
     initial-contact-points:
     {{- $zoneFullname := include "orchestration.zoneFullname" (dict "context" $ "zone" $partitioning.zone) }}
