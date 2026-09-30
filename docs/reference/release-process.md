@@ -185,6 +185,7 @@ graph TD
 - `12.x` = Camunda 8.7
 - `13.x` = Camunda 8.8
 - `14.x` = Camunda 8.9
+- `15.x` = Camunda 8.10
 
 ## Routine Chart Automation
 
@@ -192,38 +193,40 @@ graph TD
 
 ## Minor Version Chores
 
-When Camunda releases a new minor version (typically every 6 months), the following changes are needed.
+A minor goes through two sets of chores at different times. The examples use `8.10` as the minor that becomes GA and `8.11` as the new alpha.
 
-Assuming `current alpha is 8.9` (which will become `stable`) and the `new alpha is 8.10`:
+### New alpha chart
 
-**Before starting:**
+Do these when the new alpha chart is created (months before the previous alpha goes GA):
 
-1. Label all existing PRs with `backport-to-latest` so contributors know their PRs need updating.
+1. Copy `charts/camunda-platform-8.10` to `charts/camunda-platform-8.11`.
+2. Set the version in `charts/camunda-platform-8.11/Chart.yaml` to the next major with `-alpha0` (for example `16.0.0-alpha0`). The dev build adds one to the alpha number, so the first release is `-alpha1`.
+3. Give the new chart its own `SNAPSHOT` and alpha image tags. Do not keep the GA tags of the copied chart.
+4. In [`charts/chart-versions.yaml`](https://github.com/camunda/camunda-platform-helm/blob/main/charts/chart-versions.yaml), add a lifecycle entry for `8.11` without `released`, and add `8.11` to `chartAutomation.routineVersions`.
+5. Add the release-please package and manifest entry in `.github/config/release-please/`, with the `version/alpha` label.
+6. In [`renovate.json5`](https://github.com/camunda/camunda-platform-helm/blob/main/.github/renovate.json5), add the new chart files to the alpha rules.
+7. Add `8.11` to the GitHub Actions version choices (search for `type: choice`), to [`pr-labeler.yaml`](https://github.com/camunda/camunda-platform-helm/blob/main/.github/config/pr-labeler.yaml), to `scripts/release-tools/inject_values.go`, and to the chart list in `test-release-tooling.yaml`.
 
-**Chart files updates:**
+### Minor becoming GA
 
-1. Copy `charts/camunda-platform-8.9` to `charts/camunda-platform-8.10`.
-2. Update chart version in `charts/camunda-platform-8.9/Chart.yaml` (remove alpha, e.g. `14.0.0-alpha5` → `14.0.0`).
-3. Update image tags in `charts/camunda-platform-8.9/values-latest.yaml` (no `SNAPSHOT` tags).
-4. Update chart version in `charts/camunda-platform-8.10/Chart.yaml` (bump major, reset alpha, e.g. `14.0.0-alpha5` → `15.0.0-alpha1`).
+The release train publishes the Helm chart before the official release date. Do steps 1–8 before the train starts the Helm chart build (`chart-build-dev.yaml` with `chart-version: 8.10`):
 
-**Configuration files updates:**
+1. Label all open PRs with `backport-to-latest` so that contributors know their PRs need updating.
+2. In `charts/chart-versions.yaml`, set `released` and `stdSupportUntil` for `8.10`. Use the "Minor release date" and "End of standard maintenance" dates from the 8.10 release announcements page in the docs. The presence of `released` switches the release tooling from prerelease to stable versions. Without `stdSupportUntil`, the version matrix shows the minor in extended support.
+3. Do not change the version in `Chart.yaml`. The dev build computes the GA version from `chart-versions.yaml`, and the release-please PR writes it to `Chart.yaml`. If you set `Chart.yaml` to the GA version by hand, the dev build takes the next version from release-please instead.
+4. Remove `artifacthub.io/prerelease: "true"` from `charts/camunda-platform-8.10/Chart.yaml`. A published chart cannot be changed, and Artifact Hub keeps the prerelease flag of a published version.
+5. Set the GA image tags in `values.yaml`, `values-latest.yaml` and `values-digest.yaml`, and change the `values-latest.yaml` header from `Camunda - Alpha` to `Camunda Helm chart.`. Renovate and CI read these files from `main`, and the package ships `values-digest.yaml` as it is on `main`.
+6. In `renovate.json5`, move the `8.10` files from the alpha rules to the patch-only `camunda-platform-images` group. Keep the alpha rules. Leave their `matchFileNames` empty until the next alpha chart exists.
+7. Remove the `version/alpha` label from the `8.10` package in `.github/config/release-please/release-please-config.json`.
+8. Point the release highlights in `templates/common/_helpers.tpl` at the versioned upgrade guide (`https://docs.camunda.io/docs/8.10/self-managed/upgrade/helm/890-to-8100/`). Remove "alpha" from parameter descriptions.
+9. Rehearse the release from the PR branch before you merge: run [`chart-promote-rc.yaml`](https://github.com/camunda/camunda-platform-helm/blob/main/.github/workflows/chart-promote-rc.yaml) with `--ref <branch>`, `dev-tag: 15-dev-latest` and `dry-run: true`, then [`chart-release-public.yaml`](https://github.com/camunda/camunda-platform-helm/blob/main/.github/workflows/chart-release-public.yaml) with `--ref <branch>`, `rc-tag: 15-rc-dryrun-latest` and `dry-run: true`. The workflows build the release tooling from the branch. The dev tag must point to a commit on `main`.
+10. After the merge, check that the next 8.10 dev build has no `-alpha` suffix in its dev tag.
 
-1. Update [`charts/chart-versions.yaml`](https://github.com/camunda/camunda-platform-helm/blob/main/charts/chart-versions.yaml) —
-   set `released` and `stdSupportUntil` in `camundaSupportLifecycle` for the minor becoming GA.
-   The presence of `released` switches release tooling from prerelease to stable selection.
-   Add the new alpha's lifecycle entry without `released`, and add it to `chartAutomation.routineVersions`.
-   Reconcile routine membership against the ESUP Case Registry's Helm chart delivery scope;
-   keep a minor in the routine list while that scope requires continued chart maintenance.
-   Do not remove lifecycle dates when removing a minor from routine automation.
-2. Update Release-Please config and manifest in `.github/config/release-please/`.
-3. Update [`renovate.json5`](https://github.com/camunda/camunda-platform-helm/blob/main/.github/renovate.json5).
-4. Update GitHub Actions with version choices (search for `type: choice`).
-5. Update [`chart-release-snapshot.yaml`](https://github.com/camunda/camunda-platform-helm/blob/main/.github/workflows/chart-release-snapshot.yaml) with new chart paths.
-6. Update [`pr-labeler.yaml`](https://github.com/camunda/camunda-platform-helm/blob/main/.github/config/pr-labeler.yaml).
-7. Update `docs/release.md` examples.
+After the public release:
 
-**Create a PR with the changes, and once merged, follow the normal release process.**
+1. Check that Artifact Hub does not show `15.0.0` as a pre-release.
+2. Check that the PRs in the release have the `version:8.10-15.0.0` label.
+3. Check the public values files and the version matrix on `helm.camunda.io`.
 
 ## Artifact Hub
 
