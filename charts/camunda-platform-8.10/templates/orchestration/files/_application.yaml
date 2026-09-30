@@ -3,6 +3,9 @@
 {{- range $env := (.Values.orchestration.env | default list) -}}
   {{- $_ := set $clusterEnv (tpl ($env.name | default "") $) true -}}
 {{- end -}}
+{{- range $envName := (.Values.orchestration.envFromProvides | default list) -}}
+  {{- $_ := set $clusterEnv $envName true -}}
+{{- end -}}
 {{- $extraConfiguration := .Values.orchestration.extraConfiguration -}}
 {{/*
 This file name should start with an underscore to avoid rendering it as a template.

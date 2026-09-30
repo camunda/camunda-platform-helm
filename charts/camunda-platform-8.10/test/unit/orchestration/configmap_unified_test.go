@@ -1468,6 +1468,22 @@ func (s *ConfigmapTemplateTest) TestClusterEnvironmentOverrides() {
 			},
 		},
 		{
+			Name: "Declared envFrom cluster variable suppresses matching unified default",
+			Values: map[string]string{
+				"orchestration.profiles.broker":              "true",
+				"orchestration.envFrom[0].configMapRef.name": "cluster-environment",
+				"orchestration.envFromProvides[0]":           "ZEEBE_BROKER_NETWORK_ADVERTISEDHOST",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				cluster := requireApplicationCluster(t, output)
+				network, ok := cluster["network"].(map[string]any)
+				require.True(t, ok)
+				requireNestedKeyAbsent(t, network, "advertised-host")
+				require.Contains(t, network, "host")
+			},
+		},
+		{
 			Name: "Imported later YAML document suppresses matching unified default",
 			Values: map[string]string{
 				"orchestration.profiles.broker":               "true",
