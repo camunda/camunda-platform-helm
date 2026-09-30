@@ -56,7 +56,7 @@ maintainers:
   - name: camunda
     url: https://camunda.com
 annotations:
-  camunda.io/helmCLIVersion: "3.20.2"
+  camunda.io/helmCLIVersion: "3.22.0"
   artifacthub.io/links: |
     - name: Camunda 8 docs
       url: https://docs.camunda.io/
@@ -66,9 +66,13 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
-    - kind: changed
-      description: "Omit empty init container blocks"
+    - kind: added
+      description: "Support orchestration releases managed by Camunda Hub"
+    - kind: added
+      description: "Document and validate ReadWriteOncePod for broker PVCs"
     - kind: fixed
-      description: "Warn that the bundled Keycloak image line is frozen and affected by CVE-2026-18963"
+      description: "DocumentStore cloud credentials misuse"
     - kind: fixed
-      description: "Stop management identity from provisioning disabled components"
+      description: "Only add Web Modeler / Camunda Hub audience if enabled"
+    - kind: fixed
+      description: "Allow overriding external ingress protocol"
