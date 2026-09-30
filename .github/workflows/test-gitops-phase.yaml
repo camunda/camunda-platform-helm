@@ -10,6 +10,11 @@ name: Test - Camunda Hub GitOps Phases
         required: false
         type: string
         default: ""
+      controllers:
+        description: JSON array overriding the event-specific controller matrix.
+        required: false
+        type: string
+        default: ""
 
 permissions:
   contents: read
@@ -21,7 +26,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        controller: ${{ fromJSON(github.event_name == 'merge_group' && '["helm","argocd","flux"]' || '["helm","flux"]') }}
+        controller: ${{ fromJSON(inputs.controllers || (github.event_name == 'merge_group' && '["helm","argocd","flux"]' || '["helm","flux"]')) }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
         with:
@@ -71,12 +76,29 @@ jobs:
             --revision-ref-name "${{ inputs.camunda-helm-git-ref-name }}" \
             2>&1 | tee "${RUNNER_TEMP}/gitops-phase-${{ matrix.controller }}.log"
 
+      - name: Capture Argo CD diagnostics
+        if: always() && matrix.controller == 'argocd'
+        timeout-minutes: 3
+        run: |
+          mkdir -p "${RUNNER_TEMP}/gitops-phase-argocd"
+          kubectl --request-timeout=15s -n argocd get application gitops-phase -o yaml > "${RUNNER_TEMP}/gitops-phase-argocd/application.yaml" 2>&1 || true
+          kubectl --request-timeout=15s -n argocd get appproject default -o yaml > "${RUNNER_TEMP}/gitops-phase-argocd/project.yaml" 2>&1 || true
+          kubectl --request-timeout=15s -n argocd get pods -o yaml > "${RUNNER_TEMP}/gitops-phase-argocd/pods.yaml" 2>&1 || true
+          kubectl --request-timeout=15s -n argocd get events --sort-by=.metadata.creationTimestamp > "${RUNNER_TEMP}/gitops-phase-argocd/events.log" 2>&1 || true
+          kubectl --request-timeout=15s -n argocd logs deployment/argocd-repo-server --all-containers=true > "${RUNNER_TEMP}/gitops-phase-argocd/repo-server.log" 2>&1 || true
+          kubectl --request-timeout=15s -n argocd logs statefulset/argocd-application-controller --all-containers=true > "${RUNNER_TEMP}/gitops-phase-argocd/controller.log" 2>&1 || true
+          kubectl --request-timeout=15s -n argocd logs deployment/argocd-server --all-containers=true > "${RUNNER_TEMP}/gitops-phase-argocd/server.log" 2>&1 || true
+          kubectl --request-timeout=15s -n argocd logs deployment/argocd-redis --all-containers=true > "${RUNNER_TEMP}/gitops-phase-argocd/redis.log" 2>&1 || true
+          kubectl --request-timeout=15s -n argocd logs deployment/argocd-repo-server --all-containers=true --previous > "${RUNNER_TEMP}/gitops-phase-argocd/repo-server-previous.log" 2>&1 || true
+
       - name: Upload lifecycle diagnostics
-        if: failure()
+        if: always() && (failure() || matrix.controller == 'argocd')
         uses: ./.github/actions/upload-artifact-retry
         with:
-          name: gitops-phase-${{ matrix.controller }}-diagnostics
-          path: ${{ runner.temp }}/gitops-phase-${{ matrix.controller }}.log
+          name: gitops-phase-${{ matrix.controller }}-diagnostics-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/gitops-phase-${{ matrix.controller }}.log
+            ${{ runner.temp }}/gitops-phase-${{ matrix.controller }}/
 
       - name: Delete KIND cluster
         if: always()
