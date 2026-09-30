@@ -131,6 +131,7 @@ deploy-camunda \
   --chart-path ./charts/camunda-platform-8.9 \
   --namespace test-eske \
   --release integration \
+  --kube-context "$CTX" \
   --scenario chart-full-setup \
   --identity keycloak \
   --persistence elasticsearch

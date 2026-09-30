@@ -96,6 +96,7 @@ deploy-camunda \
   --chart-path ./charts/camunda-platform-8.9 \
   --namespace $NS \
   --release $RELEASE \
+  --kube-context "$CTX" \
   --scenario chart-full-setup
 ```
 
