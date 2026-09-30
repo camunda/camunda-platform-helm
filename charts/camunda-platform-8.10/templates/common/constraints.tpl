@@ -1795,6 +1795,14 @@ The following values inside your values.yaml need to be set but were not:
     {{ include "camundaPlatform.keyDeprecated" (dict
       "condition" (not (empty .Values.orchestration.security.initialization.authorizations))
       "oldName" "orchestration.security.initialization.authorizations" "migration" $orchestrationExtra) }}
+    {{- $defaultRoles := .Values.orchestration.security.initialization.defaultRoles | default dict }}
+    {{- range $role, $cfg := $defaultRoles }}
+      {{- if kindIs "map" $cfg }}
+    {{ include "camundaPlatform.keyDeprecated" (dict
+      "condition" (not (empty (get $cfg "mappingRules")))
+      "oldName" (printf "orchestration.security.initialization.defaultRoles.%s.mappingRules" $role) "migration" $orchestrationExtra) }}
+      {{- end }}
+    {{- end }}
     {{ include "camundaPlatform.keyDeprecated" (dict
       "condition" (not .Values.orchestration.exporters.camunda.enabled)
       "oldName" "orchestration.exporters.camunda.enabled" "migration" $orchestrationExtra) }}
