@@ -1619,7 +1619,7 @@ The following values inside your values.yaml need to be set but were not:
       {{- $warningMessage := printf "%s %s %s"
           "[camunda][warning]"
           "This deployment spans more than one failure domain. The generated configuration includes contact points for this release's local zoned brokers and, during migration, retained numbered brokers."
-          "To discover brokers in other zones, set the complete local and remote contact-point list through camunda.cluster.initial-contact-points in \"orchestration.extraConfiguration\", or CAMUNDA_CLUSTER_INITIALCONTACTPOINTS in \"orchestration.env\"."
+          "To discover brokers in other zones, set one resolvable address per zone through camunda.cluster.initial-contact-points in \"orchestration.extraConfiguration\", or CAMUNDA_CLUSTER_INITIALCONTACTPOINTS in \"orchestration.env\"."
       -}}
       {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
       {{- else }}

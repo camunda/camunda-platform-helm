@@ -1412,6 +1412,36 @@ func (s *ConfigmapTemplateTest) TestClusterEnvironmentOverrides() {
 				require.Contains(t, network, "host")
 			},
 		},
+		{
+			Name: "Imported properties cluster configuration suppresses matching unified defaults",
+			Values: map[string]string{
+				"orchestration.profiles.broker":               "true",
+				"orchestration.extraConfiguration[0].file":    "cluster.properties",
+				"orchestration.extraConfiguration[0].content": "zeebe.broker.cluster.clusterName=imported\nzeebe.broker.network.advertisedHost=imported.example.com\n",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				cluster := requireApplicationCluster(t, output)
+				require.NotContains(t, cluster, "name")
+				network, ok := cluster["network"].(map[string]any)
+				require.True(t, ok)
+				require.NotContains(t, network, "advertised-host")
+			},
+		},
+		{
+			Name: "Imported later YAML document suppresses matching unified default",
+			Values: map[string]string{
+				"orchestration.profiles.broker":               "true",
+				"orchestration.extraConfiguration[0].file":    "cluster.yaml",
+				"orchestration.extraConfiguration[0].content": "unrelated: true\n---\ncamunda.cluster.partition-count: 9\n",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				cluster := requireApplicationCluster(t, output)
+				requireNestedKeyAbsent(t, cluster, "partition-count")
+				require.Contains(t, cluster, "size")
+			},
+		},
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
