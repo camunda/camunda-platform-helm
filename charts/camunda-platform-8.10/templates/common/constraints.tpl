@@ -1616,7 +1616,13 @@ The following values inside your values.yaml need to be set but were not:
       -}}
       {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
     {{- end }}
-    {{- if eq (include "camundaPlatform.spansFailureDomains" .) "true" }}
+    {{- $contactPointsSet := false }}
+    {{- range $env := (.Values.orchestration.env | default list) }}
+      {{- if eq (tpl ($env.name | default "") $) "CAMUNDA_CLUSTER_INITIALCONTACTPOINTS" }}
+        {{- $contactPointsSet = true }}
+      {{- end }}
+    {{- end }}
+    {{- if and (eq (include "camundaPlatform.spansFailureDomains" .) "true") (not $contactPointsSet) }}
       {{- if and (eq (include "orchestration.zoneAware" .) "true") (include "camundaPlatform.partitioning" . | fromJson).keepUnzonedBrokers }}
       {{- $warningMessage := printf "%s %s %s"
           "[camunda][warning]"
