@@ -70,6 +70,7 @@ type fakeCluster struct {
 	kc         map[string]string
 	pg         map[string]string
 	pods       map[string]string
+	created    map[string]time.Time
 	stamps     []string
 	bootNames  []string
 	bootDBPw   string
@@ -140,6 +141,25 @@ func (f *fakeCluster) kubectl(_ context.Context, stdin []byte, args ...string) (
 			}
 			return nil, nil
 		case "secret":
+			if flagValue(args, "-l") != "" {
+				var items []map[string]any
+				for key, data := range f.secrets {
+					name, ok := strings.CutPrefix(key, ns+"/")
+					if !ok || !strings.HasPrefix(name, "keycloak-reconcile-") {
+						continue
+					}
+					enc := map[string]string{}
+					for k, v := range data {
+						enc[k] = base64.StdEncoding.EncodeToString([]byte(v))
+					}
+					ts := f.created[key]
+					if ts.IsZero() {
+						ts = time.Unix(1_700_000_000, 0)
+					}
+					items = append(items, map[string]any{"metadata": map[string]any{"name": name, "creationTimestamp": ts.UTC().Format(time.RFC3339)}, "data": enc})
+				}
+				return json.Marshal(map[string]any{"items": items})
+			}
 			data, ok := f.secrets[ns+"/"+args[2]]
 			if !ok {
 				return nil, nil
@@ -620,6 +640,33 @@ func TestReconcileCredentials_EveryForceSyncAnnotationIsUnique(t *testing.T) {
 	}
 	if len(f.stamps) < 4 {
 		t.Fatalf("stamps = %d, want one per namespace per run", len(f.stamps))
+	}
+}
+
+func TestReconcileCredentials_RemovesABootstrapLeftByAnInterruptedRun(t *testing.T) {
+	f := newFakeCluster(t)
+	f.kc["master/deploy-camunda-reconcile-orphan01"] = "orphan-pw"
+	f.secrets["env-hub/keycloak-reconcile-orphan01"] = map[string]string{"username": "deploy-camunda-reconcile-orphan01", "password": "orphan-pw"}
+	f.pods["env-hub/keycloak-reconcile-orphan01"] = "Succeeded"
+	f.kc["master/deploy-camunda-reconcile-inflight"] = "inflight-pw"
+	f.secrets["env-hub/keycloak-reconcile-inflight"] = map[string]string{"username": "deploy-camunda-reconcile-inflight", "password": "inflight-pw"}
+	f.created = map[string]time.Time{"env-hub/keycloak-reconcile-inflight": time.Unix(1_790_000_000, 0)}
+
+	out, err := runReconcile(t, f)
+	if err != nil {
+		t.Fatalf("reconcile: %v\n%s", err, out)
+	}
+	if _, left := f.kc["master/deploy-camunda-reconcile-orphan01"]; left {
+		t.Error("the interrupted run's temporary admin is still in Keycloak")
+	}
+	if f.secrets["env-hub/keycloak-reconcile-orphan01"] != nil || f.pods["env-hub/keycloak-reconcile-orphan01"] != "" {
+		t.Error("the interrupted run's pod or secret is still there")
+	}
+	if _, kept := f.kc["master/deploy-camunda-reconcile-inflight"]; !kept || f.secrets["env-hub/keycloak-reconcile-inflight"] == nil {
+		t.Error("a recent bootstrap, possibly a concurrent run's, must be left alone")
+	}
+	if strings.Contains(out, "orphan-pw") {
+		t.Fatal("output leaks the temporary password")
 	}
 }
 

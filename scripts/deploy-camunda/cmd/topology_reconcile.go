@@ -567,6 +567,9 @@ func (r *credentialReconciler) reconcileKeycloak(ctx context.Context, ns string,
 			return err
 		}
 	}
+	if err := r.removeStaleBootstraps(ctx, ns, k, adminPw); err != nil {
+		return err
+	}
 	for _, u := range k.Users {
 		pw, err := value(u.SecretKey)
 		if err != nil {
@@ -638,7 +641,7 @@ func (r *credentialReconciler) resetKeycloakAdmin(ctx context.Context, ns string
 			LocalObjectReference: corev1.LocalObjectReference{Name: name}, Key: e.key,
 		}}})
 	}
-	labels := map[string]string{"app.kubernetes.io/managed-by": "deploy-camunda", "app.kubernetes.io/component": "keycloak-reconcile"}
+	labels := map[string]string{"app.kubernetes.io/managed-by": "deploy-camunda", "app.kubernetes.io/component": bootstrapComponent}
 	secret := corev1.Secret{
 		TypeMeta:   metav1.TypeMeta{APIVersion: "v1", Kind: "Secret"},
 		ObjectMeta: metav1.ObjectMeta{Name: name, Labels: labels},
@@ -776,6 +779,41 @@ func (r *credentialReconciler) reconcileElasticsearch(ctx context.Context, ns st
 		return err
 	}
 	fmt.Fprintf(r.out, "%s: elasticsearch %s password rotated from its previous value\n", ns, e.User)
+	return nil
+}
+
+const bootstrapComponent = "keycloak-reconcile"
+
+// removeStaleBootstraps removes the Keycloak user, Pod, and Secret of every
+// bootstrap a terminated run left behind. Only resources older than twice the
+// run timeout count as stale, so a concurrent run's bootstrap is left alone.
+func (r *credentialReconciler) removeStaleBootstraps(ctx context.Context, ns string, k matrix.KeycloakCredentialStore, adminPw string) error {
+	raw, err := r.kubectl(ctx, nil, "get", "secret", "-n", ns, "-l", "app.kubernetes.io/component="+bootstrapComponent, "-o", "json")
+	if err != nil {
+		return err
+	}
+	var list corev1.SecretList
+	if len(bytes.TrimSpace(raw)) > 0 {
+		if err := json.Unmarshal(raw, &list); err != nil {
+			return fmt.Errorf("decode bootstrap secrets: %w", err)
+		}
+	}
+	cutoff := r.now().Add(-2 * r.timeout)
+	for _, sec := range list.Items {
+		if !sec.CreationTimestamp.Time.Before(cutoff) {
+			continue
+		}
+		user, pw := string(sec.Data["username"]), string(sec.Data["password"])
+		if user != "" {
+			if err := r.removeTempAdmin(ctx, ns, k, user, pw, adminPw); err != nil {
+				return err
+			}
+		}
+		if _, err := r.kubectl(ctx, nil, "delete", "pod/"+sec.Name, "secret/"+sec.Name, "-n", ns, "--ignore-not-found", "--wait=true"); err != nil {
+			return err
+		}
+		fmt.Fprintf(r.out, "%s: removed a stale keycloak bootstrap (%s) left by an interrupted run\n", ns, sec.Name)
+	}
 	return nil
 }
 

@@ -163,3 +163,7 @@ so it needs a fourth cluster of its own.
   `dogfood-hub/integration-test-credentials-previous` holds the values the last
   complete run set, plus every value seen since, and reconcile falls back on
   them. Don't delete that Secret by hand.
+- **Don't change the source while a deploy is running.** Reconcile pins one
+  generation, but External Secrets can still pick up a newer one before the
+  deploy finishes, which restarts consumers with values the stores don't have
+  yet. The next `upgrade` repairs it.
