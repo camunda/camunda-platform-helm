@@ -189,3 +189,130 @@ func TestShellEnvRoundTripsThroughBash(t *testing.T) {
 		t.Fatalf("sourced value = %q, want %q", out, value)
 	}
 }
+
+// fakeKubectl puts a kubectl on PATH that logs its arguments and answers the
+// identity deployment and Secret reads with the given responses.
+func fakeKubectl(t *testing.T, responses map[string]string, failOn string) (logPath string) {
+	t.Helper()
+	dir := t.TempDir()
+	logPath = filepath.Join(dir, "calls.log")
+	for name, body := range responses {
+		writeFile(t, filepath.Join(dir, name), body)
+	}
+	script := `#!/bin/sh
+printf '%s\n' "$*" >> "` + logPath + `"
+if [ -n "$KUBECTL_FAIL_ON" ]; then
+  case "$*" in *"$KUBECTL_FAIL_ON"*) echo "boom" >&2; exit 1 ;; esac
+fi
+case "$*" in
+  *" get secret "*) cat "` + dir + `/secret" 2>/dev/null ;;
+  *'.valueFrom.secretKeyRef.name}') cat "` + dir + `/name" 2>/dev/null ;;
+  *'.valueFrom.secretKeyRef.key}') cat "` + dir + `/key" 2>/dev/null ;;
+  *'.value}') cat "` + dir + `/value" 2>/dev/null ;;
+esac
+exit 0
+`
+	writeFile(t, filepath.Join(dir, "kubectl"), script)
+	if err := os.Chmod(filepath.Join(dir, "kubectl"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", dir+string(os.PathListSeparator)+os.Getenv("PATH"))
+	t.Setenv("KUBECTL_FAIL_ON", failOn)
+	return logPath
+}
+
+func kubectlCalls(t *testing.T, logPath string) []string {
+	t.Helper()
+	raw, err := os.ReadFile(logPath)
+	if errors.Is(err, os.ErrNotExist) {
+		return nil
+	}
+	if err != nil {
+		t.Fatal(err)
+	}
+	return strings.Split(strings.TrimSuffix(string(raw), "\n"), "\n")
+}
+
+func TestIdentityClientSecret(t *testing.T) {
+	const deploymentRead = `-n ns get deployment -l app.kubernetes.io/component=identity -o jsonpath={.items[0].spec.template.spec.containers[0].env[?(@.name=="VALUES_VENOM_CLIENT_SECRET")]`
+	tests := []struct {
+		name        string
+		kubeContext string
+		responses   map[string]string
+		failOn      string
+		want        string
+		wantErr     string
+		wantCalls   []string
+	}{
+		{
+			name:      "inline value",
+			responses: map[string]string{"value": "inline-secret\n"},
+			want:      "inline-secret",
+			wantCalls: []string{deploymentRead + ".value}"},
+		},
+		{
+			name:        "Secret reference with kube context",
+			kubeContext: "gke-ctx",
+			responses: map[string]string{
+				"name":   "integration-test-credentials",
+				"key":    "identity-admin-client-password",
+				"secret": "cEBzcyd3b3Jk", // p@ss'word
+			},
+			want: "p@ss'word",
+			wantCalls: []string{
+				"--context gke-ctx " + deploymentRead + ".value}",
+				"--context gke-ctx " + deploymentRead + ".valueFrom.secretKeyRef.name}",
+				"--context gke-ctx " + deploymentRead + ".valueFrom.secretKeyRef.key}",
+				"--context gke-ctx -n ns get secret integration-test-credentials -o jsonpath={.data['identity-admin-client-password']}",
+			},
+		},
+		{
+			name: "client not configured",
+			want: "",
+			wantCalls: []string{
+				deploymentRead + ".value}",
+				deploymentRead + ".valueFrom.secretKeyRef.name}",
+			},
+		},
+		{
+			name:      "deployment read fails",
+			failOn:    "get deployment",
+			wantErr:   "read VALUES_VENOM_CLIENT_SECRET from the identity deployment in ns",
+			wantCalls: []string{deploymentRead + ".value}"},
+		},
+		{
+			name:      "Secret read fails",
+			responses: map[string]string{"name": "creds", "key": "pw"},
+			failOn:    "get secret",
+			wantErr:   "read creds/pw in ns",
+		},
+		{
+			name:      "Secret value is not base64",
+			responses: map[string]string{"name": "creds", "key": "pw", "secret": "not base64!"},
+			wantErr:   "illegal base64",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			logPath := fakeKubectl(t, tt.responses, tt.failOn)
+
+			got, err := identityClientSecret(tt.kubeContext, "ns", "venom")
+
+			if tt.wantErr != "" {
+				if err == nil || !strings.Contains(err.Error(), tt.wantErr) {
+					t.Fatalf("error = %v, want it to contain %q", err, tt.wantErr)
+				}
+			} else if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if got != tt.want {
+				t.Errorf("secret = %q, want %q", got, tt.want)
+			}
+			if tt.wantCalls != nil {
+				if calls := kubectlCalls(t, logPath); !reflect.DeepEqual(calls, tt.wantCalls) {
+					t.Errorf("kubectl calls:\n%s\nwant:\n%s", strings.Join(calls, "\n"), strings.Join(tt.wantCalls, "\n"))
+				}
+			}
+		})
+	}
+}
