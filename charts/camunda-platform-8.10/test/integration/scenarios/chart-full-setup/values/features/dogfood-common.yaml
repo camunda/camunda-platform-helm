@@ -14,7 +14,7 @@
 # - Every component that reads integration-test-credentials carries the
 #   credentials checksum, so a rotated credential restarts it in the same
 #   deploy. DOGFOOD_CREDENTIALS_CHECKSUM comes from
-#   `deploy-camunda topology credentials-checksum`.
+#   `deploy-camunda topology reconcile-credentials --checksum-file`.
 
 global:
   ingress:
