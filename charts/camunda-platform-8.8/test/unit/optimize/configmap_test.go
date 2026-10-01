@@ -171,6 +171,32 @@ func (s *ConfigMapTemplateTest) TestDifferentValuesInputs() {
 				s.Require().Contains(security, "ssl")
 			},
 		},
+		{
+			Name:                 "TestExternalElasticsearchHttpEmptyUsernameOmitted",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"optimize.enabled":                   "true",
+				"elasticsearch.enabled":              "false",
+				"global.elasticsearch.external":      "true",
+				"global.elasticsearch.url.protocol":  "http",
+				"global.elasticsearch.url.host":      "external-es",
+				"global.elasticsearch.auth.username": "",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				var configmapApplication map[string]interface{}
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+				e := yaml.Unmarshal([]byte(configmap.Data["environment-config.yaml"]), &configmapApplication)
+				if e != nil {
+					s.Fail("Failed to unmarshal yaml. error=", e)
+				}
+
+				es := configmapApplication["es"].(map[string]interface{})
+				s.Require().Contains(es, "security")
+				s.Require().Nil(es["security"])
+			},
+		},
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
