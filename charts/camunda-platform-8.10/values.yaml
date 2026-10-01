@@ -211,6 +211,12 @@ global:
       secretName: camunda-platform
       ## @param global.gateway.tls.port defines the port of the HTTPS Gateway listeners.
       port: 443
+    ## @extra global.gateway.publicPorts configuration for the ports clients use to reach Gateway endpoints when they differ from the Gateway listener ports, for example when a LoadBalancer Service maps port 443 to a listener on port 8443. Used by chart-derived URLs and Identity callbacks. Does not configure listeners or Services.
+    publicPorts:
+      ## @param global.gateway.publicPorts.http [default: ~] can be used to set the public port for Gateway endpoints with TLS disabled. Defaults to global.gateway.port. Port 80 is omitted from HTTP URLs.
+      http: ~
+      ## @param global.gateway.publicPorts.https [default: ~] can be used to set the public port for Gateway endpoints with TLS enabled. Defaults to global.gateway.tls.port. Port 443 is omitted from HTTPS URLs.
+      https: ~
     ## @param global.gateway.controllerNamespace can be used to set the namespace from which an external controller or operator creates Routes that route traffic to Camunda services. The chart places this value in the ReferenceGrant's from.namespace, which is the Kubernetes permission that authorizes those Routes to reach Camunda services. Leave empty (the default) when Routes are created by this chart.
     controllerNamespace: ""
     ## @param global.gateway.namespace can be used to set the namespace where the Gateway that the Routes point to lives. When the Gateway lives in a different namespace than the Camunda components (for example, a shared Gateway in an infrastructure namespace), set this to that namespace. The chart adds namespace: <value> to the parentRefs of every Route so Kubernetes can locate the cross-namespace Gateway. When unset, Kubernetes assumes the Gateway is in the same namespace as the Route. Also set global.gateway.createGatewayResource=false when the Gateway is managed outside this chart.

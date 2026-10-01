@@ -153,6 +153,49 @@ func (s *ReleaseInfoGatewayTest) TestExternalURLsUseGlobalHost() {
 				require.NotContains(t, output, "https://camunda.example.com/auth")
 			},
 		},
+		{
+			Name: "GatewayTLSPublicPortOverridesListenerPort",
+			Values: map[string]string{
+				"global.ingress.enabled":            "false",
+				"global.gateway.enabled":            "true",
+				"global.gateway.tls.enabled":        "true",
+				"global.gateway.tls.port":           "8443",
+				"global.gateway.publicPorts.https":  "443",
+				"global.gateway.tls.secretName":     "camunda-tls",
+				"global.host":                       "camunda.example.com",
+				"global.identity.keycloak.internal": "true",
+				"identity.contextPath":              "/identity",
+				"identity.enabled":                  "true",
+			},
+			Template: "templates/common/configmap-release.yaml",
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "url: https://camunda.example.com/identity")
+				require.Contains(t, output, "url: https://camunda.example.com/operate")
+				require.Contains(t, output, "https://camunda.example.com/auth")
+				require.NotContains(t, output, "camunda.example.com:8443")
+			},
+		},
+		{
+			Name: "PlaintextGatewayPublicPortOverridesListenerPort",
+			Values: map[string]string{
+				"global.ingress.enabled":            "false",
+				"global.gateway.enabled":            "true",
+				"global.gateway.port":               "8000",
+				"global.gateway.publicPorts.http":   "9080",
+				"global.gateway.tls.enabled":        "false",
+				"global.host":                       "camunda.example.com",
+				"global.identity.keycloak.internal": "true",
+				"identity.enabled":                  "true",
+			},
+			Template: "templates/common/configmap-release.yaml",
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "url: http://camunda.example.com:9080/operate")
+				require.Contains(t, output, "http://camunda.example.com:9080/auth")
+				require.NotContains(t, output, "camunda.example.com:8000")
+			},
+		},
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, nil, testCases)
