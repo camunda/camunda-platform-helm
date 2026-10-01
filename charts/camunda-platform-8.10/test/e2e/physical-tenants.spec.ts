@@ -19,7 +19,9 @@ test("Hub deploys through the selected Physical Tenant environment", async ({
   const webModelerURL = process.env.WEBMODELER_BASE_URL;
   const baseURL = process.env.BASE_URL;
   const keycloakURL = process.env.KEYCLOAK_BASE_URL;
-  const clientSecret = process.env.DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET;
+  // The venom client has its own secret; DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET belongs to
+  // a different client and Keycloak rejects it for venom.
+  const clientSecret = process.env.VENOM_CLIENT_SECRET;
   const physicalTenantId = process.env.PHYSICAL_TENANT_ID;
   expect(webModelerURL).toBeTruthy();
   expect(baseURL).toBeTruthy();

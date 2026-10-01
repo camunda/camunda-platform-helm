@@ -275,7 +275,7 @@ func runPhysicalTenantAcceptance(ctx context.Context, opts physicalTenantAccepta
 	fmt.Fprintln(deps.out, "Legacy exporter opened for all 3 physical tenants, with no blocked exporters.")
 
 	secretNames := map[string]string{
-		"venom": "identity-admin-client-password", "default": "identity-optimize-default-client-token",
+		"venom": venomClientSecretKey, "default": "identity-optimize-default-client-token",
 		"tenanta": "identity-optimize-tenanta-client-token", "tenantb": "identity-optimize-tenantb-client-token",
 	}
 	tokens := map[string]string{}
