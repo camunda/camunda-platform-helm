@@ -303,7 +303,6 @@
       ],
       matchFileNames: [
         // bump these to whatever the latest alpha is
-        'charts/camunda-platform-8.10/Chart.yaml',
       ],
       versioning: 'regex:^(?<major>\\d+)(\\.(?<minor>\\d+))(\\.(?<patch>\\d+))(-(?<prerelease>alpha\\d+))$',
     },
@@ -332,6 +331,9 @@
         'charts/camunda-platform-8.9/values.yaml',
         'charts/camunda-platform-8.9/values-latest.yaml',
         'charts/camunda-platform-8.9/values-enterprise.yaml',
+        'charts/camunda-platform-8.10/Chart.yaml',
+        'charts/camunda-platform-8.10/values.yaml',
+        'charts/camunda-platform-8.10/values-latest.yaml',
       ],
       matchUpdateTypes: ['patch', 'pin'],
       schedule: ['at any time'],
@@ -350,27 +352,18 @@
         'docker',
         'regex',
       ],
-      matchFileNames: [
-        'charts/camunda-platform-8.10/Chart.yaml',
-        'charts/camunda-platform-8.10/values.yaml',
-        'charts/camunda-platform-8.10/values-latest.yaml',
-        'charts/camunda-platform-8.10/values-enterprise.yaml',
-      ],
+      matchFileNames: [],
       matchUpdateTypes: ['major', 'minor', 'patch'],
       schedule: ['at any time'],
       addLabels: ['camunda-platform', 'priority-high'],
       prCreation: 'immediate',
     },
     {
-      description: 'Parse Camunda 8.10 image tags as semver so alpha updates work',
+      description: 'Parse Camunda alpha chart image tags as semver so alpha updates work',
       enabled: true,
       matchPackageNames: ['/.*camunda.*/'],
       matchDatasources: ['helm', 'helm-values', 'docker', 'regex'],
-      matchFileNames: [
-        'charts/camunda-platform-8.10/Chart.yaml',
-        'charts/camunda-platform-8.10/values.yaml',
-        'charts/camunda-platform-8.10/values-latest.yaml',
-      ],
+      matchFileNames: [],
       versioning: 'regex:^(?<major>\\d+)(\\.(?<minor>\\d+))(\\.(?<patch>\\d+))(-(?<prerelease>alpha\\d+))$',
     },
     {

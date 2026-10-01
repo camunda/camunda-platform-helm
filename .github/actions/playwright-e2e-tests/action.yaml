@@ -76,6 +76,10 @@ inputs:
       a mutable ref lets whoever can move it run arbitrary code here.
     required: false
     default: ""
+  e2e-test-suite-version:
+    description: Published @camunda/e2e-test-suite version to install. Empty installs latest.
+    required: false
+    default: ""
   e2e-test-suite-token:
     description: Token with read access to camunda/c8-cross-component-e2e-tests.
     required: false
@@ -339,6 +343,7 @@ runs:
         E2E_ARG_MODELER_CLUSTER_NAME: ${{ inputs.modeler-cluster-name }}
         REQUIRE_SM_810_TEST_SUITE: ${{ inputs.hub-namespace != '' }}
         REQUIRE_HUB_WEB_MODELER_TEST_SUITE: ${{ inputs.playwright-project == 'hub-web-modeler' }}
+        E2E_TEST_SUITE_VERSION: ${{ inputs.e2e-test-suite-version }}
       run: |
         cd "$GITHUB_WORKSPACE/scripts"
         # Unset KEYCLOAK_REALM to avoid conflicts with the integration tests

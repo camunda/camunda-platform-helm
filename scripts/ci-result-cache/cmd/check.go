@@ -40,12 +40,15 @@ Exit codes:
 }
 
 var (
-	checkSHA       string
-	checkVersion   string
-	checkShortname string
-	checkFlow      string
-	checkRepoRoot  string
-	checkTTL       time.Duration
+	checkSHA             string
+	checkVersion         string
+	checkShortname       string
+	checkFlow            string
+	checkPlatform        string
+	checkRepoRoot        string
+	checkChartVersions   string
+	checkE2ESuiteVersion string
+	checkTTL             time.Duration
 )
 
 func init() {
@@ -53,17 +56,23 @@ func init() {
 	checkCmd.Flags().StringVar(&checkVersion, "version", "", "Chart version (e.g., 8.9) (required)")
 	checkCmd.Flags().StringVar(&checkShortname, "shortname", "", "Scenario shortname (e.g., oske) (required)")
 	checkCmd.Flags().StringVar(&checkFlow, "flow", "", "Flow name (e.g., install, upgrade-minor) (required)")
+	checkCmd.Flags().StringVar(&checkPlatform, "platform", "", "Platform the scenario runs on (e.g., gke, eks) (required)")
 	checkCmd.Flags().StringVar(&checkRepoRoot, "repo-root", ".", "Repository root directory")
+	checkCmd.Flags().StringVar(&checkChartVersions, "chart-versions", "", "Comma-separated chart versions the scenario deploys (e.g., 8.10,8.9) (required)")
+	checkCmd.Flags().StringVar(&checkE2ESuiteVersion, "e2e-test-suite-version", "", "@camunda/e2e-test-suite version the scenario runs (required)")
 	checkCmd.Flags().DurationVar(&checkTTL, "ttl", cache.DefaultTTL, "Maximum age of cached results (e.g., 24h, 12h, 0 to disable)")
 
 	_ = checkCmd.MarkFlagRequired("sha")
 	_ = checkCmd.MarkFlagRequired("version")
 	_ = checkCmd.MarkFlagRequired("shortname")
 	_ = checkCmd.MarkFlagRequired("flow")
+	_ = checkCmd.MarkFlagRequired("platform")
+	_ = checkCmd.MarkFlagRequired("chart-versions")
+	_ = checkCmd.MarkFlagRequired("e2e-test-suite-version")
 }
 
 func runCheck(cmd *cobra.Command, args []string) error {
-	contentHash, err := hash.Compute(checkRepoRoot, checkVersion)
+	contentHash, err := hash.Compute(checkRepoRoot, hash.ChartVersionsFromCSV(checkChartVersions), checkE2ESuiteVersion)
 	if err != nil {
 		return fmt.Errorf("computing content hash: %w", err)
 	}
@@ -78,7 +87,7 @@ func runCheck(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("fetching statuses: %w", err)
 	}
 
-	context := cache.StatusContext(checkVersion, checkShortname, checkFlow)
+	context := cache.StatusContext(checkVersion, checkShortname, checkFlow, checkPlatform)
 	cached := cache.Check(statuses, context, contentHash, checkTTL)
 
 	if cached {

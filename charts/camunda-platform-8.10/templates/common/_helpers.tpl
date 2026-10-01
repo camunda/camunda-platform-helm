@@ -1602,16 +1602,14 @@ required by camunda.modeler.clusters (introduced in 8.10 Hub/WebModeler).
 ********************************************************************************
 */}}
 {{- define "camundaPlatform.defaultWebModelerCluster" -}}
-    {{- $hub := include "camundaHub.values" . | fromYaml -}}
-{{- if or (eq (include "camundaPlatform.identityEnabled" .) "true") (eq (include "camundaHub.webModelerEnabled" .) "true") }}
+{{- if eq (include "camundaPlatform.identityEnabled" .) "true" }}
 - id: "management-cluster"
-  name: "hub"
-  version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" (dict "image" ($hub.image))) | quote }}
+  name: "Management Identity"
+  version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.identity) | quote }}
   authentication: {{ include "webModeler.authConfigValue" . | quote }}
   authorizations:
     enabled: false
   components:
-  {{- if eq (include "camundaPlatform.identityEnabled" .) "true" }}
   {{- $proto := (lower .Values.identity.readinessProbe.scheme) }}
   {{- $baseURLInternal := printf "%s://%s.%s:%v" $proto (include "identity.fullname" .) .Release.Namespace .Values.identity.service.metricsPort }}
   - name: Identity
@@ -1620,17 +1618,6 @@ required by camunda.modeler.clusters (introduced in 8.10 Hub/WebModeler).
     urls:
       webapp: {{ include "camundaPlatform.identityExternalURL" . | quote }}
       readiness: {{ printf "%s%s" $baseURLInternal .Values.identity.readinessProbe.probePath | quote }}
-  {{- end }}
-  {{- if eq (include "camundaHub.webModelerEnabled" .) "true" }}
-  {{- $proto := (lower $hub.restapi.readinessProbe.scheme) }}
-  {{- $baseURLInternal := printf "%s://%s.%s:%v" $proto (include "webModeler.restapi.fullname" .) .Release.Namespace $hub.restapi.service.managementPort }}
-  - name: WebModeler
-    type: hub
-    version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" (dict "image" ($hub.image))) | quote }}
-    urls:
-      webapp: {{ include "camundaPlatform.webModelerExternalURL" . | quote }}
-      readiness: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list $hub.contextPath $hub.restapi.readinessProbe.probePath)) | quote }}
-  {{- end }}
 {{- end }}
 {{- if or (eq (include "camundaPlatform.orchestrationEnabled" .) "true") (eq (include "camundaPlatform.optimizeEnabled" .) "true") (eq (include "camundaPlatform.connectorsEnabled" .) "true") }}
 - id: "default-cluster"
@@ -1719,7 +1706,9 @@ required by camunda.modeler.clusters (introduced in 8.10 Hub/WebModeler).
 {{- $gatewayName := $orchestration.gatewayServiceName | default (printf "%s-gateway" $orchestrationName) }}
 {{- $operateName := $orchestration.operateServiceName | default (include "camundaPlatform.topologyComponentFullname" (dict "releaseName" $cluster.releaseName "componentName" "operate")) }}
 {{- $tasklistName := $orchestration.tasklistServiceName | default (include "camundaPlatform.topologyComponentFullname" (dict "releaseName" $cluster.releaseName "componentName" "tasklist")) }}
-{{- $optimizeName := $optimize.serviceName | default (include "camundaPlatform.topologyComponentFullname" (dict "releaseName" $cluster.releaseName "componentName" "optimize")) }}
+{{- $optimizeName := $optimize.serviceName | default (include "camundaPlatform.topologyComponentFullname" (dict "releaseName" ($optimize.releaseName | default $cluster.releaseName) "componentName" "optimize")) }}
+{{- $optimizeNamespace := $optimize.namespace | default $cluster.namespace }}
+{{- $optimizeHost := $optimize.host | default $cluster.host }}
 {{- $connectorsName := $connectors.serviceName | default (include "camundaPlatform.topologyComponentFullname" (dict "releaseName" $cluster.releaseName "componentName" "connectors")) }}
 - id: {{ $cluster.id | quote }}
   name: {{ ($cluster.name | default $cluster.id) | quote }}
@@ -1735,8 +1724,8 @@ required by camunda.modeler.clusters (introduced in 8.10 Hub/WebModeler).
     type: optimize
     version: {{ $cluster.version | quote }}
     urls:
-      webapp: {{ tpl ($optimize.webappUrl | default (printf "https://%s%s" $cluster.host $optimizePath)) $ | quote }}
-      readiness: {{ $optimize.readinessUrl | default (printf "http://%s.%s.svc.cluster.local:80%s/api/readyz" $optimizeName $cluster.namespace $optimizePath) | quote }}
+      webapp: {{ tpl ($optimize.webappUrl | default (printf "https://%s%s" $optimizeHost $optimizePath)) $ | quote }}
+      readiness: {{ $optimize.readinessUrl | default (printf "http://%s.%s.svc.cluster.local:80%s/api/readyz" $optimizeName $optimizeNamespace $optimizePath) | quote }}
   {{- end }}
   {{- if $connectors.enabled }}
   - name: Connectors
@@ -2689,7 +2678,7 @@ Release highlights.
 - Some values have been renamed or moved in the new chart structure.
 - When upgraded from 8.9 to 8.10, manual adjustments may be required for some cases like custom configurations.
 - Please refer to the official docs for more details.
-https://docs.camunda.io/docs/self-managed/deployment/helm/upgrade/upgrade-hc-890-8100/
+https://docs.camunda.io/docs/8.10/self-managed/upgrade/helm/890-to-8100/
 {{- end -}}
 
 {{- /*

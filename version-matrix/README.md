@@ -10,9 +10,12 @@ helm repo add camunda https://helm.camunda.io
 helm search repo camunda/camunda-platform --devel --versions
 ```
 
-## Camunda 8.10 — Alpha
+## Camunda 8.10 — Standard support until 2028-04-11
 
-> Deploys Camunda Hub (the management plane replacing Web Modeler and Console SM). For the Orchestration Cluster versions Hub can manage, see the [Hub documentation](https://docs.camunda.io/docs/next/self-managed/components/hub/configuration/properties/).
+> Deploys Camunda Hub (the management plane replacing Web Modeler and Console SM). For the Orchestration Cluster versions Hub can manage, see the [Hub documentation](https://docs.camunda.io/docs/8.10/self-managed/components/hub/configuration/properties/).
+
+> Standard support lasts 18 months from release; fixes ship in the newest chart for that minor.
+> Upgrade one minor at a time and review the [upgrade instructions](https://docs.camunda.io/docs/self-managed/upgrade/) first.
 
 | Helm Chart | Camunda | Released | Helm CLI | Helm Values | Release Notes |
 |---|---|---|---|---|---|
@@ -25,9 +28,6 @@ helm search repo camunda/camunda-platform --devel --versions
 [All 5 chart versions for Camunda 8.10 →](./camunda-8.10/)
 
 ## Camunda 8.9 — Standard support until 2027-10-13
-
-> Standard support lasts 18 months from release; fixes ship in the newest chart for that minor.
-> Upgrade one minor at a time and review the [upgrade instructions](https://docs.camunda.io/docs/self-managed/upgrade/) first.
 
 | Helm Chart | Camunda | Released | Helm CLI | Helm Values | Release Notes |
 |---|---|---|---|---|---|

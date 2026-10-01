@@ -102,6 +102,7 @@ jobs:
       camunda-versions: ${{ steps.generate-chart-versions.outputs.camunda-versions }}
       workspace: ${{ github.workspace }}
       pr-head-sha: ${{ steps.resolve-pr-sha.outputs.pr-head-sha }}
+      e2e-test-suite-version: ${{ steps.resolve-e2e-suite.outputs.version }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -115,6 +116,17 @@ jobs:
           manual-scenario: ${{ github.event.inputs.scenario || 'none' }}
           manual-flow: ${{ github.event.inputs.flows || 'none' }}
           tier: ${{ github.event_name == 'pull_request' && '1' || '' }}
+
+      - name: Resolve e2e test suite version
+        id: resolve-e2e-suite
+        if: steps.generate-chart-versions.outputs.camunda-versions != '[]'
+        run: |
+          if ! version=$(npm view @camunda/e2e-test-suite version) || [[ -z "$version" ]]; then
+            echo "::warning::Could not resolve the @camunda/e2e-test-suite version. E2E jobs install latest and the result cache is off for this run."
+            exit 0
+          fi
+          echo "E2E test suite version: ${version}"
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
 
       # Resolve PR HEAD SHA for cache operations.
       # - pull_request: directly available from event context
@@ -145,7 +157,7 @@ jobs:
       # The gate is pr-head-sha != '' (set by resolve-pr-sha only for pull_request and
       # merge_group), so push/schedule/dispatch runs still execute the full matrix.
       - name: Setup Go for cache annotation
-        if: steps.resolve-pr-sha.outputs.pr-head-sha != ''
+        if: steps.resolve-pr-sha.outputs.pr-head-sha != '' && steps.resolve-e2e-suite.outputs.version != ''
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
         with:
           go-version-file: scripts/ci-result-cache/go.mod
@@ -157,7 +169,7 @@ jobs:
 
       - name: Annotate matrix with cache status
         id: annotate-cache
-        if: steps.resolve-pr-sha.outputs.pr-head-sha != ''
+        if: steps.resolve-pr-sha.outputs.pr-head-sha != '' && steps.resolve-e2e-suite.outputs.version != ''
         env:
           GITHUB_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
@@ -166,6 +178,7 @@ jobs:
           ANNOTATED=$(echo '${{ steps.generate-chart-versions.outputs.matrix }}' | \
             /tmp/ci-result-cache annotate-matrix \
               --sha "${{ steps.resolve-pr-sha.outputs.pr-head-sha }}" \
+              --e2e-test-suite-version "${{ steps.resolve-e2e-suite.outputs.version }}" \
               --repo-root "${{ github.workspace }}")
           echo "matrix=${ANNOTATED}" >> "$GITHUB_OUTPUT"
 
@@ -286,6 +299,8 @@ jobs:
       helm-version: ${{ matrix.helmVersion }}
       cached: ${{ matrix.cached == 'true' }}
       pr-head-sha: ${{ needs.init.outputs.pr-head-sha }}
+      chart-versions: ${{ matrix.chartVersions }}
+      e2e-test-suite-version: ${{ needs.init.outputs.e2e-test-suite-version }}
 
   # Aggregation gate job that fails if any CI job fails.
   # Add this job's name ("CI Gate") to the ruleset's required status checks

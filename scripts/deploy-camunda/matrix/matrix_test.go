@@ -847,8 +847,8 @@ func TestLoadChartVersions(t *testing.T) {
 		t.Fatal("LoadChartVersions: no active versions")
 	}
 
-	if cv.BucketOf("8.10") != versionmatrix.BucketAlpha {
-		t.Error("LoadChartVersions: 8.10 not found in alpha")
+	if cv.BucketOf("8.10") != versionmatrix.BucketSupportStandard {
+		t.Error("LoadChartVersions: 8.10 not found in supportStandard")
 	}
 }
 

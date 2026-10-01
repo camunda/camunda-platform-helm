@@ -1031,22 +1031,22 @@
                                     "properties": {
                                         "clientId": {
                                             "type": "string",
-                                            "description": "defines the client id, which is used by Camunda Hub in authentication flows. This 8.10 alpha override replaces global.identity.auth.camundaHub.webModeler.clientId.",
+                                            "description": "defines the client id, which is used by Camunda Hub in authentication flows. This 8.10 override replaces global.identity.auth.camundaHub.webModeler.clientId.",
                                             "default": ""
                                         },
                                         "clientApiAudience": {
                                             "type": "string",
-                                            "description": "defines the audience which is used by Camunda Hub's client API. This 8.10 alpha override replaces global.identity.auth.camundaHub.webModeler.clientApiAudience.",
+                                            "description": "defines the audience which is used by Camunda Hub's client API. This 8.10 override replaces global.identity.auth.camundaHub.webModeler.clientApiAudience.",
                                             "default": ""
                                         },
                                         "publicApiAudience": {
                                             "type": "string",
-                                            "description": "defines the audience which is used by Camunda Hub's public API. This 8.10 alpha override replaces global.identity.auth.camundaHub.webModeler.publicApiAudience.",
+                                            "description": "defines the audience which is used by Camunda Hub's public API. This 8.10 override replaces global.identity.auth.camundaHub.webModeler.publicApiAudience.",
                                             "default": ""
                                         },
                                         "redirectUrl": {
                                             "type": "string",
-                                            "description": "defines the root URL which is used by Keycloak to access Camunda Hub. This 8.10 alpha override replaces global.identity.auth.camundaHub.webModeler.redirectUrl.",
+                                            "description": "defines the root URL which is used by Keycloak to access Camunda Hub. This 8.10 override replaces global.identity.auth.camundaHub.webModeler.redirectUrl.",
                                             "default": ""
                                         }
                                     },
@@ -2220,7 +2220,7 @@
                         "string",
                         "null"
                     ],
-                    "description": "can be used to make Camunda Hub available on a custom sub-path. This 8.10 alpha override replaces camundaHub.webModeler.contextPath.",
+                    "description": "can be used to make Camunda Hub available on a custom sub-path. This 8.10 override replaces camundaHub.webModeler.contextPath.",
                     "default": null,
                     "nullable": true
                 },
@@ -2330,7 +2330,7 @@
                 },
                 "contextPath": {
                     "type": "string",
-                    "description": "can be used to make WebModeler available on a custom sub-path. This is mainly used to run the Camunda web applications under a single domain. For the 8.10 alpha Camunda Hub override, use camundaHub.contextPath instead of camundaHub.webModeler.contextPath.",
+                    "description": "can be used to make WebModeler available on a custom sub-path. This is mainly used to run the Camunda web applications under a single domain. For the 8.10 Camunda Hub override, use camundaHub.contextPath instead of camundaHub.webModeler.contextPath.",
                     "default": ""
                 },
                 "security": {
@@ -3373,7 +3373,7 @@
                         },
                         "deploymentStrategy": {
                             "type": "string",
-                            "description": "update strategy for the restapi Deployment. Defaults to RollingUpdate, which is always safe because the default chart-managed persistence path uses a per-pod ephemeral volume (no concurrent-attach contention). Set to \"Recreate\" only when using existingClaim with a ReadWriteOnce volume that cannot tolerate concurrent attach during a rollout (introduces brief downtime per upgrade). For the 8.10 alpha Camunda Hub override, use camundaHub.persistence.deploymentStrategy instead of camundaHub.webModeler.persistence.deploymentStrategy.",
+                            "description": "update strategy for the restapi Deployment. Defaults to RollingUpdate, which is always safe because the default chart-managed persistence path uses a per-pod ephemeral volume (no concurrent-attach contention). Set to \"Recreate\" only when using existingClaim with a ReadWriteOnce volume that cannot tolerate concurrent attach during a rollout (introduces brief downtime per upgrade). For the 8.10 Camunda Hub override, use camundaHub.persistence.deploymentStrategy instead of camundaHub.webModeler.persistence.deploymentStrategy.",
                             "default": "RollingUpdate",
                             "enum": [
                                 "RollingUpdate",
@@ -7624,6 +7624,15 @@
                 "serviceName": {
                     "type": "string"
                 },
+                "namespace": {
+                    "type": "string"
+                },
+                "releaseName": {
+                    "type": "string"
+                },
+                "host": {
+                    "type": "string"
+                },
                 "webappUrl": {
                     "type": "string",
                     "pattern": "^$|^https?://(?:[^\\s{}]|\\{\\{[^}]*\\}\\})+$"
@@ -7766,6 +7775,16 @@
                 "name": {
                     "type": "string",
                     "minLength": 1
+                },
+                "contextPaths": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                        "optimize": {
+                            "type": "string",
+                            "pattern": "^$|^/"
+                        }
+                    }
                 },
                 "components": {
                     "type": "object",

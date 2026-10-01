@@ -68,3 +68,103 @@ stub_playwright_run() {
   [ "$status" -eq 0 ]
   [[ "$output" == *"playwright-arg: --shard=2/3"* ]]
 }
+
+installed_e2e_suite() {
+  export INSTALLED_E2E_SUITE_VERSION="$1"
+  npm() {
+    printf '{"dependencies":{"@camunda/e2e-test-suite":{"version":"%s"}}}\n' "$INSTALLED_E2E_SUITE_VERSION"
+  }
+}
+
+prebuilt_e2e_suite_dir() {
+  local dir="$BATS_TEST_TMPDIR/e2e"
+  mkdir -p "$dir/node_modules"
+  printf '{"dependencies":{"@camunda/e2e-test-suite":"latest"}}\n' > "$dir/package.json"
+  printf '%s\n' "$dir"
+}
+
+@test "a pinned e2e suite version is installed instead of latest" {
+  npm() { printf 'npm %s\n' "$*"; }
+  E2E_TEST_SUITE_VERSION=0.0.1251
+
+  run _setup_playwright_environment "$(prebuilt_e2e_suite_dir)"
+
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"npm install @camunda/e2e-test-suite@0.0.1251 --no-save"* ]]
+}
+
+@test "an unpinned run installs the latest e2e suite" {
+  npm() { printf 'npm %s\n' "$*"; }
+  unset E2E_TEST_SUITE_VERSION
+
+  run _setup_playwright_environment "$(prebuilt_e2e_suite_dir)"
+
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"npm install @camunda/e2e-test-suite@latest --no-save"* ]]
+}
+
+@test "an installed e2e suite that differs from the pinned version fails the run" {
+  installed_e2e_suite 0.0.1250
+  E2E_TEST_SUITE_VERSION=0.0.1251
+
+  run _log_e2e_suite_version
+
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"0.0.1250 does not match the pinned version 0.0.1251"* ]]
+}
+
+@test "an installed e2e suite that matches the pinned version passes" {
+  installed_e2e_suite 0.0.1251
+  E2E_TEST_SUITE_VERSION=0.0.1251
+
+  run _log_e2e_suite_version
+
+  [ "$status" -eq 0 ]
+}
+
+@test "an unpinned run accepts any installed e2e suite version" {
+  installed_e2e_suite 0.0.1250
+  unset E2E_TEST_SUITE_VERSION
+
+  run _log_e2e_suite_version
+
+  [ "$status" -eq 0 ]
+}
+
+@test "a locally linked e2e suite skips the pinned version check" {
+  installed_e2e_suite 0.0.1
+  E2E_TEST_SUITE_VERSION=0.0.1251
+  PLAYWRIGHT_E2E_LOCAL_TEST_SUITE="$BATS_TEST_TMPDIR/local-suite"
+
+  run _log_e2e_suite_version
+
+  [ "$status" -eq 0 ]
+}
+
+slow_path_e2e_suite_dir() {
+  local dir="$BATS_TEST_TMPDIR/e2e-slow"
+  mkdir -p "$dir"
+  printf '{"dependencies":{"@camunda/e2e-test-suite":"latest"}}\n' > "$dir/package.json"
+  printf '%s\n' "$dir"
+}
+
+@test "the slow install path installs a pinned e2e suite version instead of updating to latest" {
+  npm() { printf 'npm %s\n' "$*"; }
+  PREBUILT_E2E_NODE_MODULES="$BATS_TEST_TMPDIR/no-prebuilt-tree"
+  E2E_TEST_SUITE_VERSION=0.0.1251
+
+  run _setup_playwright_environment "$(slow_path_e2e_suite_dir)"
+
+  [[ "$output" == *"npm install @camunda/e2e-test-suite@0.0.1251 --save-exact"* ]]
+  [[ "$output" != *"npm update"* ]]
+}
+
+@test "the slow install path updates an unpinned e2e suite to latest" {
+  npm() { printf 'npm %s\n' "$*"; }
+  PREBUILT_E2E_NODE_MODULES="$BATS_TEST_TMPDIR/no-prebuilt-tree"
+  unset E2E_TEST_SUITE_VERSION
+
+  run _setup_playwright_environment "$(slow_path_e2e_suite_dir)"
+
+  [[ "$output" == *"npm update @camunda/e2e-test-suite"* ]]
+}

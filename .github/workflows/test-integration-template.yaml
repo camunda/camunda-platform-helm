@@ -174,6 +174,16 @@ on:
         required: false
         default: ""
         type: string
+      chart-versions:
+        description: "Comma-separated chart versions the scenario deploys, for cache result recording"
+        required: false
+        default: ""
+        type: string
+      e2e-test-suite-version:
+        description: "@camunda/e2e-test-suite version the e2e jobs install (empty installs latest)"
+        required: false
+        default: ""
+        type: string
       camunda-version:
         description: "Camunda version (e.g., 8.9) for cache result recording"
         required: false
@@ -407,6 +417,8 @@ jobs:
       topology-hub-suffix: ${{ inputs.topology-hub-suffix }}
       topology-smoke-matrix: ${{ inputs.topology-smoke-matrix }}
       pr-head-sha: ${{ inputs.pr-head-sha }}
+      chart-versions: ${{ inputs.chart-versions }}
+      e2e-test-suite-version: ${{ inputs.e2e-test-suite-version }}
       camunda-version: ${{ inputs.camunda-version }}
       camunda-helm-post-render: ${{ inputs.camunda-helm-post-render }}
       camunda-helm-credentials-source: ${{ inputs.camunda-helm-credentials-source }}

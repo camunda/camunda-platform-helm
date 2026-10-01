@@ -13,17 +13,6 @@
 // limitations under the License.
 
 // Package hash computes content hashes for CI result caching.
-//
-// A content hash captures the state of all files that could affect the outcome
-// of an integration test scenario. It covers:
-//   - The chart directory (charts/camunda-platform-{version}/)
-//   - The deploy-camunda scripts (scripts/deploy-camunda/)
-//   - The shared core package that deploy-camunda depends on (scripts/camunda-core/)
-//   - Specific workflow files used in the integration test path
-//   - The e2e execution scripts (scripts/run-e2e-tests.sh, scripts/render-e2e-env.sh)
-//     and the playwright-e2e-tests composite action
-//
-// If any of these files change, the hash changes, invalidating cached results.
 package hash
 
 import (
@@ -49,22 +38,29 @@ var WorkflowFiles = []string{
 	".github/actions/playwright-e2e-tests/action.yaml",
 }
 
-// Compute calculates a SHA-256 content hash for a given chart version.
-// It hashes all relevant files that could affect integration test outcomes.
-//
-// repoRoot is the repository root directory.
-// version is the chart version (e.g., "8.9").
-func Compute(repoRoot, version string) (string, error) {
+func Compute(repoRoot string, chartVersions []string, e2eSuiteVersion string) (string, error) {
+	versions := sortedUnique(chartVersions)
+	if len(versions) == 0 {
+		return "", fmt.Errorf("at least one chart version is required")
+	}
+	if e2eSuiteVersion == "" {
+		return "", fmt.Errorf("an e2e test suite version is required")
+	}
+
 	h := sha256.New()
 
 	// Hash all paths to include — order matters for determinism.
-	paths := []string{
-		filepath.Join("charts", fmt.Sprintf("camunda-platform-%s", version)),
+	var paths []string
+	for _, version := range versions {
+		paths = append(paths, filepath.Join("charts", fmt.Sprintf("camunda-platform-%s", version)))
+	}
+	paths = append(paths,
 		filepath.Join("scripts", "deploy-camunda"),
 		filepath.Join("scripts", "camunda-core"),
 		filepath.Join("scripts", "run-e2e-tests.sh"),
 		filepath.Join("scripts", "render-e2e-env.sh"),
-	}
+		filepath.Join("scripts", "base_playwright_script.sh"),
+	)
 
 	for _, relPath := range paths {
 		absPath := filepath.Join(repoRoot, relPath)
@@ -97,7 +93,33 @@ func Compute(repoRoot, version string) (string, error) {
 		}
 	}
 
+	fmt.Fprintf(h, "e2e-test-suite:%s\n", e2eSuiteVersion)
+
 	return hex.EncodeToString(h.Sum(nil)), nil
+}
+
+func ChartVersionsFromCSV(csv string) []string {
+	var versions []string
+	for _, version := range strings.Split(csv, ",") {
+		if version = strings.TrimSpace(version); version != "" {
+			versions = append(versions, version)
+		}
+	}
+	return versions
+}
+
+func sortedUnique(values []string) []string {
+	seen := make(map[string]bool, len(values))
+	out := make([]string, 0, len(values))
+	for _, value := range values {
+		if value == "" || seen[value] {
+			continue
+		}
+		seen[value] = true
+		out = append(out, value)
+	}
+	sort.Strings(out)
+	return out
 }
 
 // hashDir walks a directory and hashes all regular files within it.
