@@ -560,6 +560,26 @@ func TestPsqlScript_ChecksOverANonLoopbackAddress(t *testing.T) {
 	}
 }
 
+func TestReconcileCredentials_ChecksumMatchesTheSourceItReconciledAgainst(t *testing.T) {
+	f := newFakeCluster(t)
+	want, err := credentialsChecksum(f.src, f.secrets["distribution-team/src"])
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got string
+	var out bytes.Buffer
+	clock := time.Unix(1_790_000_000, 0)
+	r := &credentialReconciler{kubectl: f.kubectl, out: &out, poll: time.Millisecond, timeout: time.Minute,
+		now: func() time.Time { clock = clock.Add(10 * time.Second); return clock }, generate: generateCredential}
+	if err := r.reconcile(context.Background(), reconcileInput{checksum: &got, manifest: []byte(reconcileManifest), src: f.src,
+		sourceNS: "distribution-team", namespaces: []string{"env-hub"}, hubNS: "env-hub", stores: testStores()}); err != nil {
+		t.Fatal(err)
+	}
+	if got != want {
+		t.Errorf("checksum = %q, want %q", got, want)
+	}
+}
+
 func TestCredentialsChecksum(t *testing.T) {
 	src := credentialSource{Name: "src", Properties: []string{"a", "b"}}
 	one, err := credentialsChecksum(src, map[string]string{"a": "1", "b": "2", "unused": "x"})

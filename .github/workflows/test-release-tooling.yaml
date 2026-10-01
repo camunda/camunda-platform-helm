@@ -76,3 +76,44 @@ jobs:
         run: |
           go vet ./...
           go test ./...
+
+  credential-store-changes:
+    name: Detect credential-store changes
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      relevant: ${{ github.event_name != 'pull_request' || steps.filter.outputs.stores == 'true' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        if: github.event_name == 'pull_request'
+        id: filter
+        with:
+          filters: |
+            stores:
+              - 'scripts/deploy-camunda/cmd/topology_reconcile*.go'
+              - '.github/workflows/test-release-tooling.yaml'
+              - '.tool-versions'
+
+  credential-store-integration:
+    name: Credential stores against real images
+    needs: credential-store-changes
+    if: needs.credential-store-changes.outputs.relevant == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Install tools
+        uses: ./.github/actions/install-tool-versions
+        with:
+          tools: |
+            golang
+
+      # Runs the reconcile scripts against PostgreSQL, Elasticsearch, and
+      # Keycloak containers, including the kc.sh bootstrap-admin recovery.
+      - name: deploy-camunda — credential-store integration tests
+        working-directory: scripts/deploy-camunda
+        run: go test -tags integration ./cmd -run 'TestPsqlScript|TestEsScript|TestKeycloakBootstrapReset' -count=1 -timeout 20m -v

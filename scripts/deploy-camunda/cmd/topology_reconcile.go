@@ -180,6 +180,7 @@ type credentialReconciler struct {
 }
 
 type reconcileInput struct {
+	checksum   *string
 	manifest   []byte
 	src        credentialSource
 	sourceNS   string
@@ -236,6 +237,11 @@ func (r *credentialReconciler) reconcile(ctx context.Context, in reconcileInput)
 	}
 	if source == nil {
 		return fmt.Errorf("source secret %s/%s does not exist; run ensure-credentials first", in.sourceNS, in.src.Name)
+	}
+	if in.checksum != nil {
+		if *in.checksum, err = credentialsChecksum(in.src, source); err != nil {
+			return err
+		}
 	}
 	previousName := in.stores.Secret + "-previous"
 	previous, err := r.secretData(ctx, in.hubNS, previousName)
@@ -813,8 +819,9 @@ func (f *credentialsCommandFlags) load() (*matrix.Topology, []byte, credentialSo
 
 func newTopologyReconcileCredentialsCommand() *cobra.Command {
 	var (
-		f       credentialsCommandFlags
-		timeout time.Duration
+		f            credentialsCommandFlags
+		timeout      time.Duration
+		checksumFile string
 	)
 	cmd := &cobra.Command{
 		Use:   "reconcile-credentials",
@@ -833,7 +840,8 @@ keeps the password it was initialised with to the synced value:
 - each PostgreSQL role, through ALTER ROLE over the pod's local socket.
 
 Stores already current are left alone and no value is ever printed. Run it
-before the deploy; the deploy's credentials checksum restarts the consumers.`,
+before the deploy, and annotate the --checksum-file value onto the consumers
+so the deploy restarts them.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			topology, manifest, src, err := f.load()
 			if err != nil {
@@ -863,44 +871,26 @@ before the deploy; the deploy's credentials checksum restarts the consumers.`,
 				now:      time.Now,
 				generate: generateCredential,
 			}
-			return r.reconcile(cmd.Context(), reconcileInput{
+			var checksum string
+			if err := r.reconcile(cmd.Context(), reconcileInput{
+				checksum:   &checksum,
 				manifest:   manifest,
 				src:        src,
 				sourceNS:   f.secretNamespace,
 				namespaces: namespaces,
 				hubNS:      hubNS,
 				stores:     *topology.CredentialStores,
-			})
+			}); err != nil {
+				return err
+			}
+			if checksumFile == "" {
+				return nil
+			}
+			return os.WriteFile(checksumFile, []byte(checksum+"\n"), 0o600)
 		},
 	}
 	f.bind(cmd)
 	cmd.Flags().DurationVar(&timeout, "timeout", 5*time.Minute, "how long to wait for an ExternalSecret sync or the bootstrap-admin pod")
-	return cmd
-}
-
-func newTopologyCredentialsChecksumCommand() *cobra.Command {
-	var f credentialsCommandFlags
-	cmd := &cobra.Command{
-		Use:   "credentials-checksum",
-		Short: "Print a digest of the credentials-manifest's source values, for pod annotations that restart consumers on rotation",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			_, _, src, err := f.load()
-			if err != nil {
-				return err
-			}
-			r := &credentialReconciler{kubectl: newKubectl(f.kubeContext)}
-			source, err := r.secretData(cmd.Context(), f.secretNamespace, src.Name)
-			if err != nil {
-				return err
-			}
-			sum, err := credentialsChecksum(src, source)
-			if err != nil {
-				return err
-			}
-			fmt.Fprintln(cmd.OutOrStdout(), sum)
-			return nil
-		},
-	}
-	f.bind(cmd)
+	cmd.Flags().StringVar(&checksumFile, "checksum-file", "", "after a successful run, write the credentials checksum of the source values it reconciled against to this file")
 	return cmd
 }

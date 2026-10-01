@@ -70,9 +70,9 @@ substitute it into every credential consumer's pod annotations:
 deploy-camunda topology ensure-credentials \
   --manifest charts/camunda-platform-8.10/test/integration/external-secrets/dogfood-credentials.yaml \
   --base dogfood
-deploy-camunda topology reconcile-credentials --version 8.10 --scenario dogfood --base dogfood
-export DOGFOOD_CREDENTIALS_CHECKSUM=$(deploy-camunda topology credentials-checksum \
-  --version 8.10 --scenario dogfood --base dogfood)
+deploy-camunda topology reconcile-credentials --version 8.10 --scenario dogfood --base dogfood \
+  --checksum-file /tmp/dogfood-credentials-checksum
+export DOGFOOD_CREDENTIALS_CHECKSUM=$(cat /tmp/dogfood-credentials-checksum)
 ```
 
 `ensure-credentials` creates `distribution-team/dogfood-credentials` and fills in

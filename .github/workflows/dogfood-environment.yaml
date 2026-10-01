@@ -135,8 +135,9 @@ jobs:
 
       # Syncs every existing namespace's credentials from the source and sets
       # the scenario's credential-stores (PostgreSQL roles, Keycloak admin and
-      # users) to them. The checksum is annotated onto every consumer, so the
-      # deploy below restarts them when a credential changed.
+      # users, Elasticsearch) to them. The checksum of the exact source values
+      # it reconciled against is annotated onto every consumer, so the deploy
+      # below restarts them when a credential changed.
       - name: Reconcile dogfood credentials
         if: env.DOGFOOD_ACTION == 'deploy' || env.DOGFOOD_ACTION == 'upgrade'
         run: |
@@ -144,13 +145,9 @@ jobs:
             --repo-root "${GITHUB_WORKSPACE}" \
             --version "${DOGFOOD_CHART_VERSION}" \
             --scenario "${DOGFOOD_SCENARIO}" \
-            --base "${DOGFOOD_ENVIRONMENT}"
-          checksum=$(deploy-camunda topology credentials-checksum \
-            --repo-root "${GITHUB_WORKSPACE}" \
-            --version "${DOGFOOD_CHART_VERSION}" \
-            --scenario "${DOGFOOD_SCENARIO}" \
-            --base "${DOGFOOD_ENVIRONMENT}")
-          echo "DOGFOOD_CREDENTIALS_CHECKSUM=${checksum}" >> "$GITHUB_ENV"
+            --base "${DOGFOOD_ENVIRONMENT}" \
+            --checksum-file "${RUNNER_TEMP}/credentials-checksum"
+          echo "DOGFOOD_CREDENTIALS_CHECKSUM=$(cat "${RUNNER_TEMP}/credentials-checksum")" >> "$GITHUB_ENV"
 
       # `matrix run` deploys through `helm upgrade --install`, so deploy and
       # upgrade are the same idempotent call against the same stable namespaces.
