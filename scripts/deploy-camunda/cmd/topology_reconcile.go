@@ -74,14 +74,17 @@ esac
 `
 
 // psqlScript runs in a PostgreSQL container. Positional args: mode, role,
-// database. stdin: the password. check logs in over TCP so the password is
-// verified; set connects over the local socket, which the image trusts.
+// database. stdin: the password. check logs in over TCP to the pod's own IP:
+// the image's pg_hba.conf trusts the local socket and loopback, so only a
+// non-loopback address verifies the password. set uses the trusted socket.
 const psqlScript = `set -eu
 mode=$1 role=$2 db=$3
 IFS= read -r pw
 case $mode in
 check)
-  PGPASSWORD="$pw" psql -h 127.0.0.1 -U "$role" -d "$db" -tAc 'select 1' >/dev/null 2>&1 || exit 3 ;;
+  ip=$(hostname -i | cut -d' ' -f1)
+  case $ip in ''|127.*|::1) echo "no non-loopback pod IP" >&2; exit 1 ;; esac
+  PGPASSWORD="$pw" psql -h "$ip" -U "$role" -d "$db" -tAc 'select 1' >/dev/null 2>&1 || exit 3 ;;
 set)
   export pw
   psql -v ON_ERROR_STOP=1 -q -h /var/run/postgresql -U "$role" -d "$db" -v role="$role" <<'SQL'

@@ -398,6 +398,16 @@ func TestReconcileCredentials_SkipsAbsentStores(t *testing.T) {
 	}
 }
 
+func TestPsqlScript_ChecksOverANonLoopbackAddress(t *testing.T) {
+	check := psqlScript[strings.Index(psqlScript, "check)"):strings.Index(psqlScript, "set)")]
+	if strings.Contains(check, "127.0.0.1") || strings.Contains(check, "localhost") || strings.Contains(check, "/var/run/postgresql") {
+		t.Fatalf("check must not connect over the socket or loopback, which pg_hba.conf trusts without a password:\n%s", check)
+	}
+	if !strings.Contains(check, "hostname -i") {
+		t.Fatalf("check must connect to the pod IP:\n%s", check)
+	}
+}
+
 func TestCredentialsChecksum(t *testing.T) {
 	src := credentialSource{Name: "src", Properties: []string{"a", "b"}}
 	one, err := credentialsChecksum(src, map[string]string{"a": "1", "b": "2", "unused": "x"})
