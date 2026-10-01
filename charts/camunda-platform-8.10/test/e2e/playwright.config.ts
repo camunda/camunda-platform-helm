@@ -47,6 +47,10 @@ if (
     "The required topology Orchestration test suite is not installed",
   );
 }
+// Only the default physical-tenant leg (or a non-tenant run) runs the orchestration smoke.
+const physicalTenantLegRunsOrchestrationSmoke =
+  (process.env.PHYSICAL_TENANT_ID ?? "default") === "default";
+
 // A suite that is required but missing has already thrown above, so presence
 // is the whole condition here.
 const hasAnySuite =
@@ -91,7 +95,12 @@ export default defineConfig(
     extraProjects: [
       {
         name: "physical-tenants",
-        dependencies: ["topology-orchestration"],
+        // The orchestration smoke deploys to the default tenant and asserts the import in the
+        // leg's Optimize. A named tenant's Optimize only imports its own tenant, so running it on
+        // those legs fails by design; keep it on the default leg only.
+        dependencies: physicalTenantLegRunsOrchestrationSmoke
+          ? ["topology-orchestration"]
+          : [],
         testDir: __dirname,
         testMatch: ["physical-tenants.spec.ts"],
       },
