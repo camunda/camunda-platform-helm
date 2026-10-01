@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">Adopt a composable CI scenario registry for the per-version integration test matrix | Camunda Helm Charts</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:image" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7147/img/camunda-logo.svg"><meta data-rh="true" name="twitter:image" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7147/img/camunda-logo.svg"><meta data-rh="true" property="og:url" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7147/adr/adopt-composable-ci-scenario-registry-for-per-version-test-matrix"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Adopt a composable CI scenario registry for the per-version integration test matrix | Camunda Helm Charts"><meta data-rh="true" name="description" content="- Status: accepted"><meta data-rh="true" property="og:description" content="- Status: accepted"><link data-rh="true" rel="icon" href="/camunda-platform-helm/pr-preview/pr-7147/img/camunda-logo.svg"><link data-rh="true" rel="canonical" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7147/adr/adopt-composable-ci-scenario-registry-for-per-version-test-matrix"><link data-rh="true" rel="alternate" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7147/adr/adopt-composable-ci-scenario-registry-for-per-version-test-matrix" hreflang="en"><link data-rh="true" rel="alternate" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7147/adr/adopt-composable-ci-scenario-registry-for-per-version-test-matrix" hreflang="x-default"><link rel="stylesheet" href="/camunda-platform-helm/pr-preview/pr-7147/assets/css/styles.3f6cd398.css">
-<script src="/camunda-platform-helm/pr-preview/pr-7147/assets/js/runtime~main.8fdda574.js" defer="defer"></script>
-<script src="/camunda-platform-helm/pr-preview/pr-7147/assets/js/main.e88618c5.js" defer="defer"></script>
+<script src="/camunda-platform-helm/pr-preview/pr-7147/assets/js/runtime~main.7b5ded8b.js" defer="defer"></script>
+<script src="/camunda-platform-helm/pr-preview/pr-7147/assets/js/main.b63cc770.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -120,9 +120,17 @@ have migrated, then removed.</p>
 <li class="">Every referenced hook and dependency ID resolves to a file.</li>
 <li class="">Scenario IDs and shortnames are unique.</li>
 <li class="">Platform × flow tuples do not duplicate.</li>
-<li class="">Referenced basenames (hook manifests, hook scripts, dependency
-values-files, scenario values-layer files, feature values-files)
-resolve under <code>test/integration/scenarios/</code>.</li>
+<li class="">Referenced basenames (hook manifests, hook scripts, scenario
+values-layer files, feature values-files) resolve under
+<code>test/integration/scenarios/</code>.</li>
+<li class="">Dependency values-files are repository-root-relative paths that
+resolve under the shared <code>test/integration/companion-values/</code>
+tree. Companion charts (Elasticsearch, OpenSearch, Keycloak,
+PostgreSQL) are not chart-version-specific, so every version&#x27;s
+<code>dependencies/&lt;id&gt;.yaml</code> references one shared copy instead of a
+per-version duplicate. (Clarified 2026-09-29 to match the
+implemented validator, <code>registry_validator.go</code> <code>checkDep</code>, and every
+registered dependency since the registry landed.)</li>
 <li class=""><code>extra-values</code> relative paths resolve under the scenario&#x27;s
 <code>chart-full-setup/</code> dir and MUST NOT escape it via <code>..</code> traversal;
 absolute paths are runtime-supplied (e.g. per-PR image-tag overlay)
