@@ -27,7 +27,10 @@ import (
 )
 
 // apiSuiteKeys are the variables `e2e-env api-suite` may set. A value already
-// in the caller's environment wins, so a run can override any of them.
+// in the caller's environment wins, so a run can override any of them, except
+// a key the rendered .env also sets: run-e2e-tests.sh sources that file first,
+// so the environment holds the browser suite's value (BASE_URL is the ingress
+// root there), not an override.
 var apiSuiteKeys = []string{
 	"API_CONNECTORS_URL", "API_CONSOLE_URL", "API_IDENTITY_URL", "API_WEB_MODELER_URL",
 	"AUTH_METHOD", "BASE_URL", "BASIC_AUTH_PASSWORD", "BASIC_AUTH_USER",
@@ -43,7 +46,8 @@ type apiSuiteInputs struct {
 	// Auth is the scenario's auth type (TEST_AUTH_TYPE); "basic" selects basic auth.
 	Auth         string
 	MultiTenancy bool
-	// Preset holds values the caller already set, which are kept as they are.
+	// Preset holds the caller's environment. Its values are kept, except for
+	// keys that Env also sets (see apiSuiteKeys).
 	Preset map[string]string
 }
 
@@ -123,10 +127,14 @@ func apiSuiteEnv(in apiSuiteInputs, lookup clientSecretLookup) (map[string]strin
 	}
 
 	for key, value := range in.Preset {
-		if value != "" {
-			if _, managed := vars[key]; managed {
-				vars[key] = value
-			}
+		if value == "" {
+			continue
+		}
+		if _, rendered := in.Env[key]; rendered {
+			continue
+		}
+		if _, managed := vars[key]; managed {
+			vars[key] = value
 		}
 	}
 	return vars, secrets, nil

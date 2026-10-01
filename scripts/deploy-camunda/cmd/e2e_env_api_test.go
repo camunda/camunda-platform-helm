@@ -27,6 +27,7 @@ import (
 func renderedEnv() map[string]string {
 	return map[string]string{
 		"PLAYWRIGHT_BASE_URL": "https://ci.example.com",
+		"BASE_URL":            "https://ci.example.com",
 		"OAUTH_URL":           "https://ci.example.com/auth/realms/camunda-platform/protocol/openid-connect/token",
 		"MINOR_VERSION":       "SM-8.10",
 		"CONNECTORS_BASE_URL": "https://ci.example.com/connectors/inbound",
@@ -145,6 +146,58 @@ func TestAPISuiteEnvKeepsCallerValues(t *testing.T) {
 	}
 	if _, ok := vars["UNRELATED"]; ok {
 		t.Error("a caller value outside the managed keys was added")
+	}
+}
+
+func TestAPISuiteEnvIgnoresValuesSourcedFromTheRenderedEnv(t *testing.T) {
+	// given run-e2e-tests.sh has sourced the rendered .env, so BASE_URL in the
+	// caller's environment is the browser suite's ingress root
+	env := renderedEnv()
+
+	// when
+	vars, _, err := apiSuiteEnv(apiSuiteInputs{
+		Env:    env,
+		Preset: map[string]string{"BASE_URL": env["BASE_URL"]},
+	}, secretsOf(map[string]string{"venom": "v"}))
+
+	// then
+	if err != nil {
+		t.Fatalf("apiSuiteEnv: %v", err)
+	}
+	if vars["BASE_URL"] != "https://ci.example.com/orchestration" {
+		t.Errorf("BASE_URL = %q, want the API suite's /orchestration URL", vars["BASE_URL"])
+	}
+}
+
+func TestE2EEnvAPISuiteCommandAfterSourcingTheRenderedEnv(t *testing.T) {
+	// given the environment run-e2e-tests.sh has after sourcing the rendered .env
+	dir := t.TempDir()
+	envFile := filepath.Join(dir, ".env")
+	var rendered strings.Builder
+	for key, value := range renderedEnv() {
+		rendered.WriteString(key + "=" + value + "\n")
+		t.Setenv(key, value)
+	}
+	writeFile(t, envFile, rendered.String())
+	fakeKubectl(t, map[string]string{"value": "v-secret"}, "")
+	output := filepath.Join(dir, ".env.api")
+
+	// when
+	root := NewRootCommand()
+	root.AddCommand(newE2EEnvCommand())
+	root.SetOut(&strings.Builder{})
+	root.SetArgs([]string{"e2e-env", "api-suite", "--env-file", envFile, "--namespace", "ns", "--output", output})
+	if err := root.Execute(); err != nil {
+		t.Fatalf("execute: %v", err)
+	}
+
+	// then
+	written, err := os.ReadFile(output)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := "BASE_URL='https://ci.example.com/orchestration'\n"; !strings.Contains(string(written), want) {
+		t.Errorf("output lacks %q:\n%s", want, written)
 	}
 }
 
