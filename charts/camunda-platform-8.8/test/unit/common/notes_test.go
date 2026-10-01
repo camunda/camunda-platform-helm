@@ -49,20 +49,38 @@ func TestNotesSurfacesBundledKeycloakCveWarning(t *testing.T) {
 
 	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
-	output, err := exec.Command("helm", "install", "keycloak-cve-notes-test", chartPath,
-		"--dry-run=client",
-		"--set", "identity.enabled=true",
-		"--set", "identityKeycloak.enabled=true",
-		"--set", "orchestration.data.secondaryStorage.type=elasticsearch",
-		"--set", "global.elasticsearch.enabled=true",
-		"--set", "global.elasticsearch.external=true",
-		"--set", "global.elasticsearch.url.host=elasticsearch",
-	).CombinedOutput()
-	require.NoError(t, err, string(output))
+	version, err := exec.Command("helm", "version", "--template", "{{.Version}}").Output()
+	require.NoError(t, err)
+	for _, releaseInfo := range []string{"true", "false"} {
+		t.Run("createReleaseInfo="+releaseInfo, func(t *testing.T) {
+			output, err := exec.Command("helm", "install", "keycloak-cve-notes-test", chartPath,
+				"--dry-run=client",
+				"--set", "global.createReleaseInfo="+releaseInfo,
+				"--set", "identity.enabled=true",
+				"--set", "identityKeycloak.enabled=true",
+				"--set", "orchestration.data.secondaryStorage.type=elasticsearch",
+				"--set", "global.elasticsearch.enabled=true",
+				"--set", "global.elasticsearch.external=true",
+				"--set", "global.elasticsearch.url.host=elasticsearch",
+			).CombinedOutput()
+			require.NoError(t, err, string(output))
 
-	_, notes, found := strings.Cut(string(output), "\nNOTES:\n")
-	require.True(t, found)
-	require.Contains(t, notes, "CVE-2026-18963")
+			_, notes, found := strings.Cut(string(output), "\nNOTES:\n")
+			require.True(t, found)
+			require.Contains(t, notes, "CVE-2026-18963")
+			if releaseInfo == "false" {
+				require.NotContains(t, notes, "## Console configuration")
+			} else {
+				require.Contains(t, notes, "## Console configuration")
+			}
+			if strings.HasPrefix(strings.TrimSpace(string(version)), "v3.") {
+				require.Contains(t, notes, "Helm v3 receives security fixes only until February 10, 2027")
+				require.Contains(t, notes, "After that date, Camunda no longer supports Helm CLI v3.")
+			} else {
+				require.NotContains(t, notes, "Helm v3 receives security fixes")
+			}
+		})
+	}
 }
 
 func TestNotesIngressProtocolOverride(t *testing.T) {
