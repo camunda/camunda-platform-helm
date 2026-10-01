@@ -48,6 +48,7 @@ var (
 	annotateRepoRoot        string
 	annotateTTL             time.Duration
 	annotateE2ESuiteVersion string
+	annotateRunnerImage     string
 )
 
 func init() {
@@ -55,9 +56,11 @@ func init() {
 	annotateMatrixCmd.Flags().StringVar(&annotateRepoRoot, "repo-root", ".", "Repository root directory")
 	annotateMatrixCmd.Flags().DurationVar(&annotateTTL, "ttl", cache.DefaultTTL, "Maximum age of cached results")
 	annotateMatrixCmd.Flags().StringVar(&annotateE2ESuiteVersion, "e2e-test-suite-version", "", "@camunda/e2e-test-suite version this run executes (required)")
+	annotateMatrixCmd.Flags().StringVar(&annotateRunnerImage, "playwright-runner-image", "", "Digest-pinned Playwright runner image this run executes (required)")
 
 	_ = annotateMatrixCmd.MarkFlagRequired("sha")
 	_ = annotateMatrixCmd.MarkFlagRequired("e2e-test-suite-version")
+	_ = annotateMatrixCmd.MarkFlagRequired("playwright-runner-image")
 }
 
 // matrixJSON represents the top-level matrix structure: {"include": [...]}
@@ -121,7 +124,7 @@ func runAnnotateMatrix(cmd *cobra.Command, args []string) error {
 		contentHash, ok := hashCache[chartVersions]
 		if !ok {
 			var hashErr error
-			contentHash, hashErr = hash.Compute(annotateRepoRoot, hash.ChartVersionsFromCSV(chartVersions), annotateE2ESuiteVersion)
+			contentHash, hashErr = hash.Compute(annotateRepoRoot, hash.ChartVersionsFromCSV(chartVersions), annotateE2ESuiteVersion, annotateRunnerImage)
 			if hashErr != nil {
 				fmt.Fprintf(os.Stderr, "Warning: cannot compute hash for chart versions %s (%v), marking as uncached\n", chartVersions, hashErr)
 				matrix.Include[i]["cached"] = "false"

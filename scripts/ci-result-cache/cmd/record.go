@@ -45,6 +45,7 @@ var (
 	recordRepoRoot        string
 	recordChartVersions   string
 	recordE2ESuiteVersion string
+	recordRunnerImage     string
 	recordTargetURL       string
 )
 
@@ -57,6 +58,7 @@ func init() {
 	recordCmd.Flags().StringVar(&recordRepoRoot, "repo-root", ".", "Repository root directory")
 	recordCmd.Flags().StringVar(&recordChartVersions, "chart-versions", "", "Comma-separated chart versions the scenario deploys (e.g., 8.10,8.9) (required)")
 	recordCmd.Flags().StringVar(&recordE2ESuiteVersion, "e2e-test-suite-version", "", "@camunda/e2e-test-suite version the scenario runs (required)")
+	recordCmd.Flags().StringVar(&recordRunnerImage, "playwright-runner-image", "", "Digest-pinned Playwright runner image the scenario ran (required)")
 	recordCmd.Flags().StringVar(&recordTargetURL, "target-url", "", "URL to the CI run (optional, shown in GitHub UI)")
 
 	_ = recordCmd.MarkFlagRequired("sha")
@@ -66,10 +68,11 @@ func init() {
 	_ = recordCmd.MarkFlagRequired("platform")
 	_ = recordCmd.MarkFlagRequired("chart-versions")
 	_ = recordCmd.MarkFlagRequired("e2e-test-suite-version")
+	_ = recordCmd.MarkFlagRequired("playwright-runner-image")
 }
 
 func runRecord(cmd *cobra.Command, args []string) error {
-	contentHash, err := hash.Compute(recordRepoRoot, hash.ChartVersionsFromCSV(recordChartVersions), recordE2ESuiteVersion)
+	contentHash, err := hash.Compute(recordRepoRoot, hash.ChartVersionsFromCSV(recordChartVersions), recordE2ESuiteVersion, recordRunnerImage)
 	if err != nil {
 		return fmt.Errorf("computing content hash: %w", err)
 	}

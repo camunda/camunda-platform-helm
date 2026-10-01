@@ -194,6 +194,11 @@ on:
         required: false
         default: ""
         type: string
+      playwright-runner-image:
+        description: "Digest-pinned Playwright runner image (empty uses latest and disables result caching)"
+        required: false
+        default: ""
+        type: string
       camunda-version:
         description: "Camunda version (e.g., 8.9) for cache result recording"
         required: false
@@ -1271,7 +1276,7 @@ jobs:
     needs: [install]
     runs-on: ${{ matrix.suite == 'full' && 'gcp-core-32-longrunning-big-ssd' || 'gcp-core-8-release' }}
     container:
-      image: ghcr.io/camunda/team-distribution/playwright-runner:latest
+      image: ${{ inputs.playwright-runner-image || 'ghcr.io/camunda/team-distribution/playwright-runner:latest' }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -1368,7 +1373,7 @@ jobs:
     needs: [install]
     runs-on: gcp-core-32-longrunning-big-ssd
     container:
-      image: ghcr.io/camunda/team-distribution/playwright-runner:latest
+      image: ${{ inputs.playwright-runner-image || 'ghcr.io/camunda/team-distribution/playwright-runner:latest' }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -1462,7 +1467,7 @@ jobs:
     needs: [install]
     runs-on: gcp-core-8-release
     container:
-      image: ghcr.io/camunda/team-distribution/playwright-runner:latest
+      image: ${{ inputs.playwright-runner-image || 'ghcr.io/camunda/team-distribution/playwright-runner:latest' }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -1600,7 +1605,7 @@ jobs:
     needs: [upgrade]
     runs-on: gcp-core-8-release
     container:
-      image: ghcr.io/camunda/team-distribution/playwright-runner:latest
+      image: ${{ inputs.playwright-runner-image || 'ghcr.io/camunda/team-distribution/playwright-runner:latest' }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -1781,7 +1786,8 @@ jobs:
         inputs.pr-head-sha != '' &&
         inputs.camunda-version != '' &&
         inputs.chart-versions != '' &&
-        inputs.e2e-test-suite-version != ''
+        inputs.e2e-test-suite-version != '' &&
+        inputs.playwright-runner-image != ''
       }}
     runs-on: ubuntu-latest
     permissions:
@@ -1815,6 +1821,7 @@ jobs:
             --platform "${{ inputs.distro-platform }}" \
             --chart-versions "${{ inputs.chart-versions }}" \
             --e2e-test-suite-version "${{ inputs.e2e-test-suite-version }}" \
+            --playwright-runner-image "${{ inputs.playwright-runner-image }}" \
             --repo-root "${{ github.workspace }}" \
             --target-url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
