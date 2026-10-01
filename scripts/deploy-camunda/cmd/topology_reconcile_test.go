@@ -607,6 +607,29 @@ func TestReconcileCredentials_FreshEnvironmentIsANoOp(t *testing.T) {
 	}
 }
 
+func TestReconcileCredentials_FreshEnvironmentReadsNothingInTheHubNamespace(t *testing.T) {
+	f := newFakeCluster(t)
+	f.namespaces = map[string]bool{}
+	api := f.kubectl
+	f2 := func(ctx context.Context, stdin []byte, args ...string) ([]byte, error) {
+		if flagValue(args, "-n") == "env-hub" {
+			return nil, fmt.Errorf("namespaces \"env-hub\" not found")
+		}
+		return api(ctx, stdin, args...)
+	}
+	var out bytes.Buffer
+	clock := time.Unix(1_790_000_000, 0)
+	r := &credentialReconciler{kubectl: f2, out: &out, poll: time.Millisecond, timeout: time.Minute,
+		now: func() time.Time { clock = clock.Add(10 * time.Second); return clock }, generate: generateCredential}
+	if err := r.reconcile(context.Background(), reconcileInput{manifest: []byte(reconcileManifest), src: f.src, sourceNS: "distribution-team",
+		namespaces: []string{"env-hub", "env-plain"}, hubNS: "env-hub", stores: testStores()}); err != nil {
+		t.Fatalf("fresh environment: %v", err)
+	}
+	if !strings.Contains(out.String(), "no credential store to reconcile") {
+		t.Errorf("output = %q", out.String())
+	}
+}
+
 func TestReconcileCredentials_FailsWithoutSource(t *testing.T) {
 	f := newFakeCluster(t)
 	delete(f.secrets, "distribution-team/src")

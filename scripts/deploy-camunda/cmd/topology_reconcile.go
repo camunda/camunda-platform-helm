@@ -248,6 +248,14 @@ func (r *credentialReconciler) reconcile(ctx context.Context, in reconcileInput)
 			return err
 		}
 	}
+	hubExists, err := r.exists(ctx, "", "namespace", in.hubNS)
+	if err != nil {
+		return err
+	}
+	if !hubExists {
+		fmt.Fprintf(r.out, "%s does not exist; no credential store to reconcile\n", in.hubNS)
+		return nil
+	}
 	previousName := in.stores.Secret + "-previous"
 	snapshot, err := r.secretData(ctx, in.hubNS, previousName)
 	if err != nil {
@@ -271,7 +279,6 @@ func (r *credentialReconciler) reconcile(ctx context.Context, in reconcileInput)
 	for i := len(generations) - 1; i >= 0; i-- {
 		r.prior = append(r.prior, generations[i])
 	}
-	hubExists := false
 	for _, ns := range in.namespaces {
 		ok, err := r.exists(ctx, "", "namespace", ns)
 		if err != nil {
@@ -280,16 +287,9 @@ func (r *credentialReconciler) reconcile(ctx context.Context, in reconcileInput)
 		if !ok {
 			continue
 		}
-		if ns == in.hubNS {
-			hubExists = true
-		}
 		if err := r.syncExternalSecrets(ctx, ns, in.manifest, in.src, source); err != nil {
 			return err
 		}
-	}
-	if !hubExists {
-		fmt.Fprintf(r.out, "%s does not exist; no credential store to reconcile\n", in.hubNS)
-		return nil
 	}
 	current, err := r.secretData(ctx, in.hubNS, in.stores.Secret)
 	if err != nil {
