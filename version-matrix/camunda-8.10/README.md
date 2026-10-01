@@ -3,9 +3,9 @@
 
 # Camunda 8.10 Helm Chart Version Matrix
 
-Alpha
+Standard support until 2028-04-11
 
-> Deploys Camunda Hub (the management plane replacing Web Modeler and Console SM). For the Orchestration Cluster versions Hub can manage, see the [Hub documentation](https://docs.camunda.io/docs/next/self-managed/components/hub/configuration/properties/).
+> Deploys Camunda Hub (the management plane replacing Web Modeler and Console SM). For the Orchestration Cluster versions Hub can manage, see the [Hub documentation](https://docs.camunda.io/docs/8.10/self-managed/components/hub/configuration/properties/).
 
 | Helm Chart | Camunda | Released | Helm CLI | Helm Values | Release Notes |
 |---|---|---|---|---|---|

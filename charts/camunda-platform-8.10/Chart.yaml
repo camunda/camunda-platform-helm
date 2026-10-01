@@ -34,7 +34,6 @@ maintainers:
   - name: camunda
     url: https://camunda.com
 annotations:
-  artifacthub.io/prerelease: "true"
   camunda.io/helmCLIVersion: "4.2.4"
   artifacthub.io/links: |
     - name: Camunda 8 docs
