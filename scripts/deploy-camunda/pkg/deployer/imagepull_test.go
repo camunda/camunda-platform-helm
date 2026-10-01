@@ -241,9 +241,19 @@ func TestWatchTerminalImagePull(t *testing.T) {
 }
 
 // fakeLister satisfies podLister.
-type fakeLister struct{ pods *corev1.PodList }
+type fakeLister struct {
+	pods   *corev1.PodList
+	events *corev1.EventList
+}
 
 func (f fakeLister) ListPods(context.Context, string) (*corev1.PodList, error) { return f.pods, nil }
+
+func (f fakeLister) ListEvents(context.Context, string) (*corev1.EventList, error) {
+	if f.events == nil {
+		return &corev1.EventList{}, nil
+	}
+	return f.events, nil
+}
 
 // TestUpgradeInstall_AbortsOnTerminalImagePull asserts the wait ends early and
 // the error names the image rather than the killed process.

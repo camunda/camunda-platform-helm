@@ -17,6 +17,7 @@ package deployer
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
 )
@@ -150,9 +151,70 @@ func terminalConfigError(pod *corev1.Pod) (*PodFailure, bool) {
 	return nil, false
 }
 
-// terminalUnschedulable reports a pod the scheduler has rejected. Other
-// PodScheduled failures, such as SchedulerError, are transient and ignored.
-func terminalUnschedulable(pod *corev1.Pod) (*PodFailure, bool) {
+// Cluster autoscaler event reasons recorded against a pending pod.
+const (
+	reasonTriggeredScaleUp  = "TriggeredScaleUp"
+	reasonNotTriggerScaleUp = "NotTriggerScaleUp"
+)
+
+// autoscalerVerdict is the most recent cluster autoscaler decision for a pod.
+type autoscalerVerdict struct {
+	uid     string
+	reason  string
+	message string
+	at      time.Time
+}
+
+// autoscalerVerdicts keys the latest TriggeredScaleUp or NotTriggerScaleUp
+// event by pod name. On a timestamp tie TriggeredScaleUp wins.
+func autoscalerVerdicts(events *corev1.EventList) map[string]autoscalerVerdict {
+	verdicts := map[string]autoscalerVerdict{}
+	if events == nil {
+		return verdicts
+	}
+	for _, event := range events.Items {
+		if event.InvolvedObject.Kind != "Pod" {
+			continue
+		}
+		if event.Reason != reasonTriggeredScaleUp && event.Reason != reasonNotTriggerScaleUp {
+			continue
+		}
+		at := eventTime(event)
+		prev, seen := verdicts[event.InvolvedObject.Name]
+		if seen && (at.Before(prev.at) || (at.Equal(prev.at) && event.Reason == reasonNotTriggerScaleUp)) {
+			continue
+		}
+		verdicts[event.InvolvedObject.Name] = autoscalerVerdict{
+			uid:     string(event.InvolvedObject.UID),
+			reason:  event.Reason,
+			message: strings.TrimSpace(event.Message),
+			at:      at,
+		}
+	}
+	return verdicts
+}
+
+func eventTime(event corev1.Event) time.Time {
+	if !event.LastTimestamp.IsZero() {
+		return event.LastTimestamp.Time
+	}
+	if !event.EventTime.IsZero() {
+		return event.EventTime.Time
+	}
+	return event.FirstTimestamp.Time
+}
+
+// terminalUnschedulable reports an Unschedulable pod only when the cluster
+// autoscaler's latest verdict for it is NotTriggerScaleUp. A pending scale-up,
+// or a cluster without an autoscaler, never yields a failure.
+func terminalUnschedulable(pod *corev1.Pod, verdicts map[string]autoscalerVerdict) (*PodFailure, bool) {
+	verdict, ok := verdicts[pod.Name]
+	if !ok || verdict.reason != reasonNotTriggerScaleUp {
+		return nil, false
+	}
+	if verdict.uid != "" && pod.UID != "" && verdict.uid != string(pod.UID) {
+		return nil, false
+	}
 	for _, condition := range pod.Status.Conditions {
 		if condition.Type != corev1.PodScheduled || condition.Status != corev1.ConditionFalse {
 			continue
@@ -160,10 +222,14 @@ func terminalUnschedulable(pod *corev1.Pod) (*PodFailure, bool) {
 		if condition.Reason != corev1.PodReasonUnschedulable {
 			continue
 		}
+		message := strings.TrimSpace(condition.Message)
+		if verdict.message != "" {
+			message += "; cluster autoscaler: " + verdict.message
+		}
 		return &PodFailure{
 			Pod:     pod.Name,
 			Reason:  condition.Reason,
-			Message: strings.TrimSpace(condition.Message),
+			Message: message,
 		}, true
 	}
 	return nil, false
@@ -172,7 +238,7 @@ func terminalUnschedulable(pod *corev1.Pod) (*PodFailure, bool) {
 // terminalPodStateFailure runs the detectors in a fixed order so a pod with more
 // than one problem always reports the same one, keeping the streak key stable
 // across polls.
-func terminalPodStateFailure(pod *corev1.Pod) (terminalPodFailure, bool) {
+func terminalPodStateFailure(pod *corev1.Pod, verdicts map[string]autoscalerVerdict) (terminalPodFailure, bool) {
 	if failure, ok := terminalImagePullFailure(pod); ok {
 		return failure, true
 	}
@@ -182,7 +248,7 @@ func terminalPodStateFailure(pod *corev1.Pod) (terminalPodFailure, bool) {
 	if failure, ok := terminalCrashLoop(pod); ok {
 		return failure, true
 	}
-	if failure, ok := terminalUnschedulable(pod); ok {
+	if failure, ok := terminalUnschedulable(pod, verdicts); ok {
 		return failure, true
 	}
 	return nil, false
@@ -190,12 +256,12 @@ func terminalPodStateFailure(pod *corev1.Pod) (terminalPodFailure, bool) {
 
 // firstTerminalFailure returns the terminal failure of the alphabetically first
 // affected pod, keeping the streak key stable across polls.
-func firstTerminalFailure(pods *corev1.PodList) terminalPodFailure {
+func firstTerminalFailure(pods *corev1.PodList, verdicts map[string]autoscalerVerdict) terminalPodFailure {
 	var chosen terminalPodFailure
 	var chosenPod string
 	for i := range pods.Items {
 		pod := &pods.Items[i]
-		failure, ok := terminalPodStateFailure(pod)
+		failure, ok := terminalPodStateFailure(pod, verdicts)
 		if !ok {
 			continue
 		}

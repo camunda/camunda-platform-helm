@@ -34,7 +34,32 @@ const (
 	missingKeyMessage    = `couldn't find key smtp-password in Secret ns/camunda-credentials`
 	invalidImageMessage  = `Failed to apply default image tag "reg/camunda/zeebe:8.8:latest": couldn't parse image reference`
 	unschedulableMessage = "0/6 nodes are available: 6 Insufficient cpu. preemption: 0/6 nodes are available."
+	// Verbatim cluster-autoscaler messages.
+	scaleUpMessage   = "Pod triggered scale-up: [{https://www.googleapis.com/compute/v1/projects/p/zones/z/instanceGroups/grp 26->27 (max: 150)}]"
+	noScaleUpMessage = "pod didn't trigger scale-up: 3 node(s) didn't match Pod's node affinity/selector"
 )
+
+var autoscalerEpoch = time.Date(2026, 9, 30, 13, 28, 0, 0, time.UTC)
+
+// autoscalerEvent is a cluster-autoscaler event recorded against a pod,
+// offset seconds after autoscalerEpoch.
+func autoscalerEvent(pod, reason, message string, offset int) corev1.Event {
+	return corev1.Event{
+		InvolvedObject: corev1.ObjectReference{Kind: "Pod", Name: pod},
+		Reason:         reason,
+		Message:        message,
+		Source:         corev1.EventSource{Component: "cluster-autoscaler"},
+		LastTimestamp:  metav1.NewTime(autoscalerEpoch.Add(time.Duration(offset) * time.Second)),
+	}
+}
+
+func eventList(events ...corev1.Event) *corev1.EventList {
+	return &corev1.EventList{Items: events}
+}
+
+func noScaleUp(pod string) map[string]autoscalerVerdict {
+	return autoscalerVerdicts(eventList(autoscalerEvent(pod, reasonNotTriggerScaleUp, noScaleUpMessage, 0)))
+}
 
 // waitingStatus builds a single container status stuck in Waiting.
 func waitingStatus(container, reason, message string) corev1.ContainerStatus {
@@ -291,39 +316,76 @@ func TestTerminalConfigError(t *testing.T) {
 func TestTerminalUnschedulable(t *testing.T) {
 	t.Parallel()
 
+	unschedulable := scheduledPod("camunda-zeebe-0", corev1.ConditionFalse, corev1.PodReasonUnschedulable, unschedulableMessage)
+	withUID := unschedulable
+	withUID.UID = "new-uid"
+
 	tests := []struct {
 		name    string
 		pod     corev1.Pod
+		events  *corev1.EventList
 		wantHit bool
 	}{
 		{
-			name:    "an unschedulable pod is terminal",
-			pod:     scheduledPod("camunda-zeebe-0", corev1.ConditionFalse, corev1.PodReasonUnschedulable, unschedulableMessage),
+			name:    "the autoscaler declining a scale-up is terminal",
+			pod:     unschedulable,
+			events:  eventList(autoscalerEvent("camunda-zeebe-0", reasonNotTriggerScaleUp, noScaleUpMessage, 0)),
 			wantHit: true,
+		},
+		{
+			name:    "a pod that triggered a scale-up is waiting for a node, not terminal",
+			pod:     unschedulable,
+			events:  eventList(autoscalerEvent("camunda-zeebe-0", reasonTriggeredScaleUp, scaleUpMessage, 0)),
+			wantHit: false,
+		},
+		{
+			name:    "without autoscaler events an unschedulable pod is never terminal",
+			pod:     unschedulable,
+			events:  eventList(),
+			wantHit: false,
+		},
+		{
+			name: "a later scale-up supersedes an earlier refusal",
+			pod:  unschedulable,
+			events: eventList(
+				autoscalerEvent("camunda-zeebe-0", reasonNotTriggerScaleUp, noScaleUpMessage, 0),
+				autoscalerEvent("camunda-zeebe-0", reasonTriggeredScaleUp, scaleUpMessage, 10)),
+			wantHit: false,
+		},
+		{
+			name: "a later refusal supersedes an earlier scale-up",
+			pod:  unschedulable,
+			events: eventList(
+				autoscalerEvent("camunda-zeebe-0", reasonNotTriggerScaleUp, noScaleUpMessage, 10),
+				autoscalerEvent("camunda-zeebe-0", reasonTriggeredScaleUp, scaleUpMessage, 0)),
+			wantHit: true,
+		},
+		{
+			name: "a refusal recorded for a previous pod with the same name is ignored",
+			pod:  withUID,
+			events: func() *corev1.EventList {
+				e := autoscalerEvent("camunda-zeebe-0", reasonNotTriggerScaleUp, noScaleUpMessage, 0)
+				e.InvolvedObject.UID = "old-uid"
+				return eventList(e)
+			}(),
+			wantHit: false,
+		},
+		{
+			name:    "a refusal for another pod does not apply",
+			pod:     unschedulable,
+			events:  eventList(autoscalerEvent("camunda-zeebe-1", reasonNotTriggerScaleUp, noScaleUpMessage, 0)),
+			wantHit: false,
 		},
 		{
 			name:    "a scheduler error is not terminal",
 			pod:     scheduledPod("camunda-zeebe-0", corev1.ConditionFalse, "SchedulerError", "error getting node"),
+			events:  eventList(autoscalerEvent("camunda-zeebe-0", reasonNotTriggerScaleUp, noScaleUpMessage, 0)),
 			wantHit: false,
 		},
 		{
 			name:    "a scheduled pod is not terminal",
 			pod:     scheduledPod("camunda-zeebe-0", corev1.ConditionTrue, "", ""),
-			wantHit: false,
-		},
-		{
-			name:    "a briefly pending pod with no conditions is not terminal",
-			pod:     corev1.Pod{ObjectMeta: metav1.ObjectMeta{Name: "camunda-zeebe-0"}, Status: corev1.PodStatus{Phase: corev1.PodPending}},
-			wantHit: false,
-		},
-		{
-			name: "an unready but scheduled pod is not terminal",
-			pod: corev1.Pod{
-				ObjectMeta: metav1.ObjectMeta{Name: "camunda-zeebe-0"},
-				Status: corev1.PodStatus{Conditions: []corev1.PodCondition{
-					{Type: corev1.PodReady, Status: corev1.ConditionFalse, Reason: "ContainersNotReady"},
-				}},
-			},
+			events:  eventList(autoscalerEvent("camunda-zeebe-0", reasonNotTriggerScaleUp, noScaleUpMessage, 0)),
 			wantHit: false,
 		},
 	}
@@ -331,7 +393,7 @@ func TestTerminalUnschedulable(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			got, ok := terminalUnschedulable(&tt.pod)
+			got, ok := terminalUnschedulable(&tt.pod, autoscalerVerdicts(tt.events))
 			if ok != tt.wantHit {
 				t.Fatalf("terminalUnschedulable() ok = %v, want %v", ok, tt.wantHit)
 			}
@@ -347,8 +409,10 @@ func TestTerminalUnschedulable(t *testing.T) {
 			if got.Reason != corev1.PodReasonUnschedulable {
 				t.Errorf("reason = %q, want %q", got.Reason, corev1.PodReasonUnschedulable)
 			}
-			if !strings.Contains(got.Message, "Insufficient cpu") {
-				t.Errorf("message must carry the scheduler detail, got %q", got.Message)
+			for _, want := range []string{"Insufficient cpu", "didn't trigger scale-up"} {
+				if !strings.Contains(got.Message, want) {
+					t.Errorf("message must carry %q, got %q", want, got.Message)
+				}
 			}
 		})
 	}
@@ -482,7 +546,7 @@ func TestTerminalPodStateFailureOrder(t *testing.T) {
 		pod := withContainer(
 			crashingPod("camunda-zeebe-0", "zeebe", 9, backoffMessage, false),
 			waitingStatus("exporter", "ImagePullBackOff", childManifest404))
-		got, ok := terminalPodStateFailure(&pod)
+		got, ok := terminalPodStateFailure(&pod, nil)
 		if !ok {
 			t.Fatal("expected a failure, got none")
 		}
@@ -497,7 +561,7 @@ func TestTerminalPodStateFailureOrder(t *testing.T) {
 		pod := withContainer(
 			crashingPod("camunda-zeebe-0", "zeebe", 9, backoffMessage, false),
 			waitingStatus("exporter", "CreateContainerConfigError", missingKeyMessage))
-		got, ok := terminalPodStateFailure(&pod)
+		got, ok := terminalPodStateFailure(&pod, nil)
 		if !ok {
 			t.Fatal("expected a failure, got none")
 		}
@@ -517,7 +581,7 @@ func TestTerminalPodStateFailureOrder(t *testing.T) {
 		pod := withContainer(
 			scheduledPod("camunda-zeebe-0", corev1.ConditionFalse, corev1.PodReasonUnschedulable, unschedulableMessage),
 			crashing)
-		got, ok := terminalPodStateFailure(&pod)
+		got, ok := terminalPodStateFailure(&pod, noScaleUp("camunda-zeebe-0"))
 		if !ok {
 			t.Fatal("expected a failure, got none")
 		}
@@ -533,7 +597,7 @@ func TestTerminalPodStateFailureOrder(t *testing.T) {
 	t.Run("a healthy pod reports nothing", func(t *testing.T) {
 		t.Parallel()
 		pod := healthyPod("camunda-zeebe-0")
-		if got, ok := terminalPodStateFailure(&pod); ok {
+		if got, ok := terminalPodStateFailure(&pod, nil); ok {
 			t.Fatalf("expected no failure, got %v", got)
 		}
 	})
@@ -556,7 +620,7 @@ func TestFirstTerminalFailureIsDeterministic(t *testing.T) {
 	for name, pods := range orders {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			got := firstTerminalFailure(pods)
+			got := firstTerminalFailure(pods, noScaleUp("camunda-zeebe-2"))
 			if got == nil {
 				t.Fatal("expected a failure, got nil")
 			}
@@ -572,7 +636,7 @@ func TestFirstTerminalFailureIsDeterministic(t *testing.T) {
 
 	t.Run("a healthy namespace yields a nil interface", func(t *testing.T) {
 		t.Parallel()
-		if got := firstTerminalFailure(podList(healthyPod("a"), healthyPod("b"))); got != nil {
+		if got := firstTerminalFailure(podList(healthyPod("a"), healthyPod("b")), nil); got != nil {
 			t.Fatalf("expected nil, got %v (%T)", got, got)
 		}
 	})
@@ -657,10 +721,66 @@ func TestWatchTerminalPodFailure(t *testing.T) {
 				}
 				return podList(scheduledPod("camunda-zeebe-0", corev1.ConditionTrue, "", "")), nil
 			},
+			events: func(context.Context, string) (*corev1.EventList, error) {
+				return eventList(autoscalerEvent("camunda-zeebe-0", reasonNotTriggerScaleUp, noScaleUpMessage, 0)), nil
+			},
 			sleep: noSleep(4), threshold: 2,
 		}
 		if got := watchTerminalImagePull(context.Background(), deps, "ns"); got != nil {
 			t.Fatalf("a pod scheduled on the next poll must not abort, got %v", got)
+		}
+	})
+
+	// Regression: 8.10 mns2 on GKE aborted while the autoscaler was adding the
+	// node that scheduled the pod seconds later.
+	t.Run("an unschedulable pod awaiting a scale-up never aborts", func(t *testing.T) {
+		t.Parallel()
+		deps := imagePullWatchDeps{
+			list: func(context.Context, string) (*corev1.PodList, error) {
+				return podList(scheduledPod("integration-connectors-0", corev1.ConditionFalse,
+					corev1.PodReasonUnschedulable, unschedulableMessage)), nil
+			},
+			events: func(context.Context, string) (*corev1.EventList, error) {
+				return eventList(autoscalerEvent("integration-connectors-0", reasonTriggeredScaleUp, scaleUpMessage, 0)), nil
+			},
+			sleep: noSleep(10), threshold: 2,
+		}
+		if got := watchTerminalImagePull(context.Background(), deps, "ns"); got != nil {
+			t.Fatalf("a pending scale-up must not abort, got %v", got)
+		}
+	})
+
+	t.Run("an unschedulable pod the autoscaler refuses aborts", func(t *testing.T) {
+		t.Parallel()
+		deps := imagePullWatchDeps{
+			list: func(context.Context, string) (*corev1.PodList, error) {
+				return podList(scheduledPod("integration-connectors-0", corev1.ConditionFalse,
+					corev1.PodReasonUnschedulable, unschedulableMessage)), nil
+			},
+			events: func(context.Context, string) (*corev1.EventList, error) {
+				return eventList(autoscalerEvent("integration-connectors-0", reasonNotTriggerScaleUp, noScaleUpMessage, 0)), nil
+			},
+			sleep: noSleep(10), threshold: 2,
+		}
+		if got := watchTerminalImagePull(context.Background(), deps, "ns"); got == nil {
+			t.Fatal("an autoscaler refusal must abort")
+		}
+	})
+
+	t.Run("an events list failure never makes a pod unschedulable-terminal", func(t *testing.T) {
+		t.Parallel()
+		deps := imagePullWatchDeps{
+			list: func(context.Context, string) (*corev1.PodList, error) {
+				return podList(scheduledPod("integration-connectors-0", corev1.ConditionFalse,
+					corev1.PodReasonUnschedulable, unschedulableMessage)), nil
+			},
+			events: func(context.Context, string) (*corev1.EventList, error) {
+				return nil, errors.New("events is forbidden")
+			},
+			sleep: noSleep(10), threshold: 2,
+		}
+		if got := watchTerminalImagePull(context.Background(), deps, "ns"); got != nil {
+			t.Fatalf("without autoscaler evidence the guard must keep waiting, got %v", got)
 		}
 	})
 }
@@ -673,7 +793,10 @@ func TestUpgradeInstall_AbortsOnUnschedulablePod(t *testing.T) {
 
 	origLister := newPodLister
 	newPodLister = func(string, string) (podLister, error) {
-		return fakeLister{pods: podList(stuck)}, nil
+		return fakeLister{
+			pods:   podList(stuck),
+			events: eventList(autoscalerEvent("camunda-zeebe-0", reasonNotTriggerScaleUp, noScaleUpMessage, 0)),
+		}, nil
 	}
 	defer func() { newPodLister = origLister }()
 
@@ -725,6 +848,9 @@ func TestUpgradeInstall_AbortsOnUnschedulablePod(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "Insufficient cpu") {
 		t.Errorf("error should name the scheduler detail, got %q", err.Error())
+	}
+	if !strings.Contains(err.Error(), "didn't trigger scale-up") {
+		t.Errorf("error should name the autoscaler refusal, got %q", err.Error())
 	}
 	if strings.Contains(err.Error(), "signal: killed") {
 		t.Errorf("the killed-process error must not leak to the user, got %q", err.Error())

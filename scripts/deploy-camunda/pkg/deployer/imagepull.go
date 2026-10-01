@@ -56,6 +56,7 @@ var newPodLister = func(kubeconfig, kubeContext string) (podLister, error) {
 // podLister is the slice of the Kubernetes client the guard depends on.
 type podLister interface {
 	ListPods(ctx context.Context, namespace string) (*corev1.PodList, error)
+	ListEvents(ctx context.Context, namespace string) (*corev1.EventList, error)
 }
 
 // ImagePullFailure is a container image that the registry will not serve.
@@ -179,6 +180,7 @@ func startImagePullGuard(ctx context.Context, o types.Options) (context.Context,
 
 	deps := imagePullWatchDeps{
 		list:      lister.ListPods,
+		events:    lister.ListEvents,
 		sleep:     sleepCtx,
 		interval:  imagePullGuardInterval,
 		threshold: imagePullGuardThreshold,
@@ -225,7 +227,9 @@ func (g *imagePullGuard) Stop() terminalPodFailure {
 
 // imagePullWatchDeps isolates the watcher from the clock and the cluster.
 type imagePullWatchDeps struct {
-	list      func(ctx context.Context, namespace string) (*corev1.PodList, error)
+	list func(ctx context.Context, namespace string) (*corev1.PodList, error)
+	// events is optional; without it an Unschedulable pod is never terminal.
+	events    func(ctx context.Context, namespace string) (*corev1.EventList, error)
 	sleep     func(ctx context.Context, d time.Duration) error
 	interval  time.Duration
 	threshold int
@@ -257,7 +261,14 @@ func watchTerminalImagePull(ctx context.Context, deps imagePullWatchDeps, namesp
 			continue
 		}
 
-		failure := firstTerminalFailure(pods)
+		var verdicts map[string]autoscalerVerdict
+		if deps.events != nil {
+			if events, err := deps.events(ctx, namespace); err == nil {
+				verdicts = autoscalerVerdicts(events)
+			}
+		}
+
+		failure := firstTerminalFailure(pods, verdicts)
 		if failure == nil {
 			lastKey, streak = "", 0
 			continue
