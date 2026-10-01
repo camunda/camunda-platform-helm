@@ -20,7 +20,7 @@ integration:
             gke: distroci
           identity: keycloak
           persistence: elasticsearch
-          helmVersion: 3.20.2
+          helmVersion: 3.22.0
           skip-e2e: true
         - name: enterprise-values
           enabled: true
@@ -37,7 +37,7 @@ integration:
           persistence: elasticsearch
           features:
             - enterprise
-          helmVersion: 3.20.2
+          helmVersion: 3.22.0
           skip-e2e: true
         - name: keycloak-mt
           enabled: true
@@ -53,7 +53,7 @@ integration:
             gke: distroci
           identity: keycloak
           persistence: elasticsearch
-          helmVersion: 3.20.2
+          helmVersion: 3.22.0
           skip-e2e: true
         - name: keycloak-rba
           enabled: true
@@ -68,7 +68,7 @@ integration:
             gke: distroci
           identity: keycloak
           persistence: elasticsearch
-          helmVersion: 3.20.2
+          helmVersion: 3.22.0
           skip-e2e: true
         - name: oidc
           enabled: true
@@ -83,7 +83,7 @@ integration:
             eks: preemptible
             gke: distroci
           persistence: elasticsearch
-          helmVersion: 3.20.2
+          helmVersion: 3.22.0
           skip-e2e: true
         - name: keycloak-original
           enabled: true
@@ -99,7 +99,7 @@ integration:
             gke: distroci
           identity: keycloak
           persistence: elasticsearch
-          helmVersion: 3.20.2
+          helmVersion: 3.22.0
           skip-e2e: true
         - name: opensearch-embedded
           enabled: true

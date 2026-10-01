@@ -72,6 +72,9 @@ orchestration:
             - demo
           clients:
             - venom
+        connectors:
+          clients:
+            - "${ORCH_CONNECTORS_CLIENT_ID}"
     authentication:
       authenticationRefreshInterval: PT30S
       oidc:

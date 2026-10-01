@@ -1,5 +1,26 @@
 # Changelog
 
+## [12.14.0](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.7-12.13.8...camunda-platform-8.7-12.14.0) (2026-09-29)
+
+
+### Features
+
+* **8.7:** support orchestration releases managed by Camunda Hub ([#7011](https://github.com/camunda/camunda-platform-helm/issues/7011)) ([a332efd](https://github.com/camunda/camunda-platform-helm/commit/a332efdb93e1a36260783ce76c2fbdafa0d8546b))
+
+
+### Documentation
+
+* correct the minimum Helm version to 3.10 ([#7357](https://github.com/camunda/camunda-platform-helm/issues/7357)) ([14f9179](https://github.com/camunda/camunda-platform-helm/commit/14f9179c9d6d9a59d959aade2fd5d042aa1d001d))
+
+
+### Dependencies
+
+* update camunda-platform-images (patch) ([#7298](https://github.com/camunda/camunda-platform-helm/issues/7298)) ([b68d324](https://github.com/camunda/camunda-platform-helm/commit/b68d324f1e0edccb6c7491b8bac61fdf9b437e18))
+* update camunda-platform-images (patch) ([#7350](https://github.com/camunda/camunda-platform-helm/issues/7350)) ([85b7b99](https://github.com/camunda/camunda-platform-helm/commit/85b7b998ffa80a61d3369995fd8d7b79d2f8ea53))
+* update camunda-platform-images (patch) ([#7363](https://github.com/camunda/camunda-platform-helm/issues/7363)) ([3fa30c9](https://github.com/camunda/camunda-platform-helm/commit/3fa30c92117fa9d64beb4187b376ae63a2e85cc1))
+* update camunda-platform-images (patch) ([#7365](https://github.com/camunda/camunda-platform-helm/issues/7365)) ([0799143](https://github.com/camunda/camunda-platform-helm/commit/07991434d611e13207412da66c59c9decef124ba))
+* update camunda/optimize docker tag to v8.7.29 ([#7372](https://github.com/camunda/camunda-platform-helm/issues/7372)) ([4282b10](https://github.com/camunda/camunda-platform-helm/commit/4282b10abdfc4b18e0fae8ef1d66ea79350a327c))
+
 ## [12.13.8](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.7-12.13.7...camunda-platform-8.7-12.13.8) (2026-09-21)
 
 

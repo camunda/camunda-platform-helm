@@ -45,6 +45,28 @@ type Topology struct {
 
 	// SharedStorageService is the Kubernetes Service name of the shared storage backend (defaults to SharedStorage/release name; elastic chart uses <clusterName>-master).
 	SharedStorageService string `yaml:"shared-storage-service,omitempty" json:"sharedStorageService,omitempty"`
+
+	// CredentialsManifest is a repo-root-relative ExternalSecret manifest applied
+	// to every release namespace in place of the chart's integration-test-credentials
+	// one, so a long-lived topology can source credentials that no CI namespace shares.
+	CredentialsManifest string `yaml:"credentials-manifest,omitempty" json:"credentialsManifest,omitempty"`
+}
+
+// CredentialsManifestBaseToken is replaced in a credentials-manifest by the
+// topology's base namespace, so each environment reads its own source Secret.
+const CredentialsManifestBaseToken = "${TOPOLOGY_BASE}"
+
+// RenderCredentialsManifest substitutes the base namespace into a
+// credentials-manifest. It fails when the manifest has the token but no base
+// is given, rather than read a source Secret literally named after the token.
+func RenderCredentialsManifest(content []byte, base string) ([]byte, error) {
+	if !strings.Contains(string(content), CredentialsManifestBaseToken) {
+		return content, nil
+	}
+	if strings.TrimSpace(base) == "" {
+		return nil, fmt.Errorf("credentials manifest uses %s but no base namespace was given", CredentialsManifestBaseToken)
+	}
+	return []byte(strings.ReplaceAll(string(content), CredentialsManifestBaseToken, base)), nil
 }
 
 // TopologyRelease is one namespace/release within a Topology. Each release
@@ -154,10 +176,7 @@ var reservedTopologyEnvKeys = []string{
 // reported so callers can name it in errors, and safe is false when the pinned
 // value is not a plain filename (so it must not be joined into a path).
 func releaseChartPaths(repoRoot, parentChartDir, parentVersion string, r TopologyRelease) (chartVersion, releaseChartDir, chartFullSetupDir string, safe bool) {
-	chartVersion = r.ChartVersion
-	if chartVersion == "" {
-		chartVersion = parentVersion
-	}
+	chartVersion = releaseChartVersion(parentVersion, r)
 	safe = isPlainFilename(chartVersion)
 	releaseChartDir = parentChartDir
 	if safe {
@@ -165,6 +184,13 @@ func releaseChartPaths(repoRoot, parentChartDir, parentVersion string, r Topolog
 	}
 	chartFullSetupDir = filepath.Join(releaseChartDir, "test", "integration", "scenarios", "chart-full-setup")
 	return chartVersion, releaseChartDir, chartFullSetupDir, safe
+}
+
+func releaseChartVersion(parentVersion string, r TopologyRelease) string {
+	if r.ChartVersion == "" {
+		return parentVersion
+	}
+	return r.ChartVersion
 }
 
 // Validate enforces Topology's load-time invariants:
@@ -205,6 +231,15 @@ func (t *Topology) Validate(ctx string, chartDir string, depsDir string) error {
 
 	if len(t.Releases) == 0 {
 		problems = append(problems, fmt.Sprintf("%s: topology %q: at least one release is required", ctx, t.Name))
+	}
+
+	if m := t.CredentialsManifest; m != "" {
+		clean := filepath.Clean(m)
+		if filepath.IsAbs(m) || clean == ".." || strings.HasPrefix(clean, ".."+string(filepath.Separator)) {
+			problems = append(problems, fmt.Sprintf("%s: topology %q: credentials-manifest %q must be a path inside the repository, relative to its root", ctx, t.Name, m))
+		} else if err := credentialsManifestInsideRepo(repoRoot, clean); err != nil {
+			problems = append(problems, fmt.Sprintf("%s: topology %q: credentials-manifest %q: %v", ctx, t.Name, m, err))
+		}
 	}
 
 	roles := map[string]bool{}
@@ -438,4 +473,24 @@ func TopologyEnvToken(value string) string {
 		}
 	}
 	return strings.Trim(token.String(), "_")
+}
+
+// credentialsManifestInsideRepo checks that rel exists and that, after
+// resolving symlinks, it still lives inside repoRoot. A lexical check alone
+// would accept a repository symlink pointing outside the repository, which the
+// deployer would then read and apply.
+func credentialsManifestInsideRepo(repoRoot, rel string) error {
+	root, err := filepath.EvalSymlinks(repoRoot)
+	if err != nil {
+		return err
+	}
+	target, err := filepath.EvalSymlinks(filepath.Join(repoRoot, rel))
+	if err != nil {
+		return err
+	}
+	inside, err := filepath.Rel(root, target)
+	if err != nil || inside == ".." || strings.HasPrefix(inside, ".."+string(filepath.Separator)) || filepath.IsAbs(inside) {
+		return fmt.Errorf("resolves outside the repository (%s)", target)
+	}
+	return nil
 }

@@ -534,12 +534,8 @@ func TestRotateCredentials_DoesNotRetry401(t *testing.T) {
 
 func TestEnsureServicePrincipal_AlreadyExists(t *testing.T) {
 	srv := newTestServer(t, map[string]http.HandlerFunc{
-		"GET /servicePrincipals": func(w http.ResponseWriter, r *http.Request) {
-			jsonResponse(w, 200, map[string]interface{}{
-				"value": []map[string]string{
-					{"id": "sp-123"},
-				},
-			})
+		"PATCH /servicePrincipals(appId='app-id')": func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusNoContent)
 		},
 	})
 	defer srv.Close()
@@ -557,12 +553,7 @@ func TestEnsureServicePrincipal_AlreadyExists(t *testing.T) {
 func TestEnsureServicePrincipal_Creates(t *testing.T) {
 	created := false
 	srv := newTestServer(t, map[string]http.HandlerFunc{
-		"GET /servicePrincipals": func(w http.ResponseWriter, r *http.Request) {
-			jsonResponse(w, 200, map[string]interface{}{
-				"value": []interface{}{},
-			})
-		},
-		"POST /servicePrincipals": func(w http.ResponseWriter, r *http.Request) {
+		"PATCH /servicePrincipals(appId='app-id')": func(w http.ResponseWriter, r *http.Request) {
 			created = true
 			jsonResponse(w, 201, map[string]string{
 				"id": "new-sp-id",
@@ -584,25 +575,58 @@ func TestEnsureServicePrincipal_Creates(t *testing.T) {
 	}
 }
 
-// TestEnsureServicePrincipal_RetriesOn400RequestBadRequest verifies that the
-// /servicePrincipals POST retries the specific 400 Request_BadRequest race
-// Graph returns when the appId of a just-created app isn't yet visible to
-// the SP endpoint.
+func TestEnsureServicePrincipal_RepeatedUpsert(t *testing.T) {
+	var requests int32
+	srv := newTestServer(t, map[string]http.HandlerFunc{
+		"PATCH /servicePrincipals(appId='app-id')": func(w http.ResponseWriter, r *http.Request) {
+			if got := r.Header.Get("Prefer"); got != "create-if-missing" {
+				t.Errorf("Prefer = %q, want create-if-missing", got)
+			}
+			if got := r.Header.Get("Authorization"); got != "Bearer token" {
+				t.Errorf("Authorization = %q, want Bearer token", got)
+			}
+			if got := r.Header.Get("Content-Type"); got != "application/json" {
+				t.Errorf("Content-Type = %q, want application/json", got)
+			}
+			var payload map[string]interface{}
+			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+				t.Errorf("decode upsert payload: %v", err)
+			}
+			if payload == nil || len(payload) != 0 {
+				t.Errorf("upsert payload = %#v, want empty object", payload)
+			}
+			if atomic.AddInt32(&requests, 1) == 1 {
+				jsonResponse(w, http.StatusCreated, map[string]string{"id": "sp-id", "appId": "app-id"})
+			} else {
+				w.WriteHeader(http.StatusNoContent)
+			}
+		},
+	})
+	defer srv.Close()
+	origGraph := graphBaseURL
+	graphBaseURL = srv.URL
+	defer func() { graphBaseURL = origGraph }()
+
+	for range 3 {
+		if err := ensureServicePrincipal(context.Background(), srv.Client(), "token", "app-id"); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+	}
+	if got := atomic.LoadInt32(&requests); got != 3 {
+		t.Errorf("upsert requests = %d, want 3", got)
+	}
+}
+
 func TestEnsureServicePrincipal_RetriesOn400RequestBadRequest(t *testing.T) {
 	shrinkRetryTimings(t)
 
-	var postAttempts int32
+	var patchAttempts int32
 	const flakyAttempts int32 = 2
 
 	srv := newTestServer(t, map[string]http.HandlerFunc{
-		"GET /servicePrincipals": func(w http.ResponseWriter, r *http.Request) {
-			jsonResponse(w, 200, map[string]interface{}{
-				"value": []interface{}{},
-			})
-		},
-		"POST /servicePrincipals": func(w http.ResponseWriter, r *http.Request) {
-			n := atomic.AddInt32(&postAttempts, 1)
-			if n <= flakyAttempts {
+		"PATCH /servicePrincipals(appId='abc-123')": func(w http.ResponseWriter, r *http.Request) {
+			attempt := atomic.AddInt32(&patchAttempts, 1)
+			if attempt <= flakyAttempts {
 				jsonResponse(w, 400, map[string]interface{}{
 					"error": map[string]string{
 						"code":    "Request_BadRequest",
@@ -623,8 +647,8 @@ func TestEnsureServicePrincipal_RetriesOn400RequestBadRequest(t *testing.T) {
 	if err := ensureServicePrincipal(context.Background(), srv.Client(), "token", "abc-123"); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if got := atomic.LoadInt32(&postAttempts); got != flakyAttempts+1 {
-		t.Errorf("POST attempts = %d, want %d (retry loop should recover from 400 Request_BadRequest)", got, flakyAttempts+1)
+	if got := atomic.LoadInt32(&patchAttempts); got != flakyAttempts+1 {
+		t.Errorf("PATCH attempts = %d, want %d", got, flakyAttempts+1)
 	}
 }
 
@@ -634,15 +658,10 @@ func TestEnsureServicePrincipal_RetriesOn400RequestBadRequest(t *testing.T) {
 func TestEnsureServicePrincipal_DoesNotRetryGeneric400(t *testing.T) {
 	shrinkRetryTimings(t)
 
-	var postAttempts int32
+	var patchAttempts int32
 	srv := newTestServer(t, map[string]http.HandlerFunc{
-		"GET /servicePrincipals": func(w http.ResponseWriter, r *http.Request) {
-			jsonResponse(w, 200, map[string]interface{}{
-				"value": []interface{}{},
-			})
-		},
-		"POST /servicePrincipals": func(w http.ResponseWriter, r *http.Request) {
-			atomic.AddInt32(&postAttempts, 1)
+		"PATCH /servicePrincipals(appId='app-id')": func(w http.ResponseWriter, r *http.Request) {
+			atomic.AddInt32(&patchAttempts, 1)
 			jsonResponse(w, 400, map[string]interface{}{
 				"error": map[string]string{
 					"code":    "Request_BadRequest",
@@ -661,8 +680,46 @@ func TestEnsureServicePrincipal_DoesNotRetryGeneric400(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error on generic 400, got nil")
 	}
-	if got := atomic.LoadInt32(&postAttempts); got != 1 {
-		t.Errorf("POST attempts = %d, want 1 (generic 400 should not be retried)", got)
+	if got := atomic.LoadInt32(&patchAttempts); got != 1 {
+		t.Errorf("PATCH attempts = %d, want 1 (generic 400 should not be retried)", got)
+	}
+}
+
+func TestEnsureServicePrincipal_Errors(t *testing.T) {
+	shrinkRetryTimings(t)
+	for _, testCase := range []struct {
+		name         string
+		statusCode   int
+		wantAttempts int32
+	}{
+		{"Unauthorized", http.StatusUnauthorized, 1},
+		{"Forbidden", http.StatusForbidden, 1},
+		{"UnexpectedSuccess", http.StatusOK, 1},
+		{"RetryBudget", http.StatusServiceUnavailable, int32(retryMaxAttempts)},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			var attempts int32
+			srv := newTestServer(t, map[string]http.HandlerFunc{
+				"PATCH /servicePrincipals(appId='app-id')": func(w http.ResponseWriter, r *http.Request) {
+					atomic.AddInt32(&attempts, 1)
+					jsonResponse(w, testCase.statusCode, map[string]interface{}{
+						"error": map[string]string{"code": "Request_BadRequest", "message": "unrelated failure"},
+					})
+				},
+			})
+			defer srv.Close()
+			origGraph := graphBaseURL
+			graphBaseURL = srv.URL
+			defer func() { graphBaseURL = origGraph }()
+
+			err := ensureServicePrincipal(context.Background(), srv.Client(), "token", "app-id")
+			if err == nil || !strings.Contains(err.Error(), fmt.Sprint(testCase.statusCode)) {
+				t.Fatalf("error = %v, want status %d", err, testCase.statusCode)
+			}
+			if got := atomic.LoadInt32(&attempts); got != testCase.wantAttempts {
+				t.Errorf("PATCH attempts = %d, want %d", got, testCase.wantAttempts)
+			}
+		})
 	}
 }
 
@@ -789,13 +846,7 @@ func TestEnsureVenomApp_NewApp(t *testing.T) {
 				"secretText": "generated-secret",
 			})
 		},
-		// ensureServicePrincipal: not found → create.
-		"GET /servicePrincipals": func(w http.ResponseWriter, r *http.Request) {
-			jsonResponse(w, 200, map[string]interface{}{
-				"value": []interface{}{},
-			})
-		},
-		"POST /servicePrincipals": func(w http.ResponseWriter, r *http.Request) {
+		"PATCH /servicePrincipals(appId='new-venom-app-id')": func(w http.ResponseWriter, r *http.Request) {
 			spCreated = true
 			jsonResponse(w, 201, map[string]string{"id": "sp-id"})
 		},
@@ -902,10 +953,8 @@ func TestEnsureVenomApp_ExistingApp(t *testing.T) {
 			jsonResponse(w, 200, map[string]string{"secretText": "rotated-secret"})
 		},
 		// ensureServicePrincipal: already exists.
-		"GET /servicePrincipals": func(w http.ResponseWriter, r *http.Request) {
-			jsonResponse(w, 200, map[string]interface{}{
-				"value": []map[string]string{{"id": "sp-existing"}},
-			})
+		"PATCH /servicePrincipals(appId='existing-app-id')": func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusNoContent)
 		},
 	})
 	defer srv.Close()
@@ -972,10 +1021,8 @@ func TestEnsureVenomApp_SkipK8sSecret(t *testing.T) {
 		"POST /applications/skip-secret-obj-id/addPassword": func(w http.ResponseWriter, r *http.Request) {
 			jsonResponse(w, 200, map[string]string{"secretText": "skip-secret-value"})
 		},
-		"GET /servicePrincipals": func(w http.ResponseWriter, r *http.Request) {
-			jsonResponse(w, 200, map[string]interface{}{
-				"value": []map[string]string{{"id": "sp-existing"}},
-			})
+		"PATCH /servicePrincipals(appId='skip-secret-app-id')": func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusNoContent)
 		},
 	})
 	defer srv.Close()
@@ -1476,6 +1523,9 @@ func TestGraphPatch(t *testing.T) {
 	var receivedBody map[string]interface{}
 	srv := newTestServer(t, map[string]http.HandlerFunc{
 		"PATCH /applications/test-id": func(w http.ResponseWriter, r *http.Request) {
+			if got := r.Header.Get("Prefer"); got != "" {
+				t.Errorf("Prefer = %q, want no upsert header", got)
+			}
 			json.NewDecoder(r.Body).Decode(&receivedBody) //nolint:errcheck
 			w.WriteHeader(204)
 		},
@@ -1487,7 +1537,7 @@ func TestGraphPatch(t *testing.T) {
 	defer func() { graphBaseURL = origGraph }()
 
 	payload := map[string]string{"key": "value"}
-	_, statusCode, err := graphPatch(context.Background(), srv.Client(), "token", "/applications/test-id", payload)
+	_, statusCode, err := graphPatch(context.Background(), srv.Client(), "token", "/applications/test-id", payload, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

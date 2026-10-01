@@ -174,6 +174,16 @@ on:
         required: false
         default: ""
         type: string
+      chart-versions:
+        description: "Comma-separated chart versions the scenario deploys, for cache result recording"
+        required: false
+        default: ""
+        type: string
+      e2e-test-suite-version:
+        description: "@camunda/e2e-test-suite version the e2e jobs install (empty installs latest)"
+        required: false
+        default: ""
+        type: string
       camunda-version:
         description: "Camunda version (e.g., 8.9) for cache result recording"
         required: false
@@ -407,6 +417,8 @@ jobs:
       topology-hub-suffix: ${{ inputs.topology-hub-suffix }}
       topology-smoke-matrix: ${{ inputs.topology-smoke-matrix }}
       pr-head-sha: ${{ inputs.pr-head-sha }}
+      chart-versions: ${{ inputs.chart-versions }}
+      e2e-test-suite-version: ${{ inputs.e2e-test-suite-version }}
       camunda-version: ${{ inputs.camunda-version }}
       camunda-helm-post-render: ${{ inputs.camunda-helm-post-render }}
       camunda-helm-credentials-source: ${{ inputs.camunda-helm-credentials-source }}
@@ -424,11 +436,12 @@ jobs:
       force-image-overrides: ${{ inputs.force-image-overrides }}
   print-outputs:
     name: Print outputs
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     needs: [runner]
     outputs:
       deployment-url: ${{ steps.vars.outputs.ingress-host }}
-      namespace: ${{ needs.runner.outputs.namespace }}
+      namespace: ${{ steps.publish.outputs.namespace }}
     steps:
       - name: CI Setup - Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -441,8 +454,8 @@ jobs:
         id: vars
         uses: ./.github/actions/workflow-vars
         with:
-          deployment-ttl: 30m
-          setup-flow: install
+          deployment-ttl: ${{ inputs.deployment-ttl }}
+          setup-flow: ${{ inputs.flows }}
           platform: ${{ inputs.platforms }}
           identifier-base: ${{ inputs.identifier }}-${{ inputs.shortname }}
           chart-dir: ${{ inputs.camunda-helm-dir }}
@@ -450,15 +463,18 @@ jobs:
           prefix: ${{ inputs.namespace-prefix }}
 
       - name: Print outputs
+        id: publish
+        env:
+          NAMESPACE: ${{ needs.runner.outputs.namespace || (inputs.matrix-data == '' && !contains(inputs.platforms, ',') && !contains(inputs.flows, ',') && steps.vars.outputs.namespace) || '' }}
         run: |
           echo "Deployment URL: ${{ needs.runner.outputs.deployment-url }}"
-          echo "Namespace: ${{ needs.runner.outputs.namespace }}"
+          echo "Namespace: ${NAMESPACE}"
           echo "deployment-url=${{ steps.vars.outputs.ingress-host }}" >> $GITHUB_OUTPUT
-          echo "namespace=${{ needs.runner.outputs.namespace }}" >> $GITHUB_OUTPUT
+          echo "namespace=${NAMESPACE}" >> $GITHUB_OUTPUT
 
       - name: Add GKE Workload Link to Summary
         run: |
-          NAMESPACE="${{ needs.runner.outputs.namespace }}"
+          NAMESPACE="${{ steps.publish.outputs.namespace }}"
           ENCODED_NAMESPACE=$(python3 -c "import urllib.parse; print(urllib.parse.quote('$NAMESPACE', safe=''))")
           GKE_WORKLOAD_URL="https://console.cloud.google.com/kubernetes/workload/overview?authuser=1&project=camunda-distribution&pageState=(%22savedViews%22:(%22n%22:%5B%22${ENCODED_NAMESPACE}%22%5D))"
           cat >> $GITHUB_STEP_SUMMARY << EOF

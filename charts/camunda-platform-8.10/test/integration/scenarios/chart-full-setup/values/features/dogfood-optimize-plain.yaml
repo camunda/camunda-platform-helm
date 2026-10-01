@@ -42,6 +42,11 @@ optimize:
       url:
         protocol: "${EXTERNAL_ELASTICSEARCH_SCHEME}"
         host: "${EXTERNAL_ELASTICSEARCH_HOST}"
+      auth:
+        username: elastic
+        secret:
+          existingSecret: integration-test-credentials
+          existingSecretKey: elasticsearch-password
       prefix: "${SERVED_ORCHESTRATION_INDEX_PREFIX}"
   env:
     - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SETTINGS_INDEX_PREFIX

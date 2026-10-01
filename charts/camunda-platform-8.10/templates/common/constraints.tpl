@@ -11,14 +11,6 @@ A template to handle constraints.
 {{- end -}}
 {{- end -}}
 
-{{/*
-Fail with a message if the Helm CLI version is less than v4.
-Chart 15.x (Camunda 8.10) requires Helm v4 or later.
-*/}}
-{{- if not (semverCompare ">=4.0.0-0" .Capabilities.HelmVersion.Version) -}}
-{{- fail (printf "[camunda][error] Camunda chart 15.x (8.10) requires Helm CLI v4 or later. Detected Helm CLI version: %s. Please upgrade to Helm v4: https://helm.sh/docs/topics/v4_migration/" .Capabilities.HelmVersion.Version) -}}
-{{- end -}}
-
 {{- $values := .Values | toYaml | fromYaml }}
 
 {{ include "camundaPlatform.keyRenamed" (dict
@@ -467,10 +459,7 @@ resolved maps. global.labels is rendered with a plain toYaml and stays raw. */ -
 }}
   {{- fail (printf "[camunda][error] %s is managed by the chart and cannot be configured in global.labels, global.commonLabels, or orchestration.podLabels." $reservedGenerationLabel) }}
 {{- end }}
-{{- $partitioningKey := "orchestration.partitioning" -}}
-{{- if ne (include "camundaPlatform.partitioningConfigured" (.Values.orchestration.partitioning | default dict)) "true" -}}
-  {{- $partitioningKey = "global.multiregion" -}}
-{{- end -}}
+{{- $partitioningKey := $partitioning.sourceKey -}}
 {{- if and $partitioning.keepUnzonedBrokers (eq $partitioning.scheme "zone-aware") }}
   {{- $orchRaw := .Values.orchestration.partitioning | default dict -}}
   {{- $zoneCountRaw := get $orchRaw "numberOfZones" | toString -}}
@@ -547,7 +536,23 @@ retained round-robin generation.
 {{- end }}
 
 {{/*
-Fail if the region count is below 1, under any scheme. Round-robin divides the cluster
+Fail if either block carries the other block's spelling of the numbering pair. Reached with
+--skip-schema-validation, where additionalProperties does not run.
+*/}}
+{{- $renamed := dict "regions" "numberOfZones" "regionId" "zoneIndex" -}}
+{{- $orchRaw := .Values.orchestration.partitioning | default dict -}}
+{{- $globalRaw := .Values.global.multiregion | default dict -}}
+{{- range $deprecated, $current := $renamed }}
+  {{- if hasKey $orchRaw $deprecated }}
+    {{- fail (printf "[camunda][error] orchestration.partitioning.%s was renamed to orchestration.partitioning.%s." $deprecated $current) -}}
+  {{- end }}
+  {{- if hasKey $globalRaw $current }}
+    {{- fail (printf "[camunda][error] global.multiregion.%s does not exist; the deprecated block spells it global.multiregion.%s, and %s lives under orchestration.partitioning." $current $deprecated $current) -}}
+  {{- end }}
+{{- end }}
+
+{{/*
+Fail if the zone count is below 1, under any scheme. Round-robin divides the cluster
 size by it and numbers node IDs with it; zone-aware requires it to be exactly 1, and the
 guard above cannot see a sub-1 value because the resolver has already normalised it.
 
@@ -561,25 +566,9 @@ is what makes the block read as unconfigured in the first place. The deprecated 
 scanned only when it is the one in effect, so an inert leftover cannot fail a render that
 is driven entirely by orchestration.partitioning.
 */}}
-{{- /* NOTE: reached with --skip-schema-validation, where additionalProperties does not
-     run, so each block rejects the other block's spelling here. */ -}}
-{{- $renamed := dict "regions" "numberOfZones" "regionId" "zoneIndex" -}}
-{{- $orchRaw := .Values.orchestration.partitioning | default dict -}}
-{{- range $old, $current := $renamed }}
-  {{- if hasKey $orchRaw $old }}
-    {{- fail (printf "[camunda][error] orchestration.partitioning.%s was renamed to orchestration.partitioning.%s." $old $current) -}}
-  {{- end }}
-{{- end }}
-{{- $globalRaw := .Values.global.multiregion | default dict -}}
-{{- range $current, $deprecated := dict "numberOfZones" "regions" "zoneIndex" "regionId" }}
-  {{- if hasKey $globalRaw $current }}
-    {{- fail (printf "[camunda][error] global.multiregion.%s does not exist; the deprecated block spells it global.multiregion.%s, and %s lives under orchestration.partitioning." $current $deprecated $current) -}}
-  {{- end }}
-{{- end }}
-
-{{- $rawBlocks := list (dict "key" "orchestration.partitioning" "field" "numberOfZones" "raw" (.Values.orchestration.partitioning | default dict)) -}}
+{{- $rawBlocks := list (dict "key" "orchestration.partitioning" "field" "numberOfZones" "raw" $orchRaw) -}}
 {{- if eq $partitioningKey "global.multiregion" -}}
-  {{- $rawBlocks = append $rawBlocks (dict "key" "global.multiregion" "field" "regions" "raw" (.Values.global.multiregion | default dict)) -}}
+  {{- $rawBlocks = append $rawBlocks (dict "key" "global.multiregion" "field" "regions" "raw" $globalRaw) -}}
 {{- end -}}
 {{- range $block := $rawBlocks }}
   {{- if hasKey $block.raw $block.field }}
@@ -599,18 +588,10 @@ NOTE: a clusterSize the zone count does not divide is the same class of fault an
 deliberately not rejected here; see #7196.
 */}}
 {{- if ne $partitioning.scheme "zone-aware" }}
-  {{- /* NOTE: the message names the keys of whichever block is in effect. The deprecated
-       block still spells the pair regions/regionId. */ -}}
-  {{- $countField := "numberOfZones" -}}
-  {{- $indexField := "zoneIndex" -}}
-  {{- if eq $partitioningKey "global.multiregion" -}}
-    {{- $countField = "regions" -}}
-    {{- $indexField = "regionId" -}}
-  {{- end -}}
   {{- $zoneCount := int $partitioning.numberOfZones -}}
   {{- $zoneIndex := int $partitioning.zoneIndex -}}
   {{- if or (lt $zoneIndex 0) (ge $zoneIndex $zoneCount) }}
-    {{- fail (printf "[camunda][error] %s.%s is %d but %s.%s is %d; %s addresses this zone and must be between 0 and %d, or its brokers take the node IDs of another zone." $partitioningKey $indexField $zoneIndex $partitioningKey $countField $zoneCount $indexField (sub $zoneCount 1)) -}}
+    {{- fail (printf "[camunda][error] %s.%s is %d but %s.%s is %d; %s addresses this zone and must be between 0 and %d, or its brokers take the node IDs of another zone." $partitioningKey $partitioning.indexKey $zoneIndex $partitioningKey $partitioning.countKey $zoneCount $partitioning.indexKey (sub $zoneCount 1)) -}}
   {{- end }}
 {{- end }}
 
@@ -956,13 +937,15 @@ Fail with a message if Web Modeler is enabled but management Identity is not ena
   {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
 {{- end }}
 
-{{- $hubRestapiPodLabels := or .Values.camundaHub.restapi.podLabels .Values.webModeler.restapi.podLabels | default dict }}
-{{- $hubWebsocketsPodLabels := or .Values.camundaHub.websockets.podLabels .Values.webModeler.websockets.podLabels | default dict }}
+{{- $hub := .Values.webModeler }}
+{{- if eq (include "camundaHub.webModelerEnabled" .) "true" }}
+  {{- $hub = include "camundaHub.values" . | fromYaml }}
+{{- end }}
 {{- if or
   (hasKey (.Values.global.labels | default dict) "camunda.io/upgrade-phase")
   (hasKey (.Values.global.commonLabels | default dict) "camunda.io/upgrade-phase")
-  (hasKey $hubRestapiPodLabels "camunda.io/upgrade-phase")
-  (hasKey $hubWebsocketsPodLabels "camunda.io/upgrade-phase")
+  (hasKey ($hub.restapi.podLabels | default dict) "camunda.io/upgrade-phase")
+  (hasKey ($hub.websockets.podLabels | default dict) "camunda.io/upgrade-phase")
 }}
   {{- fail "[camunda][error] The pod label camunda.io/upgrade-phase is reserved for Camunda Hub upgrade lifecycle traffic isolation and cannot be overridden." }}
 {{- end }}
@@ -1006,6 +989,23 @@ Fail with a message if Web Modeler is enabled but management Identity is not ena
 {{- end }}
 
 {{/*
+Fail with a message if orchestration.pvcAccessModes includes ReadWriteOncePod together with any
+other access mode. Kubernetes requires ReadWriteOncePod to be the sole access mode on a PVC.
+Only checked when a PVC is actually rendered, which mirrors the volumeClaimTemplates gate in
+templates/orchestration/statefulset.yaml.
+*/}}
+{{- if and (eq (include "camundaPlatform.orchestrationEnabled" .) "true")
+           (eq .Values.orchestration.persistenceType "disk")
+           (has "ReadWriteOncePod" .Values.orchestration.pvcAccessModes)
+           (gt (len .Values.orchestration.pvcAccessModes) 1) }}
+  {{- $errorMessage := printf "[camunda][error] %s %s"
+      "orchestration.pvcAccessModes includes \"ReadWriteOncePod\" together with another access mode."
+      "Kubernetes requires ReadWriteOncePod to be the only access mode in the list; set orchestration.pvcAccessModes to [\"ReadWriteOncePod\"] on its own."
+  -}}
+  {{ printf "\n%s" $errorMessage | trimSuffix "\n" | fail }}
+{{- end }}
+
+{{/*
 camunda.constraints.warnings
 Non-fatal deprecation/config warnings. Consumed by NOTES.txt (helm install/upgrade) and by
 configmap-warnings.yaml, which renders the "<release>-warnings" ConfigMap on the GitOps path
@@ -1035,6 +1035,9 @@ Usage:
 {{- end -}}
 
 {{- define "camunda.constraints.warnings" }}
+  {{- if not (semverCompare ">=4.0.0-0" .Capabilities.HelmVersion.Version) }}
+    {{- printf "\n%s" (printf "[camunda][warning] Helm CLI %s detected. Helm v3 receives security fixes only until February 10, 2027 (https://helm.sh/blog/helm-v3-end-of-life/). Upgrade to Helm v4 before then: https://helm.sh/docs/overview" .Capabilities.HelmVersion.Version) }}
+  {{- end }}
   {{- $hubUpgradePhase := include "camundaHub.upgradePhase" . }}
   {{- if eq $hubUpgradePhase "quiesce" }}
     {{- printf "\n%s" "[camunda][warning] Camunda Hub is quiesced for the 8.9 to 8.10 database migration. Confirm all external writers are stopped and create a verified database backup before setting camundaHub.upgrade.phase to migrate." }}
@@ -1280,17 +1283,16 @@ The following values inside your values.yaml need to be set but were not:
 
     {{/* (3) A component-level JAVA_TOOL_OPTIONS env entry overrides (last-wins) the
            chart's truststore flags, silently breaking JVM trust. */}}
-    {{/* webModeler.restapi env uses `or` to mirror deployment-restapi.yaml's own
-         env coalescing (camundaHub takes precedence; only that one list is
-         applied). We check exactly the list the deployment uses, so we never warn
-         about a JAVA_TOOL_OPTIONS in the ignored list — that would be a false
-         alarm since it is not applied. */}}
+    {{- $hubWarnings := .Values.webModeler }}
+    {{- if eq (include "camundaHub.webModelerEnabled" .) "true" }}
+      {{- $hubWarnings = include "camundaHub.values" . | fromYaml }}
+    {{- end }}
     {{- $envComponents := list
         (dict "comp" "orchestration" "env" .Values.orchestration.env)
         (dict "comp" "optimize" "env" .Values.optimize.env)
         (dict "comp" "connectors" "env" .Values.connectors.env)
         (dict "comp" "identity" "env" .Values.identity.env)
-        (dict "comp" "webModeler.restapi" "env" (or .Values.camundaHub.restapi.env .Values.webModeler.restapi.env))
+        (dict "comp" "webModeler.restapi" "env" $hubWarnings.restapi.env)
     }}
     {{- range $c := $envComponents }}
       {{- range $e := $c.env }}
@@ -1614,7 +1616,13 @@ The following values inside your values.yaml need to be set but were not:
       -}}
       {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
     {{- end }}
-    {{- if eq (include "camundaPlatform.spansFailureDomains" .) "true" }}
+    {{- $contactPointsSet := false }}
+    {{- range $env := (.Values.orchestration.env | default list) }}
+      {{- if eq (tpl ($env.name | default "") $) "CAMUNDA_CLUSTER_INITIALCONTACTPOINTS" }}
+        {{- $contactPointsSet = true }}
+      {{- end }}
+    {{- end }}
+    {{- if and (eq (include "camundaPlatform.spansFailureDomains" .) "true") (not $contactPointsSet) }}
       {{- if and (eq (include "orchestration.zoneAware" .) "true") (include "camundaPlatform.partitioning" . | fromJson).keepUnzonedBrokers }}
       {{- $warningMessage := printf "%s %s %s"
           "[camunda][warning]"
@@ -1787,6 +1795,14 @@ The following values inside your values.yaml need to be set but were not:
     {{ include "camundaPlatform.keyDeprecated" (dict
       "condition" (not (empty .Values.orchestration.security.initialization.authorizations))
       "oldName" "orchestration.security.initialization.authorizations" "migration" $orchestrationExtra) }}
+    {{- $defaultRoles := .Values.orchestration.security.initialization.defaultRoles | default dict }}
+    {{- range $role, $cfg := $defaultRoles }}
+      {{- if kindIs "map" $cfg }}
+    {{ include "camundaPlatform.keyDeprecated" (dict
+      "condition" (not (empty (get $cfg "mappingRules")))
+      "oldName" (printf "orchestration.security.initialization.defaultRoles.%s.mappingRules" $role) "migration" $orchestrationExtra) }}
+      {{- end }}
+    {{- end }}
     {{ include "camundaPlatform.keyDeprecated" (dict
       "condition" (not .Values.orchestration.exporters.camunda.enabled)
       "oldName" "orchestration.exporters.camunda.enabled" "migration" $orchestrationExtra) }}
@@ -1892,6 +1908,17 @@ The following values inside your values.yaml need to be set but were not:
   {{ include "camundaPlatform.keyDeprecated" (dict
     "condition" (ne (.Values.global.documentStore.type.inmemory.storeId | toString) "INMEMORY")
     "oldName" "global.documentStore.type.inmemory.storeId" "migration" $componentExtra) }}
+
+  {{- if and (eq (include "camundaPlatform.orchestrationEnabled" .) "true")
+             (eq .Values.orchestration.persistenceType "disk")
+             (has "ReadWriteOncePod" .Values.orchestration.pvcAccessModes) }}
+    {{- $warningMessage := printf "%s %s %s"
+        "[camunda][warning]"
+        "orchestration.pvcAccessModes is set to ReadWriteOncePod, which requires a CSI driver that supports it; without that support the PersistentVolumeClaim may fail to provision or stay Pending."
+        "PersistentVolumeClaim accessModes are immutable, so this only applies to new installs / new PVCs, not to an existing StatefulSet via \"helm upgrade\"."
+    -}}
+    {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+  {{- end }}
 {{- end }}
 
 {{/*
@@ -1996,13 +2023,13 @@ Gateway namespace and createGatewayResource are mutually exclusive.
 
 {{/*
 *******************************************************************************
-Ingress and Gateway API should not be enabled at the same time.
+Combined web Ingress and Gateway API are mutually exclusive.
 *******************************************************************************
 */}}
 {{- if and .Values.global.gateway.enabled .Values.global.ingress.enabled }}
   {{- $errorMessage := printf "[camunda][error] %s %s"
-      "Gateway API and Ingress cannot both be enabled at the same time."
-      "Please ensure that either \"global.gateway.enabled: true\" or \"global.ingress.enabled: true\" is set, but not both."
+      "Gateway API and combined web Ingress cannot both be enabled."
+      "Set either \"global.gateway.enabled: true\" or \"global.ingress.enabled: true\", not both. Gateway web routing can still use a separate orchestration gRPC Ingress."
   -}}
   {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
 {{- end }}

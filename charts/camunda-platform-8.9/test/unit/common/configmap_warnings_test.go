@@ -76,6 +76,30 @@ func (s *ConfigMapWarningsTemplateTest) TestDifferentValuesInputs() {
 			},
 		},
 		{
+			Name: "TestWarningsAreNotSeparatedByBlankLines",
+			Values: map[string]string{
+				"elasticsearch.enabled":                                         "true",
+				"global.elasticsearch.enabled":                                  "true",
+				"orchestration.data.secondaryStorage.type":                      "elasticsearch",
+				"identity.enabled":                                              "true",
+				"global.identity.auth.enabled":                                  "true",
+				"global.security.authentication.method":                         "oidc",
+				"connectors.security.authentication.oidc.secret.existingSecret": "foo",
+				"global.identity.auth.issuerBackendUrl":                         "http://keycloak:80/auth/realms/camunda-platform",
+				"global.testDeprecationFlags.existingSecretsMustBeSet":          "warning",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				lines := strings.Split(configmap.Data["warnings"], "\n")
+				s.Require().GreaterOrEqual(len(lines), 3)
+				for _, line := range lines {
+					s.Require().NotEmpty(strings.TrimSpace(line))
+				}
+			},
+		},
+		{
 			Name: "TestWarningsConfigMapAbsentWhenNoWarnings",
 			// Both ES flags off avoid the legacy-option deprecation warning (the test helper
 			// otherwise defaults them to true); the new secondaryStorage key satisfies the
@@ -327,4 +351,41 @@ func mergeMaps(base map[string]string, overrides map[string]string) map[string]s
 		merged[key] = value
 	}
 	return merged
+}
+
+func (s *ConfigMapWarningsTemplateTest) TestPvcAccessModesReadWriteOncePodWarning() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "ReadWriteOncePodTriggersWarning",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"orchestration.pvcAccessModes[0]":          "ReadWriteOncePod",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().Contains(configmap.Data["warnings"],
+					"orchestration.pvcAccessModes is set to ReadWriteOncePod")
+			},
+		},
+		{
+			Name: "DefaultReadWriteOnceDoesNotTriggerWarning",
+			// Another warning must stay active so the ConfigMap still renders (it is omitted
+			// entirely when no warnings are present, see TestWarningsConfigMapAbsentWhenNoWarnings).
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"elasticsearch.enabled":                    "true",
+				"global.elasticsearch.enabled":             "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().NotContains(configmap.Data["warnings"], "pvcAccessModes")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }

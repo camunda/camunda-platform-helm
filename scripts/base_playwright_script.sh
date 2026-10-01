@@ -587,6 +587,10 @@ _log_e2e_suite_version() {
   local version
   version=$(npm ls @camunda/e2e-test-suite --json 2>/dev/null | jq -r '.dependencies["@camunda/e2e-test-suite"].version // "unknown"') || version="unknown"
   info "E2E test suite version: ${version}"
+  if [[ -n "${E2E_TEST_SUITE_VERSION:-}" && -z "${PLAYWRIGHT_E2E_LOCAL_TEST_SUITE:-}" && "$version" != "$E2E_TEST_SUITE_VERSION" ]]; then
+    info "❌  E2E test suite version ${version} does not match the pinned version ${E2E_TEST_SUITE_VERSION}"
+    exit 1
+  fi
 }
 
 # Path to a node_modules tree pre-built into the playwright-runner image
@@ -640,9 +644,10 @@ _setup_playwright_environment() {
   # Fetch the moving-target @camunda/e2e-test-suite on top of the prebuilt tree.
   if [[ -d "node_modules" ]] && [[ -f "package.json" ]] \
       && grep -q '@camunda/e2e-test-suite' package.json 2>/dev/null; then
-    info "Fetching latest @camunda/e2e-test-suite..."
+    local suite_spec="@camunda/e2e-test-suite@${E2E_TEST_SUITE_VERSION:-latest}"
+    info "Fetching ${suite_spec}..."
     # shellcheck disable=SC2086
-    if npm install @camunda/e2e-test-suite@latest --no-save --prefer-online $npm_flags; then
+    if npm install "$suite_spec" --no-save --prefer-online $npm_flags; then
       [[ "$got_lock" == "true" ]] && _release_npm_lock "$test_suite_path"
       if [[ -n "${PLAYWRIGHT_E2E_LOCAL_TEST_SUITE:-}" ]]; then
         _link_local_test_suite "$test_suite_path" "$PLAYWRIGHT_E2E_LOCAL_TEST_SUITE"
@@ -668,9 +673,15 @@ _setup_playwright_environment() {
   if [[ -f "package.json" ]] && grep -q '@camunda/e2e-test-suite' package.json 2>/dev/null; then
     local pre_hash=""
     [[ -f "package-lock.json" ]] && pre_hash=$(_portable_file_hash "package-lock.json")
-    info "Checking for newer @camunda/e2e-test-suite..."
-    # shellcheck disable=SC2086
-    npm update @camunda/e2e-test-suite $npm_flags 2>/dev/null || true
+    if [[ -n "${E2E_TEST_SUITE_VERSION:-}" ]]; then
+      info "Installing pinned @camunda/e2e-test-suite@${E2E_TEST_SUITE_VERSION}..."
+      # shellcheck disable=SC2086
+      npm install "@camunda/e2e-test-suite@${E2E_TEST_SUITE_VERSION}" --save-exact $npm_flags 2>/dev/null || true
+    else
+      info "Checking for newer @camunda/e2e-test-suite..."
+      # shellcheck disable=SC2086
+      npm update @camunda/e2e-test-suite $npm_flags 2>/dev/null || true
+    fi
     local post_hash=""
     [[ -f "package-lock.json" ]] && post_hash=$(_portable_file_hash "package-lock.json")
     if [[ "$pre_hash" != "$post_hash" ]]; then
@@ -1089,9 +1100,9 @@ run_playwright_tests() {
   local -a playwright_args=(
     npx playwright test
     --project="$project"
-    --shard="${shard_index}/${shard_total}"
     --reporter="$reporter,json"
   )
+  [[ "$shard_total" -gt 1 ]] && playwright_args+=(--shard="${shard_index}/${shard_total}")
   [[ -n "$test_exclude" ]] && playwright_args+=(--grep-invert="$test_exclude")
   [[ -n "$trace_flag" ]] && playwright_args+=($trace_flag)
   [[ -n "${PLAYWRIGHT_E2E_VIDEO:-}" ]] && playwright_args+=(--video="$PLAYWRIGHT_E2E_VIDEO")

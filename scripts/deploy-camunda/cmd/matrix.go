@@ -1205,6 +1205,52 @@ func buildOrchestrationZeebeEnv(orchestrationCtx *deploy.ScenarioContext) map[st
 	}
 }
 
+// applyTopologyCredentialsManifest points a topology release's deploy at the
+// topology's credentials-manifest (repository-relative), rendered for the base
+// namespace, so the deployer applies it instead of the CI-wide
+// integration-test credentials. With no manifest declared the flags are left
+// unchanged. The returned function removes the rendered file.
+func applyTopologyCredentialsManifest(flags *config.RuntimeFlags, repoRoot, manifest, base string) (func(), error) {
+	if manifest == "" {
+		return func() {}, nil
+	}
+	path, remove, err := renderTopologyCredentialsManifest(filepath.Join(repoRoot, manifest), base)
+	if err != nil {
+		return func() {}, err
+	}
+	flags.Secrets.CredentialsManifest = path
+	return remove, nil
+}
+
+// renderTopologyCredentialsManifest writes the topology's credentials-manifest,
+// with the base namespace substituted, to a temporary file the deployer can
+// apply, and returns a function that removes it.
+func renderTopologyCredentialsManifest(path, base string) (string, func(), error) {
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return "", func() {}, fmt.Errorf("read credentials manifest: %w", err)
+	}
+	rendered, err := matrix.RenderCredentialsManifest(content, base)
+	if err != nil {
+		return "", func() {}, err
+	}
+	f, err := os.CreateTemp("", "credentials-manifest-*.yaml")
+	if err != nil {
+		return "", func() {}, err
+	}
+	remove := func() { _ = os.Remove(f.Name()) }
+	if _, err := f.Write(rendered); err != nil {
+		f.Close()
+		remove()
+		return "", func() {}, err
+	}
+	if err := f.Close(); err != nil {
+		remove()
+		return "", func() {}, err
+	}
+	return f.Name(), remove, nil
+}
+
 // buildTopologyReleaseEnv layers a release's substitution namespace: shared
 // cross-release variables first, then the release's own env, and finally the
 // keys this driver derives from the topology declaration. The derived keys go
@@ -1217,6 +1263,9 @@ func buildTopologyReleaseEnv(shared map[string]string, release matrix.TopologyRe
 	env := make(map[string]string, len(shared)+len(release.Env)+4)
 	for key, value := range shared {
 		env[key] = value
+	}
+	if host := topologyReleaseServedHost(shared, release); host != "" {
+		env["CAMUNDA_HOSTNAME"] = host
 	}
 	for key, value := range release.Env {
 		env[key] = value
@@ -1246,6 +1295,15 @@ func buildTopologyReleaseEnv(shared map[string]string, release matrix.TopologyRe
 		}
 	}
 	return env
+}
+
+// topologyReleaseServedHost returns the public host a release is served on:
+// its own <TOKEN>_HOST for orchestration, HUB_HOST for hub and optimize.
+func topologyReleaseServedHost(shared map[string]string, release matrix.TopologyRelease) string {
+	if release.Role == "orchestration" {
+		return shared[matrix.TopologyEnvToken(release.NamespaceSuffix)+"_HOST"]
+	}
+	return shared["HUB_HOST"]
 }
 
 // resolveSharedStorageServiceName resolves the Kubernetes Service name of the
@@ -1443,6 +1501,12 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 
 		applyTopologyReleaseOverrides(flags, buildTopologyReleaseEnv(crossRefEnv, rel))
 		applyTopologyReleaseHostname(flags, releaseHost)
+		removeManifest, err := applyTopologyCredentialsManifest(flags, opts.RepoRoot, entry.Topology.CredentialsManifest, baseNamespace)
+		if err != nil {
+			cleanup()
+			return fmt.Errorf("topology release %s/%s (namespace-suffix %q): %w", entry.Scenario, rel.Role, rel.NamespaceSuffix, err)
+		}
+		defer removeManifest()
 		if err := matrix.RegisterDeclarativePostInfraHook(flags, releaseEntry.PostInfra, opts.RepoRoot, releaseEntry.Version, releaseEntry.Scenario); err != nil {
 			cleanup()
 			return fmt.Errorf("topology release %s/%s (namespace-suffix %q): register post-infra hook: %w", entry.Scenario, rel.Role, rel.NamespaceSuffix, err)

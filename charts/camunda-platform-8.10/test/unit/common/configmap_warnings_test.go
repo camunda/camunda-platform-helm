@@ -16,6 +16,7 @@ package camunda
 
 import (
 	"camunda-platform/test/unit/testhelpers"
+	"fmt"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -103,6 +104,25 @@ func (s *ConfigMapWarningsTemplateTest) TestDifferentValuesInputs() {
 			},
 		},
 		{
+			Name: "TestWarningsAreNotSeparatedByBlankLines",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"orchestration.history.rolloverInterval":   "2d",
+				"orchestration.history.rolloverBatchSize":  "321",
+				"orchestration.history.delayBetweenRuns":   "4000",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				lines := strings.Split(configmap.Data["warnings"], "\n")
+				s.Require().GreaterOrEqual(len(lines), 3)
+				for _, line := range lines {
+					s.Require().NotEmpty(strings.TrimSpace(line))
+				}
+			},
+		},
+		{
 			Name: "TestWarningsConfigMapAbsentWhenNoWarnings",
 			Values: map[string]string{
 				"orchestration.data.secondaryStorage.type": "elasticsearch",
@@ -131,6 +151,30 @@ func (s *ConfigMapWarningsTemplateTest) TestDifferentValuesInputs() {
 					"webModeler.restapi.javaOpts feeds JAVA_OPTIONS, not JAVA_TOOL_OPTIONS")
 				s.Require().NotContains(configmap.Data["warnings"],
 					"web-modeler restapi) can set that instead")
+			},
+		},
+		{
+			Name: "TestEmptyCamundaHubEnvIgnoresLegacyJavaToolOptions",
+			Values: map[string]string{
+				"camundaHub.enabled":                                   "true",
+				"camundaHub.restapi.mail.fromAddress":                  "example@example.com",
+				"global.testDeprecationFlags.existingSecretsMustBeSet": "warning",
+				"global.tls.caBundle.secret.existingSecret":            "camunda-ca-bundle",
+				"identity.enabled":                                     "true",
+				"orchestration.data.secondaryStorage.type":             "elasticsearch",
+				"webModeler.restapi.env[0].name":                       "JAVA_TOOL_OPTIONS",
+				"webModeler.restapi.env[0].value":                      "-Xmx1g",
+			},
+			RenderTemplateExtraArgs: []string{"--set-json", "camundaHub.restapi.env=[]"},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				// Positive anchor: warning evaluation ran for this release.
+				s.Require().Contains(configmap.Data["warnings"],
+					"webModeler.restapi.pusher.secret.existingSecret")
+				s.Require().NotContains(configmap.Data["warnings"],
+					"webModeler.restapi.env sets JAVA_TOOL_OPTIONS directly")
 			},
 		},
 	}
@@ -737,6 +781,61 @@ func (s *ConfigMapWarningsTemplateTest) TestMigrationDisruptionBudgetWarning() {
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
+func (s *ConfigMapWarningsTemplateTest) TestFailureDomainContactPointsWarning() {
+	const warning = "This deployment spans more than one failure domain"
+
+	values := func(keepUnzonedBrokers bool, contactPointsSet bool) map[string]string {
+		result := map[string]string{
+			"orchestration.data.secondaryStorage.type": "elasticsearch",
+			"global.identity.auth.console.clientId":    "warning-anchor",
+		}
+		if keepUnzonedBrokers {
+			result["orchestration.profiles.broker"] = "true"
+			result["orchestration.partitioning.scheme"] = "zone-aware"
+			result["orchestration.partitioning.zone"] = "zone-a"
+			result["orchestration.partitioning.zones[0].name"] = "zone-a"
+			result["orchestration.partitioning.zones[0].numberOfBrokers"] = "1"
+			result["orchestration.partitioning.zones[0].numberOfReplicas"] = "1"
+			result["orchestration.partitioning.zones[0].priority"] = "100"
+			result["orchestration.partitioning.zones[1].name"] = "zone-b"
+			result["orchestration.partitioning.zones[1].numberOfBrokers"] = "1"
+			result["orchestration.partitioning.zones[1].numberOfReplicas"] = "1"
+			result["orchestration.partitioning.zones[1].priority"] = "50"
+			result["orchestration.partitioning.keepUnzonedBrokers"] = fmt.Sprint(keepUnzonedBrokers)
+		} else {
+			result["orchestration.partitioning.numberOfZones"] = "2"
+			result["orchestration.partitioning.zoneIndex"] = "0"
+		}
+		if contactPointsSet {
+			result["orchestration.env[0].name"] = `\{\{ printf "CAMUNDA_CLUSTER_INITIALCONTACTPOINTS" \}\}`
+			result["orchestration.env[0].value"] = "camunda-zeebe-0.camunda-zeebe.default.svc.cluster.local:26502"
+		}
+		return result
+	}
+
+	verifyWarning := func(expected bool) func(t *testing.T, output string, err error) {
+		return func(t *testing.T, output string, err error) {
+			s.Require().NoError(err)
+			var configmap corev1.ConfigMap
+			helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+			if expected {
+				s.Require().Contains(configmap.Data["warnings"], warning)
+			} else {
+				s.Require().NotContains(configmap.Data["warnings"], warning)
+			}
+		}
+	}
+
+	testCases := []testhelpers.TestCase{
+		{Name: "Round-robin without contact points warns", Values: values(false, false), Verifier: verifyWarning(true)},
+		{Name: "Round-robin with contact points does not warn", Values: values(false, true), Verifier: verifyWarning(false)},
+		{Name: "Migration without contact points warns", Values: values(true, false), Verifier: verifyWarning(true)},
+		{Name: "Migration with contact points does not warn", Values: values(true, true), Verifier: verifyWarning(false)},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
 func (s *ConfigMapWarningsTemplateTest) TestZonedFullConfigurationWarning() {
 	zonedValues := func() map[string]string {
 		return map[string]string{
@@ -795,6 +894,94 @@ func (s *ConfigMapWarningsTemplateTest) TestZonedFullConfigurationWarning() {
 				var configmap corev1.ConfigMap
 				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 				s.Require().NotContains(configmap.Data["warnings"], warning)
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *ConfigMapWarningsTemplateTest) TestPvcAccessModesReadWriteOncePodWarning() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "ReadWriteOncePodTriggersWarning",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"orchestration.pvcAccessModes[0]":          "ReadWriteOncePod",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().Contains(configmap.Data["warnings"],
+					"orchestration.pvcAccessModes is set to ReadWriteOncePod")
+			},
+		},
+		{
+			Name: "DefaultReadWriteOnceDoesNotTriggerWarning",
+			Values: map[string]string{
+				// Another warning must stay active so the ConfigMap still renders (it is omitted
+				// entirely when no warnings are present, see TestWarningsConfigMapAbsentWhenNoWarnings).
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"orchestration.history.rolloverInterval":   "2d",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().NotContains(configmap.Data["warnings"], "pvcAccessModes")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *ConfigMapWarningsTemplateTest) TestDefaultRolesMappingRulesDeprecationWarning() {
+	const adminWarning = `DEPRECATION: The Helm values file key "orchestration.security.initialization.defaultRoles.admin.mappingRules" is deprecated and will be removed in chart v16 (Camunda 8.11). Configure this via "orchestration.extraConfiguration" instead.`
+	const connectorsWarning = `DEPRECATION: The Helm values file key "orchestration.security.initialization.defaultRoles.connectors.mappingRules" is deprecated and will be removed in chart v16 (Camunda 8.11). Configure this via "orchestration.extraConfiguration" instead.`
+
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestDefaultRolesMappingRulesSetTriggersDeprecationWarnings",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":                                      "elasticsearch",
+				"orchestration.security.initialization.defaultRoles.admin.mappingRules[0]":      "admin-rule",
+				"orchestration.security.initialization.defaultRoles.connectors.mappingRules[0]": "connectors-rule",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+				require.Contains(t, configmap.Data["warnings"], adminWarning)
+				require.Contains(t, configmap.Data["warnings"], connectorsWarning)
+			},
+		},
+		{
+			Name: "TestCustomDefaultRoleMappingRulesTriggersDeprecationWarning",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":                                  "elasticsearch",
+				"orchestration.security.initialization.defaultRoles.custom.mappingRules[0]": "custom-rule",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+				require.Contains(t, configmap.Data["warnings"], `"orchestration.security.initialization.defaultRoles.custom.mappingRules" is deprecated`)
+				require.NotContains(t, configmap.Data["warnings"], "defaultRoles.admin.mappingRules")
+			},
+		},
+		{
+			Name: "TestDefaultRolesMappingRulesUnsetDoesNotTriggerDeprecationWarning",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"console.enabled":                          "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+				require.NotContains(t, configmap.Data["warnings"], "defaultRoles")
 			},
 		},
 	}

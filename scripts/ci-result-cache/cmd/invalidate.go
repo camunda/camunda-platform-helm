@@ -70,7 +70,7 @@ func runInvalidate(cmd *cobra.Command, args []string) error {
 	var contextFilter string
 	switch {
 	case invalidateVersion != "" && invalidateShortname != "" && invalidateFlow != "":
-		contextFilter = cache.StatusContext(invalidateVersion, invalidateShortname, invalidateFlow)
+		contextFilter = fmt.Sprintf("ci-cache/%s/%s/%s/", invalidateVersion, invalidateShortname, invalidateFlow)
 	case invalidateVersion != "":
 		contextFilter = fmt.Sprintf("ci-cache/%s/", invalidateVersion)
 	default:
@@ -98,16 +98,7 @@ func runInvalidate(cmd *cobra.Command, args []string) error {
 			continue // most recent status is already invalidated or not cached
 		}
 
-		// For exact match (all three specified), match exactly.
-		// For prefix match (version only or all), use HasPrefix.
-		match := false
-		if invalidateVersion != "" && invalidateShortname != "" && invalidateFlow != "" {
-			match = s.Context == contextFilter
-		} else {
-			match = strings.HasPrefix(s.Context, contextFilter)
-		}
-
-		if !match {
+		if !strings.HasPrefix(s.Context, contextFilter) {
 			continue
 		}
 

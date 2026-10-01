@@ -72,9 +72,14 @@ global:
     #         existingSecretKey: client-secret
     #     optimize:
     #       enabled: true
+    #       # namespace, releaseName, and host locate an Optimize deployed as its own release;
+    #       # each defaults to the cluster's value when omitted.
+    #       namespace: camunda-production-a-optimize
+    #       releaseName: optimize
+    #       host: hub.example.com
     #       clientId: optimize-production-a
     #       audience: optimize-production-a-api
-    #       redirectUrl: https://production-a.example.com/optimize
+    #       redirectUrl: https://hub.example.com/optimize
     #       secret:
     #         inlineSecret: ""
     #         existingSecret: optimize-production-a-oidc
@@ -89,6 +94,8 @@ global:
     #   physicalTenants:
     #     - id: tenanta
     #       name: Tenant A
+    #       contextPaths:
+    #         optimize: /optimize-tenanta
     #       components:
     #         optimize:
     #           enabled: true
@@ -220,6 +227,8 @@ global:
   ingress:
     ## @param global.ingress.enabled if true, an ingress resource is deployed. Only useful if an ingress controller is available, like Ingress-NGINX.
     enabled: false
+    ## @param global.ingress.protocol can be used to set the protocol in external URLs. Defaults to https when global.ingress.tls.enabled is true, otherwise http. Also selects which global.ingress.publicPorts entry is used. Does not configure TLS on the Ingress resource.
+    protocol: ""
     ## @param global.ingress.external if true, the Ingress object will not be rendered. This setting is used when a non-Ingress resource, like a service mesh, is used to access the cluster.
     external: false
     ## @param global.ingress.className Ingress.className defines the class or configuration of ingress which should be used by the controller
@@ -230,6 +239,12 @@ global:
     annotations: {}
     ## @param global.ingress.pathType can be used to define the Ingress path type. https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types
     pathType: Prefix
+    ## @extra global.ingress.publicPorts configuration for the ports clients use to reach Ingress endpoints. Used by chart-derived URLs, Identity callbacks, and combined-ingress browser WebSocket connections. Does not configure listeners, Services, host port forwarding, or Gateway API. Explicit URLs and authentication redirect URLs are not rewritten.
+    publicPorts:
+      ## @param global.ingress.publicPorts.http defines the public port for Ingress endpoints with TLS disabled. Port 80 is omitted from HTTP URLs. Separate gRPC Ingress uses its own TLS setting, even when global.ingress.enabled is false.
+      http: 80
+      ## @param global.ingress.publicPorts.https defines the public port for Ingress endpoints with TLS enabled. Port 443 is omitted from HTTPS URLs. Does not enable TLS; web Ingress uses global.ingress.tls.enabled and gRPC Ingress uses orchestration.ingress.grpc.tls.enabled.
+      https: 443
     ## @extra global.ingress.tls configuration for tls on the ingress resource https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
     tls:
       ## @param global.ingress.tls.enabled if true, then tls is configured on the ingress resource. If enabled the Ingress.host need to be defined.
@@ -712,13 +727,13 @@ global:
       ## regardless of whether Camunda Hub is enabled via camundaHub.enabled or the legacy
       ## webModeler.enabled flag. Unset values fall back to the legacy section.
       camundaHub:
-        ## @param global.identity.auth.camundaHub.clientId defines the client id, which is used by Camunda Hub in authentication flows. This 8.10 alpha override replaces global.identity.auth.camundaHub.webModeler.clientId.
+        ## @param global.identity.auth.camundaHub.clientId defines the client id, which is used by Camunda Hub in authentication flows. This 8.10 override replaces global.identity.auth.camundaHub.webModeler.clientId.
         clientId: ""
-        ## @param global.identity.auth.camundaHub.clientApiAudience defines the audience which is used by Camunda Hub's client API. This 8.10 alpha override replaces global.identity.auth.camundaHub.webModeler.clientApiAudience.
+        ## @param global.identity.auth.camundaHub.clientApiAudience defines the audience which is used by Camunda Hub's client API. This 8.10 override replaces global.identity.auth.camundaHub.webModeler.clientApiAudience.
         clientApiAudience: ""
-        ## @param global.identity.auth.camundaHub.publicApiAudience defines the audience which is used by Camunda Hub's public API. This 8.10 alpha override replaces global.identity.auth.camundaHub.webModeler.publicApiAudience.
+        ## @param global.identity.auth.camundaHub.publicApiAudience defines the audience which is used by Camunda Hub's public API. This 8.10 override replaces global.identity.auth.camundaHub.webModeler.publicApiAudience.
         publicApiAudience: ""
-        ## @param global.identity.auth.camundaHub.redirectUrl defines the root URL which is used by Keycloak to access Camunda Hub. This 8.10 alpha override replaces global.identity.auth.camundaHub.webModeler.redirectUrl.
+        ## @param global.identity.auth.camundaHub.redirectUrl defines the root URL which is used by Keycloak to access Camunda Hub. This 8.10 override replaces global.identity.auth.camundaHub.webModeler.redirectUrl.
         redirectUrl: ""
 
       #####################
@@ -782,7 +797,7 @@ global:
   ## Document Store Configuration
   ## @extra global.documentStore These parameters are used to configure the document storage backend across all Camunda components.
   documentStore:
-    ## @param global.documentStore.activeStoreId defines the default document store instance ID. When using extraConfiguration, this value must match the configured store instance ID.
+    ## @param global.documentStore.activeStoreId defines the default document store instance ID. This value must match the configured store instance ID. See https://docs.camunda.io/docs/8.10/self-managed/concepts/document-handling/configuration/helm/
     activeStoreId: "inmemory"
     type:
       aws:
@@ -984,13 +999,10 @@ identity:
   sidecars: []
   ## @param identity.initContainers can be used to set up extra init containers for the application Pod
   initContainers: []
-  ## @param identity.fullURL can be used when Ingress is configured (for both multi and single domain setup).
+  ## @param identity.fullURL can be used to set Identity's complete public URL, including scheme, port, and path. Overrides the derived runtime, login callback, and release-info URL. Supports templating.
   fullURL: ""
 
-  # Note: Management Identity cannot be accessed over HTTP if a "contextPath" is configured.
-  #       Which means that Management Identity cannot be configured in combined Ingress without HTTPS.
-  #       To use Management Identity over HTTP, setup a separated Ingress using "identity.ingress" and don't set "contextPath".
-  ## @param identity.contextPath can be used to make Management Identity web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
+  ## @param identity.contextPath can be used to serve Management Identity under a custom sub-path. Requires HTTPS when non-empty.
   # contextPath: "/identity"
   contextPath: ""
 
@@ -1154,8 +1166,8 @@ identity:
     annotations: {}
     ## @param identity.serviceAccount.labels can be used to set the labels of the service account
     labels: {}
-    ## @param identity.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
-    automountServiceAccountToken: true
+    ## @param identity.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted. Identity does not call the Kubernetes API; set to true only if a sidecar or init container needs the default token.
+    automountServiceAccountToken: false
 
   ## @param identity.automountServiceAccountToken [nullable] can be used to override the automatic mounting of the service account token at the pod level. When unset, the ServiceAccount configuration is used.
   automountServiceAccountToken:
@@ -1244,7 +1256,7 @@ camundaHub:
     ## @param camundaHub.upgrade.phase defines the Camunda Hub lifecycle phase. Use `normal` for fresh installs and normal operation, `quiesce` to stop Hub workloads before taking a database backup, and `migrate` to run one Hub REST API pod for the startup database migration without serving traffic.
     phase: normal
 
-  ## @param camundaHub.contextPath [nullable] can be used to make Camunda Hub available on a custom sub-path. This 8.10 alpha override replaces camundaHub.webModeler.contextPath.
+  ## @param camundaHub.contextPath [nullable] can be used to make Camunda Hub available on a custom sub-path. This 8.10 override replaces camundaHub.webModeler.contextPath.
   contextPath:
 
   ## Any values set here take precedence over the legacy top-level webModeler.* values.
@@ -1323,7 +1335,7 @@ webModeler:
 
   # Note: The WebSocket application will be exposed on the configured path suffixed with "-ws", e.g. "/modeler-ws"
   # contextPath: "/modeler"
-  ## @param webModeler.contextPath can be used to make WebModeler available on a custom sub-path. This is mainly used to run the Camunda web applications under a single domain. For the 8.10 alpha Camunda Hub override, use camundaHub.contextPath instead of camundaHub.webModeler.contextPath.
+  ## @param webModeler.contextPath can be used to make WebModeler available on a custom sub-path. This is mainly used to run the Camunda web applications under a single domain. For the 8.10 Camunda Hub override, use camundaHub.contextPath instead of camundaHub.webModeler.contextPath.
   contextPath: ""
 
   security:
@@ -1622,13 +1634,11 @@ webModeler:
     ## @param webModeler.websockets.initContainers can be used to set up extra init containers for the application Pod
     initContainers: []
 
-    ## @param webModeler.websockets.publicHost can be used to define the host on which the WebSockets server can be reached from the WebModeler client in the browser.
+    ## @param webModeler.websockets.publicHost can be used to set the browser-facing WebSocket hostname. With global.ingress.enabled and a non-empty Modeler or Hub contextPath, global.host takes precedence. Set overrides through camundaHub.websockets.publicHost.
     # The default value assumes that a port-forwarding to the websockets service has been created.
-    # Note: The host will only be used if the Ingress resource for WebModeler is disabled.
     publicHost: localhost
-    ## @param webModeler.websockets.publicPort can be used to define the port number on which the WebSockets server can be reached from the WebModeler client in the browser.
+    ## @param webModeler.websockets.publicPort can be used to set the browser-facing WebSocket port. With global.ingress.enabled and a non-empty Modeler or Hub contextPath, global.ingress.publicPorts and the Ingress TLS setting take precedence. Set overrides through camundaHub.websockets.publicPort.
     # The default value assumes that a port-forwarding to the websockets service on port 8085 has been created.
-    # Note: The port will only be used if the Ingress resource for WebModeler is disabled.
     publicPort: 8085
 
     ## @param webModeler.websockets.podAnnotations can be used to define extra websockets pod annotations. Supports templating (e.g., {{ .Release.Name }}).
@@ -1800,7 +1810,7 @@ webModeler:
     annotations: {}
     ## @param webModeler.persistence.selector can be used to define a label selector for the persistent volume claim
     selector: {}
-    ## @param webModeler.persistence.deploymentStrategy update strategy for the restapi Deployment. Defaults to RollingUpdate, which is always safe because the default chart-managed persistence path uses a per-pod ephemeral volume (no concurrent-attach contention). Set to "Recreate" only when using existingClaim with a ReadWriteOnce volume that cannot tolerate concurrent attach during a rollout (introduces brief downtime per upgrade). For the 8.10 alpha Camunda Hub override, use camundaHub.persistence.deploymentStrategy instead of camundaHub.webModeler.persistence.deploymentStrategy.
+    ## @param webModeler.persistence.deploymentStrategy update strategy for the restapi Deployment. Defaults to RollingUpdate, which is always safe because the default chart-managed persistence path uses a per-pod ephemeral volume (no concurrent-attach contention). Set to "Recreate" only when using existingClaim with a ReadWriteOnce volume that cannot tolerate concurrent attach during a rollout (introduces brief downtime per upgrade). For the 8.10 Camunda Hub override, use camundaHub.persistence.deploymentStrategy instead of camundaHub.webModeler.persistence.deploymentStrategy.
     deploymentStrategy: RollingUpdate
 
   ## @extra webModeler.serviceAccount configuration for the service account the WebModeler pods are assigned to
@@ -2529,6 +2539,10 @@ orchestration:
   ## @param orchestration.pvcSize defines the persistent volume claim size, which is used by each broker pod https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims
   pvcSize: "32Gi"
   ## @param orchestration.pvcAccessModes can be used to configure the persistent volume claim access mode https://kubernetes.io/docs/concepts/storage/persistent-volumes/#access-modes
+  # For a storage-layer single-writer guarantee (instead of relying on pod anti-affinity alone), set
+  # this to ["ReadWriteOncePod"]. This requires a CSI driver that supports ReadWriteOncePod, and it
+  # must be the only access mode in the list. PersistentVolumeClaim accessModes are immutable, so this
+  # only takes effect for new installs / new PVCs, not via "helm upgrade" on an existing StatefulSet.
   pvcAccessModes: ["ReadWriteOnce"]
   ## @param orchestration.pvcStorageClassName can be used to set the storage class name which should be used by the persistent volume claim.
   # It is recommended to use a storage class, which is backed with a SSD. Set to "-" to disable use of default storage class.

@@ -144,6 +144,9 @@ func TestPlanTopologyWorkflowMetadata(t *testing.T) {
 	if entry.TopologyHubSuffix != "hub" {
 		t.Errorf("topologyHubSuffix = %q, want hub", entry.TopologyHubSuffix)
 	}
+	if entry.ChartVersions != "8.10,8.7,8.8,8.9" {
+		t.Errorf("chartVersions = %q, want 8.10,8.7,8.8,8.9", entry.ChartVersions)
+	}
 	wantSmoke := `[{"orchestration_suffix":"orcha","modeler_cluster_id":"orcha","modeler_cluster_name":"Orchestration A","shard_index":"1","chart_version":"8.10","chart_dir":"camunda-platform-8.10","suite":"orchestration","test_chart_dir":"camunda-platform-8.10","playwright_project":"topology-orchestration"},{"orchestration_suffix":"orchb","modeler_cluster_id":"orchb","modeler_cluster_name":"Orchestration B","shard_index":"2","chart_version":"8.9","chart_dir":"camunda-platform-8.9","suite":"orchestration","test_chart_dir":"camunda-platform-8.9","playwright_project":"topology-orchestration"},{"orchestration_suffix":"orchc","modeler_cluster_id":"orchc","modeler_cluster_name":"Orchestration C","shard_index":"3","chart_version":"8.8","chart_dir":"camunda-platform-8.8","suite":"orchestration","test_chart_dir":"camunda-platform-8.8","playwright_project":"topology-orchestration"},{"orchestration_suffix":"orchd","modeler_cluster_id":"orchd","modeler_cluster_name":"Orchestration D","shard_index":"4","chart_version":"8.7","chart_dir":"camunda-platform-8.7","suite":"orchestration","test_chart_dir":"camunda-platform-8.7","playwright_project":"topology-orchestration"}]`
 	if entry.TopologySmokeMatrix != wantSmoke {
 		t.Errorf("topologySmokeMatrix = %q, want %q", entry.TopologySmokeMatrix, wantSmoke)
@@ -166,6 +169,9 @@ func TestPlanTopologySmokeMatrixMapsOptimizeReleases(t *testing.T) {
 	entry := result.Include[0]
 	if entry.TopologyNamespaceSuffixes != `["hub","orcha","orchb","opta","optb"]` {
 		t.Errorf("topologyNamespaceSuffixes = %q", entry.TopologyNamespaceSuffixes)
+	}
+	if entry.ChartVersions != "8.10" {
+		t.Errorf("chartVersions = %q, want 8.10", entry.ChartVersions)
 	}
 	wantSmoke := `[{"orchestration_suffix":"orcha","modeler_cluster_id":"orcha","modeler_cluster_name":"Orchestration A","shard_index":"1","optimize_suffix":"opta","optimize_context_path":"/optimize-orcha","tenant_id":"default","chart_version":"8.10","chart_dir":"camunda-platform-8.10","suite":"orchestration","test_chart_dir":"camunda-platform-8.10","playwright_project":"topology-orchestration"},{"orchestration_suffix":"orchb","modeler_cluster_id":"orchb","modeler_cluster_name":"Orchestration B","shard_index":"2","optimize_suffix":"optb","optimize_context_path":"/optimize-orchb","tenant_id":"default","chart_version":"8.10","chart_dir":"camunda-platform-8.10","suite":"orchestration","test_chart_dir":"camunda-platform-8.10","playwright_project":"topology-orchestration"}]`
 	if entry.TopologySmokeMatrix != wantSmoke {
@@ -203,6 +209,45 @@ func TestPlanOrdinaryScenarioHasEmptyTopologyWorkflowMetadata(t *testing.T) {
 	entry := result.Include[0]
 	if entry.IsTopology != "false" || entry.TopologyNamespaceSuffixes != "[]" || entry.TopologyHubSuffix != "" || entry.TopologySmokeMatrix != "[]" {
 		t.Errorf("unexpected topology metadata: %+v", entry)
+	}
+	if entry.ChartVersions != "8.10" {
+		t.Errorf("chartVersions = %q, want 8.10", entry.ChartVersions)
+	}
+}
+
+func TestPlanChartVersionsIncludesEveryRelease(t *testing.T) {
+	topology := &Topology{Releases: []TopologyRelease{
+		{Role: "hub", ChartVersion: "8.9"},
+		{Role: "orchestration"},
+		{Role: "orchestration", ChartVersion: "8.8"},
+		{Role: "optimize", ChartVersion: "8.8"},
+	}}
+	if got := strings.Join(planChartVersions("8.10", Entry{Flow: "install", Topology: topology}), ","); got != "8.10,8.8,8.9" {
+		t.Errorf("planChartVersions = %q, want 8.10,8.8,8.9", got)
+	}
+	if got := strings.Join(planChartVersions("8.10", Entry{Flow: "install"}), ","); got != "8.10" {
+		t.Errorf("planChartVersions without a topology = %q, want 8.10", got)
+	}
+	if got := strings.Join(planChartVersions("8.10", Entry{Flow: "upgrade-minor", Topology: topology}), ","); got != "8.10,8.8,8.9" {
+		t.Errorf("planChartVersions for upgrade-minor with a topology = %q, want 8.10,8.8,8.9", got)
+	}
+}
+
+func TestPlanUpgradeMinorChartVersionsIncludePreviousChart(t *testing.T) {
+	result, err := Plan(findRepoRoot(t), PlanOptions{
+		ActiveVersions: planActiveVersions,
+		ManualTrigger:  "8.10",
+		ManualScenario: "elasticsearch",
+		ManualFlow:     "upgrade-minor",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(result.Include) != 1 {
+		t.Fatalf("entries = %d, want 1", len(result.Include))
+	}
+	if got := result.Include[0].ChartVersions; got != "8.10,8.9" {
+		t.Errorf("chartVersions = %q, want 8.10,8.9", got)
 	}
 }
 

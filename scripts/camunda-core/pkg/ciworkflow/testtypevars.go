@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 
 	"scripts/camunda-core/pkg/ghactions"
 
@@ -41,9 +42,62 @@ type UnitMatrixEntry struct {
 // the `unit:` block remains as the source of truth for these vars.
 type ciTestConfig struct {
 	Unit struct {
-		Enabled bool              `yaml:"enabled"`
-		Matrix  []UnitMatrixEntry `yaml:"matrix"`
+		Enabled    bool              `yaml:"enabled"`
+		Matrix     []UnitMatrixEntry `yaml:"matrix"`
+		HelmCompat unitHelmCompat    `yaml:"helmCompat"`
 	} `yaml:"unit"`
+}
+
+type unitHelmCompat struct {
+	Versions []string             `yaml:"versions"`
+	Tests    []unitHelmCompatTest `yaml:"tests"`
+}
+
+type unitHelmCompatTest struct {
+	Name    string `yaml:"name"`
+	Package string `yaml:"package"`
+	Run     string `yaml:"run"`
+}
+
+type UnitHelmCompatEntry struct {
+	Name        string `json:"name"`
+	HelmVersion string `json:"helmVersion"`
+	Package     string `json:"package"`
+	Run         string `json:"run"`
+}
+
+var helmReleaseVersion = regexp.MustCompile(`^\d+\.\d+\.\d+$`)
+
+func (c unitHelmCompat) matrix() ([]UnitHelmCompatEntry, error) {
+	if len(c.Versions) == 0 && len(c.Tests) == 0 {
+		return nil, nil
+	}
+	if len(c.Versions) == 0 || len(c.Tests) == 0 {
+		return nil, fmt.Errorf("unit.helmCompat needs both versions and tests")
+	}
+	for _, test := range c.Tests {
+		if test.Name == "" || test.Package == "" || test.Run == "" {
+			return nil, fmt.Errorf("unit.helmCompat.tests entry %+v needs name, package and run", test)
+		}
+		if _, err := compileRunPattern(test.Run); err != nil {
+			return nil, fmt.Errorf("unit.helmCompat.tests entry %q: %w", test.Name, err)
+		}
+	}
+	var entries []UnitHelmCompatEntry
+	for _, version := range c.Versions {
+		if !helmReleaseVersion.MatchString(version) {
+			return nil, fmt.Errorf("unit.helmCompat.versions entry %q is not a MAJOR.MINOR.PATCH Helm release", version)
+		}
+		for _, test := range c.Tests {
+			entries = append(entries, UnitHelmCompatEntry{
+				Name:        fmt.Sprintf("Helm %s - %s", version, test.Name),
+				HelmVersion: version,
+				Package:     test.Package,
+				Run:         test.Run,
+			})
+		}
+	}
+	return entries, nil
 }
 
 // TestTypeVarsInput carries the composite-action inputs plus the ambient env
@@ -81,6 +135,7 @@ type TestTypeVars struct {
 	KeycloakClientsSecret string
 	UnitEnabled           bool
 	UnitMatrix            []UnitMatrixEntry
+	UnitHelmCompatMatrix  []UnitHelmCompatEntry
 }
 
 // Compute reproduces the test-type-vars shell logic.
@@ -112,6 +167,10 @@ func Compute(in TestTypeVarsInput) (TestTypeVars, error) {
 	if err := yaml.Unmarshal(raw, &cfg); err != nil {
 		return TestTypeVars{}, fmt.Errorf("parse %s: %w", matrixFile, err)
 	}
+	helmCompatMatrix, err := cfg.Unit.HelmCompat.matrix()
+	if err != nil {
+		return TestTypeVars{}, fmt.Errorf("parse %s: %w", matrixFile, err)
+	}
 
 	out := TestTypeVars{
 		ChartPath:             chartPath,
@@ -119,6 +178,7 @@ func Compute(in TestTypeVarsInput) (TestTypeVars, error) {
 		KeycloakClientsSecret: in.KeycloakClientsSecret,
 		UnitEnabled:           cfg.Unit.Enabled,
 		UnitMatrix:            cfg.Unit.Matrix,
+		UnitHelmCompatMatrix:  helmCompatMatrix,
 	}
 
 	if in.ValuesEnterprise {
@@ -142,6 +202,18 @@ func (v TestTypeVars) UnitMatrixJSON() (string, error) {
 	b, err := json.Marshal(v.UnitMatrix)
 	if err != nil {
 		return "", fmt.Errorf("marshal unit matrix: %w", err)
+	}
+	return string(b), nil
+}
+
+func (v TestTypeVars) UnitHelmCompatMatrixJSON() (string, error) {
+	entries := v.UnitHelmCompatMatrix
+	if entries == nil {
+		entries = []UnitHelmCompatEntry{}
+	}
+	b, err := json.Marshal(entries)
+	if err != nil {
+		return "", fmt.Errorf("marshal unit helm compat matrix: %w", err)
 	}
 	return string(b), nil
 }
@@ -177,5 +249,12 @@ func (v TestTypeVars) Emit(env, out *ghactions.Writer) error {
 	if err != nil {
 		return err
 	}
-	return out.Set("unit-matrix", matrixJSON)
+	if err := out.Set("unit-matrix", matrixJSON); err != nil {
+		return err
+	}
+	helmCompatJSON, err := v.UnitHelmCompatMatrixJSON()
+	if err != nil {
+		return err
+	}
+	return out.Set("unit-helm-compat-matrix", helmCompatJSON)
 }

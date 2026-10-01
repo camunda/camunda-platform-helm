@@ -270,6 +270,16 @@
                             "description": "if true, an ingress resource is deployed. Only useful if an ingress controller is available, like Ingress-NGINX.",
                             "default": false
                         },
+                        "protocol": {
+                            "type": "string",
+                            "description": "can be used to set the protocol in external URLs. Defaults to https when global.ingress.tls.enabled is true, otherwise http. Also selects which global.ingress.publicPorts entry is used. Does not configure TLS on the Ingress resource.",
+                            "default": "",
+                            "enum": [
+                                "",
+                                "http",
+                                "https"
+                            ]
+                        },
                         "external": {
                             "type": "boolean",
                             "description": "if true, the Ingress object will not be rendered. This setting is used when a non-Ingress resource, like a service mesh, is used to access the cluster.",
@@ -284,6 +294,25 @@
                             "type": "string",
                             "description": "can be used to define the Ingress path type. https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types",
                             "default": "Prefix"
+                        },
+                        "publicPorts": {
+                            "type": "object",
+                            "properties": {
+                                "http": {
+                                    "type": "integer",
+                                    "description": "defines the public port for Ingress endpoints with TLS disabled. Port 80 is omitted from HTTP URLs. Separate gRPC Ingress uses its own TLS setting, even when global.ingress.enabled is false.",
+                                    "default": 80,
+                                    "minimum": 1,
+                                    "maximum": 65535
+                                },
+                                "https": {
+                                    "type": "integer",
+                                    "description": "defines the public port for Ingress endpoints with TLS enabled. Port 443 is omitted from HTTPS URLs. Does not enable TLS; web Ingress uses global.ingress.tls.enabled and gRPC Ingress uses orchestration.ingress.grpc.tls.enabled.",
+                                    "default": 443,
+                                    "minimum": 1,
+                                    "maximum": 65535
+                                }
+                            }
                         },
                         "tls": {
                             "type": "object",
@@ -1002,22 +1031,22 @@
                                     "properties": {
                                         "clientId": {
                                             "type": "string",
-                                            "description": "defines the client id, which is used by Camunda Hub in authentication flows. This 8.10 alpha override replaces global.identity.auth.camundaHub.webModeler.clientId.",
+                                            "description": "defines the client id, which is used by Camunda Hub in authentication flows. This 8.10 override replaces global.identity.auth.camundaHub.webModeler.clientId.",
                                             "default": ""
                                         },
                                         "clientApiAudience": {
                                             "type": "string",
-                                            "description": "defines the audience which is used by Camunda Hub's client API. This 8.10 alpha override replaces global.identity.auth.camundaHub.webModeler.clientApiAudience.",
+                                            "description": "defines the audience which is used by Camunda Hub's client API. This 8.10 override replaces global.identity.auth.camundaHub.webModeler.clientApiAudience.",
                                             "default": ""
                                         },
                                         "publicApiAudience": {
                                             "type": "string",
-                                            "description": "defines the audience which is used by Camunda Hub's public API. This 8.10 alpha override replaces global.identity.auth.camundaHub.webModeler.publicApiAudience.",
+                                            "description": "defines the audience which is used by Camunda Hub's public API. This 8.10 override replaces global.identity.auth.camundaHub.webModeler.publicApiAudience.",
                                             "default": ""
                                         },
                                         "redirectUrl": {
                                             "type": "string",
-                                            "description": "defines the root URL which is used by Keycloak to access Camunda Hub. This 8.10 alpha override replaces global.identity.auth.camundaHub.webModeler.redirectUrl.",
+                                            "description": "defines the root URL which is used by Keycloak to access Camunda Hub. This 8.10 override replaces global.identity.auth.camundaHub.webModeler.redirectUrl.",
                                             "default": ""
                                         }
                                     },
@@ -1114,7 +1143,7 @@
                     "properties": {
                         "activeStoreId": {
                             "type": "string",
-                            "description": "defines the default document store instance ID. When using extraConfiguration, this value must match the configured store instance ID.",
+                            "description": "defines the default document store instance ID. This value must match the configured store instance ID. See https://docs.camunda.io/docs/8.10/self-managed/concepts/document-handling/configuration/helm/",
                             "default": "inmemory"
                         },
                         "type": {
@@ -1540,12 +1569,12 @@
                 },
                 "fullURL": {
                     "type": "string",
-                    "description": "can be used when Ingress is configured (for both multi and single domain setup).",
+                    "description": "can be used to set Identity's complete public URL, including scheme, port, and path. Overrides the derived runtime, login callback, and release-info URL. Supports templating.",
                     "default": ""
                 },
                 "contextPath": {
                     "type": "string",
-                    "description": "can be used to make Management Identity web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.",
+                    "description": "can be used to serve Management Identity under a custom sub-path. Requires HTTPS when non-empty.",
                     "default": ""
                 },
                 "podAnnotations": {
@@ -2031,8 +2060,8 @@
                         },
                         "automountServiceAccountToken": {
                             "type": "boolean",
-                            "description": "can be used to control whether the service account token should be automatically mounted",
-                            "default": true
+                            "description": "can be used to control whether the service account token should be automatically mounted. Identity does not call the Kubernetes API; set to true only if a sidecar or init container needs the default token.",
+                            "default": false
                         }
                     }
                 },
@@ -2191,7 +2220,7 @@
                         "string",
                         "null"
                     ],
-                    "description": "can be used to make Camunda Hub available on a custom sub-path. This 8.10 alpha override replaces camundaHub.webModeler.contextPath.",
+                    "description": "can be used to make Camunda Hub available on a custom sub-path. This 8.10 override replaces camundaHub.webModeler.contextPath.",
                     "default": null,
                     "nullable": true
                 },
@@ -2301,7 +2330,7 @@
                 },
                 "contextPath": {
                     "type": "string",
-                    "description": "can be used to make WebModeler available on a custom sub-path. This is mainly used to run the Camunda web applications under a single domain. For the 8.10 alpha Camunda Hub override, use camundaHub.contextPath instead of camundaHub.webModeler.contextPath.",
+                    "description": "can be used to make WebModeler available on a custom sub-path. This is mainly used to run the Camunda web applications under a single domain. For the 8.10 Camunda Hub override, use camundaHub.contextPath instead of camundaHub.webModeler.contextPath.",
                     "default": ""
                 },
                 "security": {
@@ -2920,12 +2949,12 @@
                         },
                         "publicHost": {
                             "type": "string",
-                            "description": "can be used to define the host on which the WebSockets server can be reached from the WebModeler client in the browser.",
+                            "description": "can be used to set the browser-facing WebSocket hostname. With global.ingress.enabled and a non-empty Modeler or Hub contextPath, global.host takes precedence. Set overrides through camundaHub.websockets.publicHost.",
                             "default": "localhost"
                         },
                         "publicPort": {
                             "type": "number",
-                            "description": "can be used to define the port number on which the WebSockets server can be reached from the WebModeler client in the browser.",
+                            "description": "can be used to set the browser-facing WebSocket port. With global.ingress.enabled and a non-empty Modeler or Hub contextPath, global.ingress.publicPorts and the Ingress TLS setting take precedence. Set overrides through camundaHub.websockets.publicPort.",
                             "default": 8085
                         },
                         "podAnnotations": {
@@ -3344,7 +3373,7 @@
                         },
                         "deploymentStrategy": {
                             "type": "string",
-                            "description": "update strategy for the restapi Deployment. Defaults to RollingUpdate, which is always safe because the default chart-managed persistence path uses a per-pod ephemeral volume (no concurrent-attach contention). Set to \"Recreate\" only when using existingClaim with a ReadWriteOnce volume that cannot tolerate concurrent attach during a rollout (introduces brief downtime per upgrade). For the 8.10 alpha Camunda Hub override, use camundaHub.persistence.deploymentStrategy instead of camundaHub.webModeler.persistence.deploymentStrategy.",
+                            "description": "update strategy for the restapi Deployment. Defaults to RollingUpdate, which is always safe because the default chart-managed persistence path uses a per-pod ephemeral volume (no concurrent-attach contention). Set to \"Recreate\" only when using existingClaim with a ReadWriteOnce volume that cannot tolerate concurrent attach during a rollout (introduces brief downtime per upgrade). For the 8.10 Camunda Hub override, use camundaHub.persistence.deploymentStrategy instead of camundaHub.webModeler.persistence.deploymentStrategy.",
                             "default": "RollingUpdate",
                             "enum": [
                                 "RollingUpdate",
@@ -7565,6 +7594,15 @@
                 "serviceName": {
                     "type": "string"
                 },
+                "namespace": {
+                    "type": "string"
+                },
+                "releaseName": {
+                    "type": "string"
+                },
+                "host": {
+                    "type": "string"
+                },
                 "webappUrl": {
                     "type": "string",
                     "pattern": "^$|^https?://(?:[^\\s{}]|\\{\\{[^}]*\\}\\})+$"
@@ -7707,6 +7745,16 @@
                 "name": {
                     "type": "string",
                     "minLength": 1
+                },
+                "contextPaths": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                        "optimize": {
+                            "type": "string",
+                            "pattern": "^$|^/"
+                        }
+                    }
                 },
                 "components": {
                     "type": "object",

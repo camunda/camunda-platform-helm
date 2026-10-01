@@ -163,6 +163,8 @@ global:
   ingress:
     ## @param global.ingress.enabled if true, an ingress resource is deployed. Only useful if an ingress controller is available, like Ingress-NGINX.
     enabled: false
+    ## @param global.ingress.protocol can be used to set the protocol in external URLs. Defaults to https when global.ingress.tls.enabled is true, otherwise http.
+    protocol: ""
     ## @param global.ingress.external if true, the Ingress object will not be rendered. This setting is used when a non-Ingress resource, like a service mesh, is used to access the cluster.
     external: false
     ## @param global.ingress.className Ingress.className defines the class or configuration of ingress which should be used by the controller
@@ -323,7 +325,7 @@ global:
   # Optional:
   #   global.identity.auth.publicIssuerUrl  - override public Keycloak URL
   #     (default works with port-forward; override when using ingress)
-  #   global.identity.keycloak.contextPath  - "/auth" (Keycloak v16) or "/" (v19+)
+  #   global.identity.keycloak.contextPath  - "/auth" (default); for root, use "" with identityKeycloak.httpRelativePath "/"
   #
   # No explicit OIDC endpoint URLs are needed; they are auto-derived.
   #
@@ -368,7 +370,7 @@ global:
   #
   # Optional:
   #   global.identity.keycloak.internal: true  - ExternalName svc for cross-namespace access
-  #   global.identity.keycloak.contextPath     - "/auth" (Keycloak v16) or "/" (v19+)
+  #   global.identity.keycloak.contextPath     - path served by the external Keycloak; "" for root
   #
   # Minimal snippet:
   #   identityKeycloak:
@@ -544,8 +546,7 @@ global:
         #   protocol: "https"
         #   host: "keycloak.{{ .Release.Namespace }}.svc.cluster.local"
         #   port: "8443"
-      #  defines the endpoint of Keycloak which varies between Keycloak versions.
-      ## @param global.identity.keycloak.contextPath In Keycloak v16.x.x it's hard-coded as '/auth', but in v19.x.x it's '/'.
+      ## @param global.identity.keycloak.contextPath defines the path Identity uses to reach Keycloak. With bundled Keycloak enabled, also set identityKeycloak.httpRelativePath to the same path with a trailing slash; for root, use an empty string here and / for httpRelativePath.
       # Applies to: Internal Keycloak and External Keycloak. Not used in External OIDC.
       contextPath: "/auth"
       ## @param global.identity.keycloak.realm defines Keycloak realm path used for Camunda.
@@ -731,7 +732,7 @@ global:
   ## Document Store Configuration
   ## @extra global.documentStore These parameters are used to configure the document storage backend across all Camunda components.
   documentStore:
-    ## @param global.documentStore.activeStoreId The default document store to use. Valid values: inmemory, aws, gcp, and azure.
+    ## @param global.documentStore.activeStoreId defines the default document store instance ID. This value must match the configured store instance ID. See https://docs.camunda.io/docs/8.9/self-managed/concepts/document-handling/configuration/helm/
     activeStoreId: "inmemory"
     type:
       aws:
@@ -800,7 +801,7 @@ global:
         ## @param global.documentStore.type.inmemory.class Fully qualified class name for the in-memory document store provider.
         class: "io.camunda.document.store.inmemory.InMemoryDocumentStoreProvider"
       azure:
-        ## @extra global.documentStore.type.azure.connectionString configuration to provide the Azure Blob Storage connection string.
+        ## @extra global.documentStore.type.azure.connectionString configuration to provide the Azure Blob Storage connection string (Camunda 8.9.18+).
         connectionString:
           ## @extra global.documentStore.type.azure.connectionString.secret configuration to provide the Azure connection string as a secret.
           secret:
@@ -910,7 +911,7 @@ identity:
     ## @param identity.image.repository defines which image repository to use
     repository: camunda/identity
     ## @param identity.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.9.9
+    tag: 8.9.10
     ## @param identity.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param identity.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -1374,11 +1375,9 @@ identityKeycloak:
   podSecurityContext:
     runAsNonRoot: true
     fsGroup: 1001
-  ## @param identityKeycloak.httpRelativePath (DEPRECATED) defines the context for Keycloak. This config is valid for Keycloak v19.x.x only
-  # where in Keycloak v16.x.x it's hard-coded as '/auth', but in v19.x.x it's configurable.
-  # NOTE: This should be the same as ".Values.global.identity.keycloak.contextPath" plus a trailing slash,
-  # but it cannot be referenced directly because of a bug in Helm (tested with Helm v3.9.3).
-  # NOTE: In Keycloak v23, accessing this path without the trailing slash will return "Internal Server Error".
+  ## @param identityKeycloak.httpRelativePath (DEPRECATED) defines the path served by bundled Keycloak. Set global.identity.keycloak.contextPath to the same path without a trailing slash; for root, use / here and an empty string for contextPath.
+  # These values are independent and must be configured together when changing the default path.
+  # https://docs.camunda.io/docs/8.9/self-managed/deployment/helm/configure/authentication-and-authorization/internal-keycloak/#configure-the-internal-keycloak-context-path
   httpRelativePath: /auth/
   ## @param identityKeycloak.extraEnvVars (DEPRECATED) can be used set extra environment variables to be set on Keycloak container.
   extraEnvVars: []
@@ -1457,7 +1456,7 @@ console:
     ## @param console.image.repository defines which image repository to use
     repository: camunda/console
     ## @param console.image.tag can be used to set the Docker image tag for the Console image
-    tag: 8.9.115
+    tag: 8.9.117
     ## @param console.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param console.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -1686,7 +1685,7 @@ webModeler:
     registry: ""
     ## @param webModeler.image.tag can be used to set the Docker image tag for the WebModeler images
     # renovate: datasource=docker depName=camunda/web-modeler-restapi
-    tag: 8.9.9
+    tag: 8.9.10
     ## @param webModeler.image.pullSecrets can be used to configure image pull secrets, see https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
@@ -2301,7 +2300,7 @@ connectors:
     ## @param connectors.image.repository defines which image repository to use
     repository: camunda/connectors-bundle
     ## @param connectors.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.9.12
+    tag: 8.9.14
     ## @param connectors.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param connectors.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -2664,7 +2663,7 @@ orchestration:
     ## @param orchestration.image.repository defines which image repository to use
     repository: camunda/camunda
     ## @param orchestration.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.9.21
+    tag: 8.9.22
     ## @param orchestration.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param orchestration.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -2846,6 +2845,10 @@ orchestration:
   ## @param orchestration.pvcSize defines the persistent volume claim size, which is used by each broker pod https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims
   pvcSize: "32Gi"
   ## @param orchestration.pvcAccessModes can be used to configure the persistent volume claim access mode https://kubernetes.io/docs/concepts/storage/persistent-volumes/#access-modes
+  # For a storage-layer single-writer guarantee (instead of relying on pod anti-affinity alone), set
+  # this to ["ReadWriteOncePod"]. This requires a CSI driver that supports ReadWriteOncePod, and it
+  # must be the only access mode in the list. PersistentVolumeClaim accessModes are immutable, so this
+  # only takes effect for new installs / new PVCs, not via "helm upgrade" on an existing StatefulSet.
   pvcAccessModes: ["ReadWriteOnce"]
   ## @param orchestration.pvcStorageClassName can be used to set the storage class name which should be used by the persistent volume claim.
   # It is recommended to use a storage class, which is backed with a SSD. Set to "-" to disable use of default storage class.
@@ -3198,7 +3201,7 @@ optimize:
     ## @param optimize.image.repository defines which image repository to use
     repository: camunda/optimize
     ## @param optimize.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.9.21
+    tag: 8.9.22
     ## @param optimize.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param optimize.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod

@@ -20,6 +20,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -50,6 +51,7 @@ type PlanOptions struct {
 // implementation ran `walk(tostring)` over the JSON for the same reason).
 type PlanEntry struct {
 	Version                   string `json:"version"`
+	ChartVersions             string `json:"chartVersions"`
 	CamundaVersionPrevious    string `json:"camundaVersionPrevious"`
 	Case                      string `json:"case"`
 	Platforms                 string `json:"platforms"`
@@ -445,6 +447,7 @@ func groupPlanEntries(version string, entries []Entry) []PlanEntry {
 
 		out = append(out, PlanEntry{
 			Version:                   version,
+			ChartVersions:             strings.Join(planChartVersions(version, first), ","),
 			CamundaVersionPrevious:    previousMinor(version),
 			Case:                      "pr",
 			Platforms:                 platformsCSV,
@@ -520,10 +523,7 @@ func TopologyE2ELegs(parentVersion string, topology *Topology) []TopologyE2ELeg 
 		if release.Role != "orchestration" {
 			continue
 		}
-		chartVersion := release.ChartVersion
-		if chartVersion == "" {
-			chartVersion = parentVersion
-		}
+		chartVersion := releaseChartVersion(parentVersion, release)
 		base := TopologyE2ELeg{
 			OrchestrationSuffix: release.NamespaceSuffix,
 			ModelerClusterID:    release.ModelerClusterID,
@@ -558,6 +558,20 @@ func TopologyE2ELegs(parentVersion string, topology *Topology) []TopologyE2ELeg 
 		}
 	}
 	return legs
+}
+
+func planChartVersions(parentVersion string, e Entry) []string {
+	versions := []string{parentVersion}
+	if e.Flow == "upgrade-minor" {
+		versions = append(versions, previousMinor(parentVersion))
+	}
+	if e.Topology != nil {
+		for _, release := range e.Topology.Releases {
+			versions = append(versions, releaseChartVersion(parentVersion, release))
+		}
+	}
+	sort.Strings(versions)
+	return slices.Compact(versions)
 }
 
 func planTopologyMetadata(parentVersion string, topology *Topology) (string, string, string) {

@@ -103,6 +103,10 @@ func ImageSet(chartDir string, overlays ...string) ([]string, error) {
 		}
 		values = deepMerge(values, ov)
 	}
+	if hub, ok := values["camundaHub"].(map[string]any); ok {
+		legacy, _ := values["webModeler"].(map[string]any)
+		values["webModeler"] = deepMerge(legacy, withoutNulls(hub))
+	}
 
 	seen := map[string]struct{}{}
 	var refs []string
@@ -411,6 +415,20 @@ func deepMerge(base, overlay map[string]any) map[string]any {
 			}
 		}
 		out[k] = ov
+	}
+	return out
+}
+
+func withoutNulls(m map[string]any) map[string]any {
+	out := make(map[string]any, len(m))
+	for k, v := range m {
+		switch t := v.(type) {
+		case nil:
+		case map[string]any:
+			out[k] = withoutNulls(t)
+		default:
+			out[k] = v
+		}
 	}
 	return out
 }

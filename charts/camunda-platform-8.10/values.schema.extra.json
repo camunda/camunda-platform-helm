@@ -133,6 +133,28 @@
                 },
                 "ingress": {
                     "properties": {
+                        "protocol": {
+                            "type": "string",
+                            "enum": [
+                                "",
+                                "http",
+                                "https"
+                            ]
+                        },
+                        "publicPorts": {
+                            "properties": {
+                                "http": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 65535
+                                },
+                                "https": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 65535
+                                }
+                            }
+                        },
                         "annotations": {
                             "type": "object",
                             "description": "defines the ingress related annotations, consumed mostly by the ingress controller. Empty by default; keys set here always win over the ingress-nginx compatibility set described in global.compatibility.nginx.renderAnnotations.",
@@ -1505,7 +1527,7 @@
             "properties": {
                 "contextPath": {
                     "type": ["string", "null"],
-                    "description": "can be used to make Camunda Hub available on a custom sub-path. This 8.10 alpha override replaces camundaHub.webModeler.contextPath.",
+                    "description": "can be used to make Camunda Hub available on a custom sub-path. This 8.10 override replaces camundaHub.webModeler.contextPath.",
                     "default": null
                 },
                 "automountServiceAccountToken": {
@@ -1626,6 +1648,9 @@
                 "roleName": {"type": "string"},
                 "secret": {"$ref": "#/$defs/topologySecret"},
                 "serviceName": {"type": "string"},
+                "namespace": {"type": "string"},
+                "releaseName": {"type": "string"},
+                "host": {"type": "string"},
                 "webappUrl": {"type": "string", "pattern": "^$|^https?://(?:[^\\s{}]|\\{\\{[^}]*\\}\\})+$"},
                 "readinessUrl": {"type": "string", "pattern": "^$|^https?://[^\\s]+$"}
             }
@@ -1691,6 +1716,13 @@
             "properties": {
                 "id": {"type": "string", "pattern": "^[a-z0-9]{1,64}$"},
                 "name": {"type": "string", "minLength": 1},
+                "contextPaths": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                        "optimize": {"type": "string", "pattern": "^$|^/"}
+                    }
+                },
                 "components": {
                     "type": "object",
                     "additionalProperties": false,

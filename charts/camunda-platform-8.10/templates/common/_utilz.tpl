@@ -6,6 +6,14 @@ Utilities.
 ********************************************************************************
 */}}
 
+{{- define "camundaPlatform.toYamlPretty" -}}
+  {{- if semverCompare ">=3.17.0" .context.Capabilities.HelmVersion.Version -}}
+    {{- tpl "{{ toYamlPretty .value }}" (dict "value" .value) -}}
+  {{- else -}}
+    {{- toYaml .value -}}
+  {{- end -}}
+{{- end -}}
+
 {{/*
 camundaPlatform.manualMigrationRequired
 Fail with message when the old values file key is used and show the new key.

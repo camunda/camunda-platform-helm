@@ -422,6 +422,36 @@ func TestBuildTopologyReleaseEnv_SelectsLocalOrchestrationReferences(t *testing.
 	}
 }
 
+func TestBuildTopologyReleaseEnv_SetsCamundaHostnameToServedHost(t *testing.T) {
+	shared := map[string]string{
+		"HUB_HOST":   "ns-hub.example.com",
+		"ORCHA_HOST": "ns-orcha.example.com",
+	}
+	cases := []struct {
+		name    string
+		release matrix.TopologyRelease
+		want    string
+	}{
+		{"hub", matrix.TopologyRelease{Role: "hub", NamespaceSuffix: "hub"}, "ns-hub.example.com"},
+		{"orchestration", matrix.TopologyRelease{Role: "orchestration", NamespaceSuffix: "orcha"}, "ns-orcha.example.com"},
+		{"optimize", matrix.TopologyRelease{Role: "optimize", NamespaceSuffix: "opta", Serves: "orcha"}, "ns-hub.example.com"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := buildTopologyReleaseEnv(shared, tc.release)["CAMUNDA_HOSTNAME"]; got != tc.want {
+				t.Errorf("CAMUNDA_HOSTNAME = %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestBuildTopologyReleaseEnv_OmitsCamundaHostnameWithoutHost(t *testing.T) {
+	env := buildTopologyReleaseEnv(map[string]string{}, matrix.TopologyRelease{Role: "hub", NamespaceSuffix: "hub"})
+	if _, ok := env["CAMUNDA_HOSTNAME"]; ok {
+		t.Errorf("CAMUNDA_HOSTNAME set to %q with no derived host; want it left to the process env", env["CAMUNDA_HOSTNAME"])
+	}
+}
+
 func TestBuildTopologyReleaseEnv_PublishesServedReferencesForOptimize(t *testing.T) {
 	shared := map[string]string{
 		"ORCHA_NAMESPACE":                  "ns-orcha",

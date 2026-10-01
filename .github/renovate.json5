@@ -190,6 +190,11 @@
       schedule: ['every weekend'],
     },
     {
+      matchManagers: ['custom.regex'],
+      matchDepNames: ['helm/helm'],
+      allowedVersions: '<4.0.0',
+    },
+    {
       description: 'Automerge GitHub Actions updates after status checks pass.',
       addLabels: [
         'deps/github-actions',
@@ -298,7 +303,6 @@
       ],
       matchFileNames: [
         // bump these to whatever the latest alpha is
-        'charts/camunda-platform-8.10/Chart.yaml',
       ],
       versioning: 'regex:^(?<major>\\d+)(\\.(?<minor>\\d+))(\\.(?<patch>\\d+))(-(?<prerelease>alpha\\d+))$',
     },
@@ -327,6 +331,9 @@
         'charts/camunda-platform-8.9/values.yaml',
         'charts/camunda-platform-8.9/values-latest.yaml',
         'charts/camunda-platform-8.9/values-enterprise.yaml',
+        'charts/camunda-platform-8.10/Chart.yaml',
+        'charts/camunda-platform-8.10/values.yaml',
+        'charts/camunda-platform-8.10/values-latest.yaml',
       ],
       matchUpdateTypes: ['patch', 'pin'],
       schedule: ['at any time'],
@@ -345,27 +352,18 @@
         'docker',
         'regex',
       ],
-      matchFileNames: [
-        'charts/camunda-platform-8.10/Chart.yaml',
-        'charts/camunda-platform-8.10/values.yaml',
-        'charts/camunda-platform-8.10/values-latest.yaml',
-        'charts/camunda-platform-8.10/values-enterprise.yaml',
-      ],
+      matchFileNames: [],
       matchUpdateTypes: ['major', 'minor', 'patch'],
       schedule: ['at any time'],
       addLabels: ['camunda-platform', 'priority-high'],
       prCreation: 'immediate',
     },
     {
-      description: 'Parse Camunda 8.10 image tags as semver so alpha updates work',
+      description: 'Parse Camunda alpha chart image tags as semver so alpha updates work',
       enabled: true,
       matchPackageNames: ['/.*camunda.*/'],
       matchDatasources: ['helm', 'helm-values', 'docker', 'regex'],
-      matchFileNames: [
-        'charts/camunda-platform-8.10/Chart.yaml',
-        'charts/camunda-platform-8.10/values.yaml',
-        'charts/camunda-platform-8.10/values-latest.yaml',
-      ],
+      matchFileNames: [],
       versioning: 'regex:^(?<major>\\d+)(\\.(?<minor>\\d+))(\\.(?<patch>\\d+))(-(?<prerelease>alpha\\d+))$',
     },
     {
@@ -528,7 +526,25 @@
       ],
       datasourceTemplate: 'docker',
       versioningTemplate: 'docker',
-    }
+    },
+    {
+      customType: 'regex',
+      fileMatch: [
+        '^charts/camunda-platform-[^/]+/test/ci/registry/scenarios/[^/]+\\.yaml$',
+        '^charts/camunda-platform-[^/]+/test/ci/registry-snapshot\\.yaml$',
+        '^scripts/camunda-core/pkg/releasenotes/releasenotes\\.go$',
+        '^charts/camunda-platform-[^/]+/test/ci-test-config\\.yaml$',
+      ],
+      matchStrings: [
+        'helmVersion: (?<currentValue>\\S+)',
+        'const helmV3Version = "(?<currentValue>[^"]+)"',
+        'helmCompat:\\n\\s+versions:\\n\\s+- "3\\.10\\.\\d+"\\n\\s+- "(?<currentValue>[^"]+)"',
+      ],
+      depNameTemplate: 'helm/helm',
+      datasourceTemplate: 'github-releases',
+      extractVersionTemplate: '^v(?<version>\\S+)',
+      versioningTemplate: 'semver',
+    },
   ],
   hostRules: [
     {

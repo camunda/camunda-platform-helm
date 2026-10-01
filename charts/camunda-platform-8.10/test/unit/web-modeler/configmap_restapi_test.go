@@ -65,6 +65,50 @@ func TestRestAPIConfigmapTemplate(t *testing.T) {
 	})
 }
 
+func (s *configmapRestAPITemplateTest) TestIngressPublicWebsocketPort() {
+	var testCases []testhelpers.TestCase
+	for _, input := range []struct {
+		name        string
+		ingress     string
+		tls         string
+		contextPath string
+		wantPort    string
+	}{
+		{"HTTP", "true", "false", "/modeler", "8080"},
+		{"HTTPS", "true", "true", "/modeler", "8443"},
+		{"DisabledIngress", "false", "false", "/modeler", "9085"},
+		{"WithoutContextPath", "true", "true", "", "9085"},
+	} {
+		testCases = append(testCases, testhelpers.TestCase{
+			Name: input.name,
+			Values: map[string]string{
+				"camundaHub.enabled":                          "true",
+				"identity.enabled":                            "true",
+				"camundaHub.contextPath":                      input.contextPath,
+				"camundaHub.restapi.mail.fromAddress":         "test@example.com",
+				"camundaHub.websockets.publicPort":            "9085",
+				"global.host":                                 "camunda.example.com",
+				"global.ingress.enabled":                      input.ingress,
+				"global.ingress.tls.enabled":                  input.tls,
+				"global.ingress.publicPorts.http":             "8080",
+				"global.ingress.publicPorts.https":            "8443",
+				"global.identity.auth.camundaHub.redirectUrl": "https://explicit.example.com:9443/modeler",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var configMap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configMap)
+				var application WebModelerRestAPIApplicationYAML
+				require.NoError(t, yaml.Unmarshal([]byte(configMap.Data["application.yaml"]), &application))
+				require.Equal(t, input.wantPort, application.Camunda.Modeler.Pusher.Client.Port)
+				require.Equal(t, input.ingress == "true" && input.tls == "true" && input.contextPath != "", application.Camunda.Modeler.Pusher.Client.ForceTLS)
+				require.Equal(t, "https://explicit.example.com:9443/modeler", application.Camunda.Modeler.Server.Url)
+			},
+		})
+	}
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectAuthClientApiAudience() {
 	// given
 	values := maps.Clone(requiredValues)
@@ -495,12 +539,12 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterFromSa
 				s.Fail("Failed to unmarshal yaml. error=", err)
 			}
 
-			// then — two clusters: management-cluster (Identity + WebModeler) followed by default-cluster (Orchestration)
+			// then — two clusters: management-cluster (Identity) followed by default-cluster (Orchestration)
 			s.Require().Equal(2, len(configmapApplication.Camunda.Modeler.Clusters))
 
 			mgmtCluster := configmapApplication.Camunda.Modeler.Clusters[0]
 			s.Require().Equal("management-cluster", mgmtCluster.Id)
-			s.Require().Equal("hub", mgmtCluster.Name)
+			s.Require().Equal("Management Identity", mgmtCluster.Name)
 			s.Require().Equal(false, mgmtCluster.Authorizations.Enabled)
 			s.Require().Equal(tc.expectedAuthentication, mgmtCluster.Authentication)
 			var identityComp ComponentYAML
@@ -511,6 +555,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterFromSa
 				}
 			}
 			s.Require().Equal("identity", identityComp.Type)
+			s.Require().Equal(identityComp.Version, mgmtCluster.Version)
 
 			defaultCluster := configmapApplication.Camunda.Modeler.Clusters[1]
 			s.Require().Equal("default-cluster", defaultCluster.Id)
@@ -529,6 +574,43 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterFromSa
 			s.Require().Equal("http://camunda-platform-test-zeebe-gateway:8090/orchestration", orchestrationComp.Urls.Rest)
 		})
 	}
+}
+
+func (s *configmapRestAPITemplateTest) TestContainerShouldOmitManagementClusterWhenIdentityDisabled() {
+	// given
+	values := maps.Clone(requiredValues)
+	maps.Insert(values, maps.All(map[string]string{
+		"identity.enabled":            "false",
+		"global.identity.service.url": "http://identity.external:8080",
+		"global.zeebeClusterName":     "test-zeebe",
+	}))
+	options := &helm.Options{
+		SetValues:      values,
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication WebModelerRestAPIApplicationYAML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	s.Require().NoError(err)
+
+	// then
+	s.Require().Len(configmapApplication.Camunda.Modeler.Clusters, 1)
+	defaultCluster := configmapApplication.Camunda.Modeler.Clusters[0]
+	s.Require().Equal("default-cluster", defaultCluster.Id)
+	s.Require().Equal("test-zeebe", defaultCluster.Name)
+	var orchestrationComp ComponentYAML
+	for _, c := range defaultCluster.Components {
+		if c.Type == "orchestration" {
+			orchestrationComp = c
+			break
+		}
+	}
+	s.Require().Equal("orchestration", orchestrationComp.Type)
 }
 
 func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterRestUrlWithoutTrailingSlashWhenContextPathIsRoot() {
@@ -685,9 +767,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldUseClustersFromCustomC
 	s.Require().Equal("http://localhost:8088", configmapApplication.Camunda.Modeler.Clusters[2].Url.WebApp)
 }
 
-func (s *configmapRestAPITemplateTest) TestManagementClusterContainsBothIdentityAndWebModelerComponents() {
-	// management-cluster must include both identity and hub so that WebModeler
-	// can reach Identity and register itself as a known component.
+func (s *configmapRestAPITemplateTest) TestManagementClusterContainsOnlyIdentityComponent() {
 	values := maps.Clone(requiredValues)
 	maps.Insert(values, maps.All(map[string]string{
 		"global.ingress.enabled": "true",
@@ -710,22 +790,13 @@ func (s *configmapRestAPITemplateTest) TestManagementClusterContainsBothIdentity
 		s.Fail("Failed to unmarshal yaml. error=", err)
 	}
 
-	// then — management-cluster contains both identity and hub
+	// then
 	s.Require().GreaterOrEqual(len(configmapApplication.Camunda.Modeler.Clusters), 1)
 	mgmtCluster := configmapApplication.Camunda.Modeler.Clusters[0]
 	s.Require().Equal("management-cluster", mgmtCluster.Id)
 
-	var hasIdentity, hasHub bool
-	for _, c := range mgmtCluster.Components {
-		if c.Type == "identity" {
-			hasIdentity = true
-		}
-		if c.Type == "hub" {
-			hasHub = true
-		}
-	}
-	s.Require().True(hasIdentity, "management-cluster should contain an identity component")
-	s.Require().True(hasHub, "management-cluster should contain a hub component")
+	s.Require().Len(mgmtCluster.Components, 1)
+	s.Require().Equal("identity", mgmtCluster.Components[0].Type)
 }
 
 func (s *configmapRestAPITemplateTest) TestContainerShouldNotConfigureClustersIfZeebeDisabledAndNoCustomConfiguration() {

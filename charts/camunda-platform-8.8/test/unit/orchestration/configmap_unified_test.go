@@ -327,6 +327,52 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedAuthOIDC() {
 	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
+func (s *ConfigmapTemplateTest) TestOIDCAudiencesIncludeWebModelerOnlyWhenEffectivelyEnabled() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestApplicationYamlShouldNotContainWebModelerAudienceWhenTopologySuppressesIt",
+			Values: map[string]string{
+				"global.identity.auth.enabled":                 "true",
+				"global.identity.service.url":                  "http://identity.example.com",
+				"global.topology.mode":                         "orchestration",
+				"orchestration.security.authentication.method": "oidc",
+				"webModeler.enabled":                           "true",
+				"webModeler.restapi.mail.fromAddress":          "noreply@example.com",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+
+				authConfig := configmap.Data["application.yaml"]
+				require.Contains(t, authConfig, `- "orchestration-api"`)
+				require.NotContains(t, authConfig, `- "web-modeler-api"`)
+			},
+		},
+		{
+			Name: "TestApplicationYamlShouldContainWebModelerAudienceWhenEffectivelyEnabled",
+			Values: map[string]string{
+				"global.identity.auth.enabled":                 "true",
+				"identity.enabled":                             "true",
+				"orchestration.security.authentication.method": "oidc",
+				"webModeler.enabled":                           "true",
+				"webModeler.restapi.mail.fromAddress":          "noreply@example.com",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+
+				authConfig := configmap.Data["application.yaml"]
+				require.Contains(t, authConfig, `- "orchestration-api"`)
+				require.Contains(t, authConfig, `- "web-modeler-api"`)
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
 func (s *ConfigmapTemplateTest) TestGroupsClaimConditionalRendering() {
 	testCases := []testhelpers.TestCase{
 		{
@@ -365,6 +411,67 @@ func (s *ConfigmapTemplateTest) TestGroupsClaimConditionalRendering() {
 				require.NoError(t, yaml.Unmarshal([]byte(configMap.Data["application.yaml"]), &application))
 				require.Equal(t, "custom-groups", application.Camunda.Security.Authentication.OIDC.GroupsClaim)
 			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+type camundaExporterApplication struct {
+	Camunda struct {
+		Data struct {
+			SecondaryStorage struct {
+				Type string `yaml:"type"`
+			} `yaml:"secondary-storage"`
+		} `yaml:"data"`
+	} `yaml:"camunda"`
+	Zeebe struct {
+		Broker struct {
+			Exporters struct {
+				CamundaExporter struct {
+					ClassName string `yaml:"className"`
+					Args      struct {
+						Connect map[string]any `yaml:"connect"`
+					} `yaml:"args"`
+				} `yaml:"camundaexporter"`
+			} `yaml:"exporters"`
+		} `yaml:"broker"`
+	} `yaml:"zeebe"`
+}
+
+func (s *ConfigmapTemplateTest) TestCamundaExporterOmitsLegacyConnectType() {
+	verify := func(expectedType string) func(t *testing.T, output string, err error) {
+		return func(t *testing.T, output string, err error) {
+			require.NoError(t, err)
+
+			var configMap corev1.ConfigMap
+			helm.UnmarshalK8SYaml(t, output, &configMap)
+			var application camundaExporterApplication
+			require.NoError(t, yaml.Unmarshal([]byte(configMap.Data["application.yaml"]), &application))
+
+			exporter := application.Zeebe.Broker.Exporters.CamundaExporter
+			require.Equal(t, expectedType, application.Camunda.Data.SecondaryStorage.Type)
+			require.Equal(t, "io.camunda.exporter.CamundaExporter", exporter.ClassName)
+			require.NotEmpty(t, exporter.Args.Connect["url"])
+			require.NotContains(t, exporter.Args.Connect, "type")
+		}
+	}
+
+	testCases := []testhelpers.TestCase{
+		{
+			Name:     "TestCamundaExporterOmitsLegacyConnectTypeElasticsearch",
+			Values:   map[string]string{},
+			Verifier: verify("elasticsearch"),
+		},
+		{
+			Name: "TestCamundaExporterOmitsLegacyConnectTypeOpenSearch",
+			Values: map[string]string{
+				"global.elasticsearch.enabled": "false",
+				"elasticsearch.enabled":        "false",
+				"global.opensearch.enabled":    "true",
+				"global.opensearch.url.host":   "opensearch.example.com",
+			},
+			Verifier: verify("opensearch"),
 		},
 	}
 

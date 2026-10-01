@@ -11,8 +11,11 @@ webModeler:
     image:
       tag: "$E2E_TESTS_WEBMODELER_IMAGE_TAG"
   websockets:
+    # camunda/hub-websockets has no per-line tag: it is built from
+    # camunda/camunda-laravel-websockets and publishes one rolling SNAPSHOT
+    # plus release tags. Do not substitute $E2E_TESTS_WEBMODELER_IMAGE_TAG here.
     image:
-      tag: "$E2E_TESTS_WEBMODELER_IMAGE_TAG"
+      tag: "SNAPSHOT"
 console:
   image:
     tag: "$E2E_TESTS_CONSOLE_IMAGE_TAG"

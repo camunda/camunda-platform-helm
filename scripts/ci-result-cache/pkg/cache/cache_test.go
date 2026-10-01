@@ -96,8 +96,8 @@ func TestFormatDescription(t *testing.T) {
 }
 
 func TestStatusContext(t *testing.T) {
-	got := StatusContext("8.9", "oske", "install")
-	want := "ci-cache/8.9/oske/install"
+	got := StatusContext("8.9", "oske", "install", "gke")
+	want := "ci-cache/8.9/oske/install/gke"
 	if got != want {
 		t.Errorf("got %q, want %q", got, want)
 	}
@@ -111,17 +111,17 @@ func TestCheck(t *testing.T) {
 	statuses := []commitStatus{
 		{
 			State:       "success",
-			Context:     "ci-cache/8.9/oske/install",
+			Context:     "ci-cache/8.9/oske/install/gke",
 			Description: FormatDescription("hash_a", recentTS),
 		},
 		{
 			State:       "success",
-			Context:     "ci-cache/8.9/eske/upgrade-minor",
+			Context:     "ci-cache/8.9/eske/upgrade-minor/gke",
 			Description: FormatDescription("hash_b", oldTS),
 		},
 		{
 			State:       "error",
-			Context:     "ci-cache/8.9/kemt/install",
+			Context:     "ci-cache/8.9/kemt/install/gke",
 			Description: "invalidated",
 		},
 	}
@@ -135,49 +135,49 @@ func TestCheck(t *testing.T) {
 	}{
 		{
 			name:        "matching hash, within TTL",
-			context:     "ci-cache/8.9/oske/install",
+			context:     "ci-cache/8.9/oske/install/gke",
 			currentHash: "hash_a",
 			ttl:         24 * time.Hour,
 			want:        true,
 		},
 		{
 			name:        "matching hash, TTL disabled",
-			context:     "ci-cache/8.9/oske/install",
+			context:     "ci-cache/8.9/oske/install/gke",
 			currentHash: "hash_a",
 			ttl:         0,
 			want:        true,
 		},
 		{
 			name:        "hash mismatch",
-			context:     "ci-cache/8.9/oske/install",
+			context:     "ci-cache/8.9/oske/install/gke",
 			currentHash: "different_hash",
 			ttl:         24 * time.Hour,
 			want:        false,
 		},
 		{
 			name:        "matching hash, expired TTL",
-			context:     "ci-cache/8.9/eske/upgrade-minor",
+			context:     "ci-cache/8.9/eske/upgrade-minor/gke",
 			currentHash: "hash_b",
 			ttl:         24 * time.Hour,
 			want:        false,
 		},
 		{
 			name:        "matching hash, expired but TTL disabled",
-			context:     "ci-cache/8.9/eske/upgrade-minor",
+			context:     "ci-cache/8.9/eske/upgrade-minor/gke",
 			currentHash: "hash_b",
 			ttl:         0,
 			want:        true,
 		},
 		{
 			name:        "invalidated entry",
-			context:     "ci-cache/8.9/kemt/install",
+			context:     "ci-cache/8.9/kemt/install/gke",
 			currentHash: "any_hash",
 			ttl:         24 * time.Hour,
 			want:        false,
 		},
 		{
 			name:        "non-existent context",
-			context:     "ci-cache/8.9/nosec/install",
+			context:     "ci-cache/8.9/nosec/install/gke",
 			currentHash: "any_hash",
 			ttl:         24 * time.Hour,
 			want:        false,
@@ -188,6 +188,33 @@ func TestCheck(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			got := Check(statuses, tc.context, tc.currentHash, tc.ttl)
 			if got != tc.want {
+				t.Errorf("got %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestCheckAll(t *testing.T) {
+	recentTS := time.Now().Add(-1 * time.Hour)
+	statuses := []commitStatus{
+		{State: "success", Context: "ci-cache/8.10/eske/install/gke", Description: FormatDescription("hash_a", recentTS)},
+		{State: "success", Context: "ci-cache/8.10/eske/install/eks", Description: FormatDescription("hash_a", recentTS)},
+		{State: "success", Context: "ci-cache/8.10/oske/install/gke", Description: FormatDescription("hash_a", recentTS)},
+	}
+
+	tests := []struct {
+		name     string
+		contexts []string
+		want     bool
+	}{
+		{name: "every platform cached", contexts: []string{"ci-cache/8.10/eske/install/gke", "ci-cache/8.10/eske/install/eks"}, want: true},
+		{name: "one platform missing", contexts: []string{"ci-cache/8.10/oske/install/gke", "ci-cache/8.10/oske/install/eks"}, want: false},
+		{name: "no contexts", contexts: nil, want: false},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := CheckAll(statuses, tc.contexts, "hash_a", 24*time.Hour); got != tc.want {
 				t.Errorf("got %v, want %v", got, tc.want)
 			}
 		})

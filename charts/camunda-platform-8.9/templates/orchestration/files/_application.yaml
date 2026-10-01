@@ -42,12 +42,6 @@ management:
 camunda:
   license:
     key: "${VALUES_ORCHESTRATION_LICENSE_KEY}"
-  {{- if eq (include "orchestration.hasAzureDocumentStore" .) "true" }}
-  document:
-    store:
-      azure:
-        connection-string: "${VALUES_DOCUMENT_STORE_AZURE_CONNECTION_STRING:}"
-  {{- end }}
 
   system:
     cpu-thread-count: {{ .Values.orchestration.cpuThreadCount }}
@@ -167,7 +161,9 @@ camunda:
           {{- end }}
           - {{ include "orchestration.authClientId" . | quote }}
           - {{ include "orchestration.authAudience" . | quote }}
+          {{- if eq (include "camundaPlatform.webModelerEnabled" .) "true" }}
           - {{ .Values.global.identity.auth.webModeler.clientApiAudience | quote }}
+          {{- end }}
         {{- if (include "orchestration.authIssuerUrl" .) }}
         issuer-uri: {{ include "orchestration.authIssuerUrl" . | quote }}
         {{- else }}

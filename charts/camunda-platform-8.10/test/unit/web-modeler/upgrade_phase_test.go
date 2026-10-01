@@ -170,6 +170,33 @@ func TestCamundaHubUpgradePhaseLabelCannotBeOverridden(t *testing.T) {
 	}
 }
 
+func TestCamundaHubUpgradePhaseLabelCannotBeHiddenByPartialOverride(t *testing.T) {
+	chartPath, err := filepath.Abs("../../../")
+	require.NoError(t, err)
+
+	for _, workload := range []struct {
+		name     string
+		template string
+	}{
+		{name: "restapi", template: "templates/web-modeler/deployment-restapi.yaml"},
+		{name: "websockets", template: "templates/web-modeler/deployment-websockets.yaml"},
+	} {
+		workload := workload
+		t.Run(workload.name, func(t *testing.T) {
+			_, err := helm.RenderTemplateE(t, &helm.Options{SetValues: map[string]string{
+				"camundaHub.enabled":                                   "true",
+				"camundaHub.restapi.mail.fromAddress":                  "example@example.com",
+				"camundaHub." + workload.name + ".podLabels.hub-label": "hub-value",
+				"identity.enabled":                                     "true",
+				"orchestration.enabled":                                "false",
+				"webModeler." + workload.name + ".podLabels.camunda\\.io/upgrade-phase": "normal",
+			}}, chartPath, "camunda-platform-test", []string{workload.template})
+
+			require.ErrorContains(t, err, "camunda.io/upgrade-phase is reserved")
+		})
+	}
+}
+
 func TestCamundaHubUpgradePhaseRendersGitOpsWarning(t *testing.T) {
 	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)

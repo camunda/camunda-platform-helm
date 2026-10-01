@@ -15,7 +15,9 @@
 package renovateconfigcheck
 
 import (
+	"bytes"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -55,11 +57,13 @@ type PackageRule struct {
 	Versioning        string   `json:"versioning"`
 	MatchFileNames    []string `json:"matchFileNames"`
 	MatchManagers     []string `json:"matchManagers"`
+	MatchDepNames     []string `json:"matchDepNames"`
 	MatchPackageNames []string `json:"matchPackageNames"`
 	MatchUpdateTypes  []string `json:"matchUpdateTypes"`
 	MatchCurrentValue string   `json:"matchCurrentValue"`
 	PRCreation        string   `json:"prCreation"`
 	MinimumReleaseAge string   `json:"minimumReleaseAge"`
+	AllowedVersions   string   `json:"allowedVersions"`
 	AddLabels         []string `json:"addLabels"`
 	Schedule          []string `json:"schedule"`
 	Automerge         *bool    `json:"automerge"`
@@ -69,14 +73,30 @@ type PackageRule struct {
 }
 
 type CustomManager struct {
-	FileMatch    []string `json:"fileMatch"`
-	MatchStrings []string `json:"matchStrings"`
+	FileMatch       []string `json:"fileMatch"`
+	MatchStrings    []string `json:"matchStrings"`
+	DepNameTemplate string   `json:"depNameTemplate"`
 }
 
-// ChartYAML represents the relevant fields from Chart.yaml.
-type ChartYAML struct {
-	Version    string `yaml:"version"`
-	AppVersion string `yaml:"appVersion"`
+type chartVersionsConfig struct {
+	CamundaSupportLifecycle map[string]struct {
+		Released string `yaml:"released"`
+	} `yaml:"camundaSupportLifecycle"`
+}
+
+func alphaMinors(t *testing.T, root string) map[string]bool {
+	t.Helper()
+	data, err := os.ReadFile(filepath.Join(root, "charts", "chart-versions.yaml"))
+	require.NoError(t, err, "failed to read charts/chart-versions.yaml")
+	var cfg chartVersionsConfig
+	require.NoError(t, yaml.Unmarshal(data, &cfg), "failed to parse charts/chart-versions.yaml")
+	alpha := map[string]bool{}
+	for minor, lifecycle := range cfg.CamundaSupportLifecycle {
+		if lifecycle.Released == "" {
+			alpha[minor] = true
+		}
+	}
+	return alpha
 }
 
 // chartVersionPattern extracts the chart version number (e.g., "8.9") from a matchFileName path
@@ -106,11 +126,6 @@ func isSupportedChart(version string) bool {
 
 // TestAlphaVersioningConsistency validates that Renovate alpha versioning rules
 // only reference chart versions that are actually still in alpha.
-//
-// When a chart version transitions from alpha to GA (the version field in Chart.yaml
-// no longer contains "-alpha"), it must be removed from the alpha versioning rules
-// in .github/renovate.json5. Failing to do so blocks Renovate from detecting GA
-// releases for that chart version.
 func TestAlphaVersioningConsistency(t *testing.T) {
 	root := repoRoot(t)
 	configPath := filepath.Join(root, ".github", "renovate.json5")
@@ -122,6 +137,8 @@ func TestAlphaVersioningConsistency(t *testing.T) {
 	var config RenovateConfig
 	err = json5.Unmarshal(configBytes, &config)
 	require.NoError(t, err, "failed to parse renovate.json5 as JSON5")
+
+	alpha := alphaMinors(t, root)
 
 	// Find all package rules that enforce alpha versioning
 	for _, rule := range config.PackageRules {
@@ -136,33 +153,19 @@ func TestAlphaVersioningConsistency(t *testing.T) {
 		}
 
 		for _, cv := range chartVersions {
-			chartYAMLPath := filepath.Join(root, "charts", fmt.Sprintf("camunda-platform-%s", cv), "Chart.yaml")
-
-			// Read Chart.yaml
-			chartBytes, err := os.ReadFile(chartYAMLPath)
-			if os.IsNotExist(err) {
-				// Chart directory doesn't exist — might have been removed
+			if _, err := os.Stat(filepath.Join(root, "charts", fmt.Sprintf("camunda-platform-%s", cv))); os.IsNotExist(err) {
 				t.Logf("WARN: chart directory for version %s does not exist, skipping", cv)
 				continue
 			}
-			require.NoError(t, err, "failed to read Chart.yaml for version %s", cv)
 
-			var chart ChartYAML
-			err = yaml.Unmarshal(chartBytes, &chart)
-			require.NoError(t, err, "failed to parse Chart.yaml for version %s", cv)
-
-			// If the chart version does NOT contain "-alpha", it has gone GA
-			isAlpha := strings.Contains(chart.Version, "-alpha") ||
-				strings.Contains(chart.Version, "SNAPSHOT")
-
-			assert.True(t, isAlpha,
-				"Chart %s (version=%s) has gone GA but is still referenced in a Renovate "+
-					"alpha versioning rule.\n\n"+
+			assert.True(t, alpha[cv],
+				"Chart %s has a released date in charts/chart-versions.yaml but is still "+
+					"referenced in a Renovate alpha versioning rule.\n\n"+
 					"Action: Remove %s files from the alpha versioning rules in "+
 					".github/renovate.json5 and move them to the GA patch-only group.\n\n"+
 					"Rule description: %q\n"+
 					"Rule versioning: %q",
-				cv, chart.Version, cv, rule.Description, rule.Versioning,
+				cv, cv, rule.Description, rule.Versioning,
 			)
 		}
 	}
@@ -462,28 +465,14 @@ func findGACharts(t *testing.T, root string) []string {
 	entries, err := os.ReadDir(chartsDir)
 	require.NoError(t, err)
 
+	alpha := alphaMinors(t, root)
 	var gaCharts []string
 	for _, entry := range entries {
 		if !entry.IsDir() || !strings.HasPrefix(entry.Name(), "camunda-platform-8.") {
 			continue
 		}
-
-		chartYAMLPath := filepath.Join(chartsDir, entry.Name(), "Chart.yaml")
-		chartBytes, err := os.ReadFile(chartYAMLPath)
-		if err != nil {
-			continue
-		}
-
-		var chart ChartYAML
-		if err := yaml.Unmarshal(chartBytes, &chart); err != nil {
-			continue
-		}
-
-		isAlpha := strings.Contains(chart.Version, "-alpha") ||
-			strings.Contains(chart.Version, "SNAPSHOT")
-		if !isAlpha {
-			// Extract version number from directory name
-			version := strings.TrimPrefix(entry.Name(), "camunda-platform-")
+		version := strings.TrimPrefix(entry.Name(), "camunda-platform-")
+		if !alpha[version] {
 			gaCharts = append(gaCharts, version)
 		}
 	}
@@ -567,4 +556,107 @@ func TestAlphaVersioningRegexAcceptsAlphaTags(t *testing.T) {
 
 	require.NotZero(t, checked, "no alpha versioning regex found in renovate.json5 — "+
 		"the rules moved or the `regex:` prefix changed, and this test is no longer covering them")
+}
+
+func TestHelmV3UpdatePolicy(t *testing.T) {
+	t.Parallel()
+
+	var rules []PackageRule
+	for _, rule := range readRenovateConfig(t).PackageRules {
+		if containsString(rule.MatchDepNames, "helm/helm") {
+			rules = append(rules, rule)
+		}
+	}
+	require.Len(t, rules, 1, "exactly one helm/helm package rule expected")
+	assert.Equal(t, []string{"custom.regex"}, rules[0].MatchManagers)
+	assert.Equal(t, "<4.0.0", rules[0].AllowedVersions)
+}
+
+func TestHelmRegexTracksLatestHelmV3Pins(t *testing.T) {
+	t.Parallel()
+
+	root := repoRoot(t)
+	var managers []CustomManager
+	for _, manager := range readRenovateConfig(t).CustomManagers {
+		if manager.DepNameTemplate == "helm/helm" {
+			managers = append(managers, manager)
+		}
+	}
+	require.Len(t, managers, 1, "exactly one helm/helm custom manager expected")
+	manager := managers[0]
+
+	releaseNotes := "scripts/camunda-core/pkg/releasenotes/releasenotes.go"
+	source, err := os.ReadFile(filepath.Join(root, releaseNotes))
+	require.NoError(t, err)
+	assert.Len(t, helmRegexMatches(manager, releaseNotes, string(source)), 1,
+		"%s: the helmV3Version const must be tracked", releaseNotes)
+
+	var checked int
+	err = filepath.WalkDir(filepath.Join(root, "charts"), func(name string, entry fs.DirEntry, err error) error {
+		if err != nil || entry.IsDir() || filepath.Ext(name) != ".yaml" {
+			return err
+		}
+		contents, err := os.ReadFile(name)
+		if err != nil {
+			return err
+		}
+		if !bytes.Contains(contents, []byte("helmVersion")) && !bytes.Contains(contents, []byte("helmCompat")) {
+			return nil
+		}
+		rel, err := filepath.Rel(root, name)
+		if err != nil {
+			return err
+		}
+		checked++
+		assert.ElementsMatch(t, trackedHelmPins(t, contents), helmRegexMatches(manager, filepath.ToSlash(rel), string(contents)),
+			"%s: every Helm v3 pin except the helmCompat floor must be tracked", rel)
+		return nil
+	})
+	require.NoError(t, err)
+	require.NotZero(t, checked, "no helmVersion or helmCompat pins found under charts/")
+}
+
+func helmRegexMatches(manager CustomManager, name, contents string) []string {
+	for _, pattern := range manager.FileMatch {
+		if !regexp.MustCompile(pattern).MatchString(name) {
+			continue
+		}
+		var values []string
+		for _, matchString := range manager.MatchStrings {
+			re := regexp.MustCompile(matchString)
+			for _, match := range re.FindAllStringSubmatch(contents, -1) {
+				values = append(values, match[re.SubexpIndex("currentValue")])
+			}
+		}
+		return values
+	}
+	return nil
+}
+
+func trackedHelmPins(t *testing.T, contents []byte) []string {
+	t.Helper()
+	var document yaml.Node
+	require.NoError(t, yaml.Unmarshal(contents, &document))
+	var pins []string
+	var visit func(*yaml.Node)
+	visit = func(node *yaml.Node) {
+		for i := 0; node.Kind == yaml.MappingNode && i+1 < len(node.Content); i += 2 {
+			key, value := node.Content[i].Value, node.Content[i+1]
+			switch key {
+			case "helmVersion":
+				pins = append(pins, value.Value)
+			case "helmCompat":
+				var compat struct{ Versions []string }
+				require.NoError(t, value.Decode(&compat))
+				if len(compat.Versions) > 1 {
+					pins = append(pins, compat.Versions[1:]...)
+				}
+			}
+		}
+		for _, child := range node.Content {
+			visit(child)
+		}
+	}
+	visit(&document)
+	return pins
 }

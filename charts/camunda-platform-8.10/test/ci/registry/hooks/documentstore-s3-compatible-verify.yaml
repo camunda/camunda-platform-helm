@@ -1,0 +1,4 @@
+script: post-deploy-documentstore-s3-compatible.sh
+description: |
+  Verifies document upload, download, and deletion through Orchestration and
+  validates a presigned S3-compatible URL before and after deleting the document.

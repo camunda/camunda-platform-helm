@@ -41,6 +41,8 @@ global:
               existingSecretKey: identity-orchestration-client-token
           optimize:
             enabled: true
+            namespace: "${OPTDEFAULT_NAMESPACE}"
+            host: "${HUB_HOST}"
             clientId: optimize-orcha-default
             audience: optimize-orcha-default-api
             redirectUrl: "https://${HUB_HOST}${OPTDEFAULT_OPTIMIZE_CONTEXT_PATH}"
@@ -56,6 +58,9 @@ global:
               existingSecretKey: identity-connectors-client-token
         physicalTenants:
           - id: tenanta
+            name: Tenant A
+            contextPaths:
+              optimize: "${OPTTA_OPTIMIZE_CONTEXT_PATH}"
             components:
               optimize:
                 enabled: true
@@ -67,6 +72,9 @@ global:
                   existingSecret: integration-test-credentials
                   existingSecretKey: identity-optimize-tenanta-client-token
           - id: tenantb
+            name: Tenant B
+            contextPaths:
+              optimize: "${OPTTB_OPTIMIZE_CONTEXT_PATH}"
             components:
               optimize:
                 enabled: true
@@ -77,6 +85,16 @@ global:
                 secret:
                   existingSecret: integration-test-credentials
                   existingSecretKey: identity-optimize-tenantb-client-token
+
+camundaHub:
+  restapi:
+    extraConfiguration:
+      - file: environments.yaml
+        content: |
+          camunda:
+            hub:
+              feature:
+                environments-enabled: true
 
 identity:
   clients:

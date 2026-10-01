@@ -184,6 +184,16 @@ on:
         required: false
         default: ""
         type: string
+      chart-versions:
+        description: "Comma-separated chart versions the scenario deploys, for cache result recording"
+        required: false
+        default: ""
+        type: string
+      e2e-test-suite-version:
+        description: "@camunda/e2e-test-suite version the e2e jobs install (empty installs latest)"
+        required: false
+        default: ""
+        type: string
       camunda-version:
         description: "Camunda version (e.g., 8.9) for cache result recording"
         required: false
@@ -317,7 +327,6 @@ env:
   TEST_CREATE_DOCKER_LOGIN_SECRET: "TRUE"
   # OIDC.
   INITIAL_CLAIM_VALUE: ${{ inputs.initialClaimValue }}
-  # Mapping rule client IDs - defaults for Keycloak; overridden by entra.ensure-venom-app for OIDC.
   VENOM_CLIENT_ID: venom
   CONNECTORS_CLIENT_ID: connectors
   # Misc.
@@ -357,7 +366,7 @@ jobs:
       TEST_CLUSTER_TYPE: ${{ inputs.distro-type || inputs.cluster-type }}
 
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@1bab7578250d06c3ac57ba8e2ddfc65ac3f7880c # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
       - name: Info - ℹ️ Print workflow inputs ℹ️
         env:
           GITHUB_CONTEXT: ${{ toJson(inputs) }}
@@ -585,15 +594,6 @@ jobs:
           deploy-camunda entra update-redirect-uris \
             --ingress-host "$TEST_INGRESS_HOST" \
             --log-level info
-          deploy-camunda entra ensure-venom-app \
-            --namespace "$TEST_NAMESPACE" \
-            --log-level info | tee /tmp/entra-output.txt
-          # Capture VENOM_CLIENT_ID and CONNECTORS_CLIENT_ID from Go CLI stdout.
-          grep '^VENOM_CLIENT_ID=' /tmp/entra-output.txt >> "$GITHUB_ENV"
-          grep '^CONNECTORS_CLIENT_ID=' /tmp/entra-output.txt >> "$GITHUB_ENV"
-          # Also export for the current step.
-          eval "$(grep '^VENOM_CLIENT_ID=' /tmp/entra-output.txt)"
-          eval "$(grep '^CONNECTORS_CLIENT_ID=' /tmp/entra-output.txt)"
 
       - name: Helm - Install - Pre-install scenario tweaks
         timeout-minutes: 5
@@ -899,7 +899,7 @@ jobs:
       TEST_CLUSTER_TYPE: ${{ inputs.distro-type || inputs.cluster-type }}
 
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@1bab7578250d06c3ac57ba8e2ddfc65ac3f7880c # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
       - name: Info - ℹ️ Print workflow inputs ℹ️
         env:
           GITHUB_CONTEXT: ${{ toJson(inputs) }}
@@ -1032,12 +1032,6 @@ jobs:
           deploy-camunda entra update-redirect-uris \
             --ingress-host "$TEST_INGRESS_HOST" \
             --log-level info
-          deploy-camunda entra ensure-venom-app \
-            --namespace "$TEST_NAMESPACE" \
-            --log-level info | tee /tmp/entra-output.txt
-          # Capture VENOM_CLIENT_ID and CONNECTORS_CLIENT_ID from Go CLI stdout.
-          grep '^VENOM_CLIENT_ID=' /tmp/entra-output.txt >> "$GITHUB_ENV"
-          grep '^CONNECTORS_CLIENT_ID=' /tmp/entra-output.txt >> "$GITHUB_ENV"
 
       # NOTE: helm package + pre-upgrade scripts are handled by `deploy-camunda matrix run`.
       # The runner deploys directly from the chart directory (no `helm package` needed) and
@@ -1301,7 +1295,7 @@ jobs:
       deployments: write
       packages: read
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@1bab7578250d06c3ac57ba8e2ddfc65ac3f7880c # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -1352,6 +1346,7 @@ jobs:
           exclude: ${{ inputs.exclude }}
           test-stage: after-install
           shard-index: ${{ matrix.shard_index }}
+          e2e-test-suite-version: ${{ inputs.e2e-test-suite-version }}
           scenario: ${{ inputs.scenario }}
           run-smoke-tests: ${{ matrix.suite == 'smoke' }}
       - name: Observe build status
@@ -1390,7 +1385,7 @@ jobs:
       deployments: write
       packages: read
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@1bab7578250d06c3ac57ba8e2ddfc65ac3f7880c # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -1442,6 +1437,7 @@ jobs:
           exclude: ${{ inputs.exclude }}
           test-stage: after-install
           shard-index: "1"
+          e2e-test-suite-version: ${{ inputs.e2e-test-suite-version }}
           scenario: ${{ inputs.scenario }}
           run-smoke-tests: "false"
       - name: Observe build status
@@ -1490,7 +1486,7 @@ jobs:
       deployments: write
       packages: read
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@1bab7578250d06c3ac57ba8e2ddfc65ac3f7880c # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -1538,7 +1534,7 @@ jobs:
 
       - name: Generate E2E repository token
         id: e2e-repository-token
-        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@1bab7578250d06c3ac57ba8e2ddfc65ac3f7880c # main
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
         with:
           github-app-id-vault-key: GITHUB_APP_ID
           github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/quality-assurance-ci
@@ -1582,6 +1578,7 @@ jobs:
           auth-data: ${{ inputs.auth-data }}
           test-stage: after-install
           shard-index: ${{ matrix.shard_index }}
+          e2e-test-suite-version: ${{ inputs.e2e-test-suite-version }}
           scenario: ${{ inputs.scenario }}
           run-smoke-tests: "false"
           playwright-project: ${{ matrix.playwright_project }}
@@ -1624,7 +1621,7 @@ jobs:
       deployments: write
       packages: read
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@1bab7578250d06c3ac57ba8e2ddfc65ac3f7880c # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -1676,6 +1673,7 @@ jobs:
           exclude: ${{ inputs.exclude }}
           test-stage: after-upgrade
           shard-index: ${{ matrix.shardIndex }}
+          e2e-test-suite-version: ${{ inputs.e2e-test-suite-version }}
           scenario: ${{ inputs.scenario }}
       - name: Observe build status
         if: always()
@@ -1781,7 +1779,9 @@ jobs:
         !contains(needs.*.result, 'failure') &&
         !contains(needs.*.result, 'cancelled') &&
         inputs.pr-head-sha != '' &&
-        inputs.camunda-version != ''
+        inputs.camunda-version != '' &&
+        inputs.chart-versions != '' &&
+        inputs.e2e-test-suite-version != ''
       }}
     runs-on: ubuntu-latest
     permissions:
@@ -1812,6 +1812,9 @@ jobs:
             --version "${{ inputs.camunda-version }}" \
             --shortname "${{ inputs.shortname }}" \
             --flow "${{ inputs.flow }}" \
+            --platform "${{ inputs.distro-platform }}" \
+            --chart-versions "${{ inputs.chart-versions }}" \
+            --e2e-test-suite-version "${{ inputs.e2e-test-suite-version }}" \
             --repo-root "${{ github.workspace }}" \
             --target-url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
