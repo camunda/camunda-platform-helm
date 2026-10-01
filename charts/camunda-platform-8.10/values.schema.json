@@ -4945,6 +4945,36 @@
                     "default": [],
                     "items": {}
                 },
+                "envFromProvides": {
+                    "type": "array",
+                    "description": "names the cluster variables supplied by orchestration.envFrom so generated unified cluster defaults do not override them.",
+                    "default": [],
+                    "items": {
+                        "type": "string",
+                        "enum": [
+                            "CAMUNDA_CLUSTER_NODEID",
+                            "ZEEBE_BROKER_CLUSTER_NODEID",
+                            "CAMUNDA_CLUSTER_NAME",
+                            "ZEEBE_BROKER_CLUSTER_CLUSTERNAME",
+                            "CAMUNDA_CLUSTER_SIZE",
+                            "ZEEBE_BROKER_CLUSTER_CLUSTERSIZE",
+                            "CAMUNDA_CLUSTER_REPLICATIONFACTOR",
+                            "ZEEBE_BROKER_CLUSTER_REPLICATIONFACTOR",
+                            "CAMUNDA_CLUSTER_PARTITIONCOUNT",
+                            "ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT",
+                            "CAMUNDA_CLUSTER_INITIALCONTACTPOINTS",
+                            "ZEEBE_BROKER_CLUSTER_INITIALCONTACTPOINTS",
+                            "CAMUNDA_CLUSTER_NETWORK_ADVERTISEDHOST",
+                            "ZEEBE_BROKER_NETWORK_ADVERTISEDHOST",
+                            "CAMUNDA_CLUSTER_NETWORK_HOST",
+                            "ZEEBE_BROKER_NETWORK_HOST",
+                            "CAMUNDA_CLUSTER_NETWORK_COMMANDAPI_PORT",
+                            "ZEEBE_BROKER_NETWORK_COMMANDAPI_PORT",
+                            "CAMUNDA_CLUSTER_NETWORK_INTERNALAPI_PORT",
+                            "ZEEBE_BROKER_NETWORK_INTERNALAPI_PORT"
+                        ]
+                    }
+                },
                 "configMap": {
                     "type": "object",
                     "properties": {

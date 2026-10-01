@@ -276,8 +276,8 @@ func (s *PartitioningResolutionTest) TestSpansFailureDomainsBoundary() {
 }
 
 func (s *PartitioningResolutionTest) TestQualifiedAdvertisedHostDivergesFromSpansFailureDomains() {
-	const qualified = "advertisedHost: \"${K8S_NAME}.${K8S_SERVICE_NAME}.${K8S_NAMESPACE}.svc\""
-	const short = "advertisedHost: \"${K8S_NAME}.${K8S_SERVICE_NAME}\""
+	const qualified = "advertised-host: \"${K8S_NAME}.${K8S_SERVICE_NAME}.${K8S_NAMESPACE}.svc\""
+	const short = "advertised-host: \"${K8S_NAME}.${K8S_SERVICE_NAME}\""
 
 	testCases := []testhelpers.TestCase{
 		{
