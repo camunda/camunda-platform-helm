@@ -11,7 +11,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: web-modeler
-    app.kubernetes.io/version: "8.10.0-alpha5"
+    app.kubernetes.io/version: "8.10.0"
   annotations:
     {}
 data:
@@ -58,7 +58,7 @@ data:
           
           - id: "management-cluster"
             name: "Management Identity"
-            version: "8.10.0-alpha5.1"
+            version: "8.10.0"
             authentication: "BASIC"
             authorizations:
               enabled: false
@@ -91,7 +91,7 @@ data:
             components:
             - name: Connectors
               type: connectors
-              version: "8.10.0-alpha5"
+              version: "8.10.0"
               urls:
                 rest: "http://camunda-platform-test-connectors.camunda-platform:8080"
                 readiness: "http://camunda-platform-test-connectors.camunda-platform:8080/actuator/health/readiness"

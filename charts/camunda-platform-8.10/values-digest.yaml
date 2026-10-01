@@ -6,8 +6,8 @@ connectors:
   # https://hub.docker.com/r/camunda/connectors-bundle/tags
   image:
     repository: camunda/connectors-bundle
-    tag: 8.10-SNAPSHOT
-    digest: "sha256:2d67fcd1a3e5a570416edee557bc31942d8a6e05802eeff2ce1d14cc2cae5156"
+    tag: 8.10.0
+    digest: "sha256:9b69993c1b5dae12f887e1c67c32146449472f265cee3148bac79128013da822"
 
 optimize:
   # https://hub.docker.com/r/camunda/optimize/tags
@@ -25,13 +25,15 @@ webModeler:
   restapi:
     image:
       repository: camunda/hub
-      tag: SNAPSHOT
+      tag: 8.10.0
+      digest: "sha256:5e35cbcd2b8ae9905d499c062d05e75289ce41081009312fa1133a19f1e40db8"
 
   # https://hub.docker.com/r/camunda/hub-websockets/tags
   websockets:
     image:
       repository: camunda/hub-websockets
-      tag: SNAPSHOT
+      tag: 8.10.0
+      digest: "sha256:9144978dab547b6a0bd0fa7c378a70c19755d46bcdcc4a81525448503a6007b0"
 
 #
 # Orchestration Cluster
