@@ -31,16 +31,13 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 )
 
 const (
 	shortAttempts = 24
-	longAttempts  = 60
 	shortDelay    = 5 * time.Second
-	longDelay     = 10 * time.Second
 
 	entraTokenHost = "login.microsoftonline.com"
 )
@@ -82,12 +79,6 @@ type ingressList struct {
 	} `json:"items"`
 }
 
-type processDefinition struct {
-	Key      string          `json:"key"`
-	Version  json.RawMessage `json:"version"`
-	TenantID json.RawMessage `json:"tenantId"`
-}
-
 func main() {
 	cfg := config{}
 	flag.StringVar(&cfg.namespace, "namespace", "", "Kubernetes namespace")
@@ -111,7 +102,7 @@ func main() {
 		fmt.Fprintln(os.Stderr, "ERROR:", err)
 		os.Exit(1)
 	}
-	fmt.Println("Orchestration, Connectors, and an Optimize report worked with Entra and no Management Identity.")
+	fmt.Println("Orchestration and Connectors worked with Entra and no Management Identity.")
 }
 
 func newHTTPClient(transport http.RoundTripper) *http.Client {
@@ -133,7 +124,6 @@ func (v *verifier) run(ctx context.Context) error {
 	for _, args := range [][]string{
 		{"rollout", "status", "statefulset/" + v.cfg.release + "-zeebe", "--timeout=2m"},
 		{"rollout", "status", "deployment", "-l", "app.kubernetes.io/component=connectors", "--timeout=2m"},
-		{"rollout", "status", "deployment", "-l", "app.kubernetes.io/component=optimize", "--timeout=2m"},
 	} {
 		if _, err := v.kube(ctx, args...); err != nil {
 			return err
@@ -174,14 +164,12 @@ func (v *verifier) assertIdentityAbsent(ctx context.Context) error {
 	}
 
 	shared := v.cfg.release + "-camunda-platform-identity-env-vars"
-	for _, name := range []string{shared, v.cfg.release + "-camunda-platform-optimize-identity-env-vars"} {
-		raw, err = v.kube(ctx, "get", "configmap", name, "-o", "json")
-		if err != nil {
-			return err
-		}
-		if err := assertDataKeyAbsent(raw, "CAMUNDA_IDENTITY_BASEURL"); err != nil {
-			return fmt.Errorf("Management Identity URL must not be configured in %s: %w", name, err)
-		}
+	raw, err = v.kube(ctx, "get", "configmap", shared, "-o", "json")
+	if err != nil {
+		return err
+	}
+	if err := assertDataKeyAbsent(raw, "CAMUNDA_IDENTITY_BASEURL"); err != nil {
+		return fmt.Errorf("Management Identity URL must not be configured in %s: %w", shared, err)
 	}
 	return nil
 }
@@ -232,7 +220,6 @@ func (v *verifier) acquireToken(ctx context.Context) error {
 
 func (v *verifier) verifyLifecycle(ctx context.Context) error {
 	orchestrationURL := "https://" + v.hostname + "/orchestration/v2"
-	optimizeURL := "https://" + v.hostname + "/optimize/api"
 
 	if err := v.retryRequest(ctx, shortAttempts+1, shortDelay, http.MethodGet, orchestrationURL+"/topology", "", nil, func(body []byte) error {
 		var topology struct {
@@ -243,9 +230,6 @@ func (v *verifier) verifyLifecycle(ctx context.Context) error {
 		}
 		return nil
 	}, "authenticated topology request failed"); err != nil {
-		return err
-	}
-	if err := v.retryRequest(ctx, shortAttempts+1, shortDelay, http.MethodGet, optimizeURL+"/dashboard/management", "", nil, nil, "authenticated Optimize request failed"); err != nil {
 		return err
 	}
 
@@ -267,46 +251,9 @@ func (v *verifier) verifyLifecycle(ctx context.Context) error {
 	}
 
 	searchBody := []byte(`{"filter":{"processDefinitionId":"test-inbound-process","state":"COMPLETED"}}`)
-	if err := retry(ctx, shortAttempts, shortDelay, v.sleep, func() error {
+	return retry(ctx, shortAttempts, shortDelay, v.sleep, func() error {
 		return v.request(ctx, http.MethodPost, orchestrationURL+"/process-instances/search", "application/json", searchBody, assertItemsPresent)
-	}, "the inbound connector did not complete a process instance"); err != nil {
-		return err
-	}
-
-	var definition processDefinition
-	if err := retry(ctx, longAttempts, longDelay, v.sleep, func() error {
-		return v.request(ctx, http.MethodGet, optimizeURL+"/definition/process", "", nil, func(body []byte) error {
-			selected, err := selectLatestDefinition(body, "test-inbound-process")
-			if err == nil {
-				definition = selected
-			}
-			return err
-		})
-	}, "Optimize did not import the connector process definition"); err != nil {
-		return err
-	}
-
-	reportBody, err := reportDefinition(definition)
-	if err != nil {
-		return err
-	}
-	var reportID string
-	if err := v.request(ctx, http.MethodPost, optimizeURL+"/report/process/single", "application/json", reportBody, func(body []byte) error {
-		var report struct {
-			ID string `json:"id"`
-		}
-		if err := json.Unmarshal(body, &report); err != nil || report.ID == "" {
-			return errors.New("Optimize report response did not contain an id")
-		}
-		reportID = report.ID
-		return nil
-	}); err != nil {
-		return err
-	}
-
-	return retry(ctx, longAttempts, longDelay, v.sleep, func() error {
-		return v.request(ctx, http.MethodGet, optimizeURL+"/public/export/report/"+url.PathEscape(reportID)+"/result/json", "", nil, assertPositiveReport)
-	}, "the Optimize report did not include the connector process instance")
+	}, "the inbound connector did not complete a process instance")
 }
 
 func (v *verifier) retryRequest(ctx context.Context, attempts int, delay time.Duration, method, endpoint, contentType string, body []byte, validate func([]byte) error, message string) error {
@@ -544,58 +491,6 @@ func assertItemsPresent(raw []byte) error {
 	}
 	if len(result.Items) == 0 {
 		return errors.New("response contains no items")
-	}
-	return nil
-}
-
-func selectLatestDefinition(raw []byte, key string) (processDefinition, error) {
-	var definitions []processDefinition
-	if err := json.Unmarshal(raw, &definitions); err != nil {
-		return processDefinition{}, fmt.Errorf("parse Optimize definitions: %w", err)
-	}
-	var selected processDefinition
-	selectedVersion := -1
-	for _, definition := range definitions {
-		if definition.Key != key {
-			continue
-		}
-		versionText := strings.Trim(string(definition.Version), `"`)
-		version, err := strconv.Atoi(versionText)
-		if err != nil {
-			return processDefinition{}, fmt.Errorf("definition %s has invalid version", key)
-		}
-		if version >= selectedVersion {
-			selected, selectedVersion = definition, version
-		}
-	}
-	if selectedVersion < 0 {
-		return processDefinition{}, fmt.Errorf("definition %s was not found", key)
-	}
-	return selected, nil
-}
-
-func reportDefinition(definition processDefinition) ([]byte, error) {
-	version := strings.Trim(string(definition.Version), `"`)
-	tenantID := strings.Trim(string(definition.TenantID), `"`)
-	payload := map[string]any{"data": map[string]any{
-		"definitions":   []map[string]any{{"key": definition.Key, "versions": []string{version}, "tenantIds": []string{tenantID}}},
-		"view":          map[string]any{"entity": "processInstance", "properties": []string{"frequency"}},
-		"groupBy":       map[string]any{"type": "none", "value": nil},
-		"distributedBy": map[string]any{"type": "none", "value": nil},
-		"visualization": "number",
-	}}
-	return json.Marshal(payload)
-}
-
-func assertPositiveReport(raw []byte) error {
-	var report struct {
-		Data float64 `json:"data"`
-	}
-	if err := json.Unmarshal(raw, &report); err != nil {
-		return err
-	}
-	if report.Data <= 0 {
-		return errors.New("report data is not positive")
 	}
 	return nil
 }

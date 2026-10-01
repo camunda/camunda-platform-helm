@@ -17,7 +17,6 @@ package main
 import (
 	"context"
 	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
@@ -242,35 +241,6 @@ func TestParseCredentialsErrorDoesNotExposeValues(t *testing.T) {
 	}
 	if strings.Contains(err.Error(), "sensitive") || strings.Contains(err.Error(), "not-base64") {
 		t.Fatalf("error exposed credential material: %v", err)
-	}
-}
-
-func TestSelectLatestDefinition(t *testing.T) {
-	raw := []byte(`[{"key":"other","version":"99","tenantId":"x"},{"key":"test","version":"2","tenantId":"tenant"},{"key":"test","version":3,"tenantId":"tenant"}]`)
-	definition, err := selectLatestDefinition(raw, "test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if string(definition.Version) != "3" || string(definition.TenantID) != `"tenant"` {
-		t.Fatalf("selected wrong definition: %+v", definition)
-	}
-}
-
-func TestReportDefinitionPreservesJQScalarConversion(t *testing.T) {
-	body, err := reportDefinition(processDefinition{Key: "test", Version: json.RawMessage(`2`), TenantID: json.RawMessage(`null`)})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !strings.Contains(string(body), `"versions":["2"]`) || !strings.Contains(string(body), `"tenantIds":["null"]`) {
-		t.Fatalf("unexpected report definition: %s", body)
-	}
-}
-
-func TestSelectLatestDefinitionErrors(t *testing.T) {
-	for _, raw := range []string{`[]`, `[{"key":"test","version":"bad"}]`, `{}`} {
-		if _, err := selectLatestDefinition([]byte(raw), "test"); err == nil {
-			t.Fatalf("expected error for %s", raw)
-		}
 	}
 }
 
