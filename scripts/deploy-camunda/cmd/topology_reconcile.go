@@ -238,6 +238,11 @@ func (r *credentialReconciler) reconcile(ctx context.Context, in reconcileInput)
 	if source == nil {
 		return fmt.Errorf("source secret %s/%s does not exist; run ensure-credentials first", in.sourceNS, in.src.Name)
 	}
+	for _, prop := range in.src.Properties {
+		if !transportable(source[prop]) {
+			return fmt.Errorf("source secret %s/%s property %s contains a control character; reconcile passes values one per line, so set it to printable characters only", in.sourceNS, in.src.Name, prop)
+		}
+	}
 	if in.checksum != nil {
 		if *in.checksum, err = credentialsChecksum(in.src, source); err != nil {
 			return err
@@ -286,6 +291,9 @@ func (r *credentialReconciler) reconcile(ctx context.Context, in reconcileInput)
 	value := func(key string) (string, error) {
 		if current[key] == "" {
 			return "", fmt.Errorf("secret %s/%s has no %s", in.hubNS, in.stores.Secret, key)
+		}
+		if !transportable(current[key]) {
+			return "", fmt.Errorf("secret %s/%s key %s contains a control character; reconcile passes values one per line, so set it to printable characters only", in.hubNS, in.stores.Secret, key)
 		}
 		return current[key], nil
 	}
@@ -406,11 +414,22 @@ func (r *credentialReconciler) kcSetPassword(ctx context.Context, ns string, k m
 // priorValues returns the distinct earlier values of key, other than current:
 // the snapshot kept since the last incomplete run, then the namespace's value
 // before this run's sync.
+// transportable reports whether v can be passed to the exec scripts, which read
+// one value per line and embed the Elasticsearch password in a JSON string.
+func transportable(v string) bool {
+	for _, c := range v {
+		if c < 0x20 || c == 0x7f {
+			return false
+		}
+	}
+	return true
+}
+
 func (r *credentialReconciler) priorValues(key, current string) []string {
 	var out []string
 	seen := map[string]bool{current: true, "": true}
 	for _, m := range r.prior {
-		if v := m[key]; !seen[v] {
+		if v := m[key]; !seen[v] && transportable(v) {
 			seen[v] = true
 			out = append(out, v)
 		}
@@ -515,7 +534,7 @@ func (r *credentialReconciler) resetKeycloakAdmin(ctx context.Context, ns string
 		return err
 	}
 	tempUser := "deploy-camunda-reconcile-" + strings.ToLower(suffix[:8])
-	name := k.Deployment + "-reconcile-bootstrap"
+	name := k.Deployment + "-reconcile-" + strings.ToLower(suffix[:8])
 
 	dbPw, err := r.acceptedDatabasePassword(ctx, ns, src.Env)
 	if err != nil {
@@ -565,9 +584,6 @@ func (r *credentialReconciler) resetKeycloakAdmin(ctx context.Context, ns string
 	}
 	cleanup := func(c context.Context) error {
 		_, err := r.kubectl(c, nil, "delete", "pod/"+name, "secret/"+name, "-n", ns, "--ignore-not-found", "--wait=true")
-		return err
-	}
-	if err := cleanup(ctx); err != nil {
 		return err
 	}
 	defer func() {

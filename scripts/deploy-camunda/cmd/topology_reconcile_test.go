@@ -70,6 +70,7 @@ type fakeCluster struct {
 	kc         map[string]string
 	pg         map[string]string
 	pods       map[string]string
+	bootNames  []string
 	bootDBPw   string
 	failES     bool
 	failPG     bool
@@ -186,6 +187,7 @@ func (f *fakeCluster) kubectl(_ context.Context, stdin []byte, args ...string) (
 			return nil, nil
 		}
 		f.bootstraps++
+		f.bootNames = append(f.bootNames, obj.Metadata.Name)
 		tmp := f.secrets[ns+"/"+obj.Metadata.Name]
 		for _, e := range obj.Spec.Containers[0].Env {
 			if e.Name == "KC_DB_PASSWORD" && e.ValueFrom != nil && e.ValueFrom.SecretKeyRef != nil {
@@ -367,8 +369,13 @@ func TestReconcileCredentials_ResetsAdminThroughBootstrapWhenNoKnownPasswordWork
 			t.Errorf("temporary admin %s was left behind", k)
 		}
 	}
-	if len(f.pods) != 0 || f.secrets["env-hub/keycloak-reconcile-bootstrap"] != nil {
-		t.Errorf("bootstrap pod or secret left behind: pods=%v", f.pods)
+	if len(f.pods) != 0 {
+		t.Errorf("bootstrap pod left behind: %v", f.pods)
+	}
+	for k := range f.secrets {
+		if strings.HasPrefix(k, "env-hub/keycloak-reconcile-") {
+			t.Errorf("bootstrap secret %s left behind", k)
+		}
 	}
 	assertNoValues(t, out)
 }
@@ -577,6 +584,46 @@ func TestReconcileCredentials_ChecksumMatchesTheSourceItReconciledAgainst(t *tes
 	}
 	if got != want {
 		t.Errorf("checksum = %q, want %q", got, want)
+	}
+}
+
+func TestReconcileCredentials_EachBootstrapUsesItsOwnResourceNames(t *testing.T) {
+	f := newFakeCluster(t)
+	for i := 0; i < 2; i++ {
+		f.kc["master/admin"] = "unknown"
+		if out, err := runReconcile(t, f); err != nil {
+			t.Fatalf("run %d: %v\n%s", i, err, out)
+		}
+	}
+	if len(f.bootNames) != 2 || f.bootNames[0] == f.bootNames[1] {
+		t.Fatalf("bootstrap names = %v, want two distinct names", f.bootNames)
+	}
+	for _, n := range f.bootNames {
+		if len(n) > 63 || strings.ToLower(n) != n {
+			t.Errorf("%q is not a valid pod name", n)
+		}
+	}
+}
+
+func TestReconcileCredentials_RejectsAControlCharacterWithoutPrintingIt(t *testing.T) {
+	f := newFakeCluster(t)
+	f.secrets["distribution-team/src"]["kc-admin"] = "line-one\nline-two"
+	_, err := runReconcile(t, f)
+	if err == nil || !strings.Contains(err.Error(), "property kc-admin contains a control character") {
+		t.Fatalf("err = %v", err)
+	}
+	if strings.Contains(err.Error(), "line-one") {
+		t.Fatal("error leaks the value")
+	}
+	if f.kc["master/admin"] != "old-admin" || f.sets != 0 || f.applies != 0 {
+		t.Error("nothing may be synced or changed when a source value cannot be transported")
+	}
+}
+
+func TestPriorValues_SkipsUntransportableAndDuplicateValues(t *testing.T) {
+	r := &credentialReconciler{prior: []map[string]string{{"k": "a"}, {"k": "bad\tvalue"}, {"k": "a"}, {"k": "b"}, nil}}
+	if got := strings.Join(r.priorValues("k", "b"), ","); got != "a" {
+		t.Errorf("priorValues = %q, want a", got)
 	}
 }
 
