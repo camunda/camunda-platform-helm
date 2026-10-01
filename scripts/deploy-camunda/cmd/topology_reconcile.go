@@ -249,7 +249,7 @@ func (r *credentialReconciler) reconcile(ctx context.Context, in reconcileInput)
 		}
 	}
 	previousName := in.stores.Secret + "-previous"
-	previous, err := r.secretData(ctx, in.hubNS, previousName)
+	snapshot, err := r.secretData(ctx, in.hubNS, previousName)
 	if err != nil {
 		return err
 	}
@@ -257,12 +257,20 @@ func (r *credentialReconciler) reconcile(ctx context.Context, in reconcileInput)
 	if err != nil {
 		return err
 	}
-	if previous == nil && len(preSync) > 0 {
-		if err := r.saveSecret(ctx, in.hubNS, previousName, preSync); err != nil {
+	generations := splitGenerations(snapshot)
+	if len(preSync) > 0 && !containsGeneration(generations, preSync) {
+		generations = append(generations, preSync)
+		if len(generations) > maxGenerations {
+			return fmt.Errorf("%s/%s already holds %d unfinished credential generations; fix the failing store before rotating again", in.hubNS, previousName, maxGenerations)
+		}
+		if err := r.saveSecret(ctx, in.hubNS, previousName, joinGenerations(generations)); err != nil {
 			return err
 		}
 	}
-	r.prior = []map[string]string{previous, preSync}
+	r.prior = make([]map[string]string, 0, len(generations))
+	for i := len(generations) - 1; i >= 0; i-- {
+		r.prior = append(r.prior, generations[i])
+	}
 	hubExists := false
 	for _, ns := range in.namespaces {
 		ok, err := r.exists(ctx, "", "namespace", ns)
@@ -316,15 +324,24 @@ func (r *credentialReconciler) reconcile(ctx context.Context, in reconcileInput)
 			return err
 		}
 	}
+	final, err := r.secretData(ctx, in.sourceNS, in.src.Name)
+	if err != nil {
+		return err
+	}
+	for _, prop := range in.src.Properties {
+		if final[prop] != source[prop] {
+			return fmt.Errorf("source secret %s/%s changed during reconcile (%s); re-run so the stores and the checksum use one generation", in.sourceNS, in.src.Name, prop)
+		}
+	}
 	if _, err := r.kubectl(ctx, nil, "delete", "secret", previousName, "-n", in.hubNS, "--ignore-not-found"); err != nil {
 		return err
 	}
 	return nil
 }
 
-// saveSecret creates an Opaque Secret holding data. It is the pre-sync
-// snapshot reconcile falls back to until a run completes, so a retry after a
-// partial failure still has the values the stores were last set to.
+// saveSecret applies an Opaque Secret holding data: the snapshot of every
+// pre-sync generation since the last complete run, which the fallbacks try so
+// a retry after partial failures still reaches stores left on any of them.
 func (r *credentialReconciler) saveSecret(ctx context.Context, ns, name string, data map[string]string) error {
 	secret := corev1.Secret{
 		TypeMeta:   metav1.TypeMeta{APIVersion: "v1", Kind: "Secret"},
@@ -336,8 +353,72 @@ func (r *credentialReconciler) saveSecret(ctx context.Context, ns, name string, 
 	if err != nil {
 		return err
 	}
-	_, err = r.kubectl(ctx, manifest, "create", "-n", ns, "-f", "-")
+	_, err = r.kubectl(ctx, manifest, "apply", "--server-side", "--force-conflicts", "--field-manager="+kubectlFieldManager, "-n", ns, "-f", "-")
 	return err
+}
+
+// maxGenerations bounds how many unfinished rotations the snapshot keeps.
+const maxGenerations = 8
+
+// splitGenerations decodes the snapshot's "g<N>.<key>" entries into one map per
+// generation, oldest first.
+func splitGenerations(snapshot map[string]string) []map[string]string {
+	byIndex := map[int]map[string]string{}
+	for k, v := range snapshot {
+		var n int
+		var key string
+		if i := strings.IndexByte(k, '.'); i > 1 && k[0] == 'g' {
+			if _, err := fmt.Sscanf(k[1:i], "%d", &n); err == nil {
+				key = k[i+1:]
+			}
+		}
+		if key == "" {
+			continue
+		}
+		if byIndex[n] == nil {
+			byIndex[n] = map[string]string{}
+		}
+		byIndex[n][key] = v
+	}
+	indexes := make([]int, 0, len(byIndex))
+	for n := range byIndex {
+		indexes = append(indexes, n)
+	}
+	sort.Ints(indexes)
+	out := make([]map[string]string, 0, len(indexes))
+	for _, n := range indexes {
+		out = append(out, byIndex[n])
+	}
+	return out
+}
+
+func joinGenerations(generations []map[string]string) map[string]string {
+	out := map[string]string{}
+	for n, g := range generations {
+		for k, v := range g {
+			out[fmt.Sprintf("g%d.%s", n, k)] = v
+		}
+	}
+	return out
+}
+
+func containsGeneration(generations []map[string]string, data map[string]string) bool {
+	for _, g := range generations {
+		if len(g) != len(data) {
+			continue
+		}
+		same := true
+		for k, v := range data {
+			if g[k] != v {
+				same = false
+				break
+			}
+		}
+		if same {
+			return true
+		}
+	}
+	return false
 }
 
 func (r *credentialReconciler) syncExternalSecrets(ctx context.Context, ns string, manifest []byte, src credentialSource, source map[string]string) error {

@@ -160,6 +160,15 @@ func (f *fakeCluster) kubectl(_ context.Context, stdin []byte, args ...string) (
 			return []byte(args[1] + "/" + args[2]), nil
 		}
 	case "apply":
+		var obj struct {
+			Kind     string                `json:"kind"`
+			Metadata struct{ Name string } `json:"metadata"`
+			Data     map[string]string     `json:"stringData"`
+		}
+		if json.Unmarshal(stdin, &obj) == nil && obj.Kind == "Secret" {
+			f.secrets[ns+"/"+obj.Metadata.Name] = obj.Data
+			return nil, nil
+		}
 		f.applies++
 		return nil, nil
 	case "annotate":
@@ -442,7 +451,7 @@ func TestReconcileCredentials_RetryAfterAPartialFailureKeepsThePreviousValues(t 
 	if f.secrets["env-hub/creds"]["es"] != "new-es" || f.es != "old-es" {
 		t.Fatal("setup: the first run should have synced the namespace but left elasticsearch on the old value")
 	}
-	if f.secrets["env-hub/creds-previous"]["es"] != "old-es" {
+	if f.secrets["env-hub/creds-previous"]["g0.es"] != "old-es" {
 		t.Fatal("the pre-sync snapshot was not kept after the failure")
 	}
 	f.failES = false
@@ -485,6 +494,83 @@ func TestReconcileCredentials_RetryAfterTheSourceRotatesAgainUsesTheValueAStoreW
 		if strings.Contains(out, v) {
 			t.Fatalf("output leaks %q", v)
 		}
+	}
+}
+
+func TestReconcileCredentials_RepeatedFailedRotationsKeepEveryIntermediateValue(t *testing.T) {
+	f := newFakeCluster(t)
+	src := f.secrets["distribution-team/src"]
+
+	f.failPG = true
+	if _, err := runReconcile(t, f); err == nil {
+		t.Fatal("A->B: want the injected postgres failure")
+	}
+	if f.es != "new-es" {
+		t.Fatal("setup: elasticsearch should be on B")
+	}
+
+	src["es"], src["kc-admin"] = "c-es", "c-admin"
+	f.failES = true
+	if _, err := runReconcile(t, f); err == nil {
+		t.Fatal("B->C: want the injected elasticsearch failure")
+	}
+	if f.es != "new-es" {
+		t.Fatal("setup: elasticsearch should still be on B")
+	}
+
+	src["es"], src["kc-admin"] = "d-es", "d-admin"
+	f.failES, f.failPG = false, false
+	out, err := runReconcile(t, f)
+	if err != nil {
+		t.Fatalf("D retry: %v\n%s", err, out)
+	}
+	if f.es != "d-es" || f.kc["master/admin"] != "d-admin" {
+		t.Errorf("D retry did not reach D: es=%v admin=%v", f.es == "d-es", f.kc["master/admin"] == "d-admin")
+	}
+	if _, kept := f.secrets["env-hub/creds-previous"]; kept {
+		t.Error("snapshot must be removed after a successful run")
+	}
+}
+
+func TestReconcileCredentials_FailsWhenTheSourceChangesDuringTheRun(t *testing.T) {
+	f := newFakeCluster(t)
+	api := f.kubectl
+	execs := 0
+	f2 := func(ctx context.Context, stdin []byte, args ...string) ([]byte, error) {
+		if args[0] == "exec" {
+			execs++
+			if execs == 1 {
+				f.secrets["distribution-team/src"]["es"] = "concurrent-es"
+			}
+		}
+		return api(ctx, stdin, args...)
+	}
+	var out bytes.Buffer
+	clock := time.Unix(1_790_000_000, 0)
+	var sum string
+	r := &credentialReconciler{kubectl: f2, out: &out, poll: time.Millisecond, timeout: time.Minute,
+		now: func() time.Time { clock = clock.Add(10 * time.Second); return clock }, generate: generateCredential}
+	err := r.reconcile(context.Background(), reconcileInput{checksum: &sum, manifest: []byte(reconcileManifest), src: f.src,
+		sourceNS: "distribution-team", namespaces: []string{"env-hub"}, hubNS: "env-hub", stores: testStores()})
+	if err == nil || !strings.Contains(err.Error(), "changed during reconcile (es)") || strings.Contains(err.Error(), "concurrent-es") {
+		t.Fatalf("err = %v", err)
+	}
+	if _, kept := f.secrets["env-hub/creds-previous"]; !kept {
+		t.Error("the snapshot must survive a run that did not finish")
+	}
+}
+
+func TestGenerations_RoundTripAndDeduplicate(t *testing.T) {
+	gens := []map[string]string{{"a": "1", "b": "2"}, {"a": "3", "b": "4"}}
+	back := splitGenerations(joinGenerations(gens))
+	if len(back) != 2 || back[0]["a"] != "1" || back[1]["b"] != "4" {
+		t.Fatalf("round trip = %v", back)
+	}
+	if !containsGeneration(back, map[string]string{"a": "3", "b": "4"}) || containsGeneration(back, map[string]string{"a": "3"}) {
+		t.Error("containsGeneration mismatch")
+	}
+	if got := splitGenerations(map[string]string{"legacy": "x", "gx.y": "z"}); len(got) != 0 {
+		t.Errorf("non-generation keys must be ignored, got %v", got)
 	}
 }
 
