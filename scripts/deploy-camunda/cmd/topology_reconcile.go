@@ -110,6 +110,10 @@ code=$(printf '{"password":"%s"}' "$body" | curl -s -o /dev/null -w '%{http_code
 [ "$code" = 200 ] || { echo "change password returned HTTP $code" >&2; exit 1; }
 `
 
+// bootstrapAdminArgs are kc.sh's arguments in the bootstrap pod, which reads
+// the temporary admin's name and password from these env vars.
+var bootstrapAdminArgs = []string{"bootstrap-admin", "user", "--username:env", "KC_BOOTSTRAP_USER", "--password:env", "KC_BOOTSTRAP_PW", "--no-prompt"}
+
 type kubectlFunc func(ctx context.Context, stdin []byte, args ...string) ([]byte, error)
 
 type kubectlError struct {
@@ -166,7 +170,7 @@ func lines(values ...string) []byte {
 
 type credentialReconciler struct {
 	kubectl  kubectlFunc
-	previous map[string]string
+	prior    []map[string]string
 	postgres []matrix.PostgresCredentialStore
 	out      io.Writer
 	poll     time.Duration
@@ -238,16 +242,16 @@ func (r *credentialReconciler) reconcile(ctx context.Context, in reconcileInput)
 	if err != nil {
 		return err
 	}
-	if previous == nil {
-		if previous, err = r.secretData(ctx, in.hubNS, in.stores.Secret); err != nil {
+	preSync, err := r.secretData(ctx, in.hubNS, in.stores.Secret)
+	if err != nil {
+		return err
+	}
+	if previous == nil && len(preSync) > 0 {
+		if err := r.saveSecret(ctx, in.hubNS, previousName, preSync); err != nil {
 			return err
 		}
-		if len(previous) > 0 {
-			if err := r.saveSecret(ctx, in.hubNS, previousName, previous); err != nil {
-				return err
-			}
-		}
 	}
+	r.prior = []map[string]string{previous, preSync}
 	hubExists := false
 	for _, ns := range in.namespaces {
 		ok, err := r.exists(ctx, "", "namespace", ns)
@@ -272,7 +276,6 @@ func (r *credentialReconciler) reconcile(ctx context.Context, in reconcileInput)
 	if err != nil {
 		return err
 	}
-	r.previous = previous
 	r.postgres = in.stores.Postgres
 	value := func(key string) (string, error) {
 		if current[key] == "" {
@@ -281,12 +284,12 @@ func (r *credentialReconciler) reconcile(ctx context.Context, in reconcileInput)
 		return current[key], nil
 	}
 	if k := in.stores.Keycloak; k != nil {
-		if err := r.reconcileKeycloak(ctx, in.hubNS, *k, value, previous); err != nil {
+		if err := r.reconcileKeycloak(ctx, in.hubNS, *k, value); err != nil {
 			return err
 		}
 	}
 	if e := in.stores.Elasticsearch; e != nil {
-		if err := r.reconcileElasticsearch(ctx, in.hubNS, *e, value, previous); err != nil {
+		if err := r.reconcileElasticsearch(ctx, in.hubNS, *e, value); err != nil {
 			return err
 		}
 	}
@@ -394,7 +397,22 @@ func (r *credentialReconciler) kcSetPassword(ctx context.Context, ns string, k m
 	return out, err
 }
 
-func (r *credentialReconciler) reconcileKeycloak(ctx context.Context, ns string, k matrix.KeycloakCredentialStore, value func(string) (string, error), previous map[string]string) error {
+// priorValues returns the distinct earlier values of key, other than current:
+// the snapshot kept since the last incomplete run, then the namespace's value
+// before this run's sync.
+func (r *credentialReconciler) priorValues(key, current string) []string {
+	var out []string
+	seen := map[string]bool{current: true, "": true}
+	for _, m := range r.prior {
+		if v := m[key]; !seen[v] {
+			seen[v] = true
+			out = append(out, v)
+		}
+	}
+	return out
+}
+
+func (r *credentialReconciler) reconcileKeycloak(ctx context.Context, ns string, k matrix.KeycloakCredentialStore, value func(string) (string, error)) error {
 	ok, err := r.exists(ctx, ns, "deployment", k.Deployment)
 	if err != nil || !ok {
 		if ok || err == nil {
@@ -414,11 +432,14 @@ func (r *credentialReconciler) reconcileKeycloak(ctx context.Context, ns string,
 	case current:
 		fmt.Fprintf(r.out, "%s: keycloak %s password current\n", ns, k.AdminUser)
 	default:
-		prev := previous[k.AdminSecretKey]
-		usePrev := false
-		if prev != "" && prev != adminPw {
-			if usePrev, err = r.kcLogin(ctx, ns, k, k.AdminUser, prev); err != nil {
+		prev, usePrev := "", false
+		for _, candidate := range r.priorValues(k.AdminSecretKey, adminPw) {
+			if usePrev, err = r.kcLogin(ctx, ns, k, k.AdminUser, candidate); err != nil {
 				return err
+			}
+			if usePrev {
+				prev = candidate
+				break
 			}
 		}
 		if usePrev {
@@ -526,7 +547,7 @@ func (r *credentialReconciler) resetKeycloakAdmin(ctx context.Context, ns string
 			Containers: []corev1.Container{{
 				Name:            "bootstrap-admin",
 				Image:           src.Image,
-				Args:            []string{"bootstrap-admin", "user", "--username:env", "KC_BOOTSTRAP_USER", "--password:env", "KC_BOOTSTRAP_PW", "--no-prompt"},
+				Args:            bootstrapAdminArgs,
 				Env:             env,
 				SecurityContext: src.SecurityContext,
 				Resources: corev1.ResourceRequirements{
@@ -608,7 +629,7 @@ func (r *credentialReconciler) esLogin(ctx context.Context, ns string, e matrix.
 // API, authenticating with the namespace's previous value. Without a working
 // previous value there is no non-interactive way in, so it fails with the
 // manual step instead.
-func (r *credentialReconciler) reconcileElasticsearch(ctx context.Context, ns string, e matrix.ElasticsearchCredential, value func(string) (string, error), previous map[string]string) error {
+func (r *credentialReconciler) reconcileElasticsearch(ctx context.Context, ns string, e matrix.ElasticsearchCredential, value func(string) (string, error)) error {
 	ok, err := r.exists(ctx, ns, "statefulset", e.StatefulSet)
 	if err != nil {
 		return err
@@ -627,15 +648,18 @@ func (r *credentialReconciler) reconcileElasticsearch(ctx context.Context, ns st
 		}
 		return err
 	}
-	prev := previous[e.SecretKey]
-	usable := false
-	if prev != "" && prev != pw {
-		if usable, err = r.esLogin(ctx, ns, e, prev); err != nil {
+	prev, usable := "", false
+	for _, candidate := range r.priorValues(e.SecretKey, pw) {
+		if usable, err = r.esLogin(ctx, ns, e, candidate); err != nil {
 			return err
+		}
+		if usable {
+			prev = candidate
+			break
 		}
 	}
 	if !usable {
-		return fmt.Errorf("%s: elasticsearch rejects both the current and the previous %s password; reset it in %s-0 with "+
+		return fmt.Errorf("%s: elasticsearch rejects the current and every earlier %s password; reset it in %s-0 with "+
 			"`bin/elasticsearch-reset-password -u %s -i` to the value of %s, then re-run", ns, e.User, e.StatefulSet, e.User, e.SecretKey)
 	}
 	if err := r.es(ctx, ns, e, lines(prev, pw), "set"); err != nil {
@@ -694,7 +718,7 @@ func (r *credentialReconciler) acceptedDatabasePassword(ctx context.Context, ns 
 		if err != nil {
 			return "", err
 		}
-		for _, candidate := range []string{current[key], r.previous[key]} {
+		for _, candidate := range append([]string{current[key]}, r.priorValues(key, current[key])...) {
 			if candidate == "" {
 				continue
 			}
@@ -706,7 +730,7 @@ func (r *credentialReconciler) acceptedDatabasePassword(ctx context.Context, ns 
 				return "", err
 			}
 		}
-		return "", fmt.Errorf("%s: postgres %s/%s accepts neither the current nor the previous %s; the bootstrap admin cannot reach the database", ns, pg.StatefulSet, pg.User, key)
+		return "", fmt.Errorf("%s: postgres %s/%s accepts neither the current nor any earlier %s; the bootstrap admin cannot reach the database", ns, pg.StatefulSet, pg.User, key)
 	}
 	return "", nil
 }

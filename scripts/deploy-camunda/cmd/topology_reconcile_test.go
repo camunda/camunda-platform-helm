@@ -72,6 +72,7 @@ type fakeCluster struct {
 	pods       map[string]string
 	bootDBPw   string
 	failES     bool
+	failPG     bool
 	es         string
 	sets       int
 	bootstraps int
@@ -256,6 +257,9 @@ func (f *fakeCluster) kubectl(_ context.Context, stdin []byte, args ...string) (
 				return nil, exitErr(loginRejected)
 			}
 			return nil, nil
+		}
+		if f.failPG {
+			return nil, fmt.Errorf("injected postgres failure")
 		}
 		f.sets++
 		f.pg[key] = in[0]
@@ -446,6 +450,35 @@ func TestReconcileCredentials_RetryAfterAPartialFailureKeepsThePreviousValues(t 
 		t.Error("snapshot must be removed after a successful run")
 	}
 	assertNoValues(t, out)
+}
+
+func TestReconcileCredentials_RetryAfterTheSourceRotatesAgainUsesTheValueAStoreWasLeftOn(t *testing.T) {
+	f := newFakeCluster(t)
+	f.failPG = true
+	if _, err := runReconcile(t, f); err == nil || !strings.Contains(err.Error(), "injected postgres failure") {
+		t.Fatalf("first run err = %v", err)
+	}
+	if f.es != "new-es" || f.kc["master/admin"] != "new-admin" {
+		t.Fatal("setup: keycloak and elasticsearch should have moved to the first rotation's values")
+	}
+	src := f.secrets["distribution-team/src"]
+	src["es"], src["kc-admin"], src["kc-db"] = "third-es", "third-admin", "third-kcdb"
+	f.failPG = false
+	out, err := runReconcile(t, f)
+	if err != nil {
+		t.Fatalf("retry: %v\n%s", err, out)
+	}
+	if f.es != "third-es" || f.kc["master/admin"] != "third-admin" || f.pg["env-hub/keycloak-postgresql/keycloak"] != "third-kcdb" {
+		t.Errorf("retry did not reach the second rotation: es=%v admin=%v", f.es == "third-es", f.kc["master/admin"] == "third-admin")
+	}
+	if f.bootstraps != 0 {
+		t.Errorf("bootstraps = %d, want 0: the admin's intermediate value was known", f.bootstraps)
+	}
+	for _, v := range []string{"third-es", "third-admin", "third-kcdb"} {
+		if strings.Contains(out, v) {
+			t.Fatalf("output leaks %q", v)
+		}
+	}
 }
 
 func TestReconcileCredentials_LeavesCurrentStoresAlone(t *testing.T) {
