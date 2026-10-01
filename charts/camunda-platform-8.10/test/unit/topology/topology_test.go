@@ -1406,3 +1406,34 @@ func TestHubTopologyInventoryChangeRestartsWebModeler(t *testing.T) {
 	require.NotEmpty(t, first, "the restapi Deployment must annotate its ConfigMap checksum")
 	require.NotEqual(t, first, second, "changing the cluster inventory must change the checksum")
 }
+
+func TestOrchestrationEntraScenarioAcceptsEntraAudience(t *testing.T) {
+	valuesDir := filepath.Join(chartPath(t), "test/integration/scenarios/chart-full-setup/values")
+	options := &helm.Options{
+		ValuesFiles: []string{
+			filepath.Join(valuesDir, "base.yaml"),
+			filepath.Join(valuesDir, "identity", "oidc.yaml"),
+			filepath.Join(valuesDir, "persistence", "elasticsearch.yaml"),
+			filepath.Join(valuesDir, "features", "orchestration-entra.yaml"),
+		},
+		SetValues: map[string]string{"global.host": "camunda.example.com"},
+	}
+
+	output := helm.RenderTemplate(t, options, chartPath(t), "integration", []string{"templates/orchestration/configmap.yaml"})
+	var configMap corev1.ConfigMap
+	helm.UnmarshalK8SYaml(t, output, &configMap)
+
+	var application struct {
+		Camunda struct {
+			Security struct {
+				Authentication struct {
+					OIDC struct {
+						Audiences []string `yaml:"audiences"`
+					} `yaml:"oidc"`
+				} `yaml:"authentication"`
+			} `yaml:"security"`
+		} `yaml:"camunda"`
+	}
+	require.NoError(t, yaml.Unmarshal([]byte(configMap.Data["application.yaml"]), &application))
+	require.Contains(t, application.Camunda.Security.Authentication.OIDC.Audiences, "$ENTRA_APP_CLIENT_ID")
+}
