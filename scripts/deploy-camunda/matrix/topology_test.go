@@ -1854,8 +1854,8 @@ func renderedPhysicalTenants(top *Topology) []RenderedTopologyRelease {
 		OptimizeContextPath: def.ContextPath,
 		Optimize:            def,
 		PhysicalTenants: []TopologyContractPhysicalTenant{
-			{ID: "tenanta", Optimize: ta},
-			{ID: "tenantb", Optimize: tb},
+			{ID: "tenanta", OptimizeContextPath: ta.ContextPath, Optimize: ta},
+			{ID: "tenantb", OptimizeContextPath: tb.ContextPath, Optimize: tb},
 		},
 	}}
 	orchestration.Orchestration.ElasticsearchIndexPrefix = "job-orcha"
@@ -2011,5 +2011,41 @@ func TestTopologyValidate_RejectsTraversalInIdentityAndPersistence(t *testing.T)
 				t.Fatalf("want plain-filename rejection for %s reference, got: %v", tc.name, err)
 			}
 		})
+	}
+}
+
+// A tenant Optimize is reachable only at the path the Hub advertises for it. While physicalTenants
+// entries could not state one, this check compared the release's declared path to itself and passed
+// for any Hub inventory at all.
+func TestTopologyValidateRenderedRejectsPhysicalTenantAdvertisingNoPath(t *testing.T) {
+	top := physicalTenantsTopology()
+	rendered := renderedPhysicalTenants(top)
+	rendered[0].Contract.Hub.Clusters[0].PhysicalTenants[0].OptimizeContextPath = ""
+
+	err := top.ValidateRendered("ctx", rendered)
+	if err == nil {
+		t.Fatal("expected the unadvertised tenanta path to be reported")
+	}
+	if !strings.Contains(err.Error(), `physicalTenants[id="tenanta"].contextPaths.optimize`) {
+		t.Errorf("error should name the key that has to state the path, got %v", err)
+	}
+}
+
+// The advertised path is what the Hub's Console and Web Modeler link to, so a tenant entry that
+// states a different one than its release is deployed on sends that tenant's users nowhere.
+func TestTopologyValidateRenderedRejectsPhysicalTenantAdvertisingAnotherPath(t *testing.T) {
+	top := physicalTenantsTopology()
+	rendered := renderedPhysicalTenants(top)
+	rendered[0].Contract.Hub.Clusters[0].PhysicalTenants[1].OptimizeContextPath = "/optimize-stale"
+
+	err := top.ValidateRendered("ctx", rendered)
+	if err == nil {
+		t.Fatal("expected the stale tenantb path to be reported")
+	}
+	if !strings.Contains(err.Error(), `the Hub advertises physical tenant "tenantb"'s Optimize at "/optimize-stale"`) {
+		t.Errorf("error should name the advertised path and the tenant, got %v", err)
+	}
+	if strings.Contains(err.Error(), "tenanta") {
+		t.Errorf("tenanta is unchanged and must not be reported, got %v", err)
 	}
 }
