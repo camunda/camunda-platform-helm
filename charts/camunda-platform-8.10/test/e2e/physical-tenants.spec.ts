@@ -54,8 +54,12 @@ test("Hub deploys through the selected Physical Tenant environment", async ({
     `${webModelerURL}/api/internal/v2/organizations/${organizationId}/environments`,
     { headers },
   );
-  expect(environmentsResponse.ok()).toBeTruthy();
-  const environments = (await environmentsResponse.json()) as Environment[];
+  expect(environmentsResponse.ok(), await environmentsResponse.text()).toBeTruthy();
+  // Hub wraps every internal API response as { data: ... } (ResponseBodyWrapperAdvice).
+  const { data: environments } = (await environmentsResponse.json()) as {
+    data: Environment[];
+  };
+  expect(Array.isArray(environments)).toBeTruthy();
   const orchestrationEnvironments = environments.filter(
     ({ clusterId }) => clusterId === "orcha",
   );
@@ -102,15 +106,17 @@ test("Hub deploys through the selected Physical Tenant environment", async ({
     `${webModelerURL}/api/internal/v2/workspaces/${workspaceId}/environments`,
     { headers },
   );
-  expect(assignmentResponse.ok()).toBeTruthy();
-  const assignments = (await assignmentResponse.json()) as Environment[];
+  expect(assignmentResponse.ok(), await assignmentResponse.text()).toBeTruthy();
+  const { data: assignments } = (await assignmentResponse.json()) as {
+    data: Environment[];
+  };
   expect(assignments.map(({ id }) => id)).toEqual([environment!.id]);
 
   const projectResponse = await page.request.post(
     `${webModelerURL}/api/internal/v2/projects`,
     { data: { workspaceId, name: `Physical Tenant ${suffix}` }, headers },
   );
-  expect(projectResponse.ok()).toBeTruthy();
+  expect(projectResponse.ok(), await projectResponse.text()).toBeTruthy();
   const projectBody = (await projectResponse.json()) as {
     data?: { id: string };
     id?: string;
@@ -131,14 +137,15 @@ test("Hub deploys through the selected Physical Tenant environment", async ({
       data: {
         name: `${processId}.bpmn`,
         content,
+        // Omit folderId to create the file at the project root: Hub only accepts the id of a
+        // folder inside the project there and rejects the project id (TARGET_NOT_IN_PROJECT).
         hubProjectId: projectId,
-        folderId: projectId,
         type: "BPMN",
       },
       headers,
     },
   );
-  expect(fileResponse.ok()).toBeTruthy();
+  expect(fileResponse.ok(), await fileResponse.text()).toBeTruthy();
   const fileBody = (await fileResponse.json()) as {
     data?: { id: string };
     id?: string;
@@ -150,7 +157,7 @@ test("Hub deploys through the selected Physical Tenant environment", async ({
     `${webModelerURL}/api/internal/v2/files/${fileId}/deploy`,
     { data: { environmentId: environment!.id }, headers },
   );
-  expect(deployResponse.ok()).toBeTruthy();
+  expect(deployResponse.ok(), await deployResponse.text()).toBeTruthy();
 
   const authenticatedAPI = await request.newContext();
   try {
