@@ -67,6 +67,10 @@ integration:
       shortname: esa0
       tier: 2
       enabled: true
+    - id: orchestration-entra
+      shortname: ocen
+      tier: 1
+      enabled: true
     - id: keycloak-mt
       shortname: kemt
       tier: 2

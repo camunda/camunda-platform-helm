@@ -25,6 +25,9 @@ spec:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/optimize/configmap.yaml") . | sha256sum }}
         checksum/config-identity-env: {{ include (print $.Template.BasePath "/optimize/configmap-identity-env.yaml") . | sha256sum }}
+        {{- if and (eq (include "optimize.authEnabled" .) "true") .Values.global.identity.auth.enabled }}
+        checksum/config-shared-identity-env: {{ include (print $.Template.BasePath "/common/configmap-identity-auth.yaml") . | sha256sum }}
+        {{- end }}
         {{- with (include "camundaPlatform.caBundleChecksumAnnotation" .) }}{{ . | nindent 8 }}{{- end }}
         {{- with (include "camundaPlatform.optimizeServerTLSChecksumAnnotation" .) }}{{ . | nindent 8 }}{{- end }}
       {{- if .Values.optimize.podAnnotations }}
