@@ -123,6 +123,8 @@ func RunTests(ctx context.Context, flags *config.RuntimeFlags, namespace string)
 				OptimizeNamespace:   flags.Test.OptimizeNamespace,
 				OptimizeContextPath: flags.Test.OptimizeContextPath,
 				ModelerClusterName:  flags.Test.ModelerClusterName,
+				PlaywrightProject:   flags.Test.PlaywrightProject,
+				PhysicalTenantID:    flags.Test.PhysicalTenantID,
 			}, flags.E2EOutputWriter)
 			resultCh <- TestResult{Type: "e2e", Error: err, Output: output}
 		}()
@@ -175,11 +177,14 @@ type topologyTarget struct {
 	OptimizeContextPath string
 	// ModelerClusterName selects this leg's cluster in the Hub's Web Modeler deploy dialog.
 	ModelerClusterName string
+	PlaywrightProject  string
+	PhysicalTenantID   string
 }
 
 func (o topologyTarget) isSet() bool {
 	return o.HubNamespace != "" || o.OptimizeNamespace != "" || o.OptimizeContextPath != "" ||
-		o.ModelerClusterName != ""
+		o.ModelerClusterName != "" || o.PlaywrightProject != "" ||
+		o.PhysicalTenantID != ""
 }
 
 func runE2ETests(ctx context.Context, repoRoot, chartPath, namespace, kubeContext, testExclude, persistence string, topology topologyTarget, outputSink io.Writer) (string, error) {
@@ -246,6 +251,12 @@ func e2eScriptArgs(chartPath, namespace, kubeContext, testExclude, persistence s
 	}
 	if topology.ModelerClusterName != "" {
 		args = append(args, "--modeler-cluster-name", topology.ModelerClusterName)
+	}
+	if topology.PlaywrightProject != "" {
+		args = append(args, "--playwright-project", topology.PlaywrightProject)
+	}
+	if topology.PhysicalTenantID != "" {
+		args = append(args, "--physical-tenant-id", topology.PhysicalTenantID)
 	}
 	return args
 }

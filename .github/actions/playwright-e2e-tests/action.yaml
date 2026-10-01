@@ -64,6 +64,10 @@ inputs:
     description: Named Playwright project to run instead of smoke-tests or full-suite.
     required: false
     default: ""
+  physical-tenant-id:
+    description: Physical Tenant selected by this topology matrix leg.
+    required: false
+    default: ""
   test-chart-dir:
     description: Chart directory whose Playwright config provides the test suite.
     required: false
@@ -341,6 +345,12 @@ runs:
         E2E_ARG_OPTIMIZE_NAMESPACE: ${{ inputs.optimize-namespace }}
         E2E_ARG_OPTIMIZE_CONTEXT_PATH: ${{ inputs.optimize-context-path }}
         E2E_ARG_MODELER_CLUSTER_NAME: ${{ inputs.modeler-cluster-name }}
+        PHYSICAL_TENANT_ID: ${{ inputs.physical-tenant-id }}
+        # Playwright names the blob ZIP from project/grep/shard settings, so legs that run the same
+        # project unsharded (the physical-tenant legs) write the same file name. merge-e2e-reports
+        # downloads every leg into one directory with merge-multiple, so identical names overwrite
+        # each other and drop those legs from the merged HTML report. Name the ZIP per invocation.
+        PLAYWRIGHT_BLOB_OUTPUT_NAME: report-${{ inputs.test-stage }}-${{ inputs.shard-index }}-${{ inputs.artifact-suffix }}${{ inputs.physical-tenant-id && format('-{0}', inputs.physical-tenant-id) || '' }}.zip
         REQUIRE_SM_810_TEST_SUITE: ${{ inputs.hub-namespace != '' }}
         REQUIRE_HUB_WEB_MODELER_TEST_SUITE: ${{ inputs.playwright-project == 'hub-web-modeler' }}
         E2E_TEST_SUITE_VERSION: ${{ inputs.e2e-test-suite-version }}
@@ -379,6 +389,7 @@ runs:
         [[ -n "$E2E_ARG_OPTIMIZE_CONTEXT_PATH" ]] && E2E_ARGS+=(--optimize-context-path "${E2E_ARG_OPTIMIZE_CONTEXT_PATH}")
         [[ -n "$E2E_ARG_MODELER_CLUSTER_NAME" ]] && E2E_ARGS+=(--modeler-cluster-name "${E2E_ARG_MODELER_CLUSTER_NAME}")
         [[ -n "${{ inputs.playwright-project }}" ]] && E2E_ARGS+=(--playwright-project "${{ inputs.playwright-project }}")
+        [[ -n "${{ inputs.physical-tenant-id }}" ]] && E2E_ARGS+=(--physical-tenant-id "${{ inputs.physical-tenant-id }}")
         [[ -n "${{ inputs.e2e-test-suite-ref }}" ]] && E2E_ARGS+=(--local-test-suite "${GITHUB_WORKSPACE}/.e2e-test-suite")
 
         ./run-e2e-tests.sh "${E2E_ARGS[@]}"
