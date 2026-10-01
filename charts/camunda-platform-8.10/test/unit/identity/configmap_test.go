@@ -17,6 +17,7 @@ package identity
 import (
 	"camunda-platform/test/unit/testhelpers"
 	"fmt"
+	"maps"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -81,31 +82,74 @@ func (s *configMapSpringTemplateTest) TestIngressPublicURL() {
 				"global.gateway.tls.enabled":       "true",
 				"global.identity.auth.enabled":     "true",
 			},
-			Verifier: func(t *testing.T, output string, err error) {
-				require.NoError(t, err)
-				var configMap corev1.ConfigMap
-				helm.UnmarshalK8SYaml(t, output, &configMap)
-				var application IdentityConfigYAML
-				require.NoError(t, yaml.Unmarshal([]byte(configMap.Data["application.yaml"]), &application))
-				require.Equal(t, input.wantURL, application.Identity.Url)
-				var callbackConfig struct {
-					Keycloak struct {
-						Environment struct {
-							Clients []struct {
-								RootURL      string   `yaml:"root-url"`
-								RedirectURIs []string `yaml:"redirect-uris"`
-							} `yaml:"clients"`
-						} `yaml:"environment"`
-					} `yaml:"keycloak"`
-				}
-				require.NoError(t, yaml.Unmarshal([]byte(configMap.Data["application.yaml"]), &callbackConfig))
-				require.Len(t, callbackConfig.Keycloak.Environment.Clients, 1)
-				require.Equal(t, input.wantURL, callbackConfig.Keycloak.Environment.Clients[0].RootURL)
-				require.Equal(t, []string{"/auth/login-callback"}, callbackConfig.Keycloak.Environment.Clients[0].RedirectURIs)
-			},
+			Verifier: requireIdentityPublicURL(input.wantURL),
 		})
 	}
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *configMapSpringTemplateTest) TestGatewayPublicURL() {
+	var testCases []testhelpers.TestCase
+	for _, input := range []struct {
+		name        string
+		tls         string
+		port        string
+		tlsPort     string
+		publicPorts map[string]string
+		wantURL     string
+	}{
+		{"HTTPCustomPort", "false", "8080", "8443", nil, "http://camunda.example.com:8080/identity"},
+		{"HTTPSCustomPort", "true", "8080", "8443", nil, "https://camunda.example.com:8443/identity"},
+		{"HTTPStandardPort", "false", "80", "443", nil, "http://camunda.example.com/identity"},
+		{"HTTPSStandardPort", "true", "80", "443", nil, "https://camunda.example.com/identity"},
+		{"HTTPPublicPort", "false", "8000", "8443", map[string]string{"global.gateway.publicPorts.http": "9080"}, "http://camunda.example.com:9080/identity"},
+		{"HTTPSPublicPort", "true", "8000", "8443", map[string]string{"global.gateway.publicPorts.https": "443"}, "https://camunda.example.com/identity"},
+	} {
+		values := map[string]string{
+			"identity.enabled":             "true",
+			"identity.contextPath":         "/identity",
+			"global.host":                  "camunda.example.com",
+			"global.ingress.enabled":       "false",
+			"global.ingress.tls.enabled":   "true",
+			"global.gateway.enabled":       "true",
+			"global.gateway.tls.enabled":   input.tls,
+			"global.gateway.port":          input.port,
+			"global.gateway.tls.port":      input.tlsPort,
+			"global.identity.auth.enabled": "true",
+		}
+		maps.Copy(values, input.publicPorts)
+		testCases = append(testCases, testhelpers.TestCase{
+			Name:     input.name,
+			Values:   values,
+			Verifier: requireIdentityPublicURL(input.wantURL),
+		})
+	}
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func requireIdentityPublicURL(wantURL string) func(t *testing.T, output string, err error) {
+	return func(t *testing.T, output string, err error) {
+		require.NoError(t, err)
+		var configMap corev1.ConfigMap
+		helm.UnmarshalK8SYaml(t, output, &configMap)
+		var application IdentityConfigYAML
+		require.NoError(t, yaml.Unmarshal([]byte(configMap.Data["application.yaml"]), &application))
+		require.Equal(t, wantURL, application.Identity.Url)
+		var callbackConfig struct {
+			Keycloak struct {
+				Environment struct {
+					Clients []struct {
+						RootURL      string   `yaml:"root-url"`
+						RedirectURIs []string `yaml:"redirect-uris"`
+					} `yaml:"clients"`
+				} `yaml:"environment"`
+			} `yaml:"keycloak"`
+		}
+		require.NoError(t, yaml.Unmarshal([]byte(configMap.Data["application.yaml"]), &callbackConfig))
+		require.Len(t, callbackConfig.Keycloak.Environment.Clients, 1)
+		require.Equal(t, wantURL, callbackConfig.Keycloak.Environment.Clients[0].RootURL)
+		require.Equal(t, []string{"/auth/login-callback"}, callbackConfig.Keycloak.Environment.Clients[0].RedirectURIs)
+	}
 }
 
 func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {

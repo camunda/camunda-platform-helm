@@ -254,6 +254,28 @@
                 },
                 "gateway": {
                     "properties": {
+                        "publicPorts": {
+                            "properties": {
+                                "http": {
+                                    "type": [
+                                        "integer",
+                                        "null"
+                                    ],
+                                    "minimum": 1,
+                                    "maximum": 65535,
+                                    "default": null
+                                },
+                                "https": {
+                                    "type": [
+                                        "integer",
+                                        "null"
+                                    ],
+                                    "minimum": 1,
+                                    "maximum": 65535,
+                                    "default": null
+                                }
+                            }
+                        },
                         "labels": {
                             "type": "object",
                             "description": "labels added to the Gateway and all Route resources.",

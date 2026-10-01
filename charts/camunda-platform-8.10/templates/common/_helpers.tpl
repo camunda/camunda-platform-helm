@@ -339,7 +339,8 @@ in front of the Ingress (OpenShift edge routes, external load balancers).
 {{- define "camundaPlatform.gatewayExternalURL" -}}
   {{- $tlsEnabled := .context.Values.global.gateway.tls.enabled -}}
   {{- $proto := ternary "https" "http" $tlsEnabled -}}
-  {{- $port := ternary .context.Values.global.gateway.tls.port .context.Values.global.gateway.port $tlsEnabled -}}
+  {{- $ports := .context.Values.global.gateway.publicPorts | default dict -}}
+  {{- $port := ternary ($ports.https | default .context.Values.global.gateway.tls.port) ($ports.http | default .context.Values.global.gateway.port) $tlsEnabled -}}
   {{- $defaultPort := ternary 443 80 $tlsEnabled -}}
   {{- $host := tpl .host .context -}}
   {{- if eq (int $port) $defaultPort -}}
