@@ -398,43 +398,26 @@ source "$ENV_FILE"
 set +a
 
 # ── REST v2 API suite (--playwright-project api) ──
-# Variables are the ones tests/api/README.md in @camunda/e2e-test-suite documents.
+# `deploy-camunda e2e-env api-suite` writes the suite's variables; see its --help.
 if [[ "$PLAYWRIGHT_PROJECT" == "api" ]]; then
-  export BASE_URL="${PLAYWRIGHT_BASE_URL%/}/orchestration"
-  ZEEBE_VERSION="$(grep -oE '[0-9]+\.[0-9]+' <<< "$MINOR_VERSION" | head -1)"
-  export ZEEBE_VERSION
-  export MT="$IS_MT"
-  export REQUIRE_API_TEST_SUITE=true
-  # The chart's gRPC ingress host (orchestration.ingress.grpc) in the CI values.
-  export GRPC_ADDRESS="${GRPC_ADDRESS:-grpc-${hostname}:443}"
-  export API_CONNECTORS_URL="${API_CONNECTORS_URL:-${CONNECTORS_BASE_URL%/inbound}}"
-  if [[ "$TEST_AUTH_TYPE" == "basic" ]]; then
-    # The chart's default initial admin (orchestration.security.initialization.users).
-    export AUTH_METHOD=basic
-    export BASIC_AUTH_USER="${BASIC_AUTH_USER:-demo}"
-    export BASIC_AUTH_PASSWORD="${BASIC_AUTH_PASSWORD:-demo}"
-  else
-    export AUTH_METHOD=oauth2
-    export TOKEN_URL="$OAUTH_URL"
-    export API_IDENTITY_URL="${API_IDENTITY_URL:-$IDENTITY_BASE_URL}"
-    export API_CONSOLE_URL="${API_CONSOLE_URL:-$CONSOLE_BASE_URL}"
-    export API_WEB_MODELER_URL="${API_WEB_MODELER_URL:-$WEBMODELER_BASE_URL}"
-    export CLIENT_ID="venom"
-    CLIENT_SECRET="$(resolve_env_password "$NAMESPACE" "VALUES_VENOM_CLIENT_SECRET" "$KUBE_CONTEXT")"
-    if [[ -z "$CLIENT_SECRET" ]]; then
-      echo "Error: could not resolve the venom client secret (VALUES_VENOM_CLIENT_SECRET) in namespace $NAMESPACE" >&2
-      exit 1
-    fi
-    mask_secret "$CLIENT_SECRET"
-    export CLIENT_SECRET
-    # The CI values' role-less "unprivileged" client, for the suite's authorization-enforcement tests.
-    SECONDARY_CLIENT_SECRET="$(resolve_env_password "$NAMESPACE" "VALUES_UNPRIVILEGED_CLIENT_SECRET" "$KUBE_CONTEXT")"
-    if [[ -n "$SECONDARY_CLIENT_SECRET" ]]; then
-      mask_secret "$SECONDARY_CLIENT_SECRET"
-      export SECONDARY_CLIENT_ID="unprivileged" SECONDARY_CLIENT_SECRET
-    fi
-  fi
-  log "REST v2 API suite: ${BASE_URL}, gRPC ${GRPC_ADDRESS} (version ${ZEEBE_VERSION}, auth ${AUTH_METHOD}, multi-tenancy ${MT})"
+  DEPLOY_CAMUNDA_BIN=$(resolve_deploy_camunda) || {
+    echo "Error: the api project needs deploy-camunda (build it with 'make install.deploy-camunda', or set DEPLOY_CAMUNDA)." >&2
+    exit 1
+  }
+  API_ENV_FILE="${ENV_FILE}.api"
+  "$DEPLOY_CAMUNDA_BIN" e2e-env api-suite \
+    --env-file "$ENV_FILE" \
+    --namespace "$NAMESPACE" \
+    ${KUBE_CONTEXT:+--kube-context "$KUBE_CONTEXT"} \
+    --auth "${TEST_AUTH_TYPE:-}" \
+    --mt="$IS_MT" \
+    --ci="$IS_CI" \
+    --output "$API_ENV_FILE" || exit 1
+  set -a
+  # shellcheck disable=SC1090
+  source "$API_ENV_FILE"
+  set +a
+  rm -f "$API_ENV_FILE"
 fi
 
 # ── Namespace-scoped Playwright output directories ──

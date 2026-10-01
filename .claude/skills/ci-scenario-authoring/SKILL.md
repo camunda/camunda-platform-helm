@@ -62,7 +62,7 @@ e2e-api-suite-blocking: true    # default false — API suite failures are infor
 
 The API leg runs the `api` and `clock` projects that `test/e2e/playwright.api-projects.ts` loads from
 `@camunda/e2e-test-suite` (`dist/tests/api/projects.js`), authenticated as the `venom` admin client.
-`run-e2e-tests.sh --playwright-project api` sets the suite's variables (`BASE_URL` with
+`run-e2e-tests.sh --playwright-project api` sources the suite's variables from `deploy-camunda e2e-env api-suite` (`BASE_URL` with
 `/orchestration`, `TOKEN_URL`, `CLIENT_ID`/`CLIENT_SECRET`, `ZEEBE_VERSION`, `MT`, and
 `GRPC_ADDRESS` as `grpc-<host>:443`), and the runner
 waits on the package's `wait-for-orchestration-admin-role.sh` before starting it. The role-less
