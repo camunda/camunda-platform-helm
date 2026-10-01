@@ -21,7 +21,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        controller: ${{ fromJSON(github.event_name == 'merge_group' && '["helm","argocd","flux"]' || '["helm","flux"]') }}
+        # TODO(#7416): re-add argocd for merge_group once Redis image pull throttling is fixed.
+        controller: ["helm", "flux"]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
         with:
