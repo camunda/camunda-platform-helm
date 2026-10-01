@@ -166,6 +166,8 @@ func lines(values ...string) []byte {
 
 type credentialReconciler struct {
 	kubectl  kubectlFunc
+	previous map[string]string
+	postgres []matrix.PostgresCredentialStore
 	out      io.Writer
 	poll     time.Duration
 	timeout  time.Duration
@@ -231,9 +233,20 @@ func (r *credentialReconciler) reconcile(ctx context.Context, in reconcileInput)
 	if source == nil {
 		return fmt.Errorf("source secret %s/%s does not exist; run ensure-credentials first", in.sourceNS, in.src.Name)
 	}
-	previous, err := r.secretData(ctx, in.hubNS, in.stores.Secret)
+	previousName := in.stores.Secret + "-previous"
+	previous, err := r.secretData(ctx, in.hubNS, previousName)
 	if err != nil {
 		return err
+	}
+	if previous == nil {
+		if previous, err = r.secretData(ctx, in.hubNS, in.stores.Secret); err != nil {
+			return err
+		}
+		if len(previous) > 0 {
+			if err := r.saveSecret(ctx, in.hubNS, previousName, previous); err != nil {
+				return err
+			}
+		}
 	}
 	hubExists := false
 	for _, ns := range in.namespaces {
@@ -259,6 +272,8 @@ func (r *credentialReconciler) reconcile(ctx context.Context, in reconcileInput)
 	if err != nil {
 		return err
 	}
+	r.previous = previous
+	r.postgres = in.stores.Postgres
 	value := func(key string) (string, error) {
 		if current[key] == "" {
 			return "", fmt.Errorf("secret %s/%s has no %s", in.hubNS, in.stores.Secret, key)
@@ -284,7 +299,28 @@ func (r *credentialReconciler) reconcile(ctx context.Context, in reconcileInput)
 			return err
 		}
 	}
+	if _, err := r.kubectl(ctx, nil, "delete", "secret", previousName, "-n", in.hubNS, "--ignore-not-found"); err != nil {
+		return err
+	}
 	return nil
+}
+
+// saveSecret creates an Opaque Secret holding data. It is the pre-sync
+// snapshot reconcile falls back to until a run completes, so a retry after a
+// partial failure still has the values the stores were last set to.
+func (r *credentialReconciler) saveSecret(ctx context.Context, ns, name string, data map[string]string) error {
+	secret := corev1.Secret{
+		TypeMeta:   metav1.TypeMeta{APIVersion: "v1", Kind: "Secret"},
+		ObjectMeta: metav1.ObjectMeta{Name: name, Labels: map[string]string{"app.kubernetes.io/managed-by": "deploy-camunda"}},
+		Type:       corev1.SecretTypeOpaque,
+		StringData: data,
+	}
+	manifest, err := json.Marshal(secret)
+	if err != nil {
+		return err
+	}
+	_, err = r.kubectl(ctx, manifest, "create", "-n", ns, "-f", "-")
+	return err
 }
 
 func (r *credentialReconciler) syncExternalSecrets(ctx context.Context, ns string, manifest []byte, src credentialSource, source map[string]string) error {
@@ -454,11 +490,20 @@ func (r *credentialReconciler) resetKeycloakAdmin(ctx context.Context, ns string
 	tempUser := "deploy-camunda-reconcile-" + strings.ToLower(suffix[:8])
 	name := k.Deployment + "-reconcile-bootstrap"
 
+	dbPw, err := r.acceptedDatabasePassword(ctx, ns, src.Env)
+	if err != nil {
+		return err
+	}
 	env := []corev1.EnvVar{{Name: "KC_CACHE", Value: "local"}}
 	for _, e := range src.Env {
-		if strings.HasPrefix(e.Name, "KC_DB") {
+		if strings.HasPrefix(e.Name, "KC_DB") && (e.Name != "KC_DB_PASSWORD" || dbPw == "") {
 			env = append(env, e)
 		}
+	}
+	if dbPw != "" {
+		env = append(env, corev1.EnvVar{Name: "KC_DB_PASSWORD", ValueFrom: &corev1.EnvVarSource{SecretKeyRef: &corev1.SecretKeySelector{
+			LocalObjectReference: corev1.LocalObjectReference{Name: name}, Key: "db-password",
+		}}})
 	}
 	for _, e := range []struct{ name, key string }{{"KC_BOOTSTRAP_USER", "username"}, {"KC_BOOTSTRAP_PW", "password"}} {
 		env = append(env, corev1.EnvVar{Name: e.name, ValueFrom: &corev1.EnvVarSource{SecretKeyRef: &corev1.SecretKeySelector{
@@ -469,7 +514,7 @@ func (r *credentialReconciler) resetKeycloakAdmin(ctx context.Context, ns string
 	secret := corev1.Secret{
 		TypeMeta:   metav1.TypeMeta{APIVersion: "v1", Kind: "Secret"},
 		ObjectMeta: metav1.ObjectMeta{Name: name, Labels: labels},
-		StringData: map[string]string{"username": tempUser, "password": tempPw},
+		StringData: map[string]string{"username": tempUser, "password": tempPw, "db-password": dbPw},
 	}
 	pod := corev1.Pod{
 		TypeMeta:   metav1.TypeMeta{APIVersion: "v1", Kind: "Pod"},
@@ -628,6 +673,42 @@ func (r *credentialReconciler) removeTempAdmin(ctx context.Context, ns string, k
 		return nil
 	}
 	return fmt.Errorf("%s: temporary keycloak admin %s may remain in the master realm; delete it: %w", ns, tempUser, last)
+}
+
+// acceptedDatabasePassword returns the value of Keycloak's KC_DB_PASSWORD
+// secret key that its PostgreSQL store accepts right now: the synced value, or
+// the previous one while the role is not yet rotated. It returns "" when no
+// PostgreSQL store matches that key, leaving the env reference unchanged.
+func (r *credentialReconciler) acceptedDatabasePassword(ctx context.Context, ns string, env []corev1.EnvVar) (string, error) {
+	var key, secret string
+	for _, e := range env {
+		if e.Name == "KC_DB_PASSWORD" && e.ValueFrom != nil && e.ValueFrom.SecretKeyRef != nil {
+			key, secret = e.ValueFrom.SecretKeyRef.Key, e.ValueFrom.SecretKeyRef.Name
+		}
+	}
+	for _, pg := range r.postgres {
+		if key == "" || pg.SecretKey != key {
+			continue
+		}
+		current, err := r.secretData(ctx, ns, secret)
+		if err != nil {
+			return "", err
+		}
+		for _, candidate := range []string{current[key], r.previous[key]} {
+			if candidate == "" {
+				continue
+			}
+			err := r.psql(ctx, ns, pg, "check", candidate)
+			if err == nil {
+				return candidate, nil
+			}
+			if exitCode(err) != loginRejected {
+				return "", err
+			}
+		}
+		return "", fmt.Errorf("%s: postgres %s/%s accepts neither the current nor the previous %s; the bootstrap admin cannot reach the database", ns, pg.StatefulSet, pg.User, key)
+	}
+	return "", nil
 }
 
 func (r *credentialReconciler) psql(ctx context.Context, ns string, pg matrix.PostgresCredentialStore, mode, pw string) error {

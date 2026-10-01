@@ -70,6 +70,8 @@ type fakeCluster struct {
 	kc         map[string]string
 	pg         map[string]string
 	pods       map[string]string
+	bootDBPw   string
+	failES     bool
 	es         string
 	sets       int
 	bootstraps int
@@ -151,7 +153,7 @@ func (f *fakeCluster) kubectl(_ context.Context, stdin []byte, args ...string) (
 				return nil, nil
 			}
 			if flagValue(args, "-o") == "json" {
-				return []byte(`{"spec":{"template":{"spec":{"containers":[{"name":"keycloak","image":"kc:26","env":[{"name":"KC_DB_URL","value":"jdbc:x"},{"name":"KC_HOSTNAME","value":"h"}]}]}}}}`), nil
+				return []byte(`{"spec":{"template":{"spec":{"containers":[{"name":"keycloak","image":"kc:26","env":[{"name":"KC_DB_URL","value":"jdbc:x"},{"name":"KC_DB_PASSWORD","valueFrom":{"secretKeyRef":{"name":"creds","key":"kc-db"}}},{"name":"KC_HOSTNAME","value":"h"}]}]}}}}`), nil
 			}
 			return []byte(args[1] + "/" + args[2]), nil
 		}
@@ -184,10 +186,23 @@ func (f *fakeCluster) kubectl(_ context.Context, stdin []byte, args ...string) (
 		}
 		f.bootstraps++
 		tmp := f.secrets[ns+"/"+obj.Metadata.Name]
+		for _, e := range obj.Spec.Containers[0].Env {
+			if e.Name == "KC_DB_PASSWORD" && e.ValueFrom != nil && e.ValueFrom.SecretKeyRef != nil {
+				f.bootDBPw = f.secrets[ns+"/"+e.ValueFrom.SecretKeyRef.Name][e.ValueFrom.SecretKeyRef.Key]
+			}
+		}
+		if f.bootDBPw != f.pg[ns+"/keycloak-postgresql/keycloak"] {
+			f.pods[ns+"/"+obj.Metadata.Name] = "Failed"
+			return nil, nil
+		}
 		f.kc["master/"+tmp["username"]] = tmp["password"]
 		f.pods[ns+"/"+obj.Metadata.Name] = "Succeeded"
 		return nil, nil
 	case "delete":
+		if args[1] == "secret" {
+			delete(f.secrets, ns+"/"+args[2])
+			return nil, nil
+		}
 		for _, a := range args[1:] {
 			if name, ok := strings.CutPrefix(a, "pod/"); ok {
 				delete(f.pods, ns+"/"+name)
@@ -207,6 +222,9 @@ func (f *fakeCluster) kubectl(_ context.Context, stdin []byte, args ...string) (
 				return nil, exitErr(loginRejected)
 			}
 			if pos[0] == "set" {
+				if f.failES {
+					return nil, fmt.Errorf("injected elasticsearch failure")
+				}
 				f.sets++
 				f.es = in[1]
 			}
@@ -387,6 +405,47 @@ func TestReconcileCredentials_ElasticsearchWithoutAWorkingPasswordFailsWithTheMa
 	if err == nil || !strings.Contains(err.Error(), "elasticsearch-reset-password") || strings.Contains(err.Error(), "new-es") {
 		t.Fatalf("err = %v", err)
 	}
+}
+
+func TestReconcileCredentials_BootstrapUsesTheDatabasePasswordPostgresStillAccepts(t *testing.T) {
+	f := newFakeCluster(t)
+	f.kc["master/admin"] = "unknown"
+	out, err := runReconcile(t, f)
+	if err != nil {
+		t.Fatalf("reconcile: %v\n%s", err, out)
+	}
+	if f.bootDBPw != "old-kcdb" {
+		t.Errorf("bootstrap pod got a database password Postgres did not accept (match old=%v)", f.bootDBPw == "old-kcdb")
+	}
+	if f.pg["env-hub/keycloak-postgresql/keycloak"] != "new-kcdb" {
+		t.Error("keycloak role not rotated after the bootstrap")
+	}
+}
+
+func TestReconcileCredentials_RetryAfterAPartialFailureKeepsThePreviousValues(t *testing.T) {
+	f := newFakeCluster(t)
+	f.failES = true
+	if _, err := runReconcile(t, f); err == nil || !strings.Contains(err.Error(), "injected elasticsearch failure") {
+		t.Fatalf("first run err = %v, want the injected failure", err)
+	}
+	if f.secrets["env-hub/creds"]["es"] != "new-es" || f.es != "old-es" {
+		t.Fatal("setup: the first run should have synced the namespace but left elasticsearch on the old value")
+	}
+	if f.secrets["env-hub/creds-previous"]["es"] != "old-es" {
+		t.Fatal("the pre-sync snapshot was not kept after the failure")
+	}
+	f.failES = false
+	out, err := runReconcile(t, f)
+	if err != nil {
+		t.Fatalf("retry: %v\n%s", err, out)
+	}
+	if f.es != "new-es" {
+		t.Error("retry did not rotate elasticsearch from the snapshot")
+	}
+	if _, kept := f.secrets["env-hub/creds-previous"]; kept {
+		t.Error("snapshot must be removed after a successful run")
+	}
+	assertNoValues(t, out)
 }
 
 func TestReconcileCredentials_LeavesCurrentStoresAlone(t *testing.T) {

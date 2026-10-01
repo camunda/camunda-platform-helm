@@ -82,3 +82,63 @@ func TestPsqlScript_RepairsAStaleRoleOnTheSupportedImage(t *testing.T) {
 		t.Fatalf("old password still accepted: err = %v", err)
 	}
 }
+
+// elasticsearchImage matches the dogfood Elasticsearch companion's image.
+const elasticsearchImage = "docker.elastic.co/elasticsearch/elasticsearch:8.18.0"
+
+// TestEsScript_RotatesTheElasticPasswordOnTheSupportedImage runs esScript, via
+// docker exec, against a secured single-node Elasticsearch. The new password
+// carries JSON metacharacters to cover the request body's escaping.
+func TestEsScript_RotatesTheElasticPasswordOnTheSupportedImage(t *testing.T) {
+	if _, err := exec.LookPath("docker"); err != nil {
+		t.Skip("docker not available")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 8*time.Minute)
+	defer cancel()
+
+	out, err := exec.CommandContext(ctx, "docker", "run", "-d", "--rm",
+		"-e", "discovery.type=single-node", "-e", "xpack.security.enabled=true",
+		"-e", "xpack.security.http.ssl.enabled=false", "-e", "ELASTIC_PASSWORD=initial-pw",
+		"-e", "ES_JAVA_OPTS=-Xms512m -Xmx512m", elasticsearchImage).CombinedOutput()
+	if err != nil {
+		t.Fatalf("docker run: %v: %s", err, out)
+	}
+	id := strings.TrimSpace(string(out))
+	t.Cleanup(func() { _ = exec.Command("docker", "rm", "-f", id).Run() })
+
+	const rotated = `rot"at\ed-pw`
+	run := func(mode string, pws ...string) error {
+		cmd := exec.CommandContext(ctx, "docker", "exec", "-i", id, "sh", "-c", esScript, "sh", mode, "http://localhost:9200", "elastic")
+		cmd.Stdin = bytes.NewReader(lines(pws...))
+		var stderr bytes.Buffer
+		cmd.Stderr = &stderr
+		err := cmd.Run()
+		if err != nil && exitCode(err) != loginRejected {
+			t.Logf("%s stderr: %s", mode, stderr.String())
+		}
+		return err
+	}
+
+	deadline := time.Now().Add(4 * time.Minute)
+	for {
+		if err := run("check", "initial-pw"); err == nil {
+			break
+		} else if time.Now().After(deadline) {
+			t.Fatalf("elasticsearch never accepted the initial password: %v", err)
+		}
+		time.Sleep(5 * time.Second)
+	}
+
+	if err := run("check", rotated); exitCode(err) != loginRejected {
+		t.Fatalf("check with a stale password: err = %v, want exit %d", err, loginRejected)
+	}
+	if err := run("set", "initial-pw", rotated); err != nil {
+		t.Fatalf("set: %v", err)
+	}
+	if err := run("check", rotated); err != nil {
+		t.Fatalf("check after set: %v", err)
+	}
+	if err := run("check", "initial-pw"); exitCode(err) != loginRejected {
+		t.Fatalf("old password still accepted: err = %v", err)
+	}
+}
