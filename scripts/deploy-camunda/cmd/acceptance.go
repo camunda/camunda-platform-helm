@@ -578,7 +578,7 @@ func postAcceptanceRequest(ctx context.Context, doHTTP func(*http.Request) (*htt
 			return response, nil
 		default:
 			lastErr = fmt.Errorf("%s: HTTP %d: %s", what, status, strings.TrimSpace(string(response)))
-			if status != http.StatusBadGateway && status != http.StatusServiceUnavailable && status != http.StatusGatewayTimeout {
+			if !isTransientGatewayStatus(status) {
 				return nil, lastErr
 			}
 		}
@@ -630,15 +630,20 @@ func assertOptimizeExcludesSiblings(ctx context.Context, deps acceptanceDependen
 	lastDiagnostic := "no response"
 	for attempt := 1; attempt <= attempts; attempt++ {
 		body, status, err := httpGet(ctx, deps.doHTTP, optimizeURL+"/api/definition/process/keys", token)
+		// An ingress 502/503/504 means Optimize was briefly unreachable, not that the check
+		// failed, so it is retried like a transport error. Any other non-200 is a real failure.
+		if err == nil && isTransientGatewayStatus(status) {
+			err = fmt.Errorf("HTTP %d: %s", status, strings.TrimSpace(string(body)))
+		}
 		if err != nil {
-			lastDiagnostic = "transport error: " + err.Error()
+			lastDiagnostic = "transient error: " + err.Error()
 			if attempt < attempts {
 				if sleepErr := deps.sleep(ctx, 5*time.Second); sleepErr != nil {
 					return sleepErr
 				}
 				continue
 			}
-			return fmt.Errorf("Optimize for %q isolation check exhausted transport retries (last response: %s)", tenant, lastDiagnostic)
+			return fmt.Errorf("Optimize for %q isolation check exhausted retries (last response: %s)", tenant, lastDiagnostic)
 		}
 		lastDiagnostic = fmt.Sprintf("HTTP %d: %s", status, strings.TrimSpace(string(body)))
 		if status != http.StatusOK {
@@ -656,6 +661,10 @@ func assertOptimizeExcludesSiblings(ctx context.Context, deps acceptanceDependen
 		}
 	}
 	return nil
+}
+
+func isTransientGatewayStatus(status int) bool {
+	return status == http.StatusBadGateway || status == http.StatusServiceUnavailable || status == http.StatusGatewayTimeout
 }
 
 func httpGet(ctx context.Context, doHTTP func(*http.Request) (*http.Response, error), target, token string) ([]byte, int, error) {

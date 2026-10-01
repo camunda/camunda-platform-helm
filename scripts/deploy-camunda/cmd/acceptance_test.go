@@ -203,6 +203,29 @@ func TestAssertOptimizeExcludesSiblingsFailures(t *testing.T) {
 		assert.Zero(t, sleeps)
 	})
 
+	t.Run("retries a transient gateway status", func(t *testing.T) {
+		calls, sleeps := 0, 0
+		deps := pollingDependencies(func(*http.Request) (*http.Response, error) {
+			calls++
+			if calls == 1 {
+				return testResponse(http.StatusServiceUnavailable, "<h1>503 Service Temporarily Unavailable</h1>"), nil
+			}
+			return testResponse(http.StatusOK, `[]`), nil
+		}, &sleeps)
+		require.NoError(t, assertOptimizeExcludesSiblings(context.Background(), deps, "https://optimize", "tenanta", "token", []string{"sibling-process"}, 3))
+		assert.Equal(t, 3, calls)
+	})
+
+	t.Run("gives up after persistent gateway errors", func(t *testing.T) {
+		sleeps := 0
+		deps := pollingDependencies(func(*http.Request) (*http.Response, error) {
+			return testResponse(http.StatusBadGateway, "bad gateway"), nil
+		}, &sleeps)
+		err := assertOptimizeExcludesSiblings(context.Background(), deps, "https://optimize", "tenanta", "token", nil, 2)
+		require.ErrorContains(t, err, "exhausted retries")
+		require.ErrorContains(t, err, "HTTP 502")
+	})
+
 	t.Run("detects sibling", func(t *testing.T) {
 		sleeps := 0
 		deps := pollingDependencies(func(*http.Request) (*http.Response, error) {
