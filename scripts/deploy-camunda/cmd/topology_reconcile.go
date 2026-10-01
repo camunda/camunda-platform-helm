@@ -333,15 +333,12 @@ func (r *credentialReconciler) reconcile(ctx context.Context, in reconcileInput)
 			return fmt.Errorf("source secret %s/%s changed during reconcile (%s); re-run so the stores and the checksum use one generation", in.sourceNS, in.src.Name, prop)
 		}
 	}
-	if _, err := r.kubectl(ctx, nil, "delete", "secret", previousName, "-n", in.hubNS, "--ignore-not-found"); err != nil {
-		return err
-	}
-	return nil
+	return r.saveSecret(ctx, in.hubNS, previousName, joinGenerations([]map[string]string{current}))
 }
 
-// saveSecret applies an Opaque Secret holding data: the snapshot of every
-// pre-sync generation since the last complete run, which the fallbacks try so
-// a retry after partial failures still reaches stores left on any of them.
+// saveSecret applies an Opaque Secret holding data: the generation the last
+// complete run set every store to, plus every pre-sync generation since, which
+// the fallbacks try so a retry still reaches stores left on any of them.
 func (r *credentialReconciler) saveSecret(ctx context.Context, ns, name string, data map[string]string) error {
 	secret := corev1.Secret{
 		TypeMeta:   metav1.TypeMeta{APIVersion: "v1", Kind: "Secret"},
@@ -425,7 +422,11 @@ func (r *credentialReconciler) syncExternalSecrets(ctx context.Context, ns strin
 	if _, err := r.kubectl(ctx, manifest, "apply", "--server-side", "--force-conflicts", "--field-manager="+kubectlFieldManager, "-n", ns, "-f", "-"); err != nil {
 		return err
 	}
-	stamp := fmt.Sprintf("force-sync=%d", r.now().Unix())
+	nonce, err := r.generate()
+	if err != nil {
+		return err
+	}
+	stamp := fmt.Sprintf("force-sync=%d-%s", r.now().UnixNano(), strings.ToLower(nonce[:8]))
 	for _, es := range src.ExternalSecrets {
 		if _, err := r.kubectl(ctx, nil, "annotate", "externalsecret", es, "-n", ns, stamp, "--overwrite"); err != nil {
 			return err

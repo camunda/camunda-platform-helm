@@ -159,6 +159,7 @@ so it needs a fourth cluster of its own.
   `distribution-team/dogfood-credentials` to have `ensure-credentials` generate a
   new value, or set it yourself, then run the workflow's `upgrade` action.
   Reconcile sets the stores, and the changed checksum restarts every consumer.
-  If a run fails part way, re-run it: earlier values are kept in
-  `dogfood-hub/integration-test-credentials-previous` until a run completes.
-  Don't delete that Secret by hand while it exists.
+  If a run fails part way, re-run it.
+  `dogfood-hub/integration-test-credentials-previous` holds the values the last
+  complete run set, plus every value seen since, and reconcile falls back on
+  them. Don't delete that Secret by hand.

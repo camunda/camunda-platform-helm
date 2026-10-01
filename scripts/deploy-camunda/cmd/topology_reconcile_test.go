@@ -70,6 +70,7 @@ type fakeCluster struct {
 	kc         map[string]string
 	pg         map[string]string
 	pods       map[string]string
+	stamps     []string
 	bootNames  []string
 	bootDBPw   string
 	failES     bool
@@ -172,6 +173,7 @@ func (f *fakeCluster) kubectl(_ context.Context, stdin []byte, args ...string) (
 		f.applies++
 		return nil, nil
 	case "annotate":
+		f.stamps = append(f.stamps, args[len(args)-2])
 		if f.esoSync {
 			for target, keys := range f.src.Targets {
 				live := f.secrets[ns+"/"+target]
@@ -462,9 +464,7 @@ func TestReconcileCredentials_RetryAfterAPartialFailureKeepsThePreviousValues(t 
 	if f.es != "new-es" {
 		t.Error("retry did not rotate elasticsearch from the snapshot")
 	}
-	if _, kept := f.secrets["env-hub/creds-previous"]; kept {
-		t.Error("snapshot must be removed after a successful run")
-	}
+	assertSnapshotIsTheReconciledGeneration(t, f)
 	assertNoValues(t, out)
 }
 
@@ -527,9 +527,7 @@ func TestReconcileCredentials_RepeatedFailedRotationsKeepEveryIntermediateValue(
 	if f.es != "d-es" || f.kc["master/admin"] != "d-admin" {
 		t.Errorf("D retry did not reach D: es=%v admin=%v", f.es == "d-es", f.kc["master/admin"] == "d-admin")
 	}
-	if _, kept := f.secrets["env-hub/creds-previous"]; kept {
-		t.Error("snapshot must be removed after a successful run")
-	}
+	assertSnapshotIsTheReconciledGeneration(t, f)
 }
 
 func TestReconcileCredentials_FailsWhenTheSourceChangesDuringTheRun(t *testing.T) {
@@ -571,6 +569,57 @@ func TestGenerations_RoundTripAndDeduplicate(t *testing.T) {
 	}
 	if got := splitGenerations(map[string]string{"legacy": "x", "gx.y": "z"}); len(got) != 0 {
 		t.Errorf("non-generation keys must be ignored, got %v", got)
+	}
+}
+
+func assertSnapshotIsTheReconciledGeneration(t *testing.T, f *fakeCluster) {
+	t.Helper()
+	gens := splitGenerations(f.secrets["env-hub/creds-previous"])
+	if len(gens) != 1 || !containsGeneration(gens, f.secrets["env-hub/creds"]) {
+		t.Errorf("after a successful run the snapshot must hold exactly the reconciled generation; got %d generations", len(gens))
+	}
+}
+
+func TestReconcileCredentials_SourceRotatedAfterASuccessfulRunStaysRecoverable(t *testing.T) {
+	f := newFakeCluster(t)
+	if out, err := runReconcile(t, f); err != nil {
+		t.Fatalf("first run: %v\n%s", err, out)
+	}
+	src := f.secrets["distribution-team/src"]
+	src["es"], src["kc-admin"] = "next-es", "next-admin"
+	for _, ns := range []string{"env-hub", "env-plain"} {
+		f.secrets[ns+"/creds"]["es"], f.secrets[ns+"/creds"]["kc-admin"] = "next-es", "next-admin"
+	}
+	out, err := runReconcile(t, f)
+	if err != nil {
+		t.Fatalf("run after External Secrets already synced the rotation: %v\n%s", err, out)
+	}
+	if f.es != "next-es" || f.kc["master/admin"] != "next-admin" || f.bootstraps != 0 {
+		t.Errorf("es=%v admin=%v bootstraps=%d", f.es == "next-es", f.kc["master/admin"] == "next-admin", f.bootstraps)
+	}
+}
+
+func TestReconcileCredentials_EveryForceSyncAnnotationIsUnique(t *testing.T) {
+	f := newFakeCluster(t)
+	instant := time.Unix(1_790_000_000, 0)
+	for i := 0; i < 2; i++ {
+		var out bytes.Buffer
+		r := &credentialReconciler{kubectl: f.kubectl, out: &out, poll: time.Millisecond, timeout: time.Minute,
+			now: func() time.Time { return instant }, generate: generateCredential}
+		if err := r.reconcile(context.Background(), reconcileInput{manifest: []byte(reconcileManifest), src: f.src, sourceNS: "distribution-team",
+			namespaces: []string{"env-hub", "env-plain"}, hubNS: "env-hub", stores: testStores()}); err != nil {
+			t.Fatalf("run %d: %v\n%s", i, err, out.String())
+		}
+	}
+	seen := map[string]bool{}
+	for _, s := range f.stamps {
+		if seen[s] {
+			t.Fatalf("force-sync annotation %q repeated; External Secrets ignores an unchanged value", s)
+		}
+		seen[s] = true
+	}
+	if len(f.stamps) < 4 {
+		t.Fatalf("stamps = %d, want one per namespace per run", len(f.stamps))
 	}
 }
 
