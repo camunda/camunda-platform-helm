@@ -20,6 +20,19 @@ integration:
           identity: keycloak
           persistence: elasticsearch
           helmVersion: 3.22.0
+        - name: elasticsearch-helm-v4
+          enabled: true
+          shortname: esh4
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          tier: 1
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
         - name: orchestration-tls
           enabled: true
           shortname: estls

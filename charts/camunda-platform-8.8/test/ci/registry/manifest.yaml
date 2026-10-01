@@ -30,6 +30,10 @@ integration:
       shortname: eske
       tier: 1
       enabled: true
+    - id: elasticsearch-helm-v4
+      shortname: esh4
+      tier: 1
+      enabled: true
     - id: orchestration-tls
       shortname: estls
       tier: 2

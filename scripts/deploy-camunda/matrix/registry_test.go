@@ -33,6 +33,42 @@ import (
 
 const registryGoodChartDir = "testdata/registry-good/charts/camunda-platform-99.99"
 
+func TestChart88HelmCompatibilityPRMatrix(t *testing.T) {
+	repoRoot, err := filepath.Abs("../../..")
+	require.NoError(t, err)
+	entries, err := Generate(repoRoot, GenerateOptions{Versions: []string{"8.8"}})
+	require.NoError(t, err)
+	entries = Filter(entries, FilterOptions{Tier: 1, Platform: "gke"})
+	for _, tc := range []struct {
+		shortname string
+		helmMajor string
+	}{
+		{"eske", "3"},
+		{"esh4", "4"},
+	} {
+		t.Run(tc.shortname, func(t *testing.T) {
+			selected := Filter(entries, FilterOptions{ShortnameFilter: tc.shortname, FlowFilter: "install"})
+			require.Len(t, selected, 1)
+			entry := selected[0]
+			helmVersion := entry.HelmVersion
+			if helmVersion == "" {
+				tools, err := os.ReadFile(filepath.Join(repoRoot, ".tool-versions"))
+				require.NoError(t, err)
+				for _, line := range strings.Split(string(tools), "\n") {
+					fields := strings.Fields(line)
+					if len(fields) >= 2 && fields[0] == "helm" {
+						helmVersion = fields[1]
+					}
+				}
+			}
+			require.True(t, strings.HasPrefix(helmVersion, tc.helmMajor+"."), "Helm version: %s", helmVersion)
+			require.Equal(t, "keycloak", entry.Identity)
+			require.Equal(t, "elasticsearch", entry.Persistence)
+			require.False(t, entry.SkipE2E)
+		})
+	}
+}
+
 func TestResolveScenarioLegacyRegistryCompatibility(t *testing.T) {
 	repoRoot, err := filepath.Abs("../../..")
 	require.NoError(t, err)

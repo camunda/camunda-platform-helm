@@ -53,12 +53,27 @@ See [Camunda 8 reference architectures](https://docs.camunda.io/docs/self-manage
 
 ## Requirements
 
-- [Helm](https://helm.sh/) >= 3.10.x
+- [Helm](https://helm.sh/) v4 (recommended), or v3.10+ until February 10, 2027
 - Kubernetes >= 1.20+
 - Minimum cluster requirements include the following to run this chart with default settings.
   - All of these settings are configurable.
   - Three Kubernetes nodes to respect the default "hard" affinity settings
   - 2GB of RAM for the JVM heap
+
+### Helm CLI compatibility
+
+Camunda 8.8 (chart 13.x) supports Helm CLI v3.10+ and v4. Helm CLI v4 is recommended for new installations and supported for the Camunda 8.8 release cycle. CI runs the full template unit suite and an Elasticsearch/Keycloak installation with Helm v4, alongside a Helm v3 installation and targeted unit tests on Helm v3.10.3 and the latest pinned v3 release.
+
+For Camunda 8.8 to 8.10 (charts 13.x to 15.x), Helm CLI v3 is supported until its [upstream end of life on February 10, 2027](https://helm.sh/blog/helm-v3-end-of-life/). After that date, Camunda no longer supports Helm CLI v3. Customers who continue to use it do so at their own risk.
+
+Helm v4 enables server-side apply by default, which rejects duplicate environment variable names. Prefer dedicated chart values or `configuration`/`extraConfiguration` over `env` overrides that duplicate chart-generated entries. If an override requires duplicates, disable server-side apply for that command:
+
+```bash
+helm install camunda-platform camunda/camunda-platform --version <13.x-chart-version> --values values.yaml --server-side=false
+helm upgrade camunda-platform camunda/camunda-platform --version <13.x-chart-version> --values values.yaml --server-side=false
+```
+
+The Helm v4 CI installation uses default server-side apply. Release automation records both tested CLI versions in `camunda.io/helmCLIVersion` and the [version matrix](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8/) for future chart releases; historical release entries retain their recorded versions.
 
 ## Dependencies
 

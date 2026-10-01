@@ -24,3 +24,14 @@ unit:
       packages: orchestration connectors optimize
     - name: Design
       packages: web-modeler
+  helmCompat:
+    versions:
+      - "3.10.3"
+      - "3.22.0"
+    tests:
+      - name: Chart constraints
+        package: common
+        run: 'TestConstraintTemplate'
+      - name: Orchestration scheduling
+        package: orchestration
+        run: 'TestStatefulSetTemplate/TestDifferentValuesInputs/^TestContainerSet(NodeSelector|Affinity|Tolerations|TopologySpreadConstraints)$'
