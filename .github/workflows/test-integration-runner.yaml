@@ -1465,7 +1465,11 @@ jobs:
       # One leg per Optimize instance can share an orchestration_suffix, so legs
       # would otherwise run the stateful smoke suite against the same
       # orchestration/Modeler deployment at once and interfere with each other.
-      max-parallel: 1
+      # physicaltenants (ptnt) is the exception: only its default leg runs the
+      # orchestration smoke, and each tenant leg uses its own Optimize and its own
+      # uniquely named workspace, project and process, so its legs run together
+      # (verified on GKE: three parallel rounds, all legs passing first time).
+      max-parallel: ${{ inputs.shortname == 'ptnt' && 3 || 1 }}
       matrix:
         include: ${{ fromJson(inputs.topology-smoke-matrix) }}
     permissions:
