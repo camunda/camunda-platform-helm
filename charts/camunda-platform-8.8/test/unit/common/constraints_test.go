@@ -16,13 +16,17 @@ package camunda
 
 import (
 	"camunda-platform/test/unit/testhelpers"
+	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
+	"github.com/gruntwork-io/terratest/modules/helm"
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	corev1 "k8s.io/api/core/v1"
 )
 
 type ConstraintTemplateTest struct {
@@ -45,6 +49,36 @@ func TestConstraintTemplate(t *testing.T) {
 		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
 		templates: []string{},
 	})
+}
+
+func (s *ConstraintTemplateTest) TestHelmVersionConstraint() {
+	versionOutput, err := exec.Command("helm", "version", "--template", "{{.Version}}").Output()
+	s.Require().NoError(err)
+	version := strings.TrimSpace(string(versionOutput))
+	major, err := strconv.Atoi(strings.SplitN(strings.TrimPrefix(version, "v"), ".", 2)[0])
+	s.Require().NoError(err)
+	testCases := []testhelpers.TestCase{
+		{
+			Name:   "TestHelmVersionWarning",
+			Values: map[string]string{},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				warnings := configmap.Data["warnings"]
+				if major >= 4 {
+					s.Require().NotContains(warnings, "Helm CLI")
+					s.Require().NotContains(warnings, "Helm v3 receives security fixes")
+				} else {
+					s.Require().Contains(warnings, "[camunda][warning] Helm CLI "+version+" detected.")
+					s.Require().Contains(warnings, "Helm v3 receives security fixes only until February 10, 2027")
+					s.Require().Contains(warnings, "After that date, Camunda no longer supports Helm CLI v3.")
+					s.Require().Contains(warnings, "Upgrade to Helm v4 before then: https://helm.sh/docs/overview")
+				}
+			},
+		},
+	}
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, []string{"templates/common/configmap-warnings.yaml"}, testCases)
 }
 
 func (s *ConstraintTemplateTest) TestDifferentValuesInputs() {

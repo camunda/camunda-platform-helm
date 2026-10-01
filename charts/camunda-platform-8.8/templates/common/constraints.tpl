@@ -451,6 +451,17 @@ The following values inside your values.yaml need to be set but were not:
     {{- end }}
   {{- end }}
 
+  {{- if not (semverCompare ">=4.0.0-0" .Capabilities.HelmVersion.Version) }}
+    {{- $warningMessage := printf "%s %s %s %s %s"
+        "[camunda][warning]"
+        (printf "Helm CLI %s detected." .Capabilities.HelmVersion.Version)
+        "Helm v3 receives security fixes only until February 10, 2027 (https://helm.sh/blog/helm-v3-end-of-life/)."
+        "After that date, Camunda no longer supports Helm CLI v3."
+        "Upgrade to Helm v4 before then: https://helm.sh/docs/overview"
+    -}}
+    {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+  {{- end }}
+
   {{- if and .Values.orchestration.enabled
              (eq .Values.orchestration.persistenceType "disk")
              (has "ReadWriteOncePod" .Values.orchestration.pvcAccessModes) }}

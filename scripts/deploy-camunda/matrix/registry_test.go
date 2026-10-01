@@ -33,22 +33,23 @@ import (
 
 const registryGoodChartDir = "testdata/registry-good/charts/camunda-platform-99.99"
 
-func TestChart88HelmCompatibilityPRMatrix(t *testing.T) {
+func TestChart88HelmCompatibilityMatrix(t *testing.T) {
 	repoRoot, err := filepath.Abs("../../..")
 	require.NoError(t, err)
 	entries, err := Generate(repoRoot, GenerateOptions{Versions: []string{"8.8"}})
 	require.NoError(t, err)
-	entries = Filter(entries, FilterOptions{Tier: 1, Platform: "gke"})
 	for _, tc := range []struct {
 		shortname string
 		helmMajor string
+		tier      int
 	}{
-		{"eske", "3"},
-		{"esh4", "4"},
+		{"eske", "3", 2},
+		{"esh4", "4", 1},
 	} {
 		t.Run(tc.shortname, func(t *testing.T) {
-			selected := Filter(entries, FilterOptions{ShortnameFilter: tc.shortname, FlowFilter: "install"})
+			selected := Filter(entries, FilterOptions{ShortnameFilter: tc.shortname, FlowFilter: "install", Platform: "gke", Tier: tc.tier})
 			require.Len(t, selected, 1)
+			require.Empty(t, Filter(entries, FilterOptions{ShortnameFilter: tc.shortname, Tier: 3 - tc.tier}))
 			entry := selected[0]
 			helmVersion := entry.HelmVersion
 			if helmVersion == "" {

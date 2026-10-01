@@ -29,9 +29,9 @@ unit:
       - "3.10.3"
       - "3.22.0"
     tests:
-      - name: Chart constraints
+      - name: Helm version constraint
         package: common
-        run: 'TestConstraintTemplate'
+        run: 'TestConstraintTemplate/TestHelmVersionConstraint'
       - name: Orchestration scheduling
         package: orchestration
         run: 'TestStatefulSetTemplate/TestDifferentValuesInputs/^TestContainerSet(NodeSelector|Affinity|Tolerations|TopologySpreadConstraints)$'

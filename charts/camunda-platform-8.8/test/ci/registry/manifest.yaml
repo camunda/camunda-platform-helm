@@ -28,7 +28,7 @@ integration:
   scenarios:
     - id: elasticsearch
       shortname: eske
-      tier: 1
+      tier: 2
       enabled: true
     - id: elasticsearch-helm-v4
       shortname: esh4
