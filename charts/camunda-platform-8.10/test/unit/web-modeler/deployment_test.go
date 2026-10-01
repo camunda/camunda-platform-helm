@@ -737,7 +737,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 
 				expectedEnvNames := map[string]string{
 					"websockets": "PUSHER_APP_SECRET",
-					"restapi":    "RESTAPI_PUSHER_SECRET",
+					"restapi":    "CAMUNDA_HUB_PUSHER_SECRET",
 				}
 
 				s.Require().Contains(env,
