@@ -48,6 +48,8 @@ spec:
       remoteRef: {key: src, property: app-db}
     - secretKey: demo
       remoteRef: {key: src, property: demo}
+    - secretKey: es
+      remoteRef: {key: src, property: es}
 `
 
 type exitErr int
@@ -68,6 +70,7 @@ type fakeCluster struct {
 	kc         map[string]string
 	pg         map[string]string
 	pods       map[string]string
+	es         string
 	sets       int
 	bootstraps int
 	applies    int
@@ -81,14 +84,15 @@ func newFakeCluster(t *testing.T) *fakeCluster {
 	return &fakeCluster{
 		namespaces: map[string]bool{"env-hub": true, "env-plain": true},
 		secrets: map[string]map[string]string{
-			"distribution-team/src": {"kc-admin": "new-admin", "kc-db": "new-kcdb", "app-db": "new-appdb", "demo": "new-demo"},
-			"env-hub/creds":         {"kc-admin": "old-admin", "kc-db": "old-kcdb", "app-db": "old-appdb", "demo": "old-demo"},
-			"env-plain/creds":       {"kc-admin": "old-admin", "kc-db": "old-kcdb", "app-db": "old-appdb", "demo": "old-demo"},
+			"distribution-team/src": {"kc-admin": "new-admin", "kc-db": "new-kcdb", "app-db": "new-appdb", "demo": "new-demo", "es": "new-es"},
+			"env-hub/creds":         {"kc-admin": "old-admin", "kc-db": "old-kcdb", "app-db": "old-appdb", "demo": "old-demo", "es": "old-es"},
+			"env-plain/creds":       {"kc-admin": "old-admin", "kc-db": "old-kcdb", "app-db": "old-appdb", "demo": "old-demo", "es": "old-es"},
 		},
 		resources: map[string]bool{
 			"env-hub/deployment/keycloak":             true,
 			"env-hub/statefulset/keycloak-postgresql": true,
 			"env-hub/statefulset/postgresql":          true,
+			"env-hub/statefulset/elasticsearch":       true,
 		},
 		esoSync:   true,
 		src:       src,
@@ -96,6 +100,7 @@ func newFakeCluster(t *testing.T) *fakeCluster {
 		kc:        map[string]string{"master/admin": "old-admin", "camunda-platform/demo": "old-demo"},
 		pg:        map[string]string{"env-hub/keycloak-postgresql/keycloak": "old-kcdb", "env-hub/postgresql/app": "old-appdb"},
 		pods:      map[string]string{},
+		es:        "old-es",
 	}
 }
 
@@ -197,6 +202,16 @@ func (f *fakeCluster) kubectl(_ context.Context, stdin []byte, args ...string) (
 	case "exec":
 		pos := scriptArgs(args)
 		target := args[4]
+		if target == "statefulset/elasticsearch" {
+			if f.es != in[0] {
+				return nil, exitErr(loginRejected)
+			}
+			if pos[0] == "set" {
+				f.sets++
+				f.es = in[1]
+			}
+			return nil, nil
+		}
 		if strings.HasPrefix(target, "deployment/") {
 			mode, login := pos[0], pos[2]
 			if pw, ok := f.kc["master/"+login]; !ok || pw != in[0] {
@@ -244,6 +259,9 @@ func testStores() matrix.CredentialStores {
 			AdminUser: "admin", AdminSecretKey: "kc-admin",
 			Users: []matrix.KeycloakUserCredential{{Realm: "camunda-platform", Username: "demo", SecretKey: "demo"}},
 		},
+		Elasticsearch: &matrix.ElasticsearchCredential{
+			StatefulSet: "elasticsearch", Container: "elasticsearch", URL: "http://localhost:9200", User: "elastic", SecretKey: "es",
+		},
 	}
 }
 
@@ -272,7 +290,7 @@ func runReconcile(t *testing.T, f *fakeCluster) (string, error) {
 
 func assertNoValues(t *testing.T, out string) {
 	t.Helper()
-	for _, v := range []string{"old-admin", "new-admin", "old-kcdb", "new-kcdb", "old-appdb", "new-appdb", "old-demo", "new-demo"} {
+	for _, v := range []string{"old-admin", "new-admin", "old-kcdb", "new-kcdb", "old-appdb", "new-appdb", "old-demo", "new-demo", "old-es", "new-es"} {
 		if strings.Contains(out, v) {
 			t.Fatalf("output leaks credential %q:\n%s", v, out)
 		}
@@ -293,6 +311,9 @@ func TestReconcileCredentials_RotatesEveryStoreToTheSource(t *testing.T) {
 	}
 	if f.pg["env-hub/keycloak-postgresql/keycloak"] != "new-kcdb" || f.pg["env-hub/postgresql/app"] != "new-appdb" {
 		t.Errorf("postgres roles not rotated: %v", f.pg)
+	}
+	if f.es != "new-es" {
+		t.Error("elasticsearch password not rotated")
 	}
 	if f.secrets["env-plain/creds"]["kc-admin"] != "new-admin" {
 		t.Error("non-hub namespace was not synced")
@@ -330,6 +351,44 @@ func TestReconcileCredentials_ResetsAdminThroughBootstrapWhenNoKnownPasswordWork
 	assertNoValues(t, out)
 }
 
+func TestReconcileCredentials_RemovesTemporaryAdminWhenTheResetFails(t *testing.T) {
+	f := newFakeCluster(t)
+	f.kc["master/admin"] = "unknown"
+	api := f.kubectl
+	f2 := func(ctx context.Context, stdin []byte, args ...string) ([]byte, error) {
+		if pos := scriptArgs(args); len(pos) > 2 && pos[0] == "set-password" && strings.HasPrefix(pos[2], "deploy-camunda-reconcile-") {
+			return nil, fmt.Errorf("injected set-password failure")
+		}
+		return api(ctx, stdin, args...)
+	}
+	var out bytes.Buffer
+	clock := time.Unix(1_790_000_000, 0)
+	r := &credentialReconciler{kubectl: f2, out: &out, poll: time.Millisecond, timeout: time.Minute,
+		now: func() time.Time { clock = clock.Add(10 * time.Second); return clock }, generate: generateCredential}
+	err := r.reconcile(context.Background(), reconcileInput{manifest: []byte(reconcileManifest), src: f.src, sourceNS: "distribution-team",
+		namespaces: []string{"env-hub"}, hubNS: "env-hub", stores: testStores()})
+	if err == nil || !strings.Contains(err.Error(), "injected") {
+		t.Fatalf("err = %v, want the injected failure", err)
+	}
+	for k := range f.kc {
+		if strings.Contains(k, "deploy-camunda-reconcile-") {
+			t.Errorf("temporary admin %s left behind after a failed reset", k)
+		}
+	}
+	if len(f.pods) != 0 {
+		t.Errorf("bootstrap pod left behind: %v", f.pods)
+	}
+}
+
+func TestReconcileCredentials_ElasticsearchWithoutAWorkingPasswordFailsWithTheManualStep(t *testing.T) {
+	f := newFakeCluster(t)
+	f.es = "unknown"
+	_, err := runReconcile(t, f)
+	if err == nil || !strings.Contains(err.Error(), "elasticsearch-reset-password") || strings.Contains(err.Error(), "new-es") {
+		t.Fatalf("err = %v", err)
+	}
+}
+
 func TestReconcileCredentials_LeavesCurrentStoresAlone(t *testing.T) {
 	f := newFakeCluster(t)
 	for k, v := range f.secrets["distribution-team/src"] {
@@ -338,6 +397,7 @@ func TestReconcileCredentials_LeavesCurrentStoresAlone(t *testing.T) {
 	f.kc["master/admin"] = "new-admin"
 	f.pg["env-hub/keycloak-postgresql/keycloak"] = "new-kcdb"
 	f.pg["env-hub/postgresql/app"] = "new-appdb"
+	f.es = "new-es"
 	out, err := runReconcile(t, f)
 	if err != nil {
 		t.Fatalf("reconcile: %v\n%s", err, out)
@@ -456,6 +516,9 @@ func TestDogfoodCredentialStores_KeysExistInTheManifest(t *testing.T) {
 	}
 	for _, u := range s.Keycloak.Users {
 		want = append(want, u.SecretKey)
+	}
+	if s.Elasticsearch != nil {
+		want = append(want, s.Elasticsearch.SecretKey)
 	}
 	for _, k := range want {
 		if keys[k] == "" {

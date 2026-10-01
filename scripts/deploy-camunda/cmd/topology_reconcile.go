@@ -95,6 +95,21 @@ SQL
 esac
 `
 
+// esScript runs in an Elasticsearch container. Positional args: mode, URL,
+// user. stdin: the login password, then for set the new password.
+const esScript = `set -eu
+mode=$1 url=$2 user=$3
+IFS= read -r lp
+auth=$(printf '%s:%s' "$user" "$lp" | base64 | tr -d '\n')
+code=$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Basic $auth" "$url/_security/_authenticate")
+case $code in 200) ;; 401) exit 3 ;; *) echo "authenticate returned HTTP $code" >&2; exit 1 ;; esac
+[ "$mode" = check ] && exit 0
+IFS= read -r np
+body=$(printf '%s' "$np" | sed 's/\\/\\\\/g; s/"/\\"/g')
+code=$(printf '{"password":"%s"}' "$body" | curl -s -o /dev/null -w '%{http_code}' -X POST -H "Authorization: Basic $auth" -H 'Content-Type: application/json' --data-binary @- "$url/_security/user/$user/_password")
+[ "$code" = 200 ] || { echo "change password returned HTTP $code" >&2; exit 1; }
+`
+
 type kubectlFunc func(ctx context.Context, stdin []byte, args ...string) ([]byte, error)
 
 type kubectlError struct {
@@ -255,6 +270,11 @@ func (r *credentialReconciler) reconcile(ctx context.Context, in reconcileInput)
 			return err
 		}
 	}
+	if e := in.stores.Elasticsearch; e != nil {
+		if err := r.reconcileElasticsearch(ctx, in.hubNS, *e, value, previous); err != nil {
+			return err
+		}
+	}
 	for _, pg := range in.stores.Postgres {
 		pw, err := value(pg.SecretKey)
 		if err != nil {
@@ -405,7 +425,7 @@ func (r *credentialReconciler) reconcileKeycloak(ctx context.Context, ns string,
 // from the Keycloak Deployment's image and database settings, logs in as the
 // temporary admin it creates to set adminPw, then deletes it. The live
 // container's memory limit leaves no room for the second JVM.
-func (r *credentialReconciler) resetKeycloakAdmin(ctx context.Context, ns string, k matrix.KeycloakCredentialStore, adminPw string) error {
+func (r *credentialReconciler) resetKeycloakAdmin(ctx context.Context, ns string, k matrix.KeycloakCredentialStore, adminPw string) (retErr error) {
 	raw, err := r.kubectl(ctx, nil, "get", "deployment", k.Deployment, "-n", ns, "-o", "json")
 	if err != nil {
 		return err
@@ -478,7 +498,16 @@ func (r *credentialReconciler) resetKeycloakAdmin(ctx context.Context, ns string
 	if err := cleanup(ctx); err != nil {
 		return err
 	}
-	defer func() { _ = cleanup(context.WithoutCancel(ctx)) }()
+	defer func() {
+		c, cancel := context.WithTimeout(context.WithoutCancel(ctx), 2*time.Minute)
+		defer cancel()
+		if err := r.removeTempAdmin(c, ns, k, tempUser, tempPw, adminPw); err != nil {
+			retErr = errors.Join(retErr, err)
+		}
+		if err := cleanup(c); err != nil {
+			retErr = errors.Join(retErr, fmt.Errorf("%s: delete bootstrap pod and secret %s: %w", ns, name, err))
+		}
+	}()
 	for _, obj := range []any{secret, pod} {
 		manifest, err := json.Marshal(obj)
 		if err != nil {
@@ -496,17 +525,8 @@ func (r *credentialReconciler) resetKeycloakAdmin(ctx context.Context, ns string
 		}
 		switch strings.TrimSpace(string(phase)) {
 		case string(corev1.PodSucceeded):
-			if _, err := r.kcSetPassword(ctx, ns, k, tempUser, tempPw, "master", k.AdminUser, adminPw); err != nil {
-				return err
-			}
-			res, err := r.kcadm(ctx, ns, k, lines(adminPw), "delete-user", k.URL, k.AdminUser, "master", tempUser)
-			if err != nil {
-				return err
-			}
-			if res != "deleted" {
-				return fmt.Errorf("%s: temporary admin %s was not found for deletion", ns, tempUser)
-			}
-			return nil
+			_, err := r.kcSetPassword(ctx, ns, k, tempUser, tempPw, "master", k.AdminUser, adminPw)
+			return err
 		case string(corev1.PodFailed):
 			logs, _ := r.kubectl(ctx, nil, "logs", "pod/"+name, "-n", ns, "--tail=20")
 			return fmt.Errorf("%s: bootstrap-admin pod failed:\n%s", ns, logs)
@@ -520,6 +540,94 @@ func (r *credentialReconciler) resetKeycloakAdmin(ctx context.Context, ns string
 		case <-time.After(r.poll):
 		}
 	}
+}
+
+func (r *credentialReconciler) es(ctx context.Context, ns string, e matrix.ElasticsearchCredential, stdin []byte, mode string) error {
+	_, err := r.kubectl(ctx, stdin, "exec", "-i", "-n", ns, "statefulset/"+e.StatefulSet, "-c", e.Container, "--", "sh", "-c", esScript, "sh", mode, e.URL, e.User)
+	return err
+}
+
+func (r *credentialReconciler) esLogin(ctx context.Context, ns string, e matrix.ElasticsearchCredential, pw string) (bool, error) {
+	err := r.es(ctx, ns, e, lines(pw), "check")
+	switch {
+	case err == nil:
+		return true, nil
+	case exitCode(err) == loginRejected:
+		return false, nil
+	default:
+		return false, err
+	}
+}
+
+// reconcileElasticsearch sets the native user's password through the security
+// API, authenticating with the namespace's previous value. Without a working
+// previous value there is no non-interactive way in, so it fails with the
+// manual step instead.
+func (r *credentialReconciler) reconcileElasticsearch(ctx context.Context, ns string, e matrix.ElasticsearchCredential, value func(string) (string, error), previous map[string]string) error {
+	ok, err := r.exists(ctx, ns, "statefulset", e.StatefulSet)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		fmt.Fprintf(r.out, "%s: statefulset/%s absent; skipping Elasticsearch\n", ns, e.StatefulSet)
+		return nil
+	}
+	pw, err := value(e.SecretKey)
+	if err != nil {
+		return err
+	}
+	if current, err := r.esLogin(ctx, ns, e, pw); err != nil || current {
+		if current {
+			fmt.Fprintf(r.out, "%s: elasticsearch %s password current\n", ns, e.User)
+		}
+		return err
+	}
+	prev := previous[e.SecretKey]
+	usable := false
+	if prev != "" && prev != pw {
+		if usable, err = r.esLogin(ctx, ns, e, prev); err != nil {
+			return err
+		}
+	}
+	if !usable {
+		return fmt.Errorf("%s: elasticsearch rejects both the current and the previous %s password; reset it in %s-0 with "+
+			"`bin/elasticsearch-reset-password -u %s -i` to the value of %s, then re-run", ns, e.User, e.StatefulSet, e.User, e.SecretKey)
+	}
+	if err := r.es(ctx, ns, e, lines(prev, pw), "set"); err != nil {
+		return err
+	}
+	if ok, err := r.esLogin(ctx, ns, e, pw); err != nil || !ok {
+		if err == nil {
+			err = fmt.Errorf("%s: elasticsearch still rejects %s's password after the change", ns, e.User)
+		}
+		return err
+	}
+	fmt.Fprintf(r.out, "%s: elasticsearch %s password rotated from its previous value\n", ns, e.User)
+	return nil
+}
+
+// removeTempAdmin deletes the bootstrap admin, logging in as the permanent
+// admin or, if that password was never set, as the temporary admin itself. A
+// temporary admin that no longer exists, or never got created, is not an error.
+func (r *credentialReconciler) removeTempAdmin(ctx context.Context, ns string, k matrix.KeycloakCredentialStore, tempUser, tempPw, adminPw string) error {
+	var last error
+	for _, login := range []struct{ user, pw string }{{k.AdminUser, adminPw}, {tempUser, tempPw}} {
+		res, err := r.kcadm(ctx, ns, k, lines(login.pw), "delete-user", k.URL, login.user, "master", tempUser)
+		switch {
+		case err == nil && (res == "deleted" || res == "absent"):
+			return nil
+		case err == nil:
+			last = fmt.Errorf("unexpected kcadm output %q", res)
+		case exitCode(err) == loginRejected:
+			continue
+		default:
+			last = err
+		}
+	}
+	if last == nil {
+		return nil
+	}
+	return fmt.Errorf("%s: temporary keycloak admin %s may remain in the master realm; delete it: %w", ns, tempUser, last)
 }
 
 func (r *credentialReconciler) psql(ctx context.Context, ns string, pg matrix.PostgresCredentialStore, mode, pw string) error {
@@ -615,6 +723,8 @@ keeps the password it was initialised with to the synced value:
   namespace's previous value, else creates a temporary admin with
   kc.sh bootstrap-admin in a separate pod and deletes it afterwards;
 - each listed Keycloak realm user that exists;
+- the Elasticsearch native user, through the security API with its previous
+  value;
 - each PostgreSQL role, through ALTER ROLE over the pod's local socket.
 
 Stores already current are left alone and no value is ever printed. Run it

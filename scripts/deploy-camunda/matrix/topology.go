@@ -64,6 +64,17 @@ type CredentialStores struct {
 	Secret          string                    `yaml:"secret" json:"secret"`
 	Postgres        []PostgresCredentialStore `yaml:"postgres,omitempty" json:"postgres,omitempty"`
 	Keycloak        *KeycloakCredentialStore  `yaml:"keycloak,omitempty" json:"keycloak,omitempty"`
+	Elasticsearch   *ElasticsearchCredential  `yaml:"elasticsearch,omitempty" json:"elasticsearch,omitempty"`
+}
+
+// ElasticsearchCredential is a native-realm user whose password lives in the
+// cluster's security index.
+type ElasticsearchCredential struct {
+	StatefulSet string `yaml:"statefulset" json:"statefulset"`
+	Container   string `yaml:"container" json:"container"`
+	URL         string `yaml:"url" json:"url"`
+	User        string `yaml:"user" json:"user"`
+	SecretKey   string `yaml:"secret-key" json:"secretKey"`
 }
 
 // PostgresCredentialStore is a PostgreSQL role whose password lives in the database.
@@ -125,8 +136,15 @@ func credentialStoreProblems(s *CredentialStores, suffixes map[string]bool) []st
 			req(u.SecretKey, at+"secret-key")
 		}
 	}
-	if len(s.Postgres) == 0 && s.Keycloak == nil {
-		p = append(p, "at least one postgres or keycloak store is required")
+	if e := s.Elasticsearch; e != nil {
+		req(e.StatefulSet, "elasticsearch.statefulset")
+		req(e.Container, "elasticsearch.container")
+		req(e.URL, "elasticsearch.url")
+		req(e.User, "elasticsearch.user")
+		req(e.SecretKey, "elasticsearch.secret-key")
+	}
+	if len(s.Postgres) == 0 && s.Keycloak == nil && s.Elasticsearch == nil {
+		p = append(p, "at least one postgres, keycloak, or elasticsearch store is required")
 	}
 	return p
 }

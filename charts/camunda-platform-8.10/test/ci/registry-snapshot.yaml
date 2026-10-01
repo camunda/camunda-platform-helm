@@ -2471,6 +2471,12 @@ integration:
                   - realm: camunda-platform
                     username: demo
                     secret-key: identity-user-password
+              elasticsearch:
+                statefulset: elasticsearch-master
+                container: elasticsearch
+                url: http://localhost:9200
+                user: elastic
+                secret-key: elasticsearch-password
     nightly:
       scenario: []
   flows:

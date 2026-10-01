@@ -451,7 +451,8 @@ func TestTopologyValidate_CredentialStores(t *testing.T) {
 		{"missing secret", manifest, func(s *CredentialStores) { s.Secret = "" }, "secret is required"},
 		{"incomplete postgres", manifest, func(s *CredentialStores) { s.Postgres[0].User = "" }, "postgres[0].user is required"},
 		{"incomplete keycloak user", manifest, func(s *CredentialStores) { s.Keycloak.Users[0].SecretKey = "" }, "keycloak.users[0].secret-key is required"},
-		{"no stores", manifest, func(s *CredentialStores) { s.Postgres, s.Keycloak = nil, nil }, "at least one postgres or keycloak store"},
+		{"no stores", manifest, func(s *CredentialStores) { s.Postgres, s.Keycloak = nil, nil }, "at least one postgres, keycloak, or elasticsearch store"},
+		{"incomplete elasticsearch", manifest, func(s *CredentialStores) { s.Elasticsearch = &ElasticsearchCredential{StatefulSet: "es"} }, "elasticsearch.user is required"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
