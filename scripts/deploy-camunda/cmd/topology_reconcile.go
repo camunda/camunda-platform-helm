@@ -266,14 +266,18 @@ func (r *credentialReconciler) reconcile(ctx context.Context, in reconcileInput)
 		return err
 	}
 	generations := splitGenerations(snapshot)
-	if len(preSync) > 0 && !containsGeneration(generations, preSync) {
-		generations = append(generations, preSync)
-		if len(generations) > maxGenerations {
+	remember := func(gen map[string]string) error {
+		if len(gen) == 0 || containsGeneration(generations, gen) {
+			return nil
+		}
+		if len(generations) >= maxGenerations {
 			return fmt.Errorf("%s/%s already holds %d unfinished credential generations; fix the failing store before rotating again", in.hubNS, previousName, maxGenerations)
 		}
-		if err := r.saveSecret(ctx, in.hubNS, previousName, joinGenerations(generations)); err != nil {
-			return err
-		}
+		generations = append(generations, gen)
+		return r.saveSecret(ctx, in.hubNS, previousName, joinGenerations(generations))
+	}
+	if err := remember(preSync); err != nil {
+		return err
 	}
 	r.prior = make([]map[string]string, 0, len(generations))
 	for i := len(generations) - 1; i >= 0; i-- {
@@ -293,6 +297,9 @@ func (r *credentialReconciler) reconcile(ctx context.Context, in reconcileInput)
 	}
 	current, err := r.secretData(ctx, in.hubNS, in.stores.Secret)
 	if err != nil {
+		return err
+	}
+	if err := remember(current); err != nil {
 		return err
 	}
 	r.postgres = in.stores.Postgres

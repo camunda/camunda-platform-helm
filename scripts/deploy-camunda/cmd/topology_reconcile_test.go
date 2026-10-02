@@ -576,6 +576,37 @@ func TestReconcileCredentials_FailsWhenTheSourceChangesDuringTheRun(t *testing.T
 	if _, kept := f.secrets["env-hub/creds-previous"]; !kept {
 		t.Error("the snapshot must survive a run that did not finish")
 	}
+	gens := splitGenerations(f.secrets["env-hub/creds-previous"])
+	if !containsGeneration(gens, map[string]string{"kc-admin": "new-admin", "kc-db": "new-kcdb", "app-db": "new-appdb", "demo": "new-demo", "es": "new-es"}) {
+		t.Error("the snapshot must keep the generation this run already wrote into the stores")
+	}
+}
+
+func TestReconcileCredentials_SnapshotHoldsTheSyncedGenerationBeforeAnyStoreMoves(t *testing.T) {
+	f := newFakeCluster(t)
+	api := f.kubectl
+	checked := false
+	f2 := func(ctx context.Context, stdin []byte, args ...string) ([]byte, error) {
+		if args[0] == "exec" && !checked {
+			checked = true
+			gens := splitGenerations(f.secrets["env-hub/creds-previous"])
+			if !containsGeneration(gens, f.secrets["env-hub/creds"]) {
+				t.Error("a store was touched before the synced generation was saved to the snapshot")
+			}
+		}
+		return api(ctx, stdin, args...)
+	}
+	var out bytes.Buffer
+	clock := time.Unix(1_790_000_000, 0)
+	r := &credentialReconciler{kubectl: f2, out: &out, poll: time.Millisecond, timeout: time.Minute,
+		now: func() time.Time { clock = clock.Add(10 * time.Second); return clock }, generate: generateCredential}
+	if err := r.reconcile(context.Background(), reconcileInput{manifest: []byte(reconcileManifest), src: f.src,
+		sourceNS: "distribution-team", namespaces: []string{"env-hub"}, hubNS: "env-hub", stores: testStores()}); err != nil {
+		t.Fatalf("reconcile: %v\n%s", err, out.String())
+	}
+	if !checked {
+		t.Fatal("no store was reconciled")
+	}
 }
 
 func TestGenerations_RoundTripAndDeduplicate(t *testing.T) {
