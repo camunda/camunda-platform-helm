@@ -1,0 +1,41 @@
+---
+apiVersion: camunda.io/v1alpha1
+kind: CamundaHub
+metadata:
+  name: camunda
+  namespace: camunda-hub
+spec:
+  chart:
+    repository: oci://ghcr.io/camunda/team-distribution/camunda-platform
+    name: camunda-platform
+    version: 15.0.0-alpha4
+  release:
+    createNamespace: true
+    timeout: 15m
+  adoption:
+    # Set true to take over a release that was installed with the Helm CLI.
+    # Adoption is in place: no reinstall, no resource recreation.
+    adoptExisting: false
+  upgrade:
+    approval: Manual
+    phased: false
+  drift: Detect
+  deletionPolicy: Retain
+  # Chart values, passed through verbatim and validated against the resolved
+  # chart's own values.schema.json. global.topology.mode is set to "hub" by the
+  # operator and must not be set here.
+  values:
+    global:
+      security:
+        authentication:
+          method: oidc
+      identity:
+        auth:
+          issuerBackendUrl: https://keycloak.example.com/realms/camunda
+    identity:
+      enabled: true
+    camundaHub:
+      enabled: true
+      restapi:
+        mail:
+          fromAddress: noreply@example.com
