@@ -115,5 +115,4 @@ jobs:
       # Runs the reconcile scripts against PostgreSQL, Elasticsearch, and
       # Keycloak containers, including the kc.sh bootstrap-admin recovery.
       - name: deploy-camunda — credential-store integration tests
-        working-directory: scripts/deploy-camunda
-        run: go test -tags integration ./cmd -run 'TestPsqlScript|TestEsScript|TestKeycloakBootstrapReset' -count=1 -timeout 20m -v
+        run: make test.deploy-camunda-credential-stores
