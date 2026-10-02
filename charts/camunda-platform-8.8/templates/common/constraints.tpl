@@ -464,7 +464,7 @@ The following values inside your values.yaml need to be set but were not:
 
   {{- $regions := int .Values.global.multiregion.regions -}}
   {{- $clusterSize := int .Values.orchestration.clusterSize -}}
-  {{- if and .Values.orchestration.enabled (gt $regions 0) (ne (mod $clusterSize $regions) 0) }}
+  {{- if and .Values.orchestration.enabled (gt $regions 1) (ne (mod $clusterSize $regions) 0) }}
     {{- $warningMessage := printf "%s %s %s"
         "[camunda][warning]"
         (printf "orchestration.clusterSize is %d but global.multiregion.regions is %d, so the regions deploy %d brokers while every broker expects %d; the missing brokers stay cluster members and a region failover can leave partitions without a leader." $clusterSize $regions (mul (div $clusterSize $regions) $regions) $clusterSize)
