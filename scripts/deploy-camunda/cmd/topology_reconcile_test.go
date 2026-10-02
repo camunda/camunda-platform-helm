@@ -842,6 +842,35 @@ func TestReconcileCredentials_SkipsAbsentStores(t *testing.T) {
 	}
 }
 
+func TestKcadmScript_OnlyReportsRejectedForInvalidCredentials(t *testing.T) {
+	login := kcadmScript[strings.Index(kcadmScript, "config credentials"):strings.Index(kcadmScript, `[ "$mode" = check ]`)]
+	if !strings.Contains(login, "invalid_grant") || !strings.Contains(login, "exit 1") {
+		t.Fatalf("login must exit %d only for invalid credentials and fail otherwise:\n%s", loginRejected, login)
+	}
+}
+
+func TestReconcileCredentials_KeycloakOutageFailsWithoutTryingABootstrap(t *testing.T) {
+	f := newFakeCluster(t)
+	api := f.kubectl
+	f2 := func(ctx context.Context, stdin []byte, args ...string) ([]byte, error) {
+		if args[0] == "exec" && strings.HasPrefix(args[4], "deployment/") {
+			return nil, exitErr(1)
+		}
+		return api(ctx, stdin, args...)
+	}
+	var out bytes.Buffer
+	clock := time.Unix(1_790_000_000, 0)
+	r := &credentialReconciler{kubectl: f2, out: &out, poll: time.Millisecond, timeout: time.Minute,
+		now: func() time.Time { clock = clock.Add(10 * time.Second); return clock }, generate: generateCredential}
+	if err := r.reconcile(context.Background(), reconcileInput{manifest: []byte(reconcileManifest), src: f.src, sourceNS: "distribution-team",
+		namespaces: []string{"env-hub"}, hubNS: "env-hub", stores: testStores()}); err == nil {
+		t.Fatal("want the keycloak error")
+	}
+	if f.bootstraps != 0 {
+		t.Errorf("bootstraps = %d, want 0 when keycloak is unreachable", f.bootstraps)
+	}
+}
+
 func TestPsqlScript_ChecksOverANonLoopbackAddress(t *testing.T) {
 	check := psqlScript[strings.Index(psqlScript, "check)"):strings.Index(psqlScript, "set)")]
 	if strings.Contains(check, "127.0.0.1") || strings.Contains(check, "localhost") || strings.Contains(check, "/var/run/postgresql") {

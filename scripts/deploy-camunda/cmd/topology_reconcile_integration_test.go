@@ -204,6 +204,9 @@ func TestKeycloakBootstrapReset_RecoversALostAdminOnTheSupportedImage(t *testing
 		}
 		time.Sleep(5 * time.Second)
 	}
+	if _, err := kcadm([]string{"initial-pw"}, "check", "http://localhost:1/auth", "admin"); err == nil || exitCode(err) == loginRejected {
+		t.Fatalf("an unreachable server must fail, not report a rejected password: %v", err)
+	}
 	if res, err := kcadm([]string{"initial-pw", "lost-pw"}, "set-password", url, "admin", "master", "admin"); err != nil || res != "set" {
 		t.Fatalf("lose the admin password: res=%q err=%v", res, err)
 	}

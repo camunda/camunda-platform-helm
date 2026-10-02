@@ -57,7 +57,11 @@ K=/opt/keycloak/bin/kcadm.sh
 cfg=$(mktemp)
 trap 'rm -f "$cfg"' EXIT
 IFS= read -r lp
-"$K" config credentials --config "$cfg" --server "$url" --realm master --user "$login" --password "$lp" >/dev/null 2>&1 || exit 3
+if ! err=$("$K" config credentials --config "$cfg" --server "$url" --realm master --user "$login" --password "$lp" 2>&1); then
+  case $err in *invalid_grant*|*"Invalid user credentials"*) exit 3 ;; esac
+  printf 'kcadm login failed: %s\n' "$err" >&2
+  exit 1
+fi
 [ "$mode" = check ] && exit 0
 realm=$4 user=$5
 id=$("$K" get users --config "$cfg" -r "$realm" -q username="$user" -q exact=true --fields id --format csv --noquotes)
