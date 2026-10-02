@@ -2,26 +2,19 @@
 # Camunda - Digest
 #
 
-console:
-  # https://hub.docker.com/r/camunda/console/tags
-  image:
-    repository: camunda/console
-    tag: 8.10-SNAPSHOT
-    digest: "sha256:bc30049fadef54f289961198e93b47d495f99a6e225aafb900703cebcd436953"
-
 connectors:
   # https://hub.docker.com/r/camunda/connectors-bundle/tags
   image:
     repository: camunda/connectors-bundle
-    tag: 8.10-SNAPSHOT
-    digest: "sha256:1a304465db2145c004aa782c3791b49d7147e358e94a0e17ac355247c875d965"
+    tag: 8.10.0
+    digest: "sha256:9b69993c1b5dae12f887e1c67c32146449472f265cee3148bac79128013da822"
 
 optimize:
   # https://hub.docker.com/r/camunda/optimize/tags
   image:
     repository: camunda/optimize
-    tag: 8.10-SNAPSHOT
-    digest: "sha256:320b0c691fe335233169bf2673c5e20142ff3865527515989c440bc477e8600e"
+    tag: 8.10.0
+    digest: "sha256:89e1e876289ce36c58e73e80ea71bce4b99c1a06b53e1327e758c89211f7be44"
 
 #
 # Web Modeler
@@ -32,13 +25,15 @@ webModeler:
   restapi:
     image:
       repository: camunda/hub
-      tag: SNAPSHOT
+      tag: 8.10.0
+      digest: "sha256:5e35cbcd2b8ae9905d499c062d05e75289ce41081009312fa1133a19f1e40db8"
 
   # https://hub.docker.com/r/camunda/hub-websockets/tags
   websockets:
     image:
       repository: camunda/hub-websockets
-      tag: SNAPSHOT
+      tag: 8.10.0
+      digest: "sha256:9144978dab547b6a0bd0fa7c378a70c19755d46bcdcc4a81525448503a6007b0"
 
 #
 # Orchestration Cluster
@@ -48,8 +43,8 @@ orchestration:
   # https://hub.docker.com/r/camunda/camunda/tags
   image:
     repository: camunda/camunda
-    tag: 8.10-SNAPSHOT
-    digest: "sha256:93e89a81fae663c844b85d1ed291037777b4149fc765f01433b1b619d30e6b9d"
+    tag: 8.10.0
+    digest: "sha256:f52ecca54537e568b9166d3ea1f0b9adfca557fae13e104d35236091ca1ee6ff"
 
 #
 # Identity
@@ -59,5 +54,5 @@ identity:
   # https://hub.docker.com/r/camunda/identity/tags
   image:
     repository: camunda/identity
-    tag: SNAPSHOT
-    digest: "sha256:4f74946ef9b43668aef11c7c67b4a88ba0d8e1ec95e18da00f66419ad2f03fed"
+    tag: 8.10.0
+    digest: "sha256:0a731ff58fb248c7d1bae2cd8e315128100dbbeb547e6a9b4551e8761e43b777"

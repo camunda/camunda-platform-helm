@@ -11,7 +11,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: zeebe-broker
-    app.kubernetes.io/version: "8.10.0-alpha5"
+    app.kubernetes.io/version: "8.10.0"
     camunda.io/broker-generation: zoned
     
     camunda.io/zone: "zone-a"
@@ -42,7 +42,7 @@ spec:
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
         app.kubernetes.io/component: zeebe-broker
-        app.kubernetes.io/version: "8.10.0-alpha5"
+        app.kubernetes.io/version: "8.10.0"
         camunda.io/broker-generation: zoned
         
         camunda.io/zone: "zone-a"
@@ -52,7 +52,7 @@ spec:
         []
       containers:
         - name: orchestration
-          image: camunda/camunda:8.10.0-alpha5
+          image: camunda/camunda:8.10.0
           imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: false
@@ -188,7 +188,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: zeebe-broker
-    app.kubernetes.io/version: "8.10.0-alpha5"
+    app.kubernetes.io/version: "8.10.0"
     camunda.io/broker-generation: numbered
   annotations:
 spec:
@@ -214,7 +214,7 @@ spec:
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
         app.kubernetes.io/component: zeebe-broker
-        app.kubernetes.io/version: "8.10.0-alpha5"
+        app.kubernetes.io/version: "8.10.0"
         camunda.io/broker-generation: numbered
       annotations:
     spec:
@@ -222,7 +222,7 @@ spec:
         []
       containers:
         - name: orchestration
-          image: camunda/camunda:8.10.0-alpha5
+          image: camunda/camunda:8.10.0
           imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: false
