@@ -26,6 +26,7 @@ import (
 	"testing"
 	"time"
 
+	"gopkg.in/yaml.v3"
 	corev1 "k8s.io/api/core/v1"
 
 	"scripts/deploy-camunda/matrix"
@@ -1008,6 +1009,47 @@ func TestDogfoodCredentialStores_KeysExistInTheManifest(t *testing.T) {
 	for _, k := range want {
 		if keys[k] == "" {
 			t.Errorf("credential-stores key %q is not written by the manifest", k)
+		}
+	}
+}
+
+// The integration tests run the reconcile scripts against these images.
+const (
+	postgresImage      = "postgres:16-alpine"
+	elasticsearchImage = "docker.elastic.co/elasticsearch/elasticsearch:8.18.0"
+	keycloakImage      = "quay.io/keycloak/keycloak:26.3.3"
+)
+
+func TestCredentialStoreIntegrationImages_MatchTheDogfoodStores(t *testing.T) {
+	repoRoot := filepath.Join("..", "..", "..")
+	read := func(rel string) map[string]any {
+		t.Helper()
+		raw, err := os.ReadFile(filepath.Join(repoRoot, rel))
+		if err != nil {
+			t.Fatal(err)
+		}
+		var v map[string]any
+		if err := yaml.Unmarshal(raw, &v); err != nil {
+			t.Fatalf("%s: %v", rel, err)
+		}
+		return v
+	}
+	image := func(v map[string]any) string {
+		img, _ := v["image"].(map[string]any)
+		return fmt.Sprintf("%v/%v:%v", img["registry"], img["repository"], img["tag"])
+	}
+	kc := read("test/integration/companion-values/keycloak-dogfood.yaml")
+	es := read("test/integration/companion-values/elasticsearch-dogfood.yaml")
+	pg := read("charts/internal-postgresql/values.yaml")
+	kcpg, _ := read("charts/internal-keycloak-26/values.yaml")["postgresql"].(map[string]any)
+	for name, pair := range map[string][2]string{
+		"keycloak":              {keycloakImage, image(kc)},
+		"elasticsearch":         {elasticsearchImage, fmt.Sprintf("docker.elastic.co/elasticsearch/elasticsearch:%v", es["imageTag"])},
+		"postgresql":            {"docker.io/" + postgresImage, image(pg)},
+		"keycloak's postgresql": {"docker.io/" + postgresImage, image(kcpg)},
+	} {
+		if pair[0] != pair[1] {
+			t.Errorf("%s: integration tests use %s but dogfood deploys %s; update the image constant and re-run make test.deploy-camunda-credential-stores", name, pair[0], pair[1])
 		}
 	}
 }

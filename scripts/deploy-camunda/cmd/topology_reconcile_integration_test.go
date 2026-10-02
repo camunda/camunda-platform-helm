@@ -25,9 +25,6 @@ import (
 	"time"
 )
 
-// postgresImage matches internal-postgresql's and internal-keycloak-26's database image.
-const postgresImage = "postgres:16-alpine"
-
 // TestPsqlScript_RepairsAStaleRoleOnTheSupportedImage runs psqlScript, via
 // docker exec, against a PostgreSQL initialised with one password: the new
 // password must be rejected, set, and then accepted.
@@ -92,9 +89,6 @@ func TestPsqlScript_RepairsAStaleRoleOnTheSupportedImage(t *testing.T) {
 	}
 }
 
-// elasticsearchImage matches the dogfood Elasticsearch companion's image.
-const elasticsearchImage = "docker.elastic.co/elasticsearch/elasticsearch:8.18.0"
-
 // TestEsScript_RotatesTheElasticPasswordOnTheSupportedImage runs esScript, via
 // docker exec, against a secured single-node Elasticsearch. The new password
 // carries JSON metacharacters to cover the request body's escaping.
@@ -149,9 +143,6 @@ func TestEsScript_RotatesTheElasticPasswordOnTheSupportedImage(t *testing.T) {
 		t.Fatalf("old password still accepted: err = %v", err)
 	}
 }
-
-// keycloakImage matches the dogfood Keycloak companion's image.
-const keycloakImage = "quay.io/keycloak/keycloak:26.3.3"
 
 // TestKeycloakBootstrapReset_RecoversALostAdminOnTheSupportedImage reproduces
 // the lost-admin recovery against Keycloak on PostgreSQL: a second container

@@ -94,7 +94,14 @@ jobs:
           filters: |
             stores:
               - 'scripts/deploy-camunda/cmd/topology_reconcile*.go'
+              - 'charts/internal-keycloak-26/**'
+              - 'charts/internal-postgresql/**'
+              - 'test/integration/companion-values/*-dogfood.yaml'
+              - 'charts/camunda-platform-8.10/test/ci/registry/dependencies/*-dogfood.yaml'
+              - 'charts/camunda-platform-8.10/test/ci/registry/scenarios/dogfood.yaml'
+              - 'charts/camunda-platform-8.10/test/integration/scenarios/chart-full-setup/values/features/dogfood-hub.yaml'
               - '.github/workflows/test-release-tooling.yaml'
+              - 'Makefile'
               - '.tool-versions'
 
   credential-store-integration:
