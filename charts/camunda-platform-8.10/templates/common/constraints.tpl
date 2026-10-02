@@ -583,15 +583,16 @@ is driven entirely by orchestration.partitioning.
 Fail if the round-robin numbering cannot describe a consistent cluster. Node IDs are
 derived as "<ordinal> * numberOfZones + zoneIndex", so a zone indexed outside its own
 range takes the node IDs of another zone.
-
-NOTE: a clusterSize the zone count does not divide is the same class of fault and is
-deliberately not rejected here; see #7196.
 */}}
 {{- if ne $partitioning.scheme "zone-aware" }}
   {{- $zoneCount := int $partitioning.numberOfZones -}}
   {{- $zoneIndex := int $partitioning.zoneIndex -}}
   {{- if or (lt $zoneIndex 0) (ge $zoneIndex $zoneCount) }}
     {{- fail (printf "[camunda][error] %s.%s is %d but %s.%s is %d; %s addresses this zone and must be between 0 and %d, or its brokers take the node IDs of another zone." $partitioningKey $partitioning.indexKey $zoneIndex $partitioningKey $partitioning.countKey $zoneCount $partitioning.indexKey (sub $zoneCount 1)) -}}
+  {{- end }}
+  {{- $clusterSize := int .Values.orchestration.clusterSize -}}
+  {{- if ne (mod $clusterSize $zoneCount) 0 }}
+    {{- fail (printf "[camunda][error] orchestration.clusterSize is %d but %s.%s is %d, so the zones deploy %d brokers while every broker expects %d; the missing brokers stay cluster members and a zone failover can leave partitions without a leader. Set orchestration.clusterSize to a multiple of %s.%s." $clusterSize $partitioningKey $partitioning.countKey $zoneCount (mul (div $clusterSize $zoneCount) $zoneCount) $clusterSize $partitioningKey $partitioning.countKey) -}}
   {{- end }}
 {{- end }}
 
