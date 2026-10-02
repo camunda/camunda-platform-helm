@@ -440,6 +440,37 @@ func TestReconcileCredentials_RemovesTemporaryAdminWhenTheResetFails(t *testing.
 	}
 }
 
+func TestReconcileCredentials_KeepsTheBootstrapSecretWhenTheTemporaryAdminCannotBeRemoved(t *testing.T) {
+	f := newFakeCluster(t)
+	f.kc["master/admin"] = "unknown"
+	api := f.kubectl
+	f2 := func(ctx context.Context, stdin []byte, args ...string) ([]byte, error) {
+		if pos := scriptArgs(args); len(pos) > 0 && pos[0] == "delete-user" {
+			return nil, fmt.Errorf("injected delete failure")
+		}
+		return api(ctx, stdin, args...)
+	}
+	var out bytes.Buffer
+	clock := time.Unix(1_790_000_000, 0)
+	r := &credentialReconciler{kubectl: f2, out: &out, poll: time.Millisecond, timeout: time.Minute,
+		now: func() time.Time { clock = clock.Add(10 * time.Second); return clock }, generate: generateCredential}
+	err := r.reconcile(context.Background(), reconcileInput{manifest: []byte(reconcileManifest), src: f.src, sourceNS: "distribution-team",
+		namespaces: []string{"env-hub"}, hubNS: "env-hub", stores: testStores()})
+	if err == nil || !strings.Contains(err.Error(), "may remain in the master realm") {
+		t.Fatalf("err = %v, want the temporary-admin warning", err)
+	}
+	if len(f.pods) != 0 {
+		t.Errorf("bootstrap pod left behind: %v", f.pods)
+	}
+	kept := false
+	for k := range f.secrets {
+		kept = kept || strings.HasPrefix(k, "env-hub/keycloak-reconcile-")
+	}
+	if !kept {
+		t.Error("the bootstrap secret is the only record of the temporary admin and must be kept for the next run's cleanup")
+	}
+}
+
 func TestReconcileCredentials_ElasticsearchWithoutAWorkingPasswordFailsWithTheManualStep(t *testing.T) {
 	f := newFakeCluster(t)
 	f.es = "unknown"

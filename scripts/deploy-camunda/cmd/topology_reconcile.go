@@ -674,18 +674,20 @@ func (r *credentialReconciler) resetKeycloakAdmin(ctx context.Context, ns string
 			}},
 		},
 	}
-	cleanup := func(c context.Context) error {
-		_, err := r.kubectl(c, nil, "delete", "pod/"+name, "secret/"+name, "-n", ns, "--ignore-not-found", "--wait=true")
+	cleanup := func(c context.Context, objs ...string) error {
+		_, err := r.kubectl(c, nil, append(append([]string{"delete"}, objs...), "-n", ns, "--ignore-not-found", "--wait=true")...)
 		return err
 	}
 	defer func() {
 		c, cancel := context.WithTimeout(context.WithoutCancel(ctx), 2*time.Minute)
 		defer cancel()
+		objs := []string{"pod/" + name, "secret/" + name}
 		if err := r.removeTempAdmin(c, ns, k, tempUser, tempPw, adminPw); err != nil {
 			retErr = errors.Join(retErr, err)
+			objs = objs[:1]
 		}
-		if err := cleanup(c); err != nil {
-			retErr = errors.Join(retErr, fmt.Errorf("%s: delete bootstrap pod and secret %s: %w", ns, name, err))
+		if err := cleanup(c, objs...); err != nil {
+			retErr = errors.Join(retErr, fmt.Errorf("%s: delete bootstrap %v: %w", ns, objs, err))
 		}
 	}()
 	for _, obj := range []any{secret, pod} {
