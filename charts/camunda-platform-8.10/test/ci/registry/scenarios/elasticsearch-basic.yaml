@@ -11,5 +11,6 @@ exclude:
 infra-type:
   eks: preemptible
   gke: distroci
+e2e-api-suite: true
 dependencies:
   - elasticsearch

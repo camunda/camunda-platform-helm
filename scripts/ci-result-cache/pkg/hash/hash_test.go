@@ -261,6 +261,8 @@ func TestCompute_E2EExecutionScriptsIncluded(t *testing.T) {
 		filepath.Join("scripts", "run-e2e-tests.sh"),
 		filepath.Join("scripts", "render-e2e-env.sh"),
 		filepath.Join("scripts", "base_playwright_script.sh"),
+		filepath.Join("test", "e2e", "playwright.base.config.ts"),
+		filepath.Join("test", "e2e", "playwright.api-projects.ts"),
 	} {
 		t.Run(relPath, func(t *testing.T) {
 			tmpDir := t.TempDir()

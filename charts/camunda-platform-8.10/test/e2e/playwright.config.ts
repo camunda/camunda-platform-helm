@@ -6,6 +6,7 @@ import * as dotenv from "dotenv";
 import * as fs from "fs";
 import * as path from "path";
 
+import { apiProjects } from "../../../../test/e2e/playwright.api-projects";
 import { makeShadowConfig } from "../../../../test/e2e/playwright.base.config";
 
 dotenv.config();
@@ -112,6 +113,7 @@ export default defineConfig(
         testDir: auth0TestDir,
         testMatch: ["**/*.spec.{ts,js}"],
       },
+      ...apiProjects(__dirname),
     ],
   }),
 );

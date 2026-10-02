@@ -45,12 +45,12 @@ func TestCIE2EMatrixWritesRegistryLegs(t *testing.T) {
 		want      []e2eLeg
 	}{
 		{"alpha defaults to blocking smoke", "alp", "alpha", []e2eLeg{{"smoke", true, 1, 1}}},
-		{"beta inverts both blocking defaults", "bet", "beta", []e2eLeg{{"smoke", false, 1, 1}, {"full", true, 1, 1}}},
-		{"gamma opts into a non-blocking full leg", "gam", "gamma", []e2eLeg{{"smoke", true, 1, 1}, {"full", false, 1, 1}}},
+		{"beta inverts every blocking default", "bet", "beta", []e2eLeg{{"smoke", false, 1, 1}, {"full", true, 1, 1}, {"api", true, 1, 1}}},
+		{"gamma opts into non-blocking full and api legs", "gam", "gamma", []e2eLeg{{"smoke", true, 1, 1}, {"full", false, 1, 1}, {"api", false, 1, 1}}},
 		// Shortname wins: a mismatched scenario name must not override it.
-		{"shortname takes precedence", "bet", "alpha", []e2eLeg{{"smoke", false, 1, 1}, {"full", true, 1, 1}}},
+		{"shortname takes precedence", "bet", "alpha", []e2eLeg{{"smoke", false, 1, 1}, {"full", true, 1, 1}, {"api", true, 1, 1}}},
 		// Unknown shortname falls back to the name lookup.
-		{"unknown shortname falls back to name", "zzz", "beta", []e2eLeg{{"smoke", false, 1, 1}, {"full", true, 1, 1}}},
+		{"unknown shortname falls back to name", "zzz", "beta", []e2eLeg{{"smoke", false, 1, 1}, {"full", true, 1, 1}, {"api", true, 1, 1}}},
 		{"unknown scenario defaults", "", "not-a-scenario", []e2eLeg{{"smoke", true, 1, 1}}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

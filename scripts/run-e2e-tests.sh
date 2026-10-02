@@ -127,7 +127,7 @@ Options:
   --rba                                       Run the rba tests
   --mt                                        Run the mt tests
   --auth0                                     Run the auth0-smoke project (Auth0 OIDC scenario)
-  --playwright-project PROJECT                Run a named Playwright project
+  --playwright-project PROJECT                Run a named Playwright project ("api" runs the REST v2 API suite)
   --physical-tenant-id ID                     Physical Tenant selected by this topology leg
   --playwright-debug                          Enable Playwright API debug logs and traces
   --video MODE                                Record video: on, off, retain-on-failure, on-first-retry (default: off)
@@ -396,6 +396,29 @@ set -a
 # shellcheck disable=SC1090
 source "$ENV_FILE"
 set +a
+
+# ── REST v2 API suite (--playwright-project api) ──
+# `deploy-camunda e2e-env api-suite` writes the suite's variables; see its --help.
+if [[ "$PLAYWRIGHT_PROJECT" == "api" ]]; then
+  DEPLOY_CAMUNDA_BIN=$(resolve_deploy_camunda) || {
+    echo "Error: the api project needs deploy-camunda (build it with 'make install.deploy-camunda', or set DEPLOY_CAMUNDA)." >&2
+    exit 1
+  }
+  API_ENV_FILE="${ENV_FILE}.api"
+  "$DEPLOY_CAMUNDA_BIN" e2e-env api-suite \
+    --env-file "$ENV_FILE" \
+    --namespace "$NAMESPACE" \
+    ${KUBE_CONTEXT:+--kube-context "$KUBE_CONTEXT"} \
+    --auth "${TEST_AUTH_TYPE:-}" \
+    --mt="$IS_MT" \
+    --ci="$IS_CI" \
+    --output "$API_ENV_FILE" || exit 1
+  set -a
+  # shellcheck disable=SC1090
+  source "$API_ENV_FILE"
+  set +a
+  rm -f "$API_ENV_FILE"
+fi
 
 # ── Namespace-scoped Playwright output directories ──
 # Playwright defaults test artifacts to <cwd>/test-results and HTML reports to

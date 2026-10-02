@@ -23,18 +23,21 @@ import (
 )
 
 // E2E leg suite names. SuiteSmoke selects the Playwright "smoke-tests" project,
-// SuiteFull the "full-suite" project.
+// SuiteFull the "full-suite" project, and SuiteAPI the "api" and "clock"
+// projects of the Orchestration Cluster REST v2 API suite.
 const (
 	SuiteSmoke = "smoke"
 	SuiteFull  = "full"
+	SuiteAPI   = "api"
 )
 
 // Default blocking behavior per suite, applied when a scenario leaves the
 // corresponding *bool unset. Smoke is the long-standing required signal; the
-// full suite starts as an informational one.
+// full and API suites start as informational ones.
 const (
 	defaultSmokeBlocking = true
 	defaultFullBlocking  = false
+	defaultAPIBlocking   = false
 )
 
 // E2ELeg is one entry of the e2e job's GitHub Actions matrix: which Playwright
@@ -134,6 +137,9 @@ func scenarioE2ELegs(scn CIScenario) []E2ELeg {
 	legs := []E2ELeg{newE2ELeg(SuiteSmoke, e2eBlocking(scn.E2ESmokeBlocking, defaultSmokeBlocking))}
 	if scn.E2EFullSuite {
 		legs = append(legs, newE2ELeg(SuiteFull, e2eBlocking(scn.E2EFullSuiteBlocking, defaultFullBlocking)))
+	}
+	if scn.E2EAPISuite {
+		legs = append(legs, newE2ELeg(SuiteAPI, e2eBlocking(scn.E2EAPISuiteBlocking, defaultAPIBlocking)))
 	}
 	return legs
 }

@@ -32,6 +32,7 @@ func newE2EEnvCommand() *cobra.Command {
 		Short: "Generate e2e .env files",
 	}
 	c.AddCommand(newE2EEnvMergeCommand())
+	c.AddCommand(newE2EEnvAPISuiteCommand())
 	return c
 }
 

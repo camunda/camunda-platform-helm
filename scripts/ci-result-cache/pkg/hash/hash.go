@@ -76,6 +76,7 @@ func Compute(repoRoot string, chartVersions []string, e2eSuiteVersion, runnerIma
 		filepath.Join("scripts", "run-e2e-tests.sh"),
 		filepath.Join("scripts", "render-e2e-env.sh"),
 		filepath.Join("scripts", "base_playwright_script.sh"),
+		filepath.Join("test", "e2e"),
 	)
 
 	for _, relPath := range paths {
