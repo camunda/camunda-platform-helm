@@ -360,3 +360,13 @@ func TestApplyTopologyCredentialsManifest(t *testing.T) {
 		}
 	})
 }
+
+func TestEnsureCredentialsCommand_AcceptsTheDeprecatedGuardNamespaceFlag(t *testing.T) {
+	cmd := newTopologyEnsureCredentialsCommand()
+	if err := cmd.ParseFlags([]string{"--manifest", "m.yaml", "--guard-namespace", "a", "--guard-namespace", "b,c"}); err != nil {
+		t.Fatalf("existing callers pass --guard-namespace: %v", err)
+	}
+	if f := cmd.Flags().Lookup("guard-namespace"); f == nil || f.Deprecated == "" {
+		t.Error("--guard-namespace must be marked deprecated")
+	}
+}
