@@ -2318,7 +2318,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be used to set the Docker image tag for the WebModeler images",
-                            "default": "8.10.0-alpha5"
+                            "default": "8.10.0"
                         },
                         "pullSecrets": {
                             "type": "array",
