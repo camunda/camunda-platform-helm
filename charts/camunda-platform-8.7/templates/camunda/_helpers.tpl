@@ -117,7 +117,7 @@ If the "overlay" values exist, they will override the "base" values, otherwise t
 Usage: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.console) }}
 */}}
 {{- define "camundaPlatform.imageTagByParams" -}}
-    {{- .overlay.image.tag | default .base.image.tag -}}
+    {{- .overlay.image.tag | default .base.image.tag | default "" -}}
 {{- end -}}
 
 {{/*
@@ -162,18 +162,7 @@ Return the version label for resources.
 If an image digest is specified without a tag, fall back to .Chart.AppVersion (e.g., “8.7.x”); otherwise use the resolved image tag.
 */}}
 {{- define "camundaPlatform.versionLabel" -}}
-  {{- $imageTag := include "camundaPlatform.imageTagByParams" (dict "base" .base "overlay" .overlay) -}}
-  {{- $imageDigest := .overlay.image.digest | default .base.image.digest -}}
-  {{- if $imageDigest }}
-    {{- /* Using digest: fall back to application version for label */ -}}
-    {{- .chart.AppVersion -}}
-  {{- else if $imageTag }}
-    {{- /* Using tag: use the tag for the label */ -}}
-    {{- $imageTag -}}
-  {{- else }}
-    {{- /* Neither tag nor digest provided: use appVersion as default */ -}}
-    {{- .chart.AppVersion -}}
-  {{- end -}}
+  {{- include "camundaPlatform.imageTagByParams" (dict "base" .base "overlay" .overlay) | default .chart.AppVersion -}}
 {{- end -}}
 
 {{/*

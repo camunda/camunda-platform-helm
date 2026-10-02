@@ -166,18 +166,7 @@ Return the version label for resources.
 If an image digest is specified without a tag, fall back to .Chart.AppVersion (e.g., "8.8.x"); otherwise use the resolved image tag.
 */}}
 {{- define "camundaPlatform.versionLabel" -}}
-  {{- $imageTag := include "camundaPlatform.imageTagByParams" (dict "base" .base "overlay" .overlay) -}}
-  {{- $imageDigest := .overlay.image.digest | default .base.image.digest -}}
-  {{- if $imageDigest }}
-    {{- /* Using digest: fall back to application version for label */ -}}
-    {{- .chart.AppVersion -}}
-  {{- else if $imageTag }}
-    {{- /* Using tag: use the tag for the label */ -}}
-    {{- $imageTag -}}
-  {{- else }}
-    {{- /* Neither tag nor digest provided: use appVersion as default */ -}}
-    {{- .chart.AppVersion -}}
-  {{- end -}}
+  {{- include "camundaPlatform.imageTagByParams" (dict "base" .base "overlay" .overlay) | default .chart.AppVersion -}}
 {{- end -}}
 
 {{/*
