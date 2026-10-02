@@ -64,6 +64,12 @@ test.zone-aware-migration:
 	cd scripts/zone-aware-migration && go test -race ./...
 	$(chartPath)/test/integration/scenarios/zone-aware-migration/verify-zone-aware-migration.sh
 
+# test.deploy-camunda-credential-stores: run the credential reconcile scripts
+# against real PostgreSQL, Elasticsearch, and Keycloak containers (needs docker).
+.PHONY: test.deploy-camunda-credential-stores
+test.deploy-camunda-credential-stores:
+	cd scripts/deploy-camunda && go test -tags integration ./cmd -run 'TestPsqlScript|TestEsScript|TestKeycloakBootstrapReset' -count=1 -timeout 20m -v
+
 .PHONY: install.release-tools
 install.release-tools:
 	cd scripts/release-tools && go mod tidy && go install .

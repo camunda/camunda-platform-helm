@@ -39,9 +39,16 @@ const (
 )
 
 type externalSecretDoc struct {
-	Kind string `yaml:"kind"`
+	Kind     string `yaml:"kind"`
+	Metadata struct {
+		Name string `yaml:"name"`
+	} `yaml:"metadata"`
 	Spec struct {
+		Target struct {
+			Name string `yaml:"name"`
+		} `yaml:"target"`
 		Data []struct {
+			SecretKey string `yaml:"secretKey"`
 			RemoteRef struct {
 				Key      string `yaml:"key"`
 				Property string `yaml:"property"`
@@ -51,10 +58,13 @@ type externalSecretDoc struct {
 }
 
 // credentialSource is the single source Secret an ExternalSecret manifest reads
-// from, and every property it reads.
+// from, every property it reads, the ExternalSecrets reading it, and, per
+// target Secret, which source property each target key receives.
 type credentialSource struct {
-	Name       string
-	Properties []string
+	Name            string
+	Properties      []string
+	ExternalSecrets []string
+	Targets         map[string]map[string]string
 }
 
 // parseCredentialSource reads every ExternalSecret document in manifest and
@@ -64,6 +74,8 @@ func parseCredentialSource(manifest []byte) (credentialSource, error) {
 	dec := yaml.NewDecoder(bytes.NewReader(manifest))
 	names := map[string]bool{}
 	props := map[string]bool{}
+	targets := map[string]map[string]string{}
+	var externalSecrets []string
 	for {
 		var doc externalSecretDoc
 		err := dec.Decode(&doc)
@@ -76,12 +88,25 @@ func parseCredentialSource(manifest []byte) (credentialSource, error) {
 		if doc.Kind != "ExternalSecret" {
 			continue
 		}
+		if doc.Metadata.Name != "" {
+			externalSecrets = append(externalSecrets, doc.Metadata.Name)
+		}
+		target := doc.Spec.Target.Name
+		if target == "" {
+			target = doc.Metadata.Name
+		}
 		for _, d := range doc.Spec.Data {
 			if d.RemoteRef.Key == "" || d.RemoteRef.Property == "" {
 				return credentialSource{}, errors.New("every spec.data entry needs remoteRef.key and remoteRef.property")
 			}
 			names[d.RemoteRef.Key] = true
 			props[d.RemoteRef.Property] = true
+			if target != "" && d.SecretKey != "" {
+				if targets[target] == nil {
+					targets[target] = map[string]string{}
+				}
+				targets[target][d.SecretKey] = d.RemoteRef.Property
+			}
 		}
 	}
 	if len(names) != 1 {
@@ -92,7 +117,8 @@ func parseCredentialSource(manifest []byte) (credentialSource, error) {
 		sort.Strings(found)
 		return credentialSource{}, fmt.Errorf("manifest must read from exactly one source secret, found %d: %v", len(names), found)
 	}
-	src := credentialSource{}
+	sort.Strings(externalSecrets)
+	src := credentialSource{Targets: targets, ExternalSecrets: externalSecrets}
 	for n := range names {
 		src.Name = n
 	}
@@ -105,8 +131,7 @@ func parseCredentialSource(manifest []byte) (credentialSource, error) {
 
 // planCredentials returns the full data set to store: every existing non-empty
 // value unchanged, plus a generated value for each required property that is
-// missing. It never replaces a value: rotating a credential is a deliberate,
-// out-of-band operation because databases and Keycloak only read theirs once.
+// missing. It never replaces a value.
 func planCredentials(existing map[string]string, required []string, generate func() (string, error)) (map[string]string, []string, error) {
 	merged := make(map[string]string, len(existing)+len(required))
 	for k, v := range existing {
@@ -146,22 +171,7 @@ type topologyCredentialStore struct {
 	get    func(ctx context.Context, namespace, name string) (map[string]string, error)
 	create func(ctx context.Context, namespace, name string, data map[string]string) error
 	// update adds keys to an existing secret, leaving every other key untouched.
-	update          func(ctx context.Context, namespace, name string, data map[string]string) error
-	namespaceExists func(ctx context.Context, namespace string) (bool, error)
-}
-
-// firstExisting returns the first of namespaces that exists, or "".
-func firstExisting(ctx context.Context, store topologyCredentialStore, namespaces []string) (string, error) {
-	for _, ns := range namespaces {
-		exists, err := store.namespaceExists(ctx, ns)
-		if err != nil {
-			return "", err
-		}
-		if exists {
-			return ns, nil
-		}
-	}
-	return "", nil
+	update func(ctx context.Context, namespace, name string, data map[string]string) error
 }
 
 // ensureCredentials makes sure the manifest's source Secret holds a value for
@@ -169,12 +179,7 @@ func firstExisting(ctx context.Context, store topologyCredentialStore, namespace
 //
 // A missing source is created with a plain Create, so when two first-time runs
 // race, the loser re-reads the winner's values instead of overwriting them.
-//
-// guardNamespaces are namespaces any one of which existing means the
-// environment already holds state initialised with some credentials. Generating a fresh
-// source then would hand every component values its databases and Keycloak do
-// not accept, so that case fails with the migration steps instead.
-func ensureCredentials(ctx context.Context, out io.Writer, manifest []byte, namespace string, guardNamespaces []string, store topologyCredentialStore) error {
+func ensureCredentials(ctx context.Context, out io.Writer, manifest []byte, namespace string, store topologyCredentialStore) error {
 	src, err := parseCredentialSource(manifest)
 	if err != nil {
 		return err
@@ -183,30 +188,9 @@ func ensureCredentials(ctx context.Context, out io.Writer, manifest []byte, name
 	if err != nil {
 		return err
 	}
-	if existing == nil {
-		deployed, err := firstExisting(ctx, store, guardNamespaces)
-		if err != nil {
-			return err
-		}
-		if deployed != "" {
-			return fmt.Errorf("source secret %s/%s does not exist but namespace %s does: the environment was initialised with other credentials. "+
-				"Rotate them to the new source in place first (PostgreSQL users, Keycloak admin and client secrets), or uninstall the environment, "+
-				"then create the source; generating it now would lock existing services out", namespace, src.Name, deployed)
-		}
-	}
 	merged, created, err := planCredentials(existing, src.Properties, generateCredential)
 	if err != nil {
 		return err
-	}
-	if existing != nil && len(created) > 0 {
-		deployed, err := firstExisting(ctx, store, guardNamespaces)
-		if err != nil {
-			return err
-		}
-		if deployed != "" {
-			return fmt.Errorf("source secret %s/%s lacks %v while namespace %s exists: a value generated now would not match what that environment's services were initialised with. "+
-				"Add the missing properties with the values those services use (or rotate the services to new values first)", namespace, src.Name, created, deployed)
-		}
 	}
 	switch {
 	case len(created) == 0:
@@ -214,7 +198,7 @@ func ensureCredentials(ctx context.Context, out io.Writer, manifest []byte, name
 		err := store.create(ctx, namespace, src.Name, merged)
 		if apierrors.IsAlreadyExists(err) {
 			fmt.Fprintf(out, "%s/%s was created concurrently; using its values\n", namespace, src.Name)
-			return ensureCredentials(ctx, out, manifest, namespace, nil, store)
+			return ensureCredentials(ctx, out, manifest, namespace, store)
 		}
 		if err != nil {
 			return err
@@ -237,11 +221,10 @@ func ensureCredentials(ctx context.Context, out io.Writer, manifest []byte, name
 
 func newTopologyEnsureCredentialsCommand() *cobra.Command {
 	var (
-		manifestPath    string
-		base            string
-		namespace       string
-		guardNamespaces []string
-		kubeContext     string
+		manifestPath string
+		base         string
+		namespace    string
+		kubeContext  string
 	)
 
 	cmd := &cobra.Command{
@@ -251,9 +234,8 @@ func newTopologyEnsureCredentialsCommand() *cobra.Command {
 sure the one source Secret it reads from exists in the ClusterSecretStore's
 namespace with a random value for every property it references.
 
-Existing values are never changed, and no value is ever printed. With
---guard-namespace, a missing source or property is only generated while none of
-those namespaces exists yet, i.e. for a fresh environment.`,
+Existing values are never changed, and no value is ever printed. A deployed
+environment picks up a generated value through reconcile-credentials.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			raw, err := os.ReadFile(manifestPath)
 			if err != nil {
@@ -267,11 +249,10 @@ those namespaces exists yet, i.e. for a fresh environment.`,
 			if err != nil {
 				return err
 			}
-			return ensureCredentials(cmd.Context(), cmd.OutOrStdout(), manifest, namespace, guardNamespaces, topologyCredentialStore{
-				get:             client.GetSecretData,
-				create:          client.CreateOpaqueSecret,
-				update:          client.AddSecretData,
-				namespaceExists: client.NamespaceExists,
+			return ensureCredentials(cmd.Context(), cmd.OutOrStdout(), manifest, namespace, topologyCredentialStore{
+				get:    client.GetSecretData,
+				create: client.CreateOpaqueSecret,
+				update: client.AddSecretData,
 			})
 		},
 	}
@@ -279,8 +260,9 @@ those namespaces exists yet, i.e. for a fresh environment.`,
 	cmd.Flags().StringVar(&manifestPath, "manifest", "", "ExternalSecret manifest whose source secret to ensure")
 	cmd.Flags().StringVar(&base, "base", "", "topology base namespace, substituted for "+matrix.CredentialsManifestBaseToken+" in the manifest")
 	cmd.Flags().StringVar(&namespace, "secret-namespace", "distribution-team", "namespace the ClusterSecretStore reads source secrets from")
-	cmd.Flags().StringSliceVar(&guardNamespaces, "guard-namespace", nil, "refuse to generate a missing source or property while any of these namespaces exists (repeatable; pass every namespace of the environment)")
 	cmd.Flags().StringVar(&kubeContext, "kube-context", "", "kubectl context (defaults to current)")
+	cmd.Flags().StringSlice("guard-namespace", nil, "ignored")
+	_ = cmd.Flags().MarkDeprecated("guard-namespace", "it has no effect; reconcile-credentials now brings existing stores to the source")
 	_ = cmd.MarkFlagRequired("manifest")
 	return cmd
 }

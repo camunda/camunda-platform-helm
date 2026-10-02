@@ -3,3 +3,4 @@ release-name: keycloak
 values-file: test/integration/companion-values/keycloak-dogfood.yaml
 env-vars:
   - CAMUNDA_HOSTNAME
+  - DOGFOOD_CREDENTIALS_CHECKSUM

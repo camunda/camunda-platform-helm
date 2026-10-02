@@ -53,6 +53,28 @@ type topologyRelease struct {
 // version's CI registry and derives each release's namespace from
 // baseNamespace, applying the same truncation the deploy path applies.
 func resolveTopologyReleases(repoRoot, version, scenario, baseNamespace string) ([]topologyRelease, error) {
+	topology, err := loadScenarioTopology(repoRoot, version, scenario)
+	if err != nil {
+		return nil, err
+	}
+	releases := make([]topologyRelease, 0, len(topology.Releases))
+	for _, r := range topology.Releases {
+		namespace, err := deploy.DeriveReleaseNamespace(baseNamespace, r.NamespaceSuffix)
+		if err != nil {
+			return nil, err
+		}
+		releases = append(releases, topologyRelease{
+			Role:                r.Role,
+			Suffix:              r.NamespaceSuffix,
+			Namespace:           namespace,
+			OptimizeContextPath: r.OptimizeContextPath,
+		})
+	}
+	return releases, nil
+}
+
+// loadScenarioTopology reads the scenario's topology out of the chart version's CI registry.
+func loadScenarioTopology(repoRoot, version, scenario string) (*matrix.Topology, error) {
 	chartDir := filepath.Join(repoRoot, "charts", fmt.Sprintf("camunda-platform-%s", version))
 	cfg, err := matrix.LoadRegistry(chartDir)
 	if err != nil {
@@ -66,20 +88,7 @@ func resolveTopologyReleases(repoRoot, version, scenario, baseNamespace string) 
 		if s.Topology == nil {
 			return nil, fmt.Errorf("scenario %q in version %s declares no topology", scenario, version)
 		}
-		releases := make([]topologyRelease, 0, len(s.Topology.Releases))
-		for _, r := range s.Topology.Releases {
-			namespace, err := deploy.DeriveReleaseNamespace(baseNamespace, r.NamespaceSuffix)
-			if err != nil {
-				return nil, err
-			}
-			releases = append(releases, topologyRelease{
-				Role:                r.Role,
-				Suffix:              r.NamespaceSuffix,
-				Namespace:           namespace,
-				OptimizeContextPath: r.OptimizeContextPath,
-			})
-		}
-		return releases, nil
+		return s.Topology, nil
 	}
 
 	return nil, fmt.Errorf("scenario %q not found in version %s registry", scenario, version)
