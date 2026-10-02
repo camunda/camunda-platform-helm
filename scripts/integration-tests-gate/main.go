@@ -30,15 +30,6 @@ func mustEnv(key string) string {
 }
 
 func main() {
-	// Fork PRs lack actions:write on GITHUB_TOKEN, so rerun would 403.
-	// Return success so the required-check name stays green;
-	// for fork PRs the matrix workflow's own status is the real signal.
-	if os.Getenv("IS_FORK") == "true" {
-		fmt.Fprintln(os.Stderr,
-			"fork PR: deferring to matrix's own status")
-		return
-	}
-
 	repo := mustEnv("GH_REPO")
 	workflow := mustEnv("MATRIX_WORKFLOW")
 	event := mustEnv("EVENT_NAME")

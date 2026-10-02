@@ -15,6 +15,7 @@
 package common
 
 import (
+	_ "camunda-platform/test/unit/utils"
 	"os/exec"
 	"path/filepath"
 	"strings"

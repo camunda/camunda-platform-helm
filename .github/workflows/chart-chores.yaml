@@ -19,7 +19,10 @@ permissions:
 jobs:
   chores:
     if: >-
-      (github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository) &&
+      (github.event_name == 'workflow_dispatch' || (
+        github.event.pull_request.head.repo.full_name == github.repository &&
+        github.event.pull_request.user.login != 'dependabot[bot]'
+      )) &&
       !startsWith(github.head_ref || github.ref_name, 'renovate/') &&
       !startsWith(github.head_ref || github.ref_name, 'release-please--') &&
       (github.head_ref || github.ref_name) != 'main'
