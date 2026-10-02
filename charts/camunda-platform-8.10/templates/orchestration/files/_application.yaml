@@ -1,4 +1,14 @@
 {{- $partitioning := include "camundaPlatform.partitioning" $ | fromJson -}}
+{{- $clusterEnv := dict -}}
+{{- range $env := (.Values.orchestration.env | default list) -}}
+  {{- $_ := set $clusterEnv (tpl ($env.name | default "") $) true -}}
+{{- end -}}
+{{- if .Values.orchestration.envFrom -}}
+  {{- range $envName := (.Values.orchestration.envFromProvides | default list) -}}
+    {{- $_ := set $clusterEnv $envName true -}}
+  {{- end -}}
+{{- end -}}
+{{- $extraConfiguration := .Values.orchestration.extraConfiguration -}}
 {{/*
 This file name should start with an underscore to avoid rendering it as a template.
 It is included (imported) in the ConfigMap.
@@ -72,10 +82,21 @@ camunda:
   cluster:
     # The Node ID depends on the StatefulSet Pod's name so it cannot be templated in the StatefulSet level.
     # The value of "node-id" is calculated in the "startup.sh" file and exported as "VALUES_ORCHESTRATION_NODE_ID" env var.
+    {{- if not (or (hasKey $clusterEnv "CAMUNDA_CLUSTER_NODEID") (hasKey $clusterEnv "ZEEBE_BROKER_CLUSTER_NODEID") (eq (include "camundaPlatform.appConfigMentionsPath" (dict "extraConfiguration" $extraConfiguration "path" (list "camunda" "cluster" "node-id"))) "true") (eq (include "camundaPlatform.appConfigMentionsPath" (dict "extraConfiguration" $extraConfiguration "path" (list "zeebe" "broker" "cluster" "nodeId"))) "true")) }}
     node-id: "${VALUES_ORCHESTRATION_NODE_ID:}"
+    {{- end }}
+    {{- if not (or (hasKey $clusterEnv "CAMUNDA_CLUSTER_NAME") (hasKey $clusterEnv "ZEEBE_BROKER_CLUSTER_CLUSTERNAME") (eq (include "camundaPlatform.appConfigMentionsPath" (dict "extraConfiguration" $extraConfiguration "path" (list "camunda" "cluster" "name"))) "true") (eq (include "camundaPlatform.appConfigMentionsPath" (dict "extraConfiguration" $extraConfiguration "path" (list "zeebe" "broker" "cluster" "clusterName"))) "true")) }}
+    name: {{ tpl .Values.global.zeebeClusterName . }}
+    {{- end }}
+    {{- if not (or (hasKey $clusterEnv "CAMUNDA_CLUSTER_SIZE") (hasKey $clusterEnv "ZEEBE_BROKER_CLUSTER_CLUSTERSIZE") (eq (include "camundaPlatform.appConfigMentionsPath" (dict "extraConfiguration" $extraConfiguration "path" (list "camunda" "cluster" "size"))) "true") (eq (include "camundaPlatform.appConfigMentionsPath" (dict "extraConfiguration" $extraConfiguration "path" (list "zeebe" "broker" "cluster" "clusterSize"))) "true")) }}
     size: {{ include "orchestration.clusterSize" . | quote }}
+    {{- end }}
+    {{- if not (or (hasKey $clusterEnv "CAMUNDA_CLUSTER_REPLICATIONFACTOR") (hasKey $clusterEnv "ZEEBE_BROKER_CLUSTER_REPLICATIONFACTOR") (eq (include "camundaPlatform.appConfigMentionsPath" (dict "extraConfiguration" $extraConfiguration "path" (list "camunda" "cluster" "replication-factor"))) "true") (eq (include "camundaPlatform.appConfigMentionsPath" (dict "extraConfiguration" $extraConfiguration "path" (list "zeebe" "broker" "cluster" "replicationFactor"))) "true")) }}
     replication-factor: {{ include "orchestration.replicationFactor" . | quote }}
+    {{- end }}
+    {{- if not (or (hasKey $clusterEnv "CAMUNDA_CLUSTER_PARTITIONCOUNT") (hasKey $clusterEnv "ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT") (eq (include "camundaPlatform.appConfigMentionsPath" (dict "extraConfiguration" $extraConfiguration "path" (list "camunda" "cluster" "partition-count"))) "true") (eq (include "camundaPlatform.appConfigMentionsPath" (dict "extraConfiguration" $extraConfiguration "path" (list "zeebe" "broker" "cluster" "partitionsCount"))) "true")) }}
     partition-count: {{ .Values.orchestration.partitionCount | quote }}
+    {{- end }}
     {{- if eq (include "orchestration.zoneAware" .) "true" }}
     partitioning:
       scheme: ZONE_AWARE
@@ -93,7 +114,8 @@ camunda:
          itself. Beyond that it cannot know how brokers reach each other, so the list is the
          user's to provide. Retention is the exception: the zoned brokers and the round-robin
          ones they replace share this release, so the chart can still name both. */ -}}
-    {{- if and (eq (include "orchestration.zoneAware" .) "true") (or (ne (include "camundaPlatform.spansFailureDomains" $) "true") $partitioning.keepUnzonedBrokers) }}
+    {{- if eq (include "orchestration.contactPointsConfigured" .) "true" }}
+    {{- else if and (eq (include "orchestration.zoneAware" .) "true") (or (ne (include "camundaPlatform.spansFailureDomains" $) "true") $partitioning.keepUnzonedBrokers) }}
     initial-contact-points:
     {{- $zoneFullname := include "orchestration.zoneFullname" (dict "context" $ "zone" $partitioning.zone) }}
     {{- range untilStep 0 (int (include "orchestration.replicas" $)) 1 }}
@@ -110,10 +132,40 @@ camunda:
       - {{ include "orchestration.fullname" $ }}-{{ . }}.${K8S_SERVICE_NAME}:{{ $.Values.orchestration.service.internalPort }}
     {{- end }}
     {{- else }}
-    # Multi-region deployments: initial-contact-points must be provided manually via environment variable.
-    # Set CAMUNDA_CLUSTER_INITIALCONTACTPOINTS with fully-qualified domain names for all brokers across zones.
+    # Multi-region deployments: initial-contact-points must be provided manually.
+    # Set camunda.cluster.initial-contact-points through orchestration.extraConfiguration or
+    # CAMUNDA_CLUSTER_INITIALCONTACTPOINTS through orchestration.env with addresses that resolve across every zone.
+    # One entry per zone is enough: a contact point resolves to a single address, and a broker
+    # that reaches one live member discovers the rest through membership gossip. The DNS form
+    # depends on how the zones are connected, so the chart cannot generate it.
     # Example: orchestration.env[0].name=CAMUNDA_CLUSTER_INITIALCONTACTPOINTS
-    #          orchestration.env[0].value=<pod>.<headless-service>.<namespace-0>.svc.cluster.local:26502,<pod>.<headless-service>.<namespace-1>.svc.cluster.local:26502,...
+    #          orchestration.env[0].value=<zone-0-address>:26502,<zone-1-address>:26502,...
+    {{- end }}
+
+    {{- $advertisedHostSet := or (hasKey $clusterEnv "CAMUNDA_CLUSTER_NETWORK_ADVERTISEDHOST") (hasKey $clusterEnv "ZEEBE_BROKER_NETWORK_ADVERTISEDHOST") (eq (include "camundaPlatform.appConfigMentionsPath" (dict "extraConfiguration" $extraConfiguration "path" (list "camunda" "cluster" "network" "advertised-host"))) "true") (eq (include "camundaPlatform.appConfigMentionsPath" (dict "extraConfiguration" $extraConfiguration "path" (list "zeebe" "broker" "network" "advertisedHost"))) "true") }}
+    {{- $hostSet := or (hasKey $clusterEnv "CAMUNDA_CLUSTER_NETWORK_HOST") (hasKey $clusterEnv "ZEEBE_BROKER_NETWORK_HOST") (eq (include "camundaPlatform.appConfigMentionsPath" (dict "extraConfiguration" $extraConfiguration "path" (list "camunda" "cluster" "network" "host"))) "true") (eq (include "camundaPlatform.appConfigMentionsPath" (dict "extraConfiguration" $extraConfiguration "path" (list "zeebe" "broker" "network" "host"))) "true") }}
+    {{- $commandPortSet := or (hasKey $clusterEnv "CAMUNDA_CLUSTER_NETWORK_COMMANDAPI_PORT") (hasKey $clusterEnv "ZEEBE_BROKER_NETWORK_COMMANDAPI_PORT") (eq (include "camundaPlatform.appConfigMentionsPath" (dict "extraConfiguration" $extraConfiguration "path" (list "camunda" "cluster" "network" "command-api" "port"))) "true") (eq (include "camundaPlatform.appConfigMentionsPath" (dict "extraConfiguration" $extraConfiguration "path" (list "zeebe" "broker" "network" "commandApi" "port"))) "true") }}
+    {{- $internalPortSet := or (hasKey $clusterEnv "CAMUNDA_CLUSTER_NETWORK_INTERNALAPI_PORT") (hasKey $clusterEnv "ZEEBE_BROKER_NETWORK_INTERNALAPI_PORT") (eq (include "camundaPlatform.appConfigMentionsPath" (dict "extraConfiguration" $extraConfiguration "path" (list "camunda" "cluster" "network" "internal-api" "port"))) "true") (eq (include "camundaPlatform.appConfigMentionsPath" (dict "extraConfiguration" $extraConfiguration "path" (list "zeebe" "broker" "network" "internalApi" "port"))) "true") }}
+    {{- if not (and $advertisedHostSet $hostSet $commandPortSet $internalPortSet) }}
+    network:
+      {{- if not $advertisedHostSet }}
+      {{- if $partitioning.qualifiedAdvertisedHost }}
+      advertised-host: "${K8S_NAME}.${K8S_SERVICE_NAME}.${K8S_NAMESPACE}.svc"
+      {{- else }}
+      advertised-host: "${K8S_NAME}.${K8S_SERVICE_NAME}"
+      {{- end }}
+      {{- end }}
+      {{- if not $hostSet }}
+      host: 0.0.0.0
+      {{- end }}
+      {{- if not $commandPortSet }}
+      command-api:
+        port: {{ .Values.orchestration.service.commandPort }}
+      {{- end }}
+      {{- if not $internalPortSet }}
+      internal-api:
+        port: {{ .Values.orchestration.service.internalPort }}
+      {{- end }}
     {{- end }}
 
   api:
@@ -351,23 +403,6 @@ zeebe:
       enable: true
       multitenancy:
         enabled: {{ include "orchestration.multitenancyChecksEnabled" . }}
-
-    # zeebe.broker.network
-    network:
-      {{- if $partitioning.qualifiedAdvertisedHost }}
-      advertisedHost: "${K8S_NAME}.${K8S_SERVICE_NAME}.${K8S_NAMESPACE}.svc"
-      {{- else }}
-      advertisedHost: "${K8S_NAME}.${K8S_SERVICE_NAME}"
-      {{- end }}
-      host: 0.0.0.0
-      commandApi:
-        port: {{ .Values.orchestration.service.commandPort }}
-      internalApi:
-        port: {{ .Values.orchestration.service.internalPort }}
-
-    # zeebe.broker.cluster
-    cluster:
-      clusterName: {{ tpl .Values.global.zeebeClusterName . }}
 
     {{- if or
       (eq (include "orchestration.hasElasticsearchExporter" .) "true")

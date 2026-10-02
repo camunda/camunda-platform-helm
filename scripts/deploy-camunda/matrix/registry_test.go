@@ -357,12 +357,19 @@ func TestLoadRegistryAssembly(t *testing.T) {
 	if b.E2EFullSuiteBlocking == nil || !*b.E2EFullSuiteBlocking {
 		t.Errorf("beta.E2EFullSuiteBlocking = %v, want an explicit true", b.E2EFullSuiteBlocking)
 	}
+	if !b.E2EAPISuite {
+		t.Errorf("beta.E2EAPISuite = %v, want true", b.E2EAPISuite)
+	}
+	if b.E2EAPISuiteBlocking == nil || !*b.E2EAPISuiteBlocking {
+		t.Errorf("beta.E2EAPISuiteBlocking = %v, want an explicit true", b.E2EAPISuiteBlocking)
+	}
 
 	// alpha declares nothing, so the blocking pointers stay nil and the
 	// defaults apply — an absent key must not read as an explicit false.
-	if a.E2EFullSuite || a.E2ESmokeBlocking != nil || a.E2EFullSuiteBlocking != nil {
-		t.Errorf("alpha e2e = full-suite:%v smoke-blocking:%v full-blocking:%v, want unset",
-			a.E2EFullSuite, a.E2ESmokeBlocking, a.E2EFullSuiteBlocking)
+	if a.E2EFullSuite || a.E2ESmokeBlocking != nil || a.E2EFullSuiteBlocking != nil ||
+		a.E2EAPISuite || a.E2EAPISuiteBlocking != nil {
+		t.Errorf("alpha e2e = full-suite:%v smoke-blocking:%v full-blocking:%v api-suite:%v api-blocking:%v, want unset",
+			a.E2EFullSuite, a.E2ESmokeBlocking, a.E2EFullSuiteBlocking, a.E2EAPISuite, a.E2EAPISuiteBlocking)
 	}
 
 	// gamma fans out across two flows; enabled propagates from manifest (false)
@@ -374,6 +381,9 @@ func TestLoadRegistryAssembly(t *testing.T) {
 	}
 	if !scns[2].E2EFullSuite || !scns[3].E2EFullSuite {
 		t.Errorf("gamma e2e-full-suite must survive flow fan-out, got %v / %v", scns[2].E2EFullSuite, scns[3].E2EFullSuite)
+	}
+	if !scns[2].E2EAPISuite || !scns[3].E2EAPISuite {
+		t.Errorf("gamma e2e-api-suite must survive flow fan-out, got %v / %v", scns[2].E2EAPISuite, scns[3].E2EAPISuite)
 	}
 }
 
@@ -423,6 +433,23 @@ func TestRegistryValidatorRejectsFullSuiteBlockingWithoutFullSuite(t *testing.T)
 	}
 }
 
+// TestRegistryValidatorRejectsAPISuiteBlockingWithoutAPISuite: the blocking
+// override is dead config when the API leg is not enabled.
+func TestRegistryValidatorRejectsAPISuiteBlockingWithoutAPISuite(t *testing.T) {
+	abs := absChartDir(t)
+	cfg, err := LoadRegistry(abs)
+	if err != nil {
+		t.Fatalf("LoadRegistry: %v", err)
+	}
+	scn := &cfg.Integration.Case.PR.Scenarios[0]
+	scn.E2EAPISuite = false
+	scn.E2EAPISuiteBlocking = boolPtr(true)
+	err = (&RegistryValidator{ChartDir: abs}).Validate(cfg)
+	if err == nil || !strings.Contains(err.Error(), "e2e-api-suite-blocking is set but e2e-api-suite is not enabled") {
+		t.Fatalf("want api-suite-blocking-without-api-suite error, got: %v", err)
+	}
+}
+
 // TestRegistryValidatorRejectsE2EFlagsWithSkipE2E: the e2e leg declarations
 // are dead config when skip-e2e disables e2e altogether.
 func TestRegistryValidatorRejectsE2EFlagsWithSkipE2E(t *testing.T) {
@@ -437,6 +464,11 @@ func TestRegistryValidatorRejectsE2EFlagsWithSkipE2E(t *testing.T) {
 			s.E2EFullSuite = true
 			s.E2EFullSuiteBlocking = boolPtr(true)
 		}, "e2e-full-suite is set but skip-e2e"},
+		{"api-suite", func(s *CIScenario) { s.E2EAPISuite = true }, "e2e-api-suite is set but skip-e2e"},
+		{"api-suite-blocking", func(s *CIScenario) {
+			s.E2EAPISuite = true
+			s.E2EAPISuiteBlocking = boolPtr(true)
+		}, "e2e-api-suite-blocking is set but skip-e2e"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			abs := absChartDir(t)
@@ -449,6 +481,8 @@ func TestRegistryValidatorRejectsE2EFlagsWithSkipE2E(t *testing.T) {
 			scn.E2EFullSuite = false
 			scn.E2ESmokeBlocking = nil
 			scn.E2EFullSuiteBlocking = nil
+			scn.E2EAPISuite = false
+			scn.E2EAPISuiteBlocking = nil
 			tc.set(scn)
 			err = (&RegistryValidator{ChartDir: abs}).Validate(cfg)
 			if err == nil || !strings.Contains(err.Error(), tc.want) {

@@ -117,9 +117,9 @@ func TestNotesTemplate(t *testing.T) {
 		},
 		{
 			name:        "round-robin across more than one zone",
-			values:      []string{"orchestration.partitioning.numberOfZones=2", "orchestration.partitioning.zoneIndex=0"},
-			expected:    "zones: 2",
-			notExpected: "regions: 2",
+			values:      []string{"orchestration.partitioning.numberOfZones=3", "orchestration.partitioning.zoneIndex=0"},
+			expected:    "zones: 3",
+			notExpected: "regions: 3",
 		},
 		{
 			name: "zone-aware reports the declared zone count",

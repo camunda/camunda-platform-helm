@@ -6,6 +6,7 @@ import * as dotenv from "dotenv";
 import * as fs from "fs";
 import * as path from "path";
 
+import { apiProjects } from "../../../../test/e2e/playwright.api-projects";
 import { makeShadowConfig } from "../../../../test/e2e/playwright.base.config";
 
 dotenv.config();
@@ -39,6 +40,17 @@ if (
     "The required Hub and Web Modeler test suite is not installed",
   );
 }
+if (
+  process.env.REQUIRE_PHYSICAL_TENANTS_TEST_SUITE === "true" &&
+  !hasTopologyOrchestrationSuite
+) {
+  throw new Error(
+    "The required topology Orchestration test suite is not installed",
+  );
+}
+// Only the default physical-tenant leg (or a non-tenant run) runs the orchestration smoke.
+const physicalTenantLegRunsOrchestrationSmoke =
+  (process.env.PHYSICAL_TENANT_ID ?? "default") === "default";
 
 // A suite that is required but missing has already thrown above, so presence
 // is the whole condition here.
@@ -83,6 +95,17 @@ export default defineConfig(
     workers: "100%",
     extraProjects: [
       {
+        name: "physical-tenants",
+        // The orchestration smoke deploys to the default tenant and asserts the import in the
+        // leg's Optimize. A named tenant's Optimize only imports its own tenant, so running it on
+        // those legs fails by design; keep it on the default leg only.
+        dependencies: physicalTenantLegRunsOrchestrationSmoke
+          ? ["topology-orchestration"]
+          : [],
+        testDir: __dirname,
+        testMatch: ["physical-tenants.spec.ts"],
+      },
+      {
         // Auth0 scenario: HTTP-level smoke that asserts each Camunda component
         // route redirects to the Auth0 issuer with a well-formed authorize URL.
         // No browser fixtures, no Keycloak admin — just request/response checks.
@@ -90,6 +113,7 @@ export default defineConfig(
         testDir: auth0TestDir,
         testMatch: ["**/*.spec.{ts,js}"],
       },
+      ...apiProjects(__dirname),
     ],
   }),
 );

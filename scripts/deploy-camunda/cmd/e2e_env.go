@@ -32,6 +32,7 @@ func newE2EEnvCommand() *cobra.Command {
 		Short: "Generate e2e .env files",
 	}
 	c.AddCommand(newE2EEnvMergeCommand())
+	c.AddCommand(newE2EEnvAPISuiteCommand())
 	return c
 }
 
@@ -99,6 +100,10 @@ func newE2EEnvMergeCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			venomSecret, err := resolveSecretKey(kubeContext, hubNamespace, venomClientSecretKey)
+			if err != nil {
+				return err
+			}
 
 			tokenURL := "https://" + hubHost + "/auth/realms/camunda-platform/protocol/openid-connect/token"
 			overrides := map[string]string{
@@ -116,6 +121,9 @@ func newE2EEnvMergeCommand() *cobra.Command {
 				"DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD": firstUserPw,
 				"DISTRO_QA_E2E_TESTS_KEYCLOAK_PASSWORD":           kcAdminPw,
 				"DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET":     clientSecret,
+				// The venom client authenticates with its own secret, not client-secret above:
+				// the physical-tenants spec exchanges it for an orchestration API token.
+				"VENOM_CLIENT_SECRET": venomSecret,
 			}
 
 			if optimizeNamespace != "" {
@@ -238,6 +246,11 @@ func assertOptimizeEnabled(merged, namespace string) error {
 	}
 	return nil
 }
+
+// venomClientSecretKey is the integration-test-credentials key holding the venom client's
+// secret. The chart's identity layers register venom with this key (existingSecretKey), and the
+// physical tenant acceptance check reads the same key.
+const venomClientSecretKey = "identity-admin-client-password"
 
 // resolveSecretKey reads and base64-decodes one key from the Hub
 // namespace's shared integration-test-credentials secret. This is the secret

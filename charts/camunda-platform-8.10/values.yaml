@@ -44,7 +44,7 @@
 global:
   ## @extra global.topology configuration for how this Helm release participates in a Camunda deployment topology. The default combined mode preserves the existing single-release behavior.
   topology:
-    ## @param global.topology.mode defines the role of this release in the deployment topology. Supported values are combined, hub, orchestration, and optimize. In optimize mode only Optimize is deployed, so a separate Optimize release can serve one Physical Tenant without sharing a release with the Orchestration Cluster; it requires optimize.enabled, global.noSecondaryStorage=false, an enabled database backend, Identity auth and URL set on the component or globally, and optimize.contextPath when routing is rendered.
+    ## @param global.topology.mode defines the role of this release in the deployment topology. Supported values are combined, hub, orchestration, and optimize. In orchestration mode, Orchestration and Connectors can authenticate directly with an external OIDC provider without a Management Identity URL; Optimize calls Management Identity when it verifies a bearer token, so a release that enables Optimize needs optimize.identity.service.url or global.identity.service.url. In optimize mode only Optimize is deployed, so a separate Optimize release can serve one Physical Tenant without sharing a release with the Orchestration Cluster; it requires optimize.enabled, global.noSecondaryStorage=false, an enabled database backend, Identity auth and URL set on the component or globally, and optimize.contextPath when routing is rendered.
     mode: combined
     ## @param global.topology.clusters can be used by a Hub release to describe remote Orchestration Clusters. The chart uses these entries to generate Camunda Hub inventory and Management Identity presets. Each entry may also declare physicalTenants, whose optional name becomes the environment display name in Hub. A tenant that runs its own Optimize release declares that component here so Optimize gets its own client and resource server rather than sharing the cluster's Optimize audience.
     clusters: []
@@ -983,7 +983,7 @@ identity:
     ## @param identity.image.repository defines which image repository to use
     repository: camunda/identity
     ## @param identity.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.10.0-alpha5.1
+    tag: 8.10.0
     ## @param identity.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param identity.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -1329,7 +1329,7 @@ webModeler:
     registry: ""
     ## @param webModeler.image.tag can be used to set the Docker image tag for the WebModeler images
     # renovate: datasource=docker depName=camunda/hub
-    tag: 8.10.0-alpha5
+    tag: 8.10.0
     ## @param webModeler.image.pullSecrets can be used to configure image pull secrets, see https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
@@ -1900,7 +1900,7 @@ connectors:
     ## @param connectors.image.repository defines which image repository to use
     repository: camunda/connectors-bundle
     ## @param connectors.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.10.0-alpha5
+    tag: 8.10.0
     ## @param connectors.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param connectors.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -2292,7 +2292,7 @@ orchestration:
     ## @param orchestration.image.repository defines which image repository to use
     repository: camunda/camunda
     ## @param orchestration.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.10.0-alpha5
+    tag: 8.10.0
     ## @param orchestration.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param orchestration.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -2374,6 +2374,8 @@ orchestration:
     #   value: TRACE
   ## @param orchestration.envFrom list of environment variables to import from configMapRef and secretRef
   envFrom: []
+  ## @param orchestration.envFromProvides names the cluster variables supplied by orchestration.envFrom so generated unified cluster defaults do not override them.
+  envFromProvides: []
   ## @extra orchestration.configMap settings for the mounted configuration ConfigMap volume (e.g. file permissions via defaultMode), not the configuration content itself.
   configMap:
     ## @param orchestration.configMap.defaultMode can be used to set permissions on created files by default. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. see https://github.com/kubernetes/api/blob/master/core/v1/types.go#L1615-L1623
@@ -2948,7 +2950,7 @@ optimize:
     ## @param optimize.image.repository defines which image repository to use
     repository: camunda/optimize
     ## @param optimize.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.10.0-alpha5
+    tag: 8.10.0
     ## @param optimize.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param optimize.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod

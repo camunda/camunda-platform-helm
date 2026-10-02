@@ -220,6 +220,30 @@ func TestHubTopologyRendersPerTenantOptimizeClientsAndApis(t *testing.T) {
 	require.Regexp(t, `id: "optimize-east"(?s).*?permissions:\s*\n\s*- audience: "optimize-east-api"\s*\n\s*definition: write:\*`, output)
 }
 
+// Each Physical Tenant's web apps complete login on their own callback under
+// /physical-tenants/<id>/, including the implicit default tenant, so the
+// cluster's Orchestration client must allow every one of them.
+func TestHubTopologyOrchestrationClientAllowsEveryPhysicalTenantCallback(t *testing.T) {
+	output := render(t, "hub-physical-tenants.yaml", "templates/identity/configmap.yaml")
+
+	require.Regexp(t, `id: "orchestration-east"(?s).*?root-url: "https://east.example.com/orchestration"\s*\n\s*redirect-uris:\s*\n`+
+		`\s*- "/login/oauth2/code/orchestration"\s*\n`+
+		`\s*- "/sso-callback"\s*\n`+
+		`\s*- "/physical-tenants/default/sso-callback"\s*\n`+
+		`\s*- "/physical-tenants/tenanta/sso-callback"\s*\n`+
+		`\s*- "/physical-tenants/tenantb/sso-callback"\s*\n`, output)
+}
+
+func TestHubTopologyOrchestrationClientListsAnExplicitDefaultTenantOnce(t *testing.T) {
+	options := &helm.Options{
+		ValuesFiles: []string{filepath.Join("testdata", "hub-physical-tenants.yaml")},
+		SetValues:   map[string]string{"global.topology.clusters[0].physicalTenants[1].id": "default"},
+	}
+	output := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{"templates/identity/configmap.yaml"})
+
+	require.Equal(t, 1, strings.Count(output, `"/physical-tenants/default/sso-callback"`))
+}
+
 func TestHubTopologyPerTenantOptimizeRoleFallsBackToSharedRole(t *testing.T) {
 	output := render(t, "hub-physical-tenants.yaml", "templates/identity/configmap.yaml")
 
@@ -266,6 +290,7 @@ func TestHubTopologyWithoutPhysicalTenantsRendersNoTenantArtifacts(t *testing.T)
 
 	require.NotContains(t, output, "_TENANT_")
 	require.NotContains(t, output, "physicalTenants")
+	require.NotContains(t, output, "/physical-tenants/")
 }
 
 func TestHubTopologyPhysicalTenantOptimizeRequiresIdentifiers(t *testing.T) {
@@ -633,17 +658,64 @@ func TestOrchestrationTopologyRejectsEnabledIdentity(t *testing.T) {
 	require.ErrorContains(t, err, "global.topology.mode=orchestration requires identity.enabled=false")
 }
 
-func TestOrchestrationTopologyRequiresManagementIdentityURL(t *testing.T) {
+func TestOrchestrationTopologyDoesNotRequireManagementIdentityURL(t *testing.T) {
 	valuesFile := filepath.Join("testdata", "orchestration.yaml")
 	options := &helm.Options{
 		ValuesFiles: []string{valuesFile},
 		SetValues: map[string]string{
 			"global.identity.service.url": "",
+			"global.multitenancy.enabled": "false",
 		},
 	}
 
-	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/orchestration/configmap.yaml"})
-	require.ErrorContains(t, err, "global.topology.mode=orchestration requires global.identity.service.url")
+	output, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{
+		"templates/orchestration/configmap.yaml",
+		"templates/connectors/deployment.yaml",
+		"templates/optimize/deployment.yaml",
+		"templates/common/configmap-identity-auth.yaml",
+	})
+	require.NoError(t, err)
+	require.NotContains(t, output, "CAMUNDA_IDENTITY_BASEURL")
+}
+
+func TestOrchestrationTopologyMultiTenantOptimizeRequiresManagementIdentityURL(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "orchestration.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues: map[string]string{
+			"global.identity.service.url": "",
+			"global.multitenancy.enabled": "true",
+		},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/optimize/deployment.yaml"})
+	require.ErrorContains(t, err, "multi-tenant Optimize in global.topology.mode=orchestration requires optimize.identity.service.url or global.identity.service.url")
+}
+
+func TestOrchestrationTopologyMultiTenantOptimizeUsesExternalManagementIdentity(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "orchestration.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues: map[string]string{
+			"global.identity.service.url": "https://hub.example.com/identity",
+			"global.multitenancy.enabled": "true",
+		},
+	}
+
+	output, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/optimize/deployment.yaml"})
+	require.NoError(t, err)
+	require.Contains(t, output, "CAMUNDA_OPTIMIZE_MULTITENANCY_ENABLED")
+}
+
+func TestCombinedTopologyRejectsMultitenancyWithoutManagementIdentity(t *testing.T) {
+	options := &helm.Options{SetValues: map[string]string{
+		"global.multitenancy.enabled":              "true",
+		"identity.enabled":                         "false",
+		"orchestration.data.secondaryStorage.type": "elasticsearch",
+	}}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/optimize/deployment.yaml"})
+	require.ErrorContains(t, err, "requires Identity enabled and configured with database")
 }
 
 func TestOrchestrationTopologyUsesGlobalIdentityServiceURL(t *testing.T) {
@@ -1358,4 +1430,35 @@ func TestHubTopologyInventoryChangeRestartsWebModeler(t *testing.T) {
 
 	require.NotEmpty(t, first, "the restapi Deployment must annotate its ConfigMap checksum")
 	require.NotEqual(t, first, second, "changing the cluster inventory must change the checksum")
+}
+
+func TestOrchestrationEntraScenarioAcceptsEntraAudience(t *testing.T) {
+	valuesDir := filepath.Join(chartPath(t), "test/integration/scenarios/chart-full-setup/values")
+	options := &helm.Options{
+		ValuesFiles: []string{
+			filepath.Join(valuesDir, "base.yaml"),
+			filepath.Join(valuesDir, "identity", "oidc.yaml"),
+			filepath.Join(valuesDir, "persistence", "elasticsearch.yaml"),
+			filepath.Join(valuesDir, "features", "orchestration-entra.yaml"),
+		},
+		SetValues: map[string]string{"global.host": "camunda.example.com"},
+	}
+
+	output := helm.RenderTemplate(t, options, chartPath(t), "integration", []string{"templates/orchestration/configmap.yaml"})
+	var configMap corev1.ConfigMap
+	helm.UnmarshalK8SYaml(t, output, &configMap)
+
+	var application struct {
+		Camunda struct {
+			Security struct {
+				Authentication struct {
+					OIDC struct {
+						Audiences []string `yaml:"audiences"`
+					} `yaml:"oidc"`
+				} `yaml:"authentication"`
+			} `yaml:"security"`
+		} `yaml:"camunda"`
+	}
+	require.NoError(t, yaml.Unmarshal([]byte(configMap.Data["application.yaml"]), &application))
+	require.Contains(t, application.Camunda.Security.Authentication.OIDC.Audiences, "$ENTRA_APP_CLIENT_ID")
 }

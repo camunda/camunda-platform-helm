@@ -375,6 +375,7 @@ integration:
             gke: distroci
           identity: basic
           persistence: elasticsearch
+          e2e-api-suite: true
           dependencies:
             - chart: elastic/elasticsearch
               version: 8.5.1
@@ -492,6 +493,34 @@ integration:
             description: |
               Waits for the authenticated Orchestration Cluster ping to register its
               uniquely named cluster in Hub's database.
+        - name: orchestration-entra
+          enabled: true
+          shortname: ocen
+          auth: oidc
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          tier: 1
+          infra-type:
+            gke: distroci
+          identity: oidc
+          persistence: elasticsearch
+          features:
+            - orchestration-entra
+          skip-e2e: true
+          dependencies:
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+          post-deploy:
+            script: post-deploy-orchestration-entra.sh
+            description: |
+              Deploys and triggers an inbound connector, verifies that its process instance
+              completes, and verifies that no Management Identity exists.
         - name: keycloak-mt
           enabled: true
           shortname: kemt
@@ -1392,6 +1421,7 @@ integration:
           identity: keycloak
           persistence: elasticsearch
           e2e-full-suite: true
+          e2e-api-suite: true
           dependencies:
             - chart: charts/internal-keycloak-26
               release-name: keycloak
@@ -2229,7 +2259,6 @@ integration:
           tier: 2
           infra-type:
             gke: distroci
-          skip-e2e: true
           post-deploy:
             script: post-deploy-physical-tenant-exporters.sh
             description: |
@@ -2263,6 +2292,7 @@ integration:
                   ORCH_ORCHESTRATION_CLIENT_ID: orchestration-orcha
                 modeler-cluster-id: orcha
                 modeler-cluster-name: Orchestration A
+                additional-playwright-project: physical-tenants
               - role: optimize
                 namespace-suffix: optdefault
                 depends-on: hub

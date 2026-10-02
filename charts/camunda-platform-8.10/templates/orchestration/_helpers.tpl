@@ -120,6 +120,25 @@ rather than branching on the scheme again.
 {{- (include "camundaPlatform.partitioning" . | fromJson).replicationFactor -}}
 {{- end -}}
 
+{{- define "orchestration.contactPointsConfigured" -}}
+{{- $env := dict -}}
+{{- range $entry := (.Values.orchestration.env | default list) -}}
+  {{- $_ := set $env (tpl ($entry.name | default "") $) true -}}
+{{- end -}}
+{{- if .Values.orchestration.envFrom -}}
+  {{- range $name := (.Values.orchestration.envFromProvides | default list) -}}
+    {{- $_ := set $env $name true -}}
+  {{- end -}}
+{{- end -}}
+{{- if or
+    (hasKey $env "CAMUNDA_CLUSTER_INITIALCONTACTPOINTS")
+    (hasKey $env "ZEEBE_BROKER_CLUSTER_INITIALCONTACTPOINTS")
+    (eq (include "camundaPlatform.appConfigMentionsPath" (dict "configuration" .Values.orchestration.configuration "extraConfiguration" .Values.orchestration.extraConfiguration "path" (list "camunda" "cluster" "initial-contact-points"))) "true")
+    (eq (include "camundaPlatform.appConfigMentionsPath" (dict "configuration" .Values.orchestration.configuration "extraConfiguration" .Values.orchestration.extraConfiguration "path" (list "zeebe" "broker" "cluster" "initialContactPoints"))) "true") -}}
+true
+{{- end -}}
+{{- end -}}
+
 {{- define "orchestration.numberedReplicas" -}}
 {{- $partitioning := include "camundaPlatform.partitioning" $ | fromJson -}}
 {{- div (int .Values.orchestration.clusterSize) (int $partitioning.numberOfZones) -}}

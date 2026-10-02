@@ -1102,7 +1102,7 @@ Usage:
       {{- $sources = append $sources (merge (dict "content" $document) (omit $entry "content")) -}}
     {{- end -}}
   {{- end -}}
-  {{- $args := dict "extraConfiguration" $sources "path" .path -}}
+  {{- $args := dict "extraConfiguration" $sources "path" .path "relaxed" true -}}
   {{- if or
       (eq (include "camundaPlatform.extraConfigHasPath" $args) "true")
       (eq (include "camundaPlatform.extraConfigHasDottedPath" $args) "true")
@@ -2742,6 +2742,7 @@ Usage:
 */ -}}
 {{- define "camundaPlatform.extraConfigHasPath" -}}
 {{- $found := "" -}}
+{{- $relaxed := .relaxed | default false -}}
 {{- range .extraConfiguration -}}
   {{- if not (and (hasKey . "springImport") (eq .springImport false)) -}}
     {{- $parsed := (.content | default "" | fromYaml) -}}
@@ -2749,8 +2750,18 @@ Usage:
       {{- $node := $parsed -}}
       {{- $ok := true -}}
       {{- range $key := $.path -}}
-        {{- if and $ok (kindIs "map" $node) (hasKey $node $key) -}}
-          {{- $node = index $node $key -}}
+        {{- if and $ok (kindIs "map" $node) -}}
+          {{- $matchedKey := "" -}}
+          {{- range $candidate, $_ := $node -}}
+            {{- if or (eq $candidate $key) (and $relaxed (eq (regexReplaceAll "[-_]" (lower $candidate) "") (regexReplaceAll "[-_]" (lower $key) ""))) -}}
+              {{- $matchedKey = $candidate -}}
+            {{- end -}}
+          {{- end -}}
+          {{- if $matchedKey -}}
+            {{- $node = index $node $matchedKey -}}
+          {{- else -}}
+            {{- $ok = false -}}
+          {{- end -}}
         {{- else -}}
           {{- $ok = false -}}
         {{- end -}}
@@ -2799,6 +2810,7 @@ Usage:
 {{- define "camundaPlatform.extraConfigHasDottedPath" -}}
 {{- $found := "" -}}
 {{- $path := .path -}}
+{{- $relaxed := .relaxed | default false -}}
 {{- range .extraConfiguration -}}
   {{- if not (and (hasKey . "springImport") (eq .springImport false)) -}}
     {{- $parsed := (.content | default "" | fromYaml) -}}
@@ -2808,8 +2820,18 @@ Usage:
         {{- $ok := true -}}
         {{- range $i := until $split -}}
           {{- $step := index $path $i -}}
-          {{- if and $ok (kindIs "map" $node) (hasKey $node $step) -}}
-            {{- $node = index $node $step -}}
+          {{- if and $ok (kindIs "map" $node) -}}
+            {{- $matchedKey := "" -}}
+            {{- range $candidate, $_ := $node -}}
+              {{- if or (eq $candidate $step) (and $relaxed (eq (regexReplaceAll "[-_]" (lower $candidate) "") (regexReplaceAll "[-_]" (lower $step) ""))) -}}
+                {{- $matchedKey = $candidate -}}
+              {{- end -}}
+            {{- end -}}
+            {{- if $matchedKey -}}
+              {{- $node = index $node $matchedKey -}}
+            {{- else -}}
+              {{- $ok = false -}}
+            {{- end -}}
           {{- else -}}
             {{- $ok = false -}}
           {{- end -}}
@@ -2817,7 +2839,9 @@ Usage:
         {{- if and $ok (kindIs "map" $node) -}}
           {{- $dotted := join "." (slice $path $split) -}}
           {{- range $key, $_ := $node -}}
-            {{- if or (eq $key $dotted) (hasPrefix (printf "%s." $dotted) $key) -}}
+            {{- $normalizedKey := regexReplaceAll "[-_]" (lower $key) "" -}}
+            {{- $normalizedDotted := regexReplaceAll "[-_]" (lower $dotted) "" -}}
+            {{- if or (eq $key $dotted) (hasPrefix (printf "%s." $dotted) $key) (and $relaxed (or (eq $normalizedKey $normalizedDotted) (hasPrefix (printf "%s." $normalizedDotted) $normalizedKey))) -}}
               {{- $found = "true" -}}
             {{- end -}}
           {{- end -}}
@@ -2914,6 +2938,8 @@ Usage:
 {{- define "camundaPlatform.extraConfigHasRawKeyPrefix" -}}
 {{- $found := "" -}}
 {{- $pattern := printf "(?m)^[ \t]*%s[.:=]" (join "\\." .path) -}}
+{{- $relaxed := .relaxed | default false -}}
+{{- $normalizedPath := regexReplaceAll "[-_]" (lower (join "." .path)) "" -}}
 {{- range .extraConfiguration -}}
   {{- if not (and (hasKey . "springImport") (eq .springImport false)) -}}
     {{- $content := .content | default "" -}}
@@ -2922,6 +2948,15 @@ Usage:
     {{- if or $unparsable (hasSuffix ".properties" (.file | default "")) -}}
       {{- if regexMatch $pattern $content -}}
         {{- $found = "true" -}}
+      {{- end -}}
+      {{- if $relaxed -}}
+        {{- range $line := regexSplit "\n" $content -1 -}}
+          {{- $key := trim (first (regexSplit "[:=]" (trim $line) 2)) -}}
+          {{- $normalizedKey := regexReplaceAll "[-_]" (lower $key) "" -}}
+          {{- if or (eq $normalizedPath $normalizedKey) (hasPrefix (printf "%s." $normalizedPath) $normalizedKey) -}}
+            {{- $found = "true" -}}
+          {{- end -}}
+        {{- end -}}
       {{- end -}}
     {{- end -}}
   {{- end -}}

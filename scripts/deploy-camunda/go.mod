@@ -3,12 +3,12 @@ module scripts/deploy-camunda
 go 1.26.0
 
 require (
-	charm.land/bubbletea/v2 v2.0.9
+	charm.land/bubbletea/v2 v2.0.10
 	charm.land/lipgloss/v2 v2.0.6
 	github.com/containerd/platforms v0.2.1
 	github.com/jwalton/gchalk v1.3.0
-	github.com/mattn/go-runewidth v0.0.29
-	github.com/opencontainers/image-spec v1.1.0-rc5
+	github.com/mattn/go-runewidth v0.0.30
+	github.com/opencontainers/image-spec v1.1.1
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
 	github.com/stretchr/testify v1.12.1

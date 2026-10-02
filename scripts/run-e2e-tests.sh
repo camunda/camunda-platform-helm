@@ -93,6 +93,7 @@ build_rerun_cmd() {
   [[ -n "$LOCAL_TEST_SUITE" ]] && cmd+=(--local-test-suite "$LOCAL_TEST_SUITE")
   [[ -n "$TEST_CHART_PATH" ]] && cmd+=(--test-chart-path "$TEST_CHART_PATH")
   [[ -n "$PLAYWRIGHT_PROJECT" ]] && cmd+=(--playwright-project "$PLAYWRIGHT_PROJECT")
+  [[ -n "$PHYSICAL_TENANT_ID_ARG" ]] && cmd+=(--physical-tenant-id "$PHYSICAL_TENANT_ID_ARG")
   # Without these a failing topology leg prints a rerun command that targets an
   # orchestration-only environment: it cannot reproduce the failure, and it would skip
   # Optimize again rather than reporting it.
@@ -126,7 +127,8 @@ Options:
   --rba                                       Run the rba tests
   --mt                                        Run the mt tests
   --auth0                                     Run the auth0-smoke project (Auth0 OIDC scenario)
-  --playwright-project PROJECT                Run a named Playwright project
+  --playwright-project PROJECT                Run a named Playwright project ("api" runs the REST v2 API suite)
+  --physical-tenant-id ID                     Physical Tenant selected by this topology leg
   --playwright-debug                          Enable Playwright API debug logs and traces
   --video MODE                                Record video: on, off, retain-on-failure, on-first-retry (default: off)
   --trace MODE                                Record trace: on, off, retain-on-failure, on-first-retry (default: off)
@@ -167,6 +169,7 @@ IS_RBA=false
 IS_MT=false
 IS_AUTH0=false
 PLAYWRIGHT_PROJECT=""
+PHYSICAL_TENANT_ID_ARG=""
 PLAYWRIGHT_DEBUG=false
 VIDEO_MODE=""
 TRACE_MODE=""
@@ -240,6 +243,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --playwright-project)
       PLAYWRIGHT_PROJECT="$2"
+      shift 2
+      ;;
+    --physical-tenant-id)
+      PHYSICAL_TENANT_ID_ARG="$2"
       shift 2
       ;;
     --playwright-debug)
@@ -390,6 +397,29 @@ set -a
 source "$ENV_FILE"
 set +a
 
+# ── REST v2 API suite (--playwright-project api) ──
+# `deploy-camunda e2e-env api-suite` writes the suite's variables; see its --help.
+if [[ "$PLAYWRIGHT_PROJECT" == "api" ]]; then
+  DEPLOY_CAMUNDA_BIN=$(resolve_deploy_camunda) || {
+    echo "Error: the api project needs deploy-camunda (build it with 'make install.deploy-camunda', or set DEPLOY_CAMUNDA)." >&2
+    exit 1
+  }
+  API_ENV_FILE="${ENV_FILE}.api"
+  "$DEPLOY_CAMUNDA_BIN" e2e-env api-suite \
+    --env-file "$ENV_FILE" \
+    --namespace "$NAMESPACE" \
+    ${KUBE_CONTEXT:+--kube-context "$KUBE_CONTEXT"} \
+    --auth "${TEST_AUTH_TYPE:-}" \
+    --mt="$IS_MT" \
+    --ci="$IS_CI" \
+    --output "$API_ENV_FILE" || exit 1
+  set -a
+  # shellcheck disable=SC1090
+  source "$API_ENV_FILE"
+  set +a
+  rm -f "$API_ENV_FILE"
+fi
+
 # ── Namespace-scoped Playwright output directories ──
 # Playwright defaults test artifacts to <cwd>/test-results and HTML reports to
 # <cwd>/playwright-report.  When parallel entries cd into the same test suite
@@ -401,6 +431,7 @@ export PLAYWRIGHT_HTML_REPORT="${TEST_SUITE_PATH}/playwright-report/${NAMESPACE}
 [[ -n "$RETRIES" ]] && export PLAYWRIGHT_E2E_RETRIES="$RETRIES"
 [[ -n "$LOCAL_TEST_SUITE" ]] && export PLAYWRIGHT_E2E_LOCAL_TEST_SUITE="$LOCAL_TEST_SUITE"
 [[ -n "$MODELER_CLUSTER_NAME_ARG" ]] && export MODELER_CLUSTER_NAME="$MODELER_CLUSTER_NAME_ARG"
+[[ -n "$PHYSICAL_TENANT_ID_ARG" ]] && export PHYSICAL_TENANT_ID="$PHYSICAL_TENANT_ID_ARG"
 
 log "$TEST_SUITE_PATH"
 log "Running smoke tests: $RUN_SMOKE_TESTS"
@@ -410,6 +441,10 @@ log "DEBUG: PLAYWRIGHT_HTML_REPORT='${PLAYWRIGHT_HTML_REPORT}'"
 
 # Build the rerun command for display on failure
 RERUN_CMD="$(build_rerun_cmd)"
+
+if [[ "$PLAYWRIGHT_PROJECT" == "physical-tenants" ]]; then
+  export REQUIRE_PHYSICAL_TENANTS_TEST_SUITE=true
+fi
 
 run_playwright_tests "$TEST_SUITE_PATH" "$SHOW_HTML_REPORT" "$SHARD_INDEX" "$SHARD_TOTAL" "blob" "$TEST_EXCLUDE" "$RUN_SMOKE_TESTS" "$PLAYWRIGHT_DEBUG" "$NAMESPACE" "$KUBE_CONTEXT" "$RERUN_CMD" "$IS_AUTH0" "$PLAYWRIGHT_PROJECT"
 

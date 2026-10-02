@@ -933,6 +933,19 @@ func requireNestedKeyAbsent(t *testing.T, root map[string]any, path ...string) {
 	}
 }
 
+func requireApplicationCluster(t *testing.T, output string) map[string]any {
+	var configMap corev1.ConfigMap
+	helm.UnmarshalK8SYaml(t, output, &configMap)
+
+	var application map[string]any
+	require.NoError(t, yaml.Unmarshal([]byte(configMap.Data["application.yaml"]), &application))
+	camunda, ok := application["camunda"].(map[string]any)
+	require.True(t, ok)
+	cluster, ok := camunda["cluster"].(map[string]any)
+	require.True(t, ok)
+	return cluster
+}
+
 func (s *ConfigmapTemplateTest) TestRDBMSDoesNotUseExporterProperties() {
 	rdbmsValues := map[string]string{
 		"orchestration.exporters.rdbms.enabled":                              "true",
@@ -1108,7 +1121,7 @@ func (s *ConfigmapTemplateTest) TestLegacyExporterMultiRegionGate() {
 	}
 
 	elasticsearchValues := map[string]string{
-		"global.multiregion.regions":               "2",
+		"global.multiregion.regions":               "3",
 		"global.multiregion.regionId":              "0",
 		"orchestration.profiles.broker":            "true",
 		"orchestration.data.secondaryStorage.type": "elasticsearch",
@@ -1116,7 +1129,7 @@ func (s *ConfigmapTemplateTest) TestLegacyExporterMultiRegionGate() {
 		"optimize.database.elasticsearch.enabled":  "true",
 	}
 	openSearchValues := map[string]string{
-		"global.multiregion.regions":               "2",
+		"global.multiregion.regions":               "3",
 		"global.multiregion.regionId":              "0",
 		"orchestration.profiles.broker":            "true",
 		"orchestration.data.secondaryStorage.type": "opensearch",
@@ -1333,6 +1346,7 @@ func (s *ConfigmapTemplateTest) TestMultiRegionInitialContactPoints() {
 				"global.multiregion.regionId":   "0",
 				"orchestration.profiles.broker": "true",
 			},
+			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.clusterSize=4"},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
 				require.NotContains(t, output, "initial-contact-points:")
@@ -1360,6 +1374,269 @@ func (s *ConfigmapTemplateTest) TestMultiRegionInitialContactPoints() {
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
+func (s *ConfigmapTemplateTest) TestClusterEnvironmentOverrides() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "Unified cluster defaults render without environment overrides",
+			Values: map[string]string{
+				"orchestration.profiles.broker": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "advertised-host: \"${K8S_NAME}.${K8S_SERVICE_NAME}\"")
+				require.Contains(t, output, "node-id: \"${VALUES_ORCHESTRATION_NODE_ID:}\"")
+				require.Contains(t, output, "command-api:")
+				require.Contains(t, output, "internal-api:")
+				require.Contains(t, output, "    name: camunda-platform-test-zeebe")
+				require.Contains(t, output, "size: \"3\"")
+				require.Contains(t, output, "replication-factor: \"3\"")
+				require.Contains(t, output, "partition-count: \"3\"")
+				require.Contains(t, output, "port: 26501")
+				require.Contains(t, output, "port: 26502")
+			},
+		},
+		{
+			Name: "Legacy cluster environment overrides suppress unified defaults",
+			Values: map[string]string{
+				"orchestration.profiles.broker": "true",
+				"orchestration.env[0].name":     `\{\{ printf "ZEEBE_BROKER_NETWORK_ADVERTISEDHOST" \}\}`,
+				"orchestration.env[1].name":     "ZEEBE_BROKER_NETWORK_HOST",
+				"orchestration.env[2].name":     "ZEEBE_BROKER_NETWORK_COMMANDAPI_PORT",
+				"orchestration.env[3].name":     "ZEEBE_BROKER_NETWORK_INTERNALAPI_PORT",
+				"orchestration.env[4].name":     "ZEEBE_BROKER_CLUSTER_NODEID",
+				"orchestration.env[5].name":     "ZEEBE_BROKER_CLUSTER_CLUSTERNAME",
+				"orchestration.env[6].name":     "ZEEBE_BROKER_CLUSTER_REPLICATIONFACTOR",
+				"orchestration.env[7].name":     "ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT",
+				"orchestration.env[8].name":     "ZEEBE_BROKER_CLUSTER_INITIALCONTACTPOINTS",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				cluster := requireApplicationCluster(t, output)
+				require.EqualValues(t, "3", cluster["size"])
+				requireNestedKeyAbsent(t, cluster, "node-id")
+				requireNestedKeyAbsent(t, cluster, "name")
+				requireNestedKeyAbsent(t, cluster, "replication-factor")
+				requireNestedKeyAbsent(t, cluster, "partition-count")
+				requireNestedKeyAbsent(t, cluster, "initial-contact-points")
+				requireNestedKeyAbsent(t, cluster, "network")
+			},
+		},
+		{
+			Name: "Unified cluster environment overrides suppress unified defaults",
+			Values: map[string]string{
+				"orchestration.profiles.broker": "true",
+				"orchestration.env[0].name":     "CAMUNDA_CLUSTER_NETWORK_ADVERTISEDHOST",
+				"orchestration.env[1].name":     "CAMUNDA_CLUSTER_NETWORK_HOST",
+				"orchestration.env[2].name":     "CAMUNDA_CLUSTER_NETWORK_COMMANDAPI_PORT",
+				"orchestration.env[3].name":     "CAMUNDA_CLUSTER_NETWORK_INTERNALAPI_PORT",
+				"orchestration.env[4].name":     "CAMUNDA_CLUSTER_NODEID",
+				"orchestration.env[5].name":     "CAMUNDA_CLUSTER_NAME",
+				"orchestration.env[6].name":     "CAMUNDA_CLUSTER_REPLICATIONFACTOR",
+				"orchestration.env[7].name":     "CAMUNDA_CLUSTER_PARTITIONCOUNT",
+				"orchestration.env[8].name":     "CAMUNDA_CLUSTER_INITIALCONTACTPOINTS",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				cluster := requireApplicationCluster(t, output)
+				require.EqualValues(t, "3", cluster["size"])
+				requireNestedKeyAbsent(t, cluster, "node-id")
+				requireNestedKeyAbsent(t, cluster, "name")
+				requireNestedKeyAbsent(t, cluster, "replication-factor")
+				requireNestedKeyAbsent(t, cluster, "partition-count")
+				requireNestedKeyAbsent(t, cluster, "initial-contact-points")
+				requireNestedKeyAbsent(t, cluster, "network")
+			},
+		},
+		{
+			Name: "Imported legacy cluster configuration suppresses matching unified defaults",
+			Values: map[string]string{
+				"orchestration.profiles.broker":                    "true",
+				"orchestration.extraConfiguration[0].file":         "cluster.yaml",
+				"orchestration.extraConfiguration[0].content":      "zeebe:\n  broker:\n    cluster:\n      clusterName: imported\n    network:\n      advertisedHost: imported.example.com\n",
+				"orchestration.extraConfiguration[1].file":         "mounted-only.yaml",
+				"orchestration.extraConfiguration[1].springImport": "false",
+				"orchestration.extraConfiguration[1].content":      "zeebe:\n  broker:\n    cluster:\n      clusterSize: 9\n",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				cluster := requireApplicationCluster(t, output)
+				require.NotContains(t, cluster, "name")
+				require.EqualValues(t, "3", cluster["size"])
+				network, ok := cluster["network"].(map[string]any)
+				require.True(t, ok)
+				require.NotContains(t, network, "advertised-host")
+				require.Contains(t, network, "host")
+			},
+		},
+		{
+			Name: "Imported properties cluster configuration suppresses matching unified defaults",
+			Values: map[string]string{
+				"orchestration.profiles.broker":               "true",
+				"orchestration.extraConfiguration[0].file":    "cluster.properties",
+				"orchestration.extraConfiguration[0].content": "zeebe.broker.cluster.clusterName=imported\nzeebe.broker.network.advertisedHost=imported.example.com\n",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				cluster := requireApplicationCluster(t, output)
+				require.NotContains(t, cluster, "name")
+				network, ok := cluster["network"].(map[string]any)
+				require.True(t, ok)
+				require.NotContains(t, network, "advertised-host")
+			},
+		},
+		{
+			Name: "Imported nested kebab cluster configuration suppresses matching unified default",
+			Values: map[string]string{
+				"orchestration.profiles.broker":               "true",
+				"orchestration.extraConfiguration[0].file":    "cluster.yaml",
+				"orchestration.extraConfiguration[0].content": "zeebe:\n  broker:\n    cluster:\n      cluster-name: imported\n",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				cluster := requireApplicationCluster(t, output)
+				requireNestedKeyAbsent(t, cluster, "name")
+			},
+		},
+		{
+			Name: "Imported dotted kebab cluster configuration suppresses matching unified default",
+			Values: map[string]string{
+				"orchestration.profiles.broker":               "true",
+				"orchestration.extraConfiguration[0].file":    "cluster.yaml",
+				"orchestration.extraConfiguration[0].content": "zeebe.broker.cluster.cluster-name: imported\n",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				cluster := requireApplicationCluster(t, output)
+				requireNestedKeyAbsent(t, cluster, "name")
+			},
+		},
+		{
+			Name: "Imported kebab properties cluster configuration suppresses matching unified default",
+			Values: map[string]string{
+				"orchestration.profiles.broker":               "true",
+				"orchestration.extraConfiguration[0].file":    "cluster.properties",
+				"orchestration.extraConfiguration[0].content": "zeebe.broker.cluster.cluster-name=imported\n",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				cluster := requireApplicationCluster(t, output)
+				requireNestedKeyAbsent(t, cluster, "name")
+			},
+		},
+		{
+			Name: "Imported nested legacy partitions-count suppresses matching unified default",
+			Values: map[string]string{
+				"orchestration.profiles.broker":               "true",
+				"orchestration.extraConfiguration[0].file":    "cluster.yaml",
+				"orchestration.extraConfiguration[0].content": "zeebe:\n  broker:\n    cluster:\n      partitions-count: 9\n",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				cluster := requireApplicationCluster(t, output)
+				requireNestedKeyAbsent(t, cluster, "partition-count")
+			},
+		},
+		{
+			Name: "Imported dotted legacy partitions-count suppresses matching unified default",
+			Values: map[string]string{
+				"orchestration.profiles.broker":               "true",
+				"orchestration.extraConfiguration[0].file":    "cluster.yaml",
+				"orchestration.extraConfiguration[0].content": "zeebe.broker.cluster.partitions-count: 9\n",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				cluster := requireApplicationCluster(t, output)
+				requireNestedKeyAbsent(t, cluster, "partition-count")
+			},
+		},
+		{
+			Name: "Imported properties legacy partitions-count suppresses matching unified default",
+			Values: map[string]string{
+				"orchestration.profiles.broker":               "true",
+				"orchestration.extraConfiguration[0].file":    "cluster.properties",
+				"orchestration.extraConfiguration[0].content": "zeebe.broker.cluster.partitions-count=9\n",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				cluster := requireApplicationCluster(t, output)
+				requireNestedKeyAbsent(t, cluster, "partition-count")
+			},
+		},
+		{
+			Name: "Imported spaced kebab properties cluster configuration suppresses matching unified default",
+			Values: map[string]string{
+				"orchestration.profiles.broker":               "true",
+				"orchestration.extraConfiguration[0].file":    "cluster.properties",
+				"orchestration.extraConfiguration[0].content": "zeebe.broker.cluster.cluster-name = imported\n",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				cluster := requireApplicationCluster(t, output)
+				requireNestedKeyAbsent(t, cluster, "name")
+			},
+		},
+		{
+			Name: "Imported similarly prefixed property keeps the unified default",
+			Values: map[string]string{
+				"orchestration.profiles.broker":               "true",
+				"orchestration.extraConfiguration[0].file":    "cluster.properties",
+				"orchestration.extraConfiguration[0].content": "zeebe.broker.cluster.clusterNameExtra=imported\n",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				cluster := requireApplicationCluster(t, output)
+				require.Equal(t, "camunda-platform-test-zeebe", cluster["name"])
+			},
+		},
+		{
+			Name: "Declared envFrom cluster variable suppresses matching unified default",
+			Values: map[string]string{
+				"orchestration.profiles.broker":              "true",
+				"orchestration.envFrom[0].configMapRef.name": "cluster-environment",
+				"orchestration.envFromProvides[0]":           "ZEEBE_BROKER_NETWORK_ADVERTISEDHOST",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				cluster := requireApplicationCluster(t, output)
+				network, ok := cluster["network"].(map[string]any)
+				require.True(t, ok)
+				requireNestedKeyAbsent(t, network, "advertised-host")
+				require.Contains(t, network, "host")
+			},
+		},
+		{
+			Name: "Declared envFrom cluster variable without a source keeps the unified default",
+			Values: map[string]string{
+				"orchestration.profiles.broker":    "true",
+				"orchestration.envFromProvides[0]": "ZEEBE_BROKER_NETWORK_ADVERTISEDHOST",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				cluster := requireApplicationCluster(t, output)
+				network, ok := cluster["network"].(map[string]any)
+				require.True(t, ok)
+				require.Contains(t, network, "advertised-host")
+			},
+		},
+		{
+			Name: "Imported later YAML document suppresses matching unified default",
+			Values: map[string]string{
+				"orchestration.profiles.broker":               "true",
+				"orchestration.extraConfiguration[0].file":    "cluster.yaml",
+				"orchestration.extraConfiguration[0].content": "unrelated: true\n---\ncamunda.cluster.partition-count: 9\n",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				cluster := requireApplicationCluster(t, output)
+				requireNestedKeyAbsent(t, cluster, "partition-count")
+				require.Contains(t, cluster, "size")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
 func (s *ConfigmapTemplateTest) TestNumberedModeConfigurationCompatibility() {
 	testCases := []testhelpers.TestCase{
 		{
@@ -1371,7 +1648,7 @@ func (s *ConfigmapTemplateTest) TestNumberedModeConfigurationCompatibility() {
 				require.NoError(t, err)
 				require.Contains(t, output, "${K8S_NAME##*-} * 1 + 0")
 				require.Contains(t, output, "node-id: \"${VALUES_ORCHESTRATION_NODE_ID:}\"")
-				require.Contains(t, output, "advertisedHost: \"${K8S_NAME}.${K8S_SERVICE_NAME}\"")
+				require.Contains(t, output, "advertised-host: \"${K8S_NAME}.${K8S_SERVICE_NAME}\"")
 				require.NotContains(t, output, "CAMUNDA_CLUSTER_ZONE")
 				require.NotContains(t, output, "scheme: ZONE_AWARE")
 			},
@@ -1384,11 +1661,12 @@ func (s *ConfigmapTemplateTest) TestNumberedModeConfigurationCompatibility() {
 				"global.multiregion.regionId":       "1",
 				"orchestration.profiles.broker":     "true",
 			},
+			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.clusterSize=4"},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
 				require.Contains(t, output, "${K8S_NAME##*-} * 2 + 1")
 				require.Contains(t, output, "node-id: \"${VALUES_ORCHESTRATION_NODE_ID:}\"")
-				require.Contains(t, output, "advertisedHost: \"${K8S_NAME}.${K8S_SERVICE_NAME}.${K8S_NAMESPACE}.svc\"")
+				require.Contains(t, output, "advertised-host: \"${K8S_NAME}.${K8S_SERVICE_NAME}.${K8S_NAMESPACE}.svc\"")
 				require.NotContains(t, output, "CAMUNDA_CLUSTER_ZONE")
 				require.NotContains(t, output, "scheme: ZONE_AWARE")
 			},
@@ -1413,7 +1691,7 @@ func (s *ConfigmapTemplateTest) TestNumberedModeConfigurationCompatibility() {
 				// cluster-wide sizing is the values key, untouched by round-robin
 				require.Contains(t, output, "size: \"6\"")
 				// cross-region advertised host, not the single-region short form
-				require.Contains(t, output, "advertisedHost: \"${K8S_NAME}.${K8S_SERVICE_NAME}.${K8S_NAMESPACE}.svc\"")
+				require.Contains(t, output, "advertised-host: \"${K8S_NAME}.${K8S_SERVICE_NAME}.${K8S_NAMESPACE}.svc\"")
 				// more than one failure domain, so the chart refuses to guess the bootstrap list
 				require.NotContains(t, output, "initial-contact-points:")
 				require.Contains(t, output, "Multi-region deployments: initial-contact-points must be provided manually")
@@ -1829,7 +2107,7 @@ func (s *ConfigmapTemplateTest) TestRenamedRegionKeysAreRejectedWithoutSchemaVal
 		},
 		{
 			Name:                    "TestDeprecatedGlobalBlockKeepsItsSpelling",
-			RenderTemplateExtraArgs: []string{"--skip-schema-validation"},
+			RenderTemplateExtraArgs: []string{"--skip-schema-validation", "--set-string", "orchestration.clusterSize=4"},
 			Values: map[string]string{
 				"global.multiregion.regions":    "2",
 				"global.multiregion.regionId":   "1",
@@ -1933,12 +2211,35 @@ func (s *ConfigmapTemplateTest) TestRoundRobinRejectsInconsistentNumbering() {
 			},
 		},
 		{
+			Name: "TestRoundRobinRejectsAClusterSizeTheZonesDoNotDivide",
+			Values: map[string]string{
+				"orchestration.partitioning.numberOfZones": "2",
+				"orchestration.partitioning.zoneIndex":     "0",
+				"orchestration.profiles.broker":            "true",
+			},
+			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.clusterSize=5"},
+			Expected: map[string]string{
+				"ERROR": "orchestration.clusterSize is 5 but orchestration.partitioning.numberOfZones is 2, so the zones deploy 4 brokers while every broker expects 5",
+			},
+		},
+		{
+			Name: "TestDeprecatedClusterSizeIsGuardedUnderItsOwnKey",
+			Values: map[string]string{
+				"global.multiregion.regions":    "2",
+				"orchestration.profiles.broker": "true",
+			},
+			Expected: map[string]string{
+				"ERROR": "orchestration.clusterSize is 3 but global.multiregion.regions is 2, so the zones deploy 2 brokers while every broker expects 3",
+			},
+		},
+		{
 			Name: "TestRoundRobinAcceptsTheLastRegion",
 			Values: map[string]string{
 				"orchestration.partitioning.numberOfZones": "2",
 				"orchestration.partitioning.zoneIndex":     "1",
 				"orchestration.profiles.broker":            "true",
 			},
+			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.clusterSize=4"},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
 				require.Contains(t, output, "* 2 + 1]")

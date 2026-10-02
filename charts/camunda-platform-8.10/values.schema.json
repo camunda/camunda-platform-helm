@@ -10,7 +10,7 @@
                     "properties": {
                         "mode": {
                             "type": "string",
-                            "description": "defines the role of this release in the deployment topology. Supported values are combined, hub, orchestration, and optimize. In optimize mode only Optimize is deployed, so a separate Optimize release can serve one Physical Tenant without sharing a release with the Orchestration Cluster; it requires optimize.enabled, global.noSecondaryStorage=false, an enabled database backend, Identity auth and URL set on the component or globally, and optimize.contextPath when routing is rendered.",
+                            "description": "defines the role of this release in the deployment topology. Supported values are combined, hub, orchestration, and optimize. In orchestration mode, Orchestration and Connectors can authenticate directly with an external OIDC provider without a Management Identity URL; Optimize calls Management Identity when it verifies a bearer token, so a release that enables Optimize needs optimize.identity.service.url or global.identity.service.url. In optimize mode only Optimize is deployed, so a separate Optimize release can serve one Physical Tenant without sharing a release with the Orchestration Cluster; it requires optimize.enabled, global.noSecondaryStorage=false, an enabled database backend, Identity auth and URL set on the component or globally, and optimize.contextPath when routing is rendered.",
                             "default": "combined",
                             "enum": [
                                 "combined",
@@ -1530,7 +1530,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.10.0-alpha5.1"
+                            "default": "8.10.0"
                         },
                         "digest": {
                             "type": "string",
@@ -2318,7 +2318,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be used to set the Docker image tag for the WebModeler images",
-                            "default": "8.10.0-alpha5"
+                            "default": "8.10.0"
                         },
                         "pullSecrets": {
                             "type": "array",
@@ -3776,7 +3776,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.10.0-alpha5"
+                            "default": "8.10.0"
                         },
                         "digest": {
                             "type": "string",
@@ -4683,7 +4683,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.10.0-alpha5"
+                            "default": "8.10.0"
                         },
                         "digest": {
                             "type": "string",
@@ -4944,6 +4944,36 @@
                     "description": "list of environment variables to import from configMapRef and secretRef",
                     "default": [],
                     "items": {}
+                },
+                "envFromProvides": {
+                    "type": "array",
+                    "description": "names the cluster variables supplied by orchestration.envFrom so generated unified cluster defaults do not override them.",
+                    "default": [],
+                    "items": {
+                        "type": "string",
+                        "enum": [
+                            "CAMUNDA_CLUSTER_NODEID",
+                            "ZEEBE_BROKER_CLUSTER_NODEID",
+                            "CAMUNDA_CLUSTER_NAME",
+                            "ZEEBE_BROKER_CLUSTER_CLUSTERNAME",
+                            "CAMUNDA_CLUSTER_SIZE",
+                            "ZEEBE_BROKER_CLUSTER_CLUSTERSIZE",
+                            "CAMUNDA_CLUSTER_REPLICATIONFACTOR",
+                            "ZEEBE_BROKER_CLUSTER_REPLICATIONFACTOR",
+                            "CAMUNDA_CLUSTER_PARTITIONCOUNT",
+                            "ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT",
+                            "CAMUNDA_CLUSTER_INITIALCONTACTPOINTS",
+                            "ZEEBE_BROKER_CLUSTER_INITIALCONTACTPOINTS",
+                            "CAMUNDA_CLUSTER_NETWORK_ADVERTISEDHOST",
+                            "ZEEBE_BROKER_NETWORK_ADVERTISEDHOST",
+                            "CAMUNDA_CLUSTER_NETWORK_HOST",
+                            "ZEEBE_BROKER_NETWORK_HOST",
+                            "CAMUNDA_CLUSTER_NETWORK_COMMANDAPI_PORT",
+                            "ZEEBE_BROKER_NETWORK_COMMANDAPI_PORT",
+                            "CAMUNDA_CLUSTER_NETWORK_INTERNALAPI_PORT",
+                            "ZEEBE_BROKER_NETWORK_INTERNALAPI_PORT"
+                        ]
+                    }
                 },
                 "configMap": {
                     "type": "object",
@@ -6215,7 +6245,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.10.0-alpha5"
+                            "default": "8.10.0"
                         },
                         "digest": {
                             "type": "string",

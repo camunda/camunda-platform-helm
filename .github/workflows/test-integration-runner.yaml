@@ -194,6 +194,11 @@ on:
         required: false
         default: ""
         type: string
+      playwright-runner-image:
+        description: "Digest-pinned Playwright runner image (empty uses latest and disables result caching)"
+        required: false
+        default: ""
+        type: string
       camunda-version:
         description: "Camunda version (e.g., 8.9) for cache result recording"
         required: false
@@ -1271,7 +1276,7 @@ jobs:
     needs: [install]
     runs-on: ${{ matrix.suite == 'full' && 'gcp-core-32-longrunning-big-ssd' || 'gcp-core-8-release' }}
     container:
-      image: ghcr.io/camunda/team-distribution/playwright-runner:latest
+      image: ${{ inputs.playwright-runner-image || 'ghcr.io/camunda/team-distribution/playwright-runner:latest' }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -1281,7 +1286,7 @@ jobs:
         shell: bash
     if: ${{ inputs.test-enabled && inputs.e2e-enabled && inputs.flow == 'install' && !inputs.skip-e2e && !inputs.is-topology }}
     continue-on-error: ${{ !matrix.blocking }}
-    timeout-minutes: ${{ matrix.suite == 'full' && 50 || 25 }}
+    timeout-minutes: ${{ matrix.suite == 'full' && 50 || matrix.suite == 'api' && 40 || 25 }}
     strategy:
       fail-fast: false
       # Legs share one deployment and smoke-tests.spec.js runs in both projects,
@@ -1349,6 +1354,22 @@ jobs:
           e2e-test-suite-version: ${{ inputs.e2e-test-suite-version }}
           scenario: ${{ inputs.scenario }}
           run-smoke-tests: ${{ matrix.suite == 'smoke' }}
+          playwright-project: ${{ matrix.suite == 'api' && 'api' || '' }}
+          artifact-suffix: ${{ matrix.suite == 'api' && 'api' || '' }}
+      # continue-on-error reports a failed non-blocking leg as success in
+      # needs.*.result; record-result requires this marker from every leg instead.
+      - name: Write e2e leg pass marker
+        run: |
+          mkdir -p "${RUNNER_TEMP}/e2e-leg-passed"
+          touch "${RUNNER_TEMP}/e2e-leg-passed/${{ matrix.suite }}-${{ matrix.shard_index }}"
+      - name: Upload e2e leg pass marker
+        continue-on-error: true # A lost marker only skips the cache write.
+        uses: ./.github/actions/upload-artifact-retry
+        with:
+          name: e2e-leg-passed-${{ inputs.identifier }}-${{ inputs.flow }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.suite }}-${{ matrix.shard_index }}
+          path: ${{ runner.temp }}/e2e-leg-passed
+          retention-days: 1
+          if-no-files-found: error
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -1368,7 +1389,7 @@ jobs:
     needs: [install]
     runs-on: gcp-core-32-longrunning-big-ssd
     container:
-      image: ghcr.io/camunda/team-distribution/playwright-runner:latest
+      image: ${{ inputs.playwright-runner-image || 'ghcr.io/camunda/team-distribution/playwright-runner:latest' }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -1462,7 +1483,7 @@ jobs:
     needs: [install]
     runs-on: gcp-core-8-release
     container:
-      image: ghcr.io/camunda/team-distribution/playwright-runner:latest
+      image: ${{ inputs.playwright-runner-image || 'ghcr.io/camunda/team-distribution/playwright-runner:latest' }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -1471,13 +1492,17 @@ jobs:
       run:
         shell: bash
     if: ${{ inputs.test-enabled && inputs.e2e-enabled && !inputs.skip-e2e && inputs.is-topology && inputs.flow == 'install' }}
-    timeout-minutes: 40
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       # One leg per Optimize instance can share an orchestration_suffix, so legs
       # would otherwise run the stateful smoke suite against the same
       # orchestration/Modeler deployment at once and interfere with each other.
-      max-parallel: 1
+      # physicaltenants (ptnt) is the exception: only its default leg runs the
+      # orchestration smoke, and each tenant leg uses its own Optimize and its own
+      # uniquely named workspace, project and process, so its legs run together
+      # (verified on GKE: three parallel rounds, all legs passing first time).
+      max-parallel: ${{ inputs.shortname == 'ptnt' && 3 || 1 }}
       matrix:
         include: ${{ fromJson(inputs.topology-smoke-matrix) }}
     permissions:
@@ -1572,6 +1597,7 @@ jobs:
           optimize-namespace: "${{ matrix.optimize_suffix && format('{0}-{1}', steps.base-vars.outputs.namespace, matrix.optimize_suffix) || '' }}"
           optimize-context-path: "${{ matrix.optimize_context_path || '' }}"
           modeler-cluster-name: ${{ matrix.modeler_cluster_name }}
+          physical-tenant-id: ${{ matrix.tenant_id }}
           binary-artifact-name: ${{ inputs.binary-artifact-name }}
           deployment-ttl: ${{ env.CI_DEPLOYMENT_TTL }}
           auth: ${{ inputs.auth }}
@@ -1581,7 +1607,7 @@ jobs:
           e2e-test-suite-version: ${{ inputs.e2e-test-suite-version }}
           scenario: ${{ inputs.scenario }}
           run-smoke-tests: "false"
-          playwright-project: ${{ matrix.playwright_project }}
+          playwright-project: ${{ matrix.additional_playwright_project || matrix.playwright_project }}
           e2e-test-suite-token: ${{ steps.e2e-repository-token.outputs.token }}
           artifact-suffix: ${{ matrix.orchestration_suffix }}-${{ matrix.suite }}
       - name: Observe build status
@@ -1600,7 +1626,7 @@ jobs:
     needs: [upgrade]
     runs-on: gcp-core-8-release
     container:
-      image: ghcr.io/camunda/team-distribution/playwright-runner:latest
+      image: ${{ inputs.playwright-runner-image || 'ghcr.io/camunda/team-distribution/playwright-runner:latest' }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -1752,7 +1778,14 @@ jobs:
           fi
 
           npm install -g playwright
-          npx playwright merge-reports --reporter html ./all-blob-reports
+          # Topology legs run suites from different chart test directories (8.10, 8.9, ...), and
+          # Playwright refuses to merge blob reports recorded under different testDirs unless a
+          # merge config names one. The checkout root contains every chart's test directory.
+          # A config file also moves the HTML report's default location, so pin it to the folder
+          # the upload step below reads.
+          echo "export default { testDir: '.' };" > playwright-merge.config.mjs
+          PLAYWRIGHT_HTML_OUTPUT_DIR="$PWD/playwright-report" \
+            npx playwright merge-reports -c playwright-merge.config.mjs --reporter html ./all-blob-reports
 
       - name: Upload HTML report
         uses: ./.github/actions/upload-artifact-retry
@@ -1768,7 +1801,8 @@ jobs:
     name: Record cache result - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
     needs: [install, playwright-e2e-tests-after-install, playwright-e2e-tests-after-upgrade, merge-e2e-reports, e2e-topology-smoke]
     # Only record when:
-    # 1. All prerequisite jobs succeeded (or were skipped — e.g., e2e tests skipped for skip-e2e scenarios)
+    # 1. All prerequisite jobs succeeded (or were skipped — e.g., e2e tests skipped for skip-e2e scenarios),
+    #    (non-blocking e2e legs are checked by their pass markers in the steps below)
     #    Note: we check both 'failure' AND 'cancelled' to prevent false positives when
     #    tests are cancelled (e.g., timeout). A cancelled job result is 'cancelled', not 'failure'.
     # 2. PR HEAD SHA is available (set by the init job for merge_group and pull_request events)
@@ -1781,7 +1815,8 @@ jobs:
         inputs.pr-head-sha != '' &&
         inputs.camunda-version != '' &&
         inputs.chart-versions != '' &&
-        inputs.e2e-test-suite-version != ''
+        inputs.e2e-test-suite-version != '' &&
+        inputs.playwright-runner-image != ''
       }}
     runs-on: ubuntu-latest
     permissions:
@@ -1801,7 +1836,41 @@ jobs:
           cache: true
           cache-dependency-path: scripts/ci-result-cache/go.sum
 
+      # Markers from this attempt only: a leg that "Re-run failed jobs" did not
+      # re-run has none, which skips the write rather than reuse an older pass.
+      - name: Download e2e leg pass markers
+        if: needs.playwright-e2e-tests-after-install.result == 'success'
+        continue-on-error: true
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          path: ${{ runner.temp }}/e2e-leg-passed
+          pattern: e2e-leg-passed-${{ inputs.identifier }}-${{ inputs.flow }}-${{ github.run_id }}-${{ github.run_attempt }}-*
+          merge-multiple: true
+
+      - name: Check every e2e leg passed
+        id: e2e-legs
+        env:
+          E2E_RESULT: ${{ needs.playwright-e2e-tests-after-install.result }}
+          E2E_MATRIX: ${{ inputs.e2e-matrix }}
+          MARKERS: ${{ runner.temp }}/e2e-leg-passed
+        run: |
+          if [[ "$E2E_RESULT" == "skipped" ]]; then
+            echo "record=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          missing=()
+          while read -r leg; do
+            [[ -f "${MARKERS}/${leg}" ]] || missing+=("$leg")
+          done < <(jq -r '.[] | "\(.suite)-\(.shard_index)"' <<<"$E2E_MATRIX")
+          if (( ${#missing[@]} > 0 )); then
+            echo "::notice::Not recording a cache result: no pass marker for e2e leg(s) ${missing[*]}"
+            echo "record=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "record=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Record passing result
+        if: steps.e2e-legs.outputs.record == 'true'
         env:
           GITHUB_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
@@ -1815,6 +1884,7 @@ jobs:
             --platform "${{ inputs.distro-platform }}" \
             --chart-versions "${{ inputs.chart-versions }}" \
             --e2e-test-suite-version "${{ inputs.e2e-test-suite-version }}" \
+            --playwright-runner-image "${{ inputs.playwright-runner-image }}" \
             --repo-root "${{ github.workspace }}" \
             --target-url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 

@@ -86,6 +86,16 @@ data:
                 {{- else }}
                 - "/login/oauth2/code/orchestration"
                 - "/sso-callback"
+                {{- $physicalTenants := dig "physicalTenants" list $cluster }}
+                {{- if $physicalTenants }}
+                {{- $tenantIds := list "default" }}
+                {{- range $tenant := $physicalTenants }}
+                {{- $tenantIds = append $tenantIds ($tenant.id | toString) }}
+                {{- end }}
+                {{- range $tenantId := $tenantIds | uniq }}
+                - {{ printf "/physical-tenants/%s/sso-callback" $tenantId | quote }}
+                {{- end }}
+                {{- end }}
                 {{- end }}
           {{- end }}
           {{- if $optimize.enabled }}

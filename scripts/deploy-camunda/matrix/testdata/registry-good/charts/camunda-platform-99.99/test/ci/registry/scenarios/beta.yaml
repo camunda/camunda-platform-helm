@@ -11,6 +11,8 @@ features: [synthetic-feature]
 e2e-full-suite: true
 e2e-smoke-blocking: false
 e2e-full-suite-blocking: true
+e2e-api-suite: true
+e2e-api-suite-blocking: true
 pre-install: cnpg-default
 post-deploy: post-deploy-beta
 dependencies:

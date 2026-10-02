@@ -53,13 +53,20 @@ non-empty string such as global.identity.service.url.
   {{- fail "[camunda][error] global.topology.mode=orchestration requires global.identity.auth.enabled=true." }}
 {{- end }}
 {{- if and (eq $topologyMode "orchestration") .Values.identity.enabled }}
-  {{- fail "[camunda][error] global.topology.mode=orchestration requires identity.enabled=false; configure global.identity.service.url to reach Management Identity." }}
-{{- end }}
-{{- if and (eq $topologyMode "orchestration") (empty .Values.global.identity.service.url) }}
-  {{- fail "[camunda][error] global.topology.mode=orchestration requires global.identity.service.url to reach Management Identity." }}
+  {{- fail "[camunda][error] global.topology.mode=orchestration requires identity.enabled=false." }}
 {{- end }}
 {{- if and (eq $topologyMode "orchestration") (ne (include "camundaPlatform.orchestrationEnabled" .) "true") }}
   {{- fail "[camunda][error] global.topology.mode=orchestration requires orchestration.enabled=true." }}
+{{- end }}
+{{- $optimizeMultitenancyEnabled := or .Values.global.multitenancy.enabled .Values.identity.multitenancy.enabled .Values.optimize.multitenancy.enabled }}
+{{- if and
+      (eq $topologyMode "orchestration")
+      (eq (include "camundaPlatform.optimizeEnabled" .) "true")
+      $optimizeMultitenancyEnabled
+      (empty (dig "identity" "service" "url" "" .Values.optimize))
+      (empty .Values.global.identity.service.url)
+      (ne (include "optimize.identityUrlMayComeFromEnv" .) "true") }}
+  {{- fail "[camunda][error] multi-tenant Optimize in global.topology.mode=orchestration requires optimize.identity.service.url or global.identity.service.url to resolve authorized tenants." }}
 {{- end }}
 {{- if and (eq (include "camundaPlatform.orchestrationEnabled" .) "true") (eq (include "orchestration.physicalTenantsDeclared" .) "true") }}
   {{- if ne (include "orchestration.authMethod" .) "oidc" }}
@@ -165,30 +172,13 @@ Either must bind the key to a non-empty value - the key alone leaves the same mi
     {{- if and (empty (include "optimize.effectiveAuthJwksUrl" .)) (ne (include "optimize.jwksSuppliedByRelease" .) "true") }}
       {{- fail (printf "[camunda][error] Optimize with OIDC authentication and optimize.security.authentication.oidc.type=%s requires optimize.security.authentication.oidc.jwksUrl (or global.identity.auth.jwksUrl), naming the endpoint Optimize fetches token signing keys from. Only KEYCLOAK has an endpoint layout to derive it from, and only while an issuerBackendUrl resolves to append it to, so this release renders an empty api.jwtSetUri and can validate no token. A release that supplies it itself is exempt: set a non-empty api.jwtSetUri in optimize.configuration, which replaces the file this chart renders, or in an optimize.extraConfiguration file, which Optimize imports after it, or name %s in optimize.env or in optimize.security.authentication.oidc.envFromProvides." (include "optimize.effectiveAuthType" .) (include "optimize.jwksEnvNames" .)) }}
     {{- end }}
-    {{/*
-    A component-scoped Optimize identity switches on the identity env ConfigMap, which always states
-    CAMUNDA_IDENTITY_BASEURL. With no Identity URL on either side that value falls back to
-    camundaPlatform.identityURL's in-release default, http://<release>-identity:<port> - an address
-    that resolves only where this release runs Management Identity itself. A release that runs none
-    therefore renders a Service name nothing serves, and because Optimize contacts Identity for
-    authorizations rather than for token validation, a valid issuer and JWKS still let it start and
-    report ready; only the first authorization lookup fails.
-
-    Scoped the same way as the issuer and JWKS checks above, to a release that configures Optimize's
-    own identity. camundaPlatform.identityEnabled is already false in orchestration and optimize
-    modes, so a release that runs no Identity of its own is caught whichever mode put it in that
-    position.
-
-    The release may answer this itself, as with every other guard here: CAMUNDA_IDENTITY_BASEURL in
-    optimize.env, or named in optimize.security.authentication.oidc.envFromProvides, is the value the
-    container reads instead of the ConfigMap's, so there is nothing left for the chart to resolve.
-    */}}
     {{- if and
+          $optimizeMultitenancyEnabled
           (ne (include "camundaPlatform.identityEnabled" .) "true")
           (empty (dig "identity" "service" "url" "" .Values.optimize))
           (empty .Values.global.identity.service.url)
           (ne (include "optimize.identityUrlMayComeFromEnv" .) "true") }}
-      {{- fail (printf "[camunda][error] Optimize configures its own identity but this release runs no Management Identity (identity.enabled=false, or global.topology.mode=orchestration or optimize), and neither optimize.identity.service.url nor global.identity.service.url names one. %s would fall back to this chart's in-release default, http://<release>-identity:<port>, which no Service in this release answers, so Optimize starts and reports ready while every authorization lookup fails. Set optimize.identity.service.url (or global.identity.service.url) to the Management Identity this release authenticates against. A release that supplies it itself is exempt: name %s in optimize.env, or in optimize.security.authentication.oidc.envFromProvides." (include "optimize.identityUrlEnvNames" .) (include "optimize.identityUrlEnvNames" .)) }}
+      {{- fail (printf "[camunda][error] multi-tenant Optimize requires a Management Identity URL to resolve authorized tenants, but neither optimize.identity.service.url nor global.identity.service.url names one. Set one of those values, or name %s in optimize.env or optimize.security.authentication.oidc.envFromProvides." (include "optimize.identityUrlEnvNames" .)) }}
     {{- end }}
   {{- end }}
   {{/*
@@ -359,7 +349,7 @@ Fail with a message if Multi-Tenancy is enabled and its requirements are not met
 - Identity Auth enabled for other apps.
 Multi-Tenancy requirements: https://docs.camunda.io/docs/self-managed/concepts/multi-tenancy/
 */}}
-{{- if or .Values.identity.multitenancy.enabled .Values.global.multitenancy.enabled }}
+{{- if and (ne $topologyMode "orchestration") (or .Values.identity.multitenancy.enabled .Values.global.multitenancy.enabled) }}
   {{- $identityDatabaseEnabled := .Values.identity.externalDatabase.enabled }}
   {{- if has false (list $identityAuthEnabled $identityDatabaseEnabled) }}
     {{- $errorMessage := printf "[camunda][error] %s %s %s"
@@ -583,15 +573,16 @@ is driven entirely by orchestration.partitioning.
 Fail if the round-robin numbering cannot describe a consistent cluster. Node IDs are
 derived as "<ordinal> * numberOfZones + zoneIndex", so a zone indexed outside its own
 range takes the node IDs of another zone.
-
-NOTE: a clusterSize the zone count does not divide is the same class of fault and is
-deliberately not rejected here; see #7196.
 */}}
 {{- if ne $partitioning.scheme "zone-aware" }}
   {{- $zoneCount := int $partitioning.numberOfZones -}}
   {{- $zoneIndex := int $partitioning.zoneIndex -}}
   {{- if or (lt $zoneIndex 0) (ge $zoneIndex $zoneCount) }}
     {{- fail (printf "[camunda][error] %s.%s is %d but %s.%s is %d; %s addresses this zone and must be between 0 and %d, or its brokers take the node IDs of another zone." $partitioningKey $partitioning.indexKey $zoneIndex $partitioningKey $partitioning.countKey $zoneCount $partitioning.indexKey (sub $zoneCount 1)) -}}
+  {{- end }}
+  {{- $clusterSize := int .Values.orchestration.clusterSize -}}
+  {{- if ne (mod $clusterSize $zoneCount) 0 }}
+    {{- fail (printf "[camunda][error] orchestration.clusterSize is %d but %s.%s is %d, so the zones deploy %d brokers while every broker expects %d; the missing brokers stay cluster members and a zone failover can leave partitions without a leader. Set orchestration.clusterSize to a multiple of %s.%s." $clusterSize $partitioningKey $partitioning.countKey $zoneCount (mul (div $clusterSize $zoneCount) $zoneCount) $clusterSize $partitioningKey $partitioning.countKey) -}}
   {{- end }}
 {{- end }}
 
@@ -1616,26 +1607,20 @@ The following values inside your values.yaml need to be set but were not:
       -}}
       {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
     {{- end }}
-    {{- $contactPointsSet := false }}
-    {{- range $env := (.Values.orchestration.env | default list) }}
-      {{- if eq (tpl ($env.name | default "") $) "CAMUNDA_CLUSTER_INITIALCONTACTPOINTS" }}
-        {{- $contactPointsSet = true }}
-      {{- end }}
-    {{- end }}
-    {{- if and (eq (include "camundaPlatform.spansFailureDomains" .) "true") (not $contactPointsSet) }}
+    {{- if and (eq (include "camundaPlatform.spansFailureDomains" .) "true") (ne (include "orchestration.contactPointsConfigured" .) "true") }}
       {{- if and (eq (include "orchestration.zoneAware" .) "true") (include "camundaPlatform.partitioning" . | fromJson).keepUnzonedBrokers }}
       {{- $warningMessage := printf "%s %s %s"
           "[camunda][warning]"
           "This deployment spans more than one failure domain. The generated configuration includes contact points for this release's local zoned brokers and, during migration, retained numbered brokers."
-          "To discover brokers in other zones, set the complete local and remote contact-point list through CAMUNDA_CLUSTER_INITIALCONTACTPOINTS in \"orchestration.env\"."
+          "To discover brokers in other zones, set one resolvable address per zone through camunda.cluster.initial-contact-points in \"orchestration.extraConfiguration\", or CAMUNDA_CLUSTER_INITIALCONTACTPOINTS in \"orchestration.env\"."
       -}}
       {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
       {{- else }}
-      {{- $warningMessage := printf "%s %s %s"
+        {{- $warningMessage := printf "%s %s %s"
           "[camunda][warning]"
-          "This deployment spans more than one failure domain, so the chart cannot generate the broker bootstrap list: set CAMUNDA_CLUSTER_INITIALCONTACTPOINTS through \"orchestration.env\"."
-          "List every broker as <pod>.<headless-service>.<namespace>.svc.cluster.local:26502, comma-separated."
-      -}}
+          "This deployment spans more than one failure domain, so the chart cannot generate the broker bootstrap list: set camunda.cluster.initial-contact-points through \"orchestration.extraConfiguration\", or CAMUNDA_CLUSTER_INITIALCONTACTPOINTS through \"orchestration.env\"."
+          "One address per zone is enough, in whatever DNS form resolves between your zones: a contact point resolves to a single address, and a broker that reaches one live member discovers the rest through membership gossip."
+        -}}
       {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
       {{- end }}
     {{- end }}

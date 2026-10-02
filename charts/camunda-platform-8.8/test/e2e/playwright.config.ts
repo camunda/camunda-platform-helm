@@ -1,6 +1,8 @@
 import { defineConfig } from "@playwright/test";
 import * as dotenv from "dotenv";
 
+import { apiProjects } from "../../../../test/e2e/playwright.api-projects";
+
 dotenv.config();
 
 export default defineConfig({
@@ -32,6 +34,7 @@ export default defineConfig({
       // Connector Secrets/Custom Tags/Properties: require QA-specific config.
       grep: /^(?!.*(@tasklistV1|Connector Secrets User Flow|Custom Tags|Custom Properties)).*$/,
     },
+    ...apiProjects(__dirname),
   ],
   fullyParallel: true,
   retries: 2,

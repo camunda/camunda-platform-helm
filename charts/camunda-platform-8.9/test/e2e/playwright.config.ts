@@ -4,6 +4,7 @@
 import { defineConfig } from "@playwright/test";
 import * as dotenv from "dotenv";
 
+import { apiProjects } from "../../../../test/e2e/playwright.api-projects";
 import { makeShadowConfig } from "../../../../test/e2e/playwright.base.config";
 
 dotenv.config();
@@ -20,5 +21,6 @@ export default defineConfig(
     retries: 2,
     timeout: 10 * 60 * 1000,
     workers: "100%",
+    extraProjects: apiProjects(__dirname),
   }),
 );

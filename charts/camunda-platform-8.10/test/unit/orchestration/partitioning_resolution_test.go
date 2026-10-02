@@ -264,6 +264,7 @@ func (s *PartitioningResolutionTest) TestSpansFailureDomainsBoundary() {
 				"orchestration.partitioning.numberOfZones": "2",
 				"orchestration.partitioning.zoneIndex":     "1",
 			},
+			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.clusterSize=4"},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
 				require.NotContains(t, output, "initial-contact-points:")
@@ -276,8 +277,8 @@ func (s *PartitioningResolutionTest) TestSpansFailureDomainsBoundary() {
 }
 
 func (s *PartitioningResolutionTest) TestQualifiedAdvertisedHostDivergesFromSpansFailureDomains() {
-	const qualified = "advertisedHost: \"${K8S_NAME}.${K8S_SERVICE_NAME}.${K8S_NAMESPACE}.svc\""
-	const short = "advertisedHost: \"${K8S_NAME}.${K8S_SERVICE_NAME}\""
+	const qualified = "advertised-host: \"${K8S_NAME}.${K8S_SERVICE_NAME}.${K8S_NAMESPACE}.svc\""
+	const short = "advertised-host: \"${K8S_NAME}.${K8S_SERVICE_NAME}\""
 
 	testCases := []testhelpers.TestCase{
 		{
@@ -303,7 +304,7 @@ func (s *PartitioningResolutionTest) TestQualifiedAdvertisedHostDivergesFromSpan
 			Values: map[string]string{
 				"orchestration.data.secondaryStorage.type": "elasticsearch",
 				"orchestration.profiles.broker":            "true",
-				"orchestration.partitioning.numberOfZones": "2",
+				"orchestration.partitioning.numberOfZones": "3",
 				"orchestration.partitioning.zoneIndex":     "0",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -341,6 +342,7 @@ func (s *PartitioningResolutionTest) TestRegionCountsRenderAsDecimalIntegers() {
 				"orchestration.partitioning.numberOfZones": "1000001",
 				"orchestration.partitioning.zoneIndex":     "1000000",
 			},
+			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.clusterSize=1000001"},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
 				require.Contains(t, output, "${K8S_NAME##*-} * 1000001 + 1000000")

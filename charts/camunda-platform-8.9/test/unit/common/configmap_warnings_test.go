@@ -389,3 +389,42 @@ func (s *ConfigMapWarningsTemplateTest) TestPvcAccessModesReadWriteOncePodWarnin
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
+
+func (s *ConfigMapWarningsTemplateTest) TestMultiregionClusterSizeDivisibilityWarning() {
+	const warning = "orchestration.clusterSize is 5 but global.multiregion.regions is 2, so the regions deploy 4 brokers while every broker expects 5"
+
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "ClusterSizeTheRegionsDoNotDivideTriggersWarning",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"global.multiregion.regions":               "2",
+			},
+			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.clusterSize=5"},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().Contains(configmap.Data["warnings"], warning)
+			},
+		},
+		{
+			Name: "ClusterSizeTheRegionsDivideDoesNotTriggerWarning",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"elasticsearch.enabled":                    "true",
+				"global.elasticsearch.enabled":             "true",
+				"global.multiregion.regions":               "2",
+			},
+			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.clusterSize=4"},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().NotContains(configmap.Data["warnings"], "orchestration.clusterSize is")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}

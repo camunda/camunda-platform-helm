@@ -15,8 +15,13 @@
 package cmd
 
 import (
+	"os"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v3"
 )
 
 func TestMergeEnvOverridesReplacesExistingKey(t *testing.T) {
@@ -345,4 +350,30 @@ func TestE2EEnvMergeRejectsHalfConfiguredOptimizeBeforeRendering(t *testing.T) {
 	if !strings.Contains(err.Error(), "must be set together") {
 		t.Fatalf("expected the flag pairing error ahead of the render step, got: %v", err)
 	}
+}
+
+// The physical-tenants spec logs in as venom with VENOM_CLIENT_SECRET, which e2e-env resolves
+// from venomClientSecretKey. That key must stay the one the physicaltenants Hub layer registers
+// venom with, or Keycloak rejects the client credentials.
+func TestVenomClientSecretKeyMatchesPhysicalTenantsHubLayer(t *testing.T) {
+	raw, err := os.ReadFile("../../../charts/camunda-platform-8.10/test/integration/scenarios/chart-full-setup/values/features/physicaltenants-hub.yaml")
+	require.NoError(t, err)
+	var values struct {
+		Identity struct {
+			Clients []struct {
+				ID     string `yaml:"id"`
+				Secret struct {
+					ExistingSecretKey string `yaml:"existingSecretKey"`
+				} `yaml:"secret"`
+			} `yaml:"clients"`
+		} `yaml:"identity"`
+	}
+	require.NoError(t, yaml.Unmarshal(raw, &values))
+	for _, client := range values.Identity.Clients {
+		if client.ID == "venom" {
+			assert.Equal(t, venomClientSecretKey, client.Secret.ExistingSecretKey)
+			return
+		}
+	}
+	t.Fatal("physicaltenants-hub.yaml registers no venom client")
 }
