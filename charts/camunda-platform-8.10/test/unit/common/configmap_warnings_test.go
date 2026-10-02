@@ -803,7 +803,7 @@ func (s *ConfigMapWarningsTemplateTest) TestFailureDomainContactPointsWarning() 
 			result["orchestration.partitioning.zones[1].priority"] = "50"
 			result["orchestration.partitioning.keepUnzonedBrokers"] = fmt.Sprint(keepUnzonedBrokers)
 		} else {
-			result["orchestration.partitioning.numberOfZones"] = "2"
+			result["orchestration.partitioning.numberOfZones"] = "3"
 			result["orchestration.partitioning.zoneIndex"] = "0"
 		}
 		if contactPointsSet {

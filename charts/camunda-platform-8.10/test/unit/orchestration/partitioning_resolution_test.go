@@ -264,6 +264,7 @@ func (s *PartitioningResolutionTest) TestSpansFailureDomainsBoundary() {
 				"orchestration.partitioning.numberOfZones": "2",
 				"orchestration.partitioning.zoneIndex":     "1",
 			},
+			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.clusterSize=4"},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
 				require.NotContains(t, output, "initial-contact-points:")
@@ -303,7 +304,7 @@ func (s *PartitioningResolutionTest) TestQualifiedAdvertisedHostDivergesFromSpan
 			Values: map[string]string{
 				"orchestration.data.secondaryStorage.type": "elasticsearch",
 				"orchestration.profiles.broker":            "true",
-				"orchestration.partitioning.numberOfZones": "2",
+				"orchestration.partitioning.numberOfZones": "3",
 				"orchestration.partitioning.zoneIndex":     "0",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -341,6 +342,7 @@ func (s *PartitioningResolutionTest) TestRegionCountsRenderAsDecimalIntegers() {
 				"orchestration.partitioning.numberOfZones": "1000001",
 				"orchestration.partitioning.zoneIndex":     "1000000",
 			},
+			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.clusterSize=1000001"},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
 				require.Contains(t, output, "${K8S_NAME##*-} * 1000001 + 1000000")
