@@ -1605,7 +1605,7 @@ required by camunda.modeler.clusters (introduced in 8.10 Hub/WebModeler).
 {{- if eq (include "camundaPlatform.identityEnabled" .) "true" }}
 - id: "management-cluster"
   name: "Management Identity"
-  version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.identity) | quote }}
+  version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.orchestration) | quote }}
   authentication: {{ include "webModeler.authConfigValue" . | quote }}
   authorizations:
     enabled: false

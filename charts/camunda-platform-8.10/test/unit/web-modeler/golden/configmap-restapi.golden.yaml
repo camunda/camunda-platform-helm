@@ -58,7 +58,7 @@ data:
           
           - id: "management-cluster"
             name: "Management Identity"
-            version: "8.10.0-alpha5.1"
+            version: "8.10.0-alpha5"
             authentication: "BASIC"
             authorizations:
               enabled: false
