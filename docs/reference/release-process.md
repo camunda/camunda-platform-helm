@@ -209,18 +209,22 @@ Do these when the new alpha chart is created (months before the previous alpha g
 
 ### Minor becoming GA
 
-The release train publishes the Helm chart before the official release date. Do steps 1–8 before the train starts the Helm chart build (`chart-build-dev.yaml` with `chart-version: 8.10`):
+The release train publishes the Helm chart before the official release date. Do steps 1–10 before the train starts the Helm chart build (`chart-build-dev.yaml` with `chart-version: 8.10`). The distribution release manager owns these steps and the checks after the public release.
 
 1. Label all open PRs with `backport-to-latest` so that contributors know their PRs need updating.
 2. In `charts/chart-versions.yaml`, set `released` and `stdSupportUntil` for `8.10`. Use the "Minor release date" and "End of standard maintenance" dates from the 8.10 release announcements page in the docs. The presence of `released` switches the release tooling from prerelease to stable versions. Without `stdSupportUntil`, the version matrix shows the minor in extended support.
 3. Do not change the version in `Chart.yaml`. The dev build computes the GA version from `chart-versions.yaml`, and the release-please PR writes it to `Chart.yaml`. If you set `Chart.yaml` to the GA version by hand, the dev build takes the next version from release-please instead.
 4. Remove `artifacthub.io/prerelease: "true"` from `charts/camunda-platform-8.10/Chart.yaml`. A published chart cannot be changed, and Artifact Hub keeps the prerelease flag of a published version.
 5. Set the GA image tags in `values.yaml`, `values-latest.yaml` and `values-digest.yaml`, and change the `values-latest.yaml` header from `Camunda - Alpha` to `Camunda Helm chart.`. Renovate and CI read these files from `main`, and the package ships `values-digest.yaml` as it is on `main`.
+   - In `values-digest.yaml`, pin each image to the digest of its GA tag. Docker Hub returns the digest in the `digest` field of `https://hub.docker.com/v2/repositories/<image>/tags/<tag>` (for example `camunda/camunda` and `8.10.0`).
+   - Remove the values of components that the GA chart does not ship (for 8.10, the Console block in `values-latest.yaml`).
 6. In `renovate.json5`, move the `8.10` files from the alpha rules to the patch-only `camunda-platform-images` group. Keep the alpha rules. Leave their `matchFileNames` empty until the next alpha chart exists.
 7. Remove the `version/alpha` label from the `8.10` package in `.github/config/release-please/release-please-config.json`.
 8. Point the release highlights in `templates/common/_helpers.tpl` at the versioned upgrade guide (`https://docs.camunda.io/docs/8.10/self-managed/upgrade/helm/890-to-8100/`). Remove "alpha" from parameter descriptions.
-9. Rehearse the release from the PR branch before you merge: run [`chart-promote-rc.yaml`](https://github.com/camunda/camunda-platform-helm/blob/main/.github/workflows/chart-promote-rc.yaml) with `--ref <branch>`, `dev-tag: 15-dev-latest` and `dry-run: true`, then [`chart-release-public.yaml`](https://github.com/camunda/camunda-platform-helm/blob/main/.github/workflows/chart-release-public.yaml) with `--ref <branch>`, `rc-tag: 15-rc-dryrun-latest` and `dry-run: true`. The workflows build the release tooling from the branch. The dev tag must point to a commit on `main`.
-10. After the merge, check that the next 8.10 dev build has no `-alpha` suffix in its dev tag.
+9. Regenerate the generated files with `make helm.readme-update`, `make helm.schema-update` and `make go.update-golden-only`, each with `chartPath=charts/camunda-platform-8.10`.
+10. Render the chart with `values.yaml` only, and again with `-f values-digest.yaml`. Check that every Camunda image uses the GA tag or its digest, and that `app.kubernetes.io/version` shows the GA version. With `values-digest.yaml`, the label shows the chart `appVersion` until [#7440](https://github.com/camunda/camunda-platform-helm/issues/7440) is fixed.
+11. Rehearse the release from the PR branch before you merge: run [`chart-promote-rc.yaml`](https://github.com/camunda/camunda-platform-helm/blob/main/.github/workflows/chart-promote-rc.yaml) with `--ref <branch>`, `dev-tag: 15-dev-latest` and `dry-run: true`, then [`chart-release-public.yaml`](https://github.com/camunda/camunda-platform-helm/blob/main/.github/workflows/chart-release-public.yaml) with `--ref <branch>`, `rc-tag: 15-rc-dryrun-latest` and `dry-run: true`. The workflows build the release tooling from the branch. The dev tag must point to a commit on `main`.
+12. After the merge, check that the next 8.10 dev build has no `-alpha` suffix in its dev tag.
 
 After the public release:
 
