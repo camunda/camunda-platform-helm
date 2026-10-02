@@ -701,6 +701,24 @@ func TestReconcileCredentials_RemovesABootstrapLeftByAnInterruptedRun(t *testing
 	}
 }
 
+func TestReconcileCredentials_StaleBootstrapNeverDeletesANonTemporaryUser(t *testing.T) {
+	for _, user := range []string{"admin", "someone-else"} {
+		f := newFakeCluster(t)
+		f.kc["master/someone-else"] = "x"
+		f.secrets["env-hub/keycloak-reconcile-bad"] = map[string]string{"username": user, "password": "x"}
+		out, err := runReconcile(t, f)
+		if err != nil {
+			t.Fatalf("%s: reconcile: %v\n%s", user, err, out)
+		}
+		if _, ok := f.kc["master/"+user]; !ok {
+			t.Errorf("stale bootstrap cleanup deleted keycloak user %q", user)
+		}
+		if f.secrets["env-hub/keycloak-reconcile-bad"] == nil || !strings.Contains(out, "not a temporary reconcile admin") {
+			t.Errorf("%s: the suspicious secret must be left for manual inspection; out=%q", user, out)
+		}
+	}
+}
+
 func TestReconcileCredentials_LeavesCurrentStoresAlone(t *testing.T) {
 	f := newFakeCluster(t)
 	for k, v := range f.secrets["distribution-team/src"] {

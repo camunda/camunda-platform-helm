@@ -625,7 +625,7 @@ func (r *credentialReconciler) resetKeycloakAdmin(ctx context.Context, ns string
 	if err != nil {
 		return err
 	}
-	tempUser := "deploy-camunda-reconcile-" + strings.ToLower(suffix[:8])
+	tempUser := tempAdminPrefix + strings.ToLower(suffix[:8])
 	name := k.Deployment + "-reconcile-" + strings.ToLower(suffix[:8])
 
 	dbPw, err := r.acceptedDatabasePassword(ctx, ns, src.Env)
@@ -789,13 +789,16 @@ func (r *credentialReconciler) reconcileElasticsearch(ctx context.Context, ns st
 	return nil
 }
 
-const bootstrapComponent = "keycloak-reconcile"
+const (
+	bootstrapComponent = "keycloak-reconcile"
+	tempAdminPrefix    = "deploy-camunda-reconcile-"
+)
 
 // removeStaleBootstraps removes the Keycloak user, Pod, and Secret of every
 // bootstrap a terminated run left behind. Only resources older than twice the
 // run timeout count as stale, so a concurrent run's bootstrap is left alone.
 func (r *credentialReconciler) removeStaleBootstraps(ctx context.Context, ns string, k matrix.KeycloakCredentialStore, adminPw string) error {
-	raw, err := r.kubectl(ctx, nil, "get", "secret", "-n", ns, "-l", "app.kubernetes.io/component="+bootstrapComponent, "-o", "json")
+	raw, err := r.kubectl(ctx, nil, "get", "secret", "-n", ns, "-l", "app.kubernetes.io/managed-by=deploy-camunda,app.kubernetes.io/component="+bootstrapComponent, "-o", "json")
 	if err != nil {
 		return err
 	}
@@ -811,6 +814,10 @@ func (r *credentialReconciler) removeStaleBootstraps(ctx context.Context, ns str
 			continue
 		}
 		user, pw := string(sec.Data["username"]), string(sec.Data["password"])
+		if user != "" && (!strings.HasPrefix(user, tempAdminPrefix) || user == k.AdminUser) {
+			fmt.Fprintf(r.out, "%s: bootstrap secret %s names a user that is not a temporary reconcile admin; left untouched, inspect it manually\n", ns, sec.Name)
+			continue
+		}
 		if user != "" {
 			if err := r.removeTempAdmin(ctx, ns, k, user, pw, adminPw); err != nil {
 				return err
