@@ -193,7 +193,7 @@ ls charts/camunda-platform-8.10/test/ci/registry/scenarios/
 
 ### Topology scenarios (multi-release)
 
-A topology scenario is a single matrix entry that fans out to N Helm releases, each in its own namespace, following a declared dependency order. Every release automatically receives its own `CAMUNDA_HOSTNAME`. Preflight validation reports all unpreparable releases in one invocation, and missing secret-mapping variables emit one summary line per release.
+A topology scenario is a single matrix entry that fans out to N Helm releases, each in its own namespace, following a declared dependency order. Each release's `CAMUNDA_HOSTNAME` is set automatically from its resolved host; Optimize releases share the Hub hostname. Preflight validation reports all unpreparable releases in one invocation, and missing secret-mapping variables emit one summary line per release.
 
 Four topology scenarios exist on chart 8.10:
 - `mns` (`multinamespace`)

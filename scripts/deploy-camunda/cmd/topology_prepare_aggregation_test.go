@@ -26,28 +26,6 @@ import (
 	"scripts/deploy-camunda/matrix"
 )
 
-// TestPrepareTopologyReleases_AggregatesAllReleaseFailures pins down that a
-// single runTopologyEntry invocation reports EVERY release whose preparation
-// failed, not just the first one. Preparation renders values only — it mutates
-// no cluster, and the cross-ref env every release consumes is computed once
-// before the loop — so release N+1 is preparable regardless of release N's
-// outcome. Returning on the first failure costs an operator a full ~14-minute
-// re-run per broken release.
-//
-// The four assertions that matter, in order of strength:
-//
-//	errors.Is finds BOTH sentinels — proves errors.Join aggregation rather
-//	than a concatenated message.
-//	The message names both failing releases — proves the aggregate is
-//	actionable without re-running.
-//	No temp dir survives — the healthy releases' dirs are removed by
-//	runTopologyEntry's deferred prepared.Cleanup(), which is the production
-//	half of the no-leak invariant; the failed releases' dirs are removed by
-//	the stub mirroring prepareScenarioValues' own error paths
-//	(deploy/values.go:855,869), which return (nil, err) after os.RemoveAll.
-//	Only healthy releases reach preparedReleases — observed through the
-//	deferred Cleanup() draining TempDir on the exact *PreparedScenario the
-//	stub handed out.
 func TestPrepareTopologyReleases_AggregatesAllReleaseFailures(t *testing.T) {
 	errRenderStage := errors.New("values render stage exploded")
 	errPreflightStage := errors.New("preflight stage exploded")

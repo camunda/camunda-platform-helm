@@ -1299,21 +1299,6 @@ func TestTopologyChartPaths(t *testing.T) {
 	}
 }
 
-// TestTopologyReleaseContextsPopulateIngressHost pins down that every release
-// in a multi-namespace topology is handed to deploy.PrepareScenario with a
-// ScenarioContext whose IngressHost is the host that release's OWN resolved
-// flags produce. deploy/values.go buildScenarioEnv only emits
-// CAMUNDA_HOSTNAME when ScenarioContext.IngressHost is non-empty, so an empty
-// one silently strips the hostname from every topology release.
-//
-// The body drives the REAL runTopologyEntry and observes the seam it prepares
-// each release through (prepareScenarioFn), so the assertion sees exactly the
-// (ScenarioContext, RuntimeFlags) pair production hands deploy.PrepareScenario.
-// The stub fails every release, which aborts the driver before any helm or
-// cluster call.
-//
-// Both host modes are covered: per-release namespace-derived hosts, and the
-// explicit shared-host override CI passes as --extra-helm-set global.host=.
 func TestTopologyReleaseContextsPopulateIngressHost(t *testing.T) {
 	releases := testTopologyReleases()
 	baseEntry := matrix.Entry{

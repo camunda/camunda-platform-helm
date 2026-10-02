@@ -37,16 +37,6 @@ func writeArgvEchoHelm(t *testing.T) {
 	t.Setenv("PATH", binDir+string(os.PathListSeparator)+os.Getenv("PATH"))
 }
 
-// TestRenderPreparedTopologyContract_OmitsIngressHostOption pins down that the
-// topology contract render never turns a release's host into
-// global.ingress.host.
-//
-// pkg/deployer/helm.go appendHelmValueArgs converts a non-empty
-// types.Options.IngressHost into "--set global.ingress.host=<v>", and
-// charts/camunda-platform-8.10/templates/common/constraints.tpl declares that
-// key REMOVED via camundaPlatform.keyRemoved — setting it is a hard template
-// failure, so the contract render dies before the topology can be validated.
-// The host reaches the chart through SetPairs instead, as global.host.
 func TestRenderPreparedTopologyContract_OmitsIngressHostOption(t *testing.T) {
 	writeArgvEchoHelm(t)
 

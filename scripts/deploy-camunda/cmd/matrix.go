@@ -1341,7 +1341,6 @@ func extractHelmSetValue(pairs []string, key string) string {
 	return value
 }
 
-// prepareScenarioFn indirects deploy.PrepareScenario so a test can substitute a per-release stub.
 var prepareScenarioFn = deploy.PrepareScenario
 
 // preparedTopologyRelease pairs a topology release with the flags and prepared scenario built for
@@ -1510,12 +1509,14 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 		removeManifest, err := applyTopologyCredentialsManifest(flags, opts.RepoRoot, entry.Topology.CredentialsManifest, baseNamespace)
 		if err != nil {
 			cleanup()
-			return fmt.Errorf("topology release %s/%s (namespace-suffix %q): %w", entry.Scenario, rel.Role, rel.NamespaceSuffix, err)
+			releaseErrs = append(releaseErrs, fmt.Errorf("topology release %s/%s (namespace-suffix %q): %w", entry.Scenario, rel.Role, rel.NamespaceSuffix, err))
+			continue
 		}
 		defer removeManifest()
 		if err := matrix.RegisterDeclarativePostInfraHook(flags, releaseEntry.PostInfra, opts.RepoRoot, releaseEntry.Version, releaseEntry.Scenario); err != nil {
 			cleanup()
-			return fmt.Errorf("topology release %s/%s (namespace-suffix %q): register post-infra hook: %w", entry.Scenario, rel.Role, rel.NamespaceSuffix, err)
+			releaseErrs = append(releaseErrs, fmt.Errorf("topology release %s/%s (namespace-suffix %q): register post-infra hook: %w", entry.Scenario, rel.Role, rel.NamespaceSuffix, err))
+			continue
 		}
 		if err := matrix.RegisterDeclarativePostDeployHook(flags, releaseEntry.PostDeploy, opts.RepoRoot, releaseEntry.Version, releaseEntry.Scenario); err != nil {
 			cleanup()

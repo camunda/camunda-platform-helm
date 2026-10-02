@@ -109,9 +109,6 @@ func TestGenerateStrictFailsOnMissing(t *testing.T) {
 	}
 }
 
-// perVarMissingWarnMsg is the message currently emitted by generate() for
-// EVERY unset/empty mapped variable (mapper.go ~L95). The planned fix demotes
-// this to Debug and folds the detail into the existing summary event instead.
 const perVarMissingWarnMsg = "Environment variable empty or missing, omitting from secret"
 
 type capturedLogEvent struct {

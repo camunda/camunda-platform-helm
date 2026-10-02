@@ -89,8 +89,6 @@ func generate(mapping, secretName, outputPath string, strict bool, envOverrides 
 		}
 		val := lookupEnv(name)
 		if val == "" {
-			// Detail is emitted at debug; the summary below names every missing
-			// var so the Secret's omitted keys stay discoverable in one line.
 			missing = append(missing, name)
 			logging.Logger.Debug().Str("var", name).Msg("Environment variable empty or missing, omitting from secret")
 			continue
