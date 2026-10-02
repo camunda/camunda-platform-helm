@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">Adopt release roles for multi-cluster deployment topology | Camunda Helm Charts</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:image" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7422/img/camunda-logo.svg"><meta data-rh="true" name="twitter:image" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7422/img/camunda-logo.svg"><meta data-rh="true" property="og:url" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7422/adr/adopt-release-roles-for-multi-cluster-deployment-topology"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Adopt release roles for multi-cluster deployment topology | Camunda Helm Charts"><meta data-rh="true" name="description" content="- Status: proposed"><meta data-rh="true" property="og:description" content="- Status: proposed"><link data-rh="true" rel="icon" href="/camunda-platform-helm/pr-preview/pr-7422/img/camunda-logo.svg"><link data-rh="true" rel="canonical" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7422/adr/adopt-release-roles-for-multi-cluster-deployment-topology"><link data-rh="true" rel="alternate" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7422/adr/adopt-release-roles-for-multi-cluster-deployment-topology" hreflang="en"><link data-rh="true" rel="alternate" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7422/adr/adopt-release-roles-for-multi-cluster-deployment-topology" hreflang="x-default"><link rel="stylesheet" href="/camunda-platform-helm/pr-preview/pr-7422/assets/css/styles.3f6cd398.css">
-<script src="/camunda-platform-helm/pr-preview/pr-7422/assets/js/runtime~main.ff8c36dd.js" defer="defer"></script>
-<script src="/camunda-platform-helm/pr-preview/pr-7422/assets/js/main.971c06c8.js" defer="defer"></script>
+<script src="/camunda-platform-helm/pr-preview/pr-7422/assets/js/runtime~main.ccc40e69.js" defer="defer"></script>
+<script src="/camunda-platform-helm/pr-preview/pr-7422/assets/js/main.8b74f28d.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -87,8 +87,8 @@ releases would no longer be self-contained and every workload change would requi
 Hub updates.</li>
 <li class=""><strong>Adopt explicit release roles with Hub-owned cluster inventory (chosen).</strong> Each release declares
 its role. The Hub release owns remote cluster records used for central registration and Hub
-inventory; orchestration releases retain their existing component values and point to the Hub
-service.</li>
+inventory; orchestration releases retain their existing component values and connect either to
+the Hub service or directly to an external OIDC provider.</li>
 </ul>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="decision-outcome">Decision Outcome<a href="#decision-outcome" class="hash-link" aria-label="Direct link to Decision Outcome" title="Direct link to Decision Outcome" translate="no">​</a></h2>
 <p>Adopt an explicit release-role contract under <code>global.topology</code>, with one Hub release owning
@@ -121,8 +121,12 @@ values remain authoritative. The release MUST NOT declare sibling orchestration 
 </li>
 <li class="">
 <p><strong>Management Identity connection.</strong> An orchestration release MUST disable its local Management
-Identity workload and MUST provide a reachable <code>global.identity.service.url</code>. Authentication
-values in the workload release MUST match the corresponding Hub cluster record.</p>
+Identity workload. It MAY omit <code>global.identity.service.url</code> when only Orchestration and
+Connectors authenticate, directly with an external OIDC provider. Optimize calls Management
+Identity to resolve permissions when it verifies a bearer token, so an orchestration release
+that enables Optimize MUST provide a reachable <code>optimize.identity.service.url</code> or
+<code>global.identity.service.url</code>.
+Authentication values in the workload release MUST match the corresponding Hub cluster record.</p>
 </li>
 <li class="">
 <p><strong>OIDC topology.</strong> Hub topology connections represented in Camunda Hub MUST use OIDC bearer
