@@ -871,6 +871,18 @@ func TestReconcileCredentials_KeycloakOutageFailsWithoutTryingABootstrap(t *test
 	}
 }
 
+func TestExecScripts_NeverPassAPasswordAsAnArgument(t *testing.T) {
+	for name, script := range map[string]string{"kcadm": kcadmScript, "es": esScript, "psql": psqlScript} {
+		for _, bad := range []string{"--password ", "--new-password", `-H "Authorization`, `"$lp"`, `"$np" `} {
+			for _, line := range strings.Split(script, "\n") {
+				if strings.Contains(line, bad) && !strings.Contains(line, "printf") {
+					t.Errorf("%s script passes a secret on a command line: %s", name, line)
+				}
+			}
+		}
+	}
+}
+
 func TestPsqlScript_ChecksOverANonLoopbackAddress(t *testing.T) {
 	check := psqlScript[strings.Index(psqlScript, "check)"):strings.Index(psqlScript, "set)")]
 	if strings.Contains(check, "127.0.0.1") || strings.Contains(check, "localhost") || strings.Contains(check, "/var/run/postgresql") {

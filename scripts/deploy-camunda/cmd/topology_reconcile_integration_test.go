@@ -220,13 +220,13 @@ func TestKeycloakBootstrapReset_RecoversALostAdminOnTheSupportedImage(t *testing
 		t.Fatalf("bootstrap-admin: %v: %s", err, out)
 	}
 
-	if res, err := kcadm([]string{"temp-pw", "rotated-pw"}, "set-password", url, "temp-admin", "master", "admin"); err != nil || res != "set" {
+	if res, err := kcadm([]string{"temp-pw", `rot"ated\pw`}, "set-password", url, "temp-admin", "master", "admin"); err != nil || res != "set" {
 		t.Fatalf("reset the admin as the temporary admin: res=%q err=%v", res, err)
 	}
-	if _, err := kcadm([]string{"rotated-pw"}, "check", url, "admin"); err != nil {
+	if _, err := kcadm([]string{`rot"ated\pw`}, "check", url, "admin"); err != nil {
 		t.Fatalf("admin rejects the reset password: %v", err)
 	}
-	if res, err := kcadm([]string{"rotated-pw"}, "delete-user", url, "admin", "master", "temp-admin"); err != nil || res != "deleted" {
+	if res, err := kcadm([]string{`rot"ated\pw`}, "delete-user", url, "admin", "master", "temp-admin"); err != nil || res != "deleted" {
 		t.Fatalf("delete the temporary admin: res=%q err=%v", res, err)
 	}
 	if _, err := kcadm([]string{"temp-pw"}, "check", url, "temp-admin"); exitCode(err) != loginRejected {

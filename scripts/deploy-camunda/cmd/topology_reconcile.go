@@ -56,12 +56,14 @@ mode=$1 url=$2 login=$3
 K=/opt/keycloak/bin/kcadm.sh
 cfg=$(mktemp)
 trap 'rm -f "$cfg"' EXIT
-IFS= read -r lp
-if ! err=$("$K" config credentials --config "$cfg" --server "$url" --realm master --user "$login" --password "$lp" 2>&1); then
+IFS= read -r KC_CLI_PASSWORD
+export KC_CLI_PASSWORD
+if ! err=$("$K" config credentials --config "$cfg" --server "$url" --realm master --user "$login" 2>&1); then
   case $err in *invalid_grant*|*"Invalid user credentials"*) exit 3 ;; esac
   printf 'kcadm login failed: %s\n' "$err" >&2
   exit 1
 fi
+unset KC_CLI_PASSWORD
 [ "$mode" = check ] && exit 0
 realm=$4 user=$5
 id=$("$K" get users --config "$cfg" -r "$realm" -q username="$user" -q exact=true --fields id --format csv --noquotes)
@@ -69,7 +71,8 @@ if [ -z "$id" ]; then echo absent; exit 0; fi
 case $mode in
 set-password)
   IFS= read -r np
-  "$K" set-password --config "$cfg" -r "$realm" --userid "$id" --new-password "$np"
+  body=$(printf '%s' "$np" | sed 's/\\/\\\\/g; s/"/\\"/g')
+  printf '{"type":"password","temporary":false,"value":"%s"}' "$body" | "$K" update "users/$id/reset-password" --config "$cfg" -r "$realm" -f - >/dev/null
   echo set ;;
 delete-user)
   "$K" delete "users/$id" --config "$cfg" -r "$realm"
@@ -103,14 +106,16 @@ esac
 // user. stdin: the login password, then for set the new password.
 const esScript = `set -eu
 mode=$1 url=$2 user=$3
+hdr=$(mktemp)
+trap 'rm -f "$hdr"' EXIT
 IFS= read -r lp
-auth=$(printf '%s:%s' "$user" "$lp" | base64 | tr -d '\n')
-code=$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Basic $auth" "$url/_security/_authenticate")
+printf 'Authorization: Basic %s\n' "$(printf '%s:%s' "$user" "$lp" | base64 | tr -d '\n')" >"$hdr"
+code=$(curl -s -o /dev/null -w '%{http_code}' -H @"$hdr" "$url/_security/_authenticate")
 case $code in 200) ;; 401) exit 3 ;; *) echo "authenticate returned HTTP $code" >&2; exit 1 ;; esac
 [ "$mode" = check ] && exit 0
 IFS= read -r np
 body=$(printf '%s' "$np" | sed 's/\\/\\\\/g; s/"/\\"/g')
-code=$(printf '{"password":"%s"}' "$body" | curl -s -o /dev/null -w '%{http_code}' -X POST -H "Authorization: Basic $auth" -H 'Content-Type: application/json' --data-binary @- "$url/_security/user/$user/_password")
+code=$(printf '{"password":"%s"}' "$body" | curl -s -o /dev/null -w '%{http_code}' -X POST -H @"$hdr" -H 'Content-Type: application/json' --data-binary @- "$url/_security/user/$user/_password")
 [ "$code" = 200 ] || { echo "change password returned HTTP $code" >&2; exit 1; }
 `
 
