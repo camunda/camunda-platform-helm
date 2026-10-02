@@ -352,7 +352,8 @@ func (r *credentialReconciler) reconcile(ctx context.Context, in reconcileInput)
 	return r.saveSecret(ctx, in.hubNS, previousName, joinGenerations([]map[string]string{current}))
 }
 
-// saveSecret applies an Opaque Secret holding data: the generation the last
+// saveSecret writes the whole Opaque Secret, dropping keys not in data,
+// holding: the generation the last
 // complete run set every store to, plus every pre-sync generation since, which
 // the fallbacks try so a retry still reaches stores left on any of them.
 func (r *credentialReconciler) saveSecret(ctx context.Context, ns, name string, data map[string]string) error {
@@ -366,7 +367,15 @@ func (r *credentialReconciler) saveSecret(ctx context.Context, ns, name string, 
 	if err != nil {
 		return err
 	}
-	_, err = r.kubectl(ctx, manifest, "apply", "--server-side", "--force-conflicts", "--field-manager="+kubectlFieldManager, "-n", ns, "-f", "-")
+	exists, err := r.exists(ctx, ns, "secret", name)
+	if err != nil {
+		return err
+	}
+	verb := "create"
+	if exists {
+		verb = "replace"
+	}
+	_, err = r.kubectl(ctx, manifest, verb, "-n", ns, "-f", "-")
 	return err
 }
 

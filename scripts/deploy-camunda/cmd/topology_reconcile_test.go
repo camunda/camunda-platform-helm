@@ -188,7 +188,15 @@ func (f *fakeCluster) kubectl(_ context.Context, stdin []byte, args ...string) (
 			Data     map[string]string     `json:"stringData"`
 		}
 		if json.Unmarshal(stdin, &obj) == nil && obj.Kind == "Secret" {
-			f.secrets[ns+"/"+obj.Metadata.Name] = obj.Data
+			// Server-side apply of stringData never removes existing .data keys.
+			live := f.secrets[ns+"/"+obj.Metadata.Name]
+			if live == nil {
+				live = map[string]string{}
+				f.secrets[ns+"/"+obj.Metadata.Name] = live
+			}
+			for k, v := range obj.Data {
+				live[k] = v
+			}
 			return nil, nil
 		}
 		f.applies++
@@ -204,6 +212,19 @@ func (f *fakeCluster) kubectl(_ context.Context, stdin []byte, args ...string) (
 			}
 		}
 		return nil, nil
+	case "replace":
+		var obj struct {
+			Metadata struct{ Name string } `json:"metadata"`
+			Data     map[string]string     `json:"stringData"`
+		}
+		if err := json.Unmarshal(stdin, &obj); err != nil {
+			return nil, err
+		}
+		if _, ok := f.secrets[ns+"/"+obj.Metadata.Name]; !ok {
+			return nil, fmt.Errorf("secrets %q not found", obj.Metadata.Name)
+		}
+		f.secrets[ns+"/"+obj.Metadata.Name] = obj.Data
+		return nil, nil
 	case "create":
 		var obj struct {
 			Kind     string                `json:"kind"`
@@ -215,6 +236,9 @@ func (f *fakeCluster) kubectl(_ context.Context, stdin []byte, args ...string) (
 			return nil, err
 		}
 		if obj.Kind == "Secret" {
+			if _, ok := f.secrets[ns+"/"+obj.Metadata.Name]; ok {
+				return nil, fmt.Errorf("secrets %q already exists", obj.Metadata.Name)
+			}
 			f.secrets[ns+"/"+obj.Metadata.Name] = obj.Data
 			return nil, nil
 		}
