@@ -220,6 +220,30 @@ func TestHubTopologyRendersPerTenantOptimizeClientsAndApis(t *testing.T) {
 	require.Regexp(t, `id: "optimize-east"(?s).*?permissions:\s*\n\s*- audience: "optimize-east-api"\s*\n\s*definition: write:\*`, output)
 }
 
+// Each Physical Tenant's web apps complete login on their own callback under
+// /physical-tenants/<id>/, including the implicit default tenant, so the
+// cluster's Orchestration client must allow every one of them.
+func TestHubTopologyOrchestrationClientAllowsEveryPhysicalTenantCallback(t *testing.T) {
+	output := render(t, "hub-physical-tenants.yaml", "templates/identity/configmap.yaml")
+
+	require.Regexp(t, `id: "orchestration-east"(?s).*?root-url: "https://east.example.com/orchestration"\s*\n\s*redirect-uris:\s*\n`+
+		`\s*- "/login/oauth2/code/orchestration"\s*\n`+
+		`\s*- "/sso-callback"\s*\n`+
+		`\s*- "/physical-tenants/default/sso-callback"\s*\n`+
+		`\s*- "/physical-tenants/tenanta/sso-callback"\s*\n`+
+		`\s*- "/physical-tenants/tenantb/sso-callback"\s*\n`, output)
+}
+
+func TestHubTopologyOrchestrationClientListsAnExplicitDefaultTenantOnce(t *testing.T) {
+	options := &helm.Options{
+		ValuesFiles: []string{filepath.Join("testdata", "hub-physical-tenants.yaml")},
+		SetValues:   map[string]string{"global.topology.clusters[0].physicalTenants[1].id": "default"},
+	}
+	output := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{"templates/identity/configmap.yaml"})
+
+	require.Equal(t, 1, strings.Count(output, `"/physical-tenants/default/sso-callback"`))
+}
+
 func TestHubTopologyPerTenantOptimizeRoleFallsBackToSharedRole(t *testing.T) {
 	output := render(t, "hub-physical-tenants.yaml", "templates/identity/configmap.yaml")
 
@@ -266,6 +290,7 @@ func TestHubTopologyWithoutPhysicalTenantsRendersNoTenantArtifacts(t *testing.T)
 
 	require.NotContains(t, output, "_TENANT_")
 	require.NotContains(t, output, "physicalTenants")
+	require.NotContains(t, output, "/physical-tenants/")
 }
 
 func TestHubTopologyPhysicalTenantOptimizeRequiresIdentifiers(t *testing.T) {
