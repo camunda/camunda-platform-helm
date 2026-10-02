@@ -43,6 +43,10 @@ install.vault-secret-mapper:
 build.ci-result-cache:
 	cd scripts/ci-result-cache && go mod tidy && go build .
 
+.PHONY: test.ci-result-cache
+test.ci-result-cache:
+	cd scripts/ci-result-cache && go test -race ./...
+
 .PHONY: install.ci-result-cache
 install.ci-result-cache:
 	cd scripts/ci-result-cache && go mod tidy && go install .

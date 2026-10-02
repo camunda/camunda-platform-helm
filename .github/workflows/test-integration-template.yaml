@@ -184,6 +184,11 @@ on:
         required: false
         default: ""
         type: string
+      playwright-runner-image:
+        description: "Digest-pinned Playwright runner image (empty uses latest and disables result caching)"
+        required: false
+        default: ""
+        type: string
       camunda-version:
         description: "Camunda version (e.g., 8.9) for cache result recording"
         required: false
@@ -419,6 +424,7 @@ jobs:
       pr-head-sha: ${{ inputs.pr-head-sha }}
       chart-versions: ${{ inputs.chart-versions }}
       e2e-test-suite-version: ${{ inputs.e2e-test-suite-version }}
+      playwright-runner-image: ${{ inputs.playwright-runner-image }}
       camunda-version: ${{ inputs.camunda-version }}
       camunda-helm-post-render: ${{ inputs.camunda-helm-post-render }}
       camunda-helm-credentials-source: ${{ inputs.camunda-helm-credentials-source }}
