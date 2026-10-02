@@ -235,6 +235,12 @@ type imagePullWatchDeps struct {
 	threshold int
 }
 
+// timedEvidence is implemented by failures whose confirmation needs evidence
+// newer than the evidence behind the previous confirmation. A zero time opts out.
+type timedEvidence interface {
+	evidenceTime() time.Time
+}
+
 // watchTerminalImagePull polls until the same terminal failure has been observed
 // threshold times in a row, or the context ends. A failed list neither confirms
 // nor clears a failure, so it resets the streak.
@@ -248,6 +254,7 @@ func watchTerminalImagePull(ctx context.Context, deps imagePullWatchDeps, namesp
 	}
 
 	var lastKey string
+	var lastEvidence time.Time
 	streak := 0
 
 	for {
@@ -257,7 +264,7 @@ func watchTerminalImagePull(ctx context.Context, deps imagePullWatchDeps, namesp
 
 		pods, err := deps.list(ctx, namespace)
 		if err != nil {
-			lastKey, streak = "", 0
+			lastKey, lastEvidence, streak = "", time.Time{}, 0
 			continue
 		}
 
@@ -270,13 +277,21 @@ func watchTerminalImagePull(ctx context.Context, deps imagePullWatchDeps, namesp
 
 		failure := firstTerminalFailure(pods, verdicts)
 		if failure == nil {
-			lastKey, streak = "", 0
+			lastKey, lastEvidence, streak = "", time.Time{}, 0
 			continue
 		}
 
 		key := failure.streakKey()
 		if key != lastKey {
-			lastKey, streak = key, 0
+			lastKey, lastEvidence, streak = key, time.Time{}, 0
+		}
+		if timed, ok := failure.(timedEvidence); ok {
+			if at := timed.evidenceTime(); !at.IsZero() {
+				if !at.After(lastEvidence) {
+					continue
+				}
+				lastEvidence = at
+			}
 		}
 		streak++
 		if streak >= threshold {

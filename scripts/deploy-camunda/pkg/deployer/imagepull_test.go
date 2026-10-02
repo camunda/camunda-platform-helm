@@ -242,13 +242,17 @@ func TestWatchTerminalImagePull(t *testing.T) {
 
 // fakeLister satisfies podLister.
 type fakeLister struct {
-	pods   *corev1.PodList
-	events *corev1.EventList
+	pods     *corev1.PodList
+	events   *corev1.EventList
+	eventsFn func() *corev1.EventList
 }
 
 func (f fakeLister) ListPods(context.Context, string) (*corev1.PodList, error) { return f.pods, nil }
 
 func (f fakeLister) ListEvents(context.Context, string) (*corev1.EventList, error) {
+	if f.eventsFn != nil {
+		return f.eventsFn(), nil
+	}
 	if f.events == nil {
 		return &corev1.EventList{}, nil
 	}

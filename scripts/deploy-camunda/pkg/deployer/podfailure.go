@@ -22,11 +22,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-// crashLoopRestartThreshold is how many restarts a container must have before a
-// CrashLoopBackOff counts as terminal. A var rather than a const so tests drive
-// it without waiting for real restarts.
-var crashLoopRestartThreshold int32 = 3
-
 // terminalPodFailure is a pod state the guard treats as unrecoverable.
 type terminalPodFailure interface {
 	error
@@ -45,8 +40,8 @@ type PodFailure struct {
 	Reason string
 	// Message is the kubelet or scheduler detail naming what is missing.
 	Message string
-	// RestartCount is set for CrashLoopBackOff only.
-	RestartCount int32
+	// evidenceAt is the autoscaler verdict time for Unschedulable; zero otherwise.
+	evidenceAt time.Time
 }
 
 func (f *PodFailure) Error() string {
@@ -54,17 +49,15 @@ func (f *PodFailure) Error() string {
 	if f.Container != "" {
 		subject = fmt.Sprintf("container %q in pod %q", f.Container, f.Pod)
 	}
-	if f.RestartCount > 0 {
-		return fmt.Sprintf("%s has restarted %d times and will not become ready (%s): %s",
-			subject, f.RestartCount, f.Reason, f.Message)
-	}
 	return fmt.Sprintf("%s will not become ready (%s): %s", subject, f.Reason, f.Message)
 }
 
-// streakKey omits RestartCount, which climbs between polls while the failure
-// stays the same.
 func (f *PodFailure) streakKey() string {
 	return f.Pod + "/" + f.Container + "/" + f.Reason
+}
+
+func (f *PodFailure) evidenceTime() time.Time {
+	return f.evidenceAt
 }
 
 func (f *PodFailure) abortReason() string {
@@ -75,7 +68,6 @@ func (f *PodFailure) abortReason() string {
 }
 
 var podFailureAbortReasons = map[string]string{
-	"CrashLoopBackOff":            "helm upgrade --install aborted early: container crash loop",
 	"CreateContainerConfigError":  "helm upgrade --install aborted early: unresolvable container configuration",
 	"InvalidImageName":            "helm upgrade --install aborted early: unresolvable container configuration",
 	corev1.PodReasonUnschedulable: "helm upgrade --install aborted early: pod cannot be scheduled",
@@ -96,41 +88,6 @@ func podContainerStatuses(pod *corev1.Pod) []corev1.ContainerStatus {
 		len(pod.Status.InitContainerStatuses)+len(pod.Status.ContainerStatuses))
 	statuses = append(statuses, pod.Status.InitContainerStatuses...)
 	return append(statuses, pod.Status.ContainerStatuses...)
-}
-
-// terminalCrashLoop reports a container that keeps dying. Restarts below
-// crashLoopRestartThreshold are left alone: a container that crashes once or
-// twice while a dependency comes up still reaches ready.
-func terminalCrashLoop(pod *corev1.Pod) (*PodFailure, bool) {
-	for _, cs := range podContainerStatuses(pod) {
-		waiting := cs.State.Waiting
-		if waiting == nil || waiting.Reason != "CrashLoopBackOff" {
-			continue
-		}
-		if cs.RestartCount < crashLoopRestartThreshold {
-			continue
-		}
-		return &PodFailure{
-			Pod:          pod.Name,
-			Container:    cs.Name,
-			Reason:       waiting.Reason,
-			Message:      crashLoopMessage(waiting.Message, cs.LastTerminationState.Terminated),
-			RestartCount: cs.RestartCount,
-		}, true
-	}
-	return nil, false
-}
-
-// crashLoopMessage prefers the kubelet backoff message and falls back to the
-// last exit code, which is the only datum that says why the container died.
-func crashLoopMessage(waiting string, last *corev1.ContainerStateTerminated) string {
-	if message := strings.TrimSpace(waiting); message != "" {
-		return message
-	}
-	if last == nil {
-		return ""
-	}
-	return fmt.Sprintf("last termination: exit code %d (%s)", last.ExitCode, last.Reason)
 }
 
 // terminalConfigError reports a container the kubelet cannot start because the
@@ -227,9 +184,10 @@ func terminalUnschedulable(pod *corev1.Pod, verdicts map[string]autoscalerVerdic
 			message += "; cluster autoscaler: " + verdict.message
 		}
 		return &PodFailure{
-			Pod:     pod.Name,
-			Reason:  condition.Reason,
-			Message: message,
+			Pod:        pod.Name,
+			Reason:     condition.Reason,
+			Message:    message,
+			evidenceAt: verdict.at,
 		}, true
 	}
 	return nil, false
@@ -243,9 +201,6 @@ func terminalPodStateFailure(pod *corev1.Pod, verdicts map[string]autoscalerVerd
 		return failure, true
 	}
 	if failure, ok := terminalConfigError(pod); ok {
-		return failure, true
-	}
-	if failure, ok := terminalCrashLoop(pod); ok {
 		return failure, true
 	}
 	if failure, ok := terminalUnschedulable(pod, verdicts); ok {

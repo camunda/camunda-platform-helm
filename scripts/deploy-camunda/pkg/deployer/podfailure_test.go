@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -30,7 +31,7 @@ import (
 
 // Verbatim kubelet and scheduler messages.
 const (
-	backoffMessage       = "back-off 5m0s restarting failed container=zeebe pod=camunda-zeebe-0_ns(9f2)"
+	backoffMessage       = "back-off 5m0s restarting failed container=migration pod=camunda-optimize-0_ns(9f2)"
 	missingKeyMessage    = `couldn't find key smtp-password in Secret ns/camunda-credentials`
 	invalidImageMessage  = `Failed to apply default image tag "reg/camunda/zeebe:8.8:latest": couldn't parse image reference`
 	unschedulableMessage = "0/6 nodes are available: 6 Insufficient cpu. preemption: 0/6 nodes are available."
@@ -78,28 +79,6 @@ func withContainer(pod corev1.Pod, status corev1.ContainerStatus) corev1.Pod {
 	return pod
 }
 
-// crashingPod builds a pod whose named container is in CrashLoopBackOff after
-// restarts restarts.
-func crashingPod(name, container string, restarts int32, message string, init bool) corev1.Pod {
-	pod := waitingPod(name, container, "reg/"+container+":1", "CrashLoopBackOff", message, init)
-	statuses := pod.Status.ContainerStatuses
-	if init {
-		statuses = pod.Status.InitContainerStatuses
-	}
-	statuses[0].RestartCount = restarts
-	return pod
-}
-
-// silentCrashingPod is a crash loop whose kubelet message is empty, leaving the
-// last exit code as the only evidence of what happened.
-func silentCrashingPod(name, container string, restarts, exitCode int32, reason string) corev1.Pod {
-	pod := crashingPod(name, container, restarts, "", false)
-	pod.Status.ContainerStatuses[0].LastTerminationState = corev1.ContainerState{
-		Terminated: &corev1.ContainerStateTerminated{ExitCode: exitCode, Reason: reason},
-	}
-	return pod
-}
-
 // scheduledPod builds a pod carrying a PodScheduled condition.
 func scheduledPod(name string, status corev1.ConditionStatus, reason, message string) corev1.Pod {
 	return corev1.Pod{
@@ -115,123 +94,6 @@ func scheduledPod(name string, status corev1.ConditionStatus, reason, message st
 
 func healthyPod(name string) corev1.Pod {
 	return corev1.Pod{ObjectMeta: metav1.ObjectMeta{Name: name}}
-}
-
-func TestTerminalCrashLoop(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name         string
-		pod          corev1.Pod
-		wantHit      bool
-		wantCtr      string
-		wantRestarts int32
-		wantMsg      string
-	}{
-		{
-			name:         "restart count at the threshold is terminal",
-			pod:          crashingPod("camunda-zeebe-0", "zeebe", 3, backoffMessage, false),
-			wantHit:      true,
-			wantCtr:      "zeebe",
-			wantRestarts: 3,
-			wantMsg:      backoffMessage,
-		},
-		{
-			name:         "restart count above the threshold is terminal",
-			pod:          crashingPod("camunda-zeebe-0", "zeebe", 11, backoffMessage, false),
-			wantHit:      true,
-			wantCtr:      "zeebe",
-			wantRestarts: 11,
-			wantMsg:      backoffMessage,
-		},
-		{
-			name:    "a container restarting below the threshold is not terminal",
-			pod:     crashingPod("camunda-zeebe-0", "zeebe", 2, backoffMessage, false),
-			wantHit: false,
-		},
-		{
-			name:    "a first restart is not terminal",
-			pod:     crashingPod("camunda-zeebe-0", "zeebe", 1, backoffMessage, false),
-			wantHit: false,
-		},
-		{
-			name:         "init container crash loops are inspected too",
-			pod:          crashingPod("camunda-operate-0", "wait-for-elasticsearch", 4, backoffMessage, true),
-			wantHit:      true,
-			wantCtr:      "wait-for-elasticsearch",
-			wantRestarts: 4,
-			wantMsg:      backoffMessage,
-		},
-		{
-			name:         "an empty kubelet message falls back to the last exit code",
-			pod:          silentCrashingPod("camunda-zeebe-0", "zeebe", 5, 137, "OOMKilled"),
-			wantHit:      true,
-			wantCtr:      "zeebe",
-			wantRestarts: 5,
-			wantMsg:      "137",
-		},
-		{
-			name:    "an unpullable image is not a crash loop",
-			pod:     waitingPod("p", "c", "reg/i:1", "ImagePullBackOff", childManifest404, false),
-			wantHit: false,
-		},
-		{
-			name:    "a running pod is not a crash loop",
-			pod:     healthyPod("p"),
-			wantHit: false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			got, ok := terminalCrashLoop(&tt.pod)
-			if ok != tt.wantHit {
-				t.Fatalf("terminalCrashLoop() ok = %v, want %v", ok, tt.wantHit)
-			}
-			if !tt.wantHit {
-				return
-			}
-			if got.Pod != tt.pod.Name {
-				t.Errorf("pod = %q, want %q", got.Pod, tt.pod.Name)
-			}
-			if got.Container != tt.wantCtr {
-				t.Errorf("container = %q, want %q", got.Container, tt.wantCtr)
-			}
-			if got.Reason != "CrashLoopBackOff" {
-				t.Errorf("reason = %q, want %q", got.Reason, "CrashLoopBackOff")
-			}
-			if got.RestartCount != tt.wantRestarts {
-				t.Errorf("restart count = %d, want %d", got.RestartCount, tt.wantRestarts)
-			}
-			if !strings.Contains(got.Message, tt.wantMsg) {
-				t.Errorf("message = %q, want it to contain %q", got.Message, tt.wantMsg)
-			}
-		})
-	}
-}
-
-// TestCrashLoopRestartThreshold pins the default and proves a test can drive it
-// without waiting for real restarts.
-func TestCrashLoopRestartThreshold(t *testing.T) {
-	if crashLoopRestartThreshold != 3 {
-		t.Fatalf("default crash loop threshold = %d, want 3", crashLoopRestartThreshold)
-	}
-
-	orig := crashLoopRestartThreshold
-	defer func() { crashLoopRestartThreshold = orig }()
-
-	pod := crashingPod("camunda-zeebe-0", "zeebe", 1, backoffMessage, false)
-
-	crashLoopRestartThreshold = 1
-	if _, ok := terminalCrashLoop(&pod); !ok {
-		t.Errorf("threshold 1 should make a single restart terminal")
-	}
-
-	crashLoopRestartThreshold = 10
-	if _, ok := terminalCrashLoop(&pod); ok {
-		t.Errorf("threshold 10 should leave a single restart alone")
-	}
 }
 
 func TestTerminalConfigError(t *testing.T) {
@@ -423,20 +285,6 @@ func TestTerminalUnschedulable(t *testing.T) {
 func TestPodFailureErrorNamesEverything(t *testing.T) {
 	t.Parallel()
 
-	t.Run("a crash loop names the container and the restarts", func(t *testing.T) {
-		t.Parallel()
-		f := &PodFailure{
-			Pod: "camunda-zeebe-0", Container: "zeebe",
-			Reason: "CrashLoopBackOff", Message: backoffMessage, RestartCount: 11,
-		}
-		msg := f.Error()
-		for _, want := range []string{f.Pod, f.Container, f.Reason, "11", "back-off"} {
-			if !strings.Contains(msg, want) {
-				t.Errorf("error message missing %q:\n%s", want, msg)
-			}
-		}
-	})
-
 	t.Run("an unschedulable pod names the pod and the scheduler message", func(t *testing.T) {
 		t.Parallel()
 		f := &PodFailure{
@@ -482,7 +330,6 @@ func TestAbortReason(t *testing.T) {
 		reason   string
 		wantPart string
 	}{
-		{reason: "CrashLoopBackOff", wantPart: "crash loop"},
 		{reason: "CreateContainerConfigError", wantPart: "container configuration"},
 		{reason: "InvalidImageName", wantPart: "container configuration"},
 		{reason: corev1.PodReasonUnschedulable, wantPart: "cannot be scheduled"},
@@ -502,10 +349,8 @@ func TestAbortReason(t *testing.T) {
 		}
 		seen[got] = true
 	}
-	// Image pull, crash loop, config error and unschedulable are four kinds but
-	// the two config reasons deliberately share a reason, so three new + one.
-	if len(seen) != 4 {
-		t.Errorf("expected 4 distinct abort reasons, got %d: %v", len(seen), seen)
+	if len(seen) != 3 {
+		t.Errorf("expected 3 distinct abort reasons, got %d: %v", len(seen), seen)
 	}
 }
 
@@ -518,19 +363,20 @@ func TestStreakKey(t *testing.T) {
 		t.Errorf("image pull streak key = %q, want %q", got, want)
 	}
 
-	early := &PodFailure{Pod: "p", Container: "c", Reason: "CrashLoopBackOff", RestartCount: 3}
-	later := &PodFailure{Pod: "p", Container: "c", Reason: "CrashLoopBackOff", RestartCount: 9}
+	early := &PodFailure{Pod: "p", Reason: corev1.PodReasonUnschedulable, Message: "a", evidenceAt: autoscalerEpoch}
+	later := &PodFailure{Pod: "p", Reason: corev1.PodReasonUnschedulable, Message: "b", evidenceAt: autoscalerEpoch.Add(time.Minute)}
 	if early.streakKey() != later.streakKey() {
-		t.Errorf("a climbing restart count must not break the streak: %q vs %q",
+		t.Errorf("advancing evidence must not break the streak: %q vs %q",
 			early.streakKey(), later.streakKey())
 	}
 
 	config := &PodFailure{Pod: "p", Container: "c", Reason: "CreateContainerConfigError"}
-	if early.streakKey() == config.streakKey() {
+	invalid := &PodFailure{Pod: "p", Container: "c", Reason: "InvalidImageName"}
+	if config.streakKey() == invalid.streakKey() {
 		t.Errorf("different failure kinds on one container must not share a key: %q", config.streakKey())
 	}
 
-	otherPod := &PodFailure{Pod: "q", Container: "c", Reason: "CrashLoopBackOff"}
+	otherPod := &PodFailure{Pod: "q", Reason: corev1.PodReasonUnschedulable}
 	if early.streakKey() == otherPod.streakKey() {
 		t.Errorf("different pods must not share a key: %q", otherPod.streakKey())
 	}
@@ -541,10 +387,10 @@ func TestStreakKey(t *testing.T) {
 func TestTerminalPodStateFailureOrder(t *testing.T) {
 	t.Parallel()
 
-	t.Run("an unpullable image outranks a crash loop", func(t *testing.T) {
+	t.Run("an unpullable image outranks a config error", func(t *testing.T) {
 		t.Parallel()
 		pod := withContainer(
-			crashingPod("camunda-zeebe-0", "zeebe", 9, backoffMessage, false),
+			waitingPod("camunda-zeebe-0", "zeebe", "reg/zeebe:1", "CreateContainerConfigError", missingKeyMessage, false),
 			waitingStatus("exporter", "ImagePullBackOff", childManifest404))
 		got, ok := terminalPodStateFailure(&pod, nil)
 		if !ok {
@@ -556,12 +402,12 @@ func TestTerminalPodStateFailureOrder(t *testing.T) {
 		}
 	})
 
-	t.Run("a config error outranks a crash loop", func(t *testing.T) {
+	t.Run("a config error outranks an unschedulable pod", func(t *testing.T) {
 		t.Parallel()
 		pod := withContainer(
-			crashingPod("camunda-zeebe-0", "zeebe", 9, backoffMessage, false),
+			scheduledPod("camunda-zeebe-0", corev1.ConditionFalse, corev1.PodReasonUnschedulable, unschedulableMessage),
 			waitingStatus("exporter", "CreateContainerConfigError", missingKeyMessage))
-		got, ok := terminalPodStateFailure(&pod, nil)
+		got, ok := terminalPodStateFailure(&pod, noScaleUp("camunda-zeebe-0"))
 		if !ok {
 			t.Fatal("expected a failure, got none")
 		}
@@ -574,23 +420,12 @@ func TestTerminalPodStateFailureOrder(t *testing.T) {
 		}
 	})
 
-	t.Run("a crash loop outranks an unschedulable pod", func(t *testing.T) {
+	t.Run("a crash-looping init container is not terminal", func(t *testing.T) {
 		t.Parallel()
-		crashing := waitingStatus("zeebe", "CrashLoopBackOff", backoffMessage)
-		crashing.RestartCount = 9
-		pod := withContainer(
-			scheduledPod("camunda-zeebe-0", corev1.ConditionFalse, corev1.PodReasonUnschedulable, unschedulableMessage),
-			crashing)
-		got, ok := terminalPodStateFailure(&pod, noScaleUp("camunda-zeebe-0"))
-		if !ok {
-			t.Fatal("expected a failure, got none")
-		}
-		var failure *PodFailure
-		if !errors.As(got, &failure) {
-			t.Fatalf("expected a *PodFailure, got %T (%v)", got, got)
-		}
-		if failure.Reason != "CrashLoopBackOff" {
-			t.Errorf("reason = %q, want CrashLoopBackOff", failure.Reason)
+		pod := waitingPod("camunda-optimize-0", "migration", "reg/optimize:8.6", "CrashLoopBackOff", backoffMessage, true)
+		pod.Status.InitContainerStatuses[0].RestartCount = 9
+		if got, ok := terminalPodStateFailure(&pod, nil); ok {
+			t.Fatalf("expected no failure, got %v", got)
 		}
 	})
 
@@ -609,13 +444,13 @@ func TestFirstTerminalFailureIsDeterministic(t *testing.T) {
 	t.Parallel()
 
 	unschedulable := scheduledPod("camunda-zeebe-2", corev1.ConditionFalse, corev1.PodReasonUnschedulable, unschedulableMessage)
-	crashing := crashingPod("camunda-connectors-0", "connectors", 9, backoffMessage, false)
-	configError := waitingPod("camunda-operate-0", "operate", "reg/operate:1", "CreateContainerConfigError", missingKeyMessage, false)
+	configError := waitingPod("camunda-connectors-0", "connectors", "reg/connectors:1", "CreateContainerConfigError", missingKeyMessage, false)
+	invalidImage := waitingPod("camunda-operate-0", "operate", "reg/operate:1", "InvalidImageName", invalidImageMessage, false)
 
 	orders := map[string]*corev1.PodList{
-		"as listed":  podList(unschedulable, crashing, configError),
-		"reversed":   podList(configError, crashing, unschedulable),
-		"interposed": podList(crashing, unschedulable, configError),
+		"as listed":  podList(unschedulable, configError, invalidImage),
+		"reversed":   podList(invalidImage, configError, unschedulable),
+		"interposed": podList(configError, unschedulable, invalidImage),
 	}
 	for name, pods := range orders {
 		t.Run(name, func(t *testing.T) {
@@ -647,7 +482,7 @@ func TestFirstTerminalFailureIsDeterministic(t *testing.T) {
 func TestWatchTerminalPodFailure(t *testing.T) {
 	t.Parallel()
 
-	crashing := crashingPod("camunda-zeebe-0", "zeebe", 9, backoffMessage, false)
+	broken := waitingPod("camunda-zeebe-0", "zeebe", "reg/zeebe:1", "CreateContainerConfigError", missingKeyMessage, false)
 	recovered := healthyPod("camunda-zeebe-0")
 
 	t.Run("two consecutive observations abort", func(t *testing.T) {
@@ -656,7 +491,7 @@ func TestWatchTerminalPodFailure(t *testing.T) {
 		deps := imagePullWatchDeps{
 			list: func(context.Context, string) (*corev1.PodList, error) {
 				calls++
-				return podList(crashing), nil
+				return podList(broken), nil
 			},
 			sleep: noSleep(10), threshold: 2,
 		}
@@ -680,7 +515,7 @@ func TestWatchTerminalPodFailure(t *testing.T) {
 			list: func(context.Context, string) (*corev1.PodList, error) {
 				calls++
 				if calls == 1 {
-					return podList(crashing), nil
+					return podList(broken), nil
 				}
 				return podList(recovered), nil
 			},
@@ -691,21 +526,18 @@ func TestWatchTerminalPodFailure(t *testing.T) {
 		}
 	})
 
-	t.Run("a climbing restart count keeps the streak", func(t *testing.T) {
+	t.Run("a crash-looping init container never aborts", func(t *testing.T) {
 		t.Parallel()
-		calls := 0
+		pod := waitingPod("camunda-optimize-0", "migration", "reg/optimize:8.6", "CrashLoopBackOff", backoffMessage, true)
+		pod.Status.InitContainerStatuses[0].RestartCount = 9
 		deps := imagePullWatchDeps{
 			list: func(context.Context, string) (*corev1.PodList, error) {
-				calls++
-				return podList(crashingPod("camunda-zeebe-0", "zeebe", int32(8+calls), backoffMessage, false)), nil
+				return podList(pod), nil
 			},
 			sleep: noSleep(10), threshold: 2,
 		}
-		if got := watchTerminalImagePull(context.Background(), deps, "ns"); got == nil {
-			t.Fatal("a restart count that climbs between polls must not reset the streak")
-		}
-		if calls != 2 {
-			t.Errorf("expected to abort on the 2nd confirmation, got %d polls", calls)
+		if got := watchTerminalImagePull(context.Background(), deps, "ns"); got != nil {
+			t.Fatalf("a crash loop must not abort, got %v", got)
 		}
 	})
 
@@ -750,7 +582,29 @@ func TestWatchTerminalPodFailure(t *testing.T) {
 		}
 	})
 
-	t.Run("an unschedulable pod the autoscaler refuses aborts", func(t *testing.T) {
+	t.Run("repeated autoscaler refusals abort", func(t *testing.T) {
+		t.Parallel()
+		polls := 0
+		deps := imagePullWatchDeps{
+			list: func(context.Context, string) (*corev1.PodList, error) {
+				polls++
+				return podList(scheduledPod("integration-connectors-0", corev1.ConditionFalse,
+					corev1.PodReasonUnschedulable, unschedulableMessage)), nil
+			},
+			events: func(context.Context, string) (*corev1.EventList, error) {
+				return eventList(autoscalerEvent("integration-connectors-0", reasonNotTriggerScaleUp, noScaleUpMessage, 10*polls)), nil
+			},
+			sleep: noSleep(10), threshold: 2,
+		}
+		if got := watchTerminalImagePull(context.Background(), deps, "ns"); got == nil {
+			t.Fatal("an autoscaler refusal must abort")
+		}
+		if polls != 2 {
+			t.Errorf("expected to abort on the 2nd confirmation, got %d polls", polls)
+		}
+	})
+
+	t.Run("a single stale autoscaler refusal never aborts", func(t *testing.T) {
 		t.Parallel()
 		deps := imagePullWatchDeps{
 			list: func(context.Context, string) (*corev1.PodList, error) {
@@ -760,10 +614,34 @@ func TestWatchTerminalPodFailure(t *testing.T) {
 			events: func(context.Context, string) (*corev1.EventList, error) {
 				return eventList(autoscalerEvent("integration-connectors-0", reasonNotTriggerScaleUp, noScaleUpMessage, 0)), nil
 			},
+			sleep: noSleep(20), threshold: 2,
+		}
+		if got := watchTerminalImagePull(context.Background(), deps, "ns"); got != nil {
+			t.Fatalf("one refusal seen on every poll must not abort, got %v", got)
+		}
+	})
+
+	t.Run("a stale refusal between fresh ones keeps the streak", func(t *testing.T) {
+		t.Parallel()
+		offsets := []int{0, 0, 0, 30}
+		polls := 0
+		deps := imagePullWatchDeps{
+			list: func(context.Context, string) (*corev1.PodList, error) {
+				return podList(scheduledPod("integration-connectors-0", corev1.ConditionFalse,
+					corev1.PodReasonUnschedulable, unschedulableMessage)), nil
+			},
+			events: func(context.Context, string) (*corev1.EventList, error) {
+				offset := offsets[min(polls, len(offsets)-1)]
+				polls++
+				return eventList(autoscalerEvent("integration-connectors-0", reasonNotTriggerScaleUp, noScaleUpMessage, offset)), nil
+			},
 			sleep: noSleep(10), threshold: 2,
 		}
 		if got := watchTerminalImagePull(context.Background(), deps, "ns"); got == nil {
-			t.Fatal("an autoscaler refusal must abort")
+			t.Fatal("a refusal that advances after stale polls must abort")
+		}
+		if polls != 4 {
+			t.Errorf("expected to abort on the 4th poll, got %d polls", polls)
 		}
 	})
 
@@ -793,9 +671,13 @@ func TestUpgradeInstall_AbortsOnUnschedulablePod(t *testing.T) {
 
 	origLister := newPodLister
 	newPodLister = func(string, string) (podLister, error) {
+		var scans atomic.Int32
 		return fakeLister{
-			pods:   podList(stuck),
-			events: eventList(autoscalerEvent("camunda-zeebe-0", reasonNotTriggerScaleUp, noScaleUpMessage, 0)),
+			pods: podList(stuck),
+			eventsFn: func() *corev1.EventList {
+				offset := int(scans.Add(1)) * 10
+				return eventList(autoscalerEvent("camunda-zeebe-0", reasonNotTriggerScaleUp, noScaleUpMessage, offset))
+			},
 		}, nil
 	}
 	defer func() { newPodLister = origLister }()
