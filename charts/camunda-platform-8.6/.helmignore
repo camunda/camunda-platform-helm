@@ -37,3 +37,4 @@ go.sum
 # Release.
 .release-please-config.json
 .release-please-manifest.json
+release-please-trace.log

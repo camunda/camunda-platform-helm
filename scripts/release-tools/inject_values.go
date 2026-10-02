@@ -17,6 +17,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"scripts/camunda-core/pkg/valuesinjector"
 )
@@ -42,34 +43,66 @@ func runInjectValues(args []string) error {
 		return fmt.Errorf("unsupported CHART_VERSION: %s (supported: 8.6, 8.7, 8.8, 8.9, 8.10)", chartVersion)
 	}
 
-	valuesFile := fmt.Sprintf("charts/camunda-platform-%s/values.yaml", chartVersion)
-	content, err := os.ReadFile(valuesFile)
-	if err != nil {
-		return fmt.Errorf("read %s: %w", valuesFile, err)
+	chartDir := fmt.Sprintf("charts/camunda-platform-%s", chartVersion)
+	for _, name := range []string{"values.yaml", "values-latest.yaml"} {
+		file := filepath.Join(chartDir, name)
+		content, err := os.ReadFile(file)
+		if name != "values.yaml" && os.IsNotExist(err) {
+			continue
+		}
+		if err != nil {
+			return fmt.Errorf("read %s: %w", file, err)
+		}
+		result, err := mergeImageTags(chartVersion, string(content), name != "values.yaml")
+		if err != nil {
+			return fmt.Errorf("merge image tags into %s: %w", file, err)
+		}
+		if err := os.WriteFile(file, []byte(result), 0o644); err != nil {
+			return fmt.Errorf("write %s: %w", file, err)
+		}
+		fmt.Printf("Successfully updated %s\n", file)
 	}
-
-	var result string
-	switch chartVersion {
-	case "8.6":
-		result, err = valuesinjector.MergeImageTags86(string(content), buildOverridesClassic())
-	case "8.7":
-		result, err = valuesinjector.MergeImageTags87(string(content), buildOverridesClassic())
-	case "8.8":
-		result, err = valuesinjector.MergeImageTags88(string(content), buildOverridesOrchestration())
-	case "8.9":
-		result, err = valuesinjector.MergeImageTags89(string(content), buildOverridesOrchestration())
-	case "8.10":
-		result, err = valuesinjector.MergeImageTags810(string(content), buildOverridesOrchestration())
-	}
-	if err != nil {
-		return fmt.Errorf("merge image tags: %w", err)
-	}
-
-	if err := os.WriteFile(valuesFile, []byte(result), 0o644); err != nil {
-		return fmt.Errorf("write %s: %w", valuesFile, err)
-	}
-	fmt.Printf("Successfully updated %s\n", valuesFile)
 	return nil
+}
+
+func mergeImageTags(chartVersion, content string, presentOnly bool) (string, error) {
+	switch chartVersion {
+	case "8.6", "8.7":
+		o := buildOverridesClassic()
+		if presentOnly {
+			dropMissing(content, map[string]**valuesinjector.ComponentImage{
+				"console": &o.Console, "zeebe": &o.Zeebe, "zeebeGateway": &o.ZeebeGateway,
+				"operate": &o.Operate, "tasklist": &o.Tasklist, "optimize": &o.Optimize,
+				"identity": &o.Identity, "webModeler": &o.WebModeler, "connectors": &o.Connectors,
+			})
+		}
+		if chartVersion == "8.6" {
+			return valuesinjector.MergeImageTags86(content, o)
+		}
+		return valuesinjector.MergeImageTags87(content, o)
+	}
+	o := buildOverridesOrchestration()
+	if presentOnly {
+		dropMissing(content, map[string]**valuesinjector.ComponentImage{
+			"identity": &o.Identity, "console": &o.Console, "webModeler": &o.WebModeler,
+			"connectors": &o.Connectors, "orchestration": &o.Orchestration, "optimize": &o.Optimize,
+		})
+	}
+	switch chartVersion {
+	case "8.8":
+		return valuesinjector.MergeImageTags88(content, o)
+	case "8.9":
+		return valuesinjector.MergeImageTags89(content, o)
+	}
+	return valuesinjector.MergeImageTags810(content, o)
+}
+
+func dropMissing(content string, components map[string]**valuesinjector.ComponentImage) {
+	for name, img := range components {
+		if *img != nil && !valuesinjector.HasImageTag(content, name) {
+			*img = nil
+		}
+	}
 }
 
 func envImage(envVar string) *valuesinjector.ComponentImage {

@@ -77,6 +77,18 @@ func TestComputeStableFromTraceFirstLine(t *testing.T) {
 	}
 }
 
+func TestComputeStableKeepsChartMajor(t *testing.T) {
+	trace := "+  version: 16.0.0\n"
+	r := Compute("15.2.1", false, trace, "charts/camunda-platform-8.10", "abc")
+	if r.ReleaseVersion != "15.3.0" || r.DevTag != "15.3.0-dev-abc" || r.ChartMajor != "15" {
+		t.Errorf("breaking change on a released chart must bump the minor, got %+v", r)
+	}
+	r = Compute("15.2.1", false, "+  version: 15.2.2\n", "charts/camunda-platform-8.10", "abc")
+	if r.ReleaseVersion != "15.2.2" {
+		t.Errorf("ReleaseVersion=%q want 15.2.2", r.ReleaseVersion)
+	}
+}
+
 func TestComputeStableFromTraceFallback(t *testing.T) {
 	// No "+...version:" line → fall back to the manifest "<dir>": "<v>" entry.
 	trace := `dry run output ... "charts/camunda-platform-8.9": "8.9.7" ...`
