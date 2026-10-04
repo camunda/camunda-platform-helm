@@ -159,7 +159,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Install ORAS CLI
         if: env.PUBLISH_ARTIFACT == 'true'
-        uses: oras-project/setup-oras@1d808f7d7f6995cc68b7bf507bfe5c5446e1dc9d # v2
+        uses: oras-project/setup-oras@005458ad77f1c8facd38a094e4af2e69e5607ff4 # v2
       - name: Upload Helm chart Cosign bundle
         if: env.PUBLISH_ARTIFACT == 'true'
         run: |
