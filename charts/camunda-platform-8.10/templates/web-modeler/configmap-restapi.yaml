@@ -18,8 +18,8 @@ data:
         {{- if eq (include "camundaPlatform.identityEnabled" .) "true" }}
         base-url: {{ include "camundaPlatform.identityURL" . | quote }}
         issuer: {{ include "camundaPlatform.authIssuerUrlWithFallback" . | quote }}
-        issuer-backend-url: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
         {{- end }}
+        issuer-backend-url: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
         type: {{ include "camundaPlatform.authIssuerType" . | quote }}
       {{- end }}
 

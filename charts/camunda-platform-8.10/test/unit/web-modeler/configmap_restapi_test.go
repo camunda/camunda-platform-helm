@@ -396,6 +396,33 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectKeycloakServ
 	s.Require().Equal("http://keycloak:8888/auth/realms/camunda-platform", configmapApplication.Camunda.Identity.IssuerBackendURL)
 }
 
+func (s *configmapRestAPITemplateTest) TestContainerShouldSetIssuerBackendUrlWhenIdentityDisabled() {
+	// given
+	values := maps.Clone(requiredValues)
+	maps.Insert(values, maps.All(map[string]string{
+		"identity.enabled":                      "false",
+		"global.identity.service.url":           "http://identity.external:8080",
+		"global.identity.auth.enabled":          "true",
+		"global.identity.auth.issuerBackendUrl": "http://keycloak.idns.svc:80/auth/realms/camunda-platform",
+	}))
+	options := &helm.Options{
+		SetValues:      values,
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication WebModelerRestAPIApplicationYAML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	s.Require().NoError(err)
+
+	// then
+	s.Require().Equal("http://keycloak.idns.svc:80/auth/realms/camunda-platform", configmapApplication.Camunda.Identity.IssuerBackendURL)
+}
+
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetSmtpCredentials() {
 	// given
 	values := maps.Clone(requiredValues)
