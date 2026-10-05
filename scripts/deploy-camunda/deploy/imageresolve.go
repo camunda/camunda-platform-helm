@@ -103,7 +103,7 @@ func resolveImages(chain []string, firstScenarioLayer int, allowDigestShadow boo
 	out := map[string]any{}
 	var refs []string
 	for path, resolved := range images {
-		if len(resolved) > 0 {
+		if sources[path] != "" {
 			setImage(out, path, resolved)
 			refs = append(refs, fmt.Sprintf("%s=%s (%s)", path, imageRef(resolved), filepath.Base(sources[path])))
 		}

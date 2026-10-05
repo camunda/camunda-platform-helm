@@ -87,6 +87,9 @@ func TestResolveImages(t *testing.T) {
 				t.Fatalf("resolveImages(): %v", err)
 			}
 			resolved := readYAMLMap(t, path)
+			if _, echoed := resolved["global"]; echoed {
+				t.Errorf("blank global.image.tag was written to the resolved values")
+			}
 			for component, want := range tc.want {
 				img := imageAt(t, resolved, component)
 				if got := imageRef(img); got != want {
