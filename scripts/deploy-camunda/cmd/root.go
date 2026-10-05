@@ -163,6 +163,7 @@ func NewRootCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			warnDeprecatedInfra(loadedConfig)
 			rootConfig = loadedConfig
 			// Hand the resolved config path to the preflight via flags.
 			if cfgRes != nil {

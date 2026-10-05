@@ -308,10 +308,9 @@ func dryRun(entries []Entry, opts RunOptions) []RunResult {
 		for _, entry := range groups[version] {
 			namespace := resolveNamespace(opts, entry)
 			platform := resolvePlatform(opts, entry)
-			kubeCtx := resolveKubeContext(opts, platform)
-			envFile := resolveEnvFile(opts, entry.Version)
-			useVault := resolveUseVaultBackedSecrets(opts, platform)
-			baseDomain := resolveIngressBaseDomain(opts, platform)
+			infra := EntryInfra(opts, platform, entry.Version)
+			kubeCtx, envFile, baseDomain := infra.KubeContext, infra.EnvFile, infra.IngressBaseDomain
+			useVault := infra.UseVaultBackedSecrets != nil && *infra.UseVaultBackedSecrets
 			ingressHost := explicitIngressHost(opts)
 			if ingressHost == "" && baseDomain != "" {
 				ingressHost = namespace + "." + baseDomain
@@ -1119,13 +1118,13 @@ func ingressBaseDomain(baseDomain, ingressHostname string) string {
 	return baseDomain
 }
 
-// resolveKubeContext returns the Kubernetes context for a given platform.
-// It checks KubeContexts (platform-specific map) first, then falls back to KubeContext.
-func resolveKubeContext(opts RunOptions, platform string) string {
-	if ctx, ok := opts.KubeContexts[platform]; ok && ctx != "" {
-		return ctx
-	}
-	return opts.KubeContext
+// EntryInfra resolves the infra values for a platform and chart version (see
+// config.RootConfig.ResolveInfra). The ingress base domain falls back to
+// INFRA_INGRESS_HOSTNAME_BASE, which test-integration-runner.yaml exports.
+func EntryInfra(opts RunOptions, platform, version string) config.InfraConfig {
+	infra := opts.Config.ResolveInfra(true, platform, version, opts.Infra)
+	infra.IngressBaseDomain = config.FirstNonEmpty(infra.IngressBaseDomain, os.Getenv("INFRA_INGRESS_HOSTNAME_BASE"))
+	return infra
 }
 
 // warmUpKubeContexts makes a lightweight API call to each unique kube context
@@ -1135,7 +1134,7 @@ func warmUpKubeContexts(ctx context.Context, entries []Entry, opts RunOptions) e
 	seen := make(map[string]bool)
 	for _, entry := range entries {
 		platform := resolvePlatform(opts, entry)
-		kubeCtx := resolveKubeContext(opts, platform)
+		kubeCtx := EntryInfra(opts, platform, entry.Version).KubeContext
 		if kubeCtx == "" || seen[kubeCtx] {
 			continue
 		}
@@ -1152,15 +1151,6 @@ func warmUpKubeContexts(ctx context.Context, entries []Entry, opts RunOptions) e
 	return nil
 }
 
-// resolveEnvFile returns the .env file path for a matrix entry's version.
-// It checks EnvFiles (version-specific map) first, then falls back to EnvFile.
-func resolveEnvFile(opts RunOptions, version string) string {
-	if f, ok := opts.EnvFiles[version]; ok && f != "" {
-		return f
-	}
-	return opts.EnvFile
-}
-
 // resolvePlatform determines the effective platform for a matrix entry.
 func resolvePlatform(opts RunOptions, entry Entry) string {
 	if opts.Platform != "" {
@@ -1170,42 +1160,6 @@ func resolvePlatform(opts RunOptions, entry Entry) string {
 		return entry.Platform
 	}
 	return "gke"
-}
-
-// resolveUseVaultBackedSecrets returns whether vault-backed secrets should be used for a given platform.
-// It checks VaultBackedSecrets (platform-specific map) first, then falls back to UseVaultBackedSecrets.
-func resolveUseVaultBackedSecrets(opts RunOptions, platform string) bool {
-	if v, ok := opts.VaultBackedSecrets[platform]; ok {
-		return v
-	}
-	return opts.UseVaultBackedSecrets
-}
-
-// resolveIngressBaseDomain returns the ingress base domain for a given platform.
-// It checks IngressBaseDomains (platform-specific map) first, then falls back to
-// IngressBaseDomain, then to the INFRA_INGRESS_HOSTNAME_BASE env var
-// test-integration-runner.yaml exports. CI invokes deploy-camunda with
-// --extra-helm-set global.host=<precomputed-host> for the base (single-namespace)
-// deploy rather than --ingress-base-domain-<platform>, so neither flag-derived
-// source is populated there; the env var is the only base domain CI actually
-// provides, and it's what a topology deploy needs to derive each release's own
-// per-namespace host.
-func resolveIngressBaseDomain(opts RunOptions, platform string) string {
-	if d, ok := opts.IngressBaseDomains[platform]; ok && d != "" {
-		return d
-	}
-	if opts.IngressBaseDomain != "" {
-		return opts.IngressBaseDomain
-	}
-	return os.Getenv("INFRA_INGRESS_HOSTNAME_BASE")
-}
-
-// ResolveIngressBaseDomain is the exported form of resolveIngressBaseDomain,
-// for callers outside the matrix package (e.g. the topology deploy driver,
-// which derives each release's own ingress host the same way BuildEntryFlags
-// does for the single-namespace path).
-func ResolveIngressBaseDomain(opts RunOptions, platform string) string {
-	return resolveIngressBaseDomain(opts, platform)
 }
 
 // diagnosticsDir is the directory where per-namespace diagnostic files are written.

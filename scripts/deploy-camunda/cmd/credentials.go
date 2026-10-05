@@ -170,7 +170,7 @@ func registryCredentialSources(docker *config.DockerFlags) []registryCredentialS
 	}
 }
 
-func resolveRegistryCredentialsFromEnvFiles(docker *config.DockerFlags, entries []matrix.Entry, envFiles map[string]string, fallback string) error {
+func resolveRegistryCredentialsFromEnvFiles(docker *config.DockerFlags, entries []matrix.Entry, envFiles map[string]string) error {
 	if err := resolveRegistryCredentialsFromEnvironment(docker); err != nil {
 		return err
 	}
@@ -180,9 +180,6 @@ func resolveRegistryCredentialsFromEnvFiles(docker *config.DockerFlags, entries 
 	var paths []string
 	for _, entry := range entries {
 		path := envFiles[entry.Version]
-		if path == "" {
-			path = fallback
-		}
 		if path != "" && !seenPaths[path] {
 			seenPaths[path] = true
 			paths = append(paths, path)

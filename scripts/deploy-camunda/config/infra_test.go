@@ -15,8 +15,11 @@
 package config
 
 import (
-	"github.com/stretchr/testify/require"
+	"os"
+	"path/filepath"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestApplySelectionDefaultsAliasPrecedence(t *testing.T) {
@@ -48,7 +51,7 @@ func TestApplySelectionDefaultsAliasPrecedence(t *testing.T) {
 						flags.ChangedFlags[flag] = true
 					}
 				}
-				require.NoError(t, ApplyActiveDeployment(root, root.Current, flags))
+				require.NoError(t, ApplyActiveDeployment(root, flags))
 				flags.MigrateDeprecatedFlags()
 				require.NoError(t, ApplySelectionDefaults(flags, SelectionFlags{Identity: "keycloak", Persistence: "elasticsearch"}, root))
 				require.Equal(t, want, flags.Selection)
@@ -62,7 +65,7 @@ func TestApplySelectionDefaultsAliasClearing(t *testing.T) {
 	root := &RootConfig{DeploySpecConfig: DeploySpecConfig{Persistence: "elasticsearch", Features: []string{"documentstore"}, QA: &enabled}}
 	defaults := SelectionFlags{Identity: "keycloak", Persistence: "opensearch"}
 	flags := &RuntimeFlags{ChangedFlags: map[string]bool{"values-features": true, "values-qa": true}}
-	require.NoError(t, ApplyActiveDeployment(root, root.Current, flags))
+	require.NoError(t, ApplyActiveDeployment(root, flags))
 	flags.MigrateDeprecatedFlags()
 	require.NoError(t, ApplySelectionDefaults(flags, defaults, root))
 	require.Empty(t, flags.Selection.Features)
@@ -71,7 +74,7 @@ func TestApplySelectionDefaultsAliasClearing(t *testing.T) {
 		Deprecated:   DeprecatedFlags{ValuesFeatures: []string{"rdbms", "upgrade", "multitenancy"}},
 		ChangedFlags: map[string]bool{"values-features": true},
 	}
-	require.NoError(t, ApplyActiveDeployment(root, root.Current, flags))
+	require.NoError(t, ApplyActiveDeployment(root, flags))
 	flags.MigrateDeprecatedFlags()
 	require.NoError(t, ApplySelectionDefaults(flags, defaults, root))
 	require.Equal(t, "rdbms", flags.Selection.Persistence)
@@ -130,112 +133,69 @@ func TestApplySelectionDefaults(t *testing.T) {
 	require.True(t, flags.Selection.UpgradeFlow)
 }
 
-// allStringPtrs returns a MatrixRunFlags with every *string/*int/*bool field
-// pointing at fresh zero values, so ApplyMatrixRunConfig can dereference them
-// without nil panics. Tests then inspect the ones they care about.
-func newMatrixRunFlags() (*MatrixRunFlags, *string, *string, *string, *string, *string) {
-	var platform, repoRoot, kubeContext, ingress, envFile string
-	var (
-		versions                                      []string
-		includeDisabled, dryRun, coverage, stopOnFail bool
-		cleanup, deleteNS, skipDep, testE2E           bool
-		testAll, useVault, ensureReg, ensureHub       bool
-		maxParallel, helmTimeout                      int
-		scenarioFilter, shortnameFilter, flowFilter   string
-		namespacePrefix, logLevel                     string
-		kubeGKE, kubeEKS, ingressGKE, ingressEKS      string
-		dockerUser, dockerPass, hubUser, hubPass      string
-		keycloakHost, keycloakProto, upgradeFrom      string
-	)
-	f := &MatrixRunFlags{
-		Versions: &versions, IncludeDisabled: &includeDisabled,
-		ScenarioFilter: &scenarioFilter, ShortnameFilter: &shortnameFilter, FlowFilter: &flowFilter,
-		Platform: &platform, RepoRoot: &repoRoot,
-		DryRun: &dryRun, Coverage: &coverage, StopOnFailure: &stopOnFail, Cleanup: &cleanup,
-		DeleteNamespace: &deleteNS, NamespacePrefix: &namespacePrefix, MaxParallel: &maxParallel,
-		LogLevel: &logLevel, SkipDependencyUpdate: &skipDep, HelmTimeout: &helmTimeout,
-		TestE2E: &testE2E, TestAll: &testAll,
-		KubeContext: &kubeContext, KubeContextGKE: &kubeGKE, KubeContextEKS: &kubeEKS,
-		IngressBaseDomain: &ingress, IngressBaseDomainGKE: &ingressGKE, IngressBaseDomainEKS: &ingressEKS,
-		UseVaultBackedSecrets: &useVault,
-		EnvFile:               &envFile,
-		DockerUsername:        &dockerUser, DockerPassword: &dockerPass,
-		EnsureDockerRegistry: &ensureReg, DockerHubUsername: &hubUser, DockerHubPassword: &hubPass,
-		EnsureDockerHub: &ensureHub,
-		KeycloakHost:    &keycloakHost, KeycloakProtocol: &keycloakProto,
-		UpgradeFromVersion: &upgradeFrom,
-	}
-	return f, &platform, &kubeContext, &ingress, &repoRoot, &envFile
-}
-
-func TestApplyMatrixRunConfigUsesActiveDeploymentProfile(t *testing.T) {
+func TestResolveInfraPrecedence(t *testing.T) {
+	yes, no := true, false
 	rc := &RootConfig{
-		Current: "local",
-		Deployments: map[string]DeploymentConfig{
-			"local": {InfraConfig: InfraConfig{
-				Platform:          "gke",
-				KubeContext:       "gke-ctx-from-profile",
-				IngressBaseDomain: "ci.distro.ultrawombat.com",
-				RepoRoot:          "/repo/root",
-				EnvFile:           ".env.profile",
-			}},
+		InfraConfig: InfraConfig{KubeContext: "root", IngressBaseDomain: "root", EnvFile: "root", RepoRoot: "root", LogLevel: "root"},
+		Current:     "dev",
+		Deployments: map[string]DeploymentConfig{"dev": {InfraConfig: InfraConfig{KubeContext: "profile", IngressBaseDomain: "profile", UseVaultBackedSecrets: &no}}},
+		Matrix: MatrixConfig{
+			InfraConfig: InfraConfig{KubeContext: "matrix", RepoRoot: "matrix", EnvFile: "matrix"},
+			InfraMaps:   InfraMaps{KubeContexts: map[string]string{"gke": "matrix-gke"}, EnvFiles: map[string]string{"8.10": "matrix-8.10"}, VaultBackedSecrets: map[string]bool{"eks": true}},
 		},
 	}
-
-	f, platform, kubeContext, ingress, repoRoot, envFile := newMatrixRunFlags()
-	ApplyMatrixRunConfig(rc, map[string]bool{}, f)
-
-	if *ingress != "ci.distro.ultrawombat.com" {
-		t.Errorf("ingress = %q, want profile value", *ingress)
-	}
-	if *kubeContext != "gke-ctx-from-profile" {
-		t.Errorf("kubeContext = %q, want profile value", *kubeContext)
-	}
-	if *platform != "gke" {
-		t.Errorf("platform = %q, want gke", *platform)
-	}
-	if *repoRoot != "/repo/root" {
-		t.Errorf("repoRoot = %q, want /repo/root", *repoRoot)
-	}
-	if *envFile != ".env.profile" {
-		t.Errorf("envFile = %q, want .env.profile", *envFile)
+	cli := InfraOverride{InfraConfig: InfraConfig{IngressBaseDomain: "cli"}, InfraMaps: InfraMaps{KubeContexts: map[string]string{"eks": "cli-eks"}}}
+	for _, tc := range []struct {
+		name              string
+		matrixMode        bool
+		platform, version string
+		cli               InfraOverride
+		want              InfraConfig
+	}{
+		{name: "single deploy reads profile then root", want: InfraConfig{KubeContext: "profile", IngressBaseDomain: "profile", EnvFile: "root", RepoRoot: "root", LogLevel: "root", UseVaultBackedSecrets: &no}},
+		{name: "matrix maps beat the profile", matrixMode: true, platform: "gke", version: "8.10", want: InfraConfig{KubeContext: "matrix-gke", IngressBaseDomain: "profile", EnvFile: "matrix-8.10", RepoRoot: "matrix", LogLevel: "root", UseVaultBackedSecrets: &no}},
+		{name: "profile beats matrix scalars", matrixMode: true, platform: "aks", version: "8.9", want: InfraConfig{KubeContext: "profile", IngressBaseDomain: "profile", EnvFile: "matrix", RepoRoot: "matrix", LogLevel: "root", UseVaultBackedSecrets: &no}},
+		{name: "cli beats config", matrixMode: true, platform: "eks", version: "8.10", cli: cli, want: InfraConfig{KubeContext: "cli-eks", IngressBaseDomain: "cli", EnvFile: "matrix-8.10", RepoRoot: "matrix", LogLevel: "root", UseVaultBackedSecrets: &yes}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			require.Equal(t, tc.want, rc.ResolveInfra(tc.matrixMode, tc.platform, tc.version, tc.cli))
+		})
 	}
 }
 
-func TestApplyMatrixRunConfigPrecedenceOverProfile(t *testing.T) {
+func TestResolveInfraMatchesSingleDeploy(t *testing.T) {
+	enabled := true
 	rc := &RootConfig{
-		Current: "local",
-		Deployments: map[string]DeploymentConfig{
-			"local": {InfraConfig: InfraConfig{IngressBaseDomain: "profile.example.com", KubeContext: "profile-ctx"}},
-		},
+		InfraConfig: InfraConfig{Platform: "eks", KubeContext: "root-ctx", LogLevel: "debug"},
+		Deployments: map[string]DeploymentConfig{"only": {InfraConfig: InfraConfig{Platform: "gke", KubeContext: "profile-ctx", IngressBaseDomain: "ci.distro.ultrawombat.com", EnvFile: ".env.profile", RepoRoot: "/repo", EnsureDockerHub: &enabled}}},
 	}
-	rc.IngressBaseDomain = "root.example.com" // root beats profile
-	rc.Matrix.KubeContext = "matrix-ctx"      // matrix block beats profile
+	matrixInfra := rc.ResolveInfra(true, "gke", "8.10", InfraOverride{})
+	require.Equal(t, rc.ResolveInfra(false, "", "", InfraOverride{}), matrixInfra)
 
-	f, _, kubeContext, ingress, _, _ := newMatrixRunFlags()
-	ApplyMatrixRunConfig(rc, map[string]bool{}, f)
-
-	if *ingress != "root.example.com" {
-		t.Errorf("ingress = %q, want root value (root beats profile)", *ingress)
-	}
-	if *kubeContext != "matrix-ctx" {
-		t.Errorf("kubeContext = %q, want matrix value (matrix block beats profile)", *kubeContext)
-	}
+	flags := &RuntimeFlags{}
+	require.NoError(t, ApplyActiveDeployment(rc, flags))
+	require.Equal(t,
+		[]string{matrixInfra.Platform, matrixInfra.KubeContext, matrixInfra.IngressBaseDomain, matrixInfra.EnvFile, matrixInfra.RepoRoot, matrixInfra.LogLevel},
+		[]string{flags.Deployment.Platform, flags.Test.KubeContext, flags.Ingress.IngressBaseDomain, flags.EnvFile, flags.Chart.RepoRoot, flags.LogLevel})
+	require.True(t, flags.Docker.EnsureDockerHub)
 }
 
-func TestApplyMatrixRunConfigCLIFlagBeatsProfile(t *testing.T) {
-	rc := &RootConfig{
-		Current: "local",
-		Deployments: map[string]DeploymentConfig{
-			"local": {InfraConfig: InfraConfig{IngressBaseDomain: "profile.example.com"}},
-		},
-	}
+func TestActiveProfileRejectsUnknownCurrent(t *testing.T) {
+	rc := &RootConfig{Current: "missing", Deployments: map[string]DeploymentConfig{"dev": {}}}
+	_, err := rc.ActiveProfile()
+	require.ErrorContains(t, err, `"missing"`)
+	require.ErrorContains(t, ApplyActiveDeployment(rc, &RuntimeFlags{}), `"missing"`)
+}
 
-	f, _, _, ingress, _, _ := newMatrixRunFlags()
-	*ingress = "cli.example.com" // user passed --ingress-base-domain
-	ApplyMatrixRunConfig(rc, map[string]bool{"ingress-base-domain": true}, f)
+func TestReadRecordsDeprecatedInfraKeys(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "deploy.yaml")
+	configFile := "repoRoot: /repo\nlogLevel: debug\nmatrix:\n  kubeContext: ctx\n  namespacePrefix: distribution\n  envFiles:\n    \"8.10\": .env.810\ndeployments:\n  dev:\n    kubeContext: dev\n"
+	require.NoError(t, os.WriteFile(path, []byte(configFile), 0o600))
+	t.Setenv("CAMUNDA_PLATFORM", "eks")
 
-	if *ingress != "cli.example.com" {
-		t.Errorf("ingress = %q, want cli value (explicit flag wins)", *ingress)
-	}
+	rc, err := Read(path, true)
+	require.NoError(t, err)
+	require.Equal(t, []string{"repoRoot", "matrix.kubeContext"}, rc.DeprecatedInfra)
+	require.Equal(t, "eks", rc.Platform)
+	require.Equal(t, ".env.810", rc.Matrix.EnvFiles["8.10"])
 }
