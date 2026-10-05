@@ -41,7 +41,7 @@ spec:
       imagePullSecrets:
         []
       containers:
-        - name: camunda-platform
+        - name: identity
           image: camunda/identity:8.10.0
           imagePullPolicy: Always
           securityContext:
