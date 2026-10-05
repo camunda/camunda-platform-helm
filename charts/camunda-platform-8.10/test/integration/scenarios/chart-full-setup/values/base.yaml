@@ -28,7 +28,7 @@ identity:
       - name: index-docker-io
       - name: registry-camunda-cloud
   contextPath: "/identity"
-  # Right-sized for CI: "camunda-platform" container P99 mem 849Mi (from 400Mi default).
+  # Right-sized for CI: P99 mem 849Mi (from 400Mi default).
   resources:
     requests:
       cpu: 600m
