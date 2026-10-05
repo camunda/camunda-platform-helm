@@ -239,23 +239,38 @@ func TestDeploymentStrategyRecreateOptIn(t *testing.T) {
 	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
 
-	testCase := testhelpers.TestCase{
-		Name: "TestDeploymentStrategyRecreateOptIn",
-		Values: map[string]string{
-			"identity.enabled":                          "true",
-			"webModeler.enabled":                        "true",
-			"camundaHub.restapi.mail.fromAddress":       "example@example.com",
-			"camundaHub.persistence.enabled":            "true",
-			"camundaHub.persistence.existingClaim":      "my-existing-pvc",
-			"camundaHub.persistence.deploymentStrategy": "Recreate",
+	verifier := func(t *testing.T, output string, err error) {
+		var deployment appsv1.Deployment
+		helm.UnmarshalK8SYaml(t, output, &deployment)
+		require.Equal(t, appsv1.RecreateDeploymentStrategyType, deployment.Spec.Strategy.Type)
+	}
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestDeploymentStrategyRecreateOptIn",
+			Values: map[string]string{
+				"identity.enabled":                          "true",
+				"webModeler.enabled":                        "true",
+				"camundaHub.restapi.mail.fromAddress":       "example@example.com",
+				"camundaHub.persistence.enabled":            "true",
+				"camundaHub.persistence.existingClaim":      "my-existing-pvc",
+				"camundaHub.persistence.deploymentStrategy": "Recreate",
+			},
+			Verifier: verifier,
 		},
-		Verifier: func(t *testing.T, output string, err error) {
-			var deployment appsv1.Deployment
-			helm.UnmarshalK8SYaml(t, output, &deployment)
-			require.Equal(t, appsv1.RecreateDeploymentStrategyType, deployment.Spec.Strategy.Type)
+		{
+			Name: "TestRecreateWithLegacyExistingClaim",
+			Values: map[string]string{
+				"identity.enabled":                          "true",
+				"webModeler.enabled":                        "true",
+				"camundaHub.restapi.mail.fromAddress":       "example@example.com",
+				"webModeler.persistence.enabled":            "true",
+				"webModeler.persistence.existingClaim":      "my-existing-pvc",
+				"webModeler.persistence.deploymentStrategy": "Recreate",
+			},
+			Verifier: verifier,
 		},
 	}
-	testhelpers.RunTestCasesE(t, chartPath, "camunda-platform-test", "camunda-platform-webmodeler", []string{"templates/web-modeler/deployment-restapi.yaml"}, []testhelpers.TestCase{testCase})
+	testhelpers.RunTestCasesE(t, chartPath, "camunda-platform-test", "camunda-platform-webmodeler", []string{"templates/web-modeler/deployment-restapi.yaml"}, testCases)
 }
 
 func TestDeploymentStrategyInvalidValueFails(t *testing.T) {
@@ -316,6 +331,17 @@ func TestDeploymentStrategyRecreateRequiresExistingClaim(t *testing.T) {
 				"camundaHub.restapi.mail.fromAddress":       "example@example.com",
 				"camundaHub.persistence.existingClaim":      "my-existing-pvc",
 				"camundaHub.persistence.deploymentStrategy": "Recreate",
+			},
+			Expected: map[string]string{"ERROR": expectedError},
+		},
+		{
+			Name: "TestRecreateWithLegacyChartManagedPersistenceFails",
+			Values: map[string]string{
+				"identity.enabled":                          "true",
+				"webModeler.enabled":                        "true",
+				"camundaHub.restapi.mail.fromAddress":       "example@example.com",
+				"webModeler.persistence.enabled":            "true",
+				"webModeler.persistence.deploymentStrategy": "Recreate",
 			},
 			Expected: map[string]string{"ERROR": expectedError},
 		},
