@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">Allow opt-in deployment strategy for components with chart-managed RWO persistence | Camunda Helm Charts</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:image" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7459/img/camunda-logo.svg"><meta data-rh="true" name="twitter:image" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7459/img/camunda-logo.svg"><meta data-rh="true" property="og:url" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7459/adr/allow-opt-in-deployment-strategy-for-components-with-chart-managed-rwo-persistence"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Allow opt-in deployment strategy for components with chart-managed RWO persistence | Camunda Helm Charts"><meta data-rh="true" name="description" content="- Status: accepted"><meta data-rh="true" property="og:description" content="- Status: accepted"><link data-rh="true" rel="icon" href="/camunda-platform-helm/pr-preview/pr-7459/img/camunda-logo.svg"><link data-rh="true" rel="canonical" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7459/adr/allow-opt-in-deployment-strategy-for-components-with-chart-managed-rwo-persistence"><link data-rh="true" rel="alternate" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7459/adr/allow-opt-in-deployment-strategy-for-components-with-chart-managed-rwo-persistence" hreflang="en"><link data-rh="true" rel="alternate" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7459/adr/allow-opt-in-deployment-strategy-for-components-with-chart-managed-rwo-persistence" hreflang="x-default"><link rel="stylesheet" href="/camunda-platform-helm/pr-preview/pr-7459/assets/css/styles.3f6cd398.css">
-<script src="/camunda-platform-helm/pr-preview/pr-7459/assets/js/runtime~main.dbc11ceb.js" defer="defer"></script>
-<script src="/camunda-platform-helm/pr-preview/pr-7459/assets/js/main.54808fbb.js" defer="defer"></script>
+<script src="/camunda-platform-helm/pr-preview/pr-7459/assets/js/runtime~main.9f359a16.js" defer="defer"></script>
+<script src="/camunda-platform-helm/pr-preview/pr-7459/assets/js/main.869d4aef.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -35,11 +35,9 @@ backing storage class supports <code>ReadWriteOnce</code> or <code>ReadWriteMany
 architecture. Under <a class="" href="/camunda-platform-helm/pr-preview/pr-7459/adr/adopt-component-extraconfiguration-as-the-standard-application-configuration-mechanism">ADR 0091</a>&#x27;s
 values classification this is a legitimate Tier 2 infrastructure value, which ADR 0043&#x27;s blanket
 removal did not anticipate.</p>
-<p>Four of the seven components ADR 0043 covered have chart-managed persistence. Connectors, Identity, and
-Optimize mount a chart-managed RWO PVC, and the Web Modeler restapi chart-managed path is a per-pod
-generic ephemeral volume (PVC names below are for charts 8.9/8.10; the 8.8 layout differs — see
-&quot;Applicability by version&quot;):</p>
-<table><thead><tr><th>Component</th><th>Chart-managed PVC (8.9/8.10)</th><th>Hardcoded strategy (pre-amendment)</th></tr></thead><tbody><tr><td>Web Modeler restapi</td><td>Per-pod generic ephemeral volume</td><td><code>RollingUpdate</code></td></tr><tr><td>Connectors</td><td><code>&lt;release&gt;-connectors-data</code></td><td><code>RollingUpdate</code></td></tr><tr><td>Identity</td><td><code>&lt;release&gt;-identity-data</code></td><td><code>RollingUpdate</code></td></tr><tr><td>Optimize</td><td><code>&lt;release&gt;-optimize-data</code></td><td><code>Recreate</code></td></tr></tbody></table>
+<p>Four of the seven components ADR 0043 covered have chart-managed persistence, either a chart-managed RWO
+PVC or a per-pod generic ephemeral volume (the 8.8 layout differs — see &quot;Applicability by version&quot;):</p>
+<table><thead><tr><th>Component</th><th>Chart-managed volume (8.9)</th><th>Chart-managed volume (8.10)</th><th>Hardcoded strategy (pre-amendment)</th></tr></thead><tbody><tr><td>Web Modeler restapi</td><td>Per-pod generic ephemeral volume</td><td>Per-pod generic ephemeral volume</td><td><code>RollingUpdate</code></td></tr><tr><td>Connectors</td><td><code>&lt;release&gt;-connectors-data</code></td><td>Per-pod generic ephemeral volume</td><td><code>RollingUpdate</code></td></tr><tr><td>Identity</td><td><code>&lt;release&gt;-identity-data</code></td><td>Per-pod generic ephemeral volume</td><td><code>RollingUpdate</code></td></tr><tr><td>Optimize</td><td><code>&lt;release&gt;-optimize-data</code></td><td><code>&lt;release&gt;-optimize-data</code></td><td><code>Recreate</code></td></tr></tbody></table>
 <p>The remaining three (Tasklist, Console, Zeebe Gateway / orchestration) mount no chart-managed PVC and
 are unaffected.</p>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="applicability-by-version">Applicability by version<a href="#applicability-by-version" class="hash-link" aria-label="Direct link to Applicability by version" title="Direct link to Applicability by version" translate="no">​</a></h3>
@@ -51,6 +49,8 @@ layout differences that prevent a copy-paste across versions:<!-- -->
 <ul>
 <li class=""><strong>Optimize</strong> uses a single PVC (<code>&lt;release&gt;-optimize-data</code>) in 8.9/8.10 but <strong>two</strong> PVCs
 (<code>&lt;release&gt;-optimize-data-tmp</code> and <code>&lt;release&gt;-optimize-data-camunda</code>) in 8.8.</li>
+<li class=""><strong>Connectors</strong> and <strong>Identity</strong> mount the shared PVCs (<code>&lt;release&gt;-connectors-data</code> and
+<code>&lt;release&gt;-identity-data</code>) in 8.8 and 8.9 but use a per-pod generic ephemeral volume in 8.10 (PR #6522).</li>
 <li class=""><strong>Web Modeler</strong> restapi uses a per-pod generic ephemeral volume as its chart-managed path in all
 three: PR #6408 for 8.8, PR #6027 for 8.9, and PR #6406 for 8.10. Each pod gets its own PVC, so a
 surge pod never contends with the outgoing pod and <code>RollingUpdate</code> is safe. 8.10 additionally resolves
