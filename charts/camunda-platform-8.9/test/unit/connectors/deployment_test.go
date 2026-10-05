@@ -16,6 +16,7 @@ package connectors
 
 import (
 	"camunda-platform/test/unit/testhelpers"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -26,6 +27,7 @@ import (
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	"gopkg.in/yaml.v3"
 	appsv1 "k8s.io/api/apps/v1"
 )
 
@@ -166,6 +168,60 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				containers := deployment.Spec.Template.Spec.Containers
 				s.Require().Equal(1, len(containers))
 				s.Require().Equal(expectedContainerImage, containers[0].Image)
+			},
+		}, {
+			Name:        "TestVersionLabelUsesImageTagFromDigestOverlay",
+			ValuesFiles: []string{filepath.Join(s.chartPath, "values-digest.yaml")},
+			Values: map[string]string{
+				"connectors.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var overlay struct {
+					Connectors struct {
+						Image struct {
+							Tag    string `yaml:"tag"`
+							Digest string `yaml:"digest"`
+						} `yaml:"image"`
+					} `yaml:"connectors"`
+				}
+				content, readErr := os.ReadFile(filepath.Join(s.chartPath, "values-digest.yaml"))
+				s.Require().NoError(readErr)
+				s.Require().NoError(yaml.Unmarshal(content, &overlay))
+
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				s.Require().Equal("camunda/connectors-bundle@"+overlay.Connectors.Image.Digest, deployment.Spec.Template.Spec.Containers[0].Image)
+				s.Require().Equal(overlay.Connectors.Image.Tag, deployment.Labels["app.kubernetes.io/version"])
+				s.Require().Equal(overlay.Connectors.Image.Tag, deployment.Spec.Template.Labels["app.kubernetes.io/version"])
+			},
+		}, {
+			Name: "TestVersionLabelUsesAppVersionWhenOnlyDigestIsSet",
+			Values: map[string]string{
+				"connectors.enabled":      "true",
+				"connectors.image.tag":    "",
+				"connectors.image.digest": "sha256:aaa111",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				s.Require().Equal("8.9.x", deployment.Labels["app.kubernetes.io/version"])
+				s.Require().Equal("8.9.x", deployment.Spec.Template.Labels["app.kubernetes.io/version"])
+			},
+		}, {
+			Name: "TestVersionLabelUsesAppVersionWhenImageTagIsNotAValidLabelValue",
+			Values: map[string]string{
+				"connectors.enabled":      "true",
+				"connectors.image.tag":    strings.Repeat("a", 64),
+				"connectors.image.digest": "sha256:aaa111",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				s.Require().Equal("8.9.x", deployment.Labels["app.kubernetes.io/version"])
+				s.Require().Equal("8.9.x", deployment.Spec.Template.Labels["app.kubernetes.io/version"])
 			},
 		}, {
 			Name: "TestContainerSetContainerCommand",
