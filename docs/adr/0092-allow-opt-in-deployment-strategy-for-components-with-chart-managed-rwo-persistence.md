@@ -26,17 +26,15 @@ architecture. Under [ADR 0091](0091-adopt-component-extraconfiguration-as-the-st
 values classification this is a legitimate Tier 2 infrastructure value, which ADR 0043's blanket
 removal did not anticipate.
 
-Four of the seven components ADR 0043 covered have chart-managed persistence. Connectors, Identity, and
-Optimize mount a chart-managed RWO PVC, and the Web Modeler restapi chart-managed path is a per-pod
-generic ephemeral volume (PVC names below are for charts 8.9/8.10; the 8.8 layout differs — see
-"Applicability by version"):
+Four of the seven components ADR 0043 covered have chart-managed persistence, either a chart-managed RWO
+PVC or a per-pod generic ephemeral volume (the 8.8 layout differs — see "Applicability by version"):
 
-| Component | Chart-managed PVC (8.9/8.10) | Hardcoded strategy (pre-amendment) |
-|---|---|---|
-| Web Modeler restapi | Per-pod generic ephemeral volume | `RollingUpdate` |
-| Connectors | `<release>-connectors-data` | `RollingUpdate` |
-| Identity | `<release>-identity-data` | `RollingUpdate` |
-| Optimize | `<release>-optimize-data` | `Recreate` |
+| Component | Chart-managed volume (8.9) | Chart-managed volume (8.10) | Hardcoded strategy (pre-amendment) |
+|---|---|---|---|
+| Web Modeler restapi | Per-pod generic ephemeral volume | Per-pod generic ephemeral volume | `RollingUpdate` |
+| Connectors | `<release>-connectors-data` | Per-pod generic ephemeral volume | `RollingUpdate` |
+| Identity | `<release>-identity-data` | Per-pod generic ephemeral volume | `RollingUpdate` |
+| Optimize | `<release>-optimize-data` | `<release>-optimize-data` | `Recreate` |
 
 The remaining three (Tasklist, Console, Zeebe Gateway / orchestration) mount no chart-managed PVC and
 are unaffected.
@@ -50,6 +48,8 @@ The `Multi-Attach` premise requires a chart-managed PVC on a `Deployment`, which
   layout differences that prevent a copy-paste across versions:
   - **Optimize** uses a single PVC (`<release>-optimize-data`) in 8.9/8.10 but **two** PVCs
     (`<release>-optimize-data-tmp` and `<release>-optimize-data-camunda`) in 8.8.
+  - **Connectors** and **Identity** mount the shared PVCs (`<release>-connectors-data` and
+    `<release>-identity-data`) in 8.8 and 8.9 but use a per-pod generic ephemeral volume in 8.10 (PR #6522).
   - **Web Modeler** restapi uses a per-pod generic ephemeral volume as its chart-managed path in all
     three: PR #6408 for 8.8, PR #6027 for 8.9, and PR #6406 for 8.10. Each pod gets its own PVC, so a
     surge pod never contends with the outgoing pod and `RollingUpdate` is safe. 8.10 additionally resolves
