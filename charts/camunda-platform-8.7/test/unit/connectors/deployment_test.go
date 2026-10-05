@@ -204,6 +204,20 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				s.Require().Equal("8.7.x", deployment.Spec.Template.Labels["app.kubernetes.io/version"])
 			},
 		}, {
+			Name: "TestVersionLabelUsesAppVersionWhenImageTagIsNotAValidLabelValue",
+			Values: map[string]string{
+				"connectors.enabled":      "true",
+				"connectors.image.tag":    strings.Repeat("a", 64),
+				"connectors.image.digest": "sha256:aaa111",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				s.Require().Equal("8.7.x", deployment.Labels["app.kubernetes.io/version"])
+				s.Require().Equal("8.7.x", deployment.Spec.Template.Labels["app.kubernetes.io/version"])
+			},
+		}, {
 			Name: "TestContainerOverwriteGlobalImageTag",
 			Values: map[string]string{
 				"connectors.enabled":   "true",

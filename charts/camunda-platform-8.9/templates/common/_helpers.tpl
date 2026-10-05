@@ -163,10 +163,14 @@ Usage: {{ include "camundaPlatform.image" . }}
 
 {{/*
 Return the version label for resources.
-If an image digest is specified without a tag, fall back to .Chart.AppVersion (e.g., "8.8.x"); otherwise use the resolved image tag.
 */}}
 {{- define "camundaPlatform.versionLabel" -}}
-  {{- include "camundaPlatform.imageTagByParams" (dict "base" .base "overlay" .overlay) | default .chart.AppVersion -}}
+  {{- $imageTag := include "camundaPlatform.imageTagByParams" (dict "base" .base "overlay" .overlay) -}}
+  {{- if and (le (len $imageTag) 63) (regexMatch "^[A-Za-z0-9]([-A-Za-z0-9_.]*[A-Za-z0-9])?$" $imageTag) -}}
+    {{- $imageTag -}}
+  {{- else -}}
+    {{- .chart.AppVersion -}}
+  {{- end -}}
 {{- end -}}
 
 {{/*
