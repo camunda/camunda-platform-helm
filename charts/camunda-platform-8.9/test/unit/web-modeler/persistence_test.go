@@ -189,31 +189,55 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 	}
 }
 
-// TestDeploymentStrategyDefaultsToRollingUpdate asserts the default strategy
-// is RollingUpdate. The restapi /tmp volume is a per-pod ephemeral volume, so
-// rollouts never contend for a shared RWO volume and zero-downtime RollingUpdate
-// is always safe.
 func TestDeploymentStrategyDefaultsToRollingUpdate(t *testing.T) {
 	t.Parallel()
 	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
 
-	testCase := testhelpers.TestCase{
-		Name: "TestDeploymentStrategyDefaultsToRollingUpdate",
-		Values: map[string]string{
-			"identity.enabled":                    "true",
-			"global.elasticsearch.enabled":        "true",
-			"elasticsearch.enabled":               "true",
-			"webModeler.enabled":                  "true",
-			"webModeler.restapi.mail.fromAddress": "example@example.com",
+	verifier := func(t *testing.T, output string, err error) {
+		var deployment appsv1.Deployment
+		helm.UnmarshalK8SYaml(t, output, &deployment)
+		require.Equal(t, appsv1.RollingUpdateDeploymentStrategyType, deployment.Spec.Strategy.Type)
+	}
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestDeploymentStrategyDefaultsToRollingUpdate",
+			Values: map[string]string{
+				"identity.enabled":                    "true",
+				"global.elasticsearch.enabled":        "true",
+				"elasticsearch.enabled":               "true",
+				"webModeler.enabled":                  "true",
+				"webModeler.restapi.mail.fromAddress": "example@example.com",
+			},
+			Verifier: verifier,
 		},
-		Verifier: func(t *testing.T, output string, err error) {
-			var deployment appsv1.Deployment
-			helm.UnmarshalK8SYaml(t, output, &deployment)
-			require.Equal(t, appsv1.RollingUpdateDeploymentStrategyType, deployment.Spec.Strategy.Type)
+		{
+			Name: "TestChartManagedPersistence",
+			Values: map[string]string{
+				"identity.enabled":                    "true",
+				"global.elasticsearch.enabled":        "true",
+				"elasticsearch.enabled":               "true",
+				"webModeler.enabled":                  "true",
+				"webModeler.restapi.mail.fromAddress": "example@example.com",
+				"webModeler.persistence.enabled":      "true",
+			},
+			Verifier: verifier,
+		},
+		{
+			Name: "TestExistingClaim",
+			Values: map[string]string{
+				"identity.enabled":                     "true",
+				"global.elasticsearch.enabled":         "true",
+				"elasticsearch.enabled":                "true",
+				"webModeler.enabled":                   "true",
+				"webModeler.restapi.mail.fromAddress":  "example@example.com",
+				"webModeler.persistence.enabled":       "true",
+				"webModeler.persistence.existingClaim": "my-existing-pvc",
+			},
+			Verifier: verifier,
 		},
 	}
-	testhelpers.RunTestCasesE(t, chartPath, "camunda-platform-test", "camunda-platform-webmodeler", []string{"templates/web-modeler/deployment-restapi.yaml"}, []testhelpers.TestCase{testCase})
+	testhelpers.RunTestCasesE(t, chartPath, "camunda-platform-test", "camunda-platform-webmodeler", []string{"templates/web-modeler/deployment-restapi.yaml"}, testCases)
 }
 
 // TestDeploymentStrategyRecreateOptIn asserts users can opt into Recreate
