@@ -4432,7 +4432,7 @@
                                         },
                                         "usernameClaim": {
                                             "type": "string",
-                                            "description": "(DEPRECATED) can be used to set username claim.",
+                                            "description": "(DEPRECATED) can be used to set username claim. This value also sets the Web Modeler username claim, even when `orchestration.enabled` is false. To set a different Web Modeler claim, set `camunda.identity.username-claim` in `webModeler.restapi.extraConfiguration`.",
                                             "default": "preferred_username"
                                         },
                                         "preferUsernameClaim": {

@@ -5950,7 +5950,7 @@
                                         },
                                         "usernameClaim": {
                                             "type": "string",
-                                            "description": "can be used to set username claim.",
+                                            "description": "can be used to set username claim. This value also sets the Web Modeler username claim, even when `orchestration.enabled` is false. To set a different Web Modeler claim, add the environment variable `CAMUNDA_IDENTITY_USERNAMECLAIM` to `webModeler.webapp.env`.",
                                             "default": "preferred_username"
                                         },
                                         "preferUsernameClaim": {
