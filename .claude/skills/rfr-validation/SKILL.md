@@ -73,7 +73,7 @@ Default: tier-1 on every affected version. Add tier-2 entries only when the diff
 | Document store feature 8.8+ | `eske` + `docstr` per version |
 | Hub change on 8.10 | `eske` + `huble` |
 | `_helpers.tpl` change | tier-1 all versions + `nosec`, `docstr` |
-| `values-enterprise.yaml` or enterprise image tags | `entv` — defined and enabled on 8.7 and 8.9 only; 8.8 defines it but leaves it `enabled: false`, and 8.10 does not define it at all |
+| `values-enterprise.yaml` or enterprise image tags | `entv` — defined and enabled on 8.7, 8.8 and 8.9; 8.10 does not define it at all |
 
 **Skip the matrix** for `.github/workflows/*` (run `actionlint`), `scripts/` Go tooling (`make go.test`), Dockerfile-only (`hadolint`, `docker build --target`), compose-only (`docker compose config`), docs-only.
 
