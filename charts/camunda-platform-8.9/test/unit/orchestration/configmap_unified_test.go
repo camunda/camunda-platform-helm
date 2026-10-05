@@ -33,7 +33,8 @@ type orchestrationApplication struct {
 		Security struct {
 			Authentication struct {
 				OIDC struct {
-					GroupsClaim string `yaml:"groups-claim"`
+					GroupsClaim string   `yaml:"groups-claim"`
+					Audiences   []string `yaml:"audiences"`
 				} `yaml:"oidc"`
 				Basic struct {
 					AllowUnauthenticatedAPIAccess bool `yaml:"allow-unauthenticated-api-access"`
@@ -750,6 +751,55 @@ func (s *ConfigmapTemplateTest) TestOIDCAudiencesIncludeWebModelerOnlyWhenEffect
 				require.Contains(t, authConfig, `- "orchestration-api"`)
 				require.Contains(t, authConfig, `- "web-modeler-api"`)
 			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *ConfigmapTemplateTest) verifyOIDCAudiences(expected ...string) func(t *testing.T, output string, err error) {
+	return func(t *testing.T, output string, err error) {
+		s.Require().NoError(err)
+		var configMap corev1.ConfigMap
+		helm.UnmarshalK8SYaml(t, output, &configMap)
+		var application orchestrationApplication
+		s.Require().NoError(yaml.Unmarshal([]byte(configMap.Data["application.yaml"]), &application))
+		s.Require().Equal(expected, application.Camunda.Security.Authentication.OIDC.Audiences)
+	}
+}
+
+func (s *ConfigmapTemplateTest) TestOIDCAudiencesIncludeConsoleOnlyWhenEffectivelyEnabled() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestApplicationYamlShouldContainConsoleAudienceWhenConsoleEnabled",
+			Values: map[string]string{
+				"global.identity.auth.enabled":                 "true",
+				"identity.enabled":                             "true",
+				"orchestration.security.authentication.method": "oidc",
+				"console.enabled":                              "true",
+			},
+			Verifier: s.verifyOIDCAudiences("orchestration", "orchestration-api", "console-api"),
+		},
+		{
+			Name: "TestApplicationYamlShouldNotContainConsoleAudienceWhenConsoleDisabled",
+			Values: map[string]string{
+				"global.identity.auth.enabled":                 "true",
+				"identity.enabled":                             "true",
+				"orchestration.security.authentication.method": "oidc",
+				"console.enabled":                              "false",
+			},
+			Verifier: s.verifyOIDCAudiences("orchestration", "orchestration-api"),
+		},
+		{
+			Name: "TestApplicationYamlShouldNotContainConsoleAudienceWhenTopologySuppressesIt",
+			Values: map[string]string{
+				"global.identity.auth.enabled":                 "true",
+				"global.identity.service.url":                  "http://identity.example.com",
+				"global.topology.mode":                         "orchestration",
+				"orchestration.security.authentication.method": "oidc",
+				"console.enabled":                              "true",
+			},
+			Verifier: s.verifyOIDCAudiences("orchestration", "orchestration-api"),
 		},
 	}
 
