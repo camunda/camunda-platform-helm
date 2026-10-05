@@ -43,8 +43,8 @@ func TestChart88HelmCompatibilityMatrix(t *testing.T) {
 		helmMajor string
 		tier      int
 	}{
-		{"eske", "3", 2},
-		{"esh4", "4", 1},
+		{"eske", "4", 1},
+		{"estls", "3", 2},
 	} {
 		t.Run(tc.shortname, func(t *testing.T) {
 			selected := Filter(entries, FilterOptions{ShortnameFilter: tc.shortname, FlowFilter: "install", Platform: "gke", Tier: tc.tier})
