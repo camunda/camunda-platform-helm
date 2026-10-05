@@ -261,8 +261,7 @@ func TestResolveScenarioOptimizeTLS(t *testing.T) {
 		t.Fatalf("expected one optimize-tls entry, got %d", len(entries))
 	}
 	entry := entries[0]
-	matrixFlags, _, _, _, cleanup, err := BuildEntryFlags(entry, RunOptions{RepoRoot: repoRoot})
-	defer cleanup()
+	matrixFlags, _, _, _, err := BuildEntryFlags(entry, RunOptions{RepoRoot: repoRoot})
 	if err != nil {
 		t.Fatal(err)
 	}

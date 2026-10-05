@@ -103,11 +103,7 @@ func appendScenarioExtraValues(base []string, entry Entry, scenarioDir string) [
 // vault-mapping assembly a normal matrix entry gets, instead of hand-rolling
 // a partial RuntimeFlags that silently omits companion charts or the
 // per-entry ingress hostname.
-//
-// The caller MUST invoke the returned cleanup func once flags are no longer
-// needed (mirrors sanitizeEnvFileForOCIImmutability's contract — safe to call
-// even on error).
-func BuildEntryFlags(entry Entry, opts RunOptions) (flags *config.RuntimeFlags, namespace string, kubeCtx string, envFile string, cleanup func(), err error) {
+func BuildEntryFlags(entry Entry, opts RunOptions) (flags *config.RuntimeFlags, namespace string, kubeCtx string, envFile string, err error) {
 	namespace = resolveNamespace(opts, entry)
 	baseNamespace := buildBaseNamespace(entry)
 	// When the caller overrides the namespace (per-scenario CI workflow, or a
@@ -124,10 +120,11 @@ func BuildEntryFlags(entry Entry, opts RunOptions) (flags *config.RuntimeFlags, 
 	platform := resolvePlatform(opts, entry)
 	infra := EntryInfra(opts, platform, entry.Version)
 	kubeCtx, envFile = infra.KubeContext, infra.EnvFile
-	envFile, cleanup, err = sanitizeEnvFileForOCIImmutability(envFile, opts)
+	strategy, err := ResolveImageStrategy(entry, opts)
 	if err != nil {
-		return nil, namespace, kubeCtx, envFile, cleanup, err
+		return nil, namespace, kubeCtx, envFile, err
 	}
+	logging.Logger.Info().Str("version", entry.Version).Str("scenario", entry.Scenario).Str("images", string(strategy)).Msg("Image strategy")
 	useVault := infra.UseVaultBackedSecrets != nil && *infra.UseVaultBackedSecrets
 	explicitIngressHost := explicitIngressHost(opts)
 	baseDomain := infra.IngressBaseDomain
@@ -168,20 +165,7 @@ func BuildEntryFlags(entry Entry, opts RunOptions) (flags *config.RuntimeFlags, 
 			ChartPath:            entry.ChartPath,
 			SkipDependencyUpdate: opts.SkipDependencyUpdate,
 			RepoRoot:             opts.RepoRoot,
-			// Build chart-root overlays.
-			// enterprise is composable (changes registry/repo, not tags).
-			// digest, latest, and image-tags are mutually exclusive for image version resolution:
-			//   - image-tags (SNAPSHOT tags from env) takes priority over digest/latest
-			//   - useLatest selects values-latest.yaml instead of values-digest.yaml
-			//   - digest is the CI default when neither image-tags nor useLatest is active
-			ChartRootOverlays: func() []string {
-				if ociImmutabilityMode(opts) {
-					logging.Logger.Warn().
-						Str("chartRef", opts.ChartRef).
-						Msg("OCI immutability mode: skipping chart-root image overlays")
-				}
-				return resolveChartRootOverlays(entry, opts)
-			}(),
+			ChartRootOverlays:    chartRootOverlays(entry, strategy),
 		},
 		Deployment: config.DeploymentFlags{
 			Namespace:                  flagsNamespace,
@@ -200,7 +184,9 @@ func BuildEntryFlags(entry Entry, opts RunOptions) (flags *config.RuntimeFlags, 
 			// Global --extra-values first, then scenario-declared extra-values
 			// (resolved against the scenario dir) so the per-scenario files win
 			// within the chain's `extra` slot.
-			ExtraValues: appendScenarioExtraValues(append([]string(nil), opts.ExtraValues...), entry, scenarioDir),
+			ExtraValues:       appendScenarioExtraValues(append([]string(nil), opts.ExtraValues...), entry, scenarioDir),
+			ImageOverrides:    append([]string(nil), opts.ImageOverrides...),
+			AllowDigestShadow: opts.AllowDigestShadow,
 			// Always include allowPreReleaseImages=true for CI deployments —
 			// matches the legacy Taskfile install/upgrade behaviour. User-supplied
 			// --extra-helm-set values are merged on top and take precedence.
@@ -262,7 +248,7 @@ func BuildEntryFlags(entry Entry, opts RunOptions) (flags *config.RuntimeFlags, 
 			Features:    entry.Features,
 			InfraType:   entry.InfraType,
 			QA:          entry.QA || opts.UseQA,
-			ImageTags:   effectiveImageTags(entry, opts),
+			ImageTags:   strategy == ImageTags,
 			UpgradeFlow: entry.Upgrade,
 		},
 	}
@@ -280,7 +266,7 @@ func BuildEntryFlags(entry Entry, opts RunOptions) (flags *config.RuntimeFlags, 
 		}
 	}
 
-	return flags, namespace, kubeCtx, envFile, cleanup, nil
+	return flags, namespace, kubeCtx, envFile, nil
 }
 
 func explicitIngressHost(opts RunOptions) string {
@@ -306,8 +292,7 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) RunResult {
 		opts.OnPhaseChange(entry, "preparing")
 	}
 
-	flags, namespace, kubeCtx, envFile, cleanupEnvFile, err := BuildEntryFlags(entry, opts)
-	defer cleanupEnvFile() // safe: cleanup is always a valid no-op func even on error
+	flags, namespace, kubeCtx, envFile, err := BuildEntryFlags(entry, opts)
 	if err != nil {
 		return RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx, Error: err}
 	}

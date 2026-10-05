@@ -141,7 +141,7 @@ func rootFlagGroups() map[string][]string {
 		},
 		grpScenario: {
 			"chart-path", "chart", "version", "scenario", "scenario-path",
-			"extra-values", "values-preset", "identity", "persistence",
+			"extra-values", "image-override", "allow-digest-shadow", "values-preset", "identity", "persistence",
 			"test-platform", "features", "qa", "image-tags",
 		},
 		grpRegistry: {
@@ -179,7 +179,7 @@ func matrixRunFlagGroups() map[string][]string {
 			"versions", "include-disabled", "scenario-filter",
 			"shortname-filter", "shortname-exact", "flow-filter",
 			"upgrade-from-version", "use-latest", "use-qa",
-			"extra-helm-arg", "extra-helm-set", "extra-values",
+			"extra-helm-arg", "extra-helm-set", "extra-values", "image-override", "allow-digest-shadow",
 			"chart-ref", "chart-version", "tier",
 		},
 		grpRegistry: {

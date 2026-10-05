@@ -1195,8 +1195,7 @@ func TestBuildEntryFlagsPrefersExplicitGlobalHost(t *testing.T) {
 		},
 	}
 
-	flags, _, _, _, cleanup, err := BuildEntryFlags(entry, opts)
-	defer cleanup()
+	flags, _, _, _, err := BuildEntryFlags(entry, opts)
 	if err != nil {
 		t.Fatalf("BuildEntryFlags returned error: %v", err)
 	}
@@ -1305,110 +1304,39 @@ func TestResolvePlatform(t *testing.T) {
 	}
 }
 
-func TestOCIImmutabilityDisablesImageOverrides(t *testing.T) {
-	chartPath := t.TempDir()
-	for _, name := range []string{"values-digest.yaml", "values-enterprise.yaml", "values-latest.yaml"} {
-		if err := os.WriteFile(filepath.Join(chartPath, name), []byte("# test\n"), 0o644); err != nil {
-			t.Fatalf("write %s: %v", name, err)
-		}
-	}
-
-	entry := Entry{Enterprise: true, ImageTags: true}
-	ociOpts := RunOptions{ChartRef: "oci://registry.camunda.cloud/team-distribution/camunda-platform", UseLatest: true}
-	if got := effectiveImageTags(entry, ociOpts); got {
-		t.Fatalf("effectiveImageTags() = true, want false in OCI immutability mode")
-	}
-	if got := resolveChartRootOverlaysQuiet(chartPath, entry, ociOpts); len(got) != 0 {
-		t.Fatalf("resolveChartRootOverlaysQuiet() = %v, want no overlays in OCI immutability mode", got)
-	}
-
-	forcedOpts := RunOptions{ChartRef: ociOpts.ChartRef, ForceImageOverrides: true, UseLatest: true}
-	if got := effectiveImageTags(entry, forcedOpts); !got {
-		t.Fatalf("effectiveImageTags() = false, want true when OCI immutability bypass is enabled")
-	}
-	if got := resolveChartRootOverlaysQuiet(chartPath, entry, forcedOpts); strings.Join(got, ",") != "enterprise" {
-		t.Fatalf("resolveChartRootOverlaysQuiet() = %v, want [enterprise] when bypass preserves image-tags", got)
-	}
-}
-
-func TestSanitizeEnvFileForOCIImmutability(t *testing.T) {
-	envFile := filepath.Join(t.TempDir(), "values.env")
-	content := "E2E_TESTS_OPTIMIZE_IMAGE_TAG=8.8-SNAPSHOT\nOPERATE_INDEX_PREFIX=test-run\nTASKLIST_INDEX_PREFIX=test-tasklist\n"
-	if err := os.WriteFile(envFile, []byte(content), 0o644); err != nil {
-		t.Fatalf("write env file: %v", err)
-	}
-
-	got, cleanup, err := sanitizeEnvFileForOCIImmutability(envFile, RunOptions{ChartRef: "oci://registry.camunda.cloud/team-distribution/camunda-platform"})
-	if err != nil {
-		t.Fatalf("sanitizeEnvFileForOCIImmutability() error = %v", err)
-	}
-	defer cleanup()
-	if got == "" || got == envFile {
-		t.Fatalf("sanitizeEnvFileForOCIImmutability() = %q, want sanitized temp file", got)
-	}
-
-	data, err := os.ReadFile(got)
-	if err != nil {
-		t.Fatalf("read sanitized env file: %v", err)
-	}
-	text := string(data)
-	if strings.Contains(text, "E2E_TESTS_OPTIMIZE_IMAGE_TAG") {
-		t.Fatalf("sanitized env file still contains image tag key: %s", text)
-	}
-	for _, key := range []string{"OPERATE_INDEX_PREFIX", "TASKLIST_INDEX_PREFIX"} {
-		if !strings.Contains(text, key+"=") {
-			t.Fatalf("sanitized env file missing %s: %s", key, text)
-		}
-	}
-}
-
-// --- resolveUseVaultBackedSecrets tests ---
-
-func TestOCIImmutabilityForceOverridesRestoresDigest(t *testing.T) {
-	chartPath := t.TempDir()
-	for _, name := range []string{"values-digest.yaml", "values-enterprise.yaml", "values-latest.yaml"} {
-		if err := os.WriteFile(filepath.Join(chartPath, name), []byte("# test\n"), 0o644); err != nil {
-			t.Fatalf("write %s: %v", name, err)
-		}
-	}
-
-	// ForceImageOverrides: true + ImageTags: false -> digest overlay should be restored
-	entry := Entry{Enterprise: true, ImageTags: false}
-	opts := RunOptions{ChartRef: "oci://registry.camunda.cloud/team-distribution/camunda-platform", ForceImageOverrides: true}
-	got := resolveChartRootOverlaysQuiet(chartPath, entry, opts)
-	expected := "enterprise,digest"
-	if strings.Join(got, ",") != expected {
-		t.Fatalf("resolveChartRootOverlaysQuiet() = %v, want [enterprise, digest] when force-overrides restores non-image-tags path", got)
-	}
-}
-
-func TestSanitizeEnvFileAllImageTags(t *testing.T) {
-	// All keys are IMAGE_TAG -> result should be empty path (no temp file needed)
-	envFile := filepath.Join(t.TempDir(), "values.env")
-	content := "E2E_TESTS_OPTIMIZE_IMAGE_TAG=8.8-SNAPSHOT\nE2E_TESTS_OPERATE_IMAGE_TAG=8.8-SNAPSHOT\n"
-	if err := os.WriteFile(envFile, []byte(content), 0o644); err != nil {
-		t.Fatalf("write env file: %v", err)
-	}
-
-	got, cleanup, err := sanitizeEnvFileForOCIImmutability(envFile, RunOptions{ChartRef: "oci://registry.camunda.cloud/team-distribution/camunda-platform"})
-	if err != nil {
-		t.Fatalf("sanitizeEnvFileForOCIImmutability() error = %v", err)
-	}
-	defer cleanup()
-	if got != "" {
-		t.Fatalf("sanitizeEnvFileForOCIImmutability() = %q, want empty path when all keys are image tags", got)
-	}
-}
-
-func TestSanitizeEnvFileNoEnvFile(t *testing.T) {
-	// OCI mode with no env file -> should short-circuit cleanly
-	got, cleanup, err := sanitizeEnvFileForOCIImmutability("", RunOptions{ChartRef: "oci://registry.camunda.cloud/team-distribution/camunda-platform"})
-	if err != nil {
-		t.Fatalf("sanitizeEnvFileForOCIImmutability() error = %v", err)
-	}
-	defer cleanup()
-	if got != "" {
-		t.Fatalf("sanitizeEnvFileForOCIImmutability() = %q, want empty string for no env file", got)
+func TestResolveImageStrategy(t *testing.T) {
+	const ref = "oci://registry.camunda.cloud/team-distribution/camunda-platform"
+	for _, tc := range []struct {
+		name     string
+		entry    Entry
+		opts     RunOptions
+		want     ImageStrategy
+		overlays string
+	}{
+		{name: "digest by default", entry: Entry{Enterprise: true}, want: ImageDigest, overlays: "enterprise,digest"},
+		{name: "use-latest", opts: RunOptions{UseLatest: true}, want: ImageLatest, overlays: "latest"},
+		{name: "image-tags", entry: Entry{Enterprise: true, ImageTags: true}, want: ImageTags, overlays: "enterprise"},
+		{name: "chart-ref keeps baked images", entry: Entry{Enterprise: true, ImageTags: true}, opts: RunOptions{ChartRef: ref}, want: ImageOCIImmutable},
+		{name: "forced chart-ref restores image-tags", entry: Entry{Enterprise: true, ImageTags: true}, opts: RunOptions{ChartRef: ref, ForceImageOverrides: true}, want: ImageTags, overlays: "enterprise"},
+		{name: "forced chart-ref restores digest", entry: Entry{Enterprise: true}, opts: RunOptions{ChartRef: ref, ForceImageOverrides: true}, want: ImageDigest, overlays: "enterprise,digest"},
+		{name: "use-latest conflicts with image-tags", entry: Entry{ImageTags: true}, opts: RunOptions{UseLatest: true}},
+		{name: "use-latest conflicts with chart-ref", opts: RunOptions{ChartRef: ref, UseLatest: true}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := ResolveImageStrategy(tc.entry, tc.opts)
+			if tc.want == "" {
+				if err == nil || !strings.Contains(err.Error(), "--use-latest conflicts") {
+					t.Fatalf("ResolveImageStrategy() error = %v, want a --use-latest conflict", err)
+				}
+				return
+			}
+			if err != nil || got != tc.want {
+				t.Fatalf("ResolveImageStrategy() = %q, %v; want %q", got, err, tc.want)
+			}
+			if overlays := strings.Join(chartRootOverlays(tc.entry, got), ","); overlays != tc.overlays {
+				t.Fatalf("chartRootOverlays() = %q, want %q", overlays, tc.overlays)
+			}
+		})
 	}
 }
 
@@ -2097,8 +2025,8 @@ func TestChartRefOverride_UpgradeStep1Unaffected(t *testing.T) {
 
 // TestExtraValues_PropagatesToDeploymentFlags pins the propagation chain that
 // makes the inc-5975 fix actually work: RunOptions.ExtraValues must land in
-// flags.Deployment.ExtraValues, because that is the only slice
-// neutralizeOverriddenDigests reads when deciding whether to strip
+// flags.Deployment.ExtraValues, because only values-chain layers reach the
+// image resolver that clears shadowed
 // values-digest.yaml digest pins. If executeEntry's flag assignment is
 // removed, the test fails — the previous flag-existence test would not.
 func TestExtraValues_PropagatesToDeploymentFlags(t *testing.T) {

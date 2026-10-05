@@ -59,7 +59,7 @@ func TestRootScenarioRegistryResolution(t *testing.T) {
 }
 
 // Pins inc-5975: --extra-values must exist on `matrix run` so that
-// flags.Deployment.ExtraValues — the only input to the digest-overlay strip —
+// flags.Deployment.ExtraValues — a layer the image resolver ranks —
 // gets populated. StringArray (not StringSlice) so paths aren't comma-split.
 func TestMatrixRunExtraValuesFlag(t *testing.T) {
 	flag := newMatrixRunCommand().Flags().Lookup("extra-values")
