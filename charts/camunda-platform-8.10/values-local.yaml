@@ -10,7 +10,7 @@ global:
       enabled: false
 
 #
-# Management Cluster.
+# Management plane.
 #
 
 identity:

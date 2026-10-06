@@ -4,7 +4,7 @@ title: Operate the dogfood environments
 
 # Operate the dogfood environments
 
-The `dogfood` topology runs one long-lived Hub plane with three Orchestration
+The `dogfood` topology runs one long-lived management plane with three Orchestration
 Clusters on GKE, for internal dogfooding of Hub, Physical Tenants, and
 multi-tenancy — shapes that do not exist in SaaS.
 
