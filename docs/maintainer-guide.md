@@ -33,10 +33,16 @@ class of problem, it needs an ADR. A purely local toggle does not.
 
 ADRs should be rare, durable records of architectural decisions. Capture the stable
 problem, decision, constraints, alternatives, and consequences rather than implementation
-steps that are likely to change. Prefer an issue, PR description, or operational guide for
-tactical changes. Edit an accepted ADR in place only for non-semantic corrections. When
-constraints or conclusions change, write a new ADR that links to the earlier decision with
-`Amends:`. When replacing a decision, write a new ADR that links to it with `Supersedes:`.
+steps that are likely to change. Do not reference files by line number. Prefer an issue, PR
+description, or operational guide for tactical changes.
+
+An ADR states the current decision, so each decision lives in one file. When constraints or
+conclusions change, edit the ADR in place and add a dated line to its `Changelog` section
+that links the PR. PR references belong only in that section. An in-place change follows the
+same review and approval as a new ADR. Git history keeps the earlier text. Write a new ADR
+only for a new decision, or when a new decision replaces an earlier one completely. In that
+case, add `Supersedes:` to the new ADR and set the status of the earlier ADR to
+`superseded by [ADR NNNN](NNNN-slug.md)`.
 
 ### ADR process
 

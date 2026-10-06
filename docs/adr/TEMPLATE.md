@@ -3,13 +3,13 @@
 <!--
   MADR template adapted for this repo. See ADR 0089–0092 for examples.
   Process and required-table: docs/maintainer-guide.md.
+  Status values: proposed, accepted, superseded by [ADR NNNN](NNNN-slug.md).
   Remove this comment and any unused sections before submitting.
 -->
 
 - Status: proposed
 - Date: YYYY-MM-DD
 - Decision-makers: Distribution team, or a named person
-<!-- Optional: - Amends: [ADR NNNN](NNNN-slug.md) -->
 <!-- Optional: - Supersedes: [ADR NNNN](NNNN-slug.md) -->
 
 ## Context and Problem Statement
@@ -49,3 +49,9 @@ PR, and follow-ups.
 <!-- Optional. Omit if empty. -->
 
 - Builds on ADR NNNN — title (link the file). One-line relevance.
+
+## Changelog
+
+<!-- Optional. Add on the first in-place amendment. One line per change to the decision. -->
+
+- YYYY-MM-DD — [#NNNN](https://github.com/camunda/camunda-platform-helm/pull/NNNN) — What changed.
