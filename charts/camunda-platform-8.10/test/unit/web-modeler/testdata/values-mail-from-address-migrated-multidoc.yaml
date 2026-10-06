@@ -1,6 +1,4 @@
-# from-address migrated to restapi.extraConfiguration (camunda.hub.mail.from-address);
-# the deprecated webModeler.restapi.mail.fromAddress is left unset. The chart-rendered
-# from-address must be omitted (so the imported file wins) and helm install must not fail.
+# from-address migrated to restapi.extraConfiguration in the second document of a multi-document YAML file.
 identity:
   enabled: true
 orchestration:
@@ -13,6 +11,10 @@ webModeler:
     extraConfiguration:
       - file: mail.yaml
         content: |
+          spring:
+            mail:
+              host: smtp.example.com
+          ---
           camunda:
             hub:
               mail:

@@ -1,6 +1,5 @@
 {{- if eq (include "camundaHub.webModelerEnabled" .) "true" -}}
 {{- $hub := include "camundaHub.values" . | fromYaml -}}
-{{- $hub := include "camundaHub.values" . | fromYaml -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -19,12 +18,12 @@ data:
         {{- if eq (include "camundaPlatform.identityEnabled" .) "true" }}
         base-url: {{ include "camundaPlatform.identityURL" . | quote }}
         issuer: {{ include "camundaPlatform.authIssuerUrlWithFallback" . | quote }}
-        issuerBackendUrl: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
         {{- end }}
+        issuer-backend-url: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
         type: {{ include "camundaPlatform.authIssuerType" . | quote }}
       {{- end }}
 
-      modeler:
+      hub:
         feature:
           test-mode-enabled: {{ ternary "false" "true" .Values.global.noSecondaryStorage | quote }}
 
@@ -42,8 +41,6 @@ data:
         {{- if or .Values.global.identity.auth.enabled (eq (include "webModeler.authMethod" .) "oidc") }}
         security:
           jwt:
-            issuer:
-              backend-url: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
             audience:
               internal-api: {{ include "webModeler.authClientApiAudience" . | quote }}
               public-api: {{ include "webModeler.authPublicApiAudience" . | quote }}
@@ -52,10 +49,17 @@ data:
         mail:
           {{- $fromAddress := $hub.restapi.mail.fromAddress }}
           {{- $restapiExtraConfig := $hub.restapi.extraConfiguration }}
+          {{- $hasExtraFromAddress := false }}
+          {{- range $prefix := list "hub" "modeler" }}
+            {{- $fromAddressPath := dict "extraConfiguration" $restapiExtraConfig "path" (list "camunda" $prefix "mail" "from-address") }}
+            {{- if or (eq (include "camundaPlatform.extraConfigHasPathInAnyYamlDocument" $fromAddressPath) "true") (eq (include "camundaPlatform.extraConfigHasRawKeyPrefix" $fromAddressPath) "true") }}
+              {{- $hasExtraFromAddress = true }}
+            {{- end }}
+          {{- end }}
           {{- if $fromAddress }}
           from-address: {{ $fromAddress | quote }}
-          {{- else if ne (include "camundaPlatform.extraConfigHasPath" (dict "extraConfiguration" $restapiExtraConfig "path" (list "camunda" "modeler" "mail" "from-address"))) "true" }}
-          from-address: {{ required "The value 'webModeler.restapi.mail.fromAddress' is required (or supply camunda.modeler.mail.from-address via webModeler.restapi.extraConfiguration)" "" | quote }}
+          {{- else if not $hasExtraFromAddress }}
+          from-address: {{ required "The value 'webModeler.restapi.mail.fromAddress' is required (or supply camunda.hub.mail.from-address via webModeler.restapi.extraConfiguration)" "" | quote }}
           {{- end }}
           from-name: {{ $hub.restapi.mail.fromName | quote }}
 

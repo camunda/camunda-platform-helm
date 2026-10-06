@@ -4,6 +4,6 @@ camundaHub:
       - file: mail.yaml
         content: |
           camunda:
-            modeler:
+            hub:
               mail:
                 from-address: migrated@example.com

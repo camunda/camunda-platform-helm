@@ -1,0 +1,14 @@
+# from-address migrated to restapi.extraConfiguration as a .properties file.
+identity:
+  enabled: true
+orchestration:
+  data:
+    secondaryStorage:
+      type: elasticsearch
+webModeler:
+  enabled: true
+  restapi:
+    extraConfiguration:
+      - file: mail.properties
+        content: |
+          camunda.hub.mail.from-address=migrated@example.com

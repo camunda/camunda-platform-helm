@@ -1452,11 +1452,10 @@ webModeler:
     podLabels: {}
 
     ## @extra webModeler.restapi.logging configuration for the restapi logging. This template will be directly included in the webModeler.restapi configuration YAML file
-    ## @param webModeler.restapi.logging.level.io.camunda.modeler (DEPRECATED) https://docs.camunda.io/docs/self-managed/components/modeler/web-modeler/troubleshooting/troubleshoot-zeebe-connection/#how-can-i-debug-log-grpc--zeebe-communication
-    ## @param webModeler.restapi.logging.level.io.grpc (DEPRECATED)
+    ## @extra webModeler.restapi.logging.level.io.camunda.modeler (DEPRECATED) set logging.level.io.camunda.hub via webModeler.restapi.extraConfiguration instead.
+    ## @param webModeler.restapi.logging.level.io.grpc (DEPRECATED) https://docs.camunda.io/docs/self-managed/components/modeler/web-modeler/troubleshooting/troubleshoot-zeebe-connection/#how-can-i-debug-log-grpc--zeebe-communication
     logging:
       level:
-        io.camunda.modeler: INFO
         io.grpc: INFO
 
     ## @param webModeler.restapi.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/components/modeler/web-modeler/configuration/ for more details.

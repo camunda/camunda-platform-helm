@@ -20,10 +20,10 @@ data:
       identity:
         base-url: "http://camunda-platform-test-identity:80"
         issuer: ""
-        issuerBackendUrl: "https://keycloak.example.com:8443/auth/realms/camunda-platform"
+        issuer-backend-url: "https://keycloak.example.com:8443/auth/realms/camunda-platform"
         type: "KEYCLOAK"
 
-      modeler:
+      hub:
         feature:
           test-mode-enabled: "true"
 
@@ -36,8 +36,6 @@ data:
             force-tls: false
         security:
           jwt:
-            issuer:
-              backend-url: "https://keycloak.example.com:8443/auth/realms/camunda-platform"
             audience:
               internal-api: "web-modeler-api"
               public-api: "web-modeler-public-api"
@@ -148,5 +146,4 @@ data:
 
     logging:
       level:
-        io.camunda.modeler: INFO
         io.grpc: INFO

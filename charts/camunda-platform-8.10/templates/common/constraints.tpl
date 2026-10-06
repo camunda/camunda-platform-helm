@@ -892,7 +892,7 @@ Fail with a message if the auth type is set to non-Keycloak and its requirements
 */}}
 {{- if has (include "camundaPlatform.authIssuerType" .) (list "MICROSOFT" "GENERIC") }}
   {{/*
-  TODO: Once refactor the auth issuers, we need to add more constraints here to validate the new auth types. 
+  TODO: Once refactor the auth issuers, we need to add more constraints here to validate the new auth types.
         More details: https://github.com/camunda/camunda-platform-helm/issues/4419
   */}}
 {{- end }}
@@ -1101,7 +1101,7 @@ Usage:
       `
 [camunda][warning]
 DEPRECATION NOTICE: Starting from appVersion 8.7, the Camunda Helm chart will no longer automatically generate passwords for the Identity component.
-Users must provide passwords as Kubernetes secrets. 
+Users must provide passwords as Kubernetes secrets.
 In appVersion 8.6, this warning will appear if all necessary existingSecrets are not set.
 
 The following values inside your values.yaml need to be set but were not:
@@ -1118,7 +1118,7 @@ The following values inside your values.yaml need to be set but were not:
       `
 [camunda][error]
 DEPRECATION NOTICE: Starting from appVersion 8.7, the Camunda Helm chart will no longer automatically generate passwords for the Identity component.
-Users must provide passwords as Kubernetes secrets. 
+Users must provide passwords as Kubernetes secrets.
 
 The following values inside your values.yaml need to be set but were not:
       `
@@ -1855,7 +1855,7 @@ The following values inside your values.yaml need to be set but were not:
   {{- end }}
 
   {{- if eq (include "camundaHub.webModelerEnabled" .) "true" }}
-    {{- $wm := deepCopy .Values.webModeler }}
+    {{- $wm := include "camundaHub.values" . | fromYaml }}
     {{- $wmExtra := "webModeler.restapi.extraConfiguration" }}
     {{ include "camundaPlatform.keyDeprecated" (dict
       "condition" (not (empty $wm.restapi.mail.fromAddress))
@@ -1876,11 +1876,36 @@ The following values inside your values.yaml need to be set but were not:
       "condition" (ne ($wm.restapi.mail.smtpPort | toString) "587")
       "oldName" "webModeler.restapi.mail.smtpPort" "migration" $wmExtra) }}
     {{ include "camundaPlatform.keyDeprecated" (dict
-      "condition" (ne (index $wm.restapi.logging.level "io.camunda.modeler" | toString) "INFO")
+      "condition" (not (empty (index $wm.restapi.logging.level "io.camunda.modeler")))
       "oldName" "webModeler.restapi.logging.level.io.camunda.modeler" "migration" $wmExtra) }}
     {{ include "camundaPlatform.keyDeprecated" (dict
       "condition" (ne (index $wm.restapi.logging.level "io.grpc" | toString) "INFO")
       "oldName" "webModeler.restapi.logging.level.io.grpc" "migration" $wmExtra) }}
+    {{- $wmEnvRenames := dict
+      "RESTAPI_PUSHER_APP_ID" "CAMUNDA_HUB_PUSHER_APPID"
+      "RESTAPI_PUSHER_KEY" "CAMUNDA_HUB_PUSHER_KEY"
+      "RESTAPI_PUSHER_SECRET" "CAMUNDA_HUB_PUSHER_SECRET"
+      "RESTAPI_MAIL_PASSWORD" "SPRING_MAIL_PASSWORD" }}
+    {{- $wmMailSecretSet := eq (include "camundaPlatform.hasSecretConfig" (dict "config" $wm.restapi.mail)) "true" }}
+    {{- range $wmEnv := $wm.restapi.env }}
+      {{- $wmEnvNew := get $wmEnvRenames (toString $wmEnv.name) }}
+      {{- if $wmEnvNew }}
+        {{- $warningMessage := "" }}
+        {{- if and (eq $wmEnvNew "SPRING_MAIL_PASSWORD") (not $wmMailSecretSet) }}
+          {{- $warningMessage = printf "%s %s"
+              "[camunda][warning]"
+              (printf "restapi.env sets the deprecated %q. Rename it to %q; the legacy name will be removed in a future version." $wmEnv.name $wmEnvNew)
+          -}}
+        {{- else }}
+          {{- $warningMessage = printf "%s %s %s"
+              "[camunda][warning]"
+              (printf "restapi.env sets %q, which is ignored because the chart now sets %q." $wmEnv.name $wmEnvNew)
+              (printf "Rename the override to %q, otherwise the chart-managed value is used instead of yours." $wmEnvNew)
+          -}}
+        {{- end }}
+        {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+      {{- end }}
+    {{- end }}
   {{- end }}
 
   {{- $componentExtra := "the consuming component's extraConfiguration" }}
