@@ -25,14 +25,14 @@ webModeler:
   restapi:
     image:
       repository: camunda/hub
-      tag: 8.10.1
-      digest: "sha256:a7840f3b156459ce03231f4cfb4dd1798debac1381a40cb04922febb1bc407f5"
+      tag: 8.10.2
+      digest: "sha256:8d2cd1f76d3b9111a70266a44eca3500741a857156caf7d3a5fb28702799c2b9"
 
   # https://hub.docker.com/r/camunda/hub-websockets/tags
   websockets:
     image:
       repository: camunda/hub-websockets
-      tag: 8.10.1
+      tag: 8.10.2
       digest: "sha256:4392c73b2d43b0287e05147b4606c59f1634bc7ac4c15ea4c86217e523cfced1"
 
 #
