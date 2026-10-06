@@ -399,6 +399,48 @@ func (s *ConfigMapWarningsTemplateTest) TestGlobalIdentityAuthConsoleDeprecation
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
+func (s *ConfigMapWarningsTemplateTest) TestWebModelerRestapiLegacyEnvOverrideWarning() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestLegacyPusherAndMailEnvOverridesTriggerUpgradeWarning",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"webModeler.enabled":                       "true",
+				"webModeler.restapi.mail.fromAddress":      "example@example.com",
+				"identity.enabled":                         "true",
+				"webModeler.restapi.env[0].name":           "RESTAPI_PUSHER_APP_ID",
+				"webModeler.restapi.env[0].value":          "custom",
+				"webModeler.restapi.env[1].name":           "RESTAPI_PUSHER_KEY",
+				"webModeler.restapi.env[1].value":          "custom",
+				"webModeler.restapi.env[2].name":           "RESTAPI_PUSHER_SECRET",
+				"webModeler.restapi.env[2].value":          "custom",
+				"webModeler.restapi.env[3].name":           "RESTAPI_MAIL_PASSWORD",
+				"webModeler.restapi.env[3].value":          "custom",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().True(strings.HasSuffix(configmap.Name, "-warnings"))
+				for oldName, newName := range map[string]string{
+					"RESTAPI_PUSHER_APP_ID": "CAMUNDA_HUB_PUSHER_APPID",
+					"RESTAPI_PUSHER_KEY":    "CAMUNDA_HUB_PUSHER_KEY",
+					"RESTAPI_PUSHER_SECRET": "CAMUNDA_HUB_PUSHER_SECRET",
+					"RESTAPI_MAIL_PASSWORD": "SPRING_MAIL_PASSWORD",
+				} {
+					s.Require().Contains(configmap.Data["warnings"], fmt.Sprintf(
+						"[camunda][warning] webModeler.restapi.env sets %q, "+
+							"which is ignored because the chart now sets %q. "+
+							"Rename the override to %q, otherwise the chart-managed value is used instead of yours.",
+						oldName, newName, newName))
+				}
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
 func (s *ConfigMapWarningsTemplateTest) TestNginxCompatAnnotationsDeprecationWarning() {
 	const warning = "global.compatibility.nginx.renderAnnotations is enabled"
 

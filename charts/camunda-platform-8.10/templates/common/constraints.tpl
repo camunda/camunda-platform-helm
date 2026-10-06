@@ -1875,6 +1875,22 @@ The following values inside your values.yaml need to be set but were not:
     {{ include "camundaPlatform.keyDeprecated" (dict
       "condition" (ne (index $wm.restapi.logging.level "io.grpc" | toString) "INFO")
       "oldName" "webModeler.restapi.logging.level.io.grpc" "migration" $wmExtra) }}
+    {{- $wmEnvRenames := dict
+      "RESTAPI_PUSHER_APP_ID" "CAMUNDA_HUB_PUSHER_APPID"
+      "RESTAPI_PUSHER_KEY" "CAMUNDA_HUB_PUSHER_KEY"
+      "RESTAPI_PUSHER_SECRET" "CAMUNDA_HUB_PUSHER_SECRET"
+      "RESTAPI_MAIL_PASSWORD" "SPRING_MAIL_PASSWORD" }}
+    {{- range $wmEnv := $wm.restapi.env }}
+      {{- $wmEnvNew := get $wmEnvRenames (toString $wmEnv.name) }}
+      {{- if $wmEnvNew }}
+        {{- $warningMessage := printf "%s %s %s"
+            "[camunda][warning]"
+            (printf "webModeler.restapi.env sets %q, which is ignored because the chart now sets %q." $wmEnv.name $wmEnvNew)
+            (printf "Rename the override to %q, otherwise the chart-managed value is used instead of yours." $wmEnvNew)
+        -}}
+        {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+      {{- end }}
+    {{- end }}
   {{- end }}
 
   {{- $componentExtra := "the consuming component's extraConfiguration" }}
