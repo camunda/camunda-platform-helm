@@ -165,7 +165,7 @@ func upgradeInstall(ctx context.Context, o types.Options) error {
 
 	args = appendHelmValueArgs(args, o)
 
-	runCtx, guard := guardedContext(ctx, o, o.Wait)
+	runCtx, guard := guardedContext(ctx, o, o.ReleaseName, o.Wait)
 	defer guard.Stop()
 
 	stderr, runErr := helmRunWithRetry(runCtx, args)
@@ -182,11 +182,11 @@ func upgradeInstall(ctx context.Context, o types.Options) error {
 // guardedContext starts the image pull guard for a waiting Helm run, or returns
 // the context untouched with a no-op guard when the run does not wait (nothing
 // to abort) or the guard is disabled.
-func guardedContext(ctx context.Context, o types.Options, waits bool) (context.Context, *imagePullGuard) {
+func guardedContext(ctx context.Context, o types.Options, release string, waits bool) (context.Context, *imagePullGuard) {
 	if !waits || !imagePullGuardEnabled() {
 		return ctx, noopImagePullGuard()
 	}
-	return startImagePullGuard(ctx, o)
+	return startImagePullGuard(ctx, o, release)
 }
 
 // guardedReason replaces the generic failure reason when the guard is what ended
@@ -242,6 +242,13 @@ var newReadinessClient = func(kubeconfig, kubeContext string) (readinessClient, 
 	return kube.NewClient(kubeconfig, kubeContext)
 }
 
+func podReleaseName(pod corev1.Pod) string {
+	if instance := pod.Labels["app.kubernetes.io/instance"]; instance != "" {
+		return instance
+	}
+	return pod.Labels["release"]
+}
+
 func collectReadinessSummary(o types.Options, release string) string {
 	if o.Namespace == "" || release == "" {
 		return ""
@@ -258,11 +265,7 @@ func collectReadinessSummary(o types.Options, release string) string {
 	}
 	var unready []corev1.Pod
 	for _, pod := range pods.Items {
-		instance := pod.Labels["app.kubernetes.io/instance"]
-		if instance == "" {
-			instance = pod.Labels["release"]
-		}
-		if instance != release || pod.DeletionTimestamp != nil || pod.Status.Phase != corev1.PodRunning {
+		if podReleaseName(pod) != release || pod.DeletionTimestamp != nil || pod.Status.Phase != corev1.PodRunning {
 			continue
 		}
 		for _, container := range pod.Status.ContainerStatuses {
@@ -522,7 +525,7 @@ func deployCompanionChart(ctx context.Context, cc types.CompanionChart, o types.
 	}
 
 	// Companion charts always pass --wait (see the args above), independently of o.Wait.
-	runCtx, guard := guardedContext(ctx, o, true)
+	runCtx, guard := guardedContext(ctx, o, cc.ReleaseName, true)
 	defer guard.Stop()
 
 	stderr, runErr := helmRunWithRetry(runCtx, args)

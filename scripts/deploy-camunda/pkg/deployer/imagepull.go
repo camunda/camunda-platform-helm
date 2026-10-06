@@ -166,7 +166,7 @@ type imagePullGuard struct {
 // watching pods in the release namespace. The returned context is cancelled once
 // a terminal pod failure is confirmed, which kills the helm child process. The
 // parent context is left untouched.
-func startImagePullGuard(ctx context.Context, o types.Options) (context.Context, *imagePullGuard) {
+func startImagePullGuard(ctx context.Context, o types.Options, release string) (context.Context, *imagePullGuard) {
 	guardCtx, cancel := context.WithCancel(ctx)
 	g := &imagePullGuard{cancel: cancel, done: make(chan struct{})}
 
@@ -179,7 +179,7 @@ func startImagePullGuard(ctx context.Context, o types.Options) (context.Context,
 	}
 
 	deps := imagePullWatchDeps{
-		list:      lister.ListPods,
+		list:      releasePods(lister.ListPods, release),
 		events:    lister.ListEvents,
 		sleep:     sleepCtx,
 		interval:  imagePullGuardInterval,
@@ -203,6 +203,27 @@ func startImagePullGuard(ctx context.Context, o types.Options) (context.Context,
 	}()
 
 	return guardCtx, g
+}
+
+// releasePods narrows list to the pods of release. An empty release keeps every
+// pod.
+func releasePods(list func(context.Context, string) (*corev1.PodList, error), release string) func(context.Context, string) (*corev1.PodList, error) {
+	if release == "" {
+		return list
+	}
+	return func(ctx context.Context, namespace string) (*corev1.PodList, error) {
+		pods, err := list(ctx, namespace)
+		if err != nil || pods == nil {
+			return pods, err
+		}
+		owned := &corev1.PodList{}
+		for _, pod := range pods.Items {
+			if podReleaseName(pod) == release {
+				owned.Items = append(owned.Items, pod)
+			}
+		}
+		return owned, nil
+	}
 }
 
 // noopImagePullGuard returns a guard that watches nothing and reports no

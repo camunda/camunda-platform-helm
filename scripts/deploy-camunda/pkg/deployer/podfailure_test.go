@@ -668,6 +668,7 @@ func TestWatchTerminalPodFailure(t *testing.T) {
 func TestUpgradeInstall_AbortsOnUnschedulablePod(t *testing.T) {
 	stuck := scheduledPod("camunda-zeebe-0", corev1.ConditionFalse,
 		corev1.PodReasonUnschedulable, unschedulableMessage)
+	stuck.Labels = map[string]string{"app.kubernetes.io/instance": "integration"}
 
 	origLister := newPodLister
 	newPodLister = func(string, string) (podLister, error) {
