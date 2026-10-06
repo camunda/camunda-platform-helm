@@ -1870,6 +1870,9 @@ The following values inside your values.yaml need to be set but were not:
       "condition" (ne ($wm.restapi.mail.smtpPort | toString) "587")
       "oldName" "webModeler.restapi.mail.smtpPort" "migration" $wmExtra) }}
     {{ include "camundaPlatform.keyDeprecated" (dict
+      "condition" (not (empty (index $wm.restapi.logging.level "io.camunda.modeler")))
+      "oldName" "webModeler.restapi.logging.level.io.camunda.modeler" "migration" $wmExtra) }}
+    {{ include "camundaPlatform.keyDeprecated" (dict
       "condition" (ne (index $wm.restapi.logging.level "io.camunda.hub" | toString) "INFO")
       "oldName" "webModeler.restapi.logging.level.io.camunda.hub" "migration" $wmExtra) }}
     {{ include "camundaPlatform.keyDeprecated" (dict

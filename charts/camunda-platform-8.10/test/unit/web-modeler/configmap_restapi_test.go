@@ -1326,3 +1326,99 @@ func (s *configmapRestAPITemplateTest) TestTestMode() {
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
+
+func (s *configmapRestAPITemplateTest) TestLegacyLoggingLevelKey() {
+	testCases := []struct {
+		name     string
+		values   map[string]string
+		expected map[string]any
+	}{
+		{
+			name:     "defaults",
+			values:   map[string]string{},
+			expected: map[string]any{"io.camunda.hub": "INFO", "io.grpc": "INFO"},
+		},
+		{
+			name:     "legacy key suppresses the default new key",
+			values:   map[string]string{"webModeler.restapi.logging.level.io\\.camunda\\.modeler": "DEBUG"},
+			expected: map[string]any{"io.camunda.modeler": "DEBUG", "io.grpc": "INFO"},
+		},
+		{
+			name: "non-default new key is kept alongside the legacy key",
+			values: map[string]string{
+				"webModeler.restapi.logging.level.io\\.camunda\\.modeler": "DEBUG",
+				"webModeler.restapi.logging.level.io\\.camunda\\.hub":     "TRACE",
+			},
+			expected: map[string]any{"io.camunda.hub": "TRACE", "io.camunda.modeler": "DEBUG", "io.grpc": "INFO"},
+		},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			options := &helm.Options{
+				SetValues:      utils.MergeMaps(maps.Clone(requiredValues), tc.values),
+				KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+			}
+
+			output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+			var configmap corev1.ConfigMap
+			helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+			var application struct {
+				Logging struct {
+					Level map[string]any `yaml:"level"`
+				} `yaml:"logging"`
+			}
+			require.NoError(s.T(), yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &application))
+
+			s.Require().Equal(tc.expected, application.Logging.Level)
+		})
+	}
+}
+
+func (s *configmapRestAPITemplateTest) TestLoggingLevelDeprecationWarnings() {
+	testCases := []struct {
+		name        string
+		values      map[string]string
+		contains    []string
+		notContains []string
+	}{
+		{
+			name:        "defaults emit no logging level warning",
+			values:      map[string]string{},
+			notContains: []string{"webModeler.restapi.logging.level.io.camunda.hub", "webModeler.restapi.logging.level.io.camunda.modeler"},
+		},
+		{
+			name:        "hub level warns",
+			values:      map[string]string{"webModeler.restapi.logging.level.io\\.camunda\\.hub": "DEBUG"},
+			contains:    []string{"webModeler.restapi.logging.level.io.camunda.hub", "webModeler.restapi.extraConfiguration"},
+			notContains: []string{"webModeler.restapi.logging.level.io.camunda.modeler"},
+		},
+		{
+			name:        "modeler level warns",
+			values:      map[string]string{"webModeler.restapi.logging.level.io\\.camunda\\.modeler": "DEBUG"},
+			contains:    []string{"webModeler.restapi.logging.level.io.camunda.modeler", "webModeler.restapi.extraConfiguration"},
+			notContains: []string{"webModeler.restapi.logging.level.io.camunda.hub"},
+		},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			options := &helm.Options{
+				SetValues:      utils.MergeMaps(maps.Clone(requiredValues), tc.values),
+				KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+			}
+
+			output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, []string{"templates/common/configmap-warnings.yaml"})
+			var configmap corev1.ConfigMap
+			helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+			for _, c := range tc.contains {
+				s.Require().Contains(configmap.Data["warnings"], c)
+			}
+			for _, c := range tc.notContains {
+				s.Require().NotContains(configmap.Data["warnings"], c)
+			}
+		})
+	}
+}
