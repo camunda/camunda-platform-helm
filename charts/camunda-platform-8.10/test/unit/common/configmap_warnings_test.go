@@ -404,18 +404,19 @@ func (s *ConfigMapWarningsTemplateTest) TestWebModelerRestapiLegacyEnvOverrideWa
 		{
 			Name: "TestLegacyPusherAndMailEnvOverridesTriggerUpgradeWarning",
 			Values: map[string]string{
-				"orchestration.data.secondaryStorage.type": "elasticsearch",
-				"webModeler.enabled":                       "true",
-				"webModeler.restapi.mail.fromAddress":      "example@example.com",
-				"identity.enabled":                         "true",
-				"webModeler.restapi.env[0].name":           "RESTAPI_PUSHER_APP_ID",
-				"webModeler.restapi.env[0].value":          "custom",
-				"webModeler.restapi.env[1].name":           "RESTAPI_PUSHER_KEY",
-				"webModeler.restapi.env[1].value":          "custom",
-				"webModeler.restapi.env[2].name":           "RESTAPI_PUSHER_SECRET",
-				"webModeler.restapi.env[2].value":          "custom",
-				"webModeler.restapi.env[3].name":           "RESTAPI_MAIL_PASSWORD",
-				"webModeler.restapi.env[3].value":          "custom",
+				"orchestration.data.secondaryStorage.type":    "elasticsearch",
+				"webModeler.enabled":                          "true",
+				"webModeler.restapi.mail.fromAddress":         "example@example.com",
+				"identity.enabled":                            "true",
+				"webModeler.restapi.env[0].name":              "RESTAPI_PUSHER_APP_ID",
+				"webModeler.restapi.env[0].value":             "custom",
+				"webModeler.restapi.env[1].name":              "RESTAPI_PUSHER_KEY",
+				"webModeler.restapi.env[1].value":             "custom",
+				"webModeler.restapi.env[2].name":              "RESTAPI_PUSHER_SECRET",
+				"webModeler.restapi.env[2].value":             "custom",
+				"webModeler.restapi.env[3].name":              "RESTAPI_MAIL_PASSWORD",
+				"webModeler.restapi.env[3].value":             "custom",
+				"webModeler.restapi.mail.secret.inlineSecret": "smtp-password",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().NoError(err)
@@ -429,11 +430,48 @@ func (s *ConfigMapWarningsTemplateTest) TestWebModelerRestapiLegacyEnvOverrideWa
 					"RESTAPI_MAIL_PASSWORD": "SPRING_MAIL_PASSWORD",
 				} {
 					s.Require().Contains(configmap.Data["warnings"], fmt.Sprintf(
-						"[camunda][warning] webModeler.restapi.env sets %q, "+
+						"[camunda][warning] restapi.env sets %q, "+
 							"which is ignored because the chart now sets %q. "+
 							"Rename the override to %q, otherwise the chart-managed value is used instead of yours.",
 						oldName, newName, newName))
 				}
+			},
+		},
+		{
+			Name: "TestLegacyMailPasswordWithoutMailSecretIsOnlyDeprecated",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"webModeler.enabled":                       "true",
+				"webModeler.restapi.mail.fromAddress":      "example@example.com",
+				"identity.enabled":                         "true",
+				"webModeler.restapi.env[0].name":           "RESTAPI_MAIL_PASSWORD",
+				"webModeler.restapi.env[0].value":          "custom",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().Contains(configmap.Data["warnings"],
+					`[camunda][warning] restapi.env sets the deprecated "RESTAPI_MAIL_PASSWORD". Rename it to "SPRING_MAIL_PASSWORD"`)
+				s.Require().NotContains(configmap.Data["warnings"], "which is ignored because the chart now sets \"SPRING_MAIL_PASSWORD\"")
+			},
+		},
+		{
+			Name: "TestLegacyEnvOverrideUnderCamundaHubTriggersWarning",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"camundaHub.enabled":                       "true",
+				"camundaHub.restapi.mail.fromAddress":      "example@example.com",
+				"identity.enabled":                         "true",
+				"camundaHub.restapi.env[0].name":           "RESTAPI_PUSHER_KEY",
+				"camundaHub.restapi.env[0].value":          "custom",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().Contains(configmap.Data["warnings"],
+					`[camunda][warning] restapi.env sets "RESTAPI_PUSHER_KEY", which is ignored because the chart now sets "CAMUNDA_HUB_PUSHER_KEY".`)
 			},
 		},
 	}

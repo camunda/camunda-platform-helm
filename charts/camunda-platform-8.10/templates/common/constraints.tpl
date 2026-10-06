@@ -1849,7 +1849,7 @@ The following values inside your values.yaml need to be set but were not:
   {{- end }}
 
   {{- if eq (include "camundaHub.webModelerEnabled" .) "true" }}
-    {{- $wm := deepCopy .Values.webModeler }}
+    {{- $wm := include "camundaHub.values" . | fromYaml }}
     {{- $wmExtra := "webModeler.restapi.extraConfiguration" }}
     {{ include "camundaPlatform.keyDeprecated" (dict
       "condition" (not (empty $wm.restapi.mail.fromAddress))
@@ -1880,14 +1880,23 @@ The following values inside your values.yaml need to be set but were not:
       "RESTAPI_PUSHER_KEY" "CAMUNDA_HUB_PUSHER_KEY"
       "RESTAPI_PUSHER_SECRET" "CAMUNDA_HUB_PUSHER_SECRET"
       "RESTAPI_MAIL_PASSWORD" "SPRING_MAIL_PASSWORD" }}
+    {{- $wmMailSecretSet := eq (include "camundaPlatform.hasSecretConfig" (dict "config" $wm.restapi.mail)) "true" }}
     {{- range $wmEnv := $wm.restapi.env }}
       {{- $wmEnvNew := get $wmEnvRenames (toString $wmEnv.name) }}
       {{- if $wmEnvNew }}
-        {{- $warningMessage := printf "%s %s %s"
-            "[camunda][warning]"
-            (printf "webModeler.restapi.env sets %q, which is ignored because the chart now sets %q." $wmEnv.name $wmEnvNew)
-            (printf "Rename the override to %q, otherwise the chart-managed value is used instead of yours." $wmEnvNew)
-        -}}
+        {{- $warningMessage := "" }}
+        {{- if and (eq $wmEnvNew "SPRING_MAIL_PASSWORD") (not $wmMailSecretSet) }}
+          {{- $warningMessage = printf "%s %s"
+              "[camunda][warning]"
+              (printf "restapi.env sets the deprecated %q. Rename it to %q; the legacy name will be removed in a future version." $wmEnv.name $wmEnvNew)
+          -}}
+        {{- else }}
+          {{- $warningMessage = printf "%s %s %s"
+              "[camunda][warning]"
+              (printf "restapi.env sets %q, which is ignored because the chart now sets %q." $wmEnv.name $wmEnvNew)
+              (printf "Rename the override to %q, otherwise the chart-managed value is used instead of yours." $wmEnvNew)
+          -}}
+        {{- end }}
         {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
       {{- end }}
     {{- end }}

@@ -1280,22 +1280,6 @@ func (s *configmapRestAPITemplateTest) TestMailFromAddressOptionalForExtraConfig
 			},
 		},
 		{
-			Name: "TestFromAddressMigratedViaExtraConfigurationLegacyPrefix",
-			ValuesFiles: []string{
-				filepath.Join(s.chartPath, "test/unit/web-modeler/testdata/values-mail-from-address-migrated-legacy-prefix.yaml"),
-			},
-			Verifier: func(t *testing.T, output string, err error) {
-				require.NoError(t, err)
-				var configmap corev1.ConfigMap
-				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
-				applicationYaml := configmap.Data["application.yaml"]
-				s.Require().NotContains(applicationYaml, "from-address:",
-					"The from-address must be omitted so the imported extraConfiguration file supplies it")
-				s.Require().Contains(applicationYaml, "optional:file:/home/runner/config/mail.yaml",
-					"The extraConfiguration file must be imported")
-			},
-		},
-		{
 			Name: "TestDeprecatedFromAddressStillRenders",
 			Values: utils.MergeMaps(
 				maps.Clone(requiredValues),
@@ -1312,6 +1296,34 @@ func (s *configmapRestAPITemplateTest) TestMailFromAddressOptionalForExtraConfig
 					"The deprecated key must still render its value when set")
 			},
 		},
+	}
+
+	for _, migrated := range []struct {
+		name         string
+		valuesFile   string
+		importedFile string
+	}{
+		{"LegacyPrefix", "values-mail-from-address-migrated-legacy-prefix.yaml", "mail.yaml"},
+		{"DottedKey", "values-mail-from-address-migrated-dotted.yaml", "mail.yaml"},
+		{"PropertiesFile", "values-mail-from-address-migrated-properties.yaml", "mail.properties"},
+		{"MultiDocumentYaml", "values-mail-from-address-migrated-multidoc.yaml", "mail.yaml"},
+	} {
+		testCases = append(testCases, testhelpers.TestCase{
+			Name: "TestFromAddressMigratedViaExtraConfiguration" + migrated.name,
+			ValuesFiles: []string{
+				filepath.Join(s.chartPath, "test/unit/web-modeler/testdata", migrated.valuesFile),
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				applicationYaml := configmap.Data["application.yaml"]
+				s.Require().NotContains(applicationYaml, "from-address:",
+					"The from-address must be omitted so the imported extraConfiguration file supplies it")
+				s.Require().Contains(applicationYaml, "optional:file:/home/runner/config/"+migrated.importedFile,
+					"The extraConfiguration file must be imported")
+			},
+		})
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
