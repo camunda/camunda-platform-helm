@@ -443,6 +443,7 @@ func clientToken(ctx context.Context, doHTTP func(*http.Request) (*http.Response
 		return "", fmt.Errorf("build token request for %s: %w", clientID, err)
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header["Idempotency-Key"] = nil
 	body, status, err := doRequest(doHTTP, req)
 	if err != nil {
 		return "", fmt.Errorf("request token for %s: %w", clientID, err)
