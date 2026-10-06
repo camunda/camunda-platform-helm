@@ -1,0 +1,7 @@
+script: post-infra-bitnami-keycloak-migration.sh
+description: |
+  Keycloak-only variant of post-infra-bitnami-migration for upgrade scenarios
+  whose search backend is already a companion chart (OpenSearch). Moves the
+  bundled (Bitnami) Keycloak realm onto the companion Keycloak before the chart
+  upgrade to 8.10 and leaves the search data in place, so users keep their
+  Keycloak ids across the upgrade.

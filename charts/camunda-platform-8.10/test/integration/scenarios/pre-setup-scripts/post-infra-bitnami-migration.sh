@@ -87,7 +87,7 @@ export MIGRATE_WEBMODELER=false
 # the bundled Bitnami ES to the companion ES, or post-upgrade users get
 # "you don't have access to this component" in Operate/Tasklist. Use warm
 # reindex (the only automated external-ES path) from the bundled ES.
-export MIGRATE_ELASTICSEARCH=true
+export MIGRATE_ELASTICSEARCH="${MIGRATE_ELASTICSEARCH:-true}"
 export ES_TARGET_MODE=external
 export ES_WARM_REINDEX=true
 export EXTERNAL_ES_HOST=elasticsearch-master
