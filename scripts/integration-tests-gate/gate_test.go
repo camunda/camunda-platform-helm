@@ -36,6 +36,13 @@ type fakeClient struct {
 	jobConclusionsErr       map[int]error
 	rerunQueue              []error
 	rerunCalls              int
+	queue                   []queueResp
+	cancelCalls             int
+}
+
+type queueResp struct {
+	heads []string
+	err   error
 }
 
 type findRunResp struct {
@@ -105,6 +112,20 @@ func (f *fakeClient) Rerun(string) error {
 	e := f.rerunQueue[0]
 	f.rerunQueue = f.rerunQueue[1:]
 	return e
+}
+func (f *fakeClient) Cancel(string) error {
+	f.cancelCalls++
+	return nil
+}
+func (f *fakeClient) MergeQueueHeads(string) ([]string, error) {
+	if len(f.queue) == 0 {
+		f.t.Fatalf("queue exhausted")
+	}
+	r := f.queue[0]
+	if len(f.queue) > 1 {
+		f.queue = f.queue[1:]
+	}
+	return r.heads, r.err
 }
 
 func statusList(statuses ...string) []statusResp {
@@ -576,6 +597,93 @@ func TestRun_MergeGroupUsesHeadSHA(t *testing.T) {
 	g := newTestGate(c)
 	if err := g.Run("merge_group", "", "head_sha"); err != nil {
 		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func newFailedMergeGroupFake(t *testing.T) *fakeClient {
+	return &fakeClient{
+		t:             t,
+		findRunQueue:  []findRunResp{{id: "200"}},
+		runURL:        "url",
+		attemptsQueue: attemptList(1, 2),
+		statusByAttempt: map[int][]statusResp{
+			1: statusList("completed"),
+			2: statusList("completed"),
+		},
+		conclusionByAttempt: map[int]string{1: "failure", 2: "success"},
+	}
+}
+
+func TestRun_MergeGroupLeftQueueIsNotRetried(t *testing.T) {
+	c := newFailedMergeGroupFake(t)
+	c.queue = []queueResp{{heads: []string{"newer_head_sha"}}}
+	err := newTestGate(c).Run("merge_group", "", "head_sha")
+	if !errors.Is(err, ErrNotRetryable) {
+		t.Fatalf("expected ErrNotRetryable, got %v", err)
+	}
+	if c.rerunCalls != 0 {
+		t.Fatalf("expected no rerun, got %d", c.rerunCalls)
+	}
+}
+
+func TestRun_MergeGroupStillQueuedIsRetried(t *testing.T) {
+	c := newFailedMergeGroupFake(t)
+	c.queue = []queueResp{{heads: []string{"other_head_sha", "head_sha"}}}
+	if err := newTestGate(c).Run("merge_group", "", "head_sha"); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if c.rerunCalls != 1 {
+		t.Fatalf("expected 1 rerun, got %d", c.rerunCalls)
+	}
+}
+
+func TestRun_MergeGroupQueueReadErrorStillRetries(t *testing.T) {
+	c := newFailedMergeGroupFake(t)
+	c.queue = []queueResp{{err: errors.New("graphql 502")}}
+	if err := newTestGate(c).Run("merge_group", "", "head_sha"); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if c.rerunCalls != 1 {
+		t.Fatalf("expected 1 rerun, got %d", c.rerunCalls)
+	}
+}
+
+func TestRun_MergeGroupLeavingQueueCancelsRun(t *testing.T) {
+	c := newFailedMergeGroupFake(t)
+	c.statusByAttempt[1] = statusList("in_progress", "in_progress", "completed")
+	c.queue = []queueResp{{heads: []string{"head_sha"}}, {heads: []string{"newer_head_sha"}}}
+	err := newTestGate(c).Run("merge_group", "", "head_sha")
+	if !errors.Is(err, ErrNotRetryable) {
+		t.Fatalf("expected ErrNotRetryable, got %v", err)
+	}
+	if c.cancelCalls != 1 || c.rerunCalls != 0 {
+		t.Fatalf("expected 1 cancel and no rerun, got %d cancels and %d reruns", c.cancelCalls, c.rerunCalls)
+	}
+}
+
+func TestRun_MergeGroupNeverSeenInQueueIsNotCancelled(t *testing.T) {
+	c := newFailedMergeGroupFake(t)
+	c.statusByAttempt[1] = statusList("in_progress", "in_progress", "completed")
+	c.conclusionByAttempt[1] = "success"
+	c.queue = []queueResp{{heads: nil}}
+	if err := newTestGate(c).Run("merge_group", "", "head_sha"); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if c.cancelCalls != 0 {
+		t.Fatalf("expected no cancel, got %d", c.cancelCalls)
+	}
+}
+
+func TestRun_MergeGroupQueueReadErrorWhilePollingDoesNotCancel(t *testing.T) {
+	c := newFailedMergeGroupFake(t)
+	c.statusByAttempt[1] = statusList("in_progress", "in_progress", "completed")
+	c.conclusionByAttempt[1] = "success"
+	c.queue = []queueResp{{heads: []string{"head_sha"}}, {err: errors.New("graphql 502")}}
+	if err := newTestGate(c).Run("merge_group", "", "head_sha"); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if c.cancelCalls != 0 {
+		t.Fatalf("expected no cancel, got %d", c.cancelCalls)
 	}
 }
 
