@@ -1352,15 +1352,15 @@ func (s *configmapRestAPITemplateTest) TestLegacyLoggingLevelKey() {
 		{
 			name:     "defaults",
 			values:   map[string]string{},
-			expected: map[string]any{"io.camunda.hub": "INFO", "io.grpc": "INFO"},
+			expected: map[string]any{"io.grpc": "INFO"},
 		},
 		{
-			name:     "legacy key suppresses the default new key",
+			name:     "legacy key is passed through",
 			values:   map[string]string{"webModeler.restapi.logging.level.io\\.camunda\\.modeler": "DEBUG"},
 			expected: map[string]any{"io.camunda.modeler": "DEBUG", "io.grpc": "INFO"},
 		},
 		{
-			name: "non-default new key is kept alongside the legacy key",
+			name: "new key is kept alongside the legacy key",
 			values: map[string]string{
 				"webModeler.restapi.logging.level.io\\.camunda\\.modeler": "DEBUG",
 				"webModeler.restapi.logging.level.io\\.camunda\\.hub":     "TRACE",
@@ -1402,19 +1402,12 @@ func (s *configmapRestAPITemplateTest) TestLoggingLevelDeprecationWarnings() {
 		{
 			name:        "defaults emit no logging level warning",
 			values:      map[string]string{},
-			notContains: []string{"webModeler.restapi.logging.level.io.camunda.hub", "webModeler.restapi.logging.level.io.camunda.modeler"},
+			notContains: []string{"webModeler.restapi.logging.level.io.camunda"},
 		},
 		{
-			name:        "hub level warns",
-			values:      map[string]string{"webModeler.restapi.logging.level.io\\.camunda\\.hub": "DEBUG"},
-			contains:    []string{"webModeler.restapi.logging.level.io.camunda.hub", "webModeler.restapi.extraConfiguration"},
-			notContains: []string{"webModeler.restapi.logging.level.io.camunda.modeler"},
-		},
-		{
-			name:        "modeler level warns",
-			values:      map[string]string{"webModeler.restapi.logging.level.io\\.camunda\\.modeler": "DEBUG"},
-			contains:    []string{"webModeler.restapi.logging.level.io.camunda.modeler", "webModeler.restapi.extraConfiguration"},
-			notContains: []string{"webModeler.restapi.logging.level.io.camunda.hub"},
+			name:     "modeler level warns",
+			values:   map[string]string{"webModeler.restapi.logging.level.io\\.camunda\\.modeler": "DEBUG"},
+			contains: []string{"webModeler.restapi.logging.level.io.camunda.modeler", "webModeler.restapi.extraConfiguration"},
 		},
 	}
 

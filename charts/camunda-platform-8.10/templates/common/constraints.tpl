@@ -1873,9 +1873,6 @@ The following values inside your values.yaml need to be set but were not:
       "condition" (not (empty (index $wm.restapi.logging.level "io.camunda.modeler")))
       "oldName" "webModeler.restapi.logging.level.io.camunda.modeler" "migration" $wmExtra) }}
     {{ include "camundaPlatform.keyDeprecated" (dict
-      "condition" (ne (index $wm.restapi.logging.level "io.camunda.hub" | toString) "INFO")
-      "oldName" "webModeler.restapi.logging.level.io.camunda.hub" "migration" $wmExtra) }}
-    {{ include "camundaPlatform.keyDeprecated" (dict
       "condition" (ne (index $wm.restapi.logging.level "io.grpc" | toString) "INFO")
       "oldName" "webModeler.restapi.logging.level.io.grpc" "migration" $wmExtra) }}
     {{- $wmEnvRenames := dict

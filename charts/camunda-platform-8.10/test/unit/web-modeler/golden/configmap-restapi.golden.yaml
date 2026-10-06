@@ -146,5 +146,4 @@ data:
 
     logging:
       level:
-        io.camunda.hub: INFO
         io.grpc: INFO

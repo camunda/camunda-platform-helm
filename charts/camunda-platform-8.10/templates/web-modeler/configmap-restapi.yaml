@@ -135,10 +135,7 @@ data:
     {{- end }}
 
     logging:
-{{- with deepCopy $hub.restapi.logging }}
-{{- if and (index (.level | default dict) "io.camunda.modeler") (eq (index .level "io.camunda.hub" | default "INFO" | toString) "INFO") }}
-{{- $_ := unset .level "io.camunda.hub" }}
-{{- end }}
+{{- with $hub.restapi.logging }}
 {{ . | toYaml | indent 6 }}
 {{- end }}
   {{- end }}
