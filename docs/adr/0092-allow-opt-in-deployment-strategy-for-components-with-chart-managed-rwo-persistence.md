@@ -26,15 +26,15 @@ architecture. Under [ADR 0091](0091-adopt-component-extraconfiguration-as-the-st
 values classification this is a legitimate Tier 2 infrastructure value, which ADR 0043's blanket
 removal did not anticipate.
 
-Four of the seven components ADR 0043 covered mount a chart-managed RWO PVC (PVC names below are for
-charts 8.9/8.10; the 8.8 layout differs — see "Applicability by version"):
+Four of the seven components ADR 0043 covered have chart-managed persistence, either a chart-managed RWO
+PVC or a per-pod generic ephemeral volume (the 8.8 layout differs — see "Applicability by version"):
 
-| Component | Chart-managed PVC (8.9/8.10) | Hardcoded strategy (pre-amendment) |
-|---|---|---|
-| Web Modeler restapi | `<release>-webmodeler-data` | `RollingUpdate` |
-| Connectors | `<release>-connectors-data` | `RollingUpdate` |
-| Identity | `<release>-identity-data` | `RollingUpdate` |
-| Optimize | `<release>-optimize-data` | `Recreate` |
+| Component | Chart-managed volume (8.9) | Chart-managed volume (8.10) | Hardcoded strategy (pre-amendment) |
+|---|---|---|---|
+| Web Modeler restapi | Per-pod generic ephemeral volume | Per-pod generic ephemeral volume | `RollingUpdate` |
+| Connectors | `<release>-connectors-data` | Per-pod generic ephemeral volume | `RollingUpdate` |
+| Identity | `<release>-identity-data` | Per-pod generic ephemeral volume | `RollingUpdate` |
+| Optimize | `<release>-optimize-data` | `<release>-optimize-data` | `Recreate` |
 
 The remaining three (Tasklist, Console, Zeebe Gateway / orchestration) mount no chart-managed PVC and
 are unaffected.
@@ -44,17 +44,30 @@ are unaffected.
 The `Multi-Attach` premise requires a chart-managed PVC on a `Deployment`, which only exists in charts
 **8.8 and later**:
 
-- **8.8, 8.9, 8.10** — all four components mount a chart-managed RWO PVC; this amendment applies. Note
+- **8.8, 8.9, 8.10** — all four components have chart-managed persistence; this amendment applies. Note
   layout differences that prevent a copy-paste across versions:
   - **Optimize** uses a single PVC (`<release>-optimize-data`) in 8.9/8.10 but **two** PVCs
     (`<release>-optimize-data-tmp` and `<release>-optimize-data-camunda`) in 8.8.
-  - **Web Modeler** restapi mounts `<release>-webmodeler-data` in all three; 8.10 additionally resolves
+  - **Connectors** and **Identity** mount the shared PVCs (`<release>-connectors-data` and
+    `<release>-identity-data`) in 8.8 and 8.9 but use a per-pod generic ephemeral volume in 8.10 (PR #6522).
+  - **Web Modeler** restapi uses a per-pod generic ephemeral volume as its chart-managed path in all
+    three: PR #6408 for 8.8, PR #6027 for 8.9, and PR #6406 for 8.10. Each pod gets its own PVC, so a
+    surge pod never contends with the outgoing pod and `RollingUpdate` is safe. 8.10 additionally resolves
     its values through the `camundaHub.*` override layer (see constraint 1); in 8.10 those overrides live
     under `camundaHub.persistence.*` after the namespace hoist (PR #6539).
 - **8.7 and earlier** — these components do **not** mount a chart-managed PVC (only the Zeebe
   `StatefulSet` uses `volumeClaimTemplates`, which is not subject to `Deployment`-style `Multi-Attach`
   rollout deadlock). The premise does not exist, so this amendment does **not** apply; ADR 0043 remains
   fully in force there.
+
+The `Recreate` precondition on a per-pod ephemeral path (constraint 5) applies to Web Modeler restapi:
+
+- **8.10** — `Recreate` without both `persistence.enabled: true` and `existingClaim` fails the render
+  with a `[camunda][error]`. This applies to `webModeler.persistence.*` and to the
+  `camundaHub.persistence.*` override (constraint 1).
+- **8.8, 8.9** — `Recreate` with `persistence.enabled: true` and no `existingClaim` renders, and the chart
+  emits a `[camunda][warning]`. `Recreate` without `persistence.enabled: true` fails the render.
+- `RollingUpdate` renders do not change in any version.
 
 ## Decision Drivers
 
@@ -66,6 +79,14 @@ The `Multi-Attach` premise requires a chart-managed PVC on a `Deployment`, which
   globally.
 - **Consistency:** all four PVC-bearing components should converge on one pattern rather than each
   inventing its own.
+- **Backward compatibility of released charts:** Charts 8.8 and 8.9 are released, and their rendering
+  logic must stay backward compatible (`docs/policies/breaking-changes.md`, Breaking Change Policy). A
+  render failure for values that a released chart accepts is a breaking change. Chart 8.10 is an alpha
+  chart, and the policy allows breaking changes between alpha releases
+  (`docs/policies/breaking-changes.md`, Exceptions). The 8.8 and 8.9 warning is the deprecation step that
+  the Deprecation Policy requires: "Deprecate in one minor release, remove in the next major release"
+  (`docs/policies/breaking-changes.md`, Deprecation Policy). The 8.10 chart (15.0.0) is the next major
+  release after the 8.9 chart (14.x), so the 8.10 chart rejects the configuration.
 
 ## Considered Options
 
@@ -74,6 +95,9 @@ The `Multi-Attach` premise requires a chart-managed PVC on a `Deployment`, which
 - **Re-expose a top-level `<component>.deploymentStrategy`** — Rejected. It re-opens the exact
   misconfiguration risk ADR 0043 eliminated (strategy decoupled from any volume), and would apply to
   stateless components too.
+- **Fail the render in 8.8 and 8.9** — Rejected because 8.8 and 8.9 are released charts, and breaking
+  changes are prohibited in all released charts (`docs/policies/breaking-changes.md`, Breaking Change
+  Policy).
 - **Re-expose strategy only under the `persistence` block, gated and enum-validated (chosen)** — The
   knob exists only where a single-attach volume makes it meaningful, with a safe default and validation.
 
@@ -102,6 +126,13 @@ Web Modeler restapi, Connectors, Identity, and Optimize. The following constrain
    remain hardcoded per ADR 0043. This amendment does not reopen strategy configuration for them, and
    adding the knob to a new component requires that component to first gain a chart-managed PVC and a
    documented RWO deadlock case.
+5. **`Recreate` precondition on a per-pod ephemeral path.** Where the chart-managed path of a component
+   is a per-pod generic ephemeral volume, `Recreate` requires `existingClaim`, not `persistence.enabled`
+   alone. In chart 8.10, the render MUST fail with a `[camunda][error]` when `Recreate` is set without
+   both `persistence.enabled: true` and `existingClaim`. In charts 8.8 and 8.9, when `Recreate` is set
+   with `persistence.enabled: true` and no `existingClaim`, the render succeeds and the chart MUST emit a
+   `[camunda][warning]`; when `Recreate` is set without `persistence.enabled: true`, the render MUST
+   fail. `RollingUpdate` renders MUST NOT change in any version (#6862).
 
 ADR 0043's underlying principle — *expose configuration only where users have a legitimate, safe
 choice* — is retained and, for these components, satisfied: the knob is meaningful (RWO vs RWX is a real

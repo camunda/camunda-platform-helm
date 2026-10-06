@@ -367,3 +367,66 @@ func (s *ConfigMapWarningsTemplateTest) TestMultiregionClusterSizeDivisibilityWa
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
+
+func (s *ConfigMapWarningsTemplateTest) TestWebModelerRecreateWithoutExistingClaimWarning() {
+	const warning = "webModeler.persistence.deploymentStrategy=Recreate gives no benefit without webModeler.persistence.existingClaim"
+
+	noWarning := func(t *testing.T, output string, err error) {
+		s.Require().NoError(err)
+		var configmap corev1.ConfigMap
+		helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+		s.Require().NotContains(configmap.Data["warnings"], "webModeler.persistence.deploymentStrategy")
+	}
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "RecreateWithChartManagedPersistenceTriggersWarning",
+			Values: map[string]string{
+				"identity.enabled":                          "true",
+				"webModeler.enabled":                        "true",
+				"webModeler.restapi.mail.fromAddress":       "example@example.com",
+				"webModeler.persistence.enabled":            "true",
+				"webModeler.persistence.deploymentStrategy": "Recreate",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().Contains(configmap.Data["warnings"], warning)
+			},
+		},
+		{
+			Name: "RecreateWithExistingClaimDoesNotTriggerWarning",
+			Values: map[string]string{
+				"identity.enabled":                                              "true",
+				"global.identity.auth.enabled":                                  "true",
+				"global.security.authentication.method":                         "oidc",
+				"connectors.security.authentication.oidc.secret.existingSecret": "foo",
+				"global.identity.auth.issuerBackendUrl":                         "http://keycloak:80/auth/realms/camunda-platform",
+				"global.testDeprecationFlags.existingSecretsMustBeSet":          "warning",
+				"webModeler.enabled":                                            "true",
+				"webModeler.restapi.mail.fromAddress":                           "example@example.com",
+				"webModeler.persistence.enabled":                                "true",
+				"webModeler.persistence.existingClaim":                          "my-existing-pvc",
+				"webModeler.persistence.deploymentStrategy":                     "Recreate",
+			},
+			Verifier: noWarning,
+		},
+		{
+			Name: "RollingUpdateWithChartManagedPersistenceDoesNotTriggerWarning",
+			Values: map[string]string{
+				"identity.enabled":                                              "true",
+				"global.identity.auth.enabled":                                  "true",
+				"global.security.authentication.method":                         "oidc",
+				"connectors.security.authentication.oidc.secret.existingSecret": "foo",
+				"global.identity.auth.issuerBackendUrl":                         "http://keycloak:80/auth/realms/camunda-platform",
+				"global.testDeprecationFlags.existingSecretsMustBeSet":          "warning",
+				"webModeler.enabled":                                            "true",
+				"webModeler.restapi.mail.fromAddress":                           "example@example.com",
+				"webModeler.persistence.enabled":                                "true",
+			},
+			Verifier: noWarning,
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}

@@ -472,6 +472,18 @@ The following values inside your values.yaml need to be set but were not:
     -}}
     {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
   {{- end }}
+
+  {{- if and (eq (include "camundaPlatform.webModelerEnabled" .) "true")
+             (eq (.Values.webModeler.persistence.deploymentStrategy | default "RollingUpdate") "Recreate")
+             .Values.webModeler.persistence.enabled
+             (not .Values.webModeler.persistence.existingClaim) }}
+    {{- $warningMessage := printf "%s %s %s"
+        "[camunda][warning]"
+        "webModeler.persistence.deploymentStrategy=Recreate gives no benefit without webModeler.persistence.existingClaim and adds downtime on each upgrade."
+        "Set RollingUpdate or set webModeler.persistence.existingClaim. The Camunda 8.10 Helm chart rejects this configuration."
+    -}}
+    {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+  {{- end }}
 {{- end }}
 
 {{/*

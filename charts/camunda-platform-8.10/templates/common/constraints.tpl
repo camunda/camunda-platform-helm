@@ -941,6 +941,12 @@ Fail with a message if Web Modeler is enabled but management Identity is not ena
   {{- fail "[camunda][error] The pod label camunda.io/upgrade-phase is reserved for Camunda Hub upgrade lifecycle traffic isolation and cannot be overridden." }}
 {{- end }}
 
+{{- if and (eq (include "camundaHub.webModelerEnabled" .) "true")
+           (eq ($hub.persistence.deploymentStrategy | default "RollingUpdate") "Recreate")
+           (not (and $hub.persistence.enabled $hub.persistence.existingClaim)) }}
+  {{- fail "[camunda][error] webModeler.persistence.deploymentStrategy (or camundaHub.persistence.deploymentStrategy)=Recreate requires webModeler.persistence.enabled=true and webModeler.persistence.existingClaim (or camundaHub.persistence.enabled=true and camundaHub.persistence.existingClaim); otherwise use RollingUpdate." }}
+{{- end }}
+
 {{- if and (eq (include "camundaPlatform.connectorsEnabled" .) "true") (eq (include "connectors.hasAppIntegrations" .) "true") }}
   {{- $appIntegrations := .Values.connectors.appIntegrations }}
   {{- $oauthParts := list }}
