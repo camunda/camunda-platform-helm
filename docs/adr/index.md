@@ -99,5 +99,4 @@
 | 95 | [Adopt release roles for multi-cluster deployment topology](0095-adopt-release-roles-for-multi-cluster-deployment-topology.md) |
 | 96 | [Support Helm CLI v3 and v4 for chart 15.x (8.10), and restrict version-gated Helm built-ins](0096-require-helm-v4-baseline-for-chart-15x-and-restrict-version-gated-helm-builtins.md) |
 | 97 | [Narrow document-store configuration to its verified consumers and separate it from ambient cloud credentials](0097-narrow-document-store-configuration-to-verified-consumers.md) |
-| 98 | [Backport the orchestration topology role to supported charts](0098-backport-orchestration-topology-role-to-supported-charts.md) |
 | 99 | [Support zone-aware broker migration through coexisting StatefulSets](0099-support-zone-aware-broker-migration-through-coexisting-statefulsets.md) |
