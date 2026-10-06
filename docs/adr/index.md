@@ -43,7 +43,7 @@
 | 40 | [Introduce a standalone alpha release channel for the Camunda Platform Helm chart](0040-introduce-a-standalone-alpha-release-channel-for-the.md) |
 | 41 | [Use Public Docker Images for Web Modeler Components](0041-use-public-docker-images-for-web-modeler-components.md) |
 | 42 | [Remove global image tag in favor of component-level image versioning](0042-remove-global-image-tag-in-favor-of-component-level-image.md) |
-| 43 | [Hardcode deployment strategy for all components and remove user-configurable strategy option](0043-hardcode-deployment-strategy-for-all-components-and-remove.md) |
+| 43 | [Hardcode deployment strategy, with an opt-in for components with chart-managed persistence](0043-hardcode-deployment-strategy-for-all-components-and-remove.md) |
 | 44 | [Replace imperative post-render script with declarative Helm values overlay for OpenShift compatibility](0044-replace-imperative-post-render-script-with-declarative-helm.md) |
 | 45 | [Adopt Helm-hook-based secrets auto-generation with install-time immutability](0045-adopt-helm-hook-based-secrets-auto-generation-with-install.md) |
 | 46 | [Migrate Bitnami Helm chart dependencies from HTTP repository to OCI registry](0046-migrate-bitnami-helm-chart-dependencies-from-http.md) |
@@ -91,7 +91,6 @@
 | 89 | [Integrate Azure Blob Storage as a document handling backend in the Helm chart](0089-integrate-azure-blob-storage-as-a-document-handling-backend.md) |
 | 90 | [Adopt Docusaurus as the dedicated documentation platform for Helm chart project knowledge](0090-adopt-docusaurus-as-the-dedicated-documentation-platform.md) |
 | 91 | [Standardize `<component>.extraConfiguration` as the Application Configuration Mechanism](0091-adopt-component-extraconfiguration-as-the-standard-application-configuration-mechanism.md) |
-| 92 | [Allow opt-in deployment strategy for components with chart-managed RWO persistence](0092-allow-opt-in-deployment-strategy-for-components-with-chart-managed-rwo-persistence.md) |
 | 93 | [Adopt a composable CI scenario registry for the per-version integration test matrix](0093-adopt-composable-ci-scenario-registry-for-per-version-test-matrix.md) |
 | 94 | [Remove bundled Bitnami subcharts from the 8.10 chart and migrate CI to companion charts](0094-remove-bundled-bitnami-subcharts-from-the-8-10-chart.md) |
 | 95 | [Adopt release roles for multi-cluster deployment topology](0095-adopt-release-roles-for-multi-cluster-deployment-topology.md) |
