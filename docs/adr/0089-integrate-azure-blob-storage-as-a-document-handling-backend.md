@@ -38,7 +38,7 @@ Azure Blob Storage is a first-class document handling storage backend in the Hel
 2. The chart MUST render the connection string at the path that the pinned application line binds: `DOCUMENT_STORE_<ID>_CONNECTION_STRING` in 8.9, with the uppercased `global.documentStore.activeStoreId` as `<ID>`, and `camunda.document.azure.<storeId>.connection-string` in 8.10.
 3. The connection string keeps the `inlineSecret` and `existingSecret` values interface in both chart versions.
 
-The shared document-store rules of [ADR 0052](0052-centralize-document-store-configuration-via-shared.md) also apply, including verification against the pinned image before wiring.
+The shared document-store rules of [ADR 0052](0052-centralize-document-store-configuration-via-shared.md) also apply.
 
 ### Positive Consequences
 

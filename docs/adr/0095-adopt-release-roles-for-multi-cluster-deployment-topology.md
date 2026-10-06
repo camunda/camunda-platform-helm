@@ -42,10 +42,10 @@ boundary so it is not relitigated per feature.
 The full contract applies to the Camunda 8.10 Helm chart and later chart versions that retain the
 Hub/workload topology.
 
-Camunda Hub 8.10 can manage Orchestration Clusters 8.7 through 8.10. Charts 8.7, 8.8, and 8.9
-support only the `orchestration` role, so that a workload release on those charts can connect to an
-8.10 Hub release. Hub mode and the cluster inventory stay in 8.10, because Camunda Hub does not exist
-in the earlier charts. Constraint 17 defines this backport.
+Camunda Hub 8.10 can manage Orchestration Clusters 8.7 through 8.10, so charts 8.7, 8.8, and 8.9
+carry the subset of the contract that a workload release needs to connect to an 8.10 Hub release
+(constraint 17). Hub mode and the cluster inventory stay in 8.10, because Camunda Hub does not exist
+in the earlier charts.
 
 The `optimize` role and the Physical Tenant constraints below apply from the 8.10 chart, where
 Physical Tenants first ship.
@@ -164,12 +164,10 @@ The following constraints are normative:
     isolation. Constraint 9 already separates their storage, and storage isolation MUST NOT be read
     as implying authorization isolation either.
 17. **Charts 8.7 through 8.9.** These charts MUST support only the `combined` and `orchestration`
-    roles, with `combined` as the default that preserves existing rendering. They MUST NOT support
-    the `hub` role or `global.topology.clusters`. An orchestration release on these charts MUST
-    disable its local Management Identity and MUST provide a reachable `global.identity.service.url`
-    for the 8.10 Hub release. It MUST keep its version-specific workload components: the unified
-    Orchestration Cluster in 8.8 and 8.9, and Zeebe, Zeebe Gateway, Operate, Tasklist, Connectors,
-    and Optimize in 8.7. Hub inventory for an 8.7 release MUST use the legacy Operate, Tasklist, and
+    roles. An orchestration release on these charts MUST provide a reachable
+    `global.identity.service.url` for the 8.10 Hub release. It MUST keep its version-specific
+    workload components: the unified Orchestration Cluster in 8.8 and 8.9, and Zeebe, Zeebe Gateway,
+    Operate, Tasklist, Connectors, and Optimize in 8.7. Hub inventory for an 8.7 release MUST use the legacy Operate, Tasklist, and
     Zeebe service endpoints and MUST NOT publish an Orchestration Admin component. CI MUST test one
     8.10 Hub release against 8.10, 8.9, 8.8, and 8.7 orchestration releases, each deployed from its
     own chart and values layers.
