@@ -1,6 +1,6 @@
 # Adopt release roles for multi-cluster deployment topology
 
-- Status: proposed
+- Status: accepted
 - Date: 2026-07-29
 - Decision-makers: Distribution team, Management Identity owners, Camunda Hub owners, Optimize owners
 

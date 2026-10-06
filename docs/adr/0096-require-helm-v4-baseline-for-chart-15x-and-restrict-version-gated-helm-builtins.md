@@ -1,6 +1,6 @@
 # Support Helm CLI v3 and v4 for chart 15.x (8.10), and restrict version-gated Helm built-ins
 
-- Status: proposed
+- Status: accepted
 - Date: 2026-08-18
 - Decision-makers: Immanuel Monma
 
