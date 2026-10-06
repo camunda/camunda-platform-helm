@@ -1,7 +1,7 @@
 # Imperative title — e.g., "Adopt X as the standard Y mechanism"
 
 <!--
-  MADR template adapted for this repo. See ADR 0089–0092 for examples.
+  MADR template adapted for this repo. See ADR 0089–0091 for examples.
   Process and required-table: docs/maintainer-guide.md.
   Status values: proposed, accepted, superseded by [ADR NNNN](NNNN-slug.md).
   Remove this comment and any unused sections before submitting.

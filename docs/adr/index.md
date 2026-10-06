@@ -30,7 +30,6 @@
 | 26 | [Hoist Identity authentication secrets to the parent chart to enable multi-namespace deployment](0026-hoist-identity-authentication-secrets-to-the-parent-chart.md) |
 | 27 | [Centralize auth configuration through a shared Identity ConfigMap rather than per-component variables](0027-centralize-auth-configuration-through-a-shared-identity.md) |
 | 28 | [Switch Connectors component to Identity-based authentication configuration](0028-switch-connectors-component-to-identity-based.md) |
-| 29 | [Integrate Console as a first-class component in the Camunda Platform Helm chart](0029-integrate-console-as-a-first-class-component-in-the-camunda.md) |
 | 30 | [Support OIDC as an alternative identity provider to Keycloak in the Camunda platform Helm chart](0030-support-oidc-as-an-alternative-identity-provider-to.md) |
 | 31 | [Promote Identity from subchart to top-level template directory for structural consistency](0031-promote-identity-from-subchart-to-top-level-template.md) |
 | 32 | [Split Zeebe Gateway ingress into separate REST and gRPC resources to support multi-protocol exposure](0032-split-zeebe-gateway-ingress-into-separate-rest-and-grpc.md) |
@@ -44,7 +43,7 @@
 | 40 | [Introduce a standalone alpha release channel for the Camunda Platform Helm chart](0040-introduce-a-standalone-alpha-release-channel-for-the.md) |
 | 41 | [Use Public Docker Images for Web Modeler Components](0041-use-public-docker-images-for-web-modeler-components.md) |
 | 42 | [Remove global image tag in favor of component-level image versioning](0042-remove-global-image-tag-in-favor-of-component-level-image.md) |
-| 43 | [Hardcode deployment strategy for all components and remove user-configurable strategy option](0043-hardcode-deployment-strategy-for-all-components-and-remove.md) |
+| 43 | [Hardcode deployment strategy, with an opt-in for components with chart-managed persistence](0043-hardcode-deployment-strategy-for-all-components-and-remove.md) |
 | 44 | [Replace imperative post-render script with declarative Helm values overlay for OpenShift compatibility](0044-replace-imperative-post-render-script-with-declarative-helm.md) |
 | 45 | [Adopt Helm-hook-based secrets auto-generation with install-time immutability](0045-adopt-helm-hook-based-secrets-auto-generation-with-install.md) |
 | 46 | [Migrate Bitnami Helm chart dependencies from HTTP repository to OCI registry](0046-migrate-bitnami-helm-chart-dependencies-from-http.md) |
@@ -61,7 +60,6 @@
 | 57 | [Support Core Identity OIDC as the authentication mechanism for Camunda 8.8 components](0057-support-core-identity-oidc-as-the-authentication-mechanism.md) |
 | 58 | [Co-locate Playwright E2E tests with versioned Helm charts for PR-level integration validation](0058-co-locate-playwright-e2e-tests-with-versioned-helm-charts.md) |
 | 59 | [Introduce Identity Migration as a Dedicated Helm Job Separate from the Identity Deployment](0059-introduce-identity-migration-as-a-dedicated-helm-job.md) |
-| 60 | [Introduce a dedicated Identity Migration Job as a separate Helm component (Phase 2)](0060-introduce-a-dedicated-identity-migration-job-as-a-separate.md) |
 | 61 | [Introduce a unified configuration mechanism for Camunda Platform core components](0061-introduce-a-unified-configuration-mechanism-for-camunda.md) |
 | 62 | [Introduce Process Migration as a Dedicated Kubernetes Job with Separate ConfigMap](0062-introduce-process-migration-as-a-dedicated-kubernetes-job.md) |
 | 63 | [Internalize integration test values within the Helm chart repository to eliminate cross-repo push dependency](0063-internalize-integration-test-values-within-the-helm-chart.md) |
@@ -93,11 +91,8 @@
 | 89 | [Integrate Azure Blob Storage as a document handling backend in the Helm chart](0089-integrate-azure-blob-storage-as-a-document-handling-backend.md) |
 | 90 | [Adopt Docusaurus as the dedicated documentation platform for Helm chart project knowledge](0090-adopt-docusaurus-as-the-dedicated-documentation-platform.md) |
 | 91 | [Standardize `<component>.extraConfiguration` as the Application Configuration Mechanism](0091-adopt-component-extraconfiguration-as-the-standard-application-configuration-mechanism.md) |
-| 92 | [Allow opt-in deployment strategy for components with chart-managed RWO persistence](0092-allow-opt-in-deployment-strategy-for-components-with-chart-managed-rwo-persistence.md) |
 | 93 | [Adopt a composable CI scenario registry for the per-version integration test matrix](0093-adopt-composable-ci-scenario-registry-for-per-version-test-matrix.md) |
 | 94 | [Remove bundled Bitnami subcharts from the 8.10 chart and migrate CI to companion charts](0094-remove-bundled-bitnami-subcharts-from-the-8-10-chart.md) |
 | 95 | [Adopt release roles for multi-cluster deployment topology](0095-adopt-release-roles-for-multi-cluster-deployment-topology.md) |
 | 96 | [Support Helm CLI v3 and v4 for chart 15.x (8.10), and restrict version-gated Helm built-ins](0096-require-helm-v4-baseline-for-chart-15x-and-restrict-version-gated-helm-builtins.md) |
-| 97 | [Narrow document-store configuration to its verified consumers and separate it from ambient cloud credentials](0097-narrow-document-store-configuration-to-verified-consumers.md) |
-| 98 | [Backport the orchestration topology role to supported charts](0098-backport-orchestration-topology-role-to-supported-charts.md) |
 | 99 | [Support zone-aware broker migration through coexisting StatefulSets](0099-support-zone-aware-broker-migration-through-coexisting-statefulsets.md) |
