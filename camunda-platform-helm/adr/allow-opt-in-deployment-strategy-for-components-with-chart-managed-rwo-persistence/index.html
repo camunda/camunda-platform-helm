@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">Allow opt-in deployment strategy for components with chart-managed RWO persistence | Camunda Helm Charts</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:image" content="https://helm.camunda.io/camunda-platform-helm/img/camunda-logo.svg"><meta data-rh="true" name="twitter:image" content="https://helm.camunda.io/camunda-platform-helm/img/camunda-logo.svg"><meta data-rh="true" property="og:url" content="https://helm.camunda.io/camunda-platform-helm/adr/allow-opt-in-deployment-strategy-for-components-with-chart-managed-rwo-persistence"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Allow opt-in deployment strategy for components with chart-managed RWO persistence | Camunda Helm Charts"><meta data-rh="true" name="description" content="- Status: accepted"><meta data-rh="true" property="og:description" content="- Status: accepted"><link data-rh="true" rel="icon" href="/camunda-platform-helm/img/camunda-logo.svg"><link data-rh="true" rel="canonical" href="https://helm.camunda.io/camunda-platform-helm/adr/allow-opt-in-deployment-strategy-for-components-with-chart-managed-rwo-persistence"><link data-rh="true" rel="alternate" href="https://helm.camunda.io/camunda-platform-helm/adr/allow-opt-in-deployment-strategy-for-components-with-chart-managed-rwo-persistence" hreflang="en"><link data-rh="true" rel="alternate" href="https://helm.camunda.io/camunda-platform-helm/adr/allow-opt-in-deployment-strategy-for-components-with-chart-managed-rwo-persistence" hreflang="x-default"><link rel="stylesheet" href="/camunda-platform-helm/assets/css/styles.3f6cd398.css">
-<script src="/camunda-platform-helm/assets/js/runtime~main.e11e0875.js" defer="defer"></script>
-<script src="/camunda-platform-helm/assets/js/main.19b5e9c4.js" defer="defer"></script>
+<script src="/camunda-platform-helm/assets/js/runtime~main.38965609.js" defer="defer"></script>
+<script src="/camunda-platform-helm/assets/js/main.f9c9d2da.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -35,21 +35,25 @@ backing storage class supports <code>ReadWriteOnce</code> or <code>ReadWriteMany
 architecture. Under <a class="" href="/camunda-platform-helm/adr/adopt-component-extraconfiguration-as-the-standard-application-configuration-mechanism">ADR 0091</a>&#x27;s
 values classification this is a legitimate Tier 2 infrastructure value, which ADR 0043&#x27;s blanket
 removal did not anticipate.</p>
-<p>Four of the seven components ADR 0043 covered mount a chart-managed RWO PVC (PVC names below are for
-charts 8.9/8.10; the 8.8 layout differs — see &quot;Applicability by version&quot;):</p>
-<table><thead><tr><th>Component</th><th>Chart-managed PVC (8.9/8.10)</th><th>Hardcoded strategy (pre-amendment)</th></tr></thead><tbody><tr><td>Web Modeler restapi</td><td><code>&lt;release&gt;-webmodeler-data</code></td><td><code>RollingUpdate</code></td></tr><tr><td>Connectors</td><td><code>&lt;release&gt;-connectors-data</code></td><td><code>RollingUpdate</code></td></tr><tr><td>Identity</td><td><code>&lt;release&gt;-identity-data</code></td><td><code>RollingUpdate</code></td></tr><tr><td>Optimize</td><td><code>&lt;release&gt;-optimize-data</code></td><td><code>Recreate</code></td></tr></tbody></table>
+<p>Four of the seven components ADR 0043 covered have chart-managed persistence, either a chart-managed RWO
+PVC or a per-pod generic ephemeral volume (the 8.8 layout differs — see &quot;Applicability by version&quot;):</p>
+<table><thead><tr><th>Component</th><th>Chart-managed volume (8.9)</th><th>Chart-managed volume (8.10)</th><th>Hardcoded strategy (pre-amendment)</th></tr></thead><tbody><tr><td>Web Modeler restapi</td><td>Per-pod generic ephemeral volume</td><td>Per-pod generic ephemeral volume</td><td><code>RollingUpdate</code></td></tr><tr><td>Connectors</td><td><code>&lt;release&gt;-connectors-data</code></td><td>Per-pod generic ephemeral volume</td><td><code>RollingUpdate</code></td></tr><tr><td>Identity</td><td><code>&lt;release&gt;-identity-data</code></td><td>Per-pod generic ephemeral volume</td><td><code>RollingUpdate</code></td></tr><tr><td>Optimize</td><td><code>&lt;release&gt;-optimize-data</code></td><td><code>&lt;release&gt;-optimize-data</code></td><td><code>Recreate</code></td></tr></tbody></table>
 <p>The remaining three (Tasklist, Console, Zeebe Gateway / orchestration) mount no chart-managed PVC and
 are unaffected.</p>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="applicability-by-version">Applicability by version<a href="#applicability-by-version" class="hash-link" aria-label="Direct link to Applicability by version" title="Direct link to Applicability by version" translate="no">​</a></h3>
 <p>The <code>Multi-Attach</code> premise requires a chart-managed PVC on a <code>Deployment</code>, which only exists in charts
 <strong>8.8 and later</strong>:</p>
 <ul>
-<li class=""><strong>8.8, 8.9, 8.10</strong> — all four components mount a chart-managed RWO PVC; this amendment applies. Note
+<li class=""><strong>8.8, 8.9, 8.10</strong> — all four components have chart-managed persistence; this amendment applies. Note
 layout differences that prevent a copy-paste across versions:<!-- -->
 <ul>
 <li class=""><strong>Optimize</strong> uses a single PVC (<code>&lt;release&gt;-optimize-data</code>) in 8.9/8.10 but <strong>two</strong> PVCs
 (<code>&lt;release&gt;-optimize-data-tmp</code> and <code>&lt;release&gt;-optimize-data-camunda</code>) in 8.8.</li>
-<li class=""><strong>Web Modeler</strong> restapi mounts <code>&lt;release&gt;-webmodeler-data</code> in all three; 8.10 additionally resolves
+<li class=""><strong>Connectors</strong> and <strong>Identity</strong> mount the shared PVCs (<code>&lt;release&gt;-connectors-data</code> and
+<code>&lt;release&gt;-identity-data</code>) in 8.8 and 8.9 but use a per-pod generic ephemeral volume in 8.10 (PR #6522).</li>
+<li class=""><strong>Web Modeler</strong> restapi uses a per-pod generic ephemeral volume as its chart-managed path in all
+three: PR #6408 for 8.8, PR #6027 for 8.9, and PR #6406 for 8.10. Each pod gets its own PVC, so a
+surge pod never contends with the outgoing pod and <code>RollingUpdate</code> is safe. 8.10 additionally resolves
 its values through the <code>camundaHub.*</code> override layer (see constraint 1); in 8.10 those overrides live
 under <code>camundaHub.persistence.*</code> after the namespace hoist (PR #6539).</li>
 </ul>
@@ -58,6 +62,15 @@ under <code>camundaHub.persistence.*</code> after the namespace hoist (PR #6539)
 <code>StatefulSet</code> uses <code>volumeClaimTemplates</code>, which is not subject to <code>Deployment</code>-style <code>Multi-Attach</code>
 rollout deadlock). The premise does not exist, so this amendment does <strong>not</strong> apply; ADR 0043 remains
 fully in force there.</li>
+</ul>
+<p>The <code>Recreate</code> precondition on a per-pod ephemeral path (constraint 5) applies to Web Modeler restapi:</p>
+<ul>
+<li class=""><strong>8.10</strong> — <code>Recreate</code> without both <code>persistence.enabled: true</code> and <code>existingClaim</code> fails the render
+with a <code>[camunda][error]</code>. This applies to <code>webModeler.persistence.*</code> and to the
+<code>camundaHub.persistence.*</code> override (constraint 1).</li>
+<li class=""><strong>8.8, 8.9</strong> — <code>Recreate</code> with <code>persistence.enabled: true</code> and no <code>existingClaim</code> renders, and the chart
+emits a <code>[camunda][warning]</code>. <code>Recreate</code> without <code>persistence.enabled: true</code> fails the render.</li>
+<li class=""><code>RollingUpdate</code> renders do not change in any version.</li>
 </ul>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="decision-drivers">Decision Drivers<a href="#decision-drivers" class="hash-link" aria-label="Direct link to Decision Drivers" title="Direct link to Decision Drivers" translate="no">​</a></h2>
 <ul>
@@ -69,6 +82,14 @@ load-balancer-fronted service causing surprise downtime — must remain structur
 globally.</li>
 <li class=""><strong>Consistency:</strong> all four PVC-bearing components should converge on one pattern rather than each
 inventing its own.</li>
+<li class=""><strong>Backward compatibility of released charts:</strong> Charts 8.8 and 8.9 are released, and their rendering
+logic must stay backward compatible (<code>docs/policies/breaking-changes.md</code>, Breaking Change Policy). A
+render failure for values that a released chart accepts is a breaking change. Chart 8.10 is an alpha
+chart, and the policy allows breaking changes between alpha releases
+(<code>docs/policies/breaking-changes.md</code>, Exceptions). The 8.8 and 8.9 warning is the deprecation step that
+the Deprecation Policy requires: &quot;Deprecate in one minor release, remove in the next major release&quot;
+(<code>docs/policies/breaking-changes.md</code>, Deprecation Policy). The 8.10 chart (15.0.0) is the next major
+release after the 8.9 chart (14.x), so the 8.10 chart rejects the configuration.</li>
 </ul>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="considered-options">Considered Options<a href="#considered-options" class="hash-link" aria-label="Direct link to Considered Options" title="Direct link to Considered Options" translate="no">​</a></h2>
 <ul>
@@ -77,6 +98,9 @@ Optimize was handled, and it penalizes RWX users with unnecessary downtime on ev
 <li class=""><strong>Re-expose a top-level <code>&lt;component&gt;.deploymentStrategy</code></strong> — Rejected. It re-opens the exact
 misconfiguration risk ADR 0043 eliminated (strategy decoupled from any volume), and would apply to
 stateless components too.</li>
+<li class=""><strong>Fail the render in 8.8 and 8.9</strong> — Rejected because 8.8 and 8.9 are released charts, and breaking
+changes are prohibited in all released charts (<code>docs/policies/breaking-changes.md</code>, Breaking Change
+Policy).</li>
 <li class=""><strong>Re-expose strategy only under the <code>persistence</code> block, gated and enum-validated (chosen)</strong> — The
 knob exists only where a single-attach volume makes it meaningful, with a safe default and validation.</li>
 </ul>
@@ -103,6 +127,13 @@ behavior; RWX users opt into <code>RollingUpdate</code>.</li>
 remain hardcoded per ADR 0043. This amendment does not reopen strategy configuration for them, and
 adding the knob to a new component requires that component to first gain a chart-managed PVC and a
 documented RWO deadlock case.</li>
+<li class=""><strong><code>Recreate</code> precondition on a per-pod ephemeral path.</strong> Where the chart-managed path of a component
+is a per-pod generic ephemeral volume, <code>Recreate</code> requires <code>existingClaim</code>, not <code>persistence.enabled</code>
+alone. In chart 8.10, the render MUST fail with a <code>[camunda][error]</code> when <code>Recreate</code> is set without
+both <code>persistence.enabled: true</code> and <code>existingClaim</code>. In charts 8.8 and 8.9, when <code>Recreate</code> is set
+with <code>persistence.enabled: true</code> and no <code>existingClaim</code>, the render succeeds and the chart MUST emit a
+<code>[camunda][warning]</code>; when <code>Recreate</code> is set without <code>persistence.enabled: true</code>, the render MUST
+fail. <code>RollingUpdate</code> renders MUST NOT change in any version (#6862).</li>
 </ol>
 <p>ADR 0043&#x27;s underlying principle — <em>expose configuration only where users have a legitimate, safe
 choice</em> — is retained and, for these components, satisfied: the knob is meaningful (RWO vs RWX is a real
