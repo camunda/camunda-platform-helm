@@ -781,6 +781,17 @@ func (s *ConfigmapTemplateTest) TestOIDCAudiencesIncludeConsoleOnlyWhenEffective
 			Verifier: s.verifyOIDCAudiences("orchestration", "orchestration-api", "console-api"),
 		},
 		{
+			Name: "TestApplicationYamlShouldContainConfiguredConsoleAudience",
+			Values: map[string]string{
+				"global.identity.auth.enabled":                 "true",
+				"identity.enabled":                             "true",
+				"orchestration.security.authentication.method": "oidc",
+				"console.enabled":                              "true",
+				"global.identity.auth.console.audience":        "custom-console-api",
+			},
+			Verifier: s.verifyOIDCAudiences("orchestration", "orchestration-api", "custom-console-api"),
+		},
+		{
 			Name: "TestApplicationYamlShouldNotContainConsoleAudienceWhenConsoleDisabled",
 			Values: map[string]string{
 				"global.identity.auth.enabled":                 "true",
