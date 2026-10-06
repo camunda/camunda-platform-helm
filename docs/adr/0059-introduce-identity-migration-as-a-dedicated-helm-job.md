@@ -19,19 +19,25 @@ The Camunda 8.8 platform requires identity data migration (Phase 1) as part of t
 
 - **Init container on the Identity Deployment** — rejected because a failing migration would cause the entire deployment to enter CrashLoopBackOff, obscuring the root cause and blocking the runtime pod from being inspectable.
 - **Embedding migration in Identity application startup** — rejected because it couples migration execution to every pod replica start, risks concurrent migration runs, and makes rollback of the application independent of migration state impossible.
+- **Helm pre-upgrade hook on existing templates** — rejected because hook lifecycle management (weight ordering, deletion policies) becomes fragile across multi-component upgrades.
 - **Standalone Job (chosen)** — provides clear lifecycle, single-execution semantics, and separation from the runtime deployment.
 
 ## Decision Outcome
 
-Identity migration was introduced as a dedicated Kubernetes Job (`identity-migration/job.yaml`) with its own helpers, ConfigMap, and values-driven configuration. The Identity deployment and core helpers were updated to reference shared configuration, ensuring the migration Job and Identity Deployment agree on connection parameters without duplicating secrets or environment wiring.
+Identity migration was introduced as a dedicated `identity-migration` chart component: a Kubernetes Job (`identity-migration/job.yaml`) with its own directory, helpers, ConfigMap, and values-driven configuration. The Identity deployment and core helpers were updated to reference shared configuration, ensuring the migration Job and Identity Deployment agree on connection parameters without duplicating secrets or environment wiring.
 
 ### Positive Consequences
 
 - Migration failures surface as failed Jobs with clear status, independent of the Identity runtime health.
 - The Identity Deployment only starts once the migration is confirmed complete, preventing serving on an inconsistent schema.
 - Future migration phases can extend the Job template without touching the Identity Deployment manifest.
+- Operators can set migration resources (CPU and memory limits, backoff policies) independently of the Identity runtime.
 
 ### Negative Consequences
 
 - Adds a new template surface area (helpers, ConfigMap, Job) that must be maintained in lockstep with Identity schema changes across chart versions.
 - Operators must now monitor an additional Job resource during upgrades, increasing operational awareness requirements.
+
+## Changelog
+
+- 2025-07-24 — [#3830](https://github.com/camunda/camunda-platform-helm/pull/3830) — Move the migration Job into its own `identity-migration` component directory (was ADR 0060).

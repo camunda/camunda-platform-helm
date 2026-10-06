@@ -30,7 +30,6 @@
 | 26 | [Hoist Identity authentication secrets to the parent chart to enable multi-namespace deployment](0026-hoist-identity-authentication-secrets-to-the-parent-chart.md) |
 | 27 | [Centralize auth configuration through a shared Identity ConfigMap rather than per-component variables](0027-centralize-auth-configuration-through-a-shared-identity.md) |
 | 28 | [Switch Connectors component to Identity-based authentication configuration](0028-switch-connectors-component-to-identity-based.md) |
-| 29 | [Integrate Console as a first-class component in the Camunda Platform Helm chart](0029-integrate-console-as-a-first-class-component-in-the-camunda.md) |
 | 30 | [Support OIDC as an alternative identity provider to Keycloak in the Camunda platform Helm chart](0030-support-oidc-as-an-alternative-identity-provider-to.md) |
 | 31 | [Promote Identity from subchart to top-level template directory for structural consistency](0031-promote-identity-from-subchart-to-top-level-template.md) |
 | 32 | [Split Zeebe Gateway ingress into separate REST and gRPC resources to support multi-protocol exposure](0032-split-zeebe-gateway-ingress-into-separate-rest-and-grpc.md) |
@@ -61,7 +60,6 @@
 | 57 | [Support Core Identity OIDC as the authentication mechanism for Camunda 8.8 components](0057-support-core-identity-oidc-as-the-authentication-mechanism.md) |
 | 58 | [Co-locate Playwright E2E tests with versioned Helm charts for PR-level integration validation](0058-co-locate-playwright-e2e-tests-with-versioned-helm-charts.md) |
 | 59 | [Introduce Identity Migration as a Dedicated Helm Job Separate from the Identity Deployment](0059-introduce-identity-migration-as-a-dedicated-helm-job.md) |
-| 60 | [Introduce a dedicated Identity Migration Job as a separate Helm component (Phase 2)](0060-introduce-a-dedicated-identity-migration-job-as-a-separate.md) |
 | 61 | [Introduce a unified configuration mechanism for Camunda Platform core components](0061-introduce-a-unified-configuration-mechanism-for-camunda.md) |
 | 62 | [Introduce Process Migration as a Dedicated Kubernetes Job with Separate ConfigMap](0062-introduce-process-migration-as-a-dedicated-kubernetes-job.md) |
 | 63 | [Internalize integration test values within the Helm chart repository to eliminate cross-repo push dependency](0063-internalize-integration-test-values-within-the-helm-chart.md) |
