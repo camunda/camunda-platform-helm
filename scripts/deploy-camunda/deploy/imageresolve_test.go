@@ -72,6 +72,13 @@ func TestResolveImages(t *testing.T) {
 		{name: "allow-digest-shadow keeps the pin", later: "orchestration: {image: {registry: mirror.example.com}}", allowShadow: true, want: map[string]string{"orchestration": "mirror.example.com/camunda/camunda@sha256:orchestration"}},
 		{name: "empty tag is rejected", later: "orchestration: {image: {registry: registry.camunda.cloud, repository: team-camunda/camunda, tag: ''}}", wantErr: "orchestration: "},
 		{name: "null tag is rejected", later: "connectors: {image: {repository: team-camunda/connectors-bundle, tag: null}}", wantErr: "connectors: "},
+		{name: "global registry change without tag is rejected", later: "global: {image: {registry: harbor.example.com}}", wantErr: "orchestration: "},
+		{name: "shared Web Modeler registry change without tag is rejected", later: "webModeler: {image: {registry: harbor.example.com}}", wantErr: "webModeler.restapi: "},
+		{name: "blank digest does not bypass the tag check", later: "orchestration: {image: {registry: mirror.example.com, digest: ''}}", wantErr: "changes registry/repository without a tag"},
+		{name: "empty tag and digest are rejected", later: "orchestration: {image: {tag: '', digest: ''}}", wantErr: "orchestration: "},
+		{name: "blank digest clears the pin", later: "orchestration: {image: {digest: ''}}", want: map[string]string{"orchestration": "camunda/camunda:8.10.0"}},
+		{name: "Camunda Hub tag replaces the legacy pin", later: "camundaHub: {restapi: {image: {tag: snapshot-a1}}}", want: map[string]string{"webModeler.restapi": "camunda/hub:snapshot-a1", "camundaHub.restapi": "camunda/hub:snapshot-a1"}},
+		{name: "Camunda Hub wins over Web Modeler in one layer", later: "camundaHub: {restapi: {image: {tag: hub}}}\nwebModeler: {restapi: {image: {tag: legacy}}}", want: map[string]string{"webModeler.restapi": "camunda/hub:hub", "camundaHub.restapi": "camunda/hub:hub"}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			dir := t.TempDir()
@@ -100,6 +107,25 @@ func TestResolveImages(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestResolveImagesOverrideBeatsCamundaHub(t *testing.T) {
+	dir := t.TempDir()
+	chain := []string{
+		writeTempYAML(t, dir, "values-digest.yaml", pinnedOverlay),
+		writeTempYAML(t, dir, "hub.yaml", "camundaHub: {restapi: {image: {repository: camunda/hub, tag: 8.10.1}}}"),
+		writeTempYAML(t, dir, "values-image-overrides.yaml", "webModeler: {restapi: {image: {registry: registry.camunda.cloud, repository: team-hub/hub, tag: snapshot-a1, digest: ''}}}"),
+	}
+	path, err := resolveImages(chain, 1, false, dir)
+	if err != nil {
+		t.Fatalf("resolveImages(): %v", err)
+	}
+	resolved := readYAMLMap(t, path)
+	for _, component := range []string{"webModeler.restapi", "camundaHub.restapi"} {
+		if got, want := imageRef(imageAt(t, resolved, component)), "registry.camunda.cloud/team-hub/hub:snapshot-a1"; got != want {
+			t.Errorf("%s = %q, want %q", component, got, want)
+		}
 	}
 }
 

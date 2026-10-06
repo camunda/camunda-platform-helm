@@ -52,48 +52,68 @@ func resolveImages(chain []string, firstScenarioLayer int, allowDigestShadow boo
 	images := map[string]map[string]any{}
 	sources := map[string]string{}
 	pins := map[string]string{}
+	hubPaths := map[string]string{}
 	var problems []string
 	for i, file := range chain {
 		doc, err := loadValuesDoc(file)
 		if err != nil {
 			return "", fmt.Errorf("reading values %q: %w", file, err)
 		}
-		walkImageBlocks(doc, func(path string, img map[string]any) {
-			digest, hasDigest := img["digest"]
-			if tag, hasTag := img["tag"]; hasTag && isBlankScalar(tag) && !hasDigest && i >= firstScenarioLayer {
-				problems = append(problems, fmt.Sprintf("%s: %s sets an empty tag and no digest; set image.tag or image.digest", path, file))
-				return
-			}
-			resolved := images[path]
-			if resolved == nil {
-				resolved = map[string]any{}
-				images[path] = resolved
-			}
-			moved := false
-			for _, key := range []string{"registry", "repository", "tag"} {
-				if v, ok := img[key]; ok {
-					moved = moved || scalar(v) != scalar(resolved[key])
-					resolved[key] = v
+		pinned := map[string][3]string{}
+		for path := range pins {
+			pinned[path] = effectiveCoordinates(images, path)
+		}
+		tagged := map[string]bool{}
+		unpinned := map[string]bool{}
+		for _, hubPass := range []bool{false, true} {
+			walkImageBlocks(doc, func(path string, img map[string]any) {
+				canonical, isHub := canonicalImagePath(path)
+				if isHub != hubPass {
+					return
 				}
-			}
-			if moved || hasDigest {
-				sources[path] = file
-			}
-			switch {
-			case hasDigest:
-				resolved["digest"] = digest
-				pins[path] = file
-				if isBlankScalar(digest) {
-					delete(pins, path)
+				digest, hasDigestKey := img["digest"]
+				hasDigest := hasDigestKey && !isBlankScalar(digest)
+				if tag, hasTag := img["tag"]; hasTag && isBlankScalar(tag) && !hasDigest && i >= firstScenarioLayer {
+					problems = append(problems, fmt.Sprintf("%s: %s sets an empty tag and no digest; set image.tag or image.digest", path, file))
+					return
 				}
-			case !moved || pins[path] == "":
-			case !isBlankScalar(img["tag"]):
-				resolved["digest"] = nil
+				if isHub {
+					hubPaths[canonical] = path
+				}
+				resolved := images[canonical]
+				if resolved == nil {
+					resolved = map[string]any{}
+					images[canonical] = resolved
+				}
+				moved := false
+				for _, key := range []string{"registry", "repository", "tag"} {
+					if v, ok := img[key]; ok {
+						moved = moved || scalar(v) != scalar(resolved[key])
+						resolved[key] = v
+					}
+				}
+				if moved || hasDigest {
+					sources[canonical] = file
+				}
+				tagged[canonical] = tagged[canonical] || !isBlankScalar(img["tag"])
+				unpinned[canonical] = unpinned[canonical] || hasDigestKey && !hasDigest
+				if hasDigest {
+					resolved["digest"] = digest
+					pins[canonical] = file
+				}
+			})
+		}
+		for path, was := range pinned {
+			switch now := effectiveCoordinates(images, path); {
+			case pins[path] == file, now == was && !unpinned[path]:
+			case now == was || tagged[path] || now[2] != was[2]:
+				images[path]["digest"] = nil
 				delete(pins, path)
+				sources[path] = file
 			case !allowDigestShadow:
 				problems = append(problems, fmt.Sprintf("%s: %s changes registry/repository without a tag, so the digest from %s would follow it; set image.tag or image.digest, or pass --allow-digest-shadow", path, file, pins[path]))
 			}
-		})
+		}
 	}
 	if len(problems) > 0 {
 		sort.Strings(problems)
@@ -105,6 +125,9 @@ func resolveImages(chain []string, firstScenarioLayer int, allowDigestShadow boo
 	for path, resolved := range images {
 		if sources[path] != "" {
 			setImage(out, path, resolved)
+			if hub := hubPaths[path]; hub != "" {
+				setImage(out, hub, resolved)
+			}
 			refs = append(refs, fmt.Sprintf("%s=%s (%s)", path, imageRef(resolved), filepath.Base(sources[path])))
 		}
 	}
@@ -161,6 +184,29 @@ func parseImageRef(ref string) map[string]any {
 	}
 	img["repository"] = name
 	return img
+}
+
+func canonicalImagePath(path string) (string, bool) {
+	if rest, ok := strings.CutPrefix(path, "camundaHub"); ok && (rest == "" || strings.HasPrefix(rest, ".")) {
+		return "webModeler" + rest, true
+	}
+	return path, false
+}
+
+func effectiveCoordinates(images map[string]map[string]any, path string) [3]string {
+	lineage := []string{path, "global"}
+	if strings.HasPrefix(path, "webModeler.") {
+		lineage = []string{path, "webModeler", "global"}
+	}
+	var coordinates [3]string
+	for i, key := range []string{"registry", "repository", "tag"} {
+		for _, p := range lineage {
+			if coordinates[i] = scalar(images[p][key]); coordinates[i] != "" {
+				break
+			}
+		}
+	}
+	return coordinates
 }
 
 // setImage stores img as the image block of the dotted component path in doc.
