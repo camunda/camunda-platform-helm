@@ -3,6 +3,7 @@
 - Status: accepted
 - Date: 2026-03-17
 - Decision-makers: Balázs
+- Supersedes: [ADR 0074](0074-externalize-elasticsearch-and-keycloak-as-shared-ci.md)
 
 ## Context and Problem Statement
 
