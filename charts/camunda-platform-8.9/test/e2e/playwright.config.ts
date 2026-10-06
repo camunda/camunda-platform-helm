@@ -13,10 +13,7 @@ export default defineConfig(
   makeShadowConfig({
     version: "SM-8.9",
     includeSetupProject: true,
-    extraTestIgnore: [
-      "**/optimize-api-tests.spec.{ts,js}",
-      "**/topology-orchestration-smoke.spec.{ts,js}",
-    ],
+    extraTestIgnore: ["**/topology-orchestration-smoke.spec.{ts,js}"],
     fullyParallel: true,
     retries: 2,
     timeout: 10 * 60 * 1000,
