@@ -49,9 +49,11 @@ data:
         mail:
           {{- $fromAddress := $hub.restapi.mail.fromAddress }}
           {{- $restapiExtraConfig := $hub.restapi.extraConfiguration }}
+          {{- $hasHubFromAddress := include "camundaPlatform.extraConfigHasPath" (dict "extraConfiguration" $restapiExtraConfig "path" (list "camunda" "hub" "mail" "from-address")) }}
+          {{- $hasLegacyFromAddress := include "camundaPlatform.extraConfigHasPath" (dict "extraConfiguration" $restapiExtraConfig "path" (list "camunda" "modeler" "mail" "from-address")) }}
           {{- if $fromAddress }}
           from-address: {{ $fromAddress | quote }}
-          {{- else if ne (include "camundaPlatform.extraConfigHasPath" (dict "extraConfiguration" $restapiExtraConfig "path" (list "camunda" "hub" "mail" "from-address"))) "true" }}
+          {{- else if and (ne $hasHubFromAddress "true") (ne $hasLegacyFromAddress "true") }}
           from-address: {{ required "The value 'webModeler.restapi.mail.fromAddress' is required (or supply camunda.hub.mail.from-address via webModeler.restapi.extraConfiguration)" "" | quote }}
           {{- end }}
           from-name: {{ $hub.restapi.mail.fromName | quote }}

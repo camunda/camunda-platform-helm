@@ -1280,6 +1280,22 @@ func (s *configmapRestAPITemplateTest) TestMailFromAddressOptionalForExtraConfig
 			},
 		},
 		{
+			Name: "TestFromAddressMigratedViaExtraConfigurationLegacyPrefix",
+			ValuesFiles: []string{
+				filepath.Join(s.chartPath, "test/unit/web-modeler/testdata/values-mail-from-address-migrated-legacy-prefix.yaml"),
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				applicationYaml := configmap.Data["application.yaml"]
+				s.Require().NotContains(applicationYaml, "from-address:",
+					"The from-address must be omitted so the imported extraConfiguration file supplies it")
+				s.Require().Contains(applicationYaml, "optional:file:/home/runner/config/mail.yaml",
+					"The extraConfiguration file must be imported")
+			},
+		},
+		{
 			Name: "TestDeprecatedFromAddressStillRenders",
 			Values: utils.MergeMaps(
 				maps.Clone(requiredValues),
