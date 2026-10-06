@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">Agent Instructions — docs/ | Camunda Helm Charts</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:image" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7468/img/camunda-logo.svg"><meta data-rh="true" name="twitter:image" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7468/img/camunda-logo.svg"><meta data-rh="true" property="og:url" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7468/AGENTS"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Agent Instructions — docs/ | Camunda Helm Charts"><meta data-rh="true" name="description" content="Applies on top of root AGENTS.md. Active when working inside docs/."><meta data-rh="true" property="og:description" content="Applies on top of root AGENTS.md. Active when working inside docs/."><link data-rh="true" rel="icon" href="/camunda-platform-helm/pr-preview/pr-7468/img/camunda-logo.svg"><link data-rh="true" rel="canonical" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7468/AGENTS"><link data-rh="true" rel="alternate" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7468/AGENTS" hreflang="en"><link data-rh="true" rel="alternate" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7468/AGENTS" hreflang="x-default"><link rel="stylesheet" href="/camunda-platform-helm/pr-preview/pr-7468/assets/css/styles.3f6cd398.css">
-<script src="/camunda-platform-helm/pr-preview/pr-7468/assets/js/runtime~main.47c208d5.js" defer="defer"></script>
-<script src="/camunda-platform-helm/pr-preview/pr-7468/assets/js/main.8cc0daa2.js" defer="defer"></script>
+<script src="/camunda-platform-helm/pr-preview/pr-7468/assets/js/runtime~main.012172d6.js" defer="defer"></script>
+<script src="/camunda-platform-helm/pr-preview/pr-7468/assets/js/main.16a5577f.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -18,34 +18,22 @@
 Read the linked ADR instead. To list all statuses, run <code>grep &quot;^- Status:&quot; docs/adr/0*.md</code>.</p>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="writing-or-editing-an-adr">Writing or editing an ADR<a href="#writing-or-editing-an-adr" class="hash-link" aria-label="Direct link to Writing or editing an ADR" title="Direct link to Writing or editing an ADR" translate="no">​</a></h2>
 <ol>
-<li class=""><strong>Process</strong>: <code>docs/maintainer-guide.md</code> → &quot;Architecture Decision Records&quot; is
-the single source for when an ADR is required, the required-table, and the
-announce/approve/implement sequence. Read it first.</li>
-<li class=""><strong>Structure</strong>: copy <code>docs/adr/TEMPLATE.md</code>. Match the layout, do not invent.</li>
+<li class=""><strong>Rules</strong>: <code>docs/maintainer-guide.md</code> → &quot;Architecture Decision Records&quot; is
+the single source for when an ADR is required, what it contains, when to
+amend it in place or supersede it, and the review and approval sequence.
+Read it first.</li>
+<li class=""><strong>Structure</strong>: copy <code>docs/adr/TEMPLATE.md</code>. Match the layout, do not invent.
+The template shows the <code>Changelog</code> line format.</li>
 <li class=""><strong>Numbering / filename</strong>: next free 4-digit ID; <code>NNNN-short-kebab-desc.md</code>.</li>
 <li class=""><strong>Index</strong>: add a row to <code>docs/adr/index.md</code>; title matches the file&#x27;s H1.</li>
-<li class=""><strong>Content</strong>: write the decision, not the implementation. Do not reference
-files by line number. Put PR references only in the <code>Changelog</code> section.</li>
-<li class=""><strong>Amend in place</strong>: when constraints or conclusions change, edit the ADR.
-Do not create a new ADR to amend it. Write the body as the current decision,
-without history. Add one line to the <code>Changelog</code> section at the end of the
-ADR: <code>- YYYY-MM-DD — [#NNNN](PR URL) — What changed.</code> Create the section if
-it does not exist. Do not add a line for typo or format fixes.</li>
-<li class=""><strong>Supersede</strong>: create a new ADR only when a new decision replaces the ADR
-completely. Add <code>Supersedes:</code> to the new ADR. Set the status of the earlier
-ADR to <code>superseded by [ADR NNNN](NNNN-slug.md)</code>.</li>
 <li class=""><strong>Scope</strong>: if the decision applies to a subset of chart versions or
 components, state it in <code>Context and Problem Statement</code> under an
 <code>Applicability by version</code> subsection.</li>
 </ol>
 <p>If a user requests an ADR for a change that clearly does not warrant one (per
 the maintainer-guide table), ask before drafting.</p>
-<p>Agents may draft or edit an ADR only when a human explicitly asks. Every ADR change
-must be reviewed and approved by human maintainers and affected stakeholders before
-acceptance; agent-generated text is never approval. Write ADRs for durable architectural
-decisions and long-lived constraints, not transient implementation details or tactical fixes.</p>
 <p>If you notice rationale that would otherwise become a &quot;why&quot; code comment, surface it
-to the human as a candidate ADR. Don&#x27;t create or edit an ADR without that explicit request.</p>
+to the human as a candidate ADR.</p>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="pr-title-for-adr-changes">PR title for ADR changes<a href="#pr-title-for-adr-changes" class="hash-link" aria-label="Direct link to PR title for ADR changes" title="Direct link to PR title for ADR changes" translate="no">​</a></h2>
 <p>Follow root <code>AGENTS.md</code> → &quot;PR title type: CI-enforced constraint&quot;.</p>
 <ul>

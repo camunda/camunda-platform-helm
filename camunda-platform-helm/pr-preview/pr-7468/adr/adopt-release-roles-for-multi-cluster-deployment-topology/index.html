@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">Adopt release roles for multi-cluster deployment topology | Camunda Helm Charts</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:image" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7468/img/camunda-logo.svg"><meta data-rh="true" name="twitter:image" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7468/img/camunda-logo.svg"><meta data-rh="true" property="og:url" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7468/adr/adopt-release-roles-for-multi-cluster-deployment-topology"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Adopt release roles for multi-cluster deployment topology | Camunda Helm Charts"><meta data-rh="true" name="description" content="- Status: accepted"><meta data-rh="true" property="og:description" content="- Status: accepted"><link data-rh="true" rel="icon" href="/camunda-platform-helm/pr-preview/pr-7468/img/camunda-logo.svg"><link data-rh="true" rel="canonical" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7468/adr/adopt-release-roles-for-multi-cluster-deployment-topology"><link data-rh="true" rel="alternate" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7468/adr/adopt-release-roles-for-multi-cluster-deployment-topology" hreflang="en"><link data-rh="true" rel="alternate" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7468/adr/adopt-release-roles-for-multi-cluster-deployment-topology" hreflang="x-default"><link rel="stylesheet" href="/camunda-platform-helm/pr-preview/pr-7468/assets/css/styles.3f6cd398.css">
-<script src="/camunda-platform-helm/pr-preview/pr-7468/assets/js/runtime~main.47c208d5.js" defer="defer"></script>
-<script src="/camunda-platform-helm/pr-preview/pr-7468/assets/js/main.8cc0daa2.js" defer="defer"></script>
+<script src="/camunda-platform-helm/pr-preview/pr-7468/assets/js/runtime~main.012172d6.js" defer="defer"></script>
+<script src="/camunda-platform-helm/pr-preview/pr-7468/assets/js/main.16a5577f.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -47,10 +47,10 @@ boundary so it is not relitigated per feature.</p>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="applicability-by-version">Applicability by version<a href="#applicability-by-version" class="hash-link" aria-label="Direct link to Applicability by version" title="Direct link to Applicability by version" translate="no">​</a></h3>
 <p>The full contract applies to the Camunda 8.10 Helm chart and later chart versions that retain the
 Hub/workload topology.</p>
-<p>Camunda Hub 8.10 can manage Orchestration Clusters 8.7 through 8.10. Charts 8.7, 8.8, and 8.9
-support only the <code>orchestration</code> role, so that a workload release on those charts can connect to an
-8.10 Hub release. Hub mode and the cluster inventory stay in 8.10, because Camunda Hub does not exist
-in the earlier charts. Constraint 17 defines this backport.</p>
+<p>Camunda Hub 8.10 can manage Orchestration Clusters 8.7 through 8.10, so charts 8.7, 8.8, and 8.9
+carry the subset of the contract that a workload release needs to connect to an 8.10 Hub release
+(constraint 17). Hub mode and the cluster inventory stay in 8.10, because Camunda Hub does not exist
+in the earlier charts.</p>
 <p>The <code>optimize</code> role and the Physical Tenant constraints below apply from the 8.10 chart, where
 Physical Tenants first ship.</p>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="decision-drivers">Decision Drivers<a href="#decision-drivers" class="hash-link" aria-label="Direct link to Decision Drivers" title="Direct link to Decision Drivers" translate="no">​</a></h2>
@@ -197,12 +197,10 @@ as implying authorization isolation either.</p>
 </li>
 <li class="">
 <p><strong>Charts 8.7 through 8.9.</strong> These charts MUST support only the <code>combined</code> and <code>orchestration</code>
-roles, with <code>combined</code> as the default that preserves existing rendering. They MUST NOT support
-the <code>hub</code> role or <code>global.topology.clusters</code>. An orchestration release on these charts MUST
-disable its local Management Identity and MUST provide a reachable <code>global.identity.service.url</code>
-for the 8.10 Hub release. It MUST keep its version-specific workload components: the unified
-Orchestration Cluster in 8.8 and 8.9, and Zeebe, Zeebe Gateway, Operate, Tasklist, Connectors,
-and Optimize in 8.7. Hub inventory for an 8.7 release MUST use the legacy Operate, Tasklist, and
+roles. An orchestration release on these charts MUST provide a reachable
+<code>global.identity.service.url</code> for the 8.10 Hub release. It MUST keep its version-specific
+workload components: the unified Orchestration Cluster in 8.8 and 8.9, and Zeebe, Zeebe Gateway,
+Operate, Tasklist, Connectors, and Optimize in 8.7. Hub inventory for an 8.7 release MUST use the legacy Operate, Tasklist, and
 Zeebe service endpoints and MUST NOT publish an Orchestration Admin component. CI MUST test one
 8.10 Hub release against 8.10, 8.9, 8.8, and 8.7 orchestration releases, each deployed from its
 own chart and values layers.</p>
