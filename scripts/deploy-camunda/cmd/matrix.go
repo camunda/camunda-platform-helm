@@ -1446,7 +1446,9 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 	// orchestration release itself exposes (orchestration.serviceName in
 	// templates/orchestration/_helpers.tpl), on the gRPC (26500) and REST
 	// (8080) ports from orchestration.service.{grpcPort,httpPort}.
-	addTopologyIngressHosts(crossRefEnv, opts, platform, contexts[hubIdx], entry.Topology.Releases, contexts)
+	if err := addTopologyIngressHosts(crossRefEnv, opts, platform, contexts[hubIdx], entry.Topology.Releases, contexts); err != nil {
+		return fmt.Errorf("topology entry %s/%s: %w", entry.Version, entry.Scenario, err)
+	}
 	for _, i := range orchestrationIndices {
 		token := matrix.TopologyEnvToken(entry.Topology.Releases[i].NamespaceSuffix)
 		crossRefEnv[token+"_NAMESPACE"] = contexts[i].Namespace
@@ -1790,14 +1792,15 @@ func topologyReleaseHostKey(role, namespaceSuffix string, orchestrationCount int
 	return "HUB_HOST"
 }
 
-func addTopologyIngressHosts(crossRefEnv map[string]string, opts matrix.RunOptions, platform string, hubCtx *deploy.ScenarioContext, releases []matrix.TopologyRelease, contexts []*deploy.ScenarioContext) {
+func addTopologyIngressHosts(crossRefEnv map[string]string, opts matrix.RunOptions, platform string, hubCtx *deploy.ScenarioContext, releases []matrix.TopologyRelease, contexts []*deploy.ScenarioContext) error {
 	orchestrationCount := 0
 	for _, release := range releases {
 		if release.Role == "orchestration" {
 			orchestrationCount++
 		}
 	}
-	if sharedHost := extractHelmSetValue(opts.ExtraHelmSets, "global.host"); sharedHost != "" && orchestrationCount <= 1 {
+	sharedHost := extractHelmSetValue(opts.ExtraHelmSets, "global.host")
+	if sharedHost != "" && orchestrationCount <= 1 {
 		crossRefEnv["HUB_HOST"] = sharedHost
 		for _, release := range releases {
 			if release.Role == "orchestration" {
@@ -1805,12 +1808,15 @@ func addTopologyIngressHosts(crossRefEnv map[string]string, opts matrix.RunOptio
 				crossRefEnv["ORCH_HOST"] = sharedHost
 			}
 		}
-		return
+		return nil
 	}
 
 	baseDomain := matrix.ResolveIngressBaseDomain(opts, platform)
 	if baseDomain == "" {
-		return
+		if sharedHost != "" {
+			return fmt.Errorf("global.host=%s is shared, but this topology has %d orchestration releases that each need their own host; set an ingress base domain instead", sharedHost, orchestrationCount)
+		}
+		return nil
 	}
 	crossRefEnv["HUB_HOST"] = (&config.IngressFlags{
 		IngressSubdomain:  hubCtx.Namespace,
@@ -1829,6 +1835,7 @@ func addTopologyIngressHosts(crossRefEnv map[string]string, opts matrix.RunOptio
 			crossRefEnv["ORCH_HOST"] = host
 		}
 	}
+	return nil
 }
 
 // topologyDeployOrder returns release indices in a depends-on-respecting order:

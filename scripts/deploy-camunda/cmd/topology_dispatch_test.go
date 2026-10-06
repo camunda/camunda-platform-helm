@@ -391,6 +391,30 @@ func TestAddTopologyIngressHosts_DerivesEveryOrchestrationHost(t *testing.T) {
 	}
 }
 
+func TestAddTopologyIngressHosts_RejectsSharedHostForMultipleOrchestrations(t *testing.T) {
+	releases := testTopologyReleases()
+	contexts := []*deploy.ScenarioContext{
+		{Namespace: "matrix-810-mns-hub"},
+		{Namespace: "matrix-810-mns-orcha"},
+		{Namespace: "matrix-810-mns-orchb"},
+	}
+	opts := matrix.RunOptions{ExtraHelmSets: []string{"global.host=abc123-mns.ci.example.com"}}
+
+	err := addTopologyIngressHosts(map[string]string{}, opts, "gke", contexts[0], releases, contexts)
+	if err == nil || !strings.Contains(err.Error(), "global.host") {
+		t.Fatalf("expected a global.host error for a multi-orchestration topology, got %v", err)
+	}
+
+	opts.IngressBaseDomain = "ci.example.com"
+	env := map[string]string{}
+	if err := addTopologyIngressHosts(env, opts, "gke", contexts[0], releases, contexts); err != nil {
+		t.Fatalf("a base domain must derive per-release hosts, got %v", err)
+	}
+	if env["HUB_HOST"] == "" || env["ORCHA_HOST"] == "" || env["ORCHB_HOST"] == "" {
+		t.Errorf("hosts not derived: %v", env)
+	}
+}
+
 func TestBuildTopologyReleaseEnv_SelectsLocalOrchestrationReferences(t *testing.T) {
 	shared := map[string]string{
 		"ORCHA_NAMESPACE":  "ns-orcha",
@@ -1325,11 +1349,12 @@ func TestTopologyReleaseContextsPopulateIngressHost(t *testing.T) {
 			},
 		},
 		{
-			name: "explicit shared global.host override",
+			name: "explicit global.host alongside a base domain, as CI passes it",
 			opts: matrix.RunOptions{
-				RepoRoot:        "/repo",
-				NamespacePrefix: "matrix",
-				ExtraHelmSets:   []string{"global.host=abc123-mns.ci.distro.ultrawombat.com"},
+				RepoRoot:          "/repo",
+				NamespacePrefix:   "matrix",
+				IngressBaseDomain: "ci.distro.ultrawombat.com",
+				ExtraHelmSets:     []string{"global.host=abc123-mns.ci.distro.ultrawombat.com"},
 			},
 		},
 	}
