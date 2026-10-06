@@ -3,19 +3,19 @@
 <!--
   MADR template adapted for this repo. See ADR 0089–0092 for examples.
   Process and required-table: docs/maintainer-guide.md.
+  Status values: proposed, accepted, superseded by [ADR NNNN](NNNN-slug.md).
   Remove this comment and any unused sections before submitting.
 -->
 
 - Status: proposed
 - Date: YYYY-MM-DD
 - Decision-makers: Distribution team, or a named person
-<!-- Optional: - Amends: [ADR NNNN](NNNN-slug.md) -->
 <!-- Optional: - Supersedes: [ADR NNNN](NNNN-slug.md) -->
 
 ## Context and Problem Statement
 
 Describe the situation, the forces at play, and the problem. Anchor in
-concrete facts: chart versions, components, issue or PR numbers, prior ADRs.
+concrete facts: chart versions, components, issue numbers, prior ADRs.
 State the problem in 1–2 sentences, then expand.
 
 ## Decision Drivers
@@ -33,8 +33,7 @@ State the problem in 1–2 sentences, then expand.
 
 State the decision in the opening sentence. Then enumerate normative
 constraints (MUST, MUST NOT, MAY) as a numbered list. Close with
-applicability: which chart versions, which components, the first-landing
-PR, and follow-ups.
+applicability: which chart versions and which components.
 
 ### Positive Consequences
 
@@ -49,3 +48,9 @@ PR, and follow-ups.
 <!-- Optional. Omit if empty. -->
 
 - Builds on ADR NNNN — title (link the file). One-line relevance.
+
+## Changelog
+
+<!-- Optional. Add on the first in-place amendment. One line per change to the decision. -->
+
+- YYYY-MM-DD — [#NNNN](https://github.com/camunda/camunda-platform-helm/pull/NNNN) — What changed.
