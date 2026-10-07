@@ -2544,7 +2544,7 @@ orchestration:
         tokenUrl: ""
         ## @param orchestration.security.authentication.oidc.jwksUrl can be used to override `global.identity.auth.jwksUrl`. Only takes effect if `orchestration.security.authentication.oidc.issuer` or `global.identity.auth.issuer` are not set. Supports templating (e.g., {{ .Release.Name }}).
         jwksUrl: ""
-        ## @param orchestration.security.authentication.oidc.usernameClaim can be used to set username claim.
+        ## @param orchestration.security.authentication.oidc.usernameClaim can be used to set username claim. This value also sets the Web Modeler username claim, even when `orchestration.enabled` is false. To set a different Web Modeler claim, add the environment variable `CAMUNDA_IDENTITY_USERNAMECLAIM` to `webModeler.webapp.env`.
         usernameClaim: preferred_username
         ## @param orchestration.security.authentication.oidc.preferUsernameClaim can be used to set OIDC prefer-username-claim.
         preferUsernameClaim: false
