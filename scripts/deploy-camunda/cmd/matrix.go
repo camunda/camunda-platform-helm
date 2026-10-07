@@ -1002,15 +1002,23 @@ func matrixCLIInfra(flags *pflag.FlagSet) config.InfraOverride {
 		value, _ := flags.GetBool(name)
 		return &value
 	}
-	cli := config.InfraOverride{InfraConfig: config.InfraConfig{
-		Platform: text("platform"), RepoRoot: text("repo-root"), NamespacePrefix: text("namespace-prefix"), LogLevel: text("log-level"),
-		EnvFile: text("env-file"), IngressBaseDomain: text("ingress-base-domain"), KubeContext: text("kube-context"),
-		DockerUsername: text("docker-username"), DockerPassword: text("docker-password"),
-		DockerHubUsername: text("dockerhub-username"), DockerHubPassword: text("dockerhub-password"),
-		SkipDependencyUpdate: toggle("skip-dependency-update"), DeleteNamespace: toggle("delete-namespace"),
-		EnsureDockerRegistry: toggle("ensure-docker-registry"), EnsureDockerHub: toggle("ensure-docker-hub"),
-		UseVaultBackedSecrets: toggle("use-vault-backed-secrets"),
-	}}
+	scalars := func(text func(string) string) config.InfraConfig {
+		return config.InfraConfig{
+			Platform: text("platform"), RepoRoot: text("repo-root"), NamespacePrefix: text("namespace-prefix"), LogLevel: text("log-level"),
+			EnvFile: text("env-file"), IngressBaseDomain: text("ingress-base-domain"), KubeContext: text("kube-context"),
+			DockerUsername: text("docker-username"), DockerPassword: text("docker-password"),
+			DockerHubUsername: text("dockerhub-username"), DockerHubPassword: text("dockerhub-password"),
+			SkipDependencyUpdate: toggle("skip-dependency-update"), DeleteNamespace: toggle("delete-namespace"),
+			EnsureDockerRegistry: toggle("ensure-docker-registry"), EnsureDockerHub: toggle("ensure-docker-hub"),
+			UseVaultBackedSecrets: toggle("use-vault-backed-secrets"),
+		}
+	}
+	cli := config.InfraOverride{InfraConfig: scalars(text), Given: scalars(func(name string) string {
+		if !flags.Changed(name) {
+			return ""
+		}
+		return name
+	})}
 	cli.KubeContexts = map[string]string{"gke": text("kube-context-gke"), "eks": text("kube-context-eks")}
 	cli.IngressBaseDomains = map[string]string{"gke": text("ingress-base-domain-gke"), "eks": text("ingress-base-domain-eks")}
 	cli.EnvFiles = map[string]string{"8.6": text("env-file-8.6"), "8.7": text("env-file-8.7"), "8.8": text("env-file-8.8"), "8.9": text("env-file-8.9")}

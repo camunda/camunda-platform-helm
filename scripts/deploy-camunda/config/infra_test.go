@@ -145,6 +145,7 @@ func TestResolveInfraPrecedence(t *testing.T) {
 		},
 	}
 	cli := InfraOverride{InfraConfig: InfraConfig{IngressBaseDomain: "cli"}, InfraMaps: InfraMaps{KubeContexts: map[string]string{"eks": "cli-eks"}}}
+	cleared := InfraOverride{InfraMaps: cli.InfraMaps, Given: InfraConfig{KubeContext: "kube-context", RepoRoot: "repo-root"}}
 	for _, tc := range []struct {
 		name              string
 		matrixMode        bool
@@ -156,6 +157,8 @@ func TestResolveInfraPrecedence(t *testing.T) {
 		{name: "matrix maps beat the profile", matrixMode: true, platform: "gke", version: "8.10", want: InfraConfig{KubeContext: "matrix-gke", IngressBaseDomain: "profile", EnvFile: "matrix-8.10", RepoRoot: "matrix", LogLevel: "root", UseVaultBackedSecrets: &no}},
 		{name: "profile beats matrix scalars", matrixMode: true, platform: "aks", version: "8.9", want: InfraConfig{KubeContext: "profile", IngressBaseDomain: "profile", EnvFile: "matrix", RepoRoot: "matrix", LogLevel: "root", UseVaultBackedSecrets: &no}},
 		{name: "cli beats config", matrixMode: true, platform: "eks", version: "8.10", cli: cli, want: InfraConfig{KubeContext: "cli-eks", IngressBaseDomain: "cli", EnvFile: "matrix-8.10", RepoRoot: "matrix", LogLevel: "root", UseVaultBackedSecrets: &yes}},
+		{name: "empty cli values beat config", matrixMode: true, platform: "gke", version: "8.10", cli: cleared, want: InfraConfig{IngressBaseDomain: "profile", EnvFile: "matrix-8.10", LogLevel: "root", UseVaultBackedSecrets: &no}},
+		{name: "cli maps beat empty cli values", matrixMode: true, platform: "eks", version: "8.10", cli: cleared, want: InfraConfig{KubeContext: "cli-eks", IngressBaseDomain: "profile", EnvFile: "matrix-8.10", LogLevel: "root", UseVaultBackedSecrets: &yes}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			require.Equal(t, tc.want, rc.ResolveInfra(tc.matrixMode, tc.platform, tc.version, tc.cli))
@@ -181,10 +184,16 @@ func TestResolveInfraMatchesSingleDeploy(t *testing.T) {
 }
 
 func TestActiveProfileRejectsUnknownCurrent(t *testing.T) {
-	rc := &RootConfig{Current: "missing", Deployments: map[string]DeploymentConfig{"dev": {}}}
-	_, err := rc.ActiveProfile()
+	for _, deployments := range []map[string]DeploymentConfig{nil, {}, {"dev": {}}} {
+		rc := &RootConfig{Current: "missing", Deployments: deployments}
+		_, err := rc.ActiveProfile()
+		require.ErrorContains(t, err, `"missing"`)
+		require.ErrorContains(t, ApplyActiveDeployment(rc, &RuntimeFlags{}), `"missing"`)
+	}
+	path := filepath.Join(t.TempDir(), "deploy.yaml")
+	require.NoError(t, os.WriteFile(path, []byte("current: missing\n"), 0o600))
+	_, err := LoadMatrixConfig(path)
 	require.ErrorContains(t, err, `"missing"`)
-	require.ErrorContains(t, ApplyActiveDeployment(rc, &RuntimeFlags{}), `"missing"`)
 }
 
 func TestReadRecordsDeprecatedInfraKeys(t *testing.T) {

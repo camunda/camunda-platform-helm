@@ -46,6 +46,8 @@ type InfraMaps struct {
 type InfraOverride struct {
 	InfraConfig
 	InfraMaps
+	// Given is non-zero in each InfraConfig field set on the command line, including to "".
+	Given InfraConfig
 }
 
 func (m InfraMaps) pick(platform, version string) InfraConfig {
@@ -58,9 +60,6 @@ func (m InfraMaps) pick(platform, version string) InfraConfig {
 
 // ActiveProfile returns deployments[current], or the only profile when current is empty.
 func (rc *RootConfig) ActiveProfile() (*DeploymentConfig, error) {
-	if len(rc.Deployments) == 0 {
-		return nil, nil
-	}
 	name := strings.TrimSpace(rc.Current)
 	if name == "" && len(rc.Deployments) == 1 {
 		for only := range rc.Deployments {
@@ -79,13 +78,15 @@ func (rc *RootConfig) ActiveProfile() (*DeploymentConfig, error) {
 
 // ResolveInfra merges the infra values for one platform and chart version. Each field takes the
 // first value set in: cli per-platform/per-version values, cli values, matrix maps, the active
-// profile, matrix values, root values. The matrix layers apply only when matrixMode is true. An
-// unknown current profile is skipped here; ActiveProfile reports it.
+// profile, matrix values, root values. A field given on the command line, even as "", stops at
+// the cli values. The matrix layers apply only when matrixMode is true. An unknown current
+// profile is skipped here; ActiveProfile reports it.
 func (rc *RootConfig) ResolveInfra(matrixMode bool, platform, version string, cli InfraOverride) InfraConfig {
 	if rc == nil {
 		rc = &RootConfig{}
 	}
 	layers := []InfraConfig{cli.pick(platform, version), cli.InfraConfig}
+	cliLayers := len(layers)
 	if matrixMode {
 		layers = append(layers, rc.Matrix.pick(platform, version))
 	}
@@ -96,11 +97,11 @@ func (rc *RootConfig) ResolveInfra(matrixMode bool, platform, version string, cl
 		layers = append(layers, rc.Matrix.InfraConfig)
 	}
 	var infra InfraConfig
-	resolved := reflect.ValueOf(&infra).Elem()
-	for _, layer := range append(layers, rc.InfraConfig) {
+	resolved, given := reflect.ValueOf(&infra).Elem(), reflect.ValueOf(cli.Given)
+	for n, layer := range append(layers, rc.InfraConfig) {
 		values := reflect.ValueOf(layer)
 		for i := range resolved.NumField() {
-			if resolved.Field(i).IsZero() {
+			if resolved.Field(i).IsZero() && (n < cliLayers || given.Field(i).IsZero()) {
 				resolved.Field(i).Set(values.Field(i))
 			}
 		}
