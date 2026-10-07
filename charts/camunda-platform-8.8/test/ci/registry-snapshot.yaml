@@ -19,7 +19,6 @@ integration:
             gke: distroci
           identity: keycloak
           persistence: elasticsearch
-          helmVersion: 3.22.0
         - name: orchestration-tls
           enabled: true
           shortname: estls
