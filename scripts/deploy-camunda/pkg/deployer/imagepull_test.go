@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -136,6 +137,87 @@ func TestImagePullFailureErrorNamesEverything(t *testing.T) {
 	}
 }
 
+func TestReleasePods(t *testing.T) {
+	t.Parallel()
+
+	labelled := func(name string, labels map[string]string) corev1.Pod {
+		return corev1.Pod{ObjectMeta: metav1.ObjectMeta{Name: name, Labels: labels}}
+	}
+	all := podList(
+		labelled("integration-zeebe-0", map[string]string{"app.kubernetes.io/instance": "integration"}),
+		labelled("integration-legacy-0", map[string]string{"release": "integration"}),
+		labelled("keycloak-0", map[string]string{"app.kubernetes.io/instance": "keycloak"}),
+		labelled("stale-0", nil),
+	)
+	list := func(context.Context, string) (*corev1.PodList, error) { return all, nil }
+
+	names := func(pods *corev1.PodList) []string {
+		var out []string
+		for _, pod := range pods.Items {
+			out = append(out, pod.Name)
+		}
+		return out
+	}
+
+	got, err := releasePods(list, "integration")(context.Background(), "ns")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := []string{"integration-zeebe-0", "integration-legacy-0"}; !reflect.DeepEqual(names(got), want) {
+		t.Errorf("release pods = %v, want %v", names(got), want)
+	}
+
+	got, err = releasePods(list, "")(context.Background(), "ns")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got.Items) != len(all.Items) {
+		t.Errorf("an empty release must keep every pod, got %v", names(got))
+	}
+}
+
+func TestUpgradeInstall_IgnoresTerminalPodsOfOtherReleases(t *testing.T) {
+	foreign := waitingPod("keycloak-0", "keycloak", "reg/keycloak:1", "ImagePullBackOff", childManifest404, false)
+	foreign.Labels = map[string]string{"app.kubernetes.io/instance": "keycloak"}
+
+	origLister := newPodLister
+	newPodLister = func(string, string) (podLister, error) {
+		return fakeLister{pods: podList(foreign)}, nil
+	}
+	defer func() { newPodLister = origLister }()
+
+	origInterval := imagePullGuardInterval
+	imagePullGuardInterval = time.Millisecond
+	defer func() { imagePullGuardInterval = origInterval }()
+
+	restore := stubHelm(
+		func(ctx context.Context, args []string, workDir string) error { return nil },
+		func(ctx context.Context, name, url string) error { return nil },
+		func(ctx context.Context) error { return nil },
+	)
+	defer restore()
+
+	helmRunCapturing = func(ctx context.Context, args []string, workDir string) (string, error) {
+		select {
+		case <-ctx.Done():
+			return "", fmt.Errorf("signal: killed")
+		case <-time.After(200 * time.Millisecond):
+			return "", nil
+		}
+	}
+
+	err := upgradeInstall(context.Background(), types.Options{
+		ReleaseName: "integration",
+		ChartPath:   "/charts/camunda-platform-8.7",
+		Namespace:   "ns",
+		Wait:        true,
+		Timeout:     20 * time.Minute,
+	})
+	if err != nil {
+		t.Fatalf("a terminal pod from another release must not abort this one, got %v", err)
+	}
+}
+
 // noSleep runs the poll loop without wall-clock delay, and ends it after
 // maxTicks so a test can never hang.
 func noSleep(maxTicks int) func(context.Context, time.Duration) error {
@@ -241,9 +323,23 @@ func TestWatchTerminalImagePull(t *testing.T) {
 }
 
 // fakeLister satisfies podLister.
-type fakeLister struct{ pods *corev1.PodList }
+type fakeLister struct {
+	pods     *corev1.PodList
+	events   *corev1.EventList
+	eventsFn func() *corev1.EventList
+}
 
 func (f fakeLister) ListPods(context.Context, string) (*corev1.PodList, error) { return f.pods, nil }
+
+func (f fakeLister) ListEvents(context.Context, string) (*corev1.EventList, error) {
+	if f.eventsFn != nil {
+		return f.eventsFn(), nil
+	}
+	if f.events == nil {
+		return &corev1.EventList{}, nil
+	}
+	return f.events, nil
+}
 
 // TestUpgradeInstall_AbortsOnTerminalImagePull asserts the wait ends early and
 // the error names the image rather than the killed process.
@@ -251,6 +347,7 @@ func TestUpgradeInstall_AbortsOnTerminalImagePull(t *testing.T) {
 	broken := waitingPod("integration-postgresql-0", "postgresql",
 		"registry.camunda.cloud/vendor-ee/postgresql:15.18.0-debian-12-r17",
 		"ImagePullBackOff", childManifest404, false)
+	broken.Labels = map[string]string{"app.kubernetes.io/instance": "integration"}
 
 	origLister := newPodLister
 	newPodLister = func(string, string) (podLister, error) {

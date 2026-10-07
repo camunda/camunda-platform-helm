@@ -19,6 +19,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -1316,6 +1317,8 @@ func extractHelmSetValue(pairs []string, key string) string {
 	return value
 }
 
+var prepareScenarioFn = deploy.PrepareScenario
+
 // preparedTopologyRelease pairs a topology release with the flags and prepared scenario built for
 // it, so the deploy loop and the topology-level post-deploy hook can both address it.
 type preparedTopologyRelease struct {
@@ -1419,7 +1422,9 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 	// orchestration release itself exposes (orchestration.serviceName in
 	// templates/orchestration/_helpers.tpl), on the gRPC (26500) and REST
 	// (8080) ports from orchestration.service.{grpcPort,httpPort}.
-	addTopologyIngressHosts(crossRefEnv, opts, platform, contexts[hubIdx], entry.Topology.Releases, contexts)
+	if err := addTopologyIngressHosts(crossRefEnv, opts, platform, contexts[hubIdx], entry.Topology.Releases, contexts); err != nil {
+		return fmt.Errorf("topology entry %s/%s: %w", entry.Version, entry.Scenario, err)
+	}
 	for _, i := range orchestrationIndices {
 		token := matrix.TopologyEnvToken(entry.Topology.Releases[i].NamespaceSuffix)
 		crossRefEnv[token+"_NAMESPACE"] = contexts[i].Namespace
@@ -1451,6 +1456,7 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 	}
 
 	preparedReleases := make([]preparedTopologyRelease, 0, len(order))
+	var releaseErrs []error
 	defer func() {
 		for _, release := range preparedReleases {
 			release.prepared.Cleanup()
@@ -1472,7 +1478,8 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 		flags, namespace, _, _, cleanup, buildErr := matrix.BuildEntryFlags(releaseEntry, releaseOpts)
 		if buildErr != nil {
 			cleanup()
-			return fmt.Errorf("topology release %s/%s (namespace-suffix %q): build flags: %w", entry.Scenario, rel.Role, rel.NamespaceSuffix, buildErr)
+			releaseErrs = append(releaseErrs, fmt.Errorf("topology release %s/%s (namespace-suffix %q): build flags: %w", entry.Scenario, rel.Role, rel.NamespaceSuffix, buildErr))
+			continue
 		}
 
 		applyTopologyReleaseOverrides(flags, buildTopologyReleaseEnv(crossRefEnv, rel))
@@ -1480,23 +1487,31 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 		removeManifest, err := applyTopologyCredentialsManifest(flags, opts.RepoRoot, entry.Topology.CredentialsManifest, baseNamespace)
 		if err != nil {
 			cleanup()
-			return fmt.Errorf("topology release %s/%s (namespace-suffix %q): %w", entry.Scenario, rel.Role, rel.NamespaceSuffix, err)
+			releaseErrs = append(releaseErrs, fmt.Errorf("topology release %s/%s (namespace-suffix %q): %w", entry.Scenario, rel.Role, rel.NamespaceSuffix, err))
+			continue
 		}
 		defer removeManifest()
 		if err := matrix.RegisterDeclarativePostInfraHook(flags, releaseEntry.PostInfra, opts.RepoRoot, releaseEntry.Version, releaseEntry.Scenario); err != nil {
 			cleanup()
-			return fmt.Errorf("topology release %s/%s (namespace-suffix %q): register post-infra hook: %w", entry.Scenario, rel.Role, rel.NamespaceSuffix, err)
+			releaseErrs = append(releaseErrs, fmt.Errorf("topology release %s/%s (namespace-suffix %q): register post-infra hook: %w", entry.Scenario, rel.Role, rel.NamespaceSuffix, err))
+			continue
 		}
 		if err := matrix.RegisterDeclarativePostDeployHook(flags, releaseEntry.PostDeploy, opts.RepoRoot, releaseEntry.Version, releaseEntry.Scenario); err != nil {
 			cleanup()
-			return fmt.Errorf("topology release %s/%s (namespace-suffix %q): register post-deploy hook: %w", entry.Scenario, rel.Role, rel.NamespaceSuffix, err)
+			releaseErrs = append(releaseErrs, fmt.Errorf("topology release %s/%s (namespace-suffix %q): register post-deploy hook: %w", entry.Scenario, rel.Role, rel.NamespaceSuffix, err))
+			continue
 		}
-		prepared, prepareErr := deploy.PrepareScenario(ctx, releaseCtx, flags)
+		releaseCtx.IngressHost = flags.ResolveIngressHostname()
+		prepared, prepareErr := prepareScenarioFn(ctx, releaseCtx, flags)
 		if prepareErr != nil {
 			cleanup()
-			return fmt.Errorf("topology release %s/%s (namespace-suffix %q) prepare failed: %w", entry.Scenario, rel.Role, rel.NamespaceSuffix, prepareErr)
+			releaseErrs = append(releaseErrs, fmt.Errorf("topology release %s/%s (namespace-suffix %q) prepare failed: %w", entry.Scenario, rel.Role, rel.NamespaceSuffix, prepareErr))
+			continue
 		}
 		preparedReleases = append(preparedReleases, preparedTopologyRelease{release: rel, flags: flags, namespace: namespace, prepared: prepared, cleanup: cleanup})
+	}
+	if len(releaseErrs) > 0 {
+		return errors.Join(releaseErrs...)
 	}
 
 	for _, chartPath := range topologyChartPaths(preparedReleases) {
@@ -1762,14 +1777,15 @@ func topologyReleaseHostKey(role, namespaceSuffix string, orchestrationCount int
 	return "HUB_HOST"
 }
 
-func addTopologyIngressHosts(crossRefEnv map[string]string, opts matrix.RunOptions, platform string, hubCtx *deploy.ScenarioContext, releases []matrix.TopologyRelease, contexts []*deploy.ScenarioContext) {
+func addTopologyIngressHosts(crossRefEnv map[string]string, opts matrix.RunOptions, platform string, hubCtx *deploy.ScenarioContext, releases []matrix.TopologyRelease, contexts []*deploy.ScenarioContext) error {
 	orchestrationCount := 0
 	for _, release := range releases {
 		if release.Role == "orchestration" {
 			orchestrationCount++
 		}
 	}
-	if sharedHost := extractHelmSetValue(opts.ExtraHelmSets, "global.host"); sharedHost != "" && orchestrationCount <= 1 {
+	sharedHost := extractHelmSetValue(opts.ExtraHelmSets, "global.host")
+	if sharedHost != "" && orchestrationCount <= 1 {
 		crossRefEnv["HUB_HOST"] = sharedHost
 		for _, release := range releases {
 			if release.Role == "orchestration" {
@@ -1777,12 +1793,15 @@ func addTopologyIngressHosts(crossRefEnv map[string]string, opts matrix.RunOptio
 				crossRefEnv["ORCH_HOST"] = sharedHost
 			}
 		}
-		return
+		return nil
 	}
 
 	baseDomain := matrix.EntryInfra(opts, platform, "").IngressBaseDomain
 	if baseDomain == "" {
-		return
+		if sharedHost != "" {
+			return fmt.Errorf("global.host=%s is shared, but this topology has %d orchestration releases that each need their own host; set an ingress base domain instead", sharedHost, orchestrationCount)
+		}
+		return nil
 	}
 	crossRefEnv["HUB_HOST"] = (&config.IngressFlags{
 		IngressSubdomain:  hubCtx.Namespace,
@@ -1801,6 +1820,7 @@ func addTopologyIngressHosts(crossRefEnv map[string]string, opts matrix.RunOptio
 			crossRefEnv["ORCH_HOST"] = host
 		}
 	}
+	return nil
 }
 
 // topologyDeployOrder returns release indices in a depends-on-respecting order:

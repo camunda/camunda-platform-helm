@@ -16,6 +16,7 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -386,6 +387,30 @@ func TestAddTopologyIngressHosts_DerivesEveryOrchestrationHost(t *testing.T) {
 	}
 	if _, exists := env["ORCH_HOST"]; exists {
 		t.Error("ORCH_HOST must not alias one release in a multi-orchestration topology")
+	}
+}
+
+func TestAddTopologyIngressHosts_RejectsSharedHostForMultipleOrchestrations(t *testing.T) {
+	releases := testTopologyReleases()
+	contexts := []*deploy.ScenarioContext{
+		{Namespace: "matrix-810-mns-hub"},
+		{Namespace: "matrix-810-mns-orcha"},
+		{Namespace: "matrix-810-mns-orchb"},
+	}
+	opts := matrix.RunOptions{ExtraHelmSets: []string{"global.host=abc123-mns.ci.example.com"}}
+
+	err := addTopologyIngressHosts(map[string]string{}, opts, "gke", contexts[0], releases, contexts)
+	if err == nil || !strings.Contains(err.Error(), "global.host") {
+		t.Fatalf("expected a global.host error for a multi-orchestration topology, got %v", err)
+	}
+
+	opts.IngressBaseDomain = "ci.example.com"
+	env := map[string]string{}
+	if err := addTopologyIngressHosts(env, opts, "gke", contexts[0], releases, contexts); err != nil {
+		t.Fatalf("a base domain must derive per-release hosts, got %v", err)
+	}
+	if env["HUB_HOST"] == "" || env["ORCHA_HOST"] == "" || env["ORCHB_HOST"] == "" {
+		t.Errorf("hosts not derived: %v", env)
 	}
 }
 
@@ -1294,6 +1319,83 @@ func TestTopologyChartPaths(t *testing.T) {
 			got := topologyChartPaths(tt.releases)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("topologyChartPaths() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestTopologyReleaseContextsPopulateIngressHost(t *testing.T) {
+	releases := testTopologyReleases()
+	baseEntry := matrix.Entry{
+		Version:   "8.10",
+		ChartPath: "charts/camunda-platform-8.10",
+		Scenario:  "multinamespace",
+		Shortname: "mns",
+		Auth:      "keycloak",
+		Flow:      "install",
+		Topology:  &matrix.Topology{Name: "multinamespace", Releases: releases},
+	}
+
+	cases := []struct {
+		name string
+		opts matrix.RunOptions
+	}{
+		{
+			name: "per-release namespace-derived hosts",
+			opts: matrix.RunOptions{
+				RepoRoot:           "/repo",
+				NamespacePrefix:    "matrix",
+				IngressBaseDomains: map[string]string{"gke": "ci.distro.ultrawombat.com"},
+				IngressBaseDomain:  "ci.distro.ultrawombat.com",
+			},
+		},
+		{
+			name: "explicit global.host alongside a base domain, as CI passes it",
+			opts: matrix.RunOptions{
+				RepoRoot:          "/repo",
+				NamespacePrefix:   "matrix",
+				IngressBaseDomain: "ci.distro.ultrawombat.com",
+				ExtraHelmSets:     []string{"global.host=abc123-mns.ci.distro.ultrawombat.com"},
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			errStubPrepare := errors.New("prepare stubbed out: this test never deploys")
+
+			type preparedRelease struct {
+				namespace   string
+				ingressHost string
+				wantHost    string
+			}
+			var recorded []preparedRelease
+
+			original := prepareScenarioFn
+			t.Cleanup(func() { prepareScenarioFn = original })
+			prepareScenarioFn = func(_ context.Context, scenarioCtx *deploy.ScenarioContext, flags *config.RuntimeFlags) (*deploy.PreparedScenario, error) {
+				recorded = append(recorded, preparedRelease{
+					namespace:   scenarioCtx.Namespace,
+					ingressHost: scenarioCtx.IngressHost,
+					wantHost:    flags.ResolveIngressHostname(),
+				})
+				return nil, errStubPrepare
+			}
+
+			// Every release fails to prepare, so the returned error is the stub's own
+			// and carries no signal. The recorded pairs are the subject.
+			_ = runTopologyEntry(context.Background(), baseEntry, tc.opts)
+
+			if len(recorded) == 0 {
+				t.Fatal("prepareScenarioFn was never called — runTopologyEntry aborted before preparing any release, so the invariant was never exercised")
+			}
+			for _, rec := range recorded {
+				if rec.wantHost == "" {
+					t.Fatalf("release %q: flags.ResolveIngressHostname() is empty — the fixture does not exercise a real host", rec.namespace)
+				}
+				if rec.ingressHost != rec.wantHost {
+					t.Errorf("release %q: ScenarioContext.IngressHost = %q, want %q — buildScenarioEnv only emits CAMUNDA_HOSTNAME when this is non-empty", rec.namespace, rec.ingressHost, rec.wantHost)
+				}
 			}
 		})
 	}
