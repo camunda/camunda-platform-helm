@@ -404,7 +404,7 @@ func TestAddTopologyIngressHosts_RejectsSharedHostForMultipleOrchestrations(t *t
 		t.Fatalf("expected a global.host error for a multi-orchestration topology, got %v", err)
 	}
 
-	opts.IngressBaseDomain = "ci.example.com"
+	opts.Infra.IngressBaseDomain = "ci.example.com"
 	env := map[string]string{}
 	if err := addTopologyIngressHosts(env, opts, "gke", contexts[0], releases, contexts); err != nil {
 		t.Fatalf("a base domain must derive per-release hosts, got %v", err)
@@ -1343,19 +1343,21 @@ func TestTopologyReleaseContextsPopulateIngressHost(t *testing.T) {
 		{
 			name: "per-release namespace-derived hosts",
 			opts: matrix.RunOptions{
-				RepoRoot:           "/repo",
-				NamespacePrefix:    "matrix",
-				IngressBaseDomains: map[string]string{"gke": "ci.distro.ultrawombat.com"},
-				IngressBaseDomain:  "ci.distro.ultrawombat.com",
+				RepoRoot:        "/repo",
+				NamespacePrefix: "matrix",
+				Infra: config.InfraOverride{
+					InfraConfig: config.InfraConfig{IngressBaseDomain: "ci.distro.ultrawombat.com"},
+					InfraMaps:   config.InfraMaps{IngressBaseDomains: map[string]string{"gke": "ci.distro.ultrawombat.com"}},
+				},
 			},
 		},
 		{
 			name: "explicit global.host alongside a base domain, as CI passes it",
 			opts: matrix.RunOptions{
-				RepoRoot:          "/repo",
-				NamespacePrefix:   "matrix",
-				IngressBaseDomain: "ci.distro.ultrawombat.com",
-				ExtraHelmSets:     []string{"global.host=abc123-mns.ci.distro.ultrawombat.com"},
+				RepoRoot:        "/repo",
+				NamespacePrefix: "matrix",
+				Infra:           config.InfraOverride{InfraConfig: config.InfraConfig{IngressBaseDomain: "ci.distro.ultrawombat.com"}},
+				ExtraHelmSets:   []string{"global.host=abc123-mns.ci.distro.ultrawombat.com"},
 			},
 		},
 	}
