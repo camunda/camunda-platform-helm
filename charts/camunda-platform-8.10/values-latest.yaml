@@ -18,7 +18,7 @@ optimize:
   # https://hub.docker.com/r/camunda/optimize/tags
   image:
     repository: camunda/optimize
-    tag: 8.10.0
+    tag: 8.10.2-rc1
 
 webModeler:
   # https://hub.docker.com/r/camunda/hub
