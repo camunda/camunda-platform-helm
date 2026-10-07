@@ -24,6 +24,11 @@
 #   * [if true] for toggles
 #   * [configuration] for section/group of variables
 
+## @param fullnameOverride can be used to override the full name of the chart resources.
+fullnameOverride: ""
+## @param nameOverride can be used to override the chart name in resource names and labels.
+nameOverride: ""
+
 #------------------------------------------------------------------------------------------------------------------------------------------#
 #------------------------------------------------------------------------------------------------------------------------------------------#
 ##########################################
@@ -181,6 +186,12 @@ global:
   image:
     ## @param global.image.registry Can be used to set container image registry.
     registry: ""
+    ## @param global.image.repository can be used as the image repository when a component repository is empty.
+    repository: ""
+    ## @param global.image.tag can be used as the image tag when a component tag is empty.
+    tag: ""
+    ## @param global.image.digest can be used as the image digest when a component digest is empty. A digest overrides the image tag.
+    digest: ""
     ## @param global.image.pullPolicy defines the image pull policy which should be used https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy
     pullPolicy: Always
     ## @param global.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -932,6 +943,13 @@ identity:
   fullnameOverride: ""
   ## @param identity.nameOverride can be used to partly override the name of the Management Identity resources (names will still be prefixed with the release name)
   nameOverride: ""
+
+  ## @extra identity.realm configuration for the external Keycloak realm.
+  realm:
+    ## @param identity.realm.enabled if true, sets the Keycloak realm in the Management Identity configuration.
+    enabled: false
+    ## @param identity.realm.id can be used to set the Keycloak realm identifier when identity.realm.enabled is true.
+    id: ""
 
   ## @extra identity.firstUser configuration to configure properties of the first Management Identity user, which can be used to access all
   # web applications
@@ -1835,6 +1853,11 @@ connectors:
   ## @param connectors.enabled if true, the Connectors deployment and its related resources are deployed via a helm release
   enabled: true
 
+  ## @param connectors.fullnameOverride can be used to override the full name of the Connectors resources.
+  fullnameOverride: ""
+  ## @param connectors.nameOverride can be used to override the Connectors name after the release prefix.
+  nameOverride: ""
+
   ## @extra connectors.security.authentication.oidc configuration to configure Connectors authentication specifics on global level, which can be accessed by other components
   security:
     ## Authentication configuration
@@ -1847,6 +1870,8 @@ connectors:
       oidc:
         ## @param connectors.security.authentication.oidc.clientId defines the client id, which is used by Connectors in authentication flows.
         clientId: connectors
+        ## @param connectors.security.authentication.oidc.audience can be used to override the Orchestration audience for Connectors authentication.
+        audience: ""
         ## @param connectors.security.authentication.oidc.tokenScope defines the token scope, which is used by Connectors.
         tokenScope: ""
         ## @extra connectors.security.authentication.oidc.secret configuration to provide the connectors client secret.
@@ -2130,6 +2155,11 @@ connectors:
 orchestration:
   ## @param orchestration.enabled if true, the orchestration cluster deployment and its related resources are deployed via a helm release
   enabled: true
+
+  ## @param orchestration.fullnameOverride can be used to override the full name of the Orchestration resources.
+  fullnameOverride: ""
+  ## @param orchestration.nameOverride can be used to override the Orchestration name after the release prefix.
+  nameOverride: ""
 
   ## @param orchestration.debug (DEPRECATED) if true, extra info is printed.
   debug: false
@@ -2906,6 +2936,11 @@ orchestration:
 optimize:
   ## @param optimize.enabled if true, the Optimize deployment and its related resources are deployed via a helm release
   enabled: false
+
+  ## @param optimize.fullnameOverride can be used to override the full name of the Optimize resources.
+  fullnameOverride: ""
+  ## @param optimize.nameOverride can be used to override the Optimize name after the release prefix.
+  nameOverride: ""
 
   ## @extra optimize.identity configuration of the Management Identity this Optimize release calls.
   identity:
