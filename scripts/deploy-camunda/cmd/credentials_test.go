@@ -124,7 +124,7 @@ func TestResolveRegistryCredentialsFromVersionEnvFile(t *testing.T) {
 		t.Fatal(err)
 	}
 	flags := config.DockerFlags{EnsureDockerRegistry: true}
-	if err := resolveRegistryCredentialsFromEnvFiles(&flags, []matrix.Entry{{Version: "8.10"}}, map[string]string{"8.10": path}, ""); err != nil {
+	if err := resolveRegistryCredentialsFromEnvFiles(&flags, []matrix.Entry{{Version: "8.10"}}, map[string]string{"8.10": path}); err != nil {
 		t.Fatal(err)
 	}
 	if flags.DockerUsername != "robot" || flags.DockerPassword != "token" {
@@ -139,7 +139,7 @@ func TestResolveRegistryCredentialsFromEnvFilesPreservesExplicitPair(t *testing.
 		t.Fatal(err)
 	}
 	flags := config.DockerFlags{EnsureDockerRegistry: true, DockerUsername: "explicit", DockerPassword: "explicit-token"}
-	if err := resolveRegistryCredentialsFromEnvFiles(&flags, []matrix.Entry{{Version: "8.10"}}, map[string]string{"8.10": path}, ""); err != nil {
+	if err := resolveRegistryCredentialsFromEnvFiles(&flags, []matrix.Entry{{Version: "8.10"}}, map[string]string{"8.10": path}); err != nil {
 		t.Fatal(err)
 	}
 	if flags.DockerUsername != "explicit" || flags.DockerPassword != "explicit-token" {
@@ -156,7 +156,7 @@ func TestResolveRegistryCredentialsFromEnvFilesPrefersEnvironmentPair(t *testing
 	t.Setenv("HARBOR_USERNAME", "environment")
 	t.Setenv("HARBOR_PASSWORD", "environment-token")
 	flags := config.DockerFlags{EnsureDockerRegistry: true}
-	if err := resolveRegistryCredentialsFromEnvFiles(&flags, []matrix.Entry{{Version: "8.10"}}, map[string]string{"8.10": path}, ""); err != nil {
+	if err := resolveRegistryCredentialsFromEnvFiles(&flags, []matrix.Entry{{Version: "8.10"}}, map[string]string{"8.10": path}); err != nil {
 		t.Fatal(err)
 	}
 	if flags.DockerUsername != "environment" || flags.DockerPassword != "environment-token" {
@@ -176,7 +176,7 @@ func TestResolveRegistryCredentialsFromEnvFilesRejectsConflictingVersionPairs(t 
 		t.Fatal(err)
 	}
 	flags := config.DockerFlags{EnsureDockerRegistry: true}
-	err := resolveRegistryCredentialsFromEnvFiles(&flags, []matrix.Entry{{Version: "8.9"}, {Version: "8.10"}}, map[string]string{"8.9": firstPath, "8.10": secondPath}, "")
+	err := resolveRegistryCredentialsFromEnvFiles(&flags, []matrix.Entry{{Version: "8.9"}, {Version: "8.10"}}, map[string]string{"8.9": firstPath, "8.10": secondPath})
 	if err == nil {
 		t.Fatal("expected conflicting version credentials error")
 	}
@@ -188,7 +188,7 @@ func TestResolveRegistryCredentialsFromEnvFilesSurfacesReadError(t *testing.T) {
 	// read error (not file-not-found), which must not be silently swallowed.
 	dir := t.TempDir()
 	flags := config.DockerFlags{EnsureDockerRegistry: true}
-	err := resolveRegistryCredentialsFromEnvFiles(&flags, []matrix.Entry{{Version: "8.10"}}, map[string]string{"8.10": dir}, "")
+	err := resolveRegistryCredentialsFromEnvFiles(&flags, []matrix.Entry{{Version: "8.10"}}, map[string]string{"8.10": dir})
 	if err == nil {
 		t.Fatal("expected unreadable env file error to surface")
 	}

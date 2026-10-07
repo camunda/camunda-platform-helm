@@ -64,6 +64,8 @@ type InfraConfig struct {
 	IngressBaseDomain    string `mapstructure:"ingressBaseDomain" yaml:"ingressBaseDomain,omitempty"`
 	KubeContext          string `mapstructure:"kubeContext" yaml:"kubeContext,omitempty"`
 	DeleteNamespace      *bool  `mapstructure:"deleteNamespace" yaml:"deleteNamespace,omitempty"`
+	// UseVaultBackedSecrets selects the vault-backed ClusterSecretStore and -vault.yaml manifests.
+	UseVaultBackedSecrets *bool `mapstructure:"useVaultBackedSecrets" yaml:"useVaultBackedSecrets,omitempty"`
 
 	// Docker registries
 	DockerUsername       string `mapstructure:"dockerUsername" yaml:"dockerUsername,omitempty"`
@@ -117,10 +119,11 @@ type DeploySpecConfig struct {
 
 // MatrixConfig holds configuration specific to the "matrix" subcommand.
 // Fields here can be set in the deploy.yaml config file under a top-level
-// "matrix:" key. Shared fields (repoRoot, platform, logLevel, keycloak, etc.)
-// fall back to root-level config when not set in the matrix section.
+// "matrix:" key. Its infra fields rank below the active deployment profile;
+// see RootConfig.ResolveInfra.
 type MatrixConfig struct {
 	InfraConfig `mapstructure:",squash" yaml:",inline"`
+	InfraMaps   `mapstructure:",squash" yaml:",inline"`
 
 	// Filtering & generation
 	Versions        []string `mapstructure:"versions" yaml:"versions,omitempty"`
@@ -141,19 +144,6 @@ type MatrixConfig struct {
 	// Tests
 	TestE2E *bool `mapstructure:"testE2E" yaml:"testE2E,omitempty"`
 	TestAll *bool `mapstructure:"testAll" yaml:"testAll,omitempty"`
-
-	// Per-platform kube contexts
-	KubeContexts map[string]string `mapstructure:"kubeContexts" yaml:"kubeContexts,omitempty"`
-
-	// Per-platform ingress domains
-	IngressBaseDomains map[string]string `mapstructure:"ingressBaseDomains" yaml:"ingressBaseDomains,omitempty"`
-
-	// Per-platform vault-backed secrets
-	UseVaultBackedSecrets *bool           `mapstructure:"useVaultBackedSecrets" yaml:"useVaultBackedSecrets,omitempty"`
-	VaultBackedSecrets    map[string]bool `mapstructure:"vaultBackedSecrets" yaml:"vaultBackedSecrets,omitempty"`
-
-	// Per-version env files (keys are version strings like "8.6", "8.7")
-	EnvFiles map[string]string `mapstructure:"envFiles" yaml:"envFiles,omitempty"`
 
 	// Keycloak overrides (if different from root)
 	KeycloakHost     string `mapstructure:"keycloakHost" yaml:"keycloakHost,omitempty"`
@@ -181,6 +171,9 @@ type RootConfig struct {
 	Matrix      MatrixConfig                `mapstructure:"matrix" yaml:"matrix,omitempty"`
 	Deployments map[string]DeploymentConfig `mapstructure:"deployments" yaml:"deployments,omitempty"`
 	FilePath    string                      `mapstructure:"-" yaml:"-"`
+	// DeprecatedInfra lists the root and matrix: platform, repoRoot, kubeContext,
+	// ingressBaseDomain and envFile keys the file sets.
+	DeprecatedInfra []string `mapstructure:"-" yaml:"-"`
 }
 
 // ConfigResolution captures how the config file was resolved — which paths
@@ -274,6 +267,7 @@ func Read(path string, includeEnv bool) (*RootConfig, error) {
 			return nil, fmt.Errorf("failed to parse config %q: %w", path, err)
 		}
 	}
+	rc.DeprecatedInfra = append(infraKeys("", rc.InfraConfig), infraKeys("matrix.", rc.Matrix.InfraConfig)...)
 	// Apply environment overrides (CAMUNDA_*) only when requested
 	if includeEnv {
 		applyEnvOverrides(rc)
