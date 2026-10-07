@@ -385,7 +385,8 @@ helm.schema-validate-values:
 		fi; \
 		echo "\n[$@] Chart dir: $${chart_dir}"; \
 		abs="$${root}/$${chart_dir}"; \
-		tmp_schema="$$(mktemp)"; \
+		mkdir -p "$${root}/debug"; \
+		tmp_schema="$$(mktemp "$${root}/debug/values-schema.XXXXXX")"; \
 		bash scripts/regenerate-values-schema.sh \
 			"$${abs}/values.yaml" \
 			"$${abs}/values.schema.extra.json" \
@@ -395,7 +396,8 @@ helm.schema-validate-values:
 			[ -f "$${abs}/$$f" ] && files="$${files} $${abs}/$$f"; \
 		done; \
 		( cd "$${root}/scripts/validate-values-schema" && \
-			go run . --schema "$${tmp_schema}" --chart-dir "$${abs}" $${files} ); \
+			go run . --schema "$${tmp_schema}" --chart-dir "$${abs}" $${files} && \
+			go run . --schema "$${tmp_schema}" --chart-dir "$${abs}" --previous-minor ); \
 		status=$$?; \
 		rm -f "$${tmp_schema}"; \
 		[ $$status -eq 0 ] || exit $$status; \

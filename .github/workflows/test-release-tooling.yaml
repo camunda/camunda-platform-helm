@@ -71,6 +71,14 @@ jobs:
           go vet ./...
           go test ./...
 
+      - name: Install schema generator
+        run: |
+          npm install -g @bitnami/readme-generator-for-helm@2.7.2
+
+      - name: Validate previous-minor schema upgrade coverage
+        run: |
+          make helm.schema-validate-values chartPath="charts/camunda-platform-8.10 charts/camunda-platform-8.9"
+
       - name: orchestration-entra-lifecycle — vet + test
         working-directory: scripts/orchestration-entra-lifecycle
         run: |
