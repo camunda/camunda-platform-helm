@@ -63,10 +63,35 @@ func (s *ConfigMapWarningsTemplateTest) TestUnresolvedAuthIssuer() {
 		backend string
 	}{
 		{name: "MissingGenericProvider", warn: true},
+		{name: "MissingKeycloakProvider", values: map[string]string{"global.identity.auth.type": "KEYCLOAK"}, warn: true, backend: "http://:/auth/realms/camunda-platform"},
 		{name: "AuthDisabled", values: map[string]string{"global.identity.auth.enabled": "false"}},
 		{name: "ExplicitIssuer", values: map[string]string{"global.identity.auth.issuer": "https://issuer.example.com"}, issuer: "https://issuer.example.com"},
 		{name: "PublicIssuerFallback", values: map[string]string{"global.identity.auth.publicIssuerUrl": "https://issuer.example.com"}, issuer: "https://issuer.example.com"},
 		{name: "ExplicitBackend", values: map[string]string{"global.identity.auth.issuerBackendUrl": "https://issuer.example.com"}, backend: "https://issuer.example.com"},
+		{name: "ExplicitKeycloakBackendWithoutHost", values: map[string]string{"global.identity.auth.type": "KEYCLOAK", "global.identity.auth.issuerBackendUrl": "https://issuer.example.com"}, backend: "https://issuer.example.com"},
+		{
+			name: "KeycloakHostTemplateResolvesEmpty",
+			values: map[string]string{
+				"identity.enabled":                      "false",
+				"global.identity.auth.type":             "KEYCLOAK",
+				"global.identity.keycloak.url.protocol": "https",
+				"global.identity.keycloak.url.port":     "443",
+			},
+			args:    []string{"--set-json", `global.identity.keycloak.url.host="{{ print \"\" }}"`},
+			warn:    true,
+			backend: "https://:443/auth/realms/camunda-platform",
+		},
+		{
+			name: "TemplatedKeycloakHost",
+			values: map[string]string{
+				"identity.enabled":                      "false",
+				"global.identity.auth.type":             "KEYCLOAK",
+				"global.identity.keycloak.url.protocol": "https",
+				"global.identity.keycloak.url.port":     "443",
+			},
+			args:    []string{"--set-json", `global.identity.keycloak.url.host="{{ .Release.Name }}.example.com"`},
+			backend: "https://" + s.release + ".example.com:443/auth/realms/camunda-platform",
+		},
 		{
 			name: "ExternalKeycloak",
 			values: map[string]string{
