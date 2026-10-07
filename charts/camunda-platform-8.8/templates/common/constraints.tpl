@@ -198,6 +198,16 @@ configmap-warnings.yaml, which renders the "<release>-warnings" ConfigMap on the
 (helm template / Argo CD / Flux). Feed new deprecations here so they reach both channels.
 */}}
 {{- define "camunda.constraints.warnings" }}
+  {{- if and .Values.global.identity.auth.enabled (empty (include "camundaPlatform.authIssuerUrlWithFallback" . | trim)) }}
+    {{- $issuerBackendUrl := include "camundaPlatform.authIssuerBackendUrl" . | trim }}
+    {{- $keycloakURL := .Values.global.identity.keycloak.url | default dict }}
+    {{- if and (eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK") (empty .Values.global.identity.auth.issuerBackendUrl) (or $keycloakURL (not .Values.identityKeycloak.enabled)) (or (empty (tpl ($keycloakURL.host | default "") . | trim)) (empty $keycloakURL.protocol) (empty $keycloakURL.port)) }}
+      {{- $issuerBackendUrl = "" }}
+    {{- end }}
+    {{- if empty $issuerBackendUrl }}
+      {{- printf "\n%s" "[camunda][warning] global.identity.auth.enabled=true, but no shared authentication issuer or issuer backend URL resolves. Set global.identity.auth.issuer (or global.identity.auth.publicIssuerUrl), global.identity.auth.issuerBackendUrl, or global.identity.keycloak.url for External Keycloak. Components using separate OIDC configuration must supply their own provider settings." }}
+    {{- end }}
+  {{- end }}
   {{- if .Values.global.testDeprecationFlags.existingSecretsMustBeSet }}
     {{/* TODO: Check if there are more existingSecrets to check */}}
 
