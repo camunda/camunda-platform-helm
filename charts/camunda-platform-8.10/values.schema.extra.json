@@ -87,6 +87,10 @@
     "properties": {
         "global": {
             "properties": {
+                "annotations": {"additionalProperties": true},
+                "labels": {"additionalProperties": true},
+                "commonLabels": {"additionalProperties": true},
+                "nodeSelector": {"additionalProperties": true},
                 "documentStore": {
                     "properties": {
                         "type": {
@@ -410,6 +414,16 @@
         },
         "connectors": {
             "properties": {
+                "podAnnotations": {"additionalProperties": true},
+                "podLabels": {"additionalProperties": true},
+                "nodeSelector": {"additionalProperties": true},
+                "serviceAccount": {"properties": {
+                    "annotations": {"additionalProperties": true},
+                    "labels": {"additionalProperties": true}
+                }},
+                "persistence": {"properties": {
+                    "annotations": {"additionalProperties": true}
+                }},
                 "appIntegrations": {
                     "properties": {
                         "oauth": {
@@ -545,6 +559,7 @@
                 },
                 "service": {
                     "properties": {
+                        "annotations": {"additionalProperties": true},
                         "appProtocols": {
                             "type": "object",
                             "description": "can be used to set the Kubernetes Service appProtocol hint per port (server), e.g. {server: \"http\"}. Empty by default, no behavior change. See https://kubernetes.io/docs/concepts/services-networking/service/#application-protocol",
@@ -559,6 +574,16 @@
         },
         "identity": {
             "properties": {
+                "podAnnotations": {"additionalProperties": true},
+                "podLabels": {"additionalProperties": true},
+                "nodeSelector": {"additionalProperties": true},
+                "serviceAccount": {"properties": {
+                    "annotations": {"additionalProperties": true},
+                    "labels": {"additionalProperties": true}
+                }},
+                "persistence": {"properties": {
+                    "annotations": {"additionalProperties": true}
+                }},
                 "automountServiceAccountToken": {
                     "type": ["boolean", "null"],
                     "description": "can be used to override the automatic mounting of the service account token at the pod level. When unset, the ServiceAccount configuration is used.",
@@ -681,6 +706,7 @@
                 },
                 "service": {
                     "properties": {
+                        "annotations": {"additionalProperties": true},
                         "appProtocols": {
                             "type": "object",
                             "description": "can be used to set the Kubernetes Service appProtocol hint per port (http, metrics), e.g. {http: \"http\"}. Empty by default, no behavior change. See https://kubernetes.io/docs/concepts/services-networking/service/#application-protocol",
@@ -695,6 +721,16 @@
         },
         "optimize": {
             "properties": {
+                "podAnnotations": {"additionalProperties": true},
+                "podLabels": {"additionalProperties": true},
+                "nodeSelector": {"additionalProperties": true},
+                "serviceAccount": {"properties": {
+                    "annotations": {"additionalProperties": true},
+                    "labels": {"additionalProperties": true}
+                }},
+                "persistence": {"properties": {
+                    "annotations": {"additionalProperties": true}
+                }},
                 "security": {
                     "properties": {
                         "authentication": {
@@ -836,6 +872,7 @@
                 },
                 "service": {
                     "properties": {
+                        "annotations": {"additionalProperties": true},
                         "appProtocols": {
                             "type": "object",
                             "description": "can be used to set the Kubernetes Service appProtocol hint per port (http, management), e.g. {http: \"http\"}. Empty by default, no behavior change. See https://kubernetes.io/docs/concepts/services-networking/service/#application-protocol",
@@ -961,6 +998,13 @@
         },
         "orchestration": {
             "properties": {
+                "podAnnotations": {"additionalProperties": true},
+                "podLabels": {"additionalProperties": true},
+                "nodeSelector": {"additionalProperties": true},
+                "serviceAccount": {"properties": {
+                    "annotations": {"additionalProperties": true},
+                    "labels": {"additionalProperties": true}
+                }},
                 "envFromProvides": {
                     "items": {
                         "type": "string",
@@ -1518,8 +1562,13 @@
                 }
             },
             "properties": {
+                "serviceAccount": {"properties": {
+                    "annotations": {"additionalProperties": true},
+                    "labels": {"additionalProperties": true}
+                }},
                 "persistence": {
                     "properties": {
+                        "annotations": {"additionalProperties": true},
                         "deploymentStrategy": {
                             "enum": [
                                 "RollingUpdate",
@@ -1530,6 +1579,9 @@
                 },
                 "restapi": {
                     "properties": {
+                        "podAnnotations": {"additionalProperties": true},
+                        "podLabels": {"additionalProperties": true},
+                        "nodeSelector": {"additionalProperties": true},
                         "logging": {
                             "type": "object",
                             "description": "configuration for the restapi logging, included directly in the webModeler restapi configuration YAML file.",
@@ -1538,6 +1590,7 @@
                         },
                         "service": {
                             "properties": {
+                                "annotations": {"additionalProperties": true},
                                 "appProtocols": {
                                     "type": "object",
                                     "description": "can be used to set the Kubernetes Service appProtocol hint per port (http, http-management), e.g. {http: \"http\"}. Empty by default, no behavior change. See https://kubernetes.io/docs/concepts/services-networking/service/#application-protocol",
@@ -1552,8 +1605,12 @@
                 },
                 "websockets": {
                     "properties": {
+                        "podAnnotations": {"additionalProperties": true},
+                        "podLabels": {"additionalProperties": true},
+                        "nodeSelector": {"additionalProperties": true},
                         "service": {
                             "properties": {
+                                "annotations": {"additionalProperties": true},
                                 "appProtocols": {
                                     "type": "object",
                                     "description": "can be used to set the Kubernetes Service appProtocol hint per port (http), e.g. {http: \"kubernetes.io/ws\"}. Empty by default, no behavior change. See https://kubernetes.io/docs/concepts/services-networking/service/#application-protocol",
@@ -1566,6 +1623,11 @@
                         }
                     }
                 }
+            }
+        },
+        "prometheusServiceMonitor": {
+            "properties": {
+                "labels": {"additionalProperties": true}
             }
         },
         "camundaHub": {

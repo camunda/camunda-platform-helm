@@ -369,7 +369,7 @@ helm.schema-update:
 			"$${chart_dir}/values.yaml" \
 			"$${chart_dir}/values.schema.extra.json" \
 			"$${chart_dir}/values.schema.json"; \
-		if [ "$$(basename "$${chart_dir}")" = "camunda-platform-8.10" ]; then \
+		if [ -f "$${chart_dir}/values.unknown-keys.schema.json" ]; then \
 			jq -c . "$${chart_dir}/values.schema.json" > "$${chart_dir}/values.unknown-keys.schema.json"; \
 		fi; \
 	done

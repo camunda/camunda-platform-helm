@@ -46,8 +46,7 @@ func (s *UnknownValuesTest) TestWarningsWhenKeysAreUnknown() {
 				s.Require().NoError(err)
 				var configmap corev1.ConfigMap
 				helm.UnmarshalK8SYaml(t, output, &configmap)
-				s.Contains(configmap.Data["warnings"], "UNKNOWN VALUES KEY: orchestration.replicasx.")
-				s.Contains(configmap.Data["warnings"], "Camunda 8.11")
+				s.Contains(configmap.Data["warnings"], "[camunda][warning] UNKNOWN VALUES KEY: orchestration.replicasx. Helm ignores this key. Remove or correct it. A future chart version can reject unknown keys.")
 			},
 		},
 		{
@@ -61,6 +60,8 @@ func (s *UnknownValuesTest) TestWarningsWhenKeysAreUnknown() {
 				"orchestration.podLabels.custom":           "value",
 				"orchestration.service.annotations.custom": "value",
 				"global.annotations.custom":                "value",
+				"global.strictValues":                       "true",
+				"prometheusServiceMonitor.labels.custom":     "value",
 			},
 			Verifier: s.verifyWarningsAbsent,
 		},

@@ -15,7 +15,7 @@
     {{- $properties := $schema.properties | default dict -}}
     {{- range $key, $value := .value -}}
       {{- $path := trimPrefix "." (printf "%s.%s" $.path $key) -}}
-      {{- if or (has $path $.exempt) (and (hasKey $properties $key) (has $key (list "annotations" "podAnnotations" "labels" "podLabels" "commonLabels" "nodeSelector"))) -}}
+      {{- if has $path $.exempt -}}
       {{- else if hasKey $properties $key -}}
         {{- include "camundaPlatform.walkUnknownValues" (dict "schema" (index $properties $key) "root" $.root "value" $value "path" $path "found" $.found "exempt" $.exempt) -}}
       {{- else if kindIs "map" $schema.additionalProperties -}}
@@ -32,16 +32,22 @@
 {{- end -}}
 
 {{- define "camundaPlatform.unknownValuesPaths" -}}
+  {{- if not (hasKey . "_camundaUnknownValuesPaths") -}}
   {{- $schema := .Files.Get "values.unknown-keys.schema.json" | mustFromJson -}}
   {{- $found := dict -}}
-  {{- /* NOTE: These namespaces are shared, free-form, or handled by constraints.tpl migration guards. */ -}}
   {{- $exempt := list "global" "common" "console" "identityKeycloak" "identityPostgresql" "webModelerPostgresql" "elasticsearch" "camundaHub.webModeler" "camundaHub.console" "identity.keycloak" "orchestration.profiles.identity" "webModeler.restapi.externalDatabase.user" "orchestration.security.initialization.defaultRoles" -}}
   {{- include "camundaPlatform.walkUnknownValues" (dict "schema" $schema "root" $schema "value" .Values "path" "" "found" $found "exempt" $exempt) -}}
-  {{- keys $found | sortAlpha | toJson -}}
+  {{- $_ := set . "_camundaUnknownValuesPaths" (keys $found | sortAlpha | toJson) -}}
+  {{- end -}}
+  {{- index . "_camundaUnknownValuesPaths" -}}
 {{- end -}}
 
 {{- define "camundaPlatform.unknownValuesWarnings" -}}
-  {{- range (include "camundaPlatform.unknownValuesPaths" . | fromJsonArray) -}}
-    {{- printf "\n[camunda][warning] UNKNOWN VALUES KEY: %s. Remove or correct this key; chart-owned unknown keys will be rejected in Camunda 8.11 (chart v16)." . -}}
+  {{- $paths := include "camundaPlatform.unknownValuesPaths" . | fromJsonArray -}}
+  {{- if and .Values.global.strictValues $paths -}}
+    {{- fail (printf "[camunda][error] Unknown values keys (global.strictValues=true): %s" (join ", " $paths)) -}}
+  {{- end -}}
+  {{- range $paths -}}
+    {{- printf "\n[camunda][warning] UNKNOWN VALUES KEY: %s. Helm ignores this key. Remove or correct it. A future chart version can reject unknown keys." . -}}
   {{- end -}}
 {{- end -}}

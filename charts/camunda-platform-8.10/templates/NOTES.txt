@@ -198,8 +198,8 @@ Explicit full URLs and authentication redirect URLs are not rewritten.
 
 {{ include "camundaPlatform.releaseInfo" . }}
 
+{{ regexReplaceAll "\n[[:space:]]*\n" (include "camunda.constraints.warnings" . | trim) "\n" }}
+
 {{ include "camundaPlatform.ReleaseHighlights" . }}
 
 {{- end }}
-
-{{ regexReplaceAll "\n[[:space:]]*\n" (include "camunda.constraints.warnings" . | trim) "\n" }}

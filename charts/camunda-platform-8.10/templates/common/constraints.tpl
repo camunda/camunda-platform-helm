@@ -2405,10 +2405,3 @@ Bundled Bitnami subcharts (removed in 8.10)
   "condition" (hasKey .Values "elasticsearch")
   "oldName" "elasticsearch"
 ) }}
-
-{{- if .Values.global.strictValues -}}
-  {{- $paths := include "camundaPlatform.unknownValuesPaths" . | fromJsonArray -}}
-  {{- if $paths -}}
-    {{- fail (printf "[camunda][error] Unknown values keys (global.strictValues=true): %s" (join ", " $paths)) -}}
-  {{- end -}}
-{{- end -}}
