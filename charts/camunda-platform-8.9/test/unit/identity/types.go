@@ -70,6 +70,16 @@ type KeycloakClientYAML struct {
 }
 
 type KeycloakYAML struct {
-	Init    map[string]any       `yaml:"init"`
-	Clients []KeycloakClientYAML `yaml:"clients"`
+	Init        map[string]any          `yaml:"init"`
+	Clients     []KeycloakClientYAML    `yaml:"clients"`
+	Environment KeycloakEnvironmentYAML `yaml:"environment"`
+}
+
+type KeycloakEnvironmentYAML struct {
+	Clients []KeycloakEnvironmentClientYAML `yaml:"clients"`
+}
+
+type KeycloakEnvironmentClientYAML struct {
+	Name    string `yaml:"name"`
+	RootUrl string `yaml:"root-url"`
 }
