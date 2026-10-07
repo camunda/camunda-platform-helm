@@ -49,7 +49,7 @@ func TestChart88HelmCompatibilityMatrix(t *testing.T) {
 		t.Run(tc.shortname, func(t *testing.T) {
 			selected := Filter(entries, FilterOptions{ShortnameFilter: tc.shortname, FlowFilter: "install", Platform: "gke", Tier: tc.tier})
 			require.Len(t, selected, 1)
-			require.Empty(t, Filter(entries, FilterOptions{ShortnameFilter: tc.shortname, Tier: 3 - tc.tier}))
+			require.Empty(t, Filter(entries, FilterOptions{ShortnameFilter: tc.shortname, FlowFilter: "install", Platform: "gke", Tier: 3 - tc.tier}))
 			entry := selected[0]
 			helmVersion := entry.HelmVersion
 			if helmVersion == "" {
