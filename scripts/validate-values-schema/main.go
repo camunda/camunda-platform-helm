@@ -54,6 +54,9 @@ func main() {
 		fmt.Fprintln(os.Stderr, "usage: validate-values-schema --schema <schema.json> [--chart-dir <dir>] [--ignore-root <key>]... <values.yaml>... OR --schema <schema.json> --chart-dir <dir> --previous-minor")
 		os.Exit(2)
 	}
+	if *previousMinor {
+		os.Exit(runPreviousMinor(*schemaPath, *chartDir, ignoreRoots))
+	}
 
 	schema, err := loadJSON(*schemaPath)
 	if err != nil {
@@ -77,17 +80,8 @@ func main() {
 		}
 	}
 
-	files := flag.Args()
-	var coverage upgradeCoverage
-	if *previousMinor {
-		coverage, files, err = loadUpgrade(*chartDir)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "error: upgrade coverage: %v\n", err)
-			os.Exit(2)
-		}
-	}
 	failures := 0
-	for _, valuesPath := range files {
+	for _, valuesPath := range flag.Args() {
 		values, err := loadYAML(valuesPath)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "error: reading %s: %v\n", valuesPath, err)
@@ -99,15 +93,6 @@ func main() {
 		}
 		for root := range ignore {
 			delete(vmap, root)
-		}
-		if *previousMinor {
-			reportPath, err := filepath.Rel(filepath.Dir(filepath.Dir(*chartDir)), valuesPath)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "error: upgrade report path: %v\n", err)
-				os.Exit(2)
-			}
-			failures += coverage.report(os.Stdout, reportPath, coverage.findUnknownKeys(strict, vmap))
-			continue
 		}
 		unknown := findUnknownKeys(strict, vmap, "")
 		if len(unknown) > 0 {
@@ -121,10 +106,6 @@ func main() {
 	}
 
 	if failures > 0 {
-		if *previousMinor {
-			fmt.Fprintln(os.Stderr, "Provide deprecation or removal coverage for uncovered previous-minor keys before enforcing a strict schema.")
-			os.Exit(1)
-		}
 		fmt.Fprintf(os.Stderr, "\nAdd the missing keys to values.schema.extra.json and run 'make helm.schema-update', "+
 			"or remove the dead keys from the values file. See https://github.com/camunda/camunda-platform-helm/issues/4564\n")
 		os.Exit(1)
