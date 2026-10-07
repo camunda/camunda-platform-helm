@@ -16,6 +16,7 @@ package kube
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"scripts/camunda-core/pkg/executil"
 	"strings"
@@ -48,14 +49,20 @@ func runKubectlTimeout(ctx context.Context, args []string, timeout time.Duration
 	defer cancel()
 
 	output, err := executil.RunCommandBuffered(cmdCtx, "kubectl", args, nil, "")
-	if err != nil {
-		// Still return any partial output captured before the error.
-		if output != nil && len(output.Stdout) > 0 {
-			return strings.Join(output.Stdout, "\n"), err
-		}
+	if output == nil {
 		return "", err
 	}
-	return strings.Join(output.Stdout, "\n"), nil
+	stdout := strings.Join(output.Stdout, "\n")
+	if err == nil {
+		return stdout, nil
+	}
+	if errors.Is(cmdCtx.Err(), context.DeadlineExceeded) {
+		err = fmt.Errorf("kubectl timed out after %s: %w", timeout, err)
+	}
+	if len(output.Stderr) > 0 {
+		err = fmt.Errorf("%w: %s", err, strings.Join(output.Stderr, "\n"))
+	}
+	return stdout, err
 }
 
 // GetPods returns the output of `kubectl get pods -n <namespace> -o wide`.
