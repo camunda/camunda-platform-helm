@@ -134,7 +134,7 @@ RUN curl -fsSL "https://github.com/upx/upx/releases/download/v${UPX_VERSION}/upx
 # Tool versions - These should match .tool-versions in the repository root
 # ------------------------------------------------------------------------------
 ARG HELM_VERSION=4.1.4
-ARG KUBECTL_VERSION=1.27.16
+ARG KUBECTL_VERSION=1.36.5
 ARG JQ_VERSION=1.8.1
 ARG YQ_VERSION=4.50.1
 ARG AWS_IAM_AUTH_VERSION=0.6.26
