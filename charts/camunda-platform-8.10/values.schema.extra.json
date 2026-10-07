@@ -1582,6 +1582,14 @@
                         "podAnnotations": {"additionalProperties": true},
                         "podLabels": {"additionalProperties": true},
                         "nodeSelector": {"additionalProperties": true},
+                        "image": {
+                            "properties": {
+                                "tag": {
+                                    "type": "string",
+                                    "description": "can be used to override webModeler.image.tag for the REST API image. Omit this key to retain the shared image tag."
+                                }
+                            }
+                        },
                         "logging": {
                             "type": "object",
                             "description": "configuration for the restapi logging, included directly in the webModeler restapi configuration YAML file.",
@@ -1608,6 +1616,14 @@
                         "podAnnotations": {"additionalProperties": true},
                         "podLabels": {"additionalProperties": true},
                         "nodeSelector": {"additionalProperties": true},
+                        "image": {
+                            "properties": {
+                                "tag": {
+                                    "type": "string",
+                                    "description": "can be used to override webModeler.image.tag for the WebSockets image. Omit this key to retain the shared image tag."
+                                }
+                            }
+                        },
                         "service": {
                             "properties": {
                                 "annotations": {"additionalProperties": true},

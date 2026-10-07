@@ -2,6 +2,16 @@
     "title": "Chart Values",
     "type": "object",
     "properties": {
+        "fullnameOverride": {
+            "type": "string",
+            "description": "can be used to override the full name of the chart resources.",
+            "default": ""
+        },
+        "nameOverride": {
+            "type": "string",
+            "description": "can be used to override the chart name in resource names and labels.",
+            "default": ""
+        },
         "global": {
             "type": "object",
             "properties": {
@@ -160,6 +170,21 @@
                         "registry": {
                             "type": "string",
                             "description": "Can be used to set container image registry.",
+                            "default": ""
+                        },
+                        "repository": {
+                            "type": "string",
+                            "description": "can be used as the image repository when a component repository is empty.",
+                            "default": ""
+                        },
+                        "tag": {
+                            "type": "string",
+                            "description": "can be used as the image tag when a component tag is empty.",
+                            "default": ""
+                        },
+                        "digest": {
+                            "type": "string",
+                            "description": "can be used as the image digest when a component digest is empty. A digest overrides the image tag.",
                             "default": ""
                         },
                         "pullPolicy": {
@@ -1486,6 +1511,21 @@
                     "description": "can be used to partly override the name of the Management Identity resources (names will still be prefixed with the release name)",
                     "default": ""
                 },
+                "realm": {
+                    "type": "object",
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "description": "if true, sets the Keycloak realm in the Management Identity configuration.",
+                            "default": false
+                        },
+                        "id": {
+                            "type": "string",
+                            "description": "can be used to set the Keycloak realm identifier when identity.realm.enabled is true.",
+                            "default": ""
+                        }
+                    }
+                },
                 "firstUser": {
                     "type": "object",
                     "properties": {
@@ -2404,6 +2444,10 @@
                                     "type": "string",
                                     "description": "can be used to set image digest (overrides tag if set, e.g. \"sha256:abcd...\")",
                                     "default": ""
+                                },
+                                "tag": {
+                                    "type": "string",
+                                    "description": "can be used to override webModeler.image.tag for the REST API image. Omit this key to retain the shared image tag."
                                 }
                             }
                         },
@@ -2977,6 +3021,10 @@
                                     "type": "string",
                                     "description": "can be used to set image digest (overrides tag if set, e.g. \"sha256:abcd...\")",
                                     "default": ""
+                                },
+                                "tag": {
+                                    "type": "string",
+                                    "description": "can be used to override webModeler.image.tag for the WebSockets image. Omit this key to retain the shared image tag."
                                 }
                             }
                         },
@@ -3667,6 +3715,16 @@
                     "description": "if true, the Connectors deployment and its related resources are deployed via a helm release",
                     "default": true
                 },
+                "fullnameOverride": {
+                    "type": "string",
+                    "description": "can be used to override the full name of the Connectors resources.",
+                    "default": ""
+                },
+                "nameOverride": {
+                    "type": "string",
+                    "description": "can be used to override the Connectors name after the release prefix.",
+                    "default": ""
+                },
                 "security": {
                     "type": "object",
                     "properties": {
@@ -3685,6 +3743,11 @@
                                             "type": "string",
                                             "description": "defines the client id, which is used by Connectors in authentication flows.",
                                             "default": "connectors"
+                                        },
+                                        "audience": {
+                                            "type": "string",
+                                            "description": "can be used to override the Orchestration audience for Connectors authentication.",
+                                            "default": ""
                                         },
                                         "tokenScope": {
                                             "type": "string",
@@ -4429,6 +4492,16 @@
                     "type": "boolean",
                     "description": "if true, the orchestration cluster deployment and its related resources are deployed via a helm release",
                     "default": true
+                },
+                "fullnameOverride": {
+                    "type": "string",
+                    "description": "can be used to override the full name of the Orchestration resources.",
+                    "default": ""
+                },
+                "nameOverride": {
+                    "type": "string",
+                    "description": "can be used to override the Orchestration name after the release prefix.",
+                    "default": ""
                 },
                 "debug": {
                     "type": "boolean",
@@ -6182,6 +6255,16 @@
                     "type": "boolean",
                     "description": "if true, the Optimize deployment and its related resources are deployed via a helm release",
                     "default": false
+                },
+                "fullnameOverride": {
+                    "type": "string",
+                    "description": "can be used to override the full name of the Optimize resources.",
+                    "default": ""
+                },
+                "nameOverride": {
+                    "type": "string",
+                    "description": "can be used to override the Optimize name after the release prefix.",
+                    "default": ""
                 },
                 "identity": {
                     "type": "object",
