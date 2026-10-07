@@ -66,13 +66,13 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
-    - kind: added
-      description: "Support orchestration releases managed by Camunda Hub"
-    - kind: added
-      description: "Document and validate ReadWriteOncePod for broker PVCs"
     - kind: fixed
-      description: "DocumentStore cloud credentials misuse"
+      description: "Remove legacy camundaexporter connect.type causing per-request deprecation log spam"
     - kind: fixed
-      description: "Only add Web Modeler / Camunda Hub audience if enabled"
+      description: "Omit empty elasticsearch username from optimize environment-config"
     - kind: fixed
-      description: "Allow overriding external ingress protocol"
+      description: "Warn when the multi-region cluster size is not a multiple of the region count"
+    - kind: fixed
+      description: "Use the image tag for app.kubernetes.io/version when an image digest is set"
+    - kind: fixed
+      description: "Warn or fail on Web Modeler restapi Recreate without existingClaim"
