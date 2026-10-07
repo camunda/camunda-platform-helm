@@ -6270,7 +6270,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.10.0"
+                            "default": "8.10.2-rc1"
                         },
                         "digest": {
                             "type": "string",
