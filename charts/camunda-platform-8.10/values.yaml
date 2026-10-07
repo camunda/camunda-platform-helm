@@ -24,6 +24,8 @@
 #   * [if true] for toggles
 #   * [configuration] for section/group of variables
 
+## @section Common parameters
+
 ## @param fullnameOverride can be used to override the full name of the chart resources.
 fullnameOverride: ""
 ## @param nameOverride can be used to override the chart name in resource names and labels.

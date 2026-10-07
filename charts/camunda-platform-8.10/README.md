@@ -352,6 +352,13 @@ Please see the corresponding [release guide](../../docs/release.md) to find out 
 
 ## Parameters
 
+### Common parameters
+
+| Name               | Description                                                          | Value |
+| ------------------ | -------------------------------------------------------------------- | ----- |
+| `fullnameOverride` | can be used to override the full name of the chart resources.        | `""`  |
+| `nameOverride`     | can be used to override the chart name in resource names and labels. | `""`  |
+
 ### Global parameters
 
 | Name                                                  | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | Value                       |
