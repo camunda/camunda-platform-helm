@@ -104,6 +104,28 @@ func (s *ConfigMapWarningsTemplateTest) TestUnresolvedAuthIssuer() {
 			backend: "https://keycloak.example.com:443/auth/realms/camunda-platform",
 		},
 		{
+			name: "KeycloakURLWithoutProtocol",
+			values: map[string]string{
+				"identity.enabled":                  "false",
+				"global.identity.auth.type":         "KEYCLOAK",
+				"global.identity.keycloak.url.host": "keycloak.example.com",
+				"global.identity.keycloak.url.port": "443",
+			},
+			warn:    true,
+			backend: "://keycloak.example.com:443/auth/realms/camunda-platform",
+		},
+		{
+			name: "KeycloakURLWithoutPort",
+			values: map[string]string{
+				"identity.enabled":                      "false",
+				"global.identity.auth.type":             "KEYCLOAK",
+				"global.identity.keycloak.url.protocol": "https",
+				"global.identity.keycloak.url.host":     "keycloak.example.com",
+			},
+			warn:    true,
+			backend: "https://keycloak.example.com:/auth/realms/camunda-platform",
+		},
+		{
 			name: "GenericCannotUseKeycloakHost",
 			values: map[string]string{
 				"global.identity.keycloak.url.protocol": "https",

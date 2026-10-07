@@ -1035,7 +1035,7 @@ Usage:
   {{- if and .Values.global.identity.auth.enabled (empty (include "camundaPlatform.authIssuerUrlWithFallback" . | trim)) }}
     {{- $issuerBackendUrl := include "camundaPlatform.authIssuerBackendUrl" . | trim }}
     {{- $keycloakURL := .Values.global.identity.keycloak.url | default dict }}
-    {{- if and (eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK") (empty .Values.global.identity.auth.issuerBackendUrl) (empty (tpl ($keycloakURL.host | default "") . | trim)) }}
+    {{- if and (eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK") (empty .Values.global.identity.auth.issuerBackendUrl) (or (empty (tpl ($keycloakURL.host | default "") . | trim)) (empty $keycloakURL.protocol) (empty $keycloakURL.port)) }}
       {{- $issuerBackendUrl = "" }}
     {{- end }}
     {{- if empty $issuerBackendUrl }}
