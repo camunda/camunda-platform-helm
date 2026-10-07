@@ -6,9 +6,9 @@
 
 ## Context and Problem Statement
 
-The Camunda Platform Helm chart is an umbrella chart that can deploy Hub plane components
+The Camunda Platform Helm chart is an umbrella chart that can deploy management plane components
 (Management Identity and Camunda Hub) and workload-plane components (Orchestration Cluster,
-Connectors, and Optimize) in one release. Operators also need to run one shared Hub plane with
+Connectors, and Optimize) in one release. Operators also need to run one shared management plane with
 multiple independently deployed Orchestration Clusters. Namespace placement alone does not describe
 that relationship: the Hub release must register clients and permissions, publish Camunda Hub
 inventory, and provide a reachable Management Identity service, while each orchestration release must
@@ -63,7 +63,7 @@ Physical Tenants first ship.
 - **Declarative GitOps operation.** Helm, Argo CD, and Flux must render the same desired resources from
   values alone. The contract must not depend on `.Release.IsUpgrade`, live-cluster `lookup`, or
   imperative discovery.
-- **Security isolation.** Multiple clusters that share a Hub plane or secondary storage must be
+- **Security isolation.** Multiple clusters that share a management plane or secondary storage must be
   able to use distinct clients, audiences, roles, secrets, and storage prefixes.
 - **Future packaging independence.** The relationship between Hub and workload releases must
   survive a future split of the umbrella chart into separately published charts.
@@ -225,3 +225,4 @@ and is not defined by this ADR.
 ## Changelog
 
 - 2026-09-22 — [#7012](https://github.com/camunda/camunda-platform-helm/pull/7012) — Backport the `orchestration` role to charts 8.7, 8.8, and 8.9 (was ADR 0098).
+- 2026-10-06 — [#7476](https://github.com/camunda/camunda-platform-helm/pull/7476) — Rename "Hub plane" to "management plane" to match the docs glossary.
