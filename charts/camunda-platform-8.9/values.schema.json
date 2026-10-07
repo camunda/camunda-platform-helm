@@ -219,6 +219,31 @@
                                 }
                             }
                         },
+                        "publicPorts": {
+                            "type": "object",
+                            "properties": {
+                                "http": {
+                                    "type": [
+                                        "integer",
+                                        "null"
+                                    ],
+                                    "description": "can be used to set the public port for Gateway endpoints with TLS disabled. Defaults to global.gateway.port. Port 80 is omitted from HTTP URLs.",
+                                    "default": null,
+                                    "minimum": 1,
+                                    "maximum": 65535
+                                },
+                                "https": {
+                                    "type": [
+                                        "integer",
+                                        "null"
+                                    ],
+                                    "description": "can be used to set the public port for Gateway endpoints with TLS enabled. Defaults to global.gateway.tls.port. Port 443 is omitted from HTTPS URLs.",
+                                    "default": null,
+                                    "minimum": 1,
+                                    "maximum": 65535
+                                }
+                            }
+                        },
                         "controllerNamespace": {
                             "type": "string",
                             "description": "can be used to set the namespace from which an external controller or operator creates Routes that route traffic to Camunda services. The chart places this value in the ReferenceGrant's from.namespace, which is the Kubernetes permission that authorizes those Routes to reach Camunda services. Leave empty (the default) when Routes are created by this chart.",
