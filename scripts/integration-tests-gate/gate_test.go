@@ -681,6 +681,19 @@ func TestRun_MergeGroupCancelFailureIsRetried(t *testing.T) {
 	}
 }
 
+func TestRun_MergeGroupSeenBeforeRetryLeavingQueueCancelsRetry(t *testing.T) {
+	c := newFailedMergeGroupFake(t)
+	c.statusByAttempt[2] = statusList("in_progress", "completed")
+	c.queue = []queueResp{{heads: []string{"head_sha"}}, {heads: []string{"newer_head_sha"}}}
+	err := newTestGate(c).Run("merge_group", "", "head_sha")
+	if !errors.Is(err, ErrNotRetryable) {
+		t.Fatalf("expected ErrNotRetryable, got %v", err)
+	}
+	if c.rerunCalls != 1 || c.cancelCalls != 1 {
+		t.Fatalf("expected 1 rerun and 1 cancel, got %d reruns and %d cancels", c.rerunCalls, c.cancelCalls)
+	}
+}
+
 func TestRun_MergeGroupNeverSeenInQueueIsNotCancelled(t *testing.T) {
 	c := newFailedMergeGroupFake(t)
 	c.statusByAttempt[1] = statusList("in_progress", "in_progress", "completed")

@@ -253,9 +253,11 @@ func (g *Gate) Run(event, prHeadSHA, mgHeadSHA string) error {
 		return watchErr
 	}
 	if g.mergeGroupSHA != "" {
-		if queued, known := g.mergeGroupQueued(); known && !queued {
+		queued, known := g.mergeGroupQueued()
+		if known && !queued {
 			return errMergeGroupLeftQueue
 		}
+		g.mergeGroupSeen = g.mergeGroupSeen || queued
 	}
 
 	g.Logf("triggering retry of failed jobs on %s", runURL)
