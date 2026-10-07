@@ -164,7 +164,8 @@ func (c upgradeCoverage) report(output io.Writer, valuesPath string, unknown []s
 }
 
 func previousMinorChart(chartDir string) (string, error) {
-	match := chartMinor.FindStringSubmatch(filepath.Base(filepath.Clean(chartDir)))
+	chartDir = filepath.Clean(chartDir)
+	match := chartMinor.FindStringSubmatch(filepath.Base(chartDir))
 	if match == nil {
 		return "", errChartVersion
 	}

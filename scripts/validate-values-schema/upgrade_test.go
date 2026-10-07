@@ -125,6 +125,23 @@ func TestPreviousMinorChartWhenMinorHasTwoDigits(t *testing.T) {
 	require.Equal(t, "charts/camunda-platform-8.9", previous)
 }
 
+func TestPreviousMinorChartHandlesTrailingSeparators(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name, chartDir string
+	}{
+		{"trailing slash", "charts/camunda-platform-8.10/"},
+		{"trailing dot", "charts/camunda-platform-8.10/."},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			previous, err := previousMinorChart(tc.chartDir)
+			require.NoError(t, err)
+			require.Equal(t, "charts/camunda-platform-8.9", previous)
+		})
+	}
+}
+
 func TestPreviousMinorChartRejectsInvalidVersion(t *testing.T) {
 	t.Parallel()
 	_, err := previousMinorChart("charts/camunda-platform-alpha")
