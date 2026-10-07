@@ -413,6 +413,77 @@ func TestTopologyValidate_CredentialsManifest(t *testing.T) {
 	}
 }
 
+func TestTopologyValidate_CredentialStores(t *testing.T) {
+	repoRoot, dir := newTopologyTestChart(t)
+	depsDir := filepath.Join(t.TempDir(), "dependencies")
+	writeValuesFile(t, dir, "features/hub.yaml")
+	writeValuesFile(t, dir, "features/orchestration.yaml")
+	writeValuesFile(t, dir, "identity/keycloak.yaml")
+	writeValuesFile(t, dir, "identity/keycloak-external.yaml")
+	writeValuesFile(t, dir, "persistence/elasticsearch-external.yaml")
+	writeDepFile(t, depsDir, "keycloak")
+	manifest := filepath.Join("charts", "camunda-platform-8.10", "creds.yaml")
+	if err := os.WriteFile(filepath.Join(repoRoot, manifest), []byte("kind: ExternalSecret\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	valid := func() *CredentialStores {
+		return &CredentialStores{
+			NamespaceSuffix: "hub",
+			Secret:          "creds",
+			Postgres:        []PostgresCredentialStore{{StatefulSet: "pg", User: "app", Database: "db", SecretKey: "pg-pw"}},
+			Keycloak: &KeycloakCredentialStore{
+				Deployment: "keycloak", Container: "keycloak", URL: "http://localhost:8080/auth",
+				AdminUser: "admin", AdminSecretKey: "kc-pw",
+				Users: []KeycloakUserCredential{{Realm: "r", Username: "demo", SecretKey: "u-pw"}},
+			},
+		}
+	}
+
+	cases := []struct {
+		name     string
+		manifest string
+		mutate   func(*CredentialStores)
+		wantErr  string
+	}{
+		{"valid", manifest, func(*CredentialStores) {}, ""},
+		{"requires credentials-manifest", "", func(*CredentialStores) {}, "requires credentials-manifest"},
+		{"unknown namespace-suffix", manifest, func(s *CredentialStores) { s.NamespaceSuffix = "nope" }, `namespace-suffix "nope" matches no release`},
+		{"missing secret", manifest, func(s *CredentialStores) { s.Secret = "" }, "secret is required"},
+		{"incomplete postgres", manifest, func(s *CredentialStores) { s.Postgres[0].User = "" }, "postgres[0].user is required"},
+		{"incomplete keycloak user", manifest, func(s *CredentialStores) { s.Keycloak.Users[0].SecretKey = "" }, "keycloak.users[0].secret-key is required"},
+		{"no stores", manifest, func(s *CredentialStores) { s.Postgres, s.Keycloak = nil, nil }, "at least one postgres, keycloak, or elasticsearch store"},
+		{"incomplete elasticsearch", manifest, func(s *CredentialStores) { s.Elasticsearch = &ElasticsearchCredential{StatefulSet: "es"} }, "elasticsearch.user is required"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			stores := valid()
+			tc.mutate(stores)
+			top := &Topology{
+				Name:                "hub-1orch",
+				CredentialsManifest: tc.manifest,
+				CredentialStores:    stores,
+				Releases: []TopologyRelease{
+					{Role: "hub", NamespaceSuffix: "hub", Features: []string{"hub"}, Identity: "keycloak", Dependencies: []string{"keycloak"}},
+					{
+						Role: "orchestration", NamespaceSuffix: "orcha", ModelerClusterID: "orcha", ModelerClusterName: "Orchestration A",
+						Features: []string{"orchestration"}, Identity: "keycloak-external", Persistence: "elasticsearch-external", DependsOn: "hub",
+					},
+				},
+			}
+			err := top.Validate("ctx", dir, depsDir)
+			if tc.wantErr == "" {
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
+				return
+			}
+			if err == nil || !strings.Contains(err.Error(), tc.wantErr) {
+				t.Fatalf("err = %v, want it to mention %q", err, tc.wantErr)
+			}
+		})
+	}
+}
+
 func TestTopologyValidate_ValidWithOptimizeReleases(t *testing.T) {
 	_, dir := newTopologyTestChart(t)
 	depsDir := filepath.Join(t.TempDir(), "dependencies")

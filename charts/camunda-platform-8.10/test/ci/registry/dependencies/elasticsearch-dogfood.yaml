@@ -4,3 +4,5 @@ release-name: elasticsearch
 values-file: test/integration/companion-values/elasticsearch-dogfood.yaml
 repo-name: elastic
 repo-url: https://helm.elastic.co
+env-vars:
+  - DOGFOOD_CREDENTIALS_CHECKSUM

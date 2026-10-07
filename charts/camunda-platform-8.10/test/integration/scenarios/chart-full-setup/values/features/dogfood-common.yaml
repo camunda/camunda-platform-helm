@@ -11,13 +11,35 @@
 # - The broker has a PodDisruptionBudget, so the cluster autoscaler does not
 #   evict it to scale a spot node down. Spot reclaims ignore budgets; this only
 #   removes the voluntary disruptions.
+# - Every component that reads integration-test-credentials carries the
+#   credentials checksum, so a rotated credential restarts it in the same
+#   deploy. DOGFOOD_CREDENTIALS_CHECKSUM comes from
+#   `deploy-camunda topology reconcile-credentials --checksum-file`.
 
 global:
   ingress:
     annotations:
       nginx.ingress.kubernetes.io/ssl-redirect: "true"
 
+identity:
+  podAnnotations:
+    camunda.io/credentials-checksum: "${DOGFOOD_CREDENTIALS_CHECKSUM}"
+
+webModeler:
+  restapi:
+    podAnnotations:
+      camunda.io/credentials-checksum: "${DOGFOOD_CREDENTIALS_CHECKSUM}"
+  websockets:
+    podAnnotations:
+      camunda.io/credentials-checksum: "${DOGFOOD_CREDENTIALS_CHECKSUM}"
+
+optimize:
+  podAnnotations:
+    camunda.io/credentials-checksum: "${DOGFOOD_CREDENTIALS_CHECKSUM}"
+
 orchestration:
+  podAnnotations:
+    camunda.io/credentials-checksum: "${DOGFOOD_CREDENTIALS_CHECKSUM}"
   ingress:
     grpc:
       annotations:
@@ -27,6 +49,8 @@ orchestration:
     minAvailable: 1
 
 connectors:
+  podAnnotations:
+    camunda.io/credentials-checksum: "${DOGFOOD_CREDENTIALS_CHECKSUM}"
   env:
     - name: MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS
       value: "never"

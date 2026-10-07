@@ -125,21 +125,29 @@ jobs:
       # The topology's credentials-manifest reads a dogfood-only source Secret in
       # the ClusterSecretStore's namespace. Create it, and generate any value it
       # lacks, before the deploy's ExternalSecrets try to read it. Existing
-      # values are kept: rotating one is a manual, coordinated operation. A
-      # missing source or property is only generated for a fresh environment:
-      # any existing namespace of it means its services hold other credentials.
+      # values are kept.
       - name: Ensure dogfood credentials
         if: env.DOGFOOD_ACTION == 'deploy' || env.DOGFOOD_ACTION == 'upgrade'
         run: |
-          namespaces=$(deploy-camunda topology namespaces \
+          deploy-camunda topology ensure-credentials \
+            --manifest "${GITHUB_WORKSPACE}/charts/camunda-platform-${DOGFOOD_CHART_VERSION}/test/integration/external-secrets/dogfood-credentials.yaml" \
+            --base "${DOGFOOD_ENVIRONMENT}"
+
+      # Syncs every existing namespace's credentials from the source and sets
+      # the scenario's credential-stores (PostgreSQL roles, Keycloak admin and
+      # users, Elasticsearch) to them. The checksum of the exact source values
+      # it reconciled against is annotated onto every consumer, so the deploy
+      # below restarts them when a credential changed.
+      - name: Reconcile dogfood credentials
+        if: env.DOGFOOD_ACTION == 'deploy' || env.DOGFOOD_ACTION == 'upgrade'
+        run: |
+          deploy-camunda topology reconcile-credentials \
             --repo-root "${GITHUB_WORKSPACE}" \
             --version "${DOGFOOD_CHART_VERSION}" \
             --scenario "${DOGFOOD_SCENARIO}" \
-            --base "${DOGFOOD_ENVIRONMENT}" | paste -sd, -)
-          deploy-camunda topology ensure-credentials \
-            --manifest "${GITHUB_WORKSPACE}/charts/camunda-platform-${DOGFOOD_CHART_VERSION}/test/integration/external-secrets/dogfood-credentials.yaml" \
             --base "${DOGFOOD_ENVIRONMENT}" \
-            --guard-namespace "${namespaces}"
+            --checksum-file "${RUNNER_TEMP}/credentials-checksum"
+          echo "DOGFOOD_CREDENTIALS_CHECKSUM=$(cat "${RUNNER_TEMP}/credentials-checksum")" >> "$GITHUB_ENV"
 
       # `matrix run` deploys through `helm upgrade --install`, so deploy and
       # upgrade are the same idempotent call against the same stable namespaces.

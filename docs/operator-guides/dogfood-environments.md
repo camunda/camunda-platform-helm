@@ -62,6 +62,28 @@ Requires a `gcloud` session for the CI GKE project, Harbor credentials in the
 Docker keychain, and `DOCKERHUB_USERNAME` and `DOCKERHUB_PASSWORD` in the
 environment (see the `gke-verification` skill for the pre-flight).
 
+Prepare the credentials first, in the same order as the workflow. The deploy
+fails without `DOGFOOD_CREDENTIALS_CHECKSUM`, because the dogfood values layers
+substitute it into every credential consumer's pod annotations:
+
+```bash
+deploy-camunda topology ensure-credentials \
+  --manifest charts/camunda-platform-8.10/test/integration/external-secrets/dogfood-credentials.yaml \
+  --base dogfood
+deploy-camunda topology reconcile-credentials --version 8.10 --scenario dogfood --base dogfood \
+  --checksum-file /tmp/dogfood-credentials-checksum
+export DOGFOOD_CREDENTIALS_CHECKSUM=$(cat /tmp/dogfood-credentials-checksum)
+```
+
+`ensure-credentials` creates `distribution-team/dogfood-credentials` and fills in
+any missing value; it never changes an existing one. `reconcile-credentials`
+syncs every namespace's `integration-test-credentials` from that source and sets
+the stores listed under `credential-stores` in the scenario to the synced values.
+Those stores are the PostgreSQL roles, the Keycloak admin and `demo` user, and
+the Elasticsearch `elastic` user. Each of them keeps the password it was
+initialised with, so skipping this step after a credential changes locks the
+services out. Both commands print key names only, never values.
+
 ```bash
 deploy-camunda matrix run \
   --repo-root . \
@@ -133,3 +155,15 @@ so it needs a fourth cluster of its own.
 - **Uninstall leaves data behind.** Helm uninstall does not drop Elasticsearch
   indices, and removing a cluster or tenant record does not delete its Identity
   or Keycloak objects. Clean both explicitly once no release reads them.
+- **Rotate a credential by changing the source.** Delete a property from
+  `distribution-team/dogfood-credentials` to have `ensure-credentials` generate a
+  new value, or set it yourself, then run the workflow's `upgrade` action.
+  Reconcile sets the stores, and the changed checksum restarts every consumer.
+  If a run fails part way, re-run it.
+  `dogfood-hub/integration-test-credentials-previous` holds the values the last
+  complete run set, plus every value seen since, and reconcile falls back on
+  them. Don't delete that Secret by hand.
+- **Don't change the source while a deploy is running.** Reconcile pins one
+  generation, but External Secrets can still pick up a newer one before the
+  deploy finishes, which restarts consumers with values the stores don't have
+  yet. The next `upgrade` repairs it.
