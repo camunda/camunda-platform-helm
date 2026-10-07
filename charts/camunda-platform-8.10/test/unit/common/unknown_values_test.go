@@ -74,6 +74,23 @@ func (s *UnknownValuesTest) TestWarningsWhenKeysAreUnknown() {
 			Verifier: s.verifyWarningsAbsent,
 		},
 		{
+			Name: "SupportedNameOverridesProduceNoUnknownWarning",
+			Values: map[string]string{
+				"nameOverride":                   "foo",
+				"orchestration.fullnameOverride": "bar",
+			},
+			Verifier: s.verifyWarningsAbsent,
+		},
+		{
+			Name: "SupportedNameOverridesPassWhenStrict",
+			Values: map[string]string{
+				"nameOverride":                   "foo",
+				"orchestration.fullnameOverride": "bar",
+				"global.strictValues":            "true",
+			},
+			Verifier: s.verifyWarningsAbsent,
+		},
+		{
 			Name: "DeprecatedConsoleKeysAreNotUnknownEvenWhenStrict",
 			Values: map[string]string{
 				"console.nodeEnv":     "legacy",
@@ -132,7 +149,7 @@ func (s *UnknownValuesTest) verifyWarningsAbsent(t *testing.T, output string, er
 	}
 	var configmap corev1.ConfigMap
 	helm.UnmarshalK8SYaml(t, output, &configmap)
-	s.Equal("camunda-platform-test-warnings", configmap.Name)
+	s.Regexp("-warnings$", configmap.Name)
 	s.NotContains(configmap.Data["warnings"], "UNKNOWN VALUES KEY:")
 }
 
