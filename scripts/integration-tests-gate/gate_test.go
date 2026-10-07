@@ -37,6 +37,7 @@ type fakeClient struct {
 	rerunQueue              []error
 	rerunCalls              int
 	queue                   []queueResp
+	cancelQueue             []error
 	cancelCalls             int
 }
 
@@ -115,7 +116,12 @@ func (f *fakeClient) Rerun(string) error {
 }
 func (f *fakeClient) Cancel(string) error {
 	f.cancelCalls++
-	return nil
+	if len(f.cancelQueue) == 0 {
+		return nil
+	}
+	e := f.cancelQueue[0]
+	f.cancelQueue = f.cancelQueue[1:]
+	return e
 }
 func (f *fakeClient) MergeQueueHeads(string) ([]string, error) {
 	if len(f.queue) == 0 {
@@ -658,6 +664,20 @@ func TestRun_MergeGroupLeavingQueueCancelsRun(t *testing.T) {
 	}
 	if c.cancelCalls != 1 || c.rerunCalls != 0 {
 		t.Fatalf("expected 1 cancel and no rerun, got %d cancels and %d reruns", c.cancelCalls, c.rerunCalls)
+	}
+}
+
+func TestRun_MergeGroupCancelFailureIsRetried(t *testing.T) {
+	c := newFailedMergeGroupFake(t)
+	c.statusByAttempt[1] = statusList("in_progress", "in_progress", "in_progress")
+	c.queue = []queueResp{{heads: []string{"head_sha"}}, {heads: []string{"newer_head_sha"}}}
+	c.cancelQueue = []error{errors.New("HTTP 502")}
+	err := newTestGate(c).Run("merge_group", "", "head_sha")
+	if !errors.Is(err, ErrNotRetryable) {
+		t.Fatalf("expected ErrNotRetryable, got %v", err)
+	}
+	if c.cancelCalls != 2 || c.rerunCalls != 0 {
+		t.Fatalf("expected 2 cancels and no rerun, got %d cancels and %d reruns", c.cancelCalls, c.rerunCalls)
 	}
 }
 

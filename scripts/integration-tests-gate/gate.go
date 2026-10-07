@@ -160,7 +160,9 @@ func (g *Gate) WaitForCompletion(runID string, attempt int) error {
 			} else if known && g.mergeGroupSeen {
 				g.Logf("merge group %s left the merge queue; cancelling run %s", g.mergeGroupSHA, runID)
 				if err := g.Client.Cancel(runID); err != nil {
-					g.Logf("cancel failed: %v", err)
+					g.Logf("cancel failed, retrying: %v", err)
+					g.Sleep(g.PollInterval)
+					continue
 				}
 				return errMergeGroupLeftQueue
 			}
