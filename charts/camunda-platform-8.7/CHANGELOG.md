@@ -1,5 +1,20 @@
 # Changelog
 
+## [12.14.1](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.7-12.14.0...camunda-platform-8.7-12.14.1) (2026-10-07)
+
+
+### Bug Fixes
+
+* use the image tag for app.kubernetes.io/version when an image digest is set ([#7447](https://github.com/camunda/camunda-platform-helm/issues/7447)) ([56f1be3](https://github.com/camunda/camunda-platform-helm/commit/56f1be3ee033bc4bda53dd69a1e6680b9c9b2fe1))
+
+
+### Dependencies
+
+* update camunda-platform-images (patch) ([#7380](https://github.com/camunda/camunda-platform-helm/issues/7380)) ([414bb27](https://github.com/camunda/camunda-platform-helm/commit/414bb2789fb5f597d65421f97db6adb445db30ec))
+* update patch-updates (patch) ([#7448](https://github.com/camunda/camunda-platform-helm/issues/7448)) ([604bd8e](https://github.com/camunda/camunda-platform-helm/commit/604bd8ef0d10864a0f9e6ff304c1086b51222b1e))
+* update patch-updates (patch) ([#7475](https://github.com/camunda/camunda-platform-helm/issues/7475)) ([5dd41b4](https://github.com/camunda/camunda-platform-helm/commit/5dd41b4bb4c46d3c75b3fb9717d448ab2eaca1e5))
+* update patch-updates (patch) ([#7483](https://github.com/camunda/camunda-platform-helm/issues/7483)) ([5713eb8](https://github.com/camunda/camunda-platform-helm/commit/5713eb88aaaa65df4ee2e3bfa75ef505bc36a024))
+
 ## [12.14.0](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.7-12.13.8...camunda-platform-8.7-12.14.0) (2026-09-29)
 
 
