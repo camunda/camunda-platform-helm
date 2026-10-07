@@ -1597,12 +1597,15 @@ required by camunda.hub.clusters (introduced in 8.10 Hub/WebModeler).
 */}}
 {{- define "camundaPlatform.defaultWebModelerCluster" -}}
 {{- if eq (include "camundaPlatform.identityEnabled" .) "true" }}
+{{- $identityVersion := include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.identity) }}
 - id: "management-cluster"
   name: "Management Identity"
-  version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.identity) | quote }}
+  version: {{ $identityVersion | quote }}
   authentication: {{ include "webModeler.authConfigValue" . | quote }}
+  {{- if semverCompare ">=8.8.0-0" (regexFind "^[0-9]+\\.[0-9]+\\.[0-9]+[0-9A-Za-z.-]*" $identityVersion | default "0.0.0") }}
   authorizations:
     enabled: false
+  {{- end }}
   components:
   {{- $proto := (lower .Values.identity.readinessProbe.scheme) }}
   {{- $baseURLInternal := printf "%s://%s.%s:%v" $proto (include "identity.fullname" .) .Release.Namespace .Values.identity.service.metricsPort }}
