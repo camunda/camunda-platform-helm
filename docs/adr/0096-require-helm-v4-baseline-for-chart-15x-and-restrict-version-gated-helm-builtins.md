@@ -54,10 +54,12 @@ nevertheless listed Helm 3.9 as their minimum.
 
 - Chart 15.x (8.10): Helm CLI v3 (3.10 or later) and Helm CLI v4. On Helm v3 the chart warns
   instead of failing (Decision Outcome item 1).
-- Chart 14.x (8.9) and earlier: existing Helm v3 support continues (Decision Outcome item 2), and
-  charts 12.x (8.7), 13.x (8.8) and 14.x (8.9) share the 3.10 floor.
-  [#5921](https://github.com/camunda/camunda-platform-helm/issues/5921) scoped CI to Helm v3 only
-  for 8.8 and earlier and to Helm v3 and v4 for 8.9; 8.10 also tests both.
+- Chart 14.x (8.9): officially supports Helm CLI v3.10+ and v4.
+- Chart 13.x (8.8): officially supports Helm CLI v3.10+ only. Helm v4 CI is internal
+  compatibility coverage and does not expand official support.
+- Chart 12.x (8.7): existing Helm v3 support continues with the 3.10 floor.
+- Charts 13.x–15.x support Helm v3 only until February 10, 2027. After that date, Camunda
+  no longer supports Helm v3. Helm v4 is supported for the release cycles of 8.9 and 8.10.
 - Chart lines after 15.x: this ADR does not set their Helm CLI baseline; that is left to a later
   decision, which [#7360](https://github.com/camunda/camunda-platform-helm/issues/7360) tracks for
   chart 16.x (8.11).
@@ -112,11 +114,21 @@ constraints are normative:
    should upgrade to Helm v4 before then. The warning replaces the `fail` guard from
    [#6156](https://github.com/camunda/camunda-platform-helm/pull/6156)
    ([#7340](https://github.com/camunda/camunda-platform-helm/issues/7340)).
-2. Chart 14.x (8.9) and earlier MAY continue to support Helm v3 for the remainder of its
-   documented support window. Charts 12.x (8.7), 13.x (8.8) and 14.x (8.9) document Helm 3.10 as their
+2. Charts 13.x–15.x support Helm v3 until its upstream end of life on February 10, 2027.
+   After that date, Camunda no longer supports Helm v3; continued use is at the customer's own
+   risk. Helm v4 is officially supported for the release cycles of 8.9 and 8.10, but not 8.8,
+   consistent with the [published support announcement](https://camunda.com/blog/2026/06/camunda-8-helm-chart-update-helm-4/).
+   Chart 13.x MAY test Helm v4 internally without extending official support. For future releases, its generated
+   `camunda.io/helmCLIVersion`, release information, and public version-matrix entries MUST list
+   only Helm v3; historical Helm v4 entries do not establish official support. Chart 12.x
+   retains its documented Helm v3 support window.
+   Charts 12.x (8.7), 13.x (8.8) and 14.x (8.9) document Helm 3.10 as their
    minimum, the oldest release that renders them
    ([#7341](https://github.com/camunda/camunda-platform-helm/issues/7341)), and chart 14.x emits the
    same Helm v3 warning as 15.x ([#7342](https://github.com/camunda/camunda-platform-helm/issues/7342)).
+   Chart 13.x also warns on Helm v3, directing users to Camunda 8.9 or 8.10 and Helm v4 for
+   an officially supported combination before the cutoff. Its Helm v4 tests do not require
+   a render-time failure or warning on Helm v4.
 3. New template code MUST NOT depend on a Helm built-in function or behavior introduced later
    than the oldest Helm version the chart line currently claims to support. If no alternative
    exists, the usage MUST be wrapped so the unsupported-version path either fails with a clear
@@ -179,8 +191,12 @@ the final v3 line, 3.22.x, through Renovate.
 - Helm v3 and v4 render the same 14.x and 15.x manifests except for blank lines, so golden files are
   byte-compared on Helm v4 only, and Helm v3 unit coverage is limited to selected tests that decode
   rendered objects ([#7344](https://github.com/camunda/camunda-platform-helm/issues/7344)).
-- The warning does not block: chart 15.x still renders on Helm v3 after 2027-02-10, when Helm v3
-  stops receiving security fixes. This ADR does not decide when chart 15.x drops Helm v3.
+- The warning does not block: charts 13.x–15.x still render on Helm v3 after 2027-02-10,
+  but that CLI is no longer supported. This cutoff does not require removing rendering compatibility.
+- Camunda 8.8 has no officially supported Helm CLI combination after 2027-02-10, even while
+  its Camunda support window remains open. The supported migration path requires upgrading
+  Camunda to 8.9 or 8.10 as well as moving to Helm v4. Internal Helm v4 compatibility coverage
+  does not close this support gap.
 - Below Helm 3.10, a render fails with a template nil-pointer error, not a message that names the
   floor ([#7340](https://github.com/camunda/camunda-platform-helm/issues/7340),
   [#7341](https://github.com/camunda/camunda-platform-helm/issues/7341)).
@@ -208,3 +224,7 @@ the final v3 line, 3.22.x, through Renovate.
 - [#6139](https://github.com/camunda/camunda-platform-helm/issues/6139) / [#6169](https://github.com/camunda/camunda-platform-helm/pull/6169) — `toYamlPretty` compat wrapper removal from 8.10, the motivating example for item 3, which #7340 reverts.
 - [#5921](https://github.com/camunda/camunda-platform-helm/issues/5921) — CI matrix scoping per chart line.
 - [ADR-0081](0081-expose-helm-v4-compatibility-options-as-explicit-values.md) — related but distinct: opt-in Helm v4-compatible *rendering* flags for charts 8.6-8.9, not a CLI-version floor.
+
+## Changelog
+
+- 2026-10-07 — Clarify 8.8's Helm v3-only official support, internal Helm v4 compatibility coverage, public metadata, and the Helm v3 support cutoff for 8.8–8.10 (PR link added when opened).

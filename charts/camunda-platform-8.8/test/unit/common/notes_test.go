@@ -99,6 +99,7 @@ func TestNotesSurfacesBundledKeycloakCveWarning(t *testing.T) {
 			if strings.HasPrefix(strings.TrimSpace(string(version)), "v3.") {
 				require.Contains(t, notes, "Helm v3 receives security fixes only until February 10, 2027")
 				require.Contains(t, notes, "After that date, Camunda no longer supports Helm CLI v3.")
+				require.Contains(t, notes, "For official Helm v4 support, upgrade to Camunda 8.9 or 8.10 and Helm v4 before then:")
 			} else {
 				require.NotContains(t, notes, "Helm v3 receives security fixes")
 			}

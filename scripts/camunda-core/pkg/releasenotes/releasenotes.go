@@ -74,12 +74,12 @@ func HelmCLIVersion(appVersion, toolVersionsPin string) string {
 	isV4 := strings.HasPrefix(toolVersionsPin, "4")
 	if major, minor, ok := splitMajorMinor(appVersion); ok && major == 8 {
 		switch {
-		case minor >= 0 && minor <= 7:
+		case minor >= 0 && minor <= 8:
 			if isV4 {
 				return helmV3Version
 			}
 			return toolVersionsPin
-		case minor >= 8 && minor <= 10:
+		case minor >= 9 && minor <= 10:
 			if isV4 {
 				return helmV3Version + "," + toolVersionsPin
 			}
