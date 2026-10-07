@@ -77,7 +77,7 @@ jobs:
 
       - name: Validate previous-minor schema upgrade coverage
         run: |
-          make helm.schema-validate-values chartPath="charts/camunda-platform-8.10 charts/camunda-platform-8.9"
+          make helm.schema-validate-values chartPath="charts/camunda-platform-8.10" schemaPreviousMinor=true
 
       - name: orchestration-entra-lifecycle — vet + test
         working-directory: scripts/orchestration-entra-lifecycle

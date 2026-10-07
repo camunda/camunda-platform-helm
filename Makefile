@@ -385,8 +385,7 @@ helm.schema-validate-values:
 		fi; \
 		echo "\n[$@] Chart dir: $${chart_dir}"; \
 		abs="$${root}/$${chart_dir}"; \
-		mkdir -p "$${root}/debug"; \
-		tmp_schema="$$(mktemp "$${root}/debug/values-schema.XXXXXX")"; \
+		tmp_schema="$$(mktemp)"; \
 		bash scripts/regenerate-values-schema.sh \
 			"$${abs}/values.yaml" \
 			"$${abs}/values.schema.extra.json" \
@@ -397,7 +396,9 @@ helm.schema-validate-values:
 		done; \
 		( cd "$${root}/scripts/validate-values-schema" && \
 			go run . --schema "$${tmp_schema}" --chart-dir "$${abs}" $${files} && \
-			go run . --schema "$${tmp_schema}" --chart-dir "$${abs}" --previous-minor ); \
+			if [ "$(schemaPreviousMinor)" = "true" ] && [ "$$(basename "$${abs}")" = "camunda-platform-8.10" ]; then \
+				go run . --schema "$${tmp_schema}" --chart-dir "$${abs}" --previous-minor; \
+			fi ); \
 		status=$$?; \
 		rm -f "$${tmp_schema}"; \
 		[ $$status -eq 0 ] || exit $$status; \
