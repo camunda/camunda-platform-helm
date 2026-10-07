@@ -227,4 +227,4 @@ the final v3 line, 3.22.x, through Renovate.
 
 ## Changelog
 
-- 2026-10-07 — Clarify 8.8's Helm v3-only official support, internal Helm v4 compatibility coverage, public metadata, and the Helm v3 support cutoff for 8.8–8.10 (PR link added when opened).
+- 2026-10-07 — [#7499](https://github.com/camunda/camunda-platform-helm/pull/7499) — Clarify 8.8's Helm v3-only official support, internal Helm v4 compatibility coverage, public metadata, and the Helm v3 support cutoff for 8.8–8.10.
