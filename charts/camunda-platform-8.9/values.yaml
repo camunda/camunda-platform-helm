@@ -576,7 +576,7 @@ global:
     # External Keycloak: OIDC values are auto-derived but docs recommend setting them explicitly for split-horizon DNS.
     # External OIDC: all OIDC endpoint URLs must be explicitly provided.
     auth:
-      ## @param global.identity.auth.enabled if true, enables authentication on Management Identity .
+      ## @param global.identity.auth.enabled if true, enables authentication on Management Identity. Warns if neither a shared issuer nor an issuer backend URL resolves.
       # Required for all authentication modes (Internal Keycloak, External Keycloak, External OIDC).
       enabled: false
       ## @param global.identity.auth.issuer defines the issuer name, which is used by the services to validate the JWT tokens.

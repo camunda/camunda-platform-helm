@@ -1032,6 +1032,9 @@ Usage:
 {{- end -}}
 
 {{- define "camunda.constraints.warnings" }}
+  {{- if and .Values.global.identity.auth.enabled (empty (include "camundaPlatform.authIssuerUrlWithFallback" . | trim)) (empty (include "camundaPlatform.authIssuerBackendUrl" . | trim)) }}
+    {{- printf "\n%s" "[camunda][warning] global.identity.auth.enabled=true, but no shared authentication issuer or issuer backend URL resolves. Set global.identity.auth.issuer (or global.identity.auth.publicIssuerUrl), global.identity.auth.issuerBackendUrl, or global.identity.keycloak.url for External Keycloak. Components using separate OIDC configuration must supply their own provider settings." }}
+  {{- end }}
   {{- if not (semverCompare ">=4.0.0-0" .Capabilities.HelmVersion.Version) }}
     {{- printf "\n%s" (printf "[camunda][warning] Helm CLI %s detected. Helm v3 receives security fixes only until February 10, 2027 (https://helm.sh/blog/helm-v3-end-of-life/). Upgrade to Helm v4 before then: https://helm.sh/docs/overview" .Capabilities.HelmVersion.Version) }}
   {{- end }}

@@ -402,7 +402,7 @@ global:
 
     ## @extra global.identity.auth configuration, to configure identity authentication setup
     auth:
-      ## @param global.identity.auth.enabled if true, enables authentication on Management Identity .
+      ## @param global.identity.auth.enabled if true, enables authentication on Management Identity. Warns if neither a shared issuer nor an issuer backend URL resolves.
       enabled: false
       ## @param global.identity.auth.issuer defines the issuer name, which is used by the services to validate the JWT tokens.
       issuer: ""

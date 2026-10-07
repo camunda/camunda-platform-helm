@@ -713,7 +713,7 @@
                             "properties": {
                                 "enabled": {
                                     "type": "boolean",
-                                    "description": "if true, enables authentication on Management Identity .",
+                                    "description": "if true, enables authentication on Management Identity. Warns if neither a shared issuer nor an issuer backend URL resolves.",
                                     "default": false
                                 },
                                 "issuer": {

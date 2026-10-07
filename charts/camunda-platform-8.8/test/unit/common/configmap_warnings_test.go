@@ -16,6 +16,7 @@ package camunda
 
 import (
 	"camunda-platform/test/unit/testhelpers"
+	"io"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -25,6 +26,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/api/core/v1"
+	k8syaml "k8s.io/apimachinery/pkg/util/yaml"
 )
 
 type ConfigMapWarningsTemplateTest struct {
@@ -47,6 +49,117 @@ func TestConfigMapWarningsTemplate(t *testing.T) {
 		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
 		templates: []string{"templates/common/configmap-warnings.yaml"},
 	})
+}
+
+func (s *ConfigMapWarningsTemplateTest) TestUnresolvedAuthIssuer() {
+	const issuerWarning = "no shared authentication issuer or issuer backend URL resolves"
+	testCases := []testhelpers.TestCase{}
+	for _, scenario := range []struct {
+		name    string
+		values  map[string]string
+		args    []string
+		warn    bool
+		issuer  string
+		backend string
+	}{
+		{name: "MissingGenericProvider", warn: true},
+		{name: "AuthDisabled", values: map[string]string{"global.identity.auth.enabled": "false"}},
+		{name: "ExplicitIssuer", values: map[string]string{"global.identity.auth.issuer": "https://issuer.example.com"}, issuer: "https://issuer.example.com"},
+		{name: "PublicIssuerFallback", values: map[string]string{"global.identity.auth.publicIssuerUrl": "https://issuer.example.com"}, issuer: "https://issuer.example.com"},
+		{name: "ExplicitBackend", values: map[string]string{"global.identity.auth.issuerBackendUrl": "https://issuer.example.com"}, backend: "https://issuer.example.com"},
+		{
+			name: "ExternalKeycloak",
+			values: map[string]string{
+				"global.identity.auth.type":             "KEYCLOAK",
+				"global.identity.keycloak.url.protocol": "https",
+				"global.identity.keycloak.url.host":     "keycloak.example.com",
+				"global.identity.keycloak.url.port":     "443",
+			},
+			backend: "https://keycloak.example.com:443/auth/realms/camunda-platform",
+		},
+		{
+			name: "BundledKeycloak",
+			values: map[string]string{
+				"global.identity.auth.type":    "KEYCLOAK",
+				"identityKeycloak.enabled":     "true",
+				"global.identity.keycloak.url": "null",
+			},
+			backend: "http://" + s.release + "-keycloak/auth/realms/camunda-platform",
+		},
+		{
+			name: "GenericCannotUseKeycloakHost",
+			values: map[string]string{
+				"global.identity.keycloak.url.protocol": "https",
+				"global.identity.keycloak.url.host":     "keycloak.example.com",
+				"global.identity.keycloak.url.port":     "443",
+			},
+			warn: true,
+		},
+		{
+			name: "TemplatesResolveEmpty",
+			args: []string{"--set-json", `global.identity.auth.issuer="{{ print \"\" }}"`, "--set-json", `global.identity.auth.issuerBackendUrl="{{ print \"\" }}"`},
+			warn: true,
+		},
+		{
+			name:   "TemplatedIssuer",
+			args:   []string{"--set-json", `global.identity.auth.issuer="https://{{ .Release.Name }}.example.com"`},
+			issuer: "https://" + s.release + ".example.com",
+		},
+		{
+			name:    "TemplatedBackend",
+			args:    []string{"--set-json", `global.identity.auth.issuerBackendUrl="https://{{ .Release.Name }}.example.com"`},
+			backend: "https://" + s.release + ".example.com",
+		},
+	} {
+		values := map[string]string{
+			"identity.enabled":                         "true",
+			"identityKeycloak.enabled":                 "false",
+			"optimize.enabled":                         "false",
+			"global.identity.auth.enabled":             "true",
+			"global.identity.auth.type":                "GENERIC",
+			"global.identity.auth.publicIssuerUrl":     "",
+			"orchestration.data.secondaryStorage.type": "elasticsearch",
+		}
+		for key, value := range scenario.values {
+			values[key] = value
+		}
+		testCases = append(testCases, testhelpers.TestCase{
+			Name:                    scenario.name,
+			Values:                  values,
+			RenderTemplateExtraArgs: scenario.args,
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				configMaps := map[string]corev1.ConfigMap{}
+				decoder := k8syaml.NewYAMLOrJSONDecoder(strings.NewReader(output), 4096)
+				for {
+					var resource corev1.ConfigMap
+					err := decoder.Decode(&resource)
+					if err == io.EOF {
+						break
+					}
+					s.Require().NoError(err)
+					if resource.Kind == "ConfigMap" {
+						configMaps[resource.Name] = resource
+					}
+				}
+				s.Require().Contains(configMaps, s.release+"-zeebe-configuration-unified")
+				warnings := configMaps[s.release+"-warnings"].Data["warnings"]
+				s.Require().Equal(scenario.warn, strings.Contains(warnings, issuerWarning))
+				if scenario.warn {
+					s.Require().Contains(warnings, "global.identity.auth.issuer")
+					s.Require().Contains(warnings, "global.identity.auth.issuerBackendUrl")
+					s.Require().Contains(warnings, "global.identity.keycloak.url")
+				}
+				if values["global.identity.auth.enabled"] == "true" {
+					s.Require().Contains(configMaps, s.release+"-identity-env-vars")
+					identity := configMaps[s.release+"-identity-env-vars"]
+					s.Require().Equal(scenario.issuer, identity.Data["CAMUNDA_IDENTITY_ISSUER"])
+					s.Require().Equal(scenario.backend, identity.Data["CAMUNDA_IDENTITY_ISSUER_BACKEND_URL"])
+				}
+			},
+		})
+	}
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, nil, testCases)
 }
 
 func (s *ConfigMapWarningsTemplateTest) TestDifferentValuesInputs() {

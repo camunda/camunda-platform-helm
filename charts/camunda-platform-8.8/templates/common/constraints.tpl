@@ -198,6 +198,9 @@ configmap-warnings.yaml, which renders the "<release>-warnings" ConfigMap on the
 (helm template / Argo CD / Flux). Feed new deprecations here so they reach both channels.
 */}}
 {{- define "camunda.constraints.warnings" }}
+  {{- if and .Values.global.identity.auth.enabled (empty (include "camundaPlatform.authIssuerUrlWithFallback" . | trim)) (empty (include "camundaPlatform.authIssuerBackendUrl" . | trim)) }}
+    {{- printf "\n%s" "[camunda][warning] global.identity.auth.enabled=true, but no shared authentication issuer or issuer backend URL resolves. Set global.identity.auth.issuer (or global.identity.auth.publicIssuerUrl), global.identity.auth.issuerBackendUrl, or global.identity.keycloak.url for External Keycloak. Components using separate OIDC configuration must supply their own provider settings." }}
+  {{- end }}
   {{- if .Values.global.testDeprecationFlags.existingSecretsMustBeSet }}
     {{/* TODO: Check if there are more existingSecrets to check */}}
 
