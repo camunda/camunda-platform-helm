@@ -14,6 +14,8 @@
 
 package matrix
 
+import "scripts/deploy-camunda/config"
+
 // RunOptions controls matrix execution.
 type RunOptions struct {
 	// DryRun logs what would be done without executing.
@@ -25,14 +27,10 @@ type RunOptions struct {
 	// and tests complete (regardless of success or failure). This frees cluster
 	// resources as early as possible rather than waiting for the entire run to finish.
 	Cleanup bool
-	// KubeContexts maps platform names to Kubernetes contexts, e.g.,
-	// {"gke": "gke_my-project_us-east1_cluster", "eks": "arn:aws:eks:..."}
-	// When an entry's platform matches a key, that context is used for deployment and cleanup.
-	KubeContexts map[string]string
-	// KubeContext is a fallback Kubernetes context used when no platform-specific
-	// context is configured. If both KubeContexts and KubeContext are set, the
-	// platform-specific context takes priority.
-	KubeContext string
+	// Config is the loaded config file, or nil. EntryInfra resolves it per entry.
+	Config *config.RootConfig
+	// Infra holds the infra values set on the command line.
+	Infra config.InfraOverride
 	// NamespacePrefix is prepended to generated namespaces.
 	NamespacePrefix string
 	// Platform overrides the platform for all entries.
@@ -47,43 +45,18 @@ type RunOptions struct {
 	TestAll bool
 	// RepoRoot is the repository root path.
 	RepoRoot string
-	// EnvFiles maps chart versions to .env file paths, e.g.,
-	// {"8.9": ".env.89", "8.8": ".env.88"}
-	// When an entry's version matches a key, that .env file is loaded before deployment.
-	EnvFiles map[string]string
-	// EnvFile is a fallback .env file used when no version-specific file is configured.
-	// If both EnvFiles and EnvFile are set, the version-specific file takes priority.
-	EnvFile string
 	// KeycloakHost is the external Keycloak hostname.
 	// Defaults to config.DefaultKeycloakHost when empty.
 	KeycloakHost string
 	// KeycloakProtocol is the protocol for the external Keycloak (e.g., "https").
 	// Defaults to config.DefaultKeycloakProtocol when empty.
 	KeycloakProtocol string
-	// IngressBaseDomains maps platform names to ingress base domains, e.g.,
-	// {"gke": "ci.distro.ultrawombat.com", "eks": "distribution.aws.camunda.cloud"}
-	// When an entry's platform matches a key, that domain is used for ingress hostname construction.
-	IngressBaseDomains map[string]string
-	// IngressBaseDomain is a fallback base domain for ingress hosts used when no
-	// platform-specific domain is configured. If both IngressBaseDomains and
-	// IngressBaseDomain are set, the platform-specific domain takes priority.
-	// Valid values: ci.distro.ultrawombat.com, distribution.aws.camunda.cloud
-	IngressBaseDomain string
 	// LogLevel controls the log verbosity for each entry's deployment.
 	// Valid values: debug, info, warn, error. Defaults to "info" if empty.
 	LogLevel string
 	// SkipDependencyUpdate skips running "helm dependency update" before deploying.
 	// Default is false, meaning dependency update runs for every entry.
 	SkipDependencyUpdate bool
-	// VaultBackedSecrets maps platform names to whether vault-backed secrets should be used, e.g.,
-	// {"eks": true, "gke": false}
-	// When an entry's platform matches a key, the corresponding value controls whether
-	// the vault-backend ClusterSecretStore and -vault.yaml manifest variants are selected.
-	VaultBackedSecrets map[string]bool
-	// UseVaultBackedSecrets is a fallback for platforms not in VaultBackedSecrets.
-	// If both VaultBackedSecrets and UseVaultBackedSecrets are set, the platform-specific
-	// value takes priority.
-	UseVaultBackedSecrets bool
 	// DeleteNamespaceFirst deletes the namespace before deploying each matrix entry.
 	// This ensures a clean-slate deployment by removing any existing resources in the namespace.
 	DeleteNamespaceFirst bool

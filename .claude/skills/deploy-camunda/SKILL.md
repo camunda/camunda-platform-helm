@@ -126,10 +126,10 @@ Create a config file at `.deploy-camunda.yaml` (project root) or `~/.config/camu
 
 ```yaml
 current: dev
-repoRoot: /path/to/repo
 
 deployments:
   dev:
+    repoRoot: /path/to/repo
     chartPath: ./charts/camunda-platform-8.9
     namespace: dev-test
     release: camunda
@@ -148,7 +148,7 @@ matrix:
     "8.9": .env.89
 ```
 
-Manage profiles: `deploy-camunda config create|use|show|set`.
+Manage profiles: `deploy-camunda config create|use|show|set`. Single deploys and `matrix run`/`matrix list` resolve infra with one rule: CLI flag > `matrix:` per-platform/per-version map (matrix only) > active profile > `matrix:` scalar (matrix only) > root.
 
 ## Matrix Operations
 

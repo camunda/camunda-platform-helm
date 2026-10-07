@@ -233,9 +233,8 @@ func TestSynthesizeReleaseEntry_UsesReleaseChartVersion(t *testing.T) {
 
 func TestSynthesizeReleaseOpts_NamespaceOverridePinsRelease(t *testing.T) {
 	base := matrix.RunOptions{
-		RepoRoot:          "/repo",
-		KubeContext:       "kube-ctx",
-		IngressBaseDomain: "ci.example.com",
+		RepoRoot: "/repo",
+		Infra:    config.InfraOverride{InfraConfig: config.InfraConfig{KubeContext: "kube-ctx", IngressBaseDomain: "ci.example.com"}},
 	}
 
 	opts := synthesizeReleaseOpts(base, "gke", "matrix-810-mns-hub")
@@ -279,7 +278,7 @@ func TestSynthesizeReleaseEntry_DistinctNamespacesPerRelease(t *testing.T) {
 // the per-platform IngressBaseDomains map) was silently dropped for topology
 // entries: synthesizeReleaseOpts used to hand-copy a subset of fields into a
 // bespoke options struct, and IngressBaseDomains was missing from it — so
-// resolveIngressBaseDomain(opts, "gke") fell through to the (also empty)
+// the ingress base domain for "gke" fell through to the (also empty)
 // generic field, ResolveIngressHostname() returned "", and CAMUNDA_HOSTNAME
 // was never derived - failing the Hub release's preflight with
 // "CAMUNDA_HOSTNAME unset".
@@ -289,12 +288,12 @@ func TestSynthesizeReleaseOpts_PropagatesPerPlatformIngressBaseDomains(t *testin
 		// Only the per-platform map is set — mirrors a user who passed
 		// --ingress-base-domain-gke and never set the generic
 		// --ingress-base-domain.
-		IngressBaseDomains: map[string]string{"gke": "ci.distro.ultrawombat.com"},
+		Infra: config.InfraOverride{InfraMaps: config.InfraMaps{IngressBaseDomains: map[string]string{"gke": "ci.distro.ultrawombat.com"}}},
 	}
 
 	opts := synthesizeReleaseOpts(base, "gke", "matrix-810-mns-hub")
 
-	if got := opts.IngressBaseDomains["gke"]; got != "ci.distro.ultrawombat.com" {
+	if got := opts.Infra.IngressBaseDomains["gke"]; got != "ci.distro.ultrawombat.com" {
 		t.Fatalf("IngressBaseDomains[\"gke\"] = %q, want %q — per-platform map was dropped", got, "ci.distro.ultrawombat.com")
 	}
 
@@ -325,14 +324,14 @@ func TestSynthesizeReleaseOpts_PropagatesPerPlatformIngressBaseDomains(t *testin
 // unaffected by this fix.
 func TestSynthesizeReleaseOpts_GenericIngressBaseDomainStillWorks(t *testing.T) {
 	base := matrix.RunOptions{
-		RepoRoot:          "/repo",
-		IngressBaseDomain: "ci.distro.ultrawombat.com",
+		RepoRoot: "/repo",
+		Infra:    config.InfraOverride{InfraConfig: config.InfraConfig{IngressBaseDomain: "ci.distro.ultrawombat.com"}},
 	}
 
 	opts := synthesizeReleaseOpts(base, "gke", "matrix-810-mns-hub")
 
-	if opts.IngressBaseDomain != "ci.distro.ultrawombat.com" {
-		t.Errorf("IngressBaseDomain = %q, want %q", opts.IngressBaseDomain, "ci.distro.ultrawombat.com")
+	if opts.Infra.IngressBaseDomain != "ci.distro.ultrawombat.com" {
+		t.Errorf("IngressBaseDomain = %q, want %q", opts.Infra.IngressBaseDomain, "ci.distro.ultrawombat.com")
 	}
 }
 
@@ -343,10 +342,10 @@ func TestAddTopologyIngressHosts_DerivesPerReleaseHosts(t *testing.T) {
 		"9200",
 		"http",
 	)
-	opts := matrix.RunOptions{
-		IngressBaseDomains: map[string]string{"gke": "ci.distro.ultrawombat.com"},
-		IngressBaseDomain:  "fallback.example.com",
-	}
+	opts := matrix.RunOptions{Infra: config.InfraOverride{
+		InfraConfig: config.InfraConfig{IngressBaseDomain: "fallback.example.com"},
+		InfraMaps:   config.InfraMaps{IngressBaseDomains: map[string]string{"gke": "ci.distro.ultrawombat.com"}},
+	}}
 
 	addTopologyIngressHosts(
 		env,
@@ -377,7 +376,7 @@ func TestAddTopologyIngressHosts_DerivesEveryOrchestrationHost(t *testing.T) {
 		{Namespace: "matrix-810-mns-orchb"},
 	}
 
-	addTopologyIngressHosts(env, matrix.RunOptions{IngressBaseDomain: "ci.example.com"}, "gke", contexts[0], releases, contexts)
+	addTopologyIngressHosts(env, matrix.RunOptions{Infra: config.InfraOverride{InfraConfig: config.InfraConfig{IngressBaseDomain: "ci.example.com"}}}, "gke", contexts[0], releases, contexts)
 
 	if got := env["ORCHA_HOST"]; got != "matrix-810-mns-orcha.ci.example.com" {
 		t.Errorf("ORCHA_HOST = %q", got)
@@ -604,7 +603,7 @@ func TestApplyTopologyReleaseHostname_PerOrchestrationRelease(t *testing.T) {
 		{Namespace: "matrix-810-mns-orchb"},
 	}
 	crossRefEnv := map[string]string{}
-	addTopologyIngressHosts(crossRefEnv, matrix.RunOptions{IngressBaseDomain: "ci.example.com"}, "gke", contexts[0], releases[:3], contexts)
+	addTopologyIngressHosts(crossRefEnv, matrix.RunOptions{Infra: config.InfraOverride{InfraConfig: config.InfraConfig{IngressBaseDomain: "ci.example.com"}}}, "gke", contexts[0], releases[:3], contexts)
 
 	for i, want := range []string{"matrix-810-mns-hub.ci.example.com", "matrix-810-mns-orcha.ci.example.com", "matrix-810-mns-orchb.ci.example.com"} {
 		release := releases[i]
@@ -917,47 +916,49 @@ func TestSynthesizeReleaseOpts_PropagatesHelmTimeout(t *testing.T) {
 // Platform/NamespaceOverride differing.
 func TestSynthesizeReleaseOpts_ForwardsEntireBaseRunOptions(t *testing.T) {
 	base := matrix.RunOptions{
-		DryRun:                true,
-		Coverage:              true,
-		StopOnFailure:         true,
-		Cleanup:               true,
-		DeleteNamespaceFirst:  true,
-		KubeContexts:          map[string]string{"gke": "gke-ctx"},
-		KubeContext:           "fallback-ctx",
-		NamespacePrefix:       "matrix",
-		Platform:              "gke",
-		MaxParallel:           3,
-		TestE2E:               true,
-		TestAll:               true,
-		RepoRoot:              "/repo",
-		EnvFiles:              map[string]string{"8.10": ".env.810"},
-		EnvFile:               ".env",
-		IngressBaseDomains:    map[string]string{"gke": "ci.distro.ultrawombat.com"},
-		IngressBaseDomain:     "ci.distro.ultrawombat.com",
-		LogLevel:              "debug",
-		SkipDependencyUpdate:  true,
-		VaultBackedSecrets:    map[string]bool{"eks": true},
-		UseVaultBackedSecrets: true,
-		KeycloakHost:          "keycloak.example.com",
-		KeycloakProtocol:      "https",
-		UpgradeFromVersion:    "8.9",
-		HelmTimeout:           25,
-		DockerUsername:        "docker-user",
-		DockerPassword:        "docker-pass",
-		EnsureDockerRegistry:  true,
-		DockerHubUsername:     "dockerhub-user",
-		DockerHubPassword:     "dockerhub-pass",
-		EnsureDockerHub:       true,
-		UseLatest:             true,
-		UseQA:                 true,
-		ForceImageOverrides:   true,
-		ExtraHelmArgs:         []string{"--set-file=foo=bar"},
-		ExtraHelmSets:         []string{"a=b"},
-		ExtraValues:           []string{"/tmp/extra.yaml"},
-		NamespaceOverride:     "should-be-overridden",
-		ChartRef:              "oci://example/camunda-platform",
-		ChartRefVersion:       "13-rc-latest",
-		LogDir:                "/tmp/matrix-logs",
+		DryRun:               true,
+		Coverage:             true,
+		StopOnFailure:        true,
+		Cleanup:              true,
+		DeleteNamespaceFirst: true,
+		Config:               &config.RootConfig{Current: "dev"},
+		Infra: config.InfraOverride{
+			InfraConfig: config.InfraConfig{KubeContext: "fallback-ctx", EnvFile: ".env", IngressBaseDomain: "ci.distro.ultrawombat.com"},
+			InfraMaps: config.InfraMaps{
+				KubeContexts:       map[string]string{"gke": "gke-ctx"},
+				EnvFiles:           map[string]string{"8.10": ".env.810"},
+				IngressBaseDomains: map[string]string{"gke": "ci.distro.ultrawombat.com"},
+				VaultBackedSecrets: map[string]bool{"eks": true},
+			},
+		},
+		NamespacePrefix:      "matrix",
+		Platform:             "gke",
+		MaxParallel:          3,
+		TestE2E:              true,
+		TestAll:              true,
+		RepoRoot:             "/repo",
+		LogLevel:             "debug",
+		SkipDependencyUpdate: true,
+		KeycloakHost:         "keycloak.example.com",
+		KeycloakProtocol:     "https",
+		UpgradeFromVersion:   "8.9",
+		HelmTimeout:          25,
+		DockerUsername:       "docker-user",
+		DockerPassword:       "docker-pass",
+		EnsureDockerRegistry: true,
+		DockerHubUsername:    "dockerhub-user",
+		DockerHubPassword:    "dockerhub-pass",
+		EnsureDockerHub:      true,
+		UseLatest:            true,
+		UseQA:                true,
+		ForceImageOverrides:  true,
+		ExtraHelmArgs:        []string{"--set-file=foo=bar"},
+		ExtraHelmSets:        []string{"a=b"},
+		ExtraValues:          []string{"/tmp/extra.yaml"},
+		NamespaceOverride:    "should-be-overridden",
+		ChartRef:             "oci://example/camunda-platform",
+		ChartRefVersion:      "13-rc-latest",
+		LogDir:               "/tmp/matrix-logs",
 	}
 
 	got := synthesizeReleaseOpts(base, "eks", "matrix-810-mns-hub")

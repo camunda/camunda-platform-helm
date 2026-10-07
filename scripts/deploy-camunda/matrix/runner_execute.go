@@ -122,15 +122,15 @@ func BuildEntryFlags(entry Entry, opts RunOptions) (flags *config.RuntimeFlags, 
 	}
 
 	platform := resolvePlatform(opts, entry)
-	kubeCtx = resolveKubeContext(opts, platform)
-	envFile = resolveEnvFile(opts, entry.Version)
+	infra := EntryInfra(opts, platform, entry.Version)
+	kubeCtx, envFile = infra.KubeContext, infra.EnvFile
 	envFile, cleanup, err = sanitizeEnvFileForOCIImmutability(envFile, opts)
 	if err != nil {
 		return nil, namespace, kubeCtx, envFile, cleanup, err
 	}
-	useVault := resolveUseVaultBackedSecrets(opts, platform)
+	useVault := infra.UseVaultBackedSecrets != nil && *infra.UseVaultBackedSecrets
 	explicitIngressHost := explicitIngressHost(opts)
-	baseDomain := resolveIngressBaseDomain(opts, platform)
+	baseDomain := infra.IngressBaseDomain
 
 	// Compute the scenario directory. deploy.Execute uses this to resolve
 	// values files — both layered and legacy formats are handled there.
@@ -312,7 +312,7 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) RunResult {
 		return RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx, Error: err}
 	}
 	platform := resolvePlatform(opts, entry)
-	useVault := resolveUseVaultBackedSecrets(opts, platform)
+	useVault := flags.Secrets.UseVaultBackedSecrets
 	logLevel := flags.LogLevel
 
 	// Wire phase reporting: deploy.Execute and RunTests call flags.OnPhase,

@@ -79,6 +79,15 @@ func TestMatrixRunExtraValuesFlag(t *testing.T) {
 	}
 }
 
+func TestMatrixCLIInfraKeepsEmptyFlags(t *testing.T) {
+	command := newMatrixRunCommand()
+	require.NoError(t, command.ParseFlags([]string{"--platform=", "--kube-context=", "--kube-context-gke", "gke-ctx"}))
+	rc := &config.RootConfig{Matrix: config.MatrixConfig{InfraConfig: config.InfraConfig{Platform: "eks", KubeContext: "matrix-ctx", RepoRoot: "/repo"}}}
+	cli := matrixCLIInfra(command.Flags())
+	require.Equal(t, config.InfraConfig{RepoRoot: "/repo"}, rc.ResolveInfra(true, "eks", "", cli))
+	require.Equal(t, "gke-ctx", rc.ResolveInfra(true, "gke", "", cli).KubeContext)
+}
+
 func TestMatrixRunDisabledScenarioHint(t *testing.T) {
 	repoRoot, err := filepath.Abs("../../..")
 	if err != nil {

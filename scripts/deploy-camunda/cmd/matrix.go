@@ -195,19 +195,19 @@ This command does not require cluster access.`,
 				changedFlags[f.Name] = true
 			})
 
-			// Load config file and merge matrix/root config into local flags.
-			if rc, err := config.LoadMatrixConfig(configFile); err == nil {
-				config.ApplyMatrixListConfig(rc, changedFlags, &config.MatrixListFlags{
-					Versions:        &versions,
-					IncludeDisabled: &includeDisabled,
-					ScenarioFilter:  &scenarioFilter,
-					ShortnameFilter: &shortnameFilter,
-					FlowFilter:      &flowFilter,
-					OutputFormat:    &outputFormat,
-					Platform:        &platform,
-					RepoRoot:        &repoRoot,
-				})
+			rc, err := config.LoadMatrixConfig(configFile)
+			if err != nil {
+				return err
 			}
+			infra := rc.ResolveInfra(true, "", "", matrixCLIInfra(cmd.Flags()))
+			platform, repoRoot = infra.Platform, infra.RepoRoot
+			m := rc.Matrix
+			config.MergeStringSliceField(&versions, m.Versions, nil)
+			config.MergeBoolField(&includeDisabled, m.IncludeDisabled, nil, changedFlags, "include-disabled")
+			config.MergeStringField(&scenarioFilter, m.ScenarioFilter, "", changedFlags, "scenario-filter")
+			config.MergeStringField(&shortnameFilter, m.ShortnameFilter, "", changedFlags, "shortname-filter")
+			config.MergeStringField(&flowFilter, m.FlowFilter, "", changedFlags, "flow-filter")
+			config.MergeStringField(&outputFormat, m.OutputFormat, "", changedFlags, "format")
 
 			if repoRoot == "" {
 				detected, err := config.DetectRepoRoot()
@@ -406,106 +406,38 @@ Under the hood this invokes deploy.Execute() for each matrix entry.`,
 				changedFlags[f.Name] = true
 			})
 
-			// Build per-platform/per-version maps from CLI flags BEFORE config
-			// merging, so that CLI-provided map entries take precedence.
-			kubeContexts := make(map[string]string)
-			if kubeContextGKE != "" {
-				kubeContexts["gke"] = kubeContextGKE
+			rc, err := config.LoadMatrixConfig(configFile)
+			if err != nil {
+				return err
 			}
-			if kubeContextEKS != "" {
-				kubeContexts["eks"] = kubeContextEKS
-			}
-
-			envFiles := make(map[string]string)
-			for version, path := range map[string]string{
-				"8.6": envFile86,
-				"8.7": envFile87,
-				"8.8": envFile88,
-				"8.9": envFile89,
-			} {
-				if path != "" {
-					envFiles[version] = path
+			cliInfra := matrixCLIInfra(cmd.Flags())
+			infra := rc.ResolveInfra(true, "", "", cliInfra)
+			platform, repoRoot, envFile, ingressBaseDomain = infra.Platform, infra.RepoRoot, infra.EnvFile, infra.IngressBaseDomain
+			namespacePrefix, logLevel = config.FirstNonEmpty(infra.NamespacePrefix, namespacePrefix), config.FirstNonEmpty(infra.LogLevel, logLevel)
+			dockerUsername, dockerPassword = infra.DockerUsername, infra.DockerPassword
+			dockerHubUsername, dockerHubPassword = infra.DockerHubUsername, infra.DockerHubPassword
+			for target, value := range map[*bool]*bool{&skipDependencyUpdate: infra.SkipDependencyUpdate, &deleteNamespace: infra.DeleteNamespace, &ensureDockerRegistry: infra.EnsureDockerRegistry, &ensureDockerHub: infra.EnsureDockerHub} {
+				if value != nil {
+					*target = *value
 				}
 			}
-
-			vaultBackedSecrets := make(map[string]bool)
-			if cmd.Flags().Changed("use-vault-backed-secrets-gke") {
-				vaultBackedSecrets["gke"] = useVaultBackedSecretsGKE
-			}
-			if cmd.Flags().Changed("use-vault-backed-secrets-eks") {
-				vaultBackedSecrets["eks"] = useVaultBackedSecretsEKS
-			}
-
-			ingressBaseDomains := make(map[string]string)
-			if ingressBaseDomainGKE != "" {
-				ingressBaseDomains["gke"] = ingressBaseDomainGKE
-			}
-			if ingressBaseDomainEKS != "" {
-				ingressBaseDomains["eks"] = ingressBaseDomainEKS
-			}
-
-			// Load config file and merge matrix/root config into local flags.
-			// Config values fill in anything not explicitly set on the CLI.
-			if rc, err := config.LoadMatrixConfig(configFile); err == nil {
-				config.ApplyMatrixRunConfig(rc, changedFlags, &config.MatrixRunFlags{
-					// Filtering & generation
-					Versions:        &versions,
-					IncludeDisabled: &includeDisabled,
-					ScenarioFilter:  &scenarioFilter,
-					ShortnameFilter: &shortnameFilter,
-					FlowFilter:      &flowFilter,
-					Platform:        &platform,
-					RepoRoot:        &repoRoot,
-					// Execution
-					DryRun:               &dryRun,
-					Coverage:             &coverage,
-					StopOnFailure:        &stopOnFailure,
-					Cleanup:              &cleanup,
-					DeleteNamespace:      &deleteNamespace,
-					NamespacePrefix:      &namespacePrefix,
-					MaxParallel:          &maxParallel,
-					LogLevel:             &logLevel,
-					SkipDependencyUpdate: &skipDependencyUpdate,
-					HelmTimeout:          &helmTimeout,
-					// Tests
-					TestE2E: &testE2E,
-					TestAll: &testAll,
-					// Kube contexts
-					KubeContext:    &kubeContext,
-					KubeContextGKE: &kubeContextGKE,
-					KubeContextEKS: &kubeContextEKS,
-					KubeContexts:   kubeContexts,
-					// Ingress
-					IngressBaseDomain:    &ingressBaseDomain,
-					IngressBaseDomainGKE: &ingressBaseDomainGKE,
-					IngressBaseDomainEKS: &ingressBaseDomainEKS,
-					IngressBaseDomains:   ingressBaseDomains,
-					// Vault
-					UseVaultBackedSecrets:    &useVaultBackedSecrets,
-					UseVaultBackedSecretsGKE: &useVaultBackedSecretsGKE,
-					UseVaultBackedSecretsEKS: &useVaultBackedSecretsEKS,
-					VaultBackedSecrets:       vaultBackedSecrets,
-					// Env files
-					EnvFile:   &envFile,
-					EnvFile86: &envFile86,
-					EnvFile87: &envFile87,
-					EnvFile88: &envFile88,
-					EnvFile89: &envFile89,
-					EnvFiles:  envFiles,
-					// Docker
-					DockerUsername:       &dockerUsername,
-					DockerPassword:       &dockerPassword,
-					EnsureDockerRegistry: &ensureDockerRegistry,
-					DockerHubUsername:    &dockerHubUsername,
-					DockerHubPassword:    &dockerHubPassword,
-					EnsureDockerHub:      &ensureDockerHub,
-					// Keycloak
-					KeycloakHost:     &keycloakHost,
-					KeycloakProtocol: &keycloakProtocol,
-					// Upgrade
-					UpgradeFromVersion: &upgradeFromVersion,
-				})
-			}
+			m := rc.Matrix
+			config.MergeStringSliceField(&versions, m.Versions, nil)
+			config.MergeBoolField(&includeDisabled, m.IncludeDisabled, nil, changedFlags, "include-disabled")
+			config.MergeStringField(&scenarioFilter, m.ScenarioFilter, "", changedFlags, "scenario-filter")
+			config.MergeStringField(&shortnameFilter, m.ShortnameFilter, "", changedFlags, "shortname-filter")
+			config.MergeStringField(&flowFilter, m.FlowFilter, "", changedFlags, "flow-filter")
+			config.MergeIntField(&maxParallel, m.MaxParallel, nil, changedFlags, "max-parallel")
+			config.MergeBoolField(&stopOnFailure, m.StopOnFailure, nil, changedFlags, "stop-on-failure")
+			config.MergeBoolField(&cleanup, m.Cleanup, nil, changedFlags, "cleanup")
+			config.MergeBoolField(&dryRun, m.DryRun, nil, changedFlags, "dry-run")
+			config.MergeBoolField(&coverage, m.Coverage, nil, changedFlags, "coverage")
+			config.MergeIntField(&helmTimeout, m.HelmTimeout, nil, changedFlags, "timeout")
+			config.MergeBoolField(&testE2E, m.TestE2E, nil, changedFlags, "test-e2e")
+			config.MergeBoolField(&testAll, m.TestAll, nil, changedFlags, "test-all")
+			config.MergeStringField(&keycloakHost, m.KeycloakHost, rc.Keycloak.Host, changedFlags, "keycloak-host")
+			config.MergeStringField(&keycloakProtocol, m.KeycloakProtocol, rc.Keycloak.Protocol, changedFlags, "keycloak-protocol")
+			config.MergeStringField(&upgradeFromVersion, m.UpgradeFromVersion, "", changedFlags, "upgrade-from-version")
 
 			// Setup logging (after config merge so log-level from config takes effect)
 			if err := logging.Setup(logging.Options{
@@ -514,6 +446,7 @@ Under the hood this invokes deploy.Execute() for each matrix entry.`,
 			}); err != nil {
 				return err
 			}
+			warnDeprecatedInfra(rc)
 
 			// Load .env file — use flag/config value if set, otherwise default to .env.
 			envFileToLoad := envFile
@@ -611,7 +544,11 @@ Under the hood this invokes deploy.Execute() for each matrix entry.`,
 			entries = singleEntries
 			dockerFlags := config.DockerFlags{DockerUsername: dockerUsername, DockerPassword: dockerPassword, EnsureDockerRegistry: ensureDockerRegistry || len(topologyEntries) > 0, DockerHubUsername: dockerHubUsername, DockerHubPassword: dockerHubPassword, EnsureDockerHub: ensureDockerHub}
 			allEntries := append(append([]matrix.Entry{}, entries...), topologyEntries...)
-			if err := resolveRegistryCredentialsFromEnvFiles(&dockerFlags, allEntries, envFiles, envFile); err != nil {
+			envFiles := make(map[string]string)
+			for _, e := range allEntries {
+				envFiles[e.Version] = rc.ResolveInfra(true, "", e.Version, cliInfra).EnvFile
+			}
+			if err := resolveRegistryCredentialsFromEnvFiles(&dockerFlags, allEntries, envFiles); err != nil {
 				return err
 			}
 			dockerUsername, dockerPassword, dockerHubUsername, dockerHubPassword = dockerFlags.DockerUsername, dockerFlags.DockerPassword, dockerFlags.DockerHubUsername, dockerFlags.DockerHubPassword
@@ -651,22 +588,16 @@ Under the hood this invokes deploy.Execute() for each matrix entry.`,
 						StopOnFailure:              stopOnFailure,
 						Cleanup:                    cleanup,
 						DeleteNamespaceFirst:       deleteNamespace,
-						KubeContexts:               kubeContexts,
-						KubeContext:                kubeContext,
+						Config:                     rc,
+						Infra:                      cliInfra,
 						NamespacePrefix:            namespacePrefix,
 						Platform:                   platform,
 						MaxParallel:                maxParallel,
 						TestE2E:                    testE2E,
 						TestAll:                    testAll,
 						RepoRoot:                   repoRoot,
-						EnvFiles:                   envFiles,
-						EnvFile:                    envFile,
-						IngressBaseDomains:         ingressBaseDomains,
-						IngressBaseDomain:          ingressBaseDomain,
 						LogLevel:                   logLevel,
 						SkipDependencyUpdate:       skipDependencyUpdate,
-						VaultBackedSecrets:         vaultBackedSecrets,
-						UseVaultBackedSecrets:      useVaultBackedSecrets,
 						KeycloakHost:               keycloakHost,
 						KeycloakProtocol:           keycloakProtocol,
 						UpgradeFromVersion:         upgradeFromVersion,
@@ -796,22 +727,16 @@ Under the hood this invokes deploy.Execute() for each matrix entry.`,
 				StopOnFailure:              stopOnFailure,
 				Cleanup:                    cleanup,
 				DeleteNamespaceFirst:       deleteNamespace,
-				KubeContexts:               kubeContexts,
-				KubeContext:                kubeContext,
+				Config:                     rc,
+				Infra:                      cliInfra,
 				NamespacePrefix:            namespacePrefix,
 				Platform:                   platform,
 				MaxParallel:                maxParallel,
 				TestE2E:                    testE2E,
 				TestAll:                    testAll,
 				RepoRoot:                   repoRoot,
-				EnvFiles:                   envFiles,
-				EnvFile:                    envFile,
-				IngressBaseDomains:         ingressBaseDomains,
-				IngressBaseDomain:          ingressBaseDomain,
 				LogLevel:                   logLevel,
 				SkipDependencyUpdate:       skipDependencyUpdate,
-				VaultBackedSecrets:         vaultBackedSecrets,
-				UseVaultBackedSecrets:      useVaultBackedSecrets,
 				KeycloakHost:               keycloakHost,
 				KeycloakProtocol:           keycloakProtocol,
 				UpgradeFromVersion:         upgradeFromVersion,
@@ -1046,11 +971,9 @@ func resolveRepoRoot(flagValue string) string {
 		return flagValue
 	}
 
-	// Try to resolve from config file
-	var tempFlags config.RuntimeFlags
-	if _, _, err := config.LoadAndMerge(configFile, false, &tempFlags); err == nil {
-		if tempFlags.Chart.RepoRoot != "" {
-			return tempFlags.Chart.RepoRoot
+	if rc, err := config.LoadMatrixConfig(configFile); err == nil {
+		if repoRoot := rc.ResolveInfra(true, "", "", config.InfraOverride{}).RepoRoot; repoRoot != "" {
+			return repoRoot
 		}
 	}
 
@@ -1061,6 +984,59 @@ func resolveRepoRoot(flagValue string) string {
 	}
 
 	return ""
+}
+
+// matrixCLIInfra collects the infra flags set on the command line.
+func matrixCLIInfra(flags *pflag.FlagSet) config.InfraOverride {
+	text := func(name string) string {
+		if !flags.Changed(name) {
+			return ""
+		}
+		value, _ := flags.GetString(name)
+		return value
+	}
+	toggle := func(name string) *bool {
+		if !flags.Changed(name) {
+			return nil
+		}
+		value, _ := flags.GetBool(name)
+		return &value
+	}
+	scalars := func(text func(string) string) config.InfraConfig {
+		return config.InfraConfig{
+			Platform: text("platform"), RepoRoot: text("repo-root"), NamespacePrefix: text("namespace-prefix"), LogLevel: text("log-level"),
+			EnvFile: text("env-file"), IngressBaseDomain: text("ingress-base-domain"), KubeContext: text("kube-context"),
+			DockerUsername: text("docker-username"), DockerPassword: text("docker-password"),
+			DockerHubUsername: text("dockerhub-username"), DockerHubPassword: text("dockerhub-password"),
+			SkipDependencyUpdate: toggle("skip-dependency-update"), DeleteNamespace: toggle("delete-namespace"),
+			EnsureDockerRegistry: toggle("ensure-docker-registry"), EnsureDockerHub: toggle("ensure-docker-hub"),
+			UseVaultBackedSecrets: toggle("use-vault-backed-secrets"),
+		}
+	}
+	cli := config.InfraOverride{InfraConfig: scalars(text), Given: scalars(func(name string) string {
+		if !flags.Changed(name) {
+			return ""
+		}
+		return name
+	})}
+	cli.KubeContexts = map[string]string{"gke": text("kube-context-gke"), "eks": text("kube-context-eks")}
+	cli.IngressBaseDomains = map[string]string{"gke": text("ingress-base-domain-gke"), "eks": text("ingress-base-domain-eks")}
+	cli.EnvFiles = map[string]string{"8.6": text("env-file-8.6"), "8.7": text("env-file-8.7"), "8.8": text("env-file-8.8"), "8.9": text("env-file-8.9")}
+	cli.VaultBackedSecrets = map[string]bool{}
+	for _, platform := range []string{"gke", "eks"} {
+		if enabled := toggle("use-vault-backed-secrets-" + platform); enabled != nil {
+			cli.VaultBackedSecrets[platform] = *enabled
+		}
+	}
+	return cli
+}
+
+// warnDeprecatedInfra logs the root and matrix: infra keys the config file sets.
+func warnDeprecatedInfra(rc *config.RootConfig) {
+	if len(rc.DeprecatedInfra) > 0 {
+		logging.Logger.Warn().Strs("keys", rc.DeprecatedInfra).Str("config", rc.FilePath).
+			Msg("Root and matrix: platform, repoRoot, kubeContext, ingressBaseDomain and envFile are deprecated; set them in a deployments.<name> profile, the matrix: per-platform maps, or flags")
+	}
 }
 
 // validateChartRefFlags rejects inconsistent --chart-ref / --chart-version
@@ -1804,7 +1780,7 @@ func addTopologyIngressHosts(crossRefEnv map[string]string, opts matrix.RunOptio
 		return
 	}
 
-	baseDomain := matrix.ResolveIngressBaseDomain(opts, platform)
+	baseDomain := matrix.EntryInfra(opts, platform, "").IngressBaseDomain
 	if baseDomain == "" {
 		return
 	}

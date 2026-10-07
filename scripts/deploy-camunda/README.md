@@ -91,7 +91,14 @@ deploy-camunda
 `deploy-camunda` reads your `.deploy-camunda.yaml` on every run — you
 don't need to repeat the flags on the command line. Precedence is
 `CLI flag  >  active profile in config file  >  root config  >  defaults`,
-so ad-hoc overrides still work when you need them. For a matching registry
+so ad-hoc overrides still work when you need them. `matrix run` and
+`matrix list` resolve infra (`platform`, `repoRoot`, `kubeContext`,
+`ingressBaseDomain`, `envFile`, docker and vault settings) with the same rule,
+adding the `matrix:` per-platform/per-version maps between the CLI flags and
+the profile and the `matrix:` scalars between the profile and the root config.
+Root-level and `matrix:` `platform`, `repoRoot`, `kubeContext`,
+`ingressBaseDomain` and `envFile` are deprecated and log a warning; set them in
+a `deployments.<name>` profile instead. For a matching registry
 scenario, its declaration supplies the defaults. Older entries that omit
 identity or persistence retain the name-derived default for that field.
 Heuristic name matching is otherwise used when the chart has no registry or
