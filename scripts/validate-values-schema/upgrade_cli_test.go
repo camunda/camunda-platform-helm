@@ -35,13 +35,13 @@ func TestUpgradeCLIWhenPreviousDefaultsContainRejectedKeys(t *testing.T) {
 			previous := filepath.Join(dir, "camunda-platform-8.9")
 			current := filepath.Join(dir, "camunda-platform-8.10")
 			files := map[string]string{
-				filepath.Join(previous, "values.schema.json"):                    `{}`,
-				filepath.Join(previous, "values.yaml"):                           "old: true\nremoved: true\nexception: true\n",
-				filepath.Join(previous, "values-enterprise.yaml"):                "old: false\n",
-				filepath.Join(current, "Chart.yaml"):                             "apiVersion: v2\nname: test\n",
-				filepath.Join(current, "values.schema.json"):                     `{"type":"object","properties":{}}`,
-				filepath.Join(current, "templates/common/constraints.tpl"):       `{{ include "camundaPlatform.keyRemoved" (dict "condition" true "oldName" "removed") }}`,
-				filepath.Join(current, "test/unit/deprecation/coverage_test.go"): `package deprecation; var allowlist = map[string]string{"exception":"test exception"}`,
+				filepath.Join(previous, "values.schema.json"):                  `{}`,
+				filepath.Join(previous, "values.yaml"):                         "old: true\nremoved: true\nexception: true\n",
+				filepath.Join(previous, "values-enterprise.yaml"):              "old: false\n",
+				filepath.Join(current, "Chart.yaml"):                           "apiVersion: v2\nname: test\n",
+				filepath.Join(current, "values.schema.json"):                   `{"type":"object","properties":{}}`,
+				filepath.Join(current, "templates/common/constraints.tpl"):     `{{ include "camundaPlatform.keyRemoved" (dict "condition" true "oldName" "removed") }}`,
+				filepath.Join(current, "test/unit/deprecation/allowlist.yaml"): `exception: test exception`,
 			}
 			if covered {
 				files[filepath.Join(current, "templates/common/constraints.tpl")] += `{{ include "camundaPlatform.keyDeprecated" (dict "condition" true "oldName" "old" "migration" "new") }}`

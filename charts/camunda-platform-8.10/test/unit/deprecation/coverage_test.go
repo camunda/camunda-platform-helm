@@ -90,10 +90,6 @@ var bespokeWarnings = []struct {
 	},
 }
 
-var allowlist = map[string]string{
-	"global.security.allowInsecureImages": "Bitnami subcharts dropped",
-}
-
 var oldNamePattern = regexp.MustCompile(`"oldName"\s+"([^"]+)"`)
 
 // helmCommentPattern matches Helm comment blocks {{/* ... */}} (including the
@@ -117,6 +113,10 @@ func TestDeprecationKeyCoverage89To810(t *testing.T) {
 
 	executable := stripHelmComments(string(constraintsBytes))
 	covered := parseCoveredKeys(executable)
+	allowlistBytes, err := os.ReadFile("allowlist.yaml")
+	require.NoError(t, err)
+	var allowlist map[string]string
+	require.NoError(t, yaml.Unmarshal(allowlistBytes, &allowlist))
 
 	var uncovered []string
 	for key := range removed {
@@ -137,7 +137,7 @@ func TestDeprecationKeyCoverage89To810(t *testing.T) {
 	if len(uncovered) > 0 {
 		sort.Strings(uncovered)
 		for _, key := range uncovered {
-			t.Errorf("removed key %q has no deprecation coverage: add keyDeprecated/keyRemoved in constraints.tpl or allowlist it in coverage_test.go", key)
+			t.Errorf("removed key %q has no deprecation coverage: add keyDeprecated/keyRemoved in constraints.tpl or allowlist it in allowlist.yaml", key)
 		}
 	}
 }

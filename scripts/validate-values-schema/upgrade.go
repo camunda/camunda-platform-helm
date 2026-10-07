@@ -17,9 +17,6 @@ package main
 import (
 	"errors"
 	"fmt"
-	"go/ast"
-	"go/parser"
-	"go/token"
 	"io"
 	"os"
 	"path/filepath"
@@ -27,6 +24,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+
+	"gopkg.in/yaml.v3"
 )
 
 type coverageClass string
@@ -40,7 +39,7 @@ const (
 
 type upgradeCoverage struct {
 	keys      map[string]coverageClass
-	allowlist map[string]bool
+	allowlist map[string]string
 }
 
 var (
@@ -54,7 +53,7 @@ var (
 )
 
 func parseUpgradeCoverage(template, allowlistSource string) (upgradeCoverage, error) {
-	c := upgradeCoverage{keys: map[string]coverageClass{}, allowlist: map[string]bool{}}
+	c := upgradeCoverage{keys: map[string]coverageClass{}, allowlist: map[string]string{}}
 	executable := helmComments.ReplaceAllString(template, "")
 	for _, block := range coverageInclude.FindAllStringSubmatch(executable, -1) {
 		if key := coverageOldName.FindStringSubmatch(block[2]); key != nil {
@@ -77,44 +76,21 @@ func parseUpgradeCoverage(template, allowlistSource string) (upgradeCoverage, er
 	if allowlistSource == "" {
 		return c, nil
 	}
-	file, err := parser.ParseFile(token.NewFileSet(), "coverage_test.go", allowlistSource, 0)
-	if err != nil {
+	if err := yaml.Unmarshal([]byte(allowlistSource), &c.allowlist); err != nil {
 		return c, fmt.Errorf("parse deprecation allowlist: %w", err)
 	}
-	ast.Inspect(file, func(node ast.Node) bool {
-		spec, ok := node.(*ast.ValueSpec)
-		if !ok || len(spec.Names) != 1 || spec.Names[0].Name != "allowlist" || len(spec.Values) != 1 {
-			return true
-		}
-		literal, ok := spec.Values[0].(*ast.CompositeLit)
-		if !ok {
-			return false
-		}
-		for _, element := range literal.Elts {
-			pair, ok := element.(*ast.KeyValueExpr)
-			if !ok {
-				continue
-			}
-			key, ok := pair.Key.(*ast.BasicLit)
-			if !ok || key.Kind != token.STRING {
-				continue
-			}
-			value, err := strconv.Unquote(key.Value)
-			if err == nil {
-				c.allowlist[value] = true
-			}
-		}
-		return false
-	})
 	return c, nil
 }
 
 func (c upgradeCoverage) classify(key string) coverageClass {
+	if _, ok := c.allowlist[key]; ok {
+		return allowlisted
+	}
 	for ancestor := key; ancestor != ""; {
 		if class, ok := c.keys[ancestor]; ok {
 			return class
 		}
-		if class, ok := c.keys[ancestor+".*"]; ok && key != "console.enabled" {
+		if class, ok := c.keys[ancestor+".*"]; ok {
 			return class
 		}
 		index := strings.LastIndexAny(ancestor, ".[")
@@ -122,9 +98,6 @@ func (c upgradeCoverage) classify(key string) coverageClass {
 			break
 		}
 		ancestor = ancestor[:index]
-	}
-	if c.allowlist[key] {
-		return allowlisted
 	}
 	return uncovered
 }
@@ -148,13 +121,13 @@ func (c upgradeCoverage) findUnknownKeys(schema any, values map[string]any) []st
 }
 
 func (c upgradeCoverage) expandUnknown(key string, value any) []string {
-	expand := key == "console" && c.keys["console.*"] == deprecated
+	expand := false
+	for allowed := range c.allowlist {
+		expand = expand || strings.HasPrefix(allowed, key+".")
+	}
 	if c.classify(key) == uncovered {
 		for covered := range c.keys {
 			expand = expand || strings.HasPrefix(covered, key+".")
-		}
-		for allowed := range c.allowlist {
-			expand = expand || strings.HasPrefix(allowed, key+".")
 		}
 	}
 	object, ok := value.(map[string]any)
@@ -217,7 +190,7 @@ func loadUpgrade(chartDir string) (upgradeCoverage, []string, error) {
 	if err != nil {
 		return upgradeCoverage{}, nil, fmt.Errorf("read upgrade constraints: %w", err)
 	}
-	allowlist, err := os.ReadFile(filepath.Join(chartDir, "test/unit/deprecation/coverage_test.go"))
+	allowlist, err := os.ReadFile(filepath.Join(chartDir, "test/unit/deprecation/allowlist.yaml"))
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
 		return upgradeCoverage{}, nil, fmt.Errorf("read upgrade allowlist: %w", err)
 	}
