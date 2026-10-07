@@ -66,5 +66,5 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
-    - kind: added
-      description: "Support orchestration releases managed by Camunda Hub"
+    - kind: fixed
+      description: "Use the image tag for app.kubernetes.io/version when an image digest is set"
