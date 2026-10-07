@@ -1026,6 +1026,88 @@ func TestRegistryValidatorAcceptsUpgradePersistenceWithoutPreviousVersion(t *tes
 	}
 }
 
+const (
+	credentialsFile      = "external-secret-integration-test-credentials.yaml"
+	credentialsVaultFile = "external-secret-integration-test-credentials-vault.yaml"
+	templateCredentials  = "spec:\n  target:\n    template:\n      data:\n        kept: x\n        dropped: y\n"
+	dataCredentialsKept  = "spec:\n  data:\n    - secretKey: kept\n"
+	dataCredentialsBoth  = "spec:\n  data:\n    - secretKey: kept\n    - secretKey: dropped\n"
+)
+
+func writeCredentials(t *testing.T, chartDir, name, body string) {
+	t.Helper()
+	dir := filepath.Join(chartDir, "test", "integration", "external-secrets")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	writeFile(t, filepath.Join(dir, name), body)
+}
+
+func writeIdentityValues(t *testing.T, chartDir, secretKey string) {
+	t.Helper()
+	writeFile(t, filepath.Join(chartDir, "test", "integration", "scenarios", "chart-full-setup", "values-identity.yaml"),
+		"identity:\n  existingSecret:\n    name: integration-test-credentials\n  existingSecretKey: \""+secretKey+"\"\n")
+}
+
+func TestRegistryValidatorRejectsUpgradeCredentialKeysMissingFromCurrentVersion(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		flows string
+		file  string
+	}{
+		{"upgrade-minor", "[upgrade-minor]", credentialsFile},
+		{"install and upgrade-minor", "[install, upgrade-minor]", credentialsFile},
+		{"vault manifest", "[upgrade-minor]", credentialsVaultFile},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			_, chartDir, regDir, prevChartDir := syntheticChartWithPrevious(t, depsWithElasticsearch, depsWithElasticsearch)
+			writeCredentials(t, prevChartDir, tc.file, templateCredentials)
+			writeCredentials(t, chartDir, tc.file, dataCredentialsKept)
+			writeIdentityValues(t, prevChartDir, "dropped")
+			writeManifest(t, regDir, "    - id: a\n      shortname: a\n      tier: 1\n      enabled: true\n")
+			writeFile(t, filepath.Join(regDir, "scenarios", "a.yaml"),
+				"name: a\nflows: "+tc.flows+"\nplatforms: [gke]\n")
+
+			_, err := LoadRegistry(chartDir)
+			if err == nil || !strings.Contains(err.Error(), tc.file+": dropped") {
+				t.Fatalf("want missing credential key error, got: %v", err)
+			}
+		})
+	}
+}
+
+func TestRegistryValidatorAcceptsUpgradeCredentialKeys(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		flows     string
+		current   string
+		prevReads string
+	}{
+		{"current version keeps every key", "[upgrade-minor]", dataCredentialsBoth, "dropped"},
+		{"previous version does not read the dropped key", "[upgrade-minor]", dataCredentialsKept, "kept"},
+		{"previous version reads a longer key name", "[upgrade-minor]", dataCredentialsKept, "legacy-dropped"},
+		{"install flow", "[install]", dataCredentialsKept, "dropped"},
+		{"upgrade-patch flow", "[upgrade-patch]", dataCredentialsKept, "dropped"},
+		{"current version has no manifest", "[upgrade-minor]", "", "dropped"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			_, chartDir, regDir, prevChartDir := syntheticChartWithPrevious(t, depsWithElasticsearch, depsWithElasticsearch)
+			writeCredentials(t, prevChartDir, credentialsFile, templateCredentials)
+			writeIdentityValues(t, prevChartDir, tc.prevReads)
+			if tc.current != "" {
+				writeCredentials(t, chartDir, credentialsFile, tc.current)
+			}
+			writeManifest(t, regDir, "    - id: a\n      shortname: a\n      tier: 1\n      enabled: true\n")
+			writeFile(t, filepath.Join(regDir, "scenarios", "a.yaml"),
+				"name: a\nflows: "+tc.flows+"\nplatforms: [gke]\n")
+
+			if _, err := LoadRegistry(chartDir); err != nil {
+				t.Fatalf("want no error, got: %v", err)
+			}
+		})
+	}
+}
+
 // TestRegistryValidatorRejectsMissingFeatureValues exercises checkFeature.
 // Feature names resolve to <feature>.yaml under chart-full-setup/values/features/;
 // a dangling name must surface as a validation error so PR review catches
