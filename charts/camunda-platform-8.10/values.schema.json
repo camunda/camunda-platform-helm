@@ -5,6 +5,11 @@
         "global": {
             "type": "object",
             "properties": {
+                "strictValues": {
+                    "type": "boolean",
+                    "description": "if true, fail rendering on unknown chart-owned values keys instead of warning. Shared global values, dependency values, and free-form maps are exempt. Camunda 8.11 (chart v16) will reject unknown chart-owned keys. Remove or correct them before upgrading.",
+                    "default": false
+                },
                 "topology": {
                     "type": "object",
                     "properties": {

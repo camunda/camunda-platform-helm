@@ -1032,6 +1032,7 @@ Usage:
 {{- end -}}
 
 {{- define "camunda.constraints.warnings" }}
+  {{- include "camundaPlatform.unknownValuesWarnings" . }}
   {{- if not (semverCompare ">=4.0.0-0" .Capabilities.HelmVersion.Version) }}
     {{- printf "\n%s" (printf "[camunda][warning] Helm CLI %s detected. Helm v3 receives security fixes only until February 10, 2027 (https://helm.sh/blog/helm-v3-end-of-life/). Upgrade to Helm v4 before then: https://helm.sh/docs/overview" .Capabilities.HelmVersion.Version) }}
   {{- end }}
@@ -2404,3 +2405,10 @@ Bundled Bitnami subcharts (removed in 8.10)
   "condition" (hasKey .Values "elasticsearch")
   "oldName" "elasticsearch"
 ) }}
+
+{{- if .Values.global.strictValues -}}
+  {{- $paths := include "camundaPlatform.unknownValuesPaths" . | fromJsonArray -}}
+  {{- if $paths -}}
+    {{- fail (printf "[camunda][error] Unknown values keys (global.strictValues=true): %s" (join ", " $paths)) -}}
+  {{- end -}}
+{{- end -}}

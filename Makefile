@@ -369,6 +369,9 @@ helm.schema-update:
 			"$${chart_dir}/values.yaml" \
 			"$${chart_dir}/values.schema.extra.json" \
 			"$${chart_dir}/values.schema.json"; \
+		if [ "$$(basename "$${chart_dir}")" = "camunda-platform-8.10" ]; then \
+			jq -c . "$${chart_dir}/values.schema.json" > "$${chart_dir}/values.unknown-keys.schema.json"; \
+		fi; \
 	done
 
 # helm.schema-validate-values: verify chart values files only use keys described by the schema.

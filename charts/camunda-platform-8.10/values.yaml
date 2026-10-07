@@ -42,6 +42,8 @@
 ## @section Global parameters
 ## @extra global
 global:
+  ## @param global.strictValues if true, fail rendering on unknown chart-owned values keys instead of warning. Shared global values, dependency values, and free-form maps are exempt. Camunda 8.11 (chart v16) will reject unknown chart-owned keys. Remove or correct them before upgrading.
+  strictValues: false
   ## @extra global.topology configuration for how this Helm release participates in a Camunda deployment topology. The default combined mode preserves the existing single-release behavior.
   topology:
     ## @param global.topology.mode defines the role of this release in the deployment topology. Supported values are combined, hub, orchestration, and optimize. In orchestration mode, Orchestration and Connectors can authenticate directly with an external OIDC provider without a Management Identity URL; Optimize calls Management Identity when it verifies a bearer token, so a release that enables Optimize needs optimize.identity.service.url or global.identity.service.url. In optimize mode only Optimize is deployed, so a separate Optimize release can serve one Physical Tenant without sharing a release with the Orchestration Cluster; it requires optimize.enabled, global.noSecondaryStorage=false, an enabled database backend, Identity auth and URL set on the component or globally, and optimize.contextPath when routing is rendered.
