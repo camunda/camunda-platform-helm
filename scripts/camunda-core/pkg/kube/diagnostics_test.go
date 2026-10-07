@@ -37,6 +37,7 @@ func TestRunKubectlTimeout(t *testing.T) {
 		name    string
 		script  string
 		timeout time.Duration
+		parent  time.Duration
 		wantOut string
 		wantErr []string
 	}{
@@ -54,6 +55,13 @@ func TestRunKubectlTimeout(t *testing.T) {
 			wantErr: []string{"kubectl timed out after 1s"},
 		},
 		{
+			name:    "parent deadline is not reported as the command timeout",
+			script:  "exec sleep 10",
+			timeout: 5 * time.Second,
+			parent:  time.Second,
+			wantErr: []string{"kubectl stopped: context deadline exceeded"},
+		},
+		{
 			name:    "failure carries stderr",
 			script:  "echo 'Error from server (Forbidden): pods is forbidden' >&2; exit 1",
 			timeout: 5 * time.Second,
@@ -64,8 +72,14 @@ func TestRunKubectlTimeout(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			useFakeKubectl(t, tt.script)
+			ctx := context.Background()
+			if tt.parent > 0 {
+				var cancel context.CancelFunc
+				ctx, cancel = context.WithTimeout(ctx, tt.parent)
+				defer cancel()
+			}
 
-			out, err := runKubectlTimeout(context.Background(), nil, tt.timeout)
+			out, err := runKubectlTimeout(ctx, nil, tt.timeout)
 			if out != tt.wantOut {
 				t.Errorf("stdout = %q, want %q", out, tt.wantOut)
 			}

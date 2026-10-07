@@ -56,7 +56,10 @@ func runKubectlTimeout(ctx context.Context, args []string, timeout time.Duration
 	if err == nil {
 		return stdout, nil
 	}
-	if errors.Is(cmdCtx.Err(), context.DeadlineExceeded) {
+	switch {
+	case ctx.Err() != nil:
+		err = fmt.Errorf("kubectl stopped: %w: %w", ctx.Err(), err)
+	case errors.Is(cmdCtx.Err(), context.DeadlineExceeded):
 		err = fmt.Errorf("kubectl timed out after %s: %w", timeout, err)
 	}
 	if len(output.Stderr) > 0 {
