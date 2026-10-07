@@ -172,21 +172,6 @@
                             "description": "Can be used to set container image registry.",
                             "default": ""
                         },
-                        "repository": {
-                            "type": "string",
-                            "description": "can be used as the image repository when a component repository is empty.",
-                            "default": ""
-                        },
-                        "tag": {
-                            "type": "string",
-                            "description": "can be used as the image tag when a component tag is empty.",
-                            "default": ""
-                        },
-                        "digest": {
-                            "type": "string",
-                            "description": "can be used as the image digest when a component digest is empty. A digest overrides the image tag.",
-                            "default": ""
-                        },
                         "pullPolicy": {
                             "type": "string",
                             "description": "defines the image pull policy which should be used https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy",
