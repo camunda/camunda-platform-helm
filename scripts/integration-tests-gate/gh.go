@@ -167,9 +167,12 @@ func (c *ghCLI) Cancel(runID string) error {
 	return err
 }
 
+func rerunArgs(runID, repo string) []string {
+	return []string{"run", "rerun", runID, "--repo", repo}
+}
+
 func (c *ghCLI) Rerun(runID string) error {
-	_, err := c.run("run", "rerun", runID,
-		"--repo", c.repo)
+	_, err := c.run(rerunArgs(runID, c.repo)...)
 	if err != nil && strings.Contains(err.Error(), "already running") {
 		return ErrRerunAlreadyRunning
 	}

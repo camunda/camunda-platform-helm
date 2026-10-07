@@ -17,6 +17,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -282,6 +283,14 @@ func TestSelectWorkflowRun(t *testing.T) {
 				t.Fatalf("got %q, want %q", got, test.want)
 			}
 		})
+	}
+}
+
+func TestRerunArgs_RerunsWholeRun(t *testing.T) {
+	got := rerunArgs("123", "owner/repo")
+	want := []string{"run", "rerun", "123", "--repo", "owner/repo"}
+	if !slices.Equal(got, want) {
+		t.Fatalf("got %q, want %q", got, want)
 	}
 }
 

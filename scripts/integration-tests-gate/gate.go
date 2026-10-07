@@ -260,7 +260,7 @@ func (g *Gate) Run(event, prHeadSHA, mgHeadSHA string) error {
 		g.mergeGroupSeen = g.mergeGroupSeen || queued
 	}
 
-	g.Logf("triggering retry of failed jobs on %s", runURL)
+	g.Logf("triggering full rerun of %s", runURL)
 	g.Cmdf("::group::rerun")
 	err = g.RerunWithBackoff(runID)
 	g.Cmdf("::endgroup::")
