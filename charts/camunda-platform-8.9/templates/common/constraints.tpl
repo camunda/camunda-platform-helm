@@ -197,6 +197,17 @@ configmap-warnings.yaml, which renders the "<release>-warnings" ConfigMap on the
       {{- printf "\n%s" "[camunda][warning] global.identity.auth.enabled=true, but no shared authentication issuer or issuer backend URL resolves. Set global.identity.auth.issuer (or global.identity.auth.publicIssuerUrl), global.identity.auth.issuerBackendUrl, or global.identity.keycloak.url for External Keycloak. Components using separate OIDC configuration must supply their own provider settings." }}
     {{- end }}
   {{- end }}
+  {{- if and (eq (include "orchestration.authMethod" .) "oidc") (empty (include "orchestration.authIssuerUrl" . | trim)) }}
+    {{- $unresolvedEndpoints := list }}
+    {{- range $key, $helper := dict "authorization-uri" "orchestration.authIssuerUrlEndpointAuth" "jwk-set-uri" "orchestration.authIssuerBackendUrlEndpointCerts" "token-uri" "orchestration.authIssuerBackendUrlEndpointToken" }}
+      {{- if not (regexMatch "^[a-zA-Z][a-zA-Z0-9+.-]*://[^/:?#]+" (include $helper $ | trim)) }}
+        {{- $unresolvedEndpoints = append $unresolvedEndpoints $key }}
+      {{- end }}
+    {{- end }}
+    {{- if $unresolvedEndpoints }}
+      {{- printf "\n[camunda][warning] The Orchestration Cluster uses OIDC without an issuer URI, and these endpoints do not render as absolute URLs: %s. Set orchestration.security.authentication.oidc.issuer or global.identity.auth.issuer, or set the endpoints in orchestration.security.authentication.oidc.authUrl, jwksUrl, and tokenUrl (or global.identity.auth.authUrl, jwksUrl, and tokenUrl). For KEYCLOAK, global.identity.auth.publicIssuerUrl derives authorization-uri, and global.identity.auth.issuerBackendUrl or global.identity.keycloak.url derives jwk-set-uri and token-uri." (join ", " $unresolvedEndpoints) }}
+    {{- end }}
+  {{- end }}
   {{- if .Values.global.testDeprecationFlags.existingSecretsMustBeSet }}
     {{/* TODO: Check if there are more existingSecrets to check */}}
 

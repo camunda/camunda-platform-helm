@@ -1042,6 +1042,17 @@ Usage:
       {{- printf "\n%s" "[camunda][warning] global.identity.auth.enabled=true, but no shared authentication issuer or issuer backend URL resolves. Set global.identity.auth.issuer (or global.identity.auth.publicIssuerUrl), global.identity.auth.issuerBackendUrl, or global.identity.keycloak.url for External Keycloak. Components using separate OIDC configuration must supply their own provider settings." }}
     {{- end }}
   {{- end }}
+  {{- if and (eq (include "orchestration.authMethod" .) "oidc") (empty (include "orchestration.authIssuerUrl" . | trim)) }}
+    {{- $unresolvedEndpoints := list }}
+    {{- range $key, $helper := dict "authorization-uri" "orchestration.authIssuerUrlEndpointAuth" "jwk-set-uri" "orchestration.authIssuerBackendUrlEndpointCerts" "token-uri" "orchestration.authIssuerBackendUrlEndpointToken" }}
+      {{- if not (regexMatch "^[a-zA-Z][a-zA-Z0-9+.-]*://[^/:?#]+" (include $helper $ | trim)) }}
+        {{- $unresolvedEndpoints = append $unresolvedEndpoints $key }}
+      {{- end }}
+    {{- end }}
+    {{- if $unresolvedEndpoints }}
+      {{- printf "\n[camunda][warning] The Orchestration Cluster uses OIDC without an issuer URI, and these endpoints do not render as absolute URLs: %s. Set orchestration.security.authentication.oidc.issuer or global.identity.auth.issuer, or set the endpoints in orchestration.security.authentication.oidc.authUrl, jwksUrl, and tokenUrl (or global.identity.auth.authUrl, jwksUrl, and tokenUrl). For KEYCLOAK, global.identity.auth.publicIssuerUrl derives authorization-uri, and global.identity.auth.issuerBackendUrl or global.identity.keycloak.url derives jwk-set-uri and token-uri." (join ", " $unresolvedEndpoints) }}
+    {{- end }}
+  {{- end }}
   {{- if not (semverCompare ">=4.0.0-0" .Capabilities.HelmVersion.Version) }}
     {{- printf "\n%s" (printf "[camunda][warning] Helm CLI %s detected. Helm v3 receives security fixes only until February 10, 2027 (https://helm.sh/blog/helm-v3-end-of-life/). Upgrade to Helm v4 before then: https://helm.sh/docs/overview" .Capabilities.HelmVersion.Version) }}
   {{- end }}
