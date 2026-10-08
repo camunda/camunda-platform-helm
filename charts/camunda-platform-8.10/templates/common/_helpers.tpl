@@ -256,7 +256,7 @@ relative authorization-uri at startup.
   {{- else if .Values.global.identity.auth.publicIssuerUrl -}}
     {{- tpl .Values.global.identity.auth.publicIssuerUrl . -}}
   {{- else if not .Values.global.identity.keycloak.internal -}}
-    {{- include "camundaPlatform.keycloakUrlDerivedIssuer" . -}}
+    {{- include "camundaPlatform.keycloakUrlDerivedIssuer" (dict "context" . "omitDefaultPort" true) -}}
   {{- end -}}
 {{- end -}}
 
@@ -267,23 +267,22 @@ relative authorization-uri at startup.
   {{- tpl .Values.global.identity.auth.issuer . -}}
 {{- end -}}
 
-{{/*
-[camunda-platform] Constructs a Keycloak issuer URL from global.identity.keycloak.url, for a
-release configured against an external Keycloak (this chart bundles none). Callers gate this
-themselves: it is only the internal-vs-public host that differs, and only when
-global.identity.keycloak.internal is true -- in that mode keycloak.url.host is itself an
-in-cluster address the chart proxies through its own Ingress (see
-camundaPlatform.keycloakExternalURL), not a route a browser or an out-of-cluster caller can
-reach directly.
-*/}}
+{{- /* NOTE: accepts context and omitDefaultPort; only the public caller omits HTTP/80 and HTTPS/443. */ -}}
 {{- define "camundaPlatform.keycloakUrlDerivedIssuer" -}}
-  {{- if and (eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK") (.Values.global.identity.keycloak.url).host -}}
+  {{- $ctx := .context -}}
+  {{- if and (eq (include "camundaPlatform.authIssuerType" $ctx) "KEYCLOAK") ($ctx.Values.global.identity.keycloak.url).host -}}
+    {{- $protocol := $ctx.Values.global.identity.keycloak.url.protocol -}}
+    {{- $port := toString $ctx.Values.global.identity.keycloak.url.port -}}
+    {{- $portSuffix := printf ":%s" $port -}}
+    {{- if and .omitDefaultPort (or (and (eq $protocol "https") (eq $port "443")) (and (eq $protocol "http") (eq $port "80"))) -}}
+      {{- $portSuffix = "" -}}
+    {{- end -}}
     {{-
-      printf "%s://%s:%v%s"
-        .Values.global.identity.keycloak.url.protocol
-        (include "identity.keycloak.host" .)
-        .Values.global.identity.keycloak.url.port
-        (include "camundaPlatform.joinpath" (list .Values.global.identity.keycloak.contextPath .Values.global.identity.keycloak.realm))
+      printf "%s://%s%s%s"
+        $protocol
+        (include "identity.keycloak.host" $ctx)
+        $portSuffix
+        (include "camundaPlatform.joinpath" (list $ctx.Values.global.identity.keycloak.contextPath $ctx.Values.global.identity.keycloak.realm))
     -}}
   {{- end -}}
 {{- end -}}
@@ -295,7 +294,7 @@ reach directly.
   {{- if .Values.global.identity.auth.issuerBackendUrl -}}
     {{- tpl .Values.global.identity.auth.issuerBackendUrl . -}}
   {{- else -}}
-    {{- include "camundaPlatform.keycloakUrlDerivedIssuer" . -}}
+    {{- include "camundaPlatform.keycloakUrlDerivedIssuer" (dict "context" . "omitDefaultPort" false) -}}
   {{- end -}}
 {{- end -}}
 

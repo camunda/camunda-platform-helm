@@ -15,6 +15,7 @@
 package optimize
 
 import (
+	"camunda-platform/test/unit/testhelpers"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -213,24 +214,47 @@ func (s *AuthIdentityTemplateTest) TestComponentAuthWithoutAnIssuerIsRejected() 
 	s.Require().Contains(err.Error(), "requires optimize.security.authentication.oidc.issuer")
 }
 
-// An External Keycloak leaves global.identity.auth.issuer empty and resolves the provider through
-// the issuerBackendUrl derived from global.identity.keycloak.url. That has always rendered, so the
-// issuer constraint must not reject it. Asserting the key alone would also pass on an empty value,
-// which is the very state the constraint exists to prevent, so assert the resolved URL.
 func (s *AuthIdentityTemplateTest) TestGlobalAuthWithoutAnIssuerStillRenders() {
-	options := &helm.Options{SetValues: map[string]string{
-		"global.identity.auth.enabled":             "true",
-		"identity.enabled":                         "true",
-		"optimize.enabled":                         "true",
-		"orchestration.data.secondaryStorage.type": "elasticsearch",
-		"global.identity.keycloak.url.protocol":    "http",
-		"global.identity.keycloak.url.host":        "keycloak.example.com",
-		"global.identity.keycloak.url.port":        "80",
+	testCases := []testhelpers.TestCase{{
+		Name: "ExternalKeycloakDerivesPublicIssuerAndAuthorizationURL",
+		Values: map[string]string{
+			"global.identity.auth.enabled":             "true",
+			"identity.enabled":                         "true",
+			"optimize.enabled":                         "true",
+			"orchestration.data.secondaryStorage.type": "elasticsearch",
+			"global.identity.keycloak.url.protocol":    "https",
+			"global.identity.keycloak.url.host":        "keycloak.example.com",
+			"global.identity.keycloak.url.port":        "443",
+		},
+		Verifier: func(t *testing.T, output string, err error) {
+			s.Require().NoError(err)
+			var configMap corev1.ConfigMap
+			helm.UnmarshalK8SYaml(t, output, &configMap)
+			var config struct {
+				Camunda struct {
+					Identity struct {
+						Issuer           string `yaml:"issuer"`
+						IssuerBackendURL string `yaml:"issuerBackendUrl"`
+					} `yaml:"identity"`
+					Security struct {
+						Authentication struct {
+							OIDC struct {
+								AuthorizationURI string `yaml:"authorization-uri"`
+							} `yaml:"oidc"`
+						} `yaml:"authentication"`
+					} `yaml:"security"`
+				} `yaml:"camunda"`
+			}
+			s.Require().NoError(yaml.Unmarshal([]byte(configMap.Data["application-ccsm.yaml"]), &config))
+			issuer := "https://keycloak.example.com/auth/realms/camunda-platform"
+			s.Require().Equal(issuer, config.Camunda.Identity.Issuer)
+			s.Require().Equal("https://keycloak.example.com:443/auth/realms/camunda-platform", config.Camunda.Identity.IssuerBackendURL)
+			s.Require().Equal(issuer+"/protocol/openid-connect/auth", config.Camunda.Security.Authentication.OIDC.AuthorizationURI)
+		},
 	}}
-	out := helm.RenderTemplate(s.T(), options, s.chartPath, s.release,
-		[]string{"templates/optimize/configmap.yaml"})
 
-	s.Require().Contains(out, `issuerBackendUrl: "http://keycloak.example.com:80/auth/realms/camunda-platform"`)
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace,
+		[]string{"templates/optimize/configmap.yaml"}, testCases)
 }
 
 // This chart bundles no Keycloak, so global.identity.auth.enabled on its own resolves no issuer at
