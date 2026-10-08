@@ -452,7 +452,7 @@ func TestCredentialIsolationContract(test *testing.T) {
 		test.Fatal("Vault secrets must not be exported to the job environment")
 	}
 	token := namedStep(test, provider, "Generate repository-scoped token")
-	if token.With["repositories"] != `["${{ github.event.repository.name }}"]` || token.With["permissions"] != `{"contents":"write"}` {
+	if token.With["repositories"] != "${{ github.event.repository.name }}" || token.With["permission-contents"] != "write" {
 		test.Fatal("GitHub App token must be scoped to this repository with contents:write")
 	}
 	validated := false
@@ -463,7 +463,7 @@ func TestCredentialIsolationContract(test *testing.T) {
 		if strings.Contains(current.Uses, "vault-action") && !validated {
 			test.Fatal("credentials acquired before validation")
 		}
-		if current.Uses != "" && !strings.HasPrefix(current.Uses, "actions/download-artifact@") && !strings.HasPrefix(current.Uses, "hashicorp/vault-action@") && !strings.HasPrefix(current.Uses, "tibdex/github-app-token@") {
+		if current.Uses != "" && !strings.HasPrefix(current.Uses, "actions/download-artifact@") && !strings.HasPrefix(current.Uses, "hashicorp/vault-action@") && !strings.HasPrefix(current.Uses, "actions/create-github-app-token@") {
 			test.Fatalf("unapproved publisher action %s", current.Uses)
 		}
 		for _, forbidden := range []string{"GITHUB_ENV", "GITHUB_PATH", "go run", "make ", "npm ", "git checkout", "git switch"} {
