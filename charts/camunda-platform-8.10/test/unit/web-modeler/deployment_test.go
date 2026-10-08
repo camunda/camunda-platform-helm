@@ -301,12 +301,15 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				"webModeler.enabled":                  "true",
 				"camundaHub.restapi.mail.fromAddress": "example@example.com",
 				"camundaHub.image.repository":         "camunda/custom-web-modeler",
+				"camundaHub.image.tag":                "test-tag",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
 				var deployment appsv1.Deployment
-				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+				helm.UnmarshalK8SYaml(t, output, &deployment)
 
-				s.Require().Equal(s.imageRepo()+":8.10.0", deployment.Spec.Template.Spec.Containers[0].Image)
+				require.Len(t, deployment.Spec.Template.Spec.Containers, 1)
+				require.Equal(t, s.imageRepo()+":test-tag", deployment.Spec.Template.Spec.Containers[0].Image)
 			},
 		}, {
 			Name: "TestContainerOverwriteImageTag",
