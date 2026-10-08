@@ -8265,6 +8265,15 @@
                             "type": "object",
                             "description": "can be used to define a label selector for the persistent volume claim",
                             "default": {}
+                        },
+                        "deploymentStrategy": {
+                            "type": "string",
+                            "description": "can be used to set the Optimize Deployment update strategy, Recreate or RollingUpdate. Keep Recreate while /tmp and /camunda use ReadWriteOnce volumes, else rollouts deadlock on Multi-Attach. RollingUpdate avoids upgrade downtime on ReadWriteMany or without persistence.",
+                            "default": "Recreate",
+                            "enum": [
+                                "RollingUpdate",
+                                "Recreate"
+                            ]
                         }
                     }
                 },

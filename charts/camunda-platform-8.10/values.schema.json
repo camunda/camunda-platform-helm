@@ -7122,6 +7122,15 @@
                             "type": "object",
                             "description": "can be used to define a label selector for the persistent volume claim",
                             "default": {}
+                        },
+                        "deploymentStrategy": {
+                            "type": "string",
+                            "description": "can be used to set the Optimize Deployment update strategy, Recreate or RollingUpdate. Keep Recreate on a ReadWriteOnce volume, else rollouts deadlock on Multi-Attach. RollingUpdate avoids upgrade downtime on a ReadWriteMany volume or without persistence.",
+                            "default": "Recreate",
+                            "enum": [
+                                "RollingUpdate",
+                                "Recreate"
+                            ]
                         }
                     }
                 },

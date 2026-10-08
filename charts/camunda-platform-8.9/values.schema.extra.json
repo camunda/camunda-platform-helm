@@ -571,6 +571,16 @@
         },
         "optimize": {
             "properties": {
+                "persistence": {
+                    "properties": {
+                        "deploymentStrategy": {
+                            "enum": [
+                                "RollingUpdate",
+                                "Recreate"
+                            ]
+                        }
+                    }
+                },
                 "env": {
                     "type": "array",
                     "items": {

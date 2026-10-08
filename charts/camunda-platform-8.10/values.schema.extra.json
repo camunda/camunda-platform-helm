@@ -695,6 +695,16 @@
         },
         "optimize": {
             "properties": {
+                "persistence": {
+                    "properties": {
+                        "deploymentStrategy": {
+                            "enum": [
+                                "RollingUpdate",
+                                "Recreate"
+                            ]
+                        }
+                    }
+                },
                 "security": {
                     "properties": {
                         "authentication": {
