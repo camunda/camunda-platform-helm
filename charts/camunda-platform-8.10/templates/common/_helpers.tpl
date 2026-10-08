@@ -1597,9 +1597,15 @@ required by camunda.hub.clusters (introduced in 8.10 Hub/WebModeler).
 */}}
 {{- define "camundaPlatform.defaultWebModelerCluster" -}}
 {{- if eq (include "camundaPlatform.identityEnabled" .) "true" }}
+{{- $identityVersion := include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.identity) }}
+{{- $managementClusterVersion := $identityVersion }}
+{{- /* NOTE: Hub rejects non-SemVer cluster versions such as pr-<sha>; those fall back to the chart's <major>.<minor>-SNAPSHOT. */ -}}
+{{- if not (regexMatch "^[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.-]+)?(\\+[0-9A-Za-z.-]+)?$" $identityVersion) }}
+  {{- $managementClusterVersion = printf "%s-SNAPSHOT" (regexFind "^[0-9]+\\.[0-9]+" .Chart.AppVersion) }}
+{{- end }}
 - id: "management-cluster"
   name: "Management Identity"
-  version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.identity) | quote }}
+  version: {{ $managementClusterVersion | quote }}
   authentication: {{ include "webModeler.authConfigValue" . | quote }}
   authorizations:
     enabled: false
@@ -1608,7 +1614,7 @@ required by camunda.hub.clusters (introduced in 8.10 Hub/WebModeler).
   {{- $baseURLInternal := printf "%s://%s.%s:%v" $proto (include "identity.fullname" .) .Release.Namespace .Values.identity.service.metricsPort }}
   - name: Identity
     type: identity
-    version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.identity) | quote }}
+    version: {{ $identityVersion | quote }}
     urls:
       webapp: {{ include "camundaPlatform.identityExternalURL" . | quote }}
       readiness: {{ printf "%s%s" $baseURLInternal .Values.identity.readinessProbe.probePath | quote }}
