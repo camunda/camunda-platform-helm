@@ -1,46 +1,75 @@
 The changelog is automatically generated and it follows [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) format.
 
-## [camunda-platform-8.10-15.0.0-alpha5](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.10-15.0.0-alpha5) (2026-09-04)
+## [camunda-platform-8.10-15.0.0](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.10-15.0.0) (2026-10-08)
 
 ### ⚠ BREAKING CHANGES
 
-- **Remove deprecated global elasticsearch and opensearch values from 8.10 chart (#6914)**
+- **Rename orchestration.multiregion to orchestration.partitioning (#7179)**
+- **Disable Identity service account token automount by default (#7293)**
 
 ### Features
 
-- Add orchestration.secretStore for centralized secret resolution (#6721)
-- Add generic appProtocol support for Service ports in 8.10 (#6605)
-- Configure Optimize via camunda.security.* for CSL (#6883)
-- Rename Web Modeler Keycloak preset roles to Hub in 8.10 (#6896)
-- Add Camunda Hub database migration phases (#6788)
-- First-class global.tls.orchestration.{rest,grpc} surface (#6423)
-- First-class TLS for Connectors (#6425)
+- Zone-aware multi-region orchestration mode, with broker node IDs [ready] (#6949)
+- First-class TLS for Optimize (#6426)
+- Add an optimize release role that owns its OIDC identity (#6884)
+- Fail fast when Physical Tenants are declared without OIDC or a pinned issuer (#6889)
+- Give each Physical Tenant's Optimize its own client and audience (#7095)
+- Name the legacy exporter index prefix after the exporter (#7096)
+- Support physical tenants in restore app execution (#7181)
+- Deprecate the ingress-nginx annotation defaults behind a compat flag [ready] (#7145)
+- Support orchestration releases managed by Camunda Hub (#7011)
+- Support migration to zone-aware orchestration [ready] (#7049)
+- [HUBPT 1/4] render physical tenants in Hub inventory (#7266)
+- Support Helm v3 CLI in 8.10 with a Helm v3 end-of-life warning (#7351)
+- Document and validate ReadWriteOncePod for broker PVCs (#7022)
+- Support orchestration topology without Management Identity (#7147)
 
 ### Refactor
 
-- Read merged Hub values across the remaining templates (#6850)
-- Remove deprecated global elasticsearch and opensearch values from 8.10 chart (#6914)
-- Rename web modeler play to test mode (#6946)
-- Remove redundant camundaexporter from zeebe.broker.exporters (#6454)
+- Omit empty init container blocks (#7082)
+- Remove stale 8.8 key guards (#7206)
+- Rename orchestration.multiregion to orchestration.partitioning (#7179)
+- Rename the partitioning region pair to zone vocabulary [ready] (#7241)
+- Derive the advertised-host predicate and stringify the region counts [ready] (#7230)
+- Publish the partitioning block vocabulary from the resolver (#7248)
+- Use camunda.hub / CAMUNDA_HUB config prefix (#7412)
 
 ### Fixes
 
-- Document defaultRoles.admin.clients in orchestration values schema [ready] (#6560)
-- Read external URLs from global.host when using the gateway api (#6816)
-- Allow root path as optimize client redirect uri in identity configmap (#6856)
-- Document camundaHub override maps in values schema [ready] (#6801)
-- Bump camunda-platform-8.10 identity image tag to 8.10.0-alpha4.2 (#6859)
-- Align legacy exporter with its component datastore source (#6840)
-- Back Connectors and Identity /tmp with a per-pod ephemeral volume (#6522)
-- Preserve Hub securityContext and resource defaults on partial override (#6849)
-- Back Optimize /tmp with emptyDir to fix persistence double-mount (#6521)
-- Stop exposing credentials in deployment output (#6796)
-- Warn on inert console config keys and enforce deprecation-key coverage (#6557)
-- Stop emitting orchestration log4j2.xml twice when extraConfiguration supplies it (#6999)
+- Align every image default on 8.10.0-alpha5 and unfreeze Renovate tracking (#7143)
+- Always render the cluster-ping role in the webmodeler preset (#7123)
+- Stop management identity from provisioning disabled components (#7051)
+- Exempt orchestration.partitionCount/replicationFactor from v16 removal (#7195)
+- Qualify the Contour gRPC annotation by upstream TLS state [ready] (#7276)
+- DocumentStore cloud credentials misuse (#7200)
+- Render the unified exporter class name so extraConfiguration exporter overrides merge (#7113)
+- Bind Azure document store secrets on 8.9 (#7175)
+- Honor public ingress ports in generated URLs (#7299)
+- Only add Web Modeler / Camunda Hub audience if enabled (#7289)
+- Allow overriding external ingress protocol (#7109)
+- Disable Identity service account token automount by default (#7293)
+- Align Hub constraints with merged values (#7249)
+- Point the install notes at the 8.9 to 8.10 upgrade guide and drop alpha wording (#7406)
+- Suppress configured contact-point warnings [ready] (#7376)
+- Deprecate defaultRoles admin and connectors mappingRules in 8.10 (#7373)
+- Point the Hub's Optimize inventory at the release that serves it (#7204)
+- List only identity in hub management cluster and rename it to Management Identity (#7305)
+- Render the unified cluster keys and stop prescribing an in-cluster DNS form for contact points [ready] (#7300)
+- Allow every physical tenant's login callback on the topology orchestration client (#7429)
+- Fail when the round-robin cluster size is not a multiple of the zone count (#7444)
+- Rename the Identity container from camunda-platform to identity in 8.10 (#7454)
+- Use the image tag for app.kubernetes.io/version when an image digest is set (#7447)
+- Warn or fail on Web Modeler restapi Recreate without existingClaim (#7459)
+- Use the public Gateway origin for Identity URLs (#7423)
+- Warn when shared authentication issuer is unresolved (#7482)
 
 ### Documentation
 
-- Document stable pod labels for Web Modeler anti-affinity rules (#6931)
+- Restore the 8.10 deprecation notices and re-declare exporters.zeebe.replicas (#7085)
+- Correct 8.10 dependency documentation (#7202)
+- Point camundaHub users at the webModeler parameter tables (#7317)
+- Document that the orchestration usernameClaim also sets the Web Modeler claim (#7455)
+- Use management plane instead of Hub plane and Management Cluster (#7476)
 
 <!-- generated by git-cliff -->
 ### Release Info
@@ -49,27 +78,27 @@ Supported versions:
 
 - Camunda applications: [8.10](https://github.com/camunda/camunda/releases?q=tag%3A8.10&expanded=true)
 - Camunda version matrix: [8.10](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.10)
-- Helm values: [15.0.0-alpha5](https://artifacthub.io/packages/helm/camunda/camunda-platform/15.0.0-alpha5?modal=values)
-- Helm CLI: [4.2.4](https://github.com/helm/helm/releases/tag/v4.2.4)
+- Helm values: [15.0.0](https://artifacthub.io/packages/helm/camunda/camunda-platform/15.0.0?modal=values)
+- Helm CLI: [3.22.0](https://github.com/helm/helm/releases/tag/v3.22.0), [4.3.0](https://github.com/helm/helm/releases/tag/v4.3.0)
 
 Camunda images:
 
-- docker.io/camunda/camunda:8.10.0-alpha5
-- docker.io/camunda/connectors-bundle:8.10.0-alpha5
-- docker.io/camunda/hub-websockets:8.10.0-alpha5
-- docker.io/camunda/hub:8.10.0-alpha5
-- docker.io/camunda/identity:8.10.0-alpha5
-- docker.io/camunda/optimize:8.10.0-alpha5
+- docker.io/camunda/camunda:8.10.2
+- docker.io/camunda/connectors-bundle:8.10.0
+- docker.io/camunda/hub-websockets:8.10.2
+- docker.io/camunda/hub:8.10.2
+- docker.io/camunda/identity:8.10.0
+- docker.io/camunda/optimize:8.10.2
 
 ### Verification
 
 For quick verification of the Helm chart integrity using [Cosign](https://docs.sigstore.dev/signing/quickstart/):
 
 ```shell
-cosign verify-blob camunda-platform-15.0.0-alpha5.tgz \
-  --bundle "camunda-platform-15.0.0-alpha5-cosign-bundle.json" \
+cosign verify-blob camunda-platform-15.0.0.tgz \
+  --bundle "camunda-platform-15.0.0-cosign-bundle.json" \
   --certificate-identity-regexp "https://github.com/camunda/camunda-platform-helm" \
   --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
 ```
 
-For detailed verification instructions, check the steps in the `camunda-platform-15.0.0-alpha5-cosign-verify.sh` file.
+For detailed verification instructions, check the steps in the `camunda-platform-15.0.0-cosign-verify.sh` file.
