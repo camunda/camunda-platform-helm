@@ -494,6 +494,16 @@ The following values inside your values.yaml need to be set but were not:
     {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
   {{- end }}
 
+  {{- $replicationFactor := int .Values.orchestration.replicationFactor -}}
+  {{- if and .Values.orchestration.enabled (eq $regions 2) (ne $replicationFactor 4) }}
+    {{- $warningMessage := printf "%s %s %s"
+        "[camunda][warning]"
+        (printf "orchestration.replicationFactor is %d but global.multiregion.regions is 2; a dual-region cluster needs a replication factor of 4 to distribute every partition evenly across both regions." $replicationFactor)
+        "Set orchestration.replicationFactor to 4."
+    -}}
+    {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+  {{- end }}
+
   {{- if and (eq (include "camundaPlatform.webModelerEnabled" .) "true")
              (eq (.Values.webModeler.persistence.deploymentStrategy | default "RollingUpdate") "Recreate")
              .Values.webModeler.persistence.enabled

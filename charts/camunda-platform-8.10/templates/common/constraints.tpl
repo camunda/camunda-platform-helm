@@ -1598,6 +1598,19 @@ The following values inside your values.yaml need to be set but were not:
     {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
   {{- end }}
 
+  {{- if eq (include "camundaPlatform.orchestrationEnabled" .) "true" }}
+    {{- $partitioning := include "camundaPlatform.partitioning" . | fromJson -}}
+    {{- $replicationFactor := int .Values.orchestration.replicationFactor -}}
+    {{- if and (ne $partitioning.scheme "zone-aware") (eq (int $partitioning.numberOfZones) 2) (ne $replicationFactor 4) }}
+      {{- $warningMessage := printf "%s %s %s"
+          "[camunda][warning]"
+          (printf "orchestration.replicationFactor is %d but %s.%s is 2; a dual-region cluster needs a replication factor of 4 to distribute every partition evenly across both regions." $replicationFactor $partitioning.sourceKey $partitioning.countKey)
+          "Set orchestration.replicationFactor to 4."
+      -}}
+      {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+    {{- end }}
+  {{- end }}
+
   {{- if .Values.orchestration.profiles.broker }}
     {{- if eq (include "orchestration.zoneAware" .) "true" }}
       {{- $warningMessage := printf "%s %s %s"
