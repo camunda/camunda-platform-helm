@@ -231,25 +231,7 @@ Authentication.
 ********************************************************************************
 */}}
 
-{{/*
-[camunda-platform] Auth issuer public URL which used externally for Camunda apps (with a fallback to
-publicIssuerUrl, and from there to global.identity.keycloak.url). This chart bundles no Keycloak
-subchart, so global.identity.keycloak.url ordinarily names an external Keycloak's own address,
-browser-reachable the same way it's cluster-reachable -- unlike the old bundled-Keycloak shape,
-there is no separate internal-only route to leak there. The fallback deliberately does NOT reuse
-authIssuerBackendUrl as a whole: that helper's issuerBackendUrl override is documented as the
-cluster-internal counterpart of publicIssuerUrl (values.yaml, split-horizon DNS), so inheriting it
-here would put an explicitly-internal address in the public-facing slot. The fallback is also
-skipped outright when global.identity.keycloak.internal is true: in that mode keycloak.url.host is
-itself an in-cluster address the chart proxies through its own Ingress, and the public route is
-camundaPlatform.keycloakExternalURL instead -- deriving one from the other belongs to a follow-up
-that also fixes that call site, not this fallback.
-Without this fallback, a release that sets only global.identity.keycloak.url (and neither issuer nor
-publicIssuerUrl) renders authorization-uri as the relative path "/protocol/openid-connect/auth" --
-unlike jwk-set-uri/token-uri in the same block, which derive from authIssuerBackendUrl and already
-have an (unconditional) equivalent fallback -- and camunda-security-library 1.0.2+ rejects a
-relative authorization-uri at startup.
-*/}}
+{{- /* NOTE: resolves issuer, then publicIssuerUrl, then the Keycloak URL when internal=false; issuerBackendUrl is not consulted. */ -}}
 {{- define "camundaPlatform.authIssuerUrlWithFallback" -}}
   {{- if .Values.global.identity.auth.issuer -}}
     {{- tpl .Values.global.identity.auth.issuer . -}}

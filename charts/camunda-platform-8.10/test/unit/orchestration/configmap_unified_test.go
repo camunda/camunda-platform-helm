@@ -638,10 +638,6 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedAuthOIDC() {
 				"orchestration.security.authentication.oidc.redirectUrl": "https://redirect.com/orchestration",
 			},
 			Expected: map[string]string{
-				// Regression guard: with neither global.identity.auth.issuer nor publicIssuerUrl set,
-				// authorization-uri must still derive an absolute URL from global.identity.keycloak.url,
-				// not the relative path "/protocol/openid-connect/auth" that camunda-security-library
-				// 1.0.2+ rejects at startup.
 				"configmapApplication.camunda.security.authentication.oidc.authorization-uri": "https://keycloak.prod.svc.cluster.local:8443/auth/realms/camunda-platform/protocol/openid-connect/auth",
 				"configmapApplication.camunda.security.authentication.oidc.jwk-set-uri":       "https://keycloak.prod.svc.cluster.local:8443/auth/realms/camunda-platform/protocol/openid-connect/certs",
 				"configmapApplication.camunda.security.authentication.oidc.token-uri":         "https://keycloak.prod.svc.cluster.local:8443/auth/realms/camunda-platform/protocol/openid-connect/token",
@@ -664,10 +660,6 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedAuthOIDC() {
 				"orchestration.security.authentication.oidc.redirectUrl": "https://redirect.com/orchestration",
 			},
 			Expected: map[string]string{
-				// Regression guard: global.identity.keycloak.internal=true means keycloak.url.host is an
-				// in-cluster address the chart proxies through its own Ingress (camundaPlatform.keycloakExternalURL
-				// names the real browser-facing route), so the keycloak.url-derived fallback must NOT apply here.
-				// authorization-uri keeps rendering the relative path rather than leaking the internal host.
 				"configmapApplication.camunda.security.authentication.oidc.authorization-uri": "/protocol/openid-connect/auth",
 				"configmapApplication.camunda.security.authentication.oidc.jwk-set-uri":       "https://keycloak.internal.svc.cluster.local:8443/auth/realms/camunda-platform/protocol/openid-connect/certs",
 				"configmapApplication.camunda.security.authentication.oidc.token-uri":         "https://keycloak.internal.svc.cluster.local:8443/auth/realms/camunda-platform/protocol/openid-connect/token",

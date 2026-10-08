@@ -651,12 +651,7 @@ global:
       # External OIDC: "MICROSOFT" or "GENERIC". OIDC endpoints (issuer or publicIssuerUrl, tokenUrl, jwksUrl, authUrl) must be explicitly set.
       type: "KEYCLOAK"
 
-      ## @param global.identity.auth.publicIssuerUrl defines the publicly-reachable token issuer URL.
-      # External Keycloak: browser-facing issuer URL used when issuer is not set, auto-derived from
-      #   global.identity.keycloak.url if omitted (unless global.identity.keycloak.internal is true,
-      #   which needs it set explicitly since keycloak.url is then a cluster-internal address).
-      #   Recommended to set explicitly.
-      # External OIDC: required when issuer is not set (generic OIDC pattern). Not consulted if issuer is set.
+      ## @param global.identity.auth.publicIssuerUrl can be used to set the publicly-reachable token issuer URL when global.identity.auth.issuer is unset. For external Keycloak with global.identity.keycloak.internal=false, omission derives the issuer from global.identity.keycloak.url, contextPath, and realm, omitting HTTP/80 and HTTPS/443. Set explicitly for private or split-horizon Keycloak routes. Required when issuer is unset for internal=true or external OIDC. Explicit issuer and publicIssuerUrl values are preserved verbatim after template evaluation.
       publicIssuerUrl: ""
 
       ## @extra global.identity.auth.admin configuration to configure Connectors authentication specifics on global level, which can be accessed by other components
