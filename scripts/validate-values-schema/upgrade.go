@@ -49,6 +49,7 @@ var (
 	warningBlock    = regexp.MustCompile(`(?s)\$warningMessage\s*:?=\s*printf\s+(.*?)\s*-?\}\}`)
 	warningKey      = regexp.MustCompile(`DEPRECATION:\s+(?:\\")?([a-zA-Z][a-zA-Z0-9]*(?:\.[a-zA-Z0-9*]+)*)(?:\\"|\s)`)
 	chartMinor      = regexp.MustCompile(`^camunda-platform-([0-9]+)\.([0-9]+)$`)
+	arrayIndex      = regexp.MustCompile(`\[[0-9]+\]`)
 	errChartVersion = errors.New("expected camunda-platform-<major>.<minor> with minor > 0")
 )
 
@@ -83,21 +84,26 @@ func parseUpgradeCoverage(template, allowlistSource string) (upgradeCoverage, er
 }
 
 func (c upgradeCoverage) classify(key string) coverageClass {
-	if _, ok := c.allowlist[key]; ok {
-		return allowlisted
+	paths := []string{key, arrayIndex.ReplaceAllString(key, "")}
+	for _, path := range paths {
+		if _, ok := c.allowlist[path]; ok {
+			return allowlisted
+		}
 	}
-	for ancestor := key; ancestor != ""; {
-		if class, ok := c.keys[ancestor]; ok {
-			return class
+	for _, path := range paths {
+		for ancestor := path; ancestor != ""; {
+			if class, ok := c.keys[ancestor]; ok {
+				return class
+			}
+			if class, ok := c.keys[ancestor+".*"]; ok {
+				return class
+			}
+			index := strings.LastIndexAny(ancestor, ".[")
+			if index < 0 {
+				break
+			}
+			ancestor = ancestor[:index]
 		}
-		if class, ok := c.keys[ancestor+".*"]; ok {
-			return class
-		}
-		index := strings.LastIndexAny(ancestor, ".[")
-		if index < 0 {
-			break
-		}
-		ancestor = ancestor[:index]
 	}
 	return uncovered
 }
@@ -181,10 +187,13 @@ func loadUpgrade(chartDir string) (upgradeCoverage, []string, error) {
 	if err != nil {
 		return upgradeCoverage{}, nil, err
 	}
-	if _, err := os.Stat(filepath.Join(previous, "values.schema.json")); errors.Is(err, os.ErrNotExist) {
-		fmt.Printf("INFO %s: previous minor has no schema baseline, skipping upgrade coverage\n", previous)
+	if _, err := os.Stat(previous); errors.Is(err, os.ErrNotExist) {
+		fmt.Printf("INFO %s: previous minor chart does not exist, skipping upgrade coverage\n", previous)
 		return upgradeCoverage{}, nil, nil
 	} else if err != nil {
+		return upgradeCoverage{}, nil, fmt.Errorf("previous minor chart: %w", err)
+	}
+	if _, err := os.Stat(filepath.Join(previous, "values.schema.json")); err != nil {
 		return upgradeCoverage{}, nil, fmt.Errorf("previous minor baseline: %w", err)
 	}
 	template, err := os.ReadFile(filepath.Join(chartDir, "templates/common/constraints.tpl"))
