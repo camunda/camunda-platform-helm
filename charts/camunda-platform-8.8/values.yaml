@@ -3502,6 +3502,8 @@ optimize:
     annotations: {}
     ## @param optimize.persistence.selector can be used to define a label selector for the persistent volume claim
     selector: {}
+    ## @param optimize.persistence.deploymentStrategy can be used to set the Optimize Deployment update strategy, Recreate or RollingUpdate. Keep Recreate while /tmp and /camunda use ReadWriteOnce volumes, else rollouts deadlock on Multi-Attach. RollingUpdate avoids upgrade downtime on ReadWriteMany or without persistence.
+    deploymentStrategy: Recreate
   ## @param optimize.profiles [string] defines SPRING_ACTIVE_PROFILES
   profiles: "ccsm"
   ## @param optimize.javaOpts can be used to set java options for optimize

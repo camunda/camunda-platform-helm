@@ -816,7 +816,8 @@
                     "labels": {"additionalProperties": true}
                 }},
                 "persistence": {"properties": {
-                    "annotations": {"additionalProperties": true}
+                    "annotations": {"additionalProperties": true},
+                    "deploymentStrategy": {"enum": ["RollingUpdate", "Recreate"]}
                 }},
                 "security": {
                     "properties": {
