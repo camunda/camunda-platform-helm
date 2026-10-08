@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 14.11.0
+version: 14.11.1
 appVersion: 8.9.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -66,19 +66,9 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
-    - kind: added
-      description: "Support orchestration releases managed by Camunda Hub"
-    - kind: added
-      description: "Warn Helm v3 users in 8.9 that Helm v3 security fixes end on February 10, 2027"
-    - kind: added
-      description: "Document and validate ReadWriteOncePod for broker PVCs"
     - kind: fixed
-      description: "DocumentStore cloud credentials misuse"
+      description: "Warn when the multi-region cluster size is not a multiple of the region count"
     - kind: fixed
-      description: "Drop legacy connect.type from the camundaexporter registration"
+      description: "Use the image tag for app.kubernetes.io/version when an image digest is set"
     - kind: fixed
-      description: "Bind Azure document store secrets on 8.9"
-    - kind: fixed
-      description: "Only add Web Modeler / Camunda Hub audience if enabled"
-    - kind: fixed
-      description: "Allow overriding external ingress protocol"
+      description: "Warn or fail on Web Modeler restapi Recreate without existingClaim"

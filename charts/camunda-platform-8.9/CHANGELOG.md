@@ -1,5 +1,29 @@
 # Changelog
 
+## [14.11.1](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.9-14.11.0...camunda-platform-8.9-14.11.1) (2026-10-07)
+
+
+### Bug Fixes
+
+* deprecate defaultRoles admin and connectors mappingRules in 8.10 ([#7373](https://github.com/camunda/camunda-platform-helm/issues/7373)) ([6e1d5f7](https://github.com/camunda/camunda-platform-helm/commit/6e1d5f723ccad0107050c9777b91774ad112d476))
+* use the image tag for app.kubernetes.io/version when an image digest is set ([#7447](https://github.com/camunda/camunda-platform-helm/issues/7447)) ([56f1be3](https://github.com/camunda/camunda-platform-helm/commit/56f1be3ee033bc4bda53dd69a1e6680b9c9b2fe1))
+* warn or fail on Web Modeler restapi Recreate without existingClaim ([#7459](https://github.com/camunda/camunda-platform-helm/issues/7459)) ([4f62cdb](https://github.com/camunda/camunda-platform-helm/commit/4f62cdb09ec84701ab083acde148a6518bd1740e))
+* warn when the multi-region cluster size is not a multiple of the region count ([#7445](https://github.com/camunda/camunda-platform-helm/issues/7445)) ([712ca25](https://github.com/camunda/camunda-platform-helm/commit/712ca25c15dc1332526c29cd430910dfd349ccd2))
+
+
+### Documentation
+
+* document that the orchestration usernameClaim also sets the Web Modeler claim ([#7455](https://github.com/camunda/camunda-platform-helm/issues/7455)) ([13f4037](https://github.com/camunda/camunda-platform-helm/commit/13f40374957df9b8d834fa34af8ab57a3ab7a796))
+
+
+### Dependencies
+
+* update camunda-platform-images (patch) ([#7380](https://github.com/camunda/camunda-platform-helm/issues/7380)) ([414bb27](https://github.com/camunda/camunda-platform-helm/commit/414bb2789fb5f597d65421f97db6adb445db30ec))
+* update patch-updates (patch) ([#7448](https://github.com/camunda/camunda-platform-helm/issues/7448)) ([604bd8e](https://github.com/camunda/camunda-platform-helm/commit/604bd8ef0d10864a0f9e6ff304c1086b51222b1e))
+* update patch-updates (patch) ([#7475](https://github.com/camunda/camunda-platform-helm/issues/7475)) ([5dd41b4](https://github.com/camunda/camunda-platform-helm/commit/5dd41b4bb4c46d3c75b3fb9717d448ab2eaca1e5))
+* update patch-updates (patch) ([#7477](https://github.com/camunda/camunda-platform-helm/issues/7477)) ([1ca8ee2](https://github.com/camunda/camunda-platform-helm/commit/1ca8ee25dca444916e25ab43ca99fbb4d9e9ff20))
+* update patch-updates (patch) ([#7483](https://github.com/camunda/camunda-platform-helm/issues/7483)) ([5713eb8](https://github.com/camunda/camunda-platform-helm/commit/5713eb88aaaa65df4ee2e3bfa75ef505bc36a024))
+
 ## [14.11.0](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.9-14.10.1...camunda-platform-8.9-14.11.0) (2026-09-30)
 
 
