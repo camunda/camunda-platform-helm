@@ -43,9 +43,7 @@ jobs:
       - name: Vendor subcharts for the real-chart contract tests
         run: |
           make helm.repos-add
-          for v in 8.7 8.8 8.9 8.10; do
-            make helm.dependency-update chartPath="charts/camunda-platform-$v"
-          done
+          make helm.dependency-update
 
       - name: camunda-core — vet + test
         working-directory: scripts/camunda-core
@@ -73,11 +71,11 @@ jobs:
 
       - name: Install schema generator
         run: |
-          npm install -g @bitnami/readme-generator-for-helm@2.7.2
+          make install.readme-generator
 
       - name: Validate previous-minor schema upgrade coverage
         run: |
-          make helm.schema-validate-values chartPath="charts/camunda-platform-8.10" schemaPreviousMinor=true
+          make helm.schema-validate-values
 
       - name: orchestration-entra-lifecycle — vet + test
         working-directory: scripts/orchestration-entra-lifecycle
