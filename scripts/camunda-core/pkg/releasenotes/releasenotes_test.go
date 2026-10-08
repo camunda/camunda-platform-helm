@@ -23,7 +23,8 @@ func TestHelmCLIVersion(t *testing.T) {
 	cases := []struct {
 		app, pin, want string
 	}{
-		{"8.8", "4.1.4", helmV3Version + ",4.1.4"},
+		{"8.8", "4.1.4", helmV3Version},
+		{"8.8", "4.3.0", helmV3Version},
 		{"8.8", "3.20.1", "3.20.1"},
 		{"8.0", "4.1.4", helmV3Version},            // lower bound of clamp range
 		{"8.9", "4.1.4", helmV3Version + ",4.1.4"}, // transitional minor, v4 pin → dual

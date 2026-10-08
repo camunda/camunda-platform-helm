@@ -204,6 +204,9 @@ func TestUpdateMatrixAppRecordsReleaseFacts(t *testing.T) {
 	if strings.Contains(string(data), "release_date") {
 		t.Errorf("update-matrix must not write release_date:\n%s", data)
 	}
+	if strings.Contains(string(data), "4.2.3") {
+		t.Errorf("8.8 matrix must not advertise the Helm v4 CI pin:\n%s", data)
+	}
 }
 
 // TestUpdateMatrixKeepsStampedFacts pins the write-once contract: once a
