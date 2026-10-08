@@ -89,6 +89,8 @@ identityKeycloak:
     repository: keycloak-ee/keycloak
     tag: "26.7.2"
     pullSecrets:
+      - name: index-docker-io
+      - name: ghcr-io
       - name: registry-camunda-cloud
   # TODO: reenable when keycloak-ci can be pulled: https://github.com/camunda/camunda-platform-helm/issues/5613
   # # Production mode: runs `kc.sh start` (not start-dev). Required for
