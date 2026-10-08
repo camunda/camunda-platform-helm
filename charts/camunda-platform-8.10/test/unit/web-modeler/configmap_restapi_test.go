@@ -826,6 +826,37 @@ func (s *configmapRestAPITemplateTest) TestManagementClusterContainsOnlyIdentity
 	s.Require().Equal("identity", mgmtCluster.Components[0].Type)
 }
 
+func (s *configmapRestAPITemplateTest) TestManagementClusterVersion() {
+	newCase := func(name, identityTag, expectedClusterVersion string) testhelpers.TestCase {
+		return testhelpers.TestCase{
+			Name:   name,
+			Values: utils.MergeMaps(maps.Clone(requiredValues), map[string]string{"identity.image.tag": identityTag}),
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var configmap corev1.ConfigMap
+				var configmapApplication WebModelerRestAPIApplicationYAML
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+				require.NoError(t, yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication))
+
+				mgmtCluster := configmapApplication.Camunda.Hub.Clusters[0]
+				s.Require().Equal("management-cluster", mgmtCluster.Id)
+				s.Require().Equal(expectedClusterVersion, mgmtCluster.Version)
+				s.Require().Len(mgmtCluster.Components, 1)
+				s.Require().Equal(identityTag, mgmtCluster.Components[0].Version)
+			},
+		}
+	}
+
+	testCases := []testhelpers.TestCase{
+		newCase("ReleaseTag", "8.10.3", "8.10.3"),
+		newCase("PrereleaseTag", "8.10.0-alpha5.1", "8.10.0-alpha5.1"),
+		newCase("NonVersionTag", "pr-dbfda8c", "8.10-SNAPSHOT"),
+		newCase("BareSnapshotTag", "SNAPSHOT", "8.10-SNAPSHOT"),
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
 func (s *configmapRestAPITemplateTest) TestContainerShouldNotConfigureClustersIfZeebeDisabledAndNoCustomConfiguration() {
 	// given
 	values := maps.Clone(requiredValues)
