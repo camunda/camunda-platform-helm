@@ -53,7 +53,7 @@ See [Camunda 8 reference architectures](https://docs.camunda.io/docs/self-manage
 
 ## Requirements
 
-- [Helm](https://helm.sh/) v4 (recommended), or v3.10+ until February 10, 2027
+- [Helm](https://helm.sh/) v3.10+ until February 10, 2027
 - Kubernetes >= 1.20+
 - Minimum cluster requirements include the following to run this chart with default settings.
   - All of these settings are configurable.
@@ -62,20 +62,24 @@ See [Camunda 8 reference architectures](https://docs.camunda.io/docs/self-manage
 
 ### Helm CLI compatibility
 
-Camunda 8.8 (chart 13.x) supports Helm CLI v3.10+ and v4. Helm CLI v4 is recommended for new installations and supported for the Camunda 8.8 release cycle. PR CI runs the full template unit suite and an Elasticsearch/Keycloak installation with Helm v4, alongside targeted unit tests on Helm v3.10.3 and the latest pinned v3 release. The Helm v3 installation runs at tier 2 in the merge queue.
+Camunda 8.8 (chart 13.x) officially supports Helm CLI v3.10+ only, as stated in the [Helm CLI support announcement](https://camunda.com/blog/2026/06/camunda-8-helm-chart-update-helm-4/). Official Helm v4 support starts with Camunda 8.9 (chart 14.x).
+
+PR CI runs the full template unit suite and an Elasticsearch/Keycloak installation with Helm v4 as internal compatibility coverage, alongside targeted unit tests on Helm v3.10.3 and the latest pinned v3 release. This testing does not extend official Helm v4 support to Camunda 8.8. The Helm v3 installation runs at tier 2 in the merge queue.
 
 For Camunda 8.8 to 8.10 (charts 13.x to 15.x), Helm CLI v3 is supported until its [upstream end of life on February 10, 2027](https://helm.sh/blog/helm-v3-end-of-life/). After that date, Camunda no longer supports Helm CLI v3. Customers who continue to use it do so at their own risk.
 
+Before that deadline, upgrade to Camunda 8.9 or 8.10 and Helm v4 for an officially supported combination. Camunda 8.8 has no officially supported Helm CLI combination after the cutoff.
+
 When using Helm v3, this chart emits a non-blocking warning with that deadline in the install/upgrade notes and the ConfigMap whose name ends in `-warnings`. Helm v4 does not emit this warning.
 
-Helm v4 enables server-side apply by default, which rejects duplicate environment variable names. Prefer dedicated chart values or `configuration`/`extraConfiguration` over `env` overrides that duplicate chart-generated entries. If an override requires duplicates, disable server-side apply for that command:
+For internal Helm v4 compatibility testing, server-side apply is enabled by default and rejects duplicate environment variable names. Prefer dedicated chart values or `configuration`/`extraConfiguration` over `env` overrides that duplicate chart-generated entries. If a test requires duplicates, disable server-side apply for that command:
 
 ```bash
 helm install camunda-platform camunda/camunda-platform --version <13.x-chart-version> --values values.yaml --server-side=false
 helm upgrade camunda-platform camunda/camunda-platform --version <13.x-chart-version> --values values.yaml --server-side=false
 ```
 
-The Helm v4 CI installation uses default server-side apply. Release automation records both tested CLI versions in `camunda.io/helmCLIVersion` and the [version matrix](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8/) for future chart releases; historical release entries retain their recorded versions.
+The Helm v4 CI installation uses default server-side apply. Release automation records only the supported Helm v3 version in `camunda.io/helmCLIVersion`, release information, and the [version matrix](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8/) for future 8.8 chart releases. Historical entries that list Helm v4 do not establish official support.
 
 ## Dependencies
 
