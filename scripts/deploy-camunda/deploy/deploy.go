@@ -179,7 +179,6 @@ func RenderPreparedTopologyContract(ctx context.Context, prepared *PreparedScena
 		Version:     flags.Chart.ChartVersion,
 		ReleaseName: prepared.ScenarioCtx.Release,
 		Namespace:   prepared.ScenarioCtx.Namespace,
-		IngressHost: prepared.ScenarioCtx.IngressHost,
 		KubeContext: flags.Test.KubeContext,
 		ValuesFiles: prepared.ValuesFiles,
 		SetPairs:    flags.Deployment.ExtraHelmSets,

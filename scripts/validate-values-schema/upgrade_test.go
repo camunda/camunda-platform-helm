@@ -1,0 +1,158 @@
+// Copyright 2026 Camunda Services GmbH
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package main
+
+import (
+	"bytes"
+	"os"
+	"path/filepath"
+	"testing"
+
+	"github.com/stretchr/testify/require"
+)
+
+func TestUpgradeReportsCoverageWhenKeyIsRejected(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name, key, template, allowlist, class string
+		failures                              int
+	}{
+		{"uncovered", "lost.key", "", "", "UNCOVERED", 1},
+		{"deprecated descendant", "old.child", `{{ include "camundaPlatform.keyDeprecated" (dict "condition" true "oldName" "old" "migration" "new") }}`, "", "deprecated", 0},
+		{"removed descendant", "old.child", `{{ include "camundaPlatform.keyRemoved" (dict "condition" true "oldName" "old") }}`, "", "removed", 0},
+		{"renamed descendant", "old.child", `{{ include "camundaPlatform.keyRenamed" (dict "condition" true "oldName" "old" "newName" "new") }}`, "", "removed", 0},
+		{"reassigned root warning", "old", `{{- $warningMessage = printf "%s %s" "[camunda][warning]" "DEPRECATION: \"old\" is deprecated." -}}`, "", "deprecated", 0},
+		{"allowlisted exact key", "old.key", "", `old.key: exception`, "allowlisted", 0},
+		{"allowlist does not cover descendants", "old.key.child", "", `old.key: exception`, "UNCOVERED", 1},
+		{"allowlist overrides wildcard", "legacy.enabled", `{{- $warningMessage := printf "%s %s" "[camunda][warning]" "DEPRECATION: legacy.* ignored." -}}`, `legacy.enabled: compatibility exception`, "allowlisted", 0},
+		{"commented registration", "old", `{{/* {{ include "camundaPlatform.keyRemoved" (dict "condition" true "oldName" "old") }} */}}`, "", "UNCOVERED", 1},
+		{"unrelated oldName", "old", `{{ dict "oldName" "old" }}`, "", "UNCOVERED", 1},
+		{"prefix boundary", "older.child", `{{ include "camundaPlatform.keyRemoved" (dict "condition" true "oldName" "old") }}`, "", "UNCOVERED", 1},
+		{"bespoke wildcard warning", "console.image", `{{- $warningMessage := printf "%s %s" "[camunda][warning]" "DEPRECATION: console.* configuration keys have no effect." -}}`, "", "deprecated", 0},
+		{"bespoke quoted wildcard root", "global.identity.auth.console", `{{- $warningMessage := printf "%s %s" "[camunda][warning]" "DEPRECATION: \"global.identity.auth.console.*\" is no longer used." -}}`, "", "deprecated", 0},
+		{"commented warning", "console.image", `{{/* {{- $warningMessage := printf "%s %s" "[camunda][warning]" "DEPRECATION: console.* ignored." -}} */}}`, "", "UNCOVERED", 1},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			coverage, err := parseUpgradeCoverage(tc.template, tc.allowlist)
+			require.NoError(t, err)
+			var output bytes.Buffer
+
+			failures := coverage.report(&output, "previous/values.yaml", []string{tc.key})
+
+			require.Equal(t, tc.failures, failures)
+			require.Contains(t, output.String(), tc.class+": "+tc.key)
+			if tc.failures == 0 {
+				require.Contains(t, output.String(), "INFO")
+				require.NotContains(t, output.String(), "::error::")
+			} else {
+				require.Contains(t, output.String(), "::error::")
+			}
+		})
+	}
+}
+
+func TestUpgradeRejectsMalformedAllowlist(t *testing.T) {
+	t.Parallel()
+	_, err := parseUpgradeCoverage("", "[invalid YAML")
+	require.Error(t, err)
+}
+
+func TestUpgradeReportsRemovedLeavesWhenUnknownParentHasCoverage(t *testing.T) {
+	t.Parallel()
+	coverage, err := parseUpgradeCoverage(`{{ include "camundaPlatform.keyRemoved" (dict "condition" true "oldName" "global.secrets.name") }}`, "")
+	require.NoError(t, err)
+	schema := strictify(mustJSON(t, `{"type":"object","properties":{"global":{"type":"object","properties":{}}}}`))
+	values := mustYAMLMap(t, `{"global":{"secrets":{"name":"old","uncovered":true}}}`)
+
+	keys := coverage.findUnknownKeys(schema, values)
+
+	require.Equal(t, []string{"global.secrets.name", "global.secrets.uncovered"}, keys)
+}
+
+func TestUpgradeExpandsUnknownParentsWhenCoverageIsNested(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name, template, allowlist, values string
+		want                              []string
+	}{
+		{"deep registration", `{{ include "camundaPlatform.keyRemoved" (dict "condition" true "oldName" "parent.sub.field") }}`, "", `{"parent":{"sub":{"field":true,"lost":true}}}`, []string{"parent.sub.field", "parent.sub.lost"}},
+		{"allowlisted leaf", "", `parent.sub.field: exception`, `{"parent":{"sub":{"field":true}}}`, []string{"parent.sub.field"}},
+		{"wildcard expands data exception", `{{- $warningMessage := printf "%s %s" "[camunda][warning]" "DEPRECATION: legacy.* ignored." -}}`, `legacy.enabled: compatibility exception`, `{"legacy":{"enabled":true,"image":"old"}}`, []string{"legacy.enabled", "legacy.image"}},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			coverage, err := parseUpgradeCoverage(tc.template, tc.allowlist)
+			require.NoError(t, err)
+			schema := strictify(mustJSON(t, `{"type":"object","properties":{}}`))
+
+			keys := coverage.findUnknownKeys(schema, mustYAMLMap(t, tc.values))
+
+			require.Equal(t, tc.want, keys)
+		})
+	}
+}
+
+func TestUpgradeDetectsKnownTemplateRegistrationsWhenChartOptsIn(t *testing.T) {
+	t.Parallel()
+	allowlists, err := filepath.Glob("../../charts/*/test/unit/deprecation/allowlist.yaml")
+	require.NoError(t, err)
+	require.NotEmpty(t, allowlists)
+	for _, allowlist := range allowlists {
+		chart := filepath.Dir(filepath.Dir(filepath.Dir(filepath.Dir(allowlist))))
+		t.Run(filepath.Base(chart), func(t *testing.T) {
+			template, err := os.ReadFile(filepath.Join(chart, "templates/common/constraints.tpl"))
+			require.NoError(t, err)
+
+			coverage, err := parseUpgradeCoverage(string(template), "")
+
+			require.NoError(t, err)
+			require.Equal(t, deprecated, coverage.keys["orchestration.logLevel"])
+			require.Equal(t, deprecated, coverage.keys["global.config.requestBodySize"])
+			require.Equal(t, removed, coverage.keys["elasticsearch"])
+			require.Equal(t, removed, coverage.keys["global.ingress.host"])
+		})
+	}
+}
+
+func TestPreviousMinorChartWhenMinorHasTwoDigits(t *testing.T) {
+	t.Parallel()
+	previous, err := previousMinorChart("charts/camunda-platform-99.10")
+	require.NoError(t, err)
+	require.Equal(t, "charts/camunda-platform-99.9", previous)
+}
+
+func TestPreviousMinorChartHandlesTrailingSeparators(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name, chartDir string
+	}{
+		{"trailing slash", "charts/camunda-platform-99.10/"},
+		{"trailing dot", "charts/camunda-platform-99.10/."},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			previous, err := previousMinorChart(tc.chartDir)
+			require.NoError(t, err)
+			require.Equal(t, "charts/camunda-platform-99.9", previous)
+		})
+	}
+}
+
+func TestPreviousMinorChartRejectsInvalidVersion(t *testing.T) {
+	t.Parallel()
+	_, err := previousMinorChart("charts/camunda-platform-alpha")
+	require.Error(t, err)
+}

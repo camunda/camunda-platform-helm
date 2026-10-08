@@ -73,7 +73,7 @@ func (s *ConstraintTemplateTest) TestHelmVersionConstraint() {
 					s.Require().Contains(warnings, "[camunda][warning] Helm CLI "+version+" detected.")
 					s.Require().Contains(warnings, "Helm v3 receives security fixes only until February 10, 2027")
 					s.Require().Contains(warnings, "After that date, Camunda no longer supports Helm CLI v3.")
-					s.Require().Contains(warnings, "Upgrade to Helm v4 before then: https://helm.sh/docs/overview")
+					s.Require().Contains(warnings, "For official Helm v4 support, upgrade to Camunda 8.9 or 8.10 and Helm v4 before then:")
 				}
 			},
 		},

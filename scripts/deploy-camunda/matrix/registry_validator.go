@@ -20,8 +20,12 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
+	"unicode"
+
+	"gopkg.in/yaml.v3"
 
 	"scripts/camunda-core/pkg/versionmatrix"
 )
@@ -183,14 +187,19 @@ func (v *RegistryValidator) Validate(cfg *CITestConfig) error {
 	currentDeps, currentDepsErr := readChartDependencies(v.ChartDir)
 	prevVersion, prevVersionErr := versionmatrix.PreviousAppVersion(version)
 	var (
-		prevDeps           []chartDependencyRef
-		prevDepsErr        error
-		prevPersistenceDir string
+		prevDeps              []chartDependencyRef
+		prevDepsErr           error
+		prevPersistenceDir    string
+		missingCredentialKeys []string
 	)
 	if prevVersionErr == nil {
 		prevChartDir := filepath.Join(repoRoot, "charts", "camunda-platform-"+prevVersion)
 		prevDeps, prevDepsErr = readChartDependencies(prevChartDir)
 		prevPersistenceDir = filepath.Join(prevChartDir, "test", "integration", "scenarios", "chart-full-setup", "values", "persistence")
+		missingCredentialKeys, err = credentialKeysMissingFrom(v.ChartDir, prevChartDir)
+		if err != nil {
+			problems = append(problems, err.Error())
+		}
 	}
 
 	checkUpgradePersistence := func(ctx string, scn CIScenario, effectiveFlow string) {
@@ -315,6 +324,14 @@ func (v *RegistryValidator) Validate(cfg *CITestConfig) error {
 		}
 
 		checkUpgradePersistence(label, scn, effectiveFlow)
+
+		if len(missingCredentialKeys) > 0 && slices.Contains(strings.Split(effectiveFlow, ","), "upgrade-minor") {
+			problems = append(problems, fmt.Sprintf(
+				"%s: integration-test credentials lack keys that chart version %s reads (%s)"+
+					" — CI applies this chart's ExternalSecret before step 1 of the two-step upgrade installs %s;"+
+					" add the keys to this chart's ExternalSecret",
+				label, prevVersion, strings.Join(missingCredentialKeys, ", "), prevVersion))
+		}
 
 		if pf != nil {
 			permitted := FilterFlows(pf, version, []string{effectiveFlow})
@@ -461,6 +478,99 @@ func (v *RegistryValidator) Validate(cfg *CITestConfig) error {
 	}
 	sort.Strings(problems)
 	return fmt.Errorf("registry validation failed:\n  - %s", strings.Join(problems, "\n  - "))
+}
+
+func credentialKeysMissingFrom(chartDir, prevChartDir string) ([]string, error) {
+	referenced, err := fileTokens(filepath.Join(prevChartDir, "test", "integration", "scenarios"))
+	if err != nil {
+		return nil, err
+	}
+	var missing []string
+	for _, name := range []string{
+		"external-secret-integration-test-credentials.yaml",
+		"external-secret-integration-test-credentials-vault.yaml",
+	} {
+		prevKeys, err := externalSecretKeys(filepath.Join(prevChartDir, "test", "integration", "external-secrets", name))
+		if err != nil {
+			return nil, err
+		}
+		keys, err := externalSecretKeys(filepath.Join(chartDir, "test", "integration", "external-secrets", name))
+		if err != nil {
+			return nil, err
+		}
+		if prevKeys == nil || keys == nil {
+			continue
+		}
+		for key := range prevKeys {
+			if referenced[key] && !keys[key] {
+				missing = append(missing, name+": "+key)
+			}
+		}
+	}
+	sort.Strings(missing)
+	return missing, nil
+}
+
+func fileTokens(dir string) (map[string]bool, error) {
+	tokens := map[string]bool{}
+	err := filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
+		if errors.Is(err, fs.ErrNotExist) && path == dir {
+			return filepath.SkipDir
+		}
+		if err != nil {
+			return err
+		}
+		if !d.Type().IsRegular() {
+			return nil
+		}
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		for _, token := range strings.FieldsFunc(string(data), func(r rune) bool {
+			return r != '-' && r != '_' && !unicode.IsLetter(r) && !unicode.IsDigit(r)
+		}) {
+			tokens[token] = true
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("scan %s: %w", dir, err)
+	}
+	return tokens, nil
+}
+
+func externalSecretKeys(path string) (map[string]bool, error) {
+	data, err := os.ReadFile(path)
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("read %s: %w", path, err)
+	}
+	var es struct {
+		Spec struct {
+			Target struct {
+				Template struct {
+					Data map[string]string `yaml:"data"`
+				} `yaml:"template"`
+			} `yaml:"target"`
+			Data []struct {
+				SecretKey string `yaml:"secretKey"`
+			} `yaml:"data"`
+		} `yaml:"spec"`
+	}
+	if err := yaml.Unmarshal(data, &es); err != nil {
+		return nil, fmt.Errorf("parse %s: %w", path, err)
+	}
+	keys := map[string]bool{}
+	for key := range es.Spec.Target.Template.Data {
+		keys[key] = true
+	}
+	for _, d := range es.Spec.Data {
+		keys[d.SecretKey] = true
+	}
+	return keys, nil
 }
 
 // readFirstKB reads at most 1024 bytes from a file and returns them as a

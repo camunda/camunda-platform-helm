@@ -50,6 +50,103 @@ type Topology struct {
 	// to every release namespace in place of the chart's integration-test-credentials
 	// one, so a long-lived topology can source credentials that no CI namespace shares.
 	CredentialsManifest string `yaml:"credentials-manifest,omitempty" json:"credentialsManifest,omitempty"`
+
+	// CredentialStores lists the stateful services that keep the credential
+	// they were initialised with, so `topology reconcile-credentials` can set
+	// them to the credentials-manifest's current values. Requires CredentialsManifest.
+	CredentialStores *CredentialStores `yaml:"credential-stores,omitempty" json:"credentialStores,omitempty"`
+}
+
+// CredentialStores are the credential-holding services of one release namespace.
+// Every SecretKey names a key of Secret.
+type CredentialStores struct {
+	NamespaceSuffix string                    `yaml:"namespace-suffix" json:"namespaceSuffix"`
+	Secret          string                    `yaml:"secret" json:"secret"`
+	Postgres        []PostgresCredentialStore `yaml:"postgres,omitempty" json:"postgres,omitempty"`
+	Keycloak        *KeycloakCredentialStore  `yaml:"keycloak,omitempty" json:"keycloak,omitempty"`
+	Elasticsearch   *ElasticsearchCredential  `yaml:"elasticsearch,omitempty" json:"elasticsearch,omitempty"`
+}
+
+// ElasticsearchCredential is a native-realm user whose password lives in the
+// cluster's security index.
+type ElasticsearchCredential struct {
+	StatefulSet string `yaml:"statefulset" json:"statefulset"`
+	Container   string `yaml:"container" json:"container"`
+	URL         string `yaml:"url" json:"url"`
+	User        string `yaml:"user" json:"user"`
+	SecretKey   string `yaml:"secret-key" json:"secretKey"`
+}
+
+// PostgresCredentialStore is a PostgreSQL role whose password lives in the database.
+type PostgresCredentialStore struct {
+	StatefulSet string `yaml:"statefulset" json:"statefulset"`
+	User        string `yaml:"user" json:"user"`
+	Database    string `yaml:"database" json:"database"`
+	SecretKey   string `yaml:"secret-key" json:"secretKey"`
+}
+
+// KeycloakCredentialStore is a Keycloak whose master-realm admin and listed
+// users have their passwords stored in its database.
+type KeycloakCredentialStore struct {
+	Deployment     string                   `yaml:"deployment" json:"deployment"`
+	Container      string                   `yaml:"container" json:"container"`
+	URL            string                   `yaml:"url" json:"url"`
+	AdminUser      string                   `yaml:"admin-user" json:"adminUser"`
+	AdminSecretKey string                   `yaml:"admin-secret-key" json:"adminSecretKey"`
+	Users          []KeycloakUserCredential `yaml:"users,omitempty" json:"users,omitempty"`
+}
+
+// KeycloakUserCredential is a realm user whose password is set from SecretKey.
+type KeycloakUserCredential struct {
+	Realm     string `yaml:"realm" json:"realm"`
+	Username  string `yaml:"username" json:"username"`
+	SecretKey string `yaml:"secret-key" json:"secretKey"`
+}
+
+// credentialStoreProblems reports every missing required field of s.
+func credentialStoreProblems(s *CredentialStores, suffixes map[string]bool) []string {
+	var p []string
+	req := func(v, what string) {
+		if v == "" {
+			p = append(p, what+" is required")
+		}
+	}
+	req(s.NamespaceSuffix, "namespace-suffix")
+	if s.NamespaceSuffix != "" && !suffixes[s.NamespaceSuffix] {
+		p = append(p, fmt.Sprintf("namespace-suffix %q matches no release", s.NamespaceSuffix))
+	}
+	req(s.Secret, "secret")
+	for i, pg := range s.Postgres {
+		at := fmt.Sprintf("postgres[%d].", i)
+		req(pg.StatefulSet, at+"statefulset")
+		req(pg.User, at+"user")
+		req(pg.Database, at+"database")
+		req(pg.SecretKey, at+"secret-key")
+	}
+	if k := s.Keycloak; k != nil {
+		req(k.Deployment, "keycloak.deployment")
+		req(k.Container, "keycloak.container")
+		req(k.URL, "keycloak.url")
+		req(k.AdminUser, "keycloak.admin-user")
+		req(k.AdminSecretKey, "keycloak.admin-secret-key")
+		for i, u := range k.Users {
+			at := fmt.Sprintf("keycloak.users[%d].", i)
+			req(u.Realm, at+"realm")
+			req(u.Username, at+"username")
+			req(u.SecretKey, at+"secret-key")
+		}
+	}
+	if e := s.Elasticsearch; e != nil {
+		req(e.StatefulSet, "elasticsearch.statefulset")
+		req(e.Container, "elasticsearch.container")
+		req(e.URL, "elasticsearch.url")
+		req(e.User, "elasticsearch.user")
+		req(e.SecretKey, "elasticsearch.secret-key")
+	}
+	if len(s.Postgres) == 0 && s.Keycloak == nil && s.Elasticsearch == nil {
+		p = append(p, "at least one postgres, keycloak, or elasticsearch store is required")
+	}
+	return p
 }
 
 // CredentialsManifestBaseToken is replaced in a credentials-manifest by the
@@ -359,6 +456,14 @@ func (t *Topology) Validate(ctx string, chartDir string, depsDir string) error {
 
 	if hubCount != 1 {
 		problems = append(problems, fmt.Sprintf("%s: topology %q: exactly one release with role \"hub\" is required, found %d", ctx, t.Name, hubCount))
+	}
+	if s := t.CredentialStores; s != nil {
+		if t.CredentialsManifest == "" {
+			problems = append(problems, fmt.Sprintf("%s: topology %q: credential-stores requires credentials-manifest", ctx, t.Name))
+		}
+		for _, p := range credentialStoreProblems(s, suffixes) {
+			problems = append(problems, fmt.Sprintf("%s: topology %q: credential-stores: %s", ctx, t.Name, p))
+		}
 	}
 	if orchestrationCount == 0 {
 		problems = append(problems, fmt.Sprintf("%s: topology %q: at least one release with role \"orchestration\" is required", ctx, t.Name))

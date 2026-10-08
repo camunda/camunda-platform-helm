@@ -31,21 +31,18 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
 	"sort"
-	"strings"
-
-	"gopkg.in/yaml.v3"
 )
 
 func main() {
 	schemaPath := flag.String("schema", "", "path to values.schema.json")
 	chartDir := flag.String("chart-dir", "", "chart directory; its Chart.yaml dependencies are treated as pass-through sub-chart roots")
+	previousMinor := flag.Bool("previous-minor", false, "check previous-minor defaults for upgrade deprecation coverage; requires --chart-dir")
 	var ignoreRoots []string
 	flag.Func("ignore-root", "additional top-level key to skip (repeatable)", func(v string) error {
 		ignoreRoots = append(ignoreRoots, v)
@@ -53,9 +50,12 @@ func main() {
 	})
 	flag.Parse()
 
-	if *schemaPath == "" || flag.NArg() == 0 {
-		fmt.Fprintln(os.Stderr, "usage: validate-values-schema --schema <schema.json> [--chart-dir <dir>] [--ignore-root <key>]... <values.yaml>...")
+	if *schemaPath == "" || (!*previousMinor && flag.NArg() == 0) || (*previousMinor && (*chartDir == "" || flag.NArg() != 0)) {
+		fmt.Fprintln(os.Stderr, "usage: validate-values-schema --schema <schema.json> [--chart-dir <dir>] [--ignore-root <key>]... <values.yaml>... OR --schema <schema.json> --chart-dir <dir> --previous-minor")
 		os.Exit(2)
+	}
+	if *previousMinor {
+		os.Exit(runPreviousMinor(*schemaPath, *chartDir, ignoreRoots))
 	}
 
 	schema, err := loadJSON(*schemaPath)
@@ -234,55 +234,4 @@ func recurseValue(schema any, value any, path string) []string {
 		return unknown
 	}
 	return nil
-}
-
-func chartDependencyRoots(chartYAML string) ([]string, error) {
-	raw, err := os.ReadFile(chartYAML)
-	if err != nil {
-		return nil, err
-	}
-	var parsed struct {
-		Dependencies []struct {
-			Name  string `yaml:"name"`
-			Alias string `yaml:"alias"`
-		} `yaml:"dependencies"`
-	}
-	if err := yaml.Unmarshal(raw, &parsed); err != nil {
-		return nil, err
-	}
-	roots := make([]string, 0, len(parsed.Dependencies))
-	for _, d := range parsed.Dependencies {
-		name := strings.TrimSpace(d.Alias)
-		if name == "" {
-			name = strings.TrimSpace(d.Name)
-		}
-		if name != "" {
-			roots = append(roots, name)
-		}
-	}
-	return roots, nil
-}
-
-func loadJSON(path string) (any, error) {
-	raw, err := os.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
-	var out any
-	if err := json.Unmarshal(raw, &out); err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func loadYAML(path string) (any, error) {
-	raw, err := os.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
-	var out any
-	if err := yaml.Unmarshal(raw, &out); err != nil {
-		return nil, err
-	}
-	return out, nil
 }

@@ -17,6 +17,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -54,6 +55,7 @@ func main() {
 	gate := &Gate{
 		Client:               newGHCLI(repo, 60*time.Second),
 		Workflow:             workflow,
+		QueueBranch:          strings.TrimPrefix(os.Getenv("MG_BASE_REF"), "refs/heads/"),
 		DiscoveryTries:       60,
 		DiscoveryInterval:    10 * time.Second,
 		PollInterval:         60 * time.Second,

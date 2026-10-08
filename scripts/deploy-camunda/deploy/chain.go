@@ -20,8 +20,10 @@ package deploy
 //  1. common    — shared base values (platform-specific, env-processed)
 //  2. overlays  — chart-root overlays (values-latest.yaml, values-enterprise.yaml, values-digest.yaml)
 //  3. scenario  — scenario-specific layers (identity, persistence, platform, features)
-//  4. extra     — user-provided --extra-values
-//  5. debug     — debug values file (highest precedence)
+//  4. extra     — user-provided --extra-values, then --image-override pins
+//  5. debug     — debug values file
+//
+// prepareScenarioValues then appends the resolveImages output, which only fixes image identity.
 func BuildValuesChain(common, overlays, extra, scenario []string, debugFile string) []string {
 	total := len(common) + len(overlays) + len(extra) + len(scenario)
 	if debugFile != "" {

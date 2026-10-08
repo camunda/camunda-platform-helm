@@ -71,8 +71,71 @@ jobs:
           go vet ./...
           go test ./...
 
+      - name: Install schema generator
+        run: |
+          make install.readme-generator
+
+      - name: Validate previous-minor schema upgrade coverage
+        run: |
+          for allowlist in charts/*/test/unit/deprecation/allowlist.yaml; do
+            make helm.schema-validate-values chartPath="${allowlist%/test/unit/deprecation/allowlist.yaml}"
+          done
+
       - name: orchestration-entra-lifecycle — vet + test
         working-directory: scripts/orchestration-entra-lifecycle
         run: |
           go vet ./...
           go test ./...
+
+      - name: integration-tests-gate — vet + test
+        working-directory: scripts/integration-tests-gate
+        run: |
+          go vet ./...
+          go test ./...
+
+  credential-store-changes:
+    name: Detect credential-store changes
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      relevant: ${{ github.event_name != 'pull_request' || steps.filter.outputs.stores == 'true' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        if: github.event_name == 'pull_request'
+        id: filter
+        with:
+          filters: |
+            stores:
+              - 'scripts/deploy-camunda/cmd/topology_reconcile*.go'
+              - 'charts/internal-keycloak-26/**'
+              - 'charts/internal-postgresql/**'
+              - 'test/integration/companion-values/*-dogfood.yaml'
+              - 'charts/camunda-platform-8.10/test/ci/registry/dependencies/*-dogfood.yaml'
+              - 'charts/camunda-platform-8.10/test/ci/registry/scenarios/dogfood.yaml'
+              - 'charts/camunda-platform-8.10/test/integration/scenarios/chart-full-setup/values/features/dogfood-hub.yaml'
+              - '.github/workflows/test-release-tooling.yaml'
+              - 'Makefile'
+              - '.tool-versions'
+
+  credential-store-integration:
+    name: Credential stores against real images
+    needs: credential-store-changes
+    if: needs.credential-store-changes.outputs.relevant == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Install tools
+        uses: ./.github/actions/install-tool-versions
+        with:
+          tools: |
+            golang
+
+      # Runs the reconcile scripts against PostgreSQL, Elasticsearch, and
+      # Keycloak containers, including the kc.sh bootstrap-admin recovery.
+      - name: deploy-camunda — credential-store integration tests
+        run: make test.deploy-camunda-credential-stores

@@ -141,9 +141,38 @@ func (c *ghCLI) AttemptJobConclusions(runID string, attempt int) ([]string, erro
 	return conclusions, nil
 }
 
-func (c *ghCLI) Rerun(runID string) error {
-	_, err := c.run("run", "rerun", runID,
+func (c *ghCLI) MergeQueueHeads(branch string) ([]string, error) {
+	owner, name, _ := strings.Cut(c.repo, "/")
+	out, err := c.run("api", "graphql",
+		"-f", "query=query($owner: String!, $name: String!, $branch: String!) { repository(owner: $owner, name: $name) { mergeQueue(branch: $branch) { entries(first: 100) { nodes { headCommit { oid } } } } } }",
+		"-f", "owner="+owner,
+		"-f", "name="+name,
+		"-f", "branch="+branch,
+		"--jq", ".data.repository.mergeQueue.entries.nodes[].headCommit.oid")
+	if err != nil {
+		return nil, err
+	}
+	var heads []string
+	for _, line := range strings.Split(out, "\n") {
+		if line = strings.TrimSpace(line); line != "" {
+			heads = append(heads, line)
+		}
+	}
+	return heads, nil
+}
+
+func (c *ghCLI) Cancel(runID string) error {
+	_, err := c.run("run", "cancel", runID,
 		"--repo", c.repo)
+	return err
+}
+
+func rerunArgs(runID, repo string) []string {
+	return []string{"run", "rerun", runID, "--repo", repo}
+}
+
+func (c *ghCLI) Rerun(runID string) error {
+	_, err := c.run(rerunArgs(runID, c.repo)...)
 	if err != nil && strings.Contains(err.Error(), "already running") {
 		return ErrRerunAlreadyRunning
 	}

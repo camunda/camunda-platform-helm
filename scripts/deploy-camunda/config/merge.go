@@ -59,6 +59,10 @@ type DeploymentFlags struct {
 	RenderTemplates      bool
 	RenderOutputDir      string
 	ExtraValues          []string
+	// ImageOverrides are component=[registry/]repository(:tag|@digest) pins ranked above every values file.
+	ImageOverrides []string
+	// AllowDigestShadow keeps a pinned digest when a later layer changes only registry/repository.
+	AllowDigestShadow bool
 	// Extra helm arguments for advanced use cases (e.g., upgrade flows).
 	// These are appended to the helm command after all other arguments.
 	ExtraHelmArgs []string

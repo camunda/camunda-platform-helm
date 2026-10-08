@@ -871,43 +871,7 @@ func prepareScenarioValues(ctx context.Context, scenarioCtx *ScenarioContext, fl
 		return nil, fmt.Errorf("failed to generate debug values: %w", err)
 	}
 
-	// Resolve chart-root overlay files (e.g., values-enterprise.yaml, values-latest.yaml).
-	// Each name in ChartRootOverlays resolves to <chartPath>/values-<name>.yaml.
-	// These provide chart-wide defaults (image versions, enterprise patches, digest pins)
-	// and are applied BEFORE scenario layers so that scenario-specific values take precedence.
-	// Not passed through values.Process() — these files contain literal values, no env placeholders.
-	var chartRootOverlayFiles []string
-	for _, overlay := range flags.Chart.ChartRootOverlays {
-		if flags.Chart.ChartPath == "" {
-			continue // repo-based installs (upgrade Step 1) have no local chart path
-		}
-		overlayPath := filepath.Join(flags.Chart.ChartPath, "values-"+overlay+".yaml")
-		if _, statErr := os.Stat(overlayPath); statErr == nil {
-			// The digest overlay pins image.digest, which the chart image helper
-			// prefers over tag. If --extra-values overrides a component's image
-			// coordinates (without its own digest), strip that component's digest
-			// from the overlay so the override actually takes effect instead of
-			// being silently shadowed. See neutralizeOverriddenDigests.
-			if overlay == "digest" && len(flags.Deployment.ExtraValues) > 0 {
-				sanitized, sanErr := neutralizeOverriddenDigests(overlayPath, flags.Deployment.ExtraValues, tempDir)
-				if sanErr != nil {
-					os.RemoveAll(tempDir)
-					return nil, fmt.Errorf("failed to sanitize digest overlay: %w", sanErr)
-				}
-				overlayPath = sanitized
-			}
-			chartRootOverlayFiles = append(chartRootOverlayFiles, overlayPath)
-			logging.Logger.Info().
-				Str("overlay", overlay).
-				Str("path", overlayPath).
-				Msg("Including chart-root overlay")
-		} else {
-			logging.Logger.Debug().
-				Str("overlay", overlay).
-				Str("path", overlayPath).
-				Msg("Chart-root overlay not found, skipping")
-		}
-	}
+	chartRootOverlayFiles := ChartRootOverlayFiles(flags.Chart.ChartPath, flags.Chart.ChartRootOverlays)
 
 	// Build the final values list using the single canonical precedence function.
 	// See BuildValuesChain() for the full precedence documentation.
@@ -928,7 +892,24 @@ func prepareScenarioValues(ctx context.Context, scenarioCtx *ScenarioContext, fl
 		scenarioFiles = legacyVals[len(processedCommonFiles):]
 	}
 
-	vals := BuildValuesChain(processedCommonFiles, chartRootOverlayFiles, flags.Deployment.ExtraValues, scenarioFiles, debugValuesFile)
+	extraValues := flags.Deployment.ExtraValues
+	if len(flags.Deployment.ImageOverrides) > 0 {
+		overridesFile, overrideErr := writeImageOverrides(flags.Deployment.ImageOverrides, flags.Chart.ChartPath, tempDir)
+		if overrideErr != nil {
+			os.RemoveAll(tempDir)
+			return nil, overrideErr
+		}
+		extraValues = append(append([]string(nil), extraValues...), overridesFile)
+	}
+	vals := BuildValuesChain(processedCommonFiles, chartRootOverlayFiles, extraValues, scenarioFiles, debugValuesFile)
+	resolvedImages, err := resolveImages(vals, len(processedCommonFiles)+len(chartRootOverlayFiles), flags.Deployment.AllowDigestShadow, tempDir)
+	if err != nil {
+		os.RemoveAll(tempDir)
+		return nil, err
+	}
+	if resolvedImages != "" {
+		vals = append(vals, resolvedImages)
+	}
 
 	logging.Logger.Debug().
 		Str("scenario", scenarioCtx.ScenarioName).

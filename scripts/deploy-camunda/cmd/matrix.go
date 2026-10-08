@@ -19,6 +19,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -323,6 +324,8 @@ func newMatrixRunCommand() *cobra.Command {
 		extraHelmArgs            []string
 		extraHelmSets            []string
 		extraValues              []string
+		imageOverrides           []string
+		allowDigestShadow        bool
 		namespaceOverride        string
 		namespacePrepared        bool
 		shortnameExact           bool
@@ -614,6 +617,8 @@ Under the hood this invokes deploy.Execute() for each matrix entry.`,
 						ExtraHelmArgs:              extraHelmArgs,
 						ExtraHelmSets:              extraHelmSets,
 						ExtraValues:                extraValues,
+						ImageOverrides:             imageOverrides,
+						AllowDigestShadow:          allowDigestShadow,
 						NamespaceOverride:          namespaceOverride,
 						ChartRef:                   chartRef,
 						ChartRefVersion:            chartRefVersion,
@@ -755,6 +760,8 @@ Under the hood this invokes deploy.Execute() for each matrix entry.`,
 				ExtraHelmArgs:              extraHelmArgs,
 				ExtraHelmSets:              extraHelmSets,
 				ExtraValues:                extraValues,
+				ImageOverrides:             imageOverrides,
+				AllowDigestShadow:          allowDigestShadow,
 				NamespaceOverride:          namespaceOverride,
 				ChartRef:                   chartRef,
 				ChartRefVersion:            chartRefVersion,
@@ -853,12 +860,14 @@ Under the hood this invokes deploy.Execute() for each matrix entry.`,
 	f.BoolVar(&ensureDockerHub, "ensure-docker-hub", false, "Ensure Docker Hub registry pull secret is created in each entry's namespace")
 	f.BoolVar(&useLatest, "use-latest", false, "Use values-latest.yaml from each chart root instead of values-digest.yaml")
 	f.BoolVar(&useQA, "use-qa", false, "Force the base-qa layer to be included for all entries, regardless of per-scenario qa config")
-	f.BoolVar(&forceImageOverrides, "force-image-overrides", false, "Bypass OCI immutability guard: allow chart-root image overlays when --chart-ref is set (env-file IMAGE_TAG keys stripped at the workflow layer are not restored).")
+	f.BoolVar(&forceImageOverrides, "force-image-overrides", false, "Bypass OCI immutability guard: apply chart-root image overlays and scenario image-tags on top of --chart-ref.")
 	f.BoolVarP(&yes, "yes", "y", false, "Skip confirmation prompts (e.g., e2e threshold warning)")
 	f.StringVar(&logDir, "log-dir", "", "Write logs to this directory and show a live status table (auto-generated when running in a TTY)")
 	f.StringArrayVar(&extraHelmArgs, "extra-helm-arg", nil, "Extra argument appended to every helm command (repeatable, e.g. --extra-helm-arg=--set-file=global.license.secret.inlineSecret=/tmp/license.txt)")
 	f.StringSliceVar(&extraHelmSets, "extra-helm-set", nil, "Extra helm --set key=value pair applied to every entry (comma-separated or repeatable, e.g. orchestration.upgrade.allowPreReleaseImages=true)")
-	f.StringArrayVar(&extraValues, "extra-values", nil, "Additional Helm values files appended last for every entry (repeatable; not comma-split — use the flag multiple times for multiple files). Engages digest-overlay strip; prefer over --extra-helm-arg=--values=. In two-step upgrade flows, applied to Step 2 only.")
+	f.StringArrayVar(&extraValues, "extra-values", nil, "Additional Helm values files appended last for every entry (repeatable; not comma-split — use the flag multiple times for multiple files). Ranked by the image resolver; prefer over --extra-helm-arg=--values=. In two-step upgrade flows, applied to Step 2 only.")
+	f.StringArrayVar(&imageOverrides, "image-override", nil, "Pin one component's image above every values file for every entry (repeatable), e.g. orchestration=registry.camunda.cloud/team-camunda/camunda:8.10.0-SNAPSHOT. In two-step upgrade flows, applied to Step 2 only.")
+	f.BoolVar(&allowDigestShadow, "allow-digest-shadow", false, "Keep a pinned digest when a later values file changes only the image registry/repository (e.g. a pull-through mirror)")
 	f.StringVar(&namespaceOverride, "namespace-override", "", "Deploy into one exact namespace that CI or another external process already provisioned. Disables automatic ExternalSecrets; local runs should use --namespace-prefix.")
 	f.BoolVar(&namespacePrepared, "namespace-prepared", false, "Confirm the exact namespace selected by --namespace-override already has required secrets, TLS, and pull secrets.")
 	f.StringVar(&chartRef, "chart-ref", "", "Override chart source with an OCI reference or .tgz path (e.g., oci://registry.camunda.cloud/team-distribution/camunda-platform). Values are still resolved from the local repo via --repo-root.")
@@ -1316,6 +1325,8 @@ func extractHelmSetValue(pairs []string, key string) string {
 	return value
 }
 
+var prepareScenarioFn = deploy.PrepareScenario
+
 // preparedTopologyRelease pairs a topology release with the flags and prepared scenario built for
 // it, so the deploy loop and the topology-level post-deploy hook can both address it.
 type preparedTopologyRelease struct {
@@ -1323,7 +1334,6 @@ type preparedTopologyRelease struct {
 	flags     *config.RuntimeFlags
 	namespace string
 	prepared  *deploy.PreparedScenario
-	cleanup   func()
 }
 
 // topologyChartPaths returns the distinct local chart directories the topology's
@@ -1365,7 +1375,7 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 		return fmt.Errorf("topology entry %s/%s: --chart-ref is not supported on the multi-namespace topology path yet (applyChartRefOverride runs only in executeEntry); tracked in #6656", entry.Version, entry.Scenario)
 	}
 	if opts.Cleanup {
-		return fmt.Errorf("topology entry %s/%s: --cleanup is not supported on the multi-namespace topology path yet (no per-release namespace teardown; the loop's cleanup() is BuildEntryFlags' temp-file cleanup); tracked in #6656", entry.Version, entry.Scenario)
+		return fmt.Errorf("topology entry %s/%s: --cleanup is not supported on the multi-namespace topology path yet (no per-release namespace teardown); tracked in #6656", entry.Version, entry.Scenario)
 	}
 
 	releases := make([]deploy.TopologyRelease, 0, len(entry.Topology.Releases))
@@ -1419,7 +1429,9 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 	// orchestration release itself exposes (orchestration.serviceName in
 	// templates/orchestration/_helpers.tpl), on the gRPC (26500) and REST
 	// (8080) ports from orchestration.service.{grpcPort,httpPort}.
-	addTopologyIngressHosts(crossRefEnv, opts, platform, contexts[hubIdx], entry.Topology.Releases, contexts)
+	if err := addTopologyIngressHosts(crossRefEnv, opts, platform, contexts[hubIdx], entry.Topology.Releases, contexts); err != nil {
+		return fmt.Errorf("topology entry %s/%s: %w", entry.Version, entry.Scenario, err)
+	}
 	for _, i := range orchestrationIndices {
 		token := matrix.TopologyEnvToken(entry.Topology.Releases[i].NamespaceSuffix)
 		crossRefEnv[token+"_NAMESPACE"] = contexts[i].Namespace
@@ -1451,10 +1463,10 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 	}
 
 	preparedReleases := make([]preparedTopologyRelease, 0, len(order))
+	var releaseErrs []error
 	defer func() {
 		for _, release := range preparedReleases {
 			release.prepared.Cleanup()
-			release.cleanup()
 		}
 	}()
 
@@ -1469,34 +1481,38 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 			releaseOpts.ExtraHelmSets = append(releaseOpts.ExtraHelmSets, "global.host="+releaseHost)
 		}
 
-		flags, namespace, _, _, cleanup, buildErr := matrix.BuildEntryFlags(releaseEntry, releaseOpts)
+		flags, namespace, _, _, buildErr := matrix.BuildEntryFlags(releaseEntry, releaseOpts)
 		if buildErr != nil {
-			cleanup()
-			return fmt.Errorf("topology release %s/%s (namespace-suffix %q): build flags: %w", entry.Scenario, rel.Role, rel.NamespaceSuffix, buildErr)
+			releaseErrs = append(releaseErrs, fmt.Errorf("topology release %s/%s (namespace-suffix %q): build flags: %w", entry.Scenario, rel.Role, rel.NamespaceSuffix, buildErr))
+			continue
 		}
 
 		applyTopologyReleaseOverrides(flags, buildTopologyReleaseEnv(crossRefEnv, rel))
 		applyTopologyReleaseHostname(flags, releaseHost)
 		removeManifest, err := applyTopologyCredentialsManifest(flags, opts.RepoRoot, entry.Topology.CredentialsManifest, baseNamespace)
 		if err != nil {
-			cleanup()
-			return fmt.Errorf("topology release %s/%s (namespace-suffix %q): %w", entry.Scenario, rel.Role, rel.NamespaceSuffix, err)
+			releaseErrs = append(releaseErrs, fmt.Errorf("topology release %s/%s (namespace-suffix %q): %w", entry.Scenario, rel.Role, rel.NamespaceSuffix, err))
+			continue
 		}
 		defer removeManifest()
 		if err := matrix.RegisterDeclarativePostInfraHook(flags, releaseEntry.PostInfra, opts.RepoRoot, releaseEntry.Version, releaseEntry.Scenario); err != nil {
-			cleanup()
-			return fmt.Errorf("topology release %s/%s (namespace-suffix %q): register post-infra hook: %w", entry.Scenario, rel.Role, rel.NamespaceSuffix, err)
+			releaseErrs = append(releaseErrs, fmt.Errorf("topology release %s/%s (namespace-suffix %q): register post-infra hook: %w", entry.Scenario, rel.Role, rel.NamespaceSuffix, err))
+			continue
 		}
 		if err := matrix.RegisterDeclarativePostDeployHook(flags, releaseEntry.PostDeploy, opts.RepoRoot, releaseEntry.Version, releaseEntry.Scenario); err != nil {
-			cleanup()
-			return fmt.Errorf("topology release %s/%s (namespace-suffix %q): register post-deploy hook: %w", entry.Scenario, rel.Role, rel.NamespaceSuffix, err)
+			releaseErrs = append(releaseErrs, fmt.Errorf("topology release %s/%s (namespace-suffix %q): register post-deploy hook: %w", entry.Scenario, rel.Role, rel.NamespaceSuffix, err))
+			continue
 		}
-		prepared, prepareErr := deploy.PrepareScenario(ctx, releaseCtx, flags)
+		releaseCtx.IngressHost = flags.ResolveIngressHostname()
+		prepared, prepareErr := prepareScenarioFn(ctx, releaseCtx, flags)
 		if prepareErr != nil {
-			cleanup()
-			return fmt.Errorf("topology release %s/%s (namespace-suffix %q) prepare failed: %w", entry.Scenario, rel.Role, rel.NamespaceSuffix, prepareErr)
+			releaseErrs = append(releaseErrs, fmt.Errorf("topology release %s/%s (namespace-suffix %q) prepare failed: %w", entry.Scenario, rel.Role, rel.NamespaceSuffix, prepareErr))
+			continue
 		}
-		preparedReleases = append(preparedReleases, preparedTopologyRelease{release: rel, flags: flags, namespace: namespace, prepared: prepared, cleanup: cleanup})
+		preparedReleases = append(preparedReleases, preparedTopologyRelease{release: rel, flags: flags, namespace: namespace, prepared: prepared})
+	}
+	if len(releaseErrs) > 0 {
+		return errors.Join(releaseErrs...)
 	}
 
 	for _, chartPath := range topologyChartPaths(preparedReleases) {
@@ -1665,9 +1681,8 @@ func runTopologyE2ELegs(
 			releaseOpts.ExtraHelmSets = append(releaseOpts.ExtraHelmSets, "global.host="+releaseHost)
 		}
 
-		flags, namespace, _, _, cleanup, buildErr := matrix.BuildEntryFlags(releaseEntry, releaseOpts)
+		flags, namespace, _, _, buildErr := matrix.BuildEntryFlags(releaseEntry, releaseOpts)
 		if buildErr != nil {
-			cleanup()
 			failures = append(failures, fmt.Sprintf("leg %q: build flags: %v", leg.OrchestrationSuffix, buildErr))
 			continue
 		}
@@ -1683,7 +1698,6 @@ func runTopologyE2ELegs(
 		flags.Test.PhysicalTenantID = leg.TenantID
 
 		testErr := deploy.RunTests(ctx, flags, namespace)
-		cleanup()
 
 		label := leg.OrchestrationSuffix
 		if leg.OptimizeSuffix != "" {
@@ -1762,14 +1776,15 @@ func topologyReleaseHostKey(role, namespaceSuffix string, orchestrationCount int
 	return "HUB_HOST"
 }
 
-func addTopologyIngressHosts(crossRefEnv map[string]string, opts matrix.RunOptions, platform string, hubCtx *deploy.ScenarioContext, releases []matrix.TopologyRelease, contexts []*deploy.ScenarioContext) {
+func addTopologyIngressHosts(crossRefEnv map[string]string, opts matrix.RunOptions, platform string, hubCtx *deploy.ScenarioContext, releases []matrix.TopologyRelease, contexts []*deploy.ScenarioContext) error {
 	orchestrationCount := 0
 	for _, release := range releases {
 		if release.Role == "orchestration" {
 			orchestrationCount++
 		}
 	}
-	if sharedHost := extractHelmSetValue(opts.ExtraHelmSets, "global.host"); sharedHost != "" && orchestrationCount <= 1 {
+	sharedHost := extractHelmSetValue(opts.ExtraHelmSets, "global.host")
+	if sharedHost != "" && orchestrationCount <= 1 {
 		crossRefEnv["HUB_HOST"] = sharedHost
 		for _, release := range releases {
 			if release.Role == "orchestration" {
@@ -1777,12 +1792,15 @@ func addTopologyIngressHosts(crossRefEnv map[string]string, opts matrix.RunOptio
 				crossRefEnv["ORCH_HOST"] = sharedHost
 			}
 		}
-		return
+		return nil
 	}
 
 	baseDomain := matrix.EntryInfra(opts, platform, "").IngressBaseDomain
 	if baseDomain == "" {
-		return
+		if sharedHost != "" {
+			return fmt.Errorf("global.host=%s is shared, but this topology has %d orchestration releases that each need their own host; set an ingress base domain instead", sharedHost, orchestrationCount)
+		}
+		return nil
 	}
 	crossRefEnv["HUB_HOST"] = (&config.IngressFlags{
 		IngressSubdomain:  hubCtx.Namespace,
@@ -1801,6 +1819,7 @@ func addTopologyIngressHosts(crossRefEnv map[string]string, opts matrix.RunOptio
 			crossRefEnv["ORCH_HOST"] = host
 		}
 	}
+	return nil
 }
 
 // topologyDeployOrder returns release indices in a depends-on-respecting order:
