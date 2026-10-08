@@ -17,6 +17,7 @@ package main
 import (
 	"bytes"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -104,25 +105,33 @@ func TestUpgradeExpandsUnknownParentsWhenCoverageIsNested(t *testing.T) {
 	}
 }
 
-func TestUpgradeDetectsKnown810TemplateRegistrations(t *testing.T) {
+func TestUpgradeDetectsKnownTemplateRegistrationsWhenChartOptsIn(t *testing.T) {
 	t.Parallel()
-	template, err := os.ReadFile("../../charts/camunda-platform-8.10/templates/common/constraints.tpl")
+	allowlists, err := filepath.Glob("../../charts/*/test/unit/deprecation/allowlist.yaml")
 	require.NoError(t, err)
+	require.NotEmpty(t, allowlists)
+	for _, allowlist := range allowlists {
+		chart := filepath.Dir(filepath.Dir(filepath.Dir(filepath.Dir(allowlist))))
+		t.Run(filepath.Base(chart), func(t *testing.T) {
+			template, err := os.ReadFile(filepath.Join(chart, "templates/common/constraints.tpl"))
+			require.NoError(t, err)
 
-	coverage, err := parseUpgradeCoverage(string(template), "")
+			coverage, err := parseUpgradeCoverage(string(template), "")
 
-	require.NoError(t, err)
-	require.Equal(t, deprecated, coverage.keys["orchestration.logLevel"])
-	require.Equal(t, deprecated, coverage.keys["global.config.requestBodySize"])
-	require.Equal(t, removed, coverage.keys["elasticsearch"])
-	require.Equal(t, removed, coverage.keys["global.ingress.host"])
+			require.NoError(t, err)
+			require.Equal(t, deprecated, coverage.keys["orchestration.logLevel"])
+			require.Equal(t, deprecated, coverage.keys["global.config.requestBodySize"])
+			require.Equal(t, removed, coverage.keys["elasticsearch"])
+			require.Equal(t, removed, coverage.keys["global.ingress.host"])
+		})
+	}
 }
 
 func TestPreviousMinorChartWhenMinorHasTwoDigits(t *testing.T) {
 	t.Parallel()
-	previous, err := previousMinorChart("charts/camunda-platform-8.10")
+	previous, err := previousMinorChart("charts/camunda-platform-99.10")
 	require.NoError(t, err)
-	require.Equal(t, "charts/camunda-platform-8.9", previous)
+	require.Equal(t, "charts/camunda-platform-99.9", previous)
 }
 
 func TestPreviousMinorChartHandlesTrailingSeparators(t *testing.T) {
@@ -130,14 +139,14 @@ func TestPreviousMinorChartHandlesTrailingSeparators(t *testing.T) {
 	tests := []struct {
 		name, chartDir string
 	}{
-		{"trailing slash", "charts/camunda-platform-8.10/"},
-		{"trailing dot", "charts/camunda-platform-8.10/."},
+		{"trailing slash", "charts/camunda-platform-99.10/"},
+		{"trailing dot", "charts/camunda-platform-99.10/."},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			previous, err := previousMinorChart(tc.chartDir)
 			require.NoError(t, err)
-			require.Equal(t, "charts/camunda-platform-8.9", previous)
+			require.Equal(t, "charts/camunda-platform-99.9", previous)
 		})
 	}
 }

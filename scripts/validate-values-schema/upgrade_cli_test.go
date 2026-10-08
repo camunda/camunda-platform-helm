@@ -32,8 +32,9 @@ func TestUpgradeCLIWhenPreviousDefaultsContainRejectedKeys(t *testing.T) {
 		}
 		t.Run(name, func(t *testing.T) {
 			dir := t.TempDir()
-			previous := filepath.Join(dir, "camunda-platform-8.9")
-			current := filepath.Join(dir, "camunda-platform-8.10")
+			current := filepath.Join(dir, "camunda-platform-99.10")
+			previous, err := previousMinorChart(current)
+			require.NoError(t, err)
 			files := map[string]string{
 				filepath.Join(previous, "values.schema.json"):                  `{}`,
 				filepath.Join(previous, "values.yaml"):                         "old: true\nremoved: true\nexception: true\n",
