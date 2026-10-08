@@ -211,7 +211,7 @@
     },
     // Limit tools and libs versions to the actual Distro CI Kubernetes cluster.
     {
-      allowedVersions: '<1.28.0',
+      allowedVersions: '<1.37.0',
       matchDepNames: [
         '/kubectl/',
       ],
