@@ -164,6 +164,9 @@ camunda:
           {{- if eq (include "camundaPlatform.webModelerEnabled" .) "true" }}
           - {{ .Values.global.identity.auth.webModeler.clientApiAudience | quote }}
           {{- end }}
+          {{- if eq (include "camundaPlatform.consoleEnabled" .) "true" }}
+          - {{ include "console.authAudience" . | quote }}
+          {{- end }}
         {{- if (include "orchestration.authIssuerUrl" .) }}
         issuer-uri: {{ include "orchestration.authIssuerUrl" . | quote }}
         {{- else }}
