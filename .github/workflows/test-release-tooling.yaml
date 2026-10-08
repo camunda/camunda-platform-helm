@@ -71,6 +71,16 @@ jobs:
           go vet ./...
           go test ./...
 
+      - name: Install schema generator
+        run: |
+          make install.readme-generator
+
+      - name: Validate previous-minor schema upgrade coverage
+        run: |
+          for allowlist in charts/*/test/unit/deprecation/allowlist.yaml; do
+            make helm.schema-validate-values chartPath="${allowlist%/test/unit/deprecation/allowlist.yaml}"
+          done
+
       - name: orchestration-entra-lifecycle — vet + test
         working-directory: scripts/orchestration-entra-lifecycle
         run: |
