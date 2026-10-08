@@ -43,7 +43,9 @@ jobs:
       - name: Vendor subcharts for the real-chart contract tests
         run: |
           make helm.repos-add
-          make helm.dependency-update
+          for v in 8.7 8.8 8.9 8.10; do
+            make helm.dependency-update chartPath="charts/camunda-platform-$v"
+          done
 
       - name: camunda-core — vet + test
         working-directory: scripts/camunda-core
@@ -75,7 +77,9 @@ jobs:
 
       - name: Validate previous-minor schema upgrade coverage
         run: |
-          make helm.schema-validate-values
+          for allowlist in charts/*/test/unit/deprecation/allowlist.yaml; do
+            make helm.schema-validate-values chartPath="${allowlist%/test/unit/deprecation/allowlist.yaml}"
+          done
 
       - name: orchestration-entra-lifecycle — vet + test
         working-directory: scripts/orchestration-entra-lifecycle
