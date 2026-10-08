@@ -28,9 +28,14 @@
 fullnameOverride: keycloak
 
 image:
-  registry: quay.io
-  repository: keycloak/keycloak
-  tag: "26.3.3"
+  registry: registry.camunda.cloud
+  repository: keycloak-ee/keycloak
+  tag: "26.7.2"
+
+command: /opt/bitnami/keycloak/bin/kc.sh
+
+imagePullSecrets:
+  - registry-camunda-cloud
 
 auth:
   adminUser: admin
