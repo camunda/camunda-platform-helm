@@ -17,6 +17,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"time"
 )
 
@@ -28,11 +29,14 @@ type ghClient interface {
 	AttemptConclusion(runID string, attempt int) (string, error)
 	AttemptJobConclusions(runID string, attempt int) ([]string, error)
 	Rerun(runID string) error
+	Cancel(runID string) error
+	MergeQueueHeads(branch string) ([]string, error)
 }
 
 type Gate struct {
-	Client   ghClient
-	Workflow string
+	Client      ghClient
+	Workflow    string
+	QueueBranch string
 
 	DiscoveryTries    int
 	DiscoveryInterval time.Duration
@@ -55,6 +59,9 @@ type Gate struct {
 	// Cmdf prints GitHub Actions workflow commands (::group::,
 	// ::endgroup::, ::warning::) to stdout.
 	Cmdf func(format string, args ...any)
+
+	mergeGroupSHA  string
+	mergeGroupSeen bool
 }
 
 func ResolveSHA(event, prHeadSHA, mgHeadSHA string) (string, error) {
@@ -146,6 +153,20 @@ func (g *Gate) WaitForCompletion(runID string, attempt int) error {
 		if status == "completed" {
 			return nil
 		}
+		if g.mergeGroupSHA != "" {
+			queued, known := g.mergeGroupQueued()
+			if queued {
+				g.mergeGroupSeen = true
+			} else if known && g.mergeGroupSeen {
+				g.Logf("merge group %s left the merge queue; cancelling run %s", g.mergeGroupSHA, runID)
+				if err := g.Client.Cancel(runID); err != nil {
+					g.Logf("cancel failed, retrying: %v", err)
+					g.Sleep(g.PollInterval)
+					continue
+				}
+				return errMergeGroupLeftQueue
+			}
+		}
 		g.Logf("attempt %d status=%q", attempt, status)
 		g.Sleep(g.PollInterval)
 	}
@@ -185,6 +206,16 @@ func (g *Gate) WaitForAttemptRegistered(runID string, want int) error {
 
 var ErrNotRetryable = errors.New("not retryable")
 var ErrRerunAlreadyRunning = errors.New("rerun: workflow already running")
+var errMergeGroupLeftQueue = fmt.Errorf("%w: merge group is no longer in the merge queue", ErrNotRetryable)
+
+func (g *Gate) mergeGroupQueued() (queued, known bool) {
+	heads, err := g.Client.MergeQueueHeads(g.QueueBranch)
+	if err != nil {
+		g.Logf("could not read the merge queue: %v", err)
+		return false, false
+	}
+	return slices.Contains(heads, g.mergeGroupSHA), true
+}
 
 func (g *Gate) Run(event, prHeadSHA, mgHeadSHA string) error {
 	sha, err := ResolveSHA(event, prHeadSHA, mgHeadSHA)
@@ -192,6 +223,9 @@ func (g *Gate) Run(event, prHeadSHA, mgHeadSHA string) error {
 		return err
 	}
 	g.Logf("gating event=%s sha=%s", event, sha)
+	if event == "merge_group" {
+		g.mergeGroupSHA = sha
+	}
 
 	g.Cmdf("::group::discover")
 	runID, runURL, err := g.Discover(sha, event)
@@ -218,8 +252,15 @@ func (g *Gate) Run(event, prHeadSHA, mgHeadSHA string) error {
 	if !errors.Is(watchErr, errNeedsRetry) {
 		return watchErr
 	}
+	if g.mergeGroupSHA != "" {
+		queued, known := g.mergeGroupQueued()
+		if known && !queued {
+			return errMergeGroupLeftQueue
+		}
+		g.mergeGroupSeen = g.mergeGroupSeen || queued
+	}
 
-	g.Logf("triggering retry of failed jobs on %s", runURL)
+	g.Logf("triggering full rerun of %s", runURL)
 	g.Cmdf("::group::rerun")
 	err = g.RerunWithBackoff(runID)
 	g.Cmdf("::endgroup::")

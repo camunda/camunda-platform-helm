@@ -713,7 +713,7 @@
                             "properties": {
                                 "enabled": {
                                     "type": "boolean",
-                                    "description": "if true, enables authentication on Management Identity .",
+                                    "description": "if true, enables authentication on Management Identity. Warns if neither a shared issuer nor an issuer backend URL resolves.",
                                     "default": false
                                 },
                                 "issuer": {
@@ -6165,7 +6165,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.40"
+                            "default": "8.8.41"
                         },
                         "digest": {
                             "type": "string",
@@ -7623,7 +7623,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.40"
+                            "default": "8.8.41"
                         },
                         "digest": {
                             "type": "string",

@@ -132,4 +132,31 @@ orchestration:
 	if strings.Contains(string(notes), "docker.io/camunda/keycloak:26.3.3") {
 		t.Errorf("release notes recomputed standard images instead of using the package annotation:\n%s", notes)
 	}
+	for _, app := range []string{"8.8", "8.9", "8.10"} {
+		t.Run("HelmSupport/"+app, func(t *testing.T) {
+			chart := strings.ReplaceAll(targetChart, "8.9.x", app+".x")
+			if err := os.WriteFile(filepath.Join(targetDir, "Chart.yaml"), []byte(chart), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			if err := releaseNotesFooter(context.Background(), targetDir, imagesDir, true); err != nil {
+				t.Fatal(err)
+			}
+			notes, err := os.ReadFile(filepath.Join(targetDir, "RELEASE-NOTES.md"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, line := range strings.Split(string(notes), "\n") {
+				if strings.HasPrefix(line, "- Helm CLI: ") {
+					if !strings.Contains(line, "/releases/tag/v3.") {
+						t.Errorf("Helm v3 missing from release information: %s", line)
+					}
+					if got, want := strings.Contains(line, "/releases/tag/v4.2.2"), app != "8.8"; got != want {
+						t.Errorf("Helm v4 advertised = %v, want %v: %s", got, want, line)
+					}
+					return
+				}
+			}
+			t.Fatal("Helm CLI release information missing")
+		})
+	}
 }

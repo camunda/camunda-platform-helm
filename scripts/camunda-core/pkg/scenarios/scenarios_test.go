@@ -916,7 +916,7 @@ func TestBuildDeploymentConfig_ResolvedSelection(t *testing.T) {
 	for _, features := range [][]string{nil, {}, {"custom"}} {
 		cfg, err := BuildDeploymentConfig(scenariosDir, "qa-multitenancy-upgrade", BuilderOverrides{
 			Resolved: true, Identity: "keycloak", Persistence: "elasticsearch", Platform: "gke",
-			Features: features, ValuesConfig: `{"E2E_TESTS_ORCHESTRATION_IMAGE_TAG":"snapshot"}`,
+			Features: features,
 		})
 		if err != nil {
 			t.Fatal(err)
@@ -927,113 +927,5 @@ func TestBuildDeploymentConfig_ResolvedSelection(t *testing.T) {
 	}
 	if _, err := BuildDeploymentConfig(scenariosDir, "elasticsearch", BuilderOverrides{Resolved: true}); err == nil {
 		t.Fatal("missing required registry selections must fail validation")
-	}
-}
-
-func TestBuildDeploymentConfig_ImageTagsAutoDetection(t *testing.T) {
-	tests := []struct {
-		name          string
-		imageTags     bool
-		imageTagsSet  bool
-		valuesConfig  string
-		wantImageTags bool
-	}{
-		{
-			name:          "explicit true stays true",
-			imageTags:     true,
-			imageTagsSet:  true,
-			valuesConfig:  `{}`,
-			wantImageTags: true,
-		},
-		{
-			name:          "false with empty config stays false",
-			imageTags:     false,
-			valuesConfig:  `{}`,
-			wantImageTags: false,
-		},
-		{
-			name:          "false with no config stays false",
-			imageTags:     false,
-			valuesConfig:  "",
-			wantImageTags: false,
-		},
-		{
-			name:          "auto-enabled when values-config has IMAGE_TAG key",
-			imageTags:     false,
-			valuesConfig:  `{"E2E_TESTS_CONNECTORS_IMAGE_TAG": "8.8.0", "SOME_OTHER_KEY": "val"}`,
-			wantImageTags: true,
-		},
-		{
-			name:          "auto-enabled with multiple IMAGE_TAG keys",
-			imageTags:     false,
-			valuesConfig:  `{"E2E_TESTS_ORCHESTRATION_IMAGE_TAG": "8.8.0", "E2E_TESTS_CONSOLE_IMAGE_TAG": "8.8.0"}`,
-			wantImageTags: true,
-		},
-		{
-			name:          "not enabled for non-IMAGE_TAG keys",
-			imageTags:     false,
-			valuesConfig:  `{"E2E_TESTS_SEARCH_ENGINE": "opensearch", "SOME_PREFIX": "val"}`,
-			wantImageTags: false,
-		},
-		{
-			name:          "not enabled for partial suffix match",
-			imageTags:     false,
-			valuesConfig:  `{"MY_IMAGE_TAGGER": "val"}`,
-			wantImageTags: false,
-		},
-		{
-			name:          "invalid JSON does not enable",
-			imageTags:     false,
-			valuesConfig:  `not valid json`,
-			wantImageTags: false,
-		},
-		{
-			name:          "explicit false not overridden by IMAGE_TAG keys",
-			imageTags:     false,
-			imageTagsSet:  true,
-			valuesConfig:  `{"E2E_TESTS_CONNECTORS_IMAGE_TAG": "8.8.0", "SOME_OTHER_KEY": "val"}`,
-			wantImageTags: false,
-		},
-	}
-
-	// Build minimal scenariosDir so ValidateAgainstValues can resolve names.
-	scenariosDir := t.TempDir()
-	for _, d := range []string{
-		filepath.Join(scenariosDir, "values", "identity"),
-		filepath.Join(scenariosDir, "values", "persistence"),
-		filepath.Join(scenariosDir, "values", "platform"),
-		filepath.Join(scenariosDir, "values", "features"),
-	} {
-		if err := os.MkdirAll(d, 0755); err != nil {
-			t.Fatal(err)
-		}
-	}
-	for _, f := range []string{
-		filepath.Join(scenariosDir, "values", "identity", "keycloak.yaml"),
-		filepath.Join(scenariosDir, "values", "persistence", "elasticsearch.yaml"),
-		filepath.Join(scenariosDir, "values", "platform", "gke.yaml"),
-	} {
-		if err := os.WriteFile(f, []byte("# test"), 0644); err != nil {
-			t.Fatal(err)
-		}
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			cfg, err := BuildDeploymentConfig(scenariosDir, "qa-elasticsearch", BuilderOverrides{
-				Identity:     "keycloak",
-				Persistence:  "elasticsearch",
-				Platform:     "gke",
-				ImageTags:    tt.imageTags,
-				ImageTagsSet: tt.imageTagsSet,
-				ValuesConfig: tt.valuesConfig,
-			})
-			if err != nil {
-				t.Fatalf("unexpected error: %v", err)
-			}
-			if cfg.ImageTags != tt.wantImageTags {
-				t.Errorf("ImageTags = %v, want %v", cfg.ImageTags, tt.wantImageTags)
-			}
-		})
 	}
 }

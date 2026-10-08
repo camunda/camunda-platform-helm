@@ -608,6 +608,34 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 				s.Require().Contains(applicationYaml, "web-modeler-api",
 					"Web Modeler API should be present when webModeler.enabled=true")
 			},
+		}, {
+			Name: "TestGatewayPublicPortKeepsIdentityURLPortless",
+			Values: map[string]string{
+				"identity.enabled":                 "true",
+				"identity.contextPath":             "/identity",
+				"identityKeycloak.enabled":         "true",
+				"global.identity.auth.enabled":     "true",
+				"global.ingress.enabled":           "false",
+				"global.gateway.enabled":           "true",
+				"global.gateway.tls.enabled":       "true",
+				"global.gateway.tls.port":          "8443",
+				"global.gateway.tls.secretName":    "camunda-tls",
+				"global.gateway.publicPorts.https": "9443",
+				"global.host":                      "camunda.example.com",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var configmap corev1.ConfigMap
+				var configmapApplication IdentityConfigYAML
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+				require.NoError(t, yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication))
+
+				clients := configmapApplication.Keycloak.Environment.Clients
+				s.Require().Equal("https://camunda.example.com/identity", configmapApplication.Identity.Url)
+				s.Require().Len(clients, 1)
+				s.Require().Equal("Identity", clients[0].Name)
+				s.Require().Equal("https://camunda.example.com/identity", clients[0].RootUrl)
+			},
 		},
 	}
 

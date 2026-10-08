@@ -23,6 +23,29 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestAuthIssuerNotesTemplate(t *testing.T) {
+	t.Parallel()
+	chartPath, err := filepath.Abs("../../../")
+	require.NoError(t, err)
+	for _, releaseInfo := range []string{"true", "false"} {
+		t.Run("release-info-"+releaseInfo, func(t *testing.T) {
+			output, err := exec.Command("helm", "install", "issuer-notes-test", chartPath,
+				"--dry-run=client",
+				"--set", "orchestration.data.secondaryStorage.type=elasticsearch",
+				"--set", "global.createReleaseInfo="+releaseInfo,
+				"--set", "global.identity.auth.enabled=true",
+				"--set", "global.identity.auth.type=GENERIC",
+				"--set", "global.identity.auth.publicIssuerUrl=",
+			).CombinedOutput()
+			require.NoError(t, err, string(output))
+			_, notes, found := strings.Cut(string(output), "\nNOTES:\n")
+			require.True(t, found)
+			require.Equal(t, 1, strings.Count(notes, "no shared authentication issuer or issuer backend URL resolves"))
+			require.Equal(t, releaseInfo == "true", strings.Contains(notes, "## Console configuration"))
+		})
+	}
+}
+
 func TestNotesTemplate(t *testing.T) {
 	t.Parallel()
 
@@ -76,6 +99,7 @@ func TestNotesSurfacesBundledKeycloakCveWarning(t *testing.T) {
 			if strings.HasPrefix(strings.TrimSpace(string(version)), "v3.") {
 				require.Contains(t, notes, "Helm v3 receives security fixes only until February 10, 2027")
 				require.Contains(t, notes, "After that date, Camunda no longer supports Helm CLI v3.")
+				require.Contains(t, notes, "For official Helm v4 support, upgrade to Camunda 8.9 or 8.10 and Helm v4 before then:")
 			} else {
 				require.NotContains(t, notes, "Helm v3 receives security fixes")
 			}

@@ -86,6 +86,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
+  actions: read
   contents: read
   pull-requests: read
   id-token: write
@@ -121,8 +122,14 @@ jobs:
       - name: Resolve e2e test suite version
         id: resolve-e2e-suite
         if: steps.generate-chart-versions.outputs.camunda-versions != '[]'
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          if ! version=$(npm view @camunda/e2e-test-suite version) || [[ -z "$version" ]]; then
+          if ! created=$(gh api "repos/${{ github.repository }}/actions/runs/${{ github.run_id }}" --jq .created_at) ||
+            ! version=$(npm view @camunda/e2e-test-suite time versions --json |
+              jq -r --arg created "$created" '.versions as $published | .time | to_entries
+                | map(select((.key | IN($published[])) and .value <= $created)) | max_by(.value) | .key // empty') ||
+            [[ -z "$version" ]]; then
             echo "::warning::Could not resolve the @camunda/e2e-test-suite version. E2E jobs install latest and the result cache is off for this run."
             exit 0
           fi

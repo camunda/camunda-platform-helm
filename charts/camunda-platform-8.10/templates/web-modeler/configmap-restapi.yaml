@@ -21,6 +21,7 @@ data:
         {{- end }}
         issuer-backend-url: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
         type: {{ include "camundaPlatform.authIssuerType" . | quote }}
+        username-claim: {{ .Values.orchestration.security.authentication.oidc.usernameClaim | quote }}
       {{- end }}
 
       hub:
@@ -65,8 +66,6 @@ data:
 
         oauth2:
           client-id: {{ include "webModeler.authClientId" . | quote }}
-          token:
-            username-claim: {{ .Values.orchestration.security.authentication.oidc.usernameClaim | quote }}
 
         server:
           url: {{ tpl (or .Values.global.identity.auth.camundaHub.redirectUrl .Values.global.identity.auth.webModeler.redirectUrl) $ | quote }}

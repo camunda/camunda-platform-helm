@@ -4,6 +4,12 @@ SHELL := /bin/bash
 chartPath := $(if $(chartPath),$(chartPath),charts/camunda-platform-*)
 chartVersion = $(shell grep -Po '(?<=^version: ).+' $(chartPath)/Chart.yaml)
 releaseName = camunda-platform-test
+# renovate: datasource=npm depName=@bitnami/readme-generator-for-helm
+readmeGeneratorVersion = 2.7.2
+
+.PHONY: install.readme-generator
+install.readme-generator:
+	npm install -g @bitnami/readme-generator-for-helm@$(readmeGeneratorVersion)
 
 #########################################################
 ######### Go.
@@ -64,6 +70,12 @@ test.zone-aware-migration:
 	cd scripts/zone-aware-migration && go test -race ./...
 	$(chartPath)/test/integration/scenarios/zone-aware-migration/verify-zone-aware-migration.sh
 
+# test.deploy-camunda-credential-stores: run the credential reconcile scripts
+# against real PostgreSQL, Elasticsearch, and Keycloak containers (needs docker).
+.PHONY: test.deploy-camunda-credential-stores
+test.deploy-camunda-credential-stores:
+	cd scripts/deploy-camunda && go test -tags integration ./cmd -run 'TestPsqlScript|TestEsScript|TestKeycloakBootstrapReset' -count=1 -timeout 20m -v
+
 .PHONY: install.release-tools
 install.release-tools:
 	cd scripts/release-tools && go mod tidy && go install .
@@ -106,9 +118,10 @@ endef
 .PHONY: go.test
 go.test: helm.dependency-update
 	@$(call go_test_run, go test ./...)
-	@echo "\n[$@] Matrix package: registry validator + snapshot drift + lifecycle fixtures"
-	# Intentionally cross-version: walks all charts/*/test/ci/ regardless of chartPath (YAML parse only, fast).
-	@cd scripts/deploy-camunda && go test -timeout 2m ./matrix/
+	@echo "\n[$@] deploy-camunda: topology dispatch, values/preflight, registry validator + snapshot drift"
+	# The matrix leg is intentionally cross-version: it walks all charts/*/test/ci/ regardless of chartPath.
+	@cd scripts/deploy-camunda && go test -timeout 5m ./cmd/... ./deploy/... ./matrix/... ./pkg/deployer/...
+	@cd scripts/vault-secret-mapper && go test -timeout 2m ./...
 
 # go.test-golden-updated: runs the tests with updating the golden files
 .PHONY: go.test-golden-updated
@@ -385,7 +398,7 @@ helm.schema-validate-values:
 		fi; \
 		echo "\n[$@] Chart dir: $${chart_dir}"; \
 		abs="$${root}/$${chart_dir}"; \
-		tmp_schema="$$(mktemp)"; \
+		tmp_schema="$$(mktemp -t values-schema.XXXXXXXXXX)"; \
 		bash scripts/regenerate-values-schema.sh \
 			"$${abs}/values.yaml" \
 			"$${abs}/values.schema.extra.json" \
@@ -395,7 +408,10 @@ helm.schema-validate-values:
 			[ -f "$${abs}/$$f" ] && files="$${files} $${abs}/$$f"; \
 		done; \
 		( cd "$${root}/scripts/validate-values-schema" && \
-			go run . --schema "$${tmp_schema}" --chart-dir "$${abs}" $${files} ); \
+			go run . --schema "$${tmp_schema}" --chart-dir "$${abs}" $${files} && \
+			if [ -f "$${abs}/test/unit/deprecation/allowlist.yaml" ]; then \
+				go run . --schema "$${tmp_schema}" --chart-dir "$${abs}" --previous-minor; \
+			fi ); \
 		status=$$?; \
 		rm -f "$${tmp_schema}"; \
 		[ $$status -eq 0 ] || exit $$status; \

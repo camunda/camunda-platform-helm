@@ -1,0 +1,2 @@
+global.security.allowInsecureImages: Bitnami subcharts dropped
+console.enabled: Compatibility shim remains honored until chart v16; its dedicated warning covers migration to camundaHub.enabled

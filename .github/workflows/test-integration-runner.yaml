@@ -606,7 +606,7 @@ jobs:
           EXTRA_VALUES: ${{ inputs.extra-values }}
         run: |
           # Persist user-supplied extra values for `deploy-camunda matrix run` to consume
-          # via --extra-values (flags.Deployment.ExtraValues → digest-overlay strip).
+          # via --extra-values (flags.Deployment.ExtraValues → image resolver).
           # Written without echoing to stdout to avoid leaking sensitive values into logs.
           echo "$EXTRA_VALUES" > /tmp/extra-values-file.yaml
 
@@ -717,17 +717,10 @@ jobs:
             FORCE_IMAGE_OVERRIDE_ARGS=(--force-image-overrides)
           fi
 
-          # Convert VALUES_CONFIG JSON to .env file. In OCI immutability mode,
-          # strip image tag keys so the released chart artifact remains the
-          # source of truth while non-image test config (index prefixes, etc.) stays available.
+          # Convert VALUES_CONFIG JSON to .env file.
           ENV_FILE_ARGS=()
           if [[ -n "${VALUES_CONFIG:-}" && "${VALUES_CONFIG}" != "{}" ]]; then
-            if [[ -n "${HELM_CHART_VERSION:-}" && "${FORCE_IMAGE_OVERRIDES}" != "true" ]]; then
-              echo "::notice::OCI artifact immutability mode: stripping *_IMAGE_TAG values from values-config"
-              echo "${VALUES_CONFIG}" | jq -r 'to_entries[] | select((.key | endswith("_IMAGE_TAG")) | not) | "\(.key)=\(.value)"' > /tmp/values-config.env
-            else
-              echo "${VALUES_CONFIG}" | jq -r 'to_entries[] | "\(.key)=\(.value)"' > /tmp/values-config.env
-            fi
+            echo "${VALUES_CONFIG}" | jq -r 'to_entries[] | "\(.key)=\(.value)"' > /tmp/values-config.env
             if [[ -s /tmp/values-config.env ]]; then
               ENV_FILE_ARGS=(--env-file /tmp/values-config.env)
             fi
@@ -735,7 +728,7 @@ jobs:
 
           # Forward workflow extra-values via --extra-values (NOT
           # --extra-helm-arg=--values=…): only this path lands in
-          # flags.Deployment.ExtraValues, which engages the digest-overlay strip.
+          # flags.Deployment.ExtraValues, which the image resolver ranks.
           # The upgrade flow forwards the same way; runner_upgrade.go nils Step 1's
           # copy so the override applies to Step 2 (the upgraded chart) only.
           EXTRA_VALUES_ARGS=()
@@ -1148,16 +1141,10 @@ jobs:
             FORCE_IMAGE_OVERRIDE_ARGS=(--force-image-overrides)
           fi
 
-          # Convert VALUES_CONFIG JSON to .env file. In OCI immutability mode,
-          # strip image tag keys so the released chart artifact remains the source of truth.
+          # Convert VALUES_CONFIG JSON to .env file.
           ENV_FILE_ARGS=()
           if [[ -n "${VALUES_CONFIG:-}" && "${VALUES_CONFIG}" != "{}" ]]; then
-            if [[ -n "${HELM_CHART_VERSION:-}" && "${FORCE_IMAGE_OVERRIDES}" != "true" ]]; then
-              echo "::notice::OCI artifact immutability mode: stripping *_IMAGE_TAG values from values-config"
-              echo "${VALUES_CONFIG}" | jq -r 'to_entries[] | select((.key | endswith("_IMAGE_TAG")) | not) | "\(.key)=\(.value)"' > /tmp/values-config.env
-            else
-              echo "${VALUES_CONFIG}" | jq -r 'to_entries[] | "\(.key)=\(.value)"' > /tmp/values-config.env
-            fi
+            echo "${VALUES_CONFIG}" | jq -r 'to_entries[] | "\(.key)=\(.value)"' > /tmp/values-config.env
             if [[ -s /tmp/values-config.env ]]; then
               ENV_FILE_ARGS=(--env-file /tmp/values-config.env)
             fi

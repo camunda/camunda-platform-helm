@@ -216,6 +216,7 @@ func executeTwoStepUpgrade(ctx context.Context, entry Entry, flags *config.Runti
 	// (e.g. per-PR image tag) and scenario-declared extra-values belong to Step 2
 	// only — they are combined in flags.Deployment.ExtraValues, which this nils.
 	step1Flags.Deployment.ExtraValues = nil
+	step1Flags.Deployment.ImageOverrides = nil
 	step1Flags.Test.RunE2ETests = false // Don't run tests after Step 1.
 	step1Flags.Test.RunAllTests = false
 	step1Flags.Deployment.WaitIngressReady = false // No ingress gate on the throwaway Step 1 install.

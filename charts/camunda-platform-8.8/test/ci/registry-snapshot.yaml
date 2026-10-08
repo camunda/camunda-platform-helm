@@ -58,7 +58,7 @@ integration:
             - enterprise
           helmVersion: 3.22.0
         - name: upgrade-migration
-          enabled: false
+          enabled: true
           shortname: eske-upgm
           auth: keycloak
           flow: upgrade-minor

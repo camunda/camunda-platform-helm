@@ -89,6 +89,7 @@ jobs:
     permissions:
       actions: write
       contents: read
+      pull-requests: read
     timeout-minutes: 420
     steps:
       - name: Verify MCP tests passed or were correctly skipped
@@ -126,6 +127,7 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           MG_HEAD_SHA: ${{ github.event.merge_group.head_sha }}
+          MG_BASE_REF: ${{ github.event.merge_group.base_ref }}
           OVERRIDE_SHA: ${{ inputs.sha }}
           OVERRIDE_EVENT: ${{ inputs.event }}
           IS_FORK: >-
