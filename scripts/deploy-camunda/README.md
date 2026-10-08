@@ -262,6 +262,12 @@ For chart-root overlays (files named `values-<name>.yaml` at the top of
 `charts/camunda-platform-<v>/`), use `--values-preset` (comma-separated
 or repeatable), e.g. `--values-preset enterprise,digest`.
 
+To swap one component's image, pass `--image-override component=registry/repository:tag`
+(or `@sha256:…`), e.g. `--image-override orchestration=registry.camunda.cloud/team-camunda/camunda:8.10.0-SNAPSHOT`.
+It ranks above every values file, and any pinned digest for that component is dropped. A values
+file that changes only an image's registry or repository must also set a tag or digest;
+`--allow-digest-shadow` keeps the pinned digest instead (e.g. for a pull-through mirror).
+
 ### 2. Override values for a companion chart (Elasticsearch, Keycloak, …)
 
 Companion charts (external persistence and IdP) use their own values

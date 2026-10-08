@@ -310,8 +310,7 @@ func TestSynthesizeReleaseOpts_PropagatesPerPlatformIngressBaseDomains(t *testin
 		Flow:      "install",
 		Platform:  "gke",
 	}
-	flags, _, _, _, cleanup, err := matrix.BuildEntryFlags(releaseEntry, opts)
-	defer cleanup()
+	flags, _, _, _, err := matrix.BuildEntryFlags(releaseEntry, opts)
 	if err != nil {
 		t.Fatalf("BuildEntryFlags returned error: %v", err)
 	}
