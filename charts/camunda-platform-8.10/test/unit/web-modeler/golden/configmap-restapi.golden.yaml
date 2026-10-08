@@ -22,6 +22,7 @@ data:
         issuer: ""
         issuer-backend-url: "https://keycloak.example.com:8443/auth/realms/camunda-platform"
         type: "KEYCLOAK"
+        username-claim: "preferred_username"
 
       hub:
         feature:
@@ -46,8 +47,6 @@ data:
 
         oauth2:
           client-id: "web-modeler"
-          token:
-            username-claim: "preferred_username"
 
         server:
           url: "http://localhost:8070"

@@ -61,6 +61,7 @@ type IdentityYAML struct {
 	BaseURL          string `yaml:"base-url"`
 	IssuerBackendURL string `yaml:"issuer-backend-url"`
 	Type             string `yaml:"type"`
+	UsernameClaim    string `yaml:"username-claim"`
 }
 type HubYAML struct {
 	Feature  FeatureYAML     `yaml:"feature"`
@@ -154,12 +155,7 @@ type PusherClientYAML struct {
 }
 
 type HubOAuth2YAML struct {
-	Token    TokenYAML `yaml:"token"`
-	ClientId string    `yaml:"client-id"`
-}
-
-type TokenYAML struct {
-	UsernameClaim string `yaml:"username-claim"`
+	ClientId string `yaml:"client-id"`
 }
 
 type ServerYAML struct {

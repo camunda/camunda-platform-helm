@@ -248,7 +248,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectAuthTokenUse
 	}
 
 	// then
-	s.Require().Equal("example-claim", configmapApplication.Camunda.Hub.OAuth2.Token.UsernameClaim)
+	s.Require().Equal("example-claim", configmapApplication.Camunda.Identity.UsernameClaim)
 }
 
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectIdentityServiceUrlWithFullnameOverride() {
