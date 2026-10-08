@@ -173,8 +173,8 @@ Default user: "{{ .Values.identity.firstUser.username }}". The password is confi
 
 {{ include "camundaPlatform.releaseInfo" . }}
 
-{{ include "camunda.constraints.warnings" . | trim }}
-
 {{ include "camundaPlatform.ReleaseHighlights" . }}
 
 {{- end }}
+
+{{ include "camunda.constraints.warnings" . | trim }}

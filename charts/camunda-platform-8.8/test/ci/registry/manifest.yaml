@@ -37,11 +37,11 @@ integration:
     - id: enterprise-values
       shortname: entv
       tier: 2
-      enabled: false
+      enabled: true
     - id: upgrade-migration
       shortname: eske-upgm
       tier: 2
-      enabled: false
+      enabled: true
     - id: elasticsearch-basic
       shortname: esba
       enabled: false

@@ -16,15 +16,10 @@
         {{ tpl .Values.identity.fullURL $ }}
     {{- else if .Values.global.ingress.enabled -}}
         {{- printf "%s%s" (include "camundaPlatform.ingressExternalURL" (dict "context" . "host" .Values.global.host "tlsEnabled" (eq (include "camundaPlatform.ingressProtocol" .) "https"))) (.Values.identity.contextPath | default "") -}}
+    {{- else if .Values.global.gateway.enabled -}}
+        {{- printf "%s%s" (include "camundaPlatform.gatewayExternalURL" (dict "context" . "host" .Values.global.host)) (.Values.identity.contextPath | default "") -}}
     {{- else -}}
-        {{- if .Values.global.gateway.enabled -}}
-            {{- $proto := ternary "https" "http" (or .Values.global.ingress.tls.enabled .Values.global.gateway.tls.enabled) -}}
-            {{- $host := (tpl .Values.global.host $) -}}
-            {{- $path := .Values.identity.contextPath | default "" -}}
-            {{- printf "%s://%s%s" $proto $host $path -}}
-        {{- else -}}
-            {{- "http://localhost:8084" -}}
-        {{- end -}}
+        {{- "http://localhost:8084" -}}
     {{- end -}}
 {{- end -}}
 

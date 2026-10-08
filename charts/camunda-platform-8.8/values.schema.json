@@ -713,7 +713,7 @@
                             "properties": {
                                 "enabled": {
                                     "type": "boolean",
-                                    "description": "if true, enables authentication on Management Identity .",
+                                    "description": "if true, enables authentication on Management Identity. Warns if neither a shared issuer nor an issuer backend URL resolves.",
                                     "default": false
                                 },
                                 "issuer": {
@@ -4682,7 +4682,7 @@
                         },
                         "deploymentStrategy": {
                             "type": "string",
-                            "description": "update strategy for the restapi Deployment. Defaults to RollingUpdate, which is always safe because the default chart-managed persistence path uses a per-pod ephemeral volume (no concurrent-attach contention). Set to \"Recreate\" only when using existingClaim with a ReadWriteOnce volume that cannot tolerate concurrent attach during a rollout (introduces brief downtime per upgrade).",
+                            "description": "can be used to set the restapi Deployment update strategy, RollingUpdate or Recreate. Recreate requires webModeler.persistence.enabled, else the render fails. Use Recreate only with webModeler.persistence.existingClaim on a ReadWriteOnce volume; it adds downtime on each upgrade.",
                             "default": "RollingUpdate",
                             "enum": [
                                 "RollingUpdate",
@@ -5950,7 +5950,7 @@
                                         },
                                         "usernameClaim": {
                                             "type": "string",
-                                            "description": "can be used to set username claim.",
+                                            "description": "can be used to set username claim. This value also sets the Web Modeler username claim, even when `orchestration.enabled` is false. To set a different Web Modeler claim, add the environment variable `CAMUNDA_IDENTITY_USERNAMECLAIM` to `webModeler.webapp.env`.",
                                             "default": "preferred_username"
                                         },
                                         "preferUsernameClaim": {
@@ -6165,7 +6165,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.40"
+                            "default": "8.8.41"
                         },
                         "digest": {
                             "type": "string",
@@ -7623,7 +7623,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.40"
+                            "default": "8.8.41"
                         },
                         "digest": {
                             "type": "string",

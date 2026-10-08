@@ -23,6 +23,29 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestAuthIssuerNotesTemplate(t *testing.T) {
+	t.Parallel()
+	chartPath, err := filepath.Abs("../../../")
+	require.NoError(t, err)
+	for _, releaseInfo := range []string{"true", "false"} {
+		t.Run("release-info-"+releaseInfo, func(t *testing.T) {
+			output, err := exec.Command("helm", "install", "issuer-notes-test", chartPath,
+				"--dry-run=client",
+				"--set", "orchestration.data.secondaryStorage.type=elasticsearch",
+				"--set", "global.createReleaseInfo="+releaseInfo,
+				"--set", "global.identity.auth.enabled=true",
+				"--set", "global.identity.auth.type=GENERIC",
+				"--set", "global.identity.auth.publicIssuerUrl=",
+			).CombinedOutput()
+			require.NoError(t, err, string(output))
+			_, notes, found := strings.Cut(string(output), "\nNOTES:\n")
+			require.True(t, found)
+			require.Equal(t, 1, strings.Count(notes, "no shared authentication issuer or issuer backend URL resolves"))
+			require.Equal(t, releaseInfo == "true", strings.Contains(notes, "## Release information"))
+		})
+	}
+}
+
 func TestNotesTemplate(t *testing.T) {
 	t.Parallel()
 
@@ -117,9 +140,9 @@ func TestNotesTemplate(t *testing.T) {
 		},
 		{
 			name:        "round-robin across more than one zone",
-			values:      []string{"orchestration.partitioning.numberOfZones=2", "orchestration.partitioning.zoneIndex=0"},
-			expected:    "zones: 2",
-			notExpected: "regions: 2",
+			values:      []string{"orchestration.partitioning.numberOfZones=3", "orchestration.partitioning.zoneIndex=0"},
+			expected:    "zones: 3",
+			notExpected: "regions: 3",
 		},
 		{
 			name: "zone-aware reports the declared zone count",

@@ -20,8 +20,10 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"net/http/httptest"
 	"regexp"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -255,6 +257,30 @@ func TestClientToken(t *testing.T) {
 		return testResponse(http.StatusUnauthorized, "bad credentials"), nil
 	}, "https://hub", "client", "secret")
 	require.ErrorContains(t, err, "HTTP 401: bad credentials")
+}
+
+func TestClientTokenSurvivesServerClosingIdleConnection(t *testing.T) {
+	t.Parallel()
+
+	var requests atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if requests.Add(1) == 2 {
+			conn, _, err := w.(http.Hijacker).Hijack()
+			require.NoError(t, err)
+			_ = conn.Close()
+			return
+		}
+		_, _ = io.WriteString(w, `{"access_token":"jwt"}`)
+	}))
+	defer server.Close()
+
+	client := server.Client()
+	for i := 0; i < 2; i++ {
+		token, err := clientToken(context.Background(), client.Do, server.URL, "client", "secret")
+		require.NoError(t, err)
+		assert.Equal(t, "jwt", token)
+	}
+	assert.Equal(t, int32(3), requests.Load())
 }
 
 func TestDeployAndStartAcceptanceProcess(t *testing.T) {

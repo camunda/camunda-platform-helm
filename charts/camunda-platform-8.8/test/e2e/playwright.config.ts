@@ -1,6 +1,8 @@
 import { defineConfig } from "@playwright/test";
 import * as dotenv from "dotenv";
 
+import { apiProjects } from "../../../../test/e2e/playwright.api-projects";
+
 dotenv.config();
 
 export default defineConfig({
@@ -18,11 +20,8 @@ export default defineConfig({
       name: "full-suite",
       testMatch: ["**/*.spec.{ts,js}"],
       // cluster-variables requires Vault-managed secrets not available in PR CI.
-      // optimize-api-tests authenticate as the `test` Keycloak client, which is
-      // only created by the base-qa.yaml values layer (scenario `qa: true`).
       testIgnore: [
         "**/cluster-variables.spec.{ts,js}",
-        "**/optimize-api-tests.spec.{ts,js}",
         "**/topology-orchestration-smoke.spec.{ts,js}",
       ],
       // @tasklistV1: requires Tasklist v1 mode with RBA enabled, not deployed in
@@ -32,6 +31,7 @@ export default defineConfig({
       // Connector Secrets/Custom Tags/Properties: require QA-specific config.
       grep: /^(?!.*(@tasklistV1|Connector Secrets User Flow|Custom Tags|Custom Properties)).*$/,
     },
+    ...apiProjects(__dirname),
   ],
   fullyParallel: true,
   retries: 2,

@@ -32,6 +32,12 @@ the original error.
   conclusion alone is not a safe retry signal.
 - A run cancelled with no failed or cancelled job (a clean human cancel, a
   merge-queue dequeue after everything finished) is still **not** retried.
+- A `merge_group` run is **not** retried when its head SHA is no longer a
+  merge queue entry. The queue rebuilds the groups behind a PR it removes, so
+  the old group can never merge. If the queue cannot be read, the gate retries.
+- While it waits, the gate **cancels** a `merge_group` run whose head SHA it
+  saw in the merge queue and that has since left it. A head SHA that the gate
+  never saw in the queue, or a failed queue read, does not cancel anything.
 - The gate's required check is `Integration Tests Gate / gate`.
   Branch protection / merge-queue config must require this check and
   not the raw matrix check.

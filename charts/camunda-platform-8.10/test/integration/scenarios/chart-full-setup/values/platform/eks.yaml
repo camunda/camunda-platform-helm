@@ -16,6 +16,8 @@ global:
       enabled: true
       secretName: aws-camunda-cloud-tls
       port: 8443
+    publicPorts:
+      https: 443
 
 orchestration:
   ingress:

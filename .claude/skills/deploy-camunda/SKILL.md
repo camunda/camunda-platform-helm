@@ -54,11 +54,16 @@ of wasted time (pods stuck in `ImagePullBackOff`, missing ingress, helm errors):
    ```
    Both are needed when `ensureDockerHub` and `ensureDockerRegistry` are `true` in `.deploy-camunda.yaml`.
 
-2. **kubectl context** — confirm you're targeting the right cluster.
+2. **Kubernetes context** — set the target once and pass it to every command.
    ```bash
-   kubectl config current-context
-   # Expected for GKE: gke_camunda-distribution_europe-west1-b_distro-ci
+   CTX=gke_camunda-distribution_europe-west1-b_distro-ci
+   kubectl --context "$CTX" cluster-info
    ```
+
+   Do not rely on the mutable current context. Use `--kube-context-gke "$CTX"` for a GKE matrix
+   run, `--kube-context "$CTX"` for a single deploy or watcher, and `--context "$CTX"` for
+   `kubectl`. A watcher pointed at another cluster will misleadingly report an empty namespace and
+   a missing Helm release while the real deployment fails elsewhere.
 
 3. **Helm dependencies** — must be up to date for the target chart version.
    ```bash
@@ -75,6 +80,15 @@ of wasted time (pods stuck in `ImagePullBackOff`, missing ingress, helm errors):
    export CAMUNDA_HOSTNAME=my-test-ns.ci.distro.ultrawombat.com
    ```
 
+5. **External secret store** — verify the store installed on the target cluster before selecting a
+   backend:
+   ```bash
+   kubectl --context "$CTX" get clustersecretstores.external-secrets.io
+   ```
+   Use `--use-vault-backed-secrets-gke` only when `vault-backend` exists. The normal `distro-ci`
+   store is `distribution-team`; selecting Vault there leaves ExternalSecrets unready and blocks
+   the deployment before Helm creates the main release.
+
 ## Deploy a Single Scenario
 
 ```bash
@@ -82,6 +96,7 @@ deploy-camunda \
   --chart-path ./charts/camunda-platform-8.9 \
   --namespace $NS \
   --release $RELEASE \
+  --kube-context "$CTX" \
   --scenario chart-full-setup
 ```
 
@@ -126,10 +141,10 @@ Create a config file at `.deploy-camunda.yaml` (project root) or `~/.config/camu
 
 ```yaml
 current: dev
-repoRoot: /path/to/repo
 
 deployments:
   dev:
+    repoRoot: /path/to/repo
     chartPath: ./charts/camunda-platform-8.9
     namespace: dev-test
     release: camunda
@@ -148,7 +163,7 @@ matrix:
     "8.9": .env.89
 ```
 
-Manage profiles: `deploy-camunda config create|use|show|set`.
+Manage profiles: `deploy-camunda config create|use|show|set`. Single deploys and `matrix run`/`matrix list` resolve infra with one rule: CLI flag > `matrix:` per-platform/per-version map (matrix only) > active profile > `matrix:` scalar (matrix only) > root.
 
 ## Matrix Operations
 
@@ -217,6 +232,37 @@ deploy-camunda matrix run \
 
 The `qa-*` scenarios have `image-tags: true`, which includes `base-image-tags.yaml` (with `$E2E_TESTS_*_IMAGE_TAG` placeholders) and excludes `values-digest.yaml`. The `--env-file` provides the actual values for substitution via `buildScenarioEnv()`. In CI, the workflow converts the `VALUES_CONFIG` JSON to a `.env` file using `jq` before calling `deploy-camunda`.
 
+## Topology Scenarios (Multi-Release)
+
+A topology scenario is a single matrix entry that fans out to N Helm releases, each in its own namespace, following a declared dependency order. Each release's `CAMUNDA_HOSTNAME` is set automatically from its resolved host; Optimize releases share the Hub hostname. Preflight validation reports all unpreparable releases in one invocation, and missing secret-mapping variables emit one summary line per release.
+
+Four topology scenarios exist on chart 8.10:
+- `mns` (`multinamespace`)
+- `mns2` (`multinamespace-2orch`)
+- `mnop` (`multinamespace-optimize`)
+- `ptnt` (`physicaltenants`)
+
+`ptnt` deploys 5 releases: 1 hub, 1 orchestration, and 3 optimize (default plus two per-tenant). The shortname `ptnt` is not guessable from "physicaltenants".
+
+**Discovery:** `deploy-camunda matrix list --versions 8.10` shows the `SHORT` column but not per-release counts. `physicaltenants` is tier 2, so `matrix list --tier 1` hides it. To preview release counts, run with `--dry-run`:
+
+```bash
+# Preview topology fan-out (prints e.g. "8.10/physicaltenants (ptnt): 5 releases")
+deploy-camunda matrix run --repo-root . --versions 8.10 \
+  --shortname-filter ptnt --shortname-exact --dry-run
+```
+
+**Namespace TTL:** `matrix run` has no `--ttl` flag — that flag exists only on the root `deploy-camunda` command. For a matrix or topology run, set `DEPLOY_CAMUNDA_TTL=8h` in the environment (default 60m).
+
+**Deploy `ptnt` to GKE:**
+
+```bash
+deploy-camunda matrix run --repo-root . --versions 8.10 \
+  --shortname-filter ptnt --shortname-exact --flow-filter install --platform gke \
+  --ingress-base-domain-gke <your-zone> --namespace-prefix <prefix> \
+  --ensure-docker-registry --timeout 15 --yes
+```
+
 ## Extended-Support Versions (Opt-In)
 
 The default matrix includes only `chartAutomation.routineVersions` from `charts/chart-versions.yaml`, independently of support-lifecycle metadata. A version outside that list is reachable when named explicitly **and** its chart dir has a CI scenario registry (`test/ci/registry/manifest.yaml`). **8.6** uses this opt-in path. A lifecycle `eolSince` entry blocks matrix execution, including explicit requests.
@@ -276,7 +322,7 @@ global:
 
 Component-level pull-secret resolution is **exclusive**, not merged: setting `identity.image.pullSecrets` makes the chart ignore `global.image.pullSecrets` for that component. A global-only override therefore drops the secret and the pod lands in `ImagePullBackOff`.
 
-A digest overlay cannot shadow the tag here — 8.6 simply ships no `values-digest.yaml` (only 8.8/8.9/8.10 do). Matrix runs do select the digest overlay by default (`resolveChartRootOverlays`, `matrix/runner.go:79`), so on the versions that have one, `neutralizeOverriddenDigests` (`deploy/digest_overlay.go:51`, wired at `deploy/values.go:890`) strips the digest of any component whose image coordinates `--extra-values` overrides, so the tag still wins.
+A digest overlay cannot shadow the tag here — 8.6 simply ships no `values-digest.yaml` (only 8.8/8.9/8.10 do). Matrix runs select the digest overlay by default (`ResolveImageStrategy` in `matrix/runner.go`); on the versions that have one, the image resolver (`resolveImages` in `deploy/imageresolve.go`) clears the digest of any component whose registry, repository, or tag a later values file changes, so the tag still wins. `--image-override component=registry/repo:tag` does the same for one component without an extra values file.
 
 **These scenarios never run e2e, even with `--test-e2e` or `--test-all`.** All three set `skip-e2e: true`, and the runner computes `RunE2ETests: (opts.TestE2E || opts.TestAll) && !entry.SkipE2E` (`matrix/runner_execute.go:250`) — the scenario flag wins unconditionally. This is deliberate: the cross-component e2e suite ships no `SM-8.6` fixture directory, and its Keycloak admin-console login locators do not match 8.6's older console. Verify a deploy by inspecting the running pod instead — image contents, startup logs, and the OIDC discovery document:
 
@@ -329,21 +375,30 @@ When a Helm install gets stuck, the default `helm install --wait --timeout 10m` 
 ```bash
 # Terminal 1: deploy via matrix run
 deploy-camunda matrix run --repo-root . --versions 8.10 \
-  --shortname-filter keyco --platform gke --delete-namespace --timeout 10 --yes
+  --shortname-filter keyco --platform gke \
+  --kube-context-gke "$CTX" --delete-namespace --timeout 10 --yes
 
 # Terminal 2: watch (start immediately, it waits for pods to appear)
 deploy-camunda watch \
   --namespace matrix-810-keyco-inst-gke \
   --release integration \
+  --kube-context "$CTX" \
+  --abort-confidence 0.85 \
   --interval 30
 
-# For single (non-matrix) deploys, same shape: watch --namespace <ns> --release <rel> --interval 30
+# For single deploys, use the same explicit context on both deploy and watch.
 ```
 
 The watcher prints a diagnosis on each tick and exits when all pods reach Running/Ready. Verdicts:
 - **wait** — pods are starting normally, keep polling.
 - **investigate** — something looks off (slow startup, pending PVCs), diagnosis printed.
 - **abort** — unrecoverable failure detected (wrong image, missing secret). Use `--abort-confidence 0.85` to auto-exit when the agent is confident (default 0 disables auto-abort).
+
+The watcher sees cluster snapshots, not the stdout or exit status of the separate deploy process.
+If it repeatedly reports an empty namespace or `release not found`, inspect the deploy output and
+run `kubectl --context "$CTX" get events -n <ns>`. The deploy may be blocked before Helm, for example
+while waiting for an ExternalSecret. An `investigate` verdict is informational and does not stop the
+watcher.
 
 **Prerequisites:** `claude` or `opencode` must be on `PATH`. The watcher does NOT call any API directly — it shells out to whichever CLI is installed and uses that CLI's existing auth and model configuration.
 

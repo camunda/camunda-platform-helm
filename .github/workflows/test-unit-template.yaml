@@ -62,7 +62,7 @@ jobs:
     name: UnitTest Scripts
     runs-on: ubuntu-latest
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@5251cf2838875fd6cab406a1ffa16af1355474a8 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Install tools
         uses: ./.github/actions/install-tool-versions
@@ -100,7 +100,7 @@ jobs:
     env:
       chartPath: "charts/${{ inputs.camunda-helm-dir }}"
     steps:
-    - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
+    - uses: camunda/infra-global-github-actions/start-build-monitor@5251cf2838875fd6cab406a1ffa16af1355474a8 # main
     - name: ℹ️ Print workflow inputs ℹ️
       env:
         GITHUB_CONTEXT: ${{ toJson(inputs) }}
@@ -169,7 +169,7 @@ jobs:
     env:
       chartPath: "charts/${{ inputs.camunda-helm-dir }}"
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@5251cf2838875fd6cab406a1ffa16af1355474a8 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Setup deploy-camunda
         uses: ./.github/actions/setup-deploy-camunda

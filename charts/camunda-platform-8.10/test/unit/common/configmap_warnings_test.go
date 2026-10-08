@@ -17,6 +17,7 @@ package camunda
 import (
 	"camunda-platform/test/unit/testhelpers"
 	"fmt"
+	"io"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -26,6 +27,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/api/core/v1"
+	k8syaml "k8s.io/apimachinery/pkg/util/yaml"
 )
 
 type ConfigMapWarningsTemplateTest struct {
@@ -48,6 +50,154 @@ func TestConfigMapWarningsTemplate(t *testing.T) {
 		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
 		templates: []string{"templates/common/configmap-warnings.yaml"},
 	})
+}
+
+func (s *ConfigMapWarningsTemplateTest) TestUnresolvedAuthIssuer() {
+	const issuerWarning = "no shared authentication issuer or issuer backend URL resolves"
+	testCases := []testhelpers.TestCase{}
+	for _, scenario := range []struct {
+		name    string
+		values  map[string]string
+		args    []string
+		warn    bool
+		issuer  string
+		backend string
+	}{
+		{name: "MissingGenericProvider", warn: true},
+		{name: "MissingKeycloakProvider", values: map[string]string{"global.identity.auth.type": "KEYCLOAK"}, warn: true},
+		{name: "AuthDisabled", values: map[string]string{"global.identity.auth.enabled": "false"}},
+		{name: "ExplicitIssuer", values: map[string]string{"global.identity.auth.issuer": "https://issuer.example.com"}, issuer: "https://issuer.example.com"},
+		{name: "PublicIssuerFallback", values: map[string]string{"global.identity.auth.publicIssuerUrl": "https://issuer.example.com"}, issuer: "https://issuer.example.com"},
+		{name: "ExplicitBackend", values: map[string]string{"global.identity.auth.issuerBackendUrl": "https://issuer.example.com"}, backend: "https://issuer.example.com"},
+		{name: "ExplicitKeycloakBackendWithoutHost", values: map[string]string{"global.identity.auth.type": "KEYCLOAK", "global.identity.auth.issuerBackendUrl": "https://issuer.example.com"}, backend: "https://issuer.example.com"},
+		{
+			name: "KeycloakHostTemplateResolvesEmpty",
+			values: map[string]string{
+				"identity.enabled":                      "false",
+				"global.identity.auth.type":             "KEYCLOAK",
+				"global.identity.keycloak.url.protocol": "https",
+				"global.identity.keycloak.url.port":     "443",
+			},
+			args:    []string{"--set-json", `global.identity.keycloak.url.host="{{ print \"\" }}"`},
+			warn:    true,
+			backend: "https://:443/auth/realms/camunda-platform",
+		},
+		{
+			name: "TemplatedKeycloakHost",
+			values: map[string]string{
+				"identity.enabled":                      "false",
+				"global.identity.auth.type":             "KEYCLOAK",
+				"global.identity.keycloak.url.protocol": "https",
+				"global.identity.keycloak.url.port":     "443",
+			},
+			args:    []string{"--set-json", `global.identity.keycloak.url.host="{{ .Release.Name }}.example.com"`},
+			backend: "https://" + s.release + ".example.com:443/auth/realms/camunda-platform",
+		},
+		{
+			name: "ExternalKeycloak",
+			values: map[string]string{
+				"global.identity.auth.type":             "KEYCLOAK",
+				"global.identity.keycloak.url.protocol": "https",
+				"global.identity.keycloak.url.host":     "keycloak.example.com",
+				"global.identity.keycloak.url.port":     "443",
+			},
+			backend: "https://keycloak.example.com:443/auth/realms/camunda-platform",
+		},
+		{
+			name: "KeycloakURLWithoutProtocol",
+			values: map[string]string{
+				"identity.enabled":                  "false",
+				"global.identity.auth.type":         "KEYCLOAK",
+				"global.identity.keycloak.url.host": "keycloak.example.com",
+				"global.identity.keycloak.url.port": "443",
+			},
+			warn:    true,
+			backend: "://keycloak.example.com:443/auth/realms/camunda-platform",
+		},
+		{
+			name: "KeycloakURLWithoutPort",
+			values: map[string]string{
+				"identity.enabled":                      "false",
+				"global.identity.auth.type":             "KEYCLOAK",
+				"global.identity.keycloak.url.protocol": "https",
+				"global.identity.keycloak.url.host":     "keycloak.example.com",
+			},
+			warn:    true,
+			backend: "https://keycloak.example.com:/auth/realms/camunda-platform",
+		},
+		{
+			name: "GenericCannotUseKeycloakHost",
+			values: map[string]string{
+				"global.identity.keycloak.url.protocol": "https",
+				"global.identity.keycloak.url.host":     "keycloak.example.com",
+				"global.identity.keycloak.url.port":     "443",
+			},
+			warn: true,
+		},
+		{
+			name: "TemplatesResolveEmpty",
+			args: []string{"--set-json", `global.identity.auth.issuer="{{ print \"\" }}"`, "--set-json", `global.identity.auth.issuerBackendUrl="{{ print \"\" }}"`},
+			warn: true,
+		},
+		{
+			name:   "TemplatedIssuer",
+			args:   []string{"--set-json", `global.identity.auth.issuer="https://{{ .Release.Name }}.example.com"`},
+			issuer: "https://" + s.release + ".example.com",
+		},
+		{
+			name:    "TemplatedBackend",
+			args:    []string{"--set-json", `global.identity.auth.issuerBackendUrl="https://{{ .Release.Name }}.example.com"`},
+			backend: "https://" + s.release + ".example.com",
+		},
+	} {
+		values := map[string]string{
+			"identity.enabled":                         "true",
+			"optimize.enabled":                         "false",
+			"global.identity.auth.enabled":             "true",
+			"global.identity.auth.type":                "GENERIC",
+			"global.identity.auth.publicIssuerUrl":     "",
+			"orchestration.data.secondaryStorage.type": "elasticsearch",
+		}
+		for key, value := range scenario.values {
+			values[key] = value
+		}
+		testCases = append(testCases, testhelpers.TestCase{
+			Name:                    scenario.name,
+			Values:                  values,
+			RenderTemplateExtraArgs: scenario.args,
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				configMaps := map[string]corev1.ConfigMap{}
+				decoder := k8syaml.NewYAMLOrJSONDecoder(strings.NewReader(output), 4096)
+				for {
+					var resource corev1.ConfigMap
+					err := decoder.Decode(&resource)
+					if err == io.EOF {
+						break
+					}
+					s.Require().NoError(err)
+					if resource.Kind == "ConfigMap" {
+						configMaps[resource.Name] = resource
+					}
+				}
+				s.Require().Contains(configMaps, s.release+"-zeebe-configuration")
+				warnings := configMaps[s.release+"-warnings"].Data["warnings"]
+				s.Require().Equal(scenario.warn, strings.Contains(warnings, issuerWarning))
+				if scenario.warn {
+					s.Require().Contains(warnings, "global.identity.auth.issuer")
+					s.Require().Contains(warnings, "global.identity.auth.issuerBackendUrl")
+					s.Require().Contains(warnings, "global.identity.keycloak.url")
+				}
+				if values["global.identity.auth.enabled"] == "true" {
+					s.Require().Contains(configMaps, s.release+"-identity-env-vars")
+					identity := configMaps[s.release+"-identity-env-vars"]
+					s.Require().Equal(scenario.issuer, identity.Data["CAMUNDA_IDENTITY_ISSUER"])
+					s.Require().Equal(scenario.backend, identity.Data["CAMUNDA_IDENTITY_ISSUER_BACKEND_URL"])
+				}
+			},
+		})
+	}
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, nil, testCases)
 }
 
 func (s *ConfigMapWarningsTemplateTest) TestDifferentValuesInputs() {
@@ -392,6 +542,86 @@ func (s *ConfigMapWarningsTemplateTest) TestGlobalIdentityAuthConsoleDeprecation
 					"this key has no replacement")
 				s.Require().NotContains(configmap.Data["warnings"],
 					"global.identity.auth.camundaHub.webModeler.*")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *ConfigMapWarningsTemplateTest) TestWebModelerRestapiLegacyEnvOverrideWarning() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestLegacyPusherAndMailEnvOverridesTriggerUpgradeWarning",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":    "elasticsearch",
+				"webModeler.enabled":                          "true",
+				"webModeler.restapi.mail.fromAddress":         "example@example.com",
+				"identity.enabled":                            "true",
+				"webModeler.restapi.env[0].name":              "RESTAPI_PUSHER_APP_ID",
+				"webModeler.restapi.env[0].value":             "custom",
+				"webModeler.restapi.env[1].name":              "RESTAPI_PUSHER_KEY",
+				"webModeler.restapi.env[1].value":             "custom",
+				"webModeler.restapi.env[2].name":              "RESTAPI_PUSHER_SECRET",
+				"webModeler.restapi.env[2].value":             "custom",
+				"webModeler.restapi.env[3].name":              "RESTAPI_MAIL_PASSWORD",
+				"webModeler.restapi.env[3].value":             "custom",
+				"webModeler.restapi.mail.secret.inlineSecret": "smtp-password",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().True(strings.HasSuffix(configmap.Name, "-warnings"))
+				for oldName, newName := range map[string]string{
+					"RESTAPI_PUSHER_APP_ID": "CAMUNDA_HUB_PUSHER_APPID",
+					"RESTAPI_PUSHER_KEY":    "CAMUNDA_HUB_PUSHER_KEY",
+					"RESTAPI_PUSHER_SECRET": "CAMUNDA_HUB_PUSHER_SECRET",
+					"RESTAPI_MAIL_PASSWORD": "SPRING_MAIL_PASSWORD",
+				} {
+					s.Require().Contains(configmap.Data["warnings"], fmt.Sprintf(
+						"[camunda][warning] restapi.env sets %q, "+
+							"which is ignored because the chart now sets %q. "+
+							"Rename the override to %q, otherwise the chart-managed value is used instead of yours.",
+						oldName, newName, newName))
+				}
+			},
+		},
+		{
+			Name: "TestLegacyMailPasswordWithoutMailSecretIsOnlyDeprecated",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"webModeler.enabled":                       "true",
+				"webModeler.restapi.mail.fromAddress":      "example@example.com",
+				"identity.enabled":                         "true",
+				"webModeler.restapi.env[0].name":           "RESTAPI_MAIL_PASSWORD",
+				"webModeler.restapi.env[0].value":          "custom",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().Contains(configmap.Data["warnings"],
+					`[camunda][warning] restapi.env sets the deprecated "RESTAPI_MAIL_PASSWORD". Rename it to "SPRING_MAIL_PASSWORD"`)
+				s.Require().NotContains(configmap.Data["warnings"], "which is ignored because the chart now sets \"SPRING_MAIL_PASSWORD\"")
+			},
+		},
+		{
+			Name: "TestLegacyEnvOverrideUnderCamundaHubTriggersWarning",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"camundaHub.enabled":                       "true",
+				"camundaHub.restapi.mail.fromAddress":      "example@example.com",
+				"identity.enabled":                         "true",
+				"camundaHub.restapi.env[0].name":           "RESTAPI_PUSHER_KEY",
+				"camundaHub.restapi.env[0].value":          "custom",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().Contains(configmap.Data["warnings"],
+					`[camunda][warning] restapi.env sets "RESTAPI_PUSHER_KEY", which is ignored because the chart now sets "CAMUNDA_HUB_PUSHER_KEY".`)
 			},
 		},
 	}
@@ -803,7 +1033,7 @@ func (s *ConfigMapWarningsTemplateTest) TestFailureDomainContactPointsWarning() 
 			result["orchestration.partitioning.zones[1].priority"] = "50"
 			result["orchestration.partitioning.keepUnzonedBrokers"] = fmt.Sprint(keepUnzonedBrokers)
 		} else {
-			result["orchestration.partitioning.numberOfZones"] = "2"
+			result["orchestration.partitioning.numberOfZones"] = "3"
 			result["orchestration.partitioning.zoneIndex"] = "0"
 		}
 		if contactPointsSet {

@@ -48,6 +48,7 @@ var (
 	checkRepoRoot        string
 	checkChartVersions   string
 	checkE2ESuiteVersion string
+	checkRunnerImage     string
 	checkTTL             time.Duration
 )
 
@@ -60,6 +61,7 @@ func init() {
 	checkCmd.Flags().StringVar(&checkRepoRoot, "repo-root", ".", "Repository root directory")
 	checkCmd.Flags().StringVar(&checkChartVersions, "chart-versions", "", "Comma-separated chart versions the scenario deploys (e.g., 8.10,8.9) (required)")
 	checkCmd.Flags().StringVar(&checkE2ESuiteVersion, "e2e-test-suite-version", "", "@camunda/e2e-test-suite version the scenario runs (required)")
+	checkCmd.Flags().StringVar(&checkRunnerImage, "playwright-runner-image", "", "Digest-pinned Playwright runner image the scenario runs (required)")
 	checkCmd.Flags().DurationVar(&checkTTL, "ttl", cache.DefaultTTL, "Maximum age of cached results (e.g., 24h, 12h, 0 to disable)")
 
 	_ = checkCmd.MarkFlagRequired("sha")
@@ -69,10 +71,11 @@ func init() {
 	_ = checkCmd.MarkFlagRequired("platform")
 	_ = checkCmd.MarkFlagRequired("chart-versions")
 	_ = checkCmd.MarkFlagRequired("e2e-test-suite-version")
+	_ = checkCmd.MarkFlagRequired("playwright-runner-image")
 }
 
 func runCheck(cmd *cobra.Command, args []string) error {
-	contentHash, err := hash.Compute(checkRepoRoot, hash.ChartVersionsFromCSV(checkChartVersions), checkE2ESuiteVersion)
+	contentHash, err := hash.Compute(checkRepoRoot, hash.ChartVersionsFromCSV(checkChartVersions), checkE2ESuiteVersion, checkRunnerImage)
 	if err != nil {
 		return fmt.Errorf("computing content hash: %w", err)
 	}

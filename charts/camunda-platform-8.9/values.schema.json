@@ -219,6 +219,31 @@
                                 }
                             }
                         },
+                        "publicPorts": {
+                            "type": "object",
+                            "properties": {
+                                "http": {
+                                    "type": [
+                                        "integer",
+                                        "null"
+                                    ],
+                                    "description": "can be used to set the public port for Gateway endpoints with TLS disabled. Defaults to global.gateway.port. Port 80 is omitted from HTTP URLs.",
+                                    "default": null,
+                                    "minimum": 1,
+                                    "maximum": 65535
+                                },
+                                "https": {
+                                    "type": [
+                                        "integer",
+                                        "null"
+                                    ],
+                                    "description": "can be used to set the public port for Gateway endpoints with TLS enabled. Defaults to global.gateway.tls.port. Port 443 is omitted from HTTPS URLs.",
+                                    "default": null,
+                                    "minimum": 1,
+                                    "maximum": 65535
+                                }
+                            }
+                        },
                         "controllerNamespace": {
                             "type": "string",
                             "description": "can be used to set the namespace from which an external controller or operator creates Routes that route traffic to Camunda services. The chart places this value in the ReferenceGrant's from.namespace, which is the Kubernetes permission that authorizes those Routes to reach Camunda services. Leave empty (the default) when Routes are created by this chart.",
@@ -792,7 +817,7 @@
                             "properties": {
                                 "enabled": {
                                     "type": "boolean",
-                                    "description": "if true, enables authentication on Management Identity .",
+                                    "description": "if true, enables authentication on Management Identity. Warns if neither a shared issuer nor an issuer backend URL resolves.",
                                     "default": false
                                 },
                                 "issuer": {
@@ -2659,7 +2684,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be used to set the Docker image tag for the Console image",
-                            "default": "8.9.117"
+                            "default": "8.9.125"
                         },
                         "digest": {
                             "type": "string",
@@ -4319,7 +4344,7 @@
                         },
                         "deploymentStrategy": {
                             "type": "string",
-                            "description": "update strategy for the restapi Deployment. Defaults to RollingUpdate, which is always safe because the default chart-managed persistence path uses a per-pod ephemeral volume (no concurrent-attach contention). Set to \"Recreate\" only when using existingClaim with a ReadWriteOnce volume that cannot tolerate concurrent attach during a rollout (introduces brief downtime per upgrade).",
+                            "description": "can be used to set the restapi Deployment update strategy, RollingUpdate or Recreate. Recreate requires webModeler.persistence.enabled, else the render fails. Use Recreate only with webModeler.persistence.existingClaim on a ReadWriteOnce volume; it adds downtime on each upgrade.",
                             "default": "RollingUpdate",
                             "enum": [
                                 "RollingUpdate",
@@ -5453,7 +5478,7 @@
                                         },
                                         "usernameClaim": {
                                             "type": "string",
-                                            "description": "can be used to set username claim.",
+                                            "description": "can be used to set username claim. This value also sets the Web Modeler username claim, even when `orchestration.enabled` is false. To set a different Web Modeler claim, set `camunda.modeler.oauth2.token.username-claim` in `webModeler.restapi.extraConfiguration`.",
                                             "default": "preferred_username"
                                         },
                                         "preferUsernameClaim": {
@@ -5644,7 +5669,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.9.22"
+                            "default": "8.9.23"
                         },
                         "digest": {
                             "type": "string",
@@ -6932,7 +6957,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.9.22"
+                            "default": "8.9.23"
                         },
                         "digest": {
                             "type": "string",

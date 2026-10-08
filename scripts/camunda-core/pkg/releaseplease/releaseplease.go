@@ -77,7 +77,7 @@ func Compute(currentVersion string, stillAlpha bool, traceLog, chartDir, shortSH
 	// Stable release: scrape the next version from the release-please trace.
 	if !r.IsPrerelease && !r.Computed {
 		if v := ScrapeTraceVersion(traceLog, chartDir); v != "" {
-			r.ReleaseVersion = v
+			r.ReleaseVersion = keepMajor(currentVersion, v)
 			r.Computed = true
 		}
 	}
@@ -94,6 +94,28 @@ func Compute(currentVersion string, stillAlpha bool, traceLog, chartDir, shortSH
 		r.ChartMajor = r.ChartMajor[:i] // ${RELEASE_VERSION%%.*}
 	}
 	return r
+}
+
+func keepMajor(current, next string) string {
+	cur, okCur := majorMinor(current)
+	nxt, okNext := majorMinor(next)
+	if !okCur || !okNext || nxt[0] <= cur[0] {
+		return next
+	}
+	return fmt.Sprintf("%d.%d.0", cur[0], cur[1]+1)
+}
+
+func majorMinor(version string) ([2]int, bool) {
+	parts := strings.SplitN(version, ".", 3)
+	if len(parts) < 2 {
+		return [2]int{}, false
+	}
+	major, errMajor := strconv.Atoi(parts[0])
+	minor, errMinor := strconv.Atoi(parts[1])
+	if errMajor != nil || errMinor != nil {
+		return [2]int{}, false
+	}
+	return [2]int{major, minor}, true
 }
 
 // ReleaseTag returns the git tag that marks a published chart release:

@@ -155,19 +155,12 @@ Usage: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "o
 
 {{/*
 Return the version label for resources.
-If an image digest is specified without a tag, fall back to .Chart.AppVersion (e.g., "8.8.x"); otherwise use the resolved image tag.
 */}}
 {{- define "camundaPlatform.versionLabel" -}}
   {{- $imageTag := include "camundaPlatform.imageTagByParams" (dict "base" .base "overlay" .overlay) -}}
-  {{- $imageDigest := .overlay.image.digest | default .base.image.digest -}}
-  {{- if $imageDigest }}
-    {{- /* Using digest: fall back to application version for label */ -}}
-    {{- .chart.AppVersion -}}
-  {{- else if $imageTag }}
-    {{- /* Using tag: use the tag for the label */ -}}
+  {{- if and (le (len $imageTag) 63) (regexMatch "^[A-Za-z0-9]([-A-Za-z0-9_.]*[A-Za-z0-9])?$" $imageTag) -}}
     {{- $imageTag -}}
-  {{- else }}
-    {{- /* Neither tag nor digest provided: use appVersion as default */ -}}
+  {{- else -}}
     {{- .chart.AppVersion -}}
   {{- end -}}
 {{- end -}}
@@ -339,7 +332,8 @@ in front of the Ingress (OpenShift edge routes, external load balancers).
 {{- define "camundaPlatform.gatewayExternalURL" -}}
   {{- $tlsEnabled := .context.Values.global.gateway.tls.enabled -}}
   {{- $proto := ternary "https" "http" $tlsEnabled -}}
-  {{- $port := ternary .context.Values.global.gateway.tls.port .context.Values.global.gateway.port $tlsEnabled -}}
+  {{- $ports := .context.Values.global.gateway.publicPorts | default dict -}}
+  {{- $port := ternary ($ports.https | default .context.Values.global.gateway.tls.port) ($ports.http | default .context.Values.global.gateway.port) $tlsEnabled -}}
   {{- $defaultPort := ternary 443 80 $tlsEnabled -}}
   {{- $host := tpl .host .context -}}
   {{- if eq (int $port) $defaultPort -}}
@@ -1598,14 +1592,20 @@ Release templates.
 ********************************************************************************
 Generate the default WebModeler cluster config using the new components[] schema.
 Mirrors camundaPlatform.releaseInfo component gating but outputs the new format
-required by camunda.modeler.clusters (introduced in 8.10 Hub/WebModeler).
+required by camunda.hub.clusters (introduced in 8.10 Hub/WebModeler).
 ********************************************************************************
 */}}
 {{- define "camundaPlatform.defaultWebModelerCluster" -}}
 {{- if eq (include "camundaPlatform.identityEnabled" .) "true" }}
+{{- $identityVersion := include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.identity) }}
+{{- $managementClusterVersion := $identityVersion }}
+{{- /* NOTE: Hub rejects non-SemVer cluster versions such as pr-<sha>; those fall back to the chart's <major>.<minor>-SNAPSHOT. */ -}}
+{{- if not (regexMatch "^[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.-]+)?(\\+[0-9A-Za-z.-]+)?$" $identityVersion) }}
+  {{- $managementClusterVersion = printf "%s-SNAPSHOT" (regexFind "^[0-9]+\\.[0-9]+" .Chart.AppVersion) }}
+{{- end }}
 - id: "management-cluster"
   name: "Management Identity"
-  version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.identity) | quote }}
+  version: {{ $managementClusterVersion | quote }}
   authentication: {{ include "webModeler.authConfigValue" . | quote }}
   authorizations:
     enabled: false
@@ -1614,7 +1614,7 @@ required by camunda.modeler.clusters (introduced in 8.10 Hub/WebModeler).
   {{- $baseURLInternal := printf "%s://%s.%s:%v" $proto (include "identity.fullname" .) .Release.Namespace .Values.identity.service.metricsPort }}
   - name: Identity
     type: identity
-    version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.identity) | quote }}
+    version: {{ $identityVersion | quote }}
     urls:
       webapp: {{ include "camundaPlatform.identityExternalURL" . | quote }}
       readiness: {{ printf "%s%s" $baseURLInternal .Values.identity.readinessProbe.probePath | quote }}

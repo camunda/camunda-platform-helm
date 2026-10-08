@@ -1,7 +1,7 @@
 
 # Externalize Elasticsearch and Keycloak as shared CI infrastructure services
 
-- Status: accepted
+- Status: superseded by [ADR 0088](0088-remove-shared-argo-managed-elasticsearch-and-keycloak.md)
 - Date: 2025-11-13
 - Decision-makers: Eamonn Moloney
 

@@ -1,0 +1,19 @@
+# from-address migrated to restapi.extraConfiguration using the legacy camunda.modeler prefix;
+# Hub translates camunda.modeler.* to camunda.hub.*, so the chart must not require
+# webModeler.restapi.mail.fromAddress and helm install must not fail.
+identity:
+  enabled: true
+orchestration:
+  data:
+    secondaryStorage:
+      type: elasticsearch
+webModeler:
+  enabled: true
+  restapi:
+    extraConfiguration:
+      - file: mail.yaml
+        content: |
+          camunda:
+            modeler:
+              mail:
+                from-address: migrated@example.com

@@ -1121,7 +1121,7 @@ func (s *ConfigmapTemplateTest) TestLegacyExporterMultiRegionGate() {
 	}
 
 	elasticsearchValues := map[string]string{
-		"global.multiregion.regions":               "2",
+		"global.multiregion.regions":               "3",
 		"global.multiregion.regionId":              "0",
 		"orchestration.profiles.broker":            "true",
 		"orchestration.data.secondaryStorage.type": "elasticsearch",
@@ -1129,7 +1129,7 @@ func (s *ConfigmapTemplateTest) TestLegacyExporterMultiRegionGate() {
 		"optimize.database.elasticsearch.enabled":  "true",
 	}
 	openSearchValues := map[string]string{
-		"global.multiregion.regions":               "2",
+		"global.multiregion.regions":               "3",
 		"global.multiregion.regionId":              "0",
 		"orchestration.profiles.broker":            "true",
 		"orchestration.data.secondaryStorage.type": "opensearch",
@@ -1346,6 +1346,7 @@ func (s *ConfigmapTemplateTest) TestMultiRegionInitialContactPoints() {
 				"global.multiregion.regionId":   "0",
 				"orchestration.profiles.broker": "true",
 			},
+			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.clusterSize=4"},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
 				require.NotContains(t, output, "initial-contact-points:")
@@ -1660,6 +1661,7 @@ func (s *ConfigmapTemplateTest) TestNumberedModeConfigurationCompatibility() {
 				"global.multiregion.regionId":       "1",
 				"orchestration.profiles.broker":     "true",
 			},
+			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.clusterSize=4"},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
 				require.Contains(t, output, "${K8S_NAME##*-} * 2 + 1")
@@ -2105,7 +2107,7 @@ func (s *ConfigmapTemplateTest) TestRenamedRegionKeysAreRejectedWithoutSchemaVal
 		},
 		{
 			Name:                    "TestDeprecatedGlobalBlockKeepsItsSpelling",
-			RenderTemplateExtraArgs: []string{"--skip-schema-validation"},
+			RenderTemplateExtraArgs: []string{"--skip-schema-validation", "--set-string", "orchestration.clusterSize=4"},
 			Values: map[string]string{
 				"global.multiregion.regions":    "2",
 				"global.multiregion.regionId":   "1",
@@ -2209,12 +2211,35 @@ func (s *ConfigmapTemplateTest) TestRoundRobinRejectsInconsistentNumbering() {
 			},
 		},
 		{
+			Name: "TestRoundRobinRejectsAClusterSizeTheZonesDoNotDivide",
+			Values: map[string]string{
+				"orchestration.partitioning.numberOfZones": "2",
+				"orchestration.partitioning.zoneIndex":     "0",
+				"orchestration.profiles.broker":            "true",
+			},
+			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.clusterSize=5"},
+			Expected: map[string]string{
+				"ERROR": "orchestration.clusterSize is 5 but orchestration.partitioning.numberOfZones is 2, so the zones deploy 4 brokers while every broker expects 5",
+			},
+		},
+		{
+			Name: "TestDeprecatedClusterSizeIsGuardedUnderItsOwnKey",
+			Values: map[string]string{
+				"global.multiregion.regions":    "2",
+				"orchestration.profiles.broker": "true",
+			},
+			Expected: map[string]string{
+				"ERROR": "orchestration.clusterSize is 3 but global.multiregion.regions is 2, so the zones deploy 2 brokers while every broker expects 3",
+			},
+		},
+		{
 			Name: "TestRoundRobinAcceptsTheLastRegion",
 			Values: map[string]string{
 				"orchestration.partitioning.numberOfZones": "2",
 				"orchestration.partitioning.zoneIndex":     "1",
 				"orchestration.profiles.broker":            "true",
 			},
+			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.clusterSize=4"},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
 				require.Contains(t, output, "* 2 + 1]")

@@ -246,92 +246,38 @@ func TestRunPrepareValues_LegacyWithPlaceholders(t *testing.T) {
 	}
 }
 
-func TestRunPrepareValues_ImageTagsAutoEnabled(t *testing.T) {
-	scenarioDir := t.TempDir()
-	outputDir := t.TempDir()
-
-	writeTempFile(t, scenarioDir, "values/base.yaml", `global:
-  image:
-    tag: "default"
-`)
-	writeTempFile(t, scenarioDir, "values/base-image-tags.yaml", `orchestration:
-  image:
-    tag: "$E2E_TESTS_ORCHESTRATION_IMAGE_TAG"
-`)
-	writeTempFile(t, scenarioDir, "values/identity/keycloak.yaml", "# test\n")
-	writeTempFile(t, scenarioDir, "values/persistence/elasticsearch.yaml", "# test\n")
-	writeTempFile(t, scenarioDir, "values/platform/gke.yaml", "# test\n")
-	if err := os.MkdirAll(filepath.Join(scenarioDir, "values", "features"), 0o755); err != nil {
-		t.Fatal(err)
-	}
-
-	pv := &prepareValuesFlags{
-		scenarioPath: scenarioDir,
-		scenario:     "qa-elasticsearch",
-		identity:     "keycloak",
-		persistence:  "elasticsearch",
-		platform:     "gke",
-		imageTags:    false,
-		valuesConfig: `{"E2E_TESTS_ORCHESTRATION_IMAGE_TAG": "8.8.0-auto"}`,
-		outputDir:    outputDir,
-		logLevel:     "error",
-	}
-
-	stdout, err := captureStdout(t, func() error { return runPrepareValues(pv) })
-	if err != nil {
-		t.Fatalf("runPrepareValues (image tags auto) failed: %v", err)
-	}
-
-	data, readErr := os.ReadFile(stdout)
-	if readErr != nil {
-		t.Fatalf("failed to read output: %v", readErr)
-	}
-	if !strings.Contains(string(data), "8.8.0-auto") {
-		t.Errorf("image tag not substituted (auto-detection failed), got:\n%s", string(data))
-	}
-}
-
-func TestRunPrepareValues_ImageTagsNotAutoEnabledWithoutTagKeys(t *testing.T) {
-	scenarioDir := t.TempDir()
-	outputDir := t.TempDir()
-
-	writeTempFile(t, scenarioDir, "values/base.yaml", `global:
-  image:
-    tag: "default"
-`)
-	writeTempFile(t, scenarioDir, "values/base-image-tags.yaml", `orchestration:
-  image:
-    tag: "$E2E_TESTS_ORCHESTRATION_IMAGE_TAG"
-`)
-	writeTempFile(t, scenarioDir, "values/identity/keycloak.yaml", "# test\n")
-	writeTempFile(t, scenarioDir, "values/persistence/elasticsearch.yaml", "# test\n")
-	writeTempFile(t, scenarioDir, "values/platform/gke.yaml", "# test\n")
-	if err := os.MkdirAll(filepath.Join(scenarioDir, "values", "features"), 0o755); err != nil {
-		t.Fatal(err)
-	}
-
-	pv := &prepareValuesFlags{
-		scenarioPath: scenarioDir,
-		scenario:     "qa-elasticsearch",
-		identity:     "keycloak",
-		persistence:  "elasticsearch",
-		platform:     "gke",
-		imageTags:    false,
-		valuesConfig: `{"E2E_TESTS_SEARCH_ENGINE": "opensearch"}`,
-		outputDir:    outputDir,
-		logLevel:     "error",
-	}
-
-	stdout, err := captureStdout(t, func() error { return runPrepareValues(pv) })
-	if err != nil {
-		t.Fatalf("runPrepareValues (no auto image tags) failed: %v", err)
-	}
-
-	data, readErr := os.ReadFile(stdout)
-	if readErr != nil {
-		t.Fatalf("failed to read output: %v", readErr)
-	}
-	if strings.Contains(string(data), "E2E_TESTS_ORCHESTRATION_IMAGE_TAG") || strings.Contains(string(data), "orchestration") {
-		t.Errorf("image tags layer should not be included, got:\n%s", string(data))
+func TestRunPrepareValues_ImageTagsOnlyWhenRequested(t *testing.T) {
+	for _, imageTags := range []bool{true, false} {
+		scenarioDir := t.TempDir()
+		writeTempFile(t, scenarioDir, "values/base.yaml", "global: {image: {tag: default}}\n")
+		writeTempFile(t, scenarioDir, "values/base-image-tags.yaml", "orchestration: {image: {tag: \"$E2E_TESTS_ORCHESTRATION_IMAGE_TAG\"}}\n")
+		writeTempFile(t, scenarioDir, "values/identity/keycloak.yaml", "# test\n")
+		writeTempFile(t, scenarioDir, "values/persistence/elasticsearch.yaml", "# test\n")
+		writeTempFile(t, scenarioDir, "values/platform/gke.yaml", "# test\n")
+		if err := os.MkdirAll(filepath.Join(scenarioDir, "values", "features"), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		pv := &prepareValuesFlags{
+			scenarioPath: scenarioDir,
+			scenario:     "qa-elasticsearch",
+			identity:     "keycloak",
+			persistence:  "elasticsearch",
+			platform:     "gke",
+			imageTags:    imageTags,
+			valuesConfig: `{"E2E_TESTS_ORCHESTRATION_IMAGE_TAG": "8.8.0-auto"}`,
+			outputDir:    t.TempDir(),
+			logLevel:     "error",
+		}
+		stdout, err := captureStdout(t, func() error { return runPrepareValues(pv) })
+		if err != nil {
+			t.Fatalf("runPrepareValues(--image-tags=%v) failed: %v", imageTags, err)
+		}
+		data, err := os.ReadFile(stdout)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if strings.Contains(string(data), "8.8.0-auto") != imageTags {
+			t.Errorf("--image-tags=%v: unexpected image tag substitution, got:\n%s", imageTags, data)
+		}
 	}
 }

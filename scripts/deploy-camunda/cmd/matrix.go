@@ -19,6 +19,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -195,19 +196,19 @@ This command does not require cluster access.`,
 				changedFlags[f.Name] = true
 			})
 
-			// Load config file and merge matrix/root config into local flags.
-			if rc, err := config.LoadMatrixConfig(configFile); err == nil {
-				config.ApplyMatrixListConfig(rc, changedFlags, &config.MatrixListFlags{
-					Versions:        &versions,
-					IncludeDisabled: &includeDisabled,
-					ScenarioFilter:  &scenarioFilter,
-					ShortnameFilter: &shortnameFilter,
-					FlowFilter:      &flowFilter,
-					OutputFormat:    &outputFormat,
-					Platform:        &platform,
-					RepoRoot:        &repoRoot,
-				})
+			rc, err := config.LoadMatrixConfig(configFile)
+			if err != nil {
+				return err
 			}
+			infra := rc.ResolveInfra(true, "", "", matrixCLIInfra(cmd.Flags()))
+			platform, repoRoot = infra.Platform, infra.RepoRoot
+			m := rc.Matrix
+			config.MergeStringSliceField(&versions, m.Versions, nil)
+			config.MergeBoolField(&includeDisabled, m.IncludeDisabled, nil, changedFlags, "include-disabled")
+			config.MergeStringField(&scenarioFilter, m.ScenarioFilter, "", changedFlags, "scenario-filter")
+			config.MergeStringField(&shortnameFilter, m.ShortnameFilter, "", changedFlags, "shortname-filter")
+			config.MergeStringField(&flowFilter, m.FlowFilter, "", changedFlags, "flow-filter")
+			config.MergeStringField(&outputFormat, m.OutputFormat, "", changedFlags, "format")
 
 			if repoRoot == "" {
 				detected, err := config.DetectRepoRoot()
@@ -323,6 +324,8 @@ func newMatrixRunCommand() *cobra.Command {
 		extraHelmArgs            []string
 		extraHelmSets            []string
 		extraValues              []string
+		imageOverrides           []string
+		allowDigestShadow        bool
 		namespaceOverride        string
 		namespacePrepared        bool
 		shortnameExact           bool
@@ -406,106 +409,38 @@ Under the hood this invokes deploy.Execute() for each matrix entry.`,
 				changedFlags[f.Name] = true
 			})
 
-			// Build per-platform/per-version maps from CLI flags BEFORE config
-			// merging, so that CLI-provided map entries take precedence.
-			kubeContexts := make(map[string]string)
-			if kubeContextGKE != "" {
-				kubeContexts["gke"] = kubeContextGKE
+			rc, err := config.LoadMatrixConfig(configFile)
+			if err != nil {
+				return err
 			}
-			if kubeContextEKS != "" {
-				kubeContexts["eks"] = kubeContextEKS
-			}
-
-			envFiles := make(map[string]string)
-			for version, path := range map[string]string{
-				"8.6": envFile86,
-				"8.7": envFile87,
-				"8.8": envFile88,
-				"8.9": envFile89,
-			} {
-				if path != "" {
-					envFiles[version] = path
+			cliInfra := matrixCLIInfra(cmd.Flags())
+			infra := rc.ResolveInfra(true, "", "", cliInfra)
+			platform, repoRoot, envFile, ingressBaseDomain = infra.Platform, infra.RepoRoot, infra.EnvFile, infra.IngressBaseDomain
+			namespacePrefix, logLevel = config.FirstNonEmpty(infra.NamespacePrefix, namespacePrefix), config.FirstNonEmpty(infra.LogLevel, logLevel)
+			dockerUsername, dockerPassword = infra.DockerUsername, infra.DockerPassword
+			dockerHubUsername, dockerHubPassword = infra.DockerHubUsername, infra.DockerHubPassword
+			for target, value := range map[*bool]*bool{&skipDependencyUpdate: infra.SkipDependencyUpdate, &deleteNamespace: infra.DeleteNamespace, &ensureDockerRegistry: infra.EnsureDockerRegistry, &ensureDockerHub: infra.EnsureDockerHub} {
+				if value != nil {
+					*target = *value
 				}
 			}
-
-			vaultBackedSecrets := make(map[string]bool)
-			if cmd.Flags().Changed("use-vault-backed-secrets-gke") {
-				vaultBackedSecrets["gke"] = useVaultBackedSecretsGKE
-			}
-			if cmd.Flags().Changed("use-vault-backed-secrets-eks") {
-				vaultBackedSecrets["eks"] = useVaultBackedSecretsEKS
-			}
-
-			ingressBaseDomains := make(map[string]string)
-			if ingressBaseDomainGKE != "" {
-				ingressBaseDomains["gke"] = ingressBaseDomainGKE
-			}
-			if ingressBaseDomainEKS != "" {
-				ingressBaseDomains["eks"] = ingressBaseDomainEKS
-			}
-
-			// Load config file and merge matrix/root config into local flags.
-			// Config values fill in anything not explicitly set on the CLI.
-			if rc, err := config.LoadMatrixConfig(configFile); err == nil {
-				config.ApplyMatrixRunConfig(rc, changedFlags, &config.MatrixRunFlags{
-					// Filtering & generation
-					Versions:        &versions,
-					IncludeDisabled: &includeDisabled,
-					ScenarioFilter:  &scenarioFilter,
-					ShortnameFilter: &shortnameFilter,
-					FlowFilter:      &flowFilter,
-					Platform:        &platform,
-					RepoRoot:        &repoRoot,
-					// Execution
-					DryRun:               &dryRun,
-					Coverage:             &coverage,
-					StopOnFailure:        &stopOnFailure,
-					Cleanup:              &cleanup,
-					DeleteNamespace:      &deleteNamespace,
-					NamespacePrefix:      &namespacePrefix,
-					MaxParallel:          &maxParallel,
-					LogLevel:             &logLevel,
-					SkipDependencyUpdate: &skipDependencyUpdate,
-					HelmTimeout:          &helmTimeout,
-					// Tests
-					TestE2E: &testE2E,
-					TestAll: &testAll,
-					// Kube contexts
-					KubeContext:    &kubeContext,
-					KubeContextGKE: &kubeContextGKE,
-					KubeContextEKS: &kubeContextEKS,
-					KubeContexts:   kubeContexts,
-					// Ingress
-					IngressBaseDomain:    &ingressBaseDomain,
-					IngressBaseDomainGKE: &ingressBaseDomainGKE,
-					IngressBaseDomainEKS: &ingressBaseDomainEKS,
-					IngressBaseDomains:   ingressBaseDomains,
-					// Vault
-					UseVaultBackedSecrets:    &useVaultBackedSecrets,
-					UseVaultBackedSecretsGKE: &useVaultBackedSecretsGKE,
-					UseVaultBackedSecretsEKS: &useVaultBackedSecretsEKS,
-					VaultBackedSecrets:       vaultBackedSecrets,
-					// Env files
-					EnvFile:   &envFile,
-					EnvFile86: &envFile86,
-					EnvFile87: &envFile87,
-					EnvFile88: &envFile88,
-					EnvFile89: &envFile89,
-					EnvFiles:  envFiles,
-					// Docker
-					DockerUsername:       &dockerUsername,
-					DockerPassword:       &dockerPassword,
-					EnsureDockerRegistry: &ensureDockerRegistry,
-					DockerHubUsername:    &dockerHubUsername,
-					DockerHubPassword:    &dockerHubPassword,
-					EnsureDockerHub:      &ensureDockerHub,
-					// Keycloak
-					KeycloakHost:     &keycloakHost,
-					KeycloakProtocol: &keycloakProtocol,
-					// Upgrade
-					UpgradeFromVersion: &upgradeFromVersion,
-				})
-			}
+			m := rc.Matrix
+			config.MergeStringSliceField(&versions, m.Versions, nil)
+			config.MergeBoolField(&includeDisabled, m.IncludeDisabled, nil, changedFlags, "include-disabled")
+			config.MergeStringField(&scenarioFilter, m.ScenarioFilter, "", changedFlags, "scenario-filter")
+			config.MergeStringField(&shortnameFilter, m.ShortnameFilter, "", changedFlags, "shortname-filter")
+			config.MergeStringField(&flowFilter, m.FlowFilter, "", changedFlags, "flow-filter")
+			config.MergeIntField(&maxParallel, m.MaxParallel, nil, changedFlags, "max-parallel")
+			config.MergeBoolField(&stopOnFailure, m.StopOnFailure, nil, changedFlags, "stop-on-failure")
+			config.MergeBoolField(&cleanup, m.Cleanup, nil, changedFlags, "cleanup")
+			config.MergeBoolField(&dryRun, m.DryRun, nil, changedFlags, "dry-run")
+			config.MergeBoolField(&coverage, m.Coverage, nil, changedFlags, "coverage")
+			config.MergeIntField(&helmTimeout, m.HelmTimeout, nil, changedFlags, "timeout")
+			config.MergeBoolField(&testE2E, m.TestE2E, nil, changedFlags, "test-e2e")
+			config.MergeBoolField(&testAll, m.TestAll, nil, changedFlags, "test-all")
+			config.MergeStringField(&keycloakHost, m.KeycloakHost, rc.Keycloak.Host, changedFlags, "keycloak-host")
+			config.MergeStringField(&keycloakProtocol, m.KeycloakProtocol, rc.Keycloak.Protocol, changedFlags, "keycloak-protocol")
+			config.MergeStringField(&upgradeFromVersion, m.UpgradeFromVersion, "", changedFlags, "upgrade-from-version")
 
 			// Setup logging (after config merge so log-level from config takes effect)
 			if err := logging.Setup(logging.Options{
@@ -514,6 +449,7 @@ Under the hood this invokes deploy.Execute() for each matrix entry.`,
 			}); err != nil {
 				return err
 			}
+			warnDeprecatedInfra(rc)
 
 			// Load .env file — use flag/config value if set, otherwise default to .env.
 			envFileToLoad := envFile
@@ -611,7 +547,11 @@ Under the hood this invokes deploy.Execute() for each matrix entry.`,
 			entries = singleEntries
 			dockerFlags := config.DockerFlags{DockerUsername: dockerUsername, DockerPassword: dockerPassword, EnsureDockerRegistry: ensureDockerRegistry || len(topologyEntries) > 0, DockerHubUsername: dockerHubUsername, DockerHubPassword: dockerHubPassword, EnsureDockerHub: ensureDockerHub}
 			allEntries := append(append([]matrix.Entry{}, entries...), topologyEntries...)
-			if err := resolveRegistryCredentialsFromEnvFiles(&dockerFlags, allEntries, envFiles, envFile); err != nil {
+			envFiles := make(map[string]string)
+			for _, e := range allEntries {
+				envFiles[e.Version] = rc.ResolveInfra(true, "", e.Version, cliInfra).EnvFile
+			}
+			if err := resolveRegistryCredentialsFromEnvFiles(&dockerFlags, allEntries, envFiles); err != nil {
 				return err
 			}
 			dockerUsername, dockerPassword, dockerHubUsername, dockerHubPassword = dockerFlags.DockerUsername, dockerFlags.DockerPassword, dockerFlags.DockerHubUsername, dockerFlags.DockerHubPassword
@@ -651,22 +591,16 @@ Under the hood this invokes deploy.Execute() for each matrix entry.`,
 						StopOnFailure:              stopOnFailure,
 						Cleanup:                    cleanup,
 						DeleteNamespaceFirst:       deleteNamespace,
-						KubeContexts:               kubeContexts,
-						KubeContext:                kubeContext,
+						Config:                     rc,
+						Infra:                      cliInfra,
 						NamespacePrefix:            namespacePrefix,
 						Platform:                   platform,
 						MaxParallel:                maxParallel,
 						TestE2E:                    testE2E,
 						TestAll:                    testAll,
 						RepoRoot:                   repoRoot,
-						EnvFiles:                   envFiles,
-						EnvFile:                    envFile,
-						IngressBaseDomains:         ingressBaseDomains,
-						IngressBaseDomain:          ingressBaseDomain,
 						LogLevel:                   logLevel,
 						SkipDependencyUpdate:       skipDependencyUpdate,
-						VaultBackedSecrets:         vaultBackedSecrets,
-						UseVaultBackedSecrets:      useVaultBackedSecrets,
 						KeycloakHost:               keycloakHost,
 						KeycloakProtocol:           keycloakProtocol,
 						UpgradeFromVersion:         upgradeFromVersion,
@@ -683,6 +617,8 @@ Under the hood this invokes deploy.Execute() for each matrix entry.`,
 						ExtraHelmArgs:              extraHelmArgs,
 						ExtraHelmSets:              extraHelmSets,
 						ExtraValues:                extraValues,
+						ImageOverrides:             imageOverrides,
+						AllowDigestShadow:          allowDigestShadow,
 						NamespaceOverride:          namespaceOverride,
 						ChartRef:                   chartRef,
 						ChartRefVersion:            chartRefVersion,
@@ -796,22 +732,16 @@ Under the hood this invokes deploy.Execute() for each matrix entry.`,
 				StopOnFailure:              stopOnFailure,
 				Cleanup:                    cleanup,
 				DeleteNamespaceFirst:       deleteNamespace,
-				KubeContexts:               kubeContexts,
-				KubeContext:                kubeContext,
+				Config:                     rc,
+				Infra:                      cliInfra,
 				NamespacePrefix:            namespacePrefix,
 				Platform:                   platform,
 				MaxParallel:                maxParallel,
 				TestE2E:                    testE2E,
 				TestAll:                    testAll,
 				RepoRoot:                   repoRoot,
-				EnvFiles:                   envFiles,
-				EnvFile:                    envFile,
-				IngressBaseDomains:         ingressBaseDomains,
-				IngressBaseDomain:          ingressBaseDomain,
 				LogLevel:                   logLevel,
 				SkipDependencyUpdate:       skipDependencyUpdate,
-				VaultBackedSecrets:         vaultBackedSecrets,
-				UseVaultBackedSecrets:      useVaultBackedSecrets,
 				KeycloakHost:               keycloakHost,
 				KeycloakProtocol:           keycloakProtocol,
 				UpgradeFromVersion:         upgradeFromVersion,
@@ -830,6 +760,8 @@ Under the hood this invokes deploy.Execute() for each matrix entry.`,
 				ExtraHelmArgs:              extraHelmArgs,
 				ExtraHelmSets:              extraHelmSets,
 				ExtraValues:                extraValues,
+				ImageOverrides:             imageOverrides,
+				AllowDigestShadow:          allowDigestShadow,
 				NamespaceOverride:          namespaceOverride,
 				ChartRef:                   chartRef,
 				ChartRefVersion:            chartRefVersion,
@@ -928,12 +860,14 @@ Under the hood this invokes deploy.Execute() for each matrix entry.`,
 	f.BoolVar(&ensureDockerHub, "ensure-docker-hub", false, "Ensure Docker Hub registry pull secret is created in each entry's namespace")
 	f.BoolVar(&useLatest, "use-latest", false, "Use values-latest.yaml from each chart root instead of values-digest.yaml")
 	f.BoolVar(&useQA, "use-qa", false, "Force the base-qa layer to be included for all entries, regardless of per-scenario qa config")
-	f.BoolVar(&forceImageOverrides, "force-image-overrides", false, "Bypass OCI immutability guard: allow chart-root image overlays when --chart-ref is set (env-file IMAGE_TAG keys stripped at the workflow layer are not restored).")
+	f.BoolVar(&forceImageOverrides, "force-image-overrides", false, "Bypass OCI immutability guard: apply chart-root image overlays and scenario image-tags on top of --chart-ref.")
 	f.BoolVarP(&yes, "yes", "y", false, "Skip confirmation prompts (e.g., e2e threshold warning)")
 	f.StringVar(&logDir, "log-dir", "", "Write logs to this directory and show a live status table (auto-generated when running in a TTY)")
 	f.StringArrayVar(&extraHelmArgs, "extra-helm-arg", nil, "Extra argument appended to every helm command (repeatable, e.g. --extra-helm-arg=--set-file=global.license.secret.inlineSecret=/tmp/license.txt)")
 	f.StringSliceVar(&extraHelmSets, "extra-helm-set", nil, "Extra helm --set key=value pair applied to every entry (comma-separated or repeatable, e.g. orchestration.upgrade.allowPreReleaseImages=true)")
-	f.StringArrayVar(&extraValues, "extra-values", nil, "Additional Helm values files appended last for every entry (repeatable; not comma-split — use the flag multiple times for multiple files). Engages digest-overlay strip; prefer over --extra-helm-arg=--values=. In two-step upgrade flows, applied to Step 2 only.")
+	f.StringArrayVar(&extraValues, "extra-values", nil, "Additional Helm values files appended last for every entry (repeatable; not comma-split — use the flag multiple times for multiple files). Ranked by the image resolver; prefer over --extra-helm-arg=--values=. In two-step upgrade flows, applied to Step 2 only.")
+	f.StringArrayVar(&imageOverrides, "image-override", nil, "Pin one component's image above every values file for every entry (repeatable), e.g. orchestration=registry.camunda.cloud/team-camunda/camunda:8.10.0-SNAPSHOT. In two-step upgrade flows, applied to Step 2 only.")
+	f.BoolVar(&allowDigestShadow, "allow-digest-shadow", false, "Keep a pinned digest when a later values file changes only the image registry/repository (e.g. a pull-through mirror)")
 	f.StringVar(&namespaceOverride, "namespace-override", "", "Deploy into one exact namespace that CI or another external process already provisioned. Disables automatic ExternalSecrets; local runs should use --namespace-prefix.")
 	f.BoolVar(&namespacePrepared, "namespace-prepared", false, "Confirm the exact namespace selected by --namespace-override already has required secrets, TLS, and pull secrets.")
 	f.StringVar(&chartRef, "chart-ref", "", "Override chart source with an OCI reference or .tgz path (e.g., oci://registry.camunda.cloud/team-distribution/camunda-platform). Values are still resolved from the local repo via --repo-root.")
@@ -1046,11 +980,9 @@ func resolveRepoRoot(flagValue string) string {
 		return flagValue
 	}
 
-	// Try to resolve from config file
-	var tempFlags config.RuntimeFlags
-	if _, _, err := config.LoadAndMerge(configFile, false, &tempFlags); err == nil {
-		if tempFlags.Chart.RepoRoot != "" {
-			return tempFlags.Chart.RepoRoot
+	if rc, err := config.LoadMatrixConfig(configFile); err == nil {
+		if repoRoot := rc.ResolveInfra(true, "", "", config.InfraOverride{}).RepoRoot; repoRoot != "" {
+			return repoRoot
 		}
 	}
 
@@ -1061,6 +993,59 @@ func resolveRepoRoot(flagValue string) string {
 	}
 
 	return ""
+}
+
+// matrixCLIInfra collects the infra flags set on the command line.
+func matrixCLIInfra(flags *pflag.FlagSet) config.InfraOverride {
+	text := func(name string) string {
+		if !flags.Changed(name) {
+			return ""
+		}
+		value, _ := flags.GetString(name)
+		return value
+	}
+	toggle := func(name string) *bool {
+		if !flags.Changed(name) {
+			return nil
+		}
+		value, _ := flags.GetBool(name)
+		return &value
+	}
+	scalars := func(text func(string) string) config.InfraConfig {
+		return config.InfraConfig{
+			Platform: text("platform"), RepoRoot: text("repo-root"), NamespacePrefix: text("namespace-prefix"), LogLevel: text("log-level"),
+			EnvFile: text("env-file"), IngressBaseDomain: text("ingress-base-domain"), KubeContext: text("kube-context"),
+			DockerUsername: text("docker-username"), DockerPassword: text("docker-password"),
+			DockerHubUsername: text("dockerhub-username"), DockerHubPassword: text("dockerhub-password"),
+			SkipDependencyUpdate: toggle("skip-dependency-update"), DeleteNamespace: toggle("delete-namespace"),
+			EnsureDockerRegistry: toggle("ensure-docker-registry"), EnsureDockerHub: toggle("ensure-docker-hub"),
+			UseVaultBackedSecrets: toggle("use-vault-backed-secrets"),
+		}
+	}
+	cli := config.InfraOverride{InfraConfig: scalars(text), Given: scalars(func(name string) string {
+		if !flags.Changed(name) {
+			return ""
+		}
+		return name
+	})}
+	cli.KubeContexts = map[string]string{"gke": text("kube-context-gke"), "eks": text("kube-context-eks")}
+	cli.IngressBaseDomains = map[string]string{"gke": text("ingress-base-domain-gke"), "eks": text("ingress-base-domain-eks")}
+	cli.EnvFiles = map[string]string{"8.6": text("env-file-8.6"), "8.7": text("env-file-8.7"), "8.8": text("env-file-8.8"), "8.9": text("env-file-8.9")}
+	cli.VaultBackedSecrets = map[string]bool{}
+	for _, platform := range []string{"gke", "eks"} {
+		if enabled := toggle("use-vault-backed-secrets-" + platform); enabled != nil {
+			cli.VaultBackedSecrets[platform] = *enabled
+		}
+	}
+	return cli
+}
+
+// warnDeprecatedInfra logs the root and matrix: infra keys the config file sets.
+func warnDeprecatedInfra(rc *config.RootConfig) {
+	if len(rc.DeprecatedInfra) > 0 {
+		logging.Logger.Warn().Strs("keys", rc.DeprecatedInfra).Str("config", rc.FilePath).
+			Msg("Root and matrix: platform, repoRoot, kubeContext, ingressBaseDomain and envFile are deprecated; set them in a deployments.<name> profile, the matrix: per-platform maps, or flags")
+	}
 }
 
 // validateChartRefFlags rejects inconsistent --chart-ref / --chart-version
@@ -1340,6 +1325,8 @@ func extractHelmSetValue(pairs []string, key string) string {
 	return value
 }
 
+var prepareScenarioFn = deploy.PrepareScenario
+
 // preparedTopologyRelease pairs a topology release with the flags and prepared scenario built for
 // it, so the deploy loop and the topology-level post-deploy hook can both address it.
 type preparedTopologyRelease struct {
@@ -1347,7 +1334,6 @@ type preparedTopologyRelease struct {
 	flags     *config.RuntimeFlags
 	namespace string
 	prepared  *deploy.PreparedScenario
-	cleanup   func()
 }
 
 // topologyChartPaths returns the distinct local chart directories the topology's
@@ -1389,7 +1375,7 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 		return fmt.Errorf("topology entry %s/%s: --chart-ref is not supported on the multi-namespace topology path yet (applyChartRefOverride runs only in executeEntry); tracked in #6656", entry.Version, entry.Scenario)
 	}
 	if opts.Cleanup {
-		return fmt.Errorf("topology entry %s/%s: --cleanup is not supported on the multi-namespace topology path yet (no per-release namespace teardown; the loop's cleanup() is BuildEntryFlags' temp-file cleanup); tracked in #6656", entry.Version, entry.Scenario)
+		return fmt.Errorf("topology entry %s/%s: --cleanup is not supported on the multi-namespace topology path yet (no per-release namespace teardown); tracked in #6656", entry.Version, entry.Scenario)
 	}
 
 	releases := make([]deploy.TopologyRelease, 0, len(entry.Topology.Releases))
@@ -1443,7 +1429,9 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 	// orchestration release itself exposes (orchestration.serviceName in
 	// templates/orchestration/_helpers.tpl), on the gRPC (26500) and REST
 	// (8080) ports from orchestration.service.{grpcPort,httpPort}.
-	addTopologyIngressHosts(crossRefEnv, opts, platform, contexts[hubIdx], entry.Topology.Releases, contexts)
+	if err := addTopologyIngressHosts(crossRefEnv, opts, platform, contexts[hubIdx], entry.Topology.Releases, contexts); err != nil {
+		return fmt.Errorf("topology entry %s/%s: %w", entry.Version, entry.Scenario, err)
+	}
 	for _, i := range orchestrationIndices {
 		token := matrix.TopologyEnvToken(entry.Topology.Releases[i].NamespaceSuffix)
 		crossRefEnv[token+"_NAMESPACE"] = contexts[i].Namespace
@@ -1475,10 +1463,10 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 	}
 
 	preparedReleases := make([]preparedTopologyRelease, 0, len(order))
+	var releaseErrs []error
 	defer func() {
 		for _, release := range preparedReleases {
 			release.prepared.Cleanup()
-			release.cleanup()
 		}
 	}()
 
@@ -1493,34 +1481,38 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 			releaseOpts.ExtraHelmSets = append(releaseOpts.ExtraHelmSets, "global.host="+releaseHost)
 		}
 
-		flags, namespace, _, _, cleanup, buildErr := matrix.BuildEntryFlags(releaseEntry, releaseOpts)
+		flags, namespace, _, _, buildErr := matrix.BuildEntryFlags(releaseEntry, releaseOpts)
 		if buildErr != nil {
-			cleanup()
-			return fmt.Errorf("topology release %s/%s (namespace-suffix %q): build flags: %w", entry.Scenario, rel.Role, rel.NamespaceSuffix, buildErr)
+			releaseErrs = append(releaseErrs, fmt.Errorf("topology release %s/%s (namespace-suffix %q): build flags: %w", entry.Scenario, rel.Role, rel.NamespaceSuffix, buildErr))
+			continue
 		}
 
 		applyTopologyReleaseOverrides(flags, buildTopologyReleaseEnv(crossRefEnv, rel))
 		applyTopologyReleaseHostname(flags, releaseHost)
 		removeManifest, err := applyTopologyCredentialsManifest(flags, opts.RepoRoot, entry.Topology.CredentialsManifest, baseNamespace)
 		if err != nil {
-			cleanup()
-			return fmt.Errorf("topology release %s/%s (namespace-suffix %q): %w", entry.Scenario, rel.Role, rel.NamespaceSuffix, err)
+			releaseErrs = append(releaseErrs, fmt.Errorf("topology release %s/%s (namespace-suffix %q): %w", entry.Scenario, rel.Role, rel.NamespaceSuffix, err))
+			continue
 		}
 		defer removeManifest()
 		if err := matrix.RegisterDeclarativePostInfraHook(flags, releaseEntry.PostInfra, opts.RepoRoot, releaseEntry.Version, releaseEntry.Scenario); err != nil {
-			cleanup()
-			return fmt.Errorf("topology release %s/%s (namespace-suffix %q): register post-infra hook: %w", entry.Scenario, rel.Role, rel.NamespaceSuffix, err)
+			releaseErrs = append(releaseErrs, fmt.Errorf("topology release %s/%s (namespace-suffix %q): register post-infra hook: %w", entry.Scenario, rel.Role, rel.NamespaceSuffix, err))
+			continue
 		}
 		if err := matrix.RegisterDeclarativePostDeployHook(flags, releaseEntry.PostDeploy, opts.RepoRoot, releaseEntry.Version, releaseEntry.Scenario); err != nil {
-			cleanup()
-			return fmt.Errorf("topology release %s/%s (namespace-suffix %q): register post-deploy hook: %w", entry.Scenario, rel.Role, rel.NamespaceSuffix, err)
+			releaseErrs = append(releaseErrs, fmt.Errorf("topology release %s/%s (namespace-suffix %q): register post-deploy hook: %w", entry.Scenario, rel.Role, rel.NamespaceSuffix, err))
+			continue
 		}
-		prepared, prepareErr := deploy.PrepareScenario(ctx, releaseCtx, flags)
+		releaseCtx.IngressHost = flags.ResolveIngressHostname()
+		prepared, prepareErr := prepareScenarioFn(ctx, releaseCtx, flags)
 		if prepareErr != nil {
-			cleanup()
-			return fmt.Errorf("topology release %s/%s (namespace-suffix %q) prepare failed: %w", entry.Scenario, rel.Role, rel.NamespaceSuffix, prepareErr)
+			releaseErrs = append(releaseErrs, fmt.Errorf("topology release %s/%s (namespace-suffix %q) prepare failed: %w", entry.Scenario, rel.Role, rel.NamespaceSuffix, prepareErr))
+			continue
 		}
-		preparedReleases = append(preparedReleases, preparedTopologyRelease{release: rel, flags: flags, namespace: namespace, prepared: prepared, cleanup: cleanup})
+		preparedReleases = append(preparedReleases, preparedTopologyRelease{release: rel, flags: flags, namespace: namespace, prepared: prepared})
+	}
+	if len(releaseErrs) > 0 {
+		return errors.Join(releaseErrs...)
 	}
 
 	for _, chartPath := range topologyChartPaths(preparedReleases) {
@@ -1689,9 +1681,8 @@ func runTopologyE2ELegs(
 			releaseOpts.ExtraHelmSets = append(releaseOpts.ExtraHelmSets, "global.host="+releaseHost)
 		}
 
-		flags, namespace, _, _, cleanup, buildErr := matrix.BuildEntryFlags(releaseEntry, releaseOpts)
+		flags, namespace, _, _, buildErr := matrix.BuildEntryFlags(releaseEntry, releaseOpts)
 		if buildErr != nil {
-			cleanup()
 			failures = append(failures, fmt.Sprintf("leg %q: build flags: %v", leg.OrchestrationSuffix, buildErr))
 			continue
 		}
@@ -1707,7 +1698,6 @@ func runTopologyE2ELegs(
 		flags.Test.PhysicalTenantID = leg.TenantID
 
 		testErr := deploy.RunTests(ctx, flags, namespace)
-		cleanup()
 
 		label := leg.OrchestrationSuffix
 		if leg.OptimizeSuffix != "" {
@@ -1786,14 +1776,15 @@ func topologyReleaseHostKey(role, namespaceSuffix string, orchestrationCount int
 	return "HUB_HOST"
 }
 
-func addTopologyIngressHosts(crossRefEnv map[string]string, opts matrix.RunOptions, platform string, hubCtx *deploy.ScenarioContext, releases []matrix.TopologyRelease, contexts []*deploy.ScenarioContext) {
+func addTopologyIngressHosts(crossRefEnv map[string]string, opts matrix.RunOptions, platform string, hubCtx *deploy.ScenarioContext, releases []matrix.TopologyRelease, contexts []*deploy.ScenarioContext) error {
 	orchestrationCount := 0
 	for _, release := range releases {
 		if release.Role == "orchestration" {
 			orchestrationCount++
 		}
 	}
-	if sharedHost := extractHelmSetValue(opts.ExtraHelmSets, "global.host"); sharedHost != "" && orchestrationCount <= 1 {
+	sharedHost := extractHelmSetValue(opts.ExtraHelmSets, "global.host")
+	if sharedHost != "" && orchestrationCount <= 1 {
 		crossRefEnv["HUB_HOST"] = sharedHost
 		for _, release := range releases {
 			if release.Role == "orchestration" {
@@ -1801,12 +1792,15 @@ func addTopologyIngressHosts(crossRefEnv map[string]string, opts matrix.RunOptio
 				crossRefEnv["ORCH_HOST"] = sharedHost
 			}
 		}
-		return
+		return nil
 	}
 
-	baseDomain := matrix.ResolveIngressBaseDomain(opts, platform)
+	baseDomain := matrix.EntryInfra(opts, platform, "").IngressBaseDomain
 	if baseDomain == "" {
-		return
+		if sharedHost != "" {
+			return fmt.Errorf("global.host=%s is shared, but this topology has %d orchestration releases that each need their own host; set an ingress base domain instead", sharedHost, orchestrationCount)
+		}
+		return nil
 	}
 	crossRefEnv["HUB_HOST"] = (&config.IngressFlags{
 		IngressSubdomain:  hubCtx.Namespace,
@@ -1825,6 +1819,7 @@ func addTopologyIngressHosts(crossRefEnv map[string]string, opts matrix.RunOptio
 			crossRefEnv["ORCH_HOST"] = host
 		}
 	}
+	return nil
 }
 
 // topologyDeployOrder returns release indices in a depends-on-respecting order:

@@ -278,7 +278,7 @@ func (s *tlsSecretsTest) TestInitContainersRendering() {
 		},
 		{
 			name: "identity", template: "templates/identity/deployment.yaml",
-			initKey: "identity.initContainers", containerName: "camunda-platform",
+			initKey: "identity.initContainers", containerName: "identity",
 		},
 		{
 			name: "orchestration", template: "templates/orchestration/statefulset.yaml",

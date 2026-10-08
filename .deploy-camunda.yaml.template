@@ -28,10 +28,10 @@
 # ============================================================================
 
 # ---------------------------------------------------------------------------
-# Root-level defaults (inherited by all deployments unless overridden)
+# Root-level defaults (inherited by all deployments unless overridden).
+# Root-level platform, repoRoot, kubeContext, ingressBaseDomain and envFile
+# are deprecated: set them in a deployment profile.
 # ---------------------------------------------------------------------------
-platform: gke                        # Target platform: gke, eks, rosa
-# repoRoot: /path/to/camunda-platform-helm  # Auto-detected from git
 # logLevel: info                     # Log level: trace, debug, info, warn, error
 
 # Active deployment profile
@@ -55,6 +55,8 @@ deployments:
   # =========================================================================
   my-dev:
     # --- Required --------------------------------------------------------
+    platform: gke                        # Target platform: gke, eks, rosa
+    # repoRoot: /path/to/camunda-platform-helm  # Auto-detected from git
     namespace: my-namespace              # Kubernetes namespace
     release: integration                 # Helm release name
     chartPath: charts/camunda-platform-8.8  # Path to local chart directory
@@ -184,10 +186,11 @@ deployments:
   # outputFormat: table                  # Output format: table, json
 
   # --- Execution ----------------------------------------------------------
-  # Controls how the matrix runner deploys each entry.
+  # Controls how the matrix runner deploys each entry. Infra values resolve as
+  # CLI flag > per-platform/per-version map below > active profile > this
+  # block > root. platform, repoRoot, kubeContext, ingressBaseDomain and
+  # envFile scalars here are deprecated: use the maps or a profile.
 
-  # repoRoot: ""                         # Auto-detected from git
-  # platform: gke                        # Target platform (also filters entries)
   # maxParallel: 1                       # Concurrent entries (1 = sequential)
   # helmTimeout: 10                      # Helm timeout in minutes per entry
   # stopOnFailure: false                 # Halt on first failure
@@ -225,10 +228,9 @@ deployments:
   # --- Per-version env files ----------------------------------------------
   # Each chart version can use a different .env file containing version-
   # specific image tags, OpenSearch credentials, Entra app IDs, etc.
-  # The runner picks the matching version key, falling back to envFile.
+  # The runner picks the matching version key, falling back to the profile's envFile.
   # (see .env.template for what goes in each file)
   #
-  # envFile: .env                        # Default for all versions
   # envFiles:
   #   "8.6": .env.86
   #   "8.7": .env.87

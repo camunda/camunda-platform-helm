@@ -53,43 +53,40 @@ type SpringJwtYAML struct {
 }
 
 type CamundaYAML struct {
-	Modeler  ModelerYAML  `yaml:"modeler"`
+	Hub      HubYAML      `yaml:"hub"`
 	Identity IdentityYAML `yaml:"identity"`
 }
 
 type IdentityYAML struct {
-	BaseURL string `yaml:"base-url"`
-	Type    string `yaml:"type"`
+	BaseURL          string `yaml:"base-url"`
+	IssuerBackendURL string `yaml:"issuer-backend-url"`
+	Type             string `yaml:"type"`
+	UsernameClaim    string `yaml:"username-claim"`
 }
-type ModelerYAML struct {
-	Feature  FeatureYAML         `yaml:"feature"`
-	Security ModelerSecurityYAML `yaml:"security"`
-	Clusters []ClusterYAML       `yaml:"clusters"`
-	Server   ModelerServerYAML   `yaml:"server"`
-	OAuth2   ModelerOAuth2YAML   `yaml:"oauth2"`
-	Pusher   PusherYAML          `yaml:"pusher"`
+type HubYAML struct {
+	Feature  FeatureYAML     `yaml:"feature"`
+	Security HubSecurityYAML `yaml:"security"`
+	Clusters []ClusterYAML   `yaml:"clusters"`
+	Server   HubServerYAML   `yaml:"server"`
+	OAuth2   HubOAuth2YAML   `yaml:"oauth2"`
+	Pusher   PusherYAML      `yaml:"pusher"`
 }
 
 type FeatureYAML struct {
 	TestModeEnabled string `yaml:"test-mode-enabled"`
 }
 
-type ModelerSecurityYAML struct {
-	JWT ModelerJwtYAML `yaml:"jwt"`
+type HubSecurityYAML struct {
+	JWT HubJwtYAML `yaml:"jwt"`
 }
 
-type ModelerServerYAML struct {
+type HubServerYAML struct {
 	HttpsOnly string `yaml:"https-only"`
 	Url       string `yaml:"url"`
 }
 
-type ModelerJwtYAML struct {
+type HubJwtYAML struct {
 	Audience AudienceYAML `yaml:"audience"`
-	Issuer   IssuerYAML   `yaml:"issuer"`
-}
-
-type IssuerYAML struct {
-	BackendUrl string `yaml:"backend-url"`
 }
 
 type AudienceYAML struct {
@@ -157,13 +154,8 @@ type PusherClientYAML struct {
 	ForceTLS bool   `yaml:"force-tls"`
 }
 
-type ModelerOAuth2YAML struct {
-	Token    TokenYAML `yaml:"token"`
-	ClientId string    `yaml:"client-id"`
-}
-
-type TokenYAML struct {
-	UsernameClaim string `yaml:"username-claim"`
+type HubOAuth2YAML struct {
+	ClientId string `yaml:"client-id"`
 }
 
 type ServerYAML struct {

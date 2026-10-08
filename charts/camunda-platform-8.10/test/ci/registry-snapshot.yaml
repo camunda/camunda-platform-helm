@@ -375,6 +375,7 @@ integration:
             gke: distroci
           identity: basic
           persistence: elasticsearch
+          e2e-api-suite: true
           dependencies:
             - chart: elastic/elasticsearch
               version: 8.5.1
@@ -1420,6 +1421,7 @@ integration:
           identity: keycloak
           persistence: elasticsearch
           e2e-full-suite: true
+          e2e-api-suite: true
           dependencies:
             - chart: charts/internal-keycloak-26
               release-name: keycloak
@@ -1642,6 +1644,14 @@ integration:
               repo-name: opensearch
               repo-url: https://opensearch-project.github.io/helm-charts/
           prefix-key: qa-opensearch-upg
+          post-infra:
+            script: post-infra-bitnami-keycloak-migration.sh
+            description: |
+              Keycloak-only variant of post-infra-bitnami-migration for upgrade scenarios
+              whose search backend is already a companion chart (OpenSearch). Moves the
+              bundled (Bitnami) Keycloak realm onto the companion Keycloak before the chart
+              upgrade to 8.10 and leaves the search data in place, so users keep their
+              Keycloak ids across the upgrade.
         - name: qa-elasticsearch-mt
           enabled: false
           shortname: qaelmt
@@ -2449,6 +2459,34 @@ integration:
             shared-storage: elasticsearch
             shared-storage-service: elasticsearch-master
             credentials-manifest: charts/camunda-platform-8.10/test/integration/external-secrets/dogfood-credentials.yaml
+            credential-stores:
+              namespace-suffix: hub
+              secret: integration-test-credentials
+              postgres:
+                - statefulset: keycloak-postgresql
+                  user: keycloak
+                  database: keycloak
+                  secret-key: identity-keycloak-postgresql-user-password
+                - statefulset: postgresql
+                  user: app
+                  database: identity
+                  secret-key: identity-postgresql-user-password
+              keycloak:
+                deployment: keycloak
+                container: keycloak
+                url: http://localhost:8080/auth
+                admin-user: admin
+                admin-secret-key: identity-keycloak-admin-password
+                users:
+                  - realm: camunda-platform
+                    username: demo
+                    secret-key: identity-user-password
+              elasticsearch:
+                statefulset: elasticsearch-master
+                container: elasticsearch
+                url: http://localhost:9200
+                user: elastic
+                secret-key: elasticsearch-password
     nightly:
       scenario: []
   flows:

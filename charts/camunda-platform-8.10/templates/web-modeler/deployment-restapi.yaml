@@ -5,9 +5,6 @@
 {{- if not (has $deploymentStrategy (list "RollingUpdate" "Recreate")) -}}
 {{- fail "webModeler.persistence.deploymentStrategy (or camundaHub.persistence.deploymentStrategy) value must be one of 'RollingUpdate', 'Recreate'" -}}
 {{- end -}}
-{{- if and (eq $deploymentStrategy "Recreate") (not $hub.persistence.enabled) -}}
-{{- fail "webModeler.persistence.deploymentStrategy (or camundaHub.persistence.deploymentStrategy): Recreate requires persistence.enabled: true on the same values path. The default chart-managed path uses a per-pod ephemeral volume with no Multi-Attach contention, so Recreate is only useful when existingClaim points to a ReadWriteOnce volume; without persistence it only adds upgrade downtime" -}}
-{{- end -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -69,31 +66,31 @@ spec:
                 "config" $hub.restapi.externalDatabase
             ) | nindent 12 }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
-                "envName" "RESTAPI_MAIL_PASSWORD"
+                "envName" "SPRING_MAIL_PASSWORD"
                 "config" $hub.restapi.mail
             ) | nindent 12 }}
-            - name: RESTAPI_PUSHER_APP_ID
+            - name: CAMUNDA_HUB_PUSHER_APPID
               valueFrom:
                 configMapKeyRef:
                   name: {{ include "webModeler.fullname" . }}-configuration
                   key: pusher-app-id
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
-                "envName" "RESTAPI_PUSHER_KEY"
+                "envName" "CAMUNDA_HUB_PUSHER_KEY"
                 "config" ($hub.restapi.pusher.client)
                 "defaultSecretName" (include "webModeler.fullname" .)
                 "defaultSecretKey" "pusher-app-key"
             ) | nindent 12 }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
-                "envName" "RESTAPI_PUSHER_SECRET"
+                "envName" "CAMUNDA_HUB_PUSHER_SECRET"
                 "config" ($hub.restapi.pusher)
                 "defaultSecretName" (include "webModeler.fullname" .)
                 "defaultSecretKey" "pusher-app-secret"
             ) | nindent 12 }}
             - name: ZEEBE_CLIENT_CONFIG_PATH
               value: {{ $hub.restapi.zeebeClientConfigPath | default "/tmp/zeebe_client_cache.txt" | quote }}
-            - name: CAMUNDA_MODELER_FEATURE_CONSOLE_ENABLED
+            - name: CAMUNDA_HUB_FEATURE_CONSOLEENABLED
               value: {{ include "camundaHub.consoleEnabled" . | quote }}
-            - name: CAMUNDA_MODELER_FEATURE_GLOBAL_NAVIGATION_V2_ENABLED
+            - name: CAMUNDA_HUB_FEATURE_GLOBALNAVIGATIONV2ENABLED
               value: "false"
           {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
             {{- include "camundaPlatform.caBundleEnv" . | nindent 12 }}

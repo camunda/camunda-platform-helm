@@ -18,13 +18,17 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"regexp"
 	"strconv"
 
 	"scripts/camunda-core/pkg/chartmeta"
+	"scripts/camunda-core/pkg/releaseplease"
 )
 
 // overrideKeys is the fixed component order for the imageOverrides annotation
 // (the block is only consumed as a presence flag, so the order is cosmetic).
+var stableTagRe = regexp.MustCompile(`^[0-9]+\.[0-9]+\.[0-9]+$`)
+
 var overrideKeys = []string{
 	"orchestration", "zeebe", "zeebe-gateway", "operate", "tasklist",
 	"console", "modeler", "connectors", "optimize", "identity",
@@ -39,13 +43,14 @@ var overrideKeys = []string{
 // present, the YAML block to --out.
 func runImageOverrides(args []string) error {
 	fs := flag.NewFlagSet("image-overrides", flag.ContinueOnError)
-	var out, chartVersion string
+	var out, chartVersion, chartVersionsFile string
 	vals := make(map[string]*string, len(overrideKeys))
 	for _, k := range overrideKeys {
 		vals[k] = fs.String(k, "", "image tag override for "+k)
 	}
 	fs.StringVar(&out, "out", "/tmp/image-overrides.yaml", "file to write the overrides YAML block to when any are present")
 	fs.StringVar(&chartVersion, "chart-version", "", "Camunda minor line of the chart, e.g. 8.10")
+	fs.StringVar(&chartVersionsFile, "chart-versions-file", "", "path to charts/chart-versions.yaml; rejects a GA orchestration tag for a minor without a released date")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -54,6 +59,16 @@ func runImageOverrides(args []string) error {
 	for _, k := range overrideKeys {
 		overrides = append(overrides, chartmeta.ImageOverride{Key: k, Value: *vals[k]})
 	}
+	if chartVersionsFile != "" && stableTagRe.MatchString(*vals["orchestration"]) {
+		alpha, err := releaseplease.StillAlpha(chartVersionsFile, chartVersion)
+		if err != nil {
+			return err
+		}
+		if alpha {
+			return fmt.Errorf("orchestration image tag %s is a GA tag, but charts/chart-versions.yaml has no released date for %s: set released and stdSupportUntil for %s and rebuild", *vals["orchestration"], chartVersion, chartVersion)
+		}
+	}
+
 	block, has := chartmeta.ImageOverrides(overrides, chartVersion)
 
 	if err := newGitHubEnv().set("HAS_IMAGE_OVERRIDES", strconv.FormatBool(has)); err != nil {

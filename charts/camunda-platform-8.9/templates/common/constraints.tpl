@@ -187,6 +187,16 @@ configmap-warnings.yaml, which renders the "<release>-warnings" ConfigMap on the
 (helm template / Argo CD / Flux). Feed new deprecations here so they reach both channels.
 */}}
 {{- define "camunda.constraints.warnings" }}
+  {{- if and .Values.global.identity.auth.enabled (empty (include "camundaPlatform.authIssuerUrlWithFallback" . | trim)) }}
+    {{- $issuerBackendUrl := include "camundaPlatform.authIssuerBackendUrl" . | trim }}
+    {{- $keycloakURL := .Values.global.identity.keycloak.url | default dict }}
+    {{- if and (eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK") (empty .Values.global.identity.auth.issuerBackendUrl) (or $keycloakURL (not .Values.identityKeycloak.enabled)) (or (empty (tpl ($keycloakURL.host | default "") . | trim)) (empty $keycloakURL.protocol) (empty $keycloakURL.port)) }}
+      {{- $issuerBackendUrl = "" }}
+    {{- end }}
+    {{- if empty $issuerBackendUrl }}
+      {{- printf "\n%s" "[camunda][warning] global.identity.auth.enabled=true, but no shared authentication issuer or issuer backend URL resolves. Set global.identity.auth.issuer (or global.identity.auth.publicIssuerUrl), global.identity.auth.issuerBackendUrl, or global.identity.keycloak.url for External Keycloak. Components using separate OIDC configuration must supply their own provider settings." }}
+    {{- end }}
+  {{- end }}
   {{- if .Values.global.testDeprecationFlags.existingSecretsMustBeSet }}
     {{/* TODO: Check if there are more existingSecrets to check */}}
 
@@ -595,6 +605,29 @@ The following values inside your values.yaml need to be set but were not:
         "[camunda][warning]"
         "orchestration.pvcAccessModes is set to ReadWriteOncePod, which requires a CSI driver that supports it; without that support the PersistentVolumeClaim may fail to provision or stay Pending."
         "PersistentVolumeClaim accessModes are immutable, so this only applies to new installs / new PVCs, not to an existing StatefulSet via \"helm upgrade\"."
+    -}}
+    {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+  {{- end }}
+
+  {{- $regions := int .Values.global.multiregion.regions -}}
+  {{- $clusterSize := int .Values.orchestration.clusterSize -}}
+  {{- if and .Values.orchestration.enabled (gt $regions 1) (ne (mod $clusterSize $regions) 0) }}
+    {{- $warningMessage := printf "%s %s %s"
+        "[camunda][warning]"
+        (printf "orchestration.clusterSize is %d but global.multiregion.regions is %d, so the regions deploy %d brokers while every broker expects %d; the missing brokers stay cluster members and a region failover can leave partitions without a leader." $clusterSize $regions (mul (div $clusterSize $regions) $regions) $clusterSize)
+        "Set orchestration.clusterSize to a multiple of global.multiregion.regions. The Camunda 8.10 Helm chart rejects this configuration."
+    -}}
+    {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+  {{- end }}
+
+  {{- if and (eq (include "camundaPlatform.webModelerEnabled" .) "true")
+             (eq (.Values.webModeler.persistence.deploymentStrategy | default "RollingUpdate") "Recreate")
+             .Values.webModeler.persistence.enabled
+             (not .Values.webModeler.persistence.existingClaim) }}
+    {{- $warningMessage := printf "%s %s %s"
+        "[camunda][warning]"
+        "webModeler.persistence.deploymentStrategy=Recreate gives no benefit without webModeler.persistence.existingClaim and adds downtime on each upgrade."
+        "Set RollingUpdate or set webModeler.persistence.existingClaim. The Camunda 8.10 Helm chart rejects this configuration."
     -}}
     {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
   {{- end }}

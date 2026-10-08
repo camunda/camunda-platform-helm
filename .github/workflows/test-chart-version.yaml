@@ -86,6 +86,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
+  actions: read
   contents: read
   pull-requests: read
   id-token: write
@@ -103,6 +104,7 @@ jobs:
       workspace: ${{ github.workspace }}
       pr-head-sha: ${{ steps.resolve-pr-sha.outputs.pr-head-sha }}
       e2e-test-suite-version: ${{ steps.resolve-e2e-suite.outputs.version }}
+      playwright-runner-image: ${{ steps.resolve-runner-image.outputs.image }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -120,8 +122,14 @@ jobs:
       - name: Resolve e2e test suite version
         id: resolve-e2e-suite
         if: steps.generate-chart-versions.outputs.camunda-versions != '[]'
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          if ! version=$(npm view @camunda/e2e-test-suite version) || [[ -z "$version" ]]; then
+          if ! created=$(gh api "repos/${{ github.repository }}/actions/runs/${{ github.run_id }}" --jq .created_at) ||
+            ! version=$(npm view @camunda/e2e-test-suite time versions --json |
+              jq -r --arg created "$created" '.versions as $published | .time | to_entries
+                | map(select((.key | IN($published[])) and .value <= $created)) | max_by(.value) | .key // empty') ||
+            [[ -z "$version" ]]; then
             echo "::warning::Could not resolve the @camunda/e2e-test-suite version. E2E jobs install latest and the result cache is off for this run."
             exit 0
           fi
@@ -156,6 +164,12 @@ jobs:
       # and will be routed to a fast-path job, skipping the full GKE deploy+test cycle.
       # The gate is pr-head-sha != '' (set by resolve-pr-sha only for pull_request and
       # merge_group), so push/schedule/dispatch runs still execute the full matrix.
+      - name: Install ORAS for runner image resolution
+        if: steps.resolve-pr-sha.outputs.pr-head-sha != '' && steps.resolve-e2e-suite.outputs.version != ''
+        uses: ./.github/actions/install-tool-versions
+        with:
+          tools: oras
+
       - name: Setup Go for cache annotation
         if: steps.resolve-pr-sha.outputs.pr-head-sha != '' && steps.resolve-e2e-suite.outputs.version != ''
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
@@ -167,18 +181,29 @@ jobs:
           # the first triggers tar "File exists" errors.
           cache: false
 
+      - name: Test and build result cache tool
+        if: steps.resolve-pr-sha.outputs.pr-head-sha != '' && steps.resolve-e2e-suite.outputs.version != ''
+        run: make test.ci-result-cache build.ci-result-cache
+
+      - name: Resolve Playwright runner image
+        id: resolve-runner-image
+        if: steps.resolve-pr-sha.outputs.pr-head-sha != '' && steps.resolve-e2e-suite.outputs.version != ''
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: scripts/ci-result-cache/ci-result-cache resolve-runner-image >> "$GITHUB_OUTPUT"
+
       - name: Annotate matrix with cache status
         id: annotate-cache
-        if: steps.resolve-pr-sha.outputs.pr-head-sha != '' && steps.resolve-e2e-suite.outputs.version != ''
+        if: steps.resolve-pr-sha.outputs.pr-head-sha != '' && steps.resolve-e2e-suite.outputs.version != '' && steps.resolve-runner-image.outputs.image != ''
         env:
           GITHUB_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
-          cd scripts/ci-result-cache && go build -o /tmp/ci-result-cache .
           ANNOTATED=$(echo '${{ steps.generate-chart-versions.outputs.matrix }}' | \
-            /tmp/ci-result-cache annotate-matrix \
+            scripts/ci-result-cache/ci-result-cache annotate-matrix \
               --sha "${{ steps.resolve-pr-sha.outputs.pr-head-sha }}" \
               --e2e-test-suite-version "${{ steps.resolve-e2e-suite.outputs.version }}" \
+              --playwright-runner-image "${{ steps.resolve-runner-image.outputs.image }}" \
               --repo-root "${{ github.workspace }}")
           echo "matrix=${ANNOTATED}" >> "$GITHUB_OUTPUT"
 
@@ -301,6 +326,7 @@ jobs:
       pr-head-sha: ${{ needs.init.outputs.pr-head-sha }}
       chart-versions: ${{ matrix.chartVersions }}
       e2e-test-suite-version: ${{ needs.init.outputs.e2e-test-suite-version }}
+      playwright-runner-image: ${{ needs.init.outputs.playwright-runner-image }}
 
   # Aggregation gate job that fails if any CI job fails.
   # Add this job's name ("CI Gate") to the ruleset's required status checks

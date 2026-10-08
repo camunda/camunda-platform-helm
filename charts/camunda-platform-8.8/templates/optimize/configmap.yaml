@@ -37,7 +37,9 @@ data:
         {{- end }}
       {{- if .Values.global.elasticsearch.external }}
       security:
-        username: {{ .Values.global.elasticsearch.auth.username | quote }}
+        {{- with .Values.global.elasticsearch.auth.username }}
+        username: {{ . | quote }}
+        {{- end }}
         {{- if eq .Values.global.elasticsearch.url.protocol "https" }}
         ssl:
           enabled: "true"

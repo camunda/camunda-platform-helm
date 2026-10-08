@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"slices"
 	"strings"
 	"testing"
@@ -1188,14 +1189,13 @@ func TestBuildEntryFlagsPrefersExplicitGlobalHost(t *testing.T) {
 	}
 	opts := RunOptions{
 		NamespaceOverride: "camunda-id--intg-8-10-gke-estls-e0bc5f",
-		IngressBaseDomain: "ci.distro.ultrawombat.com",
+		Infra:             config.InfraOverride{InfraConfig: config.InfraConfig{IngressBaseDomain: "ci.distro.ultrawombat.com"}},
 		ExtraHelmSets: []string{
 			"global.host=e0bc5f-gke--intg-8-10-gke-estls.ci.distro.ultrawombat.com",
 		},
 	}
 
-	flags, _, _, _, cleanup, err := BuildEntryFlags(entry, opts)
-	defer cleanup()
+	flags, _, _, _, err := BuildEntryFlags(entry, opts)
 	if err != nil {
 		t.Fatalf("BuildEntryFlags returned error: %v", err)
 	}
@@ -1209,8 +1209,8 @@ func TestBuildEntryFlagsPrefersExplicitGlobalHost(t *testing.T) {
 
 func TestDryRunPrefersExplicitGlobalHost(t *testing.T) {
 	opts := RunOptions{
-		IngressBaseDomain: "ci.distro.ultrawombat.com",
-		ExtraHelmSets:     []string{"global.host=hash.example.com"},
+		Infra:         config.InfraOverride{InfraConfig: config.InfraConfig{IngressBaseDomain: "ci.distro.ultrawombat.com"}},
+		ExtraHelmSets: []string{"global.host=hash.example.com"},
 	}
 
 	if got, want := explicitIngressHost(opts), "hash.example.com"; got != want {
@@ -1218,64 +1218,42 @@ func TestDryRunPrefersExplicitGlobalHost(t *testing.T) {
 	}
 }
 
-// --- resolveKubeContext tests ---
-
-func TestResolveKubeContext(t *testing.T) {
-	tests := []struct {
-		name     string
-		opts     RunOptions
-		platform string
-		want     string
-	}{
-		{
-			name:     "returns platform-specific context for gke",
-			opts:     RunOptions{KubeContexts: map[string]string{"gke": "gke-ctx", "eks": "eks-ctx"}},
-			platform: "gke",
-			want:     "gke-ctx",
-		},
-		{
-			name:     "returns platform-specific context for eks",
-			opts:     RunOptions{KubeContexts: map[string]string{"gke": "gke-ctx", "eks": "eks-ctx"}},
-			platform: "eks",
-			want:     "eks-ctx",
-		},
-		{
-			name:     "falls back to KubeContext when platform not in map",
-			opts:     RunOptions{KubeContexts: map[string]string{"gke": "gke-ctx"}, KubeContext: "fallback-ctx"},
-			platform: "eks",
-			want:     "fallback-ctx",
-		},
-		{
-			name:     "falls back to KubeContext when map is nil",
-			opts:     RunOptions{KubeContext: "fallback-ctx"},
-			platform: "gke",
-			want:     "fallback-ctx",
-		},
-		{
-			name:     "returns empty when nothing configured",
-			opts:     RunOptions{},
-			platform: "gke",
-			want:     "",
-		},
-		{
-			name:     "platform-specific takes priority over fallback",
-			opts:     RunOptions{KubeContexts: map[string]string{"gke": "gke-ctx"}, KubeContext: "fallback-ctx"},
-			platform: "gke",
-			want:     "gke-ctx",
-		},
-		{
-			name:     "skips empty string in map and falls back",
-			opts:     RunOptions{KubeContexts: map[string]string{"gke": ""}, KubeContext: "fallback-ctx"},
-			platform: "gke",
-			want:     "fallback-ctx",
+func TestEntryInfra(t *testing.T) {
+	yes, no := true, false
+	flagValues := config.InfraOverride{
+		InfraConfig: config.InfraConfig{KubeContext: "cli-ctx", EnvFile: ".env", UseVaultBackedSecrets: &yes},
+		InfraMaps: config.InfraMaps{
+			KubeContexts:       map[string]string{"gke": "gke-ctx", "eks": ""},
+			EnvFiles:           map[string]string{"8.9": ".env.89"},
+			VaultBackedSecrets: map[string]bool{"gke": false},
+			IngressBaseDomains: map[string]string{"gke": "ci.distro.ultrawombat.com"},
 		},
 	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := resolveKubeContext(tt.opts, tt.platform)
-			if got != tt.want {
-				t.Errorf("resolveKubeContext(opts, %q) = %q, want %q", tt.platform, got, tt.want)
+	fileConfig := &config.RootConfig{Matrix: config.MatrixConfig{InfraMaps: config.InfraMaps{
+		KubeContexts:       map[string]string{"eks": "config-eks-ctx"},
+		IngressBaseDomains: map[string]string{"eks": "distribution.aws.camunda.cloud"},
+	}}}
+	for _, tc := range []struct {
+		name              string
+		opts              RunOptions
+		platform, version string
+		envBaseDomain     string
+		want              config.InfraConfig
+	}{
+		{name: "per-platform and per-version flags win", opts: RunOptions{Infra: flagValues}, platform: "gke", version: "8.9",
+			want: config.InfraConfig{KubeContext: "gke-ctx", EnvFile: ".env.89", UseVaultBackedSecrets: &no, IngressBaseDomain: "ci.distro.ultrawombat.com"}},
+		{name: "empty or missing keys fall back to the scalar flag", opts: RunOptions{Infra: flagValues}, platform: "eks", version: "8.8",
+			want: config.InfraConfig{KubeContext: "cli-ctx", EnvFile: ".env", UseVaultBackedSecrets: &yes}},
+		{name: "scalar flag beats the config map", opts: RunOptions{Config: fileConfig, Infra: flagValues}, platform: "eks", version: "8.10",
+			want: config.InfraConfig{KubeContext: "cli-ctx", EnvFile: ".env", UseVaultBackedSecrets: &yes, IngressBaseDomain: "distribution.aws.camunda.cloud"}},
+		{name: "ingress base domain falls back to the CI variable", platform: "gke", envBaseDomain: "ci.distro.ultrawombat.com",
+			want: config.InfraConfig{IngressBaseDomain: "ci.distro.ultrawombat.com"}},
+		{name: "nothing configured", platform: "gke", version: "8.10"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Setenv("INFRA_INGRESS_HOSTNAME_BASE", tc.envBaseDomain)
+			if got := EntryInfra(tc.opts, tc.platform, tc.version); !reflect.DeepEqual(got, tc.want) {
+				t.Errorf("EntryInfra(%q, %q) = %+v, want %+v", tc.platform, tc.version, got, tc.want)
 			}
 		})
 	}
@@ -1326,306 +1304,40 @@ func TestResolvePlatform(t *testing.T) {
 	}
 }
 
-// --- resolveEnvFile tests ---
-
-func TestResolveEnvFile(t *testing.T) {
-	tests := []struct {
-		name    string
-		opts    RunOptions
-		version string
-		want    string
-	}{
-		{
-			name:    "version-specific file takes priority",
-			opts:    RunOptions{EnvFiles: map[string]string{"8.9": ".env.89"}, EnvFile: ".env"},
-			version: "8.9",
-			want:    ".env.89",
-		},
-		{
-			name:    "falls back to EnvFile when version not in map",
-			opts:    RunOptions{EnvFiles: map[string]string{"8.9": ".env.89"}, EnvFile: ".env"},
-			version: "8.8",
-			want:    ".env",
-		},
-		{
-			name:    "falls back to EnvFile when map is nil",
-			opts:    RunOptions{EnvFile: ".env.default"},
-			version: "8.7",
-			want:    ".env.default",
-		},
-		{
-			name:    "returns empty when nothing configured",
-			opts:    RunOptions{},
-			version: "8.6",
-			want:    "",
-		},
-		{
-			name:    "skips empty string in version map",
-			opts:    RunOptions{EnvFiles: map[string]string{"8.8": ""}, EnvFile: ".env.fallback"},
-			version: "8.8",
-			want:    ".env.fallback",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := resolveEnvFile(tt.opts, tt.version)
-			if got != tt.want {
-				t.Errorf("resolveEnvFile(opts, %q) = %q, want %q", tt.version, got, tt.want)
-			}
-		})
-	}
-}
-
-func TestOCIImmutabilityDisablesImageOverrides(t *testing.T) {
-	chartPath := t.TempDir()
-	for _, name := range []string{"values-digest.yaml", "values-enterprise.yaml", "values-latest.yaml"} {
-		if err := os.WriteFile(filepath.Join(chartPath, name), []byte("# test\n"), 0o644); err != nil {
-			t.Fatalf("write %s: %v", name, err)
-		}
-	}
-
-	entry := Entry{Enterprise: true, ImageTags: true}
-	ociOpts := RunOptions{ChartRef: "oci://registry.camunda.cloud/team-distribution/camunda-platform", UseLatest: true}
-	if got := effectiveImageTags(entry, ociOpts); got {
-		t.Fatalf("effectiveImageTags() = true, want false in OCI immutability mode")
-	}
-	if got := resolveChartRootOverlaysQuiet(chartPath, entry, ociOpts); len(got) != 0 {
-		t.Fatalf("resolveChartRootOverlaysQuiet() = %v, want no overlays in OCI immutability mode", got)
-	}
-
-	forcedOpts := RunOptions{ChartRef: ociOpts.ChartRef, ForceImageOverrides: true, UseLatest: true}
-	if got := effectiveImageTags(entry, forcedOpts); !got {
-		t.Fatalf("effectiveImageTags() = false, want true when OCI immutability bypass is enabled")
-	}
-	if got := resolveChartRootOverlaysQuiet(chartPath, entry, forcedOpts); strings.Join(got, ",") != "enterprise" {
-		t.Fatalf("resolveChartRootOverlaysQuiet() = %v, want [enterprise] when bypass preserves image-tags", got)
-	}
-}
-
-func TestSanitizeEnvFileForOCIImmutability(t *testing.T) {
-	envFile := filepath.Join(t.TempDir(), "values.env")
-	content := "E2E_TESTS_OPTIMIZE_IMAGE_TAG=8.8-SNAPSHOT\nOPERATE_INDEX_PREFIX=test-run\nTASKLIST_INDEX_PREFIX=test-tasklist\n"
-	if err := os.WriteFile(envFile, []byte(content), 0o644); err != nil {
-		t.Fatalf("write env file: %v", err)
-	}
-
-	got, cleanup, err := sanitizeEnvFileForOCIImmutability(envFile, RunOptions{ChartRef: "oci://registry.camunda.cloud/team-distribution/camunda-platform"})
-	if err != nil {
-		t.Fatalf("sanitizeEnvFileForOCIImmutability() error = %v", err)
-	}
-	defer cleanup()
-	if got == "" || got == envFile {
-		t.Fatalf("sanitizeEnvFileForOCIImmutability() = %q, want sanitized temp file", got)
-	}
-
-	data, err := os.ReadFile(got)
-	if err != nil {
-		t.Fatalf("read sanitized env file: %v", err)
-	}
-	text := string(data)
-	if strings.Contains(text, "E2E_TESTS_OPTIMIZE_IMAGE_TAG") {
-		t.Fatalf("sanitized env file still contains image tag key: %s", text)
-	}
-	for _, key := range []string{"OPERATE_INDEX_PREFIX", "TASKLIST_INDEX_PREFIX"} {
-		if !strings.Contains(text, key+"=") {
-			t.Fatalf("sanitized env file missing %s: %s", key, text)
-		}
-	}
-}
-
-// --- resolveUseVaultBackedSecrets tests ---
-
-func TestOCIImmutabilityForceOverridesRestoresDigest(t *testing.T) {
-	chartPath := t.TempDir()
-	for _, name := range []string{"values-digest.yaml", "values-enterprise.yaml", "values-latest.yaml"} {
-		if err := os.WriteFile(filepath.Join(chartPath, name), []byte("# test\n"), 0o644); err != nil {
-			t.Fatalf("write %s: %v", name, err)
-		}
-	}
-
-	// ForceImageOverrides: true + ImageTags: false -> digest overlay should be restored
-	entry := Entry{Enterprise: true, ImageTags: false}
-	opts := RunOptions{ChartRef: "oci://registry.camunda.cloud/team-distribution/camunda-platform", ForceImageOverrides: true}
-	got := resolveChartRootOverlaysQuiet(chartPath, entry, opts)
-	expected := "enterprise,digest"
-	if strings.Join(got, ",") != expected {
-		t.Fatalf("resolveChartRootOverlaysQuiet() = %v, want [enterprise, digest] when force-overrides restores non-image-tags path", got)
-	}
-}
-
-func TestSanitizeEnvFileAllImageTags(t *testing.T) {
-	// All keys are IMAGE_TAG -> result should be empty path (no temp file needed)
-	envFile := filepath.Join(t.TempDir(), "values.env")
-	content := "E2E_TESTS_OPTIMIZE_IMAGE_TAG=8.8-SNAPSHOT\nE2E_TESTS_OPERATE_IMAGE_TAG=8.8-SNAPSHOT\n"
-	if err := os.WriteFile(envFile, []byte(content), 0o644); err != nil {
-		t.Fatalf("write env file: %v", err)
-	}
-
-	got, cleanup, err := sanitizeEnvFileForOCIImmutability(envFile, RunOptions{ChartRef: "oci://registry.camunda.cloud/team-distribution/camunda-platform"})
-	if err != nil {
-		t.Fatalf("sanitizeEnvFileForOCIImmutability() error = %v", err)
-	}
-	defer cleanup()
-	if got != "" {
-		t.Fatalf("sanitizeEnvFileForOCIImmutability() = %q, want empty path when all keys are image tags", got)
-	}
-}
-
-func TestSanitizeEnvFileNoEnvFile(t *testing.T) {
-	// OCI mode with no env file -> should short-circuit cleanly
-	got, cleanup, err := sanitizeEnvFileForOCIImmutability("", RunOptions{ChartRef: "oci://registry.camunda.cloud/team-distribution/camunda-platform"})
-	if err != nil {
-		t.Fatalf("sanitizeEnvFileForOCIImmutability() error = %v", err)
-	}
-	defer cleanup()
-	if got != "" {
-		t.Fatalf("sanitizeEnvFileForOCIImmutability() = %q, want empty string for no env file", got)
-	}
-}
-
-func TestResolveUseVaultBackedSecrets(t *testing.T) {
-	tests := []struct {
+func TestResolveImageStrategy(t *testing.T) {
+	const ref = "oci://registry.camunda.cloud/team-distribution/camunda-platform"
+	for _, tc := range []struct {
 		name     string
+		entry    Entry
 		opts     RunOptions
-		platform string
-		want     bool
+		want     ImageStrategy
+		overlays string
 	}{
-		{
-			name:     "returns platform-specific value for eks (true)",
-			opts:     RunOptions{VaultBackedSecrets: map[string]bool{"eks": true, "gke": false}},
-			platform: "eks",
-			want:     true,
-		},
-		{
-			name:     "returns platform-specific value for gke (false)",
-			opts:     RunOptions{VaultBackedSecrets: map[string]bool{"eks": true, "gke": false}},
-			platform: "gke",
-			want:     false,
-		},
-		{
-			name:     "falls back to UseVaultBackedSecrets when platform not in map",
-			opts:     RunOptions{VaultBackedSecrets: map[string]bool{"gke": false}, UseVaultBackedSecrets: true},
-			platform: "eks",
-			want:     true,
-		},
-		{
-			name:     "falls back to UseVaultBackedSecrets when map is nil",
-			opts:     RunOptions{UseVaultBackedSecrets: true},
-			platform: "gke",
-			want:     true,
-		},
-		{
-			name:     "returns false when nothing configured",
-			opts:     RunOptions{},
-			platform: "gke",
-			want:     false,
-		},
-		{
-			name:     "platform-specific false overrides fallback true",
-			opts:     RunOptions{VaultBackedSecrets: map[string]bool{"gke": false}, UseVaultBackedSecrets: true},
-			platform: "gke",
-			want:     false,
-		},
-		{
-			name:     "platform-specific true overrides fallback false",
-			opts:     RunOptions{VaultBackedSecrets: map[string]bool{"eks": true}, UseVaultBackedSecrets: false},
-			platform: "eks",
-			want:     true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := resolveUseVaultBackedSecrets(tt.opts, tt.platform)
-			if got != tt.want {
-				t.Errorf("resolveUseVaultBackedSecrets(opts, %q) = %v, want %v", tt.platform, got, tt.want)
+		{name: "digest by default", entry: Entry{Enterprise: true}, want: ImageDigest, overlays: "enterprise,digest"},
+		{name: "use-latest", opts: RunOptions{UseLatest: true}, want: ImageLatest, overlays: "latest"},
+		{name: "image-tags", entry: Entry{Enterprise: true, ImageTags: true}, want: ImageTags, overlays: "enterprise"},
+		{name: "chart-ref keeps baked images", entry: Entry{Enterprise: true, ImageTags: true}, opts: RunOptions{ChartRef: ref}, want: ImageOCIImmutable},
+		{name: "forced chart-ref restores image-tags", entry: Entry{Enterprise: true, ImageTags: true}, opts: RunOptions{ChartRef: ref, ForceImageOverrides: true}, want: ImageTags, overlays: "enterprise"},
+		{name: "forced chart-ref restores digest", entry: Entry{Enterprise: true}, opts: RunOptions{ChartRef: ref, ForceImageOverrides: true}, want: ImageDigest, overlays: "enterprise,digest"},
+		{name: "use-latest conflicts with image-tags", entry: Entry{ImageTags: true}, opts: RunOptions{UseLatest: true}},
+		{name: "use-latest conflicts with chart-ref", opts: RunOptions{ChartRef: ref, UseLatest: true}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := ResolveImageStrategy(tc.entry, tc.opts)
+			if tc.want == "" {
+				if err == nil || !strings.Contains(err.Error(), "--use-latest conflicts") {
+					t.Fatalf("ResolveImageStrategy() error = %v, want a --use-latest conflict", err)
+				}
+				return
+			}
+			if err != nil || got != tc.want {
+				t.Fatalf("ResolveImageStrategy() = %q, %v; want %q", got, err, tc.want)
+			}
+			if overlays := strings.Join(chartRootOverlays(tc.entry, got), ","); overlays != tc.overlays {
+				t.Fatalf("chartRootOverlays() = %q, want %q", overlays, tc.overlays)
 			}
 		})
 	}
-}
-
-// --- resolveIngressBaseDomain tests ---
-
-func TestResolveIngressBaseDomain(t *testing.T) {
-	tests := []struct {
-		name     string
-		opts     RunOptions
-		platform string
-		want     string
-	}{
-		{
-			name:     "returns platform-specific domain for gke",
-			opts:     RunOptions{IngressBaseDomains: map[string]string{"gke": "ci.distro.ultrawombat.com", "eks": "distribution.aws.camunda.cloud"}},
-			platform: "gke",
-			want:     "ci.distro.ultrawombat.com",
-		},
-		{
-			name:     "returns platform-specific domain for eks",
-			opts:     RunOptions{IngressBaseDomains: map[string]string{"gke": "ci.distro.ultrawombat.com", "eks": "distribution.aws.camunda.cloud"}},
-			platform: "eks",
-			want:     "distribution.aws.camunda.cloud",
-		},
-		{
-			name:     "falls back to IngressBaseDomain when platform not in map",
-			opts:     RunOptions{IngressBaseDomains: map[string]string{"gke": "ci.distro.ultrawombat.com"}, IngressBaseDomain: "fallback.example.com"},
-			platform: "eks",
-			want:     "fallback.example.com",
-		},
-		{
-			name:     "falls back to IngressBaseDomain when map is nil",
-			opts:     RunOptions{IngressBaseDomain: "fallback.example.com"},
-			platform: "gke",
-			want:     "fallback.example.com",
-		},
-		{
-			name:     "returns empty when nothing configured",
-			opts:     RunOptions{},
-			platform: "gke",
-			want:     "",
-		},
-		{
-			name:     "platform-specific takes priority over fallback",
-			opts:     RunOptions{IngressBaseDomains: map[string]string{"gke": "ci.distro.ultrawombat.com"}, IngressBaseDomain: "fallback.example.com"},
-			platform: "gke",
-			want:     "ci.distro.ultrawombat.com",
-		},
-		{
-			name:     "skips empty string in map and falls back",
-			opts:     RunOptions{IngressBaseDomains: map[string]string{"gke": ""}, IngressBaseDomain: "fallback.example.com"},
-			platform: "gke",
-			want:     "fallback.example.com",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Setenv("INFRA_INGRESS_HOSTNAME_BASE", "")
-			got := resolveIngressBaseDomain(tt.opts, tt.platform)
-			if got != tt.want {
-				t.Errorf("resolveIngressBaseDomain(opts, %q) = %q, want %q", tt.platform, got, tt.want)
-			}
-		})
-	}
-}
-
-func TestResolveIngressBaseDomainEnvFallback(t *testing.T) {
-	t.Run("falls back to INFRA_INGRESS_HOSTNAME_BASE when flags empty", func(t *testing.T) {
-		t.Setenv("INFRA_INGRESS_HOSTNAME_BASE", "ci.distro.ultrawombat.com")
-		got := resolveIngressBaseDomain(RunOptions{}, "gke")
-		if got != "ci.distro.ultrawombat.com" {
-			t.Errorf("resolveIngressBaseDomain() = %q, want %q", got, "ci.distro.ultrawombat.com")
-		}
-	})
-
-	t.Run("flag-derived sources take priority over env var", func(t *testing.T) {
-		t.Setenv("INFRA_INGRESS_HOSTNAME_BASE", "should-not-be-used.example.com")
-		opts := RunOptions{IngressBaseDomains: map[string]string{"gke": "ci.distro.ultrawombat.com"}}
-		got := resolveIngressBaseDomain(opts, "gke")
-		if got != "ci.distro.ultrawombat.com" {
-			t.Errorf("resolveIngressBaseDomain() = %q, want %q", got, "ci.distro.ultrawombat.com")
-		}
-	})
 }
 
 // --- resolveInfraType tests ---
@@ -2313,8 +2025,8 @@ func TestChartRefOverride_UpgradeStep1Unaffected(t *testing.T) {
 
 // TestExtraValues_PropagatesToDeploymentFlags pins the propagation chain that
 // makes the inc-5975 fix actually work: RunOptions.ExtraValues must land in
-// flags.Deployment.ExtraValues, because that is the only slice
-// neutralizeOverriddenDigests reads when deciding whether to strip
+// flags.Deployment.ExtraValues, because only values-chain layers reach the
+// image resolver that clears shadowed
 // values-digest.yaml digest pins. If executeEntry's flag assignment is
 // removed, the test fails — the previous flag-existence test would not.
 func TestExtraValues_PropagatesToDeploymentFlags(t *testing.T) {

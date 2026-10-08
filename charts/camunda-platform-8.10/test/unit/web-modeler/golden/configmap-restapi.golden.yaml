@@ -11,7 +11,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: web-modeler
-    app.kubernetes.io/version: "8.10.0-alpha5"
+    app.kubernetes.io/version: "8.10.2"
   annotations:
     {}
 data:
@@ -20,10 +20,11 @@ data:
       identity:
         base-url: "http://camunda-platform-test-identity:80"
         issuer: ""
-        issuerBackendUrl: "https://keycloak.example.com:8443/auth/realms/camunda-platform"
+        issuer-backend-url: "https://keycloak.example.com:8443/auth/realms/camunda-platform"
         type: "KEYCLOAK"
+        username-claim: "preferred_username"
 
-      modeler:
+      hub:
         feature:
           test-mode-enabled: "true"
 
@@ -36,8 +37,6 @@ data:
             force-tls: false
         security:
           jwt:
-            issuer:
-              backend-url: "https://keycloak.example.com:8443/auth/realms/camunda-platform"
             audience:
               internal-api: "web-modeler-api"
               public-api: "web-modeler-public-api"
@@ -48,8 +47,6 @@ data:
 
         oauth2:
           client-id: "web-modeler"
-          token:
-            username-claim: "preferred_username"
 
         server:
           url: "http://localhost:8070"
@@ -58,20 +55,20 @@ data:
           
           - id: "management-cluster"
             name: "Management Identity"
-            version: "8.10.0-alpha5.1"
+            version: "8.10.0"
             authentication: "BASIC"
             authorizations:
               enabled: false
             components:
             - name: Identity
               type: identity
-              version: "8.10.0-alpha5.1"
+              version: "8.10.0"
               urls:
                 webapp: "http://localhost:8080"
                 readiness: "http://camunda-platform-test-identity.camunda-platform:82/actuator/health"
           - id: "default-cluster"
             name: "camunda-platform-test-zeebe"
-            version: "8.10.0-alpha5"
+            version: "8.10.2"
             authentication: "BASIC"
             authorizations:
               enabled: true
@@ -91,31 +88,31 @@ data:
             components:
             - name: Connectors
               type: connectors
-              version: "8.10.0-alpha5"
+              version: "8.10.0"
               urls:
                 rest: "http://camunda-platform-test-connectors.camunda-platform:8080"
                 readiness: "http://camunda-platform-test-connectors.camunda-platform:8080/actuator/health/readiness"
             - name: Operate
               type: operate
-              version: "8.10.0-alpha5"
+              version: "8.10.2"
               urls:
                 webapp: "http://localhost:8080/operate"
                 readiness: "http://camunda-platform-test-zeebe.camunda-platform:9600/actuator/health/readiness"
             - name: Tasklist
               type: tasklist
-              version: "8.10.0-alpha5"
+              version: "8.10.2"
               urls:
                 webapp: "http://localhost:8080/tasklist"
                 readiness: "http://camunda-platform-test-zeebe.camunda-platform:9600/actuator/health/readiness"
             - name: Orchestration Admin
               type: admin
-              version: "8.10.0-alpha5"
+              version: "8.10.2"
               urls:
                 webapp: "http://localhost:8080/admin"
                 readiness: "http://camunda-platform-test-zeebe.camunda-platform:9600/actuator/health/readiness"
             - name: Orchestration Cluster
               type: orchestration
-              version: "8.10.0-alpha5"
+              version: "8.10.2"
               urls:
                 grpc: "grpc://camunda-platform-test-zeebe-gateway:26500"
                 rest: "http://camunda-platform-test-zeebe-gateway:8080"
@@ -148,5 +145,4 @@ data:
 
     logging:
       level:
-        io.camunda.modeler: INFO
         io.grpc: INFO

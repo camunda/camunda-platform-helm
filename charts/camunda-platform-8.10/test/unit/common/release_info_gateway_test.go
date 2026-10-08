@@ -153,7 +153,104 @@ func (s *ReleaseInfoGatewayTest) TestExternalURLsUseGlobalHost() {
 				require.NotContains(t, output, "https://camunda.example.com/auth")
 			},
 		},
+		{
+			Name: "GatewayTLSPublicPortOverridesListenerPort",
+			Values: map[string]string{
+				"global.ingress.enabled":             "false",
+				"global.gateway.enabled":             "true",
+				"global.gateway.tls.enabled":         "true",
+				"global.gateway.tls.port":            "8443",
+				"global.gateway.publicPorts.https":   "443",
+				"global.gateway.tls.secretName":      "camunda-tls",
+				"global.host":                        "camunda.example.com",
+				"global.identity.keycloak.internal":  "true",
+				"identity.contextPath":               "/identity",
+				"identity.enabled":                   "true",
+				"orchestration.gateway.grpc.enabled": "true",
+			},
+			Template: "templates/common/configmap-release.yaml",
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "url: https://camunda.example.com/identity")
+				require.Contains(t, output, "url: https://camunda.example.com/operate")
+				require.Contains(t, output, "https://camunda.example.com/auth")
+				require.Contains(t, output, "grpc: https://grpc-camunda.example.com\n")
+				require.NotContains(t, output, "camunda.example.com:8443")
+			},
+		},
+		{
+			Name: "PlaintextGatewayPublicPortOverridesListenerPort",
+			Values: map[string]string{
+				"global.ingress.enabled":            "false",
+				"global.gateway.enabled":            "true",
+				"global.gateway.port":               "8000",
+				"global.gateway.publicPorts.http":   "9080",
+				"global.gateway.tls.enabled":        "false",
+				"global.host":                       "camunda.example.com",
+				"global.identity.keycloak.internal": "true",
+				"identity.enabled":                  "true",
+			},
+			Template: "templates/common/configmap-release.yaml",
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "url: http://camunda.example.com:9080/operate")
+				require.Contains(t, output, "http://camunda.example.com:9080/auth")
+				require.NotContains(t, output, "camunda.example.com:8000")
+			},
+		},
 	}
 
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, nil, testCases)
+}
+
+func (s *ReleaseInfoGatewayTest) TestClearedGatewayPortsUseListenerPorts() {
+	var testCases []testhelpers.TestCase
+	for _, field := range []string{"publicPorts", "publicPorts.http", "publicPorts.https"} {
+		for _, input := range []struct{ tls, wantURL string }{
+			{"false", "http://camunda.example.com:8000/identity"},
+			{"true", "https://camunda.example.com:8443/identity"},
+		} {
+			testCases = append(testCases, testhelpers.TestCase{
+				Name: field + "/tls=" + input.tls,
+				Values: map[string]string{
+					"global.ingress.enabled":        "false",
+					"global.gateway.enabled":        "true",
+					"global.gateway.port":           "8000",
+					"global.gateway.tls.enabled":    input.tls,
+					"global.gateway.tls.port":       "8443",
+					"global.gateway.tls.secretName": "camunda-tls",
+					"global.host":                   "camunda.example.com",
+					"identity.enabled":              "true",
+					"identity.contextPath":          "/identity",
+				},
+				Template:                "templates/common/configmap-release.yaml",
+				RenderTemplateExtraArgs: []string{"--set-json", "global.gateway." + field + "=null"},
+				Verifier: func(t *testing.T, output string, err error) {
+					require.NoError(t, err)
+					components := releaseInfoComponents(t, output)
+					require.Equal(t, input.wantURL, components["identity"].URL)
+				},
+			})
+		}
+	}
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, nil, testCases)
+}
+
+func (s *ReleaseInfoGatewayTest) TestInvalidGatewayPublicPorts() {
+	var testCases []testhelpers.TestCase
+	for _, protocol := range []string{"http", "https"} {
+		for _, value := range []string{"0", "-1", "65536", "1.5", "true", `"8080"`} {
+			testCases = append(testCases, testhelpers.TestCase{
+				Name:                    protocol + "=" + value,
+				Template:                "templates/common/configmap-release.yaml",
+				RenderTemplateExtraArgs: []string{"--set-json", "global.gateway.publicPorts." + protocol + "=" + value},
+				Verifier: func(t *testing.T, output string, err error) {
+					require.Error(t, err)
+					require.Contains(t, err.Error(), "schema")
+					require.Contains(t, err.Error(), "gateway/publicPorts/"+protocol)
+				},
+			})
+		}
+	}
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, nil, testCases)
 }

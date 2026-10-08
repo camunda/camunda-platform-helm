@@ -27,6 +27,19 @@ import (
 	"strings"
 )
 
+const PlaywrightRunnerImage = "ghcr.io/camunda/team-distribution/playwright-runner"
+
+func ValidateRunnerImage(image string) error {
+	digest, ok := strings.CutPrefix(image, PlaywrightRunnerImage+"@sha256:")
+	if !ok || len(digest) != 64 || strings.ToLower(digest) != digest {
+		return fmt.Errorf("playwright runner image must be %s@sha256:<64 lowercase hex characters>", PlaywrightRunnerImage)
+	}
+	if _, err := hex.DecodeString(digest); err != nil {
+		return fmt.Errorf("invalid playwright runner image digest: %w", err)
+	}
+	return nil
+}
+
 // WorkflowFiles are the specific CI files that affect integration test behavior.
 // Changes to these files should invalidate all cached results.
 var WorkflowFiles = []string{
@@ -38,13 +51,16 @@ var WorkflowFiles = []string{
 	".github/actions/playwright-e2e-tests/action.yaml",
 }
 
-func Compute(repoRoot string, chartVersions []string, e2eSuiteVersion string) (string, error) {
+func Compute(repoRoot string, chartVersions []string, e2eSuiteVersion, runnerImage string) (string, error) {
 	versions := sortedUnique(chartVersions)
 	if len(versions) == 0 {
 		return "", fmt.Errorf("at least one chart version is required")
 	}
 	if e2eSuiteVersion == "" {
 		return "", fmt.Errorf("an e2e test suite version is required")
+	}
+	if err := ValidateRunnerImage(runnerImage); err != nil {
+		return "", err
 	}
 
 	h := sha256.New()
@@ -60,6 +76,7 @@ func Compute(repoRoot string, chartVersions []string, e2eSuiteVersion string) (s
 		filepath.Join("scripts", "run-e2e-tests.sh"),
 		filepath.Join("scripts", "render-e2e-env.sh"),
 		filepath.Join("scripts", "base_playwright_script.sh"),
+		filepath.Join("test", "e2e"),
 	)
 
 	for _, relPath := range paths {
@@ -94,6 +111,7 @@ func Compute(repoRoot string, chartVersions []string, e2eSuiteVersion string) (s
 	}
 
 	fmt.Fprintf(h, "e2e-test-suite:%s\n", e2eSuiteVersion)
+	fmt.Fprintf(h, "playwright-runner-image:%s\n", runnerImage)
 
 	return hex.EncodeToString(h.Sum(nil)), nil
 }

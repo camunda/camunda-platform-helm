@@ -37,7 +37,7 @@ spec:
         {{- end }}
       {{- end }}
       containers:
-        - name: {{ .Chart.Name }}
+        - name: identity
           image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.identity) }}
           imagePullPolicy: {{ .Values.global.image.pullPolicy }}
           {{- if .Values.identity.containerSecurityContext }}

@@ -196,6 +196,7 @@ resolve_identity_passwords() {
   DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD="$(resolve_env_password "$namespace" "VALUES_IDENTITY_SECONDUSER_PASSWORD" "$kube_context")"
   DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD="$(resolve_env_password "$namespace" "VALUES_IDENTITY_THIRDUSER_PASSWORD" "$kube_context")"
   DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET="$(resolve_env_password "$namespace" "VALUES_TEST_CLIENT_SECRET" "$kube_context")"
+  DISTRO_QA_E2E_TESTS_KEYCLOAK_ADMIN_SECRET="$(resolve_env_password "$namespace" "VALUES_VENOM_CLIENT_SECRET" "$kube_context")"
 
   # Fallback to DISTRO_QA_E2E_TESTS_* keys in vault-mapped-secrets if VALUES_* resolved blank
   if [[ -z "$DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD" ]]; then
@@ -220,6 +221,7 @@ resolve_identity_passwords() {
   mask_secret "$DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD"
   mask_secret "$DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD"
   mask_secret "$DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET"
+  mask_secret "$DISTRO_QA_E2E_TESTS_KEYCLOAK_ADMIN_SECRET"
 }
 
 # _auth0_get_secret_key reads a single key from an Opaque secret and base64
@@ -383,6 +385,7 @@ render_env_file() {
     echo "DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD=$DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD"
     echo "DISTRO_QA_E2E_TESTS_KEYCLOAK_PASSWORD=$KEYCLOAK_SETUP_PASSWORD"
     echo "DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET=$DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET"
+    echo "DISTRO_QA_E2E_TESTS_KEYCLOAK_ADMIN_SECRET=$DISTRO_QA_E2E_TESTS_KEYCLOAK_ADMIN_SECRET"
     echo "OAUTH_URL=$tokenUrl"
     echo "CI=${is_ci}"
     echo "CLUSTER_NAME=integration"

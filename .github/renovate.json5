@@ -211,7 +211,7 @@
     },
     // Limit tools and libs versions to the actual Distro CI Kubernetes cluster.
     {
-      allowedVersions: '<1.28.0',
+      allowedVersions: '<1.37.0',
       matchDepNames: [
         '/kubectl/',
       ],
@@ -464,14 +464,16 @@
       versioningTemplate: '{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}',
     },
     {
-      // This is used to update npm packages in GitHub Actions workflows.
+      // This is used to update npm packages in GitHub Actions workflows and Makefile.
       customType: 'regex',
       fileMatch: [
         '^\\.github/workflows/.*\\.ya?ml$',
+        '^Makefile$',
       ],
       datasourceTemplate: 'npm',
       matchStrings: [
         '# renovate: datasource=npm depName=(?<depName>[^\\s]+?)\\s*\\n\\s*npm install -g [^\\s]+?@(?<currentValue>\\S+)',
+        '# renovate: datasource=npm depName=(?<depName>[^\\s]+?)\\s*\\n\\s*readmeGeneratorVersion = (?<currentValue>\\S+)',
       ],
       versioningTemplate: 'semver',
     },

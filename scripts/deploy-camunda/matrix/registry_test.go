@@ -33,6 +33,43 @@ import (
 
 const registryGoodChartDir = "testdata/registry-good/charts/camunda-platform-99.99"
 
+func TestChart88HelmCompatibilityMatrix(t *testing.T) {
+	repoRoot, err := filepath.Abs("../../..")
+	require.NoError(t, err)
+	entries, err := Generate(repoRoot, GenerateOptions{Versions: []string{"8.8"}})
+	require.NoError(t, err)
+	for _, tc := range []struct {
+		shortname string
+		helmMajor string
+		tier      int
+	}{
+		{"eske", "4", 1},
+		{"estls", "3", 2},
+	} {
+		t.Run(tc.shortname, func(t *testing.T) {
+			selected := Filter(entries, FilterOptions{ShortnameFilter: tc.shortname, FlowFilter: "install", Platform: "gke", Tier: tc.tier})
+			require.Len(t, selected, 1)
+			require.Empty(t, Filter(entries, FilterOptions{ShortnameFilter: tc.shortname, FlowFilter: "install", Platform: "gke", Tier: 3 - tc.tier}))
+			entry := selected[0]
+			helmVersion := entry.HelmVersion
+			if helmVersion == "" {
+				tools, err := os.ReadFile(filepath.Join(repoRoot, ".tool-versions"))
+				require.NoError(t, err)
+				for _, line := range strings.Split(string(tools), "\n") {
+					fields := strings.Fields(line)
+					if len(fields) >= 2 && fields[0] == "helm" {
+						helmVersion = fields[1]
+					}
+				}
+			}
+			require.True(t, strings.HasPrefix(helmVersion, tc.helmMajor+"."), "Helm version: %s", helmVersion)
+			require.Equal(t, "keycloak", entry.Identity)
+			require.Equal(t, "elasticsearch", entry.Persistence)
+			require.False(t, entry.SkipE2E)
+		})
+	}
+}
+
 func TestResolveScenarioLegacyRegistryCompatibility(t *testing.T) {
 	repoRoot, err := filepath.Abs("../../..")
 	require.NoError(t, err)
@@ -224,8 +261,7 @@ func TestResolveScenarioOptimizeTLS(t *testing.T) {
 		t.Fatalf("expected one optimize-tls entry, got %d", len(entries))
 	}
 	entry := entries[0]
-	matrixFlags, _, _, _, cleanup, err := BuildEntryFlags(entry, RunOptions{RepoRoot: repoRoot})
-	defer cleanup()
+	matrixFlags, _, _, _, err := BuildEntryFlags(entry, RunOptions{RepoRoot: repoRoot})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -357,12 +393,19 @@ func TestLoadRegistryAssembly(t *testing.T) {
 	if b.E2EFullSuiteBlocking == nil || !*b.E2EFullSuiteBlocking {
 		t.Errorf("beta.E2EFullSuiteBlocking = %v, want an explicit true", b.E2EFullSuiteBlocking)
 	}
+	if !b.E2EAPISuite {
+		t.Errorf("beta.E2EAPISuite = %v, want true", b.E2EAPISuite)
+	}
+	if b.E2EAPISuiteBlocking == nil || !*b.E2EAPISuiteBlocking {
+		t.Errorf("beta.E2EAPISuiteBlocking = %v, want an explicit true", b.E2EAPISuiteBlocking)
+	}
 
 	// alpha declares nothing, so the blocking pointers stay nil and the
 	// defaults apply — an absent key must not read as an explicit false.
-	if a.E2EFullSuite || a.E2ESmokeBlocking != nil || a.E2EFullSuiteBlocking != nil {
-		t.Errorf("alpha e2e = full-suite:%v smoke-blocking:%v full-blocking:%v, want unset",
-			a.E2EFullSuite, a.E2ESmokeBlocking, a.E2EFullSuiteBlocking)
+	if a.E2EFullSuite || a.E2ESmokeBlocking != nil || a.E2EFullSuiteBlocking != nil ||
+		a.E2EAPISuite || a.E2EAPISuiteBlocking != nil {
+		t.Errorf("alpha e2e = full-suite:%v smoke-blocking:%v full-blocking:%v api-suite:%v api-blocking:%v, want unset",
+			a.E2EFullSuite, a.E2ESmokeBlocking, a.E2EFullSuiteBlocking, a.E2EAPISuite, a.E2EAPISuiteBlocking)
 	}
 
 	// gamma fans out across two flows; enabled propagates from manifest (false)
@@ -374,6 +417,9 @@ func TestLoadRegistryAssembly(t *testing.T) {
 	}
 	if !scns[2].E2EFullSuite || !scns[3].E2EFullSuite {
 		t.Errorf("gamma e2e-full-suite must survive flow fan-out, got %v / %v", scns[2].E2EFullSuite, scns[3].E2EFullSuite)
+	}
+	if !scns[2].E2EAPISuite || !scns[3].E2EAPISuite {
+		t.Errorf("gamma e2e-api-suite must survive flow fan-out, got %v / %v", scns[2].E2EAPISuite, scns[3].E2EAPISuite)
 	}
 }
 
@@ -423,6 +469,23 @@ func TestRegistryValidatorRejectsFullSuiteBlockingWithoutFullSuite(t *testing.T)
 	}
 }
 
+// TestRegistryValidatorRejectsAPISuiteBlockingWithoutAPISuite: the blocking
+// override is dead config when the API leg is not enabled.
+func TestRegistryValidatorRejectsAPISuiteBlockingWithoutAPISuite(t *testing.T) {
+	abs := absChartDir(t)
+	cfg, err := LoadRegistry(abs)
+	if err != nil {
+		t.Fatalf("LoadRegistry: %v", err)
+	}
+	scn := &cfg.Integration.Case.PR.Scenarios[0]
+	scn.E2EAPISuite = false
+	scn.E2EAPISuiteBlocking = boolPtr(true)
+	err = (&RegistryValidator{ChartDir: abs}).Validate(cfg)
+	if err == nil || !strings.Contains(err.Error(), "e2e-api-suite-blocking is set but e2e-api-suite is not enabled") {
+		t.Fatalf("want api-suite-blocking-without-api-suite error, got: %v", err)
+	}
+}
+
 // TestRegistryValidatorRejectsE2EFlagsWithSkipE2E: the e2e leg declarations
 // are dead config when skip-e2e disables e2e altogether.
 func TestRegistryValidatorRejectsE2EFlagsWithSkipE2E(t *testing.T) {
@@ -437,6 +500,11 @@ func TestRegistryValidatorRejectsE2EFlagsWithSkipE2E(t *testing.T) {
 			s.E2EFullSuite = true
 			s.E2EFullSuiteBlocking = boolPtr(true)
 		}, "e2e-full-suite is set but skip-e2e"},
+		{"api-suite", func(s *CIScenario) { s.E2EAPISuite = true }, "e2e-api-suite is set but skip-e2e"},
+		{"api-suite-blocking", func(s *CIScenario) {
+			s.E2EAPISuite = true
+			s.E2EAPISuiteBlocking = boolPtr(true)
+		}, "e2e-api-suite-blocking is set but skip-e2e"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			abs := absChartDir(t)
@@ -449,6 +517,8 @@ func TestRegistryValidatorRejectsE2EFlagsWithSkipE2E(t *testing.T) {
 			scn.E2EFullSuite = false
 			scn.E2ESmokeBlocking = nil
 			scn.E2EFullSuiteBlocking = nil
+			scn.E2EAPISuite = false
+			scn.E2EAPISuiteBlocking = nil
 			tc.set(scn)
 			err = (&RegistryValidator{ChartDir: abs}).Validate(cfg)
 			if err == nil || !strings.Contains(err.Error(), tc.want) {
@@ -952,6 +1022,88 @@ func TestRegistryValidatorAcceptsUpgradePersistenceWithoutPreviousVersion(t *tes
 
 	if _, err := LoadRegistry(chartDir); err != nil {
 		t.Fatalf("want no error, got: %v", err)
+	}
+}
+
+const (
+	credentialsFile      = "external-secret-integration-test-credentials.yaml"
+	credentialsVaultFile = "external-secret-integration-test-credentials-vault.yaml"
+	templateCredentials  = "spec:\n  target:\n    template:\n      data:\n        kept: x\n        dropped: y\n"
+	dataCredentialsKept  = "spec:\n  data:\n    - secretKey: kept\n"
+	dataCredentialsBoth  = "spec:\n  data:\n    - secretKey: kept\n    - secretKey: dropped\n"
+)
+
+func writeCredentials(t *testing.T, chartDir, name, body string) {
+	t.Helper()
+	dir := filepath.Join(chartDir, "test", "integration", "external-secrets")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	writeFile(t, filepath.Join(dir, name), body)
+}
+
+func writeIdentityValues(t *testing.T, chartDir, secretKey string) {
+	t.Helper()
+	writeFile(t, filepath.Join(chartDir, "test", "integration", "scenarios", "chart-full-setup", "values-identity.yaml"),
+		"identity:\n  existingSecret:\n    name: integration-test-credentials\n  existingSecretKey: \""+secretKey+"\"\n")
+}
+
+func TestRegistryValidatorRejectsUpgradeCredentialKeysMissingFromCurrentVersion(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		flows string
+		file  string
+	}{
+		{"upgrade-minor", "[upgrade-minor]", credentialsFile},
+		{"install and upgrade-minor", "[install, upgrade-minor]", credentialsFile},
+		{"vault manifest", "[upgrade-minor]", credentialsVaultFile},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			_, chartDir, regDir, prevChartDir := syntheticChartWithPrevious(t, depsWithElasticsearch, depsWithElasticsearch)
+			writeCredentials(t, prevChartDir, tc.file, templateCredentials)
+			writeCredentials(t, chartDir, tc.file, dataCredentialsKept)
+			writeIdentityValues(t, prevChartDir, "dropped")
+			writeManifest(t, regDir, "    - id: a\n      shortname: a\n      tier: 1\n      enabled: true\n")
+			writeFile(t, filepath.Join(regDir, "scenarios", "a.yaml"),
+				"name: a\nflows: "+tc.flows+"\nplatforms: [gke]\n")
+
+			_, err := LoadRegistry(chartDir)
+			if err == nil || !strings.Contains(err.Error(), tc.file+": dropped") {
+				t.Fatalf("want missing credential key error, got: %v", err)
+			}
+		})
+	}
+}
+
+func TestRegistryValidatorAcceptsUpgradeCredentialKeys(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		flows     string
+		current   string
+		prevReads string
+	}{
+		{"current version keeps every key", "[upgrade-minor]", dataCredentialsBoth, "dropped"},
+		{"previous version does not read the dropped key", "[upgrade-minor]", dataCredentialsKept, "kept"},
+		{"previous version reads a longer key name", "[upgrade-minor]", dataCredentialsKept, "legacy-dropped"},
+		{"install flow", "[install]", dataCredentialsKept, "dropped"},
+		{"upgrade-patch flow", "[upgrade-patch]", dataCredentialsKept, "dropped"},
+		{"current version has no manifest", "[upgrade-minor]", "", "dropped"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			_, chartDir, regDir, prevChartDir := syntheticChartWithPrevious(t, depsWithElasticsearch, depsWithElasticsearch)
+			writeCredentials(t, prevChartDir, credentialsFile, templateCredentials)
+			writeIdentityValues(t, prevChartDir, tc.prevReads)
+			if tc.current != "" {
+				writeCredentials(t, chartDir, credentialsFile, tc.current)
+			}
+			writeManifest(t, regDir, "    - id: a\n      shortname: a\n      tier: 1\n      enabled: true\n")
+			writeFile(t, filepath.Join(regDir, "scenarios", "a.yaml"),
+				"name: a\nflows: "+tc.flows+"\nplatforms: [gke]\n")
+
+			if _, err := LoadRegistry(chartDir); err != nil {
+				t.Fatalf("want no error, got: %v", err)
+			}
+		})
 	}
 }
 

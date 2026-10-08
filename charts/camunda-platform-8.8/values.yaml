@@ -402,7 +402,7 @@ global:
 
     ## @extra global.identity.auth configuration, to configure identity authentication setup
     auth:
-      ## @param global.identity.auth.enabled if true, enables authentication on Management Identity .
+      ## @param global.identity.auth.enabled if true, enables authentication on Management Identity. Warns if neither a shared issuer nor an issuer backend URL resolves.
       enabled: false
       ## @param global.identity.auth.issuer defines the issuer name, which is used by the services to validate the JWT tokens.
       issuer: ""
@@ -2155,7 +2155,7 @@ webModeler:
     annotations: {}
     ## @param webModeler.persistence.selector can be used to define a label selector for the persistent volume claim
     selector: {}
-    ## @param webModeler.persistence.deploymentStrategy update strategy for the restapi Deployment. Defaults to RollingUpdate, which is always safe because the default chart-managed persistence path uses a per-pod ephemeral volume (no concurrent-attach contention). Set to "Recreate" only when using existingClaim with a ReadWriteOnce volume that cannot tolerate concurrent attach during a rollout (introduces brief downtime per upgrade).
+    ## @param webModeler.persistence.deploymentStrategy can be used to set the restapi Deployment update strategy, RollingUpdate or Recreate. Recreate requires webModeler.persistence.enabled, else the render fails. Use Recreate only with webModeler.persistence.existingClaim on a ReadWriteOnce volume; it adds downtime on each upgrade.
     deploymentStrategy: RollingUpdate
 
   ## @extra webModeler.serviceAccount configuration for the service account the WebModeler pods are assigned to
@@ -2544,7 +2544,7 @@ orchestration:
         tokenUrl: ""
         ## @param orchestration.security.authentication.oidc.jwksUrl can be used to override `global.identity.auth.jwksUrl`. Only takes effect if `orchestration.security.authentication.oidc.issuer` or `global.identity.auth.issuer` are not set. Supports templating (e.g., {{ .Release.Name }}).
         jwksUrl: ""
-        ## @param orchestration.security.authentication.oidc.usernameClaim can be used to set username claim.
+        ## @param orchestration.security.authentication.oidc.usernameClaim can be used to set username claim. This value also sets the Web Modeler username claim, even when `orchestration.enabled` is false. To set a different Web Modeler claim, add the environment variable `CAMUNDA_IDENTITY_USERNAMECLAIM` to `webModeler.webapp.env`.
         usernameClaim: preferred_username
         ## @param orchestration.security.authentication.oidc.preferUsernameClaim can be used to set OIDC prefer-username-claim.
         preferUsernameClaim: false
@@ -2659,7 +2659,7 @@ orchestration:
     ## @param orchestration.image.repository defines which image repository to use
     repository: camunda/camunda
     ## @param orchestration.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.8.40
+    tag: 8.8.41
     ## @param orchestration.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param orchestration.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -3272,7 +3272,7 @@ optimize:
     ## @param optimize.image.repository defines which image repository to use
     repository: camunda/optimize
     ## @param optimize.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.8.40
+    tag: 8.8.41
     ## @param optimize.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param optimize.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod

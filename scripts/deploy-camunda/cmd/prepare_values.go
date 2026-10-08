@@ -43,7 +43,6 @@ type prepareValuesFlags struct {
 	features     []string
 	qa           bool
 	imageTags    bool
-	imageTagsSet bool // true when --image-tags was explicitly provided
 	upgradeFlow  bool
 	flow         string
 	chartVersion string
@@ -92,7 +91,6 @@ All diagnostic output goes to stderr via the logger.`,
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			pv.imageTagsSet = cmd.Flags().Changed("image-tags")
 			return runPrepareValues(&pv)
 		},
 	}
@@ -272,10 +270,8 @@ func runPrepareValuesLayered(pv *prepareValuesFlags, scenarioDir, outputDir stri
 		Flow:         pv.flow,
 		QA:           pv.qa,
 		ImageTags:    pv.imageTags,
-		ImageTagsSet: pv.imageTagsSet,
 		Upgrade:      pv.upgradeFlow,
 		ChartVersion: pv.chartVersion,
-		ValuesConfig: pv.valuesConfig,
 	})
 	if err != nil {
 		return err

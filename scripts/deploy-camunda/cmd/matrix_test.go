@@ -59,7 +59,7 @@ func TestRootScenarioRegistryResolution(t *testing.T) {
 }
 
 // Pins inc-5975: --extra-values must exist on `matrix run` so that
-// flags.Deployment.ExtraValues — the only input to the digest-overlay strip —
+// flags.Deployment.ExtraValues — a layer the image resolver ranks —
 // gets populated. StringArray (not StringSlice) so paths aren't comma-split.
 func TestMatrixRunExtraValuesFlag(t *testing.T) {
 	flag := newMatrixRunCommand().Flags().Lookup("extra-values")
@@ -77,6 +77,15 @@ func TestMatrixRunExtraValuesFlag(t *testing.T) {
 	if got := flag.Value.String(); !strings.Contains(got, "/tmp/a.yaml") || !strings.Contains(got, "/tmp/b.yaml") {
 		t.Errorf("aggregated value %q missing entries", got)
 	}
+}
+
+func TestMatrixCLIInfraKeepsEmptyFlags(t *testing.T) {
+	command := newMatrixRunCommand()
+	require.NoError(t, command.ParseFlags([]string{"--platform=", "--kube-context=", "--kube-context-gke", "gke-ctx"}))
+	rc := &config.RootConfig{Matrix: config.MatrixConfig{InfraConfig: config.InfraConfig{Platform: "eks", KubeContext: "matrix-ctx", RepoRoot: "/repo"}}}
+	cli := matrixCLIInfra(command.Flags())
+	require.Equal(t, config.InfraConfig{RepoRoot: "/repo"}, rc.ResolveInfra(true, "eks", "", cli))
+	require.Equal(t, "gke-ctx", rc.ResolveInfra(true, "gke", "", cli).KubeContext)
 }
 
 func TestMatrixRunDisabledScenarioHint(t *testing.T) {

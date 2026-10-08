@@ -28,7 +28,6 @@ identity:
       - name: index-docker-io
       - name: registry-camunda-cloud
   contextPath: "/identity"
-  # Right-sized for CI: "camunda-platform" container P99 mem 849Mi (from 400Mi default).
   resources:
     requests:
       cpu: 600m
@@ -78,6 +77,25 @@ identity:
         - resourceServerId: optimize-api
           definition: write:*
         - resourceServerId: web-modeler-api
+          definition: write:*
+        - resourceServerId: web-modeler-public-api
+          definition: read:*
+        - resourceServerId: web-modeler-public-api
+          definition: create:*
+        - resourceServerId: web-modeler-public-api
+          definition: delete:*
+    - id: unprivileged
+      name: Unprivileged
+      secret:
+        existingSecret: integration-test-credentials
+        existingSecretKey: identity-admin-client-password
+      redirectUris: /dummy
+      rootUrl: http://dummy
+      type: confidential
+      permissions:
+        - resourceServerId: orchestration-api
+          definition: read:*
+        - resourceServerId: orchestration-api
           definition: write:*
 
 optimize:

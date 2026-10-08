@@ -163,19 +163,12 @@ Usage: {{ include "camundaPlatform.image" . }}
 
 {{/*
 Return the version label for resources.
-If an image digest is specified without a tag, fall back to .Chart.AppVersion (e.g., "8.8.x"); otherwise use the resolved image tag.
 */}}
 {{- define "camundaPlatform.versionLabel" -}}
   {{- $imageTag := include "camundaPlatform.imageTagByParams" (dict "base" .base "overlay" .overlay) -}}
-  {{- $imageDigest := .overlay.image.digest | default .base.image.digest -}}
-  {{- if $imageDigest }}
-    {{- /* Using digest: fall back to application version for label */ -}}
-    {{- .chart.AppVersion -}}
-  {{- else if $imageTag }}
-    {{- /* Using tag: use the tag for the label */ -}}
+  {{- if and (le (len $imageTag) 63) (regexMatch "^[A-Za-z0-9]([-A-Za-z0-9_.]*[A-Za-z0-9])?$" $imageTag) -}}
     {{- $imageTag -}}
-  {{- else }}
-    {{- /* Neither tag nor digest provided: use appVersion as default */ -}}
+  {{- else -}}
     {{- .chart.AppVersion -}}
   {{- end -}}
 {{- end -}}
@@ -328,7 +321,8 @@ NOTE: This is for Management Identity config, all new types will be supported vi
 {{- define "camundaPlatform.gatewayExternalURL" -}}
   {{- $tlsEnabled := .context.Values.global.gateway.tls.enabled -}}
   {{- $proto := ternary "https" "http" $tlsEnabled -}}
-  {{- $port := ternary .context.Values.global.gateway.tls.port .context.Values.global.gateway.port $tlsEnabled -}}
+  {{- $ports := .context.Values.global.gateway.publicPorts | default dict -}}
+  {{- $port := ternary ($ports.https | default .context.Values.global.gateway.tls.port) ($ports.http | default .context.Values.global.gateway.port) $tlsEnabled -}}
   {{- $defaultPort := ternary 443 80 $tlsEnabled -}}
   {{- $host := tpl .host .context -}}
   {{- if eq (int $port) $defaultPort -}}

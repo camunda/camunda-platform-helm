@@ -100,9 +100,9 @@ func (s *configmapRestAPITemplateTest) TestIngressPublicWebsocketPort() {
 				helm.UnmarshalK8SYaml(t, output, &configMap)
 				var application WebModelerRestAPIApplicationYAML
 				require.NoError(t, yaml.Unmarshal([]byte(configMap.Data["application.yaml"]), &application))
-				require.Equal(t, input.wantPort, application.Camunda.Modeler.Pusher.Client.Port)
-				require.Equal(t, input.ingress == "true" && input.tls == "true" && input.contextPath != "", application.Camunda.Modeler.Pusher.Client.ForceTLS)
-				require.Equal(t, "https://explicit.example.com:9443/modeler", application.Camunda.Modeler.Server.Url)
+				require.Equal(t, input.wantPort, application.Camunda.Hub.Pusher.Client.Port)
+				require.Equal(t, input.ingress == "true" && input.tls == "true" && input.contextPath != "", application.Camunda.Hub.Pusher.Client.ForceTLS)
+				require.Equal(t, "https://explicit.example.com:9443/modeler", application.Camunda.Hub.Server.Url)
 			},
 		})
 	}
@@ -133,7 +133,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectAuthClientAp
 	}
 
 	// then
-	s.Require().Equal("custom-audience", configmapApplication.Camunda.Modeler.Security.JWT.Audience.InternalAPI)
+	s.Require().Equal("custom-audience", configmapApplication.Camunda.Hub.Security.JWT.Audience.InternalAPI)
 }
 
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectCamundaHubAuthValues() {
@@ -165,9 +165,9 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectCamundaHubAu
 	}
 
 	// then
-	s.Require().Equal("custom-hub-audience", configmapApplication.Camunda.Modeler.Security.JWT.Audience.InternalAPI)
-	s.Require().Equal("custom-hub-clientId", configmapApplication.Camunda.Modeler.OAuth2.ClientId)
-	s.Require().Equal("https://hub.example.com", configmapApplication.Camunda.Modeler.Server.Url)
+	s.Require().Equal("custom-hub-audience", configmapApplication.Camunda.Hub.Security.JWT.Audience.InternalAPI)
+	s.Require().Equal("custom-hub-clientId", configmapApplication.Camunda.Hub.OAuth2.ClientId)
+	s.Require().Equal("https://hub.example.com", configmapApplication.Camunda.Hub.Server.Url)
 }
 
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectAuthPublicApiAudience() {
@@ -194,7 +194,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectAuthPublicAp
 	}
 
 	// then
-	s.Require().Equal("custom-audience", configmapApplication.Camunda.Modeler.Security.JWT.Audience.PublicAPI)
+	s.Require().Equal("custom-audience", configmapApplication.Camunda.Hub.Security.JWT.Audience.PublicAPI)
 }
 
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectAuthClientId() {
@@ -221,7 +221,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectAuthClientId
 	}
 
 	// then
-	s.Require().Equal("custom-clientId", configmapApplication.Camunda.Modeler.OAuth2.ClientId)
+	s.Require().Equal("custom-clientId", configmapApplication.Camunda.Hub.OAuth2.ClientId)
 }
 
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectAuthTokenUsernameClaim() {
@@ -248,7 +248,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectAuthTokenUse
 	}
 
 	// then
-	s.Require().Equal("example-claim", configmapApplication.Camunda.Modeler.OAuth2.Token.UsernameClaim)
+	s.Require().Equal("example-claim", configmapApplication.Camunda.Identity.UsernameClaim)
 }
 
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectIdentityServiceUrlWithFullnameOverride() {
@@ -364,7 +364,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectKeycloakServ
 	}
 
 	// then
-	s.Require().Equal("http://keycloak:80/auth/realms/camunda-platform", configmapApplication.Camunda.Modeler.Security.JWT.Issuer.BackendUrl)
+	s.Require().Equal("http://keycloak:80/auth/realms/camunda-platform", configmapApplication.Camunda.Identity.IssuerBackendURL)
 }
 
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectKeycloakServiceUrlWithCustomPort() {
@@ -393,7 +393,34 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectKeycloakServ
 	}
 
 	// then
-	s.Require().Equal("http://keycloak:8888/auth/realms/camunda-platform", configmapApplication.Camunda.Modeler.Security.JWT.Issuer.BackendUrl)
+	s.Require().Equal("http://keycloak:8888/auth/realms/camunda-platform", configmapApplication.Camunda.Identity.IssuerBackendURL)
+}
+
+func (s *configmapRestAPITemplateTest) TestContainerShouldSetIssuerBackendUrlWhenIdentityDisabled() {
+	// given
+	values := maps.Clone(requiredValues)
+	maps.Insert(values, maps.All(map[string]string{
+		"identity.enabled":                      "false",
+		"global.identity.service.url":           "http://identity.external:8080",
+		"global.identity.auth.enabled":          "true",
+		"global.identity.auth.issuerBackendUrl": "http://keycloak.idns.svc:80/auth/realms/camunda-platform",
+	}))
+	options := &helm.Options{
+		SetValues:      values,
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication WebModelerRestAPIApplicationYAML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	s.Require().NoError(err)
+
+	// then
+	s.Require().Equal("http://keycloak.idns.svc:80/auth/realms/camunda-platform", configmapApplication.Camunda.Identity.IssuerBackendURL)
 }
 
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetSmtpCredentials() {
@@ -540,9 +567,9 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterFromSa
 			}
 
 			// then — two clusters: management-cluster (Identity) followed by default-cluster (Orchestration)
-			s.Require().Equal(2, len(configmapApplication.Camunda.Modeler.Clusters))
+			s.Require().Equal(2, len(configmapApplication.Camunda.Hub.Clusters))
 
-			mgmtCluster := configmapApplication.Camunda.Modeler.Clusters[0]
+			mgmtCluster := configmapApplication.Camunda.Hub.Clusters[0]
 			s.Require().Equal("management-cluster", mgmtCluster.Id)
 			s.Require().Equal("Management Identity", mgmtCluster.Name)
 			s.Require().Equal(false, mgmtCluster.Authorizations.Enabled)
@@ -557,7 +584,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterFromSa
 			s.Require().Equal("identity", identityComp.Type)
 			s.Require().Equal(identityComp.Version, mgmtCluster.Version)
 
-			defaultCluster := configmapApplication.Camunda.Modeler.Clusters[1]
+			defaultCluster := configmapApplication.Camunda.Hub.Clusters[1]
 			s.Require().Equal("default-cluster", defaultCluster.Id)
 			s.Require().Equal("test-zeebe", defaultCluster.Name)
 			s.Require().Equal("8.8.x-alpha1", defaultCluster.Version)
@@ -599,8 +626,8 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldOmitManagementClusterW
 	s.Require().NoError(err)
 
 	// then
-	s.Require().Len(configmapApplication.Camunda.Modeler.Clusters, 1)
-	defaultCluster := configmapApplication.Camunda.Modeler.Clusters[0]
+	s.Require().Len(configmapApplication.Camunda.Hub.Clusters, 1)
+	defaultCluster := configmapApplication.Camunda.Hub.Clusters[0]
 	s.Require().Equal("default-cluster", defaultCluster.Id)
 	s.Require().Equal("test-zeebe", defaultCluster.Name)
 	var orchestrationComp ComponentYAML
@@ -643,8 +670,8 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterRestUr
 	}
 
 	// then
-	s.Require().Equal(2, len(configmapApplication.Camunda.Modeler.Clusters))
-	defaultCluster := configmapApplication.Camunda.Modeler.Clusters[1]
+	s.Require().Equal(2, len(configmapApplication.Camunda.Hub.Clusters))
+	defaultCluster := configmapApplication.Camunda.Hub.Clusters[1]
 	s.Require().Equal("default-cluster", defaultCluster.Id)
 	var orchestrationComp ComponentYAML
 	for _, c := range defaultCluster.Components {
@@ -685,7 +712,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldUseSecureGrpcUrlWhenOr
 	require.NoError(s.T(), err)
 
 	var orchestrationComp ComponentYAML
-	for _, cluster := range configmapApplication.Camunda.Modeler.Clusters {
+	for _, cluster := range configmapApplication.Camunda.Hub.Clusters {
 		for _, c := range cluster.Components {
 			if c.Type == "orchestration" {
 				orchestrationComp = c
@@ -744,27 +771,27 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldUseClustersFromCustomC
 	}
 
 	// then
-	s.Require().Equal(3, len(configmapApplication.Camunda.Modeler.Clusters))
-	s.Require().Equal("test-cluster-1", configmapApplication.Camunda.Modeler.Clusters[0].Id)
-	s.Require().Equal("test cluster 1", configmapApplication.Camunda.Modeler.Clusters[0].Name)
-	s.Require().Equal("8.6.0", configmapApplication.Camunda.Modeler.Clusters[0].Version)
-	s.Require().Equal("NONE", configmapApplication.Camunda.Modeler.Clusters[0].Authentication)
-	s.Require().Equal("grpc://orchestration.test-1:26500", configmapApplication.Camunda.Modeler.Clusters[0].Url.Zeebe.Grpc)
-	s.Require().Equal("http://orchestration.test-1:8080", configmapApplication.Camunda.Modeler.Clusters[0].Url.Zeebe.Rest)
-	s.Require().Equal("test-cluster-2", configmapApplication.Camunda.Modeler.Clusters[1].Id)
-	s.Require().Equal("test cluster 2", configmapApplication.Camunda.Modeler.Clusters[1].Name)
-	s.Require().Equal("8.8.0-alpha1", configmapApplication.Camunda.Modeler.Clusters[1].Version)
-	s.Require().Equal("BEARER_TOKEN", configmapApplication.Camunda.Modeler.Clusters[1].Authentication)
-	s.Require().Equal("grpc://orchestration.test-2:26500", configmapApplication.Camunda.Modeler.Clusters[1].Url.Grpc)
-	s.Require().Equal("http://orchestration.test-2:8080", configmapApplication.Camunda.Modeler.Clusters[1].Url.Rest)
-	s.Require().Equal("http://localhost:8088", configmapApplication.Camunda.Modeler.Clusters[1].Url.WebApp)
-	s.Require().Equal("test-cluster-3", configmapApplication.Camunda.Modeler.Clusters[2].Id)
-	s.Require().Equal("test cluster 3", configmapApplication.Camunda.Modeler.Clusters[2].Name)
-	s.Require().Equal("8.8.0-alpha1", configmapApplication.Camunda.Modeler.Clusters[2].Version)
-	s.Require().Equal("BASIC", configmapApplication.Camunda.Modeler.Clusters[2].Authentication)
-	s.Require().Equal("grpc://orchestration.test-3:26500", configmapApplication.Camunda.Modeler.Clusters[2].Url.Grpc)
-	s.Require().Equal("http://orchestration.test-3:8080", configmapApplication.Camunda.Modeler.Clusters[2].Url.Rest)
-	s.Require().Equal("http://localhost:8088", configmapApplication.Camunda.Modeler.Clusters[2].Url.WebApp)
+	s.Require().Equal(3, len(configmapApplication.Camunda.Hub.Clusters))
+	s.Require().Equal("test-cluster-1", configmapApplication.Camunda.Hub.Clusters[0].Id)
+	s.Require().Equal("test cluster 1", configmapApplication.Camunda.Hub.Clusters[0].Name)
+	s.Require().Equal("8.6.0", configmapApplication.Camunda.Hub.Clusters[0].Version)
+	s.Require().Equal("NONE", configmapApplication.Camunda.Hub.Clusters[0].Authentication)
+	s.Require().Equal("grpc://orchestration.test-1:26500", configmapApplication.Camunda.Hub.Clusters[0].Url.Zeebe.Grpc)
+	s.Require().Equal("http://orchestration.test-1:8080", configmapApplication.Camunda.Hub.Clusters[0].Url.Zeebe.Rest)
+	s.Require().Equal("test-cluster-2", configmapApplication.Camunda.Hub.Clusters[1].Id)
+	s.Require().Equal("test cluster 2", configmapApplication.Camunda.Hub.Clusters[1].Name)
+	s.Require().Equal("8.8.0-alpha1", configmapApplication.Camunda.Hub.Clusters[1].Version)
+	s.Require().Equal("BEARER_TOKEN", configmapApplication.Camunda.Hub.Clusters[1].Authentication)
+	s.Require().Equal("grpc://orchestration.test-2:26500", configmapApplication.Camunda.Hub.Clusters[1].Url.Grpc)
+	s.Require().Equal("http://orchestration.test-2:8080", configmapApplication.Camunda.Hub.Clusters[1].Url.Rest)
+	s.Require().Equal("http://localhost:8088", configmapApplication.Camunda.Hub.Clusters[1].Url.WebApp)
+	s.Require().Equal("test-cluster-3", configmapApplication.Camunda.Hub.Clusters[2].Id)
+	s.Require().Equal("test cluster 3", configmapApplication.Camunda.Hub.Clusters[2].Name)
+	s.Require().Equal("8.8.0-alpha1", configmapApplication.Camunda.Hub.Clusters[2].Version)
+	s.Require().Equal("BASIC", configmapApplication.Camunda.Hub.Clusters[2].Authentication)
+	s.Require().Equal("grpc://orchestration.test-3:26500", configmapApplication.Camunda.Hub.Clusters[2].Url.Grpc)
+	s.Require().Equal("http://orchestration.test-3:8080", configmapApplication.Camunda.Hub.Clusters[2].Url.Rest)
+	s.Require().Equal("http://localhost:8088", configmapApplication.Camunda.Hub.Clusters[2].Url.WebApp)
 }
 
 func (s *configmapRestAPITemplateTest) TestManagementClusterContainsOnlyIdentityComponent() {
@@ -791,12 +818,43 @@ func (s *configmapRestAPITemplateTest) TestManagementClusterContainsOnlyIdentity
 	}
 
 	// then
-	s.Require().GreaterOrEqual(len(configmapApplication.Camunda.Modeler.Clusters), 1)
-	mgmtCluster := configmapApplication.Camunda.Modeler.Clusters[0]
+	s.Require().GreaterOrEqual(len(configmapApplication.Camunda.Hub.Clusters), 1)
+	mgmtCluster := configmapApplication.Camunda.Hub.Clusters[0]
 	s.Require().Equal("management-cluster", mgmtCluster.Id)
 
 	s.Require().Len(mgmtCluster.Components, 1)
 	s.Require().Equal("identity", mgmtCluster.Components[0].Type)
+}
+
+func (s *configmapRestAPITemplateTest) TestManagementClusterVersion() {
+	newCase := func(name, identityTag, expectedClusterVersion string) testhelpers.TestCase {
+		return testhelpers.TestCase{
+			Name:   name,
+			Values: utils.MergeMaps(maps.Clone(requiredValues), map[string]string{"identity.image.tag": identityTag}),
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var configmap corev1.ConfigMap
+				var configmapApplication WebModelerRestAPIApplicationYAML
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+				require.NoError(t, yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication))
+
+				mgmtCluster := configmapApplication.Camunda.Hub.Clusters[0]
+				s.Require().Equal("management-cluster", mgmtCluster.Id)
+				s.Require().Equal(expectedClusterVersion, mgmtCluster.Version)
+				s.Require().Len(mgmtCluster.Components, 1)
+				s.Require().Equal(identityTag, mgmtCluster.Components[0].Version)
+			},
+		}
+	}
+
+	testCases := []testhelpers.TestCase{
+		newCase("ReleaseTag", "8.10.3", "8.10.3"),
+		newCase("PrereleaseTag", "8.10.0-alpha5.1", "8.10.0-alpha5.1"),
+		newCase("NonVersionTag", "pr-dbfda8c", "8.10-SNAPSHOT"),
+		newCase("BareSnapshotTag", "SNAPSHOT", "8.10-SNAPSHOT"),
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
 func (s *configmapRestAPITemplateTest) TestContainerShouldNotConfigureClustersIfZeebeDisabledAndNoCustomConfiguration() {
@@ -822,7 +880,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldNotConfigureClustersIf
 	}
 
 	// then
-	s.Require().Empty(configmapApplication.Camunda.Modeler.Clusters)
+	s.Require().Empty(configmapApplication.Camunda.Hub.Clusters)
 }
 
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetJwkSetUriFromJwksUrlProperty() {
@@ -962,8 +1020,8 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectServerUrlAnd
 	}
 
 	// then
-	s.Require().Equal("https://modeler.example.com", configmapApplication.Camunda.Modeler.Server.Url)
-	s.Require().Equal("true", configmapApplication.Camunda.Modeler.Server.HttpsOnly)
+	s.Require().Equal("https://modeler.example.com", configmapApplication.Camunda.Hub.Server.Url)
+	s.Require().Equal("true", configmapApplication.Camunda.Hub.Server.HttpsOnly)
 }
 
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectContextPath() {
@@ -1018,7 +1076,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectClientPusher
 	}
 
 	// then
-	s.Require().Equal("8082", configmapApplication.Camunda.Modeler.Pusher.Client.Port)
+	s.Require().Equal("8082", configmapApplication.Camunda.Hub.Pusher.Client.Port)
 }
 
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectClientPusherConfigurationWithGlobalIngressTlsDisabled() {
@@ -1048,10 +1106,10 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectClientPusher
 	}
 
 	// then
-	s.Require().Equal("c8.example.com", configmapApplication.Camunda.Modeler.Pusher.Client.Host)
-	s.Require().Equal("80", configmapApplication.Camunda.Modeler.Pusher.Client.Port)
-	s.Require().Equal("/modeler-ws", configmapApplication.Camunda.Modeler.Pusher.Client.Path)
-	s.Require().Equal(false, configmapApplication.Camunda.Modeler.Pusher.Client.ForceTLS)
+	s.Require().Equal("c8.example.com", configmapApplication.Camunda.Hub.Pusher.Client.Host)
+	s.Require().Equal("80", configmapApplication.Camunda.Hub.Pusher.Client.Port)
+	s.Require().Equal("/modeler-ws", configmapApplication.Camunda.Hub.Pusher.Client.Path)
+	s.Require().Equal(false, configmapApplication.Camunda.Hub.Pusher.Client.ForceTLS)
 }
 
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectClientPusherConfigurationWithGlobalIngressTlsEnabled() {
@@ -1081,10 +1139,10 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectClientPusher
 	}
 
 	// then
-	s.Require().Equal("c8.example.com", configmapApplication.Camunda.Modeler.Pusher.Client.Host)
-	s.Require().Equal("443", configmapApplication.Camunda.Modeler.Pusher.Client.Port)
-	s.Require().Equal("/modeler-ws", configmapApplication.Camunda.Modeler.Pusher.Client.Path)
-	s.Require().Equal(true, configmapApplication.Camunda.Modeler.Pusher.Client.ForceTLS)
+	s.Require().Equal("c8.example.com", configmapApplication.Camunda.Hub.Pusher.Client.Host)
+	s.Require().Equal("443", configmapApplication.Camunda.Hub.Pusher.Client.Port)
+	s.Require().Equal("/modeler-ws", configmapApplication.Camunda.Hub.Pusher.Client.Path)
+	s.Require().Equal(true, configmapApplication.Camunda.Hub.Pusher.Client.ForceTLS)
 }
 
 func (s *configmapRestAPITemplateTest) TestGlobalIngressHostTemplating() {
@@ -1104,7 +1162,7 @@ func (s *configmapRestAPITemplateTest) TestGlobalIngressHostTemplating() {
 
 				// Verify templated global.host is resolved
 				// The release name is "camunda-platform-test" so host should resolve to "camunda-platform-test.example.com"
-				s.Require().Equal("camunda-platform-test.example.com", configmapApplication.Camunda.Modeler.Pusher.Client.Host, "Pusher host should contain resolved templated host")
+				s.Require().Equal("camunda-platform-test.example.com", configmapApplication.Camunda.Hub.Pusher.Client.Host, "Pusher host should contain resolved templated host")
 			},
 		},
 		{
@@ -1129,7 +1187,7 @@ func (s *configmapRestAPITemplateTest) TestGlobalIngressHostTemplating() {
 				}
 
 				// Verify literal host values still work (backward compatibility)
-				s.Require().Equal("literal.example.com", configmapApplication.Camunda.Modeler.Pusher.Client.Host, "Pusher host should contain literal host")
+				s.Require().Equal("literal.example.com", configmapApplication.Camunda.Hub.Pusher.Client.Host, "Pusher host should contain literal host")
 			},
 		},
 	}
@@ -1271,6 +1329,34 @@ func (s *configmapRestAPITemplateTest) TestMailFromAddressOptionalForExtraConfig
 		},
 	}
 
+	for _, migrated := range []struct {
+		name         string
+		valuesFile   string
+		importedFile string
+	}{
+		{"LegacyPrefix", "values-mail-from-address-migrated-legacy-prefix.yaml", "mail.yaml"},
+		{"DottedKey", "values-mail-from-address-migrated-dotted.yaml", "mail.yaml"},
+		{"PropertiesFile", "values-mail-from-address-migrated-properties.yaml", "mail.properties"},
+		{"MultiDocumentYaml", "values-mail-from-address-migrated-multidoc.yaml", "mail.yaml"},
+	} {
+		testCases = append(testCases, testhelpers.TestCase{
+			Name: "TestFromAddressMigratedViaExtraConfiguration" + migrated.name,
+			ValuesFiles: []string{
+				filepath.Join(s.chartPath, "test/unit/web-modeler/testdata", migrated.valuesFile),
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				applicationYaml := configmap.Data["application.yaml"]
+				s.Require().NotContains(applicationYaml, "from-address:",
+					"The from-address must be omitted so the imported extraConfiguration file supplies it")
+				s.Require().Contains(applicationYaml, "optional:file:/home/runner/config/"+migrated.importedFile,
+					"The extraConfiguration file must be imported")
+			},
+		})
+	}
+
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
@@ -1291,11 +1377,100 @@ func (s *configmapRestAPITemplateTest) TestTestMode() {
 				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 				e := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
 				require.NoError(t, e)
-				s.Require().Equal("false", configmapApplication.Camunda.Modeler.Feature.TestModeEnabled,
+				s.Require().Equal("false", configmapApplication.Camunda.Hub.Feature.TestModeEnabled,
 					"test-mode-enabled must be false  in engine-only mode (when there is no secondary storage)")
 			},
 		},
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *configmapRestAPITemplateTest) TestLegacyLoggingLevelKey() {
+	testCases := []struct {
+		name     string
+		values   map[string]string
+		expected map[string]any
+	}{
+		{
+			name:     "defaults",
+			values:   map[string]string{},
+			expected: map[string]any{"io.grpc": "INFO"},
+		},
+		{
+			name:     "legacy key is passed through",
+			values:   map[string]string{"webModeler.restapi.logging.level.io\\.camunda\\.modeler": "DEBUG"},
+			expected: map[string]any{"io.camunda.modeler": "DEBUG", "io.grpc": "INFO"},
+		},
+		{
+			name: "new key is kept alongside the legacy key",
+			values: map[string]string{
+				"webModeler.restapi.logging.level.io\\.camunda\\.modeler": "DEBUG",
+				"webModeler.restapi.logging.level.io\\.camunda\\.hub":     "TRACE",
+			},
+			expected: map[string]any{"io.camunda.hub": "TRACE", "io.camunda.modeler": "DEBUG", "io.grpc": "INFO"},
+		},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			options := &helm.Options{
+				SetValues:      utils.MergeMaps(maps.Clone(requiredValues), tc.values),
+				KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+			}
+
+			output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+			var configmap corev1.ConfigMap
+			helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+			var application struct {
+				Logging struct {
+					Level map[string]any `yaml:"level"`
+				} `yaml:"logging"`
+			}
+			require.NoError(s.T(), yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &application))
+
+			s.Require().Equal(tc.expected, application.Logging.Level)
+		})
+	}
+}
+
+func (s *configmapRestAPITemplateTest) TestLoggingLevelDeprecationWarnings() {
+	testCases := []struct {
+		name        string
+		values      map[string]string
+		contains    []string
+		notContains []string
+	}{
+		{
+			name:        "defaults emit no logging level warning",
+			values:      map[string]string{},
+			notContains: []string{"webModeler.restapi.logging.level.io.camunda"},
+		},
+		{
+			name:     "modeler level warns",
+			values:   map[string]string{"webModeler.restapi.logging.level.io\\.camunda\\.modeler": "DEBUG"},
+			contains: []string{"webModeler.restapi.logging.level.io.camunda.modeler", "webModeler.restapi.extraConfiguration"},
+		},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			options := &helm.Options{
+				SetValues:      utils.MergeMaps(maps.Clone(requiredValues), tc.values),
+				KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+			}
+
+			output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, []string{"templates/common/configmap-warnings.yaml"})
+			var configmap corev1.ConfigMap
+			helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+			for _, c := range tc.contains {
+				s.Require().Contains(configmap.Data["warnings"], c)
+			}
+			for _, c := range tc.notContains {
+				s.Require().NotContains(configmap.Data["warnings"], c)
+			}
+		})
+	}
 }

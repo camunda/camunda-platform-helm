@@ -194,6 +194,11 @@ on:
         required: false
         default: ""
         type: string
+      playwright-runner-image:
+        description: "Digest-pinned Playwright runner image (empty uses latest and disables result caching)"
+        required: false
+        default: ""
+        type: string
       camunda-version:
         description: "Camunda version (e.g., 8.9) for cache result recording"
         required: false
@@ -366,7 +371,7 @@ jobs:
       TEST_CLUSTER_TYPE: ${{ inputs.distro-type || inputs.cluster-type }}
 
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@5251cf2838875fd6cab406a1ffa16af1355474a8 # main
       - name: Info - ℹ️ Print workflow inputs ℹ️
         env:
           GITHUB_CONTEXT: ${{ toJson(inputs) }}
@@ -601,7 +606,7 @@ jobs:
           EXTRA_VALUES: ${{ inputs.extra-values }}
         run: |
           # Persist user-supplied extra values for `deploy-camunda matrix run` to consume
-          # via --extra-values (flags.Deployment.ExtraValues → digest-overlay strip).
+          # via --extra-values (flags.Deployment.ExtraValues → image resolver).
           # Written without echoing to stdout to avoid leaking sensitive values into logs.
           echo "$EXTRA_VALUES" > /tmp/extra-values-file.yaml
 
@@ -712,17 +717,10 @@ jobs:
             FORCE_IMAGE_OVERRIDE_ARGS=(--force-image-overrides)
           fi
 
-          # Convert VALUES_CONFIG JSON to .env file. In OCI immutability mode,
-          # strip image tag keys so the released chart artifact remains the
-          # source of truth while non-image test config (index prefixes, etc.) stays available.
+          # Convert VALUES_CONFIG JSON to .env file.
           ENV_FILE_ARGS=()
           if [[ -n "${VALUES_CONFIG:-}" && "${VALUES_CONFIG}" != "{}" ]]; then
-            if [[ -n "${HELM_CHART_VERSION:-}" && "${FORCE_IMAGE_OVERRIDES}" != "true" ]]; then
-              echo "::notice::OCI artifact immutability mode: stripping *_IMAGE_TAG values from values-config"
-              echo "${VALUES_CONFIG}" | jq -r 'to_entries[] | select((.key | endswith("_IMAGE_TAG")) | not) | "\(.key)=\(.value)"' > /tmp/values-config.env
-            else
-              echo "${VALUES_CONFIG}" | jq -r 'to_entries[] | "\(.key)=\(.value)"' > /tmp/values-config.env
-            fi
+            echo "${VALUES_CONFIG}" | jq -r 'to_entries[] | "\(.key)=\(.value)"' > /tmp/values-config.env
             if [[ -s /tmp/values-config.env ]]; then
               ENV_FILE_ARGS=(--env-file /tmp/values-config.env)
             fi
@@ -730,7 +728,7 @@ jobs:
 
           # Forward workflow extra-values via --extra-values (NOT
           # --extra-helm-arg=--values=…): only this path lands in
-          # flags.Deployment.ExtraValues, which engages the digest-overlay strip.
+          # flags.Deployment.ExtraValues, which the image resolver ranks.
           # The upgrade flow forwards the same way; runner_upgrade.go nils Step 1's
           # copy so the override applies to Step 2 (the upgraded chart) only.
           EXTRA_VALUES_ARGS=()
@@ -899,7 +897,7 @@ jobs:
       TEST_CLUSTER_TYPE: ${{ inputs.distro-type || inputs.cluster-type }}
 
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@5251cf2838875fd6cab406a1ffa16af1355474a8 # main
       - name: Info - ℹ️ Print workflow inputs ℹ️
         env:
           GITHUB_CONTEXT: ${{ toJson(inputs) }}
@@ -1143,16 +1141,10 @@ jobs:
             FORCE_IMAGE_OVERRIDE_ARGS=(--force-image-overrides)
           fi
 
-          # Convert VALUES_CONFIG JSON to .env file. In OCI immutability mode,
-          # strip image tag keys so the released chart artifact remains the source of truth.
+          # Convert VALUES_CONFIG JSON to .env file.
           ENV_FILE_ARGS=()
           if [[ -n "${VALUES_CONFIG:-}" && "${VALUES_CONFIG}" != "{}" ]]; then
-            if [[ -n "${HELM_CHART_VERSION:-}" && "${FORCE_IMAGE_OVERRIDES}" != "true" ]]; then
-              echo "::notice::OCI artifact immutability mode: stripping *_IMAGE_TAG values from values-config"
-              echo "${VALUES_CONFIG}" | jq -r 'to_entries[] | select((.key | endswith("_IMAGE_TAG")) | not) | "\(.key)=\(.value)"' > /tmp/values-config.env
-            else
-              echo "${VALUES_CONFIG}" | jq -r 'to_entries[] | "\(.key)=\(.value)"' > /tmp/values-config.env
-            fi
+            echo "${VALUES_CONFIG}" | jq -r 'to_entries[] | "\(.key)=\(.value)"' > /tmp/values-config.env
             if [[ -s /tmp/values-config.env ]]; then
               ENV_FILE_ARGS=(--env-file /tmp/values-config.env)
             fi
@@ -1271,7 +1263,7 @@ jobs:
     needs: [install]
     runs-on: ${{ matrix.suite == 'full' && 'gcp-core-32-longrunning-big-ssd' || 'gcp-core-8-release' }}
     container:
-      image: ghcr.io/camunda/team-distribution/playwright-runner:latest
+      image: ${{ inputs.playwright-runner-image || 'ghcr.io/camunda/team-distribution/playwright-runner:latest' }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -1281,7 +1273,7 @@ jobs:
         shell: bash
     if: ${{ inputs.test-enabled && inputs.e2e-enabled && inputs.flow == 'install' && !inputs.skip-e2e && !inputs.is-topology }}
     continue-on-error: ${{ !matrix.blocking }}
-    timeout-minutes: ${{ matrix.suite == 'full' && 50 || 25 }}
+    timeout-minutes: ${{ matrix.suite == 'full' && 50 || matrix.suite == 'api' && 40 || 25 }}
     strategy:
       fail-fast: false
       # Legs share one deployment and smoke-tests.spec.js runs in both projects,
@@ -1295,7 +1287,7 @@ jobs:
       deployments: write
       packages: read
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@5251cf2838875fd6cab406a1ffa16af1355474a8 # main
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -1349,6 +1341,22 @@ jobs:
           e2e-test-suite-version: ${{ inputs.e2e-test-suite-version }}
           scenario: ${{ inputs.scenario }}
           run-smoke-tests: ${{ matrix.suite == 'smoke' }}
+          playwright-project: ${{ matrix.suite == 'api' && 'api' || '' }}
+          artifact-suffix: ${{ matrix.suite == 'api' && 'api' || '' }}
+      # continue-on-error reports a failed non-blocking leg as success in
+      # needs.*.result; record-result requires this marker from every leg instead.
+      - name: Write e2e leg pass marker
+        run: |
+          mkdir -p "${RUNNER_TEMP}/e2e-leg-passed"
+          touch "${RUNNER_TEMP}/e2e-leg-passed/${{ matrix.suite }}-${{ matrix.shard_index }}"
+      - name: Upload e2e leg pass marker
+        continue-on-error: true # A lost marker only skips the cache write.
+        uses: ./.github/actions/upload-artifact-retry
+        with:
+          name: e2e-leg-passed-${{ inputs.identifier }}-${{ inputs.flow }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.suite }}-${{ matrix.shard_index }}
+          path: ${{ runner.temp }}/e2e-leg-passed
+          retention-days: 1
+          if-no-files-found: error
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -1368,7 +1376,7 @@ jobs:
     needs: [install]
     runs-on: gcp-core-32-longrunning-big-ssd
     container:
-      image: ghcr.io/camunda/team-distribution/playwright-runner:latest
+      image: ${{ inputs.playwright-runner-image || 'ghcr.io/camunda/team-distribution/playwright-runner:latest' }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -1385,7 +1393,7 @@ jobs:
       deployments: write
       packages: read
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@5251cf2838875fd6cab406a1ffa16af1355474a8 # main
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -1462,7 +1470,7 @@ jobs:
     needs: [install]
     runs-on: gcp-core-8-release
     container:
-      image: ghcr.io/camunda/team-distribution/playwright-runner:latest
+      image: ${{ inputs.playwright-runner-image || 'ghcr.io/camunda/team-distribution/playwright-runner:latest' }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -1490,7 +1498,7 @@ jobs:
       deployments: write
       packages: read
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@5251cf2838875fd6cab406a1ffa16af1355474a8 # main
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -1538,7 +1546,7 @@ jobs:
 
       - name: Generate E2E repository token
         id: e2e-repository-token
-        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@5251cf2838875fd6cab406a1ffa16af1355474a8 # main
         with:
           github-app-id-vault-key: GITHUB_APP_ID
           github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/quality-assurance-ci
@@ -1605,7 +1613,7 @@ jobs:
     needs: [upgrade]
     runs-on: gcp-core-8-release
     container:
-      image: ghcr.io/camunda/team-distribution/playwright-runner:latest
+      image: ${{ inputs.playwright-runner-image || 'ghcr.io/camunda/team-distribution/playwright-runner:latest' }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -1626,7 +1634,7 @@ jobs:
       deployments: write
       packages: read
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@5251cf2838875fd6cab406a1ffa16af1355474a8 # main
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -1780,7 +1788,8 @@ jobs:
     name: Record cache result - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
     needs: [install, playwright-e2e-tests-after-install, playwright-e2e-tests-after-upgrade, merge-e2e-reports, e2e-topology-smoke]
     # Only record when:
-    # 1. All prerequisite jobs succeeded (or were skipped — e.g., e2e tests skipped for skip-e2e scenarios)
+    # 1. All prerequisite jobs succeeded (or were skipped — e.g., e2e tests skipped for skip-e2e scenarios),
+    #    (non-blocking e2e legs are checked by their pass markers in the steps below)
     #    Note: we check both 'failure' AND 'cancelled' to prevent false positives when
     #    tests are cancelled (e.g., timeout). A cancelled job result is 'cancelled', not 'failure'.
     # 2. PR HEAD SHA is available (set by the init job for merge_group and pull_request events)
@@ -1793,7 +1802,8 @@ jobs:
         inputs.pr-head-sha != '' &&
         inputs.camunda-version != '' &&
         inputs.chart-versions != '' &&
-        inputs.e2e-test-suite-version != ''
+        inputs.e2e-test-suite-version != '' &&
+        inputs.playwright-runner-image != ''
       }}
     runs-on: ubuntu-latest
     permissions:
@@ -1813,7 +1823,41 @@ jobs:
           cache: true
           cache-dependency-path: scripts/ci-result-cache/go.sum
 
+      # Markers from this attempt only: a leg that "Re-run failed jobs" did not
+      # re-run has none, which skips the write rather than reuse an older pass.
+      - name: Download e2e leg pass markers
+        if: needs.playwright-e2e-tests-after-install.result == 'success'
+        continue-on-error: true
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          path: ${{ runner.temp }}/e2e-leg-passed
+          pattern: e2e-leg-passed-${{ inputs.identifier }}-${{ inputs.flow }}-${{ github.run_id }}-${{ github.run_attempt }}-*
+          merge-multiple: true
+
+      - name: Check every e2e leg passed
+        id: e2e-legs
+        env:
+          E2E_RESULT: ${{ needs.playwright-e2e-tests-after-install.result }}
+          E2E_MATRIX: ${{ inputs.e2e-matrix }}
+          MARKERS: ${{ runner.temp }}/e2e-leg-passed
+        run: |
+          if [[ "$E2E_RESULT" == "skipped" ]]; then
+            echo "record=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          missing=()
+          while read -r leg; do
+            [[ -f "${MARKERS}/${leg}" ]] || missing+=("$leg")
+          done < <(jq -r '.[] | "\(.suite)-\(.shard_index)"' <<<"$E2E_MATRIX")
+          if (( ${#missing[@]} > 0 )); then
+            echo "::notice::Not recording a cache result: no pass marker for e2e leg(s) ${missing[*]}"
+            echo "record=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "record=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Record passing result
+        if: steps.e2e-legs.outputs.record == 'true'
         env:
           GITHUB_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
@@ -1827,6 +1871,7 @@ jobs:
             --platform "${{ inputs.distro-platform }}" \
             --chart-versions "${{ inputs.chart-versions }}" \
             --e2e-test-suite-version "${{ inputs.e2e-test-suite-version }}" \
+            --playwright-runner-image "${{ inputs.playwright-runner-image }}" \
             --repo-root "${{ github.workspace }}" \
             --target-url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 

@@ -37,7 +37,8 @@ Commands:
   record           Record a passing scenario result as a commit status
   check            Check if a scenario result is cached and valid
   invalidate       Invalidate cached results for a scenario or version
-  annotate-matrix  Annotate a CI matrix JSON with cached/uncached flags`,
+  annotate-matrix  Annotate a CI matrix JSON with cached/uncached flags
+  resolve-runner-image  Resolve the immutable Playwright runner image`,
 	SilenceErrors: true,
 	SilenceUsage:  true,
 }
@@ -52,4 +53,5 @@ func init() {
 	rootCmd.AddCommand(checkCmd)
 	rootCmd.AddCommand(invalidateCmd)
 	rootCmd.AddCommand(annotateMatrixCmd)
+	rootCmd.AddCommand(resolveRunnerImageCmd)
 }

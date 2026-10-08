@@ -93,8 +93,8 @@ func PrintDeploymentConfig(name string, dep config.DeploymentConfig, root config
 	repoRootStr := config.FirstNonEmpty(dep.RepoRoot, root.RepoRoot)
 	scenarioRootStr := config.FirstNonEmpty(dep.ScenarioRoot, root.ScenarioRoot)
 	valuesPresetStr := config.FirstNonEmpty(dep.ValuesPreset, root.ValuesPreset)
-	platformStr := root.Platform
-	logLevelStr := root.LogLevel
+	platformStr := config.FirstNonEmpty(dep.Platform, root.Platform)
+	logLevelStr := config.FirstNonEmpty(dep.LogLevel, root.LogLevel)
 
 	// If stdout is not a terminal, output YAML for scripting
 	if !logging.IsTerminal(os.Stdout.Fd()) {

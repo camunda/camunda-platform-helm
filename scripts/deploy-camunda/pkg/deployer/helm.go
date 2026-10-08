@@ -165,7 +165,7 @@ func upgradeInstall(ctx context.Context, o types.Options) error {
 
 	args = appendHelmValueArgs(args, o)
 
-	runCtx, guard := guardedContext(ctx, o, o.Wait)
+	runCtx, guard := guardedContext(ctx, o, o.ReleaseName, o.Wait)
 	defer guard.Stop()
 
 	stderr, runErr := helmRunWithRetry(runCtx, args)
@@ -182,25 +182,25 @@ func upgradeInstall(ctx context.Context, o types.Options) error {
 // guardedContext starts the image pull guard for a waiting Helm run, or returns
 // the context untouched with a no-op guard when the run does not wait (nothing
 // to abort) or the guard is disabled.
-func guardedContext(ctx context.Context, o types.Options, waits bool) (context.Context, *imagePullGuard) {
+func guardedContext(ctx context.Context, o types.Options, release string, waits bool) (context.Context, *imagePullGuard) {
 	if !waits || !imagePullGuardEnabled() {
 		return ctx, noopImagePullGuard()
 	}
-	return startImagePullGuard(ctx, o)
+	return startImagePullGuard(ctx, o, release)
 }
 
 // guardedReason replaces the generic failure reason when the guard is what ended
 // the run, so the error names the actual problem instead of the Helm exit.
 func guardedReason(defaultReason string, guard *imagePullGuard) string {
-	if guard.Stop() != nil {
-		return "helm upgrade --install aborted early: unresolvable container image"
+	if failure := guard.Stop(); failure != nil {
+		return failure.abortReason()
 	}
 	return defaultReason
 }
 
-// guardedCause substitutes the observed image pull failure for the Helm process
-// error. Cancelling the context kills helm, so runErr would otherwise read
-// "signal: killed", which explains nothing.
+// guardedCause substitutes the observed terminal pod failure for the Helm
+// process error. Cancelling the context kills helm, so runErr would otherwise
+// read "signal: killed", which explains nothing.
 func guardedCause(runErr error, guard *imagePullGuard, o types.Options, release string, readinessTimeout bool) error {
 	if failure := guard.Stop(); failure != nil {
 		return failure
@@ -242,6 +242,13 @@ var newReadinessClient = func(kubeconfig, kubeContext string) (readinessClient, 
 	return kube.NewClient(kubeconfig, kubeContext)
 }
 
+func podReleaseName(pod corev1.Pod) string {
+	if instance := pod.Labels["app.kubernetes.io/instance"]; instance != "" {
+		return instance
+	}
+	return pod.Labels["release"]
+}
+
 func collectReadinessSummary(o types.Options, release string) string {
 	if o.Namespace == "" || release == "" {
 		return ""
@@ -258,11 +265,7 @@ func collectReadinessSummary(o types.Options, release string) string {
 	}
 	var unready []corev1.Pod
 	for _, pod := range pods.Items {
-		instance := pod.Labels["app.kubernetes.io/instance"]
-		if instance == "" {
-			instance = pod.Labels["release"]
-		}
-		if instance != release || pod.DeletionTimestamp != nil || pod.Status.Phase != corev1.PodRunning {
+		if podReleaseName(pod) != release || pod.DeletionTimestamp != nil || pod.Status.Phase != corev1.PodRunning {
 			continue
 		}
 		for _, container := range pod.Status.ContainerStatuses {
@@ -522,7 +525,7 @@ func deployCompanionChart(ctx context.Context, cc types.CompanionChart, o types.
 	}
 
 	// Companion charts always pass --wait (see the args above), independently of o.Wait.
-	runCtx, guard := guardedContext(ctx, o, true)
+	runCtx, guard := guardedContext(ctx, o, cc.ReleaseName, true)
 	defer guard.Stop()
 
 	stderr, runErr := helmRunWithRetry(runCtx, args)

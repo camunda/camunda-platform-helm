@@ -79,7 +79,7 @@ func HelmCLIVersion(appVersion, toolVersionsPin string) string {
 				return helmV3Version
 			}
 			return toolVersionsPin
-		case minor == 9 || minor == 10:
+		case minor >= 9 && minor <= 10:
 			if isV4 {
 				return helmV3Version + "," + toolVersionsPin
 			}

@@ -154,6 +154,12 @@ global:
       secretName: camunda-platform
       ## @param global.gateway.tls.port defines the port of the HTTPS Gateway listeners.
       port: 443
+    ## @extra global.gateway.publicPorts configuration for the ports clients use to reach Gateway endpoints when they differ from the Gateway listener ports, for example when a LoadBalancer Service maps port 443 to a listener on port 8443. Used by chart-derived URLs. Does not configure listeners or Services.
+    publicPorts:
+      ## @param global.gateway.publicPorts.http [default: ~] can be used to set the public port for Gateway endpoints with TLS disabled. Defaults to global.gateway.port. Port 80 is omitted from HTTP URLs.
+      http: ~
+      ## @param global.gateway.publicPorts.https [default: ~] can be used to set the public port for Gateway endpoints with TLS enabled. Defaults to global.gateway.tls.port. Port 443 is omitted from HTTPS URLs.
+      https: ~
     ## @param global.gateway.controllerNamespace can be used to set the namespace from which an external controller or operator creates Routes that route traffic to Camunda services. The chart places this value in the ReferenceGrant's from.namespace, which is the Kubernetes permission that authorizes those Routes to reach Camunda services. Leave empty (the default) when Routes are created by this chart.
     controllerNamespace: ""
     ## @param global.gateway.namespace can be used to set the namespace where the Gateway that the Routes point to lives. When the Gateway lives in a different namespace than the Camunda components (for example, a shared Gateway in an infrastructure namespace), set this to that namespace. The chart adds namespace: <value> to the parentRefs of every Route so Kubernetes can locate the cross-namespace Gateway. When unset, Kubernetes assumes the Gateway is in the same namespace as the Route. Also set global.gateway.createGatewayResource=false when the Gateway is managed outside this chart.
@@ -576,7 +582,7 @@ global:
     # External Keycloak: OIDC values are auto-derived but docs recommend setting them explicitly for split-horizon DNS.
     # External OIDC: all OIDC endpoint URLs must be explicitly provided.
     auth:
-      ## @param global.identity.auth.enabled if true, enables authentication on Management Identity .
+      ## @param global.identity.auth.enabled if true, enables authentication on Management Identity. Warns if neither a shared issuer nor an issuer backend URL resolves.
       # Required for all authentication modes (Internal Keycloak, External Keycloak, External OIDC).
       enabled: false
       ## @param global.identity.auth.issuer defines the issuer name, which is used by the services to validate the JWT tokens.
@@ -1456,7 +1462,7 @@ console:
     ## @param console.image.repository defines which image repository to use
     repository: camunda/console
     ## @param console.image.tag can be used to set the Docker image tag for the Console image
-    tag: 8.9.117
+    tag: 8.9.125
     ## @param console.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param console.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -2170,7 +2176,7 @@ webModeler:
     annotations: {}
     ## @param webModeler.persistence.selector can be used to define a label selector for the persistent volume claim
     selector: {}
-    ## @param webModeler.persistence.deploymentStrategy update strategy for the restapi Deployment. Defaults to RollingUpdate, which is always safe because the default chart-managed persistence path uses a per-pod ephemeral volume (no concurrent-attach contention). Set to "Recreate" only when using existingClaim with a ReadWriteOnce volume that cannot tolerate concurrent attach during a rollout (introduces brief downtime per upgrade).
+    ## @param webModeler.persistence.deploymentStrategy can be used to set the restapi Deployment update strategy, RollingUpdate or Recreate. Recreate requires webModeler.persistence.enabled, else the render fails. Use Recreate only with webModeler.persistence.existingClaim on a ReadWriteOnce volume; it adds downtime on each upgrade.
     deploymentStrategy: RollingUpdate
 
   ## @extra webModeler.serviceAccount configuration for the service account the WebModeler pods are assigned to
@@ -2561,7 +2567,7 @@ orchestration:
         tokenUrl: ""
         ## @param orchestration.security.authentication.oidc.jwksUrl can be used to override `global.identity.auth.jwksUrl`. Only takes effect if `orchestration.security.authentication.oidc.issuer` or `global.identity.auth.issuer` are not set. Supports templating (e.g., {{ .Release.Name }}).
         jwksUrl: ""
-        ## @param orchestration.security.authentication.oidc.usernameClaim can be used to set username claim.
+        ## @param orchestration.security.authentication.oidc.usernameClaim can be used to set username claim. This value also sets the Web Modeler username claim, even when `orchestration.enabled` is false. To set a different Web Modeler claim, set `camunda.modeler.oauth2.token.username-claim` in `webModeler.restapi.extraConfiguration`.
         usernameClaim: preferred_username
         ## @param orchestration.security.authentication.oidc.preferUsernameClaim can be used to set OIDC prefer-username-claim.
         preferUsernameClaim: false
@@ -2663,7 +2669,7 @@ orchestration:
     ## @param orchestration.image.repository defines which image repository to use
     repository: camunda/camunda
     ## @param orchestration.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.9.22
+    tag: 8.9.23
     ## @param orchestration.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param orchestration.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -3201,7 +3207,7 @@ optimize:
     ## @param optimize.image.repository defines which image repository to use
     repository: camunda/optimize
     ## @param optimize.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.9.22
+    tag: 8.9.23
     ## @param optimize.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param optimize.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod

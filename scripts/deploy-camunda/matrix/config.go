@@ -185,13 +185,16 @@ type CIScenario struct {
 	SkipE2E bool `yaml:"skip-e2e,omitempty"`
 
 	// E2E leg selection — declarative controls read from the scenario registry.
-	// Every scenario runs a "smoke" leg; E2EFullSuite adds a second "full" leg running
-	// the Playwright full-suite project. The blocking flags are *bool so an absent key
-	// keeps its default (smoke blocks, full does not) rather than reading as false;
-	// nil is resolved by E2ELegBlocking.
+	// Every scenario runs a "smoke" leg; E2EFullSuite adds a "full" leg running
+	// the Playwright full-suite project, and E2EAPISuite an "api" leg running the
+	// Orchestration Cluster REST v2 API suite. The blocking flags are *bool so an
+	// absent key keeps its default (smoke blocks, full and api do not) rather than
+	// reading as false; nil is resolved by e2eBlocking.
 	E2EFullSuite         bool  `yaml:"e2e-full-suite,omitempty"`
 	E2ESmokeBlocking     *bool `yaml:"e2e-smoke-blocking,omitempty"`
 	E2EFullSuiteBlocking *bool `yaml:"e2e-full-suite-blocking,omitempty"`
+	E2EAPISuite          bool  `yaml:"e2e-api-suite,omitempty"`
+	E2EAPISuiteBlocking  *bool `yaml:"e2e-api-suite-blocking,omitempty"`
 
 	// Profiles names reusable dependency profiles (see
 	// integration.dependency-profiles) to expand into this scenario's

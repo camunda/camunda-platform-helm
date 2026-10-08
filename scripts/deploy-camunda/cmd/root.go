@@ -163,6 +163,7 @@ func NewRootCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			warnDeprecatedInfra(loadedConfig)
 			rootConfig = loadedConfig
 			// Hand the resolved config path to the preflight via flags.
 			if cfgRes != nil {
@@ -297,6 +298,8 @@ func NewRootCommand() *cobra.Command {
 	f.BoolVar(&flags.Deployment.RenderTemplates, "render-templates", false, "Render manifests to a directory instead of installing")
 	f.StringVar(&flags.Deployment.RenderOutputDir, "render-output-dir", "", "Output directory for rendered manifests (defaults to ./rendered/<release>)")
 	f.StringSliceVar(&flags.Deployment.ExtraValues, "extra-values", nil, "Additional Helm values files to apply last (comma-separated or repeatable)")
+	f.StringArrayVar(&flags.Deployment.ImageOverrides, "image-override", nil, "Pin one component's image above every values file (repeatable), e.g. orchestration=registry.camunda.cloud/team-camunda/camunda:8.10.0-SNAPSHOT or connectors=camunda/connectors-bundle@sha256:...")
+	f.BoolVar(&flags.Deployment.AllowDigestShadow, "allow-digest-shadow", false, "Keep a pinned digest when a later values file changes only the image registry/repository (e.g. a pull-through mirror)")
 	f.StringSliceVar(&flags.Chart.ChartRootOverlays, "values-preset", nil, "Chart-root overlay files to apply (comma-separated or repeatable): enterprise, digest, latest, local, bitnami-legacy (resolves to values-{name}.yaml)")
 	f.StringVar(&flags.Ingress.IngressSubdomain, "ingress-subdomain", "", "Ingress subdomain (requires --ingress-base-domain)")
 	f.StringVar(&flags.Ingress.IngressBaseDomain, "ingress-base-domain", "", "Base DNS zone used to compute the deploy's public URL — deploy-camunda joins <ingress-subdomain>.<base> (or the namespace if no subdomain is set) into CAMUNDA_HOSTNAME, which feeds Keycloak issuers, callback URLs, and every scenario values file. Set to the DNS zone your cluster's ingress controller serves, e.g. `ci.distro.ultrawombat.com` (Camunda CI) or `apps.mycompany.example`. Required for anything that reaches the cluster over HTTPS.")

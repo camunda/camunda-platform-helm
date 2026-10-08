@@ -1,14 +1,14 @@
 # Adopt release roles for multi-cluster deployment topology
 
-- Status: proposed
+- Status: accepted
 - Date: 2026-07-29
 - Decision-makers: Distribution team, Management Identity owners, Camunda Hub owners, Optimize owners
 
 ## Context and Problem Statement
 
-The Camunda Platform Helm chart is an umbrella chart that can deploy Hub plane components
+The Camunda Platform Helm chart is an umbrella chart that can deploy management plane components
 (Management Identity and Camunda Hub) and workload-plane components (Orchestration Cluster,
-Connectors, and Optimize) in one release. Operators also need to run one shared Hub plane with
+Connectors, and Optimize) in one release. Operators also need to run one shared management plane with
 multiple independently deployed Orchestration Clusters. Namespace placement alone does not describe
 that relationship: the Hub release must register clients and permissions, publish Camunda Hub
 inventory, and provide a reachable Management Identity service, while each orchestration release must
@@ -39,16 +39,16 @@ boundary so it is not relitigated per feature.
 
 ### Applicability by version
 
-This decision applies to the Camunda 8.10 Helm chart and later chart versions that retain the
-Hub/workload topology. Earlier chart versions keep their existing behavior and values.
+The full contract applies to the Camunda 8.10 Helm chart and later chart versions that retain the
+Hub/workload topology.
+
+Camunda Hub 8.10 can manage Orchestration Clusters 8.7 through 8.10, so charts 8.7, 8.8, and 8.9
+carry the subset of the contract that a workload release needs to connect to an 8.10 Hub release
+(constraint 17). Hub mode and the cluster inventory stay in 8.10, because Camunda Hub does not exist
+in the earlier charts.
 
 The `optimize` role and the Physical Tenant constraints below apply from the 8.10 chart, where
-Physical Tenants first ship, and are unreleased at the time of writing.
-
-The initial implementation lands in [PR #6688](https://github.com/camunda/camunda-platform-helm/pull/6688).
-Upgrade validation from 8.9 to an 8.10 CI topology is tracked separately in
-[issue #6696](https://github.com/camunda/camunda-platform-helm/issues/6696); it does not change this
-deployment contract.
+Physical Tenants first ship.
 
 ## Decision Drivers
 
@@ -63,7 +63,7 @@ deployment contract.
 - **Declarative GitOps operation.** Helm, Argo CD, and Flux must render the same desired resources from
   values alone. The contract must not depend on `.Release.IsUpgrade`, live-cluster `lookup`, or
   imperative discovery.
-- **Security isolation.** Multiple clusters that share a Hub plane or secondary storage must be
+- **Security isolation.** Multiple clusters that share a management plane or secondary storage must be
   able to use distinct clients, audiences, roles, secrets, and storage prefixes.
 - **Future packaging independence.** The relationship between Hub and workload releases must
   survive a future split of the umbrella chart into separately published charts.
@@ -163,6 +163,14 @@ The following constraints are normative:
     only; neither the chart nor the documentation may describe that arrangement as authorization
     isolation. Constraint 9 already separates their storage, and storage isolation MUST NOT be read
     as implying authorization isolation either.
+17. **Charts 8.7 through 8.9.** These charts MUST support only the `combined` and `orchestration`
+    roles. An orchestration release on these charts MUST provide a reachable
+    `global.identity.service.url` for the 8.10 Hub release. It MUST keep its version-specific
+    workload components: the unified Orchestration Cluster in 8.8 and 8.9, and Zeebe, Zeebe Gateway,
+    Operate, Tasklist, Connectors, and Optimize in 8.7. Hub inventory for an 8.7 release MUST use the legacy Operate, Tasklist, and
+    Zeebe service endpoints and MUST NOT publish an Orchestration Admin component. CI MUST test one
+    8.10 Hub release against 8.10, 8.9, 8.8, and 8.7 orchestration releases, each deployed from its
+    own chart and values layers.
 
 The initial chart implementation is scoped to fresh 8.10 topology deployments. Converting an existing
 combined production release into split releases requires separate data, storage, and rollback planning
@@ -176,6 +184,8 @@ and is not defined by this ADR.
 - GitOps tools and Helm render the same topology resources.
 - Client, role, endpoint, and storage isolation requirements become explicit and testable.
 - The model can survive future chart decomposition.
+- Every Orchestration Cluster version that Camunda Hub 8.10 supports has one tested workload-only
+  deployment contract.
 
 ### Negative Consequences
 
@@ -195,6 +205,10 @@ and is not defined by this ADR.
   any tenant also stops the default tenant inheriting the release's root exporters, which the chart
   previously hid by generating that block; a hand-written file must supply it, and omitting it stops
   the default tenant exporting silently.
+- The `orchestration` role has version-specific implementation details, because 8.7 predates the
+  unified Orchestration Cluster. Changes to the 8.10 inventory contract must keep the legacy 8.7
+  endpoint mapping while 8.7 is supported.
+- The backported role adds a public value to every supported patch line.
 
 ## Links
 
@@ -207,3 +221,8 @@ and is not defined by this ADR.
 - Optimize role implementation: [camunda-platform-helm#6884](https://github.com/camunda/camunda-platform-helm/pull/6884).
 - Physical Tenant configuration through `extraConfiguration`: [camunda-platform-helm#6889](https://github.com/camunda/camunda-platform-helm/pull/6889).
 - Per-tenant Optimize client and audience: [camunda-platform-helm#6902](https://github.com/camunda/camunda-platform-helm/pull/6902).
+
+## Changelog
+
+- 2026-09-22 — [#7012](https://github.com/camunda/camunda-platform-helm/pull/7012) — Backport the `orchestration` role to charts 8.7, 8.8, and 8.9 (was ADR 0098).
+- 2026-10-06 — [#7476](https://github.com/camunda/camunda-platform-helm/pull/7476) — Rename "Hub plane" to "management plane" to match the docs glossary.

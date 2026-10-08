@@ -1,6 +1,6 @@
 # Hub namespace layer for the dogfood topology (8.10).
 #
-# One shared Hub plane (Management Identity, Camunda Hub, Web Modeler, Keycloak,
+# One shared management plane (Management Identity, Camunda Hub, Web Modeler, Keycloak,
 # Elasticsearch) fronting three Orchestration Clusters:
 #   plain - no Physical Tenants, no logical multi-tenancy
 #   mt    - no Physical Tenants, logical multi-tenancy enabled

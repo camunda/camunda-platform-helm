@@ -15,7 +15,6 @@
 package scenarios
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -458,10 +457,8 @@ type BuilderOverrides struct {
 	Flow         string   // install, upgrade-patch, upgrade-minor
 	QA           bool
 	ImageTags    bool
-	ImageTagsSet bool // true when --image-tags was explicitly provided (prevents auto-detection override)
 	Upgrade      bool
 	ChartVersion string
-	ValuesConfig string // JSON config string; if it contains *_IMAGE_TAG keys, ImageTags is auto-enabled (only when ImageTagsSet is false)
 }
 
 // BuildDeploymentConfig is the single canonical constructor for DeploymentConfig.
@@ -511,9 +508,6 @@ func BuildDeploymentConfig(scenariosDir, scenario string, ov BuilderOverrides) (
 	if ov.ImageTags {
 		cfg.ImageTags = true
 	}
-	if !ov.Resolved && !ov.ImageTagsSet && !cfg.ImageTags && valuesConfigHasImageTags(ov.ValuesConfig) {
-		cfg.ImageTags = true
-	}
 	if ov.Upgrade {
 		cfg.Upgrade = true
 	}
@@ -532,22 +526,6 @@ func BuildDeploymentConfig(scenariosDir, scenario string, ov BuilderOverrides) (
 	}
 
 	return cfg, nil
-}
-
-func valuesConfigHasImageTags(valuesConfig string) bool {
-	if valuesConfig == "" || valuesConfig == "{}" {
-		return false
-	}
-	var m map[string]any
-	if err := json.Unmarshal([]byte(valuesConfig), &m); err != nil {
-		return false
-	}
-	for k := range m {
-		if strings.HasSuffix(k, "_IMAGE_TAG") {
-			return true
-		}
-	}
-	return false
 }
 
 // LayeredConfig is deprecated - use DeploymentConfig instead.

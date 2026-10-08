@@ -573,15 +573,16 @@ is driven entirely by orchestration.partitioning.
 Fail if the round-robin numbering cannot describe a consistent cluster. Node IDs are
 derived as "<ordinal> * numberOfZones + zoneIndex", so a zone indexed outside its own
 range takes the node IDs of another zone.
-
-NOTE: a clusterSize the zone count does not divide is the same class of fault and is
-deliberately not rejected here; see #7196.
 */}}
 {{- if ne $partitioning.scheme "zone-aware" }}
   {{- $zoneCount := int $partitioning.numberOfZones -}}
   {{- $zoneIndex := int $partitioning.zoneIndex -}}
   {{- if or (lt $zoneIndex 0) (ge $zoneIndex $zoneCount) }}
     {{- fail (printf "[camunda][error] %s.%s is %d but %s.%s is %d; %s addresses this zone and must be between 0 and %d, or its brokers take the node IDs of another zone." $partitioningKey $partitioning.indexKey $zoneIndex $partitioningKey $partitioning.countKey $zoneCount $partitioning.indexKey (sub $zoneCount 1)) -}}
+  {{- end }}
+  {{- $clusterSize := int .Values.orchestration.clusterSize -}}
+  {{- if ne (mod $clusterSize $zoneCount) 0 }}
+    {{- fail (printf "[camunda][error] orchestration.clusterSize is %d but %s.%s is %d, so the zones deploy %d brokers while every broker expects %d; the missing brokers stay cluster members and a zone failover can leave partitions without a leader. Set orchestration.clusterSize to a multiple of %s.%s." $clusterSize $partitioningKey $partitioning.countKey $zoneCount (mul (div $clusterSize $zoneCount) $zoneCount) $clusterSize $partitioningKey $partitioning.countKey) -}}
   {{- end }}
 {{- end }}
 
@@ -891,7 +892,7 @@ Fail with a message if the auth type is set to non-Keycloak and its requirements
 */}}
 {{- if has (include "camundaPlatform.authIssuerType" .) (list "MICROSOFT" "GENERIC") }}
   {{/*
-  TODO: Once refactor the auth issuers, we need to add more constraints here to validate the new auth types. 
+  TODO: Once refactor the auth issuers, we need to add more constraints here to validate the new auth types.
         More details: https://github.com/camunda/camunda-platform-helm/issues/4419
   */}}
 {{- end }}
@@ -938,6 +939,12 @@ Fail with a message if Web Modeler is enabled but management Identity is not ena
   (hasKey ($hub.websockets.podLabels | default dict) "camunda.io/upgrade-phase")
 }}
   {{- fail "[camunda][error] The pod label camunda.io/upgrade-phase is reserved for Camunda Hub upgrade lifecycle traffic isolation and cannot be overridden." }}
+{{- end }}
+
+{{- if and (eq (include "camundaHub.webModelerEnabled" .) "true")
+           (eq ($hub.persistence.deploymentStrategy | default "RollingUpdate") "Recreate")
+           (not (and $hub.persistence.enabled $hub.persistence.existingClaim)) }}
+  {{- fail "[camunda][error] webModeler.persistence.deploymentStrategy (or camundaHub.persistence.deploymentStrategy)=Recreate requires webModeler.persistence.enabled=true and webModeler.persistence.existingClaim (or camundaHub.persistence.enabled=true and camundaHub.persistence.existingClaim); otherwise use RollingUpdate." }}
 {{- end }}
 
 {{- if and (eq (include "camundaPlatform.connectorsEnabled" .) "true") (eq (include "connectors.hasAppIntegrations" .) "true") }}
@@ -1025,6 +1032,16 @@ Usage:
 {{- end -}}
 
 {{- define "camunda.constraints.warnings" }}
+  {{- if and .Values.global.identity.auth.enabled (empty (include "camundaPlatform.authIssuerUrlWithFallback" . | trim)) }}
+    {{- $issuerBackendUrl := include "camundaPlatform.authIssuerBackendUrl" . | trim }}
+    {{- $keycloakURL := .Values.global.identity.keycloak.url | default dict }}
+    {{- if and (eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK") (empty .Values.global.identity.auth.issuerBackendUrl) (or (empty (tpl ($keycloakURL.host | default "") . | trim)) (empty $keycloakURL.protocol) (empty $keycloakURL.port)) }}
+      {{- $issuerBackendUrl = "" }}
+    {{- end }}
+    {{- if empty $issuerBackendUrl }}
+      {{- printf "\n%s" "[camunda][warning] global.identity.auth.enabled=true, but no shared authentication issuer or issuer backend URL resolves. Set global.identity.auth.issuer (or global.identity.auth.publicIssuerUrl), global.identity.auth.issuerBackendUrl, or global.identity.keycloak.url for External Keycloak. Components using separate OIDC configuration must supply their own provider settings." }}
+    {{- end }}
+  {{- end }}
   {{- if not (semverCompare ">=4.0.0-0" .Capabilities.HelmVersion.Version) }}
     {{- printf "\n%s" (printf "[camunda][warning] Helm CLI %s detected. Helm v3 receives security fixes only until February 10, 2027 (https://helm.sh/blog/helm-v3-end-of-life/). Upgrade to Helm v4 before then: https://helm.sh/docs/overview" .Capabilities.HelmVersion.Version) }}
   {{- end }}
@@ -1094,7 +1111,7 @@ Usage:
       `
 [camunda][warning]
 DEPRECATION NOTICE: Starting from appVersion 8.7, the Camunda Helm chart will no longer automatically generate passwords for the Identity component.
-Users must provide passwords as Kubernetes secrets. 
+Users must provide passwords as Kubernetes secrets.
 In appVersion 8.6, this warning will appear if all necessary existingSecrets are not set.
 
 The following values inside your values.yaml need to be set but were not:
@@ -1111,7 +1128,7 @@ The following values inside your values.yaml need to be set but were not:
       `
 [camunda][error]
 DEPRECATION NOTICE: Starting from appVersion 8.7, the Camunda Helm chart will no longer automatically generate passwords for the Identity component.
-Users must provide passwords as Kubernetes secrets. 
+Users must provide passwords as Kubernetes secrets.
 
 The following values inside your values.yaml need to be set but were not:
       `
@@ -1848,7 +1865,7 @@ The following values inside your values.yaml need to be set but were not:
   {{- end }}
 
   {{- if eq (include "camundaHub.webModelerEnabled" .) "true" }}
-    {{- $wm := deepCopy .Values.webModeler }}
+    {{- $wm := include "camundaHub.values" . | fromYaml }}
     {{- $wmExtra := "webModeler.restapi.extraConfiguration" }}
     {{ include "camundaPlatform.keyDeprecated" (dict
       "condition" (not (empty $wm.restapi.mail.fromAddress))
@@ -1869,11 +1886,36 @@ The following values inside your values.yaml need to be set but were not:
       "condition" (ne ($wm.restapi.mail.smtpPort | toString) "587")
       "oldName" "webModeler.restapi.mail.smtpPort" "migration" $wmExtra) }}
     {{ include "camundaPlatform.keyDeprecated" (dict
-      "condition" (ne (index $wm.restapi.logging.level "io.camunda.modeler" | toString) "INFO")
+      "condition" (not (empty (index $wm.restapi.logging.level "io.camunda.modeler")))
       "oldName" "webModeler.restapi.logging.level.io.camunda.modeler" "migration" $wmExtra) }}
     {{ include "camundaPlatform.keyDeprecated" (dict
       "condition" (ne (index $wm.restapi.logging.level "io.grpc" | toString) "INFO")
       "oldName" "webModeler.restapi.logging.level.io.grpc" "migration" $wmExtra) }}
+    {{- $wmEnvRenames := dict
+      "RESTAPI_PUSHER_APP_ID" "CAMUNDA_HUB_PUSHER_APPID"
+      "RESTAPI_PUSHER_KEY" "CAMUNDA_HUB_PUSHER_KEY"
+      "RESTAPI_PUSHER_SECRET" "CAMUNDA_HUB_PUSHER_SECRET"
+      "RESTAPI_MAIL_PASSWORD" "SPRING_MAIL_PASSWORD" }}
+    {{- $wmMailSecretSet := eq (include "camundaPlatform.hasSecretConfig" (dict "config" $wm.restapi.mail)) "true" }}
+    {{- range $wmEnv := $wm.restapi.env }}
+      {{- $wmEnvNew := get $wmEnvRenames (toString $wmEnv.name) }}
+      {{- if $wmEnvNew }}
+        {{- $warningMessage := "" }}
+        {{- if and (eq $wmEnvNew "SPRING_MAIL_PASSWORD") (not $wmMailSecretSet) }}
+          {{- $warningMessage = printf "%s %s"
+              "[camunda][warning]"
+              (printf "restapi.env sets the deprecated %q. Rename it to %q; the legacy name will be removed in a future version." $wmEnv.name $wmEnvNew)
+          -}}
+        {{- else }}
+          {{- $warningMessage = printf "%s %s %s"
+              "[camunda][warning]"
+              (printf "restapi.env sets %q, which is ignored because the chart now sets %q." $wmEnv.name $wmEnvNew)
+              (printf "Rename the override to %q, otherwise the chart-managed value is used instead of yours." $wmEnvNew)
+          -}}
+        {{- end }}
+        {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+      {{- end }}
+    {{- end }}
   {{- end }}
 
   {{- $componentExtra := "the consuming component's extraConfiguration" }}

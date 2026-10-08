@@ -19,7 +19,6 @@ integration:
             gke: distroci
           identity: keycloak
           persistence: elasticsearch
-          helmVersion: 3.22.0
         - name: orchestration-tls
           enabled: true
           shortname: estls
@@ -43,7 +42,7 @@ integration:
               Cluster gRPC endpoint, creates the server TLS Secret, and creates
               a truststore Secret consumed by Web Modeler restapi.
         - name: enterprise-values
-          enabled: false
+          enabled: true
           shortname: entv
           auth: keycloak
           flow: install
@@ -59,7 +58,7 @@ integration:
             - enterprise
           helmVersion: 3.22.0
         - name: upgrade-migration
-          enabled: false
+          enabled: true
           shortname: eske-upgm
           auth: keycloak
           flow: upgrade-minor
@@ -92,6 +91,7 @@ integration:
           identity: basic
           persistence: elasticsearch
           helmVersion: 3.22.0
+          e2e-api-suite: true
         - name: oidc
           enabled: true
           shortname: esoi
@@ -363,6 +363,7 @@ integration:
           identity: keycloak
           persistence: elasticsearch
           e2e-full-suite: true
+          e2e-api-suite: true
         - name: keycloak-original
           enabled: false
           shortname: kcor
