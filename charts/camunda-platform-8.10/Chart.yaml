@@ -34,7 +34,7 @@ maintainers:
   - name: camunda
     url: https://camunda.com
 annotations:
-  camunda.io/helmCLIVersion: "4.2.4"
+  camunda.io/helmCLIVersion: "3.22.0,4.3.0"
   artifacthub.io/links: |
     - name: Camunda 8 docs
       url: https://docs.camunda.io/
@@ -45,48 +45,96 @@ annotations:
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
     - kind: added
-      description: "Add orchestration.secretStore for centralized secret resolution"
+      description: "Zone-aware multi-region orchestration mode, with broker node IDs [ready]"
     - kind: added
-      description: "Add generic appProtocol support for Service ports in 8.10"
+      description: "First-class TLS for Optimize"
     - kind: added
-      description: "Configure Optimize via camunda.security.* for CSL"
+      description: "Add an optimize release role that owns its OIDC identity"
     - kind: added
-      description: "Rename Web Modeler Keycloak preset roles to Hub in 8.10"
+      description: "Fail fast when Physical Tenants are declared without OIDC or a pinned issuer"
     - kind: added
-      description: "Add Camunda Hub database migration phases"
+      description: "Give each Physical Tenant's Optimize its own client and audience"
     - kind: added
-      description: "First-class global.tls.orchestration.{rest,grpc} surface"
+      description: "Name the legacy exporter index prefix after the exporter"
     - kind: added
-      description: "First-class TLS for Connectors"
+      description: "Support physical tenants in restore app execution"
+    - kind: added
+      description: "Deprecate the ingress-nginx annotation defaults behind a compat flag [ready]"
+    - kind: added
+      description: "Support orchestration releases managed by Camunda Hub"
+    - kind: added
+      description: "Support migration to zone-aware orchestration [ready]"
+    - kind: added
+      description: "[HUBPT 1/4] render physical tenants in Hub inventory"
+    - kind: added
+      description: "Support Helm v3 CLI in 8.10 with a Helm v3 end-of-life warning"
+    - kind: added
+      description: "Document and validate ReadWriteOncePod for broker PVCs"
+    - kind: added
+      description: "Support orchestration topology without Management Identity"
     - kind: changed
-      description: "Read merged Hub values across the remaining templates"
+      description: "Omit empty init container blocks"
     - kind: changed
-      description: "Remove deprecated global elasticsearch and opensearch values from 8.10 chart"
+      description: "Remove stale 8.8 key guards"
     - kind: changed
-      description: "Rename web modeler play to test mode"
+      description: "Rename orchestration.multiregion to orchestration.partitioning"
     - kind: changed
-      description: "Remove redundant camundaexporter from zeebe.broker.exporters"
+      description: "Rename the partitioning region pair to zone vocabulary [ready]"
+    - kind: changed
+      description: "Derive the advertised-host predicate and stringify the region counts [ready]"
+    - kind: changed
+      description: "Publish the partitioning block vocabulary from the resolver"
+    - kind: changed
+      description: "Use camunda.hub / CAMUNDA_HUB config prefix"
     - kind: fixed
-      description: "Document defaultRoles.admin.clients in orchestration values schema [ready]"
+      description: "Align every image default on 8.10.0-alpha5 and unfreeze Renovate tracking"
     - kind: fixed
-      description: "Read external URLs from global.host when using the gateway api"
+      description: "Always render the cluster-ping role in the webmodeler preset"
     - kind: fixed
-      description: "Allow root path as optimize client redirect uri in identity configmap"
+      description: "Stop management identity from provisioning disabled components"
     - kind: fixed
-      description: "Document camundaHub override maps in values schema [ready]"
+      description: "Exempt orchestration.partitionCount/replicationFactor from v16 removal"
     - kind: fixed
-      description: "Bump camunda-platform-8.10 identity image tag to 8.10.0-alpha4.2"
+      description: "Qualify the Contour gRPC annotation by upstream TLS state [ready]"
     - kind: fixed
-      description: "Align legacy exporter with its component datastore source"
+      description: "DocumentStore cloud credentials misuse"
     - kind: fixed
-      description: "Back Connectors and Identity /tmp with a per-pod ephemeral volume"
+      description: "Render the unified exporter class name so extraConfiguration exporter overrides merge"
     - kind: fixed
-      description: "Preserve Hub securityContext and resource defaults on partial override"
+      description: "Bind Azure document store secrets on 8.9"
     - kind: fixed
-      description: "Back Optimize /tmp with emptyDir to fix persistence double-mount"
+      description: "Honor public ingress ports in generated URLs"
     - kind: fixed
-      description: "Stop exposing credentials in deployment output"
+      description: "Only add Web Modeler / Camunda Hub audience if enabled"
     - kind: fixed
-      description: "Warn on inert console config keys and enforce deprecation-key coverage"
+      description: "Allow overriding external ingress protocol"
     - kind: fixed
-      description: "Stop emitting orchestration log4j2.xml twice when extraConfiguration supplies it"
+      description: "Disable Identity service account token automount by default"
+    - kind: fixed
+      description: "Align Hub constraints with merged values"
+    - kind: fixed
+      description: "Point the install notes at the 8.9 to 8.10 upgrade guide and drop alpha wording"
+    - kind: fixed
+      description: "Suppress configured contact-point warnings [ready]"
+    - kind: fixed
+      description: "Deprecate defaultRoles admin and connectors mappingRules in 8.10"
+    - kind: fixed
+      description: "Point the Hub's Optimize inventory at the release that serves it"
+    - kind: fixed
+      description: "List only identity in hub management cluster and rename it to Management Identity"
+    - kind: fixed
+      description: "Render the unified cluster keys and stop prescribing an in-cluster DNS form for contact points [ready]"
+    - kind: fixed
+      description: "Allow every physical tenant's login callback on the topology orchestration client"
+    - kind: fixed
+      description: "Fail when the round-robin cluster size is not a multiple of the zone count"
+    - kind: fixed
+      description: "Rename the Identity container from camunda-platform to identity in 8.10"
+    - kind: fixed
+      description: "Use the image tag for app.kubernetes.io/version when an image digest is set"
+    - kind: fixed
+      description: "Warn or fail on Web Modeler restapi Recreate without existingClaim"
+    - kind: fixed
+      description: "Use the public Gateway origin for Identity URLs"
+    - kind: fixed
+      description: "Warn when shared authentication issuer is unresolved"
