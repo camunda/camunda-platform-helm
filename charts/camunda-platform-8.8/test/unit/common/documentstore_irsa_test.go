@@ -181,18 +181,15 @@ func (s *documentStoreIRSATest) TestOrchestrationStatefulSetWithIRSA() {
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
-func (s *documentStoreIRSATest) TestOrchestrationImporterWithIRSA() {
-	valuesIRSA := awsDocumentStoreValuesWithIRSA(true)
-	valuesIRSA["orchestration.migration.data.enabled"] = "true"
-
-	valuesWithCredentials := awsDocumentStoreValuesWithIRSA(false)
-	valuesWithCredentials["orchestration.migration.data.enabled"] = "true"
+func (s *documentStoreIRSATest) TestOrchestrationImporterNeverGetsDocumentStoreCreds() {
+	values := awsDocumentStoreValuesWithIRSA(false)
+	values["orchestration.migration.data.enabled"] = "true"
 
 	testCases := []testhelpers.TestCase{
 		{
-			Name:     "Importer: AWS credentials should NOT be injected when irsa.enabled is true (IRSA mode)",
+			Name:     "Importer: document-store AWS credentials and envFrom should never be injected",
 			Template: "templates/orchestration/importer-deployment.yaml",
-			Values:   valuesIRSA,
+			Values:   values,
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
 				var deployment appsv1.Deployment
@@ -200,25 +197,11 @@ func (s *documentStoreIRSATest) TestOrchestrationImporterWithIRSA() {
 
 				containers := deployment.Spec.Template.Spec.Containers
 				require.False(t, hasAwsAccessKeyIdEnvVar(containers),
-					"AWS_ACCESS_KEY_ID should NOT be present when irsa.enabled is true")
+					"AWS_ACCESS_KEY_ID should never be present on the migration importer")
 				require.False(t, hasAwsSecretAccessKeyEnvVar(containers),
-					"AWS_SECRET_ACCESS_KEY should NOT be present when irsa.enabled is true")
-			},
-		},
-		{
-			Name:     "Importer: AWS credentials SHOULD be injected when irsa.enabled is false",
-			Template: "templates/orchestration/importer-deployment.yaml",
-			Values:   valuesWithCredentials,
-			Verifier: func(t *testing.T, output string, err error) {
-				require.NoError(t, err)
-				var deployment appsv1.Deployment
-				helm.UnmarshalK8SYaml(t, output, &deployment)
-
-				containers := deployment.Spec.Template.Spec.Containers
-				require.True(t, hasAwsAccessKeyIdEnvVar(containers),
-					"AWS_ACCESS_KEY_ID should be present when irsa.enabled is false")
-				require.True(t, hasAwsSecretAccessKeyEnvVar(containers),
-					"AWS_SECRET_ACCESS_KEY should be present when irsa.enabled is false")
+					"AWS_SECRET_ACCESS_KEY should never be present on the migration importer")
+				require.False(t, hasDocumentStoreEnvFromRef(containers),
+					"the migration importer should never reference the documentstore-env-vars ConfigMap")
 			},
 		},
 	}
@@ -471,6 +454,9 @@ func (s *documentStoreIRSATest) TestNoEmptySecretKeyRefWhenSecretUnset() {
 	webModelerValues["webModeler.enabled"] = "true"
 	webModelerValues["webModeler.restapi.mail.fromAddress"] = "test@example.com"
 
+	importerValues := awsDocumentStoreValuesWithoutSecret()
+	importerValues["orchestration.migration.data.enabled"] = "true"
+
 	testCases := []testhelpers.TestCase{
 		{
 			Name:     "Console: no empty secretKeyRef when the AWS document-store secret is unset",
@@ -512,6 +498,20 @@ func (s *documentStoreIRSATest) TestNoEmptySecretKeyRefWhenSecretUnset() {
 				containers := deployment.Spec.Template.Spec.Containers
 				require.False(t, hasEmptySecretKeyRefName(containers),
 					"Web Modeler webapp should not render a secretKeyRef with an empty name")
+			},
+		},
+		{
+			Name:     "Migration importer: no empty secretKeyRef when the AWS document-store secret is unset",
+			Template: "templates/orchestration/importer-deployment.yaml",
+			Values:   importerValues,
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(t, output, &deployment)
+
+				containers := deployment.Spec.Template.Spec.Containers
+				require.False(t, hasEmptySecretKeyRefName(containers),
+					"Migration importer should not render a secretKeyRef with an empty name")
 			},
 		},
 	}
