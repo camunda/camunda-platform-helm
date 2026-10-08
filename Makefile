@@ -4,6 +4,12 @@ SHELL := /bin/bash
 chartPath := $(if $(chartPath),$(chartPath),charts/camunda-platform-*)
 chartVersion = $(shell grep -Po '(?<=^version: ).+' $(chartPath)/Chart.yaml)
 releaseName = camunda-platform-test
+# renovate: datasource=npm depName=@bitnami/readme-generator-for-helm
+readmeGeneratorVersion = 2.7.2
+
+.PHONY: install.readme-generator
+install.readme-generator:
+	npm install -g @bitnami/readme-generator-for-helm@$(readmeGeneratorVersion)
 
 #########################################################
 ######### Go.
@@ -385,7 +391,7 @@ helm.schema-validate-values:
 		fi; \
 		echo "\n[$@] Chart dir: $${chart_dir}"; \
 		abs="$${root}/$${chart_dir}"; \
-		tmp_schema="$$(mktemp)"; \
+		tmp_schema="$$(mktemp -t values-schema.XXXXXXXXXX)"; \
 		bash scripts/regenerate-values-schema.sh \
 			"$${abs}/values.yaml" \
 			"$${abs}/values.schema.extra.json" \
@@ -396,7 +402,7 @@ helm.schema-validate-values:
 		done; \
 		( cd "$${root}/scripts/validate-values-schema" && \
 			go run . --schema "$${tmp_schema}" --chart-dir "$${abs}" $${files} && \
-			if [ "$(schemaPreviousMinor)" = "true" ] && [ "$$(basename "$${abs}")" = "camunda-platform-8.10" ]; then \
+			if [ -f "$${abs}/test/unit/deprecation/allowlist.yaml" ]; then \
 				go run . --schema "$${tmp_schema}" --chart-dir "$${abs}" --previous-minor; \
 			fi ); \
 		status=$$?; \
