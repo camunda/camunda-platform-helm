@@ -135,26 +135,23 @@ global:
               workload: distroci
             tolerations:
               - {key: workload, operator: Equal, value: distroci, effect: NoSchedule}
-            imagePullSecrets:
-              - name: registry-camunda-cloud
             securityContext:
               runAsNonRoot: true
-              runAsUser: 1001
             containers:
               - name: kcadm
-                image: registry.camunda.cloud/keycloak-ee/keycloak:26.7.2
+                image: quay.io/keycloak/keycloak:26.7.5
                 env:
                   - {name: HOME, value: /tmp}
                 command: ["/bin/bash", "-ec"]
                 args:
                   - |
-                    until /opt/bitnami/keycloak/bin/kcadm.sh config credentials --server http://keycloak/auth --realm master --user admin --password "`cat /credentials/keycloak-admin-password`"; do sleep 10; done
-                    until /opt/bitnami/keycloak/bin/kcadm.sh get realms/camunda-platform --fields realm >/dev/null; do sleep 10; done
-                    /opt/bitnami/keycloak/bin/kcadm.sh update realms/master -s bruteForceProtected=true -s permanentLockout=false -s failureFactor=10 -s waitIncrementSeconds=60 -s maxFailureWaitSeconds=900 -s maxDeltaTimeSeconds=43200 -s 'passwordPolicy=length(12) and notUsername'
-                    /opt/bitnami/keycloak/bin/kcadm.sh update realms/camunda-platform -s bruteForceProtected=true -s permanentLockout=false -s failureFactor=10 -s waitIncrementSeconds=60 -s maxFailureWaitSeconds=900 -s maxDeltaTimeSeconds=43200 -s 'passwordPolicy=length(12) and notUsername'
+                    until /opt/keycloak/bin/kcadm.sh config credentials --server http://keycloak/auth --realm master --user admin --password "`cat /credentials/keycloak-admin-password`"; do sleep 10; done
+                    until /opt/keycloak/bin/kcadm.sh get realms/camunda-platform --fields realm >/dev/null; do sleep 10; done
+                    /opt/keycloak/bin/kcadm.sh update realms/master -s bruteForceProtected=true -s permanentLockout=false -s failureFactor=10 -s waitIncrementSeconds=60 -s maxFailureWaitSeconds=900 -s maxDeltaTimeSeconds=43200 -s 'passwordPolicy=length(12) and notUsername'
+                    /opt/keycloak/bin/kcadm.sh update realms/camunda-platform -s bruteForceProtected=true -s permanentLockout=false -s failureFactor=10 -s waitIncrementSeconds=60 -s maxFailureWaitSeconds=900 -s maxDeltaTimeSeconds=43200 -s 'passwordPolicy=length(12) and notUsername'
                     # Last: changing the master realm's frontend URL changes its issuer,
                     # which invalidates the admin token this session is using.
-                    /opt/bitnami/keycloak/bin/kcadm.sh update realms/master -s 'attributes.frontendUrl=http://localhost:18080/auth'
+                    /opt/keycloak/bin/kcadm.sh update realms/master -s 'attributes.frontendUrl=http://localhost:18080/auth'
                     echo "realms hardened"
                 volumeMounts:
                   - name: credentials
