@@ -27,3 +27,4 @@ data:
     exec /usr/local/zeebe/bin/broker
 
   broker-log4j2.xml: |
+
