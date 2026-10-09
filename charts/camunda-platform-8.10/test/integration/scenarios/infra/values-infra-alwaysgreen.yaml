@@ -16,6 +16,8 @@ identity:
 # Camunda Hub.
 camundaHub:
   restapi:
+    podAnnotations:
+      cluster-autoscaler.kubernetes.io/safe-to-evict: "false"
     nodeSelector:
       workload: alwaysgreen
     tolerations:
