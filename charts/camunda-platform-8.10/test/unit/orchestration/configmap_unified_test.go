@@ -105,6 +105,98 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnified() {
 			},
 		},
 		{
+			Name: "TestApplicationYamlShouldContainWebappsDiscoveryUrls",
+			Values: map[string]string{
+				"global.ingress.enabled":     "true",
+				"global.host":                "camunda.example.com",
+				"global.ingress.tls.enabled": "true",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.webapps.operate.enabled":  "true",
+				"configmapApplication.camunda.webapps.operate.url":      "https://camunda.example.com/operate",
+				"configmapApplication.camunda.webapps.tasklist.enabled": "true",
+				"configmapApplication.camunda.webapps.tasklist.url":     "https://camunda.example.com/tasklist",
+			},
+		},
+		{
+			Name: "TestApplicationYamlShouldContainWebappsDiscoveryUrlsWithContextPath",
+			Values: map[string]string{
+				"global.ingress.enabled":    "true",
+				"global.host":               "camunda.example.com",
+				"orchestration.contextPath": "/custom",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.webapps.operate.url":  "http://camunda.example.com/custom/operate",
+				"configmapApplication.camunda.webapps.tasklist.url": "http://camunda.example.com/custom/tasklist",
+			},
+		},
+		{
+			Name:   "TestApplicationYamlShouldOmitWebappsUrlsWithoutExternalHost",
+			Values: map[string]string{},
+			Expected: map[string]string{
+				// without ingress/gateway the chart knows no real external host, so it leaves the
+				// URLs to the endpoint's relative-path fallback instead of guessing localhost
+				"configmapApplication.camunda.webapps.operate.enabled":  "true",
+				"configmapApplication.camunda.webapps.tasklist.enabled": "true",
+			},
+			Unexpected: []string{
+				"configmapApplication.camunda.webapps.operate.url",
+				"configmapApplication.camunda.webapps.tasklist.url",
+			},
+		},
+		{
+			Name: "TestApplicationYamlShouldOmitWebappsUrlsWithHostlessIngress",
+			Values: map[string]string{
+				"global.ingress.enabled": "true",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.webapps.operate.enabled":  "true",
+				"configmapApplication.camunda.webapps.tasklist.enabled": "true",
+			},
+			Unexpected: []string{
+				"configmapApplication.camunda.webapps.operate.url",
+				"configmapApplication.camunda.webapps.tasklist.url",
+			},
+		},
+		{
+			Name: "TestApplicationYamlShouldContainWebappsDiscoveryUrlsWithGatewayApi",
+			Values: map[string]string{
+				"global.gateway.enabled": "true",
+				"global.host":            "camunda.example.com",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.webapps.operate.url":  "http://camunda.example.com/operate",
+				"configmapApplication.camunda.webapps.tasklist.url": "http://camunda.example.com/tasklist",
+			},
+		},
+		{
+			Name: "TestApplicationYamlShouldNotAnnounceDisabledWebapp",
+			Values: map[string]string{
+				"orchestration.profiles.operate": "false",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.webapps.operate.enabled":  "false",
+				"configmapApplication.camunda.webapps.tasklist.enabled": "true",
+			},
+			Unexpected: []string{
+				"configmapApplication.camunda.webapps.operate.url",
+			},
+		},
+		{
+			Name: "TestApplicationYamlShouldNotAnnounceWebappsWithoutSecondaryStorage",
+			Values: map[string]string{
+				"global.noSecondaryStorage": "true",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.webapps.operate.enabled":  "false",
+				"configmapApplication.camunda.webapps.tasklist.enabled": "false",
+			},
+			Unexpected: []string{
+				"configmapApplication.camunda.webapps.operate.url",
+				"configmapApplication.camunda.webapps.tasklist.url",
+			},
+		},
+		{
 			Name: "TestApplicationYamlShouldContainSecondaryStorageOpenSearchEnabled",
 			Values: map[string]string{
 				"orchestration.data.secondaryStorage.type":           "opensearch",
