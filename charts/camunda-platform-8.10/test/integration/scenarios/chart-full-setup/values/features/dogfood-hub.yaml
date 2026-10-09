@@ -139,7 +139,7 @@ global:
               runAsNonRoot: true
             containers:
               - name: kcadm
-                image: quay.io/keycloak/keycloak:26.3.3
+                image: quay.io/keycloak/keycloak:26.7.5
                 env:
                   - {name: HOME, value: /tmp}
                 command: ["/bin/bash", "-ec"]
