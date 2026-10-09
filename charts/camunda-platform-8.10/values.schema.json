@@ -476,7 +476,8 @@
                                                         "type": "string"
                                                     }
                                                 }
-                                            }
+                                            },
+                                            "additionalProperties": true
                                         },
                                         "seccompProfile": {
                                             "type": "object",
@@ -486,9 +487,11 @@
                                                     "description": "",
                                                     "default": "RuntimeDefault"
                                                 }
-                                            }
+                                            },
+                                            "additionalProperties": true
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": true
                                 }
                             }
                         },
@@ -1724,9 +1727,11 @@
                                     "description": "",
                                     "default": "RuntimeDefault"
                                 }
-                            }
+                            },
+                            "additionalProperties": true
                         }
-                    }
+                    },
+                    "additionalProperties": true
                 },
                 "containerSecurityContext": {
                     "type": "object",
@@ -1764,9 +1769,11 @@
                                     "description": "",
                                     "default": "RuntimeDefault"
                                 }
-                            }
+                            },
+                            "additionalProperties": true
                         }
-                    }
+                    },
+                    "additionalProperties": true
                 },
                 "startupProbe": {
                     "type": "object",
@@ -1946,7 +1953,8 @@
                                     "description": "",
                                     "default": "600m"
                                 }
-                            }
+                            },
+                            "additionalProperties": true
                         },
                         "limits": {
                             "type": "object",
@@ -1961,9 +1969,11 @@
                                     "description": "",
                                     "default": "2Gi"
                                 }
-                            }
+                            },
+                            "additionalProperties": true
                         }
-                    }
+                    },
+                    "additionalProperties": true
                 },
                 "env": {
                     "type": "array",
@@ -2339,6 +2349,53 @@
                 },
                 "persistence": {
                     "properties": {
+                        "enabled": {
+                            "type": [
+                                "boolean",
+                                "null"
+                            ]
+                        },
+                        "existingClaim": {
+                            "type": [
+                                "string",
+                                "null"
+                            ]
+                        },
+                        "storageClassName": {
+                            "type": [
+                                "string",
+                                "null"
+                            ]
+                        },
+                        "size": {
+                            "type": [
+                                "string",
+                                "null"
+                            ]
+                        },
+                        "accessModes": {
+                            "type": [
+                                "array",
+                                "null"
+                            ],
+                            "items": {
+                                "type": "string"
+                            }
+                        },
+                        "annotations": {
+                            "type": [
+                                "object",
+                                "null"
+                            ],
+                            "additionalProperties": true
+                        },
+                        "selector": {
+                            "type": [
+                                "object",
+                                "null"
+                            ],
+                            "additionalProperties": true
+                        },
                         "deploymentStrategy": {
                             "type": "string",
                             "enum": [
@@ -2677,9 +2734,11 @@
                                             "description": "",
                                             "default": "RuntimeDefault"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": true
                                 }
-                            }
+                            },
+                            "additionalProperties": true
                         },
                         "containerSecurityContext": {
                             "type": "object",
@@ -2717,9 +2776,11 @@
                                             "description": "",
                                             "default": "RuntimeDefault"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": true
                                 }
-                            }
+                            },
+                            "additionalProperties": true
                         },
                         "startupProbe": {
                             "type": "object",
@@ -2899,7 +2960,8 @@
                                             "description": "",
                                             "default": "1280Mi"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": true
                                 },
                                 "limits": {
                                     "type": "object",
@@ -2914,9 +2976,11 @@
                                             "description": "",
                                             "default": "2560Mi"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": true
                                 }
-                            }
+                            },
+                            "additionalProperties": true
                         },
                         "service": {
                             "type": "object",
@@ -3098,9 +3162,11 @@
                                             "description": "",
                                             "default": "RuntimeDefault"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": true
                                 }
-                            }
+                            },
+                            "additionalProperties": true
                         },
                         "containerSecurityContext": {
                             "type": "object",
@@ -3138,9 +3204,11 @@
                                             "description": "",
                                             "default": "RuntimeDefault"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": true
                                 }
-                            }
+                            },
+                            "additionalProperties": true
                         },
                         "startupProbe": {
                             "type": "object",
@@ -3310,7 +3378,8 @@
                                             "description": "",
                                             "default": "64Mi"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": true
                                 },
                                 "limits": {
                                     "type": "object",
@@ -3325,9 +3394,11 @@
                                             "description": "",
                                             "default": "128Mi"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": true
                                 }
-                            }
+                            },
+                            "additionalProperties": true
                         },
                         "service": {
                             "type": "object",
@@ -3975,7 +4046,8 @@
                                     "description": "",
                                     "default": "1Gi"
                                 }
-                            }
+                            },
+                            "additionalProperties": true
                         },
                         "limits": {
                             "type": "object",
@@ -3990,9 +4062,11 @@
                                     "description": "",
                                     "default": "2Gi"
                                 }
-                            }
+                            },
+                            "additionalProperties": true
                         }
-                    }
+                    },
+                    "additionalProperties": true
                 },
                 "env": {
                     "type": "array",
@@ -4334,9 +4408,11 @@
                                     "description": "",
                                     "default": "RuntimeDefault"
                                 }
-                            }
+                            },
+                            "additionalProperties": true
                         }
-                    }
+                    },
+                    "additionalProperties": true
                 },
                 "containerSecurityContext": {
                     "type": "object",
@@ -4374,9 +4450,11 @@
                                     "description": "",
                                     "default": "RuntimeDefault"
                                 }
-                            }
+                            },
+                            "additionalProperties": true
                         }
-                    }
+                    },
+                    "additionalProperties": true
                 },
                 "nodeSelector": {
                     "type": "object",
@@ -5426,7 +5504,8 @@
                                     "description": "",
                                     "default": "1500Mi"
                                 }
-                            }
+                            },
+                            "additionalProperties": true
                         },
                         "limits": {
                             "type": "object",
@@ -5441,9 +5520,11 @@
                                     "description": "",
                                     "default": "3000Mi"
                                 }
-                            }
+                            },
+                            "additionalProperties": true
                         }
-                    }
+                    },
+                    "additionalProperties": true
                 },
                 "persistenceType": {
                     "type": "string",
@@ -5782,9 +5863,11 @@
                                     "description": "",
                                     "default": "RuntimeDefault"
                                 }
-                            }
+                            },
+                            "additionalProperties": true
                         }
-                    }
+                    },
+                    "additionalProperties": true
                 },
                 "containerSecurityContext": {
                     "type": "object",
@@ -5822,9 +5905,11 @@
                                     "description": "",
                                     "default": "RuntimeDefault"
                                 }
-                            }
+                            },
+                            "additionalProperties": true
                         }
-                    }
+                    },
+                    "additionalProperties": true
                 },
                 "startupProbe": {
                     "type": "object",
@@ -6622,7 +6707,8 @@
                                             "description": "",
                                             "default": "1Gi"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": true
                                 },
                                 "limits": {
                                     "type": "object",
@@ -6637,9 +6723,11 @@
                                             "description": "",
                                             "default": "2Gi"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": true
                                 }
-                            }
+                            },
+                            "additionalProperties": true
                         }
                     }
                 },
@@ -6931,9 +7019,11 @@
                                     "description": "",
                                     "default": "RuntimeDefault"
                                 }
-                            }
+                            },
+                            "additionalProperties": true
                         }
-                    }
+                    },
+                    "additionalProperties": true
                 },
                 "containerSecurityContext": {
                     "type": "object",
@@ -6971,9 +7061,11 @@
                                     "description": "",
                                     "default": "RuntimeDefault"
                                 }
-                            }
+                            },
+                            "additionalProperties": true
                         }
-                    }
+                    },
+                    "additionalProperties": true
                 },
                 "startupProbe": {
                     "type": "object",
@@ -7153,7 +7245,8 @@
                                     "description": "",
                                     "default": "1Gi"
                                 }
-                            }
+                            },
+                            "additionalProperties": true
                         },
                         "limits": {
                             "type": "object",
@@ -7168,9 +7261,11 @@
                                     "description": "",
                                     "default": "2Gi"
                                 }
-                            }
+                            },
+                            "additionalProperties": true
                         }
-                    }
+                    },
+                    "additionalProperties": true
                 },
                 "configuration": {
                     "type": "string",

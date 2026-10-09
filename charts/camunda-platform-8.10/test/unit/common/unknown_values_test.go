@@ -153,6 +153,57 @@ func (s *UnknownValuesTest) verifyWarningsAbsent(t *testing.T, output string, er
 	s.NotContains(configmap.Data["warnings"], "UNKNOWN VALUES KEY:")
 }
 
+func (s *UnknownValuesTest) TestSupportedKubernetesValuesProduceNoUnknownWarning() {
+	for _, strict := range []string{"false", "true"} {
+		testhelpers.RunTestCasesE(s.T(), s.chartPath, "camunda-platform-test", "unknown-values-test",
+			[]string{"templates/common/configmap-warnings.yaml"}, []testhelpers.TestCase{
+				{
+					Name: "ResourceRequestsWhenStrictValues=" + strict,
+					Values: map[string]string{
+						"orchestration.data.secondaryStorage.type":      "elasticsearch",
+						"identity.enabled":                              "true",
+						"identity.resources.requests.ephemeral-storage": "1Gi",
+						"global.strictValues":                           strict,
+					},
+					Verifier: s.verifyWarningsAbsent,
+				},
+				{
+					Name: "SecurityContextsWhenStrictValues=" + strict,
+					Values: map[string]string{
+						"identity.containerSecurityContext.runAsGroup":                      "1000",
+						"identity.containerSecurityContext.seccompProfile.type":             "Localhost",
+						"identity.containerSecurityContext.seccompProfile.localhostProfile": "profiles/review.json",
+						"identity.podSecurityContext.fsGroupChangePolicy":                   "OnRootMismatch",
+						"global.tls.caBundle.containerSecurityContext.capabilities.add[0]":  "NET_BIND_SERVICE",
+						"global.strictValues": strict,
+					},
+					Verifier: s.verifyWarningsAbsent,
+				},
+			})
+	}
+}
+
+func (s *UnknownValuesTest) TestHubPersistenceProducesNoUnknownWarning() {
+	for _, strict := range []string{"false", "true"} {
+		testhelpers.RunTestCasesE(s.T(), s.chartPath, "camunda-platform-test", "unknown-values-test",
+			[]string{"templates/common/configmap-warnings.yaml"}, []testhelpers.TestCase{
+				{
+					Name: "HubPersistenceWhenStrictValues=" + strict,
+					Values: map[string]string{
+						"orchestration.data.secondaryStorage.type": "elasticsearch",
+						"identity.enabled":                         "true",
+						"camundaHub.enabled":                       "true",
+						"camundaHub.restapi.mail.fromAddress":      "example@example.com",
+						"camundaHub.persistence.enabled":           "true",
+						"camundaHub.persistence.existingClaim":     "review-hub-data",
+						"global.strictValues":                      strict,
+					},
+					Verifier: s.verifyWarningsAbsent,
+				},
+			})
+	}
+}
+
 func (s *UnknownValuesTest) TestStrictValuesFailsWhenTypoIsPresent() {
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, "camunda-platform-test", "unknown-values-test",
 		[]string{"templates/common/configmap-warnings.yaml"}, []testhelpers.TestCase{

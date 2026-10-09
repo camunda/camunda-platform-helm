@@ -297,7 +297,18 @@
                             }
                         }
                     }
-                }
+                },
+                "tls": {"properties": {
+                    "caBundle": {"properties": {
+                        "containerSecurityContext": {
+                            "additionalProperties": true,
+                            "properties": {
+                                "capabilities": {"additionalProperties": true},
+                                "seccompProfile": {"additionalProperties": true}
+                            }
+                        }
+                    }}
+                }}
             }
         },
         "console": {
@@ -414,6 +425,21 @@
         },
         "connectors": {
             "properties": {
+                "resources": {
+                    "additionalProperties": true,
+                    "properties": {
+                        "requests": {"additionalProperties": true},
+                        "limits": {"additionalProperties": true}
+                    }
+                },
+                "containerSecurityContext": {
+                    "additionalProperties": true,
+                    "properties": {"seccompProfile": {"additionalProperties": true}}
+                },
+                "podSecurityContext": {
+                    "additionalProperties": true,
+                    "properties": {"seccompProfile": {"additionalProperties": true}}
+                },
                 "podAnnotations": {"additionalProperties": true},
                 "podLabels": {"additionalProperties": true},
                 "nodeSelector": {"additionalProperties": true},
@@ -574,6 +600,21 @@
         },
         "identity": {
             "properties": {
+                "resources": {
+                    "additionalProperties": true,
+                    "properties": {
+                        "requests": {"additionalProperties": true},
+                        "limits": {"additionalProperties": true}
+                    }
+                },
+                "containerSecurityContext": {
+                    "additionalProperties": true,
+                    "properties": {"seccompProfile": {"additionalProperties": true}}
+                },
+                "podSecurityContext": {
+                    "additionalProperties": true,
+                    "properties": {"seccompProfile": {"additionalProperties": true}}
+                },
                 "podAnnotations": {"additionalProperties": true},
                 "podLabels": {"additionalProperties": true},
                 "nodeSelector": {"additionalProperties": true},
@@ -721,6 +762,30 @@
         },
         "optimize": {
             "properties": {
+                "resources": {
+                    "additionalProperties": true,
+                    "properties": {
+                        "requests": {"additionalProperties": true},
+                        "limits": {"additionalProperties": true}
+                    }
+                },
+                "migration": {"properties": {
+                    "resources": {
+                        "additionalProperties": true,
+                        "properties": {
+                            "requests": {"additionalProperties": true},
+                            "limits": {"additionalProperties": true}
+                        }
+                    }
+                }},
+                "containerSecurityContext": {
+                    "additionalProperties": true,
+                    "properties": {"seccompProfile": {"additionalProperties": true}}
+                },
+                "podSecurityContext": {
+                    "additionalProperties": true,
+                    "properties": {"seccompProfile": {"additionalProperties": true}}
+                },
                 "podAnnotations": {"additionalProperties": true},
                 "podLabels": {"additionalProperties": true},
                 "nodeSelector": {"additionalProperties": true},
@@ -998,6 +1063,21 @@
         },
         "orchestration": {
             "properties": {
+                "resources": {
+                    "additionalProperties": true,
+                    "properties": {
+                        "requests": {"additionalProperties": true},
+                        "limits": {"additionalProperties": true}
+                    }
+                },
+                "containerSecurityContext": {
+                    "additionalProperties": true,
+                    "properties": {"seccompProfile": {"additionalProperties": true}}
+                },
+                "podSecurityContext": {
+                    "additionalProperties": true,
+                    "properties": {"seccompProfile": {"additionalProperties": true}}
+                },
                 "podAnnotations": {"additionalProperties": true},
                 "podLabels": {"additionalProperties": true},
                 "nodeSelector": {"additionalProperties": true},
@@ -1580,6 +1660,21 @@
                 "restapi": {
                     "properties": {
                         "podAnnotations": {"additionalProperties": true},
+                        "resources": {
+                            "additionalProperties": true,
+                            "properties": {
+                                "requests": {"additionalProperties": true},
+                                "limits": {"additionalProperties": true}
+                            }
+                        },
+                        "containerSecurityContext": {
+                            "additionalProperties": true,
+                            "properties": {"seccompProfile": {"additionalProperties": true}}
+                        },
+                        "podSecurityContext": {
+                            "additionalProperties": true,
+                            "properties": {"seccompProfile": {"additionalProperties": true}}
+                        },
                         "podLabels": {"additionalProperties": true},
                         "nodeSelector": {"additionalProperties": true},
                         "image": {
@@ -1614,6 +1709,21 @@
                 "websockets": {
                     "properties": {
                         "podAnnotations": {"additionalProperties": true},
+                        "resources": {
+                            "additionalProperties": true,
+                            "properties": {
+                                "requests": {"additionalProperties": true},
+                                "limits": {"additionalProperties": true}
+                            }
+                        },
+                        "containerSecurityContext": {
+                            "additionalProperties": true,
+                            "properties": {"seccompProfile": {"additionalProperties": true}}
+                        },
+                        "podSecurityContext": {
+                            "additionalProperties": true,
+                            "properties": {"seccompProfile": {"additionalProperties": true}}
+                        },
                         "podLabels": {"additionalProperties": true},
                         "nodeSelector": {"additionalProperties": true},
                         "image": {
@@ -1716,6 +1826,16 @@
                 },
                 "persistence": {
                     "properties": {
+                        "enabled": {"type": ["boolean", "null"]},
+                        "existingClaim": {"type": ["string", "null"]},
+                        "storageClassName": {"type": ["string", "null"]},
+                        "size": {"type": ["string", "null"]},
+                        "accessModes": {
+                            "type": ["array", "null"],
+                            "items": {"type": "string"}
+                        },
+                        "annotations": {"type": ["object", "null"], "additionalProperties": true},
+                        "selector": {"type": ["object", "null"], "additionalProperties": true},
                         "deploymentStrategy": {
                             "type": "string",
                             "enum": [
