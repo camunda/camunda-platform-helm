@@ -679,6 +679,28 @@
                         }
                     }
                 },
+                "realm": {
+                    "if": {
+                        "properties": {
+                            "enabled": {
+                                "const": true
+                            }
+                        },
+                        "required": [
+                            "enabled"
+                        ]
+                    },
+                    "then": {
+                        "properties": {
+                            "id": {
+                                "minLength": 1
+                            }
+                        },
+                        "required": [
+                            "id"
+                        ]
+                    }
+                },
                 "service": {
                     "properties": {
                         "appProtocols": {

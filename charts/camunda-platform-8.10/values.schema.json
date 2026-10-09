@@ -1500,6 +1500,26 @@
                             "description": "can be used to set the Keycloak realm identifier when identity.realm.enabled is true.",
                             "default": ""
                         }
+                    },
+                    "if": {
+                        "properties": {
+                            "enabled": {
+                                "const": true
+                            }
+                        },
+                        "required": [
+                            "enabled"
+                        ]
+                    },
+                    "then": {
+                        "properties": {
+                            "id": {
+                                "minLength": 1
+                            }
+                        },
+                        "required": [
+                            "id"
+                        ]
                     }
                 },
                 "firstUser": {
