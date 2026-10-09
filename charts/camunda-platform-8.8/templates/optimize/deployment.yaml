@@ -1,4 +1,8 @@
 {{- if and (eq (include "camundaPlatform.optimizeEnabled" .) "true") (not .Values.global.noSecondaryStorage) -}}
+{{- $deploymentStrategy := .Values.optimize.persistence.deploymentStrategy | default "Recreate" -}}
+{{- if not (has $deploymentStrategy (list "RollingUpdate" "Recreate")) -}}
+{{- fail "optimize.persistence.deploymentStrategy value must be one of 'RollingUpdate', 'Recreate'" -}}
+{{- end -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -9,7 +13,7 @@ metadata:
     {{- toYaml .Values.global.annotations | nindent 4 }}
 spec:
   strategy:
-    type: Recreate
+    type: {{ $deploymentStrategy }}
   replicas: 1
   selector:
     matchLabels:

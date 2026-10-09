@@ -169,6 +169,49 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 				s.Require().Empty(output, "no deployment should be created when component is disabled")
 			},
 		},
+		{
+			Name: "TestDeploymentStrategyDefaultsToRecreate",
+			Values: map[string]string{
+				"identity.enabled":             "true",
+				"optimize.enabled":             "true",
+				"optimize.persistence.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+				s.Require().Equal(appsv1.RecreateDeploymentStrategyType, deployment.Spec.Strategy.Type)
+			},
+		},
+		{
+			Name: "TestDeploymentStrategyRollingUpdateOptIn",
+			Values: map[string]string{
+				"identity.enabled":                        "true",
+				"optimize.enabled":                        "true",
+				"optimize.persistence.enabled":            "true",
+				"optimize.persistence.accessModes[0]":     "ReadWriteMany",
+				"optimize.persistence.deploymentStrategy": "RollingUpdate",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+				s.Require().Equal(appsv1.RollingUpdateDeploymentStrategyType, deployment.Spec.Strategy.Type)
+			},
+		},
+		{
+			Name:                    "TestDeploymentStrategyInvalidValueFails",
+			RenderTemplateExtraArgs: []string{"--skip-schema-validation"},
+			Values: map[string]string{
+				"identity.enabled":                        "true",
+				"optimize.enabled":                        "true",
+				"optimize.persistence.deploymentStrategy": "InvalidStrategy",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Error(err)
+				s.Require().Contains(err.Error(), "optimize.persistence.deploymentStrategy value must be one of 'RollingUpdate', 'Recreate'")
+			},
+		},
 	}
 
 	for _, testCase := range testCases {
@@ -186,6 +229,7 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 				helmChartPath,
 				s.release,
 				s.templates,
+				testCase.RenderTemplateExtraArgs...,
 			)
 
 			testCase.Verifier(s.T(), output, err)
