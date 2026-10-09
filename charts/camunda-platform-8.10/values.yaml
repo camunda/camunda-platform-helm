@@ -2238,6 +2238,7 @@ orchestration:
       ## @param orchestration.security.initialization.defaultRoles.admin.users defines the initial users that will get the admin permission
       ## @param orchestration.security.initialization.defaultRoles.connectors.users defines the initial users that will get the connectors permission
       ## @param orchestration.security.initialization.defaultRoles.connectors.clients define clients for the orchestration cluster.
+      ## @extra orchestration.security.initialization.defaultRoles.<role>.mappingRules (DEPRECATED) assigns mapping rule IDs to a role. Use `camunda.security.initialization.default-roles.<role>.mappingrules` in `orchestration.extraConfiguration`, together with the mapping rule definitions.
       defaultRoles:
         admin:
           users:
