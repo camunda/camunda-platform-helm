@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 12.14.0
+version: 12.14.1
 appVersion: 8.7.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -66,5 +66,5 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
-    - kind: added
-      description: "Support orchestration releases managed by Camunda Hub"
+    - kind: fixed
+      description: "Use the image tag for app.kubernetes.io/version when an image digest is set"
