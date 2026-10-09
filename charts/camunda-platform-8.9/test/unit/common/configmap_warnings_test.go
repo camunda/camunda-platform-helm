@@ -654,6 +654,47 @@ func (s *ConfigMapWarningsTemplateTest) TestPvcAccessModesReadWriteOncePodWarnin
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
+func (s *ConfigMapWarningsTemplateTest) TestNoSecondaryStorageTypeConflictWarning() {
+	const warning = "global.noSecondaryStorage=true conflicts with orchestration.data.secondaryStorage.type"
+	testCases := []testhelpers.TestCase{}
+	for _, scenario := range []struct {
+		name               string
+		noSecondaryStorage string
+		storageType        string
+		warn               bool
+	}{
+		{name: "ElasticsearchWarns", noSecondaryStorage: "true", storageType: "elasticsearch", warn: true},
+		{name: "OpensearchWarns", noSecondaryStorage: "true", storageType: "opensearch", warn: true},
+		{name: "RdbmsWarns", noSecondaryStorage: "true", storageType: "rdbms", warn: true},
+		{name: "NoneDoesNotWarn", noSecondaryStorage: "true", storageType: "none"},
+		{name: "UnsetTypeDoesNotWarn", noSecondaryStorage: "true"},
+		{name: "SecondaryStorageEnabledDoesNotWarn", noSecondaryStorage: "false", storageType: "elasticsearch"},
+	} {
+		testCases = append(testCases, testhelpers.TestCase{
+			Name: "TestNoSecondaryStorageTypeConflict" + scenario.name,
+			Values: map[string]string{
+				"global.noSecondaryStorage":                scenario.noSecondaryStorage,
+				"orchestration.data.secondaryStorage.type": scenario.storageType,
+				"orchestration.pvcAccessModes[0]":          "ReadWriteOncePod",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+				warnings := configmap.Data["warnings"]
+				s.Require().Contains(warnings, "orchestration.pvcAccessModes is set to ReadWriteOncePod")
+				if scenario.warn {
+					s.Require().Contains(warnings, warning+"="+scenario.storageType+":")
+				} else {
+					s.Require().NotContains(warnings, warning)
+				}
+			},
+		})
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
 func (s *ConfigMapWarningsTemplateTest) TestMultiregionClusterSizeDivisibilityWarning() {
 	const warning = "orchestration.clusterSize is 5 but global.multiregion.regions is 2, so the regions deploy 4 brokers while every broker expects 5"
 
