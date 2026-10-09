@@ -87,10 +87,10 @@ Give the step an `id:` and pass each secret only into the specific step that con
 
 # Consume in a GitHub Action via its `with:` inputs — no env var needed:
 - name: Generate GitHub token
-  uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
+  uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
   with:
-    app_id: ${{ steps.vault.outputs.GH_APP_ID_DISTRO_CI }}
-    private_key: ${{ steps.vault.outputs.GH_APP_PRIVATE_KEY_DISTRO_CI }}
+    app-id: ${{ steps.vault.outputs.GH_APP_ID_DISTRO_CI }}
+    private-key: ${{ steps.vault.outputs.GH_APP_PRIVATE_KEY_DISTRO_CI }}
 
 # Consume in a shell `run:` step via a step-scoped `env:` block:
 - name: Use a secret in a script
