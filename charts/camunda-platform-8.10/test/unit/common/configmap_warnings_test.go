@@ -200,6 +200,100 @@ func (s *ConfigMapWarningsTemplateTest) TestUnresolvedAuthIssuer() {
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, nil, testCases)
 }
 
+func (s *ConfigMapWarningsTemplateTest) TestUnresolvedOrchestrationOIDCEndpoints() {
+	const endpointWarning = "The Orchestration Cluster uses OIDC without an issuer URI, and these endpoints do not render as absolute URLs: "
+	testCases := []testhelpers.TestCase{}
+	for _, scenario := range []struct {
+		name       string
+		values     map[string]string
+		unresolved string
+	}{
+		{name: "GenericBackendOnly", values: map[string]string{"global.identity.auth.issuerBackendUrl": "https://idp.example.com"}, unresolved: "authorization-uri, jwk-set-uri, token-uri"},
+		{name: "MicrosoftBackendOnly", values: map[string]string{"global.identity.auth.type": "MICROSOFT", "global.identity.auth.issuerBackendUrl": "https://idp.example.com"}, unresolved: "authorization-uri, jwk-set-uri, token-uri"},
+		{name: "KeycloakPublicIssuerOnly", values: map[string]string{"global.identity.auth.type": "KEYCLOAK", "global.identity.auth.publicIssuerUrl": "https://kc.example.com/auth/realms/camunda-platform"}, unresolved: "jwk-set-uri, token-uri"},
+		{
+			name: "KeycloakURLOnly",
+			values: map[string]string{
+				"global.identity.auth.type":             "KEYCLOAK",
+				"global.identity.keycloak.url.protocol": "https",
+				"global.identity.keycloak.url.host":     "kc.example.com",
+				"global.identity.keycloak.url.port":     "443",
+			},
+			unresolved: "authorization-uri",
+		},
+		{
+			name: "ExternalKeycloak",
+			values: map[string]string{
+				"global.identity.auth.type":             "KEYCLOAK",
+				"global.identity.auth.publicIssuerUrl":  "https://kc.example.com/auth/realms/camunda-platform",
+				"global.identity.keycloak.url.protocol": "https",
+				"global.identity.keycloak.url.host":     "kc.example.com",
+				"global.identity.keycloak.url.port":     "443",
+			},
+		},
+		{name: "GlobalIssuer", values: map[string]string{"global.identity.auth.issuer": "https://idp.example.com"}},
+		{name: "OrchestrationIssuer", values: map[string]string{"orchestration.security.authentication.oidc.issuer": "https://idp.example.com"}},
+		{
+			name: "GlobalEndpoints",
+			values: map[string]string{
+				"global.identity.auth.authUrl":  "https://idp.example.com/auth",
+				"global.identity.auth.jwksUrl":  "https://idp.example.com/certs",
+				"global.identity.auth.tokenUrl": "https://idp.example.com/token",
+			},
+		},
+		{
+			name: "OrchestrationEndpoints",
+			values: map[string]string{
+				"orchestration.security.authentication.oidc.authUrl":  "https://idp.example.com/auth",
+				"orchestration.security.authentication.oidc.jwksUrl":  "https://idp.example.com/certs",
+				"orchestration.security.authentication.oidc.tokenUrl": "https://idp.example.com/token",
+			},
+		},
+		{name: "OrchestrationBasicAuth", values: map[string]string{"orchestration.security.authentication.method": "basic", "global.identity.auth.issuerBackendUrl": "https://idp.example.com"}},
+	} {
+		values := map[string]string{
+			"identity.enabled":                         "true",
+			"optimize.enabled":                         "false",
+			"global.identity.auth.enabled":             "true",
+			"global.identity.auth.type":                "GENERIC",
+			"global.identity.auth.publicIssuerUrl":     "",
+			"global.security.authentication.method":    "oidc",
+			"orchestration.data.secondaryStorage.type": "elasticsearch",
+		}
+		for key, value := range scenario.values {
+			values[key] = value
+		}
+		testCases = append(testCases, testhelpers.TestCase{
+			Name:   scenario.name,
+			Values: values,
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				configMaps := map[string]corev1.ConfigMap{}
+				decoder := k8syaml.NewYAMLOrJSONDecoder(strings.NewReader(output), 4096)
+				for {
+					var resource corev1.ConfigMap
+					err := decoder.Decode(&resource)
+					if err == io.EOF {
+						break
+					}
+					s.Require().NoError(err)
+					if resource.Kind == "ConfigMap" {
+						configMaps[resource.Name] = resource
+					}
+				}
+				s.Require().Contains(configMaps, s.release+"-zeebe-configuration")
+				warnings := configMaps[s.release+"-warnings"].Data["warnings"]
+				if scenario.unresolved == "" {
+					s.Require().NotContains(warnings, endpointWarning)
+				} else {
+					s.Require().Contains(warnings, endpointWarning+scenario.unresolved+".")
+				}
+			},
+		})
+	}
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, nil, testCases)
+}
+
 func (s *ConfigMapWarningsTemplateTest) TestDifferentValuesInputs() {
 	testCases := []testhelpers.TestCase{
 		{
@@ -1256,6 +1350,81 @@ func (s *ConfigMapWarningsTemplateTest) TestPvcAccessModesReadWriteOncePodWarnin
 				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 				s.Require().NotContains(configmap.Data["warnings"], "pvcAccessModes")
 			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *ConfigMapWarningsTemplateTest) TestDualRegionReplicationFactorWarning() {
+	const warningSuffix = "is 2; a dual-region cluster needs a replication factor of 4"
+
+	noWarning := func(t *testing.T, output string, err error) {
+		s.Require().NoError(err)
+		s.Require().NotContains(output, "orchestration.replicationFactor is")
+	}
+
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "NumberOfZonesTwoWithReplicationFactorNotFourTriggersWarning",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"orchestration.partitioning.numberOfZones": "2",
+				"orchestration.partitioning.zoneIndex":     "0",
+			},
+			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.clusterSize=4"},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().Contains(configmap.Data["warnings"],
+					"orchestration.replicationFactor is 3 but orchestration.partitioning.numberOfZones "+warningSuffix)
+			},
+		},
+		{
+			Name: "DeprecatedRegionsTwoWithReplicationFactorNotFourTriggersWarning",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"global.multiregion.regions":               "2",
+			},
+			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.clusterSize=4"},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().Contains(configmap.Data["warnings"],
+					"orchestration.replicationFactor is 3 but global.multiregion.regions "+warningSuffix)
+			},
+		},
+		{
+			Name: "ReplicationFactorFourDoesNotTriggerWarning",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"orchestration.partitioning.numberOfZones": "2",
+				"orchestration.partitioning.zoneIndex":     "0",
+			},
+			RenderTemplateExtraArgs: []string{
+				"--set-string", "orchestration.clusterSize=4",
+				"--set-string", "orchestration.replicationFactor=4",
+			},
+			Verifier: noWarning,
+		},
+		{
+			Name: "ZoneAwareSchemeDoesNotTriggerWarning",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":             "elasticsearch",
+				"orchestration.partitioning.scheme":                    "zone-aware",
+				"orchestration.partitioning.zone":                      "zone-a",
+				"orchestration.partitioning.zones[0].name":             "zone-a",
+				"orchestration.partitioning.zones[0].numberOfBrokers":  "1",
+				"orchestration.partitioning.zones[0].numberOfReplicas": "1",
+				"orchestration.partitioning.zones[0].priority":         "100",
+				"orchestration.partitioning.zones[1].name":             "zone-b",
+				"orchestration.partitioning.zones[1].numberOfBrokers":  "1",
+				"orchestration.partitioning.zones[1].numberOfReplicas": "1",
+				"orchestration.partitioning.zones[1].priority":         "50",
+			},
+			Verifier: noWarning,
 		},
 	}
 

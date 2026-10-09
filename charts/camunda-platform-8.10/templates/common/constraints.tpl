@@ -1057,6 +1057,17 @@ Usage:
       {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
     {{- end }}
   {{- end }}
+  {{- if and (eq (include "orchestration.authMethod" .) "oidc") (empty (include "orchestration.authIssuerUrl" . | trim)) }}
+    {{- $unresolvedEndpoints := list }}
+    {{- range $key, $helper := dict "authorization-uri" "orchestration.authIssuerUrlEndpointAuth" "jwk-set-uri" "orchestration.authIssuerBackendUrlEndpointCerts" "token-uri" "orchestration.authIssuerBackendUrlEndpointToken" }}
+      {{- if not (regexMatch "^[a-zA-Z][a-zA-Z0-9+.-]*://[^/:?#]+" (include $helper $ | trim)) }}
+        {{- $unresolvedEndpoints = append $unresolvedEndpoints $key }}
+      {{- end }}
+    {{- end }}
+    {{- if $unresolvedEndpoints }}
+      {{- printf "\n[camunda][warning] The Orchestration Cluster uses OIDC without an issuer URI, and these endpoints do not render as absolute URLs: %s. Set orchestration.security.authentication.oidc.issuer or global.identity.auth.issuer, or set the endpoints in orchestration.security.authentication.oidc.authUrl, jwksUrl, and tokenUrl (or global.identity.auth.authUrl, jwksUrl, and tokenUrl). For KEYCLOAK, global.identity.auth.publicIssuerUrl derives authorization-uri, and global.identity.auth.issuerBackendUrl or global.identity.keycloak.url derives jwk-set-uri and token-uri." (join ", " $unresolvedEndpoints) }}
+    {{- end }}
+  {{- end }}
   {{- if not (semverCompare ">=4.0.0-0" .Capabilities.HelmVersion.Version) }}
     {{- printf "\n%s" (printf "[camunda][warning] Helm CLI %s detected. Helm v3 receives security fixes only until February 10, 2027 (https://helm.sh/blog/helm-v3-end-of-life/). Upgrade to Helm v4 before then: https://helm.sh/docs/overview" .Capabilities.HelmVersion.Version) }}
   {{- end }}
@@ -1611,6 +1622,19 @@ The following values inside your values.yaml need to be set but were not:
         "Move the block and remove the global one; setting both fails the render."
     -}}
     {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+  {{- end }}
+
+  {{- if eq (include "camundaPlatform.orchestrationEnabled" .) "true" }}
+    {{- $partitioning := include "camundaPlatform.partitioning" . | fromJson -}}
+    {{- $replicationFactor := int .Values.orchestration.replicationFactor -}}
+    {{- if and (ne $partitioning.scheme "zone-aware") (eq (int $partitioning.numberOfZones) 2) (ne $replicationFactor 4) }}
+      {{- $warningMessage := printf "%s %s %s"
+          "[camunda][warning]"
+          (printf "orchestration.replicationFactor is %d but %s.%s is 2; a dual-region cluster needs a replication factor of 4 to distribute every partition evenly across both regions." $replicationFactor $partitioning.sourceKey $partitioning.countKey)
+          "Set orchestration.replicationFactor to 4."
+      -}}
+      {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+    {{- end }}
   {{- end }}
 
   {{- if .Values.orchestration.profiles.broker }}

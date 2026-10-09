@@ -209,6 +209,110 @@ func (s *ConfigMapWarningsTemplateTest) TestUnresolvedAuthIssuer() {
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, nil, testCases)
 }
 
+func (s *ConfigMapWarningsTemplateTest) TestUnresolvedOrchestrationOIDCEndpoints() {
+	const endpointWarning = "The Orchestration Cluster uses OIDC without an issuer URI, and these endpoints do not render as absolute URLs: "
+	testCases := []testhelpers.TestCase{}
+	for _, scenario := range []struct {
+		name       string
+		values     map[string]string
+		unresolved string
+	}{
+		{name: "GenericBackendOnly", values: map[string]string{"global.identity.auth.issuerBackendUrl": "https://idp.example.com"}, unresolved: "authorization-uri, jwk-set-uri, token-uri"},
+		{name: "MicrosoftBackendOnly", values: map[string]string{"global.identity.auth.type": "MICROSOFT", "global.identity.auth.issuerBackendUrl": "https://idp.example.com"}, unresolved: "authorization-uri, jwk-set-uri, token-uri"},
+		{name: "KeycloakPublicIssuerOnly", values: map[string]string{"global.identity.auth.type": "KEYCLOAK", "global.identity.auth.publicIssuerUrl": "https://kc.example.com/auth/realms/camunda-platform"}, unresolved: "jwk-set-uri, token-uri"},
+		{
+			name: "KeycloakURLOnly",
+			values: map[string]string{
+				"global.identity.auth.type":             "KEYCLOAK",
+				"global.identity.keycloak.url.protocol": "https",
+				"global.identity.keycloak.url.host":     "kc.example.com",
+				"global.identity.keycloak.url.port":     "443",
+			},
+			unresolved: "authorization-uri",
+		},
+		{
+			name: "ExternalKeycloak",
+			values: map[string]string{
+				"global.identity.auth.type":             "KEYCLOAK",
+				"global.identity.auth.publicIssuerUrl":  "https://kc.example.com/auth/realms/camunda-platform",
+				"global.identity.keycloak.url.protocol": "https",
+				"global.identity.keycloak.url.host":     "kc.example.com",
+				"global.identity.keycloak.url.port":     "443",
+			},
+		},
+		{
+			name: "BundledKeycloak",
+			values: map[string]string{
+				"global.identity.auth.type":            "KEYCLOAK",
+				"global.identity.auth.publicIssuerUrl": "http://localhost:18080/auth/realms/camunda-platform",
+				"identityKeycloak.enabled":             "true",
+				"global.identity.keycloak.url":         "null",
+			},
+		},
+		{name: "GlobalIssuer", values: map[string]string{"global.identity.auth.issuer": "https://idp.example.com"}},
+		{name: "OrchestrationIssuer", values: map[string]string{"orchestration.security.authentication.oidc.issuer": "https://idp.example.com"}},
+		{
+			name: "GlobalEndpoints",
+			values: map[string]string{
+				"global.identity.auth.authUrl":  "https://idp.example.com/auth",
+				"global.identity.auth.jwksUrl":  "https://idp.example.com/certs",
+				"global.identity.auth.tokenUrl": "https://idp.example.com/token",
+			},
+		},
+		{
+			name: "OrchestrationEndpoints",
+			values: map[string]string{
+				"orchestration.security.authentication.oidc.authUrl":  "https://idp.example.com/auth",
+				"orchestration.security.authentication.oidc.jwksUrl":  "https://idp.example.com/certs",
+				"orchestration.security.authentication.oidc.tokenUrl": "https://idp.example.com/token",
+			},
+		},
+		{name: "OrchestrationBasicAuth", values: map[string]string{"orchestration.security.authentication.method": "basic", "global.identity.auth.issuerBackendUrl": "https://idp.example.com"}},
+	} {
+		values := map[string]string{
+			"identity.enabled":                         "true",
+			"identityKeycloak.enabled":                 "false",
+			"optimize.enabled":                         "false",
+			"global.identity.auth.enabled":             "true",
+			"global.identity.auth.type":                "GENERIC",
+			"global.identity.auth.publicIssuerUrl":     "",
+			"global.security.authentication.method":    "oidc",
+			"orchestration.data.secondaryStorage.type": "elasticsearch",
+		}
+		for key, value := range scenario.values {
+			values[key] = value
+		}
+		testCases = append(testCases, testhelpers.TestCase{
+			Name:   scenario.name,
+			Values: values,
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				configMaps := map[string]corev1.ConfigMap{}
+				decoder := k8syaml.NewYAMLOrJSONDecoder(strings.NewReader(output), 4096)
+				for {
+					var resource corev1.ConfigMap
+					err := decoder.Decode(&resource)
+					if err == io.EOF {
+						break
+					}
+					s.Require().NoError(err)
+					if resource.Kind == "ConfigMap" {
+						configMaps[resource.Name] = resource
+					}
+				}
+				s.Require().Contains(configMaps, s.release+"-zeebe-configuration-unified")
+				warnings := configMaps[s.release+"-warnings"].Data["warnings"]
+				if scenario.unresolved == "" {
+					s.Require().NotContains(warnings, endpointWarning)
+				} else {
+					s.Require().Contains(warnings, endpointWarning+scenario.unresolved+".")
+				}
+			},
+		})
+	}
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, nil, testCases)
+}
+
 func (s *ConfigMapWarningsTemplateTest) TestDifferentValuesInputs() {
 	testCases := []testhelpers.TestCase{
 		{
@@ -521,6 +625,38 @@ func (s *ConfigMapWarningsTemplateTest) TestMultiregionClusterSizeDivisibilityWa
 				var configmap corev1.ConfigMap
 				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 				s.Require().NotContains(configmap.Data["warnings"], "orchestration.clusterSize is")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *ConfigMapWarningsTemplateTest) TestMultiregionReplicationFactorWarning() {
+	const warning = "orchestration.replicationFactor is 3 but global.multiregion.regions is 2; a dual-region cluster needs a replication factor of 4"
+
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "DualRegionReplicationFactorNotFourTriggersWarning",
+			Values: map[string]string{
+				"global.multiregion.regions": "2",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().Contains(configmap.Data["warnings"], warning)
+			},
+		},
+		{
+			Name: "DualRegionReplicationFactorFourDoesNotTriggerWarning",
+			Values: map[string]string{
+				"global.multiregion.regions": "2",
+			},
+			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.replicationFactor=4"},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				s.Require().NotContains(output, "orchestration.replicationFactor is")
 			},
 		},
 	}
