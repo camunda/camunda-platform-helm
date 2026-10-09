@@ -87,6 +87,10 @@
     "properties": {
         "global": {
             "properties": {
+                "annotations": {"additionalProperties": true},
+                "labels": {"additionalProperties": true},
+                "commonLabels": {"additionalProperties": true},
+                "nodeSelector": {"additionalProperties": true},
                 "documentStore": {
                     "properties": {
                         "type": {
@@ -293,7 +297,18 @@
                             }
                         }
                     }
-                }
+                },
+                "tls": {"properties": {
+                    "caBundle": {"properties": {
+                        "containerSecurityContext": {
+                            "additionalProperties": true,
+                            "properties": {
+                                "capabilities": {"additionalProperties": true},
+                                "seccompProfile": {"additionalProperties": true}
+                            }
+                        }
+                    }}
+                }}
             }
         },
         "console": {
@@ -410,6 +425,31 @@
         },
         "connectors": {
             "properties": {
+                "resources": {
+                    "additionalProperties": true,
+                    "properties": {
+                        "requests": {"additionalProperties": true},
+                        "limits": {"additionalProperties": true}
+                    }
+                },
+                "containerSecurityContext": {
+                    "additionalProperties": true,
+                    "properties": {"seccompProfile": {"additionalProperties": true}}
+                },
+                "podSecurityContext": {
+                    "additionalProperties": true,
+                    "properties": {"seccompProfile": {"additionalProperties": true}}
+                },
+                "podAnnotations": {"additionalProperties": true},
+                "podLabels": {"additionalProperties": true},
+                "nodeSelector": {"additionalProperties": true},
+                "serviceAccount": {"properties": {
+                    "annotations": {"additionalProperties": true},
+                    "labels": {"additionalProperties": true}
+                }},
+                "persistence": {"properties": {
+                    "annotations": {"additionalProperties": true}
+                }},
                 "appIntegrations": {
                     "properties": {
                         "oauth": {
@@ -545,6 +585,7 @@
                 },
                 "service": {
                     "properties": {
+                        "annotations": {"additionalProperties": true},
                         "appProtocols": {
                             "type": "object",
                             "description": "can be used to set the Kubernetes Service appProtocol hint per port (server), e.g. {server: \"http\"}. Empty by default, no behavior change. See https://kubernetes.io/docs/concepts/services-networking/service/#application-protocol",
@@ -559,6 +600,31 @@
         },
         "identity": {
             "properties": {
+                "resources": {
+                    "additionalProperties": true,
+                    "properties": {
+                        "requests": {"additionalProperties": true},
+                        "limits": {"additionalProperties": true}
+                    }
+                },
+                "containerSecurityContext": {
+                    "additionalProperties": true,
+                    "properties": {"seccompProfile": {"additionalProperties": true}}
+                },
+                "podSecurityContext": {
+                    "additionalProperties": true,
+                    "properties": {"seccompProfile": {"additionalProperties": true}}
+                },
+                "podAnnotations": {"additionalProperties": true},
+                "podLabels": {"additionalProperties": true},
+                "nodeSelector": {"additionalProperties": true},
+                "serviceAccount": {"properties": {
+                    "annotations": {"additionalProperties": true},
+                    "labels": {"additionalProperties": true}
+                }},
+                "persistence": {"properties": {
+                    "annotations": {"additionalProperties": true}
+                }},
                 "automountServiceAccountToken": {
                     "type": ["boolean", "null"],
                     "description": "can be used to override the automatic mounting of the service account token at the pod level. When unset, the ServiceAccount configuration is used.",
@@ -681,6 +747,7 @@
                 },
                 "service": {
                     "properties": {
+                        "annotations": {"additionalProperties": true},
                         "appProtocols": {
                             "type": "object",
                             "description": "can be used to set the Kubernetes Service appProtocol hint per port (http, metrics), e.g. {http: \"http\"}. Empty by default, no behavior change. See https://kubernetes.io/docs/concepts/services-networking/service/#application-protocol",
@@ -695,6 +762,40 @@
         },
         "optimize": {
             "properties": {
+                "resources": {
+                    "additionalProperties": true,
+                    "properties": {
+                        "requests": {"additionalProperties": true},
+                        "limits": {"additionalProperties": true}
+                    }
+                },
+                "migration": {"properties": {
+                    "resources": {
+                        "additionalProperties": true,
+                        "properties": {
+                            "requests": {"additionalProperties": true},
+                            "limits": {"additionalProperties": true}
+                        }
+                    }
+                }},
+                "containerSecurityContext": {
+                    "additionalProperties": true,
+                    "properties": {"seccompProfile": {"additionalProperties": true}}
+                },
+                "podSecurityContext": {
+                    "additionalProperties": true,
+                    "properties": {"seccompProfile": {"additionalProperties": true}}
+                },
+                "podAnnotations": {"additionalProperties": true},
+                "podLabels": {"additionalProperties": true},
+                "nodeSelector": {"additionalProperties": true},
+                "serviceAccount": {"properties": {
+                    "annotations": {"additionalProperties": true},
+                    "labels": {"additionalProperties": true}
+                }},
+                "persistence": {"properties": {
+                    "annotations": {"additionalProperties": true}
+                }},
                 "security": {
                     "properties": {
                         "authentication": {
@@ -836,6 +937,7 @@
                 },
                 "service": {
                     "properties": {
+                        "annotations": {"additionalProperties": true},
                         "appProtocols": {
                             "type": "object",
                             "description": "can be used to set the Kubernetes Service appProtocol hint per port (http, management), e.g. {http: \"http\"}. Empty by default, no behavior change. See https://kubernetes.io/docs/concepts/services-networking/service/#application-protocol",
@@ -961,6 +1063,28 @@
         },
         "orchestration": {
             "properties": {
+                "resources": {
+                    "additionalProperties": true,
+                    "properties": {
+                        "requests": {"additionalProperties": true},
+                        "limits": {"additionalProperties": true}
+                    }
+                },
+                "containerSecurityContext": {
+                    "additionalProperties": true,
+                    "properties": {"seccompProfile": {"additionalProperties": true}}
+                },
+                "podSecurityContext": {
+                    "additionalProperties": true,
+                    "properties": {"seccompProfile": {"additionalProperties": true}}
+                },
+                "podAnnotations": {"additionalProperties": true},
+                "podLabels": {"additionalProperties": true},
+                "nodeSelector": {"additionalProperties": true},
+                "serviceAccount": {"properties": {
+                    "annotations": {"additionalProperties": true},
+                    "labels": {"additionalProperties": true}
+                }},
                 "envFromProvides": {
                     "items": {
                         "type": "string",
@@ -1518,8 +1642,13 @@
                 }
             },
             "properties": {
+                "serviceAccount": {"properties": {
+                    "annotations": {"additionalProperties": true},
+                    "labels": {"additionalProperties": true}
+                }},
                 "persistence": {
                     "properties": {
+                        "annotations": {"additionalProperties": true},
                         "deploymentStrategy": {
                             "enum": [
                                 "RollingUpdate",
@@ -1530,6 +1659,32 @@
                 },
                 "restapi": {
                     "properties": {
+                        "podAnnotations": {"additionalProperties": true},
+                        "resources": {
+                            "additionalProperties": true,
+                            "properties": {
+                                "requests": {"additionalProperties": true},
+                                "limits": {"additionalProperties": true}
+                            }
+                        },
+                        "containerSecurityContext": {
+                            "additionalProperties": true,
+                            "properties": {"seccompProfile": {"additionalProperties": true}}
+                        },
+                        "podSecurityContext": {
+                            "additionalProperties": true,
+                            "properties": {"seccompProfile": {"additionalProperties": true}}
+                        },
+                        "podLabels": {"additionalProperties": true},
+                        "nodeSelector": {"additionalProperties": true},
+                        "image": {
+                            "properties": {
+                                "tag": {
+                                    "type": "string",
+                                    "description": "can be used to override webModeler.image.tag for the REST API image. Omit this key to retain the shared image tag."
+                                }
+                            }
+                        },
                         "logging": {
                             "type": "object",
                             "description": "configuration for the restapi logging, included directly in the webModeler restapi configuration YAML file.",
@@ -1538,6 +1693,7 @@
                         },
                         "service": {
                             "properties": {
+                                "annotations": {"additionalProperties": true},
                                 "appProtocols": {
                                     "type": "object",
                                     "description": "can be used to set the Kubernetes Service appProtocol hint per port (http, http-management), e.g. {http: \"http\"}. Empty by default, no behavior change. See https://kubernetes.io/docs/concepts/services-networking/service/#application-protocol",
@@ -1552,8 +1708,35 @@
                 },
                 "websockets": {
                     "properties": {
+                        "podAnnotations": {"additionalProperties": true},
+                        "resources": {
+                            "additionalProperties": true,
+                            "properties": {
+                                "requests": {"additionalProperties": true},
+                                "limits": {"additionalProperties": true}
+                            }
+                        },
+                        "containerSecurityContext": {
+                            "additionalProperties": true,
+                            "properties": {"seccompProfile": {"additionalProperties": true}}
+                        },
+                        "podSecurityContext": {
+                            "additionalProperties": true,
+                            "properties": {"seccompProfile": {"additionalProperties": true}}
+                        },
+                        "podLabels": {"additionalProperties": true},
+                        "nodeSelector": {"additionalProperties": true},
+                        "image": {
+                            "properties": {
+                                "tag": {
+                                    "type": "string",
+                                    "description": "can be used to override webModeler.image.tag for the WebSockets image. Omit this key to retain the shared image tag."
+                                }
+                            }
+                        },
                         "service": {
                             "properties": {
+                                "annotations": {"additionalProperties": true},
                                 "appProtocols": {
                                     "type": "object",
                                     "description": "can be used to set the Kubernetes Service appProtocol hint per port (http), e.g. {http: \"kubernetes.io/ws\"}. Empty by default, no behavior change. See https://kubernetes.io/docs/concepts/services-networking/service/#application-protocol",
@@ -1566,6 +1749,11 @@
                         }
                     }
                 }
+            }
+        },
+        "prometheusServiceMonitor": {
+            "properties": {
+                "labels": {"additionalProperties": true}
             }
         },
         "camundaHub": {
@@ -1638,6 +1826,16 @@
                 },
                 "persistence": {
                     "properties": {
+                        "enabled": {"type": ["boolean", "null"]},
+                        "existingClaim": {"type": ["string", "null"]},
+                        "storageClassName": {"type": ["string", "null"]},
+                        "size": {"type": ["string", "null"]},
+                        "accessModes": {
+                            "type": ["array", "null"],
+                            "items": {"type": "string"}
+                        },
+                        "annotations": {"type": ["object", "null"], "additionalProperties": true},
+                        "selector": {"type": ["object", "null"], "additionalProperties": true},
                         "deploymentStrategy": {
                             "type": "string",
                             "enum": [
