@@ -679,6 +679,28 @@
                         }
                     }
                 },
+                "realm": {
+                    "if": {
+                        "properties": {
+                            "enabled": {
+                                "const": true
+                            }
+                        },
+                        "required": [
+                            "enabled"
+                        ]
+                    },
+                    "then": {
+                        "properties": {
+                            "id": {
+                                "minLength": 1
+                            }
+                        },
+                        "required": [
+                            "id"
+                        ]
+                    }
+                },
                 "service": {
                     "properties": {
                         "appProtocols": {
@@ -1530,6 +1552,15 @@
                 },
                 "restapi": {
                     "properties": {
+                        "image": {
+                            "properties": {
+                                "tag": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "description": "can be used to override webModeler.image.tag for the REST API image. Omit this key to retain the shared image tag."
+                                }
+                            }
+                        },
                         "logging": {
                             "type": "object",
                             "description": "configuration for the restapi logging, included directly in the webModeler restapi configuration YAML file.",
@@ -1552,6 +1583,15 @@
                 },
                 "websockets": {
                     "properties": {
+                        "image": {
+                            "properties": {
+                                "tag": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "description": "can be used to override webModeler.image.tag for the WebSockets image. Omit this key to retain the shared image tag."
+                                }
+                            }
+                        },
                         "service": {
                             "properties": {
                                 "appProtocols": {

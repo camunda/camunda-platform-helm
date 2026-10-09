@@ -1042,6 +1042,21 @@ Usage:
       {{- printf "\n%s" "[camunda][warning] global.identity.auth.enabled=true, but no shared authentication issuer or issuer backend URL resolves. Set global.identity.auth.issuer (or global.identity.auth.publicIssuerUrl), global.identity.auth.issuerBackendUrl, or global.identity.keycloak.url for External Keycloak. Components using separate OIDC configuration must supply their own provider settings." }}
     {{- end }}
   {{- end }}
+  {{- if and (eq (include "camundaPlatform.identityEnabled" .) "true")
+             .Values.global.identity.auth.enabled
+             (eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK")
+             (or .Values.global.identity.auth.connectors.alwaysRegister
+                 (and (ne (include "camundaPlatform.topologyMode" .) "hub") (eq (include "connectors.authMethod" .) "oidc"))) }}
+    {{- $orchestrationAudience := include "orchestration.authAudience" . }}
+    {{- $connectorsAudience := include "connectors.authAudience" . }}
+    {{- if ne $connectorsAudience $orchestrationAudience }}
+      {{- $warningMessage := printf "%s %s"
+          "[camunda][warning]"
+          (printf "connectors.security.authentication.oidc.audience is set to %q, which differs from the Orchestration audience %q. Management Identity provisions the Connectors client with access to the Orchestration audience only, so it creates no client or API for the overridden audience. Set connectors.security.authentication.oidc.audience only with an external OIDC provider whose Connectors client you manage yourself, or remove it." $connectorsAudience $orchestrationAudience)
+      -}}
+      {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+    {{- end }}
+  {{- end }}
   {{- if and (eq (include "orchestration.authMethod" .) "oidc") (empty (include "orchestration.authIssuerUrl" . | trim)) }}
     {{- $unresolvedEndpoints := list }}
     {{- range $key, $helper := dict "authorization-uri" "orchestration.authIssuerUrlEndpointAuth" "jwk-set-uri" "orchestration.authIssuerBackendUrlEndpointCerts" "token-uri" "orchestration.authIssuerBackendUrlEndpointToken" }}
