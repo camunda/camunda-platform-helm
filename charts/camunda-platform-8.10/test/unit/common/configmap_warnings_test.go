@@ -1356,6 +1356,81 @@ func (s *ConfigMapWarningsTemplateTest) TestPvcAccessModesReadWriteOncePodWarnin
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
+func (s *ConfigMapWarningsTemplateTest) TestDualRegionReplicationFactorWarning() {
+	const warningSuffix = "is 2; a dual-region cluster needs a replication factor of 4"
+
+	noWarning := func(t *testing.T, output string, err error) {
+		s.Require().NoError(err)
+		s.Require().NotContains(output, "orchestration.replicationFactor is")
+	}
+
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "NumberOfZonesTwoWithReplicationFactorNotFourTriggersWarning",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"orchestration.partitioning.numberOfZones": "2",
+				"orchestration.partitioning.zoneIndex":     "0",
+			},
+			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.clusterSize=4"},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().Contains(configmap.Data["warnings"],
+					"orchestration.replicationFactor is 3 but orchestration.partitioning.numberOfZones "+warningSuffix)
+			},
+		},
+		{
+			Name: "DeprecatedRegionsTwoWithReplicationFactorNotFourTriggersWarning",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"global.multiregion.regions":               "2",
+			},
+			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.clusterSize=4"},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().Contains(configmap.Data["warnings"],
+					"orchestration.replicationFactor is 3 but global.multiregion.regions "+warningSuffix)
+			},
+		},
+		{
+			Name: "ReplicationFactorFourDoesNotTriggerWarning",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"orchestration.partitioning.numberOfZones": "2",
+				"orchestration.partitioning.zoneIndex":     "0",
+			},
+			RenderTemplateExtraArgs: []string{
+				"--set-string", "orchestration.clusterSize=4",
+				"--set-string", "orchestration.replicationFactor=4",
+			},
+			Verifier: noWarning,
+		},
+		{
+			Name: "ZoneAwareSchemeDoesNotTriggerWarning",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":             "elasticsearch",
+				"orchestration.partitioning.scheme":                    "zone-aware",
+				"orchestration.partitioning.zone":                      "zone-a",
+				"orchestration.partitioning.zones[0].name":             "zone-a",
+				"orchestration.partitioning.zones[0].numberOfBrokers":  "1",
+				"orchestration.partitioning.zones[0].numberOfReplicas": "1",
+				"orchestration.partitioning.zones[0].priority":         "100",
+				"orchestration.partitioning.zones[1].name":             "zone-b",
+				"orchestration.partitioning.zones[1].numberOfBrokers":  "1",
+				"orchestration.partitioning.zones[1].numberOfReplicas": "1",
+				"orchestration.partitioning.zones[1].priority":         "50",
+			},
+			Verifier: noWarning,
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
 func (s *ConfigMapWarningsTemplateTest) TestDefaultRolesMappingRulesDeprecationWarning() {
 	const adminWarning = `DEPRECATION: The Helm values file key "orchestration.security.initialization.defaultRoles.admin.mappingRules" is deprecated and will be removed in chart v16 (Camunda 8.11). Configure this via "orchestration.extraConfiguration" instead.`
 	const connectorsWarning = `DEPRECATION: The Helm values file key "orchestration.security.initialization.defaultRoles.connectors.mappingRules" is deprecated and will be removed in chart v16 (Camunda 8.11). Configure this via "orchestration.extraConfiguration" instead.`

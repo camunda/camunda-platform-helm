@@ -632,6 +632,38 @@ func (s *ConfigMapWarningsTemplateTest) TestMultiregionClusterSizeDivisibilityWa
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
+func (s *ConfigMapWarningsTemplateTest) TestMultiregionReplicationFactorWarning() {
+	const warning = "orchestration.replicationFactor is 3 but global.multiregion.regions is 2; a dual-region cluster needs a replication factor of 4"
+
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "DualRegionReplicationFactorNotFourTriggersWarning",
+			Values: map[string]string{
+				"global.multiregion.regions": "2",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().Contains(configmap.Data["warnings"], warning)
+			},
+		},
+		{
+			Name: "DualRegionReplicationFactorFourDoesNotTriggerWarning",
+			Values: map[string]string{
+				"global.multiregion.regions": "2",
+			},
+			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.replicationFactor=4"},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				s.Require().NotContains(output, "orchestration.replicationFactor is")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
 func (s *ConfigMapWarningsTemplateTest) TestWebModelerRecreateWithoutExistingClaimWarning() {
 	const warning = "webModeler.persistence.deploymentStrategy=Recreate gives no benefit without webModeler.persistence.existingClaim"
 
