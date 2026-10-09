@@ -644,7 +644,7 @@ global:
       # External OIDC: required. External Keycloak: recommended (cluster-internal URL), auto-derived if omitted and internal/external Keycloak URLs are identical.
       issuerBackendUrl: ""
       ## @param global.identity.auth.authUrl defines the authentication URL, which is used by the services to to obtain authorized access. Supports templating (e.g., {{ .Release.Name }}).
-      # External OIDC: required. External Keycloak: recommended (browser-facing URL), auto-derived if omitted.
+      # External OIDC: required. External Keycloak: recommended (browser-facing URL), derived from issuer or publicIssuerUrl if omitted.
       authUrl: ""
       ## @param global.identity.auth.tokenUrl defines the token URL, which is used by the services to request JWT tokens. Supports templating (e.g., {{ .Release.Name }}).
       # External OIDC: required. External Keycloak: recommended (cluster-internal URL), auto-derived if omitted.
