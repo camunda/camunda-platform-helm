@@ -738,13 +738,14 @@ jobs:
 
           # Give deploy-camunda the requested namespace TTL; without this it stamps its 60m
           # default onto cleaner/janitor, so 12h nightly clusters get reaped after an hour.
-          # A topology scenario runs its e2e legs sequentially, one namespace set for the
-          # whole chain, so 60m expires mid-run; TOPOLOGY_MIN_TTL covers the chain. Only
-          # the deploy-time annotation is raised — CI_DEPLOYMENT_TTL stays as it was, so
-          # the cleanup job still stamps ttl=1s and the namespaces are reaped at the end
-          # of the run rather than lingering for the full TTL.
+          # Both a topology scenario and the non-topology install flow run their e2e legs
+          # sequentially against one namespace set (install -> smoke -> full -> api), and the
+          # full leg waits on a scarce big runner, so the 60m default expires mid-run;
+          # TOPOLOGY_MIN_TTL covers the whole chain. Only the deploy-time annotation is raised —
+          # CI_DEPLOYMENT_TTL stays as it was, so the cleanup job still stamps ttl=1s and the
+          # namespaces are reaped at the end of the run rather than lingering for the full TTL.
           export DEPLOY_CAMUNDA_TTL="${CI_DEPLOYMENT_TTL:-}"
-          if [[ -z "$DEPLOY_CAMUNDA_TTL" && "$IS_TOPOLOGY" == "true" ]]; then
+          if [[ -z "$DEPLOY_CAMUNDA_TTL" && ( "$IS_TOPOLOGY" == "true" || "$FLOW" == "install" ) ]]; then
             export DEPLOY_CAMUNDA_TTL="$TOPOLOGY_MIN_TTL"
           fi
 
