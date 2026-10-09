@@ -3726,7 +3726,7 @@
                                         },
                                         "audience": {
                                             "type": "string",
-                                            "description": "can be used to override the Orchestration audience for Connectors authentication.",
+                                            "description": "can be used to override the Orchestration audience for Connectors authentication. Use it with an external OIDC provider only: Management Identity provisions the Connectors client for the Orchestration audience only, and the chart warns when this value differs from it.",
                                             "default": ""
                                         },
                                         "tokenScope": {
