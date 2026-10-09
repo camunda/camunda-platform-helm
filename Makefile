@@ -114,9 +114,19 @@ define go_test_run
 	done
 endef
 
+.PHONY: .helm-version-check
+.helm-version-check:
+	@pinned=$$(awk '$$1 == "helm" {print $$2}' .tool-versions); \
+	actual=$$(helm version --template '{{.Version}}' 2>/dev/null); \
+	if [ "$${actual#v}" != "$${pinned}" ]; then \
+		echo "ERROR: helm on PATH ($$(command -v helm)) is '$${actual}', .tool-versions pins '$${pinned}'." >&2; \
+		echo "       Run 'make tools.asdf-install' and put the asdf shims before any other helm on PATH." >&2; \
+		exit 1; \
+	fi
+
 # go.test: runs the tests without updating the golden files (runs checks against golden files)
 .PHONY: go.test
-go.test: helm.dependency-update
+go.test: .helm-version-check helm.dependency-update
 	@$(call go_test_run, go test ./...)
 	@echo "\n[$@] deploy-camunda: topology dispatch, values/preflight, registry validator + snapshot drift"
 	# The matrix leg is intentionally cross-version: it walks all charts/*/test/ci/ regardless of chartPath.
@@ -125,11 +135,11 @@ go.test: helm.dependency-update
 
 # go.test-golden-updated: runs the tests with updating the golden files
 .PHONY: go.test-golden-updated
-go.test-golden-updated: helm.dependency-update
+go.test-golden-updated: .helm-version-check helm.dependency-update
 	@$(call go_test_run, go test ./... -args -update-golden)
 
 .PHONY: go.update-golden-only-cleanup
-go.update-golden-only-cleanup: helm.dependency-update
+go.update-golden-only-cleanup: .helm-version-check helm.dependency-update
 	@$(call go_test_run, (\
 		echo "Delete golden files ..."; \
 		find . -name "*golden*.yaml" -delete; \
@@ -138,7 +148,7 @@ go.update-golden-only-cleanup: helm.dependency-update
 	))
 
 .PHONY: go.update-golden-only-lite
-go.update-golden-only-lite:
+go.update-golden-only-lite: .helm-version-check
 	@$(call go_test_run, go test ./...$(APP) -run '^TestGolden.+$$' -args -update-golden)
 	@$(MAKE) go.update-registry-golden
 
@@ -152,7 +162,7 @@ go.update-registry-golden:
 
 # go.update-golden-only: update the golden files only without the rest of the tests
 .PHONY: go.update-golden-only
-go.update-golden-only: helm.dependency-update go.update-golden-only-lite
+go.update-golden-only: .helm-version-check helm.dependency-update go.update-golden-only-lite
 
 # go.fmt: runs the gofmt in order to format all go files
 .PHONY: go.fmt
@@ -470,4 +480,4 @@ release.set-prs-version-label:
 #########################################################
 
 .PHONY: precommit.chores
-precommit.chores: helm.lint helm.readme-update helm.schema-update go.update-golden-only-lite
+precommit.chores: .helm-version-check helm.lint helm.readme-update helm.schema-update go.update-golden-only-lite
