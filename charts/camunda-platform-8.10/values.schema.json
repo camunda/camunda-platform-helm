@@ -2416,6 +2416,7 @@
                                 },
                                 "tag": {
                                     "type": "string",
+                                    "minLength": 1,
                                     "description": "can be used to override webModeler.image.tag for the REST API image. Omit this key to retain the shared image tag."
                                 }
                             }
@@ -2989,6 +2990,7 @@
                                 },
                                 "tag": {
                                     "type": "string",
+                                    "minLength": 1,
                                     "description": "can be used to override webModeler.image.tag for the WebSockets image. Omit this key to retain the shared image tag."
                                 }
                             }
