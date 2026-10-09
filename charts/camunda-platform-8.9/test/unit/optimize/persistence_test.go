@@ -199,7 +199,8 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 			},
 		},
 		{
-			Name: "TestDeploymentStrategyInvalidValueFails",
+			Name:                    "TestDeploymentStrategyInvalidValueFails",
+			RenderTemplateExtraArgs: []string{"--skip-schema-validation"},
 			Values: map[string]string{
 				"identity.enabled":                        "true",
 				"optimize.enabled":                        "true",
@@ -207,7 +208,7 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().Error(err)
-				s.Require().Contains(err.Error(), "value must be one of 'RollingUpdate', 'Recreate'")
+				s.Require().Contains(err.Error(), "optimize.persistence.deploymentStrategy value must be one of 'RollingUpdate', 'Recreate'")
 			},
 		},
 	}
@@ -235,6 +236,7 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 				helmChartPath,
 				s.release,
 				s.templates,
+				testCase.RenderTemplateExtraArgs...,
 			)
 
 			testCase.Verifier(s.T(), output, err)
