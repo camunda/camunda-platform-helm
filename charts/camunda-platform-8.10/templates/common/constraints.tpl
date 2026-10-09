@@ -1053,6 +1053,10 @@ Usage:
       {{- printf "\n[camunda][warning] The Orchestration Cluster uses OIDC without an issuer URI, and these endpoints do not render as absolute URLs: %s. Set orchestration.security.authentication.oidc.issuer or global.identity.auth.issuer, or set the endpoints in orchestration.security.authentication.oidc.authUrl, jwksUrl, and tokenUrl (or global.identity.auth.authUrl, jwksUrl, and tokenUrl). For KEYCLOAK, global.identity.auth.publicIssuerUrl derives authorization-uri, and global.identity.auth.issuerBackendUrl or global.identity.keycloak.url derives jwk-set-uri and token-uri." (join ", " $unresolvedEndpoints) }}
     {{- end }}
   {{- end }}
+  {{- $secondaryStorageType := .Values.orchestration.data.secondaryStorage.type }}
+  {{- if and .Values.global.noSecondaryStorage $secondaryStorageType (ne $secondaryStorageType "none") (eq (include "camundaPlatform.orchestrationEnabled" .) "true") }}
+    {{- printf "\n[camunda][warning] global.noSecondaryStorage=true conflicts with orchestration.data.secondaryStorage.type=%s: the Orchestration Cluster uses %s secondary storage while the other components run without it. Unset orchestration.data.secondaryStorage.type to run without secondary storage, or set global.noSecondaryStorage=false." $secondaryStorageType $secondaryStorageType }}
+  {{- end }}
   {{- if not (semverCompare ">=4.0.0-0" .Capabilities.HelmVersion.Version) }}
     {{- printf "\n%s" (printf "[camunda][warning] Helm CLI %s detected. Helm v3 receives security fixes only until February 10, 2027 (https://helm.sh/blog/helm-v3-end-of-life/). Upgrade to Helm v4 before then: https://helm.sh/docs/overview" .Capabilities.HelmVersion.Version) }}
   {{- end }}
