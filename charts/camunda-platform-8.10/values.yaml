@@ -24,6 +24,11 @@
 #   * [if true] for toggles
 #   * [configuration] for section/group of variables
 
+## @param fullnameOverride can be used to override the full name of the chart resources.
+fullnameOverride: ""
+## @param nameOverride can be used to override the chart name in resource names and labels.
+nameOverride: ""
+
 #------------------------------------------------------------------------------------------------------------------------------------------#
 #------------------------------------------------------------------------------------------------------------------------------------------#
 ##########################################
@@ -42,6 +47,8 @@
 ## @section Global parameters
 ## @extra global
 global:
+  ## @param global.strictValues if true, fail rendering on unknown chart-owned values keys instead of warning. Shared global values, dependency values, and free-form maps are exempt. A future chart version can reject unknown keys. Remove or correct them.
+  strictValues: false
   ## @extra global.topology configuration for how this Helm release participates in a Camunda deployment topology. The default combined mode preserves the existing single-release behavior.
   topology:
     ## @param global.topology.mode defines the role of this release in the deployment topology. Supported values are combined, hub, orchestration, and optimize. In orchestration mode, Orchestration and Connectors can authenticate directly with an external OIDC provider without a Management Identity URL; Optimize calls Management Identity when it verifies a bearer token, so a release that enables Optimize needs optimize.identity.service.url or global.identity.service.url. In optimize mode only Optimize is deployed, so a separate Optimize release can serve one Physical Tenant without sharing a release with the Orchestration Cluster; it requires optimize.enabled, global.noSecondaryStorage=false, an enabled database backend, Identity auth and URL set on the component or globally, and optimize.contextPath when routing is rendered.
@@ -932,6 +939,13 @@ identity:
   fullnameOverride: ""
   ## @param identity.nameOverride can be used to partly override the name of the Management Identity resources (names will still be prefixed with the release name)
   nameOverride: ""
+
+  ## @extra identity.realm configuration for the external Keycloak realm.
+  realm:
+    ## @param identity.realm.enabled if true, sets the Keycloak realm in the Management Identity configuration.
+    enabled: false
+    ## @param identity.realm.id can be used to set the Keycloak realm identifier when identity.realm.enabled is true.
+    id: ""
 
   ## @extra identity.firstUser configuration to configure properties of the first Management Identity user, which can be used to access all
   # web applications
@@ -1835,6 +1849,11 @@ connectors:
   ## @param connectors.enabled if true, the Connectors deployment and its related resources are deployed via a helm release
   enabled: true
 
+  ## @param connectors.fullnameOverride can be used to override the full name of the Connectors resources.
+  fullnameOverride: ""
+  ## @param connectors.nameOverride can be used to override the Connectors name after the release prefix.
+  nameOverride: ""
+
   ## @extra connectors.security.authentication.oidc configuration to configure Connectors authentication specifics on global level, which can be accessed by other components
   security:
     ## Authentication configuration
@@ -1847,6 +1866,8 @@ connectors:
       oidc:
         ## @param connectors.security.authentication.oidc.clientId defines the client id, which is used by Connectors in authentication flows.
         clientId: connectors
+        ## @param connectors.security.authentication.oidc.audience can be used to override the Orchestration audience for Connectors authentication.
+        audience: ""
         ## @param connectors.security.authentication.oidc.tokenScope defines the token scope, which is used by Connectors.
         tokenScope: ""
         ## @extra connectors.security.authentication.oidc.secret configuration to provide the connectors client secret.
@@ -2130,6 +2151,11 @@ connectors:
 orchestration:
   ## @param orchestration.enabled if true, the orchestration cluster deployment and its related resources are deployed via a helm release
   enabled: true
+
+  ## @param orchestration.fullnameOverride can be used to override the full name of the Orchestration resources.
+  fullnameOverride: ""
+  ## @param orchestration.nameOverride can be used to override the Orchestration name after the release prefix.
+  nameOverride: ""
 
   ## @param orchestration.debug (DEPRECATED) if true, extra info is printed.
   debug: false
@@ -2906,6 +2932,11 @@ orchestration:
 optimize:
   ## @param optimize.enabled if true, the Optimize deployment and its related resources are deployed via a helm release
   enabled: false
+
+  ## @param optimize.fullnameOverride can be used to override the full name of the Optimize resources.
+  fullnameOverride: ""
+  ## @param optimize.nameOverride can be used to override the Optimize name after the release prefix.
+  nameOverride: ""
 
   ## @extra optimize.identity configuration of the Management Identity this Optimize release calls.
   identity:

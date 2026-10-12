@@ -2,9 +2,24 @@
     "title": "Chart Values",
     "type": "object",
     "properties": {
+        "fullnameOverride": {
+            "type": "string",
+            "description": "can be used to override the full name of the chart resources.",
+            "default": ""
+        },
+        "nameOverride": {
+            "type": "string",
+            "description": "can be used to override the chart name in resource names and labels.",
+            "default": ""
+        },
         "global": {
             "type": "object",
             "properties": {
+                "strictValues": {
+                    "type": "boolean",
+                    "description": "if true, fail rendering on unknown chart-owned values keys instead of warning. Shared global values, dependency values, and free-form maps are exempt. A future chart version can reject unknown keys. Remove or correct them.",
+                    "default": false
+                },
                 "topology": {
                     "type": "object",
                     "properties": {
@@ -123,7 +138,8 @@
                 "annotations": {
                     "type": "object",
                     "description": "Annotations can be used to define common annotations, which should be applied to all deployments",
-                    "default": {}
+                    "default": {},
+                    "additionalProperties": true
                 },
                 "labels": {
                     "type": "object",
@@ -133,17 +149,20 @@
                             "description": "Name of the application",
                             "default": "camunda-platform"
                         }
-                    }
+                    },
+                    "additionalProperties": true
                 },
                 "commonLabels": {
                     "type": "object",
                     "description": "can be used to apply mutable labels to all Camunda resources.",
-                    "default": {}
+                    "default": {},
+                    "additionalProperties": true
                 },
                 "nodeSelector": {
                     "type": "object",
                     "description": "can be used to define Kubernetes node selectors to run Camunda components, unless overridden by component-specific nodeSelector.",
-                    "default": {}
+                    "default": {},
+                    "additionalProperties": true
                 },
                 "image": {
                     "type": "object",
@@ -457,7 +476,8 @@
                                                         "type": "string"
                                                     }
                                                 }
-                                            }
+                                            },
+                                            "additionalProperties": true
                                         },
                                         "seccompProfile": {
                                             "type": "object",
@@ -467,9 +487,11 @@
                                                     "description": "",
                                                     "default": "RuntimeDefault"
                                                 }
-                                            }
+                                            },
+                                            "additionalProperties": true
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": true
                                 }
                             }
                         },
@@ -1477,6 +1499,21 @@
                     "description": "can be used to partly override the name of the Management Identity resources (names will still be prefixed with the release name)",
                     "default": ""
                 },
+                "realm": {
+                    "type": "object",
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "description": "if true, sets the Keycloak realm in the Management Identity configuration.",
+                            "default": false
+                        },
+                        "id": {
+                            "type": "string",
+                            "description": "can be used to set the Keycloak realm identifier when identity.realm.enabled is true.",
+                            "default": ""
+                        }
+                    }
+                },
                 "firstUser": {
                     "type": "object",
                     "properties": {
@@ -1605,12 +1642,14 @@
                 "podAnnotations": {
                     "type": "object",
                     "description": "can be used to define extra Management Identity pod annotations. Supports templating (e.g., {{ .Release.Name }}).",
-                    "default": {}
+                    "default": {},
+                    "additionalProperties": true
                 },
                 "podLabels": {
                     "type": "object",
                     "description": "can be used to define extra Management Identity pod labels. Supports templating (e.g., {{ .Release.Name }}).",
-                    "default": {}
+                    "default": {},
+                    "additionalProperties": true
                 },
                 "logging": {
                     "type": "object",
@@ -1634,7 +1673,8 @@
                         "annotations": {
                             "type": "object",
                             "description": "can be used to define annotations, which will be applied to the identity service",
-                            "default": {}
+                            "default": {},
+                            "additionalProperties": true
                         },
                         "type": {
                             "type": "string",
@@ -1687,9 +1727,11 @@
                                     "description": "",
                                     "default": "RuntimeDefault"
                                 }
-                            }
+                            },
+                            "additionalProperties": true
                         }
-                    }
+                    },
+                    "additionalProperties": true
                 },
                 "containerSecurityContext": {
                     "type": "object",
@@ -1727,9 +1769,11 @@
                                     "description": "",
                                     "default": "RuntimeDefault"
                                 }
-                            }
+                            },
+                            "additionalProperties": true
                         }
-                    }
+                    },
+                    "additionalProperties": true
                 },
                 "startupProbe": {
                     "type": "object",
@@ -1879,7 +1923,8 @@
                 "nodeSelector": {
                     "type": "object",
                     "description": "can be used to define on which nodes the Management Identity pods should run",
-                    "default": {}
+                    "default": {},
+                    "additionalProperties": true
                 },
                 "tolerations": {
                     "type": "array",
@@ -1908,7 +1953,8 @@
                                     "description": "",
                                     "default": "600m"
                                 }
-                            }
+                            },
+                            "additionalProperties": true
                         },
                         "limits": {
                             "type": "object",
@@ -1923,9 +1969,11 @@
                                     "description": "",
                                     "default": "2Gi"
                                 }
-                            }
+                            },
+                            "additionalProperties": true
                         }
-                    }
+                    },
+                    "additionalProperties": true
                 },
                 "env": {
                     "type": "array",
@@ -2076,12 +2124,14 @@
                         "annotations": {
                             "type": "object",
                             "description": "can be used to set the annotations of the identity service account",
-                            "default": {}
+                            "default": {},
+                            "additionalProperties": true
                         },
                         "labels": {
                             "type": "object",
                             "description": "can be used to set the labels of the service account",
-                            "default": {}
+                            "default": {},
+                            "additionalProperties": true
                         },
                         "automountServiceAccountToken": {
                             "type": "boolean",
@@ -2206,7 +2256,8 @@
                         "annotations": {
                             "type": "object",
                             "description": "can be used to define annotations to add to the claim",
-                            "default": {}
+                            "default": {},
+                            "additionalProperties": true
                         },
                         "selector": {
                             "type": "object",
@@ -2298,6 +2349,53 @@
                 },
                 "persistence": {
                     "properties": {
+                        "enabled": {
+                            "type": [
+                                "boolean",
+                                "null"
+                            ]
+                        },
+                        "existingClaim": {
+                            "type": [
+                                "string",
+                                "null"
+                            ]
+                        },
+                        "storageClassName": {
+                            "type": [
+                                "string",
+                                "null"
+                            ]
+                        },
+                        "size": {
+                            "type": [
+                                "string",
+                                "null"
+                            ]
+                        },
+                        "accessModes": {
+                            "type": [
+                                "array",
+                                "null"
+                            ],
+                            "items": {
+                                "type": "string"
+                            }
+                        },
+                        "annotations": {
+                            "type": [
+                                "object",
+                                "null"
+                            ],
+                            "additionalProperties": true
+                        },
+                        "selector": {
+                            "type": [
+                                "object",
+                                "null"
+                            ],
+                            "additionalProperties": true
+                        },
                         "deploymentStrategy": {
                             "type": "string",
                             "enum": [
@@ -2388,6 +2486,10 @@
                                     "type": "string",
                                     "description": "can be used to set image digest (overrides tag if set, e.g. \"sha256:abcd...\")",
                                     "default": ""
+                                },
+                                "tag": {
+                                    "type": "string",
+                                    "description": "can be used to override webModeler.image.tag for the REST API image. Omit this key to retain the shared image tag."
                                 }
                             }
                         },
@@ -2567,12 +2669,14 @@
                         "podAnnotations": {
                             "type": "object",
                             "description": "can be used to define extra restapi pod annotations. Supports templating (e.g., {{ .Release.Name }}).",
-                            "default": {}
+                            "default": {},
+                            "additionalProperties": true
                         },
                         "podLabels": {
                             "type": "object",
                             "description": "can be used to define extra restapi pod labels. Supports templating (e.g., {{ .Release.Name }}).",
-                            "default": {}
+                            "default": {},
+                            "additionalProperties": true
                         },
                         "env": {
                             "type": "array",
@@ -2630,9 +2734,11 @@
                                             "description": "",
                                             "default": "RuntimeDefault"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": true
                                 }
-                            }
+                            },
+                            "additionalProperties": true
                         },
                         "containerSecurityContext": {
                             "type": "object",
@@ -2670,9 +2776,11 @@
                                             "description": "",
                                             "default": "RuntimeDefault"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": true
                                 }
-                            }
+                            },
+                            "additionalProperties": true
                         },
                         "startupProbe": {
                             "type": "object",
@@ -2822,7 +2930,8 @@
                         "nodeSelector": {
                             "type": "object",
                             "description": "can be used to select the nodes the restapi pods should run on",
-                            "default": {}
+                            "default": {},
+                            "additionalProperties": true
                         },
                         "tolerations": {
                             "type": "array",
@@ -2851,7 +2960,8 @@
                                             "description": "",
                                             "default": "1280Mi"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": true
                                 },
                                 "limits": {
                                     "type": "object",
@@ -2866,9 +2976,11 @@
                                             "description": "",
                                             "default": "2560Mi"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": true
                                 }
-                            }
+                            },
+                            "additionalProperties": true
                         },
                         "service": {
                             "type": "object",
@@ -2876,7 +2988,8 @@
                                 "annotations": {
                                     "type": "object",
                                     "description": "can be used to define annotations which will be applied to the service",
-                                    "default": {}
+                                    "default": {},
+                                    "additionalProperties": true
                                 },
                                 "type": {
                                     "type": "string",
@@ -2957,6 +3070,10 @@
                                     "type": "string",
                                     "description": "can be used to set image digest (overrides tag if set, e.g. \"sha256:abcd...\")",
                                     "default": ""
+                                },
+                                "tag": {
+                                    "type": "string",
+                                    "description": "can be used to override webModeler.image.tag for the WebSockets image. Omit this key to retain the shared image tag."
                                 }
                             }
                         },
@@ -2985,12 +3102,14 @@
                         "podAnnotations": {
                             "type": "object",
                             "description": "can be used to define extra websockets pod annotations. Supports templating (e.g., {{ .Release.Name }}).",
-                            "default": {}
+                            "default": {},
+                            "additionalProperties": true
                         },
                         "podLabels": {
                             "type": "object",
                             "description": "can be used to define extra websockets pod labels. Supports templating (e.g., {{ .Release.Name }}).",
-                            "default": {}
+                            "default": {},
+                            "additionalProperties": true
                         },
                         "env": {
                             "type": "array",
@@ -3043,9 +3162,11 @@
                                             "description": "",
                                             "default": "RuntimeDefault"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": true
                                 }
-                            }
+                            },
+                            "additionalProperties": true
                         },
                         "containerSecurityContext": {
                             "type": "object",
@@ -3083,9 +3204,11 @@
                                             "description": "",
                                             "default": "RuntimeDefault"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": true
                                 }
-                            }
+                            },
+                            "additionalProperties": true
                         },
                         "startupProbe": {
                             "type": "object",
@@ -3225,7 +3348,8 @@
                         "nodeSelector": {
                             "type": "object",
                             "description": "can be used to select the nodes the websockets pods should run on",
-                            "default": {}
+                            "default": {},
+                            "additionalProperties": true
                         },
                         "tolerations": {
                             "type": "array",
@@ -3254,7 +3378,8 @@
                                             "description": "",
                                             "default": "64Mi"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": true
                                 },
                                 "limits": {
                                     "type": "object",
@@ -3269,9 +3394,11 @@
                                             "description": "",
                                             "default": "128Mi"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": true
                                 }
-                            }
+                            },
+                            "additionalProperties": true
                         },
                         "service": {
                             "type": "object",
@@ -3279,7 +3406,8 @@
                                 "annotations": {
                                     "type": "object",
                                     "description": "can be used to define annotations which will be applied to the service",
-                                    "default": {}
+                                    "default": {},
+                                    "additionalProperties": true
                                 },
                                 "type": {
                                     "type": "string",
@@ -3339,12 +3467,14 @@
                         "annotations": {
                             "type": "object",
                             "description": "can be used to set the annotations of the WebModeler service account",
-                            "default": {}
+                            "default": {},
+                            "additionalProperties": true
                         },
                         "labels": {
                             "type": "object",
                             "description": "can be used to set the labels of the service account",
-                            "default": {}
+                            "default": {},
+                            "additionalProperties": true
                         },
                         "automountServiceAccountToken": {
                             "type": "boolean",
@@ -3389,7 +3519,8 @@
                         "annotations": {
                             "type": "object",
                             "description": "can be used to define annotations to add to the persistent volume claim",
-                            "default": {}
+                            "default": {},
+                            "additionalProperties": true
                         },
                         "selector": {
                             "type": "object",
@@ -3640,6 +3771,16 @@
                     "description": "if true, the Connectors deployment and its related resources are deployed via a helm release",
                     "default": true
                 },
+                "fullnameOverride": {
+                    "type": "string",
+                    "description": "can be used to override the full name of the Connectors resources.",
+                    "default": ""
+                },
+                "nameOverride": {
+                    "type": "string",
+                    "description": "can be used to override the Connectors name after the release prefix.",
+                    "default": ""
+                },
                 "security": {
                     "type": "object",
                     "properties": {
@@ -3658,6 +3799,11 @@
                                             "type": "string",
                                             "description": "defines the client id, which is used by Connectors in authentication flows.",
                                             "default": "connectors"
+                                        },
+                                        "audience": {
+                                            "type": "string",
+                                            "description": "can be used to override the Orchestration audience for Connectors authentication.",
+                                            "default": ""
                                         },
                                         "tokenScope": {
                                             "type": "string",
@@ -3841,12 +3987,14 @@
                 "podAnnotations": {
                     "type": "object",
                     "description": "can be used to define extra Connectors pod annotations. Supports templating (e.g., {{ .Release.Name }}).",
-                    "default": {}
+                    "default": {},
+                    "additionalProperties": true
                 },
                 "podLabels": {
                     "type": "object",
                     "description": "can be used to define extra Connectors pod labels. Supports templating (e.g., {{ .Release.Name }}).",
-                    "default": {}
+                    "default": {},
+                    "additionalProperties": true
                 },
                 "service": {
                     "type": "object",
@@ -3854,7 +4002,8 @@
                         "annotations": {
                             "type": "object",
                             "description": "can be used to define annotations, which will be applied to the Connectors service",
-                            "default": {}
+                            "default": {},
+                            "additionalProperties": true
                         },
                         "type": {
                             "type": "string",
@@ -3897,7 +4046,8 @@
                                     "description": "",
                                     "default": "1Gi"
                                 }
-                            }
+                            },
+                            "additionalProperties": true
                         },
                         "limits": {
                             "type": "object",
@@ -3912,9 +4062,11 @@
                                     "description": "",
                                     "default": "2Gi"
                                 }
-                            }
+                            },
+                            "additionalProperties": true
                         }
-                    }
+                    },
+                    "additionalProperties": true
                 },
                 "env": {
                     "type": "array",
@@ -4210,12 +4362,14 @@
                         "annotations": {
                             "type": "object",
                             "description": "can be used to set the annotations of the service account",
-                            "default": {}
+                            "default": {},
+                            "additionalProperties": true
                         },
                         "labels": {
                             "type": "object",
                             "description": "can be used to set the labels of the service account",
-                            "default": {}
+                            "default": {},
+                            "additionalProperties": true
                         },
                         "automountServiceAccountToken": {
                             "type": "boolean",
@@ -4254,9 +4408,11 @@
                                     "description": "",
                                     "default": "RuntimeDefault"
                                 }
-                            }
+                            },
+                            "additionalProperties": true
                         }
-                    }
+                    },
+                    "additionalProperties": true
                 },
                 "containerSecurityContext": {
                     "type": "object",
@@ -4294,14 +4450,17 @@
                                     "description": "",
                                     "default": "RuntimeDefault"
                                 }
-                            }
+                            },
+                            "additionalProperties": true
                         }
-                    }
+                    },
+                    "additionalProperties": true
                 },
                 "nodeSelector": {
                     "type": "object",
                     "description": "can be used to define on which nodes the Connectors pods should run",
-                    "default": {}
+                    "default": {},
+                    "additionalProperties": true
                 },
                 "tolerations": {
                     "type": "array",
@@ -4371,7 +4530,8 @@
                         "annotations": {
                             "type": "object",
                             "description": "can be used to define annotations to add to the claim",
-                            "default": {}
+                            "default": {},
+                            "additionalProperties": true
                         },
                         "selector": {
                             "type": "object",
@@ -4395,6 +4555,16 @@
                     "type": "boolean",
                     "description": "if true, the orchestration cluster deployment and its related resources are deployed via a helm release",
                     "default": true
+                },
+                "fullnameOverride": {
+                    "type": "string",
+                    "description": "can be used to override the full name of the Orchestration resources.",
+                    "default": ""
+                },
+                "nameOverride": {
+                    "type": "string",
+                    "description": "can be used to override the Orchestration name after the release prefix.",
+                    "default": ""
                 },
                 "debug": {
                     "type": "boolean",
@@ -5158,12 +5328,14 @@
                         "annotations": {
                             "type": "object",
                             "description": "can be used to set the annotations of the broker service account",
-                            "default": {}
+                            "default": {},
+                            "additionalProperties": true
                         },
                         "labels": {
                             "type": "object",
                             "description": "can be used to set the labels of the service account",
-                            "default": {}
+                            "default": {},
+                            "additionalProperties": true
                         },
                         "automountServiceAccountToken": {
                             "type": "boolean",
@@ -5332,7 +5504,8 @@
                                     "description": "",
                                     "default": "1500Mi"
                                 }
-                            }
+                            },
+                            "additionalProperties": true
                         },
                         "limits": {
                             "type": "object",
@@ -5347,9 +5520,11 @@
                                     "description": "",
                                     "default": "3000Mi"
                                 }
-                            }
+                            },
+                            "additionalProperties": true
                         }
-                    }
+                    },
+                    "additionalProperties": true
                 },
                 "persistenceType": {
                     "type": "string",
@@ -5638,12 +5813,14 @@
                 "podAnnotations": {
                     "type": "object",
                     "description": "can be used to define extra broker pod annotations. Supports templating (e.g., {{ .Release.Name }}).",
-                    "default": {}
+                    "default": {},
+                    "additionalProperties": true
                 },
                 "podLabels": {
                     "type": "object",
                     "description": "can be used to define extra broker pod labels. Supports templating (e.g., {{ .Release.Name }}).",
-                    "default": {}
+                    "default": {},
+                    "additionalProperties": true
                 },
                 "podDisruptionBudget": {
                     "type": "object",
@@ -5686,9 +5863,11 @@
                                     "description": "",
                                     "default": "RuntimeDefault"
                                 }
-                            }
+                            },
+                            "additionalProperties": true
                         }
-                    }
+                    },
+                    "additionalProperties": true
                 },
                 "containerSecurityContext": {
                     "type": "object",
@@ -5726,9 +5905,11 @@
                                     "description": "",
                                     "default": "RuntimeDefault"
                                 }
-                            }
+                            },
+                            "additionalProperties": true
                         }
-                    }
+                    },
+                    "additionalProperties": true
                 },
                 "startupProbe": {
                     "type": "object",
@@ -5878,7 +6059,8 @@
                 "nodeSelector": {
                     "type": "object",
                     "description": "can be used to define on which nodes the broker pods should run",
-                    "default": {}
+                    "default": {},
+                    "additionalProperties": true
                 },
                 "tolerations": {
                     "type": "array",
@@ -6143,6 +6325,16 @@
                     "type": "boolean",
                     "description": "if true, the Optimize deployment and its related resources are deployed via a helm release",
                     "default": false
+                },
+                "fullnameOverride": {
+                    "type": "string",
+                    "description": "can be used to override the full name of the Optimize resources.",
+                    "default": ""
+                },
+                "nameOverride": {
+                    "type": "string",
+                    "description": "can be used to override the Optimize name after the release prefix.",
+                    "default": ""
                 },
                 "identity": {
                     "type": "object",
@@ -6515,7 +6707,8 @@
                                             "description": "",
                                             "default": "1Gi"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": true
                                 },
                                 "limits": {
                                     "type": "object",
@@ -6530,9 +6723,11 @@
                                             "description": "",
                                             "default": "2Gi"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": true
                                 }
-                            }
+                            },
+                            "additionalProperties": true
                         }
                     }
                 },
@@ -6560,12 +6755,14 @@
                 "podAnnotations": {
                     "type": "object",
                     "description": "can be used to define extra Optimize pod annotations. Supports templating (e.g., {{ .Release.Name }}).",
-                    "default": {}
+                    "default": {},
+                    "additionalProperties": true
                 },
                 "podLabels": {
                     "type": "object",
                     "description": "can be used to define extra Optimize pod labels. Supports templating (e.g., {{ .Release.Name }}).",
-                    "default": {}
+                    "default": {},
+                    "additionalProperties": true
                 },
                 "logLevel": {
                     "type": "string",
@@ -6742,12 +6939,14 @@
                         "annotations": {
                             "type": "object",
                             "description": "can be used to set the annotations of the Optimize service account",
-                            "default": {}
+                            "default": {},
+                            "additionalProperties": true
                         },
                         "labels": {
                             "type": "object",
                             "description": "can be used to set the labels of the service account",
-                            "default": {}
+                            "default": {},
+                            "additionalProperties": true
                         },
                         "automountServiceAccountToken": {
                             "type": "boolean",
@@ -6771,7 +6970,8 @@
                         "annotations": {
                             "type": "object",
                             "description": "can be used to define annotations, which will be applied to the Optimize service",
-                            "default": {}
+                            "default": {},
+                            "additionalProperties": true
                         },
                         "type": {
                             "type": "string",
@@ -6819,9 +7019,11 @@
                                     "description": "",
                                     "default": "RuntimeDefault"
                                 }
-                            }
+                            },
+                            "additionalProperties": true
                         }
-                    }
+                    },
+                    "additionalProperties": true
                 },
                 "containerSecurityContext": {
                     "type": "object",
@@ -6859,9 +7061,11 @@
                                     "description": "",
                                     "default": "RuntimeDefault"
                                 }
-                            }
+                            },
+                            "additionalProperties": true
                         }
-                    }
+                    },
+                    "additionalProperties": true
                 },
                 "startupProbe": {
                     "type": "object",
@@ -7011,7 +7215,8 @@
                 "nodeSelector": {
                     "type": "object",
                     "description": "can be used to define on which nodes the Optimize pods should run",
-                    "default": {}
+                    "default": {},
+                    "additionalProperties": true
                 },
                 "tolerations": {
                     "type": "array",
@@ -7040,7 +7245,8 @@
                                     "description": "",
                                     "default": "1Gi"
                                 }
-                            }
+                            },
+                            "additionalProperties": true
                         },
                         "limits": {
                             "type": "object",
@@ -7055,9 +7261,11 @@
                                     "description": "",
                                     "default": "2Gi"
                                 }
-                            }
+                            },
+                            "additionalProperties": true
                         }
-                    }
+                    },
+                    "additionalProperties": true
                 },
                 "configuration": {
                     "type": "string",
@@ -7116,7 +7324,8 @@
                         "annotations": {
                             "type": "object",
                             "description": "can be used to define annotations to add to the persistent volume claim",
-                            "default": {}
+                            "default": {},
+                            "additionalProperties": true
                         },
                         "selector": {
                             "type": "object",
@@ -7294,7 +7503,8 @@
                             "description": "",
                             "default": "metrics"
                         }
-                    }
+                    },
+                    "additionalProperties": true
                 },
                 "scrapeInterval": {
                     "type": "string",

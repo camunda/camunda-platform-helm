@@ -114,8 +114,8 @@ jobs:
         run: |
           export chartPath="charts/${{ inputs.camunda-helm-dir }}"
           make helm.schema-update
-          if ! git diff --exit-code "${chartPath}/values.schema.json"; then
-            echo "::error::values.schema.json is out of date. Run 'make helm.schema-update chartPath=${chartPath}' and commit the result."
+          if ! git diff --exit-code -- "${chartPath}/values.schema.json" "${chartPath}/values.unknown-keys.schema.json"; then
+            echo "::error::Generated values schemas are out of date. Run 'make helm.schema-update chartPath=${chartPath}' and commit the result."
             exit 1
           fi
       - name: Validate current values and previous-minor upgrade coverage
