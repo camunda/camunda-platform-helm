@@ -4,6 +4,90 @@ entries:
   - annotations:
       artifacthub.io/changes: |
         - kind: added
+          description: "Warn on unknown values keys in the 8.10 chart [ready]"
+        - kind: fixed
+          description: "Render the Hub username claim under camunda.identity"
+        - kind: fixed
+          description: "Warn when orchestration OIDC endpoints are not absolute URLs"
+        - kind: fixed
+          description: "Warn when the dual-region replication factor is not 4"
+        - kind: fixed
+          description: "Declare template-read keys in the 8.10 values schema [ready]"
+      artifacthub.io/containsSecurityUpdates: "false"
+      artifacthub.io/images: |
+        - image: docker.io/camunda/camunda:8.10.3
+        - image: docker.io/camunda/connectors-bundle:8.10.0
+        - image: docker.io/camunda/hub-websockets:8.10.2
+        - image: docker.io/camunda/hub:8.10.2
+        - image: docker.io/camunda/identity:8.10.0
+        - image: docker.io/camunda/optimize:8.10.3
+      artifacthub.io/links: |
+        - name: Camunda 8 docs
+          url: https://docs.camunda.io/
+        - name: Camunda 8 Self-Managed docs
+          url: https://docs.camunda.io/docs/self-managed/about-self-managed/
+        - name: Camunda 8 Self-Managed Helm charts
+          url: https://github.com/camunda/camunda-platform-helm
+      camunda.io/chart-images: |
+        docker.io/camunda/camunda:8.10.3
+        docker.io/camunda/connectors-bundle:8.10.0
+        docker.io/camunda/hub-websockets:8.10.2
+        docker.io/camunda/hub:8.10.2
+        docker.io/camunda/identity:8.10.0
+        docker.io/camunda/optimize:8.10.3
+      camunda.io/component-image-versions: |
+        camunda: 8.10.3
+        managementIdentity: 8.10.0
+        optimize: 8.10.3
+        hub: 8.10.2
+        connectors: 8.10.0
+      camunda.io/helmCLIVersion: 3.22.0,4.3.0
+      camunda.io/imageOverrides: |
+        orchestration: 8.10.3
+        modeler: 8.10.2
+        connectors: 8.10.0
+        optimize: 8.10.3
+        identity: 8.10.0
+    apiVersion: v2
+    appVersion: 8.10.x
+    created: "2026-10-12T16:34:47.22462484Z"
+    dependencies:
+    - name: common
+      repository: file://../common-2
+      version: 2.x.x
+    description: 'Camunda 8 Self-Managed Helm charts. Camunda''s process automation
+      platform allows developers to design, automate and improve processes. '
+    digest: 5f4f16f2da27a996e1338e873c345c25e32cc6bb2c53980cd7ff8cd794568718
+    home: https://docs.camunda.io/docs/self-managed/about-self-managed/
+    icon: https://helm.camunda.io/imgs/camunda.svg
+    keywords:
+    - automation
+    - business-rules
+    - bpm
+    - bpmn
+    - camunda-platform
+    - decision-engine
+    - dmn
+    - modeling
+    - orchestration
+    - process-automation
+    - process-engine
+    - process-orchestration
+    - workflow
+    - workflow-engine
+    maintainers:
+    - name: camunda
+      url: https://camunda.com
+    name: camunda-platform
+    sources:
+    - https://github.com/camunda/camunda-platform-helm
+    type: application
+    urls:
+    - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-8.10-15.1.0/camunda-platform-15.1.0.tgz
+    version: 15.1.0
+  - annotations:
+      artifacthub.io/changes: |
+        - kind: added
           description: "Zone-aware multi-region orchestration mode, with broker node IDs [ready]"
         - kind: added
           description: "First-class TLS for Optimize"
@@ -34237,4 +34321,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2026-10-08T11:52:05.395228487Z"
+generated: "2026-10-12T16:34:47.22510367Z"
