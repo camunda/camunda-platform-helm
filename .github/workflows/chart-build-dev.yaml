@@ -411,7 +411,7 @@ jobs:
       - name: Install readme-generator-for-helm
         if: env.SKIP_BUILD == 'false' && env.HAS_IMAGE_OVERRIDES == 'true'
         run: |
-          make install.readme-generator
+          make -C ../.. install.readme-generator
 
       - name: Regenerate values documentation
         if: env.SKIP_BUILD == 'false' && env.HAS_IMAGE_OVERRIDES == 'true'
