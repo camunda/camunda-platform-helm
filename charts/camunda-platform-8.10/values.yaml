@@ -49,6 +49,8 @@ nameOverride: ""
 ## @section Global parameters
 ## @extra global
 global:
+  ## @param global.strictValues if true, fail rendering on unknown chart-owned values keys instead of warning. Shared global values, dependency values, and free-form maps are exempt. A future chart version can reject unknown keys. Remove or correct them.
+  strictValues: false
   ## @extra global.topology configuration for how this Helm release participates in a Camunda deployment topology. The default combined mode preserves the existing single-release behavior.
   topology:
     ## @param global.topology.mode defines the role of this release in the deployment topology. Supported values are combined, hub, orchestration, and optimize. In orchestration mode, Orchestration and Connectors can authenticate directly with an external OIDC provider without a Management Identity URL; Optimize calls Management Identity when it verifies a bearer token, so a release that enables Optimize needs optimize.identity.service.url or global.identity.service.url. In optimize mode only Optimize is deployed, so a separate Optimize release can serve one Physical Tenant without sharing a release with the Orchestration Cluster; it requires optimize.enabled, global.noSecondaryStorage=false, an enabled database backend, Identity auth and URL set on the component or globally, and optimize.contextPath when routing is rendered.
@@ -2264,6 +2266,7 @@ orchestration:
       ## @param orchestration.security.initialization.defaultRoles.admin.users defines the initial users that will get the admin permission
       ## @param orchestration.security.initialization.defaultRoles.connectors.users defines the initial users that will get the connectors permission
       ## @param orchestration.security.initialization.defaultRoles.connectors.clients define clients for the orchestration cluster.
+      ## @extra orchestration.security.initialization.defaultRoles.<role>.mappingRules (DEPRECATED) assigns mapping rule IDs to a role. Use `camunda.security.initialization.default-roles.<role>.mappingrules` in `orchestration.extraConfiguration`, together with the mapping rule definitions.
       defaultRoles:
         admin:
           users:
