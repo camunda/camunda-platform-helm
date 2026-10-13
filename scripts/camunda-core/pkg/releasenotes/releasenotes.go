@@ -136,7 +136,7 @@ var kacMap = map[string]string{
 // trailingParen strips a trailing " (...)" PR-link suffix (greedy from the first " (").
 var trailingParen = regexp.MustCompile(` \(.+\)$`)
 
-var reviewTagRe = regexp.MustCompile(` \[ready\](\s+\(#[0-9]+\))?\s*$`)
+var reviewTagRe = regexp.MustCompile(` \[ready\]((?:\s+\(#[0-9]+\))?(?:\*\*)?)\s*$`)
 
 // CleanReviewTags removes the exact trailing review tag from release-note bullets.
 func CleanReviewTags(releaseNotesMD string) string {

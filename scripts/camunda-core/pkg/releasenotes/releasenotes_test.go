@@ -171,3 +171,29 @@ func TestCleanReviewTags_whenNotesContainTaggedTitles(t *testing.T) {
 		t.Errorf("CleanReviewTags() = %q; want %q", got, want)
 	}
 }
+
+func TestCleanReviewTags_whenBreakingChangeIsBold(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name, line, want string
+	}{
+		{"plain with PR", "- Validate values [ready] (#7492)", "- Validate values (#7492)"},
+		{"bold with PR", "- **Validate values [ready] (#7492)**", "- **Validate values (#7492)**"},
+		{"bold bare tag", "- **Validate values [ready]**", "- **Validate values**"},
+		{"bold with trailing whitespace", "- **Validate values [ready] (#7492)** \t", "- **Validate values (#7492)**"},
+		{"bold internal tag", "- **Validate [ready] values (#7492)**", "- **Validate [ready] values (#7492)**"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			t.Parallel()
+			md := "### ⚠ BREAKING CHANGES\n\n" + c.line + "\n"
+
+			got := CleanReviewTags(md)
+
+			want := "### ⚠ BREAKING CHANGES\n\n" + c.want + "\n"
+			if got != want {
+				t.Errorf("CleanReviewTags(%q) = %q; want %q", c.line, got, want)
+			}
+		})
+	}
+}
