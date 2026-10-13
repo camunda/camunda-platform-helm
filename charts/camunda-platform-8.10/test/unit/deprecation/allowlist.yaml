@@ -1,5 +1,4 @@
 global.security.allowInsecureImages: Bitnami subcharts dropped
 console.enabled: Compatibility shim remains honored until chart v16; its dedicated warning covers migration to camundaHub.enabled
-global.image.tag: Undeclared legacy fallback retained until chart v16; ADR 0042 and keyDeprecated direct users to per-component image.tag without restoring the schema key
-global.image.repository: Undeclared legacy fallback retained until chart v16; keyDeprecated directs users to per-component image.repository without restoring the schema key
-global.image.digest: Undeclared legacy fallback retained until chart v16; keyDeprecated directs users to per-component image.digest without restoring the schema key
+global.image.tag: Undeclared legacy fallback retained until chart v17 (8.12); the chart README Global image deprecations section lists exact migration keys without restoring defaults or schema keys
+global.image.repository: Undeclared legacy fallback retained until chart v17 (8.12); the chart README Global image deprecations section lists exact migration keys without restoring defaults or schema keys
