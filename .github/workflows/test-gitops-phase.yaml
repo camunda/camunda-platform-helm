@@ -10,6 +10,13 @@ name: Test - Camunda Hub GitOps Phases
         required: false
         type: string
         default: ""
+    secrets:
+      VAULT_ADDR:
+        required: false
+      VAULT_ROLE_ID:
+        required: false
+      VAULT_SECRET_ID:
+        required: false
 
 permissions:
   contents: read
