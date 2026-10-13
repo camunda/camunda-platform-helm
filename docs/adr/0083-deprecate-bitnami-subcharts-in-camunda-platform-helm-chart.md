@@ -35,3 +35,7 @@ Bitnami subcharts are formally deprecated in 8.9 via template-level constraint w
 
 - Users relying on the convenience of bundled subcharts for development/testing environments must plan migration or accept deprecation warnings.
 - Increases short-term documentation and support burden as users ask about recommended alternatives for local development setups.
+
+## Changelog
+
+- 2026-10-13 — [#7545](https://github.com/camunda/camunda-platform-helm/pull/7545) — Point the removal notice to the deprecation policy.

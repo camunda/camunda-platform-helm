@@ -35,3 +35,7 @@ The standalone migrator was fully removed from the 8.9 chart. Migration responsi
 
 - Loss of independent observability: migration failures are no longer surfaced as a discrete Job status; operators must inspect importer/orchestration logs to diagnose migration issues.
 - Narrowed CI coverage of legacy paths: the upgrade path from 8.8→8.9 no longer exercises the standalone migrator pattern, reducing confidence in rollback scenarios that might require it.
+
+## Changelog
+
+- 2026-10-13 — [#7545](https://github.com/camunda/camunda-platform-helm/pull/7545) — Point the deprecation window to the deprecation policy.

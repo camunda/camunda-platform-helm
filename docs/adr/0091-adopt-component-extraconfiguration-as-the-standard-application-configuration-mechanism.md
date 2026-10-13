@@ -171,3 +171,7 @@ graph TD
 - Builds on [ADR 0061 — Introduce a unified configuration mechanism for Camunda Platform core components](0061-introduce-a-unified-configuration-mechanism-for-camunda.md): introduced the unified ConfigMap for the orchestration StatefulSet; this ADR extends that direction to the operator-facing values API.
 - Coordinated via product-hub#3562 (removal scope and sequencing) and product-hub#3563 (migration tooling investigation).
 - [Camunda Helm application configuration docs](https://docs.camunda.io/docs/self-managed/deployment/helm/configure/application-configs/)
+
+## Changelog
+
+- 2026-10-13 — [#7545](https://github.com/camunda/camunda-platform-helm/pull/7545) — Remove deprecated Tier 1 keys per the deprecation policy instead of in 8.11.

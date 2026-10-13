@@ -226,3 +226,4 @@ and is not defined by this ADR.
 
 - 2026-09-22 — [#7012](https://github.com/camunda/camunda-platform-helm/pull/7012) — Backport the `orchestration` role to charts 8.7, 8.8, and 8.9 (was ADR 0098).
 - 2026-10-06 — [#7476](https://github.com/camunda/camunda-platform-helm/pull/7476) — Rename "Hub plane" to "management plane" to match the docs glossary.
+- 2026-10-13 — [#7545](https://github.com/camunda/camunda-platform-helm/pull/7545) — Point the removal timing of existing values to the deprecation policy.

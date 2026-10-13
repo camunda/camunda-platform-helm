@@ -35,3 +35,7 @@ All 8.8-cycle deprecated value paths, constraint templates, and compatibility he
 
 - Users attempting unsupported skip-version upgrades (8.8 → 8.10 direct) will encounter hard failures with no deprecation guidance; this is an accepted trade-off per the N-1 policy.
 - The large deletion-heavy diff (46 files) increases short-term merge-conflict risk with parallel 8.10 development, though conflicts are straightforward to resolve given the nature of the changes.
+
+## Changelog
+
+- 2026-10-13 — [#7545](https://github.com/camunda/camunda-platform-helm/pull/7545) — Point the shim support window to the deprecation policy.

@@ -79,3 +79,4 @@ Web Modeler restapi exposes the value in charts 8.8, 8.9, and 8.10. Connectors a
 - 2026-06-01 — [#6271](https://github.com/camunda/camunda-platform-helm/pull/6271) — Allow an opt-in strategy for components with chart-managed RWO persistence (was ADR 0092).
 - 2026-07-21 — [#6539](https://github.com/camunda/camunda-platform-helm/pull/6539) — Resolve the 8.10 Web Modeler value through `camundaHub.persistence.*` and retire `camundaHub.webModeler.persistence.deploymentStrategy`.
 - 2026-10-06 — [#7459](https://github.com/camunda/camunda-platform-helm/pull/7459) — Require `existingClaim` for `Recreate` on a per-pod ephemeral path: fail in 8.10, warn in 8.8 and 8.9.
+- 2026-10-13 — [#7545](https://github.com/camunda/camunda-platform-helm/pull/7545) — Point the released-chart rationale to the breaking change policy.

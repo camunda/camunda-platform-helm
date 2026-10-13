@@ -35,3 +35,7 @@ The orchestration component's Service layer was split into three distinct resour
 
 - Increased Kubernetes resource count per release and additional template helpers increase chart maintenance burden and review surface area.
 - Backward-compatibility shims (via `z_compatibility_helpers.tpl`) add hidden complexity that must be carried until the [deprecation policy](../policies/breaking-changes.md#deprecation-policy) allows their removal.
+
+## Changelog
+
+- 2026-10-13 — [#7545](https://github.com/camunda/camunda-platform-helm/pull/7545) — Point the shim removal timing to the deprecation policy.
