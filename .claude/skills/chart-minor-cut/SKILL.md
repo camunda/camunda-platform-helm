@@ -23,16 +23,20 @@ The human checklist for the same steps is in `docs/reference/release-process.md`
 
 1. Read `charts/chart-versions.yaml`.
 2. Find the `P` entry in `camundaSupportLifecycle`.
-3. If the entry has `released`, `P` is GA. Record this value. Step 9 uses it.
+3. If the entry has `released`, `P` is GA. Record this value. Step 7 uses it.
 
-Check: you know if `P` is GA.
+Check: this command shows the `P` entry. A `released:` line means that `P` is GA.
+
+```bash
+sed -n '/^  "P":/,/^  "/p' charts/chart-versions.yaml
+```
 
 ## 2. Make tooling version-agnostic first
 
 Hardcoded lists of `P` break the new chart line. Find them before you copy the chart.
 
 ```bash
-git grep -nE '"P"|camunda-platform-P([^0-9]|$)|SM-P([^0-9]|$)' -- \
+git grep -nE "[\"']P[\"']|camunda-platform-P([^0-9]|$)|SM-P([^0-9]|$)" -- \
   ':!charts/camunda-platform-*' ':!version-matrix' ':!**/CHANGELOG.md'
 ```
 
@@ -49,7 +53,7 @@ Put these changes in a separate PR that merges first. In the 8.11 cut, the chang
 - `test/e2e/playwright.base.config.ts`: `ShadowVersion`.
 - `helm-values-mcp/test/helm-values.test.ts`: the latest-version assertions.
 
-Check: the grep shows no hardcoded list that excludes `N`.
+Check: run the grep again after the changes. It shows no hardcoded list that excludes `N`.
 
 ## 3. Copy the chart
 
@@ -76,7 +80,11 @@ find NEW -type f | wc -l
 4. Replace the content of `NEW/CHANGELOG.md` with `# Changelog`.
 5. Replace the content of `NEW/RELEASE-NOTES.md` with this line: `The changelog is automatically generated and it follows [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) format.`
 
-Check: `NEW/Chart.yaml` has no `P` version string.
+Check: this command shows `M.0.0-alpha0`, `N.x` and `"true"`, and no `P` version.
+
+```bash
+grep -nE '^(version|appVersion):|prerelease' NEW/Chart.yaml
+```
 
 ## 5. Replace the image tags
 
@@ -105,10 +113,14 @@ Find text that the copy brought from older cycles:
 
 ```bash
 grep -rnE 'P|P-1|camunda-platform-8\.[0-9]+' NEW \
-  --exclude-dir=testdata --exclude-dir=golden
+  --exclude-dir=testdata --exclude-dir=golden \
+  --exclude=values.schema.json --exclude=values.unknown-keys.schema.json \
+  --exclude=registry-snapshot.yaml
 ```
 
-Use the real values of `P` and `P-1`, with escaped dots. Sort each hit into one of these groups:
+Use the real values of `P` and `P-1`, with escaped dots. The command skips the generated files. Step 8 regenerates them. Hits in the parameter table of `NEW/README.md` are also generated. Ignore them in this step.
+
+Sort each hit into one of these groups:
 
 | Group | Action |
 |---|---|
@@ -122,7 +134,7 @@ Use the real values of `P` and `P-1`, with escaped dots. Sort each hit into one 
 | A path under `OLD` in `NEW/test/ci/registry/` | Change it to `NEW`. |
 | A hook or scenario for the `P-1` to `P` upgrade, for example a Bitnami migration | Remove the hook files, the scripts and the `post-infra:` lines. A `P` installation does not have the old state. |
 
-Check: each remaining hit is in the "Keep it" group.
+Check: run the audit command again. Each remaining hit is in the "Keep it" group.
 
 ## 7. Wire the new minor
 
@@ -135,7 +147,7 @@ Make these changes outside the chart directory:
 | `.github/config/release-please/.release-please-manifest.json` | Add `"NEW": "M.0.0-alpha0"` and `"NEW+FILLER": "0.0.0"`. |
 | `.github/renovate.json5` | Add `NEW/Chart.yaml` to the alpha `github-tags` rule. Add `NEW/Chart.yaml`, `NEW/values.yaml` and `NEW/values-latest.yaml` to the alpha images group and to the alpha semver rule. Add `NEW/values-digest.yaml` to both digest rules. Do not add a group for one version only. |
 | `.github/config/pr-labeler.yaml` | Add `version/N` for `NEW/**`. |
-| `.github/config/permitted-flows.yaml` | Add `==N` with `deny: [upgrade-patch]`. If `P` is not GA, also deny `upgrade-minor`, and remove the `upgrade-minor` flow from the scenarios in `NEW/test/ci/registry/`. The registry validation fails on a scenario flow that this file denies. |
+| `.github/config/permitted-flows.yaml` | Add `==N` with `deny: [upgrade-patch]`. If `P` is not GA, also deny `upgrade-minor`, and remove the `upgrade-minor` flow from the scenarios in `NEW/test/ci/registry/`. The registry validation fails on a scenario flow that this file denies. When `P` becomes GA, remove the `upgrade-minor` deny for `N` and add the `upgrade-minor` flow back to those scenarios. Without this follow-up, `N` has no minor-upgrade coverage. |
 | `.github/workflows/test-chart-version.yaml` | Add `"N"` to the version choices. |
 | `.github/workflows/test-release-tooling.yaml` | Add `N` to the chart loop. |
 | `scripts/release-tools/inject_values.go` | Add `N` to `validVersions` and to the error text. Check the component set in the `mergeImageTags` switch. |
@@ -149,7 +161,15 @@ gh label create "version/N" --repo camunda/camunda-platform-helm \
   --color fc5d0d --description "Camunda applications/cycle version"
 ```
 
-Check: `python3 -m json.tool` reads both release-please files without errors.
+Check: these commands exit with code 0, and the `git grep` shows `N` in each file of the table.
+
+```bash
+python3 -m json.tool .github/config/release-please/release-please-config.json > /dev/null
+python3 -m json.tool .github/config/release-please/.release-please-manifest.json > /dev/null
+git grep -c 'N' -- charts/chart-versions.yaml .github/config .github/renovate.json5 \
+  .github/workflows/test-chart-version.yaml .github/workflows/test-release-tooling.yaml \
+  scripts/release-tools/inject_values.go scripts/render-e2e-env.sh docs/reference/release-process.md
+```
 
 ## 8. Regenerate the artifacts
 
@@ -164,7 +184,11 @@ make go.update-golden-only chartPath=NEW
 
 `helm.schema-update` needs a working `jq`. If `jq --version` prints nothing, the asdf install can have the wrong CPU architecture. Install the release binary for your platform at the version in `.tool-versions`. Check the release checksum before you install it.
 
-Check: `diff` of `OLD/values.schema.json` and `NEW/values.schema.json` shows only the tags and links that you changed.
+Check: this diff shows only the tags and links that you changed. Then run the step 6 audit again without the `--exclude` options for the generated files.
+
+```bash
+diff <(python3 -m json.tool OLD/values.schema.json) <(python3 -m json.tool NEW/values.schema.json)
+```
 
 ## 9. Run the checks
 
@@ -198,10 +222,10 @@ The output must contain `RELEASE_VERSION=M.0.0-alpha1`.
 Check the rendered images:
 
 ```bash
-grep -rhoE 'image: "?[^" ]*camunda/[a-z-]+[:@][^" ]+' NEW/test/unit | sort | uniq -c
+grep -rhoE --include='*.golden.yaml' 'image: "?[^" ]*camunda/[a-z-]+[:@][^" ]+' NEW/test/unit | sort | uniq -c
 ```
 
-Each image must use the tags from step 5.
+The command reads the rendered goldens only. Each image must use the tags from step 5.
 
 Check that `OLD` did not change: `git status --short OLD` shows nothing.
 
@@ -212,6 +236,14 @@ Run the tier-1 scenarios for `N` with the `rfr-validation` skill.
 1. Use the title `feat: create the Camunda N Helm chart line as M.0.0-alpha0`.
 2. Fill in `.github/pull_request_template.md`.
 3. If the tooling PR from step 2 is not merged, stack this PR on it with the `gh-stack` skill. GitHub does not link closing keywords on a PR whose base is not `main`. Link the issue with the `addCloseIssueReferences` GraphQL mutation.
+
+Check: the first command shows the issue number. If the PR is stacked, the second command does not show `null`.
+
+```bash
+gh pr view <pr> --repo camunda/camunda-platform-helm --json closingIssuesReferences \
+  --jq '[.closingIssuesReferences[].number]'
+gh api repos/camunda/camunda-platform-helm/pulls/<pr> --jq '.stack'
+```
 
 ## 11. After the merge
 
@@ -226,6 +258,13 @@ Run the tier-1 scenarios for `N` with the `rfr-validation` skill.
 3. Tell QA that `NEW` exists. QA publishes the `SM-N` e2e suite. Then remove the fallback in `NEW/test/e2e/playwright.config.ts`.
 4. Tell the monorepo team that the `N` preview-environment smoke test can run.
 
+Check: the first command shows one tag line. The second command shows a dev package tag that starts with `M.0.0-alpha1-dev-`.
+
+```bash
+git ls-remote --tags origin camunda-platform-N-M.0.0-alpha0
+gh run list --repo camunda/camunda-platform-helm --workflow chart-build-dev.yaml --limit 5
+```
+
 ## 12. Plan the lifecycle of older minors
 
 Do not change other minors in the cut PR. Open separate PRs.
@@ -239,6 +278,12 @@ Do not change other minors in the cut PR. Open separate PRs.
    - Remove the minor from release-please, `pr-labeler.yaml`, `renovate.json5`, the `Makefile` and `.github/AGENTS.md`.
    - Regenerate `version-matrix/camunda-<minor>/README.md` and `version-matrix/README.md` with `release-tools version-matrix`.
    - Remove `version-matrix/camunda-<minor>/version-matrix.json`.
+
+Check: in the cut PR, this diff adds lines for `N` only. Other minors do not change.
+
+```bash
+git diff origin/main -- charts/chart-versions.yaml
+```
 
 ## Known failures from earlier cuts
 
