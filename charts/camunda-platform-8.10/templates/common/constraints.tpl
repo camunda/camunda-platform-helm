@@ -1629,12 +1629,12 @@ The following values inside your values.yaml need to be set but were not:
     {{- $partitioning := include "camundaPlatform.partitioning" . | fromJson -}}
     {{- $replicationFactor := int .Values.orchestration.replicationFactor -}}
     {{- $ctx := . -}}
-    {{- $replicationFactorKnown := true -}}
+    {{- $replicationFactorKnown := not .Values.orchestration.configuration -}}
     {{- if or (eq (include "camundaPlatform.appConfigMentionsPath" (dict "extraConfiguration" .Values.orchestration.extraConfiguration "path" (list "camunda" "cluster" "replication-factor"))) "true") (eq (include "camundaPlatform.appConfigMentionsPath" (dict "extraConfiguration" .Values.orchestration.extraConfiguration "path" (list "zeebe" "broker" "cluster" "replicationFactor"))) "true") (and .Values.orchestration.envFrom (or (has "CAMUNDA_CLUSTER_REPLICATIONFACTOR" (.Values.orchestration.envFromProvides | default list)) (has "ZEEBE_BROKER_CLUSTER_REPLICATIONFACTOR" (.Values.orchestration.envFromProvides | default list)))) }}
       {{- $replicationFactorKnown = false -}}
     {{- end }}
     {{- range $env := ($ctx.Values.orchestration.env | default list) }}
-      {{- if has ($env.name | default "") (list "CAMUNDA_CLUSTER_REPLICATIONFACTOR" "ZEEBE_BROKER_CLUSTER_REPLICATIONFACTOR") }}
+      {{- if has (tpl ($env.name | default "") $ctx) (list "CAMUNDA_CLUSTER_REPLICATIONFACTOR" "ZEEBE_BROKER_CLUSTER_REPLICATIONFACTOR") }}
         {{- if $env.value }}
           {{- $replicationFactor = int (tpl (toString $env.value) $ctx) -}}
           {{- $replicationFactorKnown = true -}}

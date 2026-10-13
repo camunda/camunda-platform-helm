@@ -777,6 +777,30 @@ func (s *ConfigMapWarningsTemplateTest) TestMultiregionReplicationFactorWarning(
 				s.Require().Contains(configmap.Data["warnings"], "orchestration.replicationFactor is 3 but")
 			},
 		},
+		{
+			Name: "CustomConfigurationDoesNotTriggerWarning",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"global.multiregion.regions":               "2",
+			},
+			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.configuration=camunda: {}"},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				s.Require().NotContains(output, "orchestration.replicationFactor is")
+			},
+		},
+		{
+			Name: "TemplatedEnvNameDoesNotTriggerWarning",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"global.multiregion.regions":               "2",
+			},
+			RenderTemplateExtraArgs: []string{"--set-json", `orchestration.env=[{"name":"{{ \"CAMUNDA_CLUSTER_REPLICATIONFACTOR\" }}","value":"4"}]`},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				s.Require().NotContains(output, "orchestration.replicationFactor is")
+			},
+		},
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)

@@ -1486,6 +1486,61 @@ func (s *ConfigMapWarningsTemplateTest) TestDualRegionReplicationFactorWarning()
 				s.Require().Contains(configmap.Data["warnings"], "orchestration.replicationFactor is 3 but")
 			},
 		},
+		{
+			Name: "CustomConfigurationDoesNotTriggerWarning",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"orchestration.partitioning.numberOfZones": "2",
+				"orchestration.partitioning.zoneIndex":     "0",
+			},
+			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.clusterSize=4", "--set-string", "orchestration.configuration=camunda: {}"},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				s.Require().NotContains(output, "orchestration.replicationFactor is")
+			},
+		},
+		{
+			Name: "TemplatedEnvNameDoesNotTriggerWarning",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"orchestration.partitioning.numberOfZones": "2",
+				"orchestration.partitioning.zoneIndex":     "0",
+			},
+			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.clusterSize=4", "--set-json", `orchestration.env=[{"name":"{{ \"CAMUNDA_CLUSTER_REPLICATIONFACTOR\" }}","value":"4"}]`},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				s.Require().NotContains(output, "orchestration.replicationFactor is")
+			},
+		},
+		{
+			Name: "ReplicationFactorFromExtraConfigurationDoesNotTriggerWarning",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"orchestration.partitioning.numberOfZones": "2",
+				"orchestration.partitioning.zoneIndex":     "0",
+				"orchestration.extraConfiguration[0].file": "cluster.yaml",
+			},
+			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.clusterSize=4", "--set-string", "orchestration.extraConfiguration[0].content=camunda.cluster.replication-factor: 4"},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				s.Require().NotContains(output, "orchestration.replicationFactor is")
+			},
+		},
+		{
+			Name: "ReplicationFactorFromEnvFromDoesNotTriggerWarning",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":   "elasticsearch",
+				"orchestration.partitioning.numberOfZones":   "2",
+				"orchestration.partitioning.zoneIndex":       "0",
+				"orchestration.envFrom[0].configMapRef.name": "cluster",
+				"orchestration.envFromProvides[0]":           "CAMUNDA_CLUSTER_REPLICATIONFACTOR",
+			},
+			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.clusterSize=4"},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				s.Require().NotContains(output, "orchestration.replicationFactor is")
+			},
+		},
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)

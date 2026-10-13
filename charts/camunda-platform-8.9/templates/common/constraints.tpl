@@ -633,9 +633,9 @@ The following values inside your values.yaml need to be set but were not:
 
   {{- $replicationFactor := int .Values.orchestration.replicationFactor -}}
   {{- $ctx := . -}}
-  {{- $replicationFactorKnown := true -}}
+  {{- $replicationFactorKnown := not .Values.orchestration.configuration -}}
   {{- range $env := ($ctx.Values.orchestration.env | default list) }}
-    {{- if has ($env.name | default "") (list "CAMUNDA_CLUSTER_REPLICATIONFACTOR" "ZEEBE_BROKER_CLUSTER_REPLICATIONFACTOR") }}
+    {{- if has (tpl ($env.name | default "") $ctx) (list "CAMUNDA_CLUSTER_REPLICATIONFACTOR" "ZEEBE_BROKER_CLUSTER_REPLICATIONFACTOR") }}
       {{- if $env.value }}
         {{- $replicationFactor = int (tpl (toString $env.value) $ctx) -}}
         {{- $replicationFactorKnown = true -}}
