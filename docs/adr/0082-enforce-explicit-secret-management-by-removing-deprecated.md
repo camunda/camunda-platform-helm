@@ -6,14 +6,14 @@
 
 ## Context and Problem Statement
 
-The Camunda Helm chart historically auto-generated secrets (random passwords) when users did not explicitly provide them, and supported legacy secret key paths (`global.secrets.*`) alongside newer conventions. This created ambiguity about the source of truth for credentials, made upgrades fragile (auto-generated values could change across installs), and added significant maintenance burden to the chart's template logic and test surface. With 8.9 being a new major chart version where breaking changes are permitted, this was the enforcement point after a deprecation period in 8.8.
+The Camunda Helm chart historically auto-generated secrets (random passwords) when users did not explicitly provide them, and supported legacy secret key paths (`global.secrets.*`) alongside newer conventions. This created ambiguity about the source of truth for credentials, made upgrades fragile (auto-generated values could change across installs), and added significant maintenance burden to the chart's template logic and test surface. Under the chart deprecation policy in force at the time, the new 8.9 major chart version was the enforcement point after a deprecation period in 8.8.
 
 ## Decision Drivers
 
 - **Security posture**: Operators must explicitly own credential lifecycle, improving auditability and eliminating "magic" secret creation that obscured who controlled access
 - **Maintainability**: Autogeneration helpers, normalization logic, and dual-path key support added substantial template complexity that compounded with each new component
 - **Upgrade reliability**: Auto-generated secrets changing across installs caused silent breakage during upgrades; explicit secrets make state deterministic
-- **Deprecation period**: The 8.8 chart warned on these keys. Deprecation windows follow the [deprecation policy](../policies/breaking-changes.md#deprecation-policy)
+- **Major version boundary**: Under the chart deprecation policy in force at the time, 8.9 was the place to enforce breaking changes after the 8.8 deprecation-with-warning period
 
 ## Considered Options
 
@@ -38,4 +38,4 @@ All auto-generation logic, legacy secret key paths, and associated normalization
 
 ## Changelog
 
-- 2026-10-13 — [#7545](https://github.com/camunda/camunda-platform-helm/pull/7545) — Point the deprecation window to the deprecation policy.
+- 2026-10-13 — [#7545](https://github.com/camunda/camunda-platform-helm/pull/7545) — Scope the removal rationale to the chart deprecation policy in force at the time.

@@ -33,7 +33,7 @@ Tasklist, Console, and Zeebe Gateway / orchestration mount no chart-managed PVC.
 - **Minimal API surface:** Reducing the values.yaml API surface decreases documentation burden, test matrix size, and support overhead. A strategy value exists only where it is genuinely meaningful.
 - **Consistency:** All stateless components behave uniformly, and all components with chart-managed persistence converge on one pattern.
 - **Opinionated-defaults philosophy:** The chart should encode operational best practices rather than defer every decision to the user, and expose configuration only where users have a legitimate, safe choice.
-- **Backward compatibility of released charts:** A render failure for values that a released chart accepts is a breaking change (`docs/policies/breaking-changes.md`, Breaking Change Policy). The Deprecation Policy requires a deprecation in one minor release before a removal in the next major release. The 8.10 chart (15.0.0) is the next major release after the 8.9 chart (14.x).
+- **Backward compatibility of released charts:** A render failure for values that a released chart accepts is a breaking change. The 8.10 render failure was decided under the chart deprecation policy in force at the time; new deprecations follow the [Deprecation Policy](../policies/breaking-changes.md#deprecation-policy).
 
 ## Considered Options
 
@@ -79,4 +79,4 @@ Web Modeler restapi exposes the value in charts 8.8, 8.9, and 8.10. Connectors a
 - 2026-06-01 — [#6271](https://github.com/camunda/camunda-platform-helm/pull/6271) — Allow an opt-in strategy for components with chart-managed RWO persistence (was ADR 0092).
 - 2026-07-21 — [#6539](https://github.com/camunda/camunda-platform-helm/pull/6539) — Resolve the 8.10 Web Modeler value through `camundaHub.persistence.*` and retire `camundaHub.webModeler.persistence.deploymentStrategy`.
 - 2026-10-06 — [#7459](https://github.com/camunda/camunda-platform-helm/pull/7459) — Require `existingClaim` for `Recreate` on a per-pod ephemeral path: fail in 8.10, warn in 8.8 and 8.9.
-- 2026-10-13 — [#7545](https://github.com/camunda/camunda-platform-helm/pull/7545) — Point the released-chart rationale to the breaking change policy.
+- 2026-10-13 — [#7545](https://github.com/camunda/camunda-platform-helm/pull/7545) — Scope the 8.10 render failure to the chart deprecation policy in force at the time; point new deprecations to the Deprecation Policy.

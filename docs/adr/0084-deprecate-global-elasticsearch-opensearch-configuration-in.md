@@ -13,7 +13,7 @@ In the Camunda 8.8+ unified orchestration architecture, most components receive 
 - **Accuracy of abstraction**: A "global" key that serves a single component is a misleading API surface that confuses chart consumers.
 - **Maintainability**: Reducing implicit coupling between unrelated components simplifies future chart evolution and version-scoped changes.
 - **Backward compatibility**: Any change to widely-used configuration keys must follow the [deprecation policy](../policies/breaking-changes.md#deprecation-policy) to avoid breaking existing deployments.
-- **Preparation for removal**: Establishing the copy-down pattern now enables clean removal of the global keys in a future major version.
+- **Preparation for removal**: Establishing the copy-down pattern now enables clean removal of the global keys once the [deprecation policy](../policies/breaking-changes.md#deprecation-policy) allows it.
 
 ## Considered Options
 
