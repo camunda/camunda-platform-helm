@@ -1618,7 +1618,7 @@ The following values inside your values.yaml need to be set but were not:
   {{- if eq (include "camundaPlatform.deprecatedMultiregionConfigured" (.Values.global.multiregion | default dict)) "true" }}
     {{- $warningMessage := printf "%s %s %s %s"
         "[camunda][warning]"
-        "DEPRECATION: \"global.multiregion.*\" is deprecated and will be removed in chart v16 (Camunda 8.11)."
+        "DEPRECATION: \"global.multiregion.*\" is deprecated and will be removed in chart v17 (Camunda 8.12)."
         "Only the Orchestration Cluster reads these keys, so they moved to \"orchestration.partitioning.*\", where regions is now numberOfZones and regionId is now zoneIndex."
         "Move the block and remove the global one; setting both fails the render."
     -}}
@@ -1737,7 +1737,7 @@ The following values inside your values.yaml need to be set but were not:
   {{- if $console.enabled }}
     {{- $warningMessage := printf "%s %s %s %s"
         "[camunda][warning]"
-        "DEPRECATION: \"console.enabled\" is deprecated and will be removed in chart v16 (Camunda 8.11)."
+        "DEPRECATION: \"console.enabled\" is deprecated and will be removed in chart v17 (Camunda 8.12)."
         "Console has been consolidated into Camunda Hub as an in-Modeler feature. Please use \"camundaHub.enabled: true\" instead."
         "It is the only console.* key still honored; the other console.* keys have no effect in 8.10."
     -}}
@@ -1747,7 +1747,7 @@ The following values inside your values.yaml need to be set but were not:
     {{- $warningMessage := printf "%s %s %s %s"
         "[camunda][warning]"
         "DEPRECATION: console.* configuration keys have no effect in 8.10 — Console has been consolidated into Camunda Hub."
-        "Only \"console.enabled\" is still honored, as a compatibility shim; it is deprecated too and will be removed in chart v16 (Camunda 8.11)."
+        "Only \"console.enabled\" is still honored, as a compatibility shim; it is deprecated too and will be removed in chart v17 (Camunda 8.12)."
         "The remaining console.* keys have no replacement and can be removed from values.yaml."
     -}}
     {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
@@ -1764,7 +1764,7 @@ The following values inside your values.yaml need to be set but were not:
   {{/*
   *****************************************************************************
   8.10 deprecated app-config-proxy keys (epic #6051): warn (never fail) when set
-  to a non-default value; removed in chart v16 (8.11) -> extraConfiguration.
+  to a non-default value; removed in chart v17 (8.12) -> extraConfiguration.
   *****************************************************************************
   */}}
   {{- if eq (include "camundaPlatform.orchestrationEnabled" .) "true" }}
@@ -2107,7 +2107,7 @@ Usage:
     {{- $warningMessage := printf
         "[camunda][warning] DEPRECATION: The Helm values file key \"%s\" is deprecated and will be removed in %s. %s %s"
         .oldName
-        (.removal | default "chart v16 (Camunda 8.11)")
+        (.removal | default "chart v17 (Camunda 8.12)")
         (printf "Configure this via \"%s\" instead." (.migration | default "the component's extraConfiguration"))
         (.url | default "https://docs.camunda.io/docs/self-managed/deployment/helm/upgrade/")
     -}}

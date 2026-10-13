@@ -13,11 +13,11 @@ The Camunda Platform Helm chart 8.9 relied on Bitnami subcharts (PostgreSQL, Ela
 - **Supply chain stability**: Bitnami subchart updates frequently introduced breaking changes in values schema, causing silent deployment failures for users who upgraded without reviewing upstream changelogs.
 - **Maintainability**: Keeping compatibility shims for multiple Bitnami chart versions across Camunda chart versions created compounding test and template complexity.
 - **Deployment flexibility**: Users increasingly provision infrastructure (databases, search engines) outside the Helm release, making bundled subcharts an unnecessary default rather than a requirement.
-- **Clear migration path**: Explicit deprecation with constraint validation gives users advance notice before removal in a future major version.
+- **Clear migration path**: Explicit deprecation with constraint validation gives users advance notice before removal, per the [deprecation policy](../policies/breaking-changes.md#deprecation-policy).
 
 ## Considered Options
 
-- **Remove Bitnami subcharts immediately** — Rejected because it would break existing deployments without a migration window, violating semver expectations within the 8.x line.
+- **Remove Bitnami subcharts immediately** — Rejected because it would break existing deployments without a migration window, contrary to the [deprecation policy](../policies/breaking-changes.md#deprecation-policy).
 - **Continue maintaining without deprecation** — Rejected because it defers the pain indefinitely and signals continued support for a pattern the team intends to abandon.
 - **Replace with alternative bundled charts** — Deferred to a future version; deprecation is the necessary prerequisite step.
 

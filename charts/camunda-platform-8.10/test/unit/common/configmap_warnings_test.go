@@ -344,7 +344,7 @@ func (s *ConfigMapWarningsTemplateTest) TestDifferentValuesInputs() {
 					s.Require().Contains(warnings, key)
 				}
 				s.Require().Contains(warnings, "orchestration.extraConfiguration")
-				s.Require().Contains(warnings, "chart v16 (Camunda 8.11)")
+				s.Require().Contains(warnings, "chart v17 (Camunda 8.12)")
 			},
 		},
 		{
@@ -586,7 +586,7 @@ func (s *ConfigMapWarningsTemplateTest) TestConsoleEnabledOnlyKeepsConsolidation
 				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 				s.Require().True(strings.HasSuffix(configmap.Name, "-warnings"))
 				s.Require().Contains(configmap.Data["warnings"],
-					`DEPRECATION: "console.enabled" is deprecated and will be removed in chart v16 (Camunda 8.11).`)
+					`DEPRECATION: "console.enabled" is deprecated and will be removed in chart v17 (Camunda 8.12).`)
 				s.Require().NotContains(configmap.Data["warnings"],
 					"console.* configuration keys have no effect in 8.10")
 			},
@@ -605,7 +605,7 @@ func (s *ConfigMapWarningsTemplateTest) TestConsoleEnabledOnlyKeepsConsolidation
 				s.Require().True(strings.HasSuffix(configmap.Name, "-warnings"))
 				warnings := configmap.Data["warnings"]
 				s.Require().Contains(warnings,
-					`DEPRECATION: "console.enabled" is deprecated and will be removed in chart v16 (Camunda 8.11).`)
+					`DEPRECATION: "console.enabled" is deprecated and will be removed in chart v17 (Camunda 8.12).`)
 				s.Require().Contains(warnings,
 					"console.* configuration keys have no effect in 8.10")
 				s.Require().NotContains(warnings,
@@ -1602,8 +1602,8 @@ func (s *ConfigMapWarningsTemplateTest) TestDualRegionReplicationFactorWarning()
 }
 
 func (s *ConfigMapWarningsTemplateTest) TestDefaultRolesMappingRulesDeprecationWarning() {
-	const adminWarning = `DEPRECATION: The Helm values file key "orchestration.security.initialization.defaultRoles.admin.mappingRules" is deprecated and will be removed in chart v16 (Camunda 8.11). Configure this via "orchestration.extraConfiguration" instead.`
-	const connectorsWarning = `DEPRECATION: The Helm values file key "orchestration.security.initialization.defaultRoles.connectors.mappingRules" is deprecated and will be removed in chart v16 (Camunda 8.11). Configure this via "orchestration.extraConfiguration" instead.`
+	const adminWarning = `DEPRECATION: The Helm values file key "orchestration.security.initialization.defaultRoles.admin.mappingRules" is deprecated and will be removed in chart v17 (Camunda 8.12). Configure this via "orchestration.extraConfiguration" instead.`
+	const connectorsWarning = `DEPRECATION: The Helm values file key "orchestration.security.initialization.defaultRoles.connectors.mappingRules" is deprecated and will be removed in chart v17 (Camunda 8.12). Configure this via "orchestration.extraConfiguration" instead.`
 
 	testCases := []testhelpers.TestCase{
 		{

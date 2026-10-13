@@ -13,12 +13,12 @@ The Camunda Helm chart historically auto-generated secrets (random passwords) wh
 - **Security posture**: Operators must explicitly own credential lifecycle, improving auditability and eliminating "magic" secret creation that obscured who controlled access
 - **Maintainability**: Autogeneration helpers, normalization logic, and dual-path key support added substantial template complexity that compounded with each new component
 - **Upgrade reliability**: Auto-generated secrets changing across installs caused silent breakage during upgrades; explicit secrets make state deterministic
-- **Major version boundary**: 8.9 is the correct place to enforce breaking changes after the 8.8 deprecation-with-warning period
+- **Deprecation period**: The 8.8 chart warned on these keys. Deprecation windows follow the [deprecation policy](../policies/breaking-changes.md#deprecation-policy)
 
 ## Considered Options
 
 - **Keep autogeneration behind a feature flag** — Rejected because it preserves the complexity and dual code paths that motivated the removal; users who opt in still face the same upgrade fragility
-- **Extend deprecation period to 8.10** — Rejected because the deprecation warnings have been in place since 8.8, providing sufficient migration runway; delaying only accumulates technical debt
+- **Extend deprecation period to 8.10** — Rejected because delaying only accumulates technical debt
 - **Replace with a built-in secret operator integration** — Out of scope for chart-level changes; users can adopt external secret stores independently
 
 ## Decision Outcome

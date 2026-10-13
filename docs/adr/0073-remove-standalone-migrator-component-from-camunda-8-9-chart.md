@@ -13,12 +13,12 @@ The Camunda 8.8 Helm chart included a standalone "migrator" component — dedica
 - **Operational simplicity:** Fewer moving parts during upgrades reduces the surface area for failures and the cognitive load on operators monitoring deployments.
 - **Maintainability:** Eliminating dedicated migration templates, ConfigMaps, schema entries, and golden files reduces long-term chart maintenance burden.
 - **Architectural cohesion:** Migration logic is inherently tied to the application's data model and should live alongside the components that own that data, not in a separate orchestration artifact.
-- **Version boundary opportunity:** A new chart version (8.9) provides a clean boundary for breaking changes without requiring a multi-version deprecation cycle.
+- **Version boundary:** The removal shipped at the 8.9 chart boundary. Deprecation windows follow the [deprecation policy](../policies/breaking-changes.md#deprecation-policy).
 
 ## Considered Options
 
 - **Keep the migrator as an optional, disabled-by-default component:** Rejected because maintaining dead templates increases confusion for users inspecting the chart and creates ongoing test/maintenance costs for code that should never execute.
-- **Deprecate in 8.9, remove in 8.10:** Rejected because the 8.9 version boundary already represents a supported upgrade path where breaking changes are expected, and the two-version deprecation cycle would delay simplification without providing meaningful user benefit.
+- **Deprecate first, remove after the [deprecation window](../policies/breaking-changes.md#deprecation-policy):** Rejected because the deprecation cycle would delay simplification without providing meaningful user benefit.
 - **Integrate migration into a Helm hook (pre-upgrade Job) rather than the importer deployment:** Likely considered but rejected in favor of embedding migration logic in the application startup path, which provides better lifecycle integration and avoids hook-ordering issues.
 
 ## Decision Outcome

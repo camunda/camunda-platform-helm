@@ -39,7 +39,7 @@ As additional deployment methods (ECS, Docker, Jar) have become first-class targ
 
 - **Option A — Status quo**: Keep all existing app config keys; continue adding new ones as needed. Rejected because it perpetuates the growing abstraction layer, increases chart complexity with every new application feature, and continues to require Helm chart changes for purely application-level concerns.
 - **Option B — Big bang removal**: Remove all app config keys from values.yaml in a single release. Rejected because it constitutes a breaking change without a migration window, violating upgrade expectations for existing operators and providing no documented migration path.
-- **Option C — Incremental deprecation with extraConfiguration as the standard (chosen)**: Freeze new Tier 1 additions immediately across all active chart versions, deprecate existing Tier 1 keys in 8.10 with a migration path, and target removal in 8.11.
+- **Option C — Incremental deprecation with extraConfiguration as the standard (chosen)**: Freeze new Tier 1 additions immediately across all active chart versions, deprecate existing Tier 1 keys in 8.10 with a migration path, and remove them after the [deprecation window](../policies/breaking-changes.md#deprecation-policy).
 
 ## Configuration Classification
 
@@ -148,7 +148,7 @@ graph TD
 
 - **No new Tier 1 keys shall be added to the Helm chart.** New application features that require Tier 1 configuration must use `<component>.extraConfiguration` exclusively. New features that require Tier 2 configuration (connectivity, infrastructure, cross-component coordination) may introduce new `values.yaml` keys subject to the Tier 2 classification defined above. **This rule applies to all active chart versions from the date this ADR is accepted.** Tier 2 additions are also permitted as backports to released (non-alpha) chart lines because they are additive, opt-in, and default to prior behaviour — only Tier 1 additions are blocked on released lines.
 - All existing application-specific keys in values.yaml are deprecated as of Camunda 8.10, with documented migration hints mapping each deprecated key to the equivalent extraConfiguration pattern.
-- Removal is targeted for Camunda 8.11. The keys in scope for removal are all Tier 1 values.yaml entries — those that configure application behavior rather than Tier 2 infrastructure, connectivity, or cross-component coordination concerns. Sequencing and any version-specific exceptions are tracked in product-hub#3562.
+- Removal follows the [deprecation policy](../policies/breaking-changes.md#deprecation-policy). The keys in scope for removal are all Tier 1 values.yaml entries — those that configure application behavior rather than Tier 2 infrastructure, connectivity, or cross-component coordination concerns. Sequencing and any version-specific exceptions are tracked in product-hub#3562.
 - `<component>.configuration` (full application config file override) remains available as an advanced escape hatch for operators who intentionally want to take full control of the application configuration file. It is not the recommended path and is not part of the standard mechanism.
 
 ### Positive Consequences
@@ -161,7 +161,7 @@ graph TD
 
 ### Negative Consequences
 
-- Existing users relying on application-specific Helm values must migrate to extraConfiguration; the impact is mitigated by the deprecation cycle — keys are deprecated in 8.10 and removed no earlier than 8.11, with documented migration hints for each. Further investigations in a migration tool related to product-hub#3563 will be considered.
+- Existing users relying on application-specific Helm values must migrate to extraConfiguration; the impact is mitigated by the deprecation cycle — keys are deprecated in 8.10 and removed per the [deprecation policy](../policies/breaking-changes.md#deprecation-policy), with documented migration hints for each. Further investigations in a migration tool related to product-hub#3563 will be considered.
 - Migration guidance and per-key mapping documentation is required before removal (owned by the Distribution team in coordination with application and docs teams).
 - Tier 1 application behavior that was previously a single global key (e.g. a feature toggle applied across multiple components) must now be provided per component via `extraConfiguration`. Operators can reduce repetition using YAML anchors or a dedicated shared values file (e.g. `shared-app-config.yaml`) composed via multiple `-f` flags. Note: Tier 2 concerns — TLS certificates, authentication endpoints, and cross-component coordination — are unaffected and remain expressible as `values.yaml` keys.
 

@@ -41,7 +41,7 @@ Tasklist, Console, and Zeebe Gateway / orchestration mount no chart-managed PVC.
 - **Hardcode only for specific components** — Rejected in favor of uniform treatment across all stateless components to avoid inconsistency and confusion about which components are tunable.
 - **Hardcode `Recreate` for components with chart-managed persistence** — Rejected because it penalizes RWX users with unnecessary downtime on every rollout.
 - **Re-expose a top-level `<component>.deploymentStrategy`** — Rejected because it decouples the strategy from any volume, which reopens the misconfiguration risk, and would apply to stateless components too.
-- **Fail the render in 8.8 and 8.9 for an unsafe `Recreate`** — Rejected because 8.8 and 8.9 are released charts, and breaking changes are prohibited in released charts.
+- **Fail the render in 8.8 and 8.9 for an unsafe `Recreate`** — Rejected because 8.8 and 8.9 are released charts (`docs/policies/breaking-changes.md`, Breaking Change Policy).
 - **Hardcode the strategy, and expose it only under the `persistence` block of components with chart-managed persistence, gated and enum-validated (chosen).**
 
 ## Decision Outcome

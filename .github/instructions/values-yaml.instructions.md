@@ -12,7 +12,8 @@ affect all users — treat every field as a public API. Every defined property m
 with a `@param` or `@extra` annotation so `helm-docs` can generate accurate documentation.
 Use camelCase for all field names. Provide sensible defaults (empty strings for optional
 secrets, `{}` or `[]` for optional collections, `true`/`false` for feature toggles). Never
-remove or rename an existing field without a deprecation notice — this is a breaking change.
+remove or rename an existing field outside the deprecation policy
+(`docs/policies/breaking-changes.md#deprecation-policy`) — this is a breaking change.
 
 ### Chart Design Principles
 
@@ -27,8 +28,8 @@ over opinionated integrations), 1:1 mapping to application config, reasonable pr
 ### NEVER
 - **NEVER** add a field without a corresponding documentation comment (`## @param` or `## @extra`) —
   `helm-docs` silently omits undocumented fields.
-- **NEVER** rename or remove an existing field without checking for backward compatibility — it
-  breaks existing user `values.yaml` files.
+- **NEVER** rename or remove an existing field outside the deprecation policy
+  (`docs/policies/breaking-changes.md#deprecation-policy`) — it breaks existing user `values.yaml` files.
 - **NEVER** use `snake_case` or `PascalCase` for field names — always use `camelCase`.
 - **NEVER** put secrets (passwords, tokens) as default values — use empty string `""` and document
   the `existingSecret` / `existingSecretKey` pattern instead.

@@ -6,7 +6,7 @@
 
 ## Context and Problem Statement
 
-The Camunda Platform Helm charts carry forward compatibility shims (deprecated value aliases, constraint templates, helper functions) so that users upgrading from version N-1 receive deprecation warnings rather than hard failures. By the time the 8.10 chart became the active development target, the 8.8-cycle shims had exceeded their two-minor-version support window and were adding significant template complexity without serving current users.
+The Camunda Platform Helm charts carry forward compatibility shims (deprecated value aliases, constraint templates, helper functions) so that users upgrading from version N-1 receive deprecation warnings rather than hard failures. By the time the 8.10 chart became the active development target, the 8.8-cycle shims had exceeded their [deprecation window](../policies/breaking-changes.md#deprecation-policy) and were adding significant template complexity without serving current users.
 
 ## Decision Drivers
 

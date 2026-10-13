@@ -134,8 +134,8 @@ The following constraints are normative:
     roles. Explicit cleanup remains an operator responsibility until managed deletion semantics are
     designed and approved separately.
 12. **Compatibility.** Existing singular `alwaysRegister`, component authentication, and manual Hub
-    inventory values remain supported. Any future removal MUST follow the chart deprecation policy and
-    occur no earlier than the next major chart version after a documented migration period.
+    inventory values remain supported. Any future removal MUST follow the
+    [deprecation policy](../policies/breaking-changes.md#deprecation-policy).
 13. **Packaging.** The public contract MUST describe deployment roles and connectivity rather than
     umbrella-chart internals so a future Hub/workload chart split can implement the same
     semantics without replacing the operator-facing model.
