@@ -62,12 +62,17 @@ func (s *ConfigMapWarningsTemplateTest) TestGlobalImageDeprecationWhenKeysSet() 
 					_, set := values["global.image."+key]
 					marker := `DEPRECATION: The Helm values file key "global.image.` + key + `"`
 					s.Equal(map[bool]int{false: 0, true: 1}[set], strings.Count(warnings, marker), key)
-				}
-				if len(scenario.keys) > 0 {
-					s.Contains(warnings, "chart v16 (Camunda 8.11)")
-					s.Contains(warnings, "ADR 0042")
-					for _, key := range scenario.keys {
-						s.Contains(warnings, "<component>.image."+key)
+					if !set {
+						continue
+					}
+					_, tail, _ := strings.Cut(warnings, marker)
+					message, _, _ := strings.Cut(tail, "\n")
+					s.Contains(message, "chart v16 (Camunda 8.11)", key)
+					s.Contains(message, "<component>.image."+key, key)
+					if key == "tag" {
+						s.Contains(message, "ADR 0042", key)
+					} else {
+						s.NotContains(message, "0042", key)
 					}
 				}
 			},
