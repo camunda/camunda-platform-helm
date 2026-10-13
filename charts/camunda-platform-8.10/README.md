@@ -256,7 +256,7 @@ Set repositories on the REST API and WebSockets image blocks, not on `camundaHub
 Subcomponent defaults overwrite shared repository and digest values before the global fallback applies.
 Hub values override corresponding legacy Web Modeler values.
 Console has no standalone image workload in 8.10.
-The Orchestration migration also covers its importer and inherited truststore init-container images.
+The Orchestration migration also covers its inherited truststore init-container image.
 
 Before, with a global repository fallback for both Hub images:
 

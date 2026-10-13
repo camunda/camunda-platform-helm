@@ -106,9 +106,14 @@ func (s *ConfigMapWarningsTemplateTest) TestGlobalImageMigrationWhenExactKeysSet
 						}
 					}
 				}
+				expected := map[string]string{"spec.template.spec.containers[0].image": repository + ":" + tag}
+				if target.path == "orchestration.image" {
+					values["global.tls.caBundle.secret.existingSecret"] = "custom-ca"
+					expected["spec.template.spec.initContainers[?(@.name=='ca-bundle-truststore-init')].image"] = repository + ":" + tag
+				}
 				testCases = append(testCases, testhelpers.TestCase{
 					Name: mode + "_" + key, Values: values,
-					Expected: map[string]string{"spec.template.spec.containers[0].image": repository + ":" + tag},
+					Expected: expected,
 				})
 			}
 			testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace,
