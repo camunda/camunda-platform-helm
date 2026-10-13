@@ -1797,7 +1797,7 @@
                     "default": null
                 },
                 "image": {
-                    "type": "object",
+                    "type": ["object", "null"],
                     "description": "override values for the Camunda Hub image; merged additively over the legacy webModeler.image map, so partial overrides keep the legacy values for the keys left unset.",
                     "default": {},
                     "additionalProperties": true,
@@ -1830,7 +1830,7 @@
                     "additionalProperties": true,
                     "properties": {
                         "image": {
-                            "type": "object",
+                            "type": ["object", "null"],
                             "description": "override values for the Camunda Hub restapi image; merged additively over the legacy webModeler.restapi.image map, so partial overrides keep the legacy values for the keys left unset.",
                             "default": {},
                             "additionalProperties": true,
@@ -1851,7 +1851,7 @@
                     "additionalProperties": true,
                     "properties": {
                         "image": {
-                            "type": "object",
+                            "type": ["object", "null"],
                             "description": "override values for the Camunda Hub websockets image; merged additively over the legacy webModeler.websockets.image map, so partial overrides keep the legacy values for the keys left unset.",
                             "default": {},
                             "additionalProperties": true,

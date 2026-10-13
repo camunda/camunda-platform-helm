@@ -16,7 +16,9 @@ package web_modeler
 
 import (
 	"camunda-platform/test/unit/testhelpers"
+	"encoding/json"
 	"maps"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -74,6 +76,19 @@ func hubImageTagValues(extra map[string]string) map[string]string {
 		"camundaHub.image.tag":                   "shared-tag",
 		"camundaHub.restapi.image.repository":    "example/restapi",
 		"camundaHub.websockets.image.repository": "example/websockets",
+	}
+	maps.Copy(values, extra)
+	return values
+}
+
+func hubLegacyImageValues(extra map[string]string) map[string]string {
+	values := map[string]string{
+		"identity.enabled":                       "true",
+		"camundaHub.enabled":                     "true",
+		"camundaHub.restapi.mail.fromAddress":    "example@example.com",
+		"webModeler.image.tag":                   "legacy-shared-tag",
+		"webModeler.restapi.image.repository":    "example/restapi",
+		"webModeler.websockets.image.repository": "example/websockets",
 	}
 	maps.Copy(values, extra)
 	return values
@@ -271,4 +286,68 @@ func (s *ImageTagTest) TestNullCamundaHubTagFallsThroughToSharedTag() {
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, nil, testCases)
+}
+
+func (s *ImageTagTest) TestNullCamundaHubImageNodeFallsBackToLegacyImage() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name:     "TestHubRestapiNullImage",
+			Template: restapiTemplate,
+			Values: hubLegacyImageValues(map[string]string{
+				"webModeler.restapi.image.tag": "legacy-restapi-tag",
+				"camundaHub.restapi.image":     "null",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				s.requireContainerImage(output, "example/restapi:legacy-restapi-tag")
+			},
+		},
+		{
+			Name:     "TestHubWebsocketsNullImage",
+			Template: websocketsTemplate,
+			Values: hubLegacyImageValues(map[string]string{
+				"webModeler.websockets.image.tag": "legacy-websockets-tag",
+				"camundaHub.websockets.image":     "null",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				s.requireContainerImage(output, "example/websockets:legacy-websockets-tag")
+			},
+		},
+		{
+			Name:     "TestHubSharedNullImage",
+			Template: restapiTemplate,
+			Values:   hubLegacyImageValues(map[string]string{"camundaHub.image": "null"}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				s.requireContainerImage(output, "example/restapi:legacy-shared-tag")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, nil, testCases)
+}
+
+func (s *ImageTagTest) TestCamundaHubImageNodesAcceptNullInSchema() {
+	raw, err := os.ReadFile(filepath.Join(s.chartPath, "values.schema.json"))
+	s.Require().NoError(err)
+
+	var schema map[string]any
+	s.Require().NoError(json.Unmarshal(raw, &schema))
+
+	for _, path := range [][]string{
+		{"camundaHub", "image"},
+		{"camundaHub", "restapi", "image"},
+		{"camundaHub", "websockets", "image"},
+	} {
+		name := strings.Join(path, ".")
+		node := schema
+		for _, key := range path {
+			properties, ok := node["properties"].(map[string]any)
+			s.Require().True(ok, "%s: no properties declared above %q", name, key)
+			node, ok = properties[key].(map[string]any)
+			s.Require().True(ok, "%s: %q is not declared", name, key)
+		}
+		s.Contains(node["type"], "null", "%s must accept null", name)
+	}
 }
