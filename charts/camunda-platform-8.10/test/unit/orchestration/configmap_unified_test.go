@@ -25,6 +25,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"gopkg.in/yaml.v3"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -910,6 +911,105 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedRDBMS() {
 	}
 
 	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+type secondaryStorageApplication struct {
+	Camunda struct {
+		Data struct {
+			SecondaryStorage struct {
+				Type  string `yaml:"type"`
+				RDBMS *struct {
+					URL      string `yaml:"url"`
+					Username string `yaml:"username"`
+					Password string `yaml:"password"`
+				} `yaml:"rdbms"`
+				Elasticsearch *struct {
+					URL string `yaml:"url"`
+				} `yaml:"elasticsearch"`
+			} `yaml:"secondary-storage"`
+		} `yaml:"data"`
+	} `yaml:"camunda"`
+}
+
+func decodeSecondaryStorage(t *testing.T, output string) secondaryStorageApplication {
+	var configMap corev1.ConfigMap
+	helm.UnmarshalK8SYaml(t, output, &configMap)
+	var application secondaryStorageApplication
+	require.NoError(t, yaml.Unmarshal([]byte(configMap.Data["application.yaml"]), &application))
+	return application
+}
+
+func statefulSetEnvNames(t *testing.T, output string) []string {
+	var statefulSet appsv1.StatefulSet
+	helm.UnmarshalK8SYaml(t, output, &statefulSet)
+	require.NotEmpty(t, statefulSet.Spec.Template.Spec.Containers)
+	names := []string{}
+	for _, env := range statefulSet.Spec.Template.Spec.Containers[0].Env {
+		names = append(names, env.Name)
+	}
+	return names
+}
+
+func (s *ConfigmapTemplateTest) TestRDBMSConnectionFollowsStorageType() {
+	const passwordEnv = "VALUES_ORCHESTRATION_DATA_SECONDARYSTORAGE_RDBMS_PASSWORD"
+	rdbmsWithoutExporterFlag := map[string]string{
+		"orchestration.data.secondaryStorage.type":                      "rdbms",
+		"orchestration.data.secondaryStorage.rdbms.url":                 "jdbc:postgresql://localhost:5432/camunda",
+		"orchestration.data.secondaryStorage.rdbms.username":            "camunda",
+		"orchestration.data.secondaryStorage.rdbms.secret.inlineSecret": "my-password",
+	}
+	elasticsearchWithRDBMSValues := mergeValues(rdbmsWithoutExporterFlag, map[string]string{
+		"orchestration.data.secondaryStorage.type": "elasticsearch",
+	})
+
+	testCases := []testhelpers.TestCase{
+		{
+			Name:   "TestRDBMSConnectionRendersFromStorageTypeWithoutExporterFlag",
+			Values: rdbmsWithoutExporterFlag,
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				storage := decodeSecondaryStorage(t, output).Camunda.Data.SecondaryStorage
+				require.Equal(t, "rdbms", storage.Type)
+				require.NotNil(t, storage.RDBMS)
+				require.Equal(t, "jdbc:postgresql://localhost:5432/camunda", storage.RDBMS.URL)
+				require.Equal(t, "camunda", storage.RDBMS.Username)
+				require.Equal(t, "${"+passwordEnv+":}", storage.RDBMS.Password)
+			},
+		},
+		{
+			Name:   "TestRDBMSConnectionAbsentForOtherStorageTypes",
+			Values: elasticsearchWithRDBMSValues,
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				storage := decodeSecondaryStorage(t, output).Camunda.Data.SecondaryStorage
+				require.Equal(t, "elasticsearch", storage.Type)
+				require.NotNil(t, storage.Elasticsearch)
+				require.Nil(t, storage.RDBMS)
+			},
+		},
+		{
+			Name:     "TestRDBMSPasswordEnvRendersFromStorageTypeWithoutExporterFlag",
+			Template: "templates/orchestration/statefulset.yaml",
+			Values:   rdbmsWithoutExporterFlag,
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, statefulSetEnvNames(t, output), passwordEnv)
+			},
+		},
+		{
+			Name:     "TestRDBMSPasswordEnvAbsentForOtherStorageTypes",
+			Template: "templates/orchestration/statefulset.yaml",
+			Values:   elasticsearchWithRDBMSValues,
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				names := statefulSetEnvNames(t, output)
+				require.Contains(t, names, "JAVA_TOOL_OPTIONS")
+				require.NotContains(t, names, passwordEnv)
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
 // requireNestedKeyAbsent walks a decoded YAML document by key path and fails the

@@ -1793,3 +1793,71 @@ func (s *ConfigMapWarningsTemplateTest) TestKeycloakURLWarnings() {
 	}
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, nil, testCases)
 }
+
+func (s *ConfigMapWarningsTemplateTest) TestRDBMSURLWarning() {
+	const warning = "uses RDBMS secondary storage, but no JDBC URL is set"
+	testCases := []testhelpers.TestCase{}
+	for _, scenario := range []struct {
+		name   string
+		values map[string]string
+		args   []string
+		warn   bool
+	}{
+		{name: "TypeWithoutURL", warn: true},
+		{name: "ExporterFlagWithoutTypeOrURL", values: map[string]string{"orchestration.data.secondaryStorage.type": "", "orchestration.exporters.rdbms.enabled": "true"}, warn: true},
+		{name: "UnrelatedEnv", values: map[string]string{"orchestration.env[0].name": "CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_USERNAME", "orchestration.env[0].value": "camunda"}, warn: true},
+		{name: "ValuesURL", values: map[string]string{"orchestration.data.secondaryStorage.rdbms.url": "jdbc:postgresql://db:5432/camunda"}},
+		{name: "EnvURL", values: map[string]string{"orchestration.env[0].name": "CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_URL", "orchestration.env[0].value": "jdbc:postgresql://db:5432/camunda"}},
+		{name: "EnvFrom", values: map[string]string{"orchestration.envFrom[0].secretRef.name": "rdbms-connection"}},
+		{
+			name:   "ExtraConfigurationURL",
+			values: map[string]string{"orchestration.extraConfiguration[0].file": "rdbms.yaml"},
+			args:   []string{"--set-string", "orchestration.extraConfiguration[0].content=camunda:\n  data:\n    secondary-storage:\n      rdbms:\n        url: jdbc:postgresql://db:5432/camunda\n"},
+		},
+		{
+			name: "ConfigurationURL",
+			args: []string{"--set-string", "orchestration.configuration=camunda:\n  data:\n    secondary-storage:\n      type: rdbms\n      rdbms:\n        url: jdbc:postgresql://db:5432/camunda\n"},
+		},
+		{name: "ElasticsearchWithExporterFlag", values: map[string]string{"orchestration.data.secondaryStorage.type": "elasticsearch", "orchestration.exporters.rdbms.enabled": "true"}},
+		{name: "OrchestrationDisabled", values: map[string]string{"orchestration.enabled": "false"}},
+	} {
+		values := map[string]string{
+			"orchestration.data.secondaryStorage.type": "rdbms",
+		}
+		for key, value := range scenario.values {
+			values[key] = value
+		}
+		testCases = append(testCases, testhelpers.TestCase{
+			Name:                    scenario.name,
+			Values:                  values,
+			RenderTemplateExtraArgs: scenario.args,
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				configMaps := map[string]corev1.ConfigMap{}
+				decoder := k8syaml.NewYAMLOrJSONDecoder(strings.NewReader(output), 4096)
+				for {
+					var resource corev1.ConfigMap
+					err := decoder.Decode(&resource)
+					if err == io.EOF {
+						break
+					}
+					require.NoError(t, err)
+					if resource.Kind == "ConfigMap" {
+						configMaps[resource.Name] = resource
+					}
+				}
+				if values["orchestration.enabled"] != "false" {
+					require.Contains(t, configMaps, s.release+"-zeebe-configuration")
+				}
+				warnings := configMaps[s.release+"-warnings"].Data["warnings"]
+				require.Equal(t, scenario.warn, strings.Contains(warnings, warning))
+				if scenario.warn {
+					require.Contains(t, warnings, "orchestration.data.secondaryStorage.rdbms.url")
+					require.Contains(t, warnings, "CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_URL")
+					require.Contains(t, warnings, "orchestration.extraConfiguration")
+				}
+			},
+		})
+	}
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, nil, testCases)
+}
