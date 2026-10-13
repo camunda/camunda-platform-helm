@@ -139,6 +139,24 @@ true
 {{- end -}}
 {{- end -}}
 
+{{- define "orchestration.searchUrlConfigured" -}}
+{{- $ctx := .context -}}
+{{- $configured := or (include (printf "camundaPlatform.%sURL" .type) $ctx) $ctx.Values.orchestration.envFrom -}}
+{{- range $entry := ($ctx.Values.orchestration.env | default list) -}}
+  {{- if hasPrefix (printf "CAMUNDA_DATA_SECONDARYSTORAGE_%s_URL" (upper $.type)) (tpl ($entry.name | default "") $ctx) -}}
+    {{- $configured = true -}}
+  {{- end -}}
+{{- end -}}
+{{- range $key := list "url" "urls" -}}
+  {{- if eq (include "camundaPlatform.appConfigMentionsPath" (dict "configuration" $ctx.Values.orchestration.configuration "extraConfiguration" $ctx.Values.orchestration.extraConfiguration "path" (list "camunda" "data" "secondary-storage" $.type $key))) "true" -}}
+    {{- $configured = true -}}
+  {{- end -}}
+{{- end -}}
+{{- if $configured -}}
+true
+{{- end -}}
+{{- end -}}
+
 {{- define "orchestration.numberedReplicas" -}}
 {{- $partitioning := include "camundaPlatform.partitioning" $ | fromJson -}}
 {{- div (int .Values.orchestration.clusterSize) (int $partitioning.numberOfZones) -}}

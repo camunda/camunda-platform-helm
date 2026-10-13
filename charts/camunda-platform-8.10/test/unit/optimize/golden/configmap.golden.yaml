@@ -21,8 +21,6 @@ data:
     es:
       connection:
         nodes:
-          - host: "camunda-platform-test-elasticsearch"
-            httpPort: 9200
     spring:
       servlet:
         multipart:

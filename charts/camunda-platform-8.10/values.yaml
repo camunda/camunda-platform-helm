@@ -2997,7 +2997,8 @@ optimize:
     pullSecrets: []
 
   database:
-    # Elasticsearch configuration which is shared between the sub charts
+    # Elasticsearch connection for Optimize and the legacy Zeebe exporter. The chart deploys no Elasticsearch.
+    # The Orchestration Cluster falls back to this URL when orchestration.data.secondaryStorage.elasticsearch.url is empty.
     ## @extra optimize.database.elasticsearch
     ## @param optimize.database.elasticsearch.enabled if true, enables elasticsearch for zeebe exporter and optimize
     ## @param optimize.database.elasticsearch.external if true, tries to connect to an external elasticsearch
@@ -3032,11 +3033,12 @@ optimize:
       ## @param optimize.database.elasticsearch.url.port defines the elasticsearch port, under which elasticsearch can be accessed.
       url:
         protocol: http
-        host: "{{ .Release.Name }}-elasticsearch"
+        host: ""
         port: 9200
       ## @param optimize.database.elasticsearch.prefix (DEPRECATED) defines the prefix of the Elasticsearch indexes Optimize reads. The exporter writing them is configured by "orchestration.exporters.zeebe.index.prefix"; keep the two equal.
       prefix: "zeebe-record"
-    # Opensearch configuration which is shared between the sub charts
+    # OpenSearch connection for Optimize and the legacy Zeebe exporter. The chart deploys no OpenSearch.
+    # The Orchestration Cluster falls back to this URL when orchestration.data.secondaryStorage.opensearch.url is empty.
     ## @extra optimize.database.opensearch
     ## @param optimize.database.opensearch.enabled enabled external opensearch
     ## @param optimize.database.opensearch.aws.enabled Enabling AWS IRSA
