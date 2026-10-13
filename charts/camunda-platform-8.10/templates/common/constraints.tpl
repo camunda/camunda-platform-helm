@@ -1682,6 +1682,19 @@ The following values inside your values.yaml need to be set but were not:
     {{- end }}
   {{- end }}
 
+  {{ include "camundaPlatform.keyDeprecated" (dict
+    "condition" (hasKey .Values.global.image "tag")
+    "oldName" "global.image.tag" "migration" "<component>.image.tag"
+    "url" "Deprecated per ADR 0042: https://github.com/camunda/camunda-platform-helm/blob/main/docs/adr/0042-remove-global-image-tag-in-favor-of-component-level-image.md") }}
+  {{ include "camundaPlatform.keyDeprecated" (dict
+    "condition" (hasKey .Values.global.image "repository")
+    "oldName" "global.image.repository" "migration" "<component>.image.repository"
+    "url" "Deprecated per ADR 0042: https://github.com/camunda/camunda-platform-helm/blob/main/docs/adr/0042-remove-global-image-tag-in-favor-of-component-level-image.md") }}
+  {{ include "camundaPlatform.keyDeprecated" (dict
+    "condition" (hasKey .Values.global.image "digest")
+    "oldName" "global.image.digest" "migration" "<component>.image.digest"
+    "url" "Deprecated per ADR 0042: https://github.com/camunda/camunda-platform-helm/blob/main/docs/adr/0042-remove-global-image-tag-in-favor-of-component-level-image.md") }}
+
   {{/* Camunda Hub consolidation deprecation warnings */}}
   {{- if .Values.webModeler.enabled }}
     {{- $warningMessage := printf "%s %s %s %s"
