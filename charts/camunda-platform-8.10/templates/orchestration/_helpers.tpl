@@ -143,7 +143,7 @@ true
 {{- $ctx := .context -}}
 {{- $configured := or (include (printf "camundaPlatform.%sURL" .type) $ctx) $ctx.Values.orchestration.envFrom -}}
 {{- range $entry := ($ctx.Values.orchestration.env | default list) -}}
-  {{- if hasPrefix (printf "CAMUNDA_DATA_SECONDARYSTORAGE_%s_URL" (upper $.type)) (tpl ($entry.name | default "") $ctx) -}}
+  {{- if regexMatch (printf "^CAMUNDA_DATA_SECONDARYSTORAGE_%s_URL(S(_[0-9]+)?)?$" (upper $.type)) (tpl ($entry.name | default "") $ctx) -}}
     {{- $configured = true -}}
   {{- end -}}
 {{- end -}}
