@@ -5,12 +5,12 @@
 
 ### Features
 
-* warn on unknown values keys in the 8.10 chart [ready] ([#7493](https://github.com/camunda/camunda-platform-helm/issues/7493)) ([32c6c9e](https://github.com/camunda/camunda-platform-helm/commit/32c6c9ea1c1d491623be9ddc3b0c64b1dfee89fa))
+* warn on unknown values keys in the 8.10 chart ([#7493](https://github.com/camunda/camunda-platform-helm/issues/7493)) ([32c6c9e](https://github.com/camunda/camunda-platform-helm/commit/32c6c9ea1c1d491623be9ddc3b0c64b1dfee89fa))
 
 
 ### Bug Fixes
 
-* declare template-read keys in the 8.10 values schema [ready] ([#7492](https://github.com/camunda/camunda-platform-helm/issues/7492)) ([ab90f14](https://github.com/camunda/camunda-platform-helm/commit/ab90f149f1c634aadd5d50b9edaae14538693938))
+* validate Web Modeler image tags, the Identity realm id, and the Connectors audience override ([#7492](https://github.com/camunda/camunda-platform-helm/issues/7492)) ([ab90f14](https://github.com/camunda/camunda-platform-helm/commit/ab90f149f1c634aadd5d50b9edaae14538693938))
 * render the Hub username claim under camunda.identity ([#7500](https://github.com/camunda/camunda-platform-helm/issues/7500)) ([a1d8bfa](https://github.com/camunda/camunda-platform-helm/commit/a1d8bfa7d11c386c5643e4c9cb12389d1797bd7a))
 * warn when orchestration OIDC endpoints are not absolute URLs ([#7501](https://github.com/camunda/camunda-platform-helm/issues/7501)) ([1d28c06](https://github.com/camunda/camunda-platform-helm/commit/1d28c0676134aa414bef41d57c4323c311adced6))
 * warn when the dual-region replication factor is not 4 ([#7506](https://github.com/camunda/camunda-platform-helm/issues/7506)) ([58ac756](https://github.com/camunda/camunda-platform-helm/commit/58ac756f862d66946e1ba104350e668eaf0ff2f5))
@@ -18,7 +18,7 @@
 
 ### Documentation
 
-* mark defaultRoles.&lt;role&gt;.mappingRules as deprecated in 8.10 values reference [ready] ([#7446](https://github.com/camunda/camunda-platform-helm/issues/7446)) ([7d7cce2](https://github.com/camunda/camunda-platform-helm/commit/7d7cce2d00a73dce6c59a2314bbbe456010d94ad))
+* mark defaultRoles.&lt;role&gt;.mappingRules as deprecated in 8.10 values reference ([#7446](https://github.com/camunda/camunda-platform-helm/issues/7446)) ([7d7cce2](https://github.com/camunda/camunda-platform-helm/commit/7d7cce2d00a73dce6c59a2314bbbe456010d94ad))
 
 
 ### Dependencies
