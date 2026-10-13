@@ -161,6 +161,7 @@ Procedures live as on-demand skills under `.claude/skills/<name>/SKILL.md` (Agen
 - `e2e-testing` — run Playwright/smoke tests via `c8e2e`, generate `.env` credentials, reproduce CI failures
 - `ci-scenario-authoring` — add scenarios, persistence layers, and pre-install/post-deploy/pre-upgrade hooks
 - `helm-values-debugging` — Helm vs deploy-camunda merge semantics, Bitnami env-var chains
+- `chart-minor-cut` — cut a new chart minor: copy, image tags, audit, wiring, regeneration, verification, bootstrap tag
 - `gh-stack` — GitHub native stacked PRs with the `gh stack` extension: create/adopt, cascade-rebase, land bottom-up
 
 ## Additional Agent Context
