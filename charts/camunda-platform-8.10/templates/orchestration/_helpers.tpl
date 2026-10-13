@@ -490,6 +490,24 @@ Authentication.
     {{- end -}}
 {{- end -}}
 
+{{- define "orchestration.rdbmsEnabled" -}}
+{{- or .Values.orchestration.exporters.rdbms.enabled (eq (include "orchestration.secondaryStorage" .) "rdbms") -}}
+{{- end -}}
+
+{{- define "orchestration.rdbmsUrlConfigured" -}}
+{{- $env := dict -}}
+{{- range $entry := (.Values.orchestration.env | default list) -}}
+  {{- $_ := set $env (tpl ($entry.name | default "") $) true -}}
+{{- end -}}
+{{- if or
+    .Values.orchestration.data.secondaryStorage.rdbms.url
+    .Values.orchestration.envFrom
+    (hasKey $env "CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_URL")
+    (eq (include "camundaPlatform.appConfigMentionsPath" (dict "configuration" .Values.orchestration.configuration "extraConfiguration" .Values.orchestration.extraConfiguration "path" (list "camunda" "data" "secondary-storage" "rdbms" "url"))) "true") -}}
+true
+{{- end -}}
+{{- end -}}
+
 {{- define "orchestration.sharedTlsConfig" -}}
 {{- $config := dict -}}
 {{- if eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.orchestration.data.secondaryStorage.elasticsearch.tls)) "true" -}}
