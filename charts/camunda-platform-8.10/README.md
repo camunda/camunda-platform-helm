@@ -215,6 +215,101 @@ optimize:
 > Console and Web Modeler are part of Camunda Hub in 8.10, so there is no standalone Node.js
 > component example here.
 
+### Global image deprecations
+
+#### Deprecations in chart 15.x (Camunda 8.10)
+
+`global.image.tag` and `global.image.repository` are deprecated in chart 15.x (Camunda 8.10).
+Removal targets chart 17.x (Camunda 8.12).
+The [rollout decision](https://github.com/camunda/product-hub/issues/3738#issuecomment-6146200321) requires an announcement two minors ahead.
+Both fallbacks remain compatible during the warning period, including with `global.strictValues: true`.
+An explicit key emits a warning, even when its value is empty.
+Non-empty component values take precedence over the global fallback.
+
+`global.image.digest` remains supported without a deprecation warning.
+[ADR 0056](../../docs/adr/0056-support-image-digest-based-pinning-as-an-alternative-to-tag.md#decision-outcome) accepts global and per-component digest pinning.
+An effective digest takes precedence over a tag.
+[ADR 0042](../../docs/adr/0042-remove-global-image-tag-in-favor-of-component-level-image.md) addresses tags, not digests or repositories.
+The repository warning starts the migration period for that legacy fallback.
+`global.image.registry`, `global.image.pullPolicy`, and `global.image.pullSecrets` are unchanged.
+
+#### Migration keys
+
+For each enabled component that uses a global fallback, set the matching key below.
+Keep the existing component value when it already overrides the global value.
+
+| Component | Replacement for `global.image.tag` | Replacement for `global.image.repository` |
+| --- | --- | --- |
+| Orchestration | `orchestration.image.tag` | `orchestration.image.repository` |
+| Connectors | `connectors.image.tag` | `connectors.image.repository` |
+| Identity | `identity.image.tag` | `identity.image.repository` |
+| Optimize | `optimize.image.tag` | `optimize.image.repository` |
+| Hub REST API | `camundaHub.restapi.image.tag` | `camundaHub.restapi.image.repository` |
+| Hub WebSockets | `camundaHub.websockets.image.tag` | `camundaHub.websockets.image.repository` |
+| Legacy Web Modeler REST API | `webModeler.restapi.image.tag` | `webModeler.restapi.image.repository` |
+| Legacy Web Modeler WebSockets | `webModeler.websockets.image.tag` | `webModeler.websockets.image.repository` |
+
+For a shared Hub tag, use `camundaHub.image.tag`.
+The legacy equivalent is `webModeler.image.tag`.
+An explicit subcomponent tag overrides the shared tag.
+Set repositories on the REST API and WebSockets image blocks, not on `camundaHub.image.repository` or `webModeler.image.repository`.
+Subcomponent defaults overwrite shared repository and digest values before the global fallback applies.
+Hub values override corresponding legacy Web Modeler values.
+Console has no standalone image workload in 8.10.
+The Orchestration migration also covers its importer and inherited truststore init-container images.
+
+Before, with a global repository fallback for both Hub images:
+
+```yaml
+global:
+  image:
+    repository: example/legacy
+camundaHub:
+  enabled: true
+  restapi:
+    image:
+      repository: ""
+  websockets:
+    image:
+      repository: ""
+```
+
+After, with the same repositories and no global repository key:
+
+```yaml
+camundaHub:
+  enabled: true
+  restapi:
+    image:
+      repository: example/legacy
+  websockets:
+    image:
+      repository: example/legacy
+```
+
+Before, with a global tag fallback for Orchestration:
+
+```yaml
+global:
+  image:
+    tag: custom-build
+orchestration:
+  image:
+    tag: ""
+```
+
+After, with the same tag and no global tag key:
+
+```yaml
+orchestration:
+  image:
+    tag: custom-build
+```
+
+These examples show only image settings. Keep your existing backing-service, mail, storage, and authentication settings.
+Choose tags that match each component's release. Components can use different patch versions.
+Render your complete values before upgrading. Check each container image, including init containers.
+
 ## Notes on Configuration
 
 ### Web Modeler
@@ -389,6 +484,7 @@ Please see the corresponding [release guide](../../docs/release.md) to find out 
 | `global.labels.app`                                   | Name of the application                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | `camunda-platform`          |
 | `global.commonLabels`                                 | can be used to apply mutable labels to all Camunda resources.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | `{}`                        |
 | `global.nodeSelector`                                 | can be used to define Kubernetes node selectors to run Camunda components, unless overridden by component-specific nodeSelector.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | `{}`                        |
+| `global.image`                                        | configuration of global image settings. Legacy global.image.tag and global.image.repository are DEPRECATED since chart 15.x (8.10). Removal targets chart 17.x (8.12). Use the exact component keys in README.md#global-image-deprecations. Global image digest pinning remains supported.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |                             |
 | `global.image.registry`                               | Can be used to set container image registry.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | `""`                        |
 | `global.image.pullPolicy`                             | defines the image pull policy which should be used https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | `Always`                    |
 | `global.image.pullSecrets`                            | can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | `[]`                        |

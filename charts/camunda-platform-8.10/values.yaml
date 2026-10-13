@@ -187,6 +187,7 @@ global:
   nodeSelector: {}
   # Image configuration to be used in each sub chart
   # https://hub.docker.com/u/camunda
+  ## @extra global.image configuration of global image settings. Legacy global.image.tag and global.image.repository are DEPRECATED since chart 15.x (8.10). Removal targets chart 17.x (8.12). Use the exact component keys in README.md#global-image-deprecations. Global image digest pinning remains supported.
   image:
     ## @param global.image.registry Can be used to set container image registry.
     registry: ""
