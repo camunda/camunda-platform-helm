@@ -60,6 +60,7 @@ func (s *ConfigMapWarningsTemplateTest) TestGlobalImageDeprecationWhenKeysSet() 
 				s.NotContains(warnings, "UNKNOWN VALUES KEY: global.image.")
 				for _, key := range keys {
 					_, set := values["global.image."+key]
+					set = set && key != "digest"
 					marker := `DEPRECATION: The Helm values file key "global.image.` + key + `"`
 					s.Equal(map[bool]int{false: 0, true: 1}[set], strings.Count(warnings, marker), key)
 					if !set {
@@ -67,8 +68,8 @@ func (s *ConfigMapWarningsTemplateTest) TestGlobalImageDeprecationWhenKeysSet() 
 					}
 					_, tail, _ := strings.Cut(warnings, marker)
 					message, _, _ := strings.Cut(tail, "\n")
-					s.Contains(message, "chart v16 (Camunda 8.11)", key)
-					s.Contains(message, "<component>.image."+key, key)
+					s.Contains(message, "chart v17 (Camunda 8.12)", key)
+					s.Contains(message, "orchestration.image."+key, key)
 					if key == "tag" {
 						s.Contains(message, "ADR 0042", key)
 					} else {

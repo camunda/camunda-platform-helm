@@ -1682,16 +1682,7 @@ The following values inside your values.yaml need to be set but were not:
     {{- end }}
   {{- end }}
 
-  {{ include "camundaPlatform.keyDeprecated" (dict
-    "condition" (hasKey .Values.global.image "tag")
-    "oldName" "global.image.tag" "migration" "<component>.image.tag"
-    "url" "Deprecated per ADR 0042: https://github.com/camunda/camunda-platform-helm/blob/main/docs/adr/0042-remove-global-image-tag-in-favor-of-component-level-image.md") }}
-  {{ include "camundaPlatform.keyDeprecated" (dict
-    "condition" (hasKey .Values.global.image "repository")
-    "oldName" "global.image.repository" "migration" "<component>.image.repository") }}
-  {{ include "camundaPlatform.keyDeprecated" (dict
-    "condition" (hasKey .Values.global.image "digest")
-    "oldName" "global.image.digest" "migration" "<component>.image.digest") }}
+  {{ include "camundaPlatform.globalImageDeprecations" . }}
 
   {{/* Camunda Hub consolidation deprecation warnings */}}
   {{- if .Values.webModeler.enabled }}
@@ -2075,8 +2066,9 @@ Usage:
 {{- define "camundaPlatform.keyDeprecated" }}
   {{- if .condition }}
     {{- $warningMessage := printf
-        "[camunda][warning] DEPRECATION: The Helm values file key \"%s\" is deprecated and will be removed in chart v16 (Camunda 8.11). %s %s"
+        "[camunda][warning] DEPRECATION: The Helm values file key \"%s\" is deprecated and will be removed in %s. %s %s"
         .oldName
+        (.removal | default "chart v16 (Camunda 8.11)")
         (printf "Configure this via \"%s\" instead." (.migration | default "the component's extraConfiguration"))
         (.url | default "https://docs.camunda.io/docs/self-managed/deployment/helm/upgrade/")
     -}}
