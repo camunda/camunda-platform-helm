@@ -1004,7 +1004,7 @@ identity:
     registry: ""
     ## @param identity.image.repository defines which image repository to use
     repository: camunda/identity
-    ## @param identity.image.tag can be set to overwrite the global tag, which should be used in that chart
+    ## @param identity.image.tag defines which image tag to use
     tag: 8.10.0
     ## @param identity.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
@@ -1927,7 +1927,7 @@ connectors:
     registry: ""
     ## @param connectors.image.repository defines which image repository to use
     repository: camunda/connectors-bundle
-    ## @param connectors.image.tag can be set to overwrite the global tag, which should be used in that chart
+    ## @param connectors.image.tag defines which image tag to use
     tag: 8.10.0
     ## @param connectors.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
@@ -2325,7 +2325,7 @@ orchestration:
     registry: ""
     ## @param orchestration.image.repository defines which image repository to use
     repository: camunda/camunda
-    ## @param orchestration.image.tag can be set to overwrite the global tag, which should be used in that chart
+    ## @param orchestration.image.tag defines which image tag to use
     tag: 8.10.3
     ## @param orchestration.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
@@ -2988,7 +2988,7 @@ optimize:
     registry: ""
     ## @param optimize.image.repository defines which image repository to use
     repository: camunda/optimize
-    ## @param optimize.image.tag can be set to overwrite the global tag, which should be used in that chart
+    ## @param optimize.image.tag defines which image tag to use
     tag: 8.10.3
     ## @param optimize.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
