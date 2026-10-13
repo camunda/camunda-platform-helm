@@ -284,6 +284,8 @@ jobs:
       VAULT_JWT_PATH: ${{ secrets.VAULT_JWT_PATH }}
       VAULT_JWT_ROLE: ${{ secrets.VAULT_JWT_ROLE }}
       VAULT_JWT_AUDIENCE: ${{ secrets.VAULT_JWT_AUDIENCE }}
+      VAULT_ROLE_ID: ${{ secrets.VAULT_ROLE_ID }}
+      VAULT_SECRET_ID: ${{ secrets.VAULT_SECRET_ID }}
     uses: ./.github/workflows/test-gitops-phase.yaml
     with:
       camunda-helm-git-ref: "${{ github.event_name == 'merge_group' && github.sha || needs.init.outputs.pr-head-sha }}"
