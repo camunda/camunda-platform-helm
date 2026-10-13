@@ -1828,6 +1828,7 @@ func (s *ConfigMapWarningsTemplateTest) TestSearchSecondaryStorageURLWarning() {
 		{name: "OpenSearchWithoutURL", backend: "opensearch", warn: true},
 		{name: "OpenSearchInferredFromOptimizeDatabase", backend: "opensearch", values: map[string]string{"orchestration.data.secondaryStorage.type": "", "optimize.database.opensearch.enabled": "true"}, warn: true},
 		{name: "UnrelatedEnv", backend: "elasticsearch", values: map[string]string{"orchestration.env[0].name": "CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_USERNAME", "orchestration.env[0].value": "camunda"}, warn: true},
+		{name: "UnboundURLSuffixEnv", backend: "elasticsearch", values: map[string]string{"orchestration.env[0].name": "CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_URL_FOO", "orchestration.env[0].value": "http://es.example.com:9200"}, warn: true},
 		{
 			name:    "UnrelatedExtraConfiguration",
 			backend: "elasticsearch",
@@ -1839,6 +1840,7 @@ func (s *ConfigMapWarningsTemplateTest) TestSearchSecondaryStorageURLWarning() {
 		{name: "OptimizeHostFallback", backend: "elasticsearch", values: map[string]string{"optimize.database.elasticsearch.url.host": "es.example.com"}},
 		{name: "EnvURL", backend: "opensearch", values: map[string]string{"orchestration.env[0].name": "CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_URL", "orchestration.env[0].value": "https://os.example.com:443"}},
 		{name: "EnvIndexedURLs", backend: "elasticsearch", values: map[string]string{"orchestration.env[0].name": "CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_URLS_0", "orchestration.env[0].value": "http://es-0.example.com:9200"}},
+		{name: "EnvURLs", backend: "opensearch", values: map[string]string{"orchestration.env[0].name": "CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_URLS", "orchestration.env[0].value": "https://os-0.example.com:443"}},
 		{name: "EnvFrom", backend: "elasticsearch", values: map[string]string{"orchestration.envFrom[0].secretRef.name": "search-connection"}},
 		{
 			name:    "ExtraConfigurationURL",
