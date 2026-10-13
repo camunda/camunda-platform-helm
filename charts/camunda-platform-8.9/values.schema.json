@@ -148,6 +148,10 @@
                             "description": "can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod",
                             "default": [],
                             "items": {}
+                        },
+                        "tag": {
+                            "type": "string",
+                            "description": "Deprecated legacy image tag fallback. Component image tags take precedence."
                         }
                     }
                 },
@@ -5601,6 +5605,13 @@
                                                         "type": "string"
                                                     }
                                                 },
+                                                "mappingRules": {
+                                                    "type": "array",
+                                                    "description": "Existing mapping rule IDs assigned to the admin role.",
+                                                    "items": {
+                                                        "type": "string"
+                                                    }
+                                                },
                                                 "clients": {
                                                     "type": "array",
                                                     "description": "defines the initial clients that will get the admin permission.",
@@ -5629,6 +5640,13 @@
                                                     "default": [
                                                         "connectors"
                                                     ],
+                                                    "items": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "mappingRules": {
+                                                    "type": "array",
+                                                    "description": "Existing mapping rule IDs assigned to the connectors role.",
                                                     "items": {
                                                         "type": "string"
                                                     }
