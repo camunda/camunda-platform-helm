@@ -1652,3 +1652,103 @@ func (s *ConfigMapWarningsTemplateTest) TestDefaultRolesMappingRulesDeprecationW
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
+
+func (s *ConfigMapWarningsTemplateTest) TestKeycloakURLWarnings() {
+	const urlWarning = "Management Identity uses Keycloak authentication, but global.identity.keycloak.url is not set"
+	const internalWarning = "global.identity.keycloak.internal=true routes the Keycloak path"
+	keycloakAuth := map[string]string{"identity.enabled": "true", "global.identity.auth.enabled": "true"}
+	keycloakURL := map[string]string{
+		"global.identity.keycloak.url.protocol": "http",
+		"global.identity.keycloak.url.host":     "keycloak",
+		"global.identity.keycloak.url.port":     "80",
+	}
+	internalIngress := map[string]string{
+		"identity.enabled":                  "true",
+		"global.identity.keycloak.internal": "true",
+		"global.ingress.enabled":            "true",
+		"global.host":                       "camunda.example.com",
+	}
+	testCases := []testhelpers.TestCase{}
+	for _, scenario := range []struct {
+		name         string
+		values       map[string]string
+		args         []string
+		urlWarn      bool
+		internalWarn bool
+	}{
+		{name: "KeycloakAuthWithoutURL", values: keycloakAuth, urlWarn: true},
+		{name: "KeycloakAuthWithURL", values: mergeMaps(keycloakAuth, keycloakURL)},
+		{
+			name:    "KeycloakHostTemplateResolvesEmpty",
+			values:  mergeMaps(keycloakAuth, map[string]string{"global.identity.keycloak.url.protocol": "http", "global.identity.keycloak.url.port": "80"}),
+			args:    []string{"--set-json", `global.identity.keycloak.url.host="{{ print \"\" }}"`},
+			urlWarn: true,
+		},
+		{name: "UnrelatedEnv", values: mergeMaps(keycloakAuth, map[string]string{"identity.env[0].name": "KEYCLOAK_REALM", "identity.env[0].value": "camunda-platform"}), urlWarn: true},
+		{name: "EnvURL", values: mergeMaps(keycloakAuth, map[string]string{"identity.env[0].name": "KEYCLOAK_URL", "identity.env[0].value": "http://keycloak/auth"})},
+		{name: "EnvFrom", values: mergeMaps(keycloakAuth, map[string]string{"identity.envFrom[0].secretRef.name": "keycloak-connection"})},
+		{
+			name:   "ExtraConfigurationURL",
+			values: mergeMaps(keycloakAuth, map[string]string{"identity.extraConfiguration[0].file": "keycloak.yaml"}),
+			args:   []string{"--set-string", "identity.extraConfiguration[0].content=keycloak:\n  url: http://keycloak/auth\n"},
+		},
+		{
+			name:   "ConfigurationURL",
+			values: keycloakAuth,
+			args:   []string{"--set-string", "identity.configuration=keycloak:\n  url: http://keycloak/auth\n"},
+		},
+		{name: "GenericProvider", values: mergeMaps(keycloakAuth, map[string]string{"global.identity.auth.type": "GENERIC"})},
+		{name: "AuthDisabled", values: map[string]string{"identity.enabled": "true"}},
+		{name: "IdentityDisabled", values: map[string]string{"global.identity.auth.enabled": "true"}},
+		{name: "InternalIngressWithoutHost", values: internalIngress, internalWarn: true},
+		{
+			name: "InternalGatewayWithoutHost",
+			values: map[string]string{
+				"global.identity.keycloak.internal": "true",
+				"global.gateway.enabled":            "true",
+				"global.host":                       "camunda.example.com",
+			},
+			internalWarn: true,
+		},
+		{name: "InternalIngressWithHost", values: mergeMaps(internalIngress, keycloakURL)},
+		{name: "InternalIngressWithIdentityDisabled", values: mergeMaps(internalIngress, map[string]string{"identity.enabled": "false"})},
+		{name: "InternalExternalIngress", values: mergeMaps(internalIngress, map[string]string{"global.ingress.external": "true"})},
+		{name: "InternalWithoutRoute", values: map[string]string{"identity.enabled": "true", "global.identity.keycloak.internal": "true"}},
+		{name: "IngressWithoutInternal", values: mergeMaps(internalIngress, map[string]string{"global.identity.keycloak.internal": "false"})},
+	} {
+		values := mergeMaps(map[string]string{"orchestration.data.secondaryStorage.type": "elasticsearch"}, scenario.values)
+		testCases = append(testCases, testhelpers.TestCase{
+			Name:                    scenario.name,
+			Values:                  values,
+			RenderTemplateExtraArgs: scenario.args,
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				configMaps := map[string]corev1.ConfigMap{}
+				decoder := k8syaml.NewYAMLOrJSONDecoder(strings.NewReader(output), 4096)
+				for {
+					var resource corev1.ConfigMap
+					err := decoder.Decode(&resource)
+					if err == io.EOF {
+						break
+					}
+					require.NoError(t, err)
+					if resource.Kind == "ConfigMap" {
+						configMaps[resource.Name] = resource
+					}
+				}
+				if values["identity.enabled"] == "true" {
+					require.Contains(t, configMaps, s.release+"-identity-configuration")
+				}
+				warnings := configMaps[s.release+"-warnings"].Data["warnings"]
+				require.Equal(t, scenario.urlWarn, strings.Contains(warnings, urlWarning))
+				require.Equal(t, scenario.internalWarn, strings.Contains(warnings, internalWarning))
+				if scenario.urlWarn {
+					require.Contains(t, warnings, "global.identity.keycloak.url.host")
+					require.Contains(t, warnings, "KEYCLOAK_URL in identity.env")
+					require.Contains(t, warnings, "keycloak.url in identity.extraConfiguration")
+				}
+			},
+		})
+	}
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, nil, testCases)
+}
