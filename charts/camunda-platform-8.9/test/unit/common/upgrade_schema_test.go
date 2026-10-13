@@ -25,6 +25,7 @@ import (
 	"github.com/gruntwork-io/terratest/modules/helm"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -89,4 +90,32 @@ func TestUpgradeRoleMappingRulesTemplate(t *testing.T) {
 		})
 	}
 	testhelpers.RunTestCasesE(t, chartPath, "camunda-platform-test", "upgrade-schema", []string{"templates/orchestration/configmap.yaml"}, testCases)
+}
+
+func TestUpgradeImageFallbackTemplate(t *testing.T) {
+	t.Parallel()
+	chartPath, err := filepath.Abs("../../../")
+	require.NoError(t, err)
+	testCases := []testhelpers.TestCase{}
+	for _, componentTag := range []string{"", "component-tag"} {
+		expectedTag := componentTag
+		if expectedTag == "" {
+			expectedTag = "legacy-tag"
+		}
+		testCases = append(testCases, testhelpers.TestCase{
+			Name: "ComponentTag=" + componentTag,
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"global.image.tag":                         "legacy-tag",
+				"orchestration.image.tag":                  componentTag,
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var workload appsv1.StatefulSet
+				helm.UnmarshalK8SYaml(t, output, &workload)
+				require.Equal(t, "camunda/camunda:"+expectedTag, workload.Spec.Template.Spec.Containers[0].Image)
+			},
+		})
+	}
+	testhelpers.RunTestCasesE(t, chartPath, "camunda-platform-test", "upgrade-schema", []string{"templates/orchestration/statefulset.yaml"}, testCases)
 }
