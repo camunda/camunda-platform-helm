@@ -1,0 +1,16 @@
+global:
+  tls:
+    orchestration:
+      grpc:
+        enabled: true
+        cert:
+          secret:
+            existingSecret: orchestration-tls
+            existingSecretKey: tls.crt
+        privateKey:
+          secret:
+            existingSecretKey: tls.key
+    caBundle:
+      secret:
+        existingSecret: orchestration-tls
+        existingSecretKey: tls.crt

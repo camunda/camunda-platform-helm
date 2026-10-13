@@ -1,0 +1,23 @@
+# Route Identity and Web Modeler to the internal-postgresql companion chart.
+# Used by QA/nightly scenarios to avoid Bitnami subcharts and CNPG RBAC needs.
+
+identity:
+  externalDatabase:
+    enabled: true
+    host: postgresql
+    port: 5432
+    database: identity
+    username: $RDBMS_POSTGRESQL_USERNAME
+    secret:
+      inlineSecret: $RDBMS_POSTGRESQL_PASSWORD
+
+webModeler:
+  restapi:
+    externalDatabase:
+      enabled: true
+      host: postgresql
+      port: 5432
+      database: webmodeler
+      username: $RDBMS_POSTGRESQL_USERNAME
+      secret:
+        inlineSecret: $RDBMS_POSTGRESQL_PASSWORD

@@ -11,6 +11,7 @@
 # ────────────────────────────────────────────────────────────────────────────
 chartAutomation:
   routineVersions:
+    - "8.11"
     - "8.10"
     - "8.9"
     - "8.8"
@@ -26,6 +27,7 @@ chartAutomation:
 # latestChart supplies the last chart for minors without version-matrix.json.
 # Keep lifecycle dates when routine automation ends; GA chores populate released.
 camundaSupportLifecycle:
+  "8.11": {}
   "8.10":
     released: "2026-10-13"
     stdSupportUntil: "2028-04-11"

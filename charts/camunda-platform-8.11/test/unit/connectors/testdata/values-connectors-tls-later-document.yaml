@@ -1,0 +1,12 @@
+connectors:
+  enabled: true
+  configuration: |
+    logging:
+      level:
+        root: INFO
+    ---
+    server:
+      ssl:
+        enabled: true
+        certificate: /certs/tls.crt
+        certificate-private-key: /certs/tls.key

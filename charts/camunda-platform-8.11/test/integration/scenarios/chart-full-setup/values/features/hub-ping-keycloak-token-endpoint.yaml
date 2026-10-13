@@ -1,0 +1,5 @@
+orchestration:
+  hub:
+    ping:
+      credentials:
+        tokenEndpoint: "https://$CAMUNDA_HOSTNAME/auth/realms/camunda-platform/protocol/openid-connect/token"

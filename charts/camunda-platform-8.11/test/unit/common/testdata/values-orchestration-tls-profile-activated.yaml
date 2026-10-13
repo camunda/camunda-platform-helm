@@ -1,0 +1,25 @@
+orchestration:
+  data:
+    secondaryStorage:
+      type: elasticsearch
+  configuration: |
+    logging:
+      level:
+        root: INFO
+    ---
+    spring:
+      config:
+        activate:
+          on-profile: prod
+    server:
+      ssl:
+        enabled: true
+        certificate: /certs/rest/tls.crt
+        certificate-private-key: /certs/rest/tls.key
+    camunda:
+      api:
+        grpc:
+          ssl:
+            enabled: true
+            certificate: /certs/grpc/tls.crt
+            certificate-private-key: /certs/grpc/tls.key

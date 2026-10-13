@@ -1,0 +1,148 @@
+---
+# Source: camunda-platform/templates/web-modeler/configmap-restapi.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: camunda-platform-test-web-modeler-restapi-configuration
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: web-modeler
+    app.kubernetes.io/instance: camunda-platform-test
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    app.kubernetes.io/component: web-modeler
+    app.kubernetes.io/version: "SNAPSHOT"
+  annotations:
+    {}
+data:
+  application.yaml: |
+    camunda:
+      identity:
+        base-url: "http://camunda-platform-test-identity:80"
+        issuer: ""
+        issuer-backend-url: "https://keycloak.example.com:8443/auth/realms/camunda-platform"
+        type: "KEYCLOAK"
+        username-claim: "preferred_username"
+
+      hub:
+        feature:
+          test-mode-enabled: "true"
+
+        pusher:
+          host: "camunda-platform-test-web-modeler-websockets"
+          port: 80
+          client:
+            host: "localhost"
+            port: "8085"
+            force-tls: false
+        security:
+          jwt:
+            audience:
+              internal-api: "web-modeler-api"
+              public-api: "web-modeler-public-api"
+
+        mail:
+          from-address: "example@example.com"
+          from-name: "Camunda 8"
+
+        oauth2:
+          client-id: "web-modeler"
+
+        server:
+          url: "http://localhost:8070"
+          https-only: "false"
+        clusters:
+          
+          - id: "management-cluster"
+            name: "Management Identity"
+            version: "8.11-SNAPSHOT"
+            authentication: "BASIC"
+            authorizations:
+              enabled: false
+            components:
+            - name: Identity
+              type: identity
+              version: "SNAPSHOT"
+              urls:
+                webapp: "http://localhost:8080"
+                readiness: "http://camunda-platform-test-identity.camunda-platform:82/actuator/health"
+          - id: "default-cluster"
+            name: "camunda-platform-test-zeebe"
+            version: "8.11-SNAPSHOT"
+            authentication: "BASIC"
+            authorizations:
+              enabled: true
+            tags:
+              - dev
+              - custom
+              - stage
+              - prod
+              - test
+            customProperties:
+              - description: 'This is the main integration environment for the Camunda Platform.'
+                links:
+                  - name: Camunda
+                    url: 'https://camunda.com'
+                  - name: Camunda Docs
+                    url: 'https://docs.camunda.io'
+            components:
+            - name: Connectors
+              type: connectors
+              version: "8.11-SNAPSHOT"
+              urls:
+                rest: "http://camunda-platform-test-connectors.camunda-platform:8080"
+                readiness: "http://camunda-platform-test-connectors.camunda-platform:8080/actuator/health/readiness"
+            - name: Operate
+              type: operate
+              version: "8.11-SNAPSHOT"
+              urls:
+                webapp: "http://localhost:8080/operate"
+                readiness: "http://camunda-platform-test-zeebe.camunda-platform:9600/actuator/health/readiness"
+            - name: Tasklist
+              type: tasklist
+              version: "8.11-SNAPSHOT"
+              urls:
+                webapp: "http://localhost:8080/tasklist"
+                readiness: "http://camunda-platform-test-zeebe.camunda-platform:9600/actuator/health/readiness"
+            - name: Orchestration Admin
+              type: admin
+              version: "8.11-SNAPSHOT"
+              urls:
+                webapp: "http://localhost:8080/admin"
+                readiness: "http://camunda-platform-test-zeebe.camunda-platform:9600/actuator/health/readiness"
+            - name: Orchestration Cluster
+              type: orchestration
+              version: "8.11-SNAPSHOT"
+              urls:
+                grpc: "grpc://camunda-platform-test-zeebe-gateway:26500"
+                rest: "http://camunda-platform-test-zeebe-gateway:8080"
+                readiness: "http://camunda-platform-test-zeebe.camunda-platform:9600/actuator/health/readiness"
+
+    spring:
+      datasource:
+        url: "jdbc:postgresql://postgres.example.com:5432/web-modeler"
+        username: "modeler"
+
+      mail:
+        host: ""
+        port: 587
+        properties:
+          mail.smtp.auth: false
+          mail.smtp.starttls.enable: true
+          mail.smtp.starttls.required: true
+
+      security:
+        oauth2:
+          resourceserver:
+            jwt:
+              issuer-uri: ""
+              jwk-set-uri: "https://keycloak.example.com:8443/auth/realms/camunda-platform/protocol/openid-connect/certs"
+
+      servlet:
+        multipart:
+          max-file-size: "10MB"
+          max-request-size: "10MB"
+
+    logging:
+      level:
+        io.grpc: INFO

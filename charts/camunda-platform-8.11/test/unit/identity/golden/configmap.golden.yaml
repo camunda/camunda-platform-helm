@@ -1,0 +1,101 @@
+---
+# Source: camunda-platform/templates/identity/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: camunda-platform-test-identity-configuration
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: camunda-platform-test
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    app.kubernetes.io/component: identity
+    app.kubernetes.io/version: "SNAPSHOT"
+  annotations:
+    {}
+data:
+  application.yaml: |
+    # NOTE:
+    # It is possible to override the configuration via env vars following the Spring Boot convention.
+    # For example, the "identity.url" config path is presented as the "IDENTITY_URL" environment variable.
+    # However, it's not possilbe to mix between the configuration and environment variable for the same object
+    # like arrays and maps.
+    identity:
+      url: "http://localhost:8084"
+      flags:
+        multi-tenancy: "false"
+
+      authProvider:
+        issuer-url: ""
+        backend-url: "https://keycloak.example.com:8443/auth/realms/camunda-platform"
+      component-presets:
+        identity:
+          apis:
+            - name: "Camunda Identity Resource Server"
+              audience: "camunda-identity-resource-server"
+              permissions:
+                - definition: read
+                  description: "Read permission"
+                - definition: "read:users"
+                  description: "Read users permission"
+                - definition: write
+                  description: "Write permission"
+          roles:
+            - name: "ManagementIdentity"
+              description: "Provides full access to Management Identity"
+              permissions:
+                - audience: "camunda-identity-resource-server"
+                  definition: read
+                - audience: "camunda-identity-resource-server"
+                  definition: write
+        optimize:
+          applications: []
+          apis: []
+          roles: []
+        webmodeler:
+          applications: []
+          apis: []
+          roles: []
+    keycloak:
+      url: "https://keycloak.example.com:8443/auth/"
+      setup:
+        user: "admin"
+        password: ${VALUES_KEYCLOAK_SETUP_PASSWORD:}
+      init:
+      clients:
+      users:
+        - username: "demo"
+          password: ${VALUES_IDENTITY_FIRSTUSER_PASSWORD:}
+          firstName: "Demo"
+          lastName: "User"
+          email: "demo@example.org"
+          roles:
+            - ManagementIdentity
+      environment:
+        clients:
+          - name: Identity
+            id: "camunda-identity"
+            type: CONFIDENTIAL
+            secret: ${CAMUNDA_IDENTITY_CLIENT_SECRET:${IDENTITY_CLIENT_SECRET}}
+            root-url: "http://localhost:8084"
+            redirect-uris:
+              - "/auth/login-callback"
+    server:
+      port: 8084
+
+    spring:
+      servlet:
+        multipart:
+          max-file-size: "10MB"
+          max-request-size: "10MB"
+      profiles:
+        active: keycloak
+
+    camunda:
+      identity:
+        audience: "camunda-identity-resource-server"
+    logging:
+      level:
+        ROOT: INFO
+        io.camunda.identity: INFO

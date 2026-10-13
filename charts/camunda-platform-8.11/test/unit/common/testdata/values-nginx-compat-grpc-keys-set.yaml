@@ -1,0 +1,8 @@
+orchestration:
+  ingress:
+    grpc:
+      enabled: true
+      annotations:
+        nginx.ingress.kubernetes.io/ssl-redirect: "false"
+        nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
+        nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"

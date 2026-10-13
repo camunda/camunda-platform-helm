@@ -1,0 +1,15 @@
+name: opensearch-self-signed
+auth: keycloak
+flows:
+  - install
+identity: keycloak
+persistence: opensearch-self-signed
+platforms:
+  - gke
+infra-type:
+  gke: distroci
+pre-install: opensearch-self-signed
+dependencies:
+  - keycloak
+  - postgresql
+  - opensearch-tls

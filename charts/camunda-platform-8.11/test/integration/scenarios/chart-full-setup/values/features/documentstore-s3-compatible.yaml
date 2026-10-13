@@ -1,0 +1,38 @@
+global:
+  documentStore:
+    activeStoreId: aws
+    type:
+      aws:
+        enabled: true
+        storeId: aws
+        bucket: documents
+        region: us-east-1
+        endpoint: http://documentstore-s3:9000
+        forcePathStyle: true
+        chunkedEncodingEnabled: false
+        accessKeyId:
+          secret:
+            existingSecret: documentstore-s3
+            existingSecretKey: access-key
+        secretAccessKey:
+          secret:
+            existingSecret: documentstore-s3
+            existingSecretKey: secret-key
+
+identity:
+  enabled: false
+
+connectors:
+  enabled: false
+
+webModeler:
+  enabled: false
+
+camundaHub:
+  enabled: false
+
+console:
+  enabled: false
+
+optimize:
+  enabled: false

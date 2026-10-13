@@ -1,0 +1,3 @@
+{{- if and (eq (include "camundaPlatform.orchestrationEnabled" .) "true") .Values.orchestration.podDisruptionBudget.enabled -}}
+{{- include "orchestration.renderBrokerGenerations" (dict "manifest" "orchestration.podDisruptionBudgetManifest" "context" .) -}}
+{{- end -}}

@@ -1,0 +1,7 @@
+orchestration:
+  ingress:
+    grpc:
+      enabled: true
+      className: contour
+      host: zeebe.example.com
+      annotations: null

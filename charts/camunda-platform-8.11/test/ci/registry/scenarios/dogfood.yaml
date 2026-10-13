@@ -1,0 +1,172 @@
+name: dogfood
+auth: keycloak
+flows:
+  - install
+platforms:
+  - gke
+infra-type:
+  gke: distroci
+# Long-lived dogfood environment, not a CI assertion: it is disabled in the
+# manifest and deployed only by .github/workflows/dogfood-environment.yaml via
+# --include-disabled. No post-deploy hook and no browser suite run against it.
+skip-e2e: true
+topology:
+  name: hub-3orch-dogfood
+  shared-storage: elasticsearch
+  shared-storage-service: elasticsearch-master
+  # Every namespace gets integration-test-credentials from a dogfood-only source
+  # (one generated value per key) rather than the CI-wide one; the
+  # *-dogfood dependencies below read their passwords from it too.
+  credentials-manifest: charts/camunda-platform-8.11/test/integration/external-secrets/dogfood-credentials.yaml
+  # Services that keep the password they were initialised with: PostgreSQL
+  # roles, the Keycloak admin and users, and the Elasticsearch elastic user. The
+  # dogfood-environment workflow runs `topology reconcile-credentials` before
+  # each deploy to set them to the credentials-manifest's current values.
+  credential-stores:
+    namespace-suffix: hub
+    secret: integration-test-credentials
+    postgres:
+      - statefulset: keycloak-postgresql
+        user: keycloak
+        database: keycloak
+        secret-key: identity-keycloak-postgresql-user-password
+      - statefulset: postgresql
+        user: app
+        database: identity
+        secret-key: identity-postgresql-user-password
+    keycloak:
+      deployment: keycloak
+      container: keycloak
+      url: http://localhost:8080/auth
+      admin-user: admin
+      admin-secret-key: identity-keycloak-admin-password
+      users:
+        - realm: camunda-platform
+          username: demo
+          secret-key: identity-user-password
+    elasticsearch:
+      statefulset: elasticsearch-master
+      container: elasticsearch
+      url: http://localhost:9200
+      user: elastic
+      secret-key: elasticsearch-password
+  releases:
+    - role: hub
+      namespace-suffix: hub
+      identity: keycloak
+      dependencies:
+        - keycloak-dogfood
+        - postgresql-dogfood
+        - elasticsearch-dogfood
+      features:
+        - dogfood-common
+        - multinamespace-reset-clients
+        - dogfood-hub
+    - role: orchestration
+      namespace-suffix: plain
+      modeler-cluster-id: plain
+      modeler-cluster-name: Dogfood Plain
+      identity: keycloak-external
+      persistence: elasticsearch-external
+      dependencies: []
+      features:
+        - dogfood-common
+        - dogfood-orchestration-plain
+      depends-on: hub
+      env:
+        ORCH_ORCHESTRATION_CLIENT_ID: orchestration-plain
+        ORCH_ORCHESTRATION_AUDIENCE: orchestration-plain-api
+        ORCH_CONNECTORS_CLIENT_ID: connectors-plain
+    - role: orchestration
+      namespace-suffix: mt
+      modeler-cluster-id: mt
+      modeler-cluster-name: Dogfood Multitenancy
+      identity: keycloak-external
+      persistence: elasticsearch-external
+      dependencies: []
+      features:
+        - dogfood-common
+        - dogfood-orchestration-mt
+      depends-on: hub
+      env:
+        ORCH_ORCHESTRATION_CLIENT_ID: orchestration-mt
+        ORCH_ORCHESTRATION_AUDIENCE: orchestration-mt-api
+        ORCH_CONNECTORS_CLIENT_ID: connectors-mt
+    - role: orchestration
+      namespace-suffix: pt
+      modeler-cluster-id: pt
+      modeler-cluster-name: Dogfood Physical Tenants
+      identity: keycloak-external
+      persistence: elasticsearch-external
+      dependencies: []
+      features:
+        - dogfood-common
+        - dogfood-orchestration-pt
+      depends-on: hub
+      env:
+        ORCH_ORCHESTRATION_CLIENT_ID: orchestration-pt
+        ORCH_ORCHESTRATION_AUDIENCE: orchestration-pt-api
+        ORCH_CONNECTORS_CLIENT_ID: connectors-pt
+        # Substituted once into the per-tenant exporters' password, leaving a Spring
+        # placeholder the chart resolves from the Elasticsearch auth secret at runtime.
+        ELASTICSEARCH_PASSWORD_REF: "${VALUES_ELASTICSEARCH_PASSWORD}"
+    - role: optimize
+      namespace-suffix: optplain
+      serves: plain
+      tenant: default
+      optimize-context-path: /optimize-plain
+      identity: keycloak-external-optimize
+      persistence: elasticsearch-external
+      dependencies: []
+      features:
+        - dogfood-common
+        - dogfood-optimize-plain
+      depends-on: hub
+    - role: optimize
+      namespace-suffix: optmt
+      serves: mt
+      tenant: default
+      optimize-context-path: /optimize-mt
+      identity: keycloak-external-optimize
+      persistence: elasticsearch-external
+      dependencies: []
+      features:
+        - dogfood-common
+        - dogfood-optimize-mt
+      depends-on: hub
+    - role: optimize
+      namespace-suffix: optptdef
+      serves: pt
+      tenant: default
+      optimize-context-path: /optimize-pt-default
+      identity: keycloak-external-optimize
+      persistence: elasticsearch-external
+      dependencies: []
+      features:
+        - dogfood-common
+        - dogfood-optimize-pt-default
+      depends-on: hub
+    - role: optimize
+      namespace-suffix: optptta
+      serves: pt
+      tenant: tenanta
+      optimize-context-path: /optimize-pt-tenanta
+      identity: keycloak-external-optimize
+      persistence: elasticsearch-external
+      dependencies: []
+      features:
+        - dogfood-common
+        - dogfood-optimize-pt-ta
+      depends-on: hub
+    - role: optimize
+      namespace-suffix: optpttb
+      serves: pt
+      tenant: tenantb
+      optimize-context-path: /optimize-pt-tenantb
+      identity: keycloak-external-optimize
+      persistence: elasticsearch-external
+      dependencies: []
+      features:
+        - dogfood-common
+        - dogfood-optimize-pt-tb
+      depends-on: hub

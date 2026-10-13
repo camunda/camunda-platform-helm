@@ -1,0 +1,17 @@
+# Test values for global.host templating in Web-Modeler ConfigMaps
+global:
+  host: "{{ .Release.Name }}.example.com"
+  ingress:
+    enabled: true
+    tls:
+      enabled: true
+
+webModeler:
+  enabled: true
+  contextPath: "/modeler"
+  restapi:
+    mail:
+      fromAddress: "example@example.com"
+
+identity:
+  enabled: true

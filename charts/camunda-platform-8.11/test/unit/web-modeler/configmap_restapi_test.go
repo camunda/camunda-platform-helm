@@ -1,0 +1,1477 @@
+// Copyright 2026 Camunda Services GmbH
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package web_modeler
+
+import (
+	"camunda-platform/test/unit/testhelpers"
+	"camunda-platform/test/unit/utils"
+	"maps"
+	"path/filepath"
+	"strings"
+	"testing"
+
+	"github.com/gruntwork-io/terratest/modules/helm"
+	"github.com/gruntwork-io/terratest/modules/k8s"
+	"github.com/gruntwork-io/terratest/modules/random"
+	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
+	"gopkg.in/yaml.v3"
+	corev1 "k8s.io/api/core/v1"
+)
+
+type configmapRestAPITemplateTest struct {
+	suite.Suite
+	chartPath string
+	release   string
+	namespace string
+	templates []string
+}
+
+var requiredValues = map[string]string{
+	"identity.enabled":                    "true",
+	"webModeler.enabled":                  "true",
+	"webModeler.restapi.mail.fromAddress": "example@example.com",
+	"connectors.security.authentication.oidc.secret.existingSecret":    "foo",
+	"orchestration.security.authentication.oidc.secret.existingSecret": "foo",
+	"orchestration.data.secondaryStorage.type":                         "elasticsearch",
+	"global.identity.keycloak.auth.adminUser":                          "admin",
+	"global.identity.keycloak.auth.secret.existingSecret":              "kc-secret",
+	"global.identity.keycloak.auth.secret.existingSecretKey":           "password",
+}
+
+func TestRestAPIConfigmapTemplate(t *testing.T) {
+	t.Parallel()
+
+	chartPath, err := filepath.Abs("../../../")
+	require.NoError(t, err)
+
+	suite.Run(t, &configmapRestAPITemplateTest{
+		chartPath: chartPath,
+		release:   "camunda-platform-test",
+		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
+		templates: []string{"templates/web-modeler/configmap-restapi.yaml"},
+	})
+}
+
+func (s *configmapRestAPITemplateTest) TestIngressPublicWebsocketPort() {
+	var testCases []testhelpers.TestCase
+	for _, input := range []struct {
+		name        string
+		ingress     string
+		tls         string
+		contextPath string
+		wantPort    string
+	}{
+		{"HTTP", "true", "false", "/modeler", "8080"},
+		{"HTTPS", "true", "true", "/modeler", "8443"},
+		{"DisabledIngress", "false", "false", "/modeler", "9085"},
+		{"WithoutContextPath", "true", "true", "", "9085"},
+	} {
+		testCases = append(testCases, testhelpers.TestCase{
+			Name: input.name,
+			Values: map[string]string{
+				"camundaHub.enabled":                          "true",
+				"identity.enabled":                            "true",
+				"camundaHub.contextPath":                      input.contextPath,
+				"camundaHub.restapi.mail.fromAddress":         "test@example.com",
+				"camundaHub.websockets.publicPort":            "9085",
+				"global.host":                                 "camunda.example.com",
+				"global.ingress.enabled":                      input.ingress,
+				"global.ingress.tls.enabled":                  input.tls,
+				"global.ingress.publicPorts.http":             "8080",
+				"global.ingress.publicPorts.https":            "8443",
+				"global.identity.auth.camundaHub.redirectUrl": "https://explicit.example.com:9443/modeler",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var configMap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configMap)
+				var application WebModelerRestAPIApplicationYAML
+				require.NoError(t, yaml.Unmarshal([]byte(configMap.Data["application.yaml"]), &application))
+				require.Equal(t, input.wantPort, application.Camunda.Hub.Pusher.Client.Port)
+				require.Equal(t, input.ingress == "true" && input.tls == "true" && input.contextPath != "", application.Camunda.Hub.Pusher.Client.ForceTLS)
+				require.Equal(t, "https://explicit.example.com:9443/modeler", application.Camunda.Hub.Server.Url)
+			},
+		})
+	}
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectAuthClientApiAudience() {
+	// given
+	values := maps.Clone(requiredValues)
+	maps.Insert(values, maps.All(map[string]string{
+		"global.identity.auth.enabled":                      "true",
+		"global.identity.auth.webModeler.clientApiAudience": "custom-audience",
+	}))
+	options := &helm.Options{
+		SetValues:      values,
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication WebModelerRestAPIApplicationYAML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	if err != nil {
+		s.Fail("Failed to unmarshal yaml. error=", err)
+	}
+
+	// then
+	s.Require().Equal("custom-audience", configmapApplication.Camunda.Hub.Security.JWT.Audience.InternalAPI)
+}
+
+func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectCamundaHubAuthValues() {
+	// given
+	values := maps.Clone(requiredValues)
+	maps.Insert(values, maps.All(map[string]string{
+		"global.identity.auth.enabled":                      "true",
+		"global.identity.auth.camundaHub.clientApiAudience": "custom-hub-audience",
+		"global.identity.auth.camundaHub.clientId":          "custom-hub-clientId",
+		"global.identity.auth.camundaHub.redirectUrl":       "https://hub.example.com",
+		"global.identity.auth.webModeler.clientApiAudience": "legacy-audience",
+		"global.identity.auth.webModeler.clientId":          "legacy-clientId",
+		"global.identity.auth.webModeler.redirectUrl":       "https://legacy.example.com",
+	}))
+	options := &helm.Options{
+		SetValues:      values,
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication WebModelerRestAPIApplicationYAML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	if err != nil {
+		s.Fail("Failed to unmarshal yaml. error=", err)
+	}
+
+	// then
+	s.Require().Equal("custom-hub-audience", configmapApplication.Camunda.Hub.Security.JWT.Audience.InternalAPI)
+	s.Require().Equal("custom-hub-clientId", configmapApplication.Camunda.Hub.OAuth2.ClientId)
+	s.Require().Equal("https://hub.example.com", configmapApplication.Camunda.Hub.Server.Url)
+}
+
+func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectAuthPublicApiAudience() {
+	// given
+	values := maps.Clone(requiredValues)
+	maps.Insert(values, maps.All(map[string]string{
+		"global.identity.auth.enabled":                      "true",
+		"global.identity.auth.webModeler.publicApiAudience": "custom-audience",
+	}))
+	options := &helm.Options{
+		SetValues:      values,
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication WebModelerRestAPIApplicationYAML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	if err != nil {
+		s.Fail("Failed to unmarshal yaml. error=", err)
+	}
+
+	// then
+	s.Require().Equal("custom-audience", configmapApplication.Camunda.Hub.Security.JWT.Audience.PublicAPI)
+}
+
+func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectAuthClientId() {
+	// given
+	values := maps.Clone(requiredValues)
+	maps.Insert(values, maps.All(map[string]string{
+		"global.identity.auth.enabled":             "true",
+		"global.identity.auth.webModeler.clientId": "custom-clientId",
+	}))
+	options := &helm.Options{
+		SetValues:      values,
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication WebModelerRestAPIApplicationYAML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	if err != nil {
+		s.Fail("Failed to unmarshal yaml. error=", err)
+	}
+
+	// then
+	s.Require().Equal("custom-clientId", configmapApplication.Camunda.Hub.OAuth2.ClientId)
+}
+
+func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectAuthTokenUsernameClaim() {
+	// given
+	values := maps.Clone(requiredValues)
+	maps.Insert(values, maps.All(map[string]string{
+		"global.identity.auth.enabled":                             "true",
+		"orchestration.security.authentication.oidc.usernameClaim": "example-claim",
+	}))
+	options := &helm.Options{
+		SetValues:      values,
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication WebModelerRestAPIApplicationYAML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	if err != nil {
+		s.Fail("Failed to unmarshal yaml. error=", err)
+	}
+
+	// then
+	s.Require().Equal("example-claim", configmapApplication.Camunda.Identity.UsernameClaim)
+}
+
+func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectIdentityServiceUrlWithFullnameOverride() {
+	// given
+	values := maps.Clone(requiredValues)
+	maps.Insert(values, maps.All(map[string]string{
+		"global.identity.auth.enabled": "true",
+		"identity.fullnameOverride":    "custom-identity-fullname",
+	}))
+	options := &helm.Options{
+		SetValues:      values,
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication WebModelerRestAPIApplicationYAML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	if err != nil {
+		s.Fail("Failed to unmarshal yaml. error=", err)
+	}
+
+	// then
+	s.Require().Equal("http://custom-identity-fullname:80", configmapApplication.Camunda.Identity.BaseURL)
+}
+
+func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectIdentityServiceUrlWithNameOverride() {
+	// given
+	values := maps.Clone(requiredValues)
+	maps.Insert(values, maps.All(map[string]string{
+		"global.identity.auth.enabled": "true",
+		"identity.nameOverride":        "custom-identity",
+	}))
+	options := &helm.Options{
+		SetValues:      values,
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication WebModelerRestAPIApplicationYAML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	if err != nil {
+		s.Fail("Failed to unmarshal yaml. error=", err)
+	}
+
+	// then
+	s.Require().Equal("http://camunda-platform-test-custom-identity:80", configmapApplication.Camunda.Identity.BaseURL)
+}
+
+func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectIdentityType() {
+	// given
+	values := maps.Clone(requiredValues)
+	maps.Insert(values, maps.All(map[string]string{
+		"global.identity.auth.enabled":                        "true",
+		"global.identity.auth.type":                           "MICROSOFT",
+		"global.identity.auth.identity.secret.existingSecret": "foo",
+		"global.identity.auth.issuer":                         "https://login.microsoftonline.com/00000000-0000-0000-0000-000000000000/v2.0",
+		"global.identity.auth.issuerBackendUrl":               "https://login.microsoftonline.com/00000000-0000-0000-0000-000000000000/v2.0",
+		"global.identity.auth.authUrl":                        "https://login.microsoftonline.com/00000000-0000-0000-0000-000000000000/oauth2/v2.0/authorize",
+		"global.identity.auth.tokenUrl":                       "https://login.microsoftonline.com/00000000-0000-0000-0000-000000000000/oauth2/v2.0/token",
+		"global.identity.auth.jwksUrl":                        "https://login.microsoftonline.com/00000000-0000-0000-0000-000000000000/discovery/v2.0/keys",
+	}))
+	options := &helm.Options{
+		SetValues:      values,
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication WebModelerRestAPIApplicationYAML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	if err != nil {
+		s.Fail("Failed to unmarshal yaml. error=", err)
+	}
+
+	// then
+	s.Require().Equal("MICROSOFT", configmapApplication.Camunda.Identity.Type)
+}
+
+func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectKeycloakServiceUrl() {
+	// given
+	values := maps.Clone(requiredValues)
+	maps.Insert(values, maps.All(map[string]string{
+		"global.identity.auth.enabled":          "true",
+		"global.identity.keycloak.url.protocol": "http",
+		"global.identity.keycloak.url.host":     "keycloak",
+		"global.identity.keycloak.url.port":     "80",
+	}))
+	options := &helm.Options{
+		SetValues:      values,
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication WebModelerRestAPIApplicationYAML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	if err != nil {
+		s.Fail("Failed to unmarshal yaml. error=", err)
+	}
+
+	// then
+	s.Require().Equal("http://keycloak:80/auth/realms/camunda-platform", configmapApplication.Camunda.Identity.IssuerBackendURL)
+}
+
+func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectKeycloakServiceUrlWithCustomPort() {
+	// given
+	values := maps.Clone(requiredValues)
+	maps.Insert(values, maps.All(map[string]string{
+		"global.identity.auth.enabled":          "true",
+		"global.identity.keycloak.url.protocol": "http",
+		"global.identity.keycloak.url.host":     "keycloak",
+		"global.identity.keycloak.url.port":     "8888",
+	}))
+	options := &helm.Options{
+		SetValues:      values,
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication WebModelerRestAPIApplicationYAML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	if err != nil {
+		s.Fail("Failed to unmarshal yaml. error=", err)
+	}
+
+	// then
+	s.Require().Equal("http://keycloak:8888/auth/realms/camunda-platform", configmapApplication.Camunda.Identity.IssuerBackendURL)
+}
+
+func (s *configmapRestAPITemplateTest) TestContainerShouldSetIssuerBackendUrlWhenIdentityDisabled() {
+	// given
+	values := maps.Clone(requiredValues)
+	maps.Insert(values, maps.All(map[string]string{
+		"identity.enabled":                      "false",
+		"global.identity.service.url":           "http://identity.external:8080",
+		"global.identity.auth.enabled":          "true",
+		"global.identity.auth.issuerBackendUrl": "http://keycloak.idns.svc:80/auth/realms/camunda-platform",
+	}))
+	options := &helm.Options{
+		SetValues:      values,
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication WebModelerRestAPIApplicationYAML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	s.Require().NoError(err)
+
+	// then
+	s.Require().Equal("http://keycloak.idns.svc:80/auth/realms/camunda-platform", configmapApplication.Camunda.Identity.IssuerBackendURL)
+}
+
+func (s *configmapRestAPITemplateTest) TestContainerShouldSetSmtpCredentials() {
+	// given
+	values := maps.Clone(requiredValues)
+	maps.Insert(values, maps.All(map[string]string{
+		"webModeler.restapi.mail.smtpUser": "modeler-user",
+	}))
+	options := &helm.Options{
+		SetValues:      values,
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication WebModelerRestAPIApplicationYAML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	if err != nil {
+		s.Fail("Failed to unmarshal yaml. error=", err)
+	}
+
+	// then
+	s.Require().Equal("modeler-user", configmapApplication.Spring.Mail.Username)
+}
+
+func (s *configmapRestAPITemplateTest) TestContainerShouldSetExternalDatabaseConfiguration() {
+	// given
+	values := maps.Clone(requiredValues)
+	maps.Insert(values, maps.All(map[string]string{
+		"webModeler.restapi.externalDatabase.url":      "jdbc:postgresql://postgres.example.com:65432/modeler-database",
+		"webModeler.restapi.externalDatabase.username": "modeler-user",
+	}))
+	options := &helm.Options{
+		SetValues:      values,
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication WebModelerRestAPIApplicationYAML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	if err != nil {
+		s.Fail("Failed to unmarshal yaml. error=", err)
+	}
+
+	// then
+	s.Require().Equal("jdbc:postgresql://postgres.example.com:65432/modeler-database", configmapApplication.Spring.Datasource.Url)
+	s.Require().Equal("modeler-user", configmapApplication.Spring.Datasource.Username)
+}
+
+func (s *configmapRestAPITemplateTest) TestContainerShouldSetExternalDatabaseConfigurationWithUsername() {
+	// given
+	values := maps.Clone(requiredValues)
+	maps.Insert(values, maps.All(map[string]string{
+		"webModeler.restapi.externalDatabase.url":                 "jdbc:postgresql://postgres.example.com:65432/modeler-database",
+		"webModeler.restapi.externalDatabase.username":            "modeler-user-new",
+		"webModeler.restapi.externalDatabase.secret.inlineSecret": "modeler-password",
+	}))
+	options := &helm.Options{
+		SetValues:      values,
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication WebModelerRestAPIApplicationYAML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	if err != nil {
+		s.Fail("Failed to unmarshal yaml. error=", err)
+	}
+
+	// then
+	s.Require().Equal("jdbc:postgresql://postgres.example.com:65432/modeler-database", configmapApplication.Spring.Datasource.Url)
+	s.Require().Equal("modeler-user-new", configmapApplication.Spring.Datasource.Username)
+}
+
+func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterFromSameHelmInstallationWithCustomValues() {
+	// given
+	testCases := []struct {
+		name                   string
+		authEnabled            string
+		authMethod             string
+		expectedAuthentication string
+	}{
+		{
+			name:                   "OIDC Authentication",
+			authEnabled:            "true",
+			authMethod:             "oidc",
+			expectedAuthentication: "BEARER_TOKEN",
+		},
+		{
+			name:                   "Basic Authentication",
+			authEnabled:            "true",
+			authMethod:             "basic",
+			expectedAuthentication: "BASIC",
+		},
+		{
+			name:                   "No Authentication",
+			authEnabled:            "false",
+			authMethod:             "none",
+			expectedAuthentication: "NONE",
+		},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			values := maps.Clone(requiredValues)
+			maps.Insert(values, maps.All(map[string]string{
+				"global.zeebeClusterName":                       "test-zeebe",
+				"global.identity.auth.enabled":                  tc.authEnabled,
+				"global.ingress.enabled":                        "true",
+				"global.ingress.tls.enabled":                    "true",
+				"global.host":                                   "example.com",
+				"webModeler.security.authentication.method":     tc.authMethod,
+				"orchestration.image.tag":                       "8.8.x-alpha1",
+				"identity.image.tag":                            "8.11.0",
+				"orchestration.contextPath":                     "/orchestration",
+				"orchestration.service.grpcPort":                "26600",
+				"orchestration.service.httpPort":                "8090",
+				"orchestration.security.authorizations.enabled": "false",
+			}))
+			options := &helm.Options{
+				SetValues:      values,
+				KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+			}
+
+			// when
+			output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+			var configmap corev1.ConfigMap
+			var configmapApplication WebModelerRestAPIApplicationYAML
+			helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+			err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+			if err != nil {
+				s.Fail("Failed to unmarshal yaml. error=", err)
+			}
+
+			// then — two clusters: management-cluster (Identity) followed by default-cluster (Orchestration)
+			s.Require().Equal(2, len(configmapApplication.Camunda.Hub.Clusters))
+
+			mgmtCluster := configmapApplication.Camunda.Hub.Clusters[0]
+			s.Require().Equal("management-cluster", mgmtCluster.Id)
+			s.Require().Equal("Management Identity", mgmtCluster.Name)
+			s.Require().Equal(false, mgmtCluster.Authorizations.Enabled)
+			s.Require().Equal(tc.expectedAuthentication, mgmtCluster.Authentication)
+			var identityComp ComponentYAML
+			for _, c := range mgmtCluster.Components {
+				if c.Type == "identity" {
+					identityComp = c
+					break
+				}
+			}
+			s.Require().Equal("identity", identityComp.Type)
+			s.Require().Equal(identityComp.Version, mgmtCluster.Version)
+
+			defaultCluster := configmapApplication.Camunda.Hub.Clusters[1]
+			s.Require().Equal("default-cluster", defaultCluster.Id)
+			s.Require().Equal("test-zeebe", defaultCluster.Name)
+			s.Require().Equal("8.8.x-alpha1", defaultCluster.Version)
+			s.Require().Equal(tc.expectedAuthentication, defaultCluster.Authentication)
+			s.Require().Equal(false, defaultCluster.Authorizations.Enabled)
+			var orchestrationComp ComponentYAML
+			for _, c := range defaultCluster.Components {
+				if c.Type == "orchestration" {
+					orchestrationComp = c
+					break
+				}
+			}
+			s.Require().Equal("grpc://camunda-platform-test-zeebe-gateway:26600", orchestrationComp.Urls.Grpc)
+			s.Require().Equal("http://camunda-platform-test-zeebe-gateway:8090/orchestration", orchestrationComp.Urls.Rest)
+		})
+	}
+}
+
+func (s *configmapRestAPITemplateTest) TestContainerShouldOmitManagementClusterWhenIdentityDisabled() {
+	// given
+	values := maps.Clone(requiredValues)
+	maps.Insert(values, maps.All(map[string]string{
+		"identity.enabled":            "false",
+		"global.identity.service.url": "http://identity.external:8080",
+		"global.zeebeClusterName":     "test-zeebe",
+	}))
+	options := &helm.Options{
+		SetValues:      values,
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication WebModelerRestAPIApplicationYAML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	s.Require().NoError(err)
+
+	// then
+	s.Require().Len(configmapApplication.Camunda.Hub.Clusters, 1)
+	defaultCluster := configmapApplication.Camunda.Hub.Clusters[0]
+	s.Require().Equal("default-cluster", defaultCluster.Id)
+	s.Require().Equal("test-zeebe", defaultCluster.Name)
+	var orchestrationComp ComponentYAML
+	for _, c := range defaultCluster.Components {
+		if c.Type == "orchestration" {
+			orchestrationComp = c
+			break
+		}
+	}
+	s.Require().Equal("orchestration", orchestrationComp.Type)
+}
+
+func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterRestUrlWithoutTrailingSlashWhenContextPathIsRoot() {
+	// given
+	values := maps.Clone(requiredValues)
+	maps.Insert(values, maps.All(map[string]string{
+		"global.zeebeClusterName":                       "test-zeebe",
+		"global.ingress.enabled":                        "true",
+		"global.ingress.tls.enabled":                    "true",
+		"global.host":                                   "example.com",
+		"orchestration.contextPath":                     "/",
+		"orchestration.service.grpcPort":                "26600",
+		"orchestration.service.httpPort":                "8090",
+		"orchestration.security.authorizations.enabled": "false",
+	}))
+	options := &helm.Options{
+		SetValues:      values,
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication WebModelerRestAPIApplicationYAML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	if err != nil {
+		s.Fail("Failed to unmarshal yaml. error=", err)
+	}
+
+	// then
+	s.Require().Equal(2, len(configmapApplication.Camunda.Hub.Clusters))
+	defaultCluster := configmapApplication.Camunda.Hub.Clusters[1]
+	s.Require().Equal("default-cluster", defaultCluster.Id)
+	var orchestrationComp ComponentYAML
+	for _, c := range defaultCluster.Components {
+		if c.Type == "orchestration" {
+			orchestrationComp = c
+			break
+		}
+	}
+	s.Require().Equal("grpc://camunda-platform-test-zeebe-gateway:26600", orchestrationComp.Urls.Grpc)
+	s.Require().Equal("http://camunda-platform-test-zeebe-gateway:8090", orchestrationComp.Urls.Rest)
+}
+
+func (s *configmapRestAPITemplateTest) TestContainerShouldUseSecureGrpcUrlWhenOrchestrationGrpcTlsIsEnabled() {
+	values := maps.Clone(requiredValues)
+	maps.Insert(values, maps.All(map[string]string{
+		"global.zeebeClusterName":                       "test-zeebe",
+		"global.ingress.enabled":                        "true",
+		"global.ingress.tls.enabled":                    "true",
+		"global.host":                                   "example.com",
+		"orchestration.contextPath":                     "/orchestration",
+		"orchestration.data.secondaryStorage.type":      "elasticsearch",
+		"orchestration.service.grpcPort":                "26600",
+		"orchestration.service.httpPort":                "8090",
+		"orchestration.security.authorizations.enabled": "false",
+	}))
+	options := &helm.Options{
+		SetValues:      values,
+		ValuesFiles:    []string{filepath.Join(s.chartPath, "test/unit/web-modeler/testdata/values-orchestration-grpc-tls.yaml")},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication WebModelerRestAPIApplicationYAML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	require.NoError(s.T(), err)
+
+	var orchestrationComp ComponentYAML
+	for _, cluster := range configmapApplication.Camunda.Hub.Clusters {
+		for _, c := range cluster.Components {
+			if c.Type == "orchestration" {
+				orchestrationComp = c
+				break
+			}
+		}
+		if orchestrationComp.Type != "" {
+			break
+		}
+	}
+	s.Require().Equal("grpcs://camunda-platform-test-zeebe-gateway:26600", orchestrationComp.Urls.Grpc)
+	s.Require().Equal("http://camunda-platform-test-zeebe-gateway:8090/orchestration", orchestrationComp.Urls.Rest)
+}
+
+func (s *configmapRestAPITemplateTest) TestContainerShouldUseClustersFromCustomConfiguration() {
+	// given
+	values := maps.Clone(requiredValues)
+	maps.Insert(values, maps.All(map[string]string{
+		"webModeler.restapi.clusters[0].id":             "test-cluster-1",
+		"webModeler.restapi.clusters[0].name":           "test cluster 1",
+		"webModeler.restapi.clusters[0].version":        "8.6.0",
+		"webModeler.restapi.clusters[0].authentication": "NONE",
+		"webModeler.restapi.clusters[0].url.zeebe.grpc": "grpc://orchestration.test-1:26500",
+		"webModeler.restapi.clusters[0].url.zeebe.rest": "http://orchestration.test-1:8080",
+		"webModeler.restapi.clusters[0].url.operate":    "http://operate.test-1:8080",
+		"webModeler.restapi.clusters[0].url.tasklist":   "http://tasklist.test-1:8080",
+		"webModeler.restapi.clusters[1].id":             "test-cluster-2",
+		"webModeler.restapi.clusters[1].name":           "test cluster 2",
+		"webModeler.restapi.clusters[1].version":        "8.8.0-alpha1",
+		"webModeler.restapi.clusters[1].authentication": "BEARER_TOKEN",
+		"webModeler.restapi.clusters[1].url.grpc":       "grpc://orchestration.test-2:26500",
+		"webModeler.restapi.clusters[1].url.rest":       "http://orchestration.test-2:8080",
+		"webModeler.restapi.clusters[1].url.web-app":    "http://localhost:8088",
+		"webModeler.restapi.clusters[2].id":             "test-cluster-3",
+		"webModeler.restapi.clusters[2].name":           "test cluster 3",
+		"webModeler.restapi.clusters[2].version":        "8.8.0-alpha1",
+		"webModeler.restapi.clusters[2].authentication": "BASIC",
+		"webModeler.restapi.clusters[2].url.grpc":       "grpc://orchestration.test-3:26500",
+		"webModeler.restapi.clusters[2].url.rest":       "http://orchestration.test-3:8080",
+		"webModeler.restapi.clusters[2].url.web-app":    "http://localhost:8088",
+	}))
+	options := &helm.Options{
+		SetValues:      values,
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication WebModelerRestAPIApplicationYAML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	if err != nil {
+		s.Fail("Failed to unmarshal yaml. error=", err)
+	}
+
+	// then
+	s.Require().Equal(3, len(configmapApplication.Camunda.Hub.Clusters))
+	s.Require().Equal("test-cluster-1", configmapApplication.Camunda.Hub.Clusters[0].Id)
+	s.Require().Equal("test cluster 1", configmapApplication.Camunda.Hub.Clusters[0].Name)
+	s.Require().Equal("8.6.0", configmapApplication.Camunda.Hub.Clusters[0].Version)
+	s.Require().Equal("NONE", configmapApplication.Camunda.Hub.Clusters[0].Authentication)
+	s.Require().Equal("grpc://orchestration.test-1:26500", configmapApplication.Camunda.Hub.Clusters[0].Url.Zeebe.Grpc)
+	s.Require().Equal("http://orchestration.test-1:8080", configmapApplication.Camunda.Hub.Clusters[0].Url.Zeebe.Rest)
+	s.Require().Equal("test-cluster-2", configmapApplication.Camunda.Hub.Clusters[1].Id)
+	s.Require().Equal("test cluster 2", configmapApplication.Camunda.Hub.Clusters[1].Name)
+	s.Require().Equal("8.8.0-alpha1", configmapApplication.Camunda.Hub.Clusters[1].Version)
+	s.Require().Equal("BEARER_TOKEN", configmapApplication.Camunda.Hub.Clusters[1].Authentication)
+	s.Require().Equal("grpc://orchestration.test-2:26500", configmapApplication.Camunda.Hub.Clusters[1].Url.Grpc)
+	s.Require().Equal("http://orchestration.test-2:8080", configmapApplication.Camunda.Hub.Clusters[1].Url.Rest)
+	s.Require().Equal("http://localhost:8088", configmapApplication.Camunda.Hub.Clusters[1].Url.WebApp)
+	s.Require().Equal("test-cluster-3", configmapApplication.Camunda.Hub.Clusters[2].Id)
+	s.Require().Equal("test cluster 3", configmapApplication.Camunda.Hub.Clusters[2].Name)
+	s.Require().Equal("8.8.0-alpha1", configmapApplication.Camunda.Hub.Clusters[2].Version)
+	s.Require().Equal("BASIC", configmapApplication.Camunda.Hub.Clusters[2].Authentication)
+	s.Require().Equal("grpc://orchestration.test-3:26500", configmapApplication.Camunda.Hub.Clusters[2].Url.Grpc)
+	s.Require().Equal("http://orchestration.test-3:8080", configmapApplication.Camunda.Hub.Clusters[2].Url.Rest)
+	s.Require().Equal("http://localhost:8088", configmapApplication.Camunda.Hub.Clusters[2].Url.WebApp)
+}
+
+func (s *configmapRestAPITemplateTest) TestManagementClusterContainsOnlyIdentityComponent() {
+	values := maps.Clone(requiredValues)
+	maps.Insert(values, maps.All(map[string]string{
+		"global.ingress.enabled": "true",
+		"global.host":            "example.com",
+		"orchestration.security.authorizations.enabled": "false",
+	}))
+	options := &helm.Options{
+		SetValues:      values,
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication WebModelerRestAPIApplicationYAML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	if err != nil {
+		s.Fail("Failed to unmarshal yaml. error=", err)
+	}
+
+	// then
+	s.Require().GreaterOrEqual(len(configmapApplication.Camunda.Hub.Clusters), 1)
+	mgmtCluster := configmapApplication.Camunda.Hub.Clusters[0]
+	s.Require().Equal("management-cluster", mgmtCluster.Id)
+
+	s.Require().Len(mgmtCluster.Components, 1)
+	s.Require().Equal("identity", mgmtCluster.Components[0].Type)
+}
+
+func (s *configmapRestAPITemplateTest) TestManagementClusterVersion() {
+	newCase := func(name, identityTag, expectedClusterVersion string) testhelpers.TestCase {
+		return testhelpers.TestCase{
+			Name:   name,
+			Values: utils.MergeMaps(maps.Clone(requiredValues), map[string]string{"identity.image.tag": identityTag}),
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var configmap corev1.ConfigMap
+				var configmapApplication WebModelerRestAPIApplicationYAML
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+				require.NoError(t, yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication))
+
+				mgmtCluster := configmapApplication.Camunda.Hub.Clusters[0]
+				s.Require().Equal("management-cluster", mgmtCluster.Id)
+				s.Require().Equal(expectedClusterVersion, mgmtCluster.Version)
+				s.Require().Len(mgmtCluster.Components, 1)
+				s.Require().Equal(identityTag, mgmtCluster.Components[0].Version)
+			},
+		}
+	}
+
+	testCases := []testhelpers.TestCase{
+		newCase("ReleaseTag", "8.10.3", "8.10.3"),
+		newCase("PrereleaseTag", "8.10.0-alpha5.1", "8.10.0-alpha5.1"),
+		newCase("NonVersionTag", "pr-dbfda8c", "8.11-SNAPSHOT"),
+		newCase("BareSnapshotTag", "SNAPSHOT", "8.11-SNAPSHOT"),
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *configmapRestAPITemplateTest) TestContainerShouldNotConfigureClustersIfZeebeDisabledAndNoCustomConfiguration() {
+	// given
+	values := maps.Clone(requiredValues)
+	maps.Insert(values, maps.All(map[string]string{
+		"orchestration.enabled": "false",
+	}))
+	options := &helm.Options{
+		SetValues:      values,
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication WebModelerRestAPIApplicationYAML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	if err != nil {
+		s.Fail("Failed to unmarshal yaml. error=", err)
+	}
+
+	// then
+	s.Require().Empty(configmapApplication.Camunda.Hub.Clusters)
+}
+
+func (s *configmapRestAPITemplateTest) TestContainerShouldSetJwkSetUriFromJwksUrlProperty() {
+	// given
+	values := maps.Clone(requiredValues)
+	maps.Insert(values, maps.All(map[string]string{
+		"global.identity.auth.enabled": "true",
+		"global.identity.auth.jwksUrl": "https://example.com/auth/realms/test/protocol/openid-connect/certs",
+	}))
+	options := &helm.Options{
+		SetValues:      values,
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication WebModelerRestAPIApplicationYAML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	if err != nil {
+		s.Fail("Failed to unmarshal yaml. error=", err)
+	}
+
+	// then
+	s.Require().Equal("https://example.com/auth/realms/test/protocol/openid-connect/certs", configmapApplication.Spring.Security.OAuth2.ResourceServer.JWT.JwkSetURI)
+}
+
+func (s *configmapRestAPITemplateTest) TestContainerShouldSetJwkSetUriFromIssuerBackendUrlProperty() {
+	// given
+	values := maps.Clone(requiredValues)
+	maps.Insert(values, maps.All(map[string]string{
+		"global.identity.auth.enabled":          "true",
+		"global.identity.auth.issuerBackendUrl": "http://test-keycloak/auth/realms/test",
+	}))
+	options := &helm.Options{
+		SetValues:      values,
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication WebModelerRestAPIApplicationYAML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	if err != nil {
+		s.Fail("Failed to unmarshal yaml. error=", err)
+	}
+
+	// then
+	s.Require().Equal("http://test-keycloak/auth/realms/test/protocol/openid-connect/certs", configmapApplication.Spring.Security.OAuth2.ResourceServer.JWT.JwkSetURI)
+}
+
+func (s *configmapRestAPITemplateTest) TestContainerShouldSetJwkSetUriFromKeycloakUrlProperties() {
+	// given
+	values := maps.Clone(requiredValues)
+	maps.Insert(values, maps.All(map[string]string{
+		"global.identity.auth.enabled":          "true",
+		"global.identity.keycloak.url.protocol": "https",
+		"global.identity.keycloak.url.host":     "example.com",
+		"global.identity.keycloak.url.port":     "443",
+		"global.identity.keycloak.contextPath":  "/",
+		"global.identity.keycloak.realm":        "test",
+	}))
+	options := &helm.Options{
+		SetValues:      values,
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication WebModelerRestAPIApplicationYAML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	if err != nil {
+		s.Fail("Failed to unmarshal yaml. error=", err)
+	}
+
+	// then
+	s.Require().Equal("https://example.com:443/test/protocol/openid-connect/certs", configmapApplication.Spring.Security.OAuth2.ResourceServer.JWT.JwkSetURI)
+}
+
+func (s *configmapRestAPITemplateTest) TestContainerShouldSetJdbcUrlFromHostPortDatabase() {
+	// given
+	values := maps.Clone(requiredValues)
+	maps.Insert(values, maps.All(map[string]string{
+		"webModeler.restapi.externalDatabase.host":     "custom-db.example.com",
+		"webModeler.restapi.externalDatabase.port":     "65432",
+		"webModeler.restapi.externalDatabase.database": "custom-modeler-db",
+	}))
+	options := &helm.Options{
+		SetValues:      values,
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication WebModelerRestAPIApplicationYAML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	if err != nil {
+		s.Fail("Failed to unmarshal yaml. error=", err)
+	}
+
+	// then
+	s.Require().Equal("jdbc:postgresql://custom-db.example.com:65432/custom-modeler-db", configmapApplication.Spring.Datasource.Url)
+}
+
+func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectServerUrlAndHttpsOnly() {
+	// given
+	values := maps.Clone(requiredValues)
+	maps.Insert(values, maps.All(map[string]string{
+		"global.identity.auth.enabled":                "true",
+		"global.identity.auth.webModeler.redirectUrl": "https://modeler.example.com",
+	}))
+	options := &helm.Options{
+		SetValues:      values,
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication WebModelerRestAPIApplicationYAML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	if err != nil {
+		s.Fail("Failed to unmarshal yaml. error=", err)
+	}
+
+	// then
+	s.Require().Equal("https://modeler.example.com", configmapApplication.Camunda.Hub.Server.Url)
+	s.Require().Equal("true", configmapApplication.Camunda.Hub.Server.HttpsOnly)
+}
+
+func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectContextPath() {
+	// given
+	values := maps.Clone(requiredValues)
+	maps.Insert(values, maps.All(map[string]string{
+		"global.identity.auth.enabled": "true",
+		"webModeler.contextPath":       "/modeler",
+	}))
+	options := &helm.Options{
+		SetValues:      values,
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication WebModelerRestAPIApplicationYAML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	if err != nil {
+		s.Fail("Failed to unmarshal yaml. error=", err)
+	}
+
+	// then
+	s.Require().Equal("/modeler", configmapApplication.Server.Servlet.ContextPath)
+	s.Require().Equal("/modeler", configmapApplication.Management.Server.BasePath)
+}
+
+func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectClientPusherPort() {
+	// given
+	values := maps.Clone(requiredValues)
+	maps.Insert(values, maps.All(map[string]string{
+		"global.identity.auth.enabled":     "true",
+		"webModeler.websockets.publicPort": "8082",
+	}))
+	options := &helm.Options{
+		SetValues:      values,
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication WebModelerRestAPIApplicationYAML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	if err != nil {
+		s.Fail("Failed to unmarshal yaml. error=", err)
+	}
+
+	// then
+	s.Require().Equal("8082", configmapApplication.Camunda.Hub.Pusher.Client.Port)
+}
+
+func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectClientPusherConfigurationWithGlobalIngressTlsDisabled() {
+	// given
+	values := maps.Clone(requiredValues)
+	maps.Insert(values, maps.All(map[string]string{
+		"global.identity.auth.enabled": "true",
+		"webModeler.contextPath":       "/modeler",
+		"global.ingress.enabled":       "true",
+		"global.host":                  "c8.example.com",
+		"global.ingress.tls.enabled":   "false",
+	}))
+	options := &helm.Options{
+		SetValues:      values,
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication WebModelerRestAPIApplicationYAML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	if err != nil {
+		s.Fail("Failed to unmarshal yaml. error=", err)
+	}
+
+	// then
+	s.Require().Equal("c8.example.com", configmapApplication.Camunda.Hub.Pusher.Client.Host)
+	s.Require().Equal("80", configmapApplication.Camunda.Hub.Pusher.Client.Port)
+	s.Require().Equal("/modeler-ws", configmapApplication.Camunda.Hub.Pusher.Client.Path)
+	s.Require().Equal(false, configmapApplication.Camunda.Hub.Pusher.Client.ForceTLS)
+}
+
+func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectClientPusherConfigurationWithGlobalIngressTlsEnabled() {
+	// given
+	values := maps.Clone(requiredValues)
+	maps.Insert(values, maps.All(map[string]string{
+		"global.identity.auth.enabled": "true",
+		"webModeler.contextPath":       "/modeler",
+		"global.ingress.enabled":       "true",
+		"global.host":                  "c8.example.com",
+		"global.ingress.tls.enabled":   "true",
+	}))
+	options := &helm.Options{
+		SetValues:      values,
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication WebModelerRestAPIApplicationYAML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	if err != nil {
+		s.Fail("Failed to unmarshal yaml. error=", err)
+	}
+
+	// then
+	s.Require().Equal("c8.example.com", configmapApplication.Camunda.Hub.Pusher.Client.Host)
+	s.Require().Equal("443", configmapApplication.Camunda.Hub.Pusher.Client.Port)
+	s.Require().Equal("/modeler-ws", configmapApplication.Camunda.Hub.Pusher.Client.Path)
+	s.Require().Equal(true, configmapApplication.Camunda.Hub.Pusher.Client.ForceTLS)
+}
+
+func (s *configmapRestAPITemplateTest) TestGlobalIngressHostTemplating() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name:        "TestWebModelerURLsWithTemplatedIngressHost",
+			ValuesFiles: []string{filepath.Join(s.chartPath, "test/unit/web-modeler/testdata/values-templated-ingress-host.yaml")},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				var configmapApplication WebModelerRestAPIApplicationYAML
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+				e := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+				if e != nil {
+					s.Fail("Failed to unmarshal yaml. error=", e)
+				}
+
+				// Verify templated global.host is resolved
+				// The release name is "camunda-platform-test" so host should resolve to "camunda-platform-test.example.com"
+				s.Require().Equal("camunda-platform-test.example.com", configmapApplication.Camunda.Hub.Pusher.Client.Host, "Pusher host should contain resolved templated host")
+			},
+		},
+		{
+			Name: "TestWebModelerURLsWithLiteralIngressHost",
+			Values: utils.MergeMaps(
+				maps.Clone(requiredValues),
+				map[string]string{
+					"webModeler.contextPath":     "/modeler",
+					"global.ingress.enabled":     "true",
+					"global.host":                "literal.example.com",
+					"global.ingress.tls.enabled": "true",
+				},
+			),
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				var configmapApplication WebModelerRestAPIApplicationYAML
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+				e := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+				if e != nil {
+					s.Fail("Failed to unmarshal yaml. error=", e)
+				}
+
+				// Verify literal host values still work (backward compatibility)
+				s.Require().Equal("literal.example.com", configmapApplication.Camunda.Hub.Pusher.Client.Host, "Pusher host should contain literal host")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *configmapRestAPITemplateTest) TestExtraConfigurationSpringImport() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestExtraConfigWithSpringImportDefault",
+			Values: utils.MergeMaps(
+				maps.Clone(requiredValues),
+				map[string]string{
+					"webModeler.restapi.extraConfiguration[0].file":    "custom-spring.yaml",
+					"webModeler.restapi.extraConfiguration[0].content": "some: config",
+				},
+			),
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+				applicationYaml := configmap.Data["application.yaml"]
+				// spring.config.import should include the file
+				s.Require().Contains(applicationYaml, "optional:file:/home/runner/config/custom-spring.yaml",
+					"File without springImport should be included in spring.config.import")
+				// File content should be in ConfigMap
+				s.Require().Contains(configmap.Data["custom-spring.yaml"], "some: config",
+					"File content should be present in ConfigMap")
+			},
+		},
+		{
+			Name: "TestExtraConfigWithSpringImportFalse",
+			Values: utils.MergeMaps(
+				maps.Clone(requiredValues),
+				map[string]string{
+					"webModeler.restapi.extraConfiguration[0].file":         "log4j2-spring.xml",
+					"webModeler.restapi.extraConfiguration[0].springImport": "false",
+					"webModeler.restapi.extraConfiguration[0].content":      "<Configuration/>",
+				},
+			),
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+				applicationYaml := configmap.Data["application.yaml"]
+				// spring.config.import should NOT include the file
+				s.Require().NotContains(applicationYaml, "log4j2-spring.xml",
+					"File with springImport: false should not be in spring.config.import")
+				// spring.config.import block should not be rendered
+				s.Require().NotContains(applicationYaml, "optional:file:",
+					"spring.config.import block should not be rendered when all entries have springImport: false")
+				// File content should still be in ConfigMap
+				s.Require().Contains(configmap.Data["log4j2-spring.xml"], "<Configuration/>",
+					"File content should be present in ConfigMap even with springImport: false")
+			},
+		},
+		{
+			Name: "TestExtraConfigMixedSpringImport",
+			Values: utils.MergeMaps(
+				maps.Clone(requiredValues),
+				map[string]string{
+					"webModeler.restapi.extraConfiguration[0].file":         "custom-spring.yaml",
+					"webModeler.restapi.extraConfiguration[0].content":      "some: config",
+					"webModeler.restapi.extraConfiguration[1].file":         "log4j2-spring.xml",
+					"webModeler.restapi.extraConfiguration[1].springImport": "false",
+					"webModeler.restapi.extraConfiguration[1].content":      "<Configuration/>",
+				},
+			),
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+				applicationYaml := configmap.Data["application.yaml"]
+				// Only custom-spring.yaml should be in spring.config.import
+				s.Require().Contains(applicationYaml, "optional:file:/home/runner/config/custom-spring.yaml",
+					"File without springImport should be included in spring.config.import")
+				s.Require().NotContains(applicationYaml, "log4j2-spring.xml",
+					"File with springImport: false should not be in spring.config.import")
+				// Both files should be in ConfigMap
+				s.Require().Contains(configmap.Data["custom-spring.yaml"], "some: config",
+					"First file content should be present in ConfigMap")
+				s.Require().Contains(configmap.Data["log4j2-spring.xml"], "<Configuration/>",
+					"Second file content should be present in ConfigMap even with springImport: false")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *configmapRestAPITemplateTest) TestMailFromAddressOptionalForExtraConfigurationMigration() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestFromAddressRequiredWhenUnsetAndNotMigrated",
+			Values: utils.MergeMaps(
+				maps.Clone(requiredValues),
+				map[string]string{
+					"webModeler.restapi.mail.fromAddress": "",
+				},
+			),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().ErrorContains(err, "'webModeler.restapi.mail.fromAddress' is required",
+					"A fresh install with no from-address anywhere must fail fast, not render an incomplete config")
+			},
+		},
+		{
+			Name: "TestFromAddressMigratedViaExtraConfiguration",
+			ValuesFiles: []string{
+				filepath.Join(s.chartPath, "test/unit/web-modeler/testdata/values-mail-from-address-migrated.yaml"),
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				applicationYaml := configmap.Data["application.yaml"]
+				s.Require().NotContains(applicationYaml, "from-address:",
+					"The from-address must be omitted so the imported extraConfiguration file supplies it")
+				s.Require().Contains(applicationYaml, "optional:file:/home/runner/config/mail.yaml",
+					"The extraConfiguration file must be imported")
+			},
+		},
+		{
+			Name: "TestDeprecatedFromAddressStillRenders",
+			Values: utils.MergeMaps(
+				maps.Clone(requiredValues),
+				map[string]string{
+					"webModeler.restapi.mail.fromAddress": "deprecated@example.com",
+				},
+			),
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				applicationYaml := configmap.Data["application.yaml"]
+				s.Require().Contains(applicationYaml, "from-address: \"deprecated@example.com\"",
+					"The deprecated key must still render its value when set")
+			},
+		},
+	}
+
+	for _, migrated := range []struct {
+		name         string
+		valuesFile   string
+		importedFile string
+	}{
+		{"LegacyPrefix", "values-mail-from-address-migrated-legacy-prefix.yaml", "mail.yaml"},
+		{"DottedKey", "values-mail-from-address-migrated-dotted.yaml", "mail.yaml"},
+		{"PropertiesFile", "values-mail-from-address-migrated-properties.yaml", "mail.properties"},
+		{"MultiDocumentYaml", "values-mail-from-address-migrated-multidoc.yaml", "mail.yaml"},
+	} {
+		testCases = append(testCases, testhelpers.TestCase{
+			Name: "TestFromAddressMigratedViaExtraConfiguration" + migrated.name,
+			ValuesFiles: []string{
+				filepath.Join(s.chartPath, "test/unit/web-modeler/testdata", migrated.valuesFile),
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				applicationYaml := configmap.Data["application.yaml"]
+				s.Require().NotContains(applicationYaml, "from-address:",
+					"The from-address must be omitted so the imported extraConfiguration file supplies it")
+				s.Require().Contains(applicationYaml, "optional:file:/home/runner/config/"+migrated.importedFile,
+					"The extraConfiguration file must be imported")
+			},
+		})
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *configmapRestAPITemplateTest) TestTestMode() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestTestModeWithNoSecondaryStorage",
+			Values: utils.MergeMaps(
+				maps.Clone(requiredValues),
+				map[string]string{
+					"global.noSecondaryStorage": "true",
+				},
+			),
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var configmap corev1.ConfigMap
+				var configmapApplication WebModelerRestAPIApplicationYAML
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				e := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+				require.NoError(t, e)
+				s.Require().Equal("false", configmapApplication.Camunda.Hub.Feature.TestModeEnabled,
+					"test-mode-enabled must be false  in engine-only mode (when there is no secondary storage)")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *configmapRestAPITemplateTest) TestLegacyLoggingLevelKey() {
+	testCases := []struct {
+		name     string
+		values   map[string]string
+		expected map[string]any
+	}{
+		{
+			name:     "defaults",
+			values:   map[string]string{},
+			expected: map[string]any{"io.grpc": "INFO"},
+		},
+		{
+			name:     "legacy key is passed through",
+			values:   map[string]string{"webModeler.restapi.logging.level.io\\.camunda\\.modeler": "DEBUG"},
+			expected: map[string]any{"io.camunda.modeler": "DEBUG", "io.grpc": "INFO"},
+		},
+		{
+			name: "new key is kept alongside the legacy key",
+			values: map[string]string{
+				"webModeler.restapi.logging.level.io\\.camunda\\.modeler": "DEBUG",
+				"webModeler.restapi.logging.level.io\\.camunda\\.hub":     "TRACE",
+			},
+			expected: map[string]any{"io.camunda.hub": "TRACE", "io.camunda.modeler": "DEBUG", "io.grpc": "INFO"},
+		},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			options := &helm.Options{
+				SetValues:      utils.MergeMaps(maps.Clone(requiredValues), tc.values),
+				KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+			}
+
+			output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+			var configmap corev1.ConfigMap
+			helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+			var application struct {
+				Logging struct {
+					Level map[string]any `yaml:"level"`
+				} `yaml:"logging"`
+			}
+			require.NoError(s.T(), yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &application))
+
+			s.Require().Equal(tc.expected, application.Logging.Level)
+		})
+	}
+}
+
+func (s *configmapRestAPITemplateTest) TestLoggingLevelDeprecationWarnings() {
+	testCases := []struct {
+		name        string
+		values      map[string]string
+		contains    []string
+		notContains []string
+	}{
+		{
+			name:        "defaults emit no logging level warning",
+			values:      map[string]string{},
+			notContains: []string{"webModeler.restapi.logging.level.io.camunda"},
+		},
+		{
+			name:     "modeler level warns",
+			values:   map[string]string{"webModeler.restapi.logging.level.io\\.camunda\\.modeler": "DEBUG"},
+			contains: []string{"webModeler.restapi.logging.level.io.camunda.modeler", "webModeler.restapi.extraConfiguration"},
+		},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			options := &helm.Options{
+				SetValues:      utils.MergeMaps(maps.Clone(requiredValues), tc.values),
+				KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+			}
+
+			output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, []string{"templates/common/configmap-warnings.yaml"})
+			var configmap corev1.ConfigMap
+			helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+			for _, c := range tc.contains {
+				s.Require().Contains(configmap.Data["warnings"], c)
+			}
+			for _, c := range tc.notContains {
+				s.Require().NotContains(configmap.Data["warnings"], c)
+			}
+		})
+	}
+}

@@ -1,0 +1,41 @@
+# Multi-tenancy feature configuration for 8.11
+# Layer 4: Feature - Multi-tenancy
+
+global:
+  multitenancy:
+    enabled: true
+    checksEnabled: true
+    apiEnabled: true
+
+orchestration:
+  security:
+    authorization:
+      enabled: true
+    initialization:
+      mappings:
+        - mappingID: "admin-mapping"
+          claimName: "group"
+          claimValue: "admin"
+        - mappingID: "tenant-a-mapping"
+          claimName: "tenant"
+          claimValue: "tenant-a"
+        - mappingID: "tenant-b-mapping"
+          claimName: "tenant"
+          claimValue: "tenant-b"
+
+optimize:
+  caches:
+    cloudTenantAuthorizations:
+      minFetchIntervalSeconds: 120
+
+connectors:
+  env:
+    - name: username
+      value: username
+    - name: password
+      valueFrom:
+        secretKeyRef:
+          name: integration-test-credentials
+          key: password
+    - name: CAMUNDA_CLIENT_WORKER_DEFAULTS_TENANTIDS
+      value: "<default>, Tenant_Main_Connectors, Tenant_Second_Connectors, Tenant_1_Connectors, Tenant_2_Connectors"
