@@ -44,7 +44,6 @@ func (s *UpgradeKeysTest) TestLegacyKeysWarnWithoutFailing() {
 		value string
 	}{
 		{"global.compatibility.orchestration", `{"enabled":false}`},
-		{"global.image.tag", `"legacy-fallback"`},
 		{"orchestration.importer", `{}`},
 		{"orchestration.migration", `{"data":{"enabled":true}}`},
 		{"webModeler.webapp", `{"replicas":2}`},
@@ -64,13 +63,33 @@ func (s *UpgradeKeysTest) TestLegacyKeysWarnWithoutFailing() {
 				var warnings corev1.ConfigMap
 				helm.UnmarshalK8SYaml(t, output, &warnings)
 				require.Equal(t, "camunda-platform-test-warnings", warnings.Name)
-				require.Contains(t, warnings.Data["warnings"], "[camunda][warning] DEPRECATION:")
-				require.Contains(t, warnings.Data["warnings"], `"`+input.key+`"`)
+				require.Contains(t, warnings.Data["warnings"], "[camunda][warning]")
+				require.Contains(t, warnings.Data["warnings"], `"`+input.key+`" has no effect since chart 14 (Camunda 8.9). Remove it.`)
+				require.NotContains(t, warnings.Data["warnings"], "DEPRECATION:")
 				require.Contains(t, warnings.Data["warnings"], "https://docs.camunda.io/docs/8.9/self-managed/upgrade/helm/")
 			},
 		})
 	}
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, "camunda-platform-test", "upgrade-keys", []string{"templates/common/configmap-warnings.yaml"}, testCases)
+}
+
+func (s *UpgradeKeysTest) TestSupportedGlobalImageTagDoesNotWarn() {
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, "camunda-platform-test", "upgrade-keys", []string{"templates/common/configmap-warnings.yaml"}, []testhelpers.TestCase{{
+		Name: "SupportedGlobalImageTag",
+		Values: map[string]string{
+			"orchestration.data.secondaryStorage.type": "elasticsearch",
+			"global.image.tag":                         "legacy-fallback",
+			"elasticsearch.enabled":                    "true",
+			"global.elasticsearch.enabled":             "true",
+		},
+		Verifier: func(t *testing.T, output string, err error) {
+			require.NoError(t, err)
+			var warnings corev1.ConfigMap
+			helm.UnmarshalK8SYaml(t, output, &warnings)
+			require.NotEmpty(t, warnings.Data["warnings"])
+			require.NotContains(t, warnings.Data["warnings"], "global.image.tag")
+		},
+	}})
 }
 
 func (s *UpgradeKeysTest) TestAbsentLegacyKeysDoNotWarn() {

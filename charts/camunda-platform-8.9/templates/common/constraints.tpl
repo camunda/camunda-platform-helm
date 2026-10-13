@@ -187,30 +187,25 @@ configmap-warnings.yaml, which renders the "<release>-warnings" ConfigMap on the
 (helm template / Argo CD / Flux). Feed new deprecations here so they reach both channels.
 */}}
 {{- define "camunda.constraints.warnings" }}
-  {{- include "camundaPlatform.keyDeprecated" (dict
+  {{- include "camundaPlatform.keyNoEffect" (dict
       "condition" (hasKey .Values.global.compatibility "orchestration")
       "oldName" "global.compatibility.orchestration"
-      "migration" "This compatibility layer has no effect in 8.9. Remove the block after completing the 8.7 to 8.8 upgrade."
+      "migration" "Complete the 8.7 to 8.8 upgrade on 8.8 before upgrading to 8.9."
   ) }}
-  {{- include "camundaPlatform.keyDeprecated" (dict
-      "condition" (hasKey .Values.global.image "tag")
-      "oldName" "global.image.tag"
-      "migration" "Set each component's image.tag instead. The legacy fallback remains supported in 8.9; component tags take precedence."
-  ) }}
-  {{- include "camundaPlatform.keyDeprecated" (dict
+  {{- include "camundaPlatform.keyNoEffect" (dict
       "condition" (hasKey .Values.orchestration "importer")
       "oldName" "orchestration.importer"
-      "migration" "The separate importer deployment no longer exists in 8.9. Complete the 8.7 to 8.8 migration on 8.8, then remove this block."
+      "migration" "Complete the 8.7 to 8.8 migration on 8.8 before upgrading to 8.9."
   ) }}
-  {{- include "camundaPlatform.keyDeprecated" (dict
+  {{- include "camundaPlatform.keyNoEffect" (dict
       "condition" (hasKey .Values.orchestration "migration")
       "oldName" "orchestration.migration"
-      "migration" "The migration jobs no longer exist in 8.9. Complete the 8.7 to 8.8 migration on 8.8, then remove this block."
+      "migration" "Complete the 8.7 to 8.8 migration on 8.8 before upgrading to 8.9."
   ) }}
-  {{- include "camundaPlatform.keyDeprecated" (dict
+  {{- include "camundaPlatform.keyNoEffect" (dict
       "condition" (hasKey .Values.webModeler "webapp")
       "oldName" "webModeler.webapp"
-      "migration" "The UI is served by the REST API in 8.9. Configure webModeler.restapi instead; webapp settings have no effect and are not copied automatically."
+      "migration" "The UI is served by the REST API. Configure webModeler.restapi instead; webapp settings are not copied automatically."
   ) }}
   {{- if and .Values.global.identity.auth.enabled (empty (include "camundaPlatform.authIssuerUrlWithFallback" . | trim)) }}
     {{- $issuerBackendUrl := include "camundaPlatform.authIssuerBackendUrl" . | trim }}
@@ -814,9 +809,9 @@ Usage:
   {{- end }}
 {{- end -}}
 
-{{- define "camundaPlatform.keyDeprecated" }}
+{{- define "camundaPlatform.keyNoEffect" }}
   {{- if .condition }}
-    {{- printf "\n[camunda][warning] DEPRECATION: The Helm values file key \"%s\" is deprecated. %s %s" .oldName .migration "https://docs.camunda.io/docs/8.9/self-managed/upgrade/helm/" }}
+    {{- printf "\n[camunda][warning] The Helm values file key \"%s\" has no effect since chart 14 (Camunda 8.9). Remove it. %s %s" .oldName .migration "https://docs.camunda.io/docs/8.9/self-managed/upgrade/helm/" }}
   {{- end }}
 {{- end -}}
 
