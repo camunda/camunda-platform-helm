@@ -659,6 +659,57 @@ func (s *ConfigMapWarningsTemplateTest) TestMultiregionReplicationFactorWarning(
 				s.Require().NotContains(output, "orchestration.replicationFactor is")
 			},
 		},
+		{
+			Name: "ReplicationFactorFourFromEnvDoesNotTriggerWarning",
+			Values: map[string]string{
+				"global.multiregion.regions": "2",
+				"orchestration.env[0].name":  "CAMUNDA_CLUSTER_REPLICATIONFACTOR",
+			},
+			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.env[0].value=4"},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				s.Require().NotContains(output, "orchestration.replicationFactor is")
+			},
+		},
+		{
+			Name: "ReplicationFactorFourFromLegacyEnvDoesNotTriggerWarning",
+			Values: map[string]string{
+				"global.multiregion.regions": "2",
+				"orchestration.env[0].name":  "ZEEBE_BROKER_CLUSTER_REPLICATIONFACTOR",
+			},
+			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.env[0].value=4"},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				s.Require().NotContains(output, "orchestration.replicationFactor is")
+			},
+		},
+		{
+			Name: "ReplicationFactorFromEnvValueFromDoesNotTriggerWarning",
+			Values: map[string]string{
+				"global.multiregion.regions":                       "2",
+				"orchestration.env[0].name":                        "CAMUNDA_CLUSTER_REPLICATIONFACTOR",
+				"orchestration.env[0].valueFrom.secretKeyRef.name": "cluster",
+				"orchestration.env[0].valueFrom.secretKeyRef.key":  "rf",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				s.Require().NotContains(output, "orchestration.replicationFactor is")
+			},
+		},
+		{
+			Name: "ReplicationFactorFourInValuesOverriddenByEnvTriggersWarning",
+			Values: map[string]string{
+				"global.multiregion.regions": "2",
+				"orchestration.env[0].name":  "CAMUNDA_CLUSTER_REPLICATIONFACTOR",
+			},
+			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.env[0].value=3", "--set-string", "orchestration.replicationFactor=4"},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().Contains(configmap.Data["warnings"], "orchestration.replicationFactor is 3 but")
+			},
+		},
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)

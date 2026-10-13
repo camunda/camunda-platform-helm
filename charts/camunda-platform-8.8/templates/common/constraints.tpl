@@ -506,7 +506,19 @@ The following values inside your values.yaml need to be set but were not:
   {{- end }}
 
   {{- $replicationFactor := int .Values.orchestration.replicationFactor -}}
-  {{- if and .Values.orchestration.enabled (eq $regions 2) (ne $replicationFactor 4) }}
+  {{- $ctx := . -}}
+  {{- $replicationFactorKnown := true -}}
+  {{- range $env := ($ctx.Values.orchestration.env | default list) }}
+    {{- if has ($env.name | default "") (list "CAMUNDA_CLUSTER_REPLICATIONFACTOR" "ZEEBE_BROKER_CLUSTER_REPLICATIONFACTOR") }}
+      {{- if $env.value }}
+        {{- $replicationFactor = int (tpl (toString $env.value) $ctx) -}}
+        {{- $replicationFactorKnown = true -}}
+      {{- else }}
+        {{- $replicationFactorKnown = false -}}
+      {{- end }}
+    {{- end }}
+  {{- end }}
+  {{- if and .Values.orchestration.enabled (eq $regions 2) $replicationFactorKnown (ne $replicationFactor 4) }}
     {{- $warningMessage := printf "%s %s %s"
         "[camunda][warning]"
         (printf "orchestration.replicationFactor is %d but global.multiregion.regions is 2; a dual-region cluster needs a replication factor of 4 to distribute every partition evenly across both regions." $replicationFactor)

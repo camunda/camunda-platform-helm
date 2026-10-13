@@ -1628,7 +1628,22 @@ The following values inside your values.yaml need to be set but were not:
   {{- if eq (include "camundaPlatform.orchestrationEnabled" .) "true" }}
     {{- $partitioning := include "camundaPlatform.partitioning" . | fromJson -}}
     {{- $replicationFactor := int .Values.orchestration.replicationFactor -}}
-    {{- if and (ne $partitioning.scheme "zone-aware") (eq (int $partitioning.numberOfZones) 2) (ne $replicationFactor 4) }}
+    {{- $ctx := . -}}
+    {{- $replicationFactorKnown := true -}}
+    {{- if or (eq (include "camundaPlatform.appConfigMentionsPath" (dict "extraConfiguration" .Values.orchestration.extraConfiguration "path" (list "camunda" "cluster" "replication-factor"))) "true") (eq (include "camundaPlatform.appConfigMentionsPath" (dict "extraConfiguration" .Values.orchestration.extraConfiguration "path" (list "zeebe" "broker" "cluster" "replicationFactor"))) "true") (and .Values.orchestration.envFrom (or (has "CAMUNDA_CLUSTER_REPLICATIONFACTOR" (.Values.orchestration.envFromProvides | default list)) (has "ZEEBE_BROKER_CLUSTER_REPLICATIONFACTOR" (.Values.orchestration.envFromProvides | default list)))) }}
+      {{- $replicationFactorKnown = false -}}
+    {{- end }}
+    {{- range $env := ($ctx.Values.orchestration.env | default list) }}
+      {{- if has ($env.name | default "") (list "CAMUNDA_CLUSTER_REPLICATIONFACTOR" "ZEEBE_BROKER_CLUSTER_REPLICATIONFACTOR") }}
+        {{- if $env.value }}
+          {{- $replicationFactor = int (tpl (toString $env.value) $ctx) -}}
+          {{- $replicationFactorKnown = true -}}
+        {{- else }}
+          {{- $replicationFactorKnown = false -}}
+        {{- end }}
+      {{- end }}
+    {{- end }}
+    {{- if and (ne $partitioning.scheme "zone-aware") (eq (int $partitioning.numberOfZones) 2) $replicationFactorKnown (ne $replicationFactor 4) }}
       {{- $warningMessage := printf "%s %s %s"
           "[camunda][warning]"
           (printf "orchestration.replicationFactor is %d but %s.%s is 2; a dual-region cluster needs a replication factor of 4 to distribute every partition evenly across both regions." $replicationFactor $partitioning.sourceKey $partitioning.countKey)
