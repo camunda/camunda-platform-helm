@@ -181,7 +181,6 @@ go.fmt:
 # editing them does not pull the chart into `ct list-changed` and trigger a
 # golden regeneration. Space-separated; both forms below derive from it.
 licenseExcludePaths := \
-	charts/camunda-platform-8.3 \
 	charts/camunda-platform-8.4 \
 	charts/camunda-platform-8.5
 
@@ -362,7 +361,6 @@ helm.template: helm.dependency-update
 .PHONY: helm.readme-update
 helm.readme-update:
 	set -x; for chart_dir in $(chartPath); do\
-		test "camunda-platform-8.2" = "$$(basename $${chart_dir})" && continue;\
 		[[ "$$(basename $${chart_dir})" != *camunda-platform* ]] && continue;\
 		echo "\n[$@] Chart dir: $${chart_dir}";\
 		readme-generator \
