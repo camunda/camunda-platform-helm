@@ -429,7 +429,6 @@
       description: 'Disable all updates for out-of-support chart versions (8.6 and below).',
       enabled: false,
       matchFileNames: [
-        'charts/camunda-platform-8.5/**',
         'charts/camunda-platform-8.6/**',
       ],
     },

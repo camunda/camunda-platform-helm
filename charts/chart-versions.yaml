@@ -42,6 +42,8 @@ camundaSupportLifecycle:
     released: "2024-10-08"
   "8.5":
     released: "2024-04-09"
+    eolSince: "2025-10-14"
+    latestChart: "10.11.3"
   "8.4":
     released: "2024-01-09"
     eolSince: "2025-07-09"

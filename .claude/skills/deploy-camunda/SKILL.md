@@ -336,15 +336,6 @@ curl -sk "https://$NS.ci.distro.ultrawombat.com/auth/realms/camunda-platform/.we
 
 The OIDC path uses the fixed `camunda-platform` realm — `values/identity/keycloak.yaml` hardcodes `publicIssuerUrl: .../auth/realms/camunda-platform` on every chart version. The per-scenario `realm:` value the run summary prints (e.g. `elasticsearch-0760899c`) is not a Keycloak realm path; using it returns `Realm does not exist`.
 
-For an extended-support version with **no** registry, `matrix run` fails with an error naming the missing manifest and pointing at the single-scenario path, which needs no registry:
-
-```bash
-deploy-camunda \
-  --scenario charts/camunda-platform-8.5/test/integration/scenarios/chart-full-setup \
-  --identity keycloak --persistence elasticsearch \
-  --namespace $NS --release $RELEASE
-```
-
 ## Render Without Deploying
 
 Debug values merging without touching the cluster:
