@@ -134,14 +134,6 @@ func applyExternalSecretsOther(ctx context.Context, client *Client, repoRoot, ch
 		logging.Logger.Debug().Msg("using vault-backed external secrets")
 	}
 
-	// Apply credentials secrets
-	credentialsSecretFile := fmt.Sprintf("external-secret-credentials%s.yaml", vaultSuffix)
-	if err := applyManifestIfExists(ctx, client, namespace,
-		filepath.Join(externalSecretDir, credentialsSecretFile),
-		"credentials external-secret"); err != nil {
-		return fmt.Errorf("apply credentials secrets: %w", err)
-	}
-
 	file, err := integrationCredentialsManifest(chartPath, externalSecretDir, vaultSuffix, credentialsManifest, fileExists)
 	if err != nil {
 		return err
