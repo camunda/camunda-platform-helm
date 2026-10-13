@@ -131,3 +131,43 @@ func TestCleanDescription(t *testing.T) {
 		}
 	}
 }
+
+func TestArtifactHubChanges_whenTitleHasReviewTag(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name, title, want string
+	}{
+		{"trailing tag", "Validate values [ready]", "Validate values"},
+		{"tag before PR", "Validate values [ready] (#7492)", "Validate values"},
+		{"trailing whitespace", "Validate values [ready] \t", "Validate values"},
+		{"PR with trailing whitespace", "Validate values [ready] (#7492) \t", "Validate values"},
+		{"case sensitive", "Validate values [READY] (#7492)", "Validate values [READY]"},
+		{"internal tag", "Validate [ready] values (#7492)", "Validate [ready] values"},
+		{"no separating space", "Validate values[ready] (#7492)", "Validate values[ready]"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			t.Parallel()
+			md := "### Fixes\n\n- " + c.title + "\n"
+
+			block, has := ArtifactHubChanges(md, []string{"Fixes"})
+
+			want := "annotations:\n  artifacthub.io/changes: |\n    - kind: fixed\n      description: \"" + c.want + "\"\n"
+			if !has || block != want {
+				t.Errorf("ArtifactHubChanges(%q) = %q, %v; want %q, true", c.title, block, has, want)
+			}
+		})
+	}
+}
+
+func TestCleanReviewTags_whenNotesContainTaggedTitles(t *testing.T) {
+	t.Parallel()
+	md := "### Features\n\n- Validate values [ready] (#7493) \t\n- Warn [ready] on keys (#7492)\n- Keep case [READY] (#7446)\n- Bare title [ready]\n\nText [ready]\n"
+
+	got := CleanReviewTags(md)
+
+	want := "### Features\n\n- Validate values (#7493)\n- Warn [ready] on keys (#7492)\n- Keep case [READY] (#7446)\n- Bare title\n\nText [ready]\n"
+	if got != want {
+		t.Errorf("CleanReviewTags() = %q; want %q", got, want)
+	}
+}
