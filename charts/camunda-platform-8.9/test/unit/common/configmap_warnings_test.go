@@ -313,6 +313,69 @@ func (s *ConfigMapWarningsTemplateTest) TestUnresolvedOrchestrationOIDCEndpoints
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, nil, testCases)
 }
 
+func (s *ConfigMapWarningsTemplateTest) TestRDBMSURLWarning() {
+	const rdbmsWarning = "The Orchestration Cluster uses RDBMS secondary storage, but no JDBC URL is set"
+	const jdbcURL = "jdbc:postgresql://pg:5432/camunda"
+	extraConfiguration := func(file, content string) []string {
+		return []string{"--set-json", `orchestration.extraConfiguration=[{"file":"` + file + `","content":"` + content + `"}]`}
+	}
+	testCases := []testhelpers.TestCase{}
+	for _, scenario := range []struct {
+		name   string
+		values map[string]string
+		args   []string
+		warn   bool
+	}{
+		{name: "NoURL", warn: true},
+		{name: "ExporterFlagOnly", values: map[string]string{"orchestration.data.secondaryStorage.type": "", "orchestration.exporters.rdbms.enabled": "true"}, warn: true},
+		{name: "UnrelatedEnv", values: map[string]string{"orchestration.env[0].name": "FOO", "orchestration.env[0].value": "bar"}, warn: true},
+		{name: "RDBMSConfigWithoutURL", args: extraConfiguration("rdbms.yaml", `camunda.data.secondary-storage.rdbms.username: camunda`), warn: true},
+		{name: "ValuesURL", values: map[string]string{"orchestration.data.secondaryStorage.rdbms.url": jdbcURL}},
+		{name: "EnvURL", values: map[string]string{"orchestration.env[0].name": "CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_URL", "orchestration.env[0].value": jdbcURL}},
+		{name: "SpringApplicationJSON", args: []string{"--set-json", `orchestration.env=[{"name":"SPRING_APPLICATION_JSON","value":"{\"camunda\":{\"data\":{\"secondary-storage\":{\"rdbms\":{\"url\":\"` + jdbcURL + `\"}}}}}"}]`}},
+		{name: "EnvFrom", values: map[string]string{"orchestration.envFrom[0].secretRef.name": "rdbms-connection"}},
+		{name: "JavaOpts", values: map[string]string{"orchestration.javaOpts": "-Dcamunda.data.secondary-storage.rdbms.url=" + jdbcURL}},
+		{name: "NestedExtraConfiguration", args: extraConfiguration("rdbms.yaml", `camunda:\n  data:\n    secondary-storage:\n      rdbms:\n        url: `+jdbcURL)},
+		{name: "PropertiesExtraConfiguration", args: extraConfiguration("rdbms.properties", `camunda.data.secondary-storage.rdbms.url=`+jdbcURL)},
+		{name: "Configuration", args: []string{"--set-json", `orchestration.configuration="camunda:\n  data:\n    secondary-storage:\n      type: rdbms\n      rdbms:\n        url: ` + jdbcURL + `"`}},
+		{name: "ElasticsearchWithExporterFlag", values: map[string]string{"orchestration.data.secondaryStorage.type": "elasticsearch", "orchestration.exporters.rdbms.enabled": "true"}},
+		{name: "OrchestrationDisabled", values: map[string]string{"orchestration.enabled": "false"}},
+	} {
+		values := map[string]string{"orchestration.data.secondaryStorage.type": "rdbms"}
+		for key, value := range scenario.values {
+			values[key] = value
+		}
+		testCases = append(testCases, testhelpers.TestCase{
+			Name:                    scenario.name,
+			Values:                  values,
+			RenderTemplateExtraArgs: scenario.args,
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				configMaps := map[string]corev1.ConfigMap{}
+				decoder := k8syaml.NewYAMLOrJSONDecoder(strings.NewReader(output), 4096)
+				for {
+					var resource corev1.ConfigMap
+					err := decoder.Decode(&resource)
+					if err == io.EOF {
+						break
+					}
+					s.Require().NoError(err)
+					if resource.Kind == "ConfigMap" {
+						configMaps[resource.Name] = resource
+					}
+				}
+				s.Require().NotEmpty(configMaps)
+				warnings := configMaps[s.release+"-warnings"].Data["warnings"]
+				s.Require().Equal(scenario.warn, strings.Contains(warnings, rdbmsWarning))
+				if scenario.warn {
+					s.Require().Contains(warnings, "orchestration.data.secondaryStorage.rdbms.url")
+				}
+			},
+		})
+	}
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, nil, testCases)
+}
+
 func (s *ConfigMapWarningsTemplateTest) TestDifferentValuesInputs() {
 	testCases := []testhelpers.TestCase{
 		{
