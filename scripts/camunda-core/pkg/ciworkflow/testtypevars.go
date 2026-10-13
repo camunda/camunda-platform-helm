@@ -206,7 +206,7 @@ func Compute(in TestTypeVarsInput) (TestTypeVars, error) {
 }
 
 // checkUnitPackagesListed fails when a directory under unitDir holds *_test.go
-// files but no unit.matrix entry names it; the unit job runs only listed packages.
+// files that no unit.matrix entry lists.
 func checkUnitPackagesListed(unitDir string, matrix []UnitMatrixEntry) error {
 	listed := map[string]bool{}
 	for _, entry := range matrix {
