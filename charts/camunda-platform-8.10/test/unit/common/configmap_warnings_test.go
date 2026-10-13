@@ -369,7 +369,8 @@ func (s *ConfigMapWarningsTemplateTest) TestDifferentValuesInputs() {
 		{
 			Name: "TestWarningsConfigMapAbsentWhenNoWarnings",
 			Values: map[string]string{
-				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"orchestration.data.secondaryStorage.type":              "elasticsearch",
+				"orchestration.data.secondaryStorage.elasticsearch.url": "http://elasticsearch:9200",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				// With no active warnings the helper renders nothing, so --show-only finds no manifest.
@@ -1787,6 +1788,150 @@ func (s *ConfigMapWarningsTemplateTest) TestKeycloakURLWarnings() {
 					require.Contains(t, warnings, "global.identity.keycloak.url.host")
 					require.Contains(t, warnings, "KEYCLOAK_URL in identity.env")
 					require.Contains(t, warnings, "keycloak.url in identity.extraConfiguration")
+				}
+			},
+		})
+	}
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, nil, testCases)
+}
+
+func renderedConfigMaps(t *testing.T, output string) map[string]corev1.ConfigMap {
+	configMaps := map[string]corev1.ConfigMap{}
+	decoder := k8syaml.NewYAMLOrJSONDecoder(strings.NewReader(output), 4096)
+	for {
+		var resource corev1.ConfigMap
+		err := decoder.Decode(&resource)
+		if err == io.EOF {
+			return configMaps
+		}
+		require.NoError(t, err)
+		if resource.Kind == "ConfigMap" {
+			configMaps[resource.Name] = resource
+		}
+	}
+}
+
+func (s *ConfigMapWarningsTemplateTest) TestSearchSecondaryStorageURLWarning() {
+	const warning = "secondary storage, but no URL is set"
+	extraConfiguration := func(content string) []string {
+		return []string{"--set-string", "orchestration.extraConfiguration[0].content=camunda:\n  data:\n    secondary-storage:\n" + content}
+	}
+	testCases := []testhelpers.TestCase{}
+	for _, scenario := range []struct {
+		name    string
+		backend string
+		values  map[string]string
+		args    []string
+		warn    bool
+	}{
+		{name: "ElasticsearchWithoutURL", backend: "elasticsearch", warn: true},
+		{name: "OpenSearchWithoutURL", backend: "opensearch", warn: true},
+		{name: "OpenSearchInferredFromOptimizeDatabase", backend: "opensearch", values: map[string]string{"orchestration.data.secondaryStorage.type": "", "optimize.database.opensearch.enabled": "true"}, warn: true},
+		{name: "UnrelatedEnv", backend: "elasticsearch", values: map[string]string{"orchestration.env[0].name": "CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_USERNAME", "orchestration.env[0].value": "camunda"}, warn: true},
+		{
+			name:    "UnrelatedExtraConfiguration",
+			backend: "elasticsearch",
+			values:  map[string]string{"orchestration.extraConfiguration[0].file": "search.yaml"},
+			args:    extraConfiguration("      elasticsearch:\n        index-prefix: custom\n"),
+			warn:    true,
+		},
+		{name: "ValuesURL", backend: "elasticsearch", values: map[string]string{"orchestration.data.secondaryStorage.elasticsearch.url": "http://es.example.com:9200"}},
+		{name: "OptimizeHostFallback", backend: "elasticsearch", values: map[string]string{"optimize.database.elasticsearch.url.host": "es.example.com"}},
+		{name: "EnvURL", backend: "opensearch", values: map[string]string{"orchestration.env[0].name": "CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_URL", "orchestration.env[0].value": "https://os.example.com:443"}},
+		{name: "EnvIndexedURLs", backend: "elasticsearch", values: map[string]string{"orchestration.env[0].name": "CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_URLS_0", "orchestration.env[0].value": "http://es-0.example.com:9200"}},
+		{name: "EnvFrom", backend: "elasticsearch", values: map[string]string{"orchestration.envFrom[0].secretRef.name": "search-connection"}},
+		{
+			name:    "ExtraConfigurationURL",
+			backend: "elasticsearch",
+			values:  map[string]string{"orchestration.extraConfiguration[0].file": "search.yaml"},
+			args:    extraConfiguration("      elasticsearch:\n        url: http://es.example.com:9200\n"),
+		},
+		{
+			name:    "ExtraConfigurationURLs",
+			backend: "opensearch",
+			values:  map[string]string{"orchestration.extraConfiguration[0].file": "search.yaml"},
+			args:    extraConfiguration("      opensearch:\n        urls:\n          - https://os-0.example.com:443\n          - https://os-1.example.com:443\n"),
+		},
+		{
+			name:    "ConfigurationURL",
+			backend: "elasticsearch",
+			args:    []string{"--set-string", "orchestration.configuration=camunda:\n  data:\n    secondary-storage:\n      type: elasticsearch\n      elasticsearch:\n        url: http://es.example.com:9200\n"},
+		},
+		{name: "RDBMS", backend: "rdbms", values: map[string]string{"orchestration.data.secondaryStorage.rdbms.url": "jdbc:postgresql://db:5432/camunda"}},
+		{name: "OrchestrationDisabled", backend: "elasticsearch", values: map[string]string{"orchestration.enabled": "false"}},
+	} {
+		values := map[string]string{
+			"orchestration.data.secondaryStorage.type": scenario.backend,
+		}
+		for key, value := range scenario.values {
+			values[key] = value
+		}
+		testCases = append(testCases, testhelpers.TestCase{
+			Name:                    scenario.name,
+			Values:                  values,
+			RenderTemplateExtraArgs: scenario.args,
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				configMaps := renderedConfigMaps(t, output)
+				if values["orchestration.enabled"] != "false" {
+					require.Contains(t, configMaps, s.release+"-zeebe-configuration")
+				}
+				warnings := configMaps[s.release+"-warnings"].Data["warnings"]
+				require.Equal(t, scenario.warn, strings.Contains(warnings, warning))
+				if scenario.warn {
+					require.Contains(t, warnings, "orchestration.data.secondaryStorage."+scenario.backend+".url")
+					require.Contains(t, warnings, "CAMUNDA_DATA_SECONDARYSTORAGE_"+strings.ToUpper(scenario.backend)+"_URL")
+					require.Contains(t, warnings, "camunda.data.secondary-storage."+scenario.backend+".url")
+				}
+			},
+		})
+	}
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, nil, testCases)
+}
+
+func (s *ConfigMapWarningsTemplateTest) TestOptimizeDatabaseHostWarning() {
+	testCases := []testhelpers.TestCase{}
+	for _, scenario := range []struct {
+		name    string
+		values  map[string]string
+		warning string
+	}{
+		{
+			name:    "ElasticsearchWithoutHost",
+			values:  map[string]string{"optimize.database.elasticsearch.enabled": "true"},
+			warning: "Optimize uses Elasticsearch, but optimize.database.elasticsearch.url.host is empty",
+		},
+		{
+			name:    "OpenSearchWithoutHost",
+			values:  map[string]string{"optimize.database.opensearch.enabled": "true"},
+			warning: "Optimize uses OpenSearch, but optimize.database.opensearch.url.host is empty",
+		},
+		{name: "ElasticsearchWithHost", values: map[string]string{"optimize.database.elasticsearch.enabled": "true", "optimize.database.elasticsearch.url.host": "es.example.com"}},
+		{name: "NoBackendEnabled"},
+		{name: "OptimizeDisabled", values: map[string]string{"optimize.enabled": "false", "optimize.database.elasticsearch.enabled": "true"}},
+	} {
+		values := map[string]string{
+			"orchestration.data.secondaryStorage.type":              "elasticsearch",
+			"orchestration.data.secondaryStorage.elasticsearch.url": "http://es.example.com:9200",
+			"optimize.enabled": "true",
+		}
+		for key, value := range scenario.values {
+			values[key] = value
+		}
+		testCases = append(testCases, testhelpers.TestCase{
+			Name:   scenario.name,
+			Values: values,
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				configMaps := renderedConfigMaps(t, output)
+				if values["optimize.enabled"] == "true" {
+					require.Contains(t, configMaps, s.release+"-optimize-configuration")
+				}
+				warnings := configMaps[s.release+"-warnings"].Data["warnings"]
+				if scenario.warning != "" {
+					require.Contains(t, warnings, scenario.warning)
+				} else {
+					require.NotContains(t, warnings, "url.host is empty")
 				}
 			},
 		})

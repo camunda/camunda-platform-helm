@@ -22,19 +22,30 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestOptimizeTopologyRejectsEnabledBackendWithoutAHost(t *testing.T) {
+func TestOptimizeTopologyWarnsForEnabledBackendWithoutAHost(t *testing.T) {
 	valuesFile := filepath.Join("testdata", "optimize.yaml")
-	for _, values := range []map[string]string{
-		{"optimize.database.elasticsearch.url.host": ""},
+	for _, tc := range []struct {
+		values  map[string]string
+		warning string
+	}{
 		{
-			"optimize.database.elasticsearch.enabled": "false",
-			"optimize.database.opensearch.enabled":    "true",
-			"optimize.database.opensearch.url.host":   "",
+			values:  map[string]string{"optimize.database.elasticsearch.url.host": ""},
+			warning: "Optimize uses Elasticsearch, but optimize.database.elasticsearch.url.host is empty",
+		},
+		{
+			values: map[string]string{
+				"optimize.database.elasticsearch.enabled": "false",
+				"optimize.database.opensearch.enabled":    "true",
+				"optimize.database.opensearch.url.host":   "",
+			},
+			warning: "Optimize uses OpenSearch, but optimize.database.opensearch.url.host is empty",
 		},
 	} {
-		options := &helm.Options{ValuesFiles: []string{valuesFile}, SetValues: values}
-		_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/optimize/configmap.yaml"})
-		require.ErrorContains(t, err, "requires a non-empty url.host for the enabled Optimize database backend")
+		options := &helm.Options{ValuesFiles: []string{valuesFile}, SetValues: tc.values}
+		output := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{"templates/optimize/configmap.yaml", "templates/common/configmap-warnings.yaml"})
+		require.Contains(t, output, "nodes:")
+		require.NotContains(t, output, "- host:")
+		require.Contains(t, output, tc.warning)
 	}
 }
 
