@@ -170,14 +170,8 @@ func (s *ImageTagTest) TestNonEmptySubcomponentTagOverridesSharedTag() {
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, nil, testCases)
 }
 
-func (s *ImageTagTest) TestEmptyCamundaHubTagIsRejectedBySchema() {
+func (s *ImageTagTest) TestEmptyCamundaHubSubcomponentTagIsRejectedBySchema() {
 	testCases := []testhelpers.TestCase{
-		{
-			Name:     "TestEmptyHubImageTag",
-			Template: restapiTemplate,
-			Values:   hubImageTagValues(map[string]string{"camundaHub.image.tag": ""}),
-			Expected: map[string]string{"ERROR": "'/camundaHub/image/tag': minLength: got 0, want 1"},
-		},
 		{
 			Name:     "TestEmptyHubRestapiImageTag",
 			Template: restapiTemplate,

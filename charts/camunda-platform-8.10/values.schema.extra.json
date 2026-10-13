@@ -1703,9 +1703,15 @@
                             "properties": {
                                 "tag": {
                                     "type": "string",
-                                    "minLength": 1,
-                                    "description": "can be used to override webModeler.image.tag for the REST API image. Omit this key to retain the shared image tag."
+                                    "description": "can be used to override webModeler.image.tag for the REST API image. Omit this key to retain the shared image tag. An empty value is valid only when webModeler.restapi.image.digest is set."
                                 }
+                            },
+                            "if": {
+                                "properties": {"digest": {"type": "string", "minLength": 1}},
+                                "required": ["digest"]
+                            },
+                            "else": {
+                                "properties": {"tag": {"minLength": 1}}
                             }
                         },
                         "logging": {
@@ -1753,9 +1759,15 @@
                             "properties": {
                                 "tag": {
                                     "type": "string",
-                                    "minLength": 1,
-                                    "description": "can be used to override webModeler.image.tag for the WebSockets image. Omit this key to retain the shared image tag."
+                                    "description": "can be used to override webModeler.image.tag for the WebSockets image. Omit this key to retain the shared image tag. An empty value is valid only when webModeler.websockets.image.digest is set."
                                 }
+                            },
+                            "if": {
+                                "properties": {"digest": {"type": "string", "minLength": 1}},
+                                "required": ["digest"]
+                            },
+                            "else": {
+                                "properties": {"tag": {"minLength": 1}}
                             }
                         },
                         "service": {
@@ -1804,8 +1816,7 @@
                     "properties": {
                         "tag": {
                             "type": ["string", "null"],
-                            "minLength": 1,
-                            "description": "can be used to override webModeler.image.tag for the Camunda Hub REST API and WebSockets images. Omit this key or set it to null to retain the webModeler.image.tag value."
+                            "description": "can be used to override webModeler.image.tag for the Camunda Hub REST API and WebSockets images. Omit this key or set it to null to retain the webModeler.image.tag value. An empty value renders only when the REST API and WebSockets images each set their own tag or digest."
                         }
                     }
                 },
@@ -1837,9 +1848,15 @@
                             "properties": {
                                 "tag": {
                                     "type": ["string", "null"],
-                                    "minLength": 1,
-                                    "description": "can be used to override the shared image tag (camundaHub.image.tag, else webModeler.image.tag) for the Camunda Hub REST API image. Omit this key or set it to null to retain the shared image tag."
+                                    "description": "can be used to override the shared image tag (camundaHub.image.tag, else webModeler.image.tag) for the Camunda Hub REST API image. Omit this key or set it to null to retain the shared image tag. An empty value is valid only when camundaHub.restapi.image.digest is set."
                                 }
+                            },
+                            "if": {
+                                "properties": {"digest": {"type": "string", "minLength": 1}},
+                                "required": ["digest"]
+                            },
+                            "else": {
+                                "properties": {"tag": {"minLength": 1}}
                             }
                         }
                     }
@@ -1858,9 +1875,15 @@
                             "properties": {
                                 "tag": {
                                     "type": ["string", "null"],
-                                    "minLength": 1,
-                                    "description": "can be used to override the shared image tag (camundaHub.image.tag, else webModeler.image.tag) for the Camunda Hub WebSockets image. Omit this key or set it to null to retain the shared image tag."
+                                    "description": "can be used to override the shared image tag (camundaHub.image.tag, else webModeler.image.tag) for the Camunda Hub WebSockets image. Omit this key or set it to null to retain the shared image tag. An empty value is valid only when camundaHub.websockets.image.digest is set."
                                 }
+                            },
+                            "if": {
+                                "properties": {"digest": {"type": "string", "minLength": 1}},
+                                "required": ["digest"]
+                            },
+                            "else": {
+                                "properties": {"tag": {"minLength": 1}}
                             }
                         }
                     }
