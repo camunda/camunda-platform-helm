@@ -19,7 +19,7 @@ unit:
   enabled: true
   matrix:
     - name: Management
-      packages: identity common console
+      packages: identity common console testhelpers topology
     - name: Orchestration
       packages: orchestration connectors optimize
     - name: Design
