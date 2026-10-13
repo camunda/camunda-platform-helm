@@ -31,11 +31,6 @@ version/8.5:
     - any-glob-to-any-file:
         - 'charts/camunda-platform-8.5/**'
 
-version/8.4:
-  - changed-files:
-    - any-glob-to-any-file:
-        - 'charts/camunda-platform-8.4/**'
-
 #
 # Components.
 
