@@ -1800,7 +1800,14 @@
                     "type": "object",
                     "description": "override values for the Camunda Hub image; merged additively over the legacy webModeler.image map, so partial overrides keep the legacy values for the keys left unset.",
                     "default": {},
-                    "additionalProperties": true
+                    "additionalProperties": true,
+                    "properties": {
+                        "tag": {
+                            "type": ["string", "null"],
+                            "minLength": 1,
+                            "description": "can be used to override webModeler.image.tag for the Camunda Hub REST API and WebSockets images. Omit this key or set it to null to retain the webModeler.image.tag value."
+                        }
+                    }
                 },
                 "security": {
                     "type": "object",
@@ -1820,13 +1827,43 @@
                     "type": "object",
                     "description": "override values for the Camunda Hub restapi component; set values are deep-merged over the legacy webModeler.restapi values, so a partial override keeps the sibling defaults. An explicit false, 0 or \"\" overrides the legacy value; an unset (null) key falls through to it. Maps merge key by key, while arrays replace the legacy list wholesale.",
                     "default": {},
-                    "additionalProperties": true
+                    "additionalProperties": true,
+                    "properties": {
+                        "image": {
+                            "type": "object",
+                            "description": "override values for the Camunda Hub restapi image; merged additively over the legacy webModeler.restapi.image map, so partial overrides keep the legacy values for the keys left unset.",
+                            "default": {},
+                            "additionalProperties": true,
+                            "properties": {
+                                "tag": {
+                                    "type": ["string", "null"],
+                                    "minLength": 1,
+                                    "description": "can be used to override the shared image tag (camundaHub.image.tag, else webModeler.image.tag) for the Camunda Hub REST API image. Omit this key or set it to null to retain the shared image tag."
+                                }
+                            }
+                        }
+                    }
                 },
                 "websockets": {
                     "type": "object",
                     "description": "override values for the Camunda Hub websockets component; set values are deep-merged over the legacy webModeler.websockets values, so a partial override keeps the sibling defaults. An explicit false, 0 or \"\" overrides the legacy value; an unset (null) key falls through to it. Maps merge key by key, while arrays replace the legacy list wholesale.",
                     "default": {},
-                    "additionalProperties": true
+                    "additionalProperties": true,
+                    "properties": {
+                        "image": {
+                            "type": "object",
+                            "description": "override values for the Camunda Hub websockets image; merged additively over the legacy webModeler.websockets.image map, so partial overrides keep the legacy values for the keys left unset.",
+                            "default": {},
+                            "additionalProperties": true,
+                            "properties": {
+                                "tag": {
+                                    "type": ["string", "null"],
+                                    "minLength": 1,
+                                    "description": "can be used to override the shared image tag (camundaHub.image.tag, else webModeler.image.tag) for the Camunda Hub WebSockets image. Omit this key or set it to null to retain the shared image tag."
+                                }
+                            }
+                        }
+                    }
                 },
                 "serviceAccount": {
                     "type": "object",

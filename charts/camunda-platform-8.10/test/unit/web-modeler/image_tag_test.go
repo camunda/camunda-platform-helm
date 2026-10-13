@@ -66,6 +66,19 @@ func imageTagValues(extra map[string]string) map[string]string {
 	return values
 }
 
+func hubImageTagValues(extra map[string]string) map[string]string {
+	values := map[string]string{
+		"identity.enabled":                       "true",
+		"camundaHub.enabled":                     "true",
+		"camundaHub.restapi.mail.fromAddress":    "example@example.com",
+		"camundaHub.image.tag":                   "shared-tag",
+		"camundaHub.restapi.image.repository":    "example/restapi",
+		"camundaHub.websockets.image.repository": "example/websockets",
+	}
+	maps.Copy(values, extra)
+	return values
+}
+
 func (s *ImageTagTest) requireContainerImage(output, want string) {
 	var deployment appsv1.Deployment
 	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
@@ -135,6 +148,124 @@ func (s *ImageTagTest) TestNonEmptySubcomponentTagOverridesSharedTag() {
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().NoError(err)
 				s.requireContainerImage(output, "example/websockets:websockets-tag")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, nil, testCases)
+}
+
+func (s *ImageTagTest) TestEmptyCamundaHubTagIsRejectedBySchema() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name:     "TestEmptyHubImageTag",
+			Template: restapiTemplate,
+			Values:   hubImageTagValues(map[string]string{"camundaHub.image.tag": ""}),
+			Expected: map[string]string{"ERROR": "'/camundaHub/image/tag': minLength: got 0, want 1"},
+		},
+		{
+			Name:     "TestEmptyHubRestapiImageTag",
+			Template: restapiTemplate,
+			Values:   hubImageTagValues(map[string]string{"camundaHub.restapi.image.tag": ""}),
+			Expected: map[string]string{"ERROR": "'/camundaHub/restapi/image/tag': minLength: got 0, want 1"},
+		},
+		{
+			Name:     "TestEmptyHubWebsocketsImageTag",
+			Template: websocketsTemplate,
+			Values:   hubImageTagValues(map[string]string{"camundaHub.websockets.image.tag": ""}),
+			Expected: map[string]string{"ERROR": "'/camundaHub/websockets/image/tag': minLength: got 0, want 1"},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, nil, testCases)
+}
+
+func (s *ImageTagTest) TestUnsetCamundaHubSubcomponentTagKeepsSharedTag() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name:     "TestHubRestapiKeepsSharedTag",
+			Template: restapiTemplate,
+			Values:   hubImageTagValues(nil),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				s.requireContainerImage(output, "example/restapi:shared-tag")
+			},
+		},
+		{
+			Name:     "TestHubWebsocketsKeepsSharedTag",
+			Template: websocketsTemplate,
+			Values:   hubImageTagValues(nil),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				s.requireContainerImage(output, "example/websockets:shared-tag")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, nil, testCases)
+}
+
+func (s *ImageTagTest) TestNonEmptyCamundaHubTagOverridesSharedTag() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name:     "TestHubRestapiOverride",
+			Template: restapiTemplate,
+			Values:   hubImageTagValues(map[string]string{"camundaHub.restapi.image.tag": "restapi-tag"}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				s.requireContainerImage(output, "example/restapi:restapi-tag")
+			},
+		},
+		{
+			Name:     "TestHubWebsocketsOverride",
+			Template: websocketsTemplate,
+			Values:   hubImageTagValues(map[string]string{"camundaHub.websockets.image.tag": "websockets-tag"}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				s.requireContainerImage(output, "example/websockets:websockets-tag")
+			},
+		},
+		{
+			Name:     "TestHubSharedTagOverridesLegacySharedTag",
+			Template: restapiTemplate,
+			Values:   hubImageTagValues(map[string]string{"webModeler.image.tag": "legacy-tag", "camundaHub.image.tag": "hub-tag"}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				s.requireContainerImage(output, "example/restapi:hub-tag")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, nil, testCases)
+}
+
+func (s *ImageTagTest) TestNullCamundaHubTagFallsThroughToSharedTag() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name:     "TestHubRestapiNullTag",
+			Template: restapiTemplate,
+			Values:   hubImageTagValues(map[string]string{"camundaHub.restapi.image.tag": "null"}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				s.requireContainerImage(output, "example/restapi:shared-tag")
+			},
+		},
+		{
+			Name:     "TestHubWebsocketsNullTag",
+			Template: websocketsTemplate,
+			Values:   hubImageTagValues(map[string]string{"camundaHub.websockets.image.tag": "null"}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				s.requireContainerImage(output, "example/websockets:shared-tag")
+			},
+		},
+		{
+			Name:     "TestHubSharedNullTagFallsBackToLegacySharedTag",
+			Template: restapiTemplate,
+			Values:   hubImageTagValues(map[string]string{"webModeler.image.tag": "legacy-tag", "camundaHub.image.tag": "null"}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				s.requireContainerImage(output, "example/restapi:legacy-tag")
 			},
 		},
 	}
