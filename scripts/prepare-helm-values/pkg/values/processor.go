@@ -23,6 +23,7 @@ import (
 	"path/filepath"
 	"scripts/camunda-core/pkg/logging"
 	"scripts/camunda-core/pkg/scenarios"
+	"scripts/camunda-core/pkg/versionmatrix"
 	"scripts/prepare-helm-values/pkg/env"
 	"scripts/prepare-helm-values/pkg/placeholders"
 	"sort"
@@ -81,6 +82,11 @@ func ensureMap(m map[string]any, k string) map[string]any {
 	mm := map[string]any{}
 	m[k] = mm
 	return mm
+}
+
+func usesLicenseSecret(chartPath string) bool {
+	minor := strings.TrimPrefix(filepath.Base(filepath.Clean(chartPath)), "camunda-platform-")
+	return versionmatrix.CompareChartVersions(minor, "8.9") >= 0
 }
 
 // ResolveValuesFile determines the source values file from options.
@@ -240,7 +246,7 @@ func Process(ctx context.Context, valuesFile string, opts Options) (string, stri
 		}
 		global := ensureMap(doc, "global")
 		license := ensureMap(global, "license")
-		if strings.Contains(opts.ChartPath, "8.9") || strings.Contains(opts.ChartPath, "8.10") {
+		if usesLicenseSecret(opts.ChartPath) {
 			secret := ensureMap(license, "secret")
 			secret["inlineSecret"] = opts.LicenseKey
 		} else {

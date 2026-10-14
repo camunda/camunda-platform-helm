@@ -23,6 +23,7 @@ import { generateValuesExample } from '../src/tools/generateExample.js';
 // Get the chart path (parent directory of helm-values-mcp)
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CHART_PATH = path.resolve(__dirname, '../..');
+const LATEST_VERSION = discoverChartVersions(CHART_PATH)[0];
 
 describe('Data Layer', () => {
   describe('Fetcher', () => {
@@ -90,7 +91,8 @@ describe('Data Layer', () => {
       expect(versions).toContain('8.9');
       expect(versions).toContain('8.8');
       // Versions are sorted descending
-      expect(versions[0]).toBe('8.10');
+      const minors = versions.map(v => Number(v.split('.')[1]));
+      expect(minors).toEqual([...minors].sort((a, b) => b - a));
     });
 
     it('should load chart data with metadata and configs', () => {
@@ -167,7 +169,7 @@ describe('Data Layer', () => {
       
       expect(store.chartPath).toBe(CHART_PATH);
       expect(store.charts.size).toBeGreaterThan(0);
-      expect(store.latestVersion).toBe('8.10');
+      expect(store.latestVersion).toBe(LATEST_VERSION);
     });
 
     it('should get config by path', () => {
@@ -201,7 +203,7 @@ describe('MCP Tools', () => {
     it('should return versions with chart metadata', () => {
       const result = listVersions();
       
-      expect(result.latest).toBe('8.10');
+      expect(result.latest).toBe(LATEST_VERSION);
       
       const v89 = result.versions.find(v => v.version === '8.9');
       expect(v89?.chartVersion).not.toBe('unknown');
@@ -214,7 +216,7 @@ describe('MCP Tools', () => {
     it('should return components with descriptions and dependency info', () => {
       const result = listComponents({});
 
-      expect(result.version).toBe('8.10');
+      expect(result.version).toBe(LATEST_VERSION);
 
       // Check descriptions are derived
       const global = result.components.find(c => c.name === 'global');
