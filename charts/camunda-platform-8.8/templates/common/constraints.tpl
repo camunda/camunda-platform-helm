@@ -521,7 +521,7 @@ The following values inside your values.yaml need to be set but were not:
       {{- end }}
     {{- end }}
   {{- end }}
-  {{- if regexMatch "(?i)replication-?factor" (.Values.orchestration.javaOpts | default "") }}
+  {{- if regexMatch "-Dcamunda\\.cluster\\.replication-factor=" (.Values.orchestration.javaOpts | default "") }}
     {{- $replicationFactorKnown = false -}}
   {{- end }}
   {{- if and .Values.orchestration.enabled (eq $regions 2) $replicationFactorKnown (ne $replicationFactor 4) }}

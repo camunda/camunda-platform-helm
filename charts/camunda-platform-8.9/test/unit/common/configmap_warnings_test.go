@@ -865,6 +865,34 @@ func (s *ConfigMapWarningsTemplateTest) TestMultiregionReplicationFactorWarning(
 				s.Require().NotContains(output, "a dual-region cluster needs a replication factor of 4")
 			},
 		},
+		{
+			Name: "NestedExtraConfigurationReplicationFactorDoesNotTriggerWarning",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"global.multiregion.regions":               "2",
+				"orchestration.extraConfiguration[0].file": "cluster.yaml",
+			},
+			RenderTemplateExtraArgs: []string{"--set-json", `orchestration.extraConfiguration[0].content="camunda:\n  cluster:\n    replication-factor: 4\n"`},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				s.Require().NotContains(output, "a dual-region cluster needs a replication factor of 4")
+			},
+		},
+		{
+			Name: "UnrelatedExtraConfigurationReplicationFactorStillWarns",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"global.multiregion.regions":               "2",
+				"orchestration.extraConfiguration[0].file": "cluster.yaml",
+			},
+			RenderTemplateExtraArgs: []string{"--set-json", `orchestration.extraConfiguration[0].content="foo:\n  replicationFactor: 4\n"`},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().Contains(configmap.Data["warnings"], "orchestration.replicationFactor is 3 but")
+			},
+		},
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)

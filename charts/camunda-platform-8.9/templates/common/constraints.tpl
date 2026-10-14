@@ -636,7 +636,9 @@ The following values inside your values.yaml need to be set but were not:
   {{- $replicationFactorKnown := not .Values.orchestration.configuration -}}
   {{- $replicationFactorSource := "orchestration.replicationFactor" -}}
   {{- range $file := (.Values.orchestration.extraConfiguration | default list) }}
-    {{- if and (ne $file.springImport false) (regexMatch "(?i)replication-?factor" ($file.content | default "")) }}
+    {{- $doc := fromYaml ($file.content | default "") -}}
+    {{- $cluster := dig "camunda" "cluster" dict $doc -}}
+    {{- if and (ne $file.springImport false) (or (hasKey $cluster "replication-factor") (hasKey $cluster "replicationFactor") (hasKey $doc "camunda.cluster.replication-factor")) }}
       {{- $replicationFactorKnown = false -}}
     {{- end }}
   {{- end }}
@@ -652,7 +654,7 @@ The following values inside your values.yaml need to be set but were not:
       {{- end }}
     {{- end }}
   {{- end }}
-  {{- if regexMatch "(?i)replication-?factor" (.Values.orchestration.javaOpts | default "") }}
+  {{- if regexMatch "-Dcamunda\\.cluster\\.replication-factor=" (.Values.orchestration.javaOpts | default "") }}
     {{- $replicationFactorKnown = false -}}
   {{- end }}
   {{- if and .Values.orchestration.enabled (eq $regions 2) $replicationFactorKnown (ne $replicationFactor 4) }}

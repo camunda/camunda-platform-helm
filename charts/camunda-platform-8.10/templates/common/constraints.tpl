@@ -1664,7 +1664,7 @@ The following values inside your values.yaml need to be set but were not:
       {{- $replicationFactor = $legacyValue -}}
       {{- $replicationFactorSource = "the ZEEBE_BROKER_CLUSTER_REPLICATIONFACTOR entry in orchestration.env" -}}
     {{- end }}
-    {{- if regexMatch "(?i)replication-?factor" (.Values.orchestration.javaOpts | default "") }}
+    {{- if regexMatch "-D(camunda\\.cluster\\.replication-factor|zeebe\\.broker\\.cluster\\.replicationFactor)=" (.Values.orchestration.javaOpts | default "") }}
       {{- $replicationFactorKnown = false -}}
     {{- end }}
     {{- if and (ne $partitioning.scheme "zone-aware") (eq (int $partitioning.numberOfZones) 2) $replicationFactorKnown (ne $replicationFactor 4) }}
