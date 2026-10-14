@@ -21,3 +21,4 @@ spec:
       path: /actuator/prometheus
       port: metrics
       interval: 10s
+
