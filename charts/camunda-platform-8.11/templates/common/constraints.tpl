@@ -1731,6 +1731,8 @@ The following values inside your values.yaml need to be set but were not:
     {{- end }}
   {{- end }}
 
+  {{ include "camundaPlatform.globalImageDeprecations" . }}
+
   {{/* Camunda Hub consolidation deprecation warnings */}}
   {{- if .Values.webModeler.enabled }}
     {{- $warningMessage := printf "%s %s %s %s"
