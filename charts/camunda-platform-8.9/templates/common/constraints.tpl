@@ -639,8 +639,12 @@ The following values inside your values.yaml need to be set but were not:
     {{- if ne $file.springImport false }}
       {{- range $document := regexSplit "(?m)^[ \t]*(---|\\.\\.\\.)[ \t]*(#.*)?$" ($file.content | default "") -1 }}
         {{- $doc := fromYaml $document -}}
-        {{- $nested := dig "camunda" "cluster" dict $doc -}}
-        {{- $mixed := get $doc "camunda.cluster" | default dict -}}
+        {{- $camunda := get $doc "camunda" -}}
+        {{- $nested := dict -}}
+        {{- if and (kindIs "map" $camunda) (kindIs "map" (get $camunda "cluster")) }}
+          {{- $nested = get $camunda "cluster" -}}
+        {{- end }}
+        {{- $mixed := get $doc "camunda.cluster" -}}
         {{- range $key := list "replication-factor" "replicationFactor" }}
           {{- if or (hasKey $nested $key) (and (kindIs "map" $mixed) (hasKey $mixed $key)) (hasKey $doc (printf "camunda.cluster.%s" $key)) }}
             {{- $replicationFactorKnown = false -}}

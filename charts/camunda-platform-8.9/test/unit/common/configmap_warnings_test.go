@@ -932,6 +932,36 @@ func (s *ConfigMapWarningsTemplateTest) TestMultiregionReplicationFactorWarning(
 				s.Require().Contains(configmap.Data["warnings"], "orchestration.replicationFactor is 3 but")
 			},
 		},
+		{
+			Name: "ScalarCamundaExtraConfigurationStillWarns",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"global.multiregion.regions":               "2",
+				"orchestration.extraConfiguration[0].file": "cluster.yaml",
+			},
+			RenderTemplateExtraArgs: []string{"--set-json", `orchestration.extraConfiguration[0].content="camunda: x\n"`},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().Contains(configmap.Data["warnings"], "orchestration.replicationFactor is 3 but")
+			},
+		},
+		{
+			Name: "ScalarCamundaClusterExtraConfigurationStillWarns",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"global.multiregion.regions":               "2",
+				"orchestration.extraConfiguration[0].file": "cluster.yaml",
+			},
+			RenderTemplateExtraArgs: []string{"--set-json", `orchestration.extraConfiguration[0].content="camunda:\n  cluster: x\ncamunda.cluster: y\n"`},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().Contains(configmap.Data["warnings"], "orchestration.replicationFactor is 3 but")
+			},
+		},
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
