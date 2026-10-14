@@ -636,10 +636,17 @@ The following values inside your values.yaml need to be set but were not:
   {{- $replicationFactorKnown := not .Values.orchestration.configuration -}}
   {{- $replicationFactorSource := "orchestration.replicationFactor" -}}
   {{- range $file := (.Values.orchestration.extraConfiguration | default list) }}
-    {{- $doc := fromYaml ($file.content | default "") -}}
-    {{- $cluster := dig "camunda" "cluster" dict $doc -}}
-    {{- if and (ne $file.springImport false) (or (hasKey $cluster "replication-factor") (hasKey $cluster "replicationFactor") (hasKey $doc "camunda.cluster.replication-factor")) }}
-      {{- $replicationFactorKnown = false -}}
+    {{- if ne $file.springImport false }}
+      {{- range $document := regexSplit "(?m)^[ \t]*(---|\\.\\.\\.)[ \t]*(#.*)?$" ($file.content | default "") -1 }}
+        {{- $doc := fromYaml $document -}}
+        {{- $nested := dig "camunda" "cluster" dict $doc -}}
+        {{- $mixed := get $doc "camunda.cluster" | default dict -}}
+        {{- range $key := list "replication-factor" "replicationFactor" }}
+          {{- if or (hasKey $nested $key) (and (kindIs "map" $mixed) (hasKey $mixed $key)) (hasKey $doc (printf "camunda.cluster.%s" $key)) }}
+            {{- $replicationFactorKnown = false -}}
+          {{- end }}
+        {{- end }}
+      {{- end }}
     {{- end }}
   {{- end }}
   {{- range $env := ($ctx.Values.orchestration.env | default list) }}

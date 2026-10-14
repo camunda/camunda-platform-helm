@@ -879,6 +879,45 @@ func (s *ConfigMapWarningsTemplateTest) TestMultiregionReplicationFactorWarning(
 			},
 		},
 		{
+			Name: "SecondDocumentExtraConfigurationDoesNotTriggerWarning",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"global.multiregion.regions":               "2",
+				"orchestration.extraConfiguration[0].file": "cluster.yaml",
+			},
+			RenderTemplateExtraArgs: []string{"--set-json", `orchestration.extraConfiguration[0].content="foo: bar\n---\ncamunda:\n  cluster:\n    replication-factor: 4\n"`},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				s.Require().NotContains(output, "a dual-region cluster needs a replication factor of 4")
+			},
+		},
+		{
+			Name: "MixedCamelCaseExtraConfigurationDoesNotTriggerWarning",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"global.multiregion.regions":               "2",
+				"orchestration.extraConfiguration[0].file": "cluster.yaml",
+			},
+			RenderTemplateExtraArgs: []string{"--set-json", `orchestration.extraConfiguration[0].content="camunda.cluster:\n  replicationFactor: 4\n"`},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				s.Require().NotContains(output, "a dual-region cluster needs a replication factor of 4")
+			},
+		},
+		{
+			Name: "FlatCamelCaseExtraConfigurationDoesNotTriggerWarning",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"global.multiregion.regions":               "2",
+				"orchestration.extraConfiguration[0].file": "cluster.yaml",
+			},
+			RenderTemplateExtraArgs: []string{"--set-json", `orchestration.extraConfiguration[0].content="camunda.cluster.replicationFactor: 4\n"`},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				s.Require().NotContains(output, "a dual-region cluster needs a replication factor of 4")
+			},
+		},
+		{
 			Name: "UnrelatedExtraConfigurationReplicationFactorStillWarns",
 			Values: map[string]string{
 				"orchestration.data.secondaryStorage.type": "elasticsearch",
