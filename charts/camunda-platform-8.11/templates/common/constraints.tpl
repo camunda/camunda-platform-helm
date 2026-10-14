@@ -92,9 +92,6 @@ non-empty string such as global.identity.service.url.
   {{- if not (or $esEnabled $osEnabled) }}
     {{- fail "[camunda][error] global.topology.mode=optimize requires optimize.database.elasticsearch.enabled or optimize.database.opensearch.enabled, with url.host addressing the secondary storage the Orchestration Cluster exports to. This chart bundles no Elasticsearch, and with neither backend enabled Optimize renders an empty connection node list and reaches no storage at all." }}
   {{- end }}
-  {{- if and (or $esEnabled $osEnabled) (empty (include "optimize.effectiveDatabaseHost" .)) }}
-    {{- fail "[camunda][error] global.topology.mode=optimize requires a non-empty url.host for the enabled Optimize database backend. Elasticsearch takes precedence when both backends are enabled; without its host Optimize renders an unusable connection node and cannot reach secondary storage." }}
-  {{- end }}
   {{- if ne (include "optimize.authEnabled" .) "true" }}
     {{- fail "[camunda][error] global.topology.mode=optimize requires authentication; set optimize.security.authentication.method=oidc or global.identity.auth.enabled=true." }}
   {{- end }}
@@ -1088,6 +1085,17 @@ Usage:
     {{- printf "\n%s" "[camunda][warning] Camunda Hub is quiesced for the 8.9 to 8.10 database migration. Confirm all external writers are stopped and create a verified database backup before setting camundaHub.upgrade.phase to migrate." }}
   {{- else if eq $hubUpgradePhase "migrate" }}
     {{- printf "\n%s" "[camunda][warning] Camunda Hub is running the 8.9 to 8.10 database migration without serving traffic. Validate the migrated data before setting camundaHub.upgrade.phase back to normal." }}
+  {{- end }}
+  {{- $secondaryStorage := include "orchestration.secondaryStorage" . }}
+  {{- if and (eq (include "camundaPlatform.orchestrationEnabled" .) "true") (has $secondaryStorage (list "elasticsearch" "opensearch")) (ne (include "orchestration.searchUrlConfigured" (dict "context" . "type" $secondaryStorage)) "true") }}
+    {{- printf "\n[camunda][warning] The Orchestration Cluster uses %s secondary storage, but no URL is set. Without a URL, the Orchestration Cluster connects to http://localhost:9200. Set orchestration.data.secondaryStorage.%s.url, set CAMUNDA_DATA_SECONDARYSTORAGE_%s_URL in orchestration.env, or set camunda.data.secondary-storage.%s.url in orchestration.extraConfiguration. If the URL comes from another source, such as JVM options, ignore this warning." (ternary "Elasticsearch" "OpenSearch" (eq $secondaryStorage "elasticsearch")) $secondaryStorage (upper $secondaryStorage) $secondaryStorage }}
+  {{- end }}
+  {{- if and (eq (include "camundaPlatform.optimizeEnabled" .) "true") (or .Values.optimize.database.elasticsearch.enabled .Values.optimize.database.opensearch.enabled) (empty (include "optimize.effectiveDatabaseHost" .)) }}
+    {{- $optimizeBackend := "opensearch" }}
+    {{- if .Values.optimize.database.elasticsearch.enabled }}
+      {{- $optimizeBackend = "elasticsearch" }}
+    {{- end }}
+    {{- printf "\n[camunda][warning] Optimize uses %s, but optimize.database.%s.url.host is empty, so the chart renders no connection node for it. Elasticsearch takes precedence when both backends are enabled. Set optimize.database.%s.url.host. If the host comes from another source, such as optimize.extraConfiguration, ignore this warning." (ternary "Elasticsearch" "OpenSearch" (eq $optimizeBackend "elasticsearch")) $optimizeBackend $optimizeBackend }}
   {{- end }}
   {{- if .Values.global.testDeprecationFlags.existingSecretsMustBeSet }}
     {{/* TODO: Check if there are more existingSecrets to check */}}
