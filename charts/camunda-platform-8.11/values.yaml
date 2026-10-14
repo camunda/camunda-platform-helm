@@ -521,7 +521,7 @@ global:
   # global.identity.keycloak.url + contextPath + realm.
   #
   # Optional:
-  #   global.identity.keycloak.internal: true  - ExternalName svc for cross-namespace access
+  #   global.identity.keycloak.internal: true  - route Keycloak through the shared Ingress or HTTPRoute
   #   global.identity.keycloak.contextPath     - "/auth" (Keycloak v16) or "/" (v19+)
   #
   # Minimal snippet:
@@ -604,8 +604,7 @@ global:
       ## @param global.identity.service.url
       url: ""
     keycloak:
-      # global.identity.keycloak.internal if true, it will configure an extra service with type "ExternalName".
-      ## @param global.identity.keycloak.internal It's useful for using existing Keycloak in another namespace with and access it with the combined Ingress.
+      ## @param global.identity.keycloak.internal if true, the shared Ingress or HTTPRoute routes the Keycloak context path to the Keycloak in global.identity.keycloak.url. If that host is not a Service in the release namespace, the chart creates an ExternalName Service for it, named after the release with the suffix -keycloak-custom. The chart does not deploy Keycloak. Requires global.identity.keycloak.url.host.
       # Applies to: External Keycloak. Not used in External OIDC.
       internal: false
       ## @extra global.identity.keycloak.url configures the URL to reach an external Keycloak.
