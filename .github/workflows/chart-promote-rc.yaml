@@ -48,7 +48,12 @@ jobs:
       chart-dir-id: ${{ steps.package.outputs.chart_dir_id }}
       rc-tag: ${{ steps.parse.outputs.rc_tag }}
       release-pr-url: ${{ steps.release-please.outputs.pr_url }}
+    permissions:
+      contents: write
+      pull-requests: write
+      id-token: write
     steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@ead99f6c9c536f5c47e443929d47e8fcfdb05a81  # start-build-monitor-1.0.1
       - name: Info - ℹ️ Print workflow inputs ℹ️
         env:
           GITHUB_CONTEXT: ${{ toJson(inputs) }}
@@ -443,6 +448,17 @@ jobs:
           3. Run **Chart - Release - Pipeline - 3 - Public** with \`${RC_TAG}\`
           EOF
           fi
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_jwt_path: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwt_role: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwt_audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   notify-on-failure:
     name: Notify on Failure

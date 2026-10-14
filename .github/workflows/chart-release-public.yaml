@@ -51,6 +51,7 @@ jobs:
       CHART_RELEASE_COSIGN_CERTIFICATE_IDENTITY: "https://github.com/${{ github.workflow_ref }}"
       CHART_RELEASE_COSIGN_CERTIFICATE_OIDC_ISSUER: "https://token.actions.githubusercontent.com"
     steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@ead99f6c9c536f5c47e443929d47e8fcfdb05a81  # start-build-monitor-1.0.1
       - name: Import Vault secrets for Harbor
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         id: vault-harbor
@@ -391,6 +392,17 @@ jobs:
           Skipped (logged above): GitHub release, index.yaml push, cosign signing + uploads, post-release PR automation.
           EOF
 
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_jwt_path: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwt_role: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwt_audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
+
   post-release:
     name: Post-Release
     needs: release
@@ -608,6 +620,7 @@ jobs:
       contents: read
       pull-requests: write
     steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@ead99f6c9c536f5c47e443929d47e8fcfdb05a81  # start-build-monitor-1.0.1
       - name: Import Vault secrets
         id: secrets
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
@@ -676,6 +689,27 @@ jobs:
                     *Helm Chart ${{ needs.release.outputs.version }}* was published, but its release-please PR did *not* merge (result: `${{ steps.merge-queue.outputs.result || 'unknown' }}`, last queue state: `${{ steps.merge-queue.outputs.queue-state || 'unknown' }}`).
                     Please merge it so `main` syncs with the released artifact.
                     <${{ github.server_url }}/${{ github.repository }}/pull/${{ needs.post-release.outputs.pr-number }}|View PR> · <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View workflow>
+
+      - name: Import build status secrets
+        id: build-status-secrets
+        if: always()
+        continue-on-error: true
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc  # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/distribution/ci/ci-analytics gcloud_sa_key;
+
+      - uses: camunda/infra-global-github-actions/submit-build-status@ead99f6c9c536f5c47e443929d47e8fcfdb05a81  # submit-build-status-1.3.3
+        if: ${{ always() && steps.build-status-secrets.outputs.gcloud_sa_key != '' }}
+        continue-on-error: true
+        with:
+          build_status: "${{ job.status }}"
+          gcp_credentials_json: "${{ steps.build-status-secrets.outputs.gcloud_sa_key }}"
 
   notify-on-failure:
     name: Notify on Failure

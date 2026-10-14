@@ -14,6 +14,15 @@ on:
       camunda-helm-dir:
         required: true
         type: string
+    secrets:
+      VAULT_ADDR:
+        required: false
+      VAULT_JWT_PATH:
+        required: false
+      VAULT_JWT_ROLE:
+        required: false
+      VAULT_JWT_AUDIENCE:
+        required: false
 
 permissions:
   contents: read
@@ -26,7 +35,11 @@ jobs:
   lint:
     name: Lint
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@ead99f6c9c536f5c47e443929d47e8fcfdb05a81  # start-build-monitor-1.0.1
       - name: ℹ️ Print workflow inputs ℹ️
         env:
           GITHUB_CONTEXT: ${{ toJson(inputs) }}
@@ -122,3 +135,14 @@ jobs:
         if: ${{ hashFiles(format('charts/{0}/values.schema.json', inputs.camunda-helm-dir)) != '' }}
         run: |
           make helm.schema-validate-values chartPath="charts/${{ inputs.camunda-helm-dir }}"
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_jwt_path: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwt_role: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwt_audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
