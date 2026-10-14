@@ -95,18 +95,24 @@ jobs:
 
       - name: Fetch untriaged issues
         id: fetch_issues
+        env:
+          MANUAL_ISSUE: ${{ inputs.issue_number || github.event.inputs.issue_number }}
+          EVENT_ISSUE: ${{ github.event.issue.number }}
         run: |
           set -euo pipefail
 
           # Determine which issues to process
-          MANUAL_ISSUE="${{ inputs.issue_number || github.event.inputs.issue_number }}"
           if [[ -n "$MANUAL_ISSUE" ]]; then
+            if [[ ! "$MANUAL_ISSUE" =~ ^[1-9][0-9]*$ ]]; then
+              echo "::error::issue_number must be a positive integer"
+              exit 1
+            fi
             # Single issue mode (manual dispatch or workflow_call with issue_number)
             ISSUE_NUMBERS="$MANUAL_ISSUE"
             echo "📋 Single issue mode: #${ISSUE_NUMBERS}"
-          elif [[ "${{ github.event_name }}" == "issues" ]]; then
+          elif [[ "$GITHUB_EVENT_NAME" == "issues" ]]; then
             # New issue event
-            ISSUE_NUMBERS="${{ github.event.issue.number }}"
+            ISSUE_NUMBERS="$EVENT_ISSUE"
             echo "📋 New issue event: #${ISSUE_NUMBERS}"
           else
             # Bulk mode (scheduled or manual dispatch without issue_number)
@@ -170,12 +176,11 @@ jobs:
       - name: Triage issues
         if: steps.fetch_issues.outputs.has_issues == 'true'
         env:
+          ISSUE_NUMBERS: ${{ steps.fetch_issues.outputs.issue_numbers }}
           GLEAN_API_TOKEN: ${{ steps.vault-secrets.outputs.GLEAN_API_TOKEN }}
           SLACK_DISTRO_BOT_WEBHOOK_GH: ${{ steps.vault-secrets.outputs.SLACK_DISTRO_BOT_WEBHOOK_GH }}
         run: |
           set -euo pipefail
-
-          ISSUE_NUMBERS="${{ steps.fetch_issues.outputs.issue_numbers }}"
 
           for ISSUE_NUMBER in $ISSUE_NUMBERS; do
             echo ""
