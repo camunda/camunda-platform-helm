@@ -562,3 +562,67 @@ func getConfigMapFieldValue(configmapApplication map[string]any, keyPath []strin
 		return ""
 	}
 }
+
+type HTTPRoute struct {
+	Spec struct {
+		Rules []struct {
+			Matches []struct {
+				Path struct {
+					Type  string `json:"type"`
+					Value string `json:"value"`
+				} `json:"path"`
+			} `json:"matches"`
+			Filters []struct {
+				Type       string `json:"type"`
+				URLRewrite struct {
+					Path struct {
+						Type            string `json:"type"`
+						ReplaceFullPath string `json:"replaceFullPath"`
+					} `json:"path"`
+				} `json:"urlRewrite"`
+			} `json:"filters"`
+			BackendRefs []struct {
+				Name string `json:"name"`
+				Port int    `json:"port"`
+			} `json:"backendRefs"`
+		} `json:"rules"`
+	} `json:"spec"`
+}
+
+func RequireContextRootRewrite(t *testing.T, output, contextPath, backendName string, backendPort int) {
+	t.Helper()
+	var route HTTPRoute
+	helm.UnmarshalK8SYaml(t, output, &route)
+	require.GreaterOrEqual(t, len(route.Spec.Rules), 2)
+
+	exact := route.Spec.Rules[0]
+	require.Len(t, exact.Matches, 1)
+	require.Equal(t, "Exact", exact.Matches[0].Path.Type)
+	require.Equal(t, contextPath, exact.Matches[0].Path.Value)
+	require.Len(t, exact.Filters, 1)
+	require.Equal(t, "URLRewrite", exact.Filters[0].Type)
+	require.Equal(t, "ReplaceFullPath", exact.Filters[0].URLRewrite.Path.Type)
+	require.Equal(t, contextPath+"/", exact.Filters[0].URLRewrite.Path.ReplaceFullPath)
+	require.Len(t, exact.BackendRefs, 1)
+	require.Equal(t, backendName, exact.BackendRefs[0].Name)
+	require.Equal(t, backendPort, exact.BackendRefs[0].Port)
+
+	prefix := route.Spec.Rules[1]
+	require.Equal(t, "PathPrefix", prefix.Matches[0].Path.Type)
+	require.Empty(t, prefix.Filters)
+	require.Equal(t, backendName, prefix.BackendRefs[0].Name)
+}
+
+func RequireNoContextRootRewrite(t *testing.T, output string) {
+	t.Helper()
+	var route HTTPRoute
+	helm.UnmarshalK8SYaml(t, output, &route)
+	require.NotEmpty(t, route.Spec.Rules)
+	require.Equal(t, "PathPrefix", route.Spec.Rules[0].Matches[0].Path.Type)
+	for _, rule := range route.Spec.Rules {
+		require.Empty(t, rule.Filters)
+		for _, match := range rule.Matches {
+			require.NotEqual(t, "Exact", match.Path.Type)
+		}
+	}
+}
