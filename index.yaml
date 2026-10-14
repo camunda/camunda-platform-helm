@@ -2,6 +2,80 @@ apiVersion: v1
 entries:
   camunda-platform:
   - annotations:
+      artifacthub.io/changes: ""
+      artifacthub.io/containsSecurityUpdates: "false"
+      artifacthub.io/images: |
+        - image: docker.io/camunda/camunda:8.10.4
+        - image: docker.io/camunda/connectors-bundle:8.10.0
+        - image: docker.io/camunda/hub-websockets:8.10.2
+        - image: docker.io/camunda/hub:8.10.2
+        - image: docker.io/camunda/identity:8.10.1
+        - image: docker.io/camunda/optimize:8.10.4
+      artifacthub.io/links: |
+        - name: Camunda 8 docs
+          url: https://docs.camunda.io/
+        - name: Camunda 8 Self-Managed docs
+          url: https://docs.camunda.io/docs/self-managed/about-self-managed/
+        - name: Camunda 8 Self-Managed Helm charts
+          url: https://github.com/camunda/camunda-platform-helm
+      camunda.io/chart-images: |
+        docker.io/camunda/camunda:8.10.4
+        docker.io/camunda/connectors-bundle:8.10.0
+        docker.io/camunda/hub-websockets:8.10.2
+        docker.io/camunda/hub:8.10.2
+        docker.io/camunda/identity:8.10.1
+        docker.io/camunda/optimize:8.10.4
+      camunda.io/component-image-versions: |
+        camunda: 8.10.4
+        managementIdentity: 8.10.1
+        optimize: 8.10.4
+        hub: 8.10.2
+        connectors: 8.10.0
+      camunda.io/helmCLIVersion: 3.22.0,4.3.0
+      camunda.io/imageOverrides: |
+        orchestration: 8.10.4
+        modeler: 8.10.2
+        connectors: 8.10.0
+        optimize: 8.10.4
+        identity: 8.10.1
+    apiVersion: v2
+    appVersion: 8.10.x
+    created: "2026-10-14T06:36:09.604904173Z"
+    dependencies:
+    - name: common
+      repository: file://../common-2
+      version: 2.x.x
+    description: 'Camunda 8 Self-Managed Helm charts. Camunda''s process automation
+      platform allows developers to design, automate and improve processes. '
+    digest: f8ea78ae9f003218958e9a81b725b47be57dfa3a844a81783f84e7d5e2585af2
+    home: https://docs.camunda.io/docs/self-managed/about-self-managed/
+    icon: https://helm.camunda.io/imgs/camunda.svg
+    keywords:
+    - automation
+    - business-rules
+    - bpm
+    - bpmn
+    - camunda-platform
+    - decision-engine
+    - dmn
+    - modeling
+    - orchestration
+    - process-automation
+    - process-engine
+    - process-orchestration
+    - workflow
+    - workflow-engine
+    maintainers:
+    - name: camunda
+      url: https://camunda.com
+    name: camunda-platform
+    sources:
+    - https://github.com/camunda/camunda-platform-helm
+    type: application
+    urls:
+    - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-8.10-15.1.1/camunda-platform-15.1.1.tgz
+    version: 15.1.1
+  - annotations:
       artifacthub.io/changes: |
         - kind: added
           description: "Warn on unknown values keys in the 8.10 chart [ready]"
@@ -34321,4 +34395,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2026-10-12T16:34:47.22510367Z"
+generated: "2026-10-14T06:36:09.605941288Z"
