@@ -257,21 +257,19 @@ func TestGitHubActionsAutomergePolicy(t *testing.T) {
 	assert.Empty(t, actionRule.MatchUpdateTypes)
 	assert.Contains(t, actionRule.Schedule, "every weekend")
 
-	require.NotNil(t, actionRule.Automerge)
-	assert.True(t, *actionRule.Automerge)
-	require.NotNil(t, actionRule.PlatformAutomerge)
-	assert.True(t, *actionRule.PlatformAutomerge)
-	require.NotNil(t, actionRule.IgnoreTests)
-	assert.False(t, *actionRule.IgnoreTests)
-	assert.Equal(t, "pr", actionRule.AutomergeType)
-
 	for _, label := range []string{
 		"deps/github-actions",
-		"automerge",
 		"automation/renovatebot",
 		"kind/chore",
 	} {
 		assert.Contains(t, actionRule.AddLabels, label)
+	}
+
+	// The InfraEx dependency scanner merges Renovate PRs; Renovate must not.
+	for _, rule := range config.PackageRules {
+		assert.False(t, rule.Automerge != nil && *rule.Automerge, "rule %q enables automerge", rule.Description)
+		assert.False(t, rule.PlatformAutomerge != nil && *rule.PlatformAutomerge, "rule %q enables platformAutomerge", rule.Description)
+		assert.NotContains(t, rule.AddLabels, "automerge", "rule %q adds the automerge label", rule.Description)
 	}
 }
 
