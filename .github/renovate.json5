@@ -195,19 +195,15 @@
       allowedVersions: '<4.0.0',
     },
     {
-      description: 'Automerge GitHub Actions updates after status checks pass.',
+      // Merged by the InfraEx dependency scanner, not by Renovate:
+      // https://github.com/camunda/team-infrastructure-experience/blob/main/.github/workflows/renovate-dependency-scan.yml
       addLabels: [
         'deps/github-actions',
-        'automerge',
         'automation/renovatebot',
         'kind/chore',
       ],
       matchManagers: ['github-actions'],
       schedule: ['every weekend'],
-      platformAutomerge: true,
-      automerge: true,
-      automergeType: 'pr',
-      ignoreTests: false,
     },
     // Limit tools and libs versions to the actual Distro CI Kubernetes cluster.
     {
@@ -409,15 +405,11 @@
     },
     {
       matchUpdateTypes: ['minor', 'patch', 'pin', 'digest'],
+      // Merged by the InfraEx dependency scanner, not by Renovate (see above).
       addLabels: [
-        'automerge',
         'automation/renovatebot',
         'kind/chore',
       ],
-      platformAutomerge: true,
-      automerge: true,
-      automergeType: 'pr', // Merge via PR to respect GitHub settings
-      ignoreTests: false, // Wait for all status checks to pass
     },
     // This package name is used by the initContainer for keycloak and doesn't make sense to
     // be processed by renovate because it requires helm templating to render the real image name.
