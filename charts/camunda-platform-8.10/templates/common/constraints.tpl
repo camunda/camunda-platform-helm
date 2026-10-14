@@ -1069,6 +1069,9 @@ Usage:
       {{- printf "\n[camunda][warning] The Orchestration Cluster uses OIDC without an issuer URI, and these endpoints do not render as absolute URLs: %s. Set orchestration.security.authentication.oidc.issuer or global.identity.auth.issuer, or set the endpoints in orchestration.security.authentication.oidc.authUrl, jwksUrl, and tokenUrl (or global.identity.auth.authUrl, jwksUrl, and tokenUrl). For KEYCLOAK, global.identity.auth.publicIssuerUrl derives authorization-uri, and global.identity.auth.issuerBackendUrl or global.identity.keycloak.url derives jwk-set-uri and token-uri." (join ", " $unresolvedEndpoints) }}
     {{- end }}
   {{- end }}
+  {{- if and (eq (include "camundaPlatform.orchestrationEnabled" .) "true") (eq (include "orchestration.secondaryStorage" .) "rdbms") (ne (include "orchestration.rdbmsUrlConfigured" .) "true") }}
+    {{- printf "\n%s" "[camunda][warning] The Orchestration Cluster uses RDBMS secondary storage, but no JDBC URL is set. Without a URL, the Orchestration Cluster fails at startup. Set orchestration.data.secondaryStorage.rdbms.url, set CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_URL in orchestration.env, or set camunda.data.secondary-storage.rdbms.url in orchestration.extraConfiguration. If the URL comes from another source, such as JVM options, ignore this warning." }}
+  {{- end }}
   {{- if not (semverCompare ">=4.0.0-0" .Capabilities.HelmVersion.Version) }}
     {{- printf "\n%s" (printf "[camunda][warning] Helm CLI %s detected. Helm v3 receives security fixes only until February 10, 2027 (https://helm.sh/blog/helm-v3-end-of-life/). Upgrade to Helm v4 before then: https://helm.sh/docs/overview" .Capabilities.HelmVersion.Version) }}
   {{- end }}
