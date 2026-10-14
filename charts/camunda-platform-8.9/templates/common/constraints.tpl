@@ -652,11 +652,47 @@ The following values inside your values.yaml need to be set but were not:
   {{- end }}
 
   {{- $replicationFactor := int .Values.orchestration.replicationFactor -}}
-  {{- if and .Values.orchestration.enabled (eq $regions 2) (ne $replicationFactor 4) }}
+  {{- $ctx := . -}}
+  {{- $replicationFactorKnown := not .Values.orchestration.configuration -}}
+  {{- $replicationFactorSource := "orchestration.replicationFactor" -}}
+  {{- range $file := (.Values.orchestration.extraConfiguration | default list) }}
+    {{- if ne $file.springImport false }}
+      {{- range $document := regexSplit "(?m)^[ \t]*(---|\\.\\.\\.)[ \t]*(#.*)?$" ($file.content | default "") -1 }}
+        {{- $doc := fromYaml $document -}}
+        {{- $camunda := get $doc "camunda" -}}
+        {{- $nested := dict -}}
+        {{- if and (kindIs "map" $camunda) (kindIs "map" (get $camunda "cluster")) }}
+          {{- $nested = get $camunda "cluster" -}}
+        {{- end }}
+        {{- $mixed := get $doc "camunda.cluster" -}}
+        {{- range $key := list "replication-factor" "replicationFactor" }}
+          {{- if or (hasKey $nested $key) (and (kindIs "map" $mixed) (hasKey $mixed $key)) (hasKey $doc (printf "camunda.cluster.%s" $key)) }}
+            {{- $replicationFactorKnown = false -}}
+          {{- end }}
+        {{- end }}
+      {{- end }}
+    {{- end }}
+  {{- end }}
+  {{- range $env := ($ctx.Values.orchestration.env | default list) }}
+    {{- $envName := tpl ($env.name | default "") $ctx -}}
+    {{- if has $envName (list "CAMUNDA_CLUSTER_REPLICATIONFACTOR" "CAMUNDA_CLUSTER_REPLICATION_FACTOR") }}
+      {{- if $env.value }}
+        {{- $replicationFactor = int (tpl (toString $env.value) $ctx) -}}
+        {{- $replicationFactorSource = printf "the %s entry in orchestration.env" $envName -}}
+        {{- $replicationFactorKnown = true -}}
+      {{- else }}
+        {{- $replicationFactorKnown = false -}}
+      {{- end }}
+    {{- end }}
+  {{- end }}
+  {{- if regexMatch "-Dcamunda\\.cluster\\.replication-factor=" (.Values.orchestration.javaOpts | default "") }}
+    {{- $replicationFactorKnown = false -}}
+  {{- end }}
+  {{- if and .Values.orchestration.enabled (eq $regions 2) $replicationFactorKnown (ne $replicationFactor 4) }}
     {{- $warningMessage := printf "%s %s %s"
         "[camunda][warning]"
-        (printf "orchestration.replicationFactor is %d but global.multiregion.regions is 2; a dual-region cluster needs a replication factor of 4 to distribute every partition evenly across both regions." $replicationFactor)
-        "Set orchestration.replicationFactor to 4."
+        (printf "%s is %d but global.multiregion.regions is 2; a dual-region cluster needs a replication factor of 4 to distribute every partition evenly across both regions." $replicationFactorSource $replicationFactor)
+        (printf "Set %s to 4." $replicationFactorSource)
     -}}
     {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
   {{- end }}

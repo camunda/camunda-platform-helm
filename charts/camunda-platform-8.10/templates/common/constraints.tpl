@@ -1628,11 +1628,50 @@ The following values inside your values.yaml need to be set but were not:
   {{- if eq (include "camundaPlatform.orchestrationEnabled" .) "true" }}
     {{- $partitioning := include "camundaPlatform.partitioning" . | fromJson -}}
     {{- $replicationFactor := int .Values.orchestration.replicationFactor -}}
-    {{- if and (ne $partitioning.scheme "zone-aware") (eq (int $partitioning.numberOfZones) 2) (ne $replicationFactor 4) }}
+    {{- $ctx := . -}}
+    {{- $replicationFactorKnown := not .Values.orchestration.configuration -}}
+    {{- $replicationFactorSource := "orchestration.replicationFactor" -}}
+    {{- $provided := list -}}
+    {{- if .Values.orchestration.envFrom }}
+      {{- $provided = .Values.orchestration.envFromProvides | default list -}}
+    {{- end }}
+    {{- $newKeyOwned := or (has "CAMUNDA_CLUSTER_REPLICATIONFACTOR" $provided) (eq (include "camundaPlatform.appConfigMentionsPath" (dict "extraConfiguration" .Values.orchestration.extraConfiguration "path" (list "camunda" "cluster" "replication-factor"))) "true") -}}
+    {{- if or $newKeyOwned (has "ZEEBE_BROKER_CLUSTER_REPLICATIONFACTOR" $provided) (eq (include "camundaPlatform.appConfigMentionsPath" (dict "extraConfiguration" .Values.orchestration.extraConfiguration "path" (list "zeebe" "broker" "cluster" "replicationFactor"))) "true") }}
+      {{- $replicationFactorKnown = false -}}
+    {{- end }}
+    {{- $legacyState := "" -}}
+    {{- $legacyValue := 0 -}}
+    {{- range $env := ($ctx.Values.orchestration.env | default list) }}
+      {{- $envName := tpl ($env.name | default "") $ctx -}}
+      {{- if has $envName (list "CAMUNDA_CLUSTER_REPLICATIONFACTOR" "CAMUNDA_CLUSTER_REPLICATION_FACTOR") }}
+        {{- if $env.value }}
+          {{- $replicationFactor = int (tpl (toString $env.value) $ctx) -}}
+          {{- $replicationFactorSource = printf "the %s entry in orchestration.env" $envName -}}
+          {{- $replicationFactorKnown = true -}}
+        {{- else }}
+          {{- $replicationFactorKnown = false -}}
+        {{- end }}
+        {{- $newKeyOwned = true -}}
+      {{- else if eq $envName "ZEEBE_BROKER_CLUSTER_REPLICATIONFACTOR" }}
+        {{- $legacyState = ternary "known" "unknown" (not (empty $env.value)) -}}
+        {{- if $env.value }}
+          {{- $legacyValue = int (tpl (toString $env.value) $ctx) -}}
+        {{- end }}
+      {{- end }}
+    {{- end }}
+    {{- if and $legacyState (not $newKeyOwned) (not .Values.orchestration.configuration) }}
+      {{- $replicationFactorKnown = eq $legacyState "known" -}}
+      {{- $replicationFactor = $legacyValue -}}
+      {{- $replicationFactorSource = "the ZEEBE_BROKER_CLUSTER_REPLICATIONFACTOR entry in orchestration.env" -}}
+    {{- end }}
+    {{- if regexMatch "-D(camunda\\.cluster\\.replication-factor|zeebe\\.broker\\.cluster\\.replicationFactor)=" (.Values.orchestration.javaOpts | default "") }}
+      {{- $replicationFactorKnown = false -}}
+    {{- end }}
+    {{- if and (ne $partitioning.scheme "zone-aware") (eq (int $partitioning.numberOfZones) 2) $replicationFactorKnown (ne $replicationFactor 4) }}
       {{- $warningMessage := printf "%s %s %s"
           "[camunda][warning]"
-          (printf "orchestration.replicationFactor is %d but %s.%s is 2; a dual-region cluster needs a replication factor of 4 to distribute every partition evenly across both regions." $replicationFactor $partitioning.sourceKey $partitioning.countKey)
-          "Set orchestration.replicationFactor to 4."
+          (printf "%s is %d but %s.%s is 2; a dual-region cluster needs a replication factor of 4 to distribute every partition evenly across both regions." $replicationFactorSource $replicationFactor $partitioning.sourceKey $partitioning.countKey)
+          (printf "Set %s to 4." $replicationFactorSource)
       -}}
       {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
     {{- end }}
