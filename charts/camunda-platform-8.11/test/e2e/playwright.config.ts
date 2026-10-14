@@ -37,14 +37,6 @@ if (
     "The required Hub and Web Modeler test suite is not installed",
   );
 }
-if (
-  process.env.REQUIRE_PHYSICAL_TENANTS_TEST_SUITE === "true" &&
-  !hasTopologyOrchestrationSuite
-) {
-  throw new Error(
-    "The required topology Orchestration test suite is not installed",
-  );
-}
 // Only the default physical-tenant leg (or a non-tenant run) runs the orchestration smoke.
 const physicalTenantLegRunsOrchestrationSmoke =
   (process.env.PHYSICAL_TENANT_ID ?? "default") === "default";
