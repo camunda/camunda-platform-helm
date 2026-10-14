@@ -303,6 +303,7 @@
       ],
       matchFileNames: [
         // bump these to whatever the latest alpha is
+        'charts/camunda-platform-8.11/Chart.yaml',
       ],
       versioning: 'regex:^(?<major>\\d+)(\\.(?<minor>\\d+))(\\.(?<patch>\\d+))(-(?<prerelease>alpha\\d+))$',
     },
@@ -352,7 +353,11 @@
         'docker',
         'regex',
       ],
-      matchFileNames: [],
+      matchFileNames: [
+        'charts/camunda-platform-8.11/Chart.yaml',
+        'charts/camunda-platform-8.11/values.yaml',
+        'charts/camunda-platform-8.11/values-latest.yaml',
+      ],
       matchUpdateTypes: ['major', 'minor', 'patch'],
       schedule: ['at any time'],
       addLabels: ['camunda-platform', 'priority-high'],
@@ -363,7 +368,11 @@
       enabled: true,
       matchPackageNames: ['/.*camunda.*/'],
       matchDatasources: ['helm', 'helm-values', 'docker', 'regex'],
-      matchFileNames: [],
+      matchFileNames: [
+        'charts/camunda-platform-8.11/Chart.yaml',
+        'charts/camunda-platform-8.11/values.yaml',
+        'charts/camunda-platform-8.11/values-latest.yaml',
+      ],
       versioning: 'regex:^(?<major>\\d+)(\\.(?<minor>\\d+))(\\.(?<patch>\\d+))(-(?<prerelease>alpha\\d+))$',
     },
     {
@@ -382,6 +391,7 @@
         'charts/camunda-platform-8.8/values-digest.yaml',
         'charts/camunda-platform-8.9/values-digest.yaml',
         'charts/camunda-platform-8.10/values-digest.yaml',
+        'charts/camunda-platform-8.11/values-digest.yaml',
       ],
       matchUpdateTypes: ['digest'],
       schedule: ['at any time'],
@@ -402,6 +412,7 @@
         'charts/camunda-platform-8.8/values-digest.yaml',
         'charts/camunda-platform-8.9/values-digest.yaml',
         'charts/camunda-platform-8.10/values-digest.yaml',
+        'charts/camunda-platform-8.11/values-digest.yaml',
       ],
       matchUpdateTypes: ['digest'],
       matchCurrentValue: '!/SNAPSHOT/',

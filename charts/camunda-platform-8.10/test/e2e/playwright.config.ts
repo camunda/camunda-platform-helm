@@ -29,7 +29,7 @@ const hasTopologyOrchestrationSuite = suiteInstalled(
   "topology-orchestration-smoke.spec.js",
 );
 
-if (process.env.REQUIRE_SM_810_TEST_SUITE === "true" && !hasSmSmokeSuite) {
+if (process.env.REQUIRE_SM_TEST_SUITE === "true" && !hasSmSmokeSuite) {
   throw new Error("The required SM-8.10 smoke test suite is not installed");
 }
 if (

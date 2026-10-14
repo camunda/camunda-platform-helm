@@ -1,0 +1,6 @@
+chart: charts/internal-postgresql
+release-name: postgresql
+values-file: test/integration/companion-values/postgresql.yaml
+env-vars:
+  - RDBMS_POSTGRESQL_USERNAME
+  - RDBMS_POSTGRESQL_PASSWORD

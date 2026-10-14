@@ -1,0 +1,1464 @@
+// Copyright 2026 Camunda Services GmbH
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package topology
+
+import (
+	_ "camunda-platform/test/unit/utils"
+	"encoding/json"
+	"path/filepath"
+	"strings"
+	"testing"
+
+	"github.com/gruntwork-io/terratest/modules/helm"
+	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v3"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+)
+
+func TestTopologyContractIsHiddenAndRedactsInlineSecrets(t *testing.T) {
+	options := &helm.Options{SetValues: map[string]string{
+		"orchestration.data.secondaryStorage.type":                  "elasticsearch",
+		"optimize.security.authentication.oidc.secret.inlineSecret": "must-not-render",
+	}}
+	normal := helm.RenderTemplate(t, options, chartPath(t), "camunda", nil)
+	require.NotContains(t, normal, "topology-contract")
+
+	contract := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{"templates/common/topology-contract.yaml"}, "--api-versions", "camunda.io/topology-contract")
+	require.Contains(t, contract, "topology-contract")
+	require.NotContains(t, contract, "must-not-render")
+}
+
+func TestTopologyContractContainsEffectiveOptimizeAndHubValues(t *testing.T) {
+	options := &helm.Options{
+		ValuesFiles: []string{filepath.Join("testdata", "hub-keycloak.yaml")},
+		SetValues: map[string]string{
+			"orchestration.data.secondaryStorage.type":                                 "elasticsearch",
+			"optimize.enabled":                                                         "true",
+			"optimize.contextPath":                                                     "/analytics",
+			"optimize.database.elasticsearch.enabled":                                  "true",
+			"optimize.database.elasticsearch.prefix":                                   "records-east",
+			"global.topology.clusters[0].components.optimize.enabled":                  "true",
+			"global.topology.clusters[0].components.optimize.clientId":                 "optimize-east",
+			"global.topology.clusters[0].components.optimize.audience":                 "optimize-east-api",
+			"global.topology.clusters[0].components.optimize.redirectUrl":              "https://example.test/analytics",
+			"global.topology.clusters[0].components.optimize.secret.existingSecret":    "oidc",
+			"global.topology.clusters[0].components.optimize.secret.existingSecretKey": "client-secret",
+			"optimize.security.authentication.oidc.clientId":                           "optimize-east",
+			"optimize.security.authentication.oidc.audience":                           "optimize-east-api",
+			"optimize.security.authentication.oidc.redirectUrl":                        "https://example.test/analytics",
+			"optimize.security.authentication.oidc.secret.existingSecret":              "oidc",
+			"optimize.security.authentication.oidc.secret.existingSecretKey":           "client-secret",
+		},
+	}
+	output := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{"templates/common/topology-contract.yaml"}, "--api-versions", "camunda.io/topology-contract")
+	var document struct {
+		Data map[string]string `yaml:"data"`
+	}
+	helm.UnmarshalK8SYaml(t, output, &document)
+	var contract struct {
+		Optimize struct {
+			ContextPath string `json:"contextPath"`
+			Backend     string `json:"backend"`
+			IndexPrefix string `json:"indexPrefix"`
+		} `json:"optimize"`
+		Hub struct {
+			AuthType string            `json:"authType"`
+			Clusters []json.RawMessage `json:"clusters"`
+		} `json:"hub"`
+	}
+	require.NoError(t, json.Unmarshal([]byte(document.Data["contract.json"]), &contract))
+	require.Equal(t, "/analytics", contract.Optimize.ContextPath)
+	require.Equal(t, "elasticsearch", contract.Optimize.Backend)
+	require.Equal(t, "records-east", contract.Optimize.IndexPrefix)
+	require.Equal(t, "KEYCLOAK", contract.Hub.AuthType)
+	require.NotEmpty(t, contract.Hub.Clusters)
+}
+
+func chartPath(t *testing.T) string {
+	t.Helper()
+	path, err := filepath.Abs("../../../")
+	require.NoError(t, err)
+	return path
+}
+
+func render(t *testing.T, valuesFile string, templates ...string) string {
+	t.Helper()
+	options := &helm.Options{ValuesFiles: []string{filepath.Join("testdata", valuesFile)}}
+	return helm.RenderTemplate(t, options, chartPath(t), "camunda", templates)
+}
+
+func TestHubTopologyRendersRemoteIdentityPresetsAndHubInventory(t *testing.T) {
+	output := render(t, "hub-generic.yaml",
+		"templates/identity/configmap.yaml",
+		"templates/web-modeler/configmap-restapi.yaml",
+	)
+
+	require.Contains(t, output, `"topology-east":`)
+	require.Contains(t, output, `"topology-west":`)
+	require.Contains(t, output, `"topology-shared-roles":`)
+	require.Contains(t, output, `name: "Orchestration"`)
+	require.Contains(t, output, `audience: "orchestration-east-api"`)
+	require.Contains(t, output, `audience: "orchestration-west-api"`)
+	require.NotContains(t, output, `audience: "web-modeler-api"\n                  definition: create:*`)
+	require.NotContains(t, output, `audience: "web-modeler-api"\n                  definition: update:*`)
+	require.Contains(t, output, `id: "east"`)
+	require.Contains(t, output, `id: "west"`)
+	require.Contains(t, output, `authentication: "BEARER_TOKEN"`)
+	require.Contains(t, output, `grpc://camunda-zeebe-gateway.camunda-east.svc.cluster.local:26500`)
+	require.Contains(t, output, `grpc://camunda-west-zeebe-gateway.camunda-west.svc.cluster.local:26500`)
+	require.NotContains(t, output, `keycloak:\n`)
+}
+
+func TestHubTopologyRendersPhysicalTenantsInHubInventory(t *testing.T) {
+	options := &helm.Options{
+		ValuesFiles: []string{filepath.Join("testdata", "hub-physical-tenants.yaml")},
+		SetValues: map[string]string{
+			"camundaHub.enabled": "true",
+			"global.host":        "hub.example.test",
+			"global.topology.clusters[0].components.optimize.webappUrl":                       `https://{{ .Values.global.host }}/optimize-default`,
+			"global.topology.clusters[0].physicalTenants[0].components.optimize.webappUrl":    `https://{{ .Values.global.host }}/optimize-ta`,
+			"global.topology.clusters[0].physicalTenants[0].components.optimize.readinessUrl": "https://ready.example.test/optimize-ta",
+			"webModeler.restapi.mail.fromAddress":                                             "noreply@example.com",
+		},
+	}
+	output := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{"templates/web-modeler/configmap-restapi.yaml"})
+
+	var configMap corev1.ConfigMap
+	helm.UnmarshalK8SYaml(t, output, &configMap)
+	var application struct {
+		Camunda struct {
+			Hub struct {
+				Clusters []struct {
+					ID         string `yaml:"id"`
+					Components []struct {
+						Type string `yaml:"type"`
+						URLs struct {
+							Webapp string `yaml:"webapp"`
+						} `yaml:"urls"`
+					} `yaml:"components"`
+					PhysicalTenants []struct {
+						ID         string `yaml:"id"`
+						Name       string `yaml:"name"`
+						Components []struct {
+							Type string `yaml:"type"`
+							URLs struct {
+								Webapp    string `yaml:"webapp"`
+								Readiness string `yaml:"readiness"`
+							} `yaml:"urls"`
+						} `yaml:"components"`
+					} `yaml:"physicalTenants"`
+				} `yaml:"clusters"`
+			} `yaml:"hub"`
+		} `yaml:"camunda"`
+	}
+	require.NoError(t, yaml.Unmarshal([]byte(configMap.Data["application.yaml"]), &application))
+	require.Len(t, application.Camunda.Hub.Clusters, 2)
+	cluster := application.Camunda.Hub.Clusters[1]
+	require.Equal(t, "east", cluster.ID)
+	require.Equal(t, "https://hub.example.test/optimize-default", cluster.Components[0].URLs.Webapp)
+	require.Len(t, cluster.PhysicalTenants, 2)
+	require.Equal(t, "tenanta", cluster.PhysicalTenants[0].ID)
+	require.Equal(t, "Tenant A", cluster.PhysicalTenants[0].Name)
+	require.Equal(t, "optimize", cluster.PhysicalTenants[0].Components[0].Type)
+	require.Equal(t, "https://hub.example.test/optimize-ta", cluster.PhysicalTenants[0].Components[0].URLs.Webapp)
+	require.Equal(t, "https://ready.example.test/optimize-ta", cluster.PhysicalTenants[0].Components[0].URLs.Readiness)
+	require.Equal(t, "tenantb", cluster.PhysicalTenants[1].ID)
+}
+
+func TestHubTopologyOptimizeRedirectUrisIncludesRoot(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "hub-keycloak.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues: map[string]string{
+			"global.topology.clusters[0].components.optimize.enabled":                  "true",
+			"global.topology.clusters[0].components.optimize.clientId":                 "optimize-east",
+			"global.topology.clusters[0].components.optimize.audience":                 "optimize-east-api",
+			"global.topology.clusters[0].components.optimize.redirectUrl":              "https://east.example.com/optimize",
+			"global.topology.clusters[0].components.optimize.secret.existingSecret":    "east-oidc",
+			"global.topology.clusters[0].components.optimize.secret.existingSecretKey": "optimize-secret",
+		},
+	}
+
+	output := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{"templates/identity/configmap.yaml"})
+
+	require.Regexp(t, `redirect-uris:\s*\n\s*-\s*"/api/authentication/callback"\s*\n\s*-\s*"/"\s*\n`, output)
+}
+
+// Each Physical Tenant's Optimize gets its own client AND its own resource server, so a client
+// permission can name the tenant's own audience instead of sharing the cluster's Optimize audience.
+func TestHubTopologyRendersPerTenantOptimizeClientsAndApis(t *testing.T) {
+	output := render(t, "hub-physical-tenants.yaml", "templates/identity/configmap.yaml")
+
+	require.Contains(t, output, `id: "optimize-east-ta"`)
+	require.Contains(t, output, `id: "optimize-east-tb"`)
+	require.Contains(t, output, `secret: ${VALUES_TOPOLOGY_EAST_TENANT_TENANTA_OPTIMIZE_SECRET:}`)
+	require.Contains(t, output, `secret: ${VALUES_TOPOLOGY_EAST_TENANT_TENANTB_OPTIMIZE_SECRET:}`)
+
+	require.Contains(t, output, `audience: "optimize-east-ta-api"`)
+	require.Contains(t, output, `audience: "optimize-east-tb-api"`)
+	require.Regexp(t, `id: "optimize-east-ta"(?s).*?permissions:\s*\n\s*- audience: "optimize-east-ta-api"\s*\n\s*definition: write:\*`, output)
+	require.Regexp(t, `id: "optimize-east-tb"(?s).*?permissions:\s*\n\s*- audience: "optimize-east-tb-api"\s*\n\s*definition: write:\*`, output)
+	require.Contains(t, output, `- name: "Optimize East tenanta API"`)
+	require.Contains(t, output, `- name: "Optimize East tenantb API"`)
+
+	// the cluster-level Optimize keeps its own client and audience alongside the tenants
+	require.Contains(t, output, `id: "optimize-east"`)
+	require.Contains(t, output, `audience: "optimize-east-api"`)
+	require.Regexp(t, `id: "optimize-east"(?s).*?permissions:\s*\n\s*- audience: "optimize-east-api"\s*\n\s*definition: write:\*`, output)
+}
+
+// Each Physical Tenant's web apps complete login on their own callback under
+// /physical-tenants/<id>/, including the implicit default tenant, so the
+// cluster's Orchestration client must allow every one of them.
+func TestHubTopologyOrchestrationClientAllowsEveryPhysicalTenantCallback(t *testing.T) {
+	output := render(t, "hub-physical-tenants.yaml", "templates/identity/configmap.yaml")
+
+	require.Regexp(t, `id: "orchestration-east"(?s).*?root-url: "https://east.example.com/orchestration"\s*\n\s*redirect-uris:\s*\n`+
+		`\s*- "/login/oauth2/code/orchestration"\s*\n`+
+		`\s*- "/sso-callback"\s*\n`+
+		`\s*- "/physical-tenants/default/sso-callback"\s*\n`+
+		`\s*- "/physical-tenants/tenanta/sso-callback"\s*\n`+
+		`\s*- "/physical-tenants/tenantb/sso-callback"\s*\n`, output)
+}
+
+func TestHubTopologyOrchestrationClientListsAnExplicitDefaultTenantOnce(t *testing.T) {
+	options := &helm.Options{
+		ValuesFiles: []string{filepath.Join("testdata", "hub-physical-tenants.yaml")},
+		SetValues:   map[string]string{"global.topology.clusters[0].physicalTenants[1].id": "default"},
+	}
+	output := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{"templates/identity/configmap.yaml"})
+
+	require.Equal(t, 1, strings.Count(output, `"/physical-tenants/default/sso-callback"`))
+}
+
+func TestHubTopologyPerTenantOptimizeRoleFallsBackToSharedRole(t *testing.T) {
+	output := render(t, "hub-physical-tenants.yaml", "templates/identity/configmap.yaml")
+
+	// tenantb declares roleName, so it gets a dedicated role
+	require.Regexp(t,
+		`- name: "Optimize East tenantb"\s*\n\s*description: "Grants full access to Optimize East tenantb"(?s).*?audience: "optimize-east-tb-api"`,
+		output)
+
+	// tenanta declares none, so its audience joins the shared Optimize role and tenantb's does not.
+	// Both markers are located before slicing: a renamed or removed shared role would otherwise
+	// slice on -1 and panic, reporting a range error instead of the section that went missing.
+	start := strings.Index(output, `- name: "Optimize"`)
+	require.NotEqual(t, -1, start, `the shared "Optimize" role is missing from the rendered ConfigMap`)
+	sharedRole := output[start:]
+	end := strings.Index(sharedRole, "read:users")
+	require.NotEqual(t, -1, end, `the shared "Optimize" role has no read:users permission to bound it`)
+	sharedRole = sharedRole[:end]
+	require.Contains(t, sharedRole, `audience: "optimize-east-ta-api"`)
+	require.NotContains(t, sharedRole, `audience: "optimize-east-tb-api"`)
+}
+
+func TestHubTopologyPerTenantOptimizeSecretEnvVars(t *testing.T) {
+	output := render(t, "hub-physical-tenants.yaml", "templates/identity/deployment.yaml")
+
+	require.Contains(t, output, "VALUES_TOPOLOGY_EAST_TENANT_TENANTA_OPTIMIZE_SECRET")
+	require.Contains(t, output, "VALUES_TOPOLOGY_EAST_TENANT_TENANTB_OPTIMIZE_SECRET")
+	require.Contains(t, output, "key: optimize-ta-secret")
+	require.Contains(t, output, "key: optimize-tb-secret")
+}
+
+func TestHubTopologyPerTenantOptimizeGrantsAdminTheTenantRole(t *testing.T) {
+	options := &helm.Options{
+		ValuesFiles: []string{filepath.Join("testdata", "hub-physical-tenants.yaml")},
+		SetValues:   map[string]string{"global.identity.auth.admin.enabled": "true"},
+	}
+
+	output := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{"templates/identity/configmap.yaml"})
+
+	require.Regexp(t, `roles:\s*\n\s*- ManagementIdentity(?s).*?- "Optimize East tenantb"`, output)
+}
+
+func TestHubTopologyWithoutPhysicalTenantsRendersNoTenantArtifacts(t *testing.T) {
+	output := render(t, "hub-keycloak.yaml", "templates/identity/configmap.yaml", "templates/identity/deployment.yaml")
+
+	require.NotContains(t, output, "_TENANT_")
+	require.NotContains(t, output, "physicalTenants")
+	require.NotContains(t, output, "/physical-tenants/")
+}
+
+func TestHubTopologyPhysicalTenantOptimizeRequiresIdentifiers(t *testing.T) {
+	options := &helm.Options{
+		ValuesFiles: []string{filepath.Join("testdata", "hub-physical-tenants.yaml")},
+		SetValues:   map[string]string{"global.topology.clusters[0].physicalTenants[0].components.optimize.audience": ""},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/identity/configmap.yaml"})
+	require.ErrorContains(t, err, "physicalTenants[tenanta].components.optimize requires clientId, audience, and redirectUrl")
+}
+
+func TestHubTopologyPhysicalTenantRejectsAudienceCollisionWithCluster(t *testing.T) {
+	options := &helm.Options{
+		ValuesFiles: []string{filepath.Join("testdata", "hub-physical-tenants.yaml")},
+		SetValues:   map[string]string{"global.topology.clusters[0].physicalTenants[0].components.optimize.audience": "optimize-east-api"},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/identity/configmap.yaml"})
+	require.ErrorContains(t, err, `duplicate topology client or audience id "optimize-east-api"`)
+}
+
+func TestHubTopologyPhysicalTenantRejectsInvalidId(t *testing.T) {
+	options := &helm.Options{
+		ValuesFiles: []string{filepath.Join("testdata", "hub-physical-tenants.yaml")},
+		SetValues:   map[string]string{"global.topology.clusters[0].physicalTenants[0].id": "Tenant_A"},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/identity/configmap.yaml"})
+	require.Error(t, err, "an id that cannot be a runtime tenant id must be rejected")
+}
+
+func TestHubTopologyPhysicalTenantRejectsDuplicateId(t *testing.T) {
+	options := &helm.Options{
+		ValuesFiles: []string{filepath.Join("testdata", "hub-physical-tenants.yaml")},
+		SetValues:   map[string]string{"global.topology.clusters[0].physicalTenants[1].id": "tenanta"},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/identity/configmap.yaml"})
+	require.ErrorContains(t, err, `duplicate global.topology.clusters[east].physicalTenants id "tenanta"`)
+}
+
+func TestHubTopologyRejectsPhysicalTenantOptimizeSecretEnvNameCollision(t *testing.T) {
+	options := &helm.Options{
+		ValuesFiles: []string{filepath.Join("testdata", "hub-physical-tenants.yaml")},
+		SetJSONValues: map[string]string{
+			"global.topology.clusters[1].components": `{"optimize":{"enabled":true,"clientId":"optimize-east-tenant-tenanta","audience":"optimize-east-tenant-tenanta-api","redirectUrl":"https://east-tenant-tenanta.example.com/optimize","secret":{"inlineSecret":"secret"}}}`,
+		},
+		SetValues: map[string]string{
+			"global.topology.clusters[1].id":          "east-tenant-tenanta",
+			"global.topology.clusters[1].namespace":   "camunda-east-tenant-tenanta",
+			"global.topology.clusters[1].releaseName": "camunda-east-tenant-tenanta",
+			"global.topology.clusters[1].host":        "east-tenant-tenanta.example.com",
+			"global.topology.clusters[1].version":     "8.10.0",
+		},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/identity/deployment.yaml"})
+	require.ErrorContains(t, err, "global.topology.clusters[east].physicalTenants[tenanta] and global.topology.clusters[east-tenant-tenanta].components.optimize generate the same topology secret environment variable VALUES_TOPOLOGY_EAST_TENANT_TENANTA_OPTIMIZE_SECRET")
+}
+
+func TestTopologySchemaAcceptsTemplatedOrchestrationRedirectUrl(t *testing.T) {
+	options := &helm.Options{
+		ValuesFiles: []string{filepath.Join("testdata", "hub-keycloak.yaml")},
+		SetJSONValues: map[string]string{
+			"global.topology.clusters[0].components.orchestration.redirectUrl": `"{{ printf \"https://east.example.com/orchestration\" }}"`,
+		},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/identity/configmap.yaml"})
+	require.NoError(t, err)
+}
+
+func TestTopologySchemaRejectsInvalidOptimizeRedirectUrl(t *testing.T) {
+	options := &helm.Options{
+		ValuesFiles: []string{filepath.Join("testdata", "hub-physical-tenants.yaml")},
+		SetValues: map[string]string{
+			"global.topology.clusters[0].physicalTenants[0].components.optimize.redirectUrl": "not-a-url",
+		},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/identity/configmap.yaml"})
+	require.ErrorContains(t, err, "physicalTenants/0/components/optimize/redirectUrl': 'not-a-url' does not match pattern")
+}
+
+func TestHubTopologyRendersLegacySplitWorkloadEndpoints(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "hub-keycloak.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues: map[string]string{
+			"camundaHub.enabled":                                                       "true",
+			"camundaHub.restapi.mail.fromAddress":                                      "noreply@example.com",
+			"global.topology.clusters[0].architecture":                                 "legacy",
+			"global.topology.clusters[0].version":                                      "8.7.0",
+			"global.topology.clusters[0].components.orchestration.serviceName":         "camunda-zeebe",
+			"global.topology.clusters[0].components.orchestration.gatewayServiceName":  "camunda-zeebe-gateway",
+			"global.topology.clusters[0].components.orchestration.operateServiceName":  "camunda-operate",
+			"global.topology.clusters[0].components.orchestration.tasklistServiceName": "camunda-tasklist",
+		},
+	}
+
+	output := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{
+		"templates/identity/configmap.yaml",
+		"templates/web-modeler/configmap-restapi.yaml",
+	})
+	require.Contains(t, output, `http://camunda-operate.camunda-east.svc.cluster.local:9600/operate/actuator/health/readiness`)
+	require.Contains(t, output, `http://camunda-tasklist.camunda-east.svc.cluster.local:9600/tasklist/actuator/health/readiness`)
+	require.Contains(t, output, `http://camunda-zeebe-gateway.camunda-east.svc.cluster.local:9600/actuator/health/readiness`)
+	require.Contains(t, output, `type: zeebeGateway`)
+	require.Regexp(t, `version: "8\.7\.0"\s+authentication: "BEARER_TOKEN"\s+components:`, output)
+	require.Contains(t, output, `- "/operate/identity-callback"`)
+	require.Contains(t, output, `- "/tasklist/identity-callback"`)
+	require.NotContains(t, output, `type: admin`)
+}
+
+func TestHubTopologySuppressesDefaultWorkloadPlane(t *testing.T) {
+	output := render(t, "hub-generic.yaml")
+
+	require.Contains(t, output, "name: camunda-identity")
+	require.NotContains(t, output, "name: camunda-zeebe")
+	require.NotContains(t, output, "name: camunda-connectors")
+}
+
+func TestHubTopologyKeycloakRendersInitAndSecretReferences(t *testing.T) {
+	output := render(t, "hub-keycloak.yaml",
+		"templates/identity/configmap.yaml",
+		"templates/identity/deployment.yaml",
+	)
+
+	require.Contains(t, output, `"topology-east": {}`)
+	require.Contains(t, output, "VALUES_TOPOLOGY_EAST_ORCHESTRATION_SECRET")
+	require.Contains(t, output, "name: east-oidc")
+	require.Contains(t, output, "key: orchestration-secret")
+}
+
+func TestHubTopologyKeycloakRendersHubPingAudience(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "hub-keycloak.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues: map[string]string{
+			"global.identity.auth.orchestration.hubPingAuthorizationEnabled": "true",
+		},
+	}
+
+	output := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{"templates/identity/configmap.yaml"})
+	require.Contains(t, output, `audience: "web-modeler-public-api"`)
+	require.Contains(t, output, `definition: create:*`)
+	require.Contains(t, output, `definition: update:*`)
+	require.Contains(t, output, `id: "orchestration-east"`)
+	require.NotContains(t, output, `id: ${CAMUNDA_ORCHESTRATION_CLIENT_ID:`)
+}
+
+func TestHubTopologyPreservesLegacyAlwaysRegister(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "hub-keycloak.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues: map[string]string{
+			"global.identity.auth.connectors.alwaysRegister":    "true",
+			"global.identity.auth.optimize.alwaysRegister":      "true",
+			"global.identity.auth.orchestration.alwaysRegister": "true",
+		},
+	}
+
+	output := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{
+		"templates/identity/configmap.yaml",
+		"templates/identity/deployment.yaml",
+	})
+	require.Contains(t, output, "VALUES_KEYCLOAK_INIT_CONNECTORS_SECRET")
+	require.Contains(t, output, "VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET")
+	require.Contains(t, output, "VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET")
+}
+
+func TestHubTopologyRejectsLegacyRegistrationCollision(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "hub-keycloak.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues: map[string]string{
+			"global.identity.auth.orchestration.alwaysRegister":             "true",
+			"global.topology.clusters[0].components.orchestration.clientId": "orchestration",
+		},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/identity/configmap.yaml"})
+	require.ErrorContains(t, err, `duplicate topology client or audience id "orchestration"`)
+}
+
+func TestHubTopologyRejectsReservedSharedRoleName(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "hub-generic.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues: map[string]string{
+			"global.topology.clusters[0].components.orchestration.roleName": "Orchestration",
+		},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/identity/configmap.yaml"})
+	require.ErrorContains(t, err, `duplicate or reserved topology role name "Orchestration"`)
+}
+
+func TestOrchestrationTopologyUsesExistingComponentAndIdentityConfiguration(t *testing.T) {
+	output := render(t, "orchestration.yaml",
+		"templates/orchestration/configmap.yaml",
+		"templates/orchestration/statefulset.yaml",
+		"templates/optimize/deployment.yaml",
+		"templates/connectors/deployment.yaml",
+		"templates/common/configmap-identity-auth.yaml",
+	)
+
+	require.Contains(t, output, `client-id: "orchestration-east"`)
+	require.Contains(t, output, `- "orchestration-east-api"`)
+	require.Contains(t, output, `redirect-uri: "https://east.example.com/orchestration/sso-callback"`)
+	require.Contains(t, output, `CAMUNDA_IDENTITY_BASEURL: "http://camunda-identity.camunda-hub.svc.cluster.local:80/identity"`)
+
+	var statefulSet appsv1.StatefulSet
+	for _, document := range splitDocuments(output) {
+		if !contains(document, "kind: StatefulSet") {
+			continue
+		}
+		helm.UnmarshalK8SYaml(t, document, &statefulSet)
+	}
+	require.NotEmpty(t, statefulSet.Name)
+	require.Contains(t, statefulSet.Spec.Template.Spec.Containers[0].Env, corev1.EnvVar{
+		Name: "VALUES_ORCHESTRATION_CLIENT_SECRET",
+		ValueFrom: &corev1.EnvVarSource{SecretKeyRef: &corev1.SecretKeySelector{
+			LocalObjectReference: corev1.LocalObjectReference{Name: "east-oidc"},
+			Key:                  "orchestration-secret",
+		}},
+	})
+	require.Contains(t, output, "name: CAMUNDA_IDENTITY_CLIENT_SECRET")
+	require.Contains(t, output, "name: east-oidc")
+	require.Contains(t, output, "key: optimize-secret")
+	require.Contains(t, output, "key: connectors-secret")
+}
+
+func TestHubTopologyRejectsDuplicateClientIds(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "hub-generic.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues: map[string]string{
+			"global.topology.clusters[1].components.orchestration.clientId": "orchestration-east",
+		},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/identity/configmap.yaml"})
+	require.ErrorContains(t, err, `duplicate topology client or audience id "orchestration-east"`)
+}
+
+func TestHubTopologyRejectsAdminClientCollision(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "hub-generic.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues: map[string]string{
+			"global.identity.auth.admin.enabled":  "true",
+			"global.identity.auth.admin.clientId": "orchestration-east",
+		},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/identity/configmap.yaml"})
+	require.ErrorContains(t, err, `duplicate topology client or audience id "orchestration-east"`)
+}
+
+func TestHubTopologyRejectsCustomClientCollision(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "hub-generic.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues: map[string]string{
+			"identity.clients[0].id":                  "orchestration-east",
+			"identity.clients[0].name":                "Duplicate",
+			"identity.clients[0].type":                "public",
+			"identity.clients[0].redirectUris":        "/dummy",
+			"identity.clients[0].rootUrl":             "http://dummy",
+			"identity.clients[0].secret.inlineSecret": "unused",
+		},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/identity/configmap.yaml"})
+	require.ErrorContains(t, err, `duplicate topology client or audience id "orchestration-east"`)
+}
+
+func TestHubTopologyRejectsReservedHubClusterId(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "hub-generic.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues: map[string]string{
+			"global.topology.clusters[0].id": "management-cluster",
+		},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/web-modeler/configmap-restapi.yaml"})
+	require.ErrorContains(t, err, `normalize to the same key "management-cluster"`)
+}
+
+func TestHubTopologyRequiresOIDC(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "hub-generic.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues: map[string]string{
+			"global.security.authentication.method": "basic",
+		},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/web-modeler/configmap-restapi.yaml"})
+	require.ErrorContains(t, err, "global.topology.mode=hub requires OIDC authentication")
+}
+
+func TestHubTopologyUsesHubEndpointOverrides(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "hub-generic.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues: map[string]string{
+			"global.topology.clusters[0].components.orchestration.grpcUrl":      "grpcs://grpc.example.com:443",
+			"global.topology.clusters[0].components.orchestration.restUrl":      "https://api.example.com/orchestration",
+			"global.topology.clusters[0].components.orchestration.readinessUrl": "https://health.example.com/orchestration",
+			"global.topology.clusters[0].components.orchestration.operateUrl":   "https://apps.example.com/operate",
+			"global.topology.clusters[0].components.orchestration.tasklistUrl":  "https://apps.example.com/tasklist",
+			"global.topology.clusters[0].components.orchestration.adminUrl":     "https://apps.example.com/admin",
+			"global.topology.clusters[0].components.optimize.webappUrl":         "https://apps.example.com/optimize",
+			"global.topology.clusters[0].components.optimize.readinessUrl":      "https://health.example.com/optimize",
+			"global.topology.clusters[0].components.connectors.restUrl":         "https://api.example.com/connectors",
+			"global.topology.clusters[0].components.connectors.readinessUrl":    "https://health.example.com/connectors",
+		},
+	}
+
+	output := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{"templates/web-modeler/configmap-restapi.yaml"})
+	for _, endpoint := range []string{
+		"grpcs://grpc.example.com:443",
+		"https://api.example.com/orchestration",
+		"https://health.example.com/orchestration",
+		"https://apps.example.com/operate",
+		"https://apps.example.com/tasklist",
+		"https://apps.example.com/admin",
+		"https://apps.example.com/optimize",
+		"https://health.example.com/optimize",
+		"https://api.example.com/connectors",
+		"https://health.example.com/connectors",
+	} {
+		require.Contains(t, output, endpoint)
+	}
+}
+
+func TestHubTopologyKeycloakRejectsMissingSecret(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "hub-keycloak.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues: map[string]string{
+			"global.topology.clusters[0].components.orchestration.secret.existingSecret":    "",
+			"global.topology.clusters[0].components.orchestration.secret.existingSecretKey": "",
+		},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/identity/configmap.yaml"})
+	require.ErrorContains(t, err, "requires a complete secret configuration when Management Identity administers Keycloak")
+}
+
+func TestOrchestrationTopologyRejectsEnabledIdentity(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "orchestration.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues: map[string]string{
+			"identity.enabled": "true",
+		},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/orchestration/configmap.yaml"})
+	require.ErrorContains(t, err, "global.topology.mode=orchestration requires identity.enabled=false")
+}
+
+func TestOrchestrationTopologyDoesNotRequireManagementIdentityURL(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "orchestration.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues: map[string]string{
+			"global.identity.service.url": "",
+			"global.multitenancy.enabled": "false",
+		},
+	}
+
+	output, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{
+		"templates/orchestration/configmap.yaml",
+		"templates/connectors/deployment.yaml",
+		"templates/optimize/deployment.yaml",
+		"templates/common/configmap-identity-auth.yaml",
+	})
+	require.NoError(t, err)
+	require.NotContains(t, output, "CAMUNDA_IDENTITY_BASEURL")
+}
+
+func TestOrchestrationTopologyMultiTenantOptimizeRequiresManagementIdentityURL(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "orchestration.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues: map[string]string{
+			"global.identity.service.url": "",
+			"global.multitenancy.enabled": "true",
+		},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/optimize/deployment.yaml"})
+	require.ErrorContains(t, err, "multi-tenant Optimize in global.topology.mode=orchestration requires optimize.identity.service.url or global.identity.service.url")
+}
+
+func TestOrchestrationTopologyMultiTenantOptimizeUsesExternalManagementIdentity(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "orchestration.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues: map[string]string{
+			"global.identity.service.url": "https://hub.example.com/identity",
+			"global.multitenancy.enabled": "true",
+		},
+	}
+
+	output, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/optimize/deployment.yaml"})
+	require.NoError(t, err)
+	require.Contains(t, output, "CAMUNDA_OPTIMIZE_MULTITENANCY_ENABLED")
+}
+
+func TestCombinedTopologyRejectsMultitenancyWithoutManagementIdentity(t *testing.T) {
+	options := &helm.Options{SetValues: map[string]string{
+		"global.multitenancy.enabled":              "true",
+		"identity.enabled":                         "false",
+		"orchestration.data.secondaryStorage.type": "elasticsearch",
+	}}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/optimize/deployment.yaml"})
+	require.ErrorContains(t, err, "requires Identity enabled and configured with database")
+}
+
+func TestOrchestrationTopologyUsesGlobalIdentityServiceURL(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "orchestration.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues: map[string]string{
+			"global.identity.service.url": "https://hub.example.com/identity",
+		},
+	}
+
+	output := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{"templates/common/configmap-identity-auth.yaml"})
+	require.Contains(t, output, `CAMUNDA_IDENTITY_BASEURL: "https://hub.example.com/identity"`)
+}
+
+func TestTopologyPreservesSuppressedOptimizePersistentVolumeClaim(t *testing.T) {
+	hubOptions := &helm.Options{
+		ValuesFiles: []string{filepath.Join("testdata", "hub-generic.yaml")},
+		SetValues: map[string]string{
+			"optimize.persistence.enabled": "true",
+		},
+	}
+	for _, args := range [][]string{nil, {"--is-upgrade"}} {
+		hubOutput := helm.RenderTemplate(t, hubOptions, chartPath(t), "camunda", []string{
+			"templates/optimize/persistentvolumeclaim.yaml",
+		}, args...)
+		require.Contains(t, hubOutput, "name: camunda-camunda-platform-optimize-data")
+	}
+}
+
+func TestTopologySuppressedComponentsRenderNoVolumeObjects(t *testing.T) {
+	cases := []struct {
+		component  string
+		valuesFile string
+		template   string
+	}{
+		{"connectors", "hub-generic.yaml", "templates/connectors/deployment.yaml"},
+		{"identity", "orchestration.yaml", "templates/identity/deployment.yaml"},
+	}
+
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.component, func(t *testing.T) {
+			options := &helm.Options{
+				ValuesFiles: []string{filepath.Join("testdata", tc.valuesFile)},
+				SetValues: map[string]string{
+					tc.component + ".persistence.enabled": "true",
+				},
+			}
+
+			for _, args := range [][]string{nil, {"--is-upgrade"}} {
+				_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{tc.template}, args...)
+				require.Error(t, err, "%s should not render while topology-suppressed", tc.template)
+
+				output := helm.RenderTemplate(t, options, chartPath(t), "camunda", nil, args...)
+				require.NotContains(t, output, "camunda-camunda-platform-"+tc.component+"-data")
+			}
+		})
+	}
+}
+
+func TestNullTopologyPreservesCombinedMode(t *testing.T) {
+	options := &helm.Options{SetValues: map[string]string{
+		"global.topology":                                       "null",
+		"orchestration.data.secondaryStorage.type":              "elasticsearch",
+		"orchestration.data.secondaryStorage.elasticsearch.url": "http://elasticsearch:9200",
+	}}
+
+	output := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{"templates/orchestration/configmap.yaml"})
+	require.Contains(t, output, "kind: ConfigMap")
+}
+
+func TestOptimizeTopologyRendersOnlyOptimizeWorkload(t *testing.T) {
+	output := render(t, "optimize.yaml")
+
+	require.Contains(t, output, "name: camunda-optimize")
+	require.NotContains(t, output, "name: camunda-zeebe")
+	require.NotContains(t, output, "name: camunda-identity")
+	require.NotContains(t, output, "name: camunda-connectors")
+	require.NotContains(t, output, "name: camunda-web-modeler")
+	require.NotContains(t, output, "kind: StatefulSet")
+}
+
+func TestOptimizeTopologyRendersOnlyItsOwnIngressPath(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "optimize.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues: map[string]string{
+			"global.ingress.enabled":    "true",
+			"global.host":               "east.example.com",
+			"orchestration.contextPath": "/orchestration",
+			"connectors.contextPath":    "/connectors",
+		},
+	}
+
+	output := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{"templates/common/ingress-http.yaml"})
+
+	require.Contains(t, output, "path: /optimize-tenanta")
+	require.NotContains(t, output, "path: /orchestration")
+	require.NotContains(t, output, "path: /connectors")
+}
+
+func TestOptimizeTopologyKeepsReaderAndOwnIndexPrefixesDistinct(t *testing.T) {
+	output := render(t, "optimize.yaml",
+		"templates/optimize/configmap.yaml",
+		"templates/optimize/deployment.yaml",
+	)
+
+	require.Contains(t, output, `name: "orch-east"`)
+	require.Contains(t, output, "name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SETTINGS_INDEX_PREFIX")
+	require.Contains(t, output, "value: optimize-east-tenanta")
+}
+
+func TestOptimizeTopologySuppressesIdentityServiceMonitor(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "optimize.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues:   map[string]string{"prometheusServiceMonitor.enabled": "true"},
+	}
+
+	output := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{
+		"templates/service-monitor/optimize-service-monitor.yaml",
+	})
+	require.Contains(t, output, "kind: ServiceMonitor")
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{
+		"templates/service-monitor/identity-service-monitor.yaml",
+	})
+	require.Error(t, err)
+}
+
+func TestOptimizeTopologyRequiresOptimizeEnabled(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "optimize.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues:   map[string]string{"optimize.enabled": "false"},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/optimize/configmap.yaml"})
+	require.ErrorContains(t, err, "global.topology.mode=optimize requires optimize.enabled=true")
+}
+
+func TestOptimizeTopologyRequiresContextPathWhenRenderingIngress(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "optimize.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues: map[string]string{
+			"optimize.contextPath":   "",
+			"global.ingress.enabled": "true",
+		},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/optimize/configmap.yaml"})
+	require.ErrorContains(t, err, "requires optimize.contextPath when this chart renders")
+}
+
+// The same applies to the Gateway API path, whose HTTPRoute would otherwise match an empty prefix.
+func TestOptimizeTopologyRequiresContextPathWhenRenderingGateway(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "optimize.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues: map[string]string{
+			"optimize.contextPath":   "",
+			"global.gateway.enabled": "true",
+		},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/optimize/configmap.yaml"})
+	require.ErrorContains(t, err, "requires optimize.contextPath when this chart renders")
+}
+
+// With no chart-rendered routing there is nothing for a context path to serve, so an Optimize-only
+// release reached through its Service directly must not be forced to invent one.
+func TestOptimizeTopologyAllowsEmptyContextPathWithoutRouting(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "optimize.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues:   map[string]string{"optimize.contextPath": ""},
+	}
+
+	output := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{"templates/optimize/configmap.yaml"})
+	require.Contains(t, output, "kind: ConfigMap")
+}
+
+func TestOptimizeTopologyRequiresManagementIdentityURL(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "optimize.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues:   map[string]string{"global.identity.service.url": ""},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/optimize/configmap.yaml"})
+	require.ErrorContains(t, err, "requires optimize.identity.service.url or global.identity.service.url")
+}
+
+// The component-level override must satisfy the same constraint: an Optimize-only release may name
+// its own Management Identity instead of the release-shared global one.
+func TestOptimizeTopologyAcceptsComponentIdentityURL(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "optimize.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues: map[string]string{
+			"global.identity.service.url":   "",
+			"optimize.identity.service.url": "http://identity.tenant.svc/identity",
+		},
+	}
+
+	output := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{"templates/optimize/configmap.yaml"})
+	require.Contains(t, output, "kind: ConfigMap")
+}
+
+func TestOptimizeTopologyRequiresIdentityAuth(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "optimize.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues:   map[string]string{"global.identity.auth.enabled": "false"},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/optimize/configmap.yaml"})
+	require.ErrorContains(t, err, "requires authentication; set optimize.security.authentication.method=oidc or global.identity.auth.enabled=true")
+}
+
+// A release-scoped method satisfies the constraint on its own: an Optimize-only release decides
+// whether it authenticates without the release-shared global switch.
+func TestOptimizeTopologyAcceptsComponentAuthMethod(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "optimize.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues: map[string]string{
+			"global.identity.auth.enabled":            "false",
+			"optimize.security.authentication.method": "oidc",
+		},
+	}
+
+	output := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{"templates/optimize/configmap.yaml"})
+	require.Contains(t, output, "kind: ConfigMap")
+}
+
+// And setting it to none turns Optimize's auth off even when the global switch is on, which is the
+// override direction that previously had no expression at all.
+func TestOptimizeComponentAuthMethodNoneDisablesAuth(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "optimize.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues:   map[string]string{"optimize.security.authentication.method": "none"},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/optimize/configmap.yaml"})
+	require.ErrorContains(t, err, "requires authentication")
+}
+
+func TestOptimizeTopologyRequiresAuthIssuer(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "optimize.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues: map[string]string{
+			"global.identity.auth.issuer":          "",
+			"global.identity.auth.publicIssuerUrl": "",
+		},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/optimize/configmap.yaml"})
+	require.ErrorContains(t, err, "requires optimize.security.authentication.oidc.issuer")
+}
+
+// The component key satisfies the issuer constraint on its own, so an Optimize-only release names
+// the "iss" claim it validates without depending on a release-shared global value.
+func TestOptimizeTopologyAcceptsComponentAuthIssuer(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "optimize.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues: map[string]string{
+			"global.identity.auth.issuer":                  "",
+			"global.identity.auth.publicIssuerUrl":         "",
+			"optimize.security.authentication.oidc.issuer": "https://idp.example.com/realms/camunda",
+		},
+	}
+
+	output := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{"templates/optimize/configmap.yaml"})
+	require.Contains(t, output, "kind: ConfigMap")
+}
+
+// An Optimize-only release reads records from storage it does not deploy, so leaving both
+// backends off renders an empty connection node list rather than failing.
+func TestOptimizeTopologyRequiresADatabaseBackend(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "optimize.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues:   map[string]string{"optimize.database.elasticsearch.enabled": "false"},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/optimize/configmap.yaml"})
+	require.ErrorContains(t, err, "requires optimize.database.elasticsearch.enabled or optimize.database.opensearch.enabled")
+}
+
+// OpenSearch satisfies it just as well as Elasticsearch.
+func TestOptimizeTopologyAcceptsOpenSearchBackend(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "optimize.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues: map[string]string{
+			"optimize.database.elasticsearch.enabled": "false",
+			"optimize.database.opensearch.enabled":    "true",
+			"optimize.database.opensearch.url.host":   "opensearch.example.com",
+		},
+	}
+
+	output := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{"templates/optimize/configmap.yaml"})
+	require.Contains(t, output, "kind: ConfigMap")
+}
+
+func TestOptimizeTopologyRejectsNoSecondaryStorage(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "optimize.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues:   map[string]string{"global.noSecondaryStorage": "true"},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/optimize/configmap.yaml"})
+	require.ErrorContains(t, err, "global.topology.mode=optimize requires global.noSecondaryStorage=false")
+}
+
+func TestUnknownTopologyModeIsRejected(t *testing.T) {
+	options := &helm.Options{
+		ValuesFiles: []string{filepath.Join("testdata", "optimize.yaml")},
+		SetValues:   map[string]string{"global.topology.mode": "analytics"},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/optimize/configmap.yaml"})
+	require.ErrorContains(t, err, "'combined', 'hub', 'orchestration', 'optimize'")
+}
+
+func splitDocuments(output string) []string {
+	return strings.Split(output, "\n---\n")
+}
+
+func contains(value, substring string) bool {
+	return strings.Contains(value, substring)
+}
+
+// Optimize mode is new, so it can reject the shape that renders an empty api.jwtSetUri outright
+// rather than deploying an Optimize that can validate no token.
+func TestOptimizeTopologyRequiresAResolvableJwksUrl(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "optimize.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues:   map[string]string{"global.identity.auth.jwksUrl": ""},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/optimize/configmap.yaml"})
+	require.ErrorContains(t, err, "requires optimize.security.authentication.oidc.jwksUrl")
+}
+
+// The component key satisfies it without a global one, which is the point of the release-scoped key.
+func TestOptimizeTopologyAcceptsAComponentScopedJwksUrl(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "optimize.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues: map[string]string{
+			"global.identity.auth.jwksUrl":                  "",
+			"optimize.security.authentication.oidc.jwksUrl": "https://issuer.example.com/certs",
+		},
+	}
+
+	output := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{"templates/optimize/configmap.yaml"})
+	require.Contains(t, output, `jwtSetUri: "https://issuer.example.com/certs"`)
+}
+
+// A release routing the JWKS URL through envFrom must say which variable the source carries: its
+// keys are unreadable here, so presence alone would let an unrelated ConfigMap answer the guard.
+func TestOptimizeTopologyAcceptsEnvFromDeclaringTheJwksUri(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "optimize.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues: map[string]string{
+			"global.identity.auth.jwksUrl":                             "",
+			"optimize.envFrom[0].configMapRef.name":                    "optimize-oidc-overrides",
+			"optimize.security.authentication.oidc.envFromProvides[0]": "SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI",
+		},
+	}
+
+	output := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{"templates/optimize/deployment.yaml"})
+	require.Contains(t, output, "name: optimize-oidc-overrides")
+}
+
+func TestOptimizeTopologyRejectsAnUndeclaredEnvFromInPlaceOfAJwksUrl(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "optimize.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues: map[string]string{
+			"global.identity.auth.jwksUrl":          "",
+			"optimize.envFrom[0].configMapRef.name": "optimize-oidc-overrides",
+		},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/optimize/deployment.yaml"})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "requires optimize.security.authentication.oidc.jwksUrl")
+}
+
+// The operator's own file is mounted and imported; the chart contributes no tenant block of its
+// own, so exactly one physical-tenants key appears in the ConfigMap.
+func TestPhysicalTenantsInExtraConfigurationAreMountedAndImported(t *testing.T) {
+	output := render(t, "physical-tenants.yaml", "templates/orchestration/configmap.yaml")
+
+	require.Contains(t, output, "physical-tenants.yaml: |")
+	require.Contains(t, output, "optional:file:/usr/local/camunda/config/physical-tenants.yaml")
+	require.Equal(t, 1, strings.Count(output, "physical-tenants:"))
+	require.Contains(t, output, "index-prefix: tenanta-orcha")
+	require.Contains(t, output, "index-prefix: tenantb-orcha")
+}
+
+// Declared tenants need the issuer-uri provider form, which follows from the issuer being set.
+func TestPhysicalTenantsRenderIssuerUri(t *testing.T) {
+	output := render(t, "physical-tenants.yaml", "templates/orchestration/configmap.yaml")
+
+	require.Contains(t, output, `issuer-uri: "https://hub.example.com/auth/realms/camunda-platform"`)
+	require.NotContains(t, output, "jwk-set-uri:")
+}
+
+func TestPhysicalTenantsAbsentByDefault(t *testing.T) {
+	output := render(t, "orchestration.yaml", "templates/orchestration/configmap.yaml")
+
+	require.NotContains(t, output, "physical-tenants:")
+}
+
+func TestWithoutPhysicalTenantsIssuerResolutionIsUnchanged(t *testing.T) {
+	valuesFile := filepath.Join("testdata", "orchestration.yaml")
+	options := &helm.Options{
+		ValuesFiles: []string{valuesFile},
+		SetValues: map[string]string{
+			"global.identity.auth.issuer": "",
+			// Blanking the global issuer leaves the Optimize this values file keeps enabled with
+			// no issuer of its own, which its own constraint rejects. Pin one so the render
+			// exercises Orchestration's issuer resolution, the subject here.
+			"optimize.security.authentication.oidc.issuer": "https://issuer.example.com",
+		},
+	}
+
+	output := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{"templates/orchestration/configmap.yaml"})
+
+	require.NotContains(t, output, "physical-tenants:")
+	require.Contains(t, output, "jwk-set-uri:")
+	require.NotContains(t, output, "issuer-uri:")
+}
+
+func TestPhysicalTenantsRequireExplicitIssuer(t *testing.T) {
+	options := &helm.Options{
+		ValuesFiles: []string{filepath.Join("testdata", "physical-tenants.yaml")},
+		SetValues:   map[string]string{"global.identity.auth.issuer": ""},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/orchestration/configmap.yaml"})
+	require.ErrorContains(t, err, "camunda.physical-tenants in orchestration.extraConfiguration requires global.identity.auth.issuer")
+	require.ErrorContains(t, err, "network routes")
+}
+
+// A release that carries a shared orchestration.extraConfiguration but deploys no Orchestration
+// Cluster has no tenants to configure, so the tenant constraints must not reach it. Shared-values
+// workflows apply one values file across several releases and vary only global.topology.mode, and
+// gating this on the declaration alone failed the render for every release in the topology that is
+// not the Orchestration one.
+func TestPhysicalTenantsConstraintsSkipReleasesWithoutOrchestration(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		setValues map[string]string
+	}{
+		{"orchestration disabled", map[string]string{
+			"global.identity.auth.issuer": "",
+			"orchestration.enabled":       "false",
+		}},
+		{"hub role", map[string]string{
+			"global.identity.auth.issuer": "",
+			"global.topology.mode":        "hub",
+			"identity.enabled":            "true",
+		}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			options := &helm.Options{
+				ValuesFiles: []string{filepath.Join("testdata", "physical-tenants.yaml")},
+				SetValues:   tc.setValues,
+			}
+
+			_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/identity/configmap.yaml"})
+
+			if err != nil {
+				require.NotContains(t, err.Error(), "camunda.physical-tenants in orchestration.extraConfiguration",
+					"the tenant constraints must not fire on a release that deploys no Orchestration Cluster")
+			}
+		})
+	}
+}
+
+// publicIssuerUrl must not stand in for the issuer: it is still set in the testdata, so a
+// render that succeeds without an explicit issuer would mean the fallback came back.
+func TestPhysicalTenantsDoNotInferIssuerFromPublicIssuerUrl(t *testing.T) {
+	options := &helm.Options{
+		ValuesFiles: []string{filepath.Join("testdata", "physical-tenants.yaml")},
+		SetValues: map[string]string{
+			"global.identity.auth.issuer":          "",
+			"global.identity.auth.publicIssuerUrl": "https://hub.example.com/auth/realms/camunda-platform",
+		},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/orchestration/configmap.yaml"})
+	require.Error(t, err, "publicIssuerUrl must not satisfy the issuer requirement")
+}
+
+func TestPhysicalTenantsRequireOidcAuthentication(t *testing.T) {
+	options := &helm.Options{
+		ValuesFiles: []string{filepath.Join("testdata", "physical-tenants.yaml")},
+		SetValues:   map[string]string{"orchestration.security.authentication.method": "basic"},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/orchestration/configmap.yaml"})
+	require.ErrorContains(t, err, "requires OIDC authentication")
+}
+
+func TestOrchestrationIssuerUriComesFromTheIssuerKey(t *testing.T) {
+	options := &helm.Options{
+		ValuesFiles: []string{filepath.Join("testdata", "physical-tenants.yaml")},
+		SetValues:   map[string]string{"global.identity.auth.issuer": "https://pinned.example.com/auth/realms/r"},
+	}
+
+	output := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{"templates/orchestration/configmap.yaml"})
+
+	require.Contains(t, output, `issuer-uri: "https://pinned.example.com/auth/realms/r"`)
+	require.NotContains(t, output, "jwk-set-uri:")
+}
+
+// Detection must not depend on YAML style: Spring accepts the nested, dotted and fully dotted
+// forms, and matching one alone would let a differently-written file slip past the checks. Each
+// case clears the issuer, so a render that succeeds means the tenants went undetected.
+func TestPhysicalTenantsDetectedInEveryConfigurationForm(t *testing.T) {
+	forms := map[string]string{
+		"nested":      "camunda:\n  physical-tenants:\n    tenanta:\n      cluster:\n        partitions-count: 3\n",
+		"dotted":      "camunda:\n  physical-tenants.tenanta.cluster.partitions-count: 3\n",
+		"fullyDotted": "camunda.physical-tenants.tenanta.cluster.partitions-count: 3\n",
+	}
+	for name, content := range forms {
+		t.Run(name, func(t *testing.T) {
+			options := &helm.Options{
+				ValuesFiles: []string{filepath.Join("testdata", "orchestration.yaml")},
+				SetValues: map[string]string{
+					"global.identity.auth.issuer":                 "",
+					"orchestration.extraConfiguration[0].file":    "tenants.yaml",
+					"orchestration.extraConfiguration[0].content": content,
+				},
+			}
+
+			_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/orchestration/configmap.yaml"})
+			require.ErrorContains(t, err, "requires global.identity.auth.issuer")
+		})
+	}
+}
+
+func TestPhysicalTenantsDetectedInLaterYamlDocument(t *testing.T) {
+	options := &helm.Options{
+		ValuesFiles: []string{filepath.Join("testdata", "orchestration.yaml")},
+		SetValues: map[string]string{
+			"global.identity.auth.issuer":                 "",
+			"orchestration.extraConfiguration[0].file":    "tenants.yaml",
+			"orchestration.extraConfiguration[0].content": "logging:\n  level:\n    root: INFO\n---\ncamunda:\n  physical-tenants:\n    tenanta: {}\n",
+		},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/orchestration/configmap.yaml"})
+	require.ErrorContains(t, err, "requires global.identity.auth.issuer")
+}
+
+// A file excluded from spring.config.import never reaches the application, so it must not trigger
+// the tenant checks either.
+func TestPhysicalTenantsIgnoredWhenNotSpringImported(t *testing.T) {
+	options := &helm.Options{
+		ValuesFiles: []string{filepath.Join("testdata", "orchestration.yaml")},
+		SetValues: map[string]string{
+			"global.identity.auth.issuer":                      "",
+			"optimize.security.authentication.oidc.issuer":     "https://issuer.example.com",
+			"orchestration.extraConfiguration[0].file":         "tenants.yaml",
+			"orchestration.extraConfiguration[0].springImport": "false",
+			"orchestration.extraConfiguration[0].content":      "camunda:\n  physical-tenants:\n    tenanta: {}\n",
+		},
+	}
+
+	output := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{"templates/orchestration/configmap.yaml"})
+	require.Contains(t, output, "jwk-set-uri:")
+}
+
+// TestMultiTenancyRequiresIdentityAuthEnabled pins the Multi-Tenancy guard's
+// dependence on real booleans. The orchestration fixture sets
+// global.identity.service.url, pointing at the Hub's Management Identity, while
+// global.identity.auth.enabled is false here — exactly the shape the guard's
+// error message says must be rejected. While $identityAuthEnabled was computed
+// with `or`, it evaluated to that URL string, `has false` never matched it, and
+// Multi-Tenancy rendered with auth disabled.
+func TestMultiTenancyRequiresIdentityAuthEnabled(t *testing.T) {
+	options := &helm.Options{
+		ValuesFiles: []string{filepath.Join("testdata", "orchestration.yaml")},
+		SetValues: map[string]string{
+			"global.topology.mode":              "combined",
+			"global.identity.auth.enabled":      "false",
+			"global.multitenancy.enabled":       "true",
+			"identity.externalDatabase.enabled": "true",
+		},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/orchestration/configmap.yaml"})
+	require.ErrorContains(t, err, "Multi-Tenancy feature")
+}
+
+// TestMultiTenancyAllowsIdentityAuthEnabled is the positive half of the guard:
+// with Identity enabled, auth enabled and an external database configured, the
+// same values must render. Without it, tightening `or` to `and` could pass the
+// test above by rejecting every Multi-Tenancy configuration.
+func TestMultiTenancyAllowsIdentityAuthEnabled(t *testing.T) {
+	options := &helm.Options{
+		ValuesFiles: []string{filepath.Join("testdata", "orchestration.yaml")},
+		SetValues: map[string]string{
+			"global.topology.mode":              "combined",
+			"global.identity.auth.enabled":      "true",
+			"global.multitenancy.enabled":       "true",
+			"identity.enabled":                  "true",
+			"identity.externalDatabase.enabled": "true",
+		},
+	}
+
+	_, err := helm.RenderTemplateE(t, options, chartPath(t), "camunda", []string{"templates/orchestration/configmap.yaml"})
+	require.NoError(t, err)
+}
+
+// An Optimize release deployed separately from its Orchestration Cluster runs under its own release
+// name, in its own namespace, behind its own host. The inventory derived all three from the cluster
+// record, so Web Modeler probed a Service that does not exist there and reported Optimize unhealthy.
+func TestHubTopologyOptimizeEndpointsFollowItsOwnRelease(t *testing.T) {
+	options := &helm.Options{
+		ValuesFiles: []string{filepath.Join("testdata", "hub-generic.yaml")},
+		SetValues: map[string]string{
+			"global.topology.clusters[0].contextPaths.optimize":           "/optimize-east",
+			"global.topology.clusters[0].components.optimize.namespace":   "camunda-east-optimize",
+			"global.topology.clusters[0].components.optimize.releaseName": "optimize",
+			"global.topology.clusters[0].components.optimize.host":        "hub.example.com",
+		},
+	}
+
+	output := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{"templates/web-modeler/configmap-restapi.yaml"})
+	// releaseName "optimize" already contains the component name, so topologyComponentFullname does
+	// not append it.
+	require.Contains(t, output, `readiness: "http://optimize.camunda-east-optimize.svc.cluster.local:80/optimize-east/api/readyz"`)
+	require.Contains(t, output, `webapp: "https://hub.example.com/optimize-east"`)
+	require.NotContains(t, output, "optimize.camunda-east.svc.cluster.local")
+}
+
+// The three locator fields are optional: a cluster that runs Optimize inside its own release must
+// keep deriving every Optimize URL from the cluster record exactly as before.
+func TestHubTopologyOptimizeEndpointsDefaultToTheClusterRecord(t *testing.T) {
+	options := &helm.Options{
+		ValuesFiles: []string{filepath.Join("testdata", "hub-generic.yaml")},
+		SetValues:   map[string]string{"global.topology.clusters[0].contextPaths.optimize": "/optimize-east"},
+	}
+
+	output := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{"templates/web-modeler/configmap-restapi.yaml"})
+	require.Contains(t, output, `readiness: "http://camunda-optimize.camunda-east.svc.cluster.local:80/optimize-east/api/readyz"`)
+	require.Contains(t, output, `webapp: "https://east.example.com/optimize-east"`)
+}
+
+// An explicit URL override still wins over the locator fields, so an operator who already pinned one
+// is not silently re-pointed by them.
+func TestHubTopologyOptimizeExplicitUrlsOutrankLocatorFields(t *testing.T) {
+	options := &helm.Options{
+		ValuesFiles: []string{filepath.Join("testdata", "hub-generic.yaml")},
+		SetValues: map[string]string{
+			"global.topology.clusters[0].components.optimize.namespace":    "camunda-east-optimize",
+			"global.topology.clusters[0].components.optimize.host":         "hub.example.com",
+			"global.topology.clusters[0].components.optimize.webappUrl":    "https://apps.example.com/optimize",
+			"global.topology.clusters[0].components.optimize.readinessUrl": "https://health.example.com/optimize",
+		},
+	}
+
+	output := helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{"templates/web-modeler/configmap-restapi.yaml"})
+	require.Contains(t, output, "https://apps.example.com/optimize")
+	require.Contains(t, output, "https://health.example.com/optimize")
+	require.NotContains(t, output, "camunda-east-optimize.svc.cluster.local")
+}
+
+// Web Modeler reads the cluster inventory from its ConfigMap once at startup, so an upgrade that
+// only corrects a cluster's endpoints leaves the running pod serving the stale inventory unless the
+// Deployment carries a checksum of that ConfigMap. The golden harness strips checksum lines, so
+// this is the only guard against the annotation being dropped.
+func TestHubTopologyInventoryChangeRestartsWebModeler(t *testing.T) {
+	render := func(namespace string) string {
+		options := &helm.Options{
+			ValuesFiles: []string{filepath.Join("testdata", "hub-generic.yaml")},
+			SetValues: map[string]string{
+				"global.topology.clusters[0].components.optimize.namespace": namespace,
+			},
+		}
+		return helm.RenderTemplate(t, options, chartPath(t), "camunda", []string{"templates/web-modeler/deployment-restapi.yaml"})
+	}
+
+	checksum := func(deployment string) string {
+		for _, line := range strings.Split(deployment, "\n") {
+			trimmed := strings.TrimSpace(line)
+			if after, ok := strings.CutPrefix(trimmed, "checksum/config:"); ok {
+				return strings.TrimSpace(after)
+			}
+		}
+		return ""
+	}
+
+	first := checksum(render("camunda-east-optimize"))
+	second := checksum(render("camunda-east-optimize-b"))
+
+	require.NotEmpty(t, first, "the restapi Deployment must annotate its ConfigMap checksum")
+	require.NotEqual(t, first, second, "changing the cluster inventory must change the checksum")
+}
+
+func TestOrchestrationEntraScenarioAcceptsEntraAudience(t *testing.T) {
+	valuesDir := filepath.Join(chartPath(t), "test/integration/scenarios/chart-full-setup/values")
+	options := &helm.Options{
+		ValuesFiles: []string{
+			filepath.Join(valuesDir, "base.yaml"),
+			filepath.Join(valuesDir, "identity", "oidc.yaml"),
+			filepath.Join(valuesDir, "persistence", "elasticsearch.yaml"),
+			filepath.Join(valuesDir, "features", "orchestration-entra.yaml"),
+		},
+		SetValues: map[string]string{"global.host": "camunda.example.com"},
+	}
+
+	output := helm.RenderTemplate(t, options, chartPath(t), "integration", []string{"templates/orchestration/configmap.yaml"})
+	var configMap corev1.ConfigMap
+	helm.UnmarshalK8SYaml(t, output, &configMap)
+
+	var application struct {
+		Camunda struct {
+			Security struct {
+				Authentication struct {
+					OIDC struct {
+						Audiences []string `yaml:"audiences"`
+					} `yaml:"oidc"`
+				} `yaml:"authentication"`
+			} `yaml:"security"`
+		} `yaml:"camunda"`
+	}
+	require.NoError(t, yaml.Unmarshal([]byte(configMap.Data["application.yaml"]), &application))
+	require.Contains(t, application.Camunda.Security.Authentication.OIDC.Audiences, "$ENTRA_APP_CLIENT_ID")
+}

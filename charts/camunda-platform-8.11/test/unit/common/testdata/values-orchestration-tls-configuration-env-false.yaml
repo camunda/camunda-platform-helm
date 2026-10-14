@@ -1,0 +1,20 @@
+orchestration:
+  data:
+    secondaryStorage:
+      type: elasticsearch
+  configuration: |
+    server:
+      ssl:
+        enabled: true
+        certificate: /certs/rest/tls.crt
+    camunda:
+      api:
+        grpc:
+          ssl:
+            enabled: true
+            certificate: /certs/grpc/tls.crt
+  env:
+    - name: SERVER_SSL_ENABLED
+      value: "false"
+    - name: CAMUNDA_API_GRPC_SSL_ENABLED
+      value: "false"

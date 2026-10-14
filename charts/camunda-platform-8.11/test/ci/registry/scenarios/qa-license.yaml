@@ -1,0 +1,19 @@
+name: qa-license
+auth: keycloak
+flows:
+  - install
+identity: keycloak
+persistence: elasticsearch
+features:
+  - postgresql-companion
+  - license
+platforms:
+  - gke
+infra-type:
+  gke: qa-workloads
+qa: true
+image-tags: true
+dependencies:
+  - postgresql-qa
+  - keycloak-qa
+  - elasticsearch-qa

@@ -1,0 +1,18 @@
+name: keycloak-original
+auth: keycloak
+flows:
+  - install
+identity: keycloak
+persistence: elasticsearch
+features:
+  - hub-ping
+  - hub-ping-keycloak-token-endpoint
+platforms:
+  - gke
+infra-type:
+  gke: distroci
+post-deploy: hub-ping
+dependencies:
+  - keycloak
+  - elasticsearch
+  - postgresql

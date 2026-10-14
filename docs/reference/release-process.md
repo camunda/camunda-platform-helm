@@ -186,6 +186,7 @@ graph TD
 - `13.x` = Camunda 8.8
 - `14.x` = Camunda 8.9
 - `15.x` = Camunda 8.10
+- `16.x` = Camunda 8.11
 
 ## Routine Chart Automation
 

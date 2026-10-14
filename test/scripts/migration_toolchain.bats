@@ -19,7 +19,7 @@ echo "current Helm prepared base chart" > "$HELM_LOG"
 SH
   chmod +x "$BATS_TEST_TMPDIR/bin/helm"
   export PATH="$BATS_TEST_TMPDIR/bin:$PATH"
-  command="$(yq -r '.jobs.zone-aware-migration.steps[] | select(.name == "Verify the migration sequence") | .run | split("\n") | .[0]' "$root/.github/workflows/test-zone-aware-migration.yaml")"
+  command="$(yq -r '.jobs.zone-aware-migration.steps[] | select(.name == "Verify the migration sequence") | .run | split("\n") | map(select(test("^make helm.dependency-update"))) | .[0]' "$root/.github/workflows/test-zone-aware-migration.yaml")"
   cd "$BATS_TEST_TMPDIR"
   run bash -e -c "$command"
   [ "$status" -eq 0 ]

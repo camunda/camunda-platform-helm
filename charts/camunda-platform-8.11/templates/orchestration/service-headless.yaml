@@ -1,0 +1,6 @@
+{{/*
+The headless service is used for Zeebe brokers Pod-to-Pod communication.
+*/}}
+{{- if eq (include "camundaPlatform.orchestrationEnabled" .) "true" -}}
+{{- include "orchestration.renderBrokerGenerations" (dict "manifest" "orchestration.serviceHeadless" "context" . "alwaysRenderUnzoned" true) -}}
+{{- end -}}

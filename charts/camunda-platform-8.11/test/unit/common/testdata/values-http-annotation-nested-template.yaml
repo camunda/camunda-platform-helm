@@ -1,0 +1,6 @@
+global:
+  ingress:
+    enabled: true
+    className: contour
+    annotations:
+      example.com/nested: '{{ printf "{{ .Release.Name }}" }}'

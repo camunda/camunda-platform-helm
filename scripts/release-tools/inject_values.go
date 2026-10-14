@@ -38,9 +38,9 @@ func runInjectValues(args []string) error {
 	if chartVersion == "" {
 		return fmt.Errorf("CHART_VERSION environment variable is required")
 	}
-	validVersions := map[string]bool{"8.6": true, "8.7": true, "8.8": true, "8.9": true, "8.10": true}
+	validVersions := map[string]bool{"8.6": true, "8.7": true, "8.8": true, "8.9": true, "8.10": true, "8.11": true}
 	if !validVersions[chartVersion] {
-		return fmt.Errorf("unsupported CHART_VERSION: %s (supported: 8.6, 8.7, 8.8, 8.9, 8.10)", chartVersion)
+		return fmt.Errorf("unsupported CHART_VERSION: %s (supported: 8.6, 8.7, 8.8, 8.9, 8.10, 8.11)", chartVersion)
 	}
 
 	chartDir := fmt.Sprintf("charts/camunda-platform-%s", chartVersion)

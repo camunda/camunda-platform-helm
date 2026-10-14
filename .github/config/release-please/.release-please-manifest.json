@@ -8,5 +8,7 @@
   "charts/camunda-platform-8.9": "14.11.1",
   "charts/camunda-platform-8.9+FILLER": "0.0.0",
   "charts/camunda-platform-8.10": "15.1.0",
-  "charts/camunda-platform-8.10+FILLER": "0.0.0"
+  "charts/camunda-platform-8.10+FILLER": "0.0.0",
+  "charts/camunda-platform-8.11": "16.0.0-alpha0",
+  "charts/camunda-platform-8.11+FILLER": "0.0.0"
 }

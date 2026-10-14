@@ -1,0 +1,26 @@
+# extraConfiguration supplies non-scalar / null / large-number values at the migration
+# paths. The effectiveExtraConfigValue helper must not emit Go slice syntax, scientific
+# notation, or an empty string; non-scalar and null nodes fall back to the deprecated
+# default, whole-number floats render as integers.
+identity:
+  enabled: true
+optimize:
+  enabled: true
+  profiles: myprofile
+  logLevel: mylevel
+  partitionCount: "3"
+  extraConfiguration:
+    - file: application-migrated.yaml
+      content: |
+        spring:
+          profiles:
+            active:
+              - ccsm
+              - gated
+        logging:
+          level:
+            io.camunda.optimize:
+    - file: environment-migrated.yaml
+      content: |
+        zeebe:
+          partitionCount: 10000000

@@ -1,0 +1,6 @@
+fixtures:
+  - hub-external-postgresql.yaml
+description: |
+  Provisions a standalone PostgreSQL pod for Web Modeler restapi to
+  connect to via externalDatabase config. Identity's database is
+  provided separately by the `postgresql` companion profile.

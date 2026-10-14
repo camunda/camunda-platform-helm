@@ -10,6 +10,13 @@ on:
       - "charts/camunda-platform-8.10/values.schema.json"
       - "charts/camunda-platform-8.10/values.schema.extra.json"
       - "charts/camunda-platform-8.10/test/integration/scenarios/zone-aware-migration/**"
+      - "charts/camunda-platform-8.11/templates/orchestration/**"
+      - "charts/camunda-platform-8.11/templates/common/constraints.tpl"
+      - "charts/camunda-platform-8.11/templates/common/_helpers.tpl"
+      - "charts/camunda-platform-8.11/values.yaml"
+      - "charts/camunda-platform-8.11/values.schema.json"
+      - "charts/camunda-platform-8.11/values.schema.extra.json"
+      - "charts/camunda-platform-8.11/test/integration/scenarios/zone-aware-migration/**"
       - "scripts/zone-aware-migration/**"
       - "Makefile"
       - ".github/workflows/test-zone-aware-migration.yaml"
@@ -24,10 +31,14 @@ permissions:
 
 jobs:
   zone-aware-migration:
-    name: Zone-aware migration - KIND
+    name: Zone-aware migration - KIND ${{ matrix.version }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        version: ["8.10", "8.11"]
     env:
-      chartPath: charts/camunda-platform-8.10
+      chartPath: charts/camunda-platform-${{ matrix.version }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
@@ -57,8 +68,11 @@ jobs:
 
       - name: Verify the migration sequence
         env:
-          BASE_CHART_DIR: ${{ github.workspace }}/.migration-base/charts/camunda-platform-8.10
+          BASE_CHART_DIR: ${{ github.workspace }}/.migration-base/${{ env.chartPath }}
         run: |
+          if [[ "${{ matrix.version }}" == "8.11" && ! -f "${BASE_CHART_DIR}/Chart.yaml" ]]; then
+            export BASE_CHART_DIR="${GITHUB_WORKSPACE}/.migration-base/charts/camunda-platform-8.10"
+          fi
           make helm.dependency-update chartPath="$BASE_CHART_DIR"
           make test.zone-aware-migration
 

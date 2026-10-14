@@ -1,0 +1,7 @@
+name: upgrade-migration
+auth: keycloak
+flows:
+  - upgrade-minor
+infra-type:
+  eks: preemptible
+  gke: distroci
