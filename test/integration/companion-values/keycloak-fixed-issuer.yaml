@@ -18,7 +18,7 @@ fullnameOverride: keycloak
 image:
   registry: quay.io
   repository: keycloak/keycloak
-  tag: "26.3.3"
+  tag: "26.7.5"
 
 auth:
   adminUser: admin

@@ -80,6 +80,13 @@ identity:
 
 identityKeycloak:
   enabled: true
+  image:
+    registry: registry.camunda.cloud
+    repository: keycloak-ee/keycloak
+    tag: "26.7.2"
+    pullSecrets:
+      - name: index-docker-io
+      - name: registry-camunda-cloud
   postgresql:
     auth:
       existingSecret: "integration-test-credentials"
