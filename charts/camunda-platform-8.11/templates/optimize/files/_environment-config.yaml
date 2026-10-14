@@ -31,11 +31,15 @@ es:
   connection:
     nodes:
     {{- if .Values.optimize.database.elasticsearch.enabled }}
-      - host: {{ include "camundaPlatform.elasticsearchHost" . | quote }}
-        httpPort: {{ .Values.optimize.database.elasticsearch.url.port }}
+      {{- with include "camundaPlatform.elasticsearchHost" . }}
+      - host: {{ . | quote }}
+        httpPort: {{ $.Values.optimize.database.elasticsearch.url.port }}
+      {{- end }}
     {{- else if .Values.optimize.database.opensearch.enabled }}
-      - host: {{ include "camundaPlatform.opensearchHost" . | quote }}
-        httpPort: {{ .Values.optimize.database.opensearch.url.port }}
+      {{- with include "camundaPlatform.opensearchHost" . }}
+      - host: {{ . | quote }}
+        httpPort: {{ $.Values.optimize.database.opensearch.url.port }}
+      {{- end }}
     {{- end }}
   {{- if .Values.optimize.database.elasticsearch.external }}
   security:

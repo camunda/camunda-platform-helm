@@ -381,7 +381,7 @@ Elasticsearch and Opensearch templates.
 {{- define "camundaPlatform.elasticsearchURL" -}}
 {{- if .Values.orchestration.data.secondaryStorage.elasticsearch.url -}}
   {{ .Values.orchestration.data.secondaryStorage.elasticsearch.url }}
-{{- else -}}
+{{- else if include "camundaPlatform.elasticsearchHost" . -}}
   {{ .Values.optimize.database.elasticsearch.url.protocol }}://{{ include "camundaPlatform.elasticsearchHost" . }}:{{ .Values.optimize.database.elasticsearch.url.port }}
 {{- end -}}
 {{- end -}}
@@ -393,7 +393,7 @@ Elasticsearch and Opensearch templates.
 {{- define "camundaPlatform.opensearchURL" -}}
 {{- if .Values.orchestration.data.secondaryStorage.opensearch.url -}}
   {{ .Values.orchestration.data.secondaryStorage.opensearch.url }}
-{{- else -}}
+{{- else if include "camundaPlatform.opensearchHost" . -}}
   {{ .Values.optimize.database.opensearch.url.protocol }}://{{ include "camundaPlatform.opensearchHost" . }}:{{ .Values.optimize.database.opensearch.url.port }}
 {{- end -}}
 {{- end -}}

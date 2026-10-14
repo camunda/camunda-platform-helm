@@ -194,7 +194,9 @@ camunda:
       {{- if or .Values.optimize.database.elasticsearch.enabled (eq .Values.orchestration.data.secondaryStorage.type "elasticsearch") }}
       elasticsearch:
         aws-enabled: {{ .Values.orchestration.data.secondaryStorage.elasticsearch.aws.enabled }}
-        url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
+        {{- with include "camundaPlatform.elasticsearchURL" . }}
+        url: {{ . | quote }}
+        {{- end }}
         username: {{ .Values.orchestration.data.secondaryStorage.elasticsearch.auth.username | quote }}
         password: "${VALUES_ELASTICSEARCH_PASSWORD:}"
         index-prefix: {{ .Values.orchestration.index.prefix | quote }}
@@ -213,7 +215,9 @@ camunda:
       {{- if or .Values.optimize.database.opensearch.enabled (eq .Values.orchestration.data.secondaryStorage.type "opensearch") }}
       opensearch:
         aws-enabled: {{ .Values.orchestration.data.secondaryStorage.opensearch.aws.enabled }}
-        url: {{ include "camundaPlatform.opensearchURL" . | quote }}
+        {{- with include "camundaPlatform.opensearchURL" . }}
+        url: {{ . | quote }}
+        {{- end }}
         username: {{ .Values.orchestration.data.secondaryStorage.opensearch.auth.username | quote }}
         password: "${VALUES_OPENSEARCH_PASSWORD:}"
         index-prefix: {{ .Values.orchestration.index.prefix | quote }}
@@ -421,7 +425,9 @@ zeebe:
             username: {{ include "orchestration.legacyElasticsearchExporterUsername" . | quote }}
             password: "{{ include "orchestration.legacyElasticsearchExporterPasswordRef" . }}"
           {{- end }}
-          url: {{ include "camundaPlatform.legacyExporterElasticsearchURL" . | quote }}
+          {{- with include "camundaPlatform.legacyExporterElasticsearchURL" . }}
+          url: {{ . | quote }}
+          {{- end }}
           index:
             prefix: {{ include "orchestration.legacyExporterElasticsearchPrefix" . | quote }}
             numberOfReplicas: {{ ternary .Values.orchestration.index.replicas .Values.orchestration.exporters.zeebe.replicas (kindIs "invalid" .Values.orchestration.exporters.zeebe.replicas) | quote }}
@@ -440,7 +446,9 @@ zeebe:
             username: {{ include "orchestration.legacyOpenSearchExporterUsername" . | quote }}
             password: "{{ include "orchestration.legacyOpenSearchExporterPasswordRef" . }}"
           {{- end }}
-          url: {{ include "camundaPlatform.legacyExporterOpensearchURL" . | quote }}
+          {{- with include "camundaPlatform.legacyExporterOpensearchURL" . }}
+          url: {{ . | quote }}
+          {{- end }}
           index:
             prefix: {{ include "orchestration.legacyExporterOpenSearchPrefix" . | quote }}
             numberOfReplicas: {{ ternary .Values.orchestration.index.replicas .Values.orchestration.exporters.zeebe.replicas (kindIs "invalid" .Values.orchestration.exporters.zeebe.replicas) | quote }}
