@@ -49,6 +49,11 @@ on:
         default: false
   workflow_call:
     inputs:
+      route_new_internal:
+        description: Route a newly inserted internal issue from Inbox to Backlog
+        required: false
+        type: boolean
+        default: false
       issue_number:
         description: 'Issue number to process'
         required: true
@@ -71,14 +76,11 @@ on:
         required: true
 
 concurrency:
-  group: update-urgency-${{ inputs.issue_number || github.event.inputs.issue_number || github.event.issue.number }}
+  group: update-urgency-${{ inputs.issue_number || github.event.inputs.issue_number || github.event.issue.number }}-${{ inputs.route_new_internal && 'initial' || 'update' }}
   cancel-in-progress: true
 
 jobs:
   assign-urgency-to-issue:
-    if: >-
-      inputs.issue_number != '' ||
-      !startsWith(github.event.label.name, 'triage:slack-')
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -95,12 +97,10 @@ jobs:
         shell: bash
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
-      - name: Install Go
-        uses: ./.github/actions/install-tool-versions
+      - uses: ./.github/actions/install-tool-versions
         with:
           tools: golang
       - name: Import Vault secrets
@@ -122,19 +122,14 @@ jobs:
         with:
           app-id: ${{ steps.vault-secrets.outputs.GH_APP_ID_DISTRO_CI }}
           private-key: ${{ steps.vault-secrets.outputs.GH_APP_PRIVATE_KEY_DISTRO_CI }}
-          permission-members: read
-          permission-issues: read
-          permission-organization-projects: write
-
-      - name: Classify issue creator
-        id: author
-        env:
-          GH_TOKEN: ${{ steps.generate-github-token.outputs.token }}
-        run: make run.issue-triage command=classify
 
       - name: Set GitHub token
         run: |
           echo "GH_TOKEN=${{ steps.generate-github-token.outputs.token }}" >> "$GITHUB_ENV"
+
+      - name: Classify issue creator
+        id: author
+        run: make run.issue-author
 
       - name: Dump event issue JSON
         run: |
@@ -255,7 +250,23 @@ jobs:
             echo "in_target_project=true"
             echo "project_v2_id=$TARGET_PROJECT_NODE_ID"
             echo "project_item_id=$PROJECT_ITEM_ID"
+            echo "current_status=$(echo "$ISSUE_DATA" | jq -r --argjson pn "$PROJECT_NUMBER" '.projectItems.nodes[] | select(.project.number==$pn) | .fieldValues.nodes[] | select(.field.name=="Status") | .name')"
           } >> "$GITHUB_OUTPUT"
+
+      - name: Route new internal issue to Backlog
+        if: >-
+          inputs.route_new_internal && env.DRY_RUN != 'true' &&
+          steps.author.outputs.internal == 'true' &&
+          steps.validate_project.outputs.in_target_project == 'true' &&
+          (steps.validate_project.outputs.current_status == '' || steps.validate_project.outputs.current_status == '📥 Inbox')
+        uses: github/update-project-action@d0031a4f8081c4bf4438d7ce2fa5cf1136610c7a # main
+        with:
+          github_token: ${{ steps.generate-github-token.outputs.token }}
+          organization: ${{ github.repository_owner }}
+          project_number: ${{ env.PROJECT_NUMBER }}
+          content_id: ${{ github.event.issue.node_id }}
+          field: Status
+          value: 📋 Backlog
 
       - name: Check labels
         id: check_labels
@@ -564,24 +575,20 @@ jobs:
           echo "✅ Updated urgency: '${CURRENT_URGENCY:-(empty)}' → '${NEW_URGENCY:-(empty)}'"
 
       - name: Move to Ready if immediate
-        if: >-
-          steps.author.outputs.internal == 'false' &&
-          steps.validate_urgency.outputs.urgency == 'immediate' &&
-          steps.validate_project.outputs.in_target_project == 'true' &&
-          steps.check_labels.outputs.has_urgency_locked != 'true' &&
-          env.DRY_RUN != 'true'
+        if: steps.author.outputs.internal == 'false' && steps.validate_urgency.outputs.urgency == 'immediate' && steps.validate_project.outputs.in_target_project == 'true'
         run: |
           set -euo pipefail
 
           PROJECT_V2_ID='${{ steps.validate_project.outputs.project_v2_id }}'
           PROJECT_ITEM_ID='${{ steps.validate_project.outputs.project_item_id }}'
+          NEW_URGENCY='${{ steps.validate_urgency.outputs.urgency }}'
 
           echo "🎯 Urgency is immediate - checking if issue should be moved to Ready"
 
           # Fetch current status and Ready option
           STATUS_DATA=$(gh api graphql -f query="
             query(\$projectId:ID!, \$itemId:ID!){
-              project: node(id:\$projectId){
+              node(id:\$projectId){
                 ... on ProjectV2 {
                   field(name:\"Status\") {
                     ... on ProjectV2SingleSelectField {
@@ -591,7 +598,7 @@ jobs:
                   }
                 }
               }
-              item: node(id:\$itemId) {
+              node(id:\$itemId) {
                 ... on ProjectV2Item {
                   fieldValues(first:20) {
                     nodes {
@@ -608,9 +615,9 @@ jobs:
             exit 1
           }
 
-          STATUS_FIELD_ID=$(echo "$STATUS_DATA" | jq -r '.data.project.field.id // empty')
-          READY_OPTION_ID=$(echo "$STATUS_DATA" | jq -r '.data.project.field.options[] | select(.name=="⏭️ Ready") | .id // empty')
-          CURRENT_STATUS=$(echo "$STATUS_DATA" | jq -r '.data.item.fieldValues.nodes[] | select(.field.name=="Status") | .name // empty')
+          STATUS_FIELD_ID=$(echo "$STATUS_DATA" | jq -r '.data | to_entries[0].value.field.id // empty')
+          READY_OPTION_ID=$(echo "$STATUS_DATA" | jq -r '.data | to_entries[0].value.field.options[] | select(.name=="⏭️ Ready") | .id // empty')
+          CURRENT_STATUS=$(echo "$STATUS_DATA" | jq -r '.data | to_entries[1].value.fieldValues.nodes[] | select(.field.name=="Status") | .name // empty')
 
           if [[ -z "$STATUS_FIELD_ID" ]]; then
             echo "⚠️  Status field not found in project"

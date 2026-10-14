@@ -1,15 +1,14 @@
 ---
 name: New Issue
-about: Bugs, features, and tasks — automated priority suggestions with Slack intake for external requests.
+about: Bugs, features, and tasks — AI suggests priority; team-created issues are prioritized quietly.
 title: ""
 labels: ""
 assignees: ""
 ---
 
-Describe the issue using the sections below. AI suggests priority for all authors.
-Issues from Distribution and InfraEx members go to Backlog with quiet priority
-suggestions. Requests from other authors, including bots, receive visible triage
-and Slack intake reporting.
+<!-- Our AI triage system will automatically categorize your issue, assess severity
+     and likelihood, apply labels, and route it. Just describe your issue clearly
+     using the sections below as guidance. Remove or skip any that don't apply. -->
 
 ## Description
 
