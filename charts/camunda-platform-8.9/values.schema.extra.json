@@ -2,6 +2,14 @@
     "properties": {
         "global": {
             "properties": {
+                "image": {
+                    "properties": {
+                        "tag": {
+                            "type": "string",
+                            "description": "Deprecated legacy image tag fallback. Component image tags take precedence."
+                        }
+                    }
+                },
                 "documentStore": {
                     "properties": {
                         "activeStoreId": {
@@ -813,12 +821,26 @@
                                     "properties": {
                                         "admin": {
                                             "properties": {
+                                                "mappingRules": {
+                                                    "type": "array",
+                                                    "description": "Existing mapping rule IDs assigned to the admin role.",
+                                                    "items": { "type": "string" }
+                                                },
                                                 "clients": {
                                                     "type": "array",
                                                     "description": "defines the initial clients that will get the admin permission.",
                                                     "items": {
                                                         "type": "string"
                                                     }
+                                                }
+                                            }
+                                        },
+                                        "connectors": {
+                                            "properties": {
+                                                "mappingRules": {
+                                                    "type": "array",
+                                                    "description": "Existing mapping rule IDs assigned to the connectors role.",
+                                                    "items": { "type": "string" }
                                                 }
                                             }
                                         }

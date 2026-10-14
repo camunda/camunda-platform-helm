@@ -187,6 +187,26 @@ configmap-warnings.yaml, which renders the "<release>-warnings" ConfigMap on the
 (helm template / Argo CD / Flux). Feed new deprecations here so they reach both channels.
 */}}
 {{- define "camunda.constraints.warnings" }}
+  {{- include "camundaPlatform.keyNoEffect" (dict
+      "condition" (hasKey .Values.global.compatibility "orchestration")
+      "oldName" "global.compatibility.orchestration"
+      "migration" "Complete the 8.7 to 8.8 upgrade on 8.8 before upgrading to 8.9."
+  ) }}
+  {{- include "camundaPlatform.keyNoEffect" (dict
+      "condition" (hasKey .Values.orchestration "importer")
+      "oldName" "orchestration.importer"
+      "migration" "Complete the 8.7 to 8.8 migration on 8.8 before upgrading to 8.9."
+  ) }}
+  {{- include "camundaPlatform.keyNoEffect" (dict
+      "condition" (hasKey .Values.orchestration "migration")
+      "oldName" "orchestration.migration"
+      "migration" "Complete the 8.7 to 8.8 migration on 8.8 before upgrading to 8.9."
+  ) }}
+  {{- include "camundaPlatform.keyNoEffect" (dict
+      "condition" (hasKey .Values.webModeler "webapp")
+      "oldName" "webModeler.webapp"
+      "migration" "The UI is served by the REST API. Configure webModeler.restapi instead; webapp settings are not copied automatically."
+  ) }}
   {{- if and .Values.global.identity.auth.enabled (empty (include "camundaPlatform.authIssuerUrlWithFallback" . | trim)) }}
     {{- $issuerBackendUrl := include "camundaPlatform.authIssuerBackendUrl" . | trim }}
     {{- $keycloakURL := .Values.global.identity.keycloak.url | default dict }}
@@ -786,6 +806,12 @@ Usage:
         "https://docs.camunda.io/docs/self-managed/deployment/helm/upgrade/"
     -}}
     {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
+  {{- end }}
+{{- end -}}
+
+{{- define "camundaPlatform.keyNoEffect" }}
+  {{- if .condition }}
+    {{- printf "\n[camunda][warning] The Helm values file key \"%s\" has no effect since chart 14 (Camunda 8.9). Remove it. %s %s" .oldName .migration "https://docs.camunda.io/docs/8.9/self-managed/upgrade/helm/" }}
   {{- end }}
 {{- end -}}
 
