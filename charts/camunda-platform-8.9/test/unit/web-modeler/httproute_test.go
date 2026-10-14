@@ -118,6 +118,50 @@ func (s *HTTPRouteTemplateTest) TestDifferentValuesInputs() {
 			},
 		},
 		{
+			Name: "TestHTTPRouteRewritesBareContextPath",
+			Values: map[string]string{
+				"global.gateway.enabled":              "true",
+				"global.host":                         "camunda.example.com",
+				"webModeler.enabled":                  "true",
+				"identity.enabled":                    "true",
+				"webModeler.restapi.mail.fromAddress": "example@example.com",
+				"webModeler.contextPath":              "/modeler",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				testhelpers.RequireContextRootRewrite(t, output, "/modeler", "camunda-platform-test-web-modeler-restapi", 80)
+			},
+		},
+		{
+			Name: "TestHTTPRouteRewritesBareContextPathWithTrailingSlash",
+			Values: map[string]string{
+				"global.gateway.enabled":              "true",
+				"global.host":                         "camunda.example.com",
+				"webModeler.enabled":                  "true",
+				"identity.enabled":                    "true",
+				"webModeler.restapi.mail.fromAddress": "example@example.com",
+				"webModeler.contextPath":              "/modeler/",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				testhelpers.RequireContextRootRewrite(t, output, "/modeler", "camunda-platform-test-web-modeler-restapi", 80)
+			},
+		},
+		{
+			Name: "TestHTTPRouteHasNoContextRootRewriteWithoutContextPath",
+			Values: map[string]string{
+				"global.gateway.enabled":              "true",
+				"global.host":                         "camunda.example.com",
+				"webModeler.enabled":                  "true",
+				"identity.enabled":                    "true",
+				"webModeler.restapi.mail.fromAddress": "example@example.com",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				testhelpers.RequireNoContextRootRewrite(t, output)
+			},
+		},
+		{
 			Name: "TestHTTPRouteWithAnnotations",
 			Values: map[string]string{
 				"global.gateway.enabled":                 "true",
