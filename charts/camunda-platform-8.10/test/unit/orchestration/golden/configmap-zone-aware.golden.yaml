@@ -140,7 +140,6 @@ data:
           type: "elasticsearch"
           elasticsearch:
             aws-enabled: false
-            url: "http://camunda-platform-test-elasticsearch:9200"
             username: ""
             password: "${VALUES_ELASTICSEARCH_PASSWORD:}"
             index-prefix: ""
