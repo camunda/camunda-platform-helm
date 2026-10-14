@@ -32,30 +32,29 @@ camundaSupportLifecycle:
     note: "Deploys Camunda Hub (the management plane replacing Web Modeler and Console SM). For the Orchestration Cluster versions Hub can manage, see the [Hub documentation](https://docs.camunda.io/docs/8.10/self-managed/components/hub/configuration/properties/)."
   "8.9":
     released: "2026-04-14"
-    stdSupportUntil: "2027-10-13"
+    stdSupportUntil: "2027-10-12"
   "8.8":
     released: "2025-10-14"
     stdSupportUntil: "2027-04-13"
   "8.7":
     released: "2025-04-08"
-    stdSupportUntil: "2026-10-13"
   "8.6":
     released: "2024-10-08"
   "8.5":
     released: "2024-04-09"
   "8.4":
-    released: "2023-10-10"
+    released: "2024-01-09"
   "8.3":
-    released: "2023-04-11"
+    released: "2023-10-10"
   "8.2":
-    released: "2022-10-11"
+    released: "2023-04-11"
     eolSince: "2024-10-08"
     latestChart: "8.2.34"
   "8.1":
-    released: "2022-04-12"
+    released: "2022-10-11"
     eolSince: "2024-04-10"
     latestChart: "8.1.27"
   "8.0":
-    released: "2021-10-12"
+    released: "2022-04-12"
     eolSince: "2023-10-11"
     latestChart: "8.0.20"

@@ -3,7 +3,7 @@
 
 # Camunda 8.7 Helm Chart Version Matrix
 
-Standard support until 2026-10-13
+Extended support
 
 | Helm Chart | Camunda | Released | Helm CLI | Helm Values | Release Notes |
 |---|---|---|---|---|---|
