@@ -230,7 +230,7 @@ configmap-warnings.yaml, which renders the "<release>-warnings" ConfigMap on the
   {{- end }}
   {{- $secondaryStorageType := .Values.orchestration.data.secondaryStorage.type }}
   {{- if and .Values.global.noSecondaryStorage $secondaryStorageType (ne $secondaryStorageType "none") (eq (include "camundaPlatform.orchestrationEnabled" .) "true") }}
-    {{- printf "\n[camunda][warning] global.noSecondaryStorage=true conflicts with orchestration.data.secondaryStorage.type=%s: the Orchestration Cluster uses %s secondary storage while the other components run without it. Unset orchestration.data.secondaryStorage.type to run without secondary storage, or set global.noSecondaryStorage=false." $secondaryStorageType $secondaryStorageType }}
+    {{- printf "\n[camunda][warning] global.noSecondaryStorage=true conflicts with orchestration.data.secondaryStorage.type=%s: the Orchestration Cluster uses %s secondary storage while the other components run without it. Set orchestration.data.secondaryStorage.type=none to run without secondary storage, or set global.noSecondaryStorage=false." $secondaryStorageType $secondaryStorageType }}
   {{- end }}
   {{- if .Values.global.testDeprecationFlags.existingSecretsMustBeSet }}
     {{/* TODO: Check if there are more existingSecrets to check */}}
