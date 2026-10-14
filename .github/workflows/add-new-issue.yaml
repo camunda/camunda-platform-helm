@@ -4,11 +4,23 @@ on:
   issues:
     types: [opened, reopened, transferred, labeled]
 
+permissions:
+  contents: read
+
 jobs:
   add-to-project:
     name: Add new issue
+    if: "!startsWith(github.event.label.name, 'triage:slack-')"
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Install Go
+        uses: ./.github/actions/install-tool-versions
+        with:
+          tools: golang
       - name: Create URL to the run output
         id: vars
         run: |
@@ -34,12 +46,28 @@ jobs:
         with:
           app-id: ${{ steps.vault-harbor.outputs.GH_APP_ID_DISTRO_CI }}
           private-key: ${{ steps.vault-harbor.outputs.GH_APP_PRIVATE_KEY_DISTRO_CI }}
+          permission-members: read
+          permission-issues: read
+          permission-organization-projects: write
+
+      - name: Classify issue creator
+        env:
+          GH_TOKEN: ${{ steps.generate-github-token.outputs.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: make run.issue-triage command=classify
       
       - name: Add to Distribution Team project
         uses: actions/add-to-project@5afcf98fcd03f1c2f92c3c83f58ae24323cc57fd # v2.0.0
         with:
           project-url: https://github.com/orgs/camunda/projects/33
           github-token: '${{ steps.generate-github-token.outputs.token }}'
+
+      - name: Route new internal issue to Backlog
+        if: github.event.action == 'opened'
+        env:
+          GH_TOKEN: ${{ steps.generate-github-token.outputs.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: make run.issue-triage command=route
 
       - name: Update Created At field
         uses: github/update-project-action@d0031a4f8081c4bf4438d7ce2fa5cf1136610c7a # main
@@ -70,4 +98,13 @@ jobs:
               github.event.action == 'transferred' ||
               (github.event.action == 'labeled' && github.event.label.name == 'kind/bug')
           )
-                
+
+  reconcile-urgency:
+    needs: add-to-project
+    uses: ./.github/workflows/triage-assign-urgency-to-issue.yml
+    with:
+      issue_number: ${{ format('{0}', github.event.issue.number) }}
+    secrets:
+      VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
+      VAULT_ROLE_ID: ${{ secrets.VAULT_ROLE_ID }}
+      VAULT_SECRET_ID: ${{ secrets.VAULT_SECRET_ID }}

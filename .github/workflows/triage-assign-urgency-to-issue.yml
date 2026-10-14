@@ -76,8 +76,12 @@ concurrency:
 
 jobs:
   assign-urgency-to-issue:
+    if: >-
+      inputs.issue_number != '' ||
+      !startsWith(github.event.label.name, 'triage:slack-')
     runs-on: ubuntu-latest
-    permissions: {}
+    permissions:
+      contents: read
     timeout-minutes: 10
     env:
       OWNER: ${{ github.repository_owner }}
@@ -91,6 +95,14 @@ jobs:
         shell: bash
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Install Go
+        uses: ./.github/actions/install-tool-versions
+        with:
+          tools: golang
       - name: Import Vault secrets
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc  # v4.0.0
         id: vault-secrets
@@ -110,6 +122,15 @@ jobs:
         with:
           app-id: ${{ steps.vault-secrets.outputs.GH_APP_ID_DISTRO_CI }}
           private-key: ${{ steps.vault-secrets.outputs.GH_APP_PRIVATE_KEY_DISTRO_CI }}
+          permission-members: read
+          permission-issues: read
+          permission-organization-projects: write
+
+      - name: Classify issue creator
+        id: author
+        env:
+          GH_TOKEN: ${{ steps.generate-github-token.outputs.token }}
+        run: make run.issue-triage command=classify
 
       - name: Set GitHub token
         run: |
@@ -543,20 +564,24 @@ jobs:
           echo "✅ Updated urgency: '${CURRENT_URGENCY:-(empty)}' → '${NEW_URGENCY:-(empty)}'"
 
       - name: Move to Ready if immediate
-        if: steps.validate_urgency.outputs.urgency == 'immediate' && steps.validate_project.outputs.in_target_project == 'true'
+        if: >-
+          steps.author.outputs.internal == 'false' &&
+          steps.validate_urgency.outputs.urgency == 'immediate' &&
+          steps.validate_project.outputs.in_target_project == 'true' &&
+          steps.check_labels.outputs.has_urgency_locked != 'true' &&
+          env.DRY_RUN != 'true'
         run: |
           set -euo pipefail
 
           PROJECT_V2_ID='${{ steps.validate_project.outputs.project_v2_id }}'
           PROJECT_ITEM_ID='${{ steps.validate_project.outputs.project_item_id }}'
-          NEW_URGENCY='${{ steps.validate_urgency.outputs.urgency }}'
 
           echo "🎯 Urgency is immediate - checking if issue should be moved to Ready"
 
           # Fetch current status and Ready option
           STATUS_DATA=$(gh api graphql -f query="
             query(\$projectId:ID!, \$itemId:ID!){
-              node(id:\$projectId){
+              project: node(id:\$projectId){
                 ... on ProjectV2 {
                   field(name:\"Status\") {
                     ... on ProjectV2SingleSelectField {
@@ -566,7 +591,7 @@ jobs:
                   }
                 }
               }
-              node(id:\$itemId) {
+              item: node(id:\$itemId) {
                 ... on ProjectV2Item {
                   fieldValues(first:20) {
                     nodes {
@@ -583,9 +608,9 @@ jobs:
             exit 1
           }
 
-          STATUS_FIELD_ID=$(echo "$STATUS_DATA" | jq -r '.data | to_entries[0].value.field.id // empty')
-          READY_OPTION_ID=$(echo "$STATUS_DATA" | jq -r '.data | to_entries[0].value.field.options[] | select(.name=="⏭️ Ready") | .id // empty')
-          CURRENT_STATUS=$(echo "$STATUS_DATA" | jq -r '.data | to_entries[1].value.fieldValues.nodes[] | select(.field.name=="Status") | .name // empty')
+          STATUS_FIELD_ID=$(echo "$STATUS_DATA" | jq -r '.data.project.field.id // empty')
+          READY_OPTION_ID=$(echo "$STATUS_DATA" | jq -r '.data.project.field.options[] | select(.name=="⏭️ Ready") | .id // empty')
+          CURRENT_STATUS=$(echo "$STATUS_DATA" | jq -r '.data.item.fieldValues.nodes[] | select(.field.name=="Status") | .name // empty')
 
           if [[ -z "$STATUS_FIELD_ID" ]]; then
             echo "⚠️  Status field not found in project"
