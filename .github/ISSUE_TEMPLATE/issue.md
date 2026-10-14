@@ -1,14 +1,15 @@
 ---
 name: New Issue
-about: Bugs, features, tasks, and everything else — AI will triage automatically.
+about: Bugs, features, and tasks — automated priority suggestions with Slack intake for external requests.
 title: ""
 labels: ""
 assignees: ""
 ---
 
-<!-- Our AI triage system will automatically categorize your issue, assess severity
-     and likelihood, apply labels, and route it. Just describe your issue clearly
-     using the sections below as guidance. Remove or skip any that don't apply. -->
+Describe the issue using the sections below. AI suggests priority for all authors.
+Issues from Distribution and InfraEx members go to Backlog with quiet priority
+suggestions. Requests from other authors, including bots, receive visible triage
+and Slack intake reporting.
 
 ## Description
 
@@ -48,4 +49,3 @@ assignees: ""
 - **Helm CLI version:**
 - **Chart version:**
 - **Kubernetes version:**
-
