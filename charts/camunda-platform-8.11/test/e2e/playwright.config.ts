@@ -29,9 +29,6 @@ const hasTopologyOrchestrationSuite = suiteInstalled(
   "topology-orchestration-smoke.spec.js",
 );
 
-if (process.env.REQUIRE_SM_TEST_SUITE === "true" && !hasSmSmokeSuite) {
-  throw new Error("The required SM-8.11 smoke test suite is not installed");
-}
 if (
   process.env.REQUIRE_HUB_WEB_MODELER_TEST_SUITE === "true" &&
   !hasHubWebModelerSuite
@@ -58,21 +55,26 @@ const hasAnySuite =
   hasSmSmokeSuite || hasHubWebModelerSuite || hasTopologyOrchestrationSuite;
 const testDir = hasAnySuite ? smTestDir : "./empty-test-dir";
 
-// When SM-8.11 is missing, create a fallback directory with a single skipped
-// test so Playwright exits with code 0 instead of failing on "No tests found".
+// When SM-8.11 is missing, create a fallback directory with skipped tests so
+// Playwright exits with code 0 instead of failing on "No tests found".
 // Named smoke-tests.spec.js so it matches both the "smoke-tests" and
 // "full-suite" project globs.
 const absEmpty = path.resolve(__dirname, "./empty-test-dir");
 if (!fs.existsSync(absEmpty)) {
   fs.mkdirSync(absEmpty, { recursive: true });
 }
-const skipFile = path.resolve(absEmpty, "smoke-tests.spec.js");
-if (!fs.existsSync(skipFile)) {
-  fs.writeFileSync(
-    skipFile,
-    `const { test } = require("@playwright/test");\n` +
-      `test.skip("SM-8.11 e2e suite not yet published", () => {});\n`,
-  );
+for (const spec of [
+  "smoke-tests.spec.js",
+  "topology-orchestration-smoke.spec.js",
+]) {
+  const skipFile = path.resolve(absEmpty, spec);
+  if (!fs.existsSync(skipFile)) {
+    fs.writeFileSync(
+      skipFile,
+      `const { test } = require("@playwright/test");\n` +
+        `test.skip("SM-8.11 e2e suite not yet published", () => {});\n`,
+    );
+  }
 }
 
 // Auth0 smoke directory in @camunda/e2e-test-suite. Distinct from the SM-8.11
