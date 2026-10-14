@@ -59,12 +59,12 @@ helm search repo camunda/camunda-platform --devel --versions
 | 8.6 | 2024-10-08 | [11.12.3](./camunda-8.6/#helm-chart-11123) | [camunda-8.6](./camunda-8.6/) |
 | 8.5 | 2024-04-09 | [10.11.3](./camunda-8.5/#helm-chart-10113) | [camunda-8.5](./camunda-8.5/) |
 | 8.4 | 2024-01-09 | [9.7.0](./camunda-8.4/#helm-chart-970) | [camunda-8.4](./camunda-8.4/) |
-| 8.3 | 2023-10-10 | [8.3.26](./camunda-8.3/#helm-chart-8326) | [camunda-8.3](./camunda-8.3/) |
 
 ## End of life — no longer supported
 
 | Camunda | EOL since | Last chart | Full matrix |
 |---|---|---|---|
+| 8.3 | 2025-04-09 | [8.3.26](./camunda-8.3/#helm-chart-8326) | [camunda-8.3](./camunda-8.3/) |
 | 8.2 | 2024-10-08 | [8.2.34](./camunda-8.2/#helm-chart-8234) | [camunda-8.2](./camunda-8.2/) |
 | 8.1 | 2024-04-10 | [8.1.27](./camunda-8.1/#helm-chart-8127) | [camunda-8.1](./camunda-8.1/) |
 | 8.0 | 2023-10-11 | [8.0.20](./camunda-8.0/#helm-chart-8020) | [camunda-8.0](./camunda-8.0/) |

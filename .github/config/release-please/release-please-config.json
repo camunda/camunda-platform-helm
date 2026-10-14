@@ -59,21 +59,6 @@
           "jsonpath": "$.version"
         }
       ]
-    },
-    "charts/camunda-platform-8.3": {
-      "pull-request-title-pattern": "chore(release): Camunda Platform Helm Chart ${version} - Camunda 8.3",
-      "release-type": "helm",
-      "versioning": "always-bump-patch",
-      "extra-label": "version/8.3,automation/release-please,release/pr,kind/chore,chart/camunda-platform",
-      "component": "camunda-platform-8.3",
-      "include-v-in-tag": false,
-      "extra-files": [
-        {
-          "type": "yaml",
-          "path": "charts/identity/Chart.yaml",
-          "jsonpath": "$.version"
-        }
-      ]
     }
   },
   "changelog-sections": [
