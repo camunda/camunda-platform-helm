@@ -195,8 +195,6 @@
       allowedVersions: '<4.0.0',
     },
     {
-      // Merged by the InfraEx dependency scanner, not by Renovate:
-      // https://github.com/camunda/team-infrastructure-experience/blob/main/.github/workflows/renovate-dependency-scan.yml
       addLabels: [
         'deps/github-actions',
         'automation/renovatebot',
@@ -405,7 +403,6 @@
     },
     {
       matchUpdateTypes: ['minor', 'patch', 'pin', 'digest'],
-      // Merged by the InfraEx dependency scanner, not by Renovate (see above).
       addLabels: [
         'automation/renovatebot',
         'kind/chore',

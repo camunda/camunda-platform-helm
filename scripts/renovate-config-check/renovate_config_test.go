@@ -265,7 +265,6 @@ func TestGitHubActionsAutomergePolicy(t *testing.T) {
 		assert.Contains(t, actionRule.AddLabels, label)
 	}
 
-	// The InfraEx dependency scanner merges Renovate PRs; Renovate must not.
 	for _, rule := range config.PackageRules {
 		assert.False(t, rule.Automerge != nil && *rule.Automerge, "rule %q enables automerge", rule.Description)
 		assert.False(t, rule.PlatformAutomerge != nil && *rule.PlatformAutomerge, "rule %q enables platformAutomerge", rule.Description)
