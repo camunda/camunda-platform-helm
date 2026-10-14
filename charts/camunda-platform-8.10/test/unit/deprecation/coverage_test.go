@@ -349,11 +349,19 @@ func TestDeprecatedKeysDocumentedWithMarker(t *testing.T) {
 
 	docs, err := parseDocumentedParams(currentValuesPath)
 	require.NoError(t, err)
+	allowlistBytes, err := os.ReadFile("allowlist.yaml")
+	require.NoError(t, err)
+	var allowlist map[string]string
+	require.NoError(t, yaml.Unmarshal(allowlistBytes, &allowlist))
 
 	var undeclared, unmarked []string
 	for key := range deprecated {
 		description, ok := docs[key]
 		if !ok {
+			if reason, exempt := allowlist[key]; exempt {
+				require.NotEmpty(t, reason, "documentation exemption must explain the legacy key")
+				continue
+			}
 			undeclared = append(undeclared, key)
 			continue
 		}

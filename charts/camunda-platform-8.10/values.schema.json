@@ -1611,7 +1611,7 @@
                         },
                         "tag": {
                             "type": "string",
-                            "description": "can be set to overwrite the global tag, which should be used in that chart",
+                            "description": "defines which image tag to use",
                             "default": "8.10.0"
                         },
                         "digest": {
@@ -3968,7 +3968,7 @@
                         },
                         "tag": {
                             "type": "string",
-                            "description": "can be set to overwrite the global tag, which should be used in that chart",
+                            "description": "defines which image tag to use",
                             "default": "8.10.0"
                         },
                         "digest": {
@@ -4899,7 +4899,7 @@
                         },
                         "tag": {
                             "type": "string",
-                            "description": "can be set to overwrite the global tag, which should be used in that chart",
+                            "description": "defines which image tag to use",
                             "default": "8.10.3"
                         },
                         "digest": {
@@ -6483,7 +6483,7 @@
                         },
                         "tag": {
                             "type": "string",
-                            "description": "can be set to overwrite the global tag, which should be used in that chart",
+                            "description": "defines which image tag to use",
                             "default": "8.10.3"
                         },
                         "digest": {

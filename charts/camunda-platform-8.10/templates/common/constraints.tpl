@@ -1721,6 +1721,8 @@ The following values inside your values.yaml need to be set but were not:
     {{- end }}
   {{- end }}
 
+  {{ include "camundaPlatform.globalImageDeprecations" . }}
+
   {{/* Camunda Hub consolidation deprecation warnings */}}
   {{- if .Values.webModeler.enabled }}
     {{- $warningMessage := printf "%s %s %s %s"
@@ -2103,8 +2105,9 @@ Usage:
 {{- define "camundaPlatform.keyDeprecated" }}
   {{- if .condition }}
     {{- $warningMessage := printf
-        "[camunda][warning] DEPRECATION: The Helm values file key \"%s\" is deprecated and will be removed in chart v16 (Camunda 8.11). %s %s"
+        "[camunda][warning] DEPRECATION: The Helm values file key \"%s\" is deprecated and will be removed in %s. %s %s"
         .oldName
+        (.removal | default "chart v16 (Camunda 8.11)")
         (printf "Configure this via \"%s\" instead." (.migration | default "the component's extraConfiguration"))
         (.url | default "https://docs.camunda.io/docs/self-managed/deployment/helm/upgrade/")
     -}}
