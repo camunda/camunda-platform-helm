@@ -29,10 +29,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     permissions:
+      id-token: write
       contents: read
     outputs:
       committed: ${{ steps.commit.outputs.committed }}
     steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@ead99f6c9c536f5c47e443929d47e8fcfdb05a81  # start-build-monitor-1.0.1
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ github.sha }}
@@ -129,6 +131,17 @@ jobs:
           path: ${{ runner.temp }}/changes.bundle
           if-no-files-found: error
           retention-days: 1
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_jwt_path: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwt_role: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwt_audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   push:
     needs: run

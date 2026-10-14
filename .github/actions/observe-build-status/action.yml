@@ -38,7 +38,8 @@ runs:
     continue-on-error: true
     uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
     if: |
-      inputs.secret_vault_address != ''
+      always()
+      && inputs.secret_vault_address != ''
       && inputs.secret_vault_jwt_path != ''
       && inputs.secret_vault_jwt_role != ''
     with:
@@ -52,14 +53,14 @@ runs:
         secret/data/products/distribution/ci/ci-analytics gcloud_sa_key;
 
   - name: Check secrets availability
-    if: ${{ steps.secrets.outputs.gcloud_sa_key == '' }}
+    if: ${{ always() && steps.secrets.outputs.gcloud_sa_key == '' }}
     shell: bash
     run: echo "::warning::Not sending any CI health metrics since no access to GHA secrets!"
 
   ######################## Calculate build duration #########################
   - name: Get build duration in milliseconds
     id: get-build-duration-millis
-    if: ${{ steps.secrets.outputs.gcloud_sa_key != '' }}
+    if: ${{ always() && steps.secrets.outputs.gcloud_sa_key != '' }}
     shell: bash
     run: |
       # Prefer the start-build-monitor PID file mtime as the job-start anchor;
@@ -80,7 +81,7 @@ runs:
       fi
 
   ######################## Report build result #############################
-  - uses: camunda/infra-global-github-actions/submit-build-status@95c6f97de08ce6befa8e1b222140676204d792fb # main
+  - uses: camunda/infra-global-github-actions/submit-build-status@ead99f6c9c536f5c47e443929d47e8fcfdb05a81  # submit-build-status-1.3.3
     if: ${{ always() && steps.secrets.outputs.gcloud_sa_key != '' }}
     with:
       job_name_override: "${{ inputs.job_name || github.job }}"
