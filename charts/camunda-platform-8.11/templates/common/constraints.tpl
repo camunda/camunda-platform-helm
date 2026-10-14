@@ -1080,6 +1080,9 @@ Usage:
   {{- if and .Values.global.noSecondaryStorage $secondaryStorageType (ne $secondaryStorageType "none") (eq (include "camundaPlatform.orchestrationEnabled" .) "true") }}
     {{- printf "\n[camunda][warning] global.noSecondaryStorage=true conflicts with orchestration.data.secondaryStorage.type=%s: the Orchestration Cluster uses %s secondary storage while the other components run without it. Set orchestration.data.secondaryStorage.type=none to run without secondary storage, or set global.noSecondaryStorage=false." $secondaryStorageType $secondaryStorageType }}
   {{- end }}
+  {{- if and (eq (include "camundaPlatform.orchestrationEnabled" .) "true") (eq (include "orchestration.secondaryStorage" .) "rdbms") (ne (include "orchestration.rdbmsUrlConfigured" .) "true") }}
+    {{- printf "\n%s" "[camunda][warning] The Orchestration Cluster uses RDBMS secondary storage, but no JDBC URL is set. Without a URL, the Orchestration Cluster fails at startup. Set orchestration.data.secondaryStorage.rdbms.url, set CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_URL in orchestration.env, or set camunda.data.secondary-storage.rdbms.url in orchestration.extraConfiguration. If the URL comes from another source, such as JVM options, ignore this warning." }}
+  {{- end }}
   {{- $hubUpgradePhase := include "camundaHub.upgradePhase" . }}
   {{- if eq $hubUpgradePhase "quiesce" }}
     {{- printf "\n%s" "[camunda][warning] Camunda Hub is quiesced for the 8.9 to 8.10 database migration. Confirm all external writers are stopped and create a verified database backup before setting camundaHub.upgrade.phase to migrate." }}

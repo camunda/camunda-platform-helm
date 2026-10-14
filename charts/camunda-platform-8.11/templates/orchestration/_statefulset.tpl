@@ -236,7 +236,7 @@ spec:
                 "config" $legacyOpenSearchExporterAuth
             ) | nindent 12 }}
             {{- end }}
-            {{- if and .Values.orchestration.exporters.rdbms.enabled (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.orchestration.data.secondaryStorage.rdbms)) "true") }}
+            {{- if and (eq (include "orchestration.rdbmsEnabled" .) "true") (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.orchestration.data.secondaryStorage.rdbms)) "true") }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "VALUES_ORCHESTRATION_DATA_SECONDARYSTORAGE_RDBMS_PASSWORD"
                 "config" .Values.orchestration.data.secondaryStorage.rdbms
