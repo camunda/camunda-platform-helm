@@ -719,7 +719,7 @@ func (s *ConfigMapWarningsTemplateTest) TestMultiregionReplicationFactorWarning(
 			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.replicationFactor=4"},
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().NoError(err)
-				s.Require().NotContains(output, "orchestration.replicationFactor is")
+				s.Require().NotContains(output, "a dual-region cluster needs a replication factor of 4")
 			},
 		},
 		{
@@ -732,7 +732,7 @@ func (s *ConfigMapWarningsTemplateTest) TestMultiregionReplicationFactorWarning(
 			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.env[0].value=4"},
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().NoError(err)
-				s.Require().NotContains(output, "orchestration.replicationFactor is")
+				s.Require().NotContains(output, "a dual-region cluster needs a replication factor of 4")
 			},
 		},
 		{
@@ -745,7 +745,7 @@ func (s *ConfigMapWarningsTemplateTest) TestMultiregionReplicationFactorWarning(
 			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.env[0].value=4"},
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().NoError(err)
-				s.Require().NotContains(output, "orchestration.replicationFactor is")
+				s.Require().NotContains(output, "a dual-region cluster needs a replication factor of 4")
 			},
 		},
 		{
@@ -759,7 +759,7 @@ func (s *ConfigMapWarningsTemplateTest) TestMultiregionReplicationFactorWarning(
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().NoError(err)
-				s.Require().NotContains(output, "orchestration.replicationFactor is")
+				s.Require().NotContains(output, "a dual-region cluster needs a replication factor of 4")
 			},
 		},
 		{
@@ -774,7 +774,8 @@ func (s *ConfigMapWarningsTemplateTest) TestMultiregionReplicationFactorWarning(
 				s.Require().NoError(err)
 				var configmap corev1.ConfigMap
 				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
-				s.Require().Contains(configmap.Data["warnings"], "orchestration.replicationFactor is 3 but")
+				s.Require().Contains(configmap.Data["warnings"], "the CAMUNDA_CLUSTER_REPLICATIONFACTOR entry in orchestration.env is 3 but")
+				s.Require().Contains(configmap.Data["warnings"], "Set the CAMUNDA_CLUSTER_REPLICATIONFACTOR entry in orchestration.env to 4.")
 			},
 		},
 		{
@@ -786,7 +787,7 @@ func (s *ConfigMapWarningsTemplateTest) TestMultiregionReplicationFactorWarning(
 			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.configuration=camunda: {}"},
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().NoError(err)
-				s.Require().NotContains(output, "orchestration.replicationFactor is")
+				s.Require().NotContains(output, "a dual-region cluster needs a replication factor of 4")
 			},
 		},
 		{
@@ -798,7 +799,20 @@ func (s *ConfigMapWarningsTemplateTest) TestMultiregionReplicationFactorWarning(
 			RenderTemplateExtraArgs: []string{"--set-json", `orchestration.env=[{"name":"{{ \"CAMUNDA_CLUSTER_REPLICATIONFACTOR\" }}","value":"4"}]`},
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().NoError(err)
-				s.Require().NotContains(output, "orchestration.replicationFactor is")
+				s.Require().NotContains(output, "a dual-region cluster needs a replication factor of 4")
+			},
+		},
+		{
+			Name: "ReplicationFactorFromExtraConfigurationDoesNotTriggerWarning",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"global.multiregion.regions":               "2",
+				"orchestration.extraConfiguration[0].file": "cluster.yaml",
+			},
+			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.extraConfiguration[0].content=camunda.cluster.replication-factor: 4"},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				s.Require().NotContains(output, "a dual-region cluster needs a replication factor of 4")
 			},
 		},
 	}

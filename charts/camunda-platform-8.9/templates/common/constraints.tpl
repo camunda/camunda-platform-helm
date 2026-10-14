@@ -634,10 +634,17 @@ The following values inside your values.yaml need to be set but were not:
   {{- $replicationFactor := int .Values.orchestration.replicationFactor -}}
   {{- $ctx := . -}}
   {{- $replicationFactorKnown := not .Values.orchestration.configuration -}}
+  {{- $replicationFactorSource := "orchestration.replicationFactor" -}}
+  {{- range $file := (.Values.orchestration.extraConfiguration | default list) }}
+    {{- if and (ne $file.springImport false) (regexMatch "(?i)replication-?factor" ($file.content | default "")) }}
+      {{- $replicationFactorKnown = false -}}
+    {{- end }}
+  {{- end }}
   {{- range $env := ($ctx.Values.orchestration.env | default list) }}
     {{- if has (tpl ($env.name | default "") $ctx) (list "CAMUNDA_CLUSTER_REPLICATIONFACTOR" "ZEEBE_BROKER_CLUSTER_REPLICATIONFACTOR") }}
       {{- if $env.value }}
         {{- $replicationFactor = int (tpl (toString $env.value) $ctx) -}}
+        {{- $replicationFactorSource = printf "the %s entry in orchestration.env" (tpl $env.name $ctx) -}}
         {{- $replicationFactorKnown = true -}}
       {{- else }}
         {{- $replicationFactorKnown = false -}}
@@ -647,8 +654,8 @@ The following values inside your values.yaml need to be set but were not:
   {{- if and .Values.orchestration.enabled (eq $regions 2) $replicationFactorKnown (ne $replicationFactor 4) }}
     {{- $warningMessage := printf "%s %s %s"
         "[camunda][warning]"
-        (printf "orchestration.replicationFactor is %d but global.multiregion.regions is 2; a dual-region cluster needs a replication factor of 4 to distribute every partition evenly across both regions." $replicationFactor)
-        "Set orchestration.replicationFactor to 4."
+        (printf "%s is %d but global.multiregion.regions is 2; a dual-region cluster needs a replication factor of 4 to distribute every partition evenly across both regions." $replicationFactorSource $replicationFactor)
+        (printf "Set %s to 4." $replicationFactorSource)
     -}}
     {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
   {{- end }}
