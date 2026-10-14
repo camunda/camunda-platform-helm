@@ -181,7 +181,6 @@ go.fmt:
 # editing them does not pull the chart into `ct list-changed` and trigger a
 # golden regeneration. Space-separated; both forms below derive from it.
 licenseExcludePaths := \
-	charts/camunda-platform-8.4 \
 	charts/camunda-platform-8.5
 
 # licenseExcludeArg: comma-separated, for license-check --exclude.
