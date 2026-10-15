@@ -70,6 +70,8 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
+          repository: camunda/camunda-platform-helm
+          ref: ${{ github.repository == 'camunda/camunda-platform-helm' && github.sha || 'main' }}
           persist-credentials: false
       - uses: ./.github/actions/install-tool-versions
         with:
@@ -426,20 +428,19 @@ jobs:
               if ! echo "$ISSUE_LABELS" | grep -qi '^likelihood/'; then
                 gh issue edit "$ISSUE_NUMBER" --repo "$OWNER/$REPO" --add-label "likelihood/$LIKELIHOOD"
               fi
-              gh issue edit "$ISSUE_NUMBER" --repo "$OWNER/$REPO" --add-label "TRIAGE:COMPLETED"
-              continue
-            fi
-            gh issue edit "$ISSUE_NUMBER" --repo "$OWNER/$REPO" \
-              --add-label "severity/$SEVERITY" \
-              --add-label "likelihood/$LIKELIHOOD" \
-              --add-label "TRIAGE:COMPLETED"
+            else
+              gh issue edit "$ISSUE_NUMBER" --repo "$OWNER/$REPO" \
+                --add-label "severity/$SEVERITY" \
+                --add-label "likelihood/$LIKELIHOOD" \
+                --add-label "TRIAGE:COMPLETED"
 
-            if [[ -n "$KIND" ]]; then
-              gh issue edit "$ISSUE_NUMBER" --repo "$OWNER/$REPO" --add-label "kind/$KIND"
-            fi
+              if [[ -n "$KIND" ]]; then
+                gh issue edit "$ISSUE_NUMBER" --repo "$OWNER/$REPO" --add-label "kind/$KIND"
+              fi
 
-            if [[ "$MISSING_INFO" == "true" ]]; then
-              gh issue edit "$ISSUE_NUMBER" --repo "$OWNER/$REPO" --add-label "BLOCKER/INFO"
+              if [[ "$MISSING_INFO" == "true" ]]; then
+                gh issue edit "$ISSUE_NUMBER" --repo "$OWNER/$REPO" --add-label "BLOCKER/INFO"
+              fi
             fi
 
             # Move issue to Backlog
@@ -454,6 +455,9 @@ jobs:
                       nodes {
                         id
                         project { id number }
+                        fieldValueByName(name:"Status") {
+                          ... on ProjectV2ItemFieldSingleSelectValue { name }
+                        }
                       }
                     }
                   }
@@ -483,11 +487,17 @@ jobs:
             STATUS_FIELD_ID=$(echo "$PROJECT_DATA" | jq -r '.data.organization.projectV2.field.id')
             BACKLOG_OPTION_ID=$(echo "$PROJECT_DATA" | jq -r \
               '.data.organization.projectV2.field.options[] | select(.name=="📋 Backlog") | .id')
+            CURRENT_STATUS=$(echo "$PROJECT_DATA" | jq -r --argjson pn "$PROJECT_NUMBER" \
+              '.data.repository.issue.projectItems.nodes[] | select(.project.number==$pn) | .fieldValueByName.name // ""')
 
-            if [[ -z "$PROJECT_ITEM_ID" ]]; then
+            if [[ "$INTERNAL" == "true" && -n "$CURRENT_STATUS" && "$CURRENT_STATUS" != "📥 Inbox" ]]; then
+              echo "Preserving internal issue status: $CURRENT_STATUS"
+            elif [[ -z "$PROJECT_ITEM_ID" ]]; then
               echo "⚠️  Issue not in project #${PROJECT_NUMBER}, skipping status update"
+              if [[ "$INTERNAL" == "true" ]]; then continue; fi
             elif [[ -z "$BACKLOG_OPTION_ID" ]]; then
               echo "⚠️  'Backlog' status option not found in project, skipping status update"
+              if [[ "$INTERNAL" == "true" ]]; then continue; fi
             else
               # Update status field
               # Use flat variables and inline the input object to avoid gh api graphql
@@ -500,6 +510,11 @@ jobs:
                 -f optionId="$BACKLOG_OPTION_ID" > /dev/null
 
               echo "✅ Moved to Backlog"
+            fi
+
+            if [[ "$INTERNAL" == "true" ]]; then
+              gh issue edit "$ISSUE_NUMBER" --repo "$OWNER/$REPO" --add-label "TRIAGE:COMPLETED"
+              continue
             fi
 
             # Send Slack notification to #team-distribution-github
