@@ -19,10 +19,13 @@ package ciworkflow
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 
 	"scripts/camunda-core/pkg/ghactions"
 
@@ -171,6 +174,12 @@ func Compute(in TestTypeVarsInput) (TestTypeVars, error) {
 	if err != nil {
 		return TestTypeVars{}, fmt.Errorf("parse %s: %w", matrixFile, err)
 	}
+	if cfg.Unit.Enabled {
+		unitDir := filepath.Join(repoRoot, "charts", in.ChartDir, "test", "unit")
+		if err := checkUnitPackagesListed(unitDir, cfg.Unit.Matrix); err != nil {
+			return TestTypeVars{}, fmt.Errorf("%s: %w", matrixFile, err)
+		}
+	}
 
 	out := TestTypeVars{
 		ChartPath:             chartPath,
@@ -194,6 +203,52 @@ func Compute(in TestTypeVarsInput) (TestTypeVars, error) {
 	}
 
 	return out, nil
+}
+
+// checkUnitPackagesListed fails when a directory under unitDir holds *_test.go
+// files that no unit.matrix entry lists.
+func checkUnitPackagesListed(unitDir string, matrix []UnitMatrixEntry) error {
+	listed := map[string]bool{}
+	for _, entry := range matrix {
+		for _, pkg := range strings.Fields(entry.Packages) {
+			listed[pkg] = true
+		}
+	}
+	var missing []string
+	err := filepath.WalkDir(unitDir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			if d.Name() == "testdata" {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		if !strings.HasSuffix(d.Name(), "_test.go") {
+			return nil
+		}
+		rel, err := filepath.Rel(unitDir, filepath.Dir(path))
+		if err != nil {
+			return err
+		}
+		pkg := filepath.ToSlash(rel)
+		if !listed[pkg] {
+			listed[pkg] = true
+			missing = append(missing, pkg)
+		}
+		return nil
+	})
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	if len(missing) > 0 {
+		return fmt.Errorf("unit.matrix does not list test packages %s", strings.Join(missing, ", "))
+	}
+	return nil
 }
 
 // UnitMatrixJSON returns the unit matrix as compact JSON, matching the previous
