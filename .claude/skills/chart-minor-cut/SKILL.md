@@ -52,6 +52,7 @@ Put these changes in a separate PR that merges first. In the 8.11 cut, the chang
 - `.github/workflows/test-local-template.yaml`: ECK install and appProtocol conditions.
 - `test/e2e/playwright.base.config.ts`: `ShadowVersion`.
 - `helm-values-mcp/test/helm-values.test.ts`: the latest-version assertions.
+- `scripts/validate-values-schema/upgrade_test.go`: the `expectations` map has one key for each chart that has `test/unit/deprecation/allowlist.yaml`. Add a `camunda-platform-N` key with the same keys as `P`. The 8.11 cut missed this, and `Go test + vet` failed on every PR until #7578.
 
 Check: run the grep again after the changes. It shows no hardcoded list that excludes `N`.
 
@@ -128,7 +129,7 @@ Sort each hit into one of these groups:
 | A docs link to `docs.camunda.io/docs/P/` | Change `P` to `next`. Check that the `next` page exists with `curl -L`. |
 | `camundaPlatform.ReleaseHighlights` in `NEW/templates/common/_helpers.tpl` | Change the text to "from P to N". Find the upgrade guide in `camunda/camunda-docs` under `docs/self-managed/upgrade/helm/`. If no `P`-to-`N` page exists, use `https://docs.camunda.io/docs/next/self-managed/upgrade/helm/`. Do not guess a URL. |
 | A chart directory name in the hand-written part of `NEW/README.md` | Change it to `camunda-platform-N`. |
-| `NEW/test/e2e/playwright.config.ts` | Change `SM-P` to `SM-N`. Keep the empty-directory fallback until QA publishes the `SM-N` suite. |
+| `NEW/test/e2e/playwright.config.ts` | Change `SM-P` to `SM-N`. Keep the empty-directory fallback until QA publishes the `SM-N` suite. Remove every `throw` that a `REQUIRE_*_TEST_SUITE` variable triggers, and add a skip spec for each project entry point. In the 8.11 cut, the physical-tenants throw failed the `ptnt` merge-queue scenario. |
 | The first-line header of a test values file | Change the version to `N`. |
 | A Hub cluster `version:` for an Orchestration Cluster that this chart installs | Change it to `N-SNAPSHOT`. Keep versions that describe older clusters on purpose. |
 | A path under `OLD` in `NEW/test/ci/registry/` | Change it to `NEW`. |
@@ -197,8 +198,8 @@ Run each command. Each command must pass.
 ```bash
 make helm.lint chartPath=NEW
 make go.test chartPath=NEW
-for m in camunda-core deploy-camunda release-tools renovate-config-check; do
-  (cd scripts/$m && go test ./...)
+for m in $(find scripts -name go.mod -exec dirname {} \;); do
+  (cd "$m" && go test ./...)
 done
 make mcp.test
 ```
@@ -247,7 +248,7 @@ gh api repos/camunda/camunda-platform-helm/pulls/<pr> --jq '.stack'
 
 ## 11. After the merge
 
-1. Create the bootstrap tag on the merge commit. The release notes and the PR version labels read it. Without this tag, the first alpha release fails.
+1. Create the bootstrap tag on the merge commit at once. The release notes and the PR version labels read it. Without this tag, every dev build on `main` fails at "Generate RELEASE-NOTES.md" (`git show-ref --hash camunda-platform-N-M.0.0-alpha0: exit status 1`).
 
    ```bash
    git tag -a camunda-platform-N-M.0.0-alpha0 <merge-sha> -m "Create the N chart line"
@@ -255,8 +256,9 @@ gh api repos/camunda/camunda-platform-helm/pulls/<pr> --jq '.stack'
    ```
 
 2. Check that the first dev build of `NEW` makes `M.0.0-alpha1`.
-3. Tell QA that `NEW` exists. QA publishes the `SM-N` e2e suite. Then remove the fallback in `NEW/test/e2e/playwright.config.ts`.
-4. Tell the monorepo team that the `N` preview-environment smoke test can run.
+3. Forward-port the changes to `OLD` that merged after the copy. List them with `git log <copy-sha>..origin/main -- OLD`, and open one PR for each that applies the same diff to `NEW`. For open PRs that change `OLD`, add the `forward-port-to-N` label. A bot author cannot act on a review, so do the change in the bot PR yourself.
+4. Tell QA that `NEW` exists. QA publishes the `SM-N` e2e suite. Then remove the fallback in `NEW/test/e2e/playwright.config.ts`.
+5. Tell the monorepo team that the `N` preview-environment smoke test can run.
 
 Check: the first command shows one tag line. The second command shows a dev package tag that starts with `M.0.0-alpha1-dev-`.
 
@@ -296,4 +298,7 @@ git diff origin/main -- charts/chart-versions.yaml
 | Add a Renovate group for one version | #4543: about 11 Renovate PRs in one week |
 | Change the lifecycle of other minors in the cut PR | #5526 and #5754: 8.6 left routine CI too early |
 | Merge the cut with failing checks | #4463: CI stayed red until #4503 |
-| Forget the bootstrap tag | The first 8.9 alpha release failed 29 days after the cut |
+| Forget the bootstrap tag | The first 8.9 alpha release failed 29 days after the cut. In 8.11, every dev build on `main` failed until the tag was pushed |
+| Skip the scripts modules that do not run on the cut PR | #7578: `upgrade_test.go` had no 8.11 entry |
+| Keep a `REQUIRE_*_TEST_SUITE` throw while `SM-N` is unpublished | The 8.11 `ptnt` scenario failed in the merge queue |
+| Requeue a stacked cut PR with `gh pr merge` | It fails with "Auto-merge is not supported for stacked pull requests". Use `gh stack merge <pr> --yes` after the required checks report |
