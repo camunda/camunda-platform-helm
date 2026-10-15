@@ -6,7 +6,7 @@
 
 ## Context and Problem Statement
 
-The Camunda Platform Helm charts carry forward compatibility shims (deprecated value aliases, constraint templates, helper functions) so that users upgrading from version N-1 receive deprecation warnings rather than hard failures. By the time the 8.10 chart became the active development target, the 8.8-cycle shims had exceeded their two-minor-version support window and were adding significant template complexity without serving current users.
+The Camunda Platform Helm charts carry forward compatibility shims (deprecated value aliases, constraint templates, helper functions) so that users upgrading from version N-1 receive deprecation warnings rather than hard failures. By the time the 8.10 chart became the active development target, the 8.8-cycle shims had exceeded their [deprecation window](../policies/breaking-changes.md#deprecation-policy) and were adding significant template complexity without serving current users.
 
 ## Decision Drivers
 
@@ -35,3 +35,7 @@ All 8.8-cycle deprecated value paths, constraint templates, and compatibility he
 
 - Users attempting unsupported skip-version upgrades (8.8 → 8.10 direct) will encounter hard failures with no deprecation guidance; this is an accepted trade-off per the N-1 policy.
 - The large deletion-heavy diff (46 files) increases short-term merge-conflict risk with parallel 8.10 development, though conflicts are straightforward to resolve given the nature of the changes.
+
+## Changelog
+
+- 2026-10-13 — [#7545](https://github.com/camunda/camunda-platform-helm/pull/7545) — Point the shim support window to the deprecation policy.

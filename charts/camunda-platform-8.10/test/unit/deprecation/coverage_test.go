@@ -65,7 +65,7 @@ var bespokeWarnings = []struct {
 }{
 	{
 		name:   "console.enabled deprecation",
-		marker: `\"console.enabled\" is deprecated and will be removed in chart v16 (Camunda 8.11).`,
+		marker: `\"console.enabled\" is deprecated and will be removed in chart v17 (Camunda 8.12).`,
 		covers: func(key string) bool { return key == "console.enabled" },
 	},
 	{

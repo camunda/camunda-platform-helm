@@ -159,7 +159,7 @@ application-config field a customer needs to override.
 | JVM options | This chart's per-component `javaOpts` value (rendered to `JAVA_TOOL_OPTIONS`) |
 | Application logging level, retention, exporters, mail | The application's own config layer, injected via `<component>.extraConfiguration` |
 
-Application-config proxy keys are deprecated in 8.10 and will be removed in 8.11 (chart v16).
+Application-config proxy keys are deprecated in 8.10 and will be removed in 8.12 (chart v17).
 Setting a deprecated key to a non-default value emits a `[camunda][warning] DEPRECATION` message
 naming its `extraConfiguration` replacement. The per-key migration table, with each key's target
 application-config field and before/after examples, is in the

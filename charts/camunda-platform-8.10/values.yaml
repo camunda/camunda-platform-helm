@@ -800,7 +800,7 @@ global:
         alwaysRegister: false
 
   # Multiregion options for Zeebe.
-  ## Deprecated since chart v15 (Camunda 8.10); remove in v16. Only the Orchestration
+  ## Deprecated since chart v15 (Camunda 8.10); remove in v17. Only the Orchestration
   ## Cluster reads these keys, so they moved to `orchestration.partitioning`, which is
   ## also where the zone-aware scheme is configured. Setting both blocks fails the render.
   multiregion:
@@ -1264,7 +1264,7 @@ identity:
 ## but emit deprecation warnings when set alongside camundaHub.
 ## Of the legacy console.* keys only "console.enabled" is still honored, as a
 ## compatibility shim that toggles the in-Modeler Console feature.
-## console.enabled: DEPRECATED since v15.0.0; remove in v16 (Camunda 8.11);
+## console.enabled: DEPRECATED since v15.0.0; remove in v17 (Camunda 8.12);
 ## use instead: camundaHub.enabled.
 ## Every other console.* key is inert in 8.10, has no replacement, and emits a
 ## deprecation warning when set.
@@ -2868,22 +2868,22 @@ orchestration:
 
   ## @extra orchestration.history configuration for Camunda harmonized historical indices.
   history:
-    ## DEPRECATED since chart v15 (Camunda 8.10); remove in v16; use `camunda.data.secondary-storage.<elasticsearch|opensearch>.history.els-rollover-date-format` via `orchestration.extraConfiguration`.
+    ## DEPRECATED since chart v15 (Camunda 8.10); remove in v17; use `camunda.data.secondary-storage.<elasticsearch|opensearch>.history.els-rollover-date-format` via `orchestration.extraConfiguration`.
     ## @param orchestration.history.elsRolloverDateFormat (DEPRECATED) defines the date format of historical indices in a Java DateTimeFormatter compliant syntax.
     elsRolloverDateFormat: date
-    ## DEPRECATED since chart v15 (Camunda 8.10); remove in v16; use `camunda.data.secondary-storage.<elasticsearch|opensearch>.history.rollover-interval` via `orchestration.extraConfiguration`.
+    ## DEPRECATED since chart v15 (Camunda 8.10); remove in v17; use `camunda.data.secondary-storage.<elasticsearch|opensearch>.history.rollover-interval` via `orchestration.extraConfiguration`.
     ## @param orchestration.history.rolloverInterval (DEPRECATED) defines the time range of the historical indices to be created.
     rolloverInterval: 1d
-    ## DEPRECATED since chart v15 (Camunda 8.10); remove in v16; use `camunda.data.secondary-storage.<elasticsearch|opensearch>.history.rollover-batch-size` via `orchestration.extraConfiguration`. Set it explicitly when migrating because the application default can differ from the chart default.
+    ## DEPRECATED since chart v15 (Camunda 8.10); remove in v17; use `camunda.data.secondary-storage.<elasticsearch|opensearch>.history.rollover-batch-size` via `orchestration.extraConfiguration`. Set it explicitly when migrating because the application default can differ from the chart default.
     ## @param orchestration.history.rolloverBatchSize (DEPRECATED) defines the maximum number of process instances per batch during archiving.
     rolloverBatchSize: 100
-    ## DEPRECATED since chart v15 (Camunda 8.10); remove in v16; use `camunda.data.secondary-storage.<elasticsearch|opensearch>.history.wait-period-before-archiving` via `orchestration.extraConfiguration`.
+    ## DEPRECATED since chart v15 (Camunda 8.10); remove in v17; use `camunda.data.secondary-storage.<elasticsearch|opensearch>.history.wait-period-before-archiving` via `orchestration.extraConfiguration`.
     ## @param orchestration.history.waitPeriodBeforeArchiving (DEPRECATED) defines the grace period for processes to be excluded from archiving; processes completed in the last hour are not collected into historical indices with the default value.
     waitPeriodBeforeArchiving: 1h
-    ## DEPRECATED since chart v15 (Camunda 8.10); remove in v16; use `camunda.data.secondary-storage.<elasticsearch|opensearch>.history.delay-between-runs` via `orchestration.extraConfiguration`.
+    ## DEPRECATED since chart v15 (Camunda 8.10); remove in v17; use `camunda.data.secondary-storage.<elasticsearch|opensearch>.history.delay-between-runs` via `orchestration.extraConfiguration`.
     ## @param orchestration.history.delayBetweenRuns (DEPRECATED) the millisecond interval between archiver runs
     delayBetweenRuns: 2000
-    ## DEPRECATED since chart v15 (Camunda 8.10); remove in v16; use `camunda.data.secondary-storage.<elasticsearch|opensearch>.history.max-delay-between-runs` via `orchestration.extraConfiguration`.
+    ## DEPRECATED since chart v15 (Camunda 8.10); remove in v17; use `camunda.data.secondary-storage.<elasticsearch|opensearch>.history.max-delay-between-runs` via `orchestration.extraConfiguration`.
     ## @param orchestration.history.maxDelayBetweenRuns (DEPRECATED) the maximum millisecond interval between archiver runs due to failure backoffs
     maxDelayBetweenRuns: 60000
     ## @extra orchestration.history.retention configuration for retention of the Camunda harmonized historical indices.

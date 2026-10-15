@@ -43,9 +43,9 @@ Any violation of these rules triggers immediate `human-review-required`
 regardless of the composite score:
 
 ### Breaking Changes
-- **NEVER** remove or rename an existing `values.yaml` field without a
-  deprecation notice and migration path — this is a breaking API change for
-  users.
+- **NEVER** remove or rename an existing `values.yaml` field outside the
+  [deprecation policy](https://github.com/camunda/camunda-platform-helm/blob/main/docs/policies/breaking-changes.md#deprecation-policy)
+  — this is a breaking API change for users.
 - **NEVER** change the default value of an existing field in a way that alters
   runtime behaviour for users who do not override it.
 

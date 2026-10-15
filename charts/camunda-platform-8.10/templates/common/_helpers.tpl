@@ -2685,7 +2685,7 @@ https://docs.camunda.io/docs/8.10/self-managed/upgrade/helm/890-to-8100/
 NOTE: resolves the effective value of a deprecated app-config-proxy key, letting its
 migration target (supplied through a spring-imported <component>.extraConfiguration file)
 override it. Same transitional gating as orchestration.camundaExporterEnabled: the
-deprecated key is the fallback and is removed in chart v16 (8.11). Later extraConfiguration
+deprecated key is the fallback and is removed in chart v17 (8.12). Later extraConfiguration
 entries win; entries with springImport: false are skipped. "path" is the key list to dig in
 each parsed file (keys may themselves contain dots, e.g. "io.camunda.optimize"). Keys match
 literally on nested map keys: flat dotted keys ("camunda.document.x: y"), relaxed-binding
@@ -3201,7 +3201,7 @@ indexKey, so a constraint message names the keys the user actually set.
 {{- else -}}
   {{- /* Only the numbered pair is read back from the deprecated block. mode, zone and
        zones never shipped there, and honouring them would keep the zone-aware scheme reachable
-       through the spelling being removed in v16, which values.yaml and both schemas
+       through the spelling being removed in v17, which values.yaml and both schemas
        already say it is not. */ -}}
   {{- $resolved = dict
         "scheme" "round-robin"
