@@ -196,10 +196,6 @@ jobs:
             ISSUE_BODY=$(echo "$ISSUE_DATA" | jq -r '.body // ""')
             ISSUE_LABELS=$(echo "$ISSUE_DATA" | jq -r '.labels[].name' | tr '\n' ',' | sed 's/,$//')
             ISSUE_STATE=$(echo "$ISSUE_DATA" | jq -r '.state')
-            INTERNAL=$(ISSUE_NUMBER="$ISSUE_NUMBER" make --no-print-directory run.issue-author)
-            if [[ "$INTERNAL" == "true" ]]; then
-              echo "Issue #$ISSUE_NUMBER: quiet assessment started; inspect run logs if no suggestion follows." >> "$GITHUB_STEP_SUMMARY"
-            fi
 
             echo "📄 Title: $ISSUE_TITLE"
             echo "🏷️  Labels: ${ISSUE_LABELS:-none}"
@@ -221,6 +217,11 @@ jobs:
             if echo "$ISSUE_LABELS" | grep -q "triage:manual"; then
               echo "⏭️  Skipping: has triage:manual label"
               continue
+            fi
+
+            INTERNAL=$(ISSUE_NUMBER="$ISSUE_NUMBER" make --no-print-directory run.issue-author)
+            if [[ "$INTERNAL" == "true" ]]; then
+              echo "Issue #$ISSUE_NUMBER: quiet assessment started; inspect run logs if no suggestion follows." >> "$GITHUB_STEP_SUMMARY"
             fi
 
             # Prepare Glean Chat API request - build prompt programmatically
@@ -308,6 +309,7 @@ jobs:
               echo "❌ Invalid JSON in AI response"
               echo "AI response: ${AI_TEXT}"
               if [[ "$INTERNAL" == "true" ]]; then
+                gh issue edit "$ISSUE_NUMBER" --repo "$OWNER/$REPO" --add-label "triage:manual"
                 echo "Issue #$ISSUE_NUMBER: assessment failed; manual review needed." >> "$GITHUB_STEP_SUMMARY"
                 continue
               fi

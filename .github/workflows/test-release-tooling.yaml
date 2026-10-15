@@ -47,6 +47,9 @@ jobs:
             make helm.dependency-update chartPath="charts/camunda-platform-$v"
           done
 
+      - name: issue-author — test
+        run: make test.issue-author
+
       - name: camunda-core — vet + test
         working-directory: scripts/camunda-core
         run: |
