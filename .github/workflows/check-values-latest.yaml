@@ -19,6 +19,11 @@ name: Check values-latest.yaml
         default: ''
         type: string
 
+concurrency:
+  group: >-
+    ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
   pull-requests: write
@@ -79,8 +84,9 @@ jobs:
             const comments = await github.paginate(github.rest.issues.listComments, {
               owner, repo, issue_number, per_page: 100
             })
-            const existing = comments.find(c =>
-              c.user?.login === 'github-actions[bot]' && c.body?.includes(marker)
+            const existing = comments.filter(
+              c => c.user?.login === 'github-actions[bot]' &&
+                c.body?.includes(marker)
             )
 
             if (outdated) {
@@ -90,15 +96,18 @@ jobs:
                 'not up-to-date with the latest releases. Please review ' +
                 'the workflow logs for details.\n\n' +
                 '🔎 [Open PRs labeled `deps/charts`](https://github.com/camunda/camunda-platform-helm/pulls?q=is%3Apr+state%3Aopen+label%3Adeps%2Fcharts)'
-              if (existing) {
-                await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body })
+              if (existing.length > 0) {
+                await github.rest.issues.updateComment({ owner, repo, comment_id: existing[0].id, body })
+                for (const duplicate of existing.slice(1)) {
+                  await github.rest.issues.deleteComment({ owner, repo, comment_id: duplicate.id })
+                }
               } else {
                 await github.rest.issues.createComment({ owner, repo, issue_number, body })
               }
               await github.rest.issues.addLabels({ owner, repo, issue_number, labels: [label] })
             } else {
-              if (existing) {
-                await github.rest.issues.deleteComment({ owner, repo, comment_id: existing.id })
+              for (const comment of existing) {
+                await github.rest.issues.deleteComment({ owner, repo, comment_id: comment.id })
               }
               try {
                 await github.rest.issues.removeLabel({ owner, repo, issue_number, name: label })
