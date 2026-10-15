@@ -123,6 +123,12 @@ func TestUpgradeDetectsKnownTemplateRegistrationsWhenChartOptsIn(t *testing.T) {
 			"elasticsearch":                 removed,
 			"global.ingress.host":           removed,
 		},
+		"camunda-platform-8.11": {
+			"orchestration.logLevel":        deprecated,
+			"global.config.requestBodySize": deprecated,
+			"elasticsearch":                 removed,
+			"global.ingress.host":           removed,
+		},
 	}
 	allowlists, err := filepath.Glob("../../charts/*/test/unit/deprecation/allowlist.yaml")
 	require.NoError(t, err)
