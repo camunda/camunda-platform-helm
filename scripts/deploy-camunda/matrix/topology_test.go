@@ -265,6 +265,29 @@ func TestTopologyValidate_NilIsNoop(t *testing.T) {
 	}
 }
 
+func TestTopologyValidateErrorOrderAndReset(t *testing.T) {
+	_, dir := newTopologyTestChart(t)
+	depsDir := t.TempDir()
+	writeValuesFile(t, dir, "features/hub.yaml")
+	writeValuesFile(t, dir, "features/orchestration.yaml")
+	top := &Topology{Name: "test", Releases: []TopologyRelease{
+		{Role: "hub", NamespaceSuffix: "hub", Features: []string{"hub"}},
+		{Role: "orchestration", Features: []string{"orchestration"}},
+	}}
+	label := `ctx: topology "test": release[1] (role "orchestration", namespace-suffix "")`
+	want := label + ": modeler-cluster-id is required\n  - " +
+		label + ": modeler-cluster-name is required\n  - " + label + ": namespace-suffix is required"
+	if err := top.Validate("ctx", dir, depsDir); err == nil || err.Error() != want {
+		t.Fatalf("error = %v, want %s", err, want)
+	}
+	top.Releases[1].ModelerClusterID = "orch"
+	top.Releases[1].ModelerClusterName = "Orchestration"
+	top.Releases[1].NamespaceSuffix = "orch"
+	if err := top.Validate("ctx", dir, depsDir); err != nil {
+		t.Fatalf("validation retained state from the previous call: %v", err)
+	}
+}
+
 func TestTopologyValidate_Valid(t *testing.T) {
 	_, dir := newTopologyTestChart(t)
 	depsDir := filepath.Join(t.TempDir(), "dependencies")

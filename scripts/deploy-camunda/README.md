@@ -315,9 +315,11 @@ To add a scenario for a shape you frequently deploy:
    reference it via the registry entry's identity/persistence keys.
 3. Re-run `make go.update-registry-golden` to refresh the CI registry
    snapshot so `TestRegistryGolden` (`matrix/registry_golden_test.go`)
-   stays green. `TestRegistryValidator*` in
-   `matrix/registry_test.go` additionally validates that any fixture
-   or script your new scenario references actually exists on disk.
+   stays green. `TestRegistryValidator*` in `matrix/registry_test.go`
+   checks values-layer paths, lifecycle references, upgrade compatibility,
+   and orphan resources. Topology releases use the same values-layer checks;
+   `TestTopologyValidate*` in `matrix/topology_test.go` covers their local
+   requirements and cross-release references.
 
 `deploy-camunda matrix run --shortname-filter my-scenario` now picks it
 up. When you're done iterating, if it's useful to more than one person,
