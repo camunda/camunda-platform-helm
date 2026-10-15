@@ -1043,6 +1043,12 @@ Usage:
       {{- printf "\n%s" "[camunda][warning] global.identity.auth.enabled=true, but no shared authentication issuer or issuer backend URL resolves. Set global.identity.auth.issuer (or global.identity.auth.publicIssuerUrl), global.identity.auth.issuerBackendUrl, or global.identity.keycloak.url for External Keycloak. Components using separate OIDC configuration must supply their own provider settings." }}
     {{- end }}
   {{- end }}
+  {{- if and (eq (include "camundaPlatform.identityEnabled" .) "true") .Values.global.identity.auth.enabled (eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK") (ne (include "identity.keycloakUrlConfigured" .) "true") }}
+    {{- printf "\n%s" "[camunda][warning] Management Identity uses Keycloak authentication, but global.identity.keycloak.url is not set. Without a Keycloak URL, Management Identity fails at startup. Set global.identity.keycloak.url.protocol, global.identity.keycloak.url.host, and global.identity.keycloak.url.port, set KEYCLOAK_URL in identity.env, or set keycloak.url in identity.extraConfiguration. If the URL comes from another source, such as JVM options, ignore this warning." }}
+  {{- end }}
+  {{- if and .Values.global.identity.keycloak.internal (empty (include "identity.keycloak.host" . | trim)) (or (and .Values.global.ingress.enabled (not .Values.global.ingress.external) (eq (include "camundaPlatform.identityEnabled" .) "true")) (and .Values.global.gateway.enabled (not .Values.global.gateway.external))) }}
+    {{- printf "\n%s" "[camunda][warning] global.identity.keycloak.internal=true routes the Keycloak path of the shared Ingress or HTTPRoute to Keycloak, but global.identity.keycloak.url.host is not set. The route then has no backend Service, and the Kubernetes API server rejects it. Set global.identity.keycloak.url.protocol, global.identity.keycloak.url.host, and global.identity.keycloak.url.port, or set global.identity.keycloak.internal=false." }}
+  {{- end }}
   {{- if and (eq (include "camundaPlatform.identityEnabled" .) "true")
              .Values.global.identity.auth.enabled
              (eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK")
