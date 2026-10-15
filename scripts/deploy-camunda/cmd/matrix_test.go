@@ -58,6 +58,35 @@ func TestRootScenarioRegistryResolution(t *testing.T) {
 	require.True(t, called)
 }
 
+func TestRootDeploymentSetupIsNotInherited(t *testing.T) {
+	previousFlags, previousConfig, previousLogger := flags, configFile, logging.Logger
+	t.Cleanup(func() { flags, configFile, logging.Logger = previousFlags, previousConfig, previousLogger })
+	configPath := filepath.Join(t.TempDir(), "invalid.yaml")
+	require.NoError(t, os.WriteFile(configPath, []byte("invalid: ["), 0644))
+
+	for _, args := range [][]string{nil, {"utility"}, {"group", "leaf"}} {
+		t.Run(strings.Join(append([]string{"root"}, args...), "/"), func(t *testing.T) {
+			flags = config.RuntimeFlags{}
+			command := NewRootCommand()
+			called := false
+			run := func(*cobra.Command, []string) error { called = true; return nil }
+			command.RunE = run
+			command.AddCommand(&cobra.Command{Use: "utility", RunE: run})
+			group := &cobra.Command{Use: "group"}
+			group.AddCommand(&cobra.Command{Use: "leaf", RunE: run})
+			command.AddCommand(group)
+			command.SetArgs(append([]string{"--config", configPath}, args...))
+			err := command.Execute()
+			if len(args) == 0 {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+			require.Equal(t, len(args) > 0, called)
+		})
+	}
+}
+
 // Pins inc-5975: --extra-values must exist on `matrix run` so that
 // flags.Deployment.ExtraValues — a layer the image resolver ranks —
 // gets populated. StringArray (not StringSlice) so paths aren't comma-split.

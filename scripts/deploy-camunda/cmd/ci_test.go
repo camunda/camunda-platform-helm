@@ -100,10 +100,6 @@ teleport:
 	}
 }
 
-// Pins the flag→struct wiring of "ci test-type-vars": string flags compared
-// against "true" (composite-action argument shape), the env passthroughs, and
-// the root PersistentPreRunE skip (ci needs no chart/namespace config). The
-// computation itself is covered in camunda-core/pkg/ciworkflow.
 func TestCITestTypeVarsWiring(t *testing.T) {
 	repo := t.TempDir()
 	chartDir := "camunda-platform-8.10"
