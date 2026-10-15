@@ -19,14 +19,18 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"reflect"
 	"slices"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
 	"scripts/camunda-core/pkg/versionmatrix"
 
@@ -34,6 +38,127 @@ import (
 	"scripts/deploy-camunda/deploy"
 	"scripts/deploy-camunda/pkg/deployer"
 )
+
+func TestAuth0EntryPreparation(t *testing.T) {
+	t.Setenv("AUTH0_DOMAIN", "not-a-url")
+	t.Setenv("AUTH0_MGMT_TOKEN", "fixture-token")
+	t.Setenv("AUTH0_AUDIENCE", " ")
+	t.Setenv("AUTH0_INITIAL_ADMIN_EMAIL", "")
+	for _, fail := range []bool{false, true} {
+		t.Run(fmt.Sprintf("partial-failure=%t", fail), func(t *testing.T) {
+			var created atomic.Int32
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.Header.Get("Authorization") != "Bearer fixture-token" {
+					t.Error("Auth0 token did not fall back to the process environment")
+					w.WriteHeader(http.StatusUnauthorized)
+					return
+				}
+				switch r.URL.Path {
+				case "/api/v2/clients":
+					count := created.Add(1)
+					if fail && count == 2 {
+						http.Error(w, "rejected", http.StatusBadRequest)
+						return
+					}
+					w.WriteHeader(http.StatusCreated)
+					fmt.Fprintf(w, `{"client_id":"client-%d","client_secret":"fixture"}`, count)
+				case "/api/v2/client-grants":
+					w.WriteHeader(http.StatusCreated)
+				default:
+					t.Errorf("unexpected Auth0 request: %s", r.URL.Path)
+					w.WriteHeader(http.StatusNotFound)
+				}
+			}))
+			defer server.Close()
+			envFile := filepath.Join(t.TempDir(), "provider.env")
+			require.NoError(t, os.WriteFile(envFile, []byte("AUTH0_DOMAIN="+server.URL+"\n"), 0600))
+			if fail {
+				var events []string
+				entry := Entry{Version: "8.10", Identity: "auth0", Scenario: "auth0", Flow: "install"}
+				result := executeEntry(context.Background(), entry, RunOptions{
+					NamespaceOverride: "test-ns", ExtraHelmSets: []string{"global.host=test.example"},
+					Infra:         config.InfraOverride{InfraConfig: config.InfraConfig{EnvFile: envFile}},
+					OnEntryStart:  func(Entry, string) { events = append(events, "start") },
+					OnPhaseChange: func(_ Entry, phase string) { events = append(events, phase) },
+					OnEntryComplete: func(_ Entry, result RunResult) {
+						require.NotNil(t, result.auth0Opts)
+						events = append(events, "complete")
+					},
+				})
+				require.ErrorContains(t, result.Error, "auth0: provision clients")
+				require.NotNil(t, result.auth0Opts)
+				require.Equal(t, server.URL, result.auth0Opts.Domain)
+				require.Equal(t, []string{"start", "preparing", "complete"}, events)
+				require.Equal(t, int32(2), created.Load())
+				return
+			}
+			flags := &config.RuntimeFlags{
+				EnvFile: envFile, ExtraEnv: map[string]string{"preserved": "value"},
+				Ingress: config.IngressFlags{IngressHostname: "test.example"},
+			}
+			opts, err := prepareAuth0Entry(context.Background(), flags, "test-ns", "test-context")
+			require.NoError(t, err)
+			require.True(t, opts.SkipK8sSecret)
+			require.Equal(t, int32(6), created.Load())
+			require.Len(t, flags.PreInstallHooks, 1)
+			require.Equal(t, "value", flags.ExtraEnv["preserved"])
+			require.Equal(t, " ", flags.ExtraEnv["AUTH0_AUDIENCE"])
+			require.Equal(t, server.URL, flags.ExtraEnv["AUTH0_ISSUER_URL"])
+			require.Equal(t, "demo@camunda.com", flags.ExtraEnv["AUTH0_INITIAL_ADMIN_EMAIL"])
+			require.NotEmpty(t, flags.ExtraEnv["AUTH0_WEB_MODELER_CLIENT_ID"])
+		})
+	}
+}
+
+func TestEntryCompletionAndEarlyFailure(t *testing.T) {
+	for _, cleanup := range []bool{false, true} {
+		var events []string
+		result := RunResult{Error: errors.New("failed")}
+		got := finishEntry(context.Background(), result, RunOptions{
+			Cleanup:       cleanup,
+			OnPhaseChange: func(_ Entry, phase string) { events = append(events, phase) },
+			OnEntryComplete: func(_ Entry, actual RunResult) {
+				require.Equal(t, result, actual)
+				events = append(events, "complete")
+			},
+		})
+		require.Equal(t, result, got)
+		want := []string{"complete"}
+		if cleanup {
+			want = append([]string{"cleanup"}, want...)
+		}
+		require.Equal(t, want, events)
+	}
+	for _, key := range []string{"ENTRA_APP_DIRECTORY_ID", "ENTRA_APP_CLIENT_ID", "ENTRA_APP_CLIENT_SECRET"} {
+		t.Setenv(key, "")
+	}
+	completed := false
+	result := executeEntry(context.Background(), Entry{Version: "8.10", Identity: "oidc", Auth: "oidc"}, RunOptions{
+		NamespaceOverride: "test-ns",
+		OnEntryComplete:   func(Entry, RunResult) { completed = true },
+	})
+	require.ErrorContains(t, result.Error, "entra: provision venom app")
+	require.Nil(t, result.venomOpts)
+	require.Zero(t, result.Duration)
+	require.False(t, completed)
+}
+
+func TestEntryLogCleanup(t *testing.T) {
+	flags := &config.RuntimeFlags{LogLevel: "info"}
+	entry := Entry{Version: "8.10", Scenario: "test", Shortname: "test", Flow: "install"}
+	opts := RunOptions{LogDir: t.TempDir(), NamespaceOverride: "test-ns", Platform: "gke"}
+	_, closeLogs := openEntryLogs(context.Background(), entry, opts, flags)
+	defer closeLogs()
+	require.NotNil(t, flags.E2EOutputWriter)
+	_, err := flags.E2EOutputWriter.Write([]byte("test output\n"))
+	require.NoError(t, err)
+	closeLogs()
+	_, err = flags.E2EOutputWriter.Write([]byte("after close"))
+	require.ErrorIs(t, err, os.ErrClosed)
+	content, err := os.ReadFile(filepath.Join(opts.LogDir, entryLogFileName(entry)+".deploy.log"))
+	require.NoError(t, err)
+	require.Contains(t, string(content), "namespace=test-ns platform=gke flow=install")
+}
 
 // --- Version comparison tests ---
 
