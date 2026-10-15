@@ -58,7 +58,7 @@ test.issue-author:
 	cd scripts/issue-author && go test -race ./...
 
 run.issue-author:
-	cd scripts/issue-author && go run .
+	@cd scripts/issue-author && go run .
 
 .PHONY: install.ci-result-cache
 install.ci-result-cache:
