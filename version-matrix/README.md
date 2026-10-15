@@ -10,6 +10,10 @@ helm repo add camunda https://helm.camunda.io
 helm search repo camunda/camunda-platform --devel --versions
 ```
 
+## Camunda 8.11 — Alpha
+
+_No chart releases for Camunda 8.11 yet._
+
 ## Camunda 8.10 — Standard support until 2028-04-11
 
 > Deploys Camunda Hub (the management plane replacing Web Modeler and Console SM). For the Orchestration Cluster versions Hub can manage, see the [Hub documentation](https://docs.camunda.io/docs/8.10/self-managed/components/hub/configuration/properties/).
