@@ -228,6 +228,9 @@ configmap-warnings.yaml, which renders the "<release>-warnings" ConfigMap on the
       {{- printf "\n[camunda][warning] The Orchestration Cluster uses OIDC without an issuer URI, and these endpoints do not render as absolute URLs: %s. Set orchestration.security.authentication.oidc.issuer or global.identity.auth.issuer, or set the endpoints in orchestration.security.authentication.oidc.authUrl, jwksUrl, and tokenUrl (or global.identity.auth.authUrl, jwksUrl, and tokenUrl). For KEYCLOAK, global.identity.auth.publicIssuerUrl derives authorization-uri, and global.identity.auth.issuerBackendUrl or global.identity.keycloak.url derives jwk-set-uri and token-uri." (join ", " $unresolvedEndpoints) }}
     {{- end }}
   {{- end }}
+  {{- if and (eq (include "camundaPlatform.orchestrationEnabled" .) "true") (eq (include "orchestration.secondaryStorage" .) "rdbms") (ne (include "orchestration.rdbmsUrlConfigured" .) "true") }}
+    {{- printf "\n%s" "[camunda][warning] The Orchestration Cluster uses RDBMS secondary storage, but no JDBC URL is set, so it fails at startup. Set orchestration.data.secondaryStorage.rdbms.url, CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_URL in orchestration.env, or camunda.data.secondary-storage.rdbms.url in orchestration.extraConfiguration. If the URL comes from another source, ignore this warning." }}
+  {{- end }}
   {{- if .Values.global.testDeprecationFlags.existingSecretsMustBeSet }}
     {{/* TODO: Check if there are more existingSecrets to check */}}
 

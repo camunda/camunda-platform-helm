@@ -269,6 +269,28 @@ Authentication.
     {{- end -}}
 {{- end -}}
 
+{{- define "orchestration.rdbmsEnabled" -}}
+{{- or .Values.orchestration.exporters.rdbms.enabled (eq (include "orchestration.secondaryStorage" .) "rdbms") -}}
+{{- end -}}
+
+{{- /*
+NOTE: the regex finds the URL key in every form the user can pass it: nested or dotted YAML,
+properties, env var names, SPRING_APPLICATION_JSON, and -D options.
+*/ -}}
+{{- define "orchestration.rdbmsUrlConfigured" -}}
+{{- $orchestration := .Values.orchestration -}}
+{{- $springImports := list -}}
+{{- range $orchestration.extraConfiguration -}}
+  {{- if not (and (hasKey . "springImport") (eq .springImport false)) -}}
+    {{- $springImports = append $springImports .content -}}
+  {{- end -}}
+{{- end -}}
+{{- $userConfig := toYaml (list $orchestration.configuration $springImports $orchestration.env $orchestration.javaOpts) -}}
+{{- if or $orchestration.data.secondaryStorage.rdbms.url $orchestration.envFrom (regexMatch "(?is)rdbms.*url" $userConfig) -}}
+true
+{{- end -}}
+{{- end -}}
+
 {{- define "orchestration.sharedTlsConfig" -}}
 {{- $config := dict -}}
 {{- if eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.elasticsearch.tls)) "true" -}}
