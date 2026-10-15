@@ -61,7 +61,9 @@ jobs:
           echo "::warning title=values-latest.yaml outdated::Some image versions in values-latest.yaml files are not up-to-date. See the validation step logs."
 
       - name: Sync PR warning comment and label
-        if: github.event_name == 'pull_request'
+        if: >-
+          github.event_name == 'pull_request' &&
+          github.event.pull_request.head.repo.full_name == github.repository
         # yamllint disable-line rule:line-length
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9
         env:
