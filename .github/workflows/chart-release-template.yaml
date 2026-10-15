@@ -15,6 +15,15 @@ on:
         description: The reference of the workflow which will be used sign the chart OCI artifact in keyless mode.
         required: true
         type: string
+    secrets:
+      VAULT_ADDR:
+        required: false
+      VAULT_JWT_PATH:
+        required: false
+      VAULT_JWT_ROLE:
+        required: false
+      VAULT_JWT_AUDIENCE:
+        required: false
 
 jobs:
   clean:
@@ -71,6 +80,7 @@ jobs:
       REPOSITORY_NAME: "camunda/helm"
       CHART_NAME: "camunda-platform"
     steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@ead99f6c9c536f5c47e443929d47e8fcfdb05a81  # start-build-monitor-1.0.1
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -189,3 +199,15 @@ jobs:
               chartSource="oci://ghcr.io/${{ env.REPOSITORY_NAME }}/${{ env.CHART_NAME }}" \
               chartVersion="${{ env.CHART_VERSION }}")
           EOF
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          job_name: "release/${{ matrix.chart.directory }}/${{ matrix.chart.versionSuffix }}"
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_jwt_path: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwt_role: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwt_audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
