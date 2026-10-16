@@ -194,6 +194,8 @@ func TestGeneratedCommitPolicy(test *testing.T) {
 	}{
 		{name: "readme", file: "charts/camunda-platform-8.10/README.md", valid: true},
 		{name: "schema", file: "charts/camunda-platform-8.10/values.schema.json", valid: true},
+		{name: "unknown-keys-schema", file: "charts/camunda-platform-8.10/values.unknown-keys.schema.json", valid: true},
+		{name: "other-schema-denied", file: "charts/camunda-platform-8.10/values.evil.schema.json"},
 		{name: "golden", file: "charts/camunda-platform-8.10/test/unit/orchestration/golden/configmap.golden.yaml", valid: true},
 		{name: "registry", file: "charts/camunda-platform-8.9/test/ci/registry-snapshot.yaml", valid: true},
 		{name: "lock", file: "charts/camunda-platform-8.10/Chart.lock", valid: true},
