@@ -49,6 +49,16 @@ on:
         default: false
   workflow_call:
     inputs:
+      quiet_internal:
+        description: Suppress automatic Ready promotion for internal issue authors
+        required: false
+        type: boolean
+        default: false
+      route_new_internal:
+        description: Route a newly inserted internal issue from Inbox to Backlog
+        required: false
+        type: boolean
+        default: false
       issue_number:
         description: 'Issue number to process'
         required: true
@@ -71,13 +81,14 @@ on:
         required: true
 
 concurrency:
-  group: update-urgency-${{ inputs.issue_number || github.event.inputs.issue_number || github.event.issue.number }}
+  group: update-urgency-${{ inputs.issue_number || github.event.inputs.issue_number || github.event.issue.number }}-${{ inputs.route_new_internal && 'initial' || 'update' }}
   cancel-in-progress: true
 
 jobs:
   assign-urgency-to-issue:
     runs-on: ubuntu-latest
-    permissions: {}
+    permissions:
+      contents: read
     timeout-minutes: 10
     env:
       OWNER: ${{ github.repository_owner }}
@@ -86,11 +97,20 @@ jobs:
       PROJECT_NUMBER: ${{ inputs.project_id || github.event.inputs.project_id || '33' }}
       URGENCY_FIELD_NAME: 'Urgency'
       DRY_RUN: ${{ inputs.dry_run || github.event.inputs.dry_run || 'false' }}
+      QUIET_INTERNAL: ${{ github.repository == 'camunda/camunda-platform-helm' || inputs.quiet_internal }}
     defaults:
       run:
         shell: bash
 
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: camunda/camunda-platform-helm
+          ref: ${{ github.repository == 'camunda/camunda-platform-helm' && github.sha || 'main' }}
+          persist-credentials: false
+      - uses: ./.github/actions/install-tool-versions
+        with:
+          tools: golang
       - name: Import Vault secrets
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc  # v4.0.0
         id: vault-secrets
@@ -234,6 +254,7 @@ jobs:
             echo "in_target_project=true"
             echo "project_v2_id=$TARGET_PROJECT_NODE_ID"
             echo "project_item_id=$PROJECT_ITEM_ID"
+            echo "current_status=$(echo "$ISSUE_DATA" | jq -r --argjson pn "$PROJECT_NUMBER" '.projectItems.nodes[] | select(.project.number==$pn) | .fieldValues.nodes[] | select(.field.name=="Status") | .name')"
           } >> "$GITHUB_OUTPUT"
 
       - name: Check labels
@@ -542,8 +563,34 @@ jobs:
 
           echo "✅ Updated urgency: '${CURRENT_URGENCY:-(empty)}' → '${NEW_URGENCY:-(empty)}'"
 
+      - name: Classify issue creator for routing
+        id: author
+        if: >-
+          steps.validate_project.outputs.in_target_project == 'true' &&
+          (inputs.route_new_internal ||
+           (env.QUIET_INTERNAL == 'true' && steps.validate_urgency.outputs.urgency == 'immediate'))
+        run: make run.issue-author
+
+      - name: Route new internal issue to Backlog
+        if: >-
+          inputs.route_new_internal && env.DRY_RUN != 'true' &&
+          steps.author.outputs.internal == 'true' &&
+          steps.validate_project.outputs.in_target_project == 'true' &&
+          (steps.validate_project.outputs.current_status == '' || steps.validate_project.outputs.current_status == '📥 Inbox')
+        uses: github/update-project-action@d0031a4f8081c4bf4438d7ce2fa5cf1136610c7a # main
+        with:
+          github_token: ${{ steps.generate-github-token.outputs.token }}
+          organization: ${{ github.repository_owner }}
+          project_number: ${{ env.PROJECT_NUMBER }}
+          content_id: ${{ fromJSON(steps.fetch_data.outputs.issue_data).id }}
+          field: Status
+          value: 📋 Backlog
+
       - name: Move to Ready if immediate
-        if: steps.validate_urgency.outputs.urgency == 'immediate' && steps.validate_project.outputs.in_target_project == 'true'
+        if: >-
+          (env.QUIET_INTERNAL != 'true' || steps.author.outputs.internal == 'false') &&
+          steps.validate_urgency.outputs.urgency == 'immediate' &&
+          steps.validate_project.outputs.in_target_project == 'true'
         run: |
           set -euo pipefail
 

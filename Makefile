@@ -53,6 +53,13 @@ build.ci-result-cache:
 test.ci-result-cache:
 	cd scripts/ci-result-cache && go test -race ./...
 
+.PHONY: test.issue-author run.issue-author
+test.issue-author:
+	cd scripts/issue-author && go test -race ./...
+
+run.issue-author:
+	@cd scripts/issue-author && go run .
+
 .PHONY: install.ci-result-cache
 install.ci-result-cache:
 	cd scripts/ci-result-cache && go mod tidy && go install .
