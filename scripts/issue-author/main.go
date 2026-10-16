@@ -23,6 +23,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"scripts/camunda-core/pkg/ghactions"
 )
 
 type client struct {
@@ -102,13 +104,8 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	if path := os.Getenv("GITHUB_OUTPUT"); path != "" {
-		f, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0600)
-		if err != nil {
-			return err
-		}
-		defer f.Close()
-		if _, err := fmt.Fprintf(f, "internal=%t\n", internal); err != nil {
+	if os.Getenv("GITHUB_OUTPUT") != "" || os.Getenv("GITHUB_ACTIONS") == "true" {
+		if err := ghactions.NewGitHubOutput().Set("internal", strconv.FormatBool(internal)); err != nil {
 			return err
 		}
 	}

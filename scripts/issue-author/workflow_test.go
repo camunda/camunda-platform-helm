@@ -187,6 +187,45 @@ func TestInitialRoutingCondition(t *testing.T) {
 	}
 }
 
+func TestUncertainAssessmentSuppression(t *testing.T) {
+	data, err := os.ReadFile("../../.github/workflows/triage-ai-issue.yml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	workflow := string(data)
+	start := strings.Index(workflow, "            # Check confidence threshold")
+	end := strings.Index(workflow[start:], "            # Prepare severity emoji") + start
+	if start < 0 || end <= start {
+		t.Fatal("assessment gates missing")
+	}
+	block := workflow[start:end]
+	block = block[:strings.LastIndex(block, `            if [[ "$INTERNAL" != "true" ]]; then`)]
+	for _, tc := range []struct {
+		name, confidence, severity         string
+		internal, wantManual, wantContinue bool
+	}{
+		{"internal low", "0.4", "high", true, true, true},
+		{"internal unknown", "0.9", "unknown", true, true, true},
+		{"internal accepted", "0.9", "high", true, false, false},
+		{"external low", "0.4", "high", false, false, true},
+		{"external unknown", "0.9", "unknown", false, false, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			script := "set -euo pipefail\ngh() { printf 'GH %s\\n' \"$*\"; }\nOWNER=camunda REPO=repo CONFIDENCE_THRESHOLD=0.7\nfor ISSUE_NUMBER in 42; do\n" + block + "\nprintf 'ACCEPTED\\n'\ndone\n"
+			cmd := exec.Command("bash", "-c", script)
+			cmd.Env = append(os.Environ(), "INTERNAL="+boolString(tc.internal), "CONFIDENCE="+tc.confidence, "SEVERITY="+tc.severity)
+			output, err := cmd.CombinedOutput()
+			if err != nil {
+				t.Fatalf("%v: %s", err, output)
+			}
+			text := string(output)
+			if strings.Contains(text, "--add-label triage:manual") != tc.wantManual || strings.Contains(text, "ACCEPTED") == tc.wantContinue || strings.Contains(text, "issue comment") {
+				t.Fatalf("unexpected handling: %s", text)
+			}
+		})
+	}
+}
+
 func boolString(value bool) string {
 	if value {
 		return "true"

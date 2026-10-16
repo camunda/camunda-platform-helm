@@ -31,6 +31,11 @@ on:
   #   - cron: '0 10 * * *'  # Daily at 10:00 UTC - commented out pending manual testing
   workflow_dispatch:
     inputs:
+      classification_only:
+        description: Verify App-token author classification without triage or issue mutations
+        required: false
+        type: boolean
+        default: false
       issue_number:
         description: 'Issue number to triage (optional, for single-issue mode)'
         required: false
@@ -181,6 +186,7 @@ jobs:
         env:
           GLEAN_API_TOKEN: ${{ steps.vault-secrets.outputs.GLEAN_API_TOKEN }}
           SLACK_DISTRO_BOT_WEBHOOK_GH: ${{ steps.vault-secrets.outputs.SLACK_DISTRO_BOT_WEBHOOK_GH }}
+          CLASSIFICATION_ONLY: ${{ inputs.classification_only || false }}
         run: |
           set -euo pipefail
 
@@ -198,6 +204,12 @@ jobs:
             ISSUE_BODY=$(echo "$ISSUE_DATA" | jq -r '.body // ""')
             ISSUE_LABELS=$(echo "$ISSUE_DATA" | jq -r '.labels[].name' | tr '\n' ',' | sed 's/,$//')
             ISSUE_STATE=$(echo "$ISSUE_DATA" | jq -r '.state')
+
+            if [[ "$CLASSIFICATION_ONLY" == "true" ]]; then
+              INTERNAL=$(ISSUE_NUMBER="$ISSUE_NUMBER" make --no-print-directory run.issue-author)
+              echo "App-token classification: issue #$ISSUE_NUMBER internal=$INTERNAL" >> "$GITHUB_STEP_SUMMARY"
+              continue
+            fi
 
             echo "📄 Title: $ISSUE_TITLE"
             echo "🏷️  Labels: ${ISSUE_LABELS:-none}"
@@ -340,12 +352,18 @@ jobs:
             # Check confidence threshold
             if (( $(echo "$CONFIDENCE < $CONFIDENCE_THRESHOLD" | bc -l) )); then
               echo "⏭️  Skipping: confidence ($CONFIDENCE) below threshold ($CONFIDENCE_THRESHOLD)"
+              if [[ "$INTERNAL" == "true" ]]; then
+                gh issue edit "$ISSUE_NUMBER" --repo "$OWNER/$REPO" --add-label "triage:manual"
+              fi
               continue
             fi
 
             # Skip if severity is unknown
             if [[ "$SEVERITY" == "unknown" ]]; then
               echo "⏭️  Skipping: severity is unknown"
+              if [[ "$INTERNAL" == "true" ]]; then
+                gh issue edit "$ISSUE_NUMBER" --repo "$OWNER/$REPO" --add-label "triage:manual"
+              fi
               continue
             fi
 

@@ -19,6 +19,8 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -107,5 +109,33 @@ func TestTeamPagination(t *testing.T) {
 	got, err := c.internal(42)
 	if err != nil || !got {
 		t.Fatalf("internal=%t error=%v", got, err)
+	}
+}
+
+func TestRunWritesActionsOutput(t *testing.T) {
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, `{"user":{"login":"automation[bot]","type":"Bot"}}`)
+	}))
+	defer s.Close()
+	t.Setenv("GITHUB_API_URL", s.URL)
+	t.Setenv("GITHUB_REPOSITORY", "camunda/repo")
+	t.Setenv("GH_TOKEN", "fixture")
+	t.Setenv("ISSUE_NUMBER", "42")
+	t.Setenv("GITHUB_ACTIONS", "true")
+	output := filepath.Join(t.TempDir(), "new-output-file")
+	t.Setenv("GITHUB_OUTPUT", output)
+	if err := run(); err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(output)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(data) != "internal=false\n" {
+		t.Fatalf("unexpected output %q", data)
+	}
+	t.Setenv("GITHUB_OUTPUT", "")
+	if err := run(); err == nil {
+		t.Fatal("missing Actions output must fail")
 	}
 }
