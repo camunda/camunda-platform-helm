@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -40,9 +41,11 @@ func TestWorkflowBacklogRouting(t *testing.T) {
 	for _, tc := range []struct {
 		name, status                                        string
 		internal, missingItem, missingOption, mutationError bool
+		existingKind                                        bool
 		wantMove, wantComplete, wantSlack                   bool
 	}{
 		{name: "internal Inbox", status: "📥 Inbox", internal: true, wantMove: true, wantComplete: true},
+		{name: "internal existing kind", status: "📥 Inbox", internal: true, existingKind: true, wantMove: true, wantComplete: true},
 		{name: "internal unset", internal: true, wantMove: true, wantComplete: true},
 		{name: "internal Backlog", status: "📋 Backlog", internal: true, wantComplete: true},
 		{name: "internal in progress", status: "In Progress", internal: true, wantComplete: true},
@@ -71,6 +74,7 @@ func TestWorkflowBacklogRouting(t *testing.T) {
 gh() {
   if [[ "$1" == issue && "$2" == view ]]; then
     printf 'severity/low\nlikelihood/low\n'
+    if [[ "$EXISTING_KIND" == true ]]; then printf 'kind/bug\n'; fi
   elif [[ "$1" == issue && "$2" == edit ]]; then
     printf 'EDIT %s\n' "$*" >&2
   elif [[ "$*" == *'query=mutation('* ]]; then
@@ -87,12 +91,15 @@ SEVERITY=critical LIKELIHOOD=high KIND=chore MISSING_INFO=false
 for ISSUE_NUMBER in 42; do
 ` + block + "\nprintf 'SLACK_PATH\\n'\ndone\n"
 			cmd := exec.Command("bash", "-c", script)
-			cmd.Env = append(os.Environ(), "FIXTURE="+string(fixture), "INTERNAL="+boolString(tc.internal), "MUTATION_ERROR="+boolString(tc.mutationError))
+			cmd.Env = append(os.Environ(), "FIXTURE="+string(fixture), "INTERNAL="+boolString(tc.internal), "MUTATION_ERROR="+boolString(tc.mutationError), "EXISTING_KIND="+boolString(tc.existingKind))
 			output, err := cmd.CombinedOutput()
 			if (err != nil) != tc.mutationError {
 				t.Fatalf("error=%v output=%s", err, output)
 			}
 			text := string(output)
+			if strings.Contains(text, "--add-label kind/chore") == tc.existingKind {
+				t.Error("missing kind not filled or existing kind overwritten")
+			}
 			for marker, want := range map[string]bool{"MOVE\n": tc.wantMove, "--add-label TRIAGE:COMPLETED": tc.wantComplete, "SLACK_PATH": tc.wantSlack} {
 				if strings.Contains(text, marker) != want {
 					t.Errorf("marker %q want=%t output=%s", marker, want, text)
@@ -105,6 +112,78 @@ for ISSUE_NUMBER in 42; do
 				t.Error("marked complete before routing")
 			}
 		})
+	}
+}
+
+func TestInternalInvalidAssessment(t *testing.T) {
+	data, err := os.ReadFile("../../.github/workflows/triage-ai-issue.yml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	workflow := string(data)
+	start, end := strings.Index(workflow, "            # Validate AI JSON response"), strings.Index(workflow, "            # Parse AI response")
+	if start < 0 || end <= start {
+		t.Fatal("assessment validation block missing")
+	}
+	script := `set -euo pipefail
+gh() { printf 'GH %s\n' "$*"; }
+INTERNAL=true AI_JSON=invalid AI_TEXT=invalid OWNER=camunda REPO=repo
+for ISSUE_NUMBER in 42 43; do
+` + workflow[start:end] + "\nprintf 'UNEXPECTED_SUCCESS\\n'\ndone\nprintf 'CONTINUED\\n'\n"
+	cmd := exec.Command("bash", "-c", script)
+	cmd.Env = append(os.Environ(), "GITHUB_STEP_SUMMARY="+filepath.Join(t.TempDir(), "summary"))
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("%v: %s", err, output)
+	}
+	text := string(output)
+	if strings.Count(text, "--add-label triage:manual") != 2 || strings.Contains(text, "issue comment") || strings.Contains(text, "UNEXPECTED_SUCCESS") || !strings.Contains(text, "CONTINUED") {
+		t.Fatalf("invalid internal failure handling: %s", text)
+	}
+}
+
+func TestInitialRoutingCondition(t *testing.T) {
+	data, err := os.ReadFile("../../.github/workflows/triage-assign-urgency-to-issue.yml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	workflow := string(data)
+	start := strings.Index(workflow, "      - name: Route new internal issue to Backlog")
+	if start < 0 {
+		t.Fatal("initial route missing")
+	}
+	step := workflow[start : strings.Index(workflow[start:], "      - name: Move to Ready")+start]
+	condition := strings.Split(strings.Split(step, "if: >-\n")[1], "        uses:")[0]
+	if !strings.Contains(step, "content_id: ${{ fromJSON(steps.fetch_data.outputs.issue_data).id }}") || !strings.Contains(step, "value: 📋 Backlog") {
+		t.Fatal("incorrect project action wiring")
+	}
+	for _, tc := range []struct {
+		name, status                          string
+		initial, internal, project, dry, want bool
+	}{
+		{"empty", "", true, true, true, false, true},
+		{"inbox", "📥 Inbox", true, true, true, false, true},
+		{"progress", "In Progress", true, true, true, false, false},
+		{"backlog", "📋 Backlog", true, true, true, false, false},
+		{"external", "📥 Inbox", true, false, true, false, false},
+		{"ordinary run", "📥 Inbox", false, true, true, false, false},
+		{"no project", "📥 Inbox", true, true, false, false, false},
+		{"dry run", "📥 Inbox", true, true, true, true, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			expr := strings.NewReplacer("inputs.route_new_internal", "'"+boolString(tc.initial)+"' == 'true'", "env.DRY_RUN", "'"+boolString(tc.dry)+"'", "steps.author.outputs.internal", "'"+boolString(tc.internal)+"'", "steps.validate_project.outputs.in_target_project", "'"+boolString(tc.project)+"'", "steps.validate_project.outputs.current_status", "'"+tc.status+"'").Replace(condition)
+			cmd := exec.Command("bash", "-c", "if [[ "+expr+" ]]; then printf yes; else printf no; fi")
+			output, err := cmd.CombinedOutput()
+			if err != nil {
+				t.Fatalf("%v: %s", err, output)
+			}
+			if (string(output) == "yes") != tc.want {
+				t.Fatalf("route=%s want=%t", output, tc.want)
+			}
+		})
+	}
+	if strings.Index(workflow, "      - name: Classify issue creator for routing") < strings.Index(workflow, "      - name: Update Urgency") {
+		t.Fatal("classification blocks urgency updates")
 	}
 }
 

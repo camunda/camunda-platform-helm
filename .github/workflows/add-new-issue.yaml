@@ -78,6 +78,7 @@ jobs:
     with:
       issue_number: ${{ format('{0}', github.event.issue.number) }}
       route_new_internal: true
+      quiet_internal: true
     secrets:
       VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
       VAULT_ROLE_ID: ${{ secrets.VAULT_ROLE_ID }}
