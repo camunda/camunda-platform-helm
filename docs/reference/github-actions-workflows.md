@@ -265,7 +265,7 @@ The workflow validates that image tags in `values-latest.yaml` files match the l
 
 - **SNAPSHOT/alpha tags:** Automatically skipped, as they always represent the latest development versions.
 - **Non-Camunda images:** Currently skipped (Bitnami images, etc.).
-- **Validation failures:** The workflow fails and comments on PRs if any image versions are outdated.
+- **Validation failures:** The workflow does not fail. It emits a warning annotation and, on pull requests, keeps a single warning comment up to date and adds the `deps/stale` label. Once the images are up to date again, the comment is removed and the label is cleared.
 
 ### Manual usage
 
