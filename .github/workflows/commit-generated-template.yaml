@@ -46,7 +46,7 @@ jobs:
           path: ${{ runner.temp }}/generated
       - name: Validate generated commit
         env:
-          ALLOWED_PATHS: '^charts/camunda-platform-[^/[:cntrl:]]+/(README\.md|values\.schema\.json|Chart\.lock|test/ci/registry-snapshot\.yaml|test/unit/[^/[:cntrl:]]+/(golden/[^/[:cntrl:]]+\.yaml|testdata/[^/[:cntrl:]]+\.golden\.yaml))$'
+          ALLOWED_PATHS: '^charts/camunda-platform-[^/[:cntrl:]]+/(README\.md|values(\.unknown-keys)?\.schema\.json|Chart\.lock|test/ci/registry-snapshot\.yaml|test/unit/[^/[:cntrl:]]+/(golden/[^/[:cntrl:]]+\.yaml|testdata/[^/[:cntrl:]]+\.golden\.yaml))$'
           UPDATE_MODULES: ${{ inputs.update-modules }}
         run: |
           set -euo pipefail
