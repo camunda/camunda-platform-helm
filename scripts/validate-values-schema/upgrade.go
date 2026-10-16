@@ -44,7 +44,7 @@ type upgradeCoverage struct {
 
 var (
 	helmComments    = regexp.MustCompile(`(?s)\{\{-?\s*/\*.*?\*/\s*-?\}\}`)
-	coverageInclude = regexp.MustCompile(`(?s)include\s+"camundaPlatform\.(keyDeprecated|keyRemoved|keyRenamed)"\s*\(dict(.*?)\)\s*-?\}\}`)
+	coverageInclude = regexp.MustCompile(`(?s)include\s+"camundaPlatform\.(keyDeprecated|keyRemoved|keyRenamed|keyNoEffect)"\s*\(dict(.*?)\)\s*-?\}\}`)
 	coverageOldName = regexp.MustCompile(`"oldName"\s+"([^"]+)"`)
 	warningBlock    = regexp.MustCompile(`(?s)\$warningMessage\s*:?=\s*printf\s+(.*?)\s*-?\}\}`)
 	warningKey      = regexp.MustCompile(`DEPRECATION:\s+(?:\\")?([a-zA-Z][a-zA-Z0-9]*(?:\.[a-zA-Z0-9*]+)*)(?:\\"|\s)`)
@@ -61,7 +61,7 @@ func parseUpgradeCoverage(template, allowlistSource string) (upgradeCoverage, er
 			switch block[1] {
 			case "keyDeprecated":
 				c.keys[key[1]] = deprecated
-			case "keyRemoved", "keyRenamed":
+			case "keyRemoved", "keyRenamed", "keyNoEffect":
 				c.keys[key[1]] = removed
 			}
 		}

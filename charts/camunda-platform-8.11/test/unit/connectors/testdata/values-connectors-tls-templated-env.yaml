@@ -1,0 +1,13 @@
+connectors:
+  enabled: true
+  env:
+    - name: SERVER_SSL_ENABLED
+      value: "{{ eq 1 1 }}"
+
+global:
+  tls:
+    connectors:
+      enabled: true
+      cert:
+        secret:
+          existingSecret: connectors-ks

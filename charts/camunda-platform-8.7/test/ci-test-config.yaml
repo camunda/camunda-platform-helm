@@ -19,7 +19,7 @@ unit:
   enabled: true
   matrix:
     - name: Core
-      packages: identity camunda common console
+      packages: identity camunda common console execution-identity topology
     - name: Apps
       packages: connectors operate optimize tasklist
     - name: Zeebe

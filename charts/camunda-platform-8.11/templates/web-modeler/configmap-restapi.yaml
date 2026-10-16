@@ -1,0 +1,147 @@
+{{- if eq (include "camundaHub.webModelerEnabled" .) "true" -}}
+{{- $hub := include "camundaHub.values" . | fromYaml -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "webModeler.fullname" . }}-restapi-configuration
+  labels: {{- include "webModeler.labels" . | nindent 4 }}
+  annotations: {{- toYaml .Values.global.annotations | nindent 4 }}
+data:
+  {{- if $hub.restapi.configuration }}
+  application.yaml: |
+    {{ $hub.restapi.configuration | indent 4 | trim }}
+  {{- else }}
+  application.yaml: |
+    camunda:
+      {{- if or .Values.global.identity.auth.enabled (eq (include "webModeler.authMethod" .) "oidc") }}
+      identity:
+        {{- if eq (include "camundaPlatform.identityEnabled" .) "true" }}
+        base-url: {{ include "camundaPlatform.identityURL" . | quote }}
+        issuer: {{ include "camundaPlatform.authIssuerUrlWithFallback" . | quote }}
+        {{- end }}
+        issuer-backend-url: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
+        type: {{ include "camundaPlatform.authIssuerType" . | quote }}
+        username-claim: {{ .Values.orchestration.security.authentication.oidc.usernameClaim | quote }}
+      {{- end }}
+
+      hub:
+        feature:
+          test-mode-enabled: {{ ternary "false" "true" .Values.global.noSecondaryStorage | quote }}
+
+        pusher:
+          host: {{ include "webModeler.websockets.fullname" . | quote }}
+          port: {{ $hub.websockets.service.port }}
+          client:
+            host: {{ include "webModeler.publicWebsocketHost" . | quote }}
+            port: {{ include "webModeler.publicWebsocketPort" . | quote }}
+            {{- if and .Values.global.ingress.enabled $hub.contextPath }}
+            path: {{ include "webModeler.websocketContextPath" . | quote }}
+            {{- end }}
+            force-tls: {{ include "webModeler.websocketTlsEnabled" . }}
+
+        {{- if or .Values.global.identity.auth.enabled (eq (include "webModeler.authMethod" .) "oidc") }}
+        security:
+          jwt:
+            audience:
+              internal-api: {{ include "webModeler.authClientApiAudience" . | quote }}
+              public-api: {{ include "webModeler.authPublicApiAudience" . | quote }}
+        {{- end }}
+
+        mail:
+          {{- $fromAddress := $hub.restapi.mail.fromAddress }}
+          {{- $restapiExtraConfig := $hub.restapi.extraConfiguration }}
+          {{- $hasExtraFromAddress := false }}
+          {{- range $prefix := list "hub" "modeler" }}
+            {{- $fromAddressPath := dict "extraConfiguration" $restapiExtraConfig "path" (list "camunda" $prefix "mail" "from-address") }}
+            {{- if or (eq (include "camundaPlatform.extraConfigHasPathInAnyYamlDocument" $fromAddressPath) "true") (eq (include "camundaPlatform.extraConfigHasRawKeyPrefix" $fromAddressPath) "true") }}
+              {{- $hasExtraFromAddress = true }}
+            {{- end }}
+          {{- end }}
+          {{- if $fromAddress }}
+          from-address: {{ $fromAddress | quote }}
+          {{- else if not $hasExtraFromAddress }}
+          from-address: {{ required "The value 'webModeler.restapi.mail.fromAddress' is required (or supply camunda.hub.mail.from-address via webModeler.restapi.extraConfiguration)" "" | quote }}
+          {{- end }}
+          from-name: {{ $hub.restapi.mail.fromName | quote }}
+
+        oauth2:
+          client-id: {{ include "webModeler.authClientId" . | quote }}
+
+        server:
+          url: {{ tpl (or .Values.global.identity.auth.camundaHub.redirectUrl .Values.global.identity.auth.webModeler.redirectUrl) $ | quote }}
+          https-only: {{ hasPrefix "https://" (tpl (or .Values.global.identity.auth.camundaHub.redirectUrl .Values.global.identity.auth.webModeler.redirectUrl) $) | quote }}
+
+        {{- if or .Values.orchestration.enabled (eq (include "camundaPlatform.topologyMode" .) "hub") $hub.restapi.clusters }}
+        clusters:
+          {{- if $hub.restapi.clusters }}
+            {{- $hub.restapi.clusters | toYaml | nindent 10 }}
+          {{- else}}
+            {{- if eq (include "camundaPlatform.topologyMode" .) "hub" }}
+              {{- include "camundaPlatform.topologyWebModelerClusters" . | nindent 10 }}
+            {{- else }}
+              {{- include "camundaPlatform.defaultWebModelerCluster" . | nindent 10 }}
+            {{- end }}
+          {{- end }}
+        {{- end }}
+
+    spring:
+      {{- $springImports := list }}
+      {{- range $hub.restapi.extraConfiguration }}
+        {{- if not (and (hasKey . "springImport") (eq .springImport false)) }}
+          {{- $springImports = append $springImports . }}
+        {{- end }}
+      {{- end }}
+      {{- if $springImports }}
+      config:
+        import:
+        {{- range $springImports }}
+          - optional:file:/home/runner/config/{{ .file }}
+        {{- end }}
+      {{- end }}
+      datasource:
+        url: {{ include "webModeler.restapi.databaseUrl" . | quote }}
+        username: {{ include "webModeler.restapi.databaseUser" . | quote }}
+
+      mail:
+        host: {{ $hub.restapi.mail.smtpHost | quote }}
+        port: {{ $hub.restapi.mail.smtpPort }}
+        {{- if $hub.restapi.mail.smtpUser }}
+        username: {{ $hub.restapi.mail.smtpUser | quote }}
+        {{- end }}
+        properties:
+          mail.smtp.auth: {{ include "webModeler.restapi.mail.authEnabled" . }}
+          mail.smtp.starttls.enable: {{ $hub.restapi.mail.smtpTlsEnabled }}
+          mail.smtp.starttls.required: {{ $hub.restapi.mail.smtpTlsEnabled }}
+
+      security:
+        oauth2:
+          resourceserver:
+            {{- if or .Values.global.identity.auth.enabled (eq (include "webModeler.authMethod" .) "oidc") }}
+            jwt:
+              issuer-uri: {{ include "camundaPlatform.authIssuerUrlWithFallback" . | quote }}
+              jwk-set-uri: {{ include "camundaPlatform.authIssuerBackendUrlEndpointCerts" . | quote }}
+            {{- else }}
+            jwt: null
+            {{- end }}
+
+      servlet:
+        multipart:
+          max-file-size: {{ .Values.global.config.requestBodySize | quote }}
+          max-request-size: {{ .Values.global.config.requestBodySize | quote }}
+
+    {{- if $hub.contextPath }}
+    server:
+      servlet:
+        context-path: {{ include "camundaPlatform.joinpath" (list $hub.contextPath) | quote }}
+    management:
+      server:
+        base-path: {{ include "camundaPlatform.joinpath" (list $hub.contextPath) | quote }}
+    {{- end }}
+
+    logging:
+{{- with $hub.restapi.logging }}
+{{ . | toYaml | indent 6 }}
+{{- end }}
+  {{- end }}
+  {{- include "camundaPlatform.renderExtraConfiguration" (dict "extraConfig" $hub.restapi.extraConfiguration) }}
+{{- end }}

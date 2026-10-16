@@ -161,6 +161,20 @@ Keycloak helpers
     -}}
 {{- end -}}
 
+{{- define "identity.keycloakUrlConfigured" -}}
+{{- $env := dict -}}
+{{- range $entry := (.Values.identity.env | default list) -}}
+  {{- $_ := set $env (tpl ($entry.name | default "") $) true -}}
+{{- end -}}
+{{- if or
+    (include "identity.keycloak.host" . | trim)
+    .Values.identity.envFrom
+    (hasKey $env "KEYCLOAK_URL")
+    (eq (include "camundaPlatform.appConfigMentionsPath" (dict "configuration" .Values.identity.configuration "extraConfiguration" .Values.identity.extraConfiguration "path" (list "keycloak" "url"))) "true") -}}
+true
+{{- end -}}
+{{- end -}}
+
 {{/*
 [identity] External PostgreSQL helpers.
 */}}

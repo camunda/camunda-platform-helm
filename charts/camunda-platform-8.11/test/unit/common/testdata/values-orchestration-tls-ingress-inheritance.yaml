@@ -1,0 +1,26 @@
+global:
+  ingress:
+    enabled: true
+    className: nginx
+    annotations:
+      nginx.ingress.kubernetes.io/backend-protocol: HTTP
+      customer-annotation: keep-me
+      templated-annotation: "{{ .Release.Name }}-suffix"
+    labels:
+      customer-label: keep-me
+  tls:
+    orchestration:
+      rest:
+        enabled: true
+        cert:
+          secret:
+            existingSecret: orchestration-rest-tls
+orchestration:
+  data:
+    secondaryStorage:
+      type: elasticsearch
+  enabled: true
+  contextPath: /orchestration
+optimize:
+  enabled: true
+  contextPath: /optimize

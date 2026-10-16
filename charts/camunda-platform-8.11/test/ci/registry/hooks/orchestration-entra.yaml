@@ -1,0 +1,4 @@
+script: post-deploy-orchestration-entra.sh
+description: |
+  Deploys and triggers an inbound connector, verifies that its process instance
+  completes, and verifies that no Management Identity exists.

@@ -1,0 +1,833 @@
+// Copyright 2026 Camunda Services GmbH
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package web_modeler
+
+import (
+	"path/filepath"
+	"strings"
+	"testing"
+
+	"github.com/gruntwork-io/terratest/modules/helm"
+	"github.com/gruntwork-io/terratest/modules/k8s"
+	"github.com/gruntwork-io/terratest/modules/random"
+	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
+	"gopkg.in/yaml.v3"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+)
+
+type CamundaHubShimTemplateTest struct {
+	suite.Suite
+	chartPath string
+	release   string
+	namespace string
+}
+
+func TestCamundaHubShimTemplate(t *testing.T) {
+	t.Parallel()
+
+	chartPath, err := filepath.Abs("../../../")
+	require.NoError(t, err)
+
+	suite.Run(t, &CamundaHubShimTemplateTest{
+		chartPath: chartPath,
+		release:   "camunda-platform-test",
+		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
+	})
+}
+
+func (s *CamundaHubShimTemplateTest) TestEnablementMatrix() {
+	testCases := []struct {
+		name                string
+		values              map[string]string
+		expectWebModeler    bool
+		expectConsoleFlag   string
+		expectConsoleEnvVar bool
+	}{
+		{
+			name: "HubDisabledLegacyUnset",
+			values: map[string]string{
+				"camundaHub.enabled": "false",
+			},
+		},
+		{
+			name: "HubDisabledLegacyFalse",
+			values: map[string]string{
+				"camundaHub.enabled": "false",
+				"webModeler.enabled": "false",
+				"console.enabled":    "false",
+			},
+		},
+		{
+			name: "HubDisabledWebModelerTrueConsoleFalse",
+			values: map[string]string{
+				"camundaHub.enabled":                  "false",
+				"webModeler.enabled":                  "true",
+				"console.enabled":                     "false",
+				"webModeler.restapi.mail.fromAddress": "example@example.com",
+			},
+			expectWebModeler:    true,
+			expectConsoleFlag:   "false",
+			expectConsoleEnvVar: true,
+		},
+		{
+			name: "HubDisabledWebModelerFalseConsoleTrue",
+			values: map[string]string{
+				"camundaHub.enabled": "false",
+				"webModeler.enabled": "false",
+				"console.enabled":    "true",
+			},
+		},
+		{
+			name: "HubDisabledBothLegacyTrue",
+			values: map[string]string{
+				"camundaHub.enabled":                  "false",
+				"webModeler.enabled":                  "true",
+				"console.enabled":                     "true",
+				"webModeler.restapi.mail.fromAddress": "example@example.com",
+			},
+			expectWebModeler:    true,
+			expectConsoleFlag:   "true",
+			expectConsoleEnvVar: true,
+		},
+		{
+			name: "HubEnabledLegacyUnset",
+			values: map[string]string{
+				"camundaHub.enabled": "true",
+			},
+			expectWebModeler:    true,
+			expectConsoleFlag:   "true",
+			expectConsoleEnvVar: true,
+		},
+		{
+			name: "HubEnabledLegacyFalse",
+			values: map[string]string{
+				"camundaHub.enabled": "true",
+				"webModeler.enabled": "false",
+				"console.enabled":    "false",
+			},
+			expectWebModeler:    true,
+			expectConsoleFlag:   "true",
+			expectConsoleEnvVar: true,
+		},
+		{
+			name: "HubEnabledWebModelerTrueConsoleFalse",
+			values: map[string]string{
+				"camundaHub.enabled": "true",
+				"webModeler.enabled": "true",
+				"console.enabled":    "false",
+			},
+			expectWebModeler:    true,
+			expectConsoleFlag:   "true",
+			expectConsoleEnvVar: true,
+		},
+		{
+			name: "HubEnabledWebModelerFalseConsoleTrue",
+			values: map[string]string{
+				"camundaHub.enabled": "true",
+				"webModeler.enabled": "false",
+				"console.enabled":    "true",
+			},
+			expectWebModeler:    true,
+			expectConsoleFlag:   "true",
+			expectConsoleEnvVar: true,
+		},
+		{
+			name: "HubEnabledBothLegacyTrue",
+			values: map[string]string{
+				"camundaHub.enabled": "true",
+				"webModeler.enabled": "true",
+				"console.enabled":    "true",
+			},
+			expectWebModeler:    true,
+			expectConsoleFlag:   "true",
+			expectConsoleEnvVar: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			output, err := s.renderWebModelerRestAPI(tc.values)
+
+			if !tc.expectWebModeler {
+				if err != nil {
+					s.Require().ErrorContains(err, "could not find template templates/web-modeler/deployment-restapi.yaml in chart")
+					return
+				}
+				s.Require().Empty(strings.TrimSpace(output))
+				return
+			}
+
+			s.Require().NoError(err)
+
+			deployment := s.unmarshalDeployment(output)
+			s.Require().Equal(s.release+"-web-modeler-restapi", deployment.Name)
+			consoleEnv := envVarByName(deployment.Spec.Template.Spec.Containers[0].Env, "CAMUNDA_HUB_FEATURE_CONSOLEENABLED")
+			if tc.expectConsoleEnvVar {
+				s.Require().NotNil(consoleEnv)
+				s.Require().Equal(tc.expectConsoleFlag, consoleEnv.Value)
+			} else {
+				s.Require().Nil(consoleEnv)
+			}
+		})
+	}
+}
+
+func (s *CamundaHubShimTemplateTest) TestDoubleEnableRendersSingleWebModelerWorkloadSet() {
+	values := map[string]string{
+		"camundaHub.enabled":                  "true",
+		"webModeler.enabled":                  "true",
+		"console.enabled":                     "true",
+		"webModeler.restapi.mail.fromAddress": "example@example.com",
+	}
+	output, err := s.renderWebModeler(values, []string{
+		"templates/web-modeler/deployment-restapi.yaml",
+		"templates/web-modeler/deployment-websockets.yaml",
+		"templates/web-modeler/service-restapi.yaml",
+		"templates/web-modeler/service-websockets.yaml",
+		"templates/web-modeler/serviceaccount.yaml",
+	})
+	s.Require().NoError(err)
+
+	s.Require().Equal(map[string]int{
+		"Deployment/" + s.release + "-web-modeler-restapi":    1,
+		"Deployment/" + s.release + "-web-modeler-websockets": 1,
+		"Service/" + s.release + "-web-modeler-restapi":       1,
+		"Service/" + s.release + "-web-modeler-websockets":    1,
+		"ServiceAccount/" + s.release + "-web-modeler":        1,
+	}, objectCounts(output))
+}
+
+func (s *CamundaHubShimTemplateTest) TestCamundaHubValuesTakePrecedenceOverLegacyValues() {
+	values := map[string]string{
+		"camundaHub.enabled":                  "true",
+		"camundaHub.restapi.replicas":         "3",
+		"camundaHub.restapi.mail.fromAddress": "hub@example.com",
+		"webModeler.enabled":                  "true",
+		"webModeler.restapi.replicas":         "1",
+		"webModeler.restapi.mail.fromAddress": "legacy@example.com",
+	}
+	output, err := s.renderWebModelerRestAPI(values)
+	s.Require().NoError(err)
+
+	deployment := s.unmarshalDeployment(output)
+	s.Require().Equal(int32(3), *deployment.Spec.Replicas)
+}
+
+func (s *CamundaHubShimTemplateTest) TestCamundaHubPodLabelAndAffinityTakePrecedenceTogether() {
+	values := map[string]string{
+		"camundaHub.enabled":                          "true",
+		"camundaHub.restapi.podLabels.affinity-group": "hub",
+		"camundaHub.restapi.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].weight":                                                   "100",
+		"camundaHub.restapi.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].podAffinityTerm.labelSelector.matchLabels.affinity-group": "hub",
+		"camundaHub.restapi.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].podAffinityTerm.topologyKey":                              "topology.kubernetes.io/zone",
+		"webModeler.enabled":                          "true",
+		"webModeler.restapi.mail.fromAddress":         "legacy@example.com",
+		"webModeler.restapi.podLabels.affinity-group": "legacy",
+		"webModeler.restapi.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].weight":                                                   "1",
+		"webModeler.restapi.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].podAffinityTerm.labelSelector.matchLabels.affinity-group": "legacy",
+		"webModeler.restapi.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].podAffinityTerm.topologyKey":                              "kubernetes.io/hostname",
+	}
+	output, err := s.renderWebModelerRestAPI(values)
+	s.Require().NoError(err)
+
+	deployment := s.unmarshalDeployment(output)
+	s.Require().Equal("hub", deployment.Spec.Template.Labels["affinity-group"])
+
+	preferredTerms := deployment.Spec.Template.Spec.Affinity.PodAntiAffinity.PreferredDuringSchedulingIgnoredDuringExecution
+	s.Require().Len(preferredTerms, 1)
+	s.Require().Equal(int32(100), preferredTerms[0].Weight)
+	s.Require().Equal("hub", preferredTerms[0].PodAffinityTerm.LabelSelector.MatchLabels["affinity-group"])
+	s.Require().Equal("topology.kubernetes.io/zone", preferredTerms[0].PodAffinityTerm.TopologyKey)
+}
+
+func (s *CamundaHubShimTemplateTest) TestLegacyOnlyValuesStillApply() {
+	values := map[string]string{
+		"camundaHub.enabled":                  "false",
+		"webModeler.enabled":                  "true",
+		"webModeler.restapi.replicas":         "2",
+		"webModeler.restapi.mail.fromAddress": "legacy@example.com",
+	}
+	output, err := s.renderWebModelerRestAPI(values)
+	s.Require().NoError(err)
+
+	deployment := s.unmarshalDeployment(output)
+	s.Require().Equal(int32(2), *deployment.Spec.Replicas)
+}
+
+func (s *CamundaHubShimTemplateTest) TestFalsyCamundaHubOverrideWinsOverTruthyLegacyValue() {
+	values := map[string]string{
+		"camundaHub.enabled":                        "true",
+		"camundaHub.restapi.readinessProbe.enabled": "false",
+		"webModeler.enabled":                        "true",
+		"webModeler.restapi.readinessProbe.enabled": "true",
+		"webModeler.restapi.mail.fromAddress":       "example@example.com",
+	}
+	output, err := s.renderWebModelerRestAPI(values)
+	s.Require().NoError(err)
+
+	deployment := s.unmarshalDeployment(output)
+	s.Require().Nil(deployment.Spec.Template.Spec.Containers[0].ReadinessProbe)
+}
+
+func (s *CamundaHubShimTemplateTest) TestUnsetCamundaHubKeyFallsThroughToLegacyValue() {
+	values := map[string]string{
+		"camundaHub.enabled":                  "true",
+		"webModeler.enabled":                  "true",
+		"webModeler.contextPath":              "/modeler",
+		"webModeler.restapi.mail.fromAddress": "example@example.com",
+	}
+	output, err := s.renderWebModelerRestAPI(values)
+	s.Require().NoError(err)
+
+	probe := s.unmarshalDeployment(output).Spec.Template.Spec.Containers[0].ReadinessProbe
+	s.Require().NotNil(probe)
+	s.Require().Equal("/modeler/health/readiness", probe.HTTPGet.Path)
+}
+
+func (s *CamundaHubShimTemplateTest) TestPartialContainerSecurityContextOverrideKeepsSiblingDefaults() {
+	values := map[string]string{
+		"camundaHub.enabled": "true",
+		"camundaHub.restapi.containerSecurityContext.runAsUser": "2000",
+		"webModeler.enabled":                  "true",
+		"webModeler.restapi.mail.fromAddress": "example@example.com",
+	}
+	output, err := s.renderWebModelerRestAPI(values)
+	s.Require().NoError(err)
+
+	securityContext := s.unmarshalDeployment(output).Spec.Template.Spec.Containers[0].SecurityContext
+	s.Require().NotNil(securityContext)
+	s.Require().Equal(int64(2000), *securityContext.RunAsUser)
+	s.Require().True(*securityContext.ReadOnlyRootFilesystem)
+	s.Require().True(*securityContext.RunAsNonRoot)
+	s.Require().False(*securityContext.AllowPrivilegeEscalation)
+	s.Require().NotNil(securityContext.SeccompProfile)
+	s.Require().Equal(corev1.SeccompProfileTypeRuntimeDefault, securityContext.SeccompProfile.Type)
+}
+
+func (s *CamundaHubShimTemplateTest) TestPartialPodSecurityContextOverrideKeepsSiblingDefaults() {
+	values := map[string]string{
+		"camundaHub.enabled":                            "true",
+		"camundaHub.restapi.podSecurityContext.fsGroup": "3000",
+		"webModeler.enabled":                            "true",
+		"webModeler.restapi.mail.fromAddress":           "example@example.com",
+	}
+	output, err := s.renderWebModelerRestAPI(values)
+	s.Require().NoError(err)
+
+	securityContext := s.unmarshalDeployment(output).Spec.Template.Spec.SecurityContext
+	s.Require().NotNil(securityContext)
+	s.Require().Equal(int64(3000), *securityContext.FSGroup)
+	s.Require().True(*securityContext.RunAsNonRoot)
+	s.Require().NotNil(securityContext.SeccompProfile)
+	s.Require().Equal(corev1.SeccompProfileTypeRuntimeDefault, securityContext.SeccompProfile.Type)
+}
+
+func (s *CamundaHubShimTemplateTest) TestPartialResourcesOverrideKeepsSiblingDefaults() {
+	values := map[string]string{
+		"camundaHub.enabled":                      "true",
+		"camundaHub.restapi.resources.limits.cpu": "2",
+		"webModeler.enabled":                      "true",
+		"webModeler.restapi.mail.fromAddress":     "example@example.com",
+	}
+	output, err := s.renderWebModelerRestAPI(values)
+	s.Require().NoError(err)
+
+	resources := s.unmarshalDeployment(output).Spec.Template.Spec.Containers[0].Resources
+	s.Require().Equal("2", resources.Limits.Cpu().String())
+	s.Require().False(resources.Limits.Memory().IsZero())
+	s.Require().False(resources.Requests.Cpu().IsZero())
+	s.Require().False(resources.Requests.Memory().IsZero())
+}
+
+func (s *CamundaHubShimTemplateTest) TestPartialWebsocketsSecurityContextOverrideKeepsSiblingDefaults() {
+	values := map[string]string{
+		"camundaHub.enabled": "true",
+		"camundaHub.websockets.containerSecurityContext.runAsUser": "2000",
+		"webModeler.enabled":                  "true",
+		"webModeler.restapi.mail.fromAddress": "example@example.com",
+	}
+	output, err := s.renderWebModeler(values, []string{"templates/web-modeler/deployment-websockets.yaml"})
+	s.Require().NoError(err)
+
+	securityContext := s.unmarshalDeployment(output).Spec.Template.Spec.Containers[0].SecurityContext
+	s.Require().NotNil(securityContext)
+	s.Require().Equal(int64(2000), *securityContext.RunAsUser)
+	s.Require().True(*securityContext.ReadOnlyRootFilesystem)
+	s.Require().True(*securityContext.RunAsNonRoot)
+	s.Require().False(*securityContext.AllowPrivilegeEscalation)
+	s.Require().NotNil(securityContext.SeccompProfile)
+	s.Require().Equal(corev1.SeccompProfileTypeRuntimeDefault, securityContext.SeccompProfile.Type)
+}
+
+func (s *CamundaHubShimTemplateTest) TestPartialWebsocketsResourcesOverrideKeepsSiblingDefaults() {
+	values := map[string]string{
+		"camundaHub.enabled":                         "true",
+		"webModeler.enabled":                         "true",
+		"camundaHub.websockets.resources.limits.cpu": "2",
+	}
+	output, err := s.renderWebModeler(values, []string{"templates/web-modeler/deployment-websockets.yaml"})
+	s.Require().NoError(err)
+
+	resources := s.unmarshalDeployment(output).Spec.Template.Spec.Containers[0].Resources
+	s.Require().Equal("2", resources.Limits.Cpu().String())
+	s.Require().False(resources.Limits.Memory().IsZero())
+	s.Require().False(resources.Requests.Cpu().IsZero())
+	s.Require().False(resources.Requests.Memory().IsZero())
+}
+
+func (s *CamundaHubShimTemplateTest) TestPusherAppPathResolvesViaLegacyContextPath() {
+	values := map[string]string{
+		"camundaHub.enabled":     "true",
+		"webModeler.enabled":     "true",
+		"webModeler.contextPath": "/modeler",
+		"global.ingress.enabled": "true",
+		"global.host":            "example.com",
+	}
+	output, err := s.renderWebModeler(values, []string{"templates/web-modeler/deployment-websockets.yaml"})
+	s.Require().NoError(err)
+
+	pusherPath := envVarByName(s.unmarshalDeployment(output).Spec.Template.Spec.Containers[0].Env, "PUSHER_APP_PATH")
+	s.Require().NotNil(pusherPath)
+	s.Require().Equal("/modeler-ws", pusherPath.Value)
+}
+
+func (s *CamundaHubShimTemplateTest) TestLegacyOnlyPersistenceStillCreatesVolumeClaim() {
+	values := map[string]string{
+		"camundaHub.enabled":             "true",
+		"webModeler.enabled":             "true",
+		"webModeler.persistence.enabled": "true",
+		"webModeler.persistence.size":    "5Gi",
+	}
+	output, err := s.renderWebModelerRestAPI(values)
+	s.Require().NoError(err)
+
+	volumes := s.unmarshalDeployment(output).Spec.Template.Spec.Volumes
+	var tmpVolume *corev1.Volume
+	for i := range volumes {
+		if volumes[i].Name == "tmp" {
+			tmpVolume = &volumes[i]
+		}
+	}
+	s.Require().NotNil(tmpVolume)
+	s.Require().Nil(tmpVolume.EmptyDir, "legacy webModeler.persistence must not fall through to emptyDir")
+	s.Require().NotNil(tmpVolume.Ephemeral)
+	s.Require().Equal(
+		"5Gi",
+		tmpVolume.Ephemeral.VolumeClaimTemplate.Spec.Resources.Requests.Storage().String(),
+	)
+}
+
+func (s *CamundaHubShimTemplateTest) TestContextPathResetStaysConsistentAcrossDeploymentAndConfigMap() {
+	values := map[string]string{
+		"camundaHub.enabled":     "true",
+		"webModeler.enabled":     "true",
+		"webModeler.contextPath": "/modeler",
+		"camundaHub.contextPath": "",
+	}
+	output, err := s.renderWebModelerRestAPI(values)
+	s.Require().NoError(err)
+
+	probe := s.unmarshalDeployment(output).Spec.Template.Spec.Containers[0].ReadinessProbe
+	s.Require().NotNil(probe)
+	s.Require().Equal("/health/readiness", probe.HTTPGet.Path)
+	s.Require().Empty(s.renderRestAPIConfigMap(values).Server.Servlet.ContextPath)
+}
+
+func (s *CamundaHubShimTemplateTest) TestScalarOverrideOfLegacyMapFailsFast() {
+	values := map[string]string{
+		"camundaHub.enabled":                          "true",
+		"webModeler.enabled":                          "true",
+		"camundaHub.restapi.containerSecurityContext": "false",
+	}
+	_, err := s.renderWebModelerRestAPI(values)
+	s.Require().Error(err)
+	s.Require().ErrorContains(err, "camundaHub.restapi.containerSecurityContext is a bool")
+}
+
+func (s *CamundaHubShimTemplateTest) TestScalarOverrideOfLegacyMapIsIgnoredWhenHubDisabled() {
+	values := map[string]string{
+		"camundaHub.enabled":                          "false",
+		"webModeler.enabled":                          "false",
+		"console.enabled":                             "false",
+		"camundaHub.restapi.containerSecurityContext": "false",
+	}
+	output, err := s.renderWebModeler(values, []string{"templates/orchestration/statefulset.yaml"})
+	s.Require().NoError(err, "a stray camundaHub override must not fail rendering while Hub is disabled")
+	s.Require().Contains(output, "kind: StatefulSet")
+}
+
+func (s *CamundaHubShimTemplateTest) TestMailResetAppliesToTheConfigMap() {
+	legacyOnly := map[string]string{
+		"camundaHub.enabled":               "true",
+		"webModeler.enabled":               "true",
+		"webModeler.restapi.mail.smtpUser": "legacyuser",
+	}
+	s.Require().Equal("legacyuser", s.renderRestAPIConfigMap(legacyOnly).Spring.Mail.Username)
+
+	reset := map[string]string{
+		"camundaHub.enabled":               "true",
+		"webModeler.enabled":               "true",
+		"webModeler.restapi.mail.smtpUser": "legacyuser",
+		"camundaHub.restapi.mail.smtpUser": "",
+	}
+	s.Require().Empty(s.renderRestAPIConfigMap(reset).Spring.Mail.Username)
+}
+
+func (s *CamundaHubShimTemplateTest) TestContextPathResetRemovesIngressPaths() {
+	values := map[string]string{
+		"camundaHub.enabled":     "true",
+		"webModeler.enabled":     "true",
+		"global.ingress.enabled": "true",
+		"global.host":            "example.com",
+		"webModeler.contextPath": "/modeler",
+	}
+	output, err := s.renderWebModeler(values, []string{"templates/common/ingress-http.yaml"})
+	s.Require().NoError(err)
+	s.Require().Contains(output, "path: /modeler")
+	s.Require().Contains(output, "path: /modeler-ws")
+
+	values["camundaHub.contextPath"] = ""
+	_, err = s.renderWebModeler(values, []string{"templates/common/ingress-http.yaml"})
+	s.Require().Error(err, "WebModeler is the only route here, so clearing its context path leaves no path and the Ingress is skipped")
+	s.Require().ErrorContains(err, "could not find template")
+}
+
+func (s *CamundaHubShimTemplateTest) TestListValuedOverrideReplacesLegacyList() {
+	values := map[string]string{
+		"camundaHub.enabled":                    "true",
+		"webModeler.enabled":                    "true",
+		"webModeler.restapi.tolerations[0].key": "legacy",
+		"camundaHub.restapi.tolerations[0].key": "hub",
+	}
+	output, err := s.renderWebModelerRestAPI(values)
+	s.Require().NoError(err)
+
+	tolerations := s.unmarshalDeployment(output).Spec.Template.Spec.Tolerations
+	s.Require().Len(tolerations, 1, "arrays replace wholesale rather than appending")
+	s.Require().Equal("hub", tolerations[0].Key)
+}
+
+func (s *CamundaHubShimTemplateTest) TestFalsySmtpTlsOverrideReachesTheConfigMap() {
+	values := map[string]string{
+		"camundaHub.enabled":                     "true",
+		"webModeler.enabled":                     "true",
+		"webModeler.restapi.mail.smtpTlsEnabled": "true",
+		"camundaHub.restapi.mail.smtpTlsEnabled": "false",
+	}
+	properties := s.renderRestAPIConfigMap(values).Spring.Mail.Properties
+	s.Require().Equal(false, properties["mail.smtp.starttls.enable"])
+	s.Require().Equal(false, properties["mail.smtp.starttls.required"])
+}
+
+func (s *CamundaHubShimTemplateTest) TestServiceAnnotationsMergeWithLegacyMap() {
+	values := map[string]string{
+		"camundaHub.enabled": "true",
+		"webModeler.enabled": "true",
+		"webModeler.restapi.service.annotations.legacykey": "legacyval",
+		"camundaHub.restapi.service.annotations.hubkey":    "hubval",
+	}
+	output, err := s.renderWebModeler(values, []string{"templates/web-modeler/service-restapi.yaml"})
+	s.Require().NoError(err)
+
+	var service corev1.Service
+	helm.UnmarshalK8SYaml(s.T(), output, &service)
+	annotations := service.Annotations
+	s.Require().Equal("hubval", annotations["hubkey"])
+	s.Require().Equal("legacyval", annotations["legacykey"],
+		"services now read the merged view, so a Hub annotations map keeps the legacy keys")
+}
+
+func (s *CamundaHubShimTemplateTest) TestResourceNamesStableBetweenLegacyAndCamundaHubValues() {
+	legacyValues := map[string]string{
+		"camundaHub.enabled":                  "false",
+		"webModeler.enabled":                  "true",
+		"webModeler.restapi.mail.fromAddress": "example@example.com",
+	}
+	hubValues := map[string]string{
+		"camundaHub.enabled": "true",
+	}
+	templates := []string{
+		"templates/web-modeler/deployment-restapi.yaml",
+		"templates/web-modeler/deployment-websockets.yaml",
+		"templates/web-modeler/service-restapi.yaml",
+		"templates/web-modeler/service-websockets.yaml",
+		"templates/web-modeler/serviceaccount.yaml",
+	}
+
+	legacyOutput, err := s.renderWebModeler(legacyValues, templates)
+	s.Require().NoError(err)
+	hubOutput, err := s.renderWebModeler(hubValues, templates)
+	s.Require().NoError(err)
+
+	s.Require().Equal(objectNamesByKind(legacyOutput), objectNamesByKind(hubOutput))
+}
+
+func (s *CamundaHubShimTemplateTest) TestOIDCClientIDPreserved() {
+	for _, camundaHubEnabled := range []string{"false", "true"} {
+		s.Run("camundaHub.enabled="+camundaHubEnabled, func() {
+			values := map[string]string{
+				"camundaHub.enabled":                       camundaHubEnabled,
+				"webModeler.enabled":                       "true",
+				"global.identity.auth.enabled":             "true",
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+			}
+			config := s.renderRestAPIConfigMap(values)
+			s.Require().Equal("web-modeler", config.Camunda.Hub.OAuth2.ClientId)
+		})
+	}
+}
+
+func (s *CamundaHubShimTemplateTest) TestConsoleFeatureFlagTracksShimHelper() {
+	testCases := []struct {
+		name     string
+		values   map[string]string
+		expected string
+	}{
+		{
+			name: "LegacyConsoleEnabled",
+			values: map[string]string{
+				"camundaHub.enabled": "false",
+				"webModeler.enabled": "true",
+				"console.enabled":    "true",
+			},
+			expected: "true",
+		},
+		{
+			name: "CamundaHubEnabled",
+			values: map[string]string{
+				"camundaHub.enabled": "true",
+				"webModeler.enabled": "false",
+				"console.enabled":    "false",
+			},
+			expected: "true",
+		},
+		{
+			name: "ConsoleDisabled",
+			values: map[string]string{
+				"camundaHub.enabled": "false",
+				"webModeler.enabled": "true",
+				"console.enabled":    "false",
+			},
+			expected: "false",
+		},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			output, err := s.renderWebModelerRestAPI(tc.values)
+			s.Require().NoError(err)
+			deployment := s.unmarshalDeployment(output)
+			consoleEnv := envVarByName(deployment.Spec.Template.Spec.Containers[0].Env, "CAMUNDA_HUB_FEATURE_CONSOLEENABLED")
+			s.Require().NotNil(consoleEnv)
+			s.Require().Equal(tc.expected, consoleEnv.Value)
+		})
+	}
+}
+
+func (s *CamundaHubShimTemplateTest) TestRemovedConsoleEnvVarsAreNotRendered() {
+	values := map[string]string{
+		"camundaHub.enabled":                  "true",
+		"webModeler.enabled":                  "true",
+		"console.enabled":                     "true",
+		"webModeler.restapi.mail.fromAddress": "example@example.com",
+	}
+	output, err := s.renderWebModelerRestAPI(values)
+	s.Require().NoError(err)
+	s.Require().NotContains(output, "CAMUNDA_CONSOLE_")
+}
+
+func (s *CamundaHubShimTemplateTest) TestServiceAccountLabelsMergeAcrossCamundaHubAndLegacy() {
+	values := map[string]string{
+		"camundaHub.enabled":                          "true",
+		"webModeler.enabled":                          "true",
+		"webModeler.serviceAccount.labels.legacyonly": "legacyvalue",
+		"camundaHub.serviceAccount.labels.hubonly":    "hubvalue",
+	}
+	output, err := s.renderWebModeler(values, []string{"templates/web-modeler/serviceaccount.yaml"})
+	s.Require().NoError(err)
+
+	serviceAccount := s.unmarshalServiceAccount(output)
+	s.Require().Equal("hubvalue", serviceAccount.Labels["hubonly"])
+	s.Require().Equal("legacyvalue", serviceAccount.Labels["legacyonly"])
+}
+
+func (s *CamundaHubShimTemplateTest) TestFalsyServiceAccountEnabledOverrideSuppressesServiceAccount() {
+	values := map[string]string{
+		"camundaHub.enabled":                "true",
+		"webModeler.enabled":                "true",
+		"webModeler.serviceAccount.enabled": "true",
+		"camundaHub.serviceAccount.enabled": "false",
+	}
+	output, err := s.renderWebModeler(values, []string{"templates/web-modeler/serviceaccount.yaml"})
+	if err != nil {
+		s.Require().ErrorContains(err, "could not find template templates/web-modeler/serviceaccount.yaml in chart")
+		return
+	}
+	s.Require().Empty(strings.TrimSpace(output))
+}
+
+func (s *CamundaHubShimTemplateTest) TestCamundaHubFullnameOverrideAppliesToServiceNames() {
+	values := map[string]string{
+		"camundaHub.enabled":          "true",
+		"webModeler.enabled":          "true",
+		"camundaHub.fullnameOverride": "hubname",
+	}
+	output, err := s.renderWebModeler(values, []string{"templates/web-modeler/service-restapi.yaml"})
+	s.Require().NoError(err)
+
+	s.Require().Equal("hubname-restapi", s.unmarshalService(output).Name)
+}
+
+func (s *CamundaHubShimTemplateTest) TestPartialServiceOverrideKeepsLegacySiblings() {
+	values := map[string]string{
+		"camundaHub.enabled": "true",
+		"webModeler.enabled": "true",
+		"webModeler.restapi.service.annotations.legacyann": "keepme",
+		"camundaHub.restapi.service.port":                  "8888",
+	}
+	output, err := s.renderWebModeler(values, []string{"templates/web-modeler/service-restapi.yaml"})
+	s.Require().NoError(err)
+
+	service := s.unmarshalService(output)
+	s.Require().Equal("keepme", service.Annotations["legacyann"])
+	s.Require().Equal(int32(8888), service.Spec.Ports[0].Port)
+}
+
+func (s *CamundaHubShimTemplateTest) TestPartialExternalDatabaseOverrideKeepsLegacySiblings() {
+	values := map[string]string{
+		"camundaHub.enabled":                           "true",
+		"webModeler.enabled":                           "true",
+		"webModeler.restapi.externalDatabase.host":     "legacyhost",
+		"webModeler.restapi.externalDatabase.port":     "5433",
+		"webModeler.restapi.externalDatabase.database": "legacydb",
+		"camundaHub.restapi.externalDatabase.host":     "hubhost",
+	}
+	application := s.renderRestAPIConfigMap(values)
+	s.Require().Equal("jdbc:postgresql://hubhost:5433/legacydb", application.Spring.Datasource.Url)
+}
+
+func (s *CamundaHubShimTemplateTest) renderWebModelerRestAPI(values map[string]string) (string, error) {
+	return s.renderWebModeler(values, []string{"templates/web-modeler/deployment-restapi.yaml"})
+}
+
+func (s *CamundaHubShimTemplateTest) unmarshalServiceAccount(output string) corev1.ServiceAccount {
+	var serviceAccount corev1.ServiceAccount
+	helm.UnmarshalK8SYaml(s.T(), output, &serviceAccount)
+	return serviceAccount
+}
+
+func (s *CamundaHubShimTemplateTest) unmarshalService(output string) corev1.Service {
+	var service corev1.Service
+	helm.UnmarshalK8SYaml(s.T(), output, &service)
+	return service
+}
+
+func (s *CamundaHubShimTemplateTest) renderWebModeler(values map[string]string, templates []string) (string, error) {
+	for key, value := range map[string]string{
+		"orchestration.data.secondaryStorage.type": "elasticsearch",
+		"identity.enabled":                         "true",
+		"webModeler.restapi.mail.fromAddress":      "example@example.com",
+	} {
+		if _, ok := values[key]; !ok {
+			values[key] = value
+		}
+	}
+	options := &helm.Options{
+		SetValues:      values,
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	return helm.RenderTemplateE(s.T(), options, s.chartPath, s.release, templates)
+}
+
+func (s *CamundaHubShimTemplateTest) unmarshalDeployment(output string) appsv1.Deployment {
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+	return deployment
+}
+
+func (s *CamundaHubShimTemplateTest) renderRestAPIConfigMap(values map[string]string) WebModelerRestAPIApplicationYAML {
+	for key, value := range requiredValues {
+		if _, ok := values[key]; !ok {
+			values[key] = value
+		}
+	}
+	if _, ok := values["identity.enabled"]; !ok {
+		values["identity.enabled"] = "true"
+	}
+	options := &helm.Options{
+		SetValues:      values,
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, []string{"templates/web-modeler/configmap-restapi.yaml"})
+	var configmap corev1.ConfigMap
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	var application WebModelerRestAPIApplicationYAML
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &application)
+	s.Require().NoError(err)
+	return application
+}
+
+func envVarByName(envVars []corev1.EnvVar, name string) *corev1.EnvVar {
+	for i := range envVars {
+		if envVars[i].Name == name {
+			return &envVars[i]
+		}
+	}
+	return nil
+}
+
+func objectCounts(output string) map[string]int {
+	counts := map[string]int{}
+	for _, document := range strings.Split(output, "---") {
+		object := parseObject(document)
+		if object.Kind == "" || object.Metadata.Name == "" {
+			continue
+		}
+		counts[object.Kind+"/"+object.Metadata.Name]++
+	}
+	return counts
+}
+
+func objectNamesByKind(output string) map[string][]string {
+	names := map[string][]string{}
+	for _, document := range strings.Split(output, "---") {
+		object := parseObject(document)
+		if object.Kind == "" || object.Metadata.Name == "" {
+			continue
+		}
+		names[object.Kind] = append(names[object.Kind], object.Metadata.Name)
+	}
+	return names
+}
+
+func parseObject(document string) struct {
+	Kind     string `yaml:"kind"`
+	Metadata struct {
+		Name string `yaml:"name"`
+	} `yaml:"metadata"`
+} {
+	var object struct {
+		Kind     string `yaml:"kind"`
+		Metadata struct {
+			Name string `yaml:"name"`
+		} `yaml:"metadata"`
+	}
+	_ = yaml.Unmarshal([]byte(document), &object)
+	return object
+}

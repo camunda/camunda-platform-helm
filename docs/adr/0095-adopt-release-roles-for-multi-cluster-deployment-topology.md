@@ -134,8 +134,8 @@ The following constraints are normative:
     roles. Explicit cleanup remains an operator responsibility until managed deletion semantics are
     designed and approved separately.
 12. **Compatibility.** Existing singular `alwaysRegister`, component authentication, and manual Hub
-    inventory values remain supported. Any future removal MUST follow the chart deprecation policy and
-    occur no earlier than the next major chart version after a documented migration period.
+    inventory values remain supported. Any future removal MUST follow the
+    [deprecation policy](../policies/breaking-changes.md#deprecation-policy).
 13. **Packaging.** The public contract MUST describe deployment roles and connectivity rather than
     umbrella-chart internals so a future Hub/workload chart split can implement the same
     semantics without replacing the operator-facing model.
@@ -226,3 +226,4 @@ and is not defined by this ADR.
 
 - 2026-09-22 — [#7012](https://github.com/camunda/camunda-platform-helm/pull/7012) — Backport the `orchestration` role to charts 8.7, 8.8, and 8.9 (was ADR 0098).
 - 2026-10-06 — [#7476](https://github.com/camunda/camunda-platform-helm/pull/7476) — Rename "Hub plane" to "management plane" to match the docs glossary.
+- 2026-10-13 — [#7545](https://github.com/camunda/camunda-platform-helm/pull/7545) — Point the removal timing of existing values to the deprecation policy.

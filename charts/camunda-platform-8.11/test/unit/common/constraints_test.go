@@ -1,0 +1,1039 @@
+// Copyright 2022 Camunda Services GmbH
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package camunda
+
+import (
+	"camunda-platform/test/unit/testhelpers"
+	"os/exec"
+	"path/filepath"
+	"strconv"
+	"strings"
+	"testing"
+
+	"github.com/gruntwork-io/terratest/modules/random"
+	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
+)
+
+type ConstraintTemplateTest struct {
+	suite.Suite
+	chartPath string
+	release   string
+	namespace string
+	templates []string
+}
+
+func TestConstraintTemplate(t *testing.T) {
+	t.Parallel()
+
+	chartPath, err := filepath.Abs("../../../")
+	require.NoError(t, err)
+
+	suite.Run(t, &ConstraintTemplateTest{
+		chartPath: chartPath,
+		release:   "camunda-platform-test",
+		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
+		templates: []string{},
+	})
+}
+
+func (s *ConstraintTemplateTest) TestDifferentValuesInputs() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestExistingSecretConstraintDisplays",
+			Values: map[string]string{
+				"identity.enabled":                                              "true",
+				"global.identity.auth.enabled":                                  "true",
+				"global.security.authentication.method":                         "oidc",
+				"connectors.security.authentication.oidc.secret.existingSecret": "foo",
+				"global.identity.auth.issuerBackendUrl":                         "http://keycloak:80/auth/realms/camunda-platform",
+				"global.testDeprecationFlags.existingSecretsMustBeSet":          "error",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				// then
+				s.Require().ErrorContains(err, "the Camunda Helm chart will no longer automatically generate passwords for the Identity component")
+			},
+		}, {
+			Name: "TestExistingSecretConstraintDoesNotDisplayErrorForComponentWithExistingSecret",
+			Values: map[string]string{
+				"identity.enabled":                                                 "true",
+				"global.identity.auth.enabled":                                     "true",
+				"global.security.authentication.method":                            "oidc",
+				"orchestration.security.authentication.oidc.secret.existingSecret": "bar",
+				"global.identity.auth.issuerBackendUrl":                            "http://keycloak:80/auth/realms/camunda-platform",
+				"global.testDeprecationFlags.existingSecretsMustBeSet":             "error",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				// then
+				requiredComponentsNotSet := strings.Split(err.Error(), "The following values inside your values.yaml need to be set but were not")[1]
+				s.Require().NotContains(requiredComponentsNotSet, "orchestration.security.authentication.oidc.secret.existingSecret")
+			},
+		}, {
+			Name: "TestExistingSecretConstraintInWarningModeDoesNotPreventInstall",
+			Values: map[string]string{
+				"identity.enabled":                                                 "true",
+				"global.security.authentication.method":                            "oidc",
+				"connectors.security.authentication.oidc.secret.existingSecret":    "foo",
+				"orchestration.security.authentication.oidc.secret.existingSecret": "bar",
+				"global.identity.auth.issuerBackendUrl":                            "http://keycloak:80/auth/realms/camunda-platform",
+				"global.testDeprecationFlags.existingSecretsMustBeSet":             "warning",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				// then
+				s.Require().Nil(err)
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *ConstraintTemplateTest) TestZoneLabelConstraint() {
+	zonedValues := func() map[string]string {
+		return map[string]string{
+			"orchestration.partitioning.scheme":                    "zone-aware",
+			"orchestration.partitioning.zone":                      "zone-a",
+			"orchestration.partitioning.zones[0].name":             "zone-a",
+			"orchestration.partitioning.zones[0].numberOfBrokers":  "3",
+			"orchestration.partitioning.zones[0].numberOfReplicas": "3",
+			"orchestration.partitioning.zones[0].priority":         "100",
+		}
+	}
+
+	globalLabels := zonedValues()
+	globalLabels["global.labels.camunda\\.io/zone"] = "wrong"
+	globalCommonLabels := zonedValues()
+	globalCommonLabels["global.commonLabels.camunda\\.io/zone"] = "wrong"
+	podLabels := zonedValues()
+	podLabels["orchestration.podLabels.camunda\\.io/zone"] = "wrong"
+
+	testCases := []testhelpers.TestCase{
+		{
+			Name:   "TestLegacyZoneLabelCanRemainInGlobalLabelsForZonedMode",
+			Values: globalLabels,
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+			},
+		},
+		{
+			Name:   "TestZoneLabelCannotBeSetInGlobalCommonLabelsForZonedMode",
+			Values: globalCommonLabels,
+			Expected: map[string]string{
+				"ERROR": "camunda.io/zone is managed by the chart with the zone-aware scheme",
+			},
+		},
+		{
+			Name:   "TestZoneLabelCannotBeSetInOrchestrationPodLabelsForZonedMode",
+			Values: podLabels,
+			Expected: map[string]string{
+				"ERROR": "camunda.io/zone is managed by the chart with the zone-aware scheme",
+			},
+		},
+		{
+			Name:        "TestZoneLabelCannotBeSmuggledThroughATemplatedCommonLabelKey",
+			ValuesFiles: []string{filepath.Join(s.chartPath, "test/unit/common/testdata/values-zone-label-templated-key.yaml")},
+			Expected: map[string]string{
+				"ERROR": "camunda.io/zone is managed by the chart with the zone-aware scheme",
+			},
+		},
+		{
+			Name: "TestZoneLabelCanBeSetInNumberedMode",
+			Values: map[string]string{
+				"global.labels.camunda\\.io/zone": "user-managed",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *ConstraintTemplateTest) TestBrokerGenerationLabelConstraint() {
+	testCases := make([]testhelpers.TestCase, 0, 3)
+	for _, valuesKey := range []string{"global.labels", "global.commonLabels", "orchestration.podLabels"} {
+		testCases = append(testCases, testhelpers.TestCase{
+			Name: "TestBrokerGenerationLabelCannotBeSetIn" + strings.ReplaceAll(valuesKey, ".", "_"),
+			Values: map[string]string{
+				valuesKey + ".camunda\\.io/broker-generation": "user-managed",
+			},
+			Expected: map[string]string{
+				"ERROR": "camunda.io/broker-generation is managed by the chart",
+			},
+		})
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *ConstraintTemplateTest) TestSecondaryStorageConstraint() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestSecondaryStorageConstraintFailsWhenOrchestrationEnabledAndNoStorageConfigured",
+			Values: map[string]string{
+				"orchestration.enabled":                    "true",
+				"orchestration.data.secondaryStorage.type": "",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().ErrorContains(err, "Please configure an expected secondary storage type under `orchestration.data.secondaryStorage.type`")
+			},
+		},
+		{
+			Name: "TestSecondaryStorageConstraintDoesNotFireWhenOrchestrationDisabled",
+			Values: map[string]string{
+				"orchestration.enabled":                    "false",
+				"orchestration.data.secondaryStorage.type": "",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+		{
+			Name: "TestSecondaryStorageConstraintDoesNotFireForElasticsearch",
+			Values: map[string]string{
+				"orchestration.enabled":                    "true",
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+		{
+			Name: "TestSecondaryStorageConstraintDoesNotFireForOpenSearch",
+			Values: map[string]string{
+				"orchestration.enabled":                    "true",
+				"orchestration.data.secondaryStorage.type": "opensearch",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+		{
+			Name: "TestSecondaryStorageConstraintDoesNotFireForRDBMS",
+			Values: map[string]string{
+				"orchestration.enabled":                    "true",
+				"orchestration.data.secondaryStorage.type": "rdbms",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *ConstraintTemplateTest) TestPusherSecretConstraint() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestPusherSecretConstraintErrorWhenNotSet",
+			Values: map[string]string{
+				"identity.enabled":                                     "true",
+				"webModeler.enabled":                                   "true",
+				"webModeler.restapi.mail.fromAddress":                  "example@example.com",
+				"global.testDeprecationFlags.existingSecretsMustBeSet": "error",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Error(err)
+				s.Require().Contains(err.Error(), "webModeler.restapi.pusher.secret.existingSecret")
+				s.Require().Contains(err.Error(), "webModeler.restapi.pusher.client.secret.existingSecret")
+			},
+		},
+		{
+			Name: "TestPusherSecretConstraintDoesNotListSetSecrets",
+			Values: map[string]string{
+				"identity.enabled":                                          "true",
+				"webModeler.enabled":                                        "true",
+				"webModeler.restapi.mail.fromAddress":                       "example@example.com",
+				"webModeler.restapi.pusher.secret.existingSecret":           "my-pusher-secret",
+				"webModeler.restapi.pusher.secret.existingSecretKey":        "secret-key",
+				"webModeler.restapi.pusher.client.secret.existingSecret":    "my-pusher-client-secret",
+				"webModeler.restapi.pusher.client.secret.existingSecretKey": "client-key",
+				"global.testDeprecationFlags.existingSecretsMustBeSet":      "error",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				if err != nil {
+					s.Require().NotContains(err.Error(), "webModeler.restapi.pusher.secret.existingSecret")
+					s.Require().NotContains(err.Error(), "webModeler.restapi.pusher.client.secret.existingSecret")
+				}
+			},
+		},
+		{
+			Name: "TestPusherSecretConstraintNotCheckedWhenWebModelerDisabled",
+			Values: map[string]string{
+				"webModeler.enabled": "false",
+				"global.testDeprecationFlags.existingSecretsMustBeSet": "error",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				if err != nil {
+					s.Require().NotContains(err.Error(), "webModeler.restapi.pusher")
+				}
+			},
+		},
+		{
+			Name: "TestPusherSecretConstraintErrorWhenNotSetViaCamundaHubEnabled",
+			Values: map[string]string{
+				"identity.enabled":                                     "true",
+				"camundaHub.enabled":                                   "true",
+				"webModeler.restapi.mail.fromAddress":                  "example@example.com",
+				"global.testDeprecationFlags.existingSecretsMustBeSet": "error",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Error(err)
+				s.Require().Contains(err.Error(), "webModeler.restapi.pusher.secret.existingSecret")
+				s.Require().Contains(err.Error(), "webModeler.restapi.pusher.client.secret.existingSecret")
+			},
+		},
+		{
+			Name: "TestPusherSecretConstraintDoesNotListSecretsSetUnderCamundaHubKeys",
+			Values: map[string]string{
+				"identity.enabled":                                          "true",
+				"camundaHub.enabled":                                        "true",
+				"webModeler.restapi.mail.fromAddress":                       "example@example.com",
+				"camundaHub.restapi.pusher.secret.existingSecret":           "my-pusher-secret",
+				"camundaHub.restapi.pusher.secret.existingSecretKey":        "secret-key",
+				"camundaHub.restapi.pusher.client.secret.existingSecret":    "my-pusher-client-secret",
+				"camundaHub.restapi.pusher.client.secret.existingSecretKey": "client-key",
+				"global.testDeprecationFlags.existingSecretsMustBeSet":      "error",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				if err != nil {
+					s.Require().NotContains(err.Error(), "webModeler.restapi.pusher.secret.existingSecret")
+					s.Require().NotContains(err.Error(), "webModeler.restapi.pusher.client.secret.existingSecret")
+				}
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+// helmMajorVersion returns the major version of the helm binary on PATH.
+func helmMajorVersion() int {
+	out, err := exec.Command("helm", "version", "--template={{.Version}}").Output()
+	if err != nil {
+		return 0
+	}
+	vStr := strings.TrimPrefix(strings.TrimSpace(string(out)), "v")
+	parts := strings.SplitN(vStr, ".", 2)
+	if len(parts) == 0 {
+		return 0
+	}
+	major, _ := strconv.Atoi(parts[0])
+	return major
+}
+
+func (s *ConstraintTemplateTest) TestHelmVersionConstraint() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name:   "TestHelmVersionWarning",
+			Values: map[string]string{},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				if helmMajorVersion() >= 4 {
+					s.Require().NotContains(output, "Helm v3 receives security fixes")
+				} else {
+					s.Require().Contains(output, "Helm v3 receives security fixes")
+				}
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+// TestLegacyJksTruststoreFieldsRenderWithoutCrash asserts that setting any
+// of the legacy JKS truststore fields targeted by the chart-15.x
+// deprecation does not break template rendering. The deprecation warning
+// itself is emitted via NOTES.txt at install time and is not surfaced by
+// `helm template` (the framework these tests use), so warning-content
+// assertions live only in manual `helm install --dry-run` / production
+// install verification — same constraint that applies to the existing
+// datastore TLS secret and Bitnami subchart deprecation
+// warnings.
+func (s *ConstraintTemplateTest) TestLegacyJksTruststoreFieldsRenderWithoutCrash() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestSecondaryStorageElasticsearchTlsSecretRendersOk",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":                                    "elasticsearch",
+				"orchestration.data.secondaryStorage.elasticsearch.tls.secret.existingSecret": "my-legacy-jks",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+		{
+			Name: "TestSecondaryStorageOpensearchTlsSecretRendersOk",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":                                 "opensearch",
+				"orchestration.data.secondaryStorage.opensearch.tls.secret.existingSecret": "my-legacy-jks",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+		{
+			Name: "TestOptimizeElasticsearchTlsSecretRendersOk",
+			Values: map[string]string{
+				"optimize.database.elasticsearch.tls.secret.existingSecret": "my-legacy-jks",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+		{
+			Name: "TestOptimizeOpensearchTlsSecretRendersOk",
+			Values: map[string]string{
+				"optimize.database.opensearch.tls.secret.existingSecret": "my-legacy-jks",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+		{
+			Name: "TestCaBundleAndLegacyJksCoexistRenderOk_Elasticsearch",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":                                    "elasticsearch",
+				"orchestration.data.secondaryStorage.elasticsearch.tls.secret.existingSecret": "my-legacy-jks",
+				"global.tls.caBundle.secret.existingSecret":                                   "camunda-ca-bundle",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+		{
+			Name: "TestCaBundleAndLegacyJksCoexistRenderOk_Opensearch",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":                                 "opensearch",
+				"orchestration.data.secondaryStorage.opensearch.tls.secret.existingSecret": "my-legacy-jks",
+				"global.tls.caBundle.secret.existingSecret":                                "camunda-ca-bundle",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *ConstraintTemplateTest) TestGatewayConstraints() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestGatewayNamespaceWithCreateGatewayResourceFails",
+			Values: map[string]string{
+				"global.gateway.enabled":               "true",
+				"global.gateway.namespace":             "shared-infra",
+				"global.gateway.createGatewayResource": "true",
+				"global.host":                          "camunda.example.com",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().ErrorContains(err, "global.gateway.namespace and global.gateway.createGatewayResource=true cannot be set together")
+			},
+		},
+		{
+			Name: "TestGatewayNamespaceWithoutCreateGatewayResourceSucceeds",
+			Values: map[string]string{
+				"global.gateway.enabled":               "true",
+				"global.gateway.namespace":             "shared-infra",
+				"global.gateway.createGatewayResource": "false",
+				"global.host":                          "camunda.example.com",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *ConstraintTemplateTest) TestBitnamiSubchartDeprecationWarnings() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name:   "TestBitnamiDeprecationWarningDoesNotPreventInstallWithElasticsearch",
+			Values: map[string]string{},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+		{
+			Name: "TestRenderSucceedsWithAllBitnamiSubchartsDisabled",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "rdbms",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+// TestCamundaHubConsolidationDeprecationWarningsRenderOk exercises the
+// consolidation deprecation-warning branches that fire when the legacy
+// console.enabled / webModeler.enabled keys are set. Both branches must render
+// without failing; the DEPRECATION text is emitted via NOTES.txt and is not
+// surfaced by `helm template`, so content checks live in manual dry-run
+// verification (same constraint as the other deprecation warnings above).
+func (s *ConstraintTemplateTest) TestCamundaHubConsolidationDeprecationWarningsRenderOk() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestLegacyConsoleEnabledRendersOk",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"identity.enabled":                         "true",
+				"console.enabled":                          "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+		{
+			Name: "TestLegacyWebModelerEnabledRendersOk",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"identity.enabled":                         "true",
+				"webModeler.enabled":                       "true",
+				"webModeler.restapi.mail.fromAddress":      "noreply@example.com",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *ConstraintTemplateTest) TestWebModelerExternalDatabaseUserRemovedGate() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestRemovedKeyFailsViaCamundaHubEnabled",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"identity.enabled":                         "true",
+				"camundaHub.enabled":                       "true",
+				"webModeler.restapi.mail.fromAddress":      "noreply@example.com",
+				"webModeler.restapi.externalDatabase.user": "modeler-user",
+			},
+			Expected: map[string]string{
+				"ERROR": `The Helm values file key "webModeler.restapi.externalDatabase.user" has been removed.`,
+			},
+		},
+		{
+			Name: "TestRemovedKeyFailsViaLegacyWebModelerEnabled",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"identity.enabled":                         "true",
+				"webModeler.enabled":                       "true",
+				"webModeler.restapi.mail.fromAddress":      "noreply@example.com",
+				"webModeler.restapi.externalDatabase.user": "modeler-user",
+			},
+			Expected: map[string]string{
+				"ERROR": `The Helm values file key "webModeler.restapi.externalDatabase.user" has been removed.`,
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *ConstraintTemplateTest) TestGlobalDatastoreTreesRemovedGate() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestGlobalElasticsearchTreeFails",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"global.elasticsearch.enabled":             "false",
+			},
+			Expected: map[string]string{
+				"ERROR": `The Helm values file key "global.elasticsearch" has been removed. Configure this via "optimize.database.elasticsearch.* (enabled, url, auth, tls.secret, prefix) for Optimize and orchestration.data.secondaryStorage.elasticsearch.* (or .type) for the Orchestration Cluster; clusterName has no replacement (app default is unchanged, set camunda.data.secondary-storage.elasticsearch.cluster-name via orchestration.extraConfiguration if needed); the JKS truststore password injection is removed, use global.tls.caBundle.secret (PEM) or the component's javaOpts" instead.`,
+			},
+		},
+		{
+			Name: "TestGlobalOpenSearchTreeFails",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":           "opensearch",
+				"orchestration.data.secondaryStorage.opensearch.url": "https://os.example.com:443",
+				"global.opensearch.url.host":                         "os.example.com",
+			},
+			Expected: map[string]string{
+				"ERROR": `The Helm values file key "global.opensearch" has been removed. Configure this via "optimize.database.opensearch.* (enabled, url, auth, tls.secret, prefix, aws.enabled) for Optimize and orchestration.data.secondaryStorage.opensearch.* (or .type) for the Orchestration Cluster; clusterName has no replacement (app default is unchanged, set camunda.data.secondary-storage.opensearch.cluster-name via orchestration.extraConfiguration if needed); the JKS truststore password injection is removed, use global.tls.caBundle.secret (PEM) or the component's javaOpts" instead.`,
+			},
+		},
+		{
+			Name: "TestComponentScopedDatastoreKeysRenderOk",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":                        "elasticsearch",
+				"orchestration.data.secondaryStorage.elasticsearch.url":           "http://es.example.com:9200",
+				"orchestration.data.secondaryStorage.elasticsearch.auth.username": "esuser",
+				"identity.enabled":                         "true",
+				"optimize.enabled":                         "true",
+				"optimize.database.elasticsearch.enabled":  "true",
+				"optimize.database.elasticsearch.url.host": "es.example.com",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *ConstraintTemplateTest) TestCamundaHubWebModelerKeyRenamedGuards() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestDeploymentStrategyRenamedKeyFails",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":             "elasticsearch",
+				"identity.enabled":                                     "true",
+				"camundaHub.enabled":                                   "true",
+				"camundaHub.restapi.mail.fromAddress":                  "noreply@example.com",
+				"camundaHub.webModeler.persistence.deploymentStrategy": "Recreate",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().ErrorContains(err, "camundaHub.webModeler")
+				s.Require().ErrorContains(err, "changed from")
+			},
+		},
+		{
+			Name: "TestContextPathRenamedKeyFails",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"identity.enabled":                         "true",
+				"camundaHub.enabled":                       "true",
+				"camundaHub.restapi.mail.fromAddress":      "noreply@example.com",
+				"camundaHub.webModeler.contextPath":        "/modeler",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().ErrorContains(err, "camundaHub.webModeler")
+				s.Require().ErrorContains(err, "changed from")
+			},
+		},
+		{
+			Name: "TestSecurityAuthenticationMethodRenamedKeyFails",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":             "elasticsearch",
+				"identity.enabled":                                     "true",
+				"camundaHub.enabled":                                   "true",
+				"camundaHub.restapi.mail.fromAddress":                  "noreply@example.com",
+				"camundaHub.webModeler.security.authentication.method": "oidc",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().ErrorContains(err, "camundaHub.webModeler")
+				s.Require().ErrorContains(err, "changed from")
+			},
+		},
+		{
+			Name: "TestMailFromAddressRenamedKeyFails",
+			ValuesFiles: []string{
+				filepath.Join(s.chartPath, "test/unit/common/testdata/values-camunda-hub-mail-extra-configuration.yaml"),
+			},
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":       "elasticsearch",
+				"identity.enabled":                               "true",
+				"camundaHub.enabled":                             "true",
+				"camundaHub.webModeler.restapi.mail.fromAddress": "noreply@example.com",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().ErrorContains(err, "camundaHub.webModeler")
+				s.Require().ErrorContains(err, "changed from")
+			},
+		},
+		{
+			Name: "TestConsoleSubtreeRenamedKeyFails",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"identity.enabled":                         "true",
+				"camundaHub.enabled":                       "true",
+				"camundaHub.restapi.mail.fromAddress":      "noreply@example.com",
+				"camundaHub.console.contextPath":           "/console",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().ErrorContains(err, "camundaHub.console")
+				s.Require().ErrorContains(err, "changed from")
+			},
+		},
+		{
+			Name: "TestRedirectUrlRenamedKeyFails",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":               "elasticsearch",
+				"identity.enabled":                                       "true",
+				"camundaHub.enabled":                                     "true",
+				"camundaHub.restapi.mail.fromAddress":                    "noreply@example.com",
+				"global.identity.auth.camundaHub.webModeler.redirectUrl": "https://modeler.example.com/login-callback",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().ErrorContains(err, "global.identity.auth.camundaHub.webModeler")
+				s.Require().ErrorContains(err, "changed from")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *ConstraintTemplateTest) TestCamundaHubPingClientSecretConstraint() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestPingEndpointRequiresOidcOrExplicitCredentials",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"orchestration.hub.ping.endpoint":          "https://hub/api/v1/clusters",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().ErrorContains(err, "requires orchestration.security.authentication.method=oidc")
+			},
+		},
+		{
+			Name: "TestPingEndpointWithExplicitCredentialsDoesNotRequireOidc",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":                            "elasticsearch",
+				"orchestration.hub.ping.endpoint":                                     "https://hub/api/v1/clusters",
+				"orchestration.hub.ping.credentials.clientId":                         "ping-client",
+				"orchestration.hub.ping.credentials.tokenEndpoint":                    "https://kc/token",
+				"orchestration.hub.ping.credentials.clientSecret.secret.inlineSecret": "secret",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+		{
+			Name: "TestPingCustomClientIdRequiresCustomSecret",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":                            "elasticsearch",
+				"orchestration.security.authentication.method":                        "oidc",
+				"orchestration.security.authentication.oidc.secret.existingSecret":    "orchestration-client-secret",
+				"orchestration.security.authentication.oidc.secret.existingSecretKey": "secret",
+				"orchestration.hub.ping.endpoint":                                     "https://hub/api/v1/clusters",
+				"orchestration.hub.ping.credentials.clientId":                         "ping-client",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().ErrorContains(err, "clientId requires an explicit")
+			},
+		},
+		{
+			Name: "TestPingTokenRequestParametersRejectReservedKeys",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":                                "elasticsearch",
+				"orchestration.hub.ping.credentials.tokenRequestParameters.client_secret": "override",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().ErrorContains(err, "tokenRequestParameters.client_secret is reserved")
+			},
+		},
+		{
+			Name: "TestPingExternalOidcClaimMappingRequiresBothValues",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":                       "elasticsearch",
+				"orchestration.hub.ping.endpoint":                                "https://hub/api/v1/clusters",
+				"orchestration.security.authentication.method":                   "oidc",
+				"orchestration.security.authentication.oidc.secret.inlineSecret": "secret",
+				"global.identity.auth.orchestration.hubPingClaimName":            "azp",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().ErrorContains(err, "hubPingClaimName and global.identity.auth.orchestration.hubPingClaimValue must be set together")
+			},
+		},
+		{
+			Name: "TestCentralExternalOidcAuthorizationRequiresClaimMapping",
+			Values: map[string]string{
+				"orchestration.enabled":                                          "false",
+				"orchestration.security.authentication.oidc.type":                "MICROSOFT",
+				"global.identity.auth.orchestration.hubPingAuthorizationEnabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().ErrorContains(err, "with a non-Keycloak OIDC provider requires")
+			},
+		},
+		{
+			Name: "TestPingClientSecretExistingSecretRequiresKey",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":                              "elasticsearch",
+				"orchestration.security.authentication.method":                          "oidc",
+				"orchestration.security.authentication.oidc.secret.existingSecret":      "orchestration-client-secret",
+				"orchestration.security.authentication.oidc.secret.existingSecretKey":   "secret",
+				"orchestration.hub.ping.endpoint":                                       "https://hub/api/v1/clusters",
+				"orchestration.hub.ping.credentials.clientSecret.secret.existingSecret": "s",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().ErrorContains(err, "must be set together")
+			},
+		},
+		{
+			Name: "TestPingClientSecretExistingSecretWithoutEndpointDoesNotFail",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":                              "elasticsearch",
+				"orchestration.hub.ping.credentials.clientSecret.secret.existingSecret": "s",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+		{
+			Name: "TestPingEndpointWithOidcRequiresUsableClientSecret",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":     "elasticsearch",
+				"orchestration.security.authentication.method": "oidc",
+				"orchestration.hub.ping.endpoint":              "https://hub/api/v1/clusters",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().ErrorContains(err, "requires a usable client secret")
+			},
+		},
+		{
+			Name: "TestPingEndpointWithOidcSecretRenders",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":                            "elasticsearch",
+				"orchestration.security.authentication.method":                        "oidc",
+				"orchestration.security.authentication.oidc.secret.existingSecret":    "orchestration-client-secret",
+				"orchestration.security.authentication.oidc.secret.existingSecretKey": "secret",
+				"orchestration.hub.ping.endpoint":                                     "https://hub/api/v1/clusters",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+		{
+			Name: "TestPingEndpointWithNonKeycloakOidcRequiresTokenEndpoint",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":                            "elasticsearch",
+				"orchestration.security.authentication.method":                        "oidc",
+				"orchestration.security.authentication.oidc.secret.existingSecret":    "orchestration-client-secret",
+				"orchestration.security.authentication.oidc.secret.existingSecretKey": "secret",
+				"global.identity.auth.type":                                           "MICROSOFT",
+				"orchestration.hub.ping.endpoint":                                     "https://hub/api/v1/clusters",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().ErrorContains(err, "could not resolve a token endpoint")
+			},
+		},
+		{
+			Name: "TestPingEndpointWithComponentNonKeycloakOidcRequiresTokenEndpoint",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":                            "elasticsearch",
+				"orchestration.security.authentication.method":                        "oidc",
+				"orchestration.security.authentication.oidc.type":                     "MICROSOFT",
+				"orchestration.security.authentication.oidc.issuer":                   "https://login.microsoftonline.com/tenant/v2.0",
+				"orchestration.security.authentication.oidc.secret.existingSecret":    "orchestration-client-secret",
+				"orchestration.security.authentication.oidc.secret.existingSecretKey": "secret",
+				"orchestration.hub.ping.endpoint":                                     "https://hub/api/v1/clusters",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().ErrorContains(err, "could not resolve a token endpoint")
+			},
+		},
+		{
+			Name: "TestPingEndpointWithNonKeycloakOidcAndExplicitTokenEndpointRenders",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":                            "elasticsearch",
+				"orchestration.security.authentication.method":                        "oidc",
+				"orchestration.security.authentication.oidc.secret.existingSecret":    "orchestration-client-secret",
+				"orchestration.security.authentication.oidc.secret.existingSecretKey": "secret",
+				"global.identity.auth.type":                                           "MICROSOFT",
+				"orchestration.hub.ping.endpoint":                                     "https://hub/api/v1/clusters",
+				"orchestration.hub.ping.credentials.tokenEndpoint":                    "https://idp.example/token",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+		{
+			Name: "TestPingEndpointWithExplicitSecretDoesNotRequireOidcSecret",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":                            "elasticsearch",
+				"orchestration.security.authentication.method":                        "oidc",
+				"orchestration.hub.ping.endpoint":                                     "https://hub/api/v1/clusters",
+				"orchestration.hub.ping.credentials.clientSecret.secret.inlineSecret": "secret",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+		{
+			Name: "TestPingEndpointWithOrchestrationDisabledDoesNotFail",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"orchestration.enabled":                    "false",
+				"orchestration.hub.ping.endpoint":          "https://hub/api/v1/clusters",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *ConstraintTemplateTest) TestCaBundleConsoleCertKeyFilenameWarningRendersOk() {
+	testCases := []testhelpers.TestCase{
+		{
+			// Exercises the constraints warning that fires when caBundle is set
+			// AND console.tls.certKeyFilename is configured (the latter no longer
+			// contributes trust). Asserts the warning path renders without crashing.
+			Name: "TestCaBundleWithConsoleCertKeyFilenameRendersOk",
+			Values: map[string]string{
+				"console.enabled":                           "true",
+				"identity.enabled":                          "true",
+				"orchestration.data.secondaryStorage.type":  "elasticsearch",
+				"global.tls.caBundle.secret.existingSecret": "camunda-ca-bundle",
+				"console.tls.certKeyFilename":               "tls.crt",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+// TestDeprecatedKeyHelperRendersWithoutCrash exercises the
+// camundaPlatform.keyDeprecated helper once: a deprecated app-config-proxy key
+// (epic #6051) set to a non-default value must render without failing. The
+// DEPRECATION warning itself is emitted via NOTES.txt and is not surfaced by
+// `helm template` (the framework these tests use), so warning-content checks
+// live in manual `helm install --dry-run` verification — same constraint as
+// the existing JKS truststore and Bitnami subchart deprecation warnings.
+func (s *ConstraintTemplateTest) TestDeprecatedKeyHelperRendersWithoutCrash() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestDeprecatedKeySetRenderOk",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"orchestration.logLevel":                   "debug",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+// TestAuthConsoleDeprecationWarningRendersWithoutCrash exercises the bespoke
+// non-fatal warning for "global.identity.auth.console.*" (Console consolidated
+// into Camunda Hub; the key has no replacement home). Unlike the app-config-proxy
+// keyDeprecated helper, this warning's text is asserted directly here because it
+// is also emitted into the "<release>-warnings" ConfigMap (configmap-warnings.yaml),
+// which IS surfaced by `helm template` (the framework these tests use).
+func (s *ConstraintTemplateTest) TestAuthConsoleDeprecationWarningRendersWithoutCrash() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestAuthConsoleKeySetRenderOk",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"global.identity.auth.console.clientId":    "foo",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+				s.Require().Contains(output, "global.identity.auth.console")
+				s.Require().Contains(output, "no longer used in Camunda 8.10")
+				s.Require().Contains(output, "no replacement")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *ConstraintTemplateTest) TestManagementIdentityExternalServiceUrl() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "WebModelerWithExternalManagementIdentityRenders",
+			Values: map[string]string{
+				"orchestration.enabled":               "false",
+				"webModeler.enabled":                  "true",
+				"webModeler.restapi.mail.fromAddress": "test@example.com",
+				"identity.enabled":                    "false",
+				"global.identity.service.url":         "http://identity.other-ns.svc:8080",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+			},
+		},
+		{
+			Name: "WebModelerWithoutManagementIdentityFails",
+			Values: map[string]string{
+				"orchestration.enabled":               "false",
+				"webModeler.enabled":                  "true",
+				"webModeler.restapi.mail.fromAddress": "test@example.com",
+				"identity.enabled":                    "false",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().ErrorContains(err, "Web Modeler is enabled but management Identity is not configured")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *ConstraintTemplateTest) TestPvcAccessModesReadWriteOncePodGuard() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "ReadWriteOncePodAloneRenders",
+			Values: map[string]string{
+				"orchestration.pvcAccessModes[0]": "ReadWriteOncePod",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+			},
+		},
+		{
+			Name: "ReadWriteOncePodWithAnotherAccessModeFails",
+			Values: map[string]string{
+				"orchestration.pvcAccessModes[0]": "ReadWriteOncePod",
+				"orchestration.pvcAccessModes[1]": "ReadWriteOnce",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().ErrorContains(err, "Kubernetes requires ReadWriteOncePod to be the only access mode in the list")
+			},
+		},
+		{
+			// pvcAccessModes is inert unless persistenceType renders a PVC, so an otherwise
+			// invalid combination must not block the install.
+			Name: "InvalidCombinationDoesNotFailWhenNoPvcIsRendered",
+			Values: map[string]string{
+				"orchestration.persistenceType":   "memory",
+				"orchestration.pvcAccessModes[0]": "ReadWriteOncePod",
+				"orchestration.pvcAccessModes[1]": "ReadWriteOnce",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+			},
+		},
+		{
+			Name: "InvalidCombinationDoesNotFailWhenOrchestrationDisabled",
+			Values: map[string]string{
+				"orchestration.enabled":           "false",
+				"orchestration.pvcAccessModes[0]": "ReadWriteOncePod",
+				"orchestration.pvcAccessModes[1]": "ReadWriteOnce",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}

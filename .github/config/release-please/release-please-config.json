@@ -4,6 +4,13 @@
   "bump-minor-pre-major": false,
   "draft": false,
   "packages": {
+    "charts/camunda-platform-8.11": {
+      "pull-request-title-pattern": "chore(release): Camunda Platform Helm Chart ${version} - Camunda 8.11",
+      "release-type": "helm",
+      "extra-label": "version/alpha,version/8.11,automation/release-please,release/pr,kind/chore,chart/camunda-platform",
+      "component": "camunda-platform-8.11",
+      "include-v-in-tag": false
+    },
     "charts/camunda-platform-8.10": {
       "pull-request-title-pattern": "chore(release): Camunda Platform Helm Chart ${version} - Camunda 8.10",
       "release-type": "helm",
@@ -38,42 +45,6 @@
       "extra-label": "version/8.6,automation/release-please,release/pr,kind/chore,chart/camunda-platform",
       "component": "camunda-platform-8.6",
       "include-v-in-tag": false
-    },
-    "charts/camunda-platform-8.5": {
-      "pull-request-title-pattern": "chore(release): Camunda Platform Helm Chart ${version} - Camunda 8.5",
-      "release-type": "helm",
-      "extra-label": "version/8.5,automation/release-please,release/pr,kind/chore,chart/camunda-platform",
-      "component": "camunda-platform-8.5",
-      "include-v-in-tag": false
-    },
-    "charts/camunda-platform-8.4": {
-      "pull-request-title-pattern": "chore(release): Camunda Platform Helm Chart ${version} - Camunda 8.4",
-      "release-type": "helm",
-      "extra-label": "version/8.4,automation/release-please,release/pr,kind/chore,chart/camunda-platform",
-      "component": "camunda-platform-8.4",
-      "include-v-in-tag": false,
-      "extra-files": [
-        {
-          "type": "yaml",
-          "path": "charts/identity/Chart.yaml",
-          "jsonpath": "$.version"
-        }
-      ]
-    },
-    "charts/camunda-platform-8.3": {
-      "pull-request-title-pattern": "chore(release): Camunda Platform Helm Chart ${version} - Camunda 8.3",
-      "release-type": "helm",
-      "versioning": "always-bump-patch",
-      "extra-label": "version/8.3,automation/release-please,release/pr,kind/chore,chart/camunda-platform",
-      "component": "camunda-platform-8.3",
-      "include-v-in-tag": false,
-      "extra-files": [
-        {
-          "type": "yaml",
-          "path": "charts/identity/Chart.yaml",
-          "jsonpath": "$.version"
-        }
-      ]
     }
   },
   "changelog-sections": [

@@ -1,0 +1,16 @@
+{{- if eq (include "camundaHub.webModelerEnabled" .) "true" -}}
+{{- $hub := include "camundaHub.values" . | fromYaml -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "webModeler.fullname" . }}-configuration
+  labels: {{- include "webModeler.labels" . | nindent 4 }}
+  annotations: {{- toYaml .Values.global.annotations | nindent 4 }}
+data:
+  pusher-app-id: web-modeler
+  {{- if $hub.configuration }}
+  application.yaml: |
+    {{ $hub.configuration | indent 4 | trim }}
+  {{- end }}
+  {{- include "camundaPlatform.renderExtraConfiguration" (dict "extraConfig" $hub.extraConfiguration) }}
+{{- end }}

@@ -9,6 +9,7 @@ Standard support until 2028-04-11
 
 | Helm Chart | Camunda | Released | Helm CLI | Helm Values | Release Notes |
 |---|---|---|---|---|---|
+| [15.1.1](#helm-chart-1511) | 8.10.4 | 2026-10-14 | [3.22.0](https://github.com/helm/helm/releases/tag/v3.22.0), [4.3.0](https://github.com/helm/helm/releases/tag/v4.3.0) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/15.1.1?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.10-15.1.1) |
 | [15.1.0](#helm-chart-1510) | 8.10.3 | 2026-10-12 | [3.22.0](https://github.com/helm/helm/releases/tag/v3.22.0), [4.3.0](https://github.com/helm/helm/releases/tag/v4.3.0) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/15.1.0?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.10-15.1.0) |
 | [15.0.0](#helm-chart-1500) | 8.10.2 | 2026-10-08 | [3.22.0](https://github.com/helm/helm/releases/tag/v3.22.0), [4.3.0](https://github.com/helm/helm/releases/tag/v4.3.0) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/15.0.0?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.10-15.0.0) |
 | [15.0.0-alpha5](#helm-chart-1500-alpha5) | 8.10.0-alpha5 | 2026-09-04 | [4.2.4](https://github.com/helm/helm/releases/tag/v4.2.4) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/15.0.0-alpha5?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.10-15.0.0-alpha5) |
@@ -21,6 +22,24 @@ _Enterprise images replace the matching Non-Camunda (Bitnami OSS) images when us
 
 
 ---
+
+## Helm chart 15.1.1
+
+Supported versions:
+
+- Camunda applications: [8.10](https://github.com/camunda/camunda/releases?q=tag%3A8.10&expanded=true)
+- Camunda version matrix: [8.10](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.10)
+- Helm values: [15.1.1](https://artifacthub.io/packages/helm/camunda/camunda-platform/15.1.1?modal=values)
+- Helm CLI: [3.22.0](https://github.com/helm/helm/releases/tag/v3.22.0), [4.3.0](https://github.com/helm/helm/releases/tag/v4.3.0)
+
+Camunda images:
+
+- docker.io/camunda/camunda:8.10.4
+- docker.io/camunda/connectors-bundle:8.10.0
+- docker.io/camunda/hub-websockets:8.10.2
+- docker.io/camunda/hub:8.10.2
+- docker.io/camunda/identity:8.10.1
+- docker.io/camunda/optimize:8.10.4
 
 ## Helm chart 15.1.0
 

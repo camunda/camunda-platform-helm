@@ -344,7 +344,7 @@ func (s *ConfigMapWarningsTemplateTest) TestDifferentValuesInputs() {
 					s.Require().Contains(warnings, key)
 				}
 				s.Require().Contains(warnings, "orchestration.extraConfiguration")
-				s.Require().Contains(warnings, "chart v16 (Camunda 8.11)")
+				s.Require().Contains(warnings, "chart v17 (Camunda 8.12)")
 			},
 		},
 		{
@@ -586,7 +586,7 @@ func (s *ConfigMapWarningsTemplateTest) TestConsoleEnabledOnlyKeepsConsolidation
 				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 				s.Require().True(strings.HasSuffix(configmap.Name, "-warnings"))
 				s.Require().Contains(configmap.Data["warnings"],
-					`DEPRECATION: "console.enabled" is deprecated and will be removed in chart v16 (Camunda 8.11).`)
+					`DEPRECATION: "console.enabled" is deprecated and will be removed in chart v17 (Camunda 8.12).`)
 				s.Require().NotContains(configmap.Data["warnings"],
 					"console.* configuration keys have no effect in 8.10")
 			},
@@ -605,7 +605,7 @@ func (s *ConfigMapWarningsTemplateTest) TestConsoleEnabledOnlyKeepsConsolidation
 				s.Require().True(strings.HasSuffix(configmap.Name, "-warnings"))
 				warnings := configmap.Data["warnings"]
 				s.Require().Contains(warnings,
-					`DEPRECATION: "console.enabled" is deprecated and will be removed in chart v16 (Camunda 8.11).`)
+					`DEPRECATION: "console.enabled" is deprecated and will be removed in chart v17 (Camunda 8.12).`)
 				s.Require().Contains(warnings,
 					"console.* configuration keys have no effect in 8.10")
 				s.Require().NotContains(warnings,
@@ -1356,12 +1356,53 @@ func (s *ConfigMapWarningsTemplateTest) TestPvcAccessModesReadWriteOncePodWarnin
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
+func (s *ConfigMapWarningsTemplateTest) TestNoSecondaryStorageTypeConflictWarning() {
+	const warning = "global.noSecondaryStorage=true conflicts with orchestration.data.secondaryStorage.type"
+	testCases := []testhelpers.TestCase{}
+	for _, scenario := range []struct {
+		name               string
+		noSecondaryStorage string
+		storageType        string
+		warn               bool
+	}{
+		{name: "ElasticsearchWarns", noSecondaryStorage: "true", storageType: "elasticsearch", warn: true},
+		{name: "OpensearchWarns", noSecondaryStorage: "true", storageType: "opensearch", warn: true},
+		{name: "RdbmsWarns", noSecondaryStorage: "true", storageType: "rdbms", warn: true},
+		{name: "NoneDoesNotWarn", noSecondaryStorage: "true", storageType: "none"},
+		{name: "UnsetTypeDoesNotWarn", noSecondaryStorage: "true"},
+		{name: "SecondaryStorageEnabledDoesNotWarn", noSecondaryStorage: "false", storageType: "elasticsearch"},
+	} {
+		testCases = append(testCases, testhelpers.TestCase{
+			Name: "TestNoSecondaryStorageTypeConflict" + scenario.name,
+			Values: map[string]string{
+				"global.noSecondaryStorage":                scenario.noSecondaryStorage,
+				"orchestration.data.secondaryStorage.type": scenario.storageType,
+				"orchestration.pvcAccessModes[0]":          "ReadWriteOncePod",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+				warnings := configmap.Data["warnings"]
+				s.Require().Contains(warnings, "orchestration.pvcAccessModes is set to ReadWriteOncePod")
+				if scenario.warn {
+					s.Require().Contains(warnings, warning+"="+scenario.storageType+":")
+				} else {
+					s.Require().NotContains(warnings, warning)
+				}
+			},
+		})
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
 func (s *ConfigMapWarningsTemplateTest) TestDualRegionReplicationFactorWarning() {
 	const warningSuffix = "is 2; a dual-region cluster needs a replication factor of 4"
 
 	noWarning := func(t *testing.T, output string, err error) {
 		s.Require().NoError(err)
-		s.Require().NotContains(output, "orchestration.replicationFactor is")
+		s.Require().NotContains(output, "a dual-region cluster needs a replication factor of 4")
 	}
 
 	testCases := []testhelpers.TestCase{
@@ -1426,14 +1467,184 @@ func (s *ConfigMapWarningsTemplateTest) TestDualRegionReplicationFactorWarning()
 			},
 			Verifier: noWarning,
 		},
+		{
+			Name: "ReplicationFactorFourFromEnvDoesNotTriggerWarning",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"orchestration.partitioning.numberOfZones": "2",
+				"orchestration.partitioning.zoneIndex":     "0",
+				"orchestration.env[0].name":                "CAMUNDA_CLUSTER_REPLICATIONFACTOR",
+			},
+			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.clusterSize=4", "--set-string", "orchestration.env[0].value=4"},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				s.Require().NotContains(output, "a dual-region cluster needs a replication factor of 4")
+			},
+		},
+		{
+			Name: "ReplicationFactorFourFromLegacyEnvDoesNotTriggerWarning",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"orchestration.partitioning.numberOfZones": "2",
+				"orchestration.partitioning.zoneIndex":     "0",
+				"orchestration.env[0].name":                "ZEEBE_BROKER_CLUSTER_REPLICATIONFACTOR",
+			},
+			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.clusterSize=4", "--set-string", "orchestration.env[0].value=4"},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				s.Require().NotContains(output, "a dual-region cluster needs a replication factor of 4")
+			},
+		},
+		{
+			Name: "ReplicationFactorFromEnvValueFromDoesNotTriggerWarning",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":         "elasticsearch",
+				"orchestration.partitioning.numberOfZones":         "2",
+				"orchestration.partitioning.zoneIndex":             "0",
+				"orchestration.env[0].name":                        "CAMUNDA_CLUSTER_REPLICATIONFACTOR",
+				"orchestration.env[0].valueFrom.secretKeyRef.name": "cluster",
+				"orchestration.env[0].valueFrom.secretKeyRef.key":  "rf",
+			},
+			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.clusterSize=4"},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				s.Require().NotContains(output, "a dual-region cluster needs a replication factor of 4")
+			},
+		},
+		{
+			Name: "ReplicationFactorFourInValuesOverriddenByEnvTriggersWarning",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"orchestration.partitioning.numberOfZones": "2",
+				"orchestration.partitioning.zoneIndex":     "0",
+				"orchestration.env[0].name":                "CAMUNDA_CLUSTER_REPLICATIONFACTOR",
+			},
+			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.clusterSize=4", "--set-string", "orchestration.env[0].value=3", "--set-string", "orchestration.replicationFactor=4"},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().Contains(configmap.Data["warnings"], "the CAMUNDA_CLUSTER_REPLICATIONFACTOR entry in orchestration.env is 3 but")
+				s.Require().Contains(configmap.Data["warnings"], "Set the CAMUNDA_CLUSTER_REPLICATIONFACTOR entry in orchestration.env to 4.")
+			},
+		},
+		{
+			Name: "CustomConfigurationDoesNotTriggerWarning",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"orchestration.partitioning.numberOfZones": "2",
+				"orchestration.partitioning.zoneIndex":     "0",
+			},
+			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.clusterSize=4", "--set-string", "orchestration.configuration=camunda: {}"},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				s.Require().NotContains(output, "a dual-region cluster needs a replication factor of 4")
+			},
+		},
+		{
+			Name: "TemplatedEnvNameDoesNotTriggerWarning",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"orchestration.partitioning.numberOfZones": "2",
+				"orchestration.partitioning.zoneIndex":     "0",
+			},
+			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.clusterSize=4", "--set-json", `orchestration.env=[{"name":"{{ \"CAMUNDA_CLUSTER_REPLICATIONFACTOR\" }}","value":"4"}]`},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				s.Require().NotContains(output, "a dual-region cluster needs a replication factor of 4")
+			},
+		},
+		{
+			Name: "ReplicationFactorFromExtraConfigurationDoesNotTriggerWarning",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"orchestration.partitioning.numberOfZones": "2",
+				"orchestration.partitioning.zoneIndex":     "0",
+				"orchestration.extraConfiguration[0].file": "cluster.yaml",
+			},
+			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.clusterSize=4", "--set-string", "orchestration.extraConfiguration[0].content=camunda.cluster.replication-factor: 4"},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				s.Require().NotContains(output, "a dual-region cluster needs a replication factor of 4")
+			},
+		},
+		{
+			Name: "ReplicationFactorFromEnvFromDoesNotTriggerWarning",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":   "elasticsearch",
+				"orchestration.partitioning.numberOfZones":   "2",
+				"orchestration.partitioning.zoneIndex":       "0",
+				"orchestration.envFrom[0].configMapRef.name": "cluster",
+				"orchestration.envFromProvides[0]":           "CAMUNDA_CLUSTER_REPLICATIONFACTOR",
+			},
+			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.clusterSize=4"},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				s.Require().NotContains(output, "a dual-region cluster needs a replication factor of 4")
+			},
+		},
+		{
+			Name: "SnakeCaseEnvReplicationFactorDoesNotTriggerWarning",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"orchestration.partitioning.numberOfZones": "2",
+				"orchestration.partitioning.zoneIndex":     "0",
+			},
+			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.clusterSize=4", "--set-json", `orchestration.env=[{"name":"CAMUNDA_CLUSTER_REPLICATION_FACTOR","value":"4"}]`},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				s.Require().NotContains(output, "a dual-region cluster needs a replication factor of 4")
+			},
+		},
+		{
+			Name: "JavaOptsReplicationFactorDoesNotTriggerWarning",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"orchestration.partitioning.numberOfZones": "2",
+				"orchestration.partitioning.zoneIndex":     "0",
+			},
+			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.clusterSize=4", "--set-json", `orchestration.javaOpts="-Dcamunda.cluster.replication-factor=4"`},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				s.Require().NotContains(output, "a dual-region cluster needs a replication factor of 4")
+			},
+		},
+		{
+			Name: "LegacyEnvLosesToNewKeyEnv",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"orchestration.partitioning.numberOfZones": "2",
+				"orchestration.partitioning.zoneIndex":     "0",
+			},
+			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.clusterSize=4", "--set-json", `orchestration.env=[{"name":"CAMUNDA_CLUSTER_REPLICATIONFACTOR","value":"4"},{"name":"ZEEBE_BROKER_CLUSTER_REPLICATIONFACTOR","value":"3"}]`},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				s.Require().NotContains(output, "a dual-region cluster needs a replication factor of 4")
+			},
+		},
+		{
+			Name: "LegacyEnvReplacesValuesKey",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"orchestration.partitioning.numberOfZones": "2",
+				"orchestration.partitioning.zoneIndex":     "0",
+			},
+			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.clusterSize=4", "--set-string", "orchestration.replicationFactor=4", "--set-json", `orchestration.env=[{"name":"ZEEBE_BROKER_CLUSTER_REPLICATIONFACTOR","value":"3"}]`},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().Contains(configmap.Data["warnings"], "the ZEEBE_BROKER_CLUSTER_REPLICATIONFACTOR entry in orchestration.env is 3 but")
+			},
+		},
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
 func (s *ConfigMapWarningsTemplateTest) TestDefaultRolesMappingRulesDeprecationWarning() {
-	const adminWarning = `DEPRECATION: The Helm values file key "orchestration.security.initialization.defaultRoles.admin.mappingRules" is deprecated and will be removed in chart v16 (Camunda 8.11). Configure this via "orchestration.extraConfiguration" instead.`
-	const connectorsWarning = `DEPRECATION: The Helm values file key "orchestration.security.initialization.defaultRoles.connectors.mappingRules" is deprecated and will be removed in chart v16 (Camunda 8.11). Configure this via "orchestration.extraConfiguration" instead.`
+	const adminWarning = `DEPRECATION: The Helm values file key "orchestration.security.initialization.defaultRoles.admin.mappingRules" is deprecated and will be removed in chart v17 (Camunda 8.12). Configure this via "orchestration.extraConfiguration" instead.`
+	const connectorsWarning = `DEPRECATION: The Helm values file key "orchestration.security.initialization.defaultRoles.connectors.mappingRules" is deprecated and will be removed in chart v17 (Camunda 8.12). Configure this via "orchestration.extraConfiguration" instead.`
 
 	testCases := []testhelpers.TestCase{
 		{
@@ -1481,4 +1692,104 @@ func (s *ConfigMapWarningsTemplateTest) TestDefaultRolesMappingRulesDeprecationW
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *ConfigMapWarningsTemplateTest) TestKeycloakURLWarnings() {
+	const urlWarning = "Management Identity uses Keycloak authentication, but global.identity.keycloak.url is not set"
+	const internalWarning = "global.identity.keycloak.internal=true routes the Keycloak path"
+	keycloakAuth := map[string]string{"identity.enabled": "true", "global.identity.auth.enabled": "true"}
+	keycloakURL := map[string]string{
+		"global.identity.keycloak.url.protocol": "http",
+		"global.identity.keycloak.url.host":     "keycloak",
+		"global.identity.keycloak.url.port":     "80",
+	}
+	internalIngress := map[string]string{
+		"identity.enabled":                  "true",
+		"global.identity.keycloak.internal": "true",
+		"global.ingress.enabled":            "true",
+		"global.host":                       "camunda.example.com",
+	}
+	testCases := []testhelpers.TestCase{}
+	for _, scenario := range []struct {
+		name         string
+		values       map[string]string
+		args         []string
+		urlWarn      bool
+		internalWarn bool
+	}{
+		{name: "KeycloakAuthWithoutURL", values: keycloakAuth, urlWarn: true},
+		{name: "KeycloakAuthWithURL", values: mergeMaps(keycloakAuth, keycloakURL)},
+		{
+			name:    "KeycloakHostTemplateResolvesEmpty",
+			values:  mergeMaps(keycloakAuth, map[string]string{"global.identity.keycloak.url.protocol": "http", "global.identity.keycloak.url.port": "80"}),
+			args:    []string{"--set-json", `global.identity.keycloak.url.host="{{ print \"\" }}"`},
+			urlWarn: true,
+		},
+		{name: "UnrelatedEnv", values: mergeMaps(keycloakAuth, map[string]string{"identity.env[0].name": "KEYCLOAK_REALM", "identity.env[0].value": "camunda-platform"}), urlWarn: true},
+		{name: "EnvURL", values: mergeMaps(keycloakAuth, map[string]string{"identity.env[0].name": "KEYCLOAK_URL", "identity.env[0].value": "http://keycloak/auth"})},
+		{name: "EnvFrom", values: mergeMaps(keycloakAuth, map[string]string{"identity.envFrom[0].secretRef.name": "keycloak-connection"})},
+		{
+			name:   "ExtraConfigurationURL",
+			values: mergeMaps(keycloakAuth, map[string]string{"identity.extraConfiguration[0].file": "keycloak.yaml"}),
+			args:   []string{"--set-string", "identity.extraConfiguration[0].content=keycloak:\n  url: http://keycloak/auth\n"},
+		},
+		{
+			name:   "ConfigurationURL",
+			values: keycloakAuth,
+			args:   []string{"--set-string", "identity.configuration=keycloak:\n  url: http://keycloak/auth\n"},
+		},
+		{name: "GenericProvider", values: mergeMaps(keycloakAuth, map[string]string{"global.identity.auth.type": "GENERIC"})},
+		{name: "AuthDisabled", values: map[string]string{"identity.enabled": "true"}},
+		{name: "IdentityDisabled", values: map[string]string{"global.identity.auth.enabled": "true"}},
+		{name: "InternalIngressWithoutHost", values: internalIngress, internalWarn: true},
+		{
+			name: "InternalGatewayWithoutHost",
+			values: map[string]string{
+				"global.identity.keycloak.internal": "true",
+				"global.gateway.enabled":            "true",
+				"global.host":                       "camunda.example.com",
+			},
+			internalWarn: true,
+		},
+		{name: "InternalIngressWithHost", values: mergeMaps(internalIngress, keycloakURL)},
+		{name: "InternalIngressWithIdentityDisabled", values: mergeMaps(internalIngress, map[string]string{"identity.enabled": "false"})},
+		{name: "InternalExternalIngress", values: mergeMaps(internalIngress, map[string]string{"global.ingress.external": "true"})},
+		{name: "InternalWithoutRoute", values: map[string]string{"identity.enabled": "true", "global.identity.keycloak.internal": "true"}},
+		{name: "IngressWithoutInternal", values: mergeMaps(internalIngress, map[string]string{"global.identity.keycloak.internal": "false"})},
+	} {
+		values := mergeMaps(map[string]string{"orchestration.data.secondaryStorage.type": "elasticsearch"}, scenario.values)
+		testCases = append(testCases, testhelpers.TestCase{
+			Name:                    scenario.name,
+			Values:                  values,
+			RenderTemplateExtraArgs: scenario.args,
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				configMaps := map[string]corev1.ConfigMap{}
+				decoder := k8syaml.NewYAMLOrJSONDecoder(strings.NewReader(output), 4096)
+				for {
+					var resource corev1.ConfigMap
+					err := decoder.Decode(&resource)
+					if err == io.EOF {
+						break
+					}
+					require.NoError(t, err)
+					if resource.Kind == "ConfigMap" {
+						configMaps[resource.Name] = resource
+					}
+				}
+				if values["identity.enabled"] == "true" {
+					require.Contains(t, configMaps, s.release+"-identity-configuration")
+				}
+				warnings := configMaps[s.release+"-warnings"].Data["warnings"]
+				require.Equal(t, scenario.urlWarn, strings.Contains(warnings, urlWarning))
+				require.Equal(t, scenario.internalWarn, strings.Contains(warnings, internalWarning))
+				if scenario.urlWarn {
+					require.Contains(t, warnings, "global.identity.keycloak.url.host")
+					require.Contains(t, warnings, "KEYCLOAK_URL in identity.env")
+					require.Contains(t, warnings, "keycloak.url in identity.extraConfiguration")
+				}
+			},
+		})
+	}
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, nil, testCases)
 }

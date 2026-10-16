@@ -61,7 +61,7 @@ We reject backports that are likely to surprise users:
 
 - **Tier 1 key additions:** any new values.yaml key that controls application behavior — regardless of chart version.
 - **Structural:** anything that adds/changes the config surface (especially new keys/toggles in `values.yaml`) beyond the Tier 2 exception above, or big dependency upgrades.
-- **Anything requiring manual intervention:** if users must run commands or edit/delete resources, it's a migration and must wait for a minor/major release.
+- **Anything requiring manual intervention:** if users must run commands or edit/delete resources, it's a breaking change and follows the [Breaking Changes Policy](./breaking-changes.md).
 - **Unexpected manifest changes:** if the rendered output changes in places unrelated to the bug fix, it's blocked.
 
 ## Process: opening a backport PR

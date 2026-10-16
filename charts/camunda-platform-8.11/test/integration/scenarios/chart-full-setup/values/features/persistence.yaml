@@ -1,0 +1,41 @@
+# =============================================================================
+# Component Persistence Feature
+# =============================================================================
+# Layer 4: Optional feature - exercises persistent volume configuration on
+# Camunda components so the chart's PVC/StatefulSet templates are covered by
+# nightly CI. The set of components below must stay aligned with the 8.9
+# fixture, because upgrade-minor installs 8.9 first and StatefulSet
+# volumeClaimTemplates cannot be added or removed by an upgrade.
+# Used with: TEST_VALUES_FEATURES containing "persistence"
+# =============================================================================
+
+optimize:
+  enabled: true
+  persistence:
+    enabled: true
+    size: 1Gi
+
+webModeler:
+  persistence:
+    enabled: true
+    size: 1Gi
+
+connectors:
+  persistence:
+    enabled: true
+    size: 1Gi
+
+identity:
+  persistence:
+    enabled: true
+    size: 1Gi
+
+orchestration:
+  extraVolumeClaimTemplates:
+    - metadata:
+        name: extra-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 1Gi

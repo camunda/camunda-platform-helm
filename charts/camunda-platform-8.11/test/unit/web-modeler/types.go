@@ -1,0 +1,175 @@
+// Copyright 2026 Camunda Services GmbH
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package web_modeler
+
+type WebModelerRestAPIApplicationYAML struct {
+	Camunda    CamundaYAML    `yaml:"camunda"`
+	Spring     SpringYAML     `yaml:"spring"`
+	Server     ServerYAML     `yaml:"server"`
+	Management ManagementYAML `yaml:"management"`
+}
+
+type SpringYAML struct {
+	Mail       MailYAML           `yaml:"mail"`
+	Datasource DatasourceYAML     `yaml:"datasource"`
+	Security   SpringSecurityYAML `yaml:"security"`
+}
+type DatasourceYAML struct {
+	Url      string `yaml:"url"`
+	Username string `yaml:"username"`
+}
+
+type MailYAML struct {
+	Username   string         `yaml:"username"`
+	Properties map[string]any `yaml:"properties"`
+}
+
+type SpringSecurityYAML struct {
+	OAuth2 SpringSecurityOAuth2YAML `yaml:"oauth2"`
+}
+
+type SpringSecurityOAuth2YAML struct {
+	ResourceServer ResourceServerYAML `yaml:"resourceserver"`
+}
+
+type ResourceServerYAML struct {
+	JWT SpringJwtYAML `yaml:"jwt"`
+}
+
+type SpringJwtYAML struct {
+	JwkSetURI string `yaml:"jwk-set-uri"`
+}
+
+type CamundaYAML struct {
+	Hub      HubYAML      `yaml:"hub"`
+	Identity IdentityYAML `yaml:"identity"`
+}
+
+type IdentityYAML struct {
+	BaseURL          string `yaml:"base-url"`
+	IssuerBackendURL string `yaml:"issuer-backend-url"`
+	Type             string `yaml:"type"`
+	UsernameClaim    string `yaml:"username-claim"`
+}
+type HubYAML struct {
+	Feature  FeatureYAML     `yaml:"feature"`
+	Security HubSecurityYAML `yaml:"security"`
+	Clusters []ClusterYAML   `yaml:"clusters"`
+	Server   HubServerYAML   `yaml:"server"`
+	OAuth2   HubOAuth2YAML   `yaml:"oauth2"`
+	Pusher   PusherYAML      `yaml:"pusher"`
+}
+
+type FeatureYAML struct {
+	TestModeEnabled string `yaml:"test-mode-enabled"`
+}
+
+type HubSecurityYAML struct {
+	JWT HubJwtYAML `yaml:"jwt"`
+}
+
+type HubServerYAML struct {
+	HttpsOnly string `yaml:"https-only"`
+	Url       string `yaml:"url"`
+}
+
+type HubJwtYAML struct {
+	Audience AudienceYAML `yaml:"audience"`
+}
+
+type AudienceYAML struct {
+	InternalAPI string `yaml:"internal-api"`
+	PublicAPI   string `yaml:"public-api"`
+}
+
+type ClusterYAML struct {
+	Id              string               `yaml:"id"`
+	Name            string               `yaml:"name"`
+	Version         string               `yaml:"version"`
+	Authentication  string               `yaml:"authentication"`
+	Url             UrlYAML              `yaml:"url"`
+	Authorizations  AuthorizationsYAML   `yaml:"authorizations"`
+	Components      []ComponentYAML      `yaml:"components"`
+	PhysicalTenants []PhysicalTenantYAML `yaml:"physicalTenants"`
+}
+
+type PhysicalTenantYAML struct {
+	Id         string          `yaml:"id"`
+	Name       string          `yaml:"name"`
+	Components []ComponentYAML `yaml:"components"`
+}
+
+type ComponentYAML struct {
+	Name    string           `yaml:"name"`
+	Type    string           `yaml:"type"`
+	Version string           `yaml:"version"`
+	Urls    ComponentUrlYAML `yaml:"urls"`
+}
+
+type ComponentUrlYAML struct {
+	Webapp    string `yaml:"webapp"`
+	Rest      string `yaml:"rest"`
+	Grpc      string `yaml:"grpc"`
+	Readiness string `yaml:"readiness"`
+}
+
+type UrlYAML struct {
+	Zeebe    ZeebeUrlYAML `yaml:"zeebe"`
+	Operate  string       `yaml:"operate"`
+	Tasklist string       `yaml:"tasklist"`
+	Grpc     string       `yaml:"grpc"`
+	Rest     string       `yaml:"rest"`
+	WebApp   string       `yaml:"web-app"`
+}
+
+type ZeebeUrlYAML struct {
+	Grpc string `yaml:"grpc"`
+	Rest string `yaml:"rest"`
+}
+
+type AuthorizationsYAML struct {
+	Enabled bool `yaml:"enabled"`
+}
+
+type PusherYAML struct {
+	Client PusherClientYAML `yaml:"client"`
+}
+
+type PusherClientYAML struct {
+	Host     string `yaml:"host"`
+	Port     string `yaml:"port"`
+	Path     string `yaml:"path"`
+	ForceTLS bool   `yaml:"force-tls"`
+}
+
+type HubOAuth2YAML struct {
+	ClientId string `yaml:"client-id"`
+}
+
+type ServerYAML struct {
+	Servlet ServletYAML `yaml:"servlet"`
+}
+
+type ServletYAML struct {
+	ContextPath string `yaml:"context-path"`
+}
+
+type ManagementYAML struct {
+	Server ManagementServerYAML `yaml:"server"`
+}
+
+type ManagementServerYAML struct {
+	BasePath string `yaml:"base-path"`
+}

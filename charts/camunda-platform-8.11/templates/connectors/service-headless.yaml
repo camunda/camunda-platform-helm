@@ -1,0 +1,28 @@
+{{- if eq (include "camundaPlatform.connectorsEnabled" .) "true" -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "connectors.serviceHeadlessName" . }}
+  labels:
+    {{- include "connectors.labels" . | nindent 4 }}
+  annotations:
+    {{- if .Values.global.annotations}}
+      {{- toYaml .Values.global.annotations | nindent 4 }}
+    {{- end }}
+    {{- if .Values.connectors.service.annotations}}
+      {{- toYaml .Values.connectors.service.annotations | nindent 4 }}
+    {{- end }}
+spec:
+  clusterIP: None
+  type: {{ .Values.connectors.service.type }}
+  ports:
+    - name: {{ .Values.connectors.service.serverName }}
+      port: {{ .Values.connectors.service.serverPort }}
+      targetPort: {{ .Values.connectors.service.serverPort }}
+      protocol: TCP
+      {{- with include "camundaPlatform.appProtocol" (dict "portName" "server" "knownPorts" (list "server") "appProtocols" .Values.connectors.service.appProtocols) }}
+      appProtocol: {{ . | quote }}
+      {{- end }}
+  selector:
+    {{- include "connectors.matchLabels" . | nindent 4 }}
+{{- end }}

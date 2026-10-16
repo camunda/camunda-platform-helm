@@ -1,0 +1,3 @@
+{{- if eq (include "camundaPlatform.orchestrationEnabled" .) "true" -}}
+{{- include "orchestration.renderBrokerGenerations" (dict "manifest" "orchestration.statefulset" "context" .) -}}
+{{- end -}}

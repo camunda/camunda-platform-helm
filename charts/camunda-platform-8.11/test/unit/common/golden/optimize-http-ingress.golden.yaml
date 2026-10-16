@@ -1,0 +1,31 @@
+---
+# Source: camunda-platform/templates/common/ingress-optimize-http.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: camunda-platform-test-optimize-http
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/instance: camunda-platform-test
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/part-of: camunda-platform
+  annotations:
+    nginx.ingress.kubernetes.io/backend-protocol: HTTPS
+    nginx.ingress.kubernetes.io/proxy-body-size: 10m
+    nginx.ingress.kubernetes.io/proxy-buffer-size: 128k
+    nginx.ingress.kubernetes.io/proxy-buffering: "on"
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: camunda.example.com
+      http:
+        paths:
+          - backend:
+              service:
+                name: camunda-platform-test-optimize
+                port:
+                  number: 80
+            path: /optimize
+            pathType: Prefix

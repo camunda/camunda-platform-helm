@@ -1,0 +1,203 @@
+{{/* vim: set filetype=mustache: */}}
+
+{{ define "identity.internalUrl" }}
+  {{- if .Values.identity.enabled -}}
+    {{-
+      printf "http://%s:%v%s"
+        (include "identity.fullname" .)
+        .Values.identity.service.port
+        (.Values.identity.contextPath | default "")
+    -}}
+  {{- end -}}
+{{- end -}}
+
+{{- define "identity.externalUrl" -}}
+    {{- if .Values.identity.fullURL -}}
+        {{ tpl .Values.identity.fullURL $ }}
+    {{- else if .Values.global.ingress.enabled -}}
+        {{- printf "%s%s" (include "camundaPlatform.ingressExternalURL" (dict "context" . "host" .Values.global.host "tlsEnabled" (eq (include "camundaPlatform.ingressProtocol" .) "https"))) (.Values.identity.contextPath | default "") -}}
+    {{- else if .Values.global.gateway.enabled -}}
+        {{- printf "%s%s" (include "camundaPlatform.gatewayExternalURL" (dict "context" . "host" .Values.global.host)) (.Values.identity.contextPath | default "") -}}
+    {{- else -}}
+        {{- "http://localhost:8084" -}}
+    {{- end -}}
+{{- end -}}
+
+{{- define "identity.extraLabels" -}}
+    {{- include "camundaPlatform.componentExtraLabels" (dict "componentName" "identity" "componentValuesKey" "identity" "context" $) -}}
+{{- end -}}
+
+{{- define "identity.labels" -}}
+    {{- include "camundaPlatform.componentLabels" (dict "componentName" "identity" "componentValuesKey" "identity" "context" $) -}}
+{{- end -}}
+
+{{- define "identity.matchLabels" -}}
+    {{- include "camundaPlatform.componentMatchLabels" (dict "componentName" "identity" "context" $) -}}
+{{- end -}}
+
+{{/*
+[identity] Create the name of the service account to use
+*/}}
+{{- define "identity.serviceAccountName" -}}
+    {{- include "camundaPlatform.serviceAccountName" (dict
+        "component" "identity"
+        "context" $
+    ) -}}
+{{- end -}}
+
+{{/*
+Keycloak helpers
+*/}}
+
+{{/*
+[identity] Get Keycloak URL protocol from global value.
+*/}}
+{{- define "identity.keycloak.protocol" -}}
+    {{- (.Values.global.identity.keycloak.url).protocol | default "" -}}
+{{- end -}}
+
+{{/*
+[identity] Get Keycloak URL service name when the chart proxies an external Keycloak via an in-cluster ExternalName service.
+*/}}
+{{- define "identity.keycloak.service" -}}
+    {{- $sameNamespaceServiceName := include "identity.keycloak.sameNamespaceServiceName" . -}}
+    {{- if $sameNamespaceServiceName -}}
+        {{- $sameNamespaceServiceName -}}
+    {{- else if and (.Values.global.identity.keycloak.url).host .Values.global.identity.keycloak.internal -}}
+        {{- printf "%s-keycloak-custom" .Release.Name | trunc 63 -}}
+    {{- end -}}
+{{- end -}}
+
+{{/*
+[identity] Get the Keycloak service name when the configured host points to a Service in the release namespace.
+*/}}
+{{- define "identity.keycloak.sameNamespaceServiceName" -}}
+    {{- $host := include "identity.keycloak.host" . -}}
+    {{- $serviceName := "" -}}
+    {{- if and $host (not (contains "." $host)) -}}
+        {{- $serviceName = $host -}}
+    {{- else -}}
+        {{- range $suffix := list (printf ".%s.svc.cluster.local" $.Release.Namespace) (printf ".%s.svc" $.Release.Namespace) -}}
+            {{- if and (not $serviceName) (hasSuffix $suffix $host) -}}
+                {{- $serviceName = trimSuffix $suffix $host -}}
+            {{- end -}}
+        {{- end -}}
+    {{- end -}}
+    {{- $serviceName -}}
+{{- end -}}
+
+{{/*
+[identity] Whether the chart should render an ExternalName proxy Service for Keycloak.
+*/}}
+{{- define "identity.keycloak.externalNameService.enabled" -}}
+    {{- if and (.Values.global.identity.keycloak.url).host .Values.global.identity.keycloak.internal (not (include "identity.keycloak.sameNamespaceServiceName" .)) -}}
+        {{- true -}}
+    {{- end -}}
+{{- end -}}
+
+{{/*
+[identity] Get Keycloak URL host from global value.
+*/}}
+{{- define "identity.keycloak.host" -}}
+    {{- with (.Values.global.identity.keycloak.url).host -}}
+        {{- tpl . $ -}}
+    {{- end -}}
+{{- end -}}
+
+
+{{/*
+[identity] Get Keycloak URL port from global value.
+*/}}
+{{- define "identity.keycloak.port" -}}
+    {{- (.Values.global.identity.keycloak.url).port | default "" -}}
+{{- end -}}
+
+{{/*
+[identity] Get Keycloak contextPath from global value.
+*/}}
+{{- define "identity.keycloak.contextPath" -}}
+    {{- .Values.global.identity.keycloak.contextPath -}}
+{{- end -}}
+
+
+{{/*
+[identity] Get port part of a url, return empty string if port is 80 or 443.
+*/}}
+{{- define "identity.keycloak.portUrl" -}}
+  {{- if or (eq (include "identity.keycloak.port" .) "80") (eq (include "identity.keycloak.port" .) "443") -}}
+      {{- "" -}}
+  {{- else -}}
+      {{- printf ":%s" (include "identity.keycloak.port" .) -}}
+  {{- end -}}
+{{- end -}}
+
+{{/*
+[identity] Get multitenancy setting
+*/}}
+{{- define "identity.multitenancyEnabled" -}}
+    {{- if .Values.identity.externalDatabase.enabled }}
+        {{- if .Values.identity.multitenancy.enabled -}}
+            {{ .Values.identity.multitenancy.enabled }}
+        {{- else if .Values.global.multitenancy.enabled -}}
+            {{ .Values.global.multitenancy.enabled }}
+        {{- else -}}
+          false
+        {{- end -}}
+    {{- else -}}
+      false
+    {{- end -}}
+{{- end -}}
+
+{{/*
+[identity] Get Keycloak full URL (protocol, host, port, and contextPath).
+*/}}
+{{- define "identity.keycloak.url" -}}
+    {{-
+      printf "%s://%s%s%s"
+        (include "identity.keycloak.protocol" .)
+        (include "identity.keycloak.host" .)
+        (include "identity.keycloak.portUrl" .)
+        (include "identity.keycloak.contextPath" .)
+    -}}
+{{- end -}}
+
+{{- define "identity.keycloakUrlConfigured" -}}
+{{- $env := dict -}}
+{{- range $entry := (.Values.identity.env | default list) -}}
+  {{- $_ := set $env (tpl ($entry.name | default "") $) true -}}
+{{- end -}}
+{{- if or
+    (include "identity.keycloak.host" . | trim)
+    .Values.identity.envFrom
+    (hasKey $env "KEYCLOAK_URL")
+    (eq (include "camundaPlatform.appConfigMentionsPath" (dict "configuration" .Values.identity.configuration "extraConfiguration" .Values.identity.extraConfiguration "path" (list "keycloak" "url"))) "true") -}}
+true
+{{- end -}}
+{{- end -}}
+
+{{/*
+[identity] External PostgreSQL helpers.
+*/}}
+
+{{- define "identity.postgresql.host" -}}
+    {{- .Values.identity.externalDatabase.host | default "" -}}
+{{- end -}}
+
+{{- define "identity.postgresql.port" -}}
+    {{- .Values.identity.externalDatabase.port | default "5432" -}}
+{{- end -}}
+
+{{- define "identity.postgresql.username" -}}
+    {{- .Values.identity.externalDatabase.username | default "" -}}
+{{- end -}}
+
+{{- define "identity.postgresql.database" -}}
+    {{- .Values.identity.externalDatabase.database | default "" -}}
+{{- end -}}
+
+{{/*
+[identity] Get the image pull secrets.
+*/}}
+{{- define "identity.imagePullSecrets" -}}
+    {{- include "camundaPlatform.componentImagePullSecrets" (dict "Values" (set (deepCopy .Values) "image" .Values.identity.image)) }}
+{{- end }}

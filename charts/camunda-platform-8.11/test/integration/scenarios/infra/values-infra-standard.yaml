@@ -1,0 +1,90 @@
+# GKE stable nodes need nodeSelector and tolerations config.
+
+# Auth.
+identity:
+  nodeSelector:
+    workload: standard
+  tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: standard
+
+# Camunda Hub.
+camundaHub:
+  restapi:
+    nodeSelector:
+      workload: standard
+    tolerations:
+    - effect: NoSchedule
+      key: workload
+      operator: Equal
+      value: standard
+  websockets:
+    nodeSelector:
+      workload: standard
+    tolerations:
+    - effect: NoSchedule
+      key: workload
+      operator: Equal
+      value: standard
+connectors:
+  nodeSelector:
+    workload: standard
+  tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: standard
+tasklist:
+  nodeSelector:
+    workload: standard
+  tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: standard
+operate:
+  nodeSelector:
+    workload: standard
+  tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: standard
+optimize:
+  nodeSelector:
+    workload: standard
+  tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: standard
+
+
+# Zeebe.
+orchestration:
+  nodeSelector:
+    workload: standard
+  tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: standard
+zeebeGateway:
+  nodeSelector:
+    workload: standard
+  tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: standard
+
+console:
+  nodeSelector:
+    workload: standard
+  tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: standard

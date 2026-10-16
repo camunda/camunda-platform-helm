@@ -12,8 +12,8 @@ In the Camunda 8.8+ unified orchestration architecture, most components receive 
 
 - **Accuracy of abstraction**: A "global" key that serves a single component is a misleading API surface that confuses chart consumers.
 - **Maintainability**: Reducing implicit coupling between unrelated components simplifies future chart evolution and version-scoped changes.
-- **Backward compatibility**: Any change to widely-used configuration keys must follow a deprecation cycle to avoid breaking existing deployments.
-- **Preparation for removal**: Establishing the copy-down pattern now enables clean removal of the global keys in a future major version.
+- **Backward compatibility**: Any change to widely-used configuration keys must follow the [deprecation policy](../policies/breaking-changes.md#deprecation-policy) to avoid breaking existing deployments.
+- **Preparation for removal**: Establishing the copy-down pattern now enables clean removal of the global keys once the [deprecation policy](../policies/breaking-changes.md#deprecation-policy) allows it.
 
 ## Considered Options
 
@@ -35,3 +35,7 @@ The global ES/OS configuration keys are formally deprecated and their values are
 
 - **Temporary helper complexity**: The copy-down logic in `_helpers.tpl` introduces indirection that maintainers must understand during the deprecation window until the global keys are fully removed.
 - **Large mechanical diff surface**: Updating 40 files (primarily integration test values) increases merge conflict potential and review burden for concurrent chart work.
+
+## Changelog
+
+- 2026-10-13 — [#7545](https://github.com/camunda/camunda-platform-helm/pull/7545) — Point the deprecation requirement to the deprecation policy.

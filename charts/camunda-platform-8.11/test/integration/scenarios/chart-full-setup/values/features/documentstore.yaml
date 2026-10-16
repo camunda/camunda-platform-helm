@@ -1,0 +1,27 @@
+# Document Store feature configuration for 8.11
+# Layer 4: Feature - Document Store (AWS S3)
+
+global:
+  documentStore:
+    activeStoreId: "aws"
+    type:
+      aws:
+        enabled: true
+        storeId: "aws"
+        bucket: "camunda-ci-eks-prod-team-bucket-qa"
+        region: "eu-central-1"
+        bucketPath: "documents"
+        class: "io.camunda.document.store.aws.AwsDocumentStoreProvider"
+        accessKeyId:
+          secret:
+            existingSecret: "vault-mapped-secrets"
+            existingSecretKey: "IDP_AWS_ACCESSKEY"
+        secretAccessKey:
+          secret:
+            existingSecret: "vault-mapped-secrets"
+            existingSecretKey: "IDP_AWS_SECRETKEY"
+
+orchestration:
+  data:
+    secondaryStorage:
+      type: elasticsearch

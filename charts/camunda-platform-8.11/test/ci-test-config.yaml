@@ -1,0 +1,39 @@
+# ─── CI-internal ────────────────────────────────────────────────────────────
+# This file defines the CI scenario matrix and unit-test packages for this
+# chart version. It is consumed by GitHub Actions and by
+# `deploy-camunda matrix`. External users deploying Camunda 8 Self-Managed
+# do NOT need to edit it.
+#
+# Start here instead:
+#   scripts/deploy-camunda/examples/getting-started.deploy-camunda.yaml
+# ────────────────────────────────────────────────────────────────────────────
+# Used in the GitHub Actions unit test CI workflow.
+# auth can be the following values: basic, keycloak, oidc
+#
+# ─── `unit:` block: LIVE ─────────────────────────────────────────────────────
+# The `unit:` block below is still the source of truth for the unit test
+# workflow — read via yq in `.github/actions/test-type-vars/action.yaml`.
+# Edit freely.
+#
+unit:
+  enabled: true
+  matrix:
+    - name: Management
+      packages: identity common companion deprecation testhelpers utils
+    - name: Orchestration
+      packages: orchestration connectors optimize
+    - name: Design
+      packages: web-modeler
+    - name: Topology
+      packages: topology
+  helmCompat:
+    versions:
+      - "3.10.3"
+      - "3.22.0"
+    tests:
+      - name: Helm version constraint
+        package: common
+        run: 'TestConstraintTemplate/TestHelmVersionConstraint'
+      - name: Orchestration scheduling
+        package: orchestration
+        run: 'TestStatefulSetTemplate/TestDifferentValuesInputs/^TestContainerSet(NodeSelector|Affinity|Tolerations|TopologySpreadConstraints)$'

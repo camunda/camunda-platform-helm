@@ -855,7 +855,7 @@
                             "properties": {
                                 "internal": {
                                     "type": "boolean",
-                                    "description": "It's useful for using existing Keycloak in another namespace with and access it with the combined Ingress.",
+                                    "description": "if true, the shared Ingress or HTTPRoute routes the Keycloak context path to the Keycloak in global.identity.keycloak.url. If that host is not a Service in the release namespace, the chart creates an ExternalName Service for it, named after the release with the suffix -keycloak-custom. The chart does not deploy Keycloak. Requires global.identity.keycloak.url.host.",
                                     "default": false
                                 },
                                 "url": {
@@ -1611,7 +1611,7 @@
                         },
                         "tag": {
                             "type": "string",
-                            "description": "can be set to overwrite the global tag, which should be used in that chart",
+                            "description": "defines which image tag to use",
                             "default": "8.10.0"
                         },
                         "digest": {
@@ -4090,7 +4090,7 @@
                         },
                         "tag": {
                             "type": "string",
-                            "description": "can be set to overwrite the global tag, which should be used in that chart",
+                            "description": "defines which image tag to use",
                             "default": "8.10.0"
                         },
                         "digest": {
@@ -5021,7 +5021,7 @@
                         },
                         "tag": {
                             "type": "string",
-                            "description": "can be set to overwrite the global tag, which should be used in that chart",
+                            "description": "defines which image tag to use",
                             "default": "8.10.3"
                         },
                         "digest": {
@@ -6605,7 +6605,7 @@
                         },
                         "tag": {
                             "type": "string",
-                            "description": "can be set to overwrite the global tag, which should be used in that chart",
+                            "description": "defines which image tag to use",
                             "default": "8.10.3"
                         },
                         "digest": {

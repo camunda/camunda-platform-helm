@@ -24,7 +24,7 @@ For the Camunda Helm chart, _the stable interface is `values.yaml`_: user-provid
 
 ## Breaking Change Policy
 
-**Default rule:** Breaking changes are prohibited in all released charts. Changes to the `values.yaml` schema, configuration structure, or rendering logic must be backward compatible. When a change cannot be made backward compatible, follow the **Deprecation Policy**.
+**Default rule:** The [Camunda 8 policy for non-public APIs](https://docs.camunda.io/docs/next/reference/public-api/#policy-for-non-public-apis) governs breaking changes to the chart. When a change cannot be made backward compatible, follow the **Deprecation Policy**.
 
 ### Exceptions
 
@@ -43,7 +43,7 @@ flowchart TD
     AlphaBoundary -- Yes --> Compat([Must be backward compatible\nwith previous stable minor])
     Alpha -- No --> Critical{Critical security or\nsevere malfunction?}
     Critical -- Yes --> Checklist([Follow Breaking Change Checklist])
-    Critical -- No --> Deprecate([Follow Deprecation Policy\ndeprecate now · remove next major])
+    Critical -- No --> Deprecate([Follow Deprecation Policy])
 ```
 
 ## Breaking change checklist
@@ -86,14 +86,14 @@ If a breaking change is not justifiable, follow the [Deprecation Policy](#deprec
 
 ## Deprecation Policy
 
-**Default rule:** Deprecate in one minor release, remove in the next major release. Customers must never be forced to update values without at least one minor release of warning with clear migration guidance.
+**Default rule:** The [Camunda 8 policy for non-public APIs](https://docs.camunda.io/docs/next/reference/public-api/#policy-for-non-public-apis) sets the deprecation window. Every deprecation ships with clear migration guidance.
 
 Major chart releases follow Camunda's release cycle.
 
 ### Deprecation Checklist
 
 1. **Deprecate (keep compatibility):**
-   - Add a `values.yaml` comment: `DEPRECATED since vX.Y.Z; remove in vNextMajor; use instead: ...`.
+   - Add a `values.yaml` comment: `DEPRECATED since vX.Y.Z; remove in vA.B.C; use instead: ...`, where `vA.B.C` is the first chart version the deprecation window allows.
    - Warn if the deprecated key is set (old key, replacement, removal version). Warnings are collected by the `camunda.constraints.warnings` helper, which surfaces them on both the CLI path (`NOTES.txt` on install/upgrade) and the GitOps render path (the `<release>-warnings` ConfigMap rendered by `configmap-warnings.yaml`, visible to `helm template` / Argo CD / Flux). Feed new deprecation warnings through that helper rather than wiring them directly into `NOTES.txt`.
    - If both old and new are set: new wins + warning.
 
@@ -105,7 +105,7 @@ Major chart releases follow Camunda's release cycle.
 3. **Communicate:**
    - Notify InfraEx, QA, infra, and [Reliability Team (#oc-reliability-testing)](https://camunda.slack.com/archives/C0807665N8G).
 
-4. **Remove (next major only):**
+4. **Remove (only after the deprecation window):**
    - Delete the key, its template references, and the deprecation warning.
    - Follow the approval and documentation steps from the [Breaking change checklist](#breaking-change-checklist).
 

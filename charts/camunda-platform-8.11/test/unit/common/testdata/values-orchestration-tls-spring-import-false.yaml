@@ -1,0 +1,12 @@
+orchestration:
+  data:
+    secondaryStorage:
+      type: elasticsearch
+  extraConfiguration:
+    - file: tls.yaml
+      springImport: false
+      content: |
+        server:
+          ssl:
+            enabled: true
+            certificate: /certs/rest/tls.crt

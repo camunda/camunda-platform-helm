@@ -1,0 +1,15 @@
+orchestration:
+  data:
+    secondaryStorage:
+      type: elasticsearch
+  configuration: |
+    server:
+      ssl:
+        enabled: true
+        certificate: /certs/rest/tls.crt
+  extraConfiguration:
+    - file: tls-off.yaml
+      content: |
+        server:
+          ssl:
+            enabled: false

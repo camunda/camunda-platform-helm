@@ -19,7 +19,7 @@ unit:
   enabled: true
   matrix:
     - name: Management
-      packages: identity common
+      packages: identity common companion deprecation testhelpers utils
     - name: Orchestration
       packages: orchestration connectors optimize
     - name: Design

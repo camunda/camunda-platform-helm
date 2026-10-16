@@ -1,0 +1,67 @@
+{{/*
+This file name should start with an underscore to avoid rendering it as a template.
+It is included (imported) in the ConfigMap.
+*/}}
+{{- define "optimize.defaultConfig" -}}
+{{- $optimizeTLS := eq (include "camundaPlatform.optimizeServerTLSEnabled" .) "true" -}}
+{{- if or .Values.optimize.contextPath $optimizeTLS }}
+container:
+  {{- if .Values.optimize.contextPath }}
+  contextPath: {{ .Values.optimize.contextPath | quote }}
+  {{- end }}
+  {{- if $optimizeTLS }}
+  ports:
+    {{- /* Optimize serves TLS on the chart's single named port, so the plaintext
+         connector has to go. An explicit YAML null is the form
+         ConfigurationService resolves to Optional.empty(), which drops the HTTP
+         connector AND keeps RootUrlGenerator on the https prefix -- a numeric
+         sentinel like -1 is "present" there and yields "http://host:-1". The
+         CAMUNDA_OPTIMIZE_CONTAINER_PORTS_HTTP=-1 env var in the Deployment is
+         the fallback for releases that replace this file wholesale through
+         optimize.configuration; without it HTTP would keep 8090 and collide
+         with the HTTPS connector. */}}
+    http: ~
+  {{- end }}
+{{- end }}
+zeebe:
+  enabled: true
+  partitionCount: {{ include "camundaPlatform.effectiveExtraConfigValue" (dict "default" .Values.optimize.partitionCount "extraConfiguration" .Values.optimize.extraConfiguration "path" (list "zeebe" "partitionCount")) }}
+  name: {{ include "camundaPlatform.effectiveExtraConfigValue" (dict "default" (include "optimize.indexPrefix" .) "extraConfiguration" .Values.optimize.extraConfiguration "path" (list "zeebe" "name")) | quote }}
+es:
+  connection:
+    nodes:
+    {{- if .Values.optimize.database.elasticsearch.enabled }}
+      - host: {{ include "camundaPlatform.elasticsearchHost" . | quote }}
+        httpPort: {{ .Values.optimize.database.elasticsearch.url.port }}
+    {{- else if .Values.optimize.database.opensearch.enabled }}
+      - host: {{ include "camundaPlatform.opensearchHost" . | quote }}
+        httpPort: {{ .Values.optimize.database.opensearch.url.port }}
+    {{- end }}
+  {{- if .Values.optimize.database.elasticsearch.external }}
+  security:
+    username: {{ .Values.optimize.database.elasticsearch.auth.username | quote }}
+    {{- if eq .Values.optimize.database.elasticsearch.url.protocol "https" }}
+    ssl:
+      enabled: "true"
+    {{- end }}
+  {{- end }}
+spring:
+  servlet:
+    multipart:
+      max-file-size: {{ .Values.global.config.requestBodySize | quote }}
+      max-request-size: {{ .Values.global.config.requestBodySize | quote }}
+  profiles:
+    active: "ccsm"
+security:
+  auth:
+    cookie:
+      same-site:
+        enabled: false
+{{- if (eq (include "optimize.authEnabled" .) "true") }}
+    ccsm:
+      redirectRootUrl: {{ tpl (include "optimize.effectiveAuthRedirectUrl" $) $ | quote }}
+api:
+  audience: {{ include "optimize.authAudience" . | quote }}
+  jwtSetUri: {{ include "optimize.effectiveAuthJwksUrl" . | quote }}
+{{- end }}
+{{- end -}}

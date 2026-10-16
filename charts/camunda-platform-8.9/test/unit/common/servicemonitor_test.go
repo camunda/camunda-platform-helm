@@ -15,6 +15,7 @@
 package camunda
 
 import (
+	"camunda-platform/test/unit/testhelpers"
 	"camunda-platform/test/unit/utils"
 	"path/filepath"
 	"strings"
@@ -95,6 +96,7 @@ func TestGoldenServiceMonitorIdentityDefaults(t *testing.T) {
 		Templates:      []string{"templates/service-monitor/identity-service-monitor.yaml"},
 		SetValues: map[string]string{
 			"global.identity.auth.enabled":     "true",
+			"identity.enabled":                 "true",
 			"prometheusServiceMonitor.enabled": "true",
 		},
 	})
@@ -113,5 +115,45 @@ func TestGoldenServiceMonitorOrchestrationDefaults(t *testing.T) {
 		GoldenFileName: "orchestration-service-monitor",
 		Templates:      []string{"templates/service-monitor/orchestration-service-monitor.yaml"},
 		SetValues:      map[string]string{"prometheusServiceMonitor.enabled": "true"},
+	})
+}
+
+func TestServiceMonitorsNotRenderedWithoutTheirComponent(t *testing.T) {
+	t.Parallel()
+
+	chartPath, err := filepath.Abs("../../../")
+	require.NoError(t, err)
+
+	notRendered := func(template string) func(*testing.T, string, error) {
+		return func(t *testing.T, output string, err error) {
+			require.ErrorContains(t, err, "could not find template "+template+" in chart")
+		}
+	}
+
+	identityTemplate := "templates/service-monitor/identity-service-monitor.yaml"
+	testhelpers.RunTestCasesE(t, chartPath, "camunda-platform-test", "camunda-platform-servicemonitor", []string{identityTemplate}, []testhelpers.TestCase{
+		{
+			Name: "TestIdentityServiceMonitorNotRenderedWhenIdentityDisabled",
+			Values: map[string]string{
+				"global.identity.auth.enabled":     "true",
+				"identity.enabled":                 "false",
+				"prometheusServiceMonitor.enabled": "true",
+			},
+			Verifier: notRendered(identityTemplate),
+		},
+	})
+
+	optimizeTemplate := "templates/service-monitor/optimize-service-monitor.yaml"
+	testhelpers.RunTestCasesE(t, chartPath, "camunda-platform-test", "camunda-platform-servicemonitor", []string{optimizeTemplate}, []testhelpers.TestCase{
+		{
+			Name: "TestOptimizeServiceMonitorNotRenderedWithoutSecondaryStorage",
+			Values: map[string]string{
+				"optimize.enabled":                 "true",
+				"identity.enabled":                 "true",
+				"global.noSecondaryStorage":        "true",
+				"prometheusServiceMonitor.enabled": "true",
+			},
+			Verifier: notRendered(optimizeTemplate),
+		},
 	})
 }

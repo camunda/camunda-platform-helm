@@ -23,7 +23,7 @@ The legacy component `*.tls.secret.existingSecret` fields remain functional but 
 - `optimize.database.elasticsearch.tls.secret.*`
 - `optimize.database.opensearch.tls.secret.*`
 
-Precedence remains "legacy JKS wins when set" so existing deployments do not regress on upgrade. New deployments should use `global.tls.caBundle.secret.*` only. A future major chart release will remove the legacy fields.
+Precedence remains "legacy JKS wins when set" so existing deployments do not regress on upgrade. New deployments should use `global.tls.caBundle.secret.*` only. Removal of the legacy fields follows the [deprecation policy](./policies/breaking-changes.md#deprecation-policy).
 
 For the values-side machinery referenced below, see:
 - `global.tls.caBundle.secret.{existingSecret,existingSecretKey}` — OS-level CA bundle, used by `SSL_CERT_FILE` and the chart-built combined Java truststore (PRs #6039 + #6040).

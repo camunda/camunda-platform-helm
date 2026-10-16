@@ -20,8 +20,8 @@ optimize:
   # https://hub.docker.com/r/camunda/optimize/tags
   image:
     repository: camunda/optimize
-    tag: 8.8.41
-    digest: "sha256:0a6ee048e0eaf524eba2c4db2188c1afe847cb6af05a27d2572b4c5801e10ba9"
+    tag: 8.8.42
+    digest: "sha256:d17fea3db68ccc0c4155e1eab387038a17d1acc6f7767c55b5a113aaa849de69"
 
 #
 # Web Modeler
@@ -57,8 +57,8 @@ orchestration:
   # https://hub.docker.com/r/camunda/camunda/tags
   image:
     repository: camunda/camunda
-    tag: 8.8.41
-    digest: "sha256:2d307d01601b5a45918c9640e762db71947b5237ff763404ef96c00b960dbbcd"
+    tag: 8.8.42
+    digest: "sha256:25e55c86244f2affc16cf967e6b7af6c4a1cf41a51fe941ccd4f228d8c58eb50"
 
 #
 # Identity
@@ -68,5 +68,5 @@ identity:
   # https://hub.docker.com/r/camunda/identity/tags
   image:
     repository: camunda/identity
-    tag: 8.8.18
-    digest: "sha256:bbf18d8bccb9047e14aac691ae9f29b13ab45db504dc0a83a8a3fd7e61f3019d"
+    tag: 8.8.19
+    digest: "sha256:84f74d2f70514a0adedb7e95a43ec57a3f1f2bf21e0de6a2c6af8921247c4a04"
