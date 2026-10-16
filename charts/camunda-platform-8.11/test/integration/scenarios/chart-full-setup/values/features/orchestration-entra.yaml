@@ -1,0 +1,37 @@
+global:
+  topology:
+    mode: orchestration
+  multitenancy:
+    enabled: false
+
+identity:
+  enabled: false
+
+optimize:
+  enabled: false
+
+orchestration:
+  security:
+    authentication:
+      oidc:
+        clientIdClaim: azp
+        audience: $ENTRA_APP_CLIENT_ID
+    initialization:
+      defaultRoles:
+        connectors:
+          clients:
+            - $CONNECTORS_CLIENT_ID
+      authorizations:
+        - ownerType: CLIENT
+          ownerId: $VENOM_CLIENT_ID
+          resourceType: RESOURCE
+          resourceId: "*"
+          permissions:
+            - CREATE
+        - ownerType: CLIENT
+          ownerId: $VENOM_CLIENT_ID
+          resourceType: PROCESS_DEFINITION
+          resourceId: "*"
+          permissions:
+            - READ_PROCESS_DEFINITION
+            - READ_PROCESS_INSTANCE

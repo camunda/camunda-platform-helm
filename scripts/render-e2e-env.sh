@@ -78,8 +78,8 @@ resolve_minor_version_from_identity() {
   if [[ -n "$version_label" ]]; then
     # Handle SNAPSHOT version format
     if [[ "$version_label" == "SNAPSHOT" ]]; then
-      log "DEBUG: Resolved minor version: SM-8.10 (from SNAPSHOT)"
-      printf "SM-8.10"
+      log "DEBUG: Resolved minor version: SM-8.11 (from SNAPSHOT)"
+      printf "SM-8.11"
       return 0
     fi
 

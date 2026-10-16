@@ -1,0 +1,13 @@
+global:
+  tls:
+    connectors:
+      enabled: true
+      type: pkcs12
+      keyAlias: connectors-rest
+      cert:
+        secret:
+          existingSecret: connectors-tls-keystore
+          existingSecretKey: keystore.p12
+      keystorePassword:
+        secret:
+          existingSecretKey: keystore-password

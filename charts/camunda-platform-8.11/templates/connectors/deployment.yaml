@@ -1,0 +1,277 @@
+{{- if eq (include "camundaPlatform.connectorsEnabled" .) "true" -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "connectors.fullname" . }}
+  labels: {{- include "connectors.labels" . | nindent 4 }}
+  annotations: {{- toYaml .Values.global.annotations | nindent 4 }}
+spec:
+  replicas: {{ .Values.connectors.replicas }}
+  strategy:
+    type: RollingUpdate
+  selector:
+    matchLabels: {{- include "connectors.matchLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "connectors.labels" . | nindent 8 }}
+        {{- if .Values.connectors.podLabels }}
+        {{- tpl (toYaml .Values.connectors.podLabels) $ | nindent 8 }}
+        {{- end }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/connectors/configmap.yaml") . | sha256sum }}
+        {{- if .Values.global.identity.auth.enabled }}
+        checksum/config-identity-env: {{ include (print $.Template.BasePath "/common/configmap-identity-auth.yaml") . | sha256sum }}
+        {{- end }}
+        {{- with (include "camundaPlatform.caBundleChecksumAnnotation" .) }}{{ . | nindent 8 }}{{- end }}
+        {{- with (include "camundaPlatform.connectorsTLSChecksumAnnotation" .) }}{{ . | nindent 8 }}{{- end }}
+      {{- if .Values.connectors.podAnnotations }}
+      {{- tpl (toYaml .Values.connectors.podAnnotations) $ | nindent 8 }}
+      {{- end }}
+    spec:
+      imagePullSecrets: {{- include "connectors.imagePullSecrets" . | nindent 8 }}
+      {{- if or (eq (include "camundaPlatform.hasCaBundle" .) "true") .Values.connectors.initContainers }}
+      initContainers:
+        {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+        {{- include "camundaPlatform.caBundleInitContainer" (dict "context" $ "image" (include "camundaPlatform.imageByParams" (dict "base" $.Values.global "overlay" $.Values.connectors))) | nindent 8 }}
+        {{- end }}
+        {{- with .Values.connectors.initContainers }}
+        {{- tpl (toYaml . | nindent 8) $ }}
+        {{- end }}
+      {{- end }}
+      containers:
+        - name: connectors
+          image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.connectors) }}
+          imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+          {{- if .Values.connectors.containerSecurityContext }}
+          securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.connectors.containerSecurityContext "context" $) | nindent 12 }}
+          {{- end }}
+          ports:
+            - containerPort: {{ .Values.connectors.service.serverPort }}
+              name: {{ .Values.connectors.service.serverName }}
+              protocol: TCP
+          env:
+            {{- $connectorsAuthSecret := include "connectors.authSecretConfig" . | fromYaml }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "CAMUNDA_LICENSE_KEY"
+                "config" .Values.global.license
+            ) | nindent 12 }}
+            {{- if eq (include "connectors.authMethod" .) "oidc" }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET"
+                "config" $connectorsAuthSecret
+            ) | nindent 12 }}
+            {{- end }}
+            {{- if eq (include "connectors.hasAppIntegrations" .) "true" }}
+            - name: APP_INTEGRATIONS_BASE_URL
+              value: {{ .Values.connectors.appIntegrations.baseUrl | quote }}
+            {{- with .Values.connectors.appIntegrations.clusterId }}
+            - name: APP_INTEGRATIONS_CLUSTER_ID
+              value: {{ . | quote }}
+            {{- end }}
+            {{- if eq (include "connectors.hasAppIntegrationsOauth" .) "true" }}
+            {{- $appIntegrationsOauth := .Values.connectors.appIntegrations.oauth }}
+            - name: APP_INTEGRATIONS_OAUTH_TOKEN_ENDPOINT
+              value: {{ $appIntegrationsOauth.tokenEndpoint | quote }}
+            - name: APP_INTEGRATIONS_OAUTH_CLIENT_ID
+              value: {{ $appIntegrationsOauth.clientId | quote }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "APP_INTEGRATIONS_OAUTH_CLIENT_SECRET"
+                "config" $appIntegrationsOauth
+            ) | nindent 12 }}
+            {{- with $appIntegrationsOauth.audience }}
+            - name: APP_INTEGRATIONS_OAUTH_AUDIENCE
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with $appIntegrationsOauth.scopes }}
+            - name: APP_INTEGRATIONS_OAUTH_SCOPES
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with $appIntegrationsOauth.clientAuthentication }}
+            - name: APP_INTEGRATIONS_OAUTH_CLIENT_AUTHENTICATION
+              value: {{ . | quote }}
+            {{- end }}
+            {{- else }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "APP_INTEGRATIONS_API_KEY"
+                "config" .Values.connectors.appIntegrations.apiKey
+            ) | nindent 12 }}
+            {{- end }}
+            {{- end }}
+          {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+            {{- include "camundaPlatform.caBundleEnv" . | nindent 12 }}
+            {{- include "camundaPlatform.caBundleJavaToolOptionsEnv" . | nindent 12 }}
+          {{- end }}
+            {{- if .Values.global.tls.connectors.enabled }}
+            - name: SERVER_SSL_ENABLED
+              value: "true"
+            {{- if .Values.global.tls.connectors.cert.secret.existingSecret }}
+            {{- if eq (.Values.global.tls.connectors.type | default "pkcs12") "pem" }}
+            - name: SERVER_SSL_CERTIFICATE
+              value: /usr/local/camunda/certificates/connectors/{{ include "camundaPlatform.connectorsSecretCertKey" . }}
+            - name: SERVER_SSL_CERTIFICATE_PRIVATE_KEY
+              value: /usr/local/camunda/certificates/connectors/{{ .Values.global.tls.connectors.privateKey.secret.existingSecretKey }}
+            {{- else }}
+            - name: SERVER_SSL_KEY_STORE
+              value: file:/usr/local/camunda/certificates/connectors/{{ include "camundaPlatform.connectorsSecretCertKey" . }}
+            - name: SERVER_SSL_KEY_STORE_TYPE
+              value: PKCS12
+            - name: SERVER_SSL_KEY_STORE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.global.tls.connectors.keystorePassword.secret.existingSecret | default .Values.global.tls.connectors.cert.secret.existingSecret }}
+                  key: {{ .Values.global.tls.connectors.keystorePassword.secret.existingSecretKey }}
+            {{- with .Values.global.tls.connectors.keyAlias }}
+            - name: SERVER_SSL_KEY_ALIAS
+              value: {{ . | quote }}
+            {{- end }}
+            {{- end }}
+            {{- end }}
+            {{- end }}
+          {{- if .Values.connectors.env}}
+            {{ .Values.connectors.env | toYaml | nindent 12 }}
+          {{- end }}
+          {{- if or .Values.global.identity.auth.enabled .Values.connectors.envFrom }}
+          envFrom:
+          {{- if .Values.global.identity.auth.enabled }}
+            - configMapRef:
+                name: {{ include "camundaPlatform.fullname" . }}-identity-env-vars
+          {{- end }}
+          {{- if .Values.connectors.envFrom -}}
+            {{ .Values.connectors.envFrom | toYaml | nindent 12 }}
+          {{- end }}
+          {{- end }}
+          {{- if .Values.connectors.command}}
+          command: {{ toYaml .Values.connectors.command | nindent 12 }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.connectors.resources | nindent 12 }}
+          {{- if .Values.connectors.startupProbe.enabled }}
+          startupProbe:
+            httpGet:
+              path: {{ include "camundaPlatform.joinpath" (list .Values.connectors.contextPath .Values.connectors.startupProbe.probePath) }}
+              port: {{ .Values.connectors.service.serverName }}
+              scheme: {{ .Values.connectors.startupProbe.scheme | default (ternary "HTTPS" "HTTP" (eq (include "camundaPlatform.connectorsTLSEnabled" .) "true")) }}
+            initialDelaySeconds: {{ .Values.connectors.startupProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.connectors.startupProbe.periodSeconds }}
+            successThreshold: {{ .Values.connectors.startupProbe.successThreshold }}
+            failureThreshold: {{ .Values.connectors.startupProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.connectors.startupProbe.timeoutSeconds }}
+          {{- end }}
+          {{- if .Values.connectors.readinessProbe.enabled }}
+          readinessProbe:
+            httpGet:
+              path: {{ include "camundaPlatform.joinpath" (list .Values.connectors.contextPath .Values.connectors.readinessProbe.probePath) }}
+              port: {{ .Values.connectors.service.serverName }}
+              scheme: {{ .Values.connectors.readinessProbe.scheme | default (ternary "HTTPS" "HTTP" (eq (include "camundaPlatform.connectorsTLSEnabled" .) "true")) }}
+            initialDelaySeconds: {{ .Values.connectors.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.connectors.readinessProbe.periodSeconds }}
+            successThreshold: {{ .Values.connectors.readinessProbe.successThreshold }}
+            failureThreshold: {{ .Values.connectors.readinessProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.connectors.readinessProbe.timeoutSeconds }}
+          {{- end }}
+          {{- if .Values.connectors.livenessProbe.enabled }}
+          livenessProbe:
+            httpGet:
+              path: {{ include "camundaPlatform.joinpath" (list .Values.connectors.contextPath .Values.connectors.livenessProbe.probePath) }}
+              port: {{ .Values.connectors.service.serverName }}
+              scheme: {{ .Values.connectors.livenessProbe.scheme | default (ternary "HTTPS" "HTTP" (eq (include "camundaPlatform.connectorsTLSEnabled" .) "true")) }}
+            initialDelaySeconds: {{ .Values.connectors.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.connectors.livenessProbe.periodSeconds }}
+            successThreshold: {{ .Values.connectors.livenessProbe.successThreshold }}
+            failureThreshold: {{ .Values.connectors.livenessProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.connectors.livenessProbe.timeoutSeconds }}
+          {{- end }}
+          volumeMounts:
+            - mountPath: /tmp
+              name: tmp
+            - name: config
+              mountPath: /config/application.yaml
+              subPath: application.yaml
+          {{- with .Values.connectors.extraConfiguration }}
+          {{- include "camundaPlatform.extraConfigurationVolumeMounts" (dict "extraConfig" . "volumeName" "config" "basePath" "/config") | trim | nindent 12 }}
+          {{- end }}
+          {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+            {{- include "camundaPlatform.caBundleVolumeMount" . | nindent 12 }}
+            {{- include "camundaPlatform.caBundleTruststoreVolumeMount" . | nindent 12 }}
+          {{- end }}
+            {{- if and .Values.global.tls.connectors.enabled .Values.global.tls.connectors.cert.secret.existingSecret }}
+            - name: connectors-tls
+              mountPath: /usr/local/camunda/certificates/connectors
+              readOnly: true
+            {{- end }}
+          {{- if .Values.connectors.extraVolumeMounts }}
+            {{- .Values.connectors.extraVolumeMounts | toYaml | nindent 12 }}
+          {{- end }}
+        {{- if .Values.connectors.sidecars }}
+        {{- .Values.connectors.sidecars | toYaml | nindent 8 }}
+        {{- end }}
+      volumes:
+        - name: tmp
+          {{- if and .Values.connectors.persistence.enabled .Values.connectors.persistence.existingClaim }}
+          persistentVolumeClaim:
+            claimName: {{ .Values.connectors.persistence.existingClaim }}
+          {{- else if .Values.connectors.persistence.enabled }}
+          ephemeral:
+            volumeClaimTemplate:
+              metadata:
+                labels: {{- include "connectors.labels" . | nindent 18 }}
+                {{- with .Values.connectors.persistence.annotations }}
+                annotations: {{- toYaml . | nindent 18 }}
+                {{- end }}
+              spec:
+                accessModes: {{ .Values.connectors.persistence.accessModes | default (list "ReadWriteOnce") | toYaml | nindent 18 }}
+                {{- with .Values.connectors.persistence.storageClassName }}
+                storageClassName: {{ . | quote }}
+                {{- end }}
+                {{- with .Values.connectors.persistence.selector }}
+                selector: {{- toYaml . | nindent 18 }}
+                {{- end }}
+                resources:
+                  requests:
+                    storage: {{ .Values.connectors.persistence.size | default "1Gi" | quote }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        - name: config
+          configMap:
+            name: {{ include "connectors.fullname" . }}-configuration
+      {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+        {{- include "camundaPlatform.caBundleVolume" . | nindent 8 }}
+        {{- include "camundaPlatform.caBundleTruststoreVolume" . | nindent 8 }}
+      {{- end }}
+        {{- if and .Values.global.tls.connectors.enabled .Values.global.tls.connectors.cert.secret.existingSecret }}
+        - name: connectors-tls
+          secret:
+            secretName: {{ .Values.global.tls.connectors.cert.secret.existingSecret }}
+            defaultMode: 0440
+        {{- end }}
+      {{- if .Values.connectors.extraVolumes }}
+        {{- .Values.connectors.extraVolumes | toYaml | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "connectors.serviceAccountName" . }}
+      {{- if kindIs "bool" .Values.connectors.automountServiceAccountToken }}
+      automountServiceAccountToken: {{ .Values.connectors.automountServiceAccountToken }}
+      {{- end }}
+      {{- if .Values.connectors.dnsConfig }}
+      dnsConfig: {{- toYaml .Values.connectors.dnsConfig | nindent 8 }}
+      {{- end }}
+      {{- if .Values.connectors.dnsPolicy }}
+      dnsPolicy: {{ .Values.connectors.dnsPolicy | quote }}
+      {{- end }}
+      {{- if .Values.connectors.podSecurityContext }}
+      securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.connectors.podSecurityContext "context" $) | nindent 8 }}
+      {{- end }}
+      {{- with .Values.connectors.nodeSelector | default .Values.global.nodeSelector }}
+      nodeSelector:
+        {{ toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.connectors.affinity }}
+      affinity:
+        {{ toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.connectors.tolerations }}
+      tolerations:
+        {{ toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

@@ -1,0 +1,57 @@
+{{- if and (eq (include "camundaPlatform.optimizeEnabled" .) "true") (not .Values.global.noSecondaryStorage) -}}
+kind: ConfigMap
+metadata:
+  name: {{ include "optimize.fullname" . }}-configuration
+  labels:
+    {{- include "optimize.labels" . | nindent 4 }}
+apiVersion: v1
+data:
+  environment-config.yaml: |
+  {{- if .Values.optimize.configuration }}
+    {{ .Values.optimize.configuration | indent 4 | trim }}
+  {{- else }}
+    {{- include "optimize.defaultConfig" . | trim | nindent 4 }}
+  {{- end }}
+  {{- if or (eq (include "optimize.authEnabled" .) "true") .Values.optimize.extraConfiguration }}
+  application-ccsm.yaml: |
+    {{- $springImport := include "optimize.springConfigImport" . }}
+    {{- if $springImport }}
+    spring:
+      config:
+        import: {{ $springImport }}
+    {{- end }}
+    {{- if (eq (include "optimize.authEnabled" .) "true") }}
+    camunda:
+      identity:
+        clientId: {{ include "optimize.authClientId" . | quote }}
+        audience: {{ include "optimize.authAudience" . | quote }}
+        issuer: {{ include "optimize.effectiveAuthIssuer" . | quote }}
+        issuerBackendUrl: {{ include "optimize.effectiveAuthIssuerBackendUrl" . | quote }}
+      security:
+        authentication:
+          method: "oidc"
+          oidc:
+            client-id: {{ include "optimize.authClientId" . | quote }}
+            client-secret: ${VALUES_OPTIMIZE_CLIENT_SECRET:}
+            audiences:
+              - {{ include "optimize.authClientId" . | quote }}
+              - {{ include "optimize.authAudience" . | quote }}
+              {{- if eq (include "camundaHub.webModelerEnabled" .) "true" }}
+              - {{ (or .Values.global.identity.auth.camundaHub.clientApiAudience .Values.global.identity.auth.webModeler.clientApiAudience) | quote }}
+              {{- end }}
+            {{- if (include "optimize.effectiveAuthIssuerUrl" .) }}
+            issuer-uri: {{ include "optimize.effectiveAuthIssuerUrl" . | quote }}
+            {{- else }}
+            authorization-uri: {{ include "optimize.effectiveAuthUrlEndpointAuth" . | quote }}
+            jwk-set-uri: {{ include "optimize.effectiveAuthJwksUrl" . | quote }}
+            token-uri: {{ include "optimize.effectiveAuthBackendUrlEndpointToken" . | quote }}
+            {{- end }}
+            redirect-uri: {{ printf "%s/api/authentication/callback" (tpl (include "optimize.effectiveAuthRedirectUrl" .) $) | quote }}
+    {{- end }}
+  {{- end }}
+
+  {{- range .Values.optimize.extraConfiguration }}
+  {{ .file }}: |
+    {{ .content | indent 4 | trim }}
+  {{- end }}
+{{- end }}

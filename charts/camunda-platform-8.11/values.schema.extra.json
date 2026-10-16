@@ -1,0 +1,2007 @@
+{
+    "definitions": {
+        "secretStoreFileEntries": {
+            "type": "object",
+            "propertyNames": {
+                "enum": ["default"]
+            },
+            "additionalProperties": {
+                "type": "object",
+                "properties": {
+                    "path": {
+                        "type": "string",
+                        "pattern": "^/",
+                        "minLength": 1
+                    },
+                    "secret": {
+                        "type": "object",
+                        "properties": {
+                            "existingSecret": {
+                                "type": "string",
+                                "minLength": 1
+                            }
+                        },
+                        "additionalProperties": false
+                    }
+                },
+                "additionalProperties": false
+            }
+        },
+        "secretStoreAwsEntries": {
+            "type": "object",
+            "propertyNames": {
+                "enum": ["default"]
+            },
+            "additionalProperties": {
+                "type": "object",
+                "properties": {
+                    "region": {"type": "string"},
+                    "pathPrefix": {"type": "string"},
+                    "roleArn": {"type": "string", "minLength": 1}
+                },
+                "additionalProperties": false
+            }
+        },
+        "secretStoreGcpEntries": {
+            "type": "object",
+            "propertyNames": {
+                "enum": ["default"]
+            },
+            "additionalProperties": {
+                "type": "object",
+                "properties": {
+                    "projectId": {"type": "string", "minLength": 1},
+                    "pathPrefix": {"type": "string"},
+                    "endpoint": {"type": "string", "minLength": 1},
+                    "gcpServiceAccount": {"type": "string", "minLength": 1}
+                },
+                "additionalProperties": false
+            }
+        },
+        "secretStoreProviderSet": {
+            "type": "object",
+            "properties": {
+                "file": {"$ref": "#/definitions/secretStoreFileEntries"},
+                "aws": {"$ref": "#/definitions/secretStoreAwsEntries"},
+                "gcp": {"$ref": "#/definitions/secretStoreGcpEntries"}
+            },
+            "additionalProperties": false
+        },
+        "secretStore": {
+            "type": "object",
+            "properties": {
+                "file": {"$ref": "#/definitions/secretStoreFileEntries"},
+                "aws": {"$ref": "#/definitions/secretStoreAwsEntries"},
+                "gcp": {"$ref": "#/definitions/secretStoreGcpEntries"},
+                "physicalTenants": {
+                    "type": "object",
+                    "propertyNames": {
+                        "pattern": "^[a-zA-Z0-9_-]{1,64}$"
+                    },
+                    "additionalProperties": {"$ref": "#/definitions/secretStoreProviderSet"}
+                }
+            },
+            "additionalProperties": false
+        }
+    },
+    "properties": {
+        "global": {
+            "properties": {
+                "annotations": {"additionalProperties": true},
+                "labels": {"additionalProperties": true},
+                "commonLabels": {"additionalProperties": true},
+                "nodeSelector": {"additionalProperties": true},
+                "documentStore": {
+                    "properties": {
+                        "type": {
+                            "properties": {
+                                "aws": {
+                                    "properties": {
+                                        "forcePathStyle": {
+                                            "type": ["boolean", "null"],
+                                            "description": "(Optional) Force path-style addressing on the S3 client. Set to true or false. When unset, the env var is not emitted and the SDK default (virtual-hosted style) is used; set to true when using a custom endpoint that requires path-style addressing (e.g. MinIO, Ceph RGW).",
+                                            "default": null
+                                        },
+                                        "chunkedEncodingEnabled": {
+                                            "type": ["boolean", "null"],
+                                            "description": "(Optional) Enable AWS chunked transfer encoding. Set to false for S3-compatible backends that do not support it (e.g. Garage). When unset, the SDK default (true) is used.",
+                                            "default": null
+                                        },
+                                        "supportLegacyMd5": {
+                                            "type": ["boolean", "null"],
+                                            "description": "(Optional) Add MD5 checksum plugin to the S3 client for MD5 checksum backward compatibility. Set to true to enable. When unset, the plugin is not added.",
+                                            "default": null
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "topology": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                        "mode": {
+                            "type": "string",
+                            "enum": ["combined", "hub", "orchestration", "optimize"],
+                            "default": "combined"
+                        },
+                        "clusters": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/$defs/topologyCluster"
+                            }
+                        }
+                    }
+                },
+                "ingress": {
+                    "properties": {
+                        "protocol": {
+                            "type": "string",
+                            "enum": [
+                                "",
+                                "http",
+                                "https"
+                            ]
+                        },
+                        "publicPorts": {
+                            "properties": {
+                                "http": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 65535
+                                },
+                                "https": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 65535
+                                }
+                            }
+                        },
+                        "annotations": {
+                            "type": "object",
+                            "description": "defines the ingress related annotations, consumed mostly by the ingress controller. Empty by default; keys set here always win over the ingress-nginx compatibility set described in global.compatibility.nginx.renderAnnotations.",
+                            "default": {},
+                            "additionalProperties": {
+                                "type": ["string", "null"]
+                            }
+                        },
+                        "labels": {
+                            "type": "object",
+                            "description": "can be used to define labels which will be applied to the global HTTP ingress resource.",
+                            "default": {},
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                },
+                "identity": {
+                    "properties": {
+                        "keycloak": {
+                            "properties": {
+                                "url": {
+                                    "type": "object",
+                                    "description": "configures the URL to reach an external Keycloak. The \"host\" field supports templating (e.g., {{ .Release.Namespace }}).",
+                                    "default": {},
+                                    "properties": {
+                                        "protocol": {
+                                            "type": "string",
+                                            "description": "defines the protocol used for Keycloak URL (e.g., https).",
+                                            "default": ""
+                                        },
+                                        "host": {
+                                            "type": "string",
+                                            "description": "defines the hostname for Keycloak. Supports templating (e.g., {{ .Release.Namespace }}).",
+                                            "default": ""
+                                        },
+                                        "port": {
+                                            "type": [
+                                                "string",
+                                                "integer"
+                                            ],
+                                            "description": "defines the port for Keycloak (e.g., 443).",
+                                            "default": ""
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "auth": {
+                            "properties": {
+                                "camundaHub": {
+                                    "type": "object",
+                                    "description": "auth configuration for Camunda Hub; overrides the legacy webModeler auth section when set.",
+                                    "default": {},
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    }
+                },
+                "multiregion": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "description": "DEPRECATED, use orchestration.partitioning. Only the regions and regionId settings remain here; the zone-aware scheme is configured under orchestration.partitioning.",
+                    "default": {},
+                    "properties": {
+                        "regions": {
+                            "type": [
+                                "integer",
+                                "string"
+                            ],
+                            "description": "Number of regions this Camunda Platform instance is stretched across. Must be at least 1; the render fails otherwise.",
+                            "default": 1
+                        },
+                        "regionId": {
+                            "type": [
+                                "integer",
+                                "string"
+                            ],
+                            "description": "Unique id of the region. MUST start at 0 for the computation to work correctly. With 2 regions, you would have region 0 and 1. A value outside 0 to regions - 1 fails the render, since node IDs are derived as <ordinal> * regions + regionId.",
+                            "default": 0
+                        }
+                    }
+                },
+                "testDeprecationFlags": {
+                    "type": "object",
+                    "description": "internal flags used by chart tests to assert deprecation behavior.",
+                    "default": {},
+                    "properties": {
+                        "existingSecretsMustBeSet": {
+                            "type": "string",
+                            "description": "give error or warning when existingSecret is not set.",
+                            "default": "warning"
+                        }
+                    }
+                },
+                "gateway": {
+                    "properties": {
+                        "publicPorts": {
+                            "properties": {
+                                "http": {
+                                    "type": [
+                                        "integer",
+                                        "null"
+                                    ],
+                                    "minimum": 1,
+                                    "maximum": 65535,
+                                    "default": null
+                                },
+                                "https": {
+                                    "type": [
+                                        "integer",
+                                        "null"
+                                    ],
+                                    "minimum": 1,
+                                    "maximum": 65535,
+                                    "default": null
+                                }
+                            }
+                        },
+                        "labels": {
+                            "type": "object",
+                            "description": "labels added to the Gateway and all Route resources.",
+                            "default": {},
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        },
+                        "annotations": {
+                            "type": "object",
+                            "description": "annotations added to the Gateway and all Route resources.",
+                            "default": {},
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                },
+                "tls": {"properties": {
+                    "caBundle": {"properties": {
+                        "containerSecurityContext": {
+                            "additionalProperties": true,
+                            "properties": {
+                                "capabilities": {"additionalProperties": true},
+                                "seccompProfile": {"additionalProperties": true}
+                            }
+                        }
+                    }}
+                }}
+            }
+        },
+        "console": {
+            "deprecated": true,
+            "properties": {
+                "env": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "Environment variable name"
+                            },
+                            "value": {
+                                "description": "Environment variable value",
+                                "anyOf": [
+                                    {
+                                        "type": "string"
+                                    },
+                                    {
+                                        "type": "null"
+                                    }
+                                ],
+                                "nullable": true
+                            },
+                            "valueFrom": {
+                                "description": "Source for the environment variable's value (Kubernetes EnvVarSource).",
+                                "type": "object",
+                                "properties": {
+                                    "fieldRef": {
+                                        "type": "object",
+                                        "description": "Selects a field of the pod (supports metadata.name, metadata.namespace, metadata.uid, metadata.labels['<KEY>'], metadata.annotations['<KEY>'], spec.nodeName, spec.serviceAccountName, status.hostIP, status.podIP, status.podIPs).",
+                                        "properties": {
+                                            "apiVersion": {
+                                                "type": "string"
+                                            },
+                                            "fieldPath": {
+                                                "type": "string"
+                                            }
+                                        },
+                                        "required": [
+                                            "fieldPath"
+                                        ]
+                                    },
+                                    "resourceFieldRef": {
+                                        "type": "object",
+                                        "description": "Selects a resource of the container (only resources limits and requests are currently supported).",
+                                        "properties": {
+                                            "containerName": {
+                                                "type": "string"
+                                            },
+                                            "resource": {
+                                                "type": "string"
+                                            },
+                                            "divisor": {
+                                                "type": [
+                                                    "string",
+                                                    "integer",
+                                                    "number"
+                                                ]
+                                            }
+                                        },
+                                        "required": [
+                                            "resource"
+                                        ]
+                                    },
+                                    "configMapKeyRef": {
+                                        "type": "object",
+                                        "description": "Selects a key of a ConfigMap.",
+                                        "properties": {
+                                            "name": {
+                                                "type": "string"
+                                            },
+                                            "key": {
+                                                "type": "string"
+                                            },
+                                            "optional": {
+                                                "type": "boolean"
+                                            }
+                                        },
+                                        "required": [
+                                            "key"
+                                        ]
+                                    },
+                                    "secretKeyRef": {
+                                        "type": "object",
+                                        "description": "Selects a key of a Secret.",
+                                        "properties": {
+                                            "name": {
+                                                "type": "string"
+                                            },
+                                            "key": {
+                                                "type": "string"
+                                            },
+                                            "optional": {
+                                                "type": "boolean"
+                                            }
+                                        },
+                                        "required": [
+                                            "key"
+                                        ]
+                                    }
+                                }
+                            }
+                        },
+                        "required": [
+                            "name"
+                        ],
+                        "additionalProperties": false
+                    }
+                }
+            }
+        },
+        "connectors": {
+            "properties": {
+                "resources": {
+                    "additionalProperties": true,
+                    "properties": {
+                        "requests": {"additionalProperties": true},
+                        "limits": {"additionalProperties": true}
+                    }
+                },
+                "containerSecurityContext": {
+                    "additionalProperties": true,
+                    "properties": {"seccompProfile": {"additionalProperties": true}}
+                },
+                "podSecurityContext": {
+                    "additionalProperties": true,
+                    "properties": {"seccompProfile": {"additionalProperties": true}}
+                },
+                "podAnnotations": {"additionalProperties": true},
+                "podLabels": {"additionalProperties": true},
+                "nodeSelector": {"additionalProperties": true},
+                "serviceAccount": {"properties": {
+                    "annotations": {"additionalProperties": true},
+                    "labels": {"additionalProperties": true}
+                }},
+                "persistence": {"properties": {
+                    "annotations": {"additionalProperties": true}
+                }},
+                "appIntegrations": {
+                    "properties": {
+                        "oauth": {
+                            "properties": {
+                                "clientAuthentication": {
+                                    "enum": [
+                                        "",
+                                        "credentialsBody",
+                                        "basicAuthHeader"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "automountServiceAccountToken": {
+                    "type": ["boolean", "null"],
+                    "description": "can be used to override the automatic mounting of the service account token at the pod level. When unset, the ServiceAccount configuration is used.",
+                    "default": null
+                },
+                "env": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "Environment variable name"
+                            },
+                            "value": {
+                                "description": "Environment variable value",
+                                "anyOf": [
+                                    {
+                                        "type": "string"
+                                    },
+                                    {
+                                        "type": "null"
+                                    }
+                                ],
+                                "nullable": true
+                            },
+                            "valueFrom": {
+                                "description": "Source for the environment variable's value (Kubernetes EnvVarSource).",
+                                "type": "object",
+                                "properties": {
+                                    "fieldRef": {
+                                        "type": "object",
+                                        "description": "Selects a field of the pod (supports metadata.name, metadata.namespace, metadata.uid, metadata.labels['<KEY>'], metadata.annotations['<KEY>'], spec.nodeName, spec.serviceAccountName, status.hostIP, status.podIP, status.podIPs).",
+                                        "properties": {
+                                            "apiVersion": {
+                                                "type": "string"
+                                            },
+                                            "fieldPath": {
+                                                "type": "string"
+                                            }
+                                        },
+                                        "required": [
+                                            "fieldPath"
+                                        ]
+                                    },
+                                    "resourceFieldRef": {
+                                        "type": "object",
+                                        "description": "Selects a resource of the container (only resources limits and requests are currently supported).",
+                                        "properties": {
+                                            "containerName": {
+                                                "type": "string"
+                                            },
+                                            "resource": {
+                                                "type": "string"
+                                            },
+                                            "divisor": {
+                                                "type": [
+                                                    "string",
+                                                    "integer",
+                                                    "number"
+                                                ]
+                                            }
+                                        },
+                                        "required": [
+                                            "resource"
+                                        ]
+                                    },
+                                    "configMapKeyRef": {
+                                        "type": "object",
+                                        "description": "Selects a key of a ConfigMap.",
+                                        "properties": {
+                                            "name": {
+                                                "type": "string"
+                                            },
+                                            "key": {
+                                                "type": "string"
+                                            },
+                                            "optional": {
+                                                "type": "boolean"
+                                            }
+                                        },
+                                        "required": [
+                                            "key"
+                                        ]
+                                    },
+                                    "secretKeyRef": {
+                                        "type": "object",
+                                        "description": "Selects a key of a Secret.",
+                                        "properties": {
+                                            "name": {
+                                                "type": "string"
+                                            },
+                                            "key": {
+                                                "type": "string"
+                                            },
+                                            "optional": {
+                                                "type": "boolean"
+                                            }
+                                        },
+                                        "required": [
+                                            "key"
+                                        ]
+                                    }
+                                }
+                            }
+                        },
+                        "required": [
+                            "name"
+                        ],
+                        "additionalProperties": false
+                    }
+                },
+                "logging": {
+                    "type": "object",
+                    "description": "configuration for the Connectors logging, included directly in the connectors configuration YAML file.",
+                    "default": {},
+                    "additionalProperties": true
+                },
+                "service": {
+                    "properties": {
+                        "annotations": {"additionalProperties": true},
+                        "appProtocols": {
+                            "type": "object",
+                            "description": "can be used to set the Kubernetes Service appProtocol hint per port (server), e.g. {server: \"http\"}. Empty by default, no behavior change. See https://kubernetes.io/docs/concepts/services-networking/service/#application-protocol",
+                            "default": {},
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "identity": {
+            "properties": {
+                "resources": {
+                    "additionalProperties": true,
+                    "properties": {
+                        "requests": {"additionalProperties": true},
+                        "limits": {"additionalProperties": true}
+                    }
+                },
+                "containerSecurityContext": {
+                    "additionalProperties": true,
+                    "properties": {"seccompProfile": {"additionalProperties": true}}
+                },
+                "podSecurityContext": {
+                    "additionalProperties": true,
+                    "properties": {"seccompProfile": {"additionalProperties": true}}
+                },
+                "podAnnotations": {"additionalProperties": true},
+                "podLabels": {"additionalProperties": true},
+                "nodeSelector": {"additionalProperties": true},
+                "serviceAccount": {"properties": {
+                    "annotations": {"additionalProperties": true},
+                    "labels": {"additionalProperties": true}
+                }},
+                "persistence": {"properties": {
+                    "annotations": {"additionalProperties": true}
+                }},
+                "automountServiceAccountToken": {
+                    "type": ["boolean", "null"],
+                    "description": "can be used to override the automatic mounting of the service account token at the pod level. When unset, the ServiceAccount configuration is used.",
+                    "default": null
+                },
+                "env": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "Environment variable name"
+                            },
+                            "value": {
+                                "description": "Environment variable value",
+                                "anyOf": [
+                                    {
+                                        "type": "string"
+                                    },
+                                    {
+                                        "type": "null"
+                                    }
+                                ],
+                                "nullable": true
+                            },
+                            "valueFrom": {
+                                "description": "Source for the environment variable's value (Kubernetes EnvVarSource).",
+                                "type": "object",
+                                "properties": {
+                                    "fieldRef": {
+                                        "type": "object",
+                                        "description": "Selects a field of the pod (supports metadata.name, metadata.namespace, metadata.uid, metadata.labels['<KEY>'], metadata.annotations['<KEY>'], spec.nodeName, spec.serviceAccountName, status.hostIP, status.podIP, status.podIPs).",
+                                        "properties": {
+                                            "apiVersion": {
+                                                "type": "string"
+                                            },
+                                            "fieldPath": {
+                                                "type": "string"
+                                            }
+                                        },
+                                        "required": [
+                                            "fieldPath"
+                                        ]
+                                    },
+                                    "resourceFieldRef": {
+                                        "type": "object",
+                                        "description": "Selects a resource of the container (only resources limits and requests are currently supported).",
+                                        "properties": {
+                                            "containerName": {
+                                                "type": "string"
+                                            },
+                                            "resource": {
+                                                "type": "string"
+                                            },
+                                            "divisor": {
+                                                "type": [
+                                                    "string",
+                                                    "integer",
+                                                    "number"
+                                                ]
+                                            }
+                                        },
+                                        "required": [
+                                            "resource"
+                                        ]
+                                    },
+                                    "configMapKeyRef": {
+                                        "type": "object",
+                                        "description": "Selects a key of a ConfigMap.",
+                                        "properties": {
+                                            "name": {
+                                                "type": "string"
+                                            },
+                                            "key": {
+                                                "type": "string"
+                                            },
+                                            "optional": {
+                                                "type": "boolean"
+                                            }
+                                        },
+                                        "required": [
+                                            "key"
+                                        ]
+                                    },
+                                    "secretKeyRef": {
+                                        "type": "object",
+                                        "description": "Selects a key of a Secret.",
+                                        "properties": {
+                                            "name": {
+                                                "type": "string"
+                                            },
+                                            "key": {
+                                                "type": "string"
+                                            },
+                                            "optional": {
+                                                "type": "boolean"
+                                            }
+                                        },
+                                        "required": [
+                                            "key"
+                                        ]
+                                    }
+                                }
+                            }
+                        },
+                        "required": [
+                            "name"
+                        ],
+                        "additionalProperties": false
+                    }
+                },
+                "logging": {
+                    "properties": {
+                        "level": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                },
+                "realm": {
+                    "if": {
+                        "properties": {
+                            "enabled": {
+                                "const": true
+                            }
+                        },
+                        "required": [
+                            "enabled"
+                        ]
+                    },
+                    "then": {
+                        "properties": {
+                            "id": {
+                                "minLength": 1
+                            }
+                        },
+                        "required": [
+                            "id"
+                        ]
+                    }
+                },
+                "service": {
+                    "properties": {
+                        "annotations": {"additionalProperties": true},
+                        "appProtocols": {
+                            "type": "object",
+                            "description": "can be used to set the Kubernetes Service appProtocol hint per port (http, metrics), e.g. {http: \"http\"}. Empty by default, no behavior change. See https://kubernetes.io/docs/concepts/services-networking/service/#application-protocol",
+                            "default": {},
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "optimize": {
+            "properties": {
+                "resources": {
+                    "additionalProperties": true,
+                    "properties": {
+                        "requests": {"additionalProperties": true},
+                        "limits": {"additionalProperties": true}
+                    }
+                },
+                "migration": {"properties": {
+                    "resources": {
+                        "additionalProperties": true,
+                        "properties": {
+                            "requests": {"additionalProperties": true},
+                            "limits": {"additionalProperties": true}
+                        }
+                    }
+                }},
+                "containerSecurityContext": {
+                    "additionalProperties": true,
+                    "properties": {"seccompProfile": {"additionalProperties": true}}
+                },
+                "podSecurityContext": {
+                    "additionalProperties": true,
+                    "properties": {"seccompProfile": {"additionalProperties": true}}
+                },
+                "podAnnotations": {"additionalProperties": true},
+                "podLabels": {"additionalProperties": true},
+                "nodeSelector": {"additionalProperties": true},
+                "serviceAccount": {"properties": {
+                    "annotations": {"additionalProperties": true},
+                    "labels": {"additionalProperties": true}
+                }},
+                "persistence": {"properties": {
+                    "annotations": {"additionalProperties": true}
+                }},
+                "security": {
+                    "properties": {
+                        "authentication": {
+                            "properties": {
+                                "method": {
+                                    "enum": ["", "oidc", "none"]
+                                },
+                                "oidc": {
+                                    "properties": {
+                                        "envFromProvides": {
+                                            "items": {
+                                                "type": "string",
+                                                "enum": [
+                                                    "CAMUNDA_IDENTITY_ISSUER",
+                                                    "CAMUNDA_IDENTITY_ISSUER_BACKEND_URL",
+                                                    "SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI",
+                                                    "VALUES_OPTIMIZE_CLIENT_SECRET",
+                                                    "CAMUNDA_IDENTITY_BASEURL"
+                                                ]
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "automountServiceAccountToken": {
+                    "type": ["boolean", "null"],
+                    "description": "can be used to override the automatic mounting of the service account token at the pod level. When unset, the ServiceAccount configuration is used.",
+                    "default": null
+                },
+                "env": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "Environment variable name"
+                            },
+                            "value": {
+                                "description": "Environment variable value",
+                                "anyOf": [
+                                    {
+                                        "type": "string"
+                                    },
+                                    {
+                                        "type": "null"
+                                    }
+                                ],
+                                "nullable": true
+                            },
+                            "valueFrom": {
+                                "description": "Source for the environment variable's value (Kubernetes EnvVarSource).",
+                                "type": "object",
+                                "properties": {
+                                    "fieldRef": {
+                                        "type": "object",
+                                        "description": "Selects a field of the pod (supports metadata.name, metadata.namespace, metadata.uid, metadata.labels['<KEY>'], metadata.annotations['<KEY>'], spec.nodeName, spec.serviceAccountName, status.hostIP, status.podIP, status.podIPs).",
+                                        "properties": {
+                                            "apiVersion": {
+                                                "type": "string"
+                                            },
+                                            "fieldPath": {
+                                                "type": "string"
+                                            }
+                                        },
+                                        "required": [
+                                            "fieldPath"
+                                        ]
+                                    },
+                                    "resourceFieldRef": {
+                                        "type": "object",
+                                        "description": "Selects a resource of the container (only resources limits and requests are currently supported).",
+                                        "properties": {
+                                            "containerName": {
+                                                "type": "string"
+                                            },
+                                            "resource": {
+                                                "type": "string"
+                                            },
+                                            "divisor": {
+                                                "type": [
+                                                    "string",
+                                                    "integer",
+                                                    "number"
+                                                ]
+                                            }
+                                        },
+                                        "required": [
+                                            "resource"
+                                        ]
+                                    },
+                                    "configMapKeyRef": {
+                                        "type": "object",
+                                        "description": "Selects a key of a ConfigMap.",
+                                        "properties": {
+                                            "name": {
+                                                "type": "string"
+                                            },
+                                            "key": {
+                                                "type": "string"
+                                            },
+                                            "optional": {
+                                                "type": "boolean"
+                                            }
+                                        },
+                                        "required": [
+                                            "key"
+                                        ]
+                                    },
+                                    "secretKeyRef": {
+                                        "type": "object",
+                                        "description": "Selects a key of a Secret.",
+                                        "properties": {
+                                            "name": {
+                                                "type": "string"
+                                            },
+                                            "key": {
+                                                "type": "string"
+                                            },
+                                            "optional": {
+                                                "type": "boolean"
+                                            }
+                                        },
+                                        "required": [
+                                            "key"
+                                        ]
+                                    }
+                                }
+                            }
+                        },
+                        "required": [
+                            "name"
+                        ],
+                        "additionalProperties": false
+                    }
+                },
+                "service": {
+                    "properties": {
+                        "annotations": {"additionalProperties": true},
+                        "appProtocols": {
+                            "type": "object",
+                            "description": "can be used to set the Kubernetes Service appProtocol hint per port (http, management), e.g. {http: \"http\"}. Empty by default, no behavior change. See https://kubernetes.io/docs/concepts/services-networking/service/#application-protocol",
+                            "default": {},
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "migration": {
+                "properties": {
+                    "env": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "type": "string",
+                                    "description": "Environment variable name"
+                                },
+                                "value": {
+                                    "description": "Environment variable value",
+                                    "anyOf": [
+                                        {
+                                            "type": "string"
+                                        },
+                                        {
+                                            "type": "null"
+                                        }
+                                    ],
+                                    "nullable": true
+                                },
+                                "valueFrom": {
+                                    "description": "Source for the environment variable's value (Kubernetes EnvVarSource).",
+                                    "type": "object",
+                                    "properties": {
+                                        "fieldRef": {
+                                            "type": "object",
+                                            "description": "Selects a field of the pod (supports metadata.name, metadata.namespace, metadata.uid, metadata.labels['<KEY>'], metadata.annotations['<KEY>'], spec.nodeName, spec.serviceAccountName, status.hostIP, status.podIP, status.podIPs).",
+                                            "properties": {
+                                                "apiVersion": {
+                                                    "type": "string"
+                                                },
+                                                "fieldPath": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "fieldPath"
+                                            ]
+                                        },
+                                        "resourceFieldRef": {
+                                            "type": "object",
+                                            "description": "Selects a resource of the container (only resources limits and requests are currently supported).",
+                                            "properties": {
+                                                "containerName": {
+                                                    "type": "string"
+                                                },
+                                                "resource": {
+                                                    "type": "string"
+                                                },
+                                                "divisor": {
+                                                    "type": [
+                                                        "string",
+                                                        "integer",
+                                                        "number"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "resource"
+                                            ]
+                                        },
+                                        "configMapKeyRef": {
+                                            "type": "object",
+                                            "description": "Selects a key of a ConfigMap.",
+                                            "properties": {
+                                                "name": {
+                                                    "type": "string"
+                                                },
+                                                "key": {
+                                                    "type": "string"
+                                                },
+                                                "optional": {
+                                                    "type": "boolean"
+                                                }
+                                            },
+                                            "required": [
+                                                "key"
+                                            ]
+                                        },
+                                        "secretKeyRef": {
+                                            "type": "object",
+                                            "description": "Selects a key of a Secret.",
+                                            "properties": {
+                                                "name": {
+                                                    "type": "string"
+                                                },
+                                                "key": {
+                                                    "type": "string"
+                                                },
+                                                "optional": {
+                                                    "type": "boolean"
+                                                }
+                                            },
+                                            "required": [
+                                                "key"
+                                            ]
+                                        }
+                                    }
+                                }
+                            },
+                            "required": [
+                                "name"
+                            ],
+                            "additionalProperties": false
+                        }
+                    }
+                }
+            }
+        },
+        "orchestration": {
+            "properties": {
+                "resources": {
+                    "additionalProperties": true,
+                    "properties": {
+                        "requests": {"additionalProperties": true},
+                        "limits": {"additionalProperties": true}
+                    }
+                },
+                "containerSecurityContext": {
+                    "additionalProperties": true,
+                    "properties": {"seccompProfile": {"additionalProperties": true}}
+                },
+                "podSecurityContext": {
+                    "additionalProperties": true,
+                    "properties": {"seccompProfile": {"additionalProperties": true}}
+                },
+                "podAnnotations": {"additionalProperties": true},
+                "podLabels": {"additionalProperties": true},
+                "nodeSelector": {"additionalProperties": true},
+                "serviceAccount": {"properties": {
+                    "annotations": {"additionalProperties": true},
+                    "labels": {"additionalProperties": true}
+                }},
+                "envFromProvides": {
+                    "items": {
+                        "type": "string",
+                        "enum": [
+                            "CAMUNDA_CLUSTER_NODEID",
+                            "ZEEBE_BROKER_CLUSTER_NODEID",
+                            "CAMUNDA_CLUSTER_NAME",
+                            "ZEEBE_BROKER_CLUSTER_CLUSTERNAME",
+                            "CAMUNDA_CLUSTER_SIZE",
+                            "ZEEBE_BROKER_CLUSTER_CLUSTERSIZE",
+                            "CAMUNDA_CLUSTER_REPLICATIONFACTOR",
+                            "ZEEBE_BROKER_CLUSTER_REPLICATIONFACTOR",
+                            "CAMUNDA_CLUSTER_PARTITIONCOUNT",
+                            "ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT",
+                            "CAMUNDA_CLUSTER_INITIALCONTACTPOINTS",
+                            "ZEEBE_BROKER_CLUSTER_INITIALCONTACTPOINTS",
+                            "CAMUNDA_CLUSTER_NETWORK_ADVERTISEDHOST",
+                            "ZEEBE_BROKER_NETWORK_ADVERTISEDHOST",
+                            "CAMUNDA_CLUSTER_NETWORK_HOST",
+                            "ZEEBE_BROKER_NETWORK_HOST",
+                            "CAMUNDA_CLUSTER_NETWORK_COMMANDAPI_PORT",
+                            "ZEEBE_BROKER_NETWORK_COMMANDAPI_PORT",
+                            "CAMUNDA_CLUSTER_NETWORK_INTERNALAPI_PORT",
+                            "ZEEBE_BROKER_NETWORK_INTERNALAPI_PORT"
+                        ]
+                    }
+                },
+                "partitioning": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "description": "How partition replicas are distributed across brokers, and how brokers are grouped into failure domains. Mirrors the engine configuration camunda.cluster.partitioning. This does not set the number of partitions, which is orchestration.partitionCount; it sets how the replicas of those partitions are placed. WARNING: get your configuration reviewed by Camunda before going to production — see https://docs.camunda.io/docs/self-managed/concepts/multi-region/dual-region/.",
+                    "default": {},
+                    "properties": {
+                        "scheme": {
+                            "type": "string",
+                            "enum": [
+                                "round-robin",
+                                "zone-aware"
+                            ],
+                            "description": "partitioning scheme. `round-robin` leaves brokers on plain numeric node IDs, `zone-aware` identifies them as `<zone>_<index>` and places replicas across the declared zones. These are two of the schemes accepted by camunda.cluster.partitioning.scheme; the engine also accepts FIXED, which this chart does not render.",
+                            "default": "round-robin"
+                        },
+                        "zone": {
+                            "type": "string",
+                            "maxLength": 32,
+                            "pattern": "^$|^[a-z0-9]([-a-z0-9]*[a-z0-9])?$",
+                            "description": "can be used to define the zone of this Orchestration Cluster deployment when using the zone-aware scheme. Must be an RFC 1123 label of at most 32 characters to fit zone-suffixed resource names.",
+                            "default": ""
+                        },
+                        "zones": {
+                            "type": "array",
+                            "description": "can be used to define the zones of the Orchestration Cluster when using the zone-aware scheme.",
+                            "default": [],
+                            "items": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "required": [
+                                    "name",
+                                    "numberOfBrokers",
+                                    "numberOfReplicas",
+                                    "priority"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 32,
+                                        "pattern": "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$",
+                                        "description": "Name of the zone. It is the prefix of the composite broker member ID \"<zone>_<node-id>\", and one of these names must be selected by orchestration.partitioning.zone. Restricted to an RFC 1123 label: an underscore would make the composite ID ambiguous, and the name is also used to derive per-zone resource and DNS names."
+                                    },
+                                    "numberOfBrokers": {
+                                        "type": "integer",
+                                        "minimum": 1,
+                                        "description": "Number of brokers deployed in this zone. For the local zone it is also the StatefulSet replica count."
+                                    },
+                                    "numberOfReplicas": {
+                                        "type": "integer",
+                                        "minimum": 1,
+                                        "description": "Number of partition replicas this zone holds."
+                                    },
+                                    "priority": {
+                                        "type": "integer",
+                                        "minimum": 1,
+                                        "description": "Priority of this zone in the leader election."
+                                    }
+                                }
+                            }
+                        },
+                        "numberOfZones": {
+                            "type": [
+                                "integer",
+                                "string",
+                                "null"
+                            ],
+                            "description": "Number of failure domains this Camunda Platform instance is stretched across. Must be at least 1; the render fails otherwise. Under the zone-aware scheme it must stay at 1 unless keepUnzonedBrokers is set, where it keeps describing the retained round-robin generation.",
+                            "default": 1
+                        },
+                        "zoneIndex": {
+                            "type": [
+                                "integer",
+                                "string",
+                                "null"
+                            ],
+                            "description": "Zero-based index of the zone this release is deployed to, under the round-robin scheme. A value outside 0 to numberOfZones - 1 fails the render, since node IDs are derived as <ordinal> * numberOfZones + zoneIndex. Under the zone-aware scheme it must stay at 0 unless keepUnzonedBrokers is set, where it keeps addressing the retained round-robin generation.",
+                            "default": 0
+                        }
+                    }
+                },
+                "automountServiceAccountToken": {
+                    "type": ["boolean", "null"],
+                    "description": "can be used to override the automatic mounting of the service account token at the pod level. When unset, the ServiceAccount configuration is used.",
+                    "default": null
+                },
+                "security": {
+                    "properties": {
+                        "initialization": {
+                            "properties": {
+                                "defaultRoles": {
+                                    "properties": {
+                                        "admin": {
+                                            "properties": {
+                                                "clients": {
+                                                    "type": "array",
+                                                    "description": "defines the initial clients that will get the admin permission.",
+                                                    "items": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "secretStore": {
+                    "$ref": "#/definitions/secretStore"
+                },
+                "exporters": {
+                    "properties": {
+                        "zeebe": {
+                            "properties": {
+                                "replicas": {
+                                    "type": [
+                                        "number",
+                                        "null"
+                                    ],
+                                    "description": "(DEPRECATED) can be used to specify the number of replicas for the legacy Zeebe Elasticsearch and OpenSearch exporter indices. Defaults to orchestration.index.replicas.",
+                                    "default": null
+                                }
+                            }
+                        }
+                    }
+                },
+                "ingress": {
+                    "properties": {
+                        "grpc": {
+                            "properties": {
+                                "annotations": {
+                                    "type": "object",
+                                    "description": "defines the ingress related annotations, consumed mostly by the ingress controller. Empty by default; keys set here always win over the ingress-nginx compatibility set described in global.compatibility.nginx.renderAnnotations, which supplies `nginx.ingress.kubernetes.io/ssl-redirect: \"false\"`, `nginx.ingress.kubernetes.io/backend-protocol: \"GRPC\"` and `nginx.ingress.kubernetes.io/proxy-buffer-size: \"128k\"` here while it is on; set those three here to keep them once it is off. With Contour, gRPC is declared on the Orchestration Service listing the gRPC port rather than with an annotation here, using `projectcontour.io/upstream-protocol.h2c` while the gRPC upstream is plaintext and `projectcontour.io/upstream-protocol.h2` once it serves TLS; that state follows global.tls.orchestration.grpc.enabled or `camunda.api.grpc.ssl.enabled` in orchestration.configuration or extraConfiguration, and a CAMUNDA_API_GRPC_SSL_ENABLED entry in orchestration.env overrides both.",
+                                    "default": {},
+                                    "additionalProperties": {
+                                        "type": ["string", "null"]
+                                    }
+                                },
+                                "labels": {
+                                    "type": "object",
+                                    "description": "can be used to define labels which will be applied to the gRPC ingress resource.",
+                                    "default": {},
+                                    "additionalProperties": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "service": {
+                    "properties": {
+                        "annotations": {
+                            "type": "object",
+                            "description": "can be used to define annotations, which will be applied to the service",
+                            "default": {},
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        },
+                        "headless": {
+                            "properties": {
+                                "annotations": {
+                                    "type": "object",
+                                    "description": "can be used to define annotations, which will be applied to the headless service",
+                                    "default": {},
+                                    "additionalProperties": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        },
+                        "appProtocols": {
+                            "type": "object",
+                            "description": "can be used to set the Kubernetes Service appProtocol hint per port (management, http, internal, command, grpc), e.g. {grpc: \"kubernetes.io/h2c\"}. Empty by default, no behavior change. See https://kubernetes.io/docs/concepts/services-networking/service/#application-protocol",
+                            "default": {},
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                },
+                "env": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "Environment variable name"
+                            },
+                            "value": {
+                                "description": "Environment variable value",
+                                "anyOf": [
+                                    {
+                                        "type": "string"
+                                    },
+                                    {
+                                        "type": "null"
+                                    }
+                                ],
+                                "nullable": true
+                            },
+                            "valueFrom": {
+                                "description": "Source for the environment variable's value (Kubernetes EnvVarSource).",
+                                "type": "object",
+                                "properties": {
+                                    "fieldRef": {
+                                        "type": "object",
+                                        "description": "Selects a field of the pod (supports metadata.name, metadata.namespace, metadata.uid, metadata.labels['<KEY>'], metadata.annotations['<KEY>'], spec.nodeName, spec.serviceAccountName, status.hostIP, status.podIP, status.podIPs).",
+                                        "properties": {
+                                            "apiVersion": {
+                                                "type": "string"
+                                            },
+                                            "fieldPath": {
+                                                "type": "string"
+                                            }
+                                        },
+                                        "required": [
+                                            "fieldPath"
+                                        ]
+                                    },
+                                    "resourceFieldRef": {
+                                        "type": "object",
+                                        "description": "Selects a resource of the container (only resources limits and requests are currently supported).",
+                                        "properties": {
+                                            "containerName": {
+                                                "type": "string"
+                                            },
+                                            "resource": {
+                                                "type": "string"
+                                            },
+                                            "divisor": {
+                                                "type": [
+                                                    "string",
+                                                    "integer",
+                                                    "number"
+                                                ]
+                                            }
+                                        },
+                                        "required": [
+                                            "resource"
+                                        ]
+                                    },
+                                    "configMapKeyRef": {
+                                        "type": "object",
+                                        "description": "Selects a key of a ConfigMap.",
+                                        "properties": {
+                                            "name": {
+                                                "type": "string"
+                                            },
+                                            "key": {
+                                                "type": "string"
+                                            },
+                                            "optional": {
+                                                "type": "boolean"
+                                            }
+                                        },
+                                        "required": [
+                                            "key"
+                                        ]
+                                    },
+                                    "secretKeyRef": {
+                                        "type": "object",
+                                        "description": "Selects a key of a Secret.",
+                                        "properties": {
+                                            "name": {
+                                                "type": "string"
+                                            },
+                                            "key": {
+                                                "type": "string"
+                                            },
+                                            "optional": {
+                                                "type": "boolean"
+                                            }
+                                        },
+                                        "required": [
+                                            "key"
+                                        ]
+                                    }
+                                }
+                            }
+                        },
+                        "required": [
+                            "name"
+                        ],
+                        "additionalProperties": false
+                    }
+                },
+                "affinity": {
+                    "type": "object",
+                    "description": "if specified, the pod's scheduling constraints. See https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity.",
+                    "default": {},
+                    "additionalProperties": true
+                },
+                "profiles": {
+                    "type": "object",
+                    "description": "defines which components of the orchestration cluster are enabled (e.g., broker, admin, operate).",
+                    "default": {},
+                    "additionalProperties": true
+                }
+            }
+        },
+        "webModeler": {
+            "deprecated": true,
+            "restapi": {
+                "properties": {
+                    "env": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "type": "string",
+                                    "description": "Environment variable name"
+                                },
+                                "value": {
+                                    "description": "Environment variable value",
+                                    "anyOf": [
+                                        {
+                                            "type": "string"
+                                        },
+                                        {
+                                            "type": "null"
+                                        }
+                                    ],
+                                    "nullable": true
+                                },
+                                "valueFrom": {
+                                    "description": "Source for the environment variable's value (Kubernetes EnvVarSource).",
+                                    "type": "object",
+                                    "properties": {
+                                        "fieldRef": {
+                                            "type": "object",
+                                            "description": "Selects a field of the pod (supports metadata.name, metadata.namespace, metadata.uid, metadata.labels['<KEY>'], metadata.annotations['<KEY>'], spec.nodeName, spec.serviceAccountName, status.hostIP, status.podIP, status.podIPs).",
+                                            "properties": {
+                                                "apiVersion": {
+                                                    "type": "string"
+                                                },
+                                                "fieldPath": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "fieldPath"
+                                            ]
+                                        },
+                                        "resourceFieldRef": {
+                                            "type": "object",
+                                            "description": "Selects a resource of the container (only resources limits and requests are currently supported).",
+                                            "properties": {
+                                                "containerName": {
+                                                    "type": "string"
+                                                },
+                                                "resource": {
+                                                    "type": "string"
+                                                },
+                                                "divisor": {
+                                                    "type": [
+                                                        "string",
+                                                        "integer",
+                                                        "number"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "resource"
+                                            ]
+                                        },
+                                        "configMapKeyRef": {
+                                            "type": "object",
+                                            "description": "Selects a key of a ConfigMap.",
+                                            "properties": {
+                                                "name": {
+                                                    "type": "string"
+                                                },
+                                                "key": {
+                                                    "type": "string"
+                                                },
+                                                "optional": {
+                                                    "type": "boolean"
+                                                }
+                                            },
+                                            "required": [
+                                                "key"
+                                            ]
+                                        },
+                                        "secretKeyRef": {
+                                            "type": "object",
+                                            "description": "Selects a key of a Secret.",
+                                            "properties": {
+                                                "name": {
+                                                    "type": "string"
+                                                },
+                                                "key": {
+                                                    "type": "string"
+                                                },
+                                                "optional": {
+                                                    "type": "boolean"
+                                                }
+                                            },
+                                            "required": [
+                                                "key"
+                                            ]
+                                        }
+                                    }
+                                }
+                            },
+                            "required": [
+                                "name"
+                            ],
+                            "additionalProperties": false
+                        }
+                    }
+                }
+            },
+            "websockets": {
+                "properties": {
+                    "env": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "type": "string",
+                                    "description": "Environment variable name"
+                                },
+                                "value": {
+                                    "description": "Environment variable value",
+                                    "anyOf": [
+                                        {
+                                            "type": "string"
+                                        },
+                                        {
+                                            "type": "null"
+                                        }
+                                    ],
+                                    "nullable": true
+                                },
+                                "valueFrom": {
+                                    "description": "Source for the environment variable's value (Kubernetes EnvVarSource).",
+                                    "type": "object",
+                                    "properties": {
+                                        "fieldRef": {
+                                            "type": "object",
+                                            "description": "Selects a field of the pod (supports metadata.name, metadata.namespace, metadata.uid, metadata.labels['<KEY>'], metadata.annotations['<KEY>'], spec.nodeName, spec.serviceAccountName, status.hostIP, status.podIP, status.podIPs).",
+                                            "properties": {
+                                                "apiVersion": {
+                                                    "type": "string"
+                                                },
+                                                "fieldPath": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "fieldPath"
+                                            ]
+                                        },
+                                        "resourceFieldRef": {
+                                            "type": "object",
+                                            "description": "Selects a resource of the container (only resources limits and requests are currently supported).",
+                                            "properties": {
+                                                "containerName": {
+                                                    "type": "string"
+                                                },
+                                                "resource": {
+                                                    "type": "string"
+                                                },
+                                                "divisor": {
+                                                    "type": [
+                                                        "string",
+                                                        "integer",
+                                                        "number"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "resource"
+                                            ]
+                                        },
+                                        "configMapKeyRef": {
+                                            "type": "object",
+                                            "description": "Selects a key of a ConfigMap.",
+                                            "properties": {
+                                                "name": {
+                                                    "type": "string"
+                                                },
+                                                "key": {
+                                                    "type": "string"
+                                                },
+                                                "optional": {
+                                                    "type": "boolean"
+                                                }
+                                            },
+                                            "required": [
+                                                "key"
+                                            ]
+                                        },
+                                        "secretKeyRef": {
+                                            "type": "object",
+                                            "description": "Selects a key of a Secret.",
+                                            "properties": {
+                                                "name": {
+                                                    "type": "string"
+                                                },
+                                                "key": {
+                                                    "type": "string"
+                                                },
+                                                "optional": {
+                                                    "type": "boolean"
+                                                }
+                                            },
+                                            "required": [
+                                                "key"
+                                            ]
+                                        }
+                                    }
+                                }
+                            },
+                            "required": [
+                                "name"
+                            ],
+                            "additionalProperties": false
+                        }
+                    }
+                }
+            },
+            "properties": {
+                "serviceAccount": {"properties": {
+                    "annotations": {"additionalProperties": true},
+                    "labels": {"additionalProperties": true}
+                }},
+                "persistence": {
+                    "properties": {
+                        "annotations": {"additionalProperties": true},
+                        "deploymentStrategy": {
+                            "enum": [
+                                "RollingUpdate",
+                                "Recreate"
+                            ]
+                        }
+                    }
+                },
+                "restapi": {
+                    "properties": {
+                        "podAnnotations": {"additionalProperties": true},
+                        "resources": {
+                            "additionalProperties": true,
+                            "properties": {
+                                "requests": {"additionalProperties": true},
+                                "limits": {"additionalProperties": true}
+                            }
+                        },
+                        "containerSecurityContext": {
+                            "additionalProperties": true,
+                            "properties": {"seccompProfile": {"additionalProperties": true}}
+                        },
+                        "podSecurityContext": {
+                            "additionalProperties": true,
+                            "properties": {"seccompProfile": {"additionalProperties": true}}
+                        },
+                        "podLabels": {"additionalProperties": true},
+                        "nodeSelector": {"additionalProperties": true},
+                        "image": {
+                            "properties": {
+                                "tag": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "description": "can be used to override webModeler.image.tag for the REST API image. Omit this key to retain the shared image tag."
+                                }
+                            }
+                        },
+                        "logging": {
+                            "type": "object",
+                            "description": "configuration for the restapi logging, included directly in the webModeler restapi configuration YAML file.",
+                            "default": {},
+                            "additionalProperties": true
+                        },
+                        "service": {
+                            "properties": {
+                                "annotations": {"additionalProperties": true},
+                                "appProtocols": {
+                                    "type": "object",
+                                    "description": "can be used to set the Kubernetes Service appProtocol hint per port (http, http-management), e.g. {http: \"http\"}. Empty by default, no behavior change. See https://kubernetes.io/docs/concepts/services-networking/service/#application-protocol",
+                                    "default": {},
+                                    "additionalProperties": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "websockets": {
+                    "properties": {
+                        "podAnnotations": {"additionalProperties": true},
+                        "resources": {
+                            "additionalProperties": true,
+                            "properties": {
+                                "requests": {"additionalProperties": true},
+                                "limits": {"additionalProperties": true}
+                            }
+                        },
+                        "containerSecurityContext": {
+                            "additionalProperties": true,
+                            "properties": {"seccompProfile": {"additionalProperties": true}}
+                        },
+                        "podSecurityContext": {
+                            "additionalProperties": true,
+                            "properties": {"seccompProfile": {"additionalProperties": true}}
+                        },
+                        "podLabels": {"additionalProperties": true},
+                        "nodeSelector": {"additionalProperties": true},
+                        "image": {
+                            "properties": {
+                                "tag": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "description": "can be used to override webModeler.image.tag for the WebSockets image. Omit this key to retain the shared image tag."
+                                }
+                            }
+                        },
+                        "service": {
+                            "properties": {
+                                "annotations": {"additionalProperties": true},
+                                "appProtocols": {
+                                    "type": "object",
+                                    "description": "can be used to set the Kubernetes Service appProtocol hint per port (http), e.g. {http: \"kubernetes.io/ws\"}. Empty by default, no behavior change. See https://kubernetes.io/docs/concepts/services-networking/service/#application-protocol",
+                                    "default": {},
+                                    "additionalProperties": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "prometheusServiceMonitor": {
+            "properties": {
+                "labels": {"additionalProperties": true}
+            }
+        },
+        "camundaHub": {
+            "type": "object",
+            "description": "override values for Camunda Hub; takes precedence over the legacy top-level webModeler.* values.",
+            "default": {},
+            "additionalProperties": true,
+            "properties": {
+                "contextPath": {
+                    "type": ["string", "null"],
+                    "description": "can be used to make Camunda Hub available on a custom sub-path. This 8.10 override replaces camundaHub.webModeler.contextPath.",
+                    "default": null
+                },
+                "automountServiceAccountToken": {
+                    "type": ["boolean", "null"],
+                    "description": "can be used to override the automatic mounting of the service account token at the pod level. When unset, the ServiceAccount configuration is used.",
+                    "default": null
+                },
+                "image": {
+                    "type": "object",
+                    "description": "override values for the Camunda Hub image; merged additively over the legacy webModeler.image map, so partial overrides keep the legacy values for the keys left unset.",
+                    "default": {},
+                    "additionalProperties": true
+                },
+                "security": {
+                    "type": "object",
+                    "description": "override values for the Camunda Hub security section; set values are deep-merged over the legacy webModeler.security values, so a partial override keeps the sibling defaults. An explicit false, 0 or \"\" overrides the legacy value; an unset (null) key falls through to it. Maps merge key by key, while arrays replace the legacy list wholesale.",
+                    "default": {},
+                    "additionalProperties": true,
+                    "properties": {
+                        "authentication": {
+                            "type": "object",
+                            "description": "override values for the Camunda Hub authentication section; set values are deep-merged over the legacy webModeler.security.authentication values, so a partial override keeps the sibling defaults. An explicit false, 0 or \"\" overrides the legacy value; an unset (null) key falls through to it. Maps merge key by key, while arrays replace the legacy list wholesale.",
+                            "default": {},
+                            "additionalProperties": true
+                        }
+                    }
+                },
+                "restapi": {
+                    "type": "object",
+                    "description": "override values for the Camunda Hub restapi component; set values are deep-merged over the legacy webModeler.restapi values, so a partial override keeps the sibling defaults. An explicit false, 0 or \"\" overrides the legacy value; an unset (null) key falls through to it. Maps merge key by key, while arrays replace the legacy list wholesale.",
+                    "default": {},
+                    "additionalProperties": true
+                },
+                "websockets": {
+                    "type": "object",
+                    "description": "override values for the Camunda Hub websockets component; set values are deep-merged over the legacy webModeler.websockets values, so a partial override keeps the sibling defaults. An explicit false, 0 or \"\" overrides the legacy value; an unset (null) key falls through to it. Maps merge key by key, while arrays replace the legacy list wholesale.",
+                    "default": {},
+                    "additionalProperties": true
+                },
+                "serviceAccount": {
+                    "type": "object",
+                    "description": "override values for the Camunda Hub service account; set values are deep-merged over the legacy webModeler.serviceAccount values, so a partial override keeps the sibling defaults. An explicit false, 0 or \"\" overrides the legacy value; an unset (null) key falls through to it. Maps merge key by key, while arrays replace the legacy list wholesale.",
+                    "default": {},
+                    "additionalProperties": true
+                },
+                "upgrade": {
+                    "type": "object",
+                    "properties": {
+                        "phase": {
+                            "type": "string",
+                            "enum": [
+                                "normal",
+                                "quiesce",
+                                "migrate"
+                            ],
+                            "default": "normal"
+                        }
+                    }
+                },
+                "persistence": {
+                    "properties": {
+                        "enabled": {"type": ["boolean", "null"]},
+                        "existingClaim": {"type": ["string", "null"]},
+                        "storageClassName": {"type": ["string", "null"]},
+                        "size": {"type": ["string", "null"]},
+                        "accessModes": {
+                            "type": ["array", "null"],
+                            "items": {"type": "string"}
+                        },
+                        "annotations": {"type": ["object", "null"], "additionalProperties": true},
+                        "selector": {"type": ["object", "null"], "additionalProperties": true},
+                        "deploymentStrategy": {
+                            "type": "string",
+                            "enum": [
+                                "RollingUpdate",
+                                "Recreate"
+                            ],
+                            "description": "can be used to set the restapi Deployment update strategy, RollingUpdate or Recreate. Recreate requires camundaHub.persistence.enabled and camundaHub.persistence.existingClaim, else the render fails; it adds downtime on each upgrade.",
+                            "default": "RollingUpdate"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "$defs": {
+        "topologySecret": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "inlineSecret": {"type": "string"},
+                "existingSecret": {"type": "string"},
+                "existingSecretKey": {"type": "string"}
+            }
+        },
+        "topologyOrchestrationComponent": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "enabled": {"type": "boolean"},
+                "clientId": {"type": "string"},
+                "audience": {"type": "string"},
+                "redirectUrl": {"type": "string"},
+                "roleName": {"type": "string"},
+                "secret": {"$ref": "#/$defs/topologySecret"},
+                "serviceName": {"type": "string"},
+                "gatewayServiceName": {"type": "string"},
+                "operateServiceName": {"type": "string"},
+                "tasklistServiceName": {"type": "string"},
+                "readinessUrl": {"type": "string", "pattern": "^$|^https?://[^\\s]+$"},
+                "operateReadinessUrl": {"type": "string", "pattern": "^$|^https?://[^\\s]+$"},
+                "tasklistReadinessUrl": {"type": "string", "pattern": "^$|^https?://[^\\s]+$"},
+                "restUrl": {"type": "string", "pattern": "^$|^https?://[^\\s]+$"},
+                "grpcUrl": {"type": "string", "pattern": "^$|^grpcs?://[^\\s]+$"},
+                "operateUrl": {"type": "string", "pattern": "^$|^https?://[^\\s]+$"},
+                "tasklistUrl": {"type": "string", "pattern": "^$|^https?://[^\\s]+$"},
+                "adminUrl": {"type": "string", "pattern": "^$|^https?://[^\\s]+$"}
+            }
+        },
+        "topologyOptimizeComponent": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "enabled": {"type": "boolean"},
+                "clientId": {"type": "string"},
+                "audience": {"type": "string"},
+                "redirectUrl": {"type": "string", "pattern": "^$|^https?://(?:[^\\s{}]|\\{\\{[^}]*\\}\\})+$"},
+                "roleName": {"type": "string"},
+                "secret": {"$ref": "#/$defs/topologySecret"},
+                "serviceName": {"type": "string"},
+                "namespace": {"type": "string"},
+                "releaseName": {"type": "string"},
+                "host": {"type": "string"},
+                "webappUrl": {"type": "string", "pattern": "^$|^https?://(?:[^\\s{}]|\\{\\{[^}]*\\}\\})+$"},
+                "readinessUrl": {"type": "string", "pattern": "^$|^https?://[^\\s]+$"}
+            }
+        },
+        "topologyConnectorsComponent": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "enabled": {"type": "boolean"},
+                "clientId": {"type": "string"},
+                "secret": {"$ref": "#/$defs/topologySecret"},
+                "serviceName": {"type": "string"},
+                "restUrl": {"type": "string", "pattern": "^$|^https?://[^\\s]+$"},
+                "readinessUrl": {"type": "string", "pattern": "^$|^https?://[^\\s]+$"}
+            }
+        },
+        "topologyComponents": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "orchestration": {"$ref": "#/$defs/topologyOrchestrationComponent"},
+                "optimize": {"$ref": "#/$defs/topologyOptimizeComponent"},
+                "connectors": {"$ref": "#/$defs/topologyConnectorsComponent"}
+            }
+        },
+        "topologyCluster": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "namespace", "releaseName", "host", "version", "components"],
+            "properties": {
+                "id": {"type": "string", "pattern": "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"},
+                "name": {"type": "string"},
+                "namespace": {"type": "string"},
+                "releaseName": {"type": "string"},
+                "host": {"type": "string"},
+                "version": {"type": "string"},
+                "architecture": {"type": "string", "enum": ["unified", "legacy"]},
+                "authorizations": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {"enabled": {"type": "boolean"}}
+                },
+                "contextPaths": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                        "orchestration": {"type": "string", "pattern": "^$|^/"},
+                        "optimize": {"type": "string", "pattern": "^$|^/"},
+                        "connectors": {"type": "string", "pattern": "^$|^/"}
+                    }
+                },
+                "components": {"$ref": "#/$defs/topologyComponents"},
+                "physicalTenants": {
+                    "type": "array",
+                    "items": {"$ref": "#/$defs/topologyPhysicalTenant"}
+                }
+            }
+        },
+        "topologyPhysicalTenant": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "components"],
+            "properties": {
+                "id": {"type": "string", "pattern": "^[a-z0-9]{1,64}$"},
+                "name": {"type": "string", "minLength": 1},
+                "contextPaths": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                        "optimize": {"type": "string", "pattern": "^$|^/"}
+                    }
+                },
+                "components": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                        "optimize": {"$ref": "#/$defs/topologyOptimizeComponent"}
+                    }
+                }
+            }
+        }
+    }
+}

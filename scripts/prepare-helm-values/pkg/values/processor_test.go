@@ -49,6 +49,30 @@ func TestIsSecretName(t *testing.T) {
 	}
 }
 
+func TestUsesLicenseSecret(t *testing.T) {
+	cases := []struct {
+		chartPath string
+		want      bool
+	}{
+		{"charts/camunda-platform-8.7", false},
+		{"charts/camunda-platform-8.8", false},
+		{"charts/camunda-platform-8.9", true},
+		{"charts/camunda-platform-8.10", true},
+		{"charts/camunda-platform-8.11", true},
+		{"./charts/camunda-platform-8.11/", true},
+		{"/repo/charts/camunda-platform-8.12", true},
+		{"charts/camunda-platform-alpha", false},
+		{"", false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.chartPath, func(t *testing.T) {
+			if got := usesLicenseSecret(tc.chartPath); got != tc.want {
+				t.Errorf("usesLicenseSecret(%q) = %v, want %v", tc.chartPath, got, tc.want)
+			}
+		})
+	}
+}
+
 func TestProcessImageTags_NoFileSpecified(t *testing.T) {
 	opts := Options{
 		ImageTagsFile: "",

@@ -195,19 +195,13 @@
       allowedVersions: '<4.0.0',
     },
     {
-      description: 'Automerge GitHub Actions updates after status checks pass.',
       addLabels: [
         'deps/github-actions',
-        'automerge',
         'automation/renovatebot',
         'kind/chore',
       ],
       matchManagers: ['github-actions'],
       schedule: ['every weekend'],
-      platformAutomerge: true,
-      automerge: true,
-      automergeType: 'pr',
-      ignoreTests: false,
     },
     // Limit tools and libs versions to the actual Distro CI Kubernetes cluster.
     {
@@ -303,6 +297,7 @@
       ],
       matchFileNames: [
         // bump these to whatever the latest alpha is
+        'charts/camunda-platform-8.11/Chart.yaml',
       ],
       versioning: 'regex:^(?<major>\\d+)(\\.(?<minor>\\d+))(\\.(?<patch>\\d+))(-(?<prerelease>alpha\\d+))$',
     },
@@ -352,7 +347,11 @@
         'docker',
         'regex',
       ],
-      matchFileNames: [],
+      matchFileNames: [
+        'charts/camunda-platform-8.11/Chart.yaml',
+        'charts/camunda-platform-8.11/values.yaml',
+        'charts/camunda-platform-8.11/values-latest.yaml',
+      ],
       matchUpdateTypes: ['major', 'minor', 'patch'],
       schedule: ['at any time'],
       addLabels: ['camunda-platform', 'priority-high'],
@@ -363,7 +362,11 @@
       enabled: true,
       matchPackageNames: ['/.*camunda.*/'],
       matchDatasources: ['helm', 'helm-values', 'docker', 'regex'],
-      matchFileNames: [],
+      matchFileNames: [
+        'charts/camunda-platform-8.11/Chart.yaml',
+        'charts/camunda-platform-8.11/values.yaml',
+        'charts/camunda-platform-8.11/values-latest.yaml',
+      ],
       versioning: 'regex:^(?<major>\\d+)(\\.(?<minor>\\d+))(\\.(?<patch>\\d+))(-(?<prerelease>alpha\\d+))$',
     },
     {
@@ -382,6 +385,7 @@
         'charts/camunda-platform-8.8/values-digest.yaml',
         'charts/camunda-platform-8.9/values-digest.yaml',
         'charts/camunda-platform-8.10/values-digest.yaml',
+        'charts/camunda-platform-8.11/values-digest.yaml',
       ],
       matchUpdateTypes: ['digest'],
       schedule: ['at any time'],
@@ -402,6 +406,7 @@
         'charts/camunda-platform-8.8/values-digest.yaml',
         'charts/camunda-platform-8.9/values-digest.yaml',
         'charts/camunda-platform-8.10/values-digest.yaml',
+        'charts/camunda-platform-8.11/values-digest.yaml',
       ],
       matchUpdateTypes: ['digest'],
       matchCurrentValue: '!/SNAPSHOT/',
@@ -410,14 +415,9 @@
     {
       matchUpdateTypes: ['minor', 'patch', 'pin', 'digest'],
       addLabels: [
-        'automerge',
         'automation/renovatebot',
         'kind/chore',
       ],
-      platformAutomerge: true,
-      automerge: true,
-      automergeType: 'pr', // Merge via PR to respect GitHub settings
-      ignoreTests: false, // Wait for all status checks to pass
     },
     // This package name is used by the initContainer for keycloak and doesn't make sense to
     // be processed by renovate because it requires helm templating to render the real image name.
@@ -429,9 +429,6 @@
       description: 'Disable all updates for out-of-support chart versions (8.6 and below).',
       enabled: false,
       matchFileNames: [
-        'charts/camunda-platform-8.3/**',
-        'charts/camunda-platform-8.4/**',
-        'charts/camunda-platform-8.5/**',
         'charts/camunda-platform-8.6/**',
       ],
     },

@@ -1,0 +1,49 @@
+apiVersion: v2
+name: camunda-platform
+version: 16.0.0-alpha0
+appVersion: 8.11.x
+description: |
+  Camunda 8 Self-Managed Helm charts.
+  Camunda's process automation platform allows developers to design, automate and improve processes.
+type: application
+icon: https://helm.camunda.io/imgs/camunda.svg
+home: https://docs.camunda.io/docs/self-managed/about-self-managed/
+sources:
+  - https://github.com/camunda/camunda-platform-helm
+keywords:
+  - automation
+  - business-rules
+  - bpm
+  - bpmn
+  - camunda-platform
+  - decision-engine
+  - dmn
+  - modeling
+  - orchestration
+  - process-automation
+  - process-engine
+  - process-orchestration
+  - workflow
+  - workflow-engine
+dependencies:
+  # Helpers.
+  - name: common
+    repository: "file://../common-2"
+    version: 2.x.x
+maintainers:
+  - name: camunda
+    url: https://camunda.com
+annotations:
+  artifacthub.io/prerelease: "true"
+  camunda.io/helmCLIVersion: "3.22.0,4.3.0"
+  artifacthub.io/links: |
+    - name: Camunda 8 docs
+      url: https://docs.camunda.io/
+    - name: Camunda 8 Self-Managed docs
+      url: https://docs.camunda.io/docs/self-managed/about-self-managed/
+    - name: Camunda 8 Self-Managed Helm charts
+      url: https://github.com/camunda/camunda-platform-helm
+  artifacthub.io/containsSecurityUpdates: "false"
+  artifacthub.io/changes: |
+    - kind: added
+      description: "Initial 8.11 alpha chart"

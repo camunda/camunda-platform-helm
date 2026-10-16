@@ -303,6 +303,61 @@ func TestComputeMissingConfig(t *testing.T) {
 	}
 }
 
+func TestComputeUnitPackagesListed(t *testing.T) {
+	tests := []struct {
+		name      string
+		config    string
+		testFiles []string
+		wantErr   string
+	}{
+		{
+			name:      "all test packages listed",
+			config:    sampleConfig,
+			testFiles: []string{"common/a_test.go", "web-modeler/b_test.go", "common/testdata/c_test.go"},
+		},
+		{
+			name:      "directory without test files",
+			config:    sampleConfig,
+			testFiles: []string{"common/a_test.go", "helpers/helpers.go"},
+		},
+		{
+			name:      "unlisted and nested test packages",
+			config:    sampleConfig,
+			testFiles: []string{"common/a_test.go", "companion/a_test.go", "companion/b_test.go", "orchestration/sub/c_test.go"},
+			wantErr:   "unit.matrix does not list test packages companion, orchestration/sub",
+		},
+		{
+			name:      "unit disabled",
+			config:    strings.Replace(sampleConfig, "enabled: true", "enabled: false", 1),
+			testFiles: []string{"companion/a_test.go"},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			root := writeConfig(t, "camunda-platform-8.10", tc.config, false)
+			for _, file := range tc.testFiles {
+				path := filepath.Join(root, "charts", "camunda-platform-8.10", "test", "unit", file)
+				if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+					t.Fatalf("mkdir: %v", err)
+				}
+				if err := os.WriteFile(path, []byte("package x\n"), 0o644); err != nil {
+					t.Fatalf("write %s: %v", file, err)
+				}
+			}
+			_, err := Compute(TestTypeVarsInput{ChartDir: "camunda-platform-8.10", Flow: "install", RepoRoot: root})
+			if tc.wantErr == "" {
+				if err != nil {
+					t.Fatalf("Compute: %v", err)
+				}
+				return
+			}
+			if err == nil || !strings.Contains(err.Error(), tc.wantErr) {
+				t.Fatalf("Compute error = %v, want it to contain %q", err, tc.wantErr)
+			}
+		})
+	}
+}
+
 func TestEmit(t *testing.T) {
 	root := writeConfig(t, "camunda-platform-8.10", sampleConfig, true)
 	v, err := Compute(TestTypeVarsInput{

@@ -1,0 +1,2402 @@
+integration:
+  vars:
+    tasksBaseDir: ../../../test/integration/scenarios
+    valuesBaseDir: integration/scenarios
+    chartsBaseDir: ../../../..
+  case:
+    pr:
+      scenario:
+        - name: elasticsearch
+          enabled: true
+          shortname: eske
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          tier: 1
+          infra-type:
+            eks: preemptible
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+        - name: orchestration-tls
+          enabled: true
+          shortname: estls
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - orchestration-tls
+          helmVersion: 3.22.0
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+          pre-install:
+            script: pre-install-orchestration-tls.sh
+            description: |
+              Generates one self-signed RSA-4096 certificate whose SANs cover the
+              Orchestration gateway Service DNS, then creates three Secrets from it:
+              `orchestration-tls` (PEM tls.crt/tls.key — the gRPC server cert, and the
+              REST server cert when `rest.type: pem`), `orchestration-tls-keystore`
+              (PKCS12 keystore.p12 plus keystore-password — the REST server keystore used
+              when `rest.type: pkcs12`), and `orchestration-tls-truststore` (PKCS12
+              truststore.p12 plus truststore-password, consumed by Web Modeler restapi).
+              The same self-signed cert is also referenced as global.tls.caBundle so
+              in-cluster Java clients (Web Modeler, Connectors) trust it via the
+              chart-derived internal URLs. The Identity/WebModeler PostgreSQL database is
+              provided by the `postgresql` companion dependency.
+        - name: orchestration-tls-rest
+          enabled: true
+          shortname: estlr
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - orchestration-tls-rest
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+          pre-install:
+            script: pre-install-orchestration-tls.sh
+            description: |
+              Generates one self-signed RSA-4096 certificate whose SANs cover the
+              Orchestration gateway Service DNS, then creates three Secrets from it:
+              `orchestration-tls` (PEM tls.crt/tls.key — the gRPC server cert, and the
+              REST server cert when `rest.type: pem`), `orchestration-tls-keystore`
+              (PKCS12 keystore.p12 plus keystore-password — the REST server keystore used
+              when `rest.type: pkcs12`), and `orchestration-tls-truststore` (PKCS12
+              truststore.p12 plus truststore-password, consumed by Web Modeler restapi).
+              The same self-signed cert is also referenced as global.tls.caBundle so
+              in-cluster Java clients (Web Modeler, Connectors) trust it via the
+              chart-derived internal URLs. The Identity/WebModeler PostgreSQL database is
+              provided by the `postgresql` companion dependency.
+        - name: orchestration-tls-rest-appconfig
+          enabled: true
+          shortname: estlc
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - orchestration-tls-rest-appconfig
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+          pre-install:
+            script: pre-install-orchestration-tls.sh
+            description: |
+              Generates one self-signed RSA-4096 certificate whose SANs cover the
+              Orchestration gateway Service DNS, then creates three Secrets from it:
+              `orchestration-tls` (PEM tls.crt/tls.key — the gRPC server cert, and the
+              REST server cert when `rest.type: pem`), `orchestration-tls-keystore`
+              (PKCS12 keystore.p12 plus keystore-password — the REST server keystore used
+              when `rest.type: pkcs12`), and `orchestration-tls-truststore` (PKCS12
+              truststore.p12 plus truststore-password, consumed by Web Modeler restapi).
+              The same self-signed cert is also referenced as global.tls.caBundle so
+              in-cluster Java clients (Web Modeler, Connectors) trust it via the
+              chart-derived internal URLs. The Identity/WebModeler PostgreSQL database is
+              provided by the `postgresql` companion dependency.
+        - name: connectors-tls
+          enabled: true
+          shortname: cotls
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - connectors-tls
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+          pre-install:
+            script: pre-install-connectors-tls.sh
+            description: |
+              Generates a self-signed certificate/key pair for the Connectors HTTP
+              endpoint and packages it as a PKCS12 keystore in a `connectors-tls-keystore`
+              Secret consumed by `global.tls.connectors.cert.secret.existingSecret`.
+        - name: optimize-tls
+          enabled: true
+          shortname: optls
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - optimize-tls
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+          pre-install:
+            script: pre-install-optimize-tls.sh
+            description: |
+              Generates a self-signed certificate/key pair for the Optimize HTTP
+              endpoint and packages it as a PKCS12 keystore in an `optimize-tls-keystore`
+              Secret consumed by `global.tls.optimize.cert.secret.existingSecret`.
+        - name: opensearch
+          enabled: true
+          shortname: oske
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: opensearch-embedded
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: opensearch/opensearch
+              version: 3.6.0
+              release-name: opensearch
+              values-file: test/integration/companion-values/opensearch.yaml
+              repo-name: opensearch
+              repo-url: https://opensearch-project.github.io/helm-charts/
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+        - name: opensearch-self-signed
+          enabled: true
+          shortname: osss
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: opensearch-self-signed
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+            - chart: opensearch/opensearch
+              version: 3.6.0
+              release-name: opensearch
+              values-file: test/integration/companion-values/opensearch-tls.yaml
+              repo-name: opensearch
+              repo-url: https://opensearch-project.github.io/helm-charts/
+          pre-install:
+            script: pre-install-opensearch-self-signed.sh
+            description: |
+              Provisions the Identity/WebModeler PostgreSQL fixture, then
+              Generates a self-signed CA plus node certificate via openssl
+              and creates the opensearch-tls-certs, opensearch-tls-ca, and
+              opensearch-jks Secrets consumed by the OpenSearch companion
+              chart's TLS config.
+        - name: opensearch-self-signed-os-trust
+          enabled: true
+          shortname: osot
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: opensearch-self-signed-os-trust
+          dependencies:
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: opensearch/opensearch
+              version: 3.6.0
+              release-name: opensearch
+              values-file: test/integration/companion-values/opensearch-tls.yaml
+              repo-name: opensearch
+              repo-url: https://opensearch-project.github.io/helm-charts/
+          pre-install:
+            script: pre-install-opensearch-self-signed-os-trust.sh
+            description: |
+              Provisions the Identity/WebModeler PostgreSQL fixture, then
+              generates a self-signed CA plus node certificate via openssl
+              and creates the opensearch-tls-certs, opensearch-tls-ca, and
+              opensearch-jks Secrets consumed by the OpenSearch companion
+              chart's TLS config. Identical cert generation to the
+              opensearch-self-signed scenario.
+        - name: upgrade-migration
+          enabled: false
+          shortname: eske-upgm
+          auth: keycloak
+          flow: upgrade-minor
+          platforms: []
+          exclude: []
+          infra-type:
+            eks: preemptible
+            gke: distroci
+        - name: elasticsearch-basic
+          enabled: false
+          shortname: esba
+          auth: basic
+          flow: install
+          platforms: []
+          exclude:
+            - identity
+            - console
+            - orchestration-grpc
+          infra-type:
+            eks: preemptible
+            gke: distroci
+          identity: basic
+          persistence: elasticsearch
+          e2e-api-suite: true
+          dependencies:
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+        - name: oidc
+          enabled: true
+          shortname: esoi
+          auth: oidc
+          flow: install
+          platforms:
+            - gke
+          exclude:
+            - identity
+            - console
+            - orchestration-grpc
+          tier: 2
+          infra-type:
+            eks: preemptible
+            gke: distroci
+          identity: oidc
+          persistence: elasticsearch
+          features:
+            - postgresql-companion
+            - hub-ping
+          skip-e2e: true
+          dependencies:
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+          post-deploy:
+            script: post-deploy-hub-ping.sh
+            description: |
+              Waits for the authenticated Orchestration Cluster ping to register its
+              uniquely named cluster in Hub's database.
+        - name: oidc-defaults
+          enabled: true
+          shortname: esoid
+          auth: oidc
+          flow: install
+          platforms:
+            - gke
+          exclude:
+            - identity
+            - console
+            - orchestration-grpc
+          tier: 1
+          infra-type:
+            eks: preemptible
+            gke: distroci
+          identity: oidc
+          persistence: elasticsearch
+          features:
+            - postgresql-companion
+          skip-e2e: true
+          dependencies:
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+        - name: auth0
+          enabled: true
+          shortname: esa0
+          auth: oidc
+          flow: install
+          platforms:
+            - gke
+          exclude:
+            - identity
+            - console
+            - orchestration-grpc
+          tier: 2
+          infra-type:
+            eks: preemptible
+            gke: distroci
+          identity: auth0
+          persistence: elasticsearch
+          features:
+            - hub-ping
+          skip-e2e: true
+          dependencies:
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+          post-deploy:
+            script: post-deploy-hub-ping.sh
+            description: |
+              Waits for the authenticated Orchestration Cluster ping to register its
+              uniquely named cluster in Hub's database.
+        - name: orchestration-entra
+          enabled: true
+          shortname: ocen
+          auth: oidc
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          tier: 1
+          infra-type:
+            gke: distroci
+          identity: oidc
+          persistence: elasticsearch
+          features:
+            - orchestration-entra
+          skip-e2e: true
+          dependencies:
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+          post-deploy:
+            script: post-deploy-orchestration-entra.sh
+            description: |
+              Deploys and triggers an inbound connector, verifies that its process instance
+              completes, and verifies that no Management Identity exists.
+        - name: keycloak-mt
+          enabled: true
+          shortname: kemt
+          auth: keycloak
+          flow: upgrade-minor
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            eks: preemptible
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch-companion
+          features:
+            - custom-history
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+        - name: keycloak-rba
+          enabled: true
+          shortname: kerba
+          auth: keycloak
+          flow: upgrade-minor
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            eks: preemptible
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch-companion
+          features:
+            - rba
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+        - name: keycloak-original
+          enabled: false
+          shortname: keyc
+          auth: keycloak
+          flow: upgrade-minor
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            eks: preemptible
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch-companion
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+        - name: keycloak-original
+          enabled: true
+          shortname: keorg
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            eks: preemptible
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+        - name: gateway-keycloak
+          enabled: true
+          shortname: gatkc
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            eks: preemptible
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - gateway
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+          post-deploy:
+            script: post-deploy-gateway-keycloak.sh
+            description: |
+              Applies the NGINX ProxySettingsPolicy that bumps gateway buffer
+              sizes. Runs after helm install because the Gateway API CRD is only
+              registered by the chart itself.
+        - name: elasticsearch-arm
+          enabled: true
+          shortname: esarm
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            gke: arm
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - arm
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+        - name: noSecondaryStorage
+          enabled: true
+          shortname: nosec
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: no-elasticsearch
+          features:
+            - no-secondary-storage
+          skip-e2e: true
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+        - name: documentstore
+          enabled: true
+          shortname: docstr
+          auth: keycloak
+          flow: ""
+          platforms:
+            - eks
+          exclude: []
+          tier: 2
+          infra-type:
+            eks: preemptible
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - postgresql-companion
+            - documentstore
+          dependencies:
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+        - name: documentstore-s3-compatible
+          enabled: true
+          shortname: docs3
+          auth: basic
+          flow: install
+          platforms:
+            - gke
+          exclude:
+            - orchestration-grpc
+          tier: 2
+          infra-type:
+            gke: distroci
+          identity: basic
+          persistence: elasticsearch
+          features:
+            - documentstore-s3-compatible
+          skip-e2e: true
+          dependencies:
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+          pre-install:
+            fixtures:
+              - documentstore-s3-compatible.yaml
+            description: |
+              Provisions a namespace-local S3-compatible store (Garage) with ephemeral
+              storage, test credentials, and the documents bucket before document-store
+              acceptance checks.
+          post-deploy:
+            script: post-deploy-documentstore-s3-compatible.sh
+            description: |
+              Verifies document upload, download, and deletion through Orchestration and
+              validates a presigned S3-compatible URL before and after deleting the document.
+        - name: secretstore-file
+          enabled: true
+          shortname: secfl
+          auth: basic
+          flow: install
+          platforms:
+            - gke
+          exclude:
+            - orchestration-grpc
+          tier: 2
+          infra-type:
+            gke: distroci
+          identity: basic
+          persistence: elasticsearch
+          features:
+            - secretstore-file
+          skip-e2e: true
+          dependencies:
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+          pre-install:
+            script: pre-install-secretstore-file.sh
+            description: |
+              Creates the Kubernetes Secret mounted by the file secret store before the
+              Orchestration StatefulSet is installed.
+          post-deploy:
+            script: post-deploy-secretstore-file.sh
+            description: |
+              Resolves a value from the mounted file secret store through the v2 gateway
+              API and verifies that the runtime returns the expected value.
+        - name: secretstore-gcp
+          enabled: true
+          shortname: secgc
+          auth: basic
+          flow: install
+          platforms:
+            - gke
+          exclude:
+            - orchestration-grpc
+          tier: 2
+          infra-type:
+            gke: distroci
+          identity: basic
+          persistence: elasticsearch
+          features:
+            - secretstore-gcp
+          skip-e2e: true
+          dependencies:
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+          post-deploy:
+            script: post-deploy-secretstore-gcp.sh
+            description: |
+              Grants roles/secretmanager.secretAccessor on the camunda-ci-secretstore-token
+              fixture to this run's GKE workload principal, resolves the secret through the v2
+              gateway API, and revokes the binding on exit. Also asserts the Orchestration
+              ServiceAccount carries no iam.gke.io/gcp-service-account annotation and the
+              container sets no GOOGLE_APPLICATION_CREDENTIALS, so the value can only have
+              resolved through workload identity. Requires an authenticated gcloud.
+        - name: rdbms-self-signed
+          enabled: true
+          shortname: rdbss
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: rdbms-self-signed
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql-tls.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+        - name: rdbms-external
+          enabled: false
+          shortname: rdbme
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: rdbms-external
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+        - name: rdbms
+          enabled: true
+          shortname: rdbms
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: rdbms
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql-rdbms.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+        - name: component-persistence
+          enabled: true
+          shortname: cprst
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - persistence
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+        - name: component-persistence-upgrade
+          enabled: true
+          shortname: cprsu
+          auth: keycloak
+          flow: upgrade-minor
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - persistence
+            - postgresql-companion
+          helmVersion: 3.22.0
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+        - name: hub-legacy
+          enabled: true
+          shortname: huble
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - hub-legacy
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+        - name: shadow-e2e
+          enabled: true
+          shortname: shde2
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
+          skip-e2e: true
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+        - name: hub-legacy
+          enabled: true
+          shortname: hublu
+          auth: keycloak
+          flow: upgrade-minor
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            eks: preemptible
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - hub-legacy
+            - postgresql-companion
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+        - name: hub-mixed
+          enabled: true
+          shortname: hubmu
+          auth: keycloak
+          flow: upgrade-minor
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            eks: preemptible
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - hub-mixed
+            - postgresql-companion
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+        - name: hub-webmodeler-only
+          enabled: true
+          shortname: hubwo
+          auth: keycloak
+          flow: upgrade-minor
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            eks: preemptible
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch-companion
+          features:
+            - hub-webmodeler-only
+          skip-e2e: true
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+        - name: hub-console-only
+          enabled: true
+          shortname: hubco
+          auth: keycloak
+          flow: upgrade-minor
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            eks: preemptible
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch-companion
+          features:
+            - hub-console-only
+          skip-e2e: true
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+        - name: hub-double-enable
+          enabled: true
+          shortname: hubde
+          auth: keycloak
+          flow: upgrade-minor
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            eks: preemptible
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - hub-double-enable
+            - postgresql-companion
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+        - name: hub-pinned-images
+          enabled: true
+          shortname: hubpi
+          auth: keycloak
+          flow: upgrade-minor
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            eks: preemptible
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - hub-pinned-images
+            - postgresql-companion
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+        - name: hub-external-db
+          enabled: true
+          shortname: hubdb
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - hub-external-db
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+          pre-install:
+            fixtures:
+              - hub-external-postgresql.yaml
+            description: |
+              Provisions a standalone PostgreSQL pod for Web Modeler restapi to
+              connect to via externalDatabase config. Identity's database is
+              provided separately by the `postgresql` companion profile.
+        - name: keycloak-original
+          enabled: true
+          shortname: keyco
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          tier: 1
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - hub-ping
+            - hub-ping-keycloak-token-endpoint
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+          post-deploy:
+            script: post-deploy-hub-ping.sh
+            description: |
+              Waits for the authenticated Orchestration Cluster ping to register its
+              uniquely named cluster in Hub's database.
+        - name: alwaysgreen
+          enabled: false
+          shortname: agrn
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: alwaysgreen
+          identity: keycloak
+          persistence: elasticsearch
+          e2e-full-suite: true
+          e2e-api-suite: true
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak-fixed-issuer.yaml
+              env-vars:
+                - CAMUNDA_HOSTNAME
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+        - name: qa-elasticsearch-upg
+          enabled: false
+          shortname: qaelupg
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: qa-workloads
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - postgresql-companion
+          qa: true
+          image-tags: true
+          dependencies:
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql-qa.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak-qa.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch-qa.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+        - name: qa-elasticsearch-upg
+          enabled: false
+          shortname: qaelupg
+          auth: keycloak
+          flow: modular-upgrade-minor
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: qa-workloads
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - postgresql-companion
+          qa: true
+          image-tags: true
+          dependencies:
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql-qa.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak-qa.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch-qa.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+        - name: qa-elasticsearch
+          enabled: false
+          shortname: qael
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: qa-workloads
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - postgresql-companion
+          qa: true
+          image-tags: true
+          dependencies:
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql-qa.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak-qa.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch-qa.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+        - name: qa-opensearch
+          enabled: false
+          shortname: qaos
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: qa-workloads
+          identity: keycloak
+          persistence: opensearch-embedded
+          features:
+            - postgresql-companion
+          qa: true
+          image-tags: true
+          dependencies:
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql-qa.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak-qa.yaml
+            - chart: opensearch/opensearch
+              version: 3.6.0
+              release-name: opensearch
+              values-file: test/integration/companion-values/opensearch.yaml
+              repo-name: opensearch
+              repo-url: https://opensearch-project.github.io/helm-charts/
+        - name: qa-opensearch-upg
+          enabled: false
+          shortname: qaosupg
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: qa-workloads
+          identity: keycloak
+          persistence: opensearch-embedded
+          features:
+            - postgresql-companion
+          qa: true
+          image-tags: true
+          dependencies:
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql-qa.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak-qa.yaml
+            - chart: opensearch/opensearch
+              version: 3.6.0
+              release-name: opensearch
+              values-file: test/integration/companion-values/opensearch.yaml
+              repo-name: opensearch
+              repo-url: https://opensearch-project.github.io/helm-charts/
+          prefix-key: qa-opensearch-upg
+        - name: qa-opensearch-upg
+          enabled: false
+          shortname: qaosupg
+          auth: keycloak
+          flow: modular-upgrade-minor
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: qa-workloads
+          identity: keycloak
+          persistence: opensearch-embedded
+          features:
+            - postgresql-companion
+          qa: true
+          image-tags: true
+          dependencies:
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql-qa.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak-qa.yaml
+            - chart: opensearch/opensearch
+              version: 3.6.0
+              release-name: opensearch
+              values-file: test/integration/companion-values/opensearch.yaml
+              repo-name: opensearch
+              repo-url: https://opensearch-project.github.io/helm-charts/
+          prefix-key: qa-opensearch-upg
+        - name: qa-elasticsearch-mt
+          enabled: false
+          shortname: qaelmt
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: qa-workloads
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - postgresql-companion
+            - multitenancy
+          qa: true
+          image-tags: true
+          dependencies:
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql-qa.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak-qa.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch-qa.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+        - name: qa-elasticsearch-mt-upg
+          enabled: false
+          shortname: qaelmtupg
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: qa-workloads
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - postgresql-companion
+            - multitenancy
+          qa: true
+          image-tags: true
+          dependencies:
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql-qa.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak-qa.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch-qa.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+        - name: qa-elasticsearch-mt-upg
+          enabled: false
+          shortname: qaelmtupg
+          auth: keycloak
+          flow: modular-upgrade-minor
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: qa-workloads
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - postgresql-companion
+            - multitenancy
+          qa: true
+          image-tags: true
+          dependencies:
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql-qa.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak-qa.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch-qa.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+        - name: qa-elasticsearch-rba
+          enabled: false
+          shortname: qaelrba
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: qa-workloads
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - postgresql-companion
+            - rba
+          qa: true
+          image-tags: true
+          dependencies:
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql-qa.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak-qa.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch-qa.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+        - name: qa-document-store
+          enabled: false
+          shortname: qadoc
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: qa-workloads
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - postgresql-companion
+            - documentstore
+          qa: true
+          image-tags: true
+          dependencies:
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql-qa.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak-qa.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch-qa.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+        - name: qa-document-store
+          enabled: false
+          shortname: qadoc
+          auth: keycloak
+          flow: install
+          platforms:
+            - eks
+          exclude: []
+          infra-type:
+            eks: preemptible
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - postgresql-companion
+            - documentstore
+          qa: true
+          image-tags: true
+          dependencies:
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+        - name: qa-document-store-upg
+          enabled: false
+          shortname: qadocupg
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: qa-workloads
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - postgresql-companion
+            - documentstore
+          qa: true
+          image-tags: true
+          dependencies:
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql-qa.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak-qa.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch-qa.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+        - name: qa-document-store-upg
+          enabled: false
+          shortname: qadocupg
+          auth: keycloak
+          flow: install
+          platforms:
+            - eks
+          exclude: []
+          infra-type:
+            eks: preemptible
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - postgresql-companion
+            - documentstore
+          qa: true
+          image-tags: true
+          dependencies:
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+        - name: qa-document-store-upg
+          enabled: false
+          shortname: qadocupg
+          auth: keycloak
+          flow: modular-upgrade-minor
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: qa-workloads
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - postgresql-companion
+            - documentstore
+          qa: true
+          image-tags: true
+          dependencies:
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql-qa.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak-qa.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch-qa.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+        - name: qa-document-store-upg
+          enabled: false
+          shortname: qadocupg
+          auth: keycloak
+          flow: modular-upgrade-minor
+          platforms:
+            - eks
+          exclude: []
+          infra-type:
+            eks: preemptible
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - postgresql-companion
+            - documentstore
+          qa: true
+          image-tags: true
+          dependencies:
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+        - name: qa-license
+          enabled: false
+          shortname: lic
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: qa-workloads
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - postgresql-companion
+            - license
+          qa: true
+          image-tags: true
+          dependencies:
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql-qa.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak-qa.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch-qa.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+        - name: multinamespace
+          enabled: true
+          shortname: mns
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            gke: distroci
+          post-deploy:
+            script: post-deploy-hub-ping.sh
+            description: |
+              Waits for the authenticated Orchestration Cluster ping to register its
+              uniquely named cluster in Hub's database.
+          topology:
+            name: hub-1orch
+            releases:
+              - role: hub
+                namespace-suffix: hub
+                identity: keycloak
+                features:
+                  - multinamespace-hub
+                dependencies:
+                  - keycloak
+                  - postgresql
+                  - elasticsearch
+              - role: orchestration
+                namespace-suffix: orcha
+                depends-on: hub
+                identity: keycloak-external
+                persistence: elasticsearch-external
+                features:
+                  - multinamespace-orchestration
+                env:
+                  ORCH_CONNECTORS_CLIENT_ID: connectors
+                  ORCH_OPTIMIZE_AUDIENCE: optimize-api
+                  ORCH_OPTIMIZE_CLIENT_ID: optimize
+                  ORCH_ORCHESTRATION_AUDIENCE: orchestration-api
+                  ORCH_ORCHESTRATION_CLIENT_ID: orchestration
+                modeler-cluster-id: orchestration
+                modeler-cluster-name: orchestration
+            shared-storage: elasticsearch
+            shared-storage-service: elasticsearch-master
+        - name: multinamespace-2orch
+          enabled: true
+          shortname: mns2
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          tier: 1
+          infra-type:
+            gke: distroci
+          post-infra:
+            script: post-infra-legacy-elasticsearch.sh
+            description: |
+              Removes the CI composable index template before deploying Optimize 8.7,
+              which creates overlapping legacy index templates.
+          topology:
+            name: hub-2orch
+            releases:
+              - role: hub
+                namespace-suffix: hub
+                identity: keycloak
+                features:
+                  - multinamespace-reset-clients
+                  - multinamespace-2orch-hub
+                dependencies:
+                  - keycloak
+                  - postgresql
+                  - elasticsearch
+              - role: orchestration
+                namespace-suffix: orcha
+                depends-on: hub
+                identity: keycloak-external
+                persistence: elasticsearch-external
+                features:
+                  - multinamespace-orchestration
+                env:
+                  ORCH_CONNECTORS_CLIENT_ID: connectors-orcha
+                  ORCH_OPTIMIZE_AUDIENCE: optimize-orcha-api
+                  ORCH_OPTIMIZE_CLIENT_ID: optimize-orcha
+                  ORCH_ORCHESTRATION_AUDIENCE: orchestration-orcha-api
+                  ORCH_ORCHESTRATION_CLIENT_ID: orchestration-orcha
+                modeler-cluster-id: orcha
+                modeler-cluster-name: Orchestration A
+              - chart-version: "8.9"
+                role: orchestration
+                namespace-suffix: orchb
+                depends-on: hub
+                identity: keycloak-external
+                persistence: elasticsearch-external
+                features:
+                  - multinamespace-orchestration
+                env:
+                  ORCH_CONNECTORS_CLIENT_ID: connectors-orchb
+                  ORCH_OPTIMIZE_AUDIENCE: optimize-orchb-api
+                  ORCH_OPTIMIZE_CLIENT_ID: optimize-orchb
+                  ORCH_ORCHESTRATION_AUDIENCE: orchestration-orchb-api
+                  ORCH_ORCHESTRATION_CLIENT_ID: orchestration-orchb
+                modeler-cluster-id: orchb
+                modeler-cluster-name: Orchestration B
+              - chart-version: "8.8"
+                role: orchestration
+                namespace-suffix: orchc
+                depends-on: hub
+                identity: keycloak-external
+                persistence: elasticsearch-external
+                features:
+                  - multinamespace-orchestration
+                env:
+                  ORCH_CONNECTORS_CLIENT_ID: connectors-orchc
+                  ORCH_OPTIMIZE_AUDIENCE: optimize-orchc-api
+                  ORCH_OPTIMIZE_CLIENT_ID: optimize-orchc
+                  ORCH_ORCHESTRATION_AUDIENCE: orchestration-orchc-api
+                  ORCH_ORCHESTRATION_CLIENT_ID: orchestration-orchc
+                modeler-cluster-id: orchc
+                modeler-cluster-name: Orchestration C
+              - chart-version: "8.7"
+                role: orchestration
+                namespace-suffix: orchd
+                depends-on: hub
+                identity: keycloak-external
+                persistence: elasticsearch-external
+                features:
+                  - multinamespace-orchestration
+                env:
+                  ORCH_CONNECTORS_CLIENT_ID: connectors-orchd
+                  ORCH_OPTIMIZE_AUDIENCE: optimize-orchd-api
+                  ORCH_OPTIMIZE_CLIENT_ID: optimize-orchd
+                  ORCH_ORCHESTRATION_AUDIENCE: orchestration-orchd-api
+                  ORCH_ORCHESTRATION_CLIENT_ID: orchestration-orchd
+                modeler-cluster-id: orchd
+                modeler-cluster-name: Orchestration D
+            shared-storage: elasticsearch
+            shared-storage-service: elasticsearch-master
+        - name: multinamespace-optimize
+          enabled: true
+          shortname: mnop
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            gke: distroci
+          topology:
+            name: hub-2orch-2optimize
+            releases:
+              - role: hub
+                namespace-suffix: hub
+                identity: keycloak
+                features:
+                  - multinamespace-reset-clients
+                  - multinamespace-optimize-hub
+                dependencies:
+                  - keycloak
+                  - postgresql
+                  - elasticsearch
+              - role: orchestration
+                namespace-suffix: orcha
+                depends-on: hub
+                identity: keycloak-external
+                persistence: elasticsearch-external
+                features:
+                  - multinamespace-optimize-orchestration
+                env:
+                  ORCH_CONNECTORS_CLIENT_ID: connectors-orcha
+                  ORCH_ORCHESTRATION_AUDIENCE: orchestration-orcha-api
+                  ORCH_ORCHESTRATION_CLIENT_ID: orchestration-orcha
+                modeler-cluster-id: orcha
+                modeler-cluster-name: Orchestration A
+              - role: orchestration
+                namespace-suffix: orchb
+                depends-on: hub
+                identity: keycloak-external
+                persistence: elasticsearch-external
+                features:
+                  - multinamespace-optimize-orchestration
+                env:
+                  ORCH_CONNECTORS_CLIENT_ID: connectors-orchb
+                  ORCH_ORCHESTRATION_AUDIENCE: orchestration-orchb-api
+                  ORCH_ORCHESTRATION_CLIENT_ID: orchestration-orchb
+                modeler-cluster-id: orchb
+                modeler-cluster-name: Orchestration B
+              - role: optimize
+                namespace-suffix: opta
+                depends-on: hub
+                identity: keycloak-external-optimize
+                persistence: elasticsearch-external
+                features:
+                  - multinamespace-optimize-a
+                serves: orcha
+                tenant: default
+                optimize-context-path: /optimize-orcha
+              - role: optimize
+                namespace-suffix: optb
+                depends-on: hub
+                identity: keycloak-external-optimize
+                persistence: elasticsearch-external
+                features:
+                  - multinamespace-optimize-b
+                serves: orchb
+                tenant: default
+                optimize-context-path: /optimize-orchb
+            shared-storage: elasticsearch
+            shared-storage-service: elasticsearch-master
+        - name: physicaltenants
+          enabled: true
+          shortname: ptnt
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            gke: distroci
+          post-deploy:
+            script: post-deploy-physical-tenant-exporters.sh
+            description: |
+              After the complete topology is ready, asserts that default, tenanta, and
+              tenantb export; deploys one process through each Physical Tenant route; proves
+              each Optimize imports only its own process; and proves sibling client tokens
+              are rejected.
+          topology:
+            name: hub-1orch-2tenants
+            releases:
+              - role: hub
+                namespace-suffix: hub
+                identity: keycloak
+                features:
+                  - multinamespace-reset-clients
+                  - physicaltenants-hub
+                dependencies:
+                  - keycloak-fixed-issuer
+                  - postgresql
+                  - elasticsearch
+              - role: orchestration
+                namespace-suffix: orcha
+                depends-on: hub
+                identity: keycloak-external
+                persistence: elasticsearch-external
+                features:
+                  - physicaltenants-orchestration
+                env:
+                  ORCH_CONNECTORS_CLIENT_ID: connectors-orcha
+                  ORCH_ORCHESTRATION_AUDIENCE: orchestration-orcha-api
+                  ORCH_ORCHESTRATION_CLIENT_ID: orchestration-orcha
+                modeler-cluster-id: orcha
+                modeler-cluster-name: Orchestration A
+                additional-playwright-project: physical-tenants
+              - role: optimize
+                namespace-suffix: optdefault
+                depends-on: hub
+                identity: keycloak-external-optimize
+                persistence: elasticsearch-external
+                features:
+                  - physicaltenants-optimize-default
+                serves: orcha
+                tenant: default
+                optimize-context-path: /optimize-orcha-default
+              - role: optimize
+                namespace-suffix: optta
+                depends-on: hub
+                identity: keycloak-external-optimize
+                persistence: elasticsearch-external
+                features:
+                  - physicaltenants-optimize-ta
+                serves: orcha
+                tenant: tenanta
+                optimize-context-path: /optimize-orcha-ta
+              - role: optimize
+                namespace-suffix: opttb
+                depends-on: hub
+                identity: keycloak-external-optimize
+                persistence: elasticsearch-external
+                features:
+                  - physicaltenants-optimize-tb
+                serves: orcha
+                tenant: tenantb
+                optimize-context-path: /optimize-orcha-tb
+            shared-storage: elasticsearch
+            shared-storage-service: elasticsearch-master
+        - name: dogfood
+          enabled: false
+          shortname: dogfd
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: distroci
+          skip-e2e: true
+          topology:
+            name: hub-3orch-dogfood
+            releases:
+              - role: hub
+                namespace-suffix: hub
+                identity: keycloak
+                features:
+                  - dogfood-common
+                  - multinamespace-reset-clients
+                  - dogfood-hub
+                dependencies:
+                  - keycloak-dogfood
+                  - postgresql-dogfood
+                  - elasticsearch-dogfood
+              - role: orchestration
+                namespace-suffix: plain
+                depends-on: hub
+                identity: keycloak-external
+                persistence: elasticsearch-external
+                features:
+                  - dogfood-common
+                  - dogfood-orchestration-plain
+                env:
+                  ORCH_CONNECTORS_CLIENT_ID: connectors-plain
+                  ORCH_ORCHESTRATION_AUDIENCE: orchestration-plain-api
+                  ORCH_ORCHESTRATION_CLIENT_ID: orchestration-plain
+                modeler-cluster-id: plain
+                modeler-cluster-name: Dogfood Plain
+              - role: orchestration
+                namespace-suffix: mt
+                depends-on: hub
+                identity: keycloak-external
+                persistence: elasticsearch-external
+                features:
+                  - dogfood-common
+                  - dogfood-orchestration-mt
+                env:
+                  ORCH_CONNECTORS_CLIENT_ID: connectors-mt
+                  ORCH_ORCHESTRATION_AUDIENCE: orchestration-mt-api
+                  ORCH_ORCHESTRATION_CLIENT_ID: orchestration-mt
+                modeler-cluster-id: mt
+                modeler-cluster-name: Dogfood Multitenancy
+              - role: orchestration
+                namespace-suffix: pt
+                depends-on: hub
+                identity: keycloak-external
+                persistence: elasticsearch-external
+                features:
+                  - dogfood-common
+                  - dogfood-orchestration-pt
+                env:
+                  ELASTICSEARCH_PASSWORD_REF: ${VALUES_ELASTICSEARCH_PASSWORD}
+                  ORCH_CONNECTORS_CLIENT_ID: connectors-pt
+                  ORCH_ORCHESTRATION_AUDIENCE: orchestration-pt-api
+                  ORCH_ORCHESTRATION_CLIENT_ID: orchestration-pt
+                modeler-cluster-id: pt
+                modeler-cluster-name: Dogfood Physical Tenants
+              - role: optimize
+                namespace-suffix: optplain
+                depends-on: hub
+                identity: keycloak-external-optimize
+                persistence: elasticsearch-external
+                features:
+                  - dogfood-common
+                  - dogfood-optimize-plain
+                serves: plain
+                tenant: default
+                optimize-context-path: /optimize-plain
+              - role: optimize
+                namespace-suffix: optmt
+                depends-on: hub
+                identity: keycloak-external-optimize
+                persistence: elasticsearch-external
+                features:
+                  - dogfood-common
+                  - dogfood-optimize-mt
+                serves: mt
+                tenant: default
+                optimize-context-path: /optimize-mt
+              - role: optimize
+                namespace-suffix: optptdef
+                depends-on: hub
+                identity: keycloak-external-optimize
+                persistence: elasticsearch-external
+                features:
+                  - dogfood-common
+                  - dogfood-optimize-pt-default
+                serves: pt
+                tenant: default
+                optimize-context-path: /optimize-pt-default
+              - role: optimize
+                namespace-suffix: optptta
+                depends-on: hub
+                identity: keycloak-external-optimize
+                persistence: elasticsearch-external
+                features:
+                  - dogfood-common
+                  - dogfood-optimize-pt-ta
+                serves: pt
+                tenant: tenanta
+                optimize-context-path: /optimize-pt-tenanta
+              - role: optimize
+                namespace-suffix: optpttb
+                depends-on: hub
+                identity: keycloak-external-optimize
+                persistence: elasticsearch-external
+                features:
+                  - dogfood-common
+                  - dogfood-optimize-pt-tb
+                serves: pt
+                tenant: tenantb
+                optimize-context-path: /optimize-pt-tenantb
+            shared-storage: elasticsearch
+            shared-storage-service: elasticsearch-master
+            credentials-manifest: charts/camunda-platform-8.11/test/integration/external-secrets/dogfood-credentials.yaml
+            credential-stores:
+              namespace-suffix: hub
+              secret: integration-test-credentials
+              postgres:
+                - statefulset: keycloak-postgresql
+                  user: keycloak
+                  database: keycloak
+                  secret-key: identity-keycloak-postgresql-user-password
+                - statefulset: postgresql
+                  user: app
+                  database: identity
+                  secret-key: identity-postgresql-user-password
+              keycloak:
+                deployment: keycloak
+                container: keycloak
+                url: http://localhost:8080/auth
+                admin-user: admin
+                admin-secret-key: identity-keycloak-admin-password
+                users:
+                  - realm: camunda-platform
+                    username: demo
+                    secret-key: identity-user-password
+              elasticsearch:
+                statefulset: elasticsearch-master
+                container: elasticsearch
+                url: http://localhost:9200
+                user: elastic
+                secret-key: elasticsearch-password
+    nightly:
+      scenario: []
+  flows:
+    upgrade-patch:
+      pre-upgrade:
+        script: pre-upgrade-patch.sh
+        description: |
+          Deletes orchestration StatefulSets and the postgresql-web-modeler
+          StatefulSet + PVC before the patch upgrade. Required because the
+          target chart's PostgreSQL spec has immutable diffs vs the prior
+          patch (PSQL 15→14 rollback path) — Helm cannot reconcile in place.

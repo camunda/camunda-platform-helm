@@ -1,4 +1,4 @@
-{{- if and .Values.prometheusServiceMonitor.enabled (eq (include "camundaPlatform.optimizeEnabled" .) "true") -}}
+{{- if and .Values.prometheusServiceMonitor.enabled (eq (include "camundaPlatform.optimizeEnabled" .) "true") (not .Values.global.noSecondaryStorage) -}}
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:

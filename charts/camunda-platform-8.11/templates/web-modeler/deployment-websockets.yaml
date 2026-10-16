@@ -1,0 +1,176 @@
+{{- if eq (include "camundaHub.webModelerEnabled" .) "true" -}}
+{{- $hub := include "camundaHub.values" . | fromYaml -}}
+{{- $upgradePhase := include "camundaHub.upgradePhase" . -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "webModeler.websockets.fullname" . }}
+  labels: {{- include "webModeler.websockets.labels" . | nindent 4 }}
+  annotations: {{- toYaml .Values.global.annotations | nindent 4 }}
+spec:
+  strategy:
+    type: Recreate
+  replicas: {{ ternary 1 0 (eq $upgradePhase "normal") }}
+  selector:
+    matchLabels: {{- include "webModeler.websockets.matchLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels: {{- include "webModeler.websockets.labels" . | nindent 8 }}
+      {{- if $hub.websockets.podLabels }}
+      {{- tpl (toYaml $hub.websockets.podLabels) $ | nindent 8 }}
+      {{- end }}
+        camunda.io/upgrade-phase: {{ $upgradePhase | quote }}
+      {{- if or (and (eq (include "camundaPlatform.hasCaBundle" .) "true") .Values.global.tls.caBundle.autoRollout) $hub.websockets.podAnnotations }}
+      annotations:
+        {{- with (include "camundaPlatform.caBundleChecksumAnnotation" .) }}{{ . | nindent 8 }}{{- end }}
+        {{- with $hub.websockets.podAnnotations }}
+        {{- tpl (toYaml .) $ | nindent 8 }}
+        {{- end }}
+      {{- end }}
+    spec:
+      imagePullSecrets:
+        {{- include "webModeler.imagePullSecrets" . | nindent 8 }}
+      initContainers:
+        {{- tpl ($hub.websockets.initContainers | default list | toYaml | nindent 8) $ }}
+      containers:
+        - name: {{ include "webModeler.name" . }}-websockets
+          image: {{ include "webModeler.websockets.image" . | quote }}
+          imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+          {{- if $hub.websockets.containerSecurityContext }}
+          securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $hub.websockets.containerSecurityContext "context" $) | nindent 12 }}
+          {{- end }}
+          env:
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "CAMUNDA_LICENSE_KEY"
+                "config" .Values.global.license
+            ) | nindent 12 }}
+            - name: APP_NAME
+              value: "Web Modeler WebSockets"
+            - name: PUSHER_APP_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "webModeler.fullname" . }}-configuration
+                  key: pusher-app-id
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "PUSHER_APP_KEY"
+                "config" ($hub.restapi.pusher.client)
+                "defaultSecretName" (include "webModeler.fullname" .)
+                "defaultSecretKey" "pusher-app-key"
+            ) | nindent 12 }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "PUSHER_APP_SECRET"
+                "config" ($hub.restapi.pusher)
+                "defaultSecretName" (include "webModeler.fullname" .)
+                "defaultSecretKey" "pusher-app-secret"
+            ) | nindent 12 }}
+            {{- if and .Values.global.ingress.enabled $hub.contextPath }}
+            - name: PUSHER_APP_PATH
+              value: {{ include "webModeler.websocketContextPath" . | quote }}
+            {{- end }}
+          {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+            {{- include "camundaPlatform.caBundleEnv" . | nindent 12 }}
+          {{- end }}
+          {{- with $hub.websockets.env }}
+            {{- tpl (toYaml .) $ | nindent 12 }}
+          {{- end }}
+          {{- if $hub.websockets.envFrom }}
+          envFrom:
+            {{- $hub.websockets.envFrom | toYaml | nindent 12 }}
+          {{- end }}
+          {{- if $hub.websockets.command}}
+          command: {{ toYaml $hub.websockets.command | nindent 10 }}
+          {{- end }}
+          resources:
+            {{- toYaml $hub.websockets.resources | nindent 12 }}
+          ports:
+            - containerPort: 8060
+              name: http
+              protocol: TCP
+          {{- if $hub.websockets.startupProbe.enabled }}
+          startupProbe:
+            httpGet:
+              path: {{ $hub.websockets.startupProbe.probePath }}
+              scheme: {{ $hub.websockets.startupProbe.scheme }}
+              port: http
+            initialDelaySeconds: {{ $hub.websockets.startupProbe.initialDelaySeconds }}
+            periodSeconds: {{ $hub.websockets.startupProbe.periodSeconds }}
+            successThreshold: {{ $hub.websockets.startupProbe.successThreshold }}
+            failureThreshold: {{ $hub.websockets.startupProbe.failureThreshold }}
+            timeoutSeconds: {{ $hub.websockets.startupProbe.timeoutSeconds }}
+          {{- end }}
+          {{- if $hub.websockets.readinessProbe.enabled }}
+          readinessProbe:
+            httpGet:
+              path: {{ $hub.websockets.readinessProbe.probePath }}
+              scheme: {{ $hub.websockets.readinessProbe.scheme }}
+              port: http
+            initialDelaySeconds: {{ $hub.websockets.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ $hub.websockets.readinessProbe.periodSeconds }}
+            successThreshold: {{ $hub.websockets.readinessProbe.successThreshold }}
+            failureThreshold: {{ $hub.websockets.readinessProbe.failureThreshold }}
+            timeoutSeconds: {{ $hub.websockets.readinessProbe.timeoutSeconds }}
+          {{- end }}
+          {{- if $hub.websockets.livenessProbe.enabled }}
+          livenessProbe:
+            httpGet:
+              path: {{ $hub.websockets.livenessProbe.probePath }}
+              scheme: {{ $hub.websockets.livenessProbe.scheme }}
+              port: http
+            initialDelaySeconds: {{ $hub.websockets.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ $hub.websockets.livenessProbe.periodSeconds }}
+            successThreshold: {{ $hub.websockets.livenessProbe.successThreshold }}
+            failureThreshold: {{ $hub.websockets.livenessProbe.failureThreshold }}
+            timeoutSeconds: {{ $hub.websockets.livenessProbe.timeoutSeconds }}
+          {{- end }}
+          volumeMounts:
+            - name: config
+              mountPath: /home/webapp/config/application.yaml
+              subPath: application.yaml
+          {{- with $hub.websockets.extraConfiguration }}
+          {{- include "camundaPlatform.extraConfigurationVolumeMounts" (dict "extraConfig" . "volumeName" "config" "basePath" "/home/webapp/config") | trim | nindent 12 }}
+          {{- end }}
+          {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+          {{- include "camundaPlatform.caBundleVolumeMount" . | nindent 12 }}
+          {{- end }}
+          {{- if $hub.websockets.extraVolumeMounts }}
+          {{- $hub.websockets.extraVolumeMounts | toYaml | nindent 12 }}
+          {{- end }}
+        {{- if $hub.websockets.sidecars }}
+        {{- $hub.websockets.sidecars | toYaml | nindent 8 }}
+        {{- end }}
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "webModeler.fullname" . }}-websockets-configuration
+      {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+      {{- include "camundaPlatform.caBundleVolume" . | nindent 8 }}
+      {{- end }}
+      {{- if $hub.websockets.extraVolumes }}
+      {{- $hub.websockets.extraVolumes | toYaml | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "webModeler.serviceAccountName" . }}
+      {{- if kindIs "bool" $hub.automountServiceAccountToken }}
+      automountServiceAccountToken: {{ $hub.automountServiceAccountToken }}
+      {{- end }}
+      {{- if $hub.websockets.dnsConfig }}
+      dnsConfig: {{- toYaml $hub.websockets.dnsConfig | nindent 8 }}
+      {{- end }}
+      {{- if $hub.websockets.dnsPolicy }}
+      dnsPolicy: {{ $hub.websockets.dnsPolicy | quote }}
+      {{- end }}
+      {{- if $hub.websockets.podSecurityContext }}
+      securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $hub.websockets.podSecurityContext "context" $) | nindent 8 }}
+      {{- end }}
+      {{- with $hub.websockets.nodeSelector | default .Values.global.nodeSelector }}
+      nodeSelector:
+        {{ toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $hub.websockets.affinity }}
+      affinity:
+        {{ toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $hub.websockets.tolerations }}
+      tolerations:
+        {{ toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

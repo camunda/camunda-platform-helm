@@ -1,0 +1,3294 @@
+{{/* vim: set filetype=mustache: */}}
+
+{{/*
+********************************************************************************
+General.
+********************************************************************************
+*/}}
+
+{{/*
+Expand the name of the chart.
+*/}}
+{{- define "camundaPlatform.name" -}}
+{{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{/*
+Create a default fully qualified app name.
+We truncate at 63 chars because some Kubernetes name fields are limited to this (for example,
+by the DNS naming spec). If release name contains chart name it will be used as a full name.
+*/}}
+{{- define "camundaPlatform.fullname" -}}
+{{- if .Values.fullnameOverride -}}
+{{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" -}}
+{{- else -}}
+{{- $name := default .Chart.Name .Values.nameOverride -}}
+{{- if contains $name .Release.Name -}}
+{{- .Release.Name | trunc 63 | trimSuffix "-" -}}
+{{- else -}}
+{{- printf "%s-%s" .Release.Name $name | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] Create a default fully qualified app name for component.
+
+Example:
+{{ include "camundaPlatform.componentFullname" (dict "componentName" "foo" "componentValues" .Values.foo "context" $) }}
+*/}}
+{{- define "camundaPlatform.componentFullname" -}}
+    {{- if (.componentValues).fullnameOverride -}}
+        {{- .componentValues.fullnameOverride | trunc 63 | trimSuffix "-" -}}
+    {{- else -}}
+        {{- $name := default .componentName (.componentValues).nameOverride -}}
+        {{- if contains $name .context.Release.Name -}}
+            {{- .context.Release.Name | trunc 63 | trimSuffix "-" -}}
+        {{- else -}}
+            {{- printf "%s-%s" .context.Release.Name $name | trunc 63 | trimSuffix "-" -}}
+        {{- end -}}
+    {{- end -}}
+{{- end -}}
+
+{{/*
+Define common labels, combining the match labels and transient labels, which might change on updating
+(version depending). These labels should not be used on matchLabels selector, since the selectors are immutable.
+*/}}
+{{- define "camundaPlatform.labels" -}}
+{{- template "camundaPlatform.matchLabels" . }}
+{{- if .Values.global.commonLabels }}
+{{ tpl (toYaml .Values.global.commonLabels) $ }}
+{{- end }}
+helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+{{- end }}
+
+{{/*
+Common match labels, which are extended by sub-charts and should be used in matchLabels selectors.
+*/}}
+{{- define "camundaPlatform.matchLabels" -}}
+{{- if .Values.global.labels -}}
+{{ toYaml .Values.global.labels }}
+{{- end }}
+app.kubernetes.io/name: {{ template "camundaPlatform.name" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+app.kubernetes.io/managed-by: {{ .Release.Service }}
+app.kubernetes.io/part-of: camunda-platform
+{{- end -}}
+
+{{/*
+[camunda-platform] Defines extra labels for a component (component name + version).
+
+Usage:
+{{ include "camundaPlatform.componentExtraLabels" (dict "componentName" "connectors" "componentValuesKey" "connectors" "context" $) }}
+*/}}
+{{- define "camundaPlatform.componentExtraLabels" -}}
+app.kubernetes.io/component: {{ .componentName }}
+app.kubernetes.io/version: {{ include "camundaPlatform.versionLabel" (dict "base" .context.Values.global "overlay" (index .context.Values .componentValuesKey) "chart" .context.Chart) | quote }}
+{{- end -}}
+
+{{/*
+[camunda-platform] Define common labels for a component, combining the platform labels and component extra labels.
+These labels shouldn't be used on matchLabels selector, since the selectors are immutable.
+
+Usage:
+{{ include "camundaPlatform.componentLabels" (dict "componentName" "connectors" "componentValuesKey" "connectors" "context" $) }}
+*/}}
+{{- define "camundaPlatform.componentLabels" -}}
+    {{- include "camundaPlatform.labels" .context }}
+    {{- "\n" }}
+    {{- include "camundaPlatform.componentExtraLabels" . }}
+{{- end -}}
+
+{{/*
+[camunda-platform] Defines match labels for a component, which should be used in matchLabels selectors.
+
+Usage:
+{{ include "camundaPlatform.componentMatchLabels" (dict "componentName" "connectors" "context" $) }}
+*/}}
+{{- define "camundaPlatform.componentMatchLabels" -}}
+    {{- include "camundaPlatform.matchLabels" .context }}
+    {{- "\n" -}}
+app.kubernetes.io/component: {{ .componentName }}
+{{- end -}}
+
+{{/*
+Get image tag according the values of "base" or "overlay" values.
+If the "overlay" values exist, they will override the "base" values, otherwise the "base" values will be used.
+Usage: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.connectors) }}
+*/}}
+{{- define "camundaPlatform.imageTagByParams" -}}
+    {{- .overlay.image.tag | default .base.image.tag | default "" -}}
+{{- end -}}
+
+{{/*
+Get image according the values of "base" or "overlay" values.
+If the "overlay" values exist, they will override the "base" values, otherwise the "base" values will be used.
+Usage: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.connectors) }}
+*/}}
+{{- define "camundaPlatform.imageByParams" -}}
+  {{- $imageRegistry    := .overlay.image.registry | default .base.image.registry -}}
+  {{- $imageRepository   := .overlay.image.repository | default .base.image.repository -}}
+  {{- $imageDigest := .overlay.image.digest | default .base.image.digest | default "" -}}
+
+  {{- if $imageDigest }}
+    {{- /* digest‐override path */ -}}
+    {{- printf "%s%s%s@%s"
+        $imageRegistry
+        (empty $imageRegistry | ternary "" "/")
+        $imageRepository
+        $imageDigest
+    -}}
+  {{- else }}
+    {{- /* original tag path */ -}}
+    {{- $imageTag := include "camundaPlatform.imageTagByParams" (dict "base" .base "overlay" .overlay) -}}
+    {{- if not $imageTag -}}
+      {{- fail (printf "camundaPlatform.imageByParams: image %q has neither a tag nor a digest; set image.tag or image.digest" $imageRepository) -}}
+    {{- end -}}
+    {{- printf "%s%s%s:%s"
+        $imageRegistry
+        (empty $imageRegistry | ternary "" "/")
+        $imageRepository
+        $imageTag
+    -}}
+  {{- end }}
+{{- end -}}
+
+{{/*
+Return the version label for resources.
+*/}}
+{{- define "camundaPlatform.versionLabel" -}}
+  {{- $imageTag := include "camundaPlatform.imageTagByParams" (dict "base" .base "overlay" .overlay) -}}
+  {{- if and (le (len $imageTag) 63) (regexMatch "^[A-Za-z0-9]([-A-Za-z0-9_.]*[A-Za-z0-9])?$" $imageTag) -}}
+    {{- $imageTag -}}
+  {{- else -}}
+    {{- .chart.AppVersion -}}
+  {{- end -}}
+{{- end -}}
+
+{{/*
+Get imagePullSecrets according the values of global, component, or empty.
+*/}}
+{{- define "camundaPlatform.componentImagePullSecrets" -}}
+    {{- if (.Values.image.pullSecrets) -}}
+        {{- .Values.image.pullSecrets | toYaml -}}
+    {{- else if (.Values.global.image.pullSecrets) -}}
+        {{- .Values.global.image.pullSecrets | toYaml -}}
+    {{- else -}}
+        {{- "[]" -}}
+    {{- end -}}
+{{- end -}}
+
+{{/*
+Get imagePullSecrets for top-level components.
+Usage:
+{{ include "camundaPlatform.imagePullSecrets" (dict "component" "zeebe" "context" $) }}
+*/}}
+{{- define "camundaPlatform.imagePullSecrets" -}}
+    {{- $componentValue := (index $.context.Values .component "image" "pullSecrets") -}}
+    {{- $globalValue := (index $.context.Values.global "image" "pullSecrets") -}}
+    {{- $componentValue | default $globalValue | default list | toYaml -}}
+{{- end -}}
+
+
+{{/*
+[camunda-platform] Create labels for secrets shared between Identity and other components.
+*/}}
+{{- define "camundaPlatform.identityLabels" -}}
+{{- if .Values.global.labels -}}
+{{ toYaml .Values.global.labels }}
+{{- end }}
+app.kubernetes.io/name: identity
+app.kubernetes.io/instance: {{ .Release.Name }}
+app.kubernetes.io/managed-by: {{ .Release.Service }}
+app.kubernetes.io/part-of: camunda-platform
+helm.sh/chart: identity-{{ .Chart.Version | replace "+" "_" }}
+app.kubernetes.io/component: identity
+{{- end }}
+
+{{/*
+[camunda-platform] Create the name of the service account to use
+Usage: {{ include "camundaPlatform.serviceAccountName" (dict "component" "operate" "context" $) }}
+*/}}
+{{- define "camundaPlatform.serviceAccountName" -}}
+    {{- $values := (index .context.Values .component) -}}
+    {{- if $values.serviceAccount.enabled -}}
+        {{- $values.serviceAccount.name | default (include (printf "%s.fullname" .component) .context) -}}
+    {{- else -}}
+        {{- $values.serviceAccount.name | default "default" -}}
+    {{- end -}}
+{{- end -}}
+
+{{/*
+********************************************************************************
+Authentication.
+********************************************************************************
+*/}}
+
+{{/*
+[camunda-platform] Auth issuer public URL which used externally for Camunda apps (with a fallback to publicIssuerUrl).
+*/}}
+{{- define "camundaPlatform.authIssuerUrlWithFallback" -}}
+  {{- if .Values.global.identity.auth.issuer -}}
+    {{- tpl .Values.global.identity.auth.issuer . -}}
+  {{- else -}}
+    {{- tpl .Values.global.identity.auth.publicIssuerUrl . -}}
+  {{- end -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] Auth issuer public URL which used externally for Camunda apps.
+*/}}
+{{- define "camundaPlatform.authIssuerUrl" -}}
+  {{- tpl .Values.global.identity.auth.issuer . -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] Auth issuer backend URL which used internally for Camunda apps.
+*/}}
+{{- define "camundaPlatform.authIssuerBackendUrl" -}}
+  {{- if .Values.global.identity.auth.issuerBackendUrl -}}
+    {{- tpl .Values.global.identity.auth.issuerBackendUrl . -}}
+  {{- else if and (eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK") (.Values.global.identity.keycloak.url).host -}}
+    {{-
+      printf "%s://%s:%v%s"
+        .Values.global.identity.keycloak.url.protocol
+        (include "identity.keycloak.host" .)
+        .Values.global.identity.keycloak.url.port
+        (include "camundaPlatform.joinpath" (list .Values.global.identity.keycloak.contextPath .Values.global.identity.keycloak.realm))
+    -}}
+  {{- end -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] Auth type which used internally for Camunda apps.
+NOTE: This is for Management Identity config, all new types will be supported via OIDC.
+*/}}
+{{- define "camundaPlatform.authIssuerType" -}}
+  {{- upper .Values.global.identity.auth.type -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] Auth URL which used externally by the user.
+*/}}
+{{- define "camundaPlatform.authIssuerUrlEndpointAuth" -}}
+  {{- if or .Values.global.identity.auth.authUrl -}}
+    {{- tpl .Values.global.identity.auth.authUrl . -}}
+  {{- else if eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK" -}}
+    {{- include "camundaPlatform.authIssuerUrlWithFallback" . -}}/protocol/openid-connect/auth
+  {{- end -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] Auth token URL which used internally for Camunda apps.
+*/}}
+{{- define "camundaPlatform.authIssuerBackendUrlEndpointToken" -}}
+  {{- if .Values.global.identity.auth.tokenUrl -}}
+    {{- tpl .Values.global.identity.auth.tokenUrl . -}}
+  {{- else if eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK" -}}
+    {{- include "camundaPlatform.authIssuerBackendUrl" . -}}/protocol/openid-connect/token
+  {{- end -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] Auth certs URL which used internally for Camunda apps.
+*/}}
+{{- define "camundaPlatform.authIssuerBackendUrlEndpointCerts" -}}
+  {{- if .Values.global.identity.auth.jwksUrl -}}
+    {{- tpl .Values.global.identity.auth.jwksUrl . -}}
+  {{- else if eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK" -}}
+    {{- include "camundaPlatform.authIssuerBackendUrl" . -}}/protocol/openid-connect/certs
+  {{- end -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] Protocol clients use to reach the global Ingress. global.ingress.protocol
+overrides the default derived from global.ingress.tls.enabled, e.g. when TLS is terminated
+in front of the Ingress (OpenShift edge routes, external load balancers).
+*/}}
+{{- define "camundaPlatform.ingressProtocol" -}}
+  {{- .Values.global.ingress.protocol | default (ternary "https" "http" .Values.global.ingress.tls.enabled) -}}
+{{- end -}}
+
+{{- define "camundaPlatform.ingressExternalPort" -}}
+  {{- $ports := .context.Values.global.ingress.publicPorts | default dict -}}
+  {{- ternary ($ports.https | default 443) ($ports.http | default 80) .tlsEnabled -}}
+{{- end -}}
+
+{{- define "camundaPlatform.ingressExternalURL" -}}
+  {{- $proto := ternary "https" "http" .tlsEnabled -}}
+  {{- $port := include "camundaPlatform.ingressExternalPort" . -}}
+  {{- $defaultPort := ternary 443 80 .tlsEnabled -}}
+  {{- $host := tpl .host .context -}}
+  {{- if eq (int $port) $defaultPort -}}
+    {{- printf "%s://%s" $proto $host -}}
+  {{- else -}}
+    {{- printf "%s://%s:%v" $proto $host $port -}}
+  {{- end -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] Gateway external URL prefix.
+*/}}
+{{- define "camundaPlatform.gatewayExternalURL" -}}
+  {{- $tlsEnabled := .context.Values.global.gateway.tls.enabled -}}
+  {{- $proto := ternary "https" "http" $tlsEnabled -}}
+  {{- $ports := .context.Values.global.gateway.publicPorts | default dict -}}
+  {{- $port := ternary ($ports.https | default .context.Values.global.gateway.tls.port) ($ports.http | default .context.Values.global.gateway.port) $tlsEnabled -}}
+  {{- $defaultPort := ternary 443 80 $tlsEnabled -}}
+  {{- $host := tpl .host .context -}}
+  {{- if eq (int $port) $defaultPort -}}
+    {{- printf "%s://%s" $proto $host -}}
+  {{- else -}}
+    {{- printf "%s://%s:%v" $proto $host $port -}}
+  {{- end -}}
+{{- end -}}
+
+{{/*
+Get the externally-reachable Keycloak URL for display in Camunda Hub and NOTES.txt.
+When the chart proxies Keycloak through its combined Ingress (internal: true), use
+the chart host + contextPath. Otherwise return the configured external Keycloak URL.
+*/}}
+{{- define "camundaPlatform.keycloakExternalURL" -}}
+  {{- if .Values.global.identity.keycloak.internal -}}
+    {{- if and .Values.global.gateway.enabled (tpl .Values.global.host $) -}}
+      {{- printf "%s%s" (include "camundaPlatform.gatewayExternalURL" (dict "context" . "host" .Values.global.host)) .Values.global.identity.keycloak.contextPath -}}
+    {{- else if and .Values.global.ingress.enabled (tpl .Values.global.host $) -}}
+      {{- printf "%s%s" (include "camundaPlatform.ingressExternalURL" (dict "context" . "host" .Values.global.host "tlsEnabled" (eq (include "camundaPlatform.ingressProtocol" .) "https"))) .Values.global.identity.keycloak.contextPath -}}
+    {{- else -}}
+      {{- $proto := include "camundaPlatform.ingressProtocol" . -}}
+      {{- printf "%s://%s%s" $proto ((tpl .Values.global.host $) | default "localhost:18080") .Values.global.identity.keycloak.contextPath -}}
+    {{- end -}}
+  {{- else if (.Values.global.identity.keycloak.url).host -}}
+    {{- include "identity.keycloak.url" . -}}
+  {{- end -}}
+{{- end -}}
+
+
+{{/*
+********************************************************************************
+Elasticsearch and Opensearch templates.
+********************************************************************************
+*/}}
+
+{{/*
+[camunda-platform] Elasticsearch URL which could be external.
+*/}}
+
+{{- define "camundaPlatform.elasticsearchHost" -}}
+  {{- tpl .Values.optimize.database.elasticsearch.url.host $ -}}
+{{- end -}}
+
+{{- define "camundaPlatform.elasticsearchURL" -}}
+{{- if .Values.orchestration.data.secondaryStorage.elasticsearch.url -}}
+  {{ .Values.orchestration.data.secondaryStorage.elasticsearch.url }}
+{{- else -}}
+  {{ .Values.optimize.database.elasticsearch.url.protocol }}://{{ include "camundaPlatform.elasticsearchHost" . }}:{{ .Values.optimize.database.elasticsearch.url.port }}
+{{- end -}}
+{{- end -}}
+
+{{- define "camundaPlatform.opensearchHost" -}}
+  {{- tpl .Values.optimize.database.opensearch.url.host $ -}}
+{{- end -}}
+
+{{- define "camundaPlatform.opensearchURL" -}}
+{{- if .Values.orchestration.data.secondaryStorage.opensearch.url -}}
+  {{ .Values.orchestration.data.secondaryStorage.opensearch.url }}
+{{- else -}}
+  {{ .Values.optimize.database.opensearch.url.protocol }}://{{ include "camundaPlatform.opensearchHost" . }}:{{ .Values.optimize.database.opensearch.url.port }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] Elasticsearch URL for the legacy Zeebe exporter that feeds Optimize.
+Resolves the Optimize component chain when the exporter is Optimize-owned, and the
+secondary-storage/compatibility URL otherwise.
+*/}}
+{{- define "camundaPlatform.legacyExporterElasticsearchURL" -}}
+{{- if eq (include "orchestration.legacyElasticsearchExporterUsesOptimizeSource" .) "true" -}}
+  {{ include "optimize.effectiveEsURL" . }}
+{{- else -}}
+  {{ include "camundaPlatform.elasticsearchURL" . }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] OpenSearch URL for the legacy Zeebe exporter that feeds Optimize.
+Resolves the Optimize component chain when the exporter is Optimize-owned, and the
+secondary-storage/compatibility URL otherwise.
+*/}}
+{{- define "camundaPlatform.legacyExporterOpensearchURL" -}}
+{{- if eq (include "orchestration.legacyOpenSearchExporterUsesOptimizeSource" .) "true" -}}
+  {{ include "optimize.effectiveOsURL" . }}
+{{- else -}}
+  {{ include "camundaPlatform.opensearchURL" . }}
+{{- end -}}
+{{- end -}}
+
+
+
+
+{{/*
+********************************************************************************
+Operate templates.
+********************************************************************************
+*/}}
+
+{{/*
+Get the external url for a given component.
+If the "overlay" values exist, they will override the "base" values, otherwise the "base" values will be used.
+Usage: {{ include "camundaPlatform.getExternalURL" (dict "component" "identity" "context" .) }}
+*/}}
+{{- define "camundaPlatform.getExternalURL" -}}
+  {{- if (index .context.Values .component "enabled") -}}
+    {{- if $.context.Values.global.ingress.enabled -}}
+      {{- printf "%s%s" (include "camundaPlatform.ingressExternalURL" (dict "context" .context "host" .context.Values.global.host "tlsEnabled" (eq (include "camundaPlatform.ingressProtocol" .context) "https"))) (index .context.Values .component "contextPath") -}}
+    {{- else if and $.context.Values.global.gateway.enabled (tpl .context.Values.global.host .context) -}}
+      {{- printf "%s%s" (include "camundaPlatform.gatewayExternalURL" (dict "context" .context "host" .context.Values.global.host)) (index .context.Values .component "contextPath") -}}
+    {{- else -}}
+      {{- $portMapping := (dict
+      "identity" "8080"
+      "optimize" "8083"
+      "connectors" "8086"
+      ) -}}
+      {{- printf "http://localhost:%s" (get $portMapping .component) -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] Operate external URL.
+*/}}
+{{- define "camundaPlatform.operateExternalURL" }}
+  {{- printf "%s/operate" (include "camundaPlatform.orchestrationExternalURL" . | trimSuffix "/") -}}
+{{- end -}}
+
+
+{{/*
+********************************************************************************
+Optimize templates.
+********************************************************************************
+*/}}
+{{/*
+[camunda-platform] Optimize external URL.
+*/}}
+{{- define "camundaPlatform.optimizeExternalURL" }}
+  {{- printf "%s" (include "camundaPlatform.getExternalURL" (dict "component" "optimize" "context" .)) -}}
+{{- end -}}
+
+{{/*
+********************************************************************************
+Connectors templates.
+********************************************************************************
+*/}}
+{{/*
+[camunda-platform] Connectors external URL.
+*/}}
+{{- define "camundaPlatform.connectorsExternalURL" }}
+  {{- $proto := ternary "https" "http" (eq (include "camundaPlatform.connectorsTLSEnabled" .) "true") -}}
+  {{- $baseURLInternal := printf "%s://%s.%s" $proto (include "connectors.serviceName" .) .Release.Namespace -}}
+  {{- printf "%s:%v%s" $baseURLInternal .Values.connectors.service.serverPort (include "camundaPlatform.joinpath" (list .Values.connectors.contextPath "")) | trimSuffix "/" -}}
+{{- end -}}
+
+{{/*
+********************************************************************************
+Tasklist templates.
+********************************************************************************
+*/}}
+
+{{/*
+[camunda-platform] Tasklist external URL.
+*/}}
+{{- define "camundaPlatform.tasklistExternalURL" }}
+  {{- printf "%s/tasklist" (include "camundaPlatform.orchestrationExternalURL" . | trimSuffix "/") -}}
+{{- end -}}
+
+
+{{/*
+********************************************************************************
+Orchestration Identity templates.
+********************************************************************************
+*/}}
+
+{{/*
+[camunda-platform] Orchestration Admin external URL.
+*/}}
+{{- define "camundaPlatform.orchestrationIdentityExternalURL" }}
+  {{- printf "%s/admin" (include "camundaPlatform.orchestrationExternalURL" . | trimSuffix "/") -}}
+{{- end -}}
+
+
+{{/*
+********************************************************************************
+Web Modeler templates.
+********************************************************************************
+*/}}
+{{/*
+[camunda-platform] Web Modeler external URL.
+*/}}
+
+{{- define "camundaPlatform.getExternalURLModeler" -}}
+  {{- if eq (include "camundaHub.webModelerEnabled" .context) "true" -}}
+    {{- $hub := include "camundaHub.values" .context | fromYaml -}}
+    {{- if $.context.Values.global.ingress.enabled -}}
+      {{- $baseURL := include "camundaPlatform.ingressExternalURL" (dict "context" .context "host" .context.Values.global.host "tlsEnabled" (eq (include "camundaPlatform.ingressProtocol" .context) "https")) -}}
+      {{- if eq .component "websockets" }}
+        {{- printf "%s%s" $baseURL (include "webModeler.websocketContextPath" .context) -}}
+      {{- else -}}
+        {{- printf "%s%s" $baseURL $hub.contextPath -}}
+      {{- end -}}
+    {{- else if and $.context.Values.global.gateway.enabled (tpl .context.Values.global.host .context) -}}
+      {{- $baseURL := include "camundaPlatform.gatewayExternalURL" (dict "context" .context "host" .context.Values.global.host) -}}
+      {{- if eq .component "websockets" }}
+        {{- printf "%s%s" $baseURL (include "webModeler.websocketContextPath" .context) -}}
+      {{- else -}}
+        {{- printf "%s%s" $baseURL $hub.contextPath -}}
+      {{- end -}}
+    {{- else -}}
+      {{- if eq .component "websockets" -}}
+        {{- printf "http://localhost:8085" -}}
+      {{- else -}}
+        {{- printf "http://localhost:8070" -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+
+{{- define "camundaPlatform.webModelerWebSocketsExternalURL" }}
+  {{- printf "%s" (include "camundaPlatform.getExternalURLModeler" (dict "component" "websockets" "context" .)) -}}
+{{- end -}}
+
+{{- define "camundaPlatform.webModelerExternalURL" }}
+  {{- printf "%s" (include "camundaPlatform.getExternalURLModeler" (dict "component" "" "context" .)) -}}
+{{- end -}}
+
+
+{{/*
+********************************************************************************
+Identity templates.
+********************************************************************************
+*/}}
+
+{{- define "identity.authAudience" -}}
+  {{- .Values.global.identity.auth.identity.audience | default "camunda-identity-resource-server" -}}
+{{- end -}}
+
+{{- define "identity.authClientId" -}}
+  {{- .Values.global.identity.auth.identity.clientId | default "camunda-identity" -}}
+{{- end -}}
+
+
+{{/*
+Create a default fully qualified app name.
+*/}}
+
+{{- define "identity.fullname" -}}
+    {{- include "camundaPlatform.componentFullname" (dict
+        "componentName" "identity"
+        "componentValues" .Values.identity
+        "context" $
+    ) -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] Identity internal URL.
+*/}}
+{{ define "camundaPlatform.identityURL" }}
+  {{- if .Values.global.identity.service.url -}}
+    {{- .Values.global.identity.service.url -}}
+  {{- else -}}
+    {{-
+      printf "http://%s:%v%s"
+        (include "identity.fullname" .)
+        .Values.identity.service.port
+        (.Values.identity.contextPath | default "")
+    -}}
+  {{- end -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] Create the name of the Identity secret for components.
+Usage: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "zeebe") }}
+*/}}
+{{- define "camundaPlatform.identitySecretName" -}}
+  {{- $releaseName := .context.Release.Name | trunc 63 | trimSuffix "-" -}}
+  {{- printf "%s-%s-identity-secret" $releaseName .component -}}
+{{- end }}
+
+{{/*
+[camunda-platform] Identity external URL.
+*/}}
+{{- define "camundaPlatform.identityExternalURL" }}
+  {{- if and .Values.identity.enabled .Values.identity.fullURL -}}
+    {{- include "identity.externalUrl" . -}}
+  {{- else -}}
+    {{- include "camundaPlatform.getExternalURL" (dict "component" "identity" "context" .) -}}
+  {{- end -}}
+{{- end -}}
+
+
+{{/*
+********************************************************************************
+Identity Auth.
+********************************************************************************
+*/}}
+
+{{- define "camundaPlatform.authAudienceOptimize" -}}
+  {{- $oidc := dig "security" "authentication" "oidc" dict (.Values.optimize | default dict) -}}
+  {{- $oidc.audience | default .Values.global.identity.auth.optimize.audience | default "optimize-api" -}}
+{{- end -}}
+
+{{- define "camundaPlatform.topologySlug" -}}
+  {{- regexReplaceAll "[^a-z0-9]+" (lower (. | toString)) "-" | trimAll "-" -}}
+{{- end -}}
+
+{{- define "camundaPlatform.topologyMode" -}}
+  {{- dig "mode" "combined" (.Values.global.topology | default dict) -}}
+{{- end -}}
+
+{{- define "camundaPlatform.topologyEnvToken" -}}
+  {{- regexReplaceAll "[^A-Z0-9]+" (upper (. | toString)) "_" | trimAll "_" -}}
+{{- end -}}
+
+{{- define "camundaPlatform.topologyComponentFullname" -}}
+  {{- $releaseName := .releaseName | trunc 63 | trimSuffix "-" -}}
+  {{- if contains .componentName $releaseName -}}
+    {{- $releaseName -}}
+  {{- else -}}
+    {{- printf "%s-%s" $releaseName .componentName | trunc 63 | trimSuffix "-" -}}
+  {{- end -}}
+{{- end -}}
+
+{{- define "camundaPlatform.topologyContextPath" -}}
+  {{- $path := . | default "" | toString | trimAll "/" -}}
+  {{- if $path -}}{{- printf "/%s" $path -}}{{- end -}}
+{{- end -}}
+
+{{- define "camundaPlatform.orchestrationEnabled" -}}
+  {{- if and .Values.orchestration.enabled (not (has (include "camundaPlatform.topologyMode" .) (list "hub" "optimize"))) -}}true{{- else -}}false{{- end -}}
+{{- end -}}
+
+{{- define "camundaPlatform.connectorsEnabled" -}}
+  {{- if and .Values.connectors.enabled (not (has (include "camundaPlatform.topologyMode" .) (list "hub" "optimize"))) -}}true{{- else -}}false{{- end -}}
+{{- end -}}
+
+{{- define "camundaPlatform.optimizeEnabled" -}}
+  {{- if and .Values.optimize.enabled (ne (include "camundaPlatform.topologyMode" .) "hub") -}}true{{- else -}}false{{- end -}}
+{{- end -}}
+
+{{- define "camundaPlatform.identityEnabled" -}}
+  {{- if and .Values.identity.enabled (not (has (include "camundaPlatform.topologyMode" .) (list "orchestration" "optimize"))) -}}true{{- else -}}false{{- end -}}
+{{- end -}}
+
+
+
+{{/*
+********************************************************************************
+Camunda Hub backward-compatibility shim helpers.
+These helpers support the consolidation of Console and WebModeler into a single
+"camundaHub" component while maintaining full backward compatibility with
+the legacy console.* and webModeler.* top-level keys.
+
+When camundaHub.enabled=true, both sub-components are enabled regardless of
+their individual .enabled flags. The camundaHub.* overrides take precedence over the legacy webModeler.* keys.
+********************************************************************************
+*/}}
+
+{{/*
+[camunda-hub] Check if the WebModeler sub-component should be enabled.
+Returns "true" if camundaHub.enabled OR webModeler.enabled.
+Usage: {{- if eq (include "camundaHub.webModelerEnabled" .) "true" }}
+*/}}
+{{- define "camundaHub.webModelerEnabled" -}}
+  {{- if and (not (has (include "camundaPlatform.topologyMode" .) (list "orchestration" "optimize"))) (or .Values.camundaHub.enabled .Values.webModeler.enabled) -}}
+    true
+  {{- else -}}
+    false
+  {{- end -}}
+{{- end -}}
+
+{{/*
+[camunda-hub] Check if the Console sub-component should be enabled.
+Returns "true" if camundaHub.enabled OR console.enabled (legacy 8.9 key).
+Usage: {{- if eq (include "camundaHub.consoleEnabled" .) "true" }}
+*/}}
+{{- define "camundaHub.consoleEnabled" -}}
+  {{- $console := default (dict) .Values.console -}}
+  {{- if and (not (has (include "camundaPlatform.topologyMode" .) (list "orchestration" "optimize"))) (or .Values.camundaHub.enabled $console.enabled) -}}
+    true
+  {{- else -}}
+    false
+  {{- end -}}
+{{- end -}}
+
+
+{{/*
+********************************************************************************
+Orchestration templates.
+********************************************************************************
+*/}}
+
+{{/*
+[orchestration] Get the image pull secrets.
+*/}}
+{{- define "orchestration.imagePullSecrets" -}}
+    {{- include "camundaPlatform.imagePullSecrets" (dict
+        "component" "orchestration"
+        "context" $
+    ) -}}
+{{- end }}
+
+{{/*
+********************************************************************************
+Zeebe templates.
+********************************************************************************
+*/}}
+{{/*
+[camunda-platform] Zeebe Gateway external URL.
+*/}}
+{{- define "camundaPlatform.orchestrationExternalURL" }}
+  {{- if .Values.global.ingress.enabled -}}
+    {{- printf "%s%s" (include "camundaPlatform.ingressExternalURL" (dict "context" . "host" .Values.global.host "tlsEnabled" (eq (include "camundaPlatform.ingressProtocol" .) "https"))) (include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath)) -}}
+  {{- else if and .Values.global.gateway.enabled (tpl .Values.global.host $) -}}
+    {{- printf "%s%s" (include "camundaPlatform.gatewayExternalURL" (dict "context" . "host" .Values.global.host)) (include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath)) -}}
+  {{- else -}}
+    {{- printf "http://localhost:8080" -}}
+  {{- end -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] Zeebe Gateway GRPC external URL.
+*/}}
+{{- define "camundaPlatform.orchestrationGRPCExternalURL" -}}
+  {{- if and .Values.global.gateway.enabled .Values.orchestration.gateway.grpc.enabled (tpl .Values.global.host $) -}}
+    {{- include "camundaPlatform.gatewayExternalURL" (dict "context" . "host" .Values.orchestration.gateway.grpc.host) -}}
+  {{- else if and .Values.orchestration.ingress.grpc.enabled (tpl .Values.orchestration.ingress.grpc.host .) -}}
+    {{- include "camundaPlatform.ingressExternalURL" (dict "context" . "host" .Values.orchestration.ingress.grpc.host "tlsEnabled" .Values.orchestration.ingress.grpc.tls.enabled) -}}
+  {{- else -}}
+    {{ $proto := ternary "https" "http" .Values.orchestration.ingress.grpc.tls.enabled -}}
+    {{- printf "%s://%s" $proto (tpl .Values.orchestration.ingress.grpc.host . | default "localhost:26500") -}}
+  {{- end -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] Zeebe Gateway REST internal URL.
+*/}}
+{{ define "camundaPlatform.orchestrationHTTPInternalURL" }}
+  {{- if eq (include "camundaPlatform.orchestrationEnabled" .) "true" -}}
+    {{-
+      printf "%s://%s%s"
+        (ternary "https" "http" (eq (include "camundaPlatform.orchestrationRESTTLSEnabled" .) "true"))
+        (include "orchestration.serviceNameHTTP" .)
+        (.Values.orchestration.contextPath | default "" | trimSuffix "/")
+    -}}
+  {{- end -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] Zeebe Gateway GRPC internal URL.
+*/}}
+{{ define "camundaPlatform.orchestrationGRPCInternalURL" }}
+  {{- if eq (include "camundaPlatform.orchestrationEnabled" .) "true" -}}
+    {{-
+      printf "%s://%s"
+        (ternary "grpcs" "grpc" (eq (include "camundaPlatform.orchestrationGRPCTLSEnabled" .) "true"))
+        (include "orchestration.serviceNameGRPC" .)
+    -}}
+  {{- end -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] Returns "true" when Orchestration REST TLS is enabled,
+resolved in the order Spring itself applies, highest precedence first:
+
+  1. an orchestration.env entry for SERVER_SSL_ENABLED (last duplicate wins)
+  2. global.tls.orchestration.rest.enabled, which the StatefulSet emits as that
+     same env var, so orchestration.env is appended after it and outranks it
+  3. orchestration.extraConfiguration setting server.ssl.enabled
+  4. orchestration.configuration setting server.ssl.enabled
+
+Both env sources rank above both YAML sources because Spring ranks OS
+environment variables above every application.yaml source. A "valueFrom"-sourced
+env entry (no literal value) resolves to "unknown" from
+orchestrationEnvLastValue and is treated the same as "unset" here: the chart
+cannot read that value at render time, so it falls through to the remaining
+sources rather than assuming the runtime secret disables TLS.
+
+The YAML sources match nested keys literally, so flat dotted keys,
+relaxed-binding camelCase, and springImport: false entries stay invisible here.
+Multi-document sources are resolved in document order, but a document gated by
+spring.config.activate resolves to "unresolved" and is treated as plaintext here
+because its activation is a runtime decision.
+camunda.constraints.warnings warns about what this cannot see.
+*/}}
+{{- define "camundaPlatform.orchestrationRESTTLSEnabled" -}}
+  {{- $envValue := include "camundaPlatform.orchestrationEnvLastValue" (dict "context" . "name" "SERVER_SSL_ENABLED") -}}
+  {{- if eq $envValue "true" -}}
+    true
+  {{- else if eq $envValue "false" -}}
+    false
+  {{- else if .Values.global.tls.orchestration.rest.enabled -}}
+    true
+  {{- else -}}
+    {{- $configState := include "camundaPlatform.appConfigBoolState" (dict
+        "configuration" .Values.orchestration.configuration
+        "extraConfiguration" .Values.orchestration.extraConfiguration
+        "path" (list "server" "ssl" "enabled")) -}}
+    {{- ternary "true" "false" (eq $configState "true") -}}
+  {{- end -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] Returns "true" when Orchestration gRPC TLS is enabled,
+mirroring camundaPlatform.orchestrationRESTTLSEnabled exactly: same four-source
+precedence, same "unknown" == "unset" handling for a valueFrom-sourced env
+entry, same document-order resolution with spring.config.activate treated as
+unresolved, and the same literal-nested-key limits on the YAML sources. The gRPC
+property path is camunda.api.grpc.ssl.enabled, the relaxed-binding YAML form of
+the CAMUNDA_API_GRPC_SSL_ENABLED env var the StatefulSet emits.
+*/}}
+{{- define "camundaPlatform.orchestrationGRPCTLSEnabled" -}}
+  {{- $envValue := include "camundaPlatform.orchestrationEnvLastValue" (dict "context" . "name" "CAMUNDA_API_GRPC_SSL_ENABLED") -}}
+  {{- if eq $envValue "true" -}}
+    true
+  {{- else if eq $envValue "false" -}}
+    false
+  {{- else if .Values.global.tls.orchestration.grpc.enabled -}}
+    true
+  {{- else -}}
+    {{- $configState := include "camundaPlatform.appConfigBoolState" (dict
+        "configuration" .Values.orchestration.configuration
+        "extraConfiguration" .Values.orchestration.extraConfiguration
+        "path" (list "camunda" "api" "grpc" "ssl" "enabled")) -}}
+    {{- ternary "true" "false" (eq $configState "true") -}}
+  {{- end -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] Returns "true", "false", "unknown", or "unset" for the LAST
+matching orchestration.env entry by name. Kubernetes keeps the last duplicate
+env var, so callers resolving effective TLS state must look at the last
+match, not merely whether any match exists. "unset" means no matching entry
+exists at all. "unknown" means the last matching entry carries no literal
+value but does carry a valueFrom (e.g. a Secret/ConfigMap key) — the chart
+cannot read that value at render time, so callers must fall back to the
+global TLS flag rather than treat it as "false".
+Usage:
+  {{ include "camundaPlatform.orchestrationEnvLastValue" (dict "context" . "name" "SERVER_SSL_ENABLED") }}
+*/}}
+{{- define "camundaPlatform.orchestrationEnvLastValue" -}}
+  {{- $ctx := .context -}}
+  {{- $name := .name -}}
+  {{- $result := "unset" -}}
+  {{- range $env := $ctx.Values.orchestration.env -}}
+    {{- if eq ($env.name | default "") $name -}}
+      {{- if $env.value -}}
+        {{- if eq (lower (tpl (toString $env.value) $ctx)) "true" -}}
+          {{- $result = "true" -}}
+        {{- else -}}
+          {{- $result = "false" -}}
+        {{- end -}}
+      {{- else if $env.valueFrom -}}
+        {{- $result = "unknown" -}}
+      {{- else -}}
+        {{- $result = "false" -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+  {{- $result -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] Returns "true", "false", "unset" or "unresolved" for a boolean
+key path in a <component>.configuration string, resolved the way Spring resolves
+a multi-document YAML source: documents are split on "---" and "..." separator
+lines and applied in order, so a later document overrides an earlier one for the
+keys it sets. "unset" means no document places a scalar at that path.
+
+"unresolved" means the winning value depends on runtime state: either the
+document carries a spring.config.activate condition or the scalar is a Spring
+property placeholder. Callers must require an explicit chart flag or env var
+rather than derive a transport from it. A conditioned document that does not set
+the path is ignored, and an unconditional document after one wins outright.
+
+Keys match literally on nested map keys, so flat dotted keys
+("server.ssl.enabled: true" as one key) and relaxed-binding camelCase are NOT
+matched. camunda.constraints.warnings warns about what this cannot see.
+Usage:
+  {{ include "camundaPlatform.configYamlBoolState" (dict
+    "configuration" .Values.orchestration.configuration
+    "path" (list "server" "ssl" "enabled")) }}
+*/}}
+{{- define "camundaPlatform.configYamlBoolState" -}}
+  {{- $state := "unset" -}}
+  {{- $documents := regexSplit "(?m)^[ \t]*(---|\\.\\.\\.)[ \t]*(#.*)?$" (.configuration | default "") -1 -}}
+  {{- range $document := $documents -}}
+    {{- $parsed := ($document | fromYaml) -}}
+    {{- if and (kindIs "map" $parsed) (not (hasKey $parsed "Error")) -}}
+      {{- $value := include "camundaPlatform.yamlDocBoolAt" (dict "document" $parsed "path" $.path) -}}
+      {{- if ne $value "unset" -}}
+        {{- if eq (include "camundaPlatform.yamlDocIsConditional" (dict "document" $parsed)) "true" -}}
+          {{- $state = "unresolved" -}}
+        {{- else -}}
+          {{- $state = $value -}}
+        {{- end -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+  {{- $state -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] Returns "true", "false", "unset" or "unresolved" for a
+boolean key path inside one already-parsed YAML document. Walks nested map keys
+literally and ignores map, slice and null nodes, so only a scalar at the exact
+path resolves. A Spring property placeholder is unresolved because its runtime
+value may differ from its default.
+Usage:
+  {{ include "camundaPlatform.yamlDocBoolAt" (dict
+    "document" $parsed
+    "path" (list "server" "ssl" "enabled")) }}
+*/}}
+{{- define "camundaPlatform.yamlDocBoolAt" -}}
+  {{- $state := "unset" -}}
+  {{- $node := .document -}}
+  {{- $found := true -}}
+  {{- range $key := .path -}}
+    {{- if and $found (kindIs "map" $node) (hasKey $node $key) -}}
+      {{- $node = index $node $key -}}
+    {{- else -}}
+      {{- $found = false -}}
+    {{- end -}}
+  {{- end -}}
+  {{- if and $found (not (kindIs "invalid" $node)) (not (kindIs "map" $node)) (not (kindIs "slice" $node)) -}}
+    {{- $value := trim (toString $node) -}}
+    {{- if regexMatch "^\\$\\{.*\\}$" $value -}}
+      {{- $state = "unresolved" -}}
+    {{- else -}}
+      {{- $state = ternary "true" "false" (eq (lower $value) "true") -}}
+    {{- end -}}
+  {{- end -}}
+  {{- $state -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] Returns "true" when one already-parsed YAML document carries a
+spring.config.activate condition, in every key spelling fromYaml can leave it in:
+fully nested spring -> config -> activate, a partly dotted "config.activate" key
+under spring, or a fully dotted top-level "spring.config.activate" key. Callers
+treat such a document as unresolvable while templating, because activation
+depends on the runtime profile and cloud platform.
+Usage:
+  {{ include "camundaPlatform.yamlDocIsConditional" (dict "document" $parsed) }}
+*/}}
+{{- define "camundaPlatform.yamlDocIsConditional" -}}
+  {{- $conditional := false -}}
+  {{- range $key, $unused := .document -}}
+    {{- if or (eq $key "spring.config.activate") (hasPrefix "spring.config.activate." $key) -}}
+      {{- $conditional = true -}}
+    {{- end -}}
+  {{- end -}}
+  {{- $spring := index .document "spring" -}}
+  {{- if kindIs "map" $spring -}}
+    {{- range $key, $unused := $spring -}}
+      {{- if or (eq $key "config.activate") (hasPrefix "config.activate." $key) -}}
+        {{- $conditional = true -}}
+      {{- end -}}
+    {{- end -}}
+    {{- $config := index $spring "config" -}}
+    {{- if kindIs "map" $config -}}
+      {{- range $key, $unused := $config -}}
+        {{- if or (eq $key "activate") (hasPrefix "activate." $key) -}}
+          {{- $conditional = true -}}
+        {{- end -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+  {{- ternary "true" "false" $conditional -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] Returns "true", "false", "unset" or "unresolved" for a boolean
+key path set through <component>.extraConfiguration. Each entry is resolved with
+camundaPlatform.configYamlBoolState, so multi-document content and
+spring.config.activate conditions behave exactly as they do in
+<component>.configuration. Later entries win and entries with
+springImport: false are skipped.
+Usage:
+  {{ include "camundaPlatform.extraConfigBoolState" (dict
+    "extraConfiguration" .Values.orchestration.extraConfiguration
+    "path" (list "server" "ssl" "enabled")) }}
+*/}}
+{{- define "camundaPlatform.extraConfigBoolState" -}}
+  {{- $state := "unset" -}}
+  {{- range $entry := (.extraConfiguration | default list) -}}
+    {{- if not (and (hasKey $entry "springImport") (eq $entry.springImport false)) -}}
+      {{- $entryState := include "camundaPlatform.configYamlBoolState" (dict
+          "configuration" ($entry.content | default "")
+          "path" $.path) -}}
+      {{- if ne $entryState "unset" -}}
+        {{- $state = $entryState -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+  {{- $state -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] Returns "true", "false", "unset" or "unresolved" for a boolean
+key path as Spring resolves it across a component's two YAML config sources.
+extraConfiguration outranks configuration: extraConfiguration entries are pulled
+in through spring.config.import, and an imported document overrides the document
+that imports it. This also matches camundaPlatform.effectiveExtraConfigValue,
+which already treats extraConfiguration as overriding its fallback.
+"unresolved" is returned when the source that wins the path sets it inside a
+spring.config.activate-conditioned document; callers must then require an
+explicit flag or env var instead of deriving a value. An extraConfiguration entry
+that resolves definitely still overrides an unresolved configuration, because
+Spring applies the imported document last either way.
+Callers must apply env vars on top of this result, not below it: Spring ranks
+OS environment variables above every application.yaml source, and the chart's
+own TLS flags reach the container as env vars.
+Usage:
+  {{ include "camundaPlatform.appConfigBoolState" (dict
+    "configuration" .Values.orchestration.configuration
+    "extraConfiguration" .Values.orchestration.extraConfiguration
+    "path" (list "server" "ssl" "enabled")) }}
+*/}}
+{{- define "camundaPlatform.appConfigBoolState" -}}
+  {{- $state := include "camundaPlatform.configYamlBoolState" (dict
+      "configuration" .configuration
+      "path" .path) -}}
+  {{- $extra := include "camundaPlatform.extraConfigBoolState" (dict
+      "extraConfiguration" .extraConfiguration
+      "path" .path) -}}
+  {{- if ne $extra "unset" -}}
+    {{- $state = $extra -}}
+  {{- end -}}
+  {{- $state -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] Returns "true" when a component's YAML config sources mention
+a key path at all, in any form Spring accepts. Wraps <component>.configuration as
+an extraConfiguration-shaped entry so all three existing matchers apply to
+both sources: nested keys (extraConfigHasPath), dotted/relaxed keys
+(extraConfigHasDottedPath), and raw text for .properties or unparsable content
+(extraConfigHasRawKeyPrefix). Any subkey below the path counts, so a path of
+"server" "ssl" "key-store" also matches "key-store.file-path".
+Every source is split on "---" and "..." separator lines into one entry per YAML
+document first, because extraConfigHasPath parses a single document only and
+would otherwise miss a key Spring reads from a later one.
+Presence only — this says nothing about the value. Use it to decide whether the
+operator has taken ownership of a setting, not to read it.
+Usage:
+  {{ include "camundaPlatform.appConfigMentionsPath" (dict
+    "configuration" .Values.orchestration.configuration
+    "extraConfiguration" .Values.orchestration.extraConfiguration
+    "path" (list "server" "ssl" "certificate")) }}
+*/}}
+{{- define "camundaPlatform.appConfigMentionsPath" -}}
+  {{- $raw := concat
+      (list (dict "content" (.configuration | default "")))
+      (.extraConfiguration | default list) -}}
+  {{- $sources := list -}}
+  {{- range $entry := $raw -}}
+    {{- range $document := regexSplit "(?m)^[ \t]*(---|\\.\\.\\.)[ \t]*(#.*)?$" ($entry.content | default "") -1 -}}
+      {{- $sources = append $sources (merge (dict "content" $document) (omit $entry "content")) -}}
+    {{- end -}}
+  {{- end -}}
+  {{- $args := dict "extraConfiguration" $sources "path" .path "relaxed" true -}}
+  {{- if or
+      (eq (include "camundaPlatform.extraConfigHasPath" $args) "true")
+      (eq (include "camundaPlatform.extraConfigHasDottedPath" $args) "true")
+      (eq (include "camundaPlatform.extraConfigHasRawKeyPrefix" $args) "true") -}}
+    true
+  {{- end -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] Returns "true" when a component's YAML config sources declare
+server cert material for a TLS listener, under any of the key spellings Spring
+binds: a PEM "certificate" or a "key-store" / "keyStore" keystore. Callers use
+this to tell "the operator owns the cert in application.yaml" apart from "no cert
+is configured anywhere", so a config-based TLS opt-in is not failed for missing
+cert wiring the chart simply cannot see.
+Usage:
+  {{ include "camundaPlatform.appConfigHasCertMaterial" (dict
+    "configuration" .Values.orchestration.configuration
+    "extraConfiguration" .Values.orchestration.extraConfiguration
+    "prefix" (list "server" "ssl")) }}
+*/}}
+{{- define "camundaPlatform.appConfigHasCertMaterial" -}}
+  {{- $found := "" -}}
+  {{- range $leaf := (list "certificate" "key-store" "keyStore") -}}
+    {{- if eq (include "camundaPlatform.appConfigMentionsPath" (dict
+        "configuration" $.configuration
+        "extraConfiguration" $.extraConfiguration
+        "path" (concat $.prefix (list $leaf)))) "true" -}}
+      {{- $found = "true" -}}
+    {{- end -}}
+  {{- end -}}
+  {{- $found -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] Renders the HTTP path entries of the shared Ingress, at zero
+indentation for the caller to nindent. Kept separate from ingress-http.yaml so
+that template can skip the whole Ingress when no route remains: a
+networking.k8s.io/v1 Ingress with an empty spec.rules[].http.paths is rejected
+by the API server ("spec.rules[0].http.paths: Required value"). The Orchestration
+and Optimize entries are omitted when their server TLS is enabled because
+ingress-orchestration-http.yaml and ingress-optimize-http.yaml serve those routes
+with an HTTPS backend.
+*/}}
+{{- define "camundaPlatform.ingressHTTPPaths" -}}
+{{- /* Management Group */ -}}
+  {{- if eq (include "camundaPlatform.identityEnabled" .) "true" }}
+  {{- if .Values.global.identity.keycloak.internal }}
+- backend:
+    service:
+      name: {{ include "identity.keycloak.service" . }}
+      port:
+        number: {{ include "identity.keycloak.port" . }}
+  path: {{ include "identity.keycloak.contextPath" . | trimSuffix "/" }}/
+  pathType: {{ .Values.global.ingress.pathType }}
+  {{- end }}
+  {{- /* Disable Identiy endpoint if a seperated Ingress is used because it overlaps with Keycloak endpoints */ -}}
+  {{- if .Values.identity.contextPath }}
+- backend:
+    service:
+      name: {{ template "identity.fullname" . }}
+      port:
+        number: {{ .Values.identity.service.port }}
+  path: {{ .Values.identity.contextPath }}
+  pathType: {{ .Values.global.ingress.pathType }}
+  {{- end }}
+  {{- end }}
+  {{- if eq (include "camundaHub.webModelerEnabled" .) "true" }}
+  {{- $hub := include "camundaHub.values" . | fromYaml -}}
+  {{- if $hub.contextPath }}
+- backend:
+    service:
+      name: {{ template "webModeler.restapi.fullname" . }}
+      port:
+        number: {{ $hub.restapi.service.port }}
+  path: {{ $hub.contextPath }}
+  pathType: {{ .Values.global.ingress.pathType }}
+- backend:
+    service:
+      name: {{ template "webModeler.websockets.fullname" . }}
+      port:
+        number:  {{ $hub.websockets.service.port }}
+  path: {{ template "webModeler.websocketContextPath" . }}
+  pathType: {{ .Values.global.ingress.pathType }}
+  {{- end }}
+  {{- end }}
+{{- /* Orchestration Cluster */ -}}
+  {{- if and (eq (include "camundaPlatform.orchestrationEnabled" .) "true") .Values.orchestration.contextPath (ne (include "camundaPlatform.orchestrationRESTTLSEnabled" .) "true") }}
+# Orchestration.
+- backend:
+    service:
+      name: {{ include "orchestration.serviceName" . }}
+      port:
+        number: {{ .Values.orchestration.service.httpPort }}
+  path: {{ .Values.orchestration.contextPath }}
+  pathType: {{ .Values.global.ingress.pathType }}
+  {{- end }}
+  {{- if and (eq (include "camundaPlatform.optimizeEnabled" .) "true") .Values.optimize.contextPath (ne (include "camundaPlatform.optimizeServerTLSEnabled" .) "true") }}
+# Optimize.
+- backend:
+    service:
+      name: {{ template "optimize.fullname" . }}
+      port:
+        number: {{ .Values.optimize.service.port }}
+  path: {{ .Values.optimize.contextPath }}
+  pathType: {{ .Values.global.ingress.pathType }}
+  {{- end }}
+  {{- if and (eq (include "camundaPlatform.connectorsEnabled" .) "true") .Values.connectors.contextPath (ne (include "camundaPlatform.connectorsTLSEnabled" .) "true") }}
+# Connectors.
+- backend:
+    service:
+      name: {{ template "connectors.fullname" . }}
+      port:
+        number: {{ .Values.connectors.service.serverPort }}
+  path: {{ .Values.connectors.contextPath }}
+  pathType: {{ .Values.global.ingress.pathType }}
+  {{- end }}
+{{- end -}}
+
+{{/*
+[camunda-platform] Returns "true" when Connectors TLS is enabled. An explicit
+connectors.env entry for SERVER_SSL_ENABLED wins over
+global.tls.connectors.enabled, because Kubernetes keeps the LAST duplicate env
+var and the chart must report the same TLS state the running container actually
+ends up with — probe schemes and the in-cluster Connectors URL are derived from
+this helper. A "valueFrom"-sourced entry (no literal value) resolves to
+"unknown" from connectorsEnvLastValue and is treated the same as "unset" here,
+mirroring camundaPlatform.orchestrationRESTTLSEnabled.
+
+With neither env source set, connectors.extraConfiguration and then
+connectors.configuration are consulted for server.ssl.enabled, so a Connectors
+TLS opt-in made by owning application.yaml still drives probe schemes and the
+in-cluster Connectors URL. Same source order, same document-order resolution
+with spring.config.activate treated as unresolved, and the same
+literal-nested-key limits as camundaPlatform.orchestrationRESTTLSEnabled.
+*/}}
+{{- define "camundaPlatform.connectorsTLSEnabled" -}}
+  {{- $envValue := include "camundaPlatform.connectorsEnvLastValue" (dict "context" . "name" "SERVER_SSL_ENABLED") -}}
+  {{- if eq $envValue "true" -}}
+    true
+  {{- else if eq $envValue "false" -}}
+    false
+  {{- else if .Values.global.tls.connectors.enabled -}}
+    true
+  {{- else -}}
+    {{- $configState := include "camundaPlatform.appConfigBoolState" (dict
+        "configuration" .Values.connectors.configuration
+        "extraConfiguration" .Values.connectors.extraConfiguration
+        "path" (list "server" "ssl" "enabled")) -}}
+    {{- ternary "true" "false" (eq $configState "true") -}}
+  {{- end -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] Resolves the LAST connectors.env entry for name to one of
+"true" / "false" / "unset" / "unknown", mirroring
+camundaPlatform.orchestrationEnvLastValue. "unset" means no matching entry
+exists at all. "unknown" means the last matching entry carries no literal value
+but does carry a valueFrom (e.g. a Secret/ConfigMap key) — the chart cannot read
+that value at render time, so callers must fall back to the global TLS flag
+rather than treat it as "false".
+
+Unlike camundaPlatform.orchestrationEnvLastValue this deliberately does NOT
+run the value through `tpl`: templates/connectors/deployment.yaml renders
+connectors.env with `toYaml` alone, whereas the Orchestration StatefulSet
+renders orchestration.env with `tpl (toYaml .)`. Evaluating a template here
+that the container never sees would make this helper disagree with the
+running container — a "{{ eq 1 1 }}" value would flip probes to HTTPS while
+the container receives the literal string and keeps serving plaintext.
+Usage:
+  {{ include "camundaPlatform.connectorsEnvLastValue" (dict "context" . "name" "SERVER_SSL_ENABLED") }}
+*/}}
+{{- define "camundaPlatform.connectorsEnvLastValue" -}}
+  {{- $ctx := .context -}}
+  {{- $name := .name -}}
+  {{- $result := "unset" -}}
+  {{- range $env := $ctx.Values.connectors.env -}}
+    {{- if eq ($env.name | default "") $name -}}
+      {{- if $env.value -}}
+        {{- if eq (lower (toString $env.value)) "true" -}}
+          {{- $result = "true" -}}
+        {{- else -}}
+          {{- $result = "false" -}}
+        {{- end -}}
+      {{- else if $env.valueFrom -}}
+        {{- $result = "unknown" -}}
+      {{- else -}}
+        {{- $result = "false" -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+  {{- $result -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] Returns "true" when Optimize server-side TLS is enabled.
+
+global.tls.optimize.enabled is the ONLY source. Unlike Orchestration and
+Connectors -- plain Spring Boot servers where server.ssl.* is authoritative --
+Optimize overrides Tomcat itself: OptimizeTomcatConfig always installs its own
+HTTPS connector built from container.keystore.*, and never consults
+server.ssl.*. Setting SERVER_SSL_ENABLED (or server.ssl.enabled in
+optimize.{configuration,extraConfiguration}) therefore cannot enable TLS here;
+it only makes Spring Boot register a second SSLHostConfig for host _default_,
+which Tomcat rejects at startup. camunda.constraints.errors fails the render on
+those keys, so there is no alternative source to detect.
+*/}}
+{{- define "camundaPlatform.optimizeServerTLSEnabled" -}}
+  {{- ternary "true" "false" (.Values.global.tls.optimize.enabled | default false) -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] Render conditions of the split upstream-TLS Ingress objects.
+Each mirrors the guard of the template named after it, so callers that need to
+reason about those manifests (constraints.tpl) cannot drift from what renders.
+*/}}
+{{/*
+[camunda-platform] The ingress-nginx annotation sets the chart used to ship as
+values defaults. Injected while global.compatibility.nginx.renderAnnotations is
+on, for keys the user has not set. A null value drops its key; a null map is
+rendered as no annotations at all. Entries are emitted already evaluated.
+*/}}
+{{/*
+[camunda-platform] A user annotation map evaluated for key comparison only.
+The rendered map keeps the unevaluated entries, which the callers evaluate.
+*/}}
+{{- define "camundaPlatform.resolvedUserAnnotations" -}}
+  {{- $user := .annotations | default dict -}}
+  {{- if $user -}}
+    {{- tpl (toYaml $user) .context -}}
+  {{- else -}}
+    {{- "{}" -}}
+  {{- end -}}
+{{- end -}}
+
+{{- define "camundaPlatform.legacyNginxIngressAnnotations" -}}
+nginx.ingress.kubernetes.io/ssl-redirect: "false"
+nginx.ingress.kubernetes.io/proxy-buffering: "on"
+nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
+nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+{{- end -}}
+
+{{- define "camundaPlatform.legacyNginxGrpcIngressAnnotations" -}}
+nginx.ingress.kubernetes.io/ssl-redirect: "false"
+nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
+nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
+{{- end -}}
+
+{{- define "camundaPlatform.ingressAnnotations" -}}
+  {{- $raw := .Values.global.ingress.annotations -}}
+  {{- if not (kindIs "invalid" $raw) -}}
+  {{- $user := $raw | default dict -}}
+  {{- $resolved := include "camundaPlatform.resolvedUserAnnotations" (dict "annotations" $user "context" .) | fromYaml -}}
+  {{- $compat := dict -}}
+  {{- if .Values.global.compatibility.nginx.renderAnnotations -}}
+    {{- $compat = include "camundaPlatform.legacyNginxIngressAnnotations" . | fromYaml -}}
+  {{- end -}}
+  {{- $rendered := dict -}}
+  {{- range $key, $value := $compat -}}
+    {{- if not (hasKey $resolved $key) -}}
+      {{- $_ := set $rendered $key $value -}}
+    {{- end -}}
+  {{- end -}}
+  {{- range $key, $value := $user -}}
+    {{- if not (kindIs "invalid" $value) -}}
+      {{- $_ := set $rendered $key $value -}}
+    {{- end -}}
+  {{- end -}}
+  {{- toYaml $rendered -}}
+  {{- end -}}
+{{- end -}}
+
+{{- define "camundaPlatform.grpcIngressAnnotations" -}}
+  {{- $raw := .Values.orchestration.ingress.grpc.annotations -}}
+  {{- if not (kindIs "invalid" $raw) -}}
+  {{- $user := $raw | default dict -}}
+  {{- $resolved := include "camundaPlatform.resolvedUserAnnotations" (dict "annotations" $user "context" .) | fromYaml -}}
+  {{- $compat := dict -}}
+  {{- if .Values.global.compatibility.nginx.renderAnnotations -}}
+    {{- $compat = include "camundaPlatform.legacyNginxGrpcIngressAnnotations" . | fromYaml -}}
+  {{- end -}}
+  {{- $rendered := dict -}}
+  {{- range $key, $value := $compat -}}
+    {{- if not (hasKey $resolved $key) -}}
+      {{- $_ := set $rendered $key $value -}}
+    {{- end -}}
+  {{- end -}}
+  {{- range $key, $value := $user -}}
+    {{- if not (kindIs "invalid" $value) -}}
+      {{- $_ := set $rendered $key $value -}}
+    {{- end -}}
+  {{- end -}}
+  {{- toYaml $rendered -}}
+  {{- end -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] "true" when the compatibility shim contributes a key the user
+has not set, on a route that renders. One predicate per annotation map.
+*/}}
+{{- define "camundaPlatform.sharedHTTPIngressRendered" -}}
+  {{- ternary "true" "false" (and .Values.global.ingress.enabled (not .Values.global.ingress.external) (include "camundaPlatform.ingressHTTPPaths" . | trim) | not | not) -}}
+{{- end -}}
+
+{{- define "camundaPlatform.nginxCompatHTTPInjecting" -}}
+  {{- $injecting := false -}}
+  {{- if .Values.global.compatibility.nginx.renderAnnotations -}}
+    {{- if or
+          (eq (include "camundaPlatform.sharedHTTPIngressRendered" .) "true")
+          (eq (include "camundaPlatform.orchestrationHTTPIngressRendered" .) "true")
+          (eq (include "camundaPlatform.connectorsHTTPIngressRendered" .) "true")
+          (eq (include "camundaPlatform.optimizeHTTPIngressRendered" .) "true") -}}
+      {{- $raw := .Values.global.ingress.annotations -}}
+      {{- $user := $raw | default dict -}}
+      {{- $resolved := include "camundaPlatform.resolvedUserAnnotations" (dict "annotations" $user "context" .) | fromYaml -}}
+      {{- if not (kindIs "invalid" $raw) -}}{{- range $key, $value := (include "camundaPlatform.legacyNginxIngressAnnotations" . | fromYaml) -}}
+        {{- if not (hasKey $resolved $key) -}}{{- $injecting = true -}}{{- end -}}
+      {{- end -}}{{- end -}}
+    {{- end -}}
+  {{- end -}}
+  {{- ternary "true" "false" $injecting -}}
+{{- end -}}
+
+{{- define "camundaPlatform.nginxCompatGRPCInjecting" -}}
+  {{- $injecting := false -}}
+  {{- if and .Values.global.compatibility.nginx.renderAnnotations (eq (include "camundaPlatform.grpcIngressRendered" .) "true") -}}
+    {{- $raw := .Values.orchestration.ingress.grpc.annotations -}}
+      {{- $user := $raw | default dict -}}
+    {{- $resolved := include "camundaPlatform.resolvedUserAnnotations" (dict "annotations" $user "context" .) | fromYaml -}}
+    {{- if not (kindIs "invalid" $raw) -}}{{- range $key, $value := (include "camundaPlatform.legacyNginxGrpcIngressAnnotations" . | fromYaml) -}}
+      {{- if not (hasKey $resolved $key) -}}{{- $injecting = true -}}{{- end -}}
+    {{- end -}}{{- end -}}
+  {{- end -}}
+  {{- ternary "true" "false" $injecting -}}
+{{- end -}}
+
+{{- define "camundaPlatform.orchestrationHTTPIngressRendered" -}}
+  {{- ternary "true" "false" (and .Values.global.ingress.enabled (not .Values.global.ingress.external) (eq (include "camundaPlatform.orchestrationEnabled" .) "true") .Values.orchestration.contextPath (eq (include "camundaPlatform.orchestrationRESTTLSEnabled" .) "true") | not | not) -}}
+{{- end -}}
+
+{{- define "camundaPlatform.connectorsHTTPIngressRendered" -}}
+  {{- ternary "true" "false" (and .Values.global.ingress.enabled (not .Values.global.ingress.external) (eq (include "camundaPlatform.connectorsEnabled" .) "true") .Values.connectors.contextPath (eq (include "camundaPlatform.connectorsTLSEnabled" .) "true") | not | not) -}}
+{{- end -}}
+
+{{- define "camundaPlatform.optimizeHTTPIngressRendered" -}}
+  {{- ternary "true" "false" (and .Values.global.ingress.enabled (not .Values.global.ingress.external) (eq (include "camundaPlatform.optimizeEnabled" .) "true") .Values.optimize.contextPath (eq (include "camundaPlatform.optimizeServerTLSEnabled" .) "true") | not | not) -}}
+{{- end -}}
+
+{{- define "camundaPlatform.grpcIngressRendered" -}}
+  {{- ternary "true" "false" (and (eq (include "camundaPlatform.orchestrationEnabled" .) "true") .Values.orchestration.ingress.grpc.enabled (not .Values.orchestration.ingress.grpc.external) | not | not) -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] Returns "true" when optimize.{configuration,extraConfiguration}
+mentions server.ssl in any form. Optimize cannot serve TLS from those keys (see
+camundaPlatform.optimizeServerTLSEnabled), so camunda.constraints.errors fails
+the render on them rather than letting the operator believe TLS is on.
+
+Both spellings are matched: the nested-key walk covers `server: ssl: ...`
+documents, and a regex covers the dotted/relaxed forms (`server.ssl.enabled`,
+`server.ssl.key-store`) that the walk cannot see -- a silent miss here would be
+the exact "installs cleanly, fails at connection time" outcome the check exists
+to prevent.
+*/}}
+{{- define "camundaPlatform.optimizeDeclaresServerSsl" -}}
+  {{- $found := "" -}}
+  {{- $contents := list (.Values.optimize.configuration | default "") -}}
+  {{- range $entry := (.Values.optimize.extraConfiguration | default list) -}}
+    {{- $contents = append $contents ($entry.content | default "") -}}
+  {{- end -}}
+  {{- range $content := $contents -}}
+    {{- if regexMatch "(?m)^[ \t]*server\\.ssl[A-Za-z0-9._-]*[ \t]*[:=]" $content -}}
+      {{- $found = "true" -}}
+    {{- end -}}
+  {{- end -}}
+  {{- if eq (include "camundaPlatform.appConfigHasCertMaterial" (dict
+      "configuration" .Values.optimize.configuration
+      "extraConfiguration" .Values.optimize.extraConfiguration
+      "prefix" (list "server" "ssl"))) "true" -}}
+    {{- $found = "true" -}}
+  {{- end -}}
+  {{- if ne (include "camundaPlatform.appConfigBoolState" (dict
+      "configuration" .Values.optimize.configuration
+      "extraConfiguration" .Values.optimize.extraConfiguration
+      "path" (list "server" "ssl" "enabled"))) "unset" -}}
+    {{- $found = "true" -}}
+  {{- end -}}
+  {{- $found -}}
+{{- end -}}
+
+
+{{/*
+********************************************************************************
+Release templates.
+********************************************************************************
+*/}}
+
+{{ define "camundaPlatform.releaseInfo" -}}
+- name: {{ .Release.Name }}
+  namespace: {{ .Release.Namespace }}
+  version: {{ .Chart.Version }}
+  tags:
+  - dev
+  custom-properties: []
+  components:
+  {{- $proto := include "camundaPlatform.ingressProtocol" . -}}
+  {{- $baseURL := printf "%s://%s" $proto (tpl .Values.global.host $) }}
+
+  {{- if eq (include "camundaPlatform.identityEnabled" .) "true" }}
+  {{-  $proto := (lower .Values.identity.readinessProbe.scheme) -}}
+  {{- $baseURLInternal := printf "%s://%s.%s:%v" $proto (include "identity.fullname" .) .Release.Namespace .Values.identity.service.metricsPort -}}
+  {{- if include "camundaPlatform.keycloakExternalURL" . }}
+  - name: Keycloak
+    id: keycloak
+    url: {{ include "camundaPlatform.keycloakExternalURL" . }}
+  {{- end }}
+  - name: Identity
+    id: identity
+    version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.identity) }}
+    url: {{ include "camundaPlatform.identityExternalURL" . }}
+    readiness: {{ printf "%s%s" $baseURLInternal .Values.identity.readinessProbe.probePath }}
+    metrics: {{ printf "%s%s" $baseURLInternal .Values.identity.metrics.prometheus }}
+  {{- end }}
+
+  {{- if eq (include "camundaHub.webModelerEnabled" .) "true" }}
+  {{- $hub := include "camundaHub.values" . | fromYaml -}}
+  {{-  $proto := (lower $hub.restapi.readinessProbe.scheme) -}}
+  {{- $baseURLInternal := printf "%s://%s.%s:%v" $proto (include "webModeler.restapi.fullname" .) .Release.Namespace $hub.restapi.service.managementPort }}
+  - name: WebModeler
+    id: hub
+    version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" (dict "image" ($hub.image))) }}
+    url: {{ include "camundaPlatform.webModelerExternalURL" . }}
+    readiness: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list $hub.contextPath $hub.restapi.readinessProbe.probePath)) }}
+    metrics: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list $hub.contextPath $hub.restapi.metrics.prometheus)) }}
+  {{- end }}
+
+  {{- if eq (include "camundaPlatform.optimizeEnabled" .) "true" }}
+  {{-  $proto := (lower (.Values.optimize.readinessProbe.scheme | default (ternary "HTTPS" "HTTP" (eq (include "camundaPlatform.optimizeServerTLSEnabled" .) "true")))) -}}
+  {{- $baseURLInternal := printf "%s://%s.%s" $proto (include "optimize.fullname" .) .Release.Namespace }}
+  - name: Optimize
+    id: optimize
+    version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.optimize) }}
+    url: {{ include "camundaPlatform.optimizeExternalURL" . }}
+    readiness: {{ printf "%s:%v%s" $baseURLInternal .Values.optimize.service.port (include "camundaPlatform.joinpath" (list .Values.optimize.contextPath .Values.optimize.readinessProbe.probePath)) }}
+    metrics: {{ printf "%s:%v%s" $baseURLInternal .Values.optimize.service.managementPort .Values.optimize.metrics.prometheus }}
+  {{- end }}
+
+  {{- if eq (include "camundaPlatform.connectorsEnabled" .) "true" }}
+  {{-  $proto := (lower (.Values.connectors.readinessProbe.scheme | default (ternary "HTTPS" "HTTP" (eq (include "camundaPlatform.connectorsTLSEnabled" .) "true")))) -}}
+  {{- $baseURLInternal := printf "%s://%s.%s" $proto (include "connectors.serviceName" .) .Release.Namespace }}
+  - name: Connectors
+    id: connectors
+    version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.connectors) }}
+    url: {{ include "camundaPlatform.connectorsExternalURL" . }}
+    readiness: {{ printf "%s:%v%s" $baseURLInternal .Values.connectors.service.serverPort (include "camundaPlatform.joinpath" (list .Values.connectors.contextPath .Values.connectors.readinessProbe.probePath)) }}
+    metrics: {{ printf "%s:%v%s" $baseURLInternal .Values.connectors.service.serverPort (include "camundaPlatform.joinpath" (list .Values.connectors.contextPath .Values.connectors.metrics.prometheus)) }}
+  {{- end }}
+
+  {{- if eq (include "camundaPlatform.orchestrationEnabled" .) "true" }}
+  {{-  $proto := (lower .Values.orchestration.readinessProbe.scheme) -}}
+  {{- $baseURLInternal := printf "%s://%s.%s:%v" $proto (include "orchestration.fullname" . | trimAll "\"") .Release.Namespace .Values.orchestration.service.managementPort }}
+  - name: Operate
+    id: operate
+    version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.orchestration) }}
+    url: {{ include "camundaPlatform.operateExternalURL" . }}
+    readiness: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.readinessProbe.probePath)) }}
+    metrics: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.metrics.prometheus)) }}
+  - name: Tasklist
+    id: tasklist
+    version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.orchestration) }}
+    url: {{ include "camundaPlatform.tasklistExternalURL" . }}
+    readiness: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.readinessProbe.probePath)) }}
+    metrics: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.metrics.prometheus)) }}
+  - name: Orchestration Admin
+    id: admin
+    version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.orchestration) }}
+    url: {{ include "camundaPlatform.orchestrationIdentityExternalURL" . }}
+    readiness: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.readinessProbe.probePath)) }}
+    metrics: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.metrics.prometheus)) }}
+
+  - name: Orchestration Cluster
+    id: orchestration
+    version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.orchestration) }}
+    urls:
+      grpc: {{ include "camundaPlatform.orchestrationGRPCExternalURL" . }}
+      http: {{ include "camundaPlatform.orchestrationExternalURL" . }}
+    readiness: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.readinessProbe.probePath)) }}
+    metrics: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.metrics.prometheus)) }}
+  {{- end }}
+{{- end -}}
+
+{{/*
+********************************************************************************
+Generate the default WebModeler cluster config using the new components[] schema.
+Mirrors camundaPlatform.releaseInfo component gating but outputs the new format
+required by camunda.hub.clusters (introduced in 8.10 Hub/WebModeler).
+********************************************************************************
+*/}}
+{{- define "camundaPlatform.defaultWebModelerCluster" -}}
+{{- if eq (include "camundaPlatform.identityEnabled" .) "true" }}
+{{- $identityVersion := include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.identity) }}
+{{- $managementClusterVersion := $identityVersion }}
+{{- /* NOTE: Hub rejects non-SemVer cluster versions such as pr-<sha>; those fall back to the chart's <major>.<minor>-SNAPSHOT. */ -}}
+{{- if not (regexMatch "^[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.-]+)?(\\+[0-9A-Za-z.-]+)?$" $identityVersion) }}
+  {{- $managementClusterVersion = printf "%s-SNAPSHOT" (regexFind "^[0-9]+\\.[0-9]+" .Chart.AppVersion) }}
+{{- end }}
+- id: "management-cluster"
+  name: "Management Identity"
+  version: {{ $managementClusterVersion | quote }}
+  authentication: {{ include "webModeler.authConfigValue" . | quote }}
+  authorizations:
+    enabled: false
+  components:
+  {{- $proto := (lower .Values.identity.readinessProbe.scheme) }}
+  {{- $baseURLInternal := printf "%s://%s.%s:%v" $proto (include "identity.fullname" .) .Release.Namespace .Values.identity.service.metricsPort }}
+  - name: Identity
+    type: identity
+    version: {{ $identityVersion | quote }}
+    urls:
+      webapp: {{ include "camundaPlatform.identityExternalURL" . | quote }}
+      readiness: {{ printf "%s%s" $baseURLInternal .Values.identity.readinessProbe.probePath | quote }}
+{{- end }}
+{{- if or (eq (include "camundaPlatform.orchestrationEnabled" .) "true") (eq (include "camundaPlatform.optimizeEnabled" .) "true") (eq (include "camundaPlatform.connectorsEnabled" .) "true") }}
+- id: "default-cluster"
+  name: {{ tpl .Values.global.zeebeClusterName . | quote }}
+  version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.orchestration) | quote }}
+  authentication: {{ include "webModeler.authConfigValue" . | quote }}
+  authorizations:
+    enabled: {{ .Values.orchestration.security.authorizations.enabled }}
+  tags:
+    - dev
+    - custom
+    - stage
+    - prod
+    - test
+  customProperties:
+    - description: 'This is the main integration environment for the Camunda Platform.'
+      links:
+        - name: Camunda
+          url: 'https://camunda.com'
+        - name: Camunda Docs
+          url: 'https://docs.camunda.io'
+  components:
+  {{- if eq (include "camundaPlatform.optimizeEnabled" .) "true" }}
+  {{- $proto := (lower (.Values.optimize.readinessProbe.scheme | default (ternary "HTTPS" "HTTP" (eq (include "camundaPlatform.optimizeServerTLSEnabled" .) "true")))) }}
+  {{- $baseURLInternal := printf "%s://%s.%s" $proto (include "optimize.fullname" .) .Release.Namespace }}
+  - name: Optimize
+    type: optimize
+    version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.optimize) | quote }}
+    urls:
+      webapp: {{ include "camundaPlatform.optimizeExternalURL" . | quote }}
+      readiness: {{ printf "%s:%v%s" $baseURLInternal .Values.optimize.service.port (include "camundaPlatform.joinpath" (list .Values.optimize.contextPath .Values.optimize.readinessProbe.probePath)) | quote }}
+  {{- end }}
+  {{- if eq (include "camundaPlatform.connectorsEnabled" .) "true" }}
+  {{- $proto := (lower (.Values.connectors.readinessProbe.scheme | default (ternary "HTTPS" "HTTP" (eq (include "camundaPlatform.connectorsTLSEnabled" .) "true")))) }}
+  {{- $baseURLInternal := printf "%s://%s.%s" $proto (include "connectors.serviceName" .) .Release.Namespace }}
+  - name: Connectors
+    type: connectors
+    version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.connectors) | quote }}
+    urls:
+      rest: {{ include "camundaPlatform.connectorsExternalURL" . | quote }}
+      readiness: {{ printf "%s:%v%s" $baseURLInternal .Values.connectors.service.serverPort (include "camundaPlatform.joinpath" (list .Values.connectors.contextPath .Values.connectors.readinessProbe.probePath)) | quote }}
+  {{- end }}
+  {{- if eq (include "camundaPlatform.orchestrationEnabled" .) "true" }}
+  {{- $proto := (lower .Values.orchestration.readinessProbe.scheme) }}
+  {{- $baseURLInternal := printf "%s://%s.%s:%v" $proto (include "orchestration.fullname" . | trimAll "\"") .Release.Namespace .Values.orchestration.service.managementPort }}
+  - name: Operate
+    type: operate
+    version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.orchestration) | quote }}
+    urls:
+      webapp: {{ include "camundaPlatform.operateExternalURL" . | quote }}
+      readiness: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.readinessProbe.probePath)) | quote }}
+  - name: Tasklist
+    type: tasklist
+    version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.orchestration) | quote }}
+    urls:
+      webapp: {{ include "camundaPlatform.tasklistExternalURL" . | quote }}
+      readiness: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.readinessProbe.probePath)) | quote }}
+  - name: Orchestration Admin
+    type: admin
+    version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.orchestration) | quote }}
+    urls:
+      webapp: {{ include "camundaPlatform.orchestrationIdentityExternalURL" . | quote }}
+      readiness: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.readinessProbe.probePath)) | quote }}
+  - name: Orchestration Cluster
+    type: orchestration
+    version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.orchestration) | quote }}
+    urls:
+      grpc: {{ include "camundaPlatform.orchestrationGRPCInternalURL" . | quote }}
+      rest: {{ include "camundaPlatform.orchestrationHTTPInternalURL" . | quote }}
+      readiness: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.readinessProbe.probePath)) | quote }}
+  {{- end }}
+{{- end }}
+{{- end -}}
+
+{{- define "camundaPlatform.topologyWebModelerClusters" -}}
+{{- include "camundaPlatform.defaultWebModelerCluster" . -}}
+{{- range $cluster := dig "clusters" list (.Values.global.topology | default dict) }}
+{{- $orchestration := dig "components" "orchestration" dict $cluster }}
+{{- $optimize := dig "components" "optimize" dict $cluster }}
+{{- $connectors := dig "components" "connectors" dict $cluster }}
+{{- $legacy := eq ($cluster.architecture | default "unified") "legacy" }}
+{{- $orchestrationPath := include "camundaPlatform.topologyContextPath" (dig "contextPaths" "orchestration" "" $cluster) }}
+{{- $optimizePath := include "camundaPlatform.topologyContextPath" (dig "contextPaths" "optimize" "" $cluster) }}
+{{- $connectorsPath := include "camundaPlatform.topologyContextPath" (dig "contextPaths" "connectors" "" $cluster) }}
+{{- $orchestrationName := $orchestration.serviceName | default (include "camundaPlatform.topologyComponentFullname" (dict "releaseName" $cluster.releaseName "componentName" "zeebe")) }}
+{{- $gatewayName := $orchestration.gatewayServiceName | default (printf "%s-gateway" $orchestrationName) }}
+{{- $operateName := $orchestration.operateServiceName | default (include "camundaPlatform.topologyComponentFullname" (dict "releaseName" $cluster.releaseName "componentName" "operate")) }}
+{{- $tasklistName := $orchestration.tasklistServiceName | default (include "camundaPlatform.topologyComponentFullname" (dict "releaseName" $cluster.releaseName "componentName" "tasklist")) }}
+{{- $optimizeName := $optimize.serviceName | default (include "camundaPlatform.topologyComponentFullname" (dict "releaseName" ($optimize.releaseName | default $cluster.releaseName) "componentName" "optimize")) }}
+{{- $optimizeNamespace := $optimize.namespace | default $cluster.namespace }}
+{{- $optimizeHost := $optimize.host | default $cluster.host }}
+{{- $connectorsName := $connectors.serviceName | default (include "camundaPlatform.topologyComponentFullname" (dict "releaseName" $cluster.releaseName "componentName" "connectors")) }}
+- id: {{ $cluster.id | quote }}
+  name: {{ ($cluster.name | default $cluster.id) | quote }}
+  version: {{ $cluster.version | quote }}
+  authentication: "BEARER_TOKEN"
+  {{- if not $legacy }}
+  authorizations:
+    enabled: {{ dig "authorizations" "enabled" false $cluster }}
+  {{- end }}
+  components:
+  {{- if $optimize.enabled }}
+  - name: Optimize
+    type: optimize
+    version: {{ $cluster.version | quote }}
+    urls:
+      webapp: {{ tpl ($optimize.webappUrl | default (printf "https://%s%s" $optimizeHost $optimizePath)) $ | quote }}
+      readiness: {{ $optimize.readinessUrl | default (printf "http://%s.%s.svc.cluster.local:80%s/api/readyz" $optimizeName $optimizeNamespace $optimizePath) | quote }}
+  {{- end }}
+  {{- if $connectors.enabled }}
+  - name: Connectors
+    type: connectors
+    version: {{ $cluster.version | quote }}
+    urls:
+      rest: {{ $connectors.restUrl | default (printf "http://%s.%s.svc.cluster.local:8080%s" $connectorsName $cluster.namespace $connectorsPath) | quote }}
+      readiness: {{ $connectors.readinessUrl | default (printf "http://%s.%s.svc.cluster.local:8080%s/actuator/health/readiness" $connectorsName $cluster.namespace $connectorsPath) | quote }}
+  {{- end }}
+  {{- if $orchestration.enabled }}
+  - name: Operate
+    type: operate
+    version: {{ $cluster.version | quote }}
+    urls:
+      webapp: {{ $orchestration.operateUrl | default (printf "https://%s%s/operate" $cluster.host $orchestrationPath) | quote }}
+      readiness: {{ $orchestration.operateReadinessUrl | default (ternary (printf "http://%s.%s.svc.cluster.local:9600/operate/actuator/health/readiness" $operateName $cluster.namespace) (printf "http://%s.%s.svc.cluster.local:9600%s/actuator/health/readiness" $orchestrationName $cluster.namespace $orchestrationPath) $legacy) | quote }}
+  - name: Tasklist
+    type: tasklist
+    version: {{ $cluster.version | quote }}
+    urls:
+      webapp: {{ $orchestration.tasklistUrl | default (printf "https://%s%s/tasklist" $cluster.host $orchestrationPath) | quote }}
+      readiness: {{ $orchestration.tasklistReadinessUrl | default (ternary (printf "http://%s.%s.svc.cluster.local:9600/tasklist/actuator/health/readiness" $tasklistName $cluster.namespace) (printf "http://%s.%s.svc.cluster.local:9600%s/actuator/health/readiness" $orchestrationName $cluster.namespace $orchestrationPath) $legacy) | quote }}
+  {{- if not $legacy }}
+  - name: Orchestration Admin
+    type: admin
+    version: {{ $cluster.version | quote }}
+    urls:
+      webapp: {{ $orchestration.adminUrl | default (printf "https://%s%s/admin" $cluster.host $orchestrationPath) | quote }}
+      readiness: {{ $orchestration.readinessUrl | default (printf "http://%s.%s.svc.cluster.local:9600%s/actuator/health/readiness" $orchestrationName $cluster.namespace $orchestrationPath) | quote }}
+  {{- end }}
+  - name: Orchestration Cluster
+    type: {{ ternary "zeebeGateway" "orchestration" $legacy }}
+    version: {{ $cluster.version | quote }}
+    urls:
+      grpc: {{ $orchestration.grpcUrl | default (printf "grpc://%s.%s.svc.cluster.local:26500" $gatewayName $cluster.namespace) | quote }}
+      rest: {{ $orchestration.restUrl | default (printf "http://%s.%s.svc.cluster.local:8080%s" $gatewayName $cluster.namespace $orchestrationPath) | quote }}
+      readiness: {{ $orchestration.readinessUrl | default (ternary (printf "http://%s.%s.svc.cluster.local:9600/actuator/health/readiness" $gatewayName $cluster.namespace) (printf "http://%s.%s.svc.cluster.local:9600%s/actuator/health/readiness" $orchestrationName $cluster.namespace $orchestrationPath) $legacy) | quote }}
+  {{- end }}
+  {{- with (dig "physicalTenants" list $cluster) }}
+  physicalTenants:
+  {{- range $tenant := . }}
+  {{- $tenantOptimize := dig "components" "optimize" dict $tenant }}
+  - id: {{ $tenant.id | quote }}
+    {{- with $tenant.name }}
+    name: {{ . | quote }}
+    {{- end }}
+    components:
+    {{- if $tenantOptimize.enabled }}
+    - name: Optimize
+      type: optimize
+      version: {{ $cluster.version | quote }}
+      urls:
+        webapp: {{ tpl ($tenantOptimize.webappUrl | default $tenantOptimize.redirectUrl) $ | quote }}
+        {{- with $tenantOptimize.readinessUrl }}
+        readiness: {{ . | quote }}
+        {{- end }}
+    {{- else }} []
+    {{- end }}
+  {{- end }}
+  {{- end }}
+{{- end }}
+{{- end -}}
+
+{{/*
+normalizeSecretConfiguration
+Resolves secret configuration to a standardized output format.
+Returns a dict with "ref" and "plaintext" keys.
+- "ref": dict with "name" and "key" fields for Kubernetes secret reference, or nil if not using secret
+- "plaintext": string value for inline plaintext, or empty string if using secret reference
+Usage:
+  {{ include "camundaPlatform.normalizeSecretConfiguration" (dict
+      "config" .Values.identity.firstUser
+      "defaultSecretName" "my-default-secret"
+      "defaultSecretKey" "password"
+  ) }}
+*/}}
+{{- define "camundaPlatform.normalizeSecretConfiguration" -}}
+{{- $config := .config | default dict -}}
+{{- $defName := .defaultSecretName | default "" -}}
+{{- $defKey := .defaultSecretKey | default "password" -}}
+
+{{- $result := dict "ref" nil "plaintext" "" -}}
+
+{{- if and $config.secret $config.secret.existingSecret $config.secret.existingSecretKey -}}
+  {{- $_ := set $result "ref" (dict "name" $config.secret.existingSecret "key" $config.secret.existingSecretKey) -}}
+{{- else if and $config.secret $config.secret.inlineSecret -}}
+  {{- $_ := set $result "plaintext" $config.secret.inlineSecret -}}
+{{- end }}
+
+{{/* Fallback to the caller‑supplied default */}}
+{{- if and (not $result.ref) (not $result.plaintext) $defName -}}
+  {{- $_ := set $result "ref" (dict "name" $defName "key" $defKey) -}}
+{{- end }}
+
+{{- toYaml $result -}}
+{{- end -}}
+
+{{/*
+emitEnvVarFromSecretConfig
+Usage:
+  {{ include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+      "envName" "VALUES_IDENTITY_FIRSTUSER_PASSWORD"
+      "config"  .Values.identity.firstUser
+  ) }}
+*/}}
+{{- define "camundaPlatform.emitEnvVarFromSecretConfig" -}}
+{{- $norm := include "camundaPlatform.normalizeSecretConfiguration" . | fromYaml -}}
+{{- if or $norm.ref $norm.plaintext -}}
+- name: {{ .envName }}
+{{- if $norm.ref }}
+  valueFrom:
+    secretKeyRef:
+      name: {{ $norm.ref.name }}
+      key: {{ $norm.ref.key }}
+{{- else }}
+  value: {{ $norm.plaintext | quote }}
+{{- end }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+hasSecretConfig
+Returns a string indicating whether there is a valid secret configuration.
+Named templates don't return bools, only strings [1].
+Usage:
+  {{ if eq (include "camundaPlatform.hasSecretConfig" (dict
+      "config"  .Values.identity.firstUser
+  )) "true" }}
+
+[1] https://github.com/helm/helm/issues/11231
+*/}}
+{{- define "camundaPlatform.hasSecretConfig" -}}
+{{- $norm := include "camundaPlatform.normalizeSecretConfiguration" . | fromYaml -}}
+{{- if or $norm.ref $norm.plaintext -}}
+true
+{{- else -}}
+false
+{{- end -}}
+{{- end -}}
+
+{{/*
+emitAwsDocumentStoreSecret
+Emits AWS Document Store environment variable secret configuration.
+Usage:
+  - name: AWS_ACCESS_KEY_ID
+    {{ include "camundaPlatform.emitAwsDocumentStoreSecret" (dict "secretType" "accessKeyId" "context" .) }}
+  - name: AWS_SECRET_ACCESS_KEY
+    {{ include "camundaPlatform.emitAwsDocumentStoreSecret" (dict "secretType" "secretAccessKey" "context" .) }}
+*/}}
+{{- define "camundaPlatform.emitAwsDocumentStoreSecret" -}}
+{{- $root := .context -}}
+{{- if $root.Values.global.documentStore.type.aws.enabled -}}
+{{- $awsConfig := $root.Values.global.documentStore.type.aws -}}
+{{- $secretType := .secretType -}}
+{{- $secretConfig := (index $awsConfig $secretType) | default dict -}}
+{{- if and $secretConfig.secret (or $secretConfig.secret.existingSecret $secretConfig.secret.inlineSecret) -}}
+{{- if and $secretConfig.secret.existingSecret $secretConfig.secret.existingSecretKey -}}
+valueFrom:
+  secretKeyRef:
+    name: {{ $secretConfig.secret.existingSecret }}
+    key: {{ $secretConfig.secret.existingSecretKey }}
+{{- else if $secretConfig.secret.inlineSecret -}}
+value: {{ $secretConfig.secret.inlineSecret | quote }}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+emitVolumeFromSecretConfig
+Emits volume definition using normalized secret configuration.
+Usage:
+  {{ include "camundaPlatform.emitVolumeFromSecretConfig" (dict
+      "volumeName" "gcp-credentials-volume"
+      "config" .Values.global.documentStore.type.gcp
+      "fileName" (.Values.global.documentStore.type.gcp.fileName | default "service-account.json")
+  ) }}
+*/}}
+{{- define "camundaPlatform.emitVolumeFromSecretConfig" -}}
+{{- $norm := include "camundaPlatform.normalizeSecretConfiguration" . | fromYaml -}}
+{{- if $norm.ref }}
+- name: {{ .volumeName }}
+  secret:
+    secretName: {{ $norm.ref.name | quote }}
+    items:
+      - key: {{ $norm.ref.key | quote }}
+        path: {{ .fileName | quote }}
+{{- end }}
+{{- end -}}
+
+{{/*
+emitTlsVolumeFromSecretConfig
+Emits volume definition for TLS secrets.
+Usage:
+  {{ include "camundaPlatform.emitTlsVolumeFromSecretConfig" (dict
+      "volumeName" "keystore"
+      "config" .Values.optimize.database.elasticsearch.tls
+  ) }}
+*/}}
+{{- define "camundaPlatform.emitTlsVolumeFromSecretConfig" -}}
+{{- $config := .config | default dict -}}
+{{- if and $config.secret $config.secret.existingSecret }}
+- name: {{ .volumeName }}
+  secret:
+    secretName: {{ $config.secret.existingSecret | quote }}
+    optional: false
+{{- end }}
+{{- end -}}
+
+{{/*
+getTlsSecretKey
+Returns the secret key name from TLS config.
+Uses config.secret.existingSecretKey.
+Usage:
+  {{ include "camundaPlatform.getTlsSecretKey" (dict "config" .Values.optimize.database.elasticsearch.tls) }}
+*/}}
+{{- define "camundaPlatform.getTlsSecretKey" -}}
+{{- $config := .config | default dict -}}
+{{- if and $config.secret $config.secret.existingSecretKey -}}
+  {{- $config.secret.existingSecretKey -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+common.java_tool_options_tls_env
+
+Emits JAVA_TOOL_OPTIONS with the truststore flag for the given TLS config.
+
+Usage in a Deployment/StatefulSet env: block:
+  {{ include "common.java_tool_options_tls_env" (dict
+    "Values" .Values
+    "component" "orchestration"            # REQUIRED: values key to read javaOpts from (e.g., orchestration, optimize)
+    "tlsConfig" $tlsConfig
+  ) | nindent 12 }}
+
+Behavior:
+- Requires "component" parameter; fails if omitted.
+- Renders JAVA_TOOL_OPTIONS composed of:
+  <component>.javaOpts (or provided "javaOpts") plus:
+    -Djavax.net.ssl.trustStore=<truststoreDir>/<dynamic-filename>
+- Truststore filename is resolved via "camundaPlatform.getTlsSecretKey".
+- Password-protected truststores are not handled here; pass
+  -Djavax.net.ssl.trustStorePassword=... via <component>.javaOpts, or use
+  global.tls.caBundle.secret with a PEM CA bundle instead.
+  No secret-backed alternative is available: this helper renders
+  JAVA_TOOL_OPTIONS before <component>.env, so a $(VAR) reference to a
+  Secret-sourced env entry defined there does not expand.
+*/}}
+
+{{- /* Internal: unified JAVA_TOOL_OPTIONS emitter */ -}}
+{{- define "camundaPlatform._java_tool_options_tls_env" -}}
+{{- $vals := .Values -}}
+{{- $comp := required "common.java_tool_options_tls_env: parameter 'component' is required" .component -}}
+{{- $compVals := (get $vals $comp) | default dict -}}
+{{- $javaOpts := (.javaOpts | default ((get $compVals "javaOpts") | default "")) | trim -}}
+{{- $truststoreDir := required "camundaPlatform._java_tool_options_tls_env: parameter 'truststoreDir' is required" .truststoreDir -}}
+{{- $secretKey := include "camundaPlatform.getTlsSecretKey" (dict "config" (.tlsConfig | default dict)) -}}
+{{- $truststorePath := printf "%s/%s" $truststoreDir $secretKey -}}
+- name: JAVA_TOOL_OPTIONS
+  value: >-
+    {{- if $javaOpts -}}
+    {{- printf "%s\n-Djavax.net.ssl.trustStore=%s" $javaOpts $truststorePath | nindent 4 }}
+    {{- else -}}
+    {{- printf "-Djavax.net.ssl.trustStore=%s" $truststorePath | nindent 4 }}
+    {{- end -}}
+{{- end }}
+
+{{- define "common.java_tool_options_tls_env" -}}
+{{ include "camundaPlatform._java_tool_options_tls_env" (dict
+  "Values" .Values
+  "component" .component
+  "javaOpts" .javaOpts
+  "tlsConfig" .tlsConfig
+  "truststoreDir" "/usr/local/camunda/certificates"
+) }}
+{{- end }}
+
+{{/* optimize.java_tool_options_tls_env
+Delegates to camundaPlatform._java_tool_options_tls_env.
+See common.java_tool_options_tls_env for full documentation.
+*/}}
+{{- define "optimize.java_tool_options_tls_env" -}}
+{{ include "camundaPlatform._java_tool_options_tls_env" (dict
+  "Values" .Values
+  "component" .component
+  "javaOpts" .javaOpts
+  "tlsConfig" .tlsConfig
+  "truststoreDir" "/optimize/certificates"
+) }}
+{{- end }}
+
+{{/*
+hasCaBundle
+Returns "true" when global.tls.caBundle.secret.existingSecret is set,
+"false" otherwise. Mirrors hasSecretConfig but specific to the OS-level
+CA bundle.
+Usage:
+  {{ if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+*/}}
+{{- define "camundaPlatform.hasCaBundle" -}}
+{{- if and .Values.global.tls .Values.global.tls.caBundle .Values.global.tls.caBundle.secret .Values.global.tls.caBundle.secret.existingSecret -}}
+true
+{{- else -}}
+false
+{{- end -}}
+{{- end -}}
+
+{{/*
+caBundleChecksumAnnotation
+Emits a `checksum/ca-bundle` pod annotation derived from the live CA-bundle
+Secret so that, on `helm upgrade`, pods roll automatically when the CA is
+rotated — the init container then rebuilds the truststore with the new CA.
+Without this, rotating the secret has no effect until the operator manually
+runs `kubectl rollout restart`.
+
+`lookup` returns an empty value during `helm template` / `--dry-run` (no API
+access), so the checksum is stable there and only carries real content on a
+live `helm upgrade`. It therefore does NOT react to a raw `kubectl edit secret`
+— that path still needs a manual rollout restart (documented in
+docs/tls-values-quickstart.md). Emits nothing when caBundle is unset.
+
+Usage (inside a pod template's metadata.annotations):
+  {{- include "camundaPlatform.caBundleChecksumAnnotation" . | nindent 8 }}
+*/}}
+{{/*
+orchestrationRESTSecretCertKey
+Returns the Secret data key that holds the REST server certificate.
+Smart defaults: PEM → tls.crt, PKCS12 → keystore.p12, applied when
+cert.secret.existingSecretKey is empty. Any explicit value wins verbatim.
+*/}}
+{{- define "camundaPlatform.orchestrationRESTSecretCertKey" -}}
+{{- $r := .Values.global.tls.orchestration.rest -}}
+{{- $type := $r.type | default "pkcs12" -}}
+{{- $key := $r.cert.secret.existingSecretKey -}}
+{{- if $key -}}
+{{ $key }}
+{{- else if eq $type "pem" -}}
+tls.crt
+{{- else -}}
+keystore.p12
+{{- end -}}
+{{- end -}}
+
+{{/*
+orchestrationTLSGeneratedSecretName
+Returns the deterministic, component+proto scoped name of the chart-managed
+Secret rendered by templates/orchestration/tls-secret.yaml for a given proto
+("rest" or "grpc") when inlineSecret material is provided for that proto.
+Usage:
+  {{ include "camundaPlatform.orchestrationTLSGeneratedSecretName" (dict "context" . "proto" "rest") }}
+*/}}
+{{- define "camundaPlatform.orchestrationTLSGeneratedSecretName" -}}
+{{- printf "%s-tls-%s" (include "orchestration.fullname" .context) .proto -}}
+{{- end -}}
+
+{{/*
+orchestrationTLSCertRef
+Resolves the effective Secret name/key holding the Orchestration server
+certificate for the given proto ("rest" or "grpc"), honoring:
+  1. cert.secret.existingSecret (chart-managed volume mount), or
+  2. cert.secret.inlineSecret (chart generates a Secret via tls-secret.yaml) —
+     only supported for PEM material (gRPC is always PEM; REST only when
+     type=pem, since a PKCS12 keystore is binary and impractical inline).
+Returns a dict {name, key}; name is empty when neither is configured.
+Usage:
+  {{ include "camundaPlatform.orchestrationTLSCertRef" (dict "context" . "proto" "rest") }}
+*/}}
+{{- define "camundaPlatform.orchestrationTLSCertRef" -}}
+{{- $ctx := .context -}}
+{{- $proto := .proto -}}
+{{- $tls := index $ctx.Values.global.tls.orchestration $proto -}}
+{{- $isPem := or (eq $proto "grpc") (eq ($tls.type | default "pkcs12") "pem") -}}
+{{- $name := "" -}}
+{{- $key := "" -}}
+{{- if $tls.cert.secret.existingSecret -}}
+  {{- $name = $tls.cert.secret.existingSecret -}}
+  {{- if eq $proto "rest" -}}
+    {{- $key = include "camundaPlatform.orchestrationRESTSecretCertKey" $ctx -}}
+  {{- else -}}
+    {{- $key = $tls.cert.secret.existingSecretKey | default "tls.crt" -}}
+  {{- end -}}
+{{- else if and $tls.cert.secret.inlineSecret $isPem -}}
+  {{- $name = include "camundaPlatform.orchestrationTLSGeneratedSecretName" (dict "context" $ctx "proto" $proto) -}}
+  {{- $key = "tls.crt" -}}
+{{- end -}}
+{{- dict "name" $name "key" $key | toYaml -}}
+{{- end -}}
+
+{{/*
+orchestrationTLSPrivateKeyRef
+Resolves the effective Secret name/key holding the Orchestration PEM private
+key for the given proto, honoring privateKey.secret.existingSecret,
+privateKey.secret.inlineSecret, and falling back to the resolved cert Secret
+(camundaPlatform.orchestrationTLSCertRef) when neither is set — matching the
+documented "defaults to cert.secret.existingSecret" behavior in values.yaml.
+Returns a dict {name, key}.
+Usage:
+  {{ include "camundaPlatform.orchestrationTLSPrivateKeyRef" (dict "context" . "proto" "rest") }}
+*/}}
+{{- define "camundaPlatform.orchestrationTLSPrivateKeyRef" -}}
+{{- $ctx := .context -}}
+{{- $proto := .proto -}}
+{{- $tls := index $ctx.Values.global.tls.orchestration $proto -}}
+{{- $key := $tls.privateKey.secret.existingSecretKey | default "tls.key" -}}
+{{- $name := "" -}}
+{{- if $tls.privateKey.secret.existingSecret -}}
+  {{- $name = $tls.privateKey.secret.existingSecret -}}
+{{- else if $tls.privateKey.secret.inlineSecret -}}
+  {{- $name = include "camundaPlatform.orchestrationTLSGeneratedSecretName" (dict "context" $ctx "proto" $proto) -}}
+  {{- $key = "tls.key" -}}
+{{- else -}}
+  {{- $certRef := include "camundaPlatform.orchestrationTLSCertRef" (dict "context" $ctx "proto" $proto) | fromYaml -}}
+  {{- $name = $certRef.name -}}
+{{- end -}}
+{{- dict "name" $name "key" $key | toYaml -}}
+{{- end -}}
+
+{{/*
+orchestrationTLSKeystorePasswordRef
+Resolves the effective Secret name/key holding the Orchestration REST PKCS12
+keystore password, honoring keystorePassword.secret.existingSecret,
+keystorePassword.secret.inlineSecret, and falling back to
+rest.cert.secret.existingSecret when neither is set (matching the documented
+default in values.yaml). Returns a dict {name, key}.
+Usage:
+  {{ include "camundaPlatform.orchestrationTLSKeystorePasswordRef" (dict "context" .) }}
+*/}}
+{{- define "camundaPlatform.orchestrationTLSKeystorePasswordRef" -}}
+{{- $ctx := .context -}}
+{{- $tls := $ctx.Values.global.tls.orchestration.rest -}}
+{{- $key := $tls.keystorePassword.secret.existingSecretKey | default "keystore-password" -}}
+{{- $name := "" -}}
+{{- if $tls.keystorePassword.secret.existingSecret -}}
+  {{- $name = $tls.keystorePassword.secret.existingSecret -}}
+{{- else if $tls.keystorePassword.secret.inlineSecret -}}
+  {{- $name = include "camundaPlatform.orchestrationTLSGeneratedSecretName" (dict "context" $ctx "proto" "rest") -}}
+  {{- $key = "keystore-password" -}}
+{{- else -}}
+  {{- $name = $tls.cert.secret.existingSecret -}}
+{{- end -}}
+{{- dict "name" $name "key" $key | toYaml -}}
+{{- end -}}
+
+{{/*
+orchestrationProxyVerifyCaRef
+Resolves the effective Secret name/namespace holding the CA bundle NGINX uses
+to verify the Orchestration REST upstream cert:
+  1. caSecret.secret.inlineSecret (chart generates a Secret, always keyed
+     "ca.crt", always in the release namespace — see tls-secret.yaml), or
+  2. caSecret.secret.existingSecret (used verbatim, honoring caSecret.namespace).
+nginx.ingress.kubernetes.io/proxy-ssl-secret always reads the fixed "ca.crt"
+key from the referenced Secret.
+
+REST only — there is no gRPC counterpart. See
+camundaPlatform.orchestrationProxyVerifyAnnotations.
+
+Returns a dict {name, namespace}; name is empty when neither is configured.
+Usage:
+  {{ include "camundaPlatform.orchestrationProxyVerifyCaRef" . }}
+*/}}
+{{- define "camundaPlatform.orchestrationProxyVerifyCaRef" -}}
+{{- $pv := .Values.global.tls.orchestration.rest.proxyVerify -}}
+{{- $name := "" -}}
+{{- $ns := .Release.Namespace -}}
+{{- if $pv.caSecret.secret.inlineSecret -}}
+  {{- $name = printf "%s-tls-rest-ca" (include "orchestration.fullname" .) -}}
+{{- else if $pv.caSecret.secret.existingSecret -}}
+  {{- $name = $pv.caSecret.secret.existingSecret -}}
+  {{- $ns = $pv.caSecret.namespace | default .Release.Namespace -}}
+{{- end -}}
+{{- dict "name" $name "namespace" $ns | toYaml -}}
+{{- end -}}
+
+{{/*
+orchestrationProxyVerifyAnnotations
+Renders the NGINX upstream-TLS-verification annotations for the Orchestration
+REST ingress from global.tls.orchestration.rest.proxyVerify.
+
+Returns nothing when proxyVerify.enabled is false or no CA Secret resolves
+(camundaPlatform.orchestrationProxyVerifyCaRef). Otherwise emits a flat map
+of annotation key → value:
+  - nginx.ingress.kubernetes.io/proxy-ssl-verify: "on"
+  - nginx.ingress.kubernetes.io/proxy-ssl-secret: "<namespace>/<name>"
+  - nginx.ingress.kubernetes.io/proxy-ssl-name: "<sniHost or derived Service DNS>"
+  - nginx.ingress.kubernetes.io/proxy-ssl-server-name: "on"
+
+There is deliberately NO gRPC equivalent: ingress-nginx renders these
+annotations as NGINX `proxy_ssl_*` directives, which apply to `proxy_pass`
+upstreams only. A GRPCS backend is served by `grpc_pass`, which needs the
+separate `grpc_ssl_verify` / `grpc_ssl_trusted_certificate` / `grpc_ssl_name`
+directives — ingress-nginx exposes no annotation for those, so emitting
+proxy-ssl-* on the gRPC ingress would silently verify nothing.
+
+proxy-ssl-name is ALWAYS emitted when verify is on: with ingress-nginx dynamic
+upstreams, absent proxy-ssl-name NGINX validates the upstream cert against the
+proxy host rather than the Orchestration Service DNS, so a cert carrying only
+the Service SAN fails. sniHost wins when set; otherwise the name is derived from
+the bare Orchestration Service DNS (orchestration.serviceName, `<fullname>-gateway`
+with no port — proxy-ssl-name is an SNI hostname, not a URL authority).
+
+The caller is responsible for merging the result into the ingress
+annotations block.
+
+Usage (inside an ingress template's annotations block, e.g. via merge-overwrite):
+  (include "camundaPlatform.orchestrationProxyVerifyAnnotations" .)
+*/}}
+{{- define "camundaPlatform.orchestrationProxyVerifyAnnotations" -}}
+{{- $pv := .Values.global.tls.orchestration.rest.proxyVerify -}}
+{{- $caRef := include "camundaPlatform.orchestrationProxyVerifyCaRef" . | fromYaml -}}
+{{- if and $pv.enabled $caRef.name -}}
+{{- $sslName := $pv.sniHost | default (include "orchestration.serviceName" . | trim) -}}
+nginx.ingress.kubernetes.io/proxy-ssl-verify: "on"
+nginx.ingress.kubernetes.io/proxy-ssl-secret: {{ printf "%s/%s" $caRef.namespace $caRef.name | quote }}
+nginx.ingress.kubernetes.io/proxy-ssl-name: {{ $sslName | quote }}
+nginx.ingress.kubernetes.io/proxy-ssl-server-name: "on"
+{{- end -}}
+{{- end -}}
+
+{{/*
+orchestrationTLSChecksumAnnotations
+Emits checksum/orchestration-tls-{rest,grpc} pod annotations from the cert
+and private-key material of the Orchestration TLS config when
+global.tls.orchestration.autoRollout is true, so a cert- or key-only
+rotation also rolls the pod.
+
+Per proto the gate is the EFFECTIVE TLS state
+(camundaPlatform.orchestrationRESTTLSEnabled /
+camundaPlatform.orchestrationGRPCTLSEnabled), not the raw
+global.tls.orchestration.<proto>.enabled flag: cert mounts follow the
+effective helper too (an orchestration.env override can enable TLS with the
+flag left off), so the checksum must be emitted whenever a cert is actually
+mounted or a rotation would silently not roll the pod.
+
+Per hashed item the source is chosen by material precedence: an inlineSecret
+value is hashed DIRECTLY from .Values (it is the material being rendered NOW),
+otherwise the existingSecret is read via `lookup`. `lookup` returns the
+pre-upgrade Secret content and is inert under `helm template` / GitOps — the
+opt-in gate and that caveat match camundaPlatform.caBundleChecksumAnnotation —
+but an inline value always reflects the current render, so an inline cert/key
+change flips the checksum even without cluster access.
+
+The REST keystore password is deliberately EXCLUDED from the hash: hashing a
+password-only value with no corresponding cert/key material would make the
+pod annotation a sha256(password) oracle, readable by anyone with Pod-get
+access even without Secret-read RBAC. Password-only rotation is therefore
+NOT covered by autoRollout and requires a manual `kubectl rollout restart`.
+
+Usage (inside the Orchestration pod template's metadata.annotations):
+  {{- include "camundaPlatform.orchestrationTLSChecksumAnnotations" . | nindent 8 }}
+*/}}
+{{- define "camundaPlatform.orchestrationTLSChecksumAnnotations" -}}
+{{- if .Values.global.tls.orchestration.autoRollout -}}
+{{- range $proto := (list "rest" "grpc") -}}
+{{- $tls := index $.Values.global.tls.orchestration $proto -}}
+{{- $effectiveHelper := ternary "camundaPlatform.orchestrationRESTTLSEnabled" "camundaPlatform.orchestrationGRPCTLSEnabled" (eq $proto "rest") -}}
+{{- if eq (include $effectiveHelper $) "true" -}}
+{{- $isPem := or (eq $proto "grpc") (eq ($tls.type | default "pkcs12") "pem") -}}
+{{- $certRef := include "camundaPlatform.orchestrationTLSCertRef" (dict "context" $ "proto" $proto) | fromYaml -}}
+{{- $keyRef := include "camundaPlatform.orchestrationTLSPrivateKeyRef" (dict "context" $ "proto" $proto) | fromYaml -}}
+{{- $hashes := list -}}
+{{- $certInline := ternary $tls.cert.secret.inlineSecret "" (and $isPem (not $tls.cert.secret.existingSecret)) -}}
+{{- if $certInline -}}
+  {{- $hashes = append $hashes $certInline -}}
+{{- else if $certRef.name -}}
+  {{- $s := lookup "v1" "Secret" $.Release.Namespace $certRef.name -}}
+  {{- $data := ($s | default dict).data | default dict -}}
+  {{- $hashes = append $hashes (get $data $certRef.key) -}}
+{{- end -}}
+{{- if and (not $tls.privateKey.secret.existingSecret) $tls.privateKey.secret.inlineSecret -}}
+  {{- $hashes = append $hashes $tls.privateKey.secret.inlineSecret -}}
+{{- else if $keyRef.name -}}
+  {{- $s := lookup "v1" "Secret" $.Release.Namespace $keyRef.name -}}
+  {{- $data := ($s | default dict).data | default dict -}}
+  {{- $hashes = append $hashes (get $data $keyRef.key) -}}
+{{- end -}}
+{{- if $hashes -}}
+{{- printf "\nchecksum/orchestration-tls-%s: %s" $proto (join "" $hashes | sha256sum) -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/* Returns the Secret data key that holds the Connectors server certificate. */}}
+{{- define "camundaPlatform.connectorsSecretCertKey" -}}
+{{- $c := .Values.global.tls.connectors -}}
+{{- $type := $c.type | default "pkcs12" -}}
+{{- $key := $c.cert.secret.existingSecretKey -}}
+{{- if $key -}}
+{{ $key }}
+{{- else if eq $type "pem" -}}
+tls.crt
+{{- else -}}
+keystore.p12
+{{- end -}}
+{{- end -}}
+
+{{/*
+Emits a checksum annotation for the configured Connectors TLS material.
+
+In PEM mode the cert and private key live in the SAME Secret but under
+separate keys, and the key can rotate without the cert changing. Hashing the
+cert key alone would leave such a rotation invisible to autoRollout, so the
+private key is folded into the same hash — mirroring
+camundaPlatform.orchestrationTLSChecksumAnnotations. PKCS12 mode keeps a
+single keystore key, so nothing extra is hashed there. The keystore password
+is deliberately excluded for the same reason as the Orchestration helper:
+hashing a password-only value would turn the pod annotation into a
+sha256(password) oracle readable with Pod-get access alone.
+*/}}
+{{- define "camundaPlatform.connectorsTLSChecksumAnnotation" -}}
+{{- if .Values.global.tls.connectors.autoRollout -}}
+{{- $c := .Values.global.tls.connectors -}}
+{{- if and $c.enabled $c.cert.secret.existingSecret -}}
+{{- $secret := lookup "v1" "Secret" .Release.Namespace $c.cert.secret.existingSecret -}}
+{{- $data := ($secret | default dict).data | default dict -}}
+{{- $hashes := list (get $data (include "camundaPlatform.connectorsSecretCertKey" .)) -}}
+{{- if eq ($c.type | default "pkcs12") "pem" -}}
+{{- $keyKey := $c.privateKey.secret.existingSecretKey | default "tls.key" -}}
+{{- $hashes = append $hashes (get $data $keyKey) -}}
+{{- end -}}
+checksum/connectors-tls: {{ join "" $hashes | sha256sum }}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+optimizeServerSecretCertKey
+Returns the Secret data key that holds the Optimize SERVER certificate. An
+explicit `cert.secret.existingSecretKey` wins verbatim; when empty it defaults
+to `keystore.p12`, the only format Optimize can load. Distinct from the legacy
+`camundaPlatform.getTlsSecretKey`, which resolves the Optimize-as-CLIENT
+truststore key for ES/OS.
+*/}}
+{{- define "camundaPlatform.optimizeServerSecretCertKey" -}}
+{{- $key := .Values.global.tls.optimize.cert.secret.existingSecretKey -}}
+{{- if $key -}}
+{{ $key }}
+{{- else -}}
+keystore.p12
+{{- end -}}
+{{- end -}}
+
+{{/*
+optimizeServerTLSChecksumAnnotation
+Emits a checksum/optimize-tls pod annotation from the cert content of the
+Optimize server TLS Secret when global.tls.optimize.autoRollout is true.
+Opt-in shape and lookup-during-template caveats match
+camundaPlatform.caBundleChecksumAnnotation.
+
+Usage (inside the Optimize pod template's metadata.annotations):
+  {{- include "camundaPlatform.optimizeServerTLSChecksumAnnotation" . | nindent 8 }}
+*/}}
+{{- define "camundaPlatform.optimizeServerTLSChecksumAnnotation" -}}
+{{- if .Values.global.tls.optimize.autoRollout -}}
+{{- $o := .Values.global.tls.optimize -}}
+{{- if and $o.enabled $o.cert.secret.existingSecret -}}
+{{- $secret := lookup "v1" "Secret" .Release.Namespace $o.cert.secret.existingSecret -}}
+{{- $data := ($secret | default dict).data | default dict -}}
+{{- $hashes := list (get $data (include "camundaPlatform.optimizeServerSecretCertKey" .)) -}}
+checksum/optimize-tls: {{ join "" $hashes | sha256sum }}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{- define "camundaPlatform.caBundleChecksumAnnotation" -}}
+{{- /* Gated on autoRollout (default off): the lookup below requires `get` on
+       Secrets for the upgrading identity — a Forbidden error there is NOT
+       catchable in templates and fails `helm upgrade` — and is inert under
+       GitOps `helm template` rendering. Opt in only where the upgrader has
+       Secret-read RBAC. See global.tls.caBundle.autoRollout. */ -}}
+{{- if and (eq (include "camundaPlatform.hasCaBundle" .) "true") .Values.global.tls.caBundle.autoRollout -}}
+{{- $secret := lookup "v1" "Secret" .Release.Namespace .Values.global.tls.caBundle.secret.existingSecret -}}
+{{- $key := .Values.global.tls.caBundle.secret.existingSecretKey | default "ca.crt" -}}
+{{- /* Hash ONLY the CA-bundle key's bytes, not the whole Secret. The full
+       object carries server-managed metadata (resourceVersion, managedFields,
+       uid) that controllers (cert-manager, ArgoCD, server-side apply) churn
+       without touching the CA; and a Secret may hold co-located keys whose
+       rotation is unrelated to the CA. Scoping to existingSecretKey avoids
+       spurious rollouts from either. `get` returns "" under helm template /
+       --dry-run (no API access), giving a stable sentinel. */ -}}
+checksum/ca-bundle: {{ get (($secret | default dict).data | default dict) $key | toYaml | sha256sum }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+caBundleVolume
+Emits the volume entry that exposes global.tls.caBundle as a single file
+under /etc/camunda/tls/ca.crt inside the container. Always called from a
+.spec.volumes list; the caller is responsible for the conditional. Use
+hasCaBundle to gate.
+
+The secret may carry the bundle under any key; we re-project it to the
+fixed filename "ca.crt" so SSL_CERT_FILE points at a stable path.
+
+Usage:
+  {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+  {{- include "camundaPlatform.caBundleVolume" . | nindent 8 }}
+  {{- end }}
+*/}}
+{{- define "camundaPlatform.caBundleVolume" -}}
+- name: ca-bundle
+  secret:
+    secretName: {{ .Values.global.tls.caBundle.secret.existingSecret | quote }}
+    items:
+      - key: {{ .Values.global.tls.caBundle.secret.existingSecretKey | default "ca.crt" | quote }}
+        path: ca.crt
+    optional: false
+{{- end -}}
+
+{{/*
+caBundleVolumeMount
+Emits the volumeMount entry pointing at the ca-bundle volume. Mounts
+read-only at /etc/camunda/tls so SSL_CERT_FILE=/etc/camunda/tls/ca.crt
+resolves.
+
+Usage:
+  {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+  {{- include "camundaPlatform.caBundleVolumeMount" . | nindent 12 }}
+  {{- end }}
+*/}}
+{{- define "camundaPlatform.caBundleVolumeMount" -}}
+- name: ca-bundle
+  mountPath: /etc/camunda/tls
+  readOnly: true
+{{- end -}}
+
+{{/*
+caBundleEnv
+Emits env vars pointing at the mounted CA bundle so both native and
+Node.js TLS stacks can resolve trust:
+  - SSL_CERT_FILE: honoured by the OpenSearch client (post-8.6.7) and many
+    native HTTP/TLS libraries that resolve trust through the OS.
+  - NODE_EXTRA_CA_CERTS: honoured by Node.js (web-modeler websockets, etc.)
+
+Usage (inside an env: list):
+  {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+  {{- include "camundaPlatform.caBundleEnv" . | nindent 12 }}
+  {{- end }}
+*/}}
+{{- define "camundaPlatform.caBundleEnv" -}}
+- name: SSL_CERT_FILE
+  value: /etc/camunda/tls/ca.crt
+- name: NODE_EXTRA_CA_CERTS
+  value: /etc/camunda/tls/ca.crt
+{{- end -}}
+
+{{/*
+caBundleInitContainer
+Emits an init container that builds a Java truststore (PKCS12-format JKS)
+combining the system $JAVA_HOME/lib/security/cacerts with the user CA
+mounted by caBundleVolume. Output is written to /var/camunda/tls-truststore/cacerts
+in an emptyDir shared with the main container. The main container then
+points -Djavax.net.ssl.trustStore at this file.
+
+This is the JVM-side counterpart to caBundleEnv (SSL_CERT_FILE): the
+JVM does not honour SSL_CERT_FILE, so we have to give it a real
+truststore. Runs `keytool` as a non-root user with readOnlyRootFilesystem
+and dropped capabilities.
+
+Usage (inside .spec.initContainers) — pass the calling component's own
+resolved image so the init container reuses an image the customer has
+already mirrored and inherits that image's cacerts:
+  {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+  {{- include "camundaPlatform.caBundleInitContainer" (dict "context" $ "image" (include "camundaPlatform.imageByParams" (dict "base" $.Values.global "overlay" $.Values.orchestration))) | nindent 8 }}
+  {{- end }}
+
+Image: defaults to the calling component's own image (the `image` key of
+the dict). That image already ships a JRE with keytool, it is one the
+customer has already mirrored (so this adds NO new registry dependency in
+air-gapped installs), and copying its cacerts preserves any CAs baked into
+a custom build. `global.tls.caBundle.image` is an explicit override for the
+rare image that lacks keytool; it is used VERBATIM (NOT prefixed with
+`global.image.registry`), so it must already be a routable reference.
+
+SecurityContext: comes from global.tls.caBundle.containerSecurityContext,
+rendered through common.compatibility.renderSecurityContext so OpenShift's
+adaptSecurityContext drops the fixed runAsUser/runAsGroup and lets the
+restricted SCC assign a namespace-range UID.
+*/}}
+{{- define "camundaPlatform.caBundleInitContainer" -}}
+{{- $ctx := .context -}}
+{{- $img := .image -}}
+{{- /* An explicit global.tls.caBundle.image override wins over the
+       component image and is used VERBATIM. We deliberately do NOT prepend
+       global.image.registry: the override is frequently already fully
+       qualified (e.g. myregistry.io/eclipse-temurin:21-jre), and prefixing
+       it would double it (myregistry.io/myregistry.io/...) and break the
+       pull. The user supplying an override owns its routability. The
+       component-image default (.image) is already fully resolved. */ -}}
+{{- if $ctx.Values.global.tls.caBundle.image -}}
+{{-   $img = $ctx.Values.global.tls.caBundle.image -}}
+{{- end -}}
+- name: ca-bundle-truststore-init
+  image: {{ $img | quote }}
+  imagePullPolicy: {{ $ctx.Values.global.tls.caBundle.imagePullPolicy | default $ctx.Values.global.image.pullPolicy | quote }}
+  securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $ctx.Values.global.tls.caBundle.containerSecurityContext "context" $ctx) | nindent 4 }}
+  command: ["sh", "-c"]
+  args:
+    - |
+      set -eu
+      umask 022
+      # Locate the JRE. Prefer JAVA_HOME; otherwise derive it from keytool
+      # on PATH. Reusing the component's own image means we cannot assume a
+      # single layout, so resolve it at runtime and call keytool by full
+      # path (it is not always on PATH even when JAVA_HOME is set).
+      # Fail with a clear message if neither is available, rather than letting
+      # the fallback resolve to "." and surface a confusing "cacerts: No such
+      # file or directory" later (e.g. a global.tls.caBundle.image override
+      # that lacks keytool).
+      if [ -z "${JAVA_HOME:-}" ] && ! command -v keytool >/dev/null 2>&1; then
+        echo "[ca-bundle-truststore-init] ERROR: no JAVA_HOME set and no keytool on PATH in this image. Set global.tls.caBundle.image to a JRE image that ships keytool." >&2
+        exit 1
+      fi
+      JH="${JAVA_HOME:-$(dirname "$(dirname "$(readlink -f "$(command -v keytool)")")")}"
+      KEYTOOL="$JH/bin/keytool"
+      # Validate the derivation before using it. The keytool-on-PATH heuristic
+      # mis-resolves when keytool is a non-symlink binary (e.g. /usr/bin/keytool
+      # gives JH=/usr), so confirm cacerts and keytool actually exist at $JH and
+      # fail with an actionable message rather than a confusing later error.
+      if [ ! -f "$JH/lib/security/cacerts" ] || [ ! -x "$KEYTOOL" ]; then
+        echo "[ca-bundle-truststore-init] ERROR: could not locate a JRE at JH='$JH' (expected \$JH/lib/security/cacerts and \$JH/bin/keytool). Set JAVA_HOME in the image, or set global.tls.caBundle.image to a JRE image with a standard layout." >&2
+        exit 1
+      fi
+      # Java 21 default cacerts is PKCS12; copy it as-is so we keep all
+      # public CAs (including any baked into this image) and add the user CA.
+      cp -L "$JH/lib/security/cacerts" /var/camunda/tls-truststore/cacerts
+      chmod 0644 /var/camunda/tls-truststore/cacerts
+      # Split a multi-cert PEM bundle into single-cert files and import
+      # each under its own alias. keytool -importcert with a single
+      # -alias only ever stores the first cert under that alias and
+      # silently discards the rest, so customers who concatenate
+      # root + intermediate CAs into one ca.crt would otherwise lose
+      # everything but the first. Use a writable workdir under
+      # /var/camunda — readOnlyRootFilesystem is set on this container.
+      WORK=/var/camunda/tls-truststore/work
+      mkdir -p "$WORK"
+      # Strip trailing CR first so a CRLF (Windows-authored) PEM still matches
+      # the BEGIN/END markers and the split cert files stay LF-clean for keytool.
+      awk 'BEGIN{n=0; out=""}
+           { sub(/\r$/, "") }
+           /-----BEGIN CERTIFICATE-----/ {n++; out=sprintf("'"$WORK"'/cert-%02d.pem", n)}
+           out!="" {print > out}
+           /-----END CERTIFICATE-----/ {close(out); out=""}' \
+           /etc/camunda/tls/ca.crt
+      i=0
+      for cert in "$WORK"/cert-*.pem; do
+        # POSIX sh has no nullglob — when awk produced zero output files,
+        # the literal pattern is iterated once. Skip non-files.
+        [ -f "$cert" ] || continue
+        i=$((i+1))
+        "$KEYTOOL" -importcert \
+          -noprompt \
+          -trustcacerts \
+          -keystore /var/camunda/tls-truststore/cacerts \
+          -storepass changeit \
+          -alias "camunda-user-ca-$i" \
+          -file "$cert"
+      done
+      rm -rf "$WORK"
+      if [ "$i" = "0" ]; then
+        echo "[ca-bundle-truststore-init] ERROR: no certificates found in /etc/camunda/tls/ca.crt — check that global.tls.caBundle.secret references a non-empty PEM bundle." >&2
+        exit 1
+      fi
+      echo "[ca-bundle-truststore-init] imported $i user CA cert(s) into /var/camunda/tls-truststore/cacerts"
+  volumeMounts:
+    - name: ca-bundle
+      mountPath: /etc/camunda/tls
+      readOnly: true
+    - name: ca-bundle-truststore
+      mountPath: /var/camunda/tls-truststore
+{{- end -}}
+
+{{/*
+caBundleTruststoreVolume
+Emits the emptyDir volume that the init container writes the combined
+truststore into. Always paired with caBundleInitContainer in
+.spec.initContainers and caBundleTruststoreVolumeMount on the main
+container.
+
+Usage (inside .spec.volumes):
+  {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+  {{- include "camundaPlatform.caBundleTruststoreVolume" . | nindent 8 }}
+  {{- end }}
+*/}}
+{{- define "camundaPlatform.caBundleTruststoreVolume" -}}
+- name: ca-bundle-truststore
+  emptyDir: {}
+{{- end -}}
+
+{{/*
+caBundleTruststoreVolumeMount
+Emits the volumeMount for the chart-built truststore on the main
+container. Mounted read-only — the init container writes once.
+
+Usage (inside container.volumeMounts):
+  {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+  {{- include "camundaPlatform.caBundleTruststoreVolumeMount" . | nindent 12 }}
+  {{- end }}
+*/}}
+{{- define "camundaPlatform.caBundleTruststoreVolumeMount" -}}
+- name: ca-bundle-truststore
+  mountPath: /var/camunda/tls-truststore
+  readOnly: true
+{{- end -}}
+
+{{/*
+caBundleJavaOpts
+Returns the -D arguments needed to point a JVM at the chart-built
+combined truststore. Use this when injecting JAVA_TOOL_OPTIONS for a
+component that has caBundle set but no component-specific JKS path.
+
+Usage (inside an env: list, after computing the trustStore branch):
+  - name: JAVA_TOOL_OPTIONS
+    value: {{ printf "%s %s" .Values.<component>.javaOpts (include "camundaPlatform.caBundleJavaOpts" .) | trim | quote }}
+*/}}
+{{- define "camundaPlatform.caBundleJavaOpts" -}}
+-Djavax.net.ssl.trustStore=/var/camunda/tls-truststore/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+{{- end -}}
+
+{{/*
+caBundleJavaToolOptionsEnv
+Emits a JAVA_TOOL_OPTIONS env var pre-populated with caBundleJavaOpts.
+Use on components that do NOT already render their own JAVA_TOOL_OPTIONS
+(connectors, identity, web-modeler websockets) so the chart-built
+truststore takes effect with no per-component branching.
+
+Components that already render JAVA_TOOL_OPTIONS conditionally
+(orchestration, optimize) should compose caBundleJavaOpts into their
+existing branch instead, so user-supplied javaOpts are preserved.
+
+Usage (inside an env: list):
+  {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+  {{- include "camundaPlatform.caBundleJavaToolOptionsEnv" . | nindent 12 }}
+  {{- end }}
+*/}}
+{{- define "camundaPlatform.caBundleJavaToolOptionsEnv" -}}
+- name: JAVA_TOOL_OPTIONS
+  value: {{ include "camundaPlatform.caBundleJavaOpts" . | quote }}
+{{- end -}}
+
+{{/*
+********************************************************************************
+Release highlights.
+********************************************************************************
+*/}}
+
+{{- define "camundaPlatform.ReleaseHighlights" }}
+## [info] Helm chart release highlights
+- Some values have been renamed or moved in the new chart structure.
+- When upgraded from 8.10 to 8.11, manual adjustments may be required for some cases like custom configurations.
+- Please refer to the official docs for more details.
+https://docs.camunda.io/docs/next/self-managed/upgrade/helm/
+{{- end -}}
+
+{{- /*
+NOTE: resolves the effective value of a deprecated app-config-proxy key, letting its
+migration target (supplied through a spring-imported <component>.extraConfiguration file)
+override it. Same transitional gating as orchestration.camundaExporterEnabled: the
+deprecated key is the fallback and is removed in chart v17 (8.12). Later extraConfiguration
+entries win; entries with springImport: false are skipped. "path" is the key list to dig in
+each parsed file (keys may themselves contain dots, e.g. "io.camunda.optimize"). Keys match
+literally on nested map keys: flat dotted keys ("camunda.document.x: y"), relaxed-binding
+camelCase, and keys outside the first YAML document are not matched, so the migration file
+must use the nested YAML form. Non-scalar (map/list) and null nodes are ignored and the
+deprecated default is kept; whole-number floats render as integers.
+Usage:
+{{ include "camundaPlatform.effectiveExtraConfigValue" (dict
+  "default" (.Values.optimize.logLevel)
+  "extraConfiguration" .Values.optimize.extraConfiguration
+  "path" (list "logging" "level" "io.camunda.optimize")
+) }}
+*/ -}}
+{{- define "camundaPlatform.effectiveExtraConfigValue" -}}
+{{- $value := .default -}}
+{{- range .extraConfiguration -}}
+  {{- if not (and (hasKey . "springImport") (eq .springImport false)) -}}
+    {{- $parsed := (.content | default "" | fromYaml) -}}
+    {{- if kindIs "map" $parsed -}}
+      {{- $node := $parsed -}}
+      {{- $found := true -}}
+      {{- range $key := $.path -}}
+        {{- if and $found (kindIs "map" $node) (hasKey $node $key) -}}
+          {{- $node = index $node $key -}}
+        {{- else -}}
+          {{- $found = false -}}
+        {{- end -}}
+      {{- end -}}
+      {{- if and $found (not (kindIs "invalid" $node)) (not (kindIs "map" $node)) (not (kindIs "slice" $node)) -}}
+        {{- if and (kindIs "float64" $node) (eq $node (floor $node)) -}}
+          {{- $value = (int64 $node) -}}
+        {{- else -}}
+          {{- $value = $node -}}
+        {{- end -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- $value -}}
+{{- end -}}
+
+{{- /*
+NOTE: reports "true" when a spring-imported <component>.extraConfiguration file sets the
+given key path (any subkey counts). Used to gate chart-rendered env that would otherwise
+shadow the migration target — e.g. suppress the -documentstore-env-vars envFrom for a
+component that owns document config via camunda.document.* in its extraConfiguration.
+Because any subkey matches, the whole -documentstore-env-vars envFrom is dropped. Retained
+structured coordination and secret values are rendered directly where needed. Keys match
+literally on nested map keys (see effectiveExtraConfigValue for the accepted YAML form).
+Usage:
+{{ if eq (include "camundaPlatform.extraConfigHasPath" (dict
+  "extraConfiguration" .Values.orchestration.extraConfiguration
+  "path" (list "camunda" "document"))) "true" }}
+*/ -}}
+{{- define "camundaPlatform.extraConfigHasPath" -}}
+{{- $found := "" -}}
+{{- $relaxed := .relaxed | default false -}}
+{{- range .extraConfiguration -}}
+  {{- if not (and (hasKey . "springImport") (eq .springImport false)) -}}
+    {{- $parsed := (.content | default "" | fromYaml) -}}
+    {{- if kindIs "map" $parsed -}}
+      {{- $node := $parsed -}}
+      {{- $ok := true -}}
+      {{- range $key := $.path -}}
+        {{- if and $ok (kindIs "map" $node) -}}
+          {{- $matchedKey := "" -}}
+          {{- range $candidate, $_ := $node -}}
+            {{- if or (eq $candidate $key) (and $relaxed (eq (regexReplaceAll "[-_]" (lower $candidate) "") (regexReplaceAll "[-_]" (lower $key) ""))) -}}
+              {{- $matchedKey = $candidate -}}
+            {{- end -}}
+          {{- end -}}
+          {{- if $matchedKey -}}
+            {{- $node = index $node $matchedKey -}}
+          {{- else -}}
+            {{- $ok = false -}}
+          {{- end -}}
+        {{- else -}}
+          {{- $ok = false -}}
+        {{- end -}}
+      {{- end -}}
+      {{- if $ok -}}
+        {{- $found = "true" -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- $found -}}
+{{- end -}}
+
+{{- /*
+NOTE: filename companion to extraConfigHasPath, matching on the entry's "file" rather than
+its parsed content. Unlike the content helpers it does NOT skip springImport:false entries:
+a non-Spring file such as log4j2.xml still occupies a ConfigMap data key and a subPath
+volumeMount, so a chart-rendered file of the same name would collide on both.
+Usage:
+{{ if eq (include "camundaPlatform.extraConfigHasFile" (dict
+  "extraConfiguration" .Values.orchestration.extraConfiguration
+  "file" "log4j2.xml")) "true" }}
+*/ -}}
+{{- define "camundaPlatform.extraConfigHasFile" -}}
+{{- $found := "" -}}
+{{- range .extraConfiguration -}}
+  {{- if eq (.file | default "") $.file -}}
+    {{- $found = "true" -}}
+  {{- end -}}
+{{- end -}}
+{{- $found -}}
+{{- end -}}
+
+{{- /*
+NOTE: dotted-key companion to extraConfigHasPath. Spring accepts the relaxed form
+"camunda.secrets.stores.aws.default.region: x", which fromYaml parses as one top-level
+key, so the nested walk in extraConfigHasPath cannot see it. Spring also accepts every
+split between the two, such as "camunda:" nesting a dotted "secrets.stores..." child, so
+each split point is tried: walk the first N steps nested, then match the rest joined by
+dots against that node's keys, exactly or as a prefix so any subkey counts.
+Usage:
+{{ if eq (include "camundaPlatform.extraConfigHasDottedPath" (dict
+  "extraConfiguration" .Values.orchestration.extraConfiguration
+  "path" (list "camunda" "secrets"))) "true" }}
+*/ -}}
+{{- define "camundaPlatform.extraConfigHasDottedPath" -}}
+{{- $found := "" -}}
+{{- $path := .path -}}
+{{- $relaxed := .relaxed | default false -}}
+{{- range .extraConfiguration -}}
+  {{- if not (and (hasKey . "springImport") (eq .springImport false)) -}}
+    {{- $parsed := (.content | default "" | fromYaml) -}}
+    {{- if kindIs "map" $parsed -}}
+      {{- range $split := until (len $path) -}}
+        {{- $node := $parsed -}}
+        {{- $ok := true -}}
+        {{- range $i := until $split -}}
+          {{- $step := index $path $i -}}
+          {{- if and $ok (kindIs "map" $node) -}}
+            {{- $matchedKey := "" -}}
+            {{- range $candidate, $_ := $node -}}
+              {{- if or (eq $candidate $step) (and $relaxed (eq (regexReplaceAll "[-_]" (lower $candidate) "") (regexReplaceAll "[-_]" (lower $step) ""))) -}}
+                {{- $matchedKey = $candidate -}}
+              {{- end -}}
+            {{- end -}}
+            {{- if $matchedKey -}}
+              {{- $node = index $node $matchedKey -}}
+            {{- else -}}
+              {{- $ok = false -}}
+            {{- end -}}
+          {{- else -}}
+            {{- $ok = false -}}
+          {{- end -}}
+        {{- end -}}
+        {{- if and $ok (kindIs "map" $node) -}}
+          {{- $dotted := join "." (slice $path $split) -}}
+          {{- range $key, $_ := $node -}}
+            {{- $normalizedKey := regexReplaceAll "[-_]" (lower $key) "" -}}
+            {{- $normalizedDotted := regexReplaceAll "[-_]" (lower $dotted) "" -}}
+            {{- if or (eq $key $dotted) (hasPrefix (printf "%s." $dotted) $key) (and $relaxed (or (eq $normalizedKey $normalizedDotted) (hasPrefix (printf "%s." $normalizedDotted) $normalizedKey))) -}}
+              {{- $found = "true" -}}
+            {{- end -}}
+          {{- end -}}
+        {{- end -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- $found -}}
+{{- end -}}
+
+{{- /*
+NOTE: multi-document companion to extraConfigHasPath and extraConfigHasDottedPath. fromYaml
+reads only the first YAML document, so split imported YAML before applying both path forms.
+*/ -}}
+{{- define "camundaPlatform.extraConfigHasPathInAnyYamlDocument" -}}
+{{- $found := "" -}}
+{{- range .extraConfiguration -}}
+  {{- if not (and (hasKey . "springImport") (eq .springImport false)) -}}
+    {{- $file := .file | default "" -}}
+    {{- range $document := regexSplit "(?m)^---[ \\t]*(#.*)?[ \\t]*$" (.content | default "") -1 -}}
+      {{- $entry := list (dict "file" $file "content" $document) -}}
+      {{- $args := dict "extraConfiguration" $entry "path" $.path -}}
+      {{- if or (eq (include "camundaPlatform.extraConfigHasPath" $args) "true") (eq (include "camundaPlatform.extraConfigHasDottedPath" $args) "true") -}}
+        {{- $found = "true" -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- $found -}}
+{{- end -}}
+
+{{- /*
+NOTE: exact-leaf companion to extraConfigHasPath, for guards that need the value rather than
+the key: reports "true" only when a spring-imported <component>.extraConfiguration file binds
+the given path to a non-empty scalar. Presence is not enough where a guard exists because the
+value must reach the component - "api.jwtSetUri:" with no value parses as null, so the key is
+there and the endpoint still is not. Both YAML forms Spring accepts are matched by trying each
+split between nested keys and one dotted remainder, but the remainder must match the leaf
+exactly: unlike extraConfigHasPath, a subkey is a different key, not this value. Any entry
+carrying a usable value is enough, so no last-entry-wins ordering applies.
+Usage:
+{{ if eq (include "camundaPlatform.extraConfigHasNonEmptyValueAtPath" (dict
+  "extraConfiguration" .Values.optimize.extraConfiguration
+  "path" (list "api" "jwtSetUri"))) "true" }}
+*/ -}}
+{{- define "camundaPlatform.extraConfigHasNonEmptyValueAtPath" -}}
+{{- $found := "" -}}
+{{- $path := .path -}}
+{{- range .extraConfiguration -}}
+  {{- if not (and (hasKey . "springImport") (eq .springImport false)) -}}
+    {{- $parsed := (.content | default "" | fromYaml) -}}
+    {{- if kindIs "map" $parsed -}}
+      {{- range $split := until (len $path) -}}
+        {{- $node := $parsed -}}
+        {{- $ok := true -}}
+        {{- range $i := until $split -}}
+          {{- $step := index $path $i -}}
+          {{- if and $ok (kindIs "map" $node) (hasKey $node $step) -}}
+            {{- $node = index $node $step -}}
+          {{- else -}}
+            {{- $ok = false -}}
+          {{- end -}}
+        {{- end -}}
+        {{- if and $ok (kindIs "map" $node) -}}
+          {{- $dotted := join "." (slice $path $split) -}}
+          {{- if hasKey $node $dotted -}}
+            {{- $leaf := index $node $dotted -}}
+            {{- if and (not (kindIs "map" $leaf)) (not (kindIs "slice" $leaf)) (not (empty $leaf)) -}}
+              {{- $found = "true" -}}
+            {{- end -}}
+          {{- end -}}
+        {{- end -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- $found -}}
+{{- end -}}
+
+{{- /*
+NOTE: raw-text companion to extraConfigHasPath and extraConfigHasDottedPath, for content
+those two cannot parse: spring.config.import resolves an imported file by extension, so a
+".properties" entry binds "camunda.secrets.x=v" without ever being valid YAML, and content
+that fails fromYaml yields only an "Error" key. Matches the joined path at line start
+followed by ".", ":" or "=", so "camunda.secretstore" is not a false positive. Applied only
+to those two cases, because raw matching cannot tell a real key from the same text inside a
+block scalar, and parsable YAML is already covered exactly by the other two helpers.
+Usage:
+{{ if eq (include "camundaPlatform.extraConfigHasRawKeyPrefix" (dict
+  "extraConfiguration" .Values.orchestration.extraConfiguration
+  "path" (list "camunda" "secrets"))) "true" }}
+*/ -}}
+{{- define "camundaPlatform.extraConfigHasRawKeyPrefix" -}}
+{{- $found := "" -}}
+{{- $pattern := printf "(?m)^[ \t]*%s[.:=]" (join "\\." .path) -}}
+{{- $relaxed := .relaxed | default false -}}
+{{- $normalizedPath := regexReplaceAll "[-_]" (lower (join "." .path)) "" -}}
+{{- range .extraConfiguration -}}
+  {{- if not (and (hasKey . "springImport") (eq .springImport false)) -}}
+    {{- $content := .content | default "" -}}
+    {{- $parsed := $content | fromYaml -}}
+    {{- $unparsable := or (not (kindIs "map" $parsed)) (and (eq (len (keys $parsed)) 1) (hasKey $parsed "Error")) -}}
+    {{- if or $unparsable (hasSuffix ".properties" (.file | default "")) -}}
+      {{- if regexMatch $pattern $content -}}
+        {{- $found = "true" -}}
+      {{- end -}}
+      {{- if $relaxed -}}
+        {{- range $line := regexSplit "\n" $content -1 -}}
+          {{- $key := trim (first (regexSplit "[:=]" (trim $line) 2)) -}}
+          {{- $normalizedKey := regexReplaceAll "[-_]" (lower $key) "" -}}
+          {{- if or (eq $normalizedPath $normalizedKey) (hasPrefix (printf "%s." $normalizedPath) $normalizedKey) -}}
+            {{- $found = "true" -}}
+          {{- end -}}
+        {{- end -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- $found -}}
+{{- end -}}
+
+{{/*
+secretStore._storesDict
+Builds the "stores" map (file/aws/gcp -> id -> fields) for a single "{file,aws,gcp}"
+provider map (either the default-tenant "orchestration.secretStore" or one physical-tenant
+override), skipping chart-only plumbing keys and empty/nil fields, and converting
+camelCase value keys to the kebab-case property names the runtime expects. Returns the
+YAML of the stores map, or an empty string when no store is configured.
+Usage:
+  {{- $stores := include "camundaPlatform.secretStore._storesDict" $providers | fromYaml -}}
+*/}}
+{{- define "camundaPlatform.secretStore._storesDict" -}}
+{{- $providers := . | default dict -}}
+{{- $reserved := list "secret" "roleArn" "gcpServiceAccount" -}}
+{{- $stores := dict -}}
+{{- range $type := (list "file" "aws" "gcp") -}}
+  {{- $entries := index $providers $type -}}
+  {{- if $entries -}}
+    {{- $renderedEntries := dict -}}
+    {{- range $id, $cfg := $entries -}}
+      {{- $rendered := dict -}}
+      {{- range $key, $value := $cfg -}}
+        {{- if not (has $key $reserved) -}}
+          {{- if not (or (kindIs "invalid" $value) (and (kindIs "string" $value) (eq $value ""))) -}}
+            {{- $_ := set $rendered (kebabcase $key) $value -}}
+          {{- end -}}
+        {{- end -}}
+      {{- end -}}
+      {{- if eq $type "file" -}}
+        {{- if not (hasKey $rendered "path") -}}
+          {{- $_ := set $rendered "path" "/etc/camunda/secrets" -}}
+        {{- end -}}
+      {{- end -}}
+      {{- if or $rendered (has $type (list "aws" "gcp")) -}}
+        {{- $_ := set $renderedEntries $id $rendered -}}
+      {{- end -}}
+    {{- end -}}
+    {{- $_ := set $stores $type $renderedEntries -}}
+  {{- end -}}
+{{- end -}}
+{{- if $stores -}}
+{{ toYaml $stores }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+secretStore.renderConfig
+Renders the "camunda.secrets.stores.*" application configuration (default tenant) plus any
+"camunda.physical-tenants.<id>.secrets.stores.*" per-physical-tenant overrides from the
+map-keyed "orchestration.secretStore" values. Emits nothing when no store is configured.
+Usage:
+  {{- include "camundaPlatform.secretStore.renderConfig" . | trim | nindent 2 }}
+*/}}
+{{- define "camundaPlatform.secretStore.renderConfig" -}}
+{{- $secretStore := .Values.orchestration.secretStore | default dict -}}
+{{- $result := dict -}}
+{{- $defaultStores := include "camundaPlatform.secretStore._storesDict" $secretStore | fromYaml -}}
+{{- if $defaultStores -}}
+  {{- $_ := set $result "secrets" (dict "stores" $defaultStores) -}}
+{{- end -}}
+{{- $tenants := dict -}}
+{{- range $tid, $providers := ($secretStore.physicalTenants | default dict) -}}
+  {{- $effectiveProviders := mergeOverwrite (deepCopy $secretStore) $providers -}}
+  {{- $_ := unset $effectiveProviders "physicalTenants" -}}
+  {{- $tenantStores := include "camundaPlatform.secretStore._storesDict" $effectiveProviders | fromYaml -}}
+  {{- if $tenantStores -}}
+    {{- $_ := set $tenants $tid (dict "secrets" (dict "stores" $tenantStores)) -}}
+  {{- end -}}
+{{- end -}}
+{{- if $tenants -}}
+  {{- $_ := set $result "physical-tenants" $tenants -}}
+{{- end -}}
+{{- if $result -}}
+{{ toYaml $result }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+secretStore.serviceAccountAnnotations
+Returns the identity-based-auth annotations (as YAML) that must be applied to the
+Orchestration ServiceAccount for the configured AWS/GCP secret stores, aggregated across
+the default tenant and every physical-tenant override, or an empty string when none apply.
+A single ServiceAccount can carry only one IRSA role and one Workload-Identity GCP service
+account; "constraints.tpl" fails the render when conflicting identities are configured.
+Usage:
+  {{- $annotations := fromYaml (include "camundaPlatform.secretStore.serviceAccountAnnotations" .) -}}
+*/}}
+{{- define "camundaPlatform.secretStore.serviceAccountAnnotations" -}}
+{{- $secretStore := .Values.orchestration.secretStore | default dict -}}
+{{- $providerSets := list $secretStore -}}
+{{- range $tid, $providers := ($secretStore.physicalTenants | default dict) -}}
+  {{- $providerSets = append $providerSets $providers -}}
+{{- end -}}
+{{- $annotations := dict -}}
+{{- range $providers := $providerSets -}}
+  {{- range $id, $cfg := ($providers.aws | default dict) -}}
+    {{- if $cfg.roleArn -}}
+      {{- $_ := set $annotations "eks.amazonaws.com/role-arn" $cfg.roleArn -}}
+    {{- end -}}
+  {{- end -}}
+  {{- range $id, $cfg := ($providers.gcp | default dict) -}}
+    {{- if $cfg.gcpServiceAccount -}}
+      {{- $_ := set $annotations "iam.gke.io/gcp-service-account" $cfg.gcpServiceAccount -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- if $annotations -}}
+{{ toYaml $annotations }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Returns a stable DNS-label volume name for one file secret store.
+*/}}
+{{- define "camundaPlatform.secretStore.fileVolumeName" -}}
+{{- $tenantID := .tenantId | default "default" -}}
+{{- $identity := printf "%s/%s" $tenantID .storeId -}}
+{{- if and (hasKey . "tenantId") .tenantId -}}
+  {{- $identity = printf "tenant:%s/%s" $tenantID .storeId -}}
+{{- end -}}
+{{- $slug := regexReplaceAll "[^a-z0-9]+" (printf "%s-%s" $tenantID .storeId | lower) "-" | trunc 41 | trimAll "-" -}}
+{{- printf "secretstore-%s-%s" $slug (sha256sum $identity | trunc 8) | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{- /*
+NOTE: single source of truth for resolving orchestration.secretStore file stores. Every
+entry is returned, including path-only ones with an empty "secret", because constraints
+validates those too; callers that emit volumes use secretStore.fileVolumes instead.
+"path" carries the /etc/camunda/secrets default and tenant entries are the root entry
+deep-overlaid, so the resolution rule lives here rather than at each call site.
+Usage:
+{{- $entries := (fromYaml (include "camundaPlatform.secretStore._fileEntries" .)).entries }}
+*/ -}}
+{{- define "camundaPlatform.secretStore._fileEntries" -}}
+{{- $secretStore := .Values.orchestration.secretStore | default dict -}}
+{{- $rootFile := $secretStore.file | default dict -}}
+{{- $entries := list -}}
+{{- range $id, $cfg := $rootFile -}}
+  {{- $entries = append $entries (dict
+      "id" $id
+      "tenantId" ""
+      "label" "orchestration.secretStore"
+      "name" (include "camundaPlatform.secretStore.fileVolumeName" (dict "storeId" $id))
+      "path" (toString ($cfg.path | default "/etc/camunda/secrets"))
+      "secret" (toString (($cfg.secret | default dict).existingSecret | default ""))
+  ) -}}
+{{- end -}}
+{{- range $tid, $providers := ($secretStore.physicalTenants | default dict) -}}
+  {{- range $id, $cfg := ($providers.file | default dict) -}}
+    {{- $effective := mergeOverwrite (deepCopy (index $rootFile $id | default dict)) $cfg -}}
+    {{- $entries = append $entries (dict
+        "id" $id
+        "tenantId" $tid
+        "label" (printf "orchestration.secretStore.physicalTenants.%s" $tid)
+        "name" (include "camundaPlatform.secretStore.fileVolumeName" (dict "tenantId" $tid "storeId" $id))
+        "path" (toString ($effective.path | default "/etc/camunda/secrets"))
+        "secret" (toString (($effective.secret | default dict).existingSecret | default ""))
+    ) -}}
+  {{- end -}}
+{{- end -}}
+{{- toYaml (dict "entries" $entries) -}}
+{{- end -}}
+
+{{- /*
+NOTE: the chart-managed volumes for orchestration.secretStore file stores -- the
+secret-bearing subset of _fileEntries, deduplicated so a tenant entry that inherits both
+the path and the Secret of another entry does not emit a duplicate mountPath, which
+Kubernetes rejects. A path reached by two different Secrets is a configuration error that
+constraints fails on, so it is left to surface there rather than silently dropped here.
+Usage:
+{{- $volumes := (fromYaml (include "camundaPlatform.secretStore.fileVolumes" .)).volumes }}
+*/ -}}
+{{- define "camundaPlatform.secretStore.fileVolumes" -}}
+{{- $volumes := list -}}
+{{- $seen := dict -}}
+{{- range $entry := (fromYaml (include "camundaPlatform.secretStore._fileEntries" .)).entries -}}
+  {{- if $entry.secret -}}
+    {{- if not (and (hasKey $seen $entry.path) (eq (index $seen $entry.path) $entry.secret)) -}}
+      {{- $volumes = append $volumes $entry -}}
+      {{- $_ := set $seen $entry.path $entry.secret -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- toYaml (dict "volumes" $volumes) -}}
+{{- end -}}
+
+{{- /*
+Returns the appProtocol value configured for a named Service port, or an empty string if unset.
+Fails the render if the map contains a key that isn't a known appProtocols key for this Service,
+to catch typos (e.g. "gprc") at `helm template`/CI time instead of silently no-op-ing.
+Usage:
+{{- with include "camundaPlatform.appProtocol" (dict
+  "portName" "grpc"
+  "knownPorts" (list "management" "http" "grpc")
+  "appProtocols" .Values.orchestration.service.appProtocols
+) }}
+      appProtocol: {{ . | quote }}
+{{- end }}
+*/ -}}
+{{- define "camundaPlatform.appProtocol" -}}
+{{- if .appProtocols -}}
+{{- range $key, $_ := .appProtocols -}}
+{{- if not (has $key $.knownPorts) -}}
+{{- fail (printf "appProtocols: %q is not a valid appProtocols key, expected one of %v" $key $.knownPorts) -}}
+{{- end -}}
+{{- end -}}
+{{- get .appProtocols .portName -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+NOTE: resolves the multi-region block, preferring orchestration.partitioning over the
+deprecated global.multiregion, which only still carries regions and regionId. Whole-block
+precedence, never per field, so a topology cannot be assembled half from each. Absent
+fields fall back to the chart defaults, which is what lets the global block supply the
+numbered pair without declaring the zoned ones. constraints.tpl rejects setting both.
+
+The resolved dict also carries the winning block's own key names as sourceKey, countKey and
+indexKey, so a constraint message names the keys the user actually set.
+*/}}
+{{- define "camundaPlatform.partitioning" -}}
+{{- $orch := .Values.orchestration.partitioning | default dict -}}
+{{- $global := .Values.global.multiregion | default dict -}}
+{{- $resolved := dict -}}
+{{- if eq (include "camundaPlatform.partitioningConfigured" $orch) "true" -}}
+  {{- $resolved = dict
+        "scheme" ($orch.scheme | default "round-robin")
+        "zone" ($orch.zone | default "")
+        "zones" ($orch.zones | default list)
+        "keepUnzonedBrokers" ($orch.keepUnzonedBrokers | default false)
+        "numberOfZones" (int ($orch.numberOfZones | default 1) | default 1)
+        "zoneIndex" (int ($orch.zoneIndex | default 0))
+        "sourceKey" "orchestration.partitioning"
+        "countKey" "numberOfZones"
+        "indexKey" "zoneIndex" -}}
+{{- else -}}
+  {{- /* Only the numbered pair is read back from the deprecated block. mode, zone and
+       zones never shipped there, and honouring them would keep the zone-aware scheme reachable
+       through the spelling being removed in v17, which values.yaml and both schemas
+       already say it is not. */ -}}
+  {{- $resolved = dict
+        "scheme" "round-robin"
+        "zone" ""
+        "zones" list
+        "keepUnzonedBrokers" false
+        "numberOfZones" (int ($global.regions | default 1) | default 1)
+        "zoneIndex" (int ($global.regionId | default 0))
+        "sourceKey" "global.multiregion"
+        "countKey" "regions"
+        "indexKey" "regionId" -}}
+{{- end -}}
+{{- /* Derive everything a consumer needs, so the scheme is decided here rather than
+     re-asked at each call site. The counts are stringified because the dict is round-tripped
+     through JSON, which types them as floats on the way back; the rendered output is the same
+     either way at these magnitudes, this just keeps the type explicit at the boundary.
+
+     NOTE: qualifiedAdvertisedHost is true for every zone-aware release and, under round-robin,
+     above one region. It differs from spansFailureDomains on a single-zone zone-aware release,
+     which qualifies the host but still gets a generated bootstrap list. */ -}}
+{{- if eq $resolved.scheme "zone-aware" -}}
+  {{- $brokers := 0 -}}
+  {{- $replicas := 0 -}}
+  {{- $local := 0 -}}
+  {{- range $resolved.zones -}}
+    {{- $brokers = add $brokers (int .numberOfBrokers) -}}
+    {{- $replicas = add $replicas (int .numberOfReplicas) -}}
+    {{- if eq .name $resolved.zone -}}
+      {{- $local = int .numberOfBrokers -}}
+    {{- end -}}
+  {{- end -}}
+  {{- $_ := set $resolved "clusterSize" (toString $brokers) -}}
+  {{- $_ := set $resolved "replicationFactor" (toString $replicas) -}}
+  {{- $_ := set $resolved "localReplicas" (toString $local) -}}
+  {{- $_ := set $resolved "spansFailureDomains" (gt (len $resolved.zones) 1) -}}
+  {{- $_ := set $resolved "qualifiedAdvertisedHost" true -}}
+{{- else -}}
+  {{- $_ := set $resolved "clusterSize" (toString .Values.orchestration.clusterSize) -}}
+  {{- $_ := set $resolved "replicationFactor" (toString .Values.orchestration.replicationFactor) -}}
+  {{- $_ := set $resolved "localReplicas" (toString (div .Values.orchestration.clusterSize $resolved.numberOfZones)) -}}
+  {{- $_ := set $resolved "spansFailureDomains" (gt (int $resolved.numberOfZones) 1) -}}
+  {{- $_ := set $resolved "qualifiedAdvertisedHost" (gt (int $resolved.numberOfZones) 1) -}}
+{{- end -}}
+{{- /* NOTE: the per-zone counts inside zones stay numeric; only the top-level pair is converted. */ -}}
+{{- $_ := set $resolved "numberOfZones" (toString $resolved.numberOfZones) -}}
+{{- $_ := set $resolved "zoneIndex" (toString $resolved.zoneIndex) -}}
+{{- $resolved | toJson -}}
+{{- end -}}
+
+{{/*
+NOTE: takes a multi-region block, not the root context. Emits "true" when any field
+departs from the chart default.
+*/}}
+{{- define "camundaPlatform.partitioningConfigured" -}}
+{{- if or
+      (ne (default "round-robin" .scheme) "round-robin")
+      (ne (default "" .zone) "")
+      (gt (len (default list .zones)) 0)
+      (default false .keepUnzonedBrokers)
+      (ne (int (default 1 .numberOfZones)) 1)
+      (ne (int (default 0 .zoneIndex)) 0) -}}
+true
+{{- end -}}
+{{- end -}}
+
+{{/*
+NOTE: the deprecated block only ever carried the numbering pair, under its own spelling.
+Kept separate from camundaPlatform.partitioningConfigured so neither block can be marked
+configured by a key its own resolver branch does not read.
+*/}}
+{{- define "camundaPlatform.deprecatedMultiregionConfigured" -}}
+{{- if or
+      (ne (int (default 1 .regions)) 1)
+      (ne (int (default 0 .regionId)) 0) -}}
+true
+{{- end -}}
+{{- end -}}
+
+{{/*
+NOTE: "true" when the cluster spans more than one failure domain, which is more than one
+zone with the zone-aware scheme and more than one region with round-robin. A single zone counts as
+one cluster, the same as a single-region numbered one: it exists to skew leaders inside a
+region,
+not to spread across them. Three call sites depend on agreeing about this, so they read
+it here rather than each spelling it out: the generated initial contact points, the
+legacy Optimize exporters, and the NOTES.txt warning.
+*/}}
+{{- define "camundaPlatform.spansFailureDomains" -}}
+{{- (include "camundaPlatform.partitioning" . | fromJson).spansFailureDomains -}}
+{{- end -}}

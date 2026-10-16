@@ -506,11 +506,29 @@ The following values inside your values.yaml need to be set but were not:
   {{- end }}
 
   {{- $replicationFactor := int .Values.orchestration.replicationFactor -}}
-  {{- if and .Values.orchestration.enabled (eq $regions 2) (ne $replicationFactor 4) }}
+  {{- $ctx := . -}}
+  {{- $replicationFactorKnown := not .Values.orchestration.configuration -}}
+  {{- $replicationFactorSource := "orchestration.replicationFactor" -}}
+  {{- range $env := ($ctx.Values.orchestration.env | default list) }}
+    {{- $envName := tpl ($env.name | default "") $ctx -}}
+    {{- if has $envName (list "CAMUNDA_CLUSTER_REPLICATIONFACTOR" "CAMUNDA_CLUSTER_REPLICATION_FACTOR") }}
+      {{- if $env.value }}
+        {{- $replicationFactor = int (tpl (toString $env.value) $ctx) -}}
+        {{- $replicationFactorSource = printf "the %s entry in orchestration.env" $envName -}}
+        {{- $replicationFactorKnown = true -}}
+      {{- else }}
+        {{- $replicationFactorKnown = false -}}
+      {{- end }}
+    {{- end }}
+  {{- end }}
+  {{- if regexMatch "-Dcamunda\\.cluster\\.replication-factor=" (.Values.orchestration.javaOpts | default "") }}
+    {{- $replicationFactorKnown = false -}}
+  {{- end }}
+  {{- if and .Values.orchestration.enabled (eq $regions 2) $replicationFactorKnown (ne $replicationFactor 4) }}
     {{- $warningMessage := printf "%s %s %s"
         "[camunda][warning]"
-        (printf "orchestration.replicationFactor is %d but global.multiregion.regions is 2; a dual-region cluster needs a replication factor of 4 to distribute every partition evenly across both regions." $replicationFactor)
-        "Set orchestration.replicationFactor to 4."
+        (printf "%s is %d but global.multiregion.regions is 2; a dual-region cluster needs a replication factor of 4 to distribute every partition evenly across both regions." $replicationFactorSource $replicationFactor)
+        (printf "Set %s to 4." $replicationFactorSource)
     -}}
     {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
   {{- end }}

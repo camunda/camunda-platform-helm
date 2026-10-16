@@ -43,7 +43,7 @@ jobs:
       - name: Vendor subcharts for the real-chart contract tests
         run: |
           make helm.repos-add
-          for v in 8.7 8.8 8.9 8.10; do
+          for v in 8.7 8.8 8.9 8.10 8.11; do
             make helm.dependency-update chartPath="charts/camunda-platform-$v"
           done
 

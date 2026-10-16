@@ -1,0 +1,41 @@
+# orphan-ok: legacy CloudNativePG Cluster fixture for the cnpg dependency-profile; 8.10 moved to the internal-postgresql companion chart but this file is retained for opt-in use.
+---
+apiVersion: v1
+stringData:
+  password: $RDBMS_POSTGRESQL_PASSWORD
+  username: $RDBMS_POSTGRESQL_USERNAME
+kind: Secret
+metadata:
+  name: postgresql-secret
+  namespace: $NAMESPACE
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: postgresql-cluster
+  namespace: $NAMESPACE
+spec:
+  instances: 1
+  # The login role, its owned databases, and the connection secret all derive
+  # from $RDBMS_POSTGRESQL_USERNAME so any value stays self-consistent with the
+  # JDBC user the chart connects as. Previously the role/owner were hardcoded
+  # to `app` while the chart connected as $RDBMS_POSTGRESQL_USERNAME, so any
+  # value other than `app` failed with "password authentication failed for
+  # user ...". In CI the var is `app`, so this renders identically.
+  bootstrap:
+    initdb:
+      database: app
+      owner: $RDBMS_POSTGRESQL_USERNAME
+      postInitSQL:
+        - CREATE DATABASE identity OWNER $RDBMS_POSTGRESQL_USERNAME
+        - CREATE DATABASE webmodeler OWNER $RDBMS_POSTGRESQL_USERNAME
+  managed:
+    roles:
+      - name: $RDBMS_POSTGRESQL_USERNAME
+        ensure: present
+        superuser: true
+        login: true
+        passwordSecret:
+          name: postgresql-secret
+  storage:
+    size: 1Gi

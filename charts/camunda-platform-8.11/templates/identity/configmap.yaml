@@ -1,0 +1,722 @@
+{{- if eq (include "camundaPlatform.identityEnabled" .) "true" }}
+{{- $registerHub := or (eq (include "camundaHub.webModelerEnabled" .) "true") .Values.global.identity.auth.orchestration.hubPingAuthorizationEnabled (not (empty .Values.orchestration.hub.ping.endpoint)) }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "identity.fullname" . }}-configuration
+  labels: {{- include "identity.labels" . | nindent 4 }}
+  annotations: {{- toYaml  .Values.global.annotations | nindent 4 }}
+data:
+  {{- if .Values.identity.configuration }}
+  application.yaml: |
+    {{ .Values.identity.configuration | indent 4 | trim }}
+  {{- else }}
+  application.yaml: |
+    # NOTE:
+    # It is possible to override the configuration via env vars following the Spring Boot convention.
+    # For example, the "identity.url" config path is presented as the "IDENTITY_URL" environment variable.
+    # However, it's not possilbe to mix between the configuration and environment variable for the same object
+    # like arrays and maps.
+    identity:
+      url: {{ include "identity.externalUrl" . | quote }}
+      flags:
+        multi-tenancy: {{ include "identity.multitenancyEnabled" . | quote }}
+
+      {{- if eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.identity.auth.identity)) "true" }}
+      client-id: {{ include "identity.authClientId" . | quote }}
+      {{- end }}
+      {{- $config := include "camundaPlatform.normalizeSecretConfiguration" (dict "config" .Values.global.identity.auth.identity) | fromYaml }}
+      {{- if $config.plaintext }}
+      client-secret: {{ $config.plaintext | quote }}
+      {{- else if $config.ref }}
+      client-secret: ${VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET}
+      {{- end }}
+
+      authProvider:
+        {{- if ne (include "camundaPlatform.authIssuerType" .) "KEYCLOAK" }}
+        type: {{ include "camundaPlatform.authIssuerType" . | quote }}
+        {{- end }}
+        issuer-url: {{ include "camundaPlatform.authIssuerUrlWithFallback" . | quote }}
+        backend-url: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
+
+      {{- if ne (include "camundaPlatform.authIssuerType" .) "KEYCLOAK"}}
+      initial-claim-name: {{ .Values.global.identity.auth.identity.initialClaimName }}
+      initial-claim-value: {{ .Values.global.identity.auth.identity.initialClaimValue }}
+      {{- end }}
+      component-presets:
+        {{- if eq (include "camundaPlatform.topologyMode" .) "hub" }}
+        {{- $hasSharedOrchestrationRole := false }}
+        {{- $hasSharedOptimizeRole := false }}
+        {{- range $cluster := dig "clusters" list (.Values.global.topology | default dict) }}
+        {{- $slug := include "camundaPlatform.topologySlug" $cluster.id }}
+        {{- $token := include "camundaPlatform.topologyEnvToken" $cluster.id }}
+        {{- $displayName := $cluster.name | default $cluster.id }}
+        {{- $orchestration := dig "components" "orchestration" dict $cluster }}
+        {{- $optimize := dig "components" "optimize" dict $cluster }}
+        {{- $connectors := dig "components" "connectors" dict $cluster }}
+        {{- $hasTenantOptimize := false }}
+        {{- range $tenant := dig "physicalTenants" list $cluster }}
+        {{- if dig "components" "optimize" "enabled" false $tenant }}
+          {{- $hasTenantOptimize = true }}
+        {{- end }}
+        {{- end }}
+        {{- if or $orchestration.enabled $optimize.enabled $connectors.enabled $hasTenantOptimize }}
+        {{ printf "topology-%s" $slug | quote }}:
+          applications:
+          {{- if eq (include "camundaPlatform.authIssuerType" $) "KEYCLOAK" }}
+          {{- if $orchestration.enabled }}
+            - name: {{ printf "Orchestration %s" $displayName | quote }}
+              id: {{ $orchestration.clientId | quote }}
+              type: confidential
+              secret: {{ printf "${VALUES_TOPOLOGY_%s_ORCHESTRATION_SECRET:}" $token }}
+              permissions:
+                - audience: {{ $orchestration.audience | quote }}
+                  definition: write:*
+                {{- if $.Values.global.identity.auth.orchestration.hubPingAuthorizationEnabled }}
+                - audience: {{ include "webModeler.authPublicApiAudience" $ | quote }}
+                  definition: create:*
+                - audience: {{ include "webModeler.authPublicApiAudience" $ | quote }}
+                  definition: update:*
+                {{- end }}
+              root-url: {{ tpl $orchestration.redirectUrl $ | quote }}
+              redirect-uris:
+                {{- if eq ($cluster.architecture | default "unified") "legacy" }}
+                - "/operate/identity-callback"
+                - "/tasklist/identity-callback"
+                {{- else }}
+                - "/login/oauth2/code/orchestration"
+                - "/sso-callback"
+                {{- $physicalTenants := dig "physicalTenants" list $cluster }}
+                {{- if $physicalTenants }}
+                {{- $tenantIds := list "default" }}
+                {{- range $tenant := $physicalTenants }}
+                {{- $tenantIds = append $tenantIds ($tenant.id | toString) }}
+                {{- end }}
+                {{- range $tenantId := $tenantIds | uniq }}
+                - {{ printf "/physical-tenants/%s/sso-callback" $tenantId | quote }}
+                {{- end }}
+                {{- end }}
+                {{- end }}
+          {{- end }}
+          {{- if $optimize.enabled }}
+            - name: {{ printf "Optimize %s" $displayName | quote }}
+              id: {{ $optimize.clientId | quote }}
+              type: confidential
+              secret: {{ printf "${VALUES_TOPOLOGY_%s_OPTIMIZE_SECRET:}" $token }}
+              permissions:
+                - audience: {{ $optimize.audience | quote }}
+                  definition: write:*
+              root-url: {{ tpl $optimize.redirectUrl $ | quote }}
+              redirect-uris:
+                - "/api/authentication/callback"
+                - "/"
+          {{- end }}
+          {{- range $tenant := dig "physicalTenants" list $cluster }}
+          {{- $tenantOptimize := dig "components" "optimize" dict $tenant }}
+          {{- if $tenantOptimize.enabled }}
+            - name: {{ printf "Optimize %s %s" $displayName $tenant.id | quote }}
+              id: {{ $tenantOptimize.clientId | quote }}
+              type: confidential
+              secret: {{ printf "${VALUES_TOPOLOGY_%s_TENANT_%s_OPTIMIZE_SECRET:}" $token (include "camundaPlatform.topologyEnvToken" $tenant.id) }}
+              permissions:
+                - audience: {{ $tenantOptimize.audience | quote }}
+                  definition: write:*
+              root-url: {{ tpl $tenantOptimize.redirectUrl $ | quote }}
+              redirect-uris:
+                - "/api/authentication/callback"
+                - "/"
+          {{- end }}
+          {{- end }}
+          {{- if $connectors.enabled }}
+            - name: {{ printf "Connectors %s" $displayName | quote }}
+              id: {{ $connectors.clientId | quote }}
+              type: m2m
+              secret: {{ printf "${VALUES_TOPOLOGY_%s_CONNECTORS_SECRET:}" $token }}
+              permissions:
+                - audience: {{ $orchestration.audience | quote }}
+                  definition: read:*
+          {{- end }}
+          {{- end }}
+          apis:
+          {{- if $orchestration.enabled }}
+            - name: {{ printf "Orchestration %s API" $displayName | quote }}
+              audience: {{ $orchestration.audience | quote }}
+              permissions:
+                - definition: read:*
+                  description: "Read permission"
+                - definition: write:*
+                  description: "Write permission"
+          {{- end }}
+          {{- if $optimize.enabled }}
+            - name: {{ printf "Optimize %s API" $displayName | quote }}
+              audience: {{ $optimize.audience | quote }}
+              permissions:
+                - definition: write:*
+                  description: "Write permission"
+          {{- end }}
+          {{- range $tenant := dig "physicalTenants" list $cluster }}
+          {{- $tenantOptimize := dig "components" "optimize" dict $tenant }}
+          {{- if $tenantOptimize.enabled }}
+            - name: {{ printf "Optimize %s %s API" $displayName $tenant.id | quote }}
+              audience: {{ $tenantOptimize.audience | quote }}
+              permissions:
+                - definition: write:*
+                  description: "Write permission"
+          {{- end }}
+          {{- end }}
+          roles:
+          {{- if and $orchestration.enabled $orchestration.roleName }}
+            - name: {{ $orchestration.roleName | quote }}
+              description: {{ printf "Grants full access to Orchestration %s" $displayName | quote }}
+              permissions:
+                - audience: {{ $orchestration.audience | quote }}
+                  definition: read:*
+                - audience: {{ $orchestration.audience | quote }}
+                  definition: write:*
+          {{- else if $orchestration.enabled }}
+            {{- $hasSharedOrchestrationRole = true }}
+          {{- end }}
+          {{- if and $optimize.enabled $optimize.roleName }}
+            - name: {{ $optimize.roleName | quote }}
+              description: {{ printf "Grants full access to Optimize %s" $displayName | quote }}
+              permissions:
+                - audience: {{ $optimize.audience | quote }}
+                  definition: write:*
+                - audience: {{ include "identity.authAudience" $ | quote }}
+                  definition: read:users
+          {{- else if $optimize.enabled }}
+            {{- $hasSharedOptimizeRole = true }}
+          {{- end }}
+          {{- range $tenant := dig "physicalTenants" list $cluster }}
+          {{- $tenantOptimize := dig "components" "optimize" dict $tenant }}
+          {{- if and $tenantOptimize.enabled $tenantOptimize.roleName }}
+            - name: {{ $tenantOptimize.roleName | quote }}
+              description: {{ printf "Grants full access to Optimize %s %s" $displayName $tenant.id | quote }}
+              permissions:
+                - audience: {{ $tenantOptimize.audience | quote }}
+                  definition: write:*
+                - audience: {{ include "identity.authAudience" $ | quote }}
+                  definition: read:users
+          {{- else if $tenantOptimize.enabled }}
+            {{- $hasSharedOptimizeRole = true }}
+          {{- end }}
+          {{- end }}
+        {{- end }}
+        {{- end }}
+        {{- if or $hasSharedOrchestrationRole $hasSharedOptimizeRole }}
+        "topology-shared-roles":
+          roles:
+          {{- if $hasSharedOrchestrationRole }}
+            - name: "Orchestration"
+              description: "Grants full access to Orchestration"
+              permissions:
+              {{- range $cluster := dig "clusters" list ($.Values.global.topology | default dict) }}
+              {{- $component := dig "components" "orchestration" dict $cluster }}
+              {{- if and $component.enabled (empty $component.roleName) }}
+                - audience: {{ $component.audience | quote }}
+                  definition: read:*
+                - audience: {{ $component.audience | quote }}
+                  definition: write:*
+              {{- end }}
+              {{- end }}
+          {{- end }}
+          {{- if $hasSharedOptimizeRole }}
+            - name: "Optimize"
+              description: "Grants full access to Optimize"
+              permissions:
+              {{- range $cluster := dig "clusters" list ($.Values.global.topology | default dict) }}
+              {{- $component := dig "components" "optimize" dict $cluster }}
+              {{- if and $component.enabled (empty $component.roleName) }}
+                - audience: {{ $component.audience | quote }}
+                  definition: write:*
+              {{- end }}
+              {{- range $tenant := dig "physicalTenants" list $cluster }}
+              {{- $tenantOptimize := dig "components" "optimize" dict $tenant }}
+              {{- if and $tenantOptimize.enabled (empty $tenantOptimize.roleName) }}
+                - audience: {{ $tenantOptimize.audience | quote }}
+                  definition: write:*
+              {{- end }}
+              {{- end }}
+              {{- end }}
+                - audience: {{ include "identity.authAudience" $ | quote }}
+                  definition: read:users
+          {{- end }}
+        {{- end }}
+        {{- end }}
+        {{- if or .Values.global.identity.auth.connectors.alwaysRegister (and (ne (include "camundaPlatform.topologyMode" .) "hub") (eq (include "connectors.authMethod" .) "oidc")) }}
+        connectors:
+          applications:
+            - name: Connectors
+              id: ${CAMUNDA_CONNECTORS_CLIENT_ID:${VALUES_KEYCLOAK_INIT_CONNECTORS_CLIENT_ID:connectors}}
+              type: m2m
+              secret: ${CAMUNDA_CONNECTORS_SECRET:${VALUES_KEYCLOAK_INIT_CONNECTORS_SECRET:}}
+              permissions:
+                - audience: {{ include "orchestration.authAudience" . | quote }}
+                  definition: read:*
+        {{- end }}
+        identity:
+          apis:
+            - name: "Camunda Identity Resource Server"
+              audience: {{ include "identity.authAudience" . | quote }}
+              permissions:
+                - definition: read
+                  description: "Read permission"
+                - definition: "read:users"
+                  description: "Read users permission"
+                - definition: write
+                  description: "Write permission"
+          roles:
+            - name: "ManagementIdentity"
+              description: "Provides full access to Management Identity"
+              permissions:
+                - audience: {{ include "identity.authAudience" . | quote }}
+                  definition: read
+                - audience: {{ include "identity.authAudience" . | quote }}
+                  definition: write
+        optimize:
+          {{- if or .Values.global.identity.auth.optimize.alwaysRegister (and (ne (include "camundaPlatform.topologyMode" .) "hub") .Values.optimize.enabled) }}
+          applications:
+            - name: Optimize
+              id: ${CAMUNDA_OPTIMIZE_CLIENT_ID:${VALUES_KEYCLOAK_INIT_OPTIMIZE_CLIENT_ID:optimize}}
+              type: confidential
+              secret: ${CAMUNDA_OPTIMIZE_SECRET:${VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET:}}
+              root-url: {{ tpl (include "optimize.effectiveAuthRedirectUrl" $) $ | quote }}
+              redirect-uris:
+                - "/api/authentication/callback"
+                - "/"
+          apis:
+            - name: Optimize API
+              audience: {{ include "camundaPlatform.authAudienceOptimize" . | quote }}
+              permissions:
+                - definition: write:*
+                  description: "Write permission"
+          roles:
+            - name: "Optimize"
+              description: "Grants full access to Optimize"
+              permissions:
+                - audience: {{ include "camundaPlatform.authAudienceOptimize" . | quote }}
+                  definition: write:*
+                - audience: {{ include "identity.authAudience" . | quote }}
+                  definition: read:users
+            - name: "Analyst"
+              description: "Grants full access to Optimize and to Hub. Additionally, grants management access to Hub's catalog and business intelligence features"
+              permissions:
+                - audience: {{ include "camundaPlatform.authAudienceOptimize" . | quote }}
+                  definition: write:*
+          {{- else }}
+          applications: []
+          apis: []
+          roles: []
+          {{- end }}
+        {{- if or .Values.global.identity.auth.orchestration.alwaysRegister (and (ne (include "camundaPlatform.topologyMode" .) "hub") (or .Values.global.identity.auth.orchestration.hubPingAuthorizationEnabled (eq (include "orchestration.authMethod" .) "oidc"))) }}
+        orchestration:
+          applications:
+            - name: Orchestration
+              id: ${CAMUNDA_ORCHESTRATION_CLIENT_ID:${VALUES_KEYCLOAK_INIT_ORCHESTRATION_CLIENT_ID:orchestration}}
+              type: confidential
+              secret: ${CAMUNDA_ORCHESTRATION_SECRET:${VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET:}}
+              permissions:
+                - audience: {{ include "orchestration.authAudience" . | quote }}
+                  definition: write:*
+                {{- if and (or .Values.orchestration.hub.ping.endpoint .Values.global.identity.auth.orchestration.hubPingAuthorizationEnabled) (not .Values.orchestration.hub.ping.credentials.clientId) }}
+                - audience: {{ include "webModeler.authPublicApiAudience" . | quote }}
+                  definition: create:*
+                - audience: {{ include "webModeler.authPublicApiAudience" . | quote }}
+                  definition: update:*
+                {{- end }}
+              root-url: {{ tpl .Values.orchestration.security.authentication.oidc.redirectUrl $ | quote }}
+              redirect-uris:
+                - "/login/oauth2/code/orchestration"
+                - "/sso-callback"
+          apis:
+            - name: "Orchestration API"
+              audience: {{ include "orchestration.authAudience" . | quote }}
+              permissions:
+                - definition: read:*
+                  description: "Read permission"
+                - definition: write:*
+                  description: "Write permission"
+          roles:
+            - name: "Orchestration"
+              description: "Grants full access to Orchestration"
+              permissions:
+                - audience: {{ include "orchestration.authAudience" . | quote }}
+                  definition: read:*
+                - audience: {{ include "orchestration.authAudience" . | quote }}
+                  definition: write:*
+        {{- end }}
+        webmodeler:
+          {{- if $registerHub }}
+          applications:
+            - name: "Hub"
+              id: ${CAMUNDA_WEBMODELER_CLIENT_ID:${VALUES_KEYCLOAK_INIT_WEBMODELER_CLIENT_ID:web-modeler}}
+              type: public
+              root-url: {{ tpl (or .Values.global.identity.auth.camundaHub.redirectUrl .Values.global.identity.auth.webModeler.redirectUrl) $ | quote }}
+              redirect-uris:
+                - "/login-callback"
+          apis:
+            - name: Hub Internal API
+              audience: {{ include "webModeler.authClientApiAudience" . | quote }}
+              permissions:
+                - definition: write:*
+                  description: "Write permission"
+                - definition: admin:*
+                  description: "Admin permission"
+                - definition: admin:clusters
+                  description: "Cluster management permission"
+                - definition: admin:catalog
+                  description: "Catalog management permission"
+                - definition: admin:bi
+                  description: "Business intelligence management permission"
+            - name: Hub API
+              audience: {{ include "webModeler.authPublicApiAudience" . | quote }}
+              permissions:
+                - definition: create:*
+                  description: "Allows create access for all resources"
+                - definition: read:*
+                  description: "Allows read access to all resources"
+                - definition: update:*
+                  description: "Allows update access to all resources"
+                - definition: delete:*
+                  description: "Allows delete access for all resources"
+          roles:
+            - name: "Web Modeler"
+              description: "Grants full access to Web Modeler"
+              permissions:
+                - audience: {{ include "webModeler.authClientApiAudience" . | quote }}
+                  definition: write:*
+                - audience: {{ include "identity.authAudience" . | quote }}
+                  definition: read:users
+            - name: "Web Modeler Admin"
+              description: "Grants elevated access to Web Modeler"
+              permissions:
+                - audience: {{ include "webModeler.authClientApiAudience" . | quote }}
+                  definition: write:*
+                - audience: {{ include "identity.authAudience" . | quote }}
+                  definition: read:users
+                - audience: {{ include "webModeler.authClientApiAudience" . | quote }}
+                  definition: admin:*
+            - name: "Hub"
+              description: "Grants full access to Hub"
+              permissions:
+                - audience: {{ include "webModeler.authClientApiAudience" . | quote }}
+                  definition: write:*
+                - audience: {{ include "identity.authAudience" . | quote }}
+                  definition: read:users
+            - name: "Hub Admin"
+              description: "Grants elevated access to Hub"
+              permissions:
+                - audience: {{ include "identity.authAudience" . | quote }}
+                  definition: read:users
+                - audience: {{ include "webModeler.authClientApiAudience" . | quote }}
+                  definition: write:*
+                - audience: {{ include "webModeler.authClientApiAudience" . | quote }}
+                  definition: admin:*
+            - name: "Analyst"
+              description: "Grants full access to Optimize and to Hub. Additionally, grants management access to Hub's catalog and business intelligence features"
+              permissions:
+                - audience: {{ include "webModeler.authClientApiAudience" . | quote }}
+                  definition: write:*
+                - audience: {{ include "identity.authAudience" . | quote }}
+                  definition: read:users
+                - audience: {{ include "webModeler.authClientApiAudience" . | quote }}
+                  definition: admin:catalog
+                - audience: {{ include "webModeler.authClientApiAudience" . | quote }}
+                  definition: admin:bi
+            - name: "Console"
+              description: "Grants access to Hub's cluster management"
+              permissions:
+                - audience: {{ include "webModeler.authClientApiAudience" . | quote }}
+                  definition: write:*
+                - audience: {{ include "identity.authAudience" . | quote }}
+                  definition: read:users
+                - audience: {{ include "webModeler.authClientApiAudience" . | quote }}
+                  definition: admin:clusters
+            - name: "DevOps"
+              description: "Grants access to Hub's cluster management"
+              permissions:
+                - audience: {{ include "webModeler.authClientApiAudience" . | quote }}
+                  definition: write:*
+                - audience: {{ include "identity.authAudience" . | quote }}
+                  definition: read:users
+                - audience: {{ include "webModeler.authClientApiAudience" . | quote }}
+                  definition: admin:clusters
+            - name: "Hub API - Cluster Ping"
+              description: "Grants create/update access to the CamundaHub API for the orchestration cluster ping"
+              permissions:
+                - audience: {{ include "webModeler.authPublicApiAudience" . | quote }}
+                  definition: create:*
+                - audience: {{ include "webModeler.authPublicApiAudience" . | quote }}
+                  definition: update:*
+          {{- else }}
+          applications: []
+          apis: []
+          roles: []
+          {{- end }}
+
+      {{- $pingClaimName := .Values.global.identity.auth.orchestration.hubPingClaimName -}}
+      {{- $pingClaimValue := .Values.global.identity.auth.orchestration.hubPingClaimValue -}}
+      {{- if and (or .Values.orchestration.hub.ping.endpoint .Values.global.identity.auth.orchestration.hubPingAuthorizationEnabled) (or (eq (include "orchestration.authIssuerType" .) "KEYCLOAK") (and $pingClaimName $pingClaimValue)) }}
+      mapping-rules:
+        - name: "Hub API - Cluster Ping Access"
+          claim-name: {{ $pingClaimName | default "sub" | quote }}
+          {{- if $pingClaimValue }}
+          claim-value: {{ tpl $pingClaimValue . | quote }}
+          {{- else if .Values.orchestration.hub.ping.credentials.clientId }}
+          claim-value: "service-account-{{ .Values.orchestration.hub.ping.credentials.clientId }}"
+          {{- else }}
+          claim-value: "service-account-${CAMUNDA_ORCHESTRATION_CLIENT_ID:${VALUES_KEYCLOAK_INIT_ORCHESTRATION_CLIENT_ID:orchestration}}"
+          {{- end }}
+          operator: EQUALS
+          rule-type: ROLE
+          applied-role-names:
+            - "Hub API - Cluster Ping"
+      {{- end }}
+
+    {{- if .Values.global.identity.auth.enabled }}
+    {{- if eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK"}}
+    keycloak:
+      url: {{ include "identity.keycloak.url" . | quote }}
+      {{- if and .Values.identity.realm .Values.identity.realm.enabled }}
+      realm: {{ .Values.identity.realm.id | quote }}
+      {{- end }}
+      {{- if .Values.global.identity.keycloak.auth.adminUser }}
+      setup:
+        user: {{ .Values.global.identity.keycloak.auth.adminUser | quote }}
+        password: ${VALUES_KEYCLOAK_SETUP_PASSWORD:}
+      {{- end }}
+      init:
+        {{- if and (eq (include "camundaPlatform.topologyMode" .) "hub") (eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK") }}
+        {{- $hasSharedTopologyRole := false }}
+        {{- range $cluster := dig "clusters" list (.Values.global.topology | default dict) }}
+        {{- $slug := include "camundaPlatform.topologySlug" $cluster.id }}
+        {{- $components := $cluster.components | default dict }}
+        {{- $hasTenantOptimize := false }}
+        {{- range $tenant := dig "physicalTenants" list $cluster }}
+        {{- if dig "components" "optimize" "enabled" false $tenant }}
+          {{- $hasTenantOptimize = true }}
+        {{- end }}
+        {{- if and (dig "components" "optimize" "enabled" false $tenant) (empty (dig "components" "optimize" "roleName" "" $tenant)) }}
+          {{- $hasSharedTopologyRole = true }}
+        {{- end }}
+        {{- end }}
+        {{- if or (dig "orchestration" "enabled" false $components) (dig "optimize" "enabled" false $components) (dig "connectors" "enabled" false $components) $hasTenantOptimize }}
+        {{ printf "topology-%s" $slug | quote }}: {}
+        {{- end }}
+        {{- if or (and (dig "components" "orchestration" "enabled" false $cluster) (empty (dig "components" "orchestration" "roleName" "" $cluster))) (and (dig "components" "optimize" "enabled" false $cluster) (empty (dig "components" "optimize" "roleName" "" $cluster))) }}
+          {{- $hasSharedTopologyRole = true }}
+        {{- end }}
+        {{- end }}
+        {{- if $hasSharedTopologyRole }}
+        "topology-shared-roles": {}
+        {{- end }}
+        {{- end }}
+        {{- if or .Values.global.identity.auth.connectors.alwaysRegister (and (ne (include "camundaPlatform.topologyMode" .) "hub") (eq (include "connectors.authMethod" .) "oidc")) }}
+        connectors:
+          secret: ${VALUES_KEYCLOAK_INIT_CONNECTORS_SECRET:}
+        {{- end }}
+        {{- if or .Values.global.identity.auth.optimize.alwaysRegister (and (ne (include "camundaPlatform.topologyMode" .) "hub") .Values.optimize.enabled) }}
+        optimize:
+          secret: ${VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET:}
+        {{- end }}
+        {{- if or .Values.global.identity.auth.orchestration.alwaysRegister (and (ne (include "camundaPlatform.topologyMode" .) "hub") (or .Values.global.identity.auth.orchestration.hubPingAuthorizationEnabled (eq (include "orchestration.authMethod" .) "oidc"))) }}
+        orchestration:
+          secret: ${VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET:}
+        {{- end }}
+        {{- if $registerHub }}
+        webmodeler:
+          root-url: {{ tpl (or .Values.global.identity.auth.camundaHub.redirectUrl .Values.global.identity.auth.webModeler.redirectUrl) $ | quote }}
+        {{- end }}
+      clients:
+      {{- if .Values.global.identity.auth.admin.enabled }}
+        - id: {{ .Values.global.identity.auth.admin.clientId }}
+          name: {{ .Values.global.identity.auth.admin.clientId | title }}
+          secret: ${VALUES_CAMUNDA_ADMIN_CLIENT_SECRET:}
+          redirect-uris: /dummy
+          root-url: http://dummy
+          type: confidential
+          permissions:
+            - resourceServerId: camunda-identity-resource-server
+              definition: read
+            - resourceServerId: camunda-identity-resource-server
+              definition: write
+            {{- if or .Values.global.identity.auth.orchestration.alwaysRegister (and (ne (include "camundaPlatform.topologyMode" .) "hub") (or .Values.global.identity.auth.orchestration.hubPingAuthorizationEnabled (eq (include "orchestration.authMethod" .) "oidc"))) }}
+            - resourceServerId: {{ include "orchestration.authAudience" . | quote }}
+              definition: read:*
+            - resourceServerId: {{ include "orchestration.authAudience" . | quote }}
+              definition: write:*
+            {{- end }}
+            {{- if or .Values.global.identity.auth.optimize.alwaysRegister (and (ne (include "camundaPlatform.topologyMode" .) "hub") .Values.optimize.enabled) }}
+            - resourceServerId: {{ include "camundaPlatform.authAudienceOptimize" . | quote }}
+              definition: write:*
+            {{- end }}
+            {{- if $registerHub }}
+            - resourceServerId: web-modeler-api
+              definition: write:*
+            {{- end }}
+      {{- end }}
+      {{- if .Values.identity.clients }}
+        {{- range $index, $client := .Values.identity.clients }}
+        - id: {{ $client.id }}
+          name: {{ $client.name }}
+          {{- if ne $client.type "public" }}
+          secret: ${VALUES_{{ $client.id | upper}}_CLIENT_SECRET:}
+          {{- end }}
+          {{- if kindIs "slice" $client.redirectUris }}
+          redirectUris:
+            {{- tpl (toYaml $client.redirectUris) $ | nindent 12 }}
+          {{- else }}
+          redirectUris: {{ tpl ($client.redirectUris | toString) $ }}
+          {{- end }}
+          rootUrl: {{ tpl ($client.rootUrl | toString) $ }}
+          type: {{ $client.type }}
+          permissions:
+            {{- with $client.permissions }}
+              {{- tpl (toYaml .) $ | nindent 12 }}
+            {{- end }}
+        {{- end }}
+      {{- end }}
+      users:
+        {{- if .Values.identity.firstUser.enabled }}
+        - username: {{ .Values.identity.firstUser.username | quote }}
+          password: ${VALUES_IDENTITY_FIRSTUSER_PASSWORD:}
+          firstName: {{ .Values.identity.firstUser.firstName | quote }}
+          lastName: {{ .Values.identity.firstUser.lastName | quote }}
+          email: {{ .Values.identity.firstUser.email | quote }}
+          {{- if .Values.global.identity.auth.enabled }}
+          roles:
+            - ManagementIdentity
+            {{- if eq (include "camundaPlatform.topologyMode" .) "hub" }}
+            {{- $hasSharedOrchestrationRole := false }}
+            {{- $hasSharedOptimizeRole := false }}
+            {{- range $cluster := dig "clusters" list (.Values.global.topology | default dict) }}
+            {{- if (dig "components" "orchestration" "enabled" false $cluster) }}
+              {{- $roleName := dig "components" "orchestration" "roleName" "" $cluster }}
+              {{- if $roleName }}
+            - {{ $roleName | quote }}
+              {{- else }}
+                {{- $hasSharedOrchestrationRole = true }}
+              {{- end }}
+            {{- end }}
+            {{- if (dig "components" "optimize" "enabled" false $cluster) }}
+              {{- $roleName := dig "components" "optimize" "roleName" "" $cluster }}
+              {{- if $roleName }}
+            - {{ $roleName | quote }}
+              {{- else }}
+                {{- $hasSharedOptimizeRole = true }}
+              {{- end }}
+            {{- end }}
+            {{- range $tenant := dig "physicalTenants" list $cluster }}
+            {{- if (dig "components" "optimize" "enabled" false $tenant) }}
+              {{- $roleName := dig "components" "optimize" "roleName" "" $tenant }}
+              {{- if $roleName }}
+            - {{ $roleName | quote }}
+              {{- else }}
+                {{- $hasSharedOptimizeRole = true }}
+              {{- end }}
+            {{- end }}
+            {{- end }}
+            {{- end }}
+            {{- if $hasSharedOrchestrationRole }}
+            - "Orchestration"
+            {{- end }}
+            {{- if $hasSharedOptimizeRole }}
+            - "Optimize"
+            {{- end }}
+            {{- end }}
+            {{- if or .Values.global.identity.auth.optimize.alwaysRegister (and (ne (include "camundaPlatform.topologyMode" .) "hub") .Values.optimize.enabled) }}
+            - Optimize
+            {{- end }}
+            {{- if eq (include "camundaHub.webModelerEnabled" .) "true" }}
+            - Hub
+            - Hub Admin
+            {{- end }}
+            {{- if or .Values.global.identity.auth.orchestration.alwaysRegister (and (ne (include "camundaPlatform.topologyMode" .) "hub") (or .Values.global.identity.auth.orchestration.hubPingAuthorizationEnabled (eq (include "orchestration.authMethod" .) "oidc"))) }}
+            - Orchestration
+            {{- end }}
+          {{- end }}
+        {{- end }}
+        {{- if .Values.identity.users }}
+        {{- range $index, $user := .Values.identity.users }}
+        - username: {{ $user.username }}
+          password: ${VALUES_{{ $user.username | upper}}_USER_PASSWORD:}
+          firstName: {{ $user.firstName }}
+          lastName: {{ $user.lastName }}
+          email: {{ $user.email }}
+          roles:
+            {{- with $user.roles }}
+              {{- tpl (toYaml .) $ | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- end }}
+      environment:
+        clients:
+          - name: Identity
+            id: {{  printf "%s" (include "identity.authClientId" .) | default "camunda-identity" | quote }}
+            type: CONFIDENTIAL
+            secret: ${CAMUNDA_IDENTITY_CLIENT_SECRET:${IDENTITY_CLIENT_SECRET}}
+            root-url: {{ include "identity.externalUrl" . | quote }}
+            redirect-uris:
+              - "/auth/login-callback"
+    {{- end }}
+    {{- end }}
+    server:
+      port: 8084
+      {{- if .Values.identity.contextPath }}
+      servlet:
+        context-path: {{ .Values.identity.contextPath | quote }}
+      {{- end }}
+
+    spring:
+    {{- $springImports := list }}
+    {{- range .Values.identity.extraConfiguration }}
+      {{- if not (and (hasKey . "springImport") (eq .springImport false)) }}
+        {{- $springImports = append $springImports . }}
+      {{- end }}
+    {{- end }}
+    {{- if $springImports }}
+      config:
+        import:
+        {{- range $springImports }}
+          - optional:file:/app/config/{{ .file }}
+        {{- end }}
+    {{- end }}
+      servlet:
+        multipart:
+          max-file-size: {{ .Values.global.config.requestBodySize | quote }}
+          max-request-size: {{ .Values.global.config.requestBodySize | quote }}
+      {{- if .Values.global.identity.auth.enabled }}
+      profiles:
+        active: {{ eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK" | ternary "keycloak" "oidc" }}
+      {{- end }}
+
+      {{- if .Values.identity.externalDatabase.enabled }}
+      datasource:
+        url: {{ printf "jdbc:postgresql://%s:%s/%s" (include "identity.postgresql.host" .) (include "identity.postgresql.port" .) (include "identity.postgresql.database" .) | quote }}
+        username: {{ include "identity.postgresql.username" . | quote }}
+      {{- end }}
+
+    camunda:
+      identity:
+        audience: {{ include "identity.authAudience" . | quote }}
+        {{- if eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.identity.auth.identity)) "true" }}
+        client-id: {{ include "identity.authClientId" .  | quote }}
+        {{- $config := include "camundaPlatform.normalizeSecretConfiguration" (dict "config" .Values.global.identity.auth.identity) | fromYaml }}
+        {{- if $config.plaintext }}
+        client-secret: {{ $config.plaintext | quote }}
+        {{- else if $config.ref }}
+        client-secret: ${VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET}
+        {{- end }}
+        {{- end }}
+        {{- if ne (include "camundaPlatform.authIssuerType" .) "KEYCLOAK" }}
+        baseUrl: {{ include "identity.internalUrl" . | quote }}
+        issuer: {{ include "camundaPlatform.authIssuerUrlWithFallback" . | quote }}
+        issuerBackendUrl: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
+        {{- end }}
+    logging:
+{{- with .Values.identity.logging }}
+{{ . | toYaml | indent 6 }}
+{{- end }}
+  {{- end }}
+  {{- include "camundaPlatform.renderExtraConfiguration" (dict "extraConfig" .Values.identity.extraConfiguration) }}
+{{- end }}

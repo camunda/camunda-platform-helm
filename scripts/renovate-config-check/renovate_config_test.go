@@ -257,22 +257,44 @@ func TestGitHubActionsAutomergePolicy(t *testing.T) {
 	assert.Empty(t, actionRule.MatchUpdateTypes)
 	assert.Contains(t, actionRule.Schedule, "every weekend")
 
-	require.NotNil(t, actionRule.Automerge)
-	assert.True(t, *actionRule.Automerge)
-	require.NotNil(t, actionRule.PlatformAutomerge)
-	assert.True(t, *actionRule.PlatformAutomerge)
-	require.NotNil(t, actionRule.IgnoreTests)
-	assert.False(t, *actionRule.IgnoreTests)
-	assert.Equal(t, "pr", actionRule.AutomergeType)
-
 	for _, label := range []string{
 		"deps/github-actions",
-		"automerge",
 		"automation/renovatebot",
 		"kind/chore",
 	} {
 		assert.Contains(t, actionRule.AddLabels, label)
 	}
+}
+
+func TestNoRenovateAutomerge(t *testing.T) {
+	t.Parallel()
+
+	configBytes, err := os.ReadFile(filepath.Join(repoRoot(t), ".github", "renovate.json5"))
+	require.NoError(t, err, "failed to read renovate.json5")
+	var config any
+	require.NoError(t, json5.Unmarshal(configBytes, &config), "failed to parse renovate.json5 as JSON5")
+
+	var walk func(path string, node any)
+	walk = func(path string, node any) {
+		switch value := node.(type) {
+		case map[string]any:
+			for key, child := range value {
+				childPath := path + "." + key
+				if key == "automerge" || key == "platformAutomerge" {
+					assert.NotEqual(t, true, child, "%s enables automerge", childPath)
+				}
+				if key == "addLabels" || key == "labels" {
+					assert.NotContains(t, child, "automerge", "%s adds the automerge label", childPath)
+				}
+				walk(childPath, child)
+			}
+		case []any:
+			for i, child := range value {
+				walk(fmt.Sprintf("%s[%d]", path, i), child)
+			}
+		}
+	}
+	walk("$", config)
 }
 
 func TestDigestUpdatePolicy(t *testing.T) {

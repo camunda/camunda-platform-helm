@@ -29,6 +29,22 @@ spec:
   hostnames:
   - {{ tpl .Values.global.host $ | quote }}
   rules:
+  {{- with trimSuffix "/" .Values.orchestration.contextPath }}
+  - matches:
+    - path:
+        type: Exact
+        value: {{ . }}
+    filters:
+    - type: URLRewrite
+      urlRewrite:
+        path:
+          type: ReplaceFullPath
+          replaceFullPath: {{ . }}/
+    backendRefs:
+    - name: {{ include "orchestration.serviceName" $ }}
+      namespace: {{ $.Release.Namespace }}
+      port: {{ $.Values.orchestration.service.httpPort }}
+  {{- end }}
   - matches:
     - path:
         type: PathPrefix

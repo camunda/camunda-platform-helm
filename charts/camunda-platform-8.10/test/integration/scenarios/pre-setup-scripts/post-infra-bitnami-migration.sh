@@ -121,6 +121,24 @@ export EXTERNAL_KEYCLOAK_HOST=keycloak
 export EXTERNAL_KEYCLOAK_PORT=80
 export EXTERNAL_KEYCLOAK_CONTEXT_PATH=/auth
 
+# The migration's Keycloak version check reads the target version from the
+# operator-based Keycloak CR (pinned in camunda-deployment-references), even in
+# external mode where that CR is never deployed. Point it at a stub CR carrying
+# the companion Keycloak's actual image so the check compares against the
+# instance the realm is really restored into (and doesn't flag a bogus
+# downgrade when the bundled source Keycloak is newer than that pin).
+kc_target_image="$(kubectl get deployment keycloak -n "${NS}" \
+    -o jsonpath='{.spec.template.spec.containers[0].image}')"
+export CUSTOM_KEYCLOAK_CONFIG_FILE="${workdir}/keycloak-target.yml"
+cat > "${CUSTOM_KEYCLOAK_CONFIG_FILE}" <<EOF
+apiVersion: k8s.keycloak.org/v2alpha1
+kind: Keycloak
+metadata:
+  name: keycloak
+spec:
+  image: ${kc_target_image}
+EOF
+
 cd "${migration_dir}"
 # The phase scripts expect env.sh to have been sourced (it fills defaults such as
 # CAMUNDA_HELM_CHART_VERSION). Our overrides above are preserved because env.sh

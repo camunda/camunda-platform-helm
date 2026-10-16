@@ -656,7 +656,127 @@ func (s *ConfigMapWarningsTemplateTest) TestMultiregionReplicationFactorWarning(
 			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.replicationFactor=4"},
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().NoError(err)
-				s.Require().NotContains(output, "orchestration.replicationFactor is")
+				s.Require().NotContains(output, "a dual-region cluster needs a replication factor of 4")
+			},
+		},
+		{
+			Name: "ReplicationFactorFourFromEnvDoesNotTriggerWarning",
+			Values: map[string]string{
+				"global.multiregion.regions": "2",
+				"orchestration.env[0].name":  "CAMUNDA_CLUSTER_REPLICATIONFACTOR",
+			},
+			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.env[0].value=4"},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				s.Require().NotContains(output, "a dual-region cluster needs a replication factor of 4")
+			},
+		},
+		{
+			Name: "LegacyEnvFourStillWarnsOnValuesKey",
+			Values: map[string]string{
+				"global.multiregion.regions": "2",
+				"orchestration.env[0].name":  "ZEEBE_BROKER_CLUSTER_REPLICATIONFACTOR",
+			},
+			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.env[0].value=4"},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().Contains(configmap.Data["warnings"], "orchestration.replicationFactor is 3 but")
+			},
+		},
+		{
+			Name: "ReplicationFactorFromEnvValueFromDoesNotTriggerWarning",
+			Values: map[string]string{
+				"global.multiregion.regions":                       "2",
+				"orchestration.env[0].name":                        "CAMUNDA_CLUSTER_REPLICATIONFACTOR",
+				"orchestration.env[0].valueFrom.secretKeyRef.name": "cluster",
+				"orchestration.env[0].valueFrom.secretKeyRef.key":  "rf",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				s.Require().NotContains(output, "a dual-region cluster needs a replication factor of 4")
+			},
+		},
+		{
+			Name: "ReplicationFactorFourInValuesOverriddenByEnvTriggersWarning",
+			Values: map[string]string{
+				"global.multiregion.regions": "2",
+				"orchestration.env[0].name":  "CAMUNDA_CLUSTER_REPLICATIONFACTOR",
+			},
+			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.env[0].value=3", "--set-string", "orchestration.replicationFactor=4"},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().Contains(configmap.Data["warnings"], "the CAMUNDA_CLUSTER_REPLICATIONFACTOR entry in orchestration.env is 3 but")
+				s.Require().Contains(configmap.Data["warnings"], "Set the CAMUNDA_CLUSTER_REPLICATIONFACTOR entry in orchestration.env to 4.")
+			},
+		},
+		{
+			Name: "CustomConfigurationDoesNotTriggerWarning",
+			Values: map[string]string{
+				"global.multiregion.regions": "2",
+			},
+			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.configuration=camunda: {}"},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				s.Require().NotContains(output, "a dual-region cluster needs a replication factor of 4")
+			},
+		},
+		{
+			Name: "TemplatedEnvNameDoesNotTriggerWarning",
+			Values: map[string]string{
+				"global.multiregion.regions": "2",
+			},
+			RenderTemplateExtraArgs: []string{"--set-json", `orchestration.env=[{"name":"{{ \"CAMUNDA_CLUSTER_REPLICATIONFACTOR\" }}","value":"4"}]`},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				s.Require().NotContains(output, "a dual-region cluster needs a replication factor of 4")
+			},
+		},
+		{
+			Name: "SnakeCaseEnvReplicationFactorDoesNotTriggerWarning",
+			Values: map[string]string{
+				"global.multiregion.regions": "2",
+			},
+			RenderTemplateExtraArgs: []string{"--set-json", `orchestration.env=[{"name":"CAMUNDA_CLUSTER_REPLICATION_FACTOR","value":"4"}]`},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				s.Require().NotContains(output, "a dual-region cluster needs a replication factor of 4")
+			},
+		},
+		{
+			Name: "JavaOptsReplicationFactorDoesNotTriggerWarning",
+			Values: map[string]string{
+				"global.multiregion.regions": "2",
+			},
+			RenderTemplateExtraArgs: []string{"--set-json", `orchestration.javaOpts="-Dcamunda.cluster.replication-factor=4"`},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				s.Require().NotContains(output, "a dual-region cluster needs a replication factor of 4")
+			},
+		},
+		{
+			Name: "LegacyEnvLosesToNewKeyEnv",
+			Values: map[string]string{
+				"global.multiregion.regions": "2",
+			},
+			RenderTemplateExtraArgs: []string{"--set-json", `orchestration.env=[{"name":"CAMUNDA_CLUSTER_REPLICATIONFACTOR","value":"4"},{"name":"ZEEBE_BROKER_CLUSTER_REPLICATIONFACTOR","value":"3"}]`},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				s.Require().NotContains(output, "a dual-region cluster needs a replication factor of 4")
+			},
+		},
+		{
+			Name: "LegacyEnvDoesNotOverrideValuesKey",
+			Values: map[string]string{
+				"global.multiregion.regions": "2",
+			},
+			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.replicationFactor=4", "--set-json", `orchestration.env=[{"name":"ZEEBE_BROKER_CLUSTER_REPLICATIONFACTOR","value":"3"}]`},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				s.Require().NotContains(output, "a dual-region cluster needs a replication factor of 4")
 			},
 		},
 	}

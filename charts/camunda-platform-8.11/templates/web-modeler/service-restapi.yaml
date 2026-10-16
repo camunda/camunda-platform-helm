@@ -1,0 +1,37 @@
+{{- if eq (include "camundaHub.webModelerEnabled" .) "true" -}}
+{{- $hub := include "camundaHub.values" . | fromYaml -}}
+{{- $upgradePhase := include "camundaHub.upgradePhase" . -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "webModeler.restapi.fullname" . }}
+  labels:
+    {{- include "webModeler.restapi.labels" . | nindent 4 }}
+  annotations:
+    {{- if .Values.global.annotations}}
+      {{- toYaml .Values.global.annotations | nindent 4 }}
+    {{- end }}
+    {{- if $hub.restapi.service.annotations}}
+      {{- toYaml $hub.restapi.service.annotations | nindent 4 }}
+    {{- end }}
+spec:
+  type: {{ $hub.restapi.service.type }}
+  ports:
+    - port: {{ $hub.restapi.service.port }}
+      name: http
+      targetPort: 8081
+      protocol: TCP
+      {{- with include "camundaPlatform.appProtocol" (dict "portName" "http" "knownPorts" (list "http" "http-management") "appProtocols" $hub.restapi.service.appProtocols) }}
+      appProtocol: {{ . | quote }}
+      {{- end }}
+    - port: {{ $hub.restapi.service.managementPort }}
+      name: http-management
+      targetPort: 8091
+      protocol: TCP
+      {{- with include "camundaPlatform.appProtocol" (dict "portName" "http-management" "knownPorts" (list "http" "http-management") "appProtocols" $hub.restapi.service.appProtocols) }}
+      appProtocol: {{ . | quote }}
+      {{- end }}
+  selector:
+    {{- include "webModeler.restapi.matchLabels" . | nindent 4 }}
+    camunda.io/upgrade-phase: normal
+{{- end }}

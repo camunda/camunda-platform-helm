@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 15.1.0
+version: 15.1.1
 appVersion: 8.10.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -43,14 +43,4 @@ annotations:
     - name: Camunda 8 Self-Managed Helm charts
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
-  artifacthub.io/changes: |
-    - kind: added
-      description: "Warn on unknown values keys in the 8.10 chart [ready]"
-    - kind: fixed
-      description: "Render the Hub username claim under camunda.identity"
-    - kind: fixed
-      description: "Warn when orchestration OIDC endpoints are not absolute URLs"
-    - kind: fixed
-      description: "Warn when the dual-region replication factor is not 4"
-    - kind: fixed
-      description: "Declare template-read keys in the 8.10 values schema [ready]"
+  artifacthub.io/changes: ""

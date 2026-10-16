@@ -1,0 +1,14 @@
+# from-address migrated to restapi.extraConfiguration as a dotted Spring key.
+identity:
+  enabled: true
+orchestration:
+  data:
+    secondaryStorage:
+      type: elasticsearch
+webModeler:
+  enabled: true
+  restapi:
+    extraConfiguration:
+      - file: mail.yaml
+        content: |
+          camunda.hub.mail.from-address: migrated@example.com

@@ -13,10 +13,6 @@ charts/
   camunda-platform-8.8/     # Unified "orchestration" component
   camunda-platform-8.7/     # Separate zeebe/, operate/, tasklist/ templates
   camunda-platform-8.6/     # Separate zeebe/, operate/, tasklist/ templates
-  camunda-platform-8.5/     # Extended support
-  camunda-platform-8.4/     # Extended support
-  camunda-platform-8.3/     # Extended support
-  camunda-platform-8.2/     # Extended support
   keycloak-24/               # Bitnami Keycloak sub-chart
   web-modeler-postgresql*/   # PostgreSQL sub-charts for Web Modeler
 

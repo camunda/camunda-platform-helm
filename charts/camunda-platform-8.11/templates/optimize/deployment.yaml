@@ -1,0 +1,454 @@
+{{- if and (eq (include "camundaPlatform.optimizeEnabled" .) "true") (not .Values.global.noSecondaryStorage) -}}
+{{- $tlsConfig := include "optimize.effectiveTlsConfig" . | fromYaml -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "optimize.fullname" . }}
+  labels:
+    {{- include "optimize.labels" . | nindent 4 }}
+  annotations:
+    {{- toYaml .Values.global.annotations | nindent 4 }}
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "optimize.matchLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels: 
+        {{- include "optimize.labels" . | nindent 8 }}
+        {{- if .Values.optimize.podLabels }}
+        {{- tpl (toYaml .Values.optimize.podLabels) $ | nindent 8 }}
+        {{- end }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/optimize/configmap.yaml") . | sha256sum }}
+        checksum/config-identity-env: {{ include (print $.Template.BasePath "/optimize/configmap-identity-env.yaml") . | sha256sum }}
+        {{- if and (eq (include "optimize.authEnabled" .) "true") .Values.global.identity.auth.enabled }}
+        checksum/config-shared-identity-env: {{ include (print $.Template.BasePath "/common/configmap-identity-auth.yaml") . | sha256sum }}
+        {{- end }}
+        {{- with (include "camundaPlatform.caBundleChecksumAnnotation" .) }}{{ . | nindent 8 }}{{- end }}
+        {{- with (include "camundaPlatform.optimizeServerTLSChecksumAnnotation" .) }}{{ . | nindent 8 }}{{- end }}
+      {{- if .Values.optimize.podAnnotations }}
+        {{- tpl (toYaml .Values.optimize.podAnnotations) $ | nindent 8 }}
+      {{- end }}
+    spec:
+      imagePullSecrets:
+        {{- include "optimize.imagePullSecrets" . | nindent 8 }}
+      {{- if or (eq (include "camundaPlatform.hasCaBundle" .) "true") .Values.optimize.initContainers .Values.optimize.migration.enabled }}
+      initContainers:
+        {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+        {{- include "camundaPlatform.caBundleInitContainer" (dict "context" $ "image" (include "camundaPlatform.imageByParams" (dict "base" $.Values.global "overlay" $.Values.optimize))) | nindent 8 }}
+        {{- end }}
+        {{- if .Values.optimize.initContainers }}
+          {{- tpl (.Values.optimize.initContainers | toYaml | nindent 8) $ }}
+        {{- end }}
+        {{- if .Values.optimize.migration.enabled }}
+        - name: migration
+          image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.optimize) }}
+          command: ['./upgrade/upgrade.sh', '--skip-warning']
+          {{- if .Values.optimize.containerSecurityContext }}
+          securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.optimize.containerSecurityContext "context" $) | nindent 12 }}
+          {{- end }}
+          env:
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "CAMUNDA_LICENSE_KEY"
+                "config" .Values.global.license
+            ) | nindent 12 }}
+            {{- $esAuth := .Values.optimize.database.elasticsearch.auth -}}
+            {{- if eq (include "camundaPlatform.hasSecretConfig" (dict "config" $esAuth)) "true" }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName"       "CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_PASSWORD"
+                "config"        $esAuth
+            ) | nindent 12 }}
+            {{- end }}
+            {{- if (include "camundaPlatform.opensearchHost" .) }}
+              {{- if eq .Values.optimize.database.opensearch.url.protocol "https" }}
+            - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SSL_ENABLED
+              value: "true"
+              {{- end }}
+            - name: CAMUNDA_OPTIMIZE_DATABASE
+              value: opensearch
+            - name: CAMUNDA_OPTIMIZE_OPENSEARCH_HTTP_PORT
+              value: {{ .Values.optimize.database.opensearch.url.port | quote }}
+            - name: CAMUNDA_OPTIMIZE_OPENSEARCH_HOST
+              value: {{ include "camundaPlatform.opensearchHost" . | quote }}
+            {{- if .Values.optimize.database.opensearch.auth.username }}
+            - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SECURITY_USERNAME
+              value: {{ .Values.optimize.database.opensearch.auth.username | quote }}
+            {{- end }}
+            {{- $osAuth := .Values.optimize.database.opensearch.auth -}}
+            {{- if eq (include "camundaPlatform.hasSecretConfig" (dict "config" $osAuth)) "true" }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "CAMUNDA_OPTIMIZE_OPENSEARCH_SECURITY_PASSWORD"
+                "config" $osAuth
+            ) | nindent 12 }}
+            {{- end}}
+            {{- end }}
+            {{- if eq (include "optimize.hasTlsConfig" .) "true" }}
+            {{- include "optimize.java_tool_options_tls_env" (dict "Values" .Values "component" "optimize" "tlsConfig" $tlsConfig) | nindent 12 }}
+            {{- else if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+            - name: JAVA_TOOL_OPTIONS
+              value: {{ printf "%s %s" .Values.optimize.javaOpts (include "camundaPlatform.caBundleJavaOpts" .) | trim | quote }}
+            {{- else if .Values.optimize.javaOpts }}
+            - name: JAVA_TOOL_OPTIONS
+              value: {{ .Values.optimize.javaOpts | quote }}
+            {{- end }}
+            {{- if (include "camundaPlatform.elasticsearchHost" . ) }}
+              {{- if eq .Values.optimize.database.elasticsearch.url.protocol "https" }}
+            - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SSL_ENABLED
+              value: "true"
+              {{- end }}
+            - name: OPTIMIZE_ELASTICSEARCH_HOST
+              value: {{ include "camundaPlatform.elasticsearchHost" . | quote }}
+            - name: OPTIMIZE_ELASTICSEARCH_HTTP_PORT
+              value: {{ .Values.optimize.database.elasticsearch.url.port | quote }}
+            {{- if .Values.optimize.database.elasticsearch.auth.username }}
+            - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_USERNAME
+              value: {{ .Values.optimize.database.elasticsearch.auth.username | quote }}
+            {{- end }}
+            {{- end }}
+            {{- if .Values.optimize.database.opensearch.aws.enabled }}
+            - name: CAMUNDA_OPTIMIZE_OPENSEARCH_AWS_ENABLED
+              value: "true"
+            {{- end }}
+            {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+            {{- include "camundaPlatform.caBundleEnv" . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.optimize.env }}
+              {{- tpl (toYaml .) $ | nindent 12 }}
+            {{- end }}
+            {{- with .Values.optimize.migration.env }}
+            {{- tpl (toYaml .) $ | nindent 12 }}
+            {{- end }}
+          resources:
+            {{- toYaml .Values.optimize.migration.resources | nindent 12 }}
+          volumeMounts:
+            - mountPath: /tmp
+              name: tmp
+            - mountPath: /camunda
+              name: camunda
+            - mountPath: /optimize/config/environment-config.yaml
+              subPath: environment-config.yaml
+              name: environment-config
+            {{- if or (eq (include "optimize.authEnabled" .) "true") .Values.optimize.extraConfiguration }}
+            - mountPath: /optimize/config/application-ccsm.yaml
+              subPath: application-ccsm.yaml
+              name: environment-config
+            {{- end }}
+            {{- with .Values.optimize.extraConfiguration }}
+            {{- include "camundaPlatform.extraConfigurationVolumeMounts" (dict "extraConfig" . "volumeName" "environment-config" "basePath" "/optimize/config") | trim | nindent 12 }}
+            {{- end }}
+            {{- if eq (include "optimize.hasTlsConfig" .) "true" }}
+            - name: keystore
+              mountPath: {{ printf "/optimize/certificates/%s" (include "camundaPlatform.getTlsSecretKey" (dict "config" $tlsConfig)) }}
+              subPath: {{ include "camundaPlatform.getTlsSecretKey" (dict "config" $tlsConfig) }}
+            {{- end }}
+            {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+            {{- include "camundaPlatform.caBundleVolumeMount" . | nindent 12 }}
+            {{- include "camundaPlatform.caBundleTruststoreVolumeMount" . | nindent 12 }}
+            {{- end }}
+            {{- if .Values.optimize.extraVolumeMounts }}
+            {{- .Values.optimize.extraVolumeMounts | toYaml | nindent 12 }}
+            {{- end }}
+        {{- end }}
+          {{- end }}
+      containers:
+        - name: optimize
+          image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.optimize) }}
+          imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+          {{- if .Values.optimize.containerSecurityContext }}
+          securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.optimize.containerSecurityContext "context" $) | nindent 12 }}
+          {{- end }}
+          env:
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "CAMUNDA_LICENSE_KEY"
+                "config" .Values.global.license
+            ) | nindent 12 }}
+            {{- $esAuth := .Values.optimize.database.elasticsearch.auth -}}
+            {{- if eq (include "camundaPlatform.hasSecretConfig" (dict "config" $esAuth)) "true" }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName"       "CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_PASSWORD"
+                "config"        $esAuth
+            ) | nindent 12 }}
+            {{- end }}
+            {{- if (include "camundaPlatform.opensearchHost" .) }}
+              {{- if eq .Values.optimize.database.opensearch.url.protocol "https" }}
+            - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SSL_ENABLED
+              value: "true"
+              {{- end }}
+            - name: CAMUNDA_OPTIMIZE_DATABASE
+              value: opensearch
+            - name: CAMUNDA_OPTIMIZE_OPENSEARCH_HTTP_PORT
+              value: {{ .Values.optimize.database.opensearch.url.port | quote }}
+            - name: CAMUNDA_OPTIMIZE_OPENSEARCH_HOST
+              value: {{ include "camundaPlatform.opensearchHost" . | quote }}
+            {{- if .Values.optimize.database.opensearch.auth.username }}
+            - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SECURITY_USERNAME
+              value: {{ .Values.optimize.database.opensearch.auth.username | quote }}
+            {{- end }}
+            {{- $osAuth := .Values.optimize.database.opensearch.auth -}}
+            {{- if eq (include "camundaPlatform.hasSecretConfig" (dict "config" $osAuth)) "true" }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "CAMUNDA_OPTIMIZE_OPENSEARCH_SECURITY_PASSWORD"
+                "config" $osAuth
+            ) | nindent 12 }}
+            {{- end}}
+            {{- end }}
+            {{- if eq (include "optimize.hasTlsConfig" .) "true" }}
+            {{- include "optimize.java_tool_options_tls_env" (dict "Values" .Values "component" "optimize" "tlsConfig" $tlsConfig) | nindent 12 }}
+            {{- else if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+            - name: JAVA_TOOL_OPTIONS
+              value: {{ printf "%s %s" .Values.optimize.javaOpts (include "camundaPlatform.caBundleJavaOpts" .) | trim | quote }}
+            {{- else if .Values.optimize.javaOpts }}
+            - name: JAVA_TOOL_OPTIONS
+              value: {{ .Values.optimize.javaOpts | quote }}
+            {{- end }}
+            {{- if .Values.optimize.contextPath }}
+            - name: CAMUNDA_OPTIMIZE_CONTEXT_PATH
+              value: {{ .Values.optimize.contextPath | quote }}
+            - name: SERVER_SERVLET_CONTEXT_PATH
+              value: {{ .Values.optimize.contextPath | quote }}
+            {{- end }}
+            {{- if (include "camundaPlatform.elasticsearchHost" . ) }}
+              {{- if eq .Values.optimize.database.elasticsearch.url.protocol "https" }}
+            - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SSL_ENABLED
+              value: "true"
+              {{- end }}
+            - name: OPTIMIZE_ELASTICSEARCH_HOST
+              value: {{ include "camundaPlatform.elasticsearchHost" . | quote }}
+            - name: OPTIMIZE_ELASTICSEARCH_HTTP_PORT
+              value: {{ .Values.optimize.database.elasticsearch.url.port | quote }}
+            {{- if .Values.optimize.database.elasticsearch.auth.username }}
+            - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_USERNAME
+              value: {{ .Values.optimize.database.elasticsearch.auth.username | quote }}
+            {{- end }}
+            {{- end }}
+            - name: SPRING_PROFILES_ACTIVE
+              value: {{ include "camundaPlatform.effectiveExtraConfigValue" (dict "default" (.Values.optimize.profiles | default "ccsm") "extraConfiguration" .Values.optimize.extraConfiguration "path" (list "spring" "profiles" "active")) | quote }}
+            {{- if (eq (include "optimize.authEnabled" .) "true") }}
+            {{- $optimizeAuthSecret := include "optimize.authSecretConfig" . | fromYaml }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "CAMUNDA_IDENTITY_CLIENT_SECRET"
+                "config" $optimizeAuthSecret
+            ) | nindent 12 }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "VALUES_OPTIMIZE_CLIENT_SECRET"
+                "config" $optimizeAuthSecret
+            ) | nindent 12 }}
+            {{- end }}
+            {{- if or .Values.identity.multitenancy.enabled .Values.global.multitenancy.enabled .Values.optimize.multitenancy.enabled }}
+            - name: CAMUNDA_OPTIMIZE_MULTITENANCY_ENABLED
+              value: "true"
+            - name: CAMUNDA_OPTIMIZE_CACHES_CLOUD_TENANT_AUTHORIZATIONS_MAX_SIZE
+              value: {{ include "camundaPlatform.effectiveExtraConfigValue" (dict "default" (.Values.optimize.caches.cloudTenantAuthorizations.maxSize | default "10000") "extraConfiguration" .Values.optimize.extraConfiguration "path" (list "camunda" "optimize" "caches" "cloud-tenant-authorizations" "max-size")) | quote }}
+            - name: CAMUNDA_OPTIMIZE_CACHES_CLOUD_TENANT_AUTHORIZATIONS_MIN_FETCH_INTERVAL_SECONDS
+              value: {{ include "camundaPlatform.effectiveExtraConfigValue" (dict "default" (.Values.optimize.caches.cloudTenantAuthorizations.minFetchIntervalSeconds | default "600000") "extraConfiguration" .Values.optimize.extraConfiguration "path" (list "camunda" "optimize" "caches" "cloud-tenant-authorizations" "min-fetch-interval-seconds")) | quote }}
+            {{- end }}
+            {{- if .Values.optimize.database.opensearch.aws.enabled }}
+            - name: CAMUNDA_OPTIMIZE_OPENSEARCH_AWS_ENABLED
+              value: "true"
+            {{- end }}
+            - name: OPTIMIZE_LOG_LEVEL
+              value: {{ include "camundaPlatform.effectiveExtraConfigValue" (dict "default" .Values.optimize.logLevel "extraConfiguration" .Values.optimize.extraConfiguration "path" (list "logging" "level" "io.camunda.optimize")) | quote }}
+            - name: UPGRADE_LOG_LEVEL
+              value: {{ include "camundaPlatform.effectiveExtraConfigValue" (dict "default" .Values.optimize.upgradeLogLevel "extraConfiguration" .Values.optimize.extraConfiguration "path" (list "logging" "level" "io.camunda.optimize.upgrade")) | quote }}
+            - name: ES_LOG_LEVEL
+              value: {{ include "camundaPlatform.effectiveExtraConfigValue" (dict "default" .Values.optimize.esLogLevel "extraConfiguration" .Values.optimize.extraConfiguration "path" (list "logging" "level" "org.elasticsearch")) | quote }}
+            {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+            {{- include "camundaPlatform.caBundleEnv" . | nindent 12 }}
+            {{- end }}
+            {{- /* Gated on the same helper the probes, the Ingress backend and
+                 the in-cluster URLs derive from, so the wiring and the derived
+                 transport can never disagree. */}}
+            {{- if eq (include "camundaPlatform.optimizeServerTLSEnabled" .) "true" }}
+            {{- if .Values.global.tls.optimize.cert.secret.existingSecret }}
+            {{- /* Optimize is NOT a stock Spring Boot server here: OptimizeTomcatConfig
+                 always installs its own HTTPS connector and builds the SSLHostConfig
+                 from container.keystore.*. Setting server.ssl.* (SERVER_SSL_*) makes
+                 Spring Boot add a SECOND SSLHostConfig for host _default_, and Tomcat
+                 rejects the duplicate at startup. So configure Optimize's own knobs. */}}
+            - name: CAMUNDA_OPTIMIZE_CONTAINER_KEYSTORE_LOCATION
+              value: /usr/local/camunda/certificates/optimize/{{ include "camundaPlatform.optimizeServerSecretCertKey" . }}
+            - name: CAMUNDA_OPTIMIZE_CONTAINER_KEYSTORE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ coalesce .Values.global.tls.optimize.keystorePassword.secret.existingSecret .Values.global.tls.optimize.cert.secret.existingSecret }}
+                  key: {{ .Values.global.tls.optimize.keystorePassword.secret.existingSecretKey | default "keystore-password" }}
+            {{- /* Serve TLS on the container's existing named port and refuse
+                 plaintext, matching how Connectors/Orchestration flip the scheme
+                 of one port rather than exposing a second one. A non-positive
+                 ports.http drops the HTTP connector (OptimizeTomcatConfig#getPort
+                 filters on port > 0); an explicit -1 is used instead of an empty
+                 value because the port is read through JsonPath as an Integer. */}}
+            - name: CAMUNDA_OPTIMIZE_CONTAINER_PORTS_HTTPS
+              value: "8090"
+            - name: CAMUNDA_OPTIMIZE_CONTAINER_PORTS_HTTP
+              value: "-1"
+            {{- end }}
+            {{- end }}
+          {{- with .Values.optimize.env }}
+            {{- tpl (toYaml .) $ | nindent 12 }}
+          {{- end }}
+          {{- if or (eq (include "optimize.authEnabled" .) "true") .Values.optimize.envFrom }}
+          envFrom:
+          {{- if and (eq (include "optimize.authEnabled" .) "true") .Values.global.identity.auth.enabled }}
+            - configMapRef:
+                name: {{ include "camundaPlatform.fullname" . }}-identity-env-vars
+          {{- end }}
+          {{- /* Listed after the release-shared ConfigMap: on duplicate keys the kubelet takes the last envFrom source. */}}
+          {{- if eq (include "optimize.needsIdentityConfigMap" .) "true" }}
+            - configMapRef:
+                name: {{ include "camundaPlatform.fullname" . }}-optimize-identity-env-vars
+          {{- end }}
+          {{- if .Values.optimize.envFrom -}}
+           {{ .Values.optimize.envFrom | toYaml | nindent 12 }}
+          {{- end }}
+          {{- end }}
+          {{- if .Values.optimize.command }}
+          command: {{ toYaml .Values.optimize.command | nindent 10 }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.optimize.resources | nindent 12 }}
+          ports:
+            - containerPort: 8090
+              name: http
+              protocol: TCP
+            - containerPort: 8092
+              name: management
+              protocol: TCP
+          {{- if .Values.optimize.startupProbe.enabled }}
+          startupProbe:
+            httpGet:
+              path: {{ include "camundaPlatform.joinpath" (list .Values.optimize.contextPath .Values.optimize.startupProbe.probePath) }}
+              scheme: {{ .Values.optimize.startupProbe.scheme | default (ternary "HTTPS" "HTTP" (eq (include "camundaPlatform.optimizeServerTLSEnabled" .) "true")) }}
+              port: http
+            initialDelaySeconds: {{ .Values.optimize.startupProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.optimize.startupProbe.periodSeconds }}
+            successThreshold: {{ .Values.optimize.startupProbe.successThreshold }}
+            failureThreshold: {{ .Values.optimize.startupProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.optimize.startupProbe.timeoutSeconds }}
+          {{- end }}
+          {{- if .Values.optimize.readinessProbe.enabled }}
+          readinessProbe:
+            httpGet:
+              path: {{ include "camundaPlatform.joinpath" (list .Values.optimize.contextPath .Values.optimize.readinessProbe.probePath) }}
+              scheme: {{ .Values.optimize.readinessProbe.scheme | default (ternary "HTTPS" "HTTP" (eq (include "camundaPlatform.optimizeServerTLSEnabled" .) "true")) }}
+              port: http
+            initialDelaySeconds: {{ .Values.optimize.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.optimize.readinessProbe.periodSeconds }}
+            successThreshold: {{ .Values.optimize.readinessProbe.successThreshold }}
+            failureThreshold: {{ .Values.optimize.readinessProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.optimize.readinessProbe.timeoutSeconds }}
+          {{- end }}
+          {{- if .Values.optimize.livenessProbe.enabled }}
+          livenessProbe:
+            httpGet:
+              path: {{ include "camundaPlatform.joinpath" (list .Values.optimize.contextPath .Values.optimize.livenessProbe.probePath) }}
+              scheme: {{ .Values.optimize.livenessProbe.scheme | default (ternary "HTTPS" "HTTP" (eq (include "camundaPlatform.optimizeServerTLSEnabled" .) "true")) }}
+              port: http
+            initialDelaySeconds: {{ .Values.optimize.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.optimize.livenessProbe.periodSeconds }}
+            successThreshold: {{ .Values.optimize.livenessProbe.successThreshold }}
+            failureThreshold: {{ .Values.optimize.livenessProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.optimize.livenessProbe.timeoutSeconds }}
+          {{- end }}
+          volumeMounts:
+            - mountPath: /tmp
+              name: tmp
+            - mountPath: /camunda
+              name: camunda
+            - mountPath: /optimize/config/environment-config.yaml
+              subPath: environment-config.yaml
+              name: environment-config
+            {{- if or (eq (include "optimize.authEnabled" .) "true") .Values.optimize.extraConfiguration }}
+            - mountPath: /optimize/config/application-ccsm.yaml
+              subPath: application-ccsm.yaml
+              name: environment-config
+            {{- end }}
+            {{- with .Values.optimize.extraConfiguration }}
+            {{- include "camundaPlatform.extraConfigurationVolumeMounts" (dict "extraConfig" . "volumeName" "environment-config" "basePath" "/optimize/config") | trim | nindent 12 }}
+            {{- end }}
+            {{- if eq (include "optimize.hasTlsConfig" .) "true" }}
+            - name: keystore
+              mountPath: {{ printf "/optimize/certificates/%s" (include "camundaPlatform.getTlsSecretKey" (dict "config" $tlsConfig)) }}
+              subPath: {{ include "camundaPlatform.getTlsSecretKey" (dict "config" $tlsConfig) }}
+            {{- end }}
+            {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+            {{- include "camundaPlatform.caBundleVolumeMount" . | nindent 12 }}
+            {{- include "camundaPlatform.caBundleTruststoreVolumeMount" . | nindent 12 }}
+            {{- end }}
+            {{- if and .Values.global.tls.optimize.enabled .Values.global.tls.optimize.cert.secret.existingSecret }}
+            - name: optimize-server-tls
+              mountPath: /usr/local/camunda/certificates/optimize
+              readOnly: true
+            {{- end }}
+            {{- if .Values.optimize.extraVolumeMounts }}
+            {{- .Values.optimize.extraVolumeMounts | toYaml | nindent 12 }}
+            {{- end }}
+        {{- if .Values.optimize.sidecars }}
+        {{- .Values.optimize.sidecars | toYaml | nindent 8 }}
+        {{- end }}
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: camunda
+          {{- if and .Values.optimize.persistence.enabled .Values.optimize.persistence.existingClaim }}
+          persistentVolumeClaim:
+            claimName: {{ .Values.optimize.persistence.existingClaim }}
+          {{- else if .Values.optimize.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "camundaPlatform.fullname" . }}-optimize-data
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        - name: environment-config
+          configMap:
+            name: {{ include "optimize.fullname" . }}-configuration
+            defaultMode: {{ .Values.optimize.configMap.defaultMode }}
+        {{- if eq (include "camundaPlatform.hasSecretConfig" (dict "config" $tlsConfig)) "true" }}
+        {{- include "camundaPlatform.emitTlsVolumeFromSecretConfig" (dict
+            "volumeName" "keystore"
+            "config" $tlsConfig
+        ) | nindent 8 }}
+        {{- end }}
+        {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+        {{- include "camundaPlatform.caBundleVolume" . | nindent 8 }}
+        {{- include "camundaPlatform.caBundleTruststoreVolume" . | nindent 8 }}
+        {{- end }}
+        {{- if and .Values.global.tls.optimize.enabled .Values.global.tls.optimize.cert.secret.existingSecret }}
+        - name: optimize-server-tls
+          secret:
+            secretName: {{ .Values.global.tls.optimize.cert.secret.existingSecret }}
+            defaultMode: 0440
+        {{- end }}
+        {{- if .Values.optimize.extraVolumes }}
+        {{- .Values.optimize.extraVolumes | toYaml | nindent 8 }}
+        {{- end }}
+      serviceAccountName: {{ include "optimize.serviceAccountName" . }}
+      {{- if kindIs "bool" .Values.optimize.automountServiceAccountToken }}
+      automountServiceAccountToken: {{ .Values.optimize.automountServiceAccountToken }}
+      {{- end }}
+      {{- if .Values.optimize.dnsConfig }}
+      dnsConfig: {{- toYaml .Values.optimize.dnsConfig | nindent 8 }}
+      {{- end }}
+      {{- if .Values.optimize.dnsPolicy }}
+      dnsPolicy: {{ .Values.optimize.dnsPolicy | quote }}
+      {{- end }}
+      {{- if .Values.optimize.podSecurityContext }}
+      securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.optimize.podSecurityContext "context" $) | nindent 8 }}
+      {{- end }}
+{{- with .Values.optimize.nodeSelector | default .Values.global.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+{{- end }}
+{{- with .Values.optimize.affinity }}
+      affinity:
+{{ toYaml . | indent 8 }}
+{{- end }}
+{{- with .Values.optimize.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+{{- end }}
+{{- end }}

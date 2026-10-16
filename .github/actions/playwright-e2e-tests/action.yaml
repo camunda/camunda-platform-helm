@@ -351,7 +351,7 @@ runs:
         # downloads every leg into one directory with merge-multiple, so identical names overwrite
         # each other and drop those legs from the merged HTML report. Name the ZIP per invocation.
         PLAYWRIGHT_BLOB_OUTPUT_NAME: report-${{ inputs.test-stage }}-${{ inputs.shard-index }}-${{ inputs.artifact-suffix }}${{ inputs.physical-tenant-id && format('-{0}', inputs.physical-tenant-id) || '' }}.zip
-        REQUIRE_SM_810_TEST_SUITE: ${{ inputs.hub-namespace != '' }}
+        REQUIRE_SM_TEST_SUITE: ${{ inputs.hub-namespace != '' }}
         REQUIRE_HUB_WEB_MODELER_TEST_SUITE: ${{ inputs.playwright-project == 'hub-web-modeler' }}
         E2E_TEST_SUITE_VERSION: ${{ inputs.e2e-test-suite-version }}
       run: |

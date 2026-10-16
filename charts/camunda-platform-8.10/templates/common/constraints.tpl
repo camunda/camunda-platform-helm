@@ -1043,6 +1043,12 @@ Usage:
       {{- printf "\n%s" "[camunda][warning] global.identity.auth.enabled=true, but no shared authentication issuer or issuer backend URL resolves. Set global.identity.auth.issuer (or global.identity.auth.publicIssuerUrl), global.identity.auth.issuerBackendUrl, or global.identity.keycloak.url for External Keycloak. Components using separate OIDC configuration must supply their own provider settings." }}
     {{- end }}
   {{- end }}
+  {{- if and (eq (include "camundaPlatform.identityEnabled" .) "true") .Values.global.identity.auth.enabled (eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK") (ne (include "identity.keycloakUrlConfigured" .) "true") }}
+    {{- printf "\n%s" "[camunda][warning] Management Identity uses Keycloak authentication, but global.identity.keycloak.url is not set. Without a Keycloak URL, Management Identity fails at startup. Set global.identity.keycloak.url.protocol, global.identity.keycloak.url.host, and global.identity.keycloak.url.port, set KEYCLOAK_URL in identity.env, or set keycloak.url in identity.extraConfiguration. If the URL comes from another source, such as JVM options, ignore this warning." }}
+  {{- end }}
+  {{- if and .Values.global.identity.keycloak.internal (empty (include "identity.keycloak.host" . | trim)) (or (and .Values.global.ingress.enabled (not .Values.global.ingress.external) (eq (include "camundaPlatform.identityEnabled" .) "true")) (and .Values.global.gateway.enabled (not .Values.global.gateway.external))) }}
+    {{- printf "\n%s" "[camunda][warning] global.identity.keycloak.internal=true routes the Keycloak path of the shared Ingress or HTTPRoute to Keycloak, but global.identity.keycloak.url.host is not set. The route then has no backend Service, and the Kubernetes API server rejects it. Set global.identity.keycloak.url.protocol, global.identity.keycloak.url.host, and global.identity.keycloak.url.port, or set global.identity.keycloak.internal=false." }}
+  {{- end }}
   {{- if and (eq (include "camundaPlatform.identityEnabled" .) "true")
              .Values.global.identity.auth.enabled
              (eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK")
@@ -1068,6 +1074,10 @@ Usage:
     {{- if $unresolvedEndpoints }}
       {{- printf "\n[camunda][warning] The Orchestration Cluster uses OIDC without an issuer URI, and these endpoints do not render as absolute URLs: %s. Set orchestration.security.authentication.oidc.issuer or global.identity.auth.issuer, or set the endpoints in orchestration.security.authentication.oidc.authUrl, jwksUrl, and tokenUrl (or global.identity.auth.authUrl, jwksUrl, and tokenUrl). For KEYCLOAK, global.identity.auth.publicIssuerUrl derives authorization-uri, and global.identity.auth.issuerBackendUrl or global.identity.keycloak.url derives jwk-set-uri and token-uri." (join ", " $unresolvedEndpoints) }}
     {{- end }}
+  {{- end }}
+  {{- $secondaryStorageType := .Values.orchestration.data.secondaryStorage.type }}
+  {{- if and .Values.global.noSecondaryStorage $secondaryStorageType (ne $secondaryStorageType "none") (eq (include "camundaPlatform.orchestrationEnabled" .) "true") }}
+    {{- printf "\n[camunda][warning] global.noSecondaryStorage=true conflicts with orchestration.data.secondaryStorage.type=%s: the Orchestration Cluster uses %s secondary storage while the other components run without it. Set orchestration.data.secondaryStorage.type=none to run without secondary storage, or set global.noSecondaryStorage=false." $secondaryStorageType $secondaryStorageType }}
   {{- end }}
   {{- if not (semverCompare ">=4.0.0-0" .Capabilities.HelmVersion.Version) }}
     {{- printf "\n%s" (printf "[camunda][warning] Helm CLI %s detected. Helm v3 receives security fixes only until February 10, 2027 (https://helm.sh/blog/helm-v3-end-of-life/). Upgrade to Helm v4 before then: https://helm.sh/docs/overview" .Capabilities.HelmVersion.Version) }}
@@ -1618,7 +1628,7 @@ The following values inside your values.yaml need to be set but were not:
   {{- if eq (include "camundaPlatform.deprecatedMultiregionConfigured" (.Values.global.multiregion | default dict)) "true" }}
     {{- $warningMessage := printf "%s %s %s %s"
         "[camunda][warning]"
-        "DEPRECATION: \"global.multiregion.*\" is deprecated and will be removed in chart v16 (Camunda 8.11)."
+        "DEPRECATION: \"global.multiregion.*\" is deprecated and will be removed in chart v17 (Camunda 8.12)."
         "Only the Orchestration Cluster reads these keys, so they moved to \"orchestration.partitioning.*\", where regions is now numberOfZones and regionId is now zoneIndex."
         "Move the block and remove the global one; setting both fails the render."
     -}}
@@ -1628,11 +1638,50 @@ The following values inside your values.yaml need to be set but were not:
   {{- if eq (include "camundaPlatform.orchestrationEnabled" .) "true" }}
     {{- $partitioning := include "camundaPlatform.partitioning" . | fromJson -}}
     {{- $replicationFactor := int .Values.orchestration.replicationFactor -}}
-    {{- if and (ne $partitioning.scheme "zone-aware") (eq (int $partitioning.numberOfZones) 2) (ne $replicationFactor 4) }}
+    {{- $ctx := . -}}
+    {{- $replicationFactorKnown := not .Values.orchestration.configuration -}}
+    {{- $replicationFactorSource := "orchestration.replicationFactor" -}}
+    {{- $provided := list -}}
+    {{- if .Values.orchestration.envFrom }}
+      {{- $provided = .Values.orchestration.envFromProvides | default list -}}
+    {{- end }}
+    {{- $newKeyOwned := or (has "CAMUNDA_CLUSTER_REPLICATIONFACTOR" $provided) (eq (include "camundaPlatform.appConfigMentionsPath" (dict "extraConfiguration" .Values.orchestration.extraConfiguration "path" (list "camunda" "cluster" "replication-factor"))) "true") -}}
+    {{- if or $newKeyOwned (has "ZEEBE_BROKER_CLUSTER_REPLICATIONFACTOR" $provided) (eq (include "camundaPlatform.appConfigMentionsPath" (dict "extraConfiguration" .Values.orchestration.extraConfiguration "path" (list "zeebe" "broker" "cluster" "replicationFactor"))) "true") }}
+      {{- $replicationFactorKnown = false -}}
+    {{- end }}
+    {{- $legacyState := "" -}}
+    {{- $legacyValue := 0 -}}
+    {{- range $env := ($ctx.Values.orchestration.env | default list) }}
+      {{- $envName := tpl ($env.name | default "") $ctx -}}
+      {{- if has $envName (list "CAMUNDA_CLUSTER_REPLICATIONFACTOR" "CAMUNDA_CLUSTER_REPLICATION_FACTOR") }}
+        {{- if $env.value }}
+          {{- $replicationFactor = int (tpl (toString $env.value) $ctx) -}}
+          {{- $replicationFactorSource = printf "the %s entry in orchestration.env" $envName -}}
+          {{- $replicationFactorKnown = true -}}
+        {{- else }}
+          {{- $replicationFactorKnown = false -}}
+        {{- end }}
+        {{- $newKeyOwned = true -}}
+      {{- else if eq $envName "ZEEBE_BROKER_CLUSTER_REPLICATIONFACTOR" }}
+        {{- $legacyState = ternary "known" "unknown" (not (empty $env.value)) -}}
+        {{- if $env.value }}
+          {{- $legacyValue = int (tpl (toString $env.value) $ctx) -}}
+        {{- end }}
+      {{- end }}
+    {{- end }}
+    {{- if and $legacyState (not $newKeyOwned) (not .Values.orchestration.configuration) }}
+      {{- $replicationFactorKnown = eq $legacyState "known" -}}
+      {{- $replicationFactor = $legacyValue -}}
+      {{- $replicationFactorSource = "the ZEEBE_BROKER_CLUSTER_REPLICATIONFACTOR entry in orchestration.env" -}}
+    {{- end }}
+    {{- if regexMatch "-D(camunda\\.cluster\\.replication-factor|zeebe\\.broker\\.cluster\\.replicationFactor)=" (.Values.orchestration.javaOpts | default "") }}
+      {{- $replicationFactorKnown = false -}}
+    {{- end }}
+    {{- if and (ne $partitioning.scheme "zone-aware") (eq (int $partitioning.numberOfZones) 2) $replicationFactorKnown (ne $replicationFactor 4) }}
       {{- $warningMessage := printf "%s %s %s"
           "[camunda][warning]"
-          (printf "orchestration.replicationFactor is %d but %s.%s is 2; a dual-region cluster needs a replication factor of 4 to distribute every partition evenly across both regions." $replicationFactor $partitioning.sourceKey $partitioning.countKey)
-          "Set orchestration.replicationFactor to 4."
+          (printf "%s is %d but %s.%s is 2; a dual-region cluster needs a replication factor of 4 to distribute every partition evenly across both regions." $replicationFactorSource $replicationFactor $partitioning.sourceKey $partitioning.countKey)
+          (printf "Set %s to 4." $replicationFactorSource)
       -}}
       {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
     {{- end }}
@@ -1682,6 +1731,8 @@ The following values inside your values.yaml need to be set but were not:
     {{- end }}
   {{- end }}
 
+  {{ include "camundaPlatform.globalImageDeprecations" . }}
+
   {{/* Camunda Hub consolidation deprecation warnings */}}
   {{- if .Values.webModeler.enabled }}
     {{- $warningMessage := printf "%s %s %s %s"
@@ -1696,7 +1747,7 @@ The following values inside your values.yaml need to be set but were not:
   {{- if $console.enabled }}
     {{- $warningMessage := printf "%s %s %s %s"
         "[camunda][warning]"
-        "DEPRECATION: \"console.enabled\" is deprecated and will be removed in chart v16 (Camunda 8.11)."
+        "DEPRECATION: \"console.enabled\" is deprecated and will be removed in chart v17 (Camunda 8.12)."
         "Console has been consolidated into Camunda Hub as an in-Modeler feature. Please use \"camundaHub.enabled: true\" instead."
         "It is the only console.* key still honored; the other console.* keys have no effect in 8.10."
     -}}
@@ -1706,7 +1757,7 @@ The following values inside your values.yaml need to be set but were not:
     {{- $warningMessage := printf "%s %s %s %s"
         "[camunda][warning]"
         "DEPRECATION: console.* configuration keys have no effect in 8.10 — Console has been consolidated into Camunda Hub."
-        "Only \"console.enabled\" is still honored, as a compatibility shim; it is deprecated too and will be removed in chart v16 (Camunda 8.11)."
+        "Only \"console.enabled\" is still honored, as a compatibility shim; it is deprecated too and will be removed in chart v17 (Camunda 8.12)."
         "The remaining console.* keys have no replacement and can be removed from values.yaml."
     -}}
     {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
@@ -1723,7 +1774,7 @@ The following values inside your values.yaml need to be set but were not:
   {{/*
   *****************************************************************************
   8.10 deprecated app-config-proxy keys (epic #6051): warn (never fail) when set
-  to a non-default value; removed in chart v16 (8.11) -> extraConfiguration.
+  to a non-default value; removed in chart v17 (8.12) -> extraConfiguration.
   *****************************************************************************
   */}}
   {{- if eq (include "camundaPlatform.orchestrationEnabled" .) "true" }}
@@ -2064,8 +2115,9 @@ Usage:
 {{- define "camundaPlatform.keyDeprecated" }}
   {{- if .condition }}
     {{- $warningMessage := printf
-        "[camunda][warning] DEPRECATION: The Helm values file key \"%s\" is deprecated and will be removed in chart v16 (Camunda 8.11). %s %s"
+        "[camunda][warning] DEPRECATION: The Helm values file key \"%s\" is deprecated and will be removed in %s. %s %s"
         .oldName
+        (.removal | default "chart v17 (Camunda 8.12)")
         (printf "Configure this via \"%s\" instead." (.migration | default "the component's extraConfiguration"))
         (.url | default "https://docs.camunda.io/docs/self-managed/deployment/helm/upgrade/")
     -}}

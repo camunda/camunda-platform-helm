@@ -27,8 +27,8 @@ bundling, no workarounds for application-level issues, 1:1 mapping to applicatio
 ## Critical Rules
 
 ### NEVER
-- **NEVER** approve a PR that removes or renames an existing values field without a deprecation
-  notice or migration path — this is a breaking API change for users.
+- **NEVER** approve a PR that removes or renames an existing values field outside the deprecation
+  policy (`docs/policies/breaking-changes.md#deprecation-policy`) — this is a breaking API change for users.
 - **NEVER** approve a PR that adds secrets or credentials as default values in `values.yaml`.
 - **NEVER** approve a PR that hardcodes image names or tags instead of using
   `camundaPlatform.imageByParams`.
@@ -176,8 +176,8 @@ func TestDeploymentTemplate(t *testing.T) {
 
 ### Backward Compatibility
 
-- [ ] Does the PR rename or remove any field from `values.yaml`? If so, is there a deprecation
-  comment and a transition path?
+- [ ] Does the PR rename or remove any field from `values.yaml`? If so, does it follow the
+  deprecation policy (`docs/policies/breaking-changes.md#deprecation-policy`)?
 - [ ] Does the PR change a helper name (`define "foo.bar"`)? All existing callers across all
   chart versions must be updated.
 - [ ] Does the PR change the default value of an existing field in a way that alters runtime

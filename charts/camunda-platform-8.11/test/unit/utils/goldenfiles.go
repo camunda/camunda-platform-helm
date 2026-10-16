@@ -1,0 +1,110 @@
+// Copyright 2022 Camunda Services GmbH
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package utils
+
+import (
+	"flag"
+	"io/ioutil"
+	"maps"
+	"regexp"
+	"strings"
+
+	"github.com/gruntwork-io/terratest/modules/helm"
+	"github.com/gruntwork-io/terratest/modules/k8s"
+	"github.com/gruntwork-io/terratest/modules/logger"
+	"github.com/stretchr/testify/suite"
+)
+
+var update = flag.Bool("update-golden", false, "update golden test output files")
+
+type TemplateGoldenTest struct {
+	suite.Suite
+	ChartPath      string
+	Release        string
+	Namespace      string
+	GoldenFileName string
+	Templates      []string
+	IgnoredLines   []string
+	SetValues      map[string]string
+	ValuesFiles    []string
+	ExtraHelmArgs  []string
+}
+
+func goldenValues(setValues map[string]string) map[string]string {
+	values := maps.Clone(setValues)
+	if values == nil {
+		values = make(map[string]string)
+	}
+	values["connectors.security.authentication.oidc.secret.existingSecret"] = "camunda-credentials"
+	values["connectors.security.authentication.oidc.secret.existingSecretKey"] = "client-secret"
+	values["orchestration.security.authentication.oidc.secret.existingSecret"] = "camunda-credentials"
+	values["orchestration.security.authentication.oidc.secret.existingSecretKey"] = "client-secret"
+	values["global.identity.auth.console.existingSecret.name"] = "camunda-credentials"
+	values["global.identity.auth.optimize.secret.existingSecret"] = "camunda-credentials"
+	values["global.identity.auth.optimize.secret.existingSecretKey"] = "identity-optimize-client-token"
+	_, hasStorageType := values["orchestration.data.secondaryStorage.type"]
+	hasNoSecondaryStorage := strings.EqualFold(values["global.noSecondaryStorage"], "true")
+	hasRDBMS := strings.EqualFold(values["orchestration.exporters.rdbms.enabled"], "true")
+	hasOptimizeElasticsearch := strings.EqualFold(values["optimize.database.elasticsearch.enabled"], "true")
+	hasOptimizeOpenSearch := strings.EqualFold(values["optimize.database.opensearch.enabled"], "true")
+	if !hasStorageType && !hasNoSecondaryStorage && !hasRDBMS && !hasOptimizeElasticsearch && !hasOptimizeOpenSearch {
+		values["orchestration.data.secondaryStorage.type"] = "elasticsearch"
+	}
+	return values
+}
+
+func goldenIgnoredLines(ignoredLines []string) []string {
+	lines := append([]string(nil), ignoredLines...)
+	return append(lines, `\s+helm.sh/chart:\s+.*`)
+}
+
+func (s *TemplateGoldenTest) TestContainerGoldenTestDefaults() {
+	values := goldenValues(s.SetValues)
+	options := &helm.Options{
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.Namespace),
+		SetValues:      values,
+		ValuesFiles:    s.ValuesFiles,
+		Logger:         logger.Discard,
+	}
+	output := helm.RenderTemplate(s.T(), options, s.ChartPath, s.Release, s.Templates, s.ExtraHelmArgs...)
+
+	bytes := []byte(output)
+	for _, ignoredLine := range goldenIgnoredLines(s.IgnoredLines) {
+		regex := regexp.MustCompile(ignoredLine)
+		bytes = regex.ReplaceAll(bytes, []byte(""))
+	}
+
+	// Normalize trailing whitespace to ensure exactly one trailing newline.
+	// Different Helm versions may produce varying trailing whitespace which
+	// causes yamllint failures (empty-lines max-end: 0).
+	for len(bytes) > 0 && bytes[len(bytes)-1] == '\n' {
+		bytes = bytes[:len(bytes)-1]
+	}
+	bytes = append(bytes, '\n')
+	output = string(bytes)
+
+	goldenFile := "golden/" + s.GoldenFileName + ".golden.yaml"
+
+	if *update {
+		err := ioutil.WriteFile(goldenFile, bytes, 0644)
+		s.Require().NoError(err, "Golden file was not writable")
+	}
+
+	expected, err := ioutil.ReadFile(goldenFile)
+
+	// then
+	s.Require().NoError(err, "Golden file doesn't exist or was not readable")
+	s.Require().Equal(string(expected), output)
+}

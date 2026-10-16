@@ -1,0 +1,17 @@
+name: connectors-tls
+auth: keycloak
+flows:
+  - install
+identity: keycloak
+persistence: elasticsearch
+features:
+  - connectors-tls
+platforms:
+  - gke
+infra-type:
+  gke: distroci
+pre-install: connectors-tls
+dependencies:
+  - keycloak
+  - elasticsearch
+  - postgresql

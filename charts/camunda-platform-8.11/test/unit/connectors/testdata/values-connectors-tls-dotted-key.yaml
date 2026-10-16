@@ -1,0 +1,5 @@
+connectors:
+  enabled: true
+  configuration: |
+    server.ssl.enabled: true
+    server.ssl.certificate: /certs/tls.crt

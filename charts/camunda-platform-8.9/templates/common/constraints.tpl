@@ -187,6 +187,26 @@ configmap-warnings.yaml, which renders the "<release>-warnings" ConfigMap on the
 (helm template / Argo CD / Flux). Feed new deprecations here so they reach both channels.
 */}}
 {{- define "camunda.constraints.warnings" }}
+  {{- include "camundaPlatform.keyNoEffect" (dict
+      "condition" (hasKey .Values.global.compatibility "orchestration")
+      "oldName" "global.compatibility.orchestration"
+      "migration" "Complete the 8.7 to 8.8 upgrade on 8.8 before upgrading to 8.9."
+  ) }}
+  {{- include "camundaPlatform.keyNoEffect" (dict
+      "condition" (hasKey .Values.orchestration "importer")
+      "oldName" "orchestration.importer"
+      "migration" "Complete the 8.7 to 8.8 migration on 8.8 before upgrading to 8.9."
+  ) }}
+  {{- include "camundaPlatform.keyNoEffect" (dict
+      "condition" (hasKey .Values.orchestration "migration")
+      "oldName" "orchestration.migration"
+      "migration" "Complete the 8.7 to 8.8 migration on 8.8 before upgrading to 8.9."
+  ) }}
+  {{- include "camundaPlatform.keyNoEffect" (dict
+      "condition" (hasKey .Values.webModeler "webapp")
+      "oldName" "webModeler.webapp"
+      "migration" "The UI is served by the REST API. Configure webModeler.restapi instead; webapp settings are not copied automatically."
+  ) }}
   {{- if and .Values.global.identity.auth.enabled (empty (include "camundaPlatform.authIssuerUrlWithFallback" . | trim)) }}
     {{- $issuerBackendUrl := include "camundaPlatform.authIssuerBackendUrl" . | trim }}
     {{- $keycloakURL := .Values.global.identity.keycloak.url | default dict }}
@@ -207,6 +227,10 @@ configmap-warnings.yaml, which renders the "<release>-warnings" ConfigMap on the
     {{- if $unresolvedEndpoints }}
       {{- printf "\n[camunda][warning] The Orchestration Cluster uses OIDC without an issuer URI, and these endpoints do not render as absolute URLs: %s. Set orchestration.security.authentication.oidc.issuer or global.identity.auth.issuer, or set the endpoints in orchestration.security.authentication.oidc.authUrl, jwksUrl, and tokenUrl (or global.identity.auth.authUrl, jwksUrl, and tokenUrl). For KEYCLOAK, global.identity.auth.publicIssuerUrl derives authorization-uri, and global.identity.auth.issuerBackendUrl or global.identity.keycloak.url derives jwk-set-uri and token-uri." (join ", " $unresolvedEndpoints) }}
     {{- end }}
+  {{- end }}
+  {{- $secondaryStorageType := .Values.orchestration.data.secondaryStorage.type }}
+  {{- if and .Values.global.noSecondaryStorage $secondaryStorageType (ne $secondaryStorageType "none") (eq (include "camundaPlatform.orchestrationEnabled" .) "true") }}
+    {{- printf "\n[camunda][warning] global.noSecondaryStorage=true conflicts with orchestration.data.secondaryStorage.type=%s: the Orchestration Cluster uses %s secondary storage while the other components run without it. Set orchestration.data.secondaryStorage.type=none to run without secondary storage, or set global.noSecondaryStorage=false." $secondaryStorageType $secondaryStorageType }}
   {{- end }}
   {{- if .Values.global.testDeprecationFlags.existingSecretsMustBeSet }}
     {{/* TODO: Check if there are more existingSecrets to check */}}
@@ -632,11 +656,47 @@ The following values inside your values.yaml need to be set but were not:
   {{- end }}
 
   {{- $replicationFactor := int .Values.orchestration.replicationFactor -}}
-  {{- if and .Values.orchestration.enabled (eq $regions 2) (ne $replicationFactor 4) }}
+  {{- $ctx := . -}}
+  {{- $replicationFactorKnown := not .Values.orchestration.configuration -}}
+  {{- $replicationFactorSource := "orchestration.replicationFactor" -}}
+  {{- range $file := (.Values.orchestration.extraConfiguration | default list) }}
+    {{- if ne $file.springImport false }}
+      {{- range $document := regexSplit "(?m)^[ \t]*(---|\\.\\.\\.)[ \t]*(#.*)?$" ($file.content | default "") -1 }}
+        {{- $doc := fromYaml $document -}}
+        {{- $camunda := get $doc "camunda" -}}
+        {{- $nested := dict -}}
+        {{- if and (kindIs "map" $camunda) (kindIs "map" (get $camunda "cluster")) }}
+          {{- $nested = get $camunda "cluster" -}}
+        {{- end }}
+        {{- $mixed := get $doc "camunda.cluster" -}}
+        {{- range $key := list "replication-factor" "replicationFactor" }}
+          {{- if or (hasKey $nested $key) (and (kindIs "map" $mixed) (hasKey $mixed $key)) (hasKey $doc (printf "camunda.cluster.%s" $key)) }}
+            {{- $replicationFactorKnown = false -}}
+          {{- end }}
+        {{- end }}
+      {{- end }}
+    {{- end }}
+  {{- end }}
+  {{- range $env := ($ctx.Values.orchestration.env | default list) }}
+    {{- $envName := tpl ($env.name | default "") $ctx -}}
+    {{- if has $envName (list "CAMUNDA_CLUSTER_REPLICATIONFACTOR" "CAMUNDA_CLUSTER_REPLICATION_FACTOR") }}
+      {{- if $env.value }}
+        {{- $replicationFactor = int (tpl (toString $env.value) $ctx) -}}
+        {{- $replicationFactorSource = printf "the %s entry in orchestration.env" $envName -}}
+        {{- $replicationFactorKnown = true -}}
+      {{- else }}
+        {{- $replicationFactorKnown = false -}}
+      {{- end }}
+    {{- end }}
+  {{- end }}
+  {{- if regexMatch "-Dcamunda\\.cluster\\.replication-factor=" (.Values.orchestration.javaOpts | default "") }}
+    {{- $replicationFactorKnown = false -}}
+  {{- end }}
+  {{- if and .Values.orchestration.enabled (eq $regions 2) $replicationFactorKnown (ne $replicationFactor 4) }}
     {{- $warningMessage := printf "%s %s %s"
         "[camunda][warning]"
-        (printf "orchestration.replicationFactor is %d but global.multiregion.regions is 2; a dual-region cluster needs a replication factor of 4 to distribute every partition evenly across both regions." $replicationFactor)
-        "Set orchestration.replicationFactor to 4."
+        (printf "%s is %d but global.multiregion.regions is 2; a dual-region cluster needs a replication factor of 4 to distribute every partition evenly across both regions." $replicationFactorSource $replicationFactor)
+        (printf "Set %s to 4." $replicationFactorSource)
     -}}
     {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
   {{- end }}
@@ -786,6 +846,12 @@ Usage:
         "https://docs.camunda.io/docs/self-managed/deployment/helm/upgrade/"
     -}}
     {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
+  {{- end }}
+{{- end -}}
+
+{{- define "camundaPlatform.keyNoEffect" }}
+  {{- if .condition }}
+    {{- printf "\n[camunda][warning] The Helm values file key \"%s\" has no effect since chart 14 (Camunda 8.9). Remove it. %s %s" .oldName .migration "https://docs.camunda.io/docs/8.9/self-managed/upgrade/helm/" }}
   {{- end }}
 {{- end -}}
 

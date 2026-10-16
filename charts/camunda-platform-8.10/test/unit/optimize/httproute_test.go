@@ -112,6 +112,44 @@ func (s *HTTPRouteTemplateTest) TestDifferentValuesInputs() {
 			},
 		},
 		{
+			Name: "TestHTTPRouteRewritesBareContextPath",
+			Values: map[string]string{
+				"global.gateway.enabled": "true",
+				"global.host":            "camunda.example.com",
+				"optimize.enabled":       "true",
+				"optimize.contextPath":   "/optimize",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				testhelpers.RequireContextRootRewrite(t, output, "/optimize", "camunda-platform-test-optimize", 80)
+			},
+		},
+		{
+			Name: "TestHTTPRouteRewritesBareContextPathWithTrailingSlash",
+			Values: map[string]string{
+				"global.gateway.enabled": "true",
+				"global.host":            "camunda.example.com",
+				"optimize.enabled":       "true",
+				"optimize.contextPath":   "/optimize/",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				testhelpers.RequireContextRootRewrite(t, output, "/optimize", "camunda-platform-test-optimize", 80)
+			},
+		},
+		{
+			Name: "TestHTTPRouteHasNoContextRootRewriteWithoutContextPath",
+			Values: map[string]string{
+				"global.gateway.enabled": "true",
+				"global.host":            "camunda.example.com",
+				"optimize.enabled":       "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				testhelpers.RequireNoContextRootRewrite(t, output)
+			},
+		},
+		{
 			Name: "TestHTTPRouteWithAnnotations",
 			Values: map[string]string{
 				"global.gateway.enabled":                 "true",

@@ -157,7 +157,7 @@ Use this process when a Helm Chart fix is needed (e.g. incorrect image tag, char
 
 ```mermaid
 graph TD
-    Step1[Step 1<br/>Automated<br/>---<br/>Dev packages built on every merge<br/>Renovatebot updates automerge]
+    Step1[Step 1<br/>Automated<br/>---<br/>Dev packages built on every merge<br/>Renovatebot updates merged<br/>by the InfraEx scanner]
     Step2[Step 2<br/>Manual<br/>---<br/>Release manager verifies image versions<br/>and triggers RC Promotion]
     Step3[Step 3<br/>Automated<br/>---<br/>Release-please creates PR<br/>Release chores generate notes + matrix]
     Step4[Step 4<br/>External — QA GATE<br/>---<br/>QA tests RC package from Harbor<br/>Sign-off required before Stage 4]
@@ -186,6 +186,7 @@ graph TD
 - `13.x` = Camunda 8.8
 - `14.x` = Camunda 8.9
 - `15.x` = Camunda 8.10
+- `16.x` = Camunda 8.11
 
 ## Routine Chart Automation
 
@@ -270,7 +271,7 @@ Before promoting to RC, verify component image versions match the release train:
 1. Check the dev build workflow summary for image versions.
 2. Compare with the release train announcement (Slack/Tasklist).
 3. If there's a mismatch:
-   - **Option A:** Wait for Renovatebot to update and automerge.
+   - **Option A:** Wait for the Renovatebot PR. The [InfraEx dependency scanner](https://github.com/camunda/team-infrastructure-experience/blob/main/.github/workflows/renovate-dependency-scan.yml) approves it and adds it to the merge queue every 30 minutes, after its checks pass. A PR labelled `upgrade:major`, `security` or `no merge` needs a human approval.
    - **Option B:** Manually trigger `chart-build-dev.yaml` with specific image tag inputs (the workflow supports overriding individual component versions).
    - **Option C:** Manually create a PR to update `values.yaml`.
 

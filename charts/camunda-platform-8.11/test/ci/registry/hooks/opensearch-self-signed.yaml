@@ -1,0 +1,7 @@
+script: pre-install-opensearch-self-signed.sh
+description: |
+  Provisions the Identity/WebModeler PostgreSQL fixture, then
+  Generates a self-signed CA plus node certificate via openssl
+  and creates the opensearch-tls-certs, opensearch-tls-ca, and
+  opensearch-jks Secrets consumed by the OpenSearch companion
+  chart's TLS config.

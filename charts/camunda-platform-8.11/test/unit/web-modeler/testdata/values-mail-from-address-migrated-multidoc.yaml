@@ -1,0 +1,21 @@
+# from-address migrated to restapi.extraConfiguration in the second document of a multi-document YAML file.
+identity:
+  enabled: true
+orchestration:
+  data:
+    secondaryStorage:
+      type: elasticsearch
+webModeler:
+  enabled: true
+  restapi:
+    extraConfiguration:
+      - file: mail.yaml
+        content: |
+          spring:
+            mail:
+              host: smtp.example.com
+          ---
+          camunda:
+            hub:
+              mail:
+                from-address: migrated@example.com

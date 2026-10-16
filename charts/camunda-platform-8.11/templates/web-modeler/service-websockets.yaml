@@ -1,0 +1,30 @@
+{{- if eq (include "camundaHub.webModelerEnabled" .) "true" -}}
+{{- $hub := include "camundaHub.values" . | fromYaml -}}
+{{- $upgradePhase := include "camundaHub.upgradePhase" . -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "webModeler.websockets.fullname" . }}
+  labels:
+    {{- include "webModeler.websockets.labels" . | nindent 4 }}
+  annotations:
+    {{- if .Values.global.annotations}}
+      {{- toYaml .Values.global.annotations | nindent 4 }}
+    {{- end }}
+    {{- if $hub.websockets.service.annotations}}
+      {{- toYaml $hub.websockets.service.annotations | nindent 4 }}
+    {{- end }}
+spec:
+  type: {{ $hub.websockets.service.type }}
+  ports:
+    - port: {{ $hub.websockets.service.port }}
+      name: http
+      targetPort: 8060
+      protocol: TCP
+      {{- with include "camundaPlatform.appProtocol" (dict "portName" "http" "knownPorts" (list "http") "appProtocols" $hub.websockets.service.appProtocols) }}
+      appProtocol: {{ . | quote }}
+      {{- end }}
+  selector:
+    {{- include "webModeler.websockets.matchLabels" . | nindent 4 }}
+    camunda.io/upgrade-phase: normal
+{{- end }}

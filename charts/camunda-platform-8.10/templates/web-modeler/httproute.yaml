@@ -30,6 +30,22 @@ spec:
   hostnames:
   - {{ tpl .Values.global.host $ | quote }}
   rules:
+  {{- with trimSuffix "/" $hub.contextPath }}
+  - matches:
+    - path:
+        type: Exact
+        value: {{ . }}
+    filters:
+    - type: URLRewrite
+      urlRewrite:
+        path:
+          type: ReplaceFullPath
+          replaceFullPath: {{ . }}/
+    backendRefs:
+    - name: {{ template "webModeler.restapi.fullname" $ }}
+      namespace: {{ $.Release.Namespace }}
+      port: {{ $hub.restapi.service.port }}
+  {{- end }}
   - matches:
     - path:
         type: PathPrefix

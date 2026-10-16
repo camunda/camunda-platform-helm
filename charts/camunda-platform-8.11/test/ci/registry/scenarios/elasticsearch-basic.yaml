@@ -1,0 +1,16 @@
+name: elasticsearch-basic
+auth: basic
+flows:
+  - install
+identity: basic
+persistence: elasticsearch
+exclude:
+  - identity
+  - console
+  - orchestration-grpc
+infra-type:
+  eks: preemptible
+  gke: distroci
+e2e-api-suite: true
+dependencies:
+  - elasticsearch

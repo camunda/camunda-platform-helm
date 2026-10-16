@@ -187,6 +187,7 @@ global:
   nodeSelector: {}
   # Image configuration to be used in each sub chart
   # https://hub.docker.com/u/camunda
+  ## @extra global.image configuration of global image settings. Legacy global.image.tag and global.image.repository are DEPRECATED since chart 15.x (8.10). Removal targets chart 17.x (8.12). Use the exact component keys in README.md#global-image-deprecations. Global image digest pinning remains supported.
   image:
     ## @param global.image.registry Can be used to set container image registry.
     registry: ""
@@ -521,7 +522,7 @@ global:
   # global.identity.keycloak.url + contextPath + realm.
   #
   # Optional:
-  #   global.identity.keycloak.internal: true  - ExternalName svc for cross-namespace access
+  #   global.identity.keycloak.internal: true  - route Keycloak through the shared Ingress or HTTPRoute
   #   global.identity.keycloak.contextPath     - "/auth" (Keycloak v16) or "/" (v19+)
   #
   # Minimal snippet:
@@ -604,8 +605,7 @@ global:
       ## @param global.identity.service.url
       url: ""
     keycloak:
-      # global.identity.keycloak.internal if true, it will configure an extra service with type "ExternalName".
-      ## @param global.identity.keycloak.internal It's useful for using existing Keycloak in another namespace with and access it with the combined Ingress.
+      ## @param global.identity.keycloak.internal if true, the shared Ingress or HTTPRoute routes the Keycloak context path to the Keycloak in global.identity.keycloak.url. If that host is not a Service in the release namespace, the chart creates an ExternalName Service for it, named after the release with the suffix -keycloak-custom. The chart does not deploy Keycloak. Requires global.identity.keycloak.url.host.
       # Applies to: External Keycloak. Not used in External OIDC.
       internal: false
       ## @extra global.identity.keycloak.url configures the URL to reach an external Keycloak.
@@ -800,7 +800,7 @@ global:
         alwaysRegister: false
 
   # Multiregion options for Zeebe.
-  ## Deprecated since chart v15 (Camunda 8.10); remove in v16. Only the Orchestration
+  ## Deprecated since chart v15 (Camunda 8.10); remove in v17. Only the Orchestration
   ## Cluster reads these keys, so they moved to `orchestration.partitioning`, which is
   ## also where the zone-aware scheme is configured. Setting both blocks fails the render.
   multiregion:
@@ -1004,7 +1004,7 @@ identity:
     registry: ""
     ## @param identity.image.repository defines which image repository to use
     repository: camunda/identity
-    ## @param identity.image.tag can be set to overwrite the global tag, which should be used in that chart
+    ## @param identity.image.tag defines which image tag to use
     tag: 8.10.0
     ## @param identity.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
@@ -1264,7 +1264,7 @@ identity:
 ## but emit deprecation warnings when set alongside camundaHub.
 ## Of the legacy console.* keys only "console.enabled" is still honored, as a
 ## compatibility shim that toggles the in-Modeler Console feature.
-## console.enabled: DEPRECATED since v15.0.0; remove in v16 (Camunda 8.11);
+## console.enabled: DEPRECATED since v15.0.0; remove in v17 (Camunda 8.12);
 ## use instead: camundaHub.enabled.
 ## Every other console.* key is inert in 8.10, has no replacement, and emits a
 ## deprecation warning when set.
@@ -1927,7 +1927,7 @@ connectors:
     registry: ""
     ## @param connectors.image.repository defines which image repository to use
     repository: camunda/connectors-bundle
-    ## @param connectors.image.tag can be set to overwrite the global tag, which should be used in that chart
+    ## @param connectors.image.tag defines which image tag to use
     tag: 8.10.0
     ## @param connectors.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
@@ -2325,7 +2325,7 @@ orchestration:
     registry: ""
     ## @param orchestration.image.repository defines which image repository to use
     repository: camunda/camunda
-    ## @param orchestration.image.tag can be set to overwrite the global tag, which should be used in that chart
+    ## @param orchestration.image.tag defines which image tag to use
     tag: 8.10.3
     ## @param orchestration.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
@@ -2868,22 +2868,22 @@ orchestration:
 
   ## @extra orchestration.history configuration for Camunda harmonized historical indices.
   history:
-    ## DEPRECATED since chart v15 (Camunda 8.10); remove in v16; use `camunda.data.secondary-storage.<elasticsearch|opensearch>.history.els-rollover-date-format` via `orchestration.extraConfiguration`.
+    ## DEPRECATED since chart v15 (Camunda 8.10); remove in v17; use `camunda.data.secondary-storage.<elasticsearch|opensearch>.history.els-rollover-date-format` via `orchestration.extraConfiguration`.
     ## @param orchestration.history.elsRolloverDateFormat (DEPRECATED) defines the date format of historical indices in a Java DateTimeFormatter compliant syntax.
     elsRolloverDateFormat: date
-    ## DEPRECATED since chart v15 (Camunda 8.10); remove in v16; use `camunda.data.secondary-storage.<elasticsearch|opensearch>.history.rollover-interval` via `orchestration.extraConfiguration`.
+    ## DEPRECATED since chart v15 (Camunda 8.10); remove in v17; use `camunda.data.secondary-storage.<elasticsearch|opensearch>.history.rollover-interval` via `orchestration.extraConfiguration`.
     ## @param orchestration.history.rolloverInterval (DEPRECATED) defines the time range of the historical indices to be created.
     rolloverInterval: 1d
-    ## DEPRECATED since chart v15 (Camunda 8.10); remove in v16; use `camunda.data.secondary-storage.<elasticsearch|opensearch>.history.rollover-batch-size` via `orchestration.extraConfiguration`. Set it explicitly when migrating because the application default can differ from the chart default.
+    ## DEPRECATED since chart v15 (Camunda 8.10); remove in v17; use `camunda.data.secondary-storage.<elasticsearch|opensearch>.history.rollover-batch-size` via `orchestration.extraConfiguration`. Set it explicitly when migrating because the application default can differ from the chart default.
     ## @param orchestration.history.rolloverBatchSize (DEPRECATED) defines the maximum number of process instances per batch during archiving.
     rolloverBatchSize: 100
-    ## DEPRECATED since chart v15 (Camunda 8.10); remove in v16; use `camunda.data.secondary-storage.<elasticsearch|opensearch>.history.wait-period-before-archiving` via `orchestration.extraConfiguration`.
+    ## DEPRECATED since chart v15 (Camunda 8.10); remove in v17; use `camunda.data.secondary-storage.<elasticsearch|opensearch>.history.wait-period-before-archiving` via `orchestration.extraConfiguration`.
     ## @param orchestration.history.waitPeriodBeforeArchiving (DEPRECATED) defines the grace period for processes to be excluded from archiving; processes completed in the last hour are not collected into historical indices with the default value.
     waitPeriodBeforeArchiving: 1h
-    ## DEPRECATED since chart v15 (Camunda 8.10); remove in v16; use `camunda.data.secondary-storage.<elasticsearch|opensearch>.history.delay-between-runs` via `orchestration.extraConfiguration`.
+    ## DEPRECATED since chart v15 (Camunda 8.10); remove in v17; use `camunda.data.secondary-storage.<elasticsearch|opensearch>.history.delay-between-runs` via `orchestration.extraConfiguration`.
     ## @param orchestration.history.delayBetweenRuns (DEPRECATED) the millisecond interval between archiver runs
     delayBetweenRuns: 2000
-    ## DEPRECATED since chart v15 (Camunda 8.10); remove in v16; use `camunda.data.secondary-storage.<elasticsearch|opensearch>.history.max-delay-between-runs` via `orchestration.extraConfiguration`.
+    ## DEPRECATED since chart v15 (Camunda 8.10); remove in v17; use `camunda.data.secondary-storage.<elasticsearch|opensearch>.history.max-delay-between-runs` via `orchestration.extraConfiguration`.
     ## @param orchestration.history.maxDelayBetweenRuns (DEPRECATED) the maximum millisecond interval between archiver runs due to failure backoffs
     maxDelayBetweenRuns: 60000
     ## @extra orchestration.history.retention configuration for retention of the Camunda harmonized historical indices.
@@ -2988,7 +2988,7 @@ optimize:
     registry: ""
     ## @param optimize.image.repository defines which image repository to use
     repository: camunda/optimize
-    ## @param optimize.image.tag can be set to overwrite the global tag, which should be used in that chart
+    ## @param optimize.image.tag defines which image tag to use
     tag: 8.10.3
     ## @param optimize.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""

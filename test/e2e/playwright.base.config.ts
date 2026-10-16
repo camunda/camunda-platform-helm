@@ -30,7 +30,7 @@ type ShadowConfig = {
   };
 };
 
-type ShadowVersion = "SM-8.7" | "SM-8.9" | "SM-8.10";
+type ShadowVersion = `SM-8.${number}`;
 
 export function makeShadowConfig(opts: {
   version: ShadowVersion;

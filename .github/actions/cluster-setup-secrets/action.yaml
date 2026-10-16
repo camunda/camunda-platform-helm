@@ -142,11 +142,6 @@ runs:
             "$TEST_NAMESPACE"
           wait_for_replicated_secret "$TEST_NAMESPACE" aws-camunda-cloud-tls tls.crt tls.key
 
-          # Apply credentials secrets (creates integration-test secret, for backward compat)
-          apply_external_secret_with_retry \
-            ".github/config/external-secret/external-secret-credentials-vault.yaml" \
-            "$TEST_NAMESPACE"
-
           # Apply integration test credentials (creates integration-test-credentials secret)
           stale_es="$(kubectl get externalsecret -n "$TEST_NAMESPACE" -o json 2>/dev/null | \
             jq -r '.items[] | select(.spec.target.name == "integration-test-credentials") | .metadata.name')"
