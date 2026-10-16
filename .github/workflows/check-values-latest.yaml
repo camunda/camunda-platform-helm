@@ -58,12 +58,10 @@ jobs:
               "${{ inputs.chart-version }}"
           else
             bash scripts/check-values-latest.sh
-          fi
-
-      - name: Report outdated values-latest.yaml
-        if: steps.validation.outcome == 'failure'
-        run: |
-          echo "::warning title=values-latest.yaml outdated::Some image versions in values-latest.yaml files are not up-to-date. See the validation step logs."
+          fi || {
+            echo "::warning title=values-latest.yaml outdated::Some image versions in values-latest.yaml files are not up-to-date. See the validation step logs."
+            exit 1
+          }
 
       - name: Sync PR warning comment and label
         if: >-
@@ -96,6 +94,7 @@ jobs:
                 'not up-to-date with the latest releases. Please review ' +
                 'the workflow logs for details.\n\n' +
                 '🔎 [Open PRs labeled `deps/charts`](https://github.com/camunda/camunda-platform-helm/pulls?q=is%3Apr+state%3Aopen+label%3Adeps%2Fcharts)'
+              require('fs').appendFileSync(process.env.GITHUB_STEP_SUMMARY, body + '\n')
               if (existing.length > 0) {
                 await github.rest.issues.updateComment({ owner, repo, comment_id: existing[0].id, body })
                 for (const duplicate of existing.slice(1)) {
