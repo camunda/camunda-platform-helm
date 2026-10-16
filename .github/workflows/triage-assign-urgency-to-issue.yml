@@ -49,6 +49,11 @@ on:
         default: false
   workflow_call:
     inputs:
+      quiet_internal:
+        description: Suppress automatic Ready promotion for internal issue authors
+        required: false
+        type: boolean
+        default: false
       route_new_internal:
         description: Route a newly inserted internal issue from Inbox to Backlog
         required: false
@@ -92,6 +97,7 @@ jobs:
       PROJECT_NUMBER: ${{ inputs.project_id || github.event.inputs.project_id || '33' }}
       URGENCY_FIELD_NAME: 'Urgency'
       DRY_RUN: ${{ inputs.dry_run || github.event.inputs.dry_run || 'false' }}
+      QUIET_INTERNAL: ${{ github.repository == 'camunda/camunda-platform-helm' || inputs.quiet_internal }}
     defaults:
       run:
         shell: bash
@@ -128,10 +134,6 @@ jobs:
       - name: Set GitHub token
         run: |
           echo "GH_TOKEN=${{ steps.generate-github-token.outputs.token }}" >> "$GITHUB_ENV"
-
-      - name: Classify issue creator
-        id: author
-        run: make run.issue-author
 
       - name: Dump event issue JSON
         run: |
@@ -254,21 +256,6 @@ jobs:
             echo "project_item_id=$PROJECT_ITEM_ID"
             echo "current_status=$(echo "$ISSUE_DATA" | jq -r --argjson pn "$PROJECT_NUMBER" '.projectItems.nodes[] | select(.project.number==$pn) | .fieldValues.nodes[] | select(.field.name=="Status") | .name')"
           } >> "$GITHUB_OUTPUT"
-
-      - name: Route new internal issue to Backlog
-        if: >-
-          inputs.route_new_internal && env.DRY_RUN != 'true' &&
-          steps.author.outputs.internal == 'true' &&
-          steps.validate_project.outputs.in_target_project == 'true' &&
-          (steps.validate_project.outputs.current_status == '' || steps.validate_project.outputs.current_status == '📥 Inbox')
-        uses: github/update-project-action@d0031a4f8081c4bf4438d7ce2fa5cf1136610c7a # main
-        with:
-          github_token: ${{ steps.generate-github-token.outputs.token }}
-          organization: ${{ github.repository_owner }}
-          project_number: ${{ env.PROJECT_NUMBER }}
-          content_id: ${{ github.event.issue.node_id }}
-          field: Status
-          value: 📋 Backlog
 
       - name: Check labels
         id: check_labels
@@ -576,8 +563,34 @@ jobs:
 
           echo "✅ Updated urgency: '${CURRENT_URGENCY:-(empty)}' → '${NEW_URGENCY:-(empty)}'"
 
+      - name: Classify issue creator for routing
+        id: author
+        if: >-
+          steps.validate_project.outputs.in_target_project == 'true' &&
+          (inputs.route_new_internal ||
+           (env.QUIET_INTERNAL == 'true' && steps.validate_urgency.outputs.urgency == 'immediate'))
+        run: make run.issue-author
+
+      - name: Route new internal issue to Backlog
+        if: >-
+          inputs.route_new_internal && env.DRY_RUN != 'true' &&
+          steps.author.outputs.internal == 'true' &&
+          steps.validate_project.outputs.in_target_project == 'true' &&
+          (steps.validate_project.outputs.current_status == '' || steps.validate_project.outputs.current_status == '📥 Inbox')
+        uses: github/update-project-action@d0031a4f8081c4bf4438d7ce2fa5cf1136610c7a # main
+        with:
+          github_token: ${{ steps.generate-github-token.outputs.token }}
+          organization: ${{ github.repository_owner }}
+          project_number: ${{ env.PROJECT_NUMBER }}
+          content_id: ${{ fromJSON(steps.fetch_data.outputs.issue_data).id }}
+          field: Status
+          value: 📋 Backlog
+
       - name: Move to Ready if immediate
-        if: steps.author.outputs.internal == 'false' && steps.validate_urgency.outputs.urgency == 'immediate' && steps.validate_project.outputs.in_target_project == 'true'
+        if: >-
+          (env.QUIET_INTERNAL != 'true' || steps.author.outputs.internal == 'false') &&
+          steps.validate_urgency.outputs.urgency == 'immediate' &&
+          steps.validate_project.outputs.in_target_project == 'true'
         run: |
           set -euo pipefail
 

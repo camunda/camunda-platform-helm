@@ -222,9 +222,6 @@ jobs:
             fi
 
             INTERNAL=$(ISSUE_NUMBER="$ISSUE_NUMBER" make --no-print-directory run.issue-author)
-            if [[ "$INTERNAL" == "true" ]]; then
-              echo "Issue #$ISSUE_NUMBER: quiet assessment started; inspect run logs if no suggestion follows." >> "$GITHUB_STEP_SUMMARY"
-            fi
 
             # Prepare Glean Chat API request - build prompt programmatically
             GLEAN_PROMPT="You are an expert bug and task triage assistant for the ${OWNER}/${REPO} repository."
@@ -338,9 +335,7 @@ jobs:
             echo "   Severity: $SEVERITY"
             echo "   Likelihood: $LIKELIHOOD"
             echo "   Confidence: $CONFIDENCE"
-            if [[ "$INTERNAL" == "true" ]]; then
-              printf '\n### Issue #%s — suggested priority\nSeverity: %s; likelihood: %s; confidence: %s\n\n%s\n' "$ISSUE_NUMBER" "$SEVERITY" "$LIKELIHOOD" "$CONFIDENCE" "$RATIONALE" >> "$GITHUB_STEP_SUMMARY"
-            fi
+            printf '\n### Issue #%s — suggested priority\nSeverity: %s; likelihood: %s; confidence: %s\n\n%s\n' "$ISSUE_NUMBER" "$SEVERITY" "$LIKELIHOOD" "$CONFIDENCE" "$RATIONALE" >> "$GITHUB_STEP_SUMMARY"
 
             # Check confidence threshold
             if (( $(echo "$CONFIDENCE < $CONFIDENCE_THRESHOLD" | bc -l) )); then
@@ -354,6 +349,7 @@ jobs:
               continue
             fi
 
+            if [[ "$INTERNAL" != "true" ]]; then
             # Prepare severity emoji
             SEVERITY_EMOJI=""
             case "$SEVERITY" in
@@ -398,12 +394,10 @@ jobs:
 
             # Post triage comment
             echo "💬 Posting triage assessment comment..."
-            if [[ "$INTERNAL" != "true" ]]; then
-              gh issue comment "$ISSUE_NUMBER" --repo "$OWNER/$REPO" --body "$TRIAGE_COMMENT"
-            fi
+            gh issue comment "$ISSUE_NUMBER" --repo "$OWNER/$REPO" --body "$TRIAGE_COMMENT"
 
             # Route non-internal feature requests to PM for manual triage
-            if [[ "$KIND" == "feature-request" && "$INTERNAL" != "true" ]]; then
+            if [[ "$KIND" == "feature-request" ]]; then
               if ! echo "$ISSUE_LABELS" | grep -qi "kind/internal"; then
                 echo "📌 Non-internal feature request — routing to PM"
                 gh issue edit "$ISSUE_NUMBER" --repo "$OWNER/$REPO" \
@@ -418,6 +412,8 @@ jobs:
               fi
             fi
 
+            fi
+
             # Apply labels
             echo "🏷️  Applying labels..."
             if [[ "$INTERNAL" == "true" ]]; then
@@ -427,6 +423,9 @@ jobs:
               fi
               if ! echo "$ISSUE_LABELS" | grep -qi '^likelihood/'; then
                 gh issue edit "$ISSUE_NUMBER" --repo "$OWNER/$REPO" --add-label "likelihood/$LIKELIHOOD"
+              fi
+              if [[ -n "$KIND" ]] && ! echo "$ISSUE_LABELS" | grep -qi '^kind/'; then
+                gh issue edit "$ISSUE_NUMBER" --repo "$OWNER/$REPO" --add-label "kind/$KIND"
               fi
             else
               gh issue edit "$ISSUE_NUMBER" --repo "$OWNER/$REPO" \
