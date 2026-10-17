@@ -85,7 +85,7 @@ jobs:
           make helm.dependency-update
       - name: Install Chart Verifier
         if: ${{ contains(github.event.*.labels.*.name, 'release') }}
-        uses: redhat-actions/openshift-tools-installer@37eb3cfb20ac2df6f0511ffa71cd917e4d49cabf # v3
+        uses: redhat-actions/openshift-tools-installer@1f130822bb0930e0ee02a119adcc3271a22b1499 # v3
         with:
           source: "github"
           chart-verifier: "latest"
