@@ -269,6 +269,10 @@ jobs:
     with:
       camunda-helm-git-ref: "${{ github.event_name == 'merge_group' && github.sha || needs.init.outputs.pr-head-sha }}"
       camunda-helm-git-ref-name: "${{ github.event_name == 'merge_group' && github.ref || '' }}"
+    secrets:
+      VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
+      VAULT_ROLE_ID: ${{ secrets.VAULT_ROLE_ID }}
+      VAULT_SECRET_ID: ${{ secrets.VAULT_SECRET_ID }}
 
   integration-tests:
     # Skip integration tests for Renovate image/digest PRs - these images are already
