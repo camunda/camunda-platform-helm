@@ -17,6 +17,7 @@ package matrix
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -432,6 +433,37 @@ func TestRegistryValidatorAcceptsGood(t *testing.T) {
 	}
 	if err := (&RegistryValidator{ChartDir: abs}).Validate(cfg); err != nil {
 		t.Fatalf("validator should accept good registry: %v", err)
+	}
+}
+
+func TestRegistryValidatorAggregatesAndResets(t *testing.T) {
+	dir := absChartDir(t)
+	cfg, err := LoadRegistry(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	scn := &cfg.Integration.Case.PR.Scenarios[0]
+	features := scn.Features
+	scn.Features = append(append([]string{}, features...), "zzz-missing", "aaa-missing")
+	validator := &RegistryValidator{ChartDir: dir}
+	err = validator.Validate(cfg)
+	if err == nil {
+		t.Fatal("expected both missing features to be reported")
+	}
+	problems := strings.Split(err.Error(), "\n  - ")
+	if len(problems) != 3 || problems[0] != "registry validation failed:" {
+		t.Fatalf("unexpected aggregate error: %v", err)
+	}
+	label := fmt.Sprintf("scenario %q (shortname %q, flow %q)", scn.Name, scn.Shortname, scn.Flow)
+	for i, id := range []string{"aaa-missing", "zzz-missing"} {
+		want := fmt.Sprintf("%s: feature %q: missing values file at %s", label, id, filepath.Join(chartFullSetup(dir), "values", "features", id+".yaml"))
+		if problems[i+1] != want {
+			t.Fatalf("problem[%d] = %q, want %q", i, problems[i+1], want)
+		}
+	}
+	scn.Features = features
+	if err := validator.Validate(cfg); err != nil {
+		t.Fatalf("validator retained errors from the previous call: %v", err)
 	}
 }
 
@@ -892,19 +924,6 @@ func TestRegistryValidatorRejectsMissingScript(t *testing.T) {
 	}
 }
 
-func TestRegistryValidatorRejectsMissingPersistenceValues(t *testing.T) {
-	abs := absChartDir(t)
-	cfg, err := LoadRegistry(abs)
-	if err != nil {
-		t.Fatalf("LoadRegistry: %v", err)
-	}
-	cfg.Integration.Case.PR.Scenarios[0].Persistence = "nonexistent-persistence"
-	err = (&RegistryValidator{ChartDir: abs}).Validate(cfg)
-	if err == nil || !strings.Contains(err.Error(), "nonexistent-persistence") {
-		t.Fatalf("want missing-persistence error, got: %v", err)
-	}
-}
-
 const (
 	depsWithoutElasticsearch = "  - name: common\n    version: 2.x.x\n"
 	depsWithElasticsearch    = "  - name: elasticsearch\n    version: 21.6.3\n    condition: \"elasticsearch.enabled\"\n  - name: common\n    version: 2.x.x\n"
@@ -1107,23 +1126,6 @@ func TestRegistryValidatorAcceptsUpgradeCredentialKeys(t *testing.T) {
 	}
 }
 
-// TestRegistryValidatorRejectsMissingFeatureValues exercises checkFeature.
-// Feature names resolve to <feature>.yaml under chart-full-setup/values/features/;
-// a dangling name must surface as a validation error so PR review catches
-// the typo before deployment.
-func TestRegistryValidatorRejectsMissingFeatureValues(t *testing.T) {
-	abs := absChartDir(t)
-	cfg, err := LoadRegistry(abs)
-	if err != nil {
-		t.Fatalf("LoadRegistry: %v", err)
-	}
-	cfg.Integration.Case.PR.Scenarios[0].Features = []string{"nonexistent-feature"}
-	err = (&RegistryValidator{ChartDir: abs}).Validate(cfg)
-	if err == nil || !strings.Contains(err.Error(), "nonexistent-feature") {
-		t.Fatalf("want missing-feature error, got: %v", err)
-	}
-}
-
 // TestRegistryValidatorRejectsMissingExtraValues exercises checkExtraValues:
 // a scenario's relative extra-values path must resolve under chart-full-setup;
 // a dangling reference is caught at validation, not at deploy time. Absolute
@@ -1308,52 +1310,28 @@ func writeFile(t *testing.T, path, body string) {
 	}
 }
 
-// TestRegistryValidatorRejectsPathTraversalFeature covers the scenario-level
-// feature ID, the sibling of the per-release override Topology.Validate
-// guards. The planted persistence layer is what "../persistence/elasticsearch"
-// resolves to from values/features/, so before the guard the stat succeeded
-// and the scenario validated against a file it never named.
-func TestRegistryValidatorRejectsPathTraversalFeature(t *testing.T) {
-	_, chartDir, regDir := syntheticChart(t)
-	writeManifest(t, regDir, "    - id: bad\n      shortname: bad\n      tier: 1\n      enabled: true\n")
-	writeFile(t, filepath.Join(regDir, "scenarios", "bad.yaml"),
-		"name: bad\nauth: keycloak\nflows: [install]\nplatforms: [gke]\npersistence: elasticsearch\nfeatures:\n  - ../persistence/elasticsearch\n")
-
-	_, err := LoadRegistry(chartDir)
-	if err == nil || !strings.Contains(err.Error(), "plain filename") {
-		t.Fatalf("want plain-filename rejection on feature ID, got: %v", err)
-	}
-}
-
-// TestRegistryValidatorRejectsPathTraversalPersistence covers the
-// scenario-level persistence ID. "../features/leak" resolves out of
-// values/persistence/ into the features dir, where the layer is planted.
-func TestRegistryValidatorRejectsPathTraversalPersistence(t *testing.T) {
-	_, chartDir, regDir := syntheticChart(t)
-	writeFile(t, filepath.Join(chartDir, "test", "integration", "scenarios",
-		"chart-full-setup", "values", "features", "leak.yaml"), "{}\n")
-	writeManifest(t, regDir, "    - id: bad\n      shortname: bad\n      tier: 1\n      enabled: true\n")
-	writeFile(t, filepath.Join(regDir, "scenarios", "bad.yaml"),
-		"name: bad\nauth: keycloak\nflows: [install]\nplatforms: [gke]\npersistence: ../features/leak\n")
-
-	_, err := LoadRegistry(chartDir)
-	if err == nil || !strings.Contains(err.Error(), "plain filename") {
-		t.Fatalf("want plain-filename rejection on persistence ID, got: %v", err)
-	}
-}
-
-// TestRegistryValidatorAcceptsPlainFeatureAndPersistence is the positive
-// control: the guard must not reject the ordinary bare IDs every real scenario
-// uses.
-func TestRegistryValidatorAcceptsPlainFeatureAndPersistence(t *testing.T) {
-	_, chartDir, regDir := syntheticChart(t)
-	writeFile(t, filepath.Join(chartDir, "test", "integration", "scenarios",
-		"chart-full-setup", "values", "features", "multitenancy.yaml"), "{}\n")
-	writeManifest(t, regDir, "    - id: good\n      shortname: good\n      tier: 1\n      enabled: true\n")
-	writeFile(t, filepath.Join(regDir, "scenarios", "good.yaml"),
-		"name: good\nauth: keycloak\nflows: [install]\nplatforms: [gke]\npersistence: elasticsearch\nfeatures:\n  - multitenancy\n")
-
-	if _, err := LoadRegistry(chartDir); err != nil {
-		t.Fatalf("plain feature and persistence IDs should validate, got: %v", err)
+func TestRegistryValidatorValuesLayers(t *testing.T) {
+	for _, tc := range []struct{ name, persistence, feature, want string }{
+		{"valid", "elasticsearch", "multitenancy", ""},
+		{"missing feature", "elasticsearch", "nonexistent-feature", `feature "nonexistent-feature": missing values file`},
+		{"missing persistence", "nonexistent-persistence", "multitenancy", `persistence "nonexistent-persistence": missing values file`},
+		{"feature traversal", "elasticsearch", "../persistence/elasticsearch", `feature reference "../persistence/elasticsearch" must be a plain filename`},
+		{"persistence traversal", "../features/multitenancy", "multitenancy", `persistence reference "../features/multitenancy" must be a plain filename`},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			_, chartDir, regDir := syntheticChart(t)
+			writeFile(t, filepath.Join(chartFullSetup(chartDir), "values", "features", "multitenancy.yaml"), "{}\n")
+			writeManifest(t, regDir, "    - id: test\n      shortname: test\n      tier: 1\n      enabled: true\n")
+			writeFile(t, filepath.Join(regDir, "scenarios", "test.yaml"),
+				fmt.Sprintf("name: test\nauth: keycloak\nflows: [install]\nplatforms: [gke]\npersistence: %s\nfeatures: [%s]\n", tc.persistence, tc.feature))
+			_, err := LoadRegistry(chartDir)
+			if tc.want == "" {
+				if err != nil {
+					t.Fatal(err)
+				}
+			} else if err == nil || !strings.Contains(err.Error(), tc.want) {
+				t.Fatalf("error = %v, want %q", err, tc.want)
+			}
+		})
 	}
 }
