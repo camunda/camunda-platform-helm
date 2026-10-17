@@ -47,6 +47,7 @@ func TestResolvedSelectionPreflightAndPreparation(t *testing.T) {
 		prepared, err := prepareScenarioValues(context.Background(), &ScenarioContext{ScenarioName: scenario, Namespace: "test", Release: "integration"}, flags)
 		require.NoError(t, err)
 		t.Cleanup(prepared.Cleanup)
+		require.DirExists(t, prepared.TempDir)
 		var relativeFiles []string
 		for _, filename := range files {
 			relative, err := filepath.Rel(directory, filename)
@@ -56,6 +57,46 @@ func TestResolvedSelectionPreflightAndPreparation(t *testing.T) {
 		require.Equal(t, relativeFiles, prepared.LayeredFiles)
 		require.Len(t, prepared.LayeredFiles, 4+len(features))
 		require.NotContains(t, prepared.LayeredFiles, "values/features/multitenancy.yaml")
+	}
+}
+
+func TestPrepareScenarioValuesFailureCleanup(t *testing.T) {
+	for _, tc := range []struct {
+		name, wantError string
+		legacy          bool
+		imageOverrides  []string
+	}{
+		{name: "missing layer", wantError: "invalid --identity value"},
+		{name: "missing legacy scenario", legacy: true, wantError: "failed to prepare main scenario"},
+		{name: "invalid image override", imageOverrides: []string{"invalid"}, wantError: "--image-override"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			directory := t.TempDir()
+			require.NoError(t, os.WriteFile(filepath.Join(directory, "values.yaml"), []byte("{}\n"), 0644))
+			if !tc.legacy {
+				for _, layer := range []string{"base", "identity/keycloak", "persistence/elasticsearch", "platform/gke", "features/custom"} {
+					filename := filepath.Join(directory, "values", layer+".yaml")
+					require.NoError(t, os.MkdirAll(filepath.Dir(filename), 0755))
+					require.NoError(t, os.WriteFile(filename, []byte("{}\n"), 0644))
+				}
+			}
+			flags := &config.RuntimeFlags{
+				Chart:             config.ChartFlags{ChartPath: directory},
+				Deployment:        config.DeploymentFlags{ScenarioPath: directory, Platform: "gke", ImageOverrides: tc.imageOverrides},
+				Selection:         config.SelectionFlags{Identity: "keycloak", Persistence: "elasticsearch"},
+				SelectionResolved: true,
+				EnvFile:           filepath.Join(directory, "absent.env"),
+			}
+			if tc.name == "missing layer" {
+				flags.Selection.Identity = "missing"
+			}
+			scenario := &ScenarioContext{ScenarioName: "missing", Namespace: "test", Release: "integration"}
+			_, err := prepareScenarioValues(context.Background(), scenario, flags)
+			require.ErrorContains(t, err, tc.wantError)
+			require.NotEmpty(t, scenario.TempDir)
+			_, err = os.Stat(scenario.TempDir)
+			require.ErrorIs(t, err, os.ErrNotExist)
+		})
 	}
 }
 
