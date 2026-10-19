@@ -742,7 +742,7 @@ func (s *ConfigMapWarningsTemplateTest) TestNginxCompatAnnotationsDeprecationWar
 				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 				warnings := configmap.Data["warnings"]
 				s.Require().Contains(warnings, warning)
-				s.Require().Contains(warnings, "removed in the next major")
+				s.Require().Contains(warnings, "The shim is removed in chart v17 (Camunda 8.12).")
 			},
 		},
 		{
