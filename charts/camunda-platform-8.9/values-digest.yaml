@@ -6,8 +6,8 @@ console:
   # https://hub.docker.com/r/camunda/console/tags
   image:
     repository: camunda/console
-    tag: 8.9.126
-    digest: "sha256:f3941fda8a7b6fa35845a911c0aacedc0045d623a33e7d0d7b3c0247c16544cf"
+    tag: 8.9.127
+    digest: "sha256:9d3682bee6edda8796beb13f9af29699b93b6e303f054ee5329dbdbc5f6bdd75"
 
 connectors:
   # https://hub.docker.com/r/camunda/connectors-bundle/tags
