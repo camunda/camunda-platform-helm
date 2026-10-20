@@ -23,13 +23,13 @@ _No chart releases for Camunda 8.11 yet._
 
 | Helm Chart | Camunda | Released | Helm CLI | Helm Values | Release Notes |
 |---|---|---|---|---|---|
+| [15.2.0](./camunda-8.10/#helm-chart-1520) | 8.10.5 | 2026-10-20 | [3.22.1](https://github.com/helm/helm/releases/tag/v3.22.1), [4.3.1](https://github.com/helm/helm/releases/tag/v4.3.1) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/15.2.0?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.10-15.2.0) |
 | [15.1.1](./camunda-8.10/#helm-chart-1511) | 8.10.4 | 2026-10-14 | [3.22.0](https://github.com/helm/helm/releases/tag/v3.22.0), [4.3.0](https://github.com/helm/helm/releases/tag/v4.3.0) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/15.1.1?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.10-15.1.1) |
 | [15.1.0](./camunda-8.10/#helm-chart-1510) | 8.10.3 | 2026-10-12 | [3.22.0](https://github.com/helm/helm/releases/tag/v3.22.0), [4.3.0](https://github.com/helm/helm/releases/tag/v4.3.0) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/15.1.0?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.10-15.1.0) |
 | [15.0.0](./camunda-8.10/#helm-chart-1500) | 8.10.2 | 2026-10-08 | [3.22.0](https://github.com/helm/helm/releases/tag/v3.22.0), [4.3.0](https://github.com/helm/helm/releases/tag/v4.3.0) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/15.0.0?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.10-15.0.0) |
 | [15.0.0-alpha5](./camunda-8.10/#helm-chart-1500-alpha5) | 8.10.0-alpha5 | 2026-09-04 | [4.2.4](https://github.com/helm/helm/releases/tag/v4.2.4) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/15.0.0-alpha5?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.10-15.0.0-alpha5) |
-| [15.0.0-alpha4](./camunda-8.10/#helm-chart-1500-alpha4) | 8.10.0-alpha4 | 2026-08-05 | [4.2.3](https://github.com/helm/helm/releases/tag/v4.2.3) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/15.0.0-alpha4?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.10-15.0.0-alpha4) |
 
-[All 8 chart versions for Camunda 8.10 →](./camunda-8.10/)
+[All 9 chart versions for Camunda 8.10 →](./camunda-8.10/)
 
 ## Camunda 8.9 — Standard support until 2027-10-12
 
