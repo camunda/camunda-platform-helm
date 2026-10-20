@@ -39,7 +39,9 @@ es:
     {{- end }}
   {{- if .Values.optimize.database.elasticsearch.external }}
   security:
-    username: {{ .Values.optimize.database.elasticsearch.auth.username | quote }}
+    {{- with .Values.optimize.database.elasticsearch.auth.username }}
+    username: {{ . | quote }}
+    {{- end }}
     {{- if eq .Values.optimize.database.elasticsearch.url.protocol "https" }}
     ssl:
       enabled: "true"
