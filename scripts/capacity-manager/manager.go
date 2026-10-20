@@ -12,6 +12,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -38,21 +40,23 @@ type ClusterClient interface {
 	Scale(context.Context, int, bool) (ScalePlan, error)
 }
 
-type PressureSource interface {
+// MetricsSource runs a PromQL instant query and returns the maximum value
+// across the result series, or nil when the query returned no data.
+type MetricsSource interface {
 	Query(context.Context, string) (*float64, error)
 }
 
 type Status struct {
-	ObservedAt       time.Time `json:"observedAt"`
-	Mode             string    `json:"mode"`
-	Phase            string    `json:"phase"`
-	Reason           string    `json:"reason"`
-	CurrentBrokers   int       `json:"currentBrokers"`
-	DesiredBrokers   int       `json:"desiredBrokers"`
-	WorkloadReplicas int       `json:"workloadReplicas"`
-	Pressure         float64   `json:"pressure,omitempty"`
-	Confidence       string    `json:"confidence"`
-	LastError        string    `json:"lastError,omitempty"`
+	ObservedAt       time.Time          `json:"observedAt"`
+	Mode             string             `json:"mode"`
+	Phase            string             `json:"phase"`
+	Reason           string             `json:"reason"`
+	CurrentBrokers   int                `json:"currentBrokers"`
+	DesiredBrokers   int                `json:"desiredBrokers"`
+	WorkloadReplicas int                `json:"workloadReplicas"`
+	Signals          map[string]float64 `json:"signals,omitempty"`
+	Confidence       string             `json:"confidence"`
+	LastError        string             `json:"lastError,omitempty"`
 }
 
 func (s Status) JSON() []byte {
@@ -61,10 +65,14 @@ func (s Status) JSON() []byte {
 }
 
 type Manager struct {
-	Policies      PolicySource
-	Workload      WorkloadClient
-	Cluster       ClusterClient
-	Pressure      PressureSource
+	Policies PolicySource
+	Workload WorkloadClient
+	Cluster  ClusterClient
+	Metrics  MetricsSource
+	// Namespace and StatefulSet replace the $NAMESPACE and $STATEFULSET
+	// placeholders in signal queries.
+	Namespace     string
+	StatefulSet   string
 	Planner       *Planner
 	Logger        *slog.Logger
 	OperationWait time.Duration
@@ -134,18 +142,14 @@ func (m *Manager) Reconcile(ctx context.Context) error {
 		return m.join(ctx, workload.Replicas)
 	}
 
-	pressure, err := m.Pressure.Query(ctx, policy.PressureQuery)
-	if err != nil {
-		m.Logger.Warn("pressure query failed", "error", err)
-		pressure = nil
-	}
-	decision, err := m.Planner.Decide(policy, current, pressure, time.Now().UTC())
+	readings := m.readSignals(ctx, policy, current)
+	decision, err := m.Planner.Decide(policy, Inputs{Current: current, PartitionReplicas: topology.PartitionReplicas(), Readings: readings}, time.Now().UTC())
 	if err != nil {
 		return m.fail(err)
 	}
 	status.DesiredBrokers = decision.Desired
 	status.Reason = decision.Reason
-	status.Pressure = decision.Pressure
+	status.Signals = decision.Signals
 	status.Confidence = decision.Confidence
 	if policy.Mode == "recommend" {
 		status.Phase = "recommended"
@@ -193,6 +197,27 @@ func (m *Manager) Reconcile(ctx context.Context) error {
 		return err
 	}
 	return m.Workload.MarkCompleted(ctx, target)
+}
+
+// readSignals queries every policy signal. A failed query is recorded as
+// missing data so the planner holds instead of acting on partial evidence.
+func (m *Manager) readSignals(ctx context.Context, policy Policy, current int) map[string]*float64 {
+	readings := map[string]*float64{}
+	if policy.Mode != "automatic" || m.Metrics == nil {
+		return readings
+	}
+	placeholders := strings.NewReplacer("$BROKERS", strconv.Itoa(current), "$NAMESPACE", m.Namespace, "$STATEFULSET", m.StatefulSet)
+	for _, group := range [][]Signal{policy.VetoSignals, policy.ScaleUpSignals, policy.ScaleDownSignals} {
+		for _, signal := range group {
+			value, err := m.Metrics.Query(ctx, placeholders.Replace(signal.Query))
+			if err != nil {
+				m.Logger.Warn("signal query failed", "signal", signal.Name, "error", err)
+				value = nil
+			}
+			readings[signal.Name] = value
+		}
+	}
+	return readings
 }
 
 func (m *Manager) join(ctx context.Context, target int) error {

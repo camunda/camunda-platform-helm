@@ -67,6 +67,17 @@ func (t Topology) ActiveBrokerCount() int {
 	return count
 }
 
+// PartitionReplicas counts partition replicas hosted by active brokers.
+func (t Topology) PartitionReplicas() int {
+	count := 0
+	for _, broker := range t.Brokers {
+		if broker.State != "LEFT" {
+			count += len(broker.Partitions)
+		}
+	}
+	return count
+}
+
 func (t Topology) Healthy() bool {
 	if t.PendingChange != nil {
 		return false

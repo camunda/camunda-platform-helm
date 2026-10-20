@@ -50,15 +50,17 @@ func main() {
 		logger.Error("initialize Kubernetes client", "error", err)
 		os.Exit(1)
 	}
-	var pressure capacity.PressureSource = capacity.PrometheusClient{BaseURL: prometheusURL, Client: httpClient}
-	if prometheusURL != "" && strings.HasSuffix(prometheusURL, "/actuator/prometheus") {
-		pressure = &capacity.DirectMetricsClient{URL: prometheusURL, Client: httpClient}
+	if strings.Contains(prometheusURL, "/actuator/") {
+		logger.Error("prometheus-url must be a Prometheus server; scraping a broker actuator directly is not supported")
+		os.Exit(2)
 	}
 	manager := &capacity.Manager{
 		Policies:      capacity.FilePolicySource{Path: policyPath},
 		Workload:      kubernetes,
 		Cluster:       capacity.ZeebeClient{BaseURL: zeebeURL, Client: httpClient},
-		Pressure:      pressure,
+		Metrics:       capacity.PrometheusClient{BaseURL: prometheusURL, Client: httpClient},
+		Namespace:     namespace,
+		StatefulSet:   statefulSet,
 		Planner:       &capacity.Planner{},
 		Logger:        logger,
 		OperationWait: operationWait,
@@ -77,7 +79,13 @@ func main() {
 	mux.HandleFunc("/metrics", func(response http.ResponseWriter, _ *http.Request) {
 		status := manager.Status()
 		response.Header().Set("Content-Type", "text/plain; version=0.0.4")
-		phase := strings.NewReplacer("\\", "\\\\", "\"", "\\\"").Replace(status.Phase)
+		escape := strings.NewReplacer("\\", "\\\\", "\"", "\\\"", "\n", "\\n").Replace
+		phase := escape(status.Phase)
+		var signals strings.Builder
+		signals.WriteString("# TYPE camunda_capacity_manager_signal gauge\n")
+		for name, value := range status.Signals {
+			signals.WriteString("camunda_capacity_manager_signal{signal=\"" + escape(name) + "\"} " + strconv.FormatFloat(value, 'g', -1, 64) + "\n")
+		}
 		_, _ = response.Write([]byte(
 			"# TYPE camunda_capacity_manager_current_brokers gauge\n" +
 				"camunda_capacity_manager_current_brokers " + strconv.Itoa(status.CurrentBrokers) + "\n" +
@@ -85,8 +93,7 @@ func main() {
 				"camunda_capacity_manager_desired_brokers " + strconv.Itoa(status.DesiredBrokers) + "\n" +
 				"# TYPE camunda_capacity_manager_workload_replicas gauge\n" +
 				"camunda_capacity_manager_workload_replicas " + strconv.Itoa(status.WorkloadReplicas) + "\n" +
-				"# TYPE camunda_capacity_manager_pressure gauge\n" +
-				"camunda_capacity_manager_pressure " + strconv.FormatFloat(status.Pressure, 'g', -1, 64) + "\n" +
+				signals.String() +
 				"# TYPE camunda_capacity_manager_phase gauge\n" +
 				"camunda_capacity_manager_phase{phase=\"" + phase + "\"} 1\n"))
 	})

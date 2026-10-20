@@ -28,3 +28,14 @@ func TestPrometheusClientReturnsMaximumVectorValue(t *testing.T) {
 		t.Fatalf("unexpected value %v, %v", value, err)
 	}
 }
+
+func TestPrometheusClientIgnoresNaNSeries(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(response http.ResponseWriter, _ *http.Request) {
+		_, _ = fmt.Fprint(response, `{"status":"success","data":{"result":[{"value":[1,"NaN"]}]}}`)
+	}))
+	defer server.Close()
+	value, err := (PrometheusClient{BaseURL: server.URL, Client: server.Client()}).Query(context.Background(), "ratio")
+	if err != nil || value != nil {
+		t.Fatalf("expected NaN-only result to be missing data, got %v, %v", value, err)
+	}
+}

@@ -19,9 +19,14 @@ type staticPolicies struct{ policy Policy }
 
 func (s staticPolicies) Policy() (Policy, error) { return s.policy, nil }
 
-type fakePressure struct{ value *float64 }
+type fakeMetrics struct{ values map[string]float64 }
 
-func (f fakePressure) Query(context.Context, string) (*float64, error) { return f.value, nil }
+func (f fakeMetrics) Query(_ context.Context, query string) (*float64, error) {
+	if value, ok := f.values[query]; ok {
+		return &value, nil
+	}
+	return nil, nil
+}
 
 type fakeWorkload struct {
 	replicas  int
@@ -89,7 +94,7 @@ func activeTopology(count int) Topology {
 func newTestManager(policy Policy, workload *fakeWorkload, cluster *fakeCluster) *Manager {
 	return &Manager{
 		Policies: staticPolicies{policy: policy}, Workload: workload, Cluster: cluster,
-		Pressure: fakePressure{}, Planner: &Planner{}, Logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
+		Metrics: fakeMetrics{}, Planner: &Planner{}, Logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
 		OperationWait: time.Millisecond, OperationPoll: time.Millisecond,
 	}
 }
@@ -181,5 +186,29 @@ func TestManagerRecoversCompletedScaleDown(t *testing.T) {
 	}
 	if len(workload.scales) != 1 || workload.scales[0] != 1 || len(cluster.calls) != 0 {
 		t.Fatalf("expected workload contraction only, scales=%v calls=%v", workload.scales, cluster.calls)
+	}
+}
+
+func TestManagerQueriesSignalsWithBrokerCount(t *testing.T) {
+	policy := automaticPolicy()
+	policy.ScaleDownSignals[1].Query = `sum(cpu{namespace="$NAMESPACE",pod=~"$STATEFULSET-[0-9]+"}) / ($BROKERS - 1)`
+	workload := &fakeWorkload{replicas: 2}
+	contracted := activeTopology(1)
+	contracted.LastChange = &Change{ID: 1, Status: "COMPLETED"}
+	cluster := &fakeCluster{topology: contracted, topologies: []Topology{activeTopology(2)}}
+	manager := newTestManager(policy, workload, cluster)
+	manager.OperationWait = time.Second
+	manager.Namespace, manager.StatefulSet = "ns", "zeebe"
+	manager.Metrics = fakeMetrics{values: map[string]float64{
+		"drop": 0, "cpu": 0.2, "backlog": 0, `sum(cpu{namespace="ns",pod=~"zeebe-[0-9]+"}) / (2 - 1)`: 0.3,
+	}}
+	if err := manager.Reconcile(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if got := manager.Status().Signals["fits"]; got != 0.3 {
+		t.Fatalf("expected $BROKERS substitution, signals=%v", manager.Status().Signals)
+	}
+	if len(cluster.calls) != 2 || cluster.calls[1].target != 1 {
+		t.Fatalf("expected scale down to 1, calls=%v", cluster.calls)
 	}
 }

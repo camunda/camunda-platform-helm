@@ -11,6 +11,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -70,6 +71,10 @@ func (c PrometheusClient) Query(ctx context.Context, query string) (*float64, er
 		value, err := strconv.ParseFloat(raw, 64)
 		if err != nil {
 			return nil, err
+		}
+		if math.IsNaN(value) {
+			// A NaN sample (for example 0/0) carries no evidence either way.
+			continue
 		}
 		if maximum == nil || value > *maximum {
 			copy := value

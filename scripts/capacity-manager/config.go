@@ -16,20 +16,58 @@ import (
 )
 
 type Policy struct {
-	Mode                   string  `json:"mode"`
-	MinBrokers             int     `json:"minBrokers"`
-	MaxBrokers             int     `json:"maxBrokers"`
-	TargetBrokers          int     `json:"targetBrokers,omitempty"`
-	ScheduledMinimum       int     `json:"scheduledMinimumBrokers,omitempty"`
-	ScheduleStartsAt       string  `json:"scheduleStartsAt,omitempty"`
-	ScheduleEndsAt         string  `json:"scheduleEndsAt,omitempty"`
-	PressureQuery          string  `json:"pressureQuery,omitempty"`
-	ScaleUpThreshold       float64 `json:"scaleUpThreshold,omitempty"`
-	ScaleDownThreshold     float64 `json:"scaleDownThreshold,omitempty"`
-	ScaleUpSamples         int     `json:"scaleUpSamples,omitempty"`
-	ScaleDownSamples       int     `json:"scaleDownSamples,omitempty"`
-	ScaleUpStabilization   string  `json:"scaleUpStabilization,omitempty"`
-	ScaleDownStabilization string  `json:"scaleDownStabilization,omitempty"`
+	Mode                   string   `json:"mode"`
+	MinBrokers             int      `json:"minBrokers"`
+	MaxBrokers             int      `json:"maxBrokers"`
+	TargetBrokers          int      `json:"targetBrokers,omitempty"`
+	ScheduledMinimum       int      `json:"scheduledMinimumBrokers,omitempty"`
+	ScheduleStartsAt       string   `json:"scheduleStartsAt,omitempty"`
+	ScheduleEndsAt         string   `json:"scheduleEndsAt,omitempty"`
+	ScaleUpSignals         []Signal `json:"scaleUpSignals,omitempty"`
+	ScaleDownSignals       []Signal `json:"scaleDownSignals,omitempty"`
+	VetoSignals            []Signal `json:"vetoSignals,omitempty"`
+	ScaleUpSamples         int      `json:"scaleUpSamples,omitempty"`
+	ScaleDownSamples       int      `json:"scaleDownSamples,omitempty"`
+	ScaleUpStabilization   string   `json:"scaleUpStabilization,omitempty"`
+	ScaleDownStabilization string   `json:"scaleDownStabilization,omitempty"`
+	Cooldown               string   `json:"cooldown,omitempty"`
+}
+
+// Signal is a named PromQL condition. The query result is reduced to the
+// maximum across all returned series, so "<=" means every series is at or
+// below the threshold and ">=" means at least one series reached it. The
+// placeholder $BROKERS is replaced with the current active broker count.
+type Signal struct {
+	Name      string  `json:"name"`
+	Query     string  `json:"query"`
+	Operator  string  `json:"operator"`
+	Threshold float64 `json:"threshold"`
+}
+
+func (s Signal) holds(value float64) bool {
+	if s.Operator == "<=" {
+		return value <= s.Threshold
+	}
+	return value >= s.Threshold
+}
+
+func validateSignals(role string, signals []Signal, seen map[string]bool) error {
+	for i, signal := range signals {
+		if signal.Name == "" || signal.Query == "" {
+			return fmt.Errorf("%s[%d] requires name and query", role, i)
+		}
+		if seen[signal.Name] {
+			return fmt.Errorf("signal name %q is used more than once", signal.Name)
+		}
+		seen[signal.Name] = true
+		if signal.Operator != ">=" && signal.Operator != "<=" {
+			return fmt.Errorf("%s %q operator must be >= or <=", role, signal.Name)
+		}
+		if math.IsNaN(signal.Threshold) || math.IsInf(signal.Threshold, 0) {
+			return fmt.Errorf("%s %q threshold must be finite", role, signal.Name)
+		}
+	}
+	return nil
 }
 
 func (p Policy) validate() error {
@@ -51,11 +89,21 @@ func (p Policy) validate() error {
 	if p.ScaleUpSamples < 0 || p.ScaleDownSamples < 0 {
 		return fmt.Errorf("scale sample counts cannot be negative")
 	}
-	if math.IsNaN(p.ScaleUpThreshold) || math.IsNaN(p.ScaleDownThreshold) || math.IsInf(p.ScaleUpThreshold, 0) || math.IsInf(p.ScaleDownThreshold, 0) {
-		return fmt.Errorf("scale thresholds must be finite")
+	seen := map[string]bool{}
+	if err := validateSignals("scaleUpSignals", p.ScaleUpSignals, seen); err != nil {
+		return err
 	}
-	if p.Mode == "automatic" && p.ScaleDownThreshold >= p.ScaleUpThreshold {
-		return fmt.Errorf("scaleDownThreshold must be lower than scaleUpThreshold")
+	if err := validateSignals("scaleDownSignals", p.ScaleDownSignals, seen); err != nil {
+		return err
+	}
+	if err := validateSignals("vetoSignals", p.VetoSignals, seen); err != nil {
+		return err
+	}
+	if p.Mode == "automatic" && (len(p.ScaleUpSignals) == 0 || len(p.ScaleDownSignals) == 0) {
+		return fmt.Errorf("automatic mode requires scaleUpSignals and scaleDownSignals")
+	}
+	if _, err := parseStabilization(p.Cooldown); err != nil {
+		return fmt.Errorf("parse cooldown: %w", err)
 	}
 	if (p.ScheduleStartsAt == "") != (p.ScheduleEndsAt == "") {
 		return fmt.Errorf("scheduleStartsAt and scheduleEndsAt must be configured together")
