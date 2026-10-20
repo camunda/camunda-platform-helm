@@ -7,7 +7,59 @@ It supports three policy modes:
 
 - `recommend` observes and reports a desired broker count without applying it.
 - `scheduled` applies an explicit target or an RFC3339 capacity window.
-- `automatic` uses a Prometheus pressure query with independent scale-up and scale-down stabilization.
+- `automatic` scales on named PromQL signals evaluated against a Prometheus server
+  (`capacityManager.prometheusURL`) that scrapes every broker.
+
+## Automatic Scaling Signals
+
+Partitions are fixed, so another broker only helps when three things are true together: the cluster
+is saturated, the brokers themselves are the bottleneck, and there is a partition replica for the new
+broker to host. Scale-down needs the reverse: no saturation, and the current work fits on one broker
+fewer. Throughput (`zeebe_log_appender_record_appended_total`) and `zeebe_flow_control_partition_load`
+describe load, not saturation; a partition at its write limit needs more partitions, not brokers.
+
+The policy therefore declares `scaleUpSignals` (all must hold), `scaleDownSignals` (all must hold)
+and `vetoSignals` (any blocks every change). Missing data or a failed query holds and restarts
+stabilization. The planner also caps scale-up at the topology's partition replica count and waits a
+`cooldown` after each change. A recommended policy, supplied through
+`capacityManager.extraConfiguration`:
+
+```yaml
+capacityManager:
+  enabled: true
+  replicaOwnership: capacityManager
+  prometheusURL: http://prometheus.monitoring:9090
+  extraConfiguration:
+    - file: policy.json
+      content: |
+        {
+          "mode": "automatic", "minBrokers": 1, "maxBrokers": 3,
+          "scaleUpSamples": 3, "scaleDownSamples": 6,
+          "scaleDownStabilization": "5m", "cooldown": "2m",
+          "scaleUpSignals": [
+            {"name": "backpressure", "operator": ">=", "threshold": 0.05,
+             "query": "max(sum by (partition) (rate(zeebe_dropped_request_count_total{namespace=\"$NAMESPACE\",pod=~\"$STATEFULSET-[0-9]+\"}[2m])) / clamp_min(sum by (partition) (rate(zeebe_received_request_count_total{namespace=\"$NAMESPACE\",pod=~\"$STATEFULSET-[0-9]+\"}[2m])), 1))"},
+            {"name": "broker-cpu", "operator": ">=", "threshold": 0.75,
+             "query": "max(avg_over_time(process_cpu_usage{namespace=\"$NAMESPACE\",pod=~\"$STATEFULSET-[0-9]+\"}[2m]))"}
+          ],
+          "scaleDownSignals": [
+            {"name": "no-backpressure", "operator": "<=", "threshold": 0.001,
+             "query": "max(sum by (partition) (rate(zeebe_dropped_request_count_total{namespace=\"$NAMESPACE\",pod=~\"$STATEFULSET-[0-9]+\"}[2m])) / clamp_min(sum by (partition) (rate(zeebe_received_request_count_total{namespace=\"$NAMESPACE\",pod=~\"$STATEFULSET-[0-9]+\"}[2m])), 1))"},
+            {"name": "fits-on-fewer-brokers", "operator": "<=", "threshold": 0.5,
+             "query": "sum(avg_over_time(process_cpu_usage{namespace=\"$NAMESPACE\",pod=~\"$STATEFULSET-[0-9]+\"}[5m])) / ($BROKERS - 1)"}
+          ],
+          "vetoSignals": [
+            {"name": "exporter-backlog", "operator": ">=", "threshold": 100000,
+             "query": "max(max by (partition) (zeebe_log_appender_last_committed_position{namespace=\"$NAMESPACE\",pod=~\"$STATEFULSET-[0-9]+\"}) - min by (partition) (max by (partition, exporter) (zeebe_exporter_last_exported_position{namespace=\"$NAMESPACE\",pod=~\"$STATEFULSET-[0-9]+\"}))) or vector(0)"},
+            {"name": "partition-unhealthy", "operator": "<=", "threshold": 0,
+             "query": "min(zeebe_health{namespace=\"$NAMESPACE\",pod=~\"$STATEFULSET-[0-9]+\"})"}
+          ]
+        }
+```
+
+The queries assume Prometheus attaches `namespace` and `pod` labels, as ServiceMonitor and
+Kubernetes pod discovery do. See `scripts/capacity-manager/README.md` for why each signal is used and
+for optional partition-balance and disk vetoes.
 
 ## Safety Model
 
@@ -37,14 +89,8 @@ reconciliation state machine.
 
 ## Validation
 
-The disabled `capacity-manager` GKE scenario starts with two logical partitions on one broker and a
-50 process-instances-per-second load generator. Automatic mode directly measures the broker's real
-record-appended rate, scales to two brokers, then scales safely back to one after the verifier removes
-the load generator.
-
-The GKE validation used a 5-second reconciliation interval, three scale-up samples, and six
-scale-down samples. A 50 process-instances-per-second noop workload exceeded the configured
-20 records-per-second scale-up threshold. After removing load, measured background activity was
-approximately 0.4-3.6 records per second, so the scenario uses a calibrated 5 records-per-second
-scale-down threshold. The complete matrix scenario passed in 7m03s and retained the removed broker's
-PVC.
+The `capacity-manager` GKE scenario deploys a namespace-scoped Prometheus that discovers the
+orchestration pods, runs three partitions on one CPU-limited broker, and ramps a load generator until
+the request limiter rejects commands. The verifier asserts that scale-up is driven by the
+`backpressure` and `broker-cpu` signals, that the drop ratio falls after the new broker joins, and that
+scale-down happens only after the load stops and the work fits on fewer brokers.

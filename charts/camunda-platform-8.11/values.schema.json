@@ -4630,7 +4630,7 @@
                 },
                 "prometheusURL": {
                     "type": "string",
-                    "description": "can be used to configure the Prometheus server queried for automatic scaling pressure.",
+                    "description": "base URL of a Prometheus server that scrapes every orchestration broker. Required for automatic mode, which evaluates the policy's PromQL scale-up, scale-down and veto signals; a broker actuator URL is rejected.",
                     "default": ""
                 },
                 "extraConfiguration": {

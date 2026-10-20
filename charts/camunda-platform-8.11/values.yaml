@@ -2164,7 +2164,7 @@ capacityManager:
   reconcileInterval: 30s
   ## @param capacityManager.operationTimeout defines the maximum duration of a Zeebe topology operation.
   operationTimeout: 20m
-  ## @param capacityManager.prometheusURL can be used to configure the Prometheus server queried for automatic scaling pressure.
+  ## @param capacityManager.prometheusURL base URL of a Prometheus server that scrapes every orchestration broker. Required for automatic mode, which evaluates the policy's PromQL scale-up, scale-down and veto signals; a broker actuator URL is rejected.
   prometheusURL: ""
 
   ## @param capacityManager.extraConfiguration can be used to provide application configuration files such as policy.json.
