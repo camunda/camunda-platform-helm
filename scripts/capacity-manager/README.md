@@ -12,7 +12,8 @@ topology. It never reduces the logical partition count.
 `scheduledMinimumBrokers` requires both `scheduleStartsAt` and `scheduleEndsAt` (RFC 3339).
 
 The policy is read from `/etc/capacity-manager/policy.json` on every reconciliation. The Helm chart
-renders this file from `capacityManager.policy`.
+renders this file from `capacityManager.extraConfiguration` and defaults to a read-only `recommend`
+policy.
 
 ## Automatic Scaling Signals
 
@@ -42,7 +43,7 @@ partition replica count, never scales below `minBrokers` or an active scheduled 
 `cooldown` after each change, and requires `scaleUpSamples`/`scaleDownSamples` consecutive
 evaluations held for `scaleUpStabilization`/`scaleDownStabilization` (Go durations).
 
-The chart ships these defaults (selector `{namespace="$NAMESPACE",pod=~"$STATEFULSET-[0-9]+"}`
+Recommended signals (selector `{namespace="$NAMESPACE",pod=~"$STATEFULSET-[0-9]+"}`
 abbreviated as `{S}`):
 
 | Role | Name | Query | Condition | Why |
