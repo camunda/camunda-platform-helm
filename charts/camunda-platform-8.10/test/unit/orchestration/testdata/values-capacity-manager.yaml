@@ -1,7 +1,3 @@
-global:
-  elasticsearch:
-    enabled: true
-
 capacityManager:
   enabled: true
   replicaOwnership: capacityManager
@@ -9,4 +5,7 @@ capacityManager:
     mode: automatic
 
 orchestration:
+  data:
+    secondaryStorage:
+      type: elasticsearch
   clusterSize: "1"

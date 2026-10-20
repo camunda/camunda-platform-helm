@@ -39,7 +39,7 @@ func render(t *testing.T, template string, values map[string]string) string {
 	if values == nil {
 		values = map[string]string{}
 	}
-	values["global.elasticsearch.enabled"] = "true"
+	values["orchestration.data.secondaryStorage.type"] = "elasticsearch"
 	return helm.RenderTemplate(t, &helm.Options{
 		SetValues:   values,
 		ValuesFiles: []string{filepath.Join(chartPath(t), "test/unit/common/testdata/values-capacity-manager.yaml")},
@@ -47,7 +47,7 @@ func render(t *testing.T, template string, values map[string]string) string {
 }
 
 func TestCapacityManagerDisabledByDefault(t *testing.T) {
-	output := helm.RenderTemplate(t, &helm.Options{SetValues: map[string]string{"global.elasticsearch.enabled": "true"}}, chartPath(t), "capacity-test", nil)
+	output := helm.RenderTemplate(t, &helm.Options{SetValues: map[string]string{"orchestration.data.secondaryStorage.type": "elasticsearch"}}, chartPath(t), "capacity-test", nil)
 	require.NotContains(t, strings.TrimSpace(output), "Source: camunda-platform/templates/capacity-manager/")
 }
 

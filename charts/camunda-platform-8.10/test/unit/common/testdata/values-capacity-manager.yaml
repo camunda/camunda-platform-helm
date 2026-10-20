@@ -1,9 +1,8 @@
-global:
-  elasticsearch:
-    enabled: true
-
 capacityManager:
   enabled: true
 
 orchestration:
+  data:
+    secondaryStorage:
+      type: elasticsearch
   clusterSize: "1"
