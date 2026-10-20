@@ -12,9 +12,7 @@ metadata:
     {{ $key }}: {{ $value | quote }}
     {{- end }}
 spec:
-  {{- if ne .Values.capacityManager.replicaOwnership "capacityManager" }}
   replicas: {{ include "orchestration.replicas" . }}
-  {{- end }}
   selector:
     matchLabels:
       {{- include "orchestration.matchLabels" . | nindent 6 }}

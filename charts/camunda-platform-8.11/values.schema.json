@@ -4580,7 +4580,7 @@
                 },
                 "replicaOwnership": {
                     "type": "string",
-                    "description": "can be used to transfer orchestration StatefulSet replica ownership to the capacity manager. Empty keeps ordinary Helm ownership. Returning ownership is not supported in chart 15.",
+                    "description": "can be used to transfer orchestration StatefulSet replica ownership to the capacity manager. Empty keeps ordinary Helm ownership. Returning ownership is not supported in chart 16.",
                     "default": "",
                     "enum": [
                         "",

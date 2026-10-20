@@ -2144,7 +2144,7 @@ connectors:
 capacityManager:
   ## @param capacityManager.enabled if true, deploys the capacity manager and allows it to manage orchestration StatefulSet replicas.
   enabled: false
-  ## @param capacityManager.replicaOwnership can be used to transfer orchestration StatefulSet replica ownership to the capacity manager. Empty keeps ordinary Helm ownership. Returning ownership is not supported in chart 15.
+  ## @param capacityManager.replicaOwnership can be used to transfer orchestration StatefulSet replica ownership to the capacity manager. Empty keeps ordinary Helm ownership. Returning ownership is not supported in chart 16.
   replicaOwnership: ""
 
   ## @extra capacityManager.image configuration to configure the Capacity Manager image specifics.

@@ -1,6 +1,6 @@
 # Automatic Capacity Manager
 
-The capacity manager is an opt-in 8.10 component that coordinates physical orchestration capacity
+The capacity manager is an opt-in chart 8.11 component that coordinates physical orchestration capacity
 with Camunda's dynamic cluster topology.
 
 It supports three policy modes:

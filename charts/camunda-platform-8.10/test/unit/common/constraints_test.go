@@ -52,55 +52,6 @@ func TestConstraintTemplate(t *testing.T) {
 func (s *ConstraintTemplateTest) TestDifferentValuesInputs() {
 	testCases := []testhelpers.TestCase{
 		{
-			Name:        "TestCapacityManagerRequiresOrchestration",
-			ValuesFiles: []string{filepath.Join(s.chartPath, "test/unit/common/testdata/values-capacity-manager.yaml")},
-			Values: map[string]string{
-				"orchestration.enabled": "false",
-			},
-			Verifier: func(t *testing.T, output string, err error) {
-				s.Require().ErrorContains(err, "capacityManager.enabled requires orchestration.enabled")
-			},
-		}, {
-			Name:        "TestCapacityManagerRequiresSingleBootstrapBroker",
-			ValuesFiles: []string{filepath.Join(s.chartPath, "test/unit/common/testdata/values-capacity-manager-cluster-size.yaml")},
-			Verifier: func(t *testing.T, output string, err error) {
-				s.Require().ErrorContains(err, "requires orchestration.clusterSize to be 1")
-			},
-		}, {
-			Name:        "TestCapacityManagerRejectsMultiRegion",
-			ValuesFiles: []string{filepath.Join(s.chartPath, "test/unit/common/testdata/values-capacity-manager.yaml")},
-			Values: map[string]string{
-				"global.multiregion.regions": "2",
-			},
-			RenderTemplateExtraArgs: []string{"--set-string", "orchestration.clusterSize=2"},
-			Verifier: func(t *testing.T, output string, err error) {
-				s.Require().ErrorContains(err, "capacityManager does not yet support multi-region deployments")
-			},
-		}, {
-			Name:        "TestCapacityManagerRejectsZoneAwarePartitioning",
-			ValuesFiles: []string{filepath.Join(s.chartPath, "test/unit/common/testdata/values-capacity-manager.yaml")},
-			Values: map[string]string{
-				"orchestration.partitioning.scheme":                    "zone-aware",
-				"orchestration.partitioning.zone":                      "region-a",
-				"orchestration.partitioning.zones[0].name":             "region-a",
-				"orchestration.partitioning.zones[0].numberOfBrokers":  "1",
-				"orchestration.partitioning.zones[0].numberOfReplicas": "1",
-				"orchestration.partitioning.zones[0].priority":         "1",
-			},
-			Verifier: func(t *testing.T, output string, err error) {
-				s.Require().ErrorContains(err, "capacityManager requires orchestration.partitioning.scheme round-robin")
-			},
-		}, {
-			Name:        "TestCapacityManagerRequiresExternalServiceAccountName",
-			ValuesFiles: []string{filepath.Join(s.chartPath, "test/unit/common/testdata/values-capacity-manager.yaml")},
-			Values: map[string]string{
-				"capacityManager.serviceAccount.enabled": "false",
-			},
-			Verifier: func(t *testing.T, output string, err error) {
-				s.Require().ErrorContains(err, "capacityManager.serviceAccount.name is required")
-			},
-		},
-		{
 			Name: "TestExistingSecretConstraintDisplays",
 			Values: map[string]string{
 				"identity.enabled":                                              "true",
