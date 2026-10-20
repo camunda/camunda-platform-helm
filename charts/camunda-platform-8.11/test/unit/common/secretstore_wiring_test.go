@@ -145,6 +145,7 @@ func (s *secretStoreWiringTest) TestServiceAccountAnnotations() {
 }
 
 func (s *secretStoreWiringTest) TestStatefulSetWiring() {
+	longTenantID := "tenant1" + strings.Repeat("x", 57)
 	testCases := []testhelpers.TestCase{
 		{
 			Name:     "File store mounts the existing secret as a volume",
@@ -340,12 +341,12 @@ func (s *secretStoreWiringTest) TestStatefulSetWiring() {
 			},
 		},
 		{
-			Name:     "Generated volume name is a DNS label for an awkward tenant id",
+			Name:     "Generated volume name is a DNS label for a 64-character tenant id",
 			Template: "templates/orchestration/statefulset.yaml",
 			Values: mergeValues(secretStoreBaseValues(), map[string]string{
-				"orchestration.secretStore.file.default.secret.existingSecret":                          "shared-secret",
-				"orchestration.secretStore.physicalTenants.Tenant_1.file.default.path":                  "/tenant/secrets",
-				"orchestration.secretStore.physicalTenants.Tenant_1.file.default.secret.existingSecret": "shared-secret",
+				"orchestration.secretStore.file.default.secret.existingSecret":                                      "shared-secret",
+				"orchestration.secretStore.physicalTenants." + longTenantID + ".file.default.path":                  "/tenant/secrets",
+				"orchestration.secretStore.physicalTenants." + longTenantID + ".file.default.secret.existingSecret": "shared-secret",
 			}),
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().NoError(err)
@@ -359,11 +360,11 @@ func (s *secretStoreWiringTest) TestStatefulSetWiring() {
 					}
 					s.Require().LessOrEqual(len(volume.Name), 63, "volume name %q exceeds the DNS label limit", volume.Name)
 					s.Require().Regexp(dnsLabel, volume.Name)
-					if strings.Contains(volume.Name, "tenant-1") {
+					if strings.Contains(volume.Name, "tenant1x") {
 						found = true
 					}
 				}
-				s.Require().True(found, "expected the sanitised tenant id in a volume name")
+				s.Require().True(found, "expected the truncated tenant id in a volume name")
 			},
 		},
 		{
