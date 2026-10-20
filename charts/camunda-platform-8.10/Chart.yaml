@@ -34,7 +34,7 @@ maintainers:
   - name: camunda
     url: https://camunda.com
 annotations:
-  camunda.io/helmCLIVersion: "3.22.0,4.3.0"
+  camunda.io/helmCLIVersion: "3.22.1,4.3.1"
   artifacthub.io/links: |
     - name: Camunda 8 docs
       url: https://docs.camunda.io/
@@ -43,4 +43,18 @@ annotations:
     - name: Camunda 8 Self-Managed Helm charts
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
-  artifacthub.io/changes: ""
+  artifacthub.io/changes: |
+    - kind: fixed
+      description: "Keep Gateway API redirects on HTTPS for bare Web Modeler, Orchestration and Optimize paths"
+    - kind: fixed
+      description: "Honor env replication factor override in dual-region warning"
+    - kind: fixed
+      description: "Deprecate global.image tag and repository in the 8.10 chart"
+    - kind: fixed
+      description: "Render the Identity and Optimize ServiceMonitors only when their component is deployed"
+    - kind: fixed
+      description: "Warn when 8.10 and 8.11 Management Identity uses Keycloak without a Keycloak URL"
+    - kind: fixed
+      description: "Warn when global.noSecondaryStorage conflicts with orchestration secondary storage type"
+    - kind: fixed
+      description: "Align 8.10 and 8.11 deprecation removal targets and policy docs with the Camunda 8 non-public API policy"
