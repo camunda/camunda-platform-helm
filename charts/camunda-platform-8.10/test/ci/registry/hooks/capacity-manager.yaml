@@ -1,9 +1,0 @@
-script: verify-capacity-manager.sh
-description: |
-  Ramps process load against one CPU-limited broker until the request
-  limiter rejects commands, verifies the capacity manager adds a broker on
-  backpressure and broker-CPU evidence from an in-namespace Prometheus and
-  that the second broker relieves backpressure, then removes the load and
-  verifies the scale-down is driven by the no-backpressure and
-  fits-on-fewer-brokers signals and evacuates the topology before the
-  StatefulSet contracts.
