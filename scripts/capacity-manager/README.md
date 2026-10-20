@@ -52,7 +52,7 @@ abbreviated as `{S}`):
 | up | `broker-cpu` | `max(avg_over_time(process_cpu_usage{S}[2m]))` | `>= 0.75` | The brokers themselves are busy. `process_cpu_usage` is relative to the CPUs available to the JVM, which follows the container CPU limit rounded up to whole CPUs. |
 | down | `no-backpressure` | same as `backpressure` | `<= 0.001` | Nothing is being rejected. |
 | down | `fits-on-fewer-brokers` | `sum(avg_over_time(process_cpu_usage{S}[5m])) / ($BROKERS - 1)` | `<= 0.5` | The current work fits on one broker fewer with headroom. |
-| veto | `exporter-backlog` | `max(max by (partition) (zeebe_log_appender_last_committed_position{S}) - min by (partition) (max by (partition, exporterId) (zeebe_exporter_last_exported_position{S}))) or vector(0)` | `>= 100000` | Exporters (and secondary storage) are behind; brokers are not the bottleneck and moving partitions adds load. |
+| veto | `exporter-backlog` | `max(max by (partition) (zeebe_log_appender_last_committed_position{S}) - min by (partition) (max by (partition, exporter) (zeebe_exporter_last_exported_position{S}))) or vector(0)` | `>= 100000` | Exporters (and secondary storage) are behind; brokers are not the bottleneck and moving partitions adds load. |
 | veto | `partition-unhealthy` | `min(zeebe_health{S})` | `<= 0` | A partition is unhealthy or dead. |
 
 Exporter or secondary-storage lag does not raise backpressure unless write-rate throttling is
