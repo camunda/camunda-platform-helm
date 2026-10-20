@@ -545,6 +545,42 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				s.Require().Equal("/test/live", probe.LivenessProbe.HTTPGet.Path)
 			},
 		}, {
+			Name: "TestContainerProbesWithScheme",
+			Values: map[string]string{
+				"connectors.startupProbe.enabled":   "true",
+				"connectors.startupProbe.scheme":    "HTTPS",
+				"connectors.readinessProbe.enabled": "true",
+				"connectors.readinessProbe.scheme":  "HTTPS",
+				"connectors.livenessProbe.enabled":  "true",
+				"connectors.livenessProbe.scheme":   "HTTPS",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				// then
+				probe := deployment.Spec.Template.Spec.Containers[0]
+
+				s.Require().Equal(corev1.URISchemeHTTPS, probe.StartupProbe.HTTPGet.Scheme)
+				s.Require().Equal(corev1.URISchemeHTTPS, probe.ReadinessProbe.HTTPGet.Scheme)
+				s.Require().Equal(corev1.URISchemeHTTPS, probe.LivenessProbe.HTTPGet.Scheme)
+			},
+		}, {
+			Name: "TestContainerProbesWithLegacyScheme",
+			Values: map[string]string{
+				"connectors.scheme":                 "HTTPS",
+				"connectors.readinessProbe.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				// then
+				probe := deployment.Spec.Template.Spec.Containers[0]
+
+				s.Require().Equal(corev1.URISchemeHTTPS, probe.ReadinessProbe.HTTPGet.Scheme)
+			},
+		}, {
 			Name: "TestContainerExtraVolumeMounts",
 			Values: map[string]string{
 				"connectors.enabled":                        "true",
