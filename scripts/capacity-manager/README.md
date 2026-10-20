@@ -81,7 +81,9 @@ contraction.
 The process exposes:
 
 - `/healthz` for health probes.
-- `/status` for the current decision, phase, capacity, signal readings and blocking reason.
+- `/status` for the current decision, phase, capacity, signal readings, blocking reason, and
+  `lastChange` (time, broker counts, reason and signal readings of the last decision that started a
+  change).
 - `/metrics` for current/desired brokers, replicas, phase and signal readings.
 
 ## Local Validation

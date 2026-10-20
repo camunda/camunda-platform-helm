@@ -205,6 +205,9 @@ func TestManagerQueriesSignalsWithBrokerCount(t *testing.T) {
 	if err := manager.Reconcile(context.Background()); err != nil {
 		t.Fatal(err)
 	}
+	if change := manager.Status().LastChange; change == nil || change.From != 2 || change.To != 1 || change.Signals["fits"] != 0.3 {
+		t.Fatalf("expected last change evidence, got %#v", change)
+	}
 	if got := manager.Status().Signals["fits"]; got != 0.3 {
 		t.Fatalf("expected $BROKERS substitution, signals=%v", manager.Status().Signals)
 	}

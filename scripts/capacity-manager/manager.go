@@ -55,8 +55,19 @@ type Status struct {
 	DesiredBrokers   int                `json:"desiredBrokers"`
 	WorkloadReplicas int                `json:"workloadReplicas"`
 	Signals          map[string]float64 `json:"signals,omitempty"`
+	LastChange       *CapacityChange    `json:"lastChange,omitempty"`
 	Confidence       string             `json:"confidence"`
 	LastError        string             `json:"lastError,omitempty"`
+}
+
+// CapacityChange records the most recent decision that started a broker
+// change, so the evidence behind it stays visible after later reconciles.
+type CapacityChange struct {
+	At      time.Time          `json:"at"`
+	From    int                `json:"from"`
+	To      int                `json:"to"`
+	Reason  string             `json:"reason"`
+	Signals map[string]float64 `json:"signals,omitempty"`
 }
 
 func (s Status) JSON() []byte {
@@ -79,6 +90,7 @@ type Manager struct {
 	OperationPoll time.Duration
 	mu            sync.RWMutex
 	status        Status
+	lastChange    *CapacityChange
 }
 
 func (m *Manager) Status() Status {
@@ -89,6 +101,7 @@ func (m *Manager) Status() Status {
 
 func (m *Manager) setStatus(status Status) {
 	m.mu.Lock()
+	status.LastChange = m.lastChange
 	m.status = status
 	m.mu.Unlock()
 	m.Logger.Info("capacity decision", "status", string(status.JSON()))
@@ -164,6 +177,11 @@ func (m *Manager) Reconcile(ctx context.Context) error {
 			return m.Workload.SetTarget(ctx, current)
 		}
 		return m.Workload.MarkCompleted(ctx, current)
+	}
+	if decision.Desired != current {
+		m.mu.Lock()
+		m.lastChange = &CapacityChange{At: status.ObservedAt, From: current, To: decision.Desired, Reason: decision.Reason, Signals: decision.Signals}
+		m.mu.Unlock()
 	}
 	if decision.Desired > current {
 		target := current + 1
