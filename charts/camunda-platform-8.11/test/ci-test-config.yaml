@@ -21,7 +21,7 @@ unit:
     - name: Management
       packages: identity common companion deprecation testhelpers utils
     - name: Orchestration
-      packages: orchestration connectors optimize
+      packages: orchestration connectors optimize capacitymanager
     - name: Design
       packages: web-modeler
     - name: Topology

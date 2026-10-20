@@ -20,6 +20,8 @@ import (
 	"strings"
 	"testing"
 
+	_ "camunda-platform/test/unit/utils" // registers the -update-golden flag so this package tolerates the golden-update test runner
+
 	"github.com/gruntwork-io/terratest/modules/helm"
 	"github.com/stretchr/testify/require"
 	appsv1 "k8s.io/api/apps/v1"
