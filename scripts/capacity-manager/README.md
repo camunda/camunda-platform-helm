@@ -8,7 +8,12 @@ topology. It never reduces the logical partition count.
 - `recommend` reports decisions without changing capacity.
 - `scheduled` applies an explicit target or an active scheduled minimum.
 - `automatic` evaluates a Prometheus pressure query with separate scale-up and scale-down
-  stabilization windows.
+  stabilization. A scaling step requires both the configured sample count
+  (`scaleUpSamples`/`scaleDownSamples`) and the pressure condition to hold continuously for the
+  configured window (`scaleUpStabilization`/`scaleDownStabilization`, Go durations such as `2m`).
+  An active scheduled minimum is also the floor for automatic scale-down.
+
+`scheduledMinimumBrokers` requires both `scheduleStartsAt` and `scheduleEndsAt` (RFC 3339).
 
 The policy is read from `/etc/capacity-manager/policy.json` on every reconciliation. The Helm chart
 renders this file from `capacityManager.policy`.

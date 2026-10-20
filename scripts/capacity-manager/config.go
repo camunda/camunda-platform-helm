@@ -60,6 +60,15 @@ func (p Policy) validate() error {
 	if (p.ScheduleStartsAt == "") != (p.ScheduleEndsAt == "") {
 		return fmt.Errorf("scheduleStartsAt and scheduleEndsAt must be configured together")
 	}
+	if p.ScheduledMinimum != 0 && p.ScheduleStartsAt == "" {
+		return fmt.Errorf("scheduledMinimumBrokers requires scheduleStartsAt and scheduleEndsAt")
+	}
+	if _, err := parseStabilization(p.ScaleUpStabilization); err != nil {
+		return fmt.Errorf("parse scaleUpStabilization: %w", err)
+	}
+	if _, err := parseStabilization(p.ScaleDownStabilization); err != nil {
+		return fmt.Errorf("parse scaleDownStabilization: %w", err)
+	}
 	if p.ScheduleStartsAt != "" {
 		start, err := time.Parse(time.RFC3339, p.ScheduleStartsAt)
 		if err != nil {
@@ -74,6 +83,21 @@ func (p Policy) validate() error {
 		}
 	}
 	return nil
+}
+
+// parseStabilization parses an optional Go duration; empty means no window.
+func parseStabilization(value string) (time.Duration, error) {
+	if value == "" {
+		return 0, nil
+	}
+	d, err := time.ParseDuration(value)
+	if err != nil {
+		return 0, err
+	}
+	if d < 0 {
+		return 0, fmt.Errorf("duration cannot be negative")
+	}
+	return d, nil
 }
 
 func (p Policy) scheduledMinimum(now time.Time) (int, error) {

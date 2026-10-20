@@ -49,4 +49,59 @@ func TestPlanner(t *testing.T) {
 			t.Fatalf("unexpected decision: %#v, %v", decision, err)
 		}
 	})
+	t.Run("does not scale below active scheduled minimum", func(t *testing.T) {
+		now := time.Now().UTC()
+		planner := &Planner{}
+		pressure := 0.0
+		policy := Policy{Mode: "automatic", MinBrokers: 1, MaxBrokers: 5, ScaleUpThreshold: 0.8, ScaleDownThreshold: 0.2, ScheduledMinimum: 3, ScheduleStartsAt: now.Add(-time.Minute).Format(time.RFC3339), ScheduleEndsAt: now.Add(time.Minute).Format(time.RFC3339)}
+		decision, err := planner.Decide(policy, 3, &pressure, now)
+		if err != nil || decision.Desired != 3 {
+			t.Fatalf("unexpected decision: %#v, %v", decision, err)
+		}
+		decision, err = planner.Decide(policy, 4, &pressure, now)
+		if err != nil || decision.Desired != 3 {
+			t.Fatalf("expected scale down to floor: %#v, %v", decision, err)
+		}
+	})
+
+	t.Run("honours stabilization windows", func(t *testing.T) {
+		start := time.Now().UTC()
+		planner := &Planner{}
+		high, low := 0.9, 0.1
+		policy := Policy{Mode: "automatic", MinBrokers: 1, MaxBrokers: 3, ScaleUpThreshold: 0.8, ScaleDownThreshold: 0.2, ScaleUpStabilization: "1m", ScaleDownStabilization: "5m"}
+		if d, _ := planner.Decide(policy, 1, &high, start); d.Desired != 1 {
+			t.Fatalf("scaled up before window: %#v", d)
+		}
+		if d, _ := planner.Decide(policy, 1, &high, start.Add(30*time.Second)); d.Desired != 1 {
+			t.Fatalf("scaled up before window: %#v", d)
+		}
+		if d, _ := planner.Decide(policy, 1, &high, start.Add(time.Minute)); d.Desired != 2 {
+			t.Fatalf("did not scale up after window: %#v", d)
+		}
+		if d, _ := planner.Decide(policy, 2, &low, start.Add(2*time.Minute)); d.Desired != 2 {
+			t.Fatalf("scaled down before window: %#v", d)
+		}
+		if d, _ := planner.Decide(policy, 2, &low, start.Add(7*time.Minute)); d.Desired != 1 {
+			t.Fatalf("did not scale down after window: %#v", d)
+		}
+	})
+}
+
+func TestPolicyValidation(t *testing.T) {
+	base := Policy{Mode: "scheduled", MinBrokers: 1, MaxBrokers: 5}
+	missing := base
+	missing.ScheduledMinimum = 3
+	if err := missing.validate(); err == nil {
+		t.Fatal("expected scheduled minimum without timestamps to be rejected")
+	}
+	bad := base
+	bad.ScaleUpStabilization = "soon"
+	if err := bad.validate(); err == nil {
+		t.Fatal("expected invalid stabilization to be rejected")
+	}
+	negative := base
+	negative.ScaleDownStabilization = "-1m"
+	if err := negative.validate(); err == nil {
+		t.Fatal("expected negative stabilization to be rejected")
+	}
 }
