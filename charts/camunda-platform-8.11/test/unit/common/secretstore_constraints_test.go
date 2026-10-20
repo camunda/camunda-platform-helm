@@ -75,6 +75,28 @@ func (s *secretStoreConstraintsTest) TestConstraintFailures() {
 			},
 		},
 		{
+			Name:     "Physical tenant id with a hyphen is rejected",
+			Template: "templates/orchestration/serviceaccount.yaml",
+			Values: mergeValues(secretStoreBaseValues(), map[string]string{
+				"orchestration.secretStore.physicalTenants.tenant-a.file.default.secret.existingSecret": "s",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Error(err)
+				s.Require().Contains(err.Error(), "does not match pattern")
+			},
+		},
+		{
+			Name:     "Physical tenant id with uppercase letters is rejected",
+			Template: "templates/orchestration/serviceaccount.yaml",
+			Values: mergeValues(secretStoreBaseValues(), map[string]string{
+				"orchestration.secretStore.physicalTenants.TenantA.file.default.secret.existingSecret": "s",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Error(err)
+				s.Require().Contains(err.Error(), "does not match pattern")
+			},
+		},
+		{
 			Name:     "Conflicting roleArn across tenants is rejected",
 			Template: "templates/orchestration/serviceaccount.yaml",
 			Values: mergeValues(secretStoreBaseValues(), map[string]string{
