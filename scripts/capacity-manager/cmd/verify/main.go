@@ -25,26 +25,85 @@ func main() {
 	if namespace == "" || release == "" {
 		fatalf("TEST_NAMESPACE and RELEASE_NAME are required")
 	}
-	if err := waitFor(namespace, release, 2, 10*time.Minute); err != nil {
+
+	// 1. Ramping load must saturate one broker and the scale-up must be
+	// justified by backpressure and broker CPU, not throughput.
+	up, err := waitFor(namespace, release, 2, 20*time.Minute)
+	if err != nil {
 		fatalf("load-triggered scale up verification: %v", err)
 	}
+	if err := requireChange(up.LastChange, 1, 2, "backpressure", "broker-cpu"); err != nil {
+		fatalf("scale-up evidence: %v", err)
+	}
+	pressure := up.LastChange.Signals["backpressure"]
+	fmt.Printf("scaled 1 -> 2 on %q (backpressure drop ratio %.3f, broker cpu %.2f)\n", up.LastChange.Reason, pressure, up.LastChange.Signals["broker-cpu"])
+
+	// 2. The added broker must actually relieve the saturation.
+	if err := waitForSignalBelow(namespace, release, "backpressure", pressure, 10*time.Minute); err != nil {
+		fatalf("second broker did not relieve backpressure: %v", err)
+	}
+
+	// 3. Removing load must contract safely, justified by the scale-down signals.
 	if _, err := kubectl("delete", "deployment", release+"-capacity-load", "-n", namespace, "--ignore-not-found", "--wait=true", "--timeout=2m"); err != nil {
 		fatalf("stop load generator: %v", err)
 	}
-	if err := waitFor(namespace, release, 1, 10*time.Minute); err != nil {
+	down, err := waitFor(namespace, release, 1, 20*time.Minute)
+	if err != nil {
 		fatalf("idle-triggered scale down verification: %v", err)
 	}
-	fmt.Println("capacity manager verified load-triggered 1 -> 2 and idle-triggered safe 2 -> 1 broker scaling")
+	if err := requireChange(down.LastChange, 2, 1, "no-backpressure", "fits-on-fewer-brokers"); err != nil {
+		fatalf("scale-down evidence: %v", err)
+	}
+	fmt.Println("capacity manager verified backpressure-driven 1 -> 2 and idle-driven safe 2 -> 1 broker scaling")
 }
 
-func waitFor(namespace, release string, target int, timeout time.Duration) error {
+func requireChange(change *capacity.CapacityChange, from, to int, signals ...string) error {
+	if change == nil {
+		return fmt.Errorf("status has no lastChange")
+	}
+	if change.From != from || change.To != to {
+		return fmt.Errorf("last change was %d -> %d, want %d -> %d", change.From, change.To, from, to)
+	}
+	for _, signal := range signals {
+		if !strings.Contains(change.Reason, signal) {
+			return fmt.Errorf("reason %q does not name signal %q", change.Reason, signal)
+		}
+		if _, ok := change.Signals[signal]; !ok {
+			return fmt.Errorf("signal %q has no recorded reading: %v", signal, change.Signals)
+		}
+	}
+	return nil
+}
+
+func waitForSignalBelow(namespace, release, signal string, limit float64, timeout time.Duration) error {
 	deadline := time.Now().Add(timeout)
+	last := "no reading"
+	for time.Now().Before(deadline) {
+		status, err := getStatus(namespace, release)
+		if err == nil {
+			if value, ok := status.Signals[signal]; ok {
+				last = strconv.FormatFloat(value, 'f', 3, 64)
+				if value < limit {
+					fmt.Printf("%s fell from %.3f to %s with two brokers\n", signal, limit, last)
+					return nil
+				}
+			}
+		}
+		time.Sleep(10 * time.Second)
+	}
+	return fmt.Errorf("%s stayed at or above %.3f (last %s)", signal, limit, last)
+}
+
+func waitFor(namespace, release string, target int, timeout time.Duration) (capacity.Status, error) {
+	deadline := time.Now().Add(timeout)
+	var last capacity.Status
 	for time.Now().Before(deadline) {
 		status, err := getStatus(namespace, release)
 		if err != nil {
 			time.Sleep(5 * time.Second)
 			continue
 		}
+		last = status
 		replicas, err := getReplicas(namespace, release)
 		if err != nil {
 			time.Sleep(5 * time.Second)
@@ -55,15 +114,15 @@ func waitFor(namespace, release string, target int, timeout time.Duration) error
 			time.Sleep(5 * time.Second)
 			continue
 		}
-		if target == 1 && replicas == 1 && brokers > 1 {
-			return fmt.Errorf("StatefulSet contracted before topology evacuation: replicas=%d brokers=%d status=%#v", replicas, brokers, status)
+		if replicas < brokers {
+			return status, fmt.Errorf("StatefulSet contracted before topology evacuation: replicas=%d brokers=%d status=%#v", replicas, brokers, status)
 		}
 		if brokers == target && replicas == target && status.Phase == "stable" {
-			return nil
+			return status, nil
 		}
 		time.Sleep(5 * time.Second)
 	}
-	return fmt.Errorf("timed out waiting for %d brokers", target)
+	return last, fmt.Errorf("timed out waiting for %d brokers; last status %s", target, last.JSON())
 }
 
 func getReplicas(namespace, release string) (int, error) {
