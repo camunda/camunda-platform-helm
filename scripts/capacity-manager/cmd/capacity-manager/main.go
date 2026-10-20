@@ -69,6 +69,7 @@ func main() {
 		PodLabel:       podLabel,
 		JoinTimeout:    joinTimeout,
 		Planner:        &capacity.Planner{},
+		Advisor:        &capacity.PartitionAdvisor{},
 		Logger:         logger,
 		OperationWait:  operationWait,
 		OperationPoll:  5 * time.Second,
@@ -88,6 +89,10 @@ func main() {
 		response.Header().Set("Content-Type", "text/plain; version=0.0.4")
 		escape := strings.NewReplacer("\\", "\\\\", "\"", "\\\"", "\n", "\\n").Replace
 		phase := escape(status.Phase)
+		ceiling := "0"
+		if status.PartitionAdvisor.CeilingDetected {
+			ceiling = "1"
+		}
 		var signals strings.Builder
 		signals.WriteString("# TYPE camunda_capacity_manager_signal gauge\n")
 		for name, value := range status.Signals {
@@ -102,7 +107,13 @@ func main() {
 				"camunda_capacity_manager_workload_replicas " + strconv.Itoa(status.WorkloadReplicas) + "\n" +
 				signals.String() +
 				"# TYPE camunda_capacity_manager_phase gauge\n" +
-				"camunda_capacity_manager_phase{phase=\"" + phase + "\"} 1\n"))
+				"camunda_capacity_manager_phase{phase=\"" + phase + "\"} 1\n" +
+				"# TYPE camunda_capacity_manager_current_partitions gauge\n" +
+				"camunda_capacity_manager_current_partitions " + strconv.Itoa(status.PartitionAdvisor.Current) + "\n" +
+				"# TYPE camunda_capacity_manager_recommended_partitions gauge\n" +
+				"camunda_capacity_manager_recommended_partitions " + strconv.Itoa(status.PartitionAdvisor.Recommended) + "\n" +
+				"# TYPE camunda_capacity_manager_partition_ceiling_detected gauge\n" +
+				"camunda_capacity_manager_partition_ceiling_detected " + ceiling + "\n"))
 	})
 	server := &http.Server{Addr: listenAddress, Handler: mux, ReadHeaderTimeout: 5 * time.Second}
 	go func() {

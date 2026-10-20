@@ -335,3 +335,27 @@ func TestManagerParenthesisedPlaceholders(t *testing.T) {
 		t.Fatalf("os.Expand changed the parenthesised form: %s", expanded)
 	}
 }
+
+func TestManagerPublishesPartitionAdviceWithoutMutation(t *testing.T) {
+	policy := Policy{
+		Mode: "recommend", MinBrokers: 1, MaxBrokers: 1,
+		PartitionAdvisor: PartitionAdvisorPolicy{Enabled: true, MaxRecommendedPartitions: 4, TargetLoad: 0.7, LoadQuery: `max(load{namespace="$NAMESPACE"})`, CeilingSamples: 1},
+	}
+	workload := &fakeWorkload{replicas: 1}
+	cluster := &fakeCluster{topology: activeTopology(1)}
+	manager := newTestManager(policy, workload, cluster)
+	manager.Advisor = &PartitionAdvisor{}
+	manager.Namespace = "ns"
+	manager.Metrics = fakeMetrics{values: map[string]float64{`max(load{namespace="ns"})`: 0.95}}
+
+	if err := manager.Reconcile(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	status := manager.Status()
+	if !status.PartitionAdvisor.CeilingDetected || status.PartitionAdvisor.Recommended != 2 {
+		t.Fatalf("unexpected advisor status: %#v", status.PartitionAdvisor)
+	}
+	if len(workload.scales) != 0 || len(cluster.calls) != 0 || status.Phase != "recommended" {
+		t.Fatalf("advisor mutated capacity: scales=%v clusterCalls=%v status=%#v", workload.scales, cluster.calls, status)
+	}
+}

@@ -122,3 +122,28 @@ orchestration pods, runs three partitions on one CPU-limited broker, and ramps a
 the request limiter rejects commands. The verifier asserts that scale-up is driven by the
 `backpressure` and `broker-cpu` signals, that the drop ratio falls after the new broker joins, and that
 scale-down happens only after the load stops and the work fits on fewer brokers.
+
+## Partition Advisor
+
+The recommendation-only partition advisor can be enabled independently of broker autoscaling. It
+uses the runtime topology's unique partition count and a sustained per-partition load reading to
+recommend a small partition increase. Recommendations never call the partition-scaling API.
+
+Partition load is the right input here, unlike for broker scaling: a partition that is at its write
+throughput limit cannot be relieved by more brokers, only by more partitions. The advisor reads
+`partitionAdvisor.loadQuery`, a PromQL query evaluated against `capacityManager.prometheusURL` with the
+same `$NAMESPACE`/`$STATEFULSET`/`$BROKERS` placeholders, for example the busiest partition's appended
+record rate:
+
+```promql
+max(sum by (partition) (rate(zeebe_log_appender_record_appended_total{namespace="$NAMESPACE",pod=~"$STATEFULSET-[0-9]+"}[1m])))
+```
+
+or `max(zeebe_flow_control_partition_load{...})` when write-rate flow control is enabled.
+
+The GKE advisor scenario runs one broker and one partition under a 50 process-instances-per-second
+noop workload, with the same in-namespace Prometheus as the capacity scenario. A per-partition
+appended-record rate above 20 records per second for three consecutive samples produces an
+incremental recommendation. The verifier asserts that StatefulSet replicas, active broker count,
+runtime partition count, pending topology change, and last topology change ID remain unchanged.
+Advisor-only RBAC cannot patch StatefulSets.

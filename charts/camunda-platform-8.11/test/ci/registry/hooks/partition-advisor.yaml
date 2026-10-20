@@ -1,0 +1,5 @@
+script: verify-partition-advisor.sh
+description: |
+  Waits for sustained process load to produce a partition-count recommendation,
+  then verifies the advisor did not change replicas, brokers, partitions, or
+  topology change ID.
