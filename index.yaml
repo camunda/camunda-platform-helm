@@ -2,6 +2,94 @@ apiVersion: v1
 entries:
   camunda-platform:
   - annotations:
+      artifacthub.io/changes: |
+        - kind: fixed
+          description: "Keep Gateway API redirects on HTTPS for bare Web Modeler, Orchestration and Optimize paths"
+        - kind: fixed
+          description: "Honor env replication factor override in dual-region warning"
+        - kind: fixed
+          description: "Deprecate global.image tag and repository in the 8.10 chart"
+        - kind: fixed
+          description: "Render the Identity and Optimize ServiceMonitors only when their component is deployed"
+        - kind: fixed
+          description: "Warn when 8.10 and 8.11 Management Identity uses Keycloak without a Keycloak URL"
+        - kind: fixed
+          description: "Warn when global.noSecondaryStorage conflicts with orchestration secondary storage type"
+        - kind: fixed
+          description: "Align 8.10 and 8.11 deprecation removal targets and policy docs with the Camunda 8 non-public API policy"
+      artifacthub.io/containsSecurityUpdates: "false"
+      artifacthub.io/images: |
+        - image: docker.io/camunda/camunda:8.10.5
+        - image: docker.io/camunda/connectors-bundle:8.10.1
+        - image: docker.io/camunda/hub-websockets:8.10.3
+        - image: docker.io/camunda/hub:8.10.3
+        - image: docker.io/camunda/identity:8.10.1
+        - image: docker.io/camunda/optimize:8.10.5
+      artifacthub.io/links: |
+        - name: Camunda 8 docs
+          url: https://docs.camunda.io/
+        - name: Camunda 8 Self-Managed docs
+          url: https://docs.camunda.io/docs/self-managed/about-self-managed/
+        - name: Camunda 8 Self-Managed Helm charts
+          url: https://github.com/camunda/camunda-platform-helm
+      camunda.io/chart-images: |
+        docker.io/camunda/camunda:8.10.5
+        docker.io/camunda/connectors-bundle:8.10.1
+        docker.io/camunda/hub-websockets:8.10.3
+        docker.io/camunda/hub:8.10.3
+        docker.io/camunda/identity:8.10.1
+        docker.io/camunda/optimize:8.10.5
+      camunda.io/component-image-versions: |
+        camunda: 8.10.5
+        managementIdentity: 8.10.1
+        optimize: 8.10.5
+        hub: 8.10.3
+        connectors: 8.10.1
+      camunda.io/helmCLIVersion: 3.22.1,4.3.1
+      camunda.io/imageOverrides: |
+        orchestration: 8.10.5
+        modeler: 8.10.3
+        connectors: 8.10.1
+        optimize: 8.10.5
+        identity: 8.10.1
+    apiVersion: v2
+    appVersion: 8.10.x
+    created: "2026-10-20T13:25:26.954038576Z"
+    dependencies:
+    - name: common
+      repository: file://../common-2
+      version: 2.x.x
+    description: 'Camunda 8 Self-Managed Helm charts. Camunda''s process automation
+      platform allows developers to design, automate and improve processes. '
+    digest: 7b7fc52659c7bbc930f01e923eedd6cc5efb9050f47be0f0623f274d3865fe03
+    home: https://docs.camunda.io/docs/self-managed/about-self-managed/
+    icon: https://helm.camunda.io/imgs/camunda.svg
+    keywords:
+    - automation
+    - business-rules
+    - bpm
+    - bpmn
+    - camunda-platform
+    - decision-engine
+    - dmn
+    - modeling
+    - orchestration
+    - process-automation
+    - process-engine
+    - process-orchestration
+    - workflow
+    - workflow-engine
+    maintainers:
+    - name: camunda
+      url: https://camunda.com
+    name: camunda-platform
+    sources:
+    - https://github.com/camunda/camunda-platform-helm
+    type: application
+    urls:
+    - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-8.10-15.2.0/camunda-platform-15.2.0.tgz
+    version: 15.2.0
+  - annotations:
       artifacthub.io/changes: ""
       artifacthub.io/containsSecurityUpdates: "false"
       artifacthub.io/images: |
@@ -34395,4 +34483,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2026-10-14T06:36:09.605941288Z"
+generated: "2026-10-20T13:25:26.95463437Z"
