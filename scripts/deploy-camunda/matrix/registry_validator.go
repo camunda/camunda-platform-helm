@@ -67,6 +67,13 @@ type RegistryValidator struct {
 	ChartDir string
 }
 
+type registryValidation struct {
+	chartDir, repoRoot, version                 string
+	resourcesDir, scriptsDir, setupDir, depsDir string
+	problems                                    []string
+	referencedScripts, referencedFixtures       map[string]bool
+}
+
 // Validate runs every check against the post-fan-out CITestConfig. Returns
 // nil when the registry is well-formed; otherwise an error whose Error()
 // lists every problem on its own line.
@@ -79,328 +86,269 @@ func (v *RegistryValidator) Validate(cfg *CITestConfig) error {
 		return err
 	}
 
-	var problems []string
 	scenariosDir := filepath.Join(v.ChartDir, "test", "integration", "scenarios")
-	resourcesDir := filepath.Join(scenariosDir, "common", "resources")
-	scriptsDir := filepath.Join(scenariosDir, "pre-setup-scripts")
-	chartFullSetupDir := filepath.Join(scenariosDir, "chart-full-setup")
-	featuresDir := filepath.Join(chartFullSetupDir, "values", "features")
-	persistenceDir := filepath.Join(chartFullSetupDir, "values", "persistence")
-	registryDepsDir := filepath.Join(v.ChartDir, "test", RegistryDirName, "dependencies")
-
-	// Referenced-set tracking — feeds the orphan walks below. Populated as a
-	// side effect of checkHook so every hook iteration path (PR/Nightly/
-	// dependency-profile/flow) contributes to the orphan exemption set.
-	referencedScripts := map[string]bool{}
-	referencedFixtures := map[string]bool{}
-
-	// Hook validity + basename resolution.
-	checkHook := func(ctx string, hook *LifecycleHook) {
-		if hook == nil {
-			return
-		}
-		if err := hook.Validate(ctx); err != nil {
-			problems = append(problems, err.Error())
-			return
-		}
-		if hook.Script != "" {
-			referencedScripts[hook.Script] = true
-			scriptPath := filepath.Join(scriptsDir, hook.Script)
-			if info, err := os.Stat(scriptPath); err != nil || info.IsDir() {
-				problems = append(problems, fmt.Sprintf("%s: script %q: missing or not a file at %s", ctx, hook.Script, scriptPath))
-			}
-		}
-		for _, fx := range hook.Fixtures {
-			referencedFixtures[fx] = true
-			fxPath := filepath.Join(resourcesDir, fx)
-			if info, err := os.Stat(fxPath); err != nil || info.IsDir() {
-				problems = append(problems, fmt.Sprintf("%s: fixture %q: missing or not a file at %s", ctx, fx, fxPath))
-			}
-		}
+	check := registryValidation{
+		chartDir: v.ChartDir, repoRoot: repoRoot, version: version,
+		resourcesDir:      filepath.Join(scenariosDir, "common", "resources"),
+		scriptsDir:        filepath.Join(scenariosDir, "pre-setup-scripts"),
+		setupDir:          filepath.Join(scenariosDir, "chart-full-setup"),
+		depsDir:           filepath.Join(v.ChartDir, "test", RegistryDirName, "dependencies"),
+		referencedScripts: map[string]bool{}, referencedFixtures: map[string]bool{},
 	}
+	check.checkUpgrades(cfg.Integration.Case.PR.Scenarios)
+	check.checkScenarios(cfg)
+	check.checkOrphanScripts()
+	check.checkOrphanFixtures()
+	if len(check.problems) == 0 {
+		return nil
+	}
+	sort.Strings(check.problems)
+	return fmt.Errorf("registry validation failed:\n  - %s", strings.Join(check.problems, "\n  - "))
+}
 
-	// Feature and dependency values-file resolution.
-	//
-	// Both IDs are interpolated straight into a path, so they must be plain
-	// filenames — the same requirement hook scripts, fixtures and dependency
-	// IDs already carry. Without it an ID such as "../persistence/elasticsearch"
-	// escapes its layer directory and validates a file the scenario never
-	// named. Topology.Validate enforces the same rule for the per-release
-	// overrides of these fields.
-	checkFeature := func(ctx, feature string) {
-		if !isPlainFilename(feature) {
-			problems = append(problems, fmt.Sprintf("%s: feature reference %q must be a plain filename (no path separators)", ctx, feature))
-			return
-		}
-		fPath := filepath.Join(featuresDir, feature+".yaml")
-		if info, err := os.Stat(fPath); err != nil || info.IsDir() {
-			problems = append(problems, fmt.Sprintf("%s: feature %q: missing values file at %s", ctx, feature, fPath))
-		}
+func (v *registryValidation) checkHook(ctx string, hook *LifecycleHook) {
+	if hook == nil {
+		return
 	}
-	checkPersistence := func(ctx, persistence string) {
-		if !isPlainFilename(persistence) {
-			problems = append(problems, fmt.Sprintf("%s: persistence reference %q must be a plain filename (no path separators)", ctx, persistence))
-			return
-		}
-		pPath := filepath.Join(persistenceDir, persistence+".yaml")
-		if info, err := os.Stat(pPath); err != nil || info.IsDir() {
-			problems = append(problems, fmt.Sprintf("%s: persistence %q: missing values file at %s", ctx, persistence, pPath))
-		}
+	if err := hook.Validate(ctx); err != nil {
+		v.problems = append(v.problems, err.Error())
+		return
 	}
-	// Per-scenario extra-values resolution: relative paths resolve against the
-	// scenario's chart-full-setup dir (matching appendScenarioExtraValues in
-	// runner_execute.go); absolute paths are runtime-supplied and not validated.
-	checkExtraValues := func(ctx, ev string) {
-		if filepath.IsAbs(ev) {
-			return
-		}
-		path := filepath.Join(chartFullSetupDir, ev)
-		// Reject paths that escape chart-full-setup via `..` traversal.
-		rel, err := filepath.Rel(chartFullSetupDir, path)
-		if err != nil || strings.HasPrefix(rel, "..") {
-			problems = append(problems, fmt.Sprintf("%s: extra-values %q: path escapes chart-full-setup dir", ctx, ev))
-			return
-		}
+	if hook.Script != "" {
+		v.referencedScripts[hook.Script] = true
+		path := filepath.Join(v.scriptsDir, hook.Script)
 		if info, err := os.Stat(path); err != nil || info.IsDir() {
-			problems = append(problems, fmt.Sprintf("%s: extra-values %q: missing values file at %s", ctx, ev, path))
+			v.problems = append(v.problems, fmt.Sprintf("%s: script %q: missing or not a file at %s", ctx, hook.Script, path))
 		}
 	}
-	checkDep := func(ctx string, dep ChartDependency) {
-		if dep.ValuesFile == "" {
-			return
-		}
-		// values-file paths in deps are relative to the repository root,
-		// matching the runner's resolution at runner.go:1742.
-		path := filepath.Join(repoRoot, dep.ValuesFile)
-		if info, err := os.Stat(path); err != nil {
-			if errors.Is(err, fs.ErrNotExist) {
-				problems = append(problems, fmt.Sprintf("%s: dependency %s: values-file %q: missing at %s", ctx, dep.ReleaseName, dep.ValuesFile, path))
-				return
-			}
-			problems = append(problems, fmt.Sprintf("%s: dependency %s: values-file %q: stat error at %s: %v", ctx, dep.ReleaseName, dep.ValuesFile, path, err))
-			return
-		} else if info.IsDir() {
-			problems = append(problems, fmt.Sprintf("%s: dependency %s: values-file %q: is a directory at %s", ctx, dep.ReleaseName, dep.ValuesFile, path))
+	for _, fixture := range hook.Fixtures {
+		v.referencedFixtures[fixture] = true
+		path := filepath.Join(v.resourcesDir, fixture)
+		if info, err := os.Stat(path); err != nil || info.IsDir() {
+			v.problems = append(v.problems, fmt.Sprintf("%s: fixture %q: missing or not a file at %s", ctx, fixture, path))
 		}
 	}
+}
 
-	currentDeps, currentDepsErr := readChartDependencies(v.ChartDir)
-	prevVersion, prevVersionErr := versionmatrix.PreviousAppVersion(version)
-	var (
-		prevDeps              []chartDependencyRef
-		prevDepsErr           error
-		prevPersistenceDir    string
-		missingCredentialKeys []string
-	)
-	if prevVersionErr == nil {
-		prevChartDir := filepath.Join(repoRoot, "charts", "camunda-platform-"+prevVersion)
-		prevDeps, prevDepsErr = readChartDependencies(prevChartDir)
-		prevPersistenceDir = filepath.Join(prevChartDir, "test", "integration", "scenarios", "chart-full-setup", "values", "persistence")
-		missingCredentialKeys, err = credentialKeysMissingFrom(v.ChartDir, prevChartDir)
-		if err != nil {
-			problems = append(problems, err.Error())
+func valuesLayerProblems(label, kind, dir string, ids ...string) []string {
+	var problems []string
+	for _, id := range ids {
+		if !isPlainFilename(id) {
+			problems = append(problems, fmt.Sprintf("%s: %s reference %q must be a plain filename (no path separators)", label, kind, id))
+			continue
+		}
+		path := filepath.Join(dir, id+".yaml")
+		if info, err := os.Stat(path); err != nil || info.IsDir() {
+			problems = append(problems, fmt.Sprintf("%s: %s %q: missing values file at %s", label, kind, id, path))
 		}
 	}
+	return problems
+}
 
-	checkUpgradePersistence := func(ctx string, scn CIScenario, effectiveFlow string) {
-		if scn.Persistence == "" {
-			return
-		}
-		// checkPersistence already reports the traversal; bail out here rather
-		// than resolving the escaped path against the previous version's dir.
-		if !isPlainFilename(scn.Persistence) {
-			return
-		}
-		if effectiveFlow != "upgrade-minor" && !versionmatrix.IsUpgradeOnlyFlow(effectiveFlow) {
-			return
-		}
-		if prevVersionErr != nil || currentDepsErr != nil || prevDepsErr != nil {
-			return
-		}
-		prevValues, err := readYAMLMap(filepath.Join(prevPersistenceDir, scn.Persistence+".yaml"))
-		if err != nil {
-			if effectiveFlow == "upgrade-minor" {
-				problems = append(problems, fmt.Sprintf(
-					"%s: persistence %q does not resolve in chart version %s (%v)"+
-						" — step 1 of the two-step upgrade installs that chart from its own scenario dir;"+
-						" add the layer there or select one both versions provide",
-					ctx, scn.Persistence, prevVersion, err))
-			}
-			return
-		}
-		for _, dep := range prevDeps {
-			if dep.Condition == "" || hasChartDependency(currentDeps, dep.Name) {
-				continue
-			}
-			if !anyConditionKeyTrue(prevValues, dep.Condition) {
-				continue
-			}
-			if scn.PostInfra != nil && scn.PostInfra.Script == bitnamiMigrationHookScript {
-				continue
-			}
-			problems = append(problems, fmt.Sprintf(
-				"%s: persistence %q resolves in chart version %s to a values file that enables subchart %q (%s: true), which this chart no longer bundles"+
-					" — the upgrade would address two different backends and start against empty storage;"+
-					" select a companion persistence layer both versions can reach, or declare \"post-infra: %s\" to migrate the data first",
-				ctx, scn.Persistence, prevVersion, dep.Name, dep.Condition, bitnamiMigrationHookID))
-		}
+func (v *registryValidation) checkExtraValues(ctx, value string) {
+	if filepath.IsAbs(value) {
+		return
 	}
+	path := filepath.Join(v.setupDir, value)
+	rel, err := filepath.Rel(v.setupDir, path)
+	if err != nil || strings.HasPrefix(rel, "..") {
+		v.problems = append(v.problems, fmt.Sprintf("%s: extra-values %q: path escapes chart-full-setup dir", ctx, value))
+		return
+	}
+	if info, err := os.Stat(path); err != nil || info.IsDir() {
+		v.problems = append(v.problems, fmt.Sprintf("%s: extra-values %q: missing values file at %s", ctx, value, path))
+	}
+}
 
-	// Permitted-flows is shared across all scenarios for this version; load once.
-	pf, err := LoadPermittedFlows(repoRoot)
+func (v *registryValidation) checkDependency(ctx string, dep ChartDependency) {
+	if dep.ValuesFile == "" {
+		return
+	}
+	path := filepath.Join(v.repoRoot, dep.ValuesFile)
+	if info, err := os.Stat(path); err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			v.problems = append(v.problems, fmt.Sprintf("%s: dependency %s: values-file %q: missing at %s", ctx, dep.ReleaseName, dep.ValuesFile, path))
+			return
+		}
+		v.problems = append(v.problems, fmt.Sprintf("%s: dependency %s: values-file %q: stat error at %s: %v", ctx, dep.ReleaseName, dep.ValuesFile, path, err))
+		return
+	} else if info.IsDir() {
+		v.problems = append(v.problems, fmt.Sprintf("%s: dependency %s: values-file %q: is a directory at %s", ctx, dep.ReleaseName, dep.ValuesFile, path))
+	}
+}
+
+func (v *registryValidation) checkUpgrades(scenarios []CIScenario) {
+	currentDeps, currentDepsErr := readChartDependencies(v.chartDir)
+	prevVersion, err := versionmatrix.PreviousAppVersion(v.version)
 	if err != nil {
-		// Loader path mismatch is a deployment-time failure, not a registry
-		// authoring one — surface it but don't gate the other checks.
-		problems = append(problems, fmt.Sprintf("permitted-flows: %v", err))
+		return
 	}
-
-	// Track (Shortname, Flow, Platform) tuples for duplicate detection. This is
-	// the exact tuple Kubernetes namespace generation uses in runner.go
-	// (`<version>-<shortname>-<flow>[-<platform>]`); including the scenario
-	// name in the key would let two scenarios with distinct names but the same
-	// shortname collide silently at namespace generation time, since
-	// runner.go's formula ignores Name entirely. Empty Platform is replaced
-	// with "" in the key — matrix.Generate defaults these to "gke" downstream,
-	// but the validator's job is to catch source-level duplication only.
-	type key struct {
-		shortname, flow, platform string
+	prevChartDir := filepath.Join(v.repoRoot, "charts", "camunda-platform-"+prevVersion)
+	prevDeps, prevDepsErr := readChartDependencies(prevChartDir)
+	prevPersistenceDir := filepath.Join(prevChartDir, "test", "integration", "scenarios", "chart-full-setup", "values", "persistence")
+	missingCredentialKeys, err := credentialKeysMissingFrom(v.chartDir, prevChartDir)
+	if err != nil {
+		v.problems = append(v.problems, err.Error())
 	}
-	seen := map[key]string{} // key -> first occurrence label
-
-	for _, scn := range cfg.Integration.Case.PR.Scenarios {
-		label := fmt.Sprintf("scenario %q (shortname %q, flow %q)", scn.Name, scn.Shortname, scn.Flow)
-		checkHook(label+" pre-install", scn.PreInstall)
-		checkHook(label+" post-infra", scn.PostInfra)
-		checkHook(label+" post-deploy", scn.PostDeploy)
-		for _, feat := range scn.Features {
-			checkFeature(label, feat)
-		}
-		for _, ev := range scn.ExtraValues {
-			checkExtraValues(label, ev)
-		}
-		for _, dep := range scn.Dependencies {
-			checkDep(label, dep)
-		}
-		if scn.Persistence != "" {
-			checkPersistence(label, scn.Persistence)
-		}
-		if scn.Topology != nil {
-			if err := scn.Topology.Validate(label, v.ChartDir, registryDepsDir); err != nil {
-				problems = append(problems, err.Error())
-			}
-		}
-
-		if scn.SkipE2E {
-			for _, field := range []struct {
-				name string
-				set  bool
-			}{
-				{"e2e-full-suite", scn.E2EFullSuite},
-				{"e2e-smoke-blocking", scn.E2ESmokeBlocking != nil},
-				{"e2e-full-suite-blocking", scn.E2EFullSuiteBlocking != nil},
-				{"e2e-api-suite", scn.E2EAPISuite},
-				{"e2e-api-suite-blocking", scn.E2EAPISuiteBlocking != nil},
-			} {
-				if field.set {
-					problems = append(problems, fmt.Sprintf("%s: %s is set but skip-e2e disables e2e entirely", label, field.name))
-				}
-			}
-		}
-		if !scn.E2EFullSuite && scn.E2EFullSuiteBlocking != nil {
-			problems = append(problems, fmt.Sprintf("%s: e2e-full-suite-blocking is set but e2e-full-suite is not enabled", label))
-		}
-		if !scn.E2EAPISuite && scn.E2EAPISuiteBlocking != nil {
-			problems = append(problems, fmt.Sprintf("%s: e2e-api-suite-blocking is set but e2e-api-suite is not enabled", label))
-		}
-
-		platforms := scn.Platforms
-		if len(platforms) == 0 {
-			platforms = []string{""}
-		}
-
-		effectiveFlow := strings.TrimSpace(scn.Flow)
-		if effectiveFlow == "" {
-			effectiveFlow = "install"
-		}
-
-		checkUpgradePersistence(label, scn, effectiveFlow)
-
-		if len(missingCredentialKeys) > 0 && slices.Contains(strings.Split(effectiveFlow, ","), "upgrade-minor") {
-			problems = append(problems, fmt.Sprintf(
+	for _, scn := range scenarios {
+		label, flow := scenarioLabel(scn), scenarioFlow(scn)
+		if len(missingCredentialKeys) > 0 && slices.Contains(strings.Split(flow, ","), "upgrade-minor") {
+			v.problems = append(v.problems, fmt.Sprintf(
 				"%s: integration-test credentials lack keys that chart version %s reads (%s)"+
 					" — CI applies this chart's ExternalSecret before step 1 of the two-step upgrade installs %s;"+
 					" add the keys to this chart's ExternalSecret",
 				label, prevVersion, strings.Join(missingCredentialKeys, ", "), prevVersion))
 		}
-
-		if pf != nil {
-			permitted := FilterFlows(pf, version, []string{effectiveFlow})
-			if len(permitted) == 0 {
-				problems = append(problems, fmt.Sprintf("%s: flow %q denied by permitted-flows for version %s", label, effectiveFlow, version))
-			}
-		}
-		for _, plat := range platforms {
-			k := key{scn.Shortname, effectiveFlow, plat}
-			if prev, ok := seen[k]; ok {
-				problems = append(problems, fmt.Sprintf("%s platform %q: duplicate of %s", label, plat, prev))
-			} else {
-				seen[k] = label + " platform " + plat
-			}
-		}
-	}
-
-	// Nightly scenarios contribute to the referenced-set so a fixture/script
-	// only used by a nightly scenario is not flagged as orphan. Hook validity
-	// and basename resolution still apply.
-	for _, scn := range cfg.Integration.Case.Nightly.Scenarios {
-		label := fmt.Sprintf("nightly scenario %q (shortname %q, flow %q)", scn.Name, scn.Shortname, scn.Flow)
-		checkHook(label+" pre-install", scn.PreInstall)
-		checkHook(label+" post-infra", scn.PostInfra)
-		checkHook(label+" post-deploy", scn.PostDeploy)
-		for _, ev := range scn.ExtraValues {
-			checkExtraValues(label, ev)
-		}
-	}
-
-	// Dependency-profile pre-install hooks: validate even profiles that no
-	// scenario references yet, so a typo is caught before activation.
-	for profName, prof := range cfg.Integration.DependencyProfiles {
-		checkHook(fmt.Sprintf("dependency-profile %q pre-install", profName), prof.PreInstall)
-	}
-
-	// Flow-scoped pre-upgrade hooks (two-step upgrade flows).
-	for flowName, hooks := range cfg.Integration.Flows {
-		if hooks == nil {
+		if scn.Persistence == "" || !isPlainFilename(scn.Persistence) ||
+			(flow != "upgrade-minor" && !versionmatrix.IsUpgradeOnlyFlow(flow)) ||
+			currentDepsErr != nil || prevDepsErr != nil {
 			continue
 		}
-		checkHook(fmt.Sprintf("flow %q pre-upgrade", flowName), hooks.PreUpgrade)
+		prevValues, err := readYAMLMap(filepath.Join(prevPersistenceDir, scn.Persistence+".yaml"))
+		if err != nil {
+			if flow == "upgrade-minor" {
+				v.problems = append(v.problems, fmt.Sprintf(
+					"%s: persistence %q does not resolve in chart version %s (%v)"+
+						" — step 1 of the two-step upgrade installs that chart from its own scenario dir;"+
+						" add the layer there or select one both versions provide",
+					label, scn.Persistence, prevVersion, err))
+			}
+			continue
+		}
+		if scn.PostInfra != nil && scn.PostInfra.Script == bitnamiMigrationHookScript {
+			continue
+		}
+		for _, dep := range prevDeps {
+			if dep.Condition == "" || hasChartDependency(currentDeps, dep.Name) || !anyConditionKeyTrue(prevValues, dep.Condition) {
+				continue
+			}
+			v.problems = append(v.problems, fmt.Sprintf(
+				"%s: persistence %q resolves in chart version %s to a values file that enables subchart %q (%s: true), which this chart no longer bundles"+
+					" — the upgrade would address two different backends and start against empty storage;"+
+					" select a companion persistence layer both versions can reach, or declare \"post-infra: %s\" to migrate the data first",
+				label, scn.Persistence, prevVersion, dep.Name, dep.Condition, bitnamiMigrationHookID))
+		}
 	}
+}
 
-	// Orphan walk: every .sh in pre-setup-scripts/ must be referenced by some
-	// LifecycleHook, or be exempt by one of two conventions:
-	//   1. Sibling-invoked helper: another .sh in the same dir calls it via
-	//      `bash "${SCRIPT_DIR}/<name>"` — detected by substring search.
-	//   2. Explicit marker: the file contains a line matching
-	//      `# orphan-ok: <non-empty reason>` (reason required).
-	//
-	// To exempt a file via marker, add to its header:
-	//   # orphan-ok: <reason explaining why it has no LifecycleHook reference>
-	// Alternatively, reference it from a LifecycleHook (script: <name>).
-	var scriptEntries []os.DirEntry
-	if entries, err := os.ReadDir(scriptsDir); err == nil {
-		scriptEntries = entries
-	} else if !errors.Is(err, fs.ErrNotExist) {
-		problems = append(problems, fmt.Sprintf("read pre-setup-scripts/: %v", err))
+func scenarioLabel(scn CIScenario) string {
+	return fmt.Sprintf("scenario %q (shortname %q, flow %q)", scn.Name, scn.Shortname, scn.Flow)
+}
+
+func scenarioFlow(scn CIScenario) string {
+	if flow := strings.TrimSpace(scn.Flow); flow != "" {
+		return flow
 	}
-	// Build sibling content map (full file) for invocation detection, and a
-	// separate header map (first 1KB) for orphan-ok marker scanning.
+	return "install"
+}
+
+func (v *registryValidation) checkScenarios(cfg *CITestConfig) {
+	pf, err := LoadPermittedFlows(v.repoRoot)
+	if err != nil {
+		v.problems = append(v.problems, fmt.Sprintf("permitted-flows: %v", err))
+	}
+	seen := map[[3]string]string{}
+	for _, scn := range cfg.Integration.Case.PR.Scenarios {
+		v.checkScenario(scn, pf, seen)
+	}
+	for _, scn := range cfg.Integration.Case.Nightly.Scenarios {
+		label := "nightly " + scenarioLabel(scn)
+		v.checkHook(label+" pre-install", scn.PreInstall)
+		v.checkHook(label+" post-infra", scn.PostInfra)
+		v.checkHook(label+" post-deploy", scn.PostDeploy)
+		for _, ev := range scn.ExtraValues {
+			v.checkExtraValues(label, ev)
+		}
+	}
+	for name, profile := range cfg.Integration.DependencyProfiles {
+		v.checkHook(fmt.Sprintf("dependency-profile %q pre-install", name), profile.PreInstall)
+	}
+	for name, hooks := range cfg.Integration.Flows {
+		if hooks != nil {
+			v.checkHook(fmt.Sprintf("flow %q pre-upgrade", name), hooks.PreUpgrade)
+		}
+	}
+}
+
+func (v *registryValidation) checkScenario(scn CIScenario, pf *PermittedFlows, seen map[[3]string]string) {
+	label := scenarioLabel(scn)
+	v.checkHook(label+" pre-install", scn.PreInstall)
+	v.checkHook(label+" post-infra", scn.PostInfra)
+	v.checkHook(label+" post-deploy", scn.PostDeploy)
+	v.problems = append(v.problems, valuesLayerProblems(label, "feature", filepath.Join(v.setupDir, "values", "features"), scn.Features...)...)
+	for _, ev := range scn.ExtraValues {
+		v.checkExtraValues(label, ev)
+	}
+	for _, dep := range scn.Dependencies {
+		v.checkDependency(label, dep)
+	}
+	if scn.Persistence != "" {
+		v.problems = append(v.problems, valuesLayerProblems(label, "persistence", filepath.Join(v.setupDir, "values", "persistence"), scn.Persistence)...)
+	}
+	if err := scn.Topology.Validate(label, v.chartDir, v.depsDir); err != nil {
+		v.problems = append(v.problems, err.Error())
+	}
+	v.problems = append(v.problems, scenarioE2EProblems(label, scn)...)
+	flow := scenarioFlow(scn)
+	if pf != nil && len(FilterFlows(pf, v.version, []string{flow})) == 0 {
+		v.problems = append(v.problems, fmt.Sprintf("%s: flow %q denied by permitted-flows for version %s", label, flow, v.version))
+	}
+	platforms := scn.Platforms
+	if len(platforms) == 0 {
+		platforms = []string{""}
+	}
+	for _, platform := range platforms {
+		key := [3]string{scn.Shortname, flow, platform}
+		if previous, ok := seen[key]; ok {
+			v.problems = append(v.problems, fmt.Sprintf("%s platform %q: duplicate of %s", label, platform, previous))
+		} else {
+			seen[key] = label + " platform " + platform
+		}
+	}
+}
+
+func scenarioE2EProblems(label string, scn CIScenario) []string {
+	var problems []string
+	if scn.SkipE2E {
+		for _, field := range []struct {
+			name string
+			set  bool
+		}{
+			{"e2e-full-suite", scn.E2EFullSuite},
+			{"e2e-smoke-blocking", scn.E2ESmokeBlocking != nil},
+			{"e2e-full-suite-blocking", scn.E2EFullSuiteBlocking != nil},
+			{"e2e-api-suite", scn.E2EAPISuite},
+			{"e2e-api-suite-blocking", scn.E2EAPISuiteBlocking != nil},
+		} {
+			if field.set {
+				problems = append(problems, fmt.Sprintf("%s: %s is set but skip-e2e disables e2e entirely", label, field.name))
+			}
+		}
+	}
+	if !scn.E2EFullSuite && scn.E2EFullSuiteBlocking != nil {
+		problems = append(problems, fmt.Sprintf("%s: e2e-full-suite-blocking is set but e2e-full-suite is not enabled", label))
+	}
+	if !scn.E2EAPISuite && scn.E2EAPISuiteBlocking != nil {
+		problems = append(problems, fmt.Sprintf("%s: e2e-api-suite-blocking is set but e2e-api-suite is not enabled", label))
+	}
+	return problems
+}
+
+func (v *registryValidation) checkOrphanScripts() {
+	entries, err := os.ReadDir(v.scriptsDir)
+	if err != nil {
+		if !errors.Is(err, fs.ErrNotExist) {
+			v.problems = append(v.problems, fmt.Sprintf("read pre-setup-scripts/: %v", err))
+		}
+		return
+	}
 	siblingContent := map[string]string{}
 	siblingHeader := map[string]string{}
-	for _, e := range scriptEntries {
+	for _, e := range entries {
 		if e.IsDir() || !strings.HasSuffix(e.Name(), ".sh") {
 			continue
 		}
-		path := filepath.Join(scriptsDir, e.Name())
+		path := filepath.Join(v.scriptsDir, e.Name())
 		if data, err := os.ReadFile(path); err == nil {
 			siblingContent[e.Name()] = string(data)
 		}
@@ -408,76 +356,53 @@ func (v *RegistryValidator) Validate(cfg *CITestConfig) error {
 			siblingHeader[e.Name()] = header
 		}
 	}
-	for _, e := range scriptEntries {
-		if e.IsDir() {
-			continue
-		}
+	for _, e := range entries {
 		name := e.Name()
-		if !strings.HasSuffix(name, ".sh") {
+		if e.IsDir() || !strings.HasSuffix(name, ".sh") || v.referencedScripts[name] || isSiblingInvoked(name, siblingContent) {
 			continue
 		}
-		if referencedScripts[name] {
-			continue
-		}
-		// Check sibling invocation (helper called by another script in the same dir).
-		if isSiblingInvoked(name, siblingContent) {
-			continue
-		}
-		// Check orphan-ok header marker.
-		ok, reason, err := parseOrphanOk(siblingHeader[name])
+		ok, _, err := parseOrphanOk(siblingHeader[name])
 		if err != nil {
-			problems = append(problems, fmt.Sprintf("script %q: \"orphan-ok:\" header found but reason is empty — add a reason after the colon", name))
+			v.problems = append(v.problems, fmt.Sprintf("script %q: \"orphan-ok:\" header found but reason is empty — add a reason after the colon", name))
 			continue
 		}
 		if ok {
-			_ = reason
 			continue
 		}
-		problems = append(problems, fmt.Sprintf(
+		v.problems = append(v.problems, fmt.Sprintf(
 			"orphan script %q in pre-setup-scripts/: no LifecycleHook references it and no \"# orphan-ok: <reason>\" header found"+
 				" — either add it to a LifecycleHook (script: %s) or add \"# orphan-ok: <reason>\" to the file header",
 			name, name))
 	}
+}
 
-	// Orphan walk: every .yaml/.yml in common/resources/ must be referenced by
-	// some LifecycleHook, or carry an explicit marker:
-	//   # orphan-ok: <reason>
-	// (staged-but-disabled fixtures and resources not yet wired to a hook).
-	if entries, err := os.ReadDir(resourcesDir); err == nil {
-		for _, e := range entries {
-			if e.IsDir() {
-				continue
-			}
-			name := e.Name()
-			if !strings.HasSuffix(name, ".yaml") && !strings.HasSuffix(name, ".yml") {
-				continue
-			}
-			if referencedFixtures[name] {
-				continue
-			}
-			content, _ := readFirstKB(filepath.Join(resourcesDir, name))
-			ok, _, err := parseOrphanOk(content)
-			if err != nil {
-				problems = append(problems, fmt.Sprintf("fixture %q: \"orphan-ok:\" header found but reason is empty — add a reason after the colon", name))
-				continue
-			}
-			if ok {
-				continue
-			}
-			problems = append(problems, fmt.Sprintf(
-				"orphan fixture %q in common/resources/: no LifecycleHook references it and no \"# orphan-ok: <reason>\" header found"+
-					" — either add it to a LifecycleHook (fixtures: [%s]) or add \"# orphan-ok: <reason>\" to the file header",
-				name, name))
+func (v *registryValidation) checkOrphanFixtures() {
+	entries, err := os.ReadDir(v.resourcesDir)
+	if err != nil {
+		if !errors.Is(err, fs.ErrNotExist) {
+			v.problems = append(v.problems, fmt.Sprintf("read common/resources/: %v", err))
 		}
-	} else if !errors.Is(err, fs.ErrNotExist) {
-		problems = append(problems, fmt.Sprintf("read common/resources/: %v", err))
+		return
 	}
-
-	if len(problems) == 0 {
-		return nil
+	for _, e := range entries {
+		name := e.Name()
+		if e.IsDir() || (!strings.HasSuffix(name, ".yaml") && !strings.HasSuffix(name, ".yml")) || v.referencedFixtures[name] {
+			continue
+		}
+		content, _ := readFirstKB(filepath.Join(v.resourcesDir, name))
+		ok, _, err := parseOrphanOk(content)
+		if err != nil {
+			v.problems = append(v.problems, fmt.Sprintf("fixture %q: \"orphan-ok:\" header found but reason is empty — add a reason after the colon", name))
+			continue
+		}
+		if ok {
+			continue
+		}
+		v.problems = append(v.problems, fmt.Sprintf(
+			"orphan fixture %q in common/resources/: no LifecycleHook references it and no \"# orphan-ok: <reason>\" header found"+
+				" — either add it to a LifecycleHook (fixtures: [%s]) or add \"# orphan-ok: <reason>\" to the file header",
+			name, name))
 	}
-	sort.Strings(problems)
-	return fmt.Errorf("registry validation failed:\n  - %s", strings.Join(problems, "\n  - "))
 }
 
 func credentialKeysMissingFrom(chartDir, prevChartDir string) ([]string, error) {
