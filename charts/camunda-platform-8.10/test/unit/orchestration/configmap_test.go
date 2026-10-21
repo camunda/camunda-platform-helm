@@ -160,6 +160,30 @@ func (s *ConfigmapLegacyTemplateTest) TestDifferentValuesInputs() {
 			},
 		},
 		{
+			Name:   "TestRDBMSDefaultsToEmbeddedH2WhenURLIsEmpty",
+			Values: map[string]string{"orchestration.exporters.rdbms.enabled": "true"},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+				require.Contains(t, configmap.Data["application.yaml"], `url: "jdbc:h2:file:/usr/local/camunda/data/h2db"`)
+			},
+		},
+		{
+			Name: "TestRDBMSKeepsExplicitURL",
+			Values: map[string]string{
+				"orchestration.exporters.rdbms.enabled":         "true",
+				"orchestration.data.secondaryStorage.rdbms.url": "jdbc:postgresql://rdbms:5432/camunda",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+				require.Contains(t, configmap.Data["application.yaml"], `url: "jdbc:postgresql://rdbms:5432/camunda"`)
+				require.NotContains(t, configmap.Data["application.yaml"], "jdbc:h2")
+			},
+		},
+		{
 			Name:   "TestCamundaExporterAutoconfigurationEnabledByDefault",
 			Values: map[string]string{},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -595,6 +619,28 @@ func (s *ConfigmapLegacyTemplateTest) TestExtraConfigurationDoesNotSuppressChart
 					"the chart must keep rendering its own default; the import outranks it at runtime")
 				s.Require().Contains(configmap.Data["operator-override.yaml"], "snapshot-period: 7m",
 					"the operator value must be delivered as its own imported document")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *ConfigmapLegacyTemplateTest) TestQuickInstallValuesFile() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name:        "TestQuickInstallValuesFileUsesSingleBrokerEmbeddedH2",
+			ValuesFiles: []string{filepath.Join(s.chartPath, "values-quick-install.yaml")},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+				applicationYaml := configmap.Data["application.yaml"]
+				require.Contains(t, applicationYaml, `type: "rdbms"`)
+				require.Contains(t, applicationYaml, `url: "jdbc:h2:file:/usr/local/camunda/data/h2db"`)
+				require.Contains(t, applicationYaml, `size: "1"`)
+				require.Contains(t, applicationYaml, `replication-factor: "1"`)
+				require.Contains(t, applicationYaml, `partition-count: "1"`)
 			},
 		},
 	}

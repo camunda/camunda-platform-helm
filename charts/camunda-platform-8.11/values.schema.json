@@ -5634,7 +5634,7 @@
                                         },
                                         "url": {
                                             "type": "string",
-                                            "description": "the JDBC connection URL for the RDBMS database",
+                                            "description": "the JDBC connection URL for the RDBMS database. When empty, an embedded H2 file database on the orchestration data volume is used (`jdbc:h2:file:/usr/local/camunda/data/h2db`), for development only with a single broker and a single partition",
                                             "default": ""
                                         },
                                         "username": {
