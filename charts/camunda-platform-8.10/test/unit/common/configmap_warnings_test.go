@@ -1808,6 +1808,8 @@ func (s *ConfigMapWarningsTemplateTest) TestRDBMSURLWarning() {
 		{name: "UnrelatedEnv", values: map[string]string{"orchestration.env[0].name": "CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_USERNAME", "orchestration.env[0].value": "camunda"}, warn: true},
 		{name: "ValuesURL", values: map[string]string{"orchestration.data.secondaryStorage.rdbms.url": "jdbc:postgresql://db:5432/camunda"}},
 		{name: "EnvURL", values: map[string]string{"orchestration.env[0].name": "CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_URL", "orchestration.env[0].value": "jdbc:postgresql://db:5432/camunda"}},
+		{name: "EmptyEnvURL", values: map[string]string{"orchestration.env[0].name": "CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_URL", "orchestration.env[0].value": ""}, warn: true},
+		{name: "EnvURLFromSecret", values: map[string]string{"orchestration.env[0].name": "CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_URL", "orchestration.env[0].valueFrom.secretKeyRef.name": "rdbms-connection", "orchestration.env[0].valueFrom.secretKeyRef.key": "url"}},
 		{name: "EnvFrom", values: map[string]string{"orchestration.envFrom[0].secretRef.name": "rdbms-connection"}},
 		{
 			name:   "ExtraConfigurationURL",
@@ -1817,6 +1819,12 @@ func (s *ConfigMapWarningsTemplateTest) TestRDBMSURLWarning() {
 		{
 			name: "ConfigurationURL",
 			args: []string{"--set-string", "orchestration.configuration=camunda:\n  data:\n    secondary-storage:\n      type: rdbms\n      rdbms:\n        url: jdbc:postgresql://db:5432/camunda\n"},
+		},
+		{
+			name:   "ConfigurationReplacesValuesURL",
+			values: map[string]string{"orchestration.data.secondaryStorage.rdbms.url": "jdbc:postgresql://db:5432/camunda"},
+			args:   []string{"--set-string", "orchestration.configuration=camunda:\n  data:\n    secondary-storage:\n      type: rdbms\n"},
+			warn:   true,
 		},
 		{name: "ElasticsearchWithExporterFlag", values: map[string]string{"orchestration.data.secondaryStorage.type": "elasticsearch", "orchestration.exporters.rdbms.enabled": "true"}},
 		{name: "OrchestrationDisabled", values: map[string]string{"orchestration.enabled": "false"}},
