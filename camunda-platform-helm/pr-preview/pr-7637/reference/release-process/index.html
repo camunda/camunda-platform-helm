@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">Release Process | Camunda Helm Charts</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:image" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7637/img/camunda-logo.svg"><meta data-rh="true" name="twitter:image" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7637/img/camunda-logo.svg"><meta data-rh="true" property="og:url" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7637/reference/release-process"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Release Process | Camunda Helm Charts"><meta data-rh="true" name="description" content="This document is for Distro team maintainers. For contribution process, see the Maintainer Guide."><meta data-rh="true" property="og:description" content="This document is for Distro team maintainers. For contribution process, see the Maintainer Guide."><link data-rh="true" rel="icon" href="/camunda-platform-helm/pr-preview/pr-7637/img/camunda-logo.svg"><link data-rh="true" rel="canonical" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7637/reference/release-process"><link data-rh="true" rel="alternate" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7637/reference/release-process" hreflang="en"><link data-rh="true" rel="alternate" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7637/reference/release-process" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Release Process","item":"https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7637/reference/release-process"}]}</script><link rel="stylesheet" href="/camunda-platform-helm/pr-preview/pr-7637/assets/css/styles.3f6cd398.css">
-<script src="/camunda-platform-helm/pr-preview/pr-7637/assets/js/runtime~main.e895a3b3.js" defer="defer"></script>
-<script src="/camunda-platform-helm/pr-preview/pr-7637/assets/js/main.784bcace.js" defer="defer"></script>
+<script src="/camunda-platform-helm/pr-preview/pr-7637/assets/js/runtime~main.281e39df.js" defer="defer"></script>
+<script src="/camunda-platform-helm/pr-preview/pr-7637/assets/js/main.763d3d45.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -75,15 +75,13 @@ version matrix files (component versions mapping + READMEs).</li>
 <ol>
 <li class="">Resolves the RC reference to its immutable OCI digest and reads its existing
 <code>{version}-dev-{sha}</code> tag from the same Harbor response.</li>
-<li class="">Resolves that SHA to a full commit on main, pulls by digest, and validates the package&#x27;s
-chart identity and release version. Missing, ambiguous, or inconsistent provenance fails
-before publication.</li>
-<li class="">Resolves the previous published artifact&#x27;s source from Harbor and verifies that its package
-digest matches the GitHub release asset. An incorrect historical Git tag is not used as the
-source boundary.</li>
+<li class="">Uses Git to resolve that SHA to a full commit on main and Helm to pull the selected digest.
+The existing metadata step checks the packaged release version against the RC version.</li>
+<li class="">Selects the preceding published release and resolves its recorded source from Harbor.
+An incorrect historical Git tag is not used as the source boundary. Git checks that the
+previous source is an ancestor of the current source.</li>
 <li class="">Uploads the unchanged tested package using <code>helm-cr upload --commit &lt;artifact-source-sha&gt;</code>.
-Existing releases are not silently skipped. The resulting Git tag and uploaded package
-digest are verified before indexing or post-release bookkeeping.</li>
+Existing releases are not silently skipped.</li>
 <li class="">Updates the Helm repo index (<code>gh-pages</code> branch).</li>
 <li class="">Signs with Cosign and uploads the bundle to the release.</li>
 <li class="">Labels shipped PRs and their linked issues using the explicit
@@ -97,24 +95,30 @@ branch — the single write of <code>release_date</code>, taken from the GitHub 
 <p><strong>Source and artifact identity:</strong> the public Git tag identifies the build input, not an
 installable copy of the chart. Source installation is unsupported. Version updates, generated
 release files, image overrides, dependency preparation, and other release transformations can
-produce artifact content that is not present in Git. Integrity checks compare the tested
-package with the published package, not with the unmodified source tree. No additional source
+produce artifact content that is not present in Git. Publication promotes the pulled package
+without rebuilding it from the source tree. No additional source
 annotation or generated source commit is required; the existing Harbor dev tag records the base.</p>
-<p>Release notes use the same artifact-source history instead of inferring it from publishing
-HEAD or historical tag targets. Existing Git tags do not regroup changes into an older release.</p>
 <p>For a chart line with no published predecessor, its explicit
 <code>camunda-platform-&lt;minor&gt;-&lt;major&gt;.0.0-alpha0</code> bootstrap tag supplies the starting boundary.
-Missing historical Harbor provenance or a mismatched published-package digest blocks the
-affected calculation and requires review. Do not guess from an old public tag, move public
+Missing or inconsistent historical Harbor source tags block the affected calculation.
+Do not guess from an old public tag, move public
 tags, or replace published packages to bypass that failure.</p>
 <p>The labeling entrypoint requires the packaged <code>chartVersion</code> and both verified
 <code>sourceSHA</code>/<code>previousSourceSHA</code> values. It reads the application minor from the selected source,
 not from the publishing checkout.</p>
-<p>Standalone source/history commands require a full Git checkout, GitHub read access through
-<code>gh</code>, Helm, and the existing Harbor registry/project and credential environment variables.
-For local note generation, <code>make release.generate-notes chartPath=... sourceSHA=&lt;full-sha&gt;</code>
-selects the build input explicitly; without <code>sourceSHA</code>, the Make target selects the current
-checkout for that local operation. The workflow callers always pass the actual build/dev SHA.</p>
+<p>The workflows keep Git resolution, ancestry checks and Helm pulls in their own steps.
+The Go tooling selects and validates structured Harbor tags and published-release metadata.</p>
+<p>Release-note generation receives both source boundaries explicitly. Existing Git tags do not
+regroup changes into an older release. The Build Dev and RC workflows resolve history once,
+before its consumers, and keep Harbor credentials in that read-only step.</p>
+<p>Release-please is invoked directly with its existing configuration. These source boundaries
+apply to generated release notes and shipped-PR labeling; they do not override release-please&#x27;s
+own historical tag discovery or version calculation. An incorrect old tag may therefore still
+require release-specific version selection; public tags are not rewritten by this workflow.</p>
+<p>For local generation, <code>make release.generate-notes chartPath=... sourceSHA=&lt;sha&gt;</code> selects the
+build input; without <code>sourceSHA</code>, it uses the local checkout. The Make target obtains the
+previous artifact reference, resolves the Git commits and calls the note generator directly.
+It requires GitHub read access and the Harbor registry/project and credential environment.</p>
 <p><strong>After public release:</strong></p>
 <ol>
 <li class="">The workflow enables auto-merge on the <code>release-please</code> PR, then shepherds it through the merge
