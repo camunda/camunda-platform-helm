@@ -11,6 +11,7 @@ import (
 	"context"
 	"io"
 	"log/slog"
+	"strings"
 	"testing"
 	"time"
 )
@@ -214,4 +215,79 @@ func TestManagerQueriesSignalsWithBrokerCount(t *testing.T) {
 	if len(cluster.calls) != 2 || cluster.calls[1].target != 1 {
 		t.Fatalf("expected scale down to 1, calls=%v", cluster.calls)
 	}
+}
+
+func TestManagerSelectorUsesConfiguredLabels(t *testing.T) {
+	manager := &Manager{Namespace: "ns", StatefulSet: "zeebe", NamespaceLabel: "kubernetes_namespace", PodLabel: "kubernetes_pod_name"}
+	got := manager.placeholders(3).Replace(`up{$SELECTOR} / $BROKERS by ($POD_LABEL, $NAMESPACE_LABEL)`)
+	want := `up{kubernetes_namespace="ns",kubernetes_pod_name=~"zeebe-[0-9]+"} / 3 by (kubernetes_pod_name, kubernetes_namespace)`
+	if got != want {
+		t.Fatalf("got %s\nwant %s", got, want)
+	}
+	if got := (&Manager{Namespace: "ns", StatefulSet: "zeebe"}).placeholders(1).Replace("$SELECTOR"); got != `namespace="ns",pod=~"zeebe-[0-9]+"` {
+		t.Fatalf("default selector %s", got)
+	}
+}
+
+func TestManagerWithdrawsBrokerPodThatNeverBecomesReady(t *testing.T) {
+	policy := Policy{Mode: "scheduled", MinBrokers: 1, MaxBrokers: 3, TargetBrokers: 2}
+	workload := &fakeWorkload{replicas: 2, target: 2, started: false}
+	cluster := &fakeCluster{topology: activeTopology(1)}
+	manager := newTestManager(policy, workload, cluster)
+	manager.JoinTimeout = time.Hour
+
+	if err := manager.Reconcile(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if status := manager.Status(); status.Phase != "joining-broker" || !strings.Contains(status.Reason, "waiting for broker pod 1") {
+		t.Fatalf("expected waiting join status, got %#v", status)
+	}
+	if len(workload.scales) != 0 || len(cluster.calls) != 0 {
+		t.Fatalf("acted before readiness: scales=%v calls=%v", workload.scales, cluster.calls)
+	}
+
+	manager.joinSince = time.Now().Add(-2 * time.Hour)
+	if err := manager.Reconcile(context.Background()); err == nil || !strings.Contains(err.Error(), "not Ready") {
+		t.Fatalf("expected join timeout, got %v", err)
+	}
+	if len(workload.scales) != 1 || workload.scales[0] != 1 || len(cluster.calls) != 0 {
+		t.Fatalf("expected unready pod withdrawn without topology change, scales=%v calls=%v", workload.scales, cluster.calls)
+	}
+}
+
+func TestManagerReportsProgressWhileEvacuating(t *testing.T) {
+	policy := Policy{Mode: "scheduled", MinBrokers: 1, MaxBrokers: 3, TargetBrokers: 1}
+	workload := &fakeWorkload{replicas: 2, started: true}
+	inProgress := activeTopology(2)
+	inProgress.PendingChange = &Change{ID: 1, Status: "IN_PROGRESS"}
+	done := activeTopology(1)
+	done.LastChange = &Change{ID: 1, Status: "COMPLETED"}
+	cluster := &fakeCluster{topology: done, topologies: []Topology{activeTopology(2), inProgress, inProgress}}
+	manager := newTestManager(policy, workload, cluster)
+	manager.OperationWait = time.Second
+	var phases []string
+	manager.Logger = slog.New(slog.NewTextHandler(&reasonRecorder{reasons: &phases}, nil))
+
+	if err := manager.Reconcile(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	found := false
+	for _, line := range phases {
+		if strings.Contains(line, "change 1 IN_PROGRESS") {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("no in-progress status published during evacuation: %v", phases)
+	}
+	if len(workload.scales) != 1 || workload.scales[0] != 1 {
+		t.Fatalf("expected contraction after completion, scales=%v", workload.scales)
+	}
+}
+
+type reasonRecorder struct{ reasons *[]string }
+
+func (r *reasonRecorder) Write(p []byte) (int, error) {
+	*r.reasons = append(*r.reasons, string(p))
+	return len(p), nil
 }

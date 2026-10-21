@@ -24,7 +24,8 @@ import (
 
 func main() {
 	var policyPath, namespace, statefulSet, zeebeURL, prometheusURL, listenAddress string
-	var interval, operationWait time.Duration
+	var namespaceLabel, podLabel string
+	var interval, operationWait, joinTimeout time.Duration
 	flag.StringVar(&policyPath, "policy", "/etc/capacity-manager/policy.json", "path to the capacity policy")
 	flag.StringVar(&namespace, "namespace", os.Getenv("POD_NAMESPACE"), "Kubernetes namespace")
 	flag.StringVar(&statefulSet, "statefulset", "", "orchestration StatefulSet name")
@@ -33,11 +34,14 @@ func main() {
 	flag.StringVar(&listenAddress, "listen", ":8080", "health and status listen address")
 	flag.DurationVar(&interval, "interval", 30*time.Second, "reconciliation interval")
 	flag.DurationVar(&operationWait, "operation-timeout", 20*time.Minute, "topology operation timeout")
+	flag.StringVar(&namespaceLabel, "prometheus-namespace-label", "namespace", "Prometheus label holding the pod namespace, used by $SELECTOR")
+	flag.StringVar(&podLabel, "prometheus-pod-label", "pod", "Prometheus label holding the pod name, used by $SELECTOR")
+	flag.DurationVar(&joinTimeout, "join-timeout", 10*time.Minute, "how long a provisioned broker pod may take to become Ready before it is withdrawn")
 	flag.Parse()
 
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
-	if interval <= 0 || operationWait <= 0 {
-		logger.Error("interval and operation-timeout must be positive")
+	if interval <= 0 || operationWait <= 0 || joinTimeout <= 0 {
+		logger.Error("interval, operation-timeout and join-timeout must be positive")
 		os.Exit(2)
 	}
 	if namespace == "" || statefulSet == "" || zeebeURL == "" {
@@ -55,16 +59,19 @@ func main() {
 		os.Exit(2)
 	}
 	manager := &capacity.Manager{
-		Policies:      capacity.FilePolicySource{Path: policyPath},
-		Workload:      kubernetes,
-		Cluster:       capacity.ZeebeClient{BaseURL: zeebeURL, Client: httpClient},
-		Metrics:       capacity.PrometheusClient{BaseURL: prometheusURL, Client: httpClient},
-		Namespace:     namespace,
-		StatefulSet:   statefulSet,
-		Planner:       &capacity.Planner{},
-		Logger:        logger,
-		OperationWait: operationWait,
-		OperationPoll: 5 * time.Second,
+		Policies:       capacity.FilePolicySource{Path: policyPath},
+		Workload:       kubernetes,
+		Cluster:        capacity.ZeebeClient{BaseURL: zeebeURL, Client: httpClient},
+		Metrics:        capacity.PrometheusClient{BaseURL: prometheusURL, Client: httpClient},
+		Namespace:      namespace,
+		StatefulSet:    statefulSet,
+		NamespaceLabel: namespaceLabel,
+		PodLabel:       podLabel,
+		JoinTimeout:    joinTimeout,
+		Planner:        &capacity.Planner{},
+		Logger:         logger,
+		OperationWait:  operationWait,
+		OperationPoll:  5 * time.Second,
 	}
 
 	mux := http.NewServeMux()

@@ -82,8 +82,18 @@ type Manager struct {
 	Metrics  MetricsSource
 	// Namespace and StatefulSet replace the $NAMESPACE and $STATEFULSET
 	// placeholders in signal queries.
-	Namespace     string
-	StatefulSet   string
+	Namespace   string
+	StatefulSet string
+	// NamespaceLabel and PodLabel name the Prometheus labels that carry the
+	// pod's namespace and name; they build the $SELECTOR placeholder.
+	// Empty values default to "namespace" and "pod".
+	NamespaceLabel string
+	PodLabel       string
+	// JoinTimeout bounds how long a provisioned pod may take to become Ready
+	// before the manager withdraws it; zero uses OperationWait.
+	JoinTimeout   time.Duration
+	joinTarget    int
+	joinSince     time.Time
 	Planner       *Planner
 	Logger        *slog.Logger
 	OperationWait time.Duration
@@ -152,7 +162,7 @@ func (m *Manager) Reconcile(ctx context.Context) error {
 		status.DesiredBrokers = workload.Replicas
 		status.Reason = "continuing provisioned broker join"
 		m.setStatus(status)
-		return m.join(ctx, workload.Replicas)
+		return m.join(ctx, workload.Replicas, status)
 	}
 
 	readings := m.readSignals(ctx, policy, current)
@@ -208,13 +218,36 @@ func (m *Manager) Reconcile(ctx context.Context) error {
 		return m.fail(fmt.Errorf("apply scale down: %w", err))
 	}
 	m.setStatus(status)
-	if err := m.waitForTopology(ctx, target, plan.ChangeID); err != nil {
+	if err := m.waitForTopology(ctx, target, plan.ChangeID, status); err != nil {
 		return m.fail(err)
 	}
 	if err := m.Workload.Scale(ctx, target); err != nil {
 		return err
 	}
 	return m.Workload.MarkCompleted(ctx, target)
+}
+
+// placeholders substitutes query placeholders. $SELECTOR expands to a label
+// matcher selecting the orchestration broker pods, using the configured label
+// names (StatefulSet names are DNS-1123 labels, so they need no regex
+// escaping). Longer names are listed first so $NAMESPACE_LABEL is not split.
+func (m *Manager) placeholders(current int) *strings.Replacer {
+	namespaceLabel, podLabel := m.NamespaceLabel, m.PodLabel
+	if namespaceLabel == "" {
+		namespaceLabel = "namespace"
+	}
+	if podLabel == "" {
+		podLabel = "pod"
+	}
+	selector := fmt.Sprintf(`%s=%q,%s=~"%s-[0-9]+"`, namespaceLabel, m.Namespace, podLabel, m.StatefulSet)
+	return strings.NewReplacer(
+		"$NAMESPACE_LABEL", namespaceLabel,
+		"$POD_LABEL", podLabel,
+		"$SELECTOR", selector,
+		"$BROKERS", strconv.Itoa(current),
+		"$NAMESPACE", m.Namespace,
+		"$STATEFULSET", m.StatefulSet,
+	)
 }
 
 // readSignals queries every policy signal. A failed query is recorded as
@@ -224,7 +257,7 @@ func (m *Manager) readSignals(ctx context.Context, policy Policy, current int) m
 	if policy.Mode != "automatic" || m.Metrics == nil {
 		return readings
 	}
-	placeholders := strings.NewReplacer("$BROKERS", strconv.Itoa(current), "$NAMESPACE", m.Namespace, "$STATEFULSET", m.StatefulSet)
+	placeholders := m.placeholders(current)
 	for _, group := range [][]Signal{policy.VetoSignals, policy.ScaleUpSignals, policy.ScaleDownSignals} {
 		for _, signal := range group {
 			value, err := m.Metrics.Query(ctx, placeholders.Replace(signal.Query))
@@ -238,14 +271,39 @@ func (m *Manager) readSignals(ctx context.Context, policy Policy, current int) m
 	return readings
 }
 
-func (m *Manager) join(ctx context.Context, target int) error {
+func (m *Manager) join(ctx context.Context, target int, status Status) error {
 	started, err := m.Workload.PodStarted(ctx, target-1)
 	if err != nil {
 		return m.fail(err)
 	}
 	if !started {
+		now := time.Now()
+		if m.joinTarget != target || m.joinSince.IsZero() {
+			m.joinTarget, m.joinSince = target, now
+		}
+		timeout := m.JoinTimeout
+		if timeout <= 0 {
+			timeout = m.OperationWait
+		}
+		if waited := now.Sub(m.joinSince); waited >= timeout {
+			// The pod never became Ready, so its broker was never added to the
+			// topology. Removing the pod is safe and stops the manager from
+			// holding a half-provisioned broker forever.
+			m.joinTarget, m.joinSince = 0, time.Time{}
+			if err := m.Workload.Scale(ctx, target-1); err != nil {
+				return m.fail(fmt.Errorf("withdraw unready broker pod: %w", err))
+			}
+			if m.Planner != nil {
+				m.Planner.lastChange = now
+			}
+			return m.fail(fmt.Errorf("broker pod %d was not Ready within %s; withdrew it before joining the topology", target-1, timeout))
+		}
+		status.Phase = "joining-broker"
+		status.Reason = fmt.Sprintf("waiting for broker pod %d to become Ready (%s)", target-1, now.Sub(m.joinSince).Round(time.Second))
+		m.setStatus(status)
 		return nil
 	}
+	m.joinTarget, m.joinSince = 0, time.Time{}
 	if _, err := m.Cluster.Scale(ctx, target, true); err != nil {
 		return m.fail(fmt.Errorf("dry-run scale up: %w", err))
 	}
@@ -256,7 +314,8 @@ func (m *Manager) join(ctx context.Context, target int) error {
 	return nil
 }
 
-func (m *Manager) waitForTopology(ctx context.Context, target int, changeID int64) error {
+func (m *Manager) waitForTopology(ctx context.Context, target int, changeID int64, status Status) error {
+	started := time.Now()
 	deadline := time.NewTimer(m.OperationWait)
 	defer deadline.Stop()
 	ticker := time.NewTicker(m.OperationPoll)
@@ -269,10 +328,21 @@ func (m *Manager) waitForTopology(ctx context.Context, target int, changeID int6
 			return fmt.Errorf("timed out waiting for topology change %d", changeID)
 		case <-ticker.C:
 			topology, err := m.Cluster.Topology(ctx)
+			// Keep /status current while the reconcile loop is blocked here.
+			status.ObservedAt = time.Now().UTC()
 			if err != nil {
 				m.Logger.Warn("topology poll failed", "error", err)
+				status.Reason = fmt.Sprintf("evacuating broker %d: topology poll failed after %s: %v", target, time.Since(started).Round(time.Second), err)
+				m.setStatus(status)
 				continue
 			}
+			progress := "waiting for change to start"
+			if topology.PendingChange != nil {
+				progress = fmt.Sprintf("change %d %s", topology.PendingChange.ID, topology.PendingChange.Status)
+			}
+			status.CurrentBrokers = topology.ActiveBrokerCount()
+			status.Reason = fmt.Sprintf("evacuating broker %d: %s after %s", target, progress, time.Since(started).Round(time.Second))
+			m.setStatus(status)
 			if topology.PendingChange == nil && topology.LastChange != nil && topology.LastChange.ID == changeID {
 				if topology.LastChange.Status != "COMPLETED" {
 					return fmt.Errorf("topology change %d ended with %s", changeID, topology.LastChange.Status)

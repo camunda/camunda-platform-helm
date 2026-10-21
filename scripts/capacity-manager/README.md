@@ -34,7 +34,11 @@ Each signal has a `name`, a PromQL `query`, an `operator` (`>=` or `<=`) and a `
 query result is reduced to its maximum series, so `>=` means "any series reached the threshold" and
 `<=` means "every series is at or below it". `NaN` samples are ignored. The placeholders
 `$NAMESPACE`, `$STATEFULSET` and `$BROKERS` (current active brokers) are substituted before the
-query runs.
+query runs. `$SELECTOR` expands to `<namespace label>="<namespace>",<pod label>=~"<statefulset>-[0-9]+"`,
+selecting the orchestration broker pods; the label names default to `namespace` and `pod` and are
+set with `--prometheus-namespace-label` and `--prometheus-pod-label` (`$NAMESPACE_LABEL` and
+`$POD_LABEL` expose them for `by (...)` clauses). If your Prometheus labels broker series
+differently, set these flags instead of rewriting every query.
 
 A signal without data, a failed query, or a veto without data makes the planner hold and restart
 both stabilization streaks. Write vetoes so they return a value when healthy, for example with
@@ -43,8 +47,7 @@ partition replica count, never scales below `minBrokers` or an active scheduled 
 `cooldown` after each change, and requires `scaleUpSamples`/`scaleDownSamples` consecutive
 evaluations held for `scaleUpStabilization`/`scaleDownStabilization` (Go durations).
 
-Recommended signals (selector `{namespace="$NAMESPACE",pod=~"$STATEFULSET-[0-9]+"}`
-abbreviated as `{S}`):
+Recommended signals (`{S}` abbreviates `{$SELECTOR}`):
 
 | Role | Name | Query | Condition | Why |
 |---|---|---|---|---|
@@ -63,6 +66,13 @@ for broker volumes (disk near the watermark). The status endpoint reports every 
 signals behind each decision; `/metrics` exports them as `camunda_capacity_manager_signal`.
 
 ## Safety Order
+
+A provisioned broker pod must become Ready within `--join-timeout` (default 10m). If it does not,
+the manager withdraws the pod, which is safe because its broker was never added to the topology,
+reports the error, and applies the policy cooldown before trying again. While a scale-down waits
+for the topology change to complete (up to `--operation-timeout`), `/status` is refreshed on every
+poll with the pending change's progress.
+
 
 Scale-up creates the next StatefulSet pod, waits for it to start, dry-runs the Camunda topology
 change, and then adds the broker. Scale-down dry-runs and completes broker evacuation before reducing
