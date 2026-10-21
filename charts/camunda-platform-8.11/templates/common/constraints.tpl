@@ -2523,3 +2523,24 @@ Bundled Bitnami subcharts (removed in 8.10)
 {{- if and .Values.capacityManager.enabled (not .Values.capacityManager.serviceAccount.enabled) (not .Values.capacityManager.serviceAccount.name) }}
   {{- fail "[camunda][error] capacityManager.serviceAccount.name is required when service account creation is disabled." }}
 {{- end }}
+{{- /*
+  Fail closed when Helm takes the replica count back. Once the capacity manager
+  has owned the orchestration StatefulSet, rendering spec.replicas again would
+  resize it without evacuating brokers from the topology. Helm may only reclaim
+  ownership when the manager's durable target, its completion marker and the
+  live replica count all equal the configured cluster size. A StatefulSet the
+  manager never touched (no annotation) or none at all (fresh install, offline
+  render) is not affected.
+*/}}
+{{- if ne .Values.capacityManager.replicaOwnership "capacityManager" }}
+  {{- $orchestration := lookup "apps/v1" "StatefulSet" .Release.Namespace (include "orchestration.fullname" .) }}
+  {{- $target := dig "metadata" "annotations" "capacity-manager.camunda.io/target-brokers" "" ($orchestration | default dict) }}
+  {{- if $target }}
+    {{- $completed := dig "metadata" "annotations" "capacity-manager.camunda.io/completed-brokers" "" $orchestration }}
+    {{- $replicas := int (dig "spec" "replicas" -1 $orchestration) }}
+    {{- $configured := div (int .Values.orchestration.clusterSize) (int .Values.global.multiregion.regions) }}
+    {{- if or (eq $completed "") (ne (int $target) $configured) (ne (int $completed) $configured) (ne $replicas $configured) }}
+      {{- fail (printf "[camunda][error] Helm cannot take back the orchestration replica count yet: capacity-manager target=%s, completed=%s, live replicas=%d, configured=%d. Keep capacityManager.replicaOwnership=capacityManager, set the policy to targetBrokers=%d (mode scheduled), wait until target, completed and replicas all equal it, then retry. See docs/capacity-manager.md." $target ($completed | default "none") $replicas $configured $configured) }}
+    {{- end }}
+  {{- end }}
+{{- end }}

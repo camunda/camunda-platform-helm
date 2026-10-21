@@ -4575,12 +4575,12 @@
             "properties": {
                 "enabled": {
                     "type": "boolean",
-                    "description": "if true, deploys the capacity manager and allows it to manage orchestration StatefulSet replicas.",
+                    "description": "EXPERIMENTAL. If true, deploys the capacity manager. It only observes and recommends until replicaOwnership hands it the orchestration StatefulSet replica count. See docs/capacity-manager.md before enabling.",
                     "default": false
                 },
                 "replicaOwnership": {
                     "type": "string",
-                    "description": "can be used to transfer orchestration StatefulSet replica ownership to the capacity manager. Empty keeps ordinary Helm ownership. Returning ownership is not supported in chart 16.",
+                    "description": "hands the orchestration StatefulSet replica count to the capacity manager when set to `capacityManager` (requires orchestration.clusterSize \"1\"). Empty keeps Helm ownership. Helm only takes the replica count back once the manager's durable target, completion marker and live replicas all equal orchestration.clusterSize; until then upgrades fail closed instead of resizing brokers that were not evacuated.",
                     "default": "",
                     "enum": [
                         "",
@@ -4627,6 +4627,26 @@
                     "type": "string",
                     "description": "defines the maximum duration of a Zeebe topology operation.",
                     "default": "20m"
+                },
+                "joinTimeout": {
+                    "type": "string",
+                    "description": "defines how long a newly provisioned broker pod may take to become Ready before the manager withdraws it without joining it to the topology.",
+                    "default": "10m"
+                },
+                "prometheusLabels": {
+                    "type": "object",
+                    "properties": {
+                        "namespace": {
+                            "type": "string",
+                            "description": "label holding the pod namespace.",
+                            "default": "namespace"
+                        },
+                        "pod": {
+                            "type": "string",
+                            "description": "label holding the pod name.",
+                            "default": "pod"
+                        }
+                    }
                 },
                 "prometheusURL": {
                     "type": "string",

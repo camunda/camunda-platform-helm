@@ -38,6 +38,9 @@ spec:
             - --prometheus-url={{ .Values.capacityManager.prometheusURL }}
             - --interval={{ .Values.capacityManager.reconcileInterval }}
             - --operation-timeout={{ .Values.capacityManager.operationTimeout }}
+            - --join-timeout={{ .Values.capacityManager.joinTimeout }}
+            - --prometheus-namespace-label={{ .Values.capacityManager.prometheusLabels.namespace }}
+            - --prometheus-pod-label={{ .Values.capacityManager.prometheusLabels.pod }}
           env:
             - name: POD_NAMESPACE
               valueFrom:

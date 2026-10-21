@@ -110,3 +110,31 @@ func TestCapacityManagerReadOnlyRBAC(t *testing.T) {
 	helm.UnmarshalK8SYaml(t, render(t, "templates/capacity-manager/role.yaml", values), &role)
 	require.Equal(t, []string{"get"}, role.Rules[0].Verbs)
 }
+
+func TestCapacityManagerPassesSafetyAndLabelSettings(t *testing.T) {
+	output := render(t, "templates/capacity-manager/deployment.yaml", map[string]string{
+		"capacityManager.enabled":                    "true",
+		"capacityManager.joinTimeout":                "7m",
+		"capacityManager.prometheusLabels.namespace": "kubernetes_namespace",
+		"capacityManager.prometheusLabels.pod":       "kubernetes_pod_name",
+	})
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(t, output, &deployment)
+	args := deployment.Spec.Template.Spec.Containers[0].Args
+	require.Contains(t, args, "--join-timeout=7m")
+	require.Contains(t, args, "--prometheus-namespace-label=kubernetes_namespace")
+	require.Contains(t, args, "--prometheus-pod-label=kubernetes_pod_name")
+}
+
+// The handback guard reads the live StatefulSet with lookup, which is empty
+// under `helm template`, so an offline render with Helm ownership must stay
+// unaffected. The failing paths need a live cluster and are exercised with
+// `helm template --dry-run=server` (see docs/capacity-manager.md).
+func TestCapacityManagerHandbackGuardIsInertOffline(t *testing.T) {
+	output := render(t, "templates/orchestration/statefulset.yaml", map[string]string{
+		"capacityManager.enabled": "false",
+	})
+	var statefulSet appsv1.StatefulSet
+	helm.UnmarshalK8SYaml(t, output, &statefulSet)
+	require.NotNil(t, statefulSet.Spec.Replicas)
+}

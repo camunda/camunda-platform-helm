@@ -1,5 +1,8 @@
 # Automatic Capacity Manager
 
+> **Experimental.** The capacity manager is an opt-in, default-off component of chart 8.11. Its
+> default signal thresholds are calibration starting points, not validated production values.
+
 The capacity manager is an opt-in chart 8.11 component that coordinates physical orchestration capacity
 with Camunda's dynamic cluster topology.
 
@@ -38,27 +41,30 @@ capacityManager:
           "scaleDownStabilization": "5m", "cooldown": "2m",
           "scaleUpSignals": [
             {"name": "backpressure", "operator": ">=", "threshold": 0.05,
-             "query": "max(sum by (partition) (rate(zeebe_dropped_request_count_total{namespace=\"$NAMESPACE\",pod=~\"$STATEFULSET-[0-9]+\"}[2m])) / clamp_min(sum by (partition) (rate(zeebe_received_request_count_total{namespace=\"$NAMESPACE\",pod=~\"$STATEFULSET-[0-9]+\"}[2m])), 1))"},
+             "query": "max(sum by (partition) (rate(zeebe_dropped_request_count_total{$SELECTOR}[2m])) / clamp_min(sum by (partition) (rate(zeebe_received_request_count_total{$SELECTOR}[2m])), 1))"},
             {"name": "broker-cpu", "operator": ">=", "threshold": 0.75,
-             "query": "max(avg_over_time(process_cpu_usage{namespace=\"$NAMESPACE\",pod=~\"$STATEFULSET-[0-9]+\"}[2m]))"}
+             "query": "max(avg_over_time(process_cpu_usage{$SELECTOR}[2m]))"}
           ],
           "scaleDownSignals": [
             {"name": "no-backpressure", "operator": "<=", "threshold": 0.001,
-             "query": "max(sum by (partition) (rate(zeebe_dropped_request_count_total{namespace=\"$NAMESPACE\",pod=~\"$STATEFULSET-[0-9]+\"}[2m])) / clamp_min(sum by (partition) (rate(zeebe_received_request_count_total{namespace=\"$NAMESPACE\",pod=~\"$STATEFULSET-[0-9]+\"}[2m])), 1))"},
+             "query": "max(sum by (partition) (rate(zeebe_dropped_request_count_total{$SELECTOR}[2m])) / clamp_min(sum by (partition) (rate(zeebe_received_request_count_total{$SELECTOR}[2m])), 1))"},
             {"name": "fits-on-fewer-brokers", "operator": "<=", "threshold": 0.5,
-             "query": "sum(avg_over_time(process_cpu_usage{namespace=\"$NAMESPACE\",pod=~\"$STATEFULSET-[0-9]+\"}[5m])) / ($BROKERS - 1)"}
+             "query": "sum(avg_over_time(process_cpu_usage{$SELECTOR}[5m])) / ($BROKERS - 1)"}
           ],
           "vetoSignals": [
             {"name": "exporter-backlog", "operator": ">=", "threshold": 100000,
-             "query": "max(max by (partition) (zeebe_log_appender_last_committed_position{namespace=\"$NAMESPACE\",pod=~\"$STATEFULSET-[0-9]+\"}) - min by (partition) (max by (partition, exporter) (zeebe_exporter_last_exported_position{namespace=\"$NAMESPACE\",pod=~\"$STATEFULSET-[0-9]+\"}))) or vector(0)"},
+             "query": "max(max by (partition) (zeebe_log_appender_last_committed_position{$SELECTOR}) - min by (partition) (max by (partition, exporter) (zeebe_exporter_last_exported_position{$SELECTOR}))) or vector(0)"},
             {"name": "partition-unhealthy", "operator": "<=", "threshold": 0,
-             "query": "min(zeebe_health{namespace=\"$NAMESPACE\",pod=~\"$STATEFULSET-[0-9]+\"})"}
+             "query": "min(zeebe_health{$SELECTOR})"}
           ]
         }
 ```
 
-The queries assume Prometheus attaches `namespace` and `pod` labels, as ServiceMonitor and
-Kubernetes pod discovery do. See `scripts/capacity-manager/README.md` for why each signal is used and
+`$SELECTOR` expands to a matcher for the orchestration broker pods. It assumes Prometheus labels
+broker series with the pod namespace and name, as ServiceMonitor and Kubernetes pod discovery do;
+if your labels are named differently, set `capacityManager.prometheusLabels.namespace` and
+`.pod` rather than rewriting the queries. A query that matches nothing makes the manager hold with
+low confidence, which `/status` reports. See `scripts/capacity-manager/README.md` for why each signal is used and
 for optional partition-balance and disk vetoes.
 
 ## Safety Model
@@ -75,10 +81,26 @@ with `orchestration.clusterSize: "1"`. Set `capacityManager.replicaOwnership: ca
 explicitly transfer StatefulSet replica ownership from Helm. Advisor-only mode leaves the value empty
 and retains normal Helm ownership.
 
-Returning ownership is an explicit handback using `capacityManager.replicaOwnership: helm`. It
-requires live cluster access and succeeds only when the durable target, durable completion marker,
-live replicas, and configured cluster size all match. Offline handback is rejected. Rolling back to a
-chart version that predates this contract is unsupported until the cluster has been safely contracted.
+## Onboarding, Handback and Disable
+
+1. **Observe first.** Enable the component with the default `recommend` policy and leave
+   `replicaOwnership` empty. Helm keeps the replica count; `/status` and `/metrics` show every
+   signal reading and the decision the manager would take. Use this to calibrate thresholds.
+2. **Hand over.** Set `orchestration.clusterSize: "1"`, `replicaOwnership: capacityManager` and an
+   `automatic` (or `scheduled`) policy. The chart stops rendering `spec.replicas`.
+3. **Stop acting immediately.** Change the policy to `"mode": "recommend"`. The policy is reread
+   every reconcile, so no restart is needed and the current size is kept.
+4. **Hand back to Helm or disable.** Set the policy to `{"mode": "scheduled", "targetBrokers": 1, ...}`
+   and wait until `/status` reports `stable` with one broker and the StatefulSet annotations
+   `capacity-manager.camunda.io/target-brokers` and `completed-brokers` are both `1`. Then set
+   `replicaOwnership: ""` (and optionally `enabled: false`) and run `helm upgrade`.
+
+Step 4 is enforced. Whenever Helm owns the replica count, the chart looks up the live StatefulSet;
+if the manager has ever managed it, the upgrade fails unless the durable target, the completion
+marker and the live replica count all equal the configured cluster size. This prevents Helm from
+removing brokers that were never evacuated from the topology. Offline renders and fresh installs
+have no live StatefulSet and are unaffected. Rolling back to a chart version without this guard is
+unsupported until the cluster has been contracted as in step 4.
 
 ## Operator Integration
 
