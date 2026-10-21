@@ -68,14 +68,14 @@ func TestCapacityManagerDeployment(t *testing.T) {
 	require.Equal(t, "capacity-test-capacity-manager", deployment.Spec.Template.Spec.ServiceAccountName)
 	require.True(t, *deployment.Spec.Template.Spec.Containers[0].SecurityContext.ReadOnlyRootFilesystem)
 	require.Contains(t, deployment.Spec.Template.Spec.Containers[0].Args, "--statefulset=capacity-test-zeebe")
-	require.Contains(t, deployment.Spec.Template.Spec.Containers[0].Args, "--zeebe-url=http://capacity-test-zeebe-0.capacity-test-zeebe:9600")
+	require.Contains(t, deployment.Spec.Template.Spec.Containers[0].Args, "--zeebe-url=http://capacity-test-zeebe-gateway:9600")
 
 	output = render(t, "templates/capacity-manager/deployment.yaml", map[string]string{
 		"capacityManager.enabled":   "true",
 		"orchestration.contextPath": "/orchestration",
 	})
 	helm.UnmarshalK8SYaml(t, output, &deployment)
-	require.Contains(t, deployment.Spec.Template.Spec.Containers[0].Args, "--zeebe-url=http://capacity-test-zeebe-0.capacity-test-zeebe:9600/orchestration")
+	require.Contains(t, deployment.Spec.Template.Spec.Containers[0].Args, "--zeebe-url=http://capacity-test-zeebe-gateway:9600/orchestration")
 }
 
 func TestCapacityManagerPolicy(t *testing.T) {

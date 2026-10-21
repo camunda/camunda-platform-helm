@@ -34,7 +34,9 @@ spec:
           args:
             - --namespace=$(POD_NAMESPACE)
             - --statefulset={{ include "orchestration.fullname" . }}
-            - --zeebe-url=http://{{ include "orchestration.fullname" . }}-0.{{ include "orchestration.zoneFullname" (dict "context" .) }}:{{ .Values.orchestration.service.managementPort }}{{ .Values.orchestration.contextPath }}
+            {{- /* The orchestration Service routes to any ready member, all of which serve the
+                   cluster management API, so one unavailable broker does not blind the manager. */}}
+            - --zeebe-url=http://{{ include "orchestration.serviceName" . }}:{{ .Values.orchestration.service.managementPort }}{{ .Values.orchestration.contextPath }}
             - --prometheus-url={{ .Values.capacityManager.prometheusURL }}
             - --interval={{ .Values.capacityManager.reconcileInterval }}
             - --operation-timeout={{ .Values.capacityManager.operationTimeout }}
