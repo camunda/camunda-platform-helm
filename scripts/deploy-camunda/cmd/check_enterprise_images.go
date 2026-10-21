@@ -59,74 +59,8 @@ any chart references an image that is not pullable.`,
 		Args:          cobra.NoArgs,
 		SilenceUsage:  true,
 		SilenceErrors: true,
-		// Registry auditing needs no chart, namespace or release, so the root's
-		// deploy validation is replaced rather than excluded by name.
-		PersistentPreRunE: func(*cobra.Command, []string) error { return nil },
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
-			defer stop()
-
-			if err := deploy.ValidateImagePlatform(platform); err != nil {
-				return err
-			}
-			if _, err := lookPath("docker"); err != nil {
-				return fmt.Errorf("docker is required to resolve image manifests: %w", err)
-			}
-
-			root, err := resolveEnterpriseRepoRoot(repoRoot)
-			if err != nil {
-				return err
-			}
-			charts, err := enterpriseChartDirs(root, chartVersions)
-			if err != nil {
-				return err
-			}
-
-			out := cmd.OutOrStdout()
-			failedCharts, childDenials := 0, 0
-			for _, chart := range charts {
-				valuesFile := filepath.Join(root, "charts", chart, "values-enterprise.yaml")
-				if _, err := os.Stat(valuesFile); err != nil {
-					fmt.Fprintf(out, "Skipping %s: no values-enterprise.yaml\n", chart)
-					continue
-				}
-
-				fmt.Fprintf(out, "\nValidating %s\n", chart)
-				results, auditErr := auditEnterpriseImages(ctx, valuesFile, platform)
-				if auditErr != nil {
-					failedCharts++
-					fmt.Fprintf(out, "  ✗ %v\n✗ %s validation failed\n", auditErr, chart)
-					continue
-				}
-				failed := 0
-				for _, r := range results {
-					if r.OK {
-						fmt.Fprintf(out, "  ✓ %s\n", r.Ref)
-						continue
-					}
-					failed++
-					if r.ChildDenied {
-						childDenials++
-					}
-					fmt.Fprintf(out, "  ✗ %s\n", r.Detail)
-				}
-				if failed > 0 {
-					failedCharts++
-					fmt.Fprintf(out, "✗ %s validation failed (%d of %d images)\n", chart, failed, len(results))
-					continue
-				}
-				fmt.Fprintf(out, "✓ %s validation passed (%d images)\n", chart, len(results))
-			}
-
-			if failedCharts > 0 {
-				if childDenials > 0 {
-					fmt.Fprintln(out, "\nWhen the registry serves an index but denies the child it advertises, "+
-						"a pin change will not help — see camunda/camunda-platform-helm#6804.")
-				}
-				return fmt.Errorf("%d of %d chart(s) failed enterprise image validation on %s",
-					failedCharts, len(charts), platform)
-			}
-			return nil
+			return checkEnterpriseImages(cmd, chartVersions, platform, repoRoot)
 		},
 	}
 
@@ -139,6 +73,73 @@ any chart references an image that is not pullable.`,
 	f.StringVar(&repoRoot, "repo-root", "", "Repository root (auto-detected when empty)")
 
 	return cmd
+}
+
+func checkEnterpriseImages(cmd *cobra.Command, chartVersions []string, platform, repoRoot string) error {
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
+	if err := deploy.ValidateImagePlatform(platform); err != nil {
+		return err
+	}
+	if _, err := lookPath("docker"); err != nil {
+		return fmt.Errorf("docker is required to resolve image manifests: %w", err)
+	}
+
+	root, err := resolveEnterpriseRepoRoot(repoRoot)
+	if err != nil {
+		return err
+	}
+	charts, err := enterpriseChartDirs(root, chartVersions)
+	if err != nil {
+		return err
+	}
+
+	out := cmd.OutOrStdout()
+	failedCharts, childDenials := 0, 0
+	for _, chart := range charts {
+		valuesFile := filepath.Join(root, "charts", chart, "values-enterprise.yaml")
+		if _, err := os.Stat(valuesFile); err != nil {
+			fmt.Fprintf(out, "Skipping %s: no values-enterprise.yaml\n", chart)
+			continue
+		}
+
+		fmt.Fprintf(out, "\nValidating %s\n", chart)
+		results, auditErr := auditEnterpriseImages(ctx, valuesFile, platform)
+		if auditErr != nil {
+			failedCharts++
+			fmt.Fprintf(out, "  ✗ %v\n✗ %s validation failed\n", auditErr, chart)
+			continue
+		}
+		failed := 0
+		for _, r := range results {
+			if r.OK {
+				fmt.Fprintf(out, "  ✓ %s\n", r.Ref)
+				continue
+			}
+			failed++
+			if r.ChildDenied {
+				childDenials++
+			}
+			fmt.Fprintf(out, "  ✗ %s\n", r.Detail)
+		}
+		if failed > 0 {
+			failedCharts++
+			fmt.Fprintf(out, "✗ %s validation failed (%d of %d images)\n", chart, failed, len(results))
+			continue
+		}
+		fmt.Fprintf(out, "✓ %s validation passed (%d images)\n", chart, len(results))
+	}
+
+	if failedCharts > 0 {
+		if childDenials > 0 {
+			fmt.Fprintln(out, "\nWhen the registry serves an index but denies the child it advertises, "+
+				"a pin change will not help — see camunda/camunda-platform-helm#6804.")
+		}
+		return fmt.Errorf("%d of %d chart(s) failed enterprise image validation on %s",
+			failedCharts, len(charts), platform)
+	}
+	return nil
 }
 
 func resolveEnterpriseRepoRoot(explicit string) (string, error) {
