@@ -4603,12 +4603,12 @@
                         "tag": {
                             "type": "string",
                             "description": "defines the image tag to use.",
-                            "default": "pr-6705-sha-2a8a513afa6b80ed72120a570b11eec730692899"
+                            "default": "pr-6705-sha-bffb444e371209931262abfa8d82a755992a37b7"
                         },
                         "digest": {
                             "type": "string",
                             "description": "can be used to set the image digest, overriding the tag.",
-                            "default": "sha256:a5f79a2670718f880318ce3b080d0bb4691187caa545d284d2312709f1c3b744"
+                            "default": "sha256:ac6c0ecf42e1a3b14b7187075feb326b6cc6ff34a1fac6918e65bdcbd2bcb473"
                         },
                         "pullSecrets": {
                             "type": "array",

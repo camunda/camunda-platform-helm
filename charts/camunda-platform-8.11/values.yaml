@@ -2154,9 +2154,9 @@ capacityManager:
     ## @param capacityManager.image.repository defines which image repository to use.
     repository: team-distribution/capacity-manager
     ## @param capacityManager.image.tag defines the image tag to use.
-    tag: pr-6705-sha-2a8a513afa6b80ed72120a570b11eec730692899
+    tag: pr-6705-sha-bffb444e371209931262abfa8d82a755992a37b7
     ## @param capacityManager.image.digest can be used to set the image digest, overriding the tag.
-    digest: sha256:a5f79a2670718f880318ce3b080d0bb4691187caa545d284d2312709f1c3b744
+    digest: sha256:ac6c0ecf42e1a3b14b7187075feb326b6cc6ff34a1fac6918e65bdcbd2bcb473
     ## @param capacityManager.image.pullSecrets can be used to configure image pull secrets.
     pullSecrets: []
 
