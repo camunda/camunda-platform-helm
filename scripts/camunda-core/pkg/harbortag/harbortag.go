@@ -30,6 +30,8 @@ package harbortag
 import (
 	"fmt"
 	"regexp"
+	"slices"
+	"strings"
 )
 
 // Kind selects the tag family (dev or rc).
@@ -174,6 +176,50 @@ func CommitSHAFromDevTag(tag string) string {
 	}
 	_, sha, _ := cut(tag, "-dev-")
 	return sha
+}
+
+func ResolveRCSource(input string, tags []string, dryRun bool) (RcTag, DevTag, error) {
+	kind, parse := RC, ParseRcTag
+	if dryRun && (IsRolling(input, RCDryRun) || IsRcDryRunTag(input)) {
+		kind, parse = RCDryRun, ParseRcDryRunTag
+	}
+	if !slices.Contains(tags, input) {
+		return RcTag{}, DevTag{}, fmt.Errorf("input tag %q is absent from the selected artifact", input)
+	}
+	concrete := input
+	if IsRolling(input, kind) {
+		major, _, _ := strings.Cut(input, "-")
+		concrete = ""
+		for _, tag := range tags {
+			rc, err := parse(tag)
+			if err != nil || rc.ChartMajor != major {
+				continue
+			}
+			if concrete != "" && concrete != tag {
+				return RcTag{}, DevTag{}, fmt.Errorf("ambiguous RC tags for %q: %q and %q", input, concrete, tag)
+			}
+			concrete = tag
+		}
+	}
+	rc, err := parse(concrete)
+	if err != nil {
+		return RcTag{}, DevTag{}, err
+	}
+	var source DevTag
+	for _, tag := range tags {
+		dev, err := ParseDevTag(tag)
+		if err != nil || dev.Version != rc.Version {
+			continue
+		}
+		if source.ResolvedTag != "" && source.ResolvedTag != dev.ResolvedTag {
+			return RcTag{}, DevTag{}, fmt.Errorf("ambiguous source dev tags for %q: %q and %q", rc.ResolvedTag, source.ResolvedTag, dev.ResolvedTag)
+		}
+		source = dev
+	}
+	if source.ResolvedTag == "" {
+		return RcTag{}, DevTag{}, fmt.Errorf("no source dev tag for version %q on the selected artifact", rc.Version)
+	}
+	return rc, source, nil
 }
 
 // cut splits s at the LAST occurrence of sep.

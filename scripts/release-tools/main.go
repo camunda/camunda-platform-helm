@@ -38,6 +38,8 @@ func main() {
 		err = runUpdateMatrix(os.Args[2:])
 	case "resolve-tag":
 		err = runResolveTag(os.Args[2:])
+	case "release-source":
+		err = runReleaseSource(os.Args[2:])
 	case "harbor-tag":
 		err = runHarborTag(os.Args[2:])
 	case "component-image-versions":
@@ -80,6 +82,7 @@ Subcommands:
   chart-images    Derive the chart's declared image set from values.yaml (one ref per line)
   update-matrix   Update a version-matrix.json entry from the chart's recorded camunda.io/chart-images annotation
   resolve-tag     Resolve a rolling Harbor tag to concrete, validate, and emit its parts to $GITHUB_OUTPUT
+  release-source Validate Harbor artifact sources and published packages (prepare|previous|verify)
   harbor-tag      Idempotent Harbor artifact tag operations (digest|add|delete|ensure)
   component-image-versions  Build the human-readable component-image-versions annotation block
   image-overrides Collect *-image-tag override inputs into the imageOverrides annotation + HAS_IMAGE_OVERRIDES
