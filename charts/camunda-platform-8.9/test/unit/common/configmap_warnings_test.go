@@ -319,6 +319,9 @@ func (s *ConfigMapWarningsTemplateTest) TestRDBMSURLWarning() {
 	extraConfiguration := func(file, content string) []string {
 		return []string{"--set-json", `orchestration.extraConfiguration=[{"file":"` + file + `","content":"` + content + `"}]`}
 	}
+	configuration := func(content string) []string {
+		return []string{"--set-json", `orchestration.configuration="camunda:\n  data:\n    secondary-storage:\n      type: rdbms` + content + `"`}
+	}
 	testCases := []testhelpers.TestCase{}
 	for _, scenario := range []struct {
 		name   string
@@ -331,6 +334,9 @@ func (s *ConfigMapWarningsTemplateTest) TestRDBMSURLWarning() {
 		{name: "UnrelatedEnv", values: map[string]string{"orchestration.env[0].name": "FOO", "orchestration.env[0].value": "bar"}, warn: true},
 		{name: "RDBMSConfigWithoutURL", args: extraConfiguration("rdbms.yaml", `camunda.data.secondary-storage.rdbms.username: camunda`), warn: true},
 		{name: "NonSpringExtraConfiguration", args: []string{"--set-json", `orchestration.extraConfiguration=[{"file":"rdbms.yaml","content":"camunda.data.secondary-storage.rdbms.url: ` + jdbcURL + `","springImport":false}]`}, warn: true},
+		{name: "ConfigurationReplacesValuesURL", values: map[string]string{"orchestration.data.secondaryStorage.rdbms.url": jdbcURL}, args: configuration(""), warn: true},
+		{name: "ConfigurationSkipsExtraConfigurationImport", args: append(configuration(""), extraConfiguration("rdbms.yaml", `camunda.data.secondary-storage.rdbms.url: `+jdbcURL)...), warn: true},
+		{name: "ConfigurationImportsExtraConfiguration", args: append(configuration(`\nspring:\n  config:\n    import: optional:file:/usr/local/camunda/config/rdbms.yaml`), extraConfiguration("rdbms.yaml", `camunda.data.secondary-storage.rdbms.url: `+jdbcURL)...)},
 		{name: "ValuesURL", values: map[string]string{"orchestration.data.secondaryStorage.rdbms.url": jdbcURL}},
 		{name: "EnvURL", values: map[string]string{"orchestration.env[0].name": "CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_URL", "orchestration.env[0].value": jdbcURL}},
 		{name: "SpringApplicationJSON", args: []string{"--set-json", `orchestration.env=[{"name":"SPRING_APPLICATION_JSON","value":"{\"camunda\":{\"data\":{\"secondary-storage\":{\"rdbms\":{\"url\":\"` + jdbcURL + `\"}}}}}"}]`}},
@@ -338,7 +344,7 @@ func (s *ConfigMapWarningsTemplateTest) TestRDBMSURLWarning() {
 		{name: "JavaOpts", values: map[string]string{"orchestration.javaOpts": "-Dcamunda.data.secondary-storage.rdbms.url=" + jdbcURL}},
 		{name: "NestedExtraConfiguration", args: extraConfiguration("rdbms.yaml", `camunda:\n  data:\n    secondary-storage:\n      rdbms:\n        url: `+jdbcURL)},
 		{name: "PropertiesExtraConfiguration", args: extraConfiguration("rdbms.properties", `camunda.data.secondary-storage.rdbms.url=`+jdbcURL)},
-		{name: "Configuration", args: []string{"--set-json", `orchestration.configuration="camunda:\n  data:\n    secondary-storage:\n      type: rdbms\n      rdbms:\n        url: ` + jdbcURL + `"`}},
+		{name: "Configuration", args: configuration(`\n      rdbms:\n        url: ` + jdbcURL)},
 		{name: "ElasticsearchWithExporterFlag", values: map[string]string{"orchestration.data.secondaryStorage.type": "elasticsearch", "orchestration.exporters.rdbms.enabled": "true"}},
 		{name: "OrchestrationDisabled", values: map[string]string{"orchestration.enabled": "false"}},
 	} {
