@@ -80,13 +80,12 @@ on:
       VAULT_SECRET_ID:
         required: true
 
-concurrency:
-  group: update-urgency-${{ inputs.issue_number || github.event.inputs.issue_number || github.event.issue.number }}-${{ inputs.route_new_internal && 'initial' || 'update' }}
-  cancel-in-progress: true
-
 jobs:
   assign-urgency-to-issue:
     runs-on: ubuntu-latest
+    concurrency:
+      group: update-urgency-${{ inputs.issue_number || github.event.inputs.issue_number || github.event.issue.number }}
+      cancel-in-progress: false
     permissions:
       contents: read
     timeout-minutes: 10
@@ -254,7 +253,6 @@ jobs:
             echo "in_target_project=true"
             echo "project_v2_id=$TARGET_PROJECT_NODE_ID"
             echo "project_item_id=$PROJECT_ITEM_ID"
-            echo "current_status=$(echo "$ISSUE_DATA" | jq -r --argjson pn "$PROJECT_NUMBER" '.projectItems.nodes[] | select(.project.number==$pn) | .fieldValues.nodes[] | select(.field.name=="Status") | .name')"
           } >> "$GITHUB_OUTPUT"
 
       - name: Check labels
@@ -567,24 +565,8 @@ jobs:
         id: author
         if: >-
           steps.validate_project.outputs.in_target_project == 'true' &&
-          (inputs.route_new_internal ||
-           (env.QUIET_INTERNAL == 'true' && steps.validate_urgency.outputs.urgency == 'immediate'))
+          env.QUIET_INTERNAL == 'true' && steps.validate_urgency.outputs.urgency == 'immediate'
         run: make run.issue-author
-
-      - name: Route new internal issue to Backlog
-        if: >-
-          inputs.route_new_internal && env.DRY_RUN != 'true' &&
-          steps.author.outputs.internal == 'true' &&
-          steps.validate_project.outputs.in_target_project == 'true' &&
-          (steps.validate_project.outputs.current_status == '' || steps.validate_project.outputs.current_status == '📥 Inbox')
-        uses: github/update-project-action@d0031a4f8081c4bf4438d7ce2fa5cf1136610c7a # main
-        with:
-          github_token: ${{ steps.generate-github-token.outputs.token }}
-          organization: ${{ github.repository_owner }}
-          project_number: ${{ env.PROJECT_NUMBER }}
-          content_id: ${{ fromJSON(steps.fetch_data.outputs.issue_data).id }}
-          field: Status
-          value: 📋 Backlog
 
       - name: Move to Ready if immediate
         if: >-
@@ -682,3 +664,81 @@ jobs:
           fi
 
           echo "✅ Successfully moved issue to ⏭️ Ready"
+
+  route-new-internal:
+    if: inputs.route_new_internal && !inputs.dry_run
+    runs-on: ubuntu-latest
+    concurrency:
+      group: initial-backlog-${{ inputs.issue_number }}
+      cancel-in-progress: false
+    permissions:
+      contents: read
+    timeout-minutes: 10
+    env:
+      ISSUE_NUMBER: ${{ inputs.issue_number }}
+      PROJECT_NUMBER: ${{ inputs.project_id || '33' }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: camunda/camunda-platform-helm
+          ref: ${{ github.repository == 'camunda/camunda-platform-helm' && github.sha || 'main' }}
+          persist-credentials: false
+      - uses: ./.github/actions/install-tool-versions
+        with:
+          tools: golang
+      - name: Import Vault secrets
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        id: vault-secrets
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/distribution/ci GH_APP_ID_DISTRO_CI;
+            secret/data/products/distribution/ci GH_APP_PRIVATE_KEY_DISTRO_CI;
+          exportEnv: false
+      - name: Generate GitHub token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        id: generate-github-token
+        with:
+          app-id: ${{ steps.vault-secrets.outputs.GH_APP_ID_DISTRO_CI }}
+          private-key: ${{ steps.vault-secrets.outputs.GH_APP_PRIVATE_KEY_DISTRO_CI }}
+      - name: Classify issue creator for routing
+        id: author
+        env:
+          GH_TOKEN: ${{ steps.generate-github-token.outputs.token }}
+        run: make run.issue-author
+      - name: Fetch current status for initial routing
+        id: current_status
+        if: steps.author.outputs.internal == 'true'
+        env:
+          GH_TOKEN: ${{ steps.generate-github-token.outputs.token }}
+        run: |
+          set -euo pipefail
+          gh api graphql -f query='query($owner:String!,$repo:String!,$number:Int!){
+            repository(owner:$owner,name:$repo){issue(number:$number){id state
+              projectItems(first:100){nodes{project{number} fieldValueByName(name:"Status"){
+                ... on ProjectV2ItemFieldSingleSelectValue{name}
+              }}}
+            }}
+          }' -f owner="${GITHUB_REPOSITORY%/*}" -f repo="${GITHUB_REPOSITORY#*/}" -F number="$ISSUE_NUMBER" |
+            jq -er --argjson project "$PROJECT_NUMBER" '
+              if .errors or .data.repository.issue == null then error("Failed to fetch current issue status") else
+                .data.repository.issue | "content_id=\(.id)",
+                "route=\(.state == "OPEN" and any(.projectItems.nodes[];
+                  .project.number == $project and ((.fieldValueByName.name // "") | . == "" or . == "📥 Inbox")))"
+              end' >> "$GITHUB_OUTPUT"
+      - name: Route new internal issue to Backlog
+        if: steps.current_status.outputs.route == 'true'
+        uses: github/update-project-action@d0031a4f8081c4bf4438d7ce2fa5cf1136610c7a # main
+        with:
+          github_token: ${{ steps.generate-github-token.outputs.token }}
+          organization: ${{ github.repository_owner }}
+          project_number: ${{ env.PROJECT_NUMBER }}
+          content_id: ${{ steps.current_status.outputs.content_id }}
+          field: Status
+          value: 📋 Backlog
