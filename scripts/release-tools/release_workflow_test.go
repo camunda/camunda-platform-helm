@@ -16,6 +16,7 @@ package main
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -69,6 +70,17 @@ func sourceWorkflowStepNamed(t *testing.T, steps []sourceWorkflowStep, name stri
 	}
 	t.Fatalf("missing workflow step %q", name)
 	return sourceWorkflowStep{}, -1
+}
+
+func TestPublicReleaseRejectsMismatchedPackageVersion(t *testing.T) {
+	workflow := sourceTestWorkflow(t, "chart-release-public.yaml")
+	history, _ := sourceWorkflowStepNamed(t, workflow.Jobs["release"].Steps, "Resolve previous release source")
+	t.Setenv("PACKAGE_VERSION", "14.11.0")
+	t.Setenv("RC_VERSION", "14.11.1")
+	output, err := exec.Command("bash", "-c", history.Run).CombinedOutput()
+	if err == nil || !strings.Contains(string(output), "::error::The pulled package version does not match the selected RC") {
+		t.Fatalf("mismatched package was not rejected: %v\n%s", err, output)
+	}
 }
 
 func TestPublicReleaseWorkflowSourceContract(t *testing.T) {
