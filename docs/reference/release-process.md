@@ -139,6 +139,20 @@ map to their recorded build commits in `historicalReleaseSources`; the tags them
 moved. Release-please still discovers history from the public tags on its own; its version
 calculation is unchanged.
 
+Release-note generation receives both source boundaries explicitly. Existing Git tags do not
+regroup changes into an older release. The Build Dev and RC workflows resolve history once,
+before its consumers, and keep Harbor credentials in that read-only step.
+
+Release-please is invoked directly with its existing configuration. These source boundaries
+apply to generated release notes and shipped-PR labeling; they do not override release-please's
+own historical tag discovery or version calculation. An incorrect old tag may therefore still
+require release-specific version selection; public tags are not rewritten by this workflow.
+
+For local generation, `make release.generate-notes chartPath=... sourceSHA=<sha>` selects the
+build input; without `sourceSHA`, it uses the local checkout. The Make target obtains the
+previous artifact reference, resolves the Git commits and calls the note generator directly.
+It requires GitHub read access and the Harbor registry/project and credential environment.
+
 **After public release:**
 
 1. The workflow enables auto-merge on the `release-please` PR, then shepherds it through the merge

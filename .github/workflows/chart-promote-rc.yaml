@@ -216,6 +216,26 @@ jobs:
           # package's Chart.yaml → $GITHUB_OUTPUT.
           /tmp/release-tools chart-metadata --chart-yaml "${package_chart_dir}/Chart.yaml"
 
+      - name: Resolve release history
+        id: history
+        env:
+          GH_TOKEN: ${{ steps.generate-github-token.outputs.token }}
+          HARBOR_REGISTRY_USER: ${{ steps.test-credentials-secret.outputs.HARBOR_REGISTRY_USER }}
+          HARBOR_REGISTRY_PASSWORD: ${{ steps.test-credentials-secret.outputs.HARBOR_REGISTRY_PASSWORD }}
+          SOURCE_SHA: ${{ steps.parse.outputs.sha }}
+          RELEASE_VERSION: ${{ steps.parse.outputs.version }}
+        run: |
+          set -euo pipefail
+          gh api 'repos/{owner}/{repo}/releases?per_page=100' --paginate --slurp > /tmp/releases.json
+          previous_ref=$(/tmp/release-tools release-history \
+            --chart-yaml "${{ steps.package.outputs.package_chart_dir }}/Chart.yaml" \
+            --releases-file /tmp/releases.json --before-version "${RELEASE_VERSION}" \
+            --api "https://${HARBOR_REGISTRY}/api/v2.0" \
+            --repo "projects/${HARBOR_PROJECT}/repositories/camunda-platform")
+          previous_sha=$(git rev-parse --verify "${previous_ref}^{commit}")
+          git merge-base --is-ancestor "${previous_sha}" "${SOURCE_SHA}"
+          echo "previous_commit_sha=${previous_sha}" >> "$GITHUB_OUTPUT"
+
       - name: Install release-please
         run: npm i release-please -g
 
@@ -300,7 +320,10 @@ jobs:
           fi
 
           # Chart.yaml release annotations + RELEASE-NOTES.md (body + image footer).
-          /tmp/release-tools release-notes --main "${chart_path}"
+          CHART_VERSION="${chart_version}" yq -i '.version = strenv(CHART_VERSION)' "${chart_path}/Chart.yaml"
+          /tmp/release-tools release-notes --main "${chart_path}" \
+            --source "${{ steps.parse.outputs.sha }}" \
+            --previous-source "${{ steps.history.outputs.previous_commit_sha }}"
           /tmp/release-tools release-notes --footer "${chart_path}" \
             --images-chart-dir "${{ steps.package.outputs.package_chart_dir }}"
 
