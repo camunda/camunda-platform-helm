@@ -131,27 +131,19 @@ The charts are built, linted, and tested on every push to the main branch. The r
 not an installable copy of the chart. Version bumps, generated release files and image
 overrides exist only in the package; publication never rebuilds it.
 
-`release-history` picks the highest release tag on the chart line below the chart's version; a
-new chart line starts from its `camunda-platform-<minor>-<major>.0.0-alpha0` bootstrap tag.
-Tags that were created from a later publishing checkout
+Release notes (`release-tools release-notes --main`) and shipped-PR labels use the same
+`previous-source..source` range. `release-history` picks the highest release tag on the chart
+line below the chart's version; a new chart line starts from its
+`camunda-platform-<minor>-<major>.0.0-alpha0` bootstrap tag. Tags that were created from a
+later publishing checkout
 ([#7612 audit](https://github.com/camunda/camunda-platform-helm/issues/7612#issuecomment-6314547789))
 map to their recorded build commits in `historicalReleaseSources`; the tags themselves are not
-moved. Release-please still discovers history from the public tags on its own; its version
-calculation is unchanged.
+moved. Note generation ignores tags inside the range, so such a tag cannot regroup commits into
+an older release. Release-please still discovers history from the public tags on its own; its
+version calculation is unchanged.
 
-Release-note generation receives both source boundaries explicitly. Existing Git tags do not
-regroup changes into an older release. The Build Dev and RC workflows resolve history once
-from GitHub release metadata and durable Git references, without historical Harbor access.
-
-Release-please is invoked directly with its existing configuration. These source boundaries
-apply to generated release notes and shipped-PR labeling; they do not override release-please's
-own historical tag discovery or version calculation. An incorrect old tag may therefore still
-require release-specific version selection; public tags are not rewritten by this workflow.
-
-For local generation, `make release.generate-notes chartPath=... sourceSHA=<sha>` selects the
-build input; without `sourceSHA`, it uses the local checkout. The Make target obtains the
-previous artifact reference, resolves the Git commits and calls the note generator directly.
-It requires GitHub read access and local Git history, but no Harbor credentials.
+Locally: `make release.generate-notes chartPath=charts/camunda-platform-8.9 [sourceSHA=<sha>]`
+(defaults to `HEAD`).
 
 **After public release:**
 

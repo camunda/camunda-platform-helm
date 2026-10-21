@@ -219,15 +219,11 @@ jobs:
       - name: Resolve release history
         id: history
         env:
-          GH_TOKEN: ${{ steps.generate-github-token.outputs.token }}
           SOURCE_SHA: ${{ steps.parse.outputs.sha }}
-          RELEASE_VERSION: ${{ steps.parse.outputs.version }}
         run: |
           set -euo pipefail
-          gh api 'repos/{owner}/{repo}/releases?per_page=100' --paginate --slurp > /tmp/releases.json
           previous_ref=$(/tmp/release-tools release-history \
-            --chart-yaml "${{ steps.package.outputs.package_chart_dir }}/Chart.yaml" \
-            --releases-file /tmp/releases.json --before-version "${RELEASE_VERSION}")
+            --chart-yaml "${{ steps.package.outputs.package_chart_dir }}/Chart.yaml")
           previous_sha=$(git rev-parse --verify "${previous_ref}^{commit}")
           git merge-base --is-ancestor "${previous_sha}" "${SOURCE_SHA}"
           echo "previous_commit_sha=${previous_sha}" >> "$GITHUB_OUTPUT"

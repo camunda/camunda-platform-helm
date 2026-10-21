@@ -232,20 +232,6 @@ jobs:
       # This ensures the packaged Chart.yaml has the correct version and changelog
       # annotations that release-please would compute at release time.
       #
-      - name: Resolve release history
-        id: history
-        working-directory: ${{ github.workspace }}
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -euo pipefail
-          gh api 'repos/{owner}/{repo}/releases?per_page=100' --paginate --slurp > /tmp/releases.json
-          previous_ref=$(/tmp/release-tools release-history --chart-yaml "${CHART_DIR}/Chart.yaml" \
-            --releases-file /tmp/releases.json)
-          previous_sha=$(git rev-parse --verify "${previous_ref}^{commit}")
-          git merge-base --is-ancestor "${previous_sha}" "${GITHUB_SHA}"
-          echo "previous_commit_sha=${previous_sha}" >> "$GITHUB_OUTPUT"
-
       - name: Install release-please CLI
         run: npm install -g release-please
 
@@ -481,6 +467,17 @@ jobs:
       #
       # Generate release notes
       #
+      - name: Resolve release history
+        id: history
+        if: env.SKIP_BUILD == 'false'
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -euo pipefail
+          previous_ref=$(/tmp/release-tools release-history --chart-yaml "${CHART_DIR}/Chart.yaml")
+          previous_sha=$(git rev-parse --verify "${previous_ref}^{commit}")
+          git merge-base --is-ancestor "${previous_sha}" "${GITHUB_SHA}"
+          echo "previous_commit_sha=${previous_sha}" >> "$GITHUB_OUTPUT"
+
       - name: Generate RELEASE-NOTES.md
         if: env.SKIP_BUILD == 'false'
         working-directory: ${{ github.workspace }}

@@ -435,15 +435,10 @@ release.bump-chart-version-and-commit: .release.bump-chart-version
 .PHONY: release.generate-notes
 release.generate-notes: install.release-tools
 	set -e; \
-	releases=$$(mktemp); trap 'rm -f "$$releases"' EXIT; \
-	gh api 'repos/{owner}/{repo}/releases?per_page=100' --paginate --slurp > "$$releases"; \
 	source=$$(git rev-parse --verify "$${sourceSHA:-HEAD}^{commit}"); \
 	for chart_dir in $(chartPath); do\
 		echo "\n[$@] Chart dir: $${chart_dir}";\
-		previous_ref=$$(GITHUB_OUTPUT=/dev/null release-tools release-history \
-			--chart-yaml "$$chart_dir/Chart.yaml" --releases-file "$$releases" \
-			--before-version "$$(yq '.version' "$$chart_dir/Chart.yaml")"); \
-		previous=$$(git rev-parse --verify "$${previous_ref}^{commit}"); \
+		previous=$$(git rev-parse --verify "$$(release-tools release-history --chart-yaml "$$chart_dir/Chart.yaml")^{commit}"); \
 		git merge-base --is-ancestor "$$previous" "$$source"; \
 		release-tools release-notes --main "$$chart_dir" --source "$$source" --previous-source "$$previous"; \
 	done
