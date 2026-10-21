@@ -159,7 +159,7 @@ func upgradeKeeps(e env) error {
 	if err != nil {
 		return err
 	}
-	if out, err := helm(e, "upgrade", e.release, e.chartDir, "--reuse-values", "--wait=false"); err != nil {
+	if out, err := helm(e, "upgrade", e.release, e.chartDir, "--reuse-values"); err != nil {
 		return fmt.Errorf("helm upgrade with ownership kept: %v: %s", err, tail(out))
 	}
 	time.Sleep(20 * time.Second)
@@ -301,7 +301,7 @@ func handback(e env) error {
 	if target != "1" || completed != "1" {
 		return fmt.Errorf("cluster not contracted for handback: target=%s completed=%s", target, completed)
 	}
-	if out, err := helm(e, "upgrade", e.release, e.chartDir, "--reuse-values", "--wait=false",
+	if out, err := helm(e, "upgrade", e.release, e.chartDir, "--reuse-values",
 		"--set", "capacityManager.replicaOwnership=", "--set", "capacityManager.enabled=false"); err != nil {
 		return fmt.Errorf("handback upgrade: %v: %s", err, tail(out))
 	}
