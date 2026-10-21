@@ -17,6 +17,7 @@ import (
 	"io"
 	"log"
 	"mime/multipart"
+	"net"
 	"net/http"
 	"os/signal"
 	"sync"
@@ -105,13 +106,15 @@ func main() {
 
 var currentRate atomic.Int64
 
-// saturated stops the ramp once the cluster rejects requests, so the load
-// holds just past the point where one broker can no longer keep up.
+// saturated stops the ramp once the cluster shows it cannot keep up, so the
+// load holds just past one broker's capacity. The REST gateway retries
+// broker backpressure rejections internally, so clients often see request
+// timeouts or a full worker pool rather than HTTP 503.
 var saturated atomic.Bool
 
 // counters tracks request outcomes; rejected counts backpressure responses.
 type counters struct {
-	ok, rejected, failed, skipped atomic.Int64
+	ok, rejected, timedOut, failed, skipped atomic.Int64
 }
 
 func (c *counters) record(err error) {
@@ -120,6 +123,8 @@ func (c *counters) record(err error) {
 		c.ok.Add(1)
 	case errors.Is(err, errBackpressure):
 		c.rejected.Add(1)
+	case isTimeout(err):
+		c.timedOut.Add(1)
 	default:
 		c.failed.Add(1)
 		log.Printf("start process: %v", err)
@@ -134,18 +139,24 @@ func report(ctx context.Context, stats *counters, rate func() int) {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			ok, rejected := stats.ok.Swap(0), stats.rejected.Swap(0)
-			if total := ok + rejected; total > 0 && float64(rejected)/float64(total) >= 0.01 && !saturated.Load() {
+			ok, rejected, timedOut, skipped := stats.ok.Swap(0), stats.rejected.Swap(0), stats.timedOut.Swap(0), stats.skipped.Swap(0)
+			attempted := ok + rejected + timedOut + skipped
+			if attempted > 0 && float64(rejected+timedOut+skipped)/float64(attempted) >= 0.01 && !saturated.Load() {
 				saturated.Store(true)
-				log.Printf("backpressure observed, holding rate at %d/s", rate())
+				log.Printf("saturation observed (rejected=%d timedOut=%d skipped=%d of %d), holding rate at %d/s", rejected, timedOut, skipped, attempted, rate())
 			}
-			log.Printf("rate=%d/s ok=%d rejected=%d failed=%d skipped=%d", rate(),
-				ok, rejected, stats.failed.Swap(0), stats.skipped.Swap(0))
+			log.Printf("rate=%d/s ok=%d rejected=%d timedOut=%d failed=%d skipped=%d", rate(),
+				ok, rejected, timedOut, stats.failed.Swap(0), skipped)
 		}
 	}
 }
 
 var errBackpressure = errors.New("rejected by backpressure")
+
+func isTimeout(err error) bool {
+	var netErr net.Error
+	return errors.Is(err, context.DeadlineExceeded) || (errors.As(err, &netErr) && netErr.Timeout())
+}
 
 func deploy(client *http.Client, baseURL, username, password string) error {
 	var body bytes.Buffer
