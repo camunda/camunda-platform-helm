@@ -340,142 +340,148 @@ func (t *Topology) Validate(ctx string, chartDir string, depsDir string) error {
 		}
 	}
 
-	roles := map[string]bool{}
-	suffixes := map[string]bool{}
-	hubCount := 0
-	orchestrationCount := 0
-	modelerClusterIDs := map[string]bool{}
-	modelerClusterNames := map[string]bool{}
-
+	check := topologyValidation{
+		repoRoot: repoRoot, chartDir: chartDir, version: parentVersion, depsDir: depsDir,
+		roles: map[string]int{}, suffixes: map[string]bool{}, orchestrationSuffixes: map[string]bool{},
+		modelerClusterIDs: map[string]bool{}, modelerClusterNames: map[string]bool{},
+	}
 	for i, r := range t.Releases {
 		label := fmt.Sprintf("%s: topology %q: release[%d] (role %q, namespace-suffix %q)", ctx, t.Name, i, r.Role, r.NamespaceSuffix)
-		chartVersion, releaseChartDir, chartFullSetupDir, chartVersionSafe := releaseChartPaths(repoRoot, chartDir, parentVersion, r)
-		if !chartVersionSafe {
-			problems = append(problems, fmt.Sprintf("%s: chart-version %q must not contain path separators", label, chartVersion))
-		} else if info, err := os.Stat(releaseChartDir); err != nil || !info.IsDir() {
-			problems = append(problems, fmt.Sprintf("%s: chart-version %q: missing local chart directory at %s", label, chartVersion, releaseChartDir))
-		}
-
-		switch r.Role {
-		case "hub":
-			hubCount++
-		case "orchestration":
-			orchestrationCount++
-			if strings.TrimSpace(r.ModelerClusterID) == "" {
-				problems = append(problems, fmt.Sprintf("%s: modeler-cluster-id is required", label))
-			} else if modelerClusterIDs[r.ModelerClusterID] {
-				problems = append(problems, fmt.Sprintf("%s: duplicate modeler-cluster-id %q", label, r.ModelerClusterID))
-			} else {
-				modelerClusterIDs[r.ModelerClusterID] = true
-			}
-			if strings.TrimSpace(r.ModelerClusterName) == "" {
-				problems = append(problems, fmt.Sprintf("%s: modeler-cluster-name is required", label))
-			} else if modelerClusterNames[r.ModelerClusterName] {
-				problems = append(problems, fmt.Sprintf("%s: duplicate modeler-cluster-name %q", label, r.ModelerClusterName))
-			} else {
-				modelerClusterNames[r.ModelerClusterName] = true
-			}
-		case "optimize":
-			if strings.TrimSpace(r.DependsOn) != "hub" {
-				problems = append(problems, fmt.Sprintf("%s: depends-on must be \"hub\" so the release deploys after the Management Identity that provisions its client, got %q", label, r.DependsOn))
-			}
-			if strings.TrimSpace(r.Serves) == "" {
-				problems = append(problems, fmt.Sprintf("%s: serves is required and must name the namespace-suffix of the orchestration release this Optimize reads", label))
-			}
-			if strings.TrimSpace(r.OptimizeContextPath) == "" {
-				problems = append(problems, fmt.Sprintf("%s: optimize-context-path is required and must match optimize.contextPath in the release's values layer", label))
-			} else if !strings.HasPrefix(r.OptimizeContextPath, "/") {
-				problems = append(problems, fmt.Sprintf("%s: optimize-context-path %q must start with \"/\"", label, r.OptimizeContextPath))
-			}
-		default:
-			problems = append(problems, fmt.Sprintf("%s: role must be \"hub\", \"orchestration\", or \"optimize\", got %q", label, r.Role))
-		}
-		roles[r.Role] = true
-
-		if strings.TrimSpace(r.NamespaceSuffix) == "" {
-			problems = append(problems, fmt.Sprintf("%s: namespace-suffix is required", label))
-		} else if !isDNS1123Label(r.NamespaceSuffix) {
-			problems = append(problems, fmt.Sprintf("%s: namespace-suffix %q must be a lowercase DNS-1123 label", label, r.NamespaceSuffix))
-		} else if suffixes[r.NamespaceSuffix] {
-			problems = append(problems, fmt.Sprintf("%s: duplicate namespace-suffix %q", label, r.NamespaceSuffix))
-		} else {
-			suffixes[r.NamespaceSuffix] = true
-		}
-		if len(r.NamespaceSuffix) > 12 {
-			problems = append(problems, fmt.Sprintf("%s: namespace-suffix %q is too long (max 12 chars, to keep <namespace>-<suffix> well within the 63-char Kubernetes limit)", label, r.NamespaceSuffix))
-		}
-
-		valuesDir := filepath.Join(chartFullSetupDir, "values")
-
-		if strings.TrimSpace(r.Values) != "" {
-			problems = append(problems, fmt.Sprintf("%s: values %q is no longer supported: drop the \"features/\" prefix and the \".yaml\" suffix and list it in features instead, so the layer goes through the same env-var substitution as every other feature layer", label, r.Values))
-		}
-		if len(r.Features) == 0 {
-			problems = append(problems, fmt.Sprintf("%s: features is required and must name at least this release's own overlay layer", label))
-		}
-
-		// identity/persistence/features name a values layer by bare ID, which is
-		// interpolated straight into a path. Require plain filenames the same way
-		// dependency IDs do, so an ID such as "../identity/keycloak" cannot escape
-		// its layer directory and silently validate (and later deploy) an
-		// unrelated file. kind names the layer in errors; dirName is its directory.
-		checkLayer := func(kind, dirName, id string) {
-			if !isPlainFilename(id) {
-				problems = append(problems, fmt.Sprintf("%s: %s reference %q must be a plain filename (no path separators)", label, kind, id))
-				return
-			}
-			layerPath := filepath.Join(valuesDir, dirName, id+".yaml")
-			if info, err := os.Stat(layerPath); err != nil || info.IsDir() {
-				problems = append(problems, fmt.Sprintf("%s: %s %q: missing values file at %s", label, kind, id, layerPath))
-			}
-		}
-
-		for _, featureID := range r.Features {
-			checkLayer("feature", "features", featureID)
-		}
-
-		if r.Identity != "" {
-			checkLayer("identity", "identity", r.Identity)
-		}
-
-		if r.Persistence != "" {
-			checkLayer("persistence", "persistence", r.Persistence)
-		}
-
-		for _, depID := range r.Dependencies {
-			if !isPlainFilename(depID) {
-				problems = append(problems, fmt.Sprintf("%s: dependency reference %q must be a plain filename (no path separators)", label, depID))
-				continue
-			}
-			depPath := filepath.Join(depsDir, depID+".yaml")
-			if info, err := os.Stat(depPath); err != nil || info.IsDir() {
-				problems = append(problems, fmt.Sprintf("%s: dependency %q: missing at %s", label, depID, depPath))
-			}
-		}
+		problems = append(problems, check.validateRelease(label, r)...)
 	}
 
-	if hubCount != 1 {
-		problems = append(problems, fmt.Sprintf("%s: topology %q: exactly one release with role \"hub\" is required, found %d", ctx, t.Name, hubCount))
+	if check.roles["hub"] != 1 {
+		problems = append(problems, fmt.Sprintf("%s: topology %q: exactly one release with role \"hub\" is required, found %d", ctx, t.Name, check.roles["hub"]))
 	}
 	if s := t.CredentialStores; s != nil {
 		if t.CredentialsManifest == "" {
 			problems = append(problems, fmt.Sprintf("%s: topology %q: credential-stores requires credentials-manifest", ctx, t.Name))
 		}
-		for _, p := range credentialStoreProblems(s, suffixes) {
+		for _, p := range credentialStoreProblems(s, check.suffixes) {
 			problems = append(problems, fmt.Sprintf("%s: topology %q: credential-stores: %s", ctx, t.Name, p))
 		}
 	}
-	if orchestrationCount == 0 {
+	if check.roles["orchestration"] == 0 {
 		problems = append(problems, fmt.Sprintf("%s: topology %q: at least one release with role \"orchestration\" is required", ctx, t.Name))
 	}
 
-	orchestrationSuffixes := map[string]bool{}
+	problems = append(problems, check.validateReferences(ctx, t)...)
+
 	for _, r := range t.Releases {
-		if r.Role == "orchestration" {
-			orchestrationSuffixes[r.NamespaceSuffix] = true
+		if r.Role != "optimize" {
+			continue
 		}
+		label := fmt.Sprintf("%s: topology %q: release (role %q, namespace-suffix %q)", ctx, t.Name, r.Role, r.NamespaceSuffix)
+		_, _, releaseChartFullSetupDir, safe := releaseChartPaths(repoRoot, chartDir, parentVersion, r)
+		if !safe {
+			continue
+		}
+		problems = append(problems, validateOptimizeLayerSources(label, r, releaseChartFullSetupDir)...)
 	}
 
+	if len(problems) == 0 {
+		return nil
+	}
+	return fmt.Errorf("%s", strings.Join(problems, "\n  - "))
+}
+
+type topologyValidation struct {
+	repoRoot, chartDir, version, depsDir   string
+	roles                                  map[string]int
+	suffixes, orchestrationSuffixes        map[string]bool
+	modelerClusterIDs, modelerClusterNames map[string]bool
+}
+
+func (v *topologyValidation) validateRelease(label string, r TopologyRelease) []string {
+	var problems []string
+	chartVersion, releaseChartDir, setupDir, safe := releaseChartPaths(v.repoRoot, v.chartDir, v.version, r)
+	if !safe {
+		problems = append(problems, fmt.Sprintf("%s: chart-version %q must not contain path separators", label, chartVersion))
+	} else if info, err := os.Stat(releaseChartDir); err != nil || !info.IsDir() {
+		problems = append(problems, fmt.Sprintf("%s: chart-version %q: missing local chart directory at %s", label, chartVersion, releaseChartDir))
+	}
+	problems = append(problems, v.validateRole(label, r)...)
+	if strings.TrimSpace(r.NamespaceSuffix) == "" {
+		problems = append(problems, fmt.Sprintf("%s: namespace-suffix is required", label))
+	} else if !isDNS1123Label(r.NamespaceSuffix) {
+		problems = append(problems, fmt.Sprintf("%s: namespace-suffix %q must be a lowercase DNS-1123 label", label, r.NamespaceSuffix))
+	} else if v.suffixes[r.NamespaceSuffix] {
+		problems = append(problems, fmt.Sprintf("%s: duplicate namespace-suffix %q", label, r.NamespaceSuffix))
+	} else {
+		v.suffixes[r.NamespaceSuffix] = true
+	}
+	if len(r.NamespaceSuffix) > 12 {
+		problems = append(problems, fmt.Sprintf("%s: namespace-suffix %q is too long (max 12 chars, to keep <namespace>-<suffix> well within the 63-char Kubernetes limit)", label, r.NamespaceSuffix))
+	}
+	if strings.TrimSpace(r.Values) != "" {
+		problems = append(problems, fmt.Sprintf("%s: values %q is no longer supported: drop the \"features/\" prefix and the \".yaml\" suffix and list it in features instead, so the layer goes through the same env-var substitution as every other feature layer", label, r.Values))
+	}
+	if len(r.Features) == 0 {
+		problems = append(problems, fmt.Sprintf("%s: features is required and must name at least this release's own overlay layer", label))
+	}
+	valuesDir := filepath.Join(setupDir, "values")
+	problems = append(problems, valuesLayerProblems(label, "feature", filepath.Join(valuesDir, "features"), r.Features...)...)
+	if r.Identity != "" {
+		problems = append(problems, valuesLayerProblems(label, "identity", filepath.Join(valuesDir, "identity"), r.Identity)...)
+	}
+	if r.Persistence != "" {
+		problems = append(problems, valuesLayerProblems(label, "persistence", filepath.Join(valuesDir, "persistence"), r.Persistence)...)
+	}
+	for _, id := range r.Dependencies {
+		if !isPlainFilename(id) {
+			problems = append(problems, fmt.Sprintf("%s: dependency reference %q must be a plain filename (no path separators)", label, id))
+			continue
+		}
+		path := filepath.Join(v.depsDir, id+".yaml")
+		if info, err := os.Stat(path); err != nil || info.IsDir() {
+			problems = append(problems, fmt.Sprintf("%s: dependency %q: missing at %s", label, id, path))
+		}
+	}
+	return problems
+}
+
+func (v *topologyValidation) validateRole(label string, r TopologyRelease) []string {
+	var problems []string
+	v.roles[r.Role]++
+	switch r.Role {
+	case "hub":
+	case "orchestration":
+		v.orchestrationSuffixes[r.NamespaceSuffix] = true
+		for _, field := range []struct {
+			name, value string
+			seen        map[string]bool
+		}{
+			{"modeler-cluster-id", r.ModelerClusterID, v.modelerClusterIDs},
+			{"modeler-cluster-name", r.ModelerClusterName, v.modelerClusterNames},
+		} {
+			if strings.TrimSpace(field.value) == "" {
+				problems = append(problems, fmt.Sprintf("%s: %s is required", label, field.name))
+			} else if field.seen[field.value] {
+				problems = append(problems, fmt.Sprintf("%s: duplicate %s %q", label, field.name, field.value))
+			} else {
+				field.seen[field.value] = true
+			}
+		}
+	case "optimize":
+		if strings.TrimSpace(r.DependsOn) != "hub" {
+			problems = append(problems, fmt.Sprintf("%s: depends-on must be \"hub\" so the release deploys after the Management Identity that provisions its client, got %q", label, r.DependsOn))
+		}
+		if strings.TrimSpace(r.Serves) == "" {
+			problems = append(problems, fmt.Sprintf("%s: serves is required and must name the namespace-suffix of the orchestration release this Optimize reads", label))
+		}
+		if strings.TrimSpace(r.OptimizeContextPath) == "" {
+			problems = append(problems, fmt.Sprintf("%s: optimize-context-path is required and must match optimize.contextPath in the release's values layer", label))
+		} else if !strings.HasPrefix(r.OptimizeContextPath, "/") {
+			problems = append(problems, fmt.Sprintf("%s: optimize-context-path %q must start with \"/\"", label, r.OptimizeContextPath))
+		}
+	default:
+		problems = append(problems, fmt.Sprintf("%s: role must be \"hub\", \"orchestration\", or \"optimize\", got %q", label, r.Role))
+	}
+	return problems
+}
+
+func (v *topologyValidation) validateReferences(ctx string, t *Topology) []string {
+	var problems []string
 	optimizeContextPaths := map[string]string{}
 	for _, r := range t.Releases {
 		if r.Role != "optimize" || r.OptimizeContextPath == "" {
@@ -496,7 +502,7 @@ func (t *Topology) Validate(ctx string, chartDir string, depsDir string) error {
 			if r.OptimizeContextPath != "" {
 				problems = append(problems, fmt.Sprintf("%s: topology %q: release[%d] (role %q) must not set optimize-context-path; it applies only to role \"optimize\"", ctx, t.Name, i, r.Role))
 			}
-		} else if r.Serves != "" && !orchestrationSuffixes[r.Serves] {
+		} else if r.Serves != "" && !v.orchestrationSuffixes[r.Serves] {
 			problems = append(problems, fmt.Sprintf("%s: topology %q: release[%d] serves %q does not reference a declared orchestration release's namespace-suffix", ctx, t.Name, i, r.Serves))
 		}
 
@@ -506,30 +512,11 @@ func (t *Topology) Validate(ctx string, chartDir string, depsDir string) error {
 			}
 		}
 
-		if r.DependsOn == "" {
-			continue
-		}
-		if !roles[r.DependsOn] {
+		if r.DependsOn != "" && v.roles[r.DependsOn] == 0 {
 			problems = append(problems, fmt.Sprintf("%s: topology %q: release[%d] depends-on %q does not reference a declared role", ctx, t.Name, i, r.DependsOn))
 		}
 	}
-
-	for _, r := range t.Releases {
-		if r.Role != "optimize" {
-			continue
-		}
-		label := fmt.Sprintf("%s: topology %q: release (role %q, namespace-suffix %q)", ctx, t.Name, r.Role, r.NamespaceSuffix)
-		_, _, releaseChartFullSetupDir, safe := releaseChartPaths(repoRoot, chartDir, parentVersion, r)
-		if !safe {
-			continue
-		}
-		problems = append(problems, validateOptimizeLayerSources(label, r, releaseChartFullSetupDir)...)
-	}
-
-	if len(problems) == 0 {
-		return nil
-	}
-	return fmt.Errorf("%s", strings.Join(problems, "\n  - "))
+	return problems
 }
 
 // isContainedRelativePath reports whether value is a non-empty relative path
