@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">Release Process | Camunda Helm Charts</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:image" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7638/img/camunda-logo.svg"><meta data-rh="true" name="twitter:image" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7638/img/camunda-logo.svg"><meta data-rh="true" property="og:url" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7638/reference/release-process"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Release Process | Camunda Helm Charts"><meta data-rh="true" name="description" content="This document is for Distro team maintainers. For contribution process, see the Maintainer Guide."><meta data-rh="true" property="og:description" content="This document is for Distro team maintainers. For contribution process, see the Maintainer Guide."><link data-rh="true" rel="icon" href="/camunda-platform-helm/pr-preview/pr-7638/img/camunda-logo.svg"><link data-rh="true" rel="canonical" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7638/reference/release-process"><link data-rh="true" rel="alternate" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7638/reference/release-process" hreflang="en"><link data-rh="true" rel="alternate" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7638/reference/release-process" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Release Process","item":"https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7638/reference/release-process"}]}</script><link rel="stylesheet" href="/camunda-platform-helm/pr-preview/pr-7638/assets/css/styles.3f6cd398.css">
-<script src="/camunda-platform-helm/pr-preview/pr-7638/assets/js/runtime~main.69397429.js" defer="defer"></script>
-<script src="/camunda-platform-helm/pr-preview/pr-7638/assets/js/main.a6739e74.js" defer="defer"></script>
+<script src="/camunda-platform-helm/pr-preview/pr-7638/assets/js/runtime~main.2b6f608c.js" defer="defer"></script>
+<script src="/camunda-platform-helm/pr-preview/pr-7638/assets/js/main.d9402f96.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -106,6 +106,8 @@ annotation or generated source commit is required; the existing Harbor dev tag r
 from publishing HEAD or historical tag targets. The release-tools entrypoint supplies that
 history through release-please&#x27;s plugin hook and retains its existing versioning strategies;
 the SDK version is pinned in the build, promotion, and release-tooling test workflows.
+Harbor environment variables are excluded from the npm and release-please subprocesses after
+source resolution; the GitHub token remains available to the SDK.
 When promoting or rehearsing a specific package version, the boundary is its historical
 predecessor, not a newer publication or the selected release itself. Next-version calculation
 without <code>--release-as</code> uses the latest published artifact.</p>
