@@ -11,6 +11,7 @@ import (
 	"context"
 	"io"
 	"log/slog"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -318,5 +319,19 @@ func TestManagerRestoresLastChangeAfterRestart(t *testing.T) {
 	change := restarted.Status().LastChange
 	if change == nil || change.To != 2 || change.Signals["backpressure"] != 0.2 {
 		t.Fatalf("restarted manager lost the last change evidence: %#v", change)
+	}
+}
+
+// $(NAME) survives envsubst-style tooling (os.Expand leaves it untouched)
+// and must expand exactly like $NAME.
+func TestManagerParenthesisedPlaceholders(t *testing.T) {
+	manager := &Manager{Namespace: "ns", StatefulSet: "zeebe"}
+	got := manager.placeholders(3).Replace(`x{$(SELECTOR)} / ($(BROKERS) - 1) by ($(POD_LABEL)) $(NAMESPACE)/$(STATEFULSET)`)
+	want := `x{namespace="ns",pod=~"zeebe-[0-9]+"} / (3 - 1) by (pod) ns/zeebe`
+	if got != want {
+		t.Fatalf("got %s\nwant %s", got, want)
+	}
+	if expanded := os.Expand(`$(SELECTOR) $(BROKERS)`, func(string) string { return "SUBSTITUTED" }); expanded != `$(SELECTOR) $(BROKERS)` {
+		t.Fatalf("os.Expand changed the parenthesised form: %s", expanded)
 	}
 }

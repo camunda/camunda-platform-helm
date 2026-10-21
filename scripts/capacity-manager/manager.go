@@ -249,10 +249,14 @@ func (m *Manager) Reconcile(ctx context.Context) error {
 	return m.Workload.MarkCompleted(ctx, target)
 }
 
-// placeholders substitutes query placeholders. $SELECTOR expands to a label
-// matcher selecting the orchestration broker pods, using the configured label
-// names (StatefulSet names are DNS-1123 labels, so they need no regex
-// escaping). Longer names are listed first so $NAMESPACE_LABEL is not split.
+// placeholders substitutes query placeholders. Each placeholder is accepted
+// as $(NAME) and as $NAME. The $(NAME) form is recommended: envsubst-style
+// tooling (os.Expand, as used by this repository's CI values processing)
+// leaves it untouched, while $NAME would be substituted from the
+// environment. $SELECTOR expands to a label matcher selecting the
+// orchestration broker pods with the configured label names (StatefulSet
+// names are DNS-1123 labels, so they need no regex escaping). Longer names
+// are listed first so $NAMESPACE_LABEL is not split by $NAMESPACE.
 func (m *Manager) placeholders(current int) *strings.Replacer {
 	namespaceLabel, podLabel := m.NamespaceLabel, m.PodLabel
 	if namespaceLabel == "" {
@@ -261,15 +265,22 @@ func (m *Manager) placeholders(current int) *strings.Replacer {
 	if podLabel == "" {
 		podLabel = "pod"
 	}
-	selector := fmt.Sprintf(`%s=%q,%s=~"%s-[0-9]+"`, namespaceLabel, m.Namespace, podLabel, m.StatefulSet)
-	return strings.NewReplacer(
-		"$NAMESPACE_LABEL", namespaceLabel,
-		"$POD_LABEL", podLabel,
-		"$SELECTOR", selector,
-		"$BROKERS", strconv.Itoa(current),
-		"$NAMESPACE", m.Namespace,
-		"$STATEFULSET", m.StatefulSet,
-	)
+	values := []struct{ name, value string }{
+		{"NAMESPACE_LABEL", namespaceLabel},
+		{"POD_LABEL", podLabel},
+		{"SELECTOR", fmt.Sprintf(`%s=%q,%s=~"%s-[0-9]+"`, namespaceLabel, m.Namespace, podLabel, m.StatefulSet)},
+		{"BROKERS", strconv.Itoa(current)},
+		{"NAMESPACE", m.Namespace},
+		{"STATEFULSET", m.StatefulSet},
+	}
+	pairs := make([]string, 0, 4*len(values))
+	for _, v := range values {
+		pairs = append(pairs, "$("+v.name+")", v.value)
+	}
+	for _, v := range values {
+		pairs = append(pairs, "$"+v.name, v.value)
+	}
+	return strings.NewReplacer(pairs...)
 }
 
 // readSignals queries every policy signal. A failed query is recorded as

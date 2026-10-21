@@ -34,7 +34,9 @@ Each signal has a `name`, a PromQL `query`, an `operator` (`>=` or `<=`) and a `
 query result is reduced to its maximum series, so `>=` means "any series reached the threshold" and
 `<=` means "every series is at or below it". `NaN` samples are ignored. The placeholders
 `$NAMESPACE`, `$STATEFULSET` and `$BROKERS` (current active brokers) are substituted before the
-query runs. `$SELECTOR` expands to `<namespace label>="<namespace>",<pod label>=~"<statefulset>-[0-9]+"`,
+query runs. Every placeholder is accepted as `$(NAME)` and as `$NAME`. Prefer `$(NAME)`: envsubst-style
+tooling, including this repository's CI values processing, leaves it untouched, while `$NAME` is
+substituted from the environment before the manager ever sees it. `$SELECTOR` expands to `<namespace label>="<namespace>",<pod label>=~"<statefulset>-[0-9]+"`,
 selecting the orchestration broker pods; the label names default to `namespace` and `pod` and are
 set with `--prometheus-namespace-label` and `--prometheus-pod-label` (`$NAMESPACE_LABEL` and
 `$POD_LABEL` expose them for `by (...)` clauses). If your Prometheus labels broker series
@@ -47,7 +49,7 @@ partition replica count, never scales below `minBrokers` or an active scheduled 
 `cooldown` after each change, and requires `scaleUpSamples`/`scaleDownSamples` consecutive
 evaluations held for `scaleUpStabilization`/`scaleDownStabilization` (Go durations).
 
-Recommended signals (`{S}` abbreviates `{$SELECTOR}`):
+Recommended signals (`{S}` abbreviates `{$(SELECTOR)}`):
 
 | Role | Name | Query | Condition | Why |
 |---|---|---|---|---|
