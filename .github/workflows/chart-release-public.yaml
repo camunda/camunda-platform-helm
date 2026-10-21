@@ -166,8 +166,6 @@ jobs:
         id: history
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          HARBOR_REGISTRY_USER: ${{ steps.vault-harbor.outputs.HARBOR_REGISTRY_USER }}
-          HARBOR_REGISTRY_PASSWORD: ${{ steps.vault-harbor.outputs.HARBOR_REGISTRY_PASSWORD }}
           RC_VERSION: ${{ steps.parse.outputs.version }}
           PACKAGE_VERSION: ${{ steps.metadata.outputs.version }}
           SOURCE_SHA: ${{ steps.parse.outputs.commit_sha }}
@@ -179,9 +177,7 @@ jobs:
           fi
           gh api 'repos/{owner}/{repo}/releases?per_page=100' --paginate --slurp > /tmp/releases.json
           previous_ref=$(/tmp/release-tools release-history --chart-yaml /tmp/Chart.yaml \
-            --releases-file /tmp/releases.json --before-version "${RC_VERSION}" \
-            --api "https://${HARBOR_REGISTRY}/api/v2.0" \
-            --repo "projects/${HARBOR_PROJECT}/repositories/camunda-platform")
+            --releases-file /tmp/releases.json --before-version "${RC_VERSION}")
           previous_sha=$(git rev-parse --verify "${previous_ref}^{commit}")
           git merge-base --is-ancestor "${previous_sha}" "${SOURCE_SHA}"
           echo "previous_commit_sha=${previous_sha}" >> "$GITHUB_OUTPUT"

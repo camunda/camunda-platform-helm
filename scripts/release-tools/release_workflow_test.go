@@ -109,9 +109,14 @@ func TestPublicReleaseWorkflowSourceContract(t *testing.T) {
 	}
 	if history.ID != "history" || history.Env["SOURCE_SHA"] != "${{ steps.parse.outputs.commit_sha }}" ||
 		history.Env["RC_VERSION"] != "${{ steps.parse.outputs.version }}" || history.Env["PACKAGE_VERSION"] != "${{ steps.metadata.outputs.version }}" ||
-		history.Env["HARBOR_REGISTRY_USER"] == "" || history.Env["HARBOR_REGISTRY_PASSWORD"] == "" || history.Env["GH_TOKEN"] == "" ||
+		history.Env["GH_TOKEN"] == "" ||
 		!strings.Contains(history.Run, "release-history") || !strings.Contains(history.Run, `git merge-base --is-ancestor "${previous_sha}" "${SOURCE_SHA}"`) {
 		t.Fatal("previous-source selection requires package identity, read credentials and an explicit source bound")
+	}
+	for _, key := range []string{"HARBOR_REGISTRY_USER", "HARBOR_REGISTRY_PASSWORD"} {
+		if _, exists := history.Env[key]; exists {
+			t.Fatal("published history must not depend on Harbor credentials or retention")
+		}
 	}
 	if !strings.Contains(upload.Run, `--commit "${{ steps.parse.outputs.commit_sha }}"`) || !strings.Contains(upload.Run, "--skip-existing=false") {
 		t.Fatal("upload must use the verified artifact source and reject a competing release")

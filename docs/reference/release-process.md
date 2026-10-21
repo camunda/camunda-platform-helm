@@ -108,9 +108,9 @@ The charts are built, linted, and tested on every push to the main branch. The r
    `{version}-dev-{sha}` tag from the same Harbor response.
 2. Uses Git to resolve that SHA to a full commit on main and Helm to pull the selected digest.
    The existing metadata step checks the packaged release version against the RC version.
-3. Selects the preceding published release and resolves its recorded source from Harbor.
-   An incorrect historical Git tag is not used as the source boundary. Git checks that the
-   previous source is an ancestor of the current source.
+3. Selects the preceding published release and uses its Git tag as the source boundary.
+   Verified overrides cover the incorrectly tagged releases in the #7612 audit. Git checks
+   that the previous source is an ancestor of the current source.
 4. Uploads the unchanged tested package using `helm-cr upload --commit <artifact-source-sha>`.
    Existing releases are not silently skipped.
 5. Updates the Helm repo index (`gh-pages` branch).
@@ -133,9 +133,12 @@ annotation or generated source commit is required; the existing Harbor dev tag r
 
 For a chart line with no published predecessor, its explicit
 `camunda-platform-<minor>-<major>.0.0-alpha0` bootstrap tag supplies the starting boundary.
-Missing or inconsistent historical Harbor source tags block the affected calculation.
-Do not guess from an old public tag, move public
-tags, or replace published packages to bypass that failure.
+Historical source overrides are fixed migration data recovered from the retained publication
+records in [the #7612 audit](https://github.com/camunda/camunda-platform-helm/issues/7612#issuecomment-6314547789).
+They cover the audited release window through 2026-10-21; older unaudited releases require
+separate review. Future releases use their corrected Git tags, not Harbor RC retention.
+If another release is published by the old workflow before this fix lands, verify its source
+and extend the migration data before merging. No public tags or packages are rewritten.
 
 The labeling entrypoint requires the packaged `chartVersion` and both verified
 `sourceSHA`/`previousSourceSHA` values. It reads the application minor from the selected source,
