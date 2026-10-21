@@ -80,7 +80,7 @@ Subcommands:
   chart-images    Derive the chart's declared image set from values.yaml (one ref per line)
   update-matrix   Update a version-matrix.json entry from the chart's recorded camunda.io/chart-images annotation
   resolve-tag     Resolve a rolling Harbor tag to concrete, validate, and emit its parts to $GITHUB_OUTPUT
-  harbor-tag      Idempotent Harbor artifact tag operations (digest|add|delete|ensure)
+  harbor-tag      Harbor artifact tag operations (source|digest|add|delete|ensure)
   component-image-versions  Build the human-readable component-image-versions annotation block
   image-overrides Collect *-image-tag override inputs into the imageOverrides annotation + HAS_IMAGE_OVERRIDES
   chart-metadata  Read a pulled artifact's Chart.yaml and emit its metadata to $GITHUB_OUTPUT

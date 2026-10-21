@@ -26,6 +26,11 @@ import (
 // and the captured stdout.
 func runResolveTagCapture(t *testing.T, args []string) (map[string]string, string, error) {
 	t.Helper()
+	return captureToolOutput(t, runResolveTag, args)
+}
+
+func captureToolOutput(t *testing.T, run func([]string) error, args []string) (map[string]string, string, error) {
+	t.Helper()
 	dir := t.TempDir()
 	ghoPath := filepath.Join(dir, "gho.txt")
 	t.Setenv("GITHUB_OUTPUT", ghoPath)
@@ -37,7 +42,7 @@ func runResolveTagCapture(t *testing.T, args []string) (map[string]string, strin
 	}
 	os.Stdout = w
 
-	runErr := runResolveTag(args)
+	runErr := run(args)
 
 	w.Close()
 	os.Stdout = origStdout
