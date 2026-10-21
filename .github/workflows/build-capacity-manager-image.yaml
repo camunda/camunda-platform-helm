@@ -7,6 +7,14 @@ on:
     paths:
       - "scripts/capacity-manager/**"
       - ".github/workflows/build-capacity-manager-image.yaml"
+  # Draft capacity-manager PRs need an image of their own commit to run the
+  # GKE scenarios before merge. Same-repository PRs only (fork PRs never get
+  # Harbor credentials), path-filtered, and tagged pr-<number>-sha-<sha> so PR
+  # builds never overwrite the sha-<sha> tags published from main.
+  pull_request:
+    paths:
+      - "scripts/capacity-manager/**"
+      - ".github/workflows/build-capacity-manager-image.yaml"
   workflow_dispatch:
 
 permissions:
@@ -20,10 +28,28 @@ concurrency:
 jobs:
   build:
     name: Build and push
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          # Build the PR head commit, not the synthetic merge commit, so the
+          # published digest maps to an exact branch commit.
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Compute image tag
+        id: tag
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            echo "tag=pr-${PR_NUMBER}-sha-${HEAD_SHA}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=sha-${HEAD_SHA}" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Import Harbor credentials
         id: harbor
@@ -49,6 +75,7 @@ jobs:
           password: ${{ steps.harbor.outputs.HARBOR_REGISTRY_PASSWORD }}
 
       - name: Build and push image
+        id: build
         uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
         with:
           context: scripts/capacity-manager
@@ -57,6 +84,13 @@ jobs:
           platforms: linux/amd64
           provenance: false
           tags: |
-            registry.camunda.cloud/team-distribution/capacity-manager:sha-${{ github.sha }}
+            registry.camunda.cloud/team-distribution/capacity-manager:${{ steps.tag.outputs.tag }}
           cache-from: type=gha,scope=capacity-manager
           cache-to: type=gha,mode=max,scope=capacity-manager
+
+      - name: Record image digest
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          echo "registry.camunda.cloud/team-distribution/capacity-manager:${TAG}@${DIGEST}" | tee -a "$GITHUB_STEP_SUMMARY"
