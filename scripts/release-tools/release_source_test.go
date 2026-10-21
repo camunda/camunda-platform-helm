@@ -462,6 +462,26 @@ func TestReleaseSourcePredecessorPublicationOrder(t *testing.T) {
 	}
 }
 
+func TestReleaseNotesUsesArtifactRange(t *testing.T) {
+	f := newReleaseSourceFixture(t)
+	chartDir := "charts/camunda-platform-8.9"
+	sourceTestWrite(t, chartDir+"/Chart.yaml", []byte("name: camunda-platform\nversion: 14.11.1\nappVersion: 8.9.x\n"), 0o644)
+	if err := runReleaseNotes([]string{"--main", chartDir, "--source", f.b}); err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(chartDir + "/RELEASE-NOTES.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	notes := string(data)
+	if !strings.Contains(notes, "#101") || strings.Contains(notes, "#102") || !strings.Contains(notes, "## [camunda-platform-8.9-14.11.1]") {
+		t.Fatalf("wrong release notes: %s", notes)
+	}
+	if strings.Contains(notes, "## [camunda-platform-8.9-14.11.0]") {
+		t.Fatalf("incorrect historical tag changed the new release's grouping: %s", notes)
+	}
+}
+
 func TestVersionLabelScriptUsesArtifactRange(t *testing.T) {
 	for _, missing := range []string{"", "previousSourceSHA", "chartVersion"} {
 		t.Run("missing="+missing, func(t *testing.T) {

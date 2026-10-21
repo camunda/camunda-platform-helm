@@ -99,6 +99,7 @@ func TestPublicReleaseWorkflowSourceContract(t *testing.T) {
 			t.Fatalf("%s must be disabled in dry runs", step.Name)
 		}
 	}
+
 	if release.Outputs["source-commit"] != "${{ steps.parse.outputs.commit_sha }}" ||
 		release.Outputs["previous-source-commit"] != "${{ steps.parse.outputs.previous_commit_sha }}" {
 		t.Fatal("both source boundaries must cross the release/post-release job boundary")
@@ -116,5 +117,32 @@ func TestPublicReleaseWorkflowSourceContract(t *testing.T) {
 	checkout, _ := sourceWorkflowStepNamed(t, release.Steps, "Checkout")
 	if checkout.With.FetchDepth == nil || *checkout.With.FetchDepth != 0 {
 		t.Fatal("source and ancestry validation requires complete Git history")
+	}
+}
+
+func TestReleaseHistoryWorkflowConsumers(t *testing.T) {
+	for _, tc := range []struct {
+		file, job, notesStep, source string
+	}{
+		{"chart-build-dev.yaml", "build", "Generate RELEASE-NOTES.md", `"${GITHUB_SHA}"`},
+		{"chart-promote-rc.yaml", "promote-rc", "Generate release files on the release-please PR", `"${{ steps.parse.outputs.sha }}"`},
+	} {
+		t.Run(tc.file, func(t *testing.T) {
+			workflow := sourceTestWorkflow(t, tc.file)
+			job, ok := workflow.Jobs[tc.job]
+			if !ok {
+				t.Fatalf("missing job %s", tc.job)
+			}
+			notes, _ := sourceWorkflowStepNamed(t, job.Steps, tc.notesStep)
+			if !strings.Contains(notes.Run, "--source "+tc.source) || notes.Env["HARBOR_REGISTRY_PASSWORD"] == "" {
+				t.Fatalf("%s must receive the explicit source and Harbor credentials", notes.Name)
+			}
+			if !strings.Contains(notes.Run, "release-notes --main") {
+				t.Fatal("notes must use the source-bound generator")
+			}
+			if tc.job == "promote-rc" && !strings.Contains(notes.Run, `CHART_VERSION="${chart_version}" yq -i '.version = strenv(CHART_VERSION)'`) {
+				t.Fatal("promotion rehearsal must generate the selected package version, not the source's old version")
+			}
+		})
 	}
 }

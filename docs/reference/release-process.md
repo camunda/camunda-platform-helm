@@ -133,6 +133,9 @@ produce artifact content that is not present in Git. Integrity checks compare th
 package with the published package, not with the unmodified source tree. No additional source
 annotation or generated source commit is required; the existing Harbor dev tag records the base.
 
+Release notes use the same artifact-source history instead of inferring it from publishing
+HEAD or historical tag targets. Existing Git tags do not regroup changes into an older release.
+
 For a chart line with no published predecessor, its explicit
 `camunda-platform-<minor>-<major>.0.0-alpha0` bootstrap tag supplies the starting boundary.
 Missing historical Harbor provenance or a mismatched published-package digest blocks the
@@ -145,6 +148,9 @@ not from the publishing checkout.
 
 Standalone source/history commands require a full Git checkout, GitHub read access through
 `gh`, Helm, and the existing Harbor registry/project and credential environment variables.
+For local note generation, `make release.generate-notes chartPath=... sourceSHA=<full-sha>`
+selects the build input explicitly; without `sourceSHA`, the Make target selects the current
+checkout for that local operation. The workflow callers always pass the actual build/dev SHA.
 
 **After public release:**
 

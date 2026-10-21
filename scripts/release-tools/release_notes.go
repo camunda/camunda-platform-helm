@@ -17,6 +17,7 @@ package main
 import (
 	"context"
 	"errors"
+	"flag"
 	"fmt"
 	"os"
 	"os/exec"
@@ -36,7 +37,7 @@ const cliffConfigFile = ".github/config/cliff.toml"
 // annotations. git/git-cliff/yq run as exec calls; the Chart.yaml writes go
 // through yq to preserve formatting and comments.
 //
-//	release-tools release-notes --main   <chart-dir>
+//	release-tools release-notes --main   <chart-dir> --source <commit>
 //	release-tools release-notes --footer <chart-dir> [--images-chart-dir <dir>]
 //
 // Run from the repository root (paths like .tool-versions and cliff.toml are
@@ -52,10 +53,15 @@ func runReleaseNotes(args []string) error {
 	ctx := context.Background()
 	switch mode {
 	case "--main":
-		if len(args) != 2 {
-			return fmt.Errorf("usage: release-notes --main <chart-dir>")
+		fs := flag.NewFlagSet("release-notes --main", flag.ContinueOnError)
+		source := fs.String("source", "", "explicit build-base commit")
+		if err := fs.Parse(args[2:]); err != nil {
+			return err
 		}
-		return releaseNotesMain(ctx, chartDir)
+		if *source == "" || len(fs.Args()) != 0 {
+			return fmt.Errorf("usage: release-notes --main <chart-dir> --source <commit>")
+		}
+		return releaseNotesMain(ctx, chartDir, *source)
 	case "--footer":
 		imagesChartDir := chartDir
 		useRecordedImages := false
@@ -84,46 +90,39 @@ func capture(ctx context.Context, name string, args ...string) (string, error) {
 	return strings.TrimSpace(string(out)), nil
 }
 
-func releaseNotesMain(ctx context.Context, chartDir string) error {
-	// Fetch main unless already on it (git-cliff diffs from the last release tag).
-	if branch, _ := capture(ctx, "git", "branch", "--show-current"); branch != "main" {
-		if err := executil.RunCommand(ctx, "git", []string{"fetch", "origin", "main:main"}, nil, ""); err != nil {
-			return err
-		}
-	}
-
+func releaseNotesMain(ctx context.Context, chartDir, source string) error {
 	chartFile := filepath.Join(chartDir, "Chart.yaml")
-
-	// Latest released version from main (not the release PR, which may bump it).
-	latestShow, err := executil.RunCommandCapture(ctx, "git", []string{"show", "main:" + chartDir + "/Chart.yaml"}, nil, "")
-	if err != nil {
-		return fmt.Errorf("git show main Chart.yaml: %w", err)
-	}
-	latestID, err := releasenotes.ParseChartIdentity(latestShow)
-	if err != nil {
-		return err
-	}
-	latestChartName := filepath.Base(chartDir)
-	latestTagHash, err := capture(ctx, "git", "show-ref", "--hash", latestChartName+"-"+latestID.Version)
-	if err != nil {
-		return err
-	}
-
 	chartBytes, err := os.ReadFile(chartFile)
 	if err != nil {
 		return err
 	}
-	id, err := releasenotes.ParseChartIdentity(chartBytes)
+	id, err := checkedChartIdentity(chartBytes)
 	if err != nil {
 		return err
 	}
 	appVersion := releasenotes.AppMinor(id.AppVersion)
 	chartTag := releaseplease.ReleaseTag(appVersion, id.Version)
 
-	// Early exit if the tag already exists (exact match, not substring).
-	if existing, _ := capture(ctx, "git", "tag", "-l", chartTag); existing != "" {
+	existing, err := capture(ctx, "git", "tag", "-l", chartTag)
+	if err != nil {
+		return err
+	}
+	if existing != "" {
 		fmt.Printf("[WARN] The tag %s already exists, nothing to do...\n", chartTag)
 		return nil
+	}
+
+	current, err := resolveSourceCommit(ctx, source)
+	if err != nil {
+		return err
+	}
+	client, ociRef, err := releaseHarbor()
+	if err != nil {
+		return err
+	}
+	previous, err := previousArtifactSource(ctx, client, ociRef, id, chartTag, current)
+	if err != nil {
+		return err
 	}
 
 	// camunda.io/helmCLIVersion annotation (Helm v3→v4 clamp).
@@ -141,8 +140,9 @@ func releaseNotesMain(ctx context.Context, chartDir string) error {
 	// RELEASE-NOTES.md via git-cliff. Exclude paths not shipped to end users.
 	releaseNotesPath := filepath.Join(chartDir, "RELEASE-NOTES.md")
 	if err := executil.RunCommand(ctx, "git-cliff", []string{
-		latestTagHash + "..",
+		previous.Commit + ".." + current,
 		"--tag-pattern", "camunda-platform-" + appVersion + ".*",
+		"--ignore-tags", ".*",
 		"--config", cliffConfigFile,
 		"--output", releaseNotesPath,
 		"--include-path", chartDir + "/**",

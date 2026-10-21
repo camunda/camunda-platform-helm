@@ -436,7 +436,7 @@ release.bump-chart-version-and-commit: .release.bump-chart-version
 release.generate-notes: install.release-tools
 	for chart_dir in $(chartPath); do\
 		echo "\n[$@] Chart dir: $${chart_dir}";\
-		release-tools release-notes --main "$${chart_dir}";\
+		release-tools release-notes --main "$${chart_dir}" --source "$${sourceSHA:-$$(git rev-parse HEAD)}" || exit $$?;\
 	done
 
 .PHONY: release.generate-notes-footer
