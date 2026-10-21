@@ -79,6 +79,9 @@ func runHarborTag(args []string) error {
 		if err != nil {
 			return err
 		}
+		if artifact.Digest == "" {
+			return fmt.Errorf("artifact %q has no digest", ref)
+		}
 		tags := make([]string, 0, len(artifact.Tags))
 		for _, tag := range artifact.Tags {
 			tags = append(tags, tag.Name)

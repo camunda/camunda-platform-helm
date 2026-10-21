@@ -23,13 +23,16 @@ import (
 )
 
 func TestHarborTagSource(t *testing.T) {
-	for _, missingSource := range []bool{false, true} {
-		t.Run(fmt.Sprint(missingSource), func(t *testing.T) {
+	for _, missing := range []string{"", "source", "digest"} {
+		t.Run("missing="+missing, func(t *testing.T) {
 			tags := `[{"name":"14-rc-latest"},{"name":"14.11.1-rc"},{"name":"14.11.1-dev-abc1234"}]`
-			if missingSource {
+			if missing == "source" {
 				tags = `[{"name":"14-rc-latest"},{"name":"14.11.1-rc"}]`
 			}
 			digest := "sha256:" + strings.Repeat("a", 64)
+			if missing == "digest" {
+				digest = ""
+			}
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				if r.Method != http.MethodGet || r.URL.Path != "/projects/test/repositories/camunda-platform/artifacts/14-rc-latest" || r.URL.Query().Get("with_tag") != "true" {
 					t.Errorf("unexpected artifact request: %s %s", r.Method, r.URL)
@@ -40,7 +43,7 @@ func TestHarborTagSource(t *testing.T) {
 			}))
 			defer server.Close()
 			out, sha, err := captureToolOutput(t, runHarborTag, []string{"source", "--ref", "14-rc-latest", "--api", server.URL, "--repo", "projects/test/repositories/camunda-platform"})
-			if missingSource {
+			if missing != "" {
 				if err == nil || len(out) != 0 || sha != "" {
 					t.Fatalf("missing provenance emitted a source: %v %q %v", out, sha, err)
 				}
