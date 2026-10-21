@@ -54,11 +54,17 @@ capacityManager:
           "vetoSignals": [
             {"name": "exporter-backlog", "operator": ">=", "threshold": 100000,
              "query": "max(max by (partition) (zeebe_log_appender_last_committed_position{$SELECTOR}) - min by (partition) (max by (partition, exporter) (zeebe_exporter_last_exported_position{$SELECTOR}))) or vector(0)"},
-            {"name": "partition-unhealthy", "operator": "<=", "threshold": 0,
-             "query": "min(zeebe_health{$SELECTOR})"}
+            {"name": "partition-dead", "operator": "<=", "threshold": -1,
+             "query": "min(min_over_time(zeebe_health{$SELECTOR}[2m]))"}
           ]
         }
 ```
+
+Prometheus must keep scraping saturated brokers: use a scrape timeout close to the scrape interval
+for broker targets, and keep query windows at 2m or more. A saturated broker serves metrics slowly,
+and missing samples make the manager hold instead of scaling. The veto deliberately ignores
+partitions that are only *unhealthy*, which Zeebe reports under CPU saturation; see
+`scripts/capacity-manager/README.md` for the measurements.
 
 `$SELECTOR` expands to a matcher for the orchestration broker pods. It assumes Prometheus labels
 broker series with the pod namespace and name, as ServiceMonitor and Kubernetes pod discovery do;
