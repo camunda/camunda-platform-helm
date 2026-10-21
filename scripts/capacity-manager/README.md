@@ -56,7 +56,18 @@ Recommended signals (`{S}` abbreviates `{$SELECTOR}`):
 | down | `no-backpressure` | same as `backpressure` | `<= 0.001` | Nothing is being rejected. |
 | down | `fits-on-fewer-brokers` | `sum(avg_over_time(process_cpu_usage{S}[5m])) / ($BROKERS - 1)` | `<= 0.5` | The current work fits on one broker fewer with headroom. |
 | veto | `exporter-backlog` | `max(max by (partition) (zeebe_log_appender_last_committed_position{S}) - min by (partition) (max by (partition, exporter) (zeebe_exporter_last_exported_position{S}))) or vector(0)` | `>= 100000` | Exporters (and secondary storage) are behind; brokers are not the bottleneck and moving partitions adds load. |
-| veto | `partition-unhealthy` | `min(zeebe_health{S})` | `<= 0` | A partition is unhealthy or dead. |
+| veto | `partition-dead` | `min(min_over_time(zeebe_health{S}[2m]))` | `<= -1` | A partition is dead. |
+
+Two measured behaviours shape these queries (local kind run, one 1-CPU broker, 8.11-SNAPSHOT):
+
+- A saturated broker answers `/actuator/prometheus` slowly; with a 5s scrape timeout 19 of 49
+  scrapes failed, so instant or 1m-window queries returned nothing and the manager held with low
+  confidence instead of scaling. Use range windows of at least 2m (`rate`, `*_over_time`) and a
+  scrape timeout close to the scrape interval for broker targets.
+- Under CPU saturation Zeebe marks partitions unhealthy ("actor appears blocked",
+  `zeebe_health` 0) and they recover within about a minute. Vetoing on unhealthy would block the
+  scale-up that relieves it, so the veto only fires on dead partitions (-1). Topology changes are
+  separately gated on every partition being `ACTIVE` in `/actuator/cluster`.
 
 Exporter or secondary-storage lag does not raise backpressure unless write-rate throttling is
 enabled, which is why it is a separate veto. Optional vetoes worth adding when the metrics exist:
