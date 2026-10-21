@@ -8,7 +8,7 @@ Backports exist to deliver critical fixes and stability improvements to actively
 
 ## Supported versions
 
-Backporting must only be performed within actively supported versions as defined by the [Standard and Extended Support Periods](https://confluence.camunda.com/spaces/HAN/pages/245400921/Standard+and+Extended+Support+Periods).
+Backporting must only be performed within actively supported versions as defined by the [Standard and Extended Support Periods](https://lamppost.camunda-it.rocks/handbook/#7091d03f/standard-and-extended-support-periods).
 
 ## Three-way logic: what gets backported and when
 

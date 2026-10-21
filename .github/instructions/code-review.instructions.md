@@ -182,6 +182,8 @@ func TestDeploymentTemplate(t *testing.T) {
   chart versions must be updated.
 - [ ] Does the PR change the default value of an existing field in a way that alters runtime
   behaviour for users who do not override it?
+- [ ] If the PR is a breaking change under `docs/policies/breaking-changes.md`, does it link the
+  Camunda Helm Toolkit migrate rule that rewrites the affected inputs?
 - [ ] If the change is version-specific (e.g., 8.10 only), is the scope clearly limited and
   not accidentally applied to shared templates?
 - [ ] Does the PR update the `CHANGELOG.md` for user-visible changes?
