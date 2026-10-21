@@ -279,14 +279,19 @@ properties, env var names, SPRING_APPLICATION_JSON, and -D options.
 */ -}}
 {{- define "orchestration.rdbmsUrlConfigured" -}}
 {{- $orchestration := .Values.orchestration -}}
+{{- $custom := $orchestration.configuration -}}
 {{- $springImports := list -}}
 {{- range $orchestration.extraConfiguration -}}
-  {{- if not (and (hasKey . "springImport") (eq .springImport false)) -}}
+  {{- if $custom -}}
+    {{- if contains .file $custom -}}
+      {{- $springImports = append $springImports .content -}}
+    {{- end -}}
+  {{- else if not (and (hasKey . "springImport") (eq .springImport false)) -}}
     {{- $springImports = append $springImports .content -}}
   {{- end -}}
 {{- end -}}
-{{- $userConfig := toYaml (list $orchestration.configuration $springImports $orchestration.env $orchestration.javaOpts) -}}
-{{- if or $orchestration.data.secondaryStorage.rdbms.url $orchestration.envFrom (regexMatch "(?is)rdbms.*url" $userConfig) -}}
+{{- $userConfig := toYaml (list $custom $springImports $orchestration.env $orchestration.javaOpts) -}}
+{{- if or (and (not $custom) $orchestration.data.secondaryStorage.rdbms.url) $orchestration.envFrom (regexMatch "(?is)rdbms.*url" $userConfig) -}}
 true
 {{- end -}}
 {{- end -}}
