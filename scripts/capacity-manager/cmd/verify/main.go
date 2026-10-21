@@ -22,6 +22,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -473,13 +474,16 @@ func kubectl(e env, args ...string) ([]byte, error) {
 	if !slices.Contains(args, "--raw") {
 		args = append([]string{"-n", e.namespace}, args...)
 	}
+	if kubeContext := os.Getenv("KUBE_CONTEXT"); kubeContext != "" {
+		args = append([]string{"--context", kubeContext}, args...)
+	}
 	// A saturated broker can stall an API-server proxy call indefinitely;
 	// bound every call so the verifier keeps sampling instead of hanging.
-	args = append([]string{"--request-timeout=30s"}, args...)
-	if context := os.Getenv("KUBE_CONTEXT"); context != "" {
-		args = append([]string{"--context", context}, args...)
-	}
-	output, err := exec.Command("kubectl", args...).CombinedOutput()
+	// (kubectl --request-timeout is not usable here: with get --raw it adds
+	// ?timeout= to the proxied URL, which the broker actuator rejects.)
+	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
+	defer cancel()
+	output, err := exec.CommandContext(ctx, "kubectl", args...).CombinedOutput()
 	if err != nil {
 		return nil, fmt.Errorf("kubectl %s: %w: %s", strings.Join(args, " "), err, tail(output))
 	}
