@@ -497,10 +497,12 @@ Authentication.
 {{- define "orchestration.rdbmsUrlConfigured" -}}
 {{- $env := dict -}}
 {{- range $entry := (.Values.orchestration.env | default list) -}}
-  {{- $_ := set $env (tpl ($entry.name | default "") $) true -}}
+  {{- if or $entry.value $entry.valueFrom -}}
+    {{- $_ := set $env (tpl ($entry.name | default "") $) true -}}
+  {{- end -}}
 {{- end -}}
 {{- if or
-    .Values.orchestration.data.secondaryStorage.rdbms.url
+    (and (not .Values.orchestration.configuration) .Values.orchestration.data.secondaryStorage.rdbms.url)
     .Values.orchestration.envFrom
     (hasKey $env "CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_URL")
     (eq (include "camundaPlatform.appConfigMentionsPath" (dict "configuration" .Values.orchestration.configuration "extraConfiguration" .Values.orchestration.extraConfiguration "path" (list "camunda" "data" "secondary-storage" "rdbms" "url"))) "true") -}}
