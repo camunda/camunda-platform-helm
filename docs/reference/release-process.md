@@ -104,48 +104,40 @@ The charts are built, linted, and tested on every push to the main branch. The r
 
 **What happens:**
 
-1. Resolves the RC reference to its immutable OCI digest and reads its existing
-   `{version}-dev-{sha}` tag from the same Harbor response.
-2. Uses Git to resolve that SHA to a full commit on main and Helm to pull the selected digest.
-   The existing metadata step checks the packaged release version against the RC version.
-3. Selects the preceding published release and uses its Git tag as the source boundary.
-   Verified overrides cover the incorrectly tagged releases in the #7612 audit. Git checks
-   that the previous source is an ancestor of the current source.
-4. Uploads the unchanged tested package using `helm-cr upload --commit <artifact-source-sha>`.
-   Existing releases are not silently skipped.
-5. Updates the Helm repo index (`gh-pages` branch).
-6. Signs with Cosign and uploads the bundle to the release.
-7. Labels shipped PRs and their linked issues using the explicit
-   `previous-artifact-source..current-artifact-source` range.
-8. Stamps the published release's date onto the chart's `version-matrix.json` entry
+1. Resolves the RC tag to its immutable OCI digest and the `{version}-dev-{sha}` source tag on
+   the same Harbor artifact (`release-tools harbor-tag source`). A missing or ambiguous source
+   tag fails the run before anything is published.
+2. Resolves that SHA to a full commit on `main` and pulls the package by digest.
+3. Extracts metadata (version, app version) from the packaged `Chart.yaml` and checks the
+   package version against the RC version.
+4. Selects the previous release on the chart line (`release-tools release-history`) and checks
+   that its source commit is an ancestor of the current one.
+5. Uploads the unchanged package to GitHub Releases using
+   `helm-cr upload --commit <source-sha>`, so the release tag points at the build commit.
+   An existing release fails the upload instead of being skipped.
+6. Updates the Helm repo index (`gh-pages` branch).
+7. Signs with Cosign and uploads the bundle to the release.
+8. Labels shipped PRs and their linked issues from the `previous-source..source` commit range
+   (`scripts/set-prs-version-label.sh` requires `chartVersion`, `sourceSHA` and
+   `previousSourceSHA`).
+9. Stamps the published release's date onto the chart's `version-matrix.json` entry
    (`release-tools stamp-release`) and regenerates the matrix READMEs on the `release-please`
    branch — the single write of `release_date`, taken from the GitHub release's `publishedAt`.
-9. Labels the `release-please` PR with `autorelease: published`.
+10. Labels the `release-please` PR with `autorelease: published`.
 
 **Release tag format:** `camunda-platform-{appVersion}-{version}` (e.g. `camunda-platform-8.8-13.4.0`).
 
-**Source and artifact identity:** the public Git tag identifies the build input, not an
-installable copy of the chart. Source installation is unsupported. Version updates, generated
-release files, image overrides, dependency preparation, and other release transformations can
-produce artifact content that is not present in Git. Publication promotes the pulled package
-without rebuilding it from the source tree. No additional source
-annotation or generated source commit is required; the existing Harbor dev tag records the base.
+**Source and artifact identity:** the release tag marks the commit the package was built from,
+not an installable copy of the chart. Version bumps, generated release files and image
+overrides exist only in the package; publication never rebuilds it.
 
-For a chart line with no published predecessor, its explicit
-`camunda-platform-<minor>-<major>.0.0-alpha0` bootstrap tag supplies the starting boundary.
-Historical source overrides are fixed migration data recovered from the retained publication
-records in [the #7612 audit](https://github.com/camunda/camunda-platform-helm/issues/7612#issuecomment-6314547789).
-They cover the audited release window through 2026-10-21; older unaudited releases require
-separate review. Future releases use their corrected Git tags, not Harbor RC retention.
-If another release is published by the old workflow before this fix lands, verify its source
-and extend the migration data before merging. No public tags or packages are rewritten.
-
-The labeling entrypoint requires the packaged `chartVersion` and both verified
-`sourceSHA`/`previousSourceSHA` values. It reads the application minor from the selected source,
-not from the publishing checkout.
-
-The workflows keep Git resolution, ancestry checks and Helm pulls in their own steps.
-The Go tooling selects and validates structured Harbor tags and published-release metadata.
+`release-history` picks the highest release tag on the chart line below the chart's version; a
+new chart line starts from its `camunda-platform-<minor>-<major>.0.0-alpha0` bootstrap tag.
+Tags that were created from a later publishing checkout
+([#7612 audit](https://github.com/camunda/camunda-platform-helm/issues/7612#issuecomment-6314547789))
+map to their recorded build commits in `historicalReleaseSources`; the tags themselves are not
+moved. Release-please still discovers history from the public tags on its own; its version
+calculation is unchanged.
 
 **After public release:**
 
@@ -153,8 +145,7 @@ The Go tooling selects and validates structured Harbor tags and published-releas
    queue (re-enabling auto-merge after evictions). If it still does not merge within the timeout, a
    distinct Slack alert pings the distribution release manager to merge it manually — the release
    itself is not treated as failed.
-2. Merging the `release-please` PR records release versions and generated bookkeeping in `main`;
-   it does not copy the complete published artifact into source. It triggers
+2. Merging the `release-please` PR records the released version in `main` and triggers
    `chart-public-files.yaml` to update:
    - [Version matrix](https://helm.camunda.io/camunda-platform/version-matrix/) (component versions for each chart release).
    - Public values files at `helm.camunda.io/camunda-platform/values/`.

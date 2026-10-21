@@ -165,7 +165,6 @@ jobs:
       - name: Resolve previous release source
         id: history
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RC_VERSION: ${{ steps.parse.outputs.version }}
           PACKAGE_VERSION: ${{ steps.metadata.outputs.version }}
           SOURCE_SHA: ${{ steps.parse.outputs.commit_sha }}
@@ -175,9 +174,7 @@ jobs:
             echo "::error::The pulled package version does not match the selected RC"
             exit 1
           fi
-          gh api 'repos/{owner}/{repo}/releases?per_page=100' --paginate --slurp > /tmp/releases.json
-          previous_ref=$(/tmp/release-tools release-history --chart-yaml /tmp/Chart.yaml \
-            --releases-file /tmp/releases.json --before-version "${RC_VERSION}")
+          previous_ref=$(/tmp/release-tools release-history --chart-yaml /tmp/Chart.yaml)
           previous_sha=$(git rev-parse --verify "${previous_ref}^{commit}")
           git merge-base --is-ancestor "${previous_sha}" "${SOURCE_SHA}"
           echo "previous_commit_sha=${previous_sha}" >> "$GITHUB_OUTPUT"
