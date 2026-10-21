@@ -462,6 +462,53 @@ func TestReleaseSourcePredecessorPublicationOrder(t *testing.T) {
 	}
 }
 
+func TestVersionLabelScriptUsesArtifactRange(t *testing.T) {
+	for _, missing := range []string{"", "previousSourceSHA", "chartVersion"} {
+		t.Run("missing="+missing, func(t *testing.T) {
+			f := newReleaseSourceFixture(t)
+			sourceTestWrite(t, filepath.Join(f.bin, "ct"), []byte("#!/usr/bin/env sh\nexit 99\n"), 0o755)
+			sourceTestWrite(t, filepath.Join(f.bin, "gh"), []byte(`#!/usr/bin/env bash
+set -euo pipefail
+printf 'gh %s\n' "$*" >> "$SOURCE_CALLS"
+case "$1" in
+  label) test "$2" = create ;;
+  api) if [[ "$2" != graphql ]]; then test "$2" = repos/camunda/camunda-platform-helm/pulls/101; fi ;;
+  pr) test "$2" = edit; printf 'https://github.com/camunda/camunda-platform-helm/pull/%s\n' "$3" ;;
+  *) echo 'unexpected operation' >&2; exit 1 ;;
+esac
+`), 0o755)
+			t.Setenv("chartPath", "charts/camunda-platform-8.9")
+			t.Setenv("chartVersion", "14.11.1")
+			t.Setenv("sourceSHA", f.b)
+			t.Setenv("previousSourceSHA", f.a)
+			sourceTestWrite(t, "charts/camunda-platform-8.9/Chart.yaml", []byte("name: camunda-platform\nversion: 99.0.0\nappVersion: 8.10.x\n"), 0o644)
+			if missing != "" {
+				t.Setenv(missing, "")
+			}
+			output, err := exec.Command("bash", "scripts/set-prs-version-label.sh").CombinedOutput()
+			if missing != "" {
+				if err == nil {
+					t.Fatalf("missing %s was accepted: %s", missing, output)
+				}
+				if calls, readErr := os.ReadFile(f.log); readErr == nil && len(calls) != 0 {
+					t.Fatalf("invalid provenance caused a GitHub operation: %s", calls)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("label selector failed: %v\n%s", err, output)
+			}
+			calls, err := os.ReadFile(f.log)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !strings.Contains(string(calls), "pr edit 101 --add-label version/8.9,version:8.9-14.11.1") || strings.Contains(string(calls), "102") {
+				t.Fatalf("wrong PR labels: %s", calls)
+			}
+		})
+	}
+}
+
 func TestReleaseSourcePublishedVerification(t *testing.T) {
 	for _, tc := range []struct {
 		name, target  string

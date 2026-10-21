@@ -104,17 +104,47 @@ The charts are built, linted, and tested on every push to the main branch. The r
 
 **What happens:**
 
-1. Pulls the RC package from Harbor.
-2. Extracts metadata (version, app version) from the packaged `Chart.yaml`.
-3. Uploads to GitHub Releases using `helm-cr`.
-4. Updates the Helm repo index (`gh-pages` branch).
-5. Signs with Cosign and uploads the bundle to the release.
-6. Stamps the published release's date onto the chart's `version-matrix.json` entry
+1. Resolves the RC reference to its immutable OCI digest and reads its existing
+   `{version}-dev-{sha}` tag from the same Harbor response.
+2. Resolves that SHA to a full commit on main, pulls by digest, and validates the package's
+   chart identity and release version. Missing, ambiguous, or inconsistent provenance fails
+   before publication.
+3. Resolves the previous published artifact's source from Harbor and verifies that its package
+   digest matches the GitHub release asset. An incorrect historical Git tag is not used as the
+   source boundary.
+4. Uploads the unchanged tested package using `helm-cr upload --commit <artifact-source-sha>`.
+   Existing releases are not silently skipped. The resulting Git tag and uploaded package
+   digest are verified before indexing or post-release bookkeeping.
+5. Updates the Helm repo index (`gh-pages` branch).
+6. Signs with Cosign and uploads the bundle to the release.
+7. Labels shipped PRs and their linked issues using the explicit
+   `previous-artifact-source..current-artifact-source` range.
+8. Stamps the published release's date onto the chart's `version-matrix.json` entry
    (`release-tools stamp-release`) and regenerates the matrix READMEs on the `release-please`
    branch — the single write of `release_date`, taken from the GitHub release's `publishedAt`.
-7. Labels the `release-please` PR with `autorelease: published`.
+9. Labels the `release-please` PR with `autorelease: published`.
 
 **Release tag format:** `camunda-platform-{appVersion}-{version}` (e.g. `camunda-platform-8.8-13.4.0`).
+
+**Source and artifact identity:** the public Git tag identifies the build input, not an
+installable copy of the chart. Source installation is unsupported. Version updates, generated
+release files, image overrides, dependency preparation, and other release transformations can
+produce artifact content that is not present in Git. Integrity checks compare the tested
+package with the published package, not with the unmodified source tree. No additional source
+annotation or generated source commit is required; the existing Harbor dev tag records the base.
+
+For a chart line with no published predecessor, its explicit
+`camunda-platform-<minor>-<major>.0.0-alpha0` bootstrap tag supplies the starting boundary.
+Missing historical Harbor provenance or a mismatched published-package digest blocks the
+affected calculation and requires review. Do not guess from an old public tag, move public
+tags, or replace published packages to bypass that failure.
+
+The labeling entrypoint requires the packaged `chartVersion` and both verified
+`sourceSHA`/`previousSourceSHA` values. It reads the application minor from the selected source,
+not from the publishing checkout.
+
+Standalone source/history commands require a full Git checkout, GitHub read access through
+`gh`, Helm, and the existing Harbor registry/project and credential environment variables.
 
 **After public release:**
 
@@ -122,7 +152,9 @@ The charts are built, linted, and tested on every push to the main branch. The r
    queue (re-enabling auto-merge after evictions). If it still does not merge within the timeout, a
    distinct Slack alert pings the distribution release manager to merge it manually — the release
    itself is not treated as failed.
-2. Merging the `release-please` PR syncs `main` with the released artifact and triggers `chart-public-files.yaml` to update:
+2. Merging the `release-please` PR records release versions and generated bookkeeping in `main`;
+   it does not copy the complete published artifact into source. It triggers
+   `chart-public-files.yaml` to update:
    - [Version matrix](https://helm.camunda.io/camunda-platform/version-matrix/) (component versions for each chart release).
    - Public values files at `helm.camunda.io/camunda-platform/values/`.
 
