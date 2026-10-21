@@ -87,7 +87,7 @@ func TestPublicReleaseWorkflowSourceContract(t *testing.T) {
 	if prepare.ID != "parse" || !strings.Contains(prepare.Run, "release-source prepare") || !strings.Contains(prepare.Run, `--dry-run="${DRY_RUN}"`) {
 		t.Fatal("public preflight must invoke the tested source resolver for normal and dry runs")
 	}
-	if prepare.Env["RC_TAG"] != "${{ inputs.rc-tag }}" || prepare.Env["HARBOR_REGISTRY_PASSWORD"] == "" || prepare.Env["GH_TOKEN"] == "" {
+	if prepare.Env["RC_TAG"] != "${{ inputs.rc-tag }}" || prepare.Env["HARBOR_REGISTRY_USER"] == "" || prepare.Env["HARBOR_REGISTRY_PASSWORD"] == "" || prepare.Env["GH_TOKEN"] == "" {
 		t.Fatal("preflight must receive the selected tag and its scoped read credentials")
 	}
 	if !strings.Contains(upload.Run, `--commit "${{ steps.parse.outputs.commit_sha }}"`) || !strings.Contains(upload.Run, "--skip-existing=false") {
@@ -137,8 +137,8 @@ func TestReleaseHistoryWorkflowConsumers(t *testing.T) {
 			release, _ := sourceWorkflowStepNamed(t, job.Steps, tc.releaseStep)
 			notes, _ := sourceWorkflowStepNamed(t, job.Steps, tc.notesStep)
 			for _, step := range []sourceWorkflowStep{release, notes} {
-				if !strings.Contains(step.Run, "--source "+tc.source) || step.Env["HARBOR_REGISTRY_PASSWORD"] == "" {
-					t.Fatalf("%s must receive the explicit source and Harbor credentials", step.Name)
+				if !strings.Contains(step.Run, "--source "+tc.source) || step.Env["HARBOR_REGISTRY_USER"] == "" || step.Env["HARBOR_REGISTRY_PASSWORD"] == "" || (step.Env["GH_TOKEN"] == "" && step.Env["GITHUB_TOKEN"] == "") {
+					t.Fatalf("%s must receive the explicit source and scoped read credentials", step.Name)
 				}
 			}
 			if !strings.Contains(release.Run, "/tmp/release-tools release-pr") {
