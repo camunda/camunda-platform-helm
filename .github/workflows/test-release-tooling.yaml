@@ -34,10 +34,14 @@ jobs:
         uses: ./.github/actions/install-tool-versions
         with:
           tools: |
+            git-cliff
             golang
             helm
-            git-cliff
+            nodejs
             yq
+
+      - name: Install release-please for source-boundary contract tests
+        run: npm install -g release-please@17.1.3
 
       # TestImageSetRealChartContract reads each chart's vendored subcharts
       # (keycloak/ES/PG for 8.7-8.9), so they must be present before `go test`.

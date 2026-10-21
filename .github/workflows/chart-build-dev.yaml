@@ -181,6 +181,7 @@ jobs:
             git-cliff
             golang
             helm
+            nodejs
             oras
             yq
 
@@ -233,7 +234,7 @@ jobs:
       # annotations that release-please would compute at release time.
       #
       - name: Install release-please CLI
-        run: npm install -g release-please
+        run: npm install -g release-please@17.1.3
 
       - name: Compute release version (release-please dry-run)
         id: release-please
@@ -241,7 +242,10 @@ jobs:
           RELEASE_PLEASE_CONFIG: .github/config/release-please/release-please-config.json
           RELEASE_PLEASE_MANIFEST: .github/config/release-please/.release-please-manifest.json
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HARBOR_REGISTRY_USER: ${{ steps.secrets.outputs.HARBOR_REGISTRY_USER }}
+          HARBOR_REGISTRY_PASSWORD: ${{ steps.secrets.outputs.HARBOR_REGISTRY_PASSWORD }}
         run: |
+          set -euo pipefail
           # Get current version from Chart.yaml to check if it's a prerelease
           CURRENT_VERSION=$(yq '.version' Chart.yaml)
           echo "Current version: ${CURRENT_VERSION}"
@@ -249,15 +253,12 @@ jobs:
           # Run release-please dry-run; its trace is scraped for the next stable
           # version. (Orchestration stays in the workflow.)
           cd ../..
-          release-please release-pr \
-            --token="${GITHUB_TOKEN}" \
-            --repo-url="${{ github.repository }}" \
-            --target-branch="main" \
-            --path="${{ matrix.chart.directory }}" \
+          /tmp/release-tools release-pr \
+            --source "${GITHUB_SHA}" \
+            --chart-dir "${{ matrix.chart.directory }}" \
             --config-file="${RELEASE_PLEASE_CONFIG}" \
             --manifest-file="${RELEASE_PLEASE_MANIFEST}" \
-            --dry-run \
-            --trace 2>&1 | tee ${{ matrix.chart.directory }}/release-please-trace.log
+            --dry-run 2>&1 | tee ${{ matrix.chart.directory }}/release-please-trace.log
           cd ${{ matrix.chart.directory }}
 
           # Derive the release version (prerelease bump / alpha→stable / scraped

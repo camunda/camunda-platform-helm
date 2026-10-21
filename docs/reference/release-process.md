@@ -42,7 +42,8 @@ The charts are built, linted, and tested on every push to the main branch. The r
 **What happens:**
 
 1. Builds dev packages for all chart versions selected by `chartAutomation.routineVersions`.
-2. Computes the release version using `release-please --dry-run`.
+2. Computes the release version with `release-tools release-pr --dry-run`, using release-please's
+   versioning and PR-generation logic with an explicit artifact-source commit range.
 3. Applies release transformations (removes dev comments, badges).
 4. Generates release notes using the `release-tools release-notes` command.
 5. Packages the chart with the **final release version** in `Chart.yaml`.
@@ -76,7 +77,8 @@ The charts are built, linted, and tested on every push to the main branch. The r
 
 1. Resolves rolling tags to actual dev tags via the Harbor API.
 2. Validates the commit is on the `main` branch.
-3. Runs `release-please release-pr` to create/update the release PR.
+3. Runs `release-tools release-pr` to create/update the release-please PR from the selected dev
+   source, with the package's version passed as `--release-as`.
 4. Adds RC tags to the **same artifact** in Harbor (no rebuild!).
 
 **Tagging scheme:**
@@ -133,8 +135,13 @@ produce artifact content that is not present in Git. Integrity checks compare th
 package with the published package, not with the unmodified source tree. No additional source
 annotation or generated source commit is required; the existing Harbor dev tag records the base.
 
-Release notes use the same artifact-source history instead of inferring it from publishing
-HEAD or historical tag targets. Existing Git tags do not regroup changes into an older release.
+Release notes and release-please use the same artifact-source history instead of inferring it
+from publishing HEAD or historical tag targets. The release-tools entrypoint supplies that
+history through release-please's plugin hook and retains its existing versioning strategies;
+the SDK version is pinned in the build, promotion, and release-tooling test workflows.
+When promoting or rehearsing a specific package version, the boundary is its historical
+predecessor, not a newer publication or the selected release itself. Next-version calculation
+without `--release-as` uses the latest published artifact.
 
 For a chart line with no published predecessor, its explicit
 `camunda-platform-<minor>-<major>.0.0-alpha0` bootstrap tag supplies the starting boundary.

@@ -17,6 +17,8 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"regexp"
+	"slices"
 	"strings"
 	"testing"
 
@@ -99,7 +101,6 @@ func TestPublicReleaseWorkflowSourceContract(t *testing.T) {
 			t.Fatalf("%s must be disabled in dry runs", step.Name)
 		}
 	}
-
 	if release.Outputs["source-commit"] != "${{ steps.parse.outputs.commit_sha }}" ||
 		release.Outputs["previous-source-commit"] != "${{ steps.parse.outputs.previous_commit_sha }}" {
 		t.Fatal("both source boundaries must cross the release/post-release job boundary")
@@ -122,10 +123,10 @@ func TestPublicReleaseWorkflowSourceContract(t *testing.T) {
 
 func TestReleaseHistoryWorkflowConsumers(t *testing.T) {
 	for _, tc := range []struct {
-		file, job, notesStep, source string
+		file, job, releaseStep, notesStep, source string
 	}{
-		{"chart-build-dev.yaml", "build", "Generate RELEASE-NOTES.md", `"${GITHUB_SHA}"`},
-		{"chart-promote-rc.yaml", "promote-rc", "Generate release files on the release-please PR", `"${{ steps.parse.outputs.sha }}"`},
+		{"chart-build-dev.yaml", "build", "Compute release version (release-please dry-run)", "Generate RELEASE-NOTES.md", `"${GITHUB_SHA}"`},
+		{"chart-promote-rc.yaml", "promote-rc", "Run release-please", "Generate release files on the release-please PR", `"${{ steps.parse.outputs.sha }}"`},
 	} {
 		t.Run(tc.file, func(t *testing.T) {
 			workflow := sourceTestWorkflow(t, tc.file)
@@ -133,15 +134,61 @@ func TestReleaseHistoryWorkflowConsumers(t *testing.T) {
 			if !ok {
 				t.Fatalf("missing job %s", tc.job)
 			}
+			release, _ := sourceWorkflowStepNamed(t, job.Steps, tc.releaseStep)
 			notes, _ := sourceWorkflowStepNamed(t, job.Steps, tc.notesStep)
-			if !strings.Contains(notes.Run, "--source "+tc.source) || notes.Env["HARBOR_REGISTRY_PASSWORD"] == "" {
-				t.Fatalf("%s must receive the explicit source and Harbor credentials", notes.Name)
+			for _, step := range []sourceWorkflowStep{release, notes} {
+				if !strings.Contains(step.Run, "--source "+tc.source) || step.Env["HARBOR_REGISTRY_PASSWORD"] == "" {
+					t.Fatalf("%s must receive the explicit source and Harbor credentials", step.Name)
+				}
+			}
+			if !strings.Contains(release.Run, "/tmp/release-tools release-pr") {
+				t.Fatal("release-please history must use the source-bound SDK entrypoint")
 			}
 			if !strings.Contains(notes.Run, "release-notes --main") {
 				t.Fatal("notes must use the source-bound generator")
 			}
 			if tc.job == "promote-rc" && !strings.Contains(notes.Run, `CHART_VERSION="${chart_version}" yq -i '.version = strenv(CHART_VERSION)'`) {
 				t.Fatal("promotion rehearsal must generate the selected package version, not the source's old version")
+			}
+		})
+	}
+}
+
+func TestReleaseWorkflowSDKAndStepReferences(t *testing.T) {
+	stepRef := regexp.MustCompile(`steps\.([A-Za-z0-9_-]+)\.`)
+	for _, file := range []string{"chart-build-dev.yaml", "chart-promote-rc.yaml", "chart-release-public.yaml", "test-release-tooling.yaml"} {
+		t.Run(file, func(t *testing.T) {
+			workflow := sourceTestWorkflow(t, file)
+			installedSDK := false
+			for _, job := range workflow.Jobs {
+				ids := map[string]bool{}
+				node := false
+				for _, step := range job.Steps {
+					ids[step.ID] = true
+					node = node || slices.Contains(strings.Fields(step.With.Tools), "nodejs")
+				}
+				for _, step := range job.Steps {
+					if strings.Contains(step.Run, "npm install -g release-please@17.1.3") {
+						installedSDK = true
+						if !node {
+							t.Fatal("the SDK consumer must install the pinned Node tool")
+						}
+					}
+					values := []string{step.Run}
+					for _, value := range step.Env {
+						values = append(values, value)
+					}
+					for _, value := range values {
+						for _, match := range stepRef.FindAllStringSubmatch(value, -1) {
+							if !ids[match[1]] {
+								t.Fatalf("step %s refers to nonexistent step %s", step.Name, match[1])
+							}
+						}
+					}
+				}
+			}
+			if file != "chart-release-public.yaml" && !installedSDK {
+				t.Fatal("release-please SDK must be pinned consistently in producers and contract tests")
 			}
 		})
 	}

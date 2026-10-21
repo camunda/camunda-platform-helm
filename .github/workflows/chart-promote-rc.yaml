@@ -178,6 +178,7 @@ jobs:
           tools: |
             helm
             git-cliff
+            nodejs
             yq
 
       - name: Pull and validate dev package
@@ -217,22 +218,19 @@ jobs:
           /tmp/release-tools chart-metadata --chart-yaml "${package_chart_dir}/Chart.yaml"
 
       - name: Install release-please
-        run: npm i release-please -g
+        run: npm install -g release-please@17.1.3
 
       - name: Run release-please
         id: release-please
         env:
           GH_TOKEN: ${{ steps.generate-github-token.outputs.token }}
+          HARBOR_REGISTRY_USER: ${{ steps.test-credentials-secret.outputs.HARBOR_REGISTRY_USER }}
+          HARBOR_REGISTRY_PASSWORD: ${{ steps.test-credentials-secret.outputs.HARBOR_REGISTRY_PASSWORD }}
           DRY_RUN: ${{ inputs.dry-run }}
         run: |
           set -euo pipefail
           chart_path="charts/camunda-platform-${{ steps.package.outputs.chart_dir_id }}"
           head_ref="release-please--branches--main--components--camunda-platform-${{ steps.package.outputs.chart_dir_id }}"
-
-          dry_run_args=()
-          if [[ "${DRY_RUN}" == "true" ]]; then
-            dry_run_args=(--dry-run)
-          fi
 
           # Always pass --release-as with the version from the dev tag. This ensures
           # the release-please PR version matches exactly what the dev build computed.
@@ -240,16 +238,13 @@ jobs:
           # baseline, which preserves alpha suffixes even after a stable transition.
           echo "::notice::Forcing release-please version to '${{ steps.parse.outputs.version }}'"
 
-          release-please release-pr \
-            --token="${{ steps.generate-github-token.outputs.token }}" \
-            --repo-url="${{ github.repository }}" \
-            --target-branch="main" \
-            --path="${chart_path}" \
+          /tmp/release-tools release-pr \
+            --chart-dir "${chart_path}" \
+            --source "${{ steps.parse.outputs.sha }}" \
             --config-file="${{ env.RELEASE_PLEASE_CONFIG_FILE }}" \
             --manifest-file="${{ env.RELEASE_PLEASE_MANIFEST_FILE }}" \
             --release-as="${{ steps.parse.outputs.version }}" \
-            "${dry_run_args[@]}" \
-            --debug 2>&1 | tee release-please.log
+            --dry-run="${DRY_RUN}" 2>&1 | tee release-please.log
 
           if grep -qiE 'aborting|untagged, merged release PRs outstanding' release-please.log; then
             echo "::error::release-please aborted (likely due to a merged release PR still labeled as pending)."
