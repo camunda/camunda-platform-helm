@@ -23,6 +23,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"scripts/camunda-core/pkg/releasenotes"
@@ -153,11 +154,17 @@ func runReleasePR(args []string) error {
 	if err != nil {
 		return err
 	}
-	moduleRoot, err := capture(ctx, "npm", "root", "-g")
+	sdkEnv := slices.DeleteFunc(os.Environ(), func(variable string) bool {
+		return strings.HasPrefix(variable, "HARBOR_")
+	})
+	npm := exec.CommandContext(ctx, "npm", "root", "-g")
+	npm.Env, npm.Stderr = sdkEnv, os.Stderr
+	moduleRoot, err := npm.Output()
 	if err != nil {
-		return err
+		return fmt.Errorf("locate release-please installation: %w", err)
 	}
-	cmd := exec.CommandContext(ctx, "node", "-e", releasePleaseJS, filepath.Join(moduleRoot, "release-please"))
+	cmd := exec.CommandContext(ctx, "node", "-e", releasePleaseJS, filepath.Join(strings.TrimSpace(string(moduleRoot)), "release-please"))
+	cmd.Env = sdkEnv
 	cmd.Stdin = bytes.NewReader(payload)
 	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
 	if err := cmd.Run(); err != nil {

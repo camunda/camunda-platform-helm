@@ -30,11 +30,13 @@ func TestReleasePRSelectsPredecessorForRequestedVersion(t *testing.T) {
 		releaseAs  string
 		historical bool
 		newer      bool
+		dryRun     bool
 	}{
-		{"next dev version", "", false, false},
-		{"unpublished RC", "14.11.2", false, false},
-		{"published RC rehearsal", "14.11.1", true, false},
-		{"historical RC after a newer release", "14.11.1", true, true},
+		{"next dev version", "", false, false, true},
+		{"unpublished RC", "14.11.2", false, false, true},
+		{"published RC rehearsal", "14.11.1", true, false, true},
+		{"historical RC after a newer release", "14.11.1", true, true, true},
+		{"release PR creation", "14.11.2", false, false, false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			f := newReleaseSourceFixture(t)
@@ -51,14 +53,24 @@ func TestReleasePRSelectsPredecessorForRequestedVersion(t *testing.T) {
 			t.Setenv("SOURCE_RELEASE_PR_INPUT", payloadFile)
 			t.Setenv("SOURCE_NPM_ROOT", t.TempDir())
 			t.Setenv("GH_TOKEN", "test-token")
+			t.Setenv("HARBOR_REGISTRY_USER", "test-harbor-user")
+			t.Setenv("HARBOR_REGISTRY_PASSWORD", "test-harbor-password")
 			t.Setenv("GITHUB_REPOSITORY", "camunda/camunda-platform-helm")
-			sourceTestWrite(t, filepath.Join(f.bin, "npm"), []byte("#!/bin/sh\n[ \"$1\" = root ] && [ \"$2\" = -g ] || exit 1\nprintf '%s\\n' \"$SOURCE_NPM_ROOT\"\n"), 0o755)
-			sourceTestWrite(t, filepath.Join(f.bin, "node"), []byte("#!/bin/sh\ncat > \"$SOURCE_RELEASE_PR_INPUT\"\n"), 0o755)
+			sdkEnvCheck := `if [ "${HARBOR_REGISTRY_USER+x}" = x ] || [ "${HARBOR_REGISTRY_PASSWORD+x}" = x ] || [ "$GH_TOKEN" != test-token ]; then
+  echo "unexpected release-please subprocess environment" >&2
+  exit 1
+fi
+`
+			sourceTestWrite(t, filepath.Join(f.bin, "npm"), []byte("#!/bin/sh\n"+sdkEnvCheck+"[ \"$1\" = root ] && [ \"$2\" = -g ] || exit 1\nprintf '%s\\n' \"$SOURCE_NPM_ROOT\"\n"), 0o755)
+			sourceTestWrite(t, filepath.Join(f.bin, "node"), []byte("#!/bin/sh\n"+sdkEnvCheck+"cat > \"$SOURCE_RELEASE_PR_INPUT\"\n"), 0o755)
 			source, previous, tag := f.c, f.b, "camunda-platform-8.9-14.11.1"
 			if tc.historical {
 				source, previous, tag = f.b, f.a, "camunda-platform-8.9-14.11.0"
 			}
-			args := []string{"--chart-dir", "charts/camunda-platform-8.9", "--source", source, "--dry-run"}
+			args := []string{"--chart-dir", "charts/camunda-platform-8.9", "--source", source}
+			if tc.dryRun {
+				args = append(args, "--dry-run")
+			}
 			if tc.releaseAs != "" {
 				args = append(args, "--release-as", tc.releaseAs)
 			}
@@ -79,7 +91,7 @@ func TestReleasePRSelectsPredecessorForRequestedVersion(t *testing.T) {
 			if len(input.Commits) != 1 || input.Commits[0].SHA != source {
 				t.Fatalf("wrong source-bound commits: %+v", input.Commits)
 			}
-			if !input.DryRun || input.ReleaseAs != tc.releaseAs {
+			if input.DryRun != tc.dryRun || input.ReleaseAs != tc.releaseAs {
 				t.Fatalf("wrong rehearsal arguments: %+v", input)
 			}
 		})
@@ -114,10 +126,16 @@ func TestReleasePleaseUsesArtifactHistory(t *testing.T) {
   const publishing = "c".repeat(40), current = "d".repeat(40);
   const oldTag = "camunda-platform-8.9-14.11.1";
   let headFeature = false;
+  const writes = [];
   const fix = {sha: late, message: "fix: late change missed by old artifact (#7456)",
     files: [path + "/templates/configmap.yaml"]};
   const github = {
     repository: {owner: "camunda", repo: "camunda-platform-helm", defaultBranch: "main"},
+    pullRequestIterator: async function* () {},
+    createPullRequest: async (request, branch, message, updates) => {
+      writes.push({request, branch, message, updates});
+      return {...request, number: 123};
+    },
     releaseIterator: async function* () {
       yield {name: oldTag, tagName: oldTag, sha: publishing, notes: ""};
     },
@@ -159,6 +177,19 @@ func TestReleasePleaseUsesArtifactHistory(t *testing.T) {
     previousSource: previous, commits: [fix]}, github, ManifestPlugin, TagName);
   if ((await forced.buildPullRequests())[0].version.toString() !== "14.12.3")
     throw new Error("promotion ignored the selected package version");
+  const created = await forced.createPullRequests();
+  if (created.length !== 1 || created[0].number !== 123 || writes.length !== 1)
+    throw new Error("the non-dry-run SDK path did not create exactly one PR");
+  const write = writes[0];
+  if (write.branch !== "main" ||
+      write.request.headBranchName !== "release-please--branches--main--components--camunda-platform-8.9" ||
+      !write.request.title.includes("14.12.3") ||
+      !write.request.body.includes("#7456") ||
+      write.request.body.includes("beyond the selected artifact") ||
+      !write.updates.some(update => update.path === path + "/Chart.yaml"))
+    throw new Error("created PR did not preserve the selected version and artifact-source history");
+  if ((await pinned.createPullRequests()).length !== 0 || writes.length !== 1)
+    throw new Error("commits outside the artifact range caused a PR write");
 })().catch(error => { console.error(error.stack); process.exitCode = 1; });
 `
 	output, err := exec.Command("node", "-e", program, filepath.Join(moduleRoot, "release-please")).CombinedOutput()

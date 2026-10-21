@@ -139,6 +139,8 @@ Release notes and release-please use the same artifact-source history instead of
 from publishing HEAD or historical tag targets. The release-tools entrypoint supplies that
 history through release-please's plugin hook and retains its existing versioning strategies;
 the SDK version is pinned in the build, promotion, and release-tooling test workflows.
+Harbor environment variables are excluded from the npm and release-please subprocesses after
+source resolution; the GitHub token remains available to the SDK.
 When promoting or rehearsing a specific package version, the boundary is its historical
 predecessor, not a newer publication or the selected release itself. Next-version calculation
 without `--release-as` uses the latest published artifact.
