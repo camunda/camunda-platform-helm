@@ -99,10 +99,17 @@ The copy has the GA tags of `P`. Replace each Camunda image tag in `NEW/values.y
    ```
 
 2. If the result is `200`, use `N-SNAPSHOT`. If the result is `404`, use `SNAPSHOT`. In the 8.11 cut, `camunda/identity`, `camunda/hub` and `camunda/hub-websockets` had no versioned snapshot tag.
-3. In `NEW/values-digest.yaml`, set each `digest` to the `digest` field of the same Docker Hub URL.
+3. Fetch the digest from the selected tag's URL, replacing `<selected-tag>` with `N-SNAPSHOT` or `SNAPSHOT`. Set that image's `digest` in `NEW/values-digest.yaml` to the output. Stop if the command fails.
+
+   ```bash
+   set -o pipefail
+   curl -fsS "https://hub.docker.com/v2/repositories/camunda/<image>/tags/<selected-tag>" |
+     jq -er '.digest | strings | select(length > 0)'
+   ```
+
 4. In `NEW/values-latest.yaml`, set line 2 to `# Camunda - Alpha`.
 
-Check: this grep shows no hits.
+Check: each pinned digest matches its selected-tag lookup result, and this grep shows no hits.
 
 ```bash
 grep -nE 'tag: "?P\.[0-9]' NEW/values.yaml NEW/values-latest.yaml NEW/values-digest.yaml
@@ -260,11 +267,21 @@ gh api repos/camunda/camunda-platform-helm/pulls/<pr> --jq '.stack'
 4. Tell QA that `NEW` exists. QA publishes the `SM-N` e2e suite. Then remove the fallback in `NEW/test/e2e/playwright.config.ts`.
 5. Tell the monorepo team that the `N` preview-environment smoke test can run.
 
-Check: the first command shows one tag line. The second command shows a dev package tag that starts with `M.0.0-alpha1-dev-`.
+Check: the first command shows one tag line. Use the second command to locate the run that first published `NEW`.
 
 ```bash
 git ls-remote --tags origin camunda-platform-N-M.0.0-alpha0
-gh run list --repo camunda/camunda-platform-helm --workflow chart-build-dev.yaml --limit 5
+gh run list --repo camunda/camunda-platform-helm --workflow chart-build-dev.yaml --branch main --limit 5
+```
+
+For that run, the `Build N` job must have `conclusion: success`. Use its `databaseId` as `<job-id>`. The final command must show a published dev tag beginning with `M.0.0-alpha1-dev-`.
+
+```bash
+set -o pipefail
+gh run view <run-id> --repo camunda/camunda-platform-helm --json jobs \
+  --jq '.jobs[] | select(.name == "Build N") | {databaseId, conclusion}'
+gh run view <run-id> --repo camunda/camunda-platform-helm --job <job-id> --log |
+  grep -F '##[notice]Pushed to Harbor with tags: '
 ```
 
 ## 12. Plan the lifecycle of older minors
