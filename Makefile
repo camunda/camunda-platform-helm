@@ -435,9 +435,6 @@ release.bump-chart-version-and-commit: .release.bump-chart-version
 .PHONY: release.generate-notes
 release.generate-notes: install.release-tools
 	set -e; \
-	registry=$${HARBOR_REGISTRY_HOST:-$${HARBOR_REGISTRY}}; \
-	project=$${HARBOR_REGISTRY_PROJECT:-$${HARBOR_PROJECT}}; \
-	: "$${registry:?set the Harbor registry}" "$${project:?set the Harbor project}"; \
 	releases=$$(mktemp); trap 'rm -f "$$releases"' EXIT; \
 	gh api 'repos/{owner}/{repo}/releases?per_page=100' --paginate --slurp > "$$releases"; \
 	source=$$(git rev-parse --verify "$${sourceSHA:-HEAD}^{commit}"); \
@@ -445,8 +442,7 @@ release.generate-notes: install.release-tools
 		echo "\n[$@] Chart dir: $${chart_dir}";\
 		previous_ref=$$(GITHUB_OUTPUT=/dev/null release-tools release-history \
 			--chart-yaml "$$chart_dir/Chart.yaml" --releases-file "$$releases" \
-			--before-version "$$(yq '.version' "$$chart_dir/Chart.yaml")" \
-			--api "https://$$registry/api/v2.0" --repo "projects/$$project/repositories/camunda-platform"); \
+			--before-version "$$(yq '.version' "$$chart_dir/Chart.yaml")"); \
 		previous=$$(git rev-parse --verify "$${previous_ref}^{commit}"); \
 		git merge-base --is-ancestor "$$previous" "$$source"; \
 		release-tools release-notes --main "$$chart_dir" --source "$$source" --previous-source "$$previous"; \

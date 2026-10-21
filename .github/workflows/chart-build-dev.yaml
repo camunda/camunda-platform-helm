@@ -237,15 +237,11 @@ jobs:
         working-directory: ${{ github.workspace }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          HARBOR_REGISTRY_USER: ${{ steps.secrets.outputs.HARBOR_REGISTRY_USER }}
-          HARBOR_REGISTRY_PASSWORD: ${{ steps.secrets.outputs.HARBOR_REGISTRY_PASSWORD }}
         run: |
           set -euo pipefail
           gh api 'repos/{owner}/{repo}/releases?per_page=100' --paginate --slurp > /tmp/releases.json
           previous_ref=$(/tmp/release-tools release-history --chart-yaml "${CHART_DIR}/Chart.yaml" \
-            --releases-file /tmp/releases.json \
-            --api "https://${HARBOR_REGISTRY_HOST}/api/v2.0" \
-            --repo "projects/${HARBOR_REGISTRY_PROJECT}/repositories/camunda-platform")
+            --releases-file /tmp/releases.json)
           previous_sha=$(git rev-parse --verify "${previous_ref}^{commit}")
           git merge-base --is-ancestor "${previous_sha}" "${GITHUB_SHA}"
           echo "previous_commit_sha=${previous_sha}" >> "$GITHUB_OUTPUT"
