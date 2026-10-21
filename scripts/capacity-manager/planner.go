@@ -9,6 +9,7 @@ package capacity
 
 import (
 	"fmt"
+	"math"
 	"strings"
 	"time"
 )
@@ -81,7 +82,10 @@ func (p *Planner) Decide(policy Policy, in Inputs, now time.Time) (Decision, err
 	current := in.Current
 	decision := Decision{Current: current, Desired: current, Mode: policy.Mode, Confidence: "high", Signals: map[string]float64{}}
 	for name, value := range in.Readings {
-		if value != nil {
+		// Readings drive decisions as-is (+Inf from a division by zero
+		// correctly fails a "<=" signal), but only finite values are reported
+		// because JSON cannot encode NaN or Inf.
+		if value != nil && !math.IsInf(*value, 0) && !math.IsNaN(*value) {
 			decision.Signals[name] = *value
 		}
 	}

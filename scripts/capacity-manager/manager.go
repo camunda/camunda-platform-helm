@@ -70,8 +70,15 @@ type CapacityChange struct {
 	Signals map[string]float64 `json:"signals,omitempty"`
 }
 
+// JSON encodes the status. It never returns an empty body: if encoding
+// fails, the error is reported in lastError so /status stays diagnosable.
 func (s Status) JSON() []byte {
-	data, _ := json.Marshal(s)
+	data, err := json.Marshal(s)
+	if err != nil {
+		data, _ = json.Marshal(Status{ObservedAt: s.ObservedAt, Mode: s.Mode, Phase: s.Phase, Reason: s.Reason,
+			CurrentBrokers: s.CurrentBrokers, DesiredBrokers: s.DesiredBrokers, WorkloadReplicas: s.WorkloadReplicas,
+			Confidence: s.Confidence, LastError: "encode status: " + err.Error()})
+	}
 	return data
 }
 

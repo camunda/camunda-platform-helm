@@ -8,6 +8,8 @@
 package capacity
 
 import (
+	"encoding/json"
+	"math"
 	"strings"
 	"testing"
 	"time"
@@ -194,5 +196,33 @@ func TestPolicyValidation(t *testing.T) {
 	valid := automaticPolicy()
 	if err := valid.validate(); err != nil {
 		t.Fatalf("valid automatic policy rejected: %v", err)
+	}
+}
+
+// With one broker, "fits on one broker fewer" divides by zero and Prometheus
+// returns +Inf. The reading must still block the scale-down and must not
+// break JSON encoding of the decision.
+func TestPlannerHandlesInfiniteReadings(t *testing.T) {
+	readings := quiet()
+	inf := math.Inf(1)
+	readings["fits"] = &inf
+	decision, err := (&Planner{}).Decide(automaticPolicy(), Inputs{Current: 2, PartitionReplicas: 3, Readings: readings}, time.Now())
+	if err != nil || decision.Desired != 2 {
+		t.Fatalf("+Inf must not satisfy a <= signal: %#v, %v", decision, err)
+	}
+	if _, ok := decision.Signals["fits"]; ok {
+		t.Fatalf("non-finite reading was reported: %v", decision.Signals)
+	}
+	status := Status{Phase: "stable", Signals: decision.Signals}
+	if body := status.JSON(); !json.Valid(body) || len(body) < 3 {
+		t.Fatalf("status did not encode: %q", body)
+	}
+}
+
+func TestStatusJSONNeverEmpty(t *testing.T) {
+	body := Status{Phase: "stable", Signals: map[string]float64{"x": math.Inf(1)}}.JSON()
+	var decoded Status
+	if err := json.Unmarshal(body, &decoded); err != nil || decoded.Phase != "stable" || decoded.LastError == "" {
+		t.Fatalf("expected a valid status reporting the encode error, got %q (%v)", body, err)
 	}
 }
