@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">Release Process | Camunda Helm Charts</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:image" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7635/img/camunda-logo.svg"><meta data-rh="true" name="twitter:image" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7635/img/camunda-logo.svg"><meta data-rh="true" property="og:url" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7635/reference/release-process"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Release Process | Camunda Helm Charts"><meta data-rh="true" name="description" content="This document is for Distro team maintainers. For contribution process, see the Maintainer Guide."><meta data-rh="true" property="og:description" content="This document is for Distro team maintainers. For contribution process, see the Maintainer Guide."><link data-rh="true" rel="icon" href="/camunda-platform-helm/pr-preview/pr-7635/img/camunda-logo.svg"><link data-rh="true" rel="canonical" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7635/reference/release-process"><link data-rh="true" rel="alternate" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7635/reference/release-process" hreflang="en"><link data-rh="true" rel="alternate" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7635/reference/release-process" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Release Process","item":"https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7635/reference/release-process"}]}</script><link rel="stylesheet" href="/camunda-platform-helm/pr-preview/pr-7635/assets/css/styles.3f6cd398.css">
-<script src="/camunda-platform-helm/pr-preview/pr-7635/assets/js/runtime~main.db564ebe.js" defer="defer"></script>
-<script src="/camunda-platform-helm/pr-preview/pr-7635/assets/js/main.fb876de6.js" defer="defer"></script>
+<script src="/camunda-platform-helm/pr-preview/pr-7635/assets/js/runtime~main.c2a60aa6.js" defer="defer"></script>
+<script src="/camunda-platform-helm/pr-preview/pr-7635/assets/js/main.9b4b9bed.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -73,52 +73,45 @@ version matrix files (component versions mapping + READMEs).</li>
 </ul>
 <p><strong>What happens:</strong></p>
 <ol>
-<li class="">Resolves the RC reference to its immutable OCI digest and reads its existing
-<code>{version}-dev-{sha}</code> tag from the same Harbor response.</li>
-<li class="">Uses Git to resolve that SHA to a full commit on main and Helm to pull the selected digest.
-The existing metadata step checks the packaged release version against the RC version.</li>
-<li class="">Selects the preceding published release and uses its Git tag as the source boundary.
-Verified overrides cover the incorrectly tagged releases in the #7612 audit. Git checks
-that the previous source is an ancestor of the current source.</li>
-<li class="">Uploads the unchanged tested package using <code>helm-cr upload --commit &lt;artifact-source-sha&gt;</code>.
-Existing releases are not silently skipped.</li>
+<li class="">Resolves the RC tag to its immutable OCI digest and the <code>{version}-dev-{sha}</code> source tag on
+the same Harbor artifact (<code>release-tools harbor-tag source</code>). A missing or ambiguous source
+tag fails the run before anything is published.</li>
+<li class="">Resolves that SHA to a full commit on <code>main</code> and pulls the package by digest.</li>
+<li class="">Extracts metadata (version, app version) from the packaged <code>Chart.yaml</code> and checks the
+package version against the RC version.</li>
+<li class="">Selects the previous release on the chart line (<code>release-tools release-history</code>) and checks
+that its source commit is an ancestor of the current one.</li>
+<li class="">Uploads the unchanged package to GitHub Releases using
+<code>helm-cr upload --commit &lt;source-sha&gt;</code>, so the release tag points at the build commit.
+An existing release fails the upload instead of being skipped.</li>
 <li class="">Updates the Helm repo index (<code>gh-pages</code> branch).</li>
 <li class="">Signs with Cosign and uploads the bundle to the release.</li>
-<li class="">Labels shipped PRs and their linked issues using the explicit
-<code>previous-artifact-source..current-artifact-source</code> range.</li>
+<li class="">Labels shipped PRs and their linked issues from the <code>previous-source..source</code> commit range
+(<code>scripts/set-prs-version-label.sh</code> requires <code>chartVersion</code>, <code>sourceSHA</code> and
+<code>previousSourceSHA</code>).</li>
 <li class="">Stamps the published release&#x27;s date onto the chart&#x27;s <code>version-matrix.json</code> entry
 (<code>release-tools stamp-release</code>) and regenerates the matrix READMEs on the <code>release-please</code>
 branch — the single write of <code>release_date</code>, taken from the GitHub release&#x27;s <code>publishedAt</code>.</li>
 <li class="">Labels the <code>release-please</code> PR with <code>autorelease: published</code>.</li>
 </ol>
 <p><strong>Release tag format:</strong> <code>camunda-platform-{appVersion}-{version}</code> (e.g. <code>camunda-platform-8.8-13.4.0</code>).</p>
-<p><strong>Source and artifact identity:</strong> the public Git tag identifies the build input, not an
-installable copy of the chart. Source installation is unsupported. Version updates, generated
-release files, image overrides, dependency preparation, and other release transformations can
-produce artifact content that is not present in Git. Publication promotes the pulled package
-without rebuilding it from the source tree. No additional source
-annotation or generated source commit is required; the existing Harbor dev tag records the base.</p>
-<p>For a chart line with no published predecessor, its explicit
-<code>camunda-platform-&lt;minor&gt;-&lt;major&gt;.0.0-alpha0</code> bootstrap tag supplies the starting boundary.
-Historical source overrides are fixed migration data recovered from the retained publication
-records in <a href="https://github.com/camunda/camunda-platform-helm/issues/7612#issuecomment-6314547789" target="_blank" rel="noopener noreferrer" class="">the #7612 audit</a>.
-They cover the audited release window through 2026-10-21; older unaudited releases require
-separate review. Future releases use their corrected Git tags, not Harbor RC retention.
-If another release is published by the old workflow before this fix lands, verify its source
-and extend the migration data before merging. No public tags or packages are rewritten.</p>
-<p>The labeling entrypoint requires the packaged <code>chartVersion</code> and both verified
-<code>sourceSHA</code>/<code>previousSourceSHA</code> values. It reads the application minor from the selected source,
-not from the publishing checkout.</p>
-<p>The workflows keep Git resolution, ancestry checks and Helm pulls in their own steps.
-The Go tooling selects and validates structured Harbor tags and published-release metadata.</p>
+<p><strong>Source and artifact identity:</strong> the release tag marks the commit the package was built from,
+not an installable copy of the chart. Version bumps, generated release files and image
+overrides exist only in the package; publication never rebuilds it.</p>
+<p><code>release-history</code> picks the highest release tag on the chart line below the chart&#x27;s version; a
+new chart line starts from its <code>camunda-platform-&lt;minor&gt;-&lt;major&gt;.0.0-alpha0</code> bootstrap tag.
+Tags that were created from a later publishing checkout
+(<a href="https://github.com/camunda/camunda-platform-helm/issues/7612#issuecomment-6314547789" target="_blank" rel="noopener noreferrer" class="">#7612 audit</a>)
+map to their recorded build commits in <code>historicalReleaseSources</code>; the tags themselves are not
+moved. Release-please still discovers history from the public tags on its own; its version
+calculation is unchanged.</p>
 <p><strong>After public release:</strong></p>
 <ol>
 <li class="">The workflow enables auto-merge on the <code>release-please</code> PR, then shepherds it through the merge
 queue (re-enabling auto-merge after evictions). If it still does not merge within the timeout, a
 distinct Slack alert pings the distribution release manager to merge it manually — the release
 itself is not treated as failed.</li>
-<li class="">Merging the <code>release-please</code> PR records release versions and generated bookkeeping in <code>main</code>;
-it does not copy the complete published artifact into source. It triggers
+<li class="">Merging the <code>release-please</code> PR records the released version in <code>main</code> and triggers
 <code>chart-public-files.yaml</code> to update:<!-- -->
 <ul>
 <li class=""><a href="https://helm.camunda.io/camunda-platform/version-matrix/" target="_blank" rel="noopener noreferrer" class="">Version matrix</a> (component versions for each chart release).</li>
