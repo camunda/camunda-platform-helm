@@ -28,11 +28,16 @@ type WorkloadClient interface {
 	Scale(context.Context, int) error
 	MarkCompleted(context.Context, int) error
 	PodStarted(context.Context, int) (bool, error)
+	// RecordChange durably stores the evidence of the last capacity decision
+	// so a restarted manager can still report why capacity moved.
+	RecordChange(context.Context, CapacityChange) error
 }
 
 type WorkloadState struct {
 	Replicas int
 	Target   int
+	// LastChange is the durably recorded last capacity decision, if any.
+	LastChange *CapacityChange
 }
 
 type ClusterClient interface {
@@ -137,6 +142,11 @@ func (m *Manager) Reconcile(ctx context.Context) error {
 	if err != nil {
 		return m.fail(err)
 	}
+	m.mu.Lock()
+	if m.lastChange == nil && workload.LastChange != nil {
+		m.lastChange = workload.LastChange
+	}
+	m.mu.Unlock()
 	current := topology.ActiveBrokerCount()
 	status := Status{ObservedAt: time.Now().UTC(), Mode: policy.Mode, Phase: "observing", CurrentBrokers: current, DesiredBrokers: workload.Target, WorkloadReplicas: workload.Replicas, Confidence: "high"}
 	if topology.PendingChange != nil {
@@ -196,9 +206,14 @@ func (m *Manager) Reconcile(ctx context.Context) error {
 		return m.Workload.MarkCompleted(ctx, current)
 	}
 	if decision.Desired != current {
+		change := CapacityChange{At: status.ObservedAt, From: current, To: decision.Desired, Reason: decision.Reason, Signals: decision.Signals}
 		m.mu.Lock()
-		m.lastChange = &CapacityChange{At: status.ObservedAt, From: current, To: decision.Desired, Reason: decision.Reason, Signals: decision.Signals}
+		m.lastChange = &change
 		m.mu.Unlock()
+		// Best effort: losing the evidence must never block a safe change.
+		if err := m.Workload.RecordChange(ctx, change); err != nil {
+			m.Logger.Warn("record capacity change evidence", "error", err)
+		}
 	}
 	if decision.Desired > current {
 		target := current + 1

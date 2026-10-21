@@ -30,6 +30,7 @@ type KubernetesClient struct {
 
 const targetBrokersAnnotation = "capacity-manager.camunda.io/target-brokers"
 const completedBrokersAnnotation = "capacity-manager.camunda.io/completed-brokers"
+const lastChangeAnnotation = "capacity-manager.camunda.io/last-change"
 
 func NewInClusterKubernetesClient(namespace, statefulSet string, timeoutClient *http.Client) (KubernetesClient, error) {
 	host := os.Getenv("KUBERNETES_SERVICE_HOST")
@@ -107,7 +108,26 @@ func (c KubernetesClient) State(ctx context.Context) (WorkloadState, error) {
 		}
 		target = parsed
 	}
-	return WorkloadState{Replicas: statefulSet.Spec.Replicas, Target: target}, nil
+	state := WorkloadState{Replicas: statefulSet.Spec.Replicas, Target: target}
+	if raw := statefulSet.Metadata.Annotations[lastChangeAnnotation]; raw != "" {
+		var change CapacityChange
+		// Evidence is informational; an unreadable value is ignored rather
+		// than blocking reconciliation.
+		if json.Unmarshal([]byte(raw), &change) == nil {
+			state.LastChange = &change
+		}
+	}
+	return state, nil
+}
+
+func (c KubernetesClient) RecordChange(ctx context.Context, change CapacityChange) error {
+	data, err := json.Marshal(change)
+	if err != nil {
+		return err
+	}
+	return c.patchStatefulSet(ctx, map[string]any{
+		"metadata": map[string]any{"annotations": map[string]string{lastChangeAnnotation: string(data)}},
+	})
 }
 
 func (c KubernetesClient) SetTarget(ctx context.Context, target int) error {

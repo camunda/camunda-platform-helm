@@ -84,7 +84,9 @@ logic.
 
 The StatefulSet annotation `capacity-manager.camunda.io/target-brokers` persists the intended
 capacity so a restarted manager can distinguish an unfinished join from a completed topology
-contraction.
+contraction. The annotation `capacity-manager.camunda.io/last-change` stores the evidence of the last
+capacity decision (time, broker counts, reason and signal readings), so `/status` still reports
+why capacity moved after the manager restarts.
 
 ## Status
 

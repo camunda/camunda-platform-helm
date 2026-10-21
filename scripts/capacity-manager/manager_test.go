@@ -30,6 +30,7 @@ func (f fakeMetrics) Query(_ context.Context, query string) (*float64, error) {
 }
 
 type fakeWorkload struct {
+	recorded  *CapacityChange
 	replicas  int
 	target    int
 	started   bool
@@ -42,7 +43,11 @@ func (f *fakeWorkload) State(context.Context) (WorkloadState, error) {
 	if target == 0 {
 		target = f.replicas
 	}
-	return WorkloadState{Replicas: f.replicas, Target: target}, nil
+	return WorkloadState{Replicas: f.replicas, Target: target, LastChange: f.recorded}, nil
+}
+func (f *fakeWorkload) RecordChange(_ context.Context, change CapacityChange) error {
+	f.recorded = &change
+	return nil
 }
 func (f *fakeWorkload) SetTarget(_ context.Context, target int) error {
 	f.target = target
@@ -290,4 +295,28 @@ type reasonRecorder struct{ reasons *[]string }
 func (r *reasonRecorder) Write(p []byte) (int, error) {
 	*r.reasons = append(*r.reasons, string(p))
 	return len(p), nil
+}
+
+func TestManagerRestoresLastChangeAfterRestart(t *testing.T) {
+	policy := automaticPolicy()
+	workload := &fakeWorkload{replicas: 1}
+	cluster := &fakeCluster{topology: activeTopology(1)}
+	cluster.topology.Brokers[0].Partitions = []Partition{{ID: 1, State: "ACTIVE"}, {ID: 2, State: "ACTIVE"}}
+	manager := newTestManager(policy, workload, cluster)
+	manager.Metrics = fakeMetrics{values: map[string]float64{"drop": 0.2, "cpu": 0.95, "cpu-fewer": 1.4, "backlog": 0}}
+	if err := manager.Reconcile(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if workload.recorded == nil || workload.recorded.From != 1 || workload.recorded.To != 2 {
+		t.Fatalf("scale-up evidence not recorded: %#v", workload.recorded)
+	}
+
+	restarted := newTestManager(policy, workload, cluster)
+	if err := restarted.Reconcile(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	change := restarted.Status().LastChange
+	if change == nil || change.To != 2 || change.Signals["backpressure"] != 0.2 {
+		t.Fatalf("restarted manager lost the last change evidence: %#v", change)
+	}
 }
