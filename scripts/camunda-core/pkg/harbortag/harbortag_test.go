@@ -192,17 +192,3 @@ func TestIsRcDryRunTag(t *testing.T) {
 		}
 	}
 }
-
-func TestFindDevTagAndCommitSHA(t *testing.T) {
-	tags := []string{"13.4.0-rc", "13-rc-latest", "13.4.0-dev-abc1234", "13-dev-latest"}
-	dev := FindDevTag(tags)
-	if dev != "13.4.0-dev-abc1234" {
-		t.Errorf("FindDevTag=%q want 13.4.0-dev-abc1234", dev)
-	}
-	if sha := CommitSHAFromDevTag(dev); sha != "abc1234" {
-		t.Errorf("CommitSHAFromDevTag=%q want abc1234", sha)
-	}
-	if FindDevTag([]string{"13.4.0-rc"}) != "" {
-		t.Error("FindDevTag want empty when no dev tag")
-	}
-}

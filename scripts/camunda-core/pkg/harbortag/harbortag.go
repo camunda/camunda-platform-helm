@@ -156,28 +156,6 @@ func ParseRcDryRunTag(tag string) (RcTag, error) {
 	return RcTag{ResolvedTag: tag, Version: version, ChartMajor: majorOf(version)}, nil
 }
 
-// FindDevTag returns the first dev tag in tags (used by Public to recover the
-// source dev tag — and thus commit SHA — that an RC artifact was built from).
-// Returns "" when none is present.
-func FindDevTag(tags []string) string {
-	for _, t := range tags {
-		if devTagRe.MatchString(t) {
-			return t
-		}
-	}
-	return ""
-}
-
-// CommitSHAFromDevTag extracts the {sha} from a dev tag (everything after the
-// last "-dev-"). Returns "" if tag is not a dev tag.
-func CommitSHAFromDevTag(tag string) string {
-	if !devTagRe.MatchString(tag) {
-		return ""
-	}
-	_, sha, _ := cut(tag, "-dev-")
-	return sha
-}
-
 func ResolveRCSource(input string, tags []string, dryRun bool) (RcTag, DevTag, error) {
 	kind, parse := RC, ParseRcTag
 	if dryRun && (IsRolling(input, RCDryRun) || IsRcDryRunTag(input)) {
