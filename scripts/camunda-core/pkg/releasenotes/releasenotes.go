@@ -27,6 +27,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"unicode"
 
 	"gopkg.in/yaml.v3"
 )
@@ -65,7 +66,7 @@ func AppStripLastSegment(appVersion string) string {
 	return stripLastDotSegRe.ReplaceAllString(appVersion, "")
 }
 
-const helmV3Version = "3.22.0"
+const helmV3Version = "3.22.1"
 
 // HelmCLIVersion returns the camunda.io/helmCLIVersion annotation value for a
 // chart whose Camunda minor is appVersion ("8.8", "8.10", ...), given the
@@ -135,6 +136,19 @@ var kacMap = map[string]string{
 // trailingParen strips a trailing " (...)" PR-link suffix (greedy from the first " (").
 var trailingParen = regexp.MustCompile(` \(.+\)$`)
 
+var reviewTagRe = regexp.MustCompile(` \[ready\]((?:\s+\(#[0-9]+\))?(?:\*\*)?)\s*$`)
+
+// CleanReviewTags removes the exact trailing review tag from release-note bullets.
+func CleanReviewTags(releaseNotesMD string) string {
+	lines := strings.Split(releaseNotesMD, "\n")
+	for i, line := range lines {
+		if strings.HasPrefix(line, "- ") {
+			lines[i] = reviewTagRe.ReplaceAllString(line, "$1")
+		}
+	}
+	return strings.Join(lines, "\n")
+}
+
 // ArtifactHubChanges builds the artifacthub.io/changes annotation block from a
 // git-cliff RELEASE-NOTES.md. orderedGroups is the cliff commit-parser group
 // order (e.g. Features, Refactor, Fixes, Documentation, Revert); only the
@@ -190,6 +204,8 @@ func sectionBullets(md, group string) []string {
 
 // cleanDescription drops double quotes, then strips a trailing " (...)" suffix.
 func cleanDescription(msg string) string {
+	msg = strings.TrimRightFunc(msg, unicode.IsSpace)
 	msg = strings.ReplaceAll(msg, `"`, "")
-	return trailingParen.ReplaceAllString(msg, "")
+	msg = trailingParen.ReplaceAllString(msg, "")
+	return reviewTagRe.ReplaceAllString(msg, "$1")
 }

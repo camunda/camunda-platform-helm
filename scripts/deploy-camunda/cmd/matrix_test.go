@@ -58,25 +58,48 @@ func TestRootScenarioRegistryResolution(t *testing.T) {
 	require.True(t, called)
 }
 
-// Pins inc-5975: --extra-values must exist on `matrix run` so that
-// flags.Deployment.ExtraValues — a layer the image resolver ranks —
-// gets populated. StringArray (not StringSlice) so paths aren't comma-split.
-func TestMatrixRunExtraValuesFlag(t *testing.T) {
-	flag := newMatrixRunCommand().Flags().Lookup("extra-values")
-	if flag == nil {
-		t.Fatal("--extra-values flag missing")
-	}
-	if got := flag.Value.Type(); got != "stringArray" {
-		t.Fatalf("flag type = %q, want stringArray", got)
-	}
-	for _, v := range []string{"/tmp/a.yaml", "/tmp/b.yaml"} {
-		if err := flag.Value.Set(v); err != nil {
-			t.Fatalf("set %s: %v", v, err)
-		}
-	}
-	if got := flag.Value.String(); !strings.Contains(got, "/tmp/a.yaml") || !strings.Contains(got, "/tmp/b.yaml") {
-		t.Errorf("aggregated value %q missing entries", got)
-	}
+func TestMatrixRunOptionsAndConfigPrecedence(t *testing.T) {
+	previousConfig, previousLogger := configFile, logging.Logger
+	t.Cleanup(func() { configFile, logging.Logger = previousConfig, previousLogger })
+	directory := t.TempDir()
+	configFile = filepath.Join(directory, "config.yaml")
+	require.NoError(t, os.WriteFile(configFile, []byte("matrix:\n  helmTimeout: 99\n  testE2E: true\n  scenarioFilter: configured\n  keycloakHost: configured\n"), 0644))
+
+	var run matrixRunFlags
+	command := run.command()
+	require.NoError(t, command.ParseFlags([]string{
+		"--repo-root", directory, "--env-file", os.DevNull, "--platform=eks", "--log-level=error",
+		"--timeout=17", "--test-e2e=false", "--scenario-filter=", "--keycloak-host=",
+		"--delete-namespace", "--wait-ingress-ready", "--ingress-ready-timeout=23",
+		"--extra-values=first,comma.yaml", "--extra-values=last.yaml",
+		"--image-override=orchestration=example/camunda:test", "--allow-digest-shadow",
+		"--extra-helm-set=a=b,c=d", "--extra-helm-arg=--atomic",
+		"--kube-context-gke=gke-context", "--env-file-8.9=version.env", "--use-vault-backed-secrets-eks",
+	}))
+	require.Equal(t, "stringArray", command.Flags().Lookup("extra-values").Value.Type())
+	require.NoError(t, run.configure(command))
+	require.Equal(t, 17, run.HelmTimeout)
+	require.False(t, run.TestE2E)
+	require.Empty(t, run.filter.ScenarioFilter)
+	require.Empty(t, run.KeycloakHost)
+	require.Equal(t, "eks", run.Platform)
+	require.Equal(t, "matrix", run.NamespacePrefix)
+	require.Equal(t, 1, run.MaxParallel)
+	require.True(t, run.DeleteNamespaceFirst)
+	require.True(t, run.WaitIngressReady)
+	require.Equal(t, 23, run.IngressReadyTimeoutMinutes)
+	require.Equal(t, []string{"first,comma.yaml", "last.yaml"}, run.ExtraValues)
+	require.Equal(t, []string{"orchestration=example/camunda:test"}, run.ImageOverrides)
+	require.True(t, run.AllowDigestShadow)
+	require.Equal(t, []string{"a=b", "c=d"}, run.ExtraHelmSets)
+	require.Equal(t, []string{"--atomic"}, run.ExtraHelmArgs)
+	require.Equal(t, "gke-context", run.Infra.KubeContexts["gke"])
+	require.Equal(t, "version.env", run.Infra.EnvFiles["8.9"])
+	require.True(t, run.Infra.VaultBackedSecrets["eks"])
+	base := run.RunOptions
+	perRelease := synthesizeReleaseOpts(base, "gke", "release-ns")
+	perRelease.Platform, perRelease.NamespaceOverride = base.Platform, base.NamespaceOverride
+	require.Equal(t, base, perRelease)
 }
 
 func TestMatrixCLIInfraKeepsEmptyFlags(t *testing.T) {

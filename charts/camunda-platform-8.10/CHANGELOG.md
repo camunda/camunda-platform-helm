@@ -1,5 +1,28 @@
 # Changelog
 
+## [15.2.0](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.10-15.1.1...camunda-platform-8.10-15.2.0) (2026-10-20)
+
+
+### Features
+
+* create the Camunda 8.11 Helm chart line as 16.0.0-alpha0 ([#7546](https://github.com/camunda/camunda-platform-helm/issues/7546)) ([3e6a6a5](https://github.com/camunda/camunda-platform-helm/commit/3e6a6a5fc9fd20c795e3ef439a8704a3072b2321))
+
+
+### Bug Fixes
+
+* **8.10:** keep Gateway API redirects on HTTPS for bare Web Modeler, Orchestration and Optimize paths ([#7563](https://github.com/camunda/camunda-platform-helm/issues/7563)) ([98f03d3](https://github.com/camunda/camunda-platform-helm/commit/98f03d30eaaaf9caee50988e2089565423b65457))
+* align 8.10 and 8.11 deprecation removal targets and policy docs with the Camunda 8 non-public API policy ([#7545](https://github.com/camunda/camunda-platform-helm/issues/7545)) ([e45e611](https://github.com/camunda/camunda-platform-helm/commit/e45e61195082b15e189a04d9184a29ba5376abc5))
+* deprecate global.image tag and repository in the 8.10 chart [ready] ([#7533](https://github.com/camunda/camunda-platform-helm/issues/7533)) ([cc7ab60](https://github.com/camunda/camunda-platform-helm/commit/cc7ab60e851c920540e22d38d6a74d0cefc01782))
+* honor env replication factor override in dual-region warning ([#7556](https://github.com/camunda/camunda-platform-helm/issues/7556)) ([2235e7a](https://github.com/camunda/camunda-platform-helm/commit/2235e7a46cec5ddd13d23a8d8d8e1f68773ca845))
+* render the Identity and Optimize ServiceMonitors only when their component is deployed ([#7555](https://github.com/camunda/camunda-platform-helm/issues/7555)) ([dd60ab1](https://github.com/camunda/camunda-platform-helm/commit/dd60ab1650db0bd378883f4f3f92a7474ca7f490))
+* warn when 8.10 and 8.11 Management Identity uses Keycloak without a Keycloak URL ([#7525](https://github.com/camunda/camunda-platform-helm/issues/7525)) ([c8f01b5](https://github.com/camunda/camunda-platform-helm/commit/c8f01b5e4358246c6d350d7496666bdff62bc5bb))
+* warn when global.noSecondaryStorage conflicts with orchestration secondary storage type ([#7512](https://github.com/camunda/camunda-platform-helm/issues/7512)) ([8de458a](https://github.com/camunda/camunda-platform-helm/commit/8de458a8fe69fe7560aac5a60fbb26c7864a77e1))
+
+
+### Dependencies
+
+* update patch-updates (patch) ([#7561](https://github.com/camunda/camunda-platform-helm/issues/7561)) ([7708f81](https://github.com/camunda/camunda-platform-helm/commit/7708f81a1ec92e2e442b3c000a6219b48252baa3))
+
 ## [15.1.1](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.10-15.1.0...camunda-platform-8.10-15.1.1) (2026-10-14)
 
 
@@ -13,12 +36,12 @@
 
 ### Features
 
-* warn on unknown values keys in the 8.10 chart [ready] ([#7493](https://github.com/camunda/camunda-platform-helm/issues/7493)) ([32c6c9e](https://github.com/camunda/camunda-platform-helm/commit/32c6c9ea1c1d491623be9ddc3b0c64b1dfee89fa))
+* warn on unknown values keys in the 8.10 chart ([#7493](https://github.com/camunda/camunda-platform-helm/issues/7493)) ([32c6c9e](https://github.com/camunda/camunda-platform-helm/commit/32c6c9ea1c1d491623be9ddc3b0c64b1dfee89fa))
 
 
 ### Bug Fixes
 
-* declare template-read keys in the 8.10 values schema [ready] ([#7492](https://github.com/camunda/camunda-platform-helm/issues/7492)) ([ab90f14](https://github.com/camunda/camunda-platform-helm/commit/ab90f149f1c634aadd5d50b9edaae14538693938))
+* validate Web Modeler image tags, the Identity realm id, and the Connectors audience override ([#7492](https://github.com/camunda/camunda-platform-helm/issues/7492)) ([ab90f14](https://github.com/camunda/camunda-platform-helm/commit/ab90f149f1c634aadd5d50b9edaae14538693938))
 * render the Hub username claim under camunda.identity ([#7500](https://github.com/camunda/camunda-platform-helm/issues/7500)) ([a1d8bfa](https://github.com/camunda/camunda-platform-helm/commit/a1d8bfa7d11c386c5643e4c9cb12389d1797bd7a))
 * warn when orchestration OIDC endpoints are not absolute URLs ([#7501](https://github.com/camunda/camunda-platform-helm/issues/7501)) ([1d28c06](https://github.com/camunda/camunda-platform-helm/commit/1d28c0676134aa414bef41d57c4323c311adced6))
 * warn when the dual-region replication factor is not 4 ([#7506](https://github.com/camunda/camunda-platform-helm/issues/7506)) ([58ac756](https://github.com/camunda/camunda-platform-helm/commit/58ac756f862d66946e1ba104350e668eaf0ff2f5))
@@ -26,7 +49,7 @@
 
 ### Documentation
 
-* mark defaultRoles.&lt;role&gt;.mappingRules as deprecated in 8.10 values reference [ready] ([#7446](https://github.com/camunda/camunda-platform-helm/issues/7446)) ([7d7cce2](https://github.com/camunda/camunda-platform-helm/commit/7d7cce2d00a73dce6c59a2314bbbe456010d94ad))
+* mark defaultRoles.&lt;role&gt;.mappingRules as deprecated in 8.10 values reference ([#7446](https://github.com/camunda/camunda-platform-helm/issues/7446)) ([7d7cce2](https://github.com/camunda/camunda-platform-helm/commit/7d7cce2d00a73dce6c59a2314bbbe456010d94ad))
 
 
 ### Dependencies

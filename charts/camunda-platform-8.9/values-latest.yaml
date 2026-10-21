@@ -12,25 +12,25 @@ console:
   # https://hub.docker.com/r/camunda/console/tags
   image:
     repository: camunda/console
-    tag: 8.9.126
+    tag: 8.9.127
 
 connectors:
   # https://hub.docker.com/r/camunda/connectors-bundle/tags
   image:
     repository: camunda/connectors-bundle
-    tag: 8.9.14
+    tag: 8.9.16
 
 optimize:
   # https://hub.docker.com/r/camunda/optimize/tags
   image:
     repository: camunda/optimize
-    tag: 8.9.23
+    tag: 8.9.25
 
 webModeler:
   # https://hub.docker.com/r/camunda/web-modeler-restapi
   image:
     # renovate: datasource=docker depName=camunda/web-modeler-restapi
-    tag: 8.9.10
+    tag: 8.9.11
 
 #
 # Orchestration Cluster
@@ -40,7 +40,7 @@ orchestration:
   # https://hub.docker.com/r/camunda/camunda/tags
   image:
     repository: camunda/camunda
-    tag: 8.9.23
+    tag: 8.9.25
 
 #
 # Identity
@@ -56,7 +56,7 @@ identityKeycloak:
   image:
     registry: registry.camunda.cloud
     repository: keycloak-ee/keycloak
-    tag: 26.7.2
+    tag: 26.7.5
     pullSecrets:
       - name: index-docker-io
       - name: registry-camunda-cloud

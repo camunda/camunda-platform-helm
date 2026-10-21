@@ -157,7 +157,11 @@ func releaseNotesMain(ctx context.Context, chartDir string) error {
 	if err != nil {
 		return err
 	}
-	block, _ := releasenotes.ArtifactHubChanges(string(notesMD), releasenotes.CliffGroups(string(cliffTOML)))
+	cleanNotes := releasenotes.CleanReviewTags(string(notesMD))
+	if err := os.WriteFile(releaseNotesPath, []byte(cleanNotes), 0o644); err != nil {
+		return err
+	}
+	block, _ := releasenotes.ArtifactHubChanges(cleanNotes, releasenotes.CliffGroups(string(cliffTOML)))
 
 	// Seed an empty literal block (yq can't create one directly), then merge.
 	if err := executil.RunCommand(ctx, "yq",

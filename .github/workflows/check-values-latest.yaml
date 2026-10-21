@@ -19,6 +19,11 @@ name: Check values-latest.yaml
         default: ''
         type: string
 
+concurrency:
+  group: >-
+    ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
   pull-requests: write
@@ -45,30 +50,70 @@ jobs:
           sudo apt-get install -y jq
 
       - name: Run validation script
+        id: validation
+        continue-on-error: true
         run: |
           if [[ -n "${{ inputs.chart-version }}" ]]; then
             bash scripts/check-values-latest.sh \
               "${{ inputs.chart-version }}"
           else
             bash scripts/check-values-latest.sh
-          fi
-        id: validation
+          fi || {
+            echo "::warning title=values-latest.yaml outdated::Some image versions in values-latest.yaml files are not up-to-date. See the validation step logs."
+            exit 1
+          }
 
-      - name: Comment on PR (if validation failed)
-        if: failure() && github.event_name == 'pull_request'
+      - name: Sync PR warning comment and label
+        if: >-
+          github.event_name == 'pull_request' &&
+          github.event.pull_request.head.repo.full_name == github.repository
         # yamllint disable-line rule:line-length
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9
+        env:
+          VALIDATION_OUTCOME: ${{ steps.validation.outcome }}
         with:
           script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: '⚠️ **values-latest.yaml validation failed**\n\n' +
+            const marker = '<!-- check-values-latest -->'
+            const label = 'deps/stale'
+            const { owner, repo } = context.repo
+            const issue_number = context.issue.number
+            const outdated = process.env.VALIDATION_OUTCOME === 'failure'
+
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner, repo, issue_number, per_page: 100
+            })
+            const existing = comments.filter(
+              c => c.user?.login === 'github-actions[bot]' &&
+                c.body?.includes(marker)
+            )
+
+            if (outdated) {
+              const body = marker + '\n' +
+                '⚠️ **values-latest.yaml is outdated**\n\n' +
                 'Some image versions in `values-latest.yaml` files are ' +
                 'not up-to-date with the latest releases. Please review ' +
-                'the workflow logs for details.'
-            })
+                'the workflow logs for details.\n\n' +
+                '🔎 [Open PRs labeled `deps/charts`](https://github.com/camunda/camunda-platform-helm/pulls?q=is%3Apr+state%3Aopen+label%3Adeps%2Fcharts)'
+              require('fs').appendFileSync(process.env.GITHUB_STEP_SUMMARY, body + '\n')
+              if (existing.length > 0) {
+                await github.rest.issues.updateComment({ owner, repo, comment_id: existing[0].id, body })
+                for (const duplicate of existing.slice(1)) {
+                  await github.rest.issues.deleteComment({ owner, repo, comment_id: duplicate.id })
+                }
+              } else {
+                await github.rest.issues.createComment({ owner, repo, issue_number, body })
+              }
+              await github.rest.issues.addLabels({ owner, repo, issue_number, labels: [label] })
+            } else {
+              for (const comment of existing) {
+                await github.rest.issues.deleteComment({ owner, repo, comment_id: comment.id })
+              }
+              try {
+                await github.rest.issues.removeLabel({ owner, repo, issue_number, name: label })
+              } catch (e) {
+                if (e.status !== 404) throw e
+              }
+            }
 
       # - name: 🚨 Notify the team via Slack 🚨
       #   if: failure() && !(contains(github.event.*.labels.*.name, 'skip-slack-notify'))
