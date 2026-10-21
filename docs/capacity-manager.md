@@ -41,21 +41,21 @@ capacityManager:
           "scaleDownStabilization": "5m", "cooldown": "2m",
           "scaleUpSignals": [
             {"name": "backpressure", "operator": ">=", "threshold": 0.05,
-             "query": "max(sum by (partition) (rate(zeebe_dropped_request_count_total{$SELECTOR}[2m])) / clamp_min(sum by (partition) (rate(zeebe_received_request_count_total{$SELECTOR}[2m])), 1))"},
+             "query": "max(sum by (partition) (rate(zeebe_dropped_request_count_total{$(SELECTOR)}[2m])) / clamp_min(sum by (partition) (rate(zeebe_received_request_count_total{$(SELECTOR)}[2m])), 1))"},
             {"name": "broker-cpu", "operator": ">=", "threshold": 0.75,
-             "query": "max(avg_over_time(process_cpu_usage{$SELECTOR}[2m]))"}
+             "query": "max(avg_over_time(process_cpu_usage{$(SELECTOR)}[2m]))"}
           ],
           "scaleDownSignals": [
             {"name": "no-backpressure", "operator": "<=", "threshold": 0.001,
-             "query": "max(sum by (partition) (rate(zeebe_dropped_request_count_total{$SELECTOR}[2m])) / clamp_min(sum by (partition) (rate(zeebe_received_request_count_total{$SELECTOR}[2m])), 1))"},
+             "query": "max(sum by (partition) (rate(zeebe_dropped_request_count_total{$(SELECTOR)}[2m])) / clamp_min(sum by (partition) (rate(zeebe_received_request_count_total{$(SELECTOR)}[2m])), 1))"},
             {"name": "fits-on-fewer-brokers", "operator": "<=", "threshold": 0.5,
-             "query": "sum(avg_over_time(process_cpu_usage{$SELECTOR}[5m])) / ($BROKERS - 1)"}
+             "query": "sum(avg_over_time(process_cpu_usage{$(SELECTOR)}[5m])) / ($(BROKERS) - 1)"}
           ],
           "vetoSignals": [
             {"name": "exporter-backlog", "operator": ">=", "threshold": 100000,
-             "query": "max(max by (partition) (zeebe_log_appender_last_committed_position{$SELECTOR}) - min by (partition) (max by (partition, exporter) (zeebe_exporter_last_exported_position{$SELECTOR}))) or vector(0)"},
+             "query": "max(max by (partition) (zeebe_log_appender_last_committed_position{$(SELECTOR)}) - min by (partition) (max by (partition, exporter) (zeebe_exporter_last_exported_position{$(SELECTOR)}))) or vector(0)"},
             {"name": "partition-dead", "operator": "<=", "threshold": -1,
-             "query": "min(min_over_time(zeebe_health{$SELECTOR}[2m]))"}
+             "query": "min(min_over_time(zeebe_health{$(SELECTOR)}[2m]))"}
           ]
         }
 ```
@@ -66,7 +66,7 @@ and missing samples make the manager hold instead of scaling. The veto deliberat
 partitions that are only *unhealthy*, which Zeebe reports under CPU saturation; see
 `scripts/capacity-manager/README.md` for the measurements.
 
-`$SELECTOR` expands to a matcher for the orchestration broker pods. It assumes Prometheus labels
+`$(SELECTOR)` (also accepted as `$SELECTOR`; prefer the parenthesised form, which envsubst-style tooling leaves untouched) expands to a matcher for the orchestration broker pods. It assumes Prometheus labels
 broker series with the pod namespace and name, as ServiceMonitor and Kubernetes pod discovery do;
 if your labels are named differently, set `capacityManager.prometheusLabels.namespace` and
 `.pod` rather than rewriting the queries. A query that matches nothing makes the manager hold with
