@@ -29,21 +29,21 @@ capacityManager:
           "cooldown": "2m",
           "scaleUpSignals": [
             {"name": "backpressure", "operator": ">=", "threshold": 0.05,
-             "query": "max(sum by (partition) (rate(zeebe_dropped_request_count_total{namespace=\"$NAMESPACE\",pod=~\"$STATEFULSET-[0-9]+\"}[1m])) / clamp_min(sum by (partition) (rate(zeebe_received_request_count_total{namespace=\"$NAMESPACE\",pod=~\"$STATEFULSET-[0-9]+\"}[1m])), 1))"},
+             "query": "max(sum by (partition) (rate(zeebe_dropped_request_count_total{$SELECTOR}[1m])) / clamp_min(sum by (partition) (rate(zeebe_received_request_count_total{$SELECTOR}[1m])), 1))"},
             {"name": "broker-cpu", "operator": ">=", "threshold": 0.75,
-             "query": "max(avg_over_time(process_cpu_usage{namespace=\"$NAMESPACE\",pod=~\"$STATEFULSET-[0-9]+\"}[1m]))"}
+             "query": "max(avg_over_time(process_cpu_usage{$SELECTOR}[1m]))"}
           ],
           "scaleDownSignals": [
             {"name": "no-backpressure", "operator": "<=", "threshold": 0.001,
-             "query": "max(sum by (partition) (rate(zeebe_dropped_request_count_total{namespace=\"$NAMESPACE\",pod=~\"$STATEFULSET-[0-9]+\"}[1m])) / clamp_min(sum by (partition) (rate(zeebe_received_request_count_total{namespace=\"$NAMESPACE\",pod=~\"$STATEFULSET-[0-9]+\"}[1m])), 1))"},
+             "query": "max(sum by (partition) (rate(zeebe_dropped_request_count_total{$SELECTOR}[1m])) / clamp_min(sum by (partition) (rate(zeebe_received_request_count_total{$SELECTOR}[1m])), 1))"},
             {"name": "fits-on-fewer-brokers", "operator": "<=", "threshold": 0.5,
-             "query": "sum(avg_over_time(process_cpu_usage{namespace=\"$NAMESPACE\",pod=~\"$STATEFULSET-[0-9]+\"}[2m])) / ($BROKERS - 1)"}
+             "query": "sum(avg_over_time(process_cpu_usage{$SELECTOR}[2m])) / ($BROKERS - 1)"}
           ],
           "vetoSignals": [
             {"name": "exporter-backlog", "operator": ">=", "threshold": 1000000,
-             "query": "max(max by (partition) (zeebe_log_appender_last_committed_position{namespace=\"$NAMESPACE\",pod=~\"$STATEFULSET-[0-9]+\"}) - min by (partition) (max by (partition, exporter) (zeebe_exporter_last_exported_position{namespace=\"$NAMESPACE\",pod=~\"$STATEFULSET-[0-9]+\"}))) or vector(0)"},
+             "query": "max(max by (partition) (zeebe_log_appender_last_committed_position{$SELECTOR}) - min by (partition) (max by (partition, exporter) (zeebe_exporter_last_exported_position{$SELECTOR}))) or vector(0)"},
             {"name": "partition-unhealthy", "operator": "<=", "threshold": 0,
-             "query": "min(zeebe_health{namespace=\"$NAMESPACE\",pod=~\"$STATEFULSET-[0-9]+\"})"}
+             "query": "min(zeebe_health{$SELECTOR})"}
           ]
         }
 
