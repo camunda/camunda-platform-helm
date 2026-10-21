@@ -15,57 +15,105 @@
 package main
 
 import (
-	"encoding/json"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
-	"time"
 )
 
+type releaseSourceFixture struct {
+	root, bin, log, a, b, c string
+}
+
+func sourceTestWrite(t *testing.T, path string, data []byte, mode os.FileMode) {
+	t.Helper()
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, data, mode); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func sourceTestCommand(t *testing.T, name string, args ...string) string {
+	t.Helper()
+	data, err := exec.Command(name, args...).CombinedOutput()
+	if err != nil {
+		t.Fatalf("%s %v: %v\n%s", name, args, err, data)
+	}
+	return strings.TrimSpace(string(data))
+}
+
+func newReleaseSourceFixture(t *testing.T) *releaseSourceFixture {
+	t.Helper()
+	repo, err := filepath.Abs("../..")
+	if err != nil {
+		t.Fatal(err)
+	}
+	f := &releaseSourceFixture{root: t.TempDir(), bin: t.TempDir(), log: filepath.Join(t.TempDir(), "calls")}
+	for _, path := range []string{".tool-versions", ".github/config/cliff.toml", "scripts/set-prs-version-label.sh"} {
+		data, err := os.ReadFile(filepath.Join(repo, path))
+		if err != nil {
+			t.Fatal(err)
+		}
+		sourceTestWrite(t, filepath.Join(f.root, path), data, 0o644)
+	}
+	t.Chdir(f.root)
+	sourceTestCommand(t, "git", "init", "-b", "main", "--quiet")
+	sourceTestCommand(t, "git", "config", "user.name", "Release tests")
+	sourceTestCommand(t, "git", "config", "user.email", "release-tests@example.invalid")
+	sourceTestCommand(t, "git", "config", "commit.gpgsign", "false")
+	sourceTestCommand(t, "git", "config", "tag.gpgsign", "false")
+	sourceTestCommand(t, "git", "config", "core.hooksPath", t.TempDir())
+	chart := "charts/camunda-platform-8.9/"
+	sourceTestWrite(t, chart+"Chart.yaml", []byte("name: camunda-platform\nversion: 14.11.0\nappVersion: 8.9.x\n"), 0o644)
+	var commits []string
+	for _, message := range []string{"chore: initial chart", "fix: included in RC (#101)", "fix: merged after RC (#102)"} {
+		sourceTestWrite(t, chart+"templates/change.yaml", []byte(message+"\n"), 0o644)
+		sourceTestCommand(t, "git", "add", ".")
+		sourceTestCommand(t, "git", "commit", "--quiet", "-m", message)
+		commits = append(commits, sourceTestCommand(t, "git", "rev-parse", "HEAD"))
+	}
+	f.a, f.b, f.c = commits[0], commits[1], commits[2]
+	sourceTestCommand(t, "git", "tag", "camunda-platform-8.9-14.11.0", f.b)
+	t.Setenv("PATH", f.bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+	t.Setenv("SOURCE_CALLS", f.log)
+	return f
+}
+
 func TestReleaseHistory(t *testing.T) {
-	for _, tc := range []struct {
-		name, before, app, version, wantTag, wantRef string
-		future                                       bool
-	}{
-		{"latest audited", "", "8.9", "14.11.1", "camunda-platform-8.9-14.11.2", "0b34a34d2a8ebf671de995c72d90781d03a3fff2", false},
-		{"unpublished", "14.11.3", "8.9", "14.11.1", "camunda-platform-8.9-14.11.2", "0b34a34d2a8ebf671de995c72d90781d03a3fff2", false},
-		{"historical replay", "14.11.1", "8.9", "14.11.0", "camunda-platform-8.9-14.11.0", "9ad9c5302c85bc8d4690bc9c959f47f735d4c864", false},
-		{"bootstrap", "", "8.11", "16.0.0-alpha1", "camunda-platform-8.11-16.0.0-alpha0", "refs/tags/camunda-platform-8.11-16.0.0-alpha0", false},
-		{"new release uses Git", "", "8.9", "14.11.3", "camunda-platform-8.9-14.11.3", "refs/tags/camunda-platform-8.9-14.11.3", true},
+	f := newReleaseSourceFixture(t)
+	for _, tag := range []string{
+		"camunda-platform-8.9-14.11.1", "camunda-platform-8.9-14.11.2",
+		"camunda-platform-8.10-15.0.0-alpha4", "camunda-platform-8.10-15.0.0-alpha5",
+		"camunda-platform-8.11-16.0.0-alpha0",
+	} {
+		sourceTestCommand(t, "git", "tag", tag, f.c)
+	}
+	for _, tc := range []struct{ name, app, version, want string }{
+		{"audited predecessor", "8.9", "14.11.2", "5713eb88aaaa65df4ee2e3bfa75ef505bc36a024"},
+		{"published version", "8.9", "14.11.1", "9ad9c5302c85bc8d4690bc9c959f47f735d4c864"},
+		{"correct tag", "8.9", "14.11.3", "refs/tags/camunda-platform-8.9-14.11.2"},
+		{"stable after prerelease", "8.10", "15.0.0", "d8dfa78d08efd336f79741d4b043e823333101ba"},
+		{"bootstrap", "8.11", "16.0.0-alpha1", "refs/tags/camunda-platform-8.11-16.0.0-alpha0"},
+		{"no predecessor", "8.12", "17.0.0-alpha1", ""},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			t.Setenv("HARBOR_API", "http://127.0.0.1:1")
-			t.Setenv("HARBOR_REGISTRY_USER", "")
-			t.Setenv("HARBOR_REGISTRY_PASSWORD", "")
-			dir := t.TempDir()
-			chart, releasesFile := filepath.Join(dir, "Chart.yaml"), filepath.Join(dir, "releases.json")
-			if err := os.WriteFile(chart, []byte("name: camunda-platform\nversion: "+tc.version+"\nappVersion: "+tc.app+".x\n"), 0o644); err != nil {
-				t.Fatal(err)
+			chart := filepath.Join(t.TempDir(), "Chart.yaml")
+			sourceTestWrite(t, chart, []byte("name: camunda-platform\nversion: "+tc.version+"\nappVersion: "+tc.app+".x\n"), 0o644)
+			_, ref, err := captureToolOutput(t, runReleaseHistory, []string{"--chart-yaml", chart})
+			if tc.want == "" {
+				if err == nil {
+					t.Fatalf("expected no predecessor, got %q", ref)
+				}
+				return
 			}
-			var releases []publishedRelease
-			for i, version := range []string{"14.11.0", "14.11.1", "14.11.2"} {
-				releases = append(releases, publishedRelease{Tag: "camunda-platform-8.9-" + version, PublishedAt: time.Date(2026, 10, i+1, 12, 0, 0, 0, time.UTC)})
-			}
-			if tc.future {
-				releases = append(releases, publishedRelease{Tag: "camunda-platform-8.9-14.11.3", PublishedAt: time.Date(2026, 10, 4, 12, 0, 0, 0, time.UTC)})
-			}
-			data, err := json.Marshal([][]publishedRelease{releases})
 			if err != nil {
 				t.Fatal(err)
 			}
-			if err := os.WriteFile(releasesFile, data, 0o644); err != nil {
-				t.Fatal(err)
-			}
-			args := []string{"--chart-yaml", chart, "--releases-file", releasesFile}
-			if tc.before != "" {
-				args = append(args, "--before-version", tc.before)
-			}
-			out, ref, err := captureToolOutput(t, runReleaseHistory, args)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if ref != tc.wantRef || out["previous_release_tag"] != tc.wantTag {
-				t.Fatalf("predecessor = %v %q, want %s %s", out, ref, tc.wantTag, tc.wantRef)
+			if ref != tc.want {
+				t.Fatalf("previous = %q, want %q", ref, tc.want)
 			}
 		})
 	}
