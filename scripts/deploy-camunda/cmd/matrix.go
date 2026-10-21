@@ -273,69 +273,19 @@ This command does not require cluster access.`,
 
 // newMatrixRunCommand creates the "matrix run" subcommand.
 func newMatrixRunCommand() *cobra.Command {
-	var (
-		versions                 []string
-		includeDisabled          bool
-		scenarioFilter           string
-		shortnameFilter          string
-		flowFilter               string
-		platform                 string
-		repoRoot                 string
-		dryRun                   bool
-		coverage                 bool
-		testE2E                  bool
-		testAll                  bool
-		stopOnFailure            bool
-		namespacePrefix          string
-		cleanup                  bool
-		deleteNamespace          bool
-		kubeContext              string
-		kubeContextGKE           string
-		kubeContextEKS           string
-		ingressBaseDomain        string
-		ingressBaseDomainGKE     string
-		ingressBaseDomainEKS     string
-		maxParallel              int
-		envFile                  string
-		envFile86                string
-		envFile87                string
-		envFile88                string
-		envFile89                string
-		logLevel                 string
-		skipDependencyUpdate     bool
-		useVaultBackedSecrets    bool
-		useVaultBackedSecretsGKE bool
-		useVaultBackedSecretsEKS bool
-		keycloakHost             string
-		keycloakProtocol         string
-		upgradeFromVersion       string
-		helmTimeout              int
-		dockerUsername           string
-		dockerPassword           string
-		ensureDockerRegistry     bool
-		dockerHubUsername        string
-		dockerHubPassword        string
-		ensureDockerHub          bool
-		useLatest                bool
-		useQA                    bool
-		forceImageOverrides      bool
-		yes                      bool
-		logDir                   string
-		extraHelmArgs            []string
-		extraHelmSets            []string
-		extraValues              []string
-		imageOverrides           []string
-		allowDigestShadow        bool
-		namespaceOverride        string
-		namespacePrepared        bool
-		shortnameExact           bool
-		tier                     int
-		chartRef                 string
-		chartRefVersion          string
-		waitIngressReady         bool
-		ingressReadyTimeout      int
-	)
+	return (&matrixRunFlags{}).command()
+}
 
+type matrixRunFlags struct {
+	matrix.RunOptions
+	filter            matrix.FilterOptions
+	versions          []string
+	includeDisabled   bool
+	namespacePrepared bool
+	yes               bool
+}
+
+func (r *matrixRunFlags) command() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "run",
 		Short: "Run the CI test matrix against a live cluster",
@@ -392,489 +342,72 @@ Under the hood this invokes deploy.Execute() for each matrix entry.`,
   deploy-camunda config init --from-example getting-started
   deploy-camunda matrix run --versions 8.10 --shortname-filter keyco`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			return validateChartRefFlags(chartRef, chartRefVersion)
+			return validateChartRefFlags(r.ChartRef, r.ChartRefVersion)
 		},
-		RunE: func(cmd *cobra.Command, args []string) error {
-			// Create a signal-aware context so that Ctrl+C (SIGINT) and
-			// SIGTERM cancel the context, which propagates through
-			// matrix.Run → deploy.Execute → executeScript, cleanly
-			// terminating the entire subprocess tree.
-			ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
-			defer stop()
-
-			// Track which CLI flags were explicitly set so config merging
-			// does not overwrite them.
-			changedFlags := make(map[string]bool)
-			cmd.Flags().Visit(func(f *pflag.Flag) {
-				changedFlags[f.Name] = true
-			})
-
-			rc, err := config.LoadMatrixConfig(configFile)
-			if err != nil {
-				return err
-			}
-			cliInfra := matrixCLIInfra(cmd.Flags())
-			infra := rc.ResolveInfra(true, "", "", cliInfra)
-			platform, repoRoot, envFile, ingressBaseDomain = infra.Platform, infra.RepoRoot, infra.EnvFile, infra.IngressBaseDomain
-			namespacePrefix, logLevel = config.FirstNonEmpty(infra.NamespacePrefix, namespacePrefix), config.FirstNonEmpty(infra.LogLevel, logLevel)
-			dockerUsername, dockerPassword = infra.DockerUsername, infra.DockerPassword
-			dockerHubUsername, dockerHubPassword = infra.DockerHubUsername, infra.DockerHubPassword
-			for target, value := range map[*bool]*bool{&skipDependencyUpdate: infra.SkipDependencyUpdate, &deleteNamespace: infra.DeleteNamespace, &ensureDockerRegistry: infra.EnsureDockerRegistry, &ensureDockerHub: infra.EnsureDockerHub} {
-				if value != nil {
-					*target = *value
-				}
-			}
-			m := rc.Matrix
-			config.MergeStringSliceField(&versions, m.Versions, nil)
-			config.MergeBoolField(&includeDisabled, m.IncludeDisabled, nil, changedFlags, "include-disabled")
-			config.MergeStringField(&scenarioFilter, m.ScenarioFilter, "", changedFlags, "scenario-filter")
-			config.MergeStringField(&shortnameFilter, m.ShortnameFilter, "", changedFlags, "shortname-filter")
-			config.MergeStringField(&flowFilter, m.FlowFilter, "", changedFlags, "flow-filter")
-			config.MergeIntField(&maxParallel, m.MaxParallel, nil, changedFlags, "max-parallel")
-			config.MergeBoolField(&stopOnFailure, m.StopOnFailure, nil, changedFlags, "stop-on-failure")
-			config.MergeBoolField(&cleanup, m.Cleanup, nil, changedFlags, "cleanup")
-			config.MergeBoolField(&dryRun, m.DryRun, nil, changedFlags, "dry-run")
-			config.MergeBoolField(&coverage, m.Coverage, nil, changedFlags, "coverage")
-			config.MergeIntField(&helmTimeout, m.HelmTimeout, nil, changedFlags, "timeout")
-			config.MergeBoolField(&testE2E, m.TestE2E, nil, changedFlags, "test-e2e")
-			config.MergeBoolField(&testAll, m.TestAll, nil, changedFlags, "test-all")
-			config.MergeStringField(&keycloakHost, m.KeycloakHost, rc.Keycloak.Host, changedFlags, "keycloak-host")
-			config.MergeStringField(&keycloakProtocol, m.KeycloakProtocol, rc.Keycloak.Protocol, changedFlags, "keycloak-protocol")
-			config.MergeStringField(&upgradeFromVersion, m.UpgradeFromVersion, "", changedFlags, "upgrade-from-version")
-
-			// Setup logging (after config merge so log-level from config takes effect)
-			if err := logging.Setup(logging.Options{
-				LevelString:  logLevel,
-				ColorEnabled: logging.IsTerminal(os.Stdout.Fd()),
-			}); err != nil {
-				return err
-			}
-			warnDeprecatedInfra(rc)
-
-			// Load .env file — use flag/config value if set, otherwise default to .env.
-			envFileToLoad := envFile
-			if envFileToLoad == "" {
-				envFileToLoad = ".env"
-			}
-			logging.Logger.Debug().
-				Str("envFile", envFileToLoad).
-				Msg("Loading environment file")
-			if err := env.Load(envFileToLoad); err != nil {
-				logging.Logger.Warn().Err(err).Str("envFile", envFileToLoad).Msg("Failed to load environment file")
-			}
-
-			if repoRoot == "" {
-				detected, err := config.DetectRepoRoot()
-				if err != nil {
-					return err
-				}
-				repoRoot = detected
-			}
-			if repoRoot == "" {
-				return fmt.Errorf("--repo-root is required (or set repoRoot in config, or run from within the repo)")
-			}
-			if err := validateNamespaceOverride(namespaceOverride, namespacePrepared, dryRun || coverage, os.Getenv("GITHUB_ACTIONS")); err != nil {
-				return err
-			}
-
-			// Validate ingress base domains early so the user gets immediate feedback.
-			if ingressBaseDomain != "" {
-				if !config.IsValidIngressBaseDomain(ingressBaseDomain) {
-					return fmt.Errorf("--ingress-base-domain must be one of: %s", strings.Join(config.ValidIngressBaseDomains, ", "))
-				}
-			}
-			if ingressBaseDomainGKE != "" {
-				if !config.IsValidIngressBaseDomain(ingressBaseDomainGKE) {
-					return fmt.Errorf("--ingress-base-domain-gke must be one of: %s", strings.Join(config.ValidIngressBaseDomains, ", "))
-				}
-			}
-			if ingressBaseDomainEKS != "" {
-				if !config.IsValidIngressBaseDomain(ingressBaseDomainEKS) {
-					return fmt.Errorf("--ingress-base-domain-eks must be one of: %s", strings.Join(config.ValidIngressBaseDomains, ", "))
-				}
-			}
-
-			if err := validateTierFlag(tier); err != nil {
-				return err
-			}
-
-			entries, err := matrix.Generate(repoRoot, matrix.GenerateOptions{
-				Versions:        versions,
-				IncludeDisabled: includeDisabled,
-				Platform:        platform,
-			})
-			if err != nil {
-				return err
-			}
-
-			filterOptions := matrix.FilterOptions{
-				ScenarioFilter:  scenarioFilter,
-				ShortnameFilter: shortnameFilter,
-				ShortnameExact:  shortnameExact,
-				FlowFilter:      flowFilter,
-				Platform:        platform,
-				Tier:            tier,
-			}
-			entries = matrix.Filter(entries, filterOptions)
-			if len(entries) == 0 && !includeDisabled {
-				withDisabled, err := matrix.Generate(repoRoot, matrix.GenerateOptions{
-					Versions:        versions,
-					IncludeDisabled: true,
-					Platform:        platform,
-				})
-				if err != nil {
-					return err
-				}
-				if matches := matrix.Filter(withDisabled, filterOptions); len(matches) > 0 {
-					return fmt.Errorf("no enabled matrix entries matched the filters (versions=%v); matching scenarios are disabled; re-run with --include-disabled to include them", versions)
-				}
-			}
-
-			// Entries whose scenario declares a topology (multi-namespace
-			// deployment) fan out to N releases and are driven directly via
-			// runTopologyEntry rather than matrix.Run's one-namespace-
-			// per-entry model. Split them out up front; everything else
-			// continues through the existing single-namespace path untouched.
-			var topologyEntries []matrix.Entry
-			var singleEntries []matrix.Entry
-			for _, e := range entries {
-				if e.Topology != nil {
-					topologyEntries = append(topologyEntries, e)
-				} else {
-					singleEntries = append(singleEntries, e)
-				}
-			}
-			entries = singleEntries
-			dockerFlags := config.DockerFlags{DockerUsername: dockerUsername, DockerPassword: dockerPassword, EnsureDockerRegistry: ensureDockerRegistry || len(topologyEntries) > 0, DockerHubUsername: dockerHubUsername, DockerHubPassword: dockerHubPassword, EnsureDockerHub: ensureDockerHub}
-			allEntries := append(append([]matrix.Entry{}, entries...), topologyEntries...)
-			envFiles := make(map[string]string)
-			for _, e := range allEntries {
-				envFiles[e.Version] = rc.ResolveInfra(true, "", e.Version, cliInfra).EnvFile
-			}
-			if err := resolveRegistryCredentialsFromEnvFiles(&dockerFlags, allEntries, envFiles); err != nil {
-				return err
-			}
-			dockerUsername, dockerPassword, dockerHubUsername, dockerHubPassword = dockerFlags.DockerUsername, dockerFlags.DockerPassword, dockerFlags.DockerHubUsername, dockerFlags.DockerHubPassword
-
-			if len(topologyEntries) > 0 {
-				if dryRun || coverage {
-					label := "dry-run"
-					if !dryRun && coverage {
-						label = "coverage"
-					}
-					fmt.Fprintf(os.Stdout, "\n=== Topology entries (%s — listing only, no deploy) ===\n", label)
-					for _, e := range topologyEntries {
-						fmt.Fprintf(os.Stdout, "%s/%s (%s): %d releases\n", e.Version, e.Scenario, e.Shortname, len(e.Topology.Releases))
-					}
-				} else {
-					// baseTopologyRunOpts mirrors EVERY field the normal
-					// (single-namespace) path's matrix.RunOptions carries
-					// (see the matrix.Run(...) construction below) — every
-					// per-release RunOptions is a copy of this with only
-					// Platform/NamespaceOverride overridden (see
-					// synthesizeReleaseOpts). Building it from the same flag
-					// variables here, rather than hand-picking a subset,
-					// is what prevents fields silently dropping for
-					// topology deploys (this fixed the 3rd, 4th and 5th such
-					// bug: IngressBaseDomains, HelmTimeout,
-					// DeleteNamespaceFirst, and WaitIngressReady /
-					// IngressReadyTimeoutMinutes).
-					//
-					// Only LogDir and the On* display callbacks may legitimately
-					// differ from the matrix.Run(...) literal below: LogDir is
-					// re-derived there (timestamped subdirectory) and the
-					// callbacks drive a status table that topology runs do not
-					// render. Any other divergence is this bug again.
-					baseTopologyRunOpts := matrix.RunOptions{
-						DryRun:                     dryRun,
-						Coverage:                   coverage,
-						StopOnFailure:              stopOnFailure,
-						Cleanup:                    cleanup,
-						DeleteNamespaceFirst:       deleteNamespace,
-						Config:                     rc,
-						Infra:                      cliInfra,
-						NamespacePrefix:            namespacePrefix,
-						Platform:                   platform,
-						MaxParallel:                maxParallel,
-						TestE2E:                    testE2E,
-						TestAll:                    testAll,
-						RepoRoot:                   repoRoot,
-						LogLevel:                   logLevel,
-						SkipDependencyUpdate:       skipDependencyUpdate,
-						KeycloakHost:               keycloakHost,
-						KeycloakProtocol:           keycloakProtocol,
-						UpgradeFromVersion:         upgradeFromVersion,
-						HelmTimeout:                helmTimeout,
-						DockerUsername:             dockerUsername,
-						DockerPassword:             dockerPassword,
-						EnsureDockerRegistry:       ensureDockerRegistry || len(topologyEntries) > 0,
-						DockerHubUsername:          dockerHubUsername,
-						DockerHubPassword:          dockerHubPassword,
-						EnsureDockerHub:            ensureDockerHub,
-						UseLatest:                  useLatest,
-						UseQA:                      useQA,
-						ForceImageOverrides:        forceImageOverrides,
-						ExtraHelmArgs:              extraHelmArgs,
-						ExtraHelmSets:              extraHelmSets,
-						ExtraValues:                extraValues,
-						ImageOverrides:             imageOverrides,
-						AllowDigestShadow:          allowDigestShadow,
-						NamespaceOverride:          namespaceOverride,
-						ChartRef:                   chartRef,
-						ChartRefVersion:            chartRefVersion,
-						WaitIngressReady:           waitIngressReady,
-						IngressReadyTimeoutMinutes: ingressReadyTimeout,
-						LogDir:                     logDir,
-					}
-
-					for _, e := range topologyEntries {
-						if err := runTopologyEntry(ctx, e, baseTopologyRunOpts); err != nil {
-							return fmt.Errorf("topology entry %s/%s failed: %w", e.Version, e.Scenario, err)
-						}
-					}
-				}
-			}
-
-			if len(entries) == 0 {
-				// Per-scenario CI workflows (signalled by --namespace-override or
-				// any explicit filter) always expect exactly one entry. A silent
-				// no-op here would let Playwright run against an empty namespace.
-				if namespaceOverride != "" || shortnameFilter != "" || scenarioFilter != "" || flowFilter != "" {
-					if len(topologyEntries) > 0 {
-						// The topology entries above already ran (or were
-						// listed for dry-run); nothing else matched, which is
-						// expected when the filter targets a topology scenario.
-						return nil
-					}
-					return fmt.Errorf("no matrix entries matched the filters (versions=%v, scenario-filter=%q, shortname-filter=%q, flow-filter=%q, platform=%q); check ci-test-config.yaml has an entry for this scenario+flow combination",
-						versions, scenarioFilter, shortnameFilter, flowFilter, platform)
-				}
-				fmt.Fprintln(os.Stdout, "No matrix entries matched the filters.")
-				return nil
-
-			}
-
-			// An external --chart-ref artifact corresponds to a single Camunda
-			// version, so it must not be applied across a multi-version matrix.
-			if err := validateChartRefVersionSpan(chartRef, entries); err != nil {
-				return err
-			}
-
-			// Block e2e runs with many entries — Playwright spawns a browser per test
-			// which can exhaust machine resources fast.
-			const e2eWarnThreshold = 5
-			if (testE2E || testAll) && len(entries) > e2eWarnThreshold && !yes {
-				logging.Logger.Warn().
-					Int("entries", len(entries)).
-					Int("threshold", e2eWarnThreshold).
-					Msg("Running e2e tests on many entries — Playwright spawns a browser per test which can exhaust machine resources. Consider using --scenario-filter or --shortname-filter to reduce the set.")
-				fmt.Fprintf(os.Stderr, "\nProceed with e2e tests on %d entries? [y/N] ", len(entries))
-				reader := bufio.NewReader(os.Stdin)
-				answer, _ := reader.ReadString('\n')
-				answer = strings.TrimSpace(strings.ToLower(answer))
-				if answer != "y" && answer != "yes" {
-					return fmt.Errorf("aborted: e2e run with %d entries not confirmed (use --yes to skip this prompt)", len(entries))
-				}
-			}
-
-			// Show what will be run (only for non-dry-run/non-coverage; those modes print their own detailed output)
-			if !dryRun && !coverage {
-				output, _ := matrix.Print(entries, "table")
-				fmt.Fprintln(os.Stdout, output)
-			}
-
-			// Set up status display and log redirection.
-			// Auto-generates a timestamped log dir when stdout is a TTY and
-			// --log-dir is not explicitly set, so each run gets its own logs.
-			var statusDisplay *matrix.StatusDisplay
-			var logFile io.Closer
-			stdoutIsTerminal := logging.IsTerminal(os.Stdout.Fd())
-			// When --log-dir is explicitly set, append a timestamp subdirectory
-			// so successive runs don't clobber each other's logs.
-			if logDir != "" {
-				logDir = filepath.Join(logDir, time.Now().Format("20060102-150405"))
-			}
-			if logDir == "" && stdoutIsTerminal && !dryRun && !coverage {
-				logDir = filepath.Join(os.TempDir(), "matrix-logs", time.Now().Format("20060102-150405"))
-			}
-			if logDir != "" && !dryRun && !coverage {
-				if err := os.MkdirAll(logDir, 0o755); err != nil {
-					return fmt.Errorf("failed to create log directory %q: %w", logDir, err)
-				}
-
-				// Create/update a "latest" symlink so `tail -f /tmp/matrix-logs/latest/matrix-run.log` always works.
-				latestLink := filepath.Join(filepath.Dir(logDir), "latest")
-				_ = os.Remove(latestLink)
-				_ = os.Symlink(logDir, latestLink)
-
-				f, err := os.Create(filepath.Join(logDir, "matrix-run.log"))
-				if err != nil {
-					return fmt.Errorf("failed to create log file: %w", err)
-				}
-				logFile = f
-
-				// Redirect zerolog to the log file so stdout is clean for the status table.
-				if err := logging.Setup(logging.Options{
-					LevelString:  logLevel,
-					ColorEnabled: false,
-					Writer:       f,
-				}); err != nil {
-					return err
-				}
-
-				statusDisplay = matrix.NewStatusDisplay(os.Stdout, entries, stdoutIsTerminal, logDir)
-			}
-
-			runStart := time.Now()
-			results, err := matrix.Run(ctx, entries, matrix.RunOptions{
-				DryRun:                     dryRun,
-				Coverage:                   coverage,
-				StopOnFailure:              stopOnFailure,
-				Cleanup:                    cleanup,
-				DeleteNamespaceFirst:       deleteNamespace,
-				Config:                     rc,
-				Infra:                      cliInfra,
-				NamespacePrefix:            namespacePrefix,
-				Platform:                   platform,
-				MaxParallel:                maxParallel,
-				TestE2E:                    testE2E,
-				TestAll:                    testAll,
-				RepoRoot:                   repoRoot,
-				LogLevel:                   logLevel,
-				SkipDependencyUpdate:       skipDependencyUpdate,
-				KeycloakHost:               keycloakHost,
-				KeycloakProtocol:           keycloakProtocol,
-				UpgradeFromVersion:         upgradeFromVersion,
-				HelmTimeout:                helmTimeout,
-				DockerUsername:             dockerUsername,
-				DockerPassword:             dockerPassword,
-				EnsureDockerRegistry:       ensureDockerRegistry,
-				DockerHubUsername:          dockerHubUsername,
-				DockerHubPassword:          dockerHubPassword,
-				EnsureDockerHub:            ensureDockerHub,
-				UseLatest:                  useLatest,
-				UseQA:                      useQA,
-				ForceImageOverrides:        forceImageOverrides,
-				WaitIngressReady:           waitIngressReady,
-				IngressReadyTimeoutMinutes: ingressReadyTimeout,
-				ExtraHelmArgs:              extraHelmArgs,
-				ExtraHelmSets:              extraHelmSets,
-				ExtraValues:                extraValues,
-				ImageOverrides:             imageOverrides,
-				AllowDigestShadow:          allowDigestShadow,
-				NamespaceOverride:          namespaceOverride,
-				ChartRef:                   chartRef,
-				ChartRefVersion:            chartRefVersion,
-				OnEntryStart: func(entry matrix.Entry, namespace string) {
-					if statusDisplay != nil {
-						statusDisplay.OnEntryStart(entry, namespace)
-					}
-				},
-				OnEntryComplete: func(entry matrix.Entry, result matrix.RunResult) {
-					if statusDisplay != nil {
-						statusDisplay.OnEntryComplete(entry, result)
-					}
-				},
-				OnPhaseChange: func(entry matrix.Entry, phase string) {
-					if statusDisplay != nil {
-						statusDisplay.OnPhaseChange(entry, phase)
-					}
-				},
-				LogDir: logDir,
-			})
-
-			// Close the log file if we opened one.
-			if logFile != nil {
-				logFile.Close()
-			}
-
-			// Print summary (skip for dry-run/coverage since they print their own output).
-			if !dryRun && !coverage {
-				// Stop the ticker, restore the cursor, and clear the status table
-				// before printing the final summary.
-				if statusDisplay != nil {
-					statusDisplay.Stop()
-					statusDisplay.Clear()
-					// Restore color output for the summary since logging was redirected to a file.
-					logging.ColorEnabled = stdoutIsTerminal
-				}
-				fmt.Fprintln(os.Stdout, matrix.PrintRunSummary(results, time.Since(runStart), logDir))
-			}
-
-			if err != nil {
-				return err
-			}
-			// Without --stop-on-failure, matrix.Run swallows per-entry errors so the
-			// process can drain remaining entries. Re-surface them here so the CLI
-			// (and any CI job invoking it) exits non-zero when any entry failed.
-			if failed := countFailedResults(results); failed > 0 {
-				return fmt.Errorf("matrix run: %d entr%s failed", failed, pluralEntry(failed))
-			}
-			return nil
-		},
+		RunE: r.run,
 	}
 
 	f := cmd.Flags()
-	f.StringSliceVar(&versions, "versions", nil, "Limit to specific chart versions (comma-separated, e.g., 8.8,8.9)")
-	f.BoolVar(&includeDisabled, "include-disabled", false, "Include disabled scenarios in the output")
-	f.StringVar(&scenarioFilter, "scenario-filter", "", "Filter scenarios by substring match (comma-separated for multiple, e.g. elasticsearch,opensearch)")
-	f.StringVar(&shortnameFilter, "shortname-filter", "", "Filter entries by shortname substring match (comma-separated for multiple, e.g. eske,eshy)")
-	f.BoolVar(&shortnameExact, "shortname-exact", false, "Treat each --shortname-filter value as an exact match instead of a substring (recommended for per-scenario CI use)")
-	f.StringVar(&flowFilter, "flow-filter", "", "Filter entries by exact flow name")
-	f.StringVar(&platform, "platform", "", "Filter entries to those supporting this platform (also sets deploy platform)")
-	f.StringVar(&repoRoot, "repo-root", "", "Repository root path (or set repoRoot in config)")
-	f.BoolVar(&dryRun, "dry-run", false, "Log what would be deployed without actually deploying")
-	f.BoolVar(&coverage, "coverage", false, "Show a layer-breakdown report of what is tested in the matrix (no deployment)")
-	f.BoolVar(&testE2E, "test-e2e", false, "Run e2e tests after each deployment")
-	f.BoolVar(&testAll, "test-all", false, "Run all e2e tests after each deployment")
-	f.BoolVar(&stopOnFailure, "stop-on-failure", false, "Stop the run on the first failure")
-	f.StringVar(&namespacePrefix, "namespace-prefix", "matrix", "Prefix for generated namespaces")
-	f.BoolVar(&cleanup, "cleanup", false, "Delete each entry's namespace after its deployment and tests complete")
-	f.BoolVar(&deleteNamespace, "delete-namespace", false, "Delete the namespace before deploying each entry (clean-slate deployment)")
-	f.StringVar(&kubeContext, "kube-context", "", "Default Kubernetes context for all platforms (overridden by --kube-context-gke/--kube-context-eks)")
-	f.StringVar(&kubeContextGKE, "kube-context-gke", "", "Kubernetes context for GKE entries")
-	f.StringVar(&kubeContextEKS, "kube-context-eks", "", "Kubernetes context for EKS entries")
-	f.StringVar(&ingressBaseDomain, "ingress-base-domain", "", "Fallback base DNS zone used to compute each entry's public URL — joined into CAMUNDA_HOSTNAME as <namespace>.<base>. Set to the DNS zone the target cluster's ingress controller serves, e.g. `ci.distro.ultrawombat.com` (Camunda CI) or `apps.mycompany.example`. Overridden per-platform by --ingress-base-domain-gke/--ingress-base-domain-eks.")
-	f.StringVar(&ingressBaseDomainGKE, "ingress-base-domain-gke", "", "Ingress base domain for GKE entries (e.g., ci.distro.ultrawombat.com)")
-	f.StringVar(&ingressBaseDomainEKS, "ingress-base-domain-eks", "", "Ingress base domain for EKS entries (e.g., distribution.aws.camunda.cloud)")
-	f.IntVar(&maxParallel, "max-parallel", 1, "Maximum number of entries to run concurrently (1 = sequential)")
-	f.StringVar(&envFile, "env-file", "", "Default .env file for all versions (overridden by --env-file-X.Y)")
-	f.StringVar(&envFile86, "env-file-8.6", "", "Path to .env file for 8.6 entries")
-	f.StringVar(&envFile87, "env-file-8.7", "", "Path to .env file for 8.7 entries")
-	f.StringVar(&envFile88, "env-file-8.8", "", "Path to .env file for 8.8 entries")
-	f.StringVar(&envFile89, "env-file-8.9", "", "Path to .env file for 8.9 entries")
-	f.StringVarP(&logLevel, "log-level", "l", "info", "Log level (debug, info, warn, error)")
-	f.BoolVar(&skipDependencyUpdate, "skip-dependency-update", false, "Skip helm dependency update before deploying")
-	f.BoolVar(&useVaultBackedSecrets, "use-vault-backed-secrets", false, "Use vault-backed external secrets for all platforms (overridden by --use-vault-backed-secrets-gke/--use-vault-backed-secrets-eks)")
-	f.BoolVar(&useVaultBackedSecretsGKE, "use-vault-backed-secrets-gke", false, "Use vault-backed external secrets for GKE entries")
-	f.BoolVar(&useVaultBackedSecretsEKS, "use-vault-backed-secrets-eks", false, "Use vault-backed external secrets for EKS entries")
-	f.StringVar(&keycloakHost, "keycloak-host", "", "Keycloak external host")
-	f.StringVar(&keycloakProtocol, "keycloak-protocol", "", "Keycloak protocol (defaults to "+config.DefaultKeycloakProtocol+")")
-	f.StringVar(&upgradeFromVersion, "upgrade-from-version", "", "Override the auto-resolved 'from' chart version for upgrade flows (e.g., 13.5.0)")
-	f.IntVar(&helmTimeout, "timeout", 10, "Timeout in minutes for Helm deployment (applies to all entries)")
-	f.StringVar(&dockerUsername, "docker-username", "", "Harbor registry username (defaults to HARBOR_USERNAME, TEST_DOCKER_USERNAME_CAMUNDA_CLOUD, or NEXUS_USERNAME env var)")
-	f.StringVar(&dockerPassword, "docker-password", "", "Harbor registry password (defaults to HARBOR_PASSWORD, TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD, or NEXUS_PASSWORD env var)")
-	f.BoolVar(&ensureDockerRegistry, "ensure-docker-registry", false, "Ensure Harbor registry pull secret is created in each entry's namespace (always enabled for topology entries, which pull Camunda images from Harbor)")
-	f.StringVar(&dockerHubUsername, "dockerhub-username", "", "Docker Hub registry username (defaults to DOCKERHUB_USERNAME or TEST_DOCKER_USERNAME env var)")
-	f.StringVar(&dockerHubPassword, "dockerhub-password", "", "Docker Hub registry password (defaults to DOCKERHUB_PASSWORD or TEST_DOCKER_PASSWORD env var)")
-	f.BoolVar(&ensureDockerHub, "ensure-docker-hub", false, "Ensure Docker Hub registry pull secret is created in each entry's namespace")
-	f.BoolVar(&useLatest, "use-latest", false, "Use values-latest.yaml from each chart root instead of values-digest.yaml")
-	f.BoolVar(&useQA, "use-qa", false, "Force the base-qa layer to be included for all entries, regardless of per-scenario qa config")
-	f.BoolVar(&forceImageOverrides, "force-image-overrides", false, "Bypass OCI immutability guard: apply chart-root image overlays and scenario image-tags on top of --chart-ref.")
-	f.BoolVarP(&yes, "yes", "y", false, "Skip confirmation prompts (e.g., e2e threshold warning)")
-	f.StringVar(&logDir, "log-dir", "", "Write logs to this directory and show a live status table (auto-generated when running in a TTY)")
-	f.StringArrayVar(&extraHelmArgs, "extra-helm-arg", nil, "Extra argument appended to every helm command (repeatable, e.g. --extra-helm-arg=--set-file=global.license.secret.inlineSecret=/tmp/license.txt)")
-	f.StringSliceVar(&extraHelmSets, "extra-helm-set", nil, "Extra helm --set key=value pair applied to every entry (comma-separated or repeatable, e.g. orchestration.upgrade.allowPreReleaseImages=true)")
-	f.StringArrayVar(&extraValues, "extra-values", nil, "Additional Helm values files appended last for every entry (repeatable; not comma-split — use the flag multiple times for multiple files). Ranked by the image resolver; prefer over --extra-helm-arg=--values=. In two-step upgrade flows, applied to Step 2 only.")
-	f.StringArrayVar(&imageOverrides, "image-override", nil, "Pin one component's image above every values file for every entry (repeatable), e.g. orchestration=registry.camunda.cloud/team-camunda/camunda:8.10.0-SNAPSHOT. In two-step upgrade flows, applied to Step 2 only.")
-	f.BoolVar(&allowDigestShadow, "allow-digest-shadow", false, "Keep a pinned digest when a later values file changes only the image registry/repository (e.g. a pull-through mirror)")
-	f.StringVar(&namespaceOverride, "namespace-override", "", "Deploy into one exact namespace that CI or another external process already provisioned. Disables automatic ExternalSecrets; local runs should use --namespace-prefix.")
-	f.BoolVar(&namespacePrepared, "namespace-prepared", false, "Confirm the exact namespace selected by --namespace-override already has required secrets, TLS, and pull secrets.")
-	f.StringVar(&chartRef, "chart-ref", "", "Override chart source with an OCI reference or .tgz path (e.g., oci://registry.camunda.cloud/team-distribution/camunda-platform). Values are still resolved from the local repo via --repo-root.")
-	f.StringVar(&chartRefVersion, "chart-version", "", "Chart version to install from --chart-ref (e.g., 13-rc-latest). Only meaningful when --chart-ref is set.")
-	f.IntVar(&tier, "tier", 0, "Filter entries by tier (1=PR CI, 2=merge-queue only; 0=all)")
-	f.BoolVar(&waitIngressReady, "wait-ingress-ready", false, "After a successful helm install/upgrade, fail the entry unless its ingress host becomes publicly DNS-resolvable and HTTP-reachable within --ingress-ready-timeout")
-	f.IntVar(&ingressReadyTimeout, "ingress-ready-timeout", config.DefaultIngressReadyTimeoutMinutes, "Timeout in minutes for --wait-ingress-ready")
+	f.StringSliceVar(&r.versions, "versions", nil, "Limit to specific chart versions (comma-separated, e.g., 8.8,8.9)")
+	f.BoolVar(&r.includeDisabled, "include-disabled", false, "Include disabled scenarios in the output")
+	f.StringVar(&r.filter.ScenarioFilter, "scenario-filter", "", "Filter scenarios by substring match (comma-separated for multiple, e.g. elasticsearch,opensearch)")
+	f.StringVar(&r.filter.ShortnameFilter, "shortname-filter", "", "Filter entries by shortname substring match (comma-separated for multiple, e.g. eske,eshy)")
+	f.BoolVar(&r.filter.ShortnameExact, "shortname-exact", false, "Treat each --shortname-filter value as an exact match instead of a substring (recommended for per-scenario CI use)")
+	f.StringVar(&r.filter.FlowFilter, "flow-filter", "", "Filter entries by exact flow name")
+	f.StringVar(&r.Platform, "platform", "", "Filter entries to those supporting this platform (also sets deploy platform)")
+	f.StringVar(&r.RepoRoot, "repo-root", "", "Repository root path (or set repoRoot in config)")
+	f.BoolVar(&r.DryRun, "dry-run", false, "Log what would be deployed without actually deploying")
+	f.BoolVar(&r.Coverage, "coverage", false, "Show a layer-breakdown report of what is tested in the matrix (no deployment)")
+	f.BoolVar(&r.TestE2E, "test-e2e", false, "Run e2e tests after each deployment")
+	f.BoolVar(&r.TestAll, "test-all", false, "Run all e2e tests after each deployment")
+	f.BoolVar(&r.StopOnFailure, "stop-on-failure", false, "Stop the run on the first failure")
+	f.StringVar(&r.NamespacePrefix, "namespace-prefix", "matrix", "Prefix for generated namespaces")
+	f.BoolVar(&r.Cleanup, "cleanup", false, "Delete each entry's namespace after its deployment and tests complete")
+	f.BoolVar(&r.DeleteNamespaceFirst, "delete-namespace", false, "Delete the namespace before deploying each entry (clean-slate deployment)")
+	f.String("kube-context", "", "Default Kubernetes context for all platforms (overridden by --kube-context-gke/--kube-context-eks)")
+	f.String("kube-context-gke", "", "Kubernetes context for GKE entries")
+	f.String("kube-context-eks", "", "Kubernetes context for EKS entries")
+	f.String("ingress-base-domain", "", "Fallback base DNS zone used to compute each entry's public URL — joined into CAMUNDA_HOSTNAME as <namespace>.<base>. Set to the DNS zone the target cluster's ingress controller serves, e.g. `ci.distro.ultrawombat.com` (Camunda CI) or `apps.mycompany.example`. Overridden per-platform by --ingress-base-domain-gke/--ingress-base-domain-eks.")
+	f.String("ingress-base-domain-gke", "", "Ingress base domain for GKE entries (e.g., ci.distro.ultrawombat.com)")
+	f.String("ingress-base-domain-eks", "", "Ingress base domain for EKS entries (e.g., distribution.aws.camunda.cloud)")
+	f.IntVar(&r.MaxParallel, "max-parallel", 1, "Maximum number of entries to run concurrently (1 = sequential)")
+	f.String("env-file", "", "Default .env file for all versions (overridden by --env-file-X.Y)")
+	f.String("env-file-8.6", "", "Path to .env file for 8.6 entries")
+	f.String("env-file-8.7", "", "Path to .env file for 8.7 entries")
+	f.String("env-file-8.8", "", "Path to .env file for 8.8 entries")
+	f.String("env-file-8.9", "", "Path to .env file for 8.9 entries")
+	f.StringVarP(&r.LogLevel, "log-level", "l", "info", "Log level (debug, info, warn, error)")
+	f.BoolVar(&r.SkipDependencyUpdate, "skip-dependency-update", false, "Skip helm dependency update before deploying")
+	f.Bool("use-vault-backed-secrets", false, "Use vault-backed external secrets for all platforms (overridden by --use-vault-backed-secrets-gke/--use-vault-backed-secrets-eks)")
+	f.Bool("use-vault-backed-secrets-gke", false, "Use vault-backed external secrets for GKE entries")
+	f.Bool("use-vault-backed-secrets-eks", false, "Use vault-backed external secrets for EKS entries")
+	f.StringVar(&r.KeycloakHost, "keycloak-host", "", "Keycloak external host")
+	f.StringVar(&r.KeycloakProtocol, "keycloak-protocol", "", "Keycloak protocol (defaults to "+config.DefaultKeycloakProtocol+")")
+	f.StringVar(&r.UpgradeFromVersion, "upgrade-from-version", "", "Override the auto-resolved 'from' chart version for upgrade flows (e.g., 13.5.0)")
+	f.IntVar(&r.HelmTimeout, "timeout", 10, "Timeout in minutes for Helm deployment (applies to all entries)")
+	f.StringVar(&r.DockerUsername, "docker-username", "", "Harbor registry username (defaults to HARBOR_USERNAME, TEST_DOCKER_USERNAME_CAMUNDA_CLOUD, or NEXUS_USERNAME env var)")
+	f.StringVar(&r.DockerPassword, "docker-password", "", "Harbor registry password (defaults to HARBOR_PASSWORD, TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD, or NEXUS_PASSWORD env var)")
+	f.BoolVar(&r.EnsureDockerRegistry, "ensure-docker-registry", false, "Ensure Harbor registry pull secret is created in each entry's namespace (always enabled for topology entries, which pull Camunda images from Harbor)")
+	f.StringVar(&r.DockerHubUsername, "dockerhub-username", "", "Docker Hub registry username (defaults to DOCKERHUB_USERNAME or TEST_DOCKER_USERNAME env var)")
+	f.StringVar(&r.DockerHubPassword, "dockerhub-password", "", "Docker Hub registry password (defaults to DOCKERHUB_PASSWORD or TEST_DOCKER_PASSWORD env var)")
+	f.BoolVar(&r.EnsureDockerHub, "ensure-docker-hub", false, "Ensure Docker Hub registry pull secret is created in each entry's namespace")
+	f.BoolVar(&r.UseLatest, "use-latest", false, "Use values-latest.yaml from each chart root instead of values-digest.yaml")
+	f.BoolVar(&r.UseQA, "use-qa", false, "Force the base-qa layer to be included for all entries, regardless of per-scenario qa config")
+	f.BoolVar(&r.ForceImageOverrides, "force-image-overrides", false, "Bypass OCI immutability guard: apply chart-root image overlays and scenario image-tags on top of --chart-ref.")
+	f.BoolVarP(&r.yes, "yes", "y", false, "Skip confirmation prompts (e.g., e2e threshold warning)")
+	f.StringVar(&r.LogDir, "log-dir", "", "Write logs to this directory and show a live status table (auto-generated when running in a TTY)")
+	f.StringArrayVar(&r.ExtraHelmArgs, "extra-helm-arg", nil, "Extra argument appended to every helm command (repeatable, e.g. --extra-helm-arg=--set-file=global.license.secret.inlineSecret=/tmp/license.txt)")
+	f.StringSliceVar(&r.ExtraHelmSets, "extra-helm-set", nil, "Extra helm --set key=value pair applied to every entry (comma-separated or repeatable, e.g. orchestration.upgrade.allowPreReleaseImages=true)")
+	f.StringArrayVar(&r.ExtraValues, "extra-values", nil, "Additional Helm values files appended last for every entry (repeatable; not comma-split — use the flag multiple times for multiple files). Ranked by the image resolver; prefer over --extra-helm-arg=--values=. In two-step upgrade flows, applied to Step 2 only.")
+	f.StringArrayVar(&r.ImageOverrides, "image-override", nil, "Pin one component's image above every values file for every entry (repeatable), e.g. orchestration=registry.camunda.cloud/team-camunda/camunda:8.10.0-SNAPSHOT. In two-step upgrade flows, applied to Step 2 only.")
+	f.BoolVar(&r.AllowDigestShadow, "allow-digest-shadow", false, "Keep a pinned digest when a later values file changes only the image registry/repository (e.g. a pull-through mirror)")
+	f.StringVar(&r.NamespaceOverride, "namespace-override", "", "Deploy into one exact namespace that CI or another external process already provisioned. Disables automatic ExternalSecrets; local runs should use --namespace-prefix.")
+	f.BoolVar(&r.namespacePrepared, "namespace-prepared", false, "Confirm the exact namespace selected by --namespace-override already has required secrets, TLS, and pull secrets.")
+	f.StringVar(&r.ChartRef, "chart-ref", "", "Override chart source with an OCI reference or .tgz path (e.g., oci://registry.camunda.cloud/team-distribution/camunda-platform). Values are still resolved from the local repo via --repo-root.")
+	f.StringVar(&r.ChartRefVersion, "chart-version", "", "Chart version to install from --chart-ref (e.g., 13-rc-latest). Only meaningful when --chart-ref is set.")
+	f.IntVar(&r.filter.Tier, "tier", 0, "Filter entries by tier (1=PR CI, 2=merge-queue only; 0=all)")
+	f.BoolVar(&r.WaitIngressReady, "wait-ingress-ready", false, "After a successful helm install/upgrade, fail the entry unless its ingress host becomes publicly DNS-resolvable and HTTP-reachable within --ingress-ready-timeout")
+	f.IntVar(&r.IngressReadyTimeoutMinutes, "ingress-ready-timeout", config.DefaultIngressReadyTimeoutMinutes, "Timeout in minutes for --wait-ingress-ready")
 
 	registerMatrixShortnameCompletion(cmd)
 	registerMatrixVersionsCompletion(cmd)
@@ -892,6 +425,265 @@ Under the hood this invokes deploy.Execute() for each matrix entry.`,
 	annotateFlagGroups(cmd, matrixRunFlagGroups())
 
 	return cmd
+}
+
+func (r *matrixRunFlags) configure(cmd *cobra.Command) error {
+	changedFlags := make(map[string]bool)
+	cmd.Flags().Visit(func(f *pflag.Flag) { changedFlags[f.Name] = true })
+	rc, err := config.LoadMatrixConfig(configFile)
+	if err != nil {
+		return err
+	}
+	r.Config, r.Infra = rc, matrixCLIInfra(cmd.Flags())
+	infra := rc.ResolveInfra(true, "", "", r.Infra)
+	r.Platform, r.RepoRoot = infra.Platform, infra.RepoRoot
+	r.NamespacePrefix, r.LogLevel = config.FirstNonEmpty(infra.NamespacePrefix, r.NamespacePrefix), config.FirstNonEmpty(infra.LogLevel, r.LogLevel)
+	r.DockerUsername, r.DockerPassword = infra.DockerUsername, infra.DockerPassword
+	r.DockerHubUsername, r.DockerHubPassword = infra.DockerHubUsername, infra.DockerHubPassword
+	for target, value := range map[*bool]*bool{&r.SkipDependencyUpdate: infra.SkipDependencyUpdate, &r.DeleteNamespaceFirst: infra.DeleteNamespace, &r.EnsureDockerRegistry: infra.EnsureDockerRegistry, &r.EnsureDockerHub: infra.EnsureDockerHub} {
+		if value != nil {
+			*target = *value
+		}
+	}
+	m := rc.Matrix
+	config.MergeStringSliceField(&r.versions, m.Versions, nil)
+	config.MergeBoolField(&r.includeDisabled, m.IncludeDisabled, nil, changedFlags, "include-disabled")
+	config.MergeStringField(&r.filter.ScenarioFilter, m.ScenarioFilter, "", changedFlags, "scenario-filter")
+	config.MergeStringField(&r.filter.ShortnameFilter, m.ShortnameFilter, "", changedFlags, "shortname-filter")
+	config.MergeStringField(&r.filter.FlowFilter, m.FlowFilter, "", changedFlags, "flow-filter")
+	config.MergeIntField(&r.MaxParallel, m.MaxParallel, nil, changedFlags, "max-parallel")
+	config.MergeBoolField(&r.StopOnFailure, m.StopOnFailure, nil, changedFlags, "stop-on-failure")
+	config.MergeBoolField(&r.Cleanup, m.Cleanup, nil, changedFlags, "cleanup")
+	config.MergeBoolField(&r.DryRun, m.DryRun, nil, changedFlags, "dry-run")
+	config.MergeBoolField(&r.Coverage, m.Coverage, nil, changedFlags, "coverage")
+	config.MergeIntField(&r.HelmTimeout, m.HelmTimeout, nil, changedFlags, "timeout")
+	config.MergeBoolField(&r.TestE2E, m.TestE2E, nil, changedFlags, "test-e2e")
+	config.MergeBoolField(&r.TestAll, m.TestAll, nil, changedFlags, "test-all")
+	config.MergeStringField(&r.KeycloakHost, m.KeycloakHost, rc.Keycloak.Host, changedFlags, "keycloak-host")
+	config.MergeStringField(&r.KeycloakProtocol, m.KeycloakProtocol, rc.Keycloak.Protocol, changedFlags, "keycloak-protocol")
+	config.MergeStringField(&r.UpgradeFromVersion, m.UpgradeFromVersion, "", changedFlags, "upgrade-from-version")
+
+	if err := logging.Setup(logging.Options{
+		LevelString: r.LogLevel, ColorEnabled: logging.IsTerminal(os.Stdout.Fd()),
+	}); err != nil {
+		return err
+	}
+	warnDeprecatedInfra(rc)
+	envFile := infra.EnvFile
+	if envFile == "" {
+		envFile = ".env"
+	}
+	logging.Logger.Debug().Str("envFile", envFile).Msg("Loading environment file")
+	if err := env.Load(envFile); err != nil {
+		logging.Logger.Warn().Err(err).Str("envFile", envFile).Msg("Failed to load environment file")
+	}
+	if r.RepoRoot == "" {
+		r.RepoRoot, err = config.DetectRepoRoot()
+		if err != nil {
+			return err
+		}
+	}
+	if r.RepoRoot == "" {
+		return fmt.Errorf("--repo-root is required (or set repoRoot in config, or run from within the repo)")
+	}
+	if err := validateNamespaceOverride(r.NamespaceOverride, r.namespacePrepared, r.DryRun || r.Coverage, os.Getenv("GITHUB_ACTIONS")); err != nil {
+		return err
+	}
+	for _, domain := range []struct{ flag, value string }{
+		{"ingress-base-domain", infra.IngressBaseDomain},
+		{"ingress-base-domain-gke", r.Infra.IngressBaseDomains["gke"]},
+		{"ingress-base-domain-eks", r.Infra.IngressBaseDomains["eks"]},
+	} {
+		if domain.value != "" && !config.IsValidIngressBaseDomain(domain.value) {
+			return fmt.Errorf("--%s must be one of: %s", domain.flag, strings.Join(config.ValidIngressBaseDomains, ", "))
+		}
+	}
+	return validateTierFlag(r.filter.Tier)
+}
+
+func (r *matrixRunFlags) entries() ([]matrix.Entry, error) {
+	opts := matrix.GenerateOptions{Versions: r.versions, IncludeDisabled: r.includeDisabled, Platform: r.Platform}
+	entries, err := matrix.Generate(r.RepoRoot, opts)
+	if err != nil {
+		return nil, err
+	}
+	r.filter.Platform = r.Platform
+	entries = matrix.Filter(entries, r.filter)
+	if len(entries) == 0 && !r.includeDisabled {
+		opts.IncludeDisabled = true
+		withDisabled, err := matrix.Generate(r.RepoRoot, opts)
+		if err != nil {
+			return nil, err
+		}
+		if matches := matrix.Filter(withDisabled, r.filter); len(matches) > 0 {
+			return nil, fmt.Errorf("no enabled matrix entries matched the filters (versions=%v); matching scenarios are disabled; re-run with --include-disabled to include them", r.versions)
+		}
+	}
+	return entries, nil
+}
+
+func (r *matrixRunFlags) resolveCredentials(entries []matrix.Entry, hasTopology bool) error {
+	docker := config.DockerFlags{
+		DockerUsername: r.DockerUsername, DockerPassword: r.DockerPassword, EnsureDockerRegistry: r.EnsureDockerRegistry || hasTopology,
+		DockerHubUsername: r.DockerHubUsername, DockerHubPassword: r.DockerHubPassword, EnsureDockerHub: r.EnsureDockerHub,
+	}
+	envFiles := make(map[string]string)
+	for _, entry := range entries {
+		envFiles[entry.Version] = r.Config.ResolveInfra(true, "", entry.Version, r.Infra).EnvFile
+	}
+	if err := resolveRegistryCredentialsFromEnvFiles(&docker, entries, envFiles); err != nil {
+		return err
+	}
+	r.DockerUsername, r.DockerPassword = docker.DockerUsername, docker.DockerPassword
+	r.DockerHubUsername, r.DockerHubPassword = docker.DockerHubUsername, docker.DockerHubPassword
+	return nil
+}
+
+func (r *matrixRunFlags) run(cmd *cobra.Command, _ []string) error {
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+	if err := r.configure(cmd); err != nil {
+		return err
+	}
+	allEntries, err := r.entries()
+	if err != nil {
+		return err
+	}
+	var entries, topologyEntries []matrix.Entry
+	for _, entry := range allEntries {
+		if entry.Topology != nil {
+			topologyEntries = append(topologyEntries, entry)
+		} else {
+			entries = append(entries, entry)
+		}
+	}
+	allEntries = append(append([]matrix.Entry{}, entries...), topologyEntries...)
+	if err := r.resolveCredentials(allEntries, len(topologyEntries) > 0); err != nil {
+		return err
+	}
+	if err := runMatrixTopologies(ctx, topologyEntries, r.RunOptions); err != nil {
+		return err
+	}
+	if len(entries) == 0 {
+		if r.NamespaceOverride != "" || r.filter.ShortnameFilter != "" || r.filter.ScenarioFilter != "" || r.filter.FlowFilter != "" {
+			if len(topologyEntries) > 0 {
+				return nil
+			}
+			return fmt.Errorf("no matrix entries matched the filters (versions=%v, scenario-filter=%q, shortname-filter=%q, flow-filter=%q, platform=%q); check ci-test-config.yaml has an entry for this scenario+flow combination",
+				r.versions, r.filter.ScenarioFilter, r.filter.ShortnameFilter, r.filter.FlowFilter, r.Platform)
+		}
+		fmt.Fprintln(os.Stdout, "No matrix entries matched the filters.")
+		return nil
+	}
+	if err := validateChartRefVersionSpan(r.ChartRef, entries); err != nil {
+		return err
+	}
+	if err := r.confirmE2E(len(entries)); err != nil {
+		return err
+	}
+	return runMatrixEntries(ctx, entries, r.RunOptions)
+}
+
+func runMatrixTopologies(ctx context.Context, entries []matrix.Entry, opts matrix.RunOptions) error {
+	if len(entries) == 0 {
+		return nil
+	}
+	if opts.DryRun || opts.Coverage {
+		label := "dry-run"
+		if !opts.DryRun && opts.Coverage {
+			label = "coverage"
+		}
+		fmt.Fprintf(os.Stdout, "\n=== Topology entries (%s — listing only, no deploy) ===\n", label)
+		for _, entry := range entries {
+			fmt.Fprintf(os.Stdout, "%s/%s (%s): %d releases\n", entry.Version, entry.Scenario, entry.Shortname, len(entry.Topology.Releases))
+		}
+		return nil
+	}
+	opts.EnsureDockerRegistry = true
+	for _, entry := range entries {
+		if err := runTopologyEntry(ctx, entry, opts); err != nil {
+			return fmt.Errorf("topology entry %s/%s failed: %w", entry.Version, entry.Scenario, err)
+		}
+	}
+	return nil
+}
+
+func (r *matrixRunFlags) confirmE2E(entries int) error {
+	const e2eWarnThreshold = 5
+	if (!r.TestE2E && !r.TestAll) || entries <= e2eWarnThreshold || r.yes {
+		return nil
+	}
+	logging.Logger.Warn().
+		Int("entries", entries).
+		Int("threshold", e2eWarnThreshold).
+		Msg("Running e2e tests on many entries — Playwright spawns a browser per test which can exhaust machine resources. Consider using --scenario-filter or --shortname-filter to reduce the set.")
+	fmt.Fprintf(os.Stderr, "\nProceed with e2e tests on %d entries? [y/N] ", entries)
+	answer, _ := bufio.NewReader(os.Stdin).ReadString('\n')
+	answer = strings.TrimSpace(strings.ToLower(answer))
+	if answer != "y" && answer != "yes" {
+		return fmt.Errorf("aborted: e2e run with %d entries not confirmed (use --yes to skip this prompt)", entries)
+	}
+	return nil
+}
+
+func runMatrixEntries(ctx context.Context, entries []matrix.Entry, opts matrix.RunOptions) error {
+	if !opts.DryRun && !opts.Coverage {
+		output, _ := matrix.Print(entries, "table")
+		fmt.Fprintln(os.Stdout, output)
+	}
+	var statusDisplay *matrix.StatusDisplay
+	var logFile io.Closer
+	stdoutIsTerminal := logging.IsTerminal(os.Stdout.Fd())
+	if opts.LogDir != "" {
+		opts.LogDir = filepath.Join(opts.LogDir, time.Now().Format("20060102-150405"))
+	}
+	if opts.LogDir == "" && stdoutIsTerminal && !opts.DryRun && !opts.Coverage {
+		opts.LogDir = filepath.Join(os.TempDir(), "matrix-logs", time.Now().Format("20060102-150405"))
+	}
+	if opts.LogDir != "" && !opts.DryRun && !opts.Coverage {
+		if err := os.MkdirAll(opts.LogDir, 0o755); err != nil {
+			return fmt.Errorf("failed to create log directory %q: %w", opts.LogDir, err)
+		}
+		latestLink := filepath.Join(filepath.Dir(opts.LogDir), "latest")
+		_ = os.Remove(latestLink)
+		_ = os.Symlink(opts.LogDir, latestLink)
+		f, err := os.Create(filepath.Join(opts.LogDir, "matrix-run.log"))
+		if err != nil {
+			return fmt.Errorf("failed to create log file: %w", err)
+		}
+		logFile = f
+		if err := logging.Setup(logging.Options{
+			LevelString: opts.LogLevel, ColorEnabled: false, Writer: f,
+		}); err != nil {
+			f.Close()
+			return err
+		}
+		statusDisplay = matrix.NewStatusDisplay(os.Stdout, entries, stdoutIsTerminal, opts.LogDir)
+		opts.OnEntryStart = statusDisplay.OnEntryStart
+		opts.OnEntryComplete = statusDisplay.OnEntryComplete
+		opts.OnPhaseChange = statusDisplay.OnPhaseChange
+	}
+
+	runStart := time.Now()
+	results, err := matrix.Run(ctx, entries, opts)
+	if logFile != nil {
+		logFile.Close()
+	}
+	if !opts.DryRun && !opts.Coverage {
+		if statusDisplay != nil {
+			statusDisplay.Stop()
+			statusDisplay.Clear()
+			logging.ColorEnabled = stdoutIsTerminal
+		}
+		fmt.Fprintln(os.Stdout, matrix.PrintRunSummary(results, time.Since(runStart), opts.LogDir))
+	}
+	if err != nil {
+		return err
+	}
+	if failed := countFailedResults(results); failed > 0 {
+		return fmt.Errorf("matrix run: %d entr%s failed", failed, pluralEntry(failed))
+	}
+	return nil
 }
 
 // registerMatrixShortnameCompletion adds tab completion for the --shortname-filter flag.
