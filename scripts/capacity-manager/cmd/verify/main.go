@@ -473,6 +473,9 @@ func kubectl(e env, args ...string) ([]byte, error) {
 	if !slices.Contains(args, "--raw") {
 		args = append([]string{"-n", e.namespace}, args...)
 	}
+	// A saturated broker can stall an API-server proxy call indefinitely;
+	// bound every call so the verifier keeps sampling instead of hanging.
+	args = append([]string{"--request-timeout=30s"}, args...)
 	if context := os.Getenv("KUBE_CONTEXT"); context != "" {
 		args = append([]string{"--context", context}, args...)
 	}
