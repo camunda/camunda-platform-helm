@@ -226,23 +226,36 @@ func prometheusOutage(e env) error {
 	return nil
 }
 
-// exporterVeto stalls exporting by stopping Elasticsearch, removes the load,
-// and requires the exporter-backlog veto to block the scale-down until
-// Elasticsearch is back.
+// exporterVeto makes Elasticsearch refuse writes (it stays up, so brokers
+// keep processing and the exporter falls behind), removes the load, and
+// requires the exporter-backlog veto to hold two brokers until writes are
+// allowed again. Stopping Elasticsearch instead is not a lag test on 8.11:
+// orchestration pods cannot become Ready without their secondary store, so
+// processing stops and the backlog never grows.
 func exporterVeto(e env) error {
-	if _, err := kubectl(e, "scale", "statefulset", e.esStatefulSet, "--replicas=0"); err != nil {
+	block := func(enabled bool) error {
+		value := "null"
+		if enabled {
+			value = "true"
+		}
+		_, err := kubectl(e, "exec", e.esStatefulSet+"-0", "--", "curl", "-fsS", "-XPUT", "localhost:9200/_all/_settings",
+			"-H", "Content-Type: application/json", "-d", `{"index.blocks.write":`+value+`}`)
 		return err
+	}
+	if err := block(true); err != nil {
+		return fmt.Errorf("block Elasticsearch writes: %w", err)
 	}
 	restored := false
 	restore := func() {
 		if !restored {
-			_, _ = kubectl(e, "scale", "statefulset", e.esStatefulSet, "--replicas=1")
-			_, _ = kubectl(e, "rollout", "status", "statefulset", e.esStatefulSet, "--timeout=10m")
+			if err := block(false); err != nil {
+				fmt.Printf("unblock Elasticsearch writes: %v\n", err)
+			}
 			restored = true
 		}
 	}
 	defer restore()
-	if _, err := waitFor(e, 10*time.Minute, func(s capacity.Status, _, _ int) bool {
+	if _, err := waitFor(e, 15*time.Minute, func(s capacity.Status, _, _ int) bool {
 		return strings.Contains(s.Reason, "vetoed by exporter-backlog")
 	}); err != nil {
 		return fmt.Errorf("exporter backlog never vetoed: %w", err)
@@ -455,8 +468,10 @@ func getStatus(e env) (capacity.Status, error) {
 }
 
 func kubectl(e env, args ...string) ([]byte, error) {
+	// Namespace goes before the arguments so it never lands after "--"
+	// (kubectl exec passes everything after "--" to the container).
 	if !slices.Contains(args, "--raw") {
-		args = append(args, "-n", e.namespace)
+		args = append([]string{"-n", e.namespace}, args...)
 	}
 	if context := os.Getenv("KUBE_CONTEXT"); context != "" {
 		args = append([]string{"--context", context}, args...)
