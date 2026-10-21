@@ -189,6 +189,31 @@ func (s *ImageTagTest) TestEmptyCamundaHubSubcomponentTagIsRejectedBySchema() {
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, nil, testCases)
 }
 
+func (s *ImageTagTest) TestEmptyCamundaHubSubcomponentTagFallsBackToGlobalTag() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name:     "TestHubRestapiEmptyTagUsesGlobalTag",
+			Template: restapiTemplate,
+			Values:   hubImageTagValues(map[string]string{"global.image.tag": "fallback-tag", "camundaHub.restapi.image.tag": ""}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				s.requireContainerImage(output, "example/restapi:fallback-tag")
+			},
+		},
+		{
+			Name:     "TestHubWebsocketsEmptyTagUsesGlobalTag",
+			Template: websocketsTemplate,
+			Values:   hubImageTagValues(map[string]string{"global.image.tag": "fallback-tag", "camundaHub.websockets.image.tag": ""}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				s.requireContainerImage(output, "example/websockets:fallback-tag")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, nil, testCases)
+}
+
 func (s *ImageTagTest) TestUnsetCamundaHubSubcomponentTagKeepsSharedTag() {
 	testCases := []testhelpers.TestCase{
 		{

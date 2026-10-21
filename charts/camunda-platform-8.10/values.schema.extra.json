@@ -1848,15 +1848,8 @@
                             "properties": {
                                 "tag": {
                                     "type": ["string", "null"],
-                                    "description": "can be used to override the shared image tag (camundaHub.image.tag, else webModeler.image.tag) for the Camunda Hub REST API image. Omit this key or set it to null to retain the shared image tag. An empty value is valid only when camundaHub.restapi.image.digest is set."
+                                    "description": "can be used to override the shared image tag (camundaHub.image.tag, else webModeler.image.tag) for the Camunda Hub REST API image. Omit this key or set it to null to retain the shared image tag. An empty value is valid only when camundaHub.restapi.image.digest, global.image.tag or global.image.digest is set."
                                 }
-                            },
-                            "if": {
-                                "properties": {"digest": {"type": "string", "minLength": 1}},
-                                "required": ["digest"]
-                            },
-                            "else": {
-                                "properties": {"tag": {"minLength": 1}}
                             }
                         }
                     }
@@ -1875,15 +1868,8 @@
                             "properties": {
                                 "tag": {
                                     "type": ["string", "null"],
-                                    "description": "can be used to override the shared image tag (camundaHub.image.tag, else webModeler.image.tag) for the Camunda Hub WebSockets image. Omit this key or set it to null to retain the shared image tag. An empty value is valid only when camundaHub.websockets.image.digest is set."
+                                    "description": "can be used to override the shared image tag (camundaHub.image.tag, else webModeler.image.tag) for the Camunda Hub WebSockets image. Omit this key or set it to null to retain the shared image tag. An empty value is valid only when camundaHub.websockets.image.digest, global.image.tag or global.image.digest is set."
                                 }
-                            },
-                            "if": {
-                                "properties": {"digest": {"type": "string", "minLength": 1}},
-                                "required": ["digest"]
-                            },
-                            "else": {
-                                "properties": {"tag": {"minLength": 1}}
                             }
                         }
                     }
@@ -2063,5 +2049,35 @@
                 }
             }
         }
-    }
+    },
+    "allOf": [
+        {
+            "if": {
+                "properties": {
+                    "global": {
+                        "properties": {
+                            "image": {
+                                "anyOf": [
+                                    {"properties": {"tag": {"type": "string", "minLength": 1}}, "required": ["tag"]},
+                                    {"properties": {"digest": {"type": "string", "minLength": 1}}, "required": ["digest"]}
+                                ]
+                            }
+                        },
+                        "required": ["image"]
+                    }
+                },
+                "required": ["global"]
+            },
+            "else": {
+                "properties": {
+                    "camundaHub": {
+                        "properties": {
+                            "restapi": {"properties": {"image": {"if": {"properties": {"digest": {"type": "string", "minLength": 1}}, "required": ["digest"]}, "else": {"properties": {"tag": {"minLength": 1}}}}}},
+                            "websockets": {"properties": {"image": {"if": {"properties": {"digest": {"type": "string", "minLength": 1}}, "required": ["digest"]}, "else": {"properties": {"tag": {"minLength": 1}}}}}}
+                        }
+                    }
+                }
+            }
+        }
+    ]
 }
