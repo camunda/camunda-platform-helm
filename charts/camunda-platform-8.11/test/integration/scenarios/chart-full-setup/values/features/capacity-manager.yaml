@@ -9,8 +9,8 @@ capacityManager:
     registry: registry.camunda.cloud
     repository: team-distribution/capacity-manager
     # Pre-merge PR build of this branch's capacity manager and load generator.
-    tag: pr-6707-sha-72fecb1df741186a3db17d38c7eef52544732de2
-    digest: sha256:13b8672efac91f037d8564251201617e7dd14c88f43bcac6db2e2c6972f4f241
+    tag: pr-6707-sha-5cf2ac2f83140c033b3ee867390c6aa529858b4c
+    digest: sha256:bbe8301802054d79901170ffa76cbe14adce130fa155b0006e170a3a5b527187
     pullSecrets:
       - name: registry-camunda-cloud
   reconcileInterval: 5s
@@ -210,7 +210,7 @@ global:
               - name: registry-camunda-cloud
             containers:
               - name: load-generator
-                image: registry.camunda.cloud/team-distribution/capacity-manager@sha256:13b8672efac91f037d8564251201617e7dd14c88f43bcac6db2e2c6972f4f241 # pr-6707-sha-72fecb1df741186a3db17d38c7eef52544732de2
+                image: registry.camunda.cloud/team-distribution/capacity-manager@sha256:bbe8301802054d79901170ffa76cbe14adce130fa155b0006e170a3a5b527187 # pr-6707-sha-5cf2ac2f83140c033b3ee867390c6aa529858b4c
                 imagePullPolicy: Always
                 command: ["/load-generator"]
                 args:
