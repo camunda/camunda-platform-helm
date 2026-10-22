@@ -2610,7 +2610,7 @@ orchestration:
         aws:
           ## @param orchestration.data.secondaryStorage.rdbms.aws.enabled enable AWS IAM Database Authentication for RDBMS connection
           enabled: false
-        ## @param orchestration.data.secondaryStorage.rdbms.url the JDBC connection URL for the RDBMS database. When empty, an embedded H2 file database on the orchestration data volume is used (`jdbc:h2:file:/usr/local/camunda/data/h2db`), for development only with a single broker and a single partition
+        ## @param orchestration.data.secondaryStorage.rdbms.url the JDBC connection URL for the RDBMS database
         url: ""
         ## @param orchestration.data.secondaryStorage.rdbms.username the JDBMC username for authenticating with the RDBMS database
         username: ""

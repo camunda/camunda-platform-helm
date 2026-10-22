@@ -233,7 +233,7 @@ camunda:
       rdbms:
         {{- with .Values.orchestration.data.secondaryStorage.rdbms }}
         aws-enabled: {{ .aws.enabled }}
-        url: {{ .url | default "jdbc:h2:file:/usr/local/camunda/data/h2db" | quote }}
+        url: {{ .url | quote }}
         username: {{ .username | quote }}
         password: "${VALUES_ORCHESTRATION_DATA_SECONDARYSTORAGE_RDBMS_PASSWORD:}"
         {{- end }}

@@ -160,13 +160,16 @@ func (s *ConfigmapLegacyTemplateTest) TestDifferentValuesInputs() {
 			},
 		},
 		{
-			Name:   "TestRDBMSDefaultsToEmbeddedH2WhenURLIsEmpty",
+			Name:   "TestRDBMSDoesNotFallBackToEmbeddedH2ForMultiBrokerDefaults",
 			Values: map[string]string{"orchestration.exporters.rdbms.enabled": "true"},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
 				var configmap corev1.ConfigMap
 				helm.UnmarshalK8SYaml(t, output, &configmap)
-				require.Contains(t, configmap.Data["application.yaml"], `url: "jdbc:h2:file:/usr/local/camunda/data/h2db"`)
+				applicationYaml := configmap.Data["application.yaml"]
+				require.Contains(t, applicationYaml, `size: "3"`)
+				require.Contains(t, applicationYaml, `url: ""`)
+				require.NotContains(t, applicationYaml, "jdbc:h2")
 			},
 		},
 		{
