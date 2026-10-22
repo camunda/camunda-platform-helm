@@ -1071,7 +1071,7 @@ func TestTopologyDeployOrder_ChainedDependency(t *testing.T) {
 	for p, idx := range order {
 		pos[idx] = p
 	}
-	if !(pos[1] < pos[0] && pos[0] < pos[2]) {
+	if pos[1] >= pos[0] || pos[0] >= pos[2] {
 		t.Fatalf("order %v does not satisfy hub(1) < orchestration(0) < aux(2)", order)
 	}
 }

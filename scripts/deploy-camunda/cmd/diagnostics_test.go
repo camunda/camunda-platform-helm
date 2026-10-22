@@ -296,7 +296,7 @@ func TestSearchClusterPreludeSupportsSecureOpenSearch(t *testing.T) {
 	// security plugin, so the probe must try https first and send admin
 	// credentials from the container environment.
 	var schemeLine string
-	for _, line := range strings.Split(searchClusterPrelude, "\n") {
+	for line := range strings.SplitSeq(searchClusterPrelude, "\n") {
 		if strings.HasPrefix(strings.TrimSpace(line), "for scheme in ") {
 			schemeLine = strings.TrimSpace(line)
 			break
@@ -321,7 +321,7 @@ func TestSearchClusterPreludeSupportsSecureOpenSearch(t *testing.T) {
 		}
 	}
 	// Credentials must never be echoed into CI logs.
-	for _, line := range strings.Split(searchClusterPrelude, "\n") {
+	for line := range strings.SplitSeq(searchClusterPrelude, "\n") {
 		if strings.HasPrefix(strings.TrimSpace(line), "echo") && strings.Contains(line, "PASSWORD") {
 			t.Errorf("prelude echoes a credential: %s", line)
 		}

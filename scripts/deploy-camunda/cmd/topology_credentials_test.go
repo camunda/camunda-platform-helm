@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"maps"
 	"os"
 	"path/filepath"
 	"strings"
@@ -114,7 +115,7 @@ func TestPlanCredentials_KeepsExistingAndFillsMissing(t *testing.T) {
 
 func TestGenerateCredential_LengthAndAlphabet(t *testing.T) {
 	seen := map[string]bool{}
-	for i := 0; i < 20; i++ {
+	for range 20 {
 		v, err := generateCredential()
 		if err != nil {
 			t.Fatal(err)
@@ -162,9 +163,7 @@ func (f *fakeCredentialAPI) api() topologyCredentialStore {
 		update: func(_ context.Context, _, _ string, data map[string]string) error {
 			f.updates++
 			f.lastUpdate = data
-			for k, v := range data {
-				f.store[k] = v
-			}
+			maps.Copy(f.store, data)
 			return nil
 		},
 	}

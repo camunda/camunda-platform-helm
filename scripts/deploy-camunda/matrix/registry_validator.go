@@ -521,7 +521,7 @@ func isSiblingInvoked(name string, siblingContent map[string]string) bool {
 		if sib == name {
 			continue
 		}
-		for _, line := range strings.Split(content, "\n") {
+		for line := range strings.SplitSeq(content, "\n") {
 			if !strings.Contains(line, name) {
 				continue
 			}

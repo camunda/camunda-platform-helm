@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/jwalton/gchalk"
@@ -309,7 +310,7 @@ func filterEntries(entries []Entry, opts FilterOptions) []Entry {
 	// Parse comma-separated scenario filters into individual substrings.
 	var scenarioFilters []string
 	if opts.ScenarioFilter != "" {
-		for _, f := range strings.Split(opts.ScenarioFilter, ",") {
+		for f := range strings.SplitSeq(opts.ScenarioFilter, ",") {
 			if t := strings.TrimSpace(f); t != "" {
 				scenarioFilters = append(scenarioFilters, t)
 			}
@@ -319,7 +320,7 @@ func filterEntries(entries []Entry, opts FilterOptions) []Entry {
 	// Parse comma-separated shortname filters into individual substrings.
 	var shortnameFilters []string
 	if opts.ShortnameFilter != "" {
-		for _, f := range strings.Split(opts.ShortnameFilter, ",") {
+		for f := range strings.SplitSeq(opts.ShortnameFilter, ",") {
 			if t := strings.TrimSpace(f); t != "" {
 				shortnameFilters = append(shortnameFilters, t)
 			}
@@ -337,11 +338,8 @@ func filterEntries(entries []Entry, opts FilterOptions) []Entry {
 		if len(shortnameFilters) > 0 {
 			matched := false
 			if opts.ShortnameExact {
-				for _, sn := range shortnameFilters {
-					if e.Shortname == sn {
-						matched = true
-						break
-					}
+				if slices.Contains(shortnameFilters, e.Shortname) {
+					matched = true
 				}
 			} else {
 				matched = matchesAny(e.Shortname, shortnameFilters)

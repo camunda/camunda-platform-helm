@@ -199,8 +199,7 @@ func verifyDocumentStore(ctx context.Context, doHTTP func(*http.Request) (*http.
 func documentStoreResponse(doHTTP func(*http.Request) (*http.Response, error), request *http.Request) ([]byte, int, error) {
 	response, err := doHTTP(request)
 	if err != nil {
-		var urlError *url.Error
-		if errors.As(err, &urlError) {
+		if urlError, ok := errors.AsType[*url.Error](err); ok {
 			err = urlError.Err
 		}
 		return nil, 0, err

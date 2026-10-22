@@ -17,6 +17,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"scripts/camunda-core/pkg/logging"
@@ -242,9 +243,7 @@ func buildPrepareValuesEnv(pv *prepareValuesFlags) (map[string]string, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to read env file %q: %w", pv.envFile, err)
 		}
-		for k, v := range dotenvMap {
-			envMap[k] = v
-		}
+		maps.Copy(envMap, dotenvMap)
 	}
 
 	return envMap, nil

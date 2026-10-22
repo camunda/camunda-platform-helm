@@ -17,6 +17,7 @@ package cmd
 import (
 	"encoding/base64"
 	"fmt"
+	"maps"
 	"os"
 	"os/exec"
 	"sort"
@@ -134,9 +135,7 @@ func newE2EEnvMergeCommand() *cobra.Command {
 				if err != nil {
 					return fmt.Errorf("optimize namespace %q: %w", optimizeNamespace, err)
 				}
-				for k, v := range optimizeEnvOverrides(optimizeHost, optimizeContextPath) {
-					overrides[k] = v
-				}
+				maps.Copy(overrides, optimizeEnvOverrides(optimizeHost, optimizeContextPath))
 			}
 
 			content, err := os.ReadFile(output)
@@ -239,7 +238,7 @@ func assertOptimizeDeployed(kubeContext, namespace string) error {
 // IS_OPTIMIZE=false for a topology whose Optimize runs outside the
 // orchestration namespace, and that value must have been overridden.
 func assertOptimizeEnabled(merged, namespace string) error {
-	for _, line := range strings.Split(merged, "\n") {
+	for line := range strings.SplitSeq(merged, "\n") {
 		if strings.TrimSpace(line) == "IS_OPTIMIZE=false" {
 			return fmt.Errorf("merged env still sets IS_OPTIMIZE=false while Optimize runs in namespace %q; Optimize specs would be skipped", namespace)
 		}
