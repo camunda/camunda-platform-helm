@@ -48,6 +48,6 @@
     {{- fail (printf "[camunda][error] Unknown values keys (global.strictValues=true): %s" (join ", " $paths)) -}}
   {{- end -}}
   {{- range $paths -}}
-    {{- printf "\n[camunda][warning] UNKNOWN VALUES KEY: %s. Helm ignores this key. Remove or correct it. A future chart version can reject unknown keys." . -}}
+    {{- printf "\n[camunda][warning] UNKNOWN VALUES KEY: %s. Helm ignores this key. Remove or correct it. Starting with chart v17 (Camunda 8.12), unknown keys fail the render by default." . -}}
   {{- end -}}
 {{- end -}}
