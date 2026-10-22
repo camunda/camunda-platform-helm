@@ -103,27 +103,20 @@ func RunCommand(ctx context.Context, name string, args []string, env []string, w
 
 	// Normal mode: log directly
 	baseLogger := logging.Logger
-	if fields := logging.FieldsFromContext(ctx); len(fields) > 0 {
-		b := baseLogger.With()
-		for k, v := range fields {
-			b = b.Str(k, v)
-		}
-		baseLogger = b.Logger()
-	}
 
 	var wg sync.WaitGroup
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
 		streamLines(stdout, func(line string) {
-			prefix := logging.PrefixFromContext(ctx, name)
+			prefix := logging.CommandPrefix(name)
 			baseLogger.Info().Msg(prefix + line)
 		})
 	}()
 	go func() {
 		defer wg.Done()
 		streamLines(stderr, func(line string) {
-			prefix := logging.PrefixFromContext(ctx, name)
+			prefix := logging.CommandPrefix(name)
 			baseLogger.Warn().Msg(prefix + line)
 		})
 	}()
@@ -199,26 +192,19 @@ func RunCommandWithStdin(ctx context.Context, name string, args []string, env []
 
 	// Normal mode: stream output
 	baseLogger := logging.Logger
-	if fields := logging.FieldsFromContext(ctx); len(fields) > 0 {
-		b := baseLogger.With()
-		for k, v := range fields {
-			b = b.Str(k, v)
-		}
-		baseLogger = b.Logger()
-	}
 	var wg sync.WaitGroup
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
 		streamLines(stdout, func(line string) {
-			prefix := logging.PrefixFromContext(ctx, name)
+			prefix := logging.CommandPrefix(name)
 			baseLogger.Info().Msg(prefix + line)
 		})
 	}()
 	go func() {
 		defer wg.Done()
 		streamLines(stderr, func(line string) {
-			prefix := logging.PrefixFromContext(ctx, name)
+			prefix := logging.CommandPrefix(name)
 			baseLogger.Warn().Msg(prefix + line)
 		})
 	}()
@@ -336,27 +322,20 @@ func RunCommandCaptureStderr(ctx context.Context, name string, args []string, en
 	}
 
 	baseLogger := logging.Logger
-	if fields := logging.FieldsFromContext(ctx); len(fields) > 0 {
-		b := baseLogger.With()
-		for k, v := range fields {
-			b = b.Str(k, v)
-		}
-		baseLogger = b.Logger()
-	}
 
 	var wg sync.WaitGroup
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
 		streamLines(stdout, func(line string) {
-			prefix := logging.PrefixFromContext(ctx, name)
+			prefix := logging.CommandPrefix(name)
 			baseLogger.Info().Msg(prefix + line)
 		})
 	}()
 	go func() {
 		defer wg.Done()
 		streamLines(stderrPipe, func(line string) {
-			prefix := logging.PrefixFromContext(ctx, name)
+			prefix := logging.CommandPrefix(name)
 			baseLogger.Warn().Msg(prefix + line)
 			stderrBuf.WriteString(line)
 			stderrBuf.WriteByte('\n')
@@ -365,13 +344,4 @@ func RunCommandCaptureStderr(ctx context.Context, name string, args []string, en
 
 	wg.Wait()
 	return stderrBuf.String(), cmd.Wait()
-}
-
-// FieldsNoEmpty splits on whitespace and removes empty entries.
-func FieldsNoEmpty(s string) []string {
-	ff := strings.Fields(s)
-	if len(ff) == 0 {
-		return nil
-	}
-	return ff
 }
