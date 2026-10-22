@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">Support Helm CLI v3 and v4 for chart 15.x (8.10), require Helm CLI v4 for chart 16.x (8.11), and restrict version-gated Helm built-ins | Camunda Helm Charts</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:image" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7657/img/camunda-logo.svg"><meta data-rh="true" name="twitter:image" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7657/img/camunda-logo.svg"><meta data-rh="true" property="og:url" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7657/adr/require-helm-v4-baseline-for-chart-15x-and-restrict-version-gated-helm-builtins"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Support Helm CLI v3 and v4 for chart 15.x (8.10), require Helm CLI v4 for chart 16.x (8.11), and restrict version-gated Helm built-ins | Camunda Helm Charts"><meta data-rh="true" name="description" content="- Status: accepted"><meta data-rh="true" property="og:description" content="- Status: accepted"><link data-rh="true" rel="icon" href="/camunda-platform-helm/pr-preview/pr-7657/img/camunda-logo.svg"><link data-rh="true" rel="canonical" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7657/adr/require-helm-v4-baseline-for-chart-15x-and-restrict-version-gated-helm-builtins"><link data-rh="true" rel="alternate" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7657/adr/require-helm-v4-baseline-for-chart-15x-and-restrict-version-gated-helm-builtins" hreflang="en"><link data-rh="true" rel="alternate" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7657/adr/require-helm-v4-baseline-for-chart-15x-and-restrict-version-gated-helm-builtins" hreflang="x-default"><link rel="stylesheet" href="/camunda-platform-helm/pr-preview/pr-7657/assets/css/styles.3f6cd398.css">
-<script src="/camunda-platform-helm/pr-preview/pr-7657/assets/js/runtime~main.57ade232.js" defer="defer"></script>
-<script src="/camunda-platform-helm/pr-preview/pr-7657/assets/js/main.8cf6b93b.js" defer="defer"></script>
+<script src="/camunda-platform-helm/pr-preview/pr-7657/assets/js/runtime~main.94d0c7aa.js" defer="defer"></script>
+<script src="/camunda-platform-helm/pr-preview/pr-7657/assets/js/main.7c948b6a.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -174,8 +174,8 @@ Helm v4 documentation. The Helm v3 warning from item 1 does not apply.</li>
 item 3, chart 16.x therefore keeps Helm 3.10 as the floor for Helm built-ins, although it
 does not support Helm v3. Helm v3 releases older than 3.10 MAY fail with a template error
 instead.</li>
-<li class="">Item 4 applies: chart 16.x carries no Helm v3 warning and no wrapper whose only purpose is a
-Helm v3 fallback.</li>
+<li class="">Chart 16.x carries no Helm v3 warning. <code>camundaPlatform.toYamlPretty</code> stays: its fallback lets
+Helm 3.10 to 3.16 parse the chart and reach the message, so item 4 does not remove it.</li>
 <li class="">CI for chart 16.x runs Helm v4 only. A unit test asserts that the render succeeds on Helm v4
 and fails with the message above when it runs with a Helm v3 binary.</li>
 <li class="">The <code>camunda.io/helmCLIVersion</code> annotation and the version-matrix entries of chart 16.x
@@ -219,7 +219,7 @@ on pinned Helm CLIs below and above the relevant boundary, not on whichever Helm
 (<a href="https://github.com/camunda/camunda-platform-helm/issues/7344" target="_blank" rel="noopener noreferrer" class="">#7344</a>).</li>
 <li class="">Camunda 8.11 does not depend on a Helm CLI without upstream security fixes. Helm v3 users of
 chart 16.x get one message that names the required CLI before any resource is applied, and chart
-16.x has no Helm v3 compatibility code, CI scenarios, or unit-test matrix entries.</li>
+16.x has no Helm v3 warning, CI scenarios, or unit-test matrix entries.</li>
 </ul>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="negative-consequences">Negative Consequences<a href="#negative-consequences" class="hash-link" aria-label="Direct link to Negative Consequences" title="Direct link to Negative Consequences" translate="no">​</a></h3>
 <ul>
@@ -250,8 +250,9 @@ floor and check new template code against it manually until such tooling exists.
 <li class="">Users must switch to Helm v4 before they upgrade to Camunda 8.11. Customer-facing documentation
 and release notes must state this before the 8.11 release
 (<a href="https://github.com/camunda/camunda-platform-helm/issues/7658" target="_blank" rel="noopener noreferrer" class="">#7658</a>).</li>
-<li class="">Chart 16.x keeps Helm 3.10 as its floor for Helm built-ins although it does not support Helm v3,
-so that Helm v3 users reach the message from item 5.</li>
+<li class="">Chart 16.x keeps Helm 3.10 as its floor for Helm built-ins, and keeps the
+<code>camundaPlatform.toYamlPretty</code> wrapper, although it does not support Helm v3, so that Helm v3
+users reach the message from item 5.</li>
 </ul>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="links">Links<a href="#links" class="hash-link" aria-label="Direct link to Links" title="Direct link to Links" translate="no">​</a></h2>
 <ul>
