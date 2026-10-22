@@ -60,8 +60,7 @@ func generate(mapping, secretName, outputPath string, strict bool, envOverrides 
 
 	// Parse the mapping and derive env var names to include in the Secret
 	logging.Logger.Debug().Str("mapping", mapping).Msg("Parsing mapping")
-	envVarNames := parseMapping(mapping)
-	envVarNames = dedupePreserveOrder(envVarNames)
+	envVarNames := RequiredEnvVars(mapping)
 
 	logging.Logger.Debug().Int("count", len(envVarNames)).Msg("Found env vars to map")
 	logging.Logger.Debug().Strs("envVarNames", envVarNames).Msg("Env var names")

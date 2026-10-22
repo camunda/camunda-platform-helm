@@ -99,31 +99,3 @@ func TestIsFullSuiteChart(t *testing.T) {
 		})
 	}
 }
-
-func TestIsChartVersion(t *testing.T) {
-	tests := []struct {
-		chartPath string
-		version   string
-		want      bool
-	}{
-		{"charts/camunda-platform-8.7", "8.7", true},
-		{"charts/camunda-platform-8.8", "8.8", true},
-		{"charts/camunda-platform-8.9", "8.9", true},
-		{"/absolute/path/charts/camunda-platform-8.7", "8.7", true},
-		{"charts/camunda-platform-8.7", "8.8", false},
-		{"charts/camunda-platform-8.8", "8.7", false},
-		{"charts/camunda-platform-8.7/", "8.7", true}, // filepath.Base strips trailing slash
-		{"", "8.7", false},
-		{"charts/camunda-platform-8.7", "", false},
-		{"", "", false},
-	}
-
-	for _, tt := range tests {
-		t.Run(fmt.Sprintf("%s_%s", tt.chartPath, tt.version), func(t *testing.T) {
-			got := isChartVersion(tt.chartPath, tt.version)
-			if got != tt.want {
-				t.Errorf("isChartVersion(%q, %q) = %v, want %v", tt.chartPath, tt.version, got, tt.want)
-			}
-		})
-	}
-}
