@@ -339,18 +339,17 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) RunResult {
 			// The callback tees lines to both the per-entry file and the normal logger.
 			ctx = executil.ContextWithBuffer(ctx, func(level, line string) {
 				writeEntryLog(level, line)
-				prefix := logging.BuildPrefix(logging.FieldsFromContext(ctx), "")
 				switch strings.ToLower(level) {
 				case "trace":
-					logging.Logger.Trace().Msg(prefix + line)
+					logging.Logger.Trace().Msg(line)
 				case "debug":
-					logging.Logger.Debug().Msg(prefix + line)
+					logging.Logger.Debug().Msg(line)
 				case "warn", "warning":
-					logging.Logger.Warn().Msg(prefix + line)
+					logging.Logger.Warn().Msg(line)
 				case "error":
-					logging.Logger.Error().Msg(prefix + line)
+					logging.Logger.Error().Msg(line)
 				default:
-					logging.Logger.Info().Msg(prefix + line)
+					logging.Logger.Info().Msg(line)
 				}
 			})
 		}

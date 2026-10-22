@@ -276,22 +276,6 @@ func Read(path string, includeEnv bool) (*RootConfig, error) {
 	return rc, nil
 }
 
-// Write saves the configuration to disk.
-func Write(rc *RootConfig) error {
-	if strings.TrimSpace(rc.FilePath) == "" {
-		return fmt.Errorf("no config file path resolved for writing")
-	}
-	dir := filepath.Dir(rc.FilePath)
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		return err
-	}
-	out, err := yaml.Marshal(rc)
-	if err != nil {
-		return err
-	}
-	return os.WriteFile(rc.FilePath, out, fs.FileMode(0o644))
-}
-
 // WriteCurrentOnly updates only the top-level "current" key in the YAML file.
 func WriteCurrentOnly(path string, current string) error {
 	dir := filepath.Dir(path)

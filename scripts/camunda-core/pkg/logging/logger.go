@@ -15,7 +15,6 @@
 package logging
 
 import (
-	"context"
 	"io"
 	"os"
 	"strings"
@@ -34,11 +33,6 @@ var ColorEnabled = true
 
 // Initialized indicates whether Setup has been called successfully.
 var Initialized = false
-
-type ctxKey struct{}
-
-// Compact toggles compact prefix formatting for command output logs.
-var Compact = false
 
 type Options struct {
 	UseJSON      bool
@@ -167,131 +161,13 @@ func IsTerminal(fd uintptr) bool {
 	return term.IsTerminal(int(fd))
 }
 
-// SetCompact enables/disables compact log prefixes.
-func SetCompact(enabled bool) {
-	Compact = enabled
-}
-
-// ContextWithFields attaches structured fields to context for logging enrichment.
-func ContextWithFields(ctx context.Context, fields map[string]string) context.Context {
-	if len(fields) == 0 {
-		return ctx
-	}
-	return context.WithValue(ctx, ctxKey{}, fields)
-}
-
-// FieldsFromContext extracts structured fields used to enrich log lines.
-func FieldsFromContext(ctx context.Context) map[string]string {
-	if ctx == nil {
-		return nil
-	}
-	if v := ctx.Value(ctxKey{}); v != nil {
-		if m, ok := v.(map[string]string); ok {
-			return m
-		}
-	}
-	return nil
-}
-
-// BuildPrefix constructs a compact, human-friendly prefix from fields, ordered by importance.
-// Order: jobId | version/flow/scenario | release | namespace | cmd
-func BuildPrefix(fields map[string]string, cmd string) string {
-	if len(fields) == 0 && cmd == "" {
+func CommandPrefix(cmd string) string {
+	if strings.TrimSpace(cmd) == "" {
 		return ""
 	}
-	segment := func(label, val string, style Styler) string {
-		if strings.TrimSpace(val) == "" {
-			return ""
-		}
-		txt := label + val
-		if ColorEnabled {
-			txt = style(txt)
-		}
-		return "[" + txt + "]"
+	txt := "cmd:" + cmd
+	if ColorEnabled {
+		txt = gchalk.Magenta(txt)
 	}
-	var b strings.Builder
-	if Compact {
-		// Compact mode: single-letter labels, truncated values, shortened flow and cmd
-		if v := fields["jobId"]; v != "" {
-			b.WriteString(segment("j:", v, gchalk.Blue))
-		}
-		ver := fields["version"]
-		flow := fields["flow"]
-		if flow != "" {
-			flow = strings.ToLower(string(flow[0]))
-		}
-		scn := fields["scenario"]
-		group := strings.TrimSpace(strings.Join([]string{ver, flow, scn}, "/"))
-		group = strings.Trim(group, "/")
-		if group != "" {
-			b.WriteString(segment("", group, gchalk.Green))
-		}
-		if v := fields["release"]; v != "" {
-			b.WriteString(segment("r:", truncateMiddle(v, 28), gchalk.Yellow))
-		}
-		if v := fields["namespace"]; v != "" {
-			b.WriteString(segment("n:", truncateMiddle(v, 28), gchalk.Cyan))
-		}
-		if cmd != "" {
-			b.WriteString(segment("c:", compactCmd(cmd), gchalk.Magenta))
-		}
-	} else {
-		if v := fields["jobId"]; v != "" {
-			b.WriteString(segment("job:", v, gchalk.Blue))
-		}
-		ver := fields["version"]
-		flow := fields["flow"]
-		scn := fields["scenario"]
-		if ver != "" || flow != "" || scn != "" {
-			group := strings.TrimSpace(strings.Join([]string{ver, flow, scn}, " "))
-			group = strings.ReplaceAll(group, "  ", " ")
-			b.WriteString(segment("", group, gchalk.Green))
-		}
-		if v := fields["release"]; v != "" {
-			b.WriteString(segment("rel:", v, gchalk.Yellow))
-		}
-		if v := fields["namespace"]; v != "" {
-			b.WriteString(segment("ns:", v, gchalk.Cyan))
-		}
-		if cmd != "" {
-			b.WriteString(segment("cmd:", cmd, gchalk.Magenta))
-		}
-	}
-	if b.Len() == 0 {
-		return ""
-	}
-	return b.String() + " "
-}
-
-// PrefixFromContext builds a prefix from context fields, optionally including cmd.
-func PrefixFromContext(ctx context.Context, cmd string) string {
-	return BuildPrefix(FieldsFromContext(ctx), cmd)
-}
-
-func truncateMiddle(s string, max int) string {
-	if max <= 3 || len(s) <= max {
-		return s
-	}
-	keep := (max - 3) / 2
-	start := s[:keep]
-	end := s[len(s)-keep:]
-	if (max-3)%2 == 1 {
-		// bias to start by one char
-		start = s[:keep+1]
-	}
-	return start + "..." + end
-}
-
-func compactCmd(cmd string) string {
-	switch strings.ToLower(cmd) {
-	case "kubectl":
-		return "k"
-	case "helm":
-		return "h"
-	default:
-		if len(cmd) > 1 {
-			return strings.ToLower(cmd[:1])
-		}
-		return cmd
-	}
+	return "[" + txt + "] "
 }

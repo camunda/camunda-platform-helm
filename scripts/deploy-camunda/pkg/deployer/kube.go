@@ -24,7 +24,6 @@ import (
 	"strings"
 	"time"
 
-	"gopkg.in/yaml.v3"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
@@ -164,20 +163,4 @@ func applyIntegrationTestCredentials(ctx context.Context, kubeClient *kube.Clien
 
 	// Use generic method to apply manifest
 	return kubeClient.ApplyManifest(ctx, namespace, decoded)
-}
-
-func replaceNameFieldInYAML(data []byte, name string) ([]byte, error) {
-	var obj map[string]interface{}
-	err := yaml.Unmarshal(data, &obj)
-	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal YAML: %w", err)
-	}
-
-	metadata, ok := obj["metadata"].(map[string]interface{})
-	if !ok {
-		return nil, fmt.Errorf("failed to find metadata field in YAML")
-	}
-	metadata["name"] = name
-
-	return yaml.Marshal(obj)
 }
