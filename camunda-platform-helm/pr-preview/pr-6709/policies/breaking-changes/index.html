@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">Breaking Changes &amp; Deprecation Policy | Camunda Helm Charts</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:image" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6709/img/camunda-logo.svg"><meta data-rh="true" name="twitter:image" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6709/img/camunda-logo.svg"><meta data-rh="true" property="og:url" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6709/policies/breaking-changes"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Breaking Changes &amp; Deprecation Policy | Camunda Helm Charts"><meta data-rh="true" name="description" content="Definition of a breaking change"><meta data-rh="true" property="og:description" content="Definition of a breaking change"><link data-rh="true" rel="icon" href="/camunda-platform-helm/pr-preview/pr-6709/img/camunda-logo.svg"><link data-rh="true" rel="canonical" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6709/policies/breaking-changes"><link data-rh="true" rel="alternate" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6709/policies/breaking-changes" hreflang="en"><link data-rh="true" rel="alternate" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6709/policies/breaking-changes" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Breaking Changes & Deprecation","item":"https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-6709/policies/breaking-changes"}]}</script><link rel="stylesheet" href="/camunda-platform-helm/pr-preview/pr-6709/assets/css/styles.3f6cd398.css">
-<script src="/camunda-platform-helm/pr-preview/pr-6709/assets/js/runtime~main.b6bdf0a8.js" defer="defer"></script>
-<script src="/camunda-platform-helm/pr-preview/pr-6709/assets/js/main.2d850517.js" defer="defer"></script>
+<script src="/camunda-platform-helm/pr-preview/pr-6709/assets/js/runtime~main.ef89632a.js" defer="defer"></script>
+<script src="/camunda-platform-helm/pr-preview/pr-6709/assets/js/main.00fa923a.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -41,6 +41,7 @@
 </ul>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="breaking-change-policy">Breaking Change Policy<a href="#breaking-change-policy" class="hash-link" aria-label="Direct link to Breaking Change Policy" title="Direct link to Breaking Change Policy" translate="no">​</a></h2>
 <p><strong>Default rule:</strong> The <a href="https://docs.camunda.io/docs/next/reference/public-api/#policy-for-non-public-apis" target="_blank" rel="noopener noreferrer" class="">Camunda 8 policy for non-public APIs</a> governs breaking changes to the chart. When a change cannot be made backward compatible, follow the <strong>Deprecation Policy</strong>.</p>
+<p><strong>Migration rule:</strong> A deliberately breaking deployment change ships with its automated migration (<a href="https://github.com/camunda/product-strategy/blob/main/2027/decisions/decision-07-breaking-change-upgrade-duration.md" target="_blank" rel="noopener noreferrer" class="">product-strategy decision-07</a>, decided 2026-09-30 under the <a href="https://github.com/camunda/product-strategy/issues/128" target="_blank" rel="noopener noreferrer" class="">Non-Breaking Automated Updates</a> initiative). For the chart, the migration is a <a href="https://github.com/camunda/camunda-helm-toolkit" target="_blank" rel="noopener noreferrer" class="">Camunda Helm Toolkit</a> migrate rule that rewrites the affected <code>values.yaml</code> inputs, available when the chart version that contains the change is released. The <a href="#breaking-change-checklist" class="">Breaking change checklist</a> carries the step.</p>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="exceptions">Exceptions<a href="#exceptions" class="hash-link" aria-label="Direct link to Exceptions" title="Direct link to Exceptions" translate="no">​</a></h3>
 <p>Two narrow exceptions exist where a breaking change is permitted without a deprecation cycle:</p>
 <ul>
@@ -68,7 +69,7 @@
 <h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="approval--alignment">Approval / alignment<a href="#approval--alignment" class="hash-link" aria-label="Direct link to Approval / alignment" title="Direct link to Approval / alignment" translate="no">​</a></h4>
 <ol>
 <li class="">Document and align with EM and PM justification of the breaking change (rationale, scope, customer impact, target version).</li>
-<li class="">Mark the change as breaking in the issue and PR (label <code>breaking change</code> + clear description). See <a class="" href="/camunda-platform-helm/pr-preview/pr-6709/policies/ticket-and-label">Ticket &amp; Label Policy</a> for the <code>breaking change</code> label definition.</li>
+<li class="">Mark the change as breaking in the issue and PR (label <code>breaking-change</code> + clear description). See <a class="" href="/camunda-platform-helm/pr-preview/pr-6709/policies/ticket-and-label">Ticket &amp; Label Policy</a> for the <code>breaking-change</code> label definition.</li>
 <li class="">Notify and align with primary stakeholders:<!-- -->
 <ul>
 <li class=""><strong>InfraEx</strong> and <a href="https://camunda.slack.com/archives/C0807665N8G" target="_blank" rel="noopener noreferrer" class=""><strong>#oc-reliability-testing</strong></a> — closest day-to-day chart users; must explicitly acknowledge before proceeding.</li>
@@ -85,6 +86,15 @@
 <li class="">Add release notes (breaking change callout).</li>
 <li class="">Add release announcements (link to docs/migration guidance).</li>
 <li class="">Add upgrade guide (steps + links to docs).</li>
+</ul>
+</li>
+</ol>
+<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="migration">Migration<a href="#migration" class="hash-link" aria-label="Direct link to Migration" title="Direct link to Migration" translate="no">​</a></h4>
+<ol start="6">
+<li class="">Ship the automated migration with the change:<!-- -->
+<ul>
+<li class="">Add the <a href="https://github.com/camunda/camunda-helm-toolkit" target="_blank" rel="noopener noreferrer" class="">Camunda Helm Toolkit</a> migrate rule that rewrites the affected <code>values.yaml</code> inputs, and the validate rule that flags inputs the rewrite cannot resolve.</li>
+<li class="">Link the toolkit change from the PR and the upgrade guide.</li>
 </ul>
 </li>
 </ol>
@@ -124,7 +134,7 @@
 <p><strong>Remove (only after the deprecation window):</strong></p>
 <ul>
 <li class="">Delete the key, its template references, and the deprecation warning.</li>
-<li class="">Follow the approval and documentation steps from the <a href="#breaking-change-checklist" class="">Breaking change checklist</a>.</li>
+<li class="">Follow the approval, documentation, and migration steps from the <a href="#breaking-change-checklist" class="">Breaking change checklist</a>.</li>
 </ul>
 </li>
 </ol>
