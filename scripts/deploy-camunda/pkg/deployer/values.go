@@ -28,12 +28,6 @@ type ScenarioMeta struct {
 	Desc string
 }
 
-// ResolveScenarioFiles resolves scenario names to their values file paths.
-// It supports both layered values (values/ directory) and legacy single-file approach.
-func ResolveScenarioFiles(scenarioDir string, scenarioNames []string) ([]string, error) {
-	return ResolveScenarioFilesWithConfig(scenarioDir, scenarioNames, nil)
-}
-
 // ResolveScenarioFilesWithConfig resolves scenario names to their values file paths,
 // using the provided deployment config for layered values resolution.
 // This allows passing ChartVersion and Flow for migrator detection.

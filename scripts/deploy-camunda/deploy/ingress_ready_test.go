@@ -60,222 +60,95 @@ func noSleep(ctx context.Context, _ time.Duration) error {
 	return ctx.Err()
 }
 
-func TestResolveIngressReadyHostWith(t *testing.T) {
-	t.Run("deployed routing host wins over explicit ingress hostname", func(t *testing.T) {
-		flags := &config.RuntimeFlags{
-			Ingress: config.IngressFlags{IngressHostname: "override.example.com"},
-		}
-		scenarioCtx := &ScenarioContext{Namespace: "test", Release: "integration", IngressHost: "computed.example.com"}
-		lookupCalled := false
-
-		got := resolveIngressReadyHostWith(
-			context.Background(),
-			flags,
-			scenarioCtx,
-			func(string) string { return "env.example.com" },
-			func(context.Context, string, string, string) string {
-				lookupCalled = true
-				return "rendered.example.com"
+func TestIngressReadyHostFallback(t *testing.T) {
+	env := func(string) string { return "env.example.com" }
+	noEnv := func(string) string { return "" }
+	tests := []struct {
+		name         string
+		flags        *config.RuntimeFlags
+		getenv       func(string) string
+		deployedHost string
+		computedHost string
+		want         string
+	}{
+		{
+			name:         "deployed routing host wins over explicit ingress hostname",
+			flags:        &config.RuntimeFlags{Ingress: config.IngressFlags{IngressHostname: "override.example.com"}},
+			getenv:       env,
+			deployedHost: "rendered.example.com",
+			computedHost: "computed.example.com",
+			want:         "rendered.example.com",
+		},
+		{
+			name:         "explicit ingress hostname remains a fallback",
+			flags:        &config.RuntimeFlags{Ingress: config.IngressFlags{IngressHostname: "override.example.com"}},
+			getenv:       env,
+			computedHost: "computed.example.com",
+			want:         "override.example.com",
+		},
+		{
+			name: "rendered routing host wins over raw Helm host",
+			flags: &config.RuntimeFlags{Deployment: config.DeploymentFlags{ExtraHelmSets: map[string]string{
+				"global.host": "stale.example.com",
+			}}},
+			getenv:       env,
+			deployedHost: "rendered.example.com",
+			computedHost: "computed.example.com",
+			want:         "rendered.example.com",
+		},
+		{
+			name: "templated global host defers to the rendered routing host",
+			flags: &config.RuntimeFlags{Deployment: config.DeploymentFlags{ExtraHelmSets: map[string]string{
+				"global.host": "{{ .Release.Name }}.example.com",
+			}}},
+			getenv:       env,
+			deployedHost: "rendered.example.com",
+			computedHost: "computed.example.com",
+			want:         "rendered.example.com",
+		},
+		{
+			name:         "environment host wins over computed fallback when no deployed host is found",
+			flags:        &config.RuntimeFlags{},
+			getenv:       env,
+			computedHost: "computed.example.com",
+			want:         "env.example.com",
+		},
+		{
+			name: "extra Helm host wins over explicit ingress fallback",
+			flags: &config.RuntimeFlags{
+				Deployment: config.DeploymentFlags{ExtraHelmSets: map[string]string{"global.host": "configured.example.com"}},
+				Ingress:    config.IngressFlags{IngressHostname: "override.example.com"},
 			},
-		)
+			getenv:       env,
+			computedHost: "computed.example.com",
+			want:         "configured.example.com",
+		},
+		{
+			name: "legacy ingress host takes precedence in configured fallbacks",
+			flags: &config.RuntimeFlags{Deployment: config.DeploymentFlags{ExtraHelmSets: map[string]string{
+				"global.host":         "current.example.com",
+				"global.ingress.host": "legacy.example.com",
+			}}},
+			getenv: noEnv,
+			want:   "legacy.example.com",
+		},
+		{
+			name:         "computed host remains the final fallback",
+			flags:        &config.RuntimeFlags{},
+			getenv:       noEnv,
+			computedHost: "computed.example.com",
+			want:         "computed.example.com",
+		},
+	}
 
-		if got != "rendered.example.com" {
-			t.Fatalf("resolveIngressReadyHostWith() = %q, want rendered host", got)
-		}
-		if !lookupCalled {
-			t.Fatal("cluster lookup should determine the effective rendered host")
-		}
-	})
-
-	t.Run("explicit ingress hostname remains a fallback", func(t *testing.T) {
-		flags := &config.RuntimeFlags{
-			Ingress: config.IngressFlags{IngressHostname: "override.example.com"},
-		}
-		scenarioCtx := &ScenarioContext{Namespace: "test", Release: "integration", IngressHost: "computed.example.com"}
-		lookupCalled := false
-
-		got := resolveIngressReadyHostWith(
-			context.Background(),
-			flags,
-			scenarioCtx,
-			func(string) string { return "env.example.com" },
-			func(context.Context, string, string, string) string {
-				lookupCalled = true
-				return ""
-			},
-		)
-
-		if got != "override.example.com" {
-			t.Fatalf("resolveIngressReadyHostWith() = %q, want explicit fallback", got)
-		}
-		if !lookupCalled {
-			t.Fatal("cluster lookup should run before using --ingress-hostname as a fallback")
-		}
-	})
-
-	t.Run("rendered routing host wins over raw Helm and computed hosts", func(t *testing.T) {
-		flags := &config.RuntimeFlags{
-			Deployment: config.DeploymentFlags{
-				ExtraHelmSets: map[string]string{"global.host": "stale.example.com"},
-			},
-		}
-		scenarioCtx := &ScenarioContext{Namespace: "test", Release: "integration", IngressHost: "computed.example.com"}
-		lookupCalled := false
-
-		got := resolveIngressReadyHostWith(
-			context.Background(),
-			flags,
-			scenarioCtx,
-			func(string) string { return "env.example.com" },
-			func(_ context.Context, _, _, release string) string {
-				lookupCalled = true
-				if release != "integration" {
-					t.Fatalf("lookup called with release %q", release)
-				}
-				return "rendered.example.com"
-			},
-		)
-
-		if got != "rendered.example.com" {
-			t.Fatalf("resolveIngressReadyHostWith() = %q, want rendered host", got)
-		}
-		if !lookupCalled {
-			t.Fatal("cluster lookup should determine the effective rendered host")
-		}
-	})
-
-	t.Run("deployed routing host wins over computed and environment hosts", func(t *testing.T) {
-		flags := &config.RuntimeFlags{Test: config.TestFlags{KubeContext: "cluster"}}
-		scenarioCtx := &ScenarioContext{Namespace: "test", Release: "integration", IngressHost: "computed.example.com"}
-
-		got := resolveIngressReadyHostWith(
-			context.Background(),
-			flags,
-			scenarioCtx,
-			func(string) string { return "env.example.com" },
-			func(_ context.Context, kubeContext, namespace, release string) string {
-				if kubeContext != "cluster" || namespace != "test" {
-					t.Fatalf("lookup called with context=%q namespace=%q", kubeContext, namespace)
-				}
-				if release != "integration" {
-					t.Fatalf("lookup called with release=%q", release)
-				}
-				return "gateway.example.com"
-			},
-		)
-
-		if got != "gateway.example.com" {
-			t.Fatalf("resolveIngressReadyHostWith() = %q, want deployed routing host", got)
-		}
-	})
-
-	t.Run("templated global host defers to the rendered routing host", func(t *testing.T) {
-		flags := &config.RuntimeFlags{
-			Deployment: config.DeploymentFlags{
-				ExtraHelmSets: map[string]string{"global.host": "{{ .Release.Name }}.example.com"},
-			},
-		}
-		scenarioCtx := &ScenarioContext{Namespace: "test", Release: "integration", IngressHost: "computed.example.com"}
-		lookupCalled := false
-
-		got := resolveIngressReadyHostWith(
-			context.Background(),
-			flags,
-			scenarioCtx,
-			func(string) string { return "env.example.com" },
-			func(context.Context, string, string, string) string {
-				lookupCalled = true
-				return "rendered.example.com"
-			},
-		)
-
-		if got != "rendered.example.com" {
-			t.Fatalf("resolveIngressReadyHostWith() = %q, want rendered routing host", got)
-		}
-		if !lookupCalled {
-			t.Fatal("cluster lookup should run when global.host contains a Helm template")
-		}
-	})
-
-	t.Run("environment host wins over computed fallback when no deployed host is found", func(t *testing.T) {
-		flags := &config.RuntimeFlags{}
-		scenarioCtx := &ScenarioContext{Namespace: "test", Release: "integration", IngressHost: "computed.example.com"}
-
-		got := resolveIngressReadyHostWith(
-			context.Background(),
-			flags,
-			scenarioCtx,
-			func(string) string { return "env.example.com" },
-			func(context.Context, string, string, string) string { return "" },
-		)
-
-		if got != "env.example.com" {
-			t.Fatalf("resolveIngressReadyHostWith() = %q, want environment host", got)
-		}
-	})
-
-	t.Run("extra Helm host wins over explicit ingress fallback", func(t *testing.T) {
-		flags := &config.RuntimeFlags{
-			Deployment: config.DeploymentFlags{
-				ExtraHelmSets: map[string]string{"global.host": "configured.example.com"},
-			},
-			Ingress: config.IngressFlags{IngressHostname: "override.example.com"},
-		}
-		scenarioCtx := &ScenarioContext{Namespace: "test", Release: "integration", IngressHost: "computed.example.com"}
-
-		got := resolveIngressReadyHostWith(
-			context.Background(),
-			flags,
-			scenarioCtx,
-			func(string) string { return "env.example.com" },
-			func(context.Context, string, string, string) string { return "" },
-		)
-
-		if got != "configured.example.com" {
-			t.Fatalf("resolveIngressReadyHostWith() = %q, want configured host", got)
-		}
-	})
-
-	t.Run("legacy ingress host takes precedence in configured fallbacks", func(t *testing.T) {
-		flags := &config.RuntimeFlags{
-			Deployment: config.DeploymentFlags{
-				ExtraHelmSets: map[string]string{
-					"global.host":         "current.example.com",
-					"global.ingress.host": "legacy.example.com",
-				},
-			},
-		}
-		scenarioCtx := &ScenarioContext{Namespace: "test", Release: "integration"}
-
-		got := resolveIngressReadyHostWith(
-			context.Background(),
-			flags,
-			scenarioCtx,
-			func(string) string { return "" },
-			func(context.Context, string, string, string) string { return "" },
-		)
-
-		if got != "legacy.example.com" {
-			t.Fatalf("resolveIngressReadyHostWith() = %q, want legacy host", got)
-		}
-	})
-
-	t.Run("computed host remains the final fallback", func(t *testing.T) {
-		flags := &config.RuntimeFlags{}
-		scenarioCtx := &ScenarioContext{Namespace: "test", Release: "integration", IngressHost: "computed.example.com"}
-
-		got := resolveIngressReadyHostWith(
-			context.Background(),
-			flags,
-			scenarioCtx,
-			func(string) string { return "" },
-			func(context.Context, string, string, string) string { return "" },
-		)
-
-		if got != "computed.example.com" {
-			t.Fatalf("resolveIngressReadyHostWith() = %q, want computed fallback", got)
-		}
-	})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := ingressReadyHostFallback(tt.flags, &ScenarioContext{IngressHost: tt.computedHost}, tt.getenv, tt.deployedHost)
+			if got != tt.want {
+				t.Fatalf("ingressReadyHostFallback() = %q, want %q", got, tt.want)
+			}
+		})
+	}
 }
 
 func TestResolveIngressReadyHostAfterLookup(t *testing.T) {

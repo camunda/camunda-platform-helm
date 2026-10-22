@@ -86,17 +86,6 @@ func resolveIngressReadyHostAfterLookup(
 	return ingressReadyHostFallback(flags, scenarioCtx, getenv, deployedHost), nil
 }
 
-func resolveIngressReadyHostWith(
-	ctx context.Context,
-	flags *config.RuntimeFlags,
-	scenarioCtx *ScenarioContext,
-	getenv func(string) string,
-	lookupDeployedHost func(context.Context, string, string, string) string,
-) string {
-	deployedHost := lookupDeployedHost(ctx, flags.Test.KubeContext, scenarioCtx.Namespace, scenarioCtx.Release)
-	return ingressReadyHostFallback(flags, scenarioCtx, getenv, deployedHost)
-}
-
 func ingressReadyHostFallback(
 	flags *config.RuntimeFlags,
 	scenarioCtx *ScenarioContext,
