@@ -71,6 +71,10 @@ func TestReleaseWorkflowsPassArtifactSources(t *testing.T) {
 			[]string{`--commit "${{ steps.parse.outputs.commit_sha }}"`}},
 		{"chart-release-public.yaml", "post-release", "Label PRs with version",
 			[]string{`sourceSHA="${{ needs.release.outputs.source-commit }}"`, `previousSourceSHA="${{ needs.release.outputs.previous-source-commit }}"`}},
+		{"chart-build-dev.yaml", "build", "Generate RELEASE-NOTES.md",
+			[]string{`--source "${GITHUB_SHA}"`, `--previous-source "${{ steps.history.outputs.previous_commit_sha }}"`}},
+		{"chart-promote-rc.yaml", "promote-rc", "Generate release files on the release-please PR",
+			[]string{`--source "${{ steps.parse.outputs.sha }}"`, `--previous-source "${{ steps.history.outputs.previous_commit_sha }}"`}},
 	} {
 		run := sourceTestWorkflow(t, tc.file).stepRun(t, tc.job, tc.step)
 		for _, arg := range tc.args {

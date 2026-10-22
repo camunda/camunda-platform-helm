@@ -131,13 +131,19 @@ The charts are built, linted, and tested on every push to the main branch. The r
 not an installable copy of the chart. Version bumps, generated release files and image
 overrides exist only in the package; publication never rebuilds it.
 
-`release-history` picks the highest release tag on the chart line below the chart's version; a
-new chart line starts from its `camunda-platform-<minor>-<major>.0.0-alpha0` bootstrap tag.
-Tags that were created from a later publishing checkout
+Release notes (`release-tools release-notes --main`) and shipped-PR labels use the same
+`previous-source..source` range. `release-history` picks the highest release tag on the chart
+line below the chart's version; a new chart line starts from its
+`camunda-platform-<minor>-<major>.0.0-alpha0` bootstrap tag. Tags that were created from a
+later publishing checkout
 ([#7612 audit](https://github.com/camunda/camunda-platform-helm/issues/7612#issuecomment-6314547789))
 map to their recorded build commits in `historicalReleaseSources`; the tags themselves are not
-moved. Release-please still discovers history from the public tags on its own; its version
-calculation is unchanged.
+moved. Note generation ignores tags inside the range, so such a tag cannot regroup commits into
+an older release. Release-please still discovers history from the public tags on its own; its
+version calculation is unchanged.
+
+Locally: `make release.generate-notes chartPath=charts/camunda-platform-8.9 [sourceSHA=<sha>]`
+(defaults to `HEAD`).
 
 **After public release:**
 

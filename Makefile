@@ -434,9 +434,13 @@ release.bump-chart-version-and-commit: .release.bump-chart-version
 
 .PHONY: release.generate-notes
 release.generate-notes: install.release-tools
+	set -e; \
+	source=$$(git rev-parse --verify "$${sourceSHA:-HEAD}^{commit}"); \
 	for chart_dir in $(chartPath); do\
 		echo "\n[$@] Chart dir: $${chart_dir}";\
-		release-tools release-notes --main "$${chart_dir}";\
+		previous=$$(git rev-parse --verify "$$(release-tools release-history --chart-yaml "$$chart_dir/Chart.yaml")^{commit}"); \
+		git merge-base --is-ancestor "$$previous" "$$source"; \
+		release-tools release-notes --main "$$chart_dir" --source "$$source" --previous-source "$$previous"; \
 	done
 
 .PHONY: release.generate-notes-footer
