@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -854,8 +855,7 @@ func runSequential(ctx context.Context, entries []Entry, opts RunOptions) ([]Run
 					Str("version", entry.Version).
 					Str("scenario", entry.Scenario).
 					Str("flow", entry.Flow)
-				var helmErr *deployer.HelmError
-				if errors.As(result.Error, &helmErr) {
+				if helmErr, ok := errors.AsType[*deployer.HelmError](result.Error); ok {
 					logEvent = logEvent.Str("command", helmErr.ShortCommand())
 				}
 				logEvent.Msg("Matrix entry failed")
@@ -934,8 +934,7 @@ func runParallel(ctx context.Context, entries []Entry, opts RunOptions) ([]RunRe
 					Str("version", e.Version).
 					Str("scenario", e.Scenario).
 					Str("flow", e.Flow)
-				var helmErr *deployer.HelmError
-				if errors.As(result.Error, &helmErr) {
+				if helmErr, ok := errors.AsType[*deployer.HelmError](result.Error); ok {
 					logEvent = logEvent.Str("command", helmErr.ShortCommand())
 				}
 				logEvent.Msg("Matrix entry failed")
@@ -1410,12 +1409,8 @@ func mergeHelmSets(base, override map[string]string) map[string]string {
 		return nil
 	}
 	out := make(map[string]string, len(base)+len(override))
-	for k, v := range base {
-		out[k] = v
-	}
-	for k, v := range override {
-		out[k] = v
-	}
+	maps.Copy(out, base)
+	maps.Copy(out, override)
 	return out
 }
 
@@ -1516,8 +1511,7 @@ func PrintRunSummary(results []RunResult, wallClock time.Duration, logDir string
 				fmt.Fprintf(&b, "\n  - %s/%s (%s, flow=%s)\n",
 					r.Entry.Version, r.Entry.Scenario, r.Entry.Shortname, r.Entry.Flow)
 
-				var helmErr *deployer.HelmError
-				if errors.As(r.Error, &helmErr) {
+				if helmErr, ok := errors.AsType[*deployer.HelmError](r.Error); ok {
 					// Show step context if error is wrapped (e.g. "step 1: install ... failed")
 					fullMsg := r.Error.Error()
 					helmMsg := helmErr.Error()

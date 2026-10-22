@@ -72,7 +72,7 @@ func readYAMLMap(path string) (map[string]any, error) {
 // anyConditionKeyTrue splits on "," because Helm treats a condition list as an
 // OR and enables the subchart when any entry resolves true.
 func anyConditionKeyTrue(doc map[string]any, condition string) bool {
-	for _, path := range strings.Split(condition, ",") {
+	for path := range strings.SplitSeq(condition, ",") {
 		path = strings.TrimSpace(path)
 		if path == "" {
 			continue

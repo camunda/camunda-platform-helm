@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -1038,15 +1039,11 @@ func renderTopologyCredentialsManifest(path, base string) (string, func(), error
 // the generated value authoritative even so.
 func buildTopologyReleaseEnv(shared map[string]string, release matrix.TopologyRelease) map[string]string {
 	env := make(map[string]string, len(shared)+len(release.Env)+4)
-	for key, value := range shared {
-		env[key] = value
-	}
+	maps.Copy(env, shared)
 	if host := topologyReleaseServedHost(shared, release); host != "" {
 		env["CAMUNDA_HOSTNAME"] = host
 	}
-	for key, value := range release.Env {
-		env[key] = value
-	}
+	maps.Copy(env, release.Env)
 	if release.Role == "orchestration" {
 		token := matrix.TopologyEnvToken(release.NamespaceSuffix)
 		env["ORCH_NAMESPACE"] = env[token+"_NAMESPACE"]
@@ -1242,9 +1239,7 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 		i := orchestrationIndices[0]
 		crossRefEnv["ORCH_NAMESPACE"] = contexts[i].Namespace
 		crossRefEnv["ORCH_ORCHESTRATION_INDEX_PREFIX"] = contexts[i].OrchestrationIndexPrefix
-		for key, value := range buildOrchestrationZeebeEnv(contexts[i]) {
-			crossRefEnv[key] = value
-		}
+		maps.Copy(crossRefEnv, buildOrchestrationZeebeEnv(contexts[i]))
 	}
 
 	// Deploy order honors each release's depends-on (Hub, which the
@@ -1767,9 +1762,7 @@ func applyTopologyReleaseOverrides(flags *config.RuntimeFlags, crossRefEnv map[s
 	if flags.ExtraEnv == nil {
 		flags.ExtraEnv = make(map[string]string, len(crossRefEnv))
 	}
-	for k, v := range crossRefEnv {
-		flags.ExtraEnv[k] = v
-	}
+	maps.Copy(flags.ExtraEnv, crossRefEnv)
 
 	flags.Secrets.ExternalSecrets = true
 

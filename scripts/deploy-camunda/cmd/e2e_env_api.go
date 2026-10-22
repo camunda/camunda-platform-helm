@@ -144,7 +144,7 @@ func apiSuiteEnv(in apiSuiteInputs, lookup clientSecretLookup) (map[string]strin
 // without "=".
 func parseEnvFile(content string) map[string]string {
 	env := map[string]string{}
-	for _, line := range strings.Split(content, "\n") {
+	for line := range strings.SplitSeq(content, "\n") {
 		line = strings.TrimSpace(line)
 		if line == "" || strings.HasPrefix(line, "#") {
 			continue

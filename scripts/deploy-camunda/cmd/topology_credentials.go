@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"math/big"
 	"os"
 	"sort"
@@ -134,9 +135,7 @@ func parseCredentialSource(manifest []byte) (credentialSource, error) {
 // missing. It never replaces a value.
 func planCredentials(existing map[string]string, required []string, generate func() (string, error)) (map[string]string, []string, error) {
 	merged := make(map[string]string, len(existing)+len(required))
-	for k, v := range existing {
-		merged[k] = v
-	}
+	maps.Copy(merged, existing)
 	var created []string
 	for _, key := range required {
 		if merged[key] != "" {

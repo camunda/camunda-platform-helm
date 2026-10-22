@@ -309,9 +309,9 @@ func completeConfigKeys(cmd *cobra.Command, args []string, toComplete string) ([
 	// Add deployment-prefixed keys
 	for depName := range rc.Deployments {
 		prefix := depName + "."
-		if strings.HasPrefix(toComplete, prefix) {
+		if after, ok := strings.CutPrefix(toComplete, prefix); ok {
 			// User is typing a deployment-specific key
-			keyPart := strings.TrimPrefix(toComplete, prefix)
+			keyPart := after
 			for _, key := range validConfigKeys {
 				if keyPart == "" || strings.HasPrefix(key, keyPart) {
 					completions = append(completions, prefix+key)

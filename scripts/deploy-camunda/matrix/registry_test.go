@@ -56,7 +56,7 @@ func TestChart88HelmCompatibilityMatrix(t *testing.T) {
 			if helmVersion == "" {
 				tools, err := os.ReadFile(filepath.Join(repoRoot, ".tool-versions"))
 				require.NoError(t, err)
-				for _, line := range strings.Split(string(tools), "\n") {
+				for line := range strings.SplitSeq(string(tools), "\n") {
 					fields := strings.Fields(line)
 					if len(fields) >= 2 && fields[0] == "helm" {
 						helmVersion = fields[1]
@@ -482,7 +482,8 @@ func TestRegistryValidatorRejectsDuplicatePlatformFlow(t *testing.T) {
 	}
 }
 
-func boolPtr(v bool) *bool { return &v }
+//go:fix inline
+func boolPtr(v bool) *bool { return new(v) }
 
 // TestRegistryValidatorRejectsFullSuiteBlockingWithoutFullSuite: the blocking
 // override is dead config when the full-suite leg is not enabled.
@@ -494,7 +495,7 @@ func TestRegistryValidatorRejectsFullSuiteBlockingWithoutFullSuite(t *testing.T)
 	}
 	scn := &cfg.Integration.Case.PR.Scenarios[0]
 	scn.E2EFullSuite = false
-	scn.E2EFullSuiteBlocking = boolPtr(true)
+	scn.E2EFullSuiteBlocking = new(true)
 	err = (&RegistryValidator{ChartDir: abs}).Validate(cfg)
 	if err == nil || !strings.Contains(err.Error(), "e2e-full-suite-blocking is set but e2e-full-suite is not enabled") {
 		t.Fatalf("want full-suite-blocking-without-full-suite error, got: %v", err)
@@ -511,7 +512,7 @@ func TestRegistryValidatorRejectsAPISuiteBlockingWithoutAPISuite(t *testing.T) {
 	}
 	scn := &cfg.Integration.Case.PR.Scenarios[0]
 	scn.E2EAPISuite = false
-	scn.E2EAPISuiteBlocking = boolPtr(true)
+	scn.E2EAPISuiteBlocking = new(true)
 	err = (&RegistryValidator{ChartDir: abs}).Validate(cfg)
 	if err == nil || !strings.Contains(err.Error(), "e2e-api-suite-blocking is set but e2e-api-suite is not enabled") {
 		t.Fatalf("want api-suite-blocking-without-api-suite error, got: %v", err)
@@ -527,15 +528,15 @@ func TestRegistryValidatorRejectsE2EFlagsWithSkipE2E(t *testing.T) {
 		want string
 	}{
 		{"full-suite", func(s *CIScenario) { s.E2EFullSuite = true }, "e2e-full-suite is set but skip-e2e"},
-		{"smoke-blocking", func(s *CIScenario) { s.E2ESmokeBlocking = boolPtr(false) }, "e2e-smoke-blocking is set but skip-e2e"},
+		{"smoke-blocking", func(s *CIScenario) { s.E2ESmokeBlocking = new(false) }, "e2e-smoke-blocking is set but skip-e2e"},
 		{"full-suite-blocking", func(s *CIScenario) {
 			s.E2EFullSuite = true
-			s.E2EFullSuiteBlocking = boolPtr(true)
+			s.E2EFullSuiteBlocking = new(true)
 		}, "e2e-full-suite is set but skip-e2e"},
 		{"api-suite", func(s *CIScenario) { s.E2EAPISuite = true }, "e2e-api-suite is set but skip-e2e"},
 		{"api-suite-blocking", func(s *CIScenario) {
 			s.E2EAPISuite = true
-			s.E2EAPISuiteBlocking = boolPtr(true)
+			s.E2EAPISuiteBlocking = new(true)
 		}, "e2e-api-suite-blocking is set but skip-e2e"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
