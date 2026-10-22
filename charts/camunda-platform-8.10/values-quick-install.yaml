@@ -1,0 +1,20 @@
+#
+# Use this values file for a quick development install of the Orchestration Cluster.
+# It uses Basic authentication and an embedded H2 database as secondary storage.
+# Embedded H2 is local to each broker, so keep a single broker and a single partition.
+# Do not use this file in production.
+#
+
+orchestration:
+  clusterSize: "1"
+  partitionCount: "1"
+  replicationFactor: "1"
+  exporters:
+    rdbms:
+      enabled: true
+  data:
+    secondaryStorage:
+      type: rdbms
+      rdbms:
+        url: jdbc:h2:file:/usr/local/camunda/data/h2db
+        username: sa

@@ -539,3 +539,25 @@ func (s *ConfigmapLegacyTemplateTest) TestExtraConfigurationSpringImport() {
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
+
+func (s *ConfigmapLegacyTemplateTest) TestQuickInstallValuesFile() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name:        "TestQuickInstallValuesFileUsesSingleBrokerEmbeddedH2",
+			ValuesFiles: []string{filepath.Join(s.chartPath, "values-quick-install.yaml")},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+				applicationYaml := configmap.Data["application.yaml"]
+				require.Contains(t, applicationYaml, `type: "rdbms"`)
+				require.Contains(t, applicationYaml, `url: "jdbc:h2:file:/usr/local/camunda/data/h2db"`)
+				require.Contains(t, applicationYaml, `size: "1"`)
+				require.Contains(t, applicationYaml, `replication-factor: "1"`)
+				require.Contains(t, applicationYaml, `partition-count: "1"`)
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
