@@ -1,0 +1,19 @@
+# Standalone gateway feature configuration for 8.11
+# Layer 4: Feature - Standalone gateway Deployment with 3 replicas and a REST API Ingress on its own host
+orchestration:
+  standaloneGateway:
+    enabled: true
+    replicas: 3
+    podDisruptionBudget:
+      enabled: true
+    ingress:
+      rest:
+        enabled: true
+        className: nginx
+        host: "zeebe-api-{{ .Values.global.host }}"
+        annotations:
+          external-dns.alpha.kubernetes.io/hostname: "zeebe-api-{{ .Values.global.host }}"
+          external-dns.alpha.kubernetes.io/ttl: "60"
+        tls:
+          enabled: true
+          secretName: camunda-platform
