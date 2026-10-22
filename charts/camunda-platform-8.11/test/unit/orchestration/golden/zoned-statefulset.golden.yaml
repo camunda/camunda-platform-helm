@@ -150,17 +150,17 @@ spec:
       affinity:
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
-            - labelSelector:
-                matchExpressions:
-                  - key: app.kubernetes.io/component
-                    operator: In
-                    values:
-                      - zeebe-broker
-                  - key: camunda.io/broker-generation
-                    operator: In
-                    values:
-                      - zoned
-              topologyKey: kubernetes.io/hostname
+          - labelSelector:
+              matchExpressions:
+              - key: app.kubernetes.io/component
+                operator: In
+                values:
+                - zeebe-broker
+              - key: camunda.io/broker-generation
+                operator: In
+                values:
+                - zoned
+            topologyKey: kubernetes.io/hostname
   volumeClaimTemplates:
     - apiVersion: v1
       kind: PersistentVolumeClaim
