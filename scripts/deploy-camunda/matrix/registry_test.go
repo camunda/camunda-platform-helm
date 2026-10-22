@@ -482,9 +482,6 @@ func TestRegistryValidatorRejectsDuplicatePlatformFlow(t *testing.T) {
 	}
 }
 
-//go:fix inline
-func boolPtr(v bool) *bool { return new(v) }
-
 // TestRegistryValidatorRejectsFullSuiteBlockingWithoutFullSuite: the blocking
 // override is dead config when the full-suite leg is not enabled.
 func TestRegistryValidatorRejectsFullSuiteBlockingWithoutFullSuite(t *testing.T) {
