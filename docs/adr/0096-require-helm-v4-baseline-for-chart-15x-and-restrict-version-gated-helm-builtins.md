@@ -1,4 +1,4 @@
-# Support Helm CLI v3 and v4 for chart 15.x (8.10), and restrict version-gated Helm built-ins
+# Support Helm CLI v3 and v4 for chart 15.x (8.10), require Helm CLI v4 for chart 16.x (8.11), and restrict version-gated Helm built-ins
 
 - Status: accepted
 - Date: 2026-08-18
@@ -50,6 +50,12 @@ Go 1.18, renders them ([#7340](https://github.com/camunda/camunda-platform-helm/
 [#7341](https://github.com/camunda/camunda-platform-helm/issues/7341)). The 12.x, 13.x and 14.x READMEs
 nevertheless listed Helm 3.9 as their minimum.
 
+Chart 16.x (Camunda 8.11) is planned for April 2027
+([camunda/product-hub#3838](https://github.com/camunda/product-hub/issues/3838)), after upstream
+Helm v3 security fixes end, so its whole support window falls after Helm v3 end of life. Chart 16.x
+was created as a copy of chart 15.x and inherited its Helm v3 support
+([#7360](https://github.com/camunda/camunda-platform-helm/issues/7360)).
+
 ### Applicability by version
 
 - Chart 15.x (8.10): Helm CLI v3 (3.10 or later) and Helm CLI v4. On Helm v3 the chart warns
@@ -60,9 +66,8 @@ nevertheless listed Helm 3.9 as their minimum.
 - Chart 12.x (8.7): existing Helm v3 support continues with the 3.10 floor.
 - Charts 13.x–15.x support Helm v3 only until February 10, 2027. After that date, Camunda
   no longer supports Helm v3. Helm v4 is supported for the release cycles of 8.9 and 8.10.
-- Chart lines after 15.x: this ADR does not set their Helm CLI baseline; that is left to a later
-  decision, which [#7360](https://github.com/camunda/camunda-platform-helm/issues/7360) tracks for
-  chart 16.x (8.11).
+- Chart 16.x (8.11) and later chart lines: Helm CLI v4 only. Every render on Helm v3 fails with a
+  message that names the required CLI (Decision Outcome item 5).
 - The built-in-function restriction (Decision Outcome, item 3) applies to all currently
   maintained chart lines going forward, independent of the v3/v4 line.
 
@@ -72,7 +77,7 @@ nevertheless listed Helm 3.9 as their minimum.
   November 2026, and 3.22 is the final Helm v3 minor
   ([Helm v3 end of life](https://helm.sh/blog/helm-v3-end-of-life/),
   [#7346](https://github.com/camunda/camunda-platform-helm/issues/7346)). The v4-only baseline was
-  set against the earlier date.
+  set against the earlier date. Camunda 8.11 releases after the extended date.
 - **Users on Helm v3:** users who have not moved to Helm v4 need to install 8.10, and upgrade to it
   from 8.9, with Helm v3; the v4 guard blocked both
   ([#7340](https://github.com/camunda/camunda-platform-helm/issues/7340)).
@@ -96,16 +101,22 @@ nevertheless listed Helm 3.9 as their minimum.
 - **Auto-detect and branch around every new built-in as it's introduced** — rejected: this is the
   status quo (`toYamlPretty`) and it does not scale; each occurrence is fragile, uses a
   non-obvious `tpl`-deferral trick, and is discovered reactively rather than prevented.
+- **Keep Helm v3 support with the warning for chart 16.x** — rejected: Camunda 8.11 releases after
+  Helm v3 end of life, so Camunda would support a CLI without upstream security fixes for the whole
+  8.11 support window.
+- **Drop Helm v3 for chart 16.x in documentation only, without a render-time check** — rejected:
+  Helm v3 users get no diagnostic, or a template parse error that does not name the required CLI.
 - **Stated, tested Helm CLI support per chart line, plus a policy against new version-gated
   built-ins (chosen)** — makes the floor explicit and testable (chart README plus the unit-test
-  Helm matrix), warns Helm v3 users instead of failing, and shifts the function-availability problem
-  from "wrap it" to "don't introduce it unless justified."
+  Helm matrix), warns Helm v3 users of chart 15.x instead of failing, rejects Helm v3 for chart 16.x
+  with a clear message, and shifts the function-availability problem from "wrap it" to "don't
+  introduce it unless justified."
 
 ## Decision Outcome
 
-Chart 15.x (8.10) supports Helm CLI v3 (3.10 or later) and Helm CLI v4, and new template code does
-not depend on a Helm built-in or behavior newer than its chart line's floor. The following
-constraints are normative:
+Chart 15.x (8.10) supports Helm CLI v3 (3.10 or later) and Helm CLI v4, chart 16.x (8.11) supports
+Helm CLI v4 only, and new template code does not depend on a Helm built-in or behavior newer than
+its chart line's floor. The following constraints are normative:
 
 1. Chart 15.x (8.10) MUST support Helm CLI v3 (3.10 or later) and Helm CLI v4. A render MUST NOT
    fail because of the Helm CLI major version. On Helm v3 the chart emits a non-blocking
@@ -149,6 +160,23 @@ constraints are normative:
    [#7340](https://github.com/camunda/camunda-platform-helm/issues/7340) reinstates it in 15.x,
    reverting its removal in [#6169](https://github.com/camunda/camunda-platform-helm/pull/6169)
    ([#6139](https://github.com/camunda/camunda-platform-helm/issues/6139)).
+5. Chart 16.x (8.11) and later chart lines MUST support Helm CLI v4 only:
+   - Every render on a Helm CLI older than 4.0.0 MUST fail with a `[camunda][error]` message that
+     names the detected CLI version, states that Helm CLI v4 or later is required, and links the
+     Helm v4 documentation. The Helm v3 warning from item 1 does not apply.
+   - Helm v3 releases from 3.10 to 3.22 MUST reach that message, not a template parse error. For
+     item 3, chart 16.x therefore keeps Helm 3.10 as the floor for Helm built-ins, although it
+     does not support Helm v3. Helm v3 releases older than 3.10 MAY fail with a template error
+     instead.
+   - Chart 16.x carries no Helm v3 warning. `camundaPlatform.toYamlPretty` stays: its fallback lets
+     Helm 3.10 to 3.16 parse the chart and reach the message, so item 4 does not remove it.
+   - CI for chart 16.x runs Helm v4 only. A unit test asserts that the render succeeds on Helm v4
+     and fails with the message above when it runs with a Helm v3 binary.
+   - The `camunda.io/helmCLIVersion` annotation and the version-matrix entries of chart 16.x
+     releases list only Helm v4.
+   - The supported upgrade path from chart 15.x is to switch the Helm CLI to v4 and then upgrade. A
+     chart 15.x release that was installed with Helm v3 MUST be upgradable to chart 16.x with Helm
+     v4, without a release-state migration.
 
 Applies to chart 15.x (8.10) through the sub-issues of
 [camunda/self-managed-experience#29](https://github.com/camunda/self-managed-experience/issues/29):
@@ -165,6 +193,7 @@ the final v3 line, 3.22.x, through Renovate.
 [#7341](https://github.com/camunda/camunda-platform-helm/issues/7341) and
 [#7342](https://github.com/camunda/camunda-platform-helm/issues/7342) apply item 2 to charts 12.x, 13.x and
 14.x. Item 3 is a forward rule for all chart lines from this ADR's acceptance date.
+[#7360](https://github.com/camunda/camunda-platform-helm/issues/7360) applies item 5 to chart 16.x.
 
 ### Positive Consequences
 
@@ -181,6 +210,9 @@ the final v3 line, 3.22.x, through Renovate.
 - Item 3's both-path test runs in CI: version-gated template code in charts 14.x and 15.x is tested
   on pinned Helm CLIs below and above the relevant boundary, not on whichever Helm is on `PATH`
   ([#7344](https://github.com/camunda/camunda-platform-helm/issues/7344)).
+- Camunda 8.11 does not depend on a Helm CLI without upstream security fixes. Helm v3 users of
+  chart 16.x get one message that names the required CLI before any resource is applied, and chart
+  16.x has no Helm v3 warning, CI scenarios, or unit-test matrix entries.
 
 ### Negative Consequences
 
@@ -208,6 +240,12 @@ the final v3 line, 3.22.x, through Renovate.
 - Item 3 is a review-time policy, not a tooling-enforced one today — no lint step currently flags
   a newly introduced Helm built-in against the chart's declared floor. Reviewers must know the
   floor and check new template code against it manually until such tooling exists.
+- Users must switch to Helm v4 before they upgrade to Camunda 8.11. Customer-facing documentation
+  and release notes must state this before the 8.11 release
+  ([#7658](https://github.com/camunda/camunda-platform-helm/issues/7658)).
+- Chart 16.x keeps Helm 3.10 as its floor for Helm built-ins, and keeps the
+  `camundaPlatform.toYamlPretty` wrapper, although it does not support Helm v3, so that Helm v3
+  users reach the message from item 5.
 
 ## Links
 
@@ -223,8 +261,12 @@ the final v3 line, 3.22.x, through Renovate.
 - [#6137](https://github.com/camunda/camunda-platform-helm/issues/6137) / [#6156](https://github.com/camunda/camunda-platform-helm/pull/6156) — the Helm v4 `constraints.tpl` fail guard that #7340 replaces.
 - [#6139](https://github.com/camunda/camunda-platform-helm/issues/6139) / [#6169](https://github.com/camunda/camunda-platform-helm/pull/6169) — `toYamlPretty` compat wrapper removal from 8.10, the motivating example for item 3, which #7340 reverts.
 - [#5921](https://github.com/camunda/camunda-platform-helm/issues/5921) — CI matrix scoping per chart line.
+- [#7360](https://github.com/camunda/camunda-platform-helm/issues/7360) — chart 16.x: Helm CLI v4 only (item 5).
+- [#7658](https://github.com/camunda/camunda-platform-helm/issues/7658) — customer-facing documentation and release notes for the chart 16.x Helm v4 requirement.
+- [camunda/product-hub#3838](https://github.com/camunda/product-hub/issues/3838) — PDP epic: require Helm CLI v4 for Camunda 8.11.
 - [ADR-0081](0081-expose-helm-v4-compatibility-options-as-explicit-values.md) — related but distinct: opt-in Helm v4-compatible *rendering* flags for charts 8.6-8.9, not a CLI-version floor.
 
 ## Changelog
 
 - 2026-10-07 — [#7499](https://github.com/camunda/camunda-platform-helm/pull/7499) — Clarify 8.8's Helm v3-only official support, internal Helm v4 compatibility coverage, public metadata, and the Helm v3 support cutoff for 8.8–8.10.
+- 2026-10-22 — [#7657](https://github.com/camunda/camunda-platform-helm/pull/7657) — Require Helm CLI v4 for chart 16.x (8.11) and later chart lines (item 5).

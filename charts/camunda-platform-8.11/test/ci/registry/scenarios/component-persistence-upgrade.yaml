@@ -11,7 +11,6 @@ platforms:
   - gke
 infra-type:
   gke: distroci
-helmVersion: 3.22.0
 dependencies:
   - keycloak
   - elasticsearch

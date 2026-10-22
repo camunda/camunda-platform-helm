@@ -11,6 +11,10 @@ A template to handle constraints.
 {{- end -}}
 {{- end -}}
 
+{{- if not (semverCompare ">=4.0.0-0" .Capabilities.HelmVersion.Version) -}}
+{{- fail (printf "[camunda][error] Camunda chart 16.x (8.11) requires Helm CLI v4 or later. Detected Helm CLI version: %s. Please upgrade to Helm v4: https://helm.sh/docs/overview" .Capabilities.HelmVersion.Version) -}}
+{{- end -}}
+
 {{- $values := .Values | toYaml | fromYaml }}
 
 {{ include "camundaPlatform.keyRenamed" (dict
@@ -1078,9 +1082,6 @@ Usage:
   {{- $secondaryStorageType := .Values.orchestration.data.secondaryStorage.type }}
   {{- if and .Values.global.noSecondaryStorage $secondaryStorageType (ne $secondaryStorageType "none") (eq (include "camundaPlatform.orchestrationEnabled" .) "true") }}
     {{- printf "\n[camunda][warning] global.noSecondaryStorage=true conflicts with orchestration.data.secondaryStorage.type=%s: the Orchestration Cluster uses %s secondary storage while the other components run without it. Set orchestration.data.secondaryStorage.type=none to run without secondary storage, or set global.noSecondaryStorage=false." $secondaryStorageType $secondaryStorageType }}
-  {{- end }}
-  {{- if not (semverCompare ">=4.0.0-0" .Capabilities.HelmVersion.Version) }}
-    {{- printf "\n%s" (printf "[camunda][warning] Helm CLI %s detected. Helm v3 receives security fixes only until February 10, 2027 (https://helm.sh/blog/helm-v3-end-of-life/). Upgrade to Helm v4 before then: https://helm.sh/docs/overview" .Capabilities.HelmVersion.Version) }}
   {{- end }}
   {{- $hubUpgradePhase := include "camundaHub.upgradePhase" . }}
   {{- if eq $hubUpgradePhase "quiesce" }}
