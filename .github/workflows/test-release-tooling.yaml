@@ -38,6 +38,7 @@ jobs:
             helm
             git-cliff
             yq
+            jq
 
       # TestImageSetRealChartContract reads each chart's vendored subcharts
       # (keycloak/ES/PG for 8.7-8.9), so they must be present before `go test`.
@@ -48,6 +49,9 @@ jobs:
           for v in 8.7 8.8 8.9 8.10 8.11; do
             make helm.dependency-update chartPath="charts/camunda-platform-$v"
           done
+
+      - name: issue-author — test
+        run: make test.issue-author
 
       - name: camunda-core — vet + test
         working-directory: scripts/camunda-core
