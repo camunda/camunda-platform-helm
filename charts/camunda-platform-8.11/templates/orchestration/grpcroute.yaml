@@ -30,7 +30,7 @@ spec:
   - {{ tpl .Values.orchestration.gateway.grpc.host $ }}
   rules:
   - backendRefs:
-    - name: {{ include "orchestration.serviceName" . }}
+    - name: {{ include "orchestration.clientServiceName" . }}
       namespace: {{ .Release.Namespace }}
       port: {{ .Values.orchestration.service.grpcPort }}
 {{- end }}

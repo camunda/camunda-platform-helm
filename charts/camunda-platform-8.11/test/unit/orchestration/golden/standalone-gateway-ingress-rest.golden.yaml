@@ -1,0 +1,25 @@
+---
+# Source: camunda-platform/templates/common/ingress-standalone-gateway-rest.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: camunda-platform-test-standalone-gateway-rest
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/instance: camunda-platform-test
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/part-of: camunda-platform
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: api.camunda.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: camunda-platform-test-zeebe-standalone-gateway
+                port:
+                  number: 8080

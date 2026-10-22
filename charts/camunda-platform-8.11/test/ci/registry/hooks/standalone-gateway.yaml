@@ -1,0 +1,8 @@
+script: post-deploy-standalone-gateway.sh
+description: |
+  Verifies the standalone gateway topology: more Ready gateway Pods than
+  brokers, gRPC and REST Ingress backends on the standalone gateway Service
+  and the web Ingress on the Orchestration Cluster Service. Deploys and starts
+  a process over gRPC on every gateway Pod (port-forward) and over REST through
+  the standalone gateway REST Ingress, then scales the gateway Deployment up by
+  one and repeats both checks while the broker count stays unchanged.

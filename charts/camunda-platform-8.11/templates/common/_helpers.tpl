@@ -797,6 +797,37 @@ Zeebe templates.
 {{- end -}}
 
 {{/*
+[camunda-platform] REST internal URL for API clients. Targets the standalone gateway when it is
+enabled, otherwise the same Service as camundaPlatform.orchestrationHTTPInternalURL.
+*/}}
+{{ define "camundaPlatform.orchestrationClientHTTPInternalURL" }}
+  {{- if eq (include "camundaPlatform.orchestrationEnabled" .) "true" -}}
+    {{-
+      printf "%s://%s:%v%s"
+        (ternary "https" "http" (eq (include "camundaPlatform.orchestrationRESTTLSEnabled" .) "true"))
+        (include "orchestration.clientServiceName" .)
+        .Values.orchestration.service.httpPort
+        (.Values.orchestration.contextPath | default "" | trimSuffix "/")
+    -}}
+  {{- end -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] gRPC internal URL for API clients. Targets the standalone gateway when it is
+enabled, otherwise the same Service as camundaPlatform.orchestrationGRPCInternalURL.
+*/}}
+{{ define "camundaPlatform.orchestrationClientGRPCInternalURL" }}
+  {{- if eq (include "camundaPlatform.orchestrationEnabled" .) "true" -}}
+    {{-
+      printf "%s://%s:%v"
+        (ternary "grpcs" "grpc" (eq (include "camundaPlatform.orchestrationGRPCTLSEnabled" .) "true"))
+        (include "orchestration.clientServiceName" .)
+        .Values.orchestration.service.grpcPort
+    -}}
+  {{- end -}}
+{{- end -}}
+
+{{/*
 [camunda-platform] Returns "true" when Orchestration REST TLS is enabled,
 resolved in the order Spring itself applies, highest precedence first:
 
@@ -1583,6 +1614,9 @@ Release templates.
     urls:
       grpc: {{ include "camundaPlatform.orchestrationGRPCExternalURL" . }}
       http: {{ include "camundaPlatform.orchestrationExternalURL" . }}
+      {{- with include "orchestration.standaloneGatewayRESTExternalURL" . }}
+      rest: {{ . }}
+      {{- end }}
     readiness: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.readinessProbe.probePath)) }}
     metrics: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.metrics.prometheus)) }}
   {{- end }}
@@ -1685,8 +1719,8 @@ required by camunda.hub.clusters (introduced in 8.10 Hub/WebModeler).
     type: orchestration
     version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.orchestration) | quote }}
     urls:
-      grpc: {{ include "camundaPlatform.orchestrationGRPCInternalURL" . | quote }}
-      rest: {{ include "camundaPlatform.orchestrationHTTPInternalURL" . | quote }}
+      grpc: {{ include "camundaPlatform.orchestrationClientGRPCInternalURL" . | quote }}
+      rest: {{ include "camundaPlatform.orchestrationClientHTTPInternalURL" . | quote }}
       readiness: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.readinessProbe.probePath)) | quote }}
   {{- end }}
 {{- end }}
