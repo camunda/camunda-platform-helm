@@ -53,6 +53,9 @@ jobs:
           make helm.repos-add
           make helm.dependency-update
 
+      - name: Install ripgrep for helm_unused_values tests
+        run: sudo apt-get update && sudo apt-get install -y ripgrep
+
       - name: Test every Go module under scripts/
         run: make go.test-scripts
 
