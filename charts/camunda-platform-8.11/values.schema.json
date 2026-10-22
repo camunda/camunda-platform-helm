@@ -4570,6 +4570,248 @@
                 }
             }
         },
+        "capacityManager": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean",
+                    "description": "EXPERIMENTAL. If true, deploys the capacity manager. It only observes and recommends until replicaOwnership hands it the orchestration StatefulSet replica count. See docs/capacity-manager.md before enabling.",
+                    "default": false
+                },
+                "replicaOwnership": {
+                    "type": "string",
+                    "description": "hands the orchestration StatefulSet replica count to the capacity manager when set to `capacityManager` (requires orchestration.clusterSize \"1\"). Empty keeps Helm ownership. Helm only takes the replica count back once the manager's durable target, completion marker and live replicas all equal orchestration.clusterSize; until then upgrades fail closed instead of resizing brokers that were not evacuated.",
+                    "default": "",
+                    "enum": [
+                        "",
+                        "capacityManager"
+                    ]
+                },
+                "image": {
+                    "type": "object",
+                    "properties": {
+                        "registry": {
+                            "type": "string",
+                            "description": "can be used to set the container image registry.",
+                            "default": "registry.camunda.cloud"
+                        },
+                        "repository": {
+                            "type": "string",
+                            "description": "defines which image repository to use.",
+                            "default": "team-distribution/capacity-manager"
+                        },
+                        "tag": {
+                            "type": "string",
+                            "description": "defines the image tag to use.",
+                            "default": "pr-6705-sha-bffb444e371209931262abfa8d82a755992a37b7"
+                        },
+                        "digest": {
+                            "type": "string",
+                            "description": "can be used to set the image digest, overriding the tag.",
+                            "default": "sha256:ac6c0ecf42e1a3b14b7187075feb326b6cc6ff34a1fac6918e65bdcbd2bcb473"
+                        },
+                        "pullSecrets": {
+                            "type": "array",
+                            "description": "can be used to configure image pull secrets.",
+                            "default": [],
+                            "items": {}
+                        }
+                    }
+                },
+                "reconcileInterval": {
+                    "type": "string",
+                    "description": "defines how often the capacity policy is evaluated.",
+                    "default": "30s"
+                },
+                "operationTimeout": {
+                    "type": "string",
+                    "description": "defines the maximum duration of a Zeebe topology operation.",
+                    "default": "20m"
+                },
+                "joinTimeout": {
+                    "type": "string",
+                    "description": "defines how long a newly provisioned broker pod may take to become Ready before the manager withdraws it without joining it to the topology.",
+                    "default": "10m"
+                },
+                "prometheusLabels": {
+                    "type": "object",
+                    "properties": {
+                        "namespace": {
+                            "type": "string",
+                            "description": "label holding the pod namespace.",
+                            "default": "namespace"
+                        },
+                        "pod": {
+                            "type": "string",
+                            "description": "label holding the pod name.",
+                            "default": "pod"
+                        }
+                    }
+                },
+                "prometheusURL": {
+                    "type": "string",
+                    "description": "base URL of a Prometheus server that scrapes every orchestration broker. Required for automatic mode, which evaluates the policy's PromQL scale-up, scale-down and veto signals; a broker actuator URL is rejected.",
+                    "default": ""
+                },
+                "extraConfiguration": {
+                    "type": "array",
+                    "description": "can be used to provide application configuration files such as policy.json.",
+                    "default": [],
+                    "items": {}
+                },
+                "resources": {
+                    "type": "object",
+                    "properties": {
+                        "requests": {
+                            "type": "object",
+                            "properties": {
+                                "cpu": {
+                                    "type": "string",
+                                    "description": "",
+                                    "default": "50m"
+                                },
+                                "memory": {
+                                    "type": "string",
+                                    "description": "",
+                                    "default": "64Mi"
+                                }
+                            }
+                        },
+                        "limits": {
+                            "type": "object",
+                            "properties": {
+                                "cpu": {
+                                    "type": "string",
+                                    "description": "",
+                                    "default": "250m"
+                                },
+                                "memory": {
+                                    "type": "string",
+                                    "description": "",
+                                    "default": "128Mi"
+                                }
+                            }
+                        }
+                    }
+                },
+                "podAnnotations": {
+                    "type": "object",
+                    "description": "can be used to define pod annotations.",
+                    "default": {}
+                },
+                "podLabels": {
+                    "type": "object",
+                    "description": "can be used to define pod labels.",
+                    "default": {}
+                },
+                "nodeSelector": {
+                    "type": "object",
+                    "description": "can be used to define on which nodes the pods should run.",
+                    "default": {}
+                },
+                "tolerations": {
+                    "type": "array",
+                    "description": "can be used to define pod tolerations.",
+                    "default": [],
+                    "items": {}
+                },
+                "affinity": {
+                    "type": "object",
+                    "description": "can be used to define pod affinity.",
+                    "default": {}
+                },
+                "serviceAccount": {
+                    "type": "object",
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "description": "if true, creates the service account.",
+                            "default": true
+                        },
+                        "name": {
+                            "type": "string",
+                            "description": "can be used to set the service account name.",
+                            "default": ""
+                        },
+                        "annotations": {
+                            "type": "object",
+                            "description": "can be used to set service account annotations.",
+                            "default": {}
+                        },
+                        "labels": {
+                            "type": "object",
+                            "description": "can be used to set service account labels.",
+                            "default": {}
+                        }
+                    }
+                },
+                "podSecurityContext": {
+                    "type": "object",
+                    "properties": {
+                        "runAsNonRoot": {
+                            "type": "boolean",
+                            "description": "",
+                            "default": true
+                        },
+                        "seccompProfile": {
+                            "type": "object",
+                            "properties": {
+                                "type": {
+                                    "type": "string",
+                                    "description": "",
+                                    "default": "RuntimeDefault"
+                                }
+                            }
+                        }
+                    }
+                },
+                "containerSecurityContext": {
+                    "type": "object",
+                    "properties": {
+                        "allowPrivilegeEscalation": {
+                            "type": "boolean",
+                            "description": "",
+                            "default": false
+                        },
+                        "capabilities": {
+                            "type": "object",
+                            "properties": {
+                                "drop": {
+                                    "type": "array",
+                                    "description": "",
+                                    "default": [
+                                        "ALL"
+                                    ],
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        },
+                        "privileged": {
+                            "type": "boolean",
+                            "description": "",
+                            "default": false
+                        },
+                        "readOnlyRootFilesystem": {
+                            "type": "boolean",
+                            "description": "",
+                            "default": true
+                        },
+                        "runAsNonRoot": {
+                            "type": "boolean",
+                            "description": "",
+                            "default": true
+                        },
+                        "runAsUser": {
+                            "type": "number",
+                            "description": "",
+                            "default": 65532
+                        }
+                    }
+                }
+            }
+        },
         "orchestration": {
             "type": "object",
             "properties": {

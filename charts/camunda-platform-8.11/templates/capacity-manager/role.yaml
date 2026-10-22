@@ -1,0 +1,19 @@
+{{- if .Values.capacityManager.enabled -}}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "capacityManager.fullname" . }}
+  labels: {{- include "capacityManager.labels" . | nindent 4 }}
+rules:
+  - apiGroups: ["apps"]
+    resources: ["statefulsets"]
+    resourceNames: [{{ include "orchestration.fullname" . | quote }}]
+    {{- if eq .Values.capacityManager.replicaOwnership "capacityManager" }}
+    verbs: ["get", "patch", "update"]
+    {{- else }}
+    verbs: ["get"]
+    {{- end }}
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get"]
+{{- end -}}

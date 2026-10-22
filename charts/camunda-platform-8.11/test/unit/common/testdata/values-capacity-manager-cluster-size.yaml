@@ -1,0 +1,11 @@
+capacityManager:
+  enabled: true
+  replicaOwnership: capacityManager
+  policy:
+    mode: automatic
+
+orchestration:
+  data:
+    secondaryStorage:
+      type: elasticsearch
+  clusterSize: "3"
