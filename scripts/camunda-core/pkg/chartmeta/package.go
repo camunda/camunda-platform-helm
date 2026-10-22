@@ -35,7 +35,7 @@ func ChartImages(chartYAMLPath string) ([]string, error) {
 	anns, _ := m["annotations"].(map[string]any)
 	raw, _ := scalarString(anns[ChartImagesAnnotation])
 	var images []string
-	for _, line := range strings.Split(raw, "\n") {
+	for line := range strings.SplitSeq(raw, "\n") {
 		if s := strings.TrimSpace(line); s != "" {
 			images = append(images, s)
 		}

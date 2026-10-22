@@ -37,6 +37,7 @@ import (
 	"compress/gzip"
 	"fmt"
 	"io"
+	"maps"
 	"os"
 	"path/filepath"
 	"sort"
@@ -365,7 +366,7 @@ func imageMapAt(values map[string]any, componentPath string) map[string]string {
 
 func valueAt(values map[string]any, path string) any {
 	var cur any = values
-	for _, part := range strings.Split(path, ".") {
+	for part := range strings.SplitSeq(path, ".") {
 		m, ok := cur.(map[string]any)
 		if !ok {
 			return nil
@@ -402,9 +403,7 @@ func scalarString(v any) (string, bool) {
 // recursively). Inputs are not mutated beyond the returned tree.
 func deepMerge(base, overlay map[string]any) map[string]any {
 	out := make(map[string]any, len(base))
-	for k, v := range base {
-		out[k] = v
-	}
+	maps.Copy(out, base)
 	for k, ov := range overlay {
 		if bv, ok := out[k]; ok {
 			bm, bIsMap := bv.(map[string]any)

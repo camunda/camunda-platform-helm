@@ -183,8 +183,8 @@ func parseMapping(mapping string) []string {
 			continue
 		}
 
-		if idx := strings.Index(rest, "|"); idx >= 0 {
-			aliasPart := strings.TrimSpace(rest[idx+1:])
+		if _, after, ok := strings.Cut(rest, "|"); ok {
+			aliasPart := strings.TrimSpace(after)
 			if aliasPart == "" {
 				logging.Logger.Debug().Str("line", line).Msg("Empty alias part in mapping line")
 				continue
@@ -215,11 +215,11 @@ func trimSpaceAndCR(s string) string {
 }
 
 func splitOnce(s, sep string) []string {
-	i := strings.Index(s, sep)
-	if i < 0 {
+	before, after, ok := strings.Cut(s, sep)
+	if !ok {
 		return []string{s}
 	}
-	return []string{s[:i], s[i+len(sep):]}
+	return []string{before, after}
 }
 
 func splitCSVOrSpace(s string) []string {

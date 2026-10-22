@@ -19,6 +19,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"strings"
@@ -68,8 +69,7 @@ func ReadFile(path string) (map[string]string, error) {
 // logs or prints it (e.g. matrix run's stderr, which CI captures). Those are
 // replaced with a generic message; the path alone is enough to locate the fix.
 func sanitizeParseError(path string, err error) error {
-	var pathErr *os.PathError
-	if errors.As(err, &pathErr) {
+	if _, ok := errors.AsType[*os.PathError](err); ok {
 		return err
 	}
 	return fmt.Errorf("%s: malformed .env syntax; check the file by hand", path)
@@ -131,9 +131,7 @@ func appendMultipleLocked(path string, updates map[string]string) error {
 
 	// Track which keys still need to be written.
 	remaining := make(map[string]string, len(updates))
-	for k, v := range updates {
-		remaining[k] = v
-	}
+	maps.Copy(remaining, updates)
 
 	data, err := os.ReadFile(path)
 	if err != nil && !os.IsNotExist(err) {
@@ -188,8 +186,8 @@ func extractKey(line string) string {
 	}
 	// Strip optional "export " prefix.
 	raw := trimmed
-	if strings.HasPrefix(raw, "export ") {
-		raw = strings.TrimPrefix(raw, "export ")
+	if after, ok := strings.CutPrefix(raw, "export "); ok {
+		raw = after
 		raw = strings.TrimSpace(raw)
 	}
 	idx := strings.IndexByte(raw, '=')

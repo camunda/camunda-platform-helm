@@ -489,8 +489,8 @@ func TestRenderIndexLandingAndFooter(t *testing.T) {
 		t.Fatalf("RenderIndex: %v", err)
 	}
 	// Minimal landing: orientation line + snippet before the first section.
-	firstSection := strings.Index(got, "## Camunda 8.10")
-	landing := got[:firstSection]
+	before, _, _ := strings.Cut(got, "## Camunda 8.10")
+	landing := before
 	if !strings.Contains(landing, "Find the Helm chart that matches your Camunda version.") {
 		t.Errorf("landing missing orientation line:\n%s", landing)
 	}
@@ -505,7 +505,7 @@ func TestRenderIndexLandingAndFooter(t *testing.T) {
 		t.Errorf("support note must appear exactly once")
 	}
 	noteAt := strings.Index(got, "Standard support lasts 18 months")
-	if h89 := strings.Index(got, "## Camunda 8.9"); !(noteAt > h89 && noteAt < strings.Index(got, "## Camunda 8.8")) {
+	if h89 := strings.Index(got, "## Camunda 8.9"); noteAt <= h89 || noteAt >= strings.Index(got, "## Camunda 8.8") {
 		t.Errorf("support note not under the first standard-support heading")
 	}
 	// Generation FYI is the page footer.

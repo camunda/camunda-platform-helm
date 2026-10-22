@@ -54,8 +54,8 @@ type Entry struct {
 // Format: "hash:{sha256},ts:{unix_timestamp}"
 func ParseDescription(desc string) (Entry, error) {
 	entry := Entry{}
-	parts := strings.Split(desc, ",")
-	for _, part := range parts {
+	parts := strings.SplitSeq(desc, ",")
+	for part := range parts {
 		kv := strings.SplitN(part, ":", 2)
 		if len(kv) != 2 {
 			continue

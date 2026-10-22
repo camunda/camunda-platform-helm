@@ -129,7 +129,7 @@ func ReleaseTag(minor, version string) string {
 // the first `^+.*version:` line (prefix stripped), else the
 // `"<chartDir>": "<version>"` manifest entry.
 func ScrapeTraceVersion(traceLog, chartDir string) string {
-	for _, line := range strings.Split(traceLog, "\n") {
+	for line := range strings.SplitSeq(traceLog, "\n") {
 		if traceVersionLineRe.MatchString(line) {
 			return strings.TrimSpace(traceVersionStripRe.ReplaceAllString(line, ""))
 		}

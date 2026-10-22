@@ -167,7 +167,7 @@ func extractChartVersion(path string) []int {
 
 func parseSemverParts(s string) []int {
 	out := make([]int, 0, 3)
-	for _, seg := range strings.Split(s, ".") {
+	for seg := range strings.SplitSeq(s, ".") {
 		n, err := strconv.Atoi(seg)
 		if err != nil {
 			return out
