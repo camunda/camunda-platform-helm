@@ -34,17 +34,6 @@ jobs:
       with:
         args: renovate-config-validator
 
-    - name: Set up Go
-      uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
-      with:
-        go-version-file: scripts/renovate-config-check/go.mod
-        cache: true
-        cache-dependency-path: scripts/renovate-config-check/go.sum
-
-    - name: Validate alpha versioning consistency
-      working-directory: scripts/renovate-config-check
-      run: go test ./... -v
-
     - name: Observe build status
       if: always()
       continue-on-error: true

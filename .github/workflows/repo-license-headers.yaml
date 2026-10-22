@@ -33,9 +33,6 @@ jobs:
         with:
           tools: |
             golang
-      - name: Test license-check tool
-        run: |
-          cd scripts/license-check && go test ./...
       - name: Verify license headers across all tracked source files
         run: |
           make go.license-verify

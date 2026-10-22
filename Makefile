@@ -197,6 +197,10 @@ endef
 go.lint:
 	@$(call go_scripts_run,golangci-lint run --new-from-merge-base=$(lintBase) ./...)
 
+.PHONY: go.test-scripts
+go.test-scripts:
+	@$(call go_scripts_run,go test -race ./...)
+
 #
 # Helpers.
 
