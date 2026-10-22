@@ -12,19 +12,19 @@ console:
   # https://hub.docker.com/r/camunda/console/tags
   image:
     repository: camunda/console
-    tag: 8.9.128
+    tag: 8.9.130
 
 connectors:
   # https://hub.docker.com/r/camunda/connectors-bundle/tags
   image:
     repository: camunda/connectors-bundle
-    tag: 8.9.16
+    tag: 8.9.17
 
 optimize:
   # https://hub.docker.com/r/camunda/optimize/tags
   image:
     repository: camunda/optimize
-    tag: 8.9.25
+    tag: 8.9.26
 
 webModeler:
   # https://hub.docker.com/r/camunda/web-modeler-restapi
@@ -40,7 +40,7 @@ orchestration:
   # https://hub.docker.com/r/camunda/camunda/tags
   image:
     repository: camunda/camunda
-    tag: 8.9.25
+    tag: 8.9.26
 
 #
 # Identity
@@ -50,7 +50,7 @@ identity:
   # https://hub.docker.com/r/camunda/identity/tags
   image:
     repository: camunda/identity
-    tag: 8.9.11
+    tag: 8.9.12
 
 identityKeycloak:
   image:
