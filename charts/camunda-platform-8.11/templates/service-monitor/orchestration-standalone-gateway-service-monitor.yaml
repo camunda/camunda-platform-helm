@@ -1,0 +1,17 @@
+{{- if and .Values.prometheusServiceMonitor.enabled (eq (include "orchestration.standaloneGatewayEnabled" .) "true") -}}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "orchestration.standaloneGatewayServiceName" . }}
+  labels: {{- include "camundaPlatform.labels" . | nindent 4 }}
+    {{- toYaml .Values.prometheusServiceMonitor.labels | nindent 4}}
+spec:
+  selector:
+    matchLabels:
+      {{- include "orchestration.standaloneGatewayMatchLabels" . | nindent 6 }}
+  endpoints:
+    - honorLabels: true
+      path: {{ include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.metrics.prometheus) }}
+      port: {{ default "management" .Values.orchestration.service.managementName }}
+      interval: {{ .Values.prometheusServiceMonitor.scrapeInterval }}
+{{- end }}
