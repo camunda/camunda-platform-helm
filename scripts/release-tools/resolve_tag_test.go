@@ -26,6 +26,11 @@ import (
 // and the captured stdout.
 func runResolveTagCapture(t *testing.T, args []string) (map[string]string, string, error) {
 	t.Helper()
+	return captureToolOutput(t, runResolveTag, args)
+}
+
+func captureToolOutput(t *testing.T, run func([]string) error, args []string) (map[string]string, string, error) {
+	t.Helper()
 	dir := t.TempDir()
 	ghoPath := filepath.Join(dir, "gho.txt")
 	t.Setenv("GITHUB_OUTPUT", ghoPath)
@@ -37,7 +42,7 @@ func runResolveTagCapture(t *testing.T, args []string) (map[string]string, strin
 	}
 	os.Stdout = w
 
-	runErr := runResolveTag(args)
+	runErr := run(args)
 
 	w.Close()
 	os.Stdout = origStdout
@@ -110,39 +115,6 @@ func TestResolveTagDevConcreteNoTagsFile(t *testing.T) {
 	}
 }
 
-func TestResolveTagRcWithDevTag(t *testing.T) {
-	tags := writeTags(t, "13.4.0-rc", "13-rc-latest", "13.4.0-dev-abc1234", "13-dev-latest")
-	out, _, err := runResolveTagCapture(t, []string{"--kind", "rc", "--input-tag", "13-rc-latest", "--tags-file", tags})
-	if err != nil {
-		t.Fatalf("runResolveTag: %v", err)
-	}
-	if out["resolved_tag"] != "13.4.0-rc" || out["version"] != "13.4.0" ||
-		out["dev_tag"] != "13.4.0-dev-abc1234" || out["commit_sha"] != "abc1234" {
-		t.Errorf("unexpected rc output: %v", out)
-	}
-	// rc must NOT emit dev-only keys.
-	for _, k := range []string{"chart_major", "rc_tag", "rc_latest_tag"} {
-		if _, ok := out[k]; ok {
-			t.Errorf("rc emitted unexpected key %q", k)
-		}
-	}
-}
-
-func TestResolveTagRcNoDevTag(t *testing.T) {
-	tags := writeTags(t, "14.0.0-alpha2-rc", "14-rc-latest")
-	out, _, err := runResolveTagCapture(t, []string{"--kind", "rc", "--input-tag", "14.0.0-alpha2-rc", "--tags-file", tags})
-	if err != nil {
-		t.Fatalf("runResolveTag: %v", err)
-	}
-	// dev_tag/commit_sha emitted but empty (matches bash else-branch).
-	if v, ok := out["dev_tag"]; !ok || v != "" {
-		t.Errorf("dev_tag = %q (present=%v) want empty+present", v, ok)
-	}
-	if v, ok := out["commit_sha"]; !ok || v != "" {
-		t.Errorf("commit_sha = %q (present=%v) want empty+present", v, ok)
-	}
-}
-
 func TestResolveTagDevDryRun(t *testing.T) {
 	out, stdout, err := runResolveTagCapture(t, []string{"--kind", "dev", "--input-tag", "13.4.0-dev-abc1234", "--dry-run"})
 	if err != nil {
@@ -156,44 +128,6 @@ func TestResolveTagDevDryRun(t *testing.T) {
 	}
 }
 
-func TestResolveTagRcDryRun(t *testing.T) {
-	// Concrete dry-run tag.
-	out, _, err := runResolveTagCapture(t, []string{"--kind", "rc", "--input-tag", "13.4.0-rc-dryrun", "--dry-run"})
-	if err != nil {
-		t.Fatalf("runResolveTag concrete dryrun: %v", err)
-	}
-	if out["resolved_tag"] != "13.4.0-rc-dryrun" || out["version"] != "13.4.0" {
-		t.Errorf("unexpected rc dry-run output: %v", out)
-	}
-
-	// Rolling dry-run tag resolves against -rc-dryrun concretes only.
-	tags := writeTags(t, "13-rc-dryrun-latest", "13.4.0-rc", "13.4.0-rc-dryrun", "13.4.0-dev-abc1234")
-	out, _, err = runResolveTagCapture(t, []string{"--kind", "rc", "--input-tag", "13-rc-dryrun-latest", "--tags-file", tags, "--dry-run"})
-	if err != nil {
-		t.Fatalf("runResolveTag rolling dryrun: %v", err)
-	}
-	if out["resolved_tag"] != "13.4.0-rc-dryrun" || out["dev_tag"] != "13.4.0-dev-abc1234" {
-		t.Errorf("unexpected rolling rc dry-run output: %v", out)
-	}
-
-	// Plain rc tags stay valid in dry-run.
-	out, _, err = runResolveTagCapture(t, []string{"--kind", "rc", "--input-tag", "13.4.0-rc", "--dry-run"})
-	if err != nil {
-		t.Fatalf("runResolveTag plain rc in dryrun: %v", err)
-	}
-	if out["resolved_tag"] != "13.4.0-rc" || out["version"] != "13.4.0" {
-		t.Errorf("unexpected plain rc output in dry-run: %v", out)
-	}
-
-	// Without --dry-run, dryrun tags are rejected.
-	if _, _, err := runResolveTagCapture(t, []string{"--kind", "rc", "--input-tag", "13.4.0-rc-dryrun"}); err == nil {
-		t.Error("expected error for dryrun tag without --dry-run")
-	}
-	if _, _, err := runResolveTagCapture(t, []string{"--kind", "rc", "--input-tag", "13-rc-dryrun-latest", "--tags-file", tags}); err == nil {
-		t.Error("expected error for rolling dryrun tag without --dry-run")
-	}
-}
-
 func TestResolveTagErrors(t *testing.T) {
 	// rolling without tags-file
 	if _, _, err := runResolveTagCapture(t, []string{"--kind", "dev", "--input-tag", "13-dev-latest"}); err == nil {
@@ -203,8 +137,8 @@ func TestResolveTagErrors(t *testing.T) {
 	if _, _, err := runResolveTagCapture(t, []string{"--kind", "dev", "--input-tag", "not-a-tag"}); err == nil {
 		t.Error("expected error for invalid dev tag")
 	}
-	// bad kind
-	if _, _, err := runResolveTagCapture(t, []string{"--kind", "bogus", "--input-tag", "x"}); err == nil {
-		t.Error("expected error for invalid --kind")
+	// rc tags are resolved by harbor-tag source
+	if _, _, err := runResolveTagCapture(t, []string{"--kind", "rc", "--input-tag", "13.4.0-rc"}); err == nil {
+		t.Error("expected error for --kind rc")
 	}
 }

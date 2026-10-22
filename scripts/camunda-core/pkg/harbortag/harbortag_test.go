@@ -19,6 +19,46 @@ import (
 	"testing"
 )
 
+func TestResolveRCSource(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		name    string
+		input   string
+		tags    []string
+		dryRun  bool
+		wantRC  string
+		wantSHA string
+	}{
+		{"concrete", "14.11.1-rc", []string{"14.11.1-rc", "14.11.1-dev-5713eb8"}, false, "14.11.1-rc", "5713eb8"},
+		{"rolling", "14-rc-latest", []string{"14-rc-latest", "14.11.1-rc", "14.11.1-dev-5713eb8"}, false, "14.11.1-rc", "5713eb8"},
+		{"dry run", "14-rc-dryrun-latest", []string{"14-rc-dryrun-latest", "14.11.1-rc-dryrun", "14.11.1-rc", "14.11.1-dev-5713eb8"}, true, "14.11.1-rc-dryrun", "5713eb8"},
+		{"prerelease", "16.0.0-alpha1-rc", []string{"16.0.0-alpha1-rc", "16.0.0-alpha1-dev-abcdef12"}, false, "16.0.0-alpha1-rc", "abcdef12"},
+		{"missing source", "14.11.1-rc", []string{"14.11.1-rc"}, false, "", ""},
+		{"wrong version", "14.11.1-rc", []string{"14.11.1-rc", "14.11.0-dev-5713eb8"}, false, "", ""},
+		{"ambiguous source", "14.11.1-rc", []string{"14.11.1-rc", "14.11.1-dev-5713eb8", "14.11.1-dev-abcdef1"}, false, "", ""},
+		{"ambiguous RC", "14-rc-latest", []string{"14-rc-latest", "14.11.1-rc", "14.11.2-rc", "14.11.1-dev-5713eb8"}, false, "", ""},
+		{"wrong major", "14-rc-latest", []string{"14-rc-latest", "15.0.0-rc", "15.0.0-dev-5713eb8"}, false, "", ""},
+		{"input moved", "14.11.1-rc", []string{"14.11.1-dev-5713eb8"}, false, "", ""},
+		{"dry run forbidden", "14.11.1-rc-dryrun", []string{"14.11.1-rc-dryrun", "14.11.1-dev-5713eb8"}, false, "", ""},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			rc, source, err := ResolveRCSource(tc.input, tc.tags, tc.dryRun)
+			if tc.wantRC == "" {
+				if err == nil {
+					t.Fatal("expected a provenance error")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			if rc.ResolvedTag != tc.wantRC || source.SHA != tc.wantSHA {
+				t.Fatalf("got RC=%q source=%q, want RC=%q source=%q", rc.ResolvedTag, source.SHA, tc.wantRC, tc.wantSHA)
+			}
+		})
+	}
+}
+
 func TestIsRolling(t *testing.T) {
 	tests := []struct {
 		tag  string
@@ -150,19 +190,5 @@ func TestIsRcDryRunTag(t *testing.T) {
 		if got := IsRcDryRunTag(tt.tag); got != tt.want {
 			t.Errorf("IsRcDryRunTag(%q)=%v want %v", tt.tag, got, tt.want)
 		}
-	}
-}
-
-func TestFindDevTagAndCommitSHA(t *testing.T) {
-	tags := []string{"13.4.0-rc", "13-rc-latest", "13.4.0-dev-abc1234", "13-dev-latest"}
-	dev := FindDevTag(tags)
-	if dev != "13.4.0-dev-abc1234" {
-		t.Errorf("FindDevTag=%q want 13.4.0-dev-abc1234", dev)
-	}
-	if sha := CommitSHAFromDevTag(dev); sha != "abc1234" {
-		t.Errorf("CommitSHAFromDevTag=%q want abc1234", sha)
-	}
-	if FindDevTag([]string{"13.4.0-rc"}) != "" {
-		t.Error("FindDevTag want empty when no dev tag")
 	}
 }
