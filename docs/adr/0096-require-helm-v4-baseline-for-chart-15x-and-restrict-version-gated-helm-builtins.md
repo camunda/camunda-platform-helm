@@ -168,8 +168,8 @@ its chart line's floor. The following constraints are normative:
      item 3, chart 16.x therefore keeps Helm 3.10 as the floor for Helm built-ins, although it
      does not support Helm v3. Helm v3 releases older than 3.10 MAY fail with a template error
      instead.
-   - Item 4 applies: chart 16.x carries no Helm v3 warning and no wrapper whose only purpose is a
-     Helm v3 fallback.
+   - Chart 16.x carries no Helm v3 warning. `camundaPlatform.toYamlPretty` stays: its fallback lets
+     Helm 3.10 to 3.16 parse the chart and reach the message, so item 4 does not remove it.
    - CI for chart 16.x runs Helm v4 only. A unit test asserts that the render succeeds on Helm v4
      and fails with the message above when it runs with a Helm v3 binary.
    - The `camunda.io/helmCLIVersion` annotation and the version-matrix entries of chart 16.x
@@ -212,7 +212,7 @@ the final v3 line, 3.22.x, through Renovate.
   ([#7344](https://github.com/camunda/camunda-platform-helm/issues/7344)).
 - Camunda 8.11 does not depend on a Helm CLI without upstream security fixes. Helm v3 users of
   chart 16.x get one message that names the required CLI before any resource is applied, and chart
-  16.x has no Helm v3 compatibility code, CI scenarios, or unit-test matrix entries.
+  16.x has no Helm v3 warning, CI scenarios, or unit-test matrix entries.
 
 ### Negative Consequences
 
@@ -243,8 +243,9 @@ the final v3 line, 3.22.x, through Renovate.
 - Users must switch to Helm v4 before they upgrade to Camunda 8.11. Customer-facing documentation
   and release notes must state this before the 8.11 release
   ([#7658](https://github.com/camunda/camunda-platform-helm/issues/7658)).
-- Chart 16.x keeps Helm 3.10 as its floor for Helm built-ins although it does not support Helm v3,
-  so that Helm v3 users reach the message from item 5.
+- Chart 16.x keeps Helm 3.10 as its floor for Helm built-ins, and keeps the
+  `camundaPlatform.toYamlPretty` wrapper, although it does not support Helm v3, so that Helm v3
+  users reach the message from item 5.
 
 ## Links
 
