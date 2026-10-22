@@ -1,0 +1,113 @@
+---
+# Source: camunda-platform/templates/orchestration/standalone-gateway-configmap.yaml
+kind: ConfigMap
+metadata:
+  name: camunda-platform-test-zeebe-standalone-gateway-configuration
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: camunda-platform-test
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    app.kubernetes.io/component: zeebe-standalone-gateway
+    app.kubernetes.io/version: "8.11-SNAPSHOT"
+apiVersion: v1
+data:
+  application.yaml: |    
+    spring:
+      profiles:
+        active: "gateway,standalone,consolidated-auth"
+      servlet:
+        multipart:
+          max-file-size: "10MB"
+          max-request-size: "10MB"
+    
+    server:
+      address: 0.0.0.0
+      port: 8080
+      tomcat:
+        max-http-form-post-size: "10MB"
+    
+    management:
+      server:
+        address: 0.0.0.0
+        port: 9600
+        base-path: "/"
+    
+    camunda:
+      license:
+        key: "${VALUES_ORCHESTRATION_LICENSE_KEY}"
+    
+      cluster:
+        gateway-id: "${K8S_NAME}"
+        name: camunda-platform-test-zeebe
+        # zeebe.broker.cluster
+        initial-contact-points:
+          - camunda-platform-test-zeebe-0.${K8S_SERVICE_NAME}:26502
+          - camunda-platform-test-zeebe-1.${K8S_SERVICE_NAME}:26502
+          - camunda-platform-test-zeebe-2.${K8S_SERVICE_NAME}:26502
+        network:
+          advertised-host: "${K8S_POD_IP}"
+          host: 0.0.0.0
+          internal-api:
+            port: 26502
+    
+      api:
+        grpc:
+          address: 0.0.0.0
+          port: 26500
+    
+      # Database configuration - Separated syntax.
+      database:
+    
+      data:
+        secondary-storage:
+          autoconfigure-camunda-exporter: true
+          type: "elasticsearch"
+          elasticsearch:
+            aws-enabled: false
+            url: "http://camunda-platform-test-elasticsearch:9200"
+            username: ""
+            password: "${VALUES_ELASTICSEARCH_PASSWORD:}"
+            index-prefix: ""
+            number-of-replicas: "1"
+            history:
+              els-rollover-date-format: "date"
+              rollover-interval: "1d"
+              rollover-batch-size: 100
+              wait-period-before-archiving: "1h"
+              delay-between-runs: 2000
+              max-delay-between-runs: 60000
+    
+      # Security configuration - Separated syntax.
+      security:
+        authentication:
+          method: "basic"
+          unprotectedApi: false
+        authorizations:
+          enabled: true
+        initialization:
+          default-roles:
+            admin:
+              users:
+              - demo
+            connectors:
+              clients:
+              - connectors
+              users:
+              - connectors
+          users:
+            - email: connector@demo.com
+              name: Connector User
+              password: connector
+              username: connectors
+            - email: demo@demo.com
+              name: Demo User
+              password: demo
+              username: demo
+        multiTenancy:
+          checksEnabled: false
+          apiEnabled: true
+      persistent:
+        sessions:
+          enabled: true
