@@ -237,3 +237,8 @@ global:
                   readOnlyRootFilesystem: true
                   runAsNonRoot: true
                   runAsUser: 65532
+
+# Optimize requires OIDC and cannot start with basic auth, which blocks
+# helm --wait; the capacity checks do not need it.
+optimize:
+  enabled: false
