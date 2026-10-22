@@ -53,3 +53,13 @@ func TestZeebeClient(t *testing.T) {
 		}
 	})
 }
+
+func TestTopologyPartitionCountUsesUniqueIds(t *testing.T) {
+	topology := Topology{Brokers: []Broker{
+		{State: "ACTIVE", Partitions: []Partition{{ID: 1, State: "ACTIVE"}, {ID: 2, State: "ACTIVE"}}},
+		{State: "ACTIVE", Partitions: []Partition{{ID: 1, State: "ACTIVE"}, {ID: 2, State: "ACTIVE"}}},
+	}}
+	if topology.PartitionCount() != 2 {
+		t.Fatalf("unexpected partition count %d", topology.PartitionCount())
+	}
+}

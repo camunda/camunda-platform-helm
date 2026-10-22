@@ -1,0 +1,207 @@
+capacityManager:
+  enabled: true
+  image:
+    registry: registry.camunda.cloud
+    repository: team-distribution/capacity-manager
+    tag: pr-6709-sha-7ce9fb8817c4eb0b095c6cd5ca1b2923ed1bbff1
+    digest: sha256:c074cd96c1b47bb85445082a5913d81b8f16b04d9614270d5c20ada3ba2bc96f
+    pullSecrets:
+      - name: registry-camunda-cloud
+  reconcileInterval: 5s
+  # In-namespace Prometheus below; the CI release is always named "integration".
+  prometheusURL: http://integration-capacity-prometheus:9090
+  extraConfiguration:
+    - file: policy.json
+      content: |
+        {
+          "mode": "recommend",
+          "minBrokers": 1,
+          "maxBrokers": 1,
+          "partitionAdvisor": {
+            "enabled": true,
+            "maxRecommendedPartitions": 4,
+            "targetLoad": 20,
+            "loadQuery": "max(sum by (partition) (rate(zeebe_log_appender_record_appended_total{$(SELECTOR)}[2m])))",
+            "ceilingSamples": 3
+          }
+        }
+
+orchestration:
+  clusterSize: "1"
+  partitionCount: "1"
+  replicationFactor: "1"
+  affinity: {}
+
+global:
+  extraManifests:
+    - |
+      apiVersion: v1
+      kind: ServiceAccount
+      metadata:
+        name: {{ .Release.Name }}-capacity-prometheus
+    - |
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: Role
+      metadata:
+        name: {{ .Release.Name }}-capacity-prometheus
+      rules:
+        - apiGroups: [""]
+          resources: ["pods"]
+          verbs: ["get", "list", "watch"]
+    - |
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: RoleBinding
+      metadata:
+        name: {{ .Release.Name }}-capacity-prometheus
+      roleRef:
+        apiGroup: rbac.authorization.k8s.io
+        kind: Role
+        name: {{ .Release.Name }}-capacity-prometheus
+      subjects:
+        - kind: ServiceAccount
+          name: {{ .Release.Name }}-capacity-prometheus
+          namespace: {{ .Release.Namespace }}
+    - |
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: {{ .Release.Name }}-capacity-prometheus
+      data:
+        prometheus.yml: |
+          global:
+            # A saturated broker answers /actuator/prometheus slowly; a short
+            # timeout drops the very samples that show saturation.
+            scrape_interval: 15s
+            scrape_timeout: 10s
+          scrape_configs:
+            - job_name: orchestration-brokers
+              metrics_path: {{ .Values.orchestration.contextPath }}/actuator/prometheus
+              kubernetes_sd_configs:
+                - role: pod
+                  namespaces:
+                    names: [{{ .Release.Namespace | quote }}]
+              relabel_configs:
+                - source_labels: [__meta_kubernetes_pod_name]
+                  regex: {{ .Release.Name }}-zeebe-[0-9]+
+                  action: keep
+                - source_labels: [__meta_kubernetes_pod_container_port_number]
+                  regex: "9600"
+                  action: keep
+                - source_labels: [__meta_kubernetes_namespace]
+                  target_label: namespace
+                - source_labels: [__meta_kubernetes_pod_name]
+                  target_label: pod
+    - |
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: {{ .Release.Name }}-capacity-prometheus
+        labels:
+          app.kubernetes.io/component: capacity-prometheus
+      spec:
+        replicas: 1
+        selector:
+          matchLabels:
+            app.kubernetes.io/component: capacity-prometheus
+        template:
+          metadata:
+            labels:
+              app.kubernetes.io/component: capacity-prometheus
+          spec:
+            serviceAccountName: {{ .Release.Name }}-capacity-prometheus
+            containers:
+              - name: prometheus
+                image: docker.io/prom/prometheus@sha256:63805ebb8d2b3920190daf1cb14a60871b16fd38bed42b857a3182bc621f4996 # v3.5.0
+                args:
+                  - --config.file=/etc/prometheus/prometheus.yml
+                  - --storage.tsdb.path=/prometheus
+                  - --storage.tsdb.retention.time=6h
+                ports:
+                  - name: http
+                    containerPort: 9090
+                readinessProbe:
+                  httpGet:
+                    path: /-/ready
+                    port: http
+                resources:
+                  requests:
+                    cpu: 100m
+                    memory: 256Mi
+                  limits:
+                    cpu: 500m
+                    memory: 512Mi
+                securityContext:
+                  allowPrivilegeEscalation: false
+                  readOnlyRootFilesystem: true
+                  runAsNonRoot: true
+                  runAsUser: 65534
+                volumeMounts:
+                  - name: config
+                    mountPath: /etc/prometheus
+                  - name: data
+                    mountPath: /prometheus
+            volumes:
+              - name: config
+                configMap:
+                  name: {{ .Release.Name }}-capacity-prometheus
+              - name: data
+                emptyDir: {}
+    - |
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: {{ .Release.Name }}-capacity-prometheus
+      spec:
+        selector:
+          app.kubernetes.io/component: capacity-prometheus
+        ports:
+          - name: http
+            port: 9090
+            targetPort: http
+    - |
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: integration-partition-load
+        labels:
+          app.kubernetes.io/component: partition-load
+      spec:
+        # Idle until the verifier starts it, so the install can finish.
+        replicas: 0
+        selector:
+          matchLabels:
+            app.kubernetes.io/component: partition-load
+        template:
+          metadata:
+            labels:
+              app.kubernetes.io/component: partition-load
+          spec:
+            imagePullSecrets:
+              - name: registry-camunda-cloud
+            containers:
+              - name: load-generator
+                image: registry.camunda.cloud/team-distribution/capacity-manager@sha256:c074cd96c1b47bb85445082a5913d81b8f16b04d9614270d5c20ada3ba2bc96f # pr-6709-sha-7ce9fb8817c4eb0b095c6cd5ca1b2923ed1bbff1
+                imagePullPolicy: Always
+                command: ["/load-generator"]
+                args:
+                  - --url=http://integration-zeebe-gateway:8080/orchestration/v2
+                  - --username=demo
+                  - --password=demo
+                  - --rate=50
+                resources:
+                  requests:
+                    cpu: 50m
+                    memory: 32Mi
+                  limits:
+                    cpu: 500m
+                    memory: 128Mi
+                securityContext:
+                  allowPrivilegeEscalation: false
+                  readOnlyRootFilesystem: true
+                  runAsNonRoot: true
+                  runAsUser: 65532
+
+# Optimize requires OIDC and cannot start with basic auth, which blocks
+# helm --wait; the advisor check does not need it.
+optimize:
+  enabled: false

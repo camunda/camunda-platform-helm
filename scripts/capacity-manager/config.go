@@ -16,21 +16,33 @@ import (
 )
 
 type Policy struct {
-	Mode                   string   `json:"mode"`
-	MinBrokers             int      `json:"minBrokers"`
-	MaxBrokers             int      `json:"maxBrokers"`
-	TargetBrokers          int      `json:"targetBrokers,omitempty"`
-	ScheduledMinimum       int      `json:"scheduledMinimumBrokers,omitempty"`
-	ScheduleStartsAt       string   `json:"scheduleStartsAt,omitempty"`
-	ScheduleEndsAt         string   `json:"scheduleEndsAt,omitempty"`
-	ScaleUpSignals         []Signal `json:"scaleUpSignals,omitempty"`
-	ScaleDownSignals       []Signal `json:"scaleDownSignals,omitempty"`
-	VetoSignals            []Signal `json:"vetoSignals,omitempty"`
-	ScaleUpSamples         int      `json:"scaleUpSamples,omitempty"`
-	ScaleDownSamples       int      `json:"scaleDownSamples,omitempty"`
-	ScaleUpStabilization   string   `json:"scaleUpStabilization,omitempty"`
-	ScaleDownStabilization string   `json:"scaleDownStabilization,omitempty"`
-	Cooldown               string   `json:"cooldown,omitempty"`
+	Mode                   string                 `json:"mode"`
+	MinBrokers             int                    `json:"minBrokers"`
+	MaxBrokers             int                    `json:"maxBrokers"`
+	TargetBrokers          int                    `json:"targetBrokers,omitempty"`
+	ScheduledMinimum       int                    `json:"scheduledMinimumBrokers,omitempty"`
+	ScheduleStartsAt       string                 `json:"scheduleStartsAt,omitempty"`
+	ScheduleEndsAt         string                 `json:"scheduleEndsAt,omitempty"`
+	ScaleUpSignals         []Signal               `json:"scaleUpSignals,omitempty"`
+	ScaleDownSignals       []Signal               `json:"scaleDownSignals,omitempty"`
+	VetoSignals            []Signal               `json:"vetoSignals,omitempty"`
+	ScaleUpSamples         int                    `json:"scaleUpSamples,omitempty"`
+	ScaleDownSamples       int                    `json:"scaleDownSamples,omitempty"`
+	ScaleUpStabilization   string                 `json:"scaleUpStabilization,omitempty"`
+	ScaleDownStabilization string                 `json:"scaleDownStabilization,omitempty"`
+	Cooldown               string                 `json:"cooldown,omitempty"`
+	PartitionAdvisor       PartitionAdvisorPolicy `json:"partitionAdvisor,omitempty"`
+}
+
+// PartitionAdvisorPolicy configures the recommendation-only partition
+// advisor. LoadQuery is a PromQL query for the busiest partition's load,
+// in the same unit as TargetLoad.
+type PartitionAdvisorPolicy struct {
+	Enabled                  bool    `json:"enabled"`
+	MaxRecommendedPartitions int     `json:"maxRecommendedPartitions"`
+	TargetLoad               float64 `json:"targetLoad"`
+	LoadQuery                string  `json:"loadQuery"`
+	CeilingSamples           int     `json:"ceilingSamples"`
 }
 
 // Signal is a named PromQL condition. The query result is reduced to the
@@ -85,6 +97,20 @@ func (p Policy) validate() error {
 	}
 	if p.Mode != "recommend" && p.Mode != "scheduled" && p.Mode != "automatic" {
 		return fmt.Errorf("mode must be recommend, scheduled, or automatic")
+	}
+	if p.PartitionAdvisor.Enabled {
+		if p.PartitionAdvisor.MaxRecommendedPartitions < 1 {
+			return fmt.Errorf("partitionAdvisor.maxRecommendedPartitions must be at least 1")
+		}
+		if p.PartitionAdvisor.TargetLoad <= 0 {
+			return fmt.Errorf("partitionAdvisor.targetLoad must be greater than 0")
+		}
+		if p.PartitionAdvisor.LoadQuery == "" {
+			return fmt.Errorf("partitionAdvisor.loadQuery is required")
+		}
+		if p.PartitionAdvisor.CeilingSamples < 1 {
+			return fmt.Errorf("partitionAdvisor.ceilingSamples must be at least 1")
+		}
 	}
 	if p.ScaleUpSamples < 0 || p.ScaleDownSamples < 0 {
 		return fmt.Errorf("scale sample counts cannot be negative")
