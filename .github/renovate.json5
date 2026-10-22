@@ -203,6 +203,11 @@
       matchManagers: ['github-actions'],
       schedule: ['every weekend'],
     },
+    {
+      description: 'Group all Go toolchain version updates into one PR.',
+      matchDatasources: ['golang-version'],
+      groupName: 'golang',
+    },
     // Limit tools and libs versions to the actual Distro CI Kubernetes cluster.
     {
       allowedVersions: '<1.37.0',
@@ -542,6 +547,18 @@
       depNameTemplate: 'helm/helm',
       datasourceTemplate: 'github-releases',
       extractVersionTemplate: '^v(?<version>\\S+)',
+      versioningTemplate: 'semver',
+    },
+    {
+      customType: 'regex',
+      fileMatch: [
+        '^\\.github/docker/[^/]+/Dockerfile$',
+      ],
+      matchStrings: [
+        'ARG (?:GOLANG_VERSION|GO_VERSION)=(?<currentValue>\\d+\\.\\d+\\.\\d+)',
+      ],
+      depNameTemplate: 'go',
+      datasourceTemplate: 'golang-version',
       versioningTemplate: 'semver',
     },
   ],
