@@ -13,16 +13,16 @@ metadata:
     app.kubernetes.io/part-of: camunda-platform
 spec:
   parentRefs:
-  - name: camunda-platform-test
-    sectionName: standalone-rest
+    - name: camunda-platform-test
+      sectionName: standalone-rest
   hostnames:
-  - "api-camunda.example.com"
+    - "api-camunda.example.com"
   rules:
-  - matches:
-    - path:
-        type: PathPrefix
-        value: /
-    backendRefs:
-    - name: camunda-platform-test-zeebe-standalone-gateway
-      namespace: camunda-platform-test
-      port: 8080
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: camunda-platform-test-zeebe-standalone-gateway
+          namespace: camunda-platform-test
+          port: 8080

@@ -20,20 +20,20 @@ metadata:
     ) | nindent 4 }}
 spec:
   parentRefs:
-  - name: {{ .Values.global.gateway.name | default (include "camundaPlatform.fullname" .) }}
-    {{- if .Values.global.gateway.namespace }}
-    namespace: {{ .Values.global.gateway.namespace }}
-    {{- end }}
-    sectionName: {{ .Values.orchestration.standaloneGateway.gateway.rest.sectionName | default (ternary "standalone-rests" "standalone-rest" .Values.global.gateway.tls.enabled) }}
+    - name: {{ .Values.global.gateway.name | default (include "camundaPlatform.fullname" .) }}
+      {{- if .Values.global.gateway.namespace }}
+      namespace: {{ .Values.global.gateway.namespace }}
+      {{- end }}
+      sectionName: {{ .Values.orchestration.standaloneGateway.gateway.rest.sectionName | default (ternary "standalone-rests" "standalone-rest" .Values.global.gateway.tls.enabled) }}
   hostnames:
-  - {{ tpl .Values.orchestration.standaloneGateway.gateway.rest.host $ | quote }}
+    - {{ tpl .Values.orchestration.standaloneGateway.gateway.rest.host $ | quote }}
   rules:
-  - matches:
-    - path:
-        type: PathPrefix
-        value: {{ include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath) }}
-    backendRefs:
-    - name: {{ include "orchestration.standaloneGatewayServiceName" . }}
-      namespace: {{ .Release.Namespace }}
-      port: {{ .Values.orchestration.service.httpPort }}
+    - matches:
+        - path:
+            type: PathPrefix
+            value: {{ include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath) }}
+      backendRefs:
+        - name: {{ include "orchestration.standaloneGatewayServiceName" . }}
+          namespace: {{ .Release.Namespace }}
+          port: {{ .Values.orchestration.service.httpPort }}
 {{- end }}
