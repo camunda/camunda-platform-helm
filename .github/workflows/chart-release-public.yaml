@@ -47,6 +47,8 @@ jobs:
       chart-dir-id: ${{ steps.metadata.outputs.chart_dir_id }}
       release-tag: ${{ steps.metadata.outputs.release_tag }}
       package-file: ${{ steps.metadata.outputs.package_file }}
+      source-commit: ${{ steps.parse.outputs.commit_sha }}
+      previous-source-commit: ${{ steps.history.outputs.previous_commit_sha }}
     env:
       CHART_RELEASE_COSIGN_CERTIFICATE_IDENTITY: "https://github.com/${{ github.workflow_ref }}"
       CHART_RELEASE_COSIGN_CERTIFICATE_OIDC_ISSUER: "https://token.actions.githubusercontent.com"
@@ -73,10 +75,10 @@ jobs:
           app-id: ${{ steps.vault-harbor.outputs.GH_APP_ID_DISTRO_CI }}
           private-key: ${{ steps.vault-harbor.outputs.GH_APP_PRIVATE_KEY_DISTRO_CI }}
 
-      # "Parse RC tag" runs before the main checkout, so build release-tools here.
-      # The binary in /tmp survives the later checkout.
-      - name: Checkout for tooling
+      - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
 
       - name: Install tools for tooling
         uses: ./.github/actions/install-tool-versions
@@ -86,50 +88,6 @@ jobs:
 
       - name: Build release-tools
         run: cd scripts/release-tools && go build -o /tmp/release-tools .
-
-      - name: Parse RC tag
-        id: parse
-        env:
-          HARBOR_API: "https://${{ env.HARBOR_REGISTRY }}/api/v2.0"
-          HARBOR_REPO: "projects/${{ env.HARBOR_PROJECT }}/repositories/camunda-platform"
-          HARBOR_REGISTRY_USER: ${{ steps.vault-harbor.outputs.HARBOR_REGISTRY_USER }}
-          HARBOR_REGISTRY_PASSWORD: ${{ steps.vault-harbor.outputs.HARBOR_REGISTRY_PASSWORD }}
-          DRY_RUN: ${{ inputs.dry-run }}
-        run: |
-          input_tag="${{ inputs.rc-tag }}"
-
-          # Fetch the artifact's tag list. All of an artifact's tags (rc/dev/
-          # rolling) live on the one artifact, so a single GET resolves both the
-          # concrete RC tag and (for traceability) the source dev tag.
-          if [[ "$input_tag" =~ ^[0-9]+-rc(-dryrun)?-latest$ ]]; then
-            echo "::notice::Rolling tag detected: ${input_tag}, resolving to actual RC tag..."
-            # Rolling resolution needs the tag list — fatal on failure.
-            curl -sf "${HARBOR_API}/${HARBOR_REPO}/artifacts/${input_tag}/tags" \
-              -u "${HARBOR_REGISTRY_USER}:${HARBOR_REGISTRY_PASSWORD}" \
-              --retry 3 --retry-delay 5 --retry-all-errors > /tmp/rc-tags.json
-          else
-            # Concrete input: the tag list is only needed for best-effort dev-tag
-            # traceability, so tolerate a failed fetch (empty list → no dev tag).
-            curl -sf "${HARBOR_API}/${HARBOR_REPO}/artifacts/${input_tag}/tags" \
-              -u "${HARBOR_REGISTRY_USER}:${HARBOR_REGISTRY_PASSWORD}" \
-              --retry 3 --retry-delay 5 --retry-all-errors > /tmp/rc-tags.json 2>/dev/null || echo "[]" > /tmp/rc-tags.json
-          fi
-
-          # With --dry-run, -rc-dryrun tags (staged by a dry-run RC promotion)
-          # are accepted in addition to the plain rc forms.
-          dry_run_args=()
-          if [[ "${DRY_RUN}" == "true" ]]; then
-            dry_run_args=(--dry-run)
-          fi
-
-          # Resolve + validate the RC tag; emit resolved_tag/version and
-          # (best-effort) dev_tag/commit_sha to $GITHUB_OUTPUT.
-          /tmp/release-tools resolve-tag --kind rc --input-tag "$input_tag" --tags-file /tmp/rc-tags.json "${dry_run_args[@]}"
-
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          fetch-depth: 0
 
       - name: Install tools
         uses: ./.github/actions/install-tool-versions
@@ -155,63 +113,71 @@ jobs:
           source "${GITHUB_WORKSPACE}/scripts/harbor-retry.sh"
           harbor_login
 
-      - name: Pull RC package from Harbor
+      - name: Resolve RC source
+        id: parse
         env:
           HARBOR_REGISTRY_USER: ${{ steps.vault-harbor.outputs.HARBOR_REGISTRY_USER }}
           HARBOR_REGISTRY_PASSWORD: ${{ steps.vault-harbor.outputs.HARBOR_REGISTRY_PASSWORD }}
+          RC_TAG: ${{ inputs.rc-tag }}
+          DRY_RUN: ${{ inputs.dry-run }}
+        run: |
+          set -euo pipefail
+          source_ref=$(/tmp/release-tools harbor-tag source \
+            --api "https://${HARBOR_REGISTRY}/api/v2.0" \
+            --repo "projects/${HARBOR_PROJECT}/repositories/camunda-platform" \
+            --ref "${RC_TAG}" --dry-run="${DRY_RUN}")
+          source_sha=$(git rev-parse --verify "${source_ref}^{commit}")
+          git merge-base --is-ancestor "${source_sha}" origin/main
+          echo "commit_sha=${source_sha}" >> "$GITHUB_OUTPUT"
+
+      - name: Pull immutable RC package
+        env:
+          HARBOR_REGISTRY_USER: ${{ steps.vault-harbor.outputs.HARBOR_REGISTRY_USER }}
+          HARBOR_REGISTRY_PASSWORD: ${{ steps.vault-harbor.outputs.HARBOR_REGISTRY_PASSWORD }}
+          ARTIFACT_DIGEST: ${{ steps.parse.outputs.artifact_digest }}
         run: |
           source "${GITHUB_WORKSPACE}/scripts/harbor-retry.sh"
           mkdir -p .cr-release-packages
-
-          PULL_RC=0
-          harbor_helm_pull "oci://${{ env.HARBOR_REGISTRY }}/${{ env.HARBOR_PROJECT }}/camunda-platform" \
-            --version "${{ steps.parse.outputs.resolved_tag }}" \
-            --destination .cr-release-packages || PULL_RC=$?
-          if [[ ${PULL_RC} -eq 2 ]]; then
-            echo "::error::Harbor auth failure pulling RC package: ${{ steps.parse.outputs.resolved_tag }}"
-            exit 1
-          elif [[ ${PULL_RC} -ne 0 ]]; then
-            echo "::error::Failed to pull RC package from Harbor: ${{ steps.parse.outputs.resolved_tag }}"
-            exit 1
-          fi
-
-          # drop -rc (or -rc-dryrun) from filename
-          filename=$(ls .cr-release-packages/camunda-platform-*-rc*.tgz)
-          target="${filename/-rc-dryrun/}"
-          target="${target/-rc/}"
-          mv "$filename" "$target"
-
-          echo "Downloaded package:"
-          ls -la .cr-release-packages/
+          harbor_helm_pull "oci://${HARBOR_REGISTRY}/${HARBOR_PROJECT}/camunda-platform@${ARTIFACT_DIGEST}" \
+            --destination .cr-release-packages
 
       - name: Extract metadata from package
         id: metadata
+        env:
+          RC_VERSION: ${{ steps.parse.outputs.version }}
         run: |
-          # helm pull names file based on Chart.yaml version, not OCI tag
-          package_file=$(ls .cr-release-packages/camunda-platform-*.tgz)
-          package_name=$(basename "${package_file}")
-          echo "package_file=${package_name}" | tee -a $GITHUB_OUTPUT
-          
+          package_file=$(ls .cr-release-packages/*.tgz)
+          package_name="camunda-platform-${RC_VERSION}.tgz"
+          if [[ "${package_file}" != ".cr-release-packages/${package_name}" ]]; then
+            mv "${package_file}" ".cr-release-packages/${package_name}"
+          fi
+          echo "package_file=${package_name}" >> "$GITHUB_OUTPUT"
+
           # Extract version, app_version (appVersion, .x-stripped), prerelease,
           # is_latest_stable (vs the newest released minor in chart-versions.yaml),
           # chart_dir_id, release_tag, the cosign file names and the
           # component-image-versions annotation from the package's Chart.yaml.
-          tar -xzf "${package_file}" camunda-platform/Chart.yaml -O > /tmp/Chart.yaml
+          tar -xzf ".cr-release-packages/${package_name}" camunda-platform/Chart.yaml -O > /tmp/Chart.yaml
           /tmp/release-tools chart-metadata \
             --chart-yaml /tmp/Chart.yaml \
             --chart-versions "$(git rev-parse --show-toplevel)/charts/chart-versions.yaml"
 
-      - name: Check if release already exists
-        if: ${{ !inputs.dry-run }}
+      - name: Resolve previous release source
+        id: history
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RC_VERSION: ${{ steps.parse.outputs.version }}
+          PACKAGE_VERSION: ${{ steps.metadata.outputs.version }}
+          SOURCE_SHA: ${{ steps.parse.outputs.commit_sha }}
         run: |
-          if gh release view "${{ steps.metadata.outputs.release_tag }}" > /dev/null 2>&1; then
-            echo "::error::Release ${{ steps.metadata.outputs.release_tag }} already exists"
-            echo "To re-release, delete the existing release first:"
-            echo "  gh release delete ${{ steps.metadata.outputs.release_tag }} --yes"
+          set -euo pipefail
+          if [[ "${PACKAGE_VERSION}" != "${RC_VERSION}" ]]; then
+            echo "::error::The pulled package version does not match the selected RC"
             exit 1
           fi
+          previous_ref=$(/tmp/release-tools release-history --chart-yaml /tmp/Chart.yaml)
+          previous_sha=$(git rev-parse --verify "${previous_ref}^{commit}")
+          git merge-base --is-ancestor "${previous_sha}" "${SOURCE_SHA}"
+          echo "previous_commit_sha=${previous_sha}" >> "$GITHUB_OUTPUT"
 
       - name: Run Chart Releaser - Tagging/Uploading
         if: ${{ !inputs.dry-run }}
@@ -220,6 +186,8 @@ jobs:
         run: |
           helm-cr upload --config ${{ env.CHART_RELEASER_CONFIG_FILE }} \
             --push \
+            --skip-existing=false \
+            --commit "${{ steps.parse.outputs.commit_sha }}" \
             --owner "${{ github.repository_owner }}" \
             --git-repo "$(basename ${{ github.repository }})" \
             --make-release-latest "${{ steps.metadata.outputs.is_latest_stable }}" \
@@ -387,7 +355,7 @@ jobs:
           | **Camunda** | \`${{ steps.metadata.outputs.app_version }}\` |
           | **Latest stable** | ${{ steps.metadata.outputs.is_latest_stable }} |
 
-          Validated: Harbor pull, package metadata extraction.
+          Validated: immutable Harbor pull, package metadata, and current/previous artifact source commits.
           Skipped (logged above): GitHub release, index.yaml push, cosign signing + uploads, post-release PR automation.
           EOF
 
@@ -445,7 +413,9 @@ jobs:
         run: |
           make release.set-prs-version-label \
             chartPath="charts/camunda-platform-${{ needs.release.outputs.chart-dir-id }}" \
-            chartVersion="${{ needs.release.outputs.version }}"
+            chartVersion="${{ needs.release.outputs.version }}" \
+            sourceSHA="${{ needs.release.outputs.source-commit }}" \
+            previousSourceSHA="${{ needs.release.outputs.previous-source-commit }}"
 
       - name: Stamp release date on the release-please PR
         id: stamp
