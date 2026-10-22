@@ -193,6 +193,32 @@ func TestFilterKnownFeatures(t *testing.T) {
 	}
 }
 
+func TestChartCredentialsManifest(t *testing.T) {
+	chartDir := t.TempDir()
+	dir := filepath.Join(chartDir, "test", "integration", "external-secrets")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	plain := filepath.Join(dir, "external-secret-integration-test-credentials.yaml")
+	if err := os.WriteFile(plain, nil, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, tc := range []struct {
+		name, chartDir, store, want string
+	}{
+		{"chart manifest", chartDir, "distribution-team", plain},
+		{"vault manifest missing", chartDir, "vault-backend", ""},
+		{"no chart dir", "", "distribution-team", ""},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := chartCredentialsManifest(tc.chartDir, tc.store); got != tc.want {
+				t.Errorf("chartCredentialsManifest(%q, %q) = %q, want %q", tc.chartDir, tc.store, got, tc.want)
+			}
+		})
+	}
+}
+
 func mustListPrev(t *testing.T, dir string, fn func(string) ([]string, error)) []string {
 	t.Helper()
 	got, err := fn(dir)
