@@ -1,0 +1,36 @@
+version: "2"
+
+linters:
+  enable:
+    - depguard
+    - dupl
+    - modernize
+    - revive
+    - unparam
+  settings:
+    revive:
+      rules:
+        - name: argument-limit
+          arguments: [5]
+        - name: function-result-limit
+          arguments: [3]
+    depguard:
+      rules:
+        deploy-camunda-matrix-below-cmd:
+          files: ["**/deploy-camunda/matrix/**"]
+          deny:
+            - pkg: scripts/deploy-camunda/cmd
+        deploy-camunda-deploy-below-matrix:
+          files: ["**/deploy-camunda/deploy/**"]
+          deny:
+            - pkg: scripts/deploy-camunda/cmd
+            - pkg: scripts/deploy-camunda/matrix
+        deploy-camunda-pkg-below-deploy:
+          files: ["**/deploy-camunda/pkg/**"]
+          deny:
+            - pkg: scripts/deploy-camunda/cmd
+            - pkg: scripts/deploy-camunda/matrix
+            - pkg: scripts/deploy-camunda/deploy
+  exclusions:
+    presets:
+      - std-error-handling

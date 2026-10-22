@@ -181,6 +181,22 @@ go.fmt:
 		exit 1;\
 	fi
 
+goScriptModules = $(shell find scripts -name go.mod -exec dirname {} \; | sort)
+lintBase ?= origin/main
+
+define go_scripts_run
+	failed=""; \
+	for module in $(goScriptModules); do \
+		echo "[$@] $${module}"; \
+		(cd "$${module}" && $(1)) || failed="$${failed} $${module}"; \
+	done; \
+	if [ -n "$${failed}" ]; then echo "[$@] failed:$${failed}" >&2; exit 1; fi
+endef
+
+.PHONY: go.lint
+go.lint:
+	@$(call go_scripts_run,golangci-lint run --new-from-merge-base=$(lintBase) ./...)
+
 #
 # Helpers.
 
