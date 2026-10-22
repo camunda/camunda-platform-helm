@@ -34,6 +34,10 @@ func main() {
 		fatalf("get initial replicas: %v", err)
 	}
 	beforeChange := changeID(beforeTopology.LastChange)
+	// The scenario installs the load generator idle so helm --wait can finish.
+	if out, err := kubectl("scale", "deployment", release+"-partition-load", "-n", namespace, "--replicas=1"); err != nil {
+		fatalf("start load: %v: %s", err, out)
+	}
 	deadline := time.Now().Add(10 * time.Minute)
 	var recommendation capacity.PartitionRecommendation
 	for time.Now().Before(deadline) {

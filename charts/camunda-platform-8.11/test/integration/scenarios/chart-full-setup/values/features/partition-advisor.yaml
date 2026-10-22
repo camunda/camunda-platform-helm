@@ -166,7 +166,8 @@ global:
         labels:
           app.kubernetes.io/component: partition-load
       spec:
-        replicas: 1
+        # Idle until the verifier starts it, so the install can finish.
+        replicas: 0
         selector:
           matchLabels:
             app.kubernetes.io/component: partition-load
