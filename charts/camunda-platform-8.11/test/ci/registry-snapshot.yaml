@@ -682,6 +682,47 @@ integration:
               Applies the NGINX ProxySettingsPolicy that bumps gateway buffer
               sizes. Runs after helm install because the Gateway API CRD is only
               registered by the chart itself.
+        - name: standalone-gateway
+          enabled: true
+          shortname: stgw
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          tier: 2
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
+          features:
+            - standalone-gateway
+          e2e-api-suite: true
+          dependencies:
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+          post-deploy:
+            script: post-deploy-standalone-gateway.sh
+            description: |
+              Verifies the standalone gateway topology: more Ready gateway Pods than
+              brokers, gRPC and REST Ingress backends on the standalone gateway Service
+              and the web Ingress on the Orchestration Cluster Service. Deploys and starts
+              a process over gRPC on every gateway Pod (port-forward) and over REST through
+              the standalone gateway REST Ingress, then scales the gateway Deployment up by
+              one and repeats both checks while the broker count stays unchanged.
         - name: elasticsearch-arm
           enabled: true
           shortname: esarm
