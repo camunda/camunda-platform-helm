@@ -52,7 +52,7 @@ func captureToolOutput(t *testing.T, run func([]string) error, args []string) (m
 
 	out := map[string]string{}
 	if data, ferr := os.ReadFile(ghoPath); ferr == nil {
-		for _, line := range strings.Split(strings.TrimRight(string(data), "\n"), "\n") {
+		for line := range strings.SplitSeq(strings.TrimRight(string(data), "\n"), "\n") {
 			if line == "" {
 				continue
 			}

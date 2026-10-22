@@ -20,6 +20,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 	"time"
 
 	"gopkg.in/yaml.v3"
@@ -184,12 +185,12 @@ func (lc Lifecycle) validateDates(minor string) []string {
 }
 
 func joinLines(lines []string) string {
-	out := ""
+	var out strings.Builder
 	for i, l := range lines {
 		if i > 0 {
-			out += "\n  - "
+			out.WriteString("\n  - ")
 		}
-		out += l
+		out.WriteString(l)
 	}
-	return out
+	return out.String()
 }

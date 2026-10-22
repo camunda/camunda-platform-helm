@@ -215,7 +215,7 @@ func parseReadmeHelmCLI(path string) map[string]string {
 	}
 	result := map[string]string{}
 	for version, section := range versionmatrix.ParseReadmeSections(string(data)) {
-		for _, line := range strings.Split(section, "\n") {
+		for line := range strings.SplitSeq(section, "\n") {
 			if !strings.HasPrefix(strings.TrimSpace(line), "- Helm CLI:") {
 				continue
 			}
@@ -251,7 +251,7 @@ func parseReadmeImages(path string) map[string]sectionImages {
 	for version, section := range versionmatrix.ParseReadmeSections(string(data)) {
 		var si sectionImages
 		block := ""
-		for _, line := range strings.Split(section, "\n") {
+		for line := range strings.SplitSeq(section, "\n") {
 			trimmed := strings.TrimSpace(line)
 			switch {
 			case strings.HasPrefix(trimmed, "Camunda images:"):

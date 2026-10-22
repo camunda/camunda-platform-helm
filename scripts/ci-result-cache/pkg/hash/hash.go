@@ -118,7 +118,7 @@ func Compute(repoRoot string, chartVersions []string, e2eSuiteVersion, runnerIma
 
 func ChartVersionsFromCSV(csv string) []string {
 	var versions []string
-	for _, version := range strings.Split(csv, ",") {
+	for version := range strings.SplitSeq(csv, ",") {
 		if version = strings.TrimSpace(version); version != "" {
 			versions = append(versions, version)
 		}

@@ -145,7 +145,7 @@ orchestration:
 			if err != nil {
 				t.Fatal(err)
 			}
-			for _, line := range strings.Split(string(notes), "\n") {
+			for line := range strings.SplitSeq(string(notes), "\n") {
 				if strings.HasPrefix(line, "- Helm CLI: ") {
 					if !strings.Contains(line, "/releases/tag/v3.") {
 						t.Errorf("Helm v3 missing from release information: %s", line)

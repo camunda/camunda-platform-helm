@@ -87,7 +87,7 @@ func GetPodNames(ctx context.Context, kubeContext, namespace string) ([]string, 
 	}
 
 	var names []string
-	for _, line := range strings.Split(output, "\n") {
+	for line := range strings.SplitSeq(output, "\n") {
 		line = strings.TrimSpace(line)
 		if line == "" {
 			continue
@@ -184,7 +184,7 @@ func GetPodContainers(ctx context.Context, kubeContext, namespace, pod string) (
 		return nil, err
 	}
 	var containers []string
-	for _, line := range strings.Split(output, "\n") {
+	for line := range strings.SplitSeq(output, "\n") {
 		if name := strings.TrimSpace(line); name != "" {
 			containers = append(containers, name)
 		}
@@ -229,7 +229,7 @@ func GetNonReadyPods(ctx context.Context, kubeContext, namespace string) ([]stri
 	}
 
 	var nonReady []string
-	for _, line := range strings.Split(output, "\n") {
+	for line := range strings.SplitSeq(output, "\n") {
 		line = strings.TrimSpace(line)
 		if line == "" {
 			continue

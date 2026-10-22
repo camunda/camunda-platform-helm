@@ -80,7 +80,7 @@ func Setup(opts Options) error {
 		Out:        w,
 		NoColor:    !ColorEnabled,
 		TimeFormat: "15:04:05",
-		FormatLevel: func(i interface{}) string {
+		FormatLevel: func(i any) string {
 			lvl := strings.ToUpper(toString(i))
 			if !ColorEnabled {
 				return lvl
@@ -145,7 +145,7 @@ func Emphasize(s string, style Styler) string {
 	return style(s)
 }
 
-func toString(i interface{}) string {
+func toString(i any) string {
 	if i == nil {
 		return ""
 	}

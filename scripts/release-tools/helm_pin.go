@@ -25,7 +25,7 @@ import (
 
 // parseHelmPin extracts the helm version from a .tool-versions file content.
 func parseHelmPin(toolVersions string) string {
-	for _, line := range strings.Split(toolVersions, "\n") {
+	for line := range strings.SplitSeq(toolVersions, "\n") {
 		if strings.HasPrefix(line, "helm ") {
 			if fields := strings.Fields(line); len(fields) >= 2 {
 				return fields[1]

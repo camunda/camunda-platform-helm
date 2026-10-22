@@ -210,7 +210,7 @@ func Compute(in TestTypeVarsInput) (TestTypeVars, error) {
 func checkUnitPackagesListed(unitDir string, matrix []UnitMatrixEntry) error {
 	listed := map[string]bool{}
 	for _, entry := range matrix {
-		for _, pkg := range strings.Fields(entry.Packages) {
+		for pkg := range strings.FieldsSeq(entry.Packages) {
 			listed[pkg] = true
 		}
 	}

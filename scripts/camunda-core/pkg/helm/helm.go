@@ -36,8 +36,7 @@ func Run(ctx context.Context, args []string, workDir string) error {
 
 func RunCapture(ctx context.Context, args []string, workDir string) ([]byte, error) {
 	out, err := executil.RunCommandCapture(ctx, "helm", args, nil, workDir)
-	var exitErr *exec.ExitError
-	if errors.As(err, &exitErr) {
+	if exitErr, ok := errors.AsType[*exec.ExitError](err); ok {
 		return nil, fmt.Errorf("%w: %s", err, strings.TrimSpace(string(exitErr.Stderr)))
 	}
 	return out, err

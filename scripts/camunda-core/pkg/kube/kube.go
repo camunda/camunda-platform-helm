@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"os"
 	"os/exec"
 	"scripts/camunda-core/pkg/logging"
@@ -55,26 +56,27 @@ func formatNamespacePermissionError(operation, namespace, verb string, err error
 	var verifyCommands []string
 	var additionalHint string
 
-	if verb == "get" {
+	switch verb {
+	case "get":
 		additionalHint = "  2. Or request cluster-wide namespace read permissions\n"
 		verifyCommands = []string{"kubectl auth can-i get namespaces"}
-	} else if verb == "create" {
+	case "create":
 		// Apply can use either create or patch, so check both
 		verifyCommands = []string{
 			"kubectl auth can-i create namespaces",
 			"kubectl auth can-i patch namespaces",
 		}
 		additionalHint = "  2. Note: Apply operations require either 'create' or 'patch' permissions\n"
-	} else {
+	default:
 		verifyCommands = []string{fmt.Sprintf("kubectl auth can-i %s namespaces", verb)}
 	}
 
-	verifyCmdsStr := ""
+	var verifyCmdsStr strings.Builder
 	for i, cmd := range verifyCommands {
 		if i > 0 {
-			verifyCmdsStr += "\n"
+			verifyCmdsStr.WriteString("\n")
 		}
-		verifyCmdsStr += "  " + cmd
+		verifyCmdsStr.WriteString("  " + cmd)
 	}
 
 	return fmt.Errorf("permission denied: cannot %s namespace %q\n\n"+
@@ -86,7 +88,7 @@ func formatNamespacePermissionError(operation, namespace, verb string, err error
 		"%s"+
 		"To verify your permissions, run:\n"+
 		"%s\n\n"+
-		"Original error: %w", operation, namespace, verb, namespace, additionalHint, verifyCmdsStr, err)
+		"Original error: %w", operation, namespace, verb, namespace, additionalHint, verifyCmdsStr.String(), err)
 }
 
 func defaultApplyOptions() metav1.ApplyOptions {
@@ -783,12 +785,8 @@ func (c *Client) patchNamespaceLabelsAndAnnotations(ctx context.Context, namespa
 		if ns.Annotations == nil {
 			ns.Annotations = make(map[string]string)
 		}
-		for k, v := range labels {
-			ns.Labels[k] = v
-		}
-		for k, v := range annotations {
-			ns.Annotations[k] = v
-		}
+		maps.Copy(ns.Labels, labels)
+		maps.Copy(ns.Annotations, annotations)
 		_, err = c.clientset.CoreV1().Namespaces().Update(ctx, ns, metav1.UpdateOptions{})
 		if err == nil {
 			logging.Logger.Info().

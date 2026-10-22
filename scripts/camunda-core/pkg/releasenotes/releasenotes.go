@@ -185,7 +185,7 @@ func sectionBullets(md, group string) []string {
 	headingRe := regexp.MustCompile(`^#+\s` + regexp.QuoteMeta(group))
 	var out []string
 	inSection := false
-	for _, line := range strings.Split(md, "\n") {
+	for line := range strings.SplitSeq(md, "\n") {
 		if !inSection {
 			if headingRe.MatchString(line) {
 				inSection = true

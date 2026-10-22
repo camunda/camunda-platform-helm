@@ -210,7 +210,7 @@ func CompareChartVersions(a, b string) int {
 	aParts := parseChartVersion(a)
 	bParts := parseChartVersion(b)
 
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		if aParts[i] != bParts[i] {
 			if aParts[i] < bParts[i] {
 				return -1
@@ -320,8 +320,8 @@ func parseChartVersion(v string) [3]int {
 }
 
 func preReleaseSuffix(v string) string {
-	if idx := strings.Index(v, "-"); idx >= 0 {
-		return v[idx+1:]
+	if _, after, ok := strings.Cut(v, "-"); ok {
+		return after
 	}
 	return ""
 }

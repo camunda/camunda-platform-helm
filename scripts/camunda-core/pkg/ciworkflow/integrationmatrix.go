@@ -87,7 +87,7 @@ func CompactJSON(input string) (string, error) {
 
 func csvSet(csv, name string) (map[string]bool, error) {
 	set := map[string]bool{}
-	for _, item := range strings.Split(csv, ",") {
+	for item := range strings.SplitSeq(csv, ",") {
 		item = strings.ToLower(strings.TrimSpace(item))
 		if item != "" {
 			set[item] = true
