@@ -1,6 +1,6 @@
 module scripts/deploy-camunda
 
-go 1.26.0
+go 1.27.3
 
 require (
 	charm.land/bubbletea/v2 v2.0.10

@@ -199,7 +199,7 @@ LABEL org.opencontainers.image.licenses="Apache-2.0"
 ARG ZBCTL_VERSION=v8.6.0
 ARG PLAYWRIGHT_VERSION=1.61.0
 # Keep in sync with .tool-versions (golang).
-ARG GO_VERSION=1.26.2
+ARG GO_VERSION=1.27.3
 
 # Environment configuration
 ENV DEBIAN_FRONTEND=noninteractive
