@@ -339,14 +339,13 @@ func helmMajorVersion() int {
 func (s *ConstraintTemplateTest) TestHelmVersionConstraint() {
 	testCases := []testhelpers.TestCase{
 		{
-			Name:   "TestHelmVersionWarning",
+			Name:   "TestHelmVersionGuard",
 			Values: map[string]string{},
 			Verifier: func(t *testing.T, output string, err error) {
-				s.Require().NoError(err)
 				if helmMajorVersion() >= 4 {
-					s.Require().NotContains(output, "Helm v3 receives security fixes")
+					s.Require().NoError(err)
 				} else {
-					s.Require().Contains(output, "Helm v3 receives security fixes")
+					s.Require().ErrorContains(err, "requires Helm CLI v4")
 				}
 			},
 		},

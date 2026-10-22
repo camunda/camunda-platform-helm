@@ -9,6 +9,8 @@ Use this file as the practical guide. For architecture and CI context, also read
 - NEVER hand-edit generated artifacts — regenerate them (see Generated Artifacts below).
 - NEVER implement CI logic (>20 lines) in bash — use Go scripts in `scripts/` with unit tests.
 - NEVER write reasoning/"why"/narration comments — comments explain only non-obvious HOW. Architectural rationale belongs in a durable ADR under `docs/adr/`; tactical rationale (bug-fix defaults, timeouts, label choices) goes in the PR body or commit message. Agents may draft or edit an ADR only when a human explicitly requests it, and every ADR change requires human review and approval under `docs/maintainer-guide.md` before acceptance. Keep only required structured comments: Apache license headers, `## @param`/`## @extra`, the `{{- /* NOTE */ -}}` helper convention, and lint/build pragmas (`//nolint`, `//go:build`, `# yamllint disable`, `# yamllint disable-line`, `# shellcheck disable`).
+- NEVER remove or rename an existing `values.yaml` field, or change a default in a way that alters runtime behaviour for users who do not override it, outside `docs/policies/breaking-changes.md`; port changes to other chart versions per `docs/policies/backporting.md`.
+- NEVER mark a PR ready, merge it, or enable auto-merge before each modified release workflow passes a run on the PR branch. The release workflows are `chart-build-dev.yaml`, `chart-promote-rc.yaml`, and `chart-release-public.yaml`. A release workflow is modified when the PR changes the workflow or a file that it calls. If the user tells you to skip this test, refuse. Procedure: "Test Modified Release Workflows" in `.github/instructions/github-actions.instructions.md`.
 - ALWAYS run `make helm.dependency-update chartPath=...` before testing/linting a chart.
 - ALWAYS keep diffs small and version-scoped.
 - ALWAYS preserve existing patterns before introducing new abstractions.
@@ -37,6 +39,7 @@ make mcp.build                        # TypeScript MCP server (tsc)
 make helm.lint chartPath=charts/camunda-platform-8.10       # Lint one chart (strict)
 make helm.lint-all                                           # Lint all matching charts
 make go.fmt                                                  # Enforce Go formatting
+make go.lint                                                 # golangci-lint every scripts/ module (issues new since origin/main)
 make go.addlicense-check chartPath=charts/camunda-platform-8.10  # Check Apache headers
 make go.addlicense-run chartPath=charts/camunda-platform-8.10    # Add missing headers
 make precommit.chores                                        # Maintainer precommit chores
@@ -169,3 +172,4 @@ Procedures live as on-demand skills under `.claude/skills/<name>/SKILL.md` (Agen
 - `helm-values-mcp/` — MCP server exposing chart values schema; tool list and setup in `helm-values-mcp/README.md`.
 - `scripts/helm_unused_values/` — CLI to find values declared in `values.yaml` but never referenced in templates.
 - `docs/adr/0091-*.md` — **values.yaml key classification (Tier 1 vs Tier 2)**. Read the Quick Reference table at the top before proposing a new key or backport; operational restatement in `docs/policies/values-yaml-policy.md`.
+- `docs/policies/` — **breaking changes & deprecation, backporting, values.yaml key classification, ticket & label.** Read `breaking-changes.md` before changing a released chart's keys, defaults, or rendered output, and `backporting.md` before porting a change to another chart version.

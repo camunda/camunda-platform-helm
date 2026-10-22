@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -532,11 +533,6 @@ func BuildDeploymentConfig(scenariosDir, scenario string, ov BuilderOverrides) (
 // Kept for backward compatibility during transition.
 type LayeredConfig = DeploymentConfig
 
-// DeriveLayeredConfig is deprecated - use MapScenarioToConfig instead.
-func DeriveLayeredConfig(scenario string) *LayeredConfig {
-	return MapScenarioToConfig(scenario)
-}
-
 // ResolvePath determines the source values file path for a scenario.
 // It first tries the new values structure (values/ directory), then falls back
 // to the legacy single-file approach (values-integration-test-ingress-*.yaml).
@@ -662,10 +658,5 @@ func listYamlFiles(dir string) ([]string, error) {
 
 // contains checks if a slice contains a string.
 func contains(slice []string, item string) bool {
-	for _, s := range slice {
-		if s == item {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(slice, item)
 }

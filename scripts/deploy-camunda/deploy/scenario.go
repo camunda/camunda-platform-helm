@@ -224,8 +224,8 @@ func generateCompactRealmName(namespace, scenario, suffix string) string {
 func keycloakVersionSuffix(host string) string {
 	// Take everything before the first dot (the subdomain).
 	subdomain := host
-	if idx := strings.Index(host, "."); idx >= 0 {
-		subdomain = host[:idx]
+	if before, _, ok := strings.Cut(host, "."); ok {
+		subdomain = before
 	}
 	// Strip the "keycloak-" prefix if present.
 	version := strings.TrimPrefix(subdomain, "keycloak-")

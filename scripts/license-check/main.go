@@ -176,7 +176,7 @@ func reportViolations(violations []violation, checked int, out io.Writer) error 
 
 func parseExts(extList string) []string {
 	var exts []string
-	for _, e := range strings.Split(extList, ",") {
+	for e := range strings.SplitSeq(extList, ",") {
 		e = strings.TrimSpace(e)
 		if e == "" {
 			continue
@@ -193,7 +193,7 @@ func parseExts(extList string) []string {
 // normalised to forward slashes and without a trailing separator.
 func parseExcludes(excludeList string) []string {
 	var excludes []string
-	for _, e := range strings.Split(excludeList, ",") {
+	for e := range strings.SplitSeq(excludeList, ",") {
 		e = strings.TrimSpace(filepath.ToSlash(strings.TrimSpace(e)))
 		e = strings.TrimSuffix(e, "/")
 		if e == "" {
@@ -254,7 +254,7 @@ func trackedFiles(repoRoot string, exts []string) ([]string, error) {
 	}
 
 	var files []string
-	for _, rel := range strings.Split(string(stdout), "\x00") {
+	for rel := range strings.SplitSeq(string(stdout), "\x00") {
 		if rel == "" {
 			continue
 		}
@@ -299,7 +299,7 @@ func commentText(head, ext string) string {
 	}
 
 	var b strings.Builder
-	for _, line := range strings.Split(head, "\n") {
+	for line := range strings.SplitSeq(head, "\n") {
 		trimmed := strings.TrimSpace(line)
 		for _, p := range prefixes {
 			if strings.HasPrefix(trimmed, p) {

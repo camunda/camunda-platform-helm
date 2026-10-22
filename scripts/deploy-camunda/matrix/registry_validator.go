@@ -260,9 +260,6 @@ func (v *registryValidation) checkScenarios(cfg *CITestConfig) {
 			v.checkExtraValues(label, ev)
 		}
 	}
-	for name, profile := range cfg.Integration.DependencyProfiles {
-		v.checkHook(fmt.Sprintf("dependency-profile %q pre-install", name), profile.PreInstall)
-	}
 	for name, hooks := range cfg.Integration.Flows {
 		if hooks != nil {
 			v.checkHook(fmt.Sprintf("flow %q pre-upgrade", name), hooks.PreUpgrade)
@@ -521,7 +518,7 @@ func isSiblingInvoked(name string, siblingContent map[string]string) bool {
 		if sib == name {
 			continue
 		}
-		for _, line := range strings.Split(content, "\n") {
+		for line := range strings.SplitSeq(content, "\n") {
 			if !strings.Contains(line, name) {
 				continue
 			}

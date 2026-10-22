@@ -38,9 +38,9 @@ var (
 )
 
 // redactDeployOpts returns a copy of deploy options with sensitive fields redacted for logging.
-func redactDeployOpts(opts types.Options) map[string]interface{} {
+func redactDeployOpts(opts types.Options) map[string]any {
 	redacted := "[REDACTED]"
-	return map[string]interface{}{
+	return map[string]any{
 		"chart":                  opts.Chart,
 		"chartPath":              opts.ChartPath,
 		"version":                opts.Version,
@@ -117,11 +117,12 @@ func printDeploymentSummary(result *ScenarioResult, flags *config.RuntimeFlags) 
 		if len(flags.Debug.DebugComponents) > 0 {
 			fmt.Fprintf(&out, "debug:\n")
 			for component, debugCfg := range flags.Debug.DebugComponents {
-				if component == "orchestration" {
+				switch component {
+				case "orchestration":
 					fmt.Fprintf(&out, "  orchestration:\n")
 					fmt.Fprintf(&out, "    port: %d\n", debugCfg.Port)
 					fmt.Fprintf(&out, "    portForwardCommand: kubectl port-forward -n %s svc/%s-zeebe %d:%d\n", namespace, release, debugCfg.Port, debugCfg.Port)
-				} else if component == "connectors" {
+				case "connectors":
 					fmt.Fprintf(&out, "  connectors:\n")
 					fmt.Fprintf(&out, "    port: %d\n", debugCfg.Port)
 					fmt.Fprintf(&out, "    portForwardCommand: kubectl port-forward -n %s deploy/%s-connectors %d:%d\n", namespace, release, debugCfg.Port, debugCfg.Port)
@@ -177,14 +178,15 @@ func printDeploymentSummary(result *ScenarioResult, flags *config.RuntimeFlags) 
 			out.WriteString(styleHead("  To connect your debugger, run:"))
 			out.WriteString("\n")
 			var portForwardCmd string
-			if component == "orchestration" {
+			switch component {
+			case "orchestration":
 				portForwardCmd = fmt.Sprintf("kubectl port-forward -n %s svc/%s-zeebe %d:%d", namespace, release, debugCfg.Port, debugCfg.Port)
-			} else if component == "connectors" {
+			case "connectors":
 				portForwardCmd = fmt.Sprintf("kubectl port-forward -n %s deploy/%s-connectors %d:%d", namespace, release, debugCfg.Port, debugCfg.Port)
 			}
 			fmt.Fprintf(&out, "    %s\n", styleVal(portForwardCmd))
 			out.WriteString("\n")
-			out.WriteString(fmt.Sprintf("  Then connect your IDE debugger to %s\n", styleVal(fmt.Sprintf("localhost:%d", debugCfg.Port))))
+			fmt.Fprintf(&out, "  Then connect your IDE debugger to %s\n", styleVal(fmt.Sprintf("localhost:%d", debugCfg.Port)))
 		}
 	}
 
@@ -247,9 +249,10 @@ func printMultiScenarioSummary(results []*ScenarioResult, flags *config.RuntimeF
 				for _, r := range results {
 					if r.Error == nil {
 						fmt.Fprintf(&out, "      - scenario: %s\n", r.Scenario)
-						if component == "orchestration" {
+						switch component {
+						case "orchestration":
 							fmt.Fprintf(&out, "        command: kubectl port-forward -n %s svc/%s-zeebe %d:%d\n", r.Namespace, r.Release, debugCfg.Port, debugCfg.Port)
-						} else if component == "connectors" {
+						case "connectors":
 							fmt.Fprintf(&out, "        command: kubectl port-forward -n %s deploy/%s-connectors %d:%d\n", r.Namespace, r.Release, debugCfg.Port, debugCfg.Port)
 						}
 					}
@@ -332,16 +335,17 @@ func printMultiScenarioSummary(results []*ScenarioResult, flags *config.RuntimeF
 			for _, r := range results {
 				if r.Error == nil {
 					var portForwardCmd string
-					if component == "orchestration" {
+					switch component {
+					case "orchestration":
 						portForwardCmd = fmt.Sprintf("kubectl port-forward -n %s svc/%s-zeebe %d:%d", r.Namespace, r.Release, debugCfg.Port, debugCfg.Port)
-					} else if component == "connectors" {
+					case "connectors":
 						portForwardCmd = fmt.Sprintf("kubectl port-forward -n %s deploy/%s-connectors %d:%d", r.Namespace, r.Release, debugCfg.Port, debugCfg.Port)
 					}
 					fmt.Fprintf(&out, "    [%s] %s\n", styleVal(r.Scenario), portForwardCmd)
 				}
 			}
 			out.WriteString("\n")
-			out.WriteString(fmt.Sprintf("  Then connect your IDE debugger to %s\n", styleVal(fmt.Sprintf("localhost:%d", debugCfg.Port))))
+			fmt.Fprintf(&out, "  Then connect your IDE debugger to %s\n", styleVal(fmt.Sprintf("localhost:%d", debugCfg.Port)))
 		}
 	}
 

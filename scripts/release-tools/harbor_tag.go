@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	"scripts/camunda-core/pkg/harbor"
+	"scripts/camunda-core/pkg/harbortag"
 )
 
 // runHarborTag performs Harbor artifact-tag operations. The API base, repository
@@ -29,6 +30,7 @@ import (
 //
 // ops:
 //
+//	source --ref <r>                         emit RC metadata and print its source SHA
 //	digest --ref <r>                         print the artifact digest for a reference
 //	add    --digest <d> --tag <t>            add a tag (fails on non-2xx)
 //	delete --ref <r> --tag <t> [--ignore-missing]   untag via the tag endpoint
@@ -37,7 +39,7 @@ import (
 // All deletes use the deleteTag endpoint (never deleteArtifact); see the package doc.
 func runHarborTag(args []string) error {
 	if len(args) < 1 {
-		return fmt.Errorf("harbor-tag requires an op: digest|add|delete|ensure")
+		return fmt.Errorf("harbor-tag requires an op: source|digest|add|delete|ensure")
 	}
 	op := args[0]
 	fs := flag.NewFlagSet("harbor-tag "+op, flag.ContinueOnError)
@@ -69,6 +71,36 @@ func runHarborTag(args []string) error {
 	c := harbor.New(api, repo, dryRun)
 
 	switch op {
+	case "source":
+		if ref == "" {
+			return fmt.Errorf("source: --ref is required")
+		}
+		artifact, err := c.Artifact(ref)
+		if err != nil {
+			return err
+		}
+		if artifact.Digest == "" {
+			return fmt.Errorf("artifact %q has no digest", ref)
+		}
+		tags := make([]string, 0, len(artifact.Tags))
+		for _, tag := range artifact.Tags {
+			tags = append(tags, tag.Name)
+		}
+		rc, dev, err := harbortag.ResolveRCSource(ref, tags, dryRun)
+		if err != nil {
+			return err
+		}
+		out := newGitHubOutput()
+		for _, pair := range [][2]string{
+			{"resolved_tag", rc.ResolvedTag}, {"version", rc.Version},
+			{"dev_tag", dev.ResolvedTag}, {"artifact_digest", artifact.Digest},
+		} {
+			if err := out.set(pair[0], pair[1]); err != nil {
+				return err
+			}
+		}
+		fmt.Println(dev.SHA)
+		return nil
 	case "digest":
 		if ref == "" {
 			return fmt.Errorf("digest: --ref is required")

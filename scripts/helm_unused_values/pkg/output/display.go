@@ -72,14 +72,6 @@ func (d *Display) PrintError(message string) {
 	}
 }
 
-// PrintHighlight prints a highlighted message
-func (d *Display) PrintHighlight(message string) {
-	if !d.QuietMode {
-		cyan := color.New(color.FgCyan)
-		cyan.Println(message)
-	}
-}
-
 // PrintBold prints a message in bold text
 func (d *Display) PrintBold(message string) {
 	if !d.QuietMode {

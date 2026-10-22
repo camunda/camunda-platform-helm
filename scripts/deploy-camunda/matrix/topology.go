@@ -519,24 +519,6 @@ func (v *topologyValidation) validateReferences(ctx string, t *Topology) []strin
 	return problems
 }
 
-// isContainedRelativePath reports whether value is a non-empty relative path
-// that stays inside the directory it is joined onto. Used for topology fields
-// that legitimately contain a subdirectory, where isPlainFilename is too
-// strict but filepath.Join would still happily follow "..".
-func isContainedRelativePath(value string) bool {
-	if value == "" || filepath.IsAbs(value) {
-		return false
-	}
-	if strings.ContainsRune(value, '\\') {
-		return false
-	}
-	cleaned := filepath.Clean(value)
-	if cleaned == "." || cleaned == ".." || strings.HasPrefix(cleaned, ".."+string(filepath.Separator)) {
-		return false
-	}
-	return true
-}
-
 func isDNS1123Label(value string) bool {
 	if value == "" || len(value) > 63 {
 		return false

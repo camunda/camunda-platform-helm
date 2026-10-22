@@ -31,6 +31,11 @@ on:
   #   - cron: '0 10 * * *'  # Daily at 10:00 UTC - commented out pending manual testing
   workflow_dispatch:
     inputs:
+      classification_only:
+        description: Verify App-token author classification without triage or issue mutations
+        required: false
+        type: boolean
+        default: false
       issue_number:
         description: 'Issue number to triage (optional, for single-issue mode)'
         required: false
@@ -55,7 +60,8 @@ concurrency:
 jobs:
   ai-triage:
     runs-on: ubuntu-latest
-    permissions: {}
+    permissions:
+      contents: read
     timeout-minutes: 30
     env:
       OWNER: ${{ github.repository_owner }}
@@ -67,6 +73,14 @@ jobs:
         shell: bash
 
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: camunda/camunda-platform-helm
+          ref: ${{ github.repository == 'camunda/camunda-platform-helm' && github.sha || 'main' }}
+          persist-credentials: false
+      - uses: ./.github/actions/install-tool-versions
+        with:
+          tools: golang
       - name: Import Vault secrets
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc  # v4.0.0
         id: vault-secrets
@@ -179,6 +193,7 @@ jobs:
           ISSUE_NUMBERS: ${{ steps.fetch_issues.outputs.issue_numbers }}
           GLEAN_API_TOKEN: ${{ steps.vault-secrets.outputs.GLEAN_API_TOKEN }}
           SLACK_DISTRO_BOT_WEBHOOK_GH: ${{ steps.vault-secrets.outputs.SLACK_DISTRO_BOT_WEBHOOK_GH }}
+          CLASSIFICATION_ONLY: ${{ inputs.classification_only || false }}
         run: |
           set -euo pipefail
 
@@ -194,6 +209,12 @@ jobs:
             ISSUE_BODY=$(echo "$ISSUE_DATA" | jq -r '.body // ""')
             ISSUE_LABELS=$(echo "$ISSUE_DATA" | jq -r '.labels[].name' | tr '\n' ',' | sed 's/,$//')
             ISSUE_STATE=$(echo "$ISSUE_DATA" | jq -r '.state')
+
+            if [[ "$CLASSIFICATION_ONLY" == "true" ]]; then
+              INTERNAL=$(ISSUE_NUMBER="$ISSUE_NUMBER" make --no-print-directory run.issue-author)
+              echo "App-token classification: issue #$ISSUE_NUMBER internal=$INTERNAL" >> "$GITHUB_STEP_SUMMARY"
+              continue
+            fi
 
             echo "📄 Title: $ISSUE_TITLE"
             echo "🏷️  Labels: ${ISSUE_LABELS:-none}"
@@ -216,6 +237,8 @@ jobs:
               echo "⏭️  Skipping: has triage:manual label"
               continue
             fi
+
+            INTERNAL=$(ISSUE_NUMBER="$ISSUE_NUMBER" make --no-print-directory run.issue-author)
 
             # Prepare Glean Chat API request - build prompt programmatically
             GLEAN_PROMPT="You are an expert bug and task triage assistant for the ${OWNER}/${REPO} repository."
@@ -301,6 +324,11 @@ jobs:
             if ! echo "$AI_JSON" | jq -e . > /dev/null 2>&1; then
               echo "❌ Invalid JSON in AI response"
               echo "AI response: ${AI_TEXT}"
+              if [[ "$INTERNAL" == "true" ]]; then
+                gh issue edit "$ISSUE_NUMBER" --repo "$OWNER/$REPO" --add-label "triage:manual"
+                echo "Issue #$ISSUE_NUMBER: assessment failed; manual review needed." >> "$GITHUB_STEP_SUMMARY"
+                continue
+              fi
               echo "💬 Posting error comment and applying triage:manual label..."
               gh issue comment "$ISSUE_NUMBER" --repo "$OWNER/$REPO" --body "$(printf '❌ **Error triaging #%s — manual triage required**\n\nThe AI triage assistant failed to produce a valid response for this issue. Please triage it manually and apply the appropriate labels.\n\nThe `triage:manual` label has been applied to suppress future automated triage attempts.' "$ISSUE_NUMBER")" || true
               gh issue edit "$ISSUE_NUMBER" --repo "$OWNER/$REPO" --add-label "triage:manual" || true
@@ -324,19 +352,27 @@ jobs:
             echo "   Severity: $SEVERITY"
             echo "   Likelihood: $LIKELIHOOD"
             echo "   Confidence: $CONFIDENCE"
+            printf '\n### Issue #%s — suggested priority\nSeverity: %s; likelihood: %s; confidence: %s\n\n%s\n' "$ISSUE_NUMBER" "$SEVERITY" "$LIKELIHOOD" "$CONFIDENCE" "$RATIONALE" >> "$GITHUB_STEP_SUMMARY"
 
             # Check confidence threshold
             if (( $(echo "$CONFIDENCE < $CONFIDENCE_THRESHOLD" | bc -l) )); then
               echo "⏭️  Skipping: confidence ($CONFIDENCE) below threshold ($CONFIDENCE_THRESHOLD)"
+              if [[ "$INTERNAL" == "true" ]]; then
+                gh issue edit "$ISSUE_NUMBER" --repo "$OWNER/$REPO" --add-label "triage:manual"
+              fi
               continue
             fi
 
             # Skip if severity is unknown
             if [[ "$SEVERITY" == "unknown" ]]; then
               echo "⏭️  Skipping: severity is unknown"
+              if [[ "$INTERNAL" == "true" ]]; then
+                gh issue edit "$ISSUE_NUMBER" --repo "$OWNER/$REPO" --add-label "triage:manual"
+              fi
               continue
             fi
 
+            if [[ "$INTERNAL" != "true" ]]; then
             # Prepare severity emoji
             SEVERITY_EMOJI=""
             case "$SEVERITY" in
@@ -399,19 +435,34 @@ jobs:
               fi
             fi
 
-            # Apply labels
-            echo "🏷️  Applying labels..."
-            gh issue edit "$ISSUE_NUMBER" --repo "$OWNER/$REPO" \
-              --add-label "severity/$SEVERITY" \
-              --add-label "likelihood/$LIKELIHOOD" \
-              --add-label "TRIAGE:COMPLETED"
-
-            if [[ -n "$KIND" ]]; then
-              gh issue edit "$ISSUE_NUMBER" --repo "$OWNER/$REPO" --add-label "kind/$KIND"
             fi
 
-            if [[ "$MISSING_INFO" == "true" ]]; then
-              gh issue edit "$ISSUE_NUMBER" --repo "$OWNER/$REPO" --add-label "BLOCKER/INFO"
+            # Apply labels
+            echo "🏷️  Applying labels..."
+            if [[ "$INTERNAL" == "true" ]]; then
+              ISSUE_LABELS=$(gh issue view "$ISSUE_NUMBER" --repo "$OWNER/$REPO" --json labels --jq '.labels[].name')
+              if ! echo "$ISSUE_LABELS" | grep -qi '^severity/'; then
+                gh issue edit "$ISSUE_NUMBER" --repo "$OWNER/$REPO" --add-label "severity/$SEVERITY"
+              fi
+              if ! echo "$ISSUE_LABELS" | grep -qi '^likelihood/'; then
+                gh issue edit "$ISSUE_NUMBER" --repo "$OWNER/$REPO" --add-label "likelihood/$LIKELIHOOD"
+              fi
+              if [[ -n "$KIND" ]] && ! echo "$ISSUE_LABELS" | grep -qi '^kind/'; then
+                gh issue edit "$ISSUE_NUMBER" --repo "$OWNER/$REPO" --add-label "kind/$KIND"
+              fi
+            else
+              gh issue edit "$ISSUE_NUMBER" --repo "$OWNER/$REPO" \
+                --add-label "severity/$SEVERITY" \
+                --add-label "likelihood/$LIKELIHOOD" \
+                --add-label "TRIAGE:COMPLETED"
+
+              if [[ -n "$KIND" ]]; then
+                gh issue edit "$ISSUE_NUMBER" --repo "$OWNER/$REPO" --add-label "kind/$KIND"
+              fi
+
+              if [[ "$MISSING_INFO" == "true" ]]; then
+                gh issue edit "$ISSUE_NUMBER" --repo "$OWNER/$REPO" --add-label "BLOCKER/INFO"
+              fi
             fi
 
             # Move issue to Backlog
@@ -426,6 +477,9 @@ jobs:
                       nodes {
                         id
                         project { id number }
+                        fieldValueByName(name:"Status") {
+                          ... on ProjectV2ItemFieldSingleSelectValue { name }
+                        }
                       }
                     }
                   }
@@ -455,11 +509,17 @@ jobs:
             STATUS_FIELD_ID=$(echo "$PROJECT_DATA" | jq -r '.data.organization.projectV2.field.id')
             BACKLOG_OPTION_ID=$(echo "$PROJECT_DATA" | jq -r \
               '.data.organization.projectV2.field.options[] | select(.name=="📋 Backlog") | .id')
+            CURRENT_STATUS=$(echo "$PROJECT_DATA" | jq -r --argjson pn "$PROJECT_NUMBER" \
+              '.data.repository.issue.projectItems.nodes[] | select(.project.number==$pn) | .fieldValueByName.name // ""')
 
-            if [[ -z "$PROJECT_ITEM_ID" ]]; then
+            if [[ "$INTERNAL" == "true" && -n "$CURRENT_STATUS" && "$CURRENT_STATUS" != "📥 Inbox" ]]; then
+              echo "Preserving internal issue status: $CURRENT_STATUS"
+            elif [[ -z "$PROJECT_ITEM_ID" ]]; then
               echo "⚠️  Issue not in project #${PROJECT_NUMBER}, skipping status update"
+              if [[ "$INTERNAL" == "true" ]]; then continue; fi
             elif [[ -z "$BACKLOG_OPTION_ID" ]]; then
               echo "⚠️  'Backlog' status option not found in project, skipping status update"
+              if [[ "$INTERNAL" == "true" ]]; then continue; fi
             else
               # Update status field
               # Use flat variables and inline the input object to avoid gh api graphql
@@ -472,6 +532,11 @@ jobs:
                 -f optionId="$BACKLOG_OPTION_ID" > /dev/null
 
               echo "✅ Moved to Backlog"
+            fi
+
+            if [[ "$INTERNAL" == "true" ]]; then
+              gh issue edit "$ISSUE_NUMBER" --repo "$OWNER/$REPO" --add-label "TRIAGE:COMPLETED"
+              continue
             fi
 
             # Send Slack notification to #team-distribution-github

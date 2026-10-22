@@ -20,6 +20,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"strings"
@@ -194,9 +195,7 @@ func (f *fakeCluster) kubectl(_ context.Context, stdin []byte, args ...string) (
 				live = map[string]string{}
 				f.secrets[ns+"/"+obj.Metadata.Name] = live
 			}
-			for k, v := range obj.Data {
-				live[k] = v
-			}
+			maps.Copy(live, obj.Data)
 			return nil, nil
 		}
 		f.applies++
@@ -709,7 +708,7 @@ func TestReconcileCredentials_SourceRotatedAfterASuccessfulRunStaysRecoverable(t
 func TestReconcileCredentials_EveryForceSyncAnnotationIsUnique(t *testing.T) {
 	f := newFakeCluster(t)
 	instant := time.Unix(1_790_000_000, 0)
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		var out bytes.Buffer
 		r := &credentialReconciler{kubectl: f.kubectl, out: &out, poll: time.Millisecond, timeout: time.Minute,
 			now: func() time.Time { return instant }, generate: generateCredential}
@@ -777,9 +776,7 @@ func TestReconcileCredentials_StaleBootstrapNeverDeletesANonTemporaryUser(t *tes
 
 func TestReconcileCredentials_LeavesCurrentStoresAlone(t *testing.T) {
 	f := newFakeCluster(t)
-	for k, v := range f.secrets["distribution-team/src"] {
-		f.secrets["env-hub/creds"][k] = v
-	}
+	maps.Copy(f.secrets["env-hub/creds"], f.secrets["distribution-team/src"])
 	f.kc["master/admin"] = "new-admin"
 	f.pg["env-hub/keycloak-postgresql/keycloak"] = "new-kcdb"
 	f.pg["env-hub/postgresql/app"] = "new-appdb"
@@ -899,7 +896,7 @@ func TestReconcileCredentials_KeycloakOutageFailsWithoutTryingABootstrap(t *test
 func TestExecScripts_NeverPassAPasswordAsAnArgument(t *testing.T) {
 	for name, script := range map[string]string{"kcadm": kcadmScript, "es": esScript, "psql": psqlScript} {
 		for _, bad := range []string{"--password ", "--new-password", `-H "Authorization`, `"$lp"`, `"$np" `} {
-			for _, line := range strings.Split(script, "\n") {
+			for line := range strings.SplitSeq(script, "\n") {
 				if strings.Contains(line, bad) && !strings.Contains(line, "printf") {
 					t.Errorf("%s script passes a secret on a command line: %s", name, line)
 				}
@@ -940,7 +937,7 @@ func TestReconcileCredentials_ChecksumMatchesTheSourceItReconciledAgainst(t *tes
 
 func TestReconcileCredentials_EachBootstrapUsesItsOwnResourceNames(t *testing.T) {
 	f := newFakeCluster(t)
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		f.kc["master/admin"] = "unknown"
 		if out, err := runReconcile(t, f); err != nil {
 			t.Fatalf("run %d: %v\n%s", i, err, out)

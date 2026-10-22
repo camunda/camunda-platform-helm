@@ -70,4 +70,16 @@ jobs:
               github.event.action == 'transferred' ||
               (github.event.action == 'labeled' && github.event.label.name == 'kind/bug')
           )
-                
+
+  reconcile-urgency:
+    needs: add-to-project
+    if: github.event.action == 'opened'
+    uses: ./.github/workflows/triage-assign-urgency-to-issue.yml
+    with:
+      issue_number: ${{ format('{0}', github.event.issue.number) }}
+      route_new_internal: true
+      quiet_internal: true
+    secrets:
+      VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
+      VAULT_ROLE_ID: ${{ secrets.VAULT_ROLE_ID }}
+      VAULT_SECRET_ID: ${{ secrets.VAULT_SECRET_ID }}

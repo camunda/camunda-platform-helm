@@ -17,6 +17,7 @@ package matrix
 import (
 	"context"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"strings"
@@ -103,9 +104,7 @@ func lifecycleVars(flags *config.RuntimeFlags, namespace, release string) map[st
 		"NAMESPACE":    namespace,
 		"RELEASE_NAME": release,
 	}
-	for k, v := range resolveLifecycleEnv(flags) {
-		vars[k] = v
-	}
+	maps.Copy(vars, resolveLifecycleEnv(flags))
 	return vars
 }
 

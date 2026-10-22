@@ -87,7 +87,7 @@ These labels make it easy to triage, route, and track work consistently (what it
 - **`needs-info`:** Needs more information, e.g. a question/discussion (not actionable work yet).
 - **`good first issue`:** Good for new contributors.
 - **`deprecated/8.x`:** Track work that gets deprecated in version `8.x`.
-- **`breaking change`:** Marks a breaking change that needs special attention and communication. See [Breaking Changes Policy](./breaking-changes.md) for the full policy on what qualifies as a breaking change and the required approval process.
+- **`breaking-change`:** Marks a breaking change that needs special attention and communication. See [Breaking Changes Policy](./breaking-changes.md) for the full policy on what qualifies as a breaking change and the required approval process.
 
 ### 3.4. Epic/Task Structure
 

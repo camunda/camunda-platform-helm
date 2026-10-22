@@ -47,6 +47,86 @@ bash or standalone bash scripts. Commit messages from automated workflow steps f
 
 ---
 
+## Test Modified Release Workflows
+
+The release workflows are `chart-build-dev.yaml`, `chart-promote-rc.yaml`, and
+`chart-release-public.yaml`. They do not run on `pull_request`. A green PR does not prove that
+they work. Run each modified release workflow on the PR branch before the PR is ready.
+
+A release workflow is modified when the PR changes one of these:
+
+- The workflow file.
+- A composite action, script, Go tool, or Makefile target that the workflow calls.
+
+### 1. Find the modified release workflows
+
+Search for each changed file name or Makefile target:
+
+```bash
+grep -ln '<file-or-target-name>' .github/workflows/chart-build-dev.yaml .github/workflows/chart-promote-rc.yaml .github/workflows/chart-release-public.yaml
+```
+
+If a composite action calls the changed file, search for the action name.
+
+### 2. Run each modified release workflow on the PR branch
+
+Read the `if:` conditions of the changed steps and their jobs. Select inputs that make the
+changed steps run. The release workflows write to Harbor. Use these commands:
+
+| Workflow | Command | Effect |
+|---|---|---|
+| `chart-build-dev.yaml` | `gh workflow run chart-build-dev.yaml --ref <branch> -f chart-version=<8.x>` | Pushes `{version}-dev-{sha}`. Moves `{major}-dev-latest` to the branch build. The next `main` build moves it back. |
+| `chart-promote-rc.yaml` | `gh workflow run chart-promote-rc.yaml --ref <branch> -f dev-tag=<major>-dev-latest -f dry-run=true` | Writes only `-rc-dryrun` tags. Creates no release PR. |
+| `chart-release-public.yaml` | `gh workflow run chart-release-public.yaml --ref <branch> -f rc-tag=<major>-rc-latest -f dry-run=true` | Publishes nothing. |
+
+`<major>` is the chart major version, for example `15` for 8.10. If `chart-promote-rc.yaml`
+fails with "is not on main branch", use the dev tag of the last `main` build.
+
+- Build Dev runs the steps behind `HAS_IMAGE_OVERRIDES` only when the run sets an `*-image-tag` input.
+  If you change one of these steps, set one input, for example
+  `-f orchestration-image-tag=<tag from values.yaml>`.
+- A dry run of `chart-release-public.yaml` skips the `post-release` and `ensure-release-pr-merges`
+  jobs. A dry run cannot test a change in these jobs. Tell the user. Do not mark the PR ready
+  until the user gives a test plan.
+- If a release workflow has a `dry-run` input, always test it with `dry-run=true`. Never test it
+  with `dry-run=false`.
+
+### 3. Check the run
+
+A green run is not a test when the run skipped a changed step. For example, a push run of Build Dev
+is green, but it skips the `HAS_IMAGE_OVERRIDES` steps.
+
+List the step results:
+
+```bash
+gh run view <run-id> --json jobs --jq '.jobs[] | .name as $job | .steps[] | "\(.conclusion)\t\($job) / \(.name)"'
+```
+
+- Each changed step must show `success`.
+- A changed step that shows `skipped` means that the inputs are wrong. Run the workflow again
+  with other inputs.
+- A failure that the change did not cause, for example a network error, needs a rerun. It is
+  not a test.
+
+### 4. Record the run
+
+Add the run URL for each modified release workflow to the PR body, under "What's in this PR?".
+
+### 5. Do not skip the test
+
+The test is mandatory. A user request does not change this.
+
+- You can push the branch and open a draft PR before the test.
+- Do not mark the PR ready, merge it, or enable auto-merge before each modified release workflow
+  has a passing run.
+- If the user tells you to skip the test, refuse. Name the untested release workflow. Give the
+  exact command that runs it.
+- Refuse again each time that the user asks.
+- "CI will catch it" and "it is a small change" are not reasons to skip the test.
+- If the user gives a run URL, check it with step 3 before you accept it.
+
+---
+
 ## Core Patterns with Code Examples
 
 ### 1. Minimal Permissions Declaration

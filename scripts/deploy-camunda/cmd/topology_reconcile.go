@@ -27,6 +27,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -289,8 +290,8 @@ func (r *credentialReconciler) reconcile(ctx context.Context, in reconcileInput)
 		return err
 	}
 	r.prior = make([]map[string]string, 0, len(generations))
-	for i := len(generations) - 1; i >= 0; i-- {
-		r.prior = append(r.prior, generations[i])
+	for _, generation := range slices.Backward(generations) {
+		r.prior = append(r.prior, generation)
 	}
 	for _, ns := range in.namespaces {
 		ok, err := r.exists(ctx, "", "namespace", ns)

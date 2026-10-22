@@ -216,6 +216,18 @@ jobs:
           # package's Chart.yaml → $GITHUB_OUTPUT.
           /tmp/release-tools chart-metadata --chart-yaml "${package_chart_dir}/Chart.yaml"
 
+      - name: Resolve release history
+        id: history
+        env:
+          SOURCE_SHA: ${{ steps.parse.outputs.sha }}
+        run: |
+          set -euo pipefail
+          previous_ref=$(/tmp/release-tools release-history \
+            --chart-yaml "${{ steps.package.outputs.package_chart_dir }}/Chart.yaml")
+          previous_sha=$(git rev-parse --verify "${previous_ref}^{commit}")
+          git merge-base --is-ancestor "${previous_sha}" "${SOURCE_SHA}"
+          echo "previous_commit_sha=${previous_sha}" >> "$GITHUB_OUTPUT"
+
       - name: Install release-please
         run: npm i release-please -g
 
@@ -300,7 +312,10 @@ jobs:
           fi
 
           # Chart.yaml release annotations + RELEASE-NOTES.md (body + image footer).
-          /tmp/release-tools release-notes --main "${chart_path}"
+          CHART_VERSION="${chart_version}" yq -i '.version = strenv(CHART_VERSION)' "${chart_path}/Chart.yaml"
+          /tmp/release-tools release-notes --main "${chart_path}" \
+            --source "${{ steps.parse.outputs.sha }}" \
+            --previous-source "${{ steps.history.outputs.previous_commit_sha }}"
           /tmp/release-tools release-notes --footer "${chart_path}" \
             --images-chart-dir "${{ steps.package.outputs.package_chart_dir }}"
 

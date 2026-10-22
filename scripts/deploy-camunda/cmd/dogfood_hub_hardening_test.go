@@ -170,7 +170,7 @@ func TestDogfoodHub_HardensKeycloakRealms(t *testing.T) {
 	}
 	for _, realm := range []string{"master", "camunda-platform"} {
 		var line string
-		for _, l := range strings.Split(script, "\n") {
+		for l := range strings.SplitSeq(script, "\n") {
 			if strings.Contains(l, "update realms/"+realm+" ") && strings.Contains(l, "bruteForceProtected") {
 				line = l
 			}
@@ -257,7 +257,7 @@ func TestDogfood_ElasticsearchAuthContract(t *testing.T) {
 
 	pt := read("charts", "camunda-platform-8.10", "test", "integration", "scenarios", "chart-full-setup", "values", "features", "dogfood-orchestration-pt.yaml")
 	passwords := 0
-	for _, line := range strings.Split(pt, "\n") {
+	for line := range strings.SplitSeq(pt, "\n") {
 		trimmed := strings.TrimSpace(line)
 		if strings.HasPrefix(trimmed, "password:") {
 			passwords++

@@ -17,6 +17,7 @@ package deploy
 import (
 	"context"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -315,7 +316,7 @@ func generateDebugValuesFile(outputDir string, flags *config.RuntimeFlags) (stri
 
 			// For debugging, set clusterSize, partitionCount, and replicationFactor to 1
 			// to avoid complexity with multiple replicas during debug sessions
-			yamlContent.WriteString(fmt.Sprintf(`orchestration:
+			fmt.Fprintf(&yamlContent, `orchestration:
   clusterSize: "1"
   partitionCount: "1"
   replicationFactor: "1"
@@ -328,7 +329,7 @@ func generateDebugValuesFile(outputDir string, flags *config.RuntimeFlags) (stri
         protocol: TCP
         port: %d
         targetPort: %d
-`, debugJavaOpts, debugCfg.Port, debugCfg.Port))
+`, debugJavaOpts, debugCfg.Port, debugCfg.Port)
 
 			logging.Logger.Info().
 				Str("component", "orchestration").
@@ -345,12 +346,12 @@ func generateDebugValuesFile(outputDir string, flags *config.RuntimeFlags) (stri
 			)
 
 			// Set replicas to 1 for easier debugging
-			yamlContent.WriteString(fmt.Sprintf(`connectors:
+			fmt.Fprintf(&yamlContent, `connectors:
   replicas: 1
   env:
     - name: JAVA_TOOL_OPTIONS
       value: "%s"
-`, debugJavaOpts))
+`, debugJavaOpts)
 
 			logging.Logger.Info().
 				Str("component", "connectors").
@@ -426,9 +427,7 @@ func buildScenarioEnv(scenarioCtx *ScenarioContext, flags *config.RuntimeFlags) 
 	if err != nil {
 		return nil, fmt.Errorf("failed to read env file %q: %w", envFile, err)
 	}
-	for k, v := range dotenvMap {
-		envMap[k] = v
-	}
+	maps.Copy(envMap, dotenvMap)
 
 	// 3. Apply scenario-specific overrides.
 	envMap["KEYCLOAK_REALM"] = scenarioCtx.KeycloakRealm
@@ -446,9 +445,7 @@ func buildScenarioEnv(scenarioCtx *ScenarioContext, flags *config.RuntimeFlags) 
 	envMap["FLOW"] = flags.Deployment.Flow
 
 	// 4. Apply per-entry extra environment variables (e.g., VENOM_CLIENT_ID, CONNECTORS_CLIENT_ID).
-	for k, v := range flags.ExtraEnv {
-		envMap[k] = v
-	}
+	maps.Copy(envMap, flags.ExtraEnv)
 
 	// 5. Set Keycloak versioned environment variables.
 	if flags.Auth.KeycloakHost != "" {
@@ -594,7 +591,7 @@ func enhanceScenarioError(err error, scenario, scenarioPath, chartPath string) e
 // Each invocation builds an isolated env map via buildScenarioEnv so that parallel
 // calls never race on the process environment. The resulting map is passed to
 // values.Process via EnvOverrides.
-func prepareScenarioValues(ctx context.Context, scenarioCtx *ScenarioContext, flags *config.RuntimeFlags) (*PreparedScenario, error) {
+func prepareScenarioValues(ctx context.Context, scenarioCtx *ScenarioContext, flags *config.RuntimeFlags) (_ *PreparedScenario, err error) {
 	logging.Logger.Debug().
 		Str("scenario", scenarioCtx.ScenarioName).
 		Str("namespace", scenarioCtx.Namespace).
@@ -605,11 +602,6 @@ func prepareScenarioValues(ctx context.Context, scenarioCtx *ScenarioContext, fl
 		Str("scenario", scenarioCtx.ScenarioName).
 		Str("namespace", scenarioCtx.Namespace).
 		Msg("Preparing scenario values")
-
-	// Generate identifiers
-	realmName := scenarioCtx.KeycloakRealm
-	optimizePrefix := scenarioCtx.OptimizeIndexPrefix
-	orchestrationPrefix := scenarioCtx.OrchestrationIndexPrefix
 
 	// Create temp directory for values
 	logging.Logger.Debug().
@@ -626,6 +618,11 @@ func prepareScenarioValues(ctx context.Context, scenarioCtx *ScenarioContext, fl
 		return nil, fmt.Errorf("failed to create temp directory: %w", err)
 	}
 	scenarioCtx.TempDir = tempDir
+	defer func() {
+		if err != nil {
+			os.RemoveAll(tempDir)
+		}
+	}()
 	logging.Logger.Debug().Str("dir", tempDir).Str("scenario", scenarioCtx.ScenarioName).Msg("✅ [prepareScenarioValues] temp directory created successfully")
 
 	// Build an isolated environment map for this scenario. This replaces the
@@ -633,51 +630,21 @@ func prepareScenarioValues(ctx context.Context, scenarioCtx *ScenarioContext, fl
 	// map so parallel calls never race on the process environment.
 	envMap, err := buildScenarioEnv(scenarioCtx, flags)
 	if err != nil {
-		os.RemoveAll(tempDir)
 		return nil, fmt.Errorf("failed to build scenario env: %w", err)
 	}
 
 	companionCharts, err := processCompanionCharts(ctx, flags.CompanionCharts, tempDir, flags.EnvFile, envMap)
 	if err != nil {
-		os.RemoveAll(tempDir)
 		return nil, err
 	}
 
-	// Helper function to process values files
-	processValues := func(scen string) error {
-		logging.Logger.Debug().
-			Str("scenario", scen).
-			Str("chartPath", flags.Chart.ChartPath).
-			Str("scenarioDir", flags.Deployment.ScenarioPath).
-			Str("outputDir", tempDir).
-			Bool("interactive", flags.Interactive).
-			Str("envFile", flags.EnvFile).
-			Msg("📝 [prepareScenarioValues.processValues] building values options")
-
-		opts := values.Options{
-			ChartPath:    flags.Chart.ChartPath,
-			Scenario:     scen,
-			ScenarioDir:  flags.Deployment.ScenarioPath,
-			OutputDir:    tempDir,
-			Interactive:  flags.Interactive,
-			EnvFile:      flags.EnvFile,
-			EnvOverrides: envMap,
-		}
-
-		file, err := values.ResolveValuesFile(opts)
-		if err != nil {
-			return enhanceScenarioError(err, scen, flags.Deployment.ScenarioPath, flags.Chart.ChartPath)
-		}
-
-		_, _, err = values.Process(ctx, file, opts)
-		if err != nil {
-			return fmt.Errorf("failed to process scenario %q: %w", scen, err)
-		}
-		logging.Logger.Debug().
-			Str("scenario", scen).
-			Str("file", file).
-			Msg("✅ [prepareScenarioValues.processValues] values file processed successfully")
-		return nil
+	opts := values.Options{
+		ChartPath:    flags.Chart.ChartPath,
+		ScenarioDir:  flags.Deployment.ScenarioPath,
+		OutputDir:    tempDir,
+		Interactive:  flags.Interactive,
+		EnvFile:      flags.EnvFile,
+		EnvOverrides: envMap,
 	}
 
 	// Process common values files first (base layer)
@@ -688,7 +655,6 @@ func prepareScenarioValues(ctx context.Context, scenarioCtx *ScenarioContext, fl
 		Msg("📋 [prepareScenarioValues] processing common values files")
 	processedCommonFiles, err := processCommonValues(ctx, flags.Deployment.ScenarioPath, tempDir, flags.EnvFile, flags.Deployment.Platform, envMap)
 	if err != nil {
-		os.RemoveAll(tempDir) // Cleanup on error
 		return nil, fmt.Errorf("failed to process common values: %w", err)
 	}
 
@@ -706,156 +672,31 @@ func prepareScenarioValues(ctx context.Context, scenarioCtx *ScenarioContext, fl
 	var scenarioValueFiles []string
 	var resolvedLayerFiles []string // source layer files before env var processing (for display)
 	if isLayered {
-		logging.Logger.Debug().
-			Str("scenarioDir", effectiveScenarioDir).
-			Str("scenario", scenarioCtx.ScenarioName).
-			Msg("📋 [prepareScenarioValues] layered values detected; resolving all layer files")
-
-		// Build deployment config via the canonical builder, applying any explicit
-		// flag overrides so that --platform / --test-platform propagates to the
-		// layered values resolution (e.g. selecting eks.yaml instead of gke.yaml).
-		effectivePlatform := flags.Selection.TestPlatform
-		if effectivePlatform == "" {
-			effectivePlatform = flags.Deployment.Platform
-		}
-		deployConfig, err := scenarios.BuildDeploymentConfig(effectiveScenarioDir, scenarioCtx.ScenarioName, scenarios.BuilderOverrides{
-			Resolved:     flags.SelectionResolved,
-			Identity:     flags.Selection.Identity,
-			Persistence:  flags.Selection.Persistence,
-			Platform:     effectivePlatform,
-			Features:     flags.Selection.Features,
-			InfraType:    flags.Selection.InfraType,
-			Flow:         flags.Deployment.Flow,
-			QA:           flags.Selection.QA,
-			ImageTags:    flags.Selection.ImageTags,
-			Upgrade:      flags.Selection.UpgradeFlow,
-			ChartVersion: flags.Chart.ChartVersion,
-		})
+		opts.ScenarioDir = effectiveScenarioDir
+		scenarioValueFiles, resolvedLayerFiles, err = prepareLayeredValues(ctx, opts, scenarioCtx.ScenarioName, flags)
 		if err != nil {
-			os.RemoveAll(tempDir)
-			return nil, fmt.Errorf("failed to build deployment config for scenario %q: %w", scenarioCtx.ScenarioName, err)
+			return nil, err
 		}
-
-		layeredFiles, err := deployConfig.ResolvePaths(effectiveScenarioDir)
-		if err != nil {
-			os.RemoveAll(tempDir)
-			return nil, fmt.Errorf("failed to resolve layered values for scenario %q: %w", scenarioCtx.ScenarioName, err)
-		}
-
-		logging.Logger.Debug().
-			Strs("layeredFiles", layeredFiles).
-			Int("count", len(layeredFiles)).
-			Msg("📋 [prepareScenarioValues] processing layered values files")
-
-		// Log resolved deployment config and layer files at INFO level for visibility.
-		// Show short relative paths (from scenario dir) instead of absolute paths.
-		shortFiles := make([]string, len(layeredFiles))
-		for i, f := range layeredFiles {
-			if rel, err := filepath.Rel(effectiveScenarioDir, f); err == nil {
-				shortFiles[i] = rel
-			} else {
-				shortFiles[i] = filepath.Base(f)
-			}
-		}
-		logging.Logger.Info().
-			Str("scenario", scenarioCtx.ScenarioName).
-			Str("identity", deployConfig.Identity).
-			Str("persistence", deployConfig.Persistence).
-			Str("platform", deployConfig.Platform).
-			Str("infraType", deployConfig.InfraType).
-			Strs("features", deployConfig.Features).
-			Strs("layerFiles", shortFiles).
-			Msg("Resolved deployment layers")
-		resolvedLayerFiles = shortFiles
-
-		// Process each layered file (env var substitution) into tempDir
-		for _, srcFile := range layeredFiles {
-			opts := values.Options{
-				ChartPath:    flags.Chart.ChartPath,
-				ScenarioDir:  effectiveScenarioDir,
-				OutputDir:    tempDir,
-				Interactive:  flags.Interactive,
-				EnvFile:      flags.EnvFile,
-				EnvOverrides: envMap,
-			}
-			outputPath, _, procErr := values.Process(ctx, srcFile, opts)
-			if procErr != nil {
-				os.RemoveAll(tempDir)
-				return nil, fmt.Errorf("failed to process layered values file %q: %w", srcFile, procErr)
-			}
-			scenarioValueFiles = append(scenarioValueFiles, outputPath)
-		}
-
-		logging.Logger.Debug().
-			Strs("processedFiles", scenarioValueFiles).
-			Msg("📋 [prepareScenarioValues] layered values files processed")
-
-		// Deep-merge all layered files into a single YAML file to prevent
-		// Helm's shallow array replacement from silently dropping entries.
-		// Without this, a later layer's array (e.g., rba.yaml's operate.env)
-		// completely replaces an earlier layer's array (e.g., elasticsearch.yaml's
-		// operate.env), losing critical env vars like index prefix overrides.
-		scenarioValueFiles, err = MergeLayeredValues(scenarioValueFiles, tempDir)
-		if err != nil {
-			os.RemoveAll(tempDir)
-			return nil, fmt.Errorf("failed to merge layered values: %w", err)
-		}
-		logging.Logger.Debug().
-			Strs("mergedFiles", scenarioValueFiles).
-			Msg("📋 [prepareScenarioValues] layered values merged")
 	} else {
 		// Legacy path: process auth and main scenario, then let BuildValuesList resolve
 		effectiveAuth := flags.Auth.Auth
 		if effectiveAuth != "" && effectiveAuth != scenarioCtx.ScenarioName {
 			logging.Logger.Info().Str("auth", effectiveAuth).Str("scenario", scenarioCtx.ScenarioName).Msg("Preparing auth scenario")
-			if err := processValues(effectiveAuth); err != nil {
-				os.RemoveAll(tempDir)
+			if err := processScenarioValues(ctx, effectiveAuth, opts); err != nil {
 				return nil, fmt.Errorf("failed to prepare auth scenario: %w", err)
 			}
 		}
 
 		// Process main scenario
 		logging.Logger.Info().Str("scenario", scenarioCtx.ScenarioName).Msg("Preparing main scenario")
-		if err := processValues(scenarioCtx.ScenarioName); err != nil {
-			os.RemoveAll(tempDir)
+		if err := processScenarioValues(ctx, scenarioCtx.ScenarioName, opts); err != nil {
 			return nil, fmt.Errorf("failed to prepare main scenario: %w", err)
 		}
 	}
 
-	// Auto-generate secrets if requested
-	var secrets map[string]string
-	if flags.Secrets.AutoGenerateSecrets {
-		logging.Logger.Debug().
-			Str("scenario", scenarioCtx.ScenarioName).
-			Msg("🔑 [prepareScenarioValues] auto-generating test secrets")
-		secrets, err = generateTestSecrets(flags.EnvFile, envMap)
-		if err != nil {
-			os.RemoveAll(tempDir) // Cleanup on error
-			return nil, fmt.Errorf("failed to generate test secrets: %w", err)
-		}
-		// Merge secrets into envMap so that vault_secret_mapping is available below.
-		for k, v := range secrets {
-			envMap[k] = v
-		}
-	}
-
-	// Generate vault secrets if auto-generating
-	var vaultSecretPath string
-	if flags.Secrets.AutoGenerateSecrets {
-		vaultSecretPath = filepath.Join(tempDir, "vault-mapped-secrets.yaml")
-		logging.Logger.Info().Str("scenario", scenarioCtx.ScenarioName).Msg("Generating vault secrets")
-		mapping := flags.Secrets.VaultSecretMapping
-		if mapping == "" {
-			mapping = envMap["vault_secret_mapping"]
-		}
-		generate := mapper.Generate
-		if flags.Secrets.StrictSecrets {
-			generate = mapper.GenerateStrict
-		}
-		if err := generate(mapping, "vault-mapped-secrets", vaultSecretPath, envMap); err != nil {
-			os.RemoveAll(tempDir) // Cleanup on error
-			return nil, fmt.Errorf("failed to generate vault secrets: %w", err)
-		}
+	secrets, vaultSecretPath, err := prepareScenarioSecrets(flags, opts, scenarioCtx.ScenarioName)
+	if err != nil {
+		return nil, err
 	}
 
 	// Build values files list
@@ -867,7 +708,6 @@ func prepareScenarioValues(ctx context.Context, scenarioCtx *ScenarioContext, fl
 	// Generate debug values file if debug components are specified
 	debugValuesFile, err := generateDebugValuesFile(tempDir, flags)
 	if err != nil {
-		os.RemoveAll(tempDir)
 		return nil, fmt.Errorf("failed to generate debug values: %w", err)
 	}
 
@@ -884,7 +724,6 @@ func prepareScenarioValues(ctx context.Context, scenarioCtx *ScenarioContext, fl
 		// Pass nil for userValues — we handle ExtraValues in BuildValuesChain.
 		legacyVals, legacyErr := deployer.BuildValuesList(tempDir, []string{scenarioCtx.ScenarioName}, flags.Auth.Auth, false, false, nil, processedCommonFiles)
 		if legacyErr != nil {
-			os.RemoveAll(tempDir)
 			return nil, fmt.Errorf("failed to build values list: %w", legacyErr)
 		}
 		// BuildValuesList returns: common + auth + scenario.
@@ -896,7 +735,6 @@ func prepareScenarioValues(ctx context.Context, scenarioCtx *ScenarioContext, fl
 	if len(flags.Deployment.ImageOverrides) > 0 {
 		overridesFile, overrideErr := writeImageOverrides(flags.Deployment.ImageOverrides, flags.Chart.ChartPath, tempDir)
 		if overrideErr != nil {
-			os.RemoveAll(tempDir)
 			return nil, overrideErr
 		}
 		extraValues = append(append([]string(nil), extraValues...), overridesFile)
@@ -904,7 +742,6 @@ func prepareScenarioValues(ctx context.Context, scenarioCtx *ScenarioContext, fl
 	vals := BuildValuesChain(processedCommonFiles, chartRootOverlayFiles, extraValues, scenarioFiles, debugValuesFile)
 	resolvedImages, err := resolveImages(vals, len(processedCommonFiles)+len(chartRootOverlayFiles), flags.Deployment.AllowDigestShadow, tempDir)
 	if err != nil {
-		os.RemoveAll(tempDir)
 		return nil, err
 	}
 	if resolvedImages != "" {
@@ -929,9 +766,137 @@ func prepareScenarioValues(ctx context.Context, scenarioCtx *ScenarioContext, fl
 		VaultSecretPath:     vaultSecretPath,
 		CompanionCharts:     companionCharts,
 		TempDir:             tempDir,
-		RealmName:           realmName,
-		OptimizePrefix:      optimizePrefix,
-		OrchestrationPrefix: orchestrationPrefix,
+		RealmName:           scenarioCtx.KeycloakRealm,
+		OptimizePrefix:      scenarioCtx.OptimizeIndexPrefix,
+		OrchestrationPrefix: scenarioCtx.OrchestrationIndexPrefix,
 		Secrets:             secrets,
 	}, nil
+}
+
+func prepareScenarioSecrets(flags *config.RuntimeFlags, opts values.Options, scenario string) (map[string]string, string, error) {
+	if !flags.Secrets.AutoGenerateSecrets {
+		return nil, "", nil
+	}
+	logging.Logger.Debug().
+		Str("scenario", scenario).
+		Msg("🔑 [prepareScenarioValues] auto-generating test secrets")
+	secrets, err := generateTestSecrets(opts.EnvFile, opts.EnvOverrides)
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to generate test secrets: %w", err)
+	}
+	maps.Copy(opts.EnvOverrides, secrets)
+	vaultSecretPath := filepath.Join(opts.OutputDir, "vault-mapped-secrets.yaml")
+	logging.Logger.Info().Str("scenario", scenario).Msg("Generating vault secrets")
+	mapping := flags.Secrets.VaultSecretMapping
+	if mapping == "" {
+		mapping = opts.EnvOverrides["vault_secret_mapping"]
+	}
+	generate := mapper.Generate
+	if flags.Secrets.StrictSecrets {
+		generate = mapper.GenerateStrict
+	}
+	if err := generate(mapping, "vault-mapped-secrets", vaultSecretPath, opts.EnvOverrides); err != nil {
+		return nil, "", fmt.Errorf("failed to generate vault secrets: %w", err)
+	}
+	return secrets, vaultSecretPath, nil
+}
+
+func processScenarioValues(ctx context.Context, scenario string, opts values.Options) error {
+	opts.Scenario = scenario
+	logging.Logger.Debug().
+		Str("scenario", scenario).
+		Str("chartPath", opts.ChartPath).
+		Str("scenarioDir", opts.ScenarioDir).
+		Str("outputDir", opts.OutputDir).
+		Bool("interactive", opts.Interactive).
+		Str("envFile", opts.EnvFile).
+		Msg("📝 [prepareScenarioValues.processValues] building values options")
+
+	file, err := values.ResolveValuesFile(opts)
+	if err != nil {
+		return enhanceScenarioError(err, scenario, opts.ScenarioDir, opts.ChartPath)
+	}
+	if _, _, err := values.Process(ctx, file, opts); err != nil {
+		return fmt.Errorf("failed to process scenario %q: %w", scenario, err)
+	}
+	logging.Logger.Debug().
+		Str("scenario", scenario).
+		Str("file", file).
+		Msg("✅ [prepareScenarioValues.processValues] values file processed successfully")
+	return nil
+}
+
+func prepareLayeredValues(ctx context.Context, opts values.Options, scenario string, flags *config.RuntimeFlags) ([]string, []string, error) {
+	logging.Logger.Debug().
+		Str("scenarioDir", opts.ScenarioDir).
+		Str("scenario", scenario).
+		Msg("📋 [prepareScenarioValues] layered values detected; resolving all layer files")
+
+	effectivePlatform := flags.Selection.TestPlatform
+	if effectivePlatform == "" {
+		effectivePlatform = flags.Deployment.Platform
+	}
+	deployConfig, err := scenarios.BuildDeploymentConfig(opts.ScenarioDir, scenario, scenarios.BuilderOverrides{
+		Resolved:     flags.SelectionResolved,
+		Identity:     flags.Selection.Identity,
+		Persistence:  flags.Selection.Persistence,
+		Platform:     effectivePlatform,
+		Features:     flags.Selection.Features,
+		InfraType:    flags.Selection.InfraType,
+		Flow:         flags.Deployment.Flow,
+		QA:           flags.Selection.QA,
+		ImageTags:    flags.Selection.ImageTags,
+		Upgrade:      flags.Selection.UpgradeFlow,
+		ChartVersion: flags.Chart.ChartVersion,
+	})
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to build deployment config for scenario %q: %w", scenario, err)
+	}
+	layeredFiles, err := deployConfig.ResolvePaths(opts.ScenarioDir)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to resolve layered values for scenario %q: %w", scenario, err)
+	}
+	logging.Logger.Debug().
+		Strs("layeredFiles", layeredFiles).
+		Int("count", len(layeredFiles)).
+		Msg("📋 [prepareScenarioValues] processing layered values files")
+
+	shortFiles := make([]string, len(layeredFiles))
+	for i, f := range layeredFiles {
+		if rel, err := filepath.Rel(opts.ScenarioDir, f); err == nil {
+			shortFiles[i] = rel
+		} else {
+			shortFiles[i] = filepath.Base(f)
+		}
+	}
+	logging.Logger.Info().
+		Str("scenario", scenario).
+		Str("identity", deployConfig.Identity).
+		Str("persistence", deployConfig.Persistence).
+		Str("platform", deployConfig.Platform).
+		Str("infraType", deployConfig.InfraType).
+		Strs("features", deployConfig.Features).
+		Strs("layerFiles", shortFiles).
+		Msg("Resolved deployment layers")
+
+	var scenarioValueFiles []string
+	for _, srcFile := range layeredFiles {
+		outputPath, _, err := values.Process(ctx, srcFile, opts)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to process layered values file %q: %w", srcFile, err)
+		}
+		scenarioValueFiles = append(scenarioValueFiles, outputPath)
+	}
+	logging.Logger.Debug().
+		Strs("processedFiles", scenarioValueFiles).
+		Msg("📋 [prepareScenarioValues] layered values files processed")
+
+	scenarioValueFiles, err = MergeLayeredValues(scenarioValueFiles, opts.OutputDir)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to merge layered values: %w", err)
+	}
+	logging.Logger.Debug().
+		Strs("mergedFiles", scenarioValueFiles).
+		Msg("📋 [prepareScenarioValues] layered values merged")
+	return scenarioValueFiles, shortFiles, nil
 }

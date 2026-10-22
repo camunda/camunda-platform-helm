@@ -17,6 +17,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"scripts/camunda-core/pkg/logging"
@@ -85,11 +86,6 @@ Go layer resolution, env var substitution, and name-keyed array merge logic.
 
 Exit code 0 on success; the ONLY line on stdout is the merged file path.
 All diagnostic output goes to stderr via the logger.`,
-		// Override PersistentPreRunE to skip root's heavy validation
-		// (no namespace, release, chart-path, or scenario required).
-		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			return nil
-		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runPrepareValues(&pv)
 		},
@@ -247,9 +243,7 @@ func buildPrepareValuesEnv(pv *prepareValuesFlags) (map[string]string, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to read env file %q: %w", pv.envFile, err)
 		}
-		for k, v := range dotenvMap {
-			envMap[k] = v
-		}
+		maps.Copy(envMap, dotenvMap)
 	}
 
 	return envMap, nil

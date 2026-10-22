@@ -250,9 +250,10 @@ func waitForPhase(cfg config, phase string) error {
 			continue
 		}
 		expectedRest, expectedWebsockets := int32(2), int32(1)
-		if phase == "quiesce" {
+		switch phase {
+		case "quiesce":
 			expectedRest, expectedWebsockets = 0, 0
-		} else if phase == "migrate" {
+		case "migrate":
 			expectedRest, expectedWebsockets = 1, 0
 		}
 		if deploymentConverged(rest, expectedRest, phase) && deploymentConverged(websockets, expectedWebsockets, phase) && rest.Spec.Strategy.Type == "RollingUpdate" {

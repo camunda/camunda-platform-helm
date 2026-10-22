@@ -103,6 +103,41 @@ func newClient(f *fakeTransport) *Client {
 	}
 }
 
+func TestArtifactIncludesDigestAndTags(t *testing.T) {
+	f := &fakeTransport{handler: func(method, endpoint, body string) (int, string) {
+		if method != http.MethodGet || !strings.HasSuffix(endpoint, "/artifacts/14-rc-latest?with_tag=true") {
+			t.Fatalf("unexpected request: %s %s", method, endpoint)
+		}
+		return 200, `{"digest":"sha256:abc","tags":[{"name":"14.11.1-rc"},{"name":"14.11.1-dev-5713eb8"}]}`
+	}}
+	a, err := newClient(f).Artifact("14-rc-latest")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if a.Digest != "sha256:abc" || len(a.Tags) != 2 || a.Tags[1].Name != "14.11.1-dev-5713eb8" || len(f.calls) != 1 {
+		t.Fatalf("unexpected artifact response: %+v, calls=%d", a, len(f.calls))
+	}
+}
+
+func TestArtifactLookupFailsClosed(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		code int
+		body string
+	}{
+		{"missing", http.StatusNotFound, `{}`},
+		{"forbidden", http.StatusForbidden, `{}`},
+		{"invalid response", http.StatusOK, `invalid`},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			f := &fakeTransport{handler: func(string, string, string) (int, string) { return tc.code, tc.body }}
+			if _, err := newClient(f).Artifact("14.11.1-rc"); err == nil {
+				t.Fatal("expected lookup failure")
+			}
+		})
+	}
+}
+
 func TestEnsureTagNoOp(t *testing.T) {
 	digest := "sha256:aaa"
 	f := &fakeTransport{handler: func(method, url, body string) (int, string) {

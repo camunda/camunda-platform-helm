@@ -1890,7 +1890,7 @@ func TestTopologyValidate_RejectsSecondTenantOptimizeInlineSecretDifferingFromIt
 // inline literal, keeping the indentation each reference sits at.
 func inlineSecretOn(layer, value string) string {
 	var out []string
-	for _, line := range strings.Split(layer, "\n") {
+	for line := range strings.SplitSeq(layer, "\n") {
 		trimmed := strings.TrimLeft(line, " ")
 		indent := line[:len(line)-len(trimmed)]
 		switch {

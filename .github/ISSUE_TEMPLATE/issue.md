@@ -1,6 +1,6 @@
 ---
 name: New Issue
-about: Bugs, features, tasks, and everything else — AI will triage automatically.
+about: Bugs, features, and tasks — AI suggests priority; team-created issues are prioritized quietly.
 title: ""
 labels: ""
 assignees: ""
@@ -48,4 +48,3 @@ assignees: ""
 - **Helm CLI version:**
 - **Chart version:**
 - **Kubernetes version:**
-

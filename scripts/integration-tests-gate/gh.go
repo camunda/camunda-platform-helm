@@ -133,7 +133,7 @@ func (c *ghCLI) AttemptJobConclusions(runID string, attempt int) ([]string, erro
 		return nil, err
 	}
 	var conclusions []string
-	for _, line := range strings.Split(out, "\n") {
+	for line := range strings.SplitSeq(out, "\n") {
 		if line = strings.TrimSpace(line); line != "" {
 			conclusions = append(conclusions, line)
 		}
@@ -153,7 +153,7 @@ func (c *ghCLI) MergeQueueHeads(branch string) ([]string, error) {
 		return nil, err
 	}
 	var heads []string
-	for _, line := range strings.Split(out, "\n") {
+	for line := range strings.SplitSeq(out, "\n") {
 		if line = strings.TrimSpace(line); line != "" {
 			heads = append(heads, line)
 		}

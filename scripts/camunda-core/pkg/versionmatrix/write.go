@@ -20,32 +20,6 @@ import (
 	"fmt"
 )
 
-// UpsertImages replaces the image sets of chartVersion's entry, creating the
-// entry when absent. Release-time facts already recorded on the entry
-// (release_date, helm_cli, release_tag) are preserved — an image re-derivation
-// must never erase a stamped release fact. chart_enterprise_images is included
-// only when enterpriseImages is non-empty (pass nil to omit it). Entries for
-// other versions are preserved verbatim (including any extra fields), only
-// re-indented. existing is the current file content; empty input is treated as
-// an empty array. Output is 2-space-indented, no HTML escaping, trailing
-// newline.
-func UpsertImages(existing []byte, chartVersion string, images, enterpriseImages []string) ([]byte, error) {
-	entry, _, err := FindEntry(existing, chartVersion)
-	if err != nil {
-		return nil, err
-	}
-	entry.ChartVersion = chartVersion
-	if images == nil {
-		images = []string{}
-	}
-	entry.ChartImages = images
-	entry.ChartEnterpriseImages = nil
-	if len(enterpriseImages) > 0 {
-		entry.ChartEnterpriseImages = enterpriseImages
-	}
-	return UpsertEntry(existing, entry)
-}
-
 // FindEntry returns chartVersion's entry parsed from the file content, and
 // whether it exists. A missing entry yields a zero ChartEntry and ok=false.
 func FindEntry(existing []byte, chartVersion string) (ChartEntry, bool, error) {

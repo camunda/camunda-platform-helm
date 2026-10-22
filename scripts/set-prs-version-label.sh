@@ -25,7 +25,7 @@ REPO_NAME='camunda-platform-helm'
 
 # Init.
 # Check dependencies.
-dep_names="ct gh git git-cliff grep jq yq"
+dep_names="ct gh git git-cliff jq yq"
 for dep_name in ${dep_names}; do
     test -n "$(which ${dep_name})" || (
       echo "Missing dependency: ${dep_name}";
@@ -33,23 +33,15 @@ for dep_name in ${dep_names}; do
       exit 1
     )
 done
-# Ensure that the main branch is there.
-test "$(git branch --show-current)" != "main" &&
-    git fetch origin main:main --no-tags
-
 # Get PRs from commits in a certain chart dir.
 get_prs_per_chart_dir () {
     chart_dir="${1}"
-    # Get the latest version from main, not from the releas PR as it could be updated in the PR.
-    latest_chart_version="$(git show main:${chart_dir}/Chart.yaml | yq '.version')"
-    latest_chart_name="${chart_dir##*/}"
-    latest_chart_tag_hash="$(git show-ref --hash ${latest_chart_name}-${latest_chart_version})"
     cliff_config_file=".github/config/cliff.toml"
-    git-cliff ${latest_chart_tag_hash}.. \
+    git-cliff "${previousSourceSHA}..${sourceSHA}" \
         --context \
         --config "${cliff_config_file}" \
         --include-path "${chart_dir}/**" |
-            jq '.[].commits[].message' | (grep -Po '(?<=#)\d+' || true)
+            jq -r '.[].commits[].message | scan("#([0-9]+)") | .[0]'
 }
 
 # Get the issues fixed by a PR.
@@ -86,10 +78,23 @@ if [[ -z "${chart_dirs}" ]]; then
     exit 0
 fi
 
+if [[ ! "${sourceSHA:-}" =~ ^[a-f0-9]{40}$ || ! "${previousSourceSHA:-}" =~ ^[a-f0-9]{40}$ ]]; then
+    echo "sourceSHA and previousSourceSHA must be verified full artifact-source commits." >&2
+    exit 1
+fi
+if [[ -z "${chartVersion:-}" ]]; then
+    echo "chartVersion must be the selected artifact's version." >&2
+    exit 1
+fi
+if ! git merge-base --is-ancestor "${previousSourceSHA}" "${sourceSHA}"; then
+    echo "previousSourceSHA must be an ancestor of sourceSHA." >&2
+    exit 1
+fi
+
 echo "${chart_dirs}" | while read -r chart_dir; do
     [[ -z "${chart_dir}" ]] && continue
-    app_version="$(yq '.appVersion | sub("\..$", "")' ${chart_dir}/Chart.yaml)"
-    chart_version="${chartVersion:-$(yq '.version' ${chart_dir}/Chart.yaml)}"
+    app_version="$(git show "${sourceSHA}:${chart_dir}/Chart.yaml" | yq '.appVersion | sub("\..$", "")')"
+    chart_version="${chartVersion}"
     app_version_label="version/${app_version}"
     # The "version:x.y.z" label format is used by the support team,
     # it must not changed without checking with the support team.

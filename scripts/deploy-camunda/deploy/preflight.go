@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -191,9 +192,7 @@ func scenarioDeployEnv(flags *config.RuntimeFlags, baseEnv map[string]string) ma
 // at step 0. baseEnv is not mutated.
 func withScenarioSeeds(baseEnv map[string]string) map[string]string {
 	merged := scenarioEnvSeeds()
-	for k, v := range baseEnv {
-		merged[k] = v
-	}
+	maps.Copy(merged, baseEnv)
 	return merged
 }
 
@@ -203,7 +202,7 @@ func firstScenario(flags *config.RuntimeFlags) string {
 	if len(flags.Deployment.Scenarios) > 0 {
 		return flags.Deployment.Scenarios[0]
 	}
-	for _, s := range strings.Split(flags.Deployment.Scenario, ",") {
+	for s := range strings.SplitSeq(flags.Deployment.Scenario, ",") {
 		if t := strings.TrimSpace(s); t != "" {
 			return t
 		}
@@ -448,7 +447,7 @@ func scenarioNames(flags *config.RuntimeFlags) []string {
 		return flags.Deployment.Scenarios
 	}
 	var out []string
-	for _, s := range strings.Split(flags.Deployment.Scenario, ",") {
+	for s := range strings.SplitSeq(flags.Deployment.Scenario, ",") {
 		if t := strings.TrimSpace(s); t != "" {
 			out = append(out, t)
 		}
