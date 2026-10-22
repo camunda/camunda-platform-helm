@@ -539,7 +539,7 @@ func isSiblingInvoked(name string, siblingContent map[string]string) bool {
 // (false, "", fmt.Errorf) when the marker is present but has an empty reason,
 // and (false, "", nil) when no marker is found.
 func parseOrphanOk(content string) (bool, string, error) {
-	for line := range strings.SplitSeq(content, "\n") {
+	for _, line := range strings.Split(content, "\n") {
 		trimmed := strings.TrimSpace(line)
 		if !strings.HasPrefix(trimmed, "#") {
 			continue
