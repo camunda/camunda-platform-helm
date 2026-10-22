@@ -34,6 +34,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"maps"
 	"math/rand"
 	"net/http"
 	"net/url"
@@ -438,9 +439,7 @@ func CreateK8sSecret(
 	for _, c := range prov.Private {
 		data["auth0-"+c.Component] = c.ClientSecret
 	}
-	for k, v := range postgresPasswords {
-		data[k] = v
-	}
+	maps.Copy(data, postgresPasswords)
 
 	for _, c := range prov.All() {
 		data["auth0-info-"+componentSlug(c.Component)+"-client-id"] = c.ClientID
@@ -694,7 +693,7 @@ func createClient(ctx context.Context, client *http.Client, token string, opts *
 	}
 
 	name := clientName(opts.Namespace, component)
-	payload := map[string]interface{}{
+	payload := map[string]any{
 		"name":                       name,
 		"is_first_party":             true,
 		"oidc_conformant":            true,
@@ -755,7 +754,7 @@ func createClient(ctx context.Context, client *http.Client, token string, opts *
 // grantAudience POSTs a client_grants entry tying clientID to opts.Audience.
 // Idempotent: 409 Conflict (already granted) is treated as success.
 func grantAudience(ctx context.Context, client *http.Client, token string, opts *Options, clientID string) error {
-	payload := map[string]interface{}{
+	payload := map[string]any{
 		"client_id": clientID,
 		"audience":  opts.Audience,
 		"scope":     []string{},

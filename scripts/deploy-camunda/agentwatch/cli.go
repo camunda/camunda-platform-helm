@@ -31,6 +31,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"slices"
 )
 
 // claudeSessionIDPattern matches the UUID format Claude Code emits for
@@ -75,13 +76,7 @@ func ResolveCLI(name string) (AgentCLI, error) {
 	if name == "" {
 		return DetectCLI()
 	}
-	supported := false
-	for _, s := range supportedCLIs {
-		if name == s {
-			supported = true
-			break
-		}
-	}
+	supported := slices.Contains(supportedCLIs, name)
 	if !supported {
 		return AgentCLI{}, fmt.Errorf("unsupported agent CLI %q; supported: %v", name, supportedCLIs)
 	}
