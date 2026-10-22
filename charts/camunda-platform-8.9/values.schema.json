@@ -1393,7 +1393,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.9.11"
+                            "default": "8.9.12"
                         },
                         "digest": {
                             "type": "string",
@@ -2688,7 +2688,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be used to set the Docker image tag for the Console image",
-                            "default": "8.9.128"
+                            "default": "8.9.130"
                         },
                         "digest": {
                             "type": "string",
@@ -4835,7 +4835,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.9.16"
+                            "default": "8.9.17"
                         },
                         "digest": {
                             "type": "string",
@@ -5687,7 +5687,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.9.25"
+                            "default": "8.9.26"
                         },
                         "digest": {
                             "type": "string",
@@ -6975,7 +6975,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.9.25"
+                            "default": "8.9.26"
                         },
                         "digest": {
                             "type": "string",
