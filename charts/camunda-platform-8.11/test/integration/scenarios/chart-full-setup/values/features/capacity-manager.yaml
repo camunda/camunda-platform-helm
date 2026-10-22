@@ -197,7 +197,10 @@ global:
         labels:
           app.kubernetes.io/component: capacity-load
       spec:
-        replicas: 1
+        # Idle until the verifier starts it: load during install keeps
+        # connectors from reaching the gateway, so helm --wait never
+        # completes, and the scale-up finishes before the verifier watches.
+        replicas: 0
         selector:
           matchLabels:
             app.kubernetes.io/component: capacity-load

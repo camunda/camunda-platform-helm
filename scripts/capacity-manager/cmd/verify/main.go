@@ -115,6 +115,9 @@ func main() {
 // scaleUp waits for the load to trigger 1 -> 2, restarting the manager while
 // the new broker is joining, and requires the decision to cite saturation.
 func scaleUp(e env) (capacity.Status, error) {
+	if err := scaleLoad(e, 1); err != nil {
+		return capacity.Status{}, err
+	}
 	restarted := false
 	status, err := waitFor(e, 25*time.Minute, func(s capacity.Status, brokers, replicas int) bool {
 		if !restarted && (s.Phase == "joining-broker" || s.Phase == "provisioning-broker" || replicas > brokers) {
@@ -160,8 +163,17 @@ func upgradeKeeps(e env) error {
 	if err != nil {
 		return err
 	}
+	// kubectl scale co-owns the load generator's replicas; Helm's server-side
+	// apply only conflicts when the values differ, so match the idle default
+	// for the upgrade and restart the load afterwards.
+	if err := scaleLoad(e, 0); err != nil {
+		return err
+	}
 	if out, err := helm(e, "upgrade", e.release, e.chartDir, "--reuse-values"); err != nil {
 		return fmt.Errorf("helm upgrade with ownership kept: %v: %s", err, tail(out))
+	}
+	if err := scaleLoad(e, 1); err != nil {
+		return err
 	}
 	time.Sleep(20 * time.Second)
 	after, err := getReplicas(e)
@@ -411,6 +423,14 @@ func restartManager(e env) {
 	if _, err := kubectl(e, "delete", "pod", "-l", "app.kubernetes.io/component=capacity-manager", "--wait=false"); err != nil {
 		fmt.Printf("restart manager: %v\n", err)
 	}
+}
+
+// scaleLoad sets the load generator's replicas; the scenario installs it idle.
+func scaleLoad(e env, replicas int) error {
+	if out, err := kubectl(e, "scale", "deployment", e.release+"-capacity-load", fmt.Sprintf("--replicas=%d", replicas)); err != nil {
+		return fmt.Errorf("scale load to %d: %v: %s", replicas, err, tail(out))
+	}
+	return nil
 }
 
 func stopLoad(e env) {
