@@ -21,6 +21,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"scripts/camunda-core/pkg/logging"
+	"slices"
 	"testing"
 )
 
@@ -122,7 +123,7 @@ type capturedLogEvent struct {
 func decodeLogEvents(t *testing.T, raw []byte) []capturedLogEvent {
 	t.Helper()
 	var events []capturedLogEvent
-	for _, line := range bytes.Split(raw, []byte("\n")) {
+	for line := range bytes.SplitSeq(raw, []byte("\n")) {
 		line = bytes.TrimSpace(line)
 		if len(line) == 0 {
 			continue
@@ -138,13 +139,7 @@ func decodeLogEvents(t *testing.T, raw []byte) []capturedLogEvent {
 
 func containsAll(haystack, want []string) bool {
 	for _, w := range want {
-		found := false
-		for _, h := range haystack {
-			if h == w {
-				found = true
-				break
-			}
-		}
+		found := slices.Contains(haystack, w)
 		if !found {
 			return false
 		}

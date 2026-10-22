@@ -113,7 +113,7 @@ func (c upgradeCoverage) findUnknownKeys(schema any, values map[string]any) []st
 	var result []string
 	for _, key := range unknown {
 		var value any = values
-		for _, part := range strings.Split(key, ".") {
+		for part := range strings.SplitSeq(key, ".") {
 			object, ok := value.(map[string]any)
 			if !ok {
 				value = nil

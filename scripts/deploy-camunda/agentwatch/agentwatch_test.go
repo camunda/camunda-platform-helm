@@ -264,18 +264,6 @@ func TestClassify(t *testing.T) {
 	}
 }
 
-func TestSupportedCLIs_StableOrder(t *testing.T) {
-	got := SupportedCLIs()
-	if len(got) < 2 || got[0] != "opencode" || got[1] != "claude" {
-		t.Fatalf("expected [opencode claude ...], got %v", got)
-	}
-	// Ensure callers can't mutate the package's internal slice.
-	got[0] = "tampered"
-	if SupportedCLIs()[0] != "opencode" {
-		t.Fatal("SupportedCLIs returns shared slice; callers can mutate package state")
-	}
-}
-
 func TestBuildArgs_Claude(t *testing.T) {
 	args := buildArgs(AgentCLI{Name: "claude", Path: "/usr/bin/claude"}, "be helpful")
 	if !contains(args, "-p") || !contains(args, "be helpful") || !contains(args, "json") {

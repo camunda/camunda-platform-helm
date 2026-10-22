@@ -199,12 +199,6 @@ type DeprecatedFlags struct {
 	ValuesInfra    string   // DEPRECATED: use TestPlatform instead
 }
 
-// HasExplicitLayeredConfig returns true if any deprecated layered values flags were explicitly set.
-// Deprecated: Use SelectionFlags.HasExplicitSelectionConfig instead.
-func (f *DeprecatedFlags) HasExplicitLayeredConfig() bool {
-	return f.ValuesAuth != "" || f.ValuesBackend != "" || len(f.ValuesFeatures) > 0 || f.ValuesQA || f.ValuesInfra != ""
-}
-
 // IndexPrefixFlags holds Elasticsearch/OpenSearch index prefix configuration.
 type IndexPrefixFlags struct {
 	OptimizeIndexPrefix      string
@@ -537,12 +531,6 @@ func IsValidIngressBaseDomain(domain string) bool {
 // Delegates to SelectionFlags.
 func (f *RuntimeFlags) HasExplicitSelectionConfig() bool {
 	return f.Selection.HasExplicitSelectionConfig()
-}
-
-// HasExplicitLayeredConfig returns true if any deprecated layered values flags were explicitly set.
-// Deprecated: Use HasExplicitSelectionConfig instead.
-func (f *RuntimeFlags) HasExplicitLayeredConfig() bool {
-	return f.Deprecated.HasExplicitLayeredConfig()
 }
 
 // MigrateDeprecatedFlags copies deprecated layered values flags to the new selection fields.

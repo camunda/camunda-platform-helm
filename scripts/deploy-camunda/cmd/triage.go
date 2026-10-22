@@ -278,7 +278,7 @@ func fetchFailingJobLog(ctx context.Context, ref runRef) (string, *ghJob, error)
 		if job == nil {
 			return "", nil, fmt.Errorf(
 				"no failed job found directly in run %s — integration failures often live in a nested reusable workflow that this run's job list does not include.\n"+
-					"Open the failing job on GitHub and pass its URL (…/actions/runs/<id>/job/<jobid>), or `deploy-camunda triage --job <jobid> <run-id>`.",
+					"Open the failing job on GitHub and pass its URL (…/actions/runs/<id>/job/<jobid>), or `deploy-camunda triage --job <jobid> <run-id>`",
 				ref.RunID)
 		}
 		chosen = job
@@ -400,7 +400,7 @@ func extractHelmCommand(log string) string {
 		return strings.TrimSpace(m[1])
 	}
 	var fallback string
-	for _, line := range strings.Split(log, "\n") {
+	for line := range strings.SplitSeq(log, "\n") {
 		idx := strings.Index(line, "helm upgrade")
 		if idx < 0 {
 			idx = strings.Index(line, "helm install")
@@ -518,7 +518,7 @@ var envDumpRe = regexp.MustCompile(`^\s*[A-Z][A-Z0-9_]{2,}:\s`)
 // the meaningful lines.
 func stripLogNoise(log string) string {
 	var b strings.Builder
-	for _, line := range strings.Split(log, "\n") {
+	for line := range strings.SplitSeq(log, "\n") {
 		clean := stripTimestamp(stripANSI(line))
 		if envDumpRe.MatchString(clean) {
 			continue

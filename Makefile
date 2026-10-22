@@ -53,6 +53,13 @@ build.ci-result-cache:
 test.ci-result-cache:
 	cd scripts/ci-result-cache && go test -race ./...
 
+.PHONY: test.issue-author run.issue-author
+test.issue-author:
+	cd scripts/issue-author && go test -race ./...
+
+run.issue-author:
+	@cd scripts/issue-author && go run .
+
 .PHONY: install.ci-result-cache
 install.ci-result-cache:
 	cd scripts/ci-result-cache && go mod tidy && go install .
@@ -173,6 +180,22 @@ go.fmt:
 		echo "Some files are not following the go format ($${diff}), run gofmt and fix your files.";\
 		exit 1;\
 	fi
+
+goScriptModules = $(shell find scripts -name go.mod -exec dirname {} \; | sort)
+lintBase ?= origin/main
+
+define go_scripts_run
+	failed=""; \
+	for module in $(goScriptModules); do \
+		echo "[$@] $${module}"; \
+		(cd "$${module}" && $(1)) || failed="$${failed} $${module}"; \
+	done; \
+	if [ -n "$${failed}" ]; then echo "[$@] failed:$${failed}" >&2; exit 1; fi
+endef
+
+.PHONY: go.lint
+go.lint:
+	@$(call go_scripts_run,golangci-lint run --new-from-merge-base=$(lintBase) ./...)
 
 #
 # Helpers.
@@ -434,9 +457,13 @@ release.bump-chart-version-and-commit: .release.bump-chart-version
 
 .PHONY: release.generate-notes
 release.generate-notes: install.release-tools
+	set -e; \
+	source=$$(git rev-parse --verify "$${sourceSHA:-HEAD}^{commit}"); \
 	for chart_dir in $(chartPath); do\
 		echo "\n[$@] Chart dir: $${chart_dir}";\
-		release-tools release-notes --main "$${chart_dir}";\
+		previous=$$(git rev-parse --verify "$$(release-tools release-history --chart-yaml "$$chart_dir/Chart.yaml")^{commit}"); \
+		git merge-base --is-ancestor "$$previous" "$$source"; \
+		release-tools release-notes --main "$$chart_dir" --source "$$source" --previous-source "$$previous"; \
 	done
 
 .PHONY: release.generate-notes-footer

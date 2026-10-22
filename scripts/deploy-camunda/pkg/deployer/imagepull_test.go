@@ -394,8 +394,7 @@ func TestUpgradeInstall_AbortsOnTerminalImagePull(t *testing.T) {
 		t.Errorf("reason should name the real cause, got %q", helmErr.Reason)
 	}
 
-	var pullErr *ImagePullFailure
-	if !errors.As(err, &pullErr) {
+	if _, ok := errors.AsType[*ImagePullFailure](err); !ok {
 		t.Fatalf("expected the cause to be an *ImagePullFailure, got %v", helmErr.Cause)
 	}
 	if !strings.Contains(err.Error(), "vendor-ee/postgresql") {

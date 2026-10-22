@@ -373,8 +373,8 @@ func emitSearchClusterState(
 
 // searchQueryLabel drops the query string from an endpoint path.
 func searchQueryLabel(query string) string {
-	if i := strings.IndexByte(query, '?'); i >= 0 {
-		return query[:i]
+	if before, _, ok := strings.Cut(query, "?"); ok {
+		return before
 	}
 	return query
 }

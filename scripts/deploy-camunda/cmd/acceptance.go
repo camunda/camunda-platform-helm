@@ -210,7 +210,7 @@ func runPhysicalTenantAcceptance(ctx context.Context, opts physicalTenantAccepta
 	var partitionsBody, brokerLog string
 	fail := func(cause error) error {
 		var exporters []string
-		for _, line := range strings.Split(brokerLog, "\n") {
+		for line := range strings.SplitSeq(brokerLog, "\n") {
 			if strings.Contains(line, "broker.exporter.elasticsearch") || strings.Contains(line, "broker.exporter.opensearch") || strings.Contains(line, "BlockingExporter") {
 				exporters = append(exporters, line)
 			}
@@ -371,7 +371,7 @@ func kubectlArgs(contextName string, args ...string) []string {
 
 func waitForForwardPort(ctx context.Context, process acceptanceProcess, sleep func(context.Context, time.Duration) error) (string, error) {
 	pattern := regexp.MustCompile(`Forwarding from 127\.0\.0\.1:([0-9]+)`)
-	for attempt := 0; attempt < 30; attempt++ {
+	for range 30 {
 		body := process.Output()
 		if match := pattern.FindStringSubmatch(body); len(match) == 2 {
 			return string(match[1]), nil
@@ -391,7 +391,7 @@ func waitForForwardPort(ctx context.Context, process acceptanceProcess, sleep fu
 // [},] keeps a tenant id from matching a longer one that starts with it.
 func legacyExporterOpened(brokerLog, tenant string) bool {
 	tenantMarker := regexp.MustCompile(`physicalTenant=` + regexp.QuoteMeta(tenant) + `[},]`)
-	for _, line := range strings.Split(brokerLog, "\n") {
+	for line := range strings.SplitSeq(brokerLog, "\n") {
 		if !strings.Contains(line, "broker.exporter.elasticsearch") &&
 			!strings.Contains(line, "broker.exporter.opensearch") {
 			continue
@@ -628,7 +628,6 @@ func waitForOptimizeImport(ctx context.Context, deps acceptanceDependencies, opt
 }
 
 func assertOptimizeExcludesSiblings(ctx context.Context, deps acceptanceDependencies, optimizeURL, tenant, token string, siblings []string, attempts int) error {
-	lastDiagnostic := "no response"
 	for attempt := 1; attempt <= attempts; attempt++ {
 		body, status, err := httpGet(ctx, deps.doHTTP, optimizeURL+"/api/definition/process/keys", token)
 		// An ingress 502/503/504 means Optimize was briefly unreachable, not that the check
@@ -637,16 +636,14 @@ func assertOptimizeExcludesSiblings(ctx context.Context, deps acceptanceDependen
 			err = fmt.Errorf("HTTP %d: %s", status, strings.TrimSpace(string(body)))
 		}
 		if err != nil {
-			lastDiagnostic = "transient error: " + err.Error()
 			if attempt < attempts {
 				if sleepErr := deps.sleep(ctx, 5*time.Second); sleepErr != nil {
 					return sleepErr
 				}
 				continue
 			}
-			return fmt.Errorf("Optimize for %q isolation check exhausted retries (last response: %s)", tenant, lastDiagnostic)
+			return fmt.Errorf("Optimize for %q isolation check exhausted retries (last response: transient error: %s)", tenant, err)
 		}
-		lastDiagnostic = fmt.Sprintf("HTTP %d: %s", status, strings.TrimSpace(string(body)))
 		if status != http.StatusOK {
 			return fmt.Errorf("Optimize for %q returned HTTP %d during isolation check: %s", tenant, status, strings.TrimSpace(string(body)))
 		}

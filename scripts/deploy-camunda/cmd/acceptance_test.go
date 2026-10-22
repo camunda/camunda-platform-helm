@@ -275,7 +275,7 @@ func TestClientTokenSurvivesServerClosingIdleConnection(t *testing.T) {
 	defer server.Close()
 
 	client := server.Client()
-	for i := 0; i < 2; i++ {
+	for range 2 {
 		token, err := clientToken(context.Background(), client.Do, server.URL, "client", "secret")
 		require.NoError(t, err)
 		assert.Equal(t, "jwt", token)

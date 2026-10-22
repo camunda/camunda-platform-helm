@@ -71,186 +71,13 @@ func isUsageError(err error) bool {
 
 // NewRootCommand creates the root command.
 func NewRootCommand() *cobra.Command {
-	var rootConfig *config.RootConfig
 	rootCmd := &cobra.Command{
 		Use:           "deploy-camunda",
 		Short:         "Deploy Camunda Platform with prepared Helm values",
 		SilenceUsage:  true, // Don't show usage for runtime errors, only for usage errors
 		SilenceErrors: true, // Handle all error printing ourselves
-		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			// Skip for config and completion subcommands
-			if cmd != nil {
-				if cmd.Name() == "config" || (cmd.Parent() != nil && cmd.Parent().Name() == "config") {
-					return nil
-				}
-				if cmd.Name() == "credentials" || (cmd.Parent() != nil && cmd.Parent().Name() == "credentials") {
-					return nil
-				}
-				if cmd.Name() == "matrix" || (cmd.Parent() != nil && cmd.Parent().Name() == "matrix") {
-					return nil
-				}
-				if cmd.Name() == "entra" || (cmd.Parent() != nil && cmd.Parent().Name() == "entra") {
-					return nil
-				}
-				if cmd.Name() == "watch" || (cmd.Parent() != nil && cmd.Parent().Name() == "watch") {
-					return nil
-				}
-				if cmd.Name() == "auth0" || (cmd.Parent() != nil && cmd.Parent().Name() == "auth0") {
-					return nil
-				}
-				// doctor runs its own config load + preflight; skip the deploy
-				// PersistentPreRunE so its strict Validate doesn't reject a
-				// diagnostic run with no chart/namespace/release set.
-				if cmd.Name() == "doctor" {
-					return nil
-				}
-				// triage is a read-only post-mortem over a GitHub Actions run;
-				// it needs no chart/namespace config, so skip the deploy pre-run.
-				if cmd.Name() == "triage" {
-					return nil
-				}
-				// diagnostics is a read-only namespace dump; no chart config needed.
-				if cmd.Name() == "diagnostics" || (cmd.Parent() != nil && cmd.Parent().Name() == "diagnostics") {
-					return nil
-				}
-				if cmd.Name() == "version" {
-					return nil
-				}
-				// ci subcommands compute GitHub Actions step variables; no
-				// chart/namespace config needed.
-				if cmd.Name() == "ci" || (cmd.Parent() != nil && cmd.Parent().Name() == "ci") {
-					return nil
-				}
-				// e2e-env subcommands take their own --absolute-chart-path and
-				// namespace flags; no chart/namespace/release config needed.
-				if cmd.Name() == "e2e-env" || (cmd.Parent() != nil && cmd.Parent().Name() == "e2e-env") {
-					return nil
-				}
-				// topology subcommands are pure string-derivation utilities;
-				// no chart/namespace/release config needed.
-				if cmd.Name() == "topology" || (cmd.Parent() != nil && cmd.Parent().Name() == "topology") {
-					return nil
-				}
-				if cmd.Name() == "acceptance" || (cmd.Parent() != nil && cmd.Parent().Name() == "acceptance") {
-					return nil
-				}
-				if cmd.Name() == "completion" ||
-					cmd.Name() == cobra.ShellCompRequestCmd ||
-					cmd.Name() == cobra.ShellCompNoDescRequestCmd {
-					return nil
-				}
-			}
-
-			// Setup logging early so that config loading and validation can use it.
-			if err := logging.Setup(logging.Options{
-				LevelString:  flags.LogLevel,
-				ColorEnabled: logging.IsTerminal(os.Stdout.Fd()),
-			}); err != nil {
-				return err
-			}
-
-			// Record which flags the user explicitly set on the CLI, so that
-			// config-file merging does not overwrite them. This is critical for
-			// boolean flags like --skip-dependency-update where the zero value
-			// (false) is a valid explicit choice.
-			flags.ChangedFlags = make(map[string]bool)
-			cmd.Flags().Visit(func(f *pflag.Flag) {
-				flags.ChangedFlags[f.Name] = true
-			})
-
-			// Load config and merge with flags first to get envFile from config
-			loadedConfig, cfgRes, err := config.LoadAndMerge(configFile, true, &flags)
-			if err != nil {
-				return err
-			}
-			warnDeprecatedInfra(loadedConfig)
-			rootConfig = loadedConfig
-			// Hand the resolved config path to the preflight via flags.
-			if cfgRes != nil {
-				flags.ConfigPath = cfgRes.Path
-				flags.ConfigFound = cfgRes.Found
-			}
-
-			// Auto-detect repoRoot from CWD if not set by CLI or config.
-			// Soft fallback — repoRoot is optional for deploy, so errors are non-fatal.
-			if flags.Chart.RepoRoot == "" {
-				if detected, _ := config.DetectRepoRoot(); detected != "" {
-					flags.Chart.RepoRoot = detected
-				}
-			}
-
-			// Load .env file - use config value if set, otherwise default to .env
-			envFileToLoad := flags.EnvFile
-			if envFileToLoad == "" {
-				envFileToLoad = ".env"
-			}
-			logging.Logger.Debug().
-				Str("envFile", envFileToLoad).
-				Str("source", func() string {
-					if flags.EnvFile != "" {
-						return "config/flag"
-					}
-					return "default"
-				}()).
-				Msg("Loading environment file")
-			if err := env.Load(envFileToLoad); err != nil {
-				logging.Logger.Warn().Err(err).Str("envFile", envFileToLoad).Msg("Failed to load environment file")
-			}
-			if err := resolveRegistryCredentials(&flags.Docker); err != nil {
-				return err
-			}
-
-			// Validate merged configuration
-			if err := config.Validate(&flags, cfgRes); err != nil {
-				return err
-			}
-
-			// Resolve relative chartPath against repoRoot when running from a subdirectory
-			if strings.TrimSpace(flags.Chart.ChartPath) != "" && !filepath.IsAbs(flags.Chart.ChartPath) && flags.Chart.RepoRoot != "" {
-				if _, err := os.Stat(flags.Chart.ChartPath); err != nil {
-					resolved := filepath.Join(flags.Chart.RepoRoot, flags.Chart.ChartPath)
-					if fi, err := os.Stat(resolved); err == nil && fi.IsDir() {
-						flags.Chart.ChartPath = resolved
-					}
-				}
-			}
-
-			// Validate chartPath exists
-			if strings.TrimSpace(flags.Chart.ChartPath) != "" {
-				if fi, err := os.Stat(flags.Chart.ChartPath); err != nil || !fi.IsDir() {
-					return fmt.Errorf("resolved chart path %q does not exist or is not a directory; set --repo-root/--chart/--version or --chart-path explicitly", flags.Chart.ChartPath)
-				}
-			}
-
-			// Parse debug flags into the DebugComponents map
-			if len(debugFlagsRaw) > 0 {
-				flags.Debug.DebugComponents = make(map[string]config.DebugConfig)
-				for _, raw := range debugFlagsRaw {
-					component, port, err := config.ParseDebugFlag(raw, flags.Debug.DebugPort)
-					if err != nil {
-						return fmt.Errorf("invalid --debug flag %q: %w", raw, err)
-					}
-					flags.Debug.DebugComponents[component] = config.DebugConfig{Port: port}
-				}
-			}
-
-			return nil
-		},
-		PreRunE: func(cmd *cobra.Command, args []string) error {
-			return matrix.ResolveScenario(&flags, rootConfig)
-		},
-		RunE: func(cmd *cobra.Command, args []string) error {
-			// Create a signal-aware context so that Ctrl+C (SIGINT) and
-			// SIGTERM cancel the context and cleanly terminate subprocesses.
-			ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
-			defer stop()
-
-			// Log flags
-			format.PrintFlags(cmd.Flags())
-
-			// Execute deployment
-			return deploy.Execute(ctx, &flags)
-		},
+		PreRunE:       prepareDeploy,
+		RunE:          runDeploy,
 	}
 
 	// Persistent flags
@@ -354,6 +181,90 @@ func NewRootCommand() *cobra.Command {
 	return rootCmd
 }
 
+func prepareDeploy(cmd *cobra.Command, _ []string) error {
+	if err := logging.Setup(logging.Options{
+		LevelString:  flags.LogLevel,
+		ColorEnabled: logging.IsTerminal(os.Stdout.Fd()),
+	}); err != nil {
+		return err
+	}
+
+	flags.ChangedFlags = make(map[string]bool)
+	cmd.Flags().Visit(func(f *pflag.Flag) {
+		flags.ChangedFlags[f.Name] = true
+	})
+
+	rootConfig, cfgRes, err := config.LoadAndMerge(configFile, true, &flags)
+	if err != nil {
+		return err
+	}
+	warnDeprecatedInfra(rootConfig)
+	if cfgRes != nil {
+		flags.ConfigPath = cfgRes.Path
+		flags.ConfigFound = cfgRes.Found
+	}
+	if flags.Chart.RepoRoot == "" {
+		if detected, _ := config.DetectRepoRoot(); detected != "" {
+			flags.Chart.RepoRoot = detected
+		}
+	}
+
+	envFileToLoad, source := flags.EnvFile, "config/flag"
+	if envFileToLoad == "" {
+		envFileToLoad, source = ".env", "default"
+	}
+	logging.Logger.Debug().Str("envFile", envFileToLoad).Str("source", source).Msg("Loading environment file")
+	if err := env.Load(envFileToLoad); err != nil {
+		logging.Logger.Warn().Err(err).Str("envFile", envFileToLoad).Msg("Failed to load environment file")
+	}
+	if err := resolveRegistryCredentials(&flags.Docker); err != nil {
+		return err
+	}
+	if err := config.Validate(&flags, cfgRes); err != nil {
+		return err
+	}
+	if err := resolveDeployChartPath(&flags.Chart); err != nil {
+		return err
+	}
+
+	if len(debugFlagsRaw) > 0 {
+		flags.Debug.DebugComponents = make(map[string]config.DebugConfig)
+		for _, raw := range debugFlagsRaw {
+			component, port, err := config.ParseDebugFlag(raw, flags.Debug.DebugPort)
+			if err != nil {
+				return fmt.Errorf("invalid --debug flag %q: %w", raw, err)
+			}
+			flags.Debug.DebugComponents[component] = config.DebugConfig{Port: port}
+		}
+	}
+	return matrix.ResolveScenario(&flags, rootConfig)
+}
+
+func resolveDeployChartPath(chart *config.ChartFlags) error {
+	if strings.TrimSpace(chart.ChartPath) == "" {
+		return nil
+	}
+	if !filepath.IsAbs(chart.ChartPath) && chart.RepoRoot != "" {
+		if _, err := os.Stat(chart.ChartPath); err != nil {
+			resolved := filepath.Join(chart.RepoRoot, chart.ChartPath)
+			if fi, err := os.Stat(resolved); err == nil && fi.IsDir() {
+				chart.ChartPath = resolved
+			}
+		}
+	}
+	if fi, err := os.Stat(chart.ChartPath); err != nil || !fi.IsDir() {
+		return fmt.Errorf("resolved chart path %q does not exist or is not a directory; set --repo-root/--chart/--version or --chart-path explicitly", chart.ChartPath)
+	}
+	return nil
+}
+
+func runDeploy(cmd *cobra.Command, _ []string) error {
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+	format.PrintFlags(cmd.Flags())
+	return deploy.Execute(ctx, &flags)
+}
+
 // registerScenarioCompletion adds tab completion for scenario-related flags.
 // It loads the config file and merges with CLI flags to resolve the scenario path.
 // Supports comma-separated multi-select for the scenario flag.
@@ -417,7 +328,7 @@ func getKubeContexts() ([]string, error) {
 	}
 
 	var contexts []string
-	for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
+	for line := range strings.SplitSeq(strings.TrimSpace(string(out)), "\n") {
 		ctx := strings.TrimSpace(line)
 		if ctx != "" {
 			contexts = append(contexts, ctx)

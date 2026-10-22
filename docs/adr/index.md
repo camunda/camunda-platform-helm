@@ -94,5 +94,5 @@
 | 93 | [Adopt a composable CI scenario registry for the per-version integration test matrix](0093-adopt-composable-ci-scenario-registry-for-per-version-test-matrix.md) |
 | 94 | [Remove bundled Bitnami subcharts from the 8.10 chart and migrate CI to companion charts](0094-remove-bundled-bitnami-subcharts-from-the-8-10-chart.md) |
 | 95 | [Adopt release roles for multi-cluster deployment topology](0095-adopt-release-roles-for-multi-cluster-deployment-topology.md) |
-| 96 | [Support Helm CLI v3 and v4 for chart 15.x (8.10), and restrict version-gated Helm built-ins](0096-require-helm-v4-baseline-for-chart-15x-and-restrict-version-gated-helm-builtins.md) |
+| 96 | [Support Helm CLI v3 and v4 for chart 15.x (8.10), require Helm CLI v4 for chart 16.x (8.11), and restrict version-gated Helm built-ins](0096-require-helm-v4-baseline-for-chart-15x-and-restrict-version-gated-helm-builtins.md) |
 | 99 | [Support zone-aware broker migration through coexisting StatefulSets](0099-support-zone-aware-broker-migration-through-coexisting-statefulsets.md) |

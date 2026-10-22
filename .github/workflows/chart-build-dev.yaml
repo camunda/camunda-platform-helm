@@ -467,6 +467,17 @@ jobs:
       #
       # Generate release notes
       #
+      - name: Resolve release history
+        id: history
+        if: env.SKIP_BUILD == 'false'
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -euo pipefail
+          previous_ref=$(/tmp/release-tools release-history --chart-yaml "${CHART_DIR}/Chart.yaml")
+          previous_sha=$(git rev-parse --verify "${previous_ref}^{commit}")
+          git merge-base --is-ancestor "${previous_sha}" "${GITHUB_SHA}"
+          echo "previous_commit_sha=${previous_sha}" >> "$GITHUB_OUTPUT"
+
       - name: Generate RELEASE-NOTES.md
         if: env.SKIP_BUILD == 'false'
         working-directory: ${{ github.workspace }}
@@ -476,7 +487,9 @@ jobs:
           # --main: RELEASE-NOTES.md (git-cliff changelog) + the helmCLIVersion
           # and artifacthub.io/changes Chart.yaml annotations.
           # --footer: append the version-matrix block.
-          /tmp/release-tools release-notes --main ${{ matrix.chart.directory }}
+          /tmp/release-tools release-notes --main ${{ matrix.chart.directory }} \
+            --source "${GITHUB_SHA}" \
+            --previous-source "${{ steps.history.outputs.previous_commit_sha }}"
           /tmp/release-tools release-notes --footer ${{ matrix.chart.directory }}
 
           # Verify release notes contain actual version matrix content 

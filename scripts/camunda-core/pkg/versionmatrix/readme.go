@@ -97,7 +97,7 @@ const readmeHeader = "<!-- THIS FILE IS AUTO-GENERATED, DO NOT EDIT IT MANUALLY!
 // trimming whitespace.
 func SplitHelmCLI(csv string) []string {
 	var result []string
-	for _, v := range strings.Split(csv, ",") {
+	for v := range strings.SplitSeq(csv, ",") {
 		if v = strings.TrimSpace(v); v != "" {
 			result = append(result, v)
 		}
@@ -354,7 +354,7 @@ func ParseReadmeSections(readme string) map[string]string {
 	if idx < 0 {
 		return sections
 	}
-	for _, chunk := range strings.Split(readme[idx:], "\n"+marker) {
+	for chunk := range strings.SplitSeq(readme[idx:], "\n"+marker) {
 		chunk = strings.TrimPrefix(chunk, marker)
 		nl := strings.IndexByte(chunk, '\n')
 		version, rest := chunk, ""

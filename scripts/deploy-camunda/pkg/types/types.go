@@ -105,7 +105,7 @@ type Options struct {
 	// CompanionNodeSelector is node scheduling applied to companion chart installs so they run on the same infra pool as the main chart.
 	CompanionNodeSelector map[string]string
 	// CompanionTolerations is node scheduling applied to companion chart installs so they run on the same infra pool as the main chart.
-	CompanionTolerations []map[string]interface{}
+	CompanionTolerations []map[string]any
 	// CompanionStorageClass overrides the PVC storage class for companion
 	// charts that provision persistent volumes. Applied per release via
 	// companionStorageClassPaths, which maps a release name to the value key

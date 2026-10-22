@@ -60,8 +60,7 @@ func generate(mapping, secretName, outputPath string, strict bool, envOverrides 
 
 	// Parse the mapping and derive env var names to include in the Secret
 	logging.Logger.Debug().Str("mapping", mapping).Msg("Parsing mapping")
-	envVarNames := parseMapping(mapping)
-	envVarNames = dedupePreserveOrder(envVarNames)
+	envVarNames := RequiredEnvVars(mapping)
 
 	logging.Logger.Debug().Int("count", len(envVarNames)).Msg("Found env vars to map")
 	logging.Logger.Debug().Strs("envVarNames", envVarNames).Msg("Env var names")
@@ -183,8 +182,8 @@ func parseMapping(mapping string) []string {
 			continue
 		}
 
-		if idx := strings.Index(rest, "|"); idx >= 0 {
-			aliasPart := strings.TrimSpace(rest[idx+1:])
+		if _, after, ok := strings.Cut(rest, "|"); ok {
+			aliasPart := strings.TrimSpace(after)
 			if aliasPart == "" {
 				logging.Logger.Debug().Str("line", line).Msg("Empty alias part in mapping line")
 				continue
@@ -215,11 +214,11 @@ func trimSpaceAndCR(s string) string {
 }
 
 func splitOnce(s, sep string) []string {
-	i := strings.Index(s, sep)
-	if i < 0 {
+	before, after, ok := strings.Cut(s, sep)
+	if !ok {
 		return []string{s}
 	}
-	return []string{s[:i], s[i+len(sep):]}
+	return []string{before, after}
 }
 
 func splitCSVOrSpace(s string) []string {

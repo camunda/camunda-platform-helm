@@ -21,21 +21,21 @@ import (
 func TestGetNestedString(t *testing.T) {
 	tests := []struct {
 		name string
-		m    map[string]interface{}
+		m    map[string]any
 		keys []string
 		want string
 	}{
 		{
 			name: "simple one-level key",
-			m:    map[string]interface{}{"foo": "bar"},
+			m:    map[string]any{"foo": "bar"},
 			keys: []string{"foo"},
 			want: "bar",
 		},
 		{
 			name: "two-level nested key",
-			m: map[string]interface{}{
-				"orchestration": map[string]interface{}{
-					"index": map[string]interface{}{
+			m: map[string]any{
+				"orchestration": map[string]any{
+					"index": map[string]any{
 						"prefix": "orch-eske-abcd1234",
 					},
 				},
@@ -45,25 +45,25 @@ func TestGetNestedString(t *testing.T) {
 		},
 		{
 			name: "missing intermediate key",
-			m:    map[string]interface{}{"foo": "bar"},
+			m:    map[string]any{"foo": "bar"},
 			keys: []string{"missing", "path"},
 			want: "",
 		},
 		{
 			name: "leaf is not a string",
-			m:    map[string]interface{}{"foo": 42},
+			m:    map[string]any{"foo": 42},
 			keys: []string{"foo"},
 			want: "",
 		},
 		{
 			name: "empty map",
-			m:    map[string]interface{}{},
+			m:    map[string]any{},
 			keys: []string{"foo"},
 			want: "",
 		},
 		{
 			name: "intermediate is not a map",
-			m:    map[string]interface{}{"foo": "not-a-map"},
+			m:    map[string]any{"foo": "not-a-map"},
 			keys: []string{"foo", "bar"},
 			want: "",
 		},
@@ -82,18 +82,18 @@ func TestGetNestedString(t *testing.T) {
 func TestFindEnvValue(t *testing.T) {
 	tests := []struct {
 		name    string
-		m       map[string]interface{}
+		m       map[string]any
 		path    []string
 		envName string
 		want    string
 	}{
 		{
 			name: "finds env var in array",
-			m: map[string]interface{}{
-				"orchestration": map[string]interface{}{
-					"env": []interface{}{
-						map[string]interface{}{"name": "FOO", "value": "bar"},
-						map[string]interface{}{"name": "CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_INDEXPREFIX", "value": "op-eske-abcd1234"},
+			m: map[string]any{
+				"orchestration": map[string]any{
+					"env": []any{
+						map[string]any{"name": "FOO", "value": "bar"},
+						map[string]any{"name": "CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_INDEXPREFIX", "value": "op-eske-abcd1234"},
 					},
 				},
 			},
@@ -103,10 +103,10 @@ func TestFindEnvValue(t *testing.T) {
 		},
 		{
 			name: "env var not found",
-			m: map[string]interface{}{
-				"orchestration": map[string]interface{}{
-					"env": []interface{}{
-						map[string]interface{}{"name": "FOO", "value": "bar"},
+			m: map[string]any{
+				"orchestration": map[string]any{
+					"env": []any{
+						map[string]any{"name": "FOO", "value": "bar"},
 					},
 				},
 			},
@@ -116,16 +116,16 @@ func TestFindEnvValue(t *testing.T) {
 		},
 		{
 			name:    "path does not exist",
-			m:       map[string]interface{}{},
+			m:       map[string]any{},
 			path:    []string{"orchestration", "env"},
 			envName: "FOO",
 			want:    "",
 		},
 		{
 			name: "array is empty",
-			m: map[string]interface{}{
-				"orchestration": map[string]interface{}{
-					"env": []interface{}{},
+			m: map[string]any{
+				"orchestration": map[string]any{
+					"env": []any{},
 				},
 			},
 			path:    []string{"orchestration", "env"},
@@ -134,11 +134,11 @@ func TestFindEnvValue(t *testing.T) {
 		},
 		{
 			name: "array contains non-map entries",
-			m: map[string]interface{}{
-				"orchestration": map[string]interface{}{
-					"env": []interface{}{
+			m: map[string]any{
+				"orchestration": map[string]any{
+					"env": []any{
 						"not-a-map",
-						map[string]interface{}{"name": "TARGET", "value": "found"},
+						map[string]any{"name": "TARGET", "value": "found"},
 					},
 				},
 			},
@@ -159,25 +159,25 @@ func TestFindEnvValue(t *testing.T) {
 }
 
 func TestReadPrefixesFromMap_FullValues(t *testing.T) {
-	vals := map[string]interface{}{
-		"orchestration": map[string]interface{}{
-			"index": map[string]interface{}{
+	vals := map[string]any{
+		"orchestration": map[string]any{
+			"index": map[string]any{
 				"prefix": "orch-qa-opensearch-upg-abc12345",
 			},
-			"env": []interface{}{
-				map[string]interface{}{
+			"env": []any{
+				map[string]any{
 					"name":  "CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_INDEXPREFIX",
 					"value": "op-qa-opensearch-upg-abc12345",
 				},
-				map[string]interface{}{
+				map[string]any{
 					"name":  "CAMUNDA_TASKLIST_OPENSEARCH_INDEXPREFIX",
 					"value": "task-qa-opensearch-upg-abc12345",
 				},
 			},
 		},
-		"optimize": map[string]interface{}{
-			"database": map[string]interface{}{
-				"opensearch": map[string]interface{}{
+		"optimize": map[string]any{
+			"database": map[string]any{
+				"opensearch": map[string]any{
 					"prefix": "opt-qa-opensearch-upg-abc12345",
 				},
 			},
@@ -201,7 +201,7 @@ func TestReadPrefixesFromMap_FullValues(t *testing.T) {
 }
 
 func TestReadPrefixesFromMap_EmptyMap(t *testing.T) {
-	result := readPrefixesFromMap(map[string]interface{}{})
+	result := readPrefixesFromMap(map[string]any{})
 
 	if result.OrchestrationIndexPrefix != "" {
 		t.Errorf("OrchestrationIndexPrefix should be empty, got %q", result.OrchestrationIndexPrefix)
@@ -219,9 +219,9 @@ func TestReadPrefixesFromMap_EmptyMap(t *testing.T) {
 
 func TestReadPrefixesFromMap_PartialValues(t *testing.T) {
 	// ES scenario: only orchestration.index.prefix is set, no env vars for OS prefixes.
-	vals := map[string]interface{}{
-		"orchestration": map[string]interface{}{
-			"index": map[string]interface{}{
+	vals := map[string]any{
+		"orchestration": map[string]any{
+			"index": map[string]any{
 				"prefix": "orch-eske-12345678",
 			},
 		},

@@ -327,7 +327,7 @@ func selectPlanVersions(repoRoot string, opts PlanOptions) ([]string, error) {
 	}
 
 	var paths []string
-	for _, path := range strings.Fields(opts.ChangedFiles) {
+	for path := range strings.FieldsSeq(opts.ChangedFiles) {
 		if !chartDocPath.MatchString(path) {
 			paths = append(paths, path)
 		}

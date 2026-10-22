@@ -178,11 +178,3 @@ func truncate(s string, n int) string {
 	}
 	return s[:n] + "…"
 }
-
-// SupportedCLIs returns the names of the agent CLIs this package knows about,
-// in detection-preference order. Exposed for documentation and tests.
-func SupportedCLIs() []string {
-	out := make([]string, len(supportedCLIs))
-	copy(out, supportedCLIs)
-	return out
-}

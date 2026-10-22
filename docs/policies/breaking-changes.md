@@ -26,6 +26,8 @@ For the Camunda Helm chart, _the stable interface is `values.yaml`_: user-provid
 
 **Default rule:** The [Camunda 8 policy for non-public APIs](https://docs.camunda.io/docs/next/reference/public-api/#policy-for-non-public-apis) governs breaking changes to the chart. When a change cannot be made backward compatible, follow the **Deprecation Policy**.
 
+**Migration rule:** A deliberately breaking deployment change ships with its automated migration ([product-strategy decision-07](https://github.com/camunda/product-strategy/blob/main/2027/decisions/decision-07-breaking-change-upgrade-duration.md), decided 2026-09-30 under the [Non-Breaking Automated Updates](https://github.com/camunda/product-strategy/issues/128) initiative). For the chart, the migration is a [Camunda Helm Toolkit](https://github.com/camunda/camunda-helm-toolkit) migrate rule that rewrites the affected `values.yaml` inputs, available when the chart version that contains the change is released. The [Breaking change checklist](#breaking-change-checklist) carries the step.
+
 ### Exceptions
 
 Two narrow exceptions exist where a breaking change is permitted without a deprecation cycle:
@@ -65,7 +67,7 @@ If a breaking change is not justifiable, follow the [Deprecation Policy](#deprec
 #### Approval / alignment
 
 1. Document and align with EM and PM justification of the breaking change (rationale, scope, customer impact, target version).
-2. Mark the change as breaking in the issue and PR (label `breaking change` + clear description). See [Ticket & Label Policy](./ticket-and-label.md) for the `breaking change` label definition.
+2. Mark the change as breaking in the issue and PR (label `breaking-change` + clear description). See [Ticket & Label Policy](./ticket-and-label.md) for the `breaking-change` label definition.
 3. Notify and align with primary stakeholders:
    - **InfraEx** and [**#oc-reliability-testing**](https://camunda.slack.com/archives/C0807665N8G) — closest day-to-day chart users; must explicitly acknowledge before proceeding.
    - QA and infra.
@@ -78,6 +80,12 @@ If a breaking change is not justifiable, follow the [Deprecation Policy](#deprec
    - Add release notes (breaking change callout).
    - Add release announcements (link to docs/migration guidance).
    - Add upgrade guide (steps + links to docs).
+
+#### Migration
+
+6. Ship the automated migration with the change:
+   - Add the [Camunda Helm Toolkit](https://github.com/camunda/camunda-helm-toolkit) migrate rule that rewrites the affected `values.yaml` inputs, and the validate rule that flags inputs the rewrite cannot resolve.
+   - Link the toolkit change from the PR and the upgrade guide.
 
 #### Merge and final internal communication
 
@@ -107,7 +115,7 @@ Major chart releases follow Camunda's release cycle.
 
 4. **Remove (only after the deprecation window):**
    - Delete the key, its template references, and the deprecation warning.
-   - Follow the approval and documentation steps from the [Breaking change checklist](#breaking-change-checklist).
+   - Follow the approval, documentation, and migration steps from the [Breaking change checklist](#breaking-change-checklist).
 
 ## Reference
 

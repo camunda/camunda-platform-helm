@@ -17,6 +17,7 @@ package matrix
 import (
 	"context"
 	"fmt"
+	"maps"
 	"path/filepath"
 
 	"scripts/camunda-core/pkg/helm"
@@ -331,9 +332,7 @@ func executeTwoStepUpgrade(ctx context.Context, entry Entry, flags *config.Runti
 	// Skip for 8.10+ which removed all Bitnami subcharts — constraints.tpl rejects these keys.
 	if shouldExtractBitnamiPGPasswords(entry.Version) {
 		if pgPasswords := extractBitnamiPGPasswords(ctx, flags.EffectiveNamespace(), flags.Test.KubeContext); len(pgPasswords) > 0 {
-			for k, v := range pgPasswords {
-				step2Flags.Deployment.ExtraHelmSets[k] = v
-			}
+			maps.Copy(step2Flags.Deployment.ExtraHelmSets, pgPasswords)
 		}
 	}
 
@@ -458,9 +457,7 @@ func executeUpgradeOnly(ctx context.Context, entry Entry, flags *config.RuntimeF
 	// Skip for 8.10+ which removed all Bitnami subcharts — constraints.tpl rejects these keys.
 	if shouldExtractBitnamiPGPasswords(entry.Version) {
 		if pgPasswords := extractBitnamiPGPasswords(ctx, flags.EffectiveNamespace(), flags.Test.KubeContext); len(pgPasswords) > 0 {
-			for k, v := range pgPasswords {
-				upgradeFlags.Deployment.ExtraHelmSets[k] = v
-			}
+			maps.Copy(upgradeFlags.Deployment.ExtraHelmSets, pgPasswords)
 		}
 	}
 

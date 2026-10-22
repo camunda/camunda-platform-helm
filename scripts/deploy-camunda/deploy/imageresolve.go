@@ -211,7 +211,7 @@ func effectiveCoordinates(images map[string]map[string]any, path string) [3]stri
 
 // setImage stores img as the image block of the dotted component path in doc.
 func setImage(doc map[string]any, path string, img map[string]any) {
-	for _, key := range strings.Split(path, ".") {
+	for key := range strings.SplitSeq(path, ".") {
 		child, _ := doc[key].(map[string]any)
 		if child == nil {
 			child = map[string]any{}

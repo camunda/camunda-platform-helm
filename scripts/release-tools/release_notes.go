@@ -16,6 +16,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -34,7 +35,7 @@ const cliffConfigFile = ".github/config/cliff.toml"
 // annotations. git/git-cliff/yq run as exec calls; the Chart.yaml writes go
 // through yq to preserve formatting and comments.
 //
-//	release-tools release-notes --main   <chart-dir>
+//	release-tools release-notes --main   <chart-dir> --source <sha> --previous-source <sha>
 //	release-tools release-notes --footer <chart-dir> [--images-chart-dir <dir>]
 //
 // Run from the repository root (paths like .tool-versions and cliff.toml are
@@ -50,10 +51,16 @@ func runReleaseNotes(args []string) error {
 	ctx := context.Background()
 	switch mode {
 	case "--main":
-		if len(args) != 2 {
-			return fmt.Errorf("usage: release-notes --main <chart-dir>")
+		fs := flag.NewFlagSet("release-notes --main", flag.ContinueOnError)
+		source := fs.String("source", "", "selected build source")
+		previous := fs.String("previous-source", "", "previous published artifact source")
+		if err := fs.Parse(args[2:]); err != nil {
+			return err
 		}
-		return releaseNotesMain(ctx, chartDir)
+		if *source == "" || *previous == "" || len(fs.Args()) != 0 {
+			return fmt.Errorf("release-notes --main requires --source and --previous-source")
+		}
+		return releaseNotesMain(ctx, chartDir, *previous, *source)
 	case "--footer":
 		imagesChartDir := chartDir
 		useRecordedImages := false
@@ -78,31 +85,8 @@ func capture(ctx context.Context, name string, args ...string) (string, error) {
 	return strings.TrimSpace(string(out)), nil
 }
 
-func releaseNotesMain(ctx context.Context, chartDir string) error {
-	// Fetch main unless already on it (git-cliff diffs from the last release tag).
-	if branch, _ := capture(ctx, "git", "branch", "--show-current"); branch != "main" {
-		if err := executil.RunCommand(ctx, "git", []string{"fetch", "origin", "main:main"}, nil, ""); err != nil {
-			return err
-		}
-	}
-
+func releaseNotesMain(ctx context.Context, chartDir, previous, source string) error {
 	chartFile := filepath.Join(chartDir, "Chart.yaml")
-
-	// Latest released version from main (not the release PR, which may bump it).
-	latestShow, err := executil.RunCommandCapture(ctx, "git", []string{"show", "main:" + chartDir + "/Chart.yaml"}, nil, "")
-	if err != nil {
-		return fmt.Errorf("git show main Chart.yaml: %w", err)
-	}
-	latestID, err := releasenotes.ParseChartIdentity(latestShow)
-	if err != nil {
-		return err
-	}
-	latestChartName := filepath.Base(chartDir)
-	latestTagHash, err := capture(ctx, "git", "show-ref", "--hash", latestChartName+"-"+latestID.Version)
-	if err != nil {
-		return err
-	}
-
 	chartBytes, err := os.ReadFile(chartFile)
 	if err != nil {
 		return err
@@ -115,7 +99,11 @@ func releaseNotesMain(ctx context.Context, chartDir string) error {
 	chartTag := releaseplease.ReleaseTag(appVersion, id.Version)
 
 	// Early exit if the tag already exists (exact match, not substring).
-	if existing, _ := capture(ctx, "git", "tag", "-l", chartTag); existing != "" {
+	existing, err := capture(ctx, "git", "tag", "-l", chartTag)
+	if err != nil {
+		return err
+	}
+	if existing != "" {
 		fmt.Printf("[WARN] The tag %s already exists, nothing to do...\n", chartTag)
 		return nil
 	}
@@ -135,8 +123,9 @@ func releaseNotesMain(ctx context.Context, chartDir string) error {
 	// RELEASE-NOTES.md via git-cliff. Exclude paths not shipped to end users.
 	releaseNotesPath := filepath.Join(chartDir, "RELEASE-NOTES.md")
 	if err := executil.RunCommand(ctx, "git-cliff", []string{
-		latestTagHash + "..",
+		previous + ".." + source,
 		"--tag-pattern", "camunda-platform-" + appVersion + ".*",
+		"--ignore-tags", ".*",
 		"--config", cliffConfigFile,
 		"--output", releaseNotesPath,
 		"--include-path", chartDir + "/**",

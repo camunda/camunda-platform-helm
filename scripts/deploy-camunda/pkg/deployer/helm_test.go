@@ -21,6 +21,7 @@ import (
 	"os"
 	"path/filepath"
 	"scripts/deploy-camunda/pkg/types"
+	"slices"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -528,7 +529,7 @@ func TestDeployCompanionChart(t *testing.T) {
 			opts: types.Options{
 				Namespace:             "ns",
 				CompanionNodeSelector: map[string]string{"pool": "companion"},
-				CompanionTolerations:  []map[string]interface{}{{"key": "pool", "operator": "Equal", "value": "companion"}},
+				CompanionTolerations:  []map[string]any{{"key": "pool", "operator": "Equal", "value": "companion"}},
 			},
 			wantArgs: []string{
 				"--set-json", `nodeSelector={"pool":"companion"}`,
@@ -634,7 +635,7 @@ func TestDeployCompanionChart(t *testing.T) {
 			},
 			opts: types.Options{
 				Namespace:            "ns",
-				CompanionTolerations: []map[string]interface{}{{"bad": make(chan int)}},
+				CompanionTolerations: []map[string]any{{"bad": make(chan int)}},
 			},
 			wantErr: "marshal tolerations",
 		},
@@ -799,12 +800,7 @@ func TestDeployCompanionChart_UsesHelmWaitFlag(t *testing.T) {
 }
 
 func containsArg(args []string, want string) bool {
-	for _, a := range args {
-		if a == want {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(args, want)
 }
 
 func TestDeployCompanionChart_HelmErrorType(t *testing.T) {

@@ -115,9 +115,7 @@ func RunTests(ctx context.Context, flags *config.RuntimeFlags, namespace string)
 	resultCh := make(chan TestResult, 2)
 
 	if runE2E {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			output, err := runE2ETests(testCtx, repoRoot, chartPath, namespace, flags.Test.KubeContext, flags.Test.TestExclude, flags.Selection.Persistence, topologyTarget{
 				HubNamespace:        flags.Test.HubNamespace,
 				OptimizeNamespace:   flags.Test.OptimizeNamespace,
@@ -127,7 +125,7 @@ func RunTests(ctx context.Context, flags *config.RuntimeFlags, namespace string)
 				PhysicalTenantID:    flags.Test.PhysicalTenantID,
 			}, flags.E2EOutputWriter)
 			resultCh <- TestResult{Type: "e2e", Error: err, Output: output}
-		}()
+		})
 	}
 
 	// Wait for all tests to complete
@@ -267,11 +265,11 @@ func e2eScriptArgs(chartPath, namespace, kubeContext, testExclude, persistence s
 func isFullSuiteChart(chartPath string) bool {
 	base := filepath.Base(chartPath)
 	const prefix = "camunda-platform-8."
-	idx := strings.Index(base, prefix)
-	if idx < 0 {
+	_, after, ok := strings.Cut(base, prefix)
+	if !ok {
 		return false
 	}
-	minorStr := base[idx+len(prefix):]
+	minorStr := after
 	// Trim any non-digit suffix (e.g., "-alpha1")
 	for i, c := range minorStr {
 		if c < '0' || c > '9' {
@@ -405,15 +403,4 @@ func findRepoRoot(chartPath string) string {
 	}
 
 	return ""
-}
-
-// isChartVersion returns true if chartPath refers to the given version.
-// It matches the final directory component against "camunda-platform-<version>".
-// Example: isChartVersion("charts/camunda-platform-8.7", "8.7") returns true.
-func isChartVersion(chartPath, version string) bool {
-	if chartPath == "" || version == "" {
-		return false
-	}
-	base := filepath.Base(chartPath)
-	return strings.HasSuffix(base, "-"+version)
 }

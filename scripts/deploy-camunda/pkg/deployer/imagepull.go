@@ -269,10 +269,7 @@ func watchTerminalImagePull(ctx context.Context, deps imagePullWatchDeps, namesp
 	if namespace == "" {
 		return nil
 	}
-	threshold := deps.threshold
-	if threshold < 1 {
-		threshold = 1
-	}
+	threshold := max(deps.threshold, 1)
 
 	var lastKey string
 	var lastEvidence time.Time

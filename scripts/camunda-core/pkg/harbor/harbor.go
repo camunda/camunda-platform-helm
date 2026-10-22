@@ -32,6 +32,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"time"
 )
@@ -140,9 +141,15 @@ func (c *Client) newRequest(method, url string, body []byte) (*http.Request, err
 	return req, nil
 }
 
-// artifact is the subset of the Harbor artifact object we read.
-type artifact struct {
+type Artifact struct {
 	Digest string `json:"digest"`
+	Tags   []struct {
+		Name string `json:"name"`
+	} `json:"tags"`
+}
+
+func (c *Client) Artifact(ref string) (Artifact, error) {
+	return c.getArtifact(url.PathEscape(ref), true)
 }
 
 // Digest returns the artifact digest for a reference (tag or digest), failing if
@@ -169,23 +176,32 @@ func (c *Client) TagDigest(tag string) string {
 }
 
 func (c *Client) digest(ref string) (string, error) {
-	req, err := c.newRequest(http.MethodGet, c.artifactURL(ref), nil)
+	a, err := c.getArtifact(ref, false)
+	return a.Digest, err
+}
+
+func (c *Client) getArtifact(ref string, withTags bool) (Artifact, error) {
+	endpoint := c.artifactURL(ref)
+	if withTags {
+		endpoint += "?with_tag=true"
+	}
+	req, err := c.newRequest(http.MethodGet, endpoint, nil)
 	if err != nil {
-		return "", err
+		return Artifact{}, err
 	}
 	resp, err := c.Do(req)
 	if err != nil {
-		return "", err
+		return Artifact{}, err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode >= 400 {
-		return "", fmt.Errorf("GET %s: HTTP %d", c.artifactURL(ref), resp.StatusCode)
+		return Artifact{}, fmt.Errorf("GET %s: HTTP %d", endpoint, resp.StatusCode)
 	}
-	var a artifact
+	var a Artifact
 	if err := json.NewDecoder(resp.Body).Decode(&a); err != nil {
-		return "", fmt.Errorf("decode artifact %q: %w", ref, err)
+		return Artifact{}, fmt.Errorf("decode artifact %q: %w", ref, err)
 	}
-	return a.Digest, nil
+	return a, nil
 }
 
 // postTag POSTs a tag onto the artifact identified by digest and returns the

@@ -298,8 +298,7 @@ func IsSecretName(name string) bool {
 
 // IsMissingEnv returns (true, names) if err is a MissingEnvError.
 func IsMissingEnv(err error) (bool, []string) {
-	var me MissingEnvError
-	if errors.As(err, &me) {
+	if me, ok := errors.AsType[MissingEnvError](err); ok {
 		return true, me.Missing
 	}
 	return false, nil

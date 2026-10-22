@@ -21,6 +21,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -203,13 +204,7 @@ func TestGAChartsHavePatchUpdatesEnabled(t *testing.T) {
 			continue
 		}
 		valuesLatestPath := fmt.Sprintf("charts/camunda-platform-%s/values-latest.yaml", cv)
-		found := false
-		for _, f := range patchRuleFileNames {
-			if f == valuesLatestPath {
-				found = true
-				break
-			}
-		}
+		found := slices.Contains(patchRuleFileNames, valuesLatestPath)
 		assert.True(t, found,
 			"GA chart %s has no Renovate image update rule covering its values-latest.yaml.\n\n"+
 				"Action: Add 'charts/camunda-platform-%s/values-latest.yaml' to the appropriate "+
@@ -512,12 +507,7 @@ func containsFile(fileNames []string, suffix string) bool {
 }
 
 func containsString(values []string, expected string) bool {
-	for _, value := range values {
-		if value == expected {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(values, expected)
 }
 
 // jsNamedGroup matches the JavaScript named-capture syntax used by Renovate,

@@ -70,7 +70,7 @@ type matrixJSON struct {
 
 // matrixEntry represents one entry in the matrix as a generic map.
 // All original fields are preserved; we only add/modify the "cached" field.
-type matrixEntry map[string]interface{}
+type matrixEntry map[string]any
 
 func runAnnotateMatrix(cmd *cobra.Command, args []string) error {
 	// Read matrix JSON from stdin.
@@ -134,7 +134,7 @@ func runAnnotateMatrix(cmd *cobra.Command, args []string) error {
 		}
 
 		var contexts []string
-		for _, platform := range strings.Split(platforms, ",") {
+		for platform := range strings.SplitSeq(platforms, ",") {
 			contexts = append(contexts, cache.StatusContext(version, shortname, flow, platform))
 		}
 		if cache.CheckAll(statuses, contexts, contentHash, annotateTTL) {

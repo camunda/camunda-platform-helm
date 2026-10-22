@@ -460,7 +460,7 @@ func TestAppendMultiple_ConcurrentSafety(t *testing.T) {
 	var wg sync.WaitGroup
 	n := 20
 	wg.Add(n)
-	for i := 0; i < n; i++ {
+	for i := range n {
 		go func(i int) {
 			defer wg.Done()
 			key := "KEY_" + strings.Repeat("A", i%5)

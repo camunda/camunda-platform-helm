@@ -24,7 +24,6 @@ import (
 	"strings"
 	"time"
 
-	"gopkg.in/yaml.v3"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
@@ -106,7 +105,7 @@ func decideLifecycle(created bool, initial map[string]string, initialErr error, 
 // last error once attempts run out.
 func retryNamespaceAnnotations(ctx context.Context, kubeClient *kube.Client, namespace string, attempts int, wait time.Duration) (map[string]string, error) {
 	var err error
-	for i := 0; i < attempts; i++ {
+	for range attempts {
 		var annotations map[string]string
 		if annotations, err = readNamespaceAnnotations(ctx, kubeClient, namespace); err == nil {
 			return annotations, nil
@@ -164,20 +163,4 @@ func applyIntegrationTestCredentials(ctx context.Context, kubeClient *kube.Clien
 
 	// Use generic method to apply manifest
 	return kubeClient.ApplyManifest(ctx, namespace, decoded)
-}
-
-func replaceNameFieldInYAML(data []byte, name string) ([]byte, error) {
-	var obj map[string]interface{}
-	err := yaml.Unmarshal(data, &obj)
-	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal YAML: %w", err)
-	}
-
-	metadata, ok := obj["metadata"].(map[string]interface{})
-	if !ok {
-		return nil, fmt.Errorf("failed to find metadata field in YAML")
-	}
-	metadata["name"] = name
-
-	return yaml.Marshal(obj)
 }
