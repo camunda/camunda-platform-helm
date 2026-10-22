@@ -364,6 +364,8 @@ func printDryRunPreflight(resolved []dryRunEntry, opts RunOptions) {
 
 	fmt.Fprintln(os.Stdout, "\n=== Preflight (secrets/env validation) ===")
 	for _, dre := range resolved {
+		docker := opts.DockerFlags
+		docker.EnsureDockerRegistry, docker.EnsureDockerHub = dre.ensureDockerRegistry, dre.ensureDockerHub
 		flags := &config.RuntimeFlags{
 			EnvFile: dre.envFile,
 			Chart: config.ChartFlags{
@@ -390,14 +392,7 @@ func printDryRunPreflight(resolved []dryRunEntry, opts RunOptions) {
 				Features:     dre.features,
 				InfraType:    dre.infraType,
 			},
-			Docker: config.DockerFlags{
-				DockerUsername:       opts.DockerUsername,
-				DockerPassword:       opts.DockerPassword,
-				EnsureDockerRegistry: dre.ensureDockerRegistry,
-				DockerHubUsername:    opts.DockerHubUsername,
-				DockerHubPassword:    opts.DockerHubPassword,
-				EnsureDockerHub:      dre.ensureDockerHub,
-			},
+			Docker:          docker,
 			CompanionCharts: companionChartsForEntry(dre.entry, opts.RepoRoot),
 		}
 

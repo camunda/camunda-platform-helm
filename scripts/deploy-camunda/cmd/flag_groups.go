@@ -21,6 +21,8 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+
+	"scripts/deploy-camunda/config"
 )
 
 // flagGroupAnnotation is the pflag annotation key used to bucket flags into
@@ -73,6 +75,18 @@ func annotateFlagGroups(cmd *cobra.Command, groups map[string][]string) {
 		f.Annotations[flagGroupAnnotation] = []string{grpOther}
 	})
 	cmd.SetUsageFunc(groupedUsageFunc)
+}
+
+func bindRegistryFlags(f *pflag.FlagSet, d *config.DockerFlags) {
+	f.StringVar(&d.DockerUsername, "docker-username", "", "Harbor registry username (defaults to HARBOR_USERNAME, TEST_DOCKER_USERNAME_CAMUNDA_CLOUD, or NEXUS_USERNAME env var)")
+	f.StringVar(&d.DockerPassword, "docker-password", "", "Harbor registry password (defaults to HARBOR_PASSWORD, TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD, or NEXUS_PASSWORD env var)")
+	f.BoolVar(&d.EnsureDockerRegistry, "ensure-docker-registry", false, "Ensure Harbor registry pull secret is created")
+	f.StringVar(&d.DockerHubUsername, "dockerhub-username", "", "Docker Hub registry username (defaults to DOCKERHUB_USERNAME or TEST_DOCKER_USERNAME env var)")
+	f.StringVar(&d.DockerHubPassword, "dockerhub-password", "", "Docker Hub registry password (defaults to DOCKERHUB_PASSWORD or TEST_DOCKER_PASSWORD env var)")
+	f.BoolVar(&d.EnsureDockerHub, "ensure-docker-hub", false, "Ensure Docker Hub registry pull secret is created")
+	for _, name := range []string{"docker-username", "docker-password", "ensure-docker-registry", "dockerhub-username", "dockerhub-password", "ensure-docker-hub"} {
+		_ = f.SetAnnotation(name, flagGroupAnnotation, []string{grpRegistry})
+	}
 }
 
 // groupedUsageFunc renders the command usage with flags bucketed into the
@@ -144,10 +158,6 @@ func rootFlagGroups() map[string][]string {
 			"extra-values", "image-override", "allow-digest-shadow", "values-preset", "identity", "persistence",
 			"test-platform", "features", "qa", "image-tags",
 		},
-		grpRegistry: {
-			"docker-username", "docker-password", "ensure-docker-registry",
-			"dockerhub-username", "dockerhub-password", "ensure-docker-hub",
-		},
 		grpDeployment: {
 			"release", "flow", "ttl", "skip-preflight",
 			"skip-dependency-update", "delete-namespace", "render-templates",
@@ -181,10 +191,6 @@ func matrixRunFlagGroups() map[string][]string {
 			"upgrade-from-version", "use-latest", "use-qa",
 			"extra-helm-arg", "extra-helm-set", "extra-values", "image-override", "allow-digest-shadow",
 			"chart-ref", "chart-version", "tier",
-		},
-		grpRegistry: {
-			"docker-username", "docker-password", "ensure-docker-registry",
-			"dockerhub-username", "dockerhub-password", "ensure-docker-hub",
 		},
 		grpDeployment: {
 			"dry-run", "coverage", "test-e2e", "test-all",

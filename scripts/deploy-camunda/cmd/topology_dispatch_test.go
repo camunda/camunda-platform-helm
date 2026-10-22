@@ -939,6 +939,14 @@ func TestSynthesizeReleaseOpts_PropagatesHelmTimeout(t *testing.T) {
 // one of them survives into the per-release RunOptions unchanged, with only
 // Platform/NamespaceOverride differing.
 func TestSynthesizeReleaseOpts_ForwardsEntireBaseRunOptions(t *testing.T) {
+	docker := config.DockerFlags{
+		DockerUsername:       "docker-user",
+		DockerPassword:       "docker-pass",
+		EnsureDockerRegistry: true,
+		DockerHubUsername:    "dockerhub-user",
+		DockerHubPassword:    "dockerhub-pass",
+		EnsureDockerHub:      true,
+	}
 	base := matrix.RunOptions{
 		DryRun:               true,
 		Coverage:             true,
@@ -967,12 +975,7 @@ func TestSynthesizeReleaseOpts_ForwardsEntireBaseRunOptions(t *testing.T) {
 		KeycloakProtocol:     "https",
 		UpgradeFromVersion:   "8.9",
 		HelmTimeout:          25,
-		DockerUsername:       "docker-user",
-		DockerPassword:       "docker-pass",
-		EnsureDockerRegistry: true,
-		DockerHubUsername:    "dockerhub-user",
-		DockerHubPassword:    "dockerhub-pass",
-		EnsureDockerHub:      true,
+		DockerFlags:          docker,
 		UseLatest:            true,
 		UseQA:                true,
 		ForceImageOverrides:  true,

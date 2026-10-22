@@ -385,12 +385,7 @@ Under the hood this invokes deploy.Execute() for each matrix entry.`,
 	f.StringVar(&r.KeycloakProtocol, "keycloak-protocol", "", "Keycloak protocol (defaults to "+config.DefaultKeycloakProtocol+")")
 	f.StringVar(&r.UpgradeFromVersion, "upgrade-from-version", "", "Override the auto-resolved 'from' chart version for upgrade flows (e.g., 13.5.0)")
 	f.IntVar(&r.HelmTimeout, "timeout", 10, "Timeout in minutes for Helm deployment (applies to all entries)")
-	f.StringVar(&r.DockerUsername, "docker-username", "", "Harbor registry username (defaults to HARBOR_USERNAME, TEST_DOCKER_USERNAME_CAMUNDA_CLOUD, or NEXUS_USERNAME env var)")
-	f.StringVar(&r.DockerPassword, "docker-password", "", "Harbor registry password (defaults to HARBOR_PASSWORD, TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD, or NEXUS_PASSWORD env var)")
-	f.BoolVar(&r.EnsureDockerRegistry, "ensure-docker-registry", false, "Ensure Harbor registry pull secret is created in each entry's namespace (always enabled for topology entries, which pull Camunda images from Harbor)")
-	f.StringVar(&r.DockerHubUsername, "dockerhub-username", "", "Docker Hub registry username (defaults to DOCKERHUB_USERNAME or TEST_DOCKER_USERNAME env var)")
-	f.StringVar(&r.DockerHubPassword, "dockerhub-password", "", "Docker Hub registry password (defaults to DOCKERHUB_PASSWORD or TEST_DOCKER_PASSWORD env var)")
-	f.BoolVar(&r.EnsureDockerHub, "ensure-docker-hub", false, "Ensure Docker Hub registry pull secret is created in each entry's namespace")
+	bindRegistryFlags(f, &r.DockerFlags)
 	f.BoolVar(&r.UseLatest, "use-latest", false, "Use values-latest.yaml from each chart root instead of values-digest.yaml")
 	f.BoolVar(&r.UseQA, "use-qa", false, "Force the base-qa layer to be included for all entries, regardless of per-scenario qa config")
 	f.BoolVar(&r.ForceImageOverrides, "force-image-overrides", false, "Bypass OCI immutability guard: apply chart-root image overlays and scenario image-tags on top of --chart-ref.")
@@ -523,10 +518,8 @@ func (r *matrixRunFlags) entries() ([]matrix.Entry, error) {
 }
 
 func (r *matrixRunFlags) resolveCredentials(entries []matrix.Entry, hasTopology bool) error {
-	docker := config.DockerFlags{
-		DockerUsername: r.DockerUsername, DockerPassword: r.DockerPassword, EnsureDockerRegistry: r.EnsureDockerRegistry || hasTopology,
-		DockerHubUsername: r.DockerHubUsername, DockerHubPassword: r.DockerHubPassword, EnsureDockerHub: r.EnsureDockerHub,
-	}
+	docker := r.DockerFlags
+	docker.EnsureDockerRegistry = docker.EnsureDockerRegistry || hasTopology
 	envFiles := make(map[string]string)
 	for _, entry := range entries {
 		envFiles[entry.Version] = r.Config.ResolveInfra(true, "", entry.Version, r.Infra).EnvFile
