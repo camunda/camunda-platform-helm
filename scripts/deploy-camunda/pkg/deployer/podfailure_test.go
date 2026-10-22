@@ -396,8 +396,7 @@ func TestTerminalPodStateFailureOrder(t *testing.T) {
 		if !ok {
 			t.Fatal("expected a failure, got none")
 		}
-		var pull *ImagePullFailure
-		if !errors.As(got, &pull) {
+		if _, ok := errors.AsType[*ImagePullFailure](got); !ok {
 			t.Fatalf("expected an *ImagePullFailure, got %T (%v)", got, got)
 		}
 	})
@@ -499,8 +498,7 @@ func TestWatchTerminalPodFailure(t *testing.T) {
 		if got == nil {
 			t.Fatal("expected a failure, got nil")
 		}
-		var failure *PodFailure
-		if !errors.As(got, &failure) {
+		if _, ok := errors.AsType[*PodFailure](got); !ok {
 			t.Fatalf("expected a *PodFailure, got %T (%v)", got, got)
 		}
 		if calls != 2 {
@@ -722,8 +720,7 @@ func TestUpgradeInstall_AbortsOnUnschedulablePod(t *testing.T) {
 		t.Errorf("reason should name the real cause, got %q", helmErr.Reason)
 	}
 
-	var podErr *PodFailure
-	if !errors.As(err, &podErr) {
+	if _, ok := errors.AsType[*PodFailure](err); !ok {
 		t.Fatalf("expected the cause to be a *PodFailure, got %v", helmErr.Cause)
 	}
 	if !strings.Contains(err.Error(), "camunda-zeebe-0") {

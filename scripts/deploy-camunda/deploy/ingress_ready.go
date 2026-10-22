@@ -212,7 +212,7 @@ func routingResourceHosts(resource unstructured.Unstructured) []string {
 }
 
 func selectPrimaryRoutingHost(raw string) string {
-	for _, host := range strings.Fields(raw) {
+	for host := range strings.FieldsSeq(raw) {
 		if concreteRoutingHost(host) == "" {
 			continue
 		}

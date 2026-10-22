@@ -57,8 +57,7 @@ func TestTestError_ErrorsAs(t *testing.T) {
 func TestTestError_ErrorsAs_NotPresent(t *testing.T) {
 	plain := fmt.Errorf("deployment failed: helm timeout")
 
-	var extracted *TestError
-	if errors.As(plain, &extracted) {
+	if _, ok := errors.AsType[*TestError](plain); ok {
 		t.Error("errors.As should NOT find *TestError in a plain error")
 	}
 }

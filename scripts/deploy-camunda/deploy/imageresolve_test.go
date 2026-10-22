@@ -43,7 +43,7 @@ webModeler:
 
 func imageAt(t *testing.T, doc map[string]any, path string) map[string]any {
 	t.Helper()
-	for _, key := range strings.Split(path, ".") {
+	for key := range strings.SplitSeq(path, ".") {
 		doc, _ = doc[key].(map[string]any)
 	}
 	img, ok := doc["image"].(map[string]any)

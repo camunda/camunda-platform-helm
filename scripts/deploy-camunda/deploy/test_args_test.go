@@ -15,6 +15,7 @@
 package deploy
 
 import (
+	"slices"
 	"testing"
 )
 
@@ -28,12 +29,7 @@ func hasFlagValue(args []string, flag, value string) bool {
 }
 
 func hasFlag(args []string, flag string) bool {
-	for _, a := range args {
-		if a == flag {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(args, flag)
 }
 
 // A topology leg must forward every namespace it was given. Dropping --hub-namespace rendered the e2e

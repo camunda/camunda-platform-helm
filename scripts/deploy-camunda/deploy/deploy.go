@@ -39,7 +39,7 @@ import (
 // companion chart installs (they need top-level scheduling; the infra file
 // only sets it per main-chart component). Returns nil,nil when infraType is
 // empty or the file/keys are absent (best-effort, never fails the deploy).
-func companionSchedulingFromInfra(scenarioPath, infraType string) (map[string]string, []map[string]interface{}) {
+func companionSchedulingFromInfra(scenarioPath, infraType string) (map[string]string, []map[string]any) {
 	if infraType == "" || scenarioPath == "" {
 		return nil, nil
 	}
@@ -48,18 +48,18 @@ func companionSchedulingFromInfra(scenarioPath, infraType string) (map[string]st
 	if err != nil {
 		return nil, nil
 	}
-	var doc map[string]interface{}
+	var doc map[string]any
 	if err := yaml.Unmarshal(data, &doc); err != nil {
 		return nil, nil
 	}
 	// Every component in the infra file shares the same pool scheduling; use the first component that has both keys.
 	for _, v := range doc {
-		comp, ok := v.(map[string]interface{})
+		comp, ok := v.(map[string]any)
 		if !ok {
 			continue
 		}
-		ns, hasNS := comp["nodeSelector"].(map[string]interface{})
-		tol, hasTol := comp["tolerations"].([]interface{})
+		ns, hasNS := comp["nodeSelector"].(map[string]any)
+		tol, hasTol := comp["tolerations"].([]any)
 		if hasNS && hasTol {
 			nodeSel := map[string]string{}
 			for k, vv := range ns {
@@ -67,9 +67,9 @@ func companionSchedulingFromInfra(scenarioPath, infraType string) (map[string]st
 					nodeSel[k] = s
 				}
 			}
-			tols := make([]map[string]interface{}, 0, len(tol))
+			tols := make([]map[string]any, 0, len(tol))
 			for _, t := range tol {
-				if tm, ok := t.(map[string]interface{}); ok {
+				if tm, ok := t.(map[string]any); ok {
 					tols = append(tols, tm)
 				}
 			}
@@ -269,14 +269,11 @@ func executeParallelDeployments(ctx context.Context, flags *config.RuntimeFlags)
 	resultCh := make(chan *ScenarioResult, len(prepared))
 
 	for _, p := range prepared {
-		p := p // capture for closure
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			// Use original context (not a cancellable one) so failures don't cancel others
 			result := executeDeployment(ctx, p, flags)
 			resultCh <- result
-		}()
+		})
 	}
 
 	// Wait for all deployments to complete
