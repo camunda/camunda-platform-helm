@@ -39,10 +39,12 @@ jobs:
     name: links-check
     runs-on: ubuntu-latest
     permissions:
+      id-token: write
       contents: read
     outputs:
       lychee-outcome: ${{ steps.lychee.outcome }}
     steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@ead99f6c9c536f5c47e443929d47e8fcfdb05a81  # start-build-monitor-1.0.1
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -86,6 +88,17 @@ jobs:
           path: ./lychee/out.md
           if-no-files-found: error
           retention-days: 14
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_jwt_path: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwt_role: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwt_audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   # Issue creation lives in a dedicated job so `issues: write` is granted only
   # on scheduled runs, never on pull_request runs. Addresses the Copilot

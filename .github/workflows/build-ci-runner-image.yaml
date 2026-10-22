@@ -52,6 +52,7 @@ jobs:
       packages: write
       id-token: write
     steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@ead99f6c9c536f5c47e443929d47e8fcfdb05a81  # start-build-monitor-1.0.1
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
@@ -106,6 +107,17 @@ jobs:
             echo "- \`${CI_RUNNER_IMAGE}:${{ steps.tags.outputs.date-tag }}\`"
           } >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_jwt_path: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwt_role: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwt_audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
+
   build-playwright-runner:
     name: Build Playwright Runner Image
     runs-on: ubuntu-latest
@@ -114,6 +126,7 @@ jobs:
       packages: write
       id-token: write
     steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@ead99f6c9c536f5c47e443929d47e8fcfdb05a81  # start-build-monitor-1.0.1
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
@@ -187,6 +200,17 @@ jobs:
             echo "Pinned \`@playwright/test=${{ steps.e2e-pkg.outputs.playwright-version }}\`"
           } >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_jwt_path: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwt_role: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwt_audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
+
   verify-images:
     name: Verify Images
     runs-on: ubuntu-latest
@@ -194,9 +218,11 @@ jobs:
       - build-ci-runner
       - build-playwright-runner
     permissions:
+      id-token: write
       contents: read
       packages: read
     steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@ead99f6c9c536f5c47e443929d47e8fcfdb05a81  # start-build-monitor-1.0.1
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
@@ -236,3 +262,14 @@ jobs:
           '
 
           echo "✅ Playwright Runner image verified successfully"
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_jwt_path: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwt_role: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwt_audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
