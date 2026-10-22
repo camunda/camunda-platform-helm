@@ -406,14 +406,3 @@ func findRepoRoot(chartPath string) string {
 
 	return ""
 }
-
-// isChartVersion returns true if chartPath refers to the given version.
-// It matches the final directory component against "camunda-platform-<version>".
-// Example: isChartVersion("charts/camunda-platform-8.7", "8.7") returns true.
-func isChartVersion(chartPath, version string) bool {
-	if chartPath == "" || version == "" {
-		return false
-	}
-	base := filepath.Base(chartPath)
-	return strings.HasSuffix(base, "-"+version)
-}
