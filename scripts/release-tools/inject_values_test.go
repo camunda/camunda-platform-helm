@@ -85,7 +85,7 @@ func TestRunInjectValuesUpdatesValuesLatest(t *testing.T) {
 	t.Setenv("CONNECTORS_IMAGE_TAG", "8.10.1")
 	t.Setenv("CONSOLE_IMAGE_TAG", "not included")
 
-	if err := runInjectValues(nil); err != nil {
+	if err := runInjectValues(); err != nil {
 		t.Fatalf("runInjectValues: %v", err)
 	}
 	gotValues, _ := os.ReadFile(filepath.Join(chartDir, "values.yaml"))

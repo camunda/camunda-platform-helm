@@ -77,7 +77,7 @@ func TestUpgradeCLIWhenPreviousDefaultsContainRejectedKeys(t *testing.T) {
 
 func TestUpgradeCLIProcess(t *testing.T) {
 	if os.Getenv("VALIDATE_VALUES_SCHEMA_PROCESS") != "1" {
-		return
+		t.Skip("runs only as the subprocess of the upgrade CLI tests")
 	}
 	for index, arg := range os.Args {
 		if arg == "--" {

@@ -21,7 +21,7 @@ import (
 	"testing"
 )
 
-func writeTempFile(t *testing.T, dir, name, content string) string {
+func writeTempFile(t *testing.T, dir, name, content string) {
 	t.Helper()
 	p := filepath.Join(dir, name)
 	if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
@@ -30,7 +30,6 @@ func writeTempFile(t *testing.T, dir, name, content string) string {
 	if err := os.WriteFile(p, []byte(content), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	return p
 }
 
 func captureStdout(t *testing.T, fn func() error) (string, error) {

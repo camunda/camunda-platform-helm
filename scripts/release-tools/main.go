@@ -53,7 +53,7 @@ func main() {
 	case "release-notes":
 		err = runReleaseNotes(os.Args[2:])
 	case "inject-values":
-		err = runInjectValues(os.Args[2:])
+		err = runInjectValues()
 	case "version-matrix":
 		err = runVersionMatrix(os.Args[2:])
 	case "backfill-matrix":

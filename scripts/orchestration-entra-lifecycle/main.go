@@ -50,7 +50,6 @@ type config struct {
 }
 
 type commandRunner func(context.Context, string, ...string) ([]byte, error)
-type requestFactory func() (*http.Request, error)
 
 type verifier struct {
 	cfg        config

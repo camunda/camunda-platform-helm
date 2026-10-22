@@ -279,7 +279,7 @@ func enterpriseValuesLayers(files []string) []string {
 // pullable on the target platform, child manifests included. It reports
 // StatusFail only for images the registry actively denied, and StatusWarn when
 // the check could not run.
-func checkPinnedImages(ctx context.Context, valuesFiles []string, platform string) Check {
+func checkPinnedImages(ctx context.Context, valuesFiles []string) Check {
 	const name = "enterprise image manifests"
 
 	images := collectPinnedImages(enterpriseValuesLayers(valuesFiles))
@@ -293,7 +293,7 @@ func checkPinnedImages(ctx context.Context, valuesFiles []string, platform strin
 
 	var broken, unverified []string
 	checked := 0
-	for _, res := range resolveImagesConcurrently(ctx, images, platform) {
+	for _, res := range resolveImagesConcurrently(ctx, images, defaultImagePlatform) {
 		switch {
 		case res.Err != nil:
 			broken = append(broken, fmt.Sprintf("%s (from %s): %v", res.Ref, res.Source, res.Err))
@@ -309,7 +309,7 @@ func checkPinnedImages(ctx context.Context, valuesFiles []string, platform strin
 			Name:   name,
 			Status: StatusFail,
 			Detail: fmt.Sprintf("%d of %d enterprise image(s) not pullable on %s:\n    %s",
-				len(broken), len(images), platform, strings.Join(broken, "\n    ")),
+				len(broken), len(images), defaultImagePlatform, strings.Join(broken, "\n    ")),
 			Remediation: "the registry serves the index but not the platform child it advertises; a pin change " +
 				"will not help — see camunda/camunda-platform-helm#6804. " +
 				"Set DEPLOY_CAMUNDA_SKIP_IMAGE_MANIFEST_CHECK=true to deploy anyway",
@@ -321,7 +321,7 @@ func checkPinnedImages(ctx context.Context, valuesFiles []string, platform strin
 			Name:   name,
 			Status: StatusWarn,
 			Detail: fmt.Sprintf("could not verify %d of %d enterprise image(s) on %s:\n    %s",
-				len(unverified), len(images), platform, strings.Join(unverified, "\n    ")),
+				len(unverified), len(images), defaultImagePlatform, strings.Join(unverified, "\n    ")),
 			Remediation: "install Docker and log in to the registry to enable this check; " +
 				"the in-flight guard still aborts the wait if an image turns out to be unpullable",
 		}
@@ -330,6 +330,6 @@ func checkPinnedImages(ctx context.Context, valuesFiles []string, platform strin
 	return Check{
 		Name:   name,
 		Status: StatusOK,
-		Detail: fmt.Sprintf("%d enterprise image(s) pullable on %s, child manifests included", checked, platform),
+		Detail: fmt.Sprintf("%d enterprise image(s) pullable on %s, child manifests included", checked, defaultImagePlatform),
 	}
 }

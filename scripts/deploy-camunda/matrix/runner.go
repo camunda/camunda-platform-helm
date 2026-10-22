@@ -1360,7 +1360,7 @@ func lastNLines(s string, n int) string {
 // This runs regardless of whether the entry succeeded or failed — cleanup should always
 // happen after diagnostics have been collected. Errors are logged but do not affect the
 // entry's result.
-func cleanupEntry(ctx context.Context, result RunResult, opts RunOptions) {
+func cleanupEntry(ctx context.Context, result RunResult) {
 	// Clean up Entra app registration for OIDC entries (best-effort, before namespace deletion).
 	if result.venomOpts != nil {
 		logging.Logger.Info().
