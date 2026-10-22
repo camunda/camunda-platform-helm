@@ -36,6 +36,8 @@ jobs:
           tools: |
             golang
             helm
+            git-cliff
+            yq
             jq
 
       # TestImageSetRealChartContract reads each chart's vendored subcharts
