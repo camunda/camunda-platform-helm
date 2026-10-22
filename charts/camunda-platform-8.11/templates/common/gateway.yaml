@@ -42,6 +42,17 @@ spec:
       - kind: Secret
         name: {{ .Values.global.gateway.tls.secretName }}
   {{- end }}
+  {{- if eq (include "orchestration.standaloneGatewayRESTRouteEnabled" .) "true" }}
+  - name: standalone-rests
+    port: {{ .Values.global.gateway.tls.port }}
+    protocol: HTTPS
+    hostname: {{ tpl .Values.orchestration.standaloneGateway.gateway.rest.host $ }}
+    tls:
+      mode: Terminate
+      certificateRefs:
+      - kind: Secret
+        name: {{ .Values.global.gateway.tls.secretName }}
+  {{- end }}
   {{- else }}
   - name: http
     port: {{ .Values.global.gateway.port }}
@@ -52,6 +63,12 @@ spec:
     port: {{ .Values.global.gateway.port }}
     protocol: HTTP
     hostname: {{ tpl .Values.orchestration.gateway.grpc.host $ }}
+  {{- end }}
+  {{- if eq (include "orchestration.standaloneGatewayRESTRouteEnabled" .) "true" }}
+  - name: standalone-rest
+    port: {{ .Values.global.gateway.port }}
+    protocol: HTTP
+    hostname: {{ tpl .Values.orchestration.standaloneGateway.gateway.rest.host $ }}
   {{- end }}
   {{- end }}
 {{- end }}

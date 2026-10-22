@@ -1,0 +1,3 @@
+{{- if eq (include "orchestration.standaloneGatewayEnabled" .) "true" -}}
+{{- include "orchestration.renderStandaloneGateway" (dict "manifest" "orchestration.standaloneGatewayConfigmapManifest" "context" .) -}}
+{{- end -}}

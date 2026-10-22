@@ -42,8 +42,8 @@ spring:
 
 camunda:
   client:
-    rest-address: {{ include "camundaPlatform.orchestrationHTTPInternalURL" . }}
-    grpc-address: {{ include "camundaPlatform.orchestrationGRPCInternalURL" . | replace "grpcs://" "https://" | replace "grpc://" "http://" }}
+    rest-address: {{ include "camundaPlatform.orchestrationClientHTTPInternalURL" . }}
+    grpc-address: {{ include "camundaPlatform.orchestrationClientGRPCInternalURL" . | replace "grpcs://" "https://" | replace "grpc://" "http://" }}
     worker:
       defaults:
         max-jobs-active: 32

@@ -382,6 +382,40 @@ Fail if there is no secondary storage type specified and if noSecondaryStorage i
   {{- fail "[camunda][error] global.identity.auth.orchestration.hubPingAuthorizationEnabled with a non-Keycloak OIDC provider requires global.identity.auth.orchestration.hubPingClaimName and global.identity.auth.orchestration.hubPingClaimValue" -}}
 {{- end }}
 
+{{- if eq (include "orchestration.standaloneGatewayEnabled" .) "true" }}
+  {{- $gw := .Values.orchestration.standaloneGateway -}}
+  {{- if ne (include "orchestration.authEnabled" .) "true" }}
+    {{- fail (printf "[camunda][error] orchestration.standaloneGateway.enabled requires the Orchestration Cluster authentication method to be basic or oidc, got %q" (include "orchestration.authMethod" .)) -}}
+  {{- end }}
+  {{- if .Values.global.noSecondaryStorage }}
+    {{- fail "[camunda][error] orchestration.standaloneGateway.enabled is not supported with global.noSecondaryStorage=true: the standalone gateway serves the REST API and authenticates users against the secondary storage" -}}
+  {{- end }}
+  {{- if not .Values.orchestration.profiles.broker }}
+    {{- fail "[camunda][error] orchestration.standaloneGateway.enabled requires orchestration.profiles.broker=true: the standalone gateway forwards requests to the brokers of this release" -}}
+  {{- end }}
+  {{- if and $gw.autoscaling.enabled (gt (int $gw.autoscaling.minReplicas) (int $gw.autoscaling.maxReplicas)) }}
+    {{- fail "[camunda][error] orchestration.standaloneGateway.autoscaling.minReplicas must not be greater than orchestration.standaloneGateway.autoscaling.maxReplicas" -}}
+  {{- end }}
+  {{- if $gw.ingress.rest.enabled }}
+    {{- $restHost := tpl ($gw.ingress.rest.host | default "") . -}}
+    {{- if not $restHost }}
+      {{- fail "[camunda][error] orchestration.standaloneGateway.ingress.rest.enabled requires orchestration.standaloneGateway.ingress.rest.host: the REST API entry point needs its own host so that it does not take over the web application Ingress" -}}
+    {{- end }}
+    {{- if eq $restHost (tpl (.Values.global.host | default "") .) }}
+      {{- fail "[camunda][error] orchestration.standaloneGateway.ingress.rest.host must differ from global.host, which serves the web applications through the Orchestration Cluster Ingress" -}}
+    {{- end }}
+    {{- if and .Values.orchestration.ingress.grpc.enabled (eq $restHost (tpl (.Values.orchestration.ingress.grpc.host | default "") .)) }}
+      {{- fail "[camunda][error] orchestration.standaloneGateway.ingress.rest.host must differ from orchestration.ingress.grpc.host" -}}
+    {{- end }}
+  {{- end }}
+  {{- if and .Values.global.gateway.enabled $gw.gateway.rest.enabled }}
+    {{- $restRouteHost := tpl ($gw.gateway.rest.host | default "") . -}}
+    {{- if or (not $restRouteHost) (eq $restRouteHost (tpl (.Values.global.host | default "") .)) }}
+      {{- fail "[camunda][error] orchestration.standaloneGateway.gateway.rest.host must be set and differ from global.host, which serves the web applications through the Orchestration Cluster HTTPRoute" -}}
+    {{- end }}
+  {{- end }}
+{{- end }}
+
 {{- if and .Values.orchestration.enabled .Values.orchestration.hub.ping.endpoint }}
   {{- $isOidc := eq (include "orchestration.authMethod" .) "oidc" -}}
   {{- $pcId := .Values.orchestration.hub.ping.credentials.clientId -}}

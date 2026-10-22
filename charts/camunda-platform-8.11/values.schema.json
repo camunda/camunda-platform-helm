@@ -5495,6 +5495,722 @@
                         }
                     }
                 },
+                "standaloneGateway": {
+                    "type": "object",
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "description": "if true, a standalone gateway Deployment is deployed, and the gRPC Ingress, GRPCRoute, Connectors and release info target its Service instead of the Orchestration Cluster Service. Requires `basic` or `oidc` authentication and a secondary storage.",
+                            "default": false
+                        },
+                        "replicas": {
+                            "type": "number",
+                            "description": "defines how many standalone gateway Pods are deployed, independently of `orchestration.clusterSize`. Ignored when `orchestration.standaloneGateway.autoscaling.enabled` is true.",
+                            "default": 2
+                        },
+                        "autoscaling": {
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean",
+                                    "description": "if true, a HorizontalPodAutoscaler manages the standalone gateway replica count",
+                                    "default": false
+                                },
+                                "minReplicas": {
+                                    "type": "number",
+                                    "description": "defines the minimum number of standalone gateway Pods",
+                                    "default": 2
+                                },
+                                "maxReplicas": {
+                                    "type": "number",
+                                    "description": "defines the maximum number of standalone gateway Pods",
+                                    "default": 5
+                                },
+                                "targetCPUUtilizationPercentage": {
+                                    "type": [
+                                        "integer",
+                                        "null"
+                                    ],
+                                    "description": "defines the target average CPU utilization of the standalone gateway Pods",
+                                    "default": 80,
+                                    "nullable": true
+                                },
+                                "targetMemoryUtilizationPercentage": {
+                                    "type": [
+                                        "integer",
+                                        "null"
+                                    ],
+                                    "description": "defines the target average memory utilization of the standalone gateway Pods",
+                                    "default": null,
+                                    "nullable": true
+                                },
+                                "behavior": {
+                                    "type": "object",
+                                    "description": "can be used to configure the scaling behavior of the HorizontalPodAutoscaler",
+                                    "default": {},
+                                    "additionalProperties": true
+                                }
+                            }
+                        },
+                        "env": {
+                            "type": "array",
+                            "description": "can be used to set extra environment variables in the standalone gateway container. They are appended to `orchestration.env`, which the standalone gateway also receives.",
+                            "default": [],
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "description": "Environment variable name"
+                                    },
+                                    "value": {
+                                        "description": "Environment variable value",
+                                        "anyOf": [
+                                            {
+                                                "type": "string"
+                                            },
+                                            {
+                                                "type": "null"
+                                            }
+                                        ],
+                                        "nullable": true
+                                    },
+                                    "valueFrom": {
+                                        "description": "Source for the environment variable's value (Kubernetes EnvVarSource).",
+                                        "type": "object",
+                                        "properties": {
+                                            "fieldRef": {
+                                                "type": "object",
+                                                "description": "Selects a field of the pod (supports metadata.name, metadata.namespace, metadata.uid, metadata.labels['<KEY>'], metadata.annotations['<KEY>'], spec.nodeName, spec.serviceAccountName, status.hostIP, status.podIP, status.podIPs).",
+                                                "properties": {
+                                                    "apiVersion": {
+                                                        "type": "string"
+                                                    },
+                                                    "fieldPath": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "required": [
+                                                    "fieldPath"
+                                                ]
+                                            },
+                                            "resourceFieldRef": {
+                                                "type": "object",
+                                                "description": "Selects a resource of the container (only resources limits and requests are currently supported).",
+                                                "properties": {
+                                                    "containerName": {
+                                                        "type": "string"
+                                                    },
+                                                    "resource": {
+                                                        "type": "string"
+                                                    },
+                                                    "divisor": {
+                                                        "type": [
+                                                            "string",
+                                                            "integer",
+                                                            "number"
+                                                        ]
+                                                    }
+                                                },
+                                                "required": [
+                                                    "resource"
+                                                ]
+                                            },
+                                            "configMapKeyRef": {
+                                                "type": "object",
+                                                "description": "Selects a key of a ConfigMap.",
+                                                "properties": {
+                                                    "name": {
+                                                        "type": "string"
+                                                    },
+                                                    "key": {
+                                                        "type": "string"
+                                                    },
+                                                    "optional": {
+                                                        "type": "boolean"
+                                                    }
+                                                },
+                                                "required": [
+                                                    "key"
+                                                ]
+                                            },
+                                            "secretKeyRef": {
+                                                "type": "object",
+                                                "description": "Selects a key of a Secret.",
+                                                "properties": {
+                                                    "name": {
+                                                        "type": "string"
+                                                    },
+                                                    "key": {
+                                                        "type": "string"
+                                                    },
+                                                    "optional": {
+                                                        "type": "boolean"
+                                                    }
+                                                },
+                                                "required": [
+                                                    "key"
+                                                ]
+                                            }
+                                        }
+                                    }
+                                },
+                                "required": [
+                                    "name"
+                                ],
+                                "additionalProperties": false
+                            }
+                        },
+                        "envFrom": {
+                            "type": "array",
+                            "description": "list of environment variables to import from configMapRef and secretRef. They are appended to `orchestration.envFrom`, which the standalone gateway also receives.",
+                            "default": [],
+                            "items": {}
+                        },
+                        "envFromProvides": {
+                            "type": "array",
+                            "description": "names the cluster variables supplied by `orchestration.standaloneGateway.envFrom` so generated unified cluster defaults do not override them.",
+                            "default": [],
+                            "items": {}
+                        },
+                        "configuration": {
+                            "type": "string",
+                            "description": "if specified, contents will be used as the standalone gateway application.yaml. `orchestration.configuration` is not used by the standalone gateway.",
+                            "default": ""
+                        },
+                        "extraConfiguration": {
+                            "type": "array",
+                            "description": "can be used to add extra configuration files to the standalone gateway, with the same entry format as `orchestration.extraConfiguration`. They are appended to `orchestration.extraConfiguration`, which the standalone gateway also receives.",
+                            "default": [],
+                            "items": {}
+                        },
+                        "javaOpts": {
+                            "type": "string",
+                            "description": "can be used to set java options for the standalone gateway",
+                            "default": "-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp -XX:ErrorFile=/tmp/camunda_error%p.log -XX:+ExitOnOutOfMemoryError"
+                        },
+                        "command": {
+                            "type": "array",
+                            "description": "can be used to override the default command provided by the container image",
+                            "default": [],
+                            "items": {}
+                        },
+                        "service": {
+                            "type": "object",
+                            "properties": {
+                                "type": {
+                                    "type": "string",
+                                    "description": "defines the type of the standalone gateway Service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types",
+                                    "default": "ClusterIP"
+                                },
+                                "annotations": {
+                                    "type": "object",
+                                    "description": "can be used to define annotations, which will be applied to the standalone gateway Service",
+                                    "default": {},
+                                    "additionalProperties": {
+                                        "type": "string"
+                                    }
+                                },
+                                "loadBalancerIP": {
+                                    "type": "string",
+                                    "description": "defines public IP address for the standalone gateway Service when its type is LoadBalancer",
+                                    "default": ""
+                                },
+                                "loadBalancerSourceRanges": {
+                                    "type": "array",
+                                    "description": "defines source ranges allowed to reach the standalone gateway Service when its type is LoadBalancer",
+                                    "default": [],
+                                    "items": {}
+                                },
+                                "extraPorts": {
+                                    "type": "array",
+                                    "description": "can be used to expose any other ports which are required. Can be useful for exporters",
+                                    "default": [],
+                                    "items": {}
+                                }
+                            }
+                        },
+                        "serviceAccount": {
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean",
+                                    "description": "if true, a dedicated service account is created for the standalone gateway",
+                                    "default": false
+                                },
+                                "name": {
+                                    "type": "string",
+                                    "description": "can be used to set the name of the standalone gateway service account",
+                                    "default": ""
+                                },
+                                "annotations": {
+                                    "type": "object",
+                                    "description": "can be used to set the annotations of the standalone gateway service account",
+                                    "default": {},
+                                    "additionalProperties": true
+                                },
+                                "labels": {
+                                    "type": "object",
+                                    "description": "can be used to set the labels of the standalone gateway service account",
+                                    "default": {},
+                                    "additionalProperties": true
+                                },
+                                "automountServiceAccountToken": {
+                                    "type": "boolean",
+                                    "description": "can be used to control whether the service account token should be automatically mounted",
+                                    "default": false
+                                }
+                            }
+                        },
+                        "automountServiceAccountToken": {
+                            "type": [
+                                "boolean",
+                                "null"
+                            ],
+                            "description": "can be used to override the automatic mounting of the service account token at the pod level. When unset, the ServiceAccount configuration is used.",
+                            "default": null,
+                            "nullable": true
+                        },
+                        "podDisruptionBudget": {
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean",
+                                    "description": "if true a pod disruption budget is defined for the standalone gateway",
+                                    "default": false
+                                },
+                                "minAvailable": {
+                                    "type": [
+                                        "integer",
+                                        "string",
+                                        "null"
+                                    ],
+                                    "description": "can be used to set how many pods should be available. Be aware that if minAvailable is set, maxUnavailable will not be set (they are mutually exclusive).",
+                                    "default": 1
+                                },
+                                "maxUnavailable": {
+                                    "type": [
+                                        "integer",
+                                        "string",
+                                        "null"
+                                    ],
+                                    "description": "can be used to set how many pods should be at max. unavailable",
+                                    "default": null,
+                                    "nullable": true
+                                }
+                            }
+                        },
+                        "resources": {
+                            "type": "object",
+                            "properties": {
+                                "requests": {
+                                    "type": "object",
+                                    "properties": {
+                                        "cpu": {
+                                            "type": "string",
+                                            "description": "",
+                                            "default": "500m"
+                                        },
+                                        "memory": {
+                                            "type": "string",
+                                            "description": "",
+                                            "default": "1Gi"
+                                        }
+                                    },
+                                    "additionalProperties": true
+                                },
+                                "limits": {
+                                    "type": "object",
+                                    "properties": {
+                                        "cpu": {
+                                            "type": "string",
+                                            "description": "",
+                                            "default": "1000m"
+                                        },
+                                        "memory": {
+                                            "type": "string",
+                                            "description": "",
+                                            "default": "2Gi"
+                                        }
+                                    },
+                                    "additionalProperties": true
+                                }
+                            },
+                            "additionalProperties": true
+                        },
+                        "startupProbe": {
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean",
+                                    "description": "if true, the startup probe is enabled in the standalone gateway container",
+                                    "default": false
+                                },
+                                "scheme": {
+                                    "type": "string",
+                                    "description": "defines the startup probe schema used on calling the probePath",
+                                    "default": "HTTP"
+                                },
+                                "probePath": {
+                                    "type": "string",
+                                    "description": "defines the startup probe route used on the standalone gateway",
+                                    "default": "/actuator/health/startup"
+                                },
+                                "initialDelaySeconds": {
+                                    "type": "number",
+                                    "description": "defines the number of seconds after the container has started before the probe is initiated",
+                                    "default": 30
+                                },
+                                "periodSeconds": {
+                                    "type": "number",
+                                    "description": "defines how often the probe is executed",
+                                    "default": 30
+                                },
+                                "successThreshold": {
+                                    "type": "number",
+                                    "description": "defines how often it needs to be true to be marked as ready, after failure",
+                                    "default": 1
+                                },
+                                "failureThreshold": {
+                                    "type": "number",
+                                    "description": "defines when the probe is considered as failed so the Pod will be marked Unready",
+                                    "default": 5
+                                },
+                                "timeoutSeconds": {
+                                    "type": "number",
+                                    "description": "defines the seconds after the probe times out",
+                                    "default": 1
+                                }
+                            }
+                        },
+                        "readinessProbe": {
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean",
+                                    "description": "if true, the readiness probe is enabled in the standalone gateway container",
+                                    "default": true
+                                },
+                                "scheme": {
+                                    "type": "string",
+                                    "description": "defines the readiness probe schema used on calling the probePath",
+                                    "default": "HTTP"
+                                },
+                                "probePath": {
+                                    "type": "string",
+                                    "description": "defines the readiness probe route used on the standalone gateway",
+                                    "default": "/actuator/health/readiness"
+                                },
+                                "initialDelaySeconds": {
+                                    "type": "number",
+                                    "description": "defines the number of seconds after the container has started before the probe is initiated",
+                                    "default": 30
+                                },
+                                "periodSeconds": {
+                                    "type": "number",
+                                    "description": "defines how often the probe is executed",
+                                    "default": 30
+                                },
+                                "successThreshold": {
+                                    "type": "number",
+                                    "description": "defines how often it needs to be true to be marked as ready, after failure",
+                                    "default": 1
+                                },
+                                "failureThreshold": {
+                                    "type": "number",
+                                    "description": "defines when the probe is considered as failed so the Pod will be marked Unready",
+                                    "default": 5
+                                },
+                                "timeoutSeconds": {
+                                    "type": "number",
+                                    "description": "defines the seconds after the probe times out",
+                                    "default": 1
+                                }
+                            }
+                        },
+                        "livenessProbe": {
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean",
+                                    "description": "if true, the liveness probe is enabled in the standalone gateway container",
+                                    "default": false
+                                },
+                                "scheme": {
+                                    "type": "string",
+                                    "description": "defines the liveness probe schema used on calling the probePath",
+                                    "default": "HTTP"
+                                },
+                                "probePath": {
+                                    "type": "string",
+                                    "description": "defines the liveness probe route used on the standalone gateway",
+                                    "default": "/actuator/health/liveness"
+                                },
+                                "initialDelaySeconds": {
+                                    "type": "number",
+                                    "description": "defines the number of seconds after the container has started before the probe is initiated",
+                                    "default": 30
+                                },
+                                "periodSeconds": {
+                                    "type": "number",
+                                    "description": "defines how often the probe is executed",
+                                    "default": 30
+                                },
+                                "successThreshold": {
+                                    "type": "number",
+                                    "description": "defines how often it needs to be true to be considered successful after having failed",
+                                    "default": 1
+                                },
+                                "failureThreshold": {
+                                    "type": "number",
+                                    "description": "defines when the probe is considered as failed so the container will be restarted",
+                                    "default": 5
+                                },
+                                "timeoutSeconds": {
+                                    "type": "number",
+                                    "description": "defines the seconds after the probe times out",
+                                    "default": 1
+                                }
+                            }
+                        },
+                        "podSecurityContext": {
+                            "type": "object",
+                            "properties": {
+                                "runAsNonRoot": {
+                                    "type": "boolean",
+                                    "description": "run as non root",
+                                    "default": true
+                                },
+                                "fsGroup": {
+                                    "type": "number",
+                                    "description": "",
+                                    "default": 1001
+                                },
+                                "seccompProfile": {
+                                    "type": "object",
+                                    "properties": {
+                                        "type": {
+                                            "type": "string",
+                                            "description": "",
+                                            "default": "RuntimeDefault"
+                                        }
+                                    },
+                                    "additionalProperties": true
+                                }
+                            },
+                            "additionalProperties": true
+                        },
+                        "containerSecurityContext": {
+                            "type": "object",
+                            "properties": {
+                                "allowPrivilegeEscalation": {
+                                    "type": "boolean",
+                                    "description": "",
+                                    "default": false
+                                },
+                                "privileged": {
+                                    "type": "boolean",
+                                    "description": "",
+                                    "default": false
+                                },
+                                "readOnlyRootFilesystem": {
+                                    "type": "boolean",
+                                    "description": "",
+                                    "default": true
+                                },
+                                "runAsNonRoot": {
+                                    "type": "boolean",
+                                    "description": "",
+                                    "default": true
+                                },
+                                "runAsUser": {
+                                    "type": "number",
+                                    "description": "",
+                                    "default": 1001
+                                },
+                                "seccompProfile": {
+                                    "type": "object",
+                                    "properties": {
+                                        "type": {
+                                            "type": "string",
+                                            "description": "",
+                                            "default": "RuntimeDefault"
+                                        }
+                                    },
+                                    "additionalProperties": true
+                                }
+                            },
+                            "additionalProperties": true
+                        },
+                        "podAnnotations": {
+                            "type": "object",
+                            "description": "can be used to define extra standalone gateway Pod annotations. Supports templating (e.g., {{ .Release.Name }}).",
+                            "default": {},
+                            "additionalProperties": true
+                        },
+                        "podLabels": {
+                            "type": "object",
+                            "description": "can be used to define extra standalone gateway Pod labels. Supports templating (e.g., {{ .Release.Name }}).",
+                            "default": {},
+                            "additionalProperties": true
+                        },
+                        "priorityClassName": {
+                            "type": "string",
+                            "description": "can be used to define the standalone gateway Pods priority https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/#priorityclass",
+                            "default": ""
+                        },
+                        "nodeSelector": {
+                            "type": "object",
+                            "description": "can be used to define on which nodes the standalone gateway Pods should run",
+                            "default": {},
+                            "additionalProperties": true
+                        },
+                        "tolerations": {
+                            "type": "array",
+                            "description": "can be used to define pod toleration's https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/",
+                            "default": [],
+                            "items": {}
+                        },
+                        "topologySpreadConstraints": {
+                            "type": "array",
+                            "description": "can be used to define how standalone gateway Pods are spread across topology domains https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/",
+                            "default": [],
+                            "items": {}
+                        },
+                        "extraVolumes": {
+                            "type": "array",
+                            "description": "can be used to define extra volumes for the standalone gateway Pods",
+                            "default": [],
+                            "items": {}
+                        },
+                        "extraVolumeMounts": {
+                            "type": "array",
+                            "description": "can be used to mount extra volumes for the standalone gateway Pods",
+                            "default": [],
+                            "items": {}
+                        },
+                        "initContainers": {
+                            "type": "array",
+                            "description": "can be used to set up extra init containers for the standalone gateway Pods",
+                            "default": [],
+                            "items": {}
+                        },
+                        "sidecars": {
+                            "type": "array",
+                            "description": "can be used to attach extra containers to the standalone gateway Pods",
+                            "default": [],
+                            "items": {}
+                        },
+                        "dnsPolicy": {
+                            "type": "string",
+                            "description": "https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy",
+                            "default": ""
+                        },
+                        "dnsConfig": {
+                            "type": "object",
+                            "description": "https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config",
+                            "default": {}
+                        },
+                        "gateway": {
+                            "type": "object",
+                            "properties": {
+                                "rest": {
+                                    "type": "object",
+                                    "properties": {
+                                        "enabled": {
+                                            "type": "boolean",
+                                            "description": "if true, an HTTPRoute on its own host exposes the standalone gateway REST API through `global.gateway`, and a matching listener is added when the chart creates the Gateway resource. The Orchestration Cluster HTTPRoute is not changed.",
+                                            "default": false
+                                        },
+                                        "host": {
+                                            "type": "string",
+                                            "description": "defines the host of the standalone gateway REST API HTTPRoute",
+                                            "default": "api-{{ .Values.global.host }}"
+                                        },
+                                        "sectionName": {
+                                            "type": "string",
+                                            "description": "can be used to set the Gateway listener the HTTPRoute attaches to. Defaults to `standalone-rests` with TLS and `standalone-rest` without.",
+                                            "default": ""
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "ingress": {
+                            "type": "object",
+                            "properties": {
+                                "rest": {
+                                    "type": "object",
+                                    "properties": {
+                                        "enabled": {
+                                            "type": "boolean",
+                                            "description": "if true, an Ingress on its own host exposes the standalone gateway REST API. The Orchestration Cluster Ingress is not changed.",
+                                            "default": false
+                                        },
+                                        "external": {
+                                            "type": "boolean",
+                                            "description": "if true, the Ingress object will not be rendered, but the host is still used for the external REST URL. This setting is used when a non-Ingress resource is used to access the standalone gateway.",
+                                            "default": false
+                                        },
+                                        "className": {
+                                            "type": "string",
+                                            "description": "defines the class or configuration of ingress which should be used by the controller",
+                                            "default": "nginx"
+                                        },
+                                        "path": {
+                                            "type": "string",
+                                            "description": "defines the path which is associated with the standalone gateway REST API https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules",
+                                            "default": "/"
+                                        },
+                                        "pathType": {
+                                            "type": "string",
+                                            "description": "can be used to define the Ingress path type. https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types",
+                                            "default": "Prefix"
+                                        },
+                                        "host": {
+                                            "type": "string",
+                                            "description": "defines the host of the ingress rule. It must differ from `global.host`, which serves the web applications. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules",
+                                            "default": ""
+                                        },
+                                        "tls": {
+                                            "type": "object",
+                                            "properties": {
+                                                "enabled": {
+                                                    "type": "boolean",
+                                                    "description": "if true, then tls is configured on the ingress resource. If enabled the host needs to be defined.",
+                                                    "default": false
+                                                },
+                                                "secretName": {
+                                                    "type": "string",
+                                                    "description": "defines the secret name which contains the TLS private key and certificate",
+                                                    "default": "camunda-platform-zeebe-standalone-gateway-rest"
+                                                }
+                                            }
+                                        },
+                                        "annotations": {
+                                            "type": "object",
+                                            "description": "defines the ingress related annotations, consumed mostly by the ingress controller.",
+                                            "default": {},
+                                            "additionalProperties": true
+                                        },
+                                        "labels": {
+                                            "type": "object",
+                                            "description": "can be used to define labels which will be applied to the standalone gateway REST ingress resource",
+                                            "default": {},
+                                            "additionalProperties": true
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "affinity": {
+                            "type": "object",
+                            "description": "if specified, the standalone gateway pod's scheduling constraints. See https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity.",
+                            "default": {},
+                            "additionalProperties": true
+                        }
+                    }
+                },
                 "contextPath": {
                     "type": "string",
                     "description": "can be used to make Orchestration Cluster web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.",
