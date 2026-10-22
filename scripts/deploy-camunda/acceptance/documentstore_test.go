@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package acceptance
 
 import (
 	"context"
@@ -203,8 +203,8 @@ func TestRunDocumentStoreAcceptanceCleansUp(t *testing.T) {
 					return testResponse(http.StatusServiceUnavailable, ""), nil
 				},
 			}
-			err := runDocumentStoreAcceptance(context.Background(), documentStoreAcceptanceOptions{
-				namespace: "test-namespace", release: "integration", kubeContext: "test-cluster",
+			err := runDocumentStoreAcceptance(context.Background(), DocumentStoreAcceptanceOptions{
+				Namespace: "test-namespace", Release: "integration", KubeContext: "test-cluster",
 			}, deps)
 			require.Error(t, err)
 			if failure == "store" {
@@ -217,14 +217,4 @@ func TestRunDocumentStoreAcceptanceCleansUp(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestDocumentStoreAcceptanceCommand(t *testing.T) {
-	t.Parallel()
-	parent := newAcceptanceCommand()
-	command, _, err := parent.Find([]string{"documentstore-s3-compatible"})
-	require.NoError(t, err)
-	assert.Equal(t, "documentstore-s3-compatible", command.Name())
-	parent.SetArgs([]string{"documentstore-s3-compatible", "--namespace=", "--release=integration"})
-	require.ErrorContains(t, parent.Execute(), "namespace and release are required")
 }

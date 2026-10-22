@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package acceptance
 
 import (
 	"bytes"
@@ -34,13 +34,11 @@ import (
 	"strings"
 	"sync"
 	"time"
-
-	"github.com/spf13/cobra"
 )
 
-type physicalTenantAcceptanceOptions struct {
-	namespace, release, hubNamespace, hubHost, orchHost, kubeContext string
-	optimizePaths                                                    map[string]string
+type PhysicalTenantAcceptanceOptions struct {
+	Namespace, Release, HubNamespace, HubHost, OrchHost, KubeContext string
+	OptimizePaths                                                    map[string]string
 }
 
 type acceptanceProcess interface {
@@ -98,53 +96,20 @@ func (p *osAcceptanceProcess) Stop() error {
 	return p.cmd.Process.Kill()
 }
 
-func newAcceptanceCommand() *cobra.Command {
-	parent := &cobra.Command{Use: "acceptance", Short: "Run repository acceptance checks"}
-	var opts physicalTenantAcceptanceOptions
-	cmd := &cobra.Command{
-		Use:   "physical-tenant-exporters",
-		Short: "Validate Physical Tenant exporters and Optimize isolation",
-		RunE: func(cmd *cobra.Command, _ []string) error {
-			return runPhysicalTenantAcceptance(cmd.Context(), opts, productionAcceptanceDependencies(opts))
-		},
-	}
-	f := cmd.Flags()
-	f.StringVar(&opts.namespace, "namespace", os.Getenv("TEST_NAMESPACE"), "Camunda namespace")
-	f.StringVar(&opts.release, "release", envDefault("RELEASE_NAME", "integration"), "Camunda release")
-	f.StringVar(&opts.hubNamespace, "hub-namespace", os.Getenv("HUB_NAMESPACE"), "Hub namespace")
-	f.StringVar(&opts.hubHost, "hub-host", os.Getenv("HUB_HOST"), "Hub hostname")
-	f.StringVar(&opts.orchHost, "orchestration-host", os.Getenv("ORCH_HOST"), "Orchestration hostname")
-	f.StringVar(&opts.kubeContext, "kube-context", os.Getenv("KUBE_CONTEXT"), "kubectl context")
-	paths := map[string]*string{}
-	for _, tenant := range []string{"default", "tenanta", "tenantb"} {
-		paths[tenant] = new(string)
-	}
-	f.StringVar(paths["default"], "default-optimize-path", os.Getenv("OPTDEFAULT_OPTIMIZE_CONTEXT_PATH"), "Default Optimize context path")
-	f.StringVar(paths["tenanta"], "tenanta-optimize-path", os.Getenv("OPTTA_OPTIMIZE_CONTEXT_PATH"), "Tenant A Optimize context path")
-	f.StringVar(paths["tenantb"], "tenantb-optimize-path", os.Getenv("OPTTB_OPTIMIZE_CONTEXT_PATH"), "Tenant B Optimize context path")
-	cmd.PreRunE = func(*cobra.Command, []string) error {
-		opts.optimizePaths = map[string]string{}
-		for tenant, value := range paths {
-			opts.optimizePaths[tenant] = *value
-		}
-		return validatePhysicalTenantOptions(opts)
-	}
-	parent.AddCommand(cmd, newDocumentStoreAcceptanceCommand())
-	return parent
+// VenomClientSecretKey is the integration-test-credentials key holding the venom client's
+// secret. The chart's identity layers register venom with this key (existingSecretKey), and the
+// physical tenant acceptance check reads the same key.
+const VenomClientSecretKey = "identity-admin-client-password"
+
+func RunPhysicalTenant(ctx context.Context, opts PhysicalTenantAcceptanceOptions) error {
+	return runPhysicalTenantAcceptance(ctx, opts, productionAcceptanceDependencies(opts))
 }
 
-func envDefault(name, fallback string) string {
-	if value := os.Getenv(name); value != "" {
-		return value
-	}
-	return fallback
-}
-
-func validatePhysicalTenantOptions(opts physicalTenantAcceptanceOptions) error {
+func ValidatePhysicalTenantOptions(opts PhysicalTenantAcceptanceOptions) error {
 	required := map[string]string{
-		"namespace": opts.namespace, "hub-namespace": opts.hubNamespace, "hub-host": opts.hubHost,
-		"orchestration-host": opts.orchHost, "default-optimize-path": opts.optimizePaths["default"],
-		"tenanta-optimize-path": opts.optimizePaths["tenanta"], "tenantb-optimize-path": opts.optimizePaths["tenantb"],
+		"namespace": opts.Namespace, "hub-namespace": opts.HubNamespace, "hub-host": opts.HubHost,
+		"orchestration-host": opts.OrchHost, "default-optimize-path": opts.OptimizePaths["default"],
+		"tenanta-optimize-path": opts.OptimizePaths["tenanta"], "tenantb-optimize-path": opts.OptimizePaths["tenantb"],
 	}
 	for name, value := range required {
 		if strings.TrimSpace(value) == "" {
@@ -154,10 +119,10 @@ func validatePhysicalTenantOptions(opts physicalTenantAcceptanceOptions) error {
 	return nil
 }
 
-func productionAcceptanceDependencies(opts physicalTenantAcceptanceOptions) acceptanceDependencies {
+func productionAcceptanceDependencies(opts PhysicalTenantAcceptanceOptions) acceptanceDependencies {
 	kubectlBase := func() []string {
-		if opts.kubeContext != "" {
-			return []string{"--context", opts.kubeContext}
+		if opts.KubeContext != "" {
+			return []string{"--context", opts.KubeContext}
 		}
 		return nil
 	}
@@ -206,7 +171,7 @@ type partitionState struct {
 	ExportedPosition int64  `json:"exportedPosition"`
 }
 
-func runPhysicalTenantAcceptance(ctx context.Context, opts physicalTenantAcceptanceOptions, deps acceptanceDependencies) (err error) {
+func runPhysicalTenantAcceptance(ctx context.Context, opts PhysicalTenantAcceptanceOptions, deps acceptanceDependencies) (err error) {
 	var partitionsBody, brokerLog string
 	fail := func(cause error) error {
 		var exporters []string
@@ -218,7 +183,7 @@ func runPhysicalTenantAcceptance(ctx context.Context, opts physicalTenantAccepta
 		return fmt.Errorf("%w\n--- partitions ---\n%s\n--- exporter log lines ---\n%s", cause, defaultText(partitionsBody), defaultText(strings.Join(exporters, "\n")))
 	}
 
-	process, err := deps.startForward(ctx, []string{"-n", opts.namespace, "port-forward", "statefulset/" + opts.release + "-zeebe", ":9600"})
+	process, err := deps.startForward(ctx, []string{"-n", opts.Namespace, "port-forward", "statefulset/" + opts.Release + "-zeebe", ":9600"})
 	if err != nil {
 		return fail(fmt.Errorf("start management port-forward: %w", err))
 	}
@@ -240,7 +205,7 @@ func runPhysicalTenantAcceptance(ctx context.Context, opts physicalTenantAccepta
 	}
 	for attempt := 1; attempt <= 60; attempt++ {
 		if !process.Alive() {
-			return fail(fmt.Errorf("port-forward to %s-zeebe died before every physical tenant reported exporting: %s", opts.release, strings.TrimSpace(process.Output())))
+			return fail(fmt.Errorf("port-forward to %s-zeebe died before every physical tenant reported exporting: %s", opts.Release, strings.TrimSpace(process.Output())))
 		}
 		body, _, requestErr := httpGet(ctx, deps.doHTTP, managementURL+actuator+"/partitions", "")
 		if requestErr == nil {
@@ -258,7 +223,7 @@ func runPhysicalTenantAcceptance(ctx context.Context, opts physicalTenantAccepta
 		}
 	}
 
-	commandArgs := kubectlArgs(opts.kubeContext, "logs", "-n", opts.namespace, "statefulset/"+opts.release+"-zeebe", "--all-containers")
+	commandArgs := kubectlArgs(opts.KubeContext, "logs", "-n", opts.Namespace, "statefulset/"+opts.Release+"-zeebe", "--all-containers")
 	logBytes, commandErr := deps.runCommand(ctx, "kubectl", commandArgs...)
 	brokerLog = string(logBytes)
 	if commandErr != nil {
@@ -275,7 +240,7 @@ func runPhysicalTenantAcceptance(ctx context.Context, opts physicalTenantAccepta
 	fmt.Fprintln(deps.out, "Legacy exporter opened for all 3 physical tenants, with no blocked exporters.")
 
 	secretNames := map[string]string{
-		"venom": venomClientSecretKey, "default": "identity-optimize-default-client-token",
+		"venom": VenomClientSecretKey, "default": "identity-optimize-default-client-token",
 		"tenanta": "identity-optimize-tenanta-client-token", "tenantb": "identity-optimize-tenantb-client-token",
 	}
 	tokens := map[string]string{}
@@ -288,7 +253,7 @@ func runPhysicalTenantAcceptance(ctx context.Context, opts physicalTenantAccepta
 		if tenant == "venom" {
 			clientID = "venom"
 		}
-		tokens[tenant], secretErr = clientToken(ctx, deps.doHTTP, "https://"+opts.hubHost, clientID, secret)
+		tokens[tenant], secretErr = clientToken(ctx, deps.doHTTP, "https://"+opts.HubHost, clientID, secret)
 		if secretErr != nil {
 			return fail(secretErr)
 		}
@@ -309,17 +274,17 @@ func runPhysicalTenantAcceptance(ctx context.Context, opts physicalTenantAccepta
 	processes := map[string]string{}
 	for _, tenant := range []string{"default", "tenanta", "tenantb"} {
 		processID := "pt-accept-" + tenant + "-" + runID
-		key, deployErr := deployAcceptanceProcess(ctx, deps.doHTTP, deps.sleep, "https://"+opts.orchHost, tenant, processID, tokens["venom"])
+		key, deployErr := deployAcceptanceProcess(ctx, deps.doHTTP, deps.sleep, "https://"+opts.OrchHost, tenant, processID, tokens["venom"])
 		if deployErr != nil {
 			return fail(deployErr)
 		}
-		if startErr := startAcceptanceProcess(ctx, deps.doHTTP, deps.sleep, "https://"+opts.orchHost, tenant, key, processID, tokens["venom"]); startErr != nil {
+		if startErr := startAcceptanceProcess(ctx, deps.doHTTP, deps.sleep, "https://"+opts.OrchHost, tenant, key, processID, tokens["venom"]); startErr != nil {
 			return fail(startErr)
 		}
 		processes[tenant] = processID
 	}
 	for _, tenant := range []string{"default", "tenanta", "tenantb"} {
-		if importErr := waitForOptimizeImport(ctx, deps, "https://"+opts.hubHost+opts.optimizePaths[tenant], tenant, processes[tenant], tokens[tenant], 60); importErr != nil {
+		if importErr := waitForOptimizeImport(ctx, deps, "https://"+opts.HubHost+opts.OptimizePaths[tenant], tenant, processes[tenant], tokens[tenant], 60); importErr != nil {
 			return fail(importErr)
 		}
 	}
@@ -330,7 +295,7 @@ func runPhysicalTenantAcceptance(ctx context.Context, opts physicalTenantAccepta
 				siblings = append(siblings, processID)
 			}
 		}
-		if isolationErr := assertOptimizeExcludesSiblings(ctx, deps, "https://"+opts.hubHost+opts.optimizePaths[tenant], tenant, tokens[tenant], siblings, 6); isolationErr != nil {
+		if isolationErr := assertOptimizeExcludesSiblings(ctx, deps, "https://"+opts.HubHost+opts.OptimizePaths[tenant], tenant, tokens[tenant], siblings, 6); isolationErr != nil {
 			return fail(isolationErr)
 		}
 	}
@@ -338,11 +303,11 @@ func runPhysicalTenantAcceptance(ctx context.Context, opts physicalTenantAccepta
 		if source == "venom" {
 			continue
 		}
-		for target, path := range opts.optimizePaths {
+		for target, path := range opts.OptimizePaths {
 			if source == target {
 				continue
 			}
-			_, status, requestErr := httpGet(ctx, deps.doHTTP, "https://"+opts.hubHost+path+"/api/definition/process/keys", token)
+			_, status, requestErr := httpGet(ctx, deps.doHTTP, "https://"+opts.HubHost+path+"/api/definition/process/keys", token)
 			if requestErr != nil {
 				return fail(fmt.Errorf("check %s credentials against %s Optimize: %w", source, target, requestErr))
 			}
@@ -423,8 +388,8 @@ func partitionsHealthy(body []byte) bool {
 	return true
 }
 
-func readSecret(ctx context.Context, deps acceptanceDependencies, opts physicalTenantAcceptanceOptions, key string) (string, error) {
-	args := kubectlArgs(opts.kubeContext, "-n", opts.hubNamespace, "get", "secret", "integration-test-credentials", "-o", "jsonpath={.data."+key+"}")
+func readSecret(ctx context.Context, deps acceptanceDependencies, opts PhysicalTenantAcceptanceOptions, key string) (string, error) {
+	args := kubectlArgs(opts.KubeContext, "-n", opts.HubNamespace, "get", "secret", "integration-test-credentials", "-o", "jsonpath={.data."+key+"}")
 	body, err := deps.runCommand(ctx, "kubectl", args...)
 	if err != nil {
 		return "", fmt.Errorf("read secret %s: %w: %s", key, err, strings.TrimSpace(string(body)))

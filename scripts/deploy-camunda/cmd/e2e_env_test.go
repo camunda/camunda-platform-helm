@@ -16,6 +16,7 @@ package cmd
 
 import (
 	"os"
+	"scripts/deploy-camunda/acceptance"
 	"strings"
 	"testing"
 
@@ -353,7 +354,7 @@ func TestE2EEnvMergeRejectsHalfConfiguredOptimizeBeforeRendering(t *testing.T) {
 }
 
 // The physical-tenants spec logs in as venom with VENOM_CLIENT_SECRET, which e2e-env resolves
-// from venomClientSecretKey. That key must stay the one the physicaltenants Hub layer registers
+// from acceptance.VenomClientSecretKey. That key must stay the one the physicaltenants Hub layer registers
 // venom with, or Keycloak rejects the client credentials.
 func TestVenomClientSecretKeyMatchesPhysicalTenantsHubLayer(t *testing.T) {
 	raw, err := os.ReadFile("../../../charts/camunda-platform-8.10/test/integration/scenarios/chart-full-setup/values/features/physicaltenants-hub.yaml")
@@ -371,7 +372,7 @@ func TestVenomClientSecretKeyMatchesPhysicalTenantsHubLayer(t *testing.T) {
 	require.NoError(t, yaml.Unmarshal(raw, &values))
 	for _, client := range values.Identity.Clients {
 		if client.ID == "venom" {
-			assert.Equal(t, venomClientSecretKey, client.Secret.ExistingSecretKey)
+			assert.Equal(t, acceptance.VenomClientSecretKey, client.Secret.ExistingSecretKey)
 			return
 		}
 	}

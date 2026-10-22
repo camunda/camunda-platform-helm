@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package acceptance
 
 import (
 	"context"
@@ -318,7 +318,7 @@ func TestReadSecretUsesContextAndDecodesValue(t *testing.T) {
 		assert.Equal(t, []string{"--context", "cluster", "-n", "hub", "get", "secret", "integration-test-credentials", "-o", "jsonpath={.data.key}"}, args)
 		return []byte(base64.StdEncoding.EncodeToString([]byte("secret"))), nil
 	}}
-	secret, err := readSecret(context.Background(), deps, physicalTenantAcceptanceOptions{hubNamespace: "hub", kubeContext: "cluster"}, "key")
+	secret, err := readSecret(context.Background(), deps, PhysicalTenantAcceptanceOptions{HubNamespace: "hub", KubeContext: "cluster"}, "key")
 	require.NoError(t, err)
 	assert.Equal(t, "secret", secret)
 }
@@ -339,10 +339,10 @@ func (p *fakeAcceptanceProcess) Stop() error {
 func TestRunPhysicalTenantAcceptance(t *testing.T) {
 	t.Parallel()
 
-	opts := physicalTenantAcceptanceOptions{
-		namespace: "camunda", release: "integration", hubNamespace: "hub", hubHost: "hub.example",
-		orchHost: "orch.example", kubeContext: "cluster",
-		optimizePaths: map[string]string{"default": "/opt-default", "tenanta": "/opt-a", "tenantb": "/opt-b"},
+	opts := PhysicalTenantAcceptanceOptions{
+		Namespace: "camunda", Release: "integration", HubNamespace: "hub", HubHost: "hub.example",
+		OrchHost: "orch.example", KubeContext: "cluster",
+		OptimizePaths: map[string]string{"default": "/opt-default", "tenanta": "/opt-a", "tenantb": "/opt-b"},
 	}
 	process := &fakeAcceptanceProcess{alive: true, output: "Forwarding from 127.0.0.1:43123 -> 9600\n"}
 	processes := map[string]string{}
