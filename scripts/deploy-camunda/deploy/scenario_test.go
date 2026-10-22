@@ -375,7 +375,7 @@ func TestGenerateCompactRealmName(t *testing.T) {
 	})
 
 	t.Run("36-char limit enforced", func(t *testing.T) {
-		for i := 0; i < 100; i++ {
+		for range 100 {
 			name := generateCompactRealmName("some-long-namespace", "some-long-scenario", "abcd1234")
 			if len(name) > 36 {
 				t.Fatalf("realm name exceeds 36 chars: %q (%d)", name, len(name))

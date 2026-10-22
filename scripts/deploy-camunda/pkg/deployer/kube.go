@@ -105,7 +105,7 @@ func decideLifecycle(created bool, initial map[string]string, initialErr error, 
 // last error once attempts run out.
 func retryNamespaceAnnotations(ctx context.Context, kubeClient *kube.Client, namespace string, attempts int, wait time.Duration) (map[string]string, error) {
 	var err error
-	for i := 0; i < attempts; i++ {
+	for range attempts {
 		var annotations map[string]string
 		if annotations, err = readNamespaceAnnotations(ctx, kubeClient, namespace); err == nil {
 			return annotations, nil

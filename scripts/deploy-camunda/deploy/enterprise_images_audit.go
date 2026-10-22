@@ -132,9 +132,8 @@ func auditResult(res imageResolution) EnterpriseImageResult {
 }
 
 func causeText(err error) string {
-	var exit *exec.ExitError
-	if errors.As(err, &exit) {
-		for _, line := range strings.Split(string(exit.Stderr), "\n") {
+	if exit, ok := errors.AsType[*exec.ExitError](err); ok {
+		for line := range strings.SplitSeq(string(exit.Stderr), "\n") {
 			if line = strings.TrimSpace(line); line != "" {
 				return fmt.Sprintf("%v: %s", err, line)
 			}

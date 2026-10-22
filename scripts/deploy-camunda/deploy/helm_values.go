@@ -40,7 +40,7 @@ type InstalledPrefixes struct {
 // GetInstalledValues runs `helm get values <release> -n <ns> -o yaml` and
 // returns the parsed user-supplied values as a nested map. Returns a nil map
 // (no error) if the release does not exist.
-func GetInstalledValues(ctx context.Context, namespace, release, kubeContext string) (map[string]interface{}, error) {
+func GetInstalledValues(ctx context.Context, namespace, release, kubeContext string) (map[string]any, error) {
 	callCtx, cancel := context.WithTimeout(ctx, helmGetValuesTimeout)
 	defer cancel()
 
@@ -72,7 +72,7 @@ func GetInstalledValues(ctx context.Context, namespace, release, kubeContext str
 		return nil, nil
 	}
 
-	var vals map[string]interface{}
+	var vals map[string]any
 	if err := yaml.Unmarshal(out, &vals); err != nil {
 		return nil, fmt.Errorf("failed to parse helm values YAML: %w", err)
 	}
@@ -98,7 +98,7 @@ func ReadInstalledPrefixes(ctx context.Context, namespace, release, kubeContext 
 
 // readPrefixesFromMap extracts index prefix values from a parsed Helm values map.
 // Factored out from ReadInstalledPrefixes for direct unit testing.
-func readPrefixesFromMap(vals map[string]interface{}) InstalledPrefixes {
+func readPrefixesFromMap(vals map[string]any) InstalledPrefixes {
 	var result InstalledPrefixes
 
 	// orchestration.index.prefix
@@ -121,7 +121,7 @@ func readPrefixesFromMap(vals map[string]interface{}) InstalledPrefixes {
 // getNestedString traverses a nested map by successive keys and returns the
 // leaf value as a string. Returns "" if any key is missing or the leaf is not
 // a string.
-func getNestedString(m map[string]interface{}, keys ...string) string {
+func getNestedString(m map[string]any, keys ...string) string {
 	current := m
 	for i, key := range keys {
 		v, ok := current[key]
@@ -138,7 +138,7 @@ func getNestedString(m map[string]interface{}, keys ...string) string {
 			}
 		}
 		// Intermediate — must be a map
-		next, ok := v.(map[string]interface{})
+		next, ok := v.(map[string]any)
 		if !ok {
 			return ""
 		}
@@ -150,7 +150,7 @@ func getNestedString(m map[string]interface{}, keys ...string) string {
 // findEnvValue searches an env-style array ([]map with "name"/"value" keys)
 // at the given path in the nested map, returning the "value" for the entry
 // whose "name" matches envName. Returns "" if not found.
-func findEnvValue(m map[string]interface{}, path []string, envName string) string {
+func findEnvValue(m map[string]any, path []string, envName string) string {
 	if len(path) == 0 {
 		return ""
 	}
@@ -161,7 +161,7 @@ func findEnvValue(m map[string]interface{}, path []string, envName string) strin
 		if !ok {
 			return ""
 		}
-		next, ok := v.(map[string]interface{})
+		next, ok := v.(map[string]any)
 		if !ok {
 			return ""
 		}
@@ -175,14 +175,14 @@ func findEnvValue(m map[string]interface{}, path []string, envName string) strin
 		return ""
 	}
 
-	arr, ok := arrRaw.([]interface{})
+	arr, ok := arrRaw.([]any)
 	if !ok {
 		return ""
 	}
 
 	// Search for the env var by name
 	for _, item := range arr {
-		entry, ok := item.(map[string]interface{})
+		entry, ok := item.(map[string]any)
 		if !ok {
 			continue
 		}

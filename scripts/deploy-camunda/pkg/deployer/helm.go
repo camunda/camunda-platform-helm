@@ -214,7 +214,7 @@ func guardedCause(runErr error, guard *imagePullGuard, o types.Options, release 
 }
 
 func helmWaitTimedOut(stderr string) bool {
-	for _, line := range strings.Split(stderr, "\n") {
+	for line := range strings.SplitSeq(stderr, "\n") {
 		message, found := strings.CutPrefix(strings.TrimSpace(line), "Error: ")
 		if !found {
 			continue
@@ -316,10 +316,10 @@ func lastReadinessFailure(pod corev1.Pod, container corev1.ContainerStatus, even
 			continue
 		}
 		observed := event.LastTimestamp.Time
-		if event.EventTime.Time.After(observed) {
+		if event.EventTime.After(observed) {
 			observed = event.EventTime.Time
 		}
-		if event.Series != nil && event.Series.LastObservedTime.Time.After(observed) {
+		if event.Series != nil && event.Series.LastObservedTime.After(observed) {
 			observed = event.Series.LastObservedTime.Time
 		}
 		if observed.After(latest) && !observed.Before(container.State.Running.StartedAt.Time) {

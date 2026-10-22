@@ -17,6 +17,7 @@ package deploy
 import (
 	"context"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -315,7 +316,7 @@ func generateDebugValuesFile(outputDir string, flags *config.RuntimeFlags) (stri
 
 			// For debugging, set clusterSize, partitionCount, and replicationFactor to 1
 			// to avoid complexity with multiple replicas during debug sessions
-			yamlContent.WriteString(fmt.Sprintf(`orchestration:
+			fmt.Fprintf(&yamlContent, `orchestration:
   clusterSize: "1"
   partitionCount: "1"
   replicationFactor: "1"
@@ -328,7 +329,7 @@ func generateDebugValuesFile(outputDir string, flags *config.RuntimeFlags) (stri
         protocol: TCP
         port: %d
         targetPort: %d
-`, debugJavaOpts, debugCfg.Port, debugCfg.Port))
+`, debugJavaOpts, debugCfg.Port, debugCfg.Port)
 
 			logging.Logger.Info().
 				Str("component", "orchestration").
@@ -345,12 +346,12 @@ func generateDebugValuesFile(outputDir string, flags *config.RuntimeFlags) (stri
 			)
 
 			// Set replicas to 1 for easier debugging
-			yamlContent.WriteString(fmt.Sprintf(`connectors:
+			fmt.Fprintf(&yamlContent, `connectors:
   replicas: 1
   env:
     - name: JAVA_TOOL_OPTIONS
       value: "%s"
-`, debugJavaOpts))
+`, debugJavaOpts)
 
 			logging.Logger.Info().
 				Str("component", "connectors").
@@ -426,9 +427,7 @@ func buildScenarioEnv(scenarioCtx *ScenarioContext, flags *config.RuntimeFlags) 
 	if err != nil {
 		return nil, fmt.Errorf("failed to read env file %q: %w", envFile, err)
 	}
-	for k, v := range dotenvMap {
-		envMap[k] = v
-	}
+	maps.Copy(envMap, dotenvMap)
 
 	// 3. Apply scenario-specific overrides.
 	envMap["KEYCLOAK_REALM"] = scenarioCtx.KeycloakRealm
@@ -446,9 +445,7 @@ func buildScenarioEnv(scenarioCtx *ScenarioContext, flags *config.RuntimeFlags) 
 	envMap["FLOW"] = flags.Deployment.Flow
 
 	// 4. Apply per-entry extra environment variables (e.g., VENOM_CLIENT_ID, CONNECTORS_CLIENT_ID).
-	for k, v := range flags.ExtraEnv {
-		envMap[k] = v
-	}
+	maps.Copy(envMap, flags.ExtraEnv)
 
 	// 5. Set Keycloak versioned environment variables.
 	if flags.Auth.KeycloakHost != "" {
@@ -787,9 +784,7 @@ func prepareScenarioSecrets(flags *config.RuntimeFlags, opts values.Options, sce
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to generate test secrets: %w", err)
 	}
-	for k, v := range secrets {
-		opts.EnvOverrides[k] = v
-	}
+	maps.Copy(opts.EnvOverrides, secrets)
 	vaultSecretPath := filepath.Join(opts.OutputDir, "vault-mapped-secrets.yaml")
 	logging.Logger.Info().Str("scenario", scenario).Msg("Generating vault secrets")
 	mapping := flags.Secrets.VaultSecretMapping
