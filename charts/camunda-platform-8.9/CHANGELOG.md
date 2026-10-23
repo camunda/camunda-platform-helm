@@ -1,5 +1,20 @@
 # Changelog
 
+## [14.12.0](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.9-14.11.2...camunda-platform-8.9-14.12.0) (2026-10-23)
+
+
+### Features
+
+* add quick install values with embedded H2 [ready] ([#7641](https://github.com/camunda/camunda-platform-helm/issues/7641)) ([6329edc](https://github.com/camunda/camunda-platform-helm/commit/6329edceaf52c000f4f4a5c3ee4a339cc1a823df))
+
+
+### Dependencies
+
+* update camunda-platform-images (patch) ([#7639](https://github.com/camunda/camunda-platform-helm/issues/7639)) ([6527ba0](https://github.com/camunda/camunda-platform-helm/commit/6527ba051a9d28c6c5fcc7479a052e2f1c03acad))
+* update camunda-platform-images (patch) ([#7670](https://github.com/camunda/camunda-platform-helm/issues/7670)) ([5180eae](https://github.com/camunda/camunda-platform-helm/commit/5180eae12ed196054950c0b3ff704fce37ad9ab4))
+* update patch-updates (patch) ([#7618](https://github.com/camunda/camunda-platform-helm/issues/7618)) ([c565042](https://github.com/camunda/camunda-platform-helm/commit/c56504296275003045f3a448bde080eedcde2d3d))
+* update patch-updates (patch) ([#7671](https://github.com/camunda/camunda-platform-helm/issues/7671)) ([922bc3e](https://github.com/camunda/camunda-platform-helm/commit/922bc3e8618f76d0b29a32af0c8fe5cccc382ac0))
+
 ## [14.11.2](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.9-14.11.1...camunda-platform-8.9-14.11.2) (2026-10-21)
 
 
