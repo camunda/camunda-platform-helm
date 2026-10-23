@@ -475,15 +475,15 @@ jobs:
         run: |
           echo "Deployment URL: ${{ needs.runner.outputs.deployment-url }}"
           echo "Namespace: ${NAMESPACE}"
-          echo "deployment-url=${{ steps.vars.outputs.ingress-host }}" >> $GITHUB_OUTPUT
-          echo "namespace=${NAMESPACE}" >> $GITHUB_OUTPUT
+          echo "deployment-url=${{ steps.vars.outputs.ingress-host }}" >> "$GITHUB_OUTPUT"
+          echo "namespace=${NAMESPACE}" >> "$GITHUB_OUTPUT"
 
       - name: Add GKE Workload Link to Summary
         run: |
           NAMESPACE="${{ steps.publish.outputs.namespace }}"
           ENCODED_NAMESPACE=$(python3 -c "import urllib.parse; print(urllib.parse.quote('$NAMESPACE', safe=''))")
           GKE_WORKLOAD_URL="https://console.cloud.google.com/kubernetes/workload/overview?authuser=1&project=camunda-distribution&pageState=(%22savedViews%22:(%22n%22:%5B%22${ENCODED_NAMESPACE}%22%5D))"
-          cat >> $GITHUB_STEP_SUMMARY << EOF
+          cat >> "$GITHUB_STEP_SUMMARY" << EOF
           ## Deployment Links
 
           | Resource | Link |

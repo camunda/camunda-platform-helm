@@ -197,10 +197,12 @@ jobs:
     steps:
       - name: Cache hit
         run: |
-          echo "## Cache Hit" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Scenario **${{ inputs.shortname }}** (${{ inputs.flows }}) for version **${{ inputs.camunda-version }}** has a valid cached result." >> $GITHUB_STEP_SUMMARY
-          echo "Skipping full GKE deploy+test cycle." >> $GITHUB_STEP_SUMMARY
+          {
+            echo "## Cache Hit"
+            echo ""
+            echo "Scenario **${{ inputs.shortname }}** (${{ inputs.flows }}) for version **${{ inputs.camunda-version }}** has a valid cached result."
+            echo "Skipping full GKE deploy+test cycle."
+          } >> "$GITHUB_STEP_SUMMARY"
 
   parse-platforms:
     name: Parse platforms - ${{ inputs.flows }}
@@ -248,7 +250,7 @@ jobs:
       exclude: "${{ inputs.exclude }}"
       platforms: "${{ matrix.platform }}"
       run-all-e2e-tests: "${{ inputs.run-all-e2e-tests }}"
-      values-digest: "true"
+      values-digest: ${{ 'true' }}
       camunda-helm-upgrade-version: "${{ inputs.camunda-helm-upgrade-version }}"
       camunda-version-previous: "${{ inputs.camunda-version-previous }}"
       always-delete-namespace: "${{ inputs.always-delete-namespace }}"

@@ -27,7 +27,8 @@ jobs:
             golang
       - name: Check gofmt across all Go files
         run: |
-          unformatted=$(gofmt -l $(git ls-files '*.go'))
+          mapfile -t go_files < <(git ls-files '*.go')
+          unformatted=$(gofmt -l "${go_files[@]}")
           if [ -n "$unformatted" ]; then
             echo "::error::These Go files are not gofmt-clean. Run 'gofmt -w' on them (or 'make go.fmt') and commit:"
             echo "$unformatted"

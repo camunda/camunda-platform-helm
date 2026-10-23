@@ -16,7 +16,6 @@ on:
       auth:
         description: The authentication type to use for the tests.
         required: true
-        default: keycloak
         type: string
       exclude:
         description: The test suites to exclude.
@@ -255,7 +254,6 @@ on:
       shortname:
         description: The shortname of the scenario.
         required: true
-        default: "eske"
         type: string
       namespace-prefix:
         description: The prefix for the namespace. This is necessary because we only have permissions to create namespaces with a specific prefix.
@@ -487,39 +485,39 @@ jobs:
 
       - name: Cluster Setup - Configure the namespace
         run: |
-          echo $TEST_NAMESPACE
+          echo "$TEST_NAMESPACE"
           # Check if namespace exists and if we own it (created by same run)
-          if kubectl get ns $TEST_NAMESPACE &>/dev/null; then
-            EXISTING_RUN_ID=$(kubectl get ns $TEST_NAMESPACE -o jsonpath='{.metadata.labels.github-run-id}' 2>/dev/null || echo "")
+          if kubectl get ns "$TEST_NAMESPACE" &>/dev/null; then
+            EXISTING_RUN_ID=$(kubectl get ns "$TEST_NAMESPACE" -o jsonpath='{.metadata.labels.github-run-id}' 2>/dev/null || echo "")
             if [[ "$EXISTING_RUN_ID" == "$GITHUB_WORKFLOW_RUN_ID" ]]; then
               echo "Namespace exists and was created by this run, deleting and recreating..."
-              kubectl delete ns $TEST_NAMESPACE
+              kubectl delete ns "$TEST_NAMESPACE"
             else
               echo "Namespace exists but was created by a different run (run-id: $EXISTING_RUN_ID), cleaning up stale release..."
               # Remove any stale Helm release left behind by a cancelled/completed previous run.
               # Without this, 'helm install' fails with "cannot re-use a name that is still in use".
-              helm uninstall integration --namespace $TEST_NAMESPACE --wait --timeout 2m0s 2>/dev/null || true
+              helm uninstall integration --namespace "$TEST_NAMESPACE" --wait --timeout 2m0s 2>/dev/null || true
               # Companions are separate releases, so the uninstall above does not touch them.
               # Kubernetes never garbage-collects PVCs created from volumeClaimTemplates, so the
               # delete is what stops a new pod binding the previous run's database.
-              helm uninstall postgresql --namespace $TEST_NAMESPACE --wait --timeout 2m0s 2>/dev/null || true
-              helm uninstall keycloak --namespace $TEST_NAMESPACE --wait --timeout 2m0s 2>/dev/null || true
+              helm uninstall postgresql --namespace "$TEST_NAMESPACE" --wait --timeout 2m0s 2>/dev/null || true
+              helm uninstall keycloak --namespace "$TEST_NAMESPACE" --wait --timeout 2m0s 2>/dev/null || true
               kubectl delete pvc -l app.kubernetes.io/component=postgresql \
-                --namespace $TEST_NAMESPACE --ignore-not-found 2>/dev/null || true
+                --namespace "$TEST_NAMESPACE" --ignore-not-found 2>/dev/null || true
             fi
           fi
-          kubectl create ns $TEST_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
-          kubectl label ns $TEST_NAMESPACE github-id=${{ steps.setup.outputs.identifier }} --overwrite
-          kubectl label ns $TEST_NAMESPACE test-flow=${{ inputs.flow }} --overwrite
-          kubectl label ns $TEST_NAMESPACE github-run-id=$GITHUB_WORKFLOW_RUN_ID --overwrite
-          kubectl label ns $TEST_NAMESPACE github-job-id=$GITHUB_WORKFLOW_JOB_ID --overwrite
-          kubectl label ns $TEST_NAMESPACE github-org=$(dirname $GITHUB_REPOSITORY) --overwrite
-          kubectl label ns $TEST_NAMESPACE github-repo=$(basename $GITHUB_REPOSITORY) --overwrite
-          kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=${{ inputs.deployment-ttl || '1h' }} --overwrite
-          kubectl annotate ns $TEST_NAMESPACE janitor/ttl=${{ inputs.deployment-ttl || '1h' }} --overwrite
-          kubectl annotate ns $TEST_NAMESPACE camunda.cloud/ephemeral=true --overwrite
-          kubectl annotate ns $TEST_NAMESPACE github-workflow-run-url=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID --overwrite
-          kubectl get ns $TEST_NAMESPACE -o yaml
+          kubectl create ns "$TEST_NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
+          kubectl label ns "$TEST_NAMESPACE" github-id=${{ steps.setup.outputs.identifier }} --overwrite
+          kubectl label ns "$TEST_NAMESPACE" test-flow=${{ inputs.flow }} --overwrite
+          kubectl label ns "$TEST_NAMESPACE" github-run-id="$GITHUB_WORKFLOW_RUN_ID" --overwrite
+          kubectl label ns "$TEST_NAMESPACE" github-job-id="$GITHUB_WORKFLOW_JOB_ID" --overwrite
+          kubectl label ns "$TEST_NAMESPACE" github-org="$(dirname "$GITHUB_REPOSITORY")" --overwrite
+          kubectl label ns "$TEST_NAMESPACE" github-repo="$(basename "$GITHUB_REPOSITORY")" --overwrite
+          kubectl annotate ns "$TEST_NAMESPACE" cleaner/ttl=${{ inputs.deployment-ttl || '1h' }} --overwrite
+          kubectl annotate ns "$TEST_NAMESPACE" janitor/ttl=${{ inputs.deployment-ttl || '1h' }} --overwrite
+          kubectl annotate ns "$TEST_NAMESPACE" camunda.cloud/ephemeral=true --overwrite
+          kubectl annotate ns "$TEST_NAMESPACE" github-workflow-run-url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" --overwrite
+          kubectl get ns "$TEST_NAMESPACE" -o yaml
 
       - name: Apply Vault mapped Secret
         if: inputs.vault-secret-mapping != ''
@@ -529,24 +527,24 @@ jobs:
       - name: Cluster Setup - Install docker registry on cluster
         run: |
           kubectl create secret docker-registry registry-camunda-cloud \
-          --namespace $TEST_NAMESPACE \
+          --namespace "$TEST_NAMESPACE" \
           --docker-server "registry.camunda.cloud" \
-          --docker-username $TEST_DOCKER_USERNAME_CAMUNDA_CLOUD \
-          --docker-password $TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD \
+          --docker-username "$TEST_DOCKER_USERNAME_CAMUNDA_CLOUD" \
+          --docker-password "$TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD" \
           --dry-run=client -o yaml | kubectl apply -f -
 
           kubectl create secret docker-registry ghcr-io \
-          --namespace $TEST_NAMESPACE \
+          --namespace "$TEST_NAMESPACE" \
           --docker-server "ghcr.io" \
-          --docker-username $GITHUB_ACTOR \
-          --docker-password $GITHUB_TOKEN \
+          --docker-username "$GITHUB_ACTOR" \
+          --docker-password "$GITHUB_TOKEN" \
           --dry-run=client -o yaml | kubectl apply -f -
 
           # Docker Hub pull secret (replaces the legacy `task init.seed` lib taskfile target).
           # TEST_DOCKER_USERNAME/PASSWORD are exported by integration-test-setup from Vault.
           if [[ "${TEST_CREATE_DOCKER_LOGIN_SECRET:-FALSE}" == "TRUE" && -n "${TEST_DOCKER_USERNAME:-}" && -n "${TEST_DOCKER_PASSWORD:-}" ]]; then
             kubectl create secret docker-registry index-docker-io \
-            --namespace $TEST_NAMESPACE \
+            --namespace "$TEST_NAMESPACE" \
             --docker-server "https://index.docker.io/v1/" \
             --docker-username "$TEST_DOCKER_USERNAME" \
             --docker-password "$TEST_DOCKER_PASSWORD" \
@@ -792,9 +790,9 @@ jobs:
         if: always()
         continue-on-error: true
         run: |
-          OUTPUT=$($GITHUB_WORKSPACE/scripts/list-chart-image-commits.sh)
+          OUTPUT=$("$GITHUB_WORKSPACE/scripts/list-chart-image-commits.sh")
           echo "$OUTPUT"
-          echo "$OUTPUT" >> $GITHUB_STEP_SUMMARY
+          echo "$OUTPUT" >> "$GITHUB_STEP_SUMMARY"
 
       ##########################################################################################################
       # Misc
@@ -1218,9 +1216,9 @@ jobs:
         if: always()
         continue-on-error: true
         run: |
-          OUTPUT=$($GITHUB_WORKSPACE/scripts/list-chart-image-commits.sh)
+          OUTPUT=$("$GITHUB_WORKSPACE/scripts/list-chart-image-commits.sh")
           echo "$OUTPUT"
-          echo "$OUTPUT" >> $GITHUB_STEP_SUMMARY
+          echo "$OUTPUT" >> "$GITHUB_STEP_SUMMARY"
 
       ##########################################################################################################
       # Misc
@@ -1747,7 +1745,7 @@ jobs:
             fi
           done
 
-          remaining_files=$(ls -1 *.zip 2>/dev/null | wc -l || echo "0")
+          remaining_files=$(compgen -G '*.zip' | wc -l || echo "0")
           echo "Valid blob reports remaining (download outcome: ${{ steps.download-reports.outcome }}): $remaining_files"
 
           if [[ "$remaining_files" -eq 0 ]]; then
@@ -2052,19 +2050,19 @@ jobs:
           OPENSEARCH_USERNAME: ${{ steps.test-credentials-secret.outputs.OPENSEARCH_USERNAME }}
           OPENSEARCH_PASSWORD: ${{ steps.test-credentials-secret.outputs.OPENSEARCH_PASSWORD }}
         run: |
-          kubectl annotate ns $TEST_NAMESPACE test-flow=${{ inputs.flow }} --overwrite || true
-          kubectl annotate ns $TEST_NAMESPACE build-failed=true --overwrite || true
+          kubectl annotate ns "$TEST_NAMESPACE" test-flow=${{ inputs.flow }} --overwrite || true
+          kubectl annotate ns "$TEST_NAMESPACE" build-failed=true --overwrite || true
 
-          if [[ "$(kubectl get ns $TEST_NAMESPACE --ignore-not-found)" != "" && "${{ env.CI_DEPLOYMENT_TTL }}" == "" ]]; then
-            kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=1s --overwrite=true
-            kubectl annotate ns $TEST_NAMESPACE janitor/ttl=1s --overwrite=true
+          if [[ "$(kubectl get ns "$TEST_NAMESPACE" --ignore-not-found)" != "" && "${{ env.CI_DEPLOYMENT_TTL }}" == "" ]]; then
+            kubectl annotate ns "$TEST_NAMESPACE" cleaner/ttl=1s --overwrite=true
+            kubectl annotate ns "$TEST_NAMESPACE" janitor/ttl=1s --overwrite=true
           else
             if [[ "${{ inputs.distro-type }}" == "kubernetes" && "${{ env.CI_DEPLOYMENT_TTL }}" != "" ]]; then
-              kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=${CI_DEPLOYMENT_TTL} --overwrite=true || true
-              kubectl annotate ns $TEST_NAMESPACE janitor/ttl=${CI_DEPLOYMENT_TTL} --overwrite=true || true
+              kubectl annotate ns "$TEST_NAMESPACE" cleaner/ttl="${CI_DEPLOYMENT_TTL}" --overwrite=true || true
+              kubectl annotate ns "$TEST_NAMESPACE" janitor/ttl="${CI_DEPLOYMENT_TTL}" --overwrite=true || true
             else
-              kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=1s --overwrite=true || true
-              kubectl annotate ns $TEST_NAMESPACE janitor/ttl=1s --overwrite=true || true
+              kubectl annotate ns "$TEST_NAMESPACE" cleaner/ttl=1s --overwrite=true || true
+              kubectl annotate ns "$TEST_NAMESPACE" janitor/ttl=1s --overwrite=true || true
             fi
           fi
 
