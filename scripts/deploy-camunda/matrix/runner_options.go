@@ -72,26 +72,7 @@ type RunOptions struct {
 	// Applies uniformly to all matrix entries (install, upgrade Step 1, upgrade Step 2).
 	// When <= 0, deploy.Execute defaults to 5 minutes.
 	HelmTimeout int
-	// DockerUsername is the Harbor registry username for pulling images.
-	// When empty, the deployer falls back to HARBOR_USERNAME, TEST_DOCKER_USERNAME_CAMUNDA_CLOUD, or NEXUS_USERNAME env vars.
-	DockerUsername string
-	// DockerPassword is the Harbor registry password for pulling images.
-	// When empty, the deployer falls back to HARBOR_PASSWORD, TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD, or NEXUS_PASSWORD env vars.
-	DockerPassword string
-	// EnsureDockerRegistry creates a Harbor registry secret in each entry's namespace.
-	// When true, the deployer performs docker login and creates a registry-camunda-cloud
-	// Kubernetes secret of type kubernetes.io/dockerconfigjson.
-	EnsureDockerRegistry bool
-	// DockerHubUsername is the Docker Hub registry username.
-	// When empty, the deployer falls back to DOCKERHUB_USERNAME or TEST_DOCKER_USERNAME env vars.
-	DockerHubUsername string
-	// DockerHubPassword is the Docker Hub registry password.
-	// When empty, the deployer falls back to DOCKERHUB_PASSWORD or TEST_DOCKER_PASSWORD env vars.
-	DockerHubPassword string
-	// EnsureDockerHub creates a Docker Hub pull secret (index-docker-io) in each entry's namespace.
-	// When true, the deployer performs docker login and creates an index-docker-io
-	// Kubernetes secret of type kubernetes.io/dockerconfigjson.
-	EnsureDockerHub bool
+	config.DockerFlags
 	// UseLatest applies values-latest.yaml from each chart root instead of values-digest.yaml.
 	// This overrides the default digest-based image pinning with the latest available tags.
 	UseLatest bool
