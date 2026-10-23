@@ -1212,6 +1212,38 @@ func TestDeployTopologyLevels_FailureFinishesItsLevelAndStopsTheNext(t *testing.
 	}
 }
 
+func TestUpdateTopologyChartDependencies_UpdatesEachChartPathOnceAndSkipsItAtDeploy(t *testing.T) {
+	release := func(chartPath string, skip bool) preparedTopologyRelease {
+		return preparedTopologyRelease{flags: &config.RuntimeFlags{Chart: config.ChartFlags{ChartPath: chartPath, SkipDependencyUpdate: skip}}}
+	}
+	releases := []preparedTopologyRelease{
+		release("charts/camunda-platform-8.10", false),
+		release("charts/camunda-platform-8.10", false),
+		release("charts/camunda-platform-8.9", false),
+		release("charts/camunda-platform-8.8", true),
+	}
+
+	var updated []string
+	original := dependencyUpdateFn
+	t.Cleanup(func() { dependencyUpdateFn = original })
+	dependencyUpdateFn = func(_ context.Context, chartPath string) error {
+		updated = append(updated, chartPath)
+		return nil
+	}
+
+	if err := updateTopologyChartDependencies(context.Background(), releases); err != nil {
+		t.Fatalf("updateTopologyChartDependencies() unexpected error: %v", err)
+	}
+	if want := []string{"charts/camunda-platform-8.10", "charts/camunda-platform-8.9"}; !slices.Equal(updated, want) {
+		t.Fatalf("updated = %v, want %v", updated, want)
+	}
+	for i, r := range releases {
+		if !r.flags.Chart.SkipDependencyUpdate {
+			t.Fatalf("release[%d] still runs its own dependency update during the concurrent deploy", i)
+		}
+	}
+}
+
 func TestRunTopologyEntry_RejectsUnsupportedAuthFlow(t *testing.T) {
 	base := matrix.Entry{
 		Version:  "8.10",
