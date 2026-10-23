@@ -34,7 +34,7 @@ const (
 
 var (
 	workflowScopes = []string{".github/workflows", ".github/actions"}
-	ghaExpression  = regexp.MustCompile(`\$\{\{.*?\}\}`)
+	ghaExpression  = regexp.MustCompile(`(?s)\$\{\{.*?\}\}`)
 )
 
 type runBlock struct {
@@ -109,48 +109,63 @@ func parseRunBlocks(src []byte) ([]runBlock, error) {
 	return blocks, nil
 }
 
-func collectRunBlocks(n *yaml.Node, step string, blocks *[]runBlock) error {
-	switch n.Kind {
-	case yaml.DocumentNode:
+func collectRunBlocks(n *yaml.Node, path string, blocks *[]runBlock) error {
+	if n.Kind == yaml.DocumentNode {
 		for _, c := range n.Content {
-			if err := collectRunBlocks(c, step, blocks); err != nil {
+			if err := collectRunBlocks(c, path, blocks); err != nil {
 				return err
 			}
 		}
-	case yaml.SequenceNode:
-		for i, c := range n.Content {
-			if err := collectRunBlocks(c, joinStep(step, stepName(c, i)), blocks); err != nil {
-				return err
-			}
+		return nil
+	}
+	if n.Kind != yaml.MappingNode {
+		return nil
+	}
+	for i := 0; i+1 < len(n.Content); i += 2 {
+		key, value := n.Content[i], n.Content[i+1]
+		collect := collectRunBlocks
+		if key.Value == "steps" && value.Kind == yaml.SequenceNode {
+			collect = collectSteps
 		}
-	case yaml.MappingNode:
-		for i := 0; i+1 < len(n.Content); i += 2 {
-			key, value := n.Content[i], n.Content[i+1]
-			if key.Value == "run" && value.Kind == yaml.ScalarNode {
-				b, err := measureRun(value)
-				if err != nil {
-					return err
-				}
-				b.step = step
-				*blocks = append(*blocks, b)
-				continue
-			}
-			if err := collectRunBlocks(value, joinStep(step, key.Value), blocks); err != nil {
-				return err
-			}
+		if err := collect(value, joinStep(path, key.Value), blocks); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func collectSteps(steps *yaml.Node, path string, blocks *[]runBlock) error {
+	for i, s := range steps.Content {
+		run := field(s, "run")
+		if run == nil || run.Kind != yaml.ScalarNode {
+			continue
+		}
+		b, err := measureRun(run)
+		if err != nil {
+			return err
+		}
+		b.step = joinStep(path, stepName(s, i))
+		*blocks = append(*blocks, b)
+	}
+	return nil
+}
+
+func field(n *yaml.Node, name string) *yaml.Node {
+	if n.Kind != yaml.MappingNode {
+		return nil
+	}
+	for i := 0; i+1 < len(n.Content); i += 2 {
+		if n.Content[i].Value == name {
+			return n.Content[i+1]
 		}
 	}
 	return nil
 }
 
 func stepName(n *yaml.Node, index int) string {
-	if n.Kind == yaml.MappingNode {
-		for _, field := range []string{"name", "id"} {
-			for i := 0; i+1 < len(n.Content); i += 2 {
-				if n.Content[i].Value == field && n.Content[i+1].Kind == yaml.ScalarNode {
-					return n.Content[i+1].Value
-				}
-			}
+	for _, name := range []string{"name", "id"} {
+		if v := field(n, name); v != nil && v.Kind == yaml.ScalarNode {
+			return v.Value
 		}
 	}
 	return strconv.Itoa(index)

@@ -102,19 +102,20 @@ func TestRunAllFailsOnUnparsableRunBlock(t *testing.T) {
 	assert.Contains(t, err.Error(), ".github/workflows/a.yaml: run block at line 7")
 }
 
-func TestParseRunBlocksNamesSteps(t *testing.T) {
+func TestParseRunBlocksReadsOnlyStepRunKeys(t *testing.T) {
 	blocks, err := parseRunBlocks([]byte("on: push\n" +
 		"defaults:\n  run:\n    shell: bash\n" +
-		"jobs:\n  build:\n    steps:\n" +
+		"jobs:\n  build:\n    env:\n      run: \"if [\"\n    steps:\n" +
 		"      - name: Named\n        id: ignored\n        run: echo a\n" +
 		"      - id: only-id\n        run: echo b\n" +
-		"      - run: echo c\n",
+		"      - run: echo c\n" +
+		"      - uses: actions/example@v1\n        with:\n          run: \"if [\"\n",
 	))
 	require.NoError(t, err)
 	assert.Equal(t, []runBlock{
-		{step: "jobs/build/steps/Named", line: 10, cyclomatic: 1, lines: 1},
-		{step: "jobs/build/steps/only-id", line: 12, cyclomatic: 1, lines: 1},
-		{step: "jobs/build/steps/2", line: 13, cyclomatic: 1, lines: 1},
+		{step: "jobs/build/steps/Named", line: 12, cyclomatic: 1, lines: 1},
+		{step: "jobs/build/steps/only-id", line: 14, cyclomatic: 1, lines: 1},
+		{step: "jobs/build/steps/2", line: 15, cyclomatic: 1, lines: 1},
 	}, blocks)
 }
 
@@ -131,6 +132,7 @@ func TestBashCyclomatic(t *testing.T) {
 		{"command lists", "a && b || c", 3},
 		{"test expressions", "[[ -n $a && -n $b || -n $c ]]", 3},
 		{"workflow expressions", `if [ "${{ inputs.flag }}" = "true" ]; then echo "${{ github.sha }}"; fi`, 2},
+		{"multiline workflow expression", "echo \"${{ format('{0}',\n  inputs.flag) }}\"", 1},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
