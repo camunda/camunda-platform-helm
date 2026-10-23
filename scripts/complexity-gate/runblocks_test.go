@@ -76,7 +76,7 @@ func TestRunAllReportsRunBlocks(t *testing.T) {
 }
 
 func TestRunAllCountsFoldedRunBlocksBySourceLines(t *testing.T) {
-	folded := strings.Replace(step("Folded", longScript(101)), "run: |", "run: >", 1)
+	folded := strings.Replace(step("Folded", "# shellcheck disable=SC2086\n"+longScript(101)), "run: |", "run: >", 1)
 	root := newRepo(t, map[string]string{".github/workflows/a.yaml": workflow(folded, step("After", longScript(100)))})
 
 	var out bytes.Buffer
@@ -270,6 +270,45 @@ func TestRunMatchesChangedStepsThatShareANameWithCrossingMeasures(t *testing.T) 
 	assert.Contains(t, out.String(), "2 run block(s) checked, none added or grown above")
 }
 
+func TestRunShellchecksChangedCompositeActionRunBlocks(t *testing.T) {
+	root := newRepo(t, map[string]string{".github/actions/clean/action.yaml": action("Clean", `echo "ok"`)})
+	writeFile(t, root, ".github/actions/new/action.yaml", action("Unquoted", `if [ -n "${{ inputs.dir }}" ]; then cd $TARGET_DIR || exit 1; fi`))
+	writeFile(t, root, ".github/workflows/w.yaml", workflow(step("Unquoted", "cd $TARGET_DIR || exit 1")))
+
+	var out bytes.Buffer
+	err := run(root, "main", false, &out)
+
+	require.Error(t, err)
+	assert.Contains(t, out.String(), ".github/actions/new/action.yaml:6: runs/steps/Unquoted: note: Double quote to prevent globbing and word splitting. [SC2086]")
+	assert.NotContains(t, out.String(), "SC2157")
+	assert.NotContains(t, out.String(), "w.yaml")
+	assert.NotContains(t, out.String(), "clean/action.yaml")
+	assert.Contains(t, err.Error(), "shellcheck reports 1 finding(s) in 1 checked composite action run block(s)")
+}
+
+func TestRunShellchecksInlineCompositeActionRunValue(t *testing.T) {
+	root := newRepo(t, map[string]string{".github/actions/a/action.yaml": action("Clean", `echo "ok"`)})
+	writeFile(t, root, ".github/actions/a/action.yaml", "runs:\n  using: composite\n  steps:\n    - name: Inline\n      run: cd $TARGET_DIR || exit 1\n")
+
+	var out bytes.Buffer
+	require.Error(t, run(root, "main", false, &out))
+	assert.Contains(t, out.String(), ".github/actions/a/action.yaml:5: runs/steps/Inline:")
+}
+
+func TestRunAllShellchecksEveryCompositeActionRunBlock(t *testing.T) {
+	root := newRepo(t, map[string]string{
+		".github/actions/a/action.yaml": action("Clean", `echo "ok"`),
+		".github/actions/b/action.yaml": action("Unquoted", "cd $TARGET_DIR || exit 1"),
+	})
+
+	var out bytes.Buffer
+	err := run(root, "main", true, &out)
+
+	require.Error(t, err)
+	assert.Contains(t, out.String(), ".github/actions/b/action.yaml:6: runs/steps/Unquoted:")
+	assert.Contains(t, err.Error(), "1 finding(s) in 2 checked composite action run block(s)")
+}
+
 func TestRunAllFailsOnUnparsableRunBlock(t *testing.T) {
 	root := newRepo(t, map[string]string{".github/workflows/a.yaml": workflow(step("Broken", "if true; then echo"))})
 
@@ -290,10 +329,17 @@ func TestParseRunBlocksReadsOnlyStepRunKeys(t *testing.T) {
 	))
 	require.NoError(t, err)
 	assert.Equal(t, []runBlock{
-		{step: "jobs/build/steps/Named", script: "echo a", line: 12, cyclomatic: 1, lines: 1},
-		{step: "jobs/build/steps/only-id", script: "echo b", line: 14, cyclomatic: 1, lines: 1},
-		{step: "jobs/build/steps/2", script: "echo c", line: 15, cyclomatic: 1, lines: 1},
+		{step: "jobs/build/steps/Named", script: "echo a", line: 12, firstLine: 12, cyclomatic: 1, lines: 1},
+		{step: "jobs/build/steps/only-id", script: "echo b", line: 14, firstLine: 14, cyclomatic: 1, lines: 1},
+		{step: "jobs/build/steps/2", script: "echo c", line: 15, firstLine: 15, cyclomatic: 1, lines: 1},
 	}, blocks)
+}
+
+func TestMeasureRunCountsLinesOfCode(t *testing.T) {
+	script := "# shellcheck disable=SC2016\necho '$a' # trailing\n\n  # indented\ncat <<EOF\n# heading\nEOF\n"
+	b, err := measureRun(&yaml.Node{Kind: yaml.ScalarNode, Value: script})
+	require.NoError(t, err)
+	assert.Equal(t, 4, b.lines)
 }
 
 func TestBashCyclomatic(t *testing.T) {
