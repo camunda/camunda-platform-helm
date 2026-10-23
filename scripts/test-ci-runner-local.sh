@@ -20,9 +20,6 @@
 
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-
 REGISTRY="registry.camunda.cloud"
 CI_RUNNER_IMAGE="${REGISTRY}/team-distribution/ci-runner:latest"
 PLAYWRIGHT_RUNNER_IMAGE="${REGISTRY}/team-distribution/playwright-runner:latest"

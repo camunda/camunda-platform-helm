@@ -51,7 +51,7 @@ runs:
             url=$(echo "$content" | grep -oE 'https://docs\.camunda\.[^[:space:]\)\"'\''<>]*' | head -1)
 
             # Clean trailing punctuation that might be captured
-            url=$(echo "$url" | sed 's/[,;:]*$//')
+            url="${url%"${url##*[^,;:]}"}"
 
             if [[ -n "$url" ]]; then
               # Append location to the URL's location list
@@ -96,8 +96,8 @@ runs:
         echo "========================================="
 
         # Set outputs
-        echo "total-checked=${TOTAL_URLS}" >> $GITHUB_OUTPUT
-        echo "invalid-count=${#INVALID_URLS[@]}" >> $GITHUB_OUTPUT
+        echo "total-checked=${TOTAL_URLS}" >> "$GITHUB_OUTPUT"
+        echo "invalid-count=${#INVALID_URLS[@]}" >> "$GITHUB_OUTPUT"
 
         if [[ ${#INVALID_URLS[@]} -gt 0 ]]; then
           echo ""

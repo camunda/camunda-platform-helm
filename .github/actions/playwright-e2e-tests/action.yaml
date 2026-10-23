@@ -332,6 +332,7 @@ runs:
 
     - name: Run Playwright E2E Tests
       shell: bash
+      working-directory: scripts
       env:
         TEST_NAMESPACE: ${{ env.TEST_NAMESPACE }}
         ABSOLUTE_TEST_CHART_DIR: ${{ env.ABSOLUTE_TEST_CHART_DIR }}
@@ -360,7 +361,6 @@ runs:
         INPUTS_PHYSICAL_TENANT_ID: ${{ inputs.physical-tenant-id }}
         INPUTS_E2E_TEST_SUITE_REF: ${{ inputs.e2e-test-suite-ref }}
       run: |
-        cd "$GITHUB_WORKSPACE/scripts"
         # Unset KEYCLOAK_REALM to avoid conflicts with the integration tests
         unset KEYCLOAK_REALM
 
