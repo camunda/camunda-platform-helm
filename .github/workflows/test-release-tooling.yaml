@@ -62,7 +62,7 @@ jobs:
       - name: Lint every Go module under scripts/
         run: make go.lint lintBase=HEAD~1
 
-      - name: Gate the complexity of changed Go functions under scripts/
+      - name: Gate the complexity of changed Go functions and workflow run blocks
         run: make go.complexity lintBase=HEAD~1
 
       - name: Install schema generator
