@@ -24,9 +24,9 @@ automated workflow steps follow Conventional Commits with the `chore(ci):` type.
 - **NEVER** store secrets in workflow files, environment variables in plain text, or repository
   variables. All secrets come from Vault via `hashicorp/vault-action`.
 - **NEVER** add a `run:` block above bash cyclomatic complexity 10 (1, plus 1 for each `if`/`elif`,
-  `case` item, loop, `&&` and `||`) or 100 non-blank lines, in `.github/workflows/` or
-  `.github/actions/`. **NEVER** make a block that is already above more complex or longer, except
-  for a fix that is not possible without it.
+  `case` item, loop, `&&` and `||`) or 100 lines of code (blank and comment-only lines do not
+  count), in `.github/workflows/` or `.github/actions/`. **NEVER** make a block that is already
+  above more complex or longer, except for a fix that is not possible without it.
   `make go.complexity` fails the change, and `test-release-tooling.yaml` runs it on every PR.
   `cd scripts/complexity-gate && go run . --repo-root ../.. --all` lists the blocks that are
   already above. To pass, delete dead branches and duplicated commands, or split the step where

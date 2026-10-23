@@ -44,6 +44,7 @@ jobs:
             git-cliff
             yq
             jq
+            shellcheck
 
       # TestImageSetRealChartContract reads each chart's vendored subcharts
       # (keycloak/ES/PG for 8.7-8.9), so they must be present before `go test`.
