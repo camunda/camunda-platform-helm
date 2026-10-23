@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">Release Process | Camunda Helm Charts</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:image" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7553/img/camunda-logo.svg"><meta data-rh="true" name="twitter:image" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7553/img/camunda-logo.svg"><meta data-rh="true" property="og:url" content="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7553/reference/release-process"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Release Process | Camunda Helm Charts"><meta data-rh="true" name="description" content="This document is for Distro team maintainers. For contribution process, see the Maintainer Guide."><meta data-rh="true" property="og:description" content="This document is for Distro team maintainers. For contribution process, see the Maintainer Guide."><link data-rh="true" rel="icon" href="/camunda-platform-helm/pr-preview/pr-7553/img/camunda-logo.svg"><link data-rh="true" rel="canonical" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7553/reference/release-process"><link data-rh="true" rel="alternate" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7553/reference/release-process" hreflang="en"><link data-rh="true" rel="alternate" href="https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7553/reference/release-process" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Release Process","item":"https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-7553/reference/release-process"}]}</script><link rel="stylesheet" href="/camunda-platform-helm/pr-preview/pr-7553/assets/css/styles.3f6cd398.css">
-<script src="/camunda-platform-helm/pr-preview/pr-7553/assets/js/runtime~main.af3a604c.js" defer="defer"></script>
-<script src="/camunda-platform-helm/pr-preview/pr-7553/assets/js/main.e3f12ced.js" defer="defer"></script>
+<script src="/camunda-platform-helm/pr-preview/pr-7553/assets/js/runtime~main.0e7cf249.js" defer="defer"></script>
+<script src="/camunda-platform-helm/pr-preview/pr-7553/assets/js/main.8dd4c49a.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -73,24 +73,51 @@ version matrix files (component versions mapping + READMEs).</li>
 </ul>
 <p><strong>What happens:</strong></p>
 <ol>
-<li class="">Pulls the RC package from Harbor.</li>
-<li class="">Extracts metadata (version, app version) from the packaged <code>Chart.yaml</code>.</li>
-<li class="">Uploads to GitHub Releases using <code>helm-cr</code>.</li>
+<li class="">Resolves the RC tag to its immutable OCI digest and the <code>{version}-dev-{sha}</code> source tag on
+the same Harbor artifact (<code>release-tools harbor-tag source</code>). A missing or ambiguous source
+tag fails the run before anything is published.</li>
+<li class="">Resolves that SHA to a full commit on <code>main</code> and pulls the package by digest.</li>
+<li class="">Extracts metadata (version, app version) from the packaged <code>Chart.yaml</code> and checks the
+package version against the RC version.</li>
+<li class="">Selects the previous release on the chart line (<code>release-tools release-history</code>) and checks
+that its source commit is an ancestor of the current one.</li>
+<li class="">Uploads the unchanged package to GitHub Releases using
+<code>helm-cr upload --commit &lt;source-sha&gt;</code>, so the release tag points at the build commit.
+An existing release fails the upload instead of being skipped.</li>
 <li class="">Updates the Helm repo index (<code>gh-pages</code> branch).</li>
 <li class="">Signs with Cosign and uploads the bundle to the release.</li>
+<li class="">Labels shipped PRs and their linked issues from the <code>previous-source..source</code> commit range
+(<code>scripts/set-prs-version-label.sh</code> requires <code>chartVersion</code>, <code>sourceSHA</code> and
+<code>previousSourceSHA</code>).</li>
 <li class="">Stamps the published release&#x27;s date onto the chart&#x27;s <code>version-matrix.json</code> entry
 (<code>release-tools stamp-release</code>) and regenerates the matrix READMEs on the <code>release-please</code>
 branch — the single write of <code>release_date</code>, taken from the GitHub release&#x27;s <code>publishedAt</code>.</li>
 <li class="">Labels the <code>release-please</code> PR with <code>autorelease: published</code>.</li>
 </ol>
 <p><strong>Release tag format:</strong> <code>camunda-platform-{appVersion}-{version}</code> (e.g. <code>camunda-platform-8.8-13.4.0</code>).</p>
+<p><strong>Source and artifact identity:</strong> the release tag marks the commit the package was built from,
+not an installable copy of the chart. Version bumps, generated release files and image
+overrides exist only in the package; publication never rebuilds it.</p>
+<p>Release notes (<code>release-tools release-notes --main</code>) and shipped-PR labels use the same
+<code>previous-source..source</code> range. <code>release-history</code> picks the highest release tag on the chart
+line below the chart&#x27;s version; a new chart line starts from its
+<code>camunda-platform-&lt;minor&gt;-&lt;major&gt;.0.0-alpha0</code> bootstrap tag. Tags that were created from a
+later publishing checkout
+(<a href="https://github.com/camunda/camunda-platform-helm/issues/7612#issuecomment-6314547789" target="_blank" rel="noopener noreferrer" class="">#7612 audit</a>)
+map to their recorded build commits in <code>historicalReleaseSources</code>; the tags themselves are not
+moved. Note generation ignores tags inside the range, so such a tag cannot regroup commits into
+an older release. Release-please still discovers history from the public tags on its own; its
+version calculation is unchanged.</p>
+<p>Locally: <code>make release.generate-notes chartPath=charts/camunda-platform-8.9 [sourceSHA=&lt;sha&gt;]</code>
+(defaults to <code>HEAD</code>).</p>
 <p><strong>After public release:</strong></p>
 <ol>
 <li class="">The workflow enables auto-merge on the <code>release-please</code> PR, then shepherds it through the merge
 queue (re-enabling auto-merge after evictions). If it still does not merge within the timeout, a
 distinct Slack alert pings the distribution release manager to merge it manually — the release
 itself is not treated as failed.</li>
-<li class="">Merging the <code>release-please</code> PR syncs <code>main</code> with the released artifact and triggers <code>chart-public-files.yaml</code> to update:<!-- -->
+<li class="">Merging the <code>release-please</code> PR records the released version in <code>main</code> and triggers
+<code>chart-public-files.yaml</code> to update:<!-- -->
 <ul>
 <li class=""><a href="https://helm.camunda.io/camunda-platform/version-matrix/" target="_blank" rel="noopener noreferrer" class="">Version matrix</a> (component versions for each chart release).</li>
 <li class="">Public values files at <code>helm.camunda.io/camunda-platform/values/</code>.</li>
@@ -153,7 +180,7 @@ itself is not treated as failed.</li>
 <li class="task-list-item"><input type="checkbox" disabled=""> <strong>4. Chart metadata.</strong> Set <code>version: 16.0.0-alpha0</code> and <code>appVersion: 8.11.x</code>. Add <code>artifacthub.io/prerelease: &quot;true&quot;</code>. Reset <code>artifacthub.io/changes</code>, <code>CHANGELOG.md</code> and <code>RELEASE-NOTES.md</code>. The dev build adds one to the alpha number, so the first release is <code>-alpha1</code>.</li>
 <li class="task-list-item"><input type="checkbox" disabled=""> <strong>5. Image tags.</strong> Replace every <code>8.10</code> tag in <code>values.yaml</code>, <code>values-latest.yaml</code> and <code>values-digest.yaml</code>. Use <code>8.11-SNAPSHOT</code> where Docker Hub has it, else <code>SNAPSHOT</code>. Pin the digest of each selected tag. Set the <code>values-latest.yaml</code> header to <code>Camunda - Alpha</code>.</li>
 <li class="task-list-item"><input type="checkbox" disabled=""> <strong>6. Audit the copy.</strong> Search the new chart for <code>8.10</code>, <code>8.9</code> and old chart directory names. Keep history statements. Fix docs links, the release-highlights text, README directory names, the Playwright <code>SM-8.11</code> suite, test values headers, Hub cluster versions and registry paths. Remove the hooks of the <code>8.9</code> to <code>8.10</code> upgrade.</li>
-<li class="task-list-item"><input type="checkbox" disabled=""> <strong>7. Wiring.</strong> Add <code>8.11</code> to <code>routineVersions</code> and <code>camundaSupportLifecycle</code> (without <code>released</code>). Add the release-please package (with the <code>version/alpha</code> label) and the manifest entry (with the filler entry). Add <code>8.11</code> to the Renovate alpha and digest rules, <code>pr-labeler.yaml</code>, <code>permitted-flows.yaml</code>, the <code>test-chart-version.yaml</code> choices, <code>test-release-tooling.yaml</code>, <code>inject_values.go</code>, <code>render-e2e-env.sh</code> and the version map above. Create the <code>version/8.11</code> label. If <code>8.10</code> is not GA yet, also deny <code>upgrade-minor</code> for <code>8.11</code>. When <code>8.10</code> becomes GA, follow <a href="https://github.com/camunda/camunda-platform-helm/blob/main/.claude/skills/chart-minor-cut/SKILL.md#7-wire-the-new-minor" target="_blank" rel="noopener noreferrer" class="">skill step 7</a> to remove that deny and restore the <code>upgrade-minor</code> scenario entries removed during the cut.</li>
+<li class="task-list-item"><input type="checkbox" disabled=""> <strong>7. Wiring.</strong> Add <code>8.11</code> to <code>routineVersions</code> and <code>camundaSupportLifecycle</code> (without <code>released</code>). Add the release-please package (with the <code>version/alpha</code> label) and the manifest entry (with the filler entry). Add <code>8.11</code> to the Renovate alpha and digest rules, <code>pr-labeler.yaml</code>, <code>permitted-flows.yaml</code>, the <code>test-chart-version.yaml</code> choices, <code>inject_values.go</code>, <code>render-e2e-env.sh</code> and the version map above. Create the <code>version/8.11</code> label. If <code>8.10</code> is not GA yet, also deny <code>upgrade-minor</code> for <code>8.11</code>. When <code>8.10</code> becomes GA, follow <a href="https://github.com/camunda/camunda-platform-helm/blob/main/.claude/skills/chart-minor-cut/SKILL.md#7-wire-the-new-minor" target="_blank" rel="noopener noreferrer" class="">skill step 7</a> to remove that deny and restore the <code>upgrade-minor</code> scenario entries removed during the cut.</li>
 <li class="task-list-item"><input type="checkbox" disabled=""> <strong>8. Regenerate.</strong> Run <code>helm.dependency-update</code>, <code>helm.readme-update</code>, <code>helm.schema-update</code> and <code>go.update-golden-only</code> for the new chart.</li>
 <li class="task-list-item"><input type="checkbox" disabled=""> <strong>9. Checks.</strong> Lint and unit tests pass for the new chart. The tooling tests pass. <code>release-tools release-version</code> returns <code>16.0.0-alpha1</code>. The rendered images use the new tags. The <code>8.10</code> chart has no changes. The tier-1 scenarios pass.</li>
 <li class="task-list-item"><input type="checkbox" disabled=""> <strong>10. PR.</strong> Open <code>feat: create the Camunda 8.11 Helm chart line as 16.0.0-alpha0</code>. Stack it on the tooling PR if that PR is not merged.</li>
