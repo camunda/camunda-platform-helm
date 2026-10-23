@@ -39,6 +39,7 @@ var (
 )
 
 type runBlock struct {
+	path       string
 	step       string
 	script     string
 	line       int
@@ -47,28 +48,11 @@ type runBlock struct {
 }
 
 func checkRunBlocks(repoRoot, base string, all bool, out io.Writer) error {
-	mergeBase, files, err := workflowFiles(repoRoot, base, all)
+	head, before, err := changedRunBlocks(repoRoot, base, all)
 	if err != nil {
 		return err
 	}
-	paths := make([]string, 0, len(files))
-	for path := range files {
-		if isWorkflowFile(path) {
-			paths = append(paths, path)
-		}
-	}
-	slices.Sort(paths)
-
-	checked := 0
-	var violations []string
-	for _, path := range paths {
-		v, n, err := checkWorkflow(repoRoot, path, mergeBase, files[path])
-		if err != nil {
-			return fmt.Errorf("%s: %w", path, err)
-		}
-		checked += n
-		violations = append(violations, v...)
-	}
+	violations := runBlockViolations(head, before)
 
 	limits := fmt.Sprintf("cyclomatic %d, %d lines", maxRunCyclomatic, maxRunLines)
 	scope := "above"
@@ -76,132 +60,152 @@ func checkRunBlocks(repoRoot, base string, all bool, out io.Writer) error {
 		scope = "added or grown above"
 	}
 	if len(violations) == 0 {
-		fmt.Fprintf(out, "complexity-gate: %d run block(s) checked, none %s %s\n", checked, scope, limits)
+		fmt.Fprintf(out, "complexity-gate: %d run block(s) checked, none %s %s\n", len(head), scope, limits)
 		return nil
 	}
 	for _, v := range violations {
 		fmt.Fprintln(out, v)
 	}
 	return fmt.Errorf("%d of %d checked run block(s) %s %s; split the step or move its logic into a tool the job already runs",
-		len(violations), checked, scope, limits)
+		len(violations), len(head), scope, limits)
 }
 
-func workflowFiles(repoRoot, base string, all bool) (string, map[string][]string, error) {
-	listArgs := []string{"ls-files", "-z"}
-	mergeBase := ""
-	files := map[string][]string{}
-	var added, deleted []string
-	if !all {
-		out, err := git(repoRoot, "merge-base", base, "HEAD")
+func changedRunBlocks(repoRoot, base string, all bool) (head, before []runBlock, err error) {
+	readHead := func(path string) ([]byte, error) { return os.ReadFile(filepath.Join(repoRoot, path)) }
+	if all {
+		tracked, err := git(repoRoot, append([]string{"ls-files", "-z", "--"}, workflowScopes...)...)
 		if err != nil {
-			return "", nil, err
+			return nil, nil, err
 		}
-		mergeBase = strings.TrimSpace(out)
-		diff, err := git(repoRoot, append([]string{"diff", "--name-status", "-z", "-M", mergeBase, "--"}, workflowScopes...)...)
-		if err != nil {
-			return "", nil, err
-		}
-		fields := strings.Split(strings.TrimSuffix(diff, "\x00"), "\x00")
-		for i := 0; i+1 < len(fields); i += 2 {
-			switch fields[i][0] {
-			case 'R':
-				files[fields[i+2]] = []string{fields[i+1]}
-				i++
-			case 'A':
-				added = append(added, fields[i+1])
-			case 'D':
-				if isWorkflowFile(fields[i+1]) {
-					deleted = append(deleted, fields[i+1])
-				}
-			default:
-				files[fields[i+1]] = []string{fields[i+1]}
-			}
-		}
-		listArgs = append(listArgs, "--others", "--exclude-standard")
+		head, err = runBlocksIn(strings.Split(tracked, "\x00"), readHead)
+		return head, nil, err
 	}
-	listed, err := git(repoRoot, append(append(listArgs, "--"), workflowScopes...)...)
+
+	mergeBase, err := git(repoRoot, "merge-base", base, "HEAD")
 	if err != nil {
-		return "", nil, err
+		return nil, nil, err
 	}
-	for path := range strings.SplitSeq(listed, "\x00") {
-		added = append(added, path)
-	}
-	for _, path := range added {
-		files[path] = deleted
-	}
-	return mergeBase, files, nil
-}
-
-func isWorkflowFile(path string) bool {
-	return strings.HasSuffix(path, ".yaml") || strings.HasSuffix(path, ".yml")
-}
-
-func checkWorkflow(repoRoot, path, mergeBase string, basePaths []string) ([]string, int, error) {
-	src, err := os.ReadFile(filepath.Join(repoRoot, path))
-	if os.IsNotExist(err) {
-		return nil, 0, nil
-	}
+	mergeBase = strings.TrimSpace(mergeBase)
+	diff, err := git(repoRoot, append([]string{"diff", "--name-status", "-z", "--no-renames", mergeBase, "--"}, workflowScopes...)...)
 	if err != nil {
-		return nil, 0, err
+		return nil, nil, err
 	}
-	blocks, err := parseRunBlocks(src)
+	untracked, err := git(repoRoot, append([]string{"ls-files", "-z", "--others", "--exclude-standard", "--"}, workflowScopes...)...)
 	if err != nil {
-		return nil, 0, err
+		return nil, nil, err
 	}
-	var baseBlocks []runBlock
-	for _, basePath := range basePaths {
-		baseSrc, err := git(repoRoot, "show", mergeBase+":"+basePath)
-		if err != nil {
-			return nil, 0, err
+	var modified, added, deleted []string
+	fields := strings.Split(strings.TrimSuffix(diff, "\x00"), "\x00")
+	for i := 0; i+1 < len(fields); i += 2 {
+		switch fields[i][0] {
+		case 'A':
+			added = append(added, fields[i+1])
+		case 'D':
+			deleted = append(deleted, fields[i+1])
+		default:
+			modified = append(modified, fields[i+1])
 		}
-		pathBlocks, err := parseRunBlocks([]byte(baseSrc))
-		if err != nil {
-			return nil, 0, fmt.Errorf("%s on %s: %w", basePath, mergeBase, err)
-		}
-		baseBlocks = append(baseBlocks, pathBlocks...)
 	}
-	return runBlockViolations(path, blocks, baseBlocks), len(blocks), nil
+	added = append(added, strings.Split(untracked, "\x00")...)
+
+	if head, err = runBlocksIn(append(modified, added...), readHead); err != nil {
+		return nil, nil, err
+	}
+	before, err = runBlocksIn(append(modified, deleted...), func(path string) ([]byte, error) {
+		src, err := git(repoRoot, "show", mergeBase+":"+path)
+		return []byte(src), err
+	})
+	if err != nil {
+		return nil, nil, fmt.Errorf("on %s: %w", mergeBase, err)
+	}
+	return head, before, nil
 }
 
-func runBlockViolations(path string, blocks, baseBlocks []runBlock) []string {
+func runBlocksIn(paths []string, read func(string) ([]byte, error)) ([]runBlock, error) {
+	var blocks []runBlock
+	for _, path := range paths {
+		if !strings.HasSuffix(path, ".yaml") && !strings.HasSuffix(path, ".yml") {
+			continue
+		}
+		src, err := read(path)
+		if os.IsNotExist(err) {
+			continue
+		}
+		if err != nil {
+			return nil, err
+		}
+		fileBlocks, err := parseRunBlocks(src)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", path, err)
+		}
+		for i := range fileBlocks {
+			fileBlocks[i].path = path
+		}
+		blocks = append(blocks, fileBlocks...)
+	}
+	return blocks, nil
+}
+
+func runBlockViolations(head, before []runBlock) []string {
 	headSteps := map[string]bool{}
-	for _, b := range blocks {
+	for _, b := range head {
 		headSteps[b.step] = true
 	}
-	before := map[string]runBlock{}
-	unchanged := map[string]bool{}
+	unchanged := map[string]int{}
 	renamed := map[string]int{}
-	for _, b := range baseBlocks {
-		unchanged[b.step+"\x00"+b.script] = true
-		if !headSteps[b.step] {
+	slots := map[string][]runBlock{}
+	for _, b := range before {
+		unchanged[b.step+"\x00"+b.script]++
+		if headSteps[b.step] {
+			slots[b.step] = append(slots[b.step], b)
+		} else {
 			renamed[b.script]++
 		}
-		if prev, ok := before[b.step]; ok {
-			b.cyclomatic, b.lines = min(b.cyclomatic, prev.cyclomatic), min(b.lines, prev.lines)
+	}
+
+	var changed []runBlock
+	for _, b := range head {
+		key := b.step + "\x00" + b.script
+		if unchanged[key] == 0 {
+			changed = append(changed, b)
+			continue
 		}
-		before[b.step] = b
+		unchanged[key]--
+		i := slices.IndexFunc(slots[b.step], func(s runBlock) bool { return s.script == b.script })
+		slots[b.step] = slices.Delete(slots[b.step], i, i+1)
 	}
 
 	var violations []string
-	for _, b := range blocks {
-		prev, known := before[b.step]
+	for _, b := range changed {
 		over := b.overLimits()
-		if over == "" || unchanged[b.step+"\x00"+b.script] {
+		if over == "" {
 			continue
 		}
-		if !known && renamed[b.script] > 0 {
+		if renamed[b.script] > 0 {
 			renamed[b.script]--
 			continue
 		}
-		if known && b.cyclomatic <= prev.cyclomatic && b.lines <= prev.lines {
-			continue
-		}
-		if known {
+		if prev, ok := smallest(slots[b.step]); ok {
+			slots[b.step] = slots[b.step][1:]
+			if b.cyclomatic <= prev.cyclomatic && b.lines <= prev.lines {
+				continue
+			}
 			over += fmt.Sprintf(", up from cyclomatic %d, %d lines", prev.cyclomatic, prev.lines)
 		}
-		violations = append(violations, fmt.Sprintf("%s:%d: %s: %s", path, b.line, b.step, over))
+		violations = append(violations, fmt.Sprintf("%s:%d: %s: %s", b.path, b.line, b.step, over))
 	}
 	return violations
+}
+
+func smallest(blocks []runBlock) (runBlock, bool) {
+	if len(blocks) == 0 {
+		return runBlock{}, false
+	}
+	s := blocks[0]
+	for _, b := range blocks[1:] {
+		s.cyclomatic, s.lines = min(s.cyclomatic, b.cyclomatic), min(s.lines, b.lines)
+	}
+	return s, true
 }
 
 func parseRunBlocks(src []byte) ([]runBlock, error) {
