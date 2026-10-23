@@ -87,6 +87,13 @@
       addLabels: ['requires-manual-review'],
     },
     {
+      description: 'Schedule major updates for Friday nights.',
+      matchUpdateTypes: ['major'],
+      matchManagers: ['!github-actions'],
+      excludePackageNames: ['/.*camunda.*/'],
+      schedule: ['* 0-6,18-23 * * 5'],
+    },
+    {
       description: 'Camunda packages are not bound to the preset update schedules.',
       matchPackageNames: ['/.*camunda.*/'],
       schedule: ['at any time'],
