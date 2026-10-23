@@ -115,12 +115,12 @@ func changedFiles(repoRoot, base string) (map[string][]hunk, error) {
 	if err != nil {
 		return nil, err
 	}
-	untracked, err := git(repoRoot, "ls-files", "--others", "--exclude-standard", "--", scope)
+	untracked, err := git(repoRoot, "ls-files", "-z", "--others", "--exclude-standard", "--", scope)
 	if err != nil {
 		return nil, err
 	}
-	for path := range strings.Lines(untracked) {
-		files[strings.TrimSpace(path)] = wholeFile
+	for path := range strings.SplitSeq(untracked, "\x00") {
+		files[path] = wholeFile
 	}
 	return files, nil
 }
@@ -147,7 +147,11 @@ func parseDiff(diff string) (map[string][]hunk, error) {
 		case strings.HasPrefix(line, "diff --git "):
 			path, inHeader = "", true
 		case inHeader && strings.HasPrefix(line, "+++ "):
-			path = strings.TrimPrefix(strings.TrimPrefix(line, "+++ "), "b/")
+			p, err := diffPath(strings.TrimPrefix(line, "+++ "))
+			if err != nil {
+				return nil, err
+			}
+			path = p
 		case strings.HasPrefix(line, "@@ "):
 			inHeader = false
 			h, err := parseHunk(line)
@@ -158,6 +162,18 @@ func parseDiff(diff string) (map[string][]hunk, error) {
 		}
 	}
 	return files, nil
+}
+
+func diffPath(name string) (string, error) {
+	name = strings.TrimSuffix(name, "\t")
+	if strings.HasPrefix(name, `"`) {
+		unquoted, err := strconv.Unquote(name)
+		if err != nil {
+			return "", fmt.Errorf("diff path %q: %w", name, err)
+		}
+		name = unquoted
+	}
+	return strings.TrimPrefix(name, "b/"), nil
 }
 
 func parseHunk(line string) (hunk, error) {

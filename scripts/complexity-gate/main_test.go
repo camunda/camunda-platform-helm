@@ -196,6 +196,22 @@ func TestRunAllReportsUnchangedFunctions(t *testing.T) {
 	assert.Contains(t, err.Error(), "1 of 2 checked function(s)")
 }
 
+func TestRunReadsChangedFileNamesThatGitQuotes(t *testing.T) {
+	root := newRepo(t, map[string]string{
+		"scripts/tool/a b.go": pkgHeader + complexFunc("Spaced", 31),
+		"scripts/tool/ö.go":   pkgHeader + complexFunc("Umlaut", 31),
+	})
+	writeFile(t, root, "scripts/tool/a b.go", pkgHeader+complexFunc("Spaced", 32))
+	writeFile(t, root, "scripts/tool/ö.go", pkgHeader+complexFunc("Umlaut", 32))
+	writeFile(t, root, "scripts/tool/ä b.go", pkgHeader+complexFunc("Untracked", 31))
+
+	var out bytes.Buffer
+	require.Error(t, run(root, "main", false, &out))
+	assert.Contains(t, out.String(), "scripts/tool/a b.go:3: Spaced: cognitive 32 > 30")
+	assert.Contains(t, out.String(), "scripts/tool/ö.go:3: Umlaut: cognitive 32 > 30")
+	assert.Contains(t, out.String(), "scripts/tool/ä b.go:3: Untracked: cognitive 31 > 30")
+}
+
 func TestRunAllReadsFileNamesThatGitQuotes(t *testing.T) {
 	root := newRepo(t, map[string]string{
 		"scripts/tool/a b.go": pkgHeader + complexFunc("Big", 31),
@@ -265,6 +281,23 @@ deleted file mode 100644
 		"scripts/a.go":   {{start: 3, count: 1}, {start: 9, count: 0}},
 		"scripts/new.go": {{start: 2, count: 3}},
 		"/dev/null":      {{start: 0, count: 0}},
+	}, files)
+}
+
+func TestParseDiffDecodesQuotedPaths(t *testing.T) {
+	diff := "diff --git \"a/scripts/\\303\\244.go\" \"b/scripts/\\303\\244.go\"\n" +
+		"--- \"a/scripts/\\303\\244.go\"\n" +
+		"+++ \"b/scripts/\\303\\244.go\"\n" +
+		"@@ -1 +1 @@\n" +
+		"diff --git a/scripts/a b.go b/scripts/a b.go\n" +
+		"--- a/scripts/a b.go\t\n" +
+		"+++ b/scripts/a b.go\t\n" +
+		"@@ -2 +2,2 @@\n"
+	files, err := parseDiff(diff)
+	require.NoError(t, err)
+	assert.Equal(t, map[string][]hunk{
+		"scripts/ä.go":   {{start: 1, count: 1}},
+		"scripts/a b.go": {{start: 2, count: 2}},
 	}, files)
 }
 
