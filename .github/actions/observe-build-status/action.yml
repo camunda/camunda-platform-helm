@@ -75,9 +75,9 @@ runs:
 
       # only submit plausible durations between 0 and 72 hours
       if (( duration >= 0 && duration <= 259200 )); then
-        echo "result=$(( duration * 1000 ))" >> $GITHUB_OUTPUT
+        echo "result=$(( duration * 1000 ))" >> "$GITHUB_OUTPUT"
       else
-        echo "result=" >> $GITHUB_OUTPUT
+        echo "result=" >> "$GITHUB_OUTPUT"
       fi
 
   ######################## Report build result #############################

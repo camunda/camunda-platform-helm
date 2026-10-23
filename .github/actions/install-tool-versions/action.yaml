@@ -165,7 +165,7 @@ runs:
               break
             else
               echo "⚠️ Attempt $attempt failed (exit code: $exit_code)"
-              if [ $attempt -lt $MAX_RETRIES ]; then
+              if [ "$attempt" -lt "$MAX_RETRIES" ]; then
                 echo "⏳ Waiting ${RETRY_DELAY}s before retry..."
                 sleep $RETRY_DELAY
                 RETRY_DELAY=$((RETRY_DELAY * 2))
@@ -201,7 +201,7 @@ runs:
           echo "=== asdf installer logs under $root ==="
           # Group each log in the Actions UI
           while IFS= read -r -d '' f; do
-            echo "::group::${f#$root/}"
+            echo "::group::${f#"$root"/}"
             cat "$f" || true
             echo "::endgroup::"
           done < <(find "$root" -type f -name install.log -print0)
