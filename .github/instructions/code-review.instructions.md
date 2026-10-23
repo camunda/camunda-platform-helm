@@ -162,6 +162,9 @@ func TestDeploymentTemplate(t *testing.T) {
 
 - [ ] Does `make go.complexity` pass? It fails on a `run:` block that the PR adds or grows above
   the limits in `github-actions.instructions.md`.
+- [ ] Does a bash-to-Go port stay inside the port rules in `scripting.instructions.md`: at most
+  about twice the removed bash lines, no new module, no interface with one implementation, existing
+  helpers reused, bash behaviour kept, and a test that compares Go and bash output?
 
 ```yaml
 # GOOD — action pinned to SHA with version comment
