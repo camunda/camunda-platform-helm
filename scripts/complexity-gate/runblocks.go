@@ -53,7 +53,7 @@ func checkRunBlocks(repoRoot, base string, all bool, out io.Writer) error {
 	}
 	paths := make([]string, 0, len(files))
 	for path := range files {
-		if strings.HasSuffix(path, ".yaml") || strings.HasSuffix(path, ".yml") {
+		if isWorkflowFile(path) {
 			paths = append(paths, path)
 		}
 	}
@@ -86,10 +86,11 @@ func checkRunBlocks(repoRoot, base string, all bool, out io.Writer) error {
 		len(violations), checked, scope, limits)
 }
 
-func workflowFiles(repoRoot, base string, all bool) (string, map[string]string, error) {
+func workflowFiles(repoRoot, base string, all bool) (string, map[string][]string, error) {
 	listArgs := []string{"ls-files", "-z"}
 	mergeBase := ""
-	files := map[string]string{}
+	files := map[string][]string{}
+	var added, deleted []string
 	if !all {
 		out, err := git(repoRoot, "merge-base", base, "HEAD")
 		if err != nil {
@@ -104,12 +105,16 @@ func workflowFiles(repoRoot, base string, all bool) (string, map[string]string, 
 		for i := 0; i+1 < len(fields); i += 2 {
 			switch fields[i][0] {
 			case 'R':
-				files[fields[i+2]] = fields[i+1]
+				files[fields[i+2]] = []string{fields[i+1]}
 				i++
-			case 'A', 'D':
-				files[fields[i+1]] = ""
+			case 'A':
+				added = append(added, fields[i+1])
+			case 'D':
+				if isWorkflowFile(fields[i+1]) {
+					deleted = append(deleted, fields[i+1])
+				}
 			default:
-				files[fields[i+1]] = fields[i+1]
+				files[fields[i+1]] = []string{fields[i+1]}
 			}
 		}
 		listArgs = append(listArgs, "--others", "--exclude-standard")
@@ -119,12 +124,19 @@ func workflowFiles(repoRoot, base string, all bool) (string, map[string]string, 
 		return "", nil, err
 	}
 	for path := range strings.SplitSeq(listed, "\x00") {
-		files[path] = ""
+		added = append(added, path)
+	}
+	for _, path := range added {
+		files[path] = deleted
 	}
 	return mergeBase, files, nil
 }
 
-func checkWorkflow(repoRoot, path, mergeBase, basePath string) ([]string, int, error) {
+func isWorkflowFile(path string) bool {
+	return strings.HasSuffix(path, ".yaml") || strings.HasSuffix(path, ".yml")
+}
+
+func checkWorkflow(repoRoot, path, mergeBase string, basePaths []string) ([]string, int, error) {
 	src, err := os.ReadFile(filepath.Join(repoRoot, path))
 	if os.IsNotExist(err) {
 		return nil, 0, nil
@@ -137,14 +149,16 @@ func checkWorkflow(repoRoot, path, mergeBase, basePath string) ([]string, int, e
 		return nil, 0, err
 	}
 	var baseBlocks []runBlock
-	if basePath != "" {
+	for _, basePath := range basePaths {
 		baseSrc, err := git(repoRoot, "show", mergeBase+":"+basePath)
 		if err != nil {
 			return nil, 0, err
 		}
-		if baseBlocks, err = parseRunBlocks([]byte(baseSrc)); err != nil {
+		pathBlocks, err := parseRunBlocks([]byte(baseSrc))
+		if err != nil {
 			return nil, 0, fmt.Errorf("%s on %s: %w", basePath, mergeBase, err)
 		}
+		baseBlocks = append(baseBlocks, pathBlocks...)
 	}
 	return runBlockViolations(path, blocks, baseBlocks), len(blocks), nil
 }
@@ -156,11 +170,11 @@ func runBlockViolations(path string, blocks, baseBlocks []runBlock) []string {
 	}
 	before := map[string]runBlock{}
 	unchanged := map[string]bool{}
-	renamed := map[string]bool{}
+	renamed := map[string]int{}
 	for _, b := range baseBlocks {
 		unchanged[b.step+"\x00"+b.script] = true
 		if !headSteps[b.step] {
-			renamed[b.script] = true
+			renamed[b.script]++
 		}
 		if prev, ok := before[b.step]; ok {
 			b.cyclomatic, b.lines = min(b.cyclomatic, prev.cyclomatic), min(b.lines, prev.lines)
@@ -172,12 +186,17 @@ func runBlockViolations(path string, blocks, baseBlocks []runBlock) []string {
 	for _, b := range blocks {
 		prev, known := before[b.step]
 		over := b.overLimits()
-		switch {
-		case over == "", unchanged[b.step+"\x00"+b.script], !known && renamed[b.script]:
+		if over == "" || unchanged[b.step+"\x00"+b.script] {
 			continue
-		case known && b.cyclomatic <= prev.cyclomatic && b.lines <= prev.lines:
+		}
+		if !known && renamed[b.script] > 0 {
+			renamed[b.script]--
 			continue
-		case known:
+		}
+		if known && b.cyclomatic <= prev.cyclomatic && b.lines <= prev.lines {
+			continue
+		}
+		if known {
 			over += fmt.Sprintf(", up from cyclomatic %d, %d lines", prev.cyclomatic, prev.lines)
 		}
 		violations = append(violations, fmt.Sprintf("%s:%d: %s: %s", path, b.line, b.step, over))
