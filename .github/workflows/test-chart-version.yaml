@@ -38,10 +38,11 @@ on:
           - gke,eks
       flows:
         description: The flows to run
-        default: ""
+        default: none
         required: false
         type: choice
         options:
+          - none
           - install
           - upgrade-patch
           - upgrade-minor

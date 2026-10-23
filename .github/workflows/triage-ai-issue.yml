@@ -143,6 +143,7 @@ jobs:
             echo "📋 Bulk mode: fetching untriaged issues from Project #${PROJECT_NUMBER}"
 
             # Query for issues in Inbox status without TRIAGE:COMPLETED label
+            # shellcheck disable=SC2016
             QUERY='
               query($owner:String!, $repo:String!, $projectNumber:Int!) {
                 repository(owner:$owner, name:$repo) {
@@ -288,6 +289,7 @@ jobs:
               -H "Content-Type: application/json" \
               -d "$GLEAN_REQUEST")
 
+            # shellcheck disable=SC2181
             if [[ "$?" != "0" ]]; then
               echo "❌ Glean API call failed"
               echo "GLEAN_RESPONSE: ${GLEAN_RESPONSE}"
@@ -320,6 +322,7 @@ jobs:
             echo "✅ Received AI response"
 
             # Extract JSON from AI response (it might be wrapped in markdown code blocks)
+            # shellcheck disable=SC2016
             AI_JSON=$(echo "$AI_TEXT" | sed -n '/^```json$/,/^```$/p' | sed '1d;$d')
             if [[ -z "$AI_JSON" ]]; then
               # Extract the first JSON object, skipping any prose that precedes it
@@ -340,6 +343,7 @@ jobs:
                 continue
               fi
               echo "💬 Posting error comment and applying triage:manual label..."
+              # shellcheck disable=SC2016
               gh issue comment "$ISSUE_NUMBER" --repo "$OWNER/$REPO" --body "$(printf '❌ **Error triaging #%s — manual triage required**\n\nThe AI triage assistant failed to produce a valid response for this issue. Please triage it manually and apply the appropriate labels.\n\nThe `triage:manual` label has been applied to suppress future automated triage attempts.' "$ISSUE_NUMBER")" || true
               gh issue edit "$ISSUE_NUMBER" --repo "$OWNER/$REPO" --add-label "triage:manual" || true
               continue
@@ -479,6 +483,7 @@ jobs:
             echo "📦 Moving issue to Backlog..."
 
             # Fetch project item and status field details
+            # shellcheck disable=SC2016
             PROJECT_QUERY='
               query($owner:String!, $repo:String!, $issueNumber:Int!, $projectNumber:Int!) {
                 repository(owner:$owner, name:$repo) {
@@ -534,6 +539,7 @@ jobs:
               # Update status field
               # Use flat variables and inline the input object to avoid gh api graphql
               # limitations with nested types like ProjectV2FieldValue
+              # shellcheck disable=SC2016
               MUTATION='mutation($projectId:ID!,$itemId:ID!,$fieldId:ID!,$optionId:String!){updateProjectV2ItemFieldValue(input:{projectId:$projectId,itemId:$itemId,fieldId:$fieldId,value:{singleSelectOptionId:$optionId}}){projectV2Item{id}}}'
               gh api graphql -f query="$MUTATION" \
                 -f projectId="$PROJECT_V2_ID" \
@@ -552,7 +558,7 @@ jobs:
             # Send Slack notification to #team-distribution-github
             echo "📣 Sending Slack notification..."
             ISSUE_URL="$GITHUB_SERVER_URL/$OWNER/$REPO/issues/$ISSUE_NUMBER"
-            SHORT_REPO=$(echo "$REPO" | sed 's/camunda-platform-//')
+            SHORT_REPO="${REPO/camunda-platform-/}"
 
             # Severity prefix for high/critical only; low/mid show no label
             SEVERITY_PREFIX=""
