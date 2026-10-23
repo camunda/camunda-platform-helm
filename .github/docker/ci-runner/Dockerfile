@@ -106,7 +106,7 @@
 #
 # Or build directly:
 #   docker buildx build --platform linux/amd64 \
-#     --build-arg GOLANG_VERSION=1.27.3 \
+#     --build-arg GOLANG_VERSION=<version> \
 #     --build-arg HELM_VERSION=3.19.4 \
 #     -t ci-runner:test .
 #
