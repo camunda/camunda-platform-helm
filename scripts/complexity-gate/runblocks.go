@@ -40,6 +40,7 @@ var (
 
 type runBlock struct {
 	step       string
+	script     string
 	line       int
 	cyclomatic int
 	lines      int
@@ -135,28 +136,53 @@ func checkWorkflow(repoRoot, path, mergeBase, basePath string) ([]string, int, e
 	if err != nil {
 		return nil, 0, err
 	}
-	before := map[string]runBlock{}
+	var baseBlocks []runBlock
 	if basePath != "" {
 		baseSrc, err := git(repoRoot, "show", mergeBase+":"+basePath)
 		if err != nil {
 			return nil, 0, err
 		}
-		baseBlocks, err := parseRunBlocks([]byte(baseSrc))
-		if err != nil {
+		if baseBlocks, err = parseRunBlocks([]byte(baseSrc)); err != nil {
 			return nil, 0, fmt.Errorf("%s on %s: %w", basePath, mergeBase, err)
 		}
-		for _, b := range baseBlocks {
-			before[b.step] = b
-		}
 	}
+	return runBlockViolations(path, blocks, baseBlocks), len(blocks), nil
+}
+
+func runBlockViolations(path string, blocks, baseBlocks []runBlock) []string {
+	headSteps := map[string]bool{}
+	for _, b := range blocks {
+		headSteps[b.step] = true
+	}
+	before := map[string]runBlock{}
+	unchanged := map[string]bool{}
+	renamed := map[string]bool{}
+	for _, b := range baseBlocks {
+		unchanged[b.step+"\x00"+b.script] = true
+		if !headSteps[b.step] {
+			renamed[b.script] = true
+		}
+		if prev, ok := before[b.step]; ok {
+			b.cyclomatic, b.lines = min(b.cyclomatic, prev.cyclomatic), min(b.lines, prev.lines)
+		}
+		before[b.step] = b
+	}
+
 	var violations []string
 	for _, b := range blocks {
 		prev, known := before[b.step]
-		if over := b.overLimits(prev, known); over != "" {
-			violations = append(violations, fmt.Sprintf("%s:%d: %s: %s", path, b.line, b.step, over))
+		over := b.overLimits()
+		switch {
+		case over == "", unchanged[b.step+"\x00"+b.script], !known && renamed[b.script]:
+			continue
+		case known && b.cyclomatic <= prev.cyclomatic && b.lines <= prev.lines:
+			continue
+		case known:
+			over += fmt.Sprintf(", up from cyclomatic %d, %d lines", prev.cyclomatic, prev.lines)
 		}
+		violations = append(violations, fmt.Sprintf("%s:%d: %s: %s", path, b.line, b.step, over))
 	}
-	return violations, len(blocks), nil
+	return violations
 }
 
 func parseRunBlocks(src []byte) ([]runBlock, error) {
@@ -167,13 +193,6 @@ func parseRunBlocks(src []byte) ([]runBlock, error) {
 	var blocks []runBlock
 	if err := collectRunBlocks(&doc, "", strings.Split(string(src), "\n"), &blocks); err != nil {
 		return nil, err
-	}
-	seen := map[string]int{}
-	for i := range blocks {
-		seen[blocks[i].step]++
-		if n := seen[blocks[i].step]; n > 1 {
-			blocks[i].step += "#" + strconv.Itoa(n)
-		}
 	}
 	return blocks, nil
 }
@@ -270,7 +289,7 @@ func measureRun(n *yaml.Node) (runBlock, error) {
 	if err != nil {
 		return runBlock{}, fmt.Errorf("run block at line %d: %w", n.Line, err)
 	}
-	b := runBlock{line: n.Line, cyclomatic: bashCyclomatic(file)}
+	b := runBlock{script: n.Value, line: n.Line, cyclomatic: bashCyclomatic(file)}
 	for line := range strings.Lines(n.Value) {
 		if strings.TrimSpace(line) != "" {
 			b.lines++
@@ -303,12 +322,12 @@ func bashCyclomatic(file *syntax.File) int {
 	return complexity
 }
 
-func (b runBlock) overLimits(before runBlock, known bool) string {
+func (b runBlock) overLimits() string {
 	var over []string
-	if b.cyclomatic > maxRunCyclomatic && (!known || b.cyclomatic > before.cyclomatic) {
+	if b.cyclomatic > maxRunCyclomatic {
 		over = append(over, fmt.Sprintf("cyclomatic %d > %d", b.cyclomatic, maxRunCyclomatic))
 	}
-	if b.lines > maxRunLines && (!known || b.lines > before.lines) {
+	if b.lines > maxRunLines {
 		over = append(over, fmt.Sprintf("%d lines > %d", b.lines, maxRunLines))
 	}
 	return strings.Join(over, ", ")
