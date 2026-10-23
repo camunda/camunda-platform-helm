@@ -1,5 +1,21 @@
 # Changelog
 
+## [12.14.2](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.7-12.14.1...camunda-platform-8.7-12.14.2) (2026-10-23)
+
+
+### Dependencies
+
+* update camunda-platform-images (patch) ([#7421](https://github.com/camunda/camunda-platform-helm/issues/7421)) ([a5ee96e](https://github.com/camunda/camunda-platform-helm/commit/a5ee96e435b83c3964552d94788fe1765e152b5a))
+* update camunda-platform-images (patch) ([#7558](https://github.com/camunda/camunda-platform-helm/issues/7558)) ([42dcd61](https://github.com/camunda/camunda-platform-helm/commit/42dcd61afbd3331d882359c924a314c1dd445055))
+* update camunda-platform-images (patch) ([#7639](https://github.com/camunda/camunda-platform-helm/issues/7639)) ([6527ba0](https://github.com/camunda/camunda-platform-helm/commit/6527ba051a9d28c6c5fcc7479a052e2f1c03acad))
+* update camunda-platform-images (patch) ([#7670](https://github.com/camunda/camunda-platform-helm/issues/7670)) ([5180eae](https://github.com/camunda/camunda-platform-helm/commit/5180eae12ed196054950c0b3ff704fce37ad9ab4))
+* update camunda/identity docker tag to v8.7.26 ([#7557](https://github.com/camunda/camunda-platform-helm/issues/7557)) ([24369e0](https://github.com/camunda/camunda-platform-helm/commit/24369e0fa0e6b0320d1e0ff4ffaba2ffcc8919fc))
+* update patch-updates (patch) ([#7518](https://github.com/camunda/camunda-platform-helm/issues/7518)) ([568a320](https://github.com/camunda/camunda-platform-helm/commit/568a320b1aeb087bbf9fb17b3d2125fc4b89c69c))
+* update patch-updates (patch) ([#7561](https://github.com/camunda/camunda-platform-helm/issues/7561)) ([7708f81](https://github.com/camunda/camunda-platform-helm/commit/7708f81a1ec92e2e442b3c000a6219b48252baa3))
+* update patch-updates (patch) ([#7605](https://github.com/camunda/camunda-platform-helm/issues/7605)) ([43a8d47](https://github.com/camunda/camunda-platform-helm/commit/43a8d4731704df2b8839a67cd8564fb67e3e95fe))
+* update patch-updates (patch) ([#7614](https://github.com/camunda/camunda-platform-helm/issues/7614)) ([4005f79](https://github.com/camunda/camunda-platform-helm/commit/4005f793c7423ff4fad3336bc040cd14a5cc6ea0))
+* update patch-updates (patch) ([#7618](https://github.com/camunda/camunda-platform-helm/issues/7618)) ([c565042](https://github.com/camunda/camunda-platform-helm/commit/c56504296275003045f3a448bde080eedcde2d3d))
+
 ## [12.14.1](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.7-12.14.0...camunda-platform-8.7-12.14.1) (2026-10-07)
 
 
