@@ -21,3 +21,5 @@ zbctl v8.6.0
 jq 1.8.1
 # renovate: datasource=github-releases depName=bats-core/bats-core extractVersion=^v(?<version>.+)$
 bats 1.11.0
+# renovate: datasource=github-releases depName=BurntSushi/ripgrep
+ripgrep 15.2.0
