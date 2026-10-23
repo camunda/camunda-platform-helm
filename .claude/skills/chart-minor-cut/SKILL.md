@@ -157,7 +157,6 @@ Make these changes outside the chart directory:
 | `.github/config/pr-labeler.yaml` | Add `version/N` for `NEW/**`. |
 | `.github/config/permitted-flows.yaml` | Add `==N` with `deny: [upgrade-patch]`. If `P` is not GA, also deny `upgrade-minor`, and remove the `upgrade-minor` flow from the scenarios in `NEW/test/ci/registry/`. The registry validation fails on a scenario flow that this file denies. When `P` becomes GA, remove the `upgrade-minor` deny for `N` and add the `upgrade-minor` flow back to those scenarios. Without this follow-up, `N` has no minor-upgrade coverage. |
 | `.github/workflows/test-chart-version.yaml` | Add `"N"` to the version choices. |
-| `.github/workflows/test-release-tooling.yaml` | Add `N` to the chart loop. |
 | `scripts/release-tools/inject_values.go` | Add `N` to `validVersions` and to the error text. Check the component set in the `mergeImageTags` switch. |
 | `scripts/render-e2e-env.sh` | Make a bare `SNAPSHOT` version resolve to `SM-N`. |
 | `docs/reference/release-process.md` | Add `M.x` = Camunda `N` to the version map. |
@@ -175,7 +174,7 @@ Check: these commands exit with code 0, and the `git grep` shows `N` in each fil
 python3 -m json.tool .github/config/release-please/release-please-config.json > /dev/null
 python3 -m json.tool .github/config/release-please/.release-please-manifest.json > /dev/null
 git grep -c 'N' -- charts/chart-versions.yaml .github/config .github/renovate.json5 \
-  .github/workflows/test-chart-version.yaml .github/workflows/test-release-tooling.yaml \
+  .github/workflows/test-chart-version.yaml \
   scripts/release-tools/inject_values.go scripts/render-e2e-env.sh docs/reference/release-process.md
 ```
 
