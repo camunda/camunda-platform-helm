@@ -1,52 +1,31 @@
 {
   extends: [
-    'config:recommended',
-    'helpers:pinGitHubActionDigests',
+    'github>camunda/infraex-common-config:default.json5',
     ':semanticCommitTypeAll(deps)',
     // Rebase Renovate PRs only on real conflicts, not on every base-branch push.
     // Provides rebaseWhen: conflicted, rebaseLabel: rebase, keepUpdatedLabel: keep-updated.
     'github>camunda/infra-renovate-config:rebase.json5',
   ],
+  ignorePaths: [
+    '**/node_modules/**',
+    '**/bower_components/**',
+    '**/vendor/**',
+    '**/examples/**',
+    '**/__tests__/**',
+    '**/test/**',
+    '**/tests/**',
+    '**/__fixtures__/**',
+  ],
   semanticCommitScope: '',
   labels: [
     'dependencies',
   ],
-  dependencyDashboard: true,
-  prHourlyLimit: 6,
-  prConcurrentLimit: 20,
-  recreateWhen: 'always',
-  commitBodyTable: true,
-  separateMajorMinor: true,
   separateMinorPatch: true,
   ignoreTests: false,
   prCreation: 'not-pending',
-  prBodyNotes: [
-    '{{#if isMajor}}:warning: THIS IS A MAJOR VERSION UPDATE :warning:{{/if}}',
-    'Before merging, *always* check with the release notes if any other changes need to be done.',
-  ],
-  // Global grouping strategy: minor and patch updates batched, major updates separate
-  major: {
-    enabled: true,
-    addLabels: ['upgrade:major'],
-  },
-  minor: {
-    enabled: true,
-    addLabels: ['upgrade:minor'],
-    groupName: 'minor-updates',
-  },
-  patch: {
-    enabled: true,
-    addLabels: ['upgrade:patch'],
-    groupName: 'patch-updates',
-  },
   digest: {
     enabled: true,
     addLabels: ['upgrade:digest'],
-    groupName: 'patch-updates',
-  },
-  vulnerabilityAlerts: {
-    addLabels: ['security'],
-    enabled: true,
   },
   lockFileMaintenance: {
     enabled: true,
@@ -69,67 +48,17 @@
       '^\\.github/workflows/[^/]+\\.ya?ml$',
     ],
   },
-  customDatasources: {
-    'rosa-camunda': {
-      defaultRegistryUrlTemplate: 'https://camunda.github.io/camunda-tf-rosa/rosa_versions.txt',
-      format: 'plain',
-    },
-    // Bitnami Premium image tags published by camunda-deployment-references, one
-    // self-contained JSON per image. Only the 'version' field is used here; the
-    // feed also carries 'newDigest', but custom json datasources do not consume or
-    // maintain digest pins (these values pin tags, not digests).
-    // Complete upstream tag list (incl. pre-Nov-2025 tags), no registry creds.
-    // Opt in per image with a '# renovate: datasource=custom.bitnami-<x>-camunda'
-    // annotation in values-enterprise.yaml (see customManagers).
-    'bitnami-postgresql-camunda': {
-      defaultRegistryUrlTemplate: 'https://camunda.github.io/camunda-deployment-references/bitnami_postgresql.json',
-      format: 'json',
-    },
-    'bitnami-os-shell-camunda': {
-      defaultRegistryUrlTemplate: 'https://camunda.github.io/camunda-deployment-references/bitnami_os-shell.json',
-      format: 'json',
-    },
-    'bitnami-postgres-exporter-camunda': {
-      defaultRegistryUrlTemplate: 'https://camunda.github.io/camunda-deployment-references/bitnami_postgres-exporter.json',
-      format: 'json',
-    },
-    'bitnami-elasticsearch-camunda': {
-      defaultRegistryUrlTemplate: 'https://camunda.github.io/camunda-deployment-references/bitnami_elasticsearch.json',
-      format: 'json',
-    },
-    'bitnami-elasticsearch-exporter-camunda': {
-      defaultRegistryUrlTemplate: 'https://camunda.github.io/camunda-deployment-references/bitnami_elasticsearch-exporter.json',
-      format: 'json',
-    },
-    'bitnami-keycloak-config-cli-camunda': {
-      defaultRegistryUrlTemplate: 'https://camunda.github.io/camunda-deployment-references/bitnami_keycloak-config-cli.json',
-      format: 'json',
-    },
-    'bitnami-keycloak-camunda': {
-      defaultRegistryUrlTemplate: 'https://camunda.github.io/camunda-deployment-references/bitnami_keycloak.json',
-      format: 'json',
-    },
-  },
   packageRules: [
-    // Bitnami Premium tags are '<x.y.z>-debian-<n>-rN'. The values-enterprise.yaml
-    // customManager falls back to 'docker' when an annotation carries no inline
-    // 'versioning=', and 'docker' does not order across the '-rN' revision. That
-    // failure is silent: the dependency resolves, there is no skipReason and no
-    // warning, it is simply never offered an update again. Attaching the versioning
-    // to the datasources makes the inline 'versioning=' in values-enterprise.yaml
-    // redundant rather than load-bearing.
     {
-      description: 'Bitnami Premium tags carry a -rN revision the default versionings cannot move.',
-      matchDatasources: [
-        'custom.bitnami-postgresql-camunda',
-        'custom.bitnami-os-shell-camunda',
-        'custom.bitnami-postgres-exporter-camunda',
-        'custom.bitnami-elasticsearch-camunda',
-        'custom.bitnami-elasticsearch-exporter-camunda',
-        'custom.bitnami-keycloak-config-cli-camunda',
-        'custom.bitnami-keycloak-camunda',
-      ],
-      versioning: 'regex:^(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)(-(?<compatibility>debian-\\d+)-r(?<build>\\d+))?$',
+      description: 'This repository is the source of custom.helm-camunda, so it keeps the asdf helm/helm updates the preset disables.',
+      matchManagers: ['asdf'],
+      matchPackageNames: ['helm/helm'],
+      enabled: true,
+    },
+    {
+      description: 'Keep devDependency ranges instead of the preset pinDevDependencies.',
+      matchDepTypes: ['devDependencies'],
+      rangeStrategy: 'auto',
     },
     // vendor-ee/postgresql in the 8.7/8.8/8.9 enterprise values is sourced from
     // the bitnami-postgresql-camunda custom datasource (see customManagers);
@@ -165,16 +94,9 @@
       schedule: ['* 0-6,18-23 * * 5'],
     },
     {
-      description: 'Schedule minor updates for Saturdays.',
-      matchUpdateTypes: ['minor'],
-      excludePackageNames: ['/.*camunda.*/'],
-      schedule: ['* * * * 6'],
-    },
-    {
-      description: 'Schedule patch/digest updates for Sundays.',
-      matchUpdateTypes: ['pin', 'digest', 'patch'],
-      excludePackageNames: ['/.*camunda.*/'],
-      schedule: ['* * * * 0'],
+      description: 'Camunda packages are not bound to the preset update schedules.',
+      matchPackageNames: ['/.*camunda.*/'],
+      schedule: ['at any time'],
     },
     {
       addLabels: ['deps/charts'],
@@ -456,18 +378,6 @@
   ],
   customManagers: [
     {
-      // This is mainly used to Camunda alpha chart.
-      customType: 'regex',
-      fileMatch: [
-        '\\.yaml$',
-      ],
-      datasourceTemplate: 'github-tags',
-      matchStrings: [
-        '# renovate: datasource=github-tags depName=(?<depName>.+?)( versioning=(?<versioning>.+?))?(?: (lookupName|packageName)=(?<packageName>[^\\s]+?))?\\s+?version: (?<currentValue>\\S+)',
-      ],
-      versioningTemplate: '{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}',
-    },
-    {
       // This is used to update npm packages in GitHub Actions workflows and Makefile.
       customType: 'regex',
       fileMatch: [
@@ -480,37 +390,6 @@
         '# renovate: datasource=npm depName=(?<depName>[^\\s]+?)\\s*\\n\\s*readmeGeneratorVersion = (?<currentValue>\\S+)',
       ],
       versioningTemplate: 'semver',
-    },
-    {
-      // This is mainly used to update enterprise image tags like Console and Web-Modeler.
-      // Console and Web-Modeler Self-Managed versions are different from SaaS versions,
-      // hence, we use image tags from Camunda private registry as a source of truth for those components.
-      // Another use case is Elasticsearch public Docker registry.
-      customType: 'regex',
-      fileMatch: [
-        '\\.yaml$',
-      ],
-      datasourceTemplate: 'docker',
-      matchStrings: [
-        '# renovate: datasource=docker depName=(?<depName>[^\\s]+?)(?: (lookupName|packageName)=(?<packageName>[^\\s]+?))?(?: versioning=(?<versioning>[^\\s]+?))?(?: registryUrl=(?<registryUrl>[^\\s]+?))?\\s*?(tag|imageTag): (?<currentValue>\\S+)',
-      ],
-      versioningTemplate: '{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}',
-    },
-    // Bitnami Premium image tags sourced from the camunda-deployment-references
-    // custom datasources (complete upstream list, credential-free). Opt in per
-    // image with '# renovate: datasource=custom.bitnami-<x>-camunda depName=<x>
-    // versioning=regex:...'. Bitnami '<x.y.z>-debian-12-rN' tags require regex
-    // versioning; docker versioning does not order across the '-rN' build suffix.
-    {
-      customType: 'regex',
-      fileMatch: [
-        'values-enterprise\\.yaml$',
-      ],
-      matchStrings: [
-        '# renovate: datasource=(?<datasource>custom\\.bitnami-[^\\s]+?) depName=(?<depName>[^\\s]+?)(?: versioning=(?<versioning>[^\\s]+?))?\\s*?tag: (?<currentValue>\\S+)',
-      ],
-      datasourceTemplate: '{{{datasource}}}',
-      versioningTemplate: '{{#if versioning}}{{{versioning}}}{{else}}docker{{/if}}',
     },
     // Keep repository, tag, and digest adjacent so a digest-less image block
     // cannot consume the digest from the next component.
@@ -549,19 +428,6 @@
       depNameTemplate: 'helm/helm',
       datasourceTemplate: 'github-releases',
       extractVersionTemplate: '^v(?<version>\\S+)',
-      versioningTemplate: 'semver',
-    },
-    // Tools the asdf manager does not know. Same annotation syntax as
-    // camunda/infraex-common-config, so this manager can go once the repo extends it.
-    {
-      customType: 'regex',
-      fileMatch: [
-        '(^|/)\\.tool-versions$',
-      ],
-      matchStrings: [
-        '# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)(?: extractVersion=(?<extractVersion>\\S+))?[ \\t]*\\r?\\n[^\\s#]+[ \\t]+(?<currentValue>[^\\s#]+)',
-      ],
-      extractVersionTemplate: '{{#if extractVersion}}{{{extractVersion}}}{{else}}^(?<version>.+)${{/if}}',
       versioningTemplate: 'semver',
     },
   ],
