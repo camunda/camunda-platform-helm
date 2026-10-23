@@ -16,6 +16,7 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"flag"
 	"fmt"
 	"go/ast"
@@ -51,7 +52,7 @@ var wholeFile = []hunk{{start: 1, count: math.MaxInt32}}
 func main() {
 	repoRoot := flag.String("repo-root", ".", "path to the camunda-platform-helm repo root")
 	base := flag.String("base", "origin/main", "git ref; the change is the diff from its merge base with HEAD to the working tree")
-	all := flag.Bool("all", false, "check every function under scripts/, changed or not")
+	all := flag.Bool("all", false, "check every function under scripts/ and every workflow run block, changed or not")
 	flag.Parse()
 
 	if err := run(*repoRoot, *base, *all, os.Stdout); err != nil {
@@ -61,6 +62,10 @@ func main() {
 }
 
 func run(repoRoot, base string, all bool, out io.Writer) error {
+	return errors.Join(checkFuncs(repoRoot, base, all, out), checkRunBlocks(repoRoot, all, out))
+}
+
+func checkFuncs(repoRoot, base string, all bool, out io.Writer) error {
 	var files map[string][]hunk
 	var err error
 	if all {
