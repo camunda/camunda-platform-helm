@@ -1112,6 +1112,8 @@ var prepareScenarioFn = deploy.PrepareScenario
 
 var executePreparedFn = deploy.ExecutePrepared
 
+var dependencyUpdateFn = helm.DependencyUpdate
+
 // preparedTopologyRelease pairs a topology release with the flags and prepared scenario built for
 // it, so the deploy loop and the topology-level post-deploy hook can both address it.
 type preparedTopologyRelease struct {
@@ -1340,6 +1342,9 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 		return err
 	}
 
+	if err := updateTopologyChartDependencies(ctx, preparedReleases); err != nil {
+		return fmt.Errorf("topology entry %s/%s: %w", entry.Version, entry.Scenario, err)
+	}
 	if err := deployTopologyLevels(ctx, entry.Scenario, preparedLevels); err != nil {
 		return err
 	}
@@ -1349,6 +1354,27 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 	}
 
 	return runTopologyE2ELegs(ctx, entry, opts, platform, contexts, crossRefEnv, orchestrationIndices)
+}
+
+// updateTopologyChartDependencies runs `helm dependency update` once per local chart path for the
+// releases that would otherwise run it during deploy, then marks those releases to skip it, so
+// releases deploying concurrently from one chart directory never rewrite its charts/ at the same time.
+func updateTopologyChartDependencies(ctx context.Context, releases []preparedTopologyRelease) error {
+	updated := make(map[string]bool, len(releases))
+	for _, release := range releases {
+		if release.flags == nil || release.flags.Chart.SkipDependencyUpdate || release.flags.Chart.Chart != "" || release.flags.Chart.ChartPath == "" {
+			continue
+		}
+		chartPath := release.flags.Chart.ChartPath
+		if !updated[chartPath] {
+			if err := dependencyUpdateFn(ctx, chartPath); err != nil {
+				return err
+			}
+			updated[chartPath] = true
+		}
+		release.flags.Chart.SkipDependencyUpdate = true
+	}
+	return nil
 }
 
 // deployTopologyLevels deploys the levels in order and the releases within a level concurrently.
