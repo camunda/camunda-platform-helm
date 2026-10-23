@@ -144,7 +144,8 @@ jobs:
     - name: ⭐️ Test ⭐️
       run: |
         cd charts/${{ inputs.camunda-helm-dir }}/test/unit
-        go test $(printf "./%s " ${{ matrix.test.packages }})
+        mapfile -t packages < <(printf "./%s\n" ${{ matrix.test.packages }})
+        go test "${packages[@]}"
     - name: Observe build status
       if: always()
       continue-on-error: true

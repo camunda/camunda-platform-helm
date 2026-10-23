@@ -125,19 +125,20 @@ jobs:
         timeout-minutes: 10
         run: |
           test -n "${{ env.TEST_HELM_DIGEST_VALUES }}" &&
-            TEST_HELM_EXTRA_ARGS="--values charts/${{ inputs.camunda-helm-dir }}/values-digest.yaml"
+            TEST_HELM_EXTRA_ARGS=(--values "charts/${{ inputs.camunda-helm-dir }}/values-digest.yaml")
           if [[ "${{ inputs.camunda-helm-dir }}" == "camunda-platform-8.11" || "${{ inputs.camunda-helm-dir }}" == "camunda-platform-8.10" || "${{ inputs.camunda-helm-dir }}" == "camunda-platform-8.9" || "${{ inputs.camunda-helm-dir }}" == "camunda-platform-8.8" ]]; then
-            TEST_HELM_EXTRA_ARGS="${TEST_HELM_EXTRA_ARGS} \
-              --set orchestration.service.appProtocols.grpc=kubernetes.io/h2c \
-              --set orchestration.service.appProtocols.management=http \
-              --set orchestration.service.appProtocols.internal=kubernetes.io/h2c \
-              --set orchestration.service.appProtocols.command=kubernetes.io/h2c"
+            TEST_HELM_EXTRA_ARGS+=(
+              --set orchestration.service.appProtocols.grpc=kubernetes.io/h2c
+              --set orchestration.service.appProtocols.management=http
+              --set orchestration.service.appProtocols.internal=kubernetes.io/h2c
+              --set orchestration.service.appProtocols.command=kubernetes.io/h2c
+            )
           fi
-          helm install camunda-platform *.tgz --wait --timeout 10m0s \
+          helm install camunda-platform ./*.tgz --wait --timeout 10m0s \
             --namespace ${{ env.TEST_NAMESPACE }} \
             --values "charts/${{ inputs.camunda-helm-dir }}/test/integration/scenarios/common/values-integration-test-pull-secrets.yaml" \
             --values "charts/${{ inputs.camunda-helm-dir }}/values-local.yaml" \
-            ${TEST_HELM_EXTRA_ARGS}
+            "${TEST_HELM_EXTRA_ARGS[@]}"
       - name: Verify appProtocol is set on live Service objects (8.11, 8.10, 8.9, 8.8)
         if: ${{ inputs.camunda-helm-dir == 'camunda-platform-8.11' || inputs.camunda-helm-dir == 'camunda-platform-8.10' ||inputs.camunda-helm-dir == 'camunda-platform-8.9' || inputs.camunda-helm-dir == 'camunda-platform-8.8' }}
         run: |

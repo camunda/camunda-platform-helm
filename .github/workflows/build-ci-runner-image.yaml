@@ -236,23 +236,23 @@ jobs:
       - name: Verify CI Runner image
         run: |
           echo "Pulling and verifying CI Runner image..."
-          docker pull ${CI_RUNNER_IMAGE}:latest
+          docker pull "${CI_RUNNER_IMAGE}:latest"
 
           echo "Testing CI Runner tools..."
-          docker run --rm ${CI_RUNNER_IMAGE}:latest "helm version --short && kubectl version --client && go version && yq --version && jq --version"
+          docker run --rm "${CI_RUNNER_IMAGE}:latest" "helm version --short && kubectl version --client && go version && yq --version && jq --version"
 
           echo "✅ CI Runner image verified successfully"
 
       - name: Verify Playwright Runner image
         run: |
           echo "Pulling and verifying Playwright Runner image..."
-          docker pull ${PLAYWRIGHT_RUNNER_IMAGE}:latest
+          docker pull "${PLAYWRIGHT_RUNNER_IMAGE}:latest"
 
           echo "Testing Playwright Runner tools..."
-          docker run --rm ${PLAYWRIGHT_RUNNER_IMAGE}:latest "helm version --short && kubectl version --client && go version && yq --version && jq --version && npx playwright --version"
+          docker run --rm "${PLAYWRIGHT_RUNNER_IMAGE}:latest" "helm version --short && kubectl version --client && go version && yq --version && jq --version && npx playwright --version"
 
           echo "Verifying prebuilt e2e node_modules and baked browser revision..."
-          docker run --rm --entrypoint sh ${PLAYWRIGHT_RUNNER_IMAGE}:latest -c '
+          docker run --rm --entrypoint sh "${PLAYWRIGHT_RUNNER_IMAGE}:latest" -c '
             set -e
             test -d /opt/e2e-prebuilt/node_modules/@playwright/test
             test ! -d /opt/e2e-prebuilt/node_modules/@camunda/e2e-test-suite
