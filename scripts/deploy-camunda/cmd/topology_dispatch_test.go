@@ -20,8 +20,11 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strings"
+	"sync"
 	"testing"
+	"time"
 
 	"scripts/deploy-camunda/config"
 	"scripts/deploy-camunda/deploy"
@@ -1044,48 +1047,168 @@ func TestResolveSharedStorageServiceName(t *testing.T) {
 	})
 }
 
-func TestTopologyDeployOrder_HubFirst(t *testing.T) {
-	order, err := topologyDeployOrder(testTopologyReleases())
+func TestTopologyDeployLevels_HubFirstThenOrchestrationsTogether(t *testing.T) {
+	levels, err := topologyDeployLevels(testTopologyReleases())
 	if err != nil {
-		t.Fatalf("topologyDeployOrder() unexpected error: %v", err)
+		t.Fatalf("topologyDeployLevels() unexpected error: %v", err)
 	}
-	if len(order) != 3 || order[0] != 0 {
-		t.Fatalf("order = %v, want Hub (index 0) first over 3 releases", order)
-	}
-	// every orchestration (depends-on Hub) must come after index 0
-	for _, idx := range order[1:] {
-		if idx == 0 {
-			t.Fatalf("Hub index appeared after position 0: %v", order)
-		}
+	if want := [][]int{{0}, {1, 2}}; !reflect.DeepEqual(levels, want) {
+		t.Fatalf("levels = %v, want %v", levels, want)
 	}
 }
 
-func TestTopologyDeployOrder_ChainedDependency(t *testing.T) {
+func TestTopologyDeployLevels_OptimizeWaitsForServedOrchestration(t *testing.T) {
+	releases := []matrix.TopologyRelease{
+		{Role: "hub", NamespaceSuffix: "hub"},
+		{Role: "orchestration", NamespaceSuffix: "orcha", DependsOn: "hub"},
+		{Role: "orchestration", NamespaceSuffix: "orchb", DependsOn: "hub"},
+		{Role: "optimize", NamespaceSuffix: "opta", Serves: "orcha", DependsOn: "hub"},
+		{Role: "optimize", NamespaceSuffix: "optb", Serves: "orchb", DependsOn: "hub"},
+	}
+	levels, err := topologyDeployLevels(releases)
+	if err != nil {
+		t.Fatalf("topologyDeployLevels() unexpected error: %v", err)
+	}
+	if want := [][]int{{0}, {1, 2}, {3, 4}}; !reflect.DeepEqual(levels, want) {
+		t.Fatalf("levels = %v, want %v", levels, want)
+	}
+}
+
+func TestTopologyDeployLevels_ChainedDependency(t *testing.T) {
 	releases := []matrix.TopologyRelease{
 		{Role: "orchestration", NamespaceSuffix: "orchb", DependsOn: "hub"},
 		{Role: "hub", NamespaceSuffix: "hub"},
 		{Role: "aux", NamespaceSuffix: "aux", DependsOn: "orchestration"},
 	}
-	order, err := topologyDeployOrder(releases)
+	levels, err := topologyDeployLevels(releases)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	pos := map[int]int{}
-	for p, idx := range order {
-		pos[idx] = p
-	}
-	if pos[1] >= pos[0] || pos[0] >= pos[2] {
-		t.Fatalf("order %v does not satisfy hub(1) < orchestration(0) < aux(2)", order)
+	if want := [][]int{{1}, {0}, {2}}; !reflect.DeepEqual(levels, want) {
+		t.Fatalf("levels = %v, want hub(1) < orchestration(0) < aux(2) as %v", levels, want)
 	}
 }
 
-func TestTopologyDeployOrder_CycleErrors(t *testing.T) {
-	releases := []matrix.TopologyRelease{
-		{Role: "a", DependsOn: "b"},
-		{Role: "b", DependsOn: "a"},
+func TestTopologyDeployLevels_Errors(t *testing.T) {
+	cases := map[string]struct {
+		releases []matrix.TopologyRelease
+		want     string
+	}{
+		"cycle": {
+			releases: []matrix.TopologyRelease{
+				{Role: "a", NamespaceSuffix: "a", DependsOn: "b"},
+				{Role: "b", NamespaceSuffix: "b", DependsOn: "a"},
+			},
+			want: "cycle",
+		},
+		"unknown depends-on role": {
+			releases: []matrix.TopologyRelease{
+				{Role: "orchestration", NamespaceSuffix: "orcha", DependsOn: "hub"},
+			},
+			want: `depends-on "hub"`,
+		},
+		"unknown served suffix": {
+			releases: []matrix.TopologyRelease{
+				{Role: "hub", NamespaceSuffix: "hub"},
+				{Role: "optimize", NamespaceSuffix: "opta", Serves: "orcha", DependsOn: "hub"},
+			},
+			want: `serves "orcha"`,
+		},
 	}
-	if _, err := topologyDeployOrder(releases); err == nil {
-		t.Fatal("expected cycle error, got nil")
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			_, err := topologyDeployLevels(tc.releases)
+			if err == nil || !strings.Contains(err.Error(), tc.want) {
+				t.Fatalf("topologyDeployLevels() error = %v, want it to contain %q", err, tc.want)
+			}
+		})
+	}
+}
+
+func testPreparedTopologyRelease(role, suffix string) preparedTopologyRelease {
+	return preparedTopologyRelease{
+		release:   matrix.TopologyRelease{Role: role, NamespaceSuffix: suffix},
+		flags:     &config.RuntimeFlags{Deployment: config.DeploymentFlags{Namespace: suffix}},
+		namespace: suffix,
+	}
+}
+
+func TestDeployTopologyLevels_RunsReleasesOfALevelConcurrently(t *testing.T) {
+	hub := testPreparedTopologyRelease("hub", "hub")
+	orchestrations := []preparedTopologyRelease{
+		testPreparedTopologyRelease("orchestration", "orcha"),
+		testPreparedTopologyRelease("orchestration", "orchb"),
+		testPreparedTopologyRelease("orchestration", "orchc"),
+	}
+
+	var mu sync.Mutex
+	var started []string
+	arrived := make(chan struct{}, len(orchestrations))
+	unblock := make(chan struct{})
+	var unblockOnce sync.Once
+	release := func() { unblockOnce.Do(func() { close(unblock) }) }
+	t.Cleanup(release)
+
+	original := executePreparedFn
+	t.Cleanup(func() { executePreparedFn = original })
+	executePreparedFn = func(_ context.Context, _ *deploy.PreparedScenario, flags *config.RuntimeFlags) error {
+		mu.Lock()
+		started = append(started, flags.Deployment.Namespace)
+		mu.Unlock()
+		if flags.Deployment.Namespace == "hub" {
+			return nil
+		}
+		arrived <- struct{}{}
+		<-unblock
+		return nil
+	}
+
+	done := make(chan error, 1)
+	go func() {
+		done <- deployTopologyLevels(context.Background(), "multinamespace-2orch", [][]preparedTopologyRelease{{hub}, orchestrations})
+	}()
+	for range orchestrations {
+		select {
+		case <-arrived:
+		case <-time.After(5 * time.Second):
+			t.Fatal("the releases of one level did not all start before any of them finished")
+		}
+	}
+	release()
+	if err := <-done; err != nil {
+		t.Fatalf("deployTopologyLevels() unexpected error: %v", err)
+	}
+	if len(started) != 4 || started[0] != "hub" {
+		t.Fatalf("started = %v, want hub first and then all three orchestration releases", started)
+	}
+}
+
+func TestDeployTopologyLevels_FailureFinishesItsLevelAndStopsTheNext(t *testing.T) {
+	var mu sync.Mutex
+	var deployed []string
+	original := executePreparedFn
+	t.Cleanup(func() { executePreparedFn = original })
+	executePreparedFn = func(_ context.Context, _ *deploy.PreparedScenario, flags *config.RuntimeFlags) error {
+		mu.Lock()
+		deployed = append(deployed, flags.Deployment.Namespace)
+		mu.Unlock()
+		if flags.Deployment.Namespace == "orchb" {
+			return errors.New("helm install timed out")
+		}
+		return nil
+	}
+
+	levels := [][]preparedTopologyRelease{
+		{testPreparedTopologyRelease("orchestration", "orcha"), testPreparedTopologyRelease("orchestration", "orchb")},
+		{testPreparedTopologyRelease("optimize", "opta")},
+	}
+	err := deployTopologyLevels(context.Background(), "multinamespace-optimize", levels)
+	if err == nil || !strings.Contains(err.Error(), `"orchb"`) || !strings.Contains(err.Error(), "helm install timed out") {
+		t.Fatalf("deployTopologyLevels() error = %v, want the orchb deploy failure", err)
+	}
+	slices.Sort(deployed)
+	if want := []string{"orcha", "orchb"}; !slices.Equal(deployed, want) {
+		t.Fatalf("deployed = %v, want %v and no release of the next level", deployed, want)
 	}
 }
 
