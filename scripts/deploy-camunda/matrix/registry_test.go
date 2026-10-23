@@ -936,7 +936,7 @@ func TestRegistryValidatorRejectsUnmitigatedBitnamiPersistenceDrop(t *testing.T)
 		{"modular upgrade", "modular-upgrade-minor"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			_, chartDir, regDir, _ := syntheticChartWithPrevious(t, depsWithoutElasticsearch, depsWithElasticsearch)
+			chartDir, regDir, _ := syntheticChartWithPrevious(t, depsWithoutElasticsearch)
 			writeManifest(t, regDir, "    - id: a\n      shortname: a\n      tier: 1\n      enabled: true\n")
 			writeFile(t, filepath.Join(regDir, "scenarios", "a.yaml"),
 				"name: a\nflows: ["+tc.flow+"]\nplatforms: [gke]\npersistence: elasticsearch\n")
@@ -978,7 +978,7 @@ func TestRegistryValidatorExemptsMitigatedBitnamiPersistenceDrop(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			_, chartDir, regDir, _ := syntheticChartWithPrevious(t, depsWithoutElasticsearch, depsWithElasticsearch)
+			chartDir, regDir, _ := syntheticChartWithPrevious(t, depsWithoutElasticsearch)
 			writeManifest(t, regDir, "    - id: a\n      shortname: a\n      tier: 1\n      enabled: true\n")
 			writeFile(t, filepath.Join(regDir, "scenarios", "a.yaml"), tc.scenario)
 			if tc.withHook {
@@ -996,7 +996,7 @@ func TestRegistryValidatorExemptsMitigatedBitnamiPersistenceDrop(t *testing.T) {
 }
 
 func TestRegistryValidatorAcceptsUpgradePersistenceWhenStillBundled(t *testing.T) {
-	_, chartDir, regDir, _ := syntheticChartWithPrevious(t, depsWithElasticsearch, depsWithElasticsearch)
+	chartDir, regDir, _ := syntheticChartWithPrevious(t, depsWithElasticsearch)
 	writeManifest(t, regDir, "    - id: a\n      shortname: a\n      tier: 1\n      enabled: true\n")
 	writeFile(t, filepath.Join(regDir, "scenarios", "a.yaml"),
 		"name: a\nflows: [upgrade-minor]\nplatforms: [gke]\npersistence: elasticsearch\n")
@@ -1007,7 +1007,7 @@ func TestRegistryValidatorAcceptsUpgradePersistenceWhenStillBundled(t *testing.T
 }
 
 func TestRegistryValidatorRejectsUpgradePersistenceMissingFromPreviousVersion(t *testing.T) {
-	_, chartDir, regDir, _ := syntheticChartWithPrevious(t, depsWithElasticsearch, depsWithElasticsearch)
+	chartDir, regDir, _ := syntheticChartWithPrevious(t, depsWithElasticsearch)
 	writePersistence(t, chartDir, "rdbms-self-signed", "")
 	writeManifest(t, regDir, "    - id: a\n      shortname: a\n      tier: 1\n      enabled: true\n")
 	writeFile(t, filepath.Join(regDir, "scenarios", "a.yaml"),
@@ -1020,7 +1020,7 @@ func TestRegistryValidatorRejectsUpgradePersistenceMissingFromPreviousVersion(t 
 }
 
 func TestRegistryValidatorExemptsModularUpgradePersistenceMissingFromPreviousVersion(t *testing.T) {
-	_, chartDir, regDir, _ := syntheticChartWithPrevious(t, depsWithElasticsearch, depsWithElasticsearch)
+	chartDir, regDir, _ := syntheticChartWithPrevious(t, depsWithElasticsearch)
 	writePersistence(t, chartDir, "rdbms-self-signed", "")
 	writeManifest(t, regDir, "    - id: a\n      shortname: a\n      tier: 1\n      enabled: true\n")
 	writeFile(t, filepath.Join(regDir, "scenarios", "a.yaml"),
@@ -1076,7 +1076,7 @@ func TestRegistryValidatorRejectsUpgradeCredentialKeysMissingFromCurrentVersion(
 		{"vault manifest", "[upgrade-minor]", credentialsVaultFile},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			_, chartDir, regDir, prevChartDir := syntheticChartWithPrevious(t, depsWithElasticsearch, depsWithElasticsearch)
+			chartDir, regDir, prevChartDir := syntheticChartWithPrevious(t, depsWithElasticsearch)
 			writeCredentials(t, prevChartDir, tc.file, templateCredentials)
 			writeCredentials(t, chartDir, tc.file, dataCredentialsKept)
 			writeIdentityValues(t, prevChartDir, "dropped")
@@ -1107,7 +1107,7 @@ func TestRegistryValidatorAcceptsUpgradeCredentialKeys(t *testing.T) {
 		{"current version has no manifest", "[upgrade-minor]", "", "dropped"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			_, chartDir, regDir, prevChartDir := syntheticChartWithPrevious(t, depsWithElasticsearch, depsWithElasticsearch)
+			chartDir, regDir, prevChartDir := syntheticChartWithPrevious(t, depsWithElasticsearch)
 			writeCredentials(t, prevChartDir, credentialsFile, templateCredentials)
 			writeIdentityValues(t, prevChartDir, tc.prevReads)
 			if tc.current != "" {
@@ -1272,7 +1272,7 @@ func writePersistence(t *testing.T, chartDir, name, body string) {
 	writeFile(t, filepath.Join(dir, name+".yaml"), body)
 }
 
-func syntheticChartWithPrevious(t *testing.T, currentDeps, prevDeps string) (string, string, string, string) {
+func syntheticChartWithPrevious(t *testing.T, currentDeps string) (string, string, string) {
 	t.Helper()
 	repoRoot, chartDir, regDir := syntheticChart(t)
 	writeFile(t, filepath.Join(chartDir, "Chart.yaml"), "name: camunda-platform\ndependencies:\n"+currentDeps)
@@ -1282,10 +1282,10 @@ func syntheticChartWithPrevious(t *testing.T, currentDeps, prevDeps string) (str
 	if err := os.MkdirAll(prevChartDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	writeFile(t, filepath.Join(prevChartDir, "Chart.yaml"), "name: camunda-platform\ndependencies:\n"+prevDeps)
+	writeFile(t, filepath.Join(prevChartDir, "Chart.yaml"), "name: camunda-platform\ndependencies:\n"+depsWithElasticsearch)
 	writePersistence(t, prevChartDir, "elasticsearch", "elasticsearch:\n  enabled: true\n")
 	writePersistence(t, prevChartDir, "elasticsearch-companion", "elasticsearch:\n  enabled: false\n")
-	return repoRoot, chartDir, regDir, prevChartDir
+	return chartDir, regDir, prevChartDir
 }
 
 // writeManifest writes a minimal manifest.yaml whose scenarios block is the

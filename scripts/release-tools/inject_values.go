@@ -33,7 +33,7 @@ import (
 //	CONSOLE_IMAGE_TAG, ZEEBE_IMAGE_TAG, ZEEBE_GATEWAY_IMAGE_TAG, OPERATE_IMAGE_TAG,
 //	TASKLIST_IMAGE_TAG, OPTIMIZE_IMAGE_TAG, IDENTITY_IMAGE_TAG, WEB_MODELER_IMAGE_TAG,
 //	CONNECTORS_IMAGE_TAG (8.6/8.7) plus ORCHESTRATION_IMAGE_TAG (8.8+).
-func runInjectValues(args []string) error {
+func runInjectValues() error {
 	chartVersion := os.Getenv("CHART_VERSION")
 	if chartVersion == "" {
 		return fmt.Errorf("CHART_VERSION environment variable is required")

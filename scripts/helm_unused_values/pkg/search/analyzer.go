@@ -110,10 +110,8 @@ func (f *Finder) processKeysInParallel(
 		}()
 	}
 
-	for w := range numWorkers {
-		wg.Add(1)
-		go func(workerID int) {
-			defer wg.Done()
+	for range numWorkers {
+		wg.Go(func() {
 			for job := range jobs {
 				// Skip empty keys
 				if job.key == "" {
@@ -164,7 +162,7 @@ func (f *Finder) processKeysInParallel(
 					progressUpdates <- 1
 				}
 			}
-		}(w)
+		})
 	}
 
 	for i, key := range ks {

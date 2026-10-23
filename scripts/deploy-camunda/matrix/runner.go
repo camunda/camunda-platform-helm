@@ -365,6 +365,8 @@ func printDryRunPreflight(resolved []dryRunEntry, opts RunOptions) {
 
 	fmt.Fprintln(os.Stdout, "\n=== Preflight (secrets/env validation) ===")
 	for _, dre := range resolved {
+		docker := opts.DockerFlags
+		docker.EnsureDockerRegistry, docker.EnsureDockerHub = dre.ensureDockerRegistry, dre.ensureDockerHub
 		flags := &config.RuntimeFlags{
 			EnvFile: dre.envFile,
 			Chart: config.ChartFlags{
@@ -391,14 +393,7 @@ func printDryRunPreflight(resolved []dryRunEntry, opts RunOptions) {
 				Features:     dre.features,
 				InfraType:    dre.infraType,
 			},
-			Docker: config.DockerFlags{
-				DockerUsername:       opts.DockerUsername,
-				DockerPassword:       opts.DockerPassword,
-				EnsureDockerRegistry: dre.ensureDockerRegistry,
-				DockerHubUsername:    opts.DockerHubUsername,
-				DockerHubPassword:    opts.DockerHubPassword,
-				EnsureDockerHub:      dre.ensureDockerHub,
-			},
+			Docker:          docker,
 			CompanionCharts: companionChartsForEntry(dre.entry, opts.RepoRoot),
 		}
 
@@ -1360,7 +1355,7 @@ func lastNLines(s string, n int) string {
 // This runs regardless of whether the entry succeeded or failed — cleanup should always
 // happen after diagnostics have been collected. Errors are logged but do not affect the
 // entry's result.
-func cleanupEntry(ctx context.Context, result RunResult, opts RunOptions) {
+func cleanupEntry(ctx context.Context, result RunResult) {
 	// Clean up Entra app registration for OIDC entries (best-effort, before namespace deletion).
 	if result.venomOpts != nil {
 		logging.Logger.Info().

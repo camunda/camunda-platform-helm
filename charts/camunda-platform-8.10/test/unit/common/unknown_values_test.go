@@ -46,7 +46,7 @@ func (s *UnknownValuesTest) TestWarningsWhenKeysAreUnknown() {
 				s.Require().NoError(err)
 				var configmap corev1.ConfigMap
 				helm.UnmarshalK8SYaml(t, output, &configmap)
-				s.Contains(configmap.Data["warnings"], "[camunda][warning] UNKNOWN VALUES KEY: orchestration.replicasx. Helm ignores this key. Remove or correct it. A future chart version can reject unknown keys.")
+				s.Contains(configmap.Data["warnings"], "[camunda][warning] UNKNOWN VALUES KEY: orchestration.replicasx. Helm ignores this key. Remove or correct it. Starting with chart v17 (Camunda 8.12), unknown keys fail the render by default.")
 			},
 		},
 		{

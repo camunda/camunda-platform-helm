@@ -150,6 +150,11 @@ func BuildEntryFlags(entry Entry, opts RunOptions) (flags *config.RuntimeFlags, 
 	keycloakHost := config.FirstNonEmpty(opts.KeycloakHost, config.DefaultKeycloakHost)
 	keycloakProtocol := config.FirstNonEmpty(opts.KeycloakProtocol, config.DefaultKeycloakProtocol)
 
+	docker := opts.DockerFlags
+	// Docker login is performed once in Run() before parallel dispatch.
+	// Each entry only creates per-namespace K8s pull secrets.
+	docker.SkipDockerLogin = true
+
 	flags = &config.RuntimeFlags{
 		LogLevel:    logLevel,
 		Interactive: false,
@@ -209,17 +214,7 @@ func BuildEntryFlags(entry Entry, opts RunOptions) (flags *config.RuntimeFlags, 
 			KeycloakHost:     keycloakHost,
 			KeycloakProtocol: keycloakProtocol,
 		},
-		Docker: config.DockerFlags{
-			DockerUsername:       opts.DockerUsername,
-			DockerPassword:       opts.DockerPassword,
-			EnsureDockerRegistry: opts.EnsureDockerRegistry,
-			DockerHubUsername:    opts.DockerHubUsername,
-			DockerHubPassword:    opts.DockerHubPassword,
-			EnsureDockerHub:      opts.EnsureDockerHub,
-			// Docker login is performed once in Run() before parallel dispatch.
-			// Each entry only creates per-namespace K8s pull secrets.
-			SkipDockerLogin: true,
-		},
+		Docker: docker,
 		Secrets: config.SecretsFlags{
 			// When the caller pre-creates the namespace (--namespace-override) it
 			// also pre-applies platform secrets/TLS via cluster-setup-secrets. Skip
@@ -421,7 +416,7 @@ func finishEntry(ctx context.Context, result RunResult, opts RunOptions) RunResu
 		if opts.OnPhaseChange != nil {
 			opts.OnPhaseChange(result.Entry, "cleanup")
 		}
-		cleanupEntry(ctx, result, opts)
+		cleanupEntry(ctx, result)
 	}
 	if opts.OnEntryComplete != nil {
 		opts.OnEntryComplete(result.Entry, result)

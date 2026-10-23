@@ -91,7 +91,7 @@ func (p *PreparedScenario) Cleanup() {
 }
 
 // generateScenarioContext creates a scenario-specific deployment context.
-func generateScenarioContext(scenario string, flags *config.RuntimeFlags) (*ScenarioContext, error) {
+func generateScenarioContext(scenario string, flags *config.RuntimeFlags) *ScenarioContext {
 	// Use EffectiveNamespace() to apply any namespace prefix (e.g., for EKS)
 	effectiveNs := flags.EffectiveNamespace()
 	suffix := namespaceDerivedSuffix(effectiveNs)
@@ -162,7 +162,7 @@ func generateScenarioContext(scenario string, flags *config.RuntimeFlags) (*Scen
 		OrchestrationIndexPrefix: orchestrationPrefix,
 		TasklistIndexPrefix:      tasklistPrefix,
 		OperateIndexPrefix:       operatePrefix,
-	}, nil
+	}
 }
 
 // namespaceDerivedSuffix produces a deterministic 8-character hex suffix from a

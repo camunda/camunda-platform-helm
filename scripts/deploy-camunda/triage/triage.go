@@ -12,26 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package triage
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
-	"os/signal"
 	"regexp"
 	"strconv"
 	"strings"
-	"syscall"
 
 	"scripts/camunda-core/pkg/executil"
-	"scripts/camunda-core/pkg/logging"
-
-	"github.com/spf13/cobra"
 )
 
-const defaultTriageRepo = "camunda/camunda-platform-helm"
+const DefaultRepo = "camunda/camunda-platform-helm"
 
 // ghAPI shells out to the GitHub CLI's `gh api` and returns stdout. It is a
 // package var so tests can inject canned responses without a network call.
@@ -114,89 +110,45 @@ var (
 	ansiRe = regexp.MustCompile("\x1b\\[[0-9;]*m")
 )
 
-// newTriageCommand creates the `triage` subcommand: from a failed integration
-// run URL/ID, pull the failing job log, strip the env-var noise, and print the
-// structured failure record (matrix cell, helm command, error, diagnostics path)
-// plus a local-repro command — the post-mortem entry point that replaces manual
-// `gh api` + grep.
-func newTriageCommand() *cobra.Command {
-	var repoFlag string
-	var jobFlag string
-	var showLog bool
+type Options struct {
+	Repo    string
+	Job     string
+	ShowLog bool
+}
 
-	cmd := &cobra.Command{
-		Use:   "triage <run-url|run-id>",
-		Short: "Triage a failed integration run: extract the failure record from its job log",
-		Long: `Turn a failed GitHub Actions run into a structured failure summary.
-
-Accepts a run URL (https://github.com/<owner>/<repo>/actions/runs/<id>[/job/<jobid>])
-or a bare run ID. Resolves the failing job(s), pulls the job log via the reliable
-` + "`gh api .../actions/jobs/<id>/logs`" + ` path (not --log-failed, which is empty
-for merge-queue runs), strips the env-var noise, and prints:
-
-  - the decoded matrix cell (version / shortname / flow / platform),
-  - the failing step and the helm command that failed,
-  - the error/reason and notable log signals,
-  - the Diagnostics bundle path (download with: gh run download <run-id> --name 'diagnostics-*'),
-  - a ready-to-run local reproduction command.
-
-Requires the GitHub CLI (gh) to be installed and authenticated.`,
-		Args:          cobra.ExactArgs(1),
-		SilenceUsage:  true,
-		SilenceErrors: true,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
-			defer stop()
-
-			if err := logging.Setup(logging.Options{
-				LevelString:  flags.LogLevel,
-				ColorEnabled: logging.IsTerminal(os.Stdout.Fd()),
-			}); err != nil {
-				return err
-			}
-
-			ref, err := parseRunRef(args[0], repoFlag)
-			if err != nil {
-				return err
-			}
-			if jobFlag != "" {
-				ref.JobID = jobFlag
-			}
-
-			log, job, err := fetchFailingJobLog(ctx, ref)
-			if err != nil {
-				return err
-			}
-
-			rec := extractFailureRecord(log)
-			if job != nil {
-				if rec.JobName == "" {
-					rec.JobName = job.Name
-				}
-				rec.Conclusion = job.Conclusion
-				if rec.Cell.empty() {
-					rec.Cell = parseMatrixCell(job.Name)
-				}
-				if rec.FailingStep == "" {
-					rec.FailingStep = firstFailedStep(*job)
-				}
-			}
-
-			fmt.Fprint(os.Stdout, renderTriageReport(ref, rec))
-			if showLog {
-				fmt.Fprintf(os.Stdout, "\n----- denoised log -----\n%s\n", stripLogNoise(log))
-			}
-			return nil
-		},
+func Run(ctx context.Context, out io.Writer, input string, opts Options) error {
+	ref, err := parseRunRef(input, opts.Repo)
+	if err != nil {
+		return err
+	}
+	if opts.Job != "" {
+		ref.JobID = opts.Job
 	}
 
-	f := cmd.Flags()
-	f.StringVar(&repoFlag, "repo", "", "owner/repo (default: derived from the URL, else "+defaultTriageRepo+")")
-	f.StringVar(&jobFlag, "job", "", "Triage a specific job ID instead of auto-selecting the failed job")
-	f.BoolVar(&showLog, "show-log", false, "Also print the denoised job log after the summary")
-	f.StringVarP(&flags.LogLevel, "log-level", "l", "info", "Log level")
+	log, job, err := fetchFailingJobLog(ctx, ref)
+	if err != nil {
+		return err
+	}
 
-	return cmd
+	rec := extractFailureRecord(log)
+	if job != nil {
+		if rec.JobName == "" {
+			rec.JobName = job.Name
+		}
+		rec.Conclusion = job.Conclusion
+		if rec.Cell.empty() {
+			rec.Cell = parseMatrixCell(job.Name)
+		}
+		if rec.FailingStep == "" {
+			rec.FailingStep = firstFailedStep(*job)
+		}
+	}
+
+	fmt.Fprint(out, renderTriageReport(ref, rec))
+	if opts.ShowLog {
+		fmt.Fprintf(out, "\n----- denoised log -----\n%s\n", stripLogNoise(log))
+	}
+	return nil
 }
 
 // parseRunRef resolves a run URL or bare run ID into a runRef. repoOverride, when
@@ -227,7 +179,7 @@ func parseRunRef(input, repoOverride string) (runRef, error) {
 		ref.Owner, ref.Repo = owner, repo
 	}
 	if ref.Owner == "" || ref.Repo == "" {
-		owner, repo, _ := splitOwnerRepo(defaultTriageRepo)
+		owner, repo, _ := splitOwnerRepo(DefaultRepo)
 		ref.Owner, ref.Repo = owner, repo
 	}
 	if ref.RunID == "" {

@@ -248,10 +248,7 @@ func TestCrossJobPrefixConsistency(t *testing.T) {
 			Scenarios: []string{"qa-opensearch"},
 		},
 	}
-	installCtx, err := generateScenarioContext("qa-opensearch", installFlags)
-	if err != nil {
-		t.Fatalf("install generateScenarioContext: %v", err)
-	}
+	installCtx := generateScenarioContext("qa-opensearch", installFlags)
 
 	// Job 2: upgrade (completely fresh flags, same namespace)
 	upgradeFlags := &config.RuntimeFlags{
@@ -260,10 +257,7 @@ func TestCrossJobPrefixConsistency(t *testing.T) {
 			Scenarios: []string{"qa-opensearch"},
 		},
 	}
-	upgradeCtx, err := generateScenarioContext("qa-opensearch", upgradeFlags)
-	if err != nil {
-		t.Fatalf("upgrade generateScenarioContext: %v", err)
-	}
+	upgradeCtx := generateScenarioContext("qa-opensearch", upgradeFlags)
 
 	// Prefixes must match — this is the core property that fixes cross-job upgrades.
 	if installCtx.OrchestrationIndexPrefix != upgradeCtx.OrchestrationIndexPrefix {

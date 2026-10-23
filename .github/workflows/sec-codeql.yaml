@@ -26,6 +26,7 @@ jobs:
     runs-on: ${{ (matrix.language == 'swift' && 'macos-latest') || 'ubuntu-latest' }}
     timeout-minutes: ${{ (matrix.language == 'swift' && 120) || 360 }}
     permissions:
+      id-token: write
       # required for all workflows
       security-events: write
 
@@ -43,6 +44,7 @@ jobs:
         # Learn more about CodeQL language support at https://aka.ms/codeql-docs/language-support
 
     steps:
+    - uses: camunda/infra-global-github-actions/start-build-monitor@ead99f6c9c536f5c47e443929d47e8fcfdb05a81  # start-build-monitor-1.0.1
     - name: Checkout repository
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
@@ -78,3 +80,15 @@ jobs:
       uses: github/codeql-action/analyze@a899987af240c0578ed84ce13c02319a693e168f
       with:
         category: "/language:${{ matrix.language }}"
+
+    - name: Observe build status
+      if: always()
+      continue-on-error: true
+      uses: ./.github/actions/observe-build-status
+      with:
+        build_status: ${{ job.status }}
+        job_name: "analyze/${{ matrix.language }}"
+        secret_vault_address: ${{ secrets.VAULT_ADDR }}
+        secret_vault_jwt_path: ${{ secrets.VAULT_JWT_PATH }}
+        secret_vault_jwt_role: ${{ secrets.VAULT_JWT_ROLE }}
+        secret_vault_jwt_audience: ${{ secrets.VAULT_JWT_AUDIENCE }}

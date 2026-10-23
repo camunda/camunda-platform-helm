@@ -31,6 +31,12 @@ linters:
             - pkg: scripts/deploy-camunda/cmd
             - pkg: scripts/deploy-camunda/matrix
             - pkg: scripts/deploy-camunda/deploy
+        deploy-camunda-cmd-only-importer:
+          files: ["**/deploy-camunda/**", "!**/deploy-camunda/cmd/**"]
+          deny:
+            - pkg: scripts/deploy-camunda/acceptance
+            - pkg: scripts/deploy-camunda/credentials
+            - pkg: scripts/deploy-camunda/triage
   exclusions:
     presets:
       - std-error-handling

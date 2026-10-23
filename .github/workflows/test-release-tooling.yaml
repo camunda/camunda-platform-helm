@@ -2,9 +2,7 @@
 ---
 name: "Test - Release Tooling"
 
-# Gates the Go that the release and chart-validate pipelines depend on
-# (scripts/camunda-core + scripts/release-tools + scripts/validate-values-schema
-# + scripts/deploy-camunda + scripts/orchestration-entra-lifecycle).
+# Gates every Go module under scripts/.
 # Deliberately UNFILTERED: the tooling's behavior is
 # coupled to inputs that live outside scripts/ (charts/**/values*.yaml,
 # charts/chart-versions.yaml, the committed version-matrix, the release-please
@@ -24,17 +22,24 @@ concurrency:
 
 jobs:
   test:
-    name: Go test + vet
+    name: Go lint + test
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@ead99f6c9c536f5c47e443929d47e8fcfdb05a81  # start-build-monitor-1.0.1
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 2
 
       - name: Install tools
         uses: ./.github/actions/install-tool-versions
         with:
           tools: |
             golang
+            golangci-lint
             helm
             git-cliff
             yq
@@ -46,36 +51,16 @@ jobs:
       - name: Vendor subcharts for the real-chart contract tests
         run: |
           make helm.repos-add
-          for v in 8.7 8.8 8.9 8.10 8.11; do
-            make helm.dependency-update chartPath="charts/camunda-platform-$v"
-          done
+          make helm.dependency-update
 
-      - name: issue-author — test
-        run: make test.issue-author
+      - name: Install ripgrep for helm_unused_values tests
+        run: sudo apt-get update && sudo apt-get install -y ripgrep
 
-      - name: camunda-core — vet + test
-        working-directory: scripts/camunda-core
-        run: |
-          go vet ./pkg/...
-          go test ./pkg/...
+      - name: Test every Go module under scripts/
+        run: make go.test-scripts
 
-      - name: deploy-camunda — vet + test
-        working-directory: scripts/deploy-camunda
-        run: |
-          go vet ./...
-          go test ./...
-
-      - name: release-tools — vet + test
-        working-directory: scripts/release-tools
-        run: |
-          go vet ./...
-          go test ./...
-
-      - name: validate-values-schema — vet + test
-        working-directory: scripts/validate-values-schema
-        run: |
-          go vet ./...
-          go test ./...
+      - name: Lint every Go module under scripts/
+        run: make go.lint lintBase=HEAD~1
 
       - name: Install schema generator
         run: |
@@ -87,17 +72,16 @@ jobs:
             make helm.schema-validate-values chartPath="${allowlist%/test/unit/deprecation/allowlist.yaml}"
           done
 
-      - name: orchestration-entra-lifecycle — vet + test
-        working-directory: scripts/orchestration-entra-lifecycle
-        run: |
-          go vet ./...
-          go test ./...
-
-      - name: integration-tests-gate — vet + test
-        working-directory: scripts/integration-tests-gate
-        run: |
-          go vet ./...
-          go test ./...
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_jwt_path: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwt_role: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwt_audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   credential-store-changes:
     name: Detect credential-store changes
@@ -131,7 +115,11 @@ jobs:
     needs: credential-store-changes
     if: needs.credential-store-changes.outputs.relevant == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@ead99f6c9c536f5c47e443929d47e8fcfdb05a81  # start-build-monitor-1.0.1
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
@@ -145,3 +133,14 @@ jobs:
       # Keycloak containers, including the kc.sh bootstrap-admin recovery.
       - name: deploy-camunda — credential-store integration tests
         run: make test.deploy-camunda-credential-stores
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_jwt_path: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwt_role: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwt_audience: ${{ secrets.VAULT_JWT_AUDIENCE }}

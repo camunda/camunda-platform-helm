@@ -144,7 +144,7 @@ func appDisplayName(namespace string) string {
 }
 
 // entraPortalAppURL returns the Entra admin center URL for an app registration.
-func entraPortalAppURL(directoryID, appID string) string {
+func entraPortalAppURL(appID string) string {
 	return fmt.Sprintf(
 		"https://entra.microsoft.com/#view/Microsoft_AAD_RegisteredApps/ApplicationMenuBlade/~/Overview/appId/%s",
 		appID,
@@ -328,7 +328,7 @@ func withGraphRetry(ctx context.Context, op string, retryable retryPredicate, re
 }
 
 // graphPost performs a POST request to the Graph API.
-func graphPost(ctx context.Context, client *http.Client, token, path string, payload interface{}) ([]byte, int, error) {
+func graphPost(ctx context.Context, client *http.Client, token, path string, payload any) ([]byte, int, error) {
 	var bodyReader io.Reader
 	if payload != nil {
 		data, err := json.Marshal(payload)
@@ -359,7 +359,9 @@ func graphPost(ctx context.Context, client *http.Client, token, path string, pay
 }
 
 // graphPatch performs a PATCH request to the Graph API.
-func graphPatch(ctx context.Context, client *http.Client, token, path string, payload interface{}, headers http.Header) ([]byte, int, error) {
+//
+//nolint:revive
+func graphPatch(ctx context.Context, client *http.Client, token, path string, payload any, headers http.Header) ([]byte, int, error) {
 	var bodyReader io.Reader
 	if payload != nil {
 		data, err := json.Marshal(payload)
@@ -453,13 +455,13 @@ func createApp(ctx context.Context, client *http.Client, token, displayName, par
 		Str("signInAudience", "AzureADMyOrg").
 		Msg("Creating Entra app registration via Graph API")
 
-	payload := map[string]interface{}{
+	payload := map[string]any{
 		"displayName":    displayName,
 		"signInAudience": "AzureADMyOrg",
-		"requiredResourceAccess": []map[string]interface{}{
+		"requiredResourceAccess": []map[string]any{
 			{
 				"resourceAppId": parentClientID,
-				"resourceAccess": []map[string]interface{}{
+				"resourceAccess": []map[string]any{
 					{
 						"id":   "00000000-0000-0000-0000-000000000000",
 						"type": "Scope",
@@ -537,7 +539,7 @@ func rotateCredentials(ctx context.Context, client *http.Client, token, objectID
 	// an app registration is created, so addPassword may return 404 for tens
 	// of seconds after POST /applications succeeds. Retry with backoff.
 	logging.Logger.Debug().Str("objectId", objectID).Msg("Adding new password credential")
-	addPayload := map[string]interface{}{
+	addPayload := map[string]any{
 		"passwordCredential": map[string]string{
 			"displayName": "integration-test-secret",
 			"endDateTime": "2099-12-31T00:00:00Z",
@@ -624,7 +626,7 @@ func EnsureVenomApp(ctx context.Context, opts Options) (*VenomApp, error) {
 	}
 
 	if appID != "" {
-		portalURL := entraPortalAppURL(opts.DirectoryID, appID)
+		portalURL := entraPortalAppURL(appID)
 		logging.Logger.Info().Str("appId", appID).Str("objectId", objectID).Msg("Found existing venom app")
 		logging.Logger.Debug().Str("portalURL", portalURL).Msg("View app in Azure portal")
 	} else {
@@ -633,7 +635,7 @@ func EnsureVenomApp(ctx context.Context, opts Options) (*VenomApp, error) {
 		if err != nil {
 			return nil, fmt.Errorf("entra: %w", err)
 		}
-		portalURL := entraPortalAppURL(opts.DirectoryID, appID)
+		portalURL := entraPortalAppURL(appID)
 		logging.Logger.Info().
 			Str("appId", appID).
 			Str("objectId", objectID).
@@ -1036,11 +1038,11 @@ func UpdateRedirectURIs(ctx context.Context, opts RedirectURIOptions) error {
 		Msg("Computed final redirect URI lists")
 
 	// Step 5: PATCH the app registration.
-	patchPayload := map[string]interface{}{
-		"web": map[string]interface{}{
+	patchPayload := map[string]any{
+		"web": map[string]any{
 			"redirectUris": finalWebURIs,
 		},
-		"spa": map[string]interface{}{
+		"spa": map[string]any{
 			"redirectUris": finalSpaURIs,
 		},
 	}

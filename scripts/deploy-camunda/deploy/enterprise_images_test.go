@@ -311,7 +311,7 @@ func TestCheckPinnedImages(t *testing.T) {
 
 		keycloak := writeValuesFile(t, "keycloak.yaml",
 			"identityKeycloak:\n  image:\n    registry: docker.io\n    repository: camunda/keycloak\n    tag: \"26.3.3\"\n")
-		got := checkPinnedImages(context.Background(), []string{keycloak}, "linux/amd64")
+		got := checkPinnedImages(context.Background(), []string{keycloak})
 		if got.Status != StatusOK {
 			t.Fatalf("status = %v, detail = %q", got.Status, got.Detail)
 		}
@@ -330,7 +330,7 @@ func TestCheckPinnedImages(t *testing.T) {
 		}
 		defer func() { dockerManifestInspect = orig }()
 
-		got := checkPinnedImages(context.Background(), []string{entLayer(t, enterpriseValues)}, "linux/amd64")
+		got := checkPinnedImages(context.Background(), []string{entLayer(t, enterpriseValues)})
 		if got.Status != StatusFail {
 			t.Fatalf("status = %v, want fail; detail = %q", got.Status, got.Detail)
 		}
@@ -352,7 +352,7 @@ func TestCheckPinnedImages(t *testing.T) {
 		}
 		defer func() { dockerManifestInspect = orig }()
 
-		got := checkPinnedImages(context.Background(), []string{entLayer(t, enterpriseValues)}, "linux/amd64")
+		got := checkPinnedImages(context.Background(), []string{entLayer(t, enterpriseValues)})
 		if got.Status != StatusWarn {
 			t.Fatalf("status = %v, want warn; detail = %q", got.Status, got.Detail)
 		}
@@ -369,7 +369,7 @@ func TestCheckPinnedImages(t *testing.T) {
 		}
 		defer func() { dockerManifestInspect = orig }()
 
-		got := checkPinnedImages(context.Background(), []string{entLayer(t, enterpriseValues)}, "linux/amd64")
+		got := checkPinnedImages(context.Background(), []string{entLayer(t, enterpriseValues)})
 		if got.Status != StatusOK {
 			t.Fatalf("status = %v, detail = %q", got.Status, got.Detail)
 		}

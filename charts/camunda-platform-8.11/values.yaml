@@ -49,7 +49,7 @@ nameOverride: ""
 ## @section Global parameters
 ## @extra global
 global:
-  ## @param global.strictValues if true, fail rendering on unknown chart-owned values keys instead of warning. Shared global values, dependency values, and free-form maps are exempt. A future chart version can reject unknown keys. Remove or correct them.
+  ## @param global.strictValues if true, fail rendering on unknown chart-owned values keys instead of warning. Shared global values, dependency values, and free-form maps are exempt. Starting with chart v17 (Camunda 8.12), unknown keys fail the render by default. Remove or correct them.
   strictValues: false
   ## @extra global.topology configuration for how this Helm release participates in a Camunda deployment topology. The default combined mode preserves the existing single-release behavior.
   topology:

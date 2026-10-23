@@ -197,6 +197,10 @@ endef
 go.lint:
 	@$(call go_scripts_run,golangci-lint run --new-from-merge-base=$(lintBase) ./...)
 
+.PHONY: go.test-scripts
+go.test-scripts:
+	@$(call go_scripts_run,go test -race -count=1 -vet=all ./...)
+
 #
 # Helpers.
 
@@ -325,7 +329,7 @@ helm.repos-add:
 helm.dependency-update:
 	find $(chartPath) -name Chart.yaml -exec dirname {} \; | while read chart_dir; do\
 		echo "[$@] Chart dir: $${chart_dir}";\
-		helm dependency update $${chart_dir};\
+		helm dependency update $${chart_dir} || exit 1;\
 	done
 
 # helm.lint: verify that the chart is well-formed.

@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -380,9 +381,9 @@ func ApplyActiveDeployment(rc *RootConfig, flags *RuntimeFlags) error {
 	MergeStringField(&flags.Chart.RepoRoot, infra.RepoRoot, "", changed, "repo-root")
 	// ChartRootOverlays: merge from config's ValuesPreset (comma-separated string → []string).
 	// CLI --values-preset sets ChartRootOverlays directly; config files provide ValuesPreset as a string.
-	if !(changed != nil && changed["values-preset"]) && len(flags.Chart.ChartRootOverlays) == 0 {
+	if (changed == nil || !changed["values-preset"]) && len(flags.Chart.ChartRootOverlays) == 0 {
 		if presetStr := FirstNonEmpty(dep.ValuesPreset, rc.ValuesPreset); presetStr != "" {
-			for _, p := range strings.Split(presetStr, ",") {
+			for p := range strings.SplitSeq(presetStr, ",") {
 				if t := strings.TrimSpace(p); t != "" {
 					flags.Chart.ChartRootOverlays = append(flags.Chart.ChartRootOverlays, t)
 				}
@@ -400,7 +401,7 @@ func ApplyActiveDeployment(rc *RootConfig, flags *RuntimeFlags) error {
 	MergeStringField(&flags.Ingress.IngressBaseDomain, infra.IngressBaseDomain, "", changed, "ingress-base-domain")
 
 	// ScenarioPath special handling — has multiple config sources
-	if !(changed != nil && changed["scenario-path"]) && strings.TrimSpace(flags.Deployment.ScenarioPath) == "" {
+	if (changed == nil || !changed["scenario-path"]) && strings.TrimSpace(flags.Deployment.ScenarioPath) == "" {
 		flags.Deployment.ScenarioPath = FirstNonEmpty(dep.ScenarioPath, dep.ScenarioRoot, rc.ScenarioPath, rc.ScenarioRoot)
 	}
 
@@ -508,7 +509,7 @@ func Validate(flags *RuntimeFlags, cfgRes ...*ConfigResolution) error {
 // parseScenarios splits a comma-separated scenario string into a slice.
 func parseScenarios(scenario string) []string {
 	var scenarios []string
-	for _, s := range strings.Split(scenario, ",") {
+	for s := range strings.SplitSeq(scenario, ",") {
 		s = strings.TrimSpace(s)
 		if s != "" {
 			scenarios = append(scenarios, s)
@@ -519,12 +520,7 @@ func parseScenarios(scenario string) []string {
 
 // IsValidIngressBaseDomain checks if the given domain is in the allowed list.
 func IsValidIngressBaseDomain(domain string) bool {
-	for _, valid := range ValidIngressBaseDomains {
-		if domain == valid {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(ValidIngressBaseDomains, domain)
 }
 
 // HasExplicitSelectionConfig returns true if any selection + composition flags were explicitly set.
@@ -626,9 +622,7 @@ func synthesizeScenarioName(flags *RuntimeFlags) string {
 	if flags.Selection.TestPlatform != "" {
 		parts = append(parts, flags.Selection.TestPlatform)
 	}
-	for _, f := range flags.Selection.Features {
-		parts = append(parts, f)
-	}
+	parts = append(parts, flags.Selection.Features...)
 	if flags.Selection.QA {
 		parts = append(parts, "qa")
 	}

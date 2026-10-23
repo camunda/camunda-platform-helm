@@ -17,7 +17,6 @@ package output
 import (
 	"encoding/json"
 	"fmt"
-	"sort"
 	"strings"
 	"time"
 
@@ -65,7 +64,6 @@ func (r *Reporter) ReportResults(usages []keys.KeyUsage) error {
 	directKeys := filterByUsageType(usages, "direct")
 	patternKeys := filterByUsageType(usages, "pattern")
 
-	var err error
 	if r.JSONOutput {
 		if r.ShowAllKeys {
 			return r.reportJSONResultsWithAllDetails(summary, directKeys, patternKeys, unusedKeys)
@@ -74,16 +72,10 @@ func (r *Reporter) ReportResults(usages []keys.KeyUsage) error {
 	}
 
 	if r.ShowAllKeys {
-		err = r.reportUsedKeys(directKeys, patternKeys, usages)
-		if err != nil {
-			return fmt.Errorf("report used keys: %w", err)
-		}
+		r.reportUsedKeys(directKeys, patternKeys, usages)
 	}
 
-	err = r.reportUnusedKeys(summary, unusedKeys, usages)
-	if err != nil {
-		return fmt.Errorf("report text results: %w", err)
-	}
+	r.reportUnusedKeys(unusedKeys)
 
 	r.printSummary(summary)
 	return nil
@@ -176,40 +168,22 @@ func (r *Reporter) reportJSONResultsWithAllDetails(summary ResultSummary, direct
 	return nil
 }
 
-func (r *Reporter) reportUnusedKeys(summary ResultSummary, unusedKeys []string, usages []keys.KeyUsage) error {
-	usageMap := make(map[string]keys.KeyUsage)
-	for _, usage := range usages {
-		usageMap[usage.Key] = usage
-	}
-
-	if summary.UnusedKeys == 0 {
+func (r *Reporter) reportUnusedKeys(unusedKeys []string) {
+	if len(unusedKeys) == 0 {
 		r.Display.PrintSuccess("No unused keys found in values.yaml.")
-		return nil
+		return
 	}
 
 	r.Display.PrintError("Unused keys found in values.yaml:")
 	fmt.Println()
-
-	usedKeys := []string{}
-	for _, usage := range usages {
-		if usage.UsageType == "direct" || usage.UsageType == "pattern" {
-			usedKeys = append(usedKeys, usage.Key)
-		}
+	r.Display.PrintBold(fmt.Sprintf("Completely unused keys (%d):", len(unusedKeys)))
+	for _, key := range unusedKeys {
+		r.Display.PrintError(fmt.Sprintf("  .Values.%s", key))
 	}
-	sort.Strings(usedKeys)
-
-	if summary.UnusedKeys > 0 {
-		r.Display.PrintBold(fmt.Sprintf("Completely unused keys (%d):", summary.UnusedKeys))
-		for _, key := range unusedKeys {
-			r.Display.PrintError(fmt.Sprintf("  .Values.%s", key))
-		}
-		fmt.Println()
-	}
-
-	return nil
+	fmt.Println()
 }
 
-func (r *Reporter) reportUsedKeys(directKeys, patternKeys []string, usages []keys.KeyUsage) error {
+func (r *Reporter) reportUsedKeys(directKeys, patternKeys []string, usages []keys.KeyUsage) {
 	usageMap := make(map[string]keys.KeyUsage)
 	for _, usage := range usages {
 		usageMap[usage.Key] = usage
@@ -298,7 +272,6 @@ func (r *Reporter) reportUsedKeys(directKeys, patternKeys []string, usages []key
 		}
 		fmt.Println()
 	}
-	return nil
 }
 
 func (r *Reporter) printSummary(summary ResultSummary) {
