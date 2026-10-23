@@ -59,10 +59,10 @@ func tokenHandler() http.HandlerFunc {
 // stubCreateClientHandler returns a handler that echoes back a synthetic
 // client_id and client_secret. It records every received name so the test
 // can assert kind-specific configuration was sent.
-func stubCreateClientHandler(t *testing.T, received *[]map[string]interface{}) http.HandlerFunc {
+func stubCreateClientHandler(t *testing.T, received *[]map[string]any) http.HandlerFunc {
 	t.Helper()
 	return func(w http.ResponseWriter, r *http.Request) {
-		var body map[string]interface{}
+		var body map[string]any
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 			t.Fatalf("decode body: %v", err)
 		}
@@ -204,14 +204,14 @@ func TestRedirectURIs(t *testing.T) {
 
 func TestEnsureClients_FullFlow(t *testing.T) {
 	var (
-		createReceived []map[string]interface{}
-		grantReceived  []map[string]interface{}
+		createReceived []map[string]any
+		grantReceived  []map[string]any
 	)
 	srv := newTestServer(t, map[string]http.HandlerFunc{
 		"POST /oauth/token":    tokenHandler(),
 		"POST /api/v2/clients": stubCreateClientHandler(t, &createReceived),
 		"POST /api/v2/client-grants": func(w http.ResponseWriter, r *http.Request) {
-			var body map[string]interface{}
+			var body map[string]any
 			_ = json.NewDecoder(r.Body).Decode(&body)
 			grantReceived = append(grantReceived, body)
 			w.WriteHeader(http.StatusCreated)
@@ -252,7 +252,7 @@ func TestEnsureClients_FullFlow(t *testing.T) {
 			if got := body["app_type"]; got != "non_interactive" {
 				t.Errorf("connectors app_type = %v, want non_interactive", got)
 			}
-			gt, _ := body["grant_types"].([]interface{})
+			gt, _ := body["grant_types"].([]any)
 			if len(gt) != 1 || gt[0] != "client_credentials" {
 				t.Errorf("connectors grant_types = %v, want [client_credentials]", gt)
 			}
@@ -287,17 +287,17 @@ func TestEnsureClients_RetriesOn429(t *testing.T) {
 
 	// First two POST /api/v2/clients calls return 429, third succeeds.
 	// Subsequent calls always succeed (so we get all six clients created).
-	var clientCalls int32
+	var clientCalls atomic.Int32
 	srv := newTestServer(t, map[string]http.HandlerFunc{
 		"POST /oauth/token": tokenHandler(),
 		"POST /api/v2/clients": func(w http.ResponseWriter, r *http.Request) {
-			n := atomic.AddInt32(&clientCalls, 1)
+			n := clientCalls.Add(1)
 			if n <= 2 {
 				w.WriteHeader(http.StatusTooManyRequests)
 				_, _ = w.Write([]byte(`{"statusCode":429,"error":"Too Many Requests"}`))
 				return
 			}
-			var body map[string]interface{}
+			var body map[string]any
 			_ = json.NewDecoder(r.Body).Decode(&body)
 			name, _ := body["name"].(string)
 			w.WriteHeader(http.StatusCreated)
@@ -325,7 +325,7 @@ func TestEnsureClients_RetriesOn429(t *testing.T) {
 	if err != nil {
 		t.Fatalf("EnsureClients with retry: %v", err)
 	}
-	if got := atomic.LoadInt32(&clientCalls); got < 3 {
+	if got := clientCalls.Load(); got < 3 {
 		t.Errorf("expected at least 3 POST /clients calls (2 failed + 1 succeeded), got %d", got)
 	}
 	if len(prov.Private)+len(prov.Public) != 6 {
@@ -342,11 +342,11 @@ func TestCleanupClients_SinglePageList(t *testing.T) {
 
 	// The new cleanup must do exactly ONE GET /api/v2/clients call (paged
 	// fetch terminates when a page is shorter than perPage).
-	var listCalls int32
+	var listCalls atomic.Int32
 	srv := newTestServer(t, map[string]http.HandlerFunc{
 		"POST /oauth/token": tokenHandler(),
 		"GET /api/v2/clients": func(w http.ResponseWriter, r *http.Request) {
-			atomic.AddInt32(&listCalls, 1)
+			listCalls.Add(1)
 			_ = json.NewEncoder(w).Encode([]map[string]string{
 				{"client_id": "id-A", "name": "ns-identity"},
 				{"client_id": "id-B", "name": "ns-orchestration"},
@@ -368,7 +368,7 @@ func TestCleanupClients_SinglePageList(t *testing.T) {
 	}
 	CleanupClients(context.Background(), opts)
 
-	if got := atomic.LoadInt32(&listCalls); got != 1 {
+	if got := listCalls.Load(); got != 1 {
 		t.Errorf("expected exactly 1 GET /api/v2/clients call, got %d", got)
 	}
 }

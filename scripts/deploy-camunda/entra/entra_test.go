@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -52,7 +53,7 @@ func newTestServer(t *testing.T, handlers map[string]http.HandlerFunc) *httptest
 	}))
 }
 
-func jsonResponse(w http.ResponseWriter, status int, body interface{}) {
+func jsonResponse(w http.ResponseWriter, status int, body any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	json.NewEncoder(w).Encode(body) //nolint:errcheck
@@ -206,7 +207,7 @@ func TestAcquireBearerToken_Error(t *testing.T) {
 func TestFindApp_Found(t *testing.T) {
 	srv := newTestServer(t, map[string]http.HandlerFunc{
 		"GET /applications": func(w http.ResponseWriter, r *http.Request) {
-			jsonResponse(w, 200, map[string]interface{}{
+			jsonResponse(w, 200, map[string]any{
 				"value": []map[string]string{
 					{"appId": "found-app-id", "id": "found-object-id"},
 				},
@@ -234,8 +235,8 @@ func TestFindApp_Found(t *testing.T) {
 func TestFindApp_NotFound(t *testing.T) {
 	srv := newTestServer(t, map[string]http.HandlerFunc{
 		"GET /applications": func(w http.ResponseWriter, r *http.Request) {
-			jsonResponse(w, 200, map[string]interface{}{
-				"value": []interface{}{},
+			jsonResponse(w, 200, map[string]any{
+				"value": []any{},
 			})
 		},
 	})
@@ -284,7 +285,7 @@ func TestCreateApp(t *testing.T) {
 func TestCreateApp_Error(t *testing.T) {
 	srv := newTestServer(t, map[string]http.HandlerFunc{
 		"POST /applications": func(w http.ResponseWriter, r *http.Request) {
-			jsonResponse(w, 400, map[string]interface{}{
+			jsonResponse(w, 400, map[string]any{
 				"error": map[string]string{
 					"code":    "BadRequest",
 					"message": "invalid payload",
@@ -307,7 +308,7 @@ func TestCreateApp_Error(t *testing.T) {
 func TestRotateCredentials(t *testing.T) {
 	srv := newTestServer(t, map[string]http.HandlerFunc{
 		"GET /applications/obj-123": func(w http.ResponseWriter, r *http.Request) {
-			jsonResponse(w, 200, map[string]interface{}{
+			jsonResponse(w, 200, map[string]any{
 				"passwordCredentials": []map[string]string{
 					{"keyId": "old-key-1"},
 				},
@@ -358,19 +359,19 @@ func shrinkRetryTimings(t *testing.T) {
 func TestRotateCredentials_RetriesOn404ThenSucceeds(t *testing.T) {
 	shrinkRetryTimings(t)
 
-	var addAttempts int32
+	var addAttempts atomic.Int32
 	const flakyAttempts int32 = 3
 
 	srv := newTestServer(t, map[string]http.HandlerFunc{
 		"GET /applications/obj-flaky": func(w http.ResponseWriter, r *http.Request) {
-			jsonResponse(w, 200, map[string]interface{}{
+			jsonResponse(w, 200, map[string]any{
 				"passwordCredentials": []map[string]string{},
 			})
 		},
 		"POST /applications/obj-flaky/addPassword": func(w http.ResponseWriter, r *http.Request) {
-			n := atomic.AddInt32(&addAttempts, 1)
+			n := addAttempts.Add(1)
 			if n <= flakyAttempts {
-				jsonResponse(w, 404, map[string]interface{}{
+				jsonResponse(w, 404, map[string]any{
 					"error": map[string]string{
 						"code":    "Request_ResourceNotFound",
 						"message": "Resource 'obj-flaky' does not exist",
@@ -396,7 +397,7 @@ func TestRotateCredentials_RetriesOn404ThenSucceeds(t *testing.T) {
 	if secret != "fresh-secret" {
 		t.Errorf("secret = %q, want %q", secret, "fresh-secret")
 	}
-	if got := atomic.LoadInt32(&addAttempts); got != flakyAttempts+1 {
+	if got := addAttempts.Load(); got != flakyAttempts+1 {
 		t.Errorf("addPassword attempts = %d, want %d (retry loop did not retry through 404s)", got, flakyAttempts+1)
 	}
 }
@@ -407,16 +408,16 @@ func TestRotateCredentials_RetriesOn404ThenSucceeds(t *testing.T) {
 func TestRotateCredentials_GivesUpAfterMaxAttempts(t *testing.T) {
 	shrinkRetryTimings(t)
 
-	var addAttempts int32
+	var addAttempts atomic.Int32
 	srv := newTestServer(t, map[string]http.HandlerFunc{
 		"GET /applications/obj-stuck": func(w http.ResponseWriter, r *http.Request) {
-			jsonResponse(w, 200, map[string]interface{}{
+			jsonResponse(w, 200, map[string]any{
 				"passwordCredentials": []map[string]string{},
 			})
 		},
 		"POST /applications/obj-stuck/addPassword": func(w http.ResponseWriter, r *http.Request) {
-			atomic.AddInt32(&addAttempts, 1)
-			jsonResponse(w, 404, map[string]interface{}{
+			addAttempts.Add(1)
+			jsonResponse(w, 404, map[string]any{
 				"error": map[string]string{
 					"code":    "Request_ResourceNotFound",
 					"message": "Resource 'obj-stuck' does not exist",
@@ -437,7 +438,7 @@ func TestRotateCredentials_GivesUpAfterMaxAttempts(t *testing.T) {
 	if !strings.Contains(err.Error(), "gave up") {
 		t.Errorf("error should mention give-up, got: %v", err)
 	}
-	if got := atomic.LoadInt32(&addAttempts); got != int32(retryMaxAttempts) {
+	if got := addAttempts.Load(); got != int32(retryMaxAttempts) {
 		t.Errorf("addPassword attempts = %d, want %d (retry loop did not use full budget)", got, retryMaxAttempts)
 	}
 }
@@ -449,19 +450,19 @@ func TestRotateCredentials_GivesUpAfterMaxAttempts(t *testing.T) {
 func TestRotateCredentials_RetriesOn409ThenSucceeds(t *testing.T) {
 	shrinkRetryTimings(t)
 
-	var addAttempts int32
+	var addAttempts atomic.Int32
 	const flakyAttempts int32 = 2
 
 	srv := newTestServer(t, map[string]http.HandlerFunc{
 		"GET /applications/obj-conflict": func(w http.ResponseWriter, r *http.Request) {
-			jsonResponse(w, 200, map[string]interface{}{
+			jsonResponse(w, 200, map[string]any{
 				"passwordCredentials": []map[string]string{},
 			})
 		},
 		"POST /applications/obj-conflict/addPassword": func(w http.ResponseWriter, r *http.Request) {
-			n := atomic.AddInt32(&addAttempts, 1)
+			n := addAttempts.Add(1)
 			if n <= flakyAttempts {
-				jsonResponse(w, 409, map[string]interface{}{
+				jsonResponse(w, 409, map[string]any{
 					"error": map[string]string{
 						"code":    "Directory_ConcurrencyViolation",
 						"message": "Error due to concurrent requests being made to the tenant.",
@@ -487,7 +488,7 @@ func TestRotateCredentials_RetriesOn409ThenSucceeds(t *testing.T) {
 	if secret != "conflict-resolved-secret" {
 		t.Errorf("secret = %q, want %q", secret, "conflict-resolved-secret")
 	}
-	if got := atomic.LoadInt32(&addAttempts); got != flakyAttempts+1 {
+	if got := addAttempts.Load(); got != flakyAttempts+1 {
 		t.Errorf("addPassword attempts = %d, want %d (retry loop did not retry through 409s)", got, flakyAttempts+1)
 	}
 }
@@ -497,16 +498,16 @@ func TestRotateCredentials_RetriesOn409ThenSucceeds(t *testing.T) {
 func TestRotateCredentials_DoesNotRetry401(t *testing.T) {
 	shrinkRetryTimings(t)
 
-	var addAttempts int32
+	var addAttempts atomic.Int32
 	srv := newTestServer(t, map[string]http.HandlerFunc{
 		"GET /applications/obj-unauthorized": func(w http.ResponseWriter, r *http.Request) {
-			jsonResponse(w, 200, map[string]interface{}{
+			jsonResponse(w, 200, map[string]any{
 				"passwordCredentials": []map[string]string{},
 			})
 		},
 		"POST /applications/obj-unauthorized/addPassword": func(w http.ResponseWriter, r *http.Request) {
-			atomic.AddInt32(&addAttempts, 1)
-			jsonResponse(w, 401, map[string]interface{}{
+			addAttempts.Add(1)
+			jsonResponse(w, 401, map[string]any{
 				"error": map[string]string{
 					"code":    "InvalidAuthenticationToken",
 					"message": "Access token has expired",
@@ -527,7 +528,7 @@ func TestRotateCredentials_DoesNotRetry401(t *testing.T) {
 	if !strings.Contains(err.Error(), "non-retryable") {
 		t.Errorf("error should be non-retryable, got: %v", err)
 	}
-	if got := atomic.LoadInt32(&addAttempts); got != 1 {
+	if got := addAttempts.Load(); got != 1 {
 		t.Errorf("addPassword attempts = %d, want 1 (should not retry on 401)", got)
 	}
 }
@@ -576,7 +577,7 @@ func TestEnsureServicePrincipal_Creates(t *testing.T) {
 }
 
 func TestEnsureServicePrincipal_RepeatedUpsert(t *testing.T) {
-	var requests int32
+	var requests atomic.Int32
 	srv := newTestServer(t, map[string]http.HandlerFunc{
 		"PATCH /servicePrincipals(appId='app-id')": func(w http.ResponseWriter, r *http.Request) {
 			if got := r.Header.Get("Prefer"); got != "create-if-missing" {
@@ -588,14 +589,14 @@ func TestEnsureServicePrincipal_RepeatedUpsert(t *testing.T) {
 			if got := r.Header.Get("Content-Type"); got != "application/json" {
 				t.Errorf("Content-Type = %q, want application/json", got)
 			}
-			var payload map[string]interface{}
+			var payload map[string]any
 			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 				t.Errorf("decode upsert payload: %v", err)
 			}
 			if payload == nil || len(payload) != 0 {
 				t.Errorf("upsert payload = %#v, want empty object", payload)
 			}
-			if atomic.AddInt32(&requests, 1) == 1 {
+			if requests.Add(1) == 1 {
 				jsonResponse(w, http.StatusCreated, map[string]string{"id": "sp-id", "appId": "app-id"})
 			} else {
 				w.WriteHeader(http.StatusNoContent)
@@ -612,7 +613,7 @@ func TestEnsureServicePrincipal_RepeatedUpsert(t *testing.T) {
 			t.Fatalf("unexpected error: %v", err)
 		}
 	}
-	if got := atomic.LoadInt32(&requests); got != 3 {
+	if got := requests.Load(); got != 3 {
 		t.Errorf("upsert requests = %d, want 3", got)
 	}
 }
@@ -620,14 +621,14 @@ func TestEnsureServicePrincipal_RepeatedUpsert(t *testing.T) {
 func TestEnsureServicePrincipal_RetriesOn400RequestBadRequest(t *testing.T) {
 	shrinkRetryTimings(t)
 
-	var patchAttempts int32
+	var patchAttempts atomic.Int32
 	const flakyAttempts int32 = 2
 
 	srv := newTestServer(t, map[string]http.HandlerFunc{
 		"PATCH /servicePrincipals(appId='abc-123')": func(w http.ResponseWriter, r *http.Request) {
-			attempt := atomic.AddInt32(&patchAttempts, 1)
+			attempt := patchAttempts.Add(1)
 			if attempt <= flakyAttempts {
-				jsonResponse(w, 400, map[string]interface{}{
+				jsonResponse(w, 400, map[string]any{
 					"error": map[string]string{
 						"code":    "Request_BadRequest",
 						"message": "The appId 'abc-123' of the service principal does not reference a valid application object.",
@@ -647,7 +648,7 @@ func TestEnsureServicePrincipal_RetriesOn400RequestBadRequest(t *testing.T) {
 	if err := ensureServicePrincipal(context.Background(), srv.Client(), "token", "abc-123"); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if got := atomic.LoadInt32(&patchAttempts); got != flakyAttempts+1 {
+	if got := patchAttempts.Load(); got != flakyAttempts+1 {
 		t.Errorf("PATCH attempts = %d, want %d", got, flakyAttempts+1)
 	}
 }
@@ -658,11 +659,11 @@ func TestEnsureServicePrincipal_RetriesOn400RequestBadRequest(t *testing.T) {
 func TestEnsureServicePrincipal_DoesNotRetryGeneric400(t *testing.T) {
 	shrinkRetryTimings(t)
 
-	var patchAttempts int32
+	var patchAttempts atomic.Int32
 	srv := newTestServer(t, map[string]http.HandlerFunc{
 		"PATCH /servicePrincipals(appId='app-id')": func(w http.ResponseWriter, r *http.Request) {
-			atomic.AddInt32(&patchAttempts, 1)
-			jsonResponse(w, 400, map[string]interface{}{
+			patchAttempts.Add(1)
+			jsonResponse(w, 400, map[string]any{
 				"error": map[string]string{
 					"code":    "Request_BadRequest",
 					"message": "Some other validation failure unrelated to propagation.",
@@ -680,7 +681,7 @@ func TestEnsureServicePrincipal_DoesNotRetryGeneric400(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error on generic 400, got nil")
 	}
-	if got := atomic.LoadInt32(&patchAttempts); got != 1 {
+	if got := patchAttempts.Load(); got != 1 {
 		t.Errorf("PATCH attempts = %d, want 1 (generic 400 should not be retried)", got)
 	}
 }
@@ -698,11 +699,11 @@ func TestEnsureServicePrincipal_Errors(t *testing.T) {
 		{"RetryBudget", http.StatusServiceUnavailable, int32(retryMaxAttempts)},
 	} {
 		t.Run(testCase.name, func(t *testing.T) {
-			var attempts int32
+			var attempts atomic.Int32
 			srv := newTestServer(t, map[string]http.HandlerFunc{
 				"PATCH /servicePrincipals(appId='app-id')": func(w http.ResponseWriter, r *http.Request) {
-					atomic.AddInt32(&attempts, 1)
-					jsonResponse(w, testCase.statusCode, map[string]interface{}{
+					attempts.Add(1)
+					jsonResponse(w, testCase.statusCode, map[string]any{
 						"error": map[string]string{"code": "Request_BadRequest", "message": "unrelated failure"},
 					})
 				},
@@ -716,7 +717,7 @@ func TestEnsureServicePrincipal_Errors(t *testing.T) {
 			if err == nil || !strings.Contains(err.Error(), fmt.Sprint(testCase.statusCode)) {
 				t.Fatalf("error = %v, want status %d", err, testCase.statusCode)
 			}
-			if got := atomic.LoadInt32(&attempts); got != testCase.wantAttempts {
+			if got := attempts.Load(); got != testCase.wantAttempts {
 				t.Errorf("PATCH attempts = %d, want %d", got, testCase.wantAttempts)
 			}
 		})
@@ -728,7 +729,7 @@ func TestCleanupVenomApp_AppExists(t *testing.T) {
 	srv := newTestServer(t, map[string]http.HandlerFunc{
 		"POST /test-tenant/oauth2/v2.0/token": tokenHandler(),
 		"GET /applications": func(w http.ResponseWriter, r *http.Request) {
-			jsonResponse(w, 200, map[string]interface{}{
+			jsonResponse(w, 200, map[string]any{
 				"value": []map[string]string{
 					{"appId": "app-id", "id": "obj-to-delete"},
 				},
@@ -767,8 +768,8 @@ func TestCleanupVenomApp_AppNotFound(t *testing.T) {
 	srv := newTestServer(t, map[string]http.HandlerFunc{
 		"POST /test-tenant/oauth2/v2.0/token": tokenHandler(),
 		"GET /applications": func(w http.ResponseWriter, r *http.Request) {
-			jsonResponse(w, 200, map[string]interface{}{
-				"value": []interface{}{},
+			jsonResponse(w, 200, map[string]any{
+				"value": []any{},
 			})
 		},
 	})
@@ -813,14 +814,14 @@ func TestEnsureVenomApp_NewApp(t *testing.T) {
 		// findApp: no existing app.
 		"GET /applications": func(w http.ResponseWriter, r *http.Request) {
 			if strings.Contains(r.URL.RawQuery, "filter") {
-				jsonResponse(w, 200, map[string]interface{}{
-					"value": []interface{}{},
+				jsonResponse(w, 200, map[string]any{
+					"value": []any{},
 				})
 				return
 			}
 			// getApp for rotateCredentials (fetching password credentials).
-			jsonResponse(w, 200, map[string]interface{}{
-				"passwordCredentials": []interface{}{},
+			jsonResponse(w, 200, map[string]any{
+				"passwordCredentials": []any{},
 			})
 		},
 		// createApp.
@@ -836,8 +837,8 @@ func TestEnsureVenomApp_NewApp(t *testing.T) {
 		},
 		// rotateCredentials: get existing app details.
 		"GET /applications/new-venom-obj-id": func(w http.ResponseWriter, r *http.Request) {
-			jsonResponse(w, 200, map[string]interface{}{
-				"passwordCredentials": []interface{}{},
+			jsonResponse(w, 200, map[string]any{
+				"passwordCredentials": []any{},
 			})
 		},
 		// rotateCredentials: addPassword.
@@ -917,7 +918,7 @@ func TestEnsureVenomApp_ExistingApp(t *testing.T) {
 		// findApp: existing app found.
 		"GET /applications": func(w http.ResponseWriter, r *http.Request) {
 			if strings.Contains(r.URL.RawQuery, "filter") {
-				jsonResponse(w, 200, map[string]interface{}{
+				jsonResponse(w, 200, map[string]any{
 					"value": []map[string]string{
 						{"appId": "existing-app-id", "id": "existing-obj-id"},
 					},
@@ -940,7 +941,7 @@ func TestEnsureVenomApp_ExistingApp(t *testing.T) {
 		},
 		// rotateCredentials.
 		"GET /applications/existing-obj-id": func(w http.ResponseWriter, r *http.Request) {
-			jsonResponse(w, 200, map[string]interface{}{
+			jsonResponse(w, 200, map[string]any{
 				"passwordCredentials": []map[string]string{
 					{"keyId": "old-key"},
 				},
@@ -1004,7 +1005,7 @@ func TestEnsureVenomApp_SkipK8sSecret(t *testing.T) {
 		"POST /test-tenant/oauth2/v2.0/token": tokenHandler(),
 		"GET /applications": func(w http.ResponseWriter, r *http.Request) {
 			if strings.Contains(r.URL.RawQuery, "filter") {
-				jsonResponse(w, 200, map[string]interface{}{
+				jsonResponse(w, 200, map[string]any{
 					"value": []map[string]string{
 						{"appId": "skip-secret-app-id", "id": "skip-secret-obj-id"},
 					},
@@ -1014,8 +1015,8 @@ func TestEnsureVenomApp_SkipK8sSecret(t *testing.T) {
 			http.NotFound(w, r)
 		},
 		"GET /applications/skip-secret-obj-id": func(w http.ResponseWriter, r *http.Request) {
-			jsonResponse(w, 200, map[string]interface{}{
-				"passwordCredentials": []interface{}{},
+			jsonResponse(w, 200, map[string]any{
+				"passwordCredentials": []any{},
 			})
 		},
 		"POST /applications/skip-secret-obj-id/addPassword": func(w http.ResponseWriter, r *http.Request) {
@@ -1341,13 +1342,13 @@ func TestResolveRedirectOpts_EnvFallback(t *testing.T) {
 }
 
 func TestUpdateRedirectURIs_HappyPath(t *testing.T) {
-	var patchReceived map[string]interface{}
+	var patchReceived map[string]any
 
 	srv := newTestServer(t, map[string]http.HandlerFunc{
 		"POST /test-tenant/oauth2/v2.0/token": tokenHandler(),
 		"GET /applications/parent-obj-id": func(w http.ResponseWriter, r *http.Request) {
-			jsonResponse(w, 200, map[string]interface{}{
-				"web": map[string]interface{}{
+			jsonResponse(w, 200, map[string]any{
+				"web": map[string]any{
 					"redirectUris": []string{
 						"https://production.example.com/callback",
 						"https://old-ns.ci.distro.ultrawombat.com/identity/auth/login-callback",
@@ -1355,7 +1356,7 @@ func TestUpdateRedirectURIs_HappyPath(t *testing.T) {
 						"https://corrupt.ci.distro.ultrawombat.com/callback,",
 					},
 				},
-				"spa": map[string]interface{}{
+				"spa": map[string]any{
 					"redirectUris": []string{
 						"https://production.example.com/spa-callback",
 						"https://old-ns.ci.distro.ultrawombat.com/modeler/login-callback",
@@ -1396,11 +1397,11 @@ func TestUpdateRedirectURIs_HappyPath(t *testing.T) {
 	}
 
 	// Verify web URIs: production preserved, stale CI removed, new added.
-	webData, ok := patchReceived["web"].(map[string]interface{})
+	webData, ok := patchReceived["web"].(map[string]any)
 	if !ok {
 		t.Fatal("missing 'web' in PATCH payload")
 	}
-	webURIs, ok := webData["redirectUris"].([]interface{})
+	webURIs, ok := webData["redirectUris"].([]any)
 	if !ok {
 		t.Fatal("missing 'redirectUris' in web payload")
 	}
@@ -1417,13 +1418,7 @@ func TestUpdateRedirectURIs_HappyPath(t *testing.T) {
 	}
 
 	// Verify production URI is preserved.
-	found := false
-	for _, u := range webStrings {
-		if u == "https://production.example.com/callback" {
-			found = true
-			break
-		}
-	}
+	found := slices.Contains(webStrings, "https://production.example.com/callback")
 	if !found {
 		t.Error("production URI was not preserved in web URIs")
 	}
@@ -1443,11 +1438,11 @@ func TestUpdateRedirectURIs_HappyPath(t *testing.T) {
 	}
 
 	// Verify SPA URIs.
-	spaData, ok := patchReceived["spa"].(map[string]interface{})
+	spaData, ok := patchReceived["spa"].(map[string]any)
 	if !ok {
 		t.Fatal("missing 'spa' in PATCH payload")
 	}
-	spaURIs, ok := spaData["redirectUris"].([]interface{})
+	spaURIs, ok := spaData["redirectUris"].([]any)
 	if !ok {
 		t.Fatal("missing 'redirectUris' in spa payload")
 	}
@@ -1466,13 +1461,13 @@ func TestUpdateRedirectURIs_PatchFails(t *testing.T) {
 	srv := newTestServer(t, map[string]http.HandlerFunc{
 		"POST /test-tenant/oauth2/v2.0/token": tokenHandler(),
 		"GET /applications/parent-obj-id": func(w http.ResponseWriter, r *http.Request) {
-			jsonResponse(w, 200, map[string]interface{}{
-				"web": map[string]interface{}{"redirectUris": []string{}},
-				"spa": map[string]interface{}{"redirectUris": []string{}},
+			jsonResponse(w, 200, map[string]any{
+				"web": map[string]any{"redirectUris": []string{}},
+				"spa": map[string]any{"redirectUris": []string{}},
 			})
 		},
 		"PATCH /applications/parent-obj-id": func(w http.ResponseWriter, r *http.Request) {
-			jsonResponse(w, 400, map[string]interface{}{
+			jsonResponse(w, 400, map[string]any{
 				"error": map[string]string{
 					"code":    "Request_BadRequest",
 					"message": "too many redirect URIs",
@@ -1520,7 +1515,7 @@ func TestUpdateRedirectURIs_InvalidOpts(t *testing.T) {
 }
 
 func TestGraphPatch(t *testing.T) {
-	var receivedBody map[string]interface{}
+	var receivedBody map[string]any
 	srv := newTestServer(t, map[string]http.HandlerFunc{
 		"PATCH /applications/test-id": func(w http.ResponseWriter, r *http.Request) {
 			if got := r.Header.Get("Prefer"); got != "" {
