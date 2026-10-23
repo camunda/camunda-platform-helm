@@ -103,16 +103,16 @@ func parseRunBlocks(src []byte) ([]runBlock, error) {
 		return nil, err
 	}
 	var blocks []runBlock
-	if err := collectRunBlocks(&doc, "", &blocks); err != nil {
+	if err := collectRunBlocks(&doc, "", strings.Split(string(src), "\n"), &blocks); err != nil {
 		return nil, err
 	}
 	return blocks, nil
 }
 
-func collectRunBlocks(n *yaml.Node, path string, blocks *[]runBlock) error {
+func collectRunBlocks(n *yaml.Node, path string, source []string, blocks *[]runBlock) error {
 	if n.Kind == yaml.DocumentNode {
 		for _, c := range n.Content {
-			if err := collectRunBlocks(c, path, blocks); err != nil {
+			if err := collectRunBlocks(c, path, source, blocks); err != nil {
 				return err
 			}
 		}
@@ -127,14 +127,14 @@ func collectRunBlocks(n *yaml.Node, path string, blocks *[]runBlock) error {
 		if key.Value == "steps" && value.Kind == yaml.SequenceNode {
 			collect = collectSteps
 		}
-		if err := collect(value, joinStep(path, key.Value), blocks); err != nil {
+		if err := collect(value, joinStep(path, key.Value), source, blocks); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func collectSteps(steps *yaml.Node, path string, blocks *[]runBlock) error {
+func collectSteps(steps *yaml.Node, path string, source []string, blocks *[]runBlock) error {
 	for i, s := range steps.Content {
 		run := field(s, "run")
 		if run == nil || run.Kind != yaml.ScalarNode {
@@ -144,10 +144,27 @@ func collectSteps(steps *yaml.Node, path string, blocks *[]runBlock) error {
 		if err != nil {
 			return err
 		}
+		if run.Style&yaml.FoldedStyle != 0 {
+			b.lines = foldedLines(source[run.Line:], s.Column)
+		}
 		b.step = joinStep(path, stepName(s, i))
 		*blocks = append(*blocks, b)
 	}
 	return nil
+}
+
+func foldedLines(source []string, stepColumn int) int {
+	lines := 0
+	for _, line := range source {
+		if strings.TrimSpace(line) == "" {
+			continue
+		}
+		if len(line)-len(strings.TrimLeft(line, " ")) < stepColumn {
+			break
+		}
+		lines++
+	}
+	return lines
 }
 
 func field(n *yaml.Node, name string) *yaml.Node {
