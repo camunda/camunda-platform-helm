@@ -21,7 +21,7 @@ import (
 	"testing"
 )
 
-func TestResolveScenarioFiles(t *testing.T) {
+func TestResolveScenarioFilesWithConfig(t *testing.T) {
 	// Create a temporary chart directory structure
 	tmpDir := t.TempDir()
 	chartPath := filepath.Join(tmpDir, "test-chart")
@@ -130,19 +130,19 @@ func TestResolveScenarioFiles(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := ResolveScenarioFiles(tt.scenarioDir, tt.scenarios)
+			got, err := ResolveScenarioFilesWithConfig(tt.scenarioDir, tt.scenarios, nil)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("ResolveScenarioFiles() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("ResolveScenarioFilesWithConfig() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("ResolveScenarioFiles() = %v, want %v", got, tt.want)
+				t.Errorf("ResolveScenarioFilesWithConfig() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func TestResolveScenarioFiles_ErrorMessage(t *testing.T) {
+func TestResolveScenarioFilesWithConfig_ErrorMessage(t *testing.T) {
 	tmpDir := t.TempDir()
 	scenarioDir := filepath.Join(tmpDir, "scenarios")
 
@@ -157,7 +157,7 @@ func TestResolveScenarioFiles_ErrorMessage(t *testing.T) {
 	}
 
 	// Try to resolve two scenarios, one missing
-	_, err := ResolveScenarioFiles(scenarioDir, []string{"basic", "missing1", "missing2"})
+	_, err := ResolveScenarioFilesWithConfig(scenarioDir, []string{"basic", "missing1", "missing2"}, nil)
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
