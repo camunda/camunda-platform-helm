@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 13.14.2
+version: 13.14.3
 appVersion: 8.8.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -65,20 +65,4 @@ annotations:
     - name: Camunda 8 Self-Managed Helm charts
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
-  artifacthub.io/changes: |
-    - kind: changed
-      description: "Remove the document store configuration from the 8.8 migration importer"
-    - kind: fixed
-      description: "Warn when shared authentication issuer is unresolved"
-    - kind: fixed
-      description: "Add the Console audience to the orchestration OIDC audiences when Console is enabled"
-    - kind: fixed
-      description: "Keep published Helm CLI support v3-only"
-    - kind: fixed
-      description: "Warn when orchestration OIDC endpoints are not absolute URLs"
-    - kind: fixed
-      description: "Warn when the dual-region replication factor is not 4"
-    - kind: fixed
-      description: "Honor env replication factor override in dual-region warning"
-    - kind: fixed
-      description: "Render the Identity and Optimize ServiceMonitors only when their component is deployed"
+  artifacthub.io/changes: ""
