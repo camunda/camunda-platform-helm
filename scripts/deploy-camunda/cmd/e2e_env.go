@@ -20,6 +20,7 @@ import (
 	"maps"
 	"os"
 	"os/exec"
+	"scripts/deploy-camunda/acceptance"
 	"sort"
 	"strings"
 
@@ -101,7 +102,7 @@ func newE2EEnvMergeCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			venomSecret, err := resolveSecretKey(kubeContext, hubNamespace, venomClientSecretKey)
+			venomSecret, err := resolveSecretKey(kubeContext, hubNamespace, acceptance.VenomClientSecretKey)
 			if err != nil {
 				return err
 			}
@@ -245,11 +246,6 @@ func assertOptimizeEnabled(merged, namespace string) error {
 	}
 	return nil
 }
-
-// venomClientSecretKey is the integration-test-credentials key holding the venom client's
-// secret. The chart's identity layers register venom with this key (existingSecretKey), and the
-// physical tenant acceptance check reads the same key.
-const venomClientSecretKey = "identity-admin-client-password"
 
 // resolveSecretKey reads and base64-decodes one key from the Hub
 // namespace's shared integration-test-credentials secret. This is the secret

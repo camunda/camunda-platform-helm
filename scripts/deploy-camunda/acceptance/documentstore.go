@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package acceptance
 
 import (
 	"bytes"
@@ -24,59 +24,44 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 	"time"
-
-	"github.com/spf13/cobra"
 )
 
 const s3CompatibleDocumentEndpoint = "http://documentstore-s3:9000"
 
-type documentStoreAcceptanceOptions struct {
-	namespace, release, kubeContext string
+type DocumentStoreAcceptanceOptions struct {
+	Namespace, Release, KubeContext string
 }
 
-func newDocumentStoreAcceptanceCommand() *cobra.Command {
-	var opts documentStoreAcceptanceOptions
-	command := &cobra.Command{
-		Use:   "documentstore-s3-compatible",
-		Short: "Verify document operations against the S3-compatible CI fixture",
-		Args:  cobra.NoArgs,
-		RunE: func(command *cobra.Command, _ []string) error {
-			if strings.TrimSpace(opts.namespace) == "" || strings.TrimSpace(opts.release) == "" {
-				return errors.New("namespace and release are required")
-			}
-			deps := productionAcceptanceDependencies(physicalTenantAcceptanceOptions{kubeContext: opts.kubeContext})
-			client := &http.Client{
-				Timeout: 30 * time.Second,
-				CheckRedirect: func(*http.Request, []*http.Request) error {
-					return http.ErrUseLastResponse
-				},
-			}
-			deps.doHTTP = client.Do
-			return runDocumentStoreAcceptance(command.Context(), opts, deps)
+func RunDocumentStore(ctx context.Context, opts DocumentStoreAcceptanceOptions) error {
+	if strings.TrimSpace(opts.Namespace) == "" || strings.TrimSpace(opts.Release) == "" {
+		return errors.New("namespace and release are required")
+	}
+	deps := productionAcceptanceDependencies(PhysicalTenantAcceptanceOptions{KubeContext: opts.KubeContext})
+	client := &http.Client{
+		Timeout: 30 * time.Second,
+		CheckRedirect: func(*http.Request, []*http.Request) error {
+			return http.ErrUseLastResponse
 		},
 	}
-	command.Flags().StringVar(&opts.namespace, "namespace", os.Getenv("TEST_NAMESPACE"), "Camunda namespace")
-	command.Flags().StringVar(&opts.release, "release", envDefault("RELEASE_NAME", "integration"), "Camunda release")
-	command.Flags().StringVar(&opts.kubeContext, "kube-context", os.Getenv("KUBE_CONTEXT"), "kubectl context")
-	return command
+	deps.doHTTP = client.Do
+	return runDocumentStoreAcceptance(ctx, opts, deps)
 }
 
-func runDocumentStoreAcceptance(ctx context.Context, opts documentStoreAcceptanceOptions, deps acceptanceDependencies) error {
+func runDocumentStoreAcceptance(ctx context.Context, opts DocumentStoreAcceptanceOptions, deps acceptanceDependencies) error {
 	ctx, cancel := context.WithTimeout(ctx, 8*time.Minute)
 	defer cancel()
-	args := kubectlArgs(opts.kubeContext, "-n", opts.namespace, "wait", "--for=condition=available", "--timeout=300s", "deployment/documentstore-s3")
+	args := kubectlArgs(opts.KubeContext, "-n", opts.Namespace, "wait", "--for=condition=available", "--timeout=300s", "deployment/documentstore-s3")
 	if output, err := deps.runCommand(ctx, "kubectl", args...); err != nil {
 		return fmt.Errorf("S3-compatible store not ready: %w: %s", err, output)
 	}
 	ports := make([]string, 0, 2)
 	for _, target := range []struct{ resource, port string }{
-		{"service/" + opts.release + "-zeebe-gateway", ":8080"},
+		{"service/" + opts.Release + "-zeebe-gateway", ":8080"},
 		{"service/documentstore-s3", ":9000"},
 	} {
-		process, err := deps.startForward(ctx, []string{"-n", opts.namespace, "port-forward", target.resource, target.port})
+		process, err := deps.startForward(ctx, []string{"-n", opts.Namespace, "port-forward", target.resource, target.port})
 		if err != nil {
 			return fmt.Errorf("start %s port-forward: %w", target.resource, err)
 		}
