@@ -20,9 +20,9 @@ set -euo pipefail
 
 NAMESPACE="${TEST_NAMESPACE:?TEST_NAMESPACE must be set}"
 RELEASE="${RELEASE_NAME:-integration}"
-CONTEXT_FLAG=""
+CONTEXT_FLAG=()
 if [[ -n "${KUBE_CONTEXT:-}" ]]; then
-  CONTEXT_FLAG="--context ${KUBE_CONTEXT}"
+  CONTEXT_FLAG=(--context "${KUBE_CONTEXT}")
 fi
 
 CERT_VALIDITY_DAYS=365
@@ -78,12 +78,12 @@ openssl x509 -req \
 
 echo "[zeebe-tls] Creating Kubernetes secret in namespace $NAMESPACE..."
 
-if kubectl ${CONTEXT_FLAG} -n "$NAMESPACE" get secret camunda-zeebe-tls >/dev/null 2>&1; then
+if kubectl "${CONTEXT_FLAG[@]}" -n "$NAMESPACE" get secret camunda-zeebe-tls >/dev/null 2>&1; then
   echo "  Secret camunda-zeebe-tls already exists - replacing"
-  kubectl ${CONTEXT_FLAG} -n "$NAMESPACE" delete secret camunda-zeebe-tls --ignore-not-found
+  kubectl "${CONTEXT_FLAG[@]}" -n "$NAMESPACE" delete secret camunda-zeebe-tls --ignore-not-found
 fi
 
-kubectl ${CONTEXT_FLAG} -n "$NAMESPACE" create secret generic camunda-zeebe-tls \
+kubectl "${CONTEXT_FLAG[@]}" -n "$NAMESPACE" create secret generic camunda-zeebe-tls \
   --from-file="chainZeebeCluster.pem=$WORK_DIR/chainZeebeCluster.pem" \
   --from-file="zeebeCluster.key=$WORK_DIR/zeebeCluster.key"
 
