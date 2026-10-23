@@ -14,7 +14,7 @@
 
 //go:build integration
 
-package cmd
+package credentials
 
 import (
 	"bytes"

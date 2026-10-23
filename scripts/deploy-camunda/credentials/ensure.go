@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package credentials
 
 import (
 	"bytes"
@@ -26,7 +26,6 @@ import (
 	"os"
 	"sort"
 
-	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
@@ -218,50 +217,29 @@ func ensureCredentials(ctx context.Context, out io.Writer, manifest []byte, name
 	return nil
 }
 
-func newTopologyEnsureCredentialsCommand() *cobra.Command {
-	var (
-		manifestPath string
-		base         string
-		namespace    string
-		kubeContext  string
-	)
+type EnsureOptions struct {
+	ManifestPath    string
+	Base            string
+	SecretNamespace string
+	KubeContext     string
+}
 
-	cmd := &cobra.Command{
-		Use:   "ensure-credentials",
-		Short: "Create the source Secret a credentials manifest reads from, generating any missing value",
-		Long: `Reads an ExternalSecret manifest (a topology's credentials-manifest), and makes
-sure the one source Secret it reads from exists in the ClusterSecretStore's
-namespace with a random value for every property it references.
-
-Existing values are never changed, and no value is ever printed. A deployed
-environment picks up a generated value through reconcile-credentials.`,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			raw, err := os.ReadFile(manifestPath)
-			if err != nil {
-				return fmt.Errorf("read manifest: %w", err)
-			}
-			manifest, err := matrix.RenderCredentialsManifest(raw, base)
-			if err != nil {
-				return err
-			}
-			client, err := kube.NewClient("", kubeContext)
-			if err != nil {
-				return err
-			}
-			return ensureCredentials(cmd.Context(), cmd.OutOrStdout(), manifest, namespace, topologyCredentialStore{
-				get:    client.GetSecretData,
-				create: client.CreateOpaqueSecret,
-				update: client.AddSecretData,
-			})
-		},
+func Ensure(ctx context.Context, out io.Writer, opts EnsureOptions) error {
+	raw, err := os.ReadFile(opts.ManifestPath)
+	if err != nil {
+		return fmt.Errorf("read manifest: %w", err)
 	}
-
-	cmd.Flags().StringVar(&manifestPath, "manifest", "", "ExternalSecret manifest whose source secret to ensure")
-	cmd.Flags().StringVar(&base, "base", "", "topology base namespace, substituted for "+matrix.CredentialsManifestBaseToken+" in the manifest")
-	cmd.Flags().StringVar(&namespace, "secret-namespace", "distribution-team", "namespace the ClusterSecretStore reads source secrets from")
-	cmd.Flags().StringVar(&kubeContext, "kube-context", "", "kubectl context (defaults to current)")
-	cmd.Flags().StringSlice("guard-namespace", nil, "ignored")
-	_ = cmd.Flags().MarkDeprecated("guard-namespace", "it has no effect; reconcile-credentials now brings existing stores to the source")
-	_ = cmd.MarkFlagRequired("manifest")
-	return cmd
+	manifest, err := matrix.RenderCredentialsManifest(raw, opts.Base)
+	if err != nil {
+		return err
+	}
+	client, err := kube.NewClient("", opts.KubeContext)
+	if err != nil {
+		return err
+	}
+	return ensureCredentials(ctx, out, manifest, opts.SecretNamespace, topologyCredentialStore{
+		get:    client.GetSecretData,
+		create: client.CreateOpaqueSecret,
+		update: client.AddSecretData,
+	})
 }
