@@ -15,6 +15,7 @@
 package main
 
 import (
+	"cmp"
 	"fmt"
 	"io"
 	"os"
@@ -162,6 +163,11 @@ func runBlockViolations(head, before []runBlock) []string {
 			renamed[b.script]++
 		}
 	}
+	for _, blocks := range slots {
+		slices.SortFunc(blocks, func(a, b runBlock) int {
+			return cmp.Or(cmp.Compare(a.cyclomatic, b.cyclomatic), cmp.Compare(a.lines, b.lines))
+		})
+	}
 
 	var changed []runBlock
 	for _, b := range head {
@@ -185,11 +191,13 @@ func runBlockViolations(head, before []runBlock) []string {
 			renamed[b.script]--
 			continue
 		}
+		if i := slices.IndexFunc(slots[b.step], func(s runBlock) bool {
+			return b.cyclomatic <= s.cyclomatic && b.lines <= s.lines
+		}); i >= 0 {
+			slots[b.step] = slices.Delete(slots[b.step], i, i+1)
+			continue
+		}
 		if prev, ok := smallest(slots[b.step]); ok {
-			slots[b.step] = slots[b.step][1:]
-			if b.cyclomatic <= prev.cyclomatic && b.lines <= prev.lines {
-				continue
-			}
 			over += fmt.Sprintf(", up from cyclomatic %d, %d lines", prev.cyclomatic, prev.lines)
 		}
 		violations = append(violations, fmt.Sprintf("%s:%d: %s: %s", b.path, b.line, b.step, over))

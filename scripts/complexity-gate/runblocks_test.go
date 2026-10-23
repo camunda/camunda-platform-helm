@@ -261,6 +261,15 @@ func TestRunMatchesStepsThatShareAName(t *testing.T) {
 	}
 }
 
+func TestRunMatchesChangedStepsThatShareANameWithCrossingMeasures(t *testing.T) {
+	root := newRepo(t, map[string]string{".github/workflows/a.yaml": workflow(step("Same", branchyScript(14)), step("Same", branchyScript(11)+longScript(20)))})
+	writeFile(t, root, ".github/workflows/a.yaml", workflow(step("Same", branchyScript(11)+longScript(3)), step("Same", branchyScript(13))))
+
+	var out bytes.Buffer
+	require.NoError(t, run(root, "main", false, &out))
+	assert.Contains(t, out.String(), "2 run block(s) checked, none added or grown above")
+}
+
 func TestRunAllFailsOnUnparsableRunBlock(t *testing.T) {
 	root := newRepo(t, map[string]string{".github/workflows/a.yaml": workflow(step("Broken", "if true; then echo"))})
 
