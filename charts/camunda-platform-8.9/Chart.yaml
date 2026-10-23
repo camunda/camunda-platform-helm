@@ -66,17 +66,5 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
-    - kind: fixed
-      description: "Warn when orchestration OIDC endpoints are not absolute URLs"
-    - kind: fixed
-      description: "Warn when the dual-region replication factor is not 4"
-    - kind: fixed
-      description: "Keep Gateway API redirects on HTTPS for bare Web Modeler, Orchestration and Optimize paths"
-    - kind: fixed
-      description: "Cover 8.9 upgrade values without breaking installs"
-    - kind: fixed
-      description: "Honor env replication factor override in dual-region warning"
-    - kind: fixed
-      description: "Render the Identity and Optimize ServiceMonitors only when their component is deployed"
-    - kind: fixed
-      description: "Warn when global.noSecondaryStorage conflicts with orchestration secondary storage type"
+    - kind: added
+      description: "Add quick install values with embedded H2"
