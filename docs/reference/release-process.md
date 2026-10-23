@@ -236,7 +236,7 @@ Do these when the new alpha chart is created (months before the previous alpha g
 4. In [`charts/chart-versions.yaml`](https://github.com/camunda/camunda-platform-helm/blob/main/charts/chart-versions.yaml), add a lifecycle entry for `8.11` without `released`, and add `8.11` to `chartAutomation.routineVersions`.
 5. Add the release-please package and manifest entry in `.github/config/release-please/`, with the `version/alpha` label.
 6. In [`renovate.json5`](https://github.com/camunda/camunda-platform-helm/blob/main/.github/renovate.json5), add the new chart files to the alpha rules.
-7. Add `8.11` to the GitHub Actions version choices (search for `type: choice`), to [`pr-labeler.yaml`](https://github.com/camunda/camunda-platform-helm/blob/main/.github/config/pr-labeler.yaml), to `scripts/release-tools/inject_values.go`, and to the chart list in `test-release-tooling.yaml`.
+7. Add `8.11` to the GitHub Actions version choices (search for `type: choice`), to [`pr-labeler.yaml`](https://github.com/camunda/camunda-platform-helm/blob/main/.github/config/pr-labeler.yaml), and to `scripts/release-tools/inject_values.go`.
 
 ### Minor becoming GA
 
