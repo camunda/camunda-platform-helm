@@ -76,7 +76,7 @@ func TestRunAllReportsRunBlocks(t *testing.T) {
 }
 
 func TestRunAllCountsFoldedRunBlocksBySourceLines(t *testing.T) {
-	folded := strings.Replace(step("Folded", longScript(101)), "run: |", "run: >", 1)
+	folded := strings.Replace(step("Folded", "# shellcheck disable=SC2086\n"+longScript(101)), "run: |", "run: >", 1)
 	root := newRepo(t, map[string]string{".github/workflows/a.yaml": workflow(folded, step("After", longScript(100)))})
 
 	var out bytes.Buffer
@@ -286,6 +286,15 @@ func TestRunShellchecksChangedCompositeActionRunBlocks(t *testing.T) {
 	assert.Contains(t, err.Error(), "shellcheck reports 1 finding(s) in 1 checked composite action run block(s)")
 }
 
+func TestRunShellchecksInlineCompositeActionRunValue(t *testing.T) {
+	root := newRepo(t, map[string]string{".github/actions/a/action.yaml": action("Clean", `echo "ok"`)})
+	writeFile(t, root, ".github/actions/a/action.yaml", "runs:\n  using: composite\n  steps:\n    - name: Inline\n      run: cd $TARGET_DIR || exit 1\n")
+
+	var out bytes.Buffer
+	require.Error(t, run(root, "main", false, &out))
+	assert.Contains(t, out.String(), ".github/actions/a/action.yaml:5: runs/steps/Inline:")
+}
+
 func TestRunAllShellchecksEveryCompositeActionRunBlock(t *testing.T) {
 	root := newRepo(t, map[string]string{
 		".github/actions/a/action.yaml": action("Clean", `echo "ok"`),
@@ -332,9 +341,9 @@ func TestParseRunBlocksReadsOnlyStepRunKeys(t *testing.T) {
 	))
 	require.NoError(t, err)
 	assert.Equal(t, []runBlock{
-		{step: "jobs/build/steps/Named", script: "echo a", line: 12, cyclomatic: 1, lines: 1},
-		{step: "jobs/build/steps/only-id", script: "echo b", line: 14, cyclomatic: 1, lines: 1},
-		{step: "jobs/build/steps/2", script: "echo c", line: 15, cyclomatic: 1, lines: 1},
+		{step: "jobs/build/steps/Named", script: "echo a", line: 12, firstLine: 12, cyclomatic: 1, lines: 1},
+		{step: "jobs/build/steps/only-id", script: "echo b", line: 14, firstLine: 14, cyclomatic: 1, lines: 1},
+		{step: "jobs/build/steps/2", script: "echo c", line: 15, firstLine: 15, cyclomatic: 1, lines: 1},
 	}, blocks)
 }
 

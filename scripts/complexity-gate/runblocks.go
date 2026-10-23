@@ -46,6 +46,7 @@ type runBlock struct {
 	step       string
 	script     string
 	line       int
+	firstLine  int
 	cyclomatic int
 	lines      int
 }
@@ -96,7 +97,7 @@ func shellcheckActions(blocks []runBlock, out io.Writer) error {
 				continue
 			}
 			n, _ := strconv.Atoi(fields[1])
-			findings = append(findings, fmt.Sprintf("%s:%d: %s:%s", b.path, b.line+n, b.step, fields[3]))
+			findings = append(findings, fmt.Sprintf("%s:%d: %s:%s", b.path, b.firstLine+n-1, b.step, fields[3]))
 		}
 	}
 	if len(findings) == 0 {
@@ -313,13 +314,16 @@ func collectSteps(steps *yaml.Node, path string, source []string, blocks *[]runB
 func foldedLines(source []string, stepColumn int) int {
 	lines := 0
 	for _, line := range source {
-		if strings.TrimSpace(line) == "" {
+		text := strings.TrimSpace(line)
+		if text == "" {
 			continue
 		}
 		if len(line)-len(strings.TrimLeft(line, " ")) < stepColumn {
 			break
 		}
-		lines++
+		if !strings.HasPrefix(text, "#") {
+			lines++
+		}
 	}
 	return lines
 }
@@ -365,7 +369,10 @@ func measureRun(n *yaml.Node) (runBlock, error) {
 		}
 		return true
 	})
-	b := runBlock{script: n.Value, line: n.Line, cyclomatic: bashCyclomatic(file)}
+	b := runBlock{script: n.Value, line: n.Line, firstLine: n.Line, cyclomatic: bashCyclomatic(file)}
+	if n.Style&(yaml.LiteralStyle|yaml.FoldedStyle) != 0 {
+		b.firstLine++
+	}
 	var number uint
 	for line := range strings.Lines(script) {
 		number++
