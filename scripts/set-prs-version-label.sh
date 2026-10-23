@@ -1,3 +1,4 @@
+#!/bin/bash
 # Copyright 2026 Camunda Services GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,7 +16,6 @@
 # A script to label PRs based on the app and chart version.
 # It meant to run in the post-release workflow and before merging the release PR.
 
-#!/bin/bash
 set -euo pipefail
 
 #
@@ -27,7 +27,7 @@ REPO_NAME='camunda-platform-helm'
 # Check dependencies.
 dep_names="ct gh git git-cliff jq yq"
 for dep_name in ${dep_names}; do
-    test -n "$(which ${dep_name})" || (
+    test -n "$(which "${dep_name}")" || (
       echo "Missing dependency: ${dep_name}";
       echo "Dependencies list: ${dep_names}";
       exit 1
@@ -37,6 +37,7 @@ done
 get_prs_per_chart_dir () {
     chart_dir="${1}"
     cliff_config_file=".github/config/cliff.toml"
+    # shellcheck disable=SC2154
     git-cliff "${previousSourceSHA}..${sourceSHA}" \
         --context \
         --config "${cliff_config_file}" \
@@ -49,6 +50,7 @@ get_prs_per_chart_dir () {
 # https://github.com/cli/cli/discussions/7097#discussioncomment-5229031
 get_issues_per_pr () {
     pr_number="${1}"
+    # shellcheck disable=SC2016
     gh api graphql -F owner="${REPO_OWNER}" -F repo="${REPO_NAME}" -F pr="${pr_number}" -f query='
         query ($owner: String!, $repo: String!, $pr: Int!) {
             repository(owner: $owner, name: $repo) {
@@ -115,29 +117,29 @@ echo "${chart_dirs}" | while read -r chart_dir; do
         # The REST pulls endpoint 404s for issue numbers (gh pr view would
         # silently fall back to issue view, so it can't be used here).
         if ! gh api "repos/${REPO_OWNER}/${REPO_NAME}/pulls/${pr_number}" --silent >/dev/null 2>&1; then
-            printf -- "- [#${pr_number}] not a PR, skipping.\n"
+            printf -- '- [#%s] not a PR, skipping.\n' "${pr_number}"
             continue
         fi
         # Label PR.
-        printf "[PR ${pr_number}] Labeling the PR with chart version label ${chart_version_label}"
+        printf '[PR %s] Labeling the PR with chart version label %s' "${pr_number}" "${chart_version_label}"
         if ! pr_edit_out="$(gh pr edit "${pr_number}" --add-label "${app_version_label},${chart_version_label}" 2>&1)"; then
-            printf -- "\n- [PR ${pr_number}] labeling failed, skipping: %s\n" "${pr_edit_out}"
+            printf -- '\n- [PR %s] labeling failed, skipping: %s\n' "${pr_number}" "${pr_edit_out}"
             continue
         fi
         printf -- " - %s\n" "${pr_edit_out}"
         # Label the PR's corresponding issue.
         if ! issue_numbers="$(get_issues_per_pr "${pr_number}")"; then
-            printf -- "- [PR ${pr_number}] could not fetch linked issues, skipping.\n"
+            printf -- '- [PR %s] could not fetch linked issues, skipping.\n' "${pr_number}"
             continue
         fi
         test -z "${issue_numbers}" && {
-            printf -- "- PR no. ${pr_number} has no corresponding issues.\n"
+            printf -- '- PR no. %s has no corresponding issues.\n' "${pr_number}"
             continue
         }
         echo -e "${issue_numbers}" | while read -r issue_number; do
-            printf -- "- [Issue ${issue_number}] Labeling the issue with chart version label ${chart_version_label}"
+            printf -- '- [Issue %s] Labeling the issue with chart version label %s' "${issue_number}" "${chart_version_label}"
             if ! issue_edit_out="$(gh issue edit "${issue_number}" --add-label "${app_version_label},${chart_version_label}" 2>&1)"; then
-                printf -- "\n- [Issue ${issue_number}] labeling failed, skipping: %s\n" "${issue_edit_out}"
+                printf -- '\n- [Issue %s] labeling failed, skipping: %s\n' "${issue_number}" "${issue_edit_out}"
                 continue
             fi
             printf -- " - %s\n" "${issue_edit_out}"
