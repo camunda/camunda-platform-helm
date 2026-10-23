@@ -6667,7 +6667,7 @@
                                         "host": {
                                             "type": "string",
                                             "description": "defines the elasticsearch host, ideally the service name inside the namespace.",
-                                            "default": "{{ .Release.Name }}-elasticsearch"
+                                            "default": ""
                                         },
                                         "port": {
                                             "type": "number",
