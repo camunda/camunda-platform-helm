@@ -1,5 +1,17 @@
 # Changelog
 
+## [13.14.3](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.8-13.14.2...camunda-platform-8.8-13.14.3) (2026-10-23)
+
+
+### Dependencies
+
+* update camunda-platform-images (patch) ([#7670](https://github.com/camunda/camunda-platform-helm/issues/7670)) ([5180eae](https://github.com/camunda/camunda-platform-helm/commit/5180eae12ed196054950c0b3ff704fce37ad9ab4))
+* update camunda/camunda docker tag to v8.8.44 ([#7673](https://github.com/camunda/camunda-platform-helm/issues/7673)) ([10cfc27](https://github.com/camunda/camunda-platform-helm/commit/10cfc2764dc554db1e1d81c7f507102833133a35))
+* update camunda/console docker tag to v8.8.145 ([#7633](https://github.com/camunda/camunda-platform-helm/issues/7633)) ([0b34a34](https://github.com/camunda/camunda-platform-helm/commit/0b34a34d2a8ebf671de995c72d90781d03a3fff2))
+* update camunda/web-modeler-restapi docker tag to v8.8.23 ([#7631](https://github.com/camunda/camunda-platform-helm/issues/7631)) ([9609a34](https://github.com/camunda/camunda-platform-helm/commit/9609a3434b6a25a6658bdc6ffc74d2b8823bc0e8))
+* update patch-updates (patch) ([#7618](https://github.com/camunda/camunda-platform-helm/issues/7618)) ([c565042](https://github.com/camunda/camunda-platform-helm/commit/c56504296275003045f3a448bde080eedcde2d3d))
+* update patch-updates (patch) ([#7671](https://github.com/camunda/camunda-platform-helm/issues/7671)) ([922bc3e](https://github.com/camunda/camunda-platform-helm/commit/922bc3e8618f76d0b29a32af0c8fe5cccc382ac0))
+
 ## [13.14.2](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.8-13.14.1...camunda-platform-8.8-13.14.2) (2026-10-21)
 
 
