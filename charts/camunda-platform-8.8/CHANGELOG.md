@@ -1,5 +1,35 @@
 # Changelog
 
+## [13.14.2](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.8-13.14.1...camunda-platform-8.8-13.14.2) (2026-10-21)
+
+
+### Bug Fixes
+
+* **8.8:** keep published Helm CLI support v3-only ([#7499](https://github.com/camunda/camunda-platform-helm/issues/7499)) ([10b228f](https://github.com/camunda/camunda-platform-helm/commit/10b228fc601f17ee8220a5297b998adb8850cacd))
+* add the Console audience to the orchestration OIDC audiences when Console is enabled ([#7456](https://github.com/camunda/camunda-platform-helm/issues/7456)) ([d0857c9](https://github.com/camunda/camunda-platform-helm/commit/d0857c90c3e5c4e857028bba535f7fc95acbd5e6))
+* honor env replication factor override in dual-region warning ([#7556](https://github.com/camunda/camunda-platform-helm/issues/7556)) ([2235e7a](https://github.com/camunda/camunda-platform-helm/commit/2235e7a46cec5ddd13d23a8d8d8e1f68773ca845))
+* render the Identity and Optimize ServiceMonitors only when their component is deployed ([#7555](https://github.com/camunda/camunda-platform-helm/issues/7555)) ([dd60ab1](https://github.com/camunda/camunda-platform-helm/commit/dd60ab1650db0bd378883f4f3f92a7474ca7f490))
+* warn when orchestration OIDC endpoints are not absolute URLs ([#7501](https://github.com/camunda/camunda-platform-helm/issues/7501)) ([1d28c06](https://github.com/camunda/camunda-platform-helm/commit/1d28c0676134aa414bef41d57c4323c311adced6))
+* warn when shared authentication issuer is unresolved ([#7482](https://github.com/camunda/camunda-platform-helm/issues/7482)) ([9b681ad](https://github.com/camunda/camunda-platform-helm/commit/9b681ade84588b5c5abc6d162112eafd900de5ae))
+* warn when the dual-region replication factor is not 4 ([#7506](https://github.com/camunda/camunda-platform-helm/issues/7506)) ([58ac756](https://github.com/camunda/camunda-platform-helm/commit/58ac756f862d66946e1ba104350e668eaf0ff2f5))
+
+
+### Dependencies
+
+* update camunda-platform-images (patch) ([#7421](https://github.com/camunda/camunda-platform-helm/issues/7421)) ([a5ee96e](https://github.com/camunda/camunda-platform-helm/commit/a5ee96e435b83c3964552d94788fe1765e152b5a))
+* update camunda-platform-images (patch) ([#7558](https://github.com/camunda/camunda-platform-helm/issues/7558)) ([42dcd61](https://github.com/camunda/camunda-platform-helm/commit/42dcd61afbd3331d882359c924a314c1dd445055))
+* update camunda-platform-images (patch) ([#7621](https://github.com/camunda/camunda-platform-helm/issues/7621)) ([9a7a67d](https://github.com/camunda/camunda-platform-helm/commit/9a7a67d730f24f5c6d717406481926c436bdea4f))
+* update patch-updates (patch) ([#7518](https://github.com/camunda/camunda-platform-helm/issues/7518)) ([568a320](https://github.com/camunda/camunda-platform-helm/commit/568a320b1aeb087bbf9fb17b3d2125fc4b89c69c))
+* update patch-updates (patch) ([#7561](https://github.com/camunda/camunda-platform-helm/issues/7561)) ([7708f81](https://github.com/camunda/camunda-platform-helm/commit/7708f81a1ec92e2e442b3c000a6219b48252baa3))
+* update patch-updates (patch) ([#7579](https://github.com/camunda/camunda-platform-helm/issues/7579)) ([50663bf](https://github.com/camunda/camunda-platform-helm/commit/50663bf80ace96115e1a37a1cfeb3d03ff4bf7c3))
+* update patch-updates (patch) ([#7605](https://github.com/camunda/camunda-platform-helm/issues/7605)) ([43a8d47](https://github.com/camunda/camunda-platform-helm/commit/43a8d4731704df2b8839a67cd8564fb67e3e95fe))
+* update patch-updates (patch) ([#7614](https://github.com/camunda/camunda-platform-helm/issues/7614)) ([4005f79](https://github.com/camunda/camunda-platform-helm/commit/4005f793c7423ff4fad3336bc040cd14a5cc6ea0))
+
+
+### Refactors
+
+* remove the document store configuration from the 8.8 migration importer ([#7502](https://github.com/camunda/camunda-platform-helm/issues/7502)) ([361aedd](https://github.com/camunda/camunda-platform-helm/commit/361aedd05fc9588752971345b15290f69173f4db))
+
 ## [13.14.1](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.8-13.14.0...camunda-platform-8.8-13.14.1) (2026-10-07)
 
 
