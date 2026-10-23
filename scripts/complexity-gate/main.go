@@ -62,7 +62,7 @@ func main() {
 }
 
 func run(repoRoot, base string, all bool, out io.Writer) error {
-	return errors.Join(checkFuncs(repoRoot, base, all, out), checkRunBlocks(repoRoot, all, out))
+	return errors.Join(checkFuncs(repoRoot, base, all, out), checkRunBlocks(repoRoot, base, all, out))
 }
 
 func checkFuncs(repoRoot, base string, all bool, out io.Writer) error {
