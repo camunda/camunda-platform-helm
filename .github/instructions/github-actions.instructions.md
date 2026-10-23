@@ -28,6 +28,8 @@ automated workflow steps follow Conventional Commits with the `chore(ci):` type.
   count), in `.github/workflows/` or
   `.github/actions/`, and never make a block that is already above more complex or longer.
   `make go.complexity` fails the change, and `test-release-tooling.yaml` runs it on every PR.
+  The same check runs shellcheck on the `run:` blocks of the composite actions that a change
+  touches and fails on any finding.
   `cd scripts/complexity-gate && go run . --repo-root ../.. --all` lists the blocks that are
   already above. To pass, delete dead branches and duplicated commands, or split the step where
   no shell variable crosses the split. Do not add a `GITHUB_ENV` or `GITHUB_OUTPUT` write, a `.sh`
