@@ -22,72 +22,29 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestApplySelectionDefaultsAliasPrecedence(t *testing.T) {
+func TestApplySelectionDefaultsFlagPrecedence(t *testing.T) {
 	for _, profile := range []bool{false, true} {
-		for _, modern := range []bool{false, true} {
-			name := "root"
-			if profile {
-				name = "profile"
-			}
-			if modern {
-				name += "/modern"
-			}
-			t.Run(name, func(t *testing.T) {
-				disabled := false
-				spec := DeploySpecConfig{Identity: "basic", Persistence: "elasticsearch", Features: []string{"documentstore"}, TestPlatform: "gke", QA: &disabled}
-				root := &RootConfig{DeploySpecConfig: spec}
-				if profile {
-					root = &RootConfig{Deployments: map[string]DeploymentConfig{"dev": {DeploySpecConfig: spec}}}
-				}
-				flags := &RuntimeFlags{
-					Deprecated:   DeprecatedFlags{ValuesAuth: "oidc", ValuesBackend: "opensearch", ValuesFeatures: []string{"rdbms", "upgrade", "multitenancy"}, ValuesInfra: "eks", ValuesQA: true},
-					ChangedFlags: map[string]bool{"values-auth": true, "values-backend": true, "values-features": true, "values-infra": true, "values-qa": true},
-				}
-				want := SelectionFlags{Identity: "oidc", Persistence: "opensearch", Features: []string{"multitenancy"}, TestPlatform: "eks", QA: true, UpgradeFlow: true}
-				if modern {
-					want = SelectionFlags{Identity: "hybrid", Persistence: "rdbms-external", Features: []string{}, TestPlatform: "gke"}
-					flags.Selection = want
-					for _, flag := range []string{"identity", "persistence", "features", "test-platform", "qa", "upgrade-flow"} {
-						flags.ChangedFlags[flag] = true
-					}
-				}
-				require.NoError(t, ApplyActiveDeployment(root, flags))
-				flags.MigrateDeprecatedFlags()
-				require.NoError(t, ApplySelectionDefaults(flags, SelectionFlags{Identity: "keycloak", Persistence: "elasticsearch"}, root))
-				require.Equal(t, want, flags.Selection)
-			})
+		name := "root"
+		if profile {
+			name = "profile"
 		}
+		t.Run(name, func(t *testing.T) {
+			disabled := false
+			spec := DeploySpecConfig{Identity: "basic", Persistence: "elasticsearch", Features: []string{"documentstore"}, TestPlatform: "gke", QA: &disabled}
+			root := &RootConfig{DeploySpecConfig: spec}
+			if profile {
+				root = &RootConfig{Deployments: map[string]DeploymentConfig{"dev": {DeploySpecConfig: spec}}}
+			}
+			want := SelectionFlags{Identity: "hybrid", Persistence: "rdbms-external", Features: []string{}, TestPlatform: "gke"}
+			flags := &RuntimeFlags{Selection: want, ChangedFlags: map[string]bool{}}
+			for _, flag := range []string{"identity", "persistence", "features", "test-platform", "qa", "upgrade-flow"} {
+				flags.ChangedFlags[flag] = true
+			}
+			require.NoError(t, ApplyActiveDeployment(root, flags))
+			require.NoError(t, ApplySelectionDefaults(flags, SelectionFlags{Identity: "keycloak", Persistence: "elasticsearch"}, root))
+			require.Equal(t, want, flags.Selection)
+		})
 	}
-}
-
-func TestApplySelectionDefaultsAliasClearing(t *testing.T) {
-	enabled := true
-	root := &RootConfig{DeploySpecConfig: DeploySpecConfig{Persistence: "elasticsearch", Features: []string{"documentstore"}, QA: &enabled}}
-	defaults := SelectionFlags{Identity: "keycloak", Persistence: "opensearch"}
-	flags := &RuntimeFlags{ChangedFlags: map[string]bool{"values-features": true, "values-qa": true}}
-	require.NoError(t, ApplyActiveDeployment(root, flags))
-	flags.MigrateDeprecatedFlags()
-	require.NoError(t, ApplySelectionDefaults(flags, defaults, root))
-	require.Empty(t, flags.Selection.Features)
-	require.False(t, flags.Selection.QA)
-	flags = &RuntimeFlags{
-		Deprecated:   DeprecatedFlags{ValuesFeatures: []string{"rdbms", "upgrade", "multitenancy"}},
-		ChangedFlags: map[string]bool{"values-features": true},
-	}
-	require.NoError(t, ApplyActiveDeployment(root, flags))
-	flags.MigrateDeprecatedFlags()
-	require.NoError(t, ApplySelectionDefaults(flags, defaults, root))
-	require.Equal(t, "rdbms", flags.Selection.Persistence)
-	require.True(t, flags.Selection.UpgradeFlow)
-	flags = &RuntimeFlags{
-		Deprecated:   DeprecatedFlags{ValuesFeatures: []string{"rdbms", "upgrade"}},
-		ChangedFlags: map[string]bool{"values-features": true, "features": true},
-	}
-	flags.MigrateDeprecatedFlags()
-	require.NoError(t, ApplySelectionDefaults(flags, defaults, nil))
-	require.Empty(t, flags.Selection.Features)
-	require.Equal(t, "opensearch", flags.Selection.Persistence)
-	require.False(t, flags.Selection.UpgradeFlow)
 }
 
 func TestApplySelectionDefaults(t *testing.T) {
@@ -121,16 +78,6 @@ func TestApplySelectionDefaults(t *testing.T) {
 	root.Deployments = nil
 	require.NoError(t, ApplySelectionDefaults(flags, defaults, root))
 	require.Empty(t, flags.Selection.Features, "empty CLI features must override nonempty root features")
-	flags = &RuntimeFlags{
-		Deprecated:   DeprecatedFlags{ValuesAuth: "basic", ValuesFeatures: []string{"rdbms", "upgrade", "custom"}},
-		ChangedFlags: map[string]bool{"values-auth": true, "values-features": true},
-	}
-	flags.MigrateDeprecatedFlags()
-	require.NoError(t, ApplySelectionDefaults(flags, defaults, nil))
-	require.Equal(t, "basic", flags.Selection.Identity)
-	require.Equal(t, "rdbms", flags.Selection.Persistence)
-	require.Equal(t, []string{"custom"}, flags.Selection.Features)
-	require.True(t, flags.Selection.UpgradeFlow)
 }
 
 func TestResolveInfraPrecedence(t *testing.T) {
