@@ -184,6 +184,13 @@ func TestRunChecksAddedAndGrownRunBlocks(t *testing.T) {
 			wantOut: []string{"3 run block(s) checked, none added or grown above"},
 		},
 		{
+			name:       "deleted workflow copied into two new workflows fails once",
+			edit:       map[string]string{".github/workflows/a.yaml": "", ".github/workflows/b.yaml": baseWorkflow, ".github/workflows/c.yaml": baseWorkflow},
+			wantErr:    true,
+			wantOut:    []string{".github/workflows/c.yaml:10: jobs/build/steps/Branchy: cyclomatic 13 > 10", ".github/workflows/c.yaml:24: jobs/build/steps/Long: 101 lines > 100"},
+			notWantOut: []string{"b.yaml"},
+		},
+		{
 			name: "deleted workflow passes",
 			edit: map[string]string{".github/workflows/a.yaml": ""},
 		},
@@ -222,7 +229,7 @@ func TestRunChecksAddedAndGrownRunBlocks(t *testing.T) {
 	}
 }
 
-func TestRunComparesStepsThatShareANameWithTheSmallestBaseBlock(t *testing.T) {
+func TestRunMatchesStepsThatShareAName(t *testing.T) {
 	baseWorkflow := workflow(step("Same", branchyScript(14)), step("Same", branchyScript(11)))
 
 	cases := []struct {
@@ -232,7 +239,9 @@ func TestRunComparesStepsThatShareANameWithTheSmallestBaseBlock(t *testing.T) {
 		wantOut string
 	}{
 		{"unchanged reorder passes", workflow(step("Same", branchyScript(11)), step("Same", branchyScript(14))), false, "none added or grown above"},
-		{"changed block is compared with the smallest base block", workflow(step("Same", branchyScript(11)), step("Same", branchyScript(13))), true, "jobs/build/steps/Same: cyclomatic 14 > 10, up from cyclomatic 12, 11 lines"},
+		{"shrunk block after a reorder passes", workflow(step("Same", branchyScript(11)), step("Same", branchyScript(13))), false, "none added or grown above"},
+		{"grown block after a reorder fails", workflow(step("Same", branchyScript(11)), step("Same", branchyScript(15))), true, "jobs/build/steps/Same: cyclomatic 16 > 10, up from cyclomatic 15, 14 lines"},
+		{"extra copy of an unchanged block fails", workflow(step("Same", branchyScript(14)), step("Same", branchyScript(11)), step("Same", branchyScript(11))), true, ".github/workflows/a.yaml:36: jobs/build/steps/Same: cyclomatic 12 > 10\n"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
