@@ -201,6 +201,10 @@ go.lint:
 go.test-scripts:
 	@$(call go_scripts_run,go test -race -count=1 -vet=all ./...)
 
+.PHONY: go.complexity
+go.complexity:
+	@cd scripts/complexity-gate && go run . --repo-root ../.. --base $(lintBase)
+
 #
 # Helpers.
 
