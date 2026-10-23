@@ -1356,9 +1356,6 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 	return runTopologyE2ELegs(ctx, entry, opts, platform, contexts, crossRefEnv, orchestrationIndices)
 }
 
-// updateTopologyChartDependencies runs `helm dependency update` once per local chart path for the
-// releases that would otherwise run it during deploy, then marks those releases to skip it, so
-// releases deploying concurrently from one chart directory never rewrite its charts/ at the same time.
 func updateTopologyChartDependencies(ctx context.Context, releases []preparedTopologyRelease) error {
 	updated := make(map[string]bool, len(releases))
 	for _, release := range releases {
@@ -1377,8 +1374,6 @@ func updateTopologyChartDependencies(ctx context.Context, releases []preparedTop
 	return nil
 }
 
-// deployTopologyLevels deploys the levels in order and the releases within a level concurrently.
-// Every release of a level runs to completion before a failure stops the next level.
 func deployTopologyLevels(ctx context.Context, scenario string, levels [][]preparedTopologyRelease) error {
 	for _, level := range levels {
 		levelErrs := make([]error, len(level))
@@ -1656,11 +1651,6 @@ func addTopologyIngressHosts(crossRefEnv map[string]string, opts matrix.RunOptio
 	return nil
 }
 
-// topologyDeployLevels groups release indices into deploy levels. A release lands in a later level
-// than the release its DependsOn role names (the first release declaring that role) and than the
-// release whose NamespaceSuffix its Serves names. Each level keeps declaration order, so the Hub the
-// other releases depend on forms the first level. Errors on a cycle or an unresolvable reference
-// (Topology.Validate already rejects unknown roles and served suffixes, so this is defense-in-depth).
 func topologyDeployLevels(releases []matrix.TopologyRelease) ([][]int, error) {
 	roleIdx := make(map[string]int, len(releases))
 	suffixIdx := make(map[string]int, len(releases))
