@@ -147,7 +147,7 @@ EOF
 # Generate random suffix for uniqueness
 generate_random_suffix() {
   # Generate 8-character alphanumeric suffix
-  tr -dc 'a-z0-9' < /dev/urandom | head -c 8 || echo "$(date +%s | sha256sum | head -c 8)"
+  tr -dc 'a-z0-9' < /dev/urandom | head -c 8 || date +%s | sha256sum | head -c 8
 }
 
 # Parse command line arguments
@@ -249,12 +249,10 @@ fi
 CHART_PATH="$(cd "$CHART_PATH" && pwd)"
 
 # Check binaries exist
-for binary in "$PREPARE_HELM_VALUES"; do
-  if [[ ! -x "$binary" ]]; then
-    error "Binary not found or not executable: $binary"
-    exit 1
-  fi
-done
+if [[ ! -x "$PREPARE_HELM_VALUES" ]]; then
+  error "Binary not found or not executable: $PREPARE_HELM_VALUES"
+  exit 1
+fi
 
 # --- Generate random identifiers ---
 RANDOM_SUFFIX="$(generate_random_suffix)"

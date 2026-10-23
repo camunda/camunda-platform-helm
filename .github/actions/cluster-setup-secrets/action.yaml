@@ -113,10 +113,10 @@ runs:
               "$TEST_NAMESPACE"
           fi
 
-          for secret in $(kubectl get externalsecret -n $TEST_NAMESPACE -o jsonpath='{.items[*].metadata.name}'); do
+          for secret in $(kubectl get externalsecret -n "$TEST_NAMESPACE" -o jsonpath='{.items[*].metadata.name}'); do
             echo "⏳ Waiting for ExternalSecret: $secret"
-            kubectl get externalsecret/"$secret" -n $TEST_NAMESPACE
-            kubectl wait --for=condition=Ready externalsecret/"$secret" -n $TEST_NAMESPACE --timeout=300s
+            kubectl get externalsecret/"$secret" -n "$TEST_NAMESPACE"
+            kubectl wait --for=condition=Ready externalsecret/"$secret" -n "$TEST_NAMESPACE" --timeout=300s
           done
           wait_for_secret_keys "$TEST_NAMESPACE" integration-test-credentials
 
@@ -164,10 +164,10 @@ runs:
           fi
 
           # Wait for all ExternalSecrets to become Ready
-          for secret in $(kubectl get externalsecret -n $TEST_NAMESPACE -o jsonpath='{.items[*].metadata.name}'); do
+          for secret in $(kubectl get externalsecret -n "$TEST_NAMESPACE" -o jsonpath='{.items[*].metadata.name}'); do
             echo "⏳ Waiting for ExternalSecret: $secret"
-            kubectl get externalsecret/"$secret" -n $TEST_NAMESPACE
-            kubectl wait --for=condition=Ready externalsecret/"$secret" -n $TEST_NAMESPACE --timeout=300s
+            kubectl get externalsecret/"$secret" -n "$TEST_NAMESPACE"
+            kubectl wait --for=condition=Ready externalsecret/"$secret" -n "$TEST_NAMESPACE" --timeout=300s
           done
           wait_for_secret_keys "$TEST_NAMESPACE" integration-test-credentials
         fi

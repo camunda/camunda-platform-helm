@@ -332,6 +332,7 @@ runs:
 
     - name: Run Playwright E2E Tests
       shell: bash
+      working-directory: scripts
       env:
         TEST_NAMESPACE: ${{ env.TEST_NAMESPACE }}
         ABSOLUTE_TEST_CHART_DIR: ${{ env.ABSOLUTE_TEST_CHART_DIR }}
@@ -355,7 +356,6 @@ runs:
         REQUIRE_HUB_WEB_MODELER_TEST_SUITE: ${{ inputs.playwright-project == 'hub-web-modeler' }}
         E2E_TEST_SUITE_VERSION: ${{ inputs.e2e-test-suite-version }}
       run: |
-        cd "$GITHUB_WORKSPACE/scripts"
         # Unset KEYCLOAK_REALM to avoid conflicts with the integration tests
         unset KEYCLOAK_REALM
 
