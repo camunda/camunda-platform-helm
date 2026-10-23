@@ -370,7 +370,7 @@ func measureRun(n *yaml.Node) (runBlock, error) {
 	for line := range strings.Lines(script) {
 		number++
 		text := strings.TrimSpace(line)
-		if text != "" && !(commentLines[number] && strings.HasPrefix(text, "#")) {
+		if text != "" && (!commentLines[number] || !strings.HasPrefix(text, "#")) {
 			b.lines++
 		}
 	}
