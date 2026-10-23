@@ -28,9 +28,9 @@ camunda_platform_images () {
     awk '/image:/ {gsub(/"/, "", $2); print $2}' | sort | uniq
 }
 
-camunda_platform_images | while read image_name; do
+camunda_platform_images | while read -r image_name; do
     # Replace forward slash to easy manage image files on the different operating systems.
-    image_file="$(echo ${image_name} | tr '/' '_').tar"
+    image_file="$(echo "${image_name}" | tr '/' '_').tar"
 
     echo -e "\n\n## Image: ${image_name}"
     echo "File: ${image_file}"

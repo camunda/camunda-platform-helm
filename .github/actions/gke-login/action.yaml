@@ -39,7 +39,7 @@ runs:
       location: ${{ inputs.cluster-location }}
   - name: Fix KUBECONFIG permissions
     shell: bash
-    run: chmod 600 $KUBECONFIG
+    run: chmod 600 "$KUBECONFIG"
   - name: Check credentials
     shell: bash
     run: |

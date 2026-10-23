@@ -82,6 +82,7 @@ runs:
         TBOT_CONFIG="/tmp/tbot-config.yaml"
 
         # Cleanup temporary files on exit
+        # shellcheck disable=SC2329
         cleanup() {
           rm -f "${TBOT_CONFIG}"
         }
