@@ -416,7 +416,7 @@ func finishEntry(ctx context.Context, result RunResult, opts RunOptions) RunResu
 		if opts.OnPhaseChange != nil {
 			opts.OnPhaseChange(result.Entry, "cleanup")
 		}
-		cleanupEntry(ctx, result, opts)
+		cleanupEntry(ctx, result)
 	}
 	if opts.OnEntryComplete != nil {
 		opts.OnEntryComplete(result.Entry, result)

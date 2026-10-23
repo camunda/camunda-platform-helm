@@ -144,7 +144,7 @@ func appDisplayName(namespace string) string {
 }
 
 // entraPortalAppURL returns the Entra admin center URL for an app registration.
-func entraPortalAppURL(directoryID, appID string) string {
+func entraPortalAppURL(appID string) string {
 	return fmt.Sprintf(
 		"https://entra.microsoft.com/#view/Microsoft_AAD_RegisteredApps/ApplicationMenuBlade/~/Overview/appId/%s",
 		appID,
@@ -626,7 +626,7 @@ func EnsureVenomApp(ctx context.Context, opts Options) (*VenomApp, error) {
 	}
 
 	if appID != "" {
-		portalURL := entraPortalAppURL(opts.DirectoryID, appID)
+		portalURL := entraPortalAppURL(appID)
 		logging.Logger.Info().Str("appId", appID).Str("objectId", objectID).Msg("Found existing venom app")
 		logging.Logger.Debug().Str("portalURL", portalURL).Msg("View app in Azure portal")
 	} else {
@@ -635,7 +635,7 @@ func EnsureVenomApp(ctx context.Context, opts Options) (*VenomApp, error) {
 		if err != nil {
 			return nil, fmt.Errorf("entra: %w", err)
 		}
-		portalURL := entraPortalAppURL(opts.DirectoryID, appID)
+		portalURL := entraPortalAppURL(appID)
 		logging.Logger.Info().
 			Str("appId", appID).
 			Str("objectId", objectID).

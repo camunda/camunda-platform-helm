@@ -178,10 +178,7 @@ func TestGenerateScenarioContext_Unaffected(t *testing.T) {
 		},
 	}
 
-	ctx, err := generateScenarioContext("elasticsearch", flags)
-	if err != nil {
-		t.Fatalf("generateScenarioContext returned error: %v", err)
-	}
+	ctx := generateScenarioContext("elasticsearch", flags)
 	if ctx.Namespace != "matrix-810-eske" {
 		t.Errorf("expected single-namespace path to keep the base namespace, got %q", ctx.Namespace)
 	}

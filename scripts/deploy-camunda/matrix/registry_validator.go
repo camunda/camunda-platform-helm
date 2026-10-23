@@ -358,7 +358,7 @@ func (v *registryValidation) checkOrphanScripts() {
 		if e.IsDir() || !strings.HasSuffix(name, ".sh") || v.referencedScripts[name] || isSiblingInvoked(name, siblingContent) {
 			continue
 		}
-		ok, _, err := parseOrphanOk(siblingHeader[name])
+		ok, err := parseOrphanOk(siblingHeader[name])
 		if err != nil {
 			v.problems = append(v.problems, fmt.Sprintf("script %q: \"orphan-ok:\" header found but reason is empty — add a reason after the colon", name))
 			continue
@@ -387,7 +387,7 @@ func (v *registryValidation) checkOrphanFixtures() {
 			continue
 		}
 		content, _ := readFirstKB(filepath.Join(v.resourcesDir, name))
-		ok, _, err := parseOrphanOk(content)
+		ok, err := parseOrphanOk(content)
 		if err != nil {
 			v.problems = append(v.problems, fmt.Sprintf("fixture %q: \"orphan-ok:\" header found but reason is empty — add a reason after the colon", name))
 			continue
@@ -532,11 +532,11 @@ func isSiblingInvoked(name string, siblingContent map[string]string) bool {
 }
 
 // parseOrphanOk scans content for a line matching `# orphan-ok: <reason>`.
-// Returns (true, reason, nil) when found with a non-empty reason,
-// (false, "", fmt.Errorf) when the marker is present but has an empty reason,
-// and (false, "", nil) when no marker is found.
-func parseOrphanOk(content string) (bool, string, error) {
-	for _, line := range strings.Split(content, "\n") {
+// Returns (true, nil) when found with a non-empty reason,
+// (false, fmt.Errorf) when the marker is present but has an empty reason,
+// and (false, nil) when no marker is found.
+func parseOrphanOk(content string) (bool, error) {
+	for line := range strings.SplitSeq(content, "\n") {
 		trimmed := strings.TrimSpace(line)
 		if !strings.HasPrefix(trimmed, "#") {
 			continue
@@ -548,11 +548,11 @@ func parseOrphanOk(content string) (bool, string, error) {
 		}
 		reason := strings.TrimSpace(strings.TrimPrefix(rest, "orphan-ok:"))
 		if reason == "" {
-			return false, "", fmt.Errorf("empty reason")
+			return false, fmt.Errorf("empty reason")
 		}
-		return true, reason, nil
+		return true, nil
 	}
-	return false, "", nil
+	return false, nil
 }
 
 // deriveRepoRootAndVersion turns chartDir = .../charts/camunda-platform-<X.Y>

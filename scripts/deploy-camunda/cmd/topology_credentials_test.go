@@ -139,7 +139,6 @@ type fakeCredentialAPI struct {
 	creates    int
 	updates    int
 	raceOnce   map[string]string
-	createErrs []error
 	lastUpdate map[string]string
 }
 

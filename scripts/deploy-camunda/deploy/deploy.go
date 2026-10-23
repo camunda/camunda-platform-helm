@@ -227,10 +227,7 @@ func executeParallelDeployments(ctx context.Context, flags *config.RuntimeFlags)
 		}
 	}()
 	for _, scenario := range flags.Deployment.Scenarios {
-		scenarioCtx, err := generateScenarioContext(scenario, flags)
-		if err != nil {
-			return fmt.Errorf("failed to generate scenario context for %s: %w", scenario, err)
-		}
+		scenarioCtx := generateScenarioContext(scenario, flags)
 
 		logging.Logger.Info().
 			Str("scenario", scenario).
@@ -321,10 +318,7 @@ func executeParallelDeployments(ctx context.Context, flags *config.RuntimeFlags)
 // executeSingleDeployment deploys a single scenario (original behavior).
 func executeSingleDeployment(ctx context.Context, flags *config.RuntimeFlags) error {
 	scenario := flags.Deployment.Scenarios[0]
-	scenarioCtx, err := generateScenarioContext(scenario, flags)
-	if err != nil {
-		return fmt.Errorf("failed to generate scenario context: %w", err)
-	}
+	scenarioCtx := generateScenarioContext(scenario, flags)
 
 	// Phase 1: Prepare values
 	prepared, err := prepareScenarioValues(ctx, scenarioCtx, flags)

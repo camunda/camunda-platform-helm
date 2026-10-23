@@ -137,7 +137,7 @@ func Preflight(ctx context.Context, flags *config.RuntimeFlags, opts PreflightOp
 	r.Checks = append(r.Checks, checkScenarioEnv(flags, deployEnv))
 	r.Checks = append(r.Checks, checkCompanionEnv(flags, deployEnv))
 	if !opts.SkipImageManifests && !envFlagEnabled(skipImageManifestsEnvVar) {
-		r.Checks = append(r.Checks, checkPinnedImages(ctx, resolvedScenarioValues(flags), defaultImagePlatform))
+		r.Checks = append(r.Checks, checkPinnedImages(ctx, resolvedScenarioValues(flags)))
 	}
 
 	return r
@@ -176,10 +176,7 @@ func scenarioDeployEnv(flags *config.RuntimeFlags, baseEnv map[string]string) ma
 	if scenario == "" || flags.Chart.ChartPath == "" {
 		return withScenarioSeeds(baseEnv)
 	}
-	scenarioCtx, err := generateScenarioContext(scenario, flags)
-	if err != nil || scenarioCtx == nil {
-		return withScenarioSeeds(baseEnv)
-	}
+	scenarioCtx := generateScenarioContext(scenario, flags)
 	env, err := buildScenarioEnv(scenarioCtx, flags)
 	if err != nil || env == nil {
 		return withScenarioSeeds(baseEnv)

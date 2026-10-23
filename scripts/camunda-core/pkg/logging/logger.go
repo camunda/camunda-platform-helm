@@ -44,10 +44,7 @@ type Options struct {
 }
 
 func Setup(opts Options) error {
-	level, err := parseLevel(opts.LevelString)
-	if err != nil {
-		level = zerolog.InfoLevel
-	}
+	level := parseLevel(opts.LevelString)
 	ColorEnabled = opts.ColorEnabled && !opts.UseJSON
 	// Respect standard color env vars and CI environments (e.g., GitHub Actions supports ANSI colors).
 	if !opts.UseJSON {
@@ -106,28 +103,26 @@ func Setup(opts Options) error {
 	return nil
 }
 
-func parseLevel(s string) (zerolog.Level, error) {
+func parseLevel(s string) zerolog.Level {
 	switch strings.ToLower(strings.TrimSpace(s)) {
 	case "trace":
-		return zerolog.TraceLevel, nil
+		return zerolog.TraceLevel
 	case "debug":
-		return zerolog.DebugLevel, nil
-	case "info", "":
-		return zerolog.InfoLevel, nil
+		return zerolog.DebugLevel
 	case "warn", "warning":
-		return zerolog.WarnLevel, nil
+		return zerolog.WarnLevel
 	case "error":
-		return zerolog.ErrorLevel, nil
+		return zerolog.ErrorLevel
 	default:
-		return zerolog.InfoLevel, nil
+		return zerolog.InfoLevel
 	}
 }
 
 // ShouldLog returns true when messageLevel is at or above configuredLevel.
 // Both arguments are level strings (trace, debug, info, warn, error).
 func ShouldLog(configuredLevel, messageLevel string) bool {
-	cfg, _ := parseLevel(configuredLevel)
-	msg, _ := parseLevel(messageLevel)
+	cfg := parseLevel(configuredLevel)
+	msg := parseLevel(messageLevel)
 	return msg >= cfg
 }
 
