@@ -75,6 +75,16 @@ func TestRunAllReportsRunBlocks(t *testing.T) {
 	assert.Contains(t, err.Error(), "3 of 4 checked run block(s) above cyclomatic 10, 100 lines")
 }
 
+func TestRunAllCountsFoldedRunBlocksBySourceLines(t *testing.T) {
+	folded := strings.Replace(step("Folded", longScript(101)), "run: |", "run: >", 1)
+	root := newRepo(t, map[string]string{".github/workflows/a.yaml": workflow(folded, step("After", longScript(100)))})
+
+	var out bytes.Buffer
+	require.Error(t, run(root, "main", true, &out))
+	assert.Contains(t, out.String(), "jobs/build/steps/Folded: 101 lines > 100")
+	assert.NotContains(t, out.String(), "After")
+}
+
 func TestRunAllPassesRunBlocksAtTheLimits(t *testing.T) {
 	root := newRepo(t, map[string]string{
 		".github/workflows/a.yaml": workflow(step("Branchy", branchyScript(9)), step("Long", longScript(100))),
