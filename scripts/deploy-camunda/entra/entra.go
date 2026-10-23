@@ -359,6 +359,8 @@ func graphPost(ctx context.Context, client *http.Client, token, path string, pay
 }
 
 // graphPatch performs a PATCH request to the Graph API.
+//
+//nolint:revive
 func graphPatch(ctx context.Context, client *http.Client, token, path string, payload any, headers http.Header) ([]byte, int, error) {
 	var bodyReader io.Reader
 	if payload != nil {
