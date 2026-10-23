@@ -51,13 +51,12 @@ func main() {
 }
 
 func run(repoRoot string, out io.Writer) error {
-	tracked, err := git(repoRoot, "ls-files", "--", scope)
+	tracked, err := git(repoRoot, "ls-files", "-z", "--", scope)
 	if err != nil {
 		return err
 	}
 	var paths []string
-	for path := range strings.Lines(tracked) {
-		path = strings.TrimSpace(path)
+	for path := range strings.SplitSeq(tracked, "\x00") {
 		if strings.HasSuffix(path, ".go") && !strings.HasSuffix(path, "_test.go") {
 			paths = append(paths, path)
 		}
@@ -94,11 +93,7 @@ func checkFile(repoRoot, path string) ([]string, int, error) {
 	}
 	checked := 0
 	var violations []string
-	for _, decl := range file.Decls {
-		fn, ok := decl.(*ast.FuncDecl)
-		if !ok || fn.Body == nil {
-			continue
-		}
+	for _, fn := range topLevelFuncs(file) {
 		from, to := fset.Position(fn.Pos()).Line, fset.Position(fn.End()).Line
 		checked++
 		if over := overLimits(fn, to-from+1); over != "" {
@@ -106,6 +101,36 @@ func checkFile(repoRoot, path string) ([]string, int, error) {
 		}
 	}
 	return violations, checked, nil
+}
+
+func topLevelFuncs(file *ast.File) []*ast.FuncDecl {
+	var fns []*ast.FuncDecl
+	for _, decl := range file.Decls {
+		switch d := decl.(type) {
+		case *ast.FuncDecl:
+			if d.Body != nil {
+				fns = append(fns, d)
+			}
+		case *ast.GenDecl:
+			for _, spec := range d.Specs {
+				vs, ok := spec.(*ast.ValueSpec)
+				if !ok {
+					continue
+				}
+				for i, value := range vs.Values {
+					name := vs.Names[min(i, len(vs.Names)-1)]
+					ast.Inspect(value, func(n ast.Node) bool {
+						lit, ok := n.(*ast.FuncLit)
+						if ok {
+							fns = append(fns, &ast.FuncDecl{Name: name, Type: lit.Type, Body: lit.Body})
+						}
+						return !ok
+					})
+				}
+			}
+		}
+	}
+	return fns
 }
 
 func overLimits(fn *ast.FuncDecl, lines int) string {

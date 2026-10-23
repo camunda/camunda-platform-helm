@@ -109,6 +109,21 @@ func TestRun(t *testing.T) {
 			wantOut: []string{"(*T).Method: cognitive 31 > 30"},
 		},
 		{
+			name: "over-limit function literal in a package variable is named with the variable",
+			files: map[string]string{
+				"scripts/tool/a.go": pkgHeader + strings.Replace(complexFunc("", 31), "func (", "var seam = func(", 1) +
+					"\nvar hooks = map[string]func(int) int{\"big\": " + strings.TrimSuffix(strings.Replace(complexFunc("", 32), "func (", "func(", 1), "\n") + "}\n",
+			},
+			wantErr: true,
+			wantOut: []string{"scripts/tool/a.go:3: seam: cognitive 31 > 30", "hooks: cognitive 32 > 30"},
+		},
+		{
+			name:    "file names that git quotes are read",
+			files:   map[string]string{"scripts/tool/a b.go": pkgHeader + complexFunc("Big", 31), "scripts/tool/ä.go": pkgHeader + complexFunc("Bigger", 32)},
+			wantErr: true,
+			wantOut: []string{"scripts/tool/a b.go:3: Big: cognitive 31 > 30", "scripts/tool/ä.go:3: Bigger: cognitive 32 > 30"},
+		},
+		{
 			name: "test files and files outside scripts are not checked",
 			files: map[string]string{
 				"scripts/tool/a.go":      pkgHeader + complexFunc("Small", 2),
