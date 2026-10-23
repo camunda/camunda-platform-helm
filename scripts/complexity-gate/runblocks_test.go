@@ -99,11 +99,12 @@ func TestRunChecksAddedAndGrownRunBlocks(t *testing.T) {
 	baseWorkflow := workflow(step("Small", branchyScript(1)), step("Branchy", branchyScript(12)), step("Long", longScript(101)))
 
 	cases := []struct {
-		name    string
-		edit    map[string]string
-		rename  [2]string
-		wantErr bool
-		wantOut []string
+		name       string
+		edit       map[string]string
+		rename     [2]string
+		wantErr    bool
+		wantOut    []string
+		notWantOut []string
 	}{
 		{
 			name:    "no change",
@@ -171,6 +172,18 @@ func TestRunChecksAddedAndGrownRunBlocks(t *testing.T) {
 			wantOut: []string{"jobs/build/steps/Copy: cyclomatic 13 > 10"},
 		},
 		{
+			name:       "renamed step and a copy of its over-limit block fail once",
+			edit:       map[string]string{".github/workflows/a.yaml": workflow(step("Small", branchyScript(1)), step("Renamed", branchyScript(12)), step("Long", longScript(101)), step("Copy", branchyScript(12)))},
+			wantErr:    true,
+			wantOut:    []string{"jobs/build/steps/Copy: cyclomatic 13 > 10"},
+			notWantOut: []string{"steps/Renamed"},
+		},
+		{
+			name:    "workflow moved without a rename that git detects keeps its over-limit blocks known",
+			edit:    map[string]string{".github/workflows/a.yaml": "", ".github/workflows/moved.yaml": baseWorkflow},
+			wantOut: []string{"3 run block(s) checked, none added or grown above"},
+		},
+		{
 			name: "deleted workflow passes",
 			edit: map[string]string{".github/workflows/a.yaml": ""},
 		},
@@ -201,6 +214,9 @@ func TestRunChecksAddedAndGrownRunBlocks(t *testing.T) {
 			}
 			for _, want := range tc.wantOut {
 				assert.Contains(t, out.String(), want)
+			}
+			for _, notWant := range tc.notWantOut {
+				assert.NotContains(t, out.String(), notWant)
 			}
 		})
 	}
