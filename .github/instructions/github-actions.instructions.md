@@ -55,6 +55,9 @@ automated workflow steps follow Conventional Commits with the `chore(ci):` type.
   permissions, unscoped app tokens, unpinned images or actions). `pre-commit run --all-files` runs
   it locally, and `lint-global` runs it on every PR as `lint / pre-commit`. Use
   `# zizmor: ignore[<audit>]` only when the finding is a false positive.
+- **ALWAYS** leave no lint finding in CI shell code. `make ci.lint` runs actionlint on every workflow
+  and shellcheck on every tracked `.sh` file, and `test-release-tooling.yaml` runs it on every PR.
+  Fix a finding; use a `# shellcheck disable=SCxxxx` line only when the code is right as written.
 - **ALWAYS** install tools via `.github/actions/install-tool-versions` before using `go`, `helm`,
   `kubectl`, etc. — this respects the pinned versions in `.tool-versions`.
 

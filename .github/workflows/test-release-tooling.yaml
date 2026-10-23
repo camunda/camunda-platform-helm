@@ -44,6 +44,7 @@ jobs:
             git-cliff
             yq
             jq
+            actionlint
             shellcheck
 
       # TestImageSetRealChartContract reads each chart's vendored subcharts
@@ -65,6 +66,9 @@ jobs:
 
       - name: Gate the complexity of changed Go functions and workflow run blocks
         run: make go.complexity lintBase=HEAD~1
+
+      - name: Lint workflows and shell scripts
+        run: make ci.lint
 
       - name: Install schema generator
         run: |
