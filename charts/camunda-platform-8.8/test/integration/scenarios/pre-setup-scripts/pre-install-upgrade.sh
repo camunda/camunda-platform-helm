@@ -23,4 +23,4 @@
 
 # Enable alpha8 chart values syntax for backwards compatibility during the upgrade-patch flow.
 sed -i '/# START pre-install-upgrade.sh COMMENT/,/# END pre-install-upgrade.sh COMMENT/  s/ # / /' \
-    ${TEST_VALUES_BASE_DIR}/chart-full-setup/values-integration-test-ingress-keycloak.yaml
+    "${TEST_VALUES_BASE_DIR}/chart-full-setup/values-integration-test-ingress-keycloak.yaml"

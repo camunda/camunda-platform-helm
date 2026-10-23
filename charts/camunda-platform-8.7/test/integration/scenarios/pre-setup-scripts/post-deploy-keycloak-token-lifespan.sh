@@ -36,9 +36,9 @@ set -euo pipefail
 # ---------------------------------------------------------------------------
 NAMESPACE="${TEST_NAMESPACE:?TEST_NAMESPACE must be set}"
 RELEASE="${RELEASE_NAME:-integration}"
-CONTEXT_FLAG=""
+CONTEXT_FLAG=()
 if [[ -n "${KUBE_CONTEXT:-}" ]]; then
-  CONTEXT_FLAG="--context ${KUBE_CONTEXT}"
+  CONTEXT_FLAG=(--context "${KUBE_CONTEXT}")
 fi
 
 REALM="camunda-platform"
@@ -54,7 +54,7 @@ echo "[keycloak-token-lifespan] Patching realm '${REALM}' in namespace ${NAMESPA
 # ---------------------------------------------------------------------------
 # 1. Get Keycloak admin password from K8s secret
 # ---------------------------------------------------------------------------
-KEYCLOAK_PASSWORD=$(kubectl ${CONTEXT_FLAG} -n "${NAMESPACE}" get secret integration-test-credentials \
+KEYCLOAK_PASSWORD=$(kubectl "${CONTEXT_FLAG[@]}" -n "${NAMESPACE}" get secret integration-test-credentials \
   -o jsonpath='{.data.identity-keycloak-admin-password}' | base64 -d)
 
 if [[ -z "${KEYCLOAK_PASSWORD}" ]]; then
@@ -66,7 +66,7 @@ fi
 # 2. Port-forward to Keycloak and obtain admin token
 # ---------------------------------------------------------------------------
 LOCAL_PORT=18080
-kubectl ${CONTEXT_FLAG} -n "${NAMESPACE}" port-forward "svc/${RELEASE}-keycloak" "${LOCAL_PORT}:80" &
+kubectl "${CONTEXT_FLAG[@]}" -n "${NAMESPACE}" port-forward "svc/${RELEASE}-keycloak" "${LOCAL_PORT}:80" &
 PF_PID=$!
 trap 'kill $PF_PID 2>/dev/null || true' EXIT
 
