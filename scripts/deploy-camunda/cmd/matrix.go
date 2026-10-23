@@ -35,6 +35,7 @@ import (
 	"scripts/prepare-helm-values/pkg/env"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -1109,6 +1110,8 @@ func extractHelmSetValue(pairs []string, key string) string {
 
 var prepareScenarioFn = deploy.PrepareScenario
 
+var executePreparedFn = deploy.ExecutePrepared
+
 // preparedTopologyRelease pairs a topology release with the flags and prepared scenario built for
 // it, so the deploy loop and the topology-level post-deploy hook can both address it.
 type preparedTopologyRelease struct {
@@ -1235,14 +1238,21 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 		maps.Copy(crossRefEnv, buildOrchestrationZeebeEnv(contexts[i]))
 	}
 
-	// Deploy order honors each release's depends-on (Hub, which the
-	// orchestration releases depend on, therefore deploys first).
-	order, err := topologyDeployOrder(entry.Topology.Releases)
+	levels, err := topologyDeployLevels(entry.Topology.Releases)
 	if err != nil {
 		return fmt.Errorf("topology entry %s/%s: %w", entry.Version, entry.Scenario, err)
 	}
+	levelOf := make([]int, len(entry.Topology.Releases))
+	order := make([]int, 0, len(entry.Topology.Releases))
+	for level, indices := range levels {
+		for _, i := range indices {
+			levelOf[i] = level
+			order = append(order, i)
+		}
+	}
 
 	preparedReleases := make([]preparedTopologyRelease, 0, len(order))
+	preparedLevels := make([][]preparedTopologyRelease, len(levels))
 	var releaseErrs []error
 	defer func() {
 		for _, release := range preparedReleases {
@@ -1289,7 +1299,9 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 			releaseErrs = append(releaseErrs, fmt.Errorf("topology release %s/%s (namespace-suffix %q) prepare failed: %w", entry.Scenario, rel.Role, rel.NamespaceSuffix, prepareErr))
 			continue
 		}
-		preparedReleases = append(preparedReleases, preparedTopologyRelease{release: rel, flags: flags, namespace: namespace, prepared: prepared})
+		release := preparedTopologyRelease{release: rel, flags: flags, namespace: namespace, prepared: prepared}
+		preparedReleases = append(preparedReleases, release)
+		preparedLevels[levelOf[i]] = append(preparedLevels[levelOf[i]], release)
 	}
 	if len(releaseErrs) > 0 {
 		return errors.Join(releaseErrs...)
@@ -1328,18 +1340,8 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 		return err
 	}
 
-	for _, release := range preparedReleases {
-		deployErr := deploy.ExecutePrepared(ctx, release.prepared, release.flags)
-
-		status := "OK"
-		if deployErr != nil {
-			status = fmt.Sprintf("FAILED: %v", deployErr)
-		}
-		fmt.Fprintf(os.Stdout, "topology release %s/%s (namespace %s): %s\n", entry.Scenario, release.release.Role, release.namespace, status)
-
-		if deployErr != nil {
-			return fmt.Errorf("topology release %s/%s (namespace-suffix %q) deploy failed: %w", entry.Scenario, release.release.Role, release.release.NamespaceSuffix, deployErr)
-		}
+	if err := deployTopologyLevels(ctx, entry.Scenario, preparedLevels); err != nil {
+		return err
 	}
 
 	if err := runTopologyPostDeployHook(ctx, entry, opts, preparedReleases); err != nil {
@@ -1347,6 +1349,32 @@ func runTopologyEntry(ctx context.Context, entry matrix.Entry, opts matrix.RunOp
 	}
 
 	return runTopologyE2ELegs(ctx, entry, opts, platform, contexts, crossRefEnv, orchestrationIndices)
+}
+
+// deployTopologyLevels deploys the levels in order and the releases within a level concurrently.
+// Every release of a level runs to completion before a failure stops the next level.
+func deployTopologyLevels(ctx context.Context, scenario string, levels [][]preparedTopologyRelease) error {
+	for _, level := range levels {
+		levelErrs := make([]error, len(level))
+		var wg sync.WaitGroup
+		for i, release := range level {
+			wg.Go(func() {
+				deployErr := executePreparedFn(ctx, release.prepared, release.flags)
+
+				status := "OK"
+				if deployErr != nil {
+					status = fmt.Sprintf("FAILED: %v", deployErr)
+					levelErrs[i] = fmt.Errorf("topology release %s/%s (namespace-suffix %q) deploy failed: %w", scenario, release.release.Role, release.release.NamespaceSuffix, deployErr)
+				}
+				fmt.Fprintf(os.Stdout, "topology release %s/%s (namespace %s): %s\n", scenario, release.release.Role, release.namespace, status)
+			})
+		}
+		wg.Wait()
+		if err := errors.Join(levelErrs...); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // runTopologyPostDeployHook runs the scenario's post-deploy hook once, after every release in the
@@ -1602,47 +1630,63 @@ func addTopologyIngressHosts(crossRefEnv map[string]string, opts matrix.RunOptio
 	return nil
 }
 
-// topologyDeployOrder returns release indices in a depends-on-respecting order:
-// a release whose DependsOn names another release's Role is always emitted after
-// that release. Ties break by declaration order, so the Hub release the
-// orchestration releases depend on is deployed first. Errors on a cycle or an
-// unresolvable dependency (Topology.Validate already rejects unknown roles, so
-// this is defense-in-depth).
-func topologyDeployOrder(releases []matrix.TopologyRelease) ([]int, error) {
+// topologyDeployLevels groups release indices into deploy levels. A release lands in a later level
+// than the release its DependsOn role names (the first release declaring that role) and than the
+// release whose NamespaceSuffix its Serves names. Each level keeps declaration order, so the Hub the
+// other releases depend on forms the first level. Errors on a cycle or an unresolvable reference
+// (Topology.Validate already rejects unknown roles and served suffixes, so this is defense-in-depth).
+func topologyDeployLevels(releases []matrix.TopologyRelease) ([][]int, error) {
 	roleIdx := make(map[string]int, len(releases))
+	suffixIdx := make(map[string]int, len(releases))
 	for i, r := range releases {
-		if r.Role != "" {
-			if _, seen := roleIdx[r.Role]; !seen {
-				roleIdx[r.Role] = i
+		if _, seen := roleIdx[r.Role]; r.Role != "" && !seen {
+			roleIdx[r.Role] = i
+		}
+		suffixIdx[r.NamespaceSuffix] = i
+	}
+	deps := make([][]int, len(releases))
+	for i, r := range releases {
+		if r.DependsOn != "" {
+			dep, ok := roleIdx[r.DependsOn]
+			if !ok {
+				return nil, fmt.Errorf("release[%d] (role %q) depends-on %q which is not a declared role", i, r.Role, r.DependsOn)
 			}
+			deps[i] = append(deps[i], dep)
+		}
+		if r.Serves != "" {
+			dep, ok := suffixIdx[r.Serves]
+			if !ok {
+				return nil, fmt.Errorf("release[%d] (role %q) serves %q which is not a declared namespace-suffix", i, r.Role, r.Serves)
+			}
+			deps[i] = append(deps[i], dep)
 		}
 	}
-	emitted := make([]bool, len(releases))
-	order := make([]int, 0, len(releases))
-	for len(order) < len(releases) {
-		progressed := false
-		for i, r := range releases {
-			if emitted[i] {
+	deployed := make([]bool, len(releases))
+	var levels [][]int
+	for remaining := len(releases); remaining > 0; {
+		var level []int
+		for i := range releases {
+			if deployed[i] {
 				continue
 			}
-			if r.DependsOn != "" {
-				dep, ok := roleIdx[r.DependsOn]
-				if !ok {
-					return nil, fmt.Errorf("release[%d] (role %q) depends-on %q which is not a declared role", i, r.Role, r.DependsOn)
-				}
-				if !emitted[dep] {
-					continue
-				}
+			ready := true
+			for _, dep := range deps[i] {
+				ready = ready && deployed[dep]
 			}
-			order = append(order, i)
-			emitted[i] = true
-			progressed = true
+			if ready {
+				level = append(level, i)
+			}
 		}
-		if !progressed {
+		if len(level) == 0 {
 			return nil, fmt.Errorf("topology depends-on graph has a cycle or unresolvable dependency")
 		}
+		for _, i := range level {
+			deployed[i] = true
+		}
+		remaining -= len(level)
+		levels = append(levels, level)
 	}
-	return order, nil
+	return levels, nil
 }
 
 // synthesizeReleaseEntry builds the matrix.Entry for one topology release,
