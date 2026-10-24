@@ -76,7 +76,7 @@
                 "physicalTenants": {
                     "type": "object",
                     "propertyNames": {
-                        "pattern": "^[a-zA-Z0-9_-]{1,64}$"
+                        "pattern": "^[a-z0-9]{1,64}$"
                     },
                     "additionalProperties": {"$ref": "#/definitions/secretStoreProviderSet"}
                 }
