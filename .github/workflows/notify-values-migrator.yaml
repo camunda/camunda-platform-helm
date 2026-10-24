@@ -101,6 +101,7 @@ jobs:
           app-id: ${{ steps.vault.outputs.GH_APP_ID_DISTRO_CI }}
           private-key: ${{ steps.vault.outputs.GH_APP_PRIVATE_KEY_DISTRO_CI }}
           repositories: helm-values-migrator
+          permission-contents: write
 
       - name: Dispatch release-train with the release commit
         if: steps.diff.outputs.changed == 'true'
