@@ -81,9 +81,12 @@ jobs:
           set -o pipefail
           go run . \
             --controller "${{ matrix.controller }}" \
-            --revision "${{ inputs.camunda-helm-git-ref }}" \
-            --revision-ref-name "${{ inputs.camunda-helm-git-ref-name }}" \
+            --revision "${INPUTS_CAMUNDA_HELM_GIT_REF}" \
+            --revision-ref-name "${INPUTS_CAMUNDA_HELM_GIT_REF_NAME}" \
             2>&1 | tee "${RUNNER_TEMP}/gitops-phase-${{ matrix.controller }}.log"
+        env:
+          INPUTS_CAMUNDA_HELM_GIT_REF: ${{ inputs.camunda-helm-git-ref }}
+          INPUTS_CAMUNDA_HELM_GIT_REF_NAME: ${{ inputs.camunda-helm-git-ref-name }}
 
       - name: Upload lifecycle diagnostics
         if: failure()

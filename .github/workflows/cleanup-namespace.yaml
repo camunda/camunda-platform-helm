@@ -55,16 +55,18 @@ jobs:
         run: |
           config=$(cat ./.github/config/test-integration-matrix.yaml)
 
-          filtered=$(echo "$config" | yq -o json | jq -r '.matrix.distro[] | select(.platform == ("${{ inputs.distro-platform }}" | ascii_downcase))')
+          filtered=$(echo "$config" | yq -o json | jq -r --arg platform "${INPUTS_DISTRO_PLATFORM}" '.matrix.distro[] | select(.platform == ($platform | ascii_downcase))')
 
           if [[ -z "$filtered" ]]; then
-            echo "No distro found for platform ${{ inputs.distro-platform }}"
+            echo "No distro found for platform ${INPUTS_DISTRO_PLATFORM}"
             exit 1
           fi
 
           echo "distro_config<<EOF" >> $GITHUB_OUTPUT
           echo "$filtered" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
+        env:
+          INPUTS_DISTRO_PLATFORM: ${{ inputs.distro-platform }}
 
       - name: Load infra config
         id: infra
@@ -117,8 +119,10 @@ jobs:
       - name: CI Cleanup
         shell: bash
         run: |
-          kubectl annotate ns ${{ inputs.namespace }} cleaner/ttl=1s --overwrite=true
-          kubectl annotate ns ${{ inputs.namespace }} janitor/ttl=1s --overwrite=true
+          kubectl annotate ns "${INPUTS_NAMESPACE}" cleaner/ttl=1s --overwrite=true
+          kubectl annotate ns "${INPUTS_NAMESPACE}" janitor/ttl=1s --overwrite=true
+        env:
+          INPUTS_NAMESPACE: ${{ inputs.namespace }}
 
       - name: Observe build status
         if: always()

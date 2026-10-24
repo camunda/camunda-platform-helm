@@ -114,19 +114,23 @@ jobs:
           kubectl wait --for=jsonpath='{.status.readyReplicas}'=1 \
             --timeout=300s statefulset/elastic-operator -n elastic-system
           kubectl apply -n ${{ env.TEST_NAMESPACE }} -f \
-            "charts/${{ inputs.camunda-helm-dir }}/test/integration/scenarios/kind/elasticsearch-cluster.yaml"
+            "charts/${INPUTS_CAMUNDA_HELM_DIR}/test/integration/scenarios/kind/elasticsearch-cluster.yaml"
           kubectl wait --for=jsonpath='{.status.phase}'=Ready --timeout=600s \
             elasticsearch/elasticsearch -n ${{ env.TEST_NAMESPACE }}
+        env:
+          INPUTS_CAMUNDA_HELM_DIR: ${{ inputs.camunda-helm-dir }}
       - name: Prepare Camunda Helm chart installation
         run: |
           make helm.repos-add
-          helm package --dependency-update "charts/${{ inputs.camunda-helm-dir }}"
+          helm package --dependency-update "charts/${INPUTS_CAMUNDA_HELM_DIR}"
+        env:
+          INPUTS_CAMUNDA_HELM_DIR: ${{ inputs.camunda-helm-dir }}
       - name: ⭐ Install Camunda Helm chart ⭐
         timeout-minutes: 10
         run: |
           test -n "${{ env.TEST_HELM_DIGEST_VALUES }}" &&
-            TEST_HELM_EXTRA_ARGS="--values charts/${{ inputs.camunda-helm-dir }}/values-digest.yaml"
-          if [[ "${{ inputs.camunda-helm-dir }}" == "camunda-platform-8.11" || "${{ inputs.camunda-helm-dir }}" == "camunda-platform-8.10" || "${{ inputs.camunda-helm-dir }}" == "camunda-platform-8.9" || "${{ inputs.camunda-helm-dir }}" == "camunda-platform-8.8" ]]; then
+            TEST_HELM_EXTRA_ARGS="--values charts/${INPUTS_CAMUNDA_HELM_DIR}/values-digest.yaml"
+          if [[ "${INPUTS_CAMUNDA_HELM_DIR}" == "camunda-platform-8.11" || "${INPUTS_CAMUNDA_HELM_DIR}" == "camunda-platform-8.10" || "${INPUTS_CAMUNDA_HELM_DIR}" == "camunda-platform-8.9" || "${INPUTS_CAMUNDA_HELM_DIR}" == "camunda-platform-8.8" ]]; then
             TEST_HELM_EXTRA_ARGS="${TEST_HELM_EXTRA_ARGS} \
               --set orchestration.service.appProtocols.grpc=kubernetes.io/h2c \
               --set orchestration.service.appProtocols.management=http \
@@ -135,9 +139,11 @@ jobs:
           fi
           helm install camunda-platform *.tgz --wait --timeout 10m0s \
             --namespace ${{ env.TEST_NAMESPACE }} \
-            --values "charts/${{ inputs.camunda-helm-dir }}/test/integration/scenarios/common/values-integration-test-pull-secrets.yaml" \
-            --values "charts/${{ inputs.camunda-helm-dir }}/values-local.yaml" \
+            --values "charts/${INPUTS_CAMUNDA_HELM_DIR}/test/integration/scenarios/common/values-integration-test-pull-secrets.yaml" \
+            --values "charts/${INPUTS_CAMUNDA_HELM_DIR}/values-local.yaml" \
             ${TEST_HELM_EXTRA_ARGS}
+        env:
+          INPUTS_CAMUNDA_HELM_DIR: ${{ inputs.camunda-helm-dir }}
       - name: Verify appProtocol is set on live Service objects (8.11, 8.10, 8.9, 8.8)
         if: ${{ inputs.camunda-helm-dir == 'camunda-platform-8.11' || inputs.camunda-helm-dir == 'camunda-platform-8.10' ||inputs.camunda-helm-dir == 'camunda-platform-8.9' || inputs.camunda-helm-dir == 'camunda-platform-8.8' }}
         run: |

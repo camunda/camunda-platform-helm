@@ -93,7 +93,9 @@ jobs:
     - name: Delete Namespace on ${{ matrix.distro.name }}
       run: |
         kubectl delete ns --ignore-not-found=true \
-          -l github-run-id="${{ inputs.github-run-id }}"
+          -l github-run-id="${INPUTS_GITHUB_RUN_ID}"
+      env:
+        INPUTS_GITHUB_RUN_ID: ${{ inputs.github-run-id }}
 
     - name: Observe build status
       if: always()
