@@ -257,8 +257,10 @@ runs:
     - name: CI Setup - Compute legacy ingress host arg
       id: legacy-ingress
       shell: bash
+      env:
+        INPUTS_CAMUNDA_HELM_DIR: ${{ inputs.camunda-helm-dir }}
       run: |
-        MINOR=$(echo "${{ inputs.camunda-helm-dir }}" | grep -oP '8\.\K\d+')
+        MINOR=$(echo "${INPUTS_CAMUNDA_HELM_DIR}" | grep -oP '8\.\K\d+')
         if [[ "$MINOR" -lt 10 ]]; then
           echo "arg=--set global.ingress.host=${{ steps.vars.outputs.ingress-host }}" >> "$GITHUB_OUTPUT"
         else

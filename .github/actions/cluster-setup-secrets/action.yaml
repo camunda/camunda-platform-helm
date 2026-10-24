@@ -15,12 +15,16 @@ runs:
   steps:
     - name: Configure TLS Certificates/Secrets
       shell: bash
+      env:
+        INPUTS_DISTRO_PLATFORM: ${{ inputs.distro-platform }}
+        INPUTS_NAMESPACE: ${{ inputs.namespace }}
+        INPUTS_CHART_PATH: ${{ inputs.chart-path }}
       run: |
         set -euo pipefail
 
-        DISTRO_PLATFORM="${{ inputs.distro-platform }}"
-        TEST_NAMESPACE="${{ inputs.namespace }}"
-        CHART_PATH="${{ inputs.chart-path }}"
+        DISTRO_PLATFORM="${INPUTS_DISTRO_PLATFORM}"
+        TEST_NAMESPACE="${INPUTS_NAMESPACE}"
+        CHART_PATH="${INPUTS_CHART_PATH}"
 
         # Function to apply external secrets with retry logic
         # This handles the case where the external-secrets webhook is not yet ready
