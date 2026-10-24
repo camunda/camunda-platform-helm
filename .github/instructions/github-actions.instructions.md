@@ -58,6 +58,9 @@ automated workflow steps follow Conventional Commits with the `chore(ci):` type.
 - **ALWAYS** leave no lint finding in CI shell code. `make ci.lint` runs actionlint on every workflow
   and shellcheck on every tracked `.sh` file, and `test-release-tooling.yaml` runs it on every PR.
   Fix a finding; use a `# shellcheck disable=SCxxxx` line only when the code is right as written.
+- **ALWAYS** start a multi-line `run:` block that you add or change with `set -euo pipefail`. When
+  you add it to an existing block, check that the block reads no unset variable and has no pipeline
+  whose first command may fail on purpose (`grep` with no match, `… | head`).
 - **ALWAYS** install tools via `.github/actions/install-tool-versions` before using `go`, `helm`,
   `kubectl`, etc. — this respects the pinned versions in `.tool-versions`.
 
