@@ -9,6 +9,7 @@ name: "Test - Release Tooling"
 # trace + Harbor API shapes), so a chart-only PR must still run these tests.
 on:
   pull_request:
+  merge_group:
   push:
     branches:
       - main
@@ -90,6 +91,7 @@ jobs:
 
   credential-store-changes:
     name: Detect credential-store changes
+    if: github.event_name != 'merge_group'
     runs-on: ubuntu-latest
     permissions:
       contents: read
