@@ -40,6 +40,7 @@ make helm.lint chartPath=charts/camunda-platform-8.10       # Lint one chart (st
 make helm.lint-all                                           # Lint all matching charts
 make go.fmt                                                  # Enforce Go formatting
 make go.lint                                                 # golangci-lint every scripts/ module (issues new since origin/main)
+make ci.lint                                                 # actionlint on every workflow, shellcheck on every tracked .sh file
 make go.addlicense-check chartPath=charts/camunda-platform-8.10  # Check Apache headers
 make go.addlicense-run chartPath=charts/camunda-platform-8.10    # Add missing headers
 make precommit.chores                                        # Maintainer precommit chores

@@ -197,6 +197,11 @@ endef
 go.lint:
 	@$(call go_scripts_run,golangci-lint run --new-from-merge-base=$(lintBase) ./...)
 
+.PHONY: ci.lint
+ci.lint:
+	actionlint
+	git ls-files -z '*.sh' | xargs -0 shellcheck
+
 .PHONY: go.test-scripts
 go.test-scripts:
 	@$(call go_scripts_run,go test -race -count=1 -vet=all ./...)
