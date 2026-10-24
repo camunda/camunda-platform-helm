@@ -26,11 +26,7 @@ concurrency:
   group: ${{ github.workflow }}-${{ inputs.rc-tag }}
   cancel-in-progress: false
 
-permissions:
-  contents: write
-  id-token: write
-  pull-requests: write
-  issues: write
+permissions: {}
 
 env:
   HARBOR_REGISTRY: registry.camunda.cloud
@@ -41,6 +37,9 @@ jobs:
   release:
     name: Release
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
     outputs:
       version: ${{ steps.metadata.outputs.version }}
       app-version: ${{ steps.metadata.outputs.app_version }}
@@ -75,6 +74,7 @@ jobs:
         with:
           app-id: ${{ steps.vault-harbor.outputs.GH_APP_ID_DISTRO_CI }}
           private-key: ${{ steps.vault-harbor.outputs.GH_APP_PRIVATE_KEY_DISTRO_CI }}
+          permission-contents: write
 
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -376,6 +376,9 @@ jobs:
     needs: release
     if: ${{ !inputs.dry-run }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
     outputs:
       pr-number: ${{ steps.mark-published.outputs.pr_number }}
       auto-merge-enabled: ${{ steps.auto-merge.outputs.enabled }}
@@ -399,6 +402,9 @@ jobs:
         with:
           app-id: ${{ steps.vault-harbor.outputs.GH_APP_ID_DISTRO_CI }}
           private-key: ${{ steps.vault-harbor.outputs.GH_APP_PRIVATE_KEY_DISTRO_CI }}
+          permission-contents: write
+          permission-pull-requests: write
+          permission-issues: write
 
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7

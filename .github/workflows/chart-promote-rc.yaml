@@ -26,9 +26,7 @@ concurrency:
   group: ${{ github.workflow }}-${{ inputs.dev-tag }}
   cancel-in-progress: false
 
-permissions:
-  contents: write
-  pull-requests: write
+permissions: {}
 
 env:
   HARBOR_REGISTRY: registry.camunda.cloud
@@ -87,6 +85,9 @@ jobs:
         with:
           app-id: ${{ steps.test-credentials-secret.outputs.GH_APP_ID_DISTRO_CI }}
           private-key: ${{ steps.test-credentials-secret.outputs.GH_APP_PRIVATE_KEY_DISTRO_CI }}
+          permission-contents: write
+          permission-pull-requests: write
+          permission-issues: write
 
       # "Parse dev tag" runs before the commit SHA is known, so build release-tools
       # here. The binary in /tmp survives the later checkout-at-SHA.
@@ -110,8 +111,9 @@ jobs:
           HARBOR_REGISTRY_USER: ${{ steps.test-credentials-secret.outputs.HARBOR_REGISTRY_USER }}
           HARBOR_REGISTRY_PASSWORD: ${{ steps.test-credentials-secret.outputs.HARBOR_REGISTRY_PASSWORD }}
           DRY_RUN: ${{ inputs.dry-run }}
+          INPUTS_DEV_TAG: ${{ inputs.dev-tag }}
         run: |
-          input_tag="${{ inputs.dev-tag }}"
+          input_tag="${INPUTS_DEV_TAG}"
 
           # A rolling tag ({major}-dev-latest) needs the artifact's tag list to
           # resolve to a concrete {version}-dev-{sha}; fetch it for resolve-tag.
