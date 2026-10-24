@@ -22,10 +22,12 @@ runs:
     - name: Validate documentation links
       id: validate
       shell: bash
+      env:
+        INPUTS_CHART_VERSIONS: ${{ inputs.chart-versions }}
       run: |
         set +e  # Don't exit on first error - collect all failures
 
-        VERSIONS="${{ inputs.chart-versions }}"
+        VERSIONS="${INPUTS_CHART_VERSIONS}"
 
         # Associative array: URL -> space-separated list of "file:line" locations
         declare -A URL_LOCATIONS

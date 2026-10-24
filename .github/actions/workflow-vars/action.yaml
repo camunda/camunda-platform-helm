@@ -48,14 +48,22 @@ runs:
     - name: Set workflow vars
       id: vars
       shell: bash
+      env:
+        INPUTS_PLATFORM: ${{ inputs.platform }}
+        INPUTS_SETUP_FLOW: ${{ inputs.setup-flow }}
+        INPUTS_DEPLOYMENT_TTL: ${{ inputs.deployment-ttl }}
+        INPUTS_IDENTIFIER_BASE: ${{ inputs.identifier-base }}
+        INPUTS_CHART_DIR: ${{ inputs.chart-dir }}
+        INPUTS_CHART_UPGRADE_VERSION: ${{ inputs.chart-upgrade-version }}
+        INPUTS_PREFIX: ${{ inputs.prefix }}
       run: |
         deploy-camunda ci workflow-vars \
-          --platform "${{ inputs.platform }}" \
-          --setup-flow "${{ inputs.setup-flow }}" \
-          --deployment-ttl "${{ inputs.deployment-ttl }}" \
-          --identifier-base "${{ inputs.identifier-base }}" \
-          --chart-dir "${{ inputs.chart-dir }}" \
-          --chart-upgrade-version "${{ inputs.chart-upgrade-version }}" \
-          --prefix "${{ inputs.prefix }}" \
+          --platform "${INPUTS_PLATFORM}" \
+          --setup-flow "${INPUTS_SETUP_FLOW}" \
+          --deployment-ttl "${INPUTS_DEPLOYMENT_TTL}" \
+          --identifier-base "${INPUTS_IDENTIFIER_BASE}" \
+          --chart-dir "${INPUTS_CHART_DIR}" \
+          --chart-upgrade-version "${INPUTS_CHART_UPGRADE_VERSION}" \
+          --prefix "${INPUTS_PREFIX}" \
           --pr-number "${{ github.event.pull_request.number }}" \
           --run-id "${{ github.run_id }}"

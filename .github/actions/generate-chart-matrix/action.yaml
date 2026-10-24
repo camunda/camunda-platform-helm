@@ -86,11 +86,15 @@ runs:
       id: set-chart-versions
       env:
         ALL_MODIFIED_FILES: ${{ steps.changed-files.outputs.all_modified_files }}
+        INPUTS_MANUAL_TRIGGER: ${{ inputs.manual-trigger }}
+        INPUTS_MANUAL_SCENARIO: ${{ inputs.manual-scenario }}
+        INPUTS_MANUAL_FLOW: ${{ inputs.manual-flow }}
+        INPUTS_TIER: ${{ inputs.tier }}
       run: |
         deploy-camunda matrix plan \
-          --manual-trigger "${{ inputs.manual-trigger }}" \
-          --manual-scenario "${{ inputs.manual-scenario }}" \
-          --manual-flow "${{ inputs.manual-flow }}" \
-          --tier "${{ inputs.tier }}" \
+          --manual-trigger "${INPUTS_MANUAL_TRIGGER}" \
+          --manual-scenario "${INPUTS_MANUAL_SCENARIO}" \
+          --manual-flow "${INPUTS_MANUAL_FLOW}" \
+          --tier "${INPUTS_TIER}" \
           --active-versions "${{ steps.get-chart-versions.outputs.active }}" \
           --all-modified-files "$ALL_MODIFIED_FILES"

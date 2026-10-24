@@ -43,11 +43,17 @@ runs:
       shell: bash
       env:
         DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET: ${{ env.DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET }}
+        INPUTS_CHART_DIR: ${{ inputs.chart-dir }}
+        INPUTS_FLOW: ${{ inputs.flow }}
+        INPUTS_CAMUNDA_VERSION_PREVIOUS: ${{ inputs.camunda-version-previous }}
+        INPUTS_UPGRADE_STEP: ${{ inputs.upgrade-step }}
+        INPUTS_VALUES_ENTERPRISE: ${{ inputs.values-enterprise }}
+        INPUTS_VALUES_DIGEST: ${{ inputs.values-digest }}
       run: |
         deploy-camunda ci test-type-vars \
-          --chart-dir "${{ inputs.chart-dir }}" \
-          --flow "${{ inputs.flow }}" \
-          --camunda-version-previous "${{ inputs.camunda-version-previous }}" \
-          --upgrade-step "${{ inputs.upgrade-step }}" \
-          --values-enterprise "${{ inputs.values-enterprise }}" \
-          --values-digest "${{ inputs.values-digest }}"
+          --chart-dir "${INPUTS_CHART_DIR}" \
+          --flow "${INPUTS_FLOW}" \
+          --camunda-version-previous "${INPUTS_CAMUNDA_VERSION_PREVIOUS}" \
+          --upgrade-step "${INPUTS_UPGRADE_STEP}" \
+          --values-enterprise "${INPUTS_VALUES_ENTERPRISE}" \
+          --values-digest "${INPUTS_VALUES_DIGEST}"
