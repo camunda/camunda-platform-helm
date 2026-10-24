@@ -28,8 +28,11 @@ automated workflow steps follow Conventional Commits with the `chore(ci):` type.
   `.github/actions/`, and never make a block that is already above more complex or longer.
   `make go.complexity` fails the change, and `test-release-tooling.yaml` runs it on every PR.
   `cd scripts/complexity-gate && go run . --repo-root ../.. --all` lists the blocks that are
-  already above. Lower a block by splitting the step, or move its logic into a tool the job
-  already runs or into Go under `scripts/` (see `scripting.instructions.md`).
+  already above. To pass, delete dead branches and duplicated commands, or split the step where
+  no shell variable crosses the split. Do not add a `GITHUB_ENV` or `GITHUB_OUTPUT` write, a `.sh`
+  file, a `${{ }}` expression or an `if:` condition only to pass the check, and do not rewrite the
+  block in another language to pass it. If a fix must grow a block that is already above, say so
+  in the PR body.
 - **NEVER** omit `concurrency:` on workflows triggered by `push` or `pull_request` — duplicate
   runs waste CI resources.
 - **NEVER** use `strategy.fail-fast: true` for integration test matrices — one flaky test must
@@ -50,8 +53,6 @@ automated workflow steps follow Conventional Commits with the `chore(ci):` type.
   `# zizmor: ignore[<audit>]` only when the finding is a false positive.
 - **ALWAYS** install tools via `.github/actions/install-tool-versions` before using `go`, `helm`,
   `kubectl`, etc. — this respects the pinned versions in `.tool-versions`.
-- **ALWAYS** implement new non-trivial workflow automation logic in Go under `scripts/<feature>/`
-  (or an existing Go tooling module), with tests where practical.
 
 ---
 

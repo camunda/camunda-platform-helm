@@ -160,11 +160,12 @@ func TestDeploymentTemplate(t *testing.T) {
 
 ### Workflow Automation Implementation
 
-- [ ] Does `make go.complexity` pass? It fails on a `run:` block that the PR adds or grows above
-  the limits in `github-actions.instructions.md`.
-- [ ] Does a bash-to-Go port stay inside the port rules in `scripting.instructions.md`: at most
-  about twice the removed bash lines, no new module, no interface with one implementation, existing
-  helpers reused, bash behaviour kept, and a test that compares Go and bash output?
+- [ ] Does `make go.complexity` pass? If not, does the PR body name the block and the reason, with
+  no rewrite and no logic moved into `GITHUB_ENV`, a `.sh` file, `${{ }}` or `if:`?
+- [ ] Does new Go under `scripts/` avoid a new module, interfaces with fewer than two non-test
+  implementations, unused types and copies of `scripts/camunda-core/pkg` helpers?
+- [ ] Does a rewrite link the request that names its files, stay inside those files, keep the bash
+  behaviour except the named changes, and show the bash-versus-Go comparison in the PR body?
 
 ```yaml
 # GOOD — action pinned to SHA with version comment

@@ -12,9 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package ciworkflow ports GitHub Actions CI variable-computation logic from
-// bash to testable Go. It replaces the shell body of the composite action at
-// .github/actions/test-type-vars.
+// Package ciworkflow computes the values that the CI composite actions write to
+// $GITHUB_ENV and $GITHUB_OUTPUT.
 package ciworkflow
 
 import (
