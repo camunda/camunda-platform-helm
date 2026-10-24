@@ -163,6 +163,7 @@ jobs:
         with:
           go-version-file: scripts/playwright-pin/go.mod
           cache-dependency-path: scripts/playwright-pin/go.sum
+          cache: false
 
       - name: Resolve @playwright/test pin and stage e2e-package.json
         id: e2e-pkg
