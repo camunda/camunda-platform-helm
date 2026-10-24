@@ -35,6 +35,8 @@ jobs:
         with:
           app-id: ${{ steps.vault-harbor.outputs.GH_APP_ID_DISTRO_CI }}
           private-key: ${{ steps.vault-harbor.outputs.GH_APP_PRIVATE_KEY_DISTRO_CI }}
+          permission-issues: read
+          permission-organization-projects: write
 
       - name: Update Closed At field
         uses: github/update-project-action@d0031a4f8081c4bf4438d7ce2fa5cf1136610c7a # main
