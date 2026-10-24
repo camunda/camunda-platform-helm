@@ -6,6 +6,8 @@ chartVersion = $(shell grep -Po '(?<=^version: ).+' $(chartPath)/Chart.yaml)
 releaseName = camunda-platform-test
 # renovate: datasource=npm depName=@bitnami/readme-generator-for-helm
 readmeGeneratorVersion = 2.7.2
+# renovate: datasource=docker depName=ghcr.io/zizmorcore/zizmor
+zizmorImage = ghcr.io/zizmorcore/zizmor:1.31.1@sha256:42d409dbb851d4c5d35a058cf042b828bea1e3f2884378c526eb0974780e18d9
 
 .PHONY: install.readme-generator
 install.readme-generator:
@@ -196,6 +198,10 @@ endef
 .PHONY: go.lint
 go.lint:
 	@$(call go_scripts_run,golangci-lint run --new-from-merge-base=$(lintBase) ./...)
+
+.PHONY: ci.zizmor
+ci.zizmor:
+	docker run --rm -v "$(CURDIR):/repo" -w /repo $(zizmorImage) --offline --no-progress --min-severity=high --config=.github/zizmor.yml .github/workflows .github/actions
 
 .PHONY: go.test-scripts
 go.test-scripts:

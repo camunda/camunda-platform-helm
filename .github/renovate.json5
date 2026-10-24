@@ -475,6 +475,18 @@
       versioningTemplate: 'semver',
     },
     {
+      // Docker images that the Makefile runs, pinned by tag and digest.
+      customType: 'regex',
+      fileMatch: [
+        '^Makefile$',
+      ],
+      datasourceTemplate: 'docker',
+      matchStrings: [
+        '# renovate: datasource=docker depName=(?<depName>[^\\s]+?)\\s*\\n\\s*[A-Za-z]+Image = [^:\\s]+:(?<currentValue>[^@\\s]+)@(?<currentDigest>sha256:[a-f0-9]+)',
+      ],
+      versioningTemplate: 'semver',
+    },
+    {
       // This is mainly used to update enterprise image tags like Console and Web-Modeler.
       // Console and Web-Modeler Self-Managed versions are different from SaaS versions,
       // hence, we use image tags from Camunda private registry as a source of truth for those components.
