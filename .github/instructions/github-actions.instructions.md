@@ -40,6 +40,10 @@ bash or standalone bash scripts. Commit messages from automated workflow steps f
   them without editing the template.
 - **ALWAYS** use `cancel-in-progress: true` in `concurrency:` for PR-triggered workflows.
 - **ALWAYS** use `make` targets (not raw commands) so local and CI behaviour match.
+- **ALWAYS** pass `${{ }}` values to a `run:` script through the step's `env:`, not inline in the
+  script. `make ci.zizmor` fails on high-severity zizmor findings (template injection, broad
+  permissions, unscoped app tokens, unpinned images or actions), and `test-release-tooling.yaml`
+  runs it on every PR. Use `# zizmor: ignore[<audit>]` only when the finding is a false positive.
 - **ALWAYS** install tools via `.github/actions/install-tool-versions` before using `go`, `helm`,
   `kubectl`, etc. — this respects the pinned versions in `.tool-versions`.
 - **ALWAYS** implement new non-trivial workflow automation logic in Go under `scripts/<feature>/`
