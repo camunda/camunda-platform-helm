@@ -70,7 +70,7 @@ func checkRunBlocks(repoRoot, base string, all bool, out io.Writer) error {
 		for _, v := range violations {
 			fmt.Fprintln(out, v)
 		}
-		complexityErr = fmt.Errorf("%d of %d checked run block(s) %s %s; split the step or move its logic into a tool the job already runs",
+		complexityErr = fmt.Errorf("%d of %d checked run block(s) %s %s; split the step or delete code (see .github/instructions/github-actions.instructions.md)",
 			len(violations), len(head), scope, limits)
 	}
 	return errors.Join(complexityErr, shellcheckActions(head, out))
