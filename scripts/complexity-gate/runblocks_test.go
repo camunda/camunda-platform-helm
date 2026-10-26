@@ -141,6 +141,8 @@ func TestBashCyclomatic(t *testing.T) {
 		{"loops", "for i in 1 2; do a; done\nwhile a; do b; done\nuntil a; do b; done", 4},
 		{"command lists", "a && b || c", 3},
 		{"test expressions", "[[ -n $a && -n $b || -n $c ]]", 3},
+		{"arithmetic commands", "(( a >= 0 && a <= 9 || b ))", 3},
+		{"arithmetic expansions", "echo $(( a && b || c ))", 3},
 		{"workflow expressions", `if [ "${{ inputs.flag }}" = "true" ]; then echo "${{ github.sha }}"; fi`, 2},
 		{"multiline workflow expression", "echo \"${{ format('{0}',\n  inputs.flag) }}\"", 1},
 	}

@@ -228,6 +228,10 @@ func bashCyclomatic(file *syntax.File) int {
 			if n.Op == syntax.AndTest || n.Op == syntax.OrTest {
 				complexity++
 			}
+		case *syntax.BinaryArithm:
+			if n.Op == syntax.AndArit || n.Op == syntax.OrArit {
+				complexity++
+			}
 		}
 		return true
 	})
