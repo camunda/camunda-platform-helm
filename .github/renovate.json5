@@ -149,6 +149,11 @@
       enabled: false,
     },
     {
+      description: 'Hold Keycloak at 26.7.x; 26.8 migrates the database irreversibly.',
+      matchPackageNames: ['/keycloak-ee/keycloak$/', '/^quay\\.io/keycloak/keycloak$/'],
+      allowedVersions: '<26.8.0',
+    },
+    {
       description: 'Major updates require manual review to prevent breaking changes.',
       matchUpdateTypes: ['major'],
       matchManagers: ['!github-actions'],
