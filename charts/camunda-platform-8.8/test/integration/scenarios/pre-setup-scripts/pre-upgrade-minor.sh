@@ -20,12 +20,6 @@
 
 set -x
 
-# Build kubectl context flag if KUBE_CONTEXT is set (passed by deploy-camunda).
-CONTEXT_FLAG=""
-if [[ -n "${KUBE_CONTEXT:-}" ]]; then
-  CONTEXT_FLAG="--context ${KUBE_CONTEXT}"
-fi
-
 # No StatefulSet pre-deletions are required for the 8.7 -> 8.8 upgrade.
 # The previous postgresql / postgresql-web-modeler deletions existed to
 # work around immutable-spec diffs surfaced when helm upgrade ran with
