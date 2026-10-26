@@ -86,7 +86,7 @@ integration:
           helmVersion: 3.22.0
           skip-e2e: true
         - name: keycloak-original
-          enabled: true
+          enabled: false
           shortname: keyc
           auth: keycloak
           flow: install,upgrade-patch

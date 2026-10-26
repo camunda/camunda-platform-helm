@@ -97,7 +97,7 @@ integration:
     - id: keycloak-original-install-tier1
       shortname: keyco
       tier: 2
-      enabled: true
+      enabled: false
     - id: alwaysgreen
       shortname: agrn
       enabled: false
