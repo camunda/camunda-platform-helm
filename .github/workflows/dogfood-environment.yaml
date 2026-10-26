@@ -63,7 +63,7 @@ jobs:
       id-token: write
       packages: read
     container:
-      image: ghcr.io/camunda/team-distribution/ci-runner:latest
+      image: ghcr.io/camunda/team-distribution/ci-runner:latest # zizmor: ignore[unpinned-images]
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}

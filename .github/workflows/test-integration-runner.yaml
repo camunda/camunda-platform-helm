@@ -348,7 +348,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 40
     container:
-      image: ghcr.io/camunda/team-distribution/ci-runner:latest
+      image: ghcr.io/camunda/team-distribution/ci-runner:latest # zizmor: ignore[unpinned-images]
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -418,7 +418,7 @@ jobs:
       - name: CI Setup - Resolve Helm version
         id: helm-resolve
         run: |
-          version="${{ inputs.helm-version }}"
+          version="${INPUTS_HELM_VERSION}"
           if [[ -z "$version" ]]; then
             version="$(awk '$1=="helm"{print $2}' .tool-versions)"
           fi
@@ -431,6 +431,8 @@ jobs:
             echo "needs-install=true" >> "$GITHUB_OUTPUT"
             echo "Pre-baked helm $prebaked != requested $version — installing override"
           fi
+        env:
+          INPUTS_HELM_VERSION: ${{ inputs.helm-version }}
 
       - name: CI Setup - Override Helm version
         if: steps.helm-resolve.outputs.needs-install == 'true'
@@ -511,16 +513,19 @@ jobs:
           fi
           kubectl create ns $TEST_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
           kubectl label ns $TEST_NAMESPACE github-id=${{ steps.setup.outputs.identifier }} --overwrite
-          kubectl label ns $TEST_NAMESPACE test-flow=${{ inputs.flow }} --overwrite
+          kubectl label ns $TEST_NAMESPACE test-flow="${INPUTS_FLOW}" --overwrite
           kubectl label ns $TEST_NAMESPACE github-run-id=$GITHUB_WORKFLOW_RUN_ID --overwrite
           kubectl label ns $TEST_NAMESPACE github-job-id=$GITHUB_WORKFLOW_JOB_ID --overwrite
           kubectl label ns $TEST_NAMESPACE github-org=$(dirname $GITHUB_REPOSITORY) --overwrite
           kubectl label ns $TEST_NAMESPACE github-repo=$(basename $GITHUB_REPOSITORY) --overwrite
-          kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=${{ inputs.deployment-ttl || '1h' }} --overwrite
-          kubectl annotate ns $TEST_NAMESPACE janitor/ttl=${{ inputs.deployment-ttl || '1h' }} --overwrite
+          kubectl annotate ns $TEST_NAMESPACE cleaner/ttl="${INPUTS_DEPLOYMENT_TTL:-1h}" --overwrite
+          kubectl annotate ns $TEST_NAMESPACE janitor/ttl="${INPUTS_DEPLOYMENT_TTL:-1h}" --overwrite
           kubectl annotate ns $TEST_NAMESPACE camunda.cloud/ephemeral=true --overwrite
           kubectl annotate ns $TEST_NAMESPACE github-workflow-run-url=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID --overwrite
           kubectl get ns $TEST_NAMESPACE -o yaml
+        env:
+          INPUTS_FLOW: ${{ inputs.flow }}
+          INPUTS_DEPLOYMENT_TTL: ${{ inputs.deployment-ttl }}
 
       - name: Apply Vault mapped Secret
         if: inputs.vault-secret-mapping != ''
@@ -616,6 +621,7 @@ jobs:
         env:
           TEST_DOCKER_USERNAME_CAMUNDA_CLOUD: ${{ steps.setup.outputs.TEST_DOCKER_USERNAME_CAMUNDA_CLOUD }}
           TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD: ${{ steps.setup.outputs.TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD }}
+          INPUTS_HELMCHARTVERSION: ${{ inputs.helmChartVersion }}
         run: |
           export HARBOR_REGISTRY_HOST=registry.camunda.cloud
           export HARBOR_REGISTRY_USER="${TEST_DOCKER_USERNAME_CAMUNDA_CLOUD}"
@@ -624,7 +630,7 @@ jobs:
 
           source "${GITHUB_WORKSPACE}/scripts/harbor-retry.sh"
           harbor_login
-          echo "TEST_CHART_VERSION=${{ inputs.helmChartVersion }}" >> "$GITHUB_ENV"
+          echo "TEST_CHART_VERSION=${INPUTS_HELMCHARTVERSION}" >> "$GITHUB_ENV"
 
       - name: Helm - Install - 🌟 Install Camunda chart 🌟
         # For upgrade flows, the upgrade job runs the full two-step orchestration
@@ -675,6 +681,10 @@ jobs:
           AUTH0_INITIAL_ADMIN_EMAIL: ${{ steps.setup.outputs.AUTH0_INITIAL_ADMIN_EMAIL }}
           RDBMS_POSTGRESQL_USERNAME: ${{ steps.setup.outputs.RDBMS_POSTGRESQL_USERNAME }}
           RDBMS_POSTGRESQL_PASSWORD: ${{ steps.setup.outputs.RDBMS_POSTGRESQL_PASSWORD }}
+          INPUTS_SCENARIO: ${{ inputs.scenario }}
+          INPUTS_SHORTNAME: ${{ inputs.shortname }}
+          INPUTS_FLOW: ${{ inputs.flow }}
+          INPUTS_DISTRO_PLATFORM: ${{ inputs.distro-platform }}
         run: |
           set -euo pipefail
           CHART_VERSION="${CAMUNDA_HELM_DIR#camunda-platform-}"
@@ -770,12 +780,12 @@ jobs:
           deploy-camunda matrix run \
             --repo-root "${GITHUB_WORKSPACE}" \
             --include-disabled \
-            --scenario-filter "${{ inputs.scenario }}" \
-            --shortname-filter "${{ inputs.shortname }}" \
+            --scenario-filter "${INPUTS_SCENARIO}" \
+            --shortname-filter "${INPUTS_SHORTNAME}" \
             --shortname-exact \
-            --flow-filter "${{ inputs.flow }}" \
+            --flow-filter "${INPUTS_FLOW}" \
             --versions "${CHART_VERSION}" \
-            --platform "${{ inputs.distro-platform }}" \
+            --platform "${INPUTS_DISTRO_PLATFORM}" \
             --namespace-override "${TEST_NAMESPACE}" \
             --skip-dependency-update=false \
             --timeout 20 \
@@ -845,9 +855,13 @@ jobs:
         id: diag-artifact
         shell: bash
         run: |
-          raw="diagnostics-${{ inputs.identifier }}-${{ inputs.flow }}-${{ inputs.shortname }}-${{ github.job }}-${{ github.run_id }}-${{ github.run_attempt }}"
+          raw="diagnostics-${INPUTS_IDENTIFIER}-${INPUTS_FLOW}-${INPUTS_SHORTNAME}-${{ github.job }}-${{ github.run_id }}-${{ github.run_attempt }}"
           # Artifact names reject spaces/colons/slashes etc.; normalize to a safe set.
           echo "name=${raw//[^a-zA-Z0-9._-]/-}" >> "$GITHUB_OUTPUT"
+        env:
+          INPUTS_IDENTIFIER: ${{ inputs.identifier }}
+          INPUTS_FLOW: ${{ inputs.flow }}
+          INPUTS_SHORTNAME: ${{ inputs.shortname }}
 
       - name: Upload deployment diagnostics bundle
         if: failure()
@@ -874,7 +888,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 40
     container:
-      image: ghcr.io/camunda/team-distribution/ci-runner:latest
+      image: ghcr.io/camunda/team-distribution/ci-runner:latest # zizmor: ignore[unpinned-images]
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -942,7 +956,7 @@ jobs:
       - name: CI Setup - Resolve Helm version
         id: helm-resolve
         run: |
-          version="${{ inputs.helm-version }}"
+          version="${INPUTS_HELM_VERSION}"
           if [[ -z "$version" ]]; then
             version="$(awk '$1=="helm"{print $2}' .tool-versions)"
           fi
@@ -955,6 +969,8 @@ jobs:
             echo "needs-install=true" >> "$GITHUB_OUTPUT"
             echo "Pre-baked helm $prebaked != requested $version — installing override"
           fi
+        env:
+          INPUTS_HELM_VERSION: ${{ inputs.helm-version }}
 
       - name: CI Setup - Override Helm version
         if: steps.helm-resolve.outputs.needs-install == 'true'
@@ -1104,6 +1120,10 @@ jobs:
           AUTH0_INITIAL_ADMIN_EMAIL: ${{ steps.setup.outputs.AUTH0_INITIAL_ADMIN_EMAIL }}
           RDBMS_POSTGRESQL_USERNAME: ${{ steps.setup.outputs.RDBMS_POSTGRESQL_USERNAME }}
           RDBMS_POSTGRESQL_PASSWORD: ${{ steps.setup.outputs.RDBMS_POSTGRESQL_PASSWORD }}
+          INPUTS_SCENARIO: ${{ inputs.scenario }}
+          INPUTS_SHORTNAME: ${{ inputs.shortname }}
+          INPUTS_FLOW: ${{ inputs.flow }}
+          INPUTS_DISTRO_PLATFORM: ${{ inputs.distro-platform }}
         run: |
           set -euo pipefail
           CHART_VERSION="${CAMUNDA_HELM_DIR#camunda-platform-}"
@@ -1197,12 +1217,12 @@ jobs:
           deploy-camunda matrix run \
             --repo-root "${GITHUB_WORKSPACE}" \
             --include-disabled \
-            --scenario-filter "${{ inputs.scenario }}" \
-            --shortname-filter "${{ inputs.shortname }}" \
+            --scenario-filter "${INPUTS_SCENARIO}" \
+            --shortname-filter "${INPUTS_SHORTNAME}" \
             --shortname-exact \
-            --flow-filter "${{ inputs.flow }}" \
+            --flow-filter "${INPUTS_FLOW}" \
             --versions "${CHART_VERSION}" \
-            --platform "${{ inputs.distro-platform }}" \
+            --platform "${INPUTS_DISTRO_PLATFORM}" \
             --namespace-override "${TEST_NAMESPACE}" \
             --skip-dependency-update=false \
             --timeout 20 \
@@ -1237,9 +1257,13 @@ jobs:
         id: diag-artifact
         shell: bash
         run: |
-          raw="diagnostics-${{ inputs.identifier }}-${{ inputs.flow }}-${{ inputs.shortname }}-${{ github.job }}-${{ github.run_id }}-${{ github.run_attempt }}"
+          raw="diagnostics-${INPUTS_IDENTIFIER}-${INPUTS_FLOW}-${INPUTS_SHORTNAME}-${{ github.job }}-${{ github.run_id }}-${{ github.run_attempt }}"
           # Artifact names reject spaces/colons/slashes etc.; normalize to a safe set.
           echo "name=${raw//[^a-zA-Z0-9._-]/-}" >> "$GITHUB_OUTPUT"
+        env:
+          INPUTS_IDENTIFIER: ${{ inputs.identifier }}
+          INPUTS_FLOW: ${{ inputs.flow }}
+          INPUTS_SHORTNAME: ${{ inputs.shortname }}
 
       - name: Upload deployment diagnostics bundle
         if: failure()
@@ -1265,7 +1289,7 @@ jobs:
     needs: [install]
     runs-on: ${{ matrix.suite == 'full' && 'gcp-core-32-longrunning-big-ssd' || 'gcp-core-8-release' }}
     container:
-      image: ${{ inputs.playwright-runner-image || 'ghcr.io/camunda/team-distribution/playwright-runner:latest' }}
+      image: ${{ inputs.playwright-runner-image || 'ghcr.io/camunda/team-distribution/playwright-runner:latest' }} # zizmor: ignore[unpinned-images]
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -1379,7 +1403,7 @@ jobs:
     needs: [install]
     runs-on: gcp-core-32-longrunning-big-ssd
     container:
-      image: ${{ inputs.playwright-runner-image || 'ghcr.io/camunda/team-distribution/playwright-runner:latest' }}
+      image: ${{ inputs.playwright-runner-image || 'ghcr.io/camunda/team-distribution/playwright-runner:latest' }} # zizmor: ignore[unpinned-images]
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -1475,7 +1499,7 @@ jobs:
     needs: [install]
     runs-on: gcp-core-8-release
     container:
-      image: ${{ inputs.playwright-runner-image || 'ghcr.io/camunda/team-distribution/playwright-runner:latest' }}
+      image: ${{ inputs.playwright-runner-image || 'ghcr.io/camunda/team-distribution/playwright-runner:latest' }} # zizmor: ignore[unpinned-images]
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -1532,7 +1556,9 @@ jobs:
               echo "::error::namespace '${full}' is ${#full} chars, exceeding the 63-character Kubernetes limit. This workflow step derives it via naive concatenation and would diverge from deploy-camunda's DeriveReleaseNamespace truncation used by the actual deploy." >&2
               exit 1
             fi
-          done < <(jq -r '.[]' <<< '${{ inputs.topology-namespace-suffixes }}')
+          done < <(jq -r '.[]' <<< "${INPUTS_TOPOLOGY_NAMESPACE_SUFFIXES}")
+        env:
+          INPUTS_TOPOLOGY_NAMESPACE_SUFFIXES: ${{ inputs.topology-namespace-suffixes }}
 
       - name: Import Vault secrets
         id: test-credentials-secret
@@ -1621,7 +1647,7 @@ jobs:
     needs: [upgrade]
     runs-on: gcp-core-8-release
     container:
-      image: ${{ inputs.playwright-runner-image || 'ghcr.io/camunda/team-distribution/playwright-runner:latest' }}
+      image: ${{ inputs.playwright-runner-image || 'ghcr.io/camunda/team-distribution/playwright-runner:latest' }} # zizmor: ignore[unpinned-images]
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -1870,17 +1896,25 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
+          INPUTS_PR_HEAD_SHA: ${{ inputs.pr-head-sha }}
+          INPUTS_CAMUNDA_VERSION: ${{ inputs.camunda-version }}
+          INPUTS_SHORTNAME: ${{ inputs.shortname }}
+          INPUTS_FLOW: ${{ inputs.flow }}
+          INPUTS_DISTRO_PLATFORM: ${{ inputs.distro-platform }}
+          INPUTS_CHART_VERSIONS: ${{ inputs.chart-versions }}
+          INPUTS_E2E_TEST_SUITE_VERSION: ${{ inputs.e2e-test-suite-version }}
+          INPUTS_PLAYWRIGHT_RUNNER_IMAGE: ${{ inputs.playwright-runner-image }}
         run: |
           cd scripts/ci-result-cache && go build -o /tmp/ci-result-cache .
           /tmp/ci-result-cache record \
-            --sha "${{ inputs.pr-head-sha }}" \
-            --version "${{ inputs.camunda-version }}" \
-            --shortname "${{ inputs.shortname }}" \
-            --flow "${{ inputs.flow }}" \
-            --platform "${{ inputs.distro-platform }}" \
-            --chart-versions "${{ inputs.chart-versions }}" \
-            --e2e-test-suite-version "${{ inputs.e2e-test-suite-version }}" \
-            --playwright-runner-image "${{ inputs.playwright-runner-image }}" \
+            --sha "${INPUTS_PR_HEAD_SHA}" \
+            --version "${INPUTS_CAMUNDA_VERSION}" \
+            --shortname "${INPUTS_SHORTNAME}" \
+            --flow "${INPUTS_FLOW}" \
+            --platform "${INPUTS_DISTRO_PLATFORM}" \
+            --chart-versions "${INPUTS_CHART_VERSIONS}" \
+            --e2e-test-suite-version "${INPUTS_E2E_TEST_SUITE_VERSION}" \
+            --playwright-runner-image "${INPUTS_PLAYWRIGHT_RUNNER_IMAGE}" \
             --repo-root "${{ github.workspace }}" \
             --target-url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
@@ -1890,7 +1924,7 @@ jobs:
     if: ${{ always() && (contains(needs.*.result, 'success') || contains(needs.*.result, 'skipped') || contains(needs.*.result, 'cancelled')) }}
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/camunda/team-distribution/ci-runner:latest
+      image: ghcr.io/camunda/team-distribution/ci-runner:latest # zizmor: ignore[unpinned-images]
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -2060,15 +2094,17 @@ jobs:
         env:
           OPENSEARCH_USERNAME: ${{ steps.test-credentials-secret.outputs.OPENSEARCH_USERNAME }}
           OPENSEARCH_PASSWORD: ${{ steps.test-credentials-secret.outputs.OPENSEARCH_PASSWORD }}
+          INPUTS_FLOW: ${{ inputs.flow }}
+          INPUTS_DISTRO_TYPE: ${{ inputs.distro-type }}
         run: |
-          kubectl annotate ns $TEST_NAMESPACE test-flow=${{ inputs.flow }} --overwrite || true
+          kubectl annotate ns $TEST_NAMESPACE test-flow="${INPUTS_FLOW}" --overwrite || true
           kubectl annotate ns $TEST_NAMESPACE build-failed=true --overwrite || true
 
           if [[ "$(kubectl get ns $TEST_NAMESPACE --ignore-not-found)" != "" && "${{ env.CI_DEPLOYMENT_TTL }}" == "" ]]; then
             kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=1s --overwrite=true
             kubectl annotate ns $TEST_NAMESPACE janitor/ttl=1s --overwrite=true
           else
-            if [[ "${{ inputs.distro-type }}" == "kubernetes" && "${{ env.CI_DEPLOYMENT_TTL }}" != "" ]]; then
+            if [[ "${INPUTS_DISTRO_TYPE}" == "kubernetes" && "${{ env.CI_DEPLOYMENT_TTL }}" != "" ]]; then
               kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=${CI_DEPLOYMENT_TTL} --overwrite=true || true
               kubectl annotate ns $TEST_NAMESPACE janitor/ttl=${CI_DEPLOYMENT_TTL} --overwrite=true || true
             else
@@ -2082,18 +2118,21 @@ jobs:
         env:
           OPENSEARCH_USERNAME: ${{ steps.test-credentials-secret.outputs.OPENSEARCH_USERNAME }}
           OPENSEARCH_PASSWORD: ${{ steps.test-credentials-secret.outputs.OPENSEARCH_PASSWORD }}
+          INPUTS_FLOW: ${{ inputs.flow }}
+          INPUTS_DISTRO_TYPE: ${{ inputs.distro-type }}
+          INPUTS_TOPOLOGY_NAMESPACE_SUFFIXES: ${{ inputs.topology-namespace-suffixes }}
         run: |
           while IFS= read -r suffix; do
             ns="$(deploy-camunda topology namespace --base "$TEST_NAMESPACE" --suffix "$suffix")"
 
-            kubectl annotate ns "$ns" test-flow=${{ inputs.flow }} --overwrite || true
+            kubectl annotate ns "$ns" test-flow="${INPUTS_FLOW}" --overwrite || true
             kubectl annotate ns "$ns" build-failed=true --overwrite || true
 
             if [[ "$(kubectl get ns "$ns" --ignore-not-found)" != "" && "${{ env.CI_DEPLOYMENT_TTL }}" == "" ]]; then
               kubectl annotate ns "$ns" cleaner/ttl=1s --overwrite=true || true
               kubectl annotate ns "$ns" janitor/ttl=1s --overwrite=true || true
             else
-              if [[ "${{ inputs.distro-type }}" == "kubernetes" && "${{ env.CI_DEPLOYMENT_TTL }}" != "" ]]; then
+              if [[ "${INPUTS_DISTRO_TYPE}" == "kubernetes" && "${{ env.CI_DEPLOYMENT_TTL }}" != "" ]]; then
                 kubectl annotate ns "$ns" cleaner/ttl="${CI_DEPLOYMENT_TTL}" --overwrite=true || true
                 kubectl annotate ns "$ns" janitor/ttl="${CI_DEPLOYMENT_TTL}" --overwrite=true || true
               else
@@ -2101,7 +2140,7 @@ jobs:
                 kubectl annotate ns "$ns" janitor/ttl=1s --overwrite=true || true
               fi
             fi
-          done < <(jq -r '.[]' <<< '${{ inputs.topology-namespace-suffixes }}')
+          done < <(jq -r '.[]' <<< "${INPUTS_TOPOLOGY_NAMESPACE_SUFFIXES}")
 
       - name: Observe build status
         if: always()

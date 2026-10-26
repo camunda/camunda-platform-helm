@@ -71,8 +71,10 @@ jobs:
       shell: bash
       run: |
         if ! command -v deploy-camunda >/dev/null 2>&1; then
-          echo "::warning::Requested deploy-camunda binary artifact '${{ inputs.binary-artifact-name }}' was not found; falling back to basic kubectl output. Verify the producer's artifact name."
+          echo "::warning::Requested deploy-camunda binary artifact '${INPUTS_BINARY_ARTIFACT_NAME}' was not found; falling back to basic kubectl output. Verify the producer's artifact name."
         fi
+      env:
+        INPUTS_BINARY_ARTIFACT_NAME: ${{ inputs.binary-artifact-name }}
     - name: Import Vault secrets
       if: env.PLATFORM == 'gke'
       id: test-credentials-secret
