@@ -143,7 +143,7 @@ outputs:
 # Secrets cannot be referenced directly inside a composite action.
 # Callers must forward the required secrets as environment variables using `env:` on the step.
 # Required env vars:
-#   VAULT_ADDR, VAULT_ROLE_ID, VAULT_SECRET_ID   (always — used for the CI credentials import)
+#   VAULT_ADDR, VAULT_JWT_PATH, VAULT_JWT_ROLE, VAULT_JWT_AUDIENCE   (always — used for the CI credentials import)
 #   GH_APP_ID, GH_APP_KEY                        (GitHub App token for cluster-auth)
 #   ROSA_URL, ROSA_USER, ROSA_PASS               (ROSA/OpenShift)
 #   TELEPORT_TOKEN                                (EKS)
@@ -181,9 +181,10 @@ runs:
       if: inputs.vault-secret-mapping != ''
       with:
         url: ${{ env.VAULT_ADDR }}
-        method: approle
-        roleId: ${{ env.VAULT_ROLE_ID }}
-        secretId: ${{ env.VAULT_SECRET_ID }}
+        method: jwt
+        path: ${{ env.VAULT_JWT_PATH }}
+        role: ${{ env.VAULT_JWT_ROLE }}
+        jwtGithubAudience: ${{ env.VAULT_JWT_AUDIENCE }}
         secrets: ${{ inputs.vault-secret-mapping }}
         exportEnv: true
 
@@ -203,9 +204,10 @@ runs:
       uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
       with:
         url: ${{ env.VAULT_ADDR }}
-        method: approle
-        roleId: ${{ env.VAULT_ROLE_ID }}
-        secretId: ${{ env.VAULT_SECRET_ID }}
+        method: jwt
+        path: ${{ env.VAULT_JWT_PATH }}
+        role: ${{ env.VAULT_JWT_ROLE }}
+        jwtGithubAudience: ${{ env.VAULT_JWT_AUDIENCE }}
         secrets: |
           secret/data/products/distribution/ci NEXUS_USERNAME;
           secret/data/products/distribution/ci NEXUS_PASSWORD;

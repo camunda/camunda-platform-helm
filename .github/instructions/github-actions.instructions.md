@@ -149,7 +149,10 @@ permissions:
 All secrets come from Vault. Use `hashicorp/vault-action` **before** any step that needs them.
 Always set `exportEnv: false` so the values are **not** written to the job-wide `$GITHUB_ENV`.
 Give the step an `id:` and pass each secret only into the specific step that consumes it, via
-`${{ steps.<id>.outputs.<NAME> }}`:
+`${{ steps.<id>.outputs.<NAME> }}`. Log in with GitHub OIDC (`method: jwt`) and grant the job
+`id-token: write`; do not add AppRole logins (`VAULT_ROLE_ID`, `VAULT_SECRET_ID`). A
+reusable workflow receives `VAULT_JWT_PATH`, `VAULT_JWT_ROLE` and `VAULT_JWT_AUDIENCE` as
+secrets, and its caller job must grant `id-token: write` as well:
 
 ```yaml
 - name: Import Vault secrets
@@ -157,9 +160,10 @@ Give the step an `id:` and pass each secret only into the specific step that con
   id: vault
   with:
     url: ${{ secrets.VAULT_ADDR }}
-    method: approle
-    roleId: ${{ secrets.VAULT_ROLE_ID }}
-    secretId: ${{ secrets.VAULT_SECRET_ID }}
+    method: jwt
+    path: ${{ secrets.VAULT_JWT_PATH }}
+    role: ${{ secrets.VAULT_JWT_ROLE }}
+    jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
     secrets: |
       secret/data/products/distribution/ci GH_APP_ID_DISTRO_CI;
       secret/data/products/distribution/ci GH_APP_PRIVATE_KEY_DISTRO_CI;

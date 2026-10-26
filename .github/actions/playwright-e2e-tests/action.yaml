@@ -280,8 +280,6 @@ runs:
         ROSA_PASS: ""
         INFRA_CLUSTER_NAME: ""
         VAULT_ADDR: ""
-        VAULT_ROLE_ID: ""
-        VAULT_SECRET_ID: ""
       run: |
         npm ci --prefix "${GITHUB_WORKSPACE}/.e2e-test-suite"
         npm run build --prefix "${GITHUB_WORKSPACE}/.e2e-test-suite"

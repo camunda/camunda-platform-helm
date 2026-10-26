@@ -75,10 +75,16 @@ on:
     secrets:
       VAULT_ADDR:
         required: true
+      VAULT_JWT_PATH:
+        required: false
+      VAULT_JWT_ROLE:
+        required: false
+      VAULT_JWT_AUDIENCE:
+        required: false
       VAULT_ROLE_ID:
-        required: true
+        required: false
       VAULT_SECRET_ID:
-        required: true
+        required: false
 
 jobs:
   assign-urgency-to-issue:
@@ -88,6 +94,7 @@ jobs:
       cancel-in-progress: false
     permissions:
       contents: read
+      id-token: write
     timeout-minutes: 10
     env:
       OWNER: ${{ github.repository_owner }}
@@ -115,9 +122,12 @@ jobs:
         id: vault-secrets
         with:
           url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          method: ${{ secrets.VAULT_JWT_ROLE != '' && 'jwt' || 'approle' }}
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
+          roleId: ${{ secrets.VAULT_JWT_ROLE == '' && secrets.VAULT_ROLE_ID || '' }}
+          secretId: ${{ secrets.VAULT_JWT_ROLE == '' && secrets.VAULT_SECRET_ID || '' }}
           secrets: |
             secret/data/products/distribution/ci GH_APP_ID_DISTRO_CI;
             secret/data/products/distribution/ci GH_APP_PRIVATE_KEY_DISTRO_CI;
@@ -673,6 +683,7 @@ jobs:
       cancel-in-progress: false
     permissions:
       contents: read
+      id-token: write
     timeout-minutes: 10
     env:
       ISSUE_NUMBER: ${{ inputs.issue_number }}
@@ -694,9 +705,12 @@ jobs:
         id: vault-secrets
         with:
           url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          method: ${{ secrets.VAULT_JWT_ROLE != '' && 'jwt' || 'approle' }}
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
+          roleId: ${{ secrets.VAULT_JWT_ROLE == '' && secrets.VAULT_ROLE_ID || '' }}
+          secretId: ${{ secrets.VAULT_JWT_ROLE == '' && secrets.VAULT_SECRET_ID || '' }}
           secrets: |
             secret/data/products/distribution/ci GH_APP_ID_DISTRO_CI;
             secret/data/products/distribution/ci GH_APP_PRIVATE_KEY_DISTRO_CI;
