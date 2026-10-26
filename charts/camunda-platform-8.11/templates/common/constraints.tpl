@@ -1576,7 +1576,7 @@ The following values inside your values.yaml need to be set but were not:
     {{- $warningMessage := printf "%s %s %s"
         "[camunda][warning]"
         "DEPRECATION: global.compatibility.nginx.renderAnnotations is enabled, so the chart still injects the ingress-nginx annotations it used to ship as values defaults. They render whatever ingress controller you run, and only ingress-nginx reads them."
-        "The shim is removed in the next major. Set whatever your controller needs through global.ingress.annotations and orchestration.ingress.grpc.annotations, then set global.compatibility.nginx.renderAnnotations to false."
+        "The shim is removed in chart v17 (Camunda 8.12). Set whatever your controller needs through global.ingress.annotations and orchestration.ingress.grpc.annotations, then set global.compatibility.nginx.renderAnnotations to false."
     -}}
     {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
   {{- end }}
