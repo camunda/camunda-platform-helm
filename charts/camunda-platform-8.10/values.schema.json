@@ -4986,7 +4986,7 @@
                         "tag": {
                             "type": "string",
                             "description": "defines which image tag to use",
-                            "default": "8.10.6"
+                            "default": "8.10.7"
                         },
                         "digest": {
                             "type": "string",
@@ -6570,7 +6570,7 @@
                         "tag": {
                             "type": "string",
                             "description": "defines which image tag to use",
-                            "default": "8.10.6"
+                            "default": "8.10.7"
                         },
                         "digest": {
                             "type": "string",
