@@ -23,7 +23,7 @@ jobs:
       contents: write
       id-token: write
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@ead99f6c9c536f5c47e443929d47e8fcfdb05a81  # start-build-monitor-1.0.1
+      - uses: camunda/infra-global-github-actions/start-build-monitor@ead99f6c9c536f5c47e443929d47e8fcfdb05a81 # start-build-monitor-1.0.1
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: gh-pages
@@ -87,7 +87,7 @@ jobs:
         id: build-status-secrets
         if: always()
         continue-on-error: true
-        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc  # v4.0.0
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: jwt
@@ -98,7 +98,7 @@ jobs:
           secrets: |
             secret/data/products/distribution/ci/ci-analytics gcloud_sa_key;
 
-      - uses: camunda/infra-global-github-actions/submit-build-status@ead99f6c9c536f5c47e443929d47e8fcfdb05a81  # submit-build-status-1.3.3
+      - uses: camunda/infra-global-github-actions/submit-build-status@ead99f6c9c536f5c47e443929d47e8fcfdb05a81 # submit-build-status-1.3.3
         if: ${{ always() && steps.build-status-secrets.outputs.gcloud_sa_key != '' }}
         continue-on-error: true
         with:

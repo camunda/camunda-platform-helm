@@ -139,7 +139,7 @@ jobs:
           go-version-file: scripts/notify-pr-activity/go.mod
 
       - name: Import Vault secrets
-        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc  # v4.0.0
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         id: vault-secrets
         with:
           url: ${{ secrets.VAULT_ADDR }}
