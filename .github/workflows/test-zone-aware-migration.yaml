@@ -33,6 +33,9 @@ jobs:
   zone-aware-migration:
     name: Zone-aware migration - KIND ${{ matrix.version }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     strategy:
       fail-fast: false
       matrix:
