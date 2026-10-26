@@ -213,6 +213,23 @@ func TestRunAllReportsUnchangedFunctions(t *testing.T) {
 	assert.Contains(t, err.Error(), "1 of 2 checked function(s)")
 }
 
+func TestRunAllChecksUntrackedFilesAndSkipsDeletedFiles(t *testing.T) {
+	root := newRepo(t, map[string]string{
+		"scripts/tool/a.go":    pkgHeader + complexFunc("Small", 2),
+		"scripts/tool/gone.go": pkgHeader + complexFunc("Gone", 31),
+	})
+	require.NoError(t, os.Remove(filepath.Join(root, "scripts/tool/gone.go")))
+	writeFile(t, root, "scripts/tool/new.go", pkgHeader+complexFunc("Untracked", 31))
+
+	var out bytes.Buffer
+	err := run(root, "main", true, &out)
+
+	require.Error(t, err)
+	assert.Contains(t, out.String(), "scripts/tool/new.go:3: Untracked: cognitive 31 > 30")
+	assert.NotContains(t, out.String(), "Gone")
+	assert.Contains(t, err.Error(), "1 of 2 checked function(s)")
+}
+
 func TestRunReadsChangedFileNamesThatGitQuotes(t *testing.T) {
 	root := newRepo(t, map[string]string{
 		"scripts/tool/a b.go": pkgHeader + complexFunc("Spaced", 31),

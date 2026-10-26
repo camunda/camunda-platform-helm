@@ -16,6 +16,7 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"flag"
 	"fmt"
 	"go/ast"
@@ -64,7 +65,7 @@ func run(repoRoot, base string, all bool, out io.Writer) error {
 	var files map[string][]hunk
 	var err error
 	if all {
-		files, err = trackedFiles(repoRoot)
+		files, err = allFiles(repoRoot)
 	} else {
 		files, err = changedFiles(repoRoot, base)
 	}
@@ -125,13 +126,16 @@ func changedFiles(repoRoot, base string) (map[string][]hunk, error) {
 	return files, nil
 }
 
-func trackedFiles(repoRoot string) (map[string][]hunk, error) {
-	tracked, err := git(repoRoot, "ls-files", "-z", "--", scope)
+func allFiles(repoRoot string) (map[string][]hunk, error) {
+	listed, err := git(repoRoot, "ls-files", "-z", "--cached", "--others", "--exclude-standard", "--", scope)
 	if err != nil {
 		return nil, err
 	}
 	files := map[string][]hunk{}
-	for path := range strings.SplitSeq(tracked, "\x00") {
+	for path := range strings.SplitSeq(listed, "\x00") {
+		if _, err := os.Stat(filepath.Join(repoRoot, path)); errors.Is(err, os.ErrNotExist) {
+			continue
+		}
 		files[path] = wholeFile
 	}
 	return files, nil
