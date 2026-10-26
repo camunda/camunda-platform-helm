@@ -128,7 +128,7 @@ jobs:
           done
           matrix+="]"
 
-          echo "chart-matrix=${matrix}" >> $GITHUB_OUTPUT
+          echo "chart-matrix=${matrix}" >> "$GITHUB_OUTPUT"
           echo "Building charts: ${versions}"
 
   build:
@@ -190,7 +190,7 @@ jobs:
 
       - name: Build release-tools
         run: |
-          cd $(git rev-parse --show-toplevel)/scripts/release-tools
+          cd "$(git rev-parse --show-toplevel)/scripts/release-tools"
           go build -o /tmp/release-tools .
 
       - name: Inject image-tag overrides into values.yaml
@@ -207,7 +207,7 @@ jobs:
           TASKLIST_IMAGE_TAG: ${{ inputs.tasklist-image-tag }}
           CHART_VERSION: ${{ matrix.chart.version }}
         run: |
-          cd $(git rev-parse --show-toplevel)
+          cd "$(git rev-parse --show-toplevel)"
           /tmp/release-tools inject-values
 
       - name: Login to Harbor registry
@@ -225,8 +225,8 @@ jobs:
           # For now, just set the short SHA and Camunda version
           SHORT_SHA="${GITHUB_SHA::7}"
           CAMUNDA_VERSION="${{ matrix.chart.version }}"
-          echo "SHORT_SHA=${SHORT_SHA}" | tee -a $GITHUB_ENV
-          echo "CAMUNDA_VERSION=${CAMUNDA_VERSION}" | tee -a $GITHUB_ENV
+          echo "SHORT_SHA=${SHORT_SHA}" | tee -a "$GITHUB_ENV"
+          echo "CAMUNDA_VERSION=${CAMUNDA_VERSION}" | tee -a "$GITHUB_ENV"
 
       #
       # Compute release version using release-please dry-run
@@ -326,13 +326,13 @@ jobs:
               echo "::notice::Dev package ${DEV_TAG} exists but image overrides provided - deleting to rebuild"
               harbor_curl \
                 -X DELETE "https://${HARBOR_REGISTRY_HOST}/api/v2.0/projects/${HARBOR_REGISTRY_PROJECT}/repositories/${{ env.CHART_NAME }}/artifacts/${DEV_TAG}/tags/${DEV_TAG}" || true
-              echo "SKIP_BUILD=false" | tee -a $GITHUB_ENV
+              echo "SKIP_BUILD=false" | tee -a "$GITHUB_ENV"
             else
-              echo "SKIP_BUILD=true" | tee -a $GITHUB_ENV
+              echo "SKIP_BUILD=true" | tee -a "$GITHUB_ENV"
               echo "::notice::Dev package ${DEV_TAG} already exists, skipping build"
             fi
           else
-            echo "SKIP_BUILD=false" | tee -a $GITHUB_ENV
+            echo "SKIP_BUILD=false" | tee -a "$GITHUB_ENV"
           fi
 
       - name: Apply Chart.yaml version from release-please
@@ -525,7 +525,7 @@ jobs:
           tar -xzf "${PACKAGED_FILE}" -O ${{ env.CHART_NAME }}/Chart.yaml | grep "^version:"
 
           # Store the package filename for later steps
-          echo "HELM_PACKAGE=${PACKAGED_FILE}" >> $GITHUB_ENV
+          echo "HELM_PACKAGE=${PACKAGED_FILE}" >> "$GITHUB_ENV"
 
       - name: Push Helm chart to Harbor
         if: env.SKIP_BUILD == 'false'
@@ -546,15 +546,14 @@ jobs:
           retry_cmd "cosign sign-blob" cosign sign-blob -y "${HELM_PACKAGE}" \
             --bundle ".cr-release-packages/${{ env.CHART_RELEASE_COSIGN_BUNDLE_FILE }}"
 
-          CHART_RELEASE_TAG_NAME="camunda-platform-${{ matrix.chart.version }}-${RELEASE_VERSION}"
-          echo "CHART_RELEASE_TAG_NAME=camunda-platform-${{ matrix.chart.version }}-${RELEASE_VERSION}" >> $GITHUB_ENV
+          echo "CHART_RELEASE_TAG_NAME=camunda-platform-${{ matrix.chart.version }}-${RELEASE_VERSION}" >> "$GITHUB_ENV"
 
           cat .cr-release-packages/${{ env.CHART_RELEASE_COSIGN_BUNDLE_FILE }} | jq
 
           # New cosign bundle format uses .verificationMaterial.tlogEntries[0].logIndex;
           # old format uses .rekorBundle.Payload.logIndex. Try both.
           rekor_log_index="$(cat .cr-release-packages/${{ env.CHART_RELEASE_COSIGN_BUNDLE_FILE }} | jq -r '.verificationMaterial.tlogEntries[0].logIndex // .rekorBundle.Payload.logIndex // "unavailable"')"
-          echo "CHART_RELEASE_COSIGN_REKOR_LOG_INDEX=${rekor_log_index}" >> $GITHUB_ENV
+          echo "CHART_RELEASE_COSIGN_REKOR_LOG_INDEX=${rekor_log_index}" >> "$GITHUB_ENV"
 
           cat << EOF > ${{ env.CHART_RELEASE_COSIGN_VERIFY_FILE }}
           # Rekor.
@@ -569,12 +568,12 @@ jobs:
           EOF
 
           COSIGN_VERIFIED="$(
-            cosign verify-blob ${HELM_PACKAGE} \
+            cosign verify-blob "${HELM_PACKAGE}" \
               --bundle ".cr-release-packages/${{ env.CHART_RELEASE_COSIGN_BUNDLE_FILE }}" \
               --certificate-identity "${{ env.CHART_RELEASE_COSIGN_CERTIFICATE_IDENTITY }}" \
               --certificate-oidc-issuer "${{ env.CHART_RELEASE_COSIGN_CERTIFICATE_OIDC_ISSUER }}" 2>&1
           )"
-          echo COSIGN_VERIFIED="${COSIGN_VERIFIED}" >> $GITHUB_ENV
+          echo COSIGN_VERIFIED="${COSIGN_VERIFIED}" >> "$GITHUB_ENV"
 
           COSIGN_METADATA="$(cat .cr-release-packages/${{ env.CHART_RELEASE_COSIGN_BUNDLE_FILE }} | jq .verificationMaterial.certificate.rawBytes | sed 's/"//g' | base64 -d | openssl x509 -noout -text - )"
           # funkiness to preserve newlines
@@ -586,7 +585,7 @@ jobs:
 
           # oras push with retry and re-auth
           harbor_retry "oras push" \
-            oras push ${OCI_REGISTRY}/${{ env.CHART_NAME }} .cr-release-packages/${{ env.CHART_RELEASE_COSIGN_BUNDLE_FILE }}
+            oras push "${OCI_REGISTRY}/${{ env.CHART_NAME }}" .cr-release-packages/${{ env.CHART_RELEASE_COSIGN_BUNDLE_FILE }}
 
           # The helm push created a tag with the release version
           PUSHED_TAG="${RELEASE_VERSION}"
@@ -630,7 +629,7 @@ jobs:
           ROLLING_TAG="${CHART_MAJOR_VERSION}-dev-latest"
 
           if [[ "${{ env.SKIP_BUILD }}" == "true" ]]; then
-            cat << EOF >> $GITHUB_STEP_SUMMARY
+            cat << EOF >> "$GITHUB_STEP_SUMMARY"
           ## 📦 Chart Build Skipped (Camunda ${{ env.CAMUNDA_VERSION }})
 
           Dev package already exists for this commit.
@@ -640,8 +639,9 @@ jobs:
 
           EOF
           else
+            # shellcheck disable=SC2016
             IMAGE_ROWS="$(sed -E 's/^([^:]+): (.*)$/| \1 | `\2` |/' /tmp/image-versions.yaml)"
-            cat << EOF >> $GITHUB_STEP_SUMMARY
+            cat << EOF >> "$GITHUB_STEP_SUMMARY"
           ## 📦 Dev Package Built ✅ (Camunda ${{ env.CAMUNDA_VERSION }})
 
           ### Package Info
@@ -681,7 +681,7 @@ jobs:
           <summary>View Cosign metadata</summary>
 
           \`\`\`bash
-          $(echo "${COSIGN_METADATA}")
+          ${COSIGN_METADATA}
           \`\`\`
 
           </details>
