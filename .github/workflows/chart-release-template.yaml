@@ -97,7 +97,7 @@ jobs:
           # NOTE: Helm CLI only accepts SemVer so we need to use something like "0.0.0-snapshot-latest".
           CHART_VERSION_SUFFIX="${{ matrix.chart.versionSuffix }}"
           CHART_VERSION_SUFFIX_DEFAULT="$(yq '.version' Chart.yaml)"
-          echo "CHART_VERSION=0.0.0-${CHART_VERSION_SUFFIX:-${CHART_VERSION_SUFFIX_DEFAULT}}" | tee -a $GITHUB_ENV
+          echo "CHART_VERSION=0.0.0-${CHART_VERSION_SUFFIX:-${CHART_VERSION_SUFFIX_DEFAULT}}" | tee -a "$GITHUB_ENV"
       #
       # Changelog.
       - name: Generate snapshot changelog
@@ -120,7 +120,7 @@ jobs:
               # If the artfact exists, then it will not republished.
               helm pull oci://ghcr.io/${{ env.REPOSITORY_NAME }}/${{ env.CHART_NAME }} \
                 --version ${{ env.CHART_VERSION }} 2> /dev/null && EXIT_CODE=0 || EXIT_CODE=1
-              test ${EXIT_CODE} -eq 0 && PUBLISH_ARTIFACT="false" || PUBLISH_ARTIFACT="true"
+              test "${EXIT_CODE}" -eq 0 && PUBLISH_ARTIFACT="false" || PUBLISH_ARTIFACT="true"
               ;;
             *)
               echo "Unsupported value."
@@ -128,7 +128,7 @@ jobs:
               ;;
           esac
           # Add the var to GH vars.
-          echo "PUBLISH_ARTIFACT=${PUBLISH_ARTIFACT}" | tee -a $GITHUB_ENV
+          echo "PUBLISH_ARTIFACT=${PUBLISH_ARTIFACT}" | tee -a "$GITHUB_ENV"
       - name: Helm dependency update
         if: env.PUBLISH_ARTIFACT == 'true'
         run: |
@@ -177,7 +177,7 @@ jobs:
             ${{ env.CHART_NAME }}-${{ env.CHART_VERSION }}.cosign.bundle:text/plain
       - name: Add release info to workflow summary
         run: |
-          cat << EOF >> $GITHUB_STEP_SUMMARY
+          cat << EOF >> "$GITHUB_STEP_SUMMARY"
           ## Chart info
 
             - Repository: \`oci://ghcr.io/${{ env.REPOSITORY_NAME }}\`

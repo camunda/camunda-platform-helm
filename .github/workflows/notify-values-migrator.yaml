@@ -54,9 +54,11 @@ jobs:
           PREV="$(git tag -l "${PREFIX}-*" --sort=-v:refname \
             | grep -E "^${PREFIX}-[0-9]+\.[0-9]+\.[0-9]+$" \
             | grep -vF "$TAG" | head -1 || true)"
-          echo "sha=$SHA"     >> "$GITHUB_OUTPUT"
-          echo "prefix=$PREFIX" >> "$GITHUB_OUTPUT"
-          echo "prev=$PREV"   >> "$GITHUB_OUTPUT"
+          {
+            echo "sha=$SHA"
+            echo "prefix=$PREFIX"
+            echo "prev=$PREV"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Gate on values change
         id: diff

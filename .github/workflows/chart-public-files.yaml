@@ -36,22 +36,22 @@ jobs:
           # Legacy - Extra values for all chart versions.
           # This is considered legacy as the version is part of the file name which should not be the case.
           # Hence, the structure is kept for backward compatibility.
-          find main/charts -name "camunda-platform-8*" | sort -n | while read chart_id; do
-              camunda_version="$(echo ${chart_id} | cut -d '-' -f 3)";
+          find main/charts -name "camunda-platform-8*" | sort -n | while read -r chart_id; do
+              camunda_version="$(echo "${chart_id}" | cut -d '-' -f 3)";
               # Latest values files.
-              cp -a ${chart_id}/values-latest.yaml camunda-platform/values/values-v${camunda_version}.yaml;
+              cp -a "${chart_id}"/values-latest.yaml "camunda-platform/values/values-v${camunda_version}.yaml";
           done
           #
           # Extra values for all chart versions.
           # This structure is preferred as the version is part of the directory name not the file name.
           # Which makes it easier to manage in the docs. Which also used in the version matrix.
-          find main/charts -name "camunda-platform-8*" | sort -n | while read chart_id; do
-              camunda_version="$(echo ${chart_id} | cut -d '-' -f 3)";
+          find main/charts -name "camunda-platform-8*" | sort -n | while read -r chart_id; do
+              camunda_version="$(echo "${chart_id}" | cut -d '-' -f 3)";
               camunda_values_dir="camunda-platform/values/camunda-${camunda_version}";
               mkdir -p "${camunda_values_dir}";
               rm -f "${camunda_values_dir}"/values-*.yaml;
               # Copy all extra values files.
-              cp -a ${chart_id}/values-*.yaml ${camunda_values_dir}/;
+              cp -a "${chart_id}"/values-*.yaml "${camunda_values_dir}"/;
           done
       - name: Copy version matrix files
         run: |
@@ -65,13 +65,13 @@ jobs:
           echo "Synced version matrix files to camunda-platform/version-matrix/"
       - name: Add public files info to workflow summary
         run: |
-          cat << EOF >> $GITHUB_STEP_SUMMARY
+          cat << EOF >> "$GITHUB_STEP_SUMMARY"
             $(
-              find main/charts -name "camunda-platform-8*" | sort -n | while read chart_id; do
-                  camunda_version="$(echo ${chart_id} | cut -d '-' -f 3)";
+              find main/charts -name "camunda-platform-8*" | sort -n | while read -r chart_id; do
+                  camunda_version="$(echo "${chart_id}" | cut -d '-' -f 3)";
                   camunda_values_dir="camunda-platform/values/camunda-${camunda_version}";
                   echo -e "\nPublic files for Camunda version ${camunda_version}:"
-                  printf -- "- https://helm.camunda.io/%s\n" $(ls ${camunda_values_dir}/values-*.yaml)
+                  printf -- "- https://helm.camunda.io/%s\n" "${camunda_values_dir}"/values-*.yaml
               done
             )
           EOF

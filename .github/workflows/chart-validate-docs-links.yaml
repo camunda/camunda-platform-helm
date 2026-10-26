@@ -46,11 +46,12 @@ jobs:
 
           if [[ -n "$MANUAL_VERSION" ]]; then
             echo "Using manually specified version: $MANUAL_VERSION"
-            echo "versions=${MANUAL_VERSION}" >> $GITHUB_OUTPUT
+            echo "versions=${MANUAL_VERSION}" >> "$GITHUB_OUTPUT"
           else
             echo "Using released routine versions from chart-versions.yaml"
+            # shellcheck disable=SC2016
             versions=$(yq '. as $config | .chartAutomation.routineVersions | map(. as $version | select(($config.camundaSupportLifecycle[$version].released // "") != "")) | join(" ")' charts/chart-versions.yaml)
-            echo "versions=${versions}" >> $GITHUB_OUTPUT
+            echo "versions=${versions}" >> "$GITHUB_OUTPUT"
           fi
         env:
           INPUTS_CHART_VERSION: ${{ inputs.chart-version }}

@@ -62,9 +62,11 @@ jobs:
             exit 1
           fi
 
-          echo "distro_config<<EOF" >> $GITHUB_OUTPUT
-          echo "$filtered" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          {
+            echo "distro_config<<EOF"
+            echo "$filtered"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
         env:
           INPUTS_DISTRO_PLATFORM: ${{ inputs.distro-platform }}
 
@@ -73,7 +75,7 @@ jobs:
         shell: bash
         run: |
           INFRA_CONFIG=".github/config/infra.yaml"
-          echo "CLUSTER_NAME=$(yq '.eks.cluster-name' "$INFRA_CONFIG")" >> $GITHUB_ENV
+          echo "CLUSTER_NAME=$(yq '.eks.cluster-name' "$INFRA_CONFIG")" >> "$GITHUB_ENV"
 
       - name: CI Setup - Install tools
         uses: ./.github/actions/install-tool-versions

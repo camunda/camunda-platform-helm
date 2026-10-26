@@ -589,7 +589,6 @@ jobs:
 
           PROJECT_V2_ID='${{ steps.validate_project.outputs.project_v2_id }}'
           PROJECT_ITEM_ID='${{ steps.validate_project.outputs.project_item_id }}'
-          NEW_URGENCY='${{ steps.validate_urgency.outputs.urgency }}'
 
           echo "🎯 Urgency is immediate - checking if issue should be moved to Ready"
 
@@ -737,6 +736,7 @@ jobs:
           GH_TOKEN: ${{ steps.generate-github-token.outputs.token }}
         run: |
           set -euo pipefail
+          # shellcheck disable=SC2016
           gh api graphql -f query='query($owner:String!,$repo:String!,$number:Int!){
             repository(owner:$owner,name:$repo){issue(number:$number){id state
               projectItems(first:100){nodes{project{number} fieldValueByName(name:"Status"){
