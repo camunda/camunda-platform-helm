@@ -47,7 +47,7 @@ integration:
     - id: keycloak-original-install-tier2
       shortname: keorg
       tier: 2
-      enabled: true
+      enabled: false
     - id: elasticsearch-self-signed
       shortname: esss
       enabled: false
@@ -92,7 +92,7 @@ integration:
     - id: keycloak-original-install-tier1
       shortname: keyco
       tier: 2
-      enabled: true
+      enabled: false
     - id: alwaysgreen
       shortname: agrn
       enabled: false

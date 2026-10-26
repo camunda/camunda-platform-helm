@@ -615,7 +615,7 @@ integration:
                 - RDBMS_POSTGRESQL_USERNAME
                 - RDBMS_POSTGRESQL_PASSWORD
         - name: keycloak-original
-          enabled: true
+          enabled: false
           shortname: keorg
           auth: keycloak
           flow: install

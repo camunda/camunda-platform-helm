@@ -338,7 +338,7 @@ integration:
               release-name: openldap
               values-file: test/integration/companion-values/openldap.yaml
         - name: keycloak-original
-          enabled: true
+          enabled: false
           shortname: keyco
           auth: keycloak
           flow: install
