@@ -25,14 +25,16 @@ automated workflow steps follow Conventional Commits with the `chore(ci):` type.
   variables. All secrets come from Vault via `hashicorp/vault-action`.
 - **NEVER** add a `run:` block above bash cyclomatic complexity 10 (1, plus 1 for each `if`/`elif`,
   `case` item, loop, `&&` and `||`) or 100 non-blank lines, in `.github/workflows/` or
-  `.github/actions/`, and never make a block that is already above more complex or longer.
+  `.github/actions/`. **NEVER** make a block that is already above more complex or longer, except
+  for a fix that is not possible without it.
   `make go.complexity` fails the change, and `test-release-tooling.yaml` runs it on every PR.
   `cd scripts/complexity-gate && go run . --repo-root ../.. --all` lists the blocks that are
   already above. To pass, delete dead branches and duplicated commands, or split the step where
   no shell variable crosses the split. Do not add a `GITHUB_ENV` or `GITHUB_OUTPUT` write, a `.sh`
   file, a `${{ }}` expression or an `if:` condition only to pass the check, and do not rewrite the
-  block in another language to pass it. If a fix must grow a block that is already above, say so
-  in the PR body.
+  block in another language to pass it. If a fix must grow a block that is already above, name
+  the block and the reason in the PR body. A reviewer who accepts the reason merges the PR
+  although the check fails.
 - **NEVER** omit `concurrency:` on workflows triggered by `push` or `pull_request` — duplicate
   runs waste CI resources.
 - **NEVER** use `strategy.fail-fast: true` for integration test matrices — one flaky test must
