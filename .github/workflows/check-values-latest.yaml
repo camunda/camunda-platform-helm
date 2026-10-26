@@ -58,15 +58,17 @@ jobs:
         id: validation
         continue-on-error: true
         run: |
-          if [[ -n "${{ inputs.chart-version }}" ]]; then
+          if [[ -n "${INPUTS_CHART_VERSION}" ]]; then
             bash scripts/check-values-latest.sh \
-              "${{ inputs.chart-version }}"
+              "${INPUTS_CHART_VERSION}"
           else
             bash scripts/check-values-latest.sh
           fi || {
             echo "::warning title=values-latest.yaml outdated::Some image versions in values-latest.yaml files are not up-to-date. See the validation step logs."
             exit 1
           }
+        env:
+          INPUTS_CHART_VERSION: ${{ inputs.chart-version }}
 
       - name: Sync PR warning comment and label
         if: >-

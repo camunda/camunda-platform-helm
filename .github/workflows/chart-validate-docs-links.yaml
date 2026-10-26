@@ -42,7 +42,7 @@ jobs:
       - name: Get chart versions to validate
         id: get-versions
         run: |
-          MANUAL_VERSION="${{ inputs.chart-version }}"
+          MANUAL_VERSION="${INPUTS_CHART_VERSION}"
 
           if [[ -n "$MANUAL_VERSION" ]]; then
             echo "Using manually specified version: $MANUAL_VERSION"
@@ -52,6 +52,8 @@ jobs:
             versions=$(yq '. as $config | .chartAutomation.routineVersions | map(. as $version | select(($config.camundaSupportLifecycle[$version].released // "") != "")) | join(" ")' charts/chart-versions.yaml)
             echo "versions=${versions}" >> $GITHUB_OUTPUT
           fi
+        env:
+          INPUTS_CHART_VERSION: ${{ inputs.chart-version }}
 
   validate:
     name: Validate Docs Links

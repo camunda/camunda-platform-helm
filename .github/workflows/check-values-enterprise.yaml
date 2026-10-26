@@ -66,7 +66,9 @@ jobs:
       - name: Run validation
         run: |
           deploy-camunda check-enterprise-images \
-            --chart-version "${{ inputs.chart-version }}"
+            --chart-version "${INPUTS_CHART_VERSION}"
+        env:
+          INPUTS_CHART_VERSION: ${{ inputs.chart-version }}
 
       - name: Comment on PR (if validation failed)
         if: failure() && github.event_name == 'pull_request'

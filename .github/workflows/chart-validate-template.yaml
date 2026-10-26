@@ -94,8 +94,10 @@ jobs:
         uses: helm/chart-testing-action@720270857a28afd41e2426521a7801db09e9b510 # v2.9.0
       - name: Get Helm dependency
         run: |
-          export chartPath="charts/${{ inputs.camunda-helm-dir }}"
+          export chartPath="charts/${INPUTS_CAMUNDA_HELM_DIR}"
           make helm.dependency-update
+        env:
+          INPUTS_CAMUNDA_HELM_DIR: ${{ inputs.camunda-helm-dir }}
       - name: Install Chart Verifier
         if: ${{ contains(github.event.*.labels.*.name, 'release') }}
         uses: redhat-actions/openshift-tools-installer@1f130822bb0930e0ee02a119adcc3271a22b1499 # v3
@@ -105,18 +107,24 @@ jobs:
       # Lint.
       - name: Run CT lint
         run: |
-          ct lint --charts charts/${{ inputs.camunda-helm-dir }} \
+          ct lint --charts "charts/${INPUTS_CAMUNDA_HELM_DIR}" \
             --lint-conf .github/config/chart-testing.yaml \
             --config .github/config/chart-testing.yaml
+        env:
+          INPUTS_CAMUNDA_HELM_DIR: ${{ inputs.camunda-helm-dir }}
       - name: Run Chart Verifier
         if: ${{ contains(github.event.*.labels.*.name, 'release') }}
         run: |
-          cd charts/${{ inputs.camunda-helm-dir }}
+          cd "charts/${INPUTS_CAMUNDA_HELM_DIR}"
           chart-verifier verify .
+        env:
+          INPUTS_CAMUNDA_HELM_DIR: ${{ inputs.camunda-helm-dir }}
       - name: Run YAMLlint
         run: |
           # Call yamllint via asdf because there is an issue loading the correct version of yamllint in GHA workflow.
-          $(asdf which yamllint) -c .github/config/yamllint.yaml ./charts/${{ inputs.camunda-helm-dir }}/test/unit
+          $(asdf which yamllint) -c .github/config/yamllint.yaml "./charts/${INPUTS_CAMUNDA_HELM_DIR}/test/unit"
+        env:
+          INPUTS_CAMUNDA_HELM_DIR: ${{ inputs.camunda-helm-dir }}
       # Schema freshness check.
       - name: Install readme-generator-for-helm
         if: ${{ hashFiles(format('charts/{0}/values.schema.json', inputs.camunda-helm-dir)) != '' }}
@@ -125,16 +133,20 @@ jobs:
       - name: Check schema is up-to-date
         if: ${{ hashFiles(format('charts/{0}/values.schema.json', inputs.camunda-helm-dir)) != '' }}
         run: |
-          export chartPath="charts/${{ inputs.camunda-helm-dir }}"
+          export chartPath="charts/${INPUTS_CAMUNDA_HELM_DIR}"
           make helm.schema-update
           if ! git diff --exit-code -- "${chartPath}/values.schema.json" "${chartPath}/values.unknown-keys.schema.json"; then
             echo "::error::Generated values schemas are out of date. Run 'make helm.schema-update chartPath=${chartPath}' and commit the result."
             exit 1
           fi
+        env:
+          INPUTS_CAMUNDA_HELM_DIR: ${{ inputs.camunda-helm-dir }}
       - name: Validate current values and previous-minor upgrade coverage
         if: ${{ hashFiles(format('charts/{0}/values.schema.json', inputs.camunda-helm-dir)) != '' }}
         run: |
-          make helm.schema-validate-values chartPath="charts/${{ inputs.camunda-helm-dir }}"
+          make helm.schema-validate-values chartPath="charts/${INPUTS_CAMUNDA_HELM_DIR}"
+        env:
+          INPUTS_CAMUNDA_HELM_DIR: ${{ inputs.camunda-helm-dir }}
 
       - name: Observe build status
         if: always()

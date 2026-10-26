@@ -139,6 +139,9 @@ jobs:
         with:
           app-id: ${{ steps.vault-secrets.outputs.GH_APP_ID_DISTRO_CI }}
           private-key: ${{ steps.vault-secrets.outputs.GH_APP_PRIVATE_KEY_DISTRO_CI }}
+          permission-issues: read
+          permission-members: read
+          permission-organization-projects: write
 
       - name: Set GitHub token
         run: |
@@ -146,9 +149,7 @@ jobs:
 
       - name: Dump event issue JSON
         run: |
-          cat << 'EOF'
-          ${{ toJSON(github.event.issue) }}
-          EOF
+          jq '.issue' "$GITHUB_EVENT_PATH"
 
       - name: Fetch issue and project data
         id: fetch_data
@@ -721,6 +722,9 @@ jobs:
         with:
           app-id: ${{ steps.vault-secrets.outputs.GH_APP_ID_DISTRO_CI }}
           private-key: ${{ steps.vault-secrets.outputs.GH_APP_PRIVATE_KEY_DISTRO_CI }}
+          permission-issues: read
+          permission-members: read
+          permission-organization-projects: write
       - name: Classify issue creator for routing
         id: author
         env:

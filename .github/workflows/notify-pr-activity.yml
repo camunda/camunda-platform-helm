@@ -23,7 +23,7 @@ name: Notify - PR Activity
 on:
   # pull_request_target ensures secrets are available even for fork PRs.
   # Safe here because we never checkout PR code.
-  pull_request_target:
+  pull_request_target:  # zizmor: ignore[dangerous-triggers]
     types: [opened, ready_for_review, closed]
 
   workflow_call:

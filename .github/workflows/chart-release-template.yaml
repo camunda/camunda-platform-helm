@@ -139,7 +139,7 @@ jobs:
         env:
           HELM_EXPERIMENTAL_OCI: 1
         run: |
-          echo ${{ secrets.GITHUB_TOKEN }} | helm registry login -u ${{ github.actor }} --password-stdin ghcr.io
+          echo ${{ secrets.GITHUB_TOKEN }} | helm registry login -u "${GITHUB_ACTOR}" --password-stdin ghcr.io
           helm package --version ${{ env.CHART_VERSION }} .
           helm push ${{ env.CHART_NAME }}-${{ env.CHART_VERSION }}.tgz oci://ghcr.io/${{ env.REPOSITORY_NAME }}
           helm registry logout ghcr.io
@@ -158,7 +158,7 @@ jobs:
         run: |
           cosign verify-blob ${{ env.CHART_NAME }}-${{ env.CHART_VERSION }}.tgz \
             --bundle ${{ env.CHART_NAME }}-${{ env.CHART_VERSION }}.cosign.bundle \
-            --certificate-identity "https://github.com/${{ github.repository }}/.github/workflows/chart-release-template.yaml@${{ github.ref }}" \
+            --certificate-identity "https://github.com/${{ github.repository }}/.github/workflows/chart-release-template.yaml@${GITHUB_REF}" \
             --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
       - name: Login to GitHub Container Registry
         if: env.PUBLISH_ARTIFACT == 'true'
