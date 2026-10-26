@@ -138,10 +138,8 @@ jobs:
           echo "GH_TOKEN=${{ steps.generate-github-token.outputs.token }}" >> "$GITHUB_ENV"
 
       - name: Dump event issue JSON
-        env:
-          EVENT_ISSUE_JSON: ${{ toJSON(github.event.issue) }}
         run: |
-          echo "${EVENT_ISSUE_JSON}"
+          jq '.issue' "$GITHUB_EVENT_PATH"
 
       - name: Fetch issue and project data
         id: fetch_data
