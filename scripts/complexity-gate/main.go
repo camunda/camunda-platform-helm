@@ -107,7 +107,7 @@ func changedFiles(repoRoot, base string) (map[string][]hunk, error) {
 	if err != nil {
 		return nil, err
 	}
-	diff, err := git(repoRoot, "diff", "--unified=0", "--no-color", "--no-ext-diff", "-M", strings.TrimSpace(mergeBase), "--", scope)
+	diff, err := git(repoRoot, "diff", "--unified=0", "--inter-hunk-context=0", "--src-prefix=a/", "--dst-prefix=b/", "--no-color", "--no-ext-diff", "-M", strings.TrimSpace(mergeBase), "--", scope)
 	if err != nil {
 		return nil, err
 	}

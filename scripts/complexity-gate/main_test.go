@@ -81,6 +81,7 @@ func TestRun(t *testing.T) {
 
 	cases := []struct {
 		name       string
+		gitConfig  map[string]string
 		edit       map[string]string
 		wantErr    bool
 		wantOut    []string
@@ -142,11 +143,27 @@ func TestRun(t *testing.T) {
 			},
 			wantOut: []string{"0 function(s) checked"},
 		},
+		{
+			name:      "diff prefixes set in git config do not change the parsed paths",
+			gitConfig: map[string]string{"diff.mnemonicPrefix": "true", "diff.srcPrefix": "s/", "diff.dstPrefix": "d/"},
+			edit:      map[string]string{"scripts/tool/a.go": pkgHeader + complexFunc("Big", 40) + "\n" + complexFunc("Small", 3)},
+			wantOut:   []string{"1 function(s) checked, none above"},
+		},
+		{
+			name:       "edits on both sides of an unchanged over-limit function do not select it under diff.interHunkContext",
+			gitConfig:  map[string]string{"diff.interHunkContext": "1000"},
+			edit:       map[string]string{"scripts/tool/a.go": pkgHeader + "var x = 1\n\n" + complexFunc("Big", 40) + "\n" + complexFunc("Small", 3)},
+			wantOut:    []string{"1 function(s) checked, none above"},
+			notWantOut: []string{"Big"},
+		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			root := newRepo(t, map[string]string{"scripts/tool/a.go": baseFile})
+			for key, value := range tc.gitConfig {
+				gitRun(t, root, "config", key, value)
+			}
 			for rel, content := range tc.edit {
 				writeFile(t, root, rel, content)
 			}
