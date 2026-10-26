@@ -37,9 +37,9 @@ set -euo pipefail
 
 NAMESPACE="${TEST_NAMESPACE:?TEST_NAMESPACE must be set}"
 RELEASE="${RELEASE_NAME:-integration}"
-CONTEXT_FLAG=""
+CONTEXT_FLAG=()
 if [[ -n "${KUBE_CONTEXT:-}" ]]; then
-  CONTEXT_FLAG="--context ${KUBE_CONTEXT}"
+  CONTEXT_FLAG=(--context "${KUBE_CONTEXT}")
 fi
 CERT_VALIDITY_DAYS=365
 
@@ -108,8 +108,8 @@ openssl x509 -req \
 # 3. Create the PEM secret (idempotent)
 # ---------------------------------------------------------------------------
 echo "[es-pem] Creating secret elasticsearch-tls-pem in namespace $NAMESPACE..."
-kubectl ${CONTEXT_FLAG} -n "$NAMESPACE" delete secret elasticsearch-tls-pem --ignore-not-found >/dev/null 2>&1 || true
-kubectl ${CONTEXT_FLAG} -n "$NAMESPACE" create secret generic elasticsearch-tls-pem \
+kubectl "${CONTEXT_FLAG[@]}" -n "$NAMESPACE" delete secret elasticsearch-tls-pem --ignore-not-found >/dev/null 2>&1 || true
+kubectl "${CONTEXT_FLAG[@]}" -n "$NAMESPACE" create secret generic elasticsearch-tls-pem \
   --from-file="tls.crt=$WORK_DIR/tls.crt" \
   --from-file="tls.key=$WORK_DIR/tls.key" \
   --from-file="ca.crt=$WORK_DIR/ca.crt"

@@ -70,7 +70,7 @@ jobs:
           exportEnv: false
 
       - name: Generate GitHub token
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
         id: generate-github-token
         with:
           app-id: ${{ steps.vault-harbor.outputs.GH_APP_ID_DISTRO_CI }}
@@ -222,7 +222,7 @@ jobs:
         run: |
           # New cosign bundle format uses .verificationMaterial.tlogEntries[0].logIndex
           rekor_log_index=$(jq -r '.verificationMaterial.tlogEntries[0].logIndex // .rekorBundle.Payload.logIndex // "unavailable"' "${{ steps.metadata.outputs.cosign_bundle }}")
-          echo "log_index=${rekor_log_index}" | tee -a $GITHUB_OUTPUT
+          echo "log_index=${rekor_log_index}" | tee -a "$GITHUB_OUTPUT"
 
       - name: Create Cosign verify script
         if: ${{ !inputs.dry-run }}
@@ -292,7 +292,7 @@ jobs:
           ARTIFACTHUB_URL="https://artifacthub.io/packages/helm/camunda/camunda-platform/${VERSION}"
           REKOR_URL="https://search.sigstore.dev/?logIndex=${REKOR_LOG_INDEX}"
 
-          cat >> $GITHUB_STEP_SUMMARY << EOF
+          cat >> "$GITHUB_STEP_SUMMARY" << EOF
           ## 🚀 Helm Chart ${VERSION} Released
 
           | | |
@@ -306,14 +306,16 @@ jobs:
 
           # Add image versions if available
           if [[ -n "${IMAGE_VERSIONS}" ]]; then
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "### Component Images" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "| Component | Version |" >> $GITHUB_STEP_SUMMARY
-            echo "|-----------|---------|" >> $GITHUB_STEP_SUMMARY
-            echo "${IMAGE_VERSIONS}" | while IFS=': ' read -r component version; do
-              [[ -n "${component}" && -n "${version}" ]] && echo "| ${component} | \`${version}\` |" >> $GITHUB_STEP_SUMMARY
-            done
+            {
+              echo ""
+              echo "### Component Images"
+              echo ""
+              echo "| Component | Version |"
+              echo "|-----------|---------|"
+              echo "${IMAGE_VERSIONS}" | while IFS=': ' read -r component version; do
+                [[ -n "${component}" && -n "${version}" ]] && echo "| ${component} | \`${version}\` |"
+              done
+            } >> "$GITHUB_STEP_SUMMARY"
           fi
 
           # Add traceability if we have source info
@@ -321,7 +323,7 @@ jobs:
             SHORT_SHA="${COMMIT_SHA:0:7}"
             COMMIT_URL="https://github.com/${{ github.repository }}/commit/${COMMIT_SHA}"
 
-            cat >> $GITHUB_STEP_SUMMARY << EOF
+            cat >> "$GITHUB_STEP_SUMMARY" << EOF
 
           ### Traceability
 
@@ -332,7 +334,7 @@ jobs:
           EOF
           fi
 
-          cat >> $GITHUB_STEP_SUMMARY << EOF
+          cat >> "$GITHUB_STEP_SUMMARY" << EOF
 
           ### Install
 
@@ -346,7 +348,7 @@ jobs:
       - name: Add dry-run info to workflow summary
         if: ${{ inputs.dry-run }}
         run: |
-          cat >> $GITHUB_STEP_SUMMARY << EOF
+          cat >> "$GITHUB_STEP_SUMMARY" << EOF
           ## 🧪 DRY RUN 🧪 Helm Chart ${{ steps.metadata.outputs.version }} Release Rehearsal
 
           | | |
@@ -394,7 +396,7 @@ jobs:
           exportEnv: false
 
       - name: Generate GitHub token
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
         id: generate-github-token
         with:
           app-id: ${{ steps.vault-harbor.outputs.GH_APP_ID_DISTRO_CI }}
