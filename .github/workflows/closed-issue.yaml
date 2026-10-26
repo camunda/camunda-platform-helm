@@ -9,6 +9,8 @@ jobs:
   update-closed-at-field:
     name: Update closed at field
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
     steps:
       - name: Create URL to the run output
         id: vars
@@ -21,9 +23,10 @@ jobs:
         id: vault-harbor
         with:
           url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          method: jwt
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           secrets: |
             secret/data/products/distribution/ci GH_APP_ID_DISTRO_CI;
             secret/data/products/distribution/ci GH_APP_PRIVATE_KEY_DISTRO_CI;

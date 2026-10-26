@@ -120,7 +120,8 @@ jobs:
   push:
     needs: chores
     if: needs.chores.outputs.committed == 'true'
-    permissions: {}
+    permissions:
+      id-token: write
     uses: ./.github/workflows/commit-generated-template.yaml
     with:
       artifact-name: chart-chores-${{ github.run_id }}-${{ github.run_attempt }}
@@ -128,5 +129,6 @@ jobs:
       target-ref: ${{ github.head_ref || github.ref_name }}
     secrets:
       VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
-      VAULT_ROLE_ID: ${{ secrets.VAULT_ROLE_ID }}
-      VAULT_SECRET_ID: ${{ secrets.VAULT_SECRET_ID }}
+      VAULT_JWT_PATH: ${{ secrets.VAULT_JWT_PATH }}
+      VAULT_JWT_ROLE: ${{ secrets.VAULT_JWT_ROLE }}
+      VAULT_JWT_AUDIENCE: ${{ secrets.VAULT_JWT_AUDIENCE }}
