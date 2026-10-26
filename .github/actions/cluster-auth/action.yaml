@@ -31,6 +31,8 @@ runs:
       with:
         app-id:      ${{ env.GH_APP_ID }}
         private-key: ${{ env.GH_APP_KEY }}
+        permission-administration: write
+        permission-deployments: write
 
     - name: Authenticate to GKE
       if: inputs.platform == 'gke' && inputs.auth-data == ''
@@ -74,7 +76,7 @@ runs:
         TELEPORT_PROXY: ${{ env.INFRA_TELEPORT_PROXY || 'camunda.teleport.sh:443' }}
         TELEPORT_TOKEN: ${{ env.TELEPORT_TOKEN }}
         KUBERNETES_CLUSTER: ${{ env.CLUSTER_NAME }}
-      run: |
+      run: | # zizmor: ignore[github-env]
         set -euo pipefail
 
         MAX_RETRIES=3
@@ -156,12 +158,14 @@ runs:
     - name: Authenticate via var
       if: inputs.auth-data != ''
       shell: bash
+      env:
+        INPUTS_AUTH_DATA: ${{ inputs.auth-data }}
       run: |
         ENC_FILE="$(mktemp)"
         trap 'rm -f "${ENC_FILE}"' EXIT
         
         mkdir -p "$HOME/.kube"
-        echo "${{ inputs.auth-data }}" | base64 -d > "${ENC_FILE}"
+        echo "${INPUTS_AUTH_DATA}" | base64 -d > "${ENC_FILE}"
         openssl enc -aes-256-cbc -d -in "${ENC_FILE}" -out "$HOME/.kube/config" \
                -pass pass:"${{ steps.generate-github-token.outputs.token }}" -pbkdf2
         chmod 600 "$HOME/.kube/config"
