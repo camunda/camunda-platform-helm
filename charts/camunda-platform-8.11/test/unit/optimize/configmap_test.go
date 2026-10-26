@@ -131,6 +131,7 @@ func (s *ConfigMapTemplateTest) TestDatabaseOverrides() {
 				"identity.enabled":                         "true",
 				"optimize.enabled":                         "true",
 				"optimize.database.elasticsearch.enabled":  "true",
+				"optimize.database.elasticsearch.url.host": "elasticsearch",
 				"optimize.database.elasticsearch.url.port": "9201",
 			},
 			Verifier: func(t *testing.T, output string, err error) {

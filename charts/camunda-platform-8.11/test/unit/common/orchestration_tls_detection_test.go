@@ -420,6 +420,7 @@ func (s *OrchestrationTLSDetectionTest) TestDetectionWarnings() {
 			// warning at all".
 			Name:        "TestMultiDocumentWithoutTLSDoesNotWarn",
 			ValuesFiles: orchestrationTLSFixture("multi-document-plain"),
+			Values:      map[string]string{"orchestration.data.secondaryStorage.elasticsearch.url": "http://elasticsearch:9200"},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.Error(t, err)
 				require.Contains(t, err.Error(), "could not find template")
