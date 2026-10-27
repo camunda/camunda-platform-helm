@@ -2,10 +2,13 @@ name: Repo - Copilot Review
 
 on:
   pull_request_target:  # zizmor: ignore[dangerous-triggers]
-    types: [opened, ready_for_review]
+    types: [opened, ready_for_review, labeled]
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  group: >-
+    ${{ github.event.action == 'labeled' && github.event.label.name != 'ai-review'
+        && format('{0}-ignored-{1}', github.workflow, github.run_id)
+        || format('{0}-{1}', github.workflow, github.event.pull_request.number) }}
   cancel-in-progress: true
 
 permissions:
@@ -14,7 +17,10 @@ permissions:
 jobs:
   request:
     name: Request Copilot review
-    if: ${{ !github.event.pull_request.draft && github.event.pull_request.user.type != 'Bot' }}
+    if: >-
+      (github.event.action == 'labeled' && github.event.label.name == 'ai-review') ||
+      (github.event.action != 'labeled' && !github.event.pull_request.draft &&
+       !contains(fromJSON('["renovate[bot]", "distro-ci[bot]"]'), github.event.pull_request.user.login))
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
