@@ -9,7 +9,12 @@ permissions: {}
 jobs:
   copilot-review:
     permissions:
+      issues: read
       pull-requests: write
-    uses: camunda/infraex-common-config/.github/workflows/copilot-review-global.yml@0b61f2d2aff816cd7527ae859bae5450a47b27c6
+    uses: camunda/infraex-common-config/.github/workflows/copilot-review-global.yml@4d09c296c3a3696e871e402f5116317e71564c82 # 2.4.0
     with:
-      skip-authors: '["renovate[bot]", "distro-ci[bot]"]'
+      skip-authors: '["renovate[bot]", "dependabot[bot]", "smx-misc[bot]", "distro-ci[bot]"]'
+    secrets:
+      VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
+      VAULT_ROLE_ID: ${{ secrets.VAULT_ROLE_ID }}
+      VAULT_SECRET_ID: ${{ secrets.VAULT_SECRET_ID }}
