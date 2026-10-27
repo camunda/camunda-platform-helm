@@ -44,7 +44,9 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
-    - kind: added
-      description: "Add quick install values with embedded H2"
     - kind: fixed
-      description: "Name chart v17 for Camunda 8.12 as the strict-values default in the unknown-key warnings"
+      description: "Reject empty Camunda Hub image tags in the 8.10 and 8.11 schemas"
+    - kind: fixed
+      description: "Render no 8.10 or 8.11 Elasticsearch or OpenSearch URL when none is configured"
+    - kind: fixed
+      description: "Align nginx compatibility shim removal target with the deprecation policy"
