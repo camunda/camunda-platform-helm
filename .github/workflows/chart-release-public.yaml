@@ -621,7 +621,7 @@ jobs:
       - name: Shepherd release-please PR through merge queue
         id: merge-queue
         continue-on-error: true
-        uses: camunda/infra-global-github-actions/ensure-pr-passes-merge-queue@95c6f97de08ce6befa8e1b222140676204d792fb # main
+        uses: camunda/infra-global-github-actions/ensure-pr-passes-merge-queue@85dbb218176a20bbedac15278ac3ff4d86672db4 # main
         with:
           pr-number: ${{ needs.post-release.outputs.pr-number }}
           app-id: ${{ steps.secrets.outputs.GH_APP_ID_DISTRO_CI }}
