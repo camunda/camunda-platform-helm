@@ -4,29 +4,12 @@ on:
   pull_request_target:  # zizmor: ignore[dangerous-triggers]
     types: [opened, ready_for_review, labeled]
 
-concurrency:
-  group: >-
-    ${{ github.event.action == 'labeled' && github.event.label.name != 'ai-review'
-        && format('{0}-ignored-{1}', github.workflow, github.run_id)
-        || format('{0}-{1}', github.workflow, github.event.pull_request.number) }}
-  cancel-in-progress: true
-
-permissions:
-  pull-requests: write
+permissions: {}
 
 jobs:
-  request:
-    name: Request Copilot review
-    if: >-
-      (github.event.action == 'labeled' && github.event.label.name == 'ai-review') ||
-      (github.event.action != 'labeled' && !github.event.pull_request.draft &&
-       !contains(fromJSON('["renovate[bot]", "distro-ci[bot]"]'), github.event.pull_request.user.login))
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - name: Request Copilot review
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR: ${{ github.event.pull_request.number }}
-          REPO: ${{ github.repository }}
-        run: gh api -X POST "repos/${REPO}/pulls/${PR}/requested_reviewers" -f 'reviewers[]=copilot-pull-request-reviewer[bot]' --silent
+  copilot-review:
+    permissions:
+      pull-requests: write
+    uses: camunda/infraex-common-config/.github/workflows/copilot-review-global.yml@0b61f2d2aff816cd7527ae859bae5450a47b27c6
+    with:
+      skip-authors: '["renovate[bot]", "distro-ci[bot]"]'
