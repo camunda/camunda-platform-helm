@@ -1,0 +1,26 @@
+name: Repo - Copilot Review
+
+on:
+  pull_request_target:  # zizmor: ignore[dangerous-triggers]
+    types: [opened, ready_for_review]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  pull-requests: write
+
+jobs:
+  request:
+    name: Request Copilot review
+    if: ${{ !github.event.pull_request.draft && github.event.pull_request.user.type != 'Bot' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Request Copilot review
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: gh api -X POST "repos/${REPO}/pulls/${PR}/requested_reviewers" -f 'reviewers[]=copilot-pull-request-reviewer[bot]' --silent
