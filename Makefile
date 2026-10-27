@@ -248,7 +248,7 @@ go.license-verify:
 .tools.asdf-plugins-add:
 	@# Add plugins from .tool-versions file within the repo.
 	@# If the plugin is already installed asdf exits with 2, so grep is used to handle that.
-	@for plugin in $$(awk '{print $$1}' .tool-versions); do \
+	@for plugin in $$(awk '!/^[[:space:]]*#/ && NF {print $$1}' .tool-versions); do \
 		echo "$${plugin}"; \
 		asdf plugin add $${plugin} 2>&1 | (grep "already added" && exit 0); \
 	done
