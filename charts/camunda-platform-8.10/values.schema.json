@@ -1078,22 +1078,22 @@
                                     "properties": {
                                         "clientId": {
                                             "type": "string",
-                                            "description": "defines the client id, which is used by Camunda Hub in authentication flows. This 8.10 override replaces global.identity.auth.camundaHub.webModeler.clientId.",
+                                            "description": "can be used to override global.identity.auth.webModeler.clientId for Camunda Hub authentication flows.",
                                             "default": ""
                                         },
                                         "clientApiAudience": {
                                             "type": "string",
-                                            "description": "defines the audience which is used by Camunda Hub's client API. This 8.10 override replaces global.identity.auth.camundaHub.webModeler.clientApiAudience.",
+                                            "description": "can be used to override global.identity.auth.webModeler.clientApiAudience for Camunda Hub's client API.",
                                             "default": ""
                                         },
                                         "publicApiAudience": {
                                             "type": "string",
-                                            "description": "defines the audience which is used by Camunda Hub's public API. This 8.10 override replaces global.identity.auth.camundaHub.webModeler.publicApiAudience.",
+                                            "description": "can be used to override global.identity.auth.webModeler.publicApiAudience for Camunda Hub's public API.",
                                             "default": ""
                                         },
                                         "redirectUrl": {
                                             "type": "string",
-                                            "description": "defines the root URL which is used by Keycloak to access Camunda Hub. This 8.10 override replaces global.identity.auth.camundaHub.webModeler.redirectUrl.",
+                                            "description": "can be used to override global.identity.auth.webModeler.redirectUrl with the root URL Keycloak uses to access Camunda Hub.",
                                             "default": ""
                                         }
                                     },
