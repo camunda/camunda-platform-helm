@@ -2316,7 +2316,7 @@
                         "string",
                         "null"
                     ],
-                    "description": "can be used to make Camunda Hub available on a custom sub-path. This 8.10 override replaces camundaHub.webModeler.contextPath.",
+                    "description": "can be used to override webModeler.contextPath for Camunda Hub.",
                     "default": null,
                     "nullable": true
                 },
@@ -2525,7 +2525,7 @@
                 },
                 "contextPath": {
                     "type": "string",
-                    "description": "can be used to make WebModeler available on a custom sub-path. This is mainly used to run the Camunda web applications under a single domain. For the 8.10 Camunda Hub override, use camundaHub.contextPath instead of camundaHub.webModeler.contextPath.",
+                    "description": "can be used to make WebModeler available on a custom sub-path. This is mainly used to run the Camunda web applications under a single domain. To override this legacy value for Camunda Hub, use camundaHub.contextPath.",
                     "default": ""
                 },
                 "security": {
@@ -3637,7 +3637,7 @@
                         },
                         "deploymentStrategy": {
                             "type": "string",
-                            "description": "can be used to set the restapi Deployment update strategy, RollingUpdate or Recreate. Recreate requires webModeler.persistence.enabled and webModeler.persistence.existingClaim, else the render fails; it adds downtime on each upgrade. For the 8.10 Camunda Hub override, use camundaHub.persistence.deploymentStrategy instead of camundaHub.webModeler.persistence.deploymentStrategy.",
+                            "description": "can be used to set the restapi Deployment update strategy, RollingUpdate or Recreate. Recreate requires webModeler.persistence.enabled and webModeler.persistence.existingClaim, else the render fails; it adds downtime on each upgrade. To override this legacy value for Camunda Hub, use camundaHub.persistence.deploymentStrategy.",
                             "default": "RollingUpdate",
                             "enum": [
                                 "RollingUpdate",
