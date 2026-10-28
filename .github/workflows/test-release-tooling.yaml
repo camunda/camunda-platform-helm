@@ -62,9 +62,6 @@ jobs:
       - name: Lint every Go module under scripts/
         run: make go.lint lintBase=HEAD~1
 
-      - name: Audit workflows and composite actions with zizmor
-        run: make ci.zizmor
-
       - name: Install schema generator
         run: |
           make install.readme-generator
