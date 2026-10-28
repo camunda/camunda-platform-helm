@@ -157,14 +157,6 @@ integration:
       shortname: hubco
       tier: 2
       enabled: true
-    - id: hub-double-enable
-      shortname: hubde
-      tier: 2
-      enabled: true
-    - id: hub-pinned-images
-      shortname: hubpi
-      tier: 2
-      enabled: true
     - id: hub-external-db
       shortname: hubdb
       tier: 2

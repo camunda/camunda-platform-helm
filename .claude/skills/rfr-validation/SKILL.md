@@ -55,7 +55,7 @@ A scenario that declares no `tier:` matches neither filter and is reachable only
 | `docstr` | document store feature |
 | `cprst` / `cprsu` | component-persistence, install and upgrade |
 | `secfl` | file-backed secret store |
-| `hub*` | Camunda Hub shapes: `huble`/`hublu` legacy, `hubmu` mixed, `hubwo` web-modeler-only, `hubco` console-only, `hubde` double-enable, `hubpi` pinned images, `hubdb` external DB |
+| `hub*` | Camunda Hub shapes: `huble`/`hublu` legacy, `hubmu` mixed, `hubwo` web-modeler-only, `hubco` console-only, `hubdb` external DB |
 | `mns` / `mns2` / `mnop` / `ptnt` | multi-namespace topologies and physical tenants |
 | `shde2` | shadow E2E |
 | `entv` | enterprise values overlay (`values-enterprise.yaml`) |
