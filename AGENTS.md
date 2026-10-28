@@ -42,8 +42,7 @@ make helm.lint-all                                           # Lint all matching
 make go.fmt                                                  # Enforce Go formatting
 make go.lint                                                 # golangci-lint every scripts/ module (issues new since origin/main)
 make go.complexity                                           # Fail on changed scripts/ functions above cognitive 30, cyclomatic 30 or 250 lines, on added or grown over-limit run blocks, and on shellcheck findings in changed composite actions
-pre-commit run --all-files                                   # Hooks that lint-global runs on every PR (zizmor high severity, action pin spacing)
-make ci.lint                                                 # actionlint on every workflow, shellcheck on every tracked .sh file
+pre-commit run --all-files                                   # Hooks that lint-global runs on every PR (actionlint, shellcheck, zizmor high severity, action pin spacing)
 make go.addlicense-check chartPath=charts/camunda-platform-8.10  # Check Apache headers
 make go.addlicense-run chartPath=charts/camunda-platform-8.10    # Add missing headers
 make precommit.chores                                        # Maintainer precommit chores
