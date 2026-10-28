@@ -1078,7 +1078,7 @@
                                     "properties": {
                                         "clientId": {
                                             "type": "string",
-                                            "description": "can be used to override global.identity.auth.webModeler.clientId for Camunda Hub authentication flows.",
+                                            "description": "can be used to override global.identity.auth.webModeler.clientId for Camunda Hub authentication flows. With the bundled Identity, also set the CAMUNDA_WEBMODELER_CLIENT_ID environment variable in identity.env to the same value so that Identity registers this client ID.",
                                             "default": ""
                                         },
                                         "clientApiAudience": {
