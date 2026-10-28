@@ -57,9 +57,9 @@ automated workflow steps follow Conventional Commits with the `chore(ci):` type.
   `# zizmor: ignore[<audit>]` only when the finding is a false positive.
 - **ALWAYS** leave no lint finding in CI shell code. The actionlint pre-commit hook checks every
   workflow and the shellcheck hook checks every shell script except `.bats` tests.
-  `pre-commit run --all-files` runs them locally, and `lint-global` runs them on every PR and in the
-  merge queue as `lint / pre-commit`. Fix a finding; use a `# shellcheck disable=SCxxxx` line only
-  when the code is right as written.
+  `pre-commit run --all-files` runs them locally, and `lint-global` runs them on every PR as
+  `lint / pre-commit`. Fix a finding; use a `# shellcheck disable=SCxxxx` line only when the code is
+  right as written.
 - **ALWAYS** start a multi-line `run:` block that you add or change with `set -euo pipefail`. When
   you add it to an existing block, check that the block reads no unset variable and has no pipeline
   whose first command may fail on purpose (`grep` with no match, `… | head`).
