@@ -742,7 +742,7 @@ global:
       ## regardless of whether Camunda Hub is enabled via camundaHub.enabled or the legacy
       ## webModeler.enabled flag. Unset values fall back to the legacy section.
       camundaHub:
-        ## @param global.identity.auth.camundaHub.clientId can be used to override global.identity.auth.webModeler.clientId for Camunda Hub authentication flows. With the bundled Identity, also set the CAMUNDA_WEBMODELER_CLIENT_ID environment variable in identity.env to the same value so that Identity registers this client ID.
+        ## @param global.identity.auth.camundaHub.clientId can be used to override global.identity.auth.webModeler.clientId for Camunda Hub authentication flows. When Management Identity registers clients in Keycloak, also set the CAMUNDA_WEBMODELER_CLIENT_ID environment variable in identity.env to the same value.
         clientId: ""
         ## @param global.identity.auth.camundaHub.clientApiAudience can be used to override global.identity.auth.webModeler.clientApiAudience for Camunda Hub's client API.
         clientApiAudience: ""
