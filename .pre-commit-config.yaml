@@ -11,7 +11,7 @@ repos:
         # shortcut: release workflows are fixed in a separate PR that test-runs them; drop this exclude then.
         exclude: ^\.github/(workflows/(chart-build-dev|chart-promote-rc|chart-release-public)\.yaml|actions/observe-build-status/action\.yml)$
   - repo: https://github.com/zizmorcore/zizmor-pre-commit
-    rev: v1.31.1
+    rev: c92afdf2c6ca336aaa8f39e2bd8d48f62dbd8e1f  # frozen: v1.31.1
     hooks:
       - id: zizmor
         args: [--no-progress, --min-severity=high, --config=.github/zizmor.yml]
