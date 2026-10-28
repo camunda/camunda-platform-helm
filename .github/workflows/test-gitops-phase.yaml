@@ -19,10 +19,6 @@ name: Test - Camunda Hub GitOps Phases
         required: false
       VAULT_JWT_AUDIENCE:
         required: false
-      VAULT_ROLE_ID:
-        required: false
-      VAULT_SECRET_ID:
-        required: false
 
 permissions:
   contents: read
@@ -62,9 +58,10 @@ jobs:
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc  # v4.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          method: jwt
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           exportEnv: false
           secrets: |
             secret/data/products/distribution/ci DOCKERHUB_USERNAME;
