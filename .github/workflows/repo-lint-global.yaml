@@ -18,6 +18,7 @@ jobs:
   lint:
     permissions:
       contents: read
+      id-token: write
     uses: camunda/infraex-common-config/.github/workflows/lint-global.yml@06dbc3c3960fe23138de789e3bf80065fe6c52e0 # 2.3.11
     secrets:
       VAULT_ADDR: ${{ secrets.VAULT_ADDR }}

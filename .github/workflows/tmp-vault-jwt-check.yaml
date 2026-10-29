@@ -1,0 +1,36 @@
+name: TMP - Vault JWT check
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+    steps:
+      - name: Import Vault secrets
+        id: vault
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: jwt
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/infrastructure-experience/ci/common SLACK_BOT_TOKEN;
+            secret/data/products/infrastructure-experience/ci/common GITHUB_APP_ID;
+            secret/data/products/infrastructure-experience/ci/common GITHUB_APP_PRIVATE_KEY;
+      - name: Check values are non-empty
+        env:
+          SLACK: ${{ steps.vault.outputs.SLACK_BOT_TOKEN }}
+          APP_ID: ${{ steps.vault.outputs.GITHUB_APP_ID }}
+          APP_KEY: ${{ steps.vault.outputs.GITHUB_APP_PRIVATE_KEY }}
+        run: |
+          for v in SLACK APP_ID APP_KEY; do [ -n "${!v}" ] || { echo "$v empty"; exit 1; }; done
+          echo ok
