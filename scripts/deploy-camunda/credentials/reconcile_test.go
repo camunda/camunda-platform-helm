@@ -23,6 +23,7 @@ import (
 	"maps"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -76,6 +77,7 @@ type fakeCluster struct {
 	stamps     []string
 	bootNames  []string
 	bootDBPw   string
+	bootCmd    []string
 	failES     bool
 	failPG     bool
 	es         string
@@ -178,7 +180,7 @@ func (f *fakeCluster) kubectl(_ context.Context, stdin []byte, args ...string) (
 				return nil, nil
 			}
 			if flagValue(args, "-o") == "json" {
-				return []byte(`{"spec":{"template":{"spec":{"containers":[{"name":"keycloak","image":"kc:26","env":[{"name":"KC_DB_URL","value":"jdbc:x"},{"name":"KC_DB_PASSWORD","valueFrom":{"secretKeyRef":{"name":"creds","key":"kc-db"}}},{"name":"KC_HOSTNAME","value":"h"}]}]}}}}`), nil
+				return []byte(`{"spec":{"template":{"spec":{"containers":[{"name":"keycloak","image":"kc:26","command":["/opt/keycloak/bin/kc.sh"],"env":[{"name":"KC_DB_URL","value":"jdbc:x"},{"name":"KC_DB_PASSWORD","valueFrom":{"secretKeyRef":{"name":"creds","key":"kc-db"}}},{"name":"KC_HOSTNAME","value":"h"}]}]}}}}`), nil
 			}
 			return []byte(args[1] + "/" + args[2]), nil
 		}
@@ -243,6 +245,7 @@ func (f *fakeCluster) kubectl(_ context.Context, stdin []byte, args ...string) (
 		}
 		f.bootstraps++
 		f.bootNames = append(f.bootNames, obj.Metadata.Name)
+		f.bootCmd = obj.Spec.Containers[0].Command
 		tmp := f.secrets[ns+"/"+obj.Metadata.Name]
 		for _, e := range obj.Spec.Containers[0].Env {
 			if e.Name == "KC_DB_PASSWORD" && e.ValueFrom != nil && e.ValueFrom.SecretKeyRef != nil {
@@ -418,6 +421,9 @@ func TestReconcileCredentials_ResetsAdminThroughBootstrapWhenNoKnownPasswordWork
 	}
 	if f.bootstraps != 1 || f.kc["master/admin"] != "new-admin" {
 		t.Fatalf("bootstraps=%d admin rotated=%v", f.bootstraps, f.kc["master/admin"] == "new-admin")
+	}
+	if !slices.Equal(f.bootCmd, []string{"/opt/keycloak/bin/kc.sh"}) {
+		t.Errorf("bootstrap pod command = %v, want the Deployment's kc.sh command", f.bootCmd)
 	}
 	for k := range f.kc {
 		if strings.Contains(k, "deploy-camunda-reconcile-") {
@@ -1047,8 +1053,24 @@ func TestDogfoodCredentialStores_KeysExistInTheManifest(t *testing.T) {
 const (
 	postgresImage      = "postgres:16-alpine"
 	elasticsearchImage = "docker.elastic.co/elasticsearch/elasticsearch:8.18.0"
-	keycloakImage      = "quay.io/keycloak/keycloak:26.7.5"
 )
+
+// keycloakImage is the internal-keycloak-26 chart default, which every Keycloak
+// companion, dogfood included, deploys; reading it keeps the integration tests
+// on the image Renovate maintains.
+var keycloakImage = func() string {
+	raw, err := os.ReadFile(filepath.Join("..", "..", "..", "charts", "internal-keycloak-26", "values.yaml"))
+	if err != nil {
+		panic(err)
+	}
+	var v struct {
+		Image struct{ Registry, Repository, Tag string } `yaml:"image"`
+	}
+	if err := yaml.Unmarshal(raw, &v); err != nil {
+		panic(err)
+	}
+	return v.Image.Registry + "/" + v.Image.Repository + ":" + v.Image.Tag
+}()
 
 func TestCredentialStoreIntegrationImages_MatchTheDogfoodStores(t *testing.T) {
 	repoRoot := filepath.Join("..", "..", "..")
@@ -1068,12 +1090,15 @@ func TestCredentialStoreIntegrationImages_MatchTheDogfoodStores(t *testing.T) {
 		img, _ := v["image"].(map[string]any)
 		return fmt.Sprintf("%v/%v:%v", img["registry"], img["repository"], img["tag"])
 	}
-	kc := read("test/integration/companion-values/keycloak-dogfood.yaml")
+	for _, f := range []string{"keycloak.yaml", "keycloak-qa.yaml", "keycloak-fixed-issuer.yaml", "keycloak-dogfood.yaml"} {
+		if _, ok := read("test/integration/companion-values/" + f)["image"]; ok {
+			t.Errorf("keycloak: %s must not override the image; every Keycloak companion uses the internal-keycloak-26 chart default", f)
+		}
+	}
 	es := read("test/integration/companion-values/elasticsearch-dogfood.yaml")
 	pg := read("charts/internal-postgresql/values.yaml")
 	kcpg, _ := read("charts/internal-keycloak-26/values.yaml")["postgresql"].(map[string]any)
 	for name, pair := range map[string][2]string{
-		"keycloak":              {keycloakImage, image(kc)},
 		"elasticsearch":         {elasticsearchImage, fmt.Sprintf("docker.elastic.co/elasticsearch/elasticsearch:%v", es["imageTag"])},
 		"postgresql":            {"docker.io/" + postgresImage, image(pg)},
 		"keycloak's postgresql": {"docker.io/" + postgresImage, image(kcpg)},

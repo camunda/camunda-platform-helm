@@ -681,6 +681,7 @@ func (r *credentialReconciler) resetKeycloakAdmin(ctx context.Context, ns string
 			Containers: []corev1.Container{{
 				Name:            "bootstrap-admin",
 				Image:           src.Image,
+				Command:         src.Command,
 				Args:            bootstrapAdminArgs,
 				Env:             env,
 				SecurityContext: src.SecurityContext,

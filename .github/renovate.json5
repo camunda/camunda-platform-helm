@@ -456,6 +456,21 @@
   ],
   customManagers: [
     {
+      // The dogfood realm-hardening Job is a Camunda-release hook embedded as an
+      // extra manifest, so its Keycloak image is an inline 'image: <ref>:<tag>'
+      // string. Track it with the same depName as the internal-keycloak-26
+      // chart default so both land in one update.
+      customType: 'regex',
+      fileMatch: [
+        '^charts/camunda-platform-[^/]+/test/integration/scenarios/chart-full-setup/values/features/dogfood-hub\\.yaml$',
+      ],
+      datasourceTemplate: 'docker',
+      matchStrings: [
+        'image: (?<depName>quay\\.io/keycloak/keycloak):(?<currentValue>\\S+)',
+      ],
+      versioningTemplate: 'docker',
+    },
+    {
       // This is mainly used to Camunda alpha chart.
       customType: 'regex',
       fileMatch: [
