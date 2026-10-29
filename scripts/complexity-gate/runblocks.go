@@ -48,7 +48,7 @@ func checkRunBlocks(repoRoot string, all bool, out io.Writer) error {
 	if !all {
 		return nil
 	}
-	tracked, err := git(repoRoot, append([]string{"ls-files", "-z", "--"}, workflowScopes...)...)
+	tracked, err := git(repoRoot, append([]string{"ls-files", "-z", "--cached", "--others", "--exclude-standard", "--"}, workflowScopes...)...)
 	if err != nil {
 		return err
 	}

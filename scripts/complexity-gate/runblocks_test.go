@@ -112,6 +112,18 @@ func TestRunAllFailsOnUnparsableRunBlock(t *testing.T) {
 	assert.Contains(t, err.Error(), ".github/workflows/a.yaml: run block at line 7")
 }
 
+func TestRunAllChecksUntrackedRunBlocks(t *testing.T) {
+	root := newRepo(t, map[string]string{".github/workflows/a.yaml": workflow(step("Small", "echo ok"))})
+	writeFile(t, root, ".github/actions/new/action.yaml", action("Long", longScript(101)))
+
+	var out bytes.Buffer
+	err := run(root, "main", true, &out)
+
+	require.Error(t, err)
+	assert.Contains(t, out.String(), ".github/actions/new/action.yaml:5: runs/steps/Long: 101 lines > 100")
+	assert.Contains(t, err.Error(), "1 of 2 checked run block(s)")
+}
+
 func TestParseRunBlocksReadsOnlyStepRunKeys(t *testing.T) {
 	blocks, err := parseRunBlocks([]byte("on: push\n" +
 		"defaults:\n  run:\n    shell: bash\n" +
