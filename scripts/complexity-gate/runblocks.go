@@ -314,16 +314,13 @@ func collectSteps(steps *yaml.Node, path string, source []string, blocks *[]runB
 func foldedLines(source []string, stepColumn int) int {
 	lines := 0
 	for _, line := range source {
-		text := strings.TrimSpace(line)
-		if text == "" {
+		if strings.TrimSpace(line) == "" {
 			continue
 		}
 		if len(line)-len(strings.TrimLeft(line, " ")) < stepColumn {
 			break
 		}
-		if !strings.HasPrefix(text, "#") {
-			lines++
-		}
+		lines++
 	}
 	return lines
 }

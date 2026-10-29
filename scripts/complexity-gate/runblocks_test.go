@@ -81,7 +81,7 @@ func TestRunAllCountsFoldedRunBlocksBySourceLines(t *testing.T) {
 
 	var out bytes.Buffer
 	require.Error(t, run(root, "main", true, &out))
-	assert.Contains(t, out.String(), "jobs/build/steps/Folded: 101 lines > 100")
+	assert.Contains(t, out.String(), "jobs/build/steps/Folded: 102 lines > 100")
 	assert.NotContains(t, out.String(), "After")
 }
 
