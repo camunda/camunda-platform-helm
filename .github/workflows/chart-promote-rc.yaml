@@ -26,9 +26,7 @@ concurrency:
   group: ${{ github.workflow }}-${{ inputs.dev-tag }}
   cancel-in-progress: false
 
-permissions:
-  contents: write
-  pull-requests: write
+permissions: {}
 
 env:
   HARBOR_REGISTRY: registry.camunda.cloud
@@ -71,9 +69,10 @@ jobs:
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          method: jwt
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           secrets: |
             secret/data/products/distribution/ci GH_APP_ID_DISTRO_CI;
             secret/data/products/distribution/ci GH_APP_PRIVATE_KEY_DISTRO_CI;
@@ -82,11 +81,15 @@ jobs:
           exportEnv: false
 
       - name: Generate GitHub token
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
         id: generate-github-token
         with:
           app-id: ${{ steps.test-credentials-secret.outputs.GH_APP_ID_DISTRO_CI }}
           private-key: ${{ steps.test-credentials-secret.outputs.GH_APP_PRIVATE_KEY_DISTRO_CI }}
+          permission-contents: write
+          permission-pull-requests: write
+          permission-issues: write
+          permission-organization-projects: write
 
       # "Parse dev tag" runs before the commit SHA is known, so build release-tools
       # here. The binary in /tmp survives the later checkout-at-SHA.
@@ -110,8 +113,9 @@ jobs:
           HARBOR_REGISTRY_USER: ${{ steps.test-credentials-secret.outputs.HARBOR_REGISTRY_USER }}
           HARBOR_REGISTRY_PASSWORD: ${{ steps.test-credentials-secret.outputs.HARBOR_REGISTRY_PASSWORD }}
           DRY_RUN: ${{ inputs.dry-run }}
+          INPUTS_DEV_TAG: ${{ inputs.dev-tag }}
         run: |
-          input_tag="${{ inputs.dev-tag }}"
+          input_tag="${INPUTS_DEV_TAG}"
 
           # A rolling tag ({major}-dev-latest) needs the artifact's tag list to
           # resolve to a concrete {version}-dev-{sha}; fetch it for resolve-tag.
@@ -152,7 +156,7 @@ jobs:
             echo "::notice::Resolved to full SHA: ${sha}"
           fi
 
-          echo "sha=${sha}" | tee -a $GITHUB_OUTPUT
+          echo "sha=${sha}" | tee -a "$GITHUB_OUTPUT"
 
       - name: Checkout at commit SHA
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -208,13 +212,13 @@ jobs:
           
           package_file=$(ls /tmp/camunda-platform-*.tgz)
           echo "✅ Dev package exists: ${package_file}"
-          echo "package_file=${package_file}" | tee -a $GITHUB_OUTPUT
+          echo "package_file=${package_file}" | tee -a "$GITHUB_OUTPUT"
 
           package_root=/tmp/camunda-platform-package
           mkdir -p "${package_root}"
           tar -xzf "${package_file}" -C "${package_root}"
           package_chart_dir="${package_root}/camunda-platform"
-          echo "package_chart_dir=${package_chart_dir}" | tee -a $GITHUB_OUTPUT
+          echo "package_chart_dir=${package_chart_dir}" | tee -a "$GITHUB_OUTPUT"
 
           # Extract camunda_version (appVersion, .x-stripped), chart_dir_id, the
           # component-image-versions annotation and has_image_overrides from the
@@ -409,12 +413,12 @@ jobs:
           COMMIT_URL="https://github.com/${{ github.repository }}/commit/${COMMIT_SHA}"
 
           if [[ "${DRY_RUN}" == "true" ]]; then
-            echo "## 🧪 DRY RUN 🧪 RC Promotion Rehearsal: ${VERSION}" >> $GITHUB_STEP_SUMMARY
+            echo "## 🧪 DRY RUN 🧪 RC Promotion Rehearsal: ${VERSION}" >> "$GITHUB_STEP_SUMMARY"
           else
-            echo "## ✅ RC Promoted: ${VERSION}" >> $GITHUB_STEP_SUMMARY
+            echo "## ✅ RC Promoted: ${VERSION}" >> "$GITHUB_STEP_SUMMARY"
           fi
 
-          cat >> $GITHUB_STEP_SUMMARY << EOF
+          cat >> "$GITHUB_STEP_SUMMARY" << EOF
 
           | | |
           |---|---|
@@ -426,26 +430,30 @@ jobs:
 
           # Add image versions if available
           if [[ -n "${IMAGE_VERSIONS}" ]]; then
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "### Component Images" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "| Component | Version |" >> $GITHUB_STEP_SUMMARY
-            echo "|-----------|---------|" >> $GITHUB_STEP_SUMMARY
-            echo "${IMAGE_VERSIONS}" | while IFS=': ' read -r component version; do
-              [[ -n "${component}" && -n "${version}" ]] && echo "| ${component} | \`${version}\` |" >> $GITHUB_STEP_SUMMARY
-            done
+            {
+              echo ""
+              echo "### Component Images"
+              echo ""
+              echo "| Component | Version |"
+              echo "|-----------|---------|"
+              echo "${IMAGE_VERSIONS}" | while IFS=': ' read -r component version; do
+                [[ -n "${component}" && -n "${version}" ]] && echo "| ${component} | \`${version}\` |"
+              done
+            } >> "$GITHUB_STEP_SUMMARY"
           fi
 
           PR_URL="${{ steps.release-please.outputs.pr_url }}"
           if [[ -n "${PR_URL}" ]]; then
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "### Release Please PR" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "[${PR_URL}](${PR_URL})" >> $GITHUB_STEP_SUMMARY
+            {
+              echo ""
+              echo "### Release Please PR"
+              echo ""
+              echo "[${PR_URL}](${PR_URL})"
+            } >> "$GITHUB_STEP_SUMMARY"
           fi
 
           if [[ "${DRY_RUN}" == "true" ]]; then
-            cat >> $GITHUB_STEP_SUMMARY << EOF
+            cat >> "$GITHUB_STEP_SUMMARY" << EOF
 
           ### Dry Run Notes
 
@@ -454,7 +462,7 @@ jobs:
           - To rehearse the next stage: run **Chart - Release - Pipeline - 3 - Public** with \`${RC_TAG}\` and dry-run enabled.
           EOF
           else
-            cat >> $GITHUB_STEP_SUMMARY << EOF
+            cat >> "$GITHUB_STEP_SUMMARY" << EOF
 
           ### Next Steps
 
@@ -480,15 +488,18 @@ jobs:
     needs: [promote-rc]
     if: ${{ failure() && !inputs.dry-run }}
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
     steps:
       - name: Import Vault secrets
         id: secrets
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          method: jwt
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           secrets: |
             secret/data/products/distribution/ci SLACK_DISTRO_BOT_WEBHOOK;
           exportEnv: false

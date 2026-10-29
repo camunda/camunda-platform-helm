@@ -26,11 +26,11 @@ jobs:
       contents: read
       id-token: write
     steps:
-    - uses: camunda/infra-global-github-actions/start-build-monitor@ead99f6c9c536f5c47e443929d47e8fcfdb05a81  # start-build-monitor-1.0.1
+    - uses: camunda/infra-global-github-actions/start-build-monitor@ead99f6c9c536f5c47e443929d47e8fcfdb05a81 # start-build-monitor-1.0.1
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
     - name: Validate renovate config syntax
-      uses: docker://renovate/renovate
+      uses: docker://renovate/renovate:latest@sha256:96ded8bde6a33719cb57b66878637dec03c4ec8c06e0d725e29883655dda6744
       with:
         args: renovate-config-validator
 

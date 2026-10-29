@@ -240,6 +240,13 @@
       matchManagers: ['helm', 'helm-values', 'custom.regex'],
       matchUpdateTypes: ['major'],
     },
+    {
+      description: 'Re-enable major updates for annotated .tool-versions tools (still flagged for manual review).',
+      enabled: true,
+      matchManagers: ['custom.regex'],
+      matchFileNames: ['.tool-versions'],
+      matchUpdateTypes: ['major'],
+    },
     // Internal scripts do not need to be updated as they are not versioned outside of git
     // dependencies for those scripts will still be updated.
     {
@@ -571,6 +578,18 @@
       ],
       depNameTemplate: 'go',
       datasourceTemplate: 'golang-version',
+    // Tools the asdf manager does not know. Same annotation syntax as
+    // camunda/infraex-common-config, so this manager can go once the repo extends it.
+    },
+    {
+      customType: 'regex',
+      fileMatch: [
+        '(^|/)\\.tool-versions$',
+      ],
+      matchStrings: [
+        '# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)(?: extractVersion=(?<extractVersion>\\S+))?[ \\t]*\\r?\\n[^\\s#]+[ \\t]+(?<currentValue>[^\\s#]+)',
+      ],
+      extractVersionTemplate: '{{#if extractVersion}}{{{extractVersion}}}{{else}}^(?<version>.+)${{/if}}',
       versioningTemplate: 'semver',
     },
   ],

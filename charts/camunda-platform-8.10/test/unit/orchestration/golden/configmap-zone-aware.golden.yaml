@@ -10,7 +10,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: zeebe-broker
-    app.kubernetes.io/version: "8.10.6"
+    app.kubernetes.io/version: "8.10.7"
     camunda.io/broker-generation: zoned
     
     camunda.io/zone: "london"
@@ -140,7 +140,6 @@ data:
           type: "elasticsearch"
           elasticsearch:
             aws-enabled: false
-            url: "http://camunda-platform-test-elasticsearch:9200"
             username: ""
             password: "${VALUES_ELASTICSEARCH_PASSWORD:}"
             index-prefix: ""

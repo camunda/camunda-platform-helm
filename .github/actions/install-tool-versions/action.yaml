@@ -21,16 +21,18 @@ runs:
       shell: bash
       run: |
         cp -a .tool-versions .tool-versions-orig
-        echo "${{ inputs.tools }}" | sed '/^$/d' > .tool-versions-input
+        echo "${INPUTS_TOOLS}" | sed '/^$/d' > .tool-versions-input
         echo "⭐ Input tool names content:"
         cat .tool-versions-input
         grep -w -f .tool-versions-input .tool-versions-orig > .tool-versions
         echo "⭐ Filtered .tool-versions content:"
         cat .tool-versions
+      env:
+        INPUTS_TOOLS: ${{ inputs.tools }}
 
     - name: Determine asdf paths
       shell: bash
-      run: |
+      run: | # zizmor: ignore[github-env]
         set -euo pipefail
         home=""
         for candidate in "$HOME" "/github/home" "/home/runner"; do
@@ -75,7 +77,7 @@ runs:
 
     - name: Add asdf to PATH
       shell: bash
-      run: |
+      run: | # zizmor: ignore[github-env]
         echo "$ASDF_BIN_DIR" >> "$GITHUB_PATH"
         echo "$ASDF_DATA_DIR/shims" >> "$GITHUB_PATH"
 
@@ -165,7 +167,7 @@ runs:
               break
             else
               echo "⚠️ Attempt $attempt failed (exit code: $exit_code)"
-              if [ $attempt -lt $MAX_RETRIES ]; then
+              if [ "$attempt" -lt "$MAX_RETRIES" ]; then
                 echo "⏳ Waiting ${RETRY_DELAY}s before retry..."
                 sleep $RETRY_DELAY
                 RETRY_DELAY=$((RETRY_DELAY * 2))
@@ -201,7 +203,7 @@ runs:
           echo "=== asdf installer logs under $root ==="
           # Group each log in the Actions UI
           while IFS= read -r -d '' f; do
-            echo "::group::${f#$root/}"
+            echo "::group::${f#"$root"/}"
             cat "$f" || true
             echo "::endgroup::"
           done < <(find "$root" -type f -name install.log -print0)

@@ -140,7 +140,7 @@ global:
     ## Compatibility adaptations for ingress-nginx
     ##
     nginx:
-      ## @param global.compatibility.nginx.renderAnnotations if true, the chart injects the ingress-nginx annotations it used to ship as values defaults (`ssl-redirect`, `proxy-buffering`, `proxy-buffer-size` and `proxy-body-size` on the HTTP Ingress, `ssl-redirect`, `backend-protocol` and `proxy-buffer-size` on the gRPC Ingress). DEPRECATED since 15.0.0; the shim is removed in the next major and the annotations become opt-in. Set it to false to stop the chart injecting them, and set whatever your own controller needs through the annotations values instead.
+      ## @param global.compatibility.nginx.renderAnnotations if true, the chart injects the ingress-nginx annotations it used to ship as values defaults (`ssl-redirect`, `proxy-buffering`, `proxy-buffer-size` and `proxy-body-size` on the HTTP Ingress, `ssl-redirect`, `backend-protocol` and `proxy-buffer-size` on the gRPC Ingress). DEPRECATED since 15.0.0; the shim is removed in chart v17 (Camunda 8.12) and the annotations become opt-in. Set it to false to stop the chart injecting them, and set whatever your own controller needs through the annotations values instead.
       ##
       renderAnnotations: true
 
@@ -2996,7 +2996,8 @@ optimize:
     pullSecrets: []
 
   database:
-    # Elasticsearch configuration which is shared between the sub charts
+    # Elasticsearch connection for Optimize and the legacy Zeebe exporter. The chart deploys no Elasticsearch.
+    # The Orchestration Cluster falls back to this URL when orchestration.data.secondaryStorage.elasticsearch.url is empty.
     ## @extra optimize.database.elasticsearch
     ## @param optimize.database.elasticsearch.enabled if true, enables elasticsearch for zeebe exporter and optimize
     ## @param optimize.database.elasticsearch.external if true, tries to connect to an external elasticsearch
@@ -3031,11 +3032,12 @@ optimize:
       ## @param optimize.database.elasticsearch.url.port defines the elasticsearch port, under which elasticsearch can be accessed.
       url:
         protocol: http
-        host: "{{ .Release.Name }}-elasticsearch"
+        host: ""
         port: 9200
       ## @param optimize.database.elasticsearch.prefix (DEPRECATED) defines the prefix of the Elasticsearch indexes Optimize reads. The exporter writing them is configured by "orchestration.exporters.zeebe.index.prefix"; keep the two equal.
       prefix: "zeebe-record"
-    # Opensearch configuration which is shared between the sub charts
+    # OpenSearch connection for Optimize and the legacy Zeebe exporter. The chart deploys no OpenSearch.
+    # The Orchestration Cluster falls back to this URL when orchestration.data.secondaryStorage.opensearch.url is empty.
     ## @extra optimize.database.opensearch
     ## @param optimize.database.opensearch.enabled enabled external opensearch
     ## @param optimize.database.opensearch.aws.enabled Enabling AWS IRSA

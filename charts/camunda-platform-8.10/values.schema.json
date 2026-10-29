@@ -88,7 +88,7 @@
                             "properties": {
                                 "renderAnnotations": {
                                     "type": "boolean",
-                                    "description": "if true, the chart injects the ingress-nginx annotations it used to ship as values defaults (`ssl-redirect`, `proxy-buffering`, `proxy-buffer-size` and `proxy-body-size` on the HTTP Ingress, `ssl-redirect`, `backend-protocol` and `proxy-buffer-size` on the gRPC Ingress). DEPRECATED since 15.0.0; the shim is removed in the next major and the annotations become opt-in. Set it to false to stop the chart injecting them, and set whatever your own controller needs through the annotations values instead.",
+                                    "description": "if true, the chart injects the ingress-nginx annotations it used to ship as values defaults (`ssl-redirect`, `proxy-buffering`, `proxy-buffer-size` and `proxy-body-size` on the HTTP Ingress, `ssl-redirect`, `backend-protocol` and `proxy-buffer-size` on the gRPC Ingress). DEPRECATED since 15.0.0; the shim is removed in chart v17 (Camunda 8.12) and the annotations become opt-in. Set it to false to stop the chart injecting them, and set whatever your own controller needs through the annotations values instead.",
                                     "default": true
                                 }
                             }
@@ -4986,7 +4986,7 @@
                         "tag": {
                             "type": "string",
                             "description": "defines which image tag to use",
-                            "default": "8.10.6"
+                            "default": "8.10.7"
                         },
                         "digest": {
                             "type": "string",
@@ -6570,7 +6570,7 @@
                         "tag": {
                             "type": "string",
                             "description": "defines which image tag to use",
-                            "default": "8.10.6"
+                            "default": "8.10.7"
                         },
                         "digest": {
                             "type": "string",
@@ -6667,7 +6667,7 @@
                                         "host": {
                                             "type": "string",
                                             "description": "defines the elasticsearch host, ideally the service name inside the namespace.",
-                                            "default": "{{ .Release.Name }}-elasticsearch"
+                                            "default": ""
                                         },
                                         "port": {
                                             "type": "number",

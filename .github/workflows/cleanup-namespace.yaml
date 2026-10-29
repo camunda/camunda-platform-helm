@@ -41,7 +41,7 @@ jobs:
       id-token: write
       deployments: write 
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@ead99f6c9c536f5c47e443929d47e8fcfdb05a81  # start-build-monitor-1.0.1
+      - uses: camunda/infra-global-github-actions/start-build-monitor@ead99f6c9c536f5c47e443929d47e8fcfdb05a81 # start-build-monitor-1.0.1
       - name: CI Setup - Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -55,23 +55,27 @@ jobs:
         run: |
           config=$(cat ./.github/config/test-integration-matrix.yaml)
 
-          filtered=$(echo "$config" | yq -o json | jq -r '.matrix.distro[] | select(.platform == ("${{ inputs.distro-platform }}" | ascii_downcase))')
+          filtered=$(echo "$config" | yq -o json | jq -r --arg platform "${INPUTS_DISTRO_PLATFORM}" '.matrix.distro[] | select(.platform == ($platform | ascii_downcase))')
 
           if [[ -z "$filtered" ]]; then
-            echo "No distro found for platform ${{ inputs.distro-platform }}"
+            echo "No distro found for platform ${INPUTS_DISTRO_PLATFORM}"
             exit 1
           fi
 
-          echo "distro_config<<EOF" >> $GITHUB_OUTPUT
-          echo "$filtered" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          {
+            echo "distro_config<<EOF"
+            echo "$filtered"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+        env:
+          INPUTS_DISTRO_PLATFORM: ${{ inputs.distro-platform }}
 
       - name: Load infra config
         id: infra
         shell: bash
         run: |
           INFRA_CONFIG=".github/config/infra.yaml"
-          echo "CLUSTER_NAME=$(yq '.eks.cluster-name' "$INFRA_CONFIG")" >> $GITHUB_ENV
+          echo "CLUSTER_NAME=$(yq '.eks.cluster-name' "$INFRA_CONFIG")" >> "$GITHUB_ENV"
 
       - name: CI Setup - Install tools
         uses: ./.github/actions/install-tool-versions
@@ -86,9 +90,10 @@ jobs:
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          method: jwt
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           secrets: |
             secret/data/products/distribution/ci DISTRO_CI_GCP_GKE_CLUSTER_NAME;
             secret/data/products/distribution/ci DISTRO_CI_GCP_GKE_CLUSTER_LOCATION;
@@ -117,8 +122,10 @@ jobs:
       - name: CI Cleanup
         shell: bash
         run: |
-          kubectl annotate ns ${{ inputs.namespace }} cleaner/ttl=1s --overwrite=true
-          kubectl annotate ns ${{ inputs.namespace }} janitor/ttl=1s --overwrite=true
+          kubectl annotate ns "${INPUTS_NAMESPACE}" cleaner/ttl=1s --overwrite=true
+          kubectl annotate ns "${INPUTS_NAMESPACE}" janitor/ttl=1s --overwrite=true
+        env:
+          INPUTS_NAMESPACE: ${{ inputs.namespace }}
 
       - name: Observe build status
         if: always()

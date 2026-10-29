@@ -38,10 +38,11 @@ on:
           - gke,eks
       flows:
         description: The flows to run
-        default: ""
+        default: none
         required: false
         type: choice
         options:
+          - none
           - install
           - upgrade-patch
           - upgrade-minor
@@ -87,18 +88,18 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  actions: read
   contents: read
-  pull-requests: read
-  id-token: write
-  deployments: write
-  packages: read
-  statuses: write
 
 jobs:
   init:
     name: Generate chart matrix
     runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      packages: read
+      pull-requests: read
+      statuses: read
     outputs:
       matrix: ${{ steps.annotate-cache.outputs.matrix || steps.generate-chart-versions.outputs.matrix }}
       camunda-versions: ${{ steps.generate-chart-versions.outputs.camunda-versions }}
@@ -145,11 +146,12 @@ jobs:
         if: github.event_name == 'merge_group' || github.event_name == 'pull_request'
         env:
           GH_TOKEN: ${{ github.token }}
+          GITHUB_EVENT_MERGE_GROUP_HEAD_REF: ${{ github.event.merge_group.head_ref }}
         run: |
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
             echo "pr-head-sha=${{ github.event.pull_request.head.sha }}" >> "$GITHUB_OUTPUT"
           elif [[ "${{ github.event_name }}" == "merge_group" ]]; then
-            PR_NUM=$(echo "${{ github.event.merge_group.head_ref }}" | grep -oP 'pr-\K\d+')
+            PR_NUM=$(echo "${GITHUB_EVENT_MERGE_GROUP_HEAD_REF}" | grep -oP 'pr-\K\d+')
             if [[ -n "$PR_NUM" ]]; then
               SHA=$(gh pr view "$PR_NUM" --json headRefOid -q .headRefOid)
               echo "pr-head-sha=${SHA}" >> "$GITHUB_OUTPUT"
@@ -216,6 +218,9 @@ jobs:
       fail-fast: false
       matrix:
         version: ${{ fromJson(needs.init.outputs.camunda-versions) }}
+    permissions:
+      contents: read
+      id-token: write
     secrets:
       VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
       VAULT_JWT_PATH: ${{ secrets.VAULT_JWT_PATH }}
@@ -235,6 +240,9 @@ jobs:
       fail-fast: false
       matrix:
         version: ${{ fromJson(needs.init.outputs.camunda-versions) }}
+    permissions:
+      contents: read
+      id-token: write
     secrets:
       VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
       VAULT_JWT_PATH: ${{ secrets.VAULT_JWT_PATH }}
@@ -300,6 +308,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.init.outputs.matrix) }}
+    permissions:
+      contents: read
+      id-token: write
+      deployments: write
+      packages: read
+      statuses: write
     uses: ./.github/workflows/test-chart-version-template.yaml
     secrets: inherit
     with:
@@ -379,6 +393,8 @@ jobs:
     name: "Report CLA status"
     if: ${{ github.event_name == 'merge_group' }}
     runs-on: ubuntu-latest
+    permissions:
+      statuses: write
     steps:
       - name: Report license/cla status
         env:
@@ -402,6 +418,8 @@ jobs:
         (github.event_name == 'pull_request' && !startsWith(github.head_ref, 'release-please--'))
       }}
     runs-on: ubuntu-latest
+    permissions:
+      statuses: write
     steps:
       - name: Report release-chores as not applicable
         env:

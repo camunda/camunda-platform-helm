@@ -23,7 +23,7 @@ name: Notify - PR Activity
 on:
   # pull_request_target ensures secrets are available even for fork PRs.
   # Safe here because we never checkout PR code.
-  pull_request_target:
+  pull_request_target:  # zizmor: ignore[dangerous-triggers]
     types: [opened, ready_for_review, closed]
 
   workflow_call:
@@ -100,9 +100,11 @@ on:
     secrets:
       VAULT_ADDR:
         required: true
-      VAULT_ROLE_ID:
+      VAULT_JWT_PATH:
         required: true
-      VAULT_SECRET_ID:
+      VAULT_JWT_ROLE:
+        required: true
+      VAULT_JWT_AUDIENCE:
         required: true
 
 jobs:
@@ -121,6 +123,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      id-token: write
     timeout-minutes: 5
 
     steps:
@@ -136,13 +139,14 @@ jobs:
           go-version-file: scripts/notify-pr-activity/go.mod
 
       - name: Import Vault secrets
-        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc  # v4.0.0
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         id: vault-secrets
         with:
           url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          method: jwt
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           secrets: |
             secret/data/products/distribution/ci SLACK_DISTRO_BOT_WEBHOOK_GH;
           exportEnv: false

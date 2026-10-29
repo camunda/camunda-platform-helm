@@ -18,9 +18,11 @@ on:
     secrets:
       VAULT_ADDR:
         required: true
-      VAULT_ROLE_ID:
+      VAULT_JWT_PATH:
         required: true
-      VAULT_SECRET_ID:
+      VAULT_JWT_ROLE:
+        required: true
+      VAULT_JWT_AUDIENCE:
         required: true
 
 permissions: {}
@@ -30,7 +32,8 @@ jobs:
     if: inputs.target-ref != 'main' && !startsWith(inputs.target-ref, 'stable/') && !startsWith(inputs.target-ref, 'release-please--')
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    permissions: {}
+    permissions:
+      id-token: write
     env:
       BASE_SHA: ${{ inputs.base-sha }}
       TARGET_REF: ${{ inputs.target-ref }}
@@ -71,15 +74,16 @@ jobs:
         id: vault
         with:
           url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          method: jwt
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           secrets: |
             secret/data/products/distribution/ci GH_APP_ID_DISTRO_CI;
             secret/data/products/distribution/ci GH_APP_PRIVATE_KEY_DISTRO_CI;
           exportEnv: false
       - name: Generate repository-scoped token
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
         id: token
         with:
           app-id: ${{ steps.vault.outputs.GH_APP_ID_DISTRO_CI }}

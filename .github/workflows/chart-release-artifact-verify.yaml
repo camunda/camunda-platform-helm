@@ -16,7 +16,7 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@ead99f6c9c536f5c47e443929d47e8fcfdb05a81  # start-build-monitor-1.0.1
+      - uses: camunda/infra-global-github-actions/start-build-monitor@ead99f6c9c536f5c47e443929d47e8fcfdb05a81 # start-build-monitor-1.0.1
       - name: Install Cosign
         uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -27,9 +27,10 @@ jobs:
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          method: jwt
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           secrets: |
             secret/data/products/distribution/ci SLACK_DISTRO_BOT_WEBHOOK;
           exportEnv: false
@@ -59,7 +60,7 @@ jobs:
             chart_version_prefix="camunda-platform-${camunda_version}"
             chart_git_tags=$(git tag -l | grep "${chart_version_prefix}-" || true)
             for chart_tag_name in ${chart_git_tags}; do
-              chart_version="$(echo "${chart_tag_name}" | sed "s/${chart_version_prefix}-//")"
+              chart_version="${chart_tag_name/${chart_version_prefix}-/}"
               chart_cosign_verify_file="camunda-platform-${chart_version}-cosign-verify.sh"
 
               # Print chart details.
@@ -110,10 +111,12 @@ jobs:
           echo "##################################################"
           echo "# Export outputs."
           echo "##################################################"
-          echo "skipped-tags-count=${#skipped_tags[@]}" | tee >> $GITHUB_OUTPUT
-          echo "skipped-verifications-count=${#skipped_verifications[@]}" | tee >> $GITHUB_OUTPUT
-          echo "failed-verifications-count=${#failed_verifications[@]}" | tee >> $GITHUB_OUTPUT
-          echo "successful-verifications-count=${#successful_verifications[@]}" | tee >> $GITHUB_OUTPUT
+          {
+            echo "skipped-tags-count=${#skipped_tags[@]}"
+            echo "skipped-verifications-count=${#skipped_verifications[@]}"
+            echo "failed-verifications-count=${#failed_verifications[@]}"
+            echo "successful-verifications-count=${#successful_verifications[@]}"
+          } | tee >> "$GITHUB_OUTPUT"
 
           echo ""
           echo "##################################################"

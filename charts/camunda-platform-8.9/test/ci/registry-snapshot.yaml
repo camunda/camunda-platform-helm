@@ -142,7 +142,7 @@ integration:
           features:
             - rba
         - name: keycloak-original
-          enabled: true
+          enabled: false
           shortname: keorg
           auth: keycloak
           flow: install
@@ -334,7 +334,7 @@ integration:
           features:
             - legacy-exporter-args
         - name: keycloak-original
-          enabled: true
+          enabled: false
           shortname: keyco
           auth: keycloak
           flow: install

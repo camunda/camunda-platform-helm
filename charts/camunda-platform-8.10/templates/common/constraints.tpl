@@ -88,9 +88,6 @@ non-empty string such as global.identity.service.url.
   {{- if not (or $esEnabled $osEnabled) }}
     {{- fail "[camunda][error] global.topology.mode=optimize requires optimize.database.elasticsearch.enabled or optimize.database.opensearch.enabled, with url.host addressing the secondary storage the Orchestration Cluster exports to. This chart bundles no Elasticsearch, and with neither backend enabled Optimize renders an empty connection node list and reaches no storage at all." }}
   {{- end }}
-  {{- if and (or $esEnabled $osEnabled) (empty (include "optimize.effectiveDatabaseHost" .)) }}
-    {{- fail "[camunda][error] global.topology.mode=optimize requires a non-empty url.host for the enabled Optimize database backend. Elasticsearch takes precedence when both backends are enabled; without its host Optimize renders an unusable connection node and cannot reach secondary storage." }}
-  {{- end }}
   {{- if ne (include "optimize.authEnabled" .) "true" }}
     {{- fail "[camunda][error] global.topology.mode=optimize requires authentication; set optimize.security.authentication.method=oidc or global.identity.auth.enabled=true." }}
   {{- end }}
@@ -1079,6 +1076,9 @@ Usage:
   {{- if and .Values.global.noSecondaryStorage $secondaryStorageType (ne $secondaryStorageType "none") (eq (include "camundaPlatform.orchestrationEnabled" .) "true") }}
     {{- printf "\n[camunda][warning] global.noSecondaryStorage=true conflicts with orchestration.data.secondaryStorage.type=%s: the Orchestration Cluster uses %s secondary storage while the other components run without it. Set orchestration.data.secondaryStorage.type=none to run without secondary storage, or set global.noSecondaryStorage=false." $secondaryStorageType $secondaryStorageType }}
   {{- end }}
+  {{- if and (eq (include "camundaPlatform.orchestrationEnabled" .) "true") (eq (include "orchestration.secondaryStorage" .) "rdbms") (ne (include "orchestration.rdbmsUrlConfigured" .) "true") }}
+    {{- printf "\n%s" "[camunda][warning] The Orchestration Cluster uses RDBMS secondary storage, but no JDBC URL is set. Without a URL, the Orchestration Cluster fails at startup. Set orchestration.data.secondaryStorage.rdbms.url, set CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_URL in orchestration.env, or set camunda.data.secondary-storage.rdbms.url in orchestration.extraConfiguration. If the URL comes from another source, such as JVM options, ignore this warning." }}
+  {{- end }}
   {{- if not (semverCompare ">=4.0.0-0" .Capabilities.HelmVersion.Version) }}
     {{- printf "\n%s" (printf "[camunda][warning] Helm CLI %s detected. Helm v3 receives security fixes only until February 10, 2027 (https://helm.sh/blog/helm-v3-end-of-life/). Upgrade to Helm v4 before then: https://helm.sh/docs/overview" .Capabilities.HelmVersion.Version) }}
   {{- end }}
@@ -1087,6 +1087,17 @@ Usage:
     {{- printf "\n%s" "[camunda][warning] Camunda Hub is quiesced for the 8.9 to 8.10 database migration. Confirm all external writers are stopped and create a verified database backup before setting camundaHub.upgrade.phase to migrate." }}
   {{- else if eq $hubUpgradePhase "migrate" }}
     {{- printf "\n%s" "[camunda][warning] Camunda Hub is running the 8.9 to 8.10 database migration without serving traffic. Validate the migrated data before setting camundaHub.upgrade.phase back to normal." }}
+  {{- end }}
+  {{- $secondaryStorage := include "orchestration.secondaryStorage" . }}
+  {{- if and (eq (include "camundaPlatform.orchestrationEnabled" .) "true") (has $secondaryStorage (list "elasticsearch" "opensearch")) (ne (include "orchestration.searchUrlConfigured" (dict "context" . "type" $secondaryStorage)) "true") }}
+    {{- printf "\n[camunda][warning] The Orchestration Cluster uses %s secondary storage, but no URL is set. Without a URL, the Orchestration Cluster connects to http://localhost:9200. Set orchestration.data.secondaryStorage.%s.url, set CAMUNDA_DATA_SECONDARYSTORAGE_%s_URL in orchestration.env, or set camunda.data.secondary-storage.%s.url in orchestration.extraConfiguration. If the URL comes from another source, such as JVM options, ignore this warning." (ternary "Elasticsearch" "OpenSearch" (eq $secondaryStorage "elasticsearch")) $secondaryStorage (upper $secondaryStorage) $secondaryStorage }}
+  {{- end }}
+  {{- if and (eq (include "camundaPlatform.optimizeEnabled" .) "true") (or .Values.optimize.database.elasticsearch.enabled .Values.optimize.database.opensearch.enabled) (empty (include "optimize.effectiveDatabaseHost" .)) }}
+    {{- $optimizeBackend := "opensearch" }}
+    {{- if .Values.optimize.database.elasticsearch.enabled }}
+      {{- $optimizeBackend = "elasticsearch" }}
+    {{- end }}
+    {{- printf "\n[camunda][warning] Optimize uses %s, but optimize.database.%s.url.host is empty, so the chart renders no connection node for it. Elasticsearch takes precedence when both backends are enabled. Set optimize.database.%s.url.host. If the host comes from another source, such as optimize.extraConfiguration, ignore this warning." (ternary "Elasticsearch" "OpenSearch" (eq $optimizeBackend "elasticsearch")) $optimizeBackend $optimizeBackend }}
   {{- end }}
   {{- if .Values.global.testDeprecationFlags.existingSecretsMustBeSet }}
     {{/* TODO: Check if there are more existingSecrets to check */}}
@@ -1567,7 +1578,7 @@ The following values inside your values.yaml need to be set but were not:
     {{- $warningMessage := printf "%s %s %s"
         "[camunda][warning]"
         "DEPRECATION: global.compatibility.nginx.renderAnnotations is enabled, so the chart still injects the ingress-nginx annotations it used to ship as values defaults. They render whatever ingress controller you run, and only ingress-nginx reads them."
-        "The shim is removed in the next major. Set whatever your controller needs through global.ingress.annotations and orchestration.ingress.grpc.annotations, then set global.compatibility.nginx.renderAnnotations to false."
+        "The shim is removed in chart v17 (Camunda 8.12). Set whatever your controller needs through global.ingress.annotations and orchestration.ingress.grpc.annotations, then set global.compatibility.nginx.renderAnnotations to false."
     -}}
     {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
   {{- end }}

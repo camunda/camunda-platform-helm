@@ -411,8 +411,8 @@ func TestCredentialIsolationContract(test *testing.T) {
 			if publisher.Needs != scenario.producerName || !strings.Contains(publisher.If, ".outputs.committed == 'true'") {
 				test.Fatal("publisher must require a producer commit")
 			}
-			if publisher.Permissions == nil || len(publisher.Permissions) != 0 {
-				test.Fatal("caller publisher must explicitly disable token permissions")
+			if len(publisher.Permissions) != 1 || publisher.Permissions["id-token"] != "write" {
+				test.Fatal("caller publisher must have only id-token:write")
 			}
 			if publisher.Uses != "./.github/workflows/commit-generated-template.yaml" {
 				test.Fatal("publisher must use the isolated workflow")
@@ -430,8 +430,8 @@ func TestCredentialIsolationContract(test *testing.T) {
 		test.Fatal("update-modules must default to false")
 	}
 	provider := providerWorkflow.Jobs["push"]
-	if provider.Permissions == nil || len(provider.Permissions) != 0 {
-		test.Fatal("publisher job must explicitly disable token permissions")
+	if len(provider.Permissions) != 1 || provider.Permissions["id-token"] != "write" {
+		test.Fatal("publisher job must have only id-token:write")
 	}
 	if provider.If != "inputs.target-ref != 'main' && !startsWith(inputs.target-ref, 'stable/') && !startsWith(inputs.target-ref, 'release-please--')" {
 		test.Fatal("publisher must refuse protected target branches")

@@ -33,9 +33,9 @@ jobs:
       pull-requests: write
       id-token: write
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@ead99f6c9c536f5c47e443929d47e8fcfdb05a81  # start-build-monitor-1.0.1
+      - uses: camunda/infra-global-github-actions/start-build-monitor@ead99f6c9c536f5c47e443929d47e8fcfdb05a81 # start-build-monitor-1.0.1
       - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 1
 
@@ -43,20 +43,21 @@ jobs:
         uses: ./.github/actions/setup-deploy-camunda
 
       - name: Import secrets
-        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc  # v4.0.0
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         id: secrets
         with:
           url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          method: jwt
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           exportEnv: false
           secrets: |
             secret/data/products/distribution/ci HARBOR_REGISTRY_USER;
             secret/data/products/distribution/ci HARBOR_REGISTRY_PASSWORD;
 
       - name: Login to Camunda registry
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f  # v4
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4
         with:
           registry: registry.camunda.cloud
           username: ${{ steps.secrets.outputs.HARBOR_REGISTRY_USER }}
@@ -65,11 +66,13 @@ jobs:
       - name: Run validation
         run: |
           deploy-camunda check-enterprise-images \
-            --chart-version "${{ inputs.chart-version }}"
+            --chart-version "${INPUTS_CHART_VERSION}"
+        env:
+          INPUTS_CHART_VERSION: ${{ inputs.chart-version }}
 
       - name: Comment on PR (if validation failed)
         if: failure() && github.event_name == 'pull_request'
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
         with:
           script: |
             github.rest.issues.createComment({

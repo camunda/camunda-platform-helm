@@ -36,8 +36,8 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@ead99f6c9c536f5c47e443929d47e8fcfdb05a81  # start-build-monitor-1.0.1
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+      - uses: camunda/infra-global-github-actions/start-build-monitor@ead99f6c9c536f5c47e443929d47e8fcfdb05a81 # start-build-monitor-1.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ inputs.camunda-helm-git-ref }}
 
@@ -81,9 +81,12 @@ jobs:
           set -o pipefail
           go run . \
             --controller "${{ matrix.controller }}" \
-            --revision "${{ inputs.camunda-helm-git-ref }}" \
-            --revision-ref-name "${{ inputs.camunda-helm-git-ref-name }}" \
+            --revision "${INPUTS_CAMUNDA_HELM_GIT_REF}" \
+            --revision-ref-name "${INPUTS_CAMUNDA_HELM_GIT_REF_NAME}" \
             2>&1 | tee "${RUNNER_TEMP}/gitops-phase-${{ matrix.controller }}.log"
+        env:
+          INPUTS_CAMUNDA_HELM_GIT_REF: ${{ inputs.camunda-helm-git-ref }}
+          INPUTS_CAMUNDA_HELM_GIT_REF_NAME: ${{ inputs.camunda-helm-git-ref-name }}
 
       - name: Upload lifecycle diagnostics
         if: failure()

@@ -24,9 +24,9 @@ set -euo pipefail
 
 NAMESPACE="${TEST_NAMESPACE:?TEST_NAMESPACE must be set}"
 RELEASE="${RELEASE_NAME:-integration}"
-CONTEXT_FLAG=""
+CONTEXT_FLAG=()
 if [[ -n "${KUBE_CONTEXT:-}" ]]; then
-  CONTEXT_FLAG="--context ${KUBE_CONTEXT}"
+  CONTEXT_FLAG=(--context "${KUBE_CONTEXT}")
 fi
 
 CERT_VALIDITY_DAYS=365
@@ -83,10 +83,10 @@ openssl pkcs12 -export \
 create_or_replace_secret() {
   local name="$1"
   shift
-  if kubectl ${CONTEXT_FLAG} -n "$NAMESPACE" get secret "$name" >/dev/null 2>&1; then
-    kubectl ${CONTEXT_FLAG} -n "$NAMESPACE" delete secret "$name" --ignore-not-found
+  if kubectl "${CONTEXT_FLAG[@]}" -n "$NAMESPACE" get secret "$name" >/dev/null 2>&1; then
+    kubectl "${CONTEXT_FLAG[@]}" -n "$NAMESPACE" delete secret "$name" --ignore-not-found
   fi
-  kubectl ${CONTEXT_FLAG} -n "$NAMESPACE" create secret generic "$name" "$@"
+  kubectl "${CONTEXT_FLAG[@]}" -n "$NAMESPACE" create secret generic "$name" "$@"
 }
 
 create_or_replace_secret "orchestration-tls" \

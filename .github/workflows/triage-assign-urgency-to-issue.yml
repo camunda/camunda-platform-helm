@@ -75,10 +75,16 @@ on:
     secrets:
       VAULT_ADDR:
         required: true
+      VAULT_JWT_PATH:
+        required: false
+      VAULT_JWT_ROLE:
+        required: false
+      VAULT_JWT_AUDIENCE:
+        required: false
       VAULT_ROLE_ID:
-        required: true
+        required: false
       VAULT_SECRET_ID:
-        required: true
+        required: false
 
 jobs:
   assign-urgency-to-issue:
@@ -88,6 +94,7 @@ jobs:
       cancel-in-progress: false
     permissions:
       contents: read
+      id-token: write
     timeout-minutes: 10
     env:
       OWNER: ${{ github.repository_owner }}
@@ -111,24 +118,30 @@ jobs:
         with:
           tools: golang
       - name: Import Vault secrets
-        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc  # v4.0.0
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         id: vault-secrets
         with:
           url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          method: ${{ secrets.VAULT_JWT_ROLE != '' && 'jwt' || 'approle' }}
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
+          roleId: ${{ secrets.VAULT_JWT_ROLE == '' && secrets.VAULT_ROLE_ID || '' }}
+          secretId: ${{ secrets.VAULT_JWT_ROLE == '' && secrets.VAULT_SECRET_ID || '' }}
           secrets: |
             secret/data/products/distribution/ci GH_APP_ID_DISTRO_CI;
             secret/data/products/distribution/ci GH_APP_PRIVATE_KEY_DISTRO_CI;
           exportEnv: false
 
       - name: Generate GitHub token
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1  # v3.2.0
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
         id: generate-github-token
         with:
           app-id: ${{ steps.vault-secrets.outputs.GH_APP_ID_DISTRO_CI }}
           private-key: ${{ steps.vault-secrets.outputs.GH_APP_PRIVATE_KEY_DISTRO_CI }}
+          permission-issues: read
+          permission-members: read
+          permission-organization-projects: write
 
       - name: Set GitHub token
         run: |
@@ -136,9 +149,7 @@ jobs:
 
       - name: Dump event issue JSON
         run: |
-          cat << 'EOF'
-          ${{ toJSON(github.event.issue) }}
-          EOF
+          jq '.issue' "$GITHUB_EVENT_PATH"
 
       - name: Fetch issue and project data
         id: fetch_data
@@ -209,11 +220,11 @@ jobs:
 
       - name: Validate project membership
         id: validate_project
+        env:
+          ISSUE_DATA: ${{ steps.fetch_data.outputs.issue_data }}
+          PROJECT_DATA: ${{ steps.fetch_data.outputs.project_data }}
         run: |
           set -euo pipefail
-
-          ISSUE_DATA='${{ steps.fetch_data.outputs.issue_data }}'
-          PROJECT_DATA='${{ steps.fetch_data.outputs.project_data }}'
 
           # Skip closed issues: re-labeling a closed issue must not re-run urgency
           # calculation or overwrite its project Status field.
@@ -258,10 +269,10 @@ jobs:
       - name: Check labels
         id: check_labels
         if: steps.validate_project.outputs.in_target_project == 'true'
+        env:
+          ISSUE_DATA: ${{ steps.fetch_data.outputs.issue_data }}
         run: |
           set -euo pipefail
-
-          ISSUE_DATA='${{ steps.fetch_data.outputs.issue_data }}'
 
           # Extract issue type and labels
           ISSUE_TYPE=$(echo "$ISSUE_DATA" | jq -r '.issueType.name // empty')
@@ -441,10 +452,11 @@ jobs:
 
       - name: Update Urgency
         if: steps.validate_project.outputs.in_target_project == 'true'
+        env:
+          ISSUE_DATA: ${{ steps.fetch_data.outputs.issue_data }}
         run: |
           set -euo pipefail
 
-          ISSUE_DATA='${{ steps.fetch_data.outputs.issue_data }}'
           PROJECT_ITEM_ID='${{ steps.validate_project.outputs.project_item_id }}'
           PROJECT_V2_ID='${{ steps.validate_project.outputs.project_v2_id }}'
           NEW_URGENCY='${{ steps.validate_urgency.outputs.urgency }}'
@@ -578,7 +590,6 @@ jobs:
 
           PROJECT_V2_ID='${{ steps.validate_project.outputs.project_v2_id }}'
           PROJECT_ITEM_ID='${{ steps.validate_project.outputs.project_item_id }}'
-          NEW_URGENCY='${{ steps.validate_urgency.outputs.urgency }}'
 
           echo "🎯 Urgency is immediate - checking if issue should be moved to Ready"
 
@@ -673,6 +684,7 @@ jobs:
       cancel-in-progress: false
     permissions:
       contents: read
+      id-token: write
     timeout-minutes: 10
     env:
       ISSUE_NUMBER: ${{ inputs.issue_number }}
@@ -694,19 +706,25 @@ jobs:
         id: vault-secrets
         with:
           url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          method: ${{ secrets.VAULT_JWT_ROLE != '' && 'jwt' || 'approle' }}
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
+          roleId: ${{ secrets.VAULT_JWT_ROLE == '' && secrets.VAULT_ROLE_ID || '' }}
+          secretId: ${{ secrets.VAULT_JWT_ROLE == '' && secrets.VAULT_SECRET_ID || '' }}
           secrets: |
             secret/data/products/distribution/ci GH_APP_ID_DISTRO_CI;
             secret/data/products/distribution/ci GH_APP_PRIVATE_KEY_DISTRO_CI;
           exportEnv: false
       - name: Generate GitHub token
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
         id: generate-github-token
         with:
           app-id: ${{ steps.vault-secrets.outputs.GH_APP_ID_DISTRO_CI }}
           private-key: ${{ steps.vault-secrets.outputs.GH_APP_PRIVATE_KEY_DISTRO_CI }}
+          permission-issues: read
+          permission-members: read
+          permission-organization-projects: write
       - name: Classify issue creator for routing
         id: author
         env:
@@ -719,6 +737,7 @@ jobs:
           GH_TOKEN: ${{ steps.generate-github-token.outputs.token }}
         run: |
           set -euo pipefail
+          # shellcheck disable=SC2016
           gh api graphql -f query='query($owner:String!,$repo:String!,$number:Int!){
             repository(owner:$owner,name:$repo){issue(number:$number){id state
               projectItems(first:100){nodes{project{number} fieldValueByName(name:"Status"){

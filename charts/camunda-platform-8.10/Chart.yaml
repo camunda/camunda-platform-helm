@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 15.2.0
+version: 15.3.0
 appVersion: 8.10.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -44,17 +44,7 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
+    - kind: added
+      description: "Add quick install values with embedded H2"
     - kind: fixed
-      description: "Keep Gateway API redirects on HTTPS for bare Web Modeler, Orchestration and Optimize paths"
-    - kind: fixed
-      description: "Honor env replication factor override in dual-region warning"
-    - kind: fixed
-      description: "Deprecate global.image tag and repository in the 8.10 chart"
-    - kind: fixed
-      description: "Render the Identity and Optimize ServiceMonitors only when their component is deployed"
-    - kind: fixed
-      description: "Warn when 8.10 and 8.11 Management Identity uses Keycloak without a Keycloak URL"
-    - kind: fixed
-      description: "Warn when global.noSecondaryStorage conflicts with orchestration secondary storage type"
-    - kind: fixed
-      description: "Align 8.10 and 8.11 deprecation removal targets and policy docs with the Camunda 8 non-public API policy"
+      description: "Name chart v17 for Camunda 8.12 as the strict-values default in the unknown-key warnings"

@@ -26,11 +26,13 @@ runs:
   using: "composite"
   steps:
     - name: Generate GitHub token
-      uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+      uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
       id: generate-github-token
       with:
         app-id:      ${{ env.GH_APP_ID }}
         private-key: ${{ env.GH_APP_KEY }}
+        permission-administration: write
+        permission-deployments: write
 
     - name: Authenticate to GKE
       if: inputs.platform == 'gke' && inputs.auth-data == ''
@@ -74,7 +76,7 @@ runs:
         TELEPORT_PROXY: ${{ env.INFRA_TELEPORT_PROXY || 'camunda.teleport.sh:443' }}
         TELEPORT_TOKEN: ${{ env.TELEPORT_TOKEN }}
         KUBERNETES_CLUSTER: ${{ env.CLUSTER_NAME }}
-      run: |
+      run: | # zizmor: ignore[github-env]
         set -euo pipefail
 
         MAX_RETRIES=3
@@ -82,6 +84,7 @@ runs:
         TBOT_CONFIG="/tmp/tbot-config.yaml"
 
         # Cleanup temporary files on exit
+        # shellcheck disable=SC2329
         cleanup() {
           rm -f "${TBOT_CONFIG}"
         }
@@ -156,12 +159,14 @@ runs:
     - name: Authenticate via var
       if: inputs.auth-data != ''
       shell: bash
+      env:
+        INPUTS_AUTH_DATA: ${{ inputs.auth-data }}
       run: |
         ENC_FILE="$(mktemp)"
         trap 'rm -f "${ENC_FILE}"' EXIT
         
         mkdir -p "$HOME/.kube"
-        echo "${{ inputs.auth-data }}" | base64 -d > "${ENC_FILE}"
+        echo "${INPUTS_AUTH_DATA}" | base64 -d > "${ENC_FILE}"
         openssl enc -aes-256-cbc -d -in "${ENC_FILE}" -out "$HOME/.kube/config" \
                -pass pass:"${{ steps.generate-github-token.outputs.token }}" -pbkdf2
         chmod 600 "$HOME/.kube/config"

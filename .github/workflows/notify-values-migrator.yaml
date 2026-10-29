@@ -18,6 +18,7 @@ concurrency:
 
 permissions:
   contents: read
+  id-token: write
 
 env:
   VAULT_DISTRO_CI_PATH: secret/data/products/distribution/ci
@@ -53,9 +54,11 @@ jobs:
           PREV="$(git tag -l "${PREFIX}-*" --sort=-v:refname \
             | grep -E "^${PREFIX}-[0-9]+\.[0-9]+\.[0-9]+$" \
             | grep -vF "$TAG" | head -1 || true)"
-          echo "sha=$SHA"     >> "$GITHUB_OUTPUT"
-          echo "prefix=$PREFIX" >> "$GITHUB_OUTPUT"
-          echo "prev=$PREV"   >> "$GITHUB_OUTPUT"
+          {
+            echo "sha=$SHA"
+            echo "prefix=$PREFIX"
+            echo "prev=$PREV"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Gate on values change
         id: diff
@@ -85,9 +88,10 @@ jobs:
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          method: jwt
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           exportEnv: false
           secrets: |
             ${{ env.VAULT_DISTRO_CI_PATH }} GH_APP_ID_DISTRO_CI;
@@ -96,11 +100,12 @@ jobs:
       - name: Generate cross-repo token
         if: steps.diff.outputs.changed == 'true'
         id: token
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
         with:
           app-id: ${{ steps.vault.outputs.GH_APP_ID_DISTRO_CI }}
           private-key: ${{ steps.vault.outputs.GH_APP_PRIVATE_KEY_DISTRO_CI }}
           repositories: helm-values-migrator
+          permission-contents: write
 
       - name: Dispatch release-train with the release commit
         if: steps.diff.outputs.changed == 'true'

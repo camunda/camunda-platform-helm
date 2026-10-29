@@ -32,7 +32,7 @@ jobs:
     env:
       TEST_NAMESPACE: camunda-platform
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@ead99f6c9c536f5c47e443929d47e8fcfdb05a81  # start-build-monitor-1.0.1
+      - uses: camunda/infra-global-github-actions/start-build-monitor@ead99f6c9c536f5c47e443929d47e8fcfdb05a81 # start-build-monitor-1.0.1
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: "${{ inputs.camunda-helm-git-ref }}"
@@ -41,15 +41,16 @@ jobs:
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          method: jwt
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           secrets: |
             secret/data/products/distribution/ci DOCKERHUB_USERNAME | TEST_DOCKER_USERNAME;
             secret/data/products/distribution/ci DOCKERHUB_PASSWORD | TEST_DOCKER_PASSWORD;
           exportEnv: false
       - name: Install common software tooling
-        uses: camunda/infra-global-github-actions/common-tooling@95c6f97de08ce6befa8e1b222140676204d792fb # main
+        uses: camunda/infra-global-github-actions/common-tooling@85dbb218176a20bbedac15278ac3ff4d86672db4 # main
         with:
           overwrite: "false"
           build-essential-enabled: "true"
@@ -114,30 +115,37 @@ jobs:
           kubectl wait --for=jsonpath='{.status.readyReplicas}'=1 \
             --timeout=300s statefulset/elastic-operator -n elastic-system
           kubectl apply -n ${{ env.TEST_NAMESPACE }} -f \
-            "charts/${{ inputs.camunda-helm-dir }}/test/integration/scenarios/kind/elasticsearch-cluster.yaml"
+            "charts/${INPUTS_CAMUNDA_HELM_DIR}/test/integration/scenarios/kind/elasticsearch-cluster.yaml"
           kubectl wait --for=jsonpath='{.status.phase}'=Ready --timeout=600s \
             elasticsearch/elasticsearch -n ${{ env.TEST_NAMESPACE }}
+        env:
+          INPUTS_CAMUNDA_HELM_DIR: ${{ inputs.camunda-helm-dir }}
       - name: Prepare Camunda Helm chart installation
         run: |
           make helm.repos-add
-          helm package --dependency-update "charts/${{ inputs.camunda-helm-dir }}"
+          helm package --dependency-update "charts/${INPUTS_CAMUNDA_HELM_DIR}"
+        env:
+          INPUTS_CAMUNDA_HELM_DIR: ${{ inputs.camunda-helm-dir }}
       - name: ⭐ Install Camunda Helm chart ⭐
         timeout-minutes: 10
         run: |
           test -n "${{ env.TEST_HELM_DIGEST_VALUES }}" &&
-            TEST_HELM_EXTRA_ARGS="--values charts/${{ inputs.camunda-helm-dir }}/values-digest.yaml"
-          if [[ "${{ inputs.camunda-helm-dir }}" == "camunda-platform-8.11" || "${{ inputs.camunda-helm-dir }}" == "camunda-platform-8.10" || "${{ inputs.camunda-helm-dir }}" == "camunda-platform-8.9" || "${{ inputs.camunda-helm-dir }}" == "camunda-platform-8.8" ]]; then
-            TEST_HELM_EXTRA_ARGS="${TEST_HELM_EXTRA_ARGS} \
-              --set orchestration.service.appProtocols.grpc=kubernetes.io/h2c \
-              --set orchestration.service.appProtocols.management=http \
-              --set orchestration.service.appProtocols.internal=kubernetes.io/h2c \
-              --set orchestration.service.appProtocols.command=kubernetes.io/h2c"
+            TEST_HELM_EXTRA_ARGS=(--values "charts/${INPUTS_CAMUNDA_HELM_DIR}/values-digest.yaml")
+          if [[ "${INPUTS_CAMUNDA_HELM_DIR}" == "camunda-platform-8.11" || "${INPUTS_CAMUNDA_HELM_DIR}" == "camunda-platform-8.10" || "${INPUTS_CAMUNDA_HELM_DIR}" == "camunda-platform-8.9" || "${INPUTS_CAMUNDA_HELM_DIR}" == "camunda-platform-8.8" ]]; then
+            TEST_HELM_EXTRA_ARGS+=(
+              --set orchestration.service.appProtocols.grpc=kubernetes.io/h2c
+              --set orchestration.service.appProtocols.management=http
+              --set orchestration.service.appProtocols.internal=kubernetes.io/h2c
+              --set orchestration.service.appProtocols.command=kubernetes.io/h2c
+            )
           fi
-          helm install camunda-platform *.tgz --wait --timeout 10m0s \
+          helm install camunda-platform ./*.tgz --wait --timeout 10m0s \
             --namespace ${{ env.TEST_NAMESPACE }} \
-            --values "charts/${{ inputs.camunda-helm-dir }}/test/integration/scenarios/common/values-integration-test-pull-secrets.yaml" \
-            --values "charts/${{ inputs.camunda-helm-dir }}/values-local.yaml" \
-            ${TEST_HELM_EXTRA_ARGS}
+            --values "charts/${INPUTS_CAMUNDA_HELM_DIR}/test/integration/scenarios/common/values-integration-test-pull-secrets.yaml" \
+            --values "charts/${INPUTS_CAMUNDA_HELM_DIR}/values-local.yaml" \
+            "${TEST_HELM_EXTRA_ARGS[@]}"
+        env:
+          INPUTS_CAMUNDA_HELM_DIR: ${{ inputs.camunda-helm-dir }}
       - name: Verify appProtocol is set on live Service objects (8.11, 8.10, 8.9, 8.8)
         if: ${{ inputs.camunda-helm-dir == 'camunda-platform-8.11' || inputs.camunda-helm-dir == 'camunda-platform-8.10' ||inputs.camunda-helm-dir == 'camunda-platform-8.9' || inputs.camunda-helm-dir == 'camunda-platform-8.8' }}
         run: |

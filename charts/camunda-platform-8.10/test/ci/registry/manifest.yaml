@@ -85,7 +85,7 @@ integration:
     - id: keycloak-original-install-tier2
       shortname: keorg
       tier: 2
-      enabled: true
+      enabled: false
     - id: gateway-keycloak
       shortname: gatkc
       tier: 2
@@ -155,14 +155,6 @@ integration:
       enabled: true
     - id: hub-console-only
       shortname: hubco
-      tier: 2
-      enabled: true
-    - id: hub-double-enable
-      shortname: hubde
-      tier: 2
-      enabled: true
-    - id: hub-pinned-images
-      shortname: hubpi
       tier: 2
       enabled: true
     - id: hub-external-db

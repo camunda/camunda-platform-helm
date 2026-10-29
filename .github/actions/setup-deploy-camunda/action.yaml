@@ -42,7 +42,7 @@ runs:
         (cd scripts/deploy-camunda && CGO_ENABLED=0 go build -o "$GITHUB_WORKSPACE/.local-bin/deploy-camunda" .)
     - name: Export deploy-camunda to PATH
       shell: bash
-      run: |
+      run: | # zizmor: ignore[github-env]
         if [[ "${{ steps.runner-binary.outputs.present }}" == "true" ]]; then
           echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
         else

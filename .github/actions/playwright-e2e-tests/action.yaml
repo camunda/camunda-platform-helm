@@ -196,7 +196,7 @@ runs:
 
     - name: Install if required common software tooling
       if: steps.check-tools.outputs.skip-install != 'true'
-      uses: camunda/infra-global-github-actions/common-tooling@95c6f97de08ce6befa8e1b222140676204d792fb # main
+      uses: camunda/infra-global-github-actions/common-tooling@85dbb218176a20bbedac15278ac3ff4d86672db4 # main
       with:
         overwrite: "false"
         build-essential-enabled: "false"
@@ -227,7 +227,7 @@ runs:
     - name: Add deploy-camunda to PATH
       if: inputs.binary-artifact-name != ''
       shell: bash
-      run: |
+      run: | # zizmor: ignore[github-env]
         chmod +x "${RUNNER_TEMP}/bin/deploy-camunda"
         echo "${RUNNER_TEMP}/bin" >> "$GITHUB_PATH"
 
@@ -280,8 +280,6 @@ runs:
         ROSA_PASS: ""
         INFRA_CLUSTER_NAME: ""
         VAULT_ADDR: ""
-        VAULT_ROLE_ID: ""
-        VAULT_SECRET_ID: ""
       run: |
         npm ci --prefix "${GITHUB_WORKSPACE}/.e2e-test-suite"
         npm run build --prefix "${GITHUB_WORKSPACE}/.e2e-test-suite"
@@ -301,7 +299,9 @@ runs:
     - name: Override TEST_NAMESPACE (multi-namespace topology)
       if: inputs.namespace-override != ''
       shell: bash
-      run: echo "TEST_NAMESPACE=${{ inputs.namespace-override }}" | tee -a "$GITHUB_ENV"
+      env:
+        INPUTS_NAMESPACE_OVERRIDE: ${{ inputs.namespace-override }}
+      run: echo "TEST_NAMESPACE=${INPUTS_NAMESPACE_OVERRIDE}" | tee -a "$GITHUB_ENV" # zizmor: ignore[github-env]
 
     - name: Authenticate to cluster
       id: cluster-auth
@@ -332,6 +332,7 @@ runs:
 
     - name: Run Playwright E2E Tests
       shell: bash
+      working-directory: scripts
       env:
         TEST_NAMESPACE: ${{ env.TEST_NAMESPACE }}
         ABSOLUTE_TEST_CHART_DIR: ${{ env.ABSOLUTE_TEST_CHART_DIR }}
@@ -354,21 +355,25 @@ runs:
         REQUIRE_SM_TEST_SUITE: ${{ inputs.hub-namespace != '' }}
         REQUIRE_HUB_WEB_MODELER_TEST_SUITE: ${{ inputs.playwright-project == 'hub-web-modeler' }}
         E2E_TEST_SUITE_VERSION: ${{ inputs.e2e-test-suite-version }}
+        INPUTS_SCENARIO: ${{ inputs.scenario }}
+        INPUTS_TEST_CHART_DIR: ${{ inputs.test-chart-dir }}
+        INPUTS_PLAYWRIGHT_PROJECT: ${{ inputs.playwright-project }}
+        INPUTS_PHYSICAL_TENANT_ID: ${{ inputs.physical-tenant-id }}
+        INPUTS_E2E_TEST_SUITE_REF: ${{ inputs.e2e-test-suite-ref }}
       run: |
-        cd "$GITHUB_WORKSPACE/scripts"
         # Unset KEYCLOAK_REALM to avoid conflicts with the integration tests
         unset KEYCLOAK_REALM
 
         # Build scenario-specific flags
         EXTRA_FLAGS=""
         SMOKE_FLAG="${{ inputs.run-smoke-tests == 'true' && '--run-smoke-tests' || '' }}"
-        if [[ "${{ inputs.scenario }}" == opensearch* ]]; then
+        if [[ "${INPUTS_SCENARIO}" == opensearch* ]]; then
           EXTRA_FLAGS="--opensearch"
-        elif [[ "${{ inputs.scenario }}" == "keycloak-rba" ]]; then
+        elif [[ "${INPUTS_SCENARIO}" == "keycloak-rba" ]]; then
           EXTRA_FLAGS="--rba"
-        elif [[ "${{ inputs.scenario }}" == "keycloak-mt" ]] || [[ "${{ inputs.scenario }}" == "multitenancy" ]]; then
+        elif [[ "${INPUTS_SCENARIO}" == "keycloak-mt" ]] || [[ "${INPUTS_SCENARIO}" == "multitenancy" ]]; then
           EXTRA_FLAGS="--mt"
-        elif [[ "${{ inputs.scenario }}" == "auth0" ]]; then
+        elif [[ "${INPUTS_SCENARIO}" == "auth0" ]]; then
           # auth0 uses its own Playwright project (auth0-smoke); do NOT pass
           # --run-smoke-tests, which would otherwise route to the Keycloak-
           # coupled smoke-tests project.
@@ -376,7 +381,7 @@ runs:
           SMOKE_FLAG=""
         fi
 
-        TEST_CHART_DIR="${{ inputs.test-chart-dir }}"
+        TEST_CHART_DIR="${INPUTS_TEST_CHART_DIR}"
         E2E_ARGS=(--absolute-chart-path "${ABSOLUTE_TEST_CHART_DIR}" --namespace "${TEST_NAMESPACE}")
         if [[ -n "$TEST_CHART_DIR" ]]; then
           E2E_ARGS+=(--test-chart-path "${GITHUB_WORKSPACE}/charts/${TEST_CHART_DIR}")
@@ -388,9 +393,9 @@ runs:
         [[ -n "$E2E_ARG_OPTIMIZE_NAMESPACE" ]] && E2E_ARGS+=(--optimize-namespace "${E2E_ARG_OPTIMIZE_NAMESPACE}")
         [[ -n "$E2E_ARG_OPTIMIZE_CONTEXT_PATH" ]] && E2E_ARGS+=(--optimize-context-path "${E2E_ARG_OPTIMIZE_CONTEXT_PATH}")
         [[ -n "$E2E_ARG_MODELER_CLUSTER_NAME" ]] && E2E_ARGS+=(--modeler-cluster-name "${E2E_ARG_MODELER_CLUSTER_NAME}")
-        [[ -n "${{ inputs.playwright-project }}" ]] && E2E_ARGS+=(--playwright-project "${{ inputs.playwright-project }}")
-        [[ -n "${{ inputs.physical-tenant-id }}" ]] && E2E_ARGS+=(--physical-tenant-id "${{ inputs.physical-tenant-id }}")
-        [[ -n "${{ inputs.e2e-test-suite-ref }}" ]] && E2E_ARGS+=(--local-test-suite "${GITHUB_WORKSPACE}/.e2e-test-suite")
+        [[ -n "${INPUTS_PLAYWRIGHT_PROJECT}" ]] && E2E_ARGS+=(--playwright-project "${INPUTS_PLAYWRIGHT_PROJECT}")
+        [[ -n "${INPUTS_PHYSICAL_TENANT_ID}" ]] && E2E_ARGS+=(--physical-tenant-id "${INPUTS_PHYSICAL_TENANT_ID}")
+        [[ -n "${INPUTS_E2E_TEST_SUITE_REF}" ]] && E2E_ARGS+=(--local-test-suite "${GITHUB_WORKSPACE}/.e2e-test-suite")
 
         ./run-e2e-tests.sh "${E2E_ARGS[@]}"
 
@@ -426,8 +431,14 @@ runs:
       id: e2e_diag_artifact
       if: ${{ !success() }}
       shell: bash
+      env:
+        INPUTS_IDENTIFIER: ${{ inputs.identifier }}
+        INPUTS_FLOW: ${{ inputs.flow }}
+        INPUTS_TEST_STAGE: ${{ inputs.test-stage }}
+        INPUTS_SHARD_INDEX: ${{ inputs.shard-index }}
+        INPUTS_ARTIFACT_SUFFIX: ${{ inputs.artifact-suffix }}
       run: |
-        raw="diagnostics-e2e-${{ inputs.identifier }}-${{ inputs.flow }}-${{ inputs.test-stage }}-${{ inputs.shard-index }}-${{ inputs.artifact-suffix }}-${{ github.run_id }}-${{ github.run_attempt }}"
+        raw="diagnostics-e2e-${INPUTS_IDENTIFIER}-${INPUTS_FLOW}-${INPUTS_TEST_STAGE}-${INPUTS_SHARD_INDEX}-${INPUTS_ARTIFACT_SUFFIX}-${{ github.run_id }}-${{ github.run_attempt }}"
         echo "name=${raw//[^a-zA-Z0-9._-]/-}" >> "$GITHUB_OUTPUT"
 
     - name: Upload namespace diagnostics

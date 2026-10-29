@@ -161,13 +161,13 @@ func TestRunnerImageWorkflowContract(t *testing.T) {
 				}
 			} `yaml:"workflow_call"`
 		}
-		Permissions map[string]string
-		Jobs        map[string]struct {
-			Uses      string
-			If        string
-			With      map[string]string
-			Outputs   map[string]string
-			Container struct {
+		Jobs map[string]struct {
+			Uses        string
+			If          string
+			With        map[string]string
+			Outputs     map[string]string
+			Permissions map[string]string
+			Container   struct {
 				Image string
 			}
 			Steps []struct {
@@ -239,7 +239,7 @@ func TestRunnerImageWorkflowContract(t *testing.T) {
 		t.Errorf("runner must be resolved exactly once, got %d resolutions", resolutionCount)
 	}
 	entry := readWorkflow(files[0])
-	if entry.Permissions["packages"] != "read" || entry.Jobs["init"].Outputs[input] != resolvedImage {
+	if entry.Jobs["init"].Permissions["packages"] != "read" || entry.Jobs["init"].Outputs[input] != resolvedImage {
 		t.Fatal("init must expose its resolved image and have packages:read")
 	}
 	annotationFound, orasFound, resolutionSeen := false, false, false
@@ -278,7 +278,7 @@ func TestRunnerImageWorkflowContract(t *testing.T) {
 	for _, step := range record.Steps {
 		if strings.Contains(step.Run, "ci-result-cache record") {
 			recordFound = true
-			if !strings.Contains(step.Run, "--playwright-runner-image \""+passedImage+"\"") {
+			if step.Env["INPUTS_PLAYWRIGHT_RUNNER_IMAGE"] != passedImage || !strings.Contains(step.Run, "--playwright-runner-image \"${INPUTS_PLAYWRIGHT_RUNNER_IMAGE}\"") {
 				t.Error("recording must hash the executed image")
 			}
 		}

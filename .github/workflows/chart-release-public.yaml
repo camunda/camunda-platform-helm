@@ -26,11 +26,7 @@ concurrency:
   group: ${{ github.workflow }}-${{ inputs.rc-tag }}
   cancel-in-progress: false
 
-permissions:
-  contents: write
-  id-token: write
-  pull-requests: write
-  issues: write
+permissions: {}
 
 env:
   HARBOR_REGISTRY: registry.camunda.cloud
@@ -41,6 +37,9 @@ jobs:
   release:
     name: Release
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
     outputs:
       version: ${{ steps.metadata.outputs.version }}
       app-version: ${{ steps.metadata.outputs.app_version }}
@@ -59,9 +58,10 @@ jobs:
         id: vault-harbor
         with:
           url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          method: jwt
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           secrets: |
             secret/data/products/distribution/ci HARBOR_REGISTRY_USER;
             secret/data/products/distribution/ci HARBOR_REGISTRY_PASSWORD;
@@ -70,11 +70,12 @@ jobs:
           exportEnv: false
 
       - name: Generate GitHub token
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
         id: generate-github-token
         with:
           app-id: ${{ steps.vault-harbor.outputs.GH_APP_ID_DISTRO_CI }}
           private-key: ${{ steps.vault-harbor.outputs.GH_APP_PRIVATE_KEY_DISTRO_CI }}
+          permission-contents: write
 
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -222,7 +223,7 @@ jobs:
         run: |
           # New cosign bundle format uses .verificationMaterial.tlogEntries[0].logIndex
           rekor_log_index=$(jq -r '.verificationMaterial.tlogEntries[0].logIndex // .rekorBundle.Payload.logIndex // "unavailable"' "${{ steps.metadata.outputs.cosign_bundle }}")
-          echo "log_index=${rekor_log_index}" | tee -a $GITHUB_OUTPUT
+          echo "log_index=${rekor_log_index}" | tee -a "$GITHUB_OUTPUT"
 
       - name: Create Cosign verify script
         if: ${{ !inputs.dry-run }}
@@ -292,7 +293,7 @@ jobs:
           ARTIFACTHUB_URL="https://artifacthub.io/packages/helm/camunda/camunda-platform/${VERSION}"
           REKOR_URL="https://search.sigstore.dev/?logIndex=${REKOR_LOG_INDEX}"
 
-          cat >> $GITHUB_STEP_SUMMARY << EOF
+          cat >> "$GITHUB_STEP_SUMMARY" << EOF
           ## 🚀 Helm Chart ${VERSION} Released
 
           | | |
@@ -306,14 +307,16 @@ jobs:
 
           # Add image versions if available
           if [[ -n "${IMAGE_VERSIONS}" ]]; then
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "### Component Images" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "| Component | Version |" >> $GITHUB_STEP_SUMMARY
-            echo "|-----------|---------|" >> $GITHUB_STEP_SUMMARY
-            echo "${IMAGE_VERSIONS}" | while IFS=': ' read -r component version; do
-              [[ -n "${component}" && -n "${version}" ]] && echo "| ${component} | \`${version}\` |" >> $GITHUB_STEP_SUMMARY
-            done
+            {
+              echo ""
+              echo "### Component Images"
+              echo ""
+              echo "| Component | Version |"
+              echo "|-----------|---------|"
+              echo "${IMAGE_VERSIONS}" | while IFS=': ' read -r component version; do
+                [[ -n "${component}" && -n "${version}" ]] && echo "| ${component} | \`${version}\` |"
+              done
+            } >> "$GITHUB_STEP_SUMMARY"
           fi
 
           # Add traceability if we have source info
@@ -321,7 +324,7 @@ jobs:
             SHORT_SHA="${COMMIT_SHA:0:7}"
             COMMIT_URL="https://github.com/${{ github.repository }}/commit/${COMMIT_SHA}"
 
-            cat >> $GITHUB_STEP_SUMMARY << EOF
+            cat >> "$GITHUB_STEP_SUMMARY" << EOF
 
           ### Traceability
 
@@ -332,7 +335,7 @@ jobs:
           EOF
           fi
 
-          cat >> $GITHUB_STEP_SUMMARY << EOF
+          cat >> "$GITHUB_STEP_SUMMARY" << EOF
 
           ### Install
 
@@ -346,7 +349,7 @@ jobs:
       - name: Add dry-run info to workflow summary
         if: ${{ inputs.dry-run }}
         run: |
-          cat >> $GITHUB_STEP_SUMMARY << EOF
+          cat >> "$GITHUB_STEP_SUMMARY" << EOF
           ## 🧪 DRY RUN 🧪 Helm Chart ${{ steps.metadata.outputs.version }} Release Rehearsal
 
           | | |
@@ -376,6 +379,9 @@ jobs:
     needs: release
     if: ${{ !inputs.dry-run }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
     outputs:
       pr-number: ${{ steps.mark-published.outputs.pr_number }}
       auto-merge-enabled: ${{ steps.auto-merge.outputs.enabled }}
@@ -385,20 +391,24 @@ jobs:
         id: vault-harbor
         with:
           url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          method: jwt
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           secrets: |
             secret/data/products/distribution/ci GH_APP_ID_DISTRO_CI;
             secret/data/products/distribution/ci GH_APP_PRIVATE_KEY_DISTRO_CI;
           exportEnv: false
 
       - name: Generate GitHub token
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
         id: generate-github-token
         with:
           app-id: ${{ steps.vault-harbor.outputs.GH_APP_ID_DISTRO_CI }}
           private-key: ${{ steps.vault-harbor.outputs.GH_APP_PRIVATE_KEY_DISTRO_CI }}
+          permission-contents: write
+          permission-pull-requests: write
+          permission-issues: write
 
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -480,7 +490,7 @@ jobs:
             exit 1
           fi
 
-          echo "pr_number=${pr_number}" >> $GITHUB_OUTPUT
+          echo "pr_number=${pr_number}" >> "$GITHUB_OUTPUT"
 
           current_labels="$(gh pr view "${pr_number}" --json labels --jq '.labels[].name')"
           if echo "${current_labels}" | grep -qx "autorelease: pending"; then
@@ -516,7 +526,7 @@ jobs:
           GH_TOKEN="${{ secrets.GITHUB_TOKEN }}" gh pr review "${pr_number}" --approve
 
           gh pr merge "${pr_number}" --auto --squash
-          echo "enabled=true" >> $GITHUB_OUTPUT
+          echo "enabled=true" >> "$GITHUB_OUTPUT"
 
       - name: Summary
         if: ${{ !cancelled() }}
@@ -525,7 +535,7 @@ jobs:
         run: |
           PR_URL=$(gh pr view "${{ steps.mark-published.outputs.pr_number }}" --json url --jq '.url' 2>/dev/null || echo "")
 
-          cat >> $GITHUB_STEP_SUMMARY << EOF
+          cat >> "$GITHUB_STEP_SUMMARY" << EOF
 
           ## Post-Release Complete
 
@@ -534,12 +544,12 @@ jobs:
           EOF
 
           if [[ "${{ steps.auto-merge.outputs.enabled }}" == "true" ]]; then
-            cat >> $GITHUB_STEP_SUMMARY << EOF
+            cat >> "$GITHUB_STEP_SUMMARY" << EOF
           ✅ Auto-merge enabled for release-please PR
           ${PR_URL:+**PR:** ${PR_URL}}
           EOF
           else
-            cat >> $GITHUB_STEP_SUMMARY << EOF
+            cat >> "$GITHUB_STEP_SUMMARY" << EOF
 
           ### Manual Step Required
           Merge the release-please PR to complete the release process.
@@ -554,9 +564,10 @@ jobs:
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          method: jwt
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           secrets: |
             secret/data/products/distribution/ci SLACK_DISTRO_BOT_WEBHOOK;
           exportEnv: false
@@ -589,6 +600,7 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
+      id-token: write
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@ead99f6c9c536f5c47e443929d47e8fcfdb05a81  # start-build-monitor-1.0.1
       - name: Import Vault secrets
@@ -596,9 +608,10 @@ jobs:
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          method: jwt
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           secrets: |
             secret/data/products/distribution/ci GH_APP_ID_DISTRO_CI;
             secret/data/products/distribution/ci GH_APP_PRIVATE_KEY_DISTRO_CI;
@@ -608,7 +621,7 @@ jobs:
       - name: Shepherd release-please PR through merge queue
         id: merge-queue
         continue-on-error: true
-        uses: camunda/infra-global-github-actions/ensure-pr-passes-merge-queue@95c6f97de08ce6befa8e1b222140676204d792fb # main
+        uses: camunda/infra-global-github-actions/ensure-pr-passes-merge-queue@85dbb218176a20bbedac15278ac3ff4d86672db4 # main
         with:
           pr-number: ${{ needs.post-release.outputs.pr-number }}
           app-id: ${{ steps.secrets.outputs.GH_APP_ID_DISTRO_CI }}
@@ -667,9 +680,10 @@ jobs:
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc  # v4.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          method: jwt
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           exportEnv: false
           secrets: |
             secret/data/products/distribution/ci/ci-analytics gcloud_sa_key;
@@ -692,9 +706,10 @@ jobs:
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          method: jwt
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           secrets: |
             secret/data/products/distribution/ci SLACK_DISTRO_BOT_WEBHOOK;
           exportEnv: false

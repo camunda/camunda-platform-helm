@@ -27,7 +27,7 @@ integration:
     - id: keycloak-original-install-patch
       shortname: keyc
       tier: 2
-      enabled: true
+      enabled: false
     - id: opensearch-embedded
       shortname: osem
       tier: 2

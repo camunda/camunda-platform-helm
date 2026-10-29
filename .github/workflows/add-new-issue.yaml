@@ -8,6 +8,8 @@ jobs:
   add-to-project:
     name: Add new issue
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
     steps:
       - name: Create URL to the run output
         id: vars
@@ -20,20 +22,23 @@ jobs:
         id: vault-harbor
         with:
           url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          method: jwt
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           secrets: |
             secret/data/products/distribution/ci GH_APP_ID_DISTRO_CI;
             secret/data/products/distribution/ci GH_APP_PRIVATE_KEY_DISTRO_CI;
           exportEnv: false
 
       - name: Generate GitHub token
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
         id: generate-github-token
         with:
           app-id: ${{ steps.vault-harbor.outputs.GH_APP_ID_DISTRO_CI }}
           private-key: ${{ steps.vault-harbor.outputs.GH_APP_PRIVATE_KEY_DISTRO_CI }}
+          permission-issues: write
+          permission-organization-projects: write
       
       - name: Add to Distribution Team project
         uses: actions/add-to-project@5afcf98fcd03f1c2f92c3c83f58ae24323cc57fd # v2.0.0
@@ -55,7 +60,7 @@ jobs:
       - name: Add issue to Quality Board
         # https://github.com/orgs/camunda/projects/187/views/15
         id: add-bug-to-quality-board
-        uses: camunda/infra-global-github-actions/add-bug-to-quality-board@95c6f97de08ce6befa8e1b222140676204d792fb # main
+        uses: camunda/infra-global-github-actions/add-bug-to-quality-board@85dbb218176a20bbedac15278ac3ff4d86672db4 # main
         with:
           github-token: ${{ steps.generate-github-token.outputs.token }}
           project-number: "187"
@@ -74,6 +79,9 @@ jobs:
   reconcile-urgency:
     needs: add-to-project
     if: github.event.action == 'opened'
+    permissions:
+      contents: read
+      id-token: write
     uses: ./.github/workflows/triage-assign-urgency-to-issue.yml
     with:
       issue_number: ${{ format('{0}', github.event.issue.number) }}
@@ -81,5 +89,6 @@ jobs:
       quiet_internal: true
     secrets:
       VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
-      VAULT_ROLE_ID: ${{ secrets.VAULT_ROLE_ID }}
-      VAULT_SECRET_ID: ${{ secrets.VAULT_SECRET_ID }}
+      VAULT_JWT_PATH: ${{ secrets.VAULT_JWT_PATH }}
+      VAULT_JWT_ROLE: ${{ secrets.VAULT_JWT_ROLE }}
+      VAULT_JWT_AUDIENCE: ${{ secrets.VAULT_JWT_AUDIENCE }}

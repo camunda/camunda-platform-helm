@@ -10,7 +10,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: optimize
-    app.kubernetes.io/version: "8.10.6"
+    app.kubernetes.io/version: "8.10.7"
 apiVersion: v1
 data:
   environment-config.yaml: |
@@ -21,8 +21,6 @@ data:
     es:
       connection:
         nodes:
-          - host: "camunda-platform-test-elasticsearch"
-            httpPort: 9200
     spring:
       servlet:
         multipart:

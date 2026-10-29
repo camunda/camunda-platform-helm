@@ -35,6 +35,7 @@
 # Source base script for shared utilities (log, get_ingress_hostname)
 # Only source if not already sourced (check for log function)
 if ! declare -f log > /dev/null 2>&1; then
+  # shellcheck disable=SC1091
   source "$(dirname "$0")/base_playwright_script.sh"
 fi
 
@@ -347,7 +348,6 @@ render_env_file() {
     exit 12
   fi
   keycloakUrl=$($kubectl_cmd -n "$namespace" get deployment -l app.kubernetes.io/component=identity -o jsonpath="{.items[0].metadata.annotations.keycloak-token-url}")
-  host=""
   tokenUrl=""
   echo "::group::Keycloak URL parsing"
   if [[ -n "$keycloakUrl" ]]; then

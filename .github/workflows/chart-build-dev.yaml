@@ -110,8 +110,8 @@ jobs:
         id: matrix
         run: |
           # Use input version if provided, otherwise use all active versions
-          if [[ -n "${{ inputs.chart-version }}" ]]; then
-            versions="${{ inputs.chart-version }}"
+          if [[ -n "${INPUTS_CHART_VERSION}" ]]; then
+            versions="${INPUTS_CHART_VERSION}"
           else
             versions="${{ steps.chart-versions.outputs.active }}"
           fi
@@ -128,8 +128,10 @@ jobs:
           done
           matrix+="]"
 
-          echo "chart-matrix=${matrix}" >> $GITHUB_OUTPUT
+          echo "chart-matrix=${matrix}" >> "$GITHUB_OUTPUT"
           echo "Building charts: ${versions}"
+        env:
+          INPUTS_CHART_VERSION: ${{ inputs.chart-version }}
 
   build:
     needs: setup
@@ -167,9 +169,10 @@ jobs:
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          method: jwt
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           secrets: |
             secret/data/products/distribution/ci HARBOR_REGISTRY_USER;
             secret/data/products/distribution/ci HARBOR_REGISTRY_PASSWORD;
@@ -190,7 +193,7 @@ jobs:
 
       - name: Build release-tools
         run: |
-          cd $(git rev-parse --show-toplevel)/scripts/release-tools
+          cd "$(git rev-parse --show-toplevel)/scripts/release-tools"
           go build -o /tmp/release-tools .
 
       - name: Inject image-tag overrides into values.yaml
@@ -207,7 +210,7 @@ jobs:
           TASKLIST_IMAGE_TAG: ${{ inputs.tasklist-image-tag }}
           CHART_VERSION: ${{ matrix.chart.version }}
         run: |
-          cd $(git rev-parse --show-toplevel)
+          cd "$(git rev-parse --show-toplevel)"
           /tmp/release-tools inject-values
 
       - name: Login to Harbor registry
@@ -225,8 +228,8 @@ jobs:
           # For now, just set the short SHA and Camunda version
           SHORT_SHA="${GITHUB_SHA::7}"
           CAMUNDA_VERSION="${{ matrix.chart.version }}"
-          echo "SHORT_SHA=${SHORT_SHA}" | tee -a $GITHUB_ENV
-          echo "CAMUNDA_VERSION=${CAMUNDA_VERSION}" | tee -a $GITHUB_ENV
+          echo "SHORT_SHA=${SHORT_SHA}" | tee -a "$GITHUB_ENV"
+          echo "CAMUNDA_VERSION=${CAMUNDA_VERSION}" | tee -a "$GITHUB_ENV"
 
       #
       # Compute release version using release-please dry-run
@@ -286,17 +289,28 @@ jobs:
           /tmp/release-tools image-overrides \
             --chart-version "${{ matrix.chart.version }}" \
             --chart-versions-file "$(git rev-parse --show-toplevel)/charts/chart-versions.yaml" \
-            --orchestration "${{ inputs.orchestration-image-tag }}" \
-            --zeebe "${{ inputs.zeebe-image-tag }}" \
-            --zeebe-gateway "${{ inputs.zeebe-gateway-image-tag }}" \
-            --operate "${{ inputs.operate-image-tag }}" \
-            --tasklist "${{ inputs.tasklist-image-tag }}" \
-            --console "${{ inputs.console-image-tag }}" \
-            --modeler "${{ inputs.modeler-image-tag }}" \
-            --connectors "${{ inputs.connectors-image-tag }}" \
-            --optimize "${{ inputs.optimize-image-tag }}" \
-            --identity "${{ inputs.identity-image-tag }}" \
+            --orchestration "${INPUTS_ORCHESTRATION_IMAGE_TAG}" \
+            --zeebe "${INPUTS_ZEEBE_IMAGE_TAG}" \
+            --zeebe-gateway "${INPUTS_ZEEBE_GATEWAY_IMAGE_TAG}" \
+            --operate "${INPUTS_OPERATE_IMAGE_TAG}" \
+            --tasklist "${INPUTS_TASKLIST_IMAGE_TAG}" \
+            --console "${INPUTS_CONSOLE_IMAGE_TAG}" \
+            --modeler "${INPUTS_MODELER_IMAGE_TAG}" \
+            --connectors "${INPUTS_CONNECTORS_IMAGE_TAG}" \
+            --optimize "${INPUTS_OPTIMIZE_IMAGE_TAG}" \
+            --identity "${INPUTS_IDENTITY_IMAGE_TAG}" \
             --out /tmp/image-overrides.yaml
+        env:
+          INPUTS_ORCHESTRATION_IMAGE_TAG: ${{ inputs.orchestration-image-tag }}
+          INPUTS_ZEEBE_IMAGE_TAG: ${{ inputs.zeebe-image-tag }}
+          INPUTS_ZEEBE_GATEWAY_IMAGE_TAG: ${{ inputs.zeebe-gateway-image-tag }}
+          INPUTS_OPERATE_IMAGE_TAG: ${{ inputs.operate-image-tag }}
+          INPUTS_TASKLIST_IMAGE_TAG: ${{ inputs.tasklist-image-tag }}
+          INPUTS_CONSOLE_IMAGE_TAG: ${{ inputs.console-image-tag }}
+          INPUTS_MODELER_IMAGE_TAG: ${{ inputs.modeler-image-tag }}
+          INPUTS_CONNECTORS_IMAGE_TAG: ${{ inputs.connectors-image-tag }}
+          INPUTS_OPTIMIZE_IMAGE_TAG: ${{ inputs.optimize-image-tag }}
+          INPUTS_IDENTITY_IMAGE_TAG: ${{ inputs.identity-image-tag }}
 
       - name: Check if artifact already exists
         id: check-artifact
@@ -326,13 +340,13 @@ jobs:
               echo "::notice::Dev package ${DEV_TAG} exists but image overrides provided - deleting to rebuild"
               harbor_curl \
                 -X DELETE "https://${HARBOR_REGISTRY_HOST}/api/v2.0/projects/${HARBOR_REGISTRY_PROJECT}/repositories/${{ env.CHART_NAME }}/artifacts/${DEV_TAG}/tags/${DEV_TAG}" || true
-              echo "SKIP_BUILD=false" | tee -a $GITHUB_ENV
+              echo "SKIP_BUILD=false" | tee -a "$GITHUB_ENV"
             else
-              echo "SKIP_BUILD=true" | tee -a $GITHUB_ENV
+              echo "SKIP_BUILD=true" | tee -a "$GITHUB_ENV"
               echo "::notice::Dev package ${DEV_TAG} already exists, skipping build"
             fi
           else
-            echo "SKIP_BUILD=false" | tee -a $GITHUB_ENV
+            echo "SKIP_BUILD=false" | tee -a "$GITHUB_ENV"
           fi
 
       - name: Apply Chart.yaml version from release-please
@@ -525,7 +539,7 @@ jobs:
           tar -xzf "${PACKAGED_FILE}" -O ${{ env.CHART_NAME }}/Chart.yaml | grep "^version:"
 
           # Store the package filename for later steps
-          echo "HELM_PACKAGE=${PACKAGED_FILE}" >> $GITHUB_ENV
+          echo "HELM_PACKAGE=${PACKAGED_FILE}" >> "$GITHUB_ENV"
 
       - name: Push Helm chart to Harbor
         if: env.SKIP_BUILD == 'false'
@@ -546,15 +560,14 @@ jobs:
           retry_cmd "cosign sign-blob" cosign sign-blob -y "${HELM_PACKAGE}" \
             --bundle ".cr-release-packages/${{ env.CHART_RELEASE_COSIGN_BUNDLE_FILE }}"
 
-          CHART_RELEASE_TAG_NAME="camunda-platform-${{ matrix.chart.version }}-${RELEASE_VERSION}"
-          echo "CHART_RELEASE_TAG_NAME=camunda-platform-${{ matrix.chart.version }}-${RELEASE_VERSION}" >> $GITHUB_ENV
+          echo "CHART_RELEASE_TAG_NAME=camunda-platform-${{ matrix.chart.version }}-${RELEASE_VERSION}" >> "$GITHUB_ENV"
 
           cat .cr-release-packages/${{ env.CHART_RELEASE_COSIGN_BUNDLE_FILE }} | jq
 
           # New cosign bundle format uses .verificationMaterial.tlogEntries[0].logIndex;
           # old format uses .rekorBundle.Payload.logIndex. Try both.
           rekor_log_index="$(cat .cr-release-packages/${{ env.CHART_RELEASE_COSIGN_BUNDLE_FILE }} | jq -r '.verificationMaterial.tlogEntries[0].logIndex // .rekorBundle.Payload.logIndex // "unavailable"')"
-          echo "CHART_RELEASE_COSIGN_REKOR_LOG_INDEX=${rekor_log_index}" >> $GITHUB_ENV
+          echo "CHART_RELEASE_COSIGN_REKOR_LOG_INDEX=${rekor_log_index}" >> "$GITHUB_ENV"
 
           cat << EOF > ${{ env.CHART_RELEASE_COSIGN_VERIFY_FILE }}
           # Rekor.
@@ -569,12 +582,12 @@ jobs:
           EOF
 
           COSIGN_VERIFIED="$(
-            cosign verify-blob ${HELM_PACKAGE} \
+            cosign verify-blob "${HELM_PACKAGE}" \
               --bundle ".cr-release-packages/${{ env.CHART_RELEASE_COSIGN_BUNDLE_FILE }}" \
               --certificate-identity "${{ env.CHART_RELEASE_COSIGN_CERTIFICATE_IDENTITY }}" \
               --certificate-oidc-issuer "${{ env.CHART_RELEASE_COSIGN_CERTIFICATE_OIDC_ISSUER }}" 2>&1
           )"
-          echo COSIGN_VERIFIED="${COSIGN_VERIFIED}" >> $GITHUB_ENV
+          echo COSIGN_VERIFIED="${COSIGN_VERIFIED}" >> "$GITHUB_ENV"
 
           COSIGN_METADATA="$(cat .cr-release-packages/${{ env.CHART_RELEASE_COSIGN_BUNDLE_FILE }} | jq .verificationMaterial.certificate.rawBytes | sed 's/"//g' | base64 -d | openssl x509 -noout -text - )"
           # funkiness to preserve newlines
@@ -586,7 +599,7 @@ jobs:
 
           # oras push with retry and re-auth
           harbor_retry "oras push" \
-            oras push ${OCI_REGISTRY}/${{ env.CHART_NAME }} .cr-release-packages/${{ env.CHART_RELEASE_COSIGN_BUNDLE_FILE }}
+            oras push "${OCI_REGISTRY}/${{ env.CHART_NAME }}" .cr-release-packages/${{ env.CHART_RELEASE_COSIGN_BUNDLE_FILE }}
 
           # The helm push created a tag with the release version
           PUSHED_TAG="${RELEASE_VERSION}"
@@ -630,7 +643,7 @@ jobs:
           ROLLING_TAG="${CHART_MAJOR_VERSION}-dev-latest"
 
           if [[ "${{ env.SKIP_BUILD }}" == "true" ]]; then
-            cat << EOF >> $GITHUB_STEP_SUMMARY
+            cat << EOF >> "$GITHUB_STEP_SUMMARY"
           ## 📦 Chart Build Skipped (Camunda ${{ env.CAMUNDA_VERSION }})
 
           Dev package already exists for this commit.
@@ -640,8 +653,9 @@ jobs:
 
           EOF
           else
+            # shellcheck disable=SC2016
             IMAGE_ROWS="$(sed -E 's/^([^:]+): (.*)$/| \1 | `\2` |/' /tmp/image-versions.yaml)"
-            cat << EOF >> $GITHUB_STEP_SUMMARY
+            cat << EOF >> "$GITHUB_STEP_SUMMARY"
           ## 📦 Dev Package Built ✅ (Camunda ${{ env.CAMUNDA_VERSION }})
 
           ### Package Info
@@ -681,7 +695,7 @@ jobs:
           <summary>View Cosign metadata</summary>
 
           \`\`\`bash
-          $(echo "${COSIGN_METADATA}")
+          ${COSIGN_METADATA}
           \`\`\`
 
           </details>
@@ -706,15 +720,18 @@ jobs:
     needs: [setup, build]
     if: failure()
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
     steps:
       - name: Import Vault secrets
         id: secrets
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          method: jwt
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           secrets: |
             secret/data/products/distribution/ci SLACK_DISTRO_BOT_WEBHOOK;
           exportEnv: false

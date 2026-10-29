@@ -80,7 +80,7 @@ jobs:
       REPOSITORY_NAME: "camunda/helm"
       CHART_NAME: "camunda-platform"
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@ead99f6c9c536f5c47e443929d47e8fcfdb05a81  # start-build-monitor-1.0.1
+      - uses: camunda/infra-global-github-actions/start-build-monitor@ead99f6c9c536f5c47e443929d47e8fcfdb05a81 # start-build-monitor-1.0.1
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -97,7 +97,7 @@ jobs:
           # NOTE: Helm CLI only accepts SemVer so we need to use something like "0.0.0-snapshot-latest".
           CHART_VERSION_SUFFIX="${{ matrix.chart.versionSuffix }}"
           CHART_VERSION_SUFFIX_DEFAULT="$(yq '.version' Chart.yaml)"
-          echo "CHART_VERSION=0.0.0-${CHART_VERSION_SUFFIX:-${CHART_VERSION_SUFFIX_DEFAULT}}" | tee -a $GITHUB_ENV
+          echo "CHART_VERSION=0.0.0-${CHART_VERSION_SUFFIX:-${CHART_VERSION_SUFFIX_DEFAULT}}" | tee -a "$GITHUB_ENV"
       #
       # Changelog.
       - name: Generate snapshot changelog
@@ -120,7 +120,7 @@ jobs:
               # If the artfact exists, then it will not republished.
               helm pull oci://ghcr.io/${{ env.REPOSITORY_NAME }}/${{ env.CHART_NAME }} \
                 --version ${{ env.CHART_VERSION }} 2> /dev/null && EXIT_CODE=0 || EXIT_CODE=1
-              test ${EXIT_CODE} -eq 0 && PUBLISH_ARTIFACT="false" || PUBLISH_ARTIFACT="true"
+              test "${EXIT_CODE}" -eq 0 && PUBLISH_ARTIFACT="false" || PUBLISH_ARTIFACT="true"
               ;;
             *)
               echo "Unsupported value."
@@ -128,7 +128,7 @@ jobs:
               ;;
           esac
           # Add the var to GH vars.
-          echo "PUBLISH_ARTIFACT=${PUBLISH_ARTIFACT}" | tee -a $GITHUB_ENV
+          echo "PUBLISH_ARTIFACT=${PUBLISH_ARTIFACT}" | tee -a "$GITHUB_ENV"
       - name: Helm dependency update
         if: env.PUBLISH_ARTIFACT == 'true'
         run: |
@@ -139,7 +139,7 @@ jobs:
         env:
           HELM_EXPERIMENTAL_OCI: 1
         run: |
-          echo ${{ secrets.GITHUB_TOKEN }} | helm registry login -u ${{ github.actor }} --password-stdin ghcr.io
+          echo ${{ secrets.GITHUB_TOKEN }} | helm registry login -u "${GITHUB_ACTOR}" --password-stdin ghcr.io
           helm package --version ${{ env.CHART_VERSION }} .
           helm push ${{ env.CHART_NAME }}-${{ env.CHART_VERSION }}.tgz oci://ghcr.io/${{ env.REPOSITORY_NAME }}
           helm registry logout ghcr.io
@@ -158,11 +158,11 @@ jobs:
         run: |
           cosign verify-blob ${{ env.CHART_NAME }}-${{ env.CHART_VERSION }}.tgz \
             --bundle ${{ env.CHART_NAME }}-${{ env.CHART_VERSION }}.cosign.bundle \
-            --certificate-identity "https://github.com/${{ github.repository }}/.github/workflows/chart-release-template.yaml@${{ github.ref }}" \
+            --certificate-identity "https://github.com/${{ github.repository }}/.github/workflows/chart-release-template.yaml@${GITHUB_REF}" \
             --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
       - name: Login to GitHub Container Registry
         if: env.PUBLISH_ARTIFACT == 'true'
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -177,7 +177,7 @@ jobs:
             ${{ env.CHART_NAME }}-${{ env.CHART_VERSION }}.cosign.bundle:text/plain
       - name: Add release info to workflow summary
         run: |
-          cat << EOF >> $GITHUB_STEP_SUMMARY
+          cat << EOF >> "$GITHUB_STEP_SUMMARY"
           ## Chart info
 
             - Repository: \`oci://ghcr.io/${{ env.REPOSITORY_NAME }}\`

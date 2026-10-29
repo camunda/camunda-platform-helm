@@ -589,7 +589,7 @@ func TestPlanPermittedFlowsDenyUpgradePatchFor810(t *testing.T) {
 }
 
 func TestPlanKeycloakOriginalSkipsUpgradePatch(t *testing.T) {
-	result, err := Plan(findRepoRoot(t), PlanOptions{ActiveVersions: planActiveVersions, ManualTrigger: "8.7"})
+	result, err := Plan(findRepoRoot(t), PlanOptions{ActiveVersions: planActiveVersions, ManualTrigger: "8.7", ManualScenario: "keycloak-original"})
 	if err != nil {
 		t.Fatal(err)
 	}

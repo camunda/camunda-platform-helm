@@ -40,6 +40,11 @@ bash or standalone bash scripts. Commit messages from automated workflow steps f
   them without editing the template.
 - **ALWAYS** use `cancel-in-progress: true` in `concurrency:` for PR-triggered workflows.
 - **ALWAYS** use `make` targets (not raw commands) so local and CI behaviour match.
+- **ALWAYS** pass `${{ }}` values to a `run:` script through the step's `env:`, not inline in the
+  script. The zizmor pre-commit hook fails on high-severity findings (template injection, broad
+  permissions, unscoped app tokens, unpinned images or actions). `pre-commit run --all-files` runs
+  it locally, and `lint-global` runs it on every PR as `lint / pre-commit`. Use
+  `# zizmor: ignore[<audit>]` only when the finding is a false positive.
 - **ALWAYS** install tools via `.github/actions/install-tool-versions` before using `go`, `helm`,
   `kubectl`, etc. — this respects the pinned versions in `.tool-versions`.
 - **ALWAYS** implement new non-trivial workflow automation logic in Go under `scripts/<feature>/`
@@ -149,7 +154,10 @@ permissions:
 All secrets come from Vault. Use `hashicorp/vault-action` **before** any step that needs them.
 Always set `exportEnv: false` so the values are **not** written to the job-wide `$GITHUB_ENV`.
 Give the step an `id:` and pass each secret only into the specific step that consumes it, via
-`${{ steps.<id>.outputs.<NAME> }}`:
+`${{ steps.<id>.outputs.<NAME> }}`. Log in with GitHub OIDC (`method: jwt`) and grant the job
+`id-token: write`; do not add AppRole logins (`VAULT_ROLE_ID`, `VAULT_SECRET_ID`). A
+reusable workflow receives `VAULT_JWT_PATH`, `VAULT_JWT_ROLE` and `VAULT_JWT_AUDIENCE` as
+secrets, and its caller job must grant `id-token: write` as well:
 
 ```yaml
 - name: Import Vault secrets
@@ -157,9 +165,10 @@ Give the step an `id:` and pass each secret only into the specific step that con
   id: vault
   with:
     url: ${{ secrets.VAULT_ADDR }}
-    method: approle
-    roleId: ${{ secrets.VAULT_ROLE_ID }}
-    secretId: ${{ secrets.VAULT_SECRET_ID }}
+    method: jwt
+    path: ${{ secrets.VAULT_JWT_PATH }}
+    role: ${{ secrets.VAULT_JWT_ROLE }}
+    jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
     secrets: |
       secret/data/products/distribution/ci GH_APP_ID_DISTRO_CI;
       secret/data/products/distribution/ci GH_APP_PRIVATE_KEY_DISTRO_CI;

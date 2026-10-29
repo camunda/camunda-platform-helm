@@ -54,7 +54,7 @@ jobs:
         - distro:
             if: false
     steps:
-    - uses: camunda/infra-global-github-actions/start-build-monitor@ead99f6c9c536f5c47e443929d47e8fcfdb05a81  # start-build-monitor-1.0.1
+    - uses: camunda/infra-global-github-actions/start-build-monitor@ead99f6c9c536f5c47e443929d47e8fcfdb05a81 # start-build-monitor-1.0.1
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       with:
         # This is needed to load repo GH composite actions if the workflow triggered by workflow_call.
@@ -65,9 +65,10 @@ jobs:
       uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
       with:
         url: ${{ secrets.VAULT_ADDR }}
-        method: approle
-        roleId: ${{ secrets.VAULT_ROLE_ID }}
-        secretId: ${{ secrets.VAULT_SECRET_ID }}
+        method: jwt
+        path: ${{ secrets.VAULT_JWT_PATH }}
+        role: ${{ secrets.VAULT_JWT_ROLE }}
+        jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
         secrets: |
           secret/data/products/distribution/ci DISTRO_CI_GCP_GKE_CLUSTER_NAME;
           secret/data/products/distribution/ci DISTRO_CI_GCP_GKE_CLUSTER_LOCATION;
@@ -93,7 +94,9 @@ jobs:
     - name: Delete Namespace on ${{ matrix.distro.name }}
       run: |
         kubectl delete ns --ignore-not-found=true \
-          -l github-run-id="${{ inputs.github-run-id }}"
+          -l github-run-id="${INPUTS_GITHUB_RUN_ID}"
+      env:
+        INPUTS_GITHUB_RUN_ID: ${{ inputs.github-run-id }}
 
     - name: Observe build status
       if: always()
