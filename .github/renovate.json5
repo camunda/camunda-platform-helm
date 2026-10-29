@@ -131,9 +131,9 @@
       versioning: 'regex:^(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)(-(?<compatibility>debian-\\d+)-r(?<build>\\d+))?$',
     },
     {
-      description: 'Bitnami Premium os-shell tags are <major>-debian-<n>-rN, without minor or patch.',
+      description: 'Bitnami Premium os-shell tags are <major>-debian-<n>-rN; rN maps to build, as in the shared rule.',
       matchDatasources: ['custom.bitnami-os-shell-camunda'],
-      versioning: 'regex:^(?<major>\\d+)-(?<compatibility>debian-\\d+)-r(?<patch>\\d+)$',
+      versioning: 'regex:^(?<major>\\d+)-(?<compatibility>debian-\\d+)-r(?<build>\\d+)$',
     },
     // vendor-ee/postgresql and vendor-ee/os-shell in the 8.7/8.8/8.9 enterprise values are sourced from
     // their bitnami-<x>-camunda custom datasources (see customManagers);
