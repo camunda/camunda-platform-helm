@@ -74,7 +74,7 @@ func checkRunBlocks(repoRoot, base string, all bool, out io.Writer) error {
 func changedRunBlocks(repoRoot, base string, all bool) (head, before []runBlock, err error) {
 	readHead := func(path string) ([]byte, error) { return os.ReadFile(filepath.Join(repoRoot, path)) }
 	if all {
-		tracked, err := git(repoRoot, append([]string{"ls-files", "-z", "--"}, workflowScopes...)...)
+		tracked, err := git(repoRoot, append([]string{"ls-files", "-z", "--cached", "--others", "--exclude-standard", "--"}, workflowScopes...)...)
 		if err != nil {
 			return nil, nil, err
 		}
