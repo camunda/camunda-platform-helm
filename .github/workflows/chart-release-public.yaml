@@ -490,7 +490,7 @@ jobs:
             exit 1
           fi
 
-          echo "pr_number=${pr_number}" >> $GITHUB_OUTPUT
+          echo "pr_number=${pr_number}" >> "$GITHUB_OUTPUT"
 
           current_labels="$(gh pr view "${pr_number}" --json labels --jq '.labels[].name')"
           if echo "${current_labels}" | grep -qx "autorelease: pending"; then
@@ -526,7 +526,7 @@ jobs:
           GH_TOKEN="${{ secrets.GITHUB_TOKEN }}" gh pr review "${pr_number}" --approve
 
           gh pr merge "${pr_number}" --auto --squash
-          echo "enabled=true" >> $GITHUB_OUTPUT
+          echo "enabled=true" >> "$GITHUB_OUTPUT"
 
       - name: Summary
         if: ${{ !cancelled() }}
@@ -535,7 +535,7 @@ jobs:
         run: |
           PR_URL=$(gh pr view "${{ steps.mark-published.outputs.pr_number }}" --json url --jq '.url' 2>/dev/null || echo "")
 
-          cat >> $GITHUB_STEP_SUMMARY << EOF
+          cat >> "$GITHUB_STEP_SUMMARY" << EOF
 
           ## Post-Release Complete
 
@@ -544,12 +544,12 @@ jobs:
           EOF
 
           if [[ "${{ steps.auto-merge.outputs.enabled }}" == "true" ]]; then
-            cat >> $GITHUB_STEP_SUMMARY << EOF
+            cat >> "$GITHUB_STEP_SUMMARY" << EOF
           ✅ Auto-merge enabled for release-please PR
           ${PR_URL:+**PR:** ${PR_URL}}
           EOF
           else
-            cat >> $GITHUB_STEP_SUMMARY << EOF
+            cat >> "$GITHUB_STEP_SUMMARY" << EOF
 
           ### Manual Step Required
           Merge the release-please PR to complete the release process.
