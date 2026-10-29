@@ -29,6 +29,8 @@ func helmHelp(out io.Writer) {
 	fmt.Fprintf(out, `
 Helm budgets: branches <= %d; control depth <= %d.
 Count if/range/with actions; chained alternatives share a level.
+An else arm with only one same-kind branch is a chain, including explicit else/end.
+Other else bodies retain nesting.
 Definitions and blocks start independent bodies; called templates are not expanded.
 New or edited parsed bodies must satisfy both budgets, even when counts decrease.
 Untouched legacy debt passes. Comments and expression formatting preserve eligibility.
@@ -42,10 +44,6 @@ func checkHelm(repoRoot, base string, charts []string, out io.Writer) error {
 	root, selected, err := helmInputs(repoRoot, charts)
 	if err != nil {
 		return err
-	}
-	if len(selected) == 0 {
-		fmt.Fprintln(out, "helm-template-check: no Camunda chart paths selected; dependency charts are outside this check")
-		return nil
 	}
 	baseSHA, err := git(root, "merge-base", base, "HEAD")
 	if err != nil {

@@ -167,7 +167,17 @@ func TestHelmExecutableHelp(t *testing.T) {
 	helmHelp(&out)
 	assert.Contains(t, out.String(), fmt.Sprintf("branches <= %d; control depth <= %d", maxHelmBranches, maxHelmDepth))
 	assert.Contains(t, out.String(), "Untouched legacy debt passes")
+	assert.Contains(t, out.String(), "including explicit else/end")
 	require.ErrorContains(t, checkHelm(t.TempDir(), "HEAD", nil, &out), "at least one chart path")
+}
+
+func TestHelmCheckRejectsUnsupportedChart(t *testing.T) {
+	t.Parallel()
+	root := t.TempDir()
+	writeFile(t, root, "charts/dependency/Chart.yaml", "apiVersion: v2\n")
+	var out bytes.Buffer
+	require.ErrorContains(t, checkHelm(root, "HEAD", []string{"charts/dependency"}, &out), "unsupported chart path")
+	assert.Empty(t, out.String())
 }
 
 func TestHelmMakeEntryPoint(t *testing.T) {
