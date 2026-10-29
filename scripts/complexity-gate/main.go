@@ -16,6 +16,7 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"flag"
 	"fmt"
 	"go/ast"
@@ -23,10 +24,12 @@ import (
 	"go/token"
 	"go/types"
 	"io"
+	"math"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/fzipp/gocyclo"
@@ -40,23 +43,38 @@ const (
 	scope         = "scripts"
 )
 
+type hunk struct {
+	start, count int
+}
+
+var wholeFile = []hunk{{start: 1, count: math.MaxInt32}}
+
 func main() {
 	repoRoot := flag.String("repo-root", ".", "path to the camunda-platform-helm repo root")
+	base := flag.String("base", "origin/main", "git ref; the change is the diff from its merge base with HEAD to the working tree")
+	all := flag.Bool("all", false, "check every function under scripts/, changed or not")
 	flag.Parse()
 
-	if err := run(*repoRoot, os.Stdout); err != nil {
+	if err := run(*repoRoot, *base, *all, os.Stdout); err != nil {
 		fmt.Fprintln(os.Stderr, "ERROR:", err)
 		os.Exit(1)
 	}
 }
 
-func run(repoRoot string, out io.Writer) error {
-	tracked, err := git(repoRoot, "ls-files", "-z", "--", scope)
+func run(repoRoot, base string, all bool, out io.Writer) error {
+	var files map[string][]hunk
+	var err error
+	if all {
+		files, err = allFiles(repoRoot)
+	} else {
+		files, err = changedFiles(repoRoot, base)
+	}
 	if err != nil {
 		return err
 	}
-	var paths []string
-	for path := range strings.SplitSeq(tracked, "\x00") {
+
+	paths := make([]string, 0, len(files))
+	for path := range files {
 		if strings.HasSuffix(path, ".go") && !strings.HasSuffix(path, "_test.go") {
 			paths = append(paths, path)
 		}
@@ -66,7 +84,7 @@ func run(repoRoot string, out io.Writer) error {
 	checked := 0
 	var violations []string
 	for _, path := range paths {
-		v, n, err := checkFile(repoRoot, path)
+		v, n, err := checkFile(repoRoot, path, files[path])
 		if err != nil {
 			return err
 		}
@@ -85,7 +103,118 @@ func run(repoRoot string, out io.Writer) error {
 	return fmt.Errorf("%d of %d checked function(s) above %s; split them", len(violations), checked, limits)
 }
 
-func checkFile(repoRoot, path string) ([]string, int, error) {
+func changedFiles(repoRoot, base string) (map[string][]hunk, error) {
+	mergeBase, err := git(repoRoot, "merge-base", base, "HEAD")
+	if err != nil {
+		return nil, err
+	}
+	diff, err := git(repoRoot, "diff", "--unified=0", "--inter-hunk-context=0", "--src-prefix=a/", "--dst-prefix=b/", "--no-color", "--no-ext-diff", "-M", strings.TrimSpace(mergeBase), "--", scope)
+	if err != nil {
+		return nil, err
+	}
+	files, err := parseDiff(diff)
+	if err != nil {
+		return nil, err
+	}
+	untracked, err := git(repoRoot, "ls-files", "-z", "--others", "--exclude-standard", "--", scope)
+	if err != nil {
+		return nil, err
+	}
+	for path := range strings.SplitSeq(untracked, "\x00") {
+		files[path] = wholeFile
+	}
+	return files, nil
+}
+
+func allFiles(repoRoot string) (map[string][]hunk, error) {
+	listed, err := git(repoRoot, "ls-files", "-z", "--cached", "--others", "--exclude-standard", "--", scope)
+	if err != nil {
+		return nil, err
+	}
+	files := map[string][]hunk{}
+	for path := range strings.SplitSeq(listed, "\x00") {
+		if _, err := os.Stat(filepath.Join(repoRoot, path)); errors.Is(err, os.ErrNotExist) {
+			continue
+		}
+		files[path] = wholeFile
+	}
+	return files, nil
+}
+
+func parseDiff(diff string) (map[string][]hunk, error) {
+	files := map[string][]hunk{}
+	path := ""
+	inHeader := false
+	for line := range strings.Lines(diff) {
+		line = strings.TrimRight(line, "\n")
+		switch {
+		case strings.HasPrefix(line, "diff --git "):
+			path, inHeader = "", true
+		case inHeader && strings.HasPrefix(line, "+++ "):
+			p, err := diffPath(strings.TrimPrefix(line, "+++ "))
+			if err != nil {
+				return nil, err
+			}
+			path = p
+		case strings.HasPrefix(line, "@@ "):
+			inHeader = false
+			h, err := parseHunk(line)
+			if err != nil {
+				return nil, err
+			}
+			files[path] = append(files[path], h)
+		}
+	}
+	return files, nil
+}
+
+func diffPath(name string) (string, error) {
+	name = strings.TrimSuffix(name, "\t")
+	if strings.HasPrefix(name, `"`) {
+		unquoted, err := strconv.Unquote(name)
+		if err != nil {
+			return "", fmt.Errorf("diff path %q: %w", name, err)
+		}
+		name = unquoted
+	}
+	return strings.TrimPrefix(name, "b/"), nil
+}
+
+func parseHunk(line string) (hunk, error) {
+	fields := strings.Fields(line)
+	if len(fields) < 3 || !strings.HasPrefix(fields[2], "+") {
+		return hunk{}, fmt.Errorf("unexpected hunk header %q", line)
+	}
+	startText, countText, hasCount := strings.Cut(fields[2][1:], ",")
+	start, err := strconv.Atoi(startText)
+	if err != nil {
+		return hunk{}, fmt.Errorf("hunk header %q: %w", line, err)
+	}
+	count := 1
+	if hasCount {
+		if count, err = strconv.Atoi(countText); err != nil {
+			return hunk{}, fmt.Errorf("hunk header %q: %w", line, err)
+		}
+	}
+	return hunk{start: start, count: count}, nil
+}
+
+func touches(hunks []hunk, from, to int) bool {
+	for _, h := range hunks {
+		if h.count == 0 {
+			if h.start >= from && h.start < to {
+				return true
+			}
+			continue
+		}
+		if h.start <= to && h.start+h.count-1 >= from {
+			return true
+		}
+	}
+	return false
+}
+
+func checkFile(repoRoot, path string, hunks []hunk) ([]string, int, error) {
 	fset := token.NewFileSet()
 	file, err := parser.ParseFile(fset, filepath.Join(repoRoot, path), nil, parser.SkipObjectResolution)
 	if err != nil {
@@ -95,6 +224,9 @@ func checkFile(repoRoot, path string) ([]string, int, error) {
 	var violations []string
 	for _, fn := range topLevelFuncs(file) {
 		from, to := fset.Position(fn.Pos()).Line, fset.Position(fn.End()).Line
+		if !touches(hunks, from, to) {
+			continue
+		}
 		checked++
 		if over := overLimits(fn, to-from+1); over != "" {
 			violations = append(violations, fmt.Sprintf("%s:%d: %s: %s", path, from, funcName(fn), over))
