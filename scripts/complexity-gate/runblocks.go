@@ -84,8 +84,8 @@ func shellcheckActions(blocks []runBlock, out io.Writer) error {
 			continue
 		}
 		checked++
-		cmd := exec.Command("shellcheck", "--shell=bash", "--format=gcc", "-")
-		cmd.Stdin = strings.NewReader(ghaExpression.ReplaceAllLiteralString(b.script, "${GHA_EXPRESSION}"))
+		cmd := exec.Command("shellcheck", "--shell=bash", "--format=gcc", "--exclude=SC2043,SC2050,SC2157,SC2194", "-")
+		cmd.Stdin = strings.NewReader(maskExpressions(b.script))
 		report, err := cmd.Output()
 		var exitErr *exec.ExitError
 		if err != nil && (!errors.As(err, &exitErr) || exitErr.ExitCode() != 1) {
@@ -356,8 +356,18 @@ func joinStep(parent, child string) string {
 	return parent + "/" + child
 }
 
+func maskExpressions(script string) string {
+	return ghaExpression.ReplaceAllStringFunc(script, func(e string) string {
+		parts := strings.Split(e, "\n")
+		for i, p := range parts {
+			parts[i] = strings.Repeat("_", len(p))
+		}
+		return strings.Join(parts, "\\\n")
+	})
+}
+
 func measureRun(n *yaml.Node) (runBlock, error) {
-	script := ghaExpression.ReplaceAllString(n.Value, "GHA_EXPRESSION")
+	script := maskExpressions(n.Value)
 	file, err := syntax.NewParser(syntax.KeepComments(true)).Parse(strings.NewReader(script), "")
 	if err != nil {
 		return runBlock{}, fmt.Errorf("run block at line %d: %w", n.Line, err)

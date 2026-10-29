@@ -295,6 +295,19 @@ func TestRunShellchecksInlineCompositeActionRunValue(t *testing.T) {
 	assert.Contains(t, out.String(), ".github/actions/a/action.yaml:5: runs/steps/Inline:")
 }
 
+func TestRunShellchecksMaskedExpressionsAtTheirSourceLines(t *testing.T) {
+	root := newRepo(t, map[string]string{".github/actions/a/action.yaml": action("Clean", `echo "ok"`)})
+	writeFile(t, root, ".github/actions/a/action.yaml", action("Masked", "echo '${{ github.sha }}' '$HOME'\necho \"${{\n  inputs.dir\n}}\"\ncd $TARGET_DIR || exit 1"))
+
+	var out bytes.Buffer
+	err := run(root, "main", false, &out)
+
+	require.Error(t, err)
+	assert.Contains(t, out.String(), ".github/actions/a/action.yaml:6: runs/steps/Masked: note: Expressions don't expand in single quotes")
+	assert.Contains(t, out.String(), ".github/actions/a/action.yaml:10: runs/steps/Masked: note: Double quote to prevent globbing")
+	assert.Contains(t, err.Error(), "shellcheck reports 2 finding(s)")
+}
+
 func TestRunAllShellchecksEveryCompositeActionRunBlock(t *testing.T) {
 	root := newRepo(t, map[string]string{
 		".github/actions/a/action.yaml": action("Clean", `echo "ok"`),
@@ -352,6 +365,13 @@ func TestMeasureRunCountsLinesOfCode(t *testing.T) {
 	b, err := measureRun(&yaml.Node{Kind: yaml.ScalarNode, Value: script})
 	require.NoError(t, err)
 	assert.Equal(t, 4, b.lines)
+}
+
+func TestMeasureRunCountsEveryLineOfMultilineExpressions(t *testing.T) {
+	script := longScript(99) + "echo \"${{ format('{0}{1}',\n  inputs.a,\n  inputs.b) }}\"\n"
+	b, err := measureRun(&yaml.Node{Kind: yaml.ScalarNode, Value: script})
+	require.NoError(t, err)
+	assert.Equal(t, 102, b.lines)
 }
 
 func TestBashCyclomatic(t *testing.T) {
