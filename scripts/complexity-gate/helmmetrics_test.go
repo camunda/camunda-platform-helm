@@ -35,6 +35,8 @@ func TestHelmMeasurements(t *testing.T) {
 		{"with alternatives", `{{with .x}}x{{else with .y}}y{{end}}`, "root:test.tpl", 2, 1},
 		{"nested alternative body", `{{if .x}}x{{else if .y}}{{if .z}}z{{end}}{{end}}`, "root:test.tpl", 3, 2},
 		{"explicit alternative", "{{if .x}}x{{else}}\n {{if .y}}y{{end}}\n{{end}}", "root:test.tpl", 2, 1},
+		{"else body with text", `{{if .x}}x{{else}}fallback{{if .y}}y{{end}}{{end}}`, "root:test.tpl", 2, 2},
+		{"else body with action", `{{if .x}}x{{else}}{{printf "fallback"}}{{if .y}}y{{end}}{{end}}`, "root:test.tpl", 2, 2},
 		{"range empty branch", `{{range .xs}}x{{else}}{{range .ys}}y{{end}}{{end}}`, "root:test.tpl", 2, 2},
 		{"comments and strings", "{{- /* {{if .ignored}} */ -}}{{printf \"{{if .ignored}}\"}}{{printf `{{range .ignored}}`}}", "root:test.tpl", 0, 0},
 		{"definition", `{{define "x"}}{{if .x}}{{include "unknown" .}}{{end}}{{end}}`, "helper:x", 1, 1},
@@ -88,6 +90,14 @@ func TestHelmReportRejectsInvalidInput(t *testing.T) {
 	require.ErrorContains(t, reportHelmCharts(root, nil, &out), "at least one chart")
 	require.ErrorContains(t, reportHelmCharts(root, []string{"../outside"}, &out), "outside the repository")
 	require.ErrorContains(t, reportHelmCharts(root, []string{"charts/missing"}, &out), "Chart.yaml")
+	valid := "charts/camunda-platform-test"
+	unsupported := "charts/dependency"
+	writeFile(t, root, valid+"/Chart.yaml", "apiVersion: v2\n")
+	writeFile(t, root, valid+"/templates/configmap.yaml", "kind: ConfigMap\n")
+	writeFile(t, root, unsupported+"/Chart.yaml", "apiVersion: v2\n")
+	for _, charts := range [][]string{{unsupported}, {valid, unsupported}, {unsupported, valid}} {
+		require.ErrorContains(t, reportHelmCharts(root, charts, &out), "unsupported chart path")
+	}
 	writeFile(t, root, "charts/camunda-platform-empty/Chart.yaml", "apiVersion: v2\n")
 	require.ErrorContains(t, reportHelmCharts(root, []string{"charts/camunda-platform-empty"}, &out), "candidate")
 	assert.Empty(t, out.String())

@@ -79,9 +79,10 @@ func helmInputs(repoRoot string, charts []string) (string, []string, error) {
 			return "", nil, fmt.Errorf("chart %q: %w", chart, err)
 		}
 		parts := strings.Split(relative, "/")
-		if len(parts) == 2 && parts[0] == "charts" && strings.HasPrefix(parts[1], "camunda-platform-") {
-			selected = append(selected, relative)
+		if len(parts) != 2 || parts[0] != "charts" || !strings.HasPrefix(parts[1], "camunda-platform-") {
+			return "", nil, fmt.Errorf("unsupported chart path %q: expected charts/camunda-platform-*", chart)
 		}
+		selected = append(selected, relative)
 	}
 	return root, selected, nil
 }
