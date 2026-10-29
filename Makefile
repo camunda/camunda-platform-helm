@@ -81,7 +81,7 @@ test.zone-aware-migration:
 # against real PostgreSQL, Elasticsearch, and Keycloak containers (needs docker).
 .PHONY: test.deploy-camunda-credential-stores
 test.deploy-camunda-credential-stores:
-	cd scripts/deploy-camunda && go test -tags integration ./cmd -run 'TestPsqlScript|TestEsScript|TestKeycloakBootstrapReset' -count=1 -timeout 20m -v
+	cd scripts/deploy-camunda && go test -tags integration ./credentials -run 'TestPsqlScript|TestEsScript|TestKeycloakBootstrapReset' -count=1 -timeout 20m -v
 
 .PHONY: install.release-tools
 install.release-tools:
@@ -137,7 +137,7 @@ go.test: .helm-version-check helm.dependency-update
 	@$(call go_test_run, go test ./...)
 	@echo "\n[$@] deploy-camunda: topology dispatch, values/preflight, registry validator + snapshot drift"
 	# The matrix leg is intentionally cross-version: it walks all charts/*/test/ci/ regardless of chartPath.
-	@cd scripts/deploy-camunda && go test -timeout 5m ./cmd/... ./deploy/... ./matrix/... ./pkg/deployer/...
+	@cd scripts/deploy-camunda && go test -timeout 5m ./cmd/... ./credentials/... ./deploy/... ./matrix/... ./pkg/deployer/...
 	@cd scripts/vault-secret-mapper && go test -timeout 2m ./...
 
 # go.test-golden-updated: runs the tests with updating the golden files
@@ -200,6 +200,10 @@ go.lint:
 .PHONY: go.test-scripts
 go.test-scripts:
 	@$(call go_scripts_run,go test -race -count=1 -vet=all ./...)
+
+.PHONY: go.complexity
+go.complexity:
+	@cd scripts/complexity-gate && go run . --repo-root ../.. --base $(lintBase)
 
 #
 # Helpers.

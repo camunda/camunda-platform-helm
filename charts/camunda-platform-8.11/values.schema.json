@@ -1078,22 +1078,22 @@
                                     "properties": {
                                         "clientId": {
                                             "type": "string",
-                                            "description": "defines the client id, which is used by Camunda Hub in authentication flows. This 8.10 override replaces global.identity.auth.camundaHub.webModeler.clientId.",
+                                            "description": "can be used to override global.identity.auth.webModeler.clientId for Camunda Hub authentication flows. When Management Identity registers clients in Keycloak, also set the CAMUNDA_WEBMODELER_CLIENT_ID environment variable in identity.env to the same value.",
                                             "default": ""
                                         },
                                         "clientApiAudience": {
                                             "type": "string",
-                                            "description": "defines the audience which is used by Camunda Hub's client API. This 8.10 override replaces global.identity.auth.camundaHub.webModeler.clientApiAudience.",
+                                            "description": "can be used to override global.identity.auth.webModeler.clientApiAudience for Camunda Hub's client API.",
                                             "default": ""
                                         },
                                         "publicApiAudience": {
                                             "type": "string",
-                                            "description": "defines the audience which is used by Camunda Hub's public API. This 8.10 override replaces global.identity.auth.camundaHub.webModeler.publicApiAudience.",
+                                            "description": "can be used to override global.identity.auth.webModeler.publicApiAudience for Camunda Hub's public API.",
                                             "default": ""
                                         },
                                         "redirectUrl": {
                                             "type": "string",
-                                            "description": "defines the root URL which is used by Keycloak to access Camunda Hub. This 8.10 override replaces global.identity.auth.camundaHub.webModeler.redirectUrl.",
+                                            "description": "can be used to override global.identity.auth.webModeler.redirectUrl with the root URL Keycloak uses to access Camunda Hub.",
                                             "default": ""
                                         }
                                     },
@@ -2316,7 +2316,7 @@
                         "string",
                         "null"
                     ],
-                    "description": "can be used to make Camunda Hub available on a custom sub-path. This 8.10 override replaces camundaHub.webModeler.contextPath.",
+                    "description": "can be used to override webModeler.contextPath for Camunda Hub.",
                     "default": null,
                     "nullable": true
                 },
@@ -2525,7 +2525,7 @@
                 },
                 "contextPath": {
                     "type": "string",
-                    "description": "can be used to make WebModeler available on a custom sub-path. This is mainly used to run the Camunda web applications under a single domain. For the 8.10 Camunda Hub override, use camundaHub.contextPath instead of camundaHub.webModeler.contextPath.",
+                    "description": "can be used to make WebModeler available on a custom sub-path. This is mainly used to run the Camunda web applications under a single domain. To override this legacy value for Camunda Hub, use camundaHub.contextPath.",
                     "default": ""
                 },
                 "security": {
@@ -3637,7 +3637,7 @@
                         },
                         "deploymentStrategy": {
                             "type": "string",
-                            "description": "can be used to set the restapi Deployment update strategy, RollingUpdate or Recreate. Recreate requires webModeler.persistence.enabled and webModeler.persistence.existingClaim, else the render fails; it adds downtime on each upgrade. For the 8.10 Camunda Hub override, use camundaHub.persistence.deploymentStrategy instead of camundaHub.webModeler.persistence.deploymentStrategy.",
+                            "description": "can be used to set the restapi Deployment update strategy, RollingUpdate or Recreate. Recreate requires webModeler.persistence.enabled and webModeler.persistence.existingClaim, else the render fails; it adds downtime on each upgrade. To override this legacy value for Camunda Hub, use camundaHub.persistence.deploymentStrategy.",
                             "default": "RollingUpdate",
                             "enum": [
                                 "RollingUpdate",

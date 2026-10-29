@@ -11,9 +11,8 @@ template workflows (named `*-template.yaml`) are called by trigger workflows (na
 `*-runner.yaml` or per-event files). All workflows use pinned action SHAs (not mutable tags)
 for security. Vault is the source of truth for secrets — never hard-code credentials. The
 `hashicorp/vault-action` step imports secrets as environment variables before any step that
-needs them. Complex logic (>20 lines of shell) must be implemented as a Go script, not inline
-bash or standalone bash scripts. Commit messages from automated workflow steps follow Conventional Commits with the
-`chore(ci):` type. Always set `permissions:` explicitly to the minimum required.
+needs them. `run:` blocks have a complexity limit (see Critical Rules). Commit messages from
+automated workflow steps follow Conventional Commits with the `chore(ci):` type. Always set `permissions:` explicitly to the minimum required.
 
 ---
 
@@ -24,9 +23,20 @@ bash or standalone bash scripts. Commit messages from automated workflow steps f
   SHA with a `# vX.Y.Z` comment.
 - **NEVER** store secrets in workflow files, environment variables in plain text, or repository
   variables. All secrets come from Vault via `hashicorp/vault-action`.
-- **NEVER** put automation logic longer than ~20 lines (or anything with branching, API calls,
-  or JSON parsing) in inline bash or new `scripts/*.sh` — implement as a Go script with tests
-  in `scripts/<feature>/` (see `scripting.instructions.md`).
+- **NEVER** add a `run:` block above bash cyclomatic complexity 10 (1, plus 1 for each `if`/`elif`,
+  `case` item, loop, `&&` and `||`) or 100 lines of code (blank and comment-only lines do not
+  count), in `.github/workflows/` or `.github/actions/`. **NEVER** make a block that is already
+  above more complex or longer, except for a fix that is not possible without it.
+  `make go.complexity` fails the change, and `test-release-tooling.yaml` runs it on every PR.
+  The same check runs shellcheck on the `run:` blocks of the composite actions that a change
+  touches and fails on any finding.
+  `cd scripts/complexity-gate && go run . --repo-root ../.. --all` lists the blocks that are
+  already above. To pass, delete dead branches and duplicated commands, or split the step where
+  no shell variable crosses the split. Do not add a `GITHUB_ENV` or `GITHUB_OUTPUT` write, a `.sh`
+  file, a `${{ }}` expression or an `if:` condition only to pass the check, and do not rewrite the
+  block in another language to pass it. If a fix must grow a block that is already above, name
+  the block and the reason in the PR body. A reviewer who accepts the reason merges the PR
+  although the check fails.
 - **NEVER** omit `concurrency:` on workflows triggered by `push` or `pull_request` — duplicate
   runs waste CI resources.
 - **NEVER** use `strategy.fail-fast: true` for integration test matrices — one flaky test must
@@ -47,8 +57,6 @@ bash or standalone bash scripts. Commit messages from automated workflow steps f
   `# zizmor: ignore[<audit>]` only when the finding is a false positive.
 - **ALWAYS** install tools via `.github/actions/install-tool-versions` before using `go`, `helm`,
   `kubectl`, etc. — this respects the pinned versions in `.tool-versions`.
-- **ALWAYS** implement new non-trivial workflow automation logic in Go under `scripts/<feature>/`
-  (or an existing Go tooling module), with tests where practical.
 
 ---
 
@@ -343,8 +351,8 @@ jobs:
 
 ## Common Mistakes
 
-For SHA pinning, Vault-only secrets, `exportEnv: false` (and its one exception), bash >20 lines,
-`fail-fast: false`, and `concurrency:`, see Critical Rules and Pattern 2 above. Additional pitfalls:
+For SHA pinning, Vault-only secrets, `exportEnv: false` (and its one exception), over-limit
+`run:` blocks, `fail-fast: false`, and `concurrency:`, see Critical Rules and Pattern 2 above. Additional pitfalls:
 
 1. **Not using `make` targets** — running `go test ./...` directly instead of `make go.test`
    skips pre-test steps (license checks, formatting, dependency updates).
