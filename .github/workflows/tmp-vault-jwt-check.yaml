@@ -23,14 +23,14 @@ jobs:
           jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           exportEnv: false
           secrets: |
-            secret/data/products/infrastructure-experience/ci/common SLACK_BOT_TOKEN;
-            secret/data/products/infrastructure-experience/ci/common GITHUB_APP_ID;
-            secret/data/products/infrastructure-experience/ci/common GITHUB_APP_PRIVATE_KEY;
+            secret/data/products/qa/ci/common SLACK_BOT_USER_OAUTH_TOKEN;
+            secret/data/products/qa/ci/github.com/apps/camunda/quality-assurance-ci GITHUB_APP_ID;
+            secret/data/products/qa/ci/github.com/apps/camunda/quality-assurance-ci GITHUB_APP_SECRET;
       - name: Check values are non-empty
         env:
-          SLACK: ${{ steps.vault.outputs.SLACK_BOT_TOKEN }}
+          SLACK: ${{ steps.vault.outputs.SLACK_BOT_USER_OAUTH_TOKEN }}
           APP_ID: ${{ steps.vault.outputs.GITHUB_APP_ID }}
-          APP_KEY: ${{ steps.vault.outputs.GITHUB_APP_PRIVATE_KEY }}
+          APP_KEY: ${{ steps.vault.outputs.GITHUB_APP_SECRET }}
         run: |
           for v in SLACK APP_ID APP_KEY; do [ -n "${!v}" ] || { echo "$v empty"; exit 1; }; done
           echo ok
