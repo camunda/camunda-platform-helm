@@ -135,7 +135,7 @@
       matchDatasources: ['custom.bitnami-os-shell-camunda'],
       versioning: 'regex:^(?<major>\\d+)-(?<compatibility>debian-\\d+)-r(?<build>\\d+)$',
     },
-    // vendor-ee/postgresql and vendor-ee/os-shell in the 8.7/8.8/8.9 enterprise values are sourced from
+    // vendor-ee images with a renovate annotation in the 8.7/8.8/8.9 enterprise values are sourced from
     // their bitnami-<x>-camunda custom datasources (see customManagers);
     // disable the docker/helm-values tracking for it so it is not bumped twice.
     // vendor-ee/elasticsearch is intentionally NOT wired here: the chart pins a
@@ -149,7 +149,7 @@
         'charts/camunda-platform-8.8/values-enterprise.yaml',
         'charts/camunda-platform-8.9/values-enterprise.yaml',
       ],
-      matchPackageNames: ['/vendor-ee/postgresql$/', '/vendor-ee/os-shell$/'],
+      matchPackageNames: ['/vendor-ee/(postgresql|os-shell|postgres-exporter|elasticsearch-exporter|keycloak-config-cli)$/'],
       enabled: false,
     },
     {
