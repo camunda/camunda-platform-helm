@@ -103,7 +103,7 @@ jobs:
         with:
           filters: |
             stores:
-              - 'scripts/deploy-camunda/cmd/topology_reconcile*.go'
+              - 'scripts/deploy-camunda/credentials/reconcile*.go'
               - 'charts/internal-keycloak-26/**'
               - 'charts/internal-postgresql/**'
               - 'test/integration/companion-values/*-dogfood.yaml'
