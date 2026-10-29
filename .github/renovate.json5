@@ -122,7 +122,6 @@
       description: 'Bitnami Premium tags carry a -rN revision the default versionings cannot move.',
       matchDatasources: [
         'custom.bitnami-postgresql-camunda',
-        'custom.bitnami-os-shell-camunda',
         'custom.bitnami-postgres-exporter-camunda',
         'custom.bitnami-elasticsearch-camunda',
         'custom.bitnami-elasticsearch-exporter-camunda',
@@ -131,8 +130,13 @@
       ],
       versioning: 'regex:^(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)(-(?<compatibility>debian-\\d+)-r(?<build>\\d+))?$',
     },
-    // vendor-ee/postgresql in the 8.7/8.8/8.9 enterprise values is sourced from
-    // the bitnami-postgresql-camunda custom datasource (see customManagers);
+    {
+      description: 'Bitnami Premium os-shell tags are <major>-debian-<n>-rN, without minor or patch.',
+      matchDatasources: ['custom.bitnami-os-shell-camunda'],
+      versioning: 'regex:^(?<major>\\d+)-(?<compatibility>debian-\\d+)-r(?<patch>\\d+)$',
+    },
+    // vendor-ee/postgresql and vendor-ee/os-shell in the 8.7/8.8/8.9 enterprise values are sourced from
+    // their bitnami-<x>-camunda custom datasources (see customManagers);
     // disable the docker/helm-values tracking for it so it is not bumped twice.
     // vendor-ee/elasticsearch is intentionally NOT wired here: the chart pins a
     // plain tag (e.g. 8.19.16) while the published feed uses the
@@ -145,7 +149,7 @@
         'charts/camunda-platform-8.8/values-enterprise.yaml',
         'charts/camunda-platform-8.9/values-enterprise.yaml',
       ],
-      matchPackageNames: ['/vendor-ee/postgresql$/'],
+      matchPackageNames: ['/vendor-ee/postgresql$/', '/vendor-ee/os-shell$/'],
       enabled: false,
     },
     {
