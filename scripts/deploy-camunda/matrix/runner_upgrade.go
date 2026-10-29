@@ -66,9 +66,9 @@ func filterKnownFeatures(want, available []string) (kept, dropped []string) {
 	return kept, dropped
 }
 
-func chartCredentialsManifest(chartDir, externalSecretsStore string) string {
+func chartCredentialsManifest(chartDir string, secrets config.SecretsFlags) string {
 	name := "external-secret-integration-test-credentials.yaml"
-	if externalSecretsStore == "vault-backend" {
+	if secrets.EffectiveExternalSecretsStore() == "vault-backend" {
 		name = "external-secret-integration-test-credentials-vault.yaml"
 	}
 	path := filepath.Join(chartDir, "test", "integration", "external-secrets", name)
@@ -281,7 +281,7 @@ func executeTwoStepUpgrade(ctx context.Context, entry Entry, flags *config.Runti
 		}
 	}
 	if step1Flags.Secrets.CredentialsManifest == "" {
-		step1Flags.Secrets.CredentialsManifest = chartCredentialsManifest(step1ChartDir, step1Flags.Secrets.ExternalSecretsStore)
+		step1Flags.Secrets.CredentialsManifest = chartCredentialsManifest(step1ChartDir, step1Flags.Secrets)
 	}
 
 	// --- Pre-install lifecycle hook (Step 1 of two-step upgrade) ---

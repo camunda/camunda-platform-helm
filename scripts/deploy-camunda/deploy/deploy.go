@@ -403,9 +403,8 @@ func executeDeployment(ctx context.Context, prepared *PreparedScenario, flags *c
 		Msg("🏷️ [executeDeployment] generated deployment identifier")
 
 	// Determine external secrets store - vault-backend if using vault-backed secrets
-	externalSecretsStore := flags.Secrets.ExternalSecretsStore
+	externalSecretsStore := flags.Secrets.EffectiveExternalSecretsStore()
 	if flags.Secrets.UseVaultBackedSecrets {
-		externalSecretsStore = "vault-backend"
 		logging.Logger.Debug().
 			Str("scenario", scenarioCtx.ScenarioName).
 			Msg("🔐 [executeDeployment] using vault-backed external secrets")
