@@ -220,11 +220,11 @@ jobs:
 
       - name: Validate project membership
         id: validate_project
+        env:
+          ISSUE_DATA: ${{ steps.fetch_data.outputs.issue_data }}
+          PROJECT_DATA: ${{ steps.fetch_data.outputs.project_data }}
         run: |
           set -euo pipefail
-
-          ISSUE_DATA='${{ steps.fetch_data.outputs.issue_data }}'
-          PROJECT_DATA='${{ steps.fetch_data.outputs.project_data }}'
 
           # Skip closed issues: re-labeling a closed issue must not re-run urgency
           # calculation or overwrite its project Status field.
@@ -269,10 +269,10 @@ jobs:
       - name: Check labels
         id: check_labels
         if: steps.validate_project.outputs.in_target_project == 'true'
+        env:
+          ISSUE_DATA: ${{ steps.fetch_data.outputs.issue_data }}
         run: |
           set -euo pipefail
-
-          ISSUE_DATA='${{ steps.fetch_data.outputs.issue_data }}'
 
           # Extract issue type and labels
           ISSUE_TYPE=$(echo "$ISSUE_DATA" | jq -r '.issueType.name // empty')
@@ -452,10 +452,11 @@ jobs:
 
       - name: Update Urgency
         if: steps.validate_project.outputs.in_target_project == 'true'
+        env:
+          ISSUE_DATA: ${{ steps.fetch_data.outputs.issue_data }}
         run: |
           set -euo pipefail
 
-          ISSUE_DATA='${{ steps.fetch_data.outputs.issue_data }}'
           PROJECT_ITEM_ID='${{ steps.validate_project.outputs.project_item_id }}'
           PROJECT_V2_ID='${{ steps.validate_project.outputs.project_v2_id }}'
           NEW_URGENCY='${{ steps.validate_urgency.outputs.urgency }}'
