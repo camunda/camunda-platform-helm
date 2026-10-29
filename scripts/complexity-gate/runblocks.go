@@ -16,9 +16,11 @@ package main
 
 import (
 	"cmp"
+	"errors"
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"slices"
@@ -44,6 +46,7 @@ type runBlock struct {
 	step       string
 	script     string
 	line       int
+	firstLine  int
 	cyclomatic int
 	lines      int
 }
@@ -60,15 +63,51 @@ func checkRunBlocks(repoRoot, base string, all bool, out io.Writer) error {
 	if !all {
 		scope = "added or grown above"
 	}
+	var complexityErr error
 	if len(violations) == 0 {
 		fmt.Fprintf(out, "complexity-gate: %d run block(s) checked, none %s %s\n", len(head), scope, limits)
+	} else {
+		for _, v := range violations {
+			fmt.Fprintln(out, v)
+		}
+		complexityErr = fmt.Errorf("%d of %d checked run block(s) %s %s; split the step or delete code (see .github/instructions/github-actions.instructions.md)",
+			len(violations), len(head), scope, limits)
+	}
+	return errors.Join(complexityErr, shellcheckActions(head, out))
+}
+
+func shellcheckActions(blocks []runBlock, out io.Writer) error {
+	checked := 0
+	var findings []string
+	for _, b := range blocks {
+		if !strings.HasPrefix(b.path, ".github/actions/") {
+			continue
+		}
+		checked++
+		cmd := exec.Command("shellcheck", "--shell=bash", "--format=gcc", "--exclude=SC2043,SC2050,SC2157,SC2194", "-")
+		cmd.Stdin = strings.NewReader(maskExpressions(b.script))
+		report, err := cmd.Output()
+		var exitErr *exec.ExitError
+		if err != nil && (!errors.As(err, &exitErr) || exitErr.ExitCode() != 1) {
+			return fmt.Errorf("shellcheck %s: %w", b.path, err)
+		}
+		for line := range strings.Lines(string(report)) {
+			fields := strings.SplitN(strings.TrimSpace(line), ":", 4)
+			if len(fields) < 4 {
+				continue
+			}
+			n, _ := strconv.Atoi(fields[1])
+			findings = append(findings, fmt.Sprintf("%s:%d: %s:%s", b.path, b.firstLine+n-1, b.step, fields[3]))
+		}
+	}
+	if len(findings) == 0 {
+		fmt.Fprintf(out, "complexity-gate: %d composite action run block(s) checked, no shellcheck finding\n", checked)
 		return nil
 	}
-	for _, v := range violations {
-		fmt.Fprintln(out, v)
+	for _, f := range findings {
+		fmt.Fprintln(out, f)
 	}
-	return fmt.Errorf("%d of %d checked run block(s) %s %s; split the step or move its logic into a tool the job already runs",
-		len(violations), len(head), scope, limits)
+	return fmt.Errorf("shellcheck reports %d finding(s) in %d checked composite action run block(s)", len(findings), checked)
 }
 
 func changedRunBlocks(repoRoot, base string, all bool) (head, before []runBlock, err error) {
@@ -314,15 +353,38 @@ func joinStep(parent, child string) string {
 	return parent + "/" + child
 }
 
+func maskExpressions(script string) string {
+	return ghaExpression.ReplaceAllStringFunc(script, func(e string) string {
+		parts := strings.Split(e, "\n")
+		for i, p := range parts {
+			parts[i] = strings.Repeat("_", len(p))
+		}
+		return strings.Join(parts, "\\\n")
+	})
+}
+
 func measureRun(n *yaml.Node) (runBlock, error) {
-	script := ghaExpression.ReplaceAllString(n.Value, "GHA_EXPRESSION")
-	file, err := syntax.NewParser().Parse(strings.NewReader(script), "")
+	script := maskExpressions(n.Value)
+	file, err := syntax.NewParser(syntax.KeepComments(true)).Parse(strings.NewReader(script), "")
 	if err != nil {
 		return runBlock{}, fmt.Errorf("run block at line %d: %w", n.Line, err)
 	}
-	b := runBlock{script: n.Value, line: n.Line, cyclomatic: bashCyclomatic(file)}
-	for line := range strings.Lines(n.Value) {
-		if strings.TrimSpace(line) != "" {
+	commentLines := map[uint]bool{}
+	syntax.Walk(file, func(node syntax.Node) bool {
+		if c, ok := node.(*syntax.Comment); ok {
+			commentLines[c.Pos().Line()] = true
+		}
+		return true
+	})
+	b := runBlock{script: n.Value, line: n.Line, firstLine: n.Line, cyclomatic: bashCyclomatic(file)}
+	if n.Style&(yaml.LiteralStyle|yaml.FoldedStyle) != 0 {
+		b.firstLine++
+	}
+	var number uint
+	for line := range strings.Lines(script) {
+		number++
+		text := strings.TrimSpace(line)
+		if text != "" && (!commentLines[number] || !strings.HasPrefix(text, "#")) {
 			b.lines++
 		}
 	}
