@@ -147,7 +147,7 @@ EOF
 # Generate random suffix for uniqueness
 generate_random_suffix() {
   # Generate 8-character alphanumeric suffix
-  tr -dc 'a-z0-9' < /dev/urandom | head -c 8 || date +%s | sha256sum | head -c 8
+  tr -dc 'a-z0-9' < /dev/urandom | head -c 8 || date +%s | sha256sum | head -c 8 || true
 }
 
 # Parse command line arguments
