@@ -2509,7 +2509,7 @@ orchestration:
     ## @extra orchestration.secretStore.gcp.default.endpoint can be used to override the Secret Manager API endpoint.
     ## @extra orchestration.secretStore.gcp.default.gcpServiceAccount can be used to set the `iam.gke.io/gcp-service-account` annotation on the Orchestration ServiceAccount for Workload Identity. Chart-only; it is not written to the application configuration.
     gcp: {}
-    ## @param orchestration.secretStore.physicalTenants can be used to override fields of an inherited secret store per physical tenant. Tenant configuration is a deep overlay and cannot remove a root store, so a tenant must use the same provider and `default` store id when overriding a root store. File-store `secret.existingSecret` is inherited together with the runtime fields. Physical tenant ids must match the runtime tenant id exactly and may contain letters, digits, `_` and `-`. Example: `tenanta: {aws: {default: {region: us-east-1}}}`.
+    ## @param orchestration.secretStore.physicalTenants can be used to override fields of an inherited secret store per physical tenant. Tenant configuration is a deep overlay and cannot remove a root store, so a tenant must use the same provider and `default` store id when overriding a root store. File-store `secret.existingSecret` is inherited together with the runtime fields. Physical tenant ids must match the runtime tenant id exactly and may contain only lowercase letters and digits, up to 64 characters. Example: `tenanta: {aws: {default: {region: us-east-1}}}`.
     physicalTenants: {}
 
   gateway:
