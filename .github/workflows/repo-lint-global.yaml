@@ -15,6 +15,23 @@ permissions:
   contents: read
 
 jobs:
+  template-complexity:
+    name: Template complexity
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+      - name: Install Go
+        uses: ./.github/actions/install-tool-versions
+        with:
+          tools: golang
+      - name: Check template complexity
+        env:
+          HELM_TEMPLATE_BASE_REF: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before || github.sha }}
+        run: make helm.template-complexity
   lint:
     permissions:
       contents: read

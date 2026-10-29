@@ -53,13 +53,24 @@ func main() {
 	repoRoot := flag.String("repo-root", ".", "path to the camunda-platform-helm repo root")
 	base := flag.String("base", "origin/main", "git ref; the change is the diff from its merge base with HEAD to the working tree")
 	all := flag.Bool("all", false, "check every function under scripts/ and every workflow run block, changed or not")
+	helmCheck := flag.Bool("helm", false, "check changed Helm template bodies in the positional chart paths")
 	helmReport := flag.Bool("report-helm", false, "report source metrics for the positional chart paths without a Git baseline")
+	flag.Usage = func() {
+		fmt.Fprintln(flag.CommandLine.Output(), "Usage: complexity-gate [options] [CHART...]")
+		flag.PrintDefaults()
+		helmHelp(flag.CommandLine.Output())
+	}
 	flag.Parse()
 
 	var err error
-	if *helmReport {
+	switch {
+	case *helmCheck && *helmReport:
+		err = errors.New("choose either -helm or -report-helm")
+	case *helmCheck:
+		err = checkHelm(*repoRoot, *base, flag.Args(), os.Stdout)
+	case *helmReport:
 		err = reportHelmCharts(*repoRoot, flag.Args(), os.Stdout)
-	} else {
+	default:
 		err = run(*repoRoot, *base, *all, os.Stdout)
 	}
 	if err != nil {
