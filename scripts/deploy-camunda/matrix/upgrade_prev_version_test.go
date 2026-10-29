@@ -24,6 +24,7 @@ import (
 
 	"scripts/camunda-core/pkg/scenarios"
 	"scripts/camunda-core/pkg/versionmatrix"
+	"scripts/deploy-camunda/config"
 )
 
 // TestUpgradeMinorPrevVersionDimensions asserts that every upgrade-minor
@@ -190,6 +191,41 @@ func TestFilterKnownFeatures(t *testing.T) {
 	}
 	if !slices.Equal(want, []string{"postgresql-companion", "documentstore", "persistence"}) {
 		t.Errorf("want slice mutated: %v", want)
+	}
+}
+
+func TestChartCredentialsManifest(t *testing.T) {
+	plainOnly, both := t.TempDir(), t.TempDir()
+	write := func(chartDir, name string) string {
+		dir := filepath.Join(chartDir, "test", "integration", "external-secrets")
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		path := filepath.Join(dir, name)
+		if err := os.WriteFile(path, nil, 0o644); err != nil {
+			t.Fatal(err)
+		}
+		return path
+	}
+	plain := write(plainOnly, "external-secret-integration-test-credentials.yaml")
+	write(both, "external-secret-integration-test-credentials.yaml")
+	vault := write(both, "external-secret-integration-test-credentials-vault.yaml")
+
+	for _, tc := range []struct {
+		name, chartDir string
+		secrets        config.SecretsFlags
+		want           string
+	}{
+		{"chart manifest", plainOnly, config.SecretsFlags{ExternalSecretsStore: "distribution-team"}, plain},
+		{"vault-backed flag with empty store", both, config.SecretsFlags{UseVaultBackedSecrets: true}, vault},
+		{"vault manifest missing", plainOnly, config.SecretsFlags{UseVaultBackedSecrets: true}, ""},
+		{"no chart dir", "", config.SecretsFlags{ExternalSecretsStore: "distribution-team"}, ""},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := chartCredentialsManifest(tc.chartDir, tc.secrets); got != tc.want {
+				t.Errorf("chartCredentialsManifest(%q, %+v) = %q, want %q", tc.chartDir, tc.secrets, got, tc.want)
+			}
+		})
 	}
 }
 

@@ -139,6 +139,13 @@ type SecretsFlags struct {
 	StrictSecrets bool
 }
 
+func (f *SecretsFlags) EffectiveExternalSecretsStore() string {
+	if f.UseVaultBackedSecrets {
+		return "vault-backend"
+	}
+	return f.ExternalSecretsStore
+}
+
 // DebugFlags holds JVM debug configuration.
 type DebugFlags struct {
 	DebugComponents map[string]DebugConfig // Components to enable JVM debugging for, with their ports
