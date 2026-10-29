@@ -37,6 +37,8 @@ identityPostgresql:
     image:
       registry: registry.camunda.cloud
       repository: vendor-ee/os-shell
+      # renovate: datasource=custom.bitnami-os-shell-camunda depName=os-shell versioning=regex:^(?<major>\d+)-(?<compatibility>debian-\d+)-r(?<patch>\d+)$
+      tag: 12-debian-12-r82
       pullSecrets:
         - name: registry-camunda-cloud
 
@@ -75,6 +77,8 @@ identityKeycloak:
       image:
         registry: registry.camunda.cloud
         repository: vendor-ee/os-shell
+        # renovate: datasource=custom.bitnami-os-shell-camunda depName=os-shell versioning=regex:^(?<major>\d+)-(?<compatibility>debian-\d+)-r(?<patch>\d+)$
+        tag: 12-debian-12-r82
         pullSecrets:
           - name: registry-camunda-cloud
 
@@ -98,6 +102,8 @@ webModelerPostgresql:
     image:
       registry: registry.camunda.cloud
       repository: vendor-ee/os-shell
+      # renovate: datasource=custom.bitnami-os-shell-camunda depName=os-shell versioning=regex:^(?<major>\d+)-(?<compatibility>debian-\d+)-r(?<patch>\d+)$
+      tag: 12-debian-12-r82
       pullSecrets:
         - name: registry-camunda-cloud
 
@@ -120,12 +126,16 @@ elasticsearch:
     image:
       registry: registry.camunda.cloud
       repository: vendor-ee/os-shell
+      # renovate: datasource=custom.bitnami-os-shell-camunda depName=os-shell versioning=regex:^(?<major>\d+)-(?<compatibility>debian-\d+)-r(?<patch>\d+)$
+      tag: 12-debian-12-r82
       pullSecrets:
         - name: registry-camunda-cloud
 
   sysctlImage:
     registry: registry.camunda.cloud
     repository: vendor-ee/os-shell
+    # renovate: datasource=custom.bitnami-os-shell-camunda depName=os-shell versioning=regex:^(?<major>\d+)-(?<compatibility>debian-\d+)-r(?<patch>\d+)$
+    tag: 12-debian-12-r82
     pullSecrets:
       - name: registry-camunda-cloud
 
@@ -133,6 +143,8 @@ elasticsearch:
     image:
       registry: registry.camunda.cloud
       repository: vendor-ee/os-shell
+      # renovate: datasource=custom.bitnami-os-shell-camunda depName=os-shell versioning=regex:^(?<major>\d+)-(?<compatibility>debian-\d+)-r(?<patch>\d+)$
+      tag: 12-debian-12-r82
       pullSecrets:
         - name: registry-camunda-cloud
 
