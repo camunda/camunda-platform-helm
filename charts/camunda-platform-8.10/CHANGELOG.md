@@ -1,5 +1,26 @@
 # Changelog
 
+## [15.4.0](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.10-15.3.0...camunda-platform-8.10-15.4.0) (2026-10-27)
+
+
+### ⚠ BREAKING CHANGES
+
+* render no 8.10 or 8.11 Elasticsearch or OpenSearch URL when none is configured ([#7527](https://github.com/camunda/camunda-platform-helm/issues/7527))
+
+### Bug Fixes
+
+* align nginx compatibility shim removal target with the deprecation policy ([#7616](https://github.com/camunda/camunda-platform-helm/issues/7616)) ([8353eb1](https://github.com/camunda/camunda-platform-helm/commit/8353eb106afe8ab1402fa0d34b9bce6377ea78f6))
+* reject empty Camunda Hub image tags in the 8.10 and 8.11 schemas ([#7534](https://github.com/camunda/camunda-platform-helm/issues/7534)) ([c0103f4](https://github.com/camunda/camunda-platform-helm/commit/c0103f44e9489ec4ab6396772f4a8ebc78c98c6e))
+* render no 8.10 or 8.11 Elasticsearch or OpenSearch URL when none is configured ([#7527](https://github.com/camunda/camunda-platform-helm/issues/7527)) ([87d1bdf](https://github.com/camunda/camunda-platform-helm/commit/87d1bdf76af291f7585cd52c85f85c5992bb4151))
+
+
+### Dependencies
+
+* update camunda-platform-images (patch) ([#7680](https://github.com/camunda/camunda-platform-helm/issues/7680)) ([3262615](https://github.com/camunda/camunda-platform-helm/commit/3262615583c1db30345d8ade9d7a9c7f7727537b))
+* update camunda-platform-images to v8.10.7 ([#7739](https://github.com/camunda/camunda-platform-helm/issues/7739)) ([3fea4c8](https://github.com/camunda/camunda-platform-helm/commit/3fea4c8365b8f0945628b2045bdd3f2b3f30d2b8))
+* update patch-updates (patch) ([#7727](https://github.com/camunda/camunda-platform-helm/issues/7727)) ([0cd2b5f](https://github.com/camunda/camunda-platform-helm/commit/0cd2b5fe26f158b0c919b538ba6dc1d637656487))
+* update patch-updates (patch) ([#7741](https://github.com/camunda/camunda-platform-helm/issues/7741)) ([88751e0](https://github.com/camunda/camunda-platform-helm/commit/88751e060db7fa33fd818aff602b5d2d8a379a68))
+
 ## [15.3.0](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.10-15.2.0...camunda-platform-8.10-15.3.0) (2026-10-23)
 
 
