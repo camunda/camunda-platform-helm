@@ -204,21 +204,20 @@
       schedule: ['every weekend'],
     },
     {
-      // Renovate leaves the go.mod `go` directive untouched by default and only bumps
-      // `toolchain`. Repositories pinning the version in `go` alone (read by
-      // actions/setup-go `go-version-file`) would otherwise freeze on it.
-      // https://docs.renovatebot.com/modules/manager/gomod/#updating-of-go-mod-and-toolchain-directives
-      description: 'Bump the go.mod go directive like the other Go version pins.',
-      matchManagers: [
-        'gomod',
-      ],
-      matchDepNames: [
-        'go',
-      ],
-      matchDepTypes: [
-        'golang',
-      ],
+      description: 'Group every Go version pin (go.mod, Dockerfiles, .tool-versions) into one PR.',
+      matchDatasources: ['golang-version'],
       groupName: 'golang',
+    },
+    {
+      matchManagers: ['asdf'],
+      matchDepNames: ['golang'],
+      groupName: 'golang',
+    },
+    {
+      description: 'Bump the go.mod go directive like the other Go version pins.',
+      matchManagers: ['gomod'],
+      matchDepNames: ['go'],
+      matchDepTypes: ['golang'],
       rangeStrategy: 'bump',
     },
     // Limit tools and libs versions to the actual Distro CI Kubernetes cluster.
