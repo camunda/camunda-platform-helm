@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package ghactions provides small helpers for GitHub Actions step logic that
-// is being ported from bash to Go. Writer appends key/value pairs to the files
-// named by $GITHUB_ENV and $GITHUB_OUTPUT.
+// Package ghactions provides small helpers for GitHub Actions step logic.
+// Writer appends key/value pairs to the files named by $GITHUB_ENV and
+// $GITHUB_OUTPUT.
 package ghactions
 
 import (
