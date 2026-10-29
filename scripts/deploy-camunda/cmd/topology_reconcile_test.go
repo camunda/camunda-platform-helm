@@ -1038,7 +1038,7 @@ func TestDogfoodCredentialStores_KeysExistInTheManifest(t *testing.T) {
 const (
 	postgresImage      = "postgres:16-alpine"
 	elasticsearchImage = "docker.elastic.co/elasticsearch/elasticsearch:8.18.0"
-	keycloakImage      = "quay.io/keycloak/keycloak:26.7.5"
+	keycloakImage      = "quay.io/keycloak/keycloak:26.8.1"
 )
 
 func TestCredentialStoreIntegrationImages_MatchTheDogfoodStores(t *testing.T) {

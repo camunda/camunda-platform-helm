@@ -9,7 +9,7 @@ fullnameOverride: keycloak
 image:
   registry: quay.io
   repository: keycloak/keycloak
-  tag: "26.7.5"
+  tag: "26.8.1"
 
 auth:
   adminUser: admin
