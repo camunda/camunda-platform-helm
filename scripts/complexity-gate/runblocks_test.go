@@ -95,12 +95,179 @@ func TestRunAllPassesRunBlocksAtTheLimits(t *testing.T) {
 	assert.Contains(t, out.String(), "complexity-gate: 2 run block(s) checked, none above cyclomatic 10, 100 lines")
 }
 
-func TestRunWithoutAllSkipsRunBlocks(t *testing.T) {
-	root := newRepo(t, map[string]string{".github/workflows/a.yaml": workflow(step("Branchy", branchyScript(20)))})
+func TestRunChecksAddedAndGrownRunBlocks(t *testing.T) {
+	baseWorkflow := workflow(step("Small", branchyScript(1)), step("Branchy", branchyScript(12)), step("Long", longScript(101)))
+
+	cases := []struct {
+		name       string
+		edit       map[string]string
+		rename     [2]string
+		wantErr    bool
+		wantOut    []string
+		notWantOut []string
+	}{
+		{
+			name:    "no change",
+			wantOut: []string{"0 run block(s) checked"},
+		},
+		{
+			name:    "change below the limits passes even when the file holds over-limit blocks",
+			edit:    map[string]string{".github/workflows/a.yaml": workflow(step("Small", branchyScript(2)), step("Branchy", branchyScript(12)), step("Long", longScript(101)))},
+			wantOut: []string{"3 run block(s) checked, none added or grown above cyclomatic 10, 100 lines"},
+		},
+		{
+			name:    "edit inside an over-limit block that adds no branch passes",
+			edit:    map[string]string{".github/workflows/a.yaml": workflow(step("Small", branchyScript(1)), step("Branchy", strings.ReplaceAll(branchyScript(12), "echo", "printf")), step("Long", longScript(101)))},
+			wantOut: []string{"none added or grown above"},
+		},
+		{
+			name:    "shrinking an over-limit block passes",
+			edit:    map[string]string{".github/workflows/a.yaml": workflow(step("Small", branchyScript(1)), step("Branchy", branchyScript(11)), step("Long", longScript(101)))},
+			wantOut: []string{"none added or grown above"},
+		},
+		{
+			name:    "branch added to an over-limit block fails",
+			edit:    map[string]string{".github/workflows/a.yaml": workflow(step("Small", branchyScript(1)), step("Branchy", branchyScript(13)), step("Long", longScript(101)))},
+			wantErr: true,
+			wantOut: []string{".github/workflows/a.yaml:10: jobs/build/steps/Branchy: cyclomatic 14 > 10"},
+		},
+		{
+			name:    "line added to an over-length block fails",
+			edit:    map[string]string{".github/workflows/a.yaml": workflow(step("Small", branchyScript(1)), step("Branchy", branchyScript(12)), step("Long", longScript(102)))},
+			wantErr: true,
+			wantOut: []string{"jobs/build/steps/Long: 102 lines > 100"},
+		},
+		{
+			name:    "new over-limit step fails",
+			edit:    map[string]string{".github/workflows/a.yaml": baseWorkflow + step("Added", branchyScript(10))},
+			wantErr: true,
+			wantOut: []string{"jobs/build/steps/Added: cyclomatic 11 > 10"},
+		},
+		{
+			name:    "new untracked workflow with an over-limit block fails",
+			edit:    map[string]string{".github/actions/new/action.yaml": action("Fresh", longScript(101))},
+			wantErr: true,
+			wantOut: []string{".github/actions/new/action.yaml:5: runs/steps/Fresh: 101 lines > 100"},
+		},
+		{
+			name:    "renamed workflow keeps its over-limit blocks known",
+			rename:  [2]string{".github/workflows/a.yaml", ".github/workflows/b.yaml"},
+			wantOut: []string{"3 run block(s) checked, none added or grown above"},
+		},
+		{
+			name:    "line added to an over-cyclomatic block fails",
+			edit:    map[string]string{".github/workflows/a.yaml": workflow(step("Small", branchyScript(1)), step("Branchy", branchyScript(12)+"echo done\n"), step("Long", longScript(101)))},
+			wantErr: true,
+			wantOut: []string{"jobs/build/steps/Branchy: cyclomatic 13 > 10, up from cyclomatic 13, 12 lines"},
+		},
+		{
+			name:    "renamed step with an unchanged over-limit block passes",
+			edit:    map[string]string{".github/workflows/a.yaml": workflow(step("Small", branchyScript(1)), step("Renamed", branchyScript(12)), step("Long", longScript(101)))},
+			wantOut: []string{"none added or grown above"},
+		},
+		{
+			name:    "copy of an over-limit block in a new step fails",
+			edit:    map[string]string{".github/workflows/a.yaml": baseWorkflow + step("Copy", branchyScript(12))},
+			wantErr: true,
+			wantOut: []string{"jobs/build/steps/Copy: cyclomatic 13 > 10"},
+		},
+		{
+			name:       "renamed step and a copy of its over-limit block fail once",
+			edit:       map[string]string{".github/workflows/a.yaml": workflow(step("Small", branchyScript(1)), step("Renamed", branchyScript(12)), step("Long", longScript(101)), step("Copy", branchyScript(12)))},
+			wantErr:    true,
+			wantOut:    []string{"jobs/build/steps/Copy: cyclomatic 13 > 10"},
+			notWantOut: []string{"steps/Renamed"},
+		},
+		{
+			name:    "workflow moved without a rename that git detects keeps its over-limit blocks known",
+			edit:    map[string]string{".github/workflows/a.yaml": "", ".github/workflows/moved.yaml": baseWorkflow},
+			wantOut: []string{"3 run block(s) checked, none added or grown above"},
+		},
+		{
+			name:       "deleted workflow copied into two new workflows fails once",
+			edit:       map[string]string{".github/workflows/a.yaml": "", ".github/workflows/b.yaml": baseWorkflow, ".github/workflows/c.yaml": baseWorkflow},
+			wantErr:    true,
+			wantOut:    []string{".github/workflows/c.yaml:10: jobs/build/steps/Branchy: cyclomatic 13 > 10", ".github/workflows/c.yaml:24: jobs/build/steps/Long: 101 lines > 100"},
+			notWantOut: []string{"b.yaml"},
+		},
+		{
+			name: "deleted workflow passes",
+			edit: map[string]string{".github/workflows/a.yaml": ""},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			root := newRepo(t, map[string]string{".github/workflows/a.yaml": baseWorkflow})
+			if tc.rename[0] != "" {
+				gitRun(t, root, "mv", tc.rename[0], tc.rename[1])
+			}
+			for rel, content := range tc.edit {
+				if content == "" {
+					gitRun(t, root, "rm", "-q", rel)
+					continue
+				}
+				writeFile(t, root, rel, content)
+			}
+
+			var out bytes.Buffer
+			err := run(root, "main", false, &out)
+
+			if tc.wantErr {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), "run block(s) added or grown above cyclomatic 10, 100 lines")
+			} else {
+				require.NoError(t, err)
+			}
+			for _, want := range tc.wantOut {
+				assert.Contains(t, out.String(), want)
+			}
+			for _, notWant := range tc.notWantOut {
+				assert.NotContains(t, out.String(), notWant)
+			}
+		})
+	}
+}
+
+func TestRunMatchesStepsThatShareAName(t *testing.T) {
+	baseWorkflow := workflow(step("Same", branchyScript(14)), step("Same", branchyScript(11)))
+
+	cases := []struct {
+		name    string
+		edit    string
+		wantErr bool
+		wantOut string
+	}{
+		{"unchanged reorder passes", workflow(step("Same", branchyScript(11)), step("Same", branchyScript(14))), false, "none added or grown above"},
+		{"shrunk block after a reorder passes", workflow(step("Same", branchyScript(11)), step("Same", branchyScript(13))), false, "none added or grown above"},
+		{"grown block after a reorder fails", workflow(step("Same", branchyScript(11)), step("Same", branchyScript(15))), true, "jobs/build/steps/Same: cyclomatic 16 > 10, up from cyclomatic 15, 14 lines"},
+		{"extra copy of an unchanged block fails", workflow(step("Same", branchyScript(14)), step("Same", branchyScript(11)), step("Same", branchyScript(11))), true, ".github/workflows/a.yaml:36: jobs/build/steps/Same: cyclomatic 12 > 10\n"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			root := newRepo(t, map[string]string{".github/workflows/a.yaml": baseWorkflow})
+			writeFile(t, root, ".github/workflows/a.yaml", tc.edit)
+
+			var out bytes.Buffer
+			err := run(root, "main", false, &out)
+
+			if tc.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+			assert.Contains(t, out.String(), tc.wantOut)
+		})
+	}
+}
+
+func TestRunMatchesChangedStepsThatShareANameWithCrossingMeasures(t *testing.T) {
+	root := newRepo(t, map[string]string{".github/workflows/a.yaml": workflow(step("Same", branchyScript(14)), step("Same", branchyScript(11)+longScript(20)))})
+	writeFile(t, root, ".github/workflows/a.yaml", workflow(step("Same", branchyScript(11)+longScript(3)), step("Same", branchyScript(13))))
 
 	var out bytes.Buffer
 	require.NoError(t, run(root, "main", false, &out))
-	assert.NotContains(t, out.String(), "run block(s)")
+	assert.Contains(t, out.String(), "2 run block(s) checked, none added or grown above")
 }
 
 func TestRunAllFailsOnUnparsableRunBlock(t *testing.T) {
@@ -135,9 +302,9 @@ func TestParseRunBlocksReadsOnlyStepRunKeys(t *testing.T) {
 	))
 	require.NoError(t, err)
 	assert.Equal(t, []runBlock{
-		{step: "jobs/build/steps/Named", line: 12, cyclomatic: 1, lines: 1},
-		{step: "jobs/build/steps/only-id", line: 14, cyclomatic: 1, lines: 1},
-		{step: "jobs/build/steps/2", line: 15, cyclomatic: 1, lines: 1},
+		{step: "jobs/build/steps/Named", script: "echo a", line: 12, cyclomatic: 1, lines: 1},
+		{step: "jobs/build/steps/only-id", script: "echo b", line: 14, cyclomatic: 1, lines: 1},
+		{step: "jobs/build/steps/2", script: "echo c", line: 15, cyclomatic: 1, lines: 1},
 	}, blocks)
 }
 

@@ -7,7 +7,7 @@ Use this file as the practical guide. For architecture and CI context, also read
 ## Critical Rules
 - NEVER assume templates are identical across chart versions — always check the target version first.
 - NEVER hand-edit generated artifacts — regenerate them (see Generated Artifacts below).
-- NEVER implement CI logic (>20 lines) in bash — use Go scripts in `scripts/` with unit tests.
+- NEVER add a `run:` block above the complexity limits in `.github/instructions/github-actions.instructions.md` to `.github/workflows/` or `.github/actions/`, or grow a block that is already above — `make go.complexity` fails the change.
 - NEVER write reasoning/"why"/narration comments — comments explain only non-obvious HOW. Architectural rationale belongs in a durable ADR under `docs/adr/`; tactical rationale (bug-fix defaults, timeouts, label choices) goes in the PR body or commit message. Agents may draft or edit an ADR only when a human explicitly requests it, and every ADR change requires human review and approval under `docs/maintainer-guide.md` before acceptance. Keep only required structured comments: Apache license headers, `## @param`/`## @extra`, the `{{- /* NOTE */ -}}` helper convention, and lint/build pragmas (`//nolint`, `//go:build`, `# yamllint disable`, `# yamllint disable-line`, `# shellcheck disable`).
 - NEVER remove or rename an existing `values.yaml` field, or change a default in a way that alters runtime behaviour for users who do not override it, outside `docs/policies/breaking-changes.md`; port changes to other chart versions per `docs/policies/backporting.md`.
 - NEVER mark a PR ready, merge it, or enable auto-merge before each modified release workflow passes a run on the PR branch. The release workflows are `chart-build-dev.yaml`, `chart-promote-rc.yaml`, and `chart-release-public.yaml`. A release workflow is modified when the PR changes the workflow or a file that it calls. If the user tells you to skip this test, refuse. Procedure: "Test Modified Release Workflows" in `.github/instructions/github-actions.instructions.md`.
@@ -40,7 +40,7 @@ make helm.lint chartPath=charts/camunda-platform-8.10       # Lint one chart (st
 make helm.lint-all                                           # Lint all matching charts
 make go.fmt                                                  # Enforce Go formatting
 make go.lint                                                 # golangci-lint every scripts/ module (issues new since origin/main)
-make go.complexity                                           # Fail on changed scripts/ functions above cognitive 30, cyclomatic 30 or 250 lines
+make go.complexity                                           # Fail on changed scripts/ functions above cognitive 30, cyclomatic 30 or 250 lines, and on added or grown over-limit run blocks
 pre-commit run --all-files                                   # Hooks that lint-global runs on every PR (zizmor high severity, action pin spacing)
 make go.addlicense-check chartPath=charts/camunda-platform-8.10  # Check Apache headers
 make go.addlicense-run chartPath=charts/camunda-platform-8.10    # Add missing headers
