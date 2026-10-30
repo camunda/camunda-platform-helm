@@ -28,8 +28,8 @@ automated workflow steps follow Conventional Commits with the `chore(ci):` type.
   count), in `.github/workflows/` or `.github/actions/`. **NEVER** make a block that is already
   above more complex or longer, except for a fix that is not possible without it.
   `make go.complexity` fails the change, and `test-release-tooling.yaml` runs it on every PR.
-  The same check runs shellcheck on the `run:` blocks of the composite actions that a change
-  touches and fails on any finding.
+  The same check runs shellcheck on every composite action `run:` block, including unchanged
+  actions, and fails on any finding.
   `cd scripts/complexity-gate && go run . --repo-root ../.. --all` lists the blocks that are
   already above. To pass, delete dead branches and duplicated commands, or split the step where
   no shell variable crosses the split. Do not add a `GITHUB_ENV` or `GITHUB_OUTPUT` write, a `.sh`
@@ -57,9 +57,10 @@ automated workflow steps follow Conventional Commits with the `chore(ci):` type.
   `# zizmor: ignore[<audit>]` only when the finding is a false positive.
 - **ALWAYS** leave no lint finding in CI shell code. The actionlint pre-commit hook checks every
   workflow and the shellcheck hook checks every shell script except `.bats` tests.
-  `pre-commit run --all-files` runs them locally, and `lint-global` runs them on every PR as
-  `lint / pre-commit`. Fix a finding; use a `# shellcheck disable=SCxxxx` line only when the code is
-  right as written.
+  `pre-commit run --all-files` runs them locally, and `lint-global` runs them on every PR and in the
+  merge queue as `lint / pre-commit`. `make go.complexity` also checks every composite action
+  `run:` block. Fix a finding; use a `# shellcheck disable=SCxxxx` line only when the code is right
+  as written.
 - **ALWAYS** start a multi-line `run:` block that you add or change with `set -euo pipefail`. When
   you add it to an existing block, check that the block reads no unset variable and has no pipeline
   whose first command may fail on purpose (`grep` with no match, `… | head`).

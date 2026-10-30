@@ -270,7 +270,7 @@ func TestRunMatchesChangedStepsThatShareANameWithCrossingMeasures(t *testing.T) 
 	assert.Contains(t, out.String(), "2 run block(s) checked, none added or grown above")
 }
 
-func TestRunShellchecksChangedCompositeActionRunBlocks(t *testing.T) {
+func TestRunShellchecksCompositeActionRunBlocks(t *testing.T) {
 	root := newRepo(t, map[string]string{".github/actions/clean/action.yaml": action("Clean", `echo "ok"`)})
 	writeFile(t, root, ".github/actions/new/action.yaml", action("Unquoted", `if [ -n "${{ inputs.dir }}" ]; then cd $TARGET_DIR || exit 1; fi`))
 	writeFile(t, root, ".github/workflows/w.yaml", workflow(step("Unquoted", "cd $TARGET_DIR || exit 1")))
@@ -283,7 +283,7 @@ func TestRunShellchecksChangedCompositeActionRunBlocks(t *testing.T) {
 	assert.NotContains(t, out.String(), "SC2157")
 	assert.NotContains(t, out.String(), "w.yaml")
 	assert.NotContains(t, out.String(), "clean/action.yaml")
-	assert.Contains(t, err.Error(), "shellcheck reports 1 finding(s) in 1 checked composite action run block(s)")
+	assert.Contains(t, err.Error(), "shellcheck reports 1 finding(s) in 2 checked composite action run block(s)")
 }
 
 func TestRunShellchecksInlineCompositeActionRunValue(t *testing.T) {
@@ -308,18 +308,33 @@ func TestRunShellchecksMaskedExpressionsAtTheirSourceLines(t *testing.T) {
 	assert.Contains(t, err.Error(), "shellcheck reports 2 finding(s)")
 }
 
-func TestRunAllShellchecksEveryCompositeActionRunBlock(t *testing.T) {
+func TestRunShellchecksEveryCompositeActionRunBlock(t *testing.T) {
+	for _, all := range []bool{false, true} {
+		t.Run(fmt.Sprintf("all=%t", all), func(t *testing.T) {
+			root := newRepo(t, map[string]string{
+				".github/actions/a/action.yaml": action("Clean", `echo "ok"`),
+				".github/actions/b/action.yaml": action("Unquoted", "cd $TARGET_DIR || exit 1"),
+			})
+
+			var out bytes.Buffer
+			err := run(root, "main", all, &out)
+
+			require.Error(t, err)
+			assert.Contains(t, out.String(), ".github/actions/b/action.yaml:6: runs/steps/Unquoted:")
+			assert.Contains(t, err.Error(), "1 finding(s) in 2 checked composite action run block(s)")
+		})
+	}
+}
+
+func TestRunShellchecksUnchangedOverLimitCompositeAction(t *testing.T) {
 	root := newRepo(t, map[string]string{
-		".github/actions/a/action.yaml": action("Clean", `echo "ok"`),
-		".github/actions/b/action.yaml": action("Unquoted", "cd $TARGET_DIR || exit 1"),
+		".github/actions/a/action.yaml": action("Unchanged", branchyScript(11)+longScript(101)),
 	})
 
 	var out bytes.Buffer
-	err := run(root, "main", true, &out)
-
-	require.Error(t, err)
-	assert.Contains(t, out.String(), ".github/actions/b/action.yaml:6: runs/steps/Unquoted:")
-	assert.Contains(t, err.Error(), "1 finding(s) in 2 checked composite action run block(s)")
+	require.NoError(t, run(root, "main", false, &out))
+	assert.Contains(t, out.String(), "0 run block(s) checked, none added or grown above")
+	assert.Contains(t, out.String(), "1 composite action run block(s) checked, no shellcheck finding")
 }
 
 func TestRunAllFailsOnUnparsableRunBlock(t *testing.T) {
