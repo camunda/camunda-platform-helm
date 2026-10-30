@@ -612,6 +612,37 @@ func (r *credentialReconciler) reconcileKeycloak(ctx context.Context, ns string,
 	return nil
 }
 
+func findContainer(containers []corev1.Container, name string) *corev1.Container {
+	for i := range containers {
+		if containers[i].Name == name {
+			return &containers[i]
+		}
+	}
+	return nil
+}
+
+// bootstrapEnv is the bootstrap-admin pod's environment: a local cache, the
+// Deployment's database settings, and the temporary admin from secret name.
+// A non-empty dbPw, the password PostgreSQL accepted, replaces the
+// Deployment's KC_DB_PASSWORD.
+func bootstrapEnv(src []corev1.EnvVar, name, dbPw string) []corev1.EnvVar {
+	fromSecret := func(envName, key string) corev1.EnvVar {
+		return corev1.EnvVar{Name: envName, ValueFrom: &corev1.EnvVarSource{SecretKeyRef: &corev1.SecretKeySelector{
+			LocalObjectReference: corev1.LocalObjectReference{Name: name}, Key: key,
+		}}}
+	}
+	env := []corev1.EnvVar{{Name: "KC_CACHE", Value: "local"}}
+	for _, e := range src {
+		if strings.HasPrefix(e.Name, "KC_DB") && (e.Name != "KC_DB_PASSWORD" || dbPw == "") {
+			env = append(env, e)
+		}
+	}
+	if dbPw != "" {
+		env = append(env, fromSecret("KC_DB_PASSWORD", "db-password"))
+	}
+	return append(env, fromSecret("KC_BOOTSTRAP_USER", "username"), fromSecret("KC_BOOTSTRAP_PW", "password"))
+}
+
 // resetKeycloakAdmin runs `kc.sh bootstrap-admin user` in a separate pod built
 // from the Keycloak Deployment's image and database settings, logs in as the
 // temporary admin it creates to set adminPw, then deletes it. The live
@@ -625,12 +656,7 @@ func (r *credentialReconciler) resetKeycloakAdmin(ctx context.Context, ns string
 	if err := json.Unmarshal(raw, &d); err != nil {
 		return fmt.Errorf("decode deployment/%s: %w", k.Deployment, err)
 	}
-	var src *corev1.Container
-	for i := range d.Spec.Template.Spec.Containers {
-		if d.Spec.Template.Spec.Containers[i].Name == k.Container {
-			src = &d.Spec.Template.Spec.Containers[i]
-		}
-	}
+	src := findContainer(d.Spec.Template.Spec.Containers, k.Container)
 	if src == nil {
 		return fmt.Errorf("deployment/%s has no container %q", k.Deployment, k.Container)
 	}
@@ -649,22 +675,7 @@ func (r *credentialReconciler) resetKeycloakAdmin(ctx context.Context, ns string
 	if err != nil {
 		return err
 	}
-	env := []corev1.EnvVar{{Name: "KC_CACHE", Value: "local"}}
-	for _, e := range src.Env {
-		if strings.HasPrefix(e.Name, "KC_DB") && (e.Name != "KC_DB_PASSWORD" || dbPw == "") {
-			env = append(env, e)
-		}
-	}
-	if dbPw != "" {
-		env = append(env, corev1.EnvVar{Name: "KC_DB_PASSWORD", ValueFrom: &corev1.EnvVarSource{SecretKeyRef: &corev1.SecretKeySelector{
-			LocalObjectReference: corev1.LocalObjectReference{Name: name}, Key: "db-password",
-		}}})
-	}
-	for _, e := range []struct{ name, key string }{{"KC_BOOTSTRAP_USER", "username"}, {"KC_BOOTSTRAP_PW", "password"}} {
-		env = append(env, corev1.EnvVar{Name: e.name, ValueFrom: &corev1.EnvVarSource{SecretKeyRef: &corev1.SecretKeySelector{
-			LocalObjectReference: corev1.LocalObjectReference{Name: name}, Key: e.key,
-		}}})
-	}
+	env := bootstrapEnv(src.Env, name, dbPw)
 	labels := map[string]string{"app.kubernetes.io/managed-by": "deploy-camunda", "app.kubernetes.io/component": bootstrapComponent}
 	secret := corev1.Secret{
 		TypeMeta:   metav1.TypeMeta{APIVersion: "v1", Kind: "Secret"},
@@ -681,6 +692,7 @@ func (r *credentialReconciler) resetKeycloakAdmin(ctx context.Context, ns string
 			Containers: []corev1.Container{{
 				Name:            "bootstrap-admin",
 				Image:           src.Image,
+				Command:         src.Command,
 				Args:            bootstrapAdminArgs,
 				Env:             env,
 				SecurityContext: src.SecurityContext,

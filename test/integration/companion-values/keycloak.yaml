@@ -4,11 +4,6 @@
 
 fullnameOverride: keycloak
 
-image:
-  registry: quay.io
-  repository: keycloak/keycloak
-  tag: "26.7.5"
-
 auth:
   adminUser: admin
   existingSecret: integration-test-credentials
