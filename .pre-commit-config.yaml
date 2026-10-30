@@ -1,7 +1,7 @@
 ---
 repos:
   - repo: https://github.com/camunda/infraex-common-config
-    rev: 2.4.0 # use tags until renovate supports sha: https://github.com/renovatebot/renovate/issues/22567
+    rev: 3.0.0 # use tags until renovate supports sha: https://github.com/renovatebot/renovate/issues/22567
     hooks:
       - id: action-pin-spacing
         # shortcut: release workflows are fixed in a separate PR that test-runs them; drop this exclude then.
