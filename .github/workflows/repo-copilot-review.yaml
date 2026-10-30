@@ -12,10 +12,13 @@ jobs:
       id-token: write
       issues: read
       pull-requests: write
-    uses: camunda/infraex-common-config/.github/workflows/copilot-review-global.yml@4d09c296c3a3696e871e402f5116317e71564c82 # 2.4.0
+    uses: camunda/infraex-common-config/.github/workflows/copilot-review-global.yml@e2923304b40dfc031b3f595bcc1445e90c981adb # 3.0.0
     with:
+      vault-secret-path: secret/data/products/qa/ci/common
+      vault-slack-token-key: SLACK_BOT_USER_OAUTH_TOKEN
       skip-authors: '["renovate[bot]", "dependabot[bot]", "smx-misc[bot]", "distro-ci[bot]"]'
     secrets:
       VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
-      VAULT_ROLE_ID: ${{ secrets.VAULT_ROLE_ID }}
-      VAULT_SECRET_ID: ${{ secrets.VAULT_SECRET_ID }}
+      VAULT_JWT_PATH: ${{ secrets.VAULT_JWT_PATH }}
+      VAULT_JWT_ROLE: ${{ secrets.VAULT_JWT_ROLE }}
+      VAULT_JWT_AUDIENCE: ${{ secrets.VAULT_JWT_AUDIENCE }}
