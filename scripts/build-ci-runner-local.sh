@@ -105,17 +105,17 @@ run_tests() {
     echo "Running Tests"
     echo "=========================================="
 
-    local test_args="--local"
+    local test_args=(--local)
 
     if [[ "$BUILD_CI" == "true" && "$BUILD_PLAYWRIGHT" == "true" ]]; then
-        test_args="$test_args --both"
+        test_args+=(--both)
     elif [[ "$BUILD_CI" == "true" ]]; then
-        test_args="$test_args --ci-runner"
+        test_args+=(--ci-runner)
     elif [[ "$BUILD_PLAYWRIGHT" == "true" ]]; then
-        test_args="$test_args --playwright-runner"
+        test_args+=(--playwright-runner)
     fi
 
-    if "${SCRIPT_DIR}/test-ci-runner-local.sh" $test_args; then
+    if "${SCRIPT_DIR}/test-ci-runner-local.sh" "${test_args[@]}"; then
         echo ""
         echo "✅ All tests passed!"
         return 0
@@ -349,6 +349,7 @@ if [[ "$BUILD_CI" == "true" ]]; then
     # Build the image
     echo "Building image for ${TARGET_PLATFORM}..."
     if [[ "$USE_BUILDX" == "true" ]]; then
+        # shellcheck disable=SC2086
         docker buildx build \
             --platform "${TARGET_PLATFORM}" \
             ${CI_BUILD_ARGS} \
@@ -359,6 +360,7 @@ if [[ "$BUILD_CI" == "true" ]]; then
     else
         # Standard docker build (for local testing without buildx)
         # Still specify platform to ensure linux/amd64 even on ARM machines
+        # shellcheck disable=SC2086
         docker build \
             --platform "${TARGET_PLATFORM}" \
             ${CI_BUILD_ARGS} \
@@ -414,6 +416,7 @@ if [[ "$BUILD_PLAYWRIGHT" == "true" ]]; then
     # Build the image
     echo "Building image for ${TARGET_PLATFORM}..."
     if [[ "$USE_BUILDX" == "true" ]]; then
+        # shellcheck disable=SC2086
         docker buildx build \
             --platform "${TARGET_PLATFORM}" \
             ${PW_BUILD_ARGS} \
@@ -424,6 +427,7 @@ if [[ "$BUILD_PLAYWRIGHT" == "true" ]]; then
     else
         # Standard docker build (for local testing without buildx)
         # Still specify platform to ensure linux/amd64 even on ARM machines
+        # shellcheck disable=SC2086
         docker build \
             --platform "${TARGET_PLATFORM}" \
             ${PW_BUILD_ARGS} \

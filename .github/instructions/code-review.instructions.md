@@ -160,11 +160,13 @@ func TestDeploymentTemplate(t *testing.T) {
 
 ### Workflow Automation Implementation
 
-- [ ] Does the PR introduce new non-trivial workflow automation logic in Bash (`run:` blocks or
-  `scripts/*.sh`) instead of Go?
-- [ ] If the workflow logic calls external APIs, parses JSON, or contains branching/orchestration,
-  is that logic implemented in Go under `scripts/<feature>/` (or existing Go tooling)?
-- [ ] If Bash remains, is it only thin glue (roughly <=20 lines), with business logic moved to Go?
+- [ ] Does `make go.complexity` pass? If it fails only on a block that was already above, does the
+  PR body name the block and the reason, with no rewrite and no logic moved into `GITHUB_ENV`, a
+  `.sh` file, `${{ }}` or `if:`?
+- [ ] Does new Go under `scripts/` avoid a new module, interfaces with fewer than two non-test
+  implementations, unused types and copies of `scripts/camunda-core/pkg` helpers?
+- [ ] Does a rewrite link the request that names its files, stay inside those files, keep the bash
+  behaviour except the named changes, and show the bash-versus-Go comparison in the PR body?
 
 ```yaml
 # GOOD — action pinned to SHA with version comment
@@ -203,7 +205,7 @@ func TestDeploymentTemplate(t *testing.T) {
 Most flag-worthy mistakes restate the rules and checklists above (principle violations, golden
 files not regenerated — CI fails, undocumented `@param` fields — invisible in generated docs,
 `kindIs "slice"` panics on list input, `indent` without `trim` — YAML parse errors at install
-time, cross-version scope creep, bash >20 lines). Additional pitfalls not covered above:
+time, cross-version scope creep, over-limit `run:` blocks). Additional pitfalls not covered above:
 
 1. **`fail-fast: true` (or default) on test matrix** — in GitHub Actions workflows, the default
    for `fail-fast` is `true`. Test matrices should set `fail-fast: false`.

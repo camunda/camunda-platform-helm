@@ -18,6 +18,7 @@ import (
 	"camunda-platform/test/unit/testhelpers"
 	"fmt"
 	"io"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -50,6 +51,88 @@ func TestConfigMapWarningsTemplate(t *testing.T) {
 		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
 		templates: []string{"templates/common/configmap-warnings.yaml"},
 	})
+}
+
+func (s *ConfigMapWarningsTemplateTest) TestExactWarningConsumers() {
+	const authentication = "[camunda][warning] global.identity.auth.enabled=true, but no shared authentication issuer or issuer backend URL resolves. Set global.identity.auth.issuer (or global.identity.auth.publicIssuerUrl), global.identity.auth.issuerBackendUrl, or global.identity.keycloak.url for External Keycloak. Components using separate OIDC configuration must supply their own provider settings."
+	const storage = "[camunda][warning] The Orchestration Cluster uses Elasticsearch secondary storage, but no URL is set. Without a URL, the Orchestration Cluster connects to http://localhost:9200. Set orchestration.data.secondaryStorage.elasticsearch.url, set CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_URL in orchestration.env, or set camunda.data.secondary-storage.elasticsearch.url in orchestration.extraConfiguration. If the URL comes from another source, such as JVM options, ignore this warning."
+	const deprecation = `[camunda][warning] DEPRECATION: The Helm values file key "orchestration.history.rolloverInterval" is deprecated and will be removed in chart v17 (Camunda 8.12). Configure this via "orchestration.extraConfiguration" instead. https://docs.camunda.io/docs/self-managed/deployment/helm/upgrade/`
+	const pvc = `[camunda][warning] orchestration.pvcAccessModes is set to ReadWriteOncePod, which requires a CSI driver that supports it; without that support the PersistentVolumeClaim may fail to provision or stay Pending. PersistentVolumeClaim accessModes are immutable, so this only applies to new installs / new PVCs, not to an existing StatefulSet via "helm upgrade".`
+	for _, scenario := range []struct {
+		name     string
+		values   []string
+		warnings []string
+	}{
+		{name: "NoWarnings"},
+		{
+			name: "Authentication",
+			values: []string{
+				"global.identity.auth.enabled=true",
+				"global.identity.auth.type=GENERIC",
+				"global.identity.auth.publicIssuerUrl=",
+			},
+			warnings: []string{authentication},
+		},
+		{
+			name:     "Storage",
+			values:   []string{"orchestration.data.secondaryStorage.elasticsearch.url="},
+			warnings: []string{storage},
+		},
+		{
+			name:     "Deprecation",
+			values:   []string{"orchestration.history.rolloverInterval=2d"},
+			warnings: []string{deprecation},
+		},
+		{
+			name:     "PVC",
+			values:   []string{"orchestration.pvcAccessModes[0]=ReadWriteOncePod"},
+			warnings: []string{pvc},
+		},
+		{
+			name: "CombinedWithReleaseInfo",
+			values: []string{
+				"global.createReleaseInfo=true",
+				"global.identity.auth.enabled=true",
+				"global.identity.auth.type=GENERIC",
+				"global.identity.auth.publicIssuerUrl=",
+				"orchestration.data.secondaryStorage.elasticsearch.url=",
+				"orchestration.history.rolloverInterval=2d",
+				"orchestration.pvcAccessModes[0]=ReadWriteOncePod",
+			},
+			warnings: []string{authentication, storage, deprecation, pvc},
+		},
+	} {
+		s.Run(scenario.name, func() {
+			t := s.T()
+			args := []string{
+				"install", s.release, s.chartPath, "--dry-run=client",
+				"--set", "orchestration.data.secondaryStorage.type=elasticsearch",
+				"--set", "orchestration.data.secondaryStorage.elasticsearch.url=http://elasticsearch:9200",
+				"--set", "global.createReleaseInfo=false",
+			}
+			for _, value := range scenario.values {
+				args = append(args, "--set", value)
+			}
+			output, err := exec.Command("helm", args...).CombinedOutput()
+			require.NoError(t, err, string(output))
+			_, rendered, found := strings.Cut(string(output), "\nMANIFEST:\n")
+			require.True(t, found)
+			manifest, notes, found := strings.Cut(rendered, "\nNOTES:\n")
+			require.True(t, found)
+			require.Contains(t, notes, "## Installed Services:")
+			configMaps := renderedConfigMaps(t, manifest)
+			require.Contains(t, configMaps, s.release+"-zeebe-configuration")
+			expected := strings.Join(scenario.warnings, "\n")
+			warnings, present := configMaps[s.release+"-warnings"]
+			require.Equal(t, expected != "", present)
+			require.Equal(t, expected, warnings.Data["warnings"])
+			notesWarnings := ""
+			if start := strings.Index(notes, "[camunda][warning]"); start >= 0 {
+				notesWarnings = strings.TrimRight(notes[start:], "\n")
+			}
+			require.Equal(t, expected, notesWarnings)
+		})
+	}
 }
 
 func (s *ConfigMapWarningsTemplateTest) TestUnresolvedAuthIssuer() {
@@ -1934,6 +2017,82 @@ func (s *ConfigMapWarningsTemplateTest) TestOptimizeDatabaseHostWarning() {
 					require.Contains(t, warnings, scenario.warning)
 				} else {
 					require.NotContains(t, warnings, "url.host is empty")
+				}
+			},
+		})
+	}
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, nil, testCases)
+}
+
+func (s *ConfigMapWarningsTemplateTest) TestRDBMSURLWarning() {
+	const warning = "uses RDBMS secondary storage, but no JDBC URL is set"
+	testCases := []testhelpers.TestCase{}
+	for _, scenario := range []struct {
+		name   string
+		values map[string]string
+		args   []string
+		warn   bool
+	}{
+		{name: "TypeWithoutURL", warn: true},
+		{name: "ExporterFlagWithoutTypeOrURL", values: map[string]string{"orchestration.data.secondaryStorage.type": "", "orchestration.exporters.rdbms.enabled": "true"}, warn: true},
+		{name: "UnrelatedEnv", values: map[string]string{"orchestration.env[0].name": "CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_USERNAME", "orchestration.env[0].value": "camunda"}, warn: true},
+		{name: "ValuesURL", values: map[string]string{"orchestration.data.secondaryStorage.rdbms.url": "jdbc:postgresql://db:5432/camunda"}},
+		{name: "EnvURL", values: map[string]string{"orchestration.env[0].name": "CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_URL", "orchestration.env[0].value": "jdbc:postgresql://db:5432/camunda"}},
+		{name: "EmptyEnvURL", values: map[string]string{"orchestration.env[0].name": "CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_URL", "orchestration.env[0].value": ""}, warn: true},
+		{name: "EnvURLFromSecret", values: map[string]string{"orchestration.env[0].name": "CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_URL", "orchestration.env[0].valueFrom.secretKeyRef.name": "rdbms-connection", "orchestration.env[0].valueFrom.secretKeyRef.key": "url"}},
+		{name: "EnvFrom", values: map[string]string{"orchestration.envFrom[0].secretRef.name": "rdbms-connection"}},
+		{
+			name:   "ExtraConfigurationURL",
+			values: map[string]string{"orchestration.extraConfiguration[0].file": "rdbms.yaml"},
+			args:   []string{"--set-string", "orchestration.extraConfiguration[0].content=camunda:\n  data:\n    secondary-storage:\n      rdbms:\n        url: jdbc:postgresql://db:5432/camunda\n"},
+		},
+		{
+			name: "ConfigurationURL",
+			args: []string{"--set-string", "orchestration.configuration=camunda:\n  data:\n    secondary-storage:\n      type: rdbms\n      rdbms:\n        url: jdbc:postgresql://db:5432/camunda\n"},
+		},
+		{
+			name:   "ConfigurationReplacesValuesURL",
+			values: map[string]string{"orchestration.data.secondaryStorage.rdbms.url": "jdbc:postgresql://db:5432/camunda"},
+			args:   []string{"--set-string", "orchestration.configuration=camunda:\n  data:\n    secondary-storage:\n      type: rdbms\n"},
+			warn:   true,
+		},
+		{name: "ElasticsearchWithExporterFlag", values: map[string]string{"orchestration.data.secondaryStorage.type": "elasticsearch", "orchestration.exporters.rdbms.enabled": "true"}},
+		{name: "OrchestrationDisabled", values: map[string]string{"orchestration.enabled": "false"}},
+	} {
+		values := map[string]string{
+			"orchestration.data.secondaryStorage.type": "rdbms",
+		}
+		for key, value := range scenario.values {
+			values[key] = value
+		}
+		testCases = append(testCases, testhelpers.TestCase{
+			Name:                    scenario.name,
+			Values:                  values,
+			RenderTemplateExtraArgs: scenario.args,
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				configMaps := map[string]corev1.ConfigMap{}
+				decoder := k8syaml.NewYAMLOrJSONDecoder(strings.NewReader(output), 4096)
+				for {
+					var resource corev1.ConfigMap
+					err := decoder.Decode(&resource)
+					if err == io.EOF {
+						break
+					}
+					require.NoError(t, err)
+					if resource.Kind == "ConfigMap" {
+						configMaps[resource.Name] = resource
+					}
+				}
+				if values["orchestration.enabled"] != "false" {
+					require.Contains(t, configMaps, s.release+"-zeebe-configuration")
+				}
+				warnings := configMaps[s.release+"-warnings"].Data["warnings"]
+				require.Equal(t, scenario.warn, strings.Contains(warnings, warning))
+				if scenario.warn {
+					require.Contains(t, warnings, "orchestration.data.secondaryStorage.rdbms.url")
+					require.Contains(t, warnings, "CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_URL")
+					require.Contains(t, warnings, "orchestration.extraConfiguration")
 				}
 			},
 		})

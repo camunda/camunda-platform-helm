@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"maps"
+	"os"
 	"path/filepath"
 
 	"scripts/camunda-core/pkg/helm"
@@ -63,6 +64,18 @@ func filterKnownFeatures(want, available []string) (kept, dropped []string) {
 		}
 	}
 	return kept, dropped
+}
+
+func chartCredentialsManifest(chartDir string, secrets config.SecretsFlags) string {
+	name := "external-secret-integration-test-credentials.yaml"
+	if secrets.EffectiveExternalSecretsStore() == "vault-backend" {
+		name = "external-secret-integration-test-credentials-vault.yaml"
+	}
+	path := filepath.Join(chartDir, "test", "integration", "external-secrets", name)
+	if _, err := os.Stat(path); err != nil {
+		return ""
+	}
+	return path
 }
 
 // extractBitnamiPGPasswords reads the "integration-test-credentials" Kubernetes Secret from the
@@ -229,6 +242,7 @@ func executeTwoStepUpgrade(ctx context.Context, entry Entry, flags *config.Runti
 	// the install step of upgrade-minor, so values files come from the older chart.
 	// For upgrade-patch, Step 1 uses the current chart's values (same app version).
 	step1AppVersion := entry.Version
+	step1ChartDir := flags.Chart.ChartPath
 	if entry.Flow == "upgrade-minor" {
 		prevVersion, err := versionmatrix.PreviousAppVersion(entry.Version)
 		if err != nil {
@@ -236,6 +250,7 @@ func executeTwoStepUpgrade(ctx context.Context, entry Entry, flags *config.Runti
 		}
 		step1AppVersion = prevVersion
 		prevChartDir := filepath.Join(opts.RepoRoot, "charts", "camunda-platform-"+prevVersion)
+		step1ChartDir = prevChartDir
 		prevScenarioDir := filepath.Join(prevChartDir, "test/integration/scenarios/chart-full-setup")
 		step1Flags.Deployment.ScenarioPath = prevScenarioDir
 
@@ -264,6 +279,9 @@ func executeTwoStepUpgrade(ctx context.Context, entry Entry, flags *config.Runti
 					Msg("Step 1: dropped features absent from previous version (applied in Step 2)")
 			}
 		}
+	}
+	if step1Flags.Secrets.CredentialsManifest == "" {
+		step1Flags.Secrets.CredentialsManifest = chartCredentialsManifest(step1ChartDir, step1Flags.Secrets)
 	}
 
 	// --- Pre-install lifecycle hook (Step 1 of two-step upgrade) ---

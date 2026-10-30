@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package credentials
 
 import (
 	"bytes"
@@ -32,13 +32,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/spf13/cobra"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"scripts/deploy-camunda/deploy"
 	"scripts/deploy-camunda/matrix"
 )
 
@@ -958,110 +956,58 @@ func credentialsChecksum(src credentialSource, source map[string]string) (string
 	return hex.EncodeToString(h.Sum(nil))[:16], nil
 }
 
-type credentialsCommandFlags struct {
-	topologyLifecycleFlags
-	secretNamespace string
+type ReconcileOptions struct {
+	RepoRoot        string
+	Scenario        string
+	Topology        *matrix.Topology
+	Base            string
+	SecretNamespace string
+	Namespaces      []string
+	HubNamespace    string
+	KubeContext     string
+	Timeout         time.Duration
+	ChecksumFile    string
 }
 
-func (f *credentialsCommandFlags) bind(cmd *cobra.Command) {
-	f.topologyLifecycleFlags.bind(cmd)
-	cmd.Flags().StringVar(&f.secretNamespace, "secret-namespace", "distribution-team", "namespace the ClusterSecretStore reads source secrets from")
-}
-
-func (f *credentialsCommandFlags) load() (*matrix.Topology, []byte, credentialSource, error) {
-	topology, err := loadScenarioTopology(f.repoRoot, f.version, f.scenario)
+func Reconcile(ctx context.Context, out io.Writer, opts ReconcileOptions) error {
+	raw, err := os.ReadFile(filepath.Join(opts.RepoRoot, opts.Topology.CredentialsManifest))
 	if err != nil {
-		return nil, nil, credentialSource{}, err
+		return fmt.Errorf("read credentials manifest: %w", err)
 	}
-	if topology.CredentialsManifest == "" {
-		return nil, nil, credentialSource{}, fmt.Errorf("scenario %q declares no credentials-manifest", f.scenario)
-	}
-	raw, err := os.ReadFile(filepath.Join(f.repoRoot, topology.CredentialsManifest))
+	manifest, err := matrix.RenderCredentialsManifest(raw, opts.Base)
 	if err != nil {
-		return nil, nil, credentialSource{}, fmt.Errorf("read credentials manifest: %w", err)
-	}
-	manifest, err := matrix.RenderCredentialsManifest(raw, f.base)
-	if err != nil {
-		return nil, nil, credentialSource{}, err
+		return err
 	}
 	src, err := parseCredentialSource(manifest)
-	return topology, manifest, src, err
-}
-
-func newTopologyReconcileCredentialsCommand() *cobra.Command {
-	var (
-		f            credentialsCommandFlags
-		timeout      time.Duration
-		checksumFile string
-	)
-	cmd := &cobra.Command{
-		Use:   "reconcile-credentials",
-		Short: "Set a deployed topology's credential stores to the credentials-manifest's current values",
-		Long: `Applies the topology's credentials-manifest to every existing release namespace
-and waits for its ExternalSecrets to sync from the source Secret. Then, in the
-namespace named by the topology's credential-stores, it sets every store that
-keeps the password it was initialised with to the synced value:
-
-- the Keycloak master-realm admin: logs in with the synced value, else with the
-  namespace's previous value, else creates a temporary admin with
-  kc.sh bootstrap-admin in a separate pod and deletes it afterwards;
-- each listed Keycloak realm user that exists;
-- the Elasticsearch native user, through the security API with its previous
-  value;
-- each PostgreSQL role, through ALTER ROLE over the pod's local socket.
-
-Stores already current are left alone and no value is ever printed. Run it
-before the deploy, and annotate the --checksum-file value onto the consumers
-so the deploy restarts them.`,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			topology, manifest, src, err := f.load()
-			if err != nil {
-				return err
-			}
-			if topology.CredentialStores == nil {
-				fmt.Fprintf(cmd.OutOrStdout(), "scenario %q declares no credential-stores; nothing to reconcile\n", f.scenario)
-				return nil
-			}
-			releases, err := f.releases()
-			if err != nil {
-				return err
-			}
-			namespaces := make([]string, 0, len(releases))
-			for _, rel := range releases {
-				namespaces = append(namespaces, rel.Namespace)
-			}
-			hubNS, err := deploy.DeriveReleaseNamespace(f.base, topology.CredentialStores.NamespaceSuffix)
-			if err != nil {
-				return err
-			}
-			r := &credentialReconciler{
-				kubectl:  newKubectl(f.kubeContext),
-				out:      cmd.OutOrStdout(),
-				poll:     5 * time.Second,
-				timeout:  timeout,
-				now:      time.Now,
-				generate: generateCredential,
-			}
-			var checksum string
-			if err := r.reconcile(cmd.Context(), reconcileInput{
-				checksum:   &checksum,
-				manifest:   manifest,
-				src:        src,
-				sourceNS:   f.secretNamespace,
-				namespaces: namespaces,
-				hubNS:      hubNS,
-				stores:     *topology.CredentialStores,
-			}); err != nil {
-				return err
-			}
-			if checksumFile == "" {
-				return nil
-			}
-			return os.WriteFile(checksumFile, []byte(checksum+"\n"), 0o600)
-		},
+	if err != nil {
+		return err
 	}
-	f.bind(cmd)
-	cmd.Flags().DurationVar(&timeout, "timeout", 5*time.Minute, "how long to wait for an ExternalSecret sync or the bootstrap-admin pod")
-	cmd.Flags().StringVar(&checksumFile, "checksum-file", "", "after a successful run, write the credentials checksum of the source values it reconciled against to this file")
-	return cmd
+	if opts.Topology.CredentialStores == nil {
+		fmt.Fprintf(out, "scenario %q declares no credential-stores; nothing to reconcile\n", opts.Scenario)
+		return nil
+	}
+	r := &credentialReconciler{
+		kubectl:  newKubectl(opts.KubeContext),
+		out:      out,
+		poll:     5 * time.Second,
+		timeout:  opts.Timeout,
+		now:      time.Now,
+		generate: generateCredential,
+	}
+	var checksum string
+	if err := r.reconcile(ctx, reconcileInput{
+		checksum:   &checksum,
+		manifest:   manifest,
+		src:        src,
+		sourceNS:   opts.SecretNamespace,
+		namespaces: opts.Namespaces,
+		hubNS:      opts.HubNamespace,
+		stores:     *opts.Topology.CredentialStores,
+	}); err != nil {
+		return err
+	}
+	if opts.ChecksumFile == "" {
+		return nil
+	}
+	return os.WriteFile(opts.ChecksumFile, []byte(checksum+"\n"), 0o600)
 }

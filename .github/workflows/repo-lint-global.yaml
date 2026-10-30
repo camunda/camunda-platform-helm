@@ -2,7 +2,14 @@ name: Repo - Lint Global
 
 on:
   workflow_dispatch:
+    inputs:
+      base-ref:
+        description: Git ref for the Helm template complexity baseline
+        required: true
+        default: origin/main
+        type: string
   pull_request:
+  merge_group:
   push:
     branches: [main]
 
@@ -14,9 +21,27 @@ permissions:
   contents: read
 
 jobs:
+  template-complexity:
+    name: Template complexity
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+      - name: Install Go
+        uses: ./.github/actions/install-tool-versions
+        with:
+          tools: golang
+      - name: Check template complexity
+        env:
+          HELM_TEMPLATE_BASE_REF: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before || inputs.base-ref || 'origin/main' }}
+        run: make helm.template-complexity
   lint:
     permissions:
       contents: read
+      id-token: write
     uses: camunda/infraex-common-config/.github/workflows/lint-global.yml@06dbc3c3960fe23138de789e3bf80065fe6c52e0 # 2.3.11
     secrets:
       VAULT_ADDR: ${{ secrets.VAULT_ADDR }}

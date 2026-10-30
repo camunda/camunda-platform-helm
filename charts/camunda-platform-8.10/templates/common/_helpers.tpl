@@ -1067,6 +1067,24 @@ Usage:
   {{- $state -}}
 {{- end -}}
 
+{{- define "camundaPlatform.appConfigDottedTrueKey" -}}
+  {{- $dottedHit := "" -}}
+  {{- $contents := list (.configuration | default "") -}}
+  {{- range $entry := (.extraConfiguration | default list) -}}
+    {{- $contents = append $contents ($entry.content | default "") -}}
+  {{- end -}}
+  {{- range $split := until (sub (len .path) 1 | int) -}}
+    {{- $dotted := join "." (slice $.path $split) -}}
+    {{- $pattern := printf "(?m)^[ \t]*%s[ \t]*[:=][ \t]*[\"']?(?i)true" (replace "." "\\." $dotted) -}}
+    {{- range $content := $contents -}}
+      {{- if regexMatch $pattern $content -}}
+        {{- $dottedHit = $dotted -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+  {{- $dottedHit -}}
+{{- end -}}
+
 {{/*
 [camunda-platform] Returns "true" when a component's YAML config sources mention
 a key path at all, in any form Spring accepts. Wraps <component>.configuration as

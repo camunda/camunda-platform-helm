@@ -16,7 +16,9 @@
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# shellcheck disable=SC1091
 source "$(dirname "$0")/base_playwright_script.sh"
+# shellcheck disable=SC1091
 source "$(dirname "$0")/render-e2e-env.sh"
 
 # ------------------------------------------------------------------------------
@@ -286,6 +288,7 @@ while [[ $# -gt 0 ]]; do
       shift 2
       ;;
     -v | --verbose)
+      # shellcheck disable=SC2034
       VERBOSE=true
       shift
       ;;

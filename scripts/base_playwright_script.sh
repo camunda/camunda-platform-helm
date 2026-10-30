@@ -57,8 +57,6 @@ if [[ -t 2 ]]; then
   COLOR_RED='\033[0;31m'
   COLOR_GREEN='\033[0;32m'
   COLOR_YELLOW='\033[0;33m'
-  COLOR_BLUE='\033[0;34m'
-  COLOR_MAGENTA='\033[0;35m'
   COLOR_CYAN='\033[0;36m'
   COLOR_GRAY='\033[0;90m'
 else
@@ -66,8 +64,6 @@ else
   COLOR_RED=''
   COLOR_GREEN=''
   COLOR_YELLOW=''
-  COLOR_BLUE=''
-  COLOR_MAGENTA=''
   COLOR_CYAN=''
   COLOR_GRAY=''
 fi
@@ -764,7 +760,7 @@ _handle_playwright_result() {
     echo "  $rerun_command"
     echo ""
     echo "========================================"
-    exit $playwright_rc
+    exit "$playwright_rc"
   fi
 }
 
@@ -1111,7 +1107,7 @@ run_playwright_tests() {
   fi
   [[ "$shard_total" -gt 1 ]] && playwright_args+=(--shard="${shard_index}/${shard_total}")
   [[ -n "$test_exclude" && "$project" != "api" ]] && playwright_args+=(--grep-invert="$test_exclude")
-  [[ -n "$trace_flag" ]] && playwright_args+=($trace_flag)
+  [[ -n "$trace_flag" ]] && playwright_args+=("$trace_flag")
   [[ -n "${PLAYWRIGHT_E2E_VIDEO:-}" ]] && playwright_args+=(--video="$PLAYWRIGHT_E2E_VIDEO")
   [[ -n "${PLAYWRIGHT_E2E_TRACE:-}" ]] && playwright_args+=(--trace="$PLAYWRIGHT_E2E_TRACE")
   [[ -n "${PLAYWRIGHT_E2E_RETRIES:-}" ]] && playwright_args+=(--retries="$PLAYWRIGHT_E2E_RETRIES")
