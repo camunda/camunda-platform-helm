@@ -381,6 +381,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      id-token: write
       pull-requests: write
     outputs:
       pr-number: ${{ steps.mark-published.outputs.pr_number }}
@@ -700,6 +701,8 @@ jobs:
     needs: [release, post-release]
     if: ${{ failure() && !inputs.dry-run }}
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
     steps:
       - name: Import Vault secrets
         id: secrets
