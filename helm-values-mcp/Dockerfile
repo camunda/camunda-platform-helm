@@ -1,5 +1,5 @@
 # Build stage
-FROM node:24-alpine AS builder
+FROM node:24-alpine@sha256:8a32c8cf649a49915a66e81e7a609223c708d0adabf288ee3f4077d765542f85 AS builder
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci
@@ -8,7 +8,7 @@ COPY src/ ./src/
 RUN npm run build
 
 # Production stage
-FROM node:24-alpine
+FROM node:24-alpine@sha256:8a32c8cf649a49915a66e81e7a609223c708d0adabf288ee3f4077d765542f85
 WORKDIR /app
 
 # Install Helm CLI
