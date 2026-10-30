@@ -43,6 +43,9 @@ jobs:
       contents: read
       id-token: write
     uses: camunda/infraex-common-config/.github/workflows/lint-global.yml@e2923304b40dfc031b3f595bcc1445e90c981adb # 3.0.0
+    with:
+      vault-secret-path: secret/data/products/qa/ci/github.com/apps/camunda/quality-assurance-ci
+      vault-github-app-private-key-key: GITHUB_APP_SECRET
     secrets:
       VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
       VAULT_JWT_PATH: ${{ secrets.VAULT_JWT_PATH }}
