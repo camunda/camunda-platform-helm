@@ -26,9 +26,9 @@ import (
 )
 
 type helmMeasurement struct {
-	file, name      string
-	line            int
-	branches, depth int
+	file, name, body string
+	line             int
+	branches, depth  int
 }
 
 func reportHelmCharts(repoRoot string, charts []string, out io.Writer) error {
@@ -151,6 +151,7 @@ func addHelmMeasurements(result map[string]helmMeasurement, file, text string) e
 		current := helmMeasurement{
 			file: file,
 			name: display,
+			body: tree.Root.String(),
 			line: 1 + strings.Count(text[:int(tree.Root.Position())], "\n"),
 		}
 		countHelm(tree.Root, 0, &current)
