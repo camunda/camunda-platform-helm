@@ -53,9 +53,16 @@ func main() {
 	repoRoot := flag.String("repo-root", ".", "path to the camunda-platform-helm repo root")
 	base := flag.String("base", "origin/main", "git ref; the change is the diff from its merge base with HEAD to the working tree")
 	all := flag.Bool("all", false, "check every function under scripts/ and every workflow run block, changed or not")
+	helmReport := flag.Bool("report-helm", false, "report source metrics for the positional chart paths without a Git baseline")
 	flag.Parse()
 
-	if err := run(*repoRoot, *base, *all, os.Stdout); err != nil {
+	var err error
+	if *helmReport {
+		err = reportHelmCharts(*repoRoot, flag.Args(), os.Stdout)
+	} else {
+		err = run(*repoRoot, *base, *all, os.Stdout)
+	}
+	if err != nil {
 		fmt.Fprintln(os.Stderr, "ERROR:", err)
 		os.Exit(1)
 	}
