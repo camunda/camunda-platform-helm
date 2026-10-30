@@ -2,6 +2,12 @@ name: Repo - Lint Global
 
 on:
   workflow_dispatch:
+    inputs:
+      base-ref:
+        description: Git ref for the Helm template complexity baseline
+        required: true
+        default: origin/main
+        type: string
   pull_request:
   merge_group:
   push:
@@ -30,7 +36,7 @@ jobs:
           tools: golang
       - name: Check template complexity
         env:
-          HELM_TEMPLATE_BASE_REF: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before || github.sha }}
+          HELM_TEMPLATE_BASE_REF: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before || inputs.base-ref || 'origin/main' }}
         run: make helm.template-complexity
   lint:
     permissions:

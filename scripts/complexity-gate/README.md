@@ -29,3 +29,7 @@ Bundled dependency templates are excluded. The report needs no Git baseline.
 `helm.lint` and global CI use the same check. The Make targets locate the installed
 binary through Go's settings; no PATH change or asdf reshim is required.
 Parsing never renders a template or executes Helm functions.
+
+Manual runs of `Repo - Lint Global` accept a `base-ref` input, defaulting to
+`origin/main`. The checkout fetches full history for the merge-base comparison.
+PR, merge-queue and push runs use their event's base SHA.

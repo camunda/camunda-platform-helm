@@ -145,6 +145,24 @@ func TestHelmSnapshots(t *testing.T) {
 	}
 }
 
+func TestHelmCommittedRegression(t *testing.T) {
+	t.Parallel()
+	root, chart := newHelmRepo(t)
+	gitRun(t, root, "branch", "baseline")
+	writeFile(t, root, chart+"/templates/_helpers.tpl", helmHelperSource("large", maxHelmBranches+3))
+	gitRun(t, root, "add", "--", chart)
+	gitRun(t, root, "-c", "user.name=Test", "-c", "user.email=test@example.invalid",
+		"-c", "commit.gpgsign=false", "commit", "-qm", "test: committed template regression")
+
+	var out bytes.Buffer
+	require.NoError(t, checkHelm(root, "HEAD", []string{chart}, &out))
+	out.Reset()
+	require.Error(t, checkHelm(root, "baseline", []string{chart}, &out))
+	assert.Contains(t, out.String(), fmt.Sprintf("large: branches %d -> %d; budget %d",
+		maxHelmBranches+2, maxHelmBranches+3, maxHelmBranches))
+	assert.NotContains(t, out.String(), "no over-budget")
+}
+
 func TestHelmBaselineErrorsAndInventory(t *testing.T) {
 	t.Parallel()
 	root, chart := newHelmRepo(t)
@@ -241,7 +259,13 @@ func TestHelmGlobalLintWiring(t *testing.T) {
 	content, err := os.ReadFile("../../.github/workflows/repo-lint-global.yaml")
 	require.NoError(t, err)
 	var workflow struct {
-		On   map[string]any `yaml:"on"`
+		On map[string]struct {
+			Inputs map[string]struct {
+				Default  string `yaml:"default"`
+				Required bool   `yaml:"required"`
+				Type     string `yaml:"type"`
+			} `yaml:"inputs"`
+		} `yaml:"on"`
 		Jobs map[string]struct {
 			Steps []struct {
 				Run  string            `yaml:"run"`
@@ -254,6 +278,12 @@ func TestHelmGlobalLintWiring(t *testing.T) {
 	require.NoError(t, yaml.Unmarshal(content, &workflow))
 	assert.Contains(t, workflow.On, "pull_request")
 	assert.Contains(t, workflow.On, "merge_group")
+	require.Contains(t, workflow.On, "workflow_dispatch")
+	inputs := workflow.On["workflow_dispatch"].Inputs
+	require.Contains(t, inputs, "base-ref")
+	assert.Equal(t, "origin/main", inputs["base-ref"].Default)
+	assert.True(t, inputs["base-ref"].Required)
+	assert.Equal(t, "string", inputs["base-ref"].Type)
 	require.Contains(t, workflow.Jobs, "template-complexity")
 	var invokes, fullHistory bool
 	for _, step := range workflow.Jobs["template-complexity"].Steps {
@@ -262,8 +292,9 @@ func TestHelmGlobalLintWiring(t *testing.T) {
 		}
 		if step.Run == "make helm.template-complexity" {
 			invokes = true
-			assert.Contains(t, step.Env["HELM_TEMPLATE_BASE_REF"], "pull_request.base.sha")
-			assert.Contains(t, step.Env["HELM_TEMPLATE_BASE_REF"], "merge_group.base_sha")
+			assert.Equal(t,
+				"${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before || inputs.base-ref || 'origin/main' }}",
+				step.Env["HELM_TEMPLATE_BASE_REF"])
 		}
 	}
 	assert.True(t, invokes, "global lint must call the shared Make target")
