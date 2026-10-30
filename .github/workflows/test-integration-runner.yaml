@@ -324,6 +324,11 @@ env:
   # leg; at ~10m install and ~25m per leg, 4h covers the four-leg mns2 chain with room
   # for queueing. Applied only when no explicit deployment-ttl was requested.
   TOPOLOGY_MIN_TTL: 4h
+  # Floor for the deploy-time cleaner/janitor TTL of every other install. The after-install
+  # e2e legs (smoke, full, api) run one at a time (max-parallel: 1) on the install's
+  # namespace; install 40m + 25m + 50m + 40m job timeouts is 155m, so 3h covers the chain
+  # with room for queueing. Applied only when no explicit deployment-ttl was requested.
+  E2E_CHAIN_MIN_TTL: 3h
   # The Helm repo which is used during the upgrade flow.
   TEST_CHART_REPO: ${{ inputs.camunda-helm-repo }}
   # Docker Hub auth to avoid image pull rate limit.
@@ -747,13 +752,14 @@ jobs:
 
           # Give deploy-camunda the requested namespace TTL; without this it stamps its 60m
           # default onto cleaner/janitor, so 12h nightly clusters get reaped after an hour.
-          # A topology scenario runs its e2e legs sequentially, one namespace set for the
-          # whole chain, so 60m expires mid-run; TOPOLOGY_MIN_TTL covers the chain. Only
-          # the deploy-time annotation is raised — CI_DEPLOYMENT_TTL stays as it was, so
-          # the cleanup job still stamps ttl=1s and the namespaces are reaped at the end
-          # of the run rather than lingering for the full TTL.
-          export DEPLOY_CAMUNDA_TTL="${CI_DEPLOYMENT_TTL:-}"
-          if [[ -z "$DEPLOY_CAMUNDA_TTL" && "$IS_TOPOLOGY" == "true" ]]; then
+          # The e2e legs after install, and the legs of a topology scenario, run one at a
+          # time on one namespace set, so 60m expires mid-run; E2E_CHAIN_MIN_TTL and
+          # TOPOLOGY_MIN_TTL cover those chains. Only the deploy-time annotation is
+          # raised — CI_DEPLOYMENT_TTL stays as it was, so the cleanup job still stamps
+          # ttl=1s and the namespaces are reaped at the end of the run rather than
+          # lingering for the full TTL.
+          export DEPLOY_CAMUNDA_TTL="${CI_DEPLOYMENT_TTL:-$E2E_CHAIN_MIN_TTL}"
+          if [[ -z "$CI_DEPLOYMENT_TTL" && "$IS_TOPOLOGY" == "true" ]]; then
             export DEPLOY_CAMUNDA_TTL="$TOPOLOGY_MIN_TTL"
           fi
 
