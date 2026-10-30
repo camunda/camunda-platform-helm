@@ -430,6 +430,19 @@
       extractVersionTemplate: '^v(?<version>\\S+)',
       versioningTemplate: 'semver',
     },
+    // Tools the asdf manager does not know. Same annotation syntax as
+    // camunda/infraex-common-config, so this manager can go once the repo extends it.
+    {
+      customType: 'regex',
+      fileMatch: [
+        '(^|/)\\.tool-versions$',
+      ],
+      matchStrings: [
+        '# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)(?: extractVersion=(?<extractVersion>\\S+))?[ \\t]*\\r?\\n[^\\s#]+[ \\t]+(?<currentValue>[^\\s#]+)',
+      ],
+      extractVersionTemplate: '{{#if extractVersion}}{{{extractVersion}}}{{else}}^(?<version>.+)${{/if}}',
+      versioningTemplate: 'semver',
+    },
   ],
   hostRules: [
     {

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package credentials
 
 import (
 	"bytes"
@@ -993,9 +993,18 @@ func TestCredentialsChecksum(t *testing.T) {
 
 func TestDogfoodCredentialStores_KeysExistInTheManifest(t *testing.T) {
 	repoRoot := filepath.Join("..", "..", "..")
-	topology, err := loadScenarioTopology(repoRoot, "8.10", "dogfood")
+	registry, err := matrix.LoadRegistry(filepath.Join(repoRoot, "charts", "camunda-platform-8.10"))
 	if err != nil {
 		t.Fatal(err)
+	}
+	var topology *matrix.Topology
+	for _, s := range registry.Integration.Case.PR.Scenarios {
+		if s.Name == "dogfood" {
+			topology = s.Topology
+		}
+	}
+	if topology == nil {
+		t.Fatal("dogfood declares no topology")
 	}
 	raw, err := os.ReadFile(filepath.Join(repoRoot, topology.CredentialsManifest))
 	if err != nil {

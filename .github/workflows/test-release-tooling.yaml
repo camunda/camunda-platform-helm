@@ -44,6 +44,7 @@ jobs:
             git-cliff
             yq
             jq
+            shellcheck
 
       # TestImageSetRealChartContract reads each chart's vendored subcharts
       # (keycloak/ES/PG for 8.7-8.9), so they must be present before `go test`.
@@ -61,6 +62,9 @@ jobs:
 
       - name: Lint every Go module under scripts/
         run: make go.lint lintBase=HEAD~1
+
+      - name: Gate the complexity of changed Go functions and workflow run blocks
+        run: make go.complexity lintBase=HEAD~1
 
       - name: Install schema generator
         run: |
@@ -99,7 +103,7 @@ jobs:
         with:
           filters: |
             stores:
-              - 'scripts/deploy-camunda/cmd/topology_reconcile*.go'
+              - 'scripts/deploy-camunda/credentials/reconcile*.go'
               - 'charts/internal-keycloak-26/**'
               - 'charts/internal-postgresql/**'
               - 'test/integration/companion-values/*-dogfood.yaml'

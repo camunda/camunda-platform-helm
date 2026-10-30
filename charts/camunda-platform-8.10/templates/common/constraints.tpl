@@ -1030,6 +1030,54 @@ Usage:
 
 {{- define "camunda.constraints.warnings" }}
   {{- include "camundaPlatform.unknownValuesWarnings" . }}
+  {{- include "camunda.constraints.authenticationWarnings" . }}
+  {{- include "camunda.constraints.dataStoreWarnings" . }}
+  {{- include "camunda.constraints.secretWarnings" . }}
+  {{- include "camunda.constraints.trustStoreWarnings" . }}
+  {{- include "camunda.constraints.transportWarnings" . }}
+
+  {{/* Warn when webModeler pusher secret is auto-generated */}}
+  {{- if eq (include "camundaHub.webModelerEnabled" .) "true" }}
+    {{- $pusher := mustMergeOverwrite (deepCopy .Values.webModeler.restapi.pusher) (.Values.camundaHub.restapi.pusher | default dict) }}
+    {{- $pusherSecret := $pusher.secret }}
+    {{- if not (or $pusherSecret.existingSecret $pusherSecret.inlineSecret) }}
+      {{- $warningMessage := printf "%s %s %s %s"
+          "[camunda][warning]"
+          "Web Modeler is using an auto-generated Pusher secret. This will produce a new random secret on every 'helm upgrade', causing WebSocket authentication failures."
+          "Please set 'webModeler.restapi.pusher.secret.existingSecret' (recommended) or 'webModeler.restapi.pusher.secret.inlineSecret'."
+          "Auto-generation will be removed in a future release."
+      -}}
+      {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+    {{- end }}
+    {{- $pusherClientSecret := $pusher.client.secret }}
+    {{- if not (or $pusherClientSecret.existingSecret $pusherClientSecret.inlineSecret) }}
+      {{- $warningMessage := printf "%s %s %s %s"
+          "[camunda][warning]"
+          "Web Modeler is using an auto-generated Pusher app key. This will produce a new random key on every 'helm upgrade', causing WebSocket authentication failures."
+          "Please set 'webModeler.restapi.pusher.client.secret.existingSecret' (recommended) or 'webModeler.restapi.pusher.client.secret.inlineSecret'."
+          "Auto-generation will be removed in a future release."
+      -}}
+      {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+    {{- end }}
+  {{- end }}
+
+  {{- include "camunda.constraints.partitioningWarnings" . }}
+  {{ include "camundaPlatform.globalImageDeprecations" . }}
+  {{- include "camunda.constraints.configurationDeprecationWarnings" . }}
+
+  {{- if and (eq (include "camundaPlatform.orchestrationEnabled" .) "true")
+             (eq .Values.orchestration.persistenceType "disk")
+             (has "ReadWriteOncePod" .Values.orchestration.pvcAccessModes) }}
+    {{- $warningMessage := printf "%s %s %s"
+        "[camunda][warning]"
+        "orchestration.pvcAccessModes is set to ReadWriteOncePod, which requires a CSI driver that supports it; without that support the PersistentVolumeClaim may fail to provision or stay Pending."
+        "PersistentVolumeClaim accessModes are immutable, so this only applies to new installs / new PVCs, not to an existing StatefulSet via \"helm upgrade\"."
+    -}}
+    {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+  {{- end }}
+{{- end }}
+
+{{- define "camunda.constraints.authenticationWarnings" }}
   {{- if and .Values.global.identity.auth.enabled (empty (include "camundaPlatform.authIssuerUrlWithFallback" . | trim)) }}
     {{- $issuerBackendUrl := include "camundaPlatform.authIssuerBackendUrl" . | trim }}
     {{- $keycloakURL := .Values.global.identity.keycloak.url | default dict }}
@@ -1072,9 +1120,15 @@ Usage:
       {{- printf "\n[camunda][warning] The Orchestration Cluster uses OIDC without an issuer URI, and these endpoints do not render as absolute URLs: %s. Set orchestration.security.authentication.oidc.issuer or global.identity.auth.issuer, or set the endpoints in orchestration.security.authentication.oidc.authUrl, jwksUrl, and tokenUrl (or global.identity.auth.authUrl, jwksUrl, and tokenUrl). For KEYCLOAK, global.identity.auth.publicIssuerUrl derives authorization-uri, and global.identity.auth.issuerBackendUrl or global.identity.keycloak.url derives jwk-set-uri and token-uri." (join ", " $unresolvedEndpoints) }}
     {{- end }}
   {{- end }}
+{{- end }}
+
+{{- define "camunda.constraints.dataStoreWarnings" }}
   {{- $secondaryStorageType := .Values.orchestration.data.secondaryStorage.type }}
   {{- if and .Values.global.noSecondaryStorage $secondaryStorageType (ne $secondaryStorageType "none") (eq (include "camundaPlatform.orchestrationEnabled" .) "true") }}
     {{- printf "\n[camunda][warning] global.noSecondaryStorage=true conflicts with orchestration.data.secondaryStorage.type=%s: the Orchestration Cluster uses %s secondary storage while the other components run without it. Set orchestration.data.secondaryStorage.type=none to run without secondary storage, or set global.noSecondaryStorage=false." $secondaryStorageType $secondaryStorageType }}
+  {{- end }}
+  {{- if and (eq (include "camundaPlatform.orchestrationEnabled" .) "true") (eq (include "orchestration.secondaryStorage" .) "rdbms") (ne (include "orchestration.rdbmsUrlConfigured" .) "true") }}
+    {{- printf "\n%s" "[camunda][warning] The Orchestration Cluster uses RDBMS secondary storage, but no JDBC URL is set. Without a URL, the Orchestration Cluster fails at startup. Set orchestration.data.secondaryStorage.rdbms.url, set CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_URL in orchestration.env, or set camunda.data.secondary-storage.rdbms.url in orchestration.extraConfiguration. If the URL comes from another source, such as JVM options, ignore this warning." }}
   {{- end }}
   {{- if not (semverCompare ">=4.0.0-0" .Capabilities.HelmVersion.Version) }}
     {{- printf "\n%s" (printf "[camunda][warning] Helm CLI %s detected. Helm v3 receives security fixes only until February 10, 2027 (https://helm.sh/blog/helm-v3-end-of-life/). Upgrade to Helm v4 before then: https://helm.sh/docs/overview" .Capabilities.HelmVersion.Version) }}
@@ -1096,6 +1150,9 @@ Usage:
     {{- end }}
     {{- printf "\n[camunda][warning] Optimize uses %s, but optimize.database.%s.url.host is empty, so the chart renders no connection node for it. Elasticsearch takes precedence when both backends are enabled. Set optimize.database.%s.url.host. If the host comes from another source, such as optimize.extraConfiguration, ignore this warning." (ternary "Elasticsearch" "OpenSearch" (eq $optimizeBackend "elasticsearch")) $optimizeBackend $optimizeBackend }}
   {{- end }}
+{{- end }}
+
+{{- define "camunda.constraints.secretWarnings" }}
   {{- if .Values.global.testDeprecationFlags.existingSecretsMustBeSet }}
     {{/* TODO: Check if there are more existingSecrets to check */}}
 
@@ -1191,19 +1248,15 @@ The following values inside your values.yaml need to be set but were not:
   {{/* Warn about insecure inlineSecret usage */}}
   {{- $inlineSecretSections := list -}}
   {{- range $k, $v := .Values -}}
-    {{- if kindIs "map" $v -}}
-      {{- if eq $k "global" -}}
-        {{/* Drill into global.* children for finer-grained reporting */}}
-        {{- range $gk, $gv := $v -}}
-          {{- if and (kindIs "map" $gv) (mustToJson $gv | regexMatch "\"inlineSecret\":\"[^\"]+\"") -}}
-            {{- $inlineSecretSections = append $inlineSecretSections (printf "global.%s" $gk) -}}
-          {{- end -}}
-        {{- end -}}
-      {{- else -}}
-        {{- if (mustToJson $v | regexMatch "\"inlineSecret\":\"[^\"]+\"") -}}
-          {{- $inlineSecretSections = append $inlineSecretSections $k -}}
+    {{- if and (kindIs "map" $v) (eq $k "global") -}}
+      {{/* Drill into global.* children for finer-grained reporting */}}
+      {{- range $gk, $gv := $v -}}
+        {{- if and (kindIs "map" $gv) (mustToJson $gv | regexMatch "\"inlineSecret\":\"[^\"]+\"") -}}
+          {{- $inlineSecretSections = append $inlineSecretSections (printf "global.%s" $gk) -}}
         {{- end -}}
       {{- end -}}
+    {{- else if and (kindIs "map" $v) (mustToJson $v | regexMatch "\"inlineSecret\":\"[^\"]+\"") -}}
+      {{- $inlineSecretSections = append $inlineSecretSections $k -}}
     {{- end -}}
   {{- end -}}
   {{- if $inlineSecretSections -}}
@@ -1215,7 +1268,9 @@ The following values inside your values.yaml need to be set but were not:
     -}}
     {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
   {{- end }}
+{{- end }}
 
+{{- define "camunda.constraints.trustStoreWarnings" }}
   {{- if and .Values.optimize.enabled (eq (include "camundaPlatform.optimizeServerTLSEnabled" .) "true") (ne (include "camundaPlatform.hasCaBundle" .) "true") -}}
     {{- $warningMessage := printf "%s %s %s %s"
         "[camunda][warning]"
@@ -1360,7 +1415,9 @@ The following values inside your values.yaml need to be set but were not:
     {{- end }}
 
   {{- end }}
+{{- end }}
 
+{{- define "camunda.constraints.transportWarnings" }}
   {{/* Orchestration TLS detection guardrails: the chart derives ingress backend
        protocols and in-cluster client endpoint schemes from
        camundaPlatform.orchestrationRESTTLSEnabled / ...GRPCTLSEnabled. Those read
@@ -1380,20 +1437,10 @@ The following values inside your values.yaml need to be set but were not:
              yielding a single segment are skipped: a bare "enabled: true" line
              matches unrelated config. */}}
       {{- if ne $prop.state "true" }}
-        {{- $dottedHit := "" -}}
-        {{- $contents := list ($.Values.orchestration.configuration | default "") -}}
-        {{- range $entry := ($.Values.orchestration.extraConfiguration | default list) -}}
-          {{- $contents = append $contents ($entry.content | default "") -}}
-        {{- end -}}
-        {{- range $split := until (sub (len $prop.path) 1 | int) -}}
-          {{- $dotted := join "." (slice $prop.path $split) -}}
-          {{- $pattern := printf "(?m)^[ \t]*%s[ \t]*[:=][ \t]*[\"']?(?i)true" (replace "." "\\." $dotted) -}}
-          {{- range $content := $contents -}}
-            {{- if regexMatch $pattern $content -}}
-              {{- $dottedHit = $dotted -}}
-            {{- end -}}
-          {{- end -}}
-        {{- end -}}
+        {{- $dottedHit := include "camundaPlatform.appConfigDottedTrueKey" (dict
+            "configuration" $.Values.orchestration.configuration
+            "extraConfiguration" $.Values.orchestration.extraConfiguration
+            "path" $prop.path) -}}
         {{- if $dottedHit }}
           {{- $warningMessage := printf "%s %s %s"
               "[camunda][warning]"
@@ -1468,21 +1515,10 @@ The following values inside your values.yaml need to be set but were not:
            yielding a single segment are skipped: a bare "enabled: true" line
            matches unrelated config. */}}
     {{- if ne $connectorsTLS "true" }}
-      {{- $sslPath := list "server" "ssl" "enabled" -}}
-      {{- $dottedHit := "" -}}
-      {{- $contents := list (.Values.connectors.configuration | default "") -}}
-      {{- range $entry := (.Values.connectors.extraConfiguration | default list) -}}
-        {{- $contents = append $contents ($entry.content | default "") -}}
-      {{- end -}}
-      {{- range $split := until (sub (len $sslPath) 1 | int) -}}
-        {{- $dotted := join "." (slice $sslPath $split) -}}
-        {{- $pattern := printf "(?m)^[ \t]*%s[ \t]*[:=][ \t]*[\"']?(?i)true" (replace "." "\\." $dotted) -}}
-        {{- range $content := $contents -}}
-          {{- if regexMatch $pattern $content -}}
-            {{- $dottedHit = $dotted -}}
-          {{- end -}}
-        {{- end -}}
-      {{- end -}}
+      {{- $dottedHit := include "camundaPlatform.appConfigDottedTrueKey" (dict
+          "configuration" .Values.connectors.configuration
+          "extraConfiguration" .Values.connectors.extraConfiguration
+          "path" (list "server" "ssl" "enabled")) -}}
       {{- if $dottedHit }}
         {{- $warningMessage := printf "%s %s %s"
             "[camunda][warning]"
@@ -1608,31 +1644,9 @@ The following values inside your values.yaml need to be set but were not:
     {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
   {{- end }}
 
-  {{/* Warn when webModeler pusher secret is auto-generated */}}
-  {{- if eq (include "camundaHub.webModelerEnabled" .) "true" }}
-    {{- $pusher := mustMergeOverwrite (deepCopy .Values.webModeler.restapi.pusher) (.Values.camundaHub.restapi.pusher | default dict) }}
-    {{- $pusherSecret := $pusher.secret }}
-    {{- if not (or $pusherSecret.existingSecret $pusherSecret.inlineSecret) }}
-      {{- $warningMessage := printf "%s %s %s %s"
-          "[camunda][warning]"
-          "Web Modeler is using an auto-generated Pusher secret. This will produce a new random secret on every 'helm upgrade', causing WebSocket authentication failures."
-          "Please set 'webModeler.restapi.pusher.secret.existingSecret' (recommended) or 'webModeler.restapi.pusher.secret.inlineSecret'."
-          "Auto-generation will be removed in a future release."
-      -}}
-      {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
-    {{- end }}
-    {{- $pusherClientSecret := $pusher.client.secret }}
-    {{- if not (or $pusherClientSecret.existingSecret $pusherClientSecret.inlineSecret) }}
-      {{- $warningMessage := printf "%s %s %s %s"
-          "[camunda][warning]"
-          "Web Modeler is using an auto-generated Pusher app key. This will produce a new random key on every 'helm upgrade', causing WebSocket authentication failures."
-          "Please set 'webModeler.restapi.pusher.client.secret.existingSecret' (recommended) or 'webModeler.restapi.pusher.client.secret.inlineSecret'."
-          "Auto-generation will be removed in a future release."
-      -}}
-      {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
-    {{- end }}
-  {{- end }}
+{{- end }}
 
+{{- define "camunda.constraints.partitioningWarnings" }}
   {{- if eq (include "camundaPlatform.deprecatedMultiregionConfigured" (.Values.global.multiregion | default dict)) "true" }}
     {{- $warningMessage := printf "%s %s %s %s"
         "[camunda][warning]"
@@ -1739,8 +1753,9 @@ The following values inside your values.yaml need to be set but were not:
     {{- end }}
   {{- end }}
 
-  {{ include "camundaPlatform.globalImageDeprecations" . }}
+{{- end }}
 
+{{- define "camunda.constraints.configurationDeprecationWarnings" }}
   {{/* Camunda Hub consolidation deprecation warnings */}}
   {{- if .Values.webModeler.enabled }}
     {{- $warningMessage := printf "%s %s %s %s"
@@ -2034,16 +2049,6 @@ The following values inside your values.yaml need to be set but were not:
     "condition" (ne (.Values.global.documentStore.type.inmemory.storeId | toString) "INMEMORY")
     "oldName" "global.documentStore.type.inmemory.storeId" "migration" $componentExtra) }}
 
-  {{- if and (eq (include "camundaPlatform.orchestrationEnabled" .) "true")
-             (eq .Values.orchestration.persistenceType "disk")
-             (has "ReadWriteOncePod" .Values.orchestration.pvcAccessModes) }}
-    {{- $warningMessage := printf "%s %s %s"
-        "[camunda][warning]"
-        "orchestration.pvcAccessModes is set to ReadWriteOncePod, which requires a CSI driver that supports it; without that support the PersistentVolumeClaim may fail to provision or stay Pending."
-        "PersistentVolumeClaim accessModes are immutable, so this only applies to new installs / new PVCs, not to an existing StatefulSet via \"helm upgrade\"."
-    -}}
-    {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
-  {{- end }}
 {{- end }}
 
 {{/*

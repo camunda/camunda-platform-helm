@@ -1,12 +1,13 @@
 ---
 repos:
-  - repo: local
+  - repo: https://github.com/camunda/infraex-common-config
+    rev: 2.4.0 # use tags until renovate supports sha: https://github.com/renovatebot/renovate/issues/22567
     hooks:
-      # shortcut: copy of infraex-common-config's action-pin-spacing (camunda/infraex-common-config#609); switch to that hook once it is released.
       - id: action-pin-spacing
-        name: Exactly one space before the version comment of a pinned action
-        language: pygrep
-        entry: uses:\s*\S+@[0-9a-f]{40}(\s{2,}|\t)#
-        files: ^\.github/(workflows/[^/]+|actions/.+/action)\.ya?ml$
         # shortcut: release workflows are fixed in a separate PR that test-runs them; drop this exclude then.
         exclude: ^\.github/(workflows/(chart-build-dev|chart-promote-rc|chart-release-public)\.yaml|actions/observe-build-status/action\.yml)$
+  - repo: https://github.com/zizmorcore/zizmor-pre-commit
+    rev: c92afdf2c6ca336aaa8f39e2bd8d48f62dbd8e1f  # frozen: v1.31.1
+    hooks:
+      - id: zizmor
+        args: [--no-progress, --min-severity=high, --config=.github/zizmor.yml]

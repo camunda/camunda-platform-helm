@@ -22,14 +22,16 @@ set -euo pipefail
 helm repo add camunda https://helm.camunda.io
 helm repo update
 
+# shellcheck disable=SC2012
 chart_main_dir=$(ls -d1 charts/camunda-platform-8* | tail -n1)
-chart_main_version="$(yq '.version' ${chart_main_dir}/Chart.yaml)"
+chart_main_version="$(yq '.version' "${chart_main_dir}/Chart.yaml")"
 components_versions=$(helm template camunda/camunda-platform | awk -F'helm.sh/chart: ' '/helm.sh\/chart:/ {print $2}' | sort | uniq)
 
 components_count=2
 
 print_components_versions() {
     echo "Current versions from Camunda Helm repo:"
+    # shellcheck disable=SC2086
     printf -- "- %s\n" ${components_versions}
 }
 
