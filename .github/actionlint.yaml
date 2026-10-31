@@ -1,0 +1,4 @@
+self-hosted-runner:
+  labels:
+    - gcp-core-8-release
+    - gcp-core-32-longrunning-big-ssd
