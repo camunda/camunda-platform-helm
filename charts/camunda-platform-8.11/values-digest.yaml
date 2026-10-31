@@ -33,7 +33,7 @@ webModeler:
     image:
       repository: camunda/hub-websockets
       tag: SNAPSHOT
-      digest: "sha256:d36300159798e4684243d5134e0182bcb3ff8f0ccdc902bf0acb6648287043be"
+      digest: "sha256:36759cab7d8c808f49bd76c65d67de6963c899e939e43cbe37c3666a4af171d1"
 
 #
 # Orchestration Cluster
