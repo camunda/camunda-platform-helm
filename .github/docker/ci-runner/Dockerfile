@@ -106,7 +106,7 @@
 #
 # Or build directly:
 #   docker buildx build --platform linux/amd64 \
-#     --build-arg GOLANG_VERSION=1.25.5 \
+#     --build-arg GOLANG_VERSION=<version> \
 #     --build-arg HELM_VERSION=3.19.4 \
 #     -t ci-runner:test .
 #
@@ -256,7 +256,7 @@ LABEL org.opencontainers.image.licenses="Apache-2.0"
 # Build arguments for tools not downloaded in Stage 1
 # These are installed directly in this stage
 # ------------------------------------------------------------------------------
-ARG GOLANG_VERSION=1.25.5
+ARG GOLANG_VERSION=1.27.3
 ARG BATS_VERSION=1.11.0
 ARG YAMLLINT_VERSION=1.37.1
 

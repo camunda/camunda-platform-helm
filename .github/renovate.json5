@@ -130,6 +130,23 @@
       matchManagers: ['github-actions'],
       schedule: ['every weekend'],
     },
+    {
+      description: 'Group every Go version pin (go.mod, Dockerfiles, .tool-versions) into one PR.',
+      matchDatasources: ['golang-version'],
+      groupName: 'golang',
+    },
+    {
+      matchManagers: ['asdf'],
+      matchDepNames: ['golang'],
+      groupName: 'golang',
+    },
+    {
+      description: 'Bump the go.mod go directive like the other Go version pins.',
+      matchManagers: ['gomod'],
+      matchDepNames: ['go'],
+      matchDepTypes: ['golang'],
+      rangeStrategy: 'bump',
+    },
     // Limit tools and libs versions to the actual Distro CI Kubernetes cluster.
     {
       allowedVersions: '<1.37.0',
@@ -435,8 +452,19 @@
       extractVersionTemplate: '^v(?<version>\\S+)',
       versioningTemplate: 'semver',
     },
+    {
+      customType: 'regex',
+      fileMatch: [
+        '^\\.github/docker/[^/]+/Dockerfile$',
+      ],
+      matchStrings: [
+        'ARG (?:GOLANG_VERSION|GO_VERSION)=(?<currentValue>\\d+\\.\\d+\\.\\d+)',
+      ],
+      depNameTemplate: 'go',
+      datasourceTemplate: 'golang-version',
     // Tools the asdf manager does not know. Same annotation syntax as
     // camunda/infraex-common-config, so this manager can go once the repo extends it.
+    },
     {
       customType: 'regex',
       fileMatch: [
