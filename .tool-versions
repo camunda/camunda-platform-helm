@@ -1,13 +1,13 @@
 # renovate: datasource=github-releases depName=orhun/git-cliff extractVersion=^v(?<version>.+)$
-git-cliff 2.12.0
+git-cliff 2.14.2
 golang 1.27.3
 golangci-lint 2.15.0
 shellcheck 0.11.0
 helm 4.3.1
 # renovate: datasource=github-releases depName=helm/chart-releaser extractVersion=^v(?<version>.+)$
-helm-cr 1.7.0
+helm-cr 1.10.0
 # renovate: datasource=github-releases depName=helm/chart-testing extractVersion=^v(?<version>.+)$
-helm-ct 3.11.0
+helm-ct 3.15.0
 kind 0.33.0
 kubectl 1.36.5 # The kubectl version depends on the K8s CI cluster version
 kustomize 5.8.3
@@ -21,7 +21,7 @@ zbctl v8.6.0
 # renovate: datasource=github-releases depName=jqlang/jq extractVersion=^jq-(?<version>.+)$
 jq 1.8.1
 # renovate: datasource=github-releases depName=bats-core/bats-core extractVersion=^v(?<version>.+)$
-bats 1.11.0
+bats 1.14.0
 pre-commit 4.7.0
 python 3.15.2
 # renovate: datasource=github-releases depName=BurntSushi/ripgrep
