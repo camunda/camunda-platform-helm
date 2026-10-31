@@ -96,6 +96,26 @@ func TestNotesTemplate(t *testing.T) {
 			expected:    "- Camunda REST API: https://camunda.example.com",
 			notExpected: "- Camunda REST API: http://camunda.example.com",
 		},
+		{
+			name: "rest api url from global host",
+			values: []string{
+				"global.ingress.enabled=true",
+				"global.ingress.tls.enabled=true",
+				"global.host=camunda.example.com",
+			},
+			expected: "- Camunda REST API: https://camunda.example.com",
+		},
+		{
+			name: "rest api url prefers global host over deprecated ingress host",
+			values: []string{
+				"global.ingress.enabled=true",
+				"global.ingress.tls.enabled=true",
+				"global.host=camunda.example.com",
+				"global.ingress.host=legacy.example.com",
+			},
+			expected:    "- Camunda REST API: https://camunda.example.com",
+			notExpected: "- Camunda REST API: https://legacy.example.com",
+		},
 	}
 
 	for _, testCase := range testCases {
