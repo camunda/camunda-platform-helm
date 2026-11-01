@@ -73,16 +73,24 @@ func checkRunBlocks(repoRoot, base string, all bool, out io.Writer) error {
 		complexityErr = fmt.Errorf("%d of %d checked run block(s) %s %s; split the step or delete code (see .github/instructions/github-actions.instructions.md)",
 			len(violations), len(head), scope, limits)
 	}
-	return errors.Join(complexityErr, shellcheckActions(head, out))
+	return errors.Join(complexityErr, shellcheckActions(repoRoot, out))
 }
 
-func shellcheckActions(blocks []runBlock, out io.Writer) error {
+func shellcheckActions(repoRoot string, out io.Writer) error {
+	paths, err := git(repoRoot, "ls-files", "-z", "--cached", "--others", "--exclude-standard", "--", ".github/actions")
+	if err != nil {
+		return err
+	}
+	blocks, err := runBlocksIn(strings.Split(paths, "\x00"), func(path string) ([]byte, error) {
+		return os.ReadFile(filepath.Join(repoRoot, path))
+	})
+	if err != nil {
+		return err
+	}
+
 	checked := 0
 	var findings []string
 	for _, b := range blocks {
-		if !strings.HasPrefix(b.path, ".github/actions/") {
-			continue
-		}
 		checked++
 		cmd := exec.Command("shellcheck", "--shell=bash", "--format=gcc", "--exclude=SC2043,SC2050,SC2157,SC2194", "-")
 		cmd.Stdin = strings.NewReader(maskExpressions(b.script))
