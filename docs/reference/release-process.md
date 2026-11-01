@@ -228,15 +228,22 @@ A minor goes through two sets of chores at different times. The examples use `8.
 
 ### New alpha chart
 
-Do these when the new alpha chart is created (months before the previous alpha goes GA):
+Do these steps when you create the new alpha chart. The examples copy `8.10` to `8.11` as chart `16.0.0-alpha0`. Copy the checklist into the tracking issue of the cut.
 
-1. Copy `charts/camunda-platform-8.10` to `charts/camunda-platform-8.11`.
-2. Set the version in `charts/camunda-platform-8.11/Chart.yaml` to the next major with `-alpha0` (for example `16.0.0-alpha0`). The dev build adds one to the alpha number, so the first release is `-alpha1`.
-3. Give the new chart its own `SNAPSHOT` and alpha image tags. Do not keep the GA tags of the copied chart.
-4. In [`charts/chart-versions.yaml`](https://github.com/camunda/camunda-platform-helm/blob/main/charts/chart-versions.yaml), add a lifecycle entry for `8.11` without `released`, and add `8.11` to `chartAutomation.routineVersions`.
-5. Add the release-please package and manifest entry in `.github/config/release-please/`, with the `version/alpha` label.
-6. In [`renovate.json5`](https://github.com/camunda/camunda-platform-helm/blob/main/.github/renovate.json5), add the new chart files to the alpha rules.
-7. Add `8.11` to the GitHub Actions version choices (search for `type: choice`), to [`pr-labeler.yaml`](https://github.com/camunda/camunda-platform-helm/blob/main/.github/config/pr-labeler.yaml), and to `scripts/release-tools/inject_values.go`.
+The [`chart-minor-cut`](https://github.com/camunda/camunda-platform-helm/blob/main/.claude/skills/chart-minor-cut/SKILL.md) skill has the commands and the check for each step. Its section numbers match the steps below.
+
+- [ ] **1. State of the previous minor.** Record if `8.10` has `released` in [`charts/chart-versions.yaml`](https://github.com/camunda/camunda-platform-helm/blob/main/charts/chart-versions.yaml). Step 7 needs it.
+- [ ] **2. Version-agnostic tooling.** Search outside `charts/` for hardcoded `8.10` lists. Change substring checks and fixed lists to numeric comparisons, or add `8.11`. Merge these fixes in a separate PR first.
+- [ ] **3. Copy.** Copy the tracked files of `charts/camunda-platform-8.10` with `git ls-files`, not with `cp -r`. Check that both directories have the same number of tracked files.
+- [ ] **4. Chart metadata.** Set `version: 16.0.0-alpha0` and `appVersion: 8.11.x`. Add `artifacthub.io/prerelease: "true"`. Reset `artifacthub.io/changes`, `CHANGELOG.md` and `RELEASE-NOTES.md`. The dev build adds one to the alpha number, so the first release is `-alpha1`.
+- [ ] **5. Image tags.** Replace every `8.10` tag in `values.yaml`, `values-latest.yaml` and `values-digest.yaml`. Use `8.11-SNAPSHOT` where Docker Hub has it, else `SNAPSHOT`. Pin the digest of each selected tag. Set the `values-latest.yaml` header to `Camunda - Alpha`.
+- [ ] **6. Audit the copy.** Search the new chart for `8.10`, `8.9` and old chart directory names. Keep history statements. Fix docs links, the release-highlights text, README directory names, the Playwright `SM-8.11` suite, test values headers, Hub cluster versions and registry paths. Remove the hooks of the `8.9` to `8.10` upgrade.
+- [ ] **7. Wiring.** Add `8.11` to `routineVersions` and `camundaSupportLifecycle` (without `released`). Add the release-please package (with the `version/alpha` label) and the manifest entry (with the filler entry). Add `8.11` to the Renovate alpha and digest rules, `pr-labeler.yaml`, `permitted-flows.yaml`, the `test-chart-version.yaml` choices, `inject_values.go`, `render-e2e-env.sh` and the version map above. Create the `version/8.11` label. If `8.10` is not GA yet, also deny `upgrade-minor` for `8.11`. When `8.10` becomes GA, follow [skill step 7](https://github.com/camunda/camunda-platform-helm/blob/main/.claude/skills/chart-minor-cut/SKILL.md#7-wire-the-new-minor) to remove that deny and restore the `upgrade-minor` scenario entries removed during the cut.
+- [ ] **8. Regenerate.** Run `helm.dependency-update`, `helm.readme-update`, `helm.schema-update` and `go.update-golden-only` for the new chart.
+- [ ] **9. Checks.** Lint and unit tests pass for the new chart. The tooling tests pass. `release-tools release-version` returns `16.0.0-alpha1`. The rendered images use the new tags. The `8.10` chart has no changes. The tier-1 scenarios pass.
+- [ ] **10. PR.** Open `feat: create the Camunda 8.11 Helm chart line as 16.0.0-alpha0`. Stack it on the tooling PR if that PR is not merged.
+- [ ] **11. After the merge.** Push the annotated tag `camunda-platform-8.11-16.0.0-alpha0` on the merge commit. Without it, the first alpha release fails. Check that the first dev build makes `16.0.0-alpha1`. Tell QA (the `SM-8.11` e2e suite) and the monorepo team (the preview-environment smoke test).
+- [ ] **12. Older minors.** Check the end of standard maintenance and the ESUP cases of each older minor. Move or end them in separate PRs, not in the cut PR.
 
 ### Minor becoming GA
 
