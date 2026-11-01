@@ -26,7 +26,7 @@ webModeler:
     image:
       repository: camunda/hub
       tag: SNAPSHOT
-      digest: "sha256:ef91e5b48f20492bcb81ffdb63c62d1ded9027fc2ba5d9a9502b6a7dd0c821fd"
+      digest: "sha256:f7d7a985c9ec851016fec76a7073d70b1add683a20d644f42c5e4d451652170b"
 
   # https://hub.docker.com/r/camunda/hub-websockets/tags
   websockets:
