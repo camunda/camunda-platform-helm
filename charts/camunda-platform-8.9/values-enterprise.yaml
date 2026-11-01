@@ -47,7 +47,7 @@ identityPostgresql:
       registry: registry.camunda.cloud
       repository: vendor-ee/postgres-exporter
       # renovate: datasource=custom.bitnami-postgres-exporter-camunda depName=postgres-exporter versioning=regex:^(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)(-(?<compatibility>debian-\d+)-r(?<build>\d+))?$
-      tag: 0.18.1-debian-12-r9
+      tag: 0.20.1-debian-12-r13
       pullSecrets:
         - name: registry-camunda-cloud
 
@@ -64,7 +64,7 @@ identityKeycloak:
       registry: registry.camunda.cloud
       repository: vendor-ee/keycloak-config-cli
       # renovate: datasource=custom.bitnami-keycloak-config-cli-camunda depName=keycloak-config-cli versioning=regex:^(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)(-(?<compatibility>debian-\d+)-r(?<build>\d+))?$
-      tag: 6.4.0-debian-12-r18
+      tag: 6.5.1-debian-12-r10
       pullSecrets:
         - name: registry-camunda-cloud
 
@@ -91,7 +91,7 @@ identityKeycloak:
         registry: registry.camunda.cloud
         repository: vendor-ee/postgres-exporter
         # renovate: datasource=custom.bitnami-postgres-exporter-camunda depName=postgres-exporter versioning=regex:^(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)(-(?<compatibility>debian-\d+)-r(?<build>\d+))?$
-        tag: 0.18.1-debian-12-r9
+        tag: 0.20.1-debian-12-r13
         pullSecrets:
           - name: registry-camunda-cloud
 
@@ -118,7 +118,7 @@ webModelerPostgresql:
       registry: registry.camunda.cloud
       repository: vendor-ee/postgres-exporter
       # renovate: datasource=custom.bitnami-postgres-exporter-camunda depName=postgres-exporter versioning=regex:^(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)(-(?<compatibility>debian-\d+)-r(?<build>\d+))?$
-      tag: 0.18.1-debian-12-r9
+      tag: 0.20.1-debian-12-r13
       pullSecrets:
         - name: registry-camunda-cloud
 
@@ -161,6 +161,6 @@ elasticsearch:
       registry: registry.camunda.cloud
       repository: vendor-ee/elasticsearch-exporter
       # renovate: datasource=custom.bitnami-elasticsearch-exporter-camunda depName=elasticsearch-exporter versioning=regex:^(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)(-(?<compatibility>debian-\d+)-r(?<build>\d+))?$
-      tag: 1.9.0-debian-12-r24
+      tag: 1.11.0-debian-12-r16
       pullSecrets:
         - name: registry-camunda-cloud

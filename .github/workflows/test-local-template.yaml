@@ -107,7 +107,7 @@ jobs:
         if: ${{ inputs.camunda-helm-dir == 'camunda-platform-8.11' || inputs.camunda-helm-dir == 'camunda-platform-8.10' }}
         run: |
           # renovate: datasource=github-releases depName=elastic/cloud-on-k8s
-          ECK_VERSION="3.3.2"
+          ECK_VERSION="3.5.0"
           kubectl apply --server-side -f \
             "https://download.elastic.co/downloads/eck/${ECK_VERSION}/crds.yaml"
           kubectl apply --server-side -f \
