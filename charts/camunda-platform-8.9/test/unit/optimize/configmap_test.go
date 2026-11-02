@@ -260,6 +260,56 @@ func (s *ConfigMapTemplateTest) TestDatabaseOverrides() {
 			},
 		},
 		{
+			Name: "TestElasticsearchExternalEmptyUsernameOmitted",
+			Values: map[string]string{
+				"identity.enabled":                             "true",
+				"optimize.enabled":                             "true",
+				"global.elasticsearch.external":                "true",
+				"global.elasticsearch.auth.username":           "",
+				"optimize.database.elasticsearch.url.protocol": "https",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var configmap corev1.ConfigMap
+				var configmapApplication map[string]interface{}
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+				e := yaml.Unmarshal([]byte(configmap.Data["environment-config.yaml"]), &configmapApplication)
+				if e != nil {
+					s.Fail("Failed to unmarshal yaml. error=", e)
+				}
+
+				security := configmapApplication["es"].(map[string]interface{})["security"].(map[string]interface{})
+				s.Require().NotContains(security, "username")
+				s.Require().Contains(security, "ssl")
+			},
+		},
+		{
+			Name: "TestElasticsearchExternalHttpEmptyUsernameOmitted",
+			Values: map[string]string{
+				"identity.enabled":                             "true",
+				"optimize.enabled":                             "true",
+				"global.elasticsearch.external":                "true",
+				"global.elasticsearch.auth.username":           "",
+				"optimize.database.elasticsearch.url.protocol": "http",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var configmap corev1.ConfigMap
+				var configmapApplication map[string]interface{}
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+				e := yaml.Unmarshal([]byte(configmap.Data["environment-config.yaml"]), &configmapApplication)
+				if e != nil {
+					s.Fail("Failed to unmarshal yaml. error=", e)
+				}
+
+				es := configmapApplication["es"].(map[string]interface{})
+				s.Require().Contains(es, "security")
+				s.Require().Nil(es["security"])
+			},
+		},
+		{
 			Name: "TestElasticsearchNoSecuritySectionWhenNotExternal",
 			Values: map[string]string{
 				"identity.enabled": "true",
