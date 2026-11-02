@@ -118,7 +118,7 @@
 # This stage downloads all static binaries and compresses them with UPX.
 # Only the compressed binaries are copied to the final image.
 # ==============================================================================
-FROM debian:bookworm-slim AS tools
+FROM debian:bookworm-slim@sha256:99c0b25c46d0214d5a2091092e7908907dcaecd6a962cde0ac700acee222b6f3 AS tools
 
 # Install minimal tools for downloading and compressing
 # - ca-certificates: Required for HTTPS downloads
@@ -246,7 +246,7 @@ RUN echo "=== Compressed binary sizes ===" && ls -lhS /tools/
 # This stage creates the actual CI runner image with all tools installed.
 # Only necessary files are copied from Stage 1.
 # ==============================================================================
-FROM debian:bookworm-slim
+FROM debian:bookworm-slim@sha256:99c0b25c46d0214d5a2091092e7908907dcaecd6a962cde0ac700acee222b6f3
 
 LABEL org.opencontainers.image.source="https://github.com/camunda/camunda-platform-helm"
 LABEL org.opencontainers.image.description="CI Runner (Ultra-optimized) for Camunda Platform Helm integration tests"
