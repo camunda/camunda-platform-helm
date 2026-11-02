@@ -1027,6 +1027,21 @@ func (s *ConfigMapWarningsTemplateTest) TestIngressUpstreamTLSControllerWarning(
 			},
 		},
 		{
+			Name: "TestGRPCIngressOnOpenShiftClassDoesNotWarn",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":                 "elasticsearch",
+				"orchestration.ingress.grpc.enabled":                       "true",
+				"orchestration.ingress.grpc.className":                     "openshift-default",
+				"orchestration.ingress.grpc.host":                          "zeebe.example.com",
+				"global.tls.orchestration.grpc.enabled":                    "true",
+				"global.tls.orchestration.grpc.cert.secret.existingSecret": "orchestration-crt",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+				s.Require().NotContains(output, warning)
+			},
+		},
+		{
 			Name: "TestConnectorsRenderedRouteWithUpstreamTLSNamesConnectors",
 			Values: map[string]string{
 				"orchestration.data.secondaryStorage.type":         "elasticsearch",
