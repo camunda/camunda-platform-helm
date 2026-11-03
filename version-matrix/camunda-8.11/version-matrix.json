@@ -1,0 +1,15 @@
+[
+  {
+    "chart_version": "16.0.0-alpha1",
+    "chart_images": [
+      "docker.io/camunda/camunda:8.11.0-alpha1",
+      "docker.io/camunda/connectors-bundle:8.11.0-alpha1",
+      "docker.io/camunda/hub-websockets:8.11.0-alpha1",
+      "docker.io/camunda/hub:8.11.0-alpha1",
+      "docker.io/camunda/identity:8.10.3",
+      "docker.io/camunda/optimize:8.11.0-alpha1"
+    ],
+    "helm_cli": "4.3.1",
+    "release_tag": "camunda-platform-8.11-16.0.0-alpha1"
+  }
+]
