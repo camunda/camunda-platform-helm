@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package matrix
 
 import (
 	"context"
@@ -28,65 +28,64 @@ import (
 
 	"scripts/deploy-camunda/config"
 	"scripts/deploy-camunda/deploy"
-	"scripts/deploy-camunda/matrix"
 )
 
-// TestExtractHelmSetValue_FindsKey pins down that extractHelmSetValue reads
+// TestGlobalHostFromHelmSets_FindsKey pins down that globalHostFromHelmSets reads
 // the "global.host" value out of the "key=value" ExtraHelmSets pairs CI
 // passes via --extra-helm-set global.host=<host> — the value runTopologyEntry
 // now uses for HUB_HOST/ORCH_HOST instead of fabricating
 // "<namespace>.<base-domain>" (see #6651).
-func TestExtractHelmSetValue_FindsKey(t *testing.T) {
+func TestGlobalHostFromHelmSets_FindsKey(t *testing.T) {
 	pairs := []string{
 		"orchestration.upgrade.allowPreReleaseImages=true",
 		"global.host=abc123-mns.ci.distro.ultrawombat.com",
 	}
-	if got := extractHelmSetValue(pairs, "global.host"); got != "abc123-mns.ci.distro.ultrawombat.com" {
-		t.Fatalf("extractHelmSetValue() = %q, want %q", got, "abc123-mns.ci.distro.ultrawombat.com")
+	if got := globalHostFromHelmSets(pairs); got != "abc123-mns.ci.distro.ultrawombat.com" {
+		t.Fatalf("globalHostFromHelmSets() = %q, want %q", got, "abc123-mns.ci.distro.ultrawombat.com")
 	}
 }
 
-func TestExtractHelmSetValue_MissingKeyReturnsEmpty(t *testing.T) {
+func TestGlobalHostFromHelmSets_MissingKeyReturnsEmpty(t *testing.T) {
 	pairs := []string{"orchestration.upgrade.allowPreReleaseImages=true"}
-	if got := extractHelmSetValue(pairs, "global.host"); got != "" {
-		t.Fatalf("extractHelmSetValue() = %q, want empty string", got)
+	if got := globalHostFromHelmSets(pairs); got != "" {
+		t.Fatalf("globalHostFromHelmSets() = %q, want empty string", got)
 	}
 }
 
-func TestExtractHelmSetValue_EmptyInputReturnsEmpty(t *testing.T) {
-	if got := extractHelmSetValue(nil, "global.host"); got != "" {
-		t.Fatalf("extractHelmSetValue() = %q, want empty string", got)
+func TestGlobalHostFromHelmSets_EmptyInputReturnsEmpty(t *testing.T) {
+	if got := globalHostFromHelmSets(nil); got != "" {
+		t.Fatalf("globalHostFromHelmSets() = %q, want empty string", got)
 	}
 }
 
-// TestExtractHelmSetValue_LastDuplicateWins mirrors how repeated
+// TestGlobalHostFromHelmSets_LastDuplicateWins mirrors how repeated
 // --extra-helm-set flags for the same key are applied by Helm (last wins).
-func TestExtractHelmSetValue_LastDuplicateWins(t *testing.T) {
+func TestGlobalHostFromHelmSets_LastDuplicateWins(t *testing.T) {
 	pairs := []string{"global.host=first.example.com", "global.host=second.example.com"}
-	if got := extractHelmSetValue(pairs, "global.host"); got != "second.example.com" {
-		t.Fatalf("extractHelmSetValue() = %q, want %q", got, "second.example.com")
+	if got := globalHostFromHelmSets(pairs); got != "second.example.com" {
+		t.Fatalf("globalHostFromHelmSets() = %q, want %q", got, "second.example.com")
 	}
 }
 
-// TestExtractHelmSetValue_SkipsMalformedEntries pins down that entries
+// TestGlobalHostFromHelmSets_SkipsMalformedEntries pins down that entries
 // without "=" (or with "=" as the first character) are ignored rather than
 // panicking or matching spuriously, mirroring parseHelmSetPairs' handling.
-func TestExtractHelmSetValue_SkipsMalformedEntries(t *testing.T) {
+func TestGlobalHostFromHelmSets_SkipsMalformedEntries(t *testing.T) {
 	pairs := []string{"malformed-entry-no-equals", "=leading-equals-is-skipped", "global.host=host.example.com"}
-	if got := extractHelmSetValue(pairs, "global.host"); got != "host.example.com" {
-		t.Fatalf("extractHelmSetValue() = %q, want %q", got, "host.example.com")
+	if got := globalHostFromHelmSets(pairs); got != "host.example.com" {
+		t.Fatalf("globalHostFromHelmSets() = %q, want %q", got, "host.example.com")
 	}
 }
 
-func testTopologyReleases() []matrix.TopologyRelease {
-	return []matrix.TopologyRelease{
+func testTopologyReleases() []TopologyRelease {
+	return []TopologyRelease{
 		{
 			Role:            "hub",
 			NamespaceSuffix: "hub",
 			Features:        []string{"multinamespace-hub"},
 			Identity:        "keycloak",
 			Dependencies:    []string{"keycloak", "postgresql", "elasticsearch"},
-			ResolvedDependencies: []matrix.ChartDependency{
+			ResolvedDependencies: []ChartDependency{
 				{ReleaseName: "keycloak"},
 				{ReleaseName: "postgresql"},
 				{ReleaseName: "elasticsearch"},
@@ -111,8 +110,18 @@ func testTopologyReleases() []matrix.TopologyRelease {
 	}
 }
 
+func testTopologyRun(crossRefEnv map[string]string, opts RunOptions, releases []TopologyRelease, contexts []*deploy.ScenarioContext) *topologyRun {
+	return &topologyRun{
+		entry:       Entry{Topology: &Topology{Releases: releases}},
+		opts:        opts,
+		platform:    "gke",
+		contexts:    contexts,
+		crossRefEnv: crossRefEnv,
+	}
+}
+
 func TestSynthesizeReleaseEntry_HubCarriesOwnLayers(t *testing.T) {
-	baseEntry := matrix.Entry{
+	baseEntry := Entry{
 		Version:   "8.10",
 		ChartPath: "charts/camunda-platform-8.10",
 		Scenario:  "multinamespace",
@@ -159,7 +168,7 @@ func TestSynthesizeReleaseEntry_HubCarriesOwnLayers(t *testing.T) {
 // still undeployed, so a leg run here would test a partial topology, and would repeat for every
 // orchestration release. runTopologyEntry runs the legs after the whole topology is up.
 func TestSynthesizeReleaseEntry_NoRoleRunsE2EDuringDeploy(t *testing.T) {
-	baseEntry := matrix.Entry{
+	baseEntry := Entry{
 		Version:   "8.10",
 		ChartPath: "charts/camunda-platform-8.10",
 		Scenario:  "multinamespace",
@@ -176,9 +185,9 @@ func TestSynthesizeReleaseEntry_NoRoleRunsE2EDuringDeploy(t *testing.T) {
 }
 
 func TestSynthesizeReleaseEntry_OrchestrationHasNoDependenciesOrPostDeployHook(t *testing.T) {
-	postDeployHook := &matrix.LifecycleHook{Script: "post-deploy-hub-ping.sh"}
-	postInfraHook := &matrix.LifecycleHook{Script: "post-infra-legacy-elasticsearch.sh"}
-	baseEntry := matrix.Entry{Version: "8.10", ChartPath: "charts/camunda-platform-8.10", Scenario: "multinamespace", Shortname: "mns", Auth: "keycloak", PostDeploy: postDeployHook, PostInfra: postInfraHook}
+	postDeployHook := &LifecycleHook{Script: "post-deploy-hub-ping.sh"}
+	postInfraHook := &LifecycleHook{Script: "post-infra-legacy-elasticsearch.sh"}
+	baseEntry := Entry{Version: "8.10", ChartPath: "charts/camunda-platform-8.10", Scenario: "multinamespace", Shortname: "mns", Auth: "keycloak", PostDeploy: postDeployHook, PostInfra: postInfraHook}
 	releases := testTopologyReleases()
 
 	for _, rel := range releases[1:] {
@@ -218,8 +227,8 @@ func TestSynthesizeReleaseEntry_OrchestrationHasNoDependenciesOrPostDeployHook(t
 }
 
 func TestSynthesizeReleaseEntry_UsesReleaseChartVersion(t *testing.T) {
-	baseEntry := matrix.Entry{Version: "8.10", ChartPath: "/elsewhere/camunda-platform-8.10"}
-	rel := matrix.TopologyRelease{ChartVersion: "8.9"}
+	baseEntry := Entry{Version: "8.10", ChartPath: "/elsewhere/camunda-platform-8.10"}
+	rel := TopologyRelease{ChartVersion: "8.9"}
 
 	got := synthesizeReleaseEntry("/repo", baseEntry, rel, "gke")
 	if got.Version != "8.9" {
@@ -229,14 +238,14 @@ func TestSynthesizeReleaseEntry_UsesReleaseChartVersion(t *testing.T) {
 		t.Errorf("ChartPath = %q", got.ChartPath)
 	}
 
-	inherited := synthesizeReleaseEntry("/repo", baseEntry, matrix.TopologyRelease{}, "gke")
+	inherited := synthesizeReleaseEntry("/repo", baseEntry, TopologyRelease{}, "gke")
 	if inherited.Version != "8.10" || inherited.ChartPath != filepath.Join("/repo", "charts", "camunda-platform-8.10") {
 		t.Errorf("inherited chart = %s at %s", inherited.Version, inherited.ChartPath)
 	}
 }
 
 func TestSynthesizeReleaseOpts_NamespaceOverridePinsRelease(t *testing.T) {
-	base := matrix.RunOptions{
+	base := RunOptions{
 		RepoRoot: "/repo",
 		Infra:    config.InfraOverride{InfraConfig: config.InfraConfig{KubeContext: "kube-ctx", IngressBaseDomain: "ci.example.com"}},
 	}
@@ -261,7 +270,7 @@ func TestSynthesizeReleaseOpts_NamespaceOverridePinsRelease(t *testing.T) {
 // namespaces) is computed against real, distinct release namespaces before
 // any release is deployed.
 func TestSynthesizeReleaseEntry_DistinctNamespacesPerRelease(t *testing.T) {
-	base := matrix.RunOptions{RepoRoot: "/repo"}
+	base := RunOptions{RepoRoot: "/repo"}
 	namespaces := []string{"matrix-810-mns-hub", "matrix-810-mns-orcha", "matrix-810-mns-orchb"}
 
 	seen := map[string]bool{}
@@ -287,7 +296,7 @@ func TestSynthesizeReleaseEntry_DistinctNamespacesPerRelease(t *testing.T) {
 // was never derived - failing the Hub release's preflight with
 // "CAMUNDA_HOSTNAME unset".
 func TestSynthesizeReleaseOpts_PropagatesPerPlatformIngressBaseDomains(t *testing.T) {
-	base := matrix.RunOptions{
+	base := RunOptions{
 		RepoRoot: "/repo",
 		// Only the per-platform map is set — mirrors a user who passed
 		// --ingress-base-domain-gke and never set the generic
@@ -304,7 +313,7 @@ func TestSynthesizeReleaseOpts_PropagatesPerPlatformIngressBaseDomains(t *testin
 	// More directly: build the actual per-release flags the way
 	// runTopologyEntry does, and confirm the ingress hostname (and hence
 	// CAMUNDA_HOSTNAME) is non-empty.
-	releaseEntry := matrix.Entry{
+	releaseEntry := Entry{
 		Version:   "8.10",
 		ChartPath: "charts/camunda-platform-8.10",
 		Scenario:  "multinamespace",
@@ -313,7 +322,7 @@ func TestSynthesizeReleaseOpts_PropagatesPerPlatformIngressBaseDomains(t *testin
 		Flow:      "install",
 		Platform:  "gke",
 	}
-	flags, _, _, _, err := matrix.BuildEntryFlags(releaseEntry, opts)
+	flags, _, _, _, err := BuildEntryFlags(releaseEntry, opts)
 	if err != nil {
 		t.Fatalf("BuildEntryFlags returned error: %v", err)
 	}
@@ -326,7 +335,7 @@ func TestSynthesizeReleaseOpts_PropagatesPerPlatformIngressBaseDomains(t *testin
 // that the generic --ingress-base-domain path (no per-platform map) is
 // unaffected by this fix.
 func TestSynthesizeReleaseOpts_GenericIngressBaseDomainStillWorks(t *testing.T) {
-	base := matrix.RunOptions{
+	base := RunOptions{
 		RepoRoot: "/repo",
 		Infra:    config.InfraOverride{InfraConfig: config.InfraConfig{IngressBaseDomain: "ci.distro.ultrawombat.com"}},
 	}
@@ -345,19 +354,19 @@ func TestAddTopologyIngressHosts_DerivesPerReleaseHosts(t *testing.T) {
 		"9200",
 		"http",
 	)
-	opts := matrix.RunOptions{Infra: config.InfraOverride{
+	opts := RunOptions{Infra: config.InfraOverride{
 		InfraConfig: config.InfraConfig{IngressBaseDomain: "fallback.example.com"},
 		InfraMaps:   config.InfraMaps{IngressBaseDomains: map[string]string{"gke": "ci.distro.ultrawombat.com"}},
 	}}
 
-	addTopologyIngressHosts(
+	if err := testTopologyRun(
 		env,
 		opts,
-		"gke",
-		&deploy.ScenarioContext{Namespace: "matrix-810-mns-hub"},
-		[]matrix.TopologyRelease{{Role: "hub", NamespaceSuffix: "hub"}, {Role: "orchestration", NamespaceSuffix: "orcha"}},
+		[]TopologyRelease{{Role: "hub", NamespaceSuffix: "hub"}, {Role: "orchestration", NamespaceSuffix: "orcha"}},
 		[]*deploy.ScenarioContext{{Namespace: "matrix-810-mns-hub"}, {Namespace: "matrix-810-mns-orcha"}},
-	)
+	).addTopologyIngressHosts(&deploy.ScenarioContext{Namespace: "matrix-810-mns-hub"}); err != nil {
+		t.Fatal(err)
+	}
 
 	if got, want := env["HUB_HOST"], "matrix-810-mns-hub.ci.distro.ultrawombat.com"; got != want {
 		t.Errorf("HUB_HOST = %q, want %q", got, want)
@@ -379,7 +388,9 @@ func TestAddTopologyIngressHosts_DerivesEveryOrchestrationHost(t *testing.T) {
 		{Namespace: "matrix-810-mns-orchb"},
 	}
 
-	addTopologyIngressHosts(env, matrix.RunOptions{Infra: config.InfraOverride{InfraConfig: config.InfraConfig{IngressBaseDomain: "ci.example.com"}}}, "gke", contexts[0], releases, contexts)
+	if err := testTopologyRun(env, RunOptions{Infra: config.InfraOverride{InfraConfig: config.InfraConfig{IngressBaseDomain: "ci.example.com"}}}, releases, contexts).addTopologyIngressHosts(contexts[0]); err != nil {
+		t.Fatal(err)
+	}
 
 	if got := env["ORCHA_HOST"]; got != "matrix-810-mns-orcha.ci.example.com" {
 		t.Errorf("ORCHA_HOST = %q", got)
@@ -399,16 +410,16 @@ func TestAddTopologyIngressHosts_RejectsSharedHostForMultipleOrchestrations(t *t
 		{Namespace: "matrix-810-mns-orcha"},
 		{Namespace: "matrix-810-mns-orchb"},
 	}
-	opts := matrix.RunOptions{ExtraHelmSets: []string{"global.host=abc123-mns.ci.example.com"}}
+	opts := RunOptions{ExtraHelmSets: []string{"global.host=abc123-mns.ci.example.com"}}
 
-	err := addTopologyIngressHosts(map[string]string{}, opts, "gke", contexts[0], releases, contexts)
+	err := testTopologyRun(map[string]string{}, opts, releases, contexts).addTopologyIngressHosts(contexts[0])
 	if err == nil || !strings.Contains(err.Error(), "global.host") {
 		t.Fatalf("expected a global.host error for a multi-orchestration topology, got %v", err)
 	}
 
 	opts.Infra.IngressBaseDomain = "ci.example.com"
 	env := map[string]string{}
-	if err := addTopologyIngressHosts(env, opts, "gke", contexts[0], releases, contexts); err != nil {
+	if err := testTopologyRun(env, opts, releases, contexts).addTopologyIngressHosts(contexts[0]); err != nil {
 		t.Fatalf("a base domain must derive per-release hosts, got %v", err)
 	}
 	if env["HUB_HOST"] == "" || env["ORCHA_HOST"] == "" || env["ORCHB_HOST"] == "" {
@@ -427,7 +438,7 @@ func TestBuildTopologyReleaseEnv_SelectsLocalOrchestrationReferences(t *testing.
 		"ORCHB_ZEEBE_GRPC": "grpc://orchb:26500",
 		"ORCHB_ZEEBE_REST": "http://orchb:8080",
 	}
-	release := matrix.TopologyRelease{
+	release := TopologyRelease{
 		Role:            "orchestration",
 		NamespaceSuffix: "orchb",
 		Env:             map[string]string{"ORCH_ORCHESTRATION_CLIENT_ID": "orchestration-orchb"},
@@ -455,12 +466,12 @@ func TestBuildTopologyReleaseEnv_SetsCamundaHostnameToServedHost(t *testing.T) {
 	}
 	cases := []struct {
 		name    string
-		release matrix.TopologyRelease
+		release TopologyRelease
 		want    string
 	}{
-		{"hub", matrix.TopologyRelease{Role: "hub", NamespaceSuffix: "hub"}, "ns-hub.example.com"},
-		{"orchestration", matrix.TopologyRelease{Role: "orchestration", NamespaceSuffix: "orcha"}, "ns-orcha.example.com"},
-		{"optimize", matrix.TopologyRelease{Role: "optimize", NamespaceSuffix: "opta", Serves: "orcha"}, "ns-hub.example.com"},
+		{"hub", TopologyRelease{Role: "hub", NamespaceSuffix: "hub"}, "ns-hub.example.com"},
+		{"orchestration", TopologyRelease{Role: "orchestration", NamespaceSuffix: "orcha"}, "ns-orcha.example.com"},
+		{"optimize", TopologyRelease{Role: "optimize", NamespaceSuffix: "opta", Serves: "orcha"}, "ns-hub.example.com"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -472,7 +483,7 @@ func TestBuildTopologyReleaseEnv_SetsCamundaHostnameToServedHost(t *testing.T) {
 }
 
 func TestBuildTopologyReleaseEnv_OmitsCamundaHostnameWithoutHost(t *testing.T) {
-	env := buildTopologyReleaseEnv(map[string]string{}, matrix.TopologyRelease{Role: "hub", NamespaceSuffix: "hub"})
+	env := buildTopologyReleaseEnv(map[string]string{}, TopologyRelease{Role: "hub", NamespaceSuffix: "hub"})
 	if _, ok := env["CAMUNDA_HOSTNAME"]; ok {
 		t.Errorf("CAMUNDA_HOSTNAME set to %q with no derived host; want it left to the process env", env["CAMUNDA_HOSTNAME"])
 	}
@@ -487,7 +498,7 @@ func TestBuildTopologyReleaseEnv_PublishesServedReferencesForOptimize(t *testing
 		"ORCHB_HOST":                       "orchb.example.com",
 		"ORCHB_ORCHESTRATION_INDEX_PREFIX": "job-orchb",
 	}
-	release := matrix.TopologyRelease{
+	release := TopologyRelease{
 		Role:                "optimize",
 		NamespaceSuffix:     "optb",
 		Serves:              "orchb",
@@ -518,7 +529,7 @@ func TestBuildTopologyReleaseEnv_ServedPrefixFollowsServes(t *testing.T) {
 		"ORCHA_ORCHESTRATION_INDEX_PREFIX": "job-orcha",
 		"ORCHB_ORCHESTRATION_INDEX_PREFIX": "job-orchb",
 	}
-	base := matrix.TopologyRelease{Role: "optimize", NamespaceSuffix: "opta", Tenant: "default", OptimizeContextPath: "/optimize-a"}
+	base := TopologyRelease{Role: "optimize", NamespaceSuffix: "opta", Tenant: "default", OptimizeContextPath: "/optimize-a"}
 
 	servesA := base
 	servesA.Serves = "orcha"
@@ -534,7 +545,7 @@ func TestBuildTopologyReleaseEnv_ServedPrefixFollowsServes(t *testing.T) {
 }
 
 func TestBuildTopologyReleaseEnv_OmitsOptimizeKeysForOtherRoles(t *testing.T) {
-	env := buildTopologyReleaseEnv(map[string]string{}, matrix.TopologyRelease{
+	env := buildTopologyReleaseEnv(map[string]string{}, TopologyRelease{
 		Role:            "orchestration",
 		NamespaceSuffix: "orcha",
 	})
@@ -557,7 +568,7 @@ func TestBuildTopologyReleaseEnv_DerivedKeysOutrankReleaseEnv(t *testing.T) {
 		"ORCHA_HOST":                       "orcha.example.com",
 		"ORCHA_ORCHESTRATION_INDEX_PREFIX": "job-orcha",
 	}
-	release := matrix.TopologyRelease{
+	release := TopologyRelease{
 		Role:                "optimize",
 		NamespaceSuffix:     "opta",
 		Serves:              "orcha",
@@ -593,7 +604,7 @@ func TestBuildTopologyReleaseEnv_DerivedOrchestrationKeysOutrankReleaseEnv(t *te
 		"ORCHA_ZEEBE_GRPC": "grpc://orcha:26500",
 		"ORCHA_ZEEBE_REST": "http://orcha:8080",
 	}
-	release := matrix.TopologyRelease{
+	release := TopologyRelease{
 		Role:            "orchestration",
 		NamespaceSuffix: "orcha",
 		Env: map[string]string{
@@ -630,7 +641,9 @@ func TestApplyTopologyReleaseHostname_PerOrchestrationRelease(t *testing.T) {
 		{Namespace: "matrix-810-mns-orchb"},
 	}
 	crossRefEnv := map[string]string{}
-	addTopologyIngressHosts(crossRefEnv, matrix.RunOptions{Infra: config.InfraOverride{InfraConfig: config.InfraConfig{IngressBaseDomain: "ci.example.com"}}}, "gke", contexts[0], releases[:3], contexts)
+	if err := testTopologyRun(crossRefEnv, RunOptions{Infra: config.InfraOverride{InfraConfig: config.InfraConfig{IngressBaseDomain: "ci.example.com"}}}, releases[:3], contexts).addTopologyIngressHosts(contexts[0]); err != nil {
+		t.Fatal(err)
+	}
 
 	for i, want := range []string{"matrix-810-mns-hub.ci.example.com", "matrix-810-mns-orcha.ci.example.com", "matrix-810-mns-orchb.ci.example.com"} {
 		release := releases[i]
@@ -651,7 +664,7 @@ func TestApplyTopologyReleaseHostname_PerOrchestrationRelease(t *testing.T) {
 // default host, so the helper must not touch CAMUNDA_HOSTNAME there.
 func TestApplyTopologyReleaseHostname_NoAssignedHostIsNoop(t *testing.T) {
 	flags := &config.RuntimeFlags{}
-	applyTopologyReleaseHostname(flags, topologyReleaseHost(map[string]string{"ORCHA_HOST": "orcha.example.com"}, matrix.TopologyRelease{Role: "orchestration", NamespaceSuffix: "orcha"}, 1))
+	applyTopologyReleaseHostname(flags, topologyReleaseHost(map[string]string{"ORCHA_HOST": "orcha.example.com"}, TopologyRelease{Role: "orchestration", NamespaceSuffix: "orcha"}, 1))
 	if _, ok := flags.ExtraEnv["CAMUNDA_HOSTNAME"]; ok {
 		t.Errorf("CAMUNDA_HOSTNAME = %q, want unset for a single-orchestration release", flags.ExtraEnv["CAMUNDA_HOSTNAME"])
 	}
@@ -659,16 +672,16 @@ func TestApplyTopologyReleaseHostname_NoAssignedHostIsNoop(t *testing.T) {
 
 func TestAddTopologyIngressHosts_UsesExplicitSharedHost(t *testing.T) {
 	env := map[string]string{}
-	opts := matrix.RunOptions{ExtraHelmSets: []string{"global.host=abc123-mns.ci.distro.ultrawombat.com"}}
+	opts := RunOptions{ExtraHelmSets: []string{"global.host=abc123-mns.ci.distro.ultrawombat.com"}}
 
-	addTopologyIngressHosts(
+	if err := testTopologyRun(
 		env,
 		opts,
-		"gke",
-		&deploy.ScenarioContext{Namespace: "matrix-810-mns-hub"},
-		[]matrix.TopologyRelease{{Role: "hub", NamespaceSuffix: "hub"}, {Role: "orchestration", NamespaceSuffix: "orcha"}},
+		[]TopologyRelease{{Role: "hub", NamespaceSuffix: "hub"}, {Role: "orchestration", NamespaceSuffix: "orcha"}},
 		[]*deploy.ScenarioContext{{Namespace: "matrix-810-mns-hub"}, {Namespace: "matrix-810-mns-orcha"}},
-	)
+	).addTopologyIngressHosts(&deploy.ScenarioContext{Namespace: "matrix-810-mns-hub"}); err != nil {
+		t.Fatal(err)
+	}
 
 	for _, key := range []string{"HUB_HOST", "ORCHA_HOST", "ORCH_HOST"} {
 		if got, want := env[key], "abc123-mns.ci.distro.ultrawombat.com"; got != want {
@@ -679,16 +692,16 @@ func TestAddTopologyIngressHosts_UsesExplicitSharedHost(t *testing.T) {
 
 func TestAddTopologyIngressHosts_OmitsOrchestrationHostWithoutRelease(t *testing.T) {
 	env := map[string]string{}
-	opts := matrix.RunOptions{ExtraHelmSets: []string{"global.host=abc123-mns.ci.distro.ultrawombat.com"}}
+	opts := RunOptions{ExtraHelmSets: []string{"global.host=abc123-mns.ci.distro.ultrawombat.com"}}
 
-	addTopologyIngressHosts(
+	if err := testTopologyRun(
 		env,
 		opts,
-		"gke",
-		&deploy.ScenarioContext{Namespace: "matrix-810-mns-hub"},
-		[]matrix.TopologyRelease{{Role: "hub", NamespaceSuffix: "hub"}},
+		[]TopologyRelease{{Role: "hub", NamespaceSuffix: "hub"}},
 		[]*deploy.ScenarioContext{{Namespace: "matrix-810-mns-hub"}},
-	)
+	).addTopologyIngressHosts(&deploy.ScenarioContext{Namespace: "matrix-810-mns-hub"}); err != nil {
+		t.Fatal(err)
+	}
 
 	if got, want := env["HUB_HOST"], "abc123-mns.ci.distro.ultrawombat.com"; got != want {
 		t.Errorf("HUB_HOST = %q, want %q", got, want)
@@ -795,7 +808,7 @@ func TestApplyTopologyReleaseOverrides_AllReleaseRolesGetExternalSecrets(t *test
 // resolveSharedStorageService mirrors the shared-storage-service resolution
 // snippet in runTopologyEntry (cmd/matrix.go) so it can be pinned down in
 // isolation without exercising the full topology dispatch/deploy path.
-func resolveSharedStorageService(topo matrix.Topology, hubRelease matrix.TopologyRelease) string {
+func resolveSharedStorageService(topo Topology, hubRelease TopologyRelease) string {
 	if topo.SharedStorageService != "" {
 		return topo.SharedStorageService
 	}
@@ -813,13 +826,13 @@ func resolveSharedStorageService(topo matrix.Topology, hubRelease matrix.Topolog
 // release name), the resolved EXTERNAL_ELASTICSEARCH_HOST cross-ref env uses
 // that service name rather than the SharedStorage release name.
 func TestRunTopologyEntry_SharedStorageServiceOverridesReleaseName(t *testing.T) {
-	topo := matrix.Topology{
+	topo := Topology{
 		SharedStorage:        "elasticsearch",
 		SharedStorageService: "elasticsearch-master",
 	}
-	hubRelease := matrix.TopologyRelease{
+	hubRelease := TopologyRelease{
 		Role: "hub",
-		ResolvedDependencies: []matrix.ChartDependency{
+		ResolvedDependencies: []ChartDependency{
 			{ReleaseName: "elasticsearch"},
 		},
 	}
@@ -841,12 +854,12 @@ func TestRunTopologyEntry_SharedStorageServiceOverridesReleaseName(t *testing.T)
 // to the SharedStorage release name (matched via ResolvedDependencies), and
 // the cross-ref env is built from that name.
 func TestRunTopologyEntry_SharedStorageServiceFallsBackToSharedStorage(t *testing.T) {
-	topo := matrix.Topology{
+	topo := Topology{
 		SharedStorage: "elasticsearch",
 	}
-	hubRelease := matrix.TopologyRelease{
+	hubRelease := TopologyRelease{
 		Role: "hub",
-		ResolvedDependencies: []matrix.ChartDependency{
+		ResolvedDependencies: []ChartDependency{
 			{ReleaseName: "elasticsearch"},
 		},
 	}
@@ -918,7 +931,7 @@ func TestBuildOrchestrationZeebeEnv(t *testing.T) {
 // what the user passed. See TestSynthesizeReleaseOpts_ForwardsEntireBaseRunOptions
 // below for the general-case regression guard against this whole bug class.
 func TestSynthesizeReleaseOpts_PropagatesHelmTimeout(t *testing.T) {
-	base := matrix.RunOptions{
+	base := RunOptions{
 		RepoRoot:    "/repo",
 		HelmTimeout: 25,
 	}
@@ -950,7 +963,7 @@ func TestSynthesizeReleaseOpts_ForwardsEntireBaseRunOptions(t *testing.T) {
 		DockerHubPassword:    "dockerhub-pass",
 		EnsureDockerHub:      true,
 	}
-	base := matrix.RunOptions{
+	base := RunOptions{
 		DryRun:               true,
 		Coverage:             true,
 		StopOnFailure:        true,
@@ -1014,12 +1027,12 @@ func TestSynthesizeReleaseOpts_ForwardsEntireBaseRunOptions(t *testing.T) {
 }
 
 func TestResolveSharedStorageServiceName(t *testing.T) {
-	deps := []matrix.ChartDependency{
+	deps := []ChartDependency{
 		{ReleaseName: "elasticsearch"},
 	}
 
 	t.Run("explicit service name wins", func(t *testing.T) {
-		topo := &matrix.Topology{
+		topo := &Topology{
 			SharedStorage:        "elasticsearch",
 			SharedStorageService: "elasticsearch-master",
 		}
@@ -1029,7 +1042,7 @@ func TestResolveSharedStorageServiceName(t *testing.T) {
 	})
 
 	t.Run("falls back to matching dependency release name", func(t *testing.T) {
-		topo := &matrix.Topology{
+		topo := &Topology{
 			SharedStorage: "elasticsearch",
 		}
 		if got := resolveSharedStorageServiceName(topo, deps); got != "elasticsearch" {
@@ -1038,7 +1051,7 @@ func TestResolveSharedStorageServiceName(t *testing.T) {
 	})
 
 	t.Run("no match returns empty string", func(t *testing.T) {
-		topo := &matrix.Topology{
+		topo := &Topology{
 			SharedStorage: "opensearch",
 		}
 		if got := resolveSharedStorageServiceName(topo, deps); got != "" {
@@ -1058,7 +1071,7 @@ func TestTopologyDeployLevels_HubFirstThenOrchestrationsTogether(t *testing.T) {
 }
 
 func TestTopologyDeployLevels_OptimizeWaitsForServedOrchestration(t *testing.T) {
-	releases := []matrix.TopologyRelease{
+	releases := []TopologyRelease{
 		{Role: "hub", NamespaceSuffix: "hub"},
 		{Role: "orchestration", NamespaceSuffix: "orcha", DependsOn: "hub"},
 		{Role: "orchestration", NamespaceSuffix: "orchb", DependsOn: "hub"},
@@ -1075,7 +1088,7 @@ func TestTopologyDeployLevels_OptimizeWaitsForServedOrchestration(t *testing.T) 
 }
 
 func TestTopologyDeployLevels_ChainedDependency(t *testing.T) {
-	releases := []matrix.TopologyRelease{
+	releases := []TopologyRelease{
 		{Role: "orchestration", NamespaceSuffix: "orchb", DependsOn: "hub"},
 		{Role: "hub", NamespaceSuffix: "hub"},
 		{Role: "aux", NamespaceSuffix: "aux", DependsOn: "orchestration"},
@@ -1091,24 +1104,24 @@ func TestTopologyDeployLevels_ChainedDependency(t *testing.T) {
 
 func TestTopologyDeployLevels_Errors(t *testing.T) {
 	cases := map[string]struct {
-		releases []matrix.TopologyRelease
+		releases []TopologyRelease
 		want     string
 	}{
 		"cycle": {
-			releases: []matrix.TopologyRelease{
+			releases: []TopologyRelease{
 				{Role: "a", NamespaceSuffix: "a", DependsOn: "b"},
 				{Role: "b", NamespaceSuffix: "b", DependsOn: "a"},
 			},
 			want: "cycle",
 		},
 		"unknown depends-on role": {
-			releases: []matrix.TopologyRelease{
+			releases: []TopologyRelease{
 				{Role: "orchestration", NamespaceSuffix: "orcha", DependsOn: "hub"},
 			},
 			want: `depends-on "hub"`,
 		},
 		"unknown served suffix": {
-			releases: []matrix.TopologyRelease{
+			releases: []TopologyRelease{
 				{Role: "hub", NamespaceSuffix: "hub"},
 				{Role: "optimize", NamespaceSuffix: "opta", Serves: "orcha", DependsOn: "hub"},
 			},
@@ -1127,7 +1140,7 @@ func TestTopologyDeployLevels_Errors(t *testing.T) {
 
 func testPreparedTopologyRelease(role, suffix string) preparedTopologyRelease {
 	return preparedTopologyRelease{
-		release:   matrix.TopologyRelease{Role: role, NamespaceSuffix: suffix},
+		release:   TopologyRelease{Role: role, NamespaceSuffix: suffix},
 		flags:     &config.RuntimeFlags{Deployment: config.DeploymentFlags{Namespace: suffix}},
 		namespace: suffix,
 	}
@@ -1245,33 +1258,33 @@ func TestUpdateTopologyChartDependencies_UpdatesEachChartPathOnceAndSkipsItAtDep
 }
 
 func TestRunTopologyEntry_RejectsUnsupportedAuthFlow(t *testing.T) {
-	base := matrix.Entry{
+	base := Entry{
 		Version:  "8.10",
 		Scenario: "multinamespace",
 		Auth:     "oidc", // not keycloak
 		Flow:     "install",
-		Topology: &matrix.Topology{Name: "t", Releases: testTopologyReleases()},
+		Topology: &Topology{Name: "t", Releases: testTopologyReleases()},
 	}
-	if err := runTopologyEntry(context.Background(), base, matrix.RunOptions{}); err == nil {
+	if err := runTopologyEntry(context.Background(), base, RunOptions{}); err == nil {
 		t.Fatal("expected error for auth=oidc, got nil")
 	}
 
 	base.Auth = "keycloak"
 	base.Flow = "upgrade-minor" // not install
-	if err := runTopologyEntry(context.Background(), base, matrix.RunOptions{}); err == nil {
+	if err := runTopologyEntry(context.Background(), base, RunOptions{}); err == nil {
 		t.Fatal("expected error for flow=upgrade-minor, got nil")
 	}
 }
 
 func TestRunTopologyEntry_RejectsChartRef(t *testing.T) {
-	entry := matrix.Entry{
+	entry := Entry{
 		Version:  "8.10",
 		Scenario: "multinamespace",
 		Auth:     "keycloak",
 		Flow:     "install",
-		Topology: &matrix.Topology{Name: "t", Releases: testTopologyReleases()},
+		Topology: &Topology{Name: "t", Releases: testTopologyReleases()},
 	}
-	opts := matrix.RunOptions{ChartRef: "oci://example/camunda-platform"}
+	opts := RunOptions{ChartRef: "oci://example/camunda-platform"}
 
 	err := runTopologyEntry(context.Background(), entry, opts)
 	if err == nil {
@@ -1280,14 +1293,14 @@ func TestRunTopologyEntry_RejectsChartRef(t *testing.T) {
 }
 
 func TestRunTopologyEntry_RejectsCleanup(t *testing.T) {
-	entry := matrix.Entry{
+	entry := Entry{
 		Version:  "8.10",
 		Scenario: "multinamespace",
 		Auth:     "keycloak",
 		Flow:     "install",
-		Topology: &matrix.Topology{Name: "t", Releases: testTopologyReleases()},
+		Topology: &Topology{Name: "t", Releases: testTopologyReleases()},
 	}
-	opts := matrix.RunOptions{Cleanup: true}
+	opts := RunOptions{Cleanup: true}
 
 	err := runTopologyEntry(context.Background(), entry, opts)
 	if err == nil {
@@ -1337,14 +1350,14 @@ func writeTopologyHookScript(t *testing.T, body string) string {
 func topologyHookReleases() []preparedTopologyRelease {
 	return []preparedTopologyRelease{
 		{
-			release: matrix.TopologyRelease{Role: "hub", NamespaceSuffix: "hub"},
+			release: TopologyRelease{Role: "hub", NamespaceSuffix: "hub"},
 			flags: &config.RuntimeFlags{
 				Deployment: config.DeploymentFlags{Namespace: "matrix-810-pt-hub"},
 				ExtraEnv:   map[string]string{"HUB_NAMESPACE": "matrix-810-pt-hub"},
 			},
 		},
 		{
-			release: matrix.TopologyRelease{Role: "orchestration", NamespaceSuffix: "orcha"},
+			release: TopologyRelease{Role: "orchestration", NamespaceSuffix: "orcha"},
 			flags: &config.RuntimeFlags{
 				Deployment: config.DeploymentFlags{Namespace: "matrix-810-pt-orcha"},
 				ExtraEnv: map[string]string{
@@ -1369,12 +1382,12 @@ func TestRunTopologyPostDeployHook_RunsAgainstOrchestrationRelease(t *testing.T)
 		`test "$OPTTA_OPTIMIZE_CONTEXT_PATH" = "/optimize-ta"`+"\n"+
 		"touch "+marker+"\n")
 
-	entry := matrix.Entry{
+	entry := Entry{
 		Version:    "8.10",
 		Scenario:   "physicaltenants",
-		PostDeploy: &matrix.LifecycleHook{Script: "post-deploy-topology.sh", Description: "Topology-wide post-deploy assertions."},
+		PostDeploy: &LifecycleHook{Script: "post-deploy-topology.sh", Description: "Topology-wide post-deploy assertions."},
 	}
-	if err := runTopologyPostDeployHook(context.Background(), entry, matrix.RunOptions{RepoRoot: repoRoot}, topologyHookReleases()); err != nil {
+	if err := runTopologyPostDeployHook(context.Background(), entry, RunOptions{RepoRoot: repoRoot}, topologyHookReleases()); err != nil {
 		t.Fatalf("runTopologyPostDeployHook() error = %v", err)
 	}
 	if _, err := os.Stat(marker); err != nil {
@@ -1387,12 +1400,12 @@ func TestRunTopologyPostDeployHook_RunsAgainstOrchestrationRelease(t *testing.T)
 func TestRunTopologyPostDeployHook_FailurePropagates(t *testing.T) {
 	repoRoot := writeTopologyHookScript(t, "#!/bin/bash\nexit 3\n")
 
-	entry := matrix.Entry{
+	entry := Entry{
 		Version:    "8.10",
 		Scenario:   "physicaltenants",
-		PostDeploy: &matrix.LifecycleHook{Script: "post-deploy-topology.sh", Description: "Topology-wide post-deploy assertions."},
+		PostDeploy: &LifecycleHook{Script: "post-deploy-topology.sh", Description: "Topology-wide post-deploy assertions."},
 	}
-	err := runTopologyPostDeployHook(context.Background(), entry, matrix.RunOptions{RepoRoot: repoRoot}, topologyHookReleases())
+	err := runTopologyPostDeployHook(context.Background(), entry, RunOptions{RepoRoot: repoRoot}, topologyHookReleases())
 	if err == nil {
 		t.Fatal("runTopologyPostDeployHook() = nil, want the hook's failure to fail the topology entry")
 	}
@@ -1403,7 +1416,7 @@ func TestRunTopologyPostDeployHook_FailurePropagates(t *testing.T) {
 
 // A scenario without a post-deploy hook must stay a no-op.
 func TestRunTopologyPostDeployHook_NoHookIsNoop(t *testing.T) {
-	if err := runTopologyPostDeployHook(context.Background(), matrix.Entry{Version: "8.10", Scenario: "multinamespace"}, matrix.RunOptions{RepoRoot: t.TempDir()}, topologyHookReleases()); err != nil {
+	if err := runTopologyPostDeployHook(context.Background(), Entry{Version: "8.10", Scenario: "multinamespace"}, RunOptions{RepoRoot: t.TempDir()}, topologyHookReleases()); err != nil {
 		t.Fatalf("runTopologyPostDeployHook() with no hook error = %v", err)
 	}
 }
@@ -1483,23 +1496,23 @@ func TestTopologyChartPaths(t *testing.T) {
 
 func TestTopologyReleaseContextsPopulateIngressHost(t *testing.T) {
 	releases := testTopologyReleases()
-	baseEntry := matrix.Entry{
+	baseEntry := Entry{
 		Version:   "8.10",
 		ChartPath: "charts/camunda-platform-8.10",
 		Scenario:  "multinamespace",
 		Shortname: "mns",
 		Auth:      "keycloak",
 		Flow:      "install",
-		Topology:  &matrix.Topology{Name: "multinamespace", Releases: releases},
+		Topology:  &Topology{Name: "multinamespace", Releases: releases},
 	}
 
 	cases := []struct {
 		name string
-		opts matrix.RunOptions
+		opts RunOptions
 	}{
 		{
 			name: "per-release namespace-derived hosts",
-			opts: matrix.RunOptions{
+			opts: RunOptions{
 				RepoRoot:        "/repo",
 				NamespacePrefix: "matrix",
 				Infra: config.InfraOverride{
@@ -1510,7 +1523,7 @@ func TestTopologyReleaseContextsPopulateIngressHost(t *testing.T) {
 		},
 		{
 			name: "explicit global.host alongside a base domain, as CI passes it",
-			opts: matrix.RunOptions{
+			opts: RunOptions{
 				RepoRoot:        "/repo",
 				NamespacePrefix: "matrix",
 				Infra:           config.InfraOverride{InfraConfig: config.InfraConfig{IngressBaseDomain: "ci.distro.ultrawombat.com"}},
@@ -1555,6 +1568,96 @@ func TestTopologyReleaseContextsPopulateIngressHost(t *testing.T) {
 				if rec.ingressHost != rec.wantHost {
 					t.Errorf("release %q: ScenarioContext.IngressHost = %q, want %q — buildScenarioEnv only emits CAMUNDA_HOSTNAME when this is non-empty", rec.namespace, rec.ingressHost, rec.wantHost)
 				}
+			}
+		})
+	}
+}
+
+// The topology driver hands each release the rendered credentials-manifest
+// through flags.Secrets.CredentialsManifest; without it the deployer falls back
+// to the CI-wide integration-test credentials.
+func TestApplyTopologyCredentialsManifest(t *testing.T) {
+	repoRoot := t.TempDir()
+	rel := filepath.Join("charts", "creds.yaml")
+	if err := os.MkdirAll(filepath.Join(repoRoot, "charts"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(repoRoot, rel), []byte("key: ${TOPOLOGY_BASE}-credentials\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	t.Run("declared manifest is rendered and wired into the deploy flags", func(t *testing.T) {
+		flags := &config.RuntimeFlags{}
+		remove, err := applyTopologyCredentialsManifest(flags, repoRoot, rel, "dogfood")
+		if err != nil {
+			t.Fatal(err)
+		}
+		path := flags.Secrets.CredentialsManifest
+		if path == "" {
+			t.Fatal("flags.Secrets.CredentialsManifest is empty; the deploy would apply the CI-wide credentials")
+		}
+		got, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if string(got) != "key: dogfood-credentials\n" {
+			t.Errorf("rendered manifest = %q, want the base namespace substituted", got)
+		}
+		remove()
+		if _, err := os.Stat(path); !os.IsNotExist(err) {
+			t.Errorf("rendered manifest %s not removed: %v", path, err)
+		}
+	})
+
+	t.Run("no manifest leaves the flags unchanged", func(t *testing.T) {
+		flags := &config.RuntimeFlags{}
+		flags.Secrets.CredentialsManifest = "preset.yaml"
+		remove, err := applyTopologyCredentialsManifest(flags, repoRoot, "", "dogfood")
+		if err != nil {
+			t.Fatal(err)
+		}
+		remove()
+		if flags.Secrets.CredentialsManifest != "preset.yaml" {
+			t.Errorf("CredentialsManifest = %q, want unchanged", flags.Secrets.CredentialsManifest)
+		}
+	})
+
+	t.Run("missing manifest is an error", func(t *testing.T) {
+		flags := &config.RuntimeFlags{}
+		if _, err := applyTopologyCredentialsManifest(flags, repoRoot, "charts/absent.yaml", "dogfood"); err == nil {
+			t.Fatal("expected an error for a missing manifest")
+		}
+		if flags.Secrets.CredentialsManifest != "" {
+			t.Errorf("CredentialsManifest = %q, want empty after a failure", flags.Secrets.CredentialsManifest)
+		}
+	})
+}
+
+func TestTopologyPlaywrightProject(t *testing.T) {
+	tests := []struct {
+		name string
+		leg  TopologyE2ELeg
+		want string
+	}{
+		{
+			name: "uses the topology project by default",
+			leg:  TopologyE2ELeg{PlaywrightProject: "topology-orchestration"},
+			want: "topology-orchestration",
+		},
+		{
+			name: "uses the dependent additional project when configured",
+			leg: TopologyE2ELeg{
+				PlaywrightProject:           "topology-orchestration",
+				AdditionalPlaywrightProject: "physical-tenants",
+			},
+			want: "physical-tenants",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := topologyPlaywrightProject(tt.leg); got != tt.want {
+				t.Fatalf("topologyPlaywrightProject() = %q, want %q", got, tt.want)
 			}
 		})
 	}

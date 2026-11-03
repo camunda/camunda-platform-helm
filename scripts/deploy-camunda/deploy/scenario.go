@@ -380,7 +380,7 @@ func generateTopologyContexts(scenario string, releases []TopologyRelease, flags
 
 // GenerateTopologyContexts is the exported form of generateTopologyContexts,
 // for callers outside the deploy package (the topology deploy driver in
-// cmd's runTopologyEntry) that need to predict every release's namespace,
+// matrix's runTopologyEntry) that need to predict every release's namespace,
 // Keycloak realm, and index prefixes UP FRONT — before any release is
 // deployed - so cross-namespace env vars (HUB_NAMESPACE, KEYCLOAK_REALM,
 // EXTERNAL_ELASTICSEARCH_HOST) can be computed once and injected into every

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package matrix
 
 import (
 	"context"
@@ -23,7 +23,6 @@ import (
 
 	"scripts/deploy-camunda/config"
 	"scripts/deploy-camunda/deploy"
-	"scripts/deploy-camunda/matrix"
 )
 
 func TestPrepareTopologyReleases_AggregatesAllReleaseFailures(t *testing.T) {
@@ -36,13 +35,13 @@ func TestPrepareTopologyReleases_AggregatesAllReleaseFailures(t *testing.T) {
 	}
 	healthySuffixes := []string{"hub", "orchb"}
 
-	releases := []matrix.TopologyRelease{
+	releases := []TopologyRelease{
 		{
 			Role:            "hub",
 			NamespaceSuffix: "hub",
 			Features:        []string{"multinamespace-hub"},
 			Identity:        "keycloak",
-			ResolvedDependencies: []matrix.ChartDependency{
+			ResolvedDependencies: []ChartDependency{
 				{ReleaseName: "elasticsearch"},
 			},
 		},
@@ -72,7 +71,7 @@ func TestPrepareTopologyReleases_AggregatesAllReleaseFailures(t *testing.T) {
 		},
 	}
 
-	entry := matrix.Entry{
+	entry := Entry{
 		Version:   "8.10",
 		ChartPath: "charts/camunda-platform-8.10",
 		Scenario:  "multinamespace",
@@ -80,12 +79,12 @@ func TestPrepareTopologyReleases_AggregatesAllReleaseFailures(t *testing.T) {
 		Auth:      "keycloak",
 		Flow:      "install",
 		Platform:  "gke",
-		Topology: &matrix.Topology{
+		Topology: &Topology{
 			SharedStorage: "elasticsearch",
 			Releases:      releases,
 		},
 	}
-	opts := matrix.RunOptions{
+	opts := RunOptions{
 		Platform: "gke",
 		RepoRoot: t.TempDir(),
 	}
