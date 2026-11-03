@@ -18,6 +18,7 @@ import (
 	"camunda-platform/test/unit/testhelpers"
 	"fmt"
 	"io"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -50,6 +51,88 @@ func TestConfigMapWarningsTemplate(t *testing.T) {
 		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
 		templates: []string{"templates/common/configmap-warnings.yaml"},
 	})
+}
+
+func (s *ConfigMapWarningsTemplateTest) TestExactWarningConsumers() {
+	const authentication = "[camunda][warning] global.identity.auth.enabled=true, but no shared authentication issuer or issuer backend URL resolves. Set global.identity.auth.issuer (or global.identity.auth.publicIssuerUrl), global.identity.auth.issuerBackendUrl, or global.identity.keycloak.url for External Keycloak. Components using separate OIDC configuration must supply their own provider settings."
+	const storage = "[camunda][warning] The Orchestration Cluster uses Elasticsearch secondary storage, but no URL is set. Without a URL, the Orchestration Cluster connects to http://localhost:9200. Set orchestration.data.secondaryStorage.elasticsearch.url, set CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_URL in orchestration.env, or set camunda.data.secondary-storage.elasticsearch.url in orchestration.extraConfiguration. If the URL comes from another source, such as JVM options, ignore this warning."
+	const deprecation = `[camunda][warning] DEPRECATION: The Helm values file key "orchestration.history.rolloverInterval" is deprecated and will be removed in chart v17 (Camunda 8.12). Configure this via "orchestration.extraConfiguration" instead. https://docs.camunda.io/docs/self-managed/deployment/helm/upgrade/`
+	const pvc = `[camunda][warning] orchestration.pvcAccessModes is set to ReadWriteOncePod, which requires a CSI driver that supports it; without that support the PersistentVolumeClaim may fail to provision or stay Pending. PersistentVolumeClaim accessModes are immutable, so this only applies to new installs / new PVCs, not to an existing StatefulSet via "helm upgrade".`
+	for _, scenario := range []struct {
+		name     string
+		values   []string
+		warnings []string
+	}{
+		{name: "NoWarnings"},
+		{
+			name: "Authentication",
+			values: []string{
+				"global.identity.auth.enabled=true",
+				"global.identity.auth.type=GENERIC",
+				"global.identity.auth.publicIssuerUrl=",
+			},
+			warnings: []string{authentication},
+		},
+		{
+			name:     "Storage",
+			values:   []string{"orchestration.data.secondaryStorage.elasticsearch.url="},
+			warnings: []string{storage},
+		},
+		{
+			name:     "Deprecation",
+			values:   []string{"orchestration.history.rolloverInterval=2d"},
+			warnings: []string{deprecation},
+		},
+		{
+			name:     "PVC",
+			values:   []string{"orchestration.pvcAccessModes[0]=ReadWriteOncePod"},
+			warnings: []string{pvc},
+		},
+		{
+			name: "CombinedWithReleaseInfo",
+			values: []string{
+				"global.createReleaseInfo=true",
+				"global.identity.auth.enabled=true",
+				"global.identity.auth.type=GENERIC",
+				"global.identity.auth.publicIssuerUrl=",
+				"orchestration.data.secondaryStorage.elasticsearch.url=",
+				"orchestration.history.rolloverInterval=2d",
+				"orchestration.pvcAccessModes[0]=ReadWriteOncePod",
+			},
+			warnings: []string{authentication, storage, deprecation, pvc},
+		},
+	} {
+		s.Run(scenario.name, func() {
+			t := s.T()
+			args := []string{
+				"install", s.release, s.chartPath, "--dry-run=client",
+				"--set", "orchestration.data.secondaryStorage.type=elasticsearch",
+				"--set", "orchestration.data.secondaryStorage.elasticsearch.url=http://elasticsearch:9200",
+				"--set", "global.createReleaseInfo=false",
+			}
+			for _, value := range scenario.values {
+				args = append(args, "--set", value)
+			}
+			output, err := exec.Command("helm", args...).CombinedOutput()
+			require.NoError(t, err, string(output))
+			_, rendered, found := strings.Cut(string(output), "\nMANIFEST:\n")
+			require.True(t, found)
+			manifest, notes, found := strings.Cut(rendered, "\nNOTES:\n")
+			require.True(t, found)
+			require.Contains(t, notes, "## Installed Services:")
+			configMaps := renderedConfigMaps(t, manifest)
+			require.Contains(t, configMaps, s.release+"-zeebe-configuration")
+			expected := strings.Join(scenario.warnings, "\n")
+			warnings, present := configMaps[s.release+"-warnings"]
+			require.Equal(t, expected != "", present)
+			require.Equal(t, expected, warnings.Data["warnings"])
+			notesWarnings := ""
+			if start := strings.Index(notes, "[camunda][warning]"); start >= 0 {
+				notesWarnings = strings.TrimRight(notes[start:], "\n")
+			}
+			require.Equal(t, expected, notesWarnings)
+		})
+	}
 }
 
 func (s *ConfigMapWarningsTemplateTest) TestUnresolvedAuthIssuer() {

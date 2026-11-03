@@ -148,20 +148,6 @@ func NewRootCommand() *cobra.Command {
 	f.BoolVar(&flags.Selection.ImageTags, "image-tags", false, "Enable image tag overrides from env vars")
 	f.BoolVar(&flags.Selection.UpgradeFlow, "upgrade-flow", false, "Enable upgrade flow configuration")
 
-	// Deprecated layered values flags (kept for backward compatibility)
-	f.StringVar(&flags.Deprecated.ValuesAuth, "values-auth", "", "DEPRECATED: use --identity instead")
-	f.StringVar(&flags.Deprecated.ValuesBackend, "values-backend", "", "DEPRECATED: use --persistence instead")
-	f.StringSliceVar(&flags.Deprecated.ValuesFeatures, "values-features", nil, "DEPRECATED: use --features instead")
-	f.BoolVar(&flags.Deprecated.ValuesQA, "values-qa", false, "DEPRECATED: use --qa instead")
-	f.StringVar(&flags.Deprecated.ValuesInfra, "values-infra", "", "DEPRECATED: use --test-platform instead")
-
-	// Mark deprecated flags as hidden (they still work but won't show in help)
-	_ = f.MarkHidden("values-auth")
-	_ = f.MarkHidden("values-backend")
-	_ = f.MarkHidden("values-features")
-	_ = f.MarkHidden("values-qa")
-	_ = f.MarkHidden("values-infra")
-
 	// Register completions using config-aware completion function
 	registerScenarioCompletion(rootCmd, "scenario")
 	registerScenarioCompletion(rootCmd, "auth")
@@ -169,7 +155,6 @@ func NewRootCommand() *cobra.Command {
 	registerPlatformCompletion(rootCmd)
 	registerIngressBaseDomainCompletion(rootCmd)
 	registerSelectionCompletion(rootCmd)
-	registerLayeredValuesCompletion(rootCmd)
 
 	annotateFlagGroups(rootCmd, rootFlagGroups())
 
@@ -422,60 +407,6 @@ func registerSelectionCompletion(cmd *cobra.Command) {
 			return nil, cobra.ShellCompDirectiveNoFileComp
 		}
 		return completeMultiSelect(toComplete, features)
-	})
-}
-
-// registerLayeredValuesCompletion adds tab completion for layered values flags.
-func registerLayeredValuesCompletion(cmd *cobra.Command) {
-	// Auth types completion
-	_ = cmd.RegisterFlagCompletionFunc("values-auth", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		scenarioPath := resolveScenarioPath(cmd)
-		if scenarioPath == "" {
-			// Return default auth types
-			return []string{"keycloak", "oidc", "basic", "hybrid"}, cobra.ShellCompDirectiveNoFileComp
-		}
-
-		authTypes, err := scenarios.ListLayeredAuthTypes(scenarioPath)
-		if err != nil || len(authTypes) == 0 {
-			return []string{"keycloak", "oidc", "basic", "hybrid"}, cobra.ShellCompDirectiveNoFileComp
-		}
-		return authTypes, cobra.ShellCompDirectiveNoFileComp
-	})
-
-	// Backend types completion
-	_ = cmd.RegisterFlagCompletionFunc("values-backend", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		scenarioPath := resolveScenarioPath(cmd)
-		if scenarioPath == "" {
-			return []string{"elasticsearch", "opensearch-embedded"}, cobra.ShellCompDirectiveNoFileComp
-		}
-
-		backends, err := scenarios.ListLayeredBackends(scenarioPath)
-		if err != nil || len(backends) == 0 {
-			return []string{"elasticsearch", "opensearch-embedded"}, cobra.ShellCompDirectiveNoFileComp
-		}
-		return backends, cobra.ShellCompDirectiveNoFileComp
-	})
-
-	// Feature types completion
-	_ = cmd.RegisterFlagCompletionFunc("values-features", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		scenarioPath := resolveScenarioPath(cmd)
-		defaultFeatures := []string{"multitenancy", "rba", "documentstore", "rdbms", "rdbms-external", "rdbms-oracle", "upgrade"}
-
-		if scenarioPath == "" {
-			return defaultFeatures, cobra.ShellCompDirectiveNoFileComp
-		}
-
-		features, err := scenarios.ListLayeredFeatures(scenarioPath)
-		if err != nil || len(features) == 0 {
-			return defaultFeatures, cobra.ShellCompDirectiveNoFileComp
-		}
-
-		return completeMultiSelect(toComplete, features)
-	})
-
-	// Infra types completion
-	_ = cmd.RegisterFlagCompletionFunc("values-infra", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		return []string{"eks"}, cobra.ShellCompDirectiveNoFileComp
 	})
 }
 

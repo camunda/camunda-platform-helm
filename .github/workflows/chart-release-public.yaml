@@ -48,6 +48,7 @@ jobs:
       package-file: ${{ steps.metadata.outputs.package_file }}
       source-commit: ${{ steps.parse.outputs.commit_sha }}
       previous-source-commit: ${{ steps.history.outputs.previous_commit_sha }}
+      existing-release: ${{ steps.existing-release.outputs.exists }}
     env:
       CHART_RELEASE_COSIGN_CERTIFICATE_IDENTITY: "https://github.com/${{ github.workflow_ref }}"
       CHART_RELEASE_COSIGN_CERTIFICATE_OIDC_ISSUER: "https://token.actions.githubusercontent.com"
@@ -181,13 +182,50 @@ jobs:
           git merge-base --is-ancestor "${previous_sha}" "${SOURCE_SHA}"
           echo "previous_commit_sha=${previous_sha}" >> "$GITHUB_OUTPUT"
 
-      - name: Run Chart Releaser - Tagging/Uploading
+      - name: Check existing release
+        id: existing-release
         if: ${{ !inputs.dry-run }}
+        env:
+          GH_TOKEN: ${{ steps.generate-github-token.outputs.token }}
+          RELEASE_TAG: ${{ steps.metadata.outputs.release_tag }}
+          PACKAGE_FILE: ${{ steps.metadata.outputs.package_file }}
+          SOURCE_SHA: ${{ steps.parse.outputs.commit_sha }}
+          COSIGN_BUNDLE: ${{ steps.metadata.outputs.cosign_bundle }}
+        run: |
+          set -euo pipefail
+          status=$(curl -sS -o "$RUNNER_TEMP/release.json" -w '%{http_code}' \
+            -H "Authorization: Bearer ${GH_TOKEN}" -H 'Accept: application/vnd.github+json' \
+            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/releases/tags/${RELEASE_TAG}")
+          if [[ "$status" == 404 ]]; then
+            exit 0
+          fi
+          if [[ "$status" != 200 ]]; then
+            echo "::error::Release lookup failed (HTTP ${status})"
+            exit 1
+          fi
+          digest="sha256:$(sha256sum ".cr-release-packages/${PACKAGE_FILE}" | cut -d ' ' -f 1)"
+          if ! jq -e --arg name "$PACKAGE_FILE" --arg digest "$digest" \
+            '.draft == false and ([.assets[] | select(.name == $name and .state == "uploaded" and .digest == $digest)] | length == 1)' \
+            "$RUNNER_TEMP/release.json" > /dev/null; then
+            echo "::error::Existing release is a draft or its chart asset is missing or different"
+            exit 1
+          fi
+          git fetch origin "refs/tags/${RELEASE_TAG}:refs/tags/${RELEASE_TAG}"
+          if [[ "$(git rev-parse "refs/tags/${RELEASE_TAG}^{commit}")" != "$SOURCE_SHA" ]]; then
+            echo "::error::Existing release tag does not point to the RC source commit"
+            exit 1
+          fi
+          echo "exists=true" >> "$GITHUB_OUTPUT"
+          jq -r --arg bundle "$COSIGN_BUNDLE" \
+            '"bundle=\(any(.assets[]; .name == $bundle and .state == "uploaded"))"' \
+            "$RUNNER_TEMP/release.json" >> "$GITHUB_OUTPUT"
+
+      - name: Run Chart Releaser - Tagging/Uploading
+        if: ${{ !inputs.dry-run && steps.existing-release.outputs.exists != 'true' }}
         env:
           CR_TOKEN: ${{ steps.generate-github-token.outputs.token }}
         run: |
           helm-cr upload --config ${{ env.CHART_RELEASER_CONFIG_FILE }} \
-            --push \
             --skip-existing=false \
             --commit "${{ steps.parse.outputs.commit_sha }}" \
             --owner "${{ github.repository_owner }}" \
@@ -199,17 +237,34 @@ jobs:
         if: ${{ !inputs.dry-run }}
         env:
           CR_TOKEN: ${{ steps.generate-github-token.outputs.token }}
+          RELEASE_TAG: ${{ steps.metadata.outputs.release_tag }}
         run: |
-          helm-cr index --config ${{ env.CHART_RELEASER_CONFIG_FILE }} \
-            --push \
-            --owner "${{ github.repository_owner }}" \
-            --git-repo "$(basename ${{ github.repository }})" \
-            --release-name-template "${{ steps.metadata.outputs.release_tag }}"
+          for attempt in 1 2 3 4 5; do
+            git fetch origin "+refs/heads/gh-pages:refs/remotes/origin/gh-pages"
+            if helm-cr index --config "${CHART_RELEASER_CONFIG_FILE}" \
+              --push \
+              --owner "${GITHUB_REPOSITORY_OWNER}" \
+              --git-repo "${GITHUB_REPOSITORY#*/}" \
+              --release-name-template "${RELEASE_TAG}"; then
+              exit 0
+            fi
+            [[ "$attempt" == 5 ]] && exit 1
+            sleep "$attempt"
+          done
+
+      - name: Download existing Cosign bundle
+        if: ${{ !inputs.dry-run && steps.existing-release.outputs.bundle == 'true' }}
+        working-directory: .cr-release-packages
+        env:
+          GH_TOKEN: ${{ steps.generate-github-token.outputs.token }}
+          RELEASE_TAG: ${{ steps.metadata.outputs.release_tag }}
+          COSIGN_BUNDLE: ${{ steps.metadata.outputs.cosign_bundle }}
+        run: gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --pattern "$COSIGN_BUNDLE"
 
       # Cosign keyless signing is gated too: it writes a permanent entry to the
       # public Rekor transparency log, so it is a public side effect.
       - name: Sign Helm chart with Cosign
-        if: ${{ !inputs.dry-run }}
+        if: ${{ !inputs.dry-run && steps.existing-release.outputs.bundle != 'true' }}
         working-directory: .cr-release-packages
         run: |
           source "${GITHUB_WORKSPACE}/scripts/harbor-retry.sh"
@@ -223,6 +278,11 @@ jobs:
         run: |
           # New cosign bundle format uses .verificationMaterial.tlogEntries[0].logIndex
           rekor_log_index=$(jq -r '.verificationMaterial.tlogEntries[0].logIndex // .rekorBundle.Payload.logIndex // "unavailable"' "${{ steps.metadata.outputs.cosign_bundle }}")
+          # The bundle can come from an existing release; later steps interpolate this value.
+          if [[ ! "$rekor_log_index" =~ ^([0-9]+|unavailable)$ ]]; then
+            echo "::error::Invalid Rekor log index in Cosign bundle"
+            exit 1
+          fi
           echo "log_index=${rekor_log_index}" | tee -a "$GITHUB_OUTPUT"
 
       - name: Create Cosign verify script
@@ -248,7 +308,7 @@ jobs:
           bash "${{ steps.metadata.outputs.cosign_verify }}"
 
       - name: Upload Cosign bundle to release
-        if: ${{ !inputs.dry-run }}
+        if: ${{ !inputs.dry-run && steps.existing-release.outputs.bundle != 'true' }}
         working-directory: .cr-release-packages
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -265,7 +325,7 @@ jobs:
         run: |
           gh release upload "${{ steps.metadata.outputs.release_tag }}" \
             "${{ steps.metadata.outputs.cosign_verify }}" \
-            --repo "${GITHUB_REPOSITORY}"
+            --repo "${GITHUB_REPOSITORY}" --clobber
 
       - name: Dry run - log skipped public publishes
         if: ${{ inputs.dry-run }}
@@ -381,6 +441,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      id-token: write
       pull-requests: write
     outputs:
       pr-number: ${{ steps.mark-published.outputs.pr_number }}
@@ -439,18 +500,57 @@ jobs:
             sourceSHA="${{ needs.release.outputs.source-commit }}" \
             previousSourceSHA="${{ needs.release.outputs.previous-source-commit }}"
 
+      - name: Check release-please PR version
+        id: release-pr
+        env:
+          GH_TOKEN: ${{ steps.generate-github-token.outputs.token }}
+          CHART_DIR_ID: ${{ needs.release.outputs.chart-dir-id }}
+          CHART_VERSION: ${{ needs.release.outputs.version }}
+          EXISTING_RELEASE: ${{ needs.release.outputs.existing-release }}
+        run: |
+          set -euo pipefail
+          head_ref="release-please--branches--main--components--camunda-platform-${CHART_DIR_ID}"
+          pr=$(gh pr list --state open --head "$head_ref" --json number,headRefOid --jq '.[0] // empty')
+          if [[ -z "$pr" ]]; then
+            if [[ "$EXISTING_RELEASE" == true ]]; then
+              echo "::notice::No open release-please PR for ${head_ref}; skipping release-please mutations"
+              exit 0
+            fi
+            echo "::error::No open release-please PR for ${head_ref}"
+            exit 1
+          fi
+          pr_number=$(jq -r '.number' <<< "$pr")
+          pr_sha=$(jq -r '.headRefOid' <<< "$pr")
+          git fetch origin "$head_ref"
+          if [[ "$(git rev-parse FETCH_HEAD)" != "$pr_sha" ]]; then
+            echo "::error::Release-please PR #${pr_number} changed during lookup"
+            exit 1
+          fi
+          pr_version=$(git show "${pr_sha}:charts/camunda-platform-${CHART_DIR_ID}/Chart.yaml" | yq -r '.version')
+          if [[ "$pr_version" != "$CHART_VERSION" ]]; then
+            if [[ "$EXISTING_RELEASE" == true ]]; then
+              echo "::notice::Release-please PR #${pr_number} targets ${pr_version}, not ${CHART_VERSION}; skipping release-please mutations"
+              exit 0
+            fi
+            echo "::error::Release-please PR #${pr_number} targets ${pr_version}, not ${CHART_VERSION}"
+            exit 1
+          fi
+          echo "pr_number=${pr_number}" >> "$GITHUB_OUTPUT"
+          echo "head_sha=${pr_sha}" >> "$GITHUB_OUTPUT"
+
       - name: Stamp release date on the release-please PR
         id: stamp
+        if: ${{ steps.release-pr.outputs.pr_number != '' }}
         env:
           GH_TOKEN: ${{ steps.generate-github-token.outputs.token }}
           APP_VERSION: "${{ needs.release.outputs.chart-dir-id }}"
           CHART_VERSION: "${{ needs.release.outputs.version }}"
+          PR_SHA: ${{ steps.release-pr.outputs.head_sha }}
         run: |
           set -euo pipefail
 
           head_ref="release-please--branches--main--components--camunda-platform-${APP_VERSION}"
-          git fetch origin "${head_ref}" --tags
-          git checkout "${head_ref}"
+          git checkout --detach "${PR_SHA}"
 
           /tmp/release-tools stamp-release --app "${APP_VERSION}" --chart-version "${CHART_VERSION}"
           /tmp/release-tools version-matrix --readme "${APP_VERSION}"
@@ -465,9 +565,10 @@ jobs:
             echo "::notice::Release date already stamped"
           else
             git commit -m "chore: stamp release date for ${CHART_VERSION}"
-            git push origin "${head_ref}"
+            git push origin "HEAD:refs/heads/${head_ref}"
             echo "::notice::Stamped release date on ${head_ref}"
           fi
+          echo "head_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
           git checkout -
 
       # Gated on the stamp: a release must not merge to main with its
@@ -477,59 +578,72 @@ jobs:
         if: ${{ !cancelled() && steps.stamp.outcome == 'success' }}
         env:
           GH_TOKEN: ${{ steps.generate-github-token.outputs.token }}
-          CHART_DIR_ID: "${{ needs.release.outputs.chart-dir-id }}"
+          PR_NUMBER: ${{ steps.release-pr.outputs.pr_number }}
+          PR_SHA: ${{ steps.stamp.outputs.head_sha }}
         run: |
           set -euo pipefail
 
-          head_ref="release-please--branches--main--components--camunda-platform-${CHART_DIR_ID}"
-          pr_number="$(gh pr list --state open --head "${head_ref}" --json number --jq '.[0].number // empty')"
-
-          if [[ -z "${pr_number}" ]]; then
-            echo "::error::Could not find open release-please PR with head '${head_ref}'."
-            echo "::error::Cannot update autorelease labels; refusing to continue."
-            exit 1
+          current_sha=$(gh pr view "${PR_NUMBER}" --json headRefOid --jq '.headRefOid')
+          if [[ "$current_sha" != "$PR_SHA" ]]; then
+            echo "::notice::Release-please PR #${PR_NUMBER} changed; skipping post-release mutations"
+            exit 0
           fi
 
-          echo "pr_number=${pr_number}" >> "$GITHUB_OUTPUT"
+          echo "pr_number=${PR_NUMBER}" >> "$GITHUB_OUTPUT"
 
-          current_labels="$(gh pr view "${pr_number}" --json labels --jq '.labels[].name')"
+          current_labels="$(gh pr view "${PR_NUMBER}" --json labels --jq '.labels[].name')"
           if echo "${current_labels}" | grep -qx "autorelease: pending"; then
-            gh pr edit "${pr_number}" --remove-label "autorelease: pending"
+            gh pr edit "${PR_NUMBER}" --remove-label "autorelease: pending"
           fi
           if ! echo "${current_labels}" | grep -qx "autorelease: published"; then
-            gh pr edit "${pr_number}" --add-label "autorelease: published"
+            gh pr edit "${PR_NUMBER}" --add-label "autorelease: published"
           fi
 
       - name: Approve and auto-merge release-please PR
         id: auto-merge
-        if: ${{ !cancelled() && steps.mark-published.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.mark-published.outcome == 'success' && steps.mark-published.outputs.pr_number != '' }}
         continue-on-error: true
         env:
           GH_TOKEN: ${{ steps.generate-github-token.outputs.token }}
+          PR_NUMBER: ${{ steps.mark-published.outputs.pr_number }}
+          PR_SHA: ${{ steps.stamp.outputs.head_sha }}
+          CHART_DIR_ID: ${{ needs.release.outputs.chart-dir-id }}
+          CHART_VERSION: ${{ needs.release.outputs.version }}
+          APPROVAL_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          pr_number="${{ steps.mark-published.outputs.pr_number }}"
-          head_ref="release-please--branches--main--components--camunda-platform-${{ needs.release.outputs.chart-dir-id }}"
+          set -euo pipefail
+          head_ref="release-please--branches--main--components--camunda-platform-${CHART_DIR_ID}"
 
           # Rebase onto main so the branch is not behind (strict status checks).
           git config user.name "distro-ci[bot]"
           git config user.email "122795778+distro-ci[bot]@users.noreply.github.com"
           git fetch origin main "${head_ref}"
+          if [[ "$(git rev-parse "origin/${head_ref}")" != "$PR_SHA" ]]; then
+            echo "::notice::Release-please PR #${PR_NUMBER} changed; skipping approval and auto-merge"
+            exit 0
+          fi
           if ! git merge-base --is-ancestor origin/main "origin/${head_ref}"; then
             git checkout -B "${head_ref}" "origin/${head_ref}"
             git rebase origin/main
-            git push --force-with-lease origin "${head_ref}"
+            if [[ "$(yq -r '.version' "charts/camunda-platform-${CHART_DIR_ID}/Chart.yaml")" != "$CHART_VERSION" ]]; then
+              echo "::notice::Rebased release-please PR #${PR_NUMBER} targets a different version; skipping approval and auto-merge"
+              exit 0
+            fi
+            git push --force-with-lease="refs/heads/${head_ref}:${PR_SHA}" origin "${head_ref}"
+            PR_SHA=$(git rev-parse HEAD)
           else
             echo "::notice::Branch already up to date"
           fi
 
           # Use GITHUB_TOKEN for approval (different identity from PR author).
-          GH_TOKEN="${{ secrets.GITHUB_TOKEN }}" gh pr review "${pr_number}" --approve
+          GH_TOKEN="${APPROVAL_TOKEN}" gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/reviews" \
+            -f event=APPROVE -f commit_id="${PR_SHA}"
 
-          gh pr merge "${pr_number}" --auto --squash
+          gh pr merge "${PR_NUMBER}" --auto --squash --match-head-commit "${PR_SHA}"
           echo "enabled=true" >> "$GITHUB_OUTPUT"
 
       - name: Summary
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && steps.mark-published.outcome == 'success' && steps.mark-published.outputs.pr_number != '' }}
         env:
           GH_TOKEN: ${{ steps.generate-github-token.outputs.token }}
         run: |
@@ -621,7 +735,7 @@ jobs:
       - name: Shepherd release-please PR through merge queue
         id: merge-queue
         continue-on-error: true
-        uses: camunda/infra-global-github-actions/ensure-pr-passes-merge-queue@85dbb218176a20bbedac15278ac3ff4d86672db4 # main
+        uses: camunda/infra-global-github-actions/ensure-pr-passes-merge-queue@9965a08067900e11c602a050b8821ec92f49544b # main
         with:
           pr-number: ${{ needs.post-release.outputs.pr-number }}
           app-id: ${{ steps.secrets.outputs.GH_APP_ID_DISTRO_CI }}
@@ -700,6 +814,8 @@ jobs:
     needs: [release, post-release]
     if: ${{ failure() && !inputs.dry-run }}
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
     steps:
       - name: Import Vault secrets
         id: secrets

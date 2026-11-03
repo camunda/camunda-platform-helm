@@ -32,6 +32,23 @@ func TestValuesUseLightweightTestResources(t *testing.T) {
 	}
 }
 
+func TestArgoRepository(t *testing.T) {
+	t.Parallel()
+
+	const repo = "https://github.com/example/charts.git"
+	want := map[string]any{
+		"apiVersion": "v1", "kind": "Secret",
+		"metadata": map[string]any{
+			"name": "gitops-phase-repository", "namespace": "argocd",
+			"labels": map[string]string{"argocd.argoproj.io/secret-type": "repository"},
+		},
+		"stringData": map[string]string{"type": "git", "url": repo, "depth": "1"},
+	}
+	if got := argoRepository(repo); !reflect.DeepEqual(got, want) {
+		t.Fatalf("argoRepository() = %#v, want %#v", got, want)
+	}
+}
+
 func TestFluxReference(t *testing.T) {
 	tests := []struct {
 		name     string

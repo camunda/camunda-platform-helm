@@ -25,6 +25,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"gopkg.in/yaml.v3"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -1092,6 +1093,74 @@ func (s *ConfigmapTemplateTest) TestRDBMSDoesNotUseExporterProperties() {
 					"the RDBMS password must be injected as VALUES_ORCHESTRATION_DATA_SECONDARYSTORAGE_RDBMS_PASSWORD, not a CAMUNDA_DATA_EXPORTERS_RDBMS_* env var")
 			},
 		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *ConfigmapTemplateTest) TestRDBMSConnectionFollowsStorageType() {
+	const passwordEnv = "VALUES_ORCHESTRATION_DATA_SECONDARYSTORAGE_RDBMS_PASSWORD"
+	testCases := []testhelpers.TestCase{}
+	for _, storageType := range []string{"rdbms", "elasticsearch"} {
+		values := map[string]string{
+			"orchestration.data.secondaryStorage.type":                      storageType,
+			"orchestration.data.secondaryStorage.rdbms.url":                 "jdbc:postgresql://pg:5432/camunda",
+			"orchestration.data.secondaryStorage.rdbms.username":            "camunda",
+			"orchestration.data.secondaryStorage.rdbms.secret.inlineSecret": "my-password",
+		}
+		rendered := storageType == "rdbms"
+		testCases = append(testCases,
+			testhelpers.TestCase{
+				Name:   "TestApplicationYamlWithoutExporterFlag_" + storageType,
+				Values: values,
+				Verifier: func(t *testing.T, output string, err error) {
+					require.NoError(t, err)
+					var configmap corev1.ConfigMap
+					helm.UnmarshalK8SYaml(t, output, &configmap)
+					var application struct {
+						Camunda struct {
+							Data struct {
+								SecondaryStorage map[string]any `yaml:"secondary-storage"`
+							} `yaml:"data"`
+						} `yaml:"camunda"`
+					}
+					require.NoError(t, yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &application))
+					storage := application.Camunda.Data.SecondaryStorage
+					require.Equal(t, storageType, storage["type"])
+					if rendered {
+						require.Equal(t, map[string]any{
+							"aws-enabled": false,
+							"url":         "jdbc:postgresql://pg:5432/camunda",
+							"username":    "camunda",
+							"password":    "${" + passwordEnv + ":}",
+						}, storage["rdbms"])
+					} else {
+						require.Contains(t, storage, "elasticsearch")
+						require.NotContains(t, storage, "rdbms")
+					}
+				},
+			},
+			testhelpers.TestCase{
+				Name:     "TestStatefulSetPasswordEnvWithoutExporterFlag_" + storageType,
+				Template: "templates/orchestration/statefulset.yaml",
+				Values:   values,
+				Verifier: func(t *testing.T, output string, err error) {
+					require.NoError(t, err)
+					var statefulSet appsv1.StatefulSet
+					helm.UnmarshalK8SYaml(t, output, &statefulSet)
+					envNames := []string{}
+					for _, env := range statefulSet.Spec.Template.Spec.Containers[0].Env {
+						envNames = append(envNames, env.Name)
+					}
+					require.Contains(t, envNames, "JAVA_TOOL_OPTIONS")
+					if rendered {
+						require.Contains(t, envNames, passwordEnv)
+					} else {
+						require.NotContains(t, envNames, passwordEnv)
+					}
+				},
+			},
+		)
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)

@@ -1,22 +1,19 @@
 module camunda-platform
 
-go 1.26.0
-
-toolchain go1.27.3
+go 1.27.3
 
 require (
-	github.com/BurntSushi/toml v1.6.0 // indirect
 	github.com/gruntwork-io/terratest v1.0.1
 	github.com/stretchr/testify v1.12.1
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/api v0.36.2
+	k8s.io/apimachinery v0.36.2
 	k8s.io/client-go v0.36.2
 )
 
-require k8s.io/apimachinery v0.36.2
-
 require (
 	filippo.io/edwards25519 v1.1.1 // indirect
+	github.com/BurntSushi/toml v1.6.0 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.42.0 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.9 // indirect
 	github.com/aws/aws-sdk-go-v2/config v1.32.16 // indirect

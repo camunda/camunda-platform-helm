@@ -29,6 +29,7 @@ type sourceWorkflow struct {
 		Steps   []struct {
 			Name string `yaml:"name"`
 			Run  string `yaml:"run"`
+			If   string `yaml:"if"`
 		} `yaml:"steps"`
 	} `yaml:"jobs"`
 }

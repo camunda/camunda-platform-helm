@@ -198,15 +198,6 @@ func (f *SelectionFlags) HasExplicitSelectionConfig() bool {
 	return f.Identity != "" || f.Persistence != "" || f.TestPlatform != "" || len(f.Features) > 0 || f.QA || f.ImageTags || f.UpgradeFlow
 }
 
-// DeprecatedFlags holds deprecated layered values flags (backward compat).
-type DeprecatedFlags struct {
-	ValuesAuth     string   // DEPRECATED: use Identity instead
-	ValuesBackend  string   // DEPRECATED: use Persistence instead
-	ValuesFeatures []string // DEPRECATED: use Features instead
-	ValuesQA       bool     // DEPRECATED: use QA instead
-	ValuesInfra    string   // DEPRECATED: use TestPlatform instead
-}
-
 // IndexPrefixFlags holds Elasticsearch/OpenSearch index prefix configuration.
 type IndexPrefixFlags struct {
 	OptimizeIndexPrefix      string
@@ -227,7 +218,6 @@ type RuntimeFlags struct {
 	Debug      DebugFlags
 	Test       TestFlags
 	Selection  SelectionFlags
-	Deprecated DeprecatedFlags
 	Index      IndexPrefixFlags
 
 	SelectionResolved bool
@@ -474,8 +464,6 @@ func Validate(flags *RuntimeFlags, cfgRes ...*ConfigResolution) error {
 	if strings.TrimSpace(flags.Deployment.Release) == "" {
 		return missingFieldError("release not set", "release", "-r/--release", res)
 	}
-	// Migrate deprecated flags before checking selection config
-	flags.MigrateDeprecatedFlags()
 
 	if strings.TrimSpace(flags.Deployment.Scenario) == "" {
 		// Scenario is optional when selection flags fully describe the deployment
@@ -534,42 +522,6 @@ func IsValidIngressBaseDomain(domain string) bool {
 // Delegates to SelectionFlags.
 func (f *RuntimeFlags) HasExplicitSelectionConfig() bool {
 	return f.Selection.HasExplicitSelectionConfig()
-}
-
-// MigrateDeprecatedFlags copies deprecated layered values flags to the new selection fields.
-// This is called during validation to ensure backward compatibility.
-func (f *RuntimeFlags) MigrateDeprecatedFlags() {
-	if !f.ChangedFlags["identity"] && (f.Selection.Identity == "" || f.ChangedFlags["values-auth"]) && f.Deprecated.ValuesAuth != "" {
-		f.Selection.Identity = f.Deprecated.ValuesAuth
-	}
-	if !f.ChangedFlags["persistence"] && (f.Selection.Persistence == "" || f.ChangedFlags["values-backend"]) && f.Deprecated.ValuesBackend != "" {
-		f.Selection.Persistence = f.Deprecated.ValuesBackend
-	}
-	if !f.ChangedFlags["test-platform"] && (f.Selection.TestPlatform == "" || f.ChangedFlags["values-infra"]) && f.Deprecated.ValuesInfra != "" {
-		f.Selection.TestPlatform = f.Deprecated.ValuesInfra
-	}
-	if !f.ChangedFlags["features"] && (f.ChangedFlags["values-features"] || len(f.Selection.Features) == 0 && len(f.Deprecated.ValuesFeatures) > 0) {
-		f.Selection.Features = nil
-		// Filter out features that are now in other categories
-		for _, feature := range f.Deprecated.ValuesFeatures {
-			switch feature {
-			case "rdbms", "rdbms-external", "rdbms-oracle":
-				if !f.ChangedFlags["persistence"] && (f.Selection.Persistence == "" || f.ChangedFlags["values-features"] && !f.ChangedFlags["values-backend"]) {
-					f.Selection.Persistence = feature
-				}
-			case "upgrade":
-				// This is now a separate flag
-				if !f.ChangedFlags["upgrade-flow"] {
-					f.Selection.UpgradeFlow = true
-				}
-			default:
-				f.Selection.Features = append(f.Selection.Features, feature)
-			}
-		}
-	}
-	if !f.ChangedFlags["qa"] && (f.ChangedFlags["values-qa"] || !f.Selection.QA && f.Deprecated.ValuesQA) {
-		f.Selection.QA = f.Deprecated.ValuesQA
-	}
 }
 
 // ResolveIngressHostname returns the resolved ingress hostname.
@@ -664,19 +616,19 @@ func ApplySelectionDefaults(flags *RuntimeFlags, defaults SelectionFlags, root *
 			return err
 		}
 	}
-	if flags.ChangedFlags["identity"] || flags.ChangedFlags["values-auth"] {
+	if flags.ChangedFlags["identity"] {
 		merged.Selection.Identity = flags.Selection.Identity
 	}
-	if flags.ChangedFlags["persistence"] || flags.ChangedFlags["values-backend"] {
+	if flags.ChangedFlags["persistence"] {
 		merged.Selection.Persistence = flags.Selection.Persistence
 	}
-	if flags.ChangedFlags["test-platform"] || flags.ChangedFlags["values-infra"] {
+	if flags.ChangedFlags["test-platform"] {
 		merged.Selection.TestPlatform = flags.Selection.TestPlatform
 	}
-	if flags.ChangedFlags["features"] || flags.ChangedFlags["values-features"] {
+	if flags.ChangedFlags["features"] {
 		merged.Selection.Features = append([]string{}, flags.Selection.Features...)
 	}
-	if flags.ChangedFlags["qa"] || flags.ChangedFlags["values-qa"] {
+	if flags.ChangedFlags["qa"] {
 		merged.Selection.QA = flags.Selection.QA
 	}
 	if flags.ChangedFlags["image-tags"] {
@@ -684,16 +636,6 @@ func ApplySelectionDefaults(flags *RuntimeFlags, defaults SelectionFlags, root *
 	}
 	if flags.ChangedFlags["upgrade-flow"] {
 		merged.Selection.UpgradeFlow = flags.Selection.UpgradeFlow
-	}
-	if flags.ChangedFlags["values-features"] && !flags.ChangedFlags["features"] {
-		legacy := RuntimeFlags{Deprecated: flags.Deprecated}
-		legacy.MigrateDeprecatedFlags()
-		if legacy.Selection.Persistence != "" {
-			merged.Selection.Persistence = flags.Selection.Persistence
-		}
-		if legacy.Selection.UpgradeFlow {
-			merged.Selection.UpgradeFlow = flags.Selection.UpgradeFlow
-		}
 	}
 	flags.Selection = merged.Selection
 	return nil

@@ -114,7 +114,7 @@
 # This stage downloads CLI tools and compresses them with UPX.
 # Only the compressed binaries are copied to the final image.
 # ==============================================================================
-FROM debian:bookworm-slim AS tools
+FROM debian:bookworm-slim@sha256:99c0b25c46d0214d5a2091092e7908907dcaecd6a962cde0ac700acee222b6f3 AS tools
 
 # Install minimal tools for downloading and compressing
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -187,7 +187,7 @@ RUN echo "=== Compressed binary sizes ===" && ls -lh /tools/
 # ==============================================================================
 # Stage 2: Final optimized image
 # ==============================================================================
-FROM node:24-slim
+FROM node:24-slim@sha256:c86ecead9e55a5210ac1727de38a4ca840bf03dcaf34dc9749addbf383b1920c
 
 LABEL org.opencontainers.image.source="https://github.com/camunda/camunda-platform-helm"
 LABEL org.opencontainers.image.description="Playwright Runner (Ultra-optimized, Chromium headless-shell only) for Camunda Platform Helm integration tests"
@@ -199,7 +199,7 @@ LABEL org.opencontainers.image.licenses="Apache-2.0"
 ARG ZBCTL_VERSION=v8.6.0
 ARG PLAYWRIGHT_VERSION=1.61.0
 # Keep in sync with .tool-versions (golang).
-ARG GO_VERSION=1.26.2
+ARG GO_VERSION=1.27.3
 
 # Environment configuration
 ENV DEBIAN_FRONTEND=noninteractive

@@ -1,6 +1,6 @@
 module scripts/complexity-gate
 
-go 1.26.0
+go 1.27.3
 
 require (
 	github.com/fzipp/gocyclo v0.6.0

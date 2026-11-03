@@ -622,23 +622,6 @@ func ListFeatures(scenariosDir string) ([]string, error) {
 	return listYamlFiles(featuresDir)
 }
 
-// Deprecated compatibility functions - these map to the new naming
-
-// ListLayeredAuthTypes is deprecated - use ListIdentities instead.
-func ListLayeredAuthTypes(scenariosDir string) ([]string, error) {
-	return ListIdentities(scenariosDir)
-}
-
-// ListLayeredBackends is deprecated - use ListPersistence instead.
-func ListLayeredBackends(scenariosDir string) ([]string, error) {
-	return ListPersistence(scenariosDir)
-}
-
-// ListLayeredFeatures is deprecated - use ListFeatures instead.
-func ListLayeredFeatures(scenariosDir string) ([]string, error) {
-	return ListFeatures(scenariosDir)
-}
-
 // listYamlFiles returns a list of yaml files in a directory (without extension).
 func listYamlFiles(dir string) ([]string, error) {
 	entries, err := os.ReadDir(dir)

@@ -1,3 +1,3 @@
 module scripts/integration-tests-gate
 
-go 1.25.0
+go 1.27.3

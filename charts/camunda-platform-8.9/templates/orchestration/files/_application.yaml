@@ -129,7 +129,7 @@ camunda:
           policy-name: {{ .Values.orchestration.history.retention.policyName | quote }}
         {{- end }}
       {{- end }}
-      {{- if .Values.orchestration.exporters.rdbms.enabled }}
+      {{- if eq (include "orchestration.rdbmsEnabled" .) "true" }}
       rdbms:
         {{- with .Values.orchestration.data.secondaryStorage.rdbms }}
         aws-enabled: {{ .aws.enabled }}

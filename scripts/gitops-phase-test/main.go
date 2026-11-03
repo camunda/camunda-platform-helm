@@ -107,6 +107,10 @@ func main() {
 	must(err)
 	mustRun(namespace, "kubectl", "apply", "-f", "-")
 
+	if cfg.controller == "argocd" {
+		must(applyJSON(argoRepository(cfg.repo)))
+	}
+
 	for _, phase := range []string{"normal", "quiesce", "migrate", "normal"} {
 		must(cfg.apply(phase))
 		if err := waitForPhase(cfg, phase); err != nil {
@@ -171,6 +175,17 @@ func (c config) apply(phase string) error {
 		return applyJSON(releaseManifest)
 	default:
 		return fmt.Errorf("unsupported controller %q", c.controller)
+	}
+}
+
+func argoRepository(repo string) map[string]any {
+	return map[string]any{
+		"apiVersion": "v1", "kind": "Secret",
+		"metadata": map[string]any{
+			"name": release + "-repository", "namespace": "argocd",
+			"labels": map[string]string{"argocd.argoproj.io/secret-type": "repository"},
+		},
+		"stringData": map[string]string{"type": "git", "url": repo, "depth": "1"},
 	}
 }
 

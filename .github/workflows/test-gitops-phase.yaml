@@ -1,6 +1,7 @@
 name: Test - Camunda Hub GitOps Phases
 
 "on":
+  workflow_dispatch: {}
   workflow_call:
     inputs:
       camunda-helm-git-ref:
@@ -30,8 +31,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # TODO(#7416): re-add argocd for merge_group once Redis image pull throttling is fixed.
-        controller: ["helm", "flux"]
+        controller: ${{ fromJSON((github.event_name == 'merge_group' || github.event_name == 'workflow_dispatch') && '["helm","argocd","flux"]' || '["helm","flux"]') }}
     permissions:
       contents: read
       id-token: write
@@ -39,7 +39,7 @@ jobs:
       - uses: camunda/infra-global-github-actions/start-build-monitor@ead99f6c9c536f5c47e443929d47e8fcfdb05a81 # start-build-monitor-1.0.1
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          ref: ${{ inputs.camunda-helm-git-ref }}
+          ref: ${{ inputs.camunda-helm-git-ref || github.sha }}
 
       - name: Install tools
         uses: ./.github/actions/install-tool-versions
@@ -53,16 +53,44 @@ jobs:
       - name: Create KIND cluster
         run: kind create cluster --name camunda-hub-gitops-${{ matrix.controller }}
 
+      - name: Import Docker Hub credentials
+        id: secrets
+        if: matrix.controller == 'argocd'
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: jwt
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/distribution/ci DOCKERHUB_USERNAME;
+            secret/data/products/distribution/ci DOCKERHUB_PASSWORD;
+
       - name: Install Argo CD
         if: matrix.controller == 'argocd'
+        env:
+          DOCKERHUB_USERNAME: ${{ steps.secrets.outputs.DOCKERHUB_USERNAME }}
+          DOCKERHUB_PASSWORD: ${{ steps.secrets.outputs.DOCKERHUB_PASSWORD }}
         run: |
           kubectl create namespace argocd
-          kubectl apply --server-side -n argocd -f \
+          kubectl -n argocd create secret docker-registry dockerhub \
+            --docker-username="${DOCKERHUB_USERNAME}" --docker-password="${DOCKERHUB_PASSWORD}"
+          kubectl -n argocd create serviceaccount argocd-redis
+          kubectl -n argocd patch serviceaccount argocd-redis -p '{"imagePullSecrets":[{"name":"dockerhub"}]}'
+          curl --fail --location --output /tmp/argocd-install.yaml \
             https://raw.githubusercontent.com/argoproj/argo-cd/e95e1be88a2da6c06bff5c2fe1791e4d233ed810/manifests/install.yaml
+          sed -i 's#image: public.ecr.aws/docker/library/redis:#image: docker.io/library/redis:#' /tmp/argocd-install.yaml
+          if ! grep -Fq 'image: docker.io/library/redis:' /tmp/argocd-install.yaml; then
+            echo "::error::Argo CD manifest does not contain the Docker Hub Redis image"
+            exit 1
+          fi
+          kubectl apply --server-side -n argocd -f /tmp/argocd-install.yaml
           kubectl wait -n argocd --for=jsonpath='{.status.readyReplicas}'=1 \
             statefulset/argocd-application-controller --timeout=5m
           kubectl wait -n argocd --for=condition=Available \
-            deployment/argocd-repo-server --timeout=5m
+            deployment/argocd-repo-server deployment/argocd-redis --timeout=5m
 
       - name: Install Flux
         if: matrix.controller == 'flux'
@@ -85,8 +113,18 @@ jobs:
             --revision-ref-name "${INPUTS_CAMUNDA_HELM_GIT_REF_NAME}" \
             2>&1 | tee "${RUNNER_TEMP}/gitops-phase-${{ matrix.controller }}.log"
         env:
-          INPUTS_CAMUNDA_HELM_GIT_REF: ${{ inputs.camunda-helm-git-ref }}
+          INPUTS_CAMUNDA_HELM_GIT_REF: ${{ inputs.camunda-helm-git-ref || github.sha }}
           INPUTS_CAMUNDA_HELM_GIT_REF_NAME: ${{ inputs.camunda-helm-git-ref-name }}
+
+      - name: Show Argo CD diagnostics
+        if: (failure() || github.event_name == 'workflow_dispatch') && matrix.controller == 'argocd'
+        run: |
+          kubectl -n argocd get application,appproject -o yaml || true
+          kubectl -n argocd get pods -o wide || true
+          kubectl -n argocd get events --sort-by=.metadata.creationTimestamp || true
+          kubectl -n argocd logs statefulset/argocd-application-controller --all-containers=true || true
+          kubectl -n argocd logs deployment/argocd-repo-server --all-containers=true || true
+          kubectl -n argocd logs deployment/argocd-redis --all-containers=true || true
 
       - name: Upload lifecycle diagnostics
         if: failure()
