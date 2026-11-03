@@ -178,6 +178,7 @@
       "docker.io/camunda/identity:8.10.3",
       "docker.io/camunda/optimize:8.10.8"
     ],
+    "release_date": "2026-11-03",
     "helm_cli": "3.22.1,4.3.1",
     "release_tag": "camunda-platform-8.10-15.4.1"
   }
