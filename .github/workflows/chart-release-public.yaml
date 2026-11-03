@@ -278,6 +278,11 @@ jobs:
         run: |
           # New cosign bundle format uses .verificationMaterial.tlogEntries[0].logIndex
           rekor_log_index=$(jq -r '.verificationMaterial.tlogEntries[0].logIndex // .rekorBundle.Payload.logIndex // "unavailable"' "${{ steps.metadata.outputs.cosign_bundle }}")
+          # The bundle can come from an existing release; later steps interpolate this value.
+          if [[ ! "$rekor_log_index" =~ ^([0-9]+|unavailable)$ ]]; then
+            echo "::error::Invalid Rekor log index in Cosign bundle"
+            exit 1
+          fi
           echo "log_index=${rekor_log_index}" | tee -a "$GITHUB_OUTPUT"
 
       - name: Create Cosign verify script
