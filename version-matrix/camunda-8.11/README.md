@@ -7,7 +7,7 @@ Alpha
 
 | Helm Chart | Camunda | Released | Helm CLI | Helm Values | Release Notes |
 |---|---|---|---|---|---|
-| [16.0.0-alpha1](#helm-chart-1600-alpha1) | 8.11.0-alpha1 | _pending_ | [4.3.1](https://github.com/helm/helm/releases/tag/v4.3.1) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/16.0.0-alpha1?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.11-16.0.0-alpha1) |
+| [16.0.0-alpha1](#helm-chart-1600-alpha1) | 8.11.0-alpha1 | 2026-11-03 | [4.3.1](https://github.com/helm/helm/releases/tag/v4.3.1) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/16.0.0-alpha1?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.11-16.0.0-alpha1) |
 
 _Enterprise images replace the matching Non-Camunda (Bitnami OSS) images when using Camunda Enterprise registry access — mirror the set that matches your configuration._
 
