@@ -51,6 +51,10 @@ func TestPublicReleaseResume(t *testing.T) {
 				t.Fatal(err)
 			}
 			writeResumeFile(t, filepath.Join(dir, ".cr-release-packages", "chart.tgz"), "package", 0o644)
+			// asdf shims (CI) resolve tool versions from the working directory.
+			if versions, err := os.ReadFile("../../.tool-versions"); err == nil {
+				writeResumeFile(t, filepath.Join(dir, ".tool-versions"), string(versions), 0o644)
+			}
 			writeResumeFile(t, filepath.Join(dir, "curl"), "#!/bin/bash\nwhile [[ $# -gt 0 ]]; do if [[ $1 == -o ]]; then printf '%s' \"$MOCK_BODY\" > \"$2\"; shift; fi; shift; done\nprintf '%s' \"$MOCK_STATUS\"\n", 0o755)
 			writeResumeFile(t, filepath.Join(dir, "git"), "#!/bin/bash\nif [[ $1 == rev-parse ]]; then printf '%s\\n' \"$MOCK_TAG_SHA\"; fi\n", 0o755)
 			output := filepath.Join(dir, "output")
