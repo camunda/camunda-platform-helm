@@ -191,7 +191,6 @@ jobs:
           PACKAGE_FILE: ${{ steps.metadata.outputs.package_file }}
           SOURCE_SHA: ${{ steps.parse.outputs.commit_sha }}
           COSIGN_BUNDLE: ${{ steps.metadata.outputs.cosign_bundle }}
-          COSIGN_VERIFY: ${{ steps.metadata.outputs.cosign_verify }}
         run: |
           set -euo pipefail
           status=$(curl -sS -o "$RUNNER_TEMP/release.json" -w '%{http_code}' \
@@ -217,8 +216,8 @@ jobs:
             exit 1
           fi
           echo "exists=true" >> "$GITHUB_OUTPUT"
-          jq -r --arg bundle "$COSIGN_BUNDLE" --arg verify "$COSIGN_VERIFY" \
-            '"bundle=\(any(.assets[]; .name == $bundle and .state == "uploaded"))", "verify=\(any(.assets[]; .name == $verify and .state == "uploaded"))"' \
+          jq -r --arg bundle "$COSIGN_BUNDLE" \
+            '"bundle=\(any(.assets[]; .name == $bundle and .state == "uploaded"))"' \
             "$RUNNER_TEMP/release.json" >> "$GITHUB_OUTPUT"
 
       - name: Run Chart Releaser - Tagging/Uploading
@@ -319,25 +318,14 @@ jobs:
             --repo "${GITHUB_REPOSITORY}"
 
       - name: Upload Cosign verify script to release
-        if: ${{ !inputs.dry-run && steps.existing-release.outputs.verify != 'true' }}
+        if: ${{ !inputs.dry-run }}
         working-directory: .cr-release-packages
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release upload "${{ steps.metadata.outputs.release_tag }}" \
             "${{ steps.metadata.outputs.cosign_verify }}" \
-            --repo "${GITHUB_REPOSITORY}"
-
-      - name: Check existing Cosign verify script
-        if: ${{ !inputs.dry-run && steps.existing-release.outputs.verify == 'true' }}
-        working-directory: .cr-release-packages
-        env:
-          GH_TOKEN: ${{ steps.generate-github-token.outputs.token }}
-          RELEASE_TAG: ${{ steps.metadata.outputs.release_tag }}
-          COSIGN_VERIFY: ${{ steps.metadata.outputs.cosign_verify }}
-        run: |
-          gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --pattern "$COSIGN_VERIFY" --dir "$RUNNER_TEMP"
-          cmp "$COSIGN_VERIFY" "$RUNNER_TEMP/$COSIGN_VERIFY"
+            --repo "${GITHUB_REPOSITORY}" --clobber
 
       - name: Dry run - log skipped public publishes
         if: ${{ inputs.dry-run }}
@@ -502,6 +490,16 @@ jobs:
       - name: Build release-tools
         run: cd scripts/release-tools && go build -o /tmp/release-tools .
 
+      - name: Label PRs with version
+        env:
+          GH_TOKEN: ${{ steps.generate-github-token.outputs.token }}
+        run: |
+          make release.set-prs-version-label \
+            chartPath="charts/camunda-platform-${{ needs.release.outputs.chart-dir-id }}" \
+            chartVersion="${{ needs.release.outputs.version }}" \
+            sourceSHA="${{ needs.release.outputs.source-commit }}" \
+            previousSourceSHA="${{ needs.release.outputs.previous-source-commit }}"
+
       - name: Check release-please PR version
         id: release-pr
         env:
@@ -515,7 +513,7 @@ jobs:
           pr=$(gh pr list --state open --head "$head_ref" --json number,headRefOid --jq '.[0] // empty')
           if [[ -z "$pr" ]]; then
             if [[ "$EXISTING_RELEASE" == true ]]; then
-              echo "::notice::No open release-please PR for ${head_ref}; skipping post-release mutations"
+              echo "::notice::No open release-please PR for ${head_ref}; skipping release-please mutations"
               exit 0
             fi
             echo "::error::No open release-please PR for ${head_ref}"
@@ -530,22 +528,15 @@ jobs:
           fi
           pr_version=$(git show "${pr_sha}:charts/camunda-platform-${CHART_DIR_ID}/Chart.yaml" | yq -r '.version')
           if [[ "$pr_version" != "$CHART_VERSION" ]]; then
-            echo "::notice::Release-please PR #${pr_number} targets ${pr_version}, not ${CHART_VERSION}; skipping post-release mutations"
-            exit 0
+            if [[ "$EXISTING_RELEASE" == true ]]; then
+              echo "::notice::Release-please PR #${pr_number} targets ${pr_version}, not ${CHART_VERSION}; skipping release-please mutations"
+              exit 0
+            fi
+            echo "::error::Release-please PR #${pr_number} targets ${pr_version}, not ${CHART_VERSION}"
+            exit 1
           fi
           echo "pr_number=${pr_number}" >> "$GITHUB_OUTPUT"
           echo "head_sha=${pr_sha}" >> "$GITHUB_OUTPUT"
-
-      - name: Label PRs with version
-        if: ${{ steps.release-pr.outputs.pr_number != '' }}
-        env:
-          GH_TOKEN: ${{ steps.generate-github-token.outputs.token }}
-        run: |
-          make release.set-prs-version-label \
-            chartPath="charts/camunda-platform-${{ needs.release.outputs.chart-dir-id }}" \
-            chartVersion="${{ needs.release.outputs.version }}" \
-            sourceSHA="${{ needs.release.outputs.source-commit }}" \
-            previousSourceSHA="${{ needs.release.outputs.previous-source-commit }}"
 
       - name: Stamp release date on the release-please PR
         id: stamp
