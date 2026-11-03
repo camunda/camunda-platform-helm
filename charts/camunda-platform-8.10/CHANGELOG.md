@@ -1,5 +1,33 @@
 # Changelog
 
+## [15.4.1](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.10-15.4.0...camunda-platform-8.10-15.4.1) (2026-11-03)
+
+
+### Bug Fixes
+
+* **8.9,8.10,8.11:** omit empty elasticsearch username from optimize environment-config [ready] ([#7824](https://github.com/camunda/camunda-platform-helm/issues/7824)) ([75bc0aa](https://github.com/camunda/camunda-platform-helm/commit/75bc0aa0b2fffd597f3594686aec97af1b82de0d))
+* render 8.10 and 8.11 RDBMS connection from storage type and warn without a JDBC URL ([#7524](https://github.com/camunda/camunda-platform-helm/issues/7524)) ([a0558dc](https://github.com/camunda/camunda-platform-helm/commit/a0558dc98e462e68e79ea59f156c4a266cb44bf8))
+
+
+### Documentation
+
+* clarify Camunda Hub auth override descriptions in 8.10 and 8.11 ([#7746](https://github.com/camunda/camunda-platform-helm/issues/7746)) ([dfb2e26](https://github.com/camunda/camunda-platform-helm/commit/dfb2e26de593d4a0aab298e712a4c1d0888ebb2a))
+
+
+### Dependencies
+
+* update camunda-platform-images (patch) ([#7821](https://github.com/camunda/camunda-platform-helm/issues/7821)) ([d97bfda](https://github.com/camunda/camunda-platform-helm/commit/d97bfda0bc5535223b9380c91015aa6ff9bb21fc))
+* update camunda-platform-images (patch) ([#7825](https://github.com/camunda/camunda-platform-helm/issues/7825)) ([9948c84](https://github.com/camunda/camunda-platform-helm/commit/9948c84cfab87e9215abe00e7f1fc8de4d73bde8))
+* update camunda-platform-images (patch) ([#7827](https://github.com/camunda/camunda-platform-helm/issues/7827)) ([ae76d29](https://github.com/camunda/camunda-platform-helm/commit/ae76d29dc339dfc09ca3a0a36b41117fdcf42442))
+* update camunda/identity docker tag to v8.10.3 ([#7818](https://github.com/camunda/camunda-platform-helm/issues/7818)) ([b251461](https://github.com/camunda/camunda-platform-helm/commit/b25146105a77f47003e345b709aed2bac2e5b9a7))
+* update patch-updates (patch) ([#7741](https://github.com/camunda/camunda-platform-helm/issues/7741)) ([88751e0](https://github.com/camunda/camunda-platform-helm/commit/88751e060db7fa33fd818aff602b5d2d8a379a68))
+* upgrade golang version to 1.27.3 ([#7675](https://github.com/camunda/camunda-platform-helm/issues/7675)) ([89ecc30](https://github.com/camunda/camunda-platform-helm/commit/89ecc30da8aed16f5ea7813308dc3f698d6ef35d))
+
+
+### Refactors
+
+* bound 8.10 warning helpers and reuse TLS scanning ([#7757](https://github.com/camunda/camunda-platform-helm/issues/7757)) ([def2139](https://github.com/camunda/camunda-platform-helm/commit/def2139ebb2d1073948d88e4a0bd9db83bb92ad1))
+
 ## [15.4.0](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.10-15.3.0...camunda-platform-8.10-15.4.0) (2026-10-27)
 
 
