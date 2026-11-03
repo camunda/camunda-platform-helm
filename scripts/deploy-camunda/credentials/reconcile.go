@@ -628,7 +628,7 @@ func findContainer(containers []corev1.Container, name string) *corev1.Container
 func bootstrapEnv(src []corev1.EnvVar, name, dbPw string) []corev1.EnvVar {
 	fromSecret := func(envName, key string) corev1.EnvVar {
 		return corev1.EnvVar{Name: envName, ValueFrom: &corev1.EnvVarSource{SecretKeyRef: &corev1.SecretKeySelector{
-			LocalObjectReference: corev1.LocalObjectReference{Name: name}, Key: key,
+			Name: name, Key: key,
 		}}}
 	}
 	env := []corev1.EnvVar{{Name: "KC_CACHE", Value: "local"}}
