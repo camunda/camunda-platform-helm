@@ -3,6 +3,80 @@ entries:
   camunda-platform:
   - annotations:
       artifacthub.io/changes: |
+        - kind: changed
+          description: "Bound 8.10 warning helpers and reuse TLS scanning"
+        - kind: fixed
+          description: "Render 8.10 and 8.11 RDBMS connection from storage type and warn without a JDBC URL"
+        - kind: fixed
+          description: "Omit empty elasticsearch username from optimize environment-config"
+      artifacthub.io/containsSecurityUpdates: "false"
+      artifacthub.io/images: |
+        - image: docker.io/camunda/camunda:8.10.8
+        - image: docker.io/camunda/connectors-bundle:8.10.3
+        - image: docker.io/camunda/hub-websockets:8.10.5
+        - image: docker.io/camunda/hub:8.10.5
+        - image: docker.io/camunda/identity:8.10.3
+        - image: docker.io/camunda/optimize:8.10.8
+      artifacthub.io/links: |
+        - name: Camunda 8 docs
+          url: https://docs.camunda.io/
+        - name: Camunda 8 Self-Managed docs
+          url: https://docs.camunda.io/docs/self-managed/about-self-managed/
+        - name: Camunda 8 Self-Managed Helm charts
+          url: https://github.com/camunda/camunda-platform-helm
+      camunda.io/chart-images: |
+        docker.io/camunda/camunda:8.10.8
+        docker.io/camunda/connectors-bundle:8.10.3
+        docker.io/camunda/hub-websockets:8.10.5
+        docker.io/camunda/hub:8.10.5
+        docker.io/camunda/identity:8.10.3
+        docker.io/camunda/optimize:8.10.8
+      camunda.io/component-image-versions: |
+        camunda: 8.10.8
+        managementIdentity: 8.10.3
+        optimize: 8.10.8
+        hub: 8.10.5
+        connectors: 8.10.3
+      camunda.io/helmCLIVersion: 3.22.1,4.3.1
+    apiVersion: v2
+    appVersion: 8.10.x
+    created: "2026-11-03T15:26:11.846310471Z"
+    dependencies:
+    - name: common
+      repository: file://../common-2
+      version: 2.x.x
+    description: 'Camunda 8 Self-Managed Helm charts. Camunda''s process automation
+      platform allows developers to design, automate and improve processes. '
+    digest: f699caa1fd914457327e98988b1a9a95dba2887be96b21c69d38d1b47fff6223
+    home: https://docs.camunda.io/docs/self-managed/about-self-managed/
+    icon: https://helm.camunda.io/imgs/camunda.svg
+    keywords:
+    - automation
+    - business-rules
+    - bpm
+    - bpmn
+    - camunda-platform
+    - decision-engine
+    - dmn
+    - modeling
+    - orchestration
+    - process-automation
+    - process-engine
+    - process-orchestration
+    - workflow
+    - workflow-engine
+    maintainers:
+    - name: camunda
+      url: https://camunda.com
+    name: camunda-platform
+    sources:
+    - https://github.com/camunda/camunda-platform-helm
+    type: application
+    urls:
+    - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-8.10-15.4.1/camunda-platform-15.4.1.tgz
+    version: 15.4.1
+  - annotations:
+      artifacthub.io/changes: |
         - kind: fixed
           description: "Reject empty Camunda Hub image tags in the 8.10 and 8.11 schemas"
         - kind: fixed
@@ -35324,4 +35398,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2026-11-03T14:54:50.403472228Z"
+generated: "2026-11-03T15:26:11.848077907Z"
