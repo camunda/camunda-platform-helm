@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 16.0.0-alpha0
+version: 16.0.0-alpha1
 appVersion: 8.11.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -35,7 +35,7 @@ maintainers:
     url: https://camunda.com
 annotations:
   artifacthub.io/prerelease: "true"
-  camunda.io/helmCLIVersion: "3.22.0,4.3.0"
+  camunda.io/helmCLIVersion: "4.3.1"
   artifacthub.io/links: |
     - name: Camunda 8 docs
       url: https://docs.camunda.io/
@@ -46,4 +46,32 @@ annotations:
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
     - kind: added
-      description: "Initial 8.11 alpha chart"
+      description: "Add quick install values with embedded H2"
+    - kind: added
+      description: "Require Helm CLI v4 for the 8.11 chart and fail early on Helm v3"
+    - kind: changed
+      description: "Bound 8.11 warning helpers and reuse TLS scanning"
+    - kind: fixed
+      description: "Keep Gateway API redirects on HTTPS for bare Web Modeler, Orchestration and Optimize paths"
+    - kind: fixed
+      description: "Warn when 8.10 and 8.11 Management Identity uses Keycloak without a Keycloak URL"
+    - kind: fixed
+      description: "Warn when global.noSecondaryStorage conflicts with orchestration secondary storage type"
+    - kind: fixed
+      description: "Honor the env replication factor override in the 8.11 dual-region warning"
+    - kind: fixed
+      description: "Align 8.10 and 8.11 deprecation removal targets and policy docs with the Camunda 8 non-public API policy"
+    - kind: fixed
+      description: "Deprecate global.image tag and repository in the 8.11 chart"
+    - kind: fixed
+      description: "Name chart v17 for Camunda 8.12 as the strict-values default in the unknown-key warnings"
+    - kind: fixed
+      description: "Reject empty Camunda Hub image tags in the 8.10 and 8.11 schemas"
+    - kind: fixed
+      description: "Render no 8.10 or 8.11 Elasticsearch or OpenSearch URL when none is configured"
+    - kind: fixed
+      description: "Align nginx compatibility shim removal target with the deprecation policy"
+    - kind: fixed
+      description: "Render 8.10 and 8.11 RDBMS connection from storage type and warn without a JDBC URL"
+    - kind: fixed
+      description: "Omit empty elasticsearch username from optimize environment-config"
