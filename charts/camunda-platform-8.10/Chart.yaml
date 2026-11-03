@@ -44,9 +44,9 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
+    - kind: changed
+      description: "Bound 8.10 warning helpers and reuse TLS scanning"
     - kind: fixed
-      description: "Reject empty Camunda Hub image tags in the 8.10 and 8.11 schemas"
+      description: "Render 8.10 and 8.11 RDBMS connection from storage type and warn without a JDBC URL"
     - kind: fixed
-      description: "Render no 8.10 or 8.11 Elasticsearch or OpenSearch URL when none is configured"
-    - kind: fixed
-      description: "Align nginx compatibility shim removal target with the deprecation policy"
+      description: "Omit empty elasticsearch username from optimize environment-config"
