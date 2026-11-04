@@ -1332,6 +1332,29 @@ func TestBuildEntryFlagsPrefersExplicitGlobalHost(t *testing.T) {
 	}
 }
 
+func TestBuildEntryFlagsExternalSecrets(t *testing.T) {
+	entry := Entry{Version: "8.10", ChartPath: "charts/camunda-platform-8.10", Scenario: "eske", Shortname: "eske", Flow: "install", Platform: "gke"}
+	for _, tc := range []struct {
+		name string
+		opts RunOptions
+		want bool
+	}{
+		{name: "computed namespace", opts: RunOptions{}, want: true},
+		{name: "namespace override", opts: RunOptions{NamespaceOverride: "ci-ns"}, want: false},
+		{name: "namespace override with external secrets", opts: RunOptions{NamespaceOverride: "ci-ns", ExternalSecrets: true}, want: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			flags, _, _, _, err := BuildEntryFlags(entry, tc.opts)
+			if err != nil {
+				t.Fatalf("BuildEntryFlags returned error: %v", err)
+			}
+			if flags.Secrets.ExternalSecrets != tc.want {
+				t.Fatalf("Secrets.ExternalSecrets = %v, want %v", flags.Secrets.ExternalSecrets, tc.want)
+			}
+		})
+	}
+}
+
 func TestDryRunPrefersExplicitGlobalHost(t *testing.T) {
 	opts := RunOptions{
 		Infra:         config.InfraOverride{InfraConfig: config.InfraConfig{IngressBaseDomain: "ci.distro.ultrawombat.com"}},

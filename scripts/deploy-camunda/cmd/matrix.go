@@ -398,7 +398,8 @@ Under the hood this invokes deploy.Execute() for each matrix entry.`,
 	f.StringArrayVar(&r.ExtraValues, "extra-values", nil, "Additional Helm values files appended last for every entry (repeatable; not comma-split — use the flag multiple times for multiple files). Ranked by the image resolver; prefer over --extra-helm-arg=--values=. In two-step upgrade flows, applied to Step 2 only.")
 	f.StringArrayVar(&r.ImageOverrides, "image-override", nil, "Pin one component's image above every values file for every entry (repeatable), e.g. orchestration=registry.camunda.cloud/team-camunda/camunda:8.10.0-SNAPSHOT. In two-step upgrade flows, applied to Step 2 only.")
 	f.BoolVar(&r.AllowDigestShadow, "allow-digest-shadow", false, "Keep a pinned digest when a later values file changes only the image registry/repository (e.g. a pull-through mirror)")
-	f.StringVar(&r.NamespaceOverride, "namespace-override", "", "Deploy into one exact namespace that CI or another external process already provisioned. Disables automatic ExternalSecrets; local runs should use --namespace-prefix.")
+	f.StringVar(&r.NamespaceOverride, "namespace-override", "", "Deploy into one exact namespace that CI or another external process already provisioned. Disables automatic ExternalSecrets unless --external-secrets is set; local runs should use --namespace-prefix.")
+	f.BoolVar(&r.ExternalSecrets, "external-secrets", false, "Apply the platform TLS and integration-test ExternalSecrets also with --namespace-override")
 	f.BoolVar(&r.namespacePrepared, "namespace-prepared", false, "Confirm the exact namespace selected by --namespace-override already has required secrets, TLS, and pull secrets.")
 	f.StringVar(&r.ChartRef, "chart-ref", "", "Override chart source with an OCI reference or .tgz path (e.g., oci://registry.camunda.cloud/team-distribution/camunda-platform). Values are still resolved from the local repo via --repo-root.")
 	f.StringVar(&r.ChartRefVersion, "chart-version", "", "Chart version to install from --chart-ref (e.g., 13-rc-latest). Only meaningful when --chart-ref is set.")
@@ -1794,23 +1795,13 @@ func synthesizeReleaseOpts(base matrix.RunOptions, platform string, namespaceOve
 //     future-proof and functionally identical today.
 //
 //   - Secrets.ExternalSecrets: forced to true for every release.
-//     BuildEntryFlags sets ExternalSecrets = (NamespaceOverride == ""),
-//     which is a normal-path optimization: per-scenario CI workflows that
-//     pre-create the namespace via --namespace-override already ran
-//     .github/actions/cluster-setup-secrets, so re-applying external
-//     secrets would be redundant (and can fail on EKS RBAC, see
-//     BuildEntryFlags' comment). The topology path ALWAYS sets
-//     NamespaceOverride (one per release namespace) but has NO equivalent
-//     cluster-setup-secrets action run for it — so the topology driver
+//     BuildEntryFlags sets ExternalSecrets only without NamespaceOverride or
+//     with --external-secrets. The topology path ALWAYS sets
+//     NamespaceOverride (one per release namespace), so the topology driver
 //     itself must own provisioning integration-test-credentials (and other
 //     external secrets) into every release namespace from the same Vault
 //     path, or dependent companions like the Hub release's bundled
 //     Keycloak CreateContainerConfigError on the missing secret.
-//     NOTE for Stage 3 (CI wiring): when a topology scenario is wired into
-//     CI, the workflow must NOT also invoke cluster-setup-secrets for these
-//     namespaces — this driver already provisions them, and doing both
-//     would double-provision (and reintroduces the EKS RBAC risk
-//     BuildEntryFlags' comment warns about).
 func applyTopologyReleaseOverrides(flags *config.RuntimeFlags, crossRefEnv map[string]string) {
 	if flags.ExtraEnv == nil {
 		flags.ExtraEnv = make(map[string]string, len(crossRefEnv))

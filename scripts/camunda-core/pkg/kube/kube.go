@@ -816,7 +816,8 @@ const (
 	platformROSA = "rosa"
 	platformEKS  = "eks"
 
-	secretNameTLS = "aws-camunda-cloud-tls"
+	secretNameTLS                    = "aws-camunda-cloud-tls"
+	secretNameIntegrationCredentials = "integration-test-credentials"
 )
 
 func ApplyExternalSecretsAndCerts(ctx context.Context, kubeconfig, kubeContext, platform, repoRoot, chartPath, namespace, externalSecretsStore, credentialsManifest string) error {

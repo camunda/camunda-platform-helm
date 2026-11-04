@@ -216,12 +216,7 @@ func BuildEntryFlags(entry Entry, opts RunOptions) (flags *config.RuntimeFlags, 
 		},
 		Docker: docker,
 		Secrets: config.SecretsFlags{
-			// When the caller pre-creates the namespace (--namespace-override) it
-			// also pre-applies platform secrets/TLS via cluster-setup-secrets. Skip
-			// the runner's ExternalSecrets path in that case — on EKS the runner
-			// would otherwise wait a second time for aws-camunda-cloud-tls, which
-			// the replicator has already written into the test namespace.
-			ExternalSecrets:       opts.NamespaceOverride == "",
+			ExternalSecrets:       opts.NamespaceOverride == "" || opts.ExternalSecrets,
 			AutoGenerateSecrets:   true,
 			UseVaultBackedSecrets: useVault,
 		},

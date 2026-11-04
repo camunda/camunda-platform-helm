@@ -154,7 +154,7 @@ jobs:
       # `matrix run` deploys through `helm upgrade --install`, so deploy and
       # upgrade are the same idempotent call against the same stable namespaces.
       # The topology driver provisions ExternalSecrets and pull secrets into
-      # every release namespace itself, so cluster-setup-secrets must NOT run.
+      # every release namespace itself.
       - name: Deploy the topology
         if: env.DOGFOOD_ACTION == 'deploy' || env.DOGFOOD_ACTION == 'upgrade'
         env:

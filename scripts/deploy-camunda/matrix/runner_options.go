@@ -115,6 +115,7 @@ type RunOptions struct {
 	// invoking matrix run, so the install lands in the same namespace.
 	// Only meaningful when filters narrow the run to a single entry.
 	NamespaceOverride string
+	ExternalSecrets   bool
 	// ChartRef, when non-empty, overrides the chart source for helm install/upgrade.
 	// This can be an OCI reference (e.g., "oci://registry.camunda.cloud/team-distribution/camunda-platform")
 	// or a path to a local .tgz file. When set, the matrix runner uses this as the

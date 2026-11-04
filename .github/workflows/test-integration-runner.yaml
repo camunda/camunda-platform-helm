@@ -568,13 +568,6 @@ jobs:
       # Install
       ##########################################################################################################
 
-      - name: Cluster Setup - Configure TLS Certificates/Secrets
-        uses: ./.github/actions/cluster-setup-secrets
-        with:
-          distro-platform: ${{ inputs.distro-platform }}
-          chart-path: ${{ env.CHART_PATH }}
-          namespace: ${{ env.TEST_NAMESPACE }}
-
       - name: Helm - Install - Configure Helm with Entra Values
         if: (inputs.auth == 'oidc' || inputs.scenario == 'oidc' || inputs.test-identity == 'oidc') && inputs.values-config == '{}'
         timeout-minutes: 5
@@ -785,6 +778,8 @@ jobs:
             --versions "${CHART_VERSION}" \
             --platform "${INPUTS_DISTRO_PLATFORM}" \
             --namespace-override "${TEST_NAMESPACE}" \
+            --external-secrets \
+            --use-vault-backed-secrets-eks \
             --skip-dependency-update=false \
             --timeout 20 \
             --extra-helm-set "global.host=${{ steps.setup.outputs.ingress-host }}" \
@@ -1051,13 +1046,6 @@ jobs:
       # The runner deploys directly from the chart directory (no `helm package` needed) and
       # auto-discovers per-version pre-upgrade scripts via versionmatrix.HasPreUpgradeScript.
 
-      - name: Cluster Setup - Upgrade - Configure TLS Certificates/Secrets
-        uses: ./.github/actions/cluster-setup-secrets
-        with:
-          distro-platform: ${{ inputs.distro-platform }}
-          chart-path: ${{ env.CHART_PATH }}
-          namespace: ${{ env.TEST_NAMESPACE }}
-
       - name: Apply Vault mapped Secret
         if: inputs.vault-secret-mapping != ''
         run: |
@@ -1222,6 +1210,8 @@ jobs:
             --versions "${CHART_VERSION}" \
             --platform "${INPUTS_DISTRO_PLATFORM}" \
             --namespace-override "${TEST_NAMESPACE}" \
+            --external-secrets \
+            --use-vault-backed-secrets-eks \
             --skip-dependency-update=false \
             --timeout 20 \
             --extra-helm-set "global.host=${{ steps.setup.outputs.ingress-host }}" \
