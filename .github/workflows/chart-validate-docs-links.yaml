@@ -35,9 +35,7 @@ jobs:
         uses: ./.github/actions/setup-curl
 
       - name: Install tools
-        uses: ./.github/actions/install-tool-versions
-        with:
-          tools: yq
+        uses: camunda/infraex-common-config/.github/actions/asdf-install-tooling@e2923304b40dfc031b3f595bcc1445e90c981adb # 3.0.0
 
       - name: Get chart versions to validate
         id: get-versions

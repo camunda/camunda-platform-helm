@@ -64,8 +64,9 @@ automated workflow steps follow Conventional Commits with the `chore(ci):` type.
 - **ALWAYS** start a multi-line `run:` block that you add or change with `set -euo pipefail`. When
   you add it to an existing block, check that the block reads no unset variable and has no pipeline
   whose first command may fail on purpose (`grep` with no match, `… | head`).
-- **ALWAYS** install tools via `.github/actions/install-tool-versions` before using `go`, `helm`,
-  `kubectl`, etc. — this respects the pinned versions in `.tool-versions`.
+- **ALWAYS** install tools with the shared `camunda/infraex-common-config` action
+  `asdf-install-tooling` before using `go`, `helm`, `kubectl`, etc. It installs every version
+  pinned in `.tool-versions` and caches the whole toolchain; do not install a subset.
 
 ---
 
@@ -257,11 +258,7 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - name: Install tools
-        uses: ./.github/actions/install-tool-versions
-        with:
-          tools: |
-            golang
-            helm
+        uses: camunda/infraex-common-config/.github/actions/asdf-install-tooling@e2923304b40dfc031b3f595bcc1445e90c981adb # 3.0.0
       - name: Add helm repos
         run: make helm.repos-add
       - name: Get Helm dependency
@@ -322,12 +319,7 @@ Other valid CI commit types: `chore(release):`, `chore(deps):`, `docs:`.
 
 ```yaml
 - name: Install tools
-  uses: ./.github/actions/install-tool-versions
-  with:
-    tools: |
-      golang
-      helm
-      kubectl
+  uses: camunda/infraex-common-config/.github/actions/asdf-install-tooling@e2923304b40dfc031b3f595bcc1445e90c981adb # 3.0.0
 ```
 
 After installing Go tools, reshim asdf if using custom Go binaries:

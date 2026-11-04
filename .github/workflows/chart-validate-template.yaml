@@ -73,12 +73,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-helm-${{ inputs.camunda-helm-dir }}-
       - name: Install tools
-        uses: ./.github/actions/install-tool-versions
-        with:
-          tools: |
-            helm
-            yamllint
-            golang
+        uses: camunda/infraex-common-config/.github/actions/asdf-install-tooling@e2923304b40dfc031b3f595bcc1445e90c981adb # 3.0.0
       - name: Cache Helm client cache
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:

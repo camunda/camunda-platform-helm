@@ -43,13 +43,7 @@ jobs:
       # Dependencies.
       #
       - name: Install tools
-        uses: ./.github/actions/install-tool-versions
-        with:
-          tools: |
-            golang
-            helm
-            helm-ct
-            yq
+        uses: camunda/infraex-common-config/.github/actions/asdf-install-tooling@e2923304b40dfc031b3f595bcc1445e90c981adb # 3.0.0
       - name: Install readme-generator-for-helm
         run: |
           make install.readme-generator

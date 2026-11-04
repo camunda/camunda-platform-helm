@@ -31,9 +31,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Install Go
-        uses: ./.github/actions/install-tool-versions
-        with:
-          tools: golang
+        uses: camunda/infraex-common-config/.github/actions/asdf-install-tooling@e2923304b40dfc031b3f595bcc1445e90c981adb # 3.0.0
       - name: Check template complexity
         env:
           HELM_TEMPLATE_BASE_REF: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before || inputs.base-ref || 'origin/main' }}

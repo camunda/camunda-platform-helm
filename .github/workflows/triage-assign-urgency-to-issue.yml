@@ -114,9 +114,7 @@ jobs:
           repository: camunda/camunda-platform-helm
           ref: ${{ github.repository == 'camunda/camunda-platform-helm' && github.sha || 'main' }}
           persist-credentials: false
-      - uses: ./.github/actions/install-tool-versions
-        with:
-          tools: golang
+      - uses: camunda/infraex-common-config/.github/actions/asdf-install-tooling@e2923304b40dfc031b3f595bcc1445e90c981adb # 3.0.0
       - name: Import Vault secrets
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         id: vault-secrets
@@ -698,9 +696,7 @@ jobs:
           repository: camunda/camunda-platform-helm
           ref: ${{ github.repository == 'camunda/camunda-platform-helm' && github.sha || 'main' }}
           persist-credentials: false
-      - uses: ./.github/actions/install-tool-versions
-        with:
-          tools: golang
+      - uses: camunda/infraex-common-config/.github/actions/asdf-install-tooling@e2923304b40dfc031b3f595bcc1445e90c981adb # 3.0.0
       - name: Import Vault secrets
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         id: vault-secrets
