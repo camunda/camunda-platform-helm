@@ -344,6 +344,9 @@ Under the hood this invokes deploy.Execute() for each matrix entry.`,
   deploy-camunda config init --from-example getting-started
   deploy-camunda matrix run --versions 8.10 --shortname-filter keyco`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
+			if err := validateIngressReadyFlags(r.WaitIngressReady, r.IngressReadyTimeoutMinutes); err != nil {
+				return err
+			}
 			return validateChartRefFlags(r.ChartRef, r.ChartRefVersion)
 		},
 		RunE: r.run,
@@ -865,6 +868,13 @@ func validateChartRefFlags(chartRef, chartRefVersion string) error {
 		return fmt.Errorf("--chart-version is required when --chart-ref is an OCI reference")
 	}
 
+	return nil
+}
+
+func validateIngressReadyFlags(waitIngressReady bool, timeoutMinutes int) error {
+	if waitIngressReady && timeoutMinutes < 1 {
+		return fmt.Errorf("--ingress-ready-timeout must be at least 1 minute with --wait-ingress-ready, got %d", timeoutMinutes)
+	}
 	return nil
 }
 

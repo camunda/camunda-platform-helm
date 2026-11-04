@@ -292,6 +292,30 @@ func TestValidateChartRefFlags(t *testing.T) {
 	}
 }
 
+func TestValidateIngressReadyFlags(t *testing.T) {
+	tests := []struct {
+		name    string
+		wait    bool
+		timeout int
+		wantErr bool
+	}{
+		{name: "wait with a positive timeout is allowed", wait: true, timeout: 12},
+		{name: "wait with one minute is allowed", wait: true, timeout: 1},
+		{name: "wait with zero is rejected", wait: true, timeout: 0, wantErr: true},
+		{name: "wait with a negative timeout is rejected", wait: true, timeout: -1, wantErr: true},
+		{name: "no wait ignores the timeout", wait: false, timeout: 0},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateIngressReadyFlags(tt.wait, tt.timeout)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("validateIngressReadyFlags(%v, %d) error = %v, want error %v", tt.wait, tt.timeout, err, tt.wantErr)
+			}
+		})
+	}
+}
+
 func TestValidateChartRefVersionSpan(t *testing.T) {
 	entriesFor := func(versions ...string) []matrix.Entry {
 		out := make([]matrix.Entry, 0, len(versions))
