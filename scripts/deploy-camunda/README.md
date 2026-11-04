@@ -125,8 +125,24 @@ deploy-camunda --chart-path charts/camunda-platform-8.10 \
 ```
 
 Supply credentials and ingress settings through your config/environment.
-`--render-templates` resolves the same values but does not run hooks or install
-companion charts. Registry resolution applies to single-scenario deployments;
+`--render-templates` renders the resolved values with `helm template` and
+writes the manifests to `--render-output-dir` (default `./rendered/<release>`);
+it returns before any cluster access. It is not a faithful dry run of a
+deployment. It:
+
+- drops `--version` for a remote chart (`--chart`), so the latest chart
+  version is rendered rather than the one a real install would pin;
+- ignores Helm `--set` pairs and extra Helm arguments (`matrix run
+  --extra-helm-set` / `--extra-helm-arg`, and the
+  `orchestration.upgrade.allowPreReleaseImages=true` default `matrix run`
+  adds);
+- does not render or install companion charts;
+- does not run pre-install, post-infra or post-deploy hooks;
+- does not create the namespace, pull secrets, ExternalSecrets or the
+  generated `vault-mapped-secrets` Secret, so secret-backed references
+  render but nothing backs them.
+
+Registry resolution applies to single-scenario deployments;
 comma-separated scenarios retain their existing name-based behavior. Use
 `matrix run` for topologies and scenarios requiring additional lifecycle stages.
 
@@ -237,8 +253,9 @@ Three layers of override, in increasing scope:
 ### 1. Override values for the Camunda platform chart
 
 Use `--extra-values` (`extraValues:` in the config file) to append your
-own values file to the merge. It's applied **last**, so it wins over
-scenario defaults:
+own values file to the merge. It wins over the common, chart-root overlay
+and scenario layers, but it is not the last layer; see
+[Values precedence](#values-precedence):
 
 ```bash
 deploy-camunda \
@@ -263,9 +280,36 @@ or repeatable), e.g. `--values-preset enterprise,digest`.
 
 To swap one component's image, pass `--image-override component=registry/repository:tag`
 (or `@sha256:…`), e.g. `--image-override orchestration=registry.camunda.cloud/team-camunda/camunda:8.10.0-SNAPSHOT`.
-It ranks above every values file, and any pinned digest for that component is dropped. A values
+It is written to a values file that is appended after your `--extra-values`, so it wins over
+them and over the scenario layers (the debug and resolved-image files still come later; see
+[Values precedence](#values-precedence)). Any pinned digest for that component is dropped. A values
 file that changes only an image's registry or repository must also set a tag or digest;
 `--allow-digest-shadow` keeps the pinned digest instead (e.g. for a pull-through mirror).
+
+#### Values precedence
+
+Helm applies `-f` files in order and the last one wins. The chain
+`deploy-camunda` passes (`BuildValuesChain` in
+[`deploy/chain.go`](deploy/chain.go), then `prepareScenarioValues`), lowest
+to highest:
+
+1. common values (platform-specific, env-processed)
+2. chart-root overlays (`--values-preset`: `values-latest.yaml`,
+   `values-enterprise.yaml`, `values-digest.yaml`)
+3. scenario layers (identity, persistence, platform, features)
+4. `--extra-values`, in the order given
+5. for a single-scenario registry deployment, the scenario's registry
+   `extra-values`, appended after yours; `matrix run` does the same, with the
+   global `--extra-values` first (`matrix/registry.go`,
+   `matrix/runner_execute.go`)
+6. the `--image-override` file
+7. the debug values file (`--debug` flags)
+8. the resolved-image file, which only binds each image's digest to the
+   registry, repository and tag it was pinned with
+
+So `--extra-values` cannot override an `--image-override`, a debug setting
+or the resolved image identity. In `matrix run`, `--extra-helm-set` pairs are
+passed as `--set`, which Helm applies above every file.
 
 ### 2. Override values for a companion chart (Elasticsearch, Keycloak, …)
 
@@ -679,6 +723,11 @@ read without mutating your shell, and `config init` /
 `--interactive` / `--auto-generate-secrets` write back to it
 format-preservingly (comments and ordering are kept).
 
+Placeholders are replaced with plaintext: the processed values files are
+written to a temporary directory with the secret values inlined, and
+Helm receives them as ordinary `-f` files. Nothing at this layer keeps
+a value out of the values files, the Helm release or the temporary directory.
+
 > Never commit `.env`. Generate it on demand (`config init`,
 > `--auto-generate-secrets`, or `scripts/render-e2e-env.sh`).
 
@@ -702,6 +751,31 @@ The mapping used by `--auto-generate-secrets` / `config init` is data,
 not code — edit
 [`deploy/data/test-secret-mapping.yaml`](deploy/data/test-secret-mapping.yaml)
 to change which variables are scaffolded, no Go changes required.
+
+### How secrets are provided today
+
+Three mechanisms exist, and they create different Secrets:
+
+- **Placeholder substitution** (above): values are inlined into the values
+  files in plaintext.
+- **`integration-test-credentials` through ExternalSecrets.** With
+  `--external-secrets` (default on; `matrix run` turns it off when
+  `--namespace-override` is set), the deployer applies the chart's
+  `test/integration/external-secrets/external-secret-integration-test-credentials.yaml`
+  (`-vault.yaml` with `--use-vault-backed-secrets`) and waits for it to be
+  Ready. That manifest reads from the `distribution-team` `ClusterSecretStore`
+  (the `vault-backend` store for the vault variant), so it only works on
+  Camunda CI clusters where the distribution team has provisioned that store
+  and its source secret. On any other cluster the ExternalSecret never becomes
+  Ready and the deploy blocks; pass `--external-secrets=false` and create the
+  Secret yourself. (The `INTEGRATION_TEST_CREDENTIALS` env path in the deployer
+  is currently never enabled: `ApplyIntegrationCreds` is hard-coded to `false`
+  in `deploy/deploy.go`.)
+- **`--auto-generate-secrets`** generates random test passwords, persists them to
+  `.env`, and renders the `--vault-secret-mapping` into a **different**
+  Secret named `vault-mapped-secrets`, applied from plaintext `stringData`.
+  It does not create or replace `integration-test-credentials`; the two can
+  coexist, and a chart value that references one does not see the other.
 
 ### Companion-chart env vars
 
@@ -791,9 +865,15 @@ depends on which subcommand you're using:
   [`config/merge.go`'s `ResolveIngressHostname`](config/merge.go). Set
   either both fields, or `ingressHostname` as a full FQDN override.
 
-Set the base domain to the DNS zone your cluster's ingress controller
-serves — for example `ci.distro.ultrawombat.com` in Camunda CI or
-`apps.mycompany.example` in your own cluster.
+`--ingress-base-domain` accepts only an allow-listed value
+(`ValidIngressBaseDomains` in [`config/config.go`](config/config.go)):
+`ci.distro.ultrawombat.com` or `distribution.aws.camunda.cloud`. Any other
+value is rejected, both by the root command (`config/merge.go`) and by
+`matrix run` (`--ingress-base-domain`, `-gke` and `-eks`), so a placeholder
+such as `<your-zone>` in the examples above must be replaced by one of these.
+The allow-list is not checked for `--ingress-hostname`; to deploy against
+another zone, pass the full host there (and not together with
+`--ingress-subdomain` or `--ingress-base-domain`).
 
 ### Operator CRDs missing
 
