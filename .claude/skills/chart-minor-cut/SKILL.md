@@ -15,6 +15,8 @@ Use these names in every step:
 | `NEW` | `charts/camunda-platform-N` | `charts/camunda-platform-8.12` |
 | `OLD` | `charts/camunda-platform-P` | `charts/camunda-platform-8.11` |
 
+Replace each name with its real value before you run a command. In a regular expression, escape the dots (for example `8\.12`).
+
 Do the steps in sequence. Each step has a check. Do not go to the next step when a check fails.
 
 The human checklist for the same steps is in `docs/reference/release-process.md`, section "New alpha chart". Copy it into the tracking issue of the cut.
@@ -161,11 +163,13 @@ Make these changes outside the chart directory:
 | `scripts/render-e2e-env.sh` | Make a bare `SNAPSHOT` version resolve to `SM-N`. |
 | `docs/reference/release-process.md` | Add `M.x` = Camunda `N` to the version map. |
 
-Create the label:
+Create the labels:
 
 ```bash
 gh label create "version/N" --repo camunda/camunda-platform-helm \
   --color fc5d0d --description "Camunda applications/cycle version"
+gh label create "forward-port-to-N" --repo camunda/camunda-platform-helm \
+  --color b262fe --description "Changes charts/camunda-platform-P: apply the same change to charts/camunda-platform-N"
 ```
 
 Check: these commands exit with code 0, and the `git grep` shows `N` in each file of the table.
