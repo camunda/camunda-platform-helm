@@ -49,86 +49,119 @@ func ChartRootOverlayFiles(chartPath string, names []string) []string {
 // a tag it is rejected unless allowDigestShadow keeps the digest. Layers from firstScenarioLayer on
 // may not set an empty tag without a digest.
 func resolveImages(chain []string, firstScenarioLayer int, allowDigestShadow bool, tempDir string) (string, error) {
-	images := map[string]map[string]any{}
-	sources := map[string]string{}
-	pins := map[string]string{}
-	hubPaths := map[string]string{}
-	var problems []string
+	r := &imageResolver{
+		firstScenarioLayer: firstScenarioLayer,
+		allowDigestShadow:  allowDigestShadow,
+		images:             map[string]map[string]any{},
+		sources:            map[string]string{},
+		pins:               map[string]string{},
+		hubPaths:           map[string]string{},
+	}
 	for i, file := range chain {
 		doc, err := loadValuesDoc(file)
 		if err != nil {
 			return "", fmt.Errorf("reading values %q: %w", file, err)
 		}
-		pinned := map[string][3]string{}
-		for path := range pins {
-			pinned[path] = effectiveCoordinates(images, path)
-		}
-		tagged := map[string]bool{}
-		unpinned := map[string]bool{}
-		for _, hubPass := range []bool{false, true} {
-			walkImageBlocks(doc, func(path string, img map[string]any) {
-				canonical, isHub := canonicalImagePath(path)
-				if isHub != hubPass {
-					return
-				}
-				digest, hasDigestKey := img["digest"]
-				hasDigest := hasDigestKey && !isBlankScalar(digest)
-				if tag, hasTag := img["tag"]; hasTag && isBlankScalar(tag) && !hasDigest && i >= firstScenarioLayer {
-					problems = append(problems, fmt.Sprintf("%s: %s sets an empty tag and no digest; set image.tag or image.digest", path, file))
-					return
-				}
-				if isHub {
-					hubPaths[canonical] = path
-				}
-				resolved := images[canonical]
-				if resolved == nil {
-					resolved = map[string]any{}
-					images[canonical] = resolved
-				}
-				moved := false
-				for _, key := range []string{"registry", "repository", "tag"} {
-					if v, ok := img[key]; ok {
-						moved = moved || scalar(v) != scalar(resolved[key])
-						resolved[key] = v
-					}
-				}
-				if moved || hasDigest {
-					sources[canonical] = file
-				}
-				tagged[canonical] = tagged[canonical] || !isBlankScalar(img["tag"])
-				unpinned[canonical] = unpinned[canonical] || hasDigestKey && !hasDigest
-				if hasDigest {
-					resolved["digest"] = digest
-					pins[canonical] = file
-				}
-			})
-		}
-		for path, was := range pinned {
-			switch now := effectiveCoordinates(images, path); {
-			case pins[path] == file, now == was && !unpinned[path]:
-			case now == was || tagged[path] || now[2] != was[2]:
-				images[path]["digest"] = nil
-				delete(pins, path)
-				sources[path] = file
-			case !allowDigestShadow:
-				problems = append(problems, fmt.Sprintf("%s: %s changes registry/repository without a tag, so the digest from %s would follow it; set image.tag or image.digest, or pass --allow-digest-shadow", path, file, pins[path]))
-			}
-		}
+		r.applyLayer(i, file, doc)
 	}
-	if len(problems) > 0 {
-		sort.Strings(problems)
-		return "", fmt.Errorf("conflicting image overrides:\n  %s", strings.Join(problems, "\n  "))
+	if len(r.problems) > 0 {
+		sort.Strings(r.problems)
+		return "", fmt.Errorf("conflicting image overrides:\n  %s", strings.Join(r.problems, "\n  "))
 	}
+	return r.write(tempDir)
+}
 
+type imageResolver struct {
+	firstScenarioLayer int
+	allowDigestShadow  bool
+	images             map[string]map[string]any
+	sources            map[string]string
+	pins               map[string]string
+	hubPaths           map[string]string
+	problems           []string
+}
+
+type imageLayer struct {
+	index    int
+	file     string
+	tagged   map[string]bool
+	unpinned map[string]bool
+}
+
+func (r *imageResolver) applyLayer(index int, file string, doc map[string]any) {
+	pinned := map[string][3]string{}
+	for path := range r.pins {
+		pinned[path] = effectiveCoordinates(r.images, path)
+	}
+	layer := imageLayer{index: index, file: file, tagged: map[string]bool{}, unpinned: map[string]bool{}}
+	for _, hubPass := range []bool{false, true} {
+		walkImageBlocks(doc, func(path string, img map[string]any) {
+			if _, isHub := canonicalImagePath(path); isHub == hubPass {
+				r.applyImage(layer, path, img)
+			}
+		})
+	}
+	for path, was := range pinned {
+		r.reconcilePin(layer, path, was)
+	}
+}
+
+func (r *imageResolver) applyImage(layer imageLayer, path string, img map[string]any) {
+	canonical, isHub := canonicalImagePath(path)
+	digest, hasDigestKey := img["digest"]
+	hasDigest := hasDigestKey && !isBlankScalar(digest)
+	if tag, hasTag := img["tag"]; hasTag && isBlankScalar(tag) && !hasDigest && layer.index >= r.firstScenarioLayer {
+		r.problems = append(r.problems, fmt.Sprintf("%s: %s sets an empty tag and no digest; set image.tag or image.digest", path, layer.file))
+		return
+	}
+	if isHub {
+		r.hubPaths[canonical] = path
+	}
+	resolved := r.images[canonical]
+	if resolved == nil {
+		resolved = map[string]any{}
+		r.images[canonical] = resolved
+	}
+	moved := false
+	for _, key := range []string{"registry", "repository", "tag"} {
+		if v, ok := img[key]; ok {
+			moved = moved || scalar(v) != scalar(resolved[key])
+			resolved[key] = v
+		}
+	}
+	if moved || hasDigest {
+		r.sources[canonical] = layer.file
+	}
+	layer.tagged[canonical] = layer.tagged[canonical] || !isBlankScalar(img["tag"])
+	layer.unpinned[canonical] = layer.unpinned[canonical] || hasDigestKey && !hasDigest
+	if hasDigest {
+		resolved["digest"] = digest
+		r.pins[canonical] = layer.file
+	}
+}
+
+func (r *imageResolver) reconcilePin(layer imageLayer, path string, was [3]string) {
+	switch now := effectiveCoordinates(r.images, path); {
+	case r.pins[path] == layer.file, now == was && !layer.unpinned[path]:
+	case now == was || layer.tagged[path] || now[2] != was[2]:
+		r.images[path]["digest"] = nil
+		delete(r.pins, path)
+		r.sources[path] = layer.file
+	case !r.allowDigestShadow:
+		r.problems = append(r.problems, fmt.Sprintf("%s: %s changes registry/repository without a tag, so the digest from %s would follow it; set image.tag or image.digest, or pass --allow-digest-shadow", path, layer.file, r.pins[path]))
+	}
+}
+
+func (r *imageResolver) write(tempDir string) (string, error) {
 	out := map[string]any{}
 	var refs []string
-	for path, resolved := range images {
-		if sources[path] != "" {
+	for path, resolved := range r.images {
+		if r.sources[path] != "" {
 			setImage(out, path, resolved)
-			if hub := hubPaths[path]; hub != "" {
+			if hub := r.hubPaths[path]; hub != "" {
 				setImage(out, hub, resolved)
 			}
-			refs = append(refs, fmt.Sprintf("%s=%s (%s)", path, imageRef(resolved), filepath.Base(sources[path])))
+			refs = append(refs, fmt.Sprintf("%s=%s (%s)", path, imageRef(resolved), filepath.Base(r.sources[path])))
 		}
 	}
 	if len(refs) == 0 {
