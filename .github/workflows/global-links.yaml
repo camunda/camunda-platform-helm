@@ -1,16 +1,12 @@
 name: "Chart - Validate All Documentation Links"
 
-# Lychee-based replacement for the bash composite at
-# .github/actions/validate-docs-links/. Tracked by issue #6218.
+# Lychee link check. Tracked by issue #6218.
 #
-# This runs alongside the existing chart-validate-docs-links.yaml during the
-# migration window (see #6218 plan). On pull_request the lychee step is
-# soft-failing so PRs that touch unrelated Markdown are not blocked while we
-# clean up false positives; the scheduled run still hard-fails and opens a
-# tracking issue.
+# On pull_request the lychee step is soft-failing so PRs that touch unrelated
+# Markdown are not blocked while we clean up false positives; the scheduled run
+# still hard-fails and opens a tracking issue.
 #
-# Once the cron is green for a couple of cycles, drop the soft-fail and the
-# legacy chart-validate-docs-links.yaml workflow.
+# Once the cron is green for a couple of cycles, drop the soft-fail.
 
 on:
   workflow_dispatch:
@@ -19,6 +15,8 @@ on:
   pull_request:
     paths:
       - "**/*.md"
+      - "charts/camunda-platform-*/values*.yaml"
+      - "charts/camunda-platform-*/values*.json"
       - "scripts/templates/**"
       - "lychee-links.toml"
       - ".github/workflows/global-links.yaml"
@@ -77,6 +75,8 @@ jobs:
             '*.md'
             './**/*.md'
             './**/*.tpl'
+            './charts/camunda-platform-*/values*.yaml'
+            './charts/camunda-platform-*/values*.json'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
