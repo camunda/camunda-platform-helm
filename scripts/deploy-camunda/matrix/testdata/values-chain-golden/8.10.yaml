@@ -1,0 +1,1858 @@
+- scenario: elasticsearch
+  shortname: eske
+  flow: install
+  tier: 1
+  scenarioLayers:
+    - values/base.yaml
+    - values/identity/keycloak.yaml
+    - values/persistence/elasticsearch.yaml
+    - values/platform/gke.yaml
+    - ../infra/values-infra-distroci.yaml
+  chain:
+    - charts/camunda-platform-8.10/values-digest.yaml
+    - <tmp>/merged-scenario-values.yaml
+    - <tmp>/values-resolved-images.yaml
+  resolvedImageFile: <tmp>/values-resolved-images.yaml
+  resolvedImageContent: |
+    connectors:
+        image:
+            digest: sha256:ffd8428e54f4f21995e5cea0564c4123ecd80a968208965138873d032355b4d9
+            repository: camunda/connectors-bundle
+            tag: 8.10.2
+    identity:
+        image:
+            digest: sha256:5731e2c25013170e8de6db961d895c730f0f44aa73914e127da0e9062f06c488
+            repository: camunda/identity
+            tag: 8.10.2
+    optimize:
+        image:
+            digest: sha256:3aef37944561fc34f842b64548f624c1892496c29056679f58a92e40909aee49
+            repository: camunda/optimize
+            tag: 8.10.7
+    orchestration:
+        image:
+            digest: sha256:1d943ed22fab746bd5fd7e19f928f90ba06516d3cc0d28a98f1a1539db1ef585
+            repository: camunda/camunda
+            tag: 8.10.7
+    webModeler:
+        restapi:
+            image:
+                digest: sha256:d05bcf0e747572601054f389c7482a82eb5f333d35bd96718a94580343fec1ba
+                repository: camunda/hub
+                tag: 8.10.4
+        websockets:
+            image:
+                digest: sha256:baacba31529b65359c0c54ae88e720ff0351c32f93e0939f7ebd32cbf6e0e3d9
+                repository: camunda/hub-websockets
+                tag: 8.10.4
+  mergedValuesSha256: c500a463b2f6c71cab1db5233a87e835912836aead55b2deac204827b0379ca3
+- scenario: orchestration-tls
+  shortname: estls
+  flow: install
+  tier: 2
+  scenarioLayers:
+    - values/base.yaml
+    - values/identity/keycloak.yaml
+    - values/persistence/elasticsearch.yaml
+    - values/platform/gke.yaml
+    - ../infra/values-infra-distroci.yaml
+    - values/features/orchestration-tls.yaml
+  chain:
+    - charts/camunda-platform-8.10/values-digest.yaml
+    - <tmp>/merged-scenario-values.yaml
+    - <tmp>/values-resolved-images.yaml
+  resolvedImageFile: <tmp>/values-resolved-images.yaml
+  resolvedImageContent: |
+    connectors:
+        image:
+            digest: sha256:ffd8428e54f4f21995e5cea0564c4123ecd80a968208965138873d032355b4d9
+            repository: camunda/connectors-bundle
+            tag: 8.10.2
+    identity:
+        image:
+            digest: sha256:5731e2c25013170e8de6db961d895c730f0f44aa73914e127da0e9062f06c488
+            repository: camunda/identity
+            tag: 8.10.2
+    optimize:
+        image:
+            digest: sha256:3aef37944561fc34f842b64548f624c1892496c29056679f58a92e40909aee49
+            repository: camunda/optimize
+            tag: 8.10.7
+    orchestration:
+        image:
+            digest: sha256:1d943ed22fab746bd5fd7e19f928f90ba06516d3cc0d28a98f1a1539db1ef585
+            repository: camunda/camunda
+            tag: 8.10.7
+    webModeler:
+        restapi:
+            image:
+                digest: sha256:d05bcf0e747572601054f389c7482a82eb5f333d35bd96718a94580343fec1ba
+                repository: camunda/hub
+                tag: 8.10.4
+        websockets:
+            image:
+                digest: sha256:baacba31529b65359c0c54ae88e720ff0351c32f93e0939f7ebd32cbf6e0e3d9
+                repository: camunda/hub-websockets
+                tag: 8.10.4
+  mergedValuesSha256: 98b0859857635e4bba07ce77c3c44ca503c44b2cb0e15c60cd34631e972a4196
+- scenario: orchestration-tls-rest
+  shortname: estlr
+  flow: install
+  tier: 2
+  scenarioLayers:
+    - values/base.yaml
+    - values/identity/keycloak.yaml
+    - values/persistence/elasticsearch.yaml
+    - values/platform/gke.yaml
+    - ../infra/values-infra-distroci.yaml
+    - values/features/orchestration-tls-rest.yaml
+  chain:
+    - charts/camunda-platform-8.10/values-digest.yaml
+    - <tmp>/merged-scenario-values.yaml
+    - <tmp>/values-resolved-images.yaml
+  resolvedImageFile: <tmp>/values-resolved-images.yaml
+  resolvedImageContent: |
+    connectors:
+        image:
+            digest: sha256:ffd8428e54f4f21995e5cea0564c4123ecd80a968208965138873d032355b4d9
+            repository: camunda/connectors-bundle
+            tag: 8.10.2
+    identity:
+        image:
+            digest: sha256:5731e2c25013170e8de6db961d895c730f0f44aa73914e127da0e9062f06c488
+            repository: camunda/identity
+            tag: 8.10.2
+    optimize:
+        image:
+            digest: sha256:3aef37944561fc34f842b64548f624c1892496c29056679f58a92e40909aee49
+            repository: camunda/optimize
+            tag: 8.10.7
+    orchestration:
+        image:
+            digest: sha256:1d943ed22fab746bd5fd7e19f928f90ba06516d3cc0d28a98f1a1539db1ef585
+            repository: camunda/camunda
+            tag: 8.10.7
+    webModeler:
+        restapi:
+            image:
+                digest: sha256:d05bcf0e747572601054f389c7482a82eb5f333d35bd96718a94580343fec1ba
+                repository: camunda/hub
+                tag: 8.10.4
+        websockets:
+            image:
+                digest: sha256:baacba31529b65359c0c54ae88e720ff0351c32f93e0939f7ebd32cbf6e0e3d9
+                repository: camunda/hub-websockets
+                tag: 8.10.4
+  mergedValuesSha256: 49cae8408b5430ec04c82dbf2bfdc38107ae963021b80470646fb2bc1dfa467c
+- scenario: orchestration-tls-rest-appconfig
+  shortname: estlc
+  flow: install
+  tier: 2
+  scenarioLayers:
+    - values/base.yaml
+    - values/identity/keycloak.yaml
+    - values/persistence/elasticsearch.yaml
+    - values/platform/gke.yaml
+    - ../infra/values-infra-distroci.yaml
+    - values/features/orchestration-tls-rest-appconfig.yaml
+  chain:
+    - charts/camunda-platform-8.10/values-digest.yaml
+    - <tmp>/merged-scenario-values.yaml
+    - <tmp>/values-resolved-images.yaml
+  resolvedImageFile: <tmp>/values-resolved-images.yaml
+  resolvedImageContent: |
+    connectors:
+        image:
+            digest: sha256:ffd8428e54f4f21995e5cea0564c4123ecd80a968208965138873d032355b4d9
+            repository: camunda/connectors-bundle
+            tag: 8.10.2
+    identity:
+        image:
+            digest: sha256:5731e2c25013170e8de6db961d895c730f0f44aa73914e127da0e9062f06c488
+            repository: camunda/identity
+            tag: 8.10.2
+    optimize:
+        image:
+            digest: sha256:3aef37944561fc34f842b64548f624c1892496c29056679f58a92e40909aee49
+            repository: camunda/optimize
+            tag: 8.10.7
+    orchestration:
+        image:
+            digest: sha256:1d943ed22fab746bd5fd7e19f928f90ba06516d3cc0d28a98f1a1539db1ef585
+            repository: camunda/camunda
+            tag: 8.10.7
+    webModeler:
+        restapi:
+            image:
+                digest: sha256:d05bcf0e747572601054f389c7482a82eb5f333d35bd96718a94580343fec1ba
+                repository: camunda/hub
+                tag: 8.10.4
+        websockets:
+            image:
+                digest: sha256:baacba31529b65359c0c54ae88e720ff0351c32f93e0939f7ebd32cbf6e0e3d9
+                repository: camunda/hub-websockets
+                tag: 8.10.4
+  mergedValuesSha256: 62111ab2e5fcebb280c06c48431472e34367145ae5f7215aac173cebe3c25a2c
+- scenario: connectors-tls
+  shortname: cotls
+  flow: install
+  tier: 2
+  scenarioLayers:
+    - values/base.yaml
+    - values/identity/keycloak.yaml
+    - values/persistence/elasticsearch.yaml
+    - values/platform/gke.yaml
+    - ../infra/values-infra-distroci.yaml
+    - values/features/connectors-tls.yaml
+  chain:
+    - charts/camunda-platform-8.10/values-digest.yaml
+    - <tmp>/merged-scenario-values.yaml
+    - <tmp>/values-resolved-images.yaml
+  resolvedImageFile: <tmp>/values-resolved-images.yaml
+  resolvedImageContent: |
+    connectors:
+        image:
+            digest: sha256:ffd8428e54f4f21995e5cea0564c4123ecd80a968208965138873d032355b4d9
+            repository: camunda/connectors-bundle
+            tag: 8.10.2
+    identity:
+        image:
+            digest: sha256:5731e2c25013170e8de6db961d895c730f0f44aa73914e127da0e9062f06c488
+            repository: camunda/identity
+            tag: 8.10.2
+    optimize:
+        image:
+            digest: sha256:3aef37944561fc34f842b64548f624c1892496c29056679f58a92e40909aee49
+            repository: camunda/optimize
+            tag: 8.10.7
+    orchestration:
+        image:
+            digest: sha256:1d943ed22fab746bd5fd7e19f928f90ba06516d3cc0d28a98f1a1539db1ef585
+            repository: camunda/camunda
+            tag: 8.10.7
+    webModeler:
+        restapi:
+            image:
+                digest: sha256:d05bcf0e747572601054f389c7482a82eb5f333d35bd96718a94580343fec1ba
+                repository: camunda/hub
+                tag: 8.10.4
+        websockets:
+            image:
+                digest: sha256:baacba31529b65359c0c54ae88e720ff0351c32f93e0939f7ebd32cbf6e0e3d9
+                repository: camunda/hub-websockets
+                tag: 8.10.4
+  mergedValuesSha256: 5a126ae0b289c31bdee6dd60fb7027581fa3a431f20969a11a431c8c708d4ded
+- scenario: optimize-tls
+  shortname: optls
+  flow: install
+  tier: 2
+  scenarioLayers:
+    - values/base.yaml
+    - values/identity/keycloak.yaml
+    - values/persistence/elasticsearch.yaml
+    - values/platform/gke.yaml
+    - ../infra/values-infra-distroci.yaml
+    - values/features/optimize-tls.yaml
+  chain:
+    - charts/camunda-platform-8.10/values-digest.yaml
+    - <tmp>/merged-scenario-values.yaml
+    - <tmp>/values-resolved-images.yaml
+  resolvedImageFile: <tmp>/values-resolved-images.yaml
+  resolvedImageContent: |
+    connectors:
+        image:
+            digest: sha256:ffd8428e54f4f21995e5cea0564c4123ecd80a968208965138873d032355b4d9
+            repository: camunda/connectors-bundle
+            tag: 8.10.2
+    identity:
+        image:
+            digest: sha256:5731e2c25013170e8de6db961d895c730f0f44aa73914e127da0e9062f06c488
+            repository: camunda/identity
+            tag: 8.10.2
+    optimize:
+        image:
+            digest: sha256:3aef37944561fc34f842b64548f624c1892496c29056679f58a92e40909aee49
+            repository: camunda/optimize
+            tag: 8.10.7
+    orchestration:
+        image:
+            digest: sha256:1d943ed22fab746bd5fd7e19f928f90ba06516d3cc0d28a98f1a1539db1ef585
+            repository: camunda/camunda
+            tag: 8.10.7
+    webModeler:
+        restapi:
+            image:
+                digest: sha256:d05bcf0e747572601054f389c7482a82eb5f333d35bd96718a94580343fec1ba
+                repository: camunda/hub
+                tag: 8.10.4
+        websockets:
+            image:
+                digest: sha256:baacba31529b65359c0c54ae88e720ff0351c32f93e0939f7ebd32cbf6e0e3d9
+                repository: camunda/hub-websockets
+                tag: 8.10.4
+  mergedValuesSha256: cc9b73df3875fb1c2a709118e928c39deceb4926d2fa58abc5579da51787737c
+- scenario: opensearch
+  shortname: oske
+  flow: install
+  tier: 2
+  scenarioLayers:
+    - values/base.yaml
+    - values/identity/keycloak.yaml
+    - values/persistence/opensearch-embedded.yaml
+    - values/platform/gke.yaml
+    - ../infra/values-infra-distroci.yaml
+  chain:
+    - charts/camunda-platform-8.10/values-digest.yaml
+    - <tmp>/merged-scenario-values.yaml
+    - <tmp>/values-resolved-images.yaml
+  resolvedImageFile: <tmp>/values-resolved-images.yaml
+  resolvedImageContent: |
+    connectors:
+        image:
+            digest: sha256:ffd8428e54f4f21995e5cea0564c4123ecd80a968208965138873d032355b4d9
+            repository: camunda/connectors-bundle
+            tag: 8.10.2
+    identity:
+        image:
+            digest: sha256:5731e2c25013170e8de6db961d895c730f0f44aa73914e127da0e9062f06c488
+            repository: camunda/identity
+            tag: 8.10.2
+    optimize:
+        image:
+            digest: sha256:3aef37944561fc34f842b64548f624c1892496c29056679f58a92e40909aee49
+            repository: camunda/optimize
+            tag: 8.10.7
+    orchestration:
+        image:
+            digest: sha256:1d943ed22fab746bd5fd7e19f928f90ba06516d3cc0d28a98f1a1539db1ef585
+            repository: camunda/camunda
+            tag: 8.10.7
+    webModeler:
+        restapi:
+            image:
+                digest: sha256:d05bcf0e747572601054f389c7482a82eb5f333d35bd96718a94580343fec1ba
+                repository: camunda/hub
+                tag: 8.10.4
+        websockets:
+            image:
+                digest: sha256:baacba31529b65359c0c54ae88e720ff0351c32f93e0939f7ebd32cbf6e0e3d9
+                repository: camunda/hub-websockets
+                tag: 8.10.4
+  mergedValuesSha256: 6339ba501b80dddcad2439a0edd46e6b46f855bf182a8ef7e959485c08214d20
+- scenario: opensearch-self-signed
+  shortname: osss
+  flow: install
+  tier: 2
+  scenarioLayers:
+    - values/base.yaml
+    - values/identity/keycloak.yaml
+    - values/persistence/opensearch-self-signed.yaml
+    - values/platform/gke.yaml
+    - ../infra/values-infra-distroci.yaml
+  chain:
+    - charts/camunda-platform-8.10/values-digest.yaml
+    - <tmp>/merged-scenario-values.yaml
+    - <tmp>/values-resolved-images.yaml
+  resolvedImageFile: <tmp>/values-resolved-images.yaml
+  resolvedImageContent: |
+    connectors:
+        image:
+            digest: sha256:ffd8428e54f4f21995e5cea0564c4123ecd80a968208965138873d032355b4d9
+            repository: camunda/connectors-bundle
+            tag: 8.10.2
+    identity:
+        image:
+            digest: sha256:5731e2c25013170e8de6db961d895c730f0f44aa73914e127da0e9062f06c488
+            repository: camunda/identity
+            tag: 8.10.2
+    optimize:
+        image:
+            digest: sha256:3aef37944561fc34f842b64548f624c1892496c29056679f58a92e40909aee49
+            repository: camunda/optimize
+            tag: 8.10.7
+    orchestration:
+        image:
+            digest: sha256:1d943ed22fab746bd5fd7e19f928f90ba06516d3cc0d28a98f1a1539db1ef585
+            repository: camunda/camunda
+            tag: 8.10.7
+    webModeler:
+        restapi:
+            image:
+                digest: sha256:d05bcf0e747572601054f389c7482a82eb5f333d35bd96718a94580343fec1ba
+                repository: camunda/hub
+                tag: 8.10.4
+        websockets:
+            image:
+                digest: sha256:baacba31529b65359c0c54ae88e720ff0351c32f93e0939f7ebd32cbf6e0e3d9
+                repository: camunda/hub-websockets
+                tag: 8.10.4
+  mergedValuesSha256: 91072b4317427262950494a52c00d84e706cc42d56839bdfa94f76769ebb3284
+- scenario: opensearch-self-signed-os-trust
+  shortname: osot
+  flow: install
+  tier: 2
+  scenarioLayers:
+    - values/base.yaml
+    - values/identity/keycloak.yaml
+    - values/persistence/opensearch-self-signed-os-trust.yaml
+    - values/platform/gke.yaml
+    - ../infra/values-infra-distroci.yaml
+  chain:
+    - charts/camunda-platform-8.10/values-digest.yaml
+    - <tmp>/merged-scenario-values.yaml
+    - <tmp>/values-resolved-images.yaml
+  resolvedImageFile: <tmp>/values-resolved-images.yaml
+  resolvedImageContent: |
+    connectors:
+        image:
+            digest: sha256:ffd8428e54f4f21995e5cea0564c4123ecd80a968208965138873d032355b4d9
+            repository: camunda/connectors-bundle
+            tag: 8.10.2
+    identity:
+        image:
+            digest: sha256:5731e2c25013170e8de6db961d895c730f0f44aa73914e127da0e9062f06c488
+            repository: camunda/identity
+            tag: 8.10.2
+    optimize:
+        image:
+            digest: sha256:3aef37944561fc34f842b64548f624c1892496c29056679f58a92e40909aee49
+            repository: camunda/optimize
+            tag: 8.10.7
+    orchestration:
+        image:
+            digest: sha256:1d943ed22fab746bd5fd7e19f928f90ba06516d3cc0d28a98f1a1539db1ef585
+            repository: camunda/camunda
+            tag: 8.10.7
+    webModeler:
+        restapi:
+            image:
+                digest: sha256:d05bcf0e747572601054f389c7482a82eb5f333d35bd96718a94580343fec1ba
+                repository: camunda/hub
+                tag: 8.10.4
+        websockets:
+            image:
+                digest: sha256:baacba31529b65359c0c54ae88e720ff0351c32f93e0939f7ebd32cbf6e0e3d9
+                repository: camunda/hub-websockets
+                tag: 8.10.4
+  mergedValuesSha256: f261092b44722354f2cbe6c9ac674edc7c61ae2a49d75d9070a73daa0ef17c86
+- scenario: oidc
+  shortname: esoi
+  flow: install
+  tier: 2
+  scenarioLayers:
+    - values/base.yaml
+    - values/identity/oidc.yaml
+    - values/persistence/elasticsearch.yaml
+    - values/platform/gke.yaml
+    - ../infra/values-infra-distroci.yaml
+    - values/features/postgresql-companion.yaml
+    - values/features/hub-ping.yaml
+  chain:
+    - charts/camunda-platform-8.10/values-digest.yaml
+    - <tmp>/merged-scenario-values.yaml
+    - <tmp>/values-resolved-images.yaml
+  resolvedImageFile: <tmp>/values-resolved-images.yaml
+  resolvedImageContent: |
+    connectors:
+        image:
+            digest: sha256:ffd8428e54f4f21995e5cea0564c4123ecd80a968208965138873d032355b4d9
+            repository: camunda/connectors-bundle
+            tag: 8.10.2
+    identity:
+        image:
+            digest: sha256:5731e2c25013170e8de6db961d895c730f0f44aa73914e127da0e9062f06c488
+            repository: camunda/identity
+            tag: 8.10.2
+    optimize:
+        image:
+            digest: sha256:3aef37944561fc34f842b64548f624c1892496c29056679f58a92e40909aee49
+            repository: camunda/optimize
+            tag: 8.10.7
+    orchestration:
+        image:
+            digest: sha256:1d943ed22fab746bd5fd7e19f928f90ba06516d3cc0d28a98f1a1539db1ef585
+            repository: camunda/camunda
+            tag: 8.10.7
+    webModeler:
+        restapi:
+            image:
+                digest: sha256:d05bcf0e747572601054f389c7482a82eb5f333d35bd96718a94580343fec1ba
+                repository: camunda/hub
+                tag: 8.10.4
+        websockets:
+            image:
+                digest: sha256:baacba31529b65359c0c54ae88e720ff0351c32f93e0939f7ebd32cbf6e0e3d9
+                repository: camunda/hub-websockets
+                tag: 8.10.4
+  mergedValuesSha256: d3fa97bb4fbcdf28c43bb547db2e83c01ab3c9be36c5e6779823ff2936264299
+- scenario: oidc-defaults
+  shortname: esoid
+  flow: install
+  tier: 1
+  scenarioLayers:
+    - values/base.yaml
+    - values/identity/oidc.yaml
+    - values/persistence/elasticsearch.yaml
+    - values/platform/gke.yaml
+    - ../infra/values-infra-distroci.yaml
+    - values/features/postgresql-companion.yaml
+  chain:
+    - charts/camunda-platform-8.10/values-digest.yaml
+    - <tmp>/merged-scenario-values.yaml
+    - <tmp>/values-resolved-images.yaml
+  resolvedImageFile: <tmp>/values-resolved-images.yaml
+  resolvedImageContent: |
+    connectors:
+        image:
+            digest: sha256:ffd8428e54f4f21995e5cea0564c4123ecd80a968208965138873d032355b4d9
+            repository: camunda/connectors-bundle
+            tag: 8.10.2
+    identity:
+        image:
+            digest: sha256:5731e2c25013170e8de6db961d895c730f0f44aa73914e127da0e9062f06c488
+            repository: camunda/identity
+            tag: 8.10.2
+    optimize:
+        image:
+            digest: sha256:3aef37944561fc34f842b64548f624c1892496c29056679f58a92e40909aee49
+            repository: camunda/optimize
+            tag: 8.10.7
+    orchestration:
+        image:
+            digest: sha256:1d943ed22fab746bd5fd7e19f928f90ba06516d3cc0d28a98f1a1539db1ef585
+            repository: camunda/camunda
+            tag: 8.10.7
+    webModeler:
+        restapi:
+            image:
+                digest: sha256:d05bcf0e747572601054f389c7482a82eb5f333d35bd96718a94580343fec1ba
+                repository: camunda/hub
+                tag: 8.10.4
+        websockets:
+            image:
+                digest: sha256:baacba31529b65359c0c54ae88e720ff0351c32f93e0939f7ebd32cbf6e0e3d9
+                repository: camunda/hub-websockets
+                tag: 8.10.4
+  mergedValuesSha256: f7df64c3e2fbd761d9a79b603302a5fb4eb76e9195eb83c0d85ffc294646847a
+- scenario: auth0
+  shortname: esa0
+  flow: install
+  tier: 2
+  scenarioLayers:
+    - values/base.yaml
+    - values/identity/auth0.yaml
+    - values/persistence/elasticsearch.yaml
+    - values/platform/gke.yaml
+    - ../infra/values-infra-distroci.yaml
+    - values/features/hub-ping.yaml
+  chain:
+    - charts/camunda-platform-8.10/values-digest.yaml
+    - <tmp>/merged-scenario-values.yaml
+    - <tmp>/values-resolved-images.yaml
+  resolvedImageFile: <tmp>/values-resolved-images.yaml
+  resolvedImageContent: |
+    connectors:
+        image:
+            digest: sha256:ffd8428e54f4f21995e5cea0564c4123ecd80a968208965138873d032355b4d9
+            repository: camunda/connectors-bundle
+            tag: 8.10.2
+    identity:
+        image:
+            digest: sha256:5731e2c25013170e8de6db961d895c730f0f44aa73914e127da0e9062f06c488
+            repository: camunda/identity
+            tag: 8.10.2
+    optimize:
+        image:
+            digest: sha256:3aef37944561fc34f842b64548f624c1892496c29056679f58a92e40909aee49
+            repository: camunda/optimize
+            tag: 8.10.7
+    orchestration:
+        image:
+            digest: sha256:1d943ed22fab746bd5fd7e19f928f90ba06516d3cc0d28a98f1a1539db1ef585
+            repository: camunda/camunda
+            tag: 8.10.7
+    webModeler:
+        restapi:
+            image:
+                digest: sha256:d05bcf0e747572601054f389c7482a82eb5f333d35bd96718a94580343fec1ba
+                repository: camunda/hub
+                tag: 8.10.4
+        websockets:
+            image:
+                digest: sha256:baacba31529b65359c0c54ae88e720ff0351c32f93e0939f7ebd32cbf6e0e3d9
+                repository: camunda/hub-websockets
+                tag: 8.10.4
+  mergedValuesSha256: 7dad7531d785fb4bdef7b22e5b1931769c2fcb11f5b5a40737b83f478e8945d0
+- scenario: orchestration-entra
+  shortname: ocen
+  flow: install
+  tier: 1
+  scenarioLayers:
+    - values/base.yaml
+    - values/identity/oidc.yaml
+    - values/persistence/elasticsearch.yaml
+    - values/platform/gke.yaml
+    - ../infra/values-infra-distroci.yaml
+    - values/features/orchestration-entra.yaml
+  chain:
+    - charts/camunda-platform-8.10/values-digest.yaml
+    - <tmp>/merged-scenario-values.yaml
+    - <tmp>/values-resolved-images.yaml
+  resolvedImageFile: <tmp>/values-resolved-images.yaml
+  resolvedImageContent: |
+    connectors:
+        image:
+            digest: sha256:ffd8428e54f4f21995e5cea0564c4123ecd80a968208965138873d032355b4d9
+            repository: camunda/connectors-bundle
+            tag: 8.10.2
+    identity:
+        image:
+            digest: sha256:5731e2c25013170e8de6db961d895c730f0f44aa73914e127da0e9062f06c488
+            repository: camunda/identity
+            tag: 8.10.2
+    optimize:
+        image:
+            digest: sha256:3aef37944561fc34f842b64548f624c1892496c29056679f58a92e40909aee49
+            repository: camunda/optimize
+            tag: 8.10.7
+    orchestration:
+        image:
+            digest: sha256:1d943ed22fab746bd5fd7e19f928f90ba06516d3cc0d28a98f1a1539db1ef585
+            repository: camunda/camunda
+            tag: 8.10.7
+    webModeler:
+        restapi:
+            image:
+                digest: sha256:d05bcf0e747572601054f389c7482a82eb5f333d35bd96718a94580343fec1ba
+                repository: camunda/hub
+                tag: 8.10.4
+        websockets:
+            image:
+                digest: sha256:baacba31529b65359c0c54ae88e720ff0351c32f93e0939f7ebd32cbf6e0e3d9
+                repository: camunda/hub-websockets
+                tag: 8.10.4
+  mergedValuesSha256: b0a087ffec4d2023184be605682a9756681fc3fcccb43ff1f4d8f3ee5ef4f0f1
+- scenario: keycloak-mt
+  shortname: kemt
+  flow: upgrade-minor
+  tier: 2
+  scenarioLayers:
+    - values/base.yaml
+    - values/identity/keycloak.yaml
+    - values/persistence/elasticsearch-companion.yaml
+    - values/platform/gke.yaml
+    - ../infra/values-infra-distroci.yaml
+    - values/features/custom-history.yaml
+  chain:
+    - charts/camunda-platform-8.10/values-digest.yaml
+    - <tmp>/merged-scenario-values.yaml
+    - <tmp>/values-resolved-images.yaml
+  resolvedImageFile: <tmp>/values-resolved-images.yaml
+  resolvedImageContent: |
+    connectors:
+        image:
+            digest: sha256:ffd8428e54f4f21995e5cea0564c4123ecd80a968208965138873d032355b4d9
+            repository: camunda/connectors-bundle
+            tag: 8.10.2
+    identity:
+        image:
+            digest: sha256:5731e2c25013170e8de6db961d895c730f0f44aa73914e127da0e9062f06c488
+            repository: camunda/identity
+            tag: 8.10.2
+    optimize:
+        image:
+            digest: sha256:3aef37944561fc34f842b64548f624c1892496c29056679f58a92e40909aee49
+            repository: camunda/optimize
+            tag: 8.10.7
+    orchestration:
+        image:
+            digest: sha256:1d943ed22fab746bd5fd7e19f928f90ba06516d3cc0d28a98f1a1539db1ef585
+            repository: camunda/camunda
+            tag: 8.10.7
+    webModeler:
+        restapi:
+            image:
+                digest: sha256:d05bcf0e747572601054f389c7482a82eb5f333d35bd96718a94580343fec1ba
+                repository: camunda/hub
+                tag: 8.10.4
+        websockets:
+            image:
+                digest: sha256:baacba31529b65359c0c54ae88e720ff0351c32f93e0939f7ebd32cbf6e0e3d9
+                repository: camunda/hub-websockets
+                tag: 8.10.4
+  mergedValuesSha256: f84de63a7dbbe9e22e2a43630699ee77c076aa19b1883413a3a031ea0406cfd8
+- scenario: keycloak-rba
+  shortname: kerba
+  flow: upgrade-minor
+  tier: 2
+  scenarioLayers:
+    - values/base.yaml
+    - values/identity/keycloak.yaml
+    - values/persistence/elasticsearch-companion.yaml
+    - values/platform/gke.yaml
+    - ../infra/values-infra-distroci.yaml
+    - values/features/rba.yaml
+  chain:
+    - charts/camunda-platform-8.10/values-digest.yaml
+    - <tmp>/merged-scenario-values.yaml
+    - <tmp>/values-resolved-images.yaml
+  resolvedImageFile: <tmp>/values-resolved-images.yaml
+  resolvedImageContent: |
+    connectors:
+        image:
+            digest: sha256:ffd8428e54f4f21995e5cea0564c4123ecd80a968208965138873d032355b4d9
+            repository: camunda/connectors-bundle
+            tag: 8.10.2
+    identity:
+        image:
+            digest: sha256:5731e2c25013170e8de6db961d895c730f0f44aa73914e127da0e9062f06c488
+            repository: camunda/identity
+            tag: 8.10.2
+    optimize:
+        image:
+            digest: sha256:3aef37944561fc34f842b64548f624c1892496c29056679f58a92e40909aee49
+            repository: camunda/optimize
+            tag: 8.10.7
+    orchestration:
+        image:
+            digest: sha256:1d943ed22fab746bd5fd7e19f928f90ba06516d3cc0d28a98f1a1539db1ef585
+            repository: camunda/camunda
+            tag: 8.10.7
+    webModeler:
+        restapi:
+            image:
+                digest: sha256:d05bcf0e747572601054f389c7482a82eb5f333d35bd96718a94580343fec1ba
+                repository: camunda/hub
+                tag: 8.10.4
+        websockets:
+            image:
+                digest: sha256:baacba31529b65359c0c54ae88e720ff0351c32f93e0939f7ebd32cbf6e0e3d9
+                repository: camunda/hub-websockets
+                tag: 8.10.4
+  mergedValuesSha256: 72c7aafd073f65e7fa78b5b17464e1e25dc02b1bee68268054bf2a9ce91c9407
+- scenario: gateway-keycloak
+  shortname: gatkc
+  flow: install
+  tier: 2
+  scenarioLayers:
+    - values/base.yaml
+    - values/identity/keycloak.yaml
+    - values/persistence/elasticsearch.yaml
+    - values/platform/gke.yaml
+    - ../infra/values-infra-distroci.yaml
+    - values/features/gateway.yaml
+  chain:
+    - charts/camunda-platform-8.10/values-digest.yaml
+    - <tmp>/merged-scenario-values.yaml
+    - <tmp>/values-resolved-images.yaml
+  resolvedImageFile: <tmp>/values-resolved-images.yaml
+  resolvedImageContent: |
+    connectors:
+        image:
+            digest: sha256:ffd8428e54f4f21995e5cea0564c4123ecd80a968208965138873d032355b4d9
+            repository: camunda/connectors-bundle
+            tag: 8.10.2
+    identity:
+        image:
+            digest: sha256:5731e2c25013170e8de6db961d895c730f0f44aa73914e127da0e9062f06c488
+            repository: camunda/identity
+            tag: 8.10.2
+    optimize:
+        image:
+            digest: sha256:3aef37944561fc34f842b64548f624c1892496c29056679f58a92e40909aee49
+            repository: camunda/optimize
+            tag: 8.10.7
+    orchestration:
+        image:
+            digest: sha256:1d943ed22fab746bd5fd7e19f928f90ba06516d3cc0d28a98f1a1539db1ef585
+            repository: camunda/camunda
+            tag: 8.10.7
+    webModeler:
+        restapi:
+            image:
+                digest: sha256:d05bcf0e747572601054f389c7482a82eb5f333d35bd96718a94580343fec1ba
+                repository: camunda/hub
+                tag: 8.10.4
+        websockets:
+            image:
+                digest: sha256:baacba31529b65359c0c54ae88e720ff0351c32f93e0939f7ebd32cbf6e0e3d9
+                repository: camunda/hub-websockets
+                tag: 8.10.4
+  mergedValuesSha256: 93c201186395cf544728ce446c597db885f42dbe5bde8df9b6f7e72482257207
+- scenario: elasticsearch-arm
+  shortname: esarm
+  flow: install
+  tier: 2
+  scenarioLayers:
+    - values/base.yaml
+    - values/identity/keycloak.yaml
+    - values/persistence/elasticsearch.yaml
+    - values/platform/gke.yaml
+    - ../infra/values-infra-arm.yaml
+    - values/features/arm.yaml
+  chain:
+    - charts/camunda-platform-8.10/values-digest.yaml
+    - <tmp>/merged-scenario-values.yaml
+    - <tmp>/values-resolved-images.yaml
+  resolvedImageFile: <tmp>/values-resolved-images.yaml
+  resolvedImageContent: |
+    connectors:
+        image:
+            digest: sha256:ffd8428e54f4f21995e5cea0564c4123ecd80a968208965138873d032355b4d9
+            repository: camunda/connectors-bundle
+            tag: 8.10.2
+    identity:
+        image:
+            digest: sha256:5731e2c25013170e8de6db961d895c730f0f44aa73914e127da0e9062f06c488
+            repository: camunda/identity
+            tag: 8.10.2
+    optimize:
+        image:
+            digest: sha256:3aef37944561fc34f842b64548f624c1892496c29056679f58a92e40909aee49
+            repository: camunda/optimize
+            tag: 8.10.7
+    orchestration:
+        image:
+            digest: sha256:1d943ed22fab746bd5fd7e19f928f90ba06516d3cc0d28a98f1a1539db1ef585
+            repository: camunda/camunda
+            tag: 8.10.7
+    webModeler:
+        restapi:
+            image:
+                digest: sha256:d05bcf0e747572601054f389c7482a82eb5f333d35bd96718a94580343fec1ba
+                repository: camunda/hub
+                tag: 8.10.4
+        websockets:
+            image:
+                digest: sha256:baacba31529b65359c0c54ae88e720ff0351c32f93e0939f7ebd32cbf6e0e3d9
+                repository: camunda/hub-websockets
+                tag: 8.10.4
+  mergedValuesSha256: 6851f82e735a3b669b2cc6c9c0c7d73a0c59e7d345184f631c0d3e68ce7d1d27
+- scenario: noSecondaryStorage
+  shortname: nosec
+  flow: install
+  tier: 2
+  scenarioLayers:
+    - values/base.yaml
+    - values/identity/keycloak.yaml
+    - values/persistence/no-elasticsearch.yaml
+    - values/platform/gke.yaml
+    - ../infra/values-infra-distroci.yaml
+    - values/features/no-secondary-storage.yaml
+  chain:
+    - charts/camunda-platform-8.10/values-digest.yaml
+    - <tmp>/merged-scenario-values.yaml
+    - <tmp>/values-resolved-images.yaml
+  resolvedImageFile: <tmp>/values-resolved-images.yaml
+  resolvedImageContent: |
+    connectors:
+        image:
+            digest: sha256:ffd8428e54f4f21995e5cea0564c4123ecd80a968208965138873d032355b4d9
+            repository: camunda/connectors-bundle
+            tag: 8.10.2
+    identity:
+        image:
+            digest: sha256:5731e2c25013170e8de6db961d895c730f0f44aa73914e127da0e9062f06c488
+            repository: camunda/identity
+            tag: 8.10.2
+    optimize:
+        image:
+            digest: sha256:3aef37944561fc34f842b64548f624c1892496c29056679f58a92e40909aee49
+            repository: camunda/optimize
+            tag: 8.10.7
+    orchestration:
+        image:
+            digest: sha256:1d943ed22fab746bd5fd7e19f928f90ba06516d3cc0d28a98f1a1539db1ef585
+            repository: camunda/camunda
+            tag: 8.10.7
+    webModeler:
+        restapi:
+            image:
+                digest: sha256:d05bcf0e747572601054f389c7482a82eb5f333d35bd96718a94580343fec1ba
+                repository: camunda/hub
+                tag: 8.10.4
+        websockets:
+            image:
+                digest: sha256:baacba31529b65359c0c54ae88e720ff0351c32f93e0939f7ebd32cbf6e0e3d9
+                repository: camunda/hub-websockets
+                tag: 8.10.4
+  mergedValuesSha256: 8b091029b8cddedf63583cb2f80115c43c2854fe28a889c5db0a18f6b51b2986
+- scenario: documentstore
+  shortname: docstr
+  flow: install
+  tier: 2
+  scenarioLayers:
+    - values/base.yaml
+    - values/identity/keycloak.yaml
+    - values/persistence/elasticsearch.yaml
+    - values/platform/gke.yaml
+    - ../infra/values-infra-preemptible.yaml
+    - values/features/postgresql-companion.yaml
+    - values/features/documentstore.yaml
+  chain:
+    - charts/camunda-platform-8.10/values-digest.yaml
+    - <tmp>/merged-scenario-values.yaml
+    - <tmp>/values-resolved-images.yaml
+  resolvedImageFile: <tmp>/values-resolved-images.yaml
+  resolvedImageContent: |
+    connectors:
+        image:
+            digest: sha256:ffd8428e54f4f21995e5cea0564c4123ecd80a968208965138873d032355b4d9
+            repository: camunda/connectors-bundle
+            tag: 8.10.2
+    identity:
+        image:
+            digest: sha256:5731e2c25013170e8de6db961d895c730f0f44aa73914e127da0e9062f06c488
+            repository: camunda/identity
+            tag: 8.10.2
+    optimize:
+        image:
+            digest: sha256:3aef37944561fc34f842b64548f624c1892496c29056679f58a92e40909aee49
+            repository: camunda/optimize
+            tag: 8.10.7
+    orchestration:
+        image:
+            digest: sha256:1d943ed22fab746bd5fd7e19f928f90ba06516d3cc0d28a98f1a1539db1ef585
+            repository: camunda/camunda
+            tag: 8.10.7
+    webModeler:
+        restapi:
+            image:
+                digest: sha256:d05bcf0e747572601054f389c7482a82eb5f333d35bd96718a94580343fec1ba
+                repository: camunda/hub
+                tag: 8.10.4
+        websockets:
+            image:
+                digest: sha256:baacba31529b65359c0c54ae88e720ff0351c32f93e0939f7ebd32cbf6e0e3d9
+                repository: camunda/hub-websockets
+                tag: 8.10.4
+  mergedValuesSha256: 0a11438108bc6440d5b9baac0def9ecff3c3faa298355ed0aa89296d9b9f2b4e
+- scenario: documentstore-s3-compatible
+  shortname: docs3
+  flow: install
+  tier: 2
+  scenarioLayers:
+    - values/base.yaml
+    - values/identity/basic.yaml
+    - values/persistence/elasticsearch.yaml
+    - values/platform/gke.yaml
+    - ../infra/values-infra-distroci.yaml
+    - values/features/documentstore-s3-compatible.yaml
+  chain:
+    - charts/camunda-platform-8.10/values-digest.yaml
+    - <tmp>/merged-scenario-values.yaml
+    - <tmp>/values-resolved-images.yaml
+  resolvedImageFile: <tmp>/values-resolved-images.yaml
+  resolvedImageContent: |
+    connectors:
+        image:
+            digest: sha256:ffd8428e54f4f21995e5cea0564c4123ecd80a968208965138873d032355b4d9
+            repository: camunda/connectors-bundle
+            tag: 8.10.2
+    identity:
+        image:
+            digest: sha256:5731e2c25013170e8de6db961d895c730f0f44aa73914e127da0e9062f06c488
+            repository: camunda/identity
+            tag: 8.10.2
+    optimize:
+        image:
+            digest: sha256:3aef37944561fc34f842b64548f624c1892496c29056679f58a92e40909aee49
+            repository: camunda/optimize
+            tag: 8.10.7
+    orchestration:
+        image:
+            digest: sha256:1d943ed22fab746bd5fd7e19f928f90ba06516d3cc0d28a98f1a1539db1ef585
+            repository: camunda/camunda
+            tag: 8.10.7
+    webModeler:
+        restapi:
+            image:
+                digest: sha256:d05bcf0e747572601054f389c7482a82eb5f333d35bd96718a94580343fec1ba
+                repository: camunda/hub
+                tag: 8.10.4
+        websockets:
+            image:
+                digest: sha256:baacba31529b65359c0c54ae88e720ff0351c32f93e0939f7ebd32cbf6e0e3d9
+                repository: camunda/hub-websockets
+                tag: 8.10.4
+  mergedValuesSha256: e2f0012e9f75decbfc14327fe04094f479ca5db5caa708093fde630cbed2358b
+- scenario: secretstore-file
+  shortname: secfl
+  flow: install
+  tier: 2
+  scenarioLayers:
+    - values/base.yaml
+    - values/identity/basic.yaml
+    - values/persistence/elasticsearch.yaml
+    - values/platform/gke.yaml
+    - ../infra/values-infra-distroci.yaml
+    - values/features/secretstore-file.yaml
+  chain:
+    - charts/camunda-platform-8.10/values-digest.yaml
+    - <tmp>/merged-scenario-values.yaml
+    - <tmp>/values-resolved-images.yaml
+  resolvedImageFile: <tmp>/values-resolved-images.yaml
+  resolvedImageContent: |
+    connectors:
+        image:
+            digest: sha256:ffd8428e54f4f21995e5cea0564c4123ecd80a968208965138873d032355b4d9
+            repository: camunda/connectors-bundle
+            tag: 8.10.2
+    identity:
+        image:
+            digest: sha256:5731e2c25013170e8de6db961d895c730f0f44aa73914e127da0e9062f06c488
+            repository: camunda/identity
+            tag: 8.10.2
+    optimize:
+        image:
+            digest: sha256:3aef37944561fc34f842b64548f624c1892496c29056679f58a92e40909aee49
+            repository: camunda/optimize
+            tag: 8.10.7
+    orchestration:
+        image:
+            digest: sha256:1d943ed22fab746bd5fd7e19f928f90ba06516d3cc0d28a98f1a1539db1ef585
+            repository: camunda/camunda
+            tag: 8.10.7
+    webModeler:
+        restapi:
+            image:
+                digest: sha256:d05bcf0e747572601054f389c7482a82eb5f333d35bd96718a94580343fec1ba
+                repository: camunda/hub
+                tag: 8.10.4
+        websockets:
+            image:
+                digest: sha256:baacba31529b65359c0c54ae88e720ff0351c32f93e0939f7ebd32cbf6e0e3d9
+                repository: camunda/hub-websockets
+                tag: 8.10.4
+  mergedValuesSha256: b577291f33b6ce85e8c76beb00f1a7f3afec9e948a7d35ea5f4f355a0856de31
+- scenario: secretstore-gcp
+  shortname: secgc
+  flow: install
+  tier: 2
+  scenarioLayers:
+    - values/base.yaml
+    - values/identity/basic.yaml
+    - values/persistence/elasticsearch.yaml
+    - values/platform/gke.yaml
+    - ../infra/values-infra-distroci.yaml
+    - values/features/secretstore-gcp.yaml
+  chain:
+    - charts/camunda-platform-8.10/values-digest.yaml
+    - <tmp>/merged-scenario-values.yaml
+    - <tmp>/values-resolved-images.yaml
+  resolvedImageFile: <tmp>/values-resolved-images.yaml
+  resolvedImageContent: |
+    connectors:
+        image:
+            digest: sha256:ffd8428e54f4f21995e5cea0564c4123ecd80a968208965138873d032355b4d9
+            repository: camunda/connectors-bundle
+            tag: 8.10.2
+    identity:
+        image:
+            digest: sha256:5731e2c25013170e8de6db961d895c730f0f44aa73914e127da0e9062f06c488
+            repository: camunda/identity
+            tag: 8.10.2
+    optimize:
+        image:
+            digest: sha256:3aef37944561fc34f842b64548f624c1892496c29056679f58a92e40909aee49
+            repository: camunda/optimize
+            tag: 8.10.7
+    orchestration:
+        image:
+            digest: sha256:1d943ed22fab746bd5fd7e19f928f90ba06516d3cc0d28a98f1a1539db1ef585
+            repository: camunda/camunda
+            tag: 8.10.7
+    webModeler:
+        restapi:
+            image:
+                digest: sha256:d05bcf0e747572601054f389c7482a82eb5f333d35bd96718a94580343fec1ba
+                repository: camunda/hub
+                tag: 8.10.4
+        websockets:
+            image:
+                digest: sha256:baacba31529b65359c0c54ae88e720ff0351c32f93e0939f7ebd32cbf6e0e3d9
+                repository: camunda/hub-websockets
+                tag: 8.10.4
+  mergedValuesSha256: d8e9d690cfbc638a5c6fa37af484e6789038ff4f1c5b346e79ff31b9be9f0fde
+- scenario: rdbms-self-signed
+  shortname: rdbss
+  flow: install
+  tier: 2
+  scenarioLayers:
+    - values/base.yaml
+    - values/identity/keycloak.yaml
+    - values/persistence/rdbms-self-signed.yaml
+    - values/platform/gke.yaml
+    - ../infra/values-infra-distroci.yaml
+  chain:
+    - charts/camunda-platform-8.10/values-digest.yaml
+    - <tmp>/merged-scenario-values.yaml
+    - <tmp>/values-resolved-images.yaml
+  resolvedImageFile: <tmp>/values-resolved-images.yaml
+  resolvedImageContent: |
+    connectors:
+        image:
+            digest: sha256:ffd8428e54f4f21995e5cea0564c4123ecd80a968208965138873d032355b4d9
+            repository: camunda/connectors-bundle
+            tag: 8.10.2
+    identity:
+        image:
+            digest: sha256:5731e2c25013170e8de6db961d895c730f0f44aa73914e127da0e9062f06c488
+            repository: camunda/identity
+            tag: 8.10.2
+    optimize:
+        image:
+            digest: sha256:3aef37944561fc34f842b64548f624c1892496c29056679f58a92e40909aee49
+            repository: camunda/optimize
+            tag: 8.10.7
+    orchestration:
+        image:
+            digest: sha256:1d943ed22fab746bd5fd7e19f928f90ba06516d3cc0d28a98f1a1539db1ef585
+            repository: camunda/camunda
+            tag: 8.10.7
+    webModeler:
+        restapi:
+            image:
+                digest: sha256:d05bcf0e747572601054f389c7482a82eb5f333d35bd96718a94580343fec1ba
+                repository: camunda/hub
+                tag: 8.10.4
+        websockets:
+            image:
+                digest: sha256:baacba31529b65359c0c54ae88e720ff0351c32f93e0939f7ebd32cbf6e0e3d9
+                repository: camunda/hub-websockets
+                tag: 8.10.4
+  mergedValuesSha256: 5a5cb57f2ecb08ad492c309cb4c7cbe7eb4136440ed7e5d6a88ec43557cdcf53
+- scenario: rdbms
+  shortname: rdbms
+  flow: install
+  tier: 2
+  scenarioLayers:
+    - values/base.yaml
+    - values/identity/keycloak.yaml
+    - values/persistence/rdbms.yaml
+    - values/platform/gke.yaml
+    - ../infra/values-infra-distroci.yaml
+  chain:
+    - charts/camunda-platform-8.10/values-digest.yaml
+    - <tmp>/merged-scenario-values.yaml
+    - <tmp>/values-resolved-images.yaml
+  resolvedImageFile: <tmp>/values-resolved-images.yaml
+  resolvedImageContent: |
+    connectors:
+        image:
+            digest: sha256:ffd8428e54f4f21995e5cea0564c4123ecd80a968208965138873d032355b4d9
+            repository: camunda/connectors-bundle
+            tag: 8.10.2
+    identity:
+        image:
+            digest: sha256:5731e2c25013170e8de6db961d895c730f0f44aa73914e127da0e9062f06c488
+            repository: camunda/identity
+            tag: 8.10.2
+    optimize:
+        image:
+            digest: sha256:3aef37944561fc34f842b64548f624c1892496c29056679f58a92e40909aee49
+            repository: camunda/optimize
+            tag: 8.10.7
+    orchestration:
+        image:
+            digest: sha256:1d943ed22fab746bd5fd7e19f928f90ba06516d3cc0d28a98f1a1539db1ef585
+            repository: camunda/camunda
+            tag: 8.10.7
+    webModeler:
+        restapi:
+            image:
+                digest: sha256:d05bcf0e747572601054f389c7482a82eb5f333d35bd96718a94580343fec1ba
+                repository: camunda/hub
+                tag: 8.10.4
+        websockets:
+            image:
+                digest: sha256:baacba31529b65359c0c54ae88e720ff0351c32f93e0939f7ebd32cbf6e0e3d9
+                repository: camunda/hub-websockets
+                tag: 8.10.4
+  mergedValuesSha256: d2f4a210032431a7f7d6ce4e34f863cbd85355da1902d8cd0a9ad5903139b77b
+- scenario: component-persistence
+  shortname: cprst
+  flow: install
+  tier: 2
+  scenarioLayers:
+    - values/base.yaml
+    - values/identity/keycloak.yaml
+    - values/persistence/elasticsearch.yaml
+    - values/platform/gke.yaml
+    - ../infra/values-infra-distroci.yaml
+    - values/features/persistence.yaml
+  chain:
+    - charts/camunda-platform-8.10/values-digest.yaml
+    - <tmp>/merged-scenario-values.yaml
+    - <tmp>/values-resolved-images.yaml
+  resolvedImageFile: <tmp>/values-resolved-images.yaml
+  resolvedImageContent: |
+    connectors:
+        image:
+            digest: sha256:ffd8428e54f4f21995e5cea0564c4123ecd80a968208965138873d032355b4d9
+            repository: camunda/connectors-bundle
+            tag: 8.10.2
+    identity:
+        image:
+            digest: sha256:5731e2c25013170e8de6db961d895c730f0f44aa73914e127da0e9062f06c488
+            repository: camunda/identity
+            tag: 8.10.2
+    optimize:
+        image:
+            digest: sha256:3aef37944561fc34f842b64548f624c1892496c29056679f58a92e40909aee49
+            repository: camunda/optimize
+            tag: 8.10.7
+    orchestration:
+        image:
+            digest: sha256:1d943ed22fab746bd5fd7e19f928f90ba06516d3cc0d28a98f1a1539db1ef585
+            repository: camunda/camunda
+            tag: 8.10.7
+    webModeler:
+        restapi:
+            image:
+                digest: sha256:d05bcf0e747572601054f389c7482a82eb5f333d35bd96718a94580343fec1ba
+                repository: camunda/hub
+                tag: 8.10.4
+        websockets:
+            image:
+                digest: sha256:baacba31529b65359c0c54ae88e720ff0351c32f93e0939f7ebd32cbf6e0e3d9
+                repository: camunda/hub-websockets
+                tag: 8.10.4
+  mergedValuesSha256: 82525a26bf280c578cb3b4ddf1129dc75387da2e98f31bd729a33cece1abd37e
+- scenario: component-persistence-upgrade
+  shortname: cprsu
+  flow: upgrade-minor
+  tier: 2
+  scenarioLayers:
+    - values/base.yaml
+    - values/base-upgrade.yaml
+    - values/identity/keycloak.yaml
+    - values/persistence/elasticsearch.yaml
+    - values/platform/gke.yaml
+    - ../infra/values-infra-distroci.yaml
+    - values/features/persistence.yaml
+    - values/features/postgresql-companion.yaml
+  chain:
+    - charts/camunda-platform-8.10/values-digest.yaml
+    - <tmp>/merged-scenario-values.yaml
+    - <tmp>/values-resolved-images.yaml
+  resolvedImageFile: <tmp>/values-resolved-images.yaml
+  resolvedImageContent: |
+    connectors:
+        image:
+            digest: sha256:ffd8428e54f4f21995e5cea0564c4123ecd80a968208965138873d032355b4d9
+            repository: camunda/connectors-bundle
+            tag: 8.10.2
+    identity:
+        image:
+            digest: sha256:5731e2c25013170e8de6db961d895c730f0f44aa73914e127da0e9062f06c488
+            repository: camunda/identity
+            tag: 8.10.2
+    optimize:
+        image:
+            digest: sha256:3aef37944561fc34f842b64548f624c1892496c29056679f58a92e40909aee49
+            repository: camunda/optimize
+            tag: 8.10.7
+    orchestration:
+        image:
+            digest: sha256:1d943ed22fab746bd5fd7e19f928f90ba06516d3cc0d28a98f1a1539db1ef585
+            repository: camunda/camunda
+            tag: 8.10.7
+    webModeler:
+        restapi:
+            image:
+                digest: sha256:d05bcf0e747572601054f389c7482a82eb5f333d35bd96718a94580343fec1ba
+                repository: camunda/hub
+                tag: 8.10.4
+        websockets:
+            image:
+                digest: sha256:baacba31529b65359c0c54ae88e720ff0351c32f93e0939f7ebd32cbf6e0e3d9
+                repository: camunda/hub-websockets
+                tag: 8.10.4
+  mergedValuesSha256: b28f30746868b89e710bee55cebfe46b7f6e711180058007307ac90504568594
+- scenario: hub-legacy
+  shortname: huble
+  flow: install
+  tier: 2
+  scenarioLayers:
+    - values/base.yaml
+    - values/identity/keycloak.yaml
+    - values/persistence/elasticsearch.yaml
+    - values/platform/gke.yaml
+    - ../infra/values-infra-distroci.yaml
+    - values/features/hub-legacy.yaml
+  chain:
+    - charts/camunda-platform-8.10/values-digest.yaml
+    - <tmp>/merged-scenario-values.yaml
+    - <tmp>/values-resolved-images.yaml
+  resolvedImageFile: <tmp>/values-resolved-images.yaml
+  resolvedImageContent: |
+    connectors:
+        image:
+            digest: sha256:ffd8428e54f4f21995e5cea0564c4123ecd80a968208965138873d032355b4d9
+            repository: camunda/connectors-bundle
+            tag: 8.10.2
+    identity:
+        image:
+            digest: sha256:5731e2c25013170e8de6db961d895c730f0f44aa73914e127da0e9062f06c488
+            repository: camunda/identity
+            tag: 8.10.2
+    optimize:
+        image:
+            digest: sha256:3aef37944561fc34f842b64548f624c1892496c29056679f58a92e40909aee49
+            repository: camunda/optimize
+            tag: 8.10.7
+    orchestration:
+        image:
+            digest: sha256:1d943ed22fab746bd5fd7e19f928f90ba06516d3cc0d28a98f1a1539db1ef585
+            repository: camunda/camunda
+            tag: 8.10.7
+    webModeler:
+        restapi:
+            image:
+                digest: sha256:d05bcf0e747572601054f389c7482a82eb5f333d35bd96718a94580343fec1ba
+                repository: camunda/hub
+                tag: 8.10.4
+        websockets:
+            image:
+                digest: sha256:baacba31529b65359c0c54ae88e720ff0351c32f93e0939f7ebd32cbf6e0e3d9
+                repository: camunda/hub-websockets
+                tag: 8.10.4
+  mergedValuesSha256: fa8339d079c92665b4e06e7192ff8fab62ae570dc2d08ae13c0fa188d49b3d7c
+- scenario: shadow-e2e
+  shortname: shde2
+  flow: install
+  tier: 2
+  scenarioLayers:
+    - values/base.yaml
+    - values/identity/keycloak.yaml
+    - values/persistence/elasticsearch.yaml
+    - values/platform/gke.yaml
+    - ../infra/values-infra-distroci.yaml
+  chain:
+    - charts/camunda-platform-8.10/values-digest.yaml
+    - <tmp>/merged-scenario-values.yaml
+    - <tmp>/values-resolved-images.yaml
+  resolvedImageFile: <tmp>/values-resolved-images.yaml
+  resolvedImageContent: |
+    connectors:
+        image:
+            digest: sha256:ffd8428e54f4f21995e5cea0564c4123ecd80a968208965138873d032355b4d9
+            repository: camunda/connectors-bundle
+            tag: 8.10.2
+    identity:
+        image:
+            digest: sha256:5731e2c25013170e8de6db961d895c730f0f44aa73914e127da0e9062f06c488
+            repository: camunda/identity
+            tag: 8.10.2
+    optimize:
+        image:
+            digest: sha256:3aef37944561fc34f842b64548f624c1892496c29056679f58a92e40909aee49
+            repository: camunda/optimize
+            tag: 8.10.7
+    orchestration:
+        image:
+            digest: sha256:1d943ed22fab746bd5fd7e19f928f90ba06516d3cc0d28a98f1a1539db1ef585
+            repository: camunda/camunda
+            tag: 8.10.7
+    webModeler:
+        restapi:
+            image:
+                digest: sha256:d05bcf0e747572601054f389c7482a82eb5f333d35bd96718a94580343fec1ba
+                repository: camunda/hub
+                tag: 8.10.4
+        websockets:
+            image:
+                digest: sha256:baacba31529b65359c0c54ae88e720ff0351c32f93e0939f7ebd32cbf6e0e3d9
+                repository: camunda/hub-websockets
+                tag: 8.10.4
+  mergedValuesSha256: c500a463b2f6c71cab1db5233a87e835912836aead55b2deac204827b0379ca3
+- scenario: hub-legacy
+  shortname: hublu
+  flow: upgrade-minor
+  tier: 2
+  scenarioLayers:
+    - values/base.yaml
+    - values/identity/keycloak.yaml
+    - values/persistence/elasticsearch.yaml
+    - values/platform/gke.yaml
+    - ../infra/values-infra-distroci.yaml
+    - values/features/hub-legacy.yaml
+    - values/features/postgresql-companion.yaml
+  chain:
+    - charts/camunda-platform-8.10/values-digest.yaml
+    - <tmp>/merged-scenario-values.yaml
+    - <tmp>/values-resolved-images.yaml
+  resolvedImageFile: <tmp>/values-resolved-images.yaml
+  resolvedImageContent: |
+    connectors:
+        image:
+            digest: sha256:ffd8428e54f4f21995e5cea0564c4123ecd80a968208965138873d032355b4d9
+            repository: camunda/connectors-bundle
+            tag: 8.10.2
+    identity:
+        image:
+            digest: sha256:5731e2c25013170e8de6db961d895c730f0f44aa73914e127da0e9062f06c488
+            repository: camunda/identity
+            tag: 8.10.2
+    optimize:
+        image:
+            digest: sha256:3aef37944561fc34f842b64548f624c1892496c29056679f58a92e40909aee49
+            repository: camunda/optimize
+            tag: 8.10.7
+    orchestration:
+        image:
+            digest: sha256:1d943ed22fab746bd5fd7e19f928f90ba06516d3cc0d28a98f1a1539db1ef585
+            repository: camunda/camunda
+            tag: 8.10.7
+    webModeler:
+        restapi:
+            image:
+                digest: sha256:d05bcf0e747572601054f389c7482a82eb5f333d35bd96718a94580343fec1ba
+                repository: camunda/hub
+                tag: 8.10.4
+        websockets:
+            image:
+                digest: sha256:baacba31529b65359c0c54ae88e720ff0351c32f93e0939f7ebd32cbf6e0e3d9
+                repository: camunda/hub-websockets
+                tag: 8.10.4
+  mergedValuesSha256: fa8339d079c92665b4e06e7192ff8fab62ae570dc2d08ae13c0fa188d49b3d7c
+- scenario: hub-mixed
+  shortname: hubmu
+  flow: upgrade-minor
+  tier: 2
+  scenarioLayers:
+    - values/base.yaml
+    - values/identity/keycloak.yaml
+    - values/persistence/elasticsearch.yaml
+    - values/platform/gke.yaml
+    - ../infra/values-infra-distroci.yaml
+    - values/features/hub-mixed.yaml
+    - values/features/postgresql-companion.yaml
+  chain:
+    - charts/camunda-platform-8.10/values-digest.yaml
+    - <tmp>/merged-scenario-values.yaml
+    - <tmp>/values-resolved-images.yaml
+  resolvedImageFile: <tmp>/values-resolved-images.yaml
+  resolvedImageContent: |
+    connectors:
+        image:
+            digest: sha256:ffd8428e54f4f21995e5cea0564c4123ecd80a968208965138873d032355b4d9
+            repository: camunda/connectors-bundle
+            tag: 8.10.2
+    identity:
+        image:
+            digest: sha256:5731e2c25013170e8de6db961d895c730f0f44aa73914e127da0e9062f06c488
+            repository: camunda/identity
+            tag: 8.10.2
+    optimize:
+        image:
+            digest: sha256:3aef37944561fc34f842b64548f624c1892496c29056679f58a92e40909aee49
+            repository: camunda/optimize
+            tag: 8.10.7
+    orchestration:
+        image:
+            digest: sha256:1d943ed22fab746bd5fd7e19f928f90ba06516d3cc0d28a98f1a1539db1ef585
+            repository: camunda/camunda
+            tag: 8.10.7
+    webModeler:
+        restapi:
+            image:
+                digest: sha256:d05bcf0e747572601054f389c7482a82eb5f333d35bd96718a94580343fec1ba
+                repository: camunda/hub
+                tag: 8.10.4
+        websockets:
+            image:
+                digest: sha256:baacba31529b65359c0c54ae88e720ff0351c32f93e0939f7ebd32cbf6e0e3d9
+                repository: camunda/hub-websockets
+                tag: 8.10.4
+  mergedValuesSha256: 059214075b7e854e77389850cdd67e496dad1e8a838b5a96f1ddef1785a560b2
+- scenario: hub-webmodeler-only
+  shortname: hubwo
+  flow: upgrade-minor
+  tier: 2
+  scenarioLayers:
+    - values/base.yaml
+    - values/identity/keycloak.yaml
+    - values/persistence/elasticsearch-companion.yaml
+    - values/platform/gke.yaml
+    - ../infra/values-infra-distroci.yaml
+    - values/features/hub-webmodeler-only.yaml
+  chain:
+    - charts/camunda-platform-8.10/values-digest.yaml
+    - <tmp>/merged-scenario-values.yaml
+    - <tmp>/values-resolved-images.yaml
+  resolvedImageFile: <tmp>/values-resolved-images.yaml
+  resolvedImageContent: |
+    connectors:
+        image:
+            digest: sha256:ffd8428e54f4f21995e5cea0564c4123ecd80a968208965138873d032355b4d9
+            repository: camunda/connectors-bundle
+            tag: 8.10.2
+    identity:
+        image:
+            digest: sha256:5731e2c25013170e8de6db961d895c730f0f44aa73914e127da0e9062f06c488
+            repository: camunda/identity
+            tag: 8.10.2
+    optimize:
+        image:
+            digest: sha256:3aef37944561fc34f842b64548f624c1892496c29056679f58a92e40909aee49
+            repository: camunda/optimize
+            tag: 8.10.7
+    orchestration:
+        image:
+            digest: sha256:1d943ed22fab746bd5fd7e19f928f90ba06516d3cc0d28a98f1a1539db1ef585
+            repository: camunda/camunda
+            tag: 8.10.7
+    webModeler:
+        restapi:
+            image:
+                digest: sha256:d05bcf0e747572601054f389c7482a82eb5f333d35bd96718a94580343fec1ba
+                repository: camunda/hub
+                tag: 8.10.4
+        websockets:
+            image:
+                digest: sha256:baacba31529b65359c0c54ae88e720ff0351c32f93e0939f7ebd32cbf6e0e3d9
+                repository: camunda/hub-websockets
+                tag: 8.10.4
+  mergedValuesSha256: 11f6ebe56bfad93853cce00d5b9c0b97f800838cd0761e1a5fc44e3832dbd478
+- scenario: hub-console-only
+  shortname: hubco
+  flow: upgrade-minor
+  tier: 2
+  scenarioLayers:
+    - values/base.yaml
+    - values/identity/keycloak.yaml
+    - values/persistence/elasticsearch-companion.yaml
+    - values/platform/gke.yaml
+    - ../infra/values-infra-distroci.yaml
+    - values/features/hub-console-only.yaml
+  chain:
+    - charts/camunda-platform-8.10/values-digest.yaml
+    - <tmp>/merged-scenario-values.yaml
+    - <tmp>/values-resolved-images.yaml
+  resolvedImageFile: <tmp>/values-resolved-images.yaml
+  resolvedImageContent: |
+    connectors:
+        image:
+            digest: sha256:ffd8428e54f4f21995e5cea0564c4123ecd80a968208965138873d032355b4d9
+            repository: camunda/connectors-bundle
+            tag: 8.10.2
+    identity:
+        image:
+            digest: sha256:5731e2c25013170e8de6db961d895c730f0f44aa73914e127da0e9062f06c488
+            repository: camunda/identity
+            tag: 8.10.2
+    optimize:
+        image:
+            digest: sha256:3aef37944561fc34f842b64548f624c1892496c29056679f58a92e40909aee49
+            repository: camunda/optimize
+            tag: 8.10.7
+    orchestration:
+        image:
+            digest: sha256:1d943ed22fab746bd5fd7e19f928f90ba06516d3cc0d28a98f1a1539db1ef585
+            repository: camunda/camunda
+            tag: 8.10.7
+    webModeler:
+        restapi:
+            image:
+                digest: sha256:d05bcf0e747572601054f389c7482a82eb5f333d35bd96718a94580343fec1ba
+                repository: camunda/hub
+                tag: 8.10.4
+        websockets:
+            image:
+                digest: sha256:baacba31529b65359c0c54ae88e720ff0351c32f93e0939f7ebd32cbf6e0e3d9
+                repository: camunda/hub-websockets
+                tag: 8.10.4
+  mergedValuesSha256: 901df5e4d755c8ea979231fdc84e42b8fa196d8cac0b10a278f48ff84086cae2
+- scenario: hub-external-db
+  shortname: hubdb
+  flow: install
+  tier: 2
+  scenarioLayers:
+    - values/base.yaml
+    - values/identity/keycloak.yaml
+    - values/persistence/elasticsearch.yaml
+    - values/platform/gke.yaml
+    - ../infra/values-infra-distroci.yaml
+    - values/features/hub-external-db.yaml
+  chain:
+    - charts/camunda-platform-8.10/values-digest.yaml
+    - <tmp>/merged-scenario-values.yaml
+    - <tmp>/values-resolved-images.yaml
+  resolvedImageFile: <tmp>/values-resolved-images.yaml
+  resolvedImageContent: |
+    connectors:
+        image:
+            digest: sha256:ffd8428e54f4f21995e5cea0564c4123ecd80a968208965138873d032355b4d9
+            repository: camunda/connectors-bundle
+            tag: 8.10.2
+    identity:
+        image:
+            digest: sha256:5731e2c25013170e8de6db961d895c730f0f44aa73914e127da0e9062f06c488
+            repository: camunda/identity
+            tag: 8.10.2
+    optimize:
+        image:
+            digest: sha256:3aef37944561fc34f842b64548f624c1892496c29056679f58a92e40909aee49
+            repository: camunda/optimize
+            tag: 8.10.7
+    orchestration:
+        image:
+            digest: sha256:1d943ed22fab746bd5fd7e19f928f90ba06516d3cc0d28a98f1a1539db1ef585
+            repository: camunda/camunda
+            tag: 8.10.7
+    webModeler:
+        restapi:
+            image:
+                digest: sha256:d05bcf0e747572601054f389c7482a82eb5f333d35bd96718a94580343fec1ba
+                repository: camunda/hub
+                tag: 8.10.4
+        websockets:
+            image:
+                digest: sha256:baacba31529b65359c0c54ae88e720ff0351c32f93e0939f7ebd32cbf6e0e3d9
+                repository: camunda/hub-websockets
+                tag: 8.10.4
+  mergedValuesSha256: 5534e3b9965f95ef29a0ae0ce16f07bdb186841a9170cde0c64bfdeeae388659
+- scenario: keycloak-original
+  shortname: keyco
+  flow: install
+  tier: 1
+  scenarioLayers:
+    - values/base.yaml
+    - values/identity/keycloak.yaml
+    - values/persistence/elasticsearch.yaml
+    - values/platform/gke.yaml
+    - ../infra/values-infra-distroci.yaml
+    - values/features/hub-ping.yaml
+    - values/features/hub-ping-keycloak-token-endpoint.yaml
+  chain:
+    - charts/camunda-platform-8.10/values-digest.yaml
+    - <tmp>/merged-scenario-values.yaml
+    - <tmp>/values-resolved-images.yaml
+  resolvedImageFile: <tmp>/values-resolved-images.yaml
+  resolvedImageContent: |
+    connectors:
+        image:
+            digest: sha256:ffd8428e54f4f21995e5cea0564c4123ecd80a968208965138873d032355b4d9
+            repository: camunda/connectors-bundle
+            tag: 8.10.2
+    identity:
+        image:
+            digest: sha256:5731e2c25013170e8de6db961d895c730f0f44aa73914e127da0e9062f06c488
+            repository: camunda/identity
+            tag: 8.10.2
+    optimize:
+        image:
+            digest: sha256:3aef37944561fc34f842b64548f624c1892496c29056679f58a92e40909aee49
+            repository: camunda/optimize
+            tag: 8.10.7
+    orchestration:
+        image:
+            digest: sha256:1d943ed22fab746bd5fd7e19f928f90ba06516d3cc0d28a98f1a1539db1ef585
+            repository: camunda/camunda
+            tag: 8.10.7
+    webModeler:
+        restapi:
+            image:
+                digest: sha256:d05bcf0e747572601054f389c7482a82eb5f333d35bd96718a94580343fec1ba
+                repository: camunda/hub
+                tag: 8.10.4
+        websockets:
+            image:
+                digest: sha256:baacba31529b65359c0c54ae88e720ff0351c32f93e0939f7ebd32cbf6e0e3d9
+                repository: camunda/hub-websockets
+                tag: 8.10.4
+  mergedValuesSha256: 02bdf56152ccc849ae9759b75b882c57b6bb4e3b0d35ff3062188081491e379b
+- scenario: multinamespace
+  shortname: mns
+  flow: install
+  tier: 2
+  scenarioLayers:
+    - values/base.yaml
+    - values/identity/keycloak.yaml
+    - values/persistence/elasticsearch.yaml
+    - values/platform/gke.yaml
+    - ../infra/values-infra-distroci.yaml
+  chain:
+    - charts/camunda-platform-8.10/values-digest.yaml
+    - <tmp>/merged-scenario-values.yaml
+    - <tmp>/values-resolved-images.yaml
+  resolvedImageFile: <tmp>/values-resolved-images.yaml
+  resolvedImageContent: |
+    connectors:
+        image:
+            digest: sha256:ffd8428e54f4f21995e5cea0564c4123ecd80a968208965138873d032355b4d9
+            repository: camunda/connectors-bundle
+            tag: 8.10.2
+    identity:
+        image:
+            digest: sha256:5731e2c25013170e8de6db961d895c730f0f44aa73914e127da0e9062f06c488
+            repository: camunda/identity
+            tag: 8.10.2
+    optimize:
+        image:
+            digest: sha256:3aef37944561fc34f842b64548f624c1892496c29056679f58a92e40909aee49
+            repository: camunda/optimize
+            tag: 8.10.7
+    orchestration:
+        image:
+            digest: sha256:1d943ed22fab746bd5fd7e19f928f90ba06516d3cc0d28a98f1a1539db1ef585
+            repository: camunda/camunda
+            tag: 8.10.7
+    webModeler:
+        restapi:
+            image:
+                digest: sha256:d05bcf0e747572601054f389c7482a82eb5f333d35bd96718a94580343fec1ba
+                repository: camunda/hub
+                tag: 8.10.4
+        websockets:
+            image:
+                digest: sha256:baacba31529b65359c0c54ae88e720ff0351c32f93e0939f7ebd32cbf6e0e3d9
+                repository: camunda/hub-websockets
+                tag: 8.10.4
+  mergedValuesSha256: c500a463b2f6c71cab1db5233a87e835912836aead55b2deac204827b0379ca3
+- scenario: multinamespace-2orch
+  shortname: mns2
+  flow: install
+  tier: 1
+  scenarioLayers:
+    - values/base.yaml
+    - values/identity/keycloak.yaml
+    - values/persistence/elasticsearch.yaml
+    - values/platform/gke.yaml
+    - ../infra/values-infra-distroci.yaml
+  chain:
+    - charts/camunda-platform-8.10/values-digest.yaml
+    - <tmp>/merged-scenario-values.yaml
+    - <tmp>/values-resolved-images.yaml
+  resolvedImageFile: <tmp>/values-resolved-images.yaml
+  resolvedImageContent: |
+    connectors:
+        image:
+            digest: sha256:ffd8428e54f4f21995e5cea0564c4123ecd80a968208965138873d032355b4d9
+            repository: camunda/connectors-bundle
+            tag: 8.10.2
+    identity:
+        image:
+            digest: sha256:5731e2c25013170e8de6db961d895c730f0f44aa73914e127da0e9062f06c488
+            repository: camunda/identity
+            tag: 8.10.2
+    optimize:
+        image:
+            digest: sha256:3aef37944561fc34f842b64548f624c1892496c29056679f58a92e40909aee49
+            repository: camunda/optimize
+            tag: 8.10.7
+    orchestration:
+        image:
+            digest: sha256:1d943ed22fab746bd5fd7e19f928f90ba06516d3cc0d28a98f1a1539db1ef585
+            repository: camunda/camunda
+            tag: 8.10.7
+    webModeler:
+        restapi:
+            image:
+                digest: sha256:d05bcf0e747572601054f389c7482a82eb5f333d35bd96718a94580343fec1ba
+                repository: camunda/hub
+                tag: 8.10.4
+        websockets:
+            image:
+                digest: sha256:baacba31529b65359c0c54ae88e720ff0351c32f93e0939f7ebd32cbf6e0e3d9
+                repository: camunda/hub-websockets
+                tag: 8.10.4
+  mergedValuesSha256: c500a463b2f6c71cab1db5233a87e835912836aead55b2deac204827b0379ca3
+- scenario: multinamespace-optimize
+  shortname: mnop
+  flow: install
+  tier: 2
+  scenarioLayers:
+    - values/base.yaml
+    - values/identity/keycloak.yaml
+    - values/persistence/elasticsearch.yaml
+    - values/platform/gke.yaml
+    - ../infra/values-infra-distroci.yaml
+  chain:
+    - charts/camunda-platform-8.10/values-digest.yaml
+    - <tmp>/merged-scenario-values.yaml
+    - <tmp>/values-resolved-images.yaml
+  resolvedImageFile: <tmp>/values-resolved-images.yaml
+  resolvedImageContent: |
+    connectors:
+        image:
+            digest: sha256:ffd8428e54f4f21995e5cea0564c4123ecd80a968208965138873d032355b4d9
+            repository: camunda/connectors-bundle
+            tag: 8.10.2
+    identity:
+        image:
+            digest: sha256:5731e2c25013170e8de6db961d895c730f0f44aa73914e127da0e9062f06c488
+            repository: camunda/identity
+            tag: 8.10.2
+    optimize:
+        image:
+            digest: sha256:3aef37944561fc34f842b64548f624c1892496c29056679f58a92e40909aee49
+            repository: camunda/optimize
+            tag: 8.10.7
+    orchestration:
+        image:
+            digest: sha256:1d943ed22fab746bd5fd7e19f928f90ba06516d3cc0d28a98f1a1539db1ef585
+            repository: camunda/camunda
+            tag: 8.10.7
+    webModeler:
+        restapi:
+            image:
+                digest: sha256:d05bcf0e747572601054f389c7482a82eb5f333d35bd96718a94580343fec1ba
+                repository: camunda/hub
+                tag: 8.10.4
+        websockets:
+            image:
+                digest: sha256:baacba31529b65359c0c54ae88e720ff0351c32f93e0939f7ebd32cbf6e0e3d9
+                repository: camunda/hub-websockets
+                tag: 8.10.4
+  mergedValuesSha256: c500a463b2f6c71cab1db5233a87e835912836aead55b2deac204827b0379ca3
+- scenario: physicaltenants
+  shortname: ptnt
+  flow: install
+  tier: 2
+  scenarioLayers:
+    - values/base.yaml
+    - values/identity/keycloak.yaml
+    - values/persistence/elasticsearch.yaml
+    - values/platform/gke.yaml
+    - ../infra/values-infra-distroci.yaml
+  chain:
+    - charts/camunda-platform-8.10/values-digest.yaml
+    - <tmp>/merged-scenario-values.yaml
+    - <tmp>/values-resolved-images.yaml
+  resolvedImageFile: <tmp>/values-resolved-images.yaml
+  resolvedImageContent: |
+    connectors:
+        image:
+            digest: sha256:ffd8428e54f4f21995e5cea0564c4123ecd80a968208965138873d032355b4d9
+            repository: camunda/connectors-bundle
+            tag: 8.10.2
+    identity:
+        image:
+            digest: sha256:5731e2c25013170e8de6db961d895c730f0f44aa73914e127da0e9062f06c488
+            repository: camunda/identity
+            tag: 8.10.2
+    optimize:
+        image:
+            digest: sha256:3aef37944561fc34f842b64548f624c1892496c29056679f58a92e40909aee49
+            repository: camunda/optimize
+            tag: 8.10.7
+    orchestration:
+        image:
+            digest: sha256:1d943ed22fab746bd5fd7e19f928f90ba06516d3cc0d28a98f1a1539db1ef585
+            repository: camunda/camunda
+            tag: 8.10.7
+    webModeler:
+        restapi:
+            image:
+                digest: sha256:d05bcf0e747572601054f389c7482a82eb5f333d35bd96718a94580343fec1ba
+                repository: camunda/hub
+                tag: 8.10.4
+        websockets:
+            image:
+                digest: sha256:baacba31529b65359c0c54ae88e720ff0351c32f93e0939f7ebd32cbf6e0e3d9
+                repository: camunda/hub-websockets
+                tag: 8.10.4
+  mergedValuesSha256: c500a463b2f6c71cab1db5233a87e835912836aead55b2deac204827b0379ca3
