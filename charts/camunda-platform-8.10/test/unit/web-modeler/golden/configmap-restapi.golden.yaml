@@ -55,14 +55,14 @@ data:
           
           - id: "management-cluster"
             name: "Management Identity"
-            version: "8.10.3"
+            version: "8.10.4"
             authentication: "BASIC"
             authorizations:
               enabled: false
             components:
             - name: Identity
               type: identity
-              version: "8.10.3"
+              version: "8.10.4"
               urls:
                 webapp: "http://localhost:8080"
                 readiness: "http://camunda-platform-test-identity.camunda-platform:82/actuator/health"
