@@ -134,7 +134,7 @@ Every pull request (PR) related to Helm chart changes must adhere to the followi
 - **Unit tests:** Changes should include or update corresponding unit tests where applicable.
 - **Documentation updates:** User or technical documentation must reflect configuration or behavior changes.
 - **Passing CI:** All CI checks must pass successfully before merge.
-- **Code review:** At least one formal human review must be completed and approved. **Exception:** PRs authored by a maintainer listed in [`.github/auto-approve-allowlist.txt`](https://github.com/camunda/camunda-platform-helm/blob/main/.github/auto-approve-allowlist.txt) may be approved by `distro-ci[bot]` under the team-sanctioned [trusted-author auto-approval](#trusted-author-auto-approval) control. This exception never applies to PRs that modify CI-privileged paths (`.github/workflows/`, `.github/actions/`, `CODEOWNERS`, the allowlist), a chart's public API (values.yaml, values.schema.json, constraints.tpl), or agent instruction files (`AGENTS.md`/`CLAUDE.md`/`SKILLS.md`, `.claude/`, `.github/instructions/`, `.github/copilot-instructions.md`, `.github/escalation-policy.md`) — those always require a human review.
+- **Code review:** At least one formal human review must be completed and approved.
 - **Atomic changes:** Aim for small, focused PRs that address a single issue or configuration change to simplify review and reduce merge complexity.
 
 ### Automated AI review and escalation
@@ -148,19 +148,9 @@ The escalation decision is governed by the [escalation policy](https://github.co
 
 Contributors should treat the `human-review-required` label as a signal that the Distro team must approve before merge.
 
-### Trusted-author auto-approval
+### `main` ruleset
 
-The [`Repo - Auto Approve`](https://github.com/camunda/camunda-platform-helm/blob/main/.github/workflows/repo-auto-approve.yaml) workflow lets `distro-ci[bot]` post an approving review on PRs whose author is listed in `.github/auto-approve-allowlist.txt`. This is a Distro-team-sanctioned control that satisfies the human-review requirement above for those authors, on the basis that the allowlist is a small, high-trust set curated by the team.
-
-Guardrails:
-
-- **Approve-only** — the bot never merges; branch protection (required status checks, merge queue) still gates merge.
-- **Privileged, public-API, and agent-instruction paths always need a human** — any PR whose net diff (including renamed-from paths) touches a CI-privileged path (`.github/workflows/`, `.github/actions/`, `CODEOWNERS`, the allowlist), a chart's public API (`values.yaml`, `values.schema.json`, `constraints.tpl`; chart `test/` fixtures excluded), or an agent instruction file (`AGENTS.md`/`CLAUDE.md`/`SKILLS.md`, `.claude/`, `.github/instructions/`, `.github/copilot-instructions.md`, `.github/escalation-policy.md`) is never auto-approved. The exact set lives in [`.github/auto-approve-protected-paths.txt`](https://github.com/camunda/camunda-platform-helm/blob/main/.github/auto-approve-protected-paths.txt).
-- **Fail-closed** — if the workflow cannot determine what a PR changed, it does not approve.
-
-Adding or removing allowlist entries requires a normal human-reviewed PR.
-
-**Ruleset constraint:** the `main` ruleset must keep `require_last_push_approval` and `dismiss_stale_reviews_on_push` **off**. Both break the release-please and Renovate bot-merge flows (a bot approval is dismissed or disqualified by the follow-up commit those flows push), and neither adds real protection to this control: the allowlist is a subset of the ruleset's bypass actors, so an allowlisted author can already merge without review regardless.
+The `main` ruleset must keep `require_last_push_approval` and `dismiss_stale_reviews_on_push` **off**. Both break the release-please and Renovate bot-merge flows: the follow-up commit that those flows push dismisses or disqualifies the bot approval.
 
 ### Helm version
 
