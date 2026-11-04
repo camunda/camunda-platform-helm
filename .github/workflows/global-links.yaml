@@ -110,6 +110,20 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: List chart documentation links
+        uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2.9.0
+        with:
+          lycheeVersion: v0.24.2
+          format: json
+          jobSummary: false
+          output: ./lychee/chart-docs-links.txt
+          args: >-
+            -c ./lychee-links.toml
+            --dump --no-progress
+            --include '^https://docs\.camunda\.'
+            --exclude '.*'
+            './charts/camunda-platform-*/**/*'
+
       - name: Run lychee on chart documentation links
         continue-on-error: ${{ github.event_name == 'pull_request' }}
         uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2.9.0
@@ -119,10 +133,8 @@ jobs:
           output: ./lychee/chart-docs-links.md
           args: >-
             -c ./lychee-links.toml
-            --include '^https://docs\.camunda\.'
-            --exclude '.*'
             --verbose --no-progress
-            './charts/camunda-platform-*/**/*'
+            ./lychee/chart-docs-links.txt
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
