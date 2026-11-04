@@ -1,0 +1,25 @@
+# Paths that ALWAYS require a human review — distro-ci never auto-approves a PR
+# whose net diff touches any of these. One grep -E (extended regex) pattern per line;
+# blank lines and # comments are ignored. Matched against every file in the PR net
+# diff (new paths and rename sources), AFTER chart test fixtures (charts/<chart>/test/**) are excluded.
+
+# --- CI-privileged paths (.github) ---
+^\.github/workflows/
+^\.github/actions/
+^\.github/CODEOWNERS$
+^\.github/auto-approve-allowlist\.txt$
+^\.github/auto-approve-protected-paths\.txt$
+
+# --- Chart public API (the user-facing contract) ---
+^charts/.+/values\.yaml$
+^charts/.+/values\.schema(\.extra)?\.json$
+^charts/.+/constraints\.tpl$
+
+# --- Agent instruction files (steer AI behavior; always human-reviewed) ---
+(^|/)AGENTS\.md$
+(^|/)CLAUDE\.md$
+^SKILLS\.md$
+^\.claude/
+^\.github/copilot-instructions\.md$
+^\.github/instructions/
+^\.github/escalation-policy\.md$
