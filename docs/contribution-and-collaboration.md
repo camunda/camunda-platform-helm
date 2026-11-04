@@ -144,7 +144,7 @@ PRs are automatically reviewed by [`crev`](https://github.com/camunda/crev), an 
 - A **commit status** (`crev/escalation`) indicating whether human review is required.
 - A **label** (`human-review-required` or `ai-review-sufficient`) based on the escalation score.
 
-The escalation decision is governed by the [escalation policy](https://github.com/camunda/camunda-platform-helm/blob/main/.github/escalation-policy.md). PRs that touch security surfaces, span multiple chart versions, or violate hard rules always require human review. The label is advisory: every PR still needs the human approval above.
+The escalation decision is governed by the [escalation policy](https://github.com/camunda/camunda-platform-helm/blob/main/.github/escalation-policy.md). PRs that touch security surfaces, span multiple chart versions, or violate hard rules always require human review. During the evaluation phase of the escalation policy, the label is advisory and every PR still needs the human approval above.
 
 Contributors should treat the `human-review-required` label as a signal that the Distro team must approve before merge.
 
