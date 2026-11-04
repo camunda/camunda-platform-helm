@@ -12,7 +12,7 @@ console:
   # https://hub.docker.com/r/camunda/console/tags
   image:
     repository: camunda/console
-    tag: 8.9.132
+    tag: 8.9.133
 
 connectors:
   # https://hub.docker.com/r/camunda/connectors-bundle/tags
@@ -50,7 +50,7 @@ identity:
   # https://hub.docker.com/r/camunda/identity/tags
   image:
     repository: camunda/identity
-    tag: 8.9.13
+    tag: 8.9.14
 
 identityKeycloak:
   image:
