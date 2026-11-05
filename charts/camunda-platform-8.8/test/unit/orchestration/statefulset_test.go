@@ -864,6 +864,65 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 					},
 					"Orchestration should have OIDC secret when orchestration.authMethod=oidc")
 			},
+		}, {
+			Name: "TestLog4j2MountNotDuplicatedWhenBothSourcesSetIt",
+			Values: map[string]string{
+				"orchestration.log4j2":                          "<Configuration>log4j2-value</Configuration>",
+				"orchestration.extraConfiguration.log4j2\\.xml": "<Configuration>operator</Configuration>",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var statefulSet appsv1.StatefulSet
+				helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+				count := 0
+				for _, vm := range statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts {
+					if vm.MountPath == "/usr/local/camunda/config/log4j2.xml" {
+						count++
+					}
+				}
+				s.Require().Equal(1, count,
+					"log4j2.xml must be mounted exactly once when orchestration.log4j2 and extraConfiguration both set it")
+			},
+		}, {
+			Name: "TestLog4j2MountedOnceFromExtraConfigurationAlone",
+			Values: map[string]string{
+				"orchestration.extraConfiguration.log4j2\\.xml": "<Configuration>operator</Configuration>",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var statefulSet appsv1.StatefulSet
+				helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+				count := 0
+				for _, vm := range statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts {
+					if vm.MountPath == "/usr/local/camunda/config/log4j2.xml" {
+						count++
+					}
+				}
+				s.Require().Equal(1, count, "log4j2.xml should be mounted once from extraConfiguration")
+			},
+		}, {
+			Name: "TestImporterLog4j2MountNotDuplicatedWhenBothSourcesSetIt",
+			CaseTemplates: &testhelpers.CaseTemplate{
+				Templates: []string{"templates/orchestration/importer-deployment.yaml"},
+			},
+			Values: map[string]string{
+				"orchestration.migration.data.enabled":          "true",
+				"orchestration.log4j2":                          "<Configuration>log4j2-value</Configuration>",
+				"orchestration.extraConfiguration.log4j2\\.xml": "<Configuration>operator</Configuration>",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				count := 0
+				for _, vm := range deployment.Spec.Template.Spec.Containers[0].VolumeMounts {
+					if vm.MountPath == "/usr/local/camunda/config/log4j2.xml" {
+						count++
+					}
+				}
+				s.Require().Equal(1, count,
+					"the importer must mount log4j2.xml exactly once when orchestration.log4j2 and extraConfiguration both set it")
+			},
 		},
 	}
 
