@@ -208,15 +208,7 @@ runs:
 
     - name: Install tools
       if: steps.check-tools.outputs.skip-install != 'true'
-      uses: ./.github/actions/install-tool-versions
-      with:
-        tools: |
-          helm
-          kubectl
-          oc
-          yq
-          zbctl
-          jq
+      uses: camunda/infraex-common-config/.github/actions/asdf-install-tooling@e2923304b40dfc031b3f595bcc1445e90c981adb # 3.0.0
 
     - name: Download deploy-camunda binary
       if: inputs.binary-artifact-name != ''

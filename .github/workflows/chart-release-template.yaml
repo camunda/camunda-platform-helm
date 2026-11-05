@@ -87,11 +87,7 @@ jobs:
           fetch-depth: 0
           ref: ${{ inputs.branch }}
       - name: Install tools
-        uses: ./.github/actions/install-tool-versions
-        with:
-          tools: |
-            helm
-            yq
+        uses: camunda/infraex-common-config/.github/actions/asdf-install-tooling@e2923304b40dfc031b3f595bcc1445e90c981adb # 3.0.0
       - name: Set vars
         run: |
           # NOTE: Helm CLI only accepts SemVer so we need to use something like "0.0.0-snapshot-latest".

@@ -49,7 +49,6 @@ jobs:
             mcp:
               - 'helm-values-mcp/**'
               - '.github/workflows/integration-tests-gate.yaml'
-              - '.github/actions/install-tool-versions/**'
               - '.tool-versions'
               - 'charts/camunda-platform-*/Chart.yaml'
               - 'charts/camunda-platform-*/values*.yaml'
@@ -72,10 +71,7 @@ jobs:
         with:
           ref: ${{ github.event_name == 'workflow_dispatch' && inputs.sha || '' }}
       - name: Install Node (from .tool-versions)
-        uses: ./.github/actions/install-tool-versions
-        with:
-          tools: |
-            nodejs
+        uses: camunda/infraex-common-config/.github/actions/asdf-install-tooling@e2923304b40dfc031b3f595bcc1445e90c981adb # 3.0.0
       - name: Install dependencies
         run: make mcp.deps
       - name: Build

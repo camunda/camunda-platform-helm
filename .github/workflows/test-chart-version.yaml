@@ -169,9 +169,7 @@ jobs:
       # merge_group), so push/schedule/dispatch runs still execute the full matrix.
       - name: Install ORAS for runner image resolution
         if: steps.resolve-pr-sha.outputs.pr-head-sha != '' && steps.resolve-e2e-suite.outputs.version != ''
-        uses: ./.github/actions/install-tool-versions
-        with:
-          tools: oras
+        uses: camunda/infraex-common-config/.github/actions/asdf-install-tooling@e2923304b40dfc031b3f595bcc1445e90c981adb # 3.0.0
 
       - name: Setup Go for cache annotation
         if: steps.resolve-pr-sha.outputs.pr-head-sha != '' && steps.resolve-e2e-suite.outputs.version != ''

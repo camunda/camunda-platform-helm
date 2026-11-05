@@ -97,10 +97,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Install tools for tooling
-        uses: ./.github/actions/install-tool-versions
-        with:
-          tools: |
-            golang
+        uses: camunda/infraex-common-config/.github/actions/asdf-install-tooling@e2923304b40dfc031b3f595bcc1445e90c981adb # 3.0.0
 
       - name: Build release-tools
         run: cd scripts/release-tools && go build -o /tmp/release-tools .
@@ -182,12 +179,7 @@ jobs:
           harbor_login
 
       - name: Install tools
-        uses: ./.github/actions/install-tool-versions
-        with:
-          tools: |
-            helm
-            git-cliff
-            yq
+        uses: camunda/infraex-common-config/.github/actions/asdf-install-tooling@e2923304b40dfc031b3f595bcc1445e90c981adb # 3.0.0
 
       - name: Pull and validate dev package
         id: package

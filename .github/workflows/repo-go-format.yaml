@@ -21,10 +21,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Install Go (from .tool-versions)
-        uses: ./.github/actions/install-tool-versions
-        with:
-          tools: |
-            golang
+        uses: camunda/infraex-common-config/.github/actions/asdf-install-tooling@e2923304b40dfc031b3f595bcc1445e90c981adb # 3.0.0
       - name: Check gofmt across all Go files
         run: |
           mapfile -t go_files < <(git ls-files '*.go')

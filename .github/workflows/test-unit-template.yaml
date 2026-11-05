@@ -65,11 +65,7 @@ jobs:
       - uses: camunda/infra-global-github-actions/start-build-monitor@ead99f6c9c536f5c47e443929d47e8fcfdb05a81 # start-build-monitor-1.0.1
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Install tools
-        uses: ./.github/actions/install-tool-versions
-        with:
-          tools: |
-            bats
-            yq
+        uses: camunda/infraex-common-config/.github/actions/asdf-install-tooling@e2923304b40dfc031b3f595bcc1445e90c981adb # 3.0.0
       - name: Install bats-assert
         run: |
           git clone https://github.com/bats-core/bats-assert.git test/test_helper/bats-assert
@@ -109,11 +105,7 @@ jobs:
         echo "${GITHUB_CONTEXT}"
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
     - name: Install tools
-      uses: ./.github/actions/install-tool-versions
-      with:
-        tools: |
-          golang
-          helm
+      uses: camunda/infraex-common-config/.github/actions/asdf-install-tooling@e2923304b40dfc031b3f595bcc1445e90c981adb # 3.0.0
     - name: Configure curl and wget
       uses: ./.github/actions/setup-curl
     - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
@@ -177,11 +169,7 @@ jobs:
       - name: Setup deploy-camunda
         uses: ./.github/actions/setup-deploy-camunda
       - name: Install tools
-        uses: ./.github/actions/install-tool-versions
-        with:
-          tools: |
-            golang
-            helm
+        uses: camunda/infraex-common-config/.github/actions/asdf-install-tooling@e2923304b40dfc031b3f595bcc1445e90c981adb # 3.0.0
       - name: Configure curl and wget
         uses: ./.github/actions/setup-curl
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
