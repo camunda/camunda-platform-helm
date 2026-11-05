@@ -1788,7 +1788,10 @@ jobs:
           fi
 
       - name: Merge into HTML Report
+        env:
+          CAMUNDA_HELM_DIR: ${{ inputs.camunda-helm-dir }}
         run: |
+          set -euo pipefail
           # Check if there are any valid reports to merge
           if [[ ! -d "all-blob-reports" ]] || [[ -z "$(ls -A all-blob-reports/*.zip 2>/dev/null)" ]]; then
             echo "No valid blob reports found, skipping merge"
@@ -1797,7 +1800,12 @@ jobs:
             exit 0
           fi
 
-          npm install -g playwright
+          # Pin Playwright to the exact version the blob reports were recorded with, read from
+          # the chart's test/e2e/package.json (the pin is identical across charts). Unpinned
+          # 'playwright' resolves to the latest release, which is not always installable (an npm
+          # publish race leaves its playwright-core unresolvable) nor merge-compatible.
+          playwright_version="$(node -p "require('./charts/${CAMUNDA_HELM_DIR}/test/e2e/package.json').devDependencies['@playwright/test']")"
+          npm install -g "playwright@${playwright_version}"
           # Topology legs run suites from different chart test directories (8.10, 8.9, ...), and
           # Playwright refuses to merge blob reports recorded under different testDirs unless a
           # merge config names one. The checkout root contains every chart's test directory.
