@@ -1797,7 +1797,11 @@ jobs:
             exit 0
           fi
 
-          npm install -g playwright
+          # Pin to the @playwright/test version the e2e suite records in its blob reports
+          # (see c8-cross-component-e2e-tests package.json): merge-reports needs a matching
+          # Playwright, and an unpinned "latest" also breaks whenever a new release is only
+          # partially published (playwright ahead of playwright-core on the registry).
+          npm install -g playwright@1.63.0
           # Topology legs run suites from different chart test directories (8.10, 8.9, ...), and
           # Playwright refuses to merge blob reports recorded under different testDirs unless a
           # merge config names one. The checkout root contains every chart's test directory.
