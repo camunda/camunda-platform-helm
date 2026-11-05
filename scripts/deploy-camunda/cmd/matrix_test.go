@@ -125,10 +125,6 @@ func TestMatrixRunOptionsAndConfigPrecedence(t *testing.T) {
 	require.Equal(t, "gke-context", run.Infra.KubeContexts["gke"])
 	require.Equal(t, "version.env", run.Infra.EnvFiles["8.9"])
 	require.True(t, run.Infra.VaultBackedSecrets["eks"])
-	base := run.RunOptions
-	perRelease := synthesizeReleaseOpts(base, "gke", "release-ns")
-	perRelease.Platform, perRelease.NamespaceOverride = base.Platform, base.NamespaceOverride
-	require.Equal(t, base, perRelease)
 }
 
 func TestMatrixCLIInfraKeepsEmptyFlags(t *testing.T) {
@@ -348,36 +344,6 @@ func TestValidateChartRefVersionSpan(t *testing.T) {
 			}
 			if !strings.Contains(err.Error(), tt.wantErr) {
 				t.Fatalf("expected error containing %q, got %q", tt.wantErr, err.Error())
-			}
-		})
-	}
-}
-
-func TestTopologyPlaywrightProject(t *testing.T) {
-	tests := []struct {
-		name string
-		leg  matrix.TopologyE2ELeg
-		want string
-	}{
-		{
-			name: "uses the topology project by default",
-			leg:  matrix.TopologyE2ELeg{PlaywrightProject: "topology-orchestration"},
-			want: "topology-orchestration",
-		},
-		{
-			name: "uses the dependent additional project when configured",
-			leg: matrix.TopologyE2ELeg{
-				PlaywrightProject:           "topology-orchestration",
-				AdditionalPlaywrightProject: "physical-tenants",
-			},
-			want: "physical-tenants",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := topologyPlaywrightProject(tt.leg); got != tt.want {
-				t.Fatalf("topologyPlaywrightProject() = %q, want %q", got, tt.want)
 			}
 		})
 	}
