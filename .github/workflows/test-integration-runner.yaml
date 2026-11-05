@@ -1797,7 +1797,7 @@ jobs:
             exit 0
           fi
 
-          npm install -g playwright
+          npm install -g playwright@1.63.0
           # Topology legs run suites from different chart test directories (8.10, 8.9, ...), and
           # Playwright refuses to merge blob reports recorded under different testDirs unless a
           # merge config names one. The checkout root contains every chart's test directory.
