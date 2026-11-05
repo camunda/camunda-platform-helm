@@ -31,12 +31,14 @@ type ghClient interface {
 	Rerun(runID string) error
 	Cancel(runID string) error
 	MergeQueueHeads(branch string) ([]string, error)
+	PullRequestHead(number string) (string, error)
 }
 
 type Gate struct {
 	Client      ghClient
 	Workflow    string
 	QueueBranch string
+	PRNumber    string
 
 	DiscoveryTries    int
 	DiscoveryInterval time.Duration
@@ -207,6 +209,7 @@ func (g *Gate) WaitForAttemptRegistered(runID string, want int) error {
 var ErrNotRetryable = errors.New("not retryable")
 var ErrRerunAlreadyRunning = errors.New("rerun: workflow already running")
 var errMergeGroupLeftQueue = fmt.Errorf("%w: merge group is no longer in the merge queue", ErrNotRetryable)
+var errPullRequestSuperseded = fmt.Errorf("%w: the commit is no longer the pull request head", ErrNotRetryable)
 
 func (g *Gate) mergeGroupQueued() (queued, known bool) {
 	heads, err := g.Client.MergeQueueHeads(g.QueueBranch)
@@ -215,6 +218,18 @@ func (g *Gate) mergeGroupQueued() (queued, known bool) {
 		return false, false
 	}
 	return slices.Contains(heads, g.mergeGroupSHA), true
+}
+
+func (g *Gate) pullRequestSuperseded(sha string) bool {
+	if g.PRNumber == "" || g.mergeGroupSHA != "" {
+		return false
+	}
+	head, err := g.Client.PullRequestHead(g.PRNumber)
+	if err != nil {
+		g.Logf("could not read the pull request head: %v", err)
+		return false
+	}
+	return head != "" && head != sha
 }
 
 func (g *Gate) Run(event, prHeadSHA, mgHeadSHA string) error {
@@ -258,6 +273,9 @@ func (g *Gate) Run(event, prHeadSHA, mgHeadSHA string) error {
 			return errMergeGroupLeftQueue
 		}
 		g.mergeGroupSeen = g.mergeGroupSeen || queued
+	}
+	if g.pullRequestSuperseded(sha) {
+		return errPullRequestSuperseded
 	}
 
 	g.Logf("triggering full rerun of %s", runURL)

@@ -135,6 +135,7 @@ jobs:
           MATRIX_WORKFLOW: test-chart-version.yaml
           EVENT_NAME: ${{ github.event_name }}
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
           MG_HEAD_SHA: ${{ github.event.merge_group.head_sha }}
           MG_BASE_REF: ${{ github.event.merge_group.base_ref }}
           OVERRIDE_SHA: ${{ inputs.sha }}
