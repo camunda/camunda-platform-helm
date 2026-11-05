@@ -64,6 +64,7 @@ type Gate struct {
 
 	mergeGroupSHA  string
 	mergeGroupSeen bool
+	pullRequestSHA string
 }
 
 func ResolveSHA(event, prHeadSHA, mgHeadSHA string) (string, error) {
@@ -177,6 +178,9 @@ func (g *Gate) WaitForCompletion(runID string, attempt int) error {
 func (g *Gate) RerunWithBackoff(runID string) error {
 	var last error
 	for i := 0; i < g.RerunTries; i++ {
+		if g.pullRequestSuperseded() {
+			return errPullRequestSuperseded
+		}
 		err := g.Client.Rerun(runID)
 		if err == nil {
 			return nil
@@ -220,8 +224,8 @@ func (g *Gate) mergeGroupQueued() (queued, known bool) {
 	return slices.Contains(heads, g.mergeGroupSHA), true
 }
 
-func (g *Gate) pullRequestSuperseded(sha string) bool {
-	if g.PRNumber == "" || g.mergeGroupSHA != "" {
+func (g *Gate) pullRequestSuperseded() bool {
+	if g.PRNumber == "" || g.pullRequestSHA == "" {
 		return false
 	}
 	head, err := g.Client.PullRequestHead(g.PRNumber)
@@ -229,7 +233,7 @@ func (g *Gate) pullRequestSuperseded(sha string) bool {
 		g.Logf("could not read the pull request head: %v", err)
 		return false
 	}
-	return head != "" && head != sha
+	return head != "" && head != g.pullRequestSHA
 }
 
 func (g *Gate) Run(event, prHeadSHA, mgHeadSHA string) error {
@@ -240,6 +244,8 @@ func (g *Gate) Run(event, prHeadSHA, mgHeadSHA string) error {
 	g.Logf("gating event=%s sha=%s", event, sha)
 	if event == "merge_group" {
 		g.mergeGroupSHA = sha
+	} else {
+		g.pullRequestSHA = sha
 	}
 
 	g.Cmdf("::group::discover")
@@ -273,9 +279,6 @@ func (g *Gate) Run(event, prHeadSHA, mgHeadSHA string) error {
 			return errMergeGroupLeftQueue
 		}
 		g.mergeGroupSeen = g.mergeGroupSeen || queued
-	}
-	if g.pullRequestSuperseded(sha) {
-		return errPullRequestSuperseded
 	}
 
 	g.Logf("triggering full rerun of %s", runURL)

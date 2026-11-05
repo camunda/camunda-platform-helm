@@ -40,7 +40,7 @@ type fakeClient struct {
 	queue                   []queueResp
 	cancelQueue             []error
 	cancelCalls             int
-	prHead                  string
+	prHeads                 []string
 	prHeadErr               error
 }
 
@@ -137,7 +137,14 @@ func (f *fakeClient) MergeQueueHeads(string) ([]string, error) {
 	return r.heads, r.err
 }
 func (f *fakeClient) PullRequestHead(string) (string, error) {
-	return f.prHead, f.prHeadErr
+	if f.prHeadErr != nil || len(f.prHeads) == 0 {
+		return "", f.prHeadErr
+	}
+	head := f.prHeads[0]
+	if len(f.prHeads) > 1 {
+		f.prHeads = f.prHeads[1:]
+	}
+	return head, nil
 }
 
 func statusList(statuses ...string) []statusResp {
@@ -607,17 +614,26 @@ func TestRun_DiscoveryFailurePropagates(t *testing.T) {
 
 func TestRun_PullRequestHeadCheckBeforeRetry(t *testing.T) {
 	cases := []struct {
-		name      string
-		prNumber  string
-		prHead    string
-		prHeadErr error
-		wantErr   error
-		wantRerun int
+		name       string
+		prNumber   string
+		prHeads    []string
+		prHeadErr  error
+		rerunQueue []error
+		wantErr    error
+		wantRerun  int
 	}{
-		{name: "superseded_head_is_not_retried", prNumber: "7", prHead: "newer_sha", wantErr: ErrNotRetryable},
-		{name: "current_head_is_retried", prNumber: "7", prHead: "sha", wantRerun: 1},
+		{name: "superseded_head_is_not_retried", prNumber: "7", prHeads: []string{"newer_sha"}, wantErr: ErrNotRetryable},
+		{name: "current_head_is_retried", prNumber: "7", prHeads: []string{"sha"}, wantRerun: 1},
 		{name: "head_read_error_still_retries", prNumber: "7", prHeadErr: errors.New("gh api 502"), wantRerun: 1},
-		{name: "no_pr_number_skips_the_check", prHead: "newer_sha", wantRerun: 1},
+		{name: "no_pr_number_skips_the_check", prHeads: []string{"newer_sha"}, wantRerun: 1},
+		{
+			name:       "head_moving_during_rerun_backoff_stops_the_retry",
+			prNumber:   "7",
+			prHeads:    []string{"sha", "newer_sha"},
+			rerunQueue: []error{errors.New("gh run rerun 502")},
+			wantErr:    ErrNotRetryable,
+			wantRerun:  1,
+		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -631,8 +647,9 @@ func TestRun_PullRequestHeadCheckBeforeRetry(t *testing.T) {
 					2: statusList("completed"),
 				},
 				conclusionByAttempt: map[int]string{1: "failure", 2: "success"},
-				prHead:              tc.prHead,
+				prHeads:             tc.prHeads,
 				prHeadErr:           tc.prHeadErr,
+				rerunQueue:          tc.rerunQueue,
 			}
 			g := newTestGate(c)
 			g.PRNumber = tc.prNumber
