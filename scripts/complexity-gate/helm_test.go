@@ -293,7 +293,7 @@ func TestHelmGlobalLintWiring(t *testing.T) {
 		if step.Run == "make helm.template-complexity" {
 			invokes = true
 			assert.Equal(t,
-				"${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before || inputs.base-ref || 'origin/main' }}",
+				"${{ github.event_name == 'pull_request' && 'HEAD^1' || github.event.merge_group.base_sha || github.event.before || inputs.base-ref || 'origin/main' }}",
 				step.Env["HELM_TEMPLATE_BASE_REF"])
 		}
 	}
