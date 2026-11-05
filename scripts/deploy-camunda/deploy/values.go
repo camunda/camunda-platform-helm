@@ -58,99 +58,11 @@ func processCommonValues(ctx context.Context, scenarioPath, outputDir, envFile, 
 		return nil, nil
 	}
 
-	// Collect common values files in order
-	var sourceFiles []string
-
-	// First, add predefined common files in order (if they exist)
-	for _, fileName := range deployer.CommonValuesFiles {
-		p := filepath.Join(commonDir, fileName)
-		if _, err := os.Stat(p); err == nil {
-			logging.Logger.Debug().
-				Str("file", p).
-				Msg("🔍 [processCommonValues] found predefined common values file")
-			sourceFiles = append(sourceFiles, p)
-		}
-	}
-
-	// Then, discover any additional values-*.yaml files not in the predefined list
-	entries, err := os.ReadDir(commonDir)
+	sourceFiles, err := commonValuesSourceFiles(commonDir)
 	if err != nil {
-		logging.Logger.Debug().
-			Err(err).
-			Str("commonDir", commonDir).
-			Msg("⚠️ [processCommonValues] failed to read common directory")
 		return sourceFiles, nil
 	}
-
-	predefinedSet := make(map[string]bool)
-	for _, f := range deployer.CommonValuesFiles {
-		predefinedSet[f] = true
-	}
-
-	var additionalFiles []string
-	for _, entry := range entries {
-		if entry.IsDir() {
-			continue
-		}
-		name := entry.Name()
-		if predefinedSet[name] {
-			continue
-		}
-		if strings.HasPrefix(name, "values-") && strings.HasSuffix(name, ".yaml") {
-			p := filepath.Join(commonDir, name)
-			logging.Logger.Debug().
-				Str("file", p).
-				Msg("🔍 [processCommonValues] found additional common values file")
-			additionalFiles = append(additionalFiles, p)
-		}
-	}
-
-	// Sort additional files for deterministic ordering
-	sort.Strings(additionalFiles)
-	sourceFiles = append(sourceFiles, additionalFiles...)
-
-	// Discover platform-specific files from common/<platform>/ subdirectory
-	if strings.TrimSpace(platform) != "" {
-		platformDir := filepath.Join(commonDir, platform)
-		logging.Logger.Debug().
-			Str("platformDir", platformDir).
-			Str("platform", platform).
-			Msg("🔍 [processCommonValues] looking for platform-specific values directory")
-
-		if pInfo, pErr := os.Stat(platformDir); pErr == nil && pInfo.IsDir() {
-			platformEntries, pReadErr := os.ReadDir(platformDir)
-			if pReadErr != nil {
-				logging.Logger.Debug().
-					Err(pReadErr).
-					Str("platformDir", platformDir).
-					Msg("⚠️ [processCommonValues] failed to read platform directory")
-			} else {
-				var platformFiles []string
-				for _, entry := range platformEntries {
-					if entry.IsDir() {
-						continue
-					}
-					name := entry.Name()
-					if strings.HasSuffix(name, ".yaml") || strings.HasSuffix(name, ".yml") {
-						p := filepath.Join(platformDir, name)
-						logging.Logger.Debug().
-							Str("file", p).
-							Str("platform", platform).
-							Msg("🔍 [processCommonValues] found platform-specific values file")
-						platformFiles = append(platformFiles, p)
-					}
-				}
-				// Sort platform files for deterministic ordering
-				sort.Strings(platformFiles)
-				sourceFiles = append(sourceFiles, platformFiles...)
-			}
-		} else {
-			logging.Logger.Debug().
-				Str("platformDir", platformDir).
-				Str("platform", platform).
-				Msg("🔍 [processCommonValues] platform-specific directory not found - skipping")
-		}
-	}
+	sourceFiles = append(sourceFiles, platformValuesSourceFiles(commonDir, platform)...)
 
 	if len(sourceFiles) == 0 {
 		logging.Logger.Debug().
@@ -196,6 +108,105 @@ func processCommonValues(ctx context.Context, scenarioPath, outputDir, envFile, 
 		Msg("✅ [processCommonValues] all common values files processed")
 
 	return processedFiles, nil
+}
+
+func commonValuesSourceFiles(commonDir string) ([]string, error) {
+	// Collect common values files in order
+	var sourceFiles []string
+
+	// First, add predefined common files in order (if they exist)
+	for _, fileName := range deployer.CommonValuesFiles {
+		p := filepath.Join(commonDir, fileName)
+		if _, err := os.Stat(p); err == nil {
+			logging.Logger.Debug().
+				Str("file", p).
+				Msg("🔍 [processCommonValues] found predefined common values file")
+			sourceFiles = append(sourceFiles, p)
+		}
+	}
+
+	// Then, discover any additional values-*.yaml files not in the predefined list
+	entries, err := os.ReadDir(commonDir)
+	if err != nil {
+		logging.Logger.Debug().
+			Err(err).
+			Str("commonDir", commonDir).
+			Msg("⚠️ [processCommonValues] failed to read common directory")
+		return sourceFiles, err
+	}
+
+	predefinedSet := make(map[string]bool)
+	for _, f := range deployer.CommonValuesFiles {
+		predefinedSet[f] = true
+	}
+
+	var additionalFiles []string
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		name := entry.Name()
+		if predefinedSet[name] {
+			continue
+		}
+		if strings.HasPrefix(name, "values-") && strings.HasSuffix(name, ".yaml") {
+			p := filepath.Join(commonDir, name)
+			logging.Logger.Debug().
+				Str("file", p).
+				Msg("🔍 [processCommonValues] found additional common values file")
+			additionalFiles = append(additionalFiles, p)
+		}
+	}
+
+	// Sort additional files for deterministic ordering
+	sort.Strings(additionalFiles)
+	return append(sourceFiles, additionalFiles...), nil
+}
+
+func platformValuesSourceFiles(commonDir, platform string) []string {
+	if strings.TrimSpace(platform) == "" {
+		return nil
+	}
+	// Discover platform-specific files from common/<platform>/ subdirectory
+	platformDir := filepath.Join(commonDir, platform)
+	logging.Logger.Debug().
+		Str("platformDir", platformDir).
+		Str("platform", platform).
+		Msg("🔍 [processCommonValues] looking for platform-specific values directory")
+
+	if pInfo, pErr := os.Stat(platformDir); pErr != nil || !pInfo.IsDir() {
+		logging.Logger.Debug().
+			Str("platformDir", platformDir).
+			Str("platform", platform).
+			Msg("🔍 [processCommonValues] platform-specific directory not found - skipping")
+		return nil
+	}
+	platformEntries, pReadErr := os.ReadDir(platformDir)
+	if pReadErr != nil {
+		logging.Logger.Debug().
+			Err(pReadErr).
+			Str("platformDir", platformDir).
+			Msg("⚠️ [processCommonValues] failed to read platform directory")
+		return nil
+	}
+	var platformFiles []string
+	for _, entry := range platformEntries {
+		if entry.IsDir() {
+			continue
+		}
+		name := entry.Name()
+		if strings.HasSuffix(name, ".yaml") || strings.HasSuffix(name, ".yml") {
+			p := filepath.Join(platformDir, name)
+			logging.Logger.Debug().
+				Str("file", p).
+				Str("platform", platform).
+				Msg("🔍 [processCommonValues] found platform-specific values file")
+			platformFiles = append(platformFiles, p)
+		}
+	}
+	// Sort platform files for deterministic ordering
+	sort.Strings(platformFiles)
+	return platformFiles
 }
 
 // processCompanionCharts substitutes environment variables into companion
@@ -484,107 +495,81 @@ func enhanceScenarioError(err error, scenario, scenarioPath, chartPath string) e
 	// Check if this directory uses layered values (new structure)
 	valuesDir := filepath.Join(scenarioDir, "values")
 	if _, statErr := os.Stat(valuesDir); statErr == nil {
-		// Layered values structure
-		fmt.Fprintf(&helpMsg, "This scenario directory uses SELECTION + COMPOSITION model.\n")
-		fmt.Fprintf(&helpMsg, "Scenario names are derived from layer combinations.\n\n")
-
-		// List available identity types
-		identityDir := filepath.Join(valuesDir, "identity")
-		if identityEntries, err := os.ReadDir(identityDir); err == nil && len(identityEntries) > 0 {
-			fmt.Fprintf(&helpMsg, "Available identity types (--identity):\n")
-			for _, e := range identityEntries {
-				if !e.IsDir() && strings.HasSuffix(e.Name(), ".yaml") {
-					name := strings.TrimSuffix(e.Name(), ".yaml")
-					fmt.Fprintf(&helpMsg, "  - %s\n", name)
-				}
-			}
-			fmt.Fprintf(&helpMsg, "\n")
-		}
-
-		// List available persistence types
-		persistenceDir := filepath.Join(valuesDir, "persistence")
-		if persistenceEntries, err := os.ReadDir(persistenceDir); err == nil && len(persistenceEntries) > 0 {
-			fmt.Fprintf(&helpMsg, "Available persistence types (--persistence):\n")
-			for _, e := range persistenceEntries {
-				if !e.IsDir() && strings.HasSuffix(e.Name(), ".yaml") {
-					name := strings.TrimSuffix(e.Name(), ".yaml")
-					fmt.Fprintf(&helpMsg, "  - %s\n", name)
-				}
-			}
-			fmt.Fprintf(&helpMsg, "\n")
-		}
-
-		// List available platform types
-		platformDir := filepath.Join(valuesDir, "platform")
-		if platformEntries, err := os.ReadDir(platformDir); err == nil && len(platformEntries) > 0 {
-			fmt.Fprintf(&helpMsg, "Available platforms (--test-platform):\n")
-			for _, e := range platformEntries {
-				if !e.IsDir() && strings.HasSuffix(e.Name(), ".yaml") {
-					name := strings.TrimSuffix(e.Name(), ".yaml")
-					fmt.Fprintf(&helpMsg, "  - %s\n", name)
-				}
-			}
-			fmt.Fprintf(&helpMsg, "\n")
-		}
-
-		// List available features
-		featuresDir := filepath.Join(valuesDir, "features")
-		if featureEntries, err := os.ReadDir(featuresDir); err == nil && len(featureEntries) > 0 {
-			fmt.Fprintf(&helpMsg, "Available features (--features):\n")
-			for _, e := range featureEntries {
-				if !e.IsDir() && strings.HasSuffix(e.Name(), ".yaml") {
-					name := strings.TrimSuffix(e.Name(), ".yaml")
-					fmt.Fprintf(&helpMsg, "  - %s\n", name)
-				}
-			}
-			fmt.Fprintf(&helpMsg, "\n")
-		}
-
-		fmt.Fprintf(&helpMsg, "Hint: Use the new flags directly. Examples:\n")
-		fmt.Fprintf(&helpMsg, "  --identity keycloak --persistence elasticsearch --test-platform gke\n")
-		fmt.Fprintf(&helpMsg, "  --identity keycloak --persistence opensearch-embedded --test-platform gke --features multitenancy\n")
-		fmt.Fprintf(&helpMsg, "  --identity keycloak --persistence elasticsearch --test-platform gke --qa --image-tags\n")
+		writeLayeredScenarioHelp(&helpMsg, valuesDir)
 	} else {
-		// Legacy single-file structure
-		fmt.Fprintf(&helpMsg, "Expected file: values-integration-test-ingress-%s.yaml\n\n", scenario)
-
-		// Try to list available scenarios
-		entries, readErr := os.ReadDir(scenarioDir)
-		if readErr != nil {
-			fmt.Fprintf(&helpMsg, "Could not list available scenarios: %v\n\n", readErr)
-			fmt.Fprintf(&helpMsg, "Please check:\n")
-			fmt.Fprintf(&helpMsg, "  1. The scenario directory exists: %s\n", scenarioDir)
-			fmt.Fprintf(&helpMsg, "  2. You have permission to read it\n")
-			fmt.Fprintf(&helpMsg, "  3. The --chart-path or --scenario-path flags are set correctly\n")
-		} else {
-			var availableScenarios []string
-			for _, e := range entries {
-				name := e.Name()
-				if !e.IsDir() && strings.HasPrefix(name, "values-integration-test-ingress-") && strings.HasSuffix(name, ".yaml") {
-					// Extract scenario name
-					scenarioName := strings.TrimPrefix(name, "values-integration-test-ingress-")
-					scenarioName = strings.TrimSuffix(scenarioName, ".yaml")
-					availableScenarios = append(availableScenarios, scenarioName)
-				}
-			}
-
-			if len(availableScenarios) == 0 {
-				fmt.Fprintf(&helpMsg, "No scenario files found in: %s\n\n", scenarioDir)
-				fmt.Fprintf(&helpMsg, "Expected files matching pattern: values-integration-test-ingress-*.yaml\n")
-			} else {
-				fmt.Fprintf(&helpMsg, "Available scenarios (%d found):\n", len(availableScenarios))
-				for _, s := range availableScenarios {
-					fmt.Fprintf(&helpMsg, "  - %s\n", s)
-				}
-				fmt.Fprintf(&helpMsg, "\nHint: Use --scenario <name> or --scenario <name1>,<name2> for multiple scenarios\n")
-			}
-		}
+		writeLegacyScenarioHelp(&helpMsg, scenario, scenarioDir)
 	}
 
 	fmt.Fprintf(&helpMsg, "\nDocumentation: Check the chart's test/integration/scenarios/ directory\n")
 	fmt.Fprintf(&helpMsg, "for available scenario configurations.\n")
 
 	return fmt.Errorf("%s\n%s", helpMsg.String(), err)
+}
+
+func writeLayeredScenarioHelp(helpMsg *strings.Builder, valuesDir string) {
+	fmt.Fprintf(helpMsg, "This scenario directory uses SELECTION + COMPOSITION model.\n")
+	fmt.Fprintf(helpMsg, "Scenario names are derived from layer combinations.\n\n")
+
+	for _, layer := range []struct{ dir, heading string }{
+		{"identity", "Available identity types (--identity):"},
+		{"persistence", "Available persistence types (--persistence):"},
+		{"platform", "Available platforms (--test-platform):"},
+		{"features", "Available features (--features):"},
+	} {
+		entries, err := os.ReadDir(filepath.Join(valuesDir, layer.dir))
+		if err != nil || len(entries) == 0 {
+			continue
+		}
+		fmt.Fprintf(helpMsg, "%s\n", layer.heading)
+		for _, e := range entries {
+			if !e.IsDir() && strings.HasSuffix(e.Name(), ".yaml") {
+				fmt.Fprintf(helpMsg, "  - %s\n", strings.TrimSuffix(e.Name(), ".yaml"))
+			}
+		}
+		fmt.Fprintf(helpMsg, "\n")
+	}
+
+	fmt.Fprintf(helpMsg, "Hint: Use the new flags directly. Examples:\n")
+	fmt.Fprintf(helpMsg, "  --identity keycloak --persistence elasticsearch --test-platform gke\n")
+	fmt.Fprintf(helpMsg, "  --identity keycloak --persistence opensearch-embedded --test-platform gke --features multitenancy\n")
+	fmt.Fprintf(helpMsg, "  --identity keycloak --persistence elasticsearch --test-platform gke --qa --image-tags\n")
+}
+
+func writeLegacyScenarioHelp(helpMsg *strings.Builder, scenario, scenarioDir string) {
+	fmt.Fprintf(helpMsg, "Expected file: values-integration-test-ingress-%s.yaml\n\n", scenario)
+
+	// Try to list available scenarios
+	entries, readErr := os.ReadDir(scenarioDir)
+	if readErr != nil {
+		fmt.Fprintf(helpMsg, "Could not list available scenarios: %v\n\n", readErr)
+		fmt.Fprintf(helpMsg, "Please check:\n")
+		fmt.Fprintf(helpMsg, "  1. The scenario directory exists: %s\n", scenarioDir)
+		fmt.Fprintf(helpMsg, "  2. You have permission to read it\n")
+		fmt.Fprintf(helpMsg, "  3. The --chart-path or --scenario-path flags are set correctly\n")
+		return
+	}
+
+	var availableScenarios []string
+	for _, e := range entries {
+		name := e.Name()
+		if !e.IsDir() && strings.HasPrefix(name, "values-integration-test-ingress-") && strings.HasSuffix(name, ".yaml") {
+			// Extract scenario name
+			scenarioName := strings.TrimPrefix(name, "values-integration-test-ingress-")
+			scenarioName = strings.TrimSuffix(scenarioName, ".yaml")
+			availableScenarios = append(availableScenarios, scenarioName)
+		}
+	}
+
+	if len(availableScenarios) == 0 {
+		fmt.Fprintf(helpMsg, "No scenario files found in: %s\n\n", scenarioDir)
+		fmt.Fprintf(helpMsg, "Expected files matching pattern: values-integration-test-ingress-*.yaml\n")
+		return
+	}
+	fmt.Fprintf(helpMsg, "Available scenarios (%d found):\n", len(availableScenarios))
+	for _, s := range availableScenarios {
+		fmt.Fprintf(helpMsg, "  - %s\n", s)
+	}
+	fmt.Fprintf(helpMsg, "\nHint: Use --scenario <name> or --scenario <name1>,<name2> for multiple scenarios\n")
 }
 
 // prepareScenarioValues processes values files for a scenario and returns a PreparedScenario.
