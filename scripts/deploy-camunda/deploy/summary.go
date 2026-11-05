@@ -117,15 +117,10 @@ func printDeploymentSummary(result *ScenarioResult, flags *config.RuntimeFlags) 
 		if len(flags.Debug.DebugComponents) > 0 {
 			fmt.Fprintf(&out, "debug:\n")
 			for component, debugCfg := range flags.Debug.DebugComponents {
-				switch component {
-				case "orchestration":
-					fmt.Fprintf(&out, "  orchestration:\n")
+				if command := portForwardCommand(component, namespace, release, debugCfg.Port); command != "" {
+					fmt.Fprintf(&out, "  %s:\n", component)
 					fmt.Fprintf(&out, "    port: %d\n", debugCfg.Port)
-					fmt.Fprintf(&out, "    portForwardCommand: kubectl port-forward -n %s svc/%s-zeebe %d:%d\n", namespace, release, debugCfg.Port, debugCfg.Port)
-				case "connectors":
-					fmt.Fprintf(&out, "  connectors:\n")
-					fmt.Fprintf(&out, "    port: %d\n", debugCfg.Port)
-					fmt.Fprintf(&out, "    portForwardCommand: kubectl port-forward -n %s deploy/%s-connectors %d:%d\n", namespace, release, debugCfg.Port, debugCfg.Port)
+					fmt.Fprintf(&out, "    portForwardCommand: %s\n", command)
 				}
 			}
 		}
@@ -177,14 +172,7 @@ func printDeploymentSummary(result *ScenarioResult, flags *config.RuntimeFlags) 
 			out.WriteString("\n")
 			out.WriteString(styleHead("  To connect your debugger, run:"))
 			out.WriteString("\n")
-			var portForwardCmd string
-			switch component {
-			case "orchestration":
-				portForwardCmd = fmt.Sprintf("kubectl port-forward -n %s svc/%s-zeebe %d:%d", namespace, release, debugCfg.Port, debugCfg.Port)
-			case "connectors":
-				portForwardCmd = fmt.Sprintf("kubectl port-forward -n %s deploy/%s-connectors %d:%d", namespace, release, debugCfg.Port, debugCfg.Port)
-			}
-			fmt.Fprintf(&out, "    %s\n", styleVal(portForwardCmd))
+			fmt.Fprintf(&out, "    %s\n", styleVal(portForwardCommand(component, namespace, release, debugCfg.Port)))
 			out.WriteString("\n")
 			fmt.Fprintf(&out, "  Then connect your IDE debugger to %s\n", styleVal(fmt.Sprintf("localhost:%d", debugCfg.Port)))
 		}
@@ -206,63 +194,86 @@ func printMultiScenarioSummary(results []*ScenarioResult, flags *config.RuntimeF
 	}
 
 	if !isTerminal(os.Stdout.Fd()) {
-		// Plain, machine-friendly output
-		var out strings.Builder
-		fmt.Fprintf(&out, "parallel deployment: completed\n")
-		fmt.Fprintf(&out, "total scenarios: %d\n", len(results))
-		fmt.Fprintf(&out, "successful: %d\n", successCount)
-		fmt.Fprintf(&out, "failed: %d\n", failureCount)
-		fmt.Fprintf(&out, "\nscenarios:\n")
-		for _, r := range results {
-			fmt.Fprintf(&out, "- scenario: %s\n", r.Scenario)
-			fmt.Fprintf(&out, "  namespace: %s\n", r.Namespace)
-			fmt.Fprintf(&out, "  release: %s\n", r.Release)
-			if r.Error != nil {
-				fmt.Fprintf(&out, "  status: failed\n")
-				fmt.Fprintf(&out, "  error: %v\n", r.Error)
-			} else {
-				fmt.Fprintf(&out, "  status: success\n")
-				fmt.Fprintf(&out, "  realm: %s\n", r.KeycloakRealm)
-				fmt.Fprintf(&out, "  optimizeIndexPrefix: %s\n", r.OptimizeIndexPrefix)
-				fmt.Fprintf(&out, "  orchestrationIndexPrefix: %s\n", r.OrchestrationIndexPrefix)
-				if r.IngressHost != "" {
-					fmt.Fprintf(&out, "  ingressHost: %s\n", r.IngressHost)
-				}
-				if len(r.LayeredFiles) > 0 {
-					fmt.Fprintf(&out, "  layeredFiles:\n")
-					for _, f := range r.LayeredFiles {
-						fmt.Fprintf(&out, "    - %s\n", f)
-					}
-				}
-				if r.TestEnvFile != "" {
-					fmt.Fprintf(&out, "  testEnvFile: %s\n", r.TestEnvFile)
-				}
-			}
-		}
-		// Add debug port-forward instructions for machine-friendly output
-		if len(flags.Debug.DebugComponents) > 0 && successCount > 0 {
-			fmt.Fprintf(&out, "debug:\n")
-			for component, debugCfg := range flags.Debug.DebugComponents {
-				fmt.Fprintf(&out, "  - component: %s\n", component)
-				fmt.Fprintf(&out, "    port: %d\n", debugCfg.Port)
-				fmt.Fprintf(&out, "    portForwardCommands:\n")
-				for _, r := range results {
-					if r.Error == nil {
-						fmt.Fprintf(&out, "      - scenario: %s\n", r.Scenario)
-						switch component {
-						case "orchestration":
-							fmt.Fprintf(&out, "        command: kubectl port-forward -n %s svc/%s-zeebe %d:%d\n", r.Namespace, r.Release, debugCfg.Port, debugCfg.Port)
-						case "connectors":
-							fmt.Fprintf(&out, "        command: kubectl port-forward -n %s deploy/%s-connectors %d:%d\n", r.Namespace, r.Release, debugCfg.Port, debugCfg.Port)
-						}
-					}
-				}
-			}
-		}
-		logging.Logger.Info().Msg(out.String())
+		logging.Logger.Info().Msg(plainMultiScenarioSummary(results, flags, successCount, failureCount))
 		return
 	}
+	logging.Logger.Info().Msg(prettyMultiScenarioSummary(results, flags, successCount, failureCount))
+}
 
+func portForwardCommand(component, namespace, release string, port int) string {
+	switch component {
+	case "orchestration":
+		return fmt.Sprintf("kubectl port-forward -n %s svc/%s-zeebe %d:%d", namespace, release, port, port)
+	case "connectors":
+		return fmt.Sprintf("kubectl port-forward -n %s deploy/%s-connectors %d:%d", namespace, release, port, port)
+	}
+	return ""
+}
+
+func plainMultiScenarioSummary(results []*ScenarioResult, flags *config.RuntimeFlags, successCount, failureCount int) string {
+	// Plain, machine-friendly output
+	var out strings.Builder
+	fmt.Fprintf(&out, "parallel deployment: completed\n")
+	fmt.Fprintf(&out, "total scenarios: %d\n", len(results))
+	fmt.Fprintf(&out, "successful: %d\n", successCount)
+	fmt.Fprintf(&out, "failed: %d\n", failureCount)
+	fmt.Fprintf(&out, "\nscenarios:\n")
+	for _, r := range results {
+		writePlainScenarioResult(&out, r)
+	}
+	// Add debug port-forward instructions for machine-friendly output
+	if len(flags.Debug.DebugComponents) > 0 && successCount > 0 {
+		fmt.Fprintf(&out, "debug:\n")
+		for component, debugCfg := range flags.Debug.DebugComponents {
+			fmt.Fprintf(&out, "  - component: %s\n", component)
+			fmt.Fprintf(&out, "    port: %d\n", debugCfg.Port)
+			fmt.Fprintf(&out, "    portForwardCommands:\n")
+			writePlainPortForwardCommands(&out, results, component, debugCfg.Port)
+		}
+	}
+	return out.String()
+}
+
+func writePlainScenarioResult(out *strings.Builder, r *ScenarioResult) {
+	fmt.Fprintf(out, "- scenario: %s\n", r.Scenario)
+	fmt.Fprintf(out, "  namespace: %s\n", r.Namespace)
+	fmt.Fprintf(out, "  release: %s\n", r.Release)
+	if r.Error != nil {
+		fmt.Fprintf(out, "  status: failed\n")
+		fmt.Fprintf(out, "  error: %v\n", r.Error)
+		return
+	}
+	fmt.Fprintf(out, "  status: success\n")
+	fmt.Fprintf(out, "  realm: %s\n", r.KeycloakRealm)
+	fmt.Fprintf(out, "  optimizeIndexPrefix: %s\n", r.OptimizeIndexPrefix)
+	fmt.Fprintf(out, "  orchestrationIndexPrefix: %s\n", r.OrchestrationIndexPrefix)
+	if r.IngressHost != "" {
+		fmt.Fprintf(out, "  ingressHost: %s\n", r.IngressHost)
+	}
+	if len(r.LayeredFiles) > 0 {
+		fmt.Fprintf(out, "  layeredFiles:\n")
+		for _, f := range r.LayeredFiles {
+			fmt.Fprintf(out, "    - %s\n", f)
+		}
+	}
+	if r.TestEnvFile != "" {
+		fmt.Fprintf(out, "  testEnvFile: %s\n", r.TestEnvFile)
+	}
+}
+
+func writePlainPortForwardCommands(out *strings.Builder, results []*ScenarioResult, component string, port int) {
+	for _, r := range results {
+		if r.Error != nil {
+			continue
+		}
+		fmt.Fprintf(out, "      - scenario: %s\n", r.Scenario)
+		if command := portForwardCommand(component, r.Namespace, r.Release, port); command != "" {
+			fmt.Fprintf(out, "        command: %s\n", command)
+		}
+	}
+}
+
+func prettyMultiScenarioSummary(results []*ScenarioResult, flags *config.RuntimeFlags, successCount, failureCount int) string {
 	// Pretty, human-friendly output
 	var out strings.Builder
 	if failureCount == 0 {
@@ -290,34 +301,7 @@ func printMultiScenarioSummary(results []*ScenarioResult, flags *config.RuntimeF
 		if i > 0 {
 			out.WriteString("\n")
 		}
-
-		if r.Error != nil {
-			out.WriteString(styleErr(fmt.Sprintf("Scenario %d: %s [FAILED]", i+1, r.Scenario)))
-			out.WriteString("\n")
-			fmt.Fprintf(&out, "  %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey, "Namespace")), styleVal(r.Namespace))
-			fmt.Fprintf(&out, "  %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey, "Error")), styleErr(r.Error.Error()))
-		} else {
-			out.WriteString(styleOk(fmt.Sprintf("Scenario %d: %s [SUCCESS]", i+1, r.Scenario)))
-			out.WriteString("\n")
-			fmt.Fprintf(&out, "  %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey, "Namespace")), styleVal(r.Namespace))
-			fmt.Fprintf(&out, "  %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey, "Release")), styleVal(r.Release))
-			if r.IngressHost != "" {
-				fmt.Fprintf(&out, "  %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey, "Ingress Host")), styleVal(r.IngressHost))
-			}
-			fmt.Fprintf(&out, "  %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey, "Keycloak Realm")), styleVal(r.KeycloakRealm))
-			fmt.Fprintf(&out, "  %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey, "Optimize Index Prefix")), styleVal(r.OptimizeIndexPrefix))
-			fmt.Fprintf(&out, "  %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey, "Orchestration Index Prefix")), styleVal(r.OrchestrationIndexPrefix))
-			if len(r.LayeredFiles) > 0 {
-				out.WriteString(styleHead("  Layered values files:"))
-				out.WriteString("\n")
-				for j, f := range r.LayeredFiles {
-					fmt.Fprintf(&out, "    %s %s\n", styleKey(fmt.Sprintf("%d.", j+1)), styleVal(f))
-				}
-			}
-			if r.TestEnvFile != "" {
-				fmt.Fprintf(&out, "  %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey, "E2E env file")), styleVal(r.TestEnvFile))
-			}
-		}
+		writePrettyScenarioResult(&out, i, r, maxKey)
 	}
 
 	// Add debug port-forward instructions if debug mode is enabled
@@ -334,20 +318,42 @@ func printMultiScenarioSummary(results []*ScenarioResult, flags *config.RuntimeF
 			out.WriteString("\n")
 			for _, r := range results {
 				if r.Error == nil {
-					var portForwardCmd string
-					switch component {
-					case "orchestration":
-						portForwardCmd = fmt.Sprintf("kubectl port-forward -n %s svc/%s-zeebe %d:%d", r.Namespace, r.Release, debugCfg.Port, debugCfg.Port)
-					case "connectors":
-						portForwardCmd = fmt.Sprintf("kubectl port-forward -n %s deploy/%s-connectors %d:%d", r.Namespace, r.Release, debugCfg.Port, debugCfg.Port)
-					}
-					fmt.Fprintf(&out, "    [%s] %s\n", styleVal(r.Scenario), portForwardCmd)
+					fmt.Fprintf(&out, "    [%s] %s\n", styleVal(r.Scenario), portForwardCommand(component, r.Namespace, r.Release, debugCfg.Port))
 				}
 			}
 			out.WriteString("\n")
 			fmt.Fprintf(&out, "  Then connect your IDE debugger to %s\n", styleVal(fmt.Sprintf("localhost:%d", debugCfg.Port)))
 		}
 	}
+	return out.String()
+}
 
-	logging.Logger.Info().Msg(out.String())
+func writePrettyScenarioResult(out *strings.Builder, i int, r *ScenarioResult, maxKey int) {
+	if r.Error != nil {
+		out.WriteString(styleErr(fmt.Sprintf("Scenario %d: %s [FAILED]", i+1, r.Scenario)))
+		out.WriteString("\n")
+		fmt.Fprintf(out, "  %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey, "Namespace")), styleVal(r.Namespace))
+		fmt.Fprintf(out, "  %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey, "Error")), styleErr(r.Error.Error()))
+		return
+	}
+	out.WriteString(styleOk(fmt.Sprintf("Scenario %d: %s [SUCCESS]", i+1, r.Scenario)))
+	out.WriteString("\n")
+	fmt.Fprintf(out, "  %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey, "Namespace")), styleVal(r.Namespace))
+	fmt.Fprintf(out, "  %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey, "Release")), styleVal(r.Release))
+	if r.IngressHost != "" {
+		fmt.Fprintf(out, "  %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey, "Ingress Host")), styleVal(r.IngressHost))
+	}
+	fmt.Fprintf(out, "  %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey, "Keycloak Realm")), styleVal(r.KeycloakRealm))
+	fmt.Fprintf(out, "  %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey, "Optimize Index Prefix")), styleVal(r.OptimizeIndexPrefix))
+	fmt.Fprintf(out, "  %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey, "Orchestration Index Prefix")), styleVal(r.OrchestrationIndexPrefix))
+	if len(r.LayeredFiles) > 0 {
+		out.WriteString(styleHead("  Layered values files:"))
+		out.WriteString("\n")
+		for j, f := range r.LayeredFiles {
+			fmt.Fprintf(out, "    %s %s\n", styleKey(fmt.Sprintf("%d.", j+1)), styleVal(f))
+		}
+	}
+	if r.TestEnvFile != "" {
+		fmt.Fprintf(out, "  %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey, "E2E env file")), styleVal(r.TestEnvFile))
+	}
 }
