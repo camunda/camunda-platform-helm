@@ -93,7 +93,7 @@ jobs:
   gate:
     name: gate
     needs: [mcp-changes, mcp-test]
-    if: always()
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     permissions:
       actions: write
