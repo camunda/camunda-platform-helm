@@ -1797,7 +1797,11 @@ jobs:
             exit 0
           fi
 
-          npm install -g playwright
+          # Pin to the @playwright/test version the suites record blob reports with
+          # (charts/*/test/e2e/package.json, enforced by scripts/playwright-pin); an
+          # unpinned install resolves whatever npm tags latest, which can be an
+          # unresolvable or blob-incompatible release.
+          npm install -g playwright@1.63.0
           # Topology legs run suites from different chart test directories (8.10, 8.9, ...), and
           # Playwright refuses to merge blob reports recorded under different testDirs unless a
           # merge config names one. The checkout root contains every chart's test directory.
