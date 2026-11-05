@@ -26,7 +26,7 @@ import (
 // release's helm install returned successfully, and helm --wait already gated each one on workload
 // readiness, so the topology is up.
 //
-// Legs come from matrix.TopologyE2ELegs, the same computation that produces the CI smoke matrix, so
+// Legs come from TopologyE2ELegs, the same computation that produces the CI smoke matrix, so
 // a local run and a CI run agree on how many legs a topology has and which namespaces each targets.
 // Legs run sequentially and every failure is collected: one tenant's failure must not hide another's
 // result.
