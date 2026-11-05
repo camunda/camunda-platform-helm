@@ -910,7 +910,7 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestLog4j2MountNotDuplicatedWhenBothSourcesSetIt",
 			Values: map[string]string{
-				"orchestration.log4j2":                             "<Configuration>deprecated</Configuration>",
+				"orchestration.log4j2":                             "<Configuration>log4j2-value</Configuration>",
 				"orchestration.extraConfiguration[0].file":         "log4j2.xml",
 				"orchestration.extraConfiguration[0].springImport": "false",
 				"orchestration.extraConfiguration[0].content":      "<Configuration>operator</Configuration>",

@@ -544,9 +544,9 @@ func (s *ConfigmapLegacyTemplateTest) TestExtraConfigurationSpringImport() {
 			},
 		},
 		{
-			Name: "TestLog4j2KeyEmittedOnceFromDeprecatedKey",
+			Name: "TestLog4j2KeyEmittedOnceFromLog4j2Value",
 			Values: map[string]string{
-				"orchestration.log4j2": "<Configuration>deprecated</Configuration>",
+				"orchestration.log4j2": "<Configuration>log4j2-value</Configuration>",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().Equal(1, strings.Count(output, "log4j2.xml: |"),
@@ -554,7 +554,7 @@ func (s *ConfigmapLegacyTemplateTest) TestExtraConfigurationSpringImport() {
 
 				var configmap corev1.ConfigMap
 				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
-				s.Require().Contains(configmap.Data["log4j2.xml"], "<Configuration>deprecated</Configuration>",
+				s.Require().Contains(configmap.Data["log4j2.xml"], "<Configuration>log4j2-value</Configuration>",
 					"orchestration.log4j2 content should be used when extraConfiguration does not supply the file")
 			},
 		},
@@ -576,9 +576,9 @@ func (s *ConfigmapLegacyTemplateTest) TestExtraConfigurationSpringImport() {
 			},
 		},
 		{
-			Name: "TestLog4j2ExtraConfigurationWinsOverDeprecatedKey",
+			Name: "TestLog4j2ExtraConfigurationWinsOverLog4j2Value",
 			Values: map[string]string{
-				"orchestration.log4j2":                             "<Configuration>deprecated</Configuration>",
+				"orchestration.log4j2":                             "<Configuration>log4j2-value</Configuration>",
 				"orchestration.extraConfiguration[0].file":         "log4j2.xml",
 				"orchestration.extraConfiguration[0].springImport": "false",
 				"orchestration.extraConfiguration[0].content":      "<Configuration>operator</Configuration>",
@@ -590,9 +590,9 @@ func (s *ConfigmapLegacyTemplateTest) TestExtraConfigurationSpringImport() {
 				var configmap corev1.ConfigMap
 				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 				s.Require().Contains(configmap.Data["log4j2.xml"], "<Configuration>operator</Configuration>",
-					"extraConfiguration should win over the deprecated orchestration.log4j2")
-				s.Require().NotContains(configmap.Data["log4j2.xml"], "deprecated",
-					"deprecated orchestration.log4j2 content should be suppressed")
+					"extraConfiguration should win over the orchestration.log4j2 value")
+				s.Require().NotContains(configmap.Data["log4j2.xml"], "log4j2-value",
+					"orchestration.log4j2 content should be suppressed")
 			},
 		},
 	}
