@@ -43,10 +43,4 @@ annotations:
     - name: Camunda 8 Self-Managed Helm charts
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
-  artifacthub.io/changes: |
-    - kind: changed
-      description: "Bound 8.10 warning helpers and reuse TLS scanning"
-    - kind: fixed
-      description: "Render 8.10 and 8.11 RDBMS connection from storage type and warn without a JDBC URL"
-    - kind: fixed
-      description: "Omit empty elasticsearch username from optimize environment-config"
+  artifacthub.io/changes: ""
