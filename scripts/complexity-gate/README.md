@@ -32,4 +32,6 @@ Parsing never renders a template or executes Helm functions.
 
 Manual runs of `Repo - Lint Global` accept a `base-ref` input, defaulting to
 `origin/main`. The checkout fetches full history for the merge-base comparison.
-PR, merge-queue and push runs use their event's base SHA.
+PR runs use `HEAD^1`, the main side of the merge commit that the checkout builds,
+so changes that main made after the branch point are not counted as PR edits.
+Merge-queue and push runs use their event's base SHA.

@@ -34,7 +34,7 @@ jobs:
         uses: camunda/infraex-common-config/.github/actions/asdf-install-tooling@e2923304b40dfc031b3f595bcc1445e90c981adb # 3.0.0
       - name: Check template complexity
         env:
-          HELM_TEMPLATE_BASE_REF: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before || inputs.base-ref || 'origin/main' }}
+          HELM_TEMPLATE_BASE_REF: ${{ github.event_name == 'pull_request' && 'HEAD^1' || github.event.merge_group.base_sha || github.event.before || inputs.base-ref || 'origin/main' }}
         run: make helm.template-complexity
   lint:
     permissions:
