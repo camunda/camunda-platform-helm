@@ -138,50 +138,6 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Install system dependencies
-      shell: bash
-      run: |
-        # Skip if gettext-base is already installed (pre-configured container)
-        if command -v envsubst &> /dev/null; then
-          echo "envsubst already available, skipping system dependencies installation"
-          exit 0
-        fi
-        
-        # Install gettext for envsubst command used by render-e2e-env.sh
-        # Note: no sudo — containers run as root, and sudo may not be installed.
-        if command -v apt-get &> /dev/null; then
-          install_packages() {
-            apt-get update && apt-get install -y gettext-base
-          }
-
-          # Try up to 5 times with exponential backoff
-          for attempt in 1 2 3 4 5; do
-            echo "Attempt $attempt of 5..."
-            if install_packages; then
-              echo "Successfully installed packages"
-              break
-            fi
-
-            if [ $attempt -lt 5 ]; then
-              echo "apt-get failed, cleaning cache and retrying in $((attempt * 30)) seconds..."
-              rm -rf /var/lib/apt/lists/*
-              sleep $((attempt * 30))
-
-              # On third attempt, try switching to a different mirror
-              if [ $attempt -eq 3 ]; then
-                echo "Switching to alternative Ubuntu mirror..."
-                sed -i 's|http://archive.ubuntu.com|http://mirrors.edge.kernel.org|g' /etc/apt/sources.list 2>/dev/null || true
-                sed -i 's|http://security.ubuntu.com|http://mirrors.edge.kernel.org|g' /etc/apt/sources.list 2>/dev/null || true
-              fi
-            else
-              echo "All attempts failed"
-              exit 1
-            fi
-          done
-        elif command -v apk &> /dev/null; then
-          apk add --no-cache gettext
-        fi
-
     - name: Check if tools are pre-installed
       id: check-tools
       shell: bash
@@ -352,26 +308,26 @@ runs:
         INPUTS_PLAYWRIGHT_PROJECT: ${{ inputs.playwright-project }}
         INPUTS_PHYSICAL_TENANT_ID: ${{ inputs.physical-tenant-id }}
         INPUTS_E2E_TEST_SUITE_REF: ${{ inputs.e2e-test-suite-ref }}
+        SMOKE_FLAG: ${{ inputs.run-smoke-tests == 'true' && '--run-smoke-tests' || '' }}
       run: |
+        set -euo pipefail
         # Unset KEYCLOAK_REALM to avoid conflicts with the integration tests
         unset KEYCLOAK_REALM
 
         # Build scenario-specific flags
         EXTRA_FLAGS=""
-        SMOKE_FLAG="${{ inputs.run-smoke-tests == 'true' && '--run-smoke-tests' || '' }}"
-        if [[ "${INPUTS_SCENARIO}" == opensearch* ]]; then
-          EXTRA_FLAGS="--opensearch"
-        elif [[ "${INPUTS_SCENARIO}" == "keycloak-rba" ]]; then
-          EXTRA_FLAGS="--rba"
-        elif [[ "${INPUTS_SCENARIO}" == "keycloak-mt" ]] || [[ "${INPUTS_SCENARIO}" == "multitenancy" ]]; then
-          EXTRA_FLAGS="--mt"
-        elif [[ "${INPUTS_SCENARIO}" == "auth0" ]]; then
-          # auth0 uses its own Playwright project (auth0-smoke); do NOT pass
-          # --run-smoke-tests, which would otherwise route to the Keycloak-
-          # coupled smoke-tests project.
-          EXTRA_FLAGS="--auth0"
-          SMOKE_FLAG=""
-        fi
+        case "${INPUTS_SCENARIO}" in
+          opensearch*) EXTRA_FLAGS="--opensearch" ;;
+          keycloak-rba) EXTRA_FLAGS="--rba" ;;
+          keycloak-mt | multitenancy) EXTRA_FLAGS="--mt" ;;
+          auth0)
+            # auth0 uses its own Playwright project (auth0-smoke); do NOT pass
+            # --run-smoke-tests, which would otherwise route to the Keycloak-
+            # coupled smoke-tests project.
+            EXTRA_FLAGS="--auth0"
+            SMOKE_FLAG=""
+            ;;
+        esac
 
         TEST_CHART_DIR="${INPUTS_TEST_CHART_DIR}"
         E2E_ARGS=(--absolute-chart-path "${ABSOLUTE_TEST_CHART_DIR}" --namespace "${TEST_NAMESPACE}")
@@ -381,12 +337,14 @@ runs:
         [[ -n "$SMOKE_FLAG" ]] && E2E_ARGS+=("$SMOKE_FLAG")
         E2E_ARGS+=(--trace retain-on-failure --verbose)
         [[ -n "$EXTRA_FLAGS" ]] && E2E_ARGS+=("$EXTRA_FLAGS")
-        [[ -n "$HUB_NAMESPACE" ]] && E2E_ARGS+=(--hub-namespace "${HUB_NAMESPACE}")
-        [[ -n "$E2E_ARG_OPTIMIZE_NAMESPACE" ]] && E2E_ARGS+=(--optimize-namespace "${E2E_ARG_OPTIMIZE_NAMESPACE}")
-        [[ -n "$E2E_ARG_OPTIMIZE_CONTEXT_PATH" ]] && E2E_ARGS+=(--optimize-context-path "${E2E_ARG_OPTIMIZE_CONTEXT_PATH}")
-        [[ -n "$E2E_ARG_MODELER_CLUSTER_NAME" ]] && E2E_ARGS+=(--modeler-cluster-name "${E2E_ARG_MODELER_CLUSTER_NAME}")
-        [[ -n "${INPUTS_PLAYWRIGHT_PROJECT}" ]] && E2E_ARGS+=(--playwright-project "${INPUTS_PLAYWRIGHT_PROJECT}")
-        [[ -n "${INPUTS_PHYSICAL_TENANT_ID}" ]] && E2E_ARGS+=(--physical-tenant-id "${INPUTS_PHYSICAL_TENANT_ID}")
+        E2E_ARGS+=(
+          --hub-namespace "${HUB_NAMESPACE}"
+          --optimize-namespace "${E2E_ARG_OPTIMIZE_NAMESPACE}"
+          --optimize-context-path "${E2E_ARG_OPTIMIZE_CONTEXT_PATH}"
+          --modeler-cluster-name "${E2E_ARG_MODELER_CLUSTER_NAME}"
+          --playwright-project "${INPUTS_PLAYWRIGHT_PROJECT}"
+          --physical-tenant-id "${INPUTS_PHYSICAL_TENANT_ID}"
+        )
         [[ -n "${INPUTS_E2E_TEST_SUITE_REF}" ]] && E2E_ARGS+=(--local-test-suite "${GITHUB_WORKSPACE}/.e2e-test-suite")
 
         ./run-e2e-tests.sh "${E2E_ARGS[@]}"
