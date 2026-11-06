@@ -19,11 +19,32 @@ package credentials
 import (
 	"bytes"
 	"context"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
+
+	"gopkg.in/yaml.v3"
 )
+
+// keycloakImage is the internal-keycloak-26 chart default, which every Keycloak
+// companion, dogfood included, deploys; reading it keeps the integration tests
+// on the image Renovate maintains.
+var keycloakImage = func() string {
+	raw, err := os.ReadFile(filepath.Join("..", "..", "..", "charts", "internal-keycloak-26", "values.yaml"))
+	if err != nil {
+		panic(err)
+	}
+	var v struct {
+		Image struct{ Registry, Repository, Tag string } `yaml:"image"`
+	}
+	if err := yaml.Unmarshal(raw, &v); err != nil {
+		panic(err)
+	}
+	return v.Image.Registry + "/" + v.Image.Repository + ":" + v.Image.Tag
+}()
 
 // TestPsqlScript_RepairsAStaleRoleOnTheSupportedImage runs psqlScript, via
 // docker exec, against a PostgreSQL initialised with one password: the new

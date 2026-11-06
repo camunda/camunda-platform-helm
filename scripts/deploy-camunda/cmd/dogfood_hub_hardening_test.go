@@ -187,6 +187,75 @@ func TestDogfoodHub_HardensKeycloakRealms(t *testing.T) {
 	}
 }
 
+// The realm-hardening Job is a Camunda-release hook (it needs the
+// camunda-platform realm, which only exists after the Camunda install), so it
+// cannot take its image from the internal-keycloak-26 chart. Renovate bumps
+// both under the same depName; pin them together so neither drifts.
+func TestDogfoodHub_HardeningJobUsesTheKeycloakChartImage(t *testing.T) {
+	repo := filepath.Join("..", "..", "..")
+	raw, err := os.ReadFile(filepath.Join(repo, "charts", "internal-keycloak-26", "values.yaml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var chart struct {
+		Image struct{ Registry, Repository, Tag string } `yaml:"image"`
+	}
+	if err := yaml.Unmarshal(raw, &chart); err != nil {
+		t.Fatal(err)
+	}
+	want := chart.Image.Registry + "/" + chart.Image.Repository + ":" + chart.Image.Tag
+
+	for _, version := range []string{"8.10", "8.11"} {
+		raw, err := os.ReadFile(filepath.Join(repo, "charts", "camunda-platform-"+version, "test", "integration",
+			"scenarios", "chart-full-setup", "values", "features", "dogfood-hub.yaml"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		var layer struct {
+			Global struct {
+				ExtraManifests []string `yaml:"extraManifests"`
+			} `yaml:"global"`
+		}
+		if err := yaml.Unmarshal(raw, &layer); err != nil {
+			t.Fatal(err)
+		}
+		var images []string
+		for _, m := range layer.Global.ExtraManifests {
+			var job struct {
+				Kind     string `yaml:"kind"`
+				Metadata struct {
+					Name string `yaml:"name"`
+				} `yaml:"metadata"`
+				Spec struct {
+					Template struct {
+						Spec struct {
+							Containers []struct {
+								Image string `yaml:"image"`
+							} `yaml:"containers"`
+						} `yaml:"spec"`
+					} `yaml:"template"`
+				} `yaml:"spec"`
+			}
+			if err := yaml.Unmarshal([]byte(m), &job); err != nil {
+				t.Fatal(err)
+			}
+			if job.Kind == "Job" && job.Metadata.Name == "keycloak-realm-hardening" {
+				for _, c := range job.Spec.Template.Spec.Containers {
+					images = append(images, c.Image)
+				}
+			}
+		}
+		if len(images) == 0 {
+			t.Errorf("%s: keycloak-realm-hardening Job not found", version)
+		}
+		for _, img := range images {
+			if img != want {
+				t.Errorf("%s: keycloak-realm-hardening runs %s, want the internal-keycloak-26 chart image %s", version, img, want)
+			}
+		}
+	}
+}
+
 // Dogfood Elasticsearch runs with X-Pack security on because the CI cluster does
 // not enforce NetworkPolicy. Pin the auth contract end to end: the server takes
 // its elastic password from integration-test-credentials, every consumer reads
