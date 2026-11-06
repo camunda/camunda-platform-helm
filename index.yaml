@@ -5061,6 +5061,115 @@ entries:
     - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-8.9-14.0.0-alpha1/camunda-platform-14.0.0-alpha1.tgz
     version: 14.0.0-alpha1
   - annotations:
+      artifacthub.io/changes: ""
+      artifacthub.io/containsSecurityUpdates: "false"
+      artifacthub.io/images: |
+        - image: docker.io/bitnamilegacy/elasticsearch:8.18.0
+        - image: docker.io/bitnamilegacy/os-shell:12-debian-12-r43
+        - image: docker.io/bitnamilegacy/postgresql:14.18.0-debian-12-r0
+        - image: docker.io/bitnamilegacy/postgresql:15.10.0-debian-12-r2
+        - image: docker.io/camunda/camunda:8.8.46
+        - image: docker.io/camunda/connectors-bundle:8.8.26
+        - image: docker.io/camunda/console:8.8.149
+        - image: docker.io/camunda/identity:8.8.22
+        - image: docker.io/camunda/optimize:8.8.46
+        - image: docker.io/camunda/web-modeler-restapi:8.8.26
+        - image: docker.io/camunda/web-modeler-webapp:8.8.26
+        - image: docker.io/camunda/web-modeler-websockets:8.8.26
+        - image: registry.camunda.cloud/keycloak-ee/keycloak:26.7.2
+      artifacthub.io/links: |
+        - name: Camunda 8 docs
+          url: https://docs.camunda.io/
+        - name: Camunda 8 Self-Managed docs
+          url: https://docs.camunda.io/docs/self-managed/about-self-managed/
+        - name: Camunda 8 Self-Managed Helm charts
+          url: https://github.com/camunda/camunda-platform-helm
+      camunda.io/chart-images: |
+        docker.io/bitnamilegacy/elasticsearch:8.18.0
+        docker.io/bitnamilegacy/os-shell:12-debian-12-r43
+        docker.io/bitnamilegacy/postgresql:14.18.0-debian-12-r0
+        docker.io/bitnamilegacy/postgresql:15.10.0-debian-12-r2
+        docker.io/camunda/camunda:8.8.46
+        docker.io/camunda/connectors-bundle:8.8.26
+        docker.io/camunda/console:8.8.149
+        docker.io/camunda/identity:8.8.22
+        docker.io/camunda/optimize:8.8.46
+        docker.io/camunda/web-modeler-restapi:8.8.26
+        docker.io/camunda/web-modeler-webapp:8.8.26
+        docker.io/camunda/web-modeler-websockets:8.8.26
+        registry.camunda.cloud/keycloak-ee/keycloak:26.7.2
+      camunda.io/component-image-versions: |
+        camunda: 8.8.46
+        managementIdentity: 8.8.22
+        optimize: 8.8.46
+        webModeler: 8.8.26
+        connectors: 8.8.26
+        console: 8.8.149
+      camunda.io/helmCLIVersion: 3.22.1
+      camunda.io/imageOverrides: |
+        orchestration: 8.8.46
+        console: 8.8.149
+        modeler: 8.8.26
+        connectors: 8.8.26
+        optimize: 8.8.46
+        identity: 8.8.22
+    apiVersion: v2
+    appVersion: 8.8.x
+    created: "2026-11-06T16:42:02.709244329Z"
+    dependencies:
+    - alias: identityKeycloak
+      condition: identityKeycloak.enabled
+      name: keycloak
+      repository: file://../keycloak-24
+      version: 24.x.x
+    - alias: identityPostgresql
+      condition: identityPostgresql.enabled
+      name: postgresql
+      repository: file://../identity-postgresql-15
+      version: 15.x.x
+    - alias: webModelerPostgresql
+      condition: webModelerPostgresql.enabled
+      name: web-modeler-postgresql
+      repository: file://../web-modeler-postgresql-15
+      version: 15.x.x
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: file://../elasticsearch-21
+      version: 21.6.3
+    - name: common
+      repository: file://../common-2
+      version: 2.x.x
+    description: 'Camunda 8 Self-Managed Helm charts. Camunda''s process automation
+      platform allows developers to design, automate and improve processes. '
+    digest: 0ace93fb14317eaee25f4b0765e5779f9b7d1f281c3ba50d78ff4bab7a560aff
+    home: https://docs.camunda.io/docs/self-managed/about-self-managed/
+    icon: https://helm.camunda.io/imgs/camunda.svg
+    keywords:
+    - automation
+    - business-rules
+    - bpm
+    - bpmn
+    - camunda-platform
+    - decision-engine
+    - dmn
+    - modeling
+    - orchestration
+    - process-automation
+    - process-engine
+    - process-orchestration
+    - workflow
+    - workflow-engine
+    maintainers:
+    - name: camunda
+      url: https://camunda.com
+    name: camunda-platform
+    sources:
+    - https://github.com/camunda/camunda-platform-helm
+    type: application
+    urls:
+    - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-8.8-13.14.5/camunda-platform-13.14.5.tgz
+    version: 13.14.5
+  - annotations:
       artifacthub.io/changes: |
         - kind: fixed
           description: "Pin Bitnami Premium exporter and config-cli tags in 8.8 values-enterprise.yaml"
@@ -36032,4 +36141,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2026-11-06T16:17:47.628566484Z"
+generated: "2026-11-06T16:42:02.710385698Z"
