@@ -31,12 +31,14 @@ type ghClient interface {
 	Rerun(runID string) error
 	Cancel(runID string) error
 	MergeQueueHeads(branch string) ([]string, error)
+	PullRequestHead(number string) (string, error)
 }
 
 type Gate struct {
 	Client      ghClient
 	Workflow    string
 	QueueBranch string
+	PRNumber    string
 
 	DiscoveryTries    int
 	DiscoveryInterval time.Duration
@@ -62,6 +64,7 @@ type Gate struct {
 
 	mergeGroupSHA  string
 	mergeGroupSeen bool
+	pullRequestSHA string
 }
 
 func ResolveSHA(event, prHeadSHA, mgHeadSHA string) (string, error) {
@@ -175,6 +178,9 @@ func (g *Gate) WaitForCompletion(runID string, attempt int) error {
 func (g *Gate) RerunWithBackoff(runID string) error {
 	var last error
 	for i := 0; i < g.RerunTries; i++ {
+		if g.pullRequestSuperseded() {
+			return errPullRequestSuperseded
+		}
 		err := g.Client.Rerun(runID)
 		if err == nil {
 			return nil
@@ -207,6 +213,7 @@ func (g *Gate) WaitForAttemptRegistered(runID string, want int) error {
 var ErrNotRetryable = errors.New("not retryable")
 var ErrRerunAlreadyRunning = errors.New("rerun: workflow already running")
 var errMergeGroupLeftQueue = fmt.Errorf("%w: merge group is no longer in the merge queue", ErrNotRetryable)
+var errPullRequestSuperseded = fmt.Errorf("%w: the commit is no longer the pull request head", ErrNotRetryable)
 
 func (g *Gate) mergeGroupQueued() (queued, known bool) {
 	heads, err := g.Client.MergeQueueHeads(g.QueueBranch)
@@ -217,6 +224,18 @@ func (g *Gate) mergeGroupQueued() (queued, known bool) {
 	return slices.Contains(heads, g.mergeGroupSHA), true
 }
 
+func (g *Gate) pullRequestSuperseded() bool {
+	if g.PRNumber == "" || g.pullRequestSHA == "" {
+		return false
+	}
+	head, err := g.Client.PullRequestHead(g.PRNumber)
+	if err != nil {
+		g.Logf("could not read the pull request head: %v", err)
+		return false
+	}
+	return head != "" && head != g.pullRequestSHA
+}
+
 func (g *Gate) Run(event, prHeadSHA, mgHeadSHA string) error {
 	sha, err := ResolveSHA(event, prHeadSHA, mgHeadSHA)
 	if err != nil {
@@ -225,6 +244,8 @@ func (g *Gate) Run(event, prHeadSHA, mgHeadSHA string) error {
 	g.Logf("gating event=%s sha=%s", event, sha)
 	if event == "merge_group" {
 		g.mergeGroupSHA = sha
+	} else {
+		g.pullRequestSHA = sha
 	}
 
 	g.Cmdf("::group::discover")

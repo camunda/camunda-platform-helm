@@ -56,6 +56,7 @@ func main() {
 		Client:               newGHCLI(repo, 60*time.Second),
 		Workflow:             workflow,
 		QueueBranch:          strings.TrimPrefix(os.Getenv("MG_BASE_REF"), "refs/heads/"),
+		PRNumber:             os.Getenv("PR_NUMBER"),
 		DiscoveryTries:       60,
 		DiscoveryInterval:    10 * time.Second,
 		PollInterval:         60 * time.Second,

@@ -40,6 +40,8 @@ type fakeClient struct {
 	queue                   []queueResp
 	cancelQueue             []error
 	cancelCalls             int
+	prHeads                 []string
+	prHeadErr               error
 }
 
 type queueResp struct {
@@ -133,6 +135,16 @@ func (f *fakeClient) MergeQueueHeads(string) ([]string, error) {
 		f.queue = f.queue[1:]
 	}
 	return r.heads, r.err
+}
+func (f *fakeClient) PullRequestHead(string) (string, error) {
+	if f.prHeadErr != nil || len(f.prHeads) == 0 {
+		return "", f.prHeadErr
+	}
+	head := f.prHeads[0]
+	if len(f.prHeads) > 1 {
+		f.prHeads = f.prHeads[1:]
+	}
+	return head, nil
 }
 
 func statusList(statuses ...string) []statusResp {
@@ -597,6 +609,58 @@ func TestRun_DiscoveryFailurePropagates(t *testing.T) {
 	g := newTestGate(c)
 	if err := g.Run("pull_request", "sha", ""); err == nil {
 		t.Fatalf("expected discovery error")
+	}
+}
+
+func TestRun_PullRequestHeadCheckBeforeRetry(t *testing.T) {
+	cases := []struct {
+		name       string
+		prNumber   string
+		prHeads    []string
+		prHeadErr  error
+		rerunQueue []error
+		wantErr    error
+		wantRerun  int
+	}{
+		{name: "superseded_head_is_not_retried", prNumber: "7", prHeads: []string{"newer_sha"}, wantErr: ErrNotRetryable},
+		{name: "current_head_is_retried", prNumber: "7", prHeads: []string{"sha"}, wantRerun: 1},
+		{name: "head_read_error_still_retries", prNumber: "7", prHeadErr: errors.New("gh api 502"), wantRerun: 1},
+		{name: "no_pr_number_skips_the_check", prHeads: []string{"newer_sha"}, wantRerun: 1},
+		{
+			name:       "head_moving_during_rerun_backoff_stops_the_retry",
+			prNumber:   "7",
+			prHeads:    []string{"sha", "newer_sha"},
+			rerunQueue: []error{errors.New("gh run rerun 502")},
+			wantErr:    ErrNotRetryable,
+			wantRerun:  1,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			c := &fakeClient{
+				t:             t,
+				findRunQueue:  []findRunResp{{id: "100"}},
+				runURL:        "url",
+				attemptsQueue: attemptList(1, 2),
+				statusByAttempt: map[int][]statusResp{
+					1: statusList("completed"),
+					2: statusList("completed"),
+				},
+				conclusionByAttempt: map[int]string{1: "failure", 2: "success"},
+				prHeads:             tc.prHeads,
+				prHeadErr:           tc.prHeadErr,
+				rerunQueue:          tc.rerunQueue,
+			}
+			g := newTestGate(c)
+			g.PRNumber = tc.prNumber
+			err := g.Run("pull_request", "sha", "")
+			if !errors.Is(err, tc.wantErr) {
+				t.Fatalf("expected error %v, got %v", tc.wantErr, err)
+			}
+			if c.rerunCalls != tc.wantRerun {
+				t.Fatalf("expected %d reruns, got %d", tc.wantRerun, c.rerunCalls)
+			}
+		})
 	}
 }
 
