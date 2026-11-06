@@ -1,5 +1,30 @@
 # Changelog
 
+## [12.14.3](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.7-12.14.2...camunda-platform-8.7-12.14.3) (2026-11-06)
+
+
+### Bug Fixes
+
+* pin Bitnami Premium exporter and config-cli tags in 8.7 values-enterprise.yaml ([#7769](https://github.com/camunda/camunda-platform-helm/issues/7769)) ([f6f01e8](https://github.com/camunda/camunda-platform-helm/commit/f6f01e87ea89e05aa6be694a8b05e384765e96f4))
+* pin Bitnami Premium os-shell tag in 8.7 values-enterprise.yaml [ready] ([#7764](https://github.com/camunda/camunda-platform-helm/issues/7764)) ([71c2034](https://github.com/camunda/camunda-platform-helm/commit/71c20342817aa92e8c4377ba87e6544dcd067ec0))
+
+
+### Dependencies
+
+* update camunda-platform-images (patch) ([#7686](https://github.com/camunda/camunda-platform-helm/issues/7686)) ([ca1360c](https://github.com/camunda/camunda-platform-helm/commit/ca1360cbb71fc843528f076369e6df05e57f802b))
+* update camunda-platform-images (patch) ([#7752](https://github.com/camunda/camunda-platform-helm/issues/7752)) ([98e35f3](https://github.com/camunda/camunda-platform-helm/commit/98e35f38db599324fa420221ecd4cf10f2ab7008))
+* update camunda-platform-images (patch) ([#7817](https://github.com/camunda/camunda-platform-helm/issues/7817)) ([685c64b](https://github.com/camunda/camunda-platform-helm/commit/685c64b5405785d135dc8696da999530ed3d66ea))
+* update camunda-platform-images (patch) ([#7821](https://github.com/camunda/camunda-platform-helm/issues/7821)) ([d97bfda](https://github.com/camunda/camunda-platform-helm/commit/d97bfda0bc5535223b9380c91015aa6ff9bb21fc))
+* update camunda-platform-images (patch) ([#7825](https://github.com/camunda/camunda-platform-helm/issues/7825)) ([9948c84](https://github.com/camunda/camunda-platform-helm/commit/9948c84cfab87e9215abe00e7f1fc8de4d73bde8))
+* update camunda-platform-images (patch) ([#7827](https://github.com/camunda/camunda-platform-helm/issues/7827)) ([ae76d29](https://github.com/camunda/camunda-platform-helm/commit/ae76d29dc339dfc09ca3a0a36b41117fdcf42442))
+* update camunda-platform-images (patch) ([#7842](https://github.com/camunda/camunda-platform-helm/issues/7842)) ([3757c4b](https://github.com/camunda/camunda-platform-helm/commit/3757c4b0eac53daa29e198b5b26bef7e5975b7b9))
+* update camunda-platform-images (patch) ([#7865](https://github.com/camunda/camunda-platform-helm/issues/7865)) ([839db2b](https://github.com/camunda/camunda-platform-helm/commit/839db2b945f746c45328a2ad104c2d3d485a99e5))
+* update camunda-platform-images to v8.7.45 ([#7874](https://github.com/camunda/camunda-platform-helm/issues/7874)) ([ed99db6](https://github.com/camunda/camunda-platform-helm/commit/ed99db6337cce797079c027ad457d55a4d38df47))
+* update minor-grouped (minor) ([#7784](https://github.com/camunda/camunda-platform-helm/issues/7784)) ([1f513c0](https://github.com/camunda/camunda-platform-helm/commit/1f513c011474dc1fdea773d082c2451de1e7b5a4))
+* update minor-updates (minor) ([#7721](https://github.com/camunda/camunda-platform-helm/issues/7721)) ([a179706](https://github.com/camunda/camunda-platform-helm/commit/a179706cc0ceaeb7a8347c207b2dfadd30520d7d))
+* update patch-updates (patch) ([#7741](https://github.com/camunda/camunda-platform-helm/issues/7741)) ([88751e0](https://github.com/camunda/camunda-platform-helm/commit/88751e060db7fa33fd818aff602b5d2d8a379a68))
+* upgrade golang version to 1.27.3 ([#7675](https://github.com/camunda/camunda-platform-helm/issues/7675)) ([89ecc30](https://github.com/camunda/camunda-platform-helm/commit/89ecc30da8aed16f5ea7813308dc3f698d6ef35d))
+
 ## [12.14.2](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.7-12.14.1...camunda-platform-8.7-12.14.2) (2026-10-23)
 
 
