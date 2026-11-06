@@ -65,4 +65,8 @@ annotations:
     - name: Camunda 8 Self-Managed Helm charts
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
-  artifacthub.io/changes: ""
+  artifacthub.io/changes: |
+    - kind: fixed
+      description: "Pin Bitnami Premium os-shell tag in 8.7 values-enterprise.yaml"
+    - kind: fixed
+      description: "Pin Bitnami Premium exporter and config-cli tags in 8.7 values-enterprise.yaml"
