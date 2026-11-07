@@ -1,0 +1,213 @@
+# type: Documentation
+# owner: @camunda/distribution-team
+---
+# Docs sync - keeps camunda/camunda-docs in line with chart changes.
+#
+# analyze: on every push to a chart PR, Claude runs the docs-sync skill in
+#   analyze mode and this workflow upserts one PR comment with the docs impact.
+#   Claude gets read-only access; it never touches camunda-docs. The engineer
+#   opens the docs PR locally with /docs-sync.
+# promote: when the Helm PR merges, the linked draft docs PR is marked ready
+#   for review.
+#
+# Copy to .github/workflows/docs-sync.yaml. Requires in Vault
+# (secret/data/products/distribution/ci): ANTHROPIC_API_KEY, plus the existing
+# GH_APP_ID_DISTRO_CI / GH_APP_PRIVATE_KEY_DISTRO_CI. The Distro CI GitHub App
+# must be installed on camunda/camunda-docs with pull-requests: write for the
+# promote job.
+name: Docs - Sync with camunda-docs
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, closed]
+    paths:
+      - "charts/camunda-platform-*/**"
+
+permissions: {}
+
+concurrency:
+  group: docs-sync-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    # Same-repo PRs only (forks get no secrets), skip Renovate image bumps.
+    if: >-
+      github.event.action != 'closed' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.user.login != 'renovate[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      pull-requests: write
+      id-token: write # Vault JWT auth
+    env:
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      BASE_REF: ${{ github.event.pull_request.base.ref }}
+      HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Check out camunda-docs (read-only, Self-Managed content only)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: camunda/camunda-docs
+          path: camunda-docs
+          persist-credentials: false
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /*.md
+            /*.json
+            /.github/instructions/
+            /.claude/skills/
+            /docs/self-managed/
+            /docs/reference/announcements-release-notes/
+            /versioned_docs/*/self-managed/
+            /versioned_docs/*/reference/announcements-release-notes/
+
+      - name: Import Vault secrets
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        id: vault-secrets
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: ${{ secrets.VAULT_JWT_ROLE != '' && 'jwt' || 'approle' }}
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
+          roleId: ${{ secrets.VAULT_JWT_ROLE == '' && secrets.VAULT_ROLE_ID || '' }}
+          secretId: ${{ secrets.VAULT_JWT_ROLE == '' && secrets.VAULT_SECRET_ID || '' }}
+          secrets: |
+            secret/data/products/distribution/ci ANTHROPIC_API_KEY;
+          exportEnv: false
+
+      - name: Fetch the existing docs-sync comment
+        run: |
+          mkdir -p .docs-sync
+          gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" --paginate \
+            --jq '[.[] | select(.body | contains("<!-- docs-sync:comment -->"))][0].body // ""' \
+            > .docs-sync/previous-comment.md
+          git fetch --no-tags origin "${BASE_REF}"
+
+      - name: Analyze docs impact
+        uses: anthropics/claude-code-action@374f254f5efaf968abfe15d399fd90972e8138b9 # v1.0.251
+        with:
+          anthropic_api_key: ${{ steps.vault-secrets.outputs.ANTHROPIC_API_KEY }}
+          github_token: ${{ github.token }}
+          prompt: |
+            Run the docs-sync skill (.claude/skills/docs-sync/SKILL.md) in analyze mode.
+            Helm PR: #${{ env.PR_NUMBER }} in ${{ github.repository }}, base branch origin/${{ env.BASE_REF }}, head ${{ env.HEAD_SHA }}.
+            The camunda-docs checkout is at ./camunda-docs.
+            The previous docs-sync comment (may be empty) is at .docs-sync/previous-comment.md;
+            use its docs-pr and synced-head markers to report whether the docs PR is in sync,
+            but do not include those two markers in your output.
+            Write only the comment body to .docs-sync/comment.md. Do not post comments, push, or edit files elsewhere.
+          claude_args: >-
+            --max-turns 40
+            --allowedTools "Read,Grep,Glob,Write,Bash(python3 .claude/skills/docs-sync/scripts/chart_diff.py:*),Bash(git diff:*),Bash(git log:*),Bash(git show:*),Bash(gh pr view:*)"
+
+      - name: Upsert the docs-sync comment
+        run: |
+          body_file=.docs-sync/comment.md
+          if [ ! -s "$body_file" ]; then
+            echo "::warning::Claude produced no comment body; skipping."
+            exit 0
+          fi
+          existing_id=$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" --paginate \
+            --jq '[.[] | select(.body | contains("<!-- docs-sync:comment -->"))][0].id // empty')
+
+          # Stay silent on PRs that never had docs impact.
+          if [ -z "$existing_id" ] && grep -q 'docs-sync:impact=no' "$body_file"; then
+            echo "No docs impact and no existing comment; nothing to post."
+            exit 0
+          fi
+
+          # Carry forward state that only the local /docs-sync run writes.
+          grep -oE '<!-- docs-sync:(docs-pr|synced-head)=[^ ]+ -->' .docs-sync/previous-comment.md \
+            >> "$body_file" || true
+
+          if [ -n "$existing_id" ]; then
+            gh api -X PATCH "repos/${GITHUB_REPOSITORY}/issues/comments/${existing_id}" -F "body=@${body_file}" > /dev/null
+          else
+            gh pr comment "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --body-file "$body_file"
+          fi
+
+  promote:
+    if: github.event.action == 'closed' && github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pull-requests: write
+      id-token: write
+    env:
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      PR_URL: ${{ github.event.pull_request.html_url }}
+    steps:
+      - name: Find the linked docs PR
+        id: find
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          body=$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" --paginate \
+            --jq '[.[] | select(.body | contains("<!-- docs-sync:comment -->"))][0].body // ""')
+          url=$(printf '%s' "$body" | grep -oE 'docs-sync:docs-pr=https://github.com/camunda/camunda-docs/pull/[0-9]+' \
+            | head -1 | cut -d= -f2)
+          impact=$(printf '%s' "$body" | grep -c 'docs-sync:impact=yes' || true)
+          echo "url=${url}" >> "$GITHUB_OUTPUT"
+          echo "impact=${impact}" >> "$GITHUB_OUTPUT"
+
+      - name: Remind if docs impact has no docs PR
+        if: steps.find.outputs.url == '' && steps.find.outputs.impact != '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr comment "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --body \
+            "📚 This PR merged with docs impact but no linked camunda-docs PR. Run \`/docs-sync\` to open one."
+
+      - name: Import Vault secrets
+        if: steps.find.outputs.url != ''
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        id: vault-secrets
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: ${{ secrets.VAULT_JWT_ROLE != '' && 'jwt' || 'approle' }}
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
+          roleId: ${{ secrets.VAULT_JWT_ROLE == '' && secrets.VAULT_ROLE_ID || '' }}
+          secretId: ${{ secrets.VAULT_JWT_ROLE == '' && secrets.VAULT_SECRET_ID || '' }}
+          secrets: |
+            secret/data/products/distribution/ci GH_APP_ID_DISTRO_CI;
+            secret/data/products/distribution/ci GH_APP_PRIVATE_KEY_DISTRO_CI;
+          exportEnv: false
+
+      - name: Generate camunda-docs token
+        if: steps.find.outputs.url != ''
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        id: docs-token
+        with:
+          app-id: ${{ steps.vault-secrets.outputs.GH_APP_ID_DISTRO_CI }}
+          private-key: ${{ steps.vault-secrets.outputs.GH_APP_PRIVATE_KEY_DISTRO_CI }}
+          owner: camunda
+          repositories: camunda-docs
+          permission-pull-requests: write
+
+      - name: Mark docs PR ready for review
+        if: steps.find.outputs.url != ''
+        env:
+          GH_TOKEN: ${{ steps.docs-token.outputs.token }}
+          DOCS_PR: ${{ steps.find.outputs.url }}
+        run: |
+          state=$(gh pr view "$DOCS_PR" --json state,isDraft --jq '.state + " " + (.isDraft|tostring)')
+          case "$state" in
+            "OPEN true")
+              gh pr ready "$DOCS_PR"
+              gh pr comment "$DOCS_PR" --body "The Helm PR ${PR_URL} merged, so this docs PR is ready for review." ;;
+            "OPEN false") echo "Docs PR already ready for review." ;;
+            *) echo "Docs PR is ${state}; leaving it alone." ;;
+          esac
