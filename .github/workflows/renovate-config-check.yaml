@@ -30,7 +30,7 @@ jobs:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
     - name: Validate renovate config syntax
-      uses: docker://renovate/renovate:latest@sha256:52454eae0bdcb51ddfecc39035e0fc2d97172751124049144e89d44343f6ae81
+      uses: docker://renovate/renovate:latest@sha256:a8cb8222b49d15da701436954b7463427d535eae2203b294655c9a29675c47d1
       with:
         args: renovate-config-validator
 

@@ -50,7 +50,7 @@ jobs:
             secret/data/products/distribution/ci DOCKERHUB_PASSWORD | TEST_DOCKER_PASSWORD;
           exportEnv: false
       - name: Install common software tooling
-        uses: camunda/infra-global-github-actions/common-tooling@08f6922ee1aeb45b5270ff62ce582fa7d85428a1 # main
+        uses: camunda/infra-global-github-actions/common-tooling@f49af13e839834ccc2ed45cdcfcbc03166d41712 # main
         with:
           overwrite: "false"
           build-essential-enabled: "true"
