@@ -204,7 +204,7 @@ spec:
               mountPath: /exporters
             - mountPath: /tmp
               name: tmp
-            {{- if .Values.orchestration.log4j2 }}
+            {{- if and .Values.orchestration.log4j2 (not (hasKey (.Values.orchestration.extraConfiguration | default dict) "log4j2.xml")) }}
             - name: config
               mountPath: /usr/local/camunda/config/log4j2.xml
               subPath: log4j2.xml
