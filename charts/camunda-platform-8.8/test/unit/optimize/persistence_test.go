@@ -148,8 +148,8 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 
 				// then
 				s.Require().NotNil(tmpVolume, "tmp volume should exist")
-				s.Require().NotNil(tmpVolume.PersistentVolumeClaim, "tmp should use PVC when persistence is enabled")
-				s.Require().Equal("my-existing-pvc", tmpVolume.PersistentVolumeClaim.ClaimName)
+				s.Require().NotNil(tmpVolume.EmptyDir, "tmp should use emptyDir when persistence is enabled")
+				s.Require().Nil(tmpVolume.PersistentVolumeClaim, "tmp should not use PVC when persistence is enabled")
 
 				s.Require().NotNil(camundaVolume, "camunda volume should exist")
 				s.Require().NotNil(camundaVolume.PersistentVolumeClaim, "camunda should use PVC when persistence is enabled")

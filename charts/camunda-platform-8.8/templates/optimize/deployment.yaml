@@ -340,10 +340,7 @@ spec:
         {{- end }}
       volumes:
         - name: tmp
-          {{- if and .Values.optimize.persistence.enabled .Values.optimize.persistence.existingClaim }}
-          persistentVolumeClaim:
-            claimName: {{ .Values.optimize.persistence.existingClaim }}
-          {{- else if .Values.optimize.persistence.enabled }}
+          {{- if and .Values.optimize.persistence.enabled (not .Values.optimize.persistence.existingClaim) }}
           persistentVolumeClaim:
             claimName: {{ include "camundaPlatform.fullname" . }}-optimize-data-tmp
           {{- else }}
