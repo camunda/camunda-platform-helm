@@ -31,7 +31,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Install Go
-        uses: camunda/infraex-common-config/.github/actions/asdf-install-tooling@e2923304b40dfc031b3f595bcc1445e90c981adb # 3.0.0
+        uses: camunda/infraex-common-config/.github/actions/asdf-install-tooling@37bcb8168f0990c0c1786f55a350206289519c2d # 3.0.2
       - name: Check template complexity
         env:
           HELM_TEMPLATE_BASE_REF: ${{ github.event_name == 'pull_request' && 'HEAD^1' || github.event.merge_group.base_sha || github.event.before || inputs.base-ref || 'origin/main' }}
@@ -40,7 +40,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
-    uses: camunda/infraex-common-config/.github/workflows/lint-global.yml@e2923304b40dfc031b3f595bcc1445e90c981adb # 3.0.0
+    uses: camunda/infraex-common-config/.github/workflows/lint-global.yml@37bcb8168f0990c0c1786f55a350206289519c2d # 3.0.2
     with:
       vault-secret-path: secret/data/products/qa/ci/github.com/apps/camunda/quality-assurance-ci
       vault-github-app-private-key-key: GITHUB_APP_SECRET
