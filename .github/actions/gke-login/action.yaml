@@ -43,5 +43,12 @@ runs:
   - name: Check credentials
     shell: bash
     run: |
+      # Retry short API-server blips (e.g. GKE control-plane upgrade/repair).
+      for i in 1 2 3 4 5 6; do
+        kubectl version --request-timeout=10s >/dev/null 2>&1 && break
+        [ "$i" -eq 6 ] && { echo "::error::GKE API server unreachable after retries"; exit 1; }
+        echo "GKE API server not reachable (attempt $i/6), retrying in 20s..."
+        sleep 20
+      done
       kubectl auth can-i create deployment
       kubectl version
