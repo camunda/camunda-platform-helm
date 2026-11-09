@@ -172,22 +172,43 @@ func TestPublicReleasePRVersionGuard(t *testing.T) {
 	}
 }
 
-func TestPublicReleasePRChangedAfterStamp(t *testing.T) {
+func runMarkPublished(t *testing.T, refSHA string) (string, string, []byte) {
+	t.Helper()
 	run := sourceTestWorkflow(t, "chart-release-public.yaml").stepRun(t, "post-release", "Mark release-please PR as published")
 	dir := t.TempDir()
-	writeResumeFile(t, filepath.Join(dir, "gh"), "#!/bin/bash\nif [[ $1 == pr && $2 == view ]]; then echo newer; else echo mutation >> \"$CALLS\"; fi\n", 0o755)
-	output := filepath.Join(dir, "output")
+	writeResumeFile(t, filepath.Join(dir, "gh"), "#!/bin/bash\nif [[ $1 == pr && $2 == view ]]; then echo stale; else echo \"$*\" >> \"$CALLS\"; fi\n", 0o755)
+	writeResumeFile(t, filepath.Join(dir, "git"), "#!/bin/bash\nif [[ $1 == ls-remote ]]; then printf '%s\\t%s\\n' \"$MOCK_REF_SHA\" \"$3\"; fi\n", 0o755)
 	cmd := exec.Command("bash", "-e", "-o", "pipefail", "-c", run)
-	cmd.Env = append(os.Environ(), "PATH="+dir+":"+os.Getenv("PATH"), "GITHUB_OUTPUT="+output,
-		"PR_NUMBER=42", "PR_SHA=original", "CALLS="+filepath.Join(dir, "calls"))
+	cmd.Env = append(os.Environ(), "PATH="+dir+":"+os.Getenv("PATH"), "GITHUB_OUTPUT="+filepath.Join(dir, "output"),
+		"PR_NUMBER=42", "PR_SHA=stamped", "CHART_DIR_ID=8.7", "MOCK_REF_SHA="+refSHA, "CALLS="+filepath.Join(dir, "calls"))
 	result, err := cmd.CombinedOutput()
-	if err != nil || !strings.Contains(string(result), "::notice::") {
-		t.Fatalf("expected successful skip with notice: %v: %s", err, result)
+	if err != nil {
+		t.Fatalf("mark published failed: %v: %s", err, result)
 	}
-	for _, file := range []string{"output", "calls"} {
-		if _, err := os.Stat(filepath.Join(dir, file)); !os.IsNotExist(err) {
+	return filepath.Join(dir, "output"), filepath.Join(dir, "calls"), result
+}
+
+func TestPublicReleasePRChangedAfterStamp(t *testing.T) {
+	output, calls, result := runMarkPublished(t, "newer")
+	if !strings.Contains(string(result), "::notice::") {
+		t.Fatalf("expected skip notice: %s", result)
+	}
+	for _, file := range []string{output, calls} {
+		if _, err := os.Stat(file); !os.IsNotExist(err) {
 			t.Fatalf("unexpected %s after PR changed: %v", file, err)
 		}
+	}
+}
+
+func TestPublicReleasePRMarkedDespiteStaleAPIHead(t *testing.T) {
+	output, calls, result := runMarkPublished(t, "stamped")
+	got, err := os.ReadFile(output)
+	if err != nil || !strings.Contains(string(got), "pr_number=42") {
+		t.Fatalf("expected pr_number output: %v: %s", err, result)
+	}
+	mutations, err := os.ReadFile(calls)
+	if err != nil || !strings.Contains(string(mutations), "--add-label autorelease: published") {
+		t.Fatalf("expected published label: %v: %s", err, mutations)
 	}
 }
 
