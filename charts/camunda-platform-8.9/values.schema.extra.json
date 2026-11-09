@@ -1,5 +1,195 @@
 {
     "properties": {
+        "identityKeycloak": {
+            "properties": {
+                "image": {
+                    "properties": {
+                        "registry": { "type": "string" },
+                        "pullSecrets": {
+                            "type": "array",
+                            "description": "List of secrets to use to pull container images. Each entry can be either a string (secret name) or an object with a 'name' field (Kubernetes LocalObjectReference).",
+                            "default": [],
+                            "items": {
+                                "anyOf": [
+                                    { "type": "string" },
+                                    {
+                                        "type": "object",
+                                        "properties": { "name": { "type": "string" } },
+                                        "required": ["name"]
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                },
+                "keycloakConfigCli": {
+                    "properties": {
+                        "image": {
+                            "properties": {
+                                "registry": { "type": "string" },
+                                "pullSecrets": { "type": "array" }
+                            }
+                        }
+                    }
+                },
+                "postgresql": {
+                    "properties": {
+                        "enabled": { "type": "boolean" },
+                        "image": {
+                            "properties": {
+                                "registry": { "type": "string" },
+                                "pullSecrets": { "type": "array" }
+                            }
+                        },
+                        "metrics": {
+                            "properties": {
+                                "image": {
+                                    "properties": {
+                                        "registry": { "type": "string" },
+                                        "pullSecrets": { "type": "array" }
+                                    }
+                                }
+                            }
+                        },
+                        "volumePermissions": {
+                            "properties": {
+                                "image": {
+                                    "properties": {
+                                        "registry": { "type": "string" },
+                                        "pullSecrets": { "type": "array" }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "identityPostgresql": {
+            "properties": {
+                "image": {
+                    "properties": {
+                        "registry": { "type": "string" },
+                        "pullSecrets": { "type": "array" }
+                    }
+                },
+                "metrics": {
+                    "properties": {
+                        "image": {
+                            "properties": {
+                                "registry": { "type": "string" },
+                                "pullSecrets": { "type": "array" }
+                            }
+                        }
+                    }
+                },
+                "volumePermissions": {
+                    "properties": {
+                        "image": {
+                            "properties": {
+                                "registry": { "type": "string" },
+                                "pullSecrets": { "type": "array" }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "webModelerPostgresql": {
+            "properties": {
+                "image": {
+                    "properties": {
+                        "registry": { "type": "string" },
+                        "pullSecrets": { "type": "array" }
+                    }
+                },
+                "metrics": {
+                    "properties": {
+                        "image": {
+                            "properties": {
+                                "registry": { "type": "string" },
+                                "pullSecrets": { "type": "array" }
+                            }
+                        }
+                    }
+                },
+                "volumePermissions": {
+                    "properties": {
+                        "image": {
+                            "properties": {
+                                "registry": { "type": "string" },
+                                "pullSecrets": { "type": "array" }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "elasticsearch": {
+            "properties": {
+                "global": {
+                    "properties": {
+                        "imagePullSecrets": {
+                            "type": "array",
+                            "description": "List of secrets to use to pull container images. Each entry can be either a string (secret name) or an object with a 'name' field (Kubernetes LocalObjectReference).",
+                            "default": [],
+                            "items": {
+                                "anyOf": [
+                                    { "type": "string" },
+                                    {
+                                        "type": "object",
+                                        "properties": { "name": { "type": "string" } },
+                                        "required": ["name"]
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                },
+                "image": {
+                    "properties": {
+                        "registry": { "type": "string" },
+                        "pullSecrets": { "type": "array" }
+                    }
+                },
+                "metrics": {
+                    "properties": {
+                        "image": {
+                            "properties": {
+                                "registry": { "type": "string" },
+                                "pullSecrets": { "type": "array" }
+                            }
+                        }
+                    }
+                },
+                "volumePermissions": {
+                    "properties": {
+                        "image": {
+                            "properties": {
+                                "registry": { "type": "string" },
+                                "pullSecrets": { "type": "array" }
+                            }
+                        }
+                    }
+                },
+                "sysctlImage": {
+                    "properties": {
+                        "registry": { "type": "string" },
+                        "pullSecrets": { "type": "array" }
+                    }
+                },
+                "copyTlsCerts": {
+                    "properties": {
+                        "image": {
+                            "properties": {
+                                "registry": { "type": "string" },
+                                "pullSecrets": { "type": "array" }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "global": {
             "properties": {
                 "image": {
@@ -1311,68 +1501,6 @@
                                         "type": "string"
                                     }
                                 }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "elasticsearch": {
-            "properties": {
-                "global": {
-                    "properties": {
-                        "imagePullSecrets": {
-                            "type": "array",
-                            "description": "List of secrets to use to pull container images. Each entry can be either a string (secret name) or an object with a 'name' field (Kubernetes LocalObjectReference).",
-                            "default": [],
-                            "items": {
-                                "anyOf": [
-                                    {
-                                        "type": "string"
-                                    },
-                                    {
-                                        "type": "object",
-                                        "properties": {
-                                            "name": {
-                                                "type": "string"
-                                            }
-                                        },
-                                        "required": [
-                                            "name"
-                                        ]
-                                    }
-                                ]
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "identityKeycloak": {
-            "properties": {
-                "image": {
-                    "properties": {
-                        "pullSecrets": {
-                            "type": "array",
-                            "description": "List of secrets to use to pull container images. Each entry can be either a string (secret name) or an object with a 'name' field (Kubernetes LocalObjectReference).",
-                            "default": [],
-                            "items": {
-                                "anyOf": [
-                                    {
-                                        "type": "string"
-                                    },
-                                    {
-                                        "type": "object",
-                                        "properties": {
-                                            "name": {
-                                                "type": "string"
-                                            }
-                                        },
-                                        "required": [
-                                            "name"
-                                        ]
-                                    }
-                                ]
                             }
                         }
                     }
