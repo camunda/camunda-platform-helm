@@ -215,6 +215,8 @@ func values(phase string) map[string]any {
 			"restapi": map[string]any{
 				"image":   map[string]any{"repository": "busybox"},
 				"command": []string{"sh", "-c", "mkdir -p /tmp/www/health; touch /tmp/www/health/readiness /tmp/www/health/liveness; httpd -p 8081 -h /tmp/www; httpd -f -p 8091 -h /tmp/www"},
+				// The chart probe (30s delay, 30s period, 1s timeout) lets one slow busybox reply hold a pod unready for 30s+, past the phase deadline.
+				"readinessProbe": stubReadinessProbe,
 			},
 			"websockets": map[string]any{
 				"image":          map[string]any{"repository": "busybox"},
@@ -227,6 +229,8 @@ func values(phase string) map[string]any {
 		"connectors": map[string]any{"enabled": false}, "optimize": map[string]any{"enabled": false},
 	}
 }
+
+var stubReadinessProbe = map[string]any{"initialDelaySeconds": 1, "periodSeconds": 5, "timeoutSeconds": 5}
 
 func helmSetArgs(phase string) []string {
 	sets := []string{
@@ -247,6 +251,9 @@ func helmSetArgs(phase string) []string {
 		"--set-json", `webModeler.restapi.command=["sh","-c","mkdir -p /tmp/www/health; touch /tmp/www/health/readiness /tmp/www/health/liveness; httpd -p 8081 -h /tmp/www; httpd -f -p 8091 -h /tmp/www"]`,
 		"--set-json", `webModeler.websockets.command=["sleep","3600"]`,
 		"--set", "webModeler.websockets.readinessProbe.enabled=false",
+		"--set", "webModeler.restapi.readinessProbe.initialDelaySeconds=1",
+		"--set", "webModeler.restapi.readinessProbe.periodSeconds=5",
+		"--set", "webModeler.restapi.readinessProbe.timeoutSeconds=5",
 	)
 	return args
 }
