@@ -213,9 +213,8 @@ func values(phase string) map[string]any {
 		"webModeler": map[string]any{
 			"image": map[string]any{"tag": "1.36.1"},
 			"restapi": map[string]any{
-				"image":   map[string]any{"repository": "busybox"},
-				"command": []string{"sh", "-c", "mkdir -p /tmp/www/health; touch /tmp/www/health/readiness /tmp/www/health/liveness; httpd -p 8081 -h /tmp/www; httpd -f -p 8091 -h /tmp/www"},
-				// The chart probe (30s delay, 30s period, 1s timeout) lets one slow busybox reply hold a pod unready for 30s+, past the phase deadline.
+				"image":          map[string]any{"repository": "busybox"},
+				"command":        []string{"sh", "-c", "mkdir -p /tmp/www/health; touch /tmp/www/health/readiness /tmp/www/health/liveness; httpd -p 8081 -h /tmp/www; httpd -f -p 8091 -h /tmp/www"},
 				"readinessProbe": stubReadinessProbe,
 			},
 			"websockets": map[string]any{
