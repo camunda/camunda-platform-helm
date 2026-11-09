@@ -177,7 +177,7 @@ func runMarkPublished(t *testing.T, refSHA string) (string, string, []byte) {
 	run := sourceTestWorkflow(t, "chart-release-public.yaml").stepRun(t, "post-release", "Mark release-please PR as published")
 	dir := t.TempDir()
 	writeResumeFile(t, filepath.Join(dir, "gh"), "#!/bin/bash\nif [[ $1 == pr && $2 == view ]]; then echo stale; else echo \"$*\" >> \"$CALLS\"; fi\n", 0o755)
-	writeResumeFile(t, filepath.Join(dir, "git"), "#!/bin/bash\nif [[ $1 == ls-remote ]]; then printf '%s\\t%s\\n' \"$MOCK_REF_SHA\" \"$3\"; fi\n", 0o755)
+	writeResumeFile(t, filepath.Join(dir, "git"), "#!/bin/bash\nif [[ $1 == ls-remote && $3 == refs/heads/release-please--branches--main--components--camunda-platform-8.7 ]]; then printf '%s\\t%s\\n' \"$MOCK_REF_SHA\" \"$3\"; fi\n", 0o755)
 	cmd := exec.Command("bash", "-e", "-o", "pipefail", "-c", run)
 	cmd.Env = append(os.Environ(), "PATH="+dir+":"+os.Getenv("PATH"), "GITHUB_OUTPUT="+filepath.Join(dir, "output"),
 		"PR_NUMBER=42", "PR_SHA=stamped", "CHART_DIR_ID=8.7", "MOCK_REF_SHA="+refSHA, "CALLS="+filepath.Join(dir, "calls"))
