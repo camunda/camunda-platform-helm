@@ -282,10 +282,7 @@ func waitForPhase(cfg config, phase string) error {
 				time.Sleep(5 * time.Second)
 				continue
 			}
-			if err := assertServiceSelector(cfg.namespace, release+"-web-modeler-restapi"); err != nil {
-				return err
-			}
-			if err := assertServiceSelector(cfg.namespace, release+"-web-modeler-websockets"); err != nil {
+			if err := assertConvergedState(cfg); err != nil {
 				return err
 			}
 			if err := assertPhasePods(cfg.namespace, phase, expectedRest+expectedWebsockets); err != nil {
@@ -352,6 +349,37 @@ func controllerConverged(cfg config) error {
 		return err
 	}
 	return helmReleaseConverged(value)
+}
+
+// Hard failures once the controller reports convergence.
+func assertConvergedState(cfg config) error {
+	if err := assertFluxRevision(cfg); err != nil {
+		return err
+	}
+	if err := assertServiceSelector(cfg.namespace, release+"-web-modeler-restapi"); err != nil {
+		return err
+	}
+	return assertServiceSelector(cfg.namespace, release+"-web-modeler-websockets")
+}
+
+// A ref name can move after the run starts, so check that Flux built the pinned commit.
+func assertFluxRevision(cfg config) error {
+	if cfg.controller != "flux" || cfg.revisionRefName == "" {
+		return nil
+	}
+	data, err := output("kubectl", "-n", "flux-system", "get", "gitrepository", release, "-o", "jsonpath={.status.artifact.revision}")
+	if err != nil {
+		return err
+	}
+	return revisionMatches(strings.TrimSpace(string(data)), cfg.revision)
+}
+
+// Flux reports revisions as "<ref>@sha1:<sha>".
+func revisionMatches(artifactRevision, commit string) error {
+	if !strings.HasSuffix(artifactRevision, "@sha1:"+commit) {
+		return fmt.Errorf("flux artifact revision %q does not match commit %q; the ref moved during the run", artifactRevision, commit)
+	}
+	return nil
 }
 
 func helmReleaseConverged(value helmRelease) error {
