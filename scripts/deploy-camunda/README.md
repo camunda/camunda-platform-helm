@@ -942,7 +942,7 @@ For a full command reference and operational patterns, see
 | `--chart-ref` | `""` | Override chart source with an OCI reference or `.tgz` archive path. |
 | `--chart-version` | `""` | Chart version to install when `--chart-ref` is set. |
 | `--wait-ingress-ready` | `false` | Fail entry if ingress host is not publicly DNS-resolvable and HTTP-reachable after deploy. |
-| `--ingress-ready-timeout` | `8` | Timeout in minutes for `--wait-ingress-ready`. |
+| `--ingress-ready-timeout` | `8` | Timeout in minutes for `--wait-ingress-ready`. With `--wait-ingress-ready`, a value below `1` is an error. |
 
 ## Watch internals
 
