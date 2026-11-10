@@ -16,6 +16,7 @@ package cmd
 
 import (
 	"os"
+	"path/filepath"
 	"scripts/deploy-camunda/acceptance"
 	"strings"
 	"testing"
@@ -66,6 +67,38 @@ func TestE2EEnvMergeRejectsHalfConfiguredOptimizeBeforeRendering(t *testing.T) {
 	if !strings.Contains(err.Error(), "must be set together") {
 		t.Fatalf("expected the flag pairing error ahead of the render step, got: %v", err)
 	}
+}
+
+func TestE2EEnvAPISuiteCommandAfterSourcingTheRenderedEnv(t *testing.T) {
+	dir := t.TempDir()
+	envFile := filepath.Join(dir, ".env")
+	var rendered strings.Builder
+	for key, value := range map[string]string{
+		"PLAYWRIGHT_BASE_URL": "https://ci.example.com",
+		"BASE_URL":            "https://ci.example.com",
+		"OAUTH_URL":           "https://ci.example.com/auth/realms/camunda-platform/protocol/openid-connect/token",
+		"MINOR_VERSION":       "SM-8.10",
+		"CONNECTORS_BASE_URL": "https://ci.example.com/connectors/inbound",
+		"IDENTITY_BASE_URL":   "https://ci.example.com/identity/",
+		"CONSOLE_BASE_URL":    "https://ci.example.com",
+		"WEBMODELER_BASE_URL": "https://ci.example.com/modeler",
+	} {
+		rendered.WriteString(key + "=" + value + "\n")
+		t.Setenv(key, value)
+	}
+	writeFile(t, envFile, rendered.String())
+	bin := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(bin, "kubectl"), []byte("#!/bin/sh\necho v-secret\n"), 0o755))
+	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+	output := filepath.Join(dir, ".env.api")
+
+	root := NewRootCommand()
+	root.AddCommand(newE2EEnvCommand())
+	root.SetOut(&strings.Builder{})
+	root.SetArgs([]string{"e2e-env", "api-suite", "--env-file", envFile, "--namespace", "ns", "--output", output})
+	require.NoError(t, root.Execute())
+
+	assert.Contains(t, readFile(t, output), "BASE_URL='https://ci.example.com/orchestration'\n")
 }
 
 // The physical-tenants spec logs in as venom with VENOM_CLIENT_SECRET, which e2e-env resolves
