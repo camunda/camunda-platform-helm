@@ -372,7 +372,7 @@ func assertFluxRevision(cfg config) error {
 // Flux reports revisions as "<ref>@sha1:<sha>".
 func revisionMatches(artifactRevision, commit string) error {
 	if !strings.HasSuffix(artifactRevision, "@sha1:"+commit) {
-		return fmt.Errorf("Flux artifact revision %q does not match commit %q; the ref moved during the run", artifactRevision, commit)
+		return fmt.Errorf("flux artifact revision %q does not match commit %q; the ref moved during the run", artifactRevision, commit)
 	}
 	return nil
 }
