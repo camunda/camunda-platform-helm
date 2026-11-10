@@ -319,11 +319,17 @@ env:
   # Vars with "TEST_" prefix are used in the test runner tool (Task).
   CI_DEPLOYMENT_TTL: ${{ inputs.deployment-ttl }}
   IS_TOPOLOGY: ${{ inputs.is-topology }}
-  # Floor for the deploy-time cleaner/janitor TTL of a topology scenario, which holds
-  # one namespace set across sequentially-run e2e legs. Must exceed install plus every
-  # leg; at ~10m install and ~25m per leg, 4h covers the four-leg mns2 chain with room
-  # for queueing. Applied only when no explicit deployment-ttl was requested.
-  TOPOLOGY_MIN_TTL: 4h
+  # Floor for the deploy-time cleaner/janitor TTL of a scenario that runs several e2e legs
+  # sequentially against one shared namespace set: a topology chain, or an install flow
+  # with the full and api suites added to smoke. deploy-camunda's 60m default expires
+  # mid-chain, so the janitor reaps the namespace before the last leg authenticates. Must
+  # exceed install plus every leg with room for runner queueing; 4h covers both chains.
+  # Applied only when no explicit deployment-ttl was requested, so the cleanup job still
+  # stamps ttl=1s and reaps at run end — this is a ceiling, never the actual lifetime.
+  E2E_CHAIN_MIN_TTL: 4h
+  # True when the scenario runs that sequential multi-leg chain (a topology, or an e2e
+  # install flow); selects the floor above over deploy-camunda's 60m default.
+  CHAIN_NEEDS_TTL_FLOOR: ${{ inputs.is-topology || inputs.e2e-enabled }}
   # The Helm repo which is used during the upgrade flow.
   TEST_CHART_REPO: ${{ inputs.camunda-helm-repo }}
   # Docker Hub auth to avoid image pull rate limit.
@@ -738,14 +744,14 @@ jobs:
 
           # Give deploy-camunda the requested namespace TTL; without this it stamps its 60m
           # default onto cleaner/janitor, so 12h nightly clusters get reaped after an hour.
-          # A topology scenario runs its e2e legs sequentially, one namespace set for the
-          # whole chain, so 60m expires mid-run; TOPOLOGY_MIN_TTL covers the chain. Only
-          # the deploy-time annotation is raised — CI_DEPLOYMENT_TTL stays as it was, so
-          # the cleanup job still stamps ttl=1s and the namespaces are reaped at the end
-          # of the run rather than lingering for the full TTL.
+          # A topology chain and an e2e install flow (smoke + full + api) both run their
+          # legs sequentially against one namespace set, so 60m expires mid-run;
+          # E2E_CHAIN_MIN_TTL covers the chain. Only the deploy-time annotation is raised —
+          # CI_DEPLOYMENT_TTL stays as it was, so the cleanup job still stamps ttl=1s and
+          # the namespaces are reaped at the end of the run rather than lingering.
           export DEPLOY_CAMUNDA_TTL="${CI_DEPLOYMENT_TTL:-}"
-          if [[ -z "$DEPLOY_CAMUNDA_TTL" && "$IS_TOPOLOGY" == "true" ]]; then
-            export DEPLOY_CAMUNDA_TTL="$TOPOLOGY_MIN_TTL"
+          if [[ -z "$DEPLOY_CAMUNDA_TTL" && "$CHAIN_NEEDS_TTL_FLOOR" == "true" ]]; then
+            export DEPLOY_CAMUNDA_TTL="$E2E_CHAIN_MIN_TTL"
           fi
 
           INGRESS_READY_ARGS=()
@@ -1156,14 +1162,14 @@ jobs:
 
           # Give deploy-camunda the requested namespace TTL; without this it stamps its 60m
           # default onto cleaner/janitor, so 12h nightly clusters get reaped after an hour.
-          # A topology scenario runs its e2e legs sequentially, one namespace set for the
-          # whole chain, so 60m expires mid-run; TOPOLOGY_MIN_TTL covers the chain. Only
-          # the deploy-time annotation is raised — CI_DEPLOYMENT_TTL stays as it was, so
-          # the cleanup job still stamps ttl=1s and the namespaces are reaped at the end
-          # of the run rather than lingering for the full TTL.
+          # A topology chain and an e2e install flow (smoke + full + api) both run their
+          # legs sequentially against one namespace set, so 60m expires mid-run;
+          # E2E_CHAIN_MIN_TTL covers the chain. Only the deploy-time annotation is raised —
+          # CI_DEPLOYMENT_TTL stays as it was, so the cleanup job still stamps ttl=1s and
+          # the namespaces are reaped at the end of the run rather than lingering.
           export DEPLOY_CAMUNDA_TTL="${CI_DEPLOYMENT_TTL:-}"
-          if [[ -z "$DEPLOY_CAMUNDA_TTL" && "$IS_TOPOLOGY" == "true" ]]; then
-            export DEPLOY_CAMUNDA_TTL="$TOPOLOGY_MIN_TTL"
+          if [[ -z "$DEPLOY_CAMUNDA_TTL" && "$CHAIN_NEEDS_TTL_FLOOR" == "true" ]]; then
+            export DEPLOY_CAMUNDA_TTL="$E2E_CHAIN_MIN_TTL"
           fi
 
           INGRESS_READY_ARGS=()
