@@ -129,7 +129,7 @@ comment, and stop.
 5. **Commit** with the docs repo's commit convention (see `repo.instructions.md`),
    which requires a 72–120 character header in present tense, for example
    `docs(self-managed): Document that the Optimize Elasticsearch host has no Helm default in 8.10 and 8.11`.
-6. **Open the PR** by following the docs repo's own `.claude/skills/create-pr/SKILL.md`,
+6. **Open the PR** by following the docs repo's own `.claude/skills/docs-create-pr/SKILL.md`,
    with these specifics:
    - Open it as a **draft** (`gh pr create --draft`). It goes ready when the
      Helm PR merges, so docs never describe an unmerged chart.
