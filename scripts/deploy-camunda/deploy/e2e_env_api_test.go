@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package deploy
 
 import (
 	"errors"
@@ -169,7 +169,7 @@ func TestAPISuiteEnvIgnoresValuesSourcedFromTheRenderedEnv(t *testing.T) {
 	}
 }
 
-func TestE2EEnvAPISuiteCommandAfterSourcingTheRenderedEnv(t *testing.T) {
+func TestWriteAPISuiteEnvAfterSourcingTheRenderedEnv(t *testing.T) {
 	// given the environment run-e2e-tests.sh has after sourcing the rendered .env
 	dir := t.TempDir()
 	envFile := filepath.Join(dir, ".env")
@@ -183,12 +183,8 @@ func TestE2EEnvAPISuiteCommandAfterSourcingTheRenderedEnv(t *testing.T) {
 	output := filepath.Join(dir, ".env.api")
 
 	// when
-	root := NewRootCommand()
-	root.AddCommand(newE2EEnvCommand())
-	root.SetOut(&strings.Builder{})
-	root.SetArgs([]string{"e2e-env", "api-suite", "--env-file", envFile, "--namespace", "ns", "--output", output})
-	if err := root.Execute(); err != nil {
-		t.Fatalf("execute: %v", err)
+	if err := WriteAPISuiteEnv(&strings.Builder{}, APISuiteEnvOptions{EnvFile: envFile, Namespace: "ns", Output: output}); err != nil {
+		t.Fatalf("write: %v", err)
 	}
 
 	// then
@@ -284,6 +280,16 @@ func kubectlCalls(t *testing.T, logPath string) []string {
 		t.Fatal(err)
 	}
 	return strings.Split(strings.TrimSuffix(string(raw), "\n"), "\n")
+}
+
+func writeFile(t *testing.T, path, content string) {
+	t.Helper()
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
 }
 
 func TestIdentityClientSecret(t *testing.T) {
