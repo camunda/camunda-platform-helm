@@ -172,22 +172,74 @@ func TestPublicReleasePRVersionGuard(t *testing.T) {
 	}
 }
 
-func TestPublicReleasePRChangedAfterStamp(t *testing.T) {
+func TestPublicReleasePRHeadAfterStamp(t *testing.T) {
 	run := sourceTestWorkflow(t, "chart-release-public.yaml").stepRun(t, "post-release", "Mark release-please PR as published")
-	dir := t.TempDir()
-	writeResumeFile(t, filepath.Join(dir, "gh"), "#!/bin/bash\nif [[ $1 == pr && $2 == view ]]; then echo newer; else echo mutation >> \"$CALLS\"; fi\n", 0o755)
-	output := filepath.Join(dir, "output")
-	cmd := exec.Command("bash", "-e", "-o", "pipefail", "-c", run)
-	cmd.Env = append(os.Environ(), "PATH="+dir+":"+os.Getenv("PATH"), "GITHUB_OUTPUT="+output,
-		"PR_NUMBER=42", "PR_SHA=original", "CALLS="+filepath.Join(dir, "calls"))
-	result, err := cmd.CombinedOutput()
-	if err != nil || !strings.Contains(string(result), "::notice::") {
-		t.Fatalf("expected successful skip with notice: %v: %s", err, result)
-	}
-	for _, file := range []string{"output", "calls"} {
-		if _, err := os.Stat(filepath.Join(dir, file)); !os.IsNotExist(err) {
-			t.Fatalf("unexpected %s after PR changed: %v", file, err)
-		}
+	for _, tc := range []struct {
+		name, branchSHA, apiSHA string
+		gitExit                 int
+		wantOK, wantMark        bool
+	}{
+		{name: "matching head", branchSHA: "stamped", apiSHA: "stamped", wantOK: true, wantMark: true},
+		{name: "stale PR metadata", branchSHA: "stamped", apiSHA: "previous", wantOK: true, wantMark: true},
+		{name: "changed branch with stale PR metadata", branchSHA: "newer", apiSHA: "stamped", wantOK: true},
+		{name: "missing branch", apiSHA: "stamped", gitExit: 2},
+		{name: "unreadable remote", apiSHA: "stamped", gitExit: 128},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := t.TempDir()
+			writeResumeFile(t, filepath.Join(dir, "git"), `#!/bin/bash
+[[ "$*" == "ls-remote --exit-code origin refs/heads/release-please--branches--main--components--camunda-platform-8.9" ]] || exit 97
+[[ "$GIT_EXIT" == 0 ]] || exit "$GIT_EXIT"
+printf '%s\t%s\n' "$BRANCH_SHA" "$4"
+`, 0o755)
+			writeResumeFile(t, filepath.Join(dir, "gh"), `#!/bin/bash
+printf '%s\n' "$*" >> "$CALLS"
+if [[ "$1 $2" == "pr view" && "$*" == *headRefOid* ]]; then
+  printf '%s\n' "$API_SHA"
+elif [[ "$1 $2" == "pr view" && "$*" == *labels* ]]; then
+  printf '%s\n' 'autorelease: pending'
+elif [[ "$1 $2" == "pr edit" ]]; then
+  printf '%s\n' "$*" >> "$MUTATIONS"
+else
+  exit 97
+fi
+`, 0o755)
+			output := filepath.Join(dir, "output")
+			calls := filepath.Join(dir, "calls")
+			mutations := filepath.Join(dir, "mutations")
+			cmd := exec.Command("bash", "-e", "-o", "pipefail", "-c", run)
+			cmd.Dir = dir
+			cmd.Env = append(os.Environ(), "PATH="+dir+":"+os.Getenv("PATH"), "GITHUB_OUTPUT="+output,
+				"PR_NUMBER=42", "PR_SHA=stamped", "CHART_DIR_ID=8.9", "CALLS="+calls, "MUTATIONS="+mutations,
+				"BRANCH_SHA="+tc.branchSHA, "API_SHA="+tc.apiSHA, fmt.Sprintf("GIT_EXIT=%d", tc.gitExit))
+			result, err := cmd.CombinedOutput()
+			if (err == nil) != tc.wantOK {
+				t.Fatalf("error = %v, output = %s", err, result)
+			}
+			if tc.wantMark {
+				data, err := os.ReadFile(output)
+				if err != nil || string(data) != "pr_number=42\n" {
+					t.Fatalf("unexpected PR output %q: %v", data, err)
+				}
+				data, err = os.ReadFile(mutations)
+				if err != nil || string(data) != "pr edit 42 --remove-label autorelease: pending\npr edit 42 --add-label autorelease: published\n" {
+					t.Fatalf("unexpected label mutations %q: %v", data, err)
+				}
+				data, err = os.ReadFile(calls)
+				if err != nil || strings.Contains(string(data), "headRefOid") {
+					t.Fatalf("unexpected PR metadata lookup %q: %v", data, err)
+				}
+			} else {
+				for _, file := range []string{output, calls, mutations} {
+					if _, err := os.Stat(file); !os.IsNotExist(err) {
+						t.Fatalf("unexpected output or mutation file %s: %v", file, err)
+					}
+				}
+				if tc.wantOK && !strings.Contains(string(result), "::notice::") {
+					t.Fatalf("missing changed-head notice: %s", result)
+				}
+			}
+		})
 	}
 }
 

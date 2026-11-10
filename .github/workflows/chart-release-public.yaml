@@ -563,10 +563,12 @@ jobs:
           GH_TOKEN: ${{ steps.generate-github-token.outputs.token }}
           PR_NUMBER: ${{ steps.release-pr.outputs.pr_number }}
           PR_SHA: ${{ steps.stamp.outputs.head_sha }}
+          CHART_DIR_ID: ${{ needs.release.outputs.chart-dir-id }}
         run: |
           set -euo pipefail
 
-          current_sha=$(gh pr view "${PR_NUMBER}" --json headRefOid --jq '.headRefOid')
+          head_ref="refs/heads/release-please--branches--main--components--camunda-platform-${CHART_DIR_ID}"
+          current_sha=$(git ls-remote --exit-code origin "$head_ref" | cut -f1)
           if [[ "$current_sha" != "$PR_SHA" ]]; then
             echo "::notice::Release-please PR #${PR_NUMBER} changed; skipping post-release mutations"
             exit 0
