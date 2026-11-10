@@ -43,6 +43,7 @@ spec:
       initContainers:
         - name: migration
           image: camunda/optimize:8.7.30
+          imagePullPolicy: IfNotPresent
           command: ['./upgrade/upgrade.sh', '--skip-warning']
           securityContext:
             allowPrivilegeEscalation: false
