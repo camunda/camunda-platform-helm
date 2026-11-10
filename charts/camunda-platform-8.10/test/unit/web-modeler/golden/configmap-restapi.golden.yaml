@@ -88,7 +88,7 @@ data:
             components:
             - name: Connectors
               type: connectors
-              version: "8.10.4"
+              version: "8.10.5"
               urls:
                 rest: "http://camunda-platform-test-connectors.camunda-platform:8080"
                 readiness: "http://camunda-platform-test-connectors.camunda-platform:8080/actuator/health/readiness"
