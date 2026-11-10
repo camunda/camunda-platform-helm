@@ -6,9 +6,11 @@ require (
 	github.com/fzipp/gocyclo v0.6.0
 	github.com/stretchr/testify v1.12.1
 	github.com/uudashr/gocognit v1.3.0
-	go.yaml.in/yaml/v3 v3.0.5
 	go.yaml.in/yaml/v4 v4.0.0
 	mvdan.cc/sh/v3 v3.14.1
 )
 
-require golang.org/x/tools v0.42.0 // indirect
+require (
+	go.yaml.in/yaml/v3 v3.0.5 // indirect
+	golang.org/x/tools v0.42.0 // indirect
+)
