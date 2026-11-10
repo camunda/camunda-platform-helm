@@ -84,6 +84,17 @@ func TestFluxReference(t *testing.T) {
 	}
 }
 
+func TestRevisionMatches(t *testing.T) {
+	if err := revisionMatches("refs/pull/1/head@sha1:abc", "abc"); err != nil {
+		t.Fatalf("matching revision: %v", err)
+	}
+	for _, got := range []string{"refs/pull/1/head@sha1:def", "", "refs/pull/1/head@sha1:xabc"} {
+		if err := revisionMatches(got, "abc"); err == nil {
+			t.Fatalf("revisionMatches(%q) accepted a different commit", got)
+		}
+	}
+}
+
 func TestControllerConvergedForNonFlux(t *testing.T) {
 	for _, controller := range []string{"helm", "argocd"} {
 		if err := controllerConverged(config{controller: controller}); err != nil {
