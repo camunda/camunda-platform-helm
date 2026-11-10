@@ -74,12 +74,10 @@ jobs:
         id: vault-secrets
         with:
           url: ${{ secrets.VAULT_ADDR }}
-          method: ${{ secrets.VAULT_JWT_ROLE != '' && 'jwt' || 'approle' }}
+          method: jwt
           path: ${{ secrets.VAULT_JWT_PATH }}
           role: ${{ secrets.VAULT_JWT_ROLE }}
           jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
-          roleId: ${{ secrets.VAULT_JWT_ROLE == '' && secrets.VAULT_ROLE_ID || '' }}
-          secretId: ${{ secrets.VAULT_JWT_ROLE == '' && secrets.VAULT_SECRET_ID || '' }}
           secrets: |
             secret/data/products/distribution/ci ANTHROPIC_API_KEY;
           exportEnv: false
