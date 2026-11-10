@@ -282,13 +282,7 @@ func waitForPhase(cfg config, phase string) error {
 				time.Sleep(5 * time.Second)
 				continue
 			}
-			if err := assertFluxRevision(cfg); err != nil {
-				return err
-			}
-			if err := assertServiceSelector(cfg.namespace, release+"-web-modeler-restapi"); err != nil {
-				return err
-			}
-			if err := assertServiceSelector(cfg.namespace, release+"-web-modeler-websockets"); err != nil {
+			if err := assertConvergedState(cfg); err != nil {
 				return err
 			}
 			if err := assertPhasePods(cfg.namespace, phase, expectedRest+expectedWebsockets); err != nil {
@@ -355,6 +349,17 @@ func controllerConverged(cfg config) error {
 		return err
 	}
 	return helmReleaseConverged(value)
+}
+
+// Hard failures once the controller reports convergence.
+func assertConvergedState(cfg config) error {
+	if err := assertFluxRevision(cfg); err != nil {
+		return err
+	}
+	if err := assertServiceSelector(cfg.namespace, release+"-web-modeler-restapi"); err != nil {
+		return err
+	}
+	return assertServiceSelector(cfg.namespace, release+"-web-modeler-websockets")
 }
 
 // A ref name can move after the run starts, so check that Flux built the pinned commit.
