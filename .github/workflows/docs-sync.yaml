@@ -124,8 +124,11 @@ jobs:
           fi
 
           # Carry forward state that only the local /docs-sync run writes.
-          grep -oE '<!-- docs-sync:(docs-pr|synced-head)=[^ ]+ -->' .docs-sync/previous-comment.md \
-            >> "$body_file" || true
+          if [ -n "$existing_id" ]; then
+            current_body=$(gh api "repos/${GITHUB_REPOSITORY}/issues/comments/${existing_id}" --jq '.body')
+            printf '%s\n' "$current_body" | grep -oE '<!-- docs-sync:(docs-pr|synced-head)=[^ ]+ -->' \
+              >> "$body_file" || true
+          fi
 
           if [ -n "$existing_id" ]; then
             gh api -X PATCH "repos/${GITHUB_REPOSITORY}/issues/comments/${existing_id}" -F "body=@${body_file}" > /dev/null
