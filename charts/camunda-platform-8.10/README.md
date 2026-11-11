@@ -15,10 +15,12 @@
 
 > [!IMPORTANT]
 > **Disabling Optimize or the legacy Elasticsearch/OpenSearch exporter via Helm values does not remove the exporter from the broker.**
-> Setting `optimize.enabled: false` (or `orchestration.exporters.zeebe.enabled: false`) only removes the legacy exporter from
-> the broker's *static* configuration. The exporter stays in the broker's *dynamic* cluster configuration. After the restart,
-> the broker sets it to `CONFIG_NOT_FOUND`. In this state, the exporter position does not move. This halts log compaction and
-> grows the Zeebe PVC. The broker does not delete the exporter automatically. Use one of these procedures:
+> This applies only to a release that already ran with the legacy exporter enabled. The chart enables it when you set
+> `optimize.enabled: true` or `orchestration.exporters.zeebe.enabled: true`. Both are `false` by default. If you later set
+> them back to `false`, the chart only removes the legacy exporter from the broker's *static* configuration.
+> The exporter stays in the broker's *dynamic* cluster configuration. After the restart, the broker sets it to
+> `CONFIG_NOT_FOUND`. In this state, the exporter position does not move. This halts log compaction and grows the Zeebe PVC.
+> The broker does not delete the exporter automatically. Use one of these procedures:
 >
 > - **Delete the exporter after the rollout.** Roll out the Helm change. Confirm with `GET /actuator/exporters` that the
 >   exporter is in `CONFIG_NOT_FOUND` on all partitions. Then call `DELETE /actuator/exporters/{elasticsearch|opensearch}`.
