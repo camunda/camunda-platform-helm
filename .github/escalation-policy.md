@@ -19,7 +19,7 @@ When `crev` reviews a PR, it:
 3. Invokes the **escalation-assessor** which reads this policy, evaluates 8 orthogonal signals, and computes a weighted score.
 4. Posts a GitHub label (`human-review-required` or `ai-review-sufficient`) and a commit status (`crev/escalation`) on the PR as an advisory signal.
 
-The AI review always runs and provides a risk assessment. The label and score
+Each `crev` review provides a risk assessment. The label and score
 are informational — they help human reviewers prioritise attention, but they do
 **not** replace or waive the requirement for human approval before merge.
 
