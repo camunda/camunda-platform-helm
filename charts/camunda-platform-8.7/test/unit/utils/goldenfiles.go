@@ -15,6 +15,7 @@
 package utils
 
 import (
+	"context"
 	"flag"
 	"os"
 	"regexp"
@@ -43,7 +44,7 @@ func (s *TemplateGoldenTest) TestContainerGoldenTestDefaults() {
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.Namespace),
 		SetValues:      s.SetValues,
 	}
-	output := helm.RenderTemplate(s.T(), options, s.ChartPath, s.Release, s.Templates, s.ExtraHelmArgs...) //nolint:staticcheck // deprecated terratest call, the test files use the same call
+	output := helm.RenderTemplateContext(s.T(), context.Background(), options, s.ChartPath, s.Release, s.Templates, s.ExtraHelmArgs...)
 
 	s.IgnoredLines = append(s.IgnoredLines, `\s+helm.sh/chart:\s+.*`)
 	bytes := []byte(output)

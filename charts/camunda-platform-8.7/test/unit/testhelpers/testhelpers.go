@@ -18,6 +18,7 @@
 package testhelpers
 
 import (
+	"context"
 	"os"
 	"strings"
 	"testing"
@@ -91,7 +92,7 @@ func setupHelmOptions(namespace string, values map[string]string, helmOptionsExt
 func renderTemplateE(t *testing.T, chartPath, release string, namespace string, templates []string, values map[string]string, extraArgs map[string][]string, renderTemplateExtraArgs []string) (string, error) {
 	options := setupHelmOptions(namespace, values, extraArgs)
 
-	output, err := helm.RenderTemplateE(t, options, chartPath, release, templates, renderTemplateExtraArgs...) //nolint:staticcheck // deprecated terratest call, the test files use the same call
+	output, err := helm.RenderTemplateContextE(t, context.Background(), options, chartPath, release, templates, renderTemplateExtraArgs...)
 	return output, err
 }
 
@@ -135,7 +136,7 @@ func runTestCaseE(t *testing.T, chartPath, release, namespace string, templates 
 func renderTemplate(t *testing.T, chartPath, release string, namespace string, templates []string, values map[string]string) corev1.ConfigMap {
 	options := setupHelmOptions(namespace, values, nil)
 
-	output := helm.RenderTemplate(t, options, chartPath, release, templates) //nolint:staticcheck // deprecated terratest call, the test files use the same call
+	output := helm.RenderTemplateContext(t, context.Background(), options, chartPath, release, templates)
 	var configmap corev1.ConfigMap
 	helm.UnmarshalK8SYaml(t, output, &configmap)
 	return configmap

@@ -15,6 +15,7 @@
 package utils
 
 import (
+	"context"
 	"flag"
 	"maps"
 	"os"
@@ -78,7 +79,7 @@ func (s *TemplateGoldenTest) TestContainerGoldenTestDefaults() {
 		ValuesFiles:    s.ValuesFiles,
 		Logger:         logger.Discard,
 	}
-	output := helm.RenderTemplate(s.T(), options, s.ChartPath, s.Release, s.Templates, s.ExtraHelmArgs...) //nolint:staticcheck // deprecated terratest call, the test files use the same call
+	output := helm.RenderTemplateContext(s.T(), context.Background(), options, s.ChartPath, s.Release, s.Templates, s.ExtraHelmArgs...)
 
 	bytes := []byte(output)
 	for _, ignoredLine := range goldenIgnoredLines(s.IgnoredLines) {

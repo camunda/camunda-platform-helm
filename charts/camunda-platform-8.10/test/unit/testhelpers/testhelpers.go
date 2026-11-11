@@ -18,6 +18,7 @@
 package testhelpers
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"maps"
@@ -102,7 +103,7 @@ func validateTestCase(tc TestCase) error {
 	hasObjectAssertions := hasObject || hasObjectAsserter
 
 	if tc.Verifier != nil && (len(tc.Expected) > 0 || len(tc.Unexpected) > 0 || hasObjectAssertions) {
-		return fmt.Errorf("Verifier cannot be combined with declarative, error, or object assertions") //nolint:staticcheck // a change of the text changes the output
+		return fmt.Errorf("verifier cannot be combined with declarative, error, or object assertions")
 	}
 	if expectsError && (len(tc.Expected) > 1 || len(tc.Unexpected) > 0 || hasObjectAssertions) {
 		return fmt.Errorf("ERROR assertion cannot be combined with output or object assertions")
@@ -307,7 +308,7 @@ func renderTemplateE(t *testing.T, chartPath, release string, namespace string, 
 		return "", err
 	}
 
-	output, err := helm.RenderTemplateE(t, options, chartPath, release, templates, renderTemplateExtraArgs...) //nolint:staticcheck // deprecated terratest call, the test files use the same call
+	output, err := helm.RenderTemplateContextE(t, context.Background(), options, chartPath, release, templates, renderTemplateExtraArgs...)
 	return output, err
 }
 
@@ -483,7 +484,7 @@ func renderTemplate(t *testing.T, chartPath, release string, namespace string, t
 	options, err := setupHelmOptions(namespace, values, valuesFiles, nil)
 	require.NoError(t, err)
 
-	output := helm.RenderTemplate(t, options, chartPath, release, templates) //nolint:staticcheck // deprecated terratest call, the test files use the same call
+	output := helm.RenderTemplateContext(t, context.Background(), options, chartPath, release, templates)
 	var configmap corev1.ConfigMap
 	helm.UnmarshalK8SYaml(t, output, &configmap)
 	return configmap
