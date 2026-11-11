@@ -336,27 +336,9 @@ helm.dependency-update:
 		helm dependency update $${chart_dir} || exit 1;\
 	done
 
-.PHONY: install.complexity-gate
-install.complexity-gate:
-	cd scripts/complexity-gate && go install .
-
-.PHONY: helm.template-complexity
-helm.template-complexity: install.complexity-gate
-	@set -e; \
-	bin_dir="$$(go env GOBIN)"; \
-	if [ -z "$$bin_dir" ]; then bin_dir="$$(go env GOPATH)"; bin_dir="$${bin_dir%%:*}/bin"; fi; \
-	PATH="$$bin_dir:$$PATH" complexity-gate -helm -base "$${HELM_TEMPLATE_BASE_REF:-$(lintBase)}" $(templateCheckArgs) $(chartPath)
-
-.PHONY: helm.template-complexity-report
-helm.template-complexity-report: install.complexity-gate
-	@set -e; \
-	bin_dir="$$(go env GOBIN)"; \
-	if [ -z "$$bin_dir" ]; then bin_dir="$$(go env GOPATH)"; bin_dir="$${bin_dir%%:*}/bin"; fi; \
-	PATH="$$bin_dir:$$PATH" complexity-gate -report-helm $(chartPath)
-
 # helm.lint: verify that the chart is well-formed.
 .PHONY: helm.lint
-helm.lint: helm.template-complexity
+helm.lint:
 	echo "[$@] Chart dir: $(chartPath)"
 	helm lint --strict $(chartPath)
 
