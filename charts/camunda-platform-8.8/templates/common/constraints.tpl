@@ -219,6 +219,103 @@ configmap-warnings.yaml, which renders the "<release>-warnings" ConfigMap on the
       {{- printf "\n[camunda][warning] The Orchestration Cluster uses OIDC without an issuer URI, and these endpoints do not render as absolute URLs: %s. Set orchestration.security.authentication.oidc.issuer or global.identity.auth.issuer, or set the endpoints in orchestration.security.authentication.oidc.authUrl, jwksUrl, and tokenUrl (or global.identity.auth.authUrl, jwksUrl, and tokenUrl). For KEYCLOAK, global.identity.auth.publicIssuerUrl derives authorization-uri, and global.identity.auth.issuerBackendUrl or global.identity.keycloak.url derives jwk-set-uri and token-uri." (join ", " $unresolvedEndpoints) }}
     {{- end }}
   {{- end }}
+  {{- include "camundaPlatform.existingSecretsWarnings" . }}
+
+  {{/* Secret configuration warnings */}}
+  {{ include "camundaPlatform.secretConfigurationWarnings" . }}
+
+  {{/* Legacy JKS truststore deprecation, superseded by the global.tls.caBundle PEM
+       bundle (which the chart converts to a PKCS12 truststore at pod start via the
+       caBundle init container — see helm#3498). */}}
+  {{- range $entry := list
+      (dict "path" "global.elasticsearch.tls.existingSecret" "set" (not (empty .Values.global.elasticsearch.tls.existingSecret)))
+      (dict "path" "global.opensearch.tls.existingSecret" "set" (not (empty .Values.global.opensearch.tls.existingSecret)))
+      (dict "path" "global.elasticsearch.tls.jks.secret" "set" (or (not (empty .Values.global.elasticsearch.tls.jks.secret.existingSecret)) (not (empty .Values.global.elasticsearch.tls.jks.secret.inlineSecret))))
+      (dict "path" "global.opensearch.tls.jks.secret" "set" (or (not (empty .Values.global.opensearch.tls.jks.secret.existingSecret)) (not (empty .Values.global.opensearch.tls.jks.secret.inlineSecret))))
+  }}
+    {{- if $entry.set }}
+        {{- $warningMessage := printf "%s %s %s %s %s"
+            "[camunda][warning]"
+            (printf "DEPRECATION: values.yaml is using legacy JKS truststore option '%s'." $entry.path)
+            "This option is deprecated as of chart 13.x and will be removed in a future major release."
+            "Please migrate to 'global.tls.caBundle.secret.{existingSecret,existingSecretKey}', supplying a PEM-encoded CA bundle."
+            "The chart will build the JVM truststore at pod start (no offline keytool needed). Remove the legacy tls.existingSecret / tls.jks entries plus any -Djavax.net.ssl.trustStore* flags from javaOpts."
+        -}}
+        {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+    {{- end }}
+  {{- end }}
+
+  {{/* global.tls.caBundle guardrails: surface the three silent failure modes
+       a caBundle user can hit (JKS precedence, trust!=encryption, env override). */}}
+  {{- include "camundaPlatform.caBundleWarnings" . }}
+
+  {{/* CVE-2026-18963 is fixed in Keycloak 26.7.2. regexFind pulls the version out of a
+       tag that may carry a "bitnami-" or "quay-" prefix and a "-debian-12-rN" or
+       rebuild-date suffix, so semverCompare receives a parseable version. The moving
+       aliases of the Bitnami line ("26", "bitnami-26", "bitnami-latest",
+       "latest-bitnami") carry no version at all, yet resolve to a frozen bitnamilegacy
+       build that is affected and stays affected, so they are matched by name:
+       https://github.com/camunda/keycloak/blob/main/.github/workflows/build-images.yml */}}
+  {{- include "camundaPlatform.keycloakSecurityWarnings" . }}
+
+  {{/* camunda-platform-helm#6778: global.documentStore.type.* credentials also double as
+       ambient AWS/GCP configuration for connectors, optimize, and web-modeler-restapi on this
+       chart version. */}}
+  {{- if or .Values.global.documentStore.type.aws.enabled .Values.global.documentStore.type.gcp.enabled }}
+    {{- if has (lower .Values.global.documentStore.activeStoreId) (list "aws" "gcp") }}
+      {{- $warningMessage := printf "%s %s %s %s"
+          "[camunda][warning]"
+          "DEPRECATION: Starting from Camunda 8.10 release, the global.documentStore.* will be used solely for document store configuration."
+          "If the key is currently being used for general AWS/GCP/Azure cloud configuration, please migrate those settings to the appropriate component-specific configuration."
+          "When upgrading to Camunda 8.10 or later, please refer to the migration guide: https://docs.camunda.io/docs/8.10/self-managed/upgrade/helm/"
+      -}}
+      {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+    {{- end }}
+  {{- end }}
+
+  {{- if not (semverCompare ">=4.0.0-0" .Capabilities.HelmVersion.Version) }}
+    {{- $warningMessage := printf "%s %s %s %s %s"
+        "[camunda][warning]"
+        (printf "Helm CLI %s detected." .Capabilities.HelmVersion.Version)
+        "Helm v3 receives security fixes only until February 10, 2027 (https://helm.sh/blog/helm-v3-end-of-life/)."
+        "After that date, Camunda no longer supports Helm CLI v3."
+        "For official Helm v4 support, upgrade to Camunda 8.9 or 8.10 and Helm v4 before then: https://camunda.com/blog/2026/06/camunda-8-helm-chart-update-helm-4/"
+    -}}
+    {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+  {{- end }}
+
+  {{- if and .Values.orchestration.enabled
+             (eq .Values.orchestration.persistenceType "disk")
+             (has "ReadWriteOncePod" .Values.orchestration.pvcAccessModes) }}
+    {{- $warningMessage := printf "%s %s %s"
+        "[camunda][warning]"
+        "orchestration.pvcAccessModes is set to ReadWriteOncePod, which requires a CSI driver that supports it; without that support the PersistentVolumeClaim may fail to provision or stay Pending."
+        "PersistentVolumeClaim accessModes are immutable, so this only applies to new installs / new PVCs, not to an existing StatefulSet via \"helm upgrade\"."
+    -}}
+    {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+  {{- end }}
+
+  {{- include "camundaPlatform.multiRegionWarnings" . }}
+
+  {{- if and (eq (include "camundaPlatform.webModelerEnabled" .) "true")
+             (eq (.Values.webModeler.persistence.deploymentStrategy | default "RollingUpdate") "Recreate")
+             .Values.webModeler.persistence.enabled
+             (not .Values.webModeler.persistence.existingClaim) }}
+    {{- $warningMessage := printf "%s %s %s"
+        "[camunda][warning]"
+        "webModeler.persistence.deploymentStrategy=Recreate gives no benefit without webModeler.persistence.existingClaim and adds downtime on each upgrade."
+        "Set RollingUpdate or set webModeler.persistence.existingClaim. The Camunda 8.10 Helm chart rejects this configuration."
+    -}}
+    {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+  {{- end }}
+{{- end }}
+
+{{/*
+camundaPlatform.existingSecretsWarnings
+Generates the existingSecrets deprecation message selected by global.testDeprecationFlags.existingSecretsMustBeSet.
+Usage: {{ include "camundaPlatform.existingSecretsWarnings" . }}
+*/}}
+{{- define "camundaPlatform.existingSecretsWarnings" }}
   {{- if .Values.global.testDeprecationFlags.existingSecretsMustBeSet }}
     {{/* TODO: Check if there are more existingSecrets to check */}}
 
@@ -321,33 +418,14 @@ The following values inside your values.yaml need to be set but were not:
       {{- end }}
     {{- end }}
   {{- end }}
+{{- end }}
 
-  {{/* Secret configuration warnings */}}
-  {{ include "camundaPlatform.secretConfigurationWarnings" . }}
-
-  {{/* Legacy JKS truststore deprecation, superseded by the global.tls.caBundle PEM
-       bundle (which the chart converts to a PKCS12 truststore at pod start via the
-       caBundle init container — see helm#3498). */}}
-  {{- range $entry := list
-      (dict "path" "global.elasticsearch.tls.existingSecret" "set" (not (empty .Values.global.elasticsearch.tls.existingSecret)))
-      (dict "path" "global.opensearch.tls.existingSecret" "set" (not (empty .Values.global.opensearch.tls.existingSecret)))
-      (dict "path" "global.elasticsearch.tls.jks.secret" "set" (or (not (empty .Values.global.elasticsearch.tls.jks.secret.existingSecret)) (not (empty .Values.global.elasticsearch.tls.jks.secret.inlineSecret))))
-      (dict "path" "global.opensearch.tls.jks.secret" "set" (or (not (empty .Values.global.opensearch.tls.jks.secret.existingSecret)) (not (empty .Values.global.opensearch.tls.jks.secret.inlineSecret))))
-  }}
-    {{- if $entry.set }}
-        {{- $warningMessage := printf "%s %s %s %s %s"
-            "[camunda][warning]"
-            (printf "DEPRECATION: values.yaml is using legacy JKS truststore option '%s'." $entry.path)
-            "This option is deprecated as of chart 13.x and will be removed in a future major release."
-            "Please migrate to 'global.tls.caBundle.secret.{existingSecret,existingSecretKey}', supplying a PEM-encoded CA bundle."
-            "The chart will build the JVM truststore at pod start (no offline keytool needed). Remove the legacy tls.existingSecret / tls.jks entries plus any -Djavax.net.ssl.trustStore* flags from javaOpts."
-        -}}
-        {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
-    {{- end }}
-  {{- end }}
-
-  {{/* global.tls.caBundle guardrails: surface the three silent failure modes
-       a caBundle user can hit (JKS precedence, trust!=encryption, env override). */}}
+{{/*
+camundaPlatform.caBundleWarnings
+Generates warnings for global.tls.caBundle settings that do not take effect.
+Usage: {{ include "camundaPlatform.caBundleWarnings" . }}
+*/}}
+{{- define "camundaPlatform.caBundleWarnings" }}
   {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
 
     {{/* (1) A legacy JKS truststore silently wins over caBundle for the JVM
@@ -418,14 +496,14 @@ The following values inside your values.yaml need to be set but were not:
     {{- end }}
 
   {{- end }}
+{{- end }}
 
-  {{/* CVE-2026-18963 is fixed in Keycloak 26.7.2. regexFind pulls the version out of a
-       tag that may carry a "bitnami-" or "quay-" prefix and a "-debian-12-rN" or
-       rebuild-date suffix, so semverCompare receives a parseable version. The moving
-       aliases of the Bitnami line ("26", "bitnami-26", "bitnami-latest",
-       "latest-bitnami") carry no version at all, yet resolve to a frozen bitnamilegacy
-       build that is affected and stays affected, so they are matched by name:
-       https://github.com/camunda/keycloak/blob/main/.github/workflows/build-images.yml */}}
+{{/*
+camundaPlatform.keycloakSecurityWarnings
+Generates security warnings for the bundled Keycloak image.
+Usage: {{ include "camundaPlatform.keycloakSecurityWarnings" . }}
+*/}}
+{{- define "camundaPlatform.keycloakSecurityWarnings" }}
   {{- if .Values.identityKeycloak.enabled }}
     {{- $keycloakImage := .Values.identityKeycloak.image }}
     {{- $keycloakTag := (($keycloakImage).tag | toString) }}
@@ -456,44 +534,14 @@ The following values inside your values.yaml need to be set but were not:
       {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
     {{- end }}
   {{- end }}
+{{- end }}
 
-  {{/* camunda-platform-helm#6778: global.documentStore.type.* credentials also double as
-       ambient AWS/GCP configuration for connectors, optimize, and web-modeler-restapi on this
-       chart version. */}}
-  {{- if or .Values.global.documentStore.type.aws.enabled .Values.global.documentStore.type.gcp.enabled }}
-    {{- if has (lower .Values.global.documentStore.activeStoreId) (list "aws" "gcp") }}
-      {{- $warningMessage := printf "%s %s %s %s"
-          "[camunda][warning]"
-          "DEPRECATION: Starting from Camunda 8.10 release, the global.documentStore.* will be used solely for document store configuration."
-          "If the key is currently being used for general AWS/GCP/Azure cloud configuration, please migrate those settings to the appropriate component-specific configuration."
-          "When upgrading to Camunda 8.10 or later, please refer to the migration guide: https://docs.camunda.io/docs/8.10/self-managed/upgrade/helm/"
-      -}}
-      {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
-    {{- end }}
-  {{- end }}
-
-  {{- if not (semverCompare ">=4.0.0-0" .Capabilities.HelmVersion.Version) }}
-    {{- $warningMessage := printf "%s %s %s %s %s"
-        "[camunda][warning]"
-        (printf "Helm CLI %s detected." .Capabilities.HelmVersion.Version)
-        "Helm v3 receives security fixes only until February 10, 2027 (https://helm.sh/blog/helm-v3-end-of-life/)."
-        "After that date, Camunda no longer supports Helm CLI v3."
-        "For official Helm v4 support, upgrade to Camunda 8.9 or 8.10 and Helm v4 before then: https://camunda.com/blog/2026/06/camunda-8-helm-chart-update-helm-4/"
-    -}}
-    {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
-  {{- end }}
-
-  {{- if and .Values.orchestration.enabled
-             (eq .Values.orchestration.persistenceType "disk")
-             (has "ReadWriteOncePod" .Values.orchestration.pvcAccessModes) }}
-    {{- $warningMessage := printf "%s %s %s"
-        "[camunda][warning]"
-        "orchestration.pvcAccessModes is set to ReadWriteOncePod, which requires a CSI driver that supports it; without that support the PersistentVolumeClaim may fail to provision or stay Pending."
-        "PersistentVolumeClaim accessModes are immutable, so this only applies to new installs / new PVCs, not to an existing StatefulSet via \"helm upgrade\"."
-    -}}
-    {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
-  {{- end }}
-
+{{/*
+camundaPlatform.multiRegionWarnings
+Generates warnings for Orchestration Cluster sizing across global.multiregion.regions.
+Usage: {{ include "camundaPlatform.multiRegionWarnings" . }}
+*/}}
+{{- define "camundaPlatform.multiRegionWarnings" }}
   {{- $regions := int .Values.global.multiregion.regions -}}
   {{- $clusterSize := int .Values.orchestration.clusterSize -}}
   {{- if and .Values.orchestration.enabled (gt $regions 1) (ne (mod $clusterSize $regions) 0) }}
@@ -529,18 +577,6 @@ The following values inside your values.yaml need to be set but were not:
         "[camunda][warning]"
         (printf "%s is %d but global.multiregion.regions is 2; a dual-region cluster needs a replication factor of 4 to distribute every partition evenly across both regions." $replicationFactorSource $replicationFactor)
         (printf "Set %s to 4." $replicationFactorSource)
-    -}}
-    {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
-  {{- end }}
-
-  {{- if and (eq (include "camundaPlatform.webModelerEnabled" .) "true")
-             (eq (.Values.webModeler.persistence.deploymentStrategy | default "RollingUpdate") "Recreate")
-             .Values.webModeler.persistence.enabled
-             (not .Values.webModeler.persistence.existingClaim) }}
-    {{- $warningMessage := printf "%s %s %s"
-        "[camunda][warning]"
-        "webModeler.persistence.deploymentStrategy=Recreate gives no benefit without webModeler.persistence.existingClaim and adds downtime on each upgrade."
-        "Set RollingUpdate or set webModeler.persistence.existingClaim. The Camunda 8.10 Helm chart rejects this configuration."
     -}}
     {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
   {{- end }}
