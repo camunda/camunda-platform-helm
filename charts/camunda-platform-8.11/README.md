@@ -36,7 +36,8 @@
 > - **Disable the exporter before the rollout.** Call `POST /actuator/exporters/{elasticsearch|opensearch}/disable`. Confirm
 >   with `GET /actuator/exporters` that all partitions report `DISABLED`. Then roll out the Helm change. A `DISABLED` exporter
 >   does not halt compaction, but it stays in the dynamic configuration permanently. You cannot delete it, because the delete
->   accepts only exporters in `CONFIG_NOT_FOUND`.
+>   accepts only exporters in `CONFIG_NOT_FOUND`. If you add the configuration back later, the exporter stays `DISABLED`.
+>   Call `POST /actuator/exporters/{elasticsearch|opensearch}/enable` to resume exporting.
 >
 > Each call applies to all brokers and partitions, so send it once to any broker. Ensure your Camunda version includes the
 > exporter-state fix that stops the broker from re-enabling `CONFIG_NOT_FOUND` exporters at restart
