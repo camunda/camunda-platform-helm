@@ -25,7 +25,8 @@
 >   Call `POST /actuator/exporters/{elasticsearch|opensearch}/enable` to resume exporting.
 >
 > Each call applies to all brokers and partitions, so send it once to any broker. Ensure your Camunda version includes the
-> exporter-state fix that stops the broker from re-enabling `CONFIG_NOT_FOUND` exporters at restart
+> exporter-state fix that stops the broker from re-enabling `CONFIG_NOT_FOUND` exporters at restart while their
+> configuration is still missing
 > ([camunda/camunda#52260](https://github.com/camunda/camunda/issues/52260), backported to 8.9.3).
 
 Please also refer to the [documentation](https://docs.camunda.io/docs/self-managed/setup/overview/) on how to use Helm charts.
