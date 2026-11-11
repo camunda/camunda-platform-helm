@@ -208,6 +208,8 @@ Run each command. Each command must pass.
 ```bash
 make helm.lint chartPath=NEW
 make go.test chartPath=NEW
+make helm.repos-add
+make helm.dependency-update
 make go.test-scripts
 make mcp.test
 ```
