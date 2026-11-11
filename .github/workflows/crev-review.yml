@@ -1,0 +1,23 @@
+---
+name: crev review
+
+on:
+    issue_comment: # zizmor: ignore[dangerous-triggers]
+        types: [created]
+
+permissions: {}
+
+jobs:
+    crev:
+        if: github.event.issue.pull_request && (github.event.comment.body == '/crev' || startsWith(github.event.comment.body, '/crev '))
+        permissions:
+            contents: read
+            id-token: write # Vault OIDC login for the OpenRouter key
+            issues: write # escalation label
+            packages: read # pull the crev image from GHCR
+            pull-requests: write # post the review
+            statuses: write # crev/escalation status
+        uses: camunda/infraex-common-config/.github/workflows/crev-review-global.yml@main # zizmor: ignore[unpinned-uses]
+        with:
+            model: deepseek/deepseek-v4.1-flash
+            verifier-model: z-ai/glm-5.3
