@@ -356,7 +356,7 @@ For SHA pinning, Vault-only secrets, `exportEnv: false` (and its one exception),
 `run:` blocks, `fail-fast: false`, and `concurrency:`, see Critical Rules and Pattern 2 above. Additional pitfalls:
 
 1. **Not using `make` targets** — running `go test ./...` directly instead of `make go.test`
-   skips pre-test steps (license checks, formatting, dependency updates).
+   skips pre-test steps (Helm version check, dependency updates).
 
 2. **Missing `id-token: write`** — OIDC-based Vault auth requires `permissions.id-token: write`
    at job or workflow level.

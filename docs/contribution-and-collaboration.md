@@ -139,7 +139,7 @@ Every pull request (PR) related to Helm chart changes must adhere to the followi
 
 ### Automated AI review and escalation
 
-PRs are automatically reviewed by [`crev`](https://github.com/camunda/crev), an AI code-review tool with domain-specific knowledge of the Camunda Helm charts. After review, `crev` posts:
+A `/crev` comment on a PR starts a review by [`crev`](https://github.com/camunda/crev), an AI code-review tool with domain-specific knowledge of the Camunda Helm charts (`.github/workflows/crev-review.yml`). After review, `crev` posts:
 
 - A **commit status** (`crev/escalation`) indicating whether human review is required.
 - A **label** (`human-review-required` or `ai-review-sufficient`) based on the escalation score.

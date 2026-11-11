@@ -1,6 +1,6 @@
 ---
 name: rfr-validation
-description: Validate a PR locally before marking it Ready-for-Review — map the diff to CI tier-1/tier-2 scenarios, decode shortnames, run the minimum correct scenario set via deploy-camunda matrix run, verify tier-2 scenarios before merge, complete the RFR checklist, optionally self-check with crev. Use when preparing to mark a PR ready, asked which scenarios to run for a change, or validating tier-2 scenario changes the merge queue would otherwise catch.
+description: Validate a PR locally before marking it Ready-for-Review — map the diff to CI tier-1/tier-2 scenarios, decode shortnames, run the minimum correct scenario set via deploy-camunda matrix run, verify tier-2 scenarios before merge, complete the RFR checklist, and review with crev. Use when preparing to mark a PR ready, asked which scenarios to run for a change, or validating tier-2 scenario changes the merge queue would otherwise catch.
 ---
 
 # PR Ready-for-Review Validation
@@ -13,7 +13,7 @@ PR CI runs **tier-1 only** (7 deploys, the `eske` baseline). The full matrix (81
 - `helm`, `kubectl` — `asdf install` (see `.tool-versions`)
 - `gh` — PR and workflow-run inspection
 - `crev` — automated PR reviewer at [github.com/camunda/crev](https://github.com/camunda/crev); see `docs/contribution-and-collaboration.md` and `.github/escalation-policy.md` for the project workflow
-- `actionlint` — `brew install actionlint` (macOS) or `go install github.com/rhysd/actionlint/cmd/actionlint@latest`
+- `pre-commit` — `asdf install` (see `.tool-versions`); `pre-commit run --all-files` runs the actionlint, shellcheck and zizmor versions that `.pre-commit-config.yaml` pins
 
 ## Identify the Surface
 
@@ -75,7 +75,7 @@ Default: tier-1 on every affected version. Add tier-2 entries only when the diff
 | `_helpers.tpl` change | tier-1 all versions + `nosec`, `docstr` |
 | `values-enterprise.yaml` or enterprise image tags | `entv` — defined and enabled on 8.7, 8.8 and 8.9; 8.10 does not define it at all |
 
-**Skip the matrix** for `.github/workflows/*` (run `actionlint`), `scripts/` Go tooling (`make go.test`), Dockerfile-only (`hadolint`, `docker build --target`), compose-only (`docker compose config`), docs-only.
+**Skip the matrix** for `.github/workflows/*` (run `pre-commit run --all-files`), `scripts/` Go tooling (`make go.test-scripts`, `make go.lint`, `make go.complexity`), Dockerfile-only, compose-only, docs-only.
 
 ## Run via deploy-camunda
 
@@ -144,13 +144,13 @@ Obtain values from your team's secret store. `deploy-camunda doctor` and `matrix
 - [ ] Each diff-implied tier-2 scenario passes.
 - [ ] `make go.update-golden-only chartPath=...` executed if templates changed, and updated goldens committed.
 - [ ] `make precommit.chores` clean.
-- [ ] Optional: `crev` dry-run produces no findings (see below).
+- [ ] `crev` review run; each finding addressed or acknowledged (see below).
 
-## Optional Pre-RFR Self-Check (`crev`)
+## Pre-RFR Review (`crev`)
 
-`crev` ([github.com/camunda/crev](https://github.com/camunda/crev)) runs automatically on every PR per `docs/contribution-and-collaboration.md` and `.github/escalation-policy.md`. After review it posts a `crev/escalation` commit status plus a `human-review-required` or `ai-review-sufficient` label.
+`crev` ([github.com/camunda/crev](https://github.com/camunda/crev)) reviews a PR when someone comments `/crev` on it (`.github/workflows/crev-review.yml`). After review it posts a `crev/escalation` commit status plus a `human-review-required` or `ai-review-sufficient` label.
 
-Running `crev` locally before flipping draft → Ready-for-Review is optional, not required, and can surface findings before reviewers see them:
+Run `crev` before flipping draft → Ready-for-Review (`docs/contribution-and-collaboration.md`, Pull Request Requirements):
 
 ```bash
 crev <pr-url> --single --dry-run
