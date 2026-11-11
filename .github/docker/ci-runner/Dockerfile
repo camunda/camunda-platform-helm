@@ -134,7 +134,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Download UPX directly from GitHub releases
 # UPX is not available in Debian Bookworm's apt repositories
 ARG UPX_VERSION=4.2.4
-# hadolint ignore=DL4006 # predates the lint baseline
+# hadolint ignore=DL4006 # no PR job builds this image, so a fix cannot be proven
 RUN curl -fsSL "https://github.com/upx/upx/releases/download/v${UPX_VERSION}/upx-${UPX_VERSION}-amd64_linux.tar.xz" \
     | tar -xJf - --strip-components=1 -C /usr/local/bin "upx-${UPX_VERSION}-amd64_linux/upx" \
     && upx --version
@@ -164,7 +164,7 @@ WORKDIR /tools
 
 # Helm - Kubernetes package manager
 # Used for: Installing and managing Helm charts
-# hadolint ignore=DL4006 # predates the lint baseline
+# hadolint ignore=DL4006 # no PR job builds this image, so a fix cannot be proven
 RUN curl -fsSL "https://get.helm.sh/helm-v${HELM_VERSION}-linux-amd64.tar.gz" | tar -xzf - \
     && mv linux-amd64/helm ./helm \
     && rm -rf linux-amd64
@@ -186,7 +186,7 @@ RUN curl -fsSL -o yq "https://github.com/mikefarah/yq/releases/download/v${YQ_VE
 
 # Kustomize - Kubernetes configuration customization
 # Used for: Overlaying Kubernetes manifests
-# hadolint ignore=DL4006 # predates the lint baseline
+# hadolint ignore=DL4006 # no PR job builds this image, so a fix cannot be proven
 RUN curl -fsSL "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv${KUSTOMIZE_VERSION}/kustomize_v${KUSTOMIZE_VERSION}_linux_amd64.tar.gz" | tar -xzf -
 
 # kind - Kubernetes in Docker
@@ -202,24 +202,24 @@ RUN curl -fsSL "https://unpkg.com/zbctl@${ZBCTL_VERSION#v}/bin/zbctl-cli.linux" 
 
 # oras - OCI Registry As Storage
 # Used for: Pushing/pulling artifacts to OCI registries
-# hadolint ignore=DL4006 # predates the lint baseline
+# hadolint ignore=DL4006 # no PR job builds this image, so a fix cannot be proven
 RUN curl -fsSL "https://github.com/oras-project/oras/releases/download/v${ORAS_VERSION}/oras_${ORAS_VERSION}_linux_amd64.tar.gz" | tar -xzf - oras
 
 # ct (chart-testing) - Helm chart testing tool
 # Used for: Linting and testing Helm charts
-# hadolint ignore=DL4006 # predates the lint baseline
+# hadolint ignore=DL4006 # no PR job builds this image, so a fix cannot be proven
 RUN curl -fsSL "https://github.com/helm/chart-testing/releases/download/v${HELM_CT_VERSION}/chart-testing_${HELM_CT_VERSION}_linux_amd64.tar.gz" | tar -xzf - ct
 
 # cr (chart-releaser) - Helm chart releaser
 # Used for: Publishing Helm charts to GitHub Pages
-# hadolint ignore=DL4006 # predates the lint baseline
+# hadolint ignore=DL4006 # no PR job builds this image, so a fix cannot be proven
 RUN curl -fsSL "https://github.com/helm/chart-releaser/releases/download/v${HELM_CR_VERSION}/chart-releaser_${HELM_CR_VERSION}_linux_amd64.tar.gz" | tar -xzf - cr
 
 # oc - OpenShift CLI
 # Used for: Deploying to OpenShift/OKD clusters
 # This is the largest binary (160 MB uncompressed)
 # Falls back to stable-4.14 if specific version unavailable
-# hadolint ignore=DL4006 # predates the lint baseline
+# hadolint ignore=DL4006 # no PR job builds this image, so a fix cannot be proven
 RUN curl -fsSL "https://mirror.openshift.com/pub/openshift-v4/clients/ocp/${OC_VERSION}/openshift-client-linux.tar.gz" | tar -xzf - oc \
     || curl -fsSL "https://mirror.openshift.com/pub/openshift-v4/clients/ocp/stable-4.14/openshift-client-linux.tar.gz" | tar -xzf - oc
 
@@ -320,7 +320,7 @@ COPY --from=tools /tools/ /usr/local/bin/
 # - aws eks get-token (EKS authentication)
 # - aws eks update-kubeconfig (kubeconfig generation)
 # ==============================================================================
-# hadolint ignore=DL3013 # predates the lint baseline
+# hadolint ignore=DL3013 # no PR job builds this image, so a fix cannot be proven
 RUN pip3 install --no-cache-dir --break-system-packages awscli \
     && rm -rf /root/.cache
 
@@ -343,7 +343,7 @@ RUN pip3 install --no-cache-dir --break-system-packages awscli \
 # - .install/.backup: Installation backups
 # - __pycache__, *.pyc: Python bytecode caches
 # ==============================================================================
-# hadolint ignore=DL3008,DL4006 # predates the lint baseline
+# hadolint ignore=DL3008,DL4006 # no PR job builds this image, so a fix cannot be proven
 RUN curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg \
     && echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" > /etc/apt/sources.list.d/google-cloud-sdk.list \
     && apt-get update \
@@ -378,7 +378,7 @@ RUN curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --dea
 # The Go compiler and standard library remain fully functional.
 # Race detection is disabled (use -race flag locally if needed).
 # ==============================================================================
-# hadolint ignore=DL4006 # predates the lint baseline
+# hadolint ignore=DL4006 # no PR job builds this image, so a fix cannot be proven
 RUN curl -fsSL "https://go.dev/dl/go${GOLANG_VERSION}.linux-amd64.tar.gz" | tar -C /usr/local -xzf - \
     && rm -rf /usr/local/go/doc /usr/local/go/test /usr/local/go/api \
     && find /usr/local/go -name "*.md" -delete 2>/dev/null || true \
@@ -395,7 +395,7 @@ RUN curl -fsSL "https://go.dev/dl/go${GOLANG_VERSION}.linux-amd64.tar.gz" | tar 
 # - Tarball is just the release (~1 MB)
 # - Same functionality, much smaller
 # ==============================================================================
-# hadolint ignore=DL4006 # predates the lint baseline
+# hadolint ignore=DL4006 # no PR job builds this image, so a fix cannot be proven
 RUN curl -fsSL "https://github.com/bats-core/bats-core/archive/refs/tags/v${BATS_VERSION}.tar.gz" \
     | tar -xzf - -C /tmp \
     && /tmp/bats-core-${BATS_VERSION}/install.sh /usr/local \

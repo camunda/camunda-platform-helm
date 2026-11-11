@@ -89,7 +89,7 @@ type workItem struct {
 // Indirect usage is something like {{- include "camundaPlatform.subChartImagePullSecrets" (dict "Values" (set (deepCopy .Values) "image" .Values.connectors.image)) }}
 // See the test cases for examples of how to use this
 //
-//nolint:gocognit,errcheck // split tracked in #7584; inner fixes wait for the split
+//nolint:gocognit,errcheck // split tracked in #7584
 func (f *Finder) processKeysInParallel(
 	ks []string,
 	usages []keys.KeyUsage,

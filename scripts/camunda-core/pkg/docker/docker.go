@@ -33,7 +33,7 @@ func EnsureDockerHubLogin(ctx context.Context, username, password string) error 
 		password = utils.FirstNonEmpty(os.Getenv("DOCKERHUB_PASSWORD"), os.Getenv("TEST_DOCKER_PASSWORD"))
 	}
 	if username == "" || password == "" {
-		return fmt.Errorf("Docker Hub login failed: credentials not provided (set DOCKERHUB_USERNAME/DOCKERHUB_PASSWORD or TEST_DOCKER_USERNAME/TEST_DOCKER_PASSWORD environment variables, or pass --dockerhub-username/--dockerhub-password flags)") //nolint:staticcheck // a change of the text changes the output
+		return fmt.Errorf("login to Docker Hub failed: credentials not provided (set DOCKERHUB_USERNAME/DOCKERHUB_PASSWORD or TEST_DOCKER_USERNAME/TEST_DOCKER_PASSWORD environment variables, or pass --dockerhub-username/--dockerhub-password flags)")
 	}
 
 	logging.Logger.Debug().Str("registry", "docker.io").Msg("ensuring Docker Hub login")
@@ -53,7 +53,7 @@ func EnsureHarborLogin(ctx context.Context, username, password string) error {
 		password = utils.FirstNonEmpty(os.Getenv("HARBOR_PASSWORD"), os.Getenv("TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD"), os.Getenv("NEXUS_PASSWORD"))
 	}
 	if username == "" || password == "" {
-		return fmt.Errorf("Harbor login failed: credentials not provided (set HARBOR_USERNAME/HARBOR_PASSWORD, TEST_DOCKER_USERNAME_CAMUNDA_CLOUD/TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD, or NEXUS_USERNAME/NEXUS_PASSWORD environment variables, or pass --docker-username/--docker-password flags)") //nolint:staticcheck // a change of the text changes the output
+		return fmt.Errorf("login to Harbor failed: credentials not provided (set HARBOR_USERNAME/HARBOR_PASSWORD, TEST_DOCKER_USERNAME_CAMUNDA_CLOUD/TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD, or NEXUS_USERNAME/NEXUS_PASSWORD environment variables, or pass --docker-username/--docker-password flags)")
 	}
 
 	logging.Logger.Debug().Str("registry", "registry.camunda.cloud").Msg("ensuring Harbor login")
