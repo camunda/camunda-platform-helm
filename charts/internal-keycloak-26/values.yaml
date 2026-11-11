@@ -103,7 +103,7 @@ postgresql:
   image:
     registry: docker.io
     repository: postgres
-    tag: "16-alpine"
+    tag: "16.15-alpine3.24"
     pullPolicy: IfNotPresent
   ## @param postgresql.auth.database Database name for Keycloak.
   auth:
