@@ -1,10 +1,15 @@
 # Camunda 8 Helm Chart
 
 > [!IMPORTANT]
-> **Disabling Optimize or the legacy Elasticsearch/OpenSearch exporter via Helm values does not remove the exporter from the broker.**
-> This applies only to a release that already ran with the legacy exporter enabled. The chart enables it when you set
-> `optimize.enabled: true` or `orchestration.exporters.zeebe.enabled: true`. Both are `false` by default. If you later set
-> them back to `false`, the chart only removes the legacy exporter from the broker's *static* configuration.
+> **Removing the legacy Elasticsearch/OpenSearch exporter from the broker configuration does not remove it from the broker.**
+> This applies only to a release whose brokers already ran the legacy exporter, and that now renders without it. Examples:
+>
+> - You set `optimize.enabled`, `orchestration.exporters.zeebe.enabled`, or `orchestration.migration.data.enabled` to
+>   `true`, and later back to `false`. All three are `false` by default.
+> - You upgrade from the 8.7 chart. It enables the legacy Elasticsearch exporter by default.
+> - You configured the exporter through environment variables or extra configuration, and you remove that configuration.
+>
+> In each case, the exporter disappears only from the broker's *static* configuration.
 > The exporter stays in the broker's *dynamic* cluster configuration. After the restart, the broker sets it to
 > `CONFIG_NOT_FOUND`. In this state, the exporter position does not move. This halts log compaction and grows the Zeebe PVC.
 > The broker does not delete the exporter automatically. Use one of these procedures:
