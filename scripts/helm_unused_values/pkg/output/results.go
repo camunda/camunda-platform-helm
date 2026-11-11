@@ -183,6 +183,7 @@ func (r *Reporter) reportUnusedKeys(unusedKeys []string) {
 	fmt.Println()
 }
 
+//nolint:gocognit // split tracked in #7584
 func (r *Reporter) reportUsedKeys(directKeys, patternKeys []string, usages []keys.KeyUsage) {
 	usageMap := make(map[string]keys.KeyUsage)
 	for _, usage := range usages {

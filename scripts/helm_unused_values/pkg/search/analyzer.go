@@ -68,12 +68,12 @@ func (f *Finder) analyzeKeys(ks []string, showProgress bool) ([]keys.KeyUsage, e
 
 	results := f.processKeysInParallel(ks, usages, usedKeysMap, &usedKeysMutex, bar, showProgress, numWorkers)
 	if showProgress {
-		bar.Finish()
+		_ = bar.Finish()
 		fmt.Println()
 	}
 
 	if showProgress {
-		bar.Finish()
+		_ = bar.Finish()
 	}
 
 	return results, nil
@@ -88,6 +88,8 @@ type workItem struct {
 // Direct usage is something like {{ .Values.key }}.
 // Indirect usage is something like {{- include "camundaPlatform.subChartImagePullSecrets" (dict "Values" (set (deepCopy .Values) "image" .Values.connectors.image)) }}
 // See the test cases for examples of how to use this
+//
+//nolint:gocognit,errcheck // split tracked in #7584; inner fixes wait for the split
 func (f *Finder) processKeysInParallel(
 	ks []string,
 	usages []keys.KeyUsage,

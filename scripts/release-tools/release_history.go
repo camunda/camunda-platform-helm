@@ -75,7 +75,7 @@ func runReleaseHistory(args []string) error {
 		return err
 	}
 	if meta.Version == "" || meta.AppVersion == "" {
-		return fmt.Errorf("Chart.yaml must provide version and appVersion")
+		return fmt.Errorf("Chart.yaml must provide version and appVersion") //nolint:staticcheck // a change of the text changes the output
 	}
 	prefix := releaseplease.ReleaseTag(meta.AppVersion, "")
 	tags, err := capture(context.Background(), "git", "tag", "--list", prefix+"*")

@@ -1823,7 +1823,7 @@ func TestAppendTestOutputToDiagnostics_CreatesNewRunDirectory(t *testing.T) {
 	if err := os.Chdir(tmpDir); err != nil {
 		t.Fatalf("Chdir: %v", err)
 	}
-	t.Cleanup(func() { os.Chdir(origWd) })
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
 
 	te := &deploy.TestError{
 		Err:    fmt.Errorf("e2e tests failed"),

@@ -60,6 +60,8 @@ import (
 // Entries that cannot be resolved are reported and fail the run (loud) —
 // unless --allow-missing-release is set, which leaves release_date/release_tag
 // empty for entries whose GitHub release genuinely does not exist.
+//
+//nolint:gocognit,gocyclo // split tracked in #7584
 func runBackfillMatrix(args []string) error {
 	fs := flag.NewFlagSet("backfill-matrix", flag.ContinueOnError)
 	var dryRun, allowMissingRelease bool

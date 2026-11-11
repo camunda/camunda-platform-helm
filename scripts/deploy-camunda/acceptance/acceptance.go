@@ -171,6 +171,7 @@ type partitionState struct {
 	ExportedPosition int64  `json:"exportedPosition"`
 }
 
+//nolint:gocognit,gocyclo,errcheck,staticcheck // split tracked in #7584; inner fixes wait for the split
 func runPhysicalTenantAcceptance(ctx context.Context, opts PhysicalTenantAcceptanceOptions, deps acceptanceDependencies) (err error) {
 	var partitionsBody, brokerLog string
 	fail := func(cause error) error {
@@ -589,7 +590,7 @@ func waitForOptimizeImport(ctx context.Context, deps acceptanceDependencies, opt
 			}
 		}
 	}
-	return fmt.Errorf("Optimize for %q did not import %q within five minutes (last response: %s)", tenant, processID, lastDiagnostic)
+	return fmt.Errorf("Optimize for %q did not import %q within five minutes (last response: %s)", tenant, processID, lastDiagnostic) //nolint:staticcheck // a change of the text changes the output
 }
 
 func assertOptimizeExcludesSiblings(ctx context.Context, deps acceptanceDependencies, optimizeURL, tenant, token string, siblings []string, attempts int) error {
@@ -607,14 +608,14 @@ func assertOptimizeExcludesSiblings(ctx context.Context, deps acceptanceDependen
 				}
 				continue
 			}
-			return fmt.Errorf("Optimize for %q isolation check exhausted retries (last response: transient error: %s)", tenant, err)
+			return fmt.Errorf("Optimize for %q isolation check exhausted retries (last response: transient error: %s)", tenant, err) //nolint:staticcheck // a change of the text changes the output
 		}
 		if status != http.StatusOK {
-			return fmt.Errorf("Optimize for %q returned HTTP %d during isolation check: %s", tenant, status, strings.TrimSpace(string(body)))
+			return fmt.Errorf("Optimize for %q returned HTTP %d during isolation check: %s", tenant, status, strings.TrimSpace(string(body))) //nolint:staticcheck // a change of the text changes the output
 		}
 		for _, sibling := range siblings {
 			if definitionsContain(body, sibling) {
-				return fmt.Errorf("Optimize for %q imported sibling process %q", tenant, sibling)
+				return fmt.Errorf("Optimize for %q imported sibling process %q", tenant, sibling) //nolint:staticcheck // a change of the text changes the output
 			}
 		}
 		if attempt < attempts {

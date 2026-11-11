@@ -48,6 +48,8 @@ const enterpriseRegistryPrefix = "registry.camunda.cloud/"
 // image re-derivation.
 //
 // --dry-run prints the would-be file to stdout and writes nothing.
+//
+//nolint:gocognit // split tracked in #7584
 func runUpdateMatrix(args []string) error {
 	fs := flag.NewFlagSet("update-matrix", flag.ContinueOnError)
 	var (
