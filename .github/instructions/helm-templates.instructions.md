@@ -246,4 +246,4 @@ errors from `indent` without `trim`. Additional pitfalls:
 - Constraints & warnings: `charts/<version>/templates/common/constraints.tpl` (8.8+) or `charts/<version>/templates/camunda/constraints.tpl` (8.7 and older)
 - Version differences overview: `AGENTS.md` (Version-Aware Rules section)
 - Render templates locally: `make helm.template chartPath=charts/camunda-platform-8.10`
-- Lint: `make helm.lint chartPath=charts/camunda-platform-8.10`
+- Lint: `helm lint charts/camunda-platform-8.10`

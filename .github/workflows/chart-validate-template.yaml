@@ -60,10 +60,6 @@ jobs:
           git config user.name "$GITHUB_ACTOR"
           git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
           git fetch --depth=1 origin main
-      - name: Don't check version increment if there is no release label
-        if: ${{ ! contains(github.event.*.labels.*.name, 'release') }}
-        run: |
-          echo "check-version-increment: false" >> .github/config/chart-testing.yaml
       # Dependencies.
       - name: Cache Helm chart dependencies
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
