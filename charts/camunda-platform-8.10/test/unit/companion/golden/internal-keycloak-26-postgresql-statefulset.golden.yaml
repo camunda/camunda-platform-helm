@@ -8,7 +8,7 @@ metadata:
     app.kubernetes.io/name: internal-keycloak
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/component: postgresql
-    app.kubernetes.io/version: "16.15-alpine3.24"
+    app.kubernetes.io/version: "16-alpine"
     app.kubernetes.io/managed-by: Helm
 spec:
   replicas: 1
@@ -29,7 +29,7 @@ spec:
     spec:
       containers:
         - name: postgresql
-          image: docker.io/postgres:16.15-alpine3.24
+          image: docker.io/postgres:16-alpine
           imagePullPolicy: IfNotPresent
           env:
             - name: POSTGRES_DB
@@ -86,7 +86,7 @@ spec:
           app.kubernetes.io/name: internal-keycloak
           app.kubernetes.io/instance: camunda-platform-test
           app.kubernetes.io/component: postgresql
-          app.kubernetes.io/version: "16.15-alpine3.24"
+          app.kubernetes.io/version: "16-alpine"
           app.kubernetes.io/managed-by: Helm
       spec:
         accessModes:

@@ -1051,7 +1051,7 @@ func TestDogfoodCredentialStores_KeysExistInTheManifest(t *testing.T) {
 
 // The integration tests run the reconcile scripts against these images.
 const (
-	postgresImage      = "postgres:16.15-alpine3.24"
+	postgresImage      = "postgres:16-alpine"
 	elasticsearchImage = "docker.elastic.co/elasticsearch/elasticsearch:8.18.0"
 )
 

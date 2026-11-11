@@ -10,7 +10,7 @@ nameOverride: ""
 image:
   registry: docker.io
   repository: postgres
-  tag: "16.15-alpine3.24"
+  tag: "16-alpine"
   pullPolicy: IfNotPresent
 
 ## @param imagePullSecrets Array of image pull secret names.

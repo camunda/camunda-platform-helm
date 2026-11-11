@@ -29,7 +29,7 @@ spec:
     spec:
       containers:
         - name: postgresql
-          image: docker.io/postgres:16.15-alpine3.24
+          image: docker.io/postgres:16-alpine
           imagePullPolicy: IfNotPresent
           env:
             - name: POSTGRES_DB
