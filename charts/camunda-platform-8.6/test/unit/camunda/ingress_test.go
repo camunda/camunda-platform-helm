@@ -35,7 +35,6 @@ type IngressTemplateTest struct {
 	release   string
 	namespace string
 	templates []string
-	extraArgs []string
 }
 
 func TestIngressTemplate(t *testing.T) {

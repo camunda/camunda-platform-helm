@@ -16,8 +16,8 @@ package utils
 
 import (
 	"flag"
-	"io/ioutil"
 	"maps"
+	"os"
 	"regexp"
 
 	"github.com/gruntwork-io/terratest/modules/helm"
@@ -68,7 +68,7 @@ func (s *TemplateGoldenTest) TestContainerGoldenTestDefaults() {
 		SetValues:      values,
 		Logger:         logger.Discard,
 	}
-	output := helm.RenderTemplate(s.T(), options, s.ChartPath, s.Release, s.Templates, s.ExtraHelmArgs...)
+	output := helm.RenderTemplate(s.T(), options, s.ChartPath, s.Release, s.Templates, s.ExtraHelmArgs...) //nolint:staticcheck // deprecated terratest call, the test files use the same call
 
 	s.IgnoredLines = append(s.IgnoredLines, `\s+helm.sh/chart:\s+.*`)
 	bytes := []byte(output)
@@ -89,11 +89,11 @@ func (s *TemplateGoldenTest) TestContainerGoldenTestDefaults() {
 	goldenFile := "golden/" + s.GoldenFileName + ".golden.yaml"
 
 	if *update {
-		err := ioutil.WriteFile(goldenFile, bytes, 0644)
+		err := os.WriteFile(goldenFile, bytes, 0644)
 		s.Require().NoError(err, "Golden file was not writable")
 	}
 
-	expected, err := ioutil.ReadFile(goldenFile)
+	expected, err := os.ReadFile(goldenFile)
 
 	// then
 	s.Require().NoError(err, "Golden file doesn't exist or was not readable")

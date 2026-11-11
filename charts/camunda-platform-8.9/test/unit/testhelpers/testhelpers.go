@@ -288,7 +288,7 @@ func renderTemplateE(t *testing.T, chartPath, release string, namespace string, 
 		return "", err
 	}
 
-	output, err := helm.RenderTemplateE(t, options, chartPath, release, templates, renderTemplateExtraArgs...)
+	output, err := helm.RenderTemplateE(t, options, chartPath, release, templates, renderTemplateExtraArgs...) //nolint:staticcheck // deprecated terratest call, the test files use the same call
 	return output, err
 }
 
@@ -352,7 +352,7 @@ func renderTemplate(t *testing.T, chartPath, release string, namespace string, t
 	options, err := setupHelmOptions(namespace, values, valuesFiles, nil)
 	require.NoError(t, err)
 
-	output := helm.RenderTemplate(t, options, chartPath, release, templates)
+	output := helm.RenderTemplate(t, options, chartPath, release, templates) //nolint:staticcheck // deprecated terratest call, the test files use the same call
 	var configmap corev1.ConfigMap
 	helm.UnmarshalK8SYaml(t, output, &configmap)
 	return configmap

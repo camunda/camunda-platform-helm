@@ -793,7 +793,7 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 				}
 				s.Require().Equal(actualEnvVar.Name, expected.Name)
 				s.Require().Equal(actualEnvVar.ValueFrom.SecretKeyRef.Key, expected.ValueFrom.SecretKeyRef.Key)
-				s.Require().Equal(actualEnvVar.ValueFrom.SecretKeyRef.LocalObjectReference.Name, expected.ValueFrom.SecretKeyRef.LocalObjectReference.Name)
+				s.Require().Equal(actualEnvVar.ValueFrom.SecretKeyRef.Name, expected.ValueFrom.SecretKeyRef.Name)
 			},
 		}, {
 			Name: "TestContainerOpenSearchPassword",
@@ -828,7 +828,7 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 				}
 				s.Require().Equal(actualEnvVar.Name, expected.Name)
 				s.Require().Equal(actualEnvVar.ValueFrom.SecretKeyRef.Key, expected.ValueFrom.SecretKeyRef.Key)
-				s.Require().Equal(actualEnvVar.ValueFrom.SecretKeyRef.LocalObjectReference.Name, expected.ValueFrom.SecretKeyRef.LocalObjectReference.Name)
+				s.Require().Equal(actualEnvVar.ValueFrom.SecretKeyRef.Name, expected.ValueFrom.SecretKeyRef.Name)
 			},
 		},
 	}

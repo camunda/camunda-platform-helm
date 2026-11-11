@@ -25,7 +25,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	appsv1 "k8s.io/api/apps/v1"
-	coreV1 "k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -102,7 +101,7 @@ func (s *statefulSetTest) TestContainerSetGlobalAnnotations() {
 	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
 
 	// then
-	s.Require().Equal("bar", statefulSet.ObjectMeta.Annotations["foo"])
+	s.Require().Equal("bar", statefulSet.Annotations["foo"])
 }
 
 func (s *serviceTest) TestContainerServiceAnnotations() {
@@ -116,11 +115,11 @@ func (s *serviceTest) TestContainerServiceAnnotations() {
 
 	// when
 	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var service coreV1.Service
+	var service corev1.Service
 	helm.UnmarshalK8SYaml(s.T(), output, &service)
 
 	// then
-	s.Require().Equal("bar", service.ObjectMeta.Annotations["foo"])
+	s.Require().Equal("bar", service.Annotations["foo"])
 }
 
 func (s *statefulSetTest) TestContainerSetPriorityClassName() {
@@ -420,7 +419,7 @@ func (s *statefulSetTest) TestContainerOpenSearchExistingSecret() {
 	}
 	s.Require().Equal(actualEnvVar.Name, expected.Name)
 	s.Require().Equal(actualEnvVar.ValueFrom.SecretKeyRef.Key, expected.ValueFrom.SecretKeyRef.Key)
-	s.Require().Equal(actualEnvVar.ValueFrom.SecretKeyRef.LocalObjectReference.Name, expected.ValueFrom.SecretKeyRef.LocalObjectReference.Name)
+	s.Require().Equal(actualEnvVar.ValueFrom.SecretKeyRef.Name, expected.ValueFrom.SecretKeyRef.Name)
 }
 
 func (s *statefulSetTest) TestContainerOpenSearchPassword() {
@@ -462,7 +461,7 @@ func (s *statefulSetTest) TestContainerOpenSearchPassword() {
 	}
 	s.Require().Equal(actualEnvVar.Name, expected.Name)
 	s.Require().Equal(actualEnvVar.ValueFrom.SecretKeyRef.Key, expected.ValueFrom.SecretKeyRef.Key)
-	s.Require().Equal(actualEnvVar.ValueFrom.SecretKeyRef.LocalObjectReference.Name, expected.ValueFrom.SecretKeyRef.LocalObjectReference.Name)
+	s.Require().Equal(actualEnvVar.ValueFrom.SecretKeyRef.Name, expected.ValueFrom.SecretKeyRef.Name)
 }
 
 func (s *statefulSetTest) TestContainerSetLog4j2() {

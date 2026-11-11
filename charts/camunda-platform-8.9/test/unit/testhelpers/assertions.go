@@ -35,7 +35,7 @@ func validateTestCase(tc TestCase) error {
 	hasObjectAssertions := hasObject || hasObjectAsserter
 
 	if tc.Verifier != nil && (len(tc.Expected) > 0 || len(tc.Unexpected) > 0 || hasObjectAssertions) {
-		return fmt.Errorf("Verifier cannot be combined with declarative, error, or object assertions")
+		return fmt.Errorf("Verifier cannot be combined with declarative, error, or object assertions") //nolint:staticcheck // a change of the text changes the output
 	}
 	if expectsError && (len(tc.Expected) > 1 || len(tc.Unexpected) > 0 || hasObjectAssertions) {
 		return fmt.Errorf("ERROR assertion cannot be combined with output or object assertions")
