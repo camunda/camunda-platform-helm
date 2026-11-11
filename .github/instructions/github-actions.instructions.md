@@ -26,7 +26,7 @@ automated workflow steps follow Conventional Commits with the `chore(ci):` type.
 - **NEVER** add a `run:` block above bash cyclomatic complexity 10 (1, plus 1 for each `if`/`elif`,
   `case` item, loop, `&&` and `||`) or 100 lines of code (blank and comment-only lines do not
   count), in `.github/workflows/` or `.github/actions/`. **NEVER** make a block that is already
-  above more complex or longer, except for a fix that is not possible without it.
+  above more complex or longer.
   `make go.complexity` fails the change, and `test-release-tooling.yaml` runs it on every PR.
   The same check runs shellcheck on every composite action `run:` block, including unchanged
   actions, and fails on any finding.
@@ -34,9 +34,7 @@ automated workflow steps follow Conventional Commits with the `chore(ci):` type.
   already above. To pass, delete dead branches and duplicated commands, or split the step where
   no shell variable crosses the split. Do not add a `GITHUB_ENV` or `GITHUB_OUTPUT` write, a `.sh`
   file, a `${{ }}` expression or an `if:` condition only to pass the check, and do not rewrite the
-  block in another language to pass it. If a fix must grow a block that is already above, name
-  the block and the reason in the PR body. A reviewer who accepts the reason merges the PR
-  although the check fails.
+  block in another language to pass it.
 - **NEVER** omit `concurrency:` on workflows triggered by `push` or `pull_request` — duplicate
   runs waste CI resources.
 - **NEVER** use `strategy.fail-fast: true` for integration test matrices — one flaky test must
