@@ -6,7 +6,9 @@
 >
 > - You set `optimize.enabled`, `orchestration.exporters.zeebe.enabled`, or `orchestration.migration.data.enabled` to
 >   `true`, and later back to `false`. All three are `false` by default.
-> - You upgrade from the 8.7 chart. It enables the legacy Elasticsearch exporter by default.
+> - You upgrade from the 8.7 chart. It enables the legacy Elasticsearch exporter by default. If you migrate Operate and
+>   Tasklist data, keep the exporter until their importers have finished the 8.7 data, as the 8.7 to 8.8 upgrade guide
+>   describes. The importers detect completion from records that this exporter writes.
 > - You configured the exporter through environment variables or extra configuration, and you remove that configuration.
 >
 > In each case, the exporter disappears only from the broker's *static* configuration.
