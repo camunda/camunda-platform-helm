@@ -59,7 +59,7 @@ make precommit.chores                                        # Maintainer precom
 ```bash
 make go.test                                                 # All chart versions
 make go.test chartPath=charts/camunda-platform-8.10          # One chart version
-make go.test-scripts                                         # Every Go module under scripts/ (Go lint + test)
+make go.test-scripts                                         # Every Go module under scripts/ (Go lint + test); run make helm.repos-add and make helm.dependency-update first
 
 # One Go package / single test by name (run from charts/<version>/test/unit)
 cd charts/camunda-platform-8.10/test/unit && go test ./orchestration/...

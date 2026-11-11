@@ -75,7 +75,7 @@ Default: tier-1 on every affected version. Add tier-2 entries only when the diff
 | `_helpers.tpl` change | tier-1 all versions + `nosec`, `docstr` |
 | `values-enterprise.yaml` or enterprise image tags | `entv` — defined and enabled on 8.7, 8.8 and 8.9; 8.10 does not define it at all |
 
-**Skip the matrix** for `.github/workflows/*` (run `pre-commit run --all-files`), `scripts/` Go tooling (`make go.test-scripts`, `make go.lint`, `make go.complexity`), Dockerfile-only, compose-only, docs-only.
+**Skip the matrix** for `.github/workflows/*` (run `pre-commit run --all-files`), `scripts/` Go tooling (`make helm.repos-add` and `make helm.dependency-update`, then `make go.test-scripts`, `make go.lint`, `make go.complexity`), Dockerfile-only, compose-only, docs-only.
 
 ## Run via deploy-camunda
 
