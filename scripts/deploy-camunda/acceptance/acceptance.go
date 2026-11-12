@@ -171,7 +171,7 @@ type partitionState struct {
 	ExportedPosition int64  `json:"exportedPosition"`
 }
 
-//nolint:gocognit,gocyclo,errcheck,staticcheck // split tracked in #7584
+//nolint:gocognit,gocyclo // split tracked in #7584
 func runPhysicalTenantAcceptance(ctx context.Context, opts PhysicalTenantAcceptanceOptions, deps acceptanceDependencies) (err error) {
 	var partitionsBody, brokerLog string
 	fail := func(cause error) error {
@@ -188,7 +188,7 @@ func runPhysicalTenantAcceptance(ctx context.Context, opts PhysicalTenantAccepta
 	if err != nil {
 		return fail(fmt.Errorf("start management port-forward: %w", err))
 	}
-	defer process.Stop()
+	defer func() { _ = process.Stop() }()
 	localPort, err := waitForForwardPort(ctx, process, deps.sleep)
 	if err != nil {
 		return fail(err)
@@ -313,7 +313,7 @@ func runPhysicalTenantAcceptance(ctx context.Context, opts PhysicalTenantAccepta
 				return fail(fmt.Errorf("check %s credentials against %s Optimize: %w", source, target, requestErr))
 			}
 			if status != http.StatusUnauthorized && status != http.StatusForbidden {
-				return fail(fmt.Errorf("Optimize for %q accepted %q credentials (HTTP %d)", target, source, status))
+				return fail(fmt.Errorf("tenant %q: Optimize accepted %q credentials (HTTP %d)", target, source, status))
 			}
 		}
 	}
