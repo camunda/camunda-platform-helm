@@ -368,6 +368,7 @@ func (s *ConfigMapWarningsTemplateTest) TestBundledKeycloakCveWarning() {
 				var configmap corev1.ConfigMap
 				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 				s.Require().Contains(configmap.Data["warnings"], "CVE-2026-18963")
+				s.Require().Contains(configmap.Data["warnings"], "#notice-80")
 			},
 		},
 		{

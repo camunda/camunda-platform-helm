@@ -522,7 +522,7 @@ Usage: {{ include "camundaPlatform.keycloakSecurityWarnings" . }}
       {{- end }}
       {{- $frozenLineNote := "" }}
       {{- if $onFrozenLine }}
-        {{- $frozenLineNote = " The Bitnami-based \"camunda/keycloak\" tags this chart defaults to are frozen on the discontinued bitnamilegacy base and will not receive the fix. Like every bitnamilegacy image, they also still trust root certificates affected by the eMudhra CA compromise: https://docs.camunda.io/docs/reference/notices/#notice-80" }}
+        {{- $frozenLineNote = " The Bitnami-based \"camunda/keycloak\" tags this chart defaults to are frozen on the discontinued bitnamilegacy base and will not receive the fix. They also still trust emSign root certificates affected by the eMudhra CA compromise, as do the other bitnamilegacy images this chart defaults to: https://docs.camunda.io/docs/reference/notices/#notice-80" }}
       {{- end }}
       {{- $warningMessage := printf "%s %s%s %s %s"
           "[camunda][warning]"

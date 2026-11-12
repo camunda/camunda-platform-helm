@@ -19,6 +19,7 @@ Please also refer to the [documentation](https://docs.camunda.io/docs/self-manag
 - [Identity auth existing secrets](#identity-auth-existing-secrets)
 - [Known Limitations](#known-limitations)
   - [Bitnami Legacy Images](#bitnami-legacy-images)
+  - [Keycloak 25 Images](#keycloak-25-images)
 - [Development](#development)
 - [Releasing the Charts](#releasing-the-charts)
 - [Parameters](#parameters)
@@ -335,10 +336,21 @@ global:
 
 The bundled Bitnami subcharts default to images from the frozen `bitnamilegacy/*` repositories,
 for example `bitnamilegacy/postgresql` and `bitnamilegacy/os-shell`. These images never get a rebuild,
-so they receive no security fixes. They also still trust root certificates affected by the eMudhra CA
-compromise, see [security notice 80](https://docs.camunda.io/docs/reference/notices/#notice-80).
+so they receive no security fixes. Every `bitnamilegacy/*` image this chart defaults to also still trusts
+emSign root certificates affected by the eMudhra CA compromise, which
+[security notice 80](https://docs.camunda.io/docs/reference/notices/#notice-80) describes.
 To stop using them, [migrate from the Bitnami subcharts](https://docs.camunda.io/docs/self-managed/deployment/helm/operational-tasks/migration-from-bitnami/).
 Enterprise customers can instead deploy with the chart's `values-enterprise.yaml`, which uses maintained Bitnami Premium images.
+Its Keycloak image is still affected, see [Keycloak 25 Images](#keycloak-25-images).
+
+### Keycloak 25 Images
+
+The default Keycloak image, `camunda/keycloak:25.0.6`, and the `registry.camunda.cloud/keycloak-ee/keycloak:25.0.6`
+image that `values-enterprise.yaml` sets are affected by the eMudhra CA compromise. The Keycloak 25 base image
+receives no more updates, so these images do not get the fix, see
+[security notice 80](https://docs.camunda.io/docs/reference/notices/#notice-80).
+To get the fix, upgrade to a fixed Keycloak 26 image, see
+[Prepare a Keycloak upgrade](https://docs.camunda.io/docs/self-managed/deployment/helm/configure/authentication-and-authorization/keycloak-support-and-upgrades/#prepare-a-keycloak-upgrade).
 
 ## Development
 

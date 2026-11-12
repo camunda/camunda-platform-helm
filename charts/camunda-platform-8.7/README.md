@@ -342,8 +342,9 @@ global:
 
 The bundled Bitnami subcharts default to images from the frozen `bitnamilegacy/*` repositories,
 for example `bitnamilegacy/postgresql` and `bitnamilegacy/os-shell`. These images never get a rebuild,
-so they receive no security fixes. They also still trust root certificates affected by the eMudhra CA
-compromise, see [security notice 80](https://docs.camunda.io/docs/reference/notices/#notice-80).
+so they receive no security fixes. Every `bitnamilegacy/*` image this chart defaults to also still trusts
+emSign root certificates affected by the eMudhra CA compromise, which
+[security notice 80](https://docs.camunda.io/docs/reference/notices/#notice-80) describes.
 To stop using them, [migrate from the Bitnami subcharts](https://docs.camunda.io/docs/self-managed/deployment/helm/operational-tasks/migration-from-bitnami/).
 Enterprise customers can instead deploy with the chart's `values-enterprise.yaml`, which uses maintained Bitnami Premium images.
 
