@@ -221,6 +221,20 @@ The following values inside your values.yaml need to be set but were not:
     {{- $installationTypeMessage := "[camunda][warning]\nDEPRECATION NOTICE: Starting from appVersion 8.7, the Camunda Helm chart will no longer support the global.multiregion.installationType option. This is replaced with a new procedure for managing multi-region installations documented here:\nhttps://docs.camunda.io/docs/self-managed/operational-guides/multi-region/dual-region-operational-procedure/\nPlease unset this option to remove the warning.\n" }}
     {{ printf "\n%s" $installationTypeMessage }}
   {{- end }}
+  {{- if .Values.identityKeycloak.enabled }}
+    {{- $keycloakRepository := ((.Values.identityKeycloak.image).repository | toString) }}
+    {{- $keycloakTag := ((.Values.identityKeycloak.image).tag | toString) }}
+    {{- $keycloakMajor := regexFind "[0-9]+" $keycloakTag }}
+    {{- if and (has $keycloakRepository (list "camunda/keycloak" "keycloak-ee/keycloak")) (has $keycloakMajor (list "23" "24" "25")) }}
+      {{- $warningMessage := printf "%s %s %s %s"
+          "[camunda][warning]"
+          (printf "SECURITY: the bundled Keycloak image \"%s:%s\" still trusts root certificates affected by the eMudhra CA compromise." $keycloakRepository $keycloakTag)
+          "Camunda Keycloak images for Keycloak 23, 24, and 25 receive no more updates and will not get the fix: https://docs.camunda.io/docs/reference/notices/#notice-80"
+          "Upgrade to a fixed Keycloak 26 image: https://docs.camunda.io/docs/self-managed/deployment/helm/configure/authentication-and-authorization/keycloak-support-and-upgrades/#prepare-a-keycloak-upgrade"
+      -}}
+      {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+    {{- end }}
+  {{- end }}
 {{- end }}
 
 

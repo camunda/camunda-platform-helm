@@ -44,3 +44,53 @@ func TestNotesTemplate(t *testing.T) {
 	require.Contains(t, notes, "intentionally omitted")
 	require.NotContains(t, notes, "credential-output-canary-do-not-print")
 }
+
+func TestNotesKeycloakEmudhraWarning(t *testing.T) {
+	t.Parallel()
+
+	chartPath, err := filepath.Abs("../../../")
+	require.NoError(t, err)
+
+	testCases := []struct {
+		name     string
+		args     []string
+		expected bool
+	}{
+		{
+			name:     "DefaultKeycloak25Warns",
+			expected: true,
+		},
+		{
+			name:     "EnterpriseKeycloak25Warns",
+			args:     []string{"-f", filepath.Join(chartPath, "values-enterprise.yaml")},
+			expected: true,
+		},
+		{
+			name: "Keycloak26DoesNotWarn",
+			args: []string{"--set", "identityKeycloak.image.tag=quay-26.8.1"},
+		},
+		{
+			name: "NonCamundaRepositoryDoesNotWarn",
+			args: []string{"--set", "identityKeycloak.image.repository=bitnami/keycloak"},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			args := append([]string{"install", "keycloak-emudhra-test", chartPath, "--dry-run=client"}, tc.args...)
+			output, err := exec.Command("helm", args...).CombinedOutput()
+			require.NoError(t, err, string(output))
+
+			_, notes, found := strings.Cut(string(output), "\nNOTES:\n")
+			require.True(t, found)
+			if tc.expected {
+				require.Contains(t, notes, "eMudhra CA compromise")
+				require.Contains(t, notes, "#notice-80")
+			} else {
+				require.NotContains(t, notes, "#notice-80")
+			}
+		})
+	}
+}
