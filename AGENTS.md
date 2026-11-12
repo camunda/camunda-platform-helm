@@ -42,7 +42,8 @@ make helm.lint-all                                           # Lint all matching
 make go.fmt                                                  # Enforce Go formatting
 gofmt -l $(git ls-files '*.go')                              # Repo-wide Go format check (Repo - Go Format)
 make go.lint                                                 # golangci-lint every scripts/ module (issues new since origin/main)
-make go.complexity                                           # Fail on changed scripts/ functions above cognitive 30, cyclomatic 30 or 250 lines, on added or grown over-limit run blocks, and on shellcheck findings in all composite actions
+make go.complexity                                           # Fail on added or grown over-limit run blocks, and on shellcheck findings in all composite actions
+pre-commit run --config .infraex-common-config/baseline/.pre-commit-config.yaml --all-files  # Hooks of the check `lint / baseline`, with camunda/infraex-common-config cloned into .infraex-common-config: its golangci-lint configuration limits each function outside _test.go files in the full repository to cognitive complexity 30, cyclomatic complexity 30 and 250 lines (https://github.com/camunda/infraex-common-config/blob/main/README.md#baseline)
 pre-commit run --all-files                                   # Hooks that lint-global runs on every PR (actionlint, shellcheck, zizmor high severity, action pin spacing)
 yamllint -c .github/config/yamllint.yaml charts/camunda-platform-8.10/test/unit  # Lint the unit-test YAML of one chart (<v> - Validation / Lint)
 make go.license-verify                                       # Apache header on every tracked .go and .sh file (Repo - License Headers)
