@@ -17,7 +17,9 @@ The Argo CD install verifies that Redis uses the authenticated Docker Hub image.
 
 Flux uses `refs/heads/<branch>` for same-repository pull requests and merge-queue
 runs. Fork pull requests retain `refs/pull/<number>/head` in the base repository.
-The harness rejects a Flux artifact whose revision differs from `--revision`.
+When `--revision-ref-name` is set, the harness rejects a Flux artifact whose
+revision differs from `--revision`. Manual runs set no ref name and skip this
+check.
 
 To run all three controllers against a branch:
 
