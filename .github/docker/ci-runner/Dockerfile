@@ -124,7 +124,6 @@ FROM debian:bookworm-slim@sha256:734a72b3d6142a71993b4bc580ca01d8ca687f77a2c422d
 # - ca-certificates: Required for HTTPS downloads
 # - curl: For downloading binaries
 # - xz-utils: Required to extract UPX (distributed as .tar.xz)
-# hadolint ignore=DL3008 # predates the lint baseline
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     curl \
@@ -281,7 +280,6 @@ SHELL ["/bin/bash", "-c"]
 # Minimal set of packages required for CI operations.
 # Using --no-install-recommends to avoid pulling in unnecessary dependencies.
 # ==============================================================================
-# hadolint ignore=DL3008 # predates the lint baseline
 RUN apt-get update && apt-get install -y --no-install-recommends \
     bash \
     ca-certificates \
@@ -343,7 +341,7 @@ RUN pip3 install --no-cache-dir --break-system-packages awscli \
 # - .install/.backup: Installation backups
 # - __pycache__, *.pyc: Python bytecode caches
 # ==============================================================================
-# hadolint ignore=DL3008,DL4006 # no PR job builds this image, so a fix cannot be proven
+# hadolint ignore=DL4006 # no PR job builds this image, so a fix cannot be proven
 RUN curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg \
     && echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" > /etc/apt/sources.list.d/google-cloud-sdk.list \
     && apt-get update \

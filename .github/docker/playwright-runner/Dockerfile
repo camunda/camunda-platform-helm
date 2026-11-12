@@ -117,7 +117,6 @@
 FROM debian:bookworm-slim@sha256:734a72b3d6142a71993b4bc580ca01d8ca687f77a2c422d96a961d3376b179bc AS tools
 
 # Install minimal tools for downloading and compressing
-# hadolint ignore=DL3008 # predates the lint baseline
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     curl \
@@ -238,7 +237,6 @@ SHELL ["/bin/bash", "-c"]
 # NOTE: libgbm1 is required starting from Playwright 1.58.0
 # With --no-install-recommends it only adds ~2MB (avoids mesa/LLVM)
 # ==============================================================================
-# hadolint ignore=DL3008 # predates the lint baseline
 RUN apt-get update && apt-get install -y --no-install-recommends \
     # Essential system tools
     ca-certificates \
@@ -299,7 +297,7 @@ COPY --from=tools /tools/aws-iam-authenticator /usr/local/bin/
 # The plugin handles the 'gke-gcloud-auth-plugin' exec in kubeconfig files
 # without needing the full gcloud CLI.
 # ==============================================================================
-# hadolint ignore=DL3008,DL4006 # no PR job builds this image, so a fix cannot be proven
+# hadolint ignore=DL4006 # no PR job builds this image, so a fix cannot be proven
 RUN curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg \
     && echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" > /etc/apt/sources.list.d/google-cloud-sdk.list \
     && apt-get update \
