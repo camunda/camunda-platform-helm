@@ -12,7 +12,7 @@
     '**/vendor/**',
     '**/examples/**',
     '**/__tests__/**',
-    '**/test/**',
+    '**/test/**/!(dogfood-hub.yaml)',
     '**/tests/**',
     '**/__fixtures__/**',
   ],
