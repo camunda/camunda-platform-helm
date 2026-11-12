@@ -1,3 +1,3 @@
 # Complexity checks
 
-The default command checks changed Go functions and workflow run blocks.
+The default command checks changed workflow run blocks and runs shellcheck on every composite action run block.
