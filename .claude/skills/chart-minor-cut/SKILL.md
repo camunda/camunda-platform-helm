@@ -54,7 +54,7 @@ Put these changes in a separate PR that merges first. In the 8.11 cut, the chang
 - `.github/workflows/test-local-template.yaml`: ECK install and appProtocol conditions.
 - `test/e2e/playwright.base.config.ts`: `ShadowVersion`.
 - `helm-values-mcp/test/helm-values.test.ts`: the latest-version assertions.
-- `scripts/validate-values-schema/upgrade_test.go`: the `expectations` map has one key for each chart that has `test/unit/deprecation/allowlist.yaml`. Add a `camunda-platform-N` key with the same keys as `P`. The 8.11 cut missed this, and `Go test + vet` failed on every PR until #7578.
+- `scripts/validate-values-schema/upgrade_test.go`: the `expectations` map has one key for each chart that has `test/unit/deprecation/allowlist.yaml`. Add a `camunda-platform-N` key with the same keys as `P`. The 8.11 cut missed this, and the `Go lint + test` check (then named `Go test + vet`) failed on every PR until #7578.
 
 Check: run the grep again after the changes. It shows no hardcoded list that excludes `N`.
 
@@ -208,9 +208,9 @@ Run each command. Each command must pass.
 ```bash
 make helm.lint chartPath=NEW
 make go.test chartPath=NEW
-for m in $(find scripts -name go.mod -exec dirname {} \;); do
-  (cd "$m" && go test ./...)
-done
+make helm.repos-add
+make helm.dependency-update
+make go.test-scripts
 make mcp.test
 ```
 

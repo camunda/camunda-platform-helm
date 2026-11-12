@@ -40,9 +40,12 @@ make mcp.build                        # TypeScript MCP server (tsc)
 make helm.lint chartPath=charts/camunda-platform-8.10       # Lint one chart (strict)
 make helm.lint-all                                           # Lint all matching charts
 make go.fmt                                                  # Enforce Go formatting
+gofmt -l $(git ls-files '*.go')                              # Repo-wide Go format check (Repo - Go Format)
 make go.lint                                                 # golangci-lint every scripts/ module (issues new since origin/main)
 make go.complexity                                           # Fail on changed scripts/ functions above cognitive 30, cyclomatic 30 or 250 lines, on added or grown over-limit run blocks, and on shellcheck findings in all composite actions
 pre-commit run --all-files                                   # Hooks that lint-global runs on every PR (actionlint, shellcheck, zizmor high severity, action pin spacing)
+yamllint -c .github/config/yamllint.yaml charts/camunda-platform-8.10/test/unit  # Lint the unit-test YAML of one chart (<v> - Validation / Lint)
+make go.license-verify                                       # Apache header on every tracked .go and .sh file (Repo - License Headers)
 make go.addlicense-check chartPath=charts/camunda-platform-8.10  # Check Apache headers
 make go.addlicense-run chartPath=charts/camunda-platform-8.10    # Add missing headers
 make precommit.chores                                        # Maintainer precommit chores
@@ -56,6 +59,7 @@ make precommit.chores                                        # Maintainer precom
 ```bash
 make go.test                                                 # All chart versions
 make go.test chartPath=charts/camunda-platform-8.10          # One chart version
+make go.test-scripts                                         # Every Go module under scripts/ (Go lint + test); run make helm.repos-add and make helm.dependency-update first
 
 # One Go package / single test by name (run from charts/<version>/test/unit)
 cd charts/camunda-platform-8.10/test/unit && go test ./orchestration/...
