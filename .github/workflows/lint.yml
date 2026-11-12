@@ -1,0 +1,30 @@
+---
+name: lint
+
+on:
+    workflow_dispatch:
+    pull_request:
+    merge_group:
+    push:
+        branches:
+            - main
+
+concurrency:
+    group: ${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+    contents: read
+
+jobs:
+    lint:
+        permissions:
+            contents: read
+            id-token: write
+        # Terraform writes this file, so the caller follows main
+        uses: camunda/infraex-common-config/.github/workflows/lint-global.yml@main # zizmor: ignore[unpinned-uses]
+        secrets:
+            VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
+            VAULT_JWT_PATH: ${{ secrets.VAULT_JWT_PATH }}
+            VAULT_JWT_ROLE: ${{ secrets.VAULT_JWT_ROLE }}
+            VAULT_JWT_AUDIENCE: ${{ secrets.VAULT_JWT_AUDIENCE }}
