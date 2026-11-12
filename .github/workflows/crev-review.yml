@@ -2,6 +2,7 @@
 name: crev review
 
 on:
+    # The guard job of crev-review-global.yml rejects commenters below triage
     issue_comment: # zizmor: ignore[dangerous-triggers]
         types: [created]
 
@@ -17,6 +18,7 @@ jobs:
             packages: read # pull the crev image from GHCR
             pull-requests: write # post the review
             statuses: write # crev/escalation status
+        # Terraform writes this file, so the caller follows main
         uses: camunda/infraex-common-config/.github/workflows/crev-review-global.yml@main # zizmor: ignore[unpinned-uses]
         with:
             model: deepseek/deepseek-v4.1-flash
