@@ -36,6 +36,7 @@ jobs:
           fetch-depth: 2
 
       - name: Install tools
+        id: tools
         uses: camunda/infraex-common-config/.github/actions/asdf-install-tooling@e2923304b40dfc031b3f595bcc1445e90c981adb # 3.0.0
 
       # TestImageSetRealChartContract reads each chart's vendored subcharts
@@ -53,9 +54,11 @@ jobs:
         run: make go.test-scripts
 
       - name: Lint every Go module under scripts/
+        if: ${{ !cancelled() && steps.tools.outcome == 'success' }}
         run: make go.lint lintBase=HEAD~1
 
       - name: Gate the complexity of changed Go functions and workflow run blocks
+        if: ${{ !cancelled() && steps.tools.outcome == 'success' }}
         run: make go.complexity lintBase=HEAD~1
 
       - name: Install schema generator
