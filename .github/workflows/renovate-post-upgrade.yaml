@@ -68,6 +68,7 @@ jobs:
           SUPPORTED_CHANGED=$(echo "${CHANGED_CHARTS}" | tr ' ' '\n' | grep -Fxf <(printf '%s\n' "$ROUTINE_CHARTS") | tr '\n' ' ' | xargs || true)
           echo "SUPPORTED_CHANGED=${SUPPORTED_CHANGED}" | tee -a "$GITHUB_ENV"
       - name: Run go mod tidy
+        if: ${{ !startsWith(github.ref_name, 'renovate/major-') && !endsWith(github.ref_name, '.x') }}
         run: |
           set -euo pipefail
           echo "Running 'go mod tidy' on all go.mod files..."
