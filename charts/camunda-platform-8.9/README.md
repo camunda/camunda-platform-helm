@@ -1,14 +1,32 @@
 # Camunda 8 Helm Chart
 
 > [!IMPORTANT]
-> **Disabling Optimize or the legacy Elasticsearch/OpenSearch exporter via Helm values does not stop the running exporter.**
-> Setting `optimize.enabled: false` (or `orchestration.exporters.zeebe.enabled: false`) only removes the legacy exporter from
-> the broker's *static* configuration. The broker reconciles that removal into its *dynamic* cluster configuration, but the
-> reconciliation runs only on partition leaders and relies on cluster gossip to converge across all brokers. If it does not
-> converge, the exporter can remain stuck in an `UNKNOWN` / `CONFIG_NOT_FOUND` state, which halts log compaction and grows the
-> Zeebe PVC. After disabling Optimize or the legacy exporter, explicitly disable the running exporter on each broker via
-> `POST /actuator/exporters/{elasticsearch|opensearch}/disable` and confirm convergence with `GET /actuator/exporters`
-> (every broker should report `DISABLED`). Ensure your Camunda version includes the exporter-state reconciliation fix
+> **Removing the legacy Elasticsearch/OpenSearch exporter from the broker configuration does not remove it from the broker.**
+> This applies only to a release whose brokers already ran the legacy exporter, and that now renders without it. Examples:
+>
+> - You set `optimize.enabled` or `orchestration.exporters.zeebe.enabled` to `true`, and later back to `false`. Both are
+>   `false` by default.
+> - You upgrade from an earlier chart version whose release ran the legacy exporter. For example, the 8.7 chart enables it
+>   by default, and the 8.8 chart also enables it with `orchestration.migration.data.enabled: true`.
+> - You configured the exporter through environment variables or extra configuration, and you remove that configuration.
+>
+> In each case, the exporter disappears only from the broker's *static* configuration.
+> The exporter stays in the broker's *dynamic* cluster configuration. After the restart, the broker sets it to
+> `CONFIG_NOT_FOUND`. In this state, the exporter position does not move. This halts log compaction and grows the Zeebe PVC.
+> The broker does not delete the exporter automatically. Use one of these procedures:
+>
+> - **Delete the exporter after the rollout.** Roll out the Helm change. Confirm with `GET /actuator/exporters` that the
+>   exporter is in `CONFIG_NOT_FOUND` on all partitions. Then call `DELETE /actuator/exporters/{elasticsearch|opensearch}`.
+>   Use `?dryRun=true` first. Log compaction stays halted until the delete completes.
+> - **Disable the exporter before the rollout.** Call `POST /actuator/exporters/{elasticsearch|opensearch}/disable`. Confirm
+>   with `GET /actuator/exporters` that all partitions report `DISABLED`. Then roll out the Helm change. A `DISABLED` exporter
+>   does not halt compaction, but it stays in the dynamic configuration permanently. You cannot delete it, because the delete
+>   accepts only exporters in `CONFIG_NOT_FOUND`. If you add the configuration back later, the exporter stays `DISABLED`.
+>   Call `POST /actuator/exporters/{elasticsearch|opensearch}/enable` to resume exporting.
+>
+> Each call applies to all brokers and partitions, so send it once to any broker. Ensure your Camunda version includes the
+> exporter-state fix that stops the broker from re-enabling `CONFIG_NOT_FOUND` exporters at restart while their
+> configuration is still missing
 > ([camunda/camunda#52260](https://github.com/camunda/camunda/issues/52260), backported to 8.9.3).
 
 Please also refer to the [documentation](https://docs.camunda.io/docs/self-managed/setup/overview/) on how to use Helm charts.
