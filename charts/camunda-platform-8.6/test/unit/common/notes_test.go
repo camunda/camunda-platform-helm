@@ -66,12 +66,31 @@ func TestNotesKeycloakEmudhraWarning(t *testing.T) {
 			expected: true,
 		},
 		{
+			name:     "Keycloak23Warns",
+			args:     []string{"--set", "identityKeycloak.image.tag=23.0.7"},
+			expected: true,
+		},
+		{
+			name:     "Keycloak24Warns",
+			args:     []string{"--set", "identityKeycloak.image.tag=24.0.5"},
+			expected: true,
+		},
+		{
 			name: "Keycloak26DoesNotWarn",
 			args: []string{"--set", "identityKeycloak.image.tag=quay-26.8.1"},
 		},
 		{
 			name: "NonCamundaRepositoryDoesNotWarn",
 			args: []string{"--set", "identityKeycloak.image.repository=bitnami/keycloak"},
+		},
+		{
+			name: "DisabledKeycloakDoesNotWarn",
+			args: []string{
+				"--set", "identityKeycloak.enabled=false",
+				"--set", "global.identity.keycloak.url.protocol=https",
+				"--set", "global.identity.keycloak.url.host=keycloak.example.com",
+				"--set", "global.identity.keycloak.url.port=443",
+			},
 		},
 	}
 
