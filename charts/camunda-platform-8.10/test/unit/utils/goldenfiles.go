@@ -15,9 +15,10 @@
 package utils
 
 import (
+	"context"
 	"flag"
-	"io/ioutil"
 	"maps"
+	"os"
 	"regexp"
 	"strings"
 
@@ -78,7 +79,7 @@ func (s *TemplateGoldenTest) TestContainerGoldenTestDefaults() {
 		ValuesFiles:    s.ValuesFiles,
 		Logger:         logger.Discard,
 	}
-	output := helm.RenderTemplate(s.T(), options, s.ChartPath, s.Release, s.Templates, s.ExtraHelmArgs...)
+	output := helm.RenderTemplateContext(s.T(), context.Background(), options, s.ChartPath, s.Release, s.Templates, s.ExtraHelmArgs...)
 
 	bytes := []byte(output)
 	for _, ignoredLine := range goldenIgnoredLines(s.IgnoredLines) {
@@ -98,11 +99,11 @@ func (s *TemplateGoldenTest) TestContainerGoldenTestDefaults() {
 	goldenFile := "golden/" + s.GoldenFileName + ".golden.yaml"
 
 	if *update {
-		err := ioutil.WriteFile(goldenFile, bytes, 0644)
+		err := os.WriteFile(goldenFile, bytes, 0644)
 		s.Require().NoError(err, "Golden file was not writable")
 	}
 
-	expected, err := ioutil.ReadFile(goldenFile)
+	expected, err := os.ReadFile(goldenFile)
 
 	// then
 	s.Require().NoError(err, "Golden file doesn't exist or was not readable")

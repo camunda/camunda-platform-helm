@@ -88,7 +88,7 @@ func (s *SecretTest) TestDifferentValuesInputs() {
 				helm.UnmarshalK8SYaml(s.T(), output, &secret)
 
 				// I expect Secret to be rendered via templates/identity/postgresql-secret.yaml
-				s.Require().Equal("camunda-platform-test-identity-postgresql", secret.ObjectMeta.Name)
+				s.Require().Equal("camunda-platform-test-identity-postgresql", secret.Name)
 				s.Require().NotEmpty(string(secret.Data["password"]))
 			},
 		}, {

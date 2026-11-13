@@ -62,7 +62,7 @@ func (s *ServiceTest) TestDifferentValuesInputs() {
 				helm.UnmarshalK8SYaml(s.T(), output, &service)
 
 				// then
-				s.Require().Equal("bar", service.ObjectMeta.Annotations["foo"])
+				s.Require().Equal("bar", service.Annotations["foo"])
 			},
 		}, {
 			Name: "TestContainerServiceAnnotations",
@@ -75,7 +75,7 @@ func (s *ServiceTest) TestDifferentValuesInputs() {
 				helm.UnmarshalK8SYaml(s.T(), output, &service)
 
 				// then
-				s.Require().Equal("bar", service.ObjectMeta.Annotations["foo"])
+				s.Require().Equal("bar", service.Annotations["foo"])
 			},
 		},
 	}

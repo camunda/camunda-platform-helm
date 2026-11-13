@@ -18,6 +18,7 @@
 package testhelpers
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -112,7 +113,7 @@ func setupHelmOptions(namespace string, values map[string]string, valuesFiles []
 func renderTemplateE(t *testing.T, chartPath, release string, namespace string, templates []string, values map[string]string, valuesFiles []string, extraArgs map[string][]string, renderTemplateExtraArgs []string) (string, error) {
 	options := setupHelmOptions(namespace, values, valuesFiles, extraArgs)
 
-	output, err := helm.RenderTemplateE(t, options, chartPath, release, templates, renderTemplateExtraArgs...)
+	output, err := helm.RenderTemplateContextE(t, context.Background(), options, chartPath, release, templates, renderTemplateExtraArgs...)
 	return output, err
 }
 
@@ -175,7 +176,7 @@ func runTestCaseE(t *testing.T, chartPath, release, namespace string, templates 
 func renderTemplate(t *testing.T, chartPath, release string, namespace string, templates []string, values map[string]string, valuesFiles []string) corev1.ConfigMap {
 	options := setupHelmOptions(namespace, values, valuesFiles, nil)
 
-	output := helm.RenderTemplate(t, options, chartPath, release, templates)
+	output := helm.RenderTemplateContext(t, context.Background(), options, chartPath, release, templates)
 	var configmap corev1.ConfigMap
 	helm.UnmarshalK8SYaml(t, output, &configmap)
 	return configmap

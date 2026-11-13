@@ -36,7 +36,6 @@ type IngressTemplateTest struct {
 	release   string
 	namespace string
 	templates []string
-	extraArgs []string
 }
 
 func TestIngressTemplate(t *testing.T) {
@@ -575,7 +574,6 @@ type OrchestrationHttpIngressTemplateTest struct {
 	release   string
 	namespace string
 	templates []string
-	extraArgs []string
 }
 
 func TestOrchestrationHttpIngressTemplate(t *testing.T) {
@@ -785,7 +783,6 @@ type GrpcIngressTemplateTest struct {
 	release   string
 	namespace string
 	templates []string
-	extraArgs []string
 }
 
 func TestGrpcIngressTemplate(t *testing.T) {

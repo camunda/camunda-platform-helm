@@ -128,7 +128,7 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 				helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
 
 				// then
-				s.Require().Equal("bar", statefulSet.ObjectMeta.Annotations["foo"])
+				s.Require().Equal("bar", statefulSet.Annotations["foo"])
 			},
 		}, {
 			Name: "TestContainerSetPriorityClassName",

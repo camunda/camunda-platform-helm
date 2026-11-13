@@ -64,7 +64,7 @@ func (s *ServiceTest) TestDifferentValuesInputs() {
 				helm.UnmarshalK8SYaml(t, output, &service)
 
 				// then
-				s.Require().Equal("bar", service.ObjectMeta.Annotations["foo"])
+				s.Require().Equal("bar", service.Annotations["foo"])
 			},
 		}, {
 			Skip: true,
@@ -78,7 +78,7 @@ func (s *ServiceTest) TestDifferentValuesInputs() {
 				helm.UnmarshalK8SYaml(t, output, &service)
 
 				// then
-				s.Require().Equal("bar", service.ObjectMeta.Annotations["foo"])
+				s.Require().Equal("bar", service.Annotations["foo"])
 			},
 		}, {
 			Name: "TestAppProtocolsDefaultEmpty",

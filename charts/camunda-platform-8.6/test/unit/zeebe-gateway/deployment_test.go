@@ -86,7 +86,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
 
 				// then
-				s.Require().Equal("bar", deployment.ObjectMeta.Annotations["foo"])
+				s.Require().Equal("bar", deployment.Annotations["foo"])
 			},
 		}, {
 			Name: "TestContainerSetPriorityClassName",
@@ -736,9 +736,9 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				"global.opensearch.auth.existingSecretKey": "opensearch-password",
 				"global.opensearch.url.host":               "opensearch.example.com",
 			},
-			Verifier: func(t *testing.T, output string, err error) {
+			Verifier: func(t *testing.T, output string, _ error) {
 				var deployment appsv1.Deployment
-				err = helm.UnmarshalK8SYamlE(s.T(), output, &deployment)
+				err := helm.UnmarshalK8SYamlE(s.T(), output, &deployment)
 				if err != nil {
 					s.Failf("%w", err.Error())
 				}
@@ -766,7 +766,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				}
 				s.Require().Equal(actualEnvVar.Name, expected.Name)
 				s.Require().Equal(actualEnvVar.ValueFrom.SecretKeyRef.Key, expected.ValueFrom.SecretKeyRef.Key)
-				s.Require().Equal(actualEnvVar.ValueFrom.SecretKeyRef.LocalObjectReference.Name, expected.ValueFrom.SecretKeyRef.LocalObjectReference.Name)
+				s.Require().Equal(actualEnvVar.ValueFrom.SecretKeyRef.Name, expected.ValueFrom.SecretKeyRef.Name)
 			},
 		}, {
 			Name: "TestOpenSearchPassword",
@@ -802,7 +802,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				}
 				s.Require().Equal(actualEnvVar.Name, expected.Name)
 				s.Require().Equal(actualEnvVar.ValueFrom.SecretKeyRef.Key, expected.ValueFrom.SecretKeyRef.Key)
-				s.Require().Equal(actualEnvVar.ValueFrom.SecretKeyRef.LocalObjectReference.Name, expected.ValueFrom.SecretKeyRef.LocalObjectReference.Name)
+				s.Require().Equal(actualEnvVar.ValueFrom.SecretKeyRef.Name, expected.ValueFrom.SecretKeyRef.Name)
 			},
 		},
 	}
