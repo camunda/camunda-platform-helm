@@ -1,0 +1,32 @@
+---
+# Source: camunda-platform/templates/connectors/networkpolicy.yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: camunda-platform-test-connectors
+  namespace: camunda-platform-test
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: camunda-platform-test
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    app.kubernetes.io/component: connectors
+    app.kubernetes.io/version: "8.11-SNAPSHOT"
+spec:
+  podSelector:
+    matchLabels:
+      app: camunda-platform
+      app.kubernetes.io/name: camunda-platform
+      app.kubernetes.io/instance: camunda-platform-test
+      app.kubernetes.io/managed-by: Helm
+      app.kubernetes.io/part-of: camunda-platform
+      app.kubernetes.io/component: connectors
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector: {}
+      ports:
+        - protocol: TCP
+          port: 8080

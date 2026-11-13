@@ -1,0 +1,34 @@
+---
+# Source: camunda-platform/templates/identity/networkpolicy.yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: camunda-platform-test-identity
+  namespace: camunda-platform-test
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: camunda-platform-test
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    app.kubernetes.io/component: identity
+    app.kubernetes.io/version: "SNAPSHOT"
+spec:
+  podSelector:
+    matchLabels:
+      app: camunda-platform
+      app.kubernetes.io/name: camunda-platform
+      app.kubernetes.io/instance: camunda-platform-test
+      app.kubernetes.io/managed-by: Helm
+      app.kubernetes.io/part-of: camunda-platform
+      app.kubernetes.io/component: identity
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector: {}
+      ports:
+        - protocol: TCP
+          port: 8084
+        - protocol: TCP
+          port: 8082

@@ -1,0 +1,33 @@
+---
+# Source: camunda-platform/templates/web-modeler/networkpolicy-restapi.yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: camunda-platform-test-web-modeler-restapi
+  namespace: camunda-platform-test
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: web-modeler
+    app.kubernetes.io/instance: camunda-platform-test
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    app.kubernetes.io/component: restapi
+spec:
+  podSelector:
+    matchLabels:
+      app: camunda-platform
+      app.kubernetes.io/name: web-modeler
+      app.kubernetes.io/instance: camunda-platform-test
+      app.kubernetes.io/managed-by: Helm
+      app.kubernetes.io/part-of: camunda-platform
+      app.kubernetes.io/component: restapi
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector: {}
+      ports:
+        - protocol: TCP
+          port: 8081
+        - protocol: TCP
+          port: 8091

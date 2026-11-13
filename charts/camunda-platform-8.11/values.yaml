@@ -809,6 +809,23 @@ global:
     ## @skip global.multiregion.regionId deprecated, use `orchestration.partitioning.zoneIndex`. Must be between 0 and regions - 1; the render fails otherwise.
     regionId: 0
 
+  ## @extra global.networkPolicy configuration of the Kubernetes NetworkPolicies rendered for Camunda components.
+  networkPolicy:
+    ## @param global.networkPolicy.enabled if true, renders NetworkPolicies for the components whose own networkPolicy.enabled is true. Requires a CNI that enforces NetworkPolicies.
+    enabled: false
+    ## @extra global.networkPolicy.ingress configuration of the ingress rules of the rendered NetworkPolicies.
+    ingress:
+      ## @param global.networkPolicy.ingress.enabled if true, renders ingress NetworkPolicies that allow traffic from pods in the release namespace on the component pod ports, plus global.networkPolicy.ingress.extraRules; if false, no NetworkPolicy is rendered.
+      enabled: true
+      ## @param global.networkPolicy.ingress.extraRules can be used to append NetworkPolicyIngressRule entries to every rendered NetworkPolicy, for example to allow an ingress controller namespace.
+      ## Example:
+      ## extraRules:
+      ##   - from:
+      ##       - namespaceSelector:
+      ##           matchLabels:
+      ##             kubernetes.io/metadata.name: ingress-nginx
+      extraRules: []
+
   ## Document Store Configuration
   ## @extra global.documentStore These parameters are used to configure the document storage backend across all Camunda components.
   documentStore:
@@ -1191,6 +1208,10 @@ identity:
     ## @param identity.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted. Identity does not call the Kubernetes API; set to true only if a sidecar or init container needs the default token.
     automountServiceAccountToken: false
 
+  ## @extra identity.networkPolicy configuration of the Identity NetworkPolicy.
+  networkPolicy:
+    ## @param identity.networkPolicy.enabled if true and global.networkPolicy.enabled is true, renders an ingress NetworkPolicy for the Identity pods.
+    enabled: true
   ## @param identity.automountServiceAccountToken [nullable] can be used to override the automatic mounting of the service account token at the pod level. When unset, the ServiceAccount configuration is used.
   automountServiceAccountToken:
 
@@ -1311,6 +1332,8 @@ camundaHub:
     metrics: {}
     service: {}
     logging: {}
+    networkPolicy:
+      enabled: true
   ## @skip camundaHub.websockets
   websockets:
     image: {}
@@ -1318,6 +1341,8 @@ camundaHub:
     readinessProbe: {}
     livenessProbe: {}
     service: {}
+    networkPolicy:
+      enabled: true
   ## @skip camundaHub.serviceAccount
   serviceAccount: {}
   ## @param camundaHub.automountServiceAccountToken [nullable] can be used to override the automatic mounting of the service account token at the pod level. When unset, the ServiceAccount configuration is used.
@@ -2072,6 +2097,10 @@ connectors:
     ## @param connectors.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
     automountServiceAccountToken: false
 
+  ## @extra connectors.networkPolicy configuration of the Connectors NetworkPolicy.
+  networkPolicy:
+    ## @param connectors.networkPolicy.enabled if true and global.networkPolicy.enabled is true, renders an ingress NetworkPolicy for the Connectors pods.
+    enabled: true
   ## @param connectors.automountServiceAccountToken [nullable] can be used to override the automatic mounting of the service account token at the pod level. When unset, the ServiceAccount configuration is used.
   automountServiceAccountToken:
 
@@ -2488,6 +2517,10 @@ orchestration:
     ## @param orchestration.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
     automountServiceAccountToken: false
 
+  ## @extra orchestration.networkPolicy configuration of the Orchestration Cluster NetworkPolicy.
+  networkPolicy:
+    ## @param orchestration.networkPolicy.enabled if true and global.networkPolicy.enabled is true, renders an ingress NetworkPolicy for the Orchestration Cluster pods.
+    enabled: true
   ## @param orchestration.automountServiceAccountToken [nullable] can be used to override the automatic mounting of the service account token at the pod level. When unset, the ServiceAccount configuration is used.
   automountServiceAccountToken:
 
@@ -3154,6 +3187,10 @@ optimize:
     ## @param optimize.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
     automountServiceAccountToken: false
 
+  ## @extra optimize.networkPolicy configuration of the Optimize NetworkPolicy.
+  networkPolicy:
+    ## @param optimize.networkPolicy.enabled if true and global.networkPolicy.enabled is true, renders an ingress NetworkPolicy for the Optimize pods.
+    enabled: true
   ## @param optimize.automountServiceAccountToken [nullable] can be used to override the automatic mounting of the service account token at the pod level. When unset, the ServiceAccount configuration is used.
   automountServiceAccountToken:
 

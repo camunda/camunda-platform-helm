@@ -1,0 +1,8 @@
+{{- if and (eq (include "camundaPlatform.identityEnabled" .) "true") (eq (include "camundaPlatform.networkPolicyEnabled" (dict "networkPolicy" .Values.identity.networkPolicy "context" .)) "true") -}}
+{{- include "camundaPlatform.networkPolicy" (dict
+      "name" (include "identity.fullname" .)
+      "labels" (include "identity.labels" .)
+      "matchLabels" (include "identity.matchLabels" .)
+      "ports" (list 8084 8082)
+      "context" .) }}
+{{- end -}}
