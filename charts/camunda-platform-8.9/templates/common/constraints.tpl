@@ -235,6 +235,147 @@ configmap-warnings.yaml, which renders the "<release>-warnings" ConfigMap on the
   {{- if and (eq (include "camundaPlatform.orchestrationEnabled" .) "true") (eq (include "orchestration.secondaryStorage" .) "rdbms") (ne (include "orchestration.rdbmsUrlConfigured" .) "true") }}
     {{- printf "\n%s" "[camunda][warning] The Orchestration Cluster uses RDBMS secondary storage, but no JDBC URL is set, so it fails at startup. Set orchestration.data.secondaryStorage.rdbms.url, CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_URL in orchestration.env, or camunda.data.secondary-storage.rdbms.url in orchestration.extraConfiguration. If the URL comes from another source, ignore this warning." }}
   {{- end }}
+  {{- include "camundaPlatform.existingSecretsWarnings" . }}
+
+  {{/* Secret configuration warnings */}}
+  {{ include "camundaPlatform.secretConfigurationWarnings" . }}
+
+  {{/* Bitnami subchart deprecation warnings */}}
+  {{- $bitnamiSubchartsEnabled := list -}}
+  {{- if .Values.identityPostgresql.enabled -}}
+    {{- $bitnamiSubchartsEnabled = append $bitnamiSubchartsEnabled "identityPostgresql" -}}
+  {{- end -}}
+  {{- if .Values.identityKeycloak.enabled -}}
+    {{- $bitnamiSubchartsEnabled = append $bitnamiSubchartsEnabled "identityKeycloak" -}}
+  {{- end -}}
+  {{- if .Values.webModelerPostgresql.enabled -}}
+    {{- $bitnamiSubchartsEnabled = append $bitnamiSubchartsEnabled "webModelerPostgresql" -}}
+  {{- end -}}
+  {{- if .Values.elasticsearch.enabled -}}
+    {{- $bitnamiSubchartsEnabled = append $bitnamiSubchartsEnabled "elasticsearch" -}}
+  {{- end -}}
+  {{- if $bitnamiSubchartsEnabled }}
+    {{- $warningMessage := printf "%s %s %s %s %s"
+        "[camunda][warning]"
+        "DEPRECATION: The following Bitnami-based subcharts are deprecated and will be removed in Camunda 8.10:"
+        (join ", " $bitnamiSubchartsEnabled | printf "[%s].")
+        "Please migrate to externally managed services before upgrading to 8.10."
+        "For more details: https://docs.camunda.io/docs/8.9/self-managed/deployment/helm/operational-tasks/migration-from-bitnami/"
+    -}}
+    {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+  {{- end }}
+
+  {{/* Orchestration profile deprecation warnings */}}
+  {{- if .Values._deprecatedIdentityProfileUsed }}
+    {{- $warningMessage := printf "%s %s %s %s"
+        "[camunda][warning]"
+        "DEPRECATION: \"orchestration.profiles.identity\" has been renamed to \"orchestration.profiles.admin\"."
+        "The \"identity\" profile is deprecated and will be removed in a future version."
+        "Please update your values file to use \"orchestration.profiles.admin\" instead."
+    -}}
+    {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+  {{- end }}
+
+  {{/* Legacy per-component JKS truststore deprecation
+       (in favour of `global.tls.caBundle.secret.*` PEM bundle, which the
+       chart converts to a PKCS12 truststore at pod start via the caBundle
+       init container — see helm#3498). */}}
+  {{- include "camundaPlatform.legacyTruststoreWarnings" . }}
+
+  {{/* global.tls.caBundle guardrails: surface the three silent failure modes
+       a caBundle user can hit (JKS precedence, trust!=encryption, env override). */}}
+  {{- include "camundaPlatform.caBundleWarnings" . }}
+
+  {{/* Warn when webModeler pusher secret is auto-generated */}}
+  {{- if eq (include "camundaPlatform.webModelerEnabled" .) "true" }}
+    {{- $pusherSecret := .Values.webModeler.restapi.pusher.secret }}
+    {{- if not (or $pusherSecret.existingSecret $pusherSecret.inlineSecret) }}
+      {{- $warningMessage := printf "%s %s %s %s"
+          "[camunda][warning]"
+          "Web Modeler is using an auto-generated Pusher secret. This will produce a new random secret on every 'helm upgrade', causing WebSocket authentication failures."
+          "Please set 'webModeler.restapi.pusher.secret.existingSecret' (recommended) or 'webModeler.restapi.pusher.secret.inlineSecret'."
+          "Auto-generation will be removed in a future release."
+      -}}
+      {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+    {{- end }}
+    {{- $pusherClientSecret := .Values.webModeler.restapi.pusher.client.secret }}
+    {{- if not (or $pusherClientSecret.existingSecret $pusherClientSecret.inlineSecret) }}
+      {{- $warningMessage := printf "%s %s %s %s"
+          "[camunda][warning]"
+          "Web Modeler is using an auto-generated Pusher app key. This will produce a new random key on every 'helm upgrade', causing WebSocket authentication failures."
+          "Please set 'webModeler.restapi.pusher.client.secret.existingSecret' (recommended) or 'webModeler.restapi.pusher.client.secret.inlineSecret'."
+          "Auto-generation will be removed in a future release."
+      -}}
+      {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+    {{- end }}
+  {{- end }}
+
+  {{/* CVE-2026-18963 is fixed in Keycloak 26.7.2. regexFind pulls the version out of a
+       tag that may carry a "bitnami-" or "quay-" prefix and a "-debian-12-rN" or
+       rebuild-date suffix, so semverCompare receives a parseable version. The moving
+       aliases of the Bitnami line ("26", "bitnami-26", "bitnami-latest",
+       "latest-bitnami") carry no version at all, yet resolve to a frozen bitnamilegacy
+       build that is affected and stays affected, so they are matched by name:
+       https://github.com/camunda/keycloak/blob/main/.github/workflows/build-images.yml */}}
+  {{- include "camundaPlatform.keycloakSecurityWarnings" . }}
+
+  {{/* camunda-platform-helm#6778: global.documentStore.type.* credentials also double as
+       ambient AWS/GCP configuration for connectors, optimize, and web-modeler-restapi on this
+       chart version. */}}
+  {{- if or .Values.global.documentStore.type.aws.enabled .Values.global.documentStore.type.gcp.enabled }}
+    {{- if has (lower .Values.global.documentStore.activeStoreId) (list "aws" "gcp") }}
+      {{- $warningMessage := printf "%s %s %s %s"
+          "[camunda][warning]"
+          "DEPRECATION: Starting from Camunda 8.10 release, the global.documentStore.* will be used solely for document store configuration."
+          "If the key is currently being used for general AWS/GCP/Azure cloud configuration, please migrate those settings to the appropriate component-specific configuration."
+          "When upgrading to Camunda 8.10 or later, please refer to the migration guide: https://docs.camunda.io/docs/8.10/self-managed/upgrade/helm/"
+      -}}
+      {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+    {{- end }}
+  {{- end }}
+
+  {{- if not (semverCompare ">=4.0.0-0" .Capabilities.HelmVersion.Version) }}
+    {{- $warningMessage := printf "%s %s %s %s"
+        "[camunda][warning]"
+        (printf "Helm CLI %s detected." .Capabilities.HelmVersion.Version)
+        "Helm v3 receives security fixes only until February 10, 2027 (https://helm.sh/blog/helm-v3-end-of-life/)."
+        "Upgrade to Helm v4 before then: https://helm.sh/docs/overview"
+    -}}
+    {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+  {{- end }}
+
+  {{- if and .Values.orchestration.enabled
+             (eq .Values.orchestration.persistenceType "disk")
+             (has "ReadWriteOncePod" .Values.orchestration.pvcAccessModes) }}
+    {{- $warningMessage := printf "%s %s %s"
+        "[camunda][warning]"
+        "orchestration.pvcAccessModes is set to ReadWriteOncePod, which requires a CSI driver that supports it; without that support the PersistentVolumeClaim may fail to provision or stay Pending."
+        "PersistentVolumeClaim accessModes are immutable, so this only applies to new installs / new PVCs, not to an existing StatefulSet via \"helm upgrade\"."
+    -}}
+    {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+  {{- end }}
+
+  {{- include "camundaPlatform.multiRegionWarnings" . }}
+
+  {{- if and (eq (include "camundaPlatform.webModelerEnabled" .) "true")
+             (eq (.Values.webModeler.persistence.deploymentStrategy | default "RollingUpdate") "Recreate")
+             .Values.webModeler.persistence.enabled
+             (not .Values.webModeler.persistence.existingClaim) }}
+    {{- $warningMessage := printf "%s %s %s"
+        "[camunda][warning]"
+        "webModeler.persistence.deploymentStrategy=Recreate gives no benefit without webModeler.persistence.existingClaim and adds downtime on each upgrade."
+        "Set RollingUpdate or set webModeler.persistence.existingClaim. The Camunda 8.10 Helm chart rejects this configuration."
+    -}}
+    {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+  {{- end }}
+{{- end }}
+
+{{/*
+camundaPlatform.existingSecretsWarnings
+Generates the existingSecrets deprecation message selected by global.testDeprecationFlags.existingSecretsMustBeSet.
+Usage: {{ include "camundaPlatform.existingSecretsWarnings" . }}
+*/}}
+{{- define "camundaPlatform.existingSecretsWarnings" }}
   {{- if .Values.global.testDeprecationFlags.existingSecretsMustBeSet }}
     {{/* TODO: Check if there are more existingSecrets to check */}}
 
@@ -340,50 +481,14 @@ The following values inside your values.yaml need to be set but were not:
       {{- end }}
     {{- end }}
   {{- end }}
+{{- end }}
 
-  {{/* Secret configuration warnings */}}
-  {{ include "camundaPlatform.secretConfigurationWarnings" . }}
-
-  {{/* Bitnami subchart deprecation warnings */}}
-  {{- $bitnamiSubchartsEnabled := list -}}
-  {{- if .Values.identityPostgresql.enabled -}}
-    {{- $bitnamiSubchartsEnabled = append $bitnamiSubchartsEnabled "identityPostgresql" -}}
-  {{- end -}}
-  {{- if .Values.identityKeycloak.enabled -}}
-    {{- $bitnamiSubchartsEnabled = append $bitnamiSubchartsEnabled "identityKeycloak" -}}
-  {{- end -}}
-  {{- if .Values.webModelerPostgresql.enabled -}}
-    {{- $bitnamiSubchartsEnabled = append $bitnamiSubchartsEnabled "webModelerPostgresql" -}}
-  {{- end -}}
-  {{- if .Values.elasticsearch.enabled -}}
-    {{- $bitnamiSubchartsEnabled = append $bitnamiSubchartsEnabled "elasticsearch" -}}
-  {{- end -}}
-  {{- if $bitnamiSubchartsEnabled }}
-    {{- $warningMessage := printf "%s %s %s %s %s"
-        "[camunda][warning]"
-        "DEPRECATION: The following Bitnami-based subcharts are deprecated and will be removed in Camunda 8.10:"
-        (join ", " $bitnamiSubchartsEnabled | printf "[%s].")
-        "Please migrate to externally managed services before upgrading to 8.10."
-        "For more details: https://docs.camunda.io/docs/8.9/self-managed/deployment/helm/operational-tasks/migration-from-bitnami/"
-    -}}
-    {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
-  {{- end }}
-
-  {{/* Orchestration profile deprecation warnings */}}
-  {{- if .Values._deprecatedIdentityProfileUsed }}
-    {{- $warningMessage := printf "%s %s %s %s"
-        "[camunda][warning]"
-        "DEPRECATION: \"orchestration.profiles.identity\" has been renamed to \"orchestration.profiles.admin\"."
-        "The \"identity\" profile is deprecated and will be removed in a future version."
-        "Please update your values file to use \"orchestration.profiles.admin\" instead."
-    -}}
-    {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
-  {{- end }}
-
-  {{/* Legacy per-component JKS truststore deprecation
-       (in favour of `global.tls.caBundle.secret.*` PEM bundle, which the
-       chart converts to a PKCS12 truststore at pod start via the caBundle
-       init container — see helm#3498). */}}
+{{/*
+camundaPlatform.legacyTruststoreWarnings
+Generates deprecation warnings for legacy JKS truststore and database options, and the legacy exporter truststore conflict.
+Usage: {{ include "camundaPlatform.legacyTruststoreWarnings" . }}
+*/}}
+{{- define "camundaPlatform.legacyTruststoreWarnings" }}
   {{- /* hasSecretConfig (via normalizeSecretConfiguration) checks
          $config.secret.existingSecret / .inlineSecret — so each "config"
          binding is the PARENT of the .secret block, not the .secret leaf
@@ -460,9 +565,14 @@ The following values inside your values.yaml need to be set but were not:
     -}}
     {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
   {{- end }}
+{{- end }}
 
-  {{/* global.tls.caBundle guardrails: surface the three silent failure modes
-       a caBundle user can hit (JKS precedence, trust!=encryption, env override). */}}
+{{/*
+camundaPlatform.caBundleWarnings
+Generates warnings for global.tls.caBundle settings that do not take effect.
+Usage: {{ include "camundaPlatform.caBundleWarnings" . }}
+*/}}
+{{- define "camundaPlatform.caBundleWarnings" }}
   {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
 
     {{/* (1) A per-component JKS truststore silently wins over caBundle for that
@@ -548,38 +658,14 @@ The following values inside your values.yaml need to be set but were not:
     {{- end }}
 
   {{- end }}
+{{- end }}
 
-  {{/* Warn when webModeler pusher secret is auto-generated */}}
-  {{- if eq (include "camundaPlatform.webModelerEnabled" .) "true" }}
-    {{- $pusherSecret := .Values.webModeler.restapi.pusher.secret }}
-    {{- if not (or $pusherSecret.existingSecret $pusherSecret.inlineSecret) }}
-      {{- $warningMessage := printf "%s %s %s %s"
-          "[camunda][warning]"
-          "Web Modeler is using an auto-generated Pusher secret. This will produce a new random secret on every 'helm upgrade', causing WebSocket authentication failures."
-          "Please set 'webModeler.restapi.pusher.secret.existingSecret' (recommended) or 'webModeler.restapi.pusher.secret.inlineSecret'."
-          "Auto-generation will be removed in a future release."
-      -}}
-      {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
-    {{- end }}
-    {{- $pusherClientSecret := .Values.webModeler.restapi.pusher.client.secret }}
-    {{- if not (or $pusherClientSecret.existingSecret $pusherClientSecret.inlineSecret) }}
-      {{- $warningMessage := printf "%s %s %s %s"
-          "[camunda][warning]"
-          "Web Modeler is using an auto-generated Pusher app key. This will produce a new random key on every 'helm upgrade', causing WebSocket authentication failures."
-          "Please set 'webModeler.restapi.pusher.client.secret.existingSecret' (recommended) or 'webModeler.restapi.pusher.client.secret.inlineSecret'."
-          "Auto-generation will be removed in a future release."
-      -}}
-      {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
-    {{- end }}
-  {{- end }}
-
-  {{/* CVE-2026-18963 is fixed in Keycloak 26.7.2. regexFind pulls the version out of a
-       tag that may carry a "bitnami-" or "quay-" prefix and a "-debian-12-rN" or
-       rebuild-date suffix, so semverCompare receives a parseable version. The moving
-       aliases of the Bitnami line ("26", "bitnami-26", "bitnami-latest",
-       "latest-bitnami") carry no version at all, yet resolve to a frozen bitnamilegacy
-       build that is affected and stays affected, so they are matched by name:
-       https://github.com/camunda/keycloak/blob/main/.github/workflows/build-images.yml */}}
+{{/*
+camundaPlatform.keycloakSecurityWarnings
+Generates security warnings for the bundled Keycloak image.
+Usage: {{ include "camundaPlatform.keycloakSecurityWarnings" . }}
+*/}}
+{{- define "camundaPlatform.keycloakSecurityWarnings" }}
   {{- if .Values.identityKeycloak.enabled }}
     {{- $keycloakImage := .Values.identityKeycloak.image }}
     {{- $keycloakTag := (($keycloakImage).tag | toString) }}
@@ -598,7 +684,7 @@ The following values inside your values.yaml need to be set but were not:
       {{- end }}
       {{- $frozenLineNote := "" }}
       {{- if $onFrozenLine }}
-        {{- $frozenLineNote = " The Bitnami-based \"camunda/keycloak\" tags this chart defaults to are frozen on the discontinued bitnamilegacy base and will not receive the fix." }}
+        {{- $frozenLineNote = " The Bitnami-based \"camunda/keycloak\" tags this chart defaults to are frozen on the discontinued bitnamilegacy base and will not receive the fix. They also still trust emSign root certificates affected by the eMudhra CA compromise, as do the other bitnamilegacy images this chart defaults to: https://docs.camunda.io/docs/reference/notices/#notice-80" }}
       {{- end }}
       {{- $warningMessage := printf "%s %s%s %s %s"
           "[camunda][warning]"
@@ -610,43 +696,14 @@ The following values inside your values.yaml need to be set but were not:
       {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
     {{- end }}
   {{- end }}
+{{- end }}
 
-  {{/* camunda-platform-helm#6778: global.documentStore.type.* credentials also double as
-       ambient AWS/GCP configuration for connectors, optimize, and web-modeler-restapi on this
-       chart version. */}}
-  {{- if or .Values.global.documentStore.type.aws.enabled .Values.global.documentStore.type.gcp.enabled }}
-    {{- if has (lower .Values.global.documentStore.activeStoreId) (list "aws" "gcp") }}
-      {{- $warningMessage := printf "%s %s %s %s"
-          "[camunda][warning]"
-          "DEPRECATION: Starting from Camunda 8.10 release, the global.documentStore.* will be used solely for document store configuration."
-          "If the key is currently being used for general AWS/GCP/Azure cloud configuration, please migrate those settings to the appropriate component-specific configuration."
-          "When upgrading to Camunda 8.10 or later, please refer to the migration guide: https://docs.camunda.io/docs/8.10/self-managed/upgrade/helm/"
-      -}}
-      {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
-    {{- end }}
-  {{- end }}
-
-  {{- if not (semverCompare ">=4.0.0-0" .Capabilities.HelmVersion.Version) }}
-    {{- $warningMessage := printf "%s %s %s %s"
-        "[camunda][warning]"
-        (printf "Helm CLI %s detected." .Capabilities.HelmVersion.Version)
-        "Helm v3 receives security fixes only until February 10, 2027 (https://helm.sh/blog/helm-v3-end-of-life/)."
-        "Upgrade to Helm v4 before then: https://helm.sh/docs/overview"
-    -}}
-    {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
-  {{- end }}
-
-  {{- if and .Values.orchestration.enabled
-             (eq .Values.orchestration.persistenceType "disk")
-             (has "ReadWriteOncePod" .Values.orchestration.pvcAccessModes) }}
-    {{- $warningMessage := printf "%s %s %s"
-        "[camunda][warning]"
-        "orchestration.pvcAccessModes is set to ReadWriteOncePod, which requires a CSI driver that supports it; without that support the PersistentVolumeClaim may fail to provision or stay Pending."
-        "PersistentVolumeClaim accessModes are immutable, so this only applies to new installs / new PVCs, not to an existing StatefulSet via \"helm upgrade\"."
-    -}}
-    {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
-  {{- end }}
-
+{{/*
+camundaPlatform.multiRegionWarnings
+Generates warnings for Orchestration Cluster sizing across global.multiregion.regions.
+Usage: {{ include "camundaPlatform.multiRegionWarnings" . }}
+*/}}
+{{- define "camundaPlatform.multiRegionWarnings" }}
   {{- $regions := int .Values.global.multiregion.regions -}}
   {{- $clusterSize := int .Values.orchestration.clusterSize -}}
   {{- if and .Values.orchestration.enabled (gt $regions 1) (ne (mod $clusterSize $regions) 0) }}
@@ -665,17 +722,8 @@ The following values inside your values.yaml need to be set but were not:
   {{- range $file := (.Values.orchestration.extraConfiguration | default list) }}
     {{- if ne $file.springImport false }}
       {{- range $document := regexSplit "(?m)^[ \t]*(---|\\.\\.\\.)[ \t]*(#.*)?$" ($file.content | default "") -1 }}
-        {{- $doc := fromYaml $document -}}
-        {{- $camunda := get $doc "camunda" -}}
-        {{- $nested := dict -}}
-        {{- if and (kindIs "map" $camunda) (kindIs "map" (get $camunda "cluster")) }}
-          {{- $nested = get $camunda "cluster" -}}
-        {{- end }}
-        {{- $mixed := get $doc "camunda.cluster" -}}
-        {{- range $key := list "replication-factor" "replicationFactor" }}
-          {{- if or (hasKey $nested $key) (and (kindIs "map" $mixed) (hasKey $mixed $key)) (hasKey $doc (printf "camunda.cluster.%s" $key)) }}
-            {{- $replicationFactorKnown = false -}}
-          {{- end }}
+        {{- if include "camundaPlatform.documentSetsReplicationFactor" $document }}
+          {{- $replicationFactorKnown = false -}}
         {{- end }}
       {{- end }}
     {{- end }}
@@ -703,17 +751,26 @@ The following values inside your values.yaml need to be set but were not:
     -}}
     {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
   {{- end }}
+{{- end }}
 
-  {{- if and (eq (include "camundaPlatform.webModelerEnabled" .) "true")
-             (eq (.Values.webModeler.persistence.deploymentStrategy | default "RollingUpdate") "Recreate")
-             .Values.webModeler.persistence.enabled
-             (not .Values.webModeler.persistence.existingClaim) }}
-    {{- $warningMessage := printf "%s %s %s"
-        "[camunda][warning]"
-        "webModeler.persistence.deploymentStrategy=Recreate gives no benefit without webModeler.persistence.existingClaim and adds downtime on each upgrade."
-        "Set RollingUpdate or set webModeler.persistence.existingClaim. The Camunda 8.10 Helm chart rejects this configuration."
-    -}}
-    {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+{{/*
+camundaPlatform.documentSetsReplicationFactor
+Returns a non-empty string when a YAML document sets camunda.cluster.replication-factor
+in nested, dotted, or mixed form.
+Usage: {{ include "camundaPlatform.documentSetsReplicationFactor" $document }}
+*/}}
+{{- define "camundaPlatform.documentSetsReplicationFactor" -}}
+  {{- $doc := fromYaml . -}}
+  {{- $camunda := get $doc "camunda" -}}
+  {{- $nested := dict -}}
+  {{- if and (kindIs "map" $camunda) (kindIs "map" (get $camunda "cluster")) }}
+    {{- $nested = get $camunda "cluster" -}}
+  {{- end }}
+  {{- $mixed := get $doc "camunda.cluster" -}}
+  {{- range $key := list "replication-factor" "replicationFactor" }}
+    {{- if or (hasKey $nested $key) (and (kindIs "map" $mixed) (hasKey $mixed $key)) (hasKey $doc (printf "camunda.cluster.%s" $key)) -}}
+      true
+    {{- end }}
   {{- end }}
 {{- end }}
 

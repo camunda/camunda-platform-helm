@@ -18,6 +18,8 @@ Please also refer to the [documentation](https://docs.camunda.io/docs/self-manag
   - [Keycloak](#keycloak)
   - [Zeebe Message Size](#zeebe-message-size)
 - [Identity auth existing secrets](#identity-auth-existing-secrets)
+- [Known Limitations](#known-limitations)
+  - [Bitnami Legacy Images](#bitnami-legacy-images)
 - [Development](#development)
 - [Releasing the Charts](#releasing-the-charts)
 - [Parameters](#parameters)
@@ -333,6 +335,18 @@ global:
           name: "name of the secret that contains the client secret"
         existingSecretKey: "key for the client secret inside the secret" # this defaults to <component>-secret
 ```
+
+## Known Limitations
+
+### Bitnami Legacy Images
+
+The bundled Bitnami subcharts default to images from the frozen `bitnamilegacy/*` repositories,
+for example `bitnamilegacy/postgresql` and `bitnamilegacy/os-shell`. These images never get a rebuild,
+so they receive no security fixes. Every `bitnamilegacy/*` image this chart defaults to also still trusts
+emSign root certificates affected by the eMudhra CA compromise, which
+[security notice 80](https://docs.camunda.io/docs/reference/notices/#notice-80) describes.
+To stop using them, [migrate from the Bitnami subcharts](https://docs.camunda.io/docs/self-managed/deployment/helm/operational-tasks/migration-from-bitnami/).
+Enterprise customers can instead deploy with the chart's `values-enterprise.yaml`, which uses maintained Bitnami Premium images.
 
 ## Development
 

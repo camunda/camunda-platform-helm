@@ -28,6 +28,8 @@ Please also refer to the [documentation](https://docs.camunda.io/docs/self-manag
   - [Elasticsearch](#elasticsearch)
   - [Keycloak](#keycloak)
   - [Zeebe Message Size](#zeebe-message-size)
+- [Known Limitations](#known-limitations)
+  - [Bitnami Legacy Images](#bitnami-legacy-images)
 - [Development](#development)
 - [Releasing the Charts](#releasing-the-charts)
 - [Parameters](#parameters)
@@ -306,6 +308,18 @@ Zeebe now always uses its engine default maximum message size (4MB) and is no lo
 process deployments through REST endpoints). To raise the maximum message size Zeebe accepts,
 configure it directly via the component's `extraConfiguration`, the supported mechanism per
 [ADR 91](../../docs/adr/0091-adopt-component-extraconfiguration-as-the-standard-application-configuration-mechanism.md).
+
+## Known Limitations
+
+### Bitnami Legacy Images
+
+The bundled Bitnami subcharts default to images from the frozen `bitnamilegacy/*` repositories,
+for example `bitnamilegacy/postgresql` and `bitnamilegacy/os-shell`. These images never get a rebuild,
+so they receive no security fixes. Every `bitnamilegacy/*` image this chart defaults to also still trusts
+emSign root certificates affected by the eMudhra CA compromise, which
+[security notice 80](https://docs.camunda.io/docs/reference/notices/#notice-80) describes.
+To stop using them, [migrate from the Bitnami subcharts](https://docs.camunda.io/docs/self-managed/deployment/helm/operational-tasks/migration-from-bitnami/).
+Enterprise customers can instead deploy with the chart's `values-enterprise.yaml`, which uses maintained Bitnami Premium images.
 
 ## Development
 
