@@ -1,0 +1,277 @@
+- entry: eske/elasticsearch/install/gke
+  layers:
+    - values/base.yaml
+    - values/identity/keycloak.yaml
+    - values/persistence/elasticsearch.yaml
+    - values/platform/gke.yaml
+    - ../infra/values-infra-distroci.yaml
+  chain:
+    - charts/camunda-platform-8.9/values-digest.yaml
+    - $TMP/merged-scenario-values.yaml
+    - $TMP/values-resolved-images.yaml
+  resolvedImages: $TMP/values-resolved-images.yaml
+  resolvedImagesSha256: f216598b0a52c3e396b8cd99bc82157027a17b7db7d92f613e18a2324b169f9b
+  mergedValuesSha256: fc1a4982f8cdf7b40bdbf31a548120f91c5d81d7646abd5ac519f0afc25d0eb5
+- entry: eske/elasticsearch/upgrade-minor/gke
+  layers:
+    - values/base.yaml
+    - values/identity/keycloak.yaml
+    - values/persistence/elasticsearch.yaml
+    - values/platform/gke.yaml
+    - ../infra/values-infra-distroci.yaml
+  chain:
+    - charts/camunda-platform-8.9/values-digest.yaml
+    - $TMP/merged-scenario-values.yaml
+    - $TMP/values-resolved-images.yaml
+  resolvedImages: $TMP/values-resolved-images.yaml
+  resolvedImagesSha256: f216598b0a52c3e396b8cd99bc82157027a17b7db7d92f613e18a2324b169f9b
+  mergedValuesSha256: 37b21badca14c13058bd3a5e219a225208dc03f7de4f80261f2aa47eacae4472
+- entry: estls/orchestration-tls/install/gke
+  layers:
+    - values/base.yaml
+    - values/identity/keycloak.yaml
+    - values/persistence/elasticsearch.yaml
+    - values/platform/gke.yaml
+    - ../infra/values-infra-distroci.yaml
+    - values/features/orchestration-tls.yaml
+  chain:
+    - charts/camunda-platform-8.9/values-digest.yaml
+    - $TMP/merged-scenario-values.yaml
+    - $TMP/values-resolved-images.yaml
+  resolvedImages: $TMP/values-resolved-images.yaml
+  resolvedImagesSha256: f216598b0a52c3e396b8cd99bc82157027a17b7db7d92f613e18a2324b169f9b
+  mergedValuesSha256: 1b77bcfc5e4624e9ad11336d95c0aaf30c2e4aa83e7c7cdd790d14e49cc01b4d
+- entry: entv/enterprise-values/install/gke
+  layers:
+    - values/base.yaml
+    - values/identity/keycloak.yaml
+    - values/persistence/elasticsearch.yaml
+    - values/platform/gke.yaml
+    - ../infra/values-infra-distroci.yaml
+    - values/features/enterprise.yaml
+  chain:
+    - charts/camunda-platform-8.9/values-digest.yaml
+    - $TMP/merged-scenario-values.yaml
+    - $TMP/values-resolved-images.yaml
+  resolvedImages: $TMP/values-resolved-images.yaml
+  resolvedImagesSha256: 0a522c22ec6884a0614bfeb1103531b8d60893f614e7654eaee95f8b01b9b479
+  mergedValuesSha256: 33c3866df0dee89cee7af99d58f4d261e23ec7eadc5d2fc95a8b2009c387e8c4
+- entry: oske/opensearch/install/gke
+  layers:
+    - values/base.yaml
+    - values/identity/keycloak.yaml
+    - values/persistence/opensearch-embedded.yaml
+    - values/platform/gke.yaml
+    - ../infra/values-infra-distroci.yaml
+  chain:
+    - charts/camunda-platform-8.9/values-digest.yaml
+    - $TMP/merged-scenario-values.yaml
+    - $TMP/values-resolved-images.yaml
+  resolvedImages: $TMP/values-resolved-images.yaml
+  resolvedImagesSha256: f216598b0a52c3e396b8cd99bc82157027a17b7db7d92f613e18a2324b169f9b
+  mergedValuesSha256: d5ad708344a25eb9363f9955d6d27a7d4c32db70b41b6e1ea839dd4d9ea835b2
+- entry: esoi/oidc/install/gke
+  layers:
+    - values/base.yaml
+    - values/identity/oidc.yaml
+    - values/persistence/elasticsearch.yaml
+    - values/platform/gke.yaml
+    - ../infra/values-infra-distroci.yaml
+  chain:
+    - charts/camunda-platform-8.9/values-digest.yaml
+    - $TMP/merged-scenario-values.yaml
+    - $TMP/values-resolved-images.yaml
+  resolvedImages: $TMP/values-resolved-images.yaml
+  resolvedImagesSha256: 20d07228e00756f6789be98a226a6ca5b748f03e1e35daf714bb0924c61a9c0f
+  mergedValuesSha256: 1c9048a7ac1c87a5217bb06657cd527719e59f1368c41f32728a8265475be676
+- entry: esoi/oidc/upgrade-minor/gke
+  layers:
+    - values/base.yaml
+    - values/identity/oidc.yaml
+    - values/persistence/elasticsearch.yaml
+    - values/platform/gke.yaml
+    - ../infra/values-infra-distroci.yaml
+  chain:
+    - charts/camunda-platform-8.9/values-digest.yaml
+    - $TMP/merged-scenario-values.yaml
+    - $TMP/values-resolved-images.yaml
+  resolvedImages: $TMP/values-resolved-images.yaml
+  resolvedImagesSha256: 20d07228e00756f6789be98a226a6ca5b748f03e1e35daf714bb0924c61a9c0f
+  mergedValuesSha256: fe8e46df3ebe283b083b562666f5531c3e37ff2e06cb9b0c1f25e54a76dd4d46
+- entry: kemt/keycloak-mt/upgrade-minor/gke
+  layers:
+    - values/base.yaml
+    - values/identity/keycloak.yaml
+    - values/persistence/elasticsearch.yaml
+    - values/platform/gke.yaml
+    - ../infra/values-infra-distroci.yaml
+    - values/features/multitenancy.yaml
+  chain:
+    - charts/camunda-platform-8.9/values-digest.yaml
+    - $TMP/merged-scenario-values.yaml
+    - $TMP/values-resolved-images.yaml
+  resolvedImages: $TMP/values-resolved-images.yaml
+  resolvedImagesSha256: f216598b0a52c3e396b8cd99bc82157027a17b7db7d92f613e18a2324b169f9b
+  mergedValuesSha256: 3b858cc3ecae9920318827515ec3ace7aca6bce358a344e4d0dffdec30871abc
+- entry: kerba/keycloak-rba/upgrade-minor/gke
+  layers:
+    - values/base.yaml
+    - values/identity/keycloak.yaml
+    - values/persistence/elasticsearch.yaml
+    - values/platform/gke.yaml
+    - ../infra/values-infra-distroci.yaml
+    - values/features/rba.yaml
+  chain:
+    - charts/camunda-platform-8.9/values-digest.yaml
+    - $TMP/merged-scenario-values.yaml
+    - $TMP/values-resolved-images.yaml
+  resolvedImages: $TMP/values-resolved-images.yaml
+  resolvedImagesSha256: f216598b0a52c3e396b8cd99bc82157027a17b7db7d92f613e18a2324b169f9b
+  mergedValuesSha256: 5e608c4b7047dd38c783ab7193df20346544846c9f1f169826f075b1bd71c8c5
+- entry: esot/elasticsearch-self-signed-os-trust/install/gke
+  layers:
+    - values/base.yaml
+    - values/identity/keycloak.yaml
+    - values/persistence/elasticsearch-self-signed-os-trust.yaml
+    - values/platform/gke.yaml
+    - ../infra/values-infra-distroci.yaml
+  chain:
+    - charts/camunda-platform-8.9/values-digest.yaml
+    - $TMP/merged-scenario-values.yaml
+    - $TMP/values-resolved-images.yaml
+  resolvedImages: $TMP/values-resolved-images.yaml
+  resolvedImagesSha256: f216598b0a52c3e396b8cd99bc82157027a17b7db7d92f613e18a2324b169f9b
+  mergedValuesSha256: 7952025cac8fe2e069914d2caf368680ce46081c39568e0a603e5d067868ae67
+- entry: gatkc/gateway-keycloak/install/gke
+  layers:
+    - values/base.yaml
+    - values/identity/keycloak.yaml
+    - values/persistence/elasticsearch.yaml
+    - values/platform/gke.yaml
+    - ../infra/values-infra-distroci.yaml
+    - values/features/gateway.yaml
+  chain:
+    - charts/camunda-platform-8.9/values-digest.yaml
+    - $TMP/merged-scenario-values.yaml
+    - $TMP/values-resolved-images.yaml
+  resolvedImages: $TMP/values-resolved-images.yaml
+  resolvedImagesSha256: f216598b0a52c3e396b8cd99bc82157027a17b7db7d92f613e18a2324b169f9b
+  mergedValuesSha256: 504d2e6c085cbb8b9802d77d7b5ef802023e3803784cae8af3cb04c95097fee3
+- entry: esarm/elasticsearch-arm/install/gke
+  layers:
+    - values/base.yaml
+    - values/identity/keycloak.yaml
+    - values/persistence/elasticsearch.yaml
+    - values/platform/gke.yaml
+    - ../infra/values-infra-arm.yaml
+    - values/features/arm.yaml
+  chain:
+    - charts/camunda-platform-8.9/values-digest.yaml
+    - $TMP/merged-scenario-values.yaml
+    - $TMP/values-resolved-images.yaml
+  resolvedImages: $TMP/values-resolved-images.yaml
+  resolvedImagesSha256: f216598b0a52c3e396b8cd99bc82157027a17b7db7d92f613e18a2324b169f9b
+  mergedValuesSha256: f8b5c02c7bf2cd9c1677a861d660f5069073b199207104d8d930fd53ca697bbd
+- entry: nosec/noSecondaryStorage/install/gke
+  layers:
+    - values/base.yaml
+    - values/identity/keycloak.yaml
+    - values/persistence/no-elasticsearch.yaml
+    - values/platform/gke.yaml
+    - ../infra/values-infra-distroci.yaml
+    - values/features/no-secondary-storage.yaml
+  chain:
+    - charts/camunda-platform-8.9/values-digest.yaml
+    - $TMP/merged-scenario-values.yaml
+    - $TMP/values-resolved-images.yaml
+  resolvedImages: $TMP/values-resolved-images.yaml
+  resolvedImagesSha256: f216598b0a52c3e396b8cd99bc82157027a17b7db7d92f613e18a2324b169f9b
+  mergedValuesSha256: 043fdf743216643eb91ac954dd4473e017e4712a54e6acf61015a066224db7b3
+- entry: docstr/documentstore/install/eks
+  layers:
+    - values/base.yaml
+    - values/identity/keycloak.yaml
+    - values/persistence/elasticsearch.yaml
+    - values/platform/eks.yaml
+    - ../infra/values-infra-eks-preemptible.yaml
+    - values/features/documentstore.yaml
+  chain:
+    - charts/camunda-platform-8.9/values-digest.yaml
+    - $TMP/merged-scenario-values.yaml
+    - $TMP/values-resolved-images.yaml
+  resolvedImages: $TMP/values-resolved-images.yaml
+  resolvedImagesSha256: f216598b0a52c3e396b8cd99bc82157027a17b7db7d92f613e18a2324b169f9b
+  mergedValuesSha256: ac4adef089baab2dc9beba6e6adfaf676a49423899cca18fb17c1a9203fef522
+- entry: rdbms/rdbms/install/gke
+  layers:
+    - values/base.yaml
+    - values/identity/keycloak.yaml
+    - values/persistence/rdbms.yaml
+    - values/platform/gke.yaml
+    - ../infra/values-infra-distroci.yaml
+  chain:
+    - charts/camunda-platform-8.9/values-digest.yaml
+    - $TMP/merged-scenario-values.yaml
+    - $TMP/values-resolved-images.yaml
+  resolvedImages: $TMP/values-resolved-images.yaml
+  resolvedImagesSha256: f216598b0a52c3e396b8cd99bc82157027a17b7db7d92f613e18a2324b169f9b
+  mergedValuesSha256: f190b929ae001070561f0b6142312d0bacb8a0c789ec3218ecee34a90cb8481f
+- entry: cprst/component-persistence/install/gke
+  layers:
+    - values/base.yaml
+    - values/identity/keycloak.yaml
+    - values/persistence/elasticsearch.yaml
+    - values/platform/gke.yaml
+    - ../infra/values-infra-distroci.yaml
+    - values/features/persistence.yaml
+  chain:
+    - charts/camunda-platform-8.9/values-digest.yaml
+    - $TMP/merged-scenario-values.yaml
+    - $TMP/values-resolved-images.yaml
+  resolvedImages: $TMP/values-resolved-images.yaml
+  resolvedImagesSha256: f216598b0a52c3e396b8cd99bc82157027a17b7db7d92f613e18a2324b169f9b
+  mergedValuesSha256: 0dc0bf04cd397404fd7119270f80274060a522f671db2b949276c76a2eafc534
+- entry: cprst/component-persistence/upgrade-minor/gke
+  layers:
+    - values/base.yaml
+    - values/identity/keycloak.yaml
+    - values/persistence/elasticsearch.yaml
+    - values/platform/gke.yaml
+    - ../infra/values-infra-distroci.yaml
+    - values/features/persistence.yaml
+  chain:
+    - charts/camunda-platform-8.9/values-digest.yaml
+    - $TMP/merged-scenario-values.yaml
+    - $TMP/values-resolved-images.yaml
+  resolvedImages: $TMP/values-resolved-images.yaml
+  resolvedImagesSha256: f216598b0a52c3e396b8cd99bc82157027a17b7db7d92f613e18a2324b169f9b
+  mergedValuesSha256: 42c219c88f701380daa0231fabf16eec88fdffccfcf55ea8bed70a3a34948ee1
+- entry: lgexp/legacy-exporter-args/install/gke
+  layers:
+    - values/base.yaml
+    - values/identity/keycloak.yaml
+    - values/persistence/elasticsearch.yaml
+    - values/platform/gke.yaml
+    - ../infra/values-infra-distroci.yaml
+    - values/features/legacy-exporter-args.yaml
+  chain:
+    - charts/camunda-platform-8.9/values-digest.yaml
+    - $TMP/merged-scenario-values.yaml
+    - $TMP/values-resolved-images.yaml
+  resolvedImages: $TMP/values-resolved-images.yaml
+  resolvedImagesSha256: f216598b0a52c3e396b8cd99bc82157027a17b7db7d92f613e18a2324b169f9b
+  mergedValuesSha256: de7fab588bfa2158318cbeea0f89027342d02154e0654d3a51434a648d51024e
+- entry: shde2/shadow-e2e/install/gke
+  layers:
+    - values/base.yaml
+    - values/identity/keycloak.yaml
+    - values/persistence/elasticsearch.yaml
+    - values/platform/gke.yaml
+    - ../infra/values-infra-distroci.yaml
+  chain:
+    - charts/camunda-platform-8.9/values-digest.yaml
+    - $TMP/merged-scenario-values.yaml
+    - $TMP/values-resolved-images.yaml
+  resolvedImages: $TMP/values-resolved-images.yaml
+  resolvedImagesSha256: f216598b0a52c3e396b8cd99bc82157027a17b7db7d92f613e18a2324b169f9b
+  mergedValuesSha256: e3a55b188116c253a9b95a626579109742c98526c6777ba167d0877cf9dda96c
