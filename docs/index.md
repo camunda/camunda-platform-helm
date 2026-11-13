@@ -40,6 +40,7 @@ Looking for end-user installation docs? See the [official Camunda docs](https://
 |---|---|
 | [One Hub with multiple clusters and Optimize releases](./operator-guides/hub-and-physical-tenant-optimize.md) | Release, OIDC, and storage isolation for default and Physical Tenant Optimize deployments |
 | [Operate the dogfood environments](./operator-guides/dogfood-environments.md) | Deploy, upgrade, inspect, and tear down the long-lived internal Hub + three-cluster dogfood topology |
+| [Network policies](./network-policies.md) | Opt-in ingress NetworkPolicies in the 8.11 chart |
 
 ## Skills & Runbooks
 
