@@ -72,10 +72,6 @@ func (f *Finder) analyzeKeys(ks []string, showProgress bool) ([]keys.KeyUsage, e
 		fmt.Println()
 	}
 
-	if showProgress {
-		_ = bar.Finish()
-	}
-
 	return results, nil
 }
 
