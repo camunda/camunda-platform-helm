@@ -2091,6 +2091,12 @@
                             "type": "string",
                             "description": "(DEPRECATED) can be used to set image digest (overrides tag if set, e.g. \"sha256:abcd...\")",
                             "default": ""
+                        },
+                        "registry": {
+                            "type": "string"
+                        },
+                        "pullSecrets": {
+                            "type": "array"
                         }
                     }
                 },
@@ -2149,6 +2155,12 @@
                                     "type": "string",
                                     "description": "(DEPRECATED)",
                                     "default": "bitnamilegacy/os-shell"
+                                },
+                                "registry": {
+                                    "type": "string"
+                                },
+                                "pullSecrets": {
+                                    "type": "array"
                                 }
                             }
                         }
@@ -2164,6 +2176,12 @@
                                     "type": "string",
                                     "description": "(DEPRECATED)",
                                     "default": "bitnamilegacy/postgres-exporter"
+                                },
+                                "registry": {
+                                    "type": "string"
+                                },
+                                "pullSecrets": {
+                                    "type": "array"
                                 }
                             }
                         }
@@ -2231,6 +2249,9 @@
                             "type": "string",
                             "description": "(DEPRECATED) can be used to set image digest (overrides tag if set, e.g. \"sha256:abcd...\")",
                             "default": ""
+                        },
+                        "registry": {
+                            "type": "string"
                         },
                         "pullSecrets": {
                             "type": "array",
@@ -2312,6 +2333,12 @@
                                     "type": "string",
                                     "description": "(DEPRECATED) can be used to set image digest (overrides tag if set, e.g. \"sha256:abcd...\")",
                                     "default": ""
+                                },
+                                "registry": {
+                                    "type": "string"
+                                },
+                                "pullSecrets": {
+                                    "type": "array"
                                 }
                             }
                         },
@@ -2435,6 +2462,12 @@
                                             "type": "string",
                                             "description": "(DEPRECATED)",
                                             "default": "bitnamilegacy/os-shell"
+                                        },
+                                        "registry": {
+                                            "type": "string"
+                                        },
+                                        "pullSecrets": {
+                                            "type": "array"
                                         }
                                     }
                                 }
@@ -2450,10 +2483,19 @@
                                             "type": "string",
                                             "description": "(DEPRECATED)",
                                             "default": "bitnamilegacy/postgres-exporter"
+                                        },
+                                        "registry": {
+                                            "type": "string"
+                                        },
+                                        "pullSecrets": {
+                                            "type": "array"
                                         }
                                     }
                                 }
                             }
+                        },
+                        "enabled": {
+                            "type": "boolean"
                         }
                     }
                 },
@@ -2641,6 +2683,12 @@
                                     "type": "string",
                                     "description": "(DEPRECATED)",
                                     "default": "bitnamilegacy/keycloak-config-cli"
+                                },
+                                "registry": {
+                                    "type": "string"
+                                },
+                                "pullSecrets": {
+                                    "type": "array"
                                 }
                             }
                         }
@@ -4631,6 +4679,12 @@
                             "type": "string",
                             "description": "(DEPRECATED) can be used to set image digest (overrides tag if set, e.g. \"sha256:abcd...\")",
                             "default": ""
+                        },
+                        "registry": {
+                            "type": "string"
+                        },
+                        "pullSecrets": {
+                            "type": "array"
                         }
                     }
                 },
@@ -4754,6 +4808,34 @@
                                     "type": "number",
                                     "description": "(DEPRECATED)",
                                     "default": 1001
+                                }
+                            }
+                        }
+                    }
+                },
+                "metrics": {
+                    "properties": {
+                        "image": {
+                            "properties": {
+                                "registry": {
+                                    "type": "string"
+                                },
+                                "pullSecrets": {
+                                    "type": "array"
+                                }
+                            }
+                        }
+                    }
+                },
+                "volumePermissions": {
+                    "properties": {
+                        "image": {
+                            "properties": {
+                                "registry": {
+                                    "type": "string"
+                                },
+                                "pullSecrets": {
+                                    "type": "array"
                                 }
                             }
                         }
@@ -8042,6 +8124,12 @@
                             "type": "string",
                             "description": "(DEPRECATED) can be used to set image digest (overrides tag if set, e.g. \"sha256:abcd...\")",
                             "default": ""
+                        },
+                        "registry": {
+                            "type": "string"
+                        },
+                        "pullSecrets": {
+                            "type": "array"
                         }
                     }
                 },
@@ -8144,6 +8232,12 @@
                             "type": "string",
                             "description": "(DEPRECATED)",
                             "default": "bitnamilegacy/os-shell"
+                        },
+                        "registry": {
+                            "type": "string"
+                        },
+                        "pullSecrets": {
+                            "type": "array"
                         }
                     }
                 },
@@ -8187,6 +8281,12 @@
                                     "type": "string",
                                     "description": "(DEPRECATED)",
                                     "default": "bitnamilegacy/elasticsearch-exporter"
+                                },
+                                "registry": {
+                                    "type": "string"
+                                },
+                                "pullSecrets": {
+                                    "type": "array"
                                 }
                             }
                         }
@@ -8202,6 +8302,12 @@
                                     "type": "string",
                                     "description": "(DEPRECATED)",
                                     "default": "bitnamilegacy/os-shell"
+                                },
+                                "registry": {
+                                    "type": "string"
+                                },
+                                "pullSecrets": {
+                                    "type": "array"
                                 }
                             }
                         }
@@ -8217,6 +8323,12 @@
                                     "type": "string",
                                     "description": "(DEPRECATED)",
                                     "default": "bitnamilegacy/os-shell"
+                                },
+                                "registry": {
+                                    "type": "string"
+                                },
+                                "pullSecrets": {
+                                    "type": "array"
                                 }
                             }
                         }
