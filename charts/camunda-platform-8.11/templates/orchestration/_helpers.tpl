@@ -698,6 +698,78 @@ true
 {{- end -}}
 {{- end -}}
 
+{{- /*
+NOTE: collects into .acc the physical tenant ids declared under camunda.physical-tenants,
+walking nested and dotted YAML keys alike by joining them into one dotted key. A
+physical-tenants value that is not a map yields the "?" id so callers can fail closed.
+*/ -}}
+{{- define "orchestration.collectPhysicalTenantIds" -}}
+{{- $acc := .acc -}}
+{{- $prefix := .prefix -}}
+{{- range $key, $value := .node -}}
+  {{- $full := ternary (printf "%s.%s" $prefix $key) (toString $key) (ne $prefix "") -}}
+  {{- $match := regexFind "^camunda\\.physical-tenants\\.[^.\\[]+" $full -}}
+  {{- if $match -}}
+    {{- $_ := set $acc (trimPrefix "camunda.physical-tenants." $match) true -}}
+  {{- else if eq $full "camunda.physical-tenants" -}}
+    {{- if kindIs "map" $value -}}
+      {{- include "orchestration.collectPhysicalTenantIds" (dict "node" $value "prefix" $full "acc" $acc) -}}
+    {{- else -}}
+      {{- $_ := set $acc "?" true -}}
+    {{- end -}}
+  {{- else if hasPrefix "camunda.physical-tenants[" $full -}}
+    {{- $_ := set $acc "?" true -}}
+  {{- else if and (kindIs "map" $value) (hasPrefix (printf "%s." $full) "camunda.physical-tenants.") -}}
+    {{- include "orchestration.collectPhysicalTenantIds" (dict "node" $value "prefix" $full "acc" $acc) -}}
+  {{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{- /*
+NOTE: comma-separated physical tenant ids other than "default", declared either in
+orchestration.extraConfiguration (YAML documents or properties), as
+orchestration.secretStore.physicalTenants keys, or in global.topology.clusters[].physicalTenants. Unparsable declarations report "?".
+*/ -}}
+{{- define "orchestration.nonDefaultPhysicalTenantIds" -}}
+{{- $acc := dict -}}
+{{- range .Values.orchestration.extraConfiguration -}}
+  {{- if not (and (hasKey . "springImport") (eq .springImport false)) -}}
+    {{- $content := .content | default "" -}}
+    {{- range $document := regexSplit "(?m)^---[ \\t]*(#.*)?[ \\t]*$" $content -1 -}}
+      {{- $parsed := $document | fromYaml -}}
+      {{- if and (kindIs "map" $parsed) (not (hasKey $parsed "Error")) -}}
+        {{- include "orchestration.collectPhysicalTenantIds" (dict "node" $parsed "prefix" "" "acc" $acc) -}}
+      {{- end -}}
+    {{- end -}}
+    {{- range $line := regexFindAll "(?m)^[ \\t]*camunda\\.physical-tenants[.\\[][^.:=\\]\\s]+" $content -1 -}}
+      {{- $id := regexReplaceAll "^[ \\t]*camunda\\.physical-tenants[.\\[]" $line "" -}}
+      {{- $_ := set $acc (ternary "?" $id (contains "[" $line)) true -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- if and (eq (include "orchestration.physicalTenantsDeclared" .) "true") (empty $acc) -}}
+  {{- $_ := set $acc "?" true -}}
+{{- end -}}
+{{- range $id, $_ := (.Values.orchestration.secretStore.physicalTenants | default dict) -}}
+  {{- $_ := set $acc $id true -}}
+{{- end -}}
+{{- range $cluster := (dig "topology" "clusters" list .Values.global) -}}
+  {{- $tenants := list "?" -}}
+  {{- if kindIs "map" $cluster -}}
+    {{- $tenants = dig "physicalTenants" list $cluster | default list -}}
+  {{- end -}}
+  {{- if not (kindIs "slice" $tenants) -}}
+    {{- $tenants = list "?" -}}
+  {{- end -}}
+  {{- range $tenant := $tenants -}}
+    {{- $id := and (kindIs "map" $tenant) (toString (dig "id" "" $tenant)) -}}
+    {{- $_ := set $acc (or $id "?") true -}}
+  {{- end -}}
+{{- end -}}
+{{- $_ := unset $acc "default" -}}
+{{- join "," (keys $acc | sortAlpha) -}}
+{{- end -}}
+
 {{- define "orchestration.hasAppIntegrations" -}}
 {{- include "camundaPlatform.hasSecretConfig" (dict "config" .Values.orchestration.exporters.appIntegrations.apiKey) -}}
 {{- end -}}
