@@ -80,7 +80,8 @@ deploy-camunda config init --from-example getting-started
 
 # 3. Edit .deploy-camunda.yaml.
 #    - set `kubeContext` to your cluster context
-#    - set `ingressBaseDomain` to your ingress DNS zone
+#    - set `ingressBaseDomain` to one of the allow-listed zones (see
+#      "Ingress domain not found" below), or `ingressHostname` to a full FQDN
 #    - set `chartPath` to the version you want (e.g. charts/camunda-platform-8.9)
 
 # 4. Verify preflight is green.
@@ -126,7 +127,20 @@ deploy-camunda --chart-path charts/camunda-platform-8.10 \
 
 Supply credentials and ingress settings through your config/environment.
 `--render-templates` resolves the same values but does not run hooks or install
-companion charts. Registry resolution applies to single-scenario deployments;
+companion charts. It runs `helm template` with only the `-f` values chain and
+writes manifests to `--render-output-dir` (default `./rendered/<release>`), so
+the rendered output is not exactly what an install applies:
+
+- `--set` pairs (such as the matrix runner's
+  `orchestration.upgrade.allowPreReleaseImages=true` and its `--extra-helm-set`)
+  and extra Helm arguments are not passed; neither are `--version` for a
+  remote `--chart` nor the kube context.
+- No Secrets are created: no external secrets, no `vault-mapped-secrets`, no
+  registry pull secrets, and `helm dependency update` is not run.
+- The fail-fast preflight still runs first, so placeholders must resolve as
+  for a real deploy.
+
+Registry resolution applies to single-scenario deployments;
 comma-separated scenarios retain their existing name-based behavior. Use
 `matrix run` for topologies and scenarios requiring additional lifecycle stages.
 
@@ -237,8 +251,8 @@ Three layers of override, in increasing scope:
 ### 1. Override values for the Camunda platform chart
 
 Use `--extra-values` (`extraValues:` in the config file) to append your
-own values file to the merge. It's applied **last**, so it wins over
-scenario defaults:
+own values file to the merge. It comes after the common, chart-root overlay
+and scenario layers, so it wins over scenario defaults:
 
 ```bash
 deploy-camunda \
@@ -266,6 +280,30 @@ To swap one component's image, pass `--image-override component=registry/reposit
 It ranks above every values file, and any pinned digest for that component is dropped. A values
 file that changes only an image's registry or repository must also set a tag or digest;
 `--allow-digest-shadow` keeps the pinned digest instead (e.g. for a pull-through mirror).
+
+The full `-f` order (last wins), as built by
+[`BuildValuesChain`](deploy/chain.go) and `prepareScenarioValues`:
+
+1. common values, read from `common/` two levels above the scenario directory
+   (`test/integration/common/` for `chart-full-setup`); in-repo charts keep
+   theirs in `test/integration/scenarios/common/`, so this layer is currently
+   empty for them
+2. chart-root overlays (`--values-preset`, e.g. `values-latest.yaml`, `values-digest.yaml`)
+3. scenario layers (`base` + identity + persistence + platform + features, merged)
+4. `--extra-values`, in the order given; for a registry scenario its declared
+   `extra-values` are appended **after** yours (see
+   [`matrix/registry.go`](matrix/registry.go) and `appendScenarioExtraValues`),
+   so a scenario file wins over your file on conflicting keys
+5. the generated `--image-override` file
+6. the generated debug file (`--debug`)
+7. the generated `values-resolved-images.yaml`, which re-states each image's
+   resolved registry, repository, tag and digest
+
+So `--extra-values` is not the last layer: it cannot override an image that
+`--image-override` sets, debug settings, or the image coordinates written by
+the resolved-image file. Only `--set` pairs (`matrix run --extra-helm-set`)
+win over every file. `matrix/testdata/values-chain/` pins this chain for tier-1/2
+scenarios (`go test ./matrix/ -run TestValuesChainGolden`).
 
 ### 2. Override values for a companion chart (Elasticsearch, Keycloak, …)
 
@@ -682,6 +720,33 @@ format-preservingly (comments and ordering are kept).
 > Never commit `.env`. Generate it on demand (`config init`,
 > `--auto-generate-secrets`, or `scripts/render-e2e-env.sh`).
 
+### How secrets reach the cluster today
+
+- **Values are plaintext.** `$VAR` placeholders in scenario values are
+  substituted with the resolved value before Helm sees the file; the
+  processed copies sit in a temp directory and are passed with `-f`. There is
+  no secret-reference indirection at this step.
+- **`integration-test-credentials` comes from CI's secret store.** With
+  `--external-secrets` (default `true`), the deploy applies
+  `charts/<v>/test/integration/external-secrets/external-secret-integration-test-credentials.yaml`,
+  an `ExternalSecret` that reads from the `distribution-team`
+  `ClusterSecretStore` (or `vault-backend` with the `-vault.yaml` variant and
+  `useVaultBackedSecrets`). Outside the Camunda CI clusters that store does not
+  exist, so scenario values referencing `integration-test-credentials` keys
+  will not resolve unless you create that Secret yourself.
+- **`--auto-generate-secrets` creates a different Secret.** It generates random
+  identity-user passwords and a Keycloak client secret (keeping values already
+  set), appends them to `.env`, and applies a Secret named
+  `vault-mapped-secrets` built from the vault secret mapping below. The values
+  are generated after placeholder substitution, so they feed that Secret, and
+  later runs through `.env`, but not the current run's values files. It does
+  not create or fill `integration-test-credentials`. The matrix runner always
+  enables it.
+- **`INTEGRATION_TEST_CREDENTIALS` is a dead path.** `pkg/deployer` can decode
+  a base64 `INTEGRATION_TEST_CREDENTIALS` env var into a Secret, but
+  [`deploy/deploy.go`](deploy/deploy.go) always sets
+  `ApplyIntegrationCreds: false`, so setting the variable has no effect.
+
 ### Vault secret mapping
 
 `--vault-secret-mapping` (or the `vaultSecretMapping` config field)
@@ -791,9 +856,14 @@ depends on which subcommand you're using:
   [`config/merge.go`'s `ResolveIngressHostname`](config/merge.go). Set
   either both fields, or `ingressHostname` as a full FQDN override.
 
-Set the base domain to the DNS zone your cluster's ingress controller
-serves — for example `ci.distro.ultrawombat.com` in Camunda CI or
-`apps.mycompany.example` in your own cluster.
+`--ingress-base-domain` (and the matrix `--ingress-base-domain-gke` /
+`--ingress-base-domain-eks` flags) only accept the zones in the allow-list
+`ValidIngressBaseDomains` in [`config/config.go`](config/config.go):
+`ci.distro.ultrawombat.com` (GKE) and `distribution.aws.camunda.cloud` (EKS).
+Any other value is rejected. For your own cluster's zone (for example
+`apps.mycompany.example`), set `--ingress-hostname` (`ingressHostname:`) to
+the full FQDN instead; with `matrix run`, pass it as
+`--extra-helm-set global.host=<fqdn>`.
 
 ### Operator CRDs missing
 
