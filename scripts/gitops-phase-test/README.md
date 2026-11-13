@@ -15,6 +15,12 @@ Pull requests run Helm and Flux. Merge-queue and manual runs also run Argo CD.
 Each controller gets a fresh KIND cluster, which is deleted after the test.
 The Argo CD install verifies that Redis uses the authenticated Docker Hub image.
 
+Flux uses `refs/heads/<branch>` for same-repository pull requests and merge-queue
+runs. Fork pull requests retain `refs/pull/<number>/head` in the base repository.
+When `--revision-ref-name` is set, the harness rejects a Flux artifact whose
+revision differs from `--revision`. Manual runs set no ref name and skip this
+check.
+
 To run all three controllers against a branch:
 
 ```bash
