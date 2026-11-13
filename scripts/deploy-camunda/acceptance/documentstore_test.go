@@ -77,7 +77,7 @@ func TestDocumentStoreAcceptance(t *testing.T) {
 				if request.URL.Path == "/orchestration/v2/documents" {
 					assert.Equal(t, http.MethodPost, request.Method)
 					require.NoError(t, request.ParseMultipartForm(1<<20))
-					defer request.MultipartForm.RemoveAll()
+					defer func() { _ = request.MultipartForm.RemoveAll() }()
 					file, header, err := request.FormFile("file")
 					require.NoError(t, err)
 					defer file.Close()

@@ -56,7 +56,7 @@ func newTestServer(t *testing.T, handlers map[string]http.HandlerFunc) *httptest
 func jsonResponse(w http.ResponseWriter, status int, body any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(body) //nolint:errcheck
+	_ = json.NewEncoder(w).Encode(body)
 }
 
 // tokenHandler returns a handler that responds with a valid access token.
@@ -1365,7 +1365,7 @@ func TestUpdateRedirectURIs_HappyPath(t *testing.T) {
 			})
 		},
 		"PATCH /applications/parent-obj-id": func(w http.ResponseWriter, r *http.Request) {
-			json.NewDecoder(r.Body).Decode(&patchReceived) //nolint:errcheck
+			_ = json.NewDecoder(r.Body).Decode(&patchReceived)
 			w.WriteHeader(204)
 		},
 	})
@@ -1521,7 +1521,7 @@ func TestGraphPatch(t *testing.T) {
 			if got := r.Header.Get("Prefer"); got != "" {
 				t.Errorf("Prefer = %q, want no upsert header", got)
 			}
-			json.NewDecoder(r.Body).Decode(&receivedBody) //nolint:errcheck
+			_ = json.NewDecoder(r.Body).Decode(&receivedBody)
 			w.WriteHeader(204)
 		},
 	})

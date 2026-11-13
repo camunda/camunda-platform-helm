@@ -126,6 +126,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Download UPX directly from GitHub releases
 # UPX is not available in Debian Bookworm's apt repositories
 ARG UPX_VERSION=4.2.4
+# hadolint ignore=DL4006 # no PR job builds this image, so a fix cannot be proven
 RUN curl -fsSL "https://github.com/upx/upx/releases/download/v${UPX_VERSION}/upx-${UPX_VERSION}-amd64_linux.tar.xz" \
     | tar -xJf - --strip-components=1 -C /usr/local/bin "upx-${UPX_VERSION}-amd64_linux/upx" \
     && upx --version
@@ -147,6 +148,7 @@ WORKDIR /tools
 # ------------------------------------------------------------------------------
 
 # Helm - For Helm chart operations
+# hadolint ignore=DL4006 # no PR job builds this image, so a fix cannot be proven
 RUN curl -fsSL "https://get.helm.sh/helm-v${HELM_VERSION}-linux-amd64.tar.gz" | tar -xzf - \
     && mv linux-amd64/helm ./helm \
     && rm -rf linux-amd64
@@ -295,6 +297,7 @@ COPY --from=tools /tools/aws-iam-authenticator /usr/local/bin/
 # The plugin handles the 'gke-gcloud-auth-plugin' exec in kubeconfig files
 # without needing the full gcloud CLI.
 # ==============================================================================
+# hadolint ignore=DL4006 # no PR job builds this image, so a fix cannot be proven
 RUN curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg \
     && echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" > /etc/apt/sources.list.d/google-cloud-sdk.list \
     && apt-get update \
@@ -346,6 +349,7 @@ RUN npm install -g playwright@${PLAYWRIGHT_VERSION} zbctl@${ZBCTL_VERSION#v} \
 # downloading a newer toolchain at runtime, keeping image behaviour
 # deterministic.
 # ==============================================================================
+# hadolint ignore=DL4006 # no PR job builds this image, so a fix cannot be proven
 RUN curl -fsSL "https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz" \
     | tar -C /usr/local -xzf - \
     && rm -rf /usr/local/go/doc /usr/local/go/test /usr/local/go/api \
@@ -366,6 +370,7 @@ RUN mkdir -p "${GOPATH}/bin" "${GOCACHE}" "${GOMODCACHE}"
 # runtime by scripts/base_playwright_script.sh.
 COPY e2e-package.json /opt/e2e-prebuilt/package.json
 
+# hadolint ignore=DL3003 # no PR job builds this image, so a fix cannot be proven
 RUN cd /opt/e2e-prebuilt \
     && jq 'del(.devDependencies["@camunda/e2e-test-suite"], .dependencies["@camunda/e2e-test-suite"])' \
         package.json > package.json.stripped \
@@ -420,6 +425,7 @@ RUN echo "=== Verifying tool installations ===" \
     && echo "=== All tools verified successfully ==="
 
 # Run as root by default (CI typically runs as root)
+# hadolint ignore=DL3002,DL3066 # root by design, CI passes --user root; no PR job builds this image
 USER root
 
 ENTRYPOINT ["/bin/bash", "-c"]

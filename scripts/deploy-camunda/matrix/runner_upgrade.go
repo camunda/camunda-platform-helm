@@ -154,6 +154,8 @@ func extractBitnamiPGPasswords(ctx context.Context, namespace, kubeContext strin
 // The "from" chart version is resolved from version-matrix JSON files:
 //   - upgrade-patch: latest stable chart for the SAME app version
 //   - upgrade-minor: latest stable chart for the PREVIOUS app version
+//
+//nolint:gocognit // split tracked in #7584
 func executeTwoStepUpgrade(ctx context.Context, entry Entry, flags *config.RuntimeFlags, opts RunOptions) error {
 	// Resolve the "from" chart version for the upgrade.
 	// If UpgradeFromVersion is set via CLI flag, use it directly; otherwise auto-resolve.

@@ -110,7 +110,7 @@ func (e *Extractor) ExtractKeysWithProgress(valuesFile string, bar *progressbar.
 
 	if bar != nil {
 		bar.Describe(fmt.Sprintf("Found %d keys", len(keys)))
-		bar.Finish()
+		_ = bar.Finish()
 	}
 
 	e.Display.DebugLog(fmt.Sprintf("Extracted %d keys from values.yaml\n", len(keys)))

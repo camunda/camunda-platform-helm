@@ -27,6 +27,7 @@ import (
 	"time"
 )
 
+//nolint:gocognit,gocyclo // split tracked in #7584
 func Deploy(ctx context.Context, o types.Options) error {
 	// Render-only mode: do not touch the cluster or docker; just render templates
 	if o.RenderTemplates {

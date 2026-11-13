@@ -132,6 +132,8 @@ func HasRegistry(chartDir string) bool {
 // Validation runs after assembly; assembly errors are returned immediately
 // so the caller sees the file-resolution problem rather than a downstream
 // validation one.
+//
+//nolint:gocognit // split tracked in #7584
 func LoadRegistry(chartDir string) (*CITestConfig, error) {
 	registryDir := filepath.Join(chartDir, "test", RegistryDirName)
 	manifestPath := filepath.Join(registryDir, "manifest.yaml")
@@ -309,6 +311,7 @@ func LoadRegistry(chartDir string) (*CITestConfig, error) {
 	return &cfg, nil
 }
 
+//nolint:gocognit // split tracked in #7584
 func ResolveScenario(flags *config.RuntimeFlags, root *config.RootConfig) error {
 	if len(flags.Deployment.Scenarios) != 1 || flags.Chart.ChartPath == "" {
 		return nil
