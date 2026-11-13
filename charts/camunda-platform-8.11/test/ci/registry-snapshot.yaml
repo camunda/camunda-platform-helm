@@ -27,7 +27,7 @@ integration:
             - chart: elastic/elasticsearch
               version: 8.5.1
               release-name: elasticsearch
-              values-file: test/integration/companion-values/elasticsearch.yaml
+              values-file: test/integration/companion-values/elasticsearch-9.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
             - chart: charts/internal-postgresql
@@ -58,7 +58,7 @@ integration:
             - chart: elastic/elasticsearch
               version: 8.5.1
               release-name: elasticsearch
-              values-file: test/integration/companion-values/elasticsearch.yaml
+              values-file: test/integration/companion-values/elasticsearch-9.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
             - chart: charts/internal-postgresql
@@ -103,7 +103,7 @@ integration:
             - chart: elastic/elasticsearch
               version: 8.5.1
               release-name: elasticsearch
-              values-file: test/integration/companion-values/elasticsearch.yaml
+              values-file: test/integration/companion-values/elasticsearch-9.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
             - chart: charts/internal-postgresql
@@ -148,7 +148,7 @@ integration:
             - chart: elastic/elasticsearch
               version: 8.5.1
               release-name: elasticsearch
-              values-file: test/integration/companion-values/elasticsearch.yaml
+              values-file: test/integration/companion-values/elasticsearch-9.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
             - chart: charts/internal-postgresql
@@ -193,7 +193,7 @@ integration:
             - chart: elastic/elasticsearch
               version: 8.5.1
               release-name: elasticsearch
-              values-file: test/integration/companion-values/elasticsearch.yaml
+              values-file: test/integration/companion-values/elasticsearch-9.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
             - chart: charts/internal-postgresql
@@ -230,7 +230,7 @@ integration:
             - chart: elastic/elasticsearch
               version: 8.5.1
               release-name: elasticsearch
-              values-file: test/integration/companion-values/elasticsearch.yaml
+              values-file: test/integration/companion-values/elasticsearch-9.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
             - chart: charts/internal-postgresql
@@ -379,7 +379,7 @@ integration:
             - chart: elastic/elasticsearch
               version: 8.5.1
               release-name: elasticsearch
-              values-file: test/integration/companion-values/elasticsearch.yaml
+              values-file: test/integration/companion-values/elasticsearch-9.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
         - name: oidc
@@ -413,7 +413,7 @@ integration:
             - chart: elastic/elasticsearch
               version: 8.5.1
               release-name: elasticsearch
-              values-file: test/integration/companion-values/elasticsearch.yaml
+              values-file: test/integration/companion-values/elasticsearch-9.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
           post-deploy:
@@ -451,7 +451,7 @@ integration:
             - chart: elastic/elasticsearch
               version: 8.5.1
               release-name: elasticsearch
-              values-file: test/integration/companion-values/elasticsearch.yaml
+              values-file: test/integration/companion-values/elasticsearch-9.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
         - name: auth0
@@ -478,7 +478,7 @@ integration:
             - chart: elastic/elasticsearch
               version: 8.5.1
               release-name: elasticsearch
-              values-file: test/integration/companion-values/elasticsearch.yaml
+              values-file: test/integration/companion-values/elasticsearch-9.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
             - chart: charts/internal-postgresql
@@ -512,7 +512,7 @@ integration:
             - chart: elastic/elasticsearch
               version: 8.5.1
               release-name: elasticsearch
-              values-file: test/integration/companion-values/elasticsearch.yaml
+              values-file: test/integration/companion-values/elasticsearch-9.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
           post-deploy:
@@ -543,7 +543,7 @@ integration:
             - chart: elastic/elasticsearch
               version: 8.5.1
               release-name: elasticsearch
-              values-file: test/integration/companion-values/elasticsearch.yaml
+              values-file: test/integration/companion-values/elasticsearch-9.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
             - chart: charts/internal-postgresql
@@ -575,7 +575,7 @@ integration:
             - chart: elastic/elasticsearch
               version: 8.5.1
               release-name: elasticsearch
-              values-file: test/integration/companion-values/elasticsearch.yaml
+              values-file: test/integration/companion-values/elasticsearch-9.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
             - chart: charts/internal-postgresql
@@ -604,7 +604,7 @@ integration:
             - chart: elastic/elasticsearch
               version: 8.5.1
               release-name: elasticsearch
-              values-file: test/integration/companion-values/elasticsearch.yaml
+              values-file: test/integration/companion-values/elasticsearch-9.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
             - chart: charts/internal-postgresql
@@ -634,7 +634,7 @@ integration:
             - chart: elastic/elasticsearch
               version: 8.5.1
               release-name: elasticsearch
-              values-file: test/integration/companion-values/elasticsearch.yaml
+              values-file: test/integration/companion-values/elasticsearch-9.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
             - chart: charts/internal-postgresql
@@ -666,7 +666,7 @@ integration:
             - chart: elastic/elasticsearch
               version: 8.5.1
               release-name: elasticsearch
-              values-file: test/integration/companion-values/elasticsearch.yaml
+              values-file: test/integration/companion-values/elasticsearch-9.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
             - chart: charts/internal-postgresql
@@ -703,7 +703,7 @@ integration:
             - chart: elastic/elasticsearch
               version: 8.5.1
               release-name: elasticsearch
-              values-file: test/integration/companion-values/elasticsearch.yaml
+              values-file: test/integration/companion-values/elasticsearch-9.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
             - chart: charts/internal-postgresql
@@ -767,7 +767,7 @@ integration:
             - chart: elastic/elasticsearch
               version: 8.5.1
               release-name: elasticsearch
-              values-file: test/integration/companion-values/elasticsearch.yaml
+              values-file: test/integration/companion-values/elasticsearch-9.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
         - name: documentstore-s3-compatible
@@ -791,7 +791,7 @@ integration:
             - chart: elastic/elasticsearch
               version: 8.5.1
               release-name: elasticsearch
-              values-file: test/integration/companion-values/elasticsearch.yaml
+              values-file: test/integration/companion-values/elasticsearch-9.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
           pre-install:
@@ -827,7 +827,7 @@ integration:
             - chart: elastic/elasticsearch
               version: 8.5.1
               release-name: elasticsearch
-              values-file: test/integration/companion-values/elasticsearch.yaml
+              values-file: test/integration/companion-values/elasticsearch-9.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
           pre-install:
@@ -861,7 +861,7 @@ integration:
             - chart: elastic/elasticsearch
               version: 8.5.1
               release-name: elasticsearch
-              values-file: test/integration/companion-values/elasticsearch.yaml
+              values-file: test/integration/companion-values/elasticsearch-9.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
           post-deploy:
@@ -893,7 +893,7 @@ integration:
             - chart: elastic/elasticsearch
               version: 8.5.1
               release-name: elasticsearch
-              values-file: test/integration/companion-values/elasticsearch.yaml
+              values-file: test/integration/companion-values/elasticsearch-9.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
             - chart: charts/internal-postgresql
@@ -921,7 +921,7 @@ integration:
             - chart: elastic/elasticsearch
               version: 8.5.1
               release-name: elasticsearch
-              values-file: test/integration/companion-values/elasticsearch.yaml
+              values-file: test/integration/companion-values/elasticsearch-9.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
             - chart: charts/internal-postgresql
@@ -950,7 +950,7 @@ integration:
             - chart: elastic/elasticsearch
               version: 8.5.1
               release-name: elasticsearch
-              values-file: test/integration/companion-values/elasticsearch.yaml
+              values-file: test/integration/companion-values/elasticsearch-9.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
             - chart: charts/internal-postgresql
@@ -981,7 +981,7 @@ integration:
             - chart: elastic/elasticsearch
               version: 8.5.1
               release-name: elasticsearch
-              values-file: test/integration/companion-values/elasticsearch.yaml
+              values-file: test/integration/companion-values/elasticsearch-9.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
             - chart: charts/internal-postgresql
@@ -1013,7 +1013,7 @@ integration:
             - chart: elastic/elasticsearch
               version: 8.5.1
               release-name: elasticsearch
-              values-file: test/integration/companion-values/elasticsearch.yaml
+              values-file: test/integration/companion-values/elasticsearch-9.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
             - chart: charts/internal-postgresql
@@ -1044,7 +1044,7 @@ integration:
             - chart: elastic/elasticsearch
               version: 8.5.1
               release-name: elasticsearch
-              values-file: test/integration/companion-values/elasticsearch.yaml
+              values-file: test/integration/companion-values/elasticsearch-9.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
             - chart: charts/internal-postgresql
@@ -1074,7 +1074,7 @@ integration:
             - chart: elastic/elasticsearch
               version: 8.5.1
               release-name: elasticsearch
-              values-file: test/integration/companion-values/elasticsearch.yaml
+              values-file: test/integration/companion-values/elasticsearch-9.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
             - chart: charts/internal-postgresql
@@ -1107,7 +1107,7 @@ integration:
             - chart: elastic/elasticsearch
               version: 8.5.1
               release-name: elasticsearch
-              values-file: test/integration/companion-values/elasticsearch.yaml
+              values-file: test/integration/companion-values/elasticsearch-9.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
             - chart: charts/internal-postgresql
@@ -1140,7 +1140,7 @@ integration:
             - chart: elastic/elasticsearch
               version: 8.5.1
               release-name: elasticsearch
-              values-file: test/integration/companion-values/elasticsearch.yaml
+              values-file: test/integration/companion-values/elasticsearch-9.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
             - chart: charts/internal-postgresql
@@ -1173,7 +1173,7 @@ integration:
             - chart: elastic/elasticsearch
               version: 8.5.1
               release-name: elasticsearch
-              values-file: test/integration/companion-values/elasticsearch.yaml
+              values-file: test/integration/companion-values/elasticsearch-9.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
             - chart: charts/internal-postgresql
@@ -1206,7 +1206,7 @@ integration:
             - chart: elastic/elasticsearch
               version: 8.5.1
               release-name: elasticsearch
-              values-file: test/integration/companion-values/elasticsearch.yaml
+              values-file: test/integration/companion-values/elasticsearch-9.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
             - chart: charts/internal-postgresql
@@ -1237,7 +1237,7 @@ integration:
             - chart: elastic/elasticsearch
               version: 8.5.1
               release-name: elasticsearch
-              values-file: test/integration/companion-values/elasticsearch.yaml
+              values-file: test/integration/companion-values/elasticsearch-9.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
             - chart: charts/internal-postgresql
@@ -1276,7 +1276,7 @@ integration:
             - chart: elastic/elasticsearch
               version: 8.5.1
               release-name: elasticsearch
-              values-file: test/integration/companion-values/elasticsearch.yaml
+              values-file: test/integration/companion-values/elasticsearch-9.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
             - chart: charts/internal-postgresql
@@ -1313,7 +1313,7 @@ integration:
             - chart: elastic/elasticsearch
               version: 8.5.1
               release-name: elasticsearch
-              values-file: test/integration/companion-values/elasticsearch.yaml
+              values-file: test/integration/companion-values/elasticsearch-9.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
             - chart: charts/internal-postgresql
@@ -1351,7 +1351,7 @@ integration:
             - chart: elastic/elasticsearch
               version: 8.5.1
               release-name: elasticsearch
-              values-file: test/integration/companion-values/elasticsearch-qa.yaml
+              values-file: test/integration/companion-values/elasticsearch-9-qa.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
         - name: qa-elasticsearch-upg
@@ -1383,7 +1383,7 @@ integration:
             - chart: elastic/elasticsearch
               version: 8.5.1
               release-name: elasticsearch
-              values-file: test/integration/companion-values/elasticsearch-qa.yaml
+              values-file: test/integration/companion-values/elasticsearch-9-qa.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
         - name: qa-elasticsearch
@@ -1415,7 +1415,7 @@ integration:
             - chart: elastic/elasticsearch
               version: 8.5.1
               release-name: elasticsearch
-              values-file: test/integration/companion-values/elasticsearch-qa.yaml
+              values-file: test/integration/companion-values/elasticsearch-9-qa.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
         - name: qa-opensearch
@@ -1546,7 +1546,7 @@ integration:
             - chart: elastic/elasticsearch
               version: 8.5.1
               release-name: elasticsearch
-              values-file: test/integration/companion-values/elasticsearch-qa.yaml
+              values-file: test/integration/companion-values/elasticsearch-9-qa.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
         - name: qa-elasticsearch-mt-upg
@@ -1579,7 +1579,7 @@ integration:
             - chart: elastic/elasticsearch
               version: 8.5.1
               release-name: elasticsearch
-              values-file: test/integration/companion-values/elasticsearch-qa.yaml
+              values-file: test/integration/companion-values/elasticsearch-9-qa.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
         - name: qa-elasticsearch-mt-upg
@@ -1612,7 +1612,7 @@ integration:
             - chart: elastic/elasticsearch
               version: 8.5.1
               release-name: elasticsearch
-              values-file: test/integration/companion-values/elasticsearch-qa.yaml
+              values-file: test/integration/companion-values/elasticsearch-9-qa.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
         - name: qa-elasticsearch-rba
@@ -1645,7 +1645,7 @@ integration:
             - chart: elastic/elasticsearch
               version: 8.5.1
               release-name: elasticsearch
-              values-file: test/integration/companion-values/elasticsearch-qa.yaml
+              values-file: test/integration/companion-values/elasticsearch-9-qa.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
         - name: qa-document-store
@@ -1678,7 +1678,7 @@ integration:
             - chart: elastic/elasticsearch
               version: 8.5.1
               release-name: elasticsearch
-              values-file: test/integration/companion-values/elasticsearch-qa.yaml
+              values-file: test/integration/companion-values/elasticsearch-9-qa.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
         - name: qa-document-store
@@ -1711,7 +1711,7 @@ integration:
             - chart: elastic/elasticsearch
               version: 8.5.1
               release-name: elasticsearch
-              values-file: test/integration/companion-values/elasticsearch.yaml
+              values-file: test/integration/companion-values/elasticsearch-9.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
         - name: qa-document-store-upg
@@ -1744,7 +1744,7 @@ integration:
             - chart: elastic/elasticsearch
               version: 8.5.1
               release-name: elasticsearch
-              values-file: test/integration/companion-values/elasticsearch-qa.yaml
+              values-file: test/integration/companion-values/elasticsearch-9-qa.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
         - name: qa-document-store-upg
@@ -1777,7 +1777,7 @@ integration:
             - chart: elastic/elasticsearch
               version: 8.5.1
               release-name: elasticsearch
-              values-file: test/integration/companion-values/elasticsearch.yaml
+              values-file: test/integration/companion-values/elasticsearch-9.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
         - name: qa-document-store-upg
@@ -1810,7 +1810,7 @@ integration:
             - chart: elastic/elasticsearch
               version: 8.5.1
               release-name: elasticsearch
-              values-file: test/integration/companion-values/elasticsearch-qa.yaml
+              values-file: test/integration/companion-values/elasticsearch-9-qa.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
         - name: qa-document-store-upg
@@ -1843,7 +1843,7 @@ integration:
             - chart: elastic/elasticsearch
               version: 8.5.1
               release-name: elasticsearch
-              values-file: test/integration/companion-values/elasticsearch.yaml
+              values-file: test/integration/companion-values/elasticsearch-9.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
         - name: qa-license
@@ -1876,7 +1876,7 @@ integration:
             - chart: elastic/elasticsearch
               version: 8.5.1
               release-name: elasticsearch
-              values-file: test/integration/companion-values/elasticsearch-qa.yaml
+              values-file: test/integration/companion-values/elasticsearch-9-qa.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
         - name: multinamespace
