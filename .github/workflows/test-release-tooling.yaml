@@ -54,7 +54,7 @@ jobs:
         if: ${{ !cancelled() && steps.tools.outcome == 'success' }}
         run: make go.lint lintBase=HEAD~1
 
-      - name: Gate the complexity of changed Go functions and workflow run blocks
+      - name: Gate the complexity of changed workflow run blocks
         if: ${{ !cancelled() && steps.tools.outcome == 'success' }}
         run: make go.complexity lintBase=HEAD~1
 
