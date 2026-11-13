@@ -1992,7 +1992,10 @@ integration:
                 persistence: elasticsearch-external
                 features:
                   - multinamespace-orchestration
+                dependencies:
+                  - elasticsearch-8
                 env:
+                  EXTERNAL_ELASTICSEARCH_HOST: elasticsearch-master
                   ORCH_CONNECTORS_CLIENT_ID: connectors-orchc
                   ORCH_OPTIMIZE_AUDIENCE: optimize-orchc-api
                   ORCH_OPTIMIZE_CLIENT_ID: optimize-orchc
@@ -2008,7 +2011,10 @@ integration:
                 persistence: elasticsearch-external
                 features:
                   - multinamespace-orchestration
+                dependencies:
+                  - elasticsearch-8-no-auto-expand
                 env:
+                  EXTERNAL_ELASTICSEARCH_HOST: elasticsearch-master
                   ORCH_CONNECTORS_CLIENT_ID: connectors-orchd
                   ORCH_OPTIMIZE_AUDIENCE: optimize-orchd-api
                   ORCH_OPTIMIZE_CLIENT_ID: optimize-orchd
