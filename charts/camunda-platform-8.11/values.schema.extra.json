@@ -1840,6 +1840,19 @@
                     "default": {},
                     "additionalProperties": true,
                     "properties": {
+                        "networkPolicy": {
+                            "type": "object",
+                            "description": "configuration of the Camunda Hub restapi NetworkPolicy.",
+                            "default": {},
+                            "additionalProperties": true,
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean",
+                                    "description": "if true and global.networkPolicy.enabled is true, renders an ingress NetworkPolicy for the Camunda Hub restapi pods.",
+                                    "default": true
+                                }
+                            }
+                        },
                         "image": {
                             "type": ["object", "null"],
                             "description": "override values for the Camunda Hub restapi image; merged additively over the legacy webModeler.restapi.image map, so partial overrides keep the legacy values for the keys left unset.",
@@ -1860,6 +1873,19 @@
                     "default": {},
                     "additionalProperties": true,
                     "properties": {
+                        "networkPolicy": {
+                            "type": "object",
+                            "description": "configuration of the Camunda Hub websockets NetworkPolicy.",
+                            "default": {},
+                            "additionalProperties": true,
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean",
+                                    "description": "if true and global.networkPolicy.enabled is true, renders an ingress NetworkPolicy for the Camunda Hub websockets pods.",
+                                    "default": true
+                                }
+                            }
+                        },
                         "image": {
                             "type": ["object", "null"],
                             "description": "override values for the Camunda Hub websockets image; merged additively over the legacy webModeler.websockets.image map, so partial overrides keep the legacy values for the keys left unset.",
