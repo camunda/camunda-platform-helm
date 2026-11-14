@@ -1542,7 +1542,7 @@ jobs:
 
       - name: Generate E2E repository token
         id: e2e-repository-token
-        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@08f6922ee1aeb45b5270ff62ce582fa7d85428a1 # main
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@a7aee06a947103719f282c3a6ae038a349275963 # main
         with:
           github-app-id-vault-key: GITHUB_APP_ID
           github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/quality-assurance-ci
