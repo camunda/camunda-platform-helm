@@ -295,3 +295,113 @@ https://docs.bitnami.com/kubernetes/apps/keycloak/configuration/manage-passwords
 {{- define "identity.imagePullSecrets" -}}
     {{- include "camundaPlatform.subChartImagePullSecrets" (dict "Values" (set (deepCopy .Values) "image" .Values.identity.image)) }}
 {{- end }}
+
+{{/*
+[identity] Whether to render the sidecar that assigns the Keycloak client scope
+"kc-admin-api" to the Identity client. Keycloak 26.8.2 (CVE-2026-19688) rejects Admin REST API
+tokens without this scope, and Identity calls the Admin API with its own client.
+Only for the bundled Keycloak, whose image and admin credentials the chart knows.
+*/}}
+{{- define "identity.keycloakAdminApiScope.enabled" -}}
+    {{- and
+        .Values.global.identity.auth.enabled
+        .Values.identityKeycloak.enabled
+        (eq .Values.global.identity.auth.type "KEYCLOAK")
+    -}}
+{{- end -}}
+
+{{/*
+[identity] Keycloak realm of Identity, as in the "keycloak.realm" setting of the configmap.
+*/}}
+{{- define "identity.keycloak.realm" -}}
+    {{- if and .Values.identity.realm .Values.identity.realm.enabled -}}
+        {{- .Values.identity.realm.id -}}
+    {{- else -}}
+        camunda-platform
+    {{- end -}}
+{{- end -}}
+
+{{/*
+[identity] Image pull secrets of the Identity pod. With the kc-admin-api sidecar, the
+pull secrets of the Keycloak image are added, because the sidecar uses that image.
+*/}}
+{{- define "identity.podImagePullSecrets" -}}
+    {{- $secrets := include "identity.imagePullSecrets" . | fromYamlArray -}}
+    {{- if eq (include "identity.keycloakAdminApiScope.enabled" .) "true" -}}
+        {{- range (.Values.identityKeycloak.image.pullSecrets | default .Values.global.image.pullSecrets | default list) -}}
+            {{- $secret := kindIs "string" . | ternary (dict "name" .) . -}}
+            {{- if not (has $secret $secrets) -}}
+                {{- $secrets = append $secrets $secret -}}
+            {{- end -}}
+        {{- end -}}
+    {{- end -}}
+    {{- $secrets | toYaml -}}
+{{- end -}}
+
+{{/*
+[identity] Sidecar that assigns the Keycloak client scope "kc-admin-api" to the Identity client
+as a default client scope. Identity creates the realm and the client on its first start, and then
+stops with HTTP 401 on Keycloak 26.8.2 until the client has the scope; the sidecar assigns it, and
+the next start of Identity succeeds. The sidecar does nothing if Keycloak has no such scope (before
+26.8.2) or if the scope is already assigned, and checks again every few minutes.
+*/}}
+{{- define "identity.keycloakAdminApiScope.container" -}}
+- name: keycloak-admin-api-scope
+  image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.identityKeycloak) }}
+  imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+  {{- if .Values.identity.containerSecurityContext }}
+  securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" .Values.identity.containerSecurityContext "context" .) | nindent 4 }}
+  {{- end }}
+  command: ["/bin/sh", "-c"]
+  args:
+    - |
+      set -u
+      export HOME=/tmp
+      cfg=/tmp/kcadm.config
+      kc() { kcadm.sh "$@" --config "$cfg"; }
+      ensure() {
+        kc config credentials --server "$KEYCLOAK_URL" --realm master \
+          --user "$KEYCLOAK_SETUP_USER" --password "$KEYCLOAK_SETUP_PASSWORD" >/dev/null 2>&1 || return 1
+        kc get "realms/$KEYCLOAK_REALM" --fields id >/dev/null 2>&1 || return 1
+        scope=""
+        for row in $(kc get client-scopes -r "$KEYCLOAK_REALM" --fields id,name --format csv --noquotes); do
+          [ "${row#*,}" = "kc-admin-api" ] && scope="${row%%,*}"
+        done
+        [ -n "$scope" ] || return 0
+        client=$(kc get clients -r "$KEYCLOAK_REALM" -q "clientId=$IDENTITY_CLIENT_ID" --fields id --format csv --noquotes)
+        [ -n "$client" ] || return 1
+        for id in $(kc get "clients/$client/default-client-scopes" -r "$KEYCLOAK_REALM" --fields id --format csv --noquotes); do
+          [ "$id" = "$scope" ] && return 0
+        done
+        kc update "clients/$client/default-client-scopes/$scope" -r "$KEYCLOAK_REALM" || return 1
+        echo "kc-admin-api: assigned to client '$IDENTITY_CLIENT_ID' in realm '$KEYCLOAK_REALM'."
+      }
+      while true; do
+        if ensure; then sleep 300; else sleep 5; fi
+      done
+  resources:
+    requests:
+      cpu: 10m
+      memory: 64Mi
+    limits:
+      memory: 256Mi
+  env:
+    - name: KC_OPTS
+      value: "-Xmx96m -XX:+UseSerialGC"
+    - name: KEYCLOAK_URL
+      value: {{ include "identity.keycloak.url" . | quote }}
+    - name: KEYCLOAK_REALM
+      value: {{ include "identity.keycloak.realm" . | quote }}
+    - name: IDENTITY_CLIENT_ID
+      value: {{ include "identity.authClientId" . | quote }}
+    - name: KEYCLOAK_SETUP_USER
+      value: {{ include "identity.keycloak.authAdminUser" . | quote }}
+    - name: KEYCLOAK_SETUP_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: {{ include "identity.keycloak.authExistingSecret" . }}
+          key: {{ include "identity.keycloak.authExistingSecretKey" . }}
+  volumeMounts:
+    - mountPath: /tmp
+      name: keycloak-admin-api-scope-tmp
+{{- end -}}

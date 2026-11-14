@@ -26,7 +26,8 @@ spec:
       {{- end }}
     spec:
       imagePullSecrets:
-        {{- include "identity.imagePullSecrets" . | nindent 8 }}
+        {{- include "identity.podImagePullSecrets" . | nindent 8 }}
+      {{- $kcAdminApiScope := eq (include "identity.keycloakAdminApiScope.enabled" .) "true" }}
       {{- if or (eq (include "camundaPlatform.hasCaBundle" .) "true") .Values.identity.initContainers }}
       initContainers:
         {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
@@ -218,6 +219,9 @@ spec:
             {{- if .Values.identity.extraVolumeMounts}}
               {{- .Values.identity.extraVolumeMounts | toYaml | nindent 12 }}
             {{- end }}
+        {{- if $kcAdminApiScope }}
+        {{- include "identity.keycloakAdminApiScope.container" . | nindent 8 }}
+        {{- end }}
         {{- if .Values.identity.sidecars }}
         {{- .Values.identity.sidecars | toYaml | nindent 8 }}
         {{- end }}
@@ -236,6 +240,10 @@ spec:
         - name: config
           configMap:
             name: {{ include "identity.fullname" . }}-configuration
+        {{- if $kcAdminApiScope }}
+        - name: keycloak-admin-api-scope-tmp
+          emptyDir: {}
+        {{- end }}
         {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
         {{- include "camundaPlatform.caBundleVolume" . | nindent 8 }}
         {{- include "camundaPlatform.caBundleTruststoreVolume" . | nindent 8 }}

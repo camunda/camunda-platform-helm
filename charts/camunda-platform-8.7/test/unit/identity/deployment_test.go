@@ -183,7 +183,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				// then
 				expectedContainerImage := "camunda/identity:a.b.c"
 				containers := deployment.Spec.Template.Spec.Containers
-				s.Require().Equal(1, len(containers))
+				s.Require().Equal(2, len(containers)) // identity and the kc-admin-api sidecar
 				s.Require().Equal(expectedContainerImage, containers[0].Image)
 			},
 		}, {
@@ -199,7 +199,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				// then
 				expectedContainerImage := "camunda/identity:a.b.c"
 				containers := deployment.Spec.Template.Spec.Containers
-				s.Require().Equal(1, len(containers))
+				s.Require().Equal(2, len(containers)) // identity and the kc-admin-api sidecar
 				s.Require().Equal(expectedContainerImage, containers[0].Image)
 			},
 		}, {
@@ -215,7 +215,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				// then
 				expectedContainerImage := "camunda/identity:a.b.c"
 				containers := deployment.Spec.Template.Spec.Containers
-				s.Require().Equal(1, len(containers))
+				s.Require().Equal(2, len(containers)) // identity and the kc-admin-api sidecar
 				s.Require().Equal(expectedContainerImage, containers[0].Image)
 			},
 		}, {
@@ -229,7 +229,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 
 				// then
 				containers := deployment.Spec.Template.Spec.Containers
-				s.Require().Equal(1, len(containers))
+				s.Require().Equal(2, len(containers)) // identity and the kc-admin-api sidecar
 				s.Require().Equal(1, len(containers[0].Command))
 				s.Require().Equal("printenv", containers[0].Command[0])
 			},
@@ -674,7 +674,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				// then
 				expectedPullPolicy := corev1.PullAlways
 				containers := deployment.Spec.Template.Spec.Containers
-				s.Require().Equal(1, len(containers))
+				s.Require().Equal(2, len(containers)) // identity and the kc-admin-api sidecar
 				pullPolicy := containers[0].ImagePullPolicy
 				s.Require().Equal(expectedPullPolicy, pullPolicy)
 			},

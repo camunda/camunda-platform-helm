@@ -25,7 +25,8 @@ spec:
       {{- end }}
     spec:
       imagePullSecrets:
-        {{- include "identity.imagePullSecrets" . | nindent 8 }}
+        {{- include "identity.podImagePullSecrets" . | nindent 8 }}
+      {{- $kcAdminApiScope := eq (include "identity.keycloakAdminApiScope.enabled" .) "true" }}
       initContainers:
         {{- tpl (.Values.identity.initContainers | default list | toYaml | nindent 8) $ }}
       containers:
@@ -280,6 +281,9 @@ spec:
             {{- if .Values.identity.extraVolumeMounts}}
               {{- .Values.identity.extraVolumeMounts | toYaml | nindent 12 }}
             {{- end }}
+        {{- if $kcAdminApiScope }}
+        {{- include "identity.keycloakAdminApiScope.container" . | nindent 8 }}
+        {{- end }}
         {{- if .Values.identity.sidecars }}
         {{- .Values.identity.sidecars | toYaml | nindent 8 }}
         {{- end }}
@@ -290,6 +294,10 @@ spec:
         - name: config
           configMap:
             name: {{ include "identity.fullname" . }}-configuration
+        {{- if $kcAdminApiScope }}
+        - name: keycloak-admin-api-scope-tmp
+          emptyDir: {}
+        {{- end }}
         {{- if .Values.identity.extraVolumes}}
         {{- .Values.identity.extraVolumes | toYaml | nindent 8 }}
         {{- end }}

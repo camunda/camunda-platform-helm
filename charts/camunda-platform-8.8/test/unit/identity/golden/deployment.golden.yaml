@@ -95,6 +95,69 @@ spec:
             - name: config
               mountPath: /app/config/application.yaml
               subPath: application.yaml
+        - name: keycloak-admin-api-scope
+          image: docker.io/camunda/keycloak:26.3.3
+          imagePullPolicy: Always
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1001
+            seccompProfile:
+              type: RuntimeDefault
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -u
+              export HOME=/tmp
+              cfg=/tmp/kcadm.config
+              kc() { kcadm.sh "$@" --config "$cfg"; }
+              ensure() {
+                kc config credentials --server "$KEYCLOAK_URL" --realm master \
+                  --user "$KEYCLOAK_SETUP_USER" --password "$KEYCLOAK_SETUP_PASSWORD" >/dev/null 2>&1 || return 1
+                kc get "realms/$KEYCLOAK_REALM" --fields id >/dev/null 2>&1 || return 1
+                scope=""
+                for row in $(kc get client-scopes -r "$KEYCLOAK_REALM" --fields id,name --format csv --noquotes); do
+                  [ "${row#*,}" = "kc-admin-api" ] && scope="${row%%,*}"
+                done
+                [ -n "$scope" ] || return 0
+                client=$(kc get clients -r "$KEYCLOAK_REALM" -q "clientId=$IDENTITY_CLIENT_ID" --fields id --format csv --noquotes)
+                [ -n "$client" ] || return 1
+                for id in $(kc get "clients/$client/default-client-scopes" -r "$KEYCLOAK_REALM" --fields id --format csv --noquotes); do
+                  [ "$id" = "$scope" ] && return 0
+                done
+                kc update "clients/$client/default-client-scopes/$scope" -r "$KEYCLOAK_REALM" || return 1
+                echo "kc-admin-api: assigned to client '$IDENTITY_CLIENT_ID' in realm '$KEYCLOAK_REALM'."
+              }
+              while true; do
+                if ensure; then sleep 300; else sleep 5; fi
+              done
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              memory: 256Mi
+          env:
+            - name: KC_OPTS
+              value: "-Xmx96m -XX:+UseSerialGC"
+            - name: KEYCLOAK_URL
+              value: "http://camunda-platform-test-keycloak/auth"
+            - name: KEYCLOAK_REALM
+              value: "camunda-platform"
+            - name: IDENTITY_CLIENT_ID
+              value: "camunda-identity"
+            - name: KEYCLOAK_SETUP_USER
+              value: "admin"
+            - name: KEYCLOAK_SETUP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: camunda-credentials
+                  key: identity-keycloak-admin-password
+          volumeMounts:
+            - mountPath: /tmp
+              name: keycloak-admin-api-scope-tmp
 
       volumes:
         - name: tmp
@@ -102,6 +165,8 @@ spec:
         - name: config
           configMap:
             name: camunda-platform-test-identity-configuration
+        - name: keycloak-admin-api-scope-tmp
+          emptyDir: {}
       serviceAccountName: camunda-platform-test-identity
       securityContext:
         fsGroup: 1001
