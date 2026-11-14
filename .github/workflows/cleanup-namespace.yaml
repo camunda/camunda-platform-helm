@@ -78,7 +78,7 @@ jobs:
           echo "CLUSTER_NAME=$(yq '.eks.cluster-name' "$INFRA_CONFIG")" >> "$GITHUB_ENV"
 
       - name: CI Setup - Install tools
-        uses: camunda/infraex-common-config/.github/actions/asdf-install-tooling@e2923304b40dfc031b3f595bcc1445e90c981adb # 3.0.0
+        uses: camunda/infraex-common-config/.github/actions/asdf-install-tooling@6ae8fbc5933ee582ab503ff511eefbe56ed4ca87 # 3.0.7
 
       - name: Import Vault secrets
         if: inputs.distro-platform == 'gke'
