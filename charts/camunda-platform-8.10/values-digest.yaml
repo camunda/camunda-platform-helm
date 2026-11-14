@@ -6,15 +6,15 @@ connectors:
   # https://hub.docker.com/r/camunda/connectors-bundle/tags
   image:
     repository: camunda/connectors-bundle
-    tag: 8.10.2
-    digest: "sha256:ffd8428e54f4f21995e5cea0564c4123ecd80a968208965138873d032355b4d9"
+    tag: 8.10.5
+    digest: "sha256:92b0d4dbcbc2dc4b7f350ebd8bae23c0ceff301f4670fa4fad1471893ca30167"
 
 optimize:
   # https://hub.docker.com/r/camunda/optimize/tags
   image:
     repository: camunda/optimize
-    tag: 8.10.7
-    digest: "sha256:3aef37944561fc34f842b64548f624c1892496c29056679f58a92e40909aee49"
+    tag: 8.10.9
+    digest: "sha256:0e5da45fcd47249aad5fac0713bf37d8cbe1b807be666ecb970f1bb7c14d8e5c"
 
 #
 # Web Modeler
@@ -25,15 +25,15 @@ webModeler:
   restapi:
     image:
       repository: camunda/hub
-      tag: 8.10.4
-      digest: "sha256:d05bcf0e747572601054f389c7482a82eb5f333d35bd96718a94580343fec1ba"
+      tag: 8.10.6
+      digest: "sha256:941c35b7743cf2816f0495b6775aeb9854d9c009fd81e9d48cd105ff234d4f36"
 
   # https://hub.docker.com/r/camunda/hub-websockets/tags
   websockets:
     image:
       repository: camunda/hub-websockets
-      tag: 8.10.4
-      digest: "sha256:baacba31529b65359c0c54ae88e720ff0351c32f93e0939f7ebd32cbf6e0e3d9"
+      tag: 8.10.6
+      digest: "sha256:5c4c0d0687d6cd0e19bde18c60a9091148051d04b0ea01a504d166092e1f070c"
 
 #
 # Orchestration Cluster
@@ -43,8 +43,8 @@ orchestration:
   # https://hub.docker.com/r/camunda/camunda/tags
   image:
     repository: camunda/camunda
-    tag: 8.10.7
-    digest: "sha256:1d943ed22fab746bd5fd7e19f928f90ba06516d3cc0d28a98f1a1539db1ef585"
+    tag: 8.10.9
+    digest: "sha256:805fbed97b129e9e8619a5d2443438a23f30b02fc4600402242ab0382d7cd3e8"
 
 #
 # Identity
@@ -54,5 +54,5 @@ identity:
   # https://hub.docker.com/r/camunda/identity/tags
   image:
     repository: camunda/identity
-    tag: 8.10.2
-    digest: "sha256:5731e2c25013170e8de6db961d895c730f0f44aa73914e127da0e9062f06c488"
+    tag: 8.10.4
+    digest: "sha256:54891ae8f6caa7bd8d003bdb6aaceab4b9de9aa9856f5b4394e106add9c3e271"

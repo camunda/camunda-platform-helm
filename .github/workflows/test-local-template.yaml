@@ -62,7 +62,7 @@ jobs:
       - name: Install system dependencies
         run: sudo apt-get update && sudo apt-get install -y build-essential gawk make
       - name: Install tools
-        uses: camunda/infraex-common-config/.github/actions/asdf-install-tooling@e2923304b40dfc031b3f595bcc1445e90c981adb # 3.0.0
+        uses: camunda/infraex-common-config/.github/actions/asdf-install-tooling@6ae8fbc5933ee582ab503ff511eefbe56ed4ca87 # 3.0.7
       - name: Docker Hub login
         env:
           TEST_DOCKER_USERNAME: ${{ steps.test-credentials-secret.outputs.TEST_DOCKER_USERNAME }}
