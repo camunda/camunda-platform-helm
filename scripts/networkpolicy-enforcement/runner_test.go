@@ -27,12 +27,16 @@ type state struct {
 	extraRules    bool
 	connectorsOff bool
 	installed     bool
+	egress        bool
+	egressExtra   bool
 }
 
 type fakeCluster struct {
 	enforcing     bool
 	leakyExtra    bool
 	insideBlocked bool
+	egressIgnored bool
+	dnsBlocked    bool
 	staleExecs    int
 	existing      []string
 	revisions     []state
@@ -55,7 +59,9 @@ func (f *fakeCluster) helm(args []string) {
 	case "install", "upgrade":
 		f.current = state{
 			installed:     true,
-			policies:      strings.Contains(joined, "global.networkPolicy.enabled=true") || strings.Contains(joined, "values-extrarules.yaml"),
+			policies:      strings.Contains(joined, "global.networkPolicy.enabled=true") || strings.Contains(joined, "values-extrarules.yaml") || strings.Contains(joined, "values-egress.yaml"),
+			egress:        strings.Contains(joined, "values-egress.yaml"),
+			egressExtra:   strings.Contains(joined, "values-egress-extrarules.yaml"),
 			extraRules:    strings.Contains(joined, "values-extrarules.yaml"),
 			connectorsOff: strings.Contains(joined, "connectors.networkPolicy.enabled=false"),
 		}
@@ -77,11 +83,19 @@ func (f *fakeCluster) kubectl(args []string) (string, error) {
 		return "", nil
 	case args[0] == "get" && args[1] == "networkpolicy":
 		return strings.Join(f.policyNames(), " "), nil
+	case args[0] == "get" && args[1] == "nodes":
+		return "172.18.0.2", nil
+	case args[0] == "get" && args[1] == "pod" && args[2] == "netpol-probe":
+		return map[string]string{"netpol": "10.1.0.0", "netpol-outsider": "10.1.0.1", "netpol-allowed": "10.1.0.2"}[args[4]], nil
+	case args[0] == "get" && args[1] == "pod" && strings.Contains(args[len(args)-1], "metadata.name"):
+		return "netpol-zeebe-0", nil
 	case args[0] == "get" && args[1] == "pod":
 		if strings.Contains(strings.Join(args, " "), "component=connectors") {
 			return "10.0.0.2", nil
 		}
 		return "10.0.0.1", nil
+	case args[0] == "exec" && args[1] != "netpol-probe":
+		return "", f.egressExec(args)
 	case args[0] == "exec":
 		return "", f.exec(args)
 	}
@@ -125,6 +139,20 @@ func (f *fakeCluster) allowed(from, component, port string) bool {
 	return f.current.extraRules && from == "netpol-allowed" && (port == "8080" || f.leakyExtra)
 }
 
+func (f *fakeCluster) egressExec(args []string) error {
+	target := map[string]string{"10.0.0.2": "connectors", "10.1.0.1": "outsider", "10.1.0.2": "allowed", "172.18.0.2": "external"}[args[len(args)-2]]
+	if args[5] == "nslookup" {
+		target = "dns"
+	}
+	if f.dnsBlocked && target == "dns" && f.current.egress {
+		return errors.New("blocked")
+	}
+	if !f.enforcing || f.egressIgnored || !f.current.egress || target == "connectors" || target == "dns" || (f.current.egressExtra && target == "allowed") {
+		return nil
+	}
+	return errors.New("blocked")
+}
+
 func testRunner(f *fakeCluster) runner {
 	cfg := config{chartDir: "/chart", scenarioDir: "/chart/s", namespace: "netpol", release: "netpol", timeout: "1m", retries: 3}
 	return runner{cfg: cfg, command: f.run, log: func(string, ...any) {}}
@@ -151,6 +179,20 @@ func TestRunFailsWhenExtraRulesOpenTooMuch(t *testing.T) {
 	err := testRunner(&fakeCluster{enforcing: true, leakyExtra: true}).run(context.Background())
 	if err == nil || !strings.HasPrefix(err.Error(), "S3") || !strings.Contains(err.Error(), ":9600") {
 		t.Fatalf("expected S3 failure on 9600, got %v", err)
+	}
+}
+
+func TestRunFailsWhenEgressIsNotEnforced(t *testing.T) {
+	err := testRunner(&fakeCluster{enforcing: true, egressIgnored: true}).run(context.Background())
+	if err == nil || !strings.HasPrefix(err.Error(), "S7") || !strings.Contains(err.Error(), "outsider-probe") {
+		t.Fatalf("expected S7 failure, got %v", err)
+	}
+}
+
+func TestRunFailsWhenEgressBlocksDNS(t *testing.T) {
+	err := testRunner(&fakeCluster{enforcing: true, dnsBlocked: true}).run(context.Background())
+	if err == nil || !strings.HasPrefix(err.Error(), "S7") || !strings.Contains(err.Error(), "dns") {
+		t.Fatalf("expected S7 DNS failure, got %v", err)
 	}
 }
 
