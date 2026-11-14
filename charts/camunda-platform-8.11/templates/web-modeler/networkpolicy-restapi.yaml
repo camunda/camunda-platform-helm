@@ -6,6 +6,7 @@
       "labels" (include "webModeler.restapi.labels" .)
       "matchLabels" (include "webModeler.restapi.matchLabels" .)
       "ports" (list 8081 8091)
+      "networkPolicy" $hub.restapi.networkPolicy
       "context" .) }}
 {{- end -}}
 {{- end -}}

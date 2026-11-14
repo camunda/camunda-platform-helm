@@ -6,6 +6,7 @@
       "labels" (include "webModeler.websockets.labels" .)
       "matchLabels" (include "webModeler.websockets.matchLabels" .)
       "ports" (list 8060)
+      "networkPolicy" $hub.websockets.networkPolicy
       "context" .) }}
 {{- end -}}
 {{- end -}}

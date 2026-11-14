@@ -1208,6 +1208,27 @@
                                     "items": {}
                                 }
                             }
+                        },
+                        "egress": {
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean",
+                                    "description": "if true, adds egress rules to the rendered NetworkPolicies that allow traffic to pods in the release namespace, DNS if global.networkPolicy.egress.allowDNS is true, plus the egress extraRules; all other egress, such as an external database or OIDC provider, is blocked.",
+                                    "default": false
+                                },
+                                "allowDNS": {
+                                    "type": "boolean",
+                                    "description": "if true, allows egress to the kube-dns pods in the kube-system namespace on port 53 over UDP and TCP.",
+                                    "default": true
+                                },
+                                "extraRules": {
+                                    "type": "array",
+                                    "description": "can be used to append NetworkPolicyEgressRule entries to every rendered NetworkPolicy, for example to allow an external database.",
+                                    "default": [],
+                                    "items": {}
+                                }
+                            }
                         }
                     }
                 },
@@ -2193,6 +2214,22 @@
                             "type": "boolean",
                             "description": "if true and global.networkPolicy.enabled is true, renders an ingress NetworkPolicy for the Identity pods.",
                             "default": true
+                        },
+                        "egress": {
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean",
+                                    "description": "if true and global.networkPolicy.egress.enabled is true, adds egress rules to the Identity NetworkPolicy.",
+                                    "default": true
+                                },
+                                "extraRules": {
+                                    "type": "array",
+                                    "description": "can be used to append NetworkPolicyEgressRule entries to the Identity NetworkPolicy only, after global.networkPolicy.egress.extraRules.",
+                                    "default": [],
+                                    "items": {}
+                                }
+                            }
                         }
                     }
                 },
@@ -2413,6 +2450,25 @@
                                     "type": "boolean",
                                     "description": "if true and global.networkPolicy.enabled is true, renders an ingress NetworkPolicy for the Camunda Hub restapi pods.",
                                     "default": true
+                                },
+                                "egress": {
+                                    "type": "object",
+                                    "description": "configuration of the egress rules of the Camunda Hub restapi NetworkPolicy.",
+                                    "default": {},
+                                    "additionalProperties": true,
+                                    "properties": {
+                                        "enabled": {
+                                            "type": "boolean",
+                                            "description": "if true and global.networkPolicy.egress.enabled is true, adds egress rules to the Camunda Hub restapi NetworkPolicy.",
+                                            "default": true
+                                        },
+                                        "extraRules": {
+                                            "type": "array",
+                                            "description": "can be used to append NetworkPolicyEgressRule entries to the Camunda Hub restapi NetworkPolicy only, after global.networkPolicy.egress.extraRules.",
+                                            "default": [],
+                                            "items": {}
+                                        }
+                                    }
                                 }
                             }
                         },
@@ -2452,6 +2508,25 @@
                                     "type": "boolean",
                                     "description": "if true and global.networkPolicy.enabled is true, renders an ingress NetworkPolicy for the Camunda Hub websockets pods.",
                                     "default": true
+                                },
+                                "egress": {
+                                    "type": "object",
+                                    "description": "configuration of the egress rules of the Camunda Hub websockets NetworkPolicy.",
+                                    "default": {},
+                                    "additionalProperties": true,
+                                    "properties": {
+                                        "enabled": {
+                                            "type": "boolean",
+                                            "description": "if true and global.networkPolicy.egress.enabled is true, adds egress rules to the Camunda Hub websockets NetworkPolicy.",
+                                            "default": true
+                                        },
+                                        "extraRules": {
+                                            "type": "array",
+                                            "description": "can be used to append NetworkPolicyEgressRule entries to the Camunda Hub websockets NetworkPolicy only, after global.networkPolicy.egress.extraRules.",
+                                            "default": [],
+                                            "items": {}
+                                        }
+                                    }
                                 }
                             }
                         },
@@ -4555,6 +4630,22 @@
                             "type": "boolean",
                             "description": "if true and global.networkPolicy.enabled is true, renders an ingress NetworkPolicy for the Connectors pods.",
                             "default": true
+                        },
+                        "egress": {
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean",
+                                    "description": "if true and global.networkPolicy.egress.enabled is true, adds egress rules to the Connectors NetworkPolicy.",
+                                    "default": true
+                                },
+                                "extraRules": {
+                                    "type": "array",
+                                    "description": "can be used to append NetworkPolicyEgressRule entries to the Connectors NetworkPolicy only, after global.networkPolicy.egress.extraRules.",
+                                    "default": [],
+                                    "items": {}
+                                }
+                            }
                         }
                     }
                 },
@@ -5531,6 +5622,22 @@
                             "type": "boolean",
                             "description": "if true and global.networkPolicy.enabled is true, renders an ingress NetworkPolicy for the Orchestration Cluster pods.",
                             "default": true
+                        },
+                        "egress": {
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean",
+                                    "description": "if true and global.networkPolicy.egress.enabled is true, adds egress rules to the Orchestration Cluster NetworkPolicy.",
+                                    "default": true
+                                },
+                                "extraRules": {
+                                    "type": "array",
+                                    "description": "can be used to append NetworkPolicyEgressRule entries to the Orchestration Cluster NetworkPolicy only, after global.networkPolicy.egress.extraRules.",
+                                    "default": [],
+                                    "items": {}
+                                }
+                            }
                         }
                     }
                 },
@@ -7152,6 +7259,22 @@
                             "type": "boolean",
                             "description": "if true and global.networkPolicy.enabled is true, renders an ingress NetworkPolicy for the Optimize pods.",
                             "default": true
+                        },
+                        "egress": {
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean",
+                                    "description": "if true and global.networkPolicy.egress.enabled is true, adds egress rules to the Optimize NetworkPolicy.",
+                                    "default": true
+                                },
+                                "extraRules": {
+                                    "type": "array",
+                                    "description": "can be used to append NetworkPolicyEgressRule entries to the Optimize NetworkPolicy only, after global.networkPolicy.egress.extraRules.",
+                                    "default": [],
+                                    "items": {}
+                                }
+                            }
                         }
                     }
                 },
