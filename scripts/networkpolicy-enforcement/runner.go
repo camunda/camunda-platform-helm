@@ -45,11 +45,34 @@ type reach struct {
 	want      bool
 }
 
+type target int
+
+const (
+	targetInside target = iota
+	targetOutsider
+	targetAllowed
+	targetConnectors
+	targetDNS
+	targetExternal
+)
+
+const probePort = 8080
+
+func (t target) String() string {
+	return [...]string{"inside-probe", "outsider-probe", "allowed-probe", "connectors", "dns", "external"}[t]
+}
+
+type egress struct {
+	to   target
+	want bool
+}
+
 type step struct {
 	name     string
 	action   func(context.Context) error
 	policies []string
 	reaches  []reach
+	egress   []egress
 }
 
 type runner struct {
@@ -126,6 +149,11 @@ func (r runner) runStep(ctx context.Context, s step) error {
 			return err
 		}
 	}
+	for _, e := range s.egress {
+		if err := r.expectEgress(ctx, e); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -176,6 +204,10 @@ func all(from source, want bool) []reach {
 	}
 }
 
+func egressOpen() []egress {
+	return []egress{{targetConnectors, true}, {targetDNS, true}, {targetOutsider, true}, {targetAllowed, true}, {targetExternal, true}}
+}
+
 func (r runner) steps() []step {
 	both := []string{"zeebe", "connectors"}
 	enforced := append(all(inside, true), all(outsider, false)...)
@@ -192,6 +224,13 @@ func (r runner) steps() []step {
 			{from: outsider, component: connectors, ports: componentPorts[connectors], want: true},
 		}},
 		{name: "S5 rollback to the first revision deletes the policies", action: r.rollback, reaches: all(outsider, true)},
-		{name: "S6 fresh install with policies on", action: r.reinstall, policies: both, reaches: enforced},
+		{name: "S6 fresh install with policies on leaves egress open", action: r.reinstall, policies: both, reaches: enforced, egress: egressOpen()},
+		{name: "S7 egress blocks everything but the namespace and DNS", action: r.deploy("upgrade", r.values("values-egress.yaml")...), policies: both, reaches: enforced, egress: []egress{
+			{targetConnectors, true}, {targetDNS, true}, {targetOutsider, false}, {targetAllowed, false}, {targetExternal, false},
+		}},
+		{name: "S8 egress extraRules open the allowed namespace on 8080", action: r.deploy("upgrade", r.values("values-egress.yaml", "values-egress-extrarules.yaml")...), policies: both, reaches: enforced, egress: []egress{
+			{targetConnectors, true}, {targetDNS, true}, {targetAllowed, true}, {targetOutsider, false}, {targetExternal, false},
+		}},
+		{name: "S9 rollback removes the egress rules", action: r.rollback, policies: both, reaches: enforced, egress: egressOpen()},
 	}
 }

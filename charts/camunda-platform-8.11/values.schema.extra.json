@@ -1850,6 +1850,25 @@
                                     "type": "boolean",
                                     "description": "if true and global.networkPolicy.enabled is true, renders an ingress NetworkPolicy for the Camunda Hub restapi pods.",
                                     "default": true
+                                },
+                                "egress": {
+                                    "type": "object",
+                                    "description": "configuration of the egress rules of the Camunda Hub restapi NetworkPolicy.",
+                                    "default": {},
+                                    "additionalProperties": true,
+                                    "properties": {
+                                        "enabled": {
+                                            "type": "boolean",
+                                            "description": "if true and global.networkPolicy.egress.enabled is true, adds egress rules to the Camunda Hub restapi NetworkPolicy.",
+                                            "default": true
+                                        },
+                                        "extraRules": {
+                                            "type": "array",
+                                            "description": "can be used to append NetworkPolicyEgressRule entries to the Camunda Hub restapi NetworkPolicy only, after global.networkPolicy.egress.extraRules.",
+                                            "default": [],
+                                            "items": {}
+                                        }
+                                    }
                                 }
                             }
                         },
@@ -1883,6 +1902,25 @@
                                     "type": "boolean",
                                     "description": "if true and global.networkPolicy.enabled is true, renders an ingress NetworkPolicy for the Camunda Hub websockets pods.",
                                     "default": true
+                                },
+                                "egress": {
+                                    "type": "object",
+                                    "description": "configuration of the egress rules of the Camunda Hub websockets NetworkPolicy.",
+                                    "default": {},
+                                    "additionalProperties": true,
+                                    "properties": {
+                                        "enabled": {
+                                            "type": "boolean",
+                                            "description": "if true and global.networkPolicy.egress.enabled is true, adds egress rules to the Camunda Hub websockets NetworkPolicy.",
+                                            "default": true
+                                        },
+                                        "extraRules": {
+                                            "type": "array",
+                                            "description": "can be used to append NetworkPolicyEgressRule entries to the Camunda Hub websockets NetworkPolicy only, after global.networkPolicy.egress.extraRules.",
+                                            "default": [],
+                                            "items": {}
+                                        }
+                                    }
                                 }
                             }
                         },
