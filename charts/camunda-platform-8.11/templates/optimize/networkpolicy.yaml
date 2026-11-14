@@ -4,5 +4,6 @@
       "labels" (include "optimize.labels" .)
       "matchLabels" (include "optimize.matchLabels" .)
       "ports" (list 8090 8092)
+      "networkPolicy" .Values.optimize.networkPolicy
       "context" .) }}
 {{- end -}}
