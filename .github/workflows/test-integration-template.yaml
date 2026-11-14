@@ -46,9 +46,11 @@ on:
         default: main
         type: string
       deployment-ttl:
-        description: Define a TTL for the lifespan of the deployment.
+        description: >-
+          Define a TTL for the lifespan of the deployment. Leave empty to let
+          the runner apply the E2E_CHAIN_MIN_TTL floor for e2e/topology chains.
         required: false
-        default: 1h
+        default: ""
         type: string
       platforms:
         default: gke
