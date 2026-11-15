@@ -69,11 +69,13 @@ type egress struct {
 }
 
 type step struct {
-	name     string
-	action   func(context.Context) error
-	policies []string
-	reaches  []reach
-	egress   []egress
+	name          string
+	action        func(context.Context) error
+	policies      []string
+	splitPolicies []string
+	reaches       []reach
+	egress        []egress
+	cross         []crossReach
 }
 
 type runner struct {
@@ -132,6 +134,7 @@ func (r runner) refuseExisting(ctx context.Context) error {
 }
 
 func (r runner) cleanup(ctx context.Context) {
+	_ = r.helm(ctx, "uninstall", r.cfg.release2, "--namespace", r.cfg.namespace2, "--ignore-not-found", "--wait")
 	_ = r.helm(ctx, "uninstall", r.cfg.release, "--namespace", r.cfg.namespace, "--ignore-not-found", "--wait")
 	for _, namespace := range r.namespaces() {
 		_, _ = r.kubectl(ctx, "delete", "namespace", namespace, "--ignore-not-found", "--wait=false")
@@ -142,9 +145,26 @@ func (r runner) runStep(ctx context.Context, s step) error {
 	if err := s.action(ctx); err != nil {
 		return err
 	}
-	if err := r.assertPolicies(ctx, s.policies); err != nil {
+	if err := r.assertPolicies(ctx, r.cfg.namespace, r.cfg.release, s.policies); err != nil {
 		return err
 	}
+	if s.splitPolicies != nil {
+		if err := r.assertPolicies(ctx, r.cfg.namespace2, r.cfg.release2, s.splitPolicies); err != nil {
+			return err
+		}
+	}
+	if err := r.checkReaches(ctx, s); err != nil {
+		return err
+	}
+	for _, c := range s.cross {
+		if err := r.expectCross(ctx, c); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (r runner) checkReaches(ctx context.Context, s step) error {
 	for _, c := range s.reaches {
 		if err := r.checkReach(ctx, c); err != nil {
 			return err
@@ -210,7 +230,7 @@ func egressOpen() []egress {
 }
 
 func (r runner) steps() []step {
-	return slices.Concat(r.ingressSteps(), r.egressSteps(), r.allowedNamespaceSteps())
+	return slices.Concat(r.ingressSteps(), r.egressSteps(), r.allowedNamespaceSteps(), r.splitSteps())
 }
 
 func (r runner) ingressSteps() []step {
