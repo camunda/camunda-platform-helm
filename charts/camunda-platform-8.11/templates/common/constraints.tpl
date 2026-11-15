@@ -1422,14 +1422,17 @@ The following values inside your values.yaml need to be set but were not:
 {{- end }}
 
 {{- define "camunda.constraints.networkPolicyAllowedNamespaces" }}
-  {{- $lists := dict "global.networkPolicy.ingress.allowedNamespaces" ((.Values.global.networkPolicy | default dict).ingress | default dict).allowedNamespaces }}
-  {{- range $key := list "orchestration" "connectors" "identity" "optimize" }}
-    {{- $_ := set $lists (printf "%s.networkPolicy.ingress.allowedNamespaces" $key) (((get $.Values $key | default dict).networkPolicy | default dict).ingress | default dict).allowedNamespaces }}
-  {{- end }}
-  {{- if eq (include "camundaHub.webModelerEnabled" .) "true" }}
-    {{- $hub := include "camundaHub.values" . | fromYaml }}
-    {{- range $key := list "restapi" "websockets" }}
-      {{- $_ := set $lists (printf "camundaHub.%s.networkPolicy.ingress.allowedNamespaces" $key) (((get $hub $key | default dict).networkPolicy | default dict).ingress | default dict).allowedNamespaces }}
+  {{- $lists := dict }}
+  {{- range $direction := list "ingress" "egress" }}
+    {{- $_ := set $lists (printf "global.networkPolicy.%s.allowedNamespaces" $direction) (get ($.Values.global.networkPolicy | default dict) $direction | default dict).allowedNamespaces }}
+    {{- range $key := list "orchestration" "connectors" "identity" "optimize" }}
+      {{- $_ := set $lists (printf "%s.networkPolicy.%s.allowedNamespaces" $key $direction) (get ((get $.Values $key | default dict).networkPolicy | default dict) $direction | default dict).allowedNamespaces }}
+    {{- end }}
+    {{- if eq (include "camundaHub.webModelerEnabled" $) "true" }}
+      {{- $hub := include "camundaHub.values" $ | fromYaml }}
+      {{- range $key := list "restapi" "websockets" }}
+        {{- $_ := set $lists (printf "camundaHub.%s.networkPolicy.%s.allowedNamespaces" $key $direction) (get ((get $hub $key | default dict).networkPolicy | default dict) $direction | default dict).allowedNamespaces }}
+      {{- end }}
     {{- end }}
   {{- end }}
   {{- range $key, $list := $lists }}
@@ -1455,10 +1458,13 @@ The following values inside your values.yaml need to be set but were not:
     {{- $components = concat $components (list $hub.restapi $hub.websockets) }}
   {{- end }}
   {{- $extraRules := $egress.extraRules | default list }}
+  {{- $allowedNamespaces := $egress.allowedNamespaces | default list }}
   {{- range $component := $components }}
-    {{- $extraRules = concat $extraRules ((($component.networkPolicy | default dict).egress | default dict).extraRules | default list) }}
+    {{- $componentEgress := (($component.networkPolicy | default dict).egress | default dict) }}
+    {{- $extraRules = concat $extraRules ($componentEgress.extraRules | default list) }}
+    {{- $allowedNamespaces = concat $allowedNamespaces ($componentEgress.allowedNamespaces | default list) }}
   {{- end }}
-  {{- if and $networkPolicy.enabled $egress.enabled (empty $extraRules) }}
+  {{- if and $networkPolicy.enabled $egress.enabled (empty $extraRules) (empty $allowedNamespaces) }}
     {{- $dependencies := list }}
     {{- $secondaryStorage := .Values.orchestration.data.secondaryStorage.type | default "" }}
     {{- if and (eq (include "camundaPlatform.orchestrationEnabled" .) "true") (not .Values.global.noSecondaryStorage) $secondaryStorage }}
@@ -1473,8 +1479,8 @@ The following values inside your values.yaml need to be set but were not:
     {{- if $dependencies }}
       {{- $warningMessage := printf "%s %s %s"
           "[camunda][warning]"
-          (printf "global.networkPolicy.egress.enabled=true blocks all egress except the release namespace and DNS, but no global.networkPolicy.egress.extraRules are set. The release connects to %s, which is unreachable unless it runs in the release namespace." (join ", " $dependencies))
-          "Allow it with global.networkPolicy.egress.extraRules or the component networkPolicy.egress.extraRules; NetworkPolicies match IP blocks and labels, not hostnames."
+          (printf "global.networkPolicy.egress.enabled=true blocks all egress except the release namespace and DNS, but no global.networkPolicy.egress.extraRules or egress allowedNamespaces are set. The release connects to %s, which is unreachable unless it runs in the release namespace." (join ", " $dependencies))
+          "Allow it with global.networkPolicy.egress.allowedNamespaces for in-cluster namespaces, or global.networkPolicy.egress.extraRules or the component networkPolicy.egress.extraRules; NetworkPolicies match IP blocks and labels, not hostnames."
       -}}
       {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
     {{- end }}

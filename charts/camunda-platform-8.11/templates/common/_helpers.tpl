@@ -3358,16 +3358,18 @@ true
 {{- end -}}
 
 {{/*
-[camunda-platform] Resolves the ingress allowedNamespaces list of a component: the component
-networkPolicy.ingress.allowedNamespaces when it is set, including an empty list, otherwise
-global.networkPolicy.ingress.allowedNamespaces. Returns JSON of the form {"allowedNamespaces": [...]}.
+[camunda-platform] Resolves the allowedNamespaces list of a component for a direction, "ingress" by
+default or "egress": the component networkPolicy.<direction>.allowedNamespaces when it is set, including
+an empty list, otherwise global.networkPolicy.<direction>.allowedNamespaces. Returns JSON of the form
+{"allowedNamespaces": [...]}.
 
 Usage:
-{{ (include "camundaPlatform.networkPolicyAllowedNamespacesList" (dict "networkPolicy" .Values.connectors.networkPolicy "context" $) | fromJson).allowedNamespaces }}
+{{ (include "camundaPlatform.networkPolicyAllowedNamespacesList" (dict "networkPolicy" .Values.connectors.networkPolicy "direction" "egress" "context" $) | fromJson).allowedNamespaces }}
 */}}
 {{- define "camundaPlatform.networkPolicyAllowedNamespacesList" -}}
-{{- $global := (.context.Values.global.networkPolicy | default dict).ingress | default dict -}}
-{{- $component := (.networkPolicy | default dict).ingress | default dict -}}
+{{- $direction := .direction | default "ingress" -}}
+{{- $global := get (.context.Values.global.networkPolicy | default dict) $direction | default dict -}}
+{{- $component := get (.networkPolicy | default dict) $direction | default dict -}}
 {{- $list := $global.allowedNamespaces | default list -}}
 {{- if kindIs "slice" $component.allowedNamespaces -}}
   {{- $list = $component.allowedNamespaces -}}
@@ -3376,17 +3378,20 @@ Usage:
 {{- end -}}
 
 {{/*
-[camunda-platform] Renders one NetworkPolicyIngressRule per allowedNamespaces entry. A string entry, or
-an object entry with name, selects the namespace by its kubernetes.io/metadata.name label; an object
-entry with namespaceSelector uses that selector. An object entry may add a podSelector, set in the same
-peer, and ports, which replace the default ports.
+[camunda-platform] Renders one NetworkPolicy rule per allowedNamespaces entry, with peers under "from"
+by default or under "to" when peerKey is "to". A string entry, or an object entry with name, selects the
+namespace by its kubernetes.io/metadata.name label; an object entry with namespaceSelector uses that
+selector. An object entry may add a podSelector, set in the same peer, and ports, which replace the
+default ports. A rule without ports and without default ports allows every port.
 
 Usage:
 {{ include "camundaPlatform.networkPolicyAllowedNamespaceRules" (dict "allowedNamespaces" $list "defaultPorts" (list 8080) "context" $) }}
+{{ include "camundaPlatform.networkPolicyAllowedNamespaceRules" (dict "allowedNamespaces" $list "peerKey" "to" "context" $) }}
 */}}
 {{- define "camundaPlatform.networkPolicyAllowedNamespaceRules" -}}
 {{- $context := .context -}}
 {{- $defaultPorts := .defaultPorts -}}
+{{- $peerKey := .peerKey | default "from" -}}
 {{- range .allowedNamespaces }}
 {{- $entry := dict -}}
 {{- if kindIs "string" . -}}
@@ -3394,7 +3399,7 @@ Usage:
 {{- else -}}
   {{- $entry = tpl (toYaml .) $context | fromYaml -}}
 {{- end }}
-- from:
+- {{ $peerKey }}:
     - namespaceSelector:
         {{- if hasKey $entry "name" }}
         matchLabels:
@@ -3406,15 +3411,16 @@ Usage:
       podSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+  {{- if hasKey $entry "ports" }}
   ports:
-    {{- if hasKey $entry "ports" }}
     {{- toYaml $entry.ports | nindent 4 }}
-    {{- else }}
+  {{- else if $defaultPorts }}
+  ports:
     {{- range $defaultPorts }}
     - protocol: TCP
       port: {{ . }}
     {{- end }}
-    {{- end }}
+  {{- end }}
 {{- end }}
 {{- end -}}
 
@@ -3423,6 +3429,7 @@ Usage:
 namespace to reach the given pod ports, then the namespaces in the resolved allowedNamespaces list
 to reach the publicPorts, followed by global.networkPolicy.ingress.extraRules. Egress
 rules allow the release namespace and, with global.networkPolicy.egress.allowDNS, kube-dns on port 53,
+then the namespaces in the resolved egress allowedNamespaces list on any port unless an entry sets ports,
 followed by global.networkPolicy.egress.extraRules and the component networkPolicy.egress.extraRules.
 
 Usage:
@@ -3490,6 +3497,10 @@ spec:
           port: 53
         - protocol: TCP
           port: 53
+    {{- end }}
+    {{- $egressAllowedNamespaces := (include "camundaPlatform.networkPolicyAllowedNamespacesList" (dict "networkPolicy" .networkPolicy "direction" "egress" "context" .context) | fromJson).allowedNamespaces }}
+    {{- with $egressAllowedNamespaces }}
+    {{- include "camundaPlatform.networkPolicyAllowedNamespaceRules" (dict "allowedNamespaces" . "peerKey" "to" "context" $.context) | trim | nindent 4 }}
     {{- end }}
     {{- with $egress.extraRules }}
     {{- tpl (toYaml .) $.context | nindent 4 }}
