@@ -1,0 +1,10 @@
+global:
+  networkPolicy:
+    enabled: true
+    ingress:
+      allowedNamespaces:
+        - name: monitoring
+          ports:
+            - protocol: TCP
+              port: 9600
+              endPort: 9601

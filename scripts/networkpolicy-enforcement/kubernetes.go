@@ -70,6 +70,15 @@ func (r runner) createProbeNamespace(ctx context.Context, namespace string) erro
 	return nil
 }
 
+func (r runner) labelNamespace(namespace, label string) func(context.Context) error {
+	return func(ctx context.Context) error {
+		if _, err := r.kubectl(ctx, "label", "namespace", namespace, label, "--overwrite"); err != nil {
+			return fmt.Errorf("label namespace %s: %w", namespace, err)
+		}
+		return nil
+	}
+}
+
 func (r runner) policies(ctx context.Context) ([]string, error) {
 	out, err := r.kubectl(ctx, "get", "networkpolicy", "--namespace", r.cfg.namespace, "-o", "jsonpath={.items[*].metadata.name}")
 	if err != nil {

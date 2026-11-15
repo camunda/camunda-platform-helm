@@ -1,0 +1,8 @@
+global:
+  networkPolicy:
+    enabled: true
+orchestration:
+  networkPolicy:
+    ingress:
+      allowedNamespaces:
+        - namespaceSelector: {}
