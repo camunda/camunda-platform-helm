@@ -1,0 +1,4 @@
+connectors:
+  networkPolicy:
+    egress:
+      allowedNamespaces: []

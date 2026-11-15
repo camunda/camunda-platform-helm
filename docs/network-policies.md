@@ -25,6 +25,8 @@ Cilium).
 | `global.networkPolicy.egress.enabled` | `false` | Adds egress rules to the rendered policies. |
 | `global.networkPolicy.egress.allowDNS` | `true` | Allows egress to `kube-dns` in `kube-system` on port 53, UDP and TCP. |
 | `global.networkPolicy.egress.extraRules` | `[]` | `NetworkPolicyEgressRule` entries appended to every policy. Rendered with `tpl`. |
+| `global.networkPolicy.egress.allowedNamespaces` | `[]` | Namespaces every component may send traffic to. See [Egress to other namespaces](#egress-to-other-namespaces). |
+| `<component>.networkPolicy.egress.allowedNamespaces` | unset | Replaces the global egress list for that component. Unset inherits the global list; `[]` allows no other namespace. |
 | `<component>.networkPolicy.egress.enabled` | `true` | Per-component egress toggle. |
 | `<component>.networkPolicy.egress.extraRules` | `[]` | `NetworkPolicyEgressRule` entries appended to that component only, after the global ones. Rendered with `tpl`. |
 | `orchestration.networkPolicy.enabled` | `true` | Per-component toggle. |
@@ -168,6 +170,28 @@ global:
 
 The Hub components then reach the Orchestration Cluster on 8080 and 26500 only.
 
+With egress on, the Hub release also needs the egress half of the pair, and the
+Orchestration Cluster release needs it for any call back into the Hub namespace. On the
+Hub release:
+
+```yaml
+global:
+  networkPolicy:
+    enabled: true
+    egress:
+      enabled: true
+      allowedNamespaces:
+        - name: camunda-orchestration
+          ports:
+            - protocol: TCP
+              port: 8080
+            - protocol: TCP
+              port: 26500
+```
+
+Without `ports`, the egress entry allows every port in that namespace; the ingress
+policy of the Orchestration Cluster still limits the Hub to 8080 and 26500.
+
 ### Monitoring
 
 Prometheus scrapes the management port, which is not a client port. Allow it explicitly
@@ -218,16 +242,118 @@ global:
 kubectl label namespace tenant-a camunda.io/tenant-of=camunda
 ```
 
-### Database and Connectors in other namespaces
+### Connectors in another namespace
 
-A database in another namespace, and Connectors calling an Orchestration Cluster in
-another namespace with egress on, are egress-side cases. Allowed namespace lists for
-egress are planned for alpha3; until then use `global.networkPolicy.egress.extraRules`.
+A Connectors release in `camunda-connectors` calling an Orchestration Cluster in
+`camunda` needs both directions. On the Orchestration Cluster release, the ingress half,
+plus the egress half when Connectors exposes inbound webhooks the cluster calls:
+
+```yaml
+orchestration:
+  networkPolicy:
+    ingress:
+      allowedNamespaces: [camunda-connectors]
+    egress:
+      allowedNamespaces: [camunda-connectors]
+```
+
+On the Connectors release, typically with `orchestration.enabled: false`:
+
+```yaml
+global:
+  networkPolicy:
+    enabled: true
+    ingress:
+      allowedNamespaces: [camunda]
+    egress:
+      enabled: true
+      allowedNamespaces:
+        - name: camunda
+          ports:
+            - protocol: TCP
+              port: 8080
+            - protocol: TCP
+              port: 26500
+```
+
+### Database or Elasticsearch in its own namespace
+
+An in-cluster datastore, such as an ECK Elasticsearch cluster or a CloudNativePG
+PostgreSQL cluster, is reached through egress `allowedNamespaces`. Narrow each entry to
+the datastore pods and port:
+
+```yaml
+global:
+  networkPolicy:
+    egress:
+      allowedNamespaces:
+        - name: elastic-system
+          podSelector:
+            matchLabels:
+              elasticsearch.k8s.elastic.co/cluster-name: camunda
+          ports:
+            - protocol: TCP
+              port: 9200
+        - name: cnpg-system
+          podSelector:
+            matchLabels:
+              cnpg.io/cluster: camunda-db
+          ports:
+            - protocol: TCP
+              port: 5432
+```
+
+The datastore namespace must also allow the Camunda namespace in its own ingress
+policies, if it has any. A managed service outside the cluster, such as Amazon RDS or
+Elastic Cloud, has no namespace: add it with an `ipBlock` in
+`global.networkPolicy.egress.extraRules`.
+
+### Multi-tenant Optimize
+
+With one Optimize release per tenant, each Optimize release reaches the shared
+Elasticsearch on 9200 and the Orchestration Cluster on 8080:
+
+```yaml
+optimize:
+  networkPolicy:
+    egress:
+      allowedNamespaces:
+        - name: elastic-system
+          ports:
+            - protocol: TCP
+              port: 9200
+        - name: camunda
+          ports:
+            - protocol: TCP
+              port: 8080
+```
+
+The Orchestration Cluster release allows the tenant namespaces with the selector form,
+so a new tenant only needs the namespace label:
+
+```yaml
+orchestration:
+  networkPolicy:
+    ingress:
+      allowedNamespaces:
+        - namespaceSelector:
+            matchLabels:
+              camunda.io/tenant-of: "{{ .Release.Namespace }}"
+          ports:
+            - protocol: TCP
+              port: 8080
+```
+
+Never open the broker ports 26501 and 26502 to a tenant namespace.
 
 ### Upgrade order
 
 When a release starts calling another, upgrade the receiving release first, so its
-policy allows the caller before the caller starts sending traffic.
+ingress policy allows the caller before the caller starts sending traffic, then turn
+egress on last, on the calling release. With Argo CD, put the receiving release in an
+earlier sync wave. Sync waves order resources inside one Application only, so when the
+two releases are separate Applications there is no ordering between them: expect
+brief denials until both have synced.
 
 ### Migrating extraRules to allowedNamespaces
 
@@ -267,13 +393,16 @@ With egress on, each policy allows:
 2. With `allowDNS`, the `kube-dns` pods (`k8s-app: kube-dns`) in `kube-system` on port 53
    over UDP and TCP. Clusters whose DNS uses other labels or another namespace set
    `allowDNS: false` and add their own rule.
-3. `global.networkPolicy.egress.extraRules`, then the component `extraRules`.
+3. The resolved egress `allowedNamespaces` list, one rule per entry.
+4. `global.networkPolicy.egress.extraRules`, then the component `extraRules`.
 
 Everything else is blocked. The chart does not generate `ipBlock` rules for the
 external endpoints it is configured with: a `NetworkPolicy` matches pods, namespaces and
 CIDRs, not hostnames, and the IP behind a hostname such as a managed database or an
-OIDC provider can change. Add those destinations through `extraRules`. When egress is on
-with an external dependency and no `extraRules`, `helm install` prints a warning.
+OIDC provider can change. Add those destinations through `extraRules`, or in-cluster
+namespaces through `allowedNamespaces`. When egress is on with an external dependency
+and no egress `extraRules` or egress `allowedNamespaces` on any component, `helm install`
+prints a warning.
 
 | Component | Egress outside the release namespace |
 |---|---|
@@ -308,6 +437,30 @@ global:
               port: 443
 ```
 
+### Egress to other namespaces
+
+`global.networkPolicy.egress.allowedNamespaces` and the component
+`networkPolicy.egress.allowedNamespaces` take the same entry forms as the ingress lists
+and follow the same inherit-or-replace rule. Unlike ingress, an egress entry has no
+default ports: an entry without `ports` allows every port in the selected namespace.
+Add a `ports` list to narrow it:
+
+```yaml
+global:
+  networkPolicy:
+    egress:
+      enabled: true
+      allowedNamespaces:
+        - camunda-hub
+        - name: elastic-system
+          ports:
+            - protocol: TCP
+              port: 9200
+```
+
+Each entry renders one egress rule after the DNS rule and before the egress
+`extraRules`.
+
 ### Connectors
 
 Outbound connectors call endpoints that are defined in process models, not in the chart
@@ -340,7 +493,7 @@ connectors:
 
 Egress is off by default, so an upgrade does not change existing ingress-only policies.
 To turn egress on, list the external dependencies of each component from the table
-above, add them as `extraRules`, then set `global.networkPolicy.egress.enabled: true`.
+above, add them as `extraRules` or egress `allowedNamespaces`, then set `global.networkPolicy.egress.enabled: true`.
 The policies keep their names and are updated in place; `helm rollback` to a revision
 without egress removes the egress rules again.
 

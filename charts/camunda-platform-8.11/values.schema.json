@@ -1235,6 +1235,14 @@
                                     "description": "can be used to append NetworkPolicyEgressRule entries to every rendered NetworkPolicy, for example to allow an external database.",
                                     "default": [],
                                     "items": {}
+                                },
+                                "allowedNamespaces": {
+                                    "type": "array",
+                                    "description": "can be used to allow every component to reach pods in other namespaces, one egress rule per entry, added after the DNS rule and before the extraRules. An entry is a namespace name, or an object with either name or namespaceSelector, plus an optional podSelector and ports. An entry without ports allows every port. Strings support templating (e.g., {{ .Release.Namespace }}).",
+                                    "default": [],
+                                    "items": {
+                                        "$ref": "#/$defs/networkPolicyAllowedNamespace"
+                                    }
                                 }
                             }
                         }
@@ -2253,6 +2261,18 @@
                                     "description": "can be used to append NetworkPolicyEgressRule entries to the Identity NetworkPolicy only, after global.networkPolicy.egress.extraRules.",
                                     "default": [],
                                     "items": {}
+                                },
+                                "allowedNamespaces": {
+                                    "type": [
+                                        "array",
+                                        "null"
+                                    ],
+                                    "description": "can be used to replace global.networkPolicy.egress.allowedNamespaces for the Identity NetworkPolicy only. When unset, the global list is used; an empty list allows no other namespace.",
+                                    "default": null,
+                                    "nullable": true,
+                                    "items": {
+                                        "$ref": "#/$defs/networkPolicyAllowedNamespace"
+                                    }
                                 }
                             }
                         }
@@ -2508,6 +2528,17 @@
                                             "description": "can be used to append NetworkPolicyEgressRule entries to the Camunda Hub restapi NetworkPolicy only, after global.networkPolicy.egress.extraRules.",
                                             "default": [],
                                             "items": {}
+                                        },
+                                        "allowedNamespaces": {
+                                            "type": [
+                                                "array",
+                                                "null"
+                                            ],
+                                            "default": null,
+                                            "nullable": true,
+                                            "items": {
+                                                "$ref": "#/$defs/networkPolicyAllowedNamespace"
+                                            }
                                         }
                                     }
                                 }
@@ -2582,6 +2613,17 @@
                                             "description": "can be used to append NetworkPolicyEgressRule entries to the Camunda Hub websockets NetworkPolicy only, after global.networkPolicy.egress.extraRules.",
                                             "default": [],
                                             "items": {}
+                                        },
+                                        "allowedNamespaces": {
+                                            "type": [
+                                                "array",
+                                                "null"
+                                            ],
+                                            "default": null,
+                                            "nullable": true,
+                                            "items": {
+                                                "$ref": "#/$defs/networkPolicyAllowedNamespace"
+                                            }
                                         }
                                     }
                                 }
@@ -4718,6 +4760,18 @@
                                     "description": "can be used to append NetworkPolicyEgressRule entries to the Connectors NetworkPolicy only, after global.networkPolicy.egress.extraRules.",
                                     "default": [],
                                     "items": {}
+                                },
+                                "allowedNamespaces": {
+                                    "type": [
+                                        "array",
+                                        "null"
+                                    ],
+                                    "description": "can be used to replace global.networkPolicy.egress.allowedNamespaces for the Connectors NetworkPolicy only. When unset, the global list is used; an empty list allows no other namespace.",
+                                    "default": null,
+                                    "nullable": true,
+                                    "items": {
+                                        "$ref": "#/$defs/networkPolicyAllowedNamespace"
+                                    }
                                 }
                             }
                         }
@@ -5727,6 +5781,18 @@
                                     "description": "can be used to append NetworkPolicyEgressRule entries to the Orchestration Cluster NetworkPolicy only, after global.networkPolicy.egress.extraRules.",
                                     "default": [],
                                     "items": {}
+                                },
+                                "allowedNamespaces": {
+                                    "type": [
+                                        "array",
+                                        "null"
+                                    ],
+                                    "description": "can be used to replace global.networkPolicy.egress.allowedNamespaces for the Orchestration Cluster NetworkPolicy only. When unset, the global list is used; an empty list allows no other namespace.",
+                                    "default": null,
+                                    "nullable": true,
+                                    "items": {
+                                        "$ref": "#/$defs/networkPolicyAllowedNamespace"
+                                    }
                                 }
                             }
                         }
@@ -7381,6 +7447,18 @@
                                     "description": "can be used to append NetworkPolicyEgressRule entries to the Optimize NetworkPolicy only, after global.networkPolicy.egress.extraRules.",
                                     "default": [],
                                     "items": {}
+                                },
+                                "allowedNamespaces": {
+                                    "type": [
+                                        "array",
+                                        "null"
+                                    ],
+                                    "description": "can be used to replace global.networkPolicy.egress.allowedNamespaces for the Optimize NetworkPolicy only. When unset, the global list is used; an empty list allows no other namespace.",
+                                    "default": null,
+                                    "nullable": true,
+                                    "items": {
+                                        "$ref": "#/$defs/networkPolicyAllowedNamespace"
+                                    }
                                 }
                             }
                         }

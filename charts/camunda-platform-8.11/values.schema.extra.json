@@ -99,6 +99,17 @@
                                     }
                                 }
                             }
+                        },
+                        "egress": {
+                            "properties": {
+                                "allowedNamespaces": {
+                                    "type": "array",
+                                    "default": [],
+                                    "items": {
+                                        "$ref": "#/$defs/networkPolicyAllowedNamespace"
+                                    }
+                                }
+                            }
                         }
                     }
                 },
@@ -457,6 +468,22 @@
                                     }
                                 }
                             }
+                        },
+                        "egress": {
+                            "type": "object",
+                            "properties": {
+                                "allowedNamespaces": {
+                                    "type": [
+                                        "array",
+                                        "null"
+                                    ],
+                                    "default": null,
+                                    "nullable": true,
+                                    "items": {
+                                        "$ref": "#/$defs/networkPolicyAllowedNamespace"
+                                    }
+                                }
+                            }
                         }
                     }
                 },
@@ -638,6 +665,22 @@
                 "networkPolicy": {
                     "properties": {
                         "ingress": {
+                            "type": "object",
+                            "properties": {
+                                "allowedNamespaces": {
+                                    "type": [
+                                        "array",
+                                        "null"
+                                    ],
+                                    "default": null,
+                                    "nullable": true,
+                                    "items": {
+                                        "$ref": "#/$defs/networkPolicyAllowedNamespace"
+                                    }
+                                }
+                            }
+                        },
+                        "egress": {
                             "type": "object",
                             "properties": {
                                 "allowedNamespaces": {
@@ -842,6 +885,22 @@
                 "networkPolicy": {
                     "properties": {
                         "ingress": {
+                            "type": "object",
+                            "properties": {
+                                "allowedNamespaces": {
+                                    "type": [
+                                        "array",
+                                        "null"
+                                    ],
+                                    "default": null,
+                                    "nullable": true,
+                                    "items": {
+                                        "$ref": "#/$defs/networkPolicyAllowedNamespace"
+                                    }
+                                }
+                            }
+                        },
+                        "egress": {
                             "type": "object",
                             "properties": {
                                 "allowedNamespaces": {
@@ -1163,6 +1222,22 @@
                 "networkPolicy": {
                     "properties": {
                         "ingress": {
+                            "type": "object",
+                            "properties": {
+                                "allowedNamespaces": {
+                                    "type": [
+                                        "array",
+                                        "null"
+                                    ],
+                                    "default": null,
+                                    "nullable": true,
+                                    "items": {
+                                        "$ref": "#/$defs/networkPolicyAllowedNamespace"
+                                    }
+                                }
+                            }
+                        },
+                        "egress": {
                             "type": "object",
                             "properties": {
                                 "allowedNamespaces": {
@@ -1978,6 +2053,17 @@
                                             "description": "can be used to append NetworkPolicyEgressRule entries to the Camunda Hub restapi NetworkPolicy only, after global.networkPolicy.egress.extraRules.",
                                             "default": [],
                                             "items": {}
+                                        },
+                                        "allowedNamespaces": {
+                                            "type": [
+                                                "array",
+                                                "null"
+                                            ],
+                                            "default": null,
+                                            "nullable": true,
+                                            "items": {
+                                                "$ref": "#/$defs/networkPolicyAllowedNamespace"
+                                            }
                                         }
                                     }
                                 }
@@ -2046,6 +2132,17 @@
                                             "description": "can be used to append NetworkPolicyEgressRule entries to the Camunda Hub websockets NetworkPolicy only, after global.networkPolicy.egress.extraRules.",
                                             "default": [],
                                             "items": {}
+                                        },
+                                        "allowedNamespaces": {
+                                            "type": [
+                                                "array",
+                                                "null"
+                                            ],
+                                            "default": null,
+                                            "nullable": true,
+                                            "items": {
+                                                "$ref": "#/$defs/networkPolicyAllowedNamespace"
+                                            }
                                         }
                                     }
                                 }

@@ -433,6 +433,156 @@ func (s *NetworkPolicyTemplateTest) TestDifferentValuesInputs() {
 				}
 			},
 		},
+		{
+			Name:        "TestEgressAllowedNamespacesLiteralAllowsEveryPort",
+			Values:      networkPolicyValues(nil),
+			ValuesFiles: []string{"testdata/networkpolicy-egress-allowed-literal.yaml"},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.NotContains(t, output, "{{")
+				for _, name := range allPolicies {
+					doc := networkPolicyDoc(t, output, name)
+					require.True(t, strings.HasSuffix(doc, "    - to:\n        - namespaceSelector:\n            matchLabels:\n              kubernetes.io/metadata.name: \""+s.namespace+"-allowed\"\n"), name)
+					require.NotContains(t, doc, "    - from:\n        - namespaceSelector")
+				}
+			},
+		},
+		{
+			Name:        "TestEgressAllowedNamespacesSelectorAndPorts",
+			Values:      networkPolicyValues(nil),
+			ValuesFiles: []string{"testdata/networkpolicy-egress-allowed-namespaces.yaml"},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.NotContains(t, output, "{{")
+				require.Equal(t, len(allPolicies), strings.Count(output, "    - to:\n        - namespaceSelector:\n            matchLabels:\n              camunda.io/tenant-of: "+s.namespace+"\n          podSelector:\n            matchLabels:\n              app.kubernetes.io/name: hub-server\n"))
+				require.Equal(t, len(allPolicies), strings.Count(output, "kubernetes.io/metadata.name: \"elastic-system\"\n      ports:\n        - port: 9200\n          protocol: TCP\n"))
+			},
+		},
+		{
+			Name: "TestEgressComponentListReplacesGlobal",
+			Values: networkPolicyValues(map[string]string{
+				"connectors.networkPolicy.egress.allowedNamespaces[0]": "connectors-only",
+			}),
+			ValuesFiles: []string{"testdata/networkpolicy-egress-allowed-literal.yaml"},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				connectors := networkPolicyDoc(t, output, "camunda-platform-test-connectors")
+				require.Contains(t, connectors, "    - to:\n        - namespaceSelector:\n            matchLabels:\n              kubernetes.io/metadata.name: \"connectors-only\"\n")
+				require.NotContains(t, connectors, "-allowed")
+				require.Contains(t, networkPolicyDoc(t, output, "camunda-platform-test-zeebe"), "-allowed")
+				require.NotContains(t, networkPolicyDoc(t, output, "camunda-platform-test-zeebe"), "connectors-only")
+			},
+		},
+		{
+			Name:        "TestEgressComponentEmptyListNarrows",
+			Values:      networkPolicyValues(nil),
+			ValuesFiles: []string{"testdata/networkpolicy-egress-allowed-literal.yaml", "testdata/networkpolicy-egress-allowed-connectors-empty.yaml"},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				connectors := networkPolicyDoc(t, output, "camunda-platform-test-connectors")
+				require.NotContains(t, connectors, "-allowed")
+				require.Contains(t, connectors, "k8s-app: kube-dns")
+				require.Contains(t, networkPolicyDoc(t, output, "camunda-platform-test-zeebe"), "-allowed")
+			},
+		},
+		{
+			Name:        "TestEgressAllowedNamespacesDoNotChangeIngress",
+			Values:      networkPolicyValues(nil),
+			ValuesFiles: []string{"testdata/networkpolicy-egress-allowed-literal.yaml"},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Equal(t, len(allPolicies), strings.Count(output, "-allowed\""))
+				require.Equal(t, len(allPolicies), strings.Count(output, "    - from:\n"))
+			},
+		},
+		{
+			Name: "TestEgressWarningSuppressedByAllowedNamespaces",
+			Values: networkPolicyValues(networkPolicyEgress(map[string]string{
+				"global.identity.auth.enabled":                     "true",
+				"global.networkPolicy.egress.allowedNamespaces[0]": "camunda-db",
+			})),
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.NotContains(t, output, "blocks all egress")
+			},
+		},
+		{
+			Name: "TestEgressWarningSuppressedByComponentAllowedNamespaces",
+			Values: networkPolicyValues(networkPolicyEgress(map[string]string{
+				"global.identity.auth.enabled":                            "true",
+				"orchestration.networkPolicy.egress.allowedNamespaces[0]": "camunda-db",
+			})),
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.NotContains(t, output, "blocks all egress")
+			},
+		},
+		{
+			Name: "TestEgressHubAllowedNamespaces",
+			Values: networkPolicyValues(networkPolicyEgress(map[string]string{
+				"camundaHub.websockets.networkPolicy.egress.allowedNamespaces[0]": "hub-backend",
+			})),
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Equal(t, 1, strings.Count(output, "kubernetes.io/metadata.name: \"hub-backend\""))
+				require.Contains(t, networkPolicyDoc(t, output, "camunda-platform-test-web-modeler-websockets"), "    - to:\n        - namespaceSelector:\n            matchLabels:\n              kubernetes.io/metadata.name: \"hub-backend\"\n")
+			},
+		},
+		{
+			Name: "TestEgressAllowedNamespacesRuleOrder",
+			Values: networkPolicyValues(map[string]string{
+				"global.networkPolicy.egress.extraRules[0].to[0].ipBlock.cidr":        "10.20.0.0/16",
+				"orchestration.networkPolicy.egress.extraRules[0].to[0].ipBlock.cidr": "10.30.0.0/16",
+			}),
+			ValuesFiles: []string{"testdata/networkpolicy-egress-allowed-literal.yaml"},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				for _, name := range allPolicies {
+					doc := networkPolicyDoc(t, output, name)
+					egress := doc[strings.Index(doc, "  egress:\n"):]
+					require.Less(t, strings.Index(egress, "- podSelector: {}"), strings.Index(egress, "k8s-app: kube-dns"))
+					require.Less(t, strings.Index(egress, "k8s-app: kube-dns"), strings.Index(egress, "-allowed"))
+					require.Less(t, strings.Index(egress, "-allowed"), strings.Index(egress, "10.20.0.0/16"))
+				}
+				zeebe := networkPolicyDoc(t, output, "camunda-platform-test-zeebe")
+				require.Less(t, strings.Index(zeebe, "10.20.0.0/16"), strings.Index(zeebe, "10.30.0.0/16"))
+			},
+		},
+		{
+			Name:                    "TestEgressFailOnEmptyNamespaceSelector",
+			RenderTemplateExtraArgs: []string{"--skip-schema-validation"},
+			Values:                  networkPolicyValues(nil),
+			ValuesFiles:             []string{"testdata/networkpolicy-egress-allowed-empty-selector.yaml"},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), "global.networkPolicy.egress.allowedNamespaces has an entry with an empty namespaceSelector")
+			},
+		},
+		{
+			Name:                    "TestEgressFailOnNameAndSelector",
+			RenderTemplateExtraArgs: []string{"--skip-schema-validation"},
+			Values: networkPolicyValues(map[string]string{
+				"global.networkPolicy.enabled":                                                          "true",
+				"optimize.networkPolicy.egress.allowedNamespaces[0].name":                               "db",
+				"optimize.networkPolicy.egress.allowedNamespaces[0].namespaceSelector.matchLabels.team": "db",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), "optimize.networkPolicy.egress.allowedNamespaces must set exactly one")
+			},
+		},
+		{
+			Name:                    "TestEgressFailOnNeitherNameNorSelector",
+			RenderTemplateExtraArgs: []string{"--skip-schema-validation"},
+			Values: networkPolicyValues(map[string]string{
+				"global.networkPolicy.enabled": "true",
+				"camundaHub.restapi.networkPolicy.egress.allowedNamespaces[0].podSelector.matchLabels.app": "x",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), "camundaHub.restapi.networkPolicy.egress.allowedNamespaces must set exactly one")
+			},
+		},
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
@@ -476,6 +626,15 @@ func TestGoldenNetworkPolicies(t *testing.T) {
 			Templates:      []string{template},
 			SetValues:      networkPolicyValues(nil),
 			ValuesFiles:    []string{"testdata/networkpolicy-allowed-namespaces.yaml"},
+		})
+		suite.Run(t, &utils.TemplateGoldenTest{
+			ChartPath:      chartPath,
+			Release:        "camunda-platform-test",
+			Namespace:      "camunda-platform-test",
+			GoldenFileName: name + "-egress-allowednamespaces",
+			Templates:      []string{template},
+			SetValues:      networkPolicyValues(nil),
+			ValuesFiles:    []string{"testdata/networkpolicy-egress-allowed-namespaces.yaml"},
 		})
 	}
 }

@@ -1,0 +1,74 @@
+---
+# Source: camunda-platform/templates/orchestration/networkpolicy.yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: camunda-platform-test-zeebe
+  namespace: camunda-platform-test
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: camunda-platform-test
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    app.kubernetes.io/component: zeebe-broker
+    app.kubernetes.io/version: "8.11-SNAPSHOT"
+spec:
+  podSelector:
+    matchLabels:
+      app: camunda-platform
+      app.kubernetes.io/name: camunda-platform
+      app.kubernetes.io/instance: camunda-platform-test
+      app.kubernetes.io/managed-by: Helm
+      app.kubernetes.io/part-of: camunda-platform
+      app.kubernetes.io/component: zeebe-broker
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector: {}
+      ports:
+        - protocol: TCP
+          port: 8080
+        - protocol: TCP
+          port: 26501
+        - protocol: TCP
+          port: 26502
+        - protocol: TCP
+          port: 9600
+        - protocol: TCP
+          port: 26500
+  egress:
+    - to:
+        - podSelector: {}
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: "camunda-platform-test-allowed"
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              camunda.io/tenant-of: camunda-platform-test
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: hub-server
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: "elastic-system"
+      ports:
+        - port: 9200
+          protocol: TCP

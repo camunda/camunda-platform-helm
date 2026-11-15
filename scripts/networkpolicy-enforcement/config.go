@@ -34,6 +34,8 @@ type config struct {
 	scenarioDir    string
 	namespace      string
 	release        string
+	namespace2     string
+	release2       string
 	timeout        string
 	installCalico  bool
 	calicoManifest string
@@ -56,6 +58,7 @@ func parseConfig(args []string, lookupEnv func(string) string, stderr io.Writer)
 		chartDir:       envOrDefault(lookupEnv, "CHART_DIR", filepath.Join(cwd, "charts/camunda-platform-8.11")),
 		namespace:      "netpol",
 		release:        envOrDefault(lookupEnv, "RELEASE", "netpol"),
+		release2:       envOrDefault(lookupEnv, "RELEASE2", "netpol-split"),
 		timeout:        envOrDefault(lookupEnv, "TIMEOUT", "5m"),
 		calicoManifest: envOrDefault(lookupEnv, "CALICO_MANIFEST", "https://raw.githubusercontent.com/projectcalico/calico/"+calicoVersion+"/manifests/calico.yaml"),
 		retries:        10,
@@ -66,7 +69,7 @@ func parseConfig(args []string, lookupEnv func(string) string, stderr io.Writer)
 	flags.BoolVar(&cfg.installCalico, "install-calico", false, "install Calico before the scenarios")
 	flags.Usage = func() {
 		fmt.Fprintln(stderr, "Usage: networkpolicy-enforcement [-install-calico] [namespace]")
-		fmt.Fprintln(stderr, "Environment: CHART_DIR, RELEASE, TIMEOUT, CALICO_MANIFEST")
+		fmt.Fprintln(stderr, "Environment: CHART_DIR, RELEASE, RELEASE2, TIMEOUT, CALICO_MANIFEST")
 	}
 	if err := flags.Parse(args); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
@@ -81,6 +84,7 @@ func parseConfig(args []string, lookupEnv func(string) string, stderr io.Writer)
 	if flags.NArg() == 1 {
 		cfg.namespace = flags.Arg(0)
 	}
+	cfg.namespace2 = cfg.namespace + "-allowed"
 	cfg.scenarioDir = filepath.Join(cfg.chartDir, "test/integration/scenarios/networkpolicy")
 	return cfg, nil
 }
