@@ -29,6 +29,9 @@ type state struct {
 	installed     bool
 	egress        bool
 	egressExtra   bool
+	allowedNs     bool
+	selector      bool
+	connectorsNs  bool
 }
 
 type fakeCluster struct {
@@ -37,6 +40,10 @@ type fakeCluster struct {
 	insideBlocked bool
 	egressIgnored bool
 	dnsBlocked    bool
+	leakyAllowed  bool
+	stickyLabel   bool
+	ignoreReplace bool
+	labeled       map[string]bool
 	staleExecs    int
 	existing      []string
 	revisions     []state
@@ -59,11 +66,14 @@ func (f *fakeCluster) helm(args []string) {
 	case "install", "upgrade":
 		f.current = state{
 			installed:     true,
-			policies:      strings.Contains(joined, "global.networkPolicy.enabled=true") || strings.Contains(joined, "values-extrarules.yaml") || strings.Contains(joined, "values-egress.yaml"),
+			policies:      strings.Contains(joined, "global.networkPolicy.enabled=true") || strings.Contains(joined, "values-extrarules.yaml") || strings.Contains(joined, "values-egress.yaml") || strings.Contains(joined, "values-allowed-"),
 			egress:        strings.Contains(joined, "values-egress.yaml"),
 			egressExtra:   strings.Contains(joined, "values-egress-extrarules.yaml"),
 			extraRules:    strings.Contains(joined, "values-extrarules.yaml"),
 			connectorsOff: strings.Contains(joined, "connectors.networkPolicy.enabled=false"),
+			allowedNs:     strings.Contains(joined, "values-allowed-namespaces.yaml") || strings.Contains(joined, "values-allowed-component-override.yaml"),
+			selector:      strings.Contains(joined, "values-allowed-selector.yaml"),
+			connectorsNs:  !strings.Contains(joined, "values-allowed-component-override.yaml") || f.ignoreReplace,
 		}
 		f.revisions = append(f.revisions, f.current)
 	case "rollback":
@@ -80,6 +90,9 @@ func (f *fakeCluster) kubectl(args []string) (string, error) {
 		if slices.Contains(f.existing, args[2]) {
 			return "namespace/" + args[2], nil
 		}
+		return "", nil
+	case args[0] == "label":
+		f.label(args[2], args[3])
 		return "", nil
 	case args[0] == "get" && args[1] == "networkpolicy":
 		return strings.Join(f.policyNames(), " "), nil
@@ -100,6 +113,19 @@ func (f *fakeCluster) kubectl(args []string) (string, error) {
 		return "", f.exec(args)
 	}
 	return "", nil
+}
+
+func (f *fakeCluster) label(namespace, label string) {
+	if f.labeled == nil {
+		f.labeled = map[string]bool{}
+	}
+	if strings.HasSuffix(label, "-") {
+		if !f.stickyLabel {
+			delete(f.labeled, namespace)
+		}
+		return
+	}
+	f.labeled[namespace] = label == "camunda.io/tenant-of=netpol"
 }
 
 func (f *fakeCluster) policyNames() []string {
@@ -136,7 +162,14 @@ func (f *fakeCluster) allowed(from, component, port string) bool {
 	if !f.enforcing || !slices.Contains(f.policyNames(), "netpol-"+component) || from == "netpol" {
 		return true
 	}
-	return f.current.extraRules && from == "netpol-allowed" && (port == "8080" || f.leakyExtra)
+	if f.current.extraRules && from == "netpol-allowed" && (port == "8080" || f.leakyExtra) {
+		return true
+	}
+	clientPort := port == "8080" || (component == "zeebe" && port == "26500") || f.leakyAllowed
+	if f.current.allowedNs && from == "netpol-allowed" && clientPort {
+		return component == "zeebe" || f.current.connectorsNs
+	}
+	return f.current.selector && f.labeled[from] && clientPort
 }
 
 func (f *fakeCluster) egressExec(args []string) error {
@@ -193,6 +226,48 @@ func TestRunFailsWhenEgressBlocksDNS(t *testing.T) {
 	err := testRunner(&fakeCluster{enforcing: true, dnsBlocked: true}).run(context.Background())
 	if err == nil || !strings.HasPrefix(err.Error(), "S7") || !strings.Contains(err.Error(), "dns") {
 		t.Fatalf("expected S7 DNS failure, got %v", err)
+	}
+}
+
+func TestRunFailsWhenAllowedNamespacesOpenInternalPorts(t *testing.T) {
+	err := testRunner(&fakeCluster{enforcing: true, leakyAllowed: true}).run(context.Background())
+	if err == nil || !strings.HasPrefix(err.Error(), "S10") || !strings.Contains(err.Error(), ":9600") {
+		t.Fatalf("expected S10 failure on 9600, got %v", err)
+	}
+}
+
+func TestRunFailsWhenLabelRemovalIsNotEnforced(t *testing.T) {
+	err := testRunner(&fakeCluster{enforcing: true, stickyLabel: true}).run(context.Background())
+	if err == nil || !strings.HasPrefix(err.Error(), "S11 removing") || !strings.Contains(err.Error(), "netpol-outsider") {
+		t.Fatalf("expected S11 label removal failure, got %v", err)
+	}
+}
+
+func TestRunFailsWhenComponentListDoesNotReplaceGlobal(t *testing.T) {
+	err := testRunner(&fakeCluster{enforcing: true, ignoreReplace: true}).run(context.Background())
+	if err == nil || !strings.HasPrefix(err.Error(), "S12") || !strings.Contains(err.Error(), "connectors:8080") {
+		t.Fatalf("expected S12 failure on connectors, got %v", err)
+	}
+}
+
+func TestRunLabelsAndUnlabelsTheOutsiderNamespace(t *testing.T) {
+	f := &fakeCluster{enforcing: true}
+	if err := testRunner(f).run(context.Background()); err != nil {
+		t.Fatalf("run: %v", err)
+	}
+	for _, want := range []string{
+		"kubectl label namespace netpol-outsider camunda.io/tenant-of=netpol --overwrite",
+		"kubectl label namespace netpol-outsider camunda.io/tenant-of- --overwrite",
+	} {
+		if !slices.Contains(f.calls, want) {
+			t.Fatalf("missing %q", want)
+		}
+	}
+	unlabel := slices.Index(f.calls, "kubectl label namespace netpol-outsider camunda.io/tenant-of- --overwrite")
+	for _, c := range f.calls[unlabel:] {
+		if strings.HasPrefix(c, "helm upgrade") && !strings.Contains(c, "values-allowed-component-override.yaml") {
+			t.Fatalf("unexpected upgrade after label removal: %s", c)
+		}
 	}
 }
 

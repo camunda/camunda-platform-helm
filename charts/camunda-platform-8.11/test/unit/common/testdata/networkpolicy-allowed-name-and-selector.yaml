@@ -1,0 +1,11 @@
+global:
+  networkPolicy:
+    enabled: true
+connectors:
+  networkPolicy:
+    ingress:
+      allowedNamespaces:
+        - name: monitoring
+          namespaceSelector:
+            matchLabels:
+              team: monitoring
