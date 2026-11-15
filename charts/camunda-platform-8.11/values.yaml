@@ -825,6 +825,21 @@ global:
       ##           matchLabels:
       ##             kubernetes.io/metadata.name: ingress-nginx
       extraRules: []
+      ## @param global.networkPolicy.ingress.allowedNamespaces can be used to allow other namespaces to reach the client ports of every component, one ingress rule per entry, added before the extraRules. An entry is a namespace name, or an object with either name or namespaceSelector, plus an optional podSelector and ports that replace the default client ports. Strings support templating (e.g., {{ .Release.Namespace }}).
+      ## Example:
+      ## allowedNamespaces:
+      ##   - camunda-hub
+      ##   - namespaceSelector:
+      ##       matchLabels:
+      ##         camunda.io/tenant-of: "{{ .Release.Namespace }}"
+      ##   - name: monitoring
+      ##     podSelector:
+      ##       matchLabels:
+      ##         app.kubernetes.io/name: prometheus
+      ##     ports:
+      ##       - protocol: TCP
+      ##         port: 9600
+      allowedNamespaces: []
     ## @extra global.networkPolicy.egress configuration of the egress rules of the rendered NetworkPolicies.
     egress:
       ## @param global.networkPolicy.egress.enabled if true, adds egress rules to the rendered NetworkPolicies that allow traffic to pods in the release namespace, DNS if global.networkPolicy.egress.allowDNS is true, plus the egress extraRules; all other egress, such as an external database or OIDC provider, is blocked.
@@ -1228,6 +1243,10 @@ identity:
   networkPolicy:
     ## @param identity.networkPolicy.enabled if true and global.networkPolicy.enabled is true, renders an ingress NetworkPolicy for the Identity pods.
     enabled: true
+    ## @extra identity.networkPolicy.ingress configuration of the ingress rules of the Identity NetworkPolicy.
+    ingress:
+      ## @param identity.networkPolicy.ingress.allowedNamespaces [nullable] can be used to replace global.networkPolicy.ingress.allowedNamespaces for the Identity NetworkPolicy only. When unset, the global list is used; an empty list allows no other namespace.
+      allowedNamespaces:
     ## @extra identity.networkPolicy.egress configuration of the egress rules of the Identity NetworkPolicy.
     egress:
       ## @param identity.networkPolicy.egress.enabled if true and global.networkPolicy.egress.enabled is true, adds egress rules to the Identity NetworkPolicy.
@@ -1356,6 +1375,8 @@ camundaHub:
     logging: {}
     networkPolicy:
       enabled: true
+      ingress:
+        allowedNamespaces:
       egress:
         enabled: true
         extraRules: []
@@ -1368,6 +1389,8 @@ camundaHub:
     service: {}
     networkPolicy:
       enabled: true
+      ingress:
+        allowedNamespaces:
       egress:
         enabled: true
         extraRules: []
@@ -2129,6 +2152,10 @@ connectors:
   networkPolicy:
     ## @param connectors.networkPolicy.enabled if true and global.networkPolicy.enabled is true, renders an ingress NetworkPolicy for the Connectors pods.
     enabled: true
+    ## @extra connectors.networkPolicy.ingress configuration of the ingress rules of the Connectors NetworkPolicy.
+    ingress:
+      ## @param connectors.networkPolicy.ingress.allowedNamespaces [nullable] can be used to replace global.networkPolicy.ingress.allowedNamespaces for the Connectors NetworkPolicy only. When unset, the global list is used; an empty list allows no other namespace.
+      allowedNamespaces:
     ## @extra connectors.networkPolicy.egress configuration of the egress rules of the Connectors NetworkPolicy.
     egress:
       ## @param connectors.networkPolicy.egress.enabled if true and global.networkPolicy.egress.enabled is true, adds egress rules to the Connectors NetworkPolicy.
@@ -2555,6 +2582,10 @@ orchestration:
   networkPolicy:
     ## @param orchestration.networkPolicy.enabled if true and global.networkPolicy.enabled is true, renders an ingress NetworkPolicy for the Orchestration Cluster pods.
     enabled: true
+    ## @extra orchestration.networkPolicy.ingress configuration of the ingress rules of the Orchestration Cluster NetworkPolicy.
+    ingress:
+      ## @param orchestration.networkPolicy.ingress.allowedNamespaces [nullable] can be used to replace global.networkPolicy.ingress.allowedNamespaces for the Orchestration Cluster NetworkPolicy only. When unset, the global list is used; an empty list allows no other namespace.
+      allowedNamespaces:
     ## @extra orchestration.networkPolicy.egress configuration of the egress rules of the Orchestration Cluster NetworkPolicy.
     egress:
       ## @param orchestration.networkPolicy.egress.enabled if true and global.networkPolicy.egress.enabled is true, adds egress rules to the Orchestration Cluster NetworkPolicy.
@@ -3231,6 +3262,10 @@ optimize:
   networkPolicy:
     ## @param optimize.networkPolicy.enabled if true and global.networkPolicy.enabled is true, renders an ingress NetworkPolicy for the Optimize pods.
     enabled: true
+    ## @extra optimize.networkPolicy.ingress configuration of the ingress rules of the Optimize NetworkPolicy.
+    ingress:
+      ## @param optimize.networkPolicy.ingress.allowedNamespaces [nullable] can be used to replace global.networkPolicy.ingress.allowedNamespaces for the Optimize NetworkPolicy only. When unset, the global list is used; an empty list allows no other namespace.
+      allowedNamespaces:
     ## @extra optimize.networkPolicy.egress configuration of the egress rules of the Optimize NetworkPolicy.
     egress:
       ## @param optimize.networkPolicy.egress.enabled if true and global.networkPolicy.egress.enabled is true, adds egress rules to the Optimize NetworkPolicy.

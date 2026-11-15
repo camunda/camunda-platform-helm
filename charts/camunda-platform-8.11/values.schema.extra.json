@@ -87,6 +87,21 @@
     "properties": {
         "global": {
             "properties": {
+                "networkPolicy": {
+                    "properties": {
+                        "ingress": {
+                            "properties": {
+                                "allowedNamespaces": {
+                                    "type": "array",
+                                    "default": [],
+                                    "items": {
+                                        "$ref": "#/$defs/networkPolicyAllowedNamespace"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
                 "annotations": {"additionalProperties": true},
                 "labels": {"additionalProperties": true},
                 "commonLabels": {"additionalProperties": true},
@@ -425,6 +440,26 @@
         },
         "connectors": {
             "properties": {
+                "networkPolicy": {
+                    "properties": {
+                        "ingress": {
+                            "type": "object",
+                            "properties": {
+                                "allowedNamespaces": {
+                                    "type": [
+                                        "array",
+                                        "null"
+                                    ],
+                                    "default": null,
+                                    "nullable": true,
+                                    "items": {
+                                        "$ref": "#/$defs/networkPolicyAllowedNamespace"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
                 "resources": {
                     "additionalProperties": true,
                     "properties": {
@@ -600,6 +635,26 @@
         },
         "identity": {
             "properties": {
+                "networkPolicy": {
+                    "properties": {
+                        "ingress": {
+                            "type": "object",
+                            "properties": {
+                                "allowedNamespaces": {
+                                    "type": [
+                                        "array",
+                                        "null"
+                                    ],
+                                    "default": null,
+                                    "nullable": true,
+                                    "items": {
+                                        "$ref": "#/$defs/networkPolicyAllowedNamespace"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
                 "resources": {
                     "additionalProperties": true,
                     "properties": {
@@ -784,6 +839,26 @@
         },
         "optimize": {
             "properties": {
+                "networkPolicy": {
+                    "properties": {
+                        "ingress": {
+                            "type": "object",
+                            "properties": {
+                                "allowedNamespaces": {
+                                    "type": [
+                                        "array",
+                                        "null"
+                                    ],
+                                    "default": null,
+                                    "nullable": true,
+                                    "items": {
+                                        "$ref": "#/$defs/networkPolicyAllowedNamespace"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
                 "resources": {
                     "additionalProperties": true,
                     "properties": {
@@ -1085,6 +1160,26 @@
         },
         "orchestration": {
             "properties": {
+                "networkPolicy": {
+                    "properties": {
+                        "ingress": {
+                            "type": "object",
+                            "properties": {
+                                "allowedNamespaces": {
+                                    "type": [
+                                        "array",
+                                        "null"
+                                    ],
+                                    "default": null,
+                                    "nullable": true,
+                                    "items": {
+                                        "$ref": "#/$defs/networkPolicyAllowedNamespace"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
                 "resources": {
                     "additionalProperties": true,
                     "properties": {
@@ -1846,6 +1941,22 @@
                             "default": {},
                             "additionalProperties": true,
                             "properties": {
+                                "ingress": {
+                                    "type": "object",
+                                    "properties": {
+                                        "allowedNamespaces": {
+                                            "type": [
+                                                "array",
+                                                "null"
+                                            ],
+                                            "default": null,
+                                            "nullable": true,
+                                            "items": {
+                                                "$ref": "#/$defs/networkPolicyAllowedNamespace"
+                                            }
+                                        }
+                                    }
+                                },
                                 "enabled": {
                                     "type": "boolean",
                                     "description": "if true and global.networkPolicy.enabled is true, renders an ingress NetworkPolicy for the Camunda Hub restapi pods.",
@@ -1898,6 +2009,22 @@
                             "default": {},
                             "additionalProperties": true,
                             "properties": {
+                                "ingress": {
+                                    "type": "object",
+                                    "properties": {
+                                        "allowedNamespaces": {
+                                            "type": [
+                                                "array",
+                                                "null"
+                                            ],
+                                            "default": null,
+                                            "nullable": true,
+                                            "items": {
+                                                "$ref": "#/$defs/networkPolicyAllowedNamespace"
+                                            }
+                                        }
+                                    }
+                                },
                                 "enabled": {
                                     "type": "boolean",
                                     "description": "if true and global.networkPolicy.enabled is true, renders an ingress NetworkPolicy for the Camunda Hub websockets pods.",
@@ -1985,6 +2112,49 @@
         }
     },
     "$defs": {
+        "networkPolicyAllowedNamespace": {
+            "oneOf": [
+                {
+                    "type": "string",
+                    "minLength": 1
+                },
+                {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                        "name": {
+                            "type": "string",
+                            "minLength": 1
+                        },
+                        "namespaceSelector": {
+                            "type": "object",
+                            "minProperties": 1
+                        },
+                        "podSelector": {
+                            "type": "object"
+                        },
+                        "ports": {
+                            "type": "array",
+                            "items": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "oneOf": [
+                        {
+                            "required": [
+                                "name"
+                            ]
+                        },
+                        {
+                            "required": [
+                                "namespaceSelector"
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
         "topologySecret": {
             "type": "object",
             "additionalProperties": false,

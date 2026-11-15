@@ -4,6 +4,7 @@
       "labels" (include "connectors.labels" .)
       "matchLabels" (include "connectors.matchLabels" .)
       "ports" (list .Values.connectors.service.serverPort)
+      "publicPorts" (list .Values.connectors.service.serverPort)
       "networkPolicy" .Values.connectors.networkPolicy
       "context" .) }}
 {{- end -}}

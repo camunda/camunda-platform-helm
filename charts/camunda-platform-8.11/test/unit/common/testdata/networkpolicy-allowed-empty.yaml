@@ -1,0 +1,18 @@
+global:
+  networkPolicy:
+    enabled: true
+    ingress:
+      allowedNamespaces: []
+orchestration:
+  networkPolicy:
+    ingress:
+      allowedNamespaces: []
+camundaHub:
+  restapi:
+    networkPolicy:
+      ingress:
+        allowedNamespaces: []
+  websockets:
+    networkPolicy:
+      ingress:
+        allowedNamespaces: []
