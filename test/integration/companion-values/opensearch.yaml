@@ -83,7 +83,7 @@ extraObjects:
           restartPolicy: OnFailure
           containers:
             - name: register-template
-              image: curlimages/curl:8.10.1
+              image: curlimages/curl:8.23.0
               command:
                 - sh
                 - -c
