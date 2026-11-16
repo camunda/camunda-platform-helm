@@ -57,6 +57,7 @@ integration:
           persistence: elasticsearch
           features:
             - enterprise
+            - keycloak-admin-audience-off
         - name: opensearch
           enabled: true
           shortname: oske
