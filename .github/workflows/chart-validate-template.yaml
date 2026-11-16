@@ -95,7 +95,7 @@ jobs:
           INPUTS_CAMUNDA_HELM_DIR: ${{ inputs.camunda-helm-dir }}
       - name: Install Chart Verifier
         if: ${{ contains(github.event.*.labels.*.name, 'release') }}
-        uses: redhat-actions/openshift-tools-installer@1f130822bb0930e0ee02a119adcc3271a22b1499 # v3
+        uses: redhat-actions/openshift-tools-installer@bf1d8fd8fa963cff1d33688473e51f948748991e # v3
         with:
           source: "github"
           chart-verifier: "latest"
