@@ -46,7 +46,7 @@ func TestUpgradeSchemaDeclarations(t *testing.T) {
 		"webModelerPostgresql.image", "webModelerPostgresql.metrics.image", "webModelerPostgresql.volumePermissions.image",
 		"elasticsearch.image", "elasticsearch.metrics.image", "elasticsearch.volumePermissions.image", "elasticsearch.sysctlImage", "elasticsearch.copyTlsCerts.image",
 	} {
-		inputs = append(inputs, struct{ path, kind string }{image + ".registry", "string"}, struct{ path, kind string }{image + ".pullSecrets", "array"})
+		inputs = append(inputs, struct{ path, kind string }{image + ".registry", "string"}, struct{ path, kind string }{image + ".pullSecrets", "array"}, struct{ path, kind string }{image + ".tag", "string"})
 	}
 	for _, input := range inputs {
 		t.Run(input.path, func(t *testing.T) {

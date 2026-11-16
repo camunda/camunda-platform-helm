@@ -26,6 +26,7 @@
                     "properties": {
                         "image": {
                             "properties": {
+                                "tag": { "type": "string", "description": "(DEPRECATED) image tag" },
                                 "registry": { "type": "string" },
                                 "pullSecrets": { "type": "array" }
                             }
@@ -45,6 +46,7 @@
                             "properties": {
                                 "image": {
                                     "properties": {
+                                        "tag": { "type": "string", "description": "(DEPRECATED) image tag" },
                                         "registry": { "type": "string" },
                                         "pullSecrets": { "type": "array" }
                                     }
@@ -55,6 +57,7 @@
                             "properties": {
                                 "image": {
                                     "properties": {
+                                        "tag": { "type": "string", "description": "(DEPRECATED) image tag" },
                                         "registry": { "type": "string" },
                                         "pullSecrets": { "type": "array" }
                                     }
@@ -77,6 +80,7 @@
                     "properties": {
                         "image": {
                             "properties": {
+                                "tag": { "type": "string", "description": "(DEPRECATED) image tag" },
                                 "registry": { "type": "string" },
                                 "pullSecrets": { "type": "array" }
                             }
@@ -87,6 +91,7 @@
                     "properties": {
                         "image": {
                             "properties": {
+                                "tag": { "type": "string", "description": "(DEPRECATED) image tag" },
                                 "registry": { "type": "string" },
                                 "pullSecrets": { "type": "array" }
                             }
@@ -107,6 +112,7 @@
                     "properties": {
                         "image": {
                             "properties": {
+                                "tag": { "type": "string", "description": "(DEPRECATED) image tag" },
                                 "registry": { "type": "string" },
                                 "pullSecrets": { "type": "array" }
                             }
@@ -117,6 +123,7 @@
                     "properties": {
                         "image": {
                             "properties": {
+                                "tag": { "type": "string", "description": "(DEPRECATED) image tag" },
                                 "registry": { "type": "string" },
                                 "pullSecrets": { "type": "array" }
                             }
@@ -156,6 +163,7 @@
                     "properties": {
                         "image": {
                             "properties": {
+                                "tag": { "type": "string", "description": "(DEPRECATED) image tag" },
                                 "registry": { "type": "string" },
                                 "pullSecrets": { "type": "array" }
                             }
@@ -166,6 +174,7 @@
                     "properties": {
                         "image": {
                             "properties": {
+                                "tag": { "type": "string", "description": "(DEPRECATED) image tag" },
                                 "registry": { "type": "string" },
                                 "pullSecrets": { "type": "array" }
                             }
@@ -174,6 +183,7 @@
                 },
                 "sysctlImage": {
                     "properties": {
+                        "tag": { "type": "string", "description": "(DEPRECATED) image tag" },
                         "registry": { "type": "string" },
                         "pullSecrets": { "type": "array" }
                     }
@@ -182,6 +192,7 @@
                     "properties": {
                         "image": {
                             "properties": {
+                                "tag": { "type": "string", "description": "(DEPRECATED) image tag" },
                                 "registry": { "type": "string" },
                                 "pullSecrets": { "type": "array" }
                             }

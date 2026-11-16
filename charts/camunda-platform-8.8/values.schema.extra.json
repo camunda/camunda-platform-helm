@@ -1518,6 +1518,10 @@
                     "properties": {
                         "image": {
                             "properties": {
+                                "tag": {
+                                    "type": "string",
+                                    "description": "image tag"
+                                },
                                 "registry": {
                                     "type": "string"
                                 },
@@ -1532,6 +1536,10 @@
                     "properties": {
                         "image": {
                             "properties": {
+                                "tag": {
+                                    "type": "string",
+                                    "description": "image tag"
+                                },
                                 "registry": {
                                     "type": "string"
                                 },
@@ -1544,6 +1552,10 @@
                 },
                 "sysctlImage": {
                     "properties": {
+                        "tag": {
+                            "type": "string",
+                            "description": "image tag"
+                        },
                         "registry": {
                             "type": "string"
                         },
@@ -1556,6 +1568,10 @@
                     "properties": {
                         "image": {
                             "properties": {
+                                "tag": {
+                                    "type": "string",
+                                    "description": "image tag"
+                                },
                                 "registry": {
                                     "type": "string"
                                 },
@@ -1604,6 +1620,10 @@
                     "properties": {
                         "image": {
                             "properties": {
+                                "tag": {
+                                    "type": "string",
+                                    "description": "image tag"
+                                },
                                 "registry": {
                                     "type": "string"
                                 },
@@ -1633,6 +1653,10 @@
                             "properties": {
                                 "image": {
                                     "properties": {
+                                        "tag": {
+                                            "type": "string",
+                                            "description": "image tag"
+                                        },
                                         "registry": {
                                             "type": "string"
                                         },
@@ -1647,6 +1671,10 @@
                             "properties": {
                                 "image": {
                                     "properties": {
+                                        "tag": {
+                                            "type": "string",
+                                            "description": "image tag"
+                                        },
                                         "registry": {
                                             "type": "string"
                                         },
@@ -1677,6 +1705,10 @@
                     "properties": {
                         "image": {
                             "properties": {
+                                "tag": {
+                                    "type": "string",
+                                    "description": "image tag"
+                                },
                                 "registry": {
                                     "type": "string"
                                 },
@@ -1691,6 +1723,10 @@
                     "properties": {
                         "image": {
                             "properties": {
+                                "tag": {
+                                    "type": "string",
+                                    "description": "image tag"
+                                },
                                 "registry": {
                                     "type": "string"
                                 },
@@ -1719,6 +1755,10 @@
                     "properties": {
                         "image": {
                             "properties": {
+                                "tag": {
+                                    "type": "string",
+                                    "description": "image tag"
+                                },
                                 "registry": {
                                     "type": "string"
                                 },
@@ -1733,6 +1773,10 @@
                     "properties": {
                         "image": {
                             "properties": {
+                                "tag": {
+                                    "type": "string",
+                                    "description": "image tag"
+                                },
                                 "registry": {
                                     "type": "string"
                                 },
