@@ -41,6 +41,8 @@ import (
 // setup that scaffolds a config file deployment, optional docker credentials,
 // and test secrets in .env, then ends with a doctor checklist. Mirrors
 // `gh auth login` / `supabase init`.
+//
+//nolint:gocognit,gocyclo // split tracked in #7584
 func newInitCommand() *cobra.Command {
 	var nonInteractive bool
 	var envFile string

@@ -357,6 +357,8 @@ func applyEnvOverrides(rc *RootConfig) {
 }
 
 // applyMatrixEnvOverrides applies CAMUNDA_MATRIX_* environment variables to the matrix config.
+//
+//nolint:gocognit,gocyclo // split tracked in #7584
 func applyMatrixEnvOverrides(m *MatrixConfig, get func(string) string) {
 	if m == nil {
 		return

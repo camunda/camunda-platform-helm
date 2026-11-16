@@ -238,6 +238,8 @@ func (r *credentialReconciler) exists(ctx context.Context, ns string, kindName .
 // now hands the environment: it first syncs each namespace's ExternalSecrets
 // to the source, then re-keys Keycloak (while it still reaches its database)
 // and finally the PostgreSQL roles.
+//
+//nolint:gocognit,gocyclo // split tracked in #7584
 func (r *credentialReconciler) reconcile(ctx context.Context, in reconcileInput) error {
 	source, err := r.secretData(ctx, in.sourceNS, in.src.Name)
 	if err != nil {
@@ -543,6 +545,7 @@ func (r *credentialReconciler) priorValues(key, current string) []string {
 	return out
 }
 
+//nolint:gocognit // split tracked in #7584
 func (r *credentialReconciler) reconcileKeycloak(ctx context.Context, ns string, k matrix.KeycloakCredentialStore, value func(string) (string, error)) error {
 	ok, err := r.exists(ctx, ns, "deployment", k.Deployment)
 	if err != nil || !ok {

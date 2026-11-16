@@ -37,6 +37,8 @@ import (
 //	ensure --digest <d> --tag <t> [--move]   idempotently point a tag at a digest
 //
 // All deletes use the deleteTag endpoint (never deleteArtifact); see the package doc.
+//
+//nolint:gocognit // split tracked in #7584
 func runHarborTag(args []string) error {
 	if len(args) < 1 {
 		return fmt.Errorf("harbor-tag requires an op: source|digest|add|delete|ensure")

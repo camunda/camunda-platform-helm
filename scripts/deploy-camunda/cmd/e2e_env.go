@@ -42,6 +42,8 @@ func newE2EEnvCommand() *cobra.Command {
 // topology deploy: endpoints come from the orchestration namespace (via
 // render-e2e-env.sh), while the auth/host vars and credentials are overridden
 // to the Hub namespace where Identity/Keycloak run.
+//
+//nolint:gocognit // split tracked in #7584
 func newE2EEnvMergeCommand() *cobra.Command {
 	var (
 		orchestrationNamespace string
