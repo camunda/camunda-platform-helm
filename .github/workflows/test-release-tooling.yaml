@@ -50,6 +50,10 @@ jobs:
       - name: Test every Go module under scripts/
         run: make go.test-scripts
 
+      - name: Test the bash scripts with bats
+        if: ${{ !cancelled() && steps.tools.outcome == 'success' }}
+        run: bats test/scripts/*.bats
+
       - name: Lint every Go module under scripts/
         if: ${{ !cancelled() && steps.tools.outcome == 'success' }}
         run: make go.lint lintBase=HEAD~1
