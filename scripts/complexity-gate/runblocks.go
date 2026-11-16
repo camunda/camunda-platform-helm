@@ -51,7 +51,7 @@ type runBlock struct {
 	lines      int
 }
 
-func checkRunBlocks(repoRoot, base string, all bool, out io.Writer) error {
+func run(repoRoot, base string, all bool, out io.Writer) error {
 	head, before, err := changedRunBlocks(repoRoot, base, all)
 	if err != nil {
 		return err
