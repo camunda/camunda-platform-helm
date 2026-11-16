@@ -37,8 +37,7 @@ make mcp.build                        # TypeScript MCP server (tsc)
 
 ## Lint Commands
 ```bash
-make helm.lint chartPath=charts/camunda-platform-8.10       # Lint one chart (strict)
-make helm.lint-all                                           # Lint all matching charts
+helm lint charts/camunda-platform-8.10                       # Lint one chart; ct lint runs this command in CI (<v> - Validation / Lint)
 make go.fmt                                                  # Enforce Go formatting
 gofmt -l $(git ls-files '*.go')                              # Repo-wide Go format check (Repo - Go Format)
 make go.lint                                                 # golangci-lint every scripts/ module (issues new since origin/main)

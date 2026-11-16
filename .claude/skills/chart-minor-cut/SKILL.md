@@ -206,7 +206,7 @@ diff <(python3 -m json.tool OLD/values.schema.json) <(python3 -m json.tool NEW/v
 Run each command. Each command must pass.
 
 ```bash
-make helm.lint chartPath=NEW
+helm lint NEW
 make go.test chartPath=NEW
 make helm.repos-add
 make helm.dependency-update

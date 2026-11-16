@@ -336,19 +336,6 @@ helm.dependency-update:
 		helm dependency update $${chart_dir} || exit 1;\
 	done
 
-# helm.lint: verify that the chart is well-formed.
-.PHONY: helm.lint
-helm.lint:
-	echo "[$@] Chart dir: $(chartPath)"
-	helm lint --strict $(chartPath)
-
-# helm.lint: verify that the chart is well-formed.
-.PHONY: helm.lint-all
-helm.lint-all:
-	find $(chartPath) -name Chart.yaml -exec dirname {} \; | while read chart_dir; do\
-		$(MAKE) chartPath=$${chart_dir} helm.lint || exit $$?;\
-	done
-
 # helm.install: install the local chart into the current kubernetes cluster/namespace
 .PHONY: helm.install
 helm.install: helm.dependency-update
@@ -499,4 +486,4 @@ release.set-prs-version-label:
 #########################################################
 
 .PHONY: precommit.chores
-precommit.chores: .helm-version-check helm.lint helm.readme-update helm.schema-update go.update-golden-only-lite
+precommit.chores: .helm-version-check helm.readme-update helm.schema-update go.update-golden-only-lite

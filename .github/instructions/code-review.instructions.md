@@ -194,7 +194,7 @@ func TestDeploymentTemplate(t *testing.T) {
 - [ ] Are named templates (`define`) defined in `_helpers.tpl` files, not in resource templates?
 - [ ] Are component names derived from helpers (not hardcoded)?
 - [ ] Is `values.schema.json` updated when new required or constrained fields are added?
-- [ ] Is `helm lint` expected to pass? (run `make helm.lint chartPath=...` to verify)
+- [ ] Is `helm lint` expected to pass? (run `helm lint charts/camunda-platform-<version>` to verify)
 - [ ] Are multi-line configuration strings indented with `indent N | trim`?
 
 ---
@@ -222,4 +222,4 @@ time, cross-version scope creep, over-limit `run:` blocks). Additional pitfalls 
 - Kubernetes API conventions: <https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md>
 - Repository AI guidance: `AGENTS.md` and `.github/AGENTS.md`
 - Run full test suite: `make go.test chartPath=charts/camunda-platform-8.10`
-- Run helm lint: `make helm.lint chartPath=charts/camunda-platform-8.10`
+- Run helm lint: `helm lint charts/camunda-platform-8.10`

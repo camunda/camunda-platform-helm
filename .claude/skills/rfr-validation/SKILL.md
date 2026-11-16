@@ -144,6 +144,7 @@ Obtain values from your team's secret store. `deploy-camunda doctor` and `matrix
 - [ ] Each diff-implied tier-2 scenario passes.
 - [ ] `make go.update-golden-only chartPath=...` executed if templates changed, and updated goldens committed.
 - [ ] `make precommit.chores` clean.
+- [ ] `helm lint charts/camunda-platform-<version>` clean on each affected version.
 - [ ] `crev` review run; each finding addressed or acknowledged (see below).
 
 ## Pre-RFR Review (`crev`)
