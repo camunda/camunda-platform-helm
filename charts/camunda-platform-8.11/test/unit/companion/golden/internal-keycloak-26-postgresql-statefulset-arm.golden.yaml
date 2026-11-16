@@ -97,8 +97,6 @@ spec:
           app.kubernetes.io/name: internal-keycloak
           app.kubernetes.io/instance: camunda-platform-test
           app.kubernetes.io/component: postgresql
-          app.kubernetes.io/version: "16.16-alpine3.24"
-          app.kubernetes.io/managed-by: Helm
       spec:
         accessModes:
           - ReadWriteOnce
