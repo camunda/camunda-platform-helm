@@ -63,6 +63,7 @@ jobs:
       id-token: write
       packages: read
     container:
+      # CI follows the latest ci-runner image that build-ci-runner-image.yaml pushes
       image: ghcr.io/camunda/team-distribution/ci-runner:latest # zizmor: ignore[unpinned-images]
       credentials:
         username: ${{ github.actor }}

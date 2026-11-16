@@ -650,7 +650,7 @@ jobs:
 
           EOF
           else
-            # shellcheck disable=SC2016
+            # shellcheck disable=SC2016 # the backticks are literal Markdown code marks in the sed replacement
             IMAGE_ROWS="$(sed -E 's/^([^:]+): (.*)$/| \1 | `\2` |/' /tmp/image-versions.yaml)"
             cat << EOF >> "$GITHUB_STEP_SUMMARY"
           ## 📦 Dev Package Built ✅ (Camunda ${{ env.CAMUNDA_VERSION }})

@@ -143,7 +143,7 @@ cd "${migration_dir}"
 # The phase scripts expect env.sh to have been sourced (it fills defaults such as
 # CAMUNDA_HELM_CHART_VERSION). Our overrides above are preserved because env.sh
 # assigns every variable with a ${VAR:-default} guard.
-# shellcheck disable=SC1091
+# shellcheck disable=SC1091 # env.sh is in the camunda-deployment-references clone that this script makes at run time
 source ./env.sh
 bash 1-deploy-targets.sh --yes
 bash 2-backup.sh --yes

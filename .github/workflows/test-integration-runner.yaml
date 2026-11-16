@@ -352,6 +352,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 40
     container:
+      # CI follows the latest ci-runner image that build-ci-runner-image.yaml pushes
       image: ghcr.io/camunda/team-distribution/ci-runner:latest # zizmor: ignore[unpinned-images]
       credentials:
         username: ${{ github.actor }}
@@ -871,6 +872,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 40
     container:
+      # CI follows the latest ci-runner image that build-ci-runner-image.yaml pushes
       image: ghcr.io/camunda/team-distribution/ci-runner:latest # zizmor: ignore[unpinned-images]
       credentials:
         username: ${{ github.actor }}
@@ -1253,6 +1255,7 @@ jobs:
     needs: [install]
     runs-on: ${{ matrix.suite == 'full' && 'gcp-core-32-longrunning-big-ssd' || 'gcp-core-8-release' }}
     container:
+      # the input is a digest from ci-result-cache; the fallback follows the latest image that build-ci-runner-image.yaml pushes
       image: ${{ inputs.playwright-runner-image || 'ghcr.io/camunda/team-distribution/playwright-runner:latest' }} # zizmor: ignore[unpinned-images]
       credentials:
         username: ${{ github.actor }}
@@ -1367,6 +1370,7 @@ jobs:
     needs: [install]
     runs-on: gcp-core-32-longrunning-big-ssd
     container:
+      # the input is a digest from ci-result-cache; the fallback follows the latest image that build-ci-runner-image.yaml pushes
       image: ${{ inputs.playwright-runner-image || 'ghcr.io/camunda/team-distribution/playwright-runner:latest' }} # zizmor: ignore[unpinned-images]
       credentials:
         username: ${{ github.actor }}
@@ -1463,6 +1467,7 @@ jobs:
     needs: [install]
     runs-on: gcp-core-8-release
     container:
+      # the input is a digest from ci-result-cache; the fallback follows the latest image that build-ci-runner-image.yaml pushes
       image: ${{ inputs.playwright-runner-image || 'ghcr.io/camunda/team-distribution/playwright-runner:latest' }} # zizmor: ignore[unpinned-images]
       credentials:
         username: ${{ github.actor }}
@@ -1611,6 +1616,7 @@ jobs:
     needs: [upgrade]
     runs-on: gcp-core-8-release
     container:
+      # the input is a digest from ci-result-cache; the fallback follows the latest image that build-ci-runner-image.yaml pushes
       image: ${{ inputs.playwright-runner-image || 'ghcr.io/camunda/team-distribution/playwright-runner:latest' }} # zizmor: ignore[unpinned-images]
       credentials:
         username: ${{ github.actor }}
@@ -1888,6 +1894,7 @@ jobs:
     if: ${{ always() && (contains(needs.*.result, 'success') || contains(needs.*.result, 'skipped') || contains(needs.*.result, 'cancelled')) }}
     runs-on: ubuntu-latest
     container:
+      # CI follows the latest ci-runner image that build-ci-runner-image.yaml pushes
       image: ghcr.io/camunda/team-distribution/ci-runner:latest # zizmor: ignore[unpinned-images]
       credentials:
         username: ${{ github.actor }}
