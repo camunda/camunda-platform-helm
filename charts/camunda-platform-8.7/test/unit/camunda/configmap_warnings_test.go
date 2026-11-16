@@ -96,6 +96,7 @@ func (s *ConfigMapWarningsTemplateTest) TestBundledKeycloakCveWarning() {
 				var configmap corev1.ConfigMap
 				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 				s.Require().Contains(configmap.Data["warnings"], "CVE-2026-18963")
+				s.Require().Contains(configmap.Data["warnings"], "#notice-80")
 			},
 		},
 		{
@@ -140,6 +141,7 @@ func (s *ConfigMapWarningsTemplateTest) TestBundledKeycloakCveWarning() {
 				s.Require().Contains(warnings, "CVE-2026-18963")
 				s.Require().Contains(warnings, `uses the moving tag "bitnami-26"`)
 				s.Require().Contains(warnings, "frozen on the discontinued bitnamilegacy base")
+				s.Require().Contains(warnings, "#notice-80")
 			},
 		},
 		{
@@ -186,6 +188,7 @@ func (s *ConfigMapWarningsTemplateTest) TestBundledKeycloakCveWarning() {
 				warnings := configmap.Data["warnings"]
 				s.Require().Contains(warnings, "CVE-2026-18963")
 				s.Require().NotContains(warnings, "frozen on the discontinued bitnamilegacy base")
+				s.Require().NotContains(warnings, "#notice-80")
 			},
 		},
 		{
