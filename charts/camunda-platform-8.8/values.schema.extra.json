@@ -109,14 +109,17 @@
                     "properties": {
                         "mode": {
                             "type": "string",
-                            "enum": ["combined", "orchestration"],
+                            "enum": [
+                                "combined",
+                                "orchestration"
+                            ],
                             "default": "combined"
                         }
                     }
                 },
                 "multiregion": {
                     "type": "object",
-                    "description": "Multi-region configuration for the Orchestration cluster. WARNING: get your configuration reviewed by Camunda before going to production \u2014 see https://docs.camunda.io/docs/self-managed/concepts/multi-region/dual-region/.",
+                    "description": "Multi-region configuration for the Orchestration cluster. WARNING: get your configuration reviewed by Camunda before going to production — see https://docs.camunda.io/docs/self-managed/concepts/multi-region/dual-region/.",
                     "default": {},
                     "properties": {
                         "regions": {
@@ -1500,6 +1503,68 @@
                             }
                         }
                     }
+                },
+                "image": {
+                    "properties": {
+                        "registry": {
+                            "type": "string"
+                        },
+                        "pullSecrets": {
+                            "type": "array"
+                        }
+                    }
+                },
+                "metrics": {
+                    "properties": {
+                        "image": {
+                            "properties": {
+                                "registry": {
+                                    "type": "string"
+                                },
+                                "pullSecrets": {
+                                    "type": "array"
+                                }
+                            }
+                        }
+                    }
+                },
+                "volumePermissions": {
+                    "properties": {
+                        "image": {
+                            "properties": {
+                                "registry": {
+                                    "type": "string"
+                                },
+                                "pullSecrets": {
+                                    "type": "array"
+                                }
+                            }
+                        }
+                    }
+                },
+                "sysctlImage": {
+                    "properties": {
+                        "registry": {
+                            "type": "string"
+                        },
+                        "pullSecrets": {
+                            "type": "array"
+                        }
+                    }
+                },
+                "copyTlsCerts": {
+                    "properties": {
+                        "image": {
+                            "properties": {
+                                "registry": {
+                                    "type": "string"
+                                },
+                                "pullSecrets": {
+                                    "type": "array"
+                                }
+                            }
+                        }
+                    }
                 }
             }
         },
@@ -1528,6 +1593,152 @@
                                         ]
                                     }
                                 ]
+                            }
+                        },
+                        "registry": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "keycloakConfigCli": {
+                    "properties": {
+                        "image": {
+                            "properties": {
+                                "registry": {
+                                    "type": "string"
+                                },
+                                "pullSecrets": {
+                                    "type": "array"
+                                }
+                            }
+                        }
+                    }
+                },
+                "postgresql": {
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean"
+                        },
+                        "image": {
+                            "properties": {
+                                "registry": {
+                                    "type": "string"
+                                },
+                                "pullSecrets": {
+                                    "type": "array"
+                                }
+                            }
+                        },
+                        "metrics": {
+                            "properties": {
+                                "image": {
+                                    "properties": {
+                                        "registry": {
+                                            "type": "string"
+                                        },
+                                        "pullSecrets": {
+                                            "type": "array"
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "volumePermissions": {
+                            "properties": {
+                                "image": {
+                                    "properties": {
+                                        "registry": {
+                                            "type": "string"
+                                        },
+                                        "pullSecrets": {
+                                            "type": "array"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "identityPostgresql": {
+            "properties": {
+                "image": {
+                    "properties": {
+                        "registry": {
+                            "type": "string"
+                        },
+                        "pullSecrets": {
+                            "type": "array"
+                        }
+                    }
+                },
+                "metrics": {
+                    "properties": {
+                        "image": {
+                            "properties": {
+                                "registry": {
+                                    "type": "string"
+                                },
+                                "pullSecrets": {
+                                    "type": "array"
+                                }
+                            }
+                        }
+                    }
+                },
+                "volumePermissions": {
+                    "properties": {
+                        "image": {
+                            "properties": {
+                                "registry": {
+                                    "type": "string"
+                                },
+                                "pullSecrets": {
+                                    "type": "array"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "webModelerPostgresql": {
+            "properties": {
+                "image": {
+                    "properties": {
+                        "registry": {
+                            "type": "string"
+                        },
+                        "pullSecrets": {
+                            "type": "array"
+                        }
+                    }
+                },
+                "metrics": {
+                    "properties": {
+                        "image": {
+                            "properties": {
+                                "registry": {
+                                    "type": "string"
+                                },
+                                "pullSecrets": {
+                                    "type": "array"
+                                }
+                            }
+                        }
+                    }
+                },
+                "volumePermissions": {
+                    "properties": {
+                        "image": {
+                            "properties": {
+                                "registry": {
+                                    "type": "string"
+                                },
+                                "pullSecrets": {
+                                    "type": "array"
+                                }
                             }
                         }
                     }

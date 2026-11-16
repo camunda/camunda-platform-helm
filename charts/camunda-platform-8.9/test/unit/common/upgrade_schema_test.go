@@ -33,11 +33,22 @@ func TestUpgradeSchemaDeclarations(t *testing.T) {
 	t.Parallel()
 	source, err := os.ReadFile("../../../values.schema.json")
 	require.NoError(t, err)
-	for _, input := range []struct{ path, kind string }{
+	inputs := []struct{ path, kind string }{
 		{"global.image.tag", "string"},
 		{"orchestration.security.initialization.defaultRoles.admin.mappingRules", "array"},
 		{"orchestration.security.initialization.defaultRoles.connectors.mappingRules", "array"},
+		{"identityKeycloak.postgresql.enabled", "boolean"},
+	}
+	for _, image := range []string{
+		"identityKeycloak.image", "identityKeycloak.keycloakConfigCli.image",
+		"identityKeycloak.postgresql.image", "identityKeycloak.postgresql.metrics.image", "identityKeycloak.postgresql.volumePermissions.image",
+		"identityPostgresql.image", "identityPostgresql.metrics.image", "identityPostgresql.volumePermissions.image",
+		"webModelerPostgresql.image", "webModelerPostgresql.metrics.image", "webModelerPostgresql.volumePermissions.image",
+		"elasticsearch.image", "elasticsearch.metrics.image", "elasticsearch.volumePermissions.image", "elasticsearch.sysctlImage", "elasticsearch.copyTlsCerts.image",
 	} {
+		inputs = append(inputs, struct{ path, kind string }{image + ".registry", "string"}, struct{ path, kind string }{image + ".pullSecrets", "array"})
+	}
+	for _, input := range inputs {
 		t.Run(input.path, func(t *testing.T) {
 			node := source
 			for _, part := range strings.Split(input.path, ".") {
