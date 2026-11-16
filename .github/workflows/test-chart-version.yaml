@@ -285,8 +285,7 @@ jobs:
     uses: ./.github/workflows/test-gitops-phase.yaml
     with:
       camunda-helm-git-ref: "${{ github.event_name == 'merge_group' && github.sha || needs.init.outputs.pr-head-sha }}"
-      # A bare commit makes Flux clone the full history (no artifact within the phase deadline); a ref name is a shallow fetch.
-      camunda-helm-git-ref-name: "${{ github.event_name == 'merge_group' && github.ref || github.event_name == 'pull_request' && format('refs/pull/{0}/head', github.event.pull_request.number) || '' }}"
+      camunda-helm-git-ref-name: "${{ github.event_name == 'merge_group' && github.ref || github.event_name == 'pull_request' && (github.event.pull_request.head.repo.full_name == github.repository && format('refs/heads/{0}', github.head_ref) || format('refs/pull/{0}/head', github.event.pull_request.number)) || '' }}"
 
   integration-tests:
     # Skip integration tests for Renovate image/digest PRs - these images are already
