@@ -175,6 +175,7 @@ runs:
     - name: Add deploy-camunda to PATH
       if: inputs.binary-artifact-name != ''
       shell: bash
+      # GITHUB_PATH gets only the fixed directory ${RUNNER_TEMP}/bin
       run: | # zizmor: ignore[github-env]
         chmod +x "${RUNNER_TEMP}/bin/deploy-camunda"
         echo "${RUNNER_TEMP}/bin" >> "$GITHUB_PATH"
@@ -249,6 +250,7 @@ runs:
       shell: bash
       env:
         INPUTS_NAMESPACE_OVERRIDE: ${{ inputs.namespace-override }}
+      # TEST_NAMESPACE gets the namespace that the caller builds from workflow-vars and its matrix
       run: echo "TEST_NAMESPACE=${INPUTS_NAMESPACE_OVERRIDE}" | tee -a "$GITHUB_ENV" # zizmor: ignore[github-env]
 
     - name: Authenticate to cluster

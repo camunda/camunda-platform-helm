@@ -76,6 +76,7 @@ runs:
         TELEPORT_PROXY: ${{ env.INFRA_TELEPORT_PROXY || 'camunda.teleport.sh:443' }}
         TELEPORT_TOKEN: ${{ env.TELEPORT_TOKEN }}
         KUBERNETES_CLUSTER: ${{ env.CLUSTER_NAME }}
+      # GITHUB_ENV gets only the fixed path ${HOME}/.tbot-output/kubeconfig.yaml
       run: | # zizmor: ignore[github-env]
         set -euo pipefail
 
@@ -84,11 +85,7 @@ runs:
         TBOT_CONFIG="/tmp/tbot-config.yaml"
 
         # Cleanup temporary files on exit
-        # shellcheck disable=SC2329
-        cleanup() {
-          rm -f "${TBOT_CONFIG}"
-        }
-        trap cleanup EXIT
+        trap 'rm -f "${TBOT_CONFIG}"' EXIT
 
         teleport_auth() {
           echo "Authenticating with Teleport..."
