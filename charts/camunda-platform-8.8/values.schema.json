@@ -5296,7 +5296,7 @@
                             "properties": {
                                 "repository": {
                                     "type": "string",
-                                    "description": ""
+                                    "description": "image repository"
                                 },
                                 "tag": {
                                     "type": "string",
@@ -5318,7 +5318,7 @@
                             "properties": {
                                 "repository": {
                                     "type": "string",
-                                    "description": ""
+                                    "description": "image repository"
                                 },
                                 "tag": {
                                     "type": "string",
