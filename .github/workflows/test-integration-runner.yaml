@@ -709,8 +709,7 @@ jobs:
             fi
           fi
 
-          # legacy-ingress-arg is space-delimited (e.g. "--set foo=bar"); split it.
-          # shellcheck disable=SC2206
+          # shellcheck disable=SC2206 # legacy-ingress-arg is a space-delimited list of helm arguments (e.g. "--set foo=bar"), split on purpose
           LEGACY_TOKENS=($LEGACY_INGRESS_ARG)
           for tok in ${LEGACY_TOKENS[@]+"${LEGACY_TOKENS[@]}"}; do
             EXTRA_HELM_ARGS+=(--extra-helm-arg="$tok")
@@ -1125,8 +1124,7 @@ jobs:
             fi
           fi
 
-          # legacy-ingress-arg is space-delimited (e.g. "--set foo=bar"); split it.
-          # shellcheck disable=SC2206
+          # shellcheck disable=SC2206 # legacy-ingress-arg is a space-delimited list of helm arguments (e.g. "--set foo=bar"), split on purpose
           LEGACY_TOKENS=($LEGACY_INGRESS_ARG)
           for tok in ${LEGACY_TOKENS[@]+"${LEGACY_TOKENS[@]}"}; do
             EXTRA_HELM_ARGS+=(--extra-helm-arg="$tok")
