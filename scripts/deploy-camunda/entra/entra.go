@@ -412,7 +412,7 @@ func graphDelete(ctx context.Context, client *http.Client, token, path string) (
 		return 0, err
 	}
 	defer resp.Body.Close()
-	io.ReadAll(resp.Body) //nolint:errcheck // drain body
+	_, _ = io.Copy(io.Discard, resp.Body)
 	logging.Logger.Debug().Int("statusCode", resp.StatusCode).Msg("Graph API DELETE response")
 	return resp.StatusCode, nil
 }
