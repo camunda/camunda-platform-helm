@@ -22,6 +22,8 @@
 > - You upgrade from an earlier chart version whose release ran the legacy exporter. For example, the 8.7 chart enables it
 >   by default, and the 8.8 chart also enables it with `orchestration.migration.data.enabled: true`.
 > - You configured the exporter through environment variables or extra configuration, and you remove that configuration.
+>   Such an exporter can have an id other than `elasticsearch` or `opensearch`. In the calls below, use the id that
+>   `GET /actuator/exporters` reports.
 >
 > In each case, the exporter disappears only from the broker's *static* configuration.
 > The exporter stays in the broker's *dynamic* cluster configuration. After the restart, the broker sets it to
@@ -33,16 +35,16 @@
 >   Use `?dryRun=true` first. Log compaction stays halted until the delete completes.
 > - **Disable the exporter before the rollout.** Call `POST /actuator/exporters/{elasticsearch|opensearch}/disable`. Confirm
 >   with `GET /actuator/exporters` that all partitions report `DISABLED`. Then roll out the Helm change. A `DISABLED` exporter
->   does not halt compaction, but it stays in the dynamic configuration permanently. You cannot delete it, because the delete
->   accepts only exporters in `CONFIG_NOT_FOUND`. If you add the configuration back later, the exporter stays `DISABLED`.
->   Call `POST /actuator/exporters/{elasticsearch|opensearch}/enable` to resume exporting.
+>   does not halt compaction, but it stays in the dynamic configuration until you enable it again. You cannot delete it
+>   while it is `DISABLED`, because the delete accepts only exporters in `CONFIG_NOT_FOUND`. If you add the configuration
+>   back later, the exporter stays `DISABLED`. Call `POST /actuator/exporters/{elasticsearch|opensearch}/enable` to resume
+>   exporting. The exporter can miss the records written while it was disabled, because the broker can compact them in
+>   the meantime. Optimize then misses the data from that period.
 >
 > Each call applies to all brokers and partitions, so send it once to any broker. If you declared physical tenants, a call
 > without the `physicalTenant` query parameter also applies to every physical tenant that has an exporter with this id. To
 > remove or re-enable the exporter in one tenant only, add `?physicalTenant=<tenant-id>` to each call, including `enable`.
-> Without this parameter, the delete fails while the exporter is still configured in any other tenant. When you declare the
-> first physical tenant, the `default` tenant stops inheriting the root exporters. If the `default` tenant has no own legacy
-> exporter entry, this also removes the exporter there and needs one of the procedures above.
+> Without this parameter, the delete fails while the exporter is still configured in any other tenant.
 >
 > Ensure your Camunda version includes the exporter-state fix that stops the broker from re-enabling `CONFIG_NOT_FOUND`
 > exporters at restart while their configuration is still missing

@@ -10,6 +10,8 @@
 >   Tasklist data, keep the exporter until their importers have finished the 8.7 data, as the 8.7 to 8.8 upgrade guide
 >   describes. The importers detect completion from records that this exporter writes.
 > - You configured the exporter through environment variables or extra configuration, and you remove that configuration.
+>   Such an exporter can have an id other than `elasticsearch` or `opensearch`. In the calls below, use the id that
+>   `GET /actuator/exporters` reports.
 >
 > In each case, the exporter disappears only from the broker's *static* configuration.
 > The exporter stays in the broker's *dynamic* cluster configuration. After the restart, the broker sets it to
@@ -21,9 +23,11 @@
 >   Use `?dryRun=true` first. Log compaction stays halted until the delete completes.
 > - **Disable the exporter before the rollout.** Call `POST /actuator/exporters/{elasticsearch|opensearch}/disable`. Confirm
 >   with `GET /actuator/exporters` that all partitions report `DISABLED`. Then roll out the Helm change. A `DISABLED` exporter
->   does not halt compaction, but it stays in the dynamic configuration permanently. You cannot delete it, because the delete
->   accepts only exporters in `CONFIG_NOT_FOUND`. If you add the configuration back later, the exporter stays `DISABLED`.
->   Call `POST /actuator/exporters/{elasticsearch|opensearch}/enable` to resume exporting.
+>   does not halt compaction, but it stays in the dynamic configuration until you enable it again. You cannot delete it
+>   while it is `DISABLED`, because the delete accepts only exporters in `CONFIG_NOT_FOUND`. If you add the configuration
+>   back later, the exporter stays `DISABLED`. Call `POST /actuator/exporters/{elasticsearch|opensearch}/enable` to resume
+>   exporting. The exporter can miss the records written while it was disabled, because the broker can compact them in
+>   the meantime. Optimize then misses the data from that period.
 >
 > Each call applies to all brokers and partitions, so send it once to any broker. Ensure your Camunda version includes the
 > exporter-state fix that stops the broker from re-enabling `CONFIG_NOT_FOUND` exporters at restart while their
