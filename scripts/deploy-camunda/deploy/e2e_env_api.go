@@ -12,18 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package deploy
 
 import (
 	"fmt"
+	"io"
 	"net/url"
 	"os"
 	"os/exec"
 	"regexp"
 	"sort"
 	"strings"
-
-	"github.com/spf13/cobra"
 )
 
 // apiSuiteKeys are the variables `e2e-env api-suite` may set. A value already
@@ -217,63 +216,45 @@ func identityClientSecret(kubeContext, namespace, clientID string) (string, erro
 	return decodeSecretValue(string(out))
 }
 
-func newE2EEnvAPISuiteCommand() *cobra.Command {
-	var (
-		envFile      string
-		namespace    string
-		kubeContext  string
-		auth         string
-		multiTenancy bool
-		output       string
-		ci           bool
-	)
+type APISuiteEnvOptions struct {
+	EnvFile      string
+	Namespace    string
+	KubeContext  string
+	Auth         string
+	MultiTenancy bool
+	Output       string
+	CI           bool
+}
 
-	cmd := &cobra.Command{
-		Use:   "api-suite",
-		Short: "Write the REST v2 API suite's variables for a deployment, for bash to source",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			content, err := os.ReadFile(envFile)
-			if err != nil {
-				return err
-			}
-			preset := map[string]string{}
-			for _, key := range apiSuiteKeys {
-				preset[key] = os.Getenv(key)
-			}
-			vars, secrets, err := apiSuiteEnv(apiSuiteInputs{
-				Env:          parseEnvFile(string(content)),
-				Auth:         auth,
-				MultiTenancy: multiTenancy,
-				Preset:       preset,
-			}, func(clientID string) (string, error) {
-				return identityClientSecret(kubeContext, namespace, clientID)
-			})
-			if err != nil {
-				return err
-			}
-			if ci {
-				for _, s := range secrets {
-					fmt.Fprintf(cmd.OutOrStdout(), "::add-mask::%s\n", s)
-				}
-			}
-			if err := os.WriteFile(output, []byte(shellEnv(vars)), 0o600); err != nil {
-				return err
-			}
-			fmt.Fprintf(os.Stderr, "REST v2 API suite: %s, gRPC %s (version %s, auth %s, multi-tenancy %s)\n",
-				vars["BASE_URL"], vars["GRPC_ADDRESS"], vars["ZEEBE_VERSION"], vars["AUTH_METHOD"], vars["MT"])
-			return nil
-		},
+func WriteAPISuiteEnv(out io.Writer, opts APISuiteEnvOptions) error {
+	content, err := os.ReadFile(opts.EnvFile)
+	if err != nil {
+		return err
 	}
-
-	cmd.Flags().StringVar(&envFile, "env-file", "", "the deployment's rendered e2e .env")
-	cmd.Flags().StringVar(&namespace, "namespace", "", "namespace of the deployment")
-	cmd.Flags().StringVar(&kubeContext, "kube-context", "", "kube context (optional)")
-	cmd.Flags().StringVar(&auth, "auth", "", `the scenario's auth type; "basic" runs the suite with basic auth`)
-	cmd.Flags().BoolVar(&multiTenancy, "mt", false, "the deployment has multi-tenancy enabled")
-	cmd.Flags().StringVar(&output, "output", "", "file to write the variables to")
-	cmd.Flags().BoolVar(&ci, "ci", false, "print ::add-mask:: lines for the secrets")
-	_ = cmd.MarkFlagRequired("env-file")
-	_ = cmd.MarkFlagRequired("namespace")
-	_ = cmd.MarkFlagRequired("output")
-	return cmd
+	preset := map[string]string{}
+	for _, key := range apiSuiteKeys {
+		preset[key] = os.Getenv(key)
+	}
+	vars, secrets, err := apiSuiteEnv(apiSuiteInputs{
+		Env:          parseEnvFile(string(content)),
+		Auth:         opts.Auth,
+		MultiTenancy: opts.MultiTenancy,
+		Preset:       preset,
+	}, func(clientID string) (string, error) {
+		return identityClientSecret(opts.KubeContext, opts.Namespace, clientID)
+	})
+	if err != nil {
+		return err
+	}
+	if opts.CI {
+		for _, s := range secrets {
+			fmt.Fprintf(out, "::add-mask::%s\n", s)
+		}
+	}
+	if err := os.WriteFile(opts.Output, []byte(shellEnv(vars)), 0o600); err != nil {
+		return err
+	}
+	fmt.Fprintf(os.Stderr, "REST v2 API suite: %s, gRPC %s (version %s, auth %s, multi-tenancy %s)\n",
+		vars["BASE_URL"], vars["GRPC_ADDRESS"], vars["ZEEBE_VERSION"], vars["AUTH_METHOD"], vars["MT"])
+	return nil
 }
