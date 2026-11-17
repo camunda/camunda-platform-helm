@@ -29,6 +29,8 @@ func TestUpgradeSchemaDeclarations(t *testing.T) {
 	require.NoError(t, err)
 	inputs := []struct{ path, kind string }{
 		{"identityKeycloak.postgresql.enabled", "boolean"},
+		{"webModelerPostgresql.metrics.image.repository", "string"},
+		{"webModelerPostgresql.volumePermissions.image.repository", "string"},
 	}
 	for _, image := range []string{
 		"identityKeycloak.image", "identityKeycloak.keycloakConfigCli.image",

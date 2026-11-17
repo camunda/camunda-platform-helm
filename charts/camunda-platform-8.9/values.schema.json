@@ -4837,6 +4837,10 @@
                     "properties": {
                         "image": {
                             "properties": {
+                                "repository": {
+                                    "type": "string",
+                                    "description": "(DEPRECATED)"
+                                },
                                 "tag": {
                                     "type": "string",
                                     "description": "(DEPRECATED) image tag"
@@ -4855,6 +4859,10 @@
                     "properties": {
                         "image": {
                             "properties": {
+                                "repository": {
+                                    "type": "string",
+                                    "description": "(DEPRECATED)"
+                                },
                                 "tag": {
                                     "type": "string",
                                     "description": "(DEPRECATED) image tag"

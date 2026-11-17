@@ -38,6 +38,8 @@ func TestUpgradeSchemaDeclarations(t *testing.T) {
 		{"orchestration.security.initialization.defaultRoles.admin.mappingRules", "array"},
 		{"orchestration.security.initialization.defaultRoles.connectors.mappingRules", "array"},
 		{"identityKeycloak.postgresql.enabled", "boolean"},
+		{"webModelerPostgresql.metrics.image.repository", "string"},
+		{"webModelerPostgresql.volumePermissions.image.repository", "string"},
 	}
 	for _, image := range []string{
 		"identityKeycloak.image", "identityKeycloak.keycloakConfigCli.image",

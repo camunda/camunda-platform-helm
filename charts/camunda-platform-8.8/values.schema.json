@@ -5294,6 +5294,10 @@
                     "properties": {
                         "image": {
                             "properties": {
+                                "repository": {
+                                    "type": "string",
+                                    "description": ""
+                                },
                                 "tag": {
                                     "type": "string",
                                     "description": "image tag"
@@ -5312,6 +5316,10 @@
                     "properties": {
                         "image": {
                             "properties": {
+                                "repository": {
+                                    "type": "string",
+                                    "description": ""
+                                },
                                 "tag": {
                                     "type": "string",
                                     "description": "image tag"
