@@ -29,6 +29,8 @@ func TestUpgradeSchemaDeclarations(t *testing.T) {
 	require.NoError(t, err)
 	inputs := []struct{ path, kind string }{
 		{"identityKeycloak.postgresql.enabled", "boolean"},
+		{"webModelerPostgresql.metrics.image.repository", "string"},
+		{"webModelerPostgresql.volumePermissions.image.repository", "string"},
 	}
 	for _, image := range []string{
 		"identityKeycloak.image", "identityKeycloak.keycloakConfigCli.image",
@@ -37,7 +39,7 @@ func TestUpgradeSchemaDeclarations(t *testing.T) {
 		"webModelerPostgresql.image", "webModelerPostgresql.metrics.image", "webModelerPostgresql.volumePermissions.image",
 		"elasticsearch.image", "elasticsearch.metrics.image", "elasticsearch.volumePermissions.image", "elasticsearch.sysctlImage", "elasticsearch.copyTlsCerts.image",
 	} {
-		inputs = append(inputs, struct{ path, kind string }{image + ".registry", "string"}, struct{ path, kind string }{image + ".pullSecrets", "array"})
+		inputs = append(inputs, struct{ path, kind string }{image + ".registry", "string"}, struct{ path, kind string }{image + ".pullSecrets", "array"}, struct{ path, kind string }{image + ".tag", "string"})
 	}
 	for _, input := range inputs {
 		t.Run(input.path, func(t *testing.T) {

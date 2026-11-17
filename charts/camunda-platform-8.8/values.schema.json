@@ -2107,6 +2107,10 @@
                                     "description": "",
                                     "default": "bitnamilegacy/os-shell"
                                 },
+                                "tag": {
+                                    "type": "string",
+                                    "description": "image tag"
+                                },
                                 "registry": {
                                     "type": "string"
                                 },
@@ -2127,6 +2131,10 @@
                                     "type": "string",
                                     "description": "",
                                     "default": "bitnamilegacy/postgres-exporter"
+                                },
+                                "tag": {
+                                    "type": "string",
+                                    "description": "image tag"
                                 },
                                 "registry": {
                                     "type": "string"
@@ -2414,6 +2422,10 @@
                                             "description": "",
                                             "default": "bitnamilegacy/os-shell"
                                         },
+                                        "tag": {
+                                            "type": "string",
+                                            "description": "image tag"
+                                        },
                                         "registry": {
                                             "type": "string"
                                         },
@@ -2434,6 +2446,10 @@
                                             "type": "string",
                                             "description": "",
                                             "default": "bitnamilegacy/postgres-exporter"
+                                        },
+                                        "tag": {
+                                            "type": "string",
+                                            "description": "image tag"
                                         },
                                         "registry": {
                                             "type": "string"
@@ -2629,6 +2645,10 @@
                                     "type": "string",
                                     "description": "",
                                     "default": "bitnamilegacy/keycloak-config-cli"
+                                },
+                                "tag": {
+                                    "type": "string",
+                                    "description": "image tag"
                                 },
                                 "registry": {
                                     "type": "string"
@@ -5274,6 +5294,14 @@
                     "properties": {
                         "image": {
                             "properties": {
+                                "repository": {
+                                    "type": "string",
+                                    "description": "image repository"
+                                },
+                                "tag": {
+                                    "type": "string",
+                                    "description": "image tag"
+                                },
                                 "registry": {
                                     "type": "string"
                                 },
@@ -5288,6 +5316,14 @@
                     "properties": {
                         "image": {
                             "properties": {
+                                "repository": {
+                                    "type": "string",
+                                    "description": "image repository"
+                                },
+                                "tag": {
+                                    "type": "string",
+                                    "description": "image tag"
+                                },
                                 "registry": {
                                     "type": "string"
                                 },
@@ -8680,6 +8716,10 @@
                             "description": "",
                             "default": "bitnamilegacy/os-shell"
                         },
+                        "tag": {
+                            "type": "string",
+                            "description": "image tag"
+                        },
                         "registry": {
                             "type": "string"
                         },
@@ -8729,6 +8769,10 @@
                                     "description": "",
                                     "default": "bitnamilegacy/elasticsearch-exporter"
                                 },
+                                "tag": {
+                                    "type": "string",
+                                    "description": "image tag"
+                                },
                                 "registry": {
                                     "type": "string"
                                 },
@@ -8750,6 +8794,10 @@
                                     "description": "",
                                     "default": "bitnamilegacy/os-shell"
                                 },
+                                "tag": {
+                                    "type": "string",
+                                    "description": "image tag"
+                                },
                                 "registry": {
                                     "type": "string"
                                 },
@@ -8770,6 +8818,10 @@
                                     "type": "string",
                                     "description": "",
                                     "default": "bitnamilegacy/os-shell"
+                                },
+                                "tag": {
+                                    "type": "string",
+                                    "description": "image tag"
                                 },
                                 "registry": {
                                     "type": "string"
