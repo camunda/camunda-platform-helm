@@ -284,10 +284,10 @@ file that changes only an image's registry or repository must also set a tag or 
 The full `-f` order (last wins), as built by
 [`BuildValuesChain`](deploy/chain.go) and `prepareScenarioValues`:
 
-1. common values, read from `common/` two levels above the scenario directory
-   (`test/integration/common/` for `chart-full-setup`); in-repo charts keep
-   theirs in `test/integration/scenarios/common/`, so this layer is currently
-   empty for them
+1. common values, read from the `common/` sibling of the scenario directory
+   (`test/integration/scenarios/common/` for `chart-full-setup`), e.g.
+   `values-integration-test.yaml`, plus the platform subdirectory
+   (`common/gke/`, `common/eks/`) when `--platform` is set
 2. chart-root overlays (`--values-preset`, e.g. `values-latest.yaml`, `values-digest.yaml`)
 3. scenario layers (`base` + identity + persistence + platform + features, merged)
 4. `--extra-values`, in the order given; for a registry scenario its declared
