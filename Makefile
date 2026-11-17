@@ -473,10 +473,6 @@ release.generate-and-commit: release.generate-notes
 	git add $(chartPath);\
 	git commit -m "chore: add generated files for camunda-platform $(chartVersion)"
 
-.PHONY: release.verify-components-version
-release.verify-components-version:
-	@bash scripts/verify-components-version.sh
-
 .PHONY: release.set-prs-version-label
 release.set-prs-version-label:
 	@bash scripts/set-prs-version-label.sh
