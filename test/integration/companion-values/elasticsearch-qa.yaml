@@ -14,7 +14,7 @@ protocol: http
 # See elasticsearch.yaml for why this must not gate on green.
 clusterHealthCheckParams: "wait_for_status=yellow&timeout=1s"
 
-imageTag: "8.18.0"
+imageTag: "8.19.16"
 
 createCert: false
 
