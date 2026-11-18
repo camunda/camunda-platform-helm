@@ -19,7 +19,7 @@ connectors:
   # https://hub.docker.com/r/camunda/connectors-bundle/tags
   image:
     repository: camunda/connectors-bundle
-    tag: 8.7.32
+    tag: 8.7.33
 
 operate:
   # https://hub.docker.com/r/camunda/operate/tags
@@ -65,7 +65,7 @@ identity:
   # https://hub.docker.com/r/camunda/identity/tags
   image:
     repository: camunda/identity
-    tag: 8.7.29
+    tag: 8.7.30
 
 identityKeycloak:
   image:
