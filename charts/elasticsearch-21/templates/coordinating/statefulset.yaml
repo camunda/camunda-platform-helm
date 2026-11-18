@@ -237,6 +237,8 @@ spec:
             {{- if .Values.security.enabled }}
             {{- include "elasticsearch.configure.security" . | nindent 12 }}
             {{- end }}
+            - name: JDK_JAVA_OPTIONS
+              value: "-XX:-UseBASE64Intrinsics"
             {{- if .Values.coordinating.extraEnvVars }}
             {{- include "common.tplvalues.render" ( dict "value" .Values.coordinating.extraEnvVars "context" $ ) | nindent 12 }}
             {{- end }}

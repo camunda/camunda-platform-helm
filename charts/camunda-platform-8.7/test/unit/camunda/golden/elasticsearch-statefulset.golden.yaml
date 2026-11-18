@@ -178,6 +178,8 @@ spec:
               value: "$(MY_POD_NAME).camunda-platform-test-elasticsearch-master-hl.camunda.svc.cluster.local"
             - name: ELASTICSEARCH_HEAP_SIZE
               value: "1024m"
+            - name: JDK_JAVA_OPTIONS
+              value: "-XX:-UseBASE64Intrinsics"
             - name: ELASTICSEARCH_ENABLE_REST_TLS
               value: "false"
           ports:
