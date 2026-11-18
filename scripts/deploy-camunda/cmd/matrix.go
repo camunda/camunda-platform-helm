@@ -487,8 +487,11 @@ func (r *matrixRunFlags) configure(cmd *cobra.Command) error {
 		{"ingress-base-domain-gke", r.Infra.IngressBaseDomains["gke"]},
 		{"ingress-base-domain-eks", r.Infra.IngressBaseDomains["eks"]},
 	} {
-		if domain.value != "" && !config.IsValidIngressBaseDomain(domain.value) {
-			return fmt.Errorf("--%s must be one of: %s", domain.flag, strings.Join(config.ValidIngressBaseDomains, ", "))
+		if domain.value == "" {
+			continue
+		}
+		if err := config.DefaultDomainPolicy().Validate(domain.flag, domain.value); err != nil {
+			return err
 		}
 	}
 	return validateTierFlag(r.filter.Tier)

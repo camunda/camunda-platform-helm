@@ -27,11 +27,16 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// ValidIngressBaseDomains lists the allowed base domains for ingress hosts.
-var ValidIngressBaseDomains = []string{
+// DefaultIngressBaseDomains lists the base domains the default DomainPolicy allows for ingress hosts.
+var DefaultIngressBaseDomains = []string{
 	"ci.distro.ultrawombat.com",
 	"distribution.aws.camunda.cloud",
 }
+
+// ValidIngressBaseDomains is the same slice as DefaultIngressBaseDomains.
+//
+// Deprecated: use DefaultIngressBaseDomains or DefaultDomainPolicy().Domains().
+var ValidIngressBaseDomains = DefaultIngressBaseDomains
 
 const (
 	// DefaultKeycloakHost is the default external Keycloak host. The shared CI
