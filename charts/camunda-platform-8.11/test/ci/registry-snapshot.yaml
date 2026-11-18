@@ -1514,7 +1514,7 @@ integration:
               values-file: test/integration/companion-values/elasticsearch-9-qa.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
-          prefix-key: qa-rdbms-upg
+          prefix-key: qa-rdbms
         - name: qa-opensearch-upg
           enabled: false
           shortname: qaosupg

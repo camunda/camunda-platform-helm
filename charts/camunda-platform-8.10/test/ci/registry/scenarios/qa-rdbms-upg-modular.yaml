@@ -12,7 +12,7 @@ infra-type:
   gke: qa-workloads
 qa: true
 image-tags: true
-prefix-key: qa-rdbms-upg
+prefix-key: qa-rdbms
 post-infra: post-infra-bitnami-migration
 dependencies:
   - postgresql-qa
