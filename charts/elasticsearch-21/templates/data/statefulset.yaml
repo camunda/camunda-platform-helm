@@ -273,11 +273,11 @@ spec:
             - name: JDK_JAVA_OPTIONS
               value: {{ $jdkOptions | quote }}
             {{- end }}
-            {{- $roleEnv := include "elasticsearch.excludeJdkJavaOptions" (dict "envVars" .Values.data.extraEnvVars "dropJdk" $jdkOptions) | fromJsonArray }}
+            {{- $roleEnv := include "elasticsearch.excludeJdkJavaOptions" (dict "envVars" .Values.data.extraEnvVars "dropJdk" $jdkOptions "context" $) | fromJsonArray }}
             {{- if $roleEnv }}
             {{- include "common.tplvalues.render" ( dict "value" $roleEnv "context" $ ) | nindent 12 }}
             {{- end }}
-            {{- $globalEnv := include "elasticsearch.excludeJdkJavaOptions" (dict "envVars" .Values.extraEnvVars "dropJdk" $jdkOptions) | fromJsonArray }}
+            {{- $globalEnv := include "elasticsearch.excludeJdkJavaOptions" (dict "envVars" .Values.extraEnvVars "dropJdk" $jdkOptions "context" $) | fromJsonArray }}
             {{- if $globalEnv }}
             {{- include "common.tplvalues.render" ( dict "value" $globalEnv "context" $ ) | nindent 12 }}
             {{- end }}

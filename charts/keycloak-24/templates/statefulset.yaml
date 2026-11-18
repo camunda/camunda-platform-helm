@@ -260,7 +260,7 @@ spec:
             {{- $jdkOptions := include "keycloak.userJdkJavaOptions" (dict "envVars" .Values.extraEnvVars "context" $) }}
             {{- if $jdkOptions }}
             - name: JDK_JAVA_OPTIONS
-              value: {{ printf "%s -XX:-UseBASE64Intrinsics" $jdkOptions | quote }}
+              value: {{ $jdkOptions | quote }}
             {{- end }}
             {{- $filteredEnv := include "keycloak.excludeJdkJavaOptions" (dict "envVars" .Values.extraEnvVars "dropJdk" $jdkOptions) | fromJsonArray }}
             {{- if $filteredEnv }}

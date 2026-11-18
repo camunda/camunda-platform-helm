@@ -325,14 +325,19 @@ Compile all warnings into a single message.
 
 {{- /* NOTE: Returns a user JDK_JAVA_OPTIONS value for the StatefulSet to merge. */ -}}
 {{- define "keycloak.userJdkJavaOptions" -}}
+{{- $flag := "-XX:-UseBASE64Intrinsics" -}}
 {{- $ctx := .context -}}
 {{- $value := "" -}}
+{{- $found := false -}}
 {{- range .envVars | default list -}}
 {{- if and (kindIs "string" .name) (eq .name "JDK_JAVA_OPTIONS") (hasKey . "value") (kindIs "string" .value) -}}
+{{- $found = true -}}
 {{- $value = include "common.tplvalues.render" (dict "value" .value "context" $ctx) -}}
 {{- end -}}
 {{- end -}}
-{{- $value -}}
+{{- if $found -}}
+{{- if $value -}}{{ printf "%s %s" $value $flag | trim }}{{- else -}}{{ $flag }}{{- end -}}
+{{- end -}}
 {{- end -}}
 
 {{- /* NOTE: Drops JDK_JAVA_OPTIONS from extraEnvVars when the merged value is emitted. */ -}}

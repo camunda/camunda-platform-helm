@@ -135,3 +135,33 @@ func TestValueFromWarning(t *testing.T) {
 	require.Contains(t, out, "elasticsearch.extraEnvVars[valueFrom]")
 	require.Contains(t, out, "identityKeycloak.extraEnvVars[valueFrom]")
 }
+
+func TestElasticsearchStringExtraEnvVars(t *testing.T) {
+	t.Parallel()
+
+	chartPath, err := filepath.Abs("../../../")
+	require.NoError(t, err)
+
+	options := &helm.Options{
+		KubectlOptions: k8s.NewKubectlOptions("", "", "camunda"),
+		SetStrValues: map[string]string{
+			"elasticsearch.extraEnvVars": "- name: FOO\n  value: bar",
+		},
+	}
+	out := helm.RenderTemplateContext(t, context.Background(), options, chartPath, "camunda-platform-test", nil, "--show-only", "charts/elasticsearch/templates/master/statefulset.yaml")
+
+	require.Contains(t, out, "name: FOO")
+	require.Contains(t, out, "-XX:-UseBASE64Intrinsics")
+}
+
+func TestKeycloakEmptyJdkJavaOptionsValue(t *testing.T) {
+	t.Parallel()
+
+	out := renderJdkOptionsTemplate(t, map[string]string{
+		"identityKeycloak.extraEnvVars[0].name":  "JDK_JAVA_OPTIONS",
+		"identityKeycloak.extraEnvVars[0].value": "",
+	}, "charts/identityKeycloak/templates/statefulset.yaml")
+
+	require.Equal(t, 1, strings.Count(out, "name: JDK_JAVA_OPTIONS"))
+	require.Contains(t, out, `"-XX:-UseBASE64Intrinsics"`)
+}

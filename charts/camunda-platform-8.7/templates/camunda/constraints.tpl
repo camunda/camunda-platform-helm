@@ -148,21 +148,27 @@ configmap-warnings.yaml, which renders the "<release>-warnings" ConfigMap on the
 {{- $sources := list -}}
 {{- if $es.extraEnvVarsCM }}{{ $sources = append $sources "elasticsearch.extraEnvVarsCM" }}{{ end -}}
 {{- if $es.extraEnvVarsSecret }}{{ $sources = append $sources "elasticsearch.extraEnvVarsSecret" }}{{ end -}}
-{{- range $entry := ($es.extraEnvVars | default list) -}}
+{{- if kindIs "slice" ($es.extraEnvVars | default list) -}}
+{{- range $entry := $es.extraEnvVars -}}
 {{- if and (kindIs "string" $entry.name) (eq $entry.name "JDK_JAVA_OPTIONS") (hasKey $entry "valueFrom") }}{{ $sources = append $sources "elasticsearch.extraEnvVars[valueFrom]" }}{{ end -}}
+{{- end -}}
 {{- end -}}
 {{- range $role := list "master" "data" "coordinating" "ingest" -}}
 {{- $r := (index $es $role) | default dict -}}
 {{- if $r.extraEnvVarsCM }}{{ $sources = append $sources (printf "elasticsearch.%s.extraEnvVarsCM" $role) }}{{ end -}}
 {{- if $r.extraEnvVarsSecret }}{{ $sources = append $sources (printf "elasticsearch.%s.extraEnvVarsSecret" $role) }}{{ end -}}
-{{- range $entry := ($r.extraEnvVars | default list) -}}
+{{- if kindIs "slice" ($r.extraEnvVars | default list) -}}
+{{- range $entry := $r.extraEnvVars -}}
 {{- if and (kindIs "string" $entry.name) (eq $entry.name "JDK_JAVA_OPTIONS") (hasKey $entry "valueFrom") }}{{ $sources = append $sources (printf "elasticsearch.%s.extraEnvVars[valueFrom]" $role) }}{{ end -}}
+{{- end -}}
 {{- end -}}
 {{- end -}}
 {{- if $kc.extraEnvVarsCM }}{{ $sources = append $sources "identityKeycloak.extraEnvVarsCM" }}{{ end -}}
 {{- if $kc.extraEnvVarsSecret }}{{ $sources = append $sources "identityKeycloak.extraEnvVarsSecret" }}{{ end -}}
-{{- range $entry := ($kc.extraEnvVars | default list) -}}
+{{- if kindIs "slice" ($kc.extraEnvVars | default list) -}}
+{{- range $entry := $kc.extraEnvVars -}}
 {{- if and (kindIs "string" $entry.name) (eq $entry.name "JDK_JAVA_OPTIONS") (hasKey $entry "valueFrom") }}{{ $sources = append $sources "identityKeycloak.extraEnvVars[valueFrom]" }}{{ end -}}
+{{- end -}}
 {{- end -}}
 {{- if $sources -}}
 {{- printf "\n%s" (printf "[camunda][warning] SECURITY NOTICE: CVE-2026-114938 mitigation may not apply. Sources (%s) can set JDK_JAVA_OPTIONS. The chart cannot read external ConfigMaps or Secrets at render time, and it cannot merge a valueFrom entry. Add -XX:-UseBASE64Intrinsics to the value, or set a plain value in extraEnvVars so the chart can append the flag." (join ", " $sources)) }}

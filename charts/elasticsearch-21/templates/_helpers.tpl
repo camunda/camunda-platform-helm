@@ -624,13 +624,24 @@ Compile all warnings into a single message, and call fail.
 {{- end -}}
 {{- end -}}
 
+{{- /* NOTE: Accepts extraEnvVars as a list or a YAML string. */ -}}
+{{- define "elasticsearch.extraEnvVarList" -}}
+{{- $value := .value | default list -}}
+{{- if kindIs "string" $value -}}
+{{- $value = include "common.tplvalues.render" (dict "value" $value "context" .context) | fromYamlArray -}}
+{{- end -}}
+{{- $value | toJson -}}
+{{- end -}}
+
 {{- /* NOTE: Appends the CVE mitigation flag to a user JDK_JAVA_OPTIONS value. */ -}}
 {{- define "elasticsearch.jdkJavaOptions" -}}
 {{- $flag := "-XX:-UseBASE64Intrinsics" -}}
 {{- $ctx := .context -}}
 {{- $value := "" -}}
 {{- $hasValueFrom := false -}}
-{{- range concat (.roleExtraEnvVars | default list) (.globalExtraEnvVars | default list) -}}
+{{- $roleEnv := include "elasticsearch.extraEnvVarList" (dict "value" .roleExtraEnvVars "context" $ctx) | fromJsonArray -}}
+{{- $globalEnv := include "elasticsearch.extraEnvVarList" (dict "value" .globalExtraEnvVars "context" $ctx) | fromJsonArray -}}
+{{- range concat $roleEnv $globalEnv -}}
 {{- if and (kindIs "string" .name) (eq .name "JDK_JAVA_OPTIONS") -}}
 {{- if hasKey . "valueFrom" -}}
 {{- $hasValueFrom = true -}}
@@ -651,7 +662,8 @@ Compile all warnings into a single message, and call fail.
 {{- define "elasticsearch.excludeJdkJavaOptions" -}}
 {{- $drop := .dropJdk -}}
 {{- $result := list -}}
-{{- range .envVars | default list -}}
+{{- $env := include "elasticsearch.extraEnvVarList" (dict "value" .envVars "context" .context) | fromJsonArray -}}
+{{- range $env -}}
 {{- if or (not $drop) (not (and (kindIs "string" .name) (eq .name "JDK_JAVA_OPTIONS"))) -}}
 {{- $result = append $result . -}}
 {{- end -}}
