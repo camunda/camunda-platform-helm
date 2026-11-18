@@ -1959,6 +1959,35 @@ integration:
               values-file: test/integration/companion-values/elasticsearch-qa.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
+        - name: qa-entra
+          enabled: false
+          shortname: qaen
+          auth: oidc
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: qa-workloads
+          identity: oidc
+          persistence: elasticsearch
+          features:
+            - postgresql-companion
+          qa: true
+          image-tags: true
+          dependencies:
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql-qa.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch-qa.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
         - name: multinamespace
           enabled: true
           shortname: mns

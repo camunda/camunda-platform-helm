@@ -219,6 +219,9 @@ integration:
     - id: qa-license
       shortname: lic
       enabled: false
+    - id: qa-entra
+      shortname: qaen
+      enabled: false
     - id: multinamespace
       shortname: mns
       tier: 2
