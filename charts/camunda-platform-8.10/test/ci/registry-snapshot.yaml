@@ -1556,7 +1556,7 @@ integration:
               values-file: test/integration/companion-values/elasticsearch-qa.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
-          prefix-key: qa-rdbms
+          prefix-key: qa-rdbms-upg
           post-infra:
             script: post-infra-bitnami-migration.sh
             description: |
