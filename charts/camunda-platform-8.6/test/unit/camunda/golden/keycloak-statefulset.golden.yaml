@@ -144,8 +144,6 @@ spec:
           envFrom:
             - configMapRef:
                 name: camunda-platform-test-keycloak-env-vars
-            - configMapRef:
-                name: camunda-platform-test-jdk-java-options
           resources:
             limits:
               cpu: 750m

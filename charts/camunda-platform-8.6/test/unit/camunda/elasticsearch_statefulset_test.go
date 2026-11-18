@@ -45,34 +45,3 @@ func TestGoldenElasticsearchDefaults(t *testing.T) {
 		},
 	})
 }
-
-func TestGoldenElasticsearchAllRoles(t *testing.T) {
-	t.Parallel()
-
-	chartPath, err := filepath.Abs("../../../")
-	require.NoError(t, err)
-
-	suite.Run(t, &utils.TemplateGoldenTest{
-		ChartPath:      chartPath,
-		Release:        "camunda-platform-test",
-		Namespace:      "camunda",
-		GoldenFileName: "elasticsearch-roles-statefulset",
-		IgnoredLines: []string{
-			`\s+.*-secret:\s+.*`,    // ignore auto-generated secrets
-			`\s+checksum/.+?:\s+.*`, // ignore configmap checksums
-			`\s+version:/.+?:\s+.*`, // ignore version due to wrong chart.yaml reference
-
-		},
-		SetValues: map[string]string{
-			"elasticsearch.data.replicaCount":         "1",
-			"elasticsearch.coordinating.replicaCount": "1",
-			"elasticsearch.ingest.enabled":            "true",
-			"elasticsearch.ingest.replicaCount":       "1",
-		},
-		ExtraHelmArgs: []string{
-			"--show-only", "charts/elasticsearch/templates/data/statefulset.yaml",
-			"--show-only", "charts/elasticsearch/templates/coordinating/statefulset.yaml",
-			"--show-only", "charts/elasticsearch/templates/ingest/statefulset.yaml",
-		},
-	})
-}

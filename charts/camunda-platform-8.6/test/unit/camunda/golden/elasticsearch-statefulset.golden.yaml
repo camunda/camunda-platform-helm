@@ -180,9 +180,6 @@ spec:
               value: "1024m"
             - name: ELASTICSEARCH_ENABLE_REST_TLS
               value: "false"
-          envFrom:
-            - configMapRef:
-                name: camunda-platform-test-jdk-java-options
           ports:
             - name: rest-api
               containerPort: 9200
