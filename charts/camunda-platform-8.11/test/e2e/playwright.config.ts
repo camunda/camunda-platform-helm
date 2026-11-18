@@ -87,6 +87,10 @@ export default defineConfig(
     retries: 1,
     timeout: 6 * 60 * 1000,
     workers: "100%",
+    // full-suite runs only in the alwaysgreen (Hub image-validation) install,
+    // which disables Optimize. Its /optimize ingress route 404s, so the
+    // Optimize API spec can never authenticate there; keep it out of full-suite.
+    extraTestIgnore: ["**/optimize-api-tests.spec.{ts,js}"],
     extraProjects: [
       {
         name: "physical-tenants",
