@@ -68,3 +68,26 @@ func TestGoldenKeycloakEnvVarsConfigMap(t *testing.T) {
 		ExtraHelmArgs: []string{"--show-only", "charts/identityKeycloak/templates/configmap-env-vars.yaml"},
 	})
 }
+
+func TestGoldenKeycloakEnvVarsConfigMapCacheDisabled(t *testing.T) {
+	t.Parallel()
+
+	chartPath, err := filepath.Abs("../../../")
+	require.NoError(t, err)
+
+	suite.Run(t, &utils.TemplateGoldenTest{
+		ChartPath:      chartPath,
+		Release:        "camunda-platform-test",
+		Namespace:      "camunda",
+		GoldenFileName: "keycloak-env-vars-configmap-cache-disabled",
+		IgnoredLines: []string{
+			`\s+.*-secret:\s+.*`,    // secrets are auto-generated and need to be ignored.
+			`\s+checksum/.+?:\s+.*`, // ignore configmap checksum.
+		},
+		// ExtraHelmArgs is used instead of Templates here because Keycloak is a dependency chart.
+		SetValues: map[string]string{
+			"identityKeycloak.cache.enabled": "false",
+		},
+		ExtraHelmArgs: []string{"--show-only", "charts/identityKeycloak/templates/configmap-env-vars.yaml"},
+	})
+}

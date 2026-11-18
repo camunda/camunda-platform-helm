@@ -118,6 +118,8 @@ identityKeycloak:
       cpu: "4"
       memory: 2Gi
   extraEnvVars:
+    - name: JDK_JAVA_OPTIONS
+      value: "-XX:-UseBASE64Intrinsics"
     - name: JAVA_OPTS
       value: >-
         -Xms512m -Xmx1024m
