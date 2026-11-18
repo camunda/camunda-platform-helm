@@ -74,8 +74,8 @@ func (r runner) run(ctx context.Context) error {
 	if err := r.refuseExisting(ctx); err != nil {
 		return err
 	}
-	if r.cfg.installCalico {
-		if err := r.installCalico(ctx); err != nil {
+	if r.cfg.installCNI {
+		if err := r.installCNI(ctx); err != nil {
 			return err
 		}
 	}
