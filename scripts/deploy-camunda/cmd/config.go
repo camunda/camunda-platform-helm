@@ -378,5 +378,5 @@ func completeLogLevels(toComplete string) ([]string, cobra.ShellCompDirective) {
 
 // completeIngressBaseDomains returns valid ingress base domain completions.
 func completeIngressBaseDomains(toComplete string) ([]string, cobra.ShellCompDirective) {
-	return filterByPrefix(config.ValidIngressBaseDomains, toComplete), cobra.ShellCompDirectiveNoFileComp
+	return filterByPrefix(config.DefaultDomainPolicy().Domains(), toComplete), cobra.ShellCompDirectiveNoFileComp
 }
