@@ -21,6 +21,7 @@ import (
 	"os"
 	"path/filepath"
 
+	contract "scripts/camunda-core/pkg/credentials"
 	"scripts/camunda-core/pkg/helm"
 	"scripts/camunda-core/pkg/kube"
 	"scripts/camunda-core/pkg/logging"
@@ -39,10 +40,10 @@ import (
 // secret and passing them as --set overrides, we satisfy the `honorProvidedValues` check and bypass
 // the lookup/fail path entirely.
 var bitnamiPGPasswordMapping = map[string][]string{
-	"identity-keycloak-postgresql-user-password":  {"identityKeycloak.postgresql.auth.password", "identityPostgresql.auth.password"},
-	"identity-keycloak-postgresql-admin-password": {"identityKeycloak.postgresql.auth.postgresPassword", "identityPostgresql.auth.postgresPassword"},
-	"webmodeler-postgresql-user-password":         {"webModelerPostgresql.auth.password"},
-	"webmodeler-postgresql-admin-password":        {"webModelerPostgresql.auth.postgresPassword"},
+	contract.KeyKeycloakPGUser:    {"identityKeycloak.postgresql.auth.password", "identityPostgresql.auth.password"},
+	contract.KeyKeycloakPGAdmin:   {"identityKeycloak.postgresql.auth.postgresPassword", "identityPostgresql.auth.postgresPassword"},
+	contract.KeyWebModelerPGUser:  {"webModelerPostgresql.auth.password"},
+	contract.KeyWebModelerPGAdmin: {"webModelerPostgresql.auth.postgresPassword"},
 }
 
 func shouldExtractBitnamiPGPasswords(targetVersion string) bool {
@@ -87,7 +88,7 @@ func chartCredentialsManifest(chartDir string, secrets config.SecretsFlags) stri
 // it logs warnings and returns whatever it could extract. Callers should merge the result into
 // ExtraHelmSets.
 func extractBitnamiPGPasswords(ctx context.Context, namespace, kubeContext string) map[string]string {
-	const secretName = "integration-test-credentials"
+	const secretName = contract.SecretName
 
 	kubeClient, err := kube.NewClient("", kubeContext)
 	if err != nil {
