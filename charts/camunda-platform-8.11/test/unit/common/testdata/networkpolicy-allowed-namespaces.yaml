@@ -1,0 +1,16 @@
+global:
+  networkPolicy:
+    enabled: true
+    ingress:
+      allowedNamespaces:
+        - "{{ .Release.Namespace }}-allowed"
+        - namespaceSelector:
+            matchLabels:
+              camunda.io/tenant-of: "{{ .Release.Namespace }}"
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: hub-client
+        - name: monitoring
+          ports:
+            - protocol: TCP
+              port: 9600

@@ -27,6 +27,11 @@ import (
 // renovate: datasource=github-releases depName=projectcalico/calico
 const calicoVersion = "v3.30.3"
 
+const (
+	envKind      = "kind"
+	envOpenShift = "openshift"
+)
+
 var errHelp = errors.New("help requested")
 
 type config struct {
@@ -34,8 +39,11 @@ type config struct {
 	scenarioDir    string
 	namespace      string
 	release        string
+	namespace2     string
+	release2       string
 	timeout        string
 	installCalico  bool
+	env            string
 	calicoManifest string
 	retries        int
 	retryInterval  time.Duration
@@ -56,6 +64,7 @@ func parseConfig(args []string, lookupEnv func(string) string, stderr io.Writer)
 		chartDir:       envOrDefault(lookupEnv, "CHART_DIR", filepath.Join(cwd, "charts/camunda-platform-8.11")),
 		namespace:      "netpol",
 		release:        envOrDefault(lookupEnv, "RELEASE", "netpol"),
+		release2:       envOrDefault(lookupEnv, "RELEASE2", "netpol-split"),
 		timeout:        envOrDefault(lookupEnv, "TIMEOUT", "5m"),
 		calicoManifest: envOrDefault(lookupEnv, "CALICO_MANIFEST", "https://raw.githubusercontent.com/projectcalico/calico/"+calicoVersion+"/manifests/calico.yaml"),
 		retries:        10,
@@ -64,9 +73,10 @@ func parseConfig(args []string, lookupEnv func(string) string, stderr io.Writer)
 	flags := flag.NewFlagSet("networkpolicy-enforcement", flag.ContinueOnError)
 	flags.SetOutput(stderr)
 	flags.BoolVar(&cfg.installCalico, "install-calico", false, "install Calico before the scenarios")
+	flags.StringVar(&cfg.env, "env", envKind, "target environment shape: kind or openshift")
 	flags.Usage = func() {
-		fmt.Fprintln(stderr, "Usage: networkpolicy-enforcement [-install-calico] [namespace]")
-		fmt.Fprintln(stderr, "Environment: CHART_DIR, RELEASE, TIMEOUT, CALICO_MANIFEST")
+		fmt.Fprintln(stderr, "Usage: networkpolicy-enforcement [-install-calico] [-env kind|openshift] [namespace]")
+		fmt.Fprintln(stderr, "Environment: CHART_DIR, RELEASE, RELEASE2, TIMEOUT, CALICO_MANIFEST")
 	}
 	if err := flags.Parse(args); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
@@ -78,9 +88,13 @@ func parseConfig(args []string, lookupEnv func(string) string, stderr io.Writer)
 		flags.Usage()
 		return config{}, fmt.Errorf("expected at most one namespace argument")
 	}
+	if cfg.env != envKind && cfg.env != envOpenShift {
+		return config{}, fmt.Errorf("unknown -env %q, expected %s or %s", cfg.env, envKind, envOpenShift)
+	}
 	if flags.NArg() == 1 {
 		cfg.namespace = flags.Arg(0)
 	}
+	cfg.namespace2 = cfg.namespace + "-allowed"
 	cfg.scenarioDir = filepath.Join(cfg.chartDir, "test/integration/scenarios/networkpolicy")
 	return cfg, nil
 }

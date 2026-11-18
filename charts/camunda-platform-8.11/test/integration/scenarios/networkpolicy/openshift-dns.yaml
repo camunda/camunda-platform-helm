@@ -1,0 +1,68 @@
+# Copyright 2026 Camunda Services GmbH
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dns-default
+data:
+  Corefile: |
+    .:5353 {
+        errors
+        forward . /etc/resolv.conf
+    }
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: dns-default
+  labels:
+    dns.operator.openshift.io/daemonset-dns: default
+spec:
+  terminationGracePeriodSeconds: 0
+  containers:
+    - name: dns
+      image: registry.k8s.io/coredns/coredns:v1.11.3
+      args: ["-conf", "/etc/coredns/Corefile"]
+      ports:
+        - containerPort: 5353
+          protocol: UDP
+        - containerPort: 5353
+          protocol: TCP
+      readinessProbe:
+        tcpSocket:
+          port: 5353
+      volumeMounts:
+        - name: config
+          mountPath: /etc/coredns
+  volumes:
+    - name: config
+      configMap:
+        name: dns-default
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dns-default
+spec:
+  selector:
+    dns.operator.openshift.io/daemonset-dns: default
+  ports:
+    - name: dns
+      protocol: UDP
+      port: 53
+      targetPort: 5353
+    - name: dns-tcp
+      protocol: TCP
+      port: 53
+      targetPort: 5353

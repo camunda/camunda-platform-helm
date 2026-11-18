@@ -825,6 +825,49 @@ global:
       ##           matchLabels:
       ##             kubernetes.io/metadata.name: ingress-nginx
       extraRules: []
+      ## @param global.networkPolicy.ingress.allowedNamespaces can be used to allow other namespaces to reach the client ports of every component, one ingress rule per entry, added before the extraRules. An entry is a namespace name, or an object with either name or namespaceSelector, plus an optional podSelector and ports that replace the default client ports. Strings support templating (e.g., {{ .Release.Namespace }}).
+      ## Example:
+      ## allowedNamespaces:
+      ##   - camunda-hub
+      ##   - namespaceSelector:
+      ##       matchLabels:
+      ##         camunda.io/tenant-of: "{{ .Release.Namespace }}"
+      ##   - name: monitoring
+      ##     podSelector:
+      ##       matchLabels:
+      ##         app.kubernetes.io/name: prometheus
+      ##     ports:
+      ##       - protocol: TCP
+      ##         port: 9600
+      allowedNamespaces: []
+    ## @extra global.networkPolicy.egress configuration of the egress rules of the rendered NetworkPolicies.
+    egress:
+      ## @param global.networkPolicy.egress.enabled if true, adds egress rules to the rendered NetworkPolicies that allow traffic to pods in the release namespace, DNS if global.networkPolicy.egress.allowDNS is true, plus the egress extraRules; all other egress, such as an external database or OIDC provider, is blocked.
+      enabled: false
+      ## @param global.networkPolicy.egress.allowDNS if true, allows egress to the kube-dns pods in the kube-system namespace on port 53 over UDP and TCP.
+      allowDNS: true
+      ## @param global.networkPolicy.egress.extraRules can be used to append NetworkPolicyEgressRule entries to every rendered NetworkPolicy, for example to allow an external database.
+      ## Example:
+      ## extraRules:
+      ##   - to:
+      ##       - ipBlock:
+      ##           cidr: 10.20.0.0/16
+      ##     ports:
+      ##       - protocol: TCP
+      ##         port: 5432
+      extraRules: []
+      ## @param global.networkPolicy.egress.allowedNamespaces can be used to allow every component to reach pods in other namespaces, one egress rule per entry, added after the DNS rule and before the extraRules. An entry is a namespace name, or an object with either name or namespaceSelector, plus an optional podSelector and ports. An entry without ports allows every port. Strings support templating (e.g., {{ .Release.Namespace }}).
+      ## Example:
+      ## allowedNamespaces:
+      ##   - camunda-hub
+      ##   - name: elastic-system
+      ##     podSelector:
+      ##       matchLabels:
+      ##         elasticsearch.k8s.elastic.co/cluster-name: camunda
+      ##     ports:
+      ##       - protocol: TCP
+      ##         port: 9200
+      allowedNamespaces: []
 
   ## Document Store Configuration
   ## @extra global.documentStore These parameters are used to configure the document storage backend across all Camunda components.
@@ -1212,6 +1255,18 @@ identity:
   networkPolicy:
     ## @param identity.networkPolicy.enabled if true and global.networkPolicy.enabled is true, renders an ingress NetworkPolicy for the Identity pods.
     enabled: true
+    ## @extra identity.networkPolicy.ingress configuration of the ingress rules of the Identity NetworkPolicy.
+    ingress:
+      ## @param identity.networkPolicy.ingress.allowedNamespaces [nullable] can be used to replace global.networkPolicy.ingress.allowedNamespaces for the Identity NetworkPolicy only. When unset, the global list is used; an empty list allows no other namespace.
+      allowedNamespaces:
+    ## @extra identity.networkPolicy.egress configuration of the egress rules of the Identity NetworkPolicy.
+    egress:
+      ## @param identity.networkPolicy.egress.enabled if true and global.networkPolicy.egress.enabled is true, adds egress rules to the Identity NetworkPolicy.
+      enabled: true
+      ## @param identity.networkPolicy.egress.extraRules can be used to append NetworkPolicyEgressRule entries to the Identity NetworkPolicy only, after global.networkPolicy.egress.extraRules.
+      extraRules: []
+      ## @param identity.networkPolicy.egress.allowedNamespaces [nullable] can be used to replace global.networkPolicy.egress.allowedNamespaces for the Identity NetworkPolicy only. When unset, the global list is used; an empty list allows no other namespace.
+      allowedNamespaces:
   ## @param identity.automountServiceAccountToken [nullable] can be used to override the automatic mounting of the service account token at the pod level. When unset, the ServiceAccount configuration is used.
   automountServiceAccountToken:
 
@@ -1334,6 +1389,12 @@ camundaHub:
     logging: {}
     networkPolicy:
       enabled: true
+      ingress:
+        allowedNamespaces:
+      egress:
+        enabled: true
+        extraRules: []
+        allowedNamespaces:
   ## @skip camundaHub.websockets
   websockets:
     image: {}
@@ -1343,6 +1404,12 @@ camundaHub:
     service: {}
     networkPolicy:
       enabled: true
+      ingress:
+        allowedNamespaces:
+      egress:
+        enabled: true
+        extraRules: []
+        allowedNamespaces:
   ## @skip camundaHub.serviceAccount
   serviceAccount: {}
   ## @param camundaHub.automountServiceAccountToken [nullable] can be used to override the automatic mounting of the service account token at the pod level. When unset, the ServiceAccount configuration is used.
@@ -2101,6 +2168,18 @@ connectors:
   networkPolicy:
     ## @param connectors.networkPolicy.enabled if true and global.networkPolicy.enabled is true, renders an ingress NetworkPolicy for the Connectors pods.
     enabled: true
+    ## @extra connectors.networkPolicy.ingress configuration of the ingress rules of the Connectors NetworkPolicy.
+    ingress:
+      ## @param connectors.networkPolicy.ingress.allowedNamespaces [nullable] can be used to replace global.networkPolicy.ingress.allowedNamespaces for the Connectors NetworkPolicy only. When unset, the global list is used; an empty list allows no other namespace.
+      allowedNamespaces:
+    ## @extra connectors.networkPolicy.egress configuration of the egress rules of the Connectors NetworkPolicy.
+    egress:
+      ## @param connectors.networkPolicy.egress.enabled if true and global.networkPolicy.egress.enabled is true, adds egress rules to the Connectors NetworkPolicy.
+      enabled: true
+      ## @param connectors.networkPolicy.egress.extraRules can be used to append NetworkPolicyEgressRule entries to the Connectors NetworkPolicy only, after global.networkPolicy.egress.extraRules.
+      extraRules: []
+      ## @param connectors.networkPolicy.egress.allowedNamespaces [nullable] can be used to replace global.networkPolicy.egress.allowedNamespaces for the Connectors NetworkPolicy only. When unset, the global list is used; an empty list allows no other namespace.
+      allowedNamespaces:
   ## @param connectors.automountServiceAccountToken [nullable] can be used to override the automatic mounting of the service account token at the pod level. When unset, the ServiceAccount configuration is used.
   automountServiceAccountToken:
 
@@ -2521,6 +2600,18 @@ orchestration:
   networkPolicy:
     ## @param orchestration.networkPolicy.enabled if true and global.networkPolicy.enabled is true, renders an ingress NetworkPolicy for the Orchestration Cluster pods.
     enabled: true
+    ## @extra orchestration.networkPolicy.ingress configuration of the ingress rules of the Orchestration Cluster NetworkPolicy.
+    ingress:
+      ## @param orchestration.networkPolicy.ingress.allowedNamespaces [nullable] can be used to replace global.networkPolicy.ingress.allowedNamespaces for the Orchestration Cluster NetworkPolicy only. When unset, the global list is used; an empty list allows no other namespace.
+      allowedNamespaces:
+    ## @extra orchestration.networkPolicy.egress configuration of the egress rules of the Orchestration Cluster NetworkPolicy.
+    egress:
+      ## @param orchestration.networkPolicy.egress.enabled if true and global.networkPolicy.egress.enabled is true, adds egress rules to the Orchestration Cluster NetworkPolicy.
+      enabled: true
+      ## @param orchestration.networkPolicy.egress.extraRules can be used to append NetworkPolicyEgressRule entries to the Orchestration Cluster NetworkPolicy only, after global.networkPolicy.egress.extraRules.
+      extraRules: []
+      ## @param orchestration.networkPolicy.egress.allowedNamespaces [nullable] can be used to replace global.networkPolicy.egress.allowedNamespaces for the Orchestration Cluster NetworkPolicy only. When unset, the global list is used; an empty list allows no other namespace.
+      allowedNamespaces:
   ## @param orchestration.automountServiceAccountToken [nullable] can be used to override the automatic mounting of the service account token at the pod level. When unset, the ServiceAccount configuration is used.
   automountServiceAccountToken:
 
@@ -3191,6 +3282,18 @@ optimize:
   networkPolicy:
     ## @param optimize.networkPolicy.enabled if true and global.networkPolicy.enabled is true, renders an ingress NetworkPolicy for the Optimize pods.
     enabled: true
+    ## @extra optimize.networkPolicy.ingress configuration of the ingress rules of the Optimize NetworkPolicy.
+    ingress:
+      ## @param optimize.networkPolicy.ingress.allowedNamespaces [nullable] can be used to replace global.networkPolicy.ingress.allowedNamespaces for the Optimize NetworkPolicy only. When unset, the global list is used; an empty list allows no other namespace.
+      allowedNamespaces:
+    ## @extra optimize.networkPolicy.egress configuration of the egress rules of the Optimize NetworkPolicy.
+    egress:
+      ## @param optimize.networkPolicy.egress.enabled if true and global.networkPolicy.egress.enabled is true, adds egress rules to the Optimize NetworkPolicy.
+      enabled: true
+      ## @param optimize.networkPolicy.egress.extraRules can be used to append NetworkPolicyEgressRule entries to the Optimize NetworkPolicy only, after global.networkPolicy.egress.extraRules.
+      extraRules: []
+      ## @param optimize.networkPolicy.egress.allowedNamespaces [nullable] can be used to replace global.networkPolicy.egress.allowedNamespaces for the Optimize NetworkPolicy only. When unset, the global list is used; an empty list allows no other namespace.
+      allowedNamespaces:
   ## @param optimize.automountServiceAccountToken [nullable] can be used to override the automatic mounting of the service account token at the pod level. When unset, the ServiceAccount configuration is used.
   automountServiceAccountToken:
 
