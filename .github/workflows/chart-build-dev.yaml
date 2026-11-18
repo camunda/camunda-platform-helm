@@ -26,8 +26,6 @@ on:
       - .github/workflows/chart-build-dev.yaml
       - charts/camunda-platform-*/**
       - "!charts/camunda-platform-*/test/**"
-      - charts/elasticsearch-21/**
-      - charts/keycloak-24/**
 
   workflow_dispatch:
     inputs:
