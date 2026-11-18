@@ -89,7 +89,7 @@ func (r runner) policies(ctx context.Context, namespace string) ([]string, error
 	return names, nil
 }
 
-func (r runner) assertPolicies(ctx context.Context, namespace, release string, want []string) error {
+func (r runner) assertPolicies(ctx context.Context, namespace, release string, want, foreign []string) error {
 	got, err := r.policies(ctx, namespace)
 	if err != nil {
 		return err
@@ -98,6 +98,7 @@ func (r runner) assertPolicies(ctx context.Context, namespace, release string, w
 	for _, name := range want {
 		expected = append(expected, release+"-"+name)
 	}
+	expected = append(expected, foreign...)
 	slices.Sort(expected)
 	if !slices.Equal(got, expected) {
 		return fmt.Errorf("NetworkPolicies are %v, expected %v", got, expected)

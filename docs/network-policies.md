@@ -497,6 +497,21 @@ above, add them as `extraRules` or egress `allowedNamespaces`, then set `global.
 The policies keep their names and are updated in place; `helm rollback` to a revision
 without egress removes the egress rules again.
 
+## OpenShift
+
+- Routes: admit the Router with an `ingress.allowedNamespaces` entry, for example
+  `namespaceSelector: {matchLabels: {policy-group.network.openshift.io/ingress: ""}}`. Set `ports: [8080]`
+  on the entry to keep Zeebe gRPC 26500 closed. Projects created from the OpenShift multitenant template
+  already allow the Router on every port.
+- DNS: `egress.allowDNS` targets `kube-system/kube-dns` on 53, which OpenShift does not use. With egress
+  enabled, set `allowDNS: false` and add an `egress.allowedNamespaces` entry for `openshift-dns` with
+  `podSelector: {matchLabels: {dns.operator.openshift.io/daemonset-dns: default}}` on port 5353 UDP and TCP.
+- Admin policies: a namespace-scoped egress default-deny does not cap the chart's egress rules, because
+  NetworkPolicies are additive. Use AdminNetworkPolicy or EgressFirewall to cap egress.
+
+Verified on kind with Calico in an OpenShift-shaped setup, not on OpenShift. See
+`charts/camunda-platform-8.11/test/integration/scenarios/networkpolicy/OPENSHIFT.md`.
+
 ## Helpers and tests
 
 The shared helpers `camundaPlatform.networkPolicyEnabled`,
