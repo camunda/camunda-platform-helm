@@ -1,0 +1,2 @@
+describe: harbor: host=registry.camunda.cloud pull-secret=registry-camunda-cloud username-env=HARBOR_USERNAME,TEST_DOCKER_USERNAME_CAMUNDA_CLOUD,NEXUS_USERNAME password-env=HARBOR_PASSWORD,TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD,NEXUS_PASSWORD
+topology-forces-pull-secret: true

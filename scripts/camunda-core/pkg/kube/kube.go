@@ -25,6 +25,7 @@ import (
 	"os"
 	"os/exec"
 	"scripts/camunda-core/pkg/logging"
+	"scripts/camunda-core/pkg/registry"
 	"strconv"
 	"strings"
 	"time"
@@ -339,7 +340,7 @@ func (c *Client) waitForNamespaceNotTerminating(ctx context.Context, namespace s
 }
 
 func (c *Client) EnsureDockerRegistrySecret(ctx context.Context, namespace, username, password string) error {
-	return c.EnsureRegistrySecret(ctx, namespace, "registry-camunda-cloud", "registry.camunda.cloud", username, password)
+	return c.EnsureRegistrySecret(ctx, namespace, registry.Harbor.PullSecret, registry.Harbor.Host, username, password)
 }
 
 // EnsureDockerHubSecret creates or updates the "index-docker-io" pull secret for Docker Hub.

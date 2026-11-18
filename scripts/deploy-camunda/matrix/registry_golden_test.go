@@ -17,12 +17,15 @@ package matrix
 import (
 	"bytes"
 	"flag"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"gopkg.in/yaml.v3"
+
+	"scripts/camunda-core/pkg/registry"
 )
 
 // updateGolden regenerates registry snapshots in place. Snapshots live at
@@ -59,6 +62,8 @@ func TestRegistryGolden(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read charts dir: %v", err)
 	}
+
+	t.Run("provider", testRegistryProviderGolden)
 
 	const prefix = "camunda-platform-"
 	any := false
@@ -116,5 +121,39 @@ func TestRegistryGolden(t *testing.T) {
 	}
 	if !any {
 		t.Skip("no chart version has a registry yet")
+	}
+}
+
+// testRegistryProviderGolden pins Describe() and the topology pull-secret
+// decision for each registry mode.
+func testRegistryProviderGolden(t *testing.T) {
+	for _, tc := range []struct {
+		mode     string
+		provider registry.Provider
+	}{
+		{"harbor", registry.Harbor},
+		{"none", registry.Provider{}},
+	} {
+		t.Run(tc.mode, func(t *testing.T) {
+			got := []byte(fmt.Sprintf("describe: %s\ntopology-forces-pull-secret: %t\n",
+				tc.provider.Describe(), topologyForcesPullSecret(tc.provider)))
+			goldenPath := filepath.Join("testdata", "registry-provider", tc.mode+".golden")
+			if *updateGolden {
+				if err := os.MkdirAll(filepath.Dir(goldenPath), 0o755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(goldenPath, got, 0o644); err != nil {
+					t.Fatal(err)
+				}
+				return
+			}
+			want, err := os.ReadFile(goldenPath)
+			if err != nil {
+				t.Fatalf("read golden %s: %v (rerun with -update-golden)", goldenPath, err)
+			}
+			if !bytes.Equal(got, want) {
+				t.Errorf("%s drifted:\n--- got ---\n%s\n--- want ---\n%s", goldenPath, got, want)
+			}
+		})
 	}
 }
