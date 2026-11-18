@@ -26,6 +26,9 @@ on:
       - .github/workflows/chart-build-dev.yaml
       - charts/camunda-platform-*/**
       - "!charts/camunda-platform-*/test/**"
+      # Shared subcharts are vendored into the parent charts at build time.
+      - charts/elasticsearch-21/**
+      - charts/keycloak-24/**
 
   workflow_dispatch:
     inputs:

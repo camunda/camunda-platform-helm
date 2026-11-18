@@ -625,6 +625,47 @@ Compile all warnings into a single message, and call fail.
 {{- end -}}
 
 {{/*
+Return the JDK_JAVA_OPTIONS value for the CVE-2026-114938 mitigation.
+
+The chart appends -XX:-UseBASE64Intrinsics to a JDK_JAVA_OPTIONS value that a
+user sets in the role extraEnvVars or the global extraEnvVars. The chart emits
+one env entry. Duplicate env names are rejected by some API servers and give
+undefined last-wins behavior on others.
+
+The chart cannot read JDK_JAVA_OPTIONS from extraEnvVarsCM or extraEnvVarsSecret
+at render time. Parent charts warn when those sources are configured.
+*/}}
+{{- define "elasticsearch.jdkJavaOptions" -}}
+{{- $flag := "-XX:-UseBASE64Intrinsics" -}}
+{{- $ctx := .context -}}
+{{- $value := "" -}}
+{{- range concat (.roleExtraEnvVars | default list) (.globalExtraEnvVars | default list) -}}
+{{- if and (kindIs "string" .name) (eq .name "JDK_JAVA_OPTIONS") (kindIs "string" (.value | default "")) -}}
+{{- $value = include "common.tplvalues.render" (dict "value" .value "context" $ctx) -}}
+{{- end -}}
+{{- end -}}
+{{- if $value -}}
+{{- printf "%s %s" $value $flag | trim -}}
+{{- else -}}
+{{- $flag -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Return extraEnvVars without the JDK_JAVA_OPTIONS entry. The mitigation is
+rendered once by "elasticsearch.jdkJavaOptions".
+*/}}
+{{- define "elasticsearch.excludeJdkJavaOptions" -}}
+{{- $result := list -}}
+{{- range .envVars | default list -}}
+{{- if not (and (kindIs "string" .name) (eq .name "JDK_JAVA_OPTIONS")) -}}
+{{- $result = append $result . -}}
+{{- end -}}
+{{- end -}}
+{{- $result | toJson -}}
+{{- end -}}
+
+{{/*
 Sysctl set if less then
 */}}
 {{- define "elasticsearch.sysctlIfLess" -}}

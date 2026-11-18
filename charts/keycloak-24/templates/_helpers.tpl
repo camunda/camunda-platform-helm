@@ -323,6 +323,39 @@ Compile all warnings into a single message.
 {{- end -}}
 {{- end -}}
 
+{{/*
+Return a JDK_JAVA_OPTIONS value that a user sets in extraEnvVars. The
+StatefulSet appends the CVE-2026-114938 mitigation flag to this value and
+emits one explicit env entry. The chart cannot read JDK_JAVA_OPTIONS from
+extraEnvVarsCM or extraEnvVarsSecret at render time. Parent charts warn when
+those sources are configured.
+*/}}
+{{- define "keycloak.userJdkJavaOptions" -}}
+{{- $ctx := .context -}}
+{{- $value := "" -}}
+{{- range .envVars | default list -}}
+{{- if and (kindIs "string" .name) (eq .name "JDK_JAVA_OPTIONS") (kindIs "string" (.value | default "")) -}}
+{{- $value = include "common.tplvalues.render" (dict "value" .value "context" $ctx) -}}
+{{- end -}}
+{{- end -}}
+{{- $value -}}
+{{- end -}}
+
+{{/*
+Return extraEnvVars without the JDK_JAVA_OPTIONS entry. Set dropJdk when the
+StatefulSet emits the merged value so that the environment has one entry.
+*/}}
+{{- define "keycloak.excludeJdkJavaOptions" -}}
+{{- $drop := .dropJdk -}}
+{{- $result := list -}}
+{{- range .envVars | default list -}}
+{{- if or (not $drop) (not (and (kindIs "string" .name) (eq .name "JDK_JAVA_OPTIONS"))) -}}
+{{- $result = append $result . -}}
+{{- end -}}
+{{- end -}}
+{{- $result | toJson -}}
+{{- end -}}
+
 {{/* Validate values of Keycloak - database */}}
 {{- define "keycloak.validateValues.database" -}}
 {{- if and (not .Values.postgresql.enabled) (not .Values.externalDatabase.host) (and (not .Values.externalDatabase.password) (not .Values.externalDatabase.existingSecret)) -}}

@@ -238,12 +238,14 @@ spec:
             {{- include "elasticsearch.configure.security" . | nindent 12 }}
             {{- end }}
             - name: JDK_JAVA_OPTIONS
-              value: "-XX:-UseBASE64Intrinsics"
-            {{- if .Values.coordinating.extraEnvVars }}
-            {{- include "common.tplvalues.render" ( dict "value" .Values.coordinating.extraEnvVars "context" $ ) | nindent 12 }}
+              value: {{ include "elasticsearch.jdkJavaOptions" (dict "roleExtraEnvVars" .Values.coordinating.extraEnvVars "globalExtraEnvVars" .Values.extraEnvVars "context" $) | quote }}
+            {{- $roleEnv := include "elasticsearch.excludeJdkJavaOptions" (dict "envVars" .Values.coordinating.extraEnvVars) | fromJsonArray }}
+            {{- if $roleEnv }}
+            {{- include "common.tplvalues.render" ( dict "value" $roleEnv "context" $ ) | nindent 12 }}
             {{- end }}
-            {{- if .Values.extraEnvVars }}
-            {{- include "common.tplvalues.render" ( dict "value" .Values.extraEnvVars "context" $ ) | nindent 12 }}
+            {{- $globalEnv := include "elasticsearch.excludeJdkJavaOptions" (dict "envVars" .Values.extraEnvVars) | fromJsonArray }}
+            {{- if $globalEnv }}
+            {{- include "common.tplvalues.render" ( dict "value" $globalEnv "context" $ ) | nindent 12 }}
             {{- end }}
           {{- if or .Values.extraEnvVarsCM .Values.extraEnvVarsSecret .Values.coordinating.extraEnvVarsCM .Values.coordinating.extraEnvVarsSecret }}
           envFrom:

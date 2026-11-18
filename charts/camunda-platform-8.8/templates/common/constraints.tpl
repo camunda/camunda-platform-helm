@@ -197,7 +197,37 @@ Non-fatal deprecation/config warnings. Consumed by NOTES.txt (helm install/upgra
 configmap-warnings.yaml, which renders the "<release>-warnings" ConfigMap on the GitOps path
 (helm template / Argo CD / Flux). Feed new deprecations here so they reach both channels.
 */}}
+{{/*
+CVE-2026-114938 JVM mitigation warnings.
+
+Helm cannot read environment variables from external ConfigMaps or Secrets at
+render time. Warn when those sources are configured for Keycloak or
+Elasticsearch so users can include the mitigation flag themselves.
+*/}}
+{{- define "camunda.base64MitigationWarnings" -}}
+{{- $es := .Values.elasticsearch | default dict -}}
+{{- $kc := .Values.identityKeycloak | default dict -}}
+{{- $esSources := list -}}
+{{- if $es.extraEnvVarsCM }}{{ $esSources = append $esSources "elasticsearch.extraEnvVarsCM" }}{{ end -}}
+{{- if $es.extraEnvVarsSecret }}{{ $esSources = append $esSources "elasticsearch.extraEnvVarsSecret" }}{{ end -}}
+{{- range $role := list "master" "data" "coordinating" "ingest" -}}
+{{- $roleValues := (index $es $role) | default dict -}}
+{{- if $roleValues.extraEnvVarsCM }}{{ $esSources = append $esSources (printf "elasticsearch.%s.extraEnvVarsCM" $role) }}{{ end -}}
+{{- if $roleValues.extraEnvVarsSecret }}{{ $esSources = append $esSources (printf "elasticsearch.%s.extraEnvVarsSecret" $role) }}{{ end -}}
+{{- end -}}
+{{- if $esSources -}}
+{{- printf "\n%s" (printf "[camunda][warning] SECURITY NOTICE: Elasticsearch JVM options from %s are ignored. The chart sets JDK_JAVA_OPTIONS=-XX:-UseBASE64Intrinsics as an explicit env entry, and Kubernetes gives explicit env entries precedence over ConfigMap or Secret sources. Move other JDK_JAVA_OPTIONS settings from these sources into elasticsearch.extraEnvVars or the role-specific extraEnvVars so the chart can append the mitigation flag." (join ", " $esSources)) }}
+{{- end -}}
+{{- $kcSources := list -}}
+{{- if $kc.extraEnvVarsCM }}{{ $kcSources = append $kcSources "identityKeycloak.extraEnvVarsCM" }}{{ end -}}
+{{- if $kc.extraEnvVarsSecret }}{{ $kcSources = append $kcSources "identityKeycloak.extraEnvVarsSecret" }}{{ end -}}
+{{- if $kcSources -}}
+{{- printf "\n%s" (printf "[camunda][warning] SECURITY NOTICE: CVE-2026-114938 mitigation may be lost. Keycloak loads JDK_JAVA_OPTIONS from %s after the chart env-vars ConfigMap, so a JDK_JAVA_OPTIONS key in those sources replaces -XX:-UseBASE64Intrinsics. Add -XX:-UseBASE64Intrinsics to the value in those sources." (join ", " $kcSources)) }}
+{{- end -}}
+{{- end -}}
+
 {{- define "camunda.constraints.warnings" }}
+  {{- include "camunda.base64MitigationWarnings" . }}
   {{- if and .Values.global.identity.auth.enabled (empty (include "camundaPlatform.authIssuerUrlWithFallback" . | trim)) }}
     {{- $issuerBackendUrl := include "camundaPlatform.authIssuerBackendUrl" . | trim }}
     {{- $keycloakURL := .Values.global.identity.keycloak.url | default dict }}
