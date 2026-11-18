@@ -227,7 +227,7 @@ configmap-warnings.yaml, which renders the "<release>-warnings" ConfigMap on the
 {{- end -}}
 {{- end -}}
 {{- if $sources -}}
-{{- printf "\n%s" (printf "[camunda][warning] SECURITY NOTICE: CVE-2026-114938 mitigation may not apply. Sources (%s) can set JDK_JAVA_OPTIONS. The chart cannot read external ConfigMaps or Secrets at render time, and it cannot merge a valueFrom entry. Add -XX:-UseBASE64Intrinsics to the value, or set a plain value in extraEnvVars so the chart can append the flag." (join ", " $sources)) }}
+{{- printf "\n%s" (printf "[camunda][warning] SECURITY NOTICE: CVE-2026-114938 mitigation may not apply. Sources (%s) can set JDK_JAVA_OPTIONS. For Elasticsearch, ConfigMap and Secret values are masked by the chart's explicit env entry; move them to extraEnvVars. For Keycloak, values from those sources win; add -XX:-UseBASE64Intrinsics to them." (join ", " $sources)) }}
 {{- end -}}
 {{- end -}}
 
