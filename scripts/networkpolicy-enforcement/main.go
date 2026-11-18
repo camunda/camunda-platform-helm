@@ -38,5 +38,9 @@ func main() {
 		fmt.Fprintf(os.Stderr, "FAIL: %v\n", err)
 		os.Exit(1)
 	}
+	if cfg.env == envOpenShift {
+		fmt.Println("PASS: NetworkPolicies enforce beside OpenShift-shaped project, Router, DNS and admin egress policies")
+		return
+	}
 	fmt.Println("PASS: NetworkPolicies render, enforce, open extraRules exactly, restrict egress, open ingress and egress allowedNamespaces exactly, connect a split release and are removed on rollback")
 }
