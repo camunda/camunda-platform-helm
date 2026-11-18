@@ -1558,13 +1558,15 @@ integration:
               repo-url: https://helm.elastic.co
           prefix-key: qa-rdbms-upg
           post-infra:
-            script: post-infra-bitnami-keycloak-migration.sh
+            script: post-infra-bitnami-migration.sh
             description: |
-              Keycloak-only variant of post-infra-bitnami-migration for upgrade scenarios
-              whose search backend is already a companion chart (OpenSearch). Moves the
-              bundled (Bitnami) Keycloak realm onto the companion Keycloak before the chart
-              upgrade to 8.10 and leaves the search data in place, so users keep their
-              Keycloak ids across the upgrade.
+              After the companion PostgreSQL/Keycloak/Elasticsearch are deployed but before
+              the chart upgrade to 8.10, migrate the bundled (Bitnami) Keycloak realm and the
+              Elasticsearch authorization indices off the bundled backends onto the companion
+              services. Uses the camunda-deployment-references migration scripts in external
+              mode with SKIP_HELM_UPGRADE=true (data-only; the matrix runner performs the
+              chart upgrade). This keeps users/realm alive across the upgrade that removes the
+              bundled Bitnami subcharts.
         - name: qa-opensearch-upg
           enabled: false
           shortname: qaosupg
