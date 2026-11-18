@@ -237,18 +237,11 @@ spec:
             {{- if .Values.security.enabled }}
             {{- include "elasticsearch.configure.security" . | nindent 12 }}
             {{- end }}
-            {{- $jdkOptions := include "elasticsearch.jdkJavaOptions" (dict "roleExtraEnvVars" .Values.coordinating.extraEnvVars "globalExtraEnvVars" .Values.extraEnvVars "context" $) }}
-            {{- if $jdkOptions }}
-            - name: JDK_JAVA_OPTIONS
-              value: {{ $jdkOptions | quote }}
+            {{- if .Values.coordinating.extraEnvVars }}
+            {{- include "common.tplvalues.render" ( dict "value" .Values.coordinating.extraEnvVars "context" $ ) | nindent 12 }}
             {{- end }}
-            {{- $roleEnv := include "elasticsearch.excludeJdkJavaOptions" (dict "envVars" .Values.coordinating.extraEnvVars "dropJdk" $jdkOptions "context" $) | fromJsonArray }}
-            {{- if $roleEnv }}
-            {{- include "common.tplvalues.render" ( dict "value" $roleEnv "context" $ ) | nindent 12 }}
-            {{- end }}
-            {{- $globalEnv := include "elasticsearch.excludeJdkJavaOptions" (dict "envVars" .Values.extraEnvVars "dropJdk" $jdkOptions "context" $) | fromJsonArray }}
-            {{- if $globalEnv }}
-            {{- include "common.tplvalues.render" ( dict "value" $globalEnv "context" $ ) | nindent 12 }}
+            {{- if .Values.extraEnvVars }}
+            {{- include "common.tplvalues.render" ( dict "value" .Values.extraEnvVars "context" $ ) | nindent 12 }}
             {{- end }}
           {{- if or .Values.extraEnvVarsCM .Values.extraEnvVarsSecret .Values.coordinating.extraEnvVarsCM .Values.coordinating.extraEnvVarsSecret }}
           envFrom:
@@ -310,6 +303,9 @@ spec:
             - name: empty-dir
               mountPath: /opt/bitnami/elasticsearch/config
               subPath: app-conf-dir
+            - name: jvm-options
+              mountPath: /opt/bitnami/elasticsearch/config/jvm.options.d/cve-2026-114938.options
+              subPath: cve-2026-114938.options
             - name: empty-dir
               mountPath: /opt/bitnami/elasticsearch/tmp
               subPath: app-tmp-dir
@@ -370,6 +366,9 @@ spec:
       volumes:
         - name: empty-dir
           emptyDir: {}
+        - name: jvm-options
+          configMap:
+            name: {{ include "common.names.fullname" . }}-jvm-options
         - name: "data"
           emptyDir: {}
         {{- if and .Values.usePasswordFiles .Values.security.enabled }}

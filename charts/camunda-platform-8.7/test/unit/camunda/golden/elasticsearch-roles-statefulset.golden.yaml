@@ -173,8 +173,6 @@ spec:
               value: "$(MY_POD_NAME).camunda-platform-test-elasticsearch-data-hl.camunda.svc.cluster.local"
             - name: ELASTICSEARCH_HEAP_SIZE
               value: "1024m"
-            - name: JDK_JAVA_OPTIONS
-              value: "-XX:-UseBASE64Intrinsics"
           ports:
             - name: rest-api
               containerPort: 9200
@@ -213,6 +211,9 @@ spec:
             - name: empty-dir
               mountPath: /opt/bitnami/elasticsearch/config
               subPath: app-conf-dir
+            - name: jvm-options
+              mountPath: /opt/bitnami/elasticsearch/config/jvm.options.d/cve-2026-114938.options
+              subPath: cve-2026-114938.options
             - name: empty-dir
               mountPath: /opt/bitnami/elasticsearch/tmp
               subPath: app-tmp-dir
@@ -233,6 +234,9 @@ spec:
       volumes:
         - name: empty-dir
           emptyDir: {}
+        - name: jvm-options
+          configMap:
+            name: camunda-platform-test-elasticsearch-jvm-options
         - name: config
           configMap:
             name: camunda-platform-test-elasticsearch
@@ -425,8 +429,6 @@ spec:
               value: "$(MY_POD_NAME).camunda-platform-test-elasticsearch-coordinating-hl.camunda.svc.cluster.local"
             - name: ELASTICSEARCH_HEAP_SIZE
               value: "128m"
-            - name: JDK_JAVA_OPTIONS
-              value: "-XX:-UseBASE64Intrinsics"
           ports:
             - name: rest-api
               containerPort: 9200
@@ -465,6 +467,9 @@ spec:
             - name: empty-dir
               mountPath: /opt/bitnami/elasticsearch/config
               subPath: app-conf-dir
+            - name: jvm-options
+              mountPath: /opt/bitnami/elasticsearch/config/jvm.options.d/cve-2026-114938.options
+              subPath: cve-2026-114938.options
             - name: empty-dir
               mountPath: /opt/bitnami/elasticsearch/tmp
               subPath: app-tmp-dir
@@ -485,6 +490,9 @@ spec:
       volumes:
         - name: empty-dir
           emptyDir: {}
+        - name: jvm-options
+          configMap:
+            name: camunda-platform-test-elasticsearch-jvm-options
         - name: "data"
           emptyDir: {}
         - name: config
@@ -667,8 +675,6 @@ spec:
               value: "$(MY_POD_NAME).camunda-platform-test-elasticsearch-ingest-hl.camunda.svc.cluster.local"
             - name: ELASTICSEARCH_HEAP_SIZE
               value: "128m"
-            - name: JDK_JAVA_OPTIONS
-              value: "-XX:-UseBASE64Intrinsics"
           ports:
             - name: rest-api
               containerPort: 9200
@@ -707,6 +713,9 @@ spec:
             - name: empty-dir
               mountPath: /opt/bitnami/elasticsearch/config
               subPath: app-conf-dir
+            - name: jvm-options
+              mountPath: /opt/bitnami/elasticsearch/config/jvm.options.d/cve-2026-114938.options
+              subPath: cve-2026-114938.options
             - name: empty-dir
               mountPath: /opt/bitnami/elasticsearch/tmp
               subPath: app-tmp-dir
@@ -727,6 +736,9 @@ spec:
       volumes:
         - name: empty-dir
           emptyDir: {}
+        - name: jvm-options
+          configMap:
+            name: camunda-platform-test-elasticsearch-jvm-options
         - name: "data"
           emptyDir: {}
         - name: config

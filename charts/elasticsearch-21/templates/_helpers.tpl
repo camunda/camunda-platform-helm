@@ -624,53 +624,6 @@ Compile all warnings into a single message, and call fail.
 {{- end -}}
 {{- end -}}
 
-{{- /* NOTE: Accepts extraEnvVars as a list or a YAML string. */ -}}
-{{- define "elasticsearch.extraEnvVarList" -}}
-{{- $value := .value | default list -}}
-{{- if kindIs "string" $value -}}
-{{- $value = include "common.tplvalues.render" (dict "value" $value "context" .context) | fromYamlArray -}}
-{{- end -}}
-{{- $value | toJson -}}
-{{- end -}}
-
-{{- /* NOTE: Appends the CVE mitigation flag to a user JDK_JAVA_OPTIONS value. */ -}}
-{{- define "elasticsearch.jdkJavaOptions" -}}
-{{- $flag := "-XX:-UseBASE64Intrinsics" -}}
-{{- $ctx := .context -}}
-{{- $value := "" -}}
-{{- $hasValueFrom := false -}}
-{{- $roleEnv := include "elasticsearch.extraEnvVarList" (dict "value" .roleExtraEnvVars "context" $ctx) | fromJsonArray -}}
-{{- $globalEnv := include "elasticsearch.extraEnvVarList" (dict "value" .globalExtraEnvVars "context" $ctx) | fromJsonArray -}}
-{{- range concat $roleEnv $globalEnv -}}
-{{- if and (kindIs "string" .name) (eq .name "JDK_JAVA_OPTIONS") -}}
-{{- if hasKey . "valueFrom" -}}
-{{- $hasValueFrom = true -}}
-{{- else if and (hasKey . "value") (kindIs "string" .value) -}}
-{{- $value = include "common.tplvalues.render" (dict "value" .value "context" $ctx) -}}
-{{- end -}}
-{{- end -}}
-{{- end -}}
-{{- if $hasValueFrom -}}
-{{- else if $value -}}
-{{- printf "%s %s" $value $flag | trim -}}
-{{- else -}}
-{{- $flag -}}
-{{- end -}}
-{{- end -}}
-
-{{- /* NOTE: Drops JDK_JAVA_OPTIONS from extraEnvVars when the merged value is emitted. */ -}}
-{{- define "elasticsearch.excludeJdkJavaOptions" -}}
-{{- $drop := .dropJdk -}}
-{{- $result := list -}}
-{{- $env := include "elasticsearch.extraEnvVarList" (dict "value" .envVars "context" .context) | fromJsonArray -}}
-{{- range $env -}}
-{{- if or (not $drop) (not (and (kindIs "string" .name) (eq .name "JDK_JAVA_OPTIONS"))) -}}
-{{- $result = append $result . -}}
-{{- end -}}
-{{- end -}}
-{{- $result | toJson -}}
-{{- end -}}
-
 {{/*
 Sysctl set if less then
 */}}

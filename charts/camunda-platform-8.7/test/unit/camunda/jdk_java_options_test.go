@@ -38,17 +38,16 @@ func renderJdkOptionsTemplate(t *testing.T, values map[string]string, showOnly s
 	return helm.RenderTemplateContext(t, context.Background(), options, chartPath, "camunda-platform-test", nil, "--show-only", showOnly)
 }
 
-func TestElasticsearchJdkJavaOptionsOverride(t *testing.T) {
+func TestElasticsearchJvmOptionsFile(t *testing.T) {
 	t.Parallel()
+
+	out := renderJdkOptionsTemplate(t, nil, "charts/elasticsearch/templates/configmap-jvm-options.yaml")
+	require.Contains(t, out, "-XX:-UseBASE64Intrinsics")
+	require.Contains(t, out, "cve-2026-114938.options")
 
 	for _, role := range []string{"master", "data", "coordinating", "ingest"} {
 		t.Run(role, func(t *testing.T) {
-			values := map[string]string{
-				"elasticsearch.extraEnvVars[0].name":  "JDK_JAVA_OPTIONS",
-				"elasticsearch.extraEnvVars[0].value": "-Xmx2g",
-				"elasticsearch.extraEnvVars[1].name":  "OTHER",
-				"elasticsearch.extraEnvVars[1].value": "x",
-			}
+			values := map[string]string{}
 			if role != "master" {
 				values["elasticsearch."+role+".replicaCount"] = "1"
 			}
@@ -57,11 +56,25 @@ func TestElasticsearchJdkJavaOptionsOverride(t *testing.T) {
 			}
 
 			out := renderJdkOptionsTemplate(t, values, "charts/elasticsearch/templates/"+role+"/statefulset.yaml")
-			require.Equal(t, 1, strings.Count(out, "name: JDK_JAVA_OPTIONS"))
-			require.Contains(t, out, `"-Xmx2g -XX:-UseBASE64Intrinsics"`)
-			require.Contains(t, out, "name: OTHER")
+			require.Contains(t, out, "jvm.options.d/cve-2026-114938.options")
+			require.NotContains(t, out, "name: JDK_JAVA_OPTIONS")
 		})
 	}
+}
+
+func TestElasticsearchUserEnvVarsPreserved(t *testing.T) {
+	t.Parallel()
+
+	out := renderJdkOptionsTemplate(t, map[string]string{
+		"elasticsearch.extraEnvVars[0].name":  "JDK_JAVA_OPTIONS",
+		"elasticsearch.extraEnvVars[0].value": "-Xmx2g",
+		"elasticsearch.extraEnvVars[1].name":  "OTHER",
+		"elasticsearch.extraEnvVars[1].value": "x",
+	}, "charts/elasticsearch/templates/master/statefulset.yaml")
+
+	require.Equal(t, 1, strings.Count(out, "name: JDK_JAVA_OPTIONS"))
+	require.Contains(t, out, "value: -Xmx2g")
+	require.Contains(t, out, "name: OTHER")
 }
 
 func TestKeycloakJdkJavaOptionsOverride(t *testing.T) {
@@ -79,33 +92,6 @@ func TestKeycloakJdkJavaOptionsOverride(t *testing.T) {
 	require.Contains(t, out, "name: OTHER")
 }
 
-func TestBase64MitigationWarnings(t *testing.T) {
-	t.Parallel()
-
-	out := renderJdkOptionsTemplate(t, map[string]string{
-		"elasticsearch.extraEnvVarsCM":        "my-cm",
-		"identityKeycloak.extraEnvVarsSecret": "my-secret",
-	}, "templates/camunda/configmap-warnings.yaml")
-
-	require.Contains(t, out, "elasticsearch.extraEnvVarsCM")
-	require.Contains(t, out, "identityKeycloak.extraEnvVarsSecret")
-	require.Contains(t, out, "-XX:-UseBASE64Intrinsics")
-}
-
-func TestElasticsearchJdkJavaOptionsValueFrom(t *testing.T) {
-	t.Parallel()
-
-	out := renderJdkOptionsTemplate(t, map[string]string{
-		"elasticsearch.extraEnvVars[0].name":                           "JDK_JAVA_OPTIONS",
-		"elasticsearch.extraEnvVars[0].valueFrom.configMapKeyRef.name": "jvm",
-		"elasticsearch.extraEnvVars[0].valueFrom.configMapKeyRef.key":  "opts",
-	}, "charts/elasticsearch/templates/master/statefulset.yaml")
-
-	require.Equal(t, 1, strings.Count(out, "name: JDK_JAVA_OPTIONS"))
-	require.Contains(t, out, "valueFrom:")
-	require.NotContains(t, out, `"null -XX:-UseBASE64Intrinsics"`)
-}
-
 func TestKeycloakJdkJavaOptionsValueFrom(t *testing.T) {
 	t.Parallel()
 
@@ -120,40 +106,6 @@ func TestKeycloakJdkJavaOptionsValueFrom(t *testing.T) {
 	require.NotContains(t, out, `"null -XX:-UseBASE64Intrinsics"`)
 }
 
-func TestValueFromWarning(t *testing.T) {
-	t.Parallel()
-
-	out := renderJdkOptionsTemplate(t, map[string]string{
-		"elasticsearch.extraEnvVars[0].name":                              "JDK_JAVA_OPTIONS",
-		"elasticsearch.extraEnvVars[0].valueFrom.configMapKeyRef.name":    "jvm",
-		"elasticsearch.extraEnvVars[0].valueFrom.configMapKeyRef.key":     "opts",
-		"identityKeycloak.extraEnvVars[0].name":                           "JDK_JAVA_OPTIONS",
-		"identityKeycloak.extraEnvVars[0].valueFrom.configMapKeyRef.name": "jvm",
-		"identityKeycloak.extraEnvVars[0].valueFrom.configMapKeyRef.key":  "opts",
-	}, "templates/camunda/configmap-warnings.yaml")
-
-	require.Contains(t, out, "elasticsearch.extraEnvVars[valueFrom]")
-	require.Contains(t, out, "identityKeycloak.extraEnvVars[valueFrom]")
-}
-
-func TestElasticsearchStringExtraEnvVars(t *testing.T) {
-	t.Parallel()
-
-	chartPath, err := filepath.Abs("../../../")
-	require.NoError(t, err)
-
-	options := &helm.Options{
-		KubectlOptions: k8s.NewKubectlOptions("", "", "camunda"),
-		SetStrValues: map[string]string{
-			"elasticsearch.extraEnvVars": "- name: FOO\n  value: bar",
-		},
-	}
-	out := helm.RenderTemplateContext(t, context.Background(), options, chartPath, "camunda-platform-test", nil, "--show-only", "charts/elasticsearch/templates/master/statefulset.yaml")
-
-	require.Contains(t, out, "name: FOO")
-	require.Contains(t, out, "-XX:-UseBASE64Intrinsics")
-}
-
 func TestKeycloakEmptyJdkJavaOptionsValue(t *testing.T) {
 	t.Parallel()
 
@@ -164,4 +116,20 @@ func TestKeycloakEmptyJdkJavaOptionsValue(t *testing.T) {
 
 	require.Equal(t, 1, strings.Count(out, "name: JDK_JAVA_OPTIONS"))
 	require.Contains(t, out, `"-XX:-UseBASE64Intrinsics"`)
+}
+
+func TestKeycloakEnvSourceWarnings(t *testing.T) {
+	t.Parallel()
+
+	out := renderJdkOptionsTemplate(t, map[string]string{
+		"identityKeycloak.extraEnvVarsCM":                                 "my-cm",
+		"identityKeycloak.extraEnvVarsSecret":                             "my-secret",
+		"identityKeycloak.extraEnvVars[0].name":                           "JDK_JAVA_OPTIONS",
+		"identityKeycloak.extraEnvVars[0].valueFrom.configMapKeyRef.name": "jvm",
+		"identityKeycloak.extraEnvVars[0].valueFrom.configMapKeyRef.key":  "opts",
+	}, "templates/camunda/configmap-warnings.yaml")
+
+	require.Contains(t, out, "identityKeycloak.extraEnvVarsCM")
+	require.Contains(t, out, "identityKeycloak.extraEnvVarsSecret")
+	require.Contains(t, out, "identityKeycloak.extraEnvVars[valueFrom]")
 }
