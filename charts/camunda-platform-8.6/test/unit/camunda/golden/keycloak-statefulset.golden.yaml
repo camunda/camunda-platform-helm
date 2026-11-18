@@ -141,6 +141,8 @@ spec:
               value: "master"
             - name: KEYCLOAK_PROXY_ADDRESS_FORWARDING
               value: 'false'
+            - name: JDK_JAVA_OPTIONS
+              value: -XX:-UseBASE64Intrinsics
           envFrom:
             - configMapRef:
                 name: camunda-platform-test-keycloak-env-vars
