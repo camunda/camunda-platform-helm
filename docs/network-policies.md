@@ -74,6 +74,22 @@ global:
                   kubernetes.io/metadata.name: ingress-nginx
 ```
 
+## Isolation boundary
+
+The policies select only the pods of the components listed above, so the isolation
+boundary is those pods.
+
+| Isolated | Not isolated |
+|---|---|
+| Ingress to the component pods from outside the release namespace, beyond `allowedNamespaces` and `extraRules` | Traffic between pods in the release namespace: every pod in the namespace reaches every component pod port, including the broker ports 26501 and 26502 |
+| Egress from the component pods, when `global.networkPolicy.egress.enabled` is on | Pods the chart does not render, such as companion charts, init jobs from other charts or sidecars in their own pods. See [Companion charts](#companion-charts) |
+| | Components with `networkPolicy.enabled: false`, or egress for components with `networkPolicy.egress.enabled: false` |
+| | Host-network pods and node traffic: most CNIs always allow kubelet probes from the node |
+| | Layer-7 traffic: a rule allows a port, not a path, method or hostname |
+
+The chart does not render a default-deny policy for the namespace. Add one yourself to
+isolate pods the chart does not select.
+
 ## Allowing other namespaces
 
 `allowedNamespaces` lets pods in other namespaces reach a component without writing
@@ -353,7 +369,8 @@ ingress policy allows the caller before the caller starts sending traffic, then 
 egress on last, on the calling release. With Argo CD, put the receiving release in an
 earlier sync wave. Sync waves order resources inside one Application only, so when the
 two releases are separate Applications there is no ordering between them: expect
-brief denials until both have synced.
+brief denials until both have synced. See [Upgrade choreography](#upgrade-choreography)
+for a single release.
 
 ### Migrating extraRules to allowedNamespaces
 
@@ -496,6 +513,167 @@ To turn egress on, list the external dependencies of each component from the tab
 above, add them as `extraRules` or egress `allowedNamespaces`, then set `global.networkPolicy.egress.enabled: true`.
 The policies keep their names and are updated in place; `helm rollback` to a revision
 without egress removes the egress rules again.
+
+## Failure modes
+
+| Symptom | Likely cause | Fix |
+|---|---|---|
+| Policies render but nothing is blocked | The CNI does not enforce `NetworkPolicy`, for example kindnet or flannel without a policy engine | Use a CNI that enforces policies |
+| Pods fail to start with name-resolution errors after egress is on | `allowDNS` points at `kube-dns` in `kube-system`, but the cluster DNS uses other labels or another namespace | Set `allowDNS: false` and add a DNS rule in `global.networkPolicy.egress.extraRules` |
+| Readiness stays false, logs show timeouts to the database, Elasticsearch, OpenSearch or OIDC provider | Egress is on without a rule for that dependency | Add it to egress `allowedNamespaces` (in cluster) or `extraRules` with an `ipBlock` (outside the cluster) |
+| Ingress controller returns 502 or 504 | The ingress controller namespace is not allowed | Add it to `global.networkPolicy.ingress.allowedNamespaces` |
+| Prometheus targets are down | The management port is not a client port | Add an entry with `ports`. See [Monitoring](#monitoring) |
+| A component list seems to drop the global entries | A component `allowedNamespaces` replaces the global list, including `[]` | Repeat the global entries in the component list |
+| `helm template` fails on an `allowedNamespaces` entry | The entry sets both or neither of `name` and `namespaceSelector`, or an empty `namespaceSelector` | Fix the entry. See [Entry forms](#entry-forms) |
+| A label-selected namespace keeps or loses access unexpectedly | The `namespaceSelector` follows namespace labels live, without an upgrade | Check the labels with `kubectl get ns --show-labels` |
+| An `ipBlock` rule for an external endpoint stops working | The IP behind the hostname changed | Widen the CIDR or use the provider's published ranges |
+
+## Upgrade choreography
+
+A single release moves through these steps. Each step is one `helm upgrade` and can be
+rolled back on its own:
+
+1. Install or upgrade with `global.networkPolicy.enabled: false`. No policy exists.
+2. Add `allowedNamespaces` or `extraRules` for every caller outside the release
+   namespace: ingress controller, monitoring, other Camunda releases.
+3. Set `global.networkPolicy.enabled: true`. Ingress is enforced; egress stays open.
+4. Add the egress destinations from the [Egress](#egress) table as egress
+   `allowedNamespaces` or `extraRules`.
+5. Set `global.networkPolicy.egress.enabled: true`.
+
+`helm rollback` to the revision of step 1 deletes the policies; rollback to the
+revision of step 3 removes only the egress rules. Both are covered by the enforcement
+scenarios in `scripts/networkpolicy-enforcement` (S5, rollback to the first revision
+deletes the policies; S9, rollback removes the egress rules).
+
+## Argo CD and GitOps
+
+The policies are plain chart resources with no Helm hooks, so Argo CD and Flux apply them
+like any other resource, in the same sync as the workloads. Within one Application:
+
+- The policies have no `argocd.argoproj.io/sync-wave` annotation and land in wave 0,
+  together with the Deployments and the StatefulSet. A pod can start before its policy
+  exists; it is briefly unrestricted, not briefly blocked.
+- The chart has no value for a sync-wave annotation on the policies. To have the
+  policies in place before new pods start, enable them in a sync of their own first,
+  as in [Upgrade choreography](#upgrade-choreography).
+- With egress on and a dependency missing from the rules, the sync stays `Progressing`
+  until the health check times out. Check the [Failure modes](#failure-modes) table.
+
+Across Applications, follow [Upgrade order](#upgrade-order): sync the receiving
+Application first, by hand or with an app-of-apps sync wave on the child Applications.
+
+## Service meshes and other CNIs
+
+This section is general guidance and has not been validated on a cluster. The
+enforcement scenarios run on kind with Calico only.
+
+- **Istio**: with sidecar injection, the application traffic leaves the pod through the
+  Envoy sidecar on the same ports, so the policies still apply. The sidecar also needs
+  egress to `istiod` (port 15012) in `istio-system`, and ingress on the sidecar ports
+  15090 and 15021 for metrics and health checks if they are scraped from outside the
+  namespace; add them through `extraRules`. In ambient mode, traffic between pods is
+  carried by `ztunnel` on port 15008, which `NetworkPolicy` port rules do not match as
+  expected; prefer Istio `AuthorizationPolicy` for layer-7 rules and test the layer-4
+  policies before enforcing egress.
+- **Cilium**: enforces `NetworkPolicy` natively. With kube-proxy replacement, a policy
+  matches the backend pod, not the Service IP, which is what the chart rules expect.
+  Cilium identifies host traffic as `host` and allows it by default.
+- **Calico**: enforces `NetworkPolicy` natively. A Calico `GlobalNetworkPolicy` with a
+  lower order can override the chart policies; check for one when a rule seems ignored.
+
+## OpenShift
+
+This section is general guidance and has not been validated on an OpenShift cluster.
+
+- OpenShift SDN and OVN-Kubernetes both enforce `NetworkPolicy`.
+- The OpenShift router runs in `openshift-ingress`. Allow it with
+  `global.networkPolicy.ingress.allowedNamespaces: [openshift-ingress]`. On clusters
+  where the router uses host networking, also allow the namespace label
+  `policy-group.network.openshift.io/ingress: ""` through a `namespaceSelector` entry.
+- Cluster monitoring runs in `openshift-monitoring`, user-workload monitoring in
+  `openshift-user-workload-monitoring`. Allow the one that scrapes the release on the
+  management ports. See [Monitoring](#monitoring).
+- Cluster DNS runs in `openshift-dns` with the label
+  `dns.operator.openshift.io/daemonset-dns: default` on port 5353. The default
+  `allowDNS` rule does not match it: set `allowDNS: false` and add:
+
+  ```yaml
+  global:
+    networkPolicy:
+      egress:
+        allowDNS: false
+        extraRules:
+          - to:
+              - namespaceSelector:
+                  matchLabels:
+                    kubernetes.io/metadata.name: openshift-dns
+            ports:
+              - protocol: UDP
+                port: 5353
+              - protocol: TCP
+                port: 5353
+  ```
+
+- The rendered policies need no extra security context constraints.
+
+## Companion charts
+
+The policies cover only the components rendered by this chart. Companion charts installed
+as separate releases render no policy from these values:
+
+| Companion | Chart in this repository | Covered | What to do |
+|---|---|---|---|
+| Elasticsearch | `charts/elasticsearch-21` | No | Use the chart's own `networkPolicy` values, or add a policy allowing the Camunda namespace on 9200 |
+| Keycloak | `charts/keycloak-24`, `charts/internal-keycloak-26` | No | Allow Identity and the OIDC clients on the Keycloak HTTP port |
+| PostgreSQL for Identity | `charts/identity-postgresql-15`, `charts/identity-postgresql-16` | No | Allow Identity on 5432 |
+| PostgreSQL for Camunda Hub | `charts/web-modeler-postgresql-14`, `charts/web-modeler-postgresql-15` | No | Allow the Camunda Hub REST API on 5432 |
+| Internal PostgreSQL | `charts/internal-postgresql` | No | Allow the components that use it on 5432 |
+| Operators (ECK, CloudNativePG) | none | No | Follow the operator documentation |
+
+When a companion runs in the release namespace, the Camunda components reach it through
+the release-namespace rule. When it runs in its own namespace, add it to egress
+`allowedNamespaces`. See [Database or Elasticsearch in its own namespace](#database-or-elasticsearch-in-its-own-namespace).
+
+## Day-2 debugging
+
+List the policies of a release and check their rules:
+
+```bash
+kubectl -n <namespace> get networkpolicy -l app.kubernetes.io/instance=<release>
+kubectl -n <namespace> describe networkpolicy <name>
+```
+
+Check that a policy selects the expected pods:
+
+```bash
+kubectl -n <namespace> get networkpolicy <name> -o jsonpath='{.spec.podSelector.matchLabels}'
+kubectl -n <namespace> get pods -l <label>=<value>
+```
+
+Probe a port from another namespace with a short-lived pod. A timeout means blocked; a
+connection refused or an HTTP response means allowed:
+
+```bash
+kubectl -n <other-namespace> run np-probe --rm -it --restart=Never --image=busybox -- \
+  nc -zv -w 3 <service>.<namespace>.svc.cluster.local 8080
+```
+
+Check the namespace labels a `namespaceSelector` entry relies on:
+
+```bash
+kubectl get namespace <other-namespace> --show-labels
+```
+
+Compare the rendered policies with what is in the cluster:
+
+```bash
+helm get manifest <release> -n <namespace> | yq 'select(.kind == "NetworkPolicy")'
+```
+
+To rule the policies out, set `global.networkPolicy.enabled: false` and upgrade. The
+policies are deleted; turn them on again after the fix. CNI-specific tools, such as
+`calicoctl` or `cilium monitor --type drop`, show which policy dropped a packet.
 
 ## Helpers and tests
 

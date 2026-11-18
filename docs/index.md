@@ -39,7 +39,7 @@ Looking for end-user installation docs? See the [official Camunda docs](https://
 | Page | Description |
 |---|---|
 | [One Hub with multiple clusters and Optimize releases](./operator-guides/hub-and-physical-tenant-optimize.md) | Release, OIDC, and storage isolation for default and Physical Tenant Optimize deployments |
-| [Network policies](./network-policies.md) | Opt-in ingress NetworkPolicies in the 8.11 chart |
+| [Network policies](./network-policies.md) | Opt-in ingress and egress NetworkPolicies in the 8.11 chart: values, isolation boundary, upgrades, debugging |
 
 ## Skills & Runbooks
 
