@@ -68,11 +68,7 @@ func filterKnownFeatures(want, available []string) (kept, dropped []string) {
 }
 
 func chartCredentialsManifest(chartDir string, secrets config.SecretsFlags) string {
-	name := "external-secret-integration-test-credentials.yaml"
-	if secrets.EffectiveExternalSecretsStore() == "vault-backend" {
-		name = "external-secret-integration-test-credentials-vault.yaml"
-	}
-	path := filepath.Join(chartDir, "test", "integration", "external-secrets", name)
+	path := contract.ESO{Store: secrets.EffectiveExternalSecretsStore()}.ChartManifest(chartDir)
 	if _, err := os.Stat(path); err != nil {
 		return ""
 	}
