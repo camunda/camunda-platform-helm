@@ -512,7 +512,7 @@ jobs:
                 text:
                   type: mrkdwn
                   text: |
-                    <!subteam^S05K9BK6RTK> :rotating_light:
+                    <!subteam^S0CEY294VGC> :rotating_light:
                     The *Chart RC Promotion* pipeline has failed.
 
                     *Dev tag:* ${{ inputs.dev-tag }}

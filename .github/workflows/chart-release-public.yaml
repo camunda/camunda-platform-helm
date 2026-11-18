@@ -767,7 +767,7 @@ jobs:
                 text:
                   type: mrkdwn
                   text: |
-                    <!subteam^S05K9BK6RTK> :rotating_light:
+                    <!subteam^S0CEY294VGC> :rotating_light:
                     *Helm Chart ${{ needs.release.outputs.version }}* was published, but its release-please PR did *not* merge (result: `${{ steps.merge-queue.outputs.result || 'unknown' }}`, last queue state: `${{ steps.merge-queue.outputs.queue-state || 'unknown' }}`).
                     Please merge it so `main` syncs with the released artifact.
                     <${{ github.server_url }}/${{ github.repository }}/pull/${{ needs.post-release.outputs.pr-number }}|View PR> · <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View workflow>
@@ -831,7 +831,7 @@ jobs:
                 text:
                   type: mrkdwn
                   text: |
-                    <!subteam^S05K9BK6RTK> :rotating_light:
+                    <!subteam^S0CEY294VGC> :rotating_light:
                     The *Chart Public Release* pipeline has failed.
 
                     *RC tag:* ${{ inputs.rc-tag }}
