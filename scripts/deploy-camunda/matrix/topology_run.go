@@ -45,7 +45,9 @@ func RunTopologies(ctx context.Context, entries []Entry, opts RunOptions) error 
 		}
 		return nil
 	}
-	opts.EnsureDockerRegistry = true
+	if topologyForcesPullSecret(topologyRegistry) {
+		opts.EnsureDockerRegistry = true
+	}
 	for _, entry := range entries {
 		if err := runTopologyEntry(ctx, entry, opts); err != nil {
 			return fmt.Errorf("topology entry %s/%s failed: %w", entry.Version, entry.Scenario, err)

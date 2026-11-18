@@ -19,6 +19,7 @@ import (
 	"maps"
 	"os"
 	"path/filepath"
+	"scripts/camunda-core/pkg/registry"
 	"scripts/deploy-camunda/config"
 )
 
@@ -199,5 +200,15 @@ func applyTopologyReleaseOverrides(flags *config.RuntimeFlags, crossRefEnv map[s
 	// release namespace (creds resolve from HARBOR_USERNAME/TEST_DOCKER_USERNAME_CAMUNDA_CLOUD
 	// env via the deployer fallback), so the deploy is self-sufficient locally and in CI
 	// without relying on node image cache.
-	flags.Docker.EnsureDockerRegistry = true
+	if topologyForcesPullSecret(topologyRegistry) {
+		flags.Docker.EnsureDockerRegistry = true
+	}
+}
+
+// topologyRegistry is the registry whose pull secret the topology driver
+// provisions into every release namespace.
+var topologyRegistry = registry.Harbor
+
+func topologyForcesPullSecret(p registry.Provider) bool {
+	return p.PullSecret != ""
 }
