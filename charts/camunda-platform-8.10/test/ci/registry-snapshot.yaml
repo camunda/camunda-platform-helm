@@ -1524,6 +1524,47 @@ integration:
               values-file: test/integration/companion-values/elasticsearch-qa.yaml
               repo-name: elastic
               repo-url: https://helm.elastic.co
+        - name: qa-rdbms-upg
+          enabled: false
+          shortname: qardbupg
+          auth: keycloak
+          flow: modular-upgrade-minor
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: qa-workloads
+          identity: keycloak
+          persistence: rdbms-cnpg
+          features:
+            - postgresql-companion
+          qa: true
+          image-tags: true
+          dependencies:
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql-qa.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak-qa.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch-qa.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+          prefix-key: qa-rdbms-upg
+          post-infra:
+            script: post-infra-bitnami-keycloak-migration.sh
+            description: |
+              Keycloak-only variant of post-infra-bitnami-migration for upgrade scenarios
+              whose search backend is already a companion chart (OpenSearch). Moves the
+              bundled (Bitnami) Keycloak realm onto the companion Keycloak before the chart
+              upgrade to 8.10 and leaves the search data in place, so users keep their
+              Keycloak ids across the upgrade.
         - name: qa-opensearch-upg
           enabled: false
           shortname: qaosupg
