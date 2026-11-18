@@ -83,8 +83,27 @@ spec:
       {{- if .Values.master.terminationGracePeriodSeconds }}
       terminationGracePeriodSeconds: {{ .Values.master.terminationGracePeriodSeconds }}
       {{- end }}
-      {{- if or .Values.initContainers .Values.master.initContainers (and  .Values.enableDefaultInitContainers (or .Values.security.enabled .Values.sysctlImage.enabled (and .Values.volumePermissions.enabled .Values.master.persistence.enabled))) }}
+      {{- if or true .Values.initContainers .Values.master.initContainers (and  .Values.enableDefaultInitContainers (or .Values.security.enabled .Values.sysctlImage.enabled (and .Values.volumePermissions.enabled .Values.master.persistence.enabled))) }}
       initContainers:
+        - name: install-cve-jvm-options
+          image: {{ include "elasticsearch.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy | quote }}
+          {{- if .Values.master.containerSecurityContext.enabled }}
+          securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" .Values.master.containerSecurityContext "context" $) | nindent 12 }}
+          {{- end }}
+          command:
+            - /bin/bash
+          args:
+            - -ec
+            - |
+              mkdir -p /opt/bitnami/elasticsearch/config/jvm.options.d
+              cp /tmp/cve-jvm-options/cve-2026-114938.options /opt/bitnami/elasticsearch/config/jvm.options.d/cve-2026-114938.options
+          volumeMounts:
+            - name: empty-dir
+              mountPath: /opt/bitnami/elasticsearch/config
+              subPath: app-conf-dir
+            - name: jvm-options
+              mountPath: /tmp/cve-jvm-options
         {{- if and .Values.sysctlImage.enabled .Values.enableDefaultInitContainers }}
         ## Image that performs the sysctl operation to modify Kernel settings (needed sometimes to avoid boot errors)
         - name: sysctl
@@ -333,9 +352,6 @@ spec:
             - name: empty-dir
               mountPath: /opt/bitnami/elasticsearch/config
               subPath: app-conf-dir
-            - name: jvm-options
-              mountPath: /opt/bitnami/elasticsearch/config/jvm.options.d/cve-2026-114938.options
-              subPath: cve-2026-114938.options
             - name: empty-dir
               mountPath: /opt/bitnami/elasticsearch/tmp
               subPath: app-tmp-dir

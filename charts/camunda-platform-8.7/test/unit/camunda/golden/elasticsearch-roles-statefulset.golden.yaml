@@ -52,6 +52,35 @@ spec:
         supplementalGroups: []
         sysctls: []
       initContainers:
+        - name: install-cve-jvm-options
+          image: docker.io/bitnamilegacy/elasticsearch:8.17.4
+          imagePullPolicy: "IfNotPresent"
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsGroup: 1001
+            runAsNonRoot: true
+            runAsUser: 1001
+            seLinuxOptions: {}
+            seccompProfile:
+              type: RuntimeDefault
+          command:
+            - /bin/bash
+          args:
+            - -ec
+            - |
+              mkdir -p /opt/bitnami/elasticsearch/config/jvm.options.d
+              cp /tmp/cve-jvm-options/cve-2026-114938.options /opt/bitnami/elasticsearch/config/jvm.options.d/cve-2026-114938.options
+          volumeMounts:
+            - name: empty-dir
+              mountPath: /opt/bitnami/elasticsearch/config
+              subPath: app-conf-dir
+            - name: jvm-options
+              mountPath: /tmp/cve-jvm-options
         ## Image that performs the sysctl operation to modify Kernel settings (needed sometimes to avoid boot errors)
         - name: sysctl
           image: docker.io/bitnamilegacy/os-shell:12-debian-12-r43
@@ -211,9 +240,6 @@ spec:
             - name: empty-dir
               mountPath: /opt/bitnami/elasticsearch/config
               subPath: app-conf-dir
-            - name: jvm-options
-              mountPath: /opt/bitnami/elasticsearch/config/jvm.options.d/cve-2026-114938.options
-              subPath: cve-2026-114938.options
             - name: empty-dir
               mountPath: /opt/bitnami/elasticsearch/tmp
               subPath: app-tmp-dir
@@ -308,6 +334,35 @@ spec:
         supplementalGroups: []
         sysctls: []
       initContainers:
+        - name: install-cve-jvm-options
+          image: docker.io/bitnamilegacy/elasticsearch:8.17.4
+          imagePullPolicy: "IfNotPresent"
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsGroup: 1001
+            runAsNonRoot: true
+            runAsUser: 1001
+            seLinuxOptions: {}
+            seccompProfile:
+              type: RuntimeDefault
+          command:
+            - /bin/bash
+          args:
+            - -ec
+            - |
+              mkdir -p /opt/bitnami/elasticsearch/config/jvm.options.d
+              cp /tmp/cve-jvm-options/cve-2026-114938.options /opt/bitnami/elasticsearch/config/jvm.options.d/cve-2026-114938.options
+          volumeMounts:
+            - name: empty-dir
+              mountPath: /opt/bitnami/elasticsearch/config
+              subPath: app-conf-dir
+            - name: jvm-options
+              mountPath: /tmp/cve-jvm-options
         ## Image that performs the sysctl operation to modify Kernel settings (needed sometimes to avoid boot errors)
         - name: sysctl
           image: docker.io/bitnamilegacy/os-shell:12-debian-12-r43
@@ -467,9 +522,6 @@ spec:
             - name: empty-dir
               mountPath: /opt/bitnami/elasticsearch/config
               subPath: app-conf-dir
-            - name: jvm-options
-              mountPath: /opt/bitnami/elasticsearch/config/jvm.options.d/cve-2026-114938.options
-              subPath: cve-2026-114938.options
             - name: empty-dir
               mountPath: /opt/bitnami/elasticsearch/tmp
               subPath: app-tmp-dir
@@ -554,6 +606,35 @@ spec:
         supplementalGroups: []
         sysctls: []
       initContainers:
+        - name: install-cve-jvm-options
+          image: docker.io/bitnamilegacy/elasticsearch:8.17.4
+          imagePullPolicy: "IfNotPresent"
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsGroup: 1001
+            runAsNonRoot: true
+            runAsUser: 1001
+            seLinuxOptions: {}
+            seccompProfile:
+              type: RuntimeDefault
+          command:
+            - /bin/bash
+          args:
+            - -ec
+            - |
+              mkdir -p /opt/bitnami/elasticsearch/config/jvm.options.d
+              cp /tmp/cve-jvm-options/cve-2026-114938.options /opt/bitnami/elasticsearch/config/jvm.options.d/cve-2026-114938.options
+          volumeMounts:
+            - name: empty-dir
+              mountPath: /opt/bitnami/elasticsearch/config
+              subPath: app-conf-dir
+            - name: jvm-options
+              mountPath: /tmp/cve-jvm-options
         ## Image that performs the sysctl operation to modify Kernel settings (needed sometimes to avoid boot errors)
         - name: sysctl
           image: docker.io/bitnamilegacy/os-shell:12-debian-12-r43
@@ -713,9 +794,6 @@ spec:
             - name: empty-dir
               mountPath: /opt/bitnami/elasticsearch/config
               subPath: app-conf-dir
-            - name: jvm-options
-              mountPath: /opt/bitnami/elasticsearch/config/jvm.options.d/cve-2026-114938.options
-              subPath: cve-2026-114938.options
             - name: empty-dir
               mountPath: /opt/bitnami/elasticsearch/tmp
               subPath: app-tmp-dir
