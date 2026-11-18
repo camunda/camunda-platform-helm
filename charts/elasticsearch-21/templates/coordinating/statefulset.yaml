@@ -83,8 +83,27 @@ spec:
       {{- if .Values.coordinating.podSecurityContext.enabled }}
       securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" .Values.coordinating.podSecurityContext "context" $) | nindent 8 }}
       {{- end }}
-      {{- if or (or .Values.initContainers .Values.coordinating.initContainers) .Values.security.enabled .Values.sysctlImage.enabled }}
+      {{- if or true (or .Values.initContainers .Values.coordinating.initContainers) .Values.security.enabled .Values.sysctlImage.enabled }}
       initContainers:
+        - name: install-cve-jvm-options
+          image: {{ include "elasticsearch.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy | quote }}
+          {{- if .Values.coordinating.containerSecurityContext.enabled }}
+          securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" .Values.coordinating.containerSecurityContext "context" $) | nindent 12 }}
+          {{- end }}
+          command:
+            - /bin/bash
+          args:
+            - -ec
+            - |
+              mkdir -p /opt/bitnami/elasticsearch/config/jvm.options.d
+              cp /tmp/cve-jvm-options/cve-2026-114938.options /opt/bitnami/elasticsearch/config/jvm.options.d/cve-2026-114938.options
+          volumeMounts:
+            - name: empty-dir
+              mountPath: /opt/bitnami/elasticsearch/config
+              subPath: app-conf-dir
+            - name: jvm-options
+              mountPath: /tmp/cve-jvm-options
         {{- if .Values.sysctlImage.enabled }}
         ## Image that performs the sysctl operation to modify Kernel settings (needed sometimes to avoid boot errors)
         - name: sysctl
@@ -363,6 +382,9 @@ spec:
       volumes:
         - name: empty-dir
           emptyDir: {}
+        - name: jvm-options
+          configMap:
+            name: {{ include "common.names.fullname" . }}-jvm-options
         - name: "data"
           emptyDir: {}
         {{- if and .Values.usePasswordFiles .Values.security.enabled }}
