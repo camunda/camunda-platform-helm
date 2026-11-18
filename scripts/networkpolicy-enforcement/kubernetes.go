@@ -44,12 +44,44 @@ func (r runner) namespaceExists(ctx context.Context, namespace string) (bool, er
 	return out != "", nil
 }
 
+func (r runner) installCNI(ctx context.Context) error {
+	if r.cfg.cni == cniCilium {
+		return r.installCilium(ctx)
+	}
+	return r.installCalico(ctx)
+}
+
 func (r runner) installCalico(ctx context.Context) error {
 	if _, err := r.kubectl(ctx, "apply", "--server-side", "-f", r.cfg.calicoManifest); err != nil {
 		return fmt.Errorf("apply Calico manifest: %w", err)
 	}
 	if _, err := r.kubectl(ctx, "rollout", "status", "daemonset/calico-node", "--namespace", "kube-system", "--timeout", r.cfg.timeout); err != nil {
 		return fmt.Errorf("wait for calico-node: %w", err)
+	}
+	if _, err := r.kubectl(ctx, "wait", "--for=condition=Ready", "nodes", "--all", "--timeout", r.cfg.timeout); err != nil {
+		return fmt.Errorf("wait for nodes: %w", err)
+	}
+	return nil
+}
+
+func (r runner) installCilium(ctx context.Context) error {
+	host, err := r.kubectl(ctx, "get", "nodes", "-l", "node-role.kubernetes.io/control-plane", "-o", `jsonpath={.items[0].status.addresses[?(@.type=="InternalIP")].address}`)
+	if err != nil || host == "" {
+		return errors.Join(errors.New("find the control-plane InternalIP for Cilium"), err)
+	}
+	if err := r.helm(ctx, "install", "cilium", "cilium", "--repo", "https://helm.cilium.io", "--version", r.cfg.ciliumVersion,
+		"--namespace", "kube-system", "--wait", "--timeout", r.cfg.timeout,
+		"--set", "kubeProxyReplacement=true",
+		"--set", "k8sServiceHost="+host,
+		"--set", "k8sServicePort=6443",
+		"--set", "ipam.mode=cluster-pool",
+		"--set", "ipam.operator.clusterPoolIPv4PodCIDRList={"+r.cfg.ciliumPodCIDR+"}",
+		"--set", "operator.replicas=1",
+	); err != nil {
+		return fmt.Errorf("install Cilium: %w", err)
+	}
+	if _, err := r.kubectl(ctx, "rollout", "status", "daemonset/cilium", "--namespace", "kube-system", "--timeout", r.cfg.timeout); err != nil {
+		return fmt.Errorf("wait for cilium: %w", err)
 	}
 	if _, err := r.kubectl(ctx, "wait", "--for=condition=Ready", "nodes", "--all", "--timeout", r.cfg.timeout); err != nil {
 		return fmt.Errorf("wait for nodes: %w", err)
