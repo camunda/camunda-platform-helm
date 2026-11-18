@@ -497,6 +497,178 @@ above, add them as `extraRules` or egress `allowedNamespaces`, then set `global.
 The policies keep their names and are updated in place; `helm rollback` to a revision
 without egress removes the egress rules again.
 
+## December proof runbook (GKE/distroci)
+
+The KIND + Calico evidence proves the chart renders the policies and that an enforcing CNI
+acts on them. The December proof carries that to GKE/distroci, whose datapath differs
+(Dataplane V2, private nodes, node-local DNS) and where the chart runs with the real
+Camunda images. It has three parts, run in this order: the canary gate **G0**, the runner
+leg **S1–S12 (13 runs; S13–S15 not yet written)**, then the real-image leg **D1–D4**.
+
+### G0 — deny-all canary gate
+
+No Camunda run is trusted until the cluster proves it enforces a deny-all policy on its
+own. G0 is independent of the chart and runs once the Calico addon from
+`camunda/team-distribution#960` has merged and been applied (decision log, 18 Nov).
+
+1. In one namespace, start a client pod and a server pod listening on a known port, and
+   confirm the client reaches the server.
+2. Apply a deny-all ingress `NetworkPolicy` (`podSelector: {}`, `policyTypes: [Ingress]`)
+   to the server. Confirm the client is blocked within 30 seconds.
+3. Remove the policy and confirm the client reaches the server again.
+4. Repeat 1–3 for egress: confirm the server reaches the client, apply a deny-all egress
+   policy, confirm the connection is blocked within 30 seconds, remove it and confirm it
+   is reachable again.
+
+If any part of G0 fails, stop. The cluster does not enforce `NetworkPolicy` on the path
+the chart relies on, and neither of the legs below can be trusted.
+
+### Runner leg — S1–S12 (13 runs; S13–S15 not yet written)
+
+`scripts/networkpolicy-enforcement/` drives the chart through a chain-linked sequence of
+installs, upgrades, rollbacks and label changes; each run builds on the revision the
+previous one left behind. The recorded evidence is **S1–S12 (13 runs; S13–S15 not yet
+written)** — 13 chain-linked runs. On KIND, create the cluster from `kind-calico.yaml`
+(which disables the default CNI) and let the runner apply Calico v3.30.3 with
+`-install-calico`:
+
+```bash
+kind create cluster --config charts/camunda-platform-8.11/test/integration/scenarios/networkpolicy/kind-calico.yaml
+make test.networkpolicy-enforcement networkPolicyArgs=-install-calico
+```
+
+The make target builds the runner, runs its Go tests, then executes the sequence against
+`charts/camunda-platform-8.11`. The runner refuses to start if any of its namespaces
+(`<ns>`, `<ns>-outsider`, `<ns>-allowed`) already exist, and it cleans them up when it
+finishes. On GKE/distroci the cluster CNI already enforces policies, so omit
+`-install-calico` and run the binary directly:
+
+```bash
+CHART_DIR=$PWD/charts/camunda-platform-8.11 \
+EXTERNAL_TARGET=203.0.113.10:443 \
+  scripts/networkpolicy-enforcement/networkpolicy-enforcement netpol
+```
+
+The runs are:
+
+| Run | What it proves |
+|---|---|
+| S1 | install with policies off — nothing renders, the outsider reaches every port |
+| S2 | upgrade enables policies — in-namespace traffic works, the outsider is blocked |
+| S3 | `ingress.extraRules` open exactly the allowed namespace on 8080 |
+| S4 | `connectors.networkPolicy.enabled=false` removes only the connectors policy |
+| S5 | `helm rollback` deletes the policies and reopens the ports |
+| S6 | fresh install with policies on — pods reach Ready, egress still open |
+| S7 | egress on blocks everything but the release namespace and DNS |
+| S8 | egress `extraRules` open the allowed namespace on 8080 |
+| S9 | rollback removes the egress rules |
+| S10 | ingress `allowedNamespaces` open the client ports (8080, 26500) only |
+| S11 | a `namespaceSelector` entry follows the namespace label |
+| S11 | removing the label blocks the namespace again without an upgrade |
+| S12 | an empty component list replaces the global list for that component |
+
+The S11 step runs twice — the label applied, then removed — which is why S1–S12 is 13
+runs, not 12.
+
+The external-egress probe in S7, S8 and the rollback runs dials a target outside the
+cluster to prove egress is blocked. `EXTERNAL_TARGET` selects it: a host or `host:port`,
+with IPv6 hosts bracketed (`[2001:db8::1]:443`). Unset, it keeps the default — the first
+node's `InternalIP` on port 6443 — which is what KIND serves. GKE does not serve the API
+there, so set `EXTERNAL_TARGET` to a public IP on 443 or the `kubernetes` service
+endpoint. A value without a port uses 443.
+
+### Real-image leg — D1–D4
+
+The runner uses busybox stand-ins. The real-image leg installs the full 8.11 chart with
+the real Camunda images on distroci and re-checks enforcement against the real pods.
+**This leg is executed by the human operator from a Mac**, not by the agent hosts, which
+have no Docker credentials for the private registry. The variables and commands are:
+
+```bash
+NS=ws-e45976-real
+REL=netpol
+CHART=./charts/camunda-platform-8.11
+SC=$CHART/test/integration/scenarios/networkpolicy
+CTX=distro-ci
+```
+
+Pre-checks:
+
+```bash
+deploy-camunda --help   # confirm the --extra-values syntax (comma-separated or repeatable)
+deploy-camunda doctor
+```
+
+`--extra-values` takes comma-separated files or is repeated; `doctor` confirms the
+config, the kube context, the Docker credentials and the scenario's `$PLACEHOLDER`s
+before the first install.
+
+D1 — baseline with policies off:
+
+```bash
+deploy-camunda --chart-path $CHART --namespace $NS --release $REL --kube-context $CTX \
+  --scenario chart-full-setup --identity basic --persistence elasticsearch
+```
+
+D2 — ingress policies:
+
+```bash
+deploy-camunda --chart-path $CHART --namespace $NS --release $REL --kube-context $CTX \
+  --scenario chart-full-setup --identity basic --persistence elasticsearch \
+  --extra-values $SC/values-extrarules.yaml
+```
+
+D3 — egress policies:
+
+```bash
+deploy-camunda --chart-path $CHART --namespace $NS --release $REL --kube-context $CTX \
+  --scenario chart-full-setup --identity basic --persistence elasticsearch \
+  --extra-values $SC/values-egress.yaml,$SC/values-egress-extrarules.yaml
+```
+
+D4 — allowed namespaces:
+
+```bash
+deploy-camunda --chart-path $CHART --namespace $NS --release $REL --kube-context $CTX \
+  --scenario chart-full-setup --identity basic --persistence elasticsearch \
+  --extra-values $SC/values-allowed-namespaces.yaml
+```
+
+`--identity basic` disables Identity and Camunda Hub, so the expected policy list is one
+per enabled component: `netpol-zeebe` (orchestration), `netpol-connectors` and
+`netpol-optimize`.
+
+After each D step:
+
+- All pods in `$NS` are Ready, with no restarts caused by a policy.
+- `kubectl --context $CTX get networkpolicy -n $NS` matches the expected list below.
+- Probe pods in `$NS-outsider` and `$NS-allowed` reach or are blocked exactly as in the
+  table. Create both namespaces once before D1 and apply `$SC/probe.yaml` into each:
+
+  ```bash
+  for n in $NS-outsider $NS-allowed; do
+    kubectl --context $CTX create namespace $n
+    kubectl --context $CTX apply -n $n -f $SC/probe.yaml
+  done
+  ```
+
+- The e2e smoke suite passes after D2–D4 (the D1 baseline needs no policy check).
+
+| Step | Policies in `$NS` | Ingress from `$NS-outsider` | Ingress from `$NS-allowed` | Egress from the release pods |
+|---|---|---|---|---|
+| D1 | none | reaches every port | reaches every port | open |
+| D2 | `netpol-zeebe`, `netpol-connectors`, `netpol-optimize`, `Ingress` | blocked on every port | every component's 8080 (zeebe, connectors, optimize) | open |
+| D3 | same three, `Ingress` + `Egress` | blocked | blocked — no ingress rule for `$NS-allowed` in this step | `$NS-allowed` 8080 only; `$NS-outsider` and external blocked; DNS intact |
+| D4 | same three, `Ingress` | blocked | zeebe 8080 and 26500, connectors 8080, optimize 8090; 9600/26501/26502 blocked | open |
+
+### Catalog entry
+
+The deploy-camunda registry entry for this proof
+(`charts/camunda-platform-8.11/test/ci/registry/scenarios/networkpolicy.yaml`, tier 2,
+gke/distroci) stays disabled and lands **after the #7924–#7928 chain merges to main**.
+Until then the proof is driven by the runner and the D1–D4 commands above, not by the
+matrix.
+
 ## Helpers and tests
 
 The shared helpers `camundaPlatform.networkPolicyEnabled`,
