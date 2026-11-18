@@ -180,6 +180,9 @@ integration:
     - id: qa-opensearch
       shortname: qaos
       enabled: false
+    - id: qa-rdbms
+      shortname: qardbms
+      enabled: false
     - id: qa-opensearch-upg-install
       shortname: qaosupg
       enabled: false

@@ -1,0 +1,30 @@
+# Companion values for internal-postgresql — RDBMS secondary-storage, GKE QA variant.
+# Provides the Identity, Web Modeler and RDBMS `app` databases on the qa-workloads pool.
+
+fullnameOverride: postgresql
+
+auth:
+  username: "$RDBMS_POSTGRESQL_USERNAME"
+  password: "$RDBMS_POSTGRESQL_PASSWORD"
+  database: identity
+
+databases:
+  - identity
+  - webmodeler
+  - app
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+nodeSelector:
+  workload: qa-workloads
+tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: qa-workloads

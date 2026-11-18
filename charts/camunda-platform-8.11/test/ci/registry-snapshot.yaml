@@ -1450,6 +1450,38 @@ integration:
               values-file: test/integration/companion-values/opensearch.yaml
               repo-name: opensearch
               repo-url: https://opensearch-project.github.io/helm-charts/
+        - name: qa-rdbms
+          enabled: false
+          shortname: qardbms
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: qa-workloads
+          identity: keycloak
+          persistence: rdbms
+          features:
+            - postgresql-companion
+          qa: true
+          image-tags: true
+          dependencies:
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql-rdbms-qa.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak-qa.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch-9-qa.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
         - name: qa-opensearch-upg
           enabled: false
           shortname: qaosupg
