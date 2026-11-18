@@ -629,23 +629,30 @@ Compile all warnings into a single message, and call fail.
 {{- $flag := "-XX:-UseBASE64Intrinsics" -}}
 {{- $ctx := .context -}}
 {{- $value := "" -}}
+{{- $hasValueFrom := false -}}
 {{- range concat (.roleExtraEnvVars | default list) (.globalExtraEnvVars | default list) -}}
-{{- if and (kindIs "string" .name) (eq .name "JDK_JAVA_OPTIONS") (kindIs "string" (.value | default "")) -}}
+{{- if and (kindIs "string" .name) (eq .name "JDK_JAVA_OPTIONS") -}}
+{{- if hasKey . "valueFrom" -}}
+{{- $hasValueFrom = true -}}
+{{- else if and (hasKey . "value") (kindIs "string" .value) -}}
 {{- $value = include "common.tplvalues.render" (dict "value" .value "context" $ctx) -}}
 {{- end -}}
 {{- end -}}
-{{- if $value -}}
+{{- end -}}
+{{- if $hasValueFrom -}}
+{{- else if $value -}}
 {{- printf "%s %s" $value $flag | trim -}}
 {{- else -}}
 {{- $flag -}}
 {{- end -}}
 {{- end -}}
 
-{{- /* NOTE: Drops JDK_JAVA_OPTIONS from extraEnvVars to avoid duplicate env names. */ -}}
+{{- /* NOTE: Drops JDK_JAVA_OPTIONS from extraEnvVars when the merged value is emitted. */ -}}
 {{- define "elasticsearch.excludeJdkJavaOptions" -}}
+{{- $drop := .dropJdk -}}
 {{- $result := list -}}
 {{- range .envVars | default list -}}
-{{- if not (and (kindIs "string" .name) (eq .name "JDK_JAVA_OPTIONS")) -}}
+{{- if or (not $drop) (not (and (kindIs "string" .name) (eq .name "JDK_JAVA_OPTIONS"))) -}}
 {{- $result = append $result . -}}
 {{- end -}}
 {{- end -}}

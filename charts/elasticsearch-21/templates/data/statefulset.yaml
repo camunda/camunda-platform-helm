@@ -268,13 +268,16 @@ spec:
             {{- if .Values.security.enabled }}
             {{- include "elasticsearch.configure.security" . | nindent 12 }}
             {{- end }}
+            {{- $jdkOptions := include "elasticsearch.jdkJavaOptions" (dict "roleExtraEnvVars" .Values.data.extraEnvVars "globalExtraEnvVars" .Values.extraEnvVars "context" $) }}
+            {{- if $jdkOptions }}
             - name: JDK_JAVA_OPTIONS
-              value: {{ include "elasticsearch.jdkJavaOptions" (dict "roleExtraEnvVars" .Values.data.extraEnvVars "globalExtraEnvVars" .Values.extraEnvVars "context" $) | quote }}
-            {{- $roleEnv := include "elasticsearch.excludeJdkJavaOptions" (dict "envVars" .Values.data.extraEnvVars) | fromJsonArray }}
+              value: {{ $jdkOptions | quote }}
+            {{- end }}
+            {{- $roleEnv := include "elasticsearch.excludeJdkJavaOptions" (dict "envVars" .Values.data.extraEnvVars "dropJdk" $jdkOptions) | fromJsonArray }}
             {{- if $roleEnv }}
             {{- include "common.tplvalues.render" ( dict "value" $roleEnv "context" $ ) | nindent 12 }}
             {{- end }}
-            {{- $globalEnv := include "elasticsearch.excludeJdkJavaOptions" (dict "envVars" .Values.extraEnvVars) | fromJsonArray }}
+            {{- $globalEnv := include "elasticsearch.excludeJdkJavaOptions" (dict "envVars" .Values.extraEnvVars "dropJdk" $jdkOptions) | fromJsonArray }}
             {{- if $globalEnv }}
             {{- include "common.tplvalues.render" ( dict "value" $globalEnv "context" $ ) | nindent 12 }}
             {{- end }}

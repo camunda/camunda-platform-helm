@@ -328,7 +328,7 @@ Compile all warnings into a single message.
 {{- $ctx := .context -}}
 {{- $value := "" -}}
 {{- range .envVars | default list -}}
-{{- if and (kindIs "string" .name) (eq .name "JDK_JAVA_OPTIONS") (kindIs "string" (.value | default "")) -}}
+{{- if and (kindIs "string" .name) (eq .name "JDK_JAVA_OPTIONS") (hasKey . "value") (kindIs "string" .value) -}}
 {{- $value = include "common.tplvalues.render" (dict "value" .value "context" $ctx) -}}
 {{- end -}}
 {{- end -}}

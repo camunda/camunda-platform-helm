@@ -91,3 +91,47 @@ func TestBase64MitigationWarnings(t *testing.T) {
 	require.Contains(t, out, "identityKeycloak.extraEnvVarsSecret")
 	require.Contains(t, out, "-XX:-UseBASE64Intrinsics")
 }
+
+func TestElasticsearchJdkJavaOptionsValueFrom(t *testing.T) {
+	t.Parallel()
+
+	out := renderJdkOptionsTemplate(t, map[string]string{
+		"elasticsearch.extraEnvVars[0].name":                           "JDK_JAVA_OPTIONS",
+		"elasticsearch.extraEnvVars[0].valueFrom.configMapKeyRef.name": "jvm",
+		"elasticsearch.extraEnvVars[0].valueFrom.configMapKeyRef.key":  "opts",
+	}, "charts/elasticsearch/templates/master/statefulset.yaml")
+
+	require.Equal(t, 1, strings.Count(out, "name: JDK_JAVA_OPTIONS"))
+	require.Contains(t, out, "valueFrom:")
+	require.NotContains(t, out, `"null -XX:-UseBASE64Intrinsics"`)
+}
+
+func TestKeycloakJdkJavaOptionsValueFrom(t *testing.T) {
+	t.Parallel()
+
+	out := renderJdkOptionsTemplate(t, map[string]string{
+		"identityKeycloak.extraEnvVars[0].name":                           "JDK_JAVA_OPTIONS",
+		"identityKeycloak.extraEnvVars[0].valueFrom.configMapKeyRef.name": "jvm",
+		"identityKeycloak.extraEnvVars[0].valueFrom.configMapKeyRef.key":  "opts",
+	}, "charts/identityKeycloak/templates/statefulset.yaml")
+
+	require.Equal(t, 1, strings.Count(out, "name: JDK_JAVA_OPTIONS"))
+	require.Contains(t, out, "valueFrom:")
+	require.NotContains(t, out, `"null -XX:-UseBASE64Intrinsics"`)
+}
+
+func TestValueFromWarning(t *testing.T) {
+	t.Parallel()
+
+	out := renderJdkOptionsTemplate(t, map[string]string{
+		"elasticsearch.extraEnvVars[0].name":                              "JDK_JAVA_OPTIONS",
+		"elasticsearch.extraEnvVars[0].valueFrom.configMapKeyRef.name":    "jvm",
+		"elasticsearch.extraEnvVars[0].valueFrom.configMapKeyRef.key":     "opts",
+		"identityKeycloak.extraEnvVars[0].name":                           "JDK_JAVA_OPTIONS",
+		"identityKeycloak.extraEnvVars[0].valueFrom.configMapKeyRef.name": "jvm",
+		"identityKeycloak.extraEnvVars[0].valueFrom.configMapKeyRef.key":  "opts",
+	}, "templates/camunda/configmap-warnings.yaml")
+
+	require.Contains(t, out, "elasticsearch.extraEnvVars[valueFrom]")
+	require.Contains(t, out, "identityKeycloak.extraEnvVars[valueFrom]")
+}
