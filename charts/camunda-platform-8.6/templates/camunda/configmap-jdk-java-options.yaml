@@ -1,0 +1,11 @@
+{{- if or .Values.identityKeycloak.enabled (.Values.identity.keycloak).enabled .Values.elasticsearch.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-jdk-java-options
+  labels:
+    {{- include "camundaPlatform.labels" . | nindent 4 }}
+  annotations: {{- toYaml .Values.global.annotations | nindent 4 }}
+data:
+  JDK_JAVA_OPTIONS: "-XX:-UseBASE64Intrinsics"
+{{- end }}

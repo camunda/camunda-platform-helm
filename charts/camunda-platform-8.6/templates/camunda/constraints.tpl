@@ -217,6 +217,38 @@ The following values inside your values.yaml need to be set but were not:
       {{- end }}
     {{- end }}
   {{- end }}
+  {{- $jdkOptionsCM := printf "%s-jdk-java-options" .Release.Name }}
+  {{- $jdkOptionsNotApplied := list }}
+  {{- if or .Values.identityKeycloak.enabled (.Values.identity.keycloak).enabled }}
+    {{- if ne (tpl (.Values.identityKeycloak.extraEnvVarsCM | default "" | toString) $) $jdkOptionsCM }}
+      {{- $jdkOptionsNotApplied = append $jdkOptionsNotApplied "identityKeycloak.extraEnvVarsCM" }}
+    {{- end }}
+    {{- range .Values.identityKeycloak.extraEnvVars }}
+      {{- if and (eq .name "JDK_JAVA_OPTIONS") (not (contains "-XX:-UseBASE64Intrinsics" (toString .value))) }}
+        {{- $jdkOptionsNotApplied = append $jdkOptionsNotApplied "identityKeycloak.extraEnvVars" }}
+      {{- end }}
+    {{- end }}
+  {{- end }}
+  {{- if .Values.elasticsearch.enabled }}
+    {{- if ne (tpl (.Values.elasticsearch.extraEnvVarsCM | default "" | toString) $) $jdkOptionsCM }}
+      {{- $jdkOptionsNotApplied = append $jdkOptionsNotApplied "elasticsearch.extraEnvVarsCM" }}
+    {{- end }}
+    {{- $esEnvVars := dict "elasticsearch.extraEnvVars" .Values.elasticsearch.extraEnvVars }}
+    {{- range $role := list "master" "data" "ingest" "coordinating" }}
+      {{- $_ := set $esEnvVars (printf "elasticsearch.%s.extraEnvVars" $role) ((index $.Values.elasticsearch $role | default dict).extraEnvVars) }}
+    {{- end }}
+    {{- range $key, $envVars := $esEnvVars }}
+      {{- range $envVars }}
+        {{- if and (eq .name "JDK_JAVA_OPTIONS") (not (contains "-XX:-UseBASE64Intrinsics" (toString .value))) }}
+          {{- $jdkOptionsNotApplied = append $jdkOptionsNotApplied $key }}
+        {{- end }}
+      {{- end }}
+    {{- end }}
+  {{- end }}
+  {{- if $jdkOptionsNotApplied }}
+    {{- $jdkOptionsMessage := printf "[camunda][warning]\nSECURITY NOTICE: The JVM option -XX:-UseBASE64Intrinsics mitigates CVE-2026-114938 in Keycloak and Elasticsearch. The chart sets it with JDK_JAVA_OPTIONS in the ConfigMap %s, but the following values may prevent it from being applied:\n  %s\nIf you set extraEnvVarsCM, make sure that ConfigMap sets JDK_JAVA_OPTIONS with -XX:-UseBASE64Intrinsics. If you set JDK_JAVA_OPTIONS in extraEnvVars, add -XX:-UseBASE64Intrinsics to its value.\n" $jdkOptionsCM (join "\n  " $jdkOptionsNotApplied) }}
+    {{ printf "\n%s" $jdkOptionsMessage }}
+  {{- end }}
   {{- if .Values.global.multiregion.installationType }}
     {{- $installationTypeMessage := "[camunda][warning]\nDEPRECATION NOTICE: Starting from appVersion 8.7, the Camunda Helm chart will no longer support the global.multiregion.installationType option. This is replaced with a new procedure for managing multi-region installations documented here:\nhttps://docs.camunda.io/docs/self-managed/operational-guides/multi-region/dual-region-operational-procedure/\nPlease unset this option to remove the warning.\n" }}
     {{ printf "\n%s" $installationTypeMessage }}
