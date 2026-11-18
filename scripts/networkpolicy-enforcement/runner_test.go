@@ -18,9 +18,14 @@ import (
 	"context"
 	"errors"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 )
+
+// nodeIP is the InternalIP the fake cluster reports for its single node; it is
+// the default external egress target.
+const nodeIP = "172.18.0.2"
 
 type state struct {
 	policies      bool
@@ -42,6 +47,7 @@ type splitState struct {
 
 type fakeCluster struct {
 	enforcing        bool
+	externalIP       string
 	leakyExtra       bool
 	insideBlocked    bool
 	egressIgnored    bool
@@ -140,7 +146,7 @@ func (f *fakeCluster) kubectl(args []string) (string, error) {
 	case args[0] == "get" && args[1] == "networkpolicy":
 		return strings.Join(f.policyNames(), " "), nil
 	case args[0] == "get" && args[1] == "nodes":
-		return "172.18.0.2", nil
+		return nodeIP, nil
 	case args[0] == "get" && args[1] == "pod" && args[2] == "netpol-probe":
 		return map[string]string{"netpol": "10.1.0.0", "netpol-outsider": "10.1.0.1", "netpol-allowed": "10.1.0.2"}[args[4]], nil
 	case args[0] == "get" && args[1] == "pod" && strings.Contains(strings.Join(args, " "), "instance=netpol-split"):
@@ -229,7 +235,11 @@ func (f *fakeCluster) allowed(from, component, port string) bool {
 }
 
 func (f *fakeCluster) egressExec(args []string) error {
-	target := map[string]string{"10.0.0.2": "connectors", "10.1.0.1": "outsider", "10.1.0.2": "allowed", "10.2.0.2": "allowed", "172.18.0.2": "external"}[args[len(args)-2]]
+	targets := map[string]string{"10.0.0.2": "connectors", "10.1.0.1": "outsider", "10.1.0.2": "allowed", "10.2.0.2": "allowed", nodeIP: "external"}
+	if f.externalIP != "" {
+		targets[f.externalIP] = "external"
+	}
+	target := targets[args[len(args)-2]]
 	if args[5] == "nslookup" {
 		target = "dns"
 	}
@@ -264,7 +274,7 @@ func (f *fakeCluster) splitExec(args []string) error {
 }
 
 func testRunner(f *fakeCluster) runner {
-	cfg := config{chartDir: "/chart", scenarioDir: "/chart/s", namespace: "netpol", release: "netpol", namespace2: "netpol-allowed", release2: "netpol-split", timeout: "1m", retries: 3}
+	cfg := config{chartDir: "/chart", scenarioDir: "/chart/s", namespace: "netpol", release: "netpol", namespace2: "netpol-allowed", release2: "netpol-split", timeout: "1m", externalPort: nodeExternalPort, retries: 3}
 	return runner{cfg: cfg, command: f.run, log: func(string, ...any) {}}
 }
 
@@ -392,16 +402,23 @@ func TestRunInstallsCalico(t *testing.T) {
 }
 
 func TestParseConfig(t *testing.T) {
-	env := map[string]string{"CHART_DIR": "/c", "RELEASE": "r"}
+	env := map[string]string{"CHART_DIR": "/c", "RELEASE": "r", "EXTERNAL_TARGET": "203.0.113.10:8443"}
 	cfg, err := parseConfig([]string{"-install-calico", "ns"}, func(k string) string { return env[k] }, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !cfg.installCalico || cfg.namespace != "ns" || cfg.release != "r" || cfg.namespace2 != "ns-allowed" || cfg.release2 != "netpol-split" || cfg.scenarioDir != "/c/test/integration/scenarios/networkpolicy" || !strings.Contains(cfg.calicoManifest, calicoVersion) {
+	if !cfg.installCalico || cfg.namespace != "ns" || cfg.release != "r" || cfg.namespace2 != "ns-allowed" || cfg.release2 != "netpol-split" || cfg.scenarioDir != "/c/test/integration/scenarios/networkpolicy" || !strings.Contains(cfg.calicoManifest, calicoVersion) || cfg.externalHost != "203.0.113.10" || cfg.externalPort != 8443 {
 		t.Fatalf("unexpected config %+v", cfg)
 	}
 	if _, err := parseConfig([]string{"a", "b"}, func(string) string { return "" }, nil); err == nil {
 		t.Fatal("expected error for two namespaces")
+	}
+	def, err := parseConfig(nil, func(string) string { return "" }, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if def.externalHost != "" || def.externalPort != nodeExternalPort {
+		t.Fatalf("unexpected default external target %+v", def)
 	}
 }
 
@@ -452,5 +469,59 @@ func TestRunDeploysTheSplitReleaseInOrder(t *testing.T) {
 	}
 	if !slices.Contains(f.calls, "helm uninstall netpol-split --namespace netpol-allowed --ignore-not-found --wait") {
 		t.Fatal("cleanup did not uninstall the split release")
+	}
+}
+
+func TestParseExternalTarget(t *testing.T) {
+	cases := []struct {
+		raw     string
+		host    string
+		port    int
+		wantErr bool
+	}{
+		{raw: "", host: "", port: nodeExternalPort},
+		{raw: "external.example.com", host: "external.example.com", port: defaultExternalPort},
+		{raw: "external.example.com:8443", host: "external.example.com", port: 8443},
+		{raw: "[2001:db8::1]:8443", host: "2001:db8::1", port: 8443},
+		{raw: "2001:db8::1", host: "2001:db8::1", port: defaultExternalPort},
+		{raw: "external.example.com:0", wantErr: true},
+		{raw: "external.example.com:70000", wantErr: true},
+		{raw: "external.example.com:http", wantErr: true},
+		{raw: ":8443", wantErr: true},
+		{raw: "a:b:c", wantErr: true},
+	}
+	for _, c := range cases {
+		host, port, err := parseExternalTarget(c.raw)
+		if c.wantErr {
+			if err == nil {
+				t.Errorf("parseExternalTarget(%q): expected error", c.raw)
+			}
+			continue
+		}
+		if err != nil {
+			t.Errorf("parseExternalTarget(%q): %v", c.raw, err)
+			continue
+		}
+		if host != c.host || port != c.port {
+			t.Errorf("parseExternalTarget(%q) = %q:%d, want %q:%d", c.raw, host, port, c.host, c.port)
+		}
+	}
+}
+
+func TestRunUsesExternalTargetOverride(t *testing.T) {
+	f := &fakeCluster{enforcing: true, externalIP: "external.example.com"}
+	r := testRunner(f)
+	r.cfg.externalHost = "external.example.com"
+	r.cfg.externalPort = defaultExternalPort
+	if err := r.run(context.Background()); err != nil {
+		t.Fatalf("run: %v", err)
+	}
+	if slices.ContainsFunc(f.calls, func(c string) bool { return strings.Contains(c, "get nodes") }) {
+		t.Fatalf("override still resolved the node InternalIP: %v", f.calls)
+	}
+	if !slices.ContainsFunc(f.calls, func(c string) bool {
+		return strings.Contains(c, "nc -z -w 2 external.example.com "+strconv.Itoa(defaultExternalPort))
+	}) {
+		t.Fatalf("external probe did not target the override: %v", f.calls)
 	}
 }

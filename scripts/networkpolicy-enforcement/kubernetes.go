@@ -169,12 +169,21 @@ func (r runner) egressTarget(ctx context.Context, t target) (string, int, error)
 		ip, err := r.podIP(ctx, connectors)
 		return ip, componentPorts[connectors][0], err
 	case targetExternal:
-		ip, err := r.jsonpath(ctx, "node InternalIP", "nodes", "-o", `jsonpath={.items[0].status.addresses[?(@.type=="InternalIP")].address}`)
-		return ip, 6443, err
+		return r.externalTarget(ctx)
 	default:
 		ip, err := r.jsonpath(ctx, "probe IP", "pod", "netpol-probe", "--namespace", r.sourceNamespace(source(t-targetInside)), "-o", "jsonpath={.status.podIP}")
 		return ip, probePort, err
 	}
+}
+
+// externalTarget resolves the destination of the external egress probe. An
+// EXTERNAL_TARGET host overrides the default, the first node's InternalIP.
+func (r runner) externalTarget(ctx context.Context) (string, int, error) {
+	if r.cfg.externalHost != "" {
+		return r.cfg.externalHost, r.cfg.externalPort, nil
+	}
+	ip, err := r.jsonpath(ctx, "node InternalIP", "nodes", "-o", `jsonpath={.items[0].status.addresses[?(@.type=="InternalIP")].address}`)
+	return ip, r.cfg.externalPort, err
 }
 
 func (r runner) egressReachable(ctx context.Context, pod string, t target) (bool, error) {
