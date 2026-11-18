@@ -1,0 +1,164 @@
+elasticsearch/eske flow=install platform=gke
+  identity=keycloak persistence=elasticsearch platform=gke infra=distroci features=
+  - charts/camunda-platform-8.9/values-digest.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/base.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/identity/keycloak.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/persistence/elasticsearch.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/platform/gke.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/infra/values-infra-distroci.yaml
+elasticsearch/eske flow=upgrade-minor platform=gke
+  identity=keycloak persistence=elasticsearch platform=gke infra=distroci features=
+  - charts/camunda-platform-8.9/values-digest.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/base.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/identity/keycloak.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/persistence/elasticsearch.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/platform/gke.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/infra/values-infra-distroci.yaml
+orchestration-tls/estls flow=install platform=gke
+  identity=keycloak persistence=elasticsearch platform=gke infra=distroci features=orchestration-tls
+  - charts/camunda-platform-8.9/values-digest.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/base.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/identity/keycloak.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/persistence/elasticsearch.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/platform/gke.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/infra/values-infra-distroci.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/features/orchestration-tls.yaml
+enterprise-values/entv flow=install platform=gke
+  identity=keycloak persistence=elasticsearch platform=gke infra=distroci features=enterprise,keycloak-admin-audience-off
+  - charts/camunda-platform-8.9/values-digest.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/base.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/identity/keycloak.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/persistence/elasticsearch.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/platform/gke.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/infra/values-infra-distroci.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/features/enterprise.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/features/keycloak-admin-audience-off.yaml
+opensearch/oske flow=install platform=gke
+  identity=keycloak persistence=opensearch-embedded platform=gke infra=distroci features=
+  - charts/camunda-platform-8.9/values-digest.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/base.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/identity/keycloak.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/persistence/opensearch-embedded.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/platform/gke.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/infra/values-infra-distroci.yaml
+oidc/esoi flow=install platform=gke
+  identity=oidc persistence=elasticsearch platform=gke infra=distroci features=
+  - charts/camunda-platform-8.9/values-digest.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/base.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/identity/oidc.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/persistence/elasticsearch.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/platform/gke.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/infra/values-infra-distroci.yaml
+oidc/esoi flow=upgrade-minor platform=gke
+  identity=oidc persistence=elasticsearch platform=gke infra=distroci features=
+  - charts/camunda-platform-8.9/values-digest.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/base.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/identity/oidc.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/persistence/elasticsearch.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/platform/gke.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/infra/values-infra-distroci.yaml
+keycloak-mt/kemt flow=upgrade-minor platform=gke
+  identity=keycloak persistence=elasticsearch platform=gke infra=distroci features=multitenancy
+  - charts/camunda-platform-8.9/values-digest.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/base.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/identity/keycloak.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/persistence/elasticsearch.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/platform/gke.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/infra/values-infra-distroci.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/features/multitenancy.yaml
+keycloak-rba/kerba flow=upgrade-minor platform=gke
+  identity=keycloak persistence=elasticsearch platform=gke infra=distroci features=rba
+  - charts/camunda-platform-8.9/values-digest.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/base.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/identity/keycloak.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/persistence/elasticsearch.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/platform/gke.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/infra/values-infra-distroci.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/features/rba.yaml
+elasticsearch-self-signed-os-trust/esot flow=install platform=gke
+  identity=keycloak persistence=elasticsearch-self-signed-os-trust platform=gke infra=distroci features=
+  - charts/camunda-platform-8.9/values-digest.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/base.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/identity/keycloak.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/persistence/elasticsearch-self-signed-os-trust.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/platform/gke.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/infra/values-infra-distroci.yaml
+gateway-keycloak/gatkc flow=install platform=gke
+  identity=keycloak persistence=elasticsearch platform=gke infra=distroci features=gateway
+  - charts/camunda-platform-8.9/values-digest.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/base.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/identity/keycloak.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/persistence/elasticsearch.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/platform/gke.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/infra/values-infra-distroci.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/features/gateway.yaml
+elasticsearch-arm/esarm flow=install platform=gke
+  identity=keycloak persistence=elasticsearch platform=gke infra=arm features=arm
+  - charts/camunda-platform-8.9/values-digest.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/base.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/identity/keycloak.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/persistence/elasticsearch.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/platform/gke.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/infra/values-infra-arm.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/features/arm.yaml
+noSecondaryStorage/nosec flow=install platform=gke
+  identity=keycloak persistence=no-elasticsearch platform=gke infra=distroci features=no-secondary-storage
+  - charts/camunda-platform-8.9/values-digest.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/base.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/identity/keycloak.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/persistence/no-elasticsearch.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/platform/gke.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/infra/values-infra-distroci.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/features/no-secondary-storage.yaml
+documentstore/docstr flow=install platform=eks
+  identity=keycloak persistence=elasticsearch platform=eks infra=preemptible features=documentstore
+  - charts/camunda-platform-8.9/values-digest.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/base.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/identity/keycloak.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/persistence/elasticsearch.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/platform/eks.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/infra/values-infra-eks-preemptible.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/features/documentstore.yaml
+rdbms/rdbms flow=install platform=gke
+  identity=keycloak persistence=rdbms platform=gke infra=distroci features=
+  - charts/camunda-platform-8.9/values-digest.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/base.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/identity/keycloak.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/persistence/rdbms.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/platform/gke.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/infra/values-infra-distroci.yaml
+component-persistence/cprst flow=install platform=gke
+  identity=keycloak persistence=elasticsearch platform=gke infra=distroci features=persistence
+  - charts/camunda-platform-8.9/values-digest.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/base.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/identity/keycloak.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/persistence/elasticsearch.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/platform/gke.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/infra/values-infra-distroci.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/features/persistence.yaml
+component-persistence/cprst flow=upgrade-minor platform=gke
+  identity=keycloak persistence=elasticsearch platform=gke infra=distroci features=persistence
+  - charts/camunda-platform-8.9/values-digest.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/base.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/identity/keycloak.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/persistence/elasticsearch.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/platform/gke.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/infra/values-infra-distroci.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/features/persistence.yaml
+legacy-exporter-args/lgexp flow=install platform=gke
+  identity=keycloak persistence=elasticsearch platform=gke infra=distroci features=legacy-exporter-args
+  - charts/camunda-platform-8.9/values-digest.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/base.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/identity/keycloak.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/persistence/elasticsearch.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/platform/gke.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/infra/values-infra-distroci.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/features/legacy-exporter-args.yaml
+shadow-e2e/shde2 flow=install platform=gke
+  identity=keycloak persistence=elasticsearch platform=gke infra=distroci features=
+  - charts/camunda-platform-8.9/values-digest.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/base.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/identity/keycloak.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/persistence/elasticsearch.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/platform/gke.yaml
+  - charts/camunda-platform-8.9/test/integration/scenarios/infra/values-infra-distroci.yaml
