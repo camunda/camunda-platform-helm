@@ -1,0 +1,16 @@
+global:
+  compatibility:
+    nginx:
+      renderAnnotations: false
+  ingress:
+    className: contour
+    annotations:
+      projectcontour.io/websocket-routes: "/modeler-ws"
+      projectcontour.io/response-timeout: "300s"
+orchestration:
+  service:
+    annotations:
+      projectcontour.io/upstream-protocol.h2c: "26500"
+  ingress:
+    grpc:
+      className: contour
