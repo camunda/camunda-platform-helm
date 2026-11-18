@@ -624,17 +624,7 @@ Compile all warnings into a single message, and call fail.
 {{- end -}}
 {{- end -}}
 
-{{/*
-Return the JDK_JAVA_OPTIONS value for the CVE-2026-114938 mitigation.
-
-The chart appends -XX:-UseBASE64Intrinsics to a JDK_JAVA_OPTIONS value that a
-user sets in the role extraEnvVars or the global extraEnvVars. The chart emits
-one env entry. Duplicate env names are rejected by some API servers and give
-undefined last-wins behavior on others.
-
-The chart cannot read JDK_JAVA_OPTIONS from extraEnvVarsCM or extraEnvVarsSecret
-at render time. Parent charts warn when those sources are configured.
-*/}}
+{{- /* NOTE: Appends the CVE mitigation flag to a user JDK_JAVA_OPTIONS value. */ -}}
 {{- define "elasticsearch.jdkJavaOptions" -}}
 {{- $flag := "-XX:-UseBASE64Intrinsics" -}}
 {{- $ctx := .context -}}
@@ -651,10 +641,7 @@ at render time. Parent charts warn when those sources are configured.
 {{- end -}}
 {{- end -}}
 
-{{/*
-Return extraEnvVars without the JDK_JAVA_OPTIONS entry. The mitigation is
-rendered once by "elasticsearch.jdkJavaOptions".
-*/}}
+{{- /* NOTE: Drops JDK_JAVA_OPTIONS from extraEnvVars to avoid duplicate env names. */ -}}
 {{- define "elasticsearch.excludeJdkJavaOptions" -}}
 {{- $result := list -}}
 {{- range .envVars | default list -}}

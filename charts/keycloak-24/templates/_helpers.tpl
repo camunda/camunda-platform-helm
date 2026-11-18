@@ -323,13 +323,7 @@ Compile all warnings into a single message.
 {{- end -}}
 {{- end -}}
 
-{{/*
-Return a JDK_JAVA_OPTIONS value that a user sets in extraEnvVars. The
-StatefulSet appends the CVE-2026-114938 mitigation flag to this value and
-emits one explicit env entry. The chart cannot read JDK_JAVA_OPTIONS from
-extraEnvVarsCM or extraEnvVarsSecret at render time. Parent charts warn when
-those sources are configured.
-*/}}
+{{- /* NOTE: Returns a user JDK_JAVA_OPTIONS value for the StatefulSet to merge. */ -}}
 {{- define "keycloak.userJdkJavaOptions" -}}
 {{- $ctx := .context -}}
 {{- $value := "" -}}
@@ -341,10 +335,7 @@ those sources are configured.
 {{- $value -}}
 {{- end -}}
 
-{{/*
-Return extraEnvVars without the JDK_JAVA_OPTIONS entry. Set dropJdk when the
-StatefulSet emits the merged value so that the environment has one entry.
-*/}}
+{{- /* NOTE: Drops JDK_JAVA_OPTIONS from extraEnvVars when the merged value is emitted. */ -}}
 {{- define "keycloak.excludeJdkJavaOptions" -}}
 {{- $drop := .dropJdk -}}
 {{- $result := list -}}
