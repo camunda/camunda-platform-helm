@@ -14,3 +14,14 @@ global:
       secret:
         existingSecret: orchestration-tls
         existingSecretKey: tls.crt
+# Contour: base.yaml sets h2c on 26500; with gRPC TLS the backend needs h2, so empty the h2c port list.
+# infinity: Connectors use the public gRPC ingress with job streams, which 120s would cut.
+orchestration:
+  service:
+    annotations:
+      projectcontour.io/upstream-protocol.h2c: ""
+      projectcontour.io/upstream-protocol.h2: "26500"
+  ingress:
+    grpc:
+      annotations:
+        projectcontour.io/response-timeout: "infinity"

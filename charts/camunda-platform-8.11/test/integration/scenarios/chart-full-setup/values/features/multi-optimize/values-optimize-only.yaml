@@ -3,7 +3,7 @@ global:
   host: camunda.example.com
   ingress:
     enabled: true
-    className: nginx
+    className: contour
     tls:
       enabled: true
       secretName: camunda-platform-tls

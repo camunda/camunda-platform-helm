@@ -7,7 +7,7 @@ global:
   host: "$CAMUNDA_HOSTNAME"
   ingress:
     enabled: true
-    className: nginx
+    className: contour
     tls:
       enabled: true
       # A wildcard certificate will be used.
