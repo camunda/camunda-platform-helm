@@ -454,6 +454,25 @@ func (s *ConfigMapTemplateTest) TestCamundaSecurityConfiguration() {
 			},
 		},
 		{
+			Name: "TestOidcClientIdClaimForwardsConfiguredOrchestrationValue",
+			Values: map[string]string{
+				"identity.enabled":             "true",
+				"optimize.enabled":             "true",
+				"global.identity.auth.enabled": "true",
+				"orchestration.security.authentication.oidc.clientIdClaim": "azp",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+				authConfig := configmap.Data["application-ccsm.yaml"]
+				s.Require().Contains(authConfig, `client-id-claim: "azp"`,
+					"Optimize must forward the configured orchestration client-id-claim, not a hardcoded client_id, so providers using a different claim (e.g. azp) are accepted by the CSL public API filter")
+				s.Require().NotContains(authConfig, `client-id-claim: "client_id"`)
+			},
+		},
+		{
 			Name: "TestKeycloakSetupUsesBackChannelEndpointsInsteadOfDiscovery",
 			Values: map[string]string{
 				"identity.enabled":                      "true",
