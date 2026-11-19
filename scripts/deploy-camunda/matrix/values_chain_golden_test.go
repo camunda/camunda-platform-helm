@@ -21,6 +21,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io/fs"
+	"maps"
 	"os"
 	"path/filepath"
 	"sort"
@@ -192,9 +193,7 @@ func summarizeChain(t *testing.T, key, repoRoot, tempDir string, files []string)
 // helmMergeMaps mirrors helm's pkg/cli/values mergeMaps used for -f files.
 func helmMergeMaps(a, b map[string]any) map[string]any {
 	out := make(map[string]any, len(a))
-	for k, v := range a {
-		out[k] = v
-	}
+	maps.Copy(out, a)
 	for k, v := range b {
 		if vm, ok := v.(map[string]any); ok {
 			if bv, ok := out[k].(map[string]any); ok {
@@ -248,9 +247,7 @@ func placeholderDummies(t *testing.T, chartDir string) map[string]string {
 
 func withDummies(env map[string]string, names []string) map[string]string {
 	out := make(map[string]string, len(env)+len(names))
-	for k, v := range env {
-		out[k] = v
-	}
+	maps.Copy(out, env)
 	for _, name := range names {
 		if _, ok := out[name]; !ok {
 			out[name] = "dummy-" + strings.ToLower(strings.ReplaceAll(name, "_", "-"))
