@@ -18,6 +18,13 @@
 # instead; the real placeholder syntax appears only in actual values below.
 
 global:
+  # The /auth/admin and /auth/realms/master guard below is an nginx Ingress, so the hub's own
+  # ingress stays on nginx too: on Contour those paths would be served unguarded.
+  compatibility:
+    nginx:
+      renderAnnotations: true
+  ingress:
+    className: nginx
   # Hub hardening objects. Shell in these manifests avoids the dollar sign: the
   # values pipeline substitutes every dollar placeholder before Helm sees it.
   extraManifests:
