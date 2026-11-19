@@ -14,7 +14,7 @@ global:
 orchestration:
   service:
     annotations:
-      projectcontour.io/upstream-protocol.h2c: null
+      projectcontour.io/upstream-protocol.h2c: ""
       projectcontour.io/upstream-protocol.h2: "26500"
       projectcontour.io/upstream-protocol.tls: "8080"
   ingress:
