@@ -1,0 +1,53 @@
+{
+  "apiVersion": "deploy-camunda/v1",
+  "kind": "Result",
+  "status": "fail",
+  "slots": [],
+  "outputs": {
+    "checks": [
+      {
+        "name": "config file",
+        "status": "warn",
+        "detail": "no config file found (relying on flags/env)",
+        "remediation": "run `deploy-camunda config init` to scaffold one"
+      },
+      {
+        "name": "kube context",
+        "status": "ok",
+        "detail": "example-context (reachability not checked)"
+      },
+      {
+        "name": "docker creds (Harbor)",
+        "status": "fail",
+        "detail": "missing — required by --ensure-docker-* (pods would ImagePullBackOff)",
+        "remediation": "set HARBOR_USERNAME/HARBOR_PASSWORD"
+      },
+      {
+        "name": "scenario placeholders",
+        "status": "fail",
+        "detail": "2 unset",
+        "remediation": "set them in .env",
+        "missing": [
+          "ZEBRA_TOKEN",
+          "ALPHA_SECRET"
+        ]
+      }
+    ],
+    "missingEnv": [
+      "ALPHA_SECRET",
+      "ZEBRA_TOKEN"
+    ]
+  },
+  "errors": [
+    {
+      "code": "docker-creds-harbor",
+      "message": "docker creds (Harbor): missing — required by --ensure-docker-* (pods would ImagePullBackOff)",
+      "remediation": "set HARBOR_USERNAME/HARBOR_PASSWORD"
+    },
+    {
+      "code": "scenario-placeholders",
+      "message": "scenario placeholders: 2 unset",
+      "remediation": "set them in .env"
+    }
+  ]
+}
