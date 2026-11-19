@@ -158,7 +158,7 @@ jobs:
       CHART_RELEASE_COSIGN_CERTIFICATE_IDENTITY: "https://github.com/${{ github.workflow_ref }}"
       CHART_RELEASE_COSIGN_CERTIFICATE_OIDC_ISSUER: "https://token.actions.githubusercontent.com"
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@ead99f6c9c536f5c47e443929d47e8fcfdb05a81  # start-build-monitor-1.0.1
+      - uses: camunda/infra-global-github-actions/start-build-monitor@ead99f6c9c536f5c47e443929d47e8fcfdb05a81 # start-build-monitor-1.0.1
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -650,7 +650,7 @@ jobs:
 
           EOF
           else
-            # shellcheck disable=SC2016
+            # shellcheck disable=SC2016 # the backticks are literal Markdown code marks in the sed replacement
             IMAGE_ROWS="$(sed -E 's/^([^:]+): (.*)$/| \1 | `\2` |/' /tmp/image-versions.yaml)"
             cat << EOF >> "$GITHUB_STEP_SUMMARY"
           ## 📦 Dev Package Built ✅ (Camunda ${{ env.CAMUNDA_VERSION }})
@@ -749,7 +749,7 @@ jobs:
                 text:
                   type: mrkdwn
                   text: |
-                    <!subteam^S05K9BK6RTK> :rotating_light:
+                    <!subteam^S0CEY294VGC> :rotating_light:
                     The *Chart Dev Build* pipeline has failed.
 
                     *Chart version:* ${{ inputs.chart-version || 'all active versions' }}

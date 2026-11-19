@@ -18,6 +18,8 @@ Please also refer to the [documentation](https://docs.camunda.io/docs/self-manag
   - [Keycloak](#keycloak)
   - [Zeebe Message Size](#zeebe-message-size)
 - [Identity auth existing secrets](#identity-auth-existing-secrets)
+- [Known Limitations](#known-limitations)
+  - [Bitnami Legacy Images](#bitnami-legacy-images)
 - [Development](#development)
 - [Releasing the Charts](#releasing-the-charts)
 - [Parameters](#parameters)
@@ -333,6 +335,18 @@ global:
           name: "name of the secret that contains the client secret"
         existingSecretKey: "key for the client secret inside the secret" # this defaults to <component>-secret
 ```
+
+## Known Limitations
+
+### Bitnami Legacy Images
+
+The bundled Bitnami subcharts default to images from the frozen `bitnamilegacy/*` repositories,
+for example `bitnamilegacy/postgresql` and `bitnamilegacy/os-shell`. These images never get a rebuild,
+so they receive no security fixes. Every `bitnamilegacy/*` image this chart defaults to also still trusts
+emSign root certificates affected by the eMudhra CA compromise, which
+[security notice 80](https://docs.camunda.io/docs/reference/notices/#notice-80) describes.
+To stop using them, [migrate from the Bitnami subcharts](https://docs.camunda.io/docs/self-managed/deployment/helm/operational-tasks/migration-from-bitnami/).
+Enterprise customers can instead deploy with the chart's `values-enterprise.yaml`, which uses maintained Bitnami Premium images.
 
 ## Development
 
@@ -1141,7 +1155,7 @@ Please see the corresponding [release guide](../../docs/release.md) to find out 
 | `optimize.image`                                                    | configuration to configure the Optimize image specifics                                                                                                                                                                                                    |                             |
 | `optimize.image.registry`                                           | can be used to set container image registry                                                                                                                                                                                                                | `""`                        |
 | `optimize.image.repository`                                         | defines which image repository to use                                                                                                                                                                                                                      | `camunda/optimize`          |
-| `optimize.image.tag`                                                | can be set to overwrite the global tag, which should be used in that chart                                                                                                                                                                                 | `8.7.30`                    |
+| `optimize.image.tag`                                                | can be set to overwrite the global tag, which should be used in that chart                                                                                                                                                                                 | `8.7.31`                    |
 | `optimize.image.digest`                                             | can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")                                                                                                                                                                              | `""`                        |
 | `optimize.image.pullSecrets`                                        | can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod                                                                                                                    | `[]`                        |
 | `optimize.migration`                                                | configuration for Optimize migration                                                                                                                                                                                                                       |                             |
@@ -1269,7 +1283,7 @@ Please see the corresponding [release guide](../../docs/release.md) to find out 
 | `identity.image`                                             | configuration to configure the identity image specifics                                                                                                                                                                                                    |                               |
 | `identity.image.registry`                                    | can be used to set container image registry.                                                                                                                                                                                                               | `""`                          |
 | `identity.image.repository`                                  | defines which image repository to use                                                                                                                                                                                                                      | `camunda/identity`            |
-| `identity.image.tag`                                         | can be set to overwrite the global tag, which should be used in that chart                                                                                                                                                                                 | `8.7.29`                      |
+| `identity.image.tag`                                         | can be set to overwrite the global tag, which should be used in that chart                                                                                                                                                                                 | `8.7.30`                      |
 | `identity.image.digest`                                      | can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")                                                                                                                                                                              | `""`                          |
 | `identity.image.pullSecrets`                                 | can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod                                                                                                                    | `[]`                          |
 | `identity.sidecars`                                          | can be used to attach extra containers to the identity deployment                                                                                                                                                                                          | `[]`                          |
@@ -1464,7 +1478,7 @@ Please see the corresponding [release guide](../../docs/release.md) to find out 
 | `webModeler.nameOverride`      | can be used to partly override the name of the WebModeler resources (names will still be prefixed with the release name)                      | `""`     |
 | `webModeler.image`             | configuration of the WebModeler Docker images                                                                                                 |          |
 | `webModeler.image.registry`    | can be used to set the Docker registry for the WebModeler images (overwrites global.image.registry)                                           | `""`     |
-| `webModeler.image.tag`         | can be used to set the Docker image tag for the WebModeler images (overwrites global.image.tag)                                               | `8.7.28` |
+| `webModeler.image.tag`         | can be used to set the Docker image tag for the WebModeler images (overwrites global.image.tag)                                               | `8.7.29` |
 | `webModeler.image.pullSecrets` | can be used to configure image pull secrets, see https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod  | `[]`     |
 | `webModeler.contextPath`       | can be used to make WebModeler available on a custom sub-path. This is mainly used to run the Camunda web applications under a single domain. | `""`     |
 
@@ -1789,7 +1803,7 @@ Please see the corresponding [release guide](../../docs/release.md) to find out 
 | `connectors.image`                                             | configuration to configure the Connectors image specifics                                                                                                                                                                                                    |                               |
 | `connectors.image.registry`                                    | can be used to set container image registry.                                                                                                                                                                                                                 | `""`                          |
 | `connectors.image.repository`                                  | defines which image repository to use                                                                                                                                                                                                                        | `camunda/connectors-bundle`   |
-| `connectors.image.tag`                                         | can be set to overwrite the global tag, which should be used in that chart                                                                                                                                                                                   | `8.7.32`                      |
+| `connectors.image.tag`                                         | can be set to overwrite the global tag, which should be used in that chart                                                                                                                                                                                   | `8.7.33`                      |
 | `connectors.image.digest`                                      | can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")                                                                                                                                                                                | `""`                          |
 | `connectors.image.pullSecrets`                                 | can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod                                                                                                                      | `[]`                          |
 | `connectors.sidecars`                                          | can be used to attach extra containers to the connectors deployment                                                                                                                                                                                          | `[]`                          |

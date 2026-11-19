@@ -46,7 +46,8 @@ over opinionated integrations), 1:1 mapping to application config, reasonable pr
 - **ALWAYS** put hand-written validation constraints in `values.schema.extra.json`, then run
   `make helm.schema-update` (also part of `make precommit.chores`) — the committed
   `values.schema.json` is generated from `values.yaml` merged with that extra file.
-- **ALWAYS** run `make helm.lint` after editing values to catch schema violations.
+- **ALWAYS** run `helm lint charts/camunda-platform-<version>` after editing values to catch
+  schema violations.
 - **ALWAYS** check whether the new field needs to be exposed in `values-local.yaml` for
   local development.
 
@@ -273,4 +274,4 @@ For anything restating a Critical Rule or Pattern above, see those sections. Add
 - Schema file: `charts/<version>/values.schema.json`
 - Integration test values: `test/integration/scenarios/chart-full-setup/values/`
 - Integration test layer resolution: `docs/skills/integration-test-scenario-resolution.md`
-- Lint: `make helm.lint chartPath=charts/camunda-platform-8.10`
+- Lint: `helm lint charts/camunda-platform-8.10`

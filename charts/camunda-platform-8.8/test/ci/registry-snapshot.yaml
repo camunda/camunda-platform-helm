@@ -56,6 +56,7 @@ integration:
           persistence: elasticsearch
           features:
             - enterprise
+            - keycloak-admin-audience-off
           helmVersion: 3.22.0
         - name: upgrade-migration
           enabled: true

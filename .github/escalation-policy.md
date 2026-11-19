@@ -10,8 +10,6 @@ closer attention is warranted.
 > for every pull request**, regardless of the AI assessment outcome. The AI
 > score and labels are advisory only — humans retain full review responsibility
 > and sign-off authority.
->
-> **Trusted-author auto-approval:** This advisory-AI requirement is separate from the team-sanctioned [trusted-author auto-approval](https://github.com/camunda/camunda-platform-helm/blob/main/docs/contribution-and-collaboration.md#trusted-author-auto-approval) control, under which `distro-ci[bot]` may satisfy the review requirement for PRs from allowlisted authors that do not touch CI-privileged paths or a chart's public API (values, schema, constraints).
 
 ## How It Works
 
@@ -21,7 +19,7 @@ When `crev` reviews a PR, it:
 3. Invokes the **escalation-assessor** which reads this policy, evaluates 8 orthogonal signals, and computes a weighted score.
 4. Posts a GitHub label (`human-review-required` or `ai-review-sufficient`) and a commit status (`crev/escalation`) on the PR as an advisory signal.
 
-The AI review always runs and provides a risk assessment. The label and score
+Each `crev` review provides a risk assessment. The label and score
 are informational — they help human reviewers prioritise attention, but they do
 **not** replace or waive the requirement for human approval before merge.
 

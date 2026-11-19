@@ -349,7 +349,7 @@ if [[ "$BUILD_CI" == "true" ]]; then
     # Build the image
     echo "Building image for ${TARGET_PLATFORM}..."
     if [[ "$USE_BUILDX" == "true" ]]; then
-        # shellcheck disable=SC2086
+        # shellcheck disable=SC2086 # the *_BUILD_ARGS and *_BUILD_TAGS strings are option lists, split into arguments on purpose
         docker buildx build \
             --platform "${TARGET_PLATFORM}" \
             ${CI_BUILD_ARGS} \
@@ -360,7 +360,7 @@ if [[ "$BUILD_CI" == "true" ]]; then
     else
         # Standard docker build (for local testing without buildx)
         # Still specify platform to ensure linux/amd64 even on ARM machines
-        # shellcheck disable=SC2086
+        # shellcheck disable=SC2086 # the *_BUILD_ARGS and *_BUILD_TAGS strings are option lists, split into arguments on purpose
         docker build \
             --platform "${TARGET_PLATFORM}" \
             ${CI_BUILD_ARGS} \
@@ -416,7 +416,7 @@ if [[ "$BUILD_PLAYWRIGHT" == "true" ]]; then
     # Build the image
     echo "Building image for ${TARGET_PLATFORM}..."
     if [[ "$USE_BUILDX" == "true" ]]; then
-        # shellcheck disable=SC2086
+        # shellcheck disable=SC2086 # the *_BUILD_ARGS and *_BUILD_TAGS strings are option lists, split into arguments on purpose
         docker buildx build \
             --platform "${TARGET_PLATFORM}" \
             ${PW_BUILD_ARGS} \
@@ -427,7 +427,7 @@ if [[ "$BUILD_PLAYWRIGHT" == "true" ]]; then
     else
         # Standard docker build (for local testing without buildx)
         # Still specify platform to ensure linux/amd64 even on ARM machines
-        # shellcheck disable=SC2086
+        # shellcheck disable=SC2086 # the *_BUILD_ARGS and *_BUILD_TAGS strings are option lists, split into arguments on purpose
         docker build \
             --platform "${TARGET_PLATFORM}" \
             ${PW_BUILD_ARGS} \

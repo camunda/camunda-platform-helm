@@ -36,6 +36,7 @@ jobs:
           fetch-depth: 2
 
       - name: Install tools
+        id: tools
         uses: camunda/infraex-common-config/.github/actions/asdf-install-tooling@e2923304b40dfc031b3f595bcc1445e90c981adb # 3.0.0
 
       # TestImageSetRealChartContract reads each chart's vendored subcharts
@@ -46,16 +47,15 @@ jobs:
           make helm.repos-add
           make helm.dependency-update
 
-      - name: Install ripgrep for helm_unused_values tests
-        run: sudo apt-get update && sudo apt-get install -y ripgrep
-
       - name: Test every Go module under scripts/
         run: make go.test-scripts
 
       - name: Lint every Go module under scripts/
+        if: ${{ !cancelled() && steps.tools.outcome == 'success' }}
         run: make go.lint lintBase=HEAD~1
 
-      - name: Gate the complexity of changed Go functions and workflow run blocks
+      - name: Gate the complexity of changed workflow run blocks
+        if: ${{ !cancelled() && steps.tools.outcome == 'success' }}
         run: make go.complexity lintBase=HEAD~1
 
       - name: Install schema generator

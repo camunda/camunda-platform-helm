@@ -159,7 +159,7 @@ func (v *verifier) assertIdentityAbsent(ctx context.Context) error {
 		return err
 	}
 	if err := assertNoItems(raw); err != nil {
-		return fmt.Errorf("Management Identity resources must not exist: %w", err)
+		return fmt.Errorf("the Management Identity resources must not exist: %w", err)
 	}
 
 	shared := v.cfg.release + "-camunda-platform-identity-env-vars"
@@ -168,7 +168,7 @@ func (v *verifier) assertIdentityAbsent(ctx context.Context) error {
 		return err
 	}
 	if err := assertDataKeyAbsent(raw, "CAMUNDA_IDENTITY_BASEURL"); err != nil {
-		return fmt.Errorf("Management Identity URL must not be configured in %s: %w", shared, err)
+		return fmt.Errorf("the Management Identity URL must not be configured in %s: %w", shared, err)
 	}
 	return nil
 }
@@ -211,7 +211,7 @@ func (v *verifier) acquireToken(ctx context.Context) error {
 		AccessToken string `json:"access_token"`
 	}
 	if err := json.Unmarshal(body, &response); err != nil || response.AccessToken == "" {
-		return errors.New("Entra token response did not contain an access token")
+		return errors.New("the Entra token response did not contain an access token")
 	}
 	v.token = response.AccessToken
 	return nil
@@ -446,18 +446,18 @@ func assertDataKeyAbsent(raw []byte, key string) error {
 func entraTokenURL(raw string) (string, error) {
 	trimmed := strings.TrimSpace(raw)
 	if trimmed == "" {
-		return "", errors.New("Entra token URL annotation is empty")
+		return "", errors.New("the Entra token URL annotation is empty")
 	}
 	parsed, err := url.Parse(trimmed)
 	if err != nil {
-		return "", errors.New("Entra token URL annotation is not a valid URL")
+		return "", errors.New("the Entra token URL annotation is not a valid URL")
 	}
 	segments := strings.Split(strings.TrimPrefix(parsed.EscapedPath(), "/"), "/")
 	if parsed.Scheme != "https" || !strings.EqualFold(parsed.Host, entraTokenHost) || parsed.User != nil ||
 		parsed.RawQuery != "" || parsed.Fragment != "" ||
 		len(segments) != 4 || segments[0] == "" ||
 		segments[1] != "oauth2" || segments[2] != "v2.0" || segments[3] != "token" {
-		return "", fmt.Errorf("Entra token URL must be https://%s/<tenant>/oauth2/v2.0/token, got %s", entraTokenHost, parsed.Redacted())
+		return "", fmt.Errorf("the Entra token URL must be https://%s/<tenant>/oauth2/v2.0/token, got %s", entraTokenHost, parsed.Redacted())
 	}
 	return parsed.String(), nil
 }
@@ -474,7 +474,7 @@ func parseCredentials(raw []byte) (string, string, string, error) {
 		encoded := secret.Data[key]
 		decoded, err := base64.StdEncoding.DecodeString(encoded)
 		if err != nil || len(decoded) == 0 {
-			return "", "", "", fmt.Errorf("Entra credentials secret has invalid or empty %s", key)
+			return "", "", "", fmt.Errorf("the Entra credentials secret has invalid or empty %s", key)
 		}
 		values = append(values, string(decoded))
 	}

@@ -94,7 +94,7 @@ spec:
     - metadata:
         name: data
         labels:
-          {{- include "keycloak.postgresql.labels" . | nindent 10 }}
+          {{- include "keycloak.postgresql.selectorLabels" . | nindent 10 }}
       spec:
         accessModes:
           - ReadWriteOnce

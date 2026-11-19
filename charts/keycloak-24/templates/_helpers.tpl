@@ -323,6 +323,35 @@ Compile all warnings into a single message.
 {{- end -}}
 {{- end -}}
 
+{{- /* NOTE: Returns a user JDK_JAVA_OPTIONS value for the StatefulSet to merge. */ -}}
+{{- define "keycloak.userJdkJavaOptions" -}}
+{{- $flag := "-XX:-UseBASE64Intrinsics" -}}
+{{- $ctx := .context -}}
+{{- $value := "" -}}
+{{- $found := false -}}
+{{- range .envVars | default list -}}
+{{- if and (kindIs "string" .name) (eq .name "JDK_JAVA_OPTIONS") (hasKey . "value") (kindIs "string" .value) -}}
+{{- $found = true -}}
+{{- $value = include "common.tplvalues.render" (dict "value" .value "context" $ctx) -}}
+{{- end -}}
+{{- end -}}
+{{- if $found -}}
+{{- if $value -}}{{ printf "%s %s" $value $flag | trim }}{{- else -}}{{ $flag }}{{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{- /* NOTE: Drops JDK_JAVA_OPTIONS from extraEnvVars when the merged value is emitted. */ -}}
+{{- define "keycloak.excludeJdkJavaOptions" -}}
+{{- $drop := .dropJdk -}}
+{{- $result := list -}}
+{{- range .envVars | default list -}}
+{{- if or (not $drop) (not (and (kindIs "string" .name) (eq .name "JDK_JAVA_OPTIONS"))) -}}
+{{- $result = append $result . -}}
+{{- end -}}
+{{- end -}}
+{{- $result | toJson -}}
+{{- end -}}
+
 {{/* Validate values of Keycloak - database */}}
 {{- define "keycloak.validateValues.database" -}}
 {{- if and (not .Values.postgresql.enabled) (not .Values.externalDatabase.host) (and (not .Values.externalDatabase.password) (not .Values.externalDatabase.existingSecret)) -}}

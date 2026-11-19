@@ -4,8 +4,6 @@ repos:
     rev: 3.0.0 # use tags until renovate supports sha: https://github.com/renovatebot/renovate/issues/22567
     hooks:
       - id: action-pin-spacing
-        # shortcut: release workflows are fixed in a separate PR that test-runs them; drop this exclude then.
-        exclude: ^\.github/(workflows/(chart-build-dev|chart-promote-rc|chart-release-public)\.yaml|actions/observe-build-status/action\.yml)$
   - repo: https://github.com/zizmorcore/zizmor-pre-commit
     rev: c92afdf2c6ca336aaa8f39e2bd8d48f62dbd8e1f  # frozen: v1.31.1
     hooks:

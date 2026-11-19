@@ -213,8 +213,9 @@ func values(phase string) map[string]any {
 		"webModeler": map[string]any{
 			"image": map[string]any{"tag": "1.36.1"},
 			"restapi": map[string]any{
-				"image":   map[string]any{"repository": "busybox"},
-				"command": []string{"sh", "-c", "mkdir -p /tmp/www/health; touch /tmp/www/health/readiness /tmp/www/health/liveness; httpd -p 8081 -h /tmp/www; httpd -f -p 8091 -h /tmp/www"},
+				"image":          map[string]any{"repository": "busybox"},
+				"command":        []string{"sh", "-c", "mkdir -p /tmp/www/health; touch /tmp/www/health/readiness /tmp/www/health/liveness; httpd -p 8081 -h /tmp/www; httpd -f -p 8091 -h /tmp/www"},
+				"readinessProbe": stubReadinessProbe,
 			},
 			"websockets": map[string]any{
 				"image":          map[string]any{"repository": "busybox"},
@@ -227,6 +228,8 @@ func values(phase string) map[string]any {
 		"connectors": map[string]any{"enabled": false}, "optimize": map[string]any{"enabled": false},
 	}
 }
+
+var stubReadinessProbe = map[string]any{"initialDelaySeconds": 1, "periodSeconds": 5, "timeoutSeconds": 5}
 
 func helmSetArgs(phase string) []string {
 	sets := []string{
@@ -247,6 +250,9 @@ func helmSetArgs(phase string) []string {
 		"--set-json", `webModeler.restapi.command=["sh","-c","mkdir -p /tmp/www/health; touch /tmp/www/health/readiness /tmp/www/health/liveness; httpd -p 8081 -h /tmp/www; httpd -f -p 8091 -h /tmp/www"]`,
 		"--set-json", `webModeler.websockets.command=["sleep","3600"]`,
 		"--set", "webModeler.websockets.readinessProbe.enabled=false",
+		"--set", "webModeler.restapi.readinessProbe.initialDelaySeconds=1",
+		"--set", "webModeler.restapi.readinessProbe.periodSeconds=5",
+		"--set", "webModeler.restapi.readinessProbe.timeoutSeconds=5",
 	)
 	return args
 }
@@ -276,10 +282,7 @@ func waitForPhase(cfg config, phase string) error {
 				time.Sleep(5 * time.Second)
 				continue
 			}
-			if err := assertServiceSelector(cfg.namespace, release+"-web-modeler-restapi"); err != nil {
-				return err
-			}
-			if err := assertServiceSelector(cfg.namespace, release+"-web-modeler-websockets"); err != nil {
+			if err := assertConvergedState(cfg); err != nil {
 				return err
 			}
 			if err := assertPhasePods(cfg.namespace, phase, expectedRest+expectedWebsockets); err != nil {
@@ -346,6 +349,37 @@ func controllerConverged(cfg config) error {
 		return err
 	}
 	return helmReleaseConverged(value)
+}
+
+// Hard failures once the controller reports convergence.
+func assertConvergedState(cfg config) error {
+	if err := assertFluxRevision(cfg); err != nil {
+		return err
+	}
+	if err := assertServiceSelector(cfg.namespace, release+"-web-modeler-restapi"); err != nil {
+		return err
+	}
+	return assertServiceSelector(cfg.namespace, release+"-web-modeler-websockets")
+}
+
+// A ref name can move after the run starts, so check that Flux built the pinned commit.
+func assertFluxRevision(cfg config) error {
+	if cfg.controller != "flux" || cfg.revisionRefName == "" {
+		return nil
+	}
+	data, err := output("kubectl", "-n", "flux-system", "get", "gitrepository", release, "-o", "jsonpath={.status.artifact.revision}")
+	if err != nil {
+		return err
+	}
+	return revisionMatches(strings.TrimSpace(string(data)), cfg.revision)
+}
+
+// Flux reports revisions as "<ref>@sha1:<sha>".
+func revisionMatches(artifactRevision, commit string) error {
+	if !strings.HasSuffix(artifactRevision, "@sha1:"+commit) {
+		return fmt.Errorf("flux artifact revision %q does not match commit %q; the ref moved during the run", artifactRevision, commit)
+	}
+	return nil
 }
 
 func helmReleaseConverged(value helmRelease) error {

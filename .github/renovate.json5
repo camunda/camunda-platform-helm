@@ -12,7 +12,7 @@
     '**/vendor/**',
     '**/examples/**',
     '**/__tests__/**',
-    '**/test/**',
+    '**/test/**/!(dogfood-hub.yaml)',
     '**/tests/**',
     '**/__fixtures__/**',
   ],
@@ -164,7 +164,7 @@
     {
       description: 'Disable major updates for Helm dependencies to prevent breaking changes.',
       enabled: false,
-      matchManagers: ['helm', 'helm-values', 'custom.regex'],
+      matchManagers: ['helmv3', 'helm-values', 'custom.regex'],
       matchUpdateTypes: ['major'],
     },
     {
@@ -399,6 +399,21 @@
     },
   ],
   customManagers: [
+    {
+      // The dogfood realm-hardening Job is a Camunda-release hook embedded as an
+      // extra manifest, so its Keycloak image is an inline 'image: <ref>:<tag>'
+      // string. Track it with the same depName as the internal-keycloak-26
+      // chart default so both land in one update.
+      customType: 'regex',
+      fileMatch: [
+        '^charts/camunda-platform-[^/]+/test/integration/scenarios/chart-full-setup/values/features/dogfood-hub\\.yaml$',
+      ],
+      datasourceTemplate: 'docker',
+      matchStrings: [
+        'image: (?<depName>quay\\.io/keycloak/keycloak):(?<currentValue>\\S+)',
+      ],
+      versioningTemplate: 'docker',
+    },
     {
       // This is used to update npm packages in GitHub Actions workflows and Makefile.
       customType: 'regex',

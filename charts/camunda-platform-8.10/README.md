@@ -14,14 +14,40 @@
 > and its accompanying toolkit for moving each component to externally managed infrastructure.
 
 > [!IMPORTANT]
-> **Disabling Optimize or the legacy Elasticsearch/OpenSearch exporter via Helm values does not stop the running exporter.**
-> Setting `optimize.enabled: false` (or `orchestration.exporters.zeebe.enabled: false`) only removes the legacy exporter from
-> the broker's *static* configuration. The broker reconciles that removal into its *dynamic* cluster configuration, but the
-> reconciliation runs only on partition leaders and relies on cluster gossip to converge across all brokers. If it does not
-> converge, the exporter can remain stuck in an `UNKNOWN` / `CONFIG_NOT_FOUND` state, which halts log compaction and grows the
-> Zeebe PVC. After disabling Optimize or the legacy exporter, explicitly disable the running exporter on each broker via
-> `POST /actuator/exporters/{elasticsearch|opensearch}/disable` and confirm convergence with `GET /actuator/exporters`
-> (every broker should report `DISABLED`). Ensure your Camunda version includes the exporter-state reconciliation fix
+> **Removing the legacy Elasticsearch/OpenSearch exporter from the broker configuration does not remove it from the broker.**
+> This applies only to a release whose brokers already ran the legacy exporter, and that now renders without it. Examples:
+>
+> - You set `optimize.enabled` or `orchestration.exporters.zeebe.enabled` to `true`, and later back to `false`. Both are
+>   `false` by default.
+> - You upgrade from an earlier chart version whose release ran the legacy exporter. For example, the 8.7 chart enables it
+>   by default, and the 8.8 chart also enables it with `orchestration.migration.data.enabled: true`.
+> - You configured the exporter through environment variables or extra configuration, and you remove that configuration.
+>   Such an exporter can have an id other than `elasticsearch` or `opensearch`. In the calls below, use the id that
+>   `GET /actuator/exporters` reports.
+>
+> In each case, the exporter disappears only from the broker's *static* configuration.
+> The exporter stays in the broker's *dynamic* cluster configuration. After the restart, the broker sets it to
+> `CONFIG_NOT_FOUND`. In this state, the exporter position does not move. This halts log compaction and grows the Zeebe PVC.
+> The broker does not delete the exporter automatically. Use one of these procedures:
+>
+> - **Delete the exporter after the rollout.** Roll out the Helm change. Confirm with `GET /actuator/exporters` that the
+>   exporter is in `CONFIG_NOT_FOUND` on all partitions. Then call `DELETE /actuator/exporters/{elasticsearch|opensearch}`.
+>   Use `?dryRun=true` first. Log compaction stays halted until the delete completes.
+> - **Disable the exporter before the rollout.** Call `POST /actuator/exporters/{elasticsearch|opensearch}/disable`. Confirm
+>   with `GET /actuator/exporters` that all partitions report `DISABLED`. Then roll out the Helm change. A `DISABLED` exporter
+>   does not halt compaction, but it stays in the dynamic configuration until you enable it again. You cannot delete it
+>   while it is `DISABLED`, because the delete accepts only exporters in `CONFIG_NOT_FOUND`. If you add the configuration
+>   back later, the exporter stays `DISABLED`. Call `POST /actuator/exporters/{elasticsearch|opensearch}/enable` to resume
+>   exporting. The exporter can miss the records written while it was disabled, because the broker can compact them in
+>   the meantime. Optimize then misses the data from that period.
+>
+> Each call applies to all brokers and partitions, so send it once to any broker. If you declared physical tenants, a call
+> without the `physicalTenant` query parameter also applies to every physical tenant that has an exporter with this id. To
+> remove or re-enable the exporter in one tenant only, add `?physicalTenant=<tenant-id>` to each call, including `enable`.
+> Without this parameter, the delete fails while the exporter is still configured in any other tenant.
+>
+> Ensure your Camunda version includes the exporter-state fix that stops the broker from re-enabling `CONFIG_NOT_FOUND`
+> exporters at restart while their configuration is still missing
 > ([camunda/camunda#52260](https://github.com/camunda/camunda/issues/52260), fixed in 8.10.0-alpha2, so all 8.10.x releases include it).
 
 Please also refer to the [documentation](https://docs.camunda.io/docs/self-managed/setup/overview/) on how to use Helm charts.
@@ -749,7 +775,7 @@ Please see the corresponding [release guide](../../docs/release.md) to find out 
 | `identity.image`                                             | configuration to configure the identity image specifics                                                                                                                                                                                                                                                                             |                        |
 | `identity.image.registry`                                    | can be used to set container image registry.                                                                                                                                                                                                                                                                                        | `""`                   |
 | `identity.image.repository`                                  | defines which image repository to use                                                                                                                                                                                                                                                                                               | `camunda/identity`     |
-| `identity.image.tag`                                         | defines which image tag to use                                                                                                                                                                                                                                                                                                      | `8.10.4`               |
+| `identity.image.tag`                                         | defines which image tag to use                                                                                                                                                                                                                                                                                                      | `8.10.5`               |
 | `identity.image.digest`                                      | can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")                                                                                                                                                                                                                                                       | `""`                   |
 | `identity.image.pullSecrets`                                 | can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod                                                                                                                                                                                             | `[]`                   |
 | `identity.multitenancy`                                      |                                                                                                                                                                                                                                                                                                                                     |                        |
@@ -1126,7 +1152,7 @@ Please see the corresponding [release guide](../../docs/release.md) to find out 
 | `connectors.image`                                                 | configuration to configure the Connectors image specifics                                                                                                                                                                                                                                  |                              |
 | `connectors.image.registry`                                        | can be used to set container image registry.                                                                                                                                                                                                                                               | `""`                         |
 | `connectors.image.repository`                                      | defines which image repository to use                                                                                                                                                                                                                                                      | `camunda/connectors-bundle`  |
-| `connectors.image.tag`                                             | defines which image tag to use                                                                                                                                                                                                                                                             | `8.10.4`                     |
+| `connectors.image.tag`                                             | defines which image tag to use                                                                                                                                                                                                                                                             | `8.10.6`                     |
 | `connectors.image.digest`                                          | can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")                                                                                                                                                                                                              | `""`                         |
 | `connectors.image.pullSecrets`                                     | can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod                                                                                                                                                    | `[]`                         |
 | `connectors.sidecars`                                              | can be used to attach extra containers to the connectors deployment                                                                                                                                                                                                                        | `[]`                         |

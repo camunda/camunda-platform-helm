@@ -53,7 +53,7 @@ jobs:
       CHART_RELEASE_COSIGN_CERTIFICATE_IDENTITY: "https://github.com/${{ github.workflow_ref }}"
       CHART_RELEASE_COSIGN_CERTIFICATE_OIDC_ISSUER: "https://token.actions.githubusercontent.com"
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@ead99f6c9c536f5c47e443929d47e8fcfdb05a81  # start-build-monitor-1.0.1
+      - uses: camunda/infra-global-github-actions/start-build-monitor@ead99f6c9c536f5c47e443929d47e8fcfdb05a81 # start-build-monitor-1.0.1
       - name: Import Vault secrets for Harbor
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         id: vault-harbor
@@ -563,10 +563,12 @@ jobs:
           GH_TOKEN: ${{ steps.generate-github-token.outputs.token }}
           PR_NUMBER: ${{ steps.release-pr.outputs.pr_number }}
           PR_SHA: ${{ steps.stamp.outputs.head_sha }}
+          CHART_DIR_ID: ${{ needs.release.outputs.chart-dir-id }}
         run: |
           set -euo pipefail
 
-          current_sha=$(gh pr view "${PR_NUMBER}" --json headRefOid --jq '.headRefOid')
+          head_ref="refs/heads/release-please--branches--main--components--camunda-platform-${CHART_DIR_ID}"
+          current_sha=$(git ls-remote --exit-code origin "$head_ref" | cut -f1)
           if [[ "$current_sha" != "$PR_SHA" ]]; then
             echo "::notice::Release-please PR #${PR_NUMBER} changed; skipping post-release mutations"
             exit 0
@@ -699,7 +701,7 @@ jobs:
       pull-requests: write
       id-token: write
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@ead99f6c9c536f5c47e443929d47e8fcfdb05a81  # start-build-monitor-1.0.1
+      - uses: camunda/infra-global-github-actions/start-build-monitor@ead99f6c9c536f5c47e443929d47e8fcfdb05a81 # start-build-monitor-1.0.1
       - name: Import Vault secrets
         id: secrets
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
@@ -718,7 +720,7 @@ jobs:
       - name: Shepherd release-please PR through merge queue
         id: merge-queue
         continue-on-error: true
-        uses: camunda/infra-global-github-actions/ensure-pr-passes-merge-queue@9965a08067900e11c602a050b8821ec92f49544b # main
+        uses: camunda/infra-global-github-actions/ensure-pr-passes-merge-queue@3e556b42c8771fe1afb91361ae44e81367a37f5e # main
         with:
           pr-number: ${{ needs.post-release.outputs.pr-number }}
           app-id: ${{ steps.secrets.outputs.GH_APP_ID_DISTRO_CI }}
@@ -765,7 +767,7 @@ jobs:
                 text:
                   type: mrkdwn
                   text: |
-                    <!subteam^S05K9BK6RTK> :rotating_light:
+                    <!subteam^S0CEY294VGC> :rotating_light:
                     *Helm Chart ${{ needs.release.outputs.version }}* was published, but its release-please PR did *not* merge (result: `${{ steps.merge-queue.outputs.result || 'unknown' }}`, last queue state: `${{ steps.merge-queue.outputs.queue-state || 'unknown' }}`).
                     Please merge it so `main` syncs with the released artifact.
                     <${{ github.server_url }}/${{ github.repository }}/pull/${{ needs.post-release.outputs.pr-number }}|View PR> · <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View workflow>
@@ -774,7 +776,7 @@ jobs:
         id: build-status-secrets
         if: always()
         continue-on-error: true
-        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc  # v4.0.0
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: jwt
@@ -785,7 +787,7 @@ jobs:
           secrets: |
             secret/data/products/distribution/ci/ci-analytics gcloud_sa_key;
 
-      - uses: camunda/infra-global-github-actions/submit-build-status@ead99f6c9c536f5c47e443929d47e8fcfdb05a81  # submit-build-status-1.3.3
+      - uses: camunda/infra-global-github-actions/submit-build-status@ead99f6c9c536f5c47e443929d47e8fcfdb05a81 # submit-build-status-1.3.3
         if: ${{ always() && steps.build-status-secrets.outputs.gcloud_sa_key != '' }}
         continue-on-error: true
         with:
@@ -829,7 +831,7 @@ jobs:
                 text:
                   type: mrkdwn
                   text: |
-                    <!subteam^S05K9BK6RTK> :rotating_light:
+                    <!subteam^S0CEY294VGC> :rotating_light:
                     The *Chart Public Release* pipeline has failed.
 
                     *RC tag:* ${{ inputs.rc-tag }}

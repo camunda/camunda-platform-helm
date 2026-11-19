@@ -1,5 +1,5 @@
 # type: Project Management
-# owner: @camunda/distribution-team
+# owner: @camunda/smx
 ---
 # Urgency Field Automation
 #
@@ -733,7 +733,7 @@ jobs:
           GH_TOKEN: ${{ steps.generate-github-token.outputs.token }}
         run: |
           set -euo pipefail
-          # shellcheck disable=SC2016
+          # shellcheck disable=SC2016 # the $ names are GraphQL variables, not shell expansions
           gh api graphql -f query='query($owner:String!,$repo:String!,$number:Int!){
             repository(owner:$owner,name:$repo){issue(number:$number){id state
               projectItems(first:100){nodes{project{number} fieldValueByName(name:"Status"){

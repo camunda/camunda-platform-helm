@@ -161,6 +161,12 @@ func (c *ghCLI) MergeQueueHeads(branch string) ([]string, error) {
 	return heads, nil
 }
 
+func (c *ghCLI) PullRequestHead(number string) (string, error) {
+	return c.run("api",
+		fmt.Sprintf("repos/%s/pulls/%s", c.repo, number),
+		"--jq", ".head.sha")
+}
+
 func (c *ghCLI) Cancel(runID string) error {
 	_, err := c.run("run", "cancel", runID,
 		"--repo", c.repo)

@@ -1,0 +1,25 @@
+---
+# camunda/infraex-terraform creates this file from modules/github-repo-defaults/crev-review.yml.
+name: crev review
+
+on:
+    # The guard job of crev-review-global.yml rejects commenters below triage
+    issue_comment: # zizmor: ignore[dangerous-triggers]
+        types: [created]
+
+permissions: {}
+
+jobs:
+    crev:
+        if: github.event.issue.pull_request && (github.event.comment.body == '/crev' || startsWith(github.event.comment.body, '/crev '))
+        permissions:
+            contents: read
+            id-token: write # Vault OIDC login for the OpenRouter key
+            issues: write # escalation label
+            packages: read # pull the crev image from GHCR
+            pull-requests: write # post the review
+            statuses: write # crev/escalation status
+        uses: camunda/infraex-common-config/.github/workflows/crev-review-global.yml@ecfc5f760287533aa47f5a79b9d6e36508c76cc2 # 3.0.8
+        with:
+            model: deepseek/deepseek-v4.1-flash
+            verifier-model: z-ai/glm-5.3

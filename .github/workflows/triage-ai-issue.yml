@@ -1,5 +1,5 @@
 # type: Project Management
-# owner: @camunda/distribution-team
+# owner: @camunda/smx
 ---
 # AI-Powered Bug & Task Triage Workflow
 #
@@ -144,7 +144,7 @@ jobs:
             echo "📋 Bulk mode: fetching untriaged issues from Project #${PROJECT_NUMBER}"
 
             # Query for issues in Inbox status without TRIAGE:COMPLETED label
-            # shellcheck disable=SC2016
+            # shellcheck disable=SC2016 # the $ names are GraphQL variables, not shell expansions
             QUERY='
               query($owner:String!, $repo:String!, $projectNumber:Int!) {
                 repository(owner:$owner, name:$repo) {
@@ -290,13 +290,6 @@ jobs:
               -H "Content-Type: application/json" \
               -d "$GLEAN_REQUEST")
 
-            # shellcheck disable=SC2181
-            if [[ "$?" != "0" ]]; then
-              echo "❌ Glean API call failed"
-              echo "GLEAN_RESPONSE: ${GLEAN_RESPONSE}"
-              continue
-            fi
-
             # Validate JSON response
             if ! echo "$GLEAN_RESPONSE" | jq -e . > /dev/null 2>&1; then
               echo "❌ Invalid JSON response from Glean API"
@@ -323,7 +316,7 @@ jobs:
             echo "✅ Received AI response"
 
             # Extract JSON from AI response (it might be wrapped in markdown code blocks)
-            # shellcheck disable=SC2016
+            # shellcheck disable=SC2016 # the backticks and $ are sed patterns for a Markdown code fence and the line end
             AI_JSON=$(echo "$AI_TEXT" | sed -n '/^```json$/,/^```$/p' | sed '1d;$d')
             if [[ -z "$AI_JSON" ]]; then
               # Extract the first JSON object, skipping any prose that precedes it
@@ -344,7 +337,7 @@ jobs:
                 continue
               fi
               echo "💬 Posting error comment and applying triage:manual label..."
-              # shellcheck disable=SC2016
+              # shellcheck disable=SC2016 # the backticks are literal Markdown code marks in the comment text
               gh issue comment "$ISSUE_NUMBER" --repo "$OWNER/$REPO" --body "$(printf '❌ **Error triaging #%s — manual triage required**\n\nThe AI triage assistant failed to produce a valid response for this issue. Please triage it manually and apply the appropriate labels.\n\nThe `triage:manual` label has been applied to suppress future automated triage attempts.' "$ISSUE_NUMBER")" || true
               gh issue edit "$ISSUE_NUMBER" --repo "$OWNER/$REPO" --add-label "triage:manual" || true
               continue
@@ -484,7 +477,7 @@ jobs:
             echo "📦 Moving issue to Backlog..."
 
             # Fetch project item and status field details
-            # shellcheck disable=SC2016
+            # shellcheck disable=SC2016 # the $ names are GraphQL variables, not shell expansions
             PROJECT_QUERY='
               query($owner:String!, $repo:String!, $issueNumber:Int!, $projectNumber:Int!) {
                 repository(owner:$owner, name:$repo) {
@@ -540,7 +533,7 @@ jobs:
               # Update status field
               # Use flat variables and inline the input object to avoid gh api graphql
               # limitations with nested types like ProjectV2FieldValue
-              # shellcheck disable=SC2016
+              # shellcheck disable=SC2016 # the $ names are GraphQL variables, not shell expansions
               MUTATION='mutation($projectId:ID!,$itemId:ID!,$fieldId:ID!,$optionId:String!){updateProjectV2ItemFieldValue(input:{projectId:$projectId,itemId:$itemId,fieldId:$fieldId,value:{singleSelectOptionId:$optionId}}){projectV2Item{id}}}'
               gh api graphql -f query="$MUTATION" \
                 -f projectId="$PROJECT_V2_ID" \

@@ -1393,7 +1393,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.9.14"
+                            "default": "8.9.15"
                         },
                         "digest": {
                             "type": "string",
@@ -2091,6 +2091,12 @@
                             "type": "string",
                             "description": "(DEPRECATED) can be used to set image digest (overrides tag if set, e.g. \"sha256:abcd...\")",
                             "default": ""
+                        },
+                        "registry": {
+                            "type": "string"
+                        },
+                        "pullSecrets": {
+                            "type": "array"
                         }
                     }
                 },
@@ -2149,6 +2155,16 @@
                                     "type": "string",
                                     "description": "(DEPRECATED)",
                                     "default": "bitnamilegacy/os-shell"
+                                },
+                                "tag": {
+                                    "type": "string",
+                                    "description": "(DEPRECATED) image tag"
+                                },
+                                "registry": {
+                                    "type": "string"
+                                },
+                                "pullSecrets": {
+                                    "type": "array"
                                 }
                             }
                         }
@@ -2164,6 +2180,16 @@
                                     "type": "string",
                                     "description": "(DEPRECATED)",
                                     "default": "bitnamilegacy/postgres-exporter"
+                                },
+                                "tag": {
+                                    "type": "string",
+                                    "description": "(DEPRECATED) image tag"
+                                },
+                                "registry": {
+                                    "type": "string"
+                                },
+                                "pullSecrets": {
+                                    "type": "array"
                                 }
                             }
                         }
@@ -2231,6 +2257,9 @@
                             "type": "string",
                             "description": "(DEPRECATED) can be used to set image digest (overrides tag if set, e.g. \"sha256:abcd...\")",
                             "default": ""
+                        },
+                        "registry": {
+                            "type": "string"
                         },
                         "pullSecrets": {
                             "type": "array",
@@ -2312,6 +2341,12 @@
                                     "type": "string",
                                     "description": "(DEPRECATED) can be used to set image digest (overrides tag if set, e.g. \"sha256:abcd...\")",
                                     "default": ""
+                                },
+                                "registry": {
+                                    "type": "string"
+                                },
+                                "pullSecrets": {
+                                    "type": "array"
                                 }
                             }
                         },
@@ -2435,6 +2470,16 @@
                                             "type": "string",
                                             "description": "(DEPRECATED)",
                                             "default": "bitnamilegacy/os-shell"
+                                        },
+                                        "tag": {
+                                            "type": "string",
+                                            "description": "(DEPRECATED) image tag"
+                                        },
+                                        "registry": {
+                                            "type": "string"
+                                        },
+                                        "pullSecrets": {
+                                            "type": "array"
                                         }
                                     }
                                 }
@@ -2450,10 +2495,23 @@
                                             "type": "string",
                                             "description": "(DEPRECATED)",
                                             "default": "bitnamilegacy/postgres-exporter"
+                                        },
+                                        "tag": {
+                                            "type": "string",
+                                            "description": "(DEPRECATED) image tag"
+                                        },
+                                        "registry": {
+                                            "type": "string"
+                                        },
+                                        "pullSecrets": {
+                                            "type": "array"
                                         }
                                     }
                                 }
                             }
+                        },
+                        "enabled": {
+                            "type": "boolean"
                         }
                     }
                 },
@@ -2641,6 +2699,16 @@
                                     "type": "string",
                                     "description": "(DEPRECATED)",
                                     "default": "bitnamilegacy/keycloak-config-cli"
+                                },
+                                "tag": {
+                                    "type": "string",
+                                    "description": "(DEPRECATED) image tag"
+                                },
+                                "registry": {
+                                    "type": "string"
+                                },
+                                "pullSecrets": {
+                                    "type": "array"
                                 }
                             }
                         }
@@ -4631,6 +4699,12 @@
                             "type": "string",
                             "description": "(DEPRECATED) can be used to set image digest (overrides tag if set, e.g. \"sha256:abcd...\")",
                             "default": ""
+                        },
+                        "registry": {
+                            "type": "string"
+                        },
+                        "pullSecrets": {
+                            "type": "array"
                         }
                     }
                 },
@@ -4758,6 +4832,50 @@
                             }
                         }
                     }
+                },
+                "metrics": {
+                    "properties": {
+                        "image": {
+                            "properties": {
+                                "repository": {
+                                    "type": "string",
+                                    "description": "(DEPRECATED)"
+                                },
+                                "tag": {
+                                    "type": "string",
+                                    "description": "(DEPRECATED) image tag"
+                                },
+                                "registry": {
+                                    "type": "string"
+                                },
+                                "pullSecrets": {
+                                    "type": "array"
+                                }
+                            }
+                        }
+                    }
+                },
+                "volumePermissions": {
+                    "properties": {
+                        "image": {
+                            "properties": {
+                                "repository": {
+                                    "type": "string",
+                                    "description": "(DEPRECATED)"
+                                },
+                                "tag": {
+                                    "type": "string",
+                                    "description": "(DEPRECATED) image tag"
+                                },
+                                "registry": {
+                                    "type": "string"
+                                },
+                                "pullSecrets": {
+                                    "type": "array"
+                                }
+                            }
+                        }
+                    }
                 }
             }
         },
@@ -4835,7 +4953,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.9.19"
+                            "default": "8.9.20"
                         },
                         "digest": {
                             "type": "string",
@@ -8042,6 +8160,12 @@
                             "type": "string",
                             "description": "(DEPRECATED) can be used to set image digest (overrides tag if set, e.g. \"sha256:abcd...\")",
                             "default": ""
+                        },
+                        "registry": {
+                            "type": "string"
+                        },
+                        "pullSecrets": {
+                            "type": "array"
                         }
                     }
                 },
@@ -8144,6 +8268,16 @@
                             "type": "string",
                             "description": "(DEPRECATED)",
                             "default": "bitnamilegacy/os-shell"
+                        },
+                        "tag": {
+                            "type": "string",
+                            "description": "(DEPRECATED) image tag"
+                        },
+                        "registry": {
+                            "type": "string"
+                        },
+                        "pullSecrets": {
+                            "type": "array"
                         }
                     }
                 },
@@ -8187,6 +8321,16 @@
                                     "type": "string",
                                     "description": "(DEPRECATED)",
                                     "default": "bitnamilegacy/elasticsearch-exporter"
+                                },
+                                "tag": {
+                                    "type": "string",
+                                    "description": "(DEPRECATED) image tag"
+                                },
+                                "registry": {
+                                    "type": "string"
+                                },
+                                "pullSecrets": {
+                                    "type": "array"
                                 }
                             }
                         }
@@ -8202,6 +8346,16 @@
                                     "type": "string",
                                     "description": "(DEPRECATED)",
                                     "default": "bitnamilegacy/os-shell"
+                                },
+                                "tag": {
+                                    "type": "string",
+                                    "description": "(DEPRECATED) image tag"
+                                },
+                                "registry": {
+                                    "type": "string"
+                                },
+                                "pullSecrets": {
+                                    "type": "array"
                                 }
                             }
                         }
@@ -8217,6 +8371,16 @@
                                     "type": "string",
                                     "description": "(DEPRECATED)",
                                     "default": "bitnamilegacy/os-shell"
+                                },
+                                "tag": {
+                                    "type": "string",
+                                    "description": "(DEPRECATED) image tag"
+                                },
+                                "registry": {
+                                    "type": "string"
+                                },
+                                "pullSecrets": {
+                                    "type": "array"
                                 }
                             }
                         }

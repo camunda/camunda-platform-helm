@@ -133,6 +133,8 @@ type FilterOptions struct {
 // Generate builds the full test matrix from CI config files.
 // It reads chart-versions.yaml, each version's ci-test-config.yaml, and permitted-flows.yaml,
 // then explodes comma-separated flows into separate entries and filters denied flows.
+//
+//nolint:gocognit // split tracked in #7584
 func Generate(repoRoot string, opts GenerateOptions) ([]Entry, error) {
 	// Load chart versions
 	cv, err := LoadChartVersions(repoRoot)
@@ -306,6 +308,8 @@ func Filter(entries []Entry, opts FilterOptions) []Entry {
 }
 
 // filterEntries is the core filter logic used by Filter.
+//
+//nolint:gocognit // split tracked in #7584
 func filterEntries(entries []Entry, opts FilterOptions) []Entry {
 	// Parse comma-separated scenario filters into individual substrings.
 	var scenarioFilters []string

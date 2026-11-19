@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package deploy
 
 import (
 	"encoding/base64"
@@ -20,162 +20,123 @@ import (
 	"maps"
 	"os"
 	"os/exec"
-	"scripts/deploy-camunda/acceptance"
 	"sort"
 	"strings"
-
-	"github.com/spf13/cobra"
 )
 
-// newE2EEnvCommand groups e2e .env generation subcommands.
-func newE2EEnvCommand() *cobra.Command {
-	c := &cobra.Command{
-		Use:   "e2e-env",
-		Short: "Generate e2e .env files",
-	}
-	c.AddCommand(newE2EEnvMergeCommand())
-	c.AddCommand(newE2EEnvAPISuiteCommand())
-	return c
+type E2EEnvMergeOptions struct {
+	OrchestrationNamespace string
+	HubNamespace           string
+	OptimizeNamespace      string
+	OptimizeContextPath    string
+	ChartPath              string
+	Output                 string
+	RenderScript           string
+	KubeContext            string
+	VenomClientSecretKey   string
+	CI                     bool
+	RunSmokeTests          bool
 }
 
-// newE2EEnvMergeCommand produces a single merged .env for a multi-namespace
-// topology deploy: endpoints come from the orchestration namespace (via
-// render-e2e-env.sh), while the auth/host vars and credentials are overridden
-// to the Hub namespace where Identity/Keycloak run.
-func newE2EEnvMergeCommand() *cobra.Command {
-	var (
-		orchestrationNamespace string
-		hubNamespace           string
-		optimizeNamespace      string
-		optimizeContextPath    string
-		chartPath              string
-		output                 string
-		renderScript           string
-		kubeContext            string
-		ci                     bool
-		runSmokeTests          bool
-	)
-
-	cmd := &cobra.Command{
-		Use:   "merge",
-		Short: "Merge orchestration endpoints with Hub auth into one .env",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := validateOptimizeFlags(optimizeNamespace, optimizeContextPath); err != nil {
-				return err
-			}
-			renderArgs := []string{
-				renderScript,
-				"--absolute-chart-path", chartPath,
-				"--namespace", orchestrationNamespace,
-				"--output", output,
-			}
-			if runSmokeTests {
-				renderArgs = append(renderArgs, "--run-smoke-tests")
-			}
-			if !ci {
-				renderArgs = append(renderArgs, "--not-ci")
-			}
-			if kubeContext != "" {
-				renderArgs = append(renderArgs, "--kube-context", kubeContext)
-			}
-			rc := exec.Command("bash", renderArgs...)
-			rc.Stdout = os.Stderr
-			rc.Stderr = os.Stderr
-			if err := rc.Run(); err != nil {
-				return fmt.Errorf("render script failed: %w", err)
-			}
-
-			hubHost, err := resolveIngressHost(kubeContext, hubNamespace)
-			if err != nil {
-				return err
-			}
-
-			firstUserPw, err := resolveSecretKey(kubeContext, hubNamespace, "identity-user-password")
-			if err != nil {
-				return err
-			}
-			kcAdminPw, err := resolveSecretKey(kubeContext, hubNamespace, "identity-keycloak-admin-password")
-			if err != nil {
-				return err
-			}
-			clientSecret, err := resolveSecretKey(kubeContext, hubNamespace, "client-secret")
-			if err != nil {
-				return err
-			}
-			venomSecret, err := resolveSecretKey(kubeContext, hubNamespace, acceptance.VenomClientSecretKey)
-			if err != nil {
-				return err
-			}
-
-			tokenURL := "https://" + hubHost + "/auth/realms/camunda-platform/protocol/openid-connect/token"
-			overrides := map[string]string{
-				"MANAGEMENT_BASE_URL":              "https://" + hubHost,
-				"MANAGEMENT_IDENTITY_CONTEXT_PATH": "https://" + hubHost + "/identity",
-				"MODELER_CONTEXT_PATH":             "https://" + hubHost + "/modeler",
-				"CONSOLE_CONTEXT_PATH":             "https://" + hubHost + "/modeler",
-				"CONSOLE_BASE_URL":                 "https://" + hubHost,
-				"IDENTITY_BASE_URL":                "https://" + hubHost + "/identity/",
-				"KEYCLOAK_BASE_URL":                "https://" + hubHost + "/auth",
-				"KEYCLOAK_URL":                     "https://" + hubHost,
-				"WEBMODELER_BASE_URL":              "https://" + hubHost + "/modeler",
-				"OAUTH_URL":                        tokenURL,
-				"AUTH_URL":                         tokenURL,
-				"DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD": firstUserPw,
-				"DISTRO_QA_E2E_TESTS_KEYCLOAK_PASSWORD":           kcAdminPw,
-				"DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET":     clientSecret,
-				// The venom client authenticates with its own secret, not client-secret above:
-				// the physical-tenants spec exchanges it for an orchestration API token.
-				"VENOM_CLIENT_SECRET": venomSecret,
-			}
-
-			if optimizeNamespace != "" {
-				if err := assertOptimizeDeployed(kubeContext, optimizeNamespace); err != nil {
-					return err
-				}
-				optimizeHost, err := resolveIngressHost(kubeContext, optimizeNamespace)
-				if err != nil {
-					return fmt.Errorf("optimize namespace %q: %w", optimizeNamespace, err)
-				}
-				maps.Copy(overrides, optimizeEnvOverrides(optimizeHost, optimizeContextPath))
-			}
-
-			content, err := os.ReadFile(output)
-			if err != nil {
-				return err
-			}
-			merged := mergeEnvOverrides(string(content), overrides)
-			if optimizeNamespace != "" {
-				if err := assertOptimizeEnabled(merged, optimizeNamespace); err != nil {
-					return err
-				}
-			}
-			if err := os.WriteFile(output, []byte(merged), 0o600); err != nil {
-				return err
-			}
-			if err := os.Chmod(output, 0o600); err != nil {
-				return err
-			}
-
-			fmt.Fprintf(os.Stderr, "merged e2e env: hubHost=%s overrode %d keys -> %s\n", hubHost, len(overrides), output)
-			return nil
-		},
+func MergeE2EEnv(opts E2EEnvMergeOptions) error {
+	if err := validateOptimizeFlags(opts.OptimizeNamespace, opts.OptimizeContextPath); err != nil {
+		return err
+	}
+	renderArgs := []string{
+		opts.RenderScript,
+		"--absolute-chart-path", opts.ChartPath,
+		"--namespace", opts.OrchestrationNamespace,
+		"--output", opts.Output,
+	}
+	if opts.RunSmokeTests {
+		renderArgs = append(renderArgs, "--run-smoke-tests")
+	}
+	if !opts.CI {
+		renderArgs = append(renderArgs, "--not-ci")
+	}
+	if opts.KubeContext != "" {
+		renderArgs = append(renderArgs, "--kube-context", opts.KubeContext)
+	}
+	rc := exec.Command("bash", renderArgs...)
+	rc.Stdout = os.Stderr
+	rc.Stderr = os.Stderr
+	if err := rc.Run(); err != nil {
+		return fmt.Errorf("render script failed: %w", err)
 	}
 
-	cmd.Flags().StringVar(&orchestrationNamespace, "orchestration-namespace", "", "orchestration release namespace")
-	cmd.Flags().StringVar(&hubNamespace, "hub-namespace", "", "Hub release namespace")
-	cmd.Flags().StringVar(&optimizeNamespace, "optimize-namespace", "", "namespace of the Optimize-only release serving this leg; render-e2e-env.sh derives Optimize from the orchestration namespace, which is not where Optimize runs in a topology using the optimize release role")
-	cmd.Flags().StringVar(&optimizeContextPath, "optimize-context-path", "", "ingress path the Optimize-only release is served on, e.g. /optimize-orcha")
-	cmd.Flags().StringVar(&chartPath, "absolute-chart-path", "", "absolute chart path")
-	cmd.Flags().StringVar(&output, "output", ".env", "output .env path")
-	cmd.Flags().StringVar(&renderScript, "render-script", "scripts/render-e2e-env.sh", "path to render-e2e-env.sh")
-	cmd.Flags().StringVar(&kubeContext, "kube-context", "", "kube context (optional)")
-	cmd.Flags().BoolVar(&ci, "ci", false, "set CI=true in the merged .env (matches render-e2e-env.sh's default; pass when running in an actual CI job)")
-	cmd.Flags().BoolVar(&runSmokeTests, "run-smoke-tests", true, "pass --run-smoke-tests to render-e2e-env.sh (sets IS_SMOKE=true)")
-	_ = cmd.MarkFlagRequired("orchestration-namespace")
-	_ = cmd.MarkFlagRequired("hub-namespace")
-	_ = cmd.MarkFlagRequired("absolute-chart-path")
+	hubHost, err := resolveIngressHost(opts.KubeContext, opts.HubNamespace)
+	if err != nil {
+		return err
+	}
 
-	return cmd
+	firstUserPw, err := resolveSecretKey(opts.KubeContext, opts.HubNamespace, "identity-user-password")
+	if err != nil {
+		return err
+	}
+	kcAdminPw, err := resolveSecretKey(opts.KubeContext, opts.HubNamespace, "identity-keycloak-admin-password")
+	if err != nil {
+		return err
+	}
+	clientSecret, err := resolveSecretKey(opts.KubeContext, opts.HubNamespace, "client-secret")
+	if err != nil {
+		return err
+	}
+	venomSecret, err := resolveSecretKey(opts.KubeContext, opts.HubNamespace, opts.VenomClientSecretKey)
+	if err != nil {
+		return err
+	}
+
+	tokenURL := "https://" + hubHost + "/auth/realms/camunda-platform/protocol/openid-connect/token"
+	overrides := map[string]string{
+		"MANAGEMENT_BASE_URL":              "https://" + hubHost,
+		"MANAGEMENT_IDENTITY_CONTEXT_PATH": "https://" + hubHost + "/identity",
+		"MODELER_CONTEXT_PATH":             "https://" + hubHost + "/modeler",
+		"CONSOLE_CONTEXT_PATH":             "https://" + hubHost + "/modeler",
+		"CONSOLE_BASE_URL":                 "https://" + hubHost,
+		"IDENTITY_BASE_URL":                "https://" + hubHost + "/identity/",
+		"KEYCLOAK_BASE_URL":                "https://" + hubHost + "/auth",
+		"KEYCLOAK_URL":                     "https://" + hubHost,
+		"WEBMODELER_BASE_URL":              "https://" + hubHost + "/modeler",
+		"OAUTH_URL":                        tokenURL,
+		"AUTH_URL":                         tokenURL,
+		"DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD": firstUserPw,
+		"DISTRO_QA_E2E_TESTS_KEYCLOAK_PASSWORD":           kcAdminPw,
+		"DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET":     clientSecret,
+		// The venom client authenticates with its own secret, not client-secret above:
+		// the physical-tenants spec exchanges it for an orchestration API token.
+		"VENOM_CLIENT_SECRET": venomSecret,
+	}
+
+	if opts.OptimizeNamespace != "" {
+		if err := assertOptimizeDeployed(opts.KubeContext, opts.OptimizeNamespace); err != nil {
+			return err
+		}
+		optimizeHost, err := resolveIngressHost(opts.KubeContext, opts.OptimizeNamespace)
+		if err != nil {
+			return fmt.Errorf("optimize namespace %q: %w", opts.OptimizeNamespace, err)
+		}
+		maps.Copy(overrides, optimizeEnvOverrides(optimizeHost, opts.OptimizeContextPath))
+	}
+
+	content, err := os.ReadFile(opts.Output)
+	if err != nil {
+		return err
+	}
+	merged := mergeEnvOverrides(string(content), overrides)
+	if opts.OptimizeNamespace != "" {
+		if err := assertOptimizeEnabled(merged, opts.OptimizeNamespace); err != nil {
+			return err
+		}
+	}
+	if err := os.WriteFile(opts.Output, []byte(merged), 0o600); err != nil {
+		return err
+	}
+	if err := os.Chmod(opts.Output, 0o600); err != nil {
+		return err
+	}
+
+	fmt.Fprintf(os.Stderr, "merged e2e env: hubHost=%s overrode %d keys -> %s\n", hubHost, len(overrides), opts.Output)
+	return nil
 }
 
 // validateOptimizeFlags rejects the half-configured Optimize targeting that

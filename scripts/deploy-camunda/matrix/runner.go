@@ -481,6 +481,8 @@ func resolveStep1ValuesFromQuiet(entry Entry) string {
 }
 
 // formatDryRunOutput produces a human-readable dry-run summary grouped by version.
+//
+//nolint:gocognit // split tracked in #7584
 func formatDryRunOutput(entries []dryRunEntry, versions []string, opts RunOptions) string {
 	var b strings.Builder
 
@@ -1180,6 +1182,8 @@ func writeDiagnosticsReadme(runDir string, summary diagnosticsSummary) error {
 // is cancelled (e.g., StopOnFailure).
 // Returns the run directory path on success, or empty string if collection/write fails.
 // Never returns an error — all failures are silently swallowed.
+//
+//nolint:gocognit // split tracked in #7584
 func collectDiagnostics(namespace, kubeContext string) string {
 	// Use a fresh context with a generous timeout for the full collection.
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -1433,6 +1437,8 @@ func parseHelmSetPairs(pairs []string) map[string]string {
 // wallClock is the actual elapsed wall-clock duration for the entire matrix run.
 // When entries run in parallel, this will be less than the sum of individual entry durations.
 // logDir, when non-empty, shows per-entry log file paths for failed entries.
+//
+//nolint:gocognit // split tracked in #7584
 func PrintRunSummary(results []RunResult, wallClock time.Duration, logDir string) string {
 	if len(results) == 0 {
 		return "No entries executed."

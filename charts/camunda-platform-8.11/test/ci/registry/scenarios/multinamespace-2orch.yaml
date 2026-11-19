@@ -62,11 +62,13 @@ topology:
       modeler-cluster-name: Orchestration C
       identity: keycloak-external
       persistence: elasticsearch-external
-      dependencies: []
+      dependencies:
+        - elasticsearch-8
       features:
         - multinamespace-orchestration
       depends-on: hub
       env:
+        EXTERNAL_ELASTICSEARCH_HOST: elasticsearch-master
         ORCH_ORCHESTRATION_CLIENT_ID: orchestration-orchc
         ORCH_ORCHESTRATION_AUDIENCE: orchestration-orchc-api
         ORCH_OPTIMIZE_CLIENT_ID: optimize-orchc
@@ -79,11 +81,13 @@ topology:
       modeler-cluster-name: Orchestration D
       identity: keycloak-external
       persistence: elasticsearch-external
-      dependencies: []
+      dependencies:
+        - elasticsearch-8-no-auto-expand
       features:
         - multinamespace-orchestration
       depends-on: hub
       env:
+        EXTERNAL_ELASTICSEARCH_HOST: elasticsearch-master
         ORCH_ORCHESTRATION_CLIENT_ID: orchestration-orchd
         ORCH_ORCHESTRATION_AUDIENCE: orchestration-orchd-api
         ORCH_OPTIMIZE_CLIENT_ID: optimize-orchd
