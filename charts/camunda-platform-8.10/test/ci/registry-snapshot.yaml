@@ -1492,6 +1492,81 @@ integration:
               values-file: test/integration/companion-values/opensearch.yaml
               repo-name: opensearch
               repo-url: https://opensearch-project.github.io/helm-charts/
+        - name: qa-rdbms
+          enabled: false
+          shortname: qardbms
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: qa-workloads
+          identity: keycloak
+          persistence: rdbms
+          features:
+            - postgresql-companion
+          qa: true
+          image-tags: true
+          dependencies:
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql-rdbms-qa.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak-qa.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch-qa.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+        - name: qa-rdbms-upg
+          enabled: false
+          shortname: qardbupg
+          auth: keycloak
+          flow: modular-upgrade-minor
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: qa-workloads
+          identity: keycloak
+          persistence: rdbms-cnpg
+          features:
+            - postgresql-companion
+          qa: true
+          image-tags: true
+          dependencies:
+            - chart: charts/internal-postgresql
+              release-name: postgresql
+              values-file: test/integration/companion-values/postgresql-qa.yaml
+              env-vars:
+                - RDBMS_POSTGRESQL_USERNAME
+                - RDBMS_POSTGRESQL_PASSWORD
+            - chart: charts/internal-keycloak-26
+              release-name: keycloak
+              values-file: test/integration/companion-values/keycloak-qa.yaml
+            - chart: elastic/elasticsearch
+              version: 8.5.1
+              release-name: elasticsearch
+              values-file: test/integration/companion-values/elasticsearch-qa.yaml
+              repo-name: elastic
+              repo-url: https://helm.elastic.co
+          prefix-key: qa-rdbms-upg
+          post-infra:
+            script: post-infra-bitnami-migration.sh
+            description: |
+              After the companion PostgreSQL/Keycloak/Elasticsearch are deployed but before
+              the chart upgrade to 8.10, migrate the bundled (Bitnami) Keycloak realm and the
+              Elasticsearch authorization indices off the bundled backends onto the companion
+              services. Uses the camunda-deployment-references migration scripts in external
+              mode with SKIP_HELM_UPGRADE=true (data-only; the matrix runner performs the
+              chart upgrade). This keeps users/realm alive across the upgrade that removes the
+              bundled Bitnami subcharts.
         - name: qa-opensearch-upg
           enabled: false
           shortname: qaosupg
