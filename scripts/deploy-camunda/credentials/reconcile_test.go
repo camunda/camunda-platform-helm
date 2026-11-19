@@ -993,9 +993,3 @@ func TestCredentialsChecksum(t *testing.T) {
 		t.Error("want an error for a missing property")
 	}
 }
-
-// The integration tests run the reconcile scripts against these images.
-const (
-	postgresImage      = "postgres:16.16-alpine3.24"
-	elasticsearchImage = "docker.elastic.co/elasticsearch/elasticsearch:8.18.0"
-)
