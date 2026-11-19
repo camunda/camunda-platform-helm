@@ -428,7 +428,7 @@ prints a warning.
 | Identity | OIDC provider or Keycloak, its PostgreSQL database |
 | Optimize | Elasticsearch or OpenSearch, OIDC provider |
 | Camunda Hub REST API | Its PostgreSQL database, OIDC provider, SMTP server |
-| Camunda Hub WebSockets | None besides the REST API |
+| Camunda Hub WebSockets | The chart opens port 8060 on its NetworkPolicy (templates/web-modeler/networkpolicy-websockets.yaml), matching the pod (templates/web-modeler/deployment-websockets.yaml:86) and Service (templates/web-modeler/service-websockets.yaml:22). The chart templates make no claim about WebSockets egress beyond the release namespace; confirm any further egress (for example SaaS or webhook traffic) against your environment. |
 
 Example for an external PostgreSQL in `10.20.0.0/16` and an OIDC provider reached
 over HTTPS:
@@ -557,8 +557,7 @@ like any other resource, in the same sync as the workloads. Within one Applicati
 - The chart has no value for a sync-wave annotation on the policies. To have the
   policies in place before new pods start, enable them in a sync of their own first,
   as in [Upgrade choreography](#upgrade-choreography).
-- With egress on and a dependency missing from the rules, the sync stays `Progressing`
-  until the health check times out. Check the [Failure modes](#failure-modes) table.
+- Policies are plain manifests with no hook/sync-wave annotations; Argo CD applies them in its default wave/kind order; whether the app stays `Progressing` depends on Argo CD's own health rules, not the chart.
 
 Across Applications, follow [Upgrade order](#upgrade-order): sync the receiving
 Application first, by hand or with an app-of-apps sync wave on the child Applications.
