@@ -1,3 +1,7 @@
+# Opt-in, test-only: no scenario selects this layer yet. gRPC-TLS only.
+# Pair with features/orchestration-tls.yaml (gRPC TLS on 26500). REST on 8080 stays
+# plain HTTP in that feature, so there is no upstream-protocol.tls here.
+# Never combine with ingress-contour.yaml.
 global:
   ingress:
     className: contour
@@ -8,9 +12,8 @@ orchestration:
   service:
     annotations:
       projectcontour.io/upstream-protocol.h2: "26500"
-      projectcontour.io/upstream-protocol.tls: "8080"
   ingress:
     grpc:
       className: contour
       annotations:
-        projectcontour.io/response-timeout: "120s"
+        projectcontour.io/response-timeout: "infinity"

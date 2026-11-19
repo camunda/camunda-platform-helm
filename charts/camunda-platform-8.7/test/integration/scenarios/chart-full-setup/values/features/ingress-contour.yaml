@@ -1,3 +1,5 @@
+# Opt-in, test-only: no scenario selects this layer yet. Plaintext backends (h2c).
+# Never combine with ingress-contour-tls.yaml.
 global:
   ingress:
     className: contour
