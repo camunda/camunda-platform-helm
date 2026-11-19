@@ -1,0 +1,501 @@
+- entry: eske/elasticsearch/install/gke
+  selection:
+    identity: keycloak
+    persistence: elasticsearch
+    platform: gke
+    infra: distroci
+    features: []
+  sources:
+    - charts/camunda-platform-8.9/values-digest.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/base.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/identity/keycloak.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/persistence/elasticsearch.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/platform/gke.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/infra/values-infra-distroci.yaml
+  chain:
+    - $TMP/values-integration-test.yaml
+    - $TMP/values-integration-test-pull-secrets.yaml
+    - $TMP/service-monitor.yaml
+    - $TMP/tls.yaml
+    - charts/camunda-platform-8.9/values-digest.yaml
+    - $TMP/merged-scenario-values.yaml
+    - $TMP/values-resolved-images.yaml
+  resolvedImages: $TMP/values-resolved-images.yaml
+  resolvedImagesSha256: f216598b0a52c3e396b8cd99bc82157027a17b7db7d92f613e18a2324b169f9b
+  mergedValuesSha256: 64e39a47f1ef3064e65a073c905f363595bcfb8dde8096e6eaf657b522861595
+- entry: eske/elasticsearch/upgrade-minor/gke
+  selection:
+    identity: keycloak
+    persistence: elasticsearch
+    platform: gke
+    infra: distroci
+    features: []
+  sources:
+    - charts/camunda-platform-8.9/values-digest.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/base.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/identity/keycloak.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/persistence/elasticsearch.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/platform/gke.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/infra/values-infra-distroci.yaml
+  chain:
+    - $TMP/values-integration-test.yaml
+    - $TMP/values-integration-test-pull-secrets.yaml
+    - $TMP/service-monitor.yaml
+    - $TMP/tls.yaml
+    - charts/camunda-platform-8.9/values-digest.yaml
+    - $TMP/merged-scenario-values.yaml
+    - $TMP/values-resolved-images.yaml
+  resolvedImages: $TMP/values-resolved-images.yaml
+  resolvedImagesSha256: f216598b0a52c3e396b8cd99bc82157027a17b7db7d92f613e18a2324b169f9b
+  mergedValuesSha256: 45d4234f274afb855602074744916621d3014b3fd3cd2beaa274a585b29897fe
+- entry: estls/orchestration-tls/install/gke
+  selection:
+    identity: keycloak
+    persistence: elasticsearch
+    platform: gke
+    infra: distroci
+    features:
+      - orchestration-tls
+  sources:
+    - charts/camunda-platform-8.9/values-digest.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/base.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/identity/keycloak.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/persistence/elasticsearch.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/platform/gke.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/infra/values-infra-distroci.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/features/orchestration-tls.yaml
+  chain:
+    - $TMP/values-integration-test.yaml
+    - $TMP/values-integration-test-pull-secrets.yaml
+    - $TMP/service-monitor.yaml
+    - $TMP/tls.yaml
+    - charts/camunda-platform-8.9/values-digest.yaml
+    - $TMP/merged-scenario-values.yaml
+    - $TMP/values-resolved-images.yaml
+  resolvedImages: $TMP/values-resolved-images.yaml
+  resolvedImagesSha256: f216598b0a52c3e396b8cd99bc82157027a17b7db7d92f613e18a2324b169f9b
+  mergedValuesSha256: 4688b8562d9610d54c7835acd5d1d96b0528ef461dc4bff69a1577c3ebb7ffea
+- entry: entv/enterprise-values/install/gke
+  selection:
+    identity: keycloak
+    persistence: elasticsearch
+    platform: gke
+    infra: distroci
+    features:
+      - enterprise
+      - keycloak-admin-audience-off
+  sources:
+    - charts/camunda-platform-8.9/values-digest.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/base.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/identity/keycloak.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/persistence/elasticsearch.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/platform/gke.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/infra/values-infra-distroci.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/features/enterprise.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/features/keycloak-admin-audience-off.yaml
+  chain:
+    - $TMP/values-integration-test.yaml
+    - $TMP/values-integration-test-pull-secrets.yaml
+    - $TMP/service-monitor.yaml
+    - $TMP/tls.yaml
+    - charts/camunda-platform-8.9/values-digest.yaml
+    - $TMP/merged-scenario-values.yaml
+    - $TMP/values-resolved-images.yaml
+  resolvedImages: $TMP/values-resolved-images.yaml
+  resolvedImagesSha256: 0a522c22ec6884a0614bfeb1103531b8d60893f614e7654eaee95f8b01b9b479
+  mergedValuesSha256: 5a31b28bebd5e6cdc5d36f76f150812346ff2d7afaa6845f5d8021eda072ea4e
+- entry: oske/opensearch/install/gke
+  selection:
+    identity: keycloak
+    persistence: opensearch-embedded
+    platform: gke
+    infra: distroci
+    features: []
+  sources:
+    - charts/camunda-platform-8.9/values-digest.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/base.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/identity/keycloak.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/persistence/opensearch-embedded.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/platform/gke.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/infra/values-infra-distroci.yaml
+  chain:
+    - $TMP/values-integration-test.yaml
+    - $TMP/values-integration-test-pull-secrets.yaml
+    - $TMP/service-monitor.yaml
+    - $TMP/tls.yaml
+    - charts/camunda-platform-8.9/values-digest.yaml
+    - $TMP/merged-scenario-values.yaml
+    - $TMP/values-resolved-images.yaml
+  resolvedImages: $TMP/values-resolved-images.yaml
+  resolvedImagesSha256: f216598b0a52c3e396b8cd99bc82157027a17b7db7d92f613e18a2324b169f9b
+  mergedValuesSha256: 80442691adb870e6f1b47a5e93ac1b01aaa61e0e521f61518753f1670b9047e8
+- entry: esoi/oidc/install/gke
+  selection:
+    identity: oidc
+    persistence: elasticsearch
+    platform: gke
+    infra: distroci
+    features: []
+  sources:
+    - charts/camunda-platform-8.9/values-digest.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/base.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/identity/oidc.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/persistence/elasticsearch.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/platform/gke.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/infra/values-infra-distroci.yaml
+  chain:
+    - $TMP/values-integration-test.yaml
+    - $TMP/values-integration-test-pull-secrets.yaml
+    - $TMP/service-monitor.yaml
+    - $TMP/tls.yaml
+    - charts/camunda-platform-8.9/values-digest.yaml
+    - $TMP/merged-scenario-values.yaml
+    - $TMP/values-resolved-images.yaml
+  resolvedImages: $TMP/values-resolved-images.yaml
+  resolvedImagesSha256: f216598b0a52c3e396b8cd99bc82157027a17b7db7d92f613e18a2324b169f9b
+  mergedValuesSha256: 5272f2ec08f63473d532fb5941efae16e0a73c2a1b975a8fbd6e6444cba0c059
+- entry: esoi/oidc/upgrade-minor/gke
+  selection:
+    identity: oidc
+    persistence: elasticsearch
+    platform: gke
+    infra: distroci
+    features: []
+  sources:
+    - charts/camunda-platform-8.9/values-digest.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/base.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/identity/oidc.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/persistence/elasticsearch.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/platform/gke.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/infra/values-infra-distroci.yaml
+  chain:
+    - $TMP/values-integration-test.yaml
+    - $TMP/values-integration-test-pull-secrets.yaml
+    - $TMP/service-monitor.yaml
+    - $TMP/tls.yaml
+    - charts/camunda-platform-8.9/values-digest.yaml
+    - $TMP/merged-scenario-values.yaml
+    - $TMP/values-resolved-images.yaml
+  resolvedImages: $TMP/values-resolved-images.yaml
+  resolvedImagesSha256: f216598b0a52c3e396b8cd99bc82157027a17b7db7d92f613e18a2324b169f9b
+  mergedValuesSha256: 59d728956d14219eece15e51b1472ded53de4c0ff5d5534c696b9897812336e0
+- entry: kemt/keycloak-mt/upgrade-minor/gke
+  selection:
+    identity: keycloak
+    persistence: elasticsearch
+    platform: gke
+    infra: distroci
+    features:
+      - multitenancy
+  sources:
+    - charts/camunda-platform-8.9/values-digest.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/base.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/identity/keycloak.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/persistence/elasticsearch.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/platform/gke.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/infra/values-infra-distroci.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/features/multitenancy.yaml
+  chain:
+    - $TMP/values-integration-test.yaml
+    - $TMP/values-integration-test-pull-secrets.yaml
+    - $TMP/service-monitor.yaml
+    - $TMP/tls.yaml
+    - charts/camunda-platform-8.9/values-digest.yaml
+    - $TMP/merged-scenario-values.yaml
+    - $TMP/values-resolved-images.yaml
+  resolvedImages: $TMP/values-resolved-images.yaml
+  resolvedImagesSha256: f216598b0a52c3e396b8cd99bc82157027a17b7db7d92f613e18a2324b169f9b
+  mergedValuesSha256: ff2493f82dcac8d65696e2d2f931d96638a087c6ef36cd12c51f0798965f39c2
+- entry: kerba/keycloak-rba/upgrade-minor/gke
+  selection:
+    identity: keycloak
+    persistence: elasticsearch
+    platform: gke
+    infra: distroci
+    features:
+      - rba
+  sources:
+    - charts/camunda-platform-8.9/values-digest.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/base.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/identity/keycloak.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/persistence/elasticsearch.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/platform/gke.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/infra/values-infra-distroci.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/features/rba.yaml
+  chain:
+    - $TMP/values-integration-test.yaml
+    - $TMP/values-integration-test-pull-secrets.yaml
+    - $TMP/service-monitor.yaml
+    - $TMP/tls.yaml
+    - charts/camunda-platform-8.9/values-digest.yaml
+    - $TMP/merged-scenario-values.yaml
+    - $TMP/values-resolved-images.yaml
+  resolvedImages: $TMP/values-resolved-images.yaml
+  resolvedImagesSha256: f216598b0a52c3e396b8cd99bc82157027a17b7db7d92f613e18a2324b169f9b
+  mergedValuesSha256: 67c89ef0c3105da42e21148d72cb3786d8fe6cfa6a6c24d67319a0c2cbf35069
+- entry: esot/elasticsearch-self-signed-os-trust/install/gke
+  selection:
+    identity: keycloak
+    persistence: elasticsearch-self-signed-os-trust
+    platform: gke
+    infra: distroci
+    features: []
+  sources:
+    - charts/camunda-platform-8.9/values-digest.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/base.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/identity/keycloak.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/persistence/elasticsearch-self-signed-os-trust.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/platform/gke.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/infra/values-infra-distroci.yaml
+  chain:
+    - $TMP/values-integration-test.yaml
+    - $TMP/values-integration-test-pull-secrets.yaml
+    - $TMP/service-monitor.yaml
+    - $TMP/tls.yaml
+    - charts/camunda-platform-8.9/values-digest.yaml
+    - $TMP/merged-scenario-values.yaml
+    - $TMP/values-resolved-images.yaml
+  resolvedImages: $TMP/values-resolved-images.yaml
+  resolvedImagesSha256: f216598b0a52c3e396b8cd99bc82157027a17b7db7d92f613e18a2324b169f9b
+  mergedValuesSha256: ca21b792e1aa94d528742f9577c8842816e5c710f471a340f27d069cc83a6ba3
+- entry: gatkc/gateway-keycloak/install/gke
+  selection:
+    identity: keycloak
+    persistence: elasticsearch
+    platform: gke
+    infra: distroci
+    features:
+      - gateway
+  sources:
+    - charts/camunda-platform-8.9/values-digest.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/base.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/identity/keycloak.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/persistence/elasticsearch.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/platform/gke.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/infra/values-infra-distroci.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/features/gateway.yaml
+  chain:
+    - $TMP/values-integration-test.yaml
+    - $TMP/values-integration-test-pull-secrets.yaml
+    - $TMP/service-monitor.yaml
+    - $TMP/tls.yaml
+    - charts/camunda-platform-8.9/values-digest.yaml
+    - $TMP/merged-scenario-values.yaml
+    - $TMP/values-resolved-images.yaml
+  resolvedImages: $TMP/values-resolved-images.yaml
+  resolvedImagesSha256: f216598b0a52c3e396b8cd99bc82157027a17b7db7d92f613e18a2324b169f9b
+  mergedValuesSha256: 67b8b89e8ab32f4ba7e14dec189659ea6ce1b48d5330226a376e12beac54955b
+- entry: esarm/elasticsearch-arm/install/gke
+  selection:
+    identity: keycloak
+    persistence: elasticsearch
+    platform: gke
+    infra: arm
+    features:
+      - arm
+  sources:
+    - charts/camunda-platform-8.9/values-digest.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/base.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/identity/keycloak.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/persistence/elasticsearch.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/platform/gke.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/infra/values-infra-arm.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/features/arm.yaml
+  chain:
+    - $TMP/values-integration-test.yaml
+    - $TMP/values-integration-test-pull-secrets.yaml
+    - $TMP/service-monitor.yaml
+    - $TMP/tls.yaml
+    - charts/camunda-platform-8.9/values-digest.yaml
+    - $TMP/merged-scenario-values.yaml
+    - $TMP/values-resolved-images.yaml
+  resolvedImages: $TMP/values-resolved-images.yaml
+  resolvedImagesSha256: f216598b0a52c3e396b8cd99bc82157027a17b7db7d92f613e18a2324b169f9b
+  mergedValuesSha256: 91e99789fc2d963ab959495f19a4fb3314dd915cffda3a77be5504e02dc71e70
+- entry: nosec/noSecondaryStorage/install/gke
+  selection:
+    identity: keycloak
+    persistence: no-elasticsearch
+    platform: gke
+    infra: distroci
+    features:
+      - no-secondary-storage
+  sources:
+    - charts/camunda-platform-8.9/values-digest.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/base.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/identity/keycloak.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/persistence/no-elasticsearch.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/platform/gke.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/infra/values-infra-distroci.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/features/no-secondary-storage.yaml
+  chain:
+    - $TMP/values-integration-test.yaml
+    - $TMP/values-integration-test-pull-secrets.yaml
+    - $TMP/service-monitor.yaml
+    - $TMP/tls.yaml
+    - charts/camunda-platform-8.9/values-digest.yaml
+    - $TMP/merged-scenario-values.yaml
+    - $TMP/values-resolved-images.yaml
+  resolvedImages: $TMP/values-resolved-images.yaml
+  resolvedImagesSha256: f216598b0a52c3e396b8cd99bc82157027a17b7db7d92f613e18a2324b169f9b
+  mergedValuesSha256: 96a7211fbbb9a1a83e4bcc391661095ec6090ab256c25ae5353fcb6831799f23
+- entry: docstr/documentstore/install/eks
+  selection:
+    identity: keycloak
+    persistence: elasticsearch
+    platform: eks
+    infra: preemptible
+    features:
+      - documentstore
+  sources:
+    - charts/camunda-platform-8.9/values-digest.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/base.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/identity/keycloak.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/persistence/elasticsearch.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/platform/eks.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/infra/values-infra-eks-preemptible.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/features/documentstore.yaml
+  chain:
+    - $TMP/values-integration-test.yaml
+    - $TMP/values-integration-test-pull-secrets.yaml
+    - $TMP/base-layer.yaml
+    - $TMP/cleanup.yaml
+    - $TMP/service-monitor.yaml
+    - $TMP/tls.yaml
+    - charts/camunda-platform-8.9/values-digest.yaml
+    - $TMP/merged-scenario-values.yaml
+    - $TMP/values-resolved-images.yaml
+  resolvedImages: $TMP/values-resolved-images.yaml
+  resolvedImagesSha256: f216598b0a52c3e396b8cd99bc82157027a17b7db7d92f613e18a2324b169f9b
+  mergedValuesSha256: 46dbf8f909683fca73d3c37f8d4bbf5dec8a6448691df3c39abb66927d996dc9
+- entry: rdbms/rdbms/install/gke
+  selection:
+    identity: keycloak
+    persistence: rdbms
+    platform: gke
+    infra: distroci
+    features: []
+  sources:
+    - charts/camunda-platform-8.9/values-digest.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/base.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/identity/keycloak.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/persistence/rdbms.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/platform/gke.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/infra/values-infra-distroci.yaml
+  chain:
+    - $TMP/values-integration-test.yaml
+    - $TMP/values-integration-test-pull-secrets.yaml
+    - $TMP/service-monitor.yaml
+    - $TMP/tls.yaml
+    - charts/camunda-platform-8.9/values-digest.yaml
+    - $TMP/merged-scenario-values.yaml
+    - $TMP/values-resolved-images.yaml
+  resolvedImages: $TMP/values-resolved-images.yaml
+  resolvedImagesSha256: f216598b0a52c3e396b8cd99bc82157027a17b7db7d92f613e18a2324b169f9b
+  mergedValuesSha256: 63e0618b43702dea84316f6e651bf56292a7167933d501404e6ee53ccd4dcf25
+- entry: cprst/component-persistence/install/gke
+  selection:
+    identity: keycloak
+    persistence: elasticsearch
+    platform: gke
+    infra: distroci
+    features:
+      - persistence
+  sources:
+    - charts/camunda-platform-8.9/values-digest.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/base.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/identity/keycloak.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/persistence/elasticsearch.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/platform/gke.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/infra/values-infra-distroci.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/features/persistence.yaml
+  chain:
+    - $TMP/values-integration-test.yaml
+    - $TMP/values-integration-test-pull-secrets.yaml
+    - $TMP/service-monitor.yaml
+    - $TMP/tls.yaml
+    - charts/camunda-platform-8.9/values-digest.yaml
+    - $TMP/merged-scenario-values.yaml
+    - $TMP/values-resolved-images.yaml
+  resolvedImages: $TMP/values-resolved-images.yaml
+  resolvedImagesSha256: f216598b0a52c3e396b8cd99bc82157027a17b7db7d92f613e18a2324b169f9b
+  mergedValuesSha256: e7ed2dbc5180a21808b016c3ec2395e4406051d80e58b4d0fb3fee914c42a2c6
+- entry: cprst/component-persistence/upgrade-minor/gke
+  selection:
+    identity: keycloak
+    persistence: elasticsearch
+    platform: gke
+    infra: distroci
+    features:
+      - persistence
+  sources:
+    - charts/camunda-platform-8.9/values-digest.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/base.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/identity/keycloak.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/persistence/elasticsearch.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/platform/gke.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/infra/values-infra-distroci.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/features/persistence.yaml
+  chain:
+    - $TMP/values-integration-test.yaml
+    - $TMP/values-integration-test-pull-secrets.yaml
+    - $TMP/service-monitor.yaml
+    - $TMP/tls.yaml
+    - charts/camunda-platform-8.9/values-digest.yaml
+    - $TMP/merged-scenario-values.yaml
+    - $TMP/values-resolved-images.yaml
+  resolvedImages: $TMP/values-resolved-images.yaml
+  resolvedImagesSha256: f216598b0a52c3e396b8cd99bc82157027a17b7db7d92f613e18a2324b169f9b
+  mergedValuesSha256: dd6eed57cf4ee55a08baa9b524675a3e537b98b4e46847b58277bae0e5865915
+- entry: lgexp/legacy-exporter-args/install/gke
+  selection:
+    identity: keycloak
+    persistence: elasticsearch
+    platform: gke
+    infra: distroci
+    features:
+      - legacy-exporter-args
+  sources:
+    - charts/camunda-platform-8.9/values-digest.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/base.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/identity/keycloak.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/persistence/elasticsearch.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/platform/gke.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/infra/values-infra-distroci.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/features/legacy-exporter-args.yaml
+  chain:
+    - $TMP/values-integration-test.yaml
+    - $TMP/values-integration-test-pull-secrets.yaml
+    - $TMP/service-monitor.yaml
+    - $TMP/tls.yaml
+    - charts/camunda-platform-8.9/values-digest.yaml
+    - $TMP/merged-scenario-values.yaml
+    - $TMP/values-resolved-images.yaml
+  resolvedImages: $TMP/values-resolved-images.yaml
+  resolvedImagesSha256: f216598b0a52c3e396b8cd99bc82157027a17b7db7d92f613e18a2324b169f9b
+  mergedValuesSha256: 3711e1e47540c8ddf9d68347ade57aa28476bfba150317ed4406cde78eb56067
+- entry: shde2/shadow-e2e/install/gke
+  selection:
+    identity: keycloak
+    persistence: elasticsearch
+    platform: gke
+    infra: distroci
+    features: []
+  sources:
+    - charts/camunda-platform-8.9/values-digest.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/base.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/identity/keycloak.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/persistence/elasticsearch.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/values/platform/gke.yaml
+    - charts/camunda-platform-8.9/test/integration/scenarios/infra/values-infra-distroci.yaml
+  chain:
+    - $TMP/values-integration-test.yaml
+    - $TMP/values-integration-test-pull-secrets.yaml
+    - $TMP/service-monitor.yaml
+    - $TMP/tls.yaml
+    - charts/camunda-platform-8.9/values-digest.yaml
+    - $TMP/merged-scenario-values.yaml
+    - $TMP/values-resolved-images.yaml
+  resolvedImages: $TMP/values-resolved-images.yaml
+  resolvedImagesSha256: f216598b0a52c3e396b8cd99bc82157027a17b7db7d92f613e18a2324b169f9b
+  mergedValuesSha256: 9aa043887b282711fcdca4515697b79a8f5dd0c34d665e976c99cb3ff17d65d0
