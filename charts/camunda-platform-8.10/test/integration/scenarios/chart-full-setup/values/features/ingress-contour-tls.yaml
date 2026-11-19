@@ -1,5 +1,5 @@
 # Opt-in, test-only: no scenario selects this layer yet.
-# Requires features/orchestration-tls-rest.yaml or orchestration-tls-rest-appconfig.yaml:
+# Requires features/orchestration-tls.yaml (gRPC TLS) AND orchestration-tls-rest.yaml or orchestration-tls-rest-appconfig.yaml (REST TLS):
 # upstream-protocol.tls on 8080 only works when orchestration REST itself serves TLS.
 # Never combine with ingress-contour.yaml.
 global:
