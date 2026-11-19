@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 15.4.2
+version: 15.4.3
 appVersion: 8.10.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -43,4 +43,8 @@ annotations:
     - name: Camunda 8 Self-Managed Helm charts
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
-  artifacthub.io/changes: ""
+  artifacthub.io/changes: |
+    - kind: fixed
+      description: "Skip the gRPC upstream TLS ingress-nginx warning on openshift-default"
+    - kind: fixed
+      description: "Apply global pullPolicy to optimize migration init container"
