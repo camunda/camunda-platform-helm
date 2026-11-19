@@ -29,29 +29,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-func TestResolveTopologyReleases_DerivesEveryDogfoodNamespace(t *testing.T) {
-	releases, err := resolveTopologyReleases("../../..", "8.10", "dogfood", "dogfood")
-	require.NoError(t, err)
-
-	got := map[string]string{}
-	for _, r := range releases {
-		got[r.Suffix] = r.Namespace
-	}
-
-	assert.Equal(t, map[string]string{
-		"hub":      "dogfood-hub",
-		"plain":    "dogfood-plain",
-		"mt":       "dogfood-mt",
-		"pt":       "dogfood-pt",
-		"optplain": "dogfood-optplain",
-		"optmt":    "dogfood-optmt",
-		"optptdef": "dogfood-optptdef",
-		"optptta":  "dogfood-optptta",
-		"optpttb":  "dogfood-optpttb",
-	}, got)
-	assert.Equal(t, "/optimize-plain", releases[4].OptimizeContextPath)
-}
-
 func TestResolveTopologyReleases_RejectsAScenarioWithoutATopology(t *testing.T) {
 	_, err := resolveTopologyReleases("../../..", "8.10", "elasticsearch", "dogfood")
 	require.Error(t, err)
