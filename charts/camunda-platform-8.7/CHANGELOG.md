@@ -1,5 +1,21 @@
 # Changelog
 
+## [12.14.4](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.7-12.14.3...camunda-platform-8.7-12.14.4) (2026-11-19)
+
+
+### Bug Fixes
+
+* apply global pullPolicy to optimize migration init container ([#7882](https://github.com/camunda/camunda-platform-helm/issues/7882)) ([42b9ab1](https://github.com/camunda/camunda-platform-helm/commit/42b9ab159aa6b4720a0be521180c6b863fab5c5c))
+* disable BASE64 intrinsics in Keycloak and Elasticsearch for CVE-2026-114938 ([#7954](https://github.com/camunda/camunda-platform-helm/issues/7954)) ([d32c9ff](https://github.com/camunda/camunda-platform-helm/commit/d32c9ffb144a621dfd51bcd0ed3b566bd8f72f1e))
+* warn that bitnamilegacy images still trust the compromised eMudhra roots ([#7906](https://github.com/camunda/camunda-platform-helm/issues/7906)) ([26d16ec](https://github.com/camunda/camunda-platform-helm/commit/26d16ec99ec56d8e4aecad99203cee1af1a52604))
+
+
+### Dependencies
+
+* update camunda-platform-images (patch) ([#7878](https://github.com/camunda/camunda-platform-helm/issues/7878)) ([2e321fc](https://github.com/camunda/camunda-platform-helm/commit/2e321fc24f0bdfc97d5252ba13053dbcff8f49c3))
+* update camunda-platform-images (patch) ([#7953](https://github.com/camunda/camunda-platform-helm/issues/7953)) ([3704c55](https://github.com/camunda/camunda-platform-helm/commit/3704c55691ff82d8957e4148361cd885d1087df1))
+* update registry.camunda.cloud/vendor-ee/elasticsearch docker tag to v8.19.25 ([#7896](https://github.com/camunda/camunda-platform-helm/issues/7896)) ([1805ce2](https://github.com/camunda/camunda-platform-helm/commit/1805ce2cf7ff326dd129bac3e1cc328c362b1148))
+
 ## [12.14.3](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.7-12.14.2...camunda-platform-8.7-12.14.3) (2026-11-06)
 
 
