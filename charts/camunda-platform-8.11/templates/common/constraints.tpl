@@ -2184,6 +2184,9 @@ Orchestration - Secret Store
 {{- end -}}
 {{- $secretStoreTenants := list (dict "label" "orchestration.secretStore" "providers" $secretStore) -}}
 {{- range $tid, $providers := ($secretStore.physicalTenants | default dict) -}}
+  {{- if not (regexMatch "^[a-z0-9]{1,64}$" $tid) -}}
+    {{- fail (printf "[camunda][error] orchestration.secretStore.physicalTenants.%s: physical tenant ids must be lowercase alphanumeric (matching [a-z0-9]{1,64}); Camunda 8.11 rejects '%s' at startup. Rename it to '%s', the id Camunda 8.10 registered it under, and nothing else: a different id strands the data of the existing tenant." $tid $tid (lower (regexReplaceAll "[-_]" $tid ""))) -}}
+  {{- end -}}
   {{- $secretStoreTenants = append $secretStoreTenants (dict "label" (printf "orchestration.secretStore.physicalTenants.%s" $tid) "providers" $providers) -}}
 {{- end -}}
 {{- $secretStoreRoleArns := list -}}
