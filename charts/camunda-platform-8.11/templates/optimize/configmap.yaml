@@ -33,6 +33,7 @@ data:
           oidc:
             client-id: {{ include "optimize.authClientId" . | quote }}
             client-secret: ${VALUES_OPTIMIZE_CLIENT_SECRET:}
+            client-id-claim: {{ .Values.orchestration.security.authentication.oidc.clientIdClaim | quote }}
             audiences:
               - {{ include "optimize.authClientId" . | quote }}
               - {{ include "optimize.authAudience" . | quote }}

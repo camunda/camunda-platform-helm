@@ -447,6 +447,8 @@ func (s *ConfigMapTemplateTest) TestCamundaSecurityConfiguration() {
 				s.Require().Contains(authConfig, `method: "oidc"`)
 				s.Require().Contains(authConfig, `client-id: "optimize"`)
 				s.Require().Contains(authConfig, "client-secret: ${VALUES_OPTIMIZE_CLIENT_SECRET:}")
+				s.Require().Contains(authConfig, `client-id-claim: "client_id"`,
+					"the CSL public API filter rejects a bearer token as not-an-API-client unless client-id-claim is configured")
 				s.Require().Contains(authConfig, `issuer-uri: "https://camunda.example.com/auth/realms/camunda-platform"`)
 				s.Require().Contains(authConfig, `redirect-uri: "https://camunda.example.com/optimize/api/authentication/callback"`)
 			},
