@@ -67,6 +67,8 @@ annotations:
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
     - kind: fixed
-      description: "Pin Bitnami Premium os-shell tag in 8.7 values-enterprise.yaml"
+      description: "Apply global pullPolicy to optimize migration init container"
     - kind: fixed
-      description: "Pin Bitnami Premium exporter and config-cli tags in 8.7 values-enterprise.yaml"
+      description: "Warn that bitnamilegacy images still trust the compromised eMudhra roots"
+    - kind: fixed
+      description: "Disable BASE64 intrinsics in Keycloak and Elasticsearch for CVE-2026-114938"
