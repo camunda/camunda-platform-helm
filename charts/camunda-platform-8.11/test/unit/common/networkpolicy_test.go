@@ -280,6 +280,14 @@ func (s *NetworkPolicyTemplateTest) TestDifferentValuesInputs() {
 				require.Contains(t, output, "global.networkPolicy.egress.enabled=true blocks all egress")
 			},
 		},
+		{
+			Name:   "TestEgressWarningWhenExternalDependenciesUnreachable",
+			Values: networkPolicyValues(networkPolicyEgress(map[string]string{"global.identity.auth.enabled": "true"})),
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "global.networkPolicy.egress.enabled=true blocks all egress except the release namespace and DNS, but no global.networkPolicy.egress.extraRules are set. The release connects to secondary storage (elasticsearch), the OIDC provider, which is unreachable unless it runs in the release namespace. Allow it with global.networkPolicy.egress.extraRules or the component networkPolicy.egress.extraRules; NetworkPolicies match IP blocks and labels, not hostnames.")
+			},
+		},
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
