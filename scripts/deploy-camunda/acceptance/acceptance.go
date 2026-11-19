@@ -34,6 +34,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	contract "scripts/camunda-core/pkg/credentials"
 )
 
 type PhysicalTenantAcceptanceOptions struct {
@@ -99,7 +101,7 @@ func (p *osAcceptanceProcess) Stop() error {
 // VenomClientSecretKey is the integration-test-credentials key holding the venom client's
 // secret. The chart's identity layers register venom with this key (existingSecretKey), and the
 // physical tenant acceptance check reads the same key.
-const VenomClientSecretKey = "identity-admin-client-password"
+const VenomClientSecretKey = contract.KeyVenomClient
 
 func RunPhysicalTenant(ctx context.Context, opts PhysicalTenantAcceptanceOptions) error {
 	return runPhysicalTenantAcceptance(ctx, opts, productionAcceptanceDependencies(opts))
@@ -390,7 +392,7 @@ func partitionsHealthy(body []byte) bool {
 }
 
 func readSecret(ctx context.Context, deps acceptanceDependencies, opts PhysicalTenantAcceptanceOptions, key string) (string, error) {
-	args := kubectlArgs(opts.KubeContext, "-n", opts.HubNamespace, "get", "secret", "integration-test-credentials", "-o", "jsonpath={.data."+key+"}")
+	args := kubectlArgs(opts.KubeContext, "-n", opts.HubNamespace, "get", "secret", contract.SecretName, "-o", "jsonpath={.data."+key+"}")
 	body, err := deps.runCommand(ctx, "kubectl", args...)
 	if err != nil {
 		return "", fmt.Errorf("read secret %s: %w: %s", key, err, strings.TrimSpace(string(body)))

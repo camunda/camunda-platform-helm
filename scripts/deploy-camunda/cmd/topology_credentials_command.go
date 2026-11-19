@@ -46,6 +46,7 @@ environment picks up a generated value through reconcile-credentials.`,
 	cmd.Flags().StringVar(&opts.Base, "base", "", "topology base namespace, substituted for "+matrix.CredentialsManifestBaseToken+" in the manifest")
 	cmd.Flags().StringVar(&opts.SecretNamespace, "secret-namespace", "distribution-team", "namespace the ClusterSecretStore reads source secrets from")
 	cmd.Flags().StringVar(&opts.KubeContext, "kube-context", "", "kubectl context (defaults to current)")
+	cmd.Flags().BoolVar(&opts.Strict, "strict", false, "after ensuring, fail unless the manifest delivers every key deploy-camunda reads from integration-test-credentials")
 	cmd.Flags().StringSlice("guard-namespace", nil, "ignored")
 	_ = cmd.Flags().MarkDeprecated("guard-namespace", "it has no effect; reconcile-credentials now brings existing stores to the source")
 	_ = cmd.MarkFlagRequired("manifest")

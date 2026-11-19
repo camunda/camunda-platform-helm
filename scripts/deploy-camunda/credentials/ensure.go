@@ -25,10 +25,12 @@ import (
 	"math/big"
 	"os"
 	"sort"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
+	contract "scripts/camunda-core/pkg/credentials"
 	"scripts/camunda-core/pkg/kube"
 	"scripts/deploy-camunda/matrix"
 )
@@ -222,6 +224,9 @@ type EnsureOptions struct {
 	Base            string
 	SecretNamespace string
 	KubeContext     string
+	// Strict re-reads the source Secret after ensuring it and fails unless the
+	// manifest delivers every contract.RequiredKeys entry of contract.SecretName.
+	Strict bool
 }
 
 func Ensure(ctx context.Context, out io.Writer, opts EnsureOptions) error {
@@ -237,9 +242,37 @@ func Ensure(ctx context.Context, out io.Writer, opts EnsureOptions) error {
 	if err != nil {
 		return err
 	}
-	return ensureCredentials(ctx, out, manifest, opts.SecretNamespace, topologyCredentialStore{
+	store := topologyCredentialStore{
 		get:    client.GetSecretData,
 		create: client.CreateOpaqueSecret,
 		update: client.AddSecretData,
-	})
+	}
+	if err := ensureCredentials(ctx, out, manifest, opts.SecretNamespace, store); err != nil {
+		return err
+	}
+	if !opts.Strict {
+		return nil
+	}
+	return verifyRequiredKeys(ctx, manifest, opts.SecretNamespace, store, contract.RequiredKeys)
+}
+
+func verifyRequiredKeys(ctx context.Context, manifest []byte, namespace string, store topologyCredentialStore, required []string) error {
+	src, err := parseCredentialSource(manifest)
+	if err != nil {
+		return err
+	}
+	source, err := store.get(ctx, namespace, src.Name)
+	if err != nil {
+		return err
+	}
+	target := src.Targets[contract.SecretName]
+	delivered := make(map[string]string, len(target))
+	for key, property := range target {
+		delivered[key] = source[property]
+	}
+	if missing := contract.MissingKeys(delivered, required); len(missing) > 0 {
+		return fmt.Errorf("strict: manifest does not deliver required %s keys from %s/%s: %s",
+			contract.SecretName, namespace, src.Name, strings.Join(missing, ", "))
+	}
+	return nil
 }

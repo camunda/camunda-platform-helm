@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"scripts/camunda-core/pkg/credentials"
 	"scripts/camunda-core/pkg/logging"
 	"time"
 
@@ -127,14 +128,12 @@ func applyExternalSecretsCertificates(ctx context.Context, client *Client, repoR
 func applyExternalSecretsOther(ctx context.Context, client *Client, repoRoot, chartPath, namespace, externalSecretsStore, credentialsManifest string) error {
 	externalSecretDir := filepath.Join(repoRoot, ".github", "config", "external-secret")
 
-	// Determine suffix for vault-backed secrets
-	vaultSuffix := ""
-	if externalSecretsStore == "vault-backend" {
-		vaultSuffix = "-vault"
+	provider := credentials.ESO{Store: externalSecretsStore, Override: credentialsManifest}
+	if provider.VaultSuffix() != "" {
 		logging.Logger.Debug().Msg("using vault-backed external secrets")
 	}
 
-	file, err := integrationCredentialsManifest(chartPath, externalSecretDir, vaultSuffix, credentialsManifest, fileExists)
+	file, err := provider.Manifest(chartPath, externalSecretDir, fileExists)
 	if err != nil {
 		return err
 	}
@@ -154,22 +153,7 @@ func applyExternalSecretsOther(ctx context.Context, client *Client, repoRoot, ch
 // then never the CI one), otherwise the chart-specific file, otherwise the
 // shared fallback. An empty result means there is none to apply.
 func integrationCredentialsManifest(chartPath, externalSecretDir, vaultSuffix, credentialsManifest string, exists func(string) bool) (string, error) {
-	if credentialsManifest != "" {
-		if !exists(credentialsManifest) {
-			return "", fmt.Errorf("credentials manifest %q does not exist", credentialsManifest)
-		}
-		return credentialsManifest, nil
-	}
-	name := fmt.Sprintf("external-secret-integration-test-credentials%s.yaml", vaultSuffix)
-	for _, candidate := range []string{
-		filepath.Join(chartPath, "test", "integration", "external-secrets", name),
-		filepath.Join(externalSecretDir, name),
-	} {
-		if exists(candidate) {
-			return candidate, nil
-		}
-	}
-	return "", nil
+	return credentials.SelectManifest(chartPath, externalSecretDir, vaultSuffix, credentialsManifest, exists)
 }
 
 func applySecretsForEKS(ctx context.Context, client *Client, repoRoot, chartPath, namespace, externalSecretsStore, credentialsManifest string) error {

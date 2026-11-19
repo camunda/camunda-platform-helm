@@ -297,3 +297,42 @@ func TestDogfoodCredentialsManifest_ReadsOneSourceWithDistinctProperties(t *test
 		t.Errorf("%d target keys share %d source properties; every credential must have its own value", len(doc.Spec.Data), len(src.Properties))
 	}
 }
+
+const requiredKeysManifest = `
+kind: ExternalSecret
+metadata:
+  name: creds
+spec:
+  target:
+    name: integration-test-credentials
+  data:
+    - secretKey: client-secret
+      remoteRef: {key: src, property: p-client}
+    - secretKey: identity-user-password
+      remoteRef: {key: src, property: p-user}
+`
+
+func TestVerifyRequiredKeys(t *testing.T) {
+	required := []string{"client-secret", "identity-user-password", "identity-admin-client-password"}
+	cases := []struct {
+		name    string
+		store   map[string]string
+		wantErr string
+	}{
+		{"all delivered", map[string]string{"p-client": "x", "p-user": "y"}, "identity-admin-client-password"},
+		{"empty source value", map[string]string{"p-client": "x"}, "identity-user-password, identity-admin-client-password"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			f := &fakeCredentialAPI{store: tc.store, exists: true}
+			err := verifyRequiredKeys(context.Background(), []byte(requiredKeysManifest), "ns", f.api(), required)
+			if err == nil || !strings.HasSuffix(err.Error(), ": "+tc.wantErr) {
+				t.Fatalf("err = %v, want missing %s", err, tc.wantErr)
+			}
+		})
+	}
+	f := &fakeCredentialAPI{store: map[string]string{"p-client": "x", "p-user": "y"}, exists: true}
+	if err := verifyRequiredKeys(context.Background(), []byte(requiredKeysManifest), "ns", f.api(), required[:2]); err != nil {
+		t.Fatalf("err = %v, want nil", err)
+	}
+}

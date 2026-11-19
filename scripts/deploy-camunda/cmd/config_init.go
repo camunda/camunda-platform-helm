@@ -133,7 +133,7 @@ any prompting — useful when you want a file you can edit and commit. Run with
 			}{
 				{"platform", "Platform", "gke", config.DeployPlatforms},
 				{"kubeContext", "Kube context", currentKubeContext(), nil},
-				{"ingressBaseDomain", "Ingress base domain", config.ValidIngressBaseDomains[0], config.ValidIngressBaseDomains},
+				{"ingressBaseDomain", "Ingress base domain", config.DefaultDomainPolicy().Domains()[0], config.DefaultDomainPolicy().Domains()},
 				{"repoRoot", "Repo root", repoDefault, nil},
 			}
 			for _, f := range fields {

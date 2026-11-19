@@ -17,21 +17,15 @@ package docker
 import (
 	"context"
 	"fmt"
-	"os"
 	"scripts/camunda-core/pkg/executil"
 	"scripts/camunda-core/pkg/logging"
-	"scripts/camunda-core/pkg/utils"
+	"scripts/camunda-core/pkg/registry"
 )
 
 // EnsureDockerHubLogin logs into Docker Hub (index.docker.io) to avoid pull rate limits.
 // Falls back to DOCKERHUB_USERNAME/DOCKERHUB_PASSWORD, then TEST_DOCKER_USERNAME/TEST_DOCKER_PASSWORD env vars.
 func EnsureDockerHubLogin(ctx context.Context, username, password string) error {
-	if username == "" {
-		username = utils.FirstNonEmpty(os.Getenv("DOCKERHUB_USERNAME"), os.Getenv("TEST_DOCKER_USERNAME"))
-	}
-	if password == "" {
-		password = utils.FirstNonEmpty(os.Getenv("DOCKERHUB_PASSWORD"), os.Getenv("TEST_DOCKER_PASSWORD"))
-	}
+	username, password = registry.DockerHubLogin.ResolveEnv(username, password)
 	if username == "" || password == "" {
 		return fmt.Errorf("login to Docker Hub failed: credentials not provided (set DOCKERHUB_USERNAME/DOCKERHUB_PASSWORD or TEST_DOCKER_USERNAME/TEST_DOCKER_PASSWORD environment variables, or pass --dockerhub-username/--dockerhub-password flags)")
 	}
@@ -46,18 +40,18 @@ func EnsureDockerHubLogin(ctx context.Context, username, password string) error 
 // Falls back to HARBOR_USERNAME/HARBOR_PASSWORD, then TEST_DOCKER_USERNAME_CAMUNDA_CLOUD/TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD,
 // then NEXUS_USERNAME/NEXUS_PASSWORD env vars.
 func EnsureHarborLogin(ctx context.Context, username, password string) error {
-	if username == "" {
-		username = utils.FirstNonEmpty(os.Getenv("HARBOR_USERNAME"), os.Getenv("TEST_DOCKER_USERNAME_CAMUNDA_CLOUD"), os.Getenv("NEXUS_USERNAME"))
-	}
-	if password == "" {
-		password = utils.FirstNonEmpty(os.Getenv("HARBOR_PASSWORD"), os.Getenv("TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD"), os.Getenv("NEXUS_PASSWORD"))
-	}
+	return EnsureRegistryLogin(ctx, registry.Harbor, username, password)
+}
+
+// EnsureRegistryLogin logs into p.Host, resolving empty credentials through p.Login.
+func EnsureRegistryLogin(ctx context.Context, p registry.Provider, username, password string) error {
+	username, password = p.Login.ResolveEnv(username, password)
 	if username == "" || password == "" {
 		return fmt.Errorf("login to Harbor failed: credentials not provided (set HARBOR_USERNAME/HARBOR_PASSWORD, TEST_DOCKER_USERNAME_CAMUNDA_CLOUD/TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD, or NEXUS_USERNAME/NEXUS_PASSWORD environment variables, or pass --docker-username/--docker-password flags)")
 	}
 
-	logging.Logger.Debug().Str("registry", "registry.camunda.cloud").Msg("ensuring Harbor login")
+	logging.Logger.Debug().Str("registry", p.Host).Msg("ensuring Harbor login")
 
-	args := []string{"login", "registry.camunda.cloud", "--username", username, "--password-stdin"}
+	args := []string{"login", p.Host, "--username", username, "--password-stdin"}
 	return executil.RunCommandWithStdin(ctx, "docker", args, nil, "", []byte(password))
 }
