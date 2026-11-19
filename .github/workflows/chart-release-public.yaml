@@ -691,7 +691,11 @@ jobs:
       # exits 0. Without this alert the published release's PR stays open silently and
       # the next dev build fails on "chart version ... is already released".
       - name: Alert if release-please PR was not queued for merge
-        if: ${{ !cancelled() && steps.auto-merge.outputs.enabled != 'true' }}
+        # A successful lookup without a PR number is a supported replay no-op (no open PR,
+        # or the PR targets another version): do not page for it.
+        if: >-
+          ${{ !cancelled() && steps.auto-merge.outputs.enabled != 'true' &&
+              (steps.release-pr.outcome != 'success' || steps.release-pr.outputs.pr_number != '') }}
         continue-on-error: true
         uses: slackapi/slack-github-action@dcb1066f776dd043e64d0e8ba94ca15cc7e1875d # v4.0.0
         with:
@@ -704,7 +708,7 @@ jobs:
                   type: mrkdwn
                   text: |
                     <!subteam^S0CEY294VGC> :rotating_light:
-                    *Helm Chart ${{ needs.release.outputs.version }}* was published, but auto-merge was *not* enabled for its release-please PR. Label it `autorelease: published`, approve and merge it, or the next dev build of this chart fails.
+                    *Helm Chart ${{ needs.release.outputs.version }}* was published, but auto-merge was *not* enabled for its release-please PR. Check the workflow log first: confirm the PR targets this version and that the release date stamp succeeded (re-run the job if not). Then label the PR `autorelease: published`, approve and merge it. Until it merges, the next dev build of this chart fails.
                     <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View workflow>
 
   ensure-release-pr-merged:
