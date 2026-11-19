@@ -14,3 +14,7 @@
 /docs/ @camunda/smx
 /.github/workflows/docs-build-deploy.yml @camunda/smx
 /.github/workflows/docs-preview.yml @camunda/smx
+
+# Release-please PRs: only they touch the manifest. The weekly medic owns merging them
+# after the public release, so a published version never stays unmerged on main.
+/.github/config/release-please/.release-please-manifest.json @camunda/smx-medic
