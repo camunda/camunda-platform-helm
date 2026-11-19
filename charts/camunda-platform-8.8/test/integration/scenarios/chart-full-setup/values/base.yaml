@@ -316,7 +316,7 @@ orchestration:
         enabled: true
         secretName: camunda-platform-zeebe-gateway
       annotations:
-        external-dns.alpha.kubernetes.io/hostname: "orchestration-{{ .Values.global.ingress.host }}"
+        external-dns.alpha.kubernetes.io/hostname: "grpc-{{ .Values.global.ingress.host }}"
         external-dns.alpha.kubernetes.io/ttl: "60"
   importer:
     enabled: true
