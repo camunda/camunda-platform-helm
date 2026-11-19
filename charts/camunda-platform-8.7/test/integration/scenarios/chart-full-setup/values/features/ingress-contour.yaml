@@ -11,3 +11,5 @@ zeebeGateway:
   ingress:
     grpc:
       className: contour
+      annotations:
+        projectcontour.io/response-timeout: "120s"
