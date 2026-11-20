@@ -54,11 +54,8 @@ Exits non-zero if any required check fails.`,
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := format.ValidateOutput(outputFormat); err != nil {
+			if err := validateDoctorFlags(outputFormat, fix); err != nil {
 				return err
-			}
-			if fix && outputFormat == format.OutputJSON {
-				return fmt.Errorf("--fix is interactive and cannot be combined with --format json")
 			}
 
 			ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)

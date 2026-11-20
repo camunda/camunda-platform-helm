@@ -16,12 +16,23 @@ package cmd
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"strings"
 
 	"scripts/deploy-camunda/deploy"
 	"scripts/deploy-camunda/format"
 )
+
+func validateDoctorFlags(outputFormat string, fix bool) error {
+	if err := format.ValidateOutput(outputFormat); err != nil {
+		return err
+	}
+	if fix && outputFormat == format.OutputJSON {
+		return fmt.Errorf("--fix is interactive and cannot be combined with --format json")
+	}
+	return nil
+}
 
 type doctorCheckOutput struct {
 	Name        string   `json:"name"`
