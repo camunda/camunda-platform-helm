@@ -1969,7 +1969,7 @@ integration:
           exclude: []
           infra-type:
             gke: qa-workloads
-          identity: oidc
+          identity: oidc-qa
           persistence: elasticsearch
           features:
             - postgresql-companion
