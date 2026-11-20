@@ -164,7 +164,7 @@ runs:
 
     - name: Install tools
       if: steps.check-tools.outputs.skip-install != 'true'
-      uses: camunda/infraex-common-config/.github/actions/asdf-install-tooling@e2923304b40dfc031b3f595bcc1445e90c981adb # 3.0.0
+      uses: camunda/infraex-common-config/.github/actions/asdf-install-tooling@2b2c09a333c85303fce42b7a8f1e33388fba19cc # 3.0.11
 
     - name: Download deploy-camunda binary
       if: inputs.binary-artifact-name != ''

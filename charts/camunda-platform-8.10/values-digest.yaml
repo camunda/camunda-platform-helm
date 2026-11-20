@@ -6,15 +6,15 @@ connectors:
   # https://hub.docker.com/r/camunda/connectors-bundle/tags
   image:
     repository: camunda/connectors-bundle
-    tag: 8.10.2
-    digest: "sha256:ffd8428e54f4f21995e5cea0564c4123ecd80a968208965138873d032355b4d9"
+    tag: 8.10.6
+    digest: "sha256:65ee51dcaf46b9cf7d6c99111e2a1397ba2b806ae1e2ed4f8ebc8768db8c16f8"
 
 optimize:
   # https://hub.docker.com/r/camunda/optimize/tags
   image:
     repository: camunda/optimize
-    tag: 8.10.7
-    digest: "sha256:3aef37944561fc34f842b64548f624c1892496c29056679f58a92e40909aee49"
+    tag: 8.10.10
+    digest: "sha256:23055217bb91ca151c4a3f9415943bf3fac9a90ba88189bb0b8fe98903279309"
 
 #
 # Web Modeler
@@ -25,15 +25,15 @@ webModeler:
   restapi:
     image:
       repository: camunda/hub
-      tag: 8.10.4
-      digest: "sha256:d05bcf0e747572601054f389c7482a82eb5f333d35bd96718a94580343fec1ba"
+      tag: 8.10.7
+      digest: "sha256:1109e15e9c9da75fa057275eb933bcf126c3eee308d97983d00f9ac361d70a62"
 
   # https://hub.docker.com/r/camunda/hub-websockets/tags
   websockets:
     image:
       repository: camunda/hub-websockets
-      tag: 8.10.4
-      digest: "sha256:baacba31529b65359c0c54ae88e720ff0351c32f93e0939f7ebd32cbf6e0e3d9"
+      tag: 8.10.7
+      digest: "sha256:abcb1c880ece9f44a9e797098bba4d649c297da26503b4991ae68b4cc461427c"
 
 #
 # Orchestration Cluster
@@ -43,8 +43,8 @@ orchestration:
   # https://hub.docker.com/r/camunda/camunda/tags
   image:
     repository: camunda/camunda
-    tag: 8.10.7
-    digest: "sha256:1d943ed22fab746bd5fd7e19f928f90ba06516d3cc0d28a98f1a1539db1ef585"
+    tag: 8.10.10
+    digest: "sha256:9ac99adc2dc0a6bfabcf04d3ad12c76780accf8acb57b7578f97f0363fbe889b"
 
 #
 # Identity
@@ -54,5 +54,5 @@ identity:
   # https://hub.docker.com/r/camunda/identity/tags
   image:
     repository: camunda/identity
-    tag: 8.10.2
-    digest: "sha256:5731e2c25013170e8de6db961d895c730f0f44aa73914e127da0e9062f06c488"
+    tag: 8.10.5
+    digest: "sha256:c8cfd896a42760e80a3abf1c9240d1b1d218c6edc5a324f413a1799d4d293a80"
