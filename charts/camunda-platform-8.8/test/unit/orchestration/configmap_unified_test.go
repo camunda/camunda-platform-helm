@@ -538,3 +538,66 @@ func (s *ConfigmapTemplateTest) TestCamundaExporterOmitsLegacyConnectType() {
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
+
+func (s *ConfigmapTemplateTest) TestLog4j2ExtraConfiguration() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name:   "TestLog4j2KeyEmittedOnceWhenUnset",
+			Values: map[string]string{},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Equal(1, strings.Count(output, "log4j2.xml: |"),
+					"log4j2.xml should be emitted once when orchestration.log4j2 is unset")
+			},
+		},
+		{
+			Name: "TestLog4j2KeyEmittedOnceFromLog4j2Value",
+			Values: map[string]string{
+				"orchestration.log4j2": "<Configuration>log4j2-value</Configuration>",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Equal(1, strings.Count(output, "log4j2.xml: |"),
+					"log4j2.xml should be emitted exactly once")
+
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().Contains(configmap.Data["log4j2.xml"], "<Configuration>log4j2-value</Configuration>",
+					"orchestration.log4j2 content should be used when extraConfiguration does not supply the file")
+			},
+		},
+		{
+			Name: "TestLog4j2KeyEmittedOnceFromExtraConfiguration",
+			Values: map[string]string{
+				"orchestration.extraConfiguration.log4j2\\.xml": "<Configuration>operator</Configuration>",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Equal(1, strings.Count(output, "log4j2.xml: |"),
+					"log4j2.xml must not be defined twice in ConfigMap data")
+
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().Contains(configmap.Data["log4j2.xml"], "<Configuration>operator</Configuration>",
+					"extraConfiguration content should be used")
+			},
+		},
+		{
+			Name: "TestLog4j2ExtraConfigurationWinsOverLog4j2Value",
+			Values: map[string]string{
+				"orchestration.log4j2":                          "<Configuration>log4j2-value</Configuration>",
+				"orchestration.extraConfiguration.log4j2\\.xml": "<Configuration>operator</Configuration>",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Equal(1, strings.Count(output, "log4j2.xml: |"),
+					"log4j2.xml must not be defined twice when both sources set it")
+
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				s.Require().Contains(configmap.Data["log4j2.xml"], "<Configuration>operator</Configuration>",
+					"extraConfiguration should win over the orchestration.log4j2 value")
+				s.Require().NotContains(configmap.Data["log4j2.xml"], "log4j2-value",
+					"orchestration.log4j2 content should be suppressed")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
