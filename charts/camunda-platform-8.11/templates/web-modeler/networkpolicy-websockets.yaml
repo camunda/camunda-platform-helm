@@ -1,0 +1,11 @@
+{{- if eq (include "camundaHub.webModelerEnabled" .) "true" -}}
+{{- $hub := include "camundaHub.values" . | fromYaml -}}
+{{- if eq (include "camundaPlatform.networkPolicyEnabled" (dict "networkPolicy" $hub.websockets.networkPolicy "context" .)) "true" -}}
+{{- include "camundaPlatform.networkPolicy" (dict
+      "name" (include "webModeler.websockets.fullname" .)
+      "labels" (include "webModeler.websockets.labels" .)
+      "matchLabels" (include "webModeler.websockets.matchLabels" .)
+      "ports" (list 8060)
+      "context" .) }}
+{{- end -}}
+{{- end -}}

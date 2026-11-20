@@ -1,0 +1,8 @@
+{{- if and (eq (include "camundaPlatform.optimizeEnabled" .) "true") (not .Values.global.noSecondaryStorage) (eq (include "camundaPlatform.networkPolicyEnabled" (dict "networkPolicy" .Values.optimize.networkPolicy "context" .)) "true") -}}
+{{- include "camundaPlatform.networkPolicy" (dict
+      "name" (include "optimize.fullname" .)
+      "labels" (include "optimize.labels" .)
+      "matchLabels" (include "optimize.matchLabels" .)
+      "ports" (list 8090 8092)
+      "context" .) }}
+{{- end -}}
