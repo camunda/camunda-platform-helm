@@ -21,6 +21,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"scripts/camunda-core/pkg/logging"
 	"scripts/deploy-camunda/config"
 	"scripts/deploy-camunda/credentials"
 	"scripts/deploy-camunda/matrix"
@@ -151,7 +152,16 @@ func resolveRegistryCredentialsFromEnvironment(docker *config.DockerFlags) error
 				continue
 			}
 			if username == "" || password == "" {
-				return fmt.Errorf("%s/%s must both be set", pair[0], pair[1])
+				set, unset := pair[0], pair[1]
+				if username == "" {
+					set, unset = pair[1], pair[0]
+				}
+				logging.Logger.Warn().
+					Str("registry", item.registry).
+					Str("set", set).
+					Str("unset", unset).
+					Msg("Ignoring half-configured registry credentials from the environment; trying other credential sources")
+				continue
 			}
 			*item.username, *item.password = username, password
 			break
