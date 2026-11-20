@@ -158,7 +158,7 @@ jobs:
       CHART_RELEASE_COSIGN_CERTIFICATE_IDENTITY: "https://github.com/${{ github.workflow_ref }}"
       CHART_RELEASE_COSIGN_CERTIFICATE_OIDC_ISSUER: "https://token.actions.githubusercontent.com"
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@ead99f6c9c536f5c47e443929d47e8fcfdb05a81  # start-build-monitor-1.0.1
+      - uses: camunda/infra-global-github-actions/start-build-monitor@ead99f6c9c536f5c47e443929d47e8fcfdb05a81 # start-build-monitor-1.0.1
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -179,14 +179,7 @@ jobs:
           exportEnv: false
 
       - name: Install tools
-        uses: ./.github/actions/install-tool-versions
-        with:
-          tools: |
-            git-cliff
-            golang
-            helm
-            oras
-            yq
+        uses: camunda/infraex-common-config/.github/actions/asdf-install-tooling@e2923304b40dfc031b3f595bcc1445e90c981adb # 3.0.0
 
       - name: Install Cosign
         uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
@@ -232,6 +225,39 @@ jobs:
           echo "CAMUNDA_VERSION=${CAMUNDA_VERSION}" | tee -a "$GITHUB_ENV"
 
       #
+      - name: Check for image override inputs
+        id: check-overrides
+        run: |
+          # Collect the *-image-tag override inputs: sets HAS_IMAGE_OVERRIDES in
+          # $GITHUB_ENV and, when any are set, writes /tmp/image-overrides.yaml
+          # for the imageOverrides annotation. Their presence forces a rebuild
+          # even when the artifact already exists.
+          /tmp/release-tools image-overrides \
+            --chart-version "${{ matrix.chart.version }}" \
+            --chart-versions-file "$(git rev-parse --show-toplevel)/charts/chart-versions.yaml" \
+            --orchestration "${INPUTS_ORCHESTRATION_IMAGE_TAG}" \
+            --zeebe "${INPUTS_ZEEBE_IMAGE_TAG}" \
+            --zeebe-gateway "${INPUTS_ZEEBE_GATEWAY_IMAGE_TAG}" \
+            --operate "${INPUTS_OPERATE_IMAGE_TAG}" \
+            --tasklist "${INPUTS_TASKLIST_IMAGE_TAG}" \
+            --console "${INPUTS_CONSOLE_IMAGE_TAG}" \
+            --modeler "${INPUTS_MODELER_IMAGE_TAG}" \
+            --connectors "${INPUTS_CONNECTORS_IMAGE_TAG}" \
+            --optimize "${INPUTS_OPTIMIZE_IMAGE_TAG}" \
+            --identity "${INPUTS_IDENTITY_IMAGE_TAG}" \
+            --out /tmp/image-overrides.yaml
+        env:
+          INPUTS_ORCHESTRATION_IMAGE_TAG: ${{ inputs.orchestration-image-tag }}
+          INPUTS_ZEEBE_IMAGE_TAG: ${{ inputs.zeebe-image-tag }}
+          INPUTS_ZEEBE_GATEWAY_IMAGE_TAG: ${{ inputs.zeebe-gateway-image-tag }}
+          INPUTS_OPERATE_IMAGE_TAG: ${{ inputs.operate-image-tag }}
+          INPUTS_TASKLIST_IMAGE_TAG: ${{ inputs.tasklist-image-tag }}
+          INPUTS_CONSOLE_IMAGE_TAG: ${{ inputs.console-image-tag }}
+          INPUTS_MODELER_IMAGE_TAG: ${{ inputs.modeler-image-tag }}
+          INPUTS_CONNECTORS_IMAGE_TAG: ${{ inputs.connectors-image-tag }}
+          INPUTS_OPTIMIZE_IMAGE_TAG: ${{ inputs.optimize-image-tag }}
+          INPUTS_IDENTITY_IMAGE_TAG: ${{ inputs.identity-image-tag }}
+
       # Compute release version using release-please dry-run
       # This ensures the packaged Chart.yaml has the correct version and changelog
       # annotations that release-please would compute at release time.
@@ -268,8 +294,10 @@ jobs:
           # from the release-please trace, falling back to the current version)
           # and emit RELEASE_VERSION, IS_PRERELEASE, RELEASE_VERSION_COMPUTED,
           # DEV_TAG and CHART_MAJOR_VERSION to $GITHUB_ENV.
-          # --fail-if-released (dispatch only): error if the computed version
-          # already has a release tag, blocking a rebuild over a published release.
+          # --fail-if-released (dispatch only): error if the computed version (or an
+          # image-override build) already has a release tag, blocking a rebuild over
+          # a published release; when only the released Chart.yaml version was found
+          # (no new version computed), set SKIP_BUILD=true instead.
           /tmp/release-tools release-version \
             --current-version "${CURRENT_VERSION}" \
             --chart-version "${{ matrix.chart.version }}" \
@@ -279,41 +307,10 @@ jobs:
             --trace-file release-please-trace.log \
             --fail-if-released=${{ github.event_name == 'workflow_dispatch' }}
 
-      - name: Check for image override inputs
-        id: check-overrides
-        run: |
-          # Collect the *-image-tag override inputs: sets HAS_IMAGE_OVERRIDES in
-          # $GITHUB_ENV and, when any are set, writes /tmp/image-overrides.yaml
-          # for the imageOverrides annotation. Their presence forces a rebuild
-          # even when the artifact already exists.
-          /tmp/release-tools image-overrides \
-            --chart-version "${{ matrix.chart.version }}" \
-            --chart-versions-file "$(git rev-parse --show-toplevel)/charts/chart-versions.yaml" \
-            --orchestration "${INPUTS_ORCHESTRATION_IMAGE_TAG}" \
-            --zeebe "${INPUTS_ZEEBE_IMAGE_TAG}" \
-            --zeebe-gateway "${INPUTS_ZEEBE_GATEWAY_IMAGE_TAG}" \
-            --operate "${INPUTS_OPERATE_IMAGE_TAG}" \
-            --tasklist "${INPUTS_TASKLIST_IMAGE_TAG}" \
-            --console "${INPUTS_CONSOLE_IMAGE_TAG}" \
-            --modeler "${INPUTS_MODELER_IMAGE_TAG}" \
-            --connectors "${INPUTS_CONNECTORS_IMAGE_TAG}" \
-            --optimize "${INPUTS_OPTIMIZE_IMAGE_TAG}" \
-            --identity "${INPUTS_IDENTITY_IMAGE_TAG}" \
-            --out /tmp/image-overrides.yaml
-        env:
-          INPUTS_ORCHESTRATION_IMAGE_TAG: ${{ inputs.orchestration-image-tag }}
-          INPUTS_ZEEBE_IMAGE_TAG: ${{ inputs.zeebe-image-tag }}
-          INPUTS_ZEEBE_GATEWAY_IMAGE_TAG: ${{ inputs.zeebe-gateway-image-tag }}
-          INPUTS_OPERATE_IMAGE_TAG: ${{ inputs.operate-image-tag }}
-          INPUTS_TASKLIST_IMAGE_TAG: ${{ inputs.tasklist-image-tag }}
-          INPUTS_CONSOLE_IMAGE_TAG: ${{ inputs.console-image-tag }}
-          INPUTS_MODELER_IMAGE_TAG: ${{ inputs.modeler-image-tag }}
-          INPUTS_CONNECTORS_IMAGE_TAG: ${{ inputs.connectors-image-tag }}
-          INPUTS_OPTIMIZE_IMAGE_TAG: ${{ inputs.optimize-image-tag }}
-          INPUTS_IDENTITY_IMAGE_TAG: ${{ inputs.identity-image-tag }}
-
       - name: Check if artifact already exists
         id: check-artifact
+        # release-version may already have set SKIP_BUILD=true (released fallback version).
+        if: env.SKIP_BUILD != 'true'
         env:
           HARBOR_REGISTRY_USER: ${{ steps.secrets.outputs.HARBOR_REGISTRY_USER }}
           HARBOR_REGISTRY_PASSWORD: ${{ steps.secrets.outputs.HARBOR_REGISTRY_PASSWORD }}
@@ -646,14 +643,14 @@ jobs:
             cat << EOF >> "$GITHUB_STEP_SUMMARY"
           ## 📦 Chart Build Skipped (Camunda ${{ env.CAMUNDA_VERSION }})
 
-          Dev package already exists for this commit.
+          Build skipped: dev package already exists, or no new release version computed (see notices).
 
           - **Dev Tag:** \`${DEV_TAG}\`
           - **Camunda Version:** \`${{ env.CAMUNDA_VERSION }}\`
 
           EOF
           else
-            # shellcheck disable=SC2016
+            # shellcheck disable=SC2016 # the backticks are literal Markdown code marks in the sed replacement
             IMAGE_ROWS="$(sed -E 's/^([^:]+): (.*)$/| \1 | `\2` |/' /tmp/image-versions.yaml)"
             cat << EOF >> "$GITHUB_STEP_SUMMARY"
           ## 📦 Dev Package Built ✅ (Camunda ${{ env.CAMUNDA_VERSION }})
@@ -752,7 +749,7 @@ jobs:
                 text:
                   type: mrkdwn
                   text: |
-                    <!subteam^S05K9BK6RTK> :rotating_light:
+                    <!subteam^S0CEY294VGC> :rotating_light:
                     The *Chart Dev Build* pipeline has failed.
 
                     *Chart version:* ${{ inputs.chart-version || 'all active versions' }}

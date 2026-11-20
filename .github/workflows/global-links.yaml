@@ -1,16 +1,12 @@
 name: "Chart - Validate All Documentation Links"
 
-# Lychee-based replacement for the bash composite at
-# .github/actions/validate-docs-links/. Tracked by issue #6218.
+# Lychee link check. Tracked by issue #6218.
 #
-# This runs alongside the existing chart-validate-docs-links.yaml during the
-# migration window (see #6218 plan). On pull_request the lychee step is
-# soft-failing so PRs that touch unrelated Markdown are not blocked while we
-# clean up false positives; the scheduled run still hard-fails and opens a
-# tracking issue.
+# On pull_request the lychee step is soft-failing so PRs that touch unrelated
+# Markdown are not blocked while we clean up false positives; the scheduled run
+# still hard-fails and opens a tracking issue.
 #
-# Once the cron is green for a couple of cycles, drop the soft-fail and the
-# legacy chart-validate-docs-links.yaml workflow.
+# Once the cron is green for a couple of cycles, drop the soft-fail.
 
 on:
   workflow_dispatch:
@@ -19,6 +15,7 @@ on:
   pull_request:
     paths:
       - "**/*.md"
+      - "charts/camunda-platform-*/**"
       - "scripts/templates/**"
       - "lychee-links.toml"
       - ".github/workflows/global-links.yaml"
@@ -88,6 +85,58 @@ jobs:
           path: ./lychee/out.md
           if-no-files-found: error
           retention-days: 14
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_jwt_path: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwt_role: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwt_audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
+
+  chart-docs-links:
+    name: chart-docs-links
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@ead99f6c9c536f5c47e443929d47e8fcfdb05a81 # start-build-monitor-1.0.1
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 1
+
+      - name: List chart documentation links
+        uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2.9.0
+        with:
+          lycheeVersion: v0.24.2
+          format: json
+          jobSummary: false
+          output: ./lychee/chart-docs-links.txt
+          args: >-
+            -c ./lychee-links.toml
+            --dump --no-progress
+            --include '^https://docs\.camunda\.'
+            --exclude '.*'
+            './charts/camunda-platform-*/**/*'
+
+      - name: Run lychee on chart documentation links
+        continue-on-error: ${{ github.event_name == 'pull_request' }}
+        uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2.9.0
+        with:
+          lycheeVersion: v0.24.2
+          fail: true
+          output: ./lychee/chart-docs-links.md
+          args: >-
+            -c ./lychee-links.toml
+            --verbose --no-progress
+            ./lychee/chart-docs-links.txt
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Observe build status
         if: always()

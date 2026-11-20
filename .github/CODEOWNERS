@@ -4,13 +4,17 @@
 
 # These owners will be the default owners for everything in
 # the repo. Unless a later match takes precedence,
-# @camunda/distribution will be requested for
+# @camunda/smx will be requested for
 # review when someone opens a pull request.
 
-* @camunda/distribution
+* @camunda/smx
 
 # Docs site — Docusaurus project and markdown content
-/helm-docs-site/ @camunda/distribution
-/docs/ @camunda/distribution
-/.github/workflows/docs-build-deploy.yml @camunda/distribution
-/.github/workflows/docs-preview.yml @camunda/distribution
+/helm-docs-site/ @camunda/smx
+/docs/ @camunda/smx
+/.github/workflows/docs-build-deploy.yml @camunda/smx
+/.github/workflows/docs-preview.yml @camunda/smx
+
+# Release-please PRs: only they touch the manifest. The weekly medic owns merging them
+# after the public release, so a published version never stays unmerged on main.
+/.github/config/release-please/.release-please-manifest.json @camunda/smx-medic

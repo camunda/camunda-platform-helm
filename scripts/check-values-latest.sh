@@ -117,8 +117,7 @@ validate_chart() {
     local chart_dir="$1"
     local chart_path="${REPO_ROOT}/charts/${chart_dir}"
     local chart_version
-    # shellcheck disable=SC2001
-    chart_version=$(echo "$chart_dir" | sed 's/camunda-platform-\([0-9]\+\.[0-9]\+\)/\1/')
+    chart_version="${chart_dir#camunda-platform-}"
     
     echo ""
     echo -e "${YELLOW}Validating ${chart_dir}...${NC}"
@@ -146,7 +145,7 @@ validate_chart() {
         
         # Extract the minor version from the tag (e.g., 8.7 from 8.7.16)
         local tag_minor_version
-        # shellcheck disable=SC2001
+        # shellcheck disable=SC2001 # the major.minor prefix needs a regex capture, which ${variable//search/replace} does not support
         tag_minor_version=$(echo "$tag" | sed 's/^\([0-9]\+\.[0-9]\+\).*/\1/')
         
         # Only check if the tag matches the chart version

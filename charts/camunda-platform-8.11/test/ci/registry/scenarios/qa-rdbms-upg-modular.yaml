@@ -1,0 +1,19 @@
+name: qa-rdbms-upg
+auth: keycloak
+flows:
+  - modular-upgrade-minor
+identity: keycloak
+persistence: rdbms
+features:
+  - postgresql-companion
+platforms:
+  - gke
+infra-type:
+  gke: qa-workloads
+qa: true
+image-tags: true
+prefix-key: qa-rdbms-upg
+dependencies:
+  - postgresql-rdbms-qa
+  - keycloak-qa
+  - elasticsearch-qa

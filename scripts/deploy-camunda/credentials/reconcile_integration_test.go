@@ -19,17 +19,44 @@ package credentials
 import (
 	"bytes"
 	"context"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
+
+	"gopkg.in/yaml.v3"
 )
+
+// keycloakImage is the internal-keycloak-26 chart default, which every Keycloak
+// companion, dogfood included, deploys; reading it keeps the integration tests
+// on the image Renovate maintains.
+var keycloakImage = func() string {
+	raw, err := os.ReadFile(filepath.Join("..", "..", "..", "charts", "internal-keycloak-26", "values.yaml"))
+	if err != nil {
+		panic(err)
+	}
+	var v struct {
+		Image struct{ Registry, Repository, Tag string } `yaml:"image"`
+	}
+	if err := yaml.Unmarshal(raw, &v); err != nil {
+		panic(err)
+	}
+	return v.Image.Registry + "/" + v.Image.Repository + ":" + v.Image.Tag
+}()
 
 // TestPsqlScript_RepairsAStaleRoleOnTheSupportedImage runs psqlScript, via
 // docker exec, against a PostgreSQL initialised with one password: the new
 // password must be rejected, set, and then accepted.
 // dockerRunDetached starts a container and returns its ID. Only stdout is
 // read: on a first pull, docker writes pull progress to stderr.
+// The integration tests run the reconcile scripts against these images.
+const (
+	postgresImage      = "postgres:16.16-alpine3.24"
+	elasticsearchImage = "docker.elastic.co/elasticsearch/elasticsearch:8.18.0"
+)
+
 func dockerRunDetached(ctx context.Context, t *testing.T, args ...string) string {
 	t.Helper()
 	var stderr bytes.Buffer

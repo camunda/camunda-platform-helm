@@ -35,7 +35,7 @@
 # Source base script for shared utilities (log, get_ingress_hostname)
 # Only source if not already sourced (check for log function)
 if ! declare -f log > /dev/null 2>&1; then
-  # shellcheck disable=SC1091
+  # shellcheck disable=SC1091 # the shellcheck hook of .pre-commit-config.yaml runs without -x and does not follow sourced files
   source "$(dirname "$0")/base_playwright_script.sh"
 fi
 

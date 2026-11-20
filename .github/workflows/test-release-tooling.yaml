@@ -36,16 +36,8 @@ jobs:
           fetch-depth: 2
 
       - name: Install tools
-        uses: ./.github/actions/install-tool-versions
-        with:
-          tools: |
-            golang
-            golangci-lint
-            helm
-            git-cliff
-            yq
-            jq
-            shellcheck
+        id: tools
+        uses: camunda/infraex-common-config/.github/actions/asdf-install-tooling@e2923304b40dfc031b3f595bcc1445e90c981adb # 3.0.0
 
       # TestImageSetRealChartContract reads each chart's vendored subcharts
       # (keycloak/ES/PG for 8.7-8.9), so they must be present before `go test`.
@@ -55,16 +47,15 @@ jobs:
           make helm.repos-add
           make helm.dependency-update
 
-      - name: Install ripgrep for helm_unused_values tests
-        run: sudo apt-get update && sudo apt-get install -y ripgrep
-
       - name: Test every Go module under scripts/
         run: make go.test-scripts
 
       - name: Lint every Go module under scripts/
+        if: ${{ !cancelled() && steps.tools.outcome == 'success' }}
         run: make go.lint lintBase=HEAD~1
 
-      - name: Gate the complexity of changed Go functions and workflow run blocks
+      - name: Gate the complexity of changed workflow run blocks
+        if: ${{ !cancelled() && steps.tools.outcome == 'success' }}
         run: make go.complexity lintBase=HEAD~1
 
       - name: Install schema generator
@@ -108,10 +99,6 @@ jobs:
               - 'scripts/deploy-camunda/credentials/reconcile*.go'
               - 'charts/internal-keycloak-26/**'
               - 'charts/internal-postgresql/**'
-              - 'test/integration/companion-values/*-dogfood.yaml'
-              - 'charts/camunda-platform-8.10/test/ci/registry/dependencies/*-dogfood.yaml'
-              - 'charts/camunda-platform-8.10/test/ci/registry/scenarios/dogfood.yaml'
-              - 'charts/camunda-platform-8.10/test/integration/scenarios/chart-full-setup/values/features/dogfood-hub.yaml'
               - '.github/workflows/test-release-tooling.yaml'
               - 'Makefile'
               - '.tool-versions'
@@ -130,10 +117,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Install tools
-        uses: ./.github/actions/install-tool-versions
-        with:
-          tools: |
-            golang
+        uses: camunda/infraex-common-config/.github/actions/asdf-install-tooling@e2923304b40dfc031b3f595bcc1445e90c981adb # 3.0.0
 
       # Runs the reconcile scripts against PostgreSQL, Elasticsearch, and
       # Keycloak containers, including the kc.sh bootstrap-admin recovery.

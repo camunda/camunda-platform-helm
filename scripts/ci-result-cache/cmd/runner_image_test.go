@@ -244,7 +244,7 @@ func TestRunnerImageWorkflowContract(t *testing.T) {
 	}
 	annotationFound, orasFound, resolutionSeen := false, false, false
 	for _, step := range entry.Jobs["init"].Steps {
-		if step.Uses == "./.github/actions/install-tool-versions" && step.With["tools"] == "oras" {
+		if strings.HasPrefix(step.Uses, "camunda/infraex-common-config/.github/actions/asdf-install-tooling@") {
 			orasFound = true
 		}
 		if step.ID == "resolve-runner-image" {

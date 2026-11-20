@@ -65,7 +65,7 @@ func TestValidateTestCase(t *testing.T) {
 				Verifier: func(*testing.T, string, error) {},
 				Expected: map[string]string{"metadata.name": "test"},
 			},
-			expectedErr: "Verifier cannot be combined",
+			expectedErr: "verifier cannot be combined",
 		},
 		{
 			name: "verifier and object",
@@ -74,7 +74,7 @@ func TestValidateTestCase(t *testing.T) {
 				ExpectedObject: &struct{}{},
 				ObjectAsserter: func(*testing.T, any) {},
 			},
-			expectedErr: "Verifier cannot be combined",
+			expectedErr: "verifier cannot be combined",
 		},
 		{
 			name: "error and output",

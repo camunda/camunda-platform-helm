@@ -617,9 +617,9 @@ _setup_playwright_environment() {
   log "Changing directory to $test_suite_path"
   cd "$test_suite_path" || exit
 
-  local npm_flags="--no-audit --no-fund"
+  local npm_flags=(--no-audit --no-fund)
   if [[ "$silent" == "true" ]]; then
-    npm_flags="$npm_flags --silent"
+    npm_flags+=(--silent)
   fi
 
   # Serialize npm install across concurrent shards.
@@ -642,8 +642,7 @@ _setup_playwright_environment() {
       && grep -q '@camunda/e2e-test-suite' package.json 2>/dev/null; then
     local suite_spec="@camunda/e2e-test-suite@${E2E_TEST_SUITE_VERSION:-latest}"
     info "Fetching ${suite_spec}..."
-    # shellcheck disable=SC2086
-    if npm install "$suite_spec" --no-save --prefer-online $npm_flags; then
+    if npm install "$suite_spec" --no-save --prefer-online "${npm_flags[@]}"; then
       [[ "$got_lock" == "true" ]] && _release_npm_lock "$test_suite_path"
       if [[ -n "${PLAYWRIGHT_E2E_LOCAL_TEST_SUITE:-}" ]]; then
         _link_local_test_suite "$test_suite_path" "$PLAYWRIGHT_E2E_LOCAL_TEST_SUITE"
@@ -671,12 +670,10 @@ _setup_playwright_environment() {
     [[ -f "package-lock.json" ]] && pre_hash=$(_portable_file_hash "package-lock.json")
     if [[ -n "${E2E_TEST_SUITE_VERSION:-}" ]]; then
       info "Installing pinned @camunda/e2e-test-suite@${E2E_TEST_SUITE_VERSION}..."
-      # shellcheck disable=SC2086
-      npm install "@camunda/e2e-test-suite@${E2E_TEST_SUITE_VERSION}" --save-exact $npm_flags 2>/dev/null || true
+      npm install "@camunda/e2e-test-suite@${E2E_TEST_SUITE_VERSION}" --save-exact "${npm_flags[@]}" 2>/dev/null || true
     else
       info "Checking for newer @camunda/e2e-test-suite..."
-      # shellcheck disable=SC2086
-      npm update @camunda/e2e-test-suite $npm_flags 2>/dev/null || true
+      npm update @camunda/e2e-test-suite "${npm_flags[@]}" 2>/dev/null || true
     fi
     local post_hash=""
     [[ -f "package-lock.json" ]] && post_hash=$(_portable_file_hash "package-lock.json")
@@ -702,8 +699,7 @@ _setup_playwright_environment() {
   fi
 
   info "Installing npm dependencies..."
-  # shellcheck disable=SC2086
-  if npm install $npm_flags; then
+  if npm install "${npm_flags[@]}"; then
     # Store hash only on success — a partial/failed install must not be cached
     # or future runs will skip reinstallation and inherit the broken state.
     _portable_file_hash "package-lock.json" > node_modules/.package-lock-hash || true
@@ -1160,7 +1156,7 @@ run_playwright_tests_hybrid() {
   reporter=$(_get_reporter "html" "$show_html_report")
 
   # Build the playwright command arguments
-  # shellcheck disable=SC2206
+  # shellcheck disable=SC2206 # test_files is a space-separated list of spec paths, split into arguments on purpose
   local -a playwright_args=(npx playwright test $test_files --project=full-suite --reporter="$reporter,json")
   [[ -n "$test_exclude" ]] && playwright_args+=(--grep-invert="$test_exclude")
   # Namespace-scoped output directory to avoid collisions during parallel matrix runs

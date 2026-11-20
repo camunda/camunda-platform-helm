@@ -1,5 +1,17 @@
 # Changelog
 
+## [11.12.4](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.6-11.12.3...camunda-platform-8.6-11.12.4) (2026-11-06)
+
+
+### Bug Fixes
+
+* pin Bitnami Premium os-shell tag in 8.6 values-enterprise.yaml ([#7765](https://github.com/camunda/camunda-platform-helm/issues/7765)) ([0523f46](https://github.com/camunda/camunda-platform-helm/commit/0523f460010cf75d2a50b4f8baa7bc4c7ac4c8b8))
+
+
+### Dependencies
+
+* upgrade golang version to 1.27.3 ([#7675](https://github.com/camunda/camunda-platform-helm/issues/7675)) ([89ecc30](https://github.com/camunda/camunda-platform-helm/commit/89ecc30da8aed16f5ea7813308dc3f698d6ef35d))
+
 ## [11.12.3](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.6-11.12.2...camunda-platform-8.6-11.12.3) (2026-04-02)
 
 

@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 12.14.2
+version: 12.14.4
 appVersion: 8.7.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -65,4 +65,10 @@ annotations:
     - name: Camunda 8 Self-Managed Helm charts
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
-  artifacthub.io/changes: ""
+  artifacthub.io/changes: |
+    - kind: fixed
+      description: "Apply global pullPolicy to optimize migration init container"
+    - kind: fixed
+      description: "Warn that bitnamilegacy images still trust the compromised eMudhra roots"
+    - kind: fixed
+      description: "Disable BASE64 intrinsics in Keycloak and Elasticsearch for CVE-2026-114938"

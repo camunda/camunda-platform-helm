@@ -49,7 +49,6 @@ jobs:
             mcp:
               - 'helm-values-mcp/**'
               - '.github/workflows/integration-tests-gate.yaml'
-              - '.github/actions/install-tool-versions/**'
               - '.tool-versions'
               - 'charts/camunda-platform-*/Chart.yaml'
               - 'charts/camunda-platform-*/values*.yaml'
@@ -72,10 +71,7 @@ jobs:
         with:
           ref: ${{ github.event_name == 'workflow_dispatch' && inputs.sha || '' }}
       - name: Install Node (from .tool-versions)
-        uses: ./.github/actions/install-tool-versions
-        with:
-          tools: |
-            nodejs
+        uses: camunda/infraex-common-config/.github/actions/asdf-install-tooling@e2923304b40dfc031b3f595bcc1445e90c981adb # 3.0.0
       - name: Install dependencies
         run: make mcp.deps
       - name: Build
@@ -97,7 +93,7 @@ jobs:
   gate:
     name: gate
     needs: [mcp-changes, mcp-test]
-    if: always()
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     permissions:
       actions: write
@@ -139,6 +135,7 @@ jobs:
           MATRIX_WORKFLOW: test-chart-version.yaml
           EVENT_NAME: ${{ github.event_name }}
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
           MG_HEAD_SHA: ${{ github.event.merge_group.head_sha }}
           MG_BASE_REF: ${{ github.event.merge_group.base_ref }}
           OVERRIDE_SHA: ${{ inputs.sha }}

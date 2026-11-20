@@ -1,0 +1,2 @@
+identityKeycloak:
+  extraStartupArgs: "--spi-admin--audience-check-enabled=false"

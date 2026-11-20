@@ -21,13 +21,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"maps"
-	"os"
-	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"time"
 
-	"gopkg.in/yaml.v3"
 	corev1 "k8s.io/api/core/v1"
 
 	"scripts/deploy-camunda/matrix"
@@ -76,6 +74,7 @@ type fakeCluster struct {
 	stamps     []string
 	bootNames  []string
 	bootDBPw   string
+	bootCmd    []string
 	failES     bool
 	failPG     bool
 	es         string
@@ -178,7 +177,7 @@ func (f *fakeCluster) kubectl(_ context.Context, stdin []byte, args ...string) (
 				return nil, nil
 			}
 			if flagValue(args, "-o") == "json" {
-				return []byte(`{"spec":{"template":{"spec":{"containers":[{"name":"keycloak","image":"kc:26","env":[{"name":"KC_DB_URL","value":"jdbc:x"},{"name":"KC_DB_PASSWORD","valueFrom":{"secretKeyRef":{"name":"creds","key":"kc-db"}}},{"name":"KC_HOSTNAME","value":"h"}]}]}}}}`), nil
+				return []byte(`{"spec":{"template":{"spec":{"containers":[{"name":"keycloak","image":"kc:26","command":["/opt/keycloak/bin/kc.sh"],"env":[{"name":"KC_DB_URL","value":"jdbc:x"},{"name":"KC_DB_PASSWORD","valueFrom":{"secretKeyRef":{"name":"creds","key":"kc-db"}}},{"name":"KC_HOSTNAME","value":"h"}]}]}}}}`), nil
 			}
 			return []byte(args[1] + "/" + args[2]), nil
 		}
@@ -243,6 +242,7 @@ func (f *fakeCluster) kubectl(_ context.Context, stdin []byte, args ...string) (
 		}
 		f.bootstraps++
 		f.bootNames = append(f.bootNames, obj.Metadata.Name)
+		f.bootCmd = obj.Spec.Containers[0].Command
 		tmp := f.secrets[ns+"/"+obj.Metadata.Name]
 		for _, e := range obj.Spec.Containers[0].Env {
 			if e.Name == "KC_DB_PASSWORD" && e.ValueFrom != nil && e.ValueFrom.SecretKeyRef != nil {
@@ -418,6 +418,9 @@ func TestReconcileCredentials_ResetsAdminThroughBootstrapWhenNoKnownPasswordWork
 	}
 	if f.bootstraps != 1 || f.kc["master/admin"] != "new-admin" {
 		t.Fatalf("bootstraps=%d admin rotated=%v", f.bootstraps, f.kc["master/admin"] == "new-admin")
+	}
+	if !slices.Equal(f.bootCmd, []string{"/opt/keycloak/bin/kc.sh"}) {
+		t.Errorf("bootstrap pod command = %v, want the Deployment's kc.sh command", f.bootCmd)
 	}
 	for k := range f.kc {
 		if strings.Contains(k, "deploy-camunda-reconcile-") {
@@ -988,98 +991,5 @@ func TestCredentialsChecksum(t *testing.T) {
 	}
 	if _, err := credentialsChecksum(src, map[string]string{"a": "1"}); err == nil {
 		t.Error("want an error for a missing property")
-	}
-}
-
-func TestDogfoodCredentialStores_KeysExistInTheManifest(t *testing.T) {
-	repoRoot := filepath.Join("..", "..", "..")
-	registry, err := matrix.LoadRegistry(filepath.Join(repoRoot, "charts", "camunda-platform-8.10"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	var topology *matrix.Topology
-	for _, s := range registry.Integration.Case.PR.Scenarios {
-		if s.Name == "dogfood" {
-			topology = s.Topology
-		}
-	}
-	if topology == nil {
-		t.Fatal("dogfood declares no topology")
-	}
-	raw, err := os.ReadFile(filepath.Join(repoRoot, topology.CredentialsManifest))
-	if err != nil {
-		t.Fatal(err)
-	}
-	manifest, err := matrix.RenderCredentialsManifest(raw, "dogfood")
-	if err != nil {
-		t.Fatal(err)
-	}
-	src, err := parseCredentialSource(manifest)
-	if err != nil {
-		t.Fatal(err)
-	}
-	s := topology.CredentialStores
-	if s == nil {
-		t.Fatal("dogfood declares no credential-stores")
-	}
-	keys := src.Targets[s.Secret]
-	if keys == nil {
-		t.Fatalf("manifest writes no secret %q", s.Secret)
-	}
-	want := []string{s.Keycloak.AdminSecretKey}
-	for _, pg := range s.Postgres {
-		want = append(want, pg.SecretKey)
-	}
-	for _, u := range s.Keycloak.Users {
-		want = append(want, u.SecretKey)
-	}
-	if s.Elasticsearch != nil {
-		want = append(want, s.Elasticsearch.SecretKey)
-	}
-	for _, k := range want {
-		if keys[k] == "" {
-			t.Errorf("credential-stores key %q is not written by the manifest", k)
-		}
-	}
-}
-
-// The integration tests run the reconcile scripts against these images.
-const (
-	postgresImage      = "postgres:16-alpine"
-	elasticsearchImage = "docker.elastic.co/elasticsearch/elasticsearch:8.18.0"
-	keycloakImage      = "quay.io/keycloak/keycloak:26.7.5"
-)
-
-func TestCredentialStoreIntegrationImages_MatchTheDogfoodStores(t *testing.T) {
-	repoRoot := filepath.Join("..", "..", "..")
-	read := func(rel string) map[string]any {
-		t.Helper()
-		raw, err := os.ReadFile(filepath.Join(repoRoot, rel))
-		if err != nil {
-			t.Fatal(err)
-		}
-		var v map[string]any
-		if err := yaml.Unmarshal(raw, &v); err != nil {
-			t.Fatalf("%s: %v", rel, err)
-		}
-		return v
-	}
-	image := func(v map[string]any) string {
-		img, _ := v["image"].(map[string]any)
-		return fmt.Sprintf("%v/%v:%v", img["registry"], img["repository"], img["tag"])
-	}
-	kc := read("test/integration/companion-values/keycloak-dogfood.yaml")
-	es := read("test/integration/companion-values/elasticsearch-dogfood.yaml")
-	pg := read("charts/internal-postgresql/values.yaml")
-	kcpg, _ := read("charts/internal-keycloak-26/values.yaml")["postgresql"].(map[string]any)
-	for name, pair := range map[string][2]string{
-		"keycloak":              {keycloakImage, image(kc)},
-		"elasticsearch":         {elasticsearchImage, fmt.Sprintf("docker.elastic.co/elasticsearch/elasticsearch:%v", es["imageTag"])},
-		"postgresql":            {"docker.io/" + postgresImage, image(pg)},
-		"keycloak's postgresql": {"docker.io/" + postgresImage, image(kcpg)},
-	} {
-		if pair[0] != pair[1] {
-			t.Errorf("%s: integration tests use %s but dogfood deploys %s; update the image constant and re-run make test.deploy-camunda-credential-stores", name, pair[0], pair[1])
-		}
 	}
 }

@@ -137,7 +137,7 @@ harbor_helm_pull() {
   local retry_delay=${HARBOR_RETRY_DELAY}
   local pull_stderr
   pull_stderr=$(mktemp)
-  # shellcheck disable=SC2064
+  # shellcheck disable=SC2064 # expand now: the RETURN trap stays set after this function returns, when pull_stderr is out of scope
   trap "rm -f '${pull_stderr}'" RETURN
 
   for attempt in $(seq 1 "${max_retries}"); do

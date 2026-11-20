@@ -257,8 +257,14 @@ spec:
             - name: KC_SPI_ADMIN_REALM
               value: "{{ .Values.adminRealm }}"
             {{- end }}
-            {{- if .Values.extraEnvVars }}
-            {{- include "common.tplvalues.render" (dict "value" .Values.extraEnvVars "context" $) | nindent 12 }}
+            {{- $jdkOptions := include "keycloak.userJdkJavaOptions" (dict "envVars" .Values.extraEnvVars "context" $) }}
+            {{- if $jdkOptions }}
+            - name: JDK_JAVA_OPTIONS
+              value: {{ $jdkOptions | quote }}
+            {{- end }}
+            {{- $filteredEnv := include "keycloak.excludeJdkJavaOptions" (dict "envVars" .Values.extraEnvVars "dropJdk" $jdkOptions) | fromJsonArray }}
+            {{- if $filteredEnv }}
+            {{- include "common.tplvalues.render" ( dict "value" $filteredEnv "context" $ ) | nindent 12 }}
             {{- end }}
           envFrom:
             - configMapRef:

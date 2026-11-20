@@ -1,0 +1,348 @@
+// Copyright 2026 Camunda Services GmbH
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package deploy
+
+import (
+	"encoding/base64"
+	"fmt"
+	"maps"
+	"os"
+	"os/exec"
+	"sort"
+	"strings"
+)
+
+type E2EEnvMergeOptions struct {
+	OrchestrationNamespace string
+	HubNamespace           string
+	OptimizeNamespace      string
+	OptimizeContextPath    string
+	ChartPath              string
+	Output                 string
+	RenderScript           string
+	KubeContext            string
+	VenomClientSecretKey   string
+	CI                     bool
+	RunSmokeTests          bool
+}
+
+func MergeE2EEnv(opts E2EEnvMergeOptions) error {
+	if err := validateOptimizeFlags(opts.OptimizeNamespace, opts.OptimizeContextPath); err != nil {
+		return err
+	}
+	renderArgs := []string{
+		opts.RenderScript,
+		"--absolute-chart-path", opts.ChartPath,
+		"--namespace", opts.OrchestrationNamespace,
+		"--output", opts.Output,
+	}
+	if opts.RunSmokeTests {
+		renderArgs = append(renderArgs, "--run-smoke-tests")
+	}
+	if !opts.CI {
+		renderArgs = append(renderArgs, "--not-ci")
+	}
+	if opts.KubeContext != "" {
+		renderArgs = append(renderArgs, "--kube-context", opts.KubeContext)
+	}
+	rc := exec.Command("bash", renderArgs...)
+	rc.Stdout = os.Stderr
+	rc.Stderr = os.Stderr
+	if err := rc.Run(); err != nil {
+		return fmt.Errorf("render script failed: %w", err)
+	}
+
+	hubHost, err := resolveIngressHost(opts.KubeContext, opts.HubNamespace)
+	if err != nil {
+		return err
+	}
+
+	firstUserPw, err := resolveSecretKey(opts.KubeContext, opts.HubNamespace, "identity-user-password")
+	if err != nil {
+		return err
+	}
+	kcAdminPw, err := resolveSecretKey(opts.KubeContext, opts.HubNamespace, "identity-keycloak-admin-password")
+	if err != nil {
+		return err
+	}
+	clientSecret, err := resolveSecretKey(opts.KubeContext, opts.HubNamespace, "client-secret")
+	if err != nil {
+		return err
+	}
+	venomSecret, err := resolveSecretKey(opts.KubeContext, opts.HubNamespace, opts.VenomClientSecretKey)
+	if err != nil {
+		return err
+	}
+
+	tokenURL := "https://" + hubHost + "/auth/realms/camunda-platform/protocol/openid-connect/token"
+	overrides := map[string]string{
+		"MANAGEMENT_BASE_URL":              "https://" + hubHost,
+		"MANAGEMENT_IDENTITY_CONTEXT_PATH": "https://" + hubHost + "/identity",
+		"MODELER_CONTEXT_PATH":             "https://" + hubHost + "/modeler",
+		"CONSOLE_CONTEXT_PATH":             "https://" + hubHost + "/modeler",
+		"CONSOLE_BASE_URL":                 "https://" + hubHost,
+		"IDENTITY_BASE_URL":                "https://" + hubHost + "/identity/",
+		"KEYCLOAK_BASE_URL":                "https://" + hubHost + "/auth",
+		"KEYCLOAK_URL":                     "https://" + hubHost,
+		"WEBMODELER_BASE_URL":              "https://" + hubHost + "/modeler",
+		"OAUTH_URL":                        tokenURL,
+		"AUTH_URL":                         tokenURL,
+		"DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD": firstUserPw,
+		"DISTRO_QA_E2E_TESTS_KEYCLOAK_PASSWORD":           kcAdminPw,
+		"DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET":     clientSecret,
+		// The venom client authenticates with its own secret, not client-secret above:
+		// the physical-tenants spec exchanges it for an orchestration API token.
+		"VENOM_CLIENT_SECRET": venomSecret,
+	}
+
+	if opts.OptimizeNamespace != "" {
+		if err := assertOptimizeDeployed(opts.KubeContext, opts.OptimizeNamespace); err != nil {
+			return err
+		}
+		optimizeHost, err := resolveIngressHost(opts.KubeContext, opts.OptimizeNamespace)
+		if err != nil {
+			return fmt.Errorf("optimize namespace %q: %w", opts.OptimizeNamespace, err)
+		}
+		maps.Copy(overrides, optimizeEnvOverrides(optimizeHost, opts.OptimizeContextPath))
+	}
+
+	content, err := os.ReadFile(opts.Output)
+	if err != nil {
+		return err
+	}
+	merged := mergeEnvOverrides(string(content), overrides)
+	if opts.OptimizeNamespace != "" {
+		if err := assertOptimizeEnabled(merged, opts.OptimizeNamespace); err != nil {
+			return err
+		}
+	}
+	if err := os.WriteFile(opts.Output, []byte(merged), 0o600); err != nil {
+		return err
+	}
+	if err := os.Chmod(opts.Output, 0o600); err != nil {
+		return err
+	}
+
+	fmt.Fprintf(os.Stderr, "merged e2e env: hubHost=%s overrode %d keys -> %s\n", hubHost, len(overrides), opts.Output)
+	return nil
+}
+
+// validateOptimizeFlags rejects the half-configured Optimize targeting that
+// optimizeEnvOverrides cannot turn into a usable endpoint. A namespace without a
+// path builds https://<host>, the ingress root rather than Optimize; a path
+// without a namespace is never read at all; and a path missing its leading
+// slash concatenates into a malformed URL. Each one lands the leg on something
+// that is not Optimize, so refuse before any cluster lookup happens.
+func validateOptimizeFlags(optimizeNamespace, optimizeContextPath string) error {
+	if (optimizeNamespace == "") != (optimizeContextPath == "") {
+		return fmt.Errorf("--optimize-namespace and --optimize-context-path must be set together (got namespace %q, context path %q); one without the other cannot address the Optimize release", optimizeNamespace, optimizeContextPath)
+	}
+	if optimizeContextPath != "" && !strings.HasPrefix(optimizeContextPath, "/") {
+		return fmt.Errorf("--optimize-context-path %q must start with %q; it is joined onto the ingress host and would otherwise build a malformed URL", optimizeContextPath, "/")
+	}
+	return nil
+}
+
+// optimizeEnvOverrides points the e2e env at an Optimize running as its own release, in its own
+// namespace on the Hub host.
+//
+// Both URL keys are required and must agree. 32 call sites read CAMUNDA_OPTIMIZE_BASE_URL, but
+// NavigationPage.goToOptimize and goToOptimizeWithoutAccess navigate with OPTIMIZE_CONTEXT_PATH, whose
+// default "/optimize" resolves against Playwright's baseURL — the orchestration host — and lands on an
+// nginx 404. Setting only the first made the Optimize specs pass while Basic Navigation and the
+// all-apps smoke flow failed on a 404 page. Absolute URLs, like MODELER_CONTEXT_PATH, because
+// page.goto honours an absolute URL over baseURL.
+func optimizeEnvOverrides(optimizeHost, optimizeContextPath string) map[string]string {
+	url := "https://" + optimizeHost + optimizeContextPath
+	return map[string]string{
+		"CAMUNDA_OPTIMIZE_BASE_URL": url,
+		"OPTIMIZE_CONTEXT_PATH":     url,
+		"IS_OPTIMIZE":               "true",
+	}
+}
+
+// assertOptimizeDeployed fails when a leg declares an Optimize namespace that
+// runs no Optimize workload. Without it the merged env would point at nothing
+// and, because render-e2e-env.sh only sets IS_OPTIMIZE from the orchestration
+// namespace and every Optimize spec is guarded on that variable, the suite
+// would report success having silently skipped Optimize entirely.
+func assertOptimizeDeployed(kubeContext, namespace string) error {
+	args := []string{}
+	if kubeContext != "" {
+		args = append(args, "--context", kubeContext)
+	}
+	args = append(args, "-n", namespace, "get", "deployment",
+		"-l", "app.kubernetes.io/component=optimize",
+		"-o", "jsonpath={.items[*].metadata.name}")
+	out, err := exec.Command("kubectl", args...).Output()
+	if err != nil {
+		return fmt.Errorf("look for an Optimize deployment in namespace %q: %w", namespace, err)
+	}
+	if len(strings.Fields(string(out))) == 0 {
+		return fmt.Errorf("no Optimize deployment found in namespace %q; every Optimize spec is guarded on IS_OPTIMIZE, so continuing would skip Optimize coverage and still report success", namespace)
+	}
+	return nil
+}
+
+// assertOptimizeEnabled guards the merge itself: the rendered env carries
+// IS_OPTIMIZE=false for a topology whose Optimize runs outside the
+// orchestration namespace, and that value must have been overridden.
+func assertOptimizeEnabled(merged, namespace string) error {
+	for line := range strings.SplitSeq(merged, "\n") {
+		if strings.TrimSpace(line) == "IS_OPTIMIZE=false" {
+			return fmt.Errorf("merged env still sets IS_OPTIMIZE=false while Optimize runs in namespace %q; Optimize specs would be skipped", namespace)
+		}
+	}
+	return nil
+}
+
+// resolveSecretKey reads and base64-decodes one key from the Hub
+// namespace's shared integration-test-credentials secret. This is the secret
+// that actually backs the users under ExternalSecrets, so it is authoritative
+// (render-e2e-env.sh's DISTRO_QA_* values diverge from it in the topology path).
+func resolveSecretKey(kubeContext, namespace, key string) (string, error) {
+	a := []string{}
+	if kubeContext != "" {
+		a = append(a, "--context", kubeContext)
+	}
+	a = append(a, "-n", namespace, "get", "secret", "integration-test-credentials",
+		"-o", fmt.Sprintf("jsonpath={.data['%s']}", key))
+	out, err := exec.Command("kubectl", a...).Output()
+	if err != nil {
+		return "", fmt.Errorf("resolve secret key %q in %s: %w", key, namespace, err)
+	}
+	dec, err := decodeSecretValue(string(out))
+	if err != nil {
+		return "", fmt.Errorf("decode secret key %q: %w", key, err)
+	}
+	if dec == "" {
+		return "", fmt.Errorf("secret key %q in %s resolved to an empty value", key, namespace)
+	}
+	return dec, nil
+}
+
+// selectIngressHost filters raw whitespace-separated ingress/gateway host
+// tokens (as emitted by a kubectl jsonpath query), dropping hosts that look
+// like the Zeebe gRPC gateway, and returning the first remaining host.
+// Returns "" if no host survives the filter.
+func selectIngressHost(raw string) (string, error) {
+	tokens := strings.Fields(raw)
+	host := ""
+	for _, t := range tokens {
+		if strings.Contains(t, "zeebe") || strings.Contains(t, "grpc") {
+			continue
+		}
+		if host == "" {
+			host = t
+			continue
+		}
+		if t != host {
+			return "", fmt.Errorf("multiple distinct HTTP hosts found: %q and %q", host, t)
+		}
+	}
+	return host, nil
+}
+
+// resolveIngressHost discovers the live ingress hostname for a namespace by
+// querying the cluster directly, since CI ingress hosts are assigned by a
+// hash-based scheme at deploy time and cannot be reconstructed from the
+// namespace name. Falls back to the Gateway API when no Ingress host is
+// found (e.g. on a mesh-based cluster without classic Ingress objects).
+func resolveIngressHost(kubeContext, namespace string) (string, error) {
+	ingressArgs := []string{}
+	if kubeContext != "" {
+		ingressArgs = append(ingressArgs, "--context", kubeContext)
+	}
+	ingressArgs = append(ingressArgs, "-n", namespace, "get", "ingress",
+		"-o", "jsonpath={.items[*].spec.rules[*].host}")
+	out, err := exec.Command("kubectl", ingressArgs...).Output()
+	if err != nil {
+		return "", fmt.Errorf("resolve ingress host for namespace %q: %w", namespace, err)
+	}
+	host, err := selectIngressHost(string(out))
+	if err != nil {
+		return "", fmt.Errorf("resolve ingress host for namespace %q: %w", namespace, err)
+	}
+	if host != "" {
+		return host, nil
+	}
+
+	gatewayArgs := []string{}
+	if kubeContext != "" {
+		gatewayArgs = append(gatewayArgs, "--context", kubeContext)
+	}
+	gatewayArgs = append(gatewayArgs, "-n", namespace, "get", "gateway",
+		"-o", "jsonpath={.items[*].spec.listeners[*].hostname}")
+	if gwOut, err := exec.Command("kubectl", gatewayArgs...).Output(); err == nil {
+		host, selectErr := selectIngressHost(string(gwOut))
+		if selectErr != nil {
+			return "", fmt.Errorf("resolve gateway host for namespace %q: %w", namespace, selectErr)
+		}
+		if host != "" {
+			return host, nil
+		}
+	}
+
+	return "", fmt.Errorf("resolve ingress host for namespace %q: no non-zeebe/grpc ingress or gateway host found", namespace)
+}
+
+// decodeSecretValue base64-decodes a (possibly whitespace-padded) Kubernetes
+// secret data value. Extracted so the decode-failure path is unit-testable
+// without shelling out to kubectl.
+func decodeSecretValue(raw string) (string, error) {
+	dec, err := base64.StdEncoding.DecodeString(strings.TrimSpace(raw))
+	if err != nil {
+		return "", err
+	}
+	return string(dec), nil
+}
+
+// mergeEnvOverrides replaces matching KEY= lines in content with the override
+// values (preserving order and all other lines), then appends any override
+// keys not already present in sorted order. Trailing newline is preserved.
+func mergeEnvOverrides(content string, overrides map[string]string) string {
+	hadTrailingNewline := strings.HasSuffix(content, "\n")
+	lines := strings.Split(content, "\n")
+	if hadTrailingNewline && len(lines) > 0 && lines[len(lines)-1] == "" {
+		lines = lines[:len(lines)-1]
+	}
+	applied := map[string]bool{}
+	for i, line := range lines {
+		idx := strings.Index(line, "=")
+		if idx <= 0 {
+			continue
+		}
+		key := line[:idx]
+		if v, ok := overrides[key]; ok {
+			lines[i] = key + "=" + v
+			applied[key] = true
+		}
+	}
+	remaining := make([]string, 0, len(overrides))
+	for k := range overrides {
+		if !applied[k] {
+			remaining = append(remaining, k)
+		}
+	}
+	sort.Strings(remaining)
+	for _, k := range remaining {
+		lines = append(lines, k+"="+overrides[k])
+	}
+	result := strings.Join(lines, "\n")
+	if hadTrailingNewline && !strings.HasSuffix(result, "\n") {
+		result += "\n"
+	}
+	return result
+}

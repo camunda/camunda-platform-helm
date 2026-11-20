@@ -171,6 +171,7 @@ type partitionState struct {
 	ExportedPosition int64  `json:"exportedPosition"`
 }
 
+//nolint:gocognit,gocyclo // split tracked in #7584
 func runPhysicalTenantAcceptance(ctx context.Context, opts PhysicalTenantAcceptanceOptions, deps acceptanceDependencies) (err error) {
 	var partitionsBody, brokerLog string
 	fail := func(cause error) error {
@@ -187,7 +188,7 @@ func runPhysicalTenantAcceptance(ctx context.Context, opts PhysicalTenantAccepta
 	if err != nil {
 		return fail(fmt.Errorf("start management port-forward: %w", err))
 	}
-	defer process.Stop()
+	defer func() { _ = process.Stop() }()
 	localPort, err := waitForForwardPort(ctx, process, deps.sleep)
 	if err != nil {
 		return fail(err)
@@ -312,7 +313,7 @@ func runPhysicalTenantAcceptance(ctx context.Context, opts PhysicalTenantAccepta
 				return fail(fmt.Errorf("check %s credentials against %s Optimize: %w", source, target, requestErr))
 			}
 			if status != http.StatusUnauthorized && status != http.StatusForbidden {
-				return fail(fmt.Errorf("Optimize for %q accepted %q credentials (HTTP %d)", target, source, status))
+				return fail(fmt.Errorf("tenant %q: Optimize accepted %q credentials (HTTP %d)", target, source, status))
 			}
 		}
 	}
@@ -589,7 +590,7 @@ func waitForOptimizeImport(ctx context.Context, deps acceptanceDependencies, opt
 			}
 		}
 	}
-	return fmt.Errorf("Optimize for %q did not import %q within five minutes (last response: %s)", tenant, processID, lastDiagnostic)
+	return fmt.Errorf("tenant %q: Optimize did not import %q within five minutes (last response: %s)", tenant, processID, lastDiagnostic)
 }
 
 func assertOptimizeExcludesSiblings(ctx context.Context, deps acceptanceDependencies, optimizeURL, tenant, token string, siblings []string, attempts int) error {
@@ -607,14 +608,14 @@ func assertOptimizeExcludesSiblings(ctx context.Context, deps acceptanceDependen
 				}
 				continue
 			}
-			return fmt.Errorf("Optimize for %q isolation check exhausted retries (last response: transient error: %s)", tenant, err)
+			return fmt.Errorf("tenant %q: Optimize isolation check exhausted retries (last response: transient error: %s)", tenant, err)
 		}
 		if status != http.StatusOK {
-			return fmt.Errorf("Optimize for %q returned HTTP %d during isolation check: %s", tenant, status, strings.TrimSpace(string(body)))
+			return fmt.Errorf("tenant %q: Optimize returned HTTP %d during isolation check: %s", tenant, status, strings.TrimSpace(string(body)))
 		}
 		for _, sibling := range siblings {
 			if definitionsContain(body, sibling) {
-				return fmt.Errorf("Optimize for %q imported sibling process %q", tenant, sibling)
+				return fmt.Errorf("tenant %q: Optimize imported sibling process %q", tenant, sibling)
 			}
 		}
 		if attempt < attempts {

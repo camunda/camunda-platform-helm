@@ -26,7 +26,7 @@ automated workflow steps follow Conventional Commits with the `chore(ci):` type.
 - **NEVER** add a `run:` block above bash cyclomatic complexity 10 (1, plus 1 for each `if`/`elif`,
   `case` item, loop, `&&` and `||`) or 100 lines of code (blank and comment-only lines do not
   count), in `.github/workflows/` or `.github/actions/`. **NEVER** make a block that is already
-  above more complex or longer, except for a fix that is not possible without it.
+  above more complex or longer.
   `make go.complexity` fails the change, and `test-release-tooling.yaml` runs it on every PR.
   The same check runs shellcheck on every composite action `run:` block, including unchanged
   actions, and fails on any finding.
@@ -34,9 +34,7 @@ automated workflow steps follow Conventional Commits with the `chore(ci):` type.
   already above. To pass, delete dead branches and duplicated commands, or split the step where
   no shell variable crosses the split. Do not add a `GITHUB_ENV` or `GITHUB_OUTPUT` write, a `.sh`
   file, a `${{ }}` expression or an `if:` condition only to pass the check, and do not rewrite the
-  block in another language to pass it. If a fix must grow a block that is already above, name
-  the block and the reason in the PR body. A reviewer who accepts the reason merges the PR
-  although the check fails.
+  block in another language to pass it.
 - **NEVER** omit `concurrency:` on workflows triggered by `push` or `pull_request` — duplicate
   runs waste CI resources.
 - **NEVER** use `strategy.fail-fast: true` for integration test matrices — one flaky test must
@@ -64,8 +62,9 @@ automated workflow steps follow Conventional Commits with the `chore(ci):` type.
 - **ALWAYS** start a multi-line `run:` block that you add or change with `set -euo pipefail`. When
   you add it to an existing block, check that the block reads no unset variable and has no pipeline
   whose first command may fail on purpose (`grep` with no match, `… | head`).
-- **ALWAYS** install tools via `.github/actions/install-tool-versions` before using `go`, `helm`,
-  `kubectl`, etc. — this respects the pinned versions in `.tool-versions`.
+- **ALWAYS** install tools with the shared `camunda/infraex-common-config` action
+  `asdf-install-tooling` before using `go`, `helm`, `kubectl`, etc. It installs every version
+  pinned in `.tool-versions` and caches the whole toolchain; do not install a subset.
 
 ---
 
@@ -257,11 +256,7 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - name: Install tools
-        uses: ./.github/actions/install-tool-versions
-        with:
-          tools: |
-            golang
-            helm
+        uses: camunda/infraex-common-config/.github/actions/asdf-install-tooling@e2923304b40dfc031b3f595bcc1445e90c981adb # 3.0.0
       - name: Add helm repos
         run: make helm.repos-add
       - name: Get Helm dependency
@@ -322,12 +317,7 @@ Other valid CI commit types: `chore(release):`, `chore(deps):`, `docs:`.
 
 ```yaml
 - name: Install tools
-  uses: ./.github/actions/install-tool-versions
-  with:
-    tools: |
-      golang
-      helm
-      kubectl
+  uses: camunda/infraex-common-config/.github/actions/asdf-install-tooling@e2923304b40dfc031b3f595bcc1445e90c981adb # 3.0.0
 ```
 
 After installing Go tools, reshim asdf if using custom Go binaries:
@@ -364,7 +354,7 @@ For SHA pinning, Vault-only secrets, `exportEnv: false` (and its one exception),
 `run:` blocks, `fail-fast: false`, and `concurrency:`, see Critical Rules and Pattern 2 above. Additional pitfalls:
 
 1. **Not using `make` targets** — running `go test ./...` directly instead of `make go.test`
-   skips pre-test steps (license checks, formatting, dependency updates).
+   skips pre-test steps (Helm version check, dependency updates).
 
 2. **Missing `id-token: write`** — OIDC-based Vault auth requires `permissions.id-token: write`
    at job or workflow level.

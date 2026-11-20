@@ -32,15 +32,6 @@ import (
 	"scripts/prepare-helm-values/pkg/env"
 )
 
-// ResolveNamespace is the exported form of resolveNamespace, for callers
-// outside the matrix package that need the same "what namespace would a
-// normal (single-namespace) matrix entry get" computation — e.g. the
-// topology deploy driver derives each release's namespace as
-// "<this>-<namespace-suffix>" rather than deploying into it directly.
-func ResolveNamespace(opts RunOptions, entry Entry) string {
-	return resolveNamespace(opts, entry)
-}
-
 // companionChartsForEntry builds the companion chart list for a matrix entry
 // from its ci-test-config dependencies. Values file paths are resolved relative
 // to the repo root; chart references are resolved to absolute paths when they
@@ -96,13 +87,6 @@ func appendScenarioExtraValues(base []string, entry Entry, scenarioDir string) [
 // used by the fail-fast preflight. It does NOT cover OIDC/Auth0 provisioning,
 // two-step-upgrade lifecycle hooks, or per-entry log-file redirection — those
 // remain specific to executeEntry's own orchestration.
-//
-// Exported so callers outside the matrix package (the topology deploy driver
-// in deploy.ExecuteTopology / cmd's runTopologyEntry) can synthesize a
-// per-release matrix.Entry and get the exact same flags/companion-chart/
-// vault-mapping assembly a normal matrix entry gets, instead of hand-rolling
-// a partial RuntimeFlags that silently omits companion charts or the
-// per-entry ingress hostname.
 func BuildEntryFlags(entry Entry, opts RunOptions) (flags *config.RuntimeFlags, namespace string, kubeCtx string, envFile string, err error) {
 	namespace = resolveNamespace(opts, entry)
 	baseNamespace := buildBaseNamespace(entry)

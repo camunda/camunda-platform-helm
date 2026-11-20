@@ -141,7 +141,24 @@ Non-fatal deprecation/config warnings. Consumed by NOTES.txt (helm install/upgra
 configmap-warnings.yaml, which renders the "<release>-warnings" ConfigMap on the GitOps path
 (helm template / Argo CD / Flux). Feed new deprecations here so they reach both channels.
 */}}
+{{- /* NOTE: Warns when external env sources can carry JDK_JAVA_OPTIONS. */ -}}
+{{- define "camunda.base64MitigationWarnings" -}}
+{{- $kc := .Values.identityKeycloak | default dict -}}
+{{- $sources := list -}}
+{{- if $kc.extraEnvVarsCM }}{{ $sources = append $sources "identityKeycloak.extraEnvVarsCM" }}{{ end -}}
+{{- if $kc.extraEnvVarsSecret }}{{ $sources = append $sources "identityKeycloak.extraEnvVarsSecret" }}{{ end -}}
+{{- if kindIs "slice" ($kc.extraEnvVars | default list) -}}
+{{- range $entry := $kc.extraEnvVars -}}
+{{- if and (kindIs "string" $entry.name) (eq $entry.name "JDK_JAVA_OPTIONS") (hasKey $entry "valueFrom") }}{{ $sources = append $sources "identityKeycloak.extraEnvVars[valueFrom]" }}{{ end -}}
+{{- end -}}
+{{- end -}}
+{{- if $sources -}}
+{{- printf "\n%s" (printf "[camunda][warning] SECURITY NOTICE: CVE-2026-114938 mitigation may not apply. Keycloak loads JDK_JAVA_OPTIONS from %s after the chart's ConfigMap, so those values can replace -XX:-UseBASE64Intrinsics. Add the flag to them." (join ", " $sources)) }}
+{{- end -}}
+{{- end -}}
+
 {{- define "camunda.constraints.warnings" }}
+  {{- include "camunda.base64MitigationWarnings" . }}
   {{- if .Values.global.testDeprecationFlags.existingSecretsMustBeSet }}
     {{/* TODO: Check if there are more existingSecrets to check */}}
 
@@ -298,7 +315,7 @@ The following values inside your values.yaml need to be set but were not:
       {{- end }}
       {{- $frozenLineNote := "" }}
       {{- if $onFrozenLine }}
-        {{- $frozenLineNote = " The Bitnami-based \"camunda/keycloak\" tags this chart defaults to are frozen on the discontinued bitnamilegacy base and will not receive the fix." }}
+        {{- $frozenLineNote = " The Bitnami-based \"camunda/keycloak\" tags this chart defaults to are frozen on the discontinued bitnamilegacy base and will not receive the fix. For the separate eMudhra CA compromise, \"camunda/keycloak:26.3.3\" builds made on or after October 22, 2026 remove the compromised G3/AAA roots; older builds and the other bitnamilegacy images this chart defaults to remain affected. Check the image build date and follow https://docs.camunda.io/docs/reference/notices/#notice-80" }}
       {{- end }}
       {{- $warningMessage := printf "%s %s%s %s %s"
           "[camunda][warning]"

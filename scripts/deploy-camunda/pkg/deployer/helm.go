@@ -166,7 +166,7 @@ func upgradeInstall(ctx context.Context, o types.Options) error {
 	args = appendHelmValueArgs(args, o)
 
 	runCtx, guard := guardedContext(ctx, o, o.ReleaseName, o.Wait)
-	defer guard.Stop()
+	defer func() { _ = guard.Stop() }()
 
 	stderr, runErr := helmRunWithRetry(runCtx, args)
 	if runErr != nil {
@@ -526,7 +526,7 @@ func deployCompanionChart(ctx context.Context, cc types.CompanionChart, o types.
 
 	// Companion charts always pass --wait (see the args above), independently of o.Wait.
 	runCtx, guard := guardedContext(ctx, o, cc.ReleaseName, true)
-	defer guard.Stop()
+	defer func() { _ = guard.Stop() }()
 
 	stderr, runErr := helmRunWithRetry(runCtx, args)
 	if runErr == nil {

@@ -7,7 +7,7 @@ Use this file as the practical guide. For architecture and CI context, also read
 ## Critical Rules
 - NEVER assume templates are identical across chart versions — always check the target version first.
 - NEVER hand-edit generated artifacts — regenerate them (see Generated Artifacts below).
-- NEVER add a `run:` block above the limits in `.github/instructions/github-actions.instructions.md`. NEVER grow a block that is already above, except for a fix that is not possible without it. Name that block and the reason in the PR body. `make go.complexity` fails both changes.
+- NEVER add a `run:` block above the limits in `.github/instructions/github-actions.instructions.md`. NEVER grow a block that is already above. `make go.complexity` fails both changes.
 - NEVER rewrite bash in another language unless the task asks for it — see `.github/instructions/scripting.instructions.md`.
 - NEVER write reasoning/"why"/narration comments — comments explain only non-obvious HOW. Architectural rationale belongs in a durable ADR under `docs/adr/`; tactical rationale (bug-fix defaults, timeouts, label choices) goes in the PR body or commit message. Agents may draft or edit an ADR only when a human explicitly requests it, and every ADR change requires human review and approval under `docs/maintainer-guide.md` before acceptance. Keep only required structured comments: Apache license headers, `## @param`/`## @extra`, the `{{- /* NOTE */ -}}` helper convention, and lint/build pragmas (`//nolint`, `//go:build`, `# yamllint disable`, `# yamllint disable-line`, `# shellcheck disable`).
 - NEVER remove or rename an existing `values.yaml` field, or change a default in a way that alters runtime behaviour for users who do not override it, outside `docs/policies/breaking-changes.md`; port changes to other chart versions per `docs/policies/backporting.md`.
@@ -37,12 +37,15 @@ make mcp.build                        # TypeScript MCP server (tsc)
 
 ## Lint Commands
 ```bash
-make helm.lint chartPath=charts/camunda-platform-8.10       # Lint one chart (strict)
-make helm.lint-all                                           # Lint all matching charts
+helm lint charts/camunda-platform-8.10                       # Lint one chart; ct lint runs this command in CI (<v> - Validation / Lint)
 make go.fmt                                                  # Enforce Go formatting
+gofmt -l $(git ls-files '*.go')                              # Repo-wide Go format check (Repo - Go Format)
 make go.lint                                                 # golangci-lint every scripts/ module (issues new since origin/main)
-make go.complexity                                           # Fail on changed scripts/ functions above cognitive 30, cyclomatic 30 or 250 lines, on added or grown over-limit run blocks, and on shellcheck findings in all composite actions
+make go.complexity                                           # Fail on added or grown over-limit run blocks, and on shellcheck findings in all composite actions
+pre-commit run --config .infraex-common-config/baseline/.pre-commit-config.yaml --all-files  # Hooks of the check `lint / baseline`, with camunda/infraex-common-config cloned into .infraex-common-config: its golangci-lint configuration limits each function outside _test.go files in the full repository to cognitive complexity 30, cyclomatic complexity 30 and 250 lines (https://github.com/camunda/infraex-common-config/blob/main/README.md#baseline)
 pre-commit run --all-files                                   # Hooks that lint-global runs on every PR (actionlint, shellcheck, zizmor high severity, action pin spacing)
+yamllint -c .github/config/yamllint.yaml charts/camunda-platform-8.10/test/unit  # Lint the unit-test YAML of one chart (<v> - Validation / Lint)
+make go.license-verify                                       # Apache header on every tracked .go and .sh file (Repo - License Headers)
 make go.addlicense-check chartPath=charts/camunda-platform-8.10  # Check Apache headers
 make go.addlicense-run chartPath=charts/camunda-platform-8.10    # Add missing headers
 make precommit.chores                                        # Maintainer precommit chores
@@ -56,6 +59,7 @@ make precommit.chores                                        # Maintainer precom
 ```bash
 make go.test                                                 # All chart versions
 make go.test chartPath=charts/camunda-platform-8.10          # One chart version
+make go.test-scripts                                         # Every Go module under scripts/ (Go lint + test); run make helm.repos-add and make helm.dependency-update first
 
 # One Go package / single test by name (run from charts/<version>/test/unit)
 cd charts/camunda-platform-8.10/test/unit && go test ./orchestration/...

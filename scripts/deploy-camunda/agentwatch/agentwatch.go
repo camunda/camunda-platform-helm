@@ -157,6 +157,8 @@ type Options struct {
 //
 // Each tick is a paid LLM call; the bounds above are independent kill
 // switches so no single misconfiguration can produce an unbounded run.
+//
+//nolint:gocognit,gocyclo // split tracked in #7584
 func Watch(ctx context.Context, opts Options) (Decision, *Verdict, error) {
 	if opts.CLI.Name == "" {
 		return DecisionContinue, nil, errors.New("agentwatch: Options.CLI is empty (call DetectCLI first)")

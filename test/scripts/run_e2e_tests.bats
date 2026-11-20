@@ -50,7 +50,7 @@ teardown() {
   run grep -F 'E2E_ARG_MODELER_CLUSTER_NAME: ${{ inputs.modeler-cluster-name }}' "$action"
   [ "$status" -eq 0 ]
 
-  run grep -F 'E2E_ARGS+=(--modeler-cluster-name "${E2E_ARG_MODELER_CLUSTER_NAME}")' "$action"
+  run grep -F -- '--modeler-cluster-name "${E2E_ARG_MODELER_CLUSTER_NAME}"' "$action"
   [ "$status" -eq 0 ]
 }
 

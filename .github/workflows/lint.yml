@@ -1,0 +1,30 @@
+---
+# camunda/infraex-terraform creates this file from modules/github-repo-defaults/lint.yml.
+name: lint
+
+on:
+    workflow_dispatch:
+    pull_request:
+    merge_group:
+    push:
+        branches:
+            - main
+
+concurrency:
+    group: ${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+    contents: read
+
+jobs:
+    lint:
+        permissions:
+            contents: read
+            id-token: write # Vault OIDC login for the auto-fix job
+        uses: camunda/infraex-common-config/.github/workflows/lint-global.yml@ecfc5f760287533aa47f5a79b9d6e36508c76cc2 # 3.0.8
+        secrets:
+            VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
+            VAULT_JWT_PATH: ${{ secrets.VAULT_JWT_PATH }}
+            VAULT_JWT_ROLE: ${{ secrets.VAULT_JWT_ROLE }}
+            VAULT_JWT_AUDIENCE: ${{ secrets.VAULT_JWT_AUDIENCE }}

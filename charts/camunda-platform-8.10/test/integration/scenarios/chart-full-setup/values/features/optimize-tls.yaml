@@ -1,3 +1,8 @@
+# Contour: the split Ingress forces HTTPS to the backend only through an nginx annotation.
+optimize:
+  service:
+    annotations:
+      projectcontour.io/upstream-protocol.tls: "80"
 global:
   tls:
     optimize:

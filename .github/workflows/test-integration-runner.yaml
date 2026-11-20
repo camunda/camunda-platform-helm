@@ -319,11 +319,17 @@ env:
   # Vars with "TEST_" prefix are used in the test runner tool (Task).
   CI_DEPLOYMENT_TTL: ${{ inputs.deployment-ttl }}
   IS_TOPOLOGY: ${{ inputs.is-topology }}
-  # Floor for the deploy-time cleaner/janitor TTL of a topology scenario, which holds
-  # one namespace set across sequentially-run e2e legs. Must exceed install plus every
-  # leg; at ~10m install and ~25m per leg, 4h covers the four-leg mns2 chain with room
-  # for queueing. Applied only when no explicit deployment-ttl was requested.
-  TOPOLOGY_MIN_TTL: 4h
+  # Floor for the deploy-time cleaner/janitor TTL of a scenario that runs several e2e legs
+  # sequentially against one shared namespace set: a topology chain, or an install flow
+  # with the full and api suites added to smoke. deploy-camunda's 60m default expires
+  # mid-chain, so the janitor reaps the namespace before the last leg authenticates. Must
+  # exceed install plus every leg with room for runner queueing; 4h covers both chains.
+  # Applied only when no explicit deployment-ttl was requested, so the cleanup job still
+  # stamps ttl=1s and reaps at run end — this is a ceiling, never the actual lifetime.
+  E2E_CHAIN_MIN_TTL: 4h
+  # True when the scenario runs that sequential multi-leg chain (a topology, or an e2e
+  # install flow); selects the floor above over deploy-camunda's 60m default.
+  CHAIN_NEEDS_TTL_FLOOR: ${{ inputs.is-topology || inputs.e2e-enabled }}
   # The Helm repo which is used during the upgrade flow.
   TEST_CHART_REPO: ${{ inputs.camunda-helm-repo }}
   # Docker Hub auth to avoid image pull rate limit.
@@ -346,6 +352,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 40
     container:
+      # CI follows the latest ci-runner image that build-ci-runner-image.yaml pushes
       image: ghcr.io/camunda/team-distribution/ci-runner:latest # zizmor: ignore[unpinned-images]
       credentials:
         username: ${{ github.actor }}
@@ -676,6 +683,7 @@ jobs:
           INPUTS_SHORTNAME: ${{ inputs.shortname }}
           INPUTS_FLOW: ${{ inputs.flow }}
           INPUTS_DISTRO_PLATFORM: ${{ inputs.distro-platform }}
+          LEGACY_INGRESS_ARG: ${{ steps.setup.outputs.legacy-ingress-arg }}
         run: |
           set -euo pipefail
           CHART_VERSION="${CAMUNDA_HELM_DIR#camunda-platform-}"
@@ -694,24 +702,15 @@ jobs:
             fi
           fi
 
-          # Pass the legacy ingress arg + global.host as helm extra args.
-          LEGACY_INGRESS_ARG="${{ steps.setup.outputs.legacy-ingress-arg }}"
-          if [[ -n "$LEGACY_INGRESS_ARG" ]]; then
-            # legacy-ingress-arg is space-delimited (e.g. "--set foo=bar"); split it.
-            # shellcheck disable=SC2206
-            LEGACY_TOKENS=($LEGACY_INGRESS_ARG)
-            for tok in "${LEGACY_TOKENS[@]}"; do
-              EXTRA_HELM_ARGS+=(--extra-helm-arg="$tok")
-            done
-          fi
+          # shellcheck disable=SC2206 # legacy-ingress-arg is a space-delimited list of helm arguments (e.g. "--set foo=bar"), split on purpose
+          LEGACY_TOKENS=($LEGACY_INGRESS_ARG)
+          for tok in ${LEGACY_TOKENS[@]+"${LEGACY_TOKENS[@]}"}; do
+            EXTRA_HELM_ARGS+=(--extra-helm-arg="$tok")
+          done
 
           # OCI chart override: when helmChartVersion is set, deploy from the published
           # OCI artifact instead of the local git chart directory.
-          CHART_REF_ARGS=()
-          if [[ -n "${HELM_CHART_VERSION:-}" ]]; then
-            CHART_REF_ARGS+=(--chart-ref "oci://registry.camunda.cloud/team-distribution/camunda-platform")
-            CHART_REF_ARGS+=(--chart-version "${HELM_CHART_VERSION}")
-          fi
+          CHART_REF="${HELM_CHART_VERSION:+oci://registry.camunda.cloud/team-distribution/camunda-platform}"
 
           FORCE_IMAGE_OVERRIDE_ARGS=()
           if [[ "${FORCE_IMAGE_OVERRIDES}" == "true" ]]; then
@@ -720,12 +719,10 @@ jobs:
           fi
 
           # Convert VALUES_CONFIG JSON to .env file.
+          jq -r 'to_entries[] | "\(.key)=\(.value)"' <<< "${VALUES_CONFIG:-}" > /tmp/values-config.env
           ENV_FILE_ARGS=()
-          if [[ -n "${VALUES_CONFIG:-}" && "${VALUES_CONFIG}" != "{}" ]]; then
-            echo "${VALUES_CONFIG}" | jq -r 'to_entries[] | "\(.key)=\(.value)"' > /tmp/values-config.env
-            if [[ -s /tmp/values-config.env ]]; then
-              ENV_FILE_ARGS=(--env-file /tmp/values-config.env)
-            fi
+          if [[ -s /tmp/values-config.env ]]; then
+            ENV_FILE_ARGS=(--env-file /tmp/values-config.env)
           fi
 
           # Forward workflow extra-values via --extra-values (NOT
@@ -734,37 +731,24 @@ jobs:
           # The upgrade flow forwards the same way; runner_upgrade.go nils Step 1's
           # copy so the override applies to Step 2 (the upgraded chart) only.
           EXTRA_VALUES_ARGS=()
-          if [[ -s /tmp/extra-values-file.yaml ]] && grep -q '[^[:space:]]' /tmp/extra-values-file.yaml; then
+          if grep -qs '[^[:space:]]' /tmp/extra-values-file.yaml; then
             EXTRA_VALUES_ARGS=(--extra-values /tmp/extra-values-file.yaml)
           fi
 
           # Give deploy-camunda the requested namespace TTL; without this it stamps its 60m
           # default onto cleaner/janitor, so 12h nightly clusters get reaped after an hour.
-          # A topology scenario runs its e2e legs sequentially, one namespace set for the
-          # whole chain, so 60m expires mid-run; TOPOLOGY_MIN_TTL covers the chain. Only
-          # the deploy-time annotation is raised — CI_DEPLOYMENT_TTL stays as it was, so
-          # the cleanup job still stamps ttl=1s and the namespaces are reaped at the end
-          # of the run rather than lingering for the full TTL.
+          # A topology chain and an e2e install flow (smoke + full + api) both run their
+          # legs sequentially against one namespace set, so 60m expires mid-run;
+          # E2E_CHAIN_MIN_TTL covers the chain. Only the deploy-time annotation is raised —
+          # CI_DEPLOYMENT_TTL stays as it was, so the cleanup job still stamps ttl=1s and
+          # the namespaces are reaped at the end of the run rather than lingering.
           export DEPLOY_CAMUNDA_TTL="${CI_DEPLOYMENT_TTL:-}"
-          if [[ -z "$DEPLOY_CAMUNDA_TTL" && "$IS_TOPOLOGY" == "true" ]]; then
-            export DEPLOY_CAMUNDA_TTL="$TOPOLOGY_MIN_TTL"
+          if [[ -z "$DEPLOY_CAMUNDA_TTL" && "$CHAIN_NEEDS_TTL_FLOOR" == "true" ]]; then
+            export DEPLOY_CAMUNDA_TTL="$E2E_CHAIN_MIN_TTL"
           fi
 
-          # The workflow input is `number` type, so reject empty/fractional/negative
-          # (any non-digit matches *[!0-9]*) and then zero before it reaches the
-          # integer --ingress-ready-timeout flag; a valid whole minute passes through.
           INGRESS_READY_ARGS=()
           if [ "$WAIT_INGRESS_READY" = "true" ]; then
-            case "$INGRESS_READY_TIMEOUT" in
-              ''|*[!0-9]*)
-                echo "::error::ingress-ready-timeout must be a positive whole number of minutes, got '$INGRESS_READY_TIMEOUT'" >&2
-                exit 1
-                ;;
-            esac
-            if [ "$INGRESS_READY_TIMEOUT" -lt 1 ]; then
-              echo "::error::ingress-ready-timeout must be >= 1 minute, got '$INGRESS_READY_TIMEOUT'" >&2
-              exit 1
-            fi
             INGRESS_READY_ARGS+=(--wait-ingress-ready --ingress-ready-timeout "$INGRESS_READY_TIMEOUT")
           fi
 
@@ -786,7 +770,8 @@ jobs:
             ${INGRESS_READY_ARGS[@]+"${INGRESS_READY_ARGS[@]}"} \
             ${FORCE_IMAGE_OVERRIDE_ARGS[@]+"${FORCE_IMAGE_OVERRIDE_ARGS[@]}"} \
             ${ENV_FILE_ARGS[@]+"${ENV_FILE_ARGS[@]}"} \
-            ${CHART_REF_ARGS[@]+"${CHART_REF_ARGS[@]}"} \
+            --chart-ref "${CHART_REF}" \
+            --chart-version "${HELM_CHART_VERSION:-}" \
             ${EXTRA_HELM_ARGS[@]+"${EXTRA_HELM_ARGS[@]}"} \
             ${EXTRA_VALUES_ARGS[@]+"${EXTRA_VALUES_ARGS[@]}"} \
             --log-level info
@@ -881,6 +866,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 40
     container:
+      # CI follows the latest ci-runner image that build-ci-runner-image.yaml pushes
       image: ghcr.io/camunda/team-distribution/ci-runner:latest # zizmor: ignore[unpinned-images]
       credentials:
         username: ${{ github.actor }}
@@ -1110,6 +1096,7 @@ jobs:
           INPUTS_SHORTNAME: ${{ inputs.shortname }}
           INPUTS_FLOW: ${{ inputs.flow }}
           INPUTS_DISTRO_PLATFORM: ${{ inputs.distro-platform }}
+          LEGACY_INGRESS_ARG: ${{ steps.setup.outputs.legacy-ingress-arg }}
         run: |
           set -euo pipefail
           CHART_VERSION="${CAMUNDA_HELM_DIR#camunda-platform-}"
@@ -1125,23 +1112,16 @@ jobs:
             fi
           fi
 
-          LEGACY_INGRESS_ARG="${{ steps.setup.outputs.legacy-ingress-arg }}"
-          if [[ -n "$LEGACY_INGRESS_ARG" ]]; then
-            # shellcheck disable=SC2206
-            LEGACY_TOKENS=($LEGACY_INGRESS_ARG)
-            for tok in "${LEGACY_TOKENS[@]}"; do
-              EXTRA_HELM_ARGS+=(--extra-helm-arg="$tok")
-            done
-          fi
+          # shellcheck disable=SC2206 # legacy-ingress-arg is a space-delimited list of helm arguments (e.g. "--set foo=bar"), split on purpose
+          LEGACY_TOKENS=($LEGACY_INGRESS_ARG)
+          for tok in ${LEGACY_TOKENS[@]+"${LEGACY_TOKENS[@]}"}; do
+            EXTRA_HELM_ARGS+=(--extra-helm-arg="$tok")
+          done
 
           # OCI chart override: when helmChartVersion is set, upgrade to the published
           # OCI artifact instead of the local git chart directory. Step 1 (installing
           # the previous version) still uses the Helm repo — only Step 2 uses the OCI ref.
-          CHART_REF_ARGS=()
-          if [[ -n "${HELM_CHART_VERSION:-}" ]]; then
-            CHART_REF_ARGS+=(--chart-ref "oci://registry.camunda.cloud/team-distribution/camunda-platform")
-            CHART_REF_ARGS+=(--chart-version "${HELM_CHART_VERSION}")
-          fi
+          CHART_REF="${HELM_CHART_VERSION:+oci://registry.camunda.cloud/team-distribution/camunda-platform}"
 
           FORCE_IMAGE_OVERRIDE_ARGS=()
           if [[ "${FORCE_IMAGE_OVERRIDES}" == "true" ]]; then
@@ -1150,12 +1130,10 @@ jobs:
           fi
 
           # Convert VALUES_CONFIG JSON to .env file.
+          jq -r 'to_entries[] | "\(.key)=\(.value)"' <<< "${VALUES_CONFIG:-}" > /tmp/values-config.env
           ENV_FILE_ARGS=()
-          if [[ -n "${VALUES_CONFIG:-}" && "${VALUES_CONFIG}" != "{}" ]]; then
-            echo "${VALUES_CONFIG}" | jq -r 'to_entries[] | "\(.key)=\(.value)"' > /tmp/values-config.env
-            if [[ -s /tmp/values-config.env ]]; then
-              ENV_FILE_ARGS=(--env-file /tmp/values-config.env)
-            fi
+          if [[ -s /tmp/values-config.env ]]; then
+            ENV_FILE_ARGS=(--env-file /tmp/values-config.env)
           fi
 
           # Persist user-supplied extra values, then forward via --extra-values.
@@ -1166,37 +1144,24 @@ jobs:
           # leaking potentially sensitive values into workflow logs.
           echo "$EXTRA_VALUES" > /tmp/extra-values-file.yaml
           EXTRA_VALUES_ARGS=()
-          if [[ -s /tmp/extra-values-file.yaml ]] && grep -q '[^[:space:]]' /tmp/extra-values-file.yaml; then
+          if grep -qs '[^[:space:]]' /tmp/extra-values-file.yaml; then
             EXTRA_VALUES_ARGS=(--extra-values /tmp/extra-values-file.yaml)
           fi
 
           # Give deploy-camunda the requested namespace TTL; without this it stamps its 60m
           # default onto cleaner/janitor, so 12h nightly clusters get reaped after an hour.
-          # A topology scenario runs its e2e legs sequentially, one namespace set for the
-          # whole chain, so 60m expires mid-run; TOPOLOGY_MIN_TTL covers the chain. Only
-          # the deploy-time annotation is raised — CI_DEPLOYMENT_TTL stays as it was, so
-          # the cleanup job still stamps ttl=1s and the namespaces are reaped at the end
-          # of the run rather than lingering for the full TTL.
+          # A topology chain and an e2e install flow (smoke + full + api) both run their
+          # legs sequentially against one namespace set, so 60m expires mid-run;
+          # E2E_CHAIN_MIN_TTL covers the chain. Only the deploy-time annotation is raised —
+          # CI_DEPLOYMENT_TTL stays as it was, so the cleanup job still stamps ttl=1s and
+          # the namespaces are reaped at the end of the run rather than lingering.
           export DEPLOY_CAMUNDA_TTL="${CI_DEPLOYMENT_TTL:-}"
-          if [[ -z "$DEPLOY_CAMUNDA_TTL" && "$IS_TOPOLOGY" == "true" ]]; then
-            export DEPLOY_CAMUNDA_TTL="$TOPOLOGY_MIN_TTL"
+          if [[ -z "$DEPLOY_CAMUNDA_TTL" && "$CHAIN_NEEDS_TTL_FLOOR" == "true" ]]; then
+            export DEPLOY_CAMUNDA_TTL="$E2E_CHAIN_MIN_TTL"
           fi
 
-          # The workflow input is `number` type, so reject empty/fractional/negative
-          # (any non-digit matches *[!0-9]*) and then zero before it reaches the
-          # integer --ingress-ready-timeout flag; a valid whole minute passes through.
           INGRESS_READY_ARGS=()
           if [ "$WAIT_INGRESS_READY" = "true" ]; then
-            case "$INGRESS_READY_TIMEOUT" in
-              ''|*[!0-9]*)
-                echo "::error::ingress-ready-timeout must be a positive whole number of minutes, got '$INGRESS_READY_TIMEOUT'" >&2
-                exit 1
-                ;;
-            esac
-            if [ "$INGRESS_READY_TIMEOUT" -lt 1 ]; then
-              echo "::error::ingress-ready-timeout must be >= 1 minute, got '$INGRESS_READY_TIMEOUT'" >&2
-              exit 1
-            fi
             INGRESS_READY_ARGS+=(--wait-ingress-ready --ingress-ready-timeout "$INGRESS_READY_TIMEOUT")
           fi
 
@@ -1218,7 +1183,8 @@ jobs:
             ${INGRESS_READY_ARGS[@]+"${INGRESS_READY_ARGS[@]}"} \
             ${FORCE_IMAGE_OVERRIDE_ARGS[@]+"${FORCE_IMAGE_OVERRIDE_ARGS[@]}"} \
             ${ENV_FILE_ARGS[@]+"${ENV_FILE_ARGS[@]}"} \
-            ${CHART_REF_ARGS[@]+"${CHART_REF_ARGS[@]}"} \
+            --chart-ref "${CHART_REF}" \
+            --chart-version "${HELM_CHART_VERSION:-}" \
             ${EXTRA_HELM_ARGS[@]+"${EXTRA_HELM_ARGS[@]}"} \
             ${EXTRA_VALUES_ARGS[@]+"${EXTRA_VALUES_ARGS[@]}"} \
             --log-level info
@@ -1277,6 +1243,7 @@ jobs:
     needs: [install]
     runs-on: ${{ matrix.suite == 'full' && 'gcp-core-32-longrunning-big-ssd' || 'gcp-core-8-release' }}
     container:
+      # the input is a digest from ci-result-cache; the fallback follows the latest image that build-ci-runner-image.yaml pushes
       image: ${{ inputs.playwright-runner-image || 'ghcr.io/camunda/team-distribution/playwright-runner:latest' }} # zizmor: ignore[unpinned-images]
       credentials:
         username: ${{ github.actor }}
@@ -1391,6 +1358,7 @@ jobs:
     needs: [install]
     runs-on: gcp-core-32-longrunning-big-ssd
     container:
+      # the input is a digest from ci-result-cache; the fallback follows the latest image that build-ci-runner-image.yaml pushes
       image: ${{ inputs.playwright-runner-image || 'ghcr.io/camunda/team-distribution/playwright-runner:latest' }} # zizmor: ignore[unpinned-images]
       credentials:
         username: ${{ github.actor }}
@@ -1487,6 +1455,7 @@ jobs:
     needs: [install]
     runs-on: gcp-core-8-release
     container:
+      # the input is a digest from ci-result-cache; the fallback follows the latest image that build-ci-runner-image.yaml pushes
       image: ${{ inputs.playwright-runner-image || 'ghcr.io/camunda/team-distribution/playwright-runner:latest' }} # zizmor: ignore[unpinned-images]
       credentials:
         username: ${{ github.actor }}
@@ -1566,7 +1535,7 @@ jobs:
 
       - name: Generate E2E repository token
         id: e2e-repository-token
-        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@9965a08067900e11c602a050b8821ec92f49544b # main
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@3e556b42c8771fe1afb91361ae44e81367a37f5e # main
         with:
           github-app-id-vault-key: GITHUB_APP_ID
           github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/quality-assurance-ci
@@ -1635,6 +1604,7 @@ jobs:
     needs: [upgrade]
     runs-on: gcp-core-8-release
     container:
+      # the input is a digest from ci-result-cache; the fallback follows the latest image that build-ci-runner-image.yaml pushes
       image: ${{ inputs.playwright-runner-image || 'ghcr.io/camunda/team-distribution/playwright-runner:latest' }} # zizmor: ignore[unpinned-images]
       credentials:
         username: ${{ github.actor }}
@@ -1787,7 +1757,7 @@ jobs:
             exit 0
           fi
 
-          npm install -g playwright
+          npm install -g playwright@1.63.0
           # Topology legs run suites from different chart test directories (8.10, 8.9, ...), and
           # Playwright refuses to merge blob reports recorded under different testDirs unless a
           # merge config names one. The checkout root contains every chart's test directory.
@@ -1912,6 +1882,7 @@ jobs:
     if: ${{ always() && (contains(needs.*.result, 'success') || contains(needs.*.result, 'skipped') || contains(needs.*.result, 'cancelled')) }}
     runs-on: ubuntu-latest
     container:
+      # CI follows the latest ci-runner image that build-ci-runner-image.yaml pushes
       image: ghcr.io/camunda/team-distribution/ci-runner:latest # zizmor: ignore[unpinned-images]
       credentials:
         username: ${{ github.actor }}
@@ -2085,20 +2056,17 @@ jobs:
           INPUTS_FLOW: ${{ inputs.flow }}
           INPUTS_DISTRO_TYPE: ${{ inputs.distro-type }}
         run: |
-          kubectl annotate ns "$TEST_NAMESPACE" test-flow="${INPUTS_FLOW}" --overwrite || true
-          kubectl annotate ns "$TEST_NAMESPACE" build-failed=true --overwrite || true
+          set -euo pipefail
+          kubectl annotate ns "$TEST_NAMESPACE" test-flow="${INPUTS_FLOW}" build-failed=true --overwrite || true
 
-          if [[ "$(kubectl get ns "$TEST_NAMESPACE" --ignore-not-found)" != "" && "${{ env.CI_DEPLOYMENT_TTL }}" == "" ]]; then
-            kubectl annotate ns "$TEST_NAMESPACE" cleaner/ttl=1s --overwrite=true
-            kubectl annotate ns "$TEST_NAMESPACE" janitor/ttl=1s --overwrite=true
+          ttl=1s
+          if [[ "${INPUTS_DISTRO_TYPE}" == "kubernetes" && -n "${CI_DEPLOYMENT_TTL}" ]]; then
+            ttl="${CI_DEPLOYMENT_TTL}"
+          fi
+          if [[ -n "$(kubectl get ns "$TEST_NAMESPACE" --ignore-not-found)" && -z "${CI_DEPLOYMENT_TTL}" ]]; then
+            kubectl annotate ns "$TEST_NAMESPACE" cleaner/ttl=1s janitor/ttl=1s --overwrite=true
           else
-            if [[ "${INPUTS_DISTRO_TYPE}" == "kubernetes" && "${{ env.CI_DEPLOYMENT_TTL }}" != "" ]]; then
-              kubectl annotate ns "$TEST_NAMESPACE" cleaner/ttl="${CI_DEPLOYMENT_TTL}" --overwrite=true || true
-              kubectl annotate ns "$TEST_NAMESPACE" janitor/ttl="${CI_DEPLOYMENT_TTL}" --overwrite=true || true
-            else
-              kubectl annotate ns "$TEST_NAMESPACE" cleaner/ttl=1s --overwrite=true || true
-              kubectl annotate ns "$TEST_NAMESPACE" janitor/ttl=1s --overwrite=true || true
-            fi
+            kubectl annotate ns "$TEST_NAMESPACE" cleaner/ttl="$ttl" janitor/ttl="$ttl" --overwrite=true || true
           fi
 
       - name: CI Cleanup - Reap topology namespaces
@@ -2110,24 +2078,14 @@ jobs:
           INPUTS_DISTRO_TYPE: ${{ inputs.distro-type }}
           INPUTS_TOPOLOGY_NAMESPACE_SUFFIXES: ${{ inputs.topology-namespace-suffixes }}
         run: |
+          set -euo pipefail
+          ttl=1s
+          if [[ "${INPUTS_DISTRO_TYPE}" == "kubernetes" && -n "${CI_DEPLOYMENT_TTL}" ]]; then
+            ttl="${CI_DEPLOYMENT_TTL}"
+          fi
           while IFS= read -r suffix; do
             ns="$(deploy-camunda topology namespace --base "$TEST_NAMESPACE" --suffix "$suffix")"
-
-            kubectl annotate ns "$ns" test-flow="${INPUTS_FLOW}" --overwrite || true
-            kubectl annotate ns "$ns" build-failed=true --overwrite || true
-
-            if [[ "$(kubectl get ns "$ns" --ignore-not-found)" != "" && "${{ env.CI_DEPLOYMENT_TTL }}" == "" ]]; then
-              kubectl annotate ns "$ns" cleaner/ttl=1s --overwrite=true || true
-              kubectl annotate ns "$ns" janitor/ttl=1s --overwrite=true || true
-            else
-              if [[ "${INPUTS_DISTRO_TYPE}" == "kubernetes" && "${{ env.CI_DEPLOYMENT_TTL }}" != "" ]]; then
-                kubectl annotate ns "$ns" cleaner/ttl="${CI_DEPLOYMENT_TTL}" --overwrite=true || true
-                kubectl annotate ns "$ns" janitor/ttl="${CI_DEPLOYMENT_TTL}" --overwrite=true || true
-              else
-                kubectl annotate ns "$ns" cleaner/ttl=1s --overwrite=true || true
-                kubectl annotate ns "$ns" janitor/ttl=1s --overwrite=true || true
-              fi
-            fi
+            kubectl annotate ns "$ns" test-flow="${INPUTS_FLOW}" build-failed=true cleaner/ttl="$ttl" janitor/ttl="$ttl" --overwrite=true || true
           done < <(jq -r '.[]' <<< "${INPUTS_TOPOLOGY_NAMESPACE_SUFFIXES}")
 
       - name: Observe build status

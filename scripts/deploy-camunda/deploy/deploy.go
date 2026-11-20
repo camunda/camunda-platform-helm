@@ -613,7 +613,7 @@ func executeDeployment(ctx context.Context, prepared *PreparedScenario, flags *c
 // secondary-storage backend's FQDN (Service lives in the Hub
 // namespace, reachable cluster-wide via <service>.<namespace>.svc.cluster.local).
 //
-// Exported so the topology deploy driver (cmd's runTopologyEntry) can compute
+// Exported so the topology deploy driver (matrix's runTopologyEntry) can compute
 // this UP FRONT — every release's namespace/realm is known before any
 // release is deployed (see GenerateTopologyContexts) — and inject it into
 // EVERY release's ExtraEnv (including the Hub release itself, whose

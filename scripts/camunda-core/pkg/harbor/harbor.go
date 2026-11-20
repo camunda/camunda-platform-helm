@@ -221,7 +221,7 @@ func (c *Client) postTag(digest, tag string) (int, error) {
 		return 0, err
 	}
 	defer resp.Body.Close()
-	io.Copy(io.Discard, resp.Body)
+	_, _ = io.Copy(io.Discard, resp.Body)
 	return resp.StatusCode, nil
 }
 
@@ -260,7 +260,7 @@ func (c *Client) DeleteTag(ref, tag string, ignoreMissing bool) error {
 		return fmt.Errorf("delete tag %q: %w", tag, err)
 	}
 	defer resp.Body.Close()
-	io.Copy(io.Discard, resp.Body)
+	_, _ = io.Copy(io.Discard, resp.Body)
 	if resp.StatusCode >= 400 && !ignoreMissing {
 		return fmt.Errorf("delete tag %q: HTTP %d", tag, resp.StatusCode)
 	}

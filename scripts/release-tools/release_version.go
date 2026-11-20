@@ -45,7 +45,7 @@ func runReleaseVersion(args []string) error {
 	fs.StringVar(&chartDir, "chart-dir", "", "chart directory (matrix.chart.directory), for the trace fallback")
 	fs.StringVar(&shortSHA, "short-sha", "", "dev commit short SHA")
 	fs.StringVar(&traceFile, "trace-file", "", "release-please --dry-run --trace log (stable releases scrape this)")
-	fs.BoolVar(&failIfReleased, "fail-if-released", false, "hard-fail if the computed version already has a release git tag (set for workflow_dispatch builds)")
+	fs.BoolVar(&failIfReleased, "fail-if-released", false, "for workflow_dispatch builds: hard-fail if a computed version (or image-override build) already has a release git tag; skip the build (SKIP_BUILD=true) when only the released fallback version was found")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -69,8 +69,11 @@ func runReleaseVersion(args []string) error {
 
 	r := releaseplease.Compute(currentVersion, stillAlpha, trace, chartDir, shortSHA)
 
-	// Fail if the computed version already has a release tag: rebuilding it would
-	// package and push over an immutable published release.
+	// A computed version that is already tagged would re-mint an immutable
+	// release: fail. A fallback to the already-released Chart.yaml version (no new
+	// version computed) is a no-op build: skip it, unless image overrides ask for
+	// a real build.
+	skip := false
 	if failIfReleased {
 		tag := releaseplease.ReleaseTag(chartVersion, r.ReleaseVersion)
 		existing, err := capture(context.Background(), "git", "tag", "-l", tag)
@@ -78,7 +81,11 @@ func runReleaseVersion(args []string) error {
 			return fmt.Errorf("check release tag %s: %w", tag, err)
 		}
 		if existing != "" {
-			return fmt.Errorf("refusing to build: chart version %s is already released (git tag %s exists); a workflow_dispatch must not re-mint an immutable released version", r.ReleaseVersion, tag)
+			if r.Computed || os.Getenv("HAS_IMAGE_OVERRIDES") == "true" {
+				return fmt.Errorf("refusing to build: chart version %s is already released (git tag %s exists); a workflow_dispatch must not re-mint an immutable released version", r.ReleaseVersion, tag)
+			}
+			fmt.Fprintf(os.Stderr, "::notice::No new release version computed; %s is already released - skipping dev build\n", tag)
+			skip = true
 		}
 	}
 
@@ -93,6 +100,9 @@ func runReleaseVersion(args []string) error {
 		if err := env.set(kv[0], kv[1]); err != nil {
 			return err
 		}
+	}
+	if skip {
+		return env.set("SKIP_BUILD", "true")
 	}
 	fmt.Fprintf(os.Stderr, "::notice::Computed version: %s, dev tag: %s, rolling tag: %s-dev-latest\n", r.ReleaseVersion, r.DevTag, r.ChartMajor)
 	return nil

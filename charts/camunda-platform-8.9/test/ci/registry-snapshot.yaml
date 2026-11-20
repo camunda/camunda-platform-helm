@@ -57,6 +57,7 @@ integration:
           persistence: elasticsearch
           features:
             - enterprise
+            - keycloak-admin-audience-off
         - name: opensearch
           enabled: true
           shortname: oske
@@ -409,6 +410,30 @@ integration:
               values-file: test/integration/companion-values/opensearch.yaml
               repo-name: opensearch
               repo-url: https://opensearch-project.github.io/helm-charts/
+        - name: qa-rdbms
+          enabled: false
+          shortname: qardbms
+          auth: keycloak
+          flow: install
+          platforms:
+            - gke
+          exclude: []
+          infra-type:
+            gke: qa-workloads
+          identity: keycloak
+          persistence: rdbms
+          qa: true
+          image-tags: true
+          pre-install:
+            fixtures:
+              - postgresql-cluster.yaml
+            description: |
+              Provisions a CloudNativePG `Cluster` plus auth Secret in the
+              scenario namespace. The CloudNativePG operator reconciles the
+              Cluster into a running PostgreSQL instance reachable as
+              postgresql-cluster-rw.<namespace>.svc.cluster.local — required
+              before helm install or the Camunda OrchestrationCluster pods
+              crash-loop trying to reach RDBMS.
         - name: qa-elasticsearch-rba
           enabled: false
           shortname: qaelrba

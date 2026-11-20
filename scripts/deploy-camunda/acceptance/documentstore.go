@@ -65,7 +65,7 @@ func runDocumentStoreAcceptance(ctx context.Context, opts DocumentStoreAcceptanc
 		if err != nil {
 			return fmt.Errorf("start %s port-forward: %w", target.resource, err)
 		}
-		defer process.Stop()
+		defer func() { _ = process.Stop() }()
 		port, err := waitForForwardPort(ctx, process, deps.sleep)
 		if err != nil {
 			return fmt.Errorf("forward %s: %w", target.resource, err)
@@ -80,6 +80,7 @@ func runDocumentStoreAcceptance(ctx context.Context, opts DocumentStoreAcceptanc
 	return nil
 }
 
+//nolint:gocognit,gocyclo // split tracked in #7584
 func verifyDocumentStore(ctx context.Context, doHTTP func(*http.Request) (*http.Response, error), apiURL, storeAddress string) error {
 	payload := []byte("Camunda Helm S3-compatible document-store acceptance\n")
 	var upload bytes.Buffer

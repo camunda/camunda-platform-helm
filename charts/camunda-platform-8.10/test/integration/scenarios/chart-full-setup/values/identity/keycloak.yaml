@@ -11,7 +11,7 @@ global:
   host: "$CAMUNDA_HOSTNAME"
   ingress:
     enabled: true
-    className: nginx
+    className: contour
     tls:
       enabled: true
       # A wildcard certificate will be used.
@@ -23,7 +23,7 @@ global:
       url:
         protocol: http
         # FQDN required: the ExternalName service target must be resolvable from
-        # the ingress-nginx namespace (which runs in a different namespace).
+        # the ingress controller namespace (which runs in a different namespace).
         host: "keycloak.{{ .Release.Namespace }}.svc.cluster.local"
         port: "80"
       internal: true

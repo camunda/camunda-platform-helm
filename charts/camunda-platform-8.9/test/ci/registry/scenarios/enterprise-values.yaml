@@ -6,6 +6,7 @@ identity: keycloak
 persistence: elasticsearch
 features:
   - enterprise
+  - keycloak-admin-audience-off
 platforms:
   - gke
 infra-type:

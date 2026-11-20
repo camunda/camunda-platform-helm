@@ -164,7 +164,7 @@
     {
       description: 'Disable major updates for Helm dependencies to prevent breaking changes.',
       enabled: false,
-      matchManagers: ['helm', 'helm-values', 'custom.regex'],
+      matchManagers: ['helmv3', 'helm-values', 'custom.regex'],
       matchUpdateTypes: ['major'],
     },
     {

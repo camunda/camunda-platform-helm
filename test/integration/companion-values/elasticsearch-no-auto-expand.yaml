@@ -1,0 +1,84 @@
+# elasticsearch.yaml without the lifecycle hook that installs the
+# camunda-ci-auto-expand-replicas composable index template. Optimize 8.7
+# creates legacy index templates, which Elasticsearch ignores for any index a
+# composable template matches (see post-infra-legacy-elasticsearch.sh).
+#
+# CI values for the embedded Elasticsearch companion chart (elastic/elasticsearch).
+# Security/X-Pack disabled, single node, minimal resources for CI/dev environments.
+#
+# Deployed as a separate Helm release by deploy-camunda before the main
+# Camunda chart. Referenced from ci-test-config.yaml dependencies.
+
+clusterName: "elasticsearch"
+
+replicas: 1
+minimumMasterNodes: 1
+
+protocol: http
+
+# The chart's readiness probe stores its "already started" marker at
+# /tmp/.es_start_file, which is lost whenever the pod is rescheduled onto
+# another node. A rescheduled pod therefore re-runs the startup branch and
+# blocks on _cluster/health?wait_for_status=<status>. Gate on yellow: all
+# primaries assigned, which is the strongest status a single-node cluster
+# reaches while any recovered index still carries a replica.
+clusterHealthCheckParams: "wait_for_status=yellow&timeout=1s"
+
+# Use ES 8.18.0 — the elastic/elasticsearch Helm chart 8.5.1 defaults to its
+# own app version (8.5.1) but Camunda 8.10 requires ES 8.6+ (specifically for
+# the unassignedPrimaryShards field in HealthResponse). The Bitnami subchart
+# this replaces bundled ES 8.18.0.
+imageTag: "8.18.0"
+
+# Disable automatic TLS certificate generation. When createCert=true (default),
+# the chart injects env vars that force xpack.security.enabled=true and
+# xpack.security.{http,transport}.ssl.enabled=true, overriding any esConfig
+# settings. Setting createCert=false prevents cert creation, volume mounts, AND
+# the env var injection — letting our esConfig settings take effect.
+createCert: false
+
+# Keep the credentials secret enabled even though security is disabled.
+# The chart's readiness probe script checks [ -z "${ELASTIC_PASSWORD}" ] and
+# exits 1 if unset. The password is injected from this secret but ignored by
+# ES when xpack.security.enabled=false.
+secret:
+  enabled: true
+
+# Single-node disco + disable HTTP TLS + disable X-Pack security so Camunda
+# can talk to the cluster anonymously over plain HTTP (mirrors the OpenSearch
+# companion chart's "security disabled" stance).
+#
+# NOTE: discovery.type: single-node is NOT set here because the
+# elastic/elasticsearch chart injects cluster.initial_master_nodes via an env
+# var in the StatefulSet template, and ES 8.x rejects having both. With
+# replicas=1 the chart bootstraps correctly without the explicit single-node
+# setting.
+esConfig:
+  elasticsearch.yml: |
+    cluster.name: elasticsearch
+    network.host: 0.0.0.0
+    xpack.security.enabled: false
+    xpack.security.http.ssl.enabled: false
+    # Allow _reindex-from-remote to pull data from the source (bundled Bitnami)
+    # Elasticsearch during the Bitnami→companion migration (upgrade-minor flows).
+    # Harmless for install scenarios, which never issue a remote reindex.
+    reindex.remote.whitelist: "*:9200"
+    xpack.security.transport.ssl.enabled: false
+
+extraEnvs:
+  - name: ES_JAVA_OPTS
+    value: "-Xms512m -Xmx512m"
+
+resources:
+  requests:
+    cpu: "500m"
+    memory: "1Gi"
+  limits:
+    cpu: "1"
+    memory: "2Gi"
+
+volumeClaimTemplate:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 4Gi

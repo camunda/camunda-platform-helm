@@ -95,7 +95,7 @@ jobs:
           GH_APP_TOKEN: ${{ steps.token.outputs.token }}
         run: |
           set -euo pipefail
-          # shellcheck disable=SC2016
+          # shellcheck disable=SC2016 # the shell that git starts for the helper expands ${GH_APP_TOKEN}, so the token stays out of the arguments
           git -C "$RUNNER_TEMP/publish.git" -c core.hooksPath=/dev/null \
             -c credential.helper= \
             -c credential.helper='!f() { echo username=x-access-token; echo "password=${GH_APP_TOKEN}"; }; f' \

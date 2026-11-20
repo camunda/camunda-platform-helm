@@ -134,14 +134,12 @@ func Process(ctx context.Context, valuesFile string, opts Options) (string, stri
 	configEnv := map[string]string{}
 	if opts.ValuesConfig != "" && opts.ValuesConfig != "{}" {
 		logging.Logger.Debug().Msg("Parsing values-config JSON")
-		var m map[string]any
-		if err := json.Unmarshal([]byte(opts.ValuesConfig), &m); err != nil {
+		parsed, err := parseValuesConfig(opts.ValuesConfig)
+		if err != nil {
 			logging.Logger.Debug().Err(err).Msg("Failed to parse values-config")
 			return "", "", err
 		}
-		for k, v := range m {
-			configEnv[k] = fmt.Sprintf("%v", v)
-		}
+		configEnv = parsed
 		logging.Logger.Debug().Int("count", len(configEnv)).Msg("Loaded config values from values-config")
 	}
 
@@ -158,72 +156,11 @@ func Process(ctx context.Context, valuesFile string, opts Options) (string, stri
 	ph := placeholders.Find(content)
 	logging.Logger.Debug().Int("count", len(ph)).Msg("Found unique placeholders to substitute")
 
-	var missing []string
-	getVal := func(name string) (string, bool) {
-		if v, ok := configEnv[name]; ok {
-			return v, true
-		}
-		if opts.EnvOverrides != nil {
-			v, ok := opts.EnvOverrides[name]
-			return v, ok
-		}
-		v, ok := os.LookupEnv(name)
-		return v, ok
+	getVal := envLookup(configEnv, opts.EnvOverrides)
+	logSubstitutions(ph, getVal)
+	if err := requirePlaceholders(ctx, ph, getVal, opts); err != nil {
+		return "", "", err
 	}
-
-	// Log substitutions
-	if len(ph) > 0 {
-		logging.Logger.Info().Msg("Substituting environment variables:")
-		for _, p := range ph {
-			if val, ok := getVal(p); ok {
-				displayVal := val
-				if IsSecretName(p) {
-					displayVal = "***"
-				}
-				logging.Logger.Info().Str("var", p).Str("value", displayVal).Msg("")
-			}
-		}
-	}
-
-	// Check for missing variables and prompt if interactive
-	for _, p := range ph {
-		if _, ok := getVal(p); !ok {
-			if opts.Interactive {
-				// Try to guess a default or just empty
-				defVal := ""
-				val, err := env.Prompt(ctx, p, defVal)
-				if err != nil {
-					logging.Logger.Error().Err(err).Msg("Failed to read input")
-					missing = append(missing, p)
-					continue
-				}
-				if val != "" {
-					// Store in the appropriate env source so subsequent lookups find it
-					if opts.EnvOverrides != nil {
-						opts.EnvOverrides[p] = val
-					} else {
-						os.Setenv(p, val)
-					}
-					// Also persist to .env file if configured
-					if opts.EnvFile != "" {
-						if err := env.Append(opts.EnvFile, p, val); err != nil {
-							logging.Logger.Warn().Err(err).Msg("Failed to append to .env file")
-						} else {
-							logging.Logger.Info().Msg("Saved to .env file")
-						}
-					}
-					continue
-				}
-			}
-			missing = append(missing, p)
-		}
-	}
-	if len(missing) > 0 {
-		sort.Strings(missing)
-		logging.Logger.Debug().Int("count", len(missing)).Msg("Missing required environment variables")
-		return "", "", MissingEnvError{Missing: missing}
-	}
-	logging.Logger.Debug().Msg("All required environment variables are present")
 
 	// Perform substitution using os.Expand to support both $VAR and ${VAR} consistently
 	logging.Logger.Debug().Msg("Performing placeholder substitution")
@@ -238,27 +175,10 @@ func Process(ctx context.Context, valuesFile string, opts Options) (string, stri
 
 	// Optional license injection performed in-memory on substituted content
 	if opts.LicenseKey != "" {
-		logging.Logger.Debug().Msg("Injecting license key into global.license.key")
-		var doc map[string]any
-		if err := yaml.Unmarshal([]byte(content), &doc); err != nil {
-			logging.Logger.Debug().Err(err).Msg("Failed to unmarshal YAML for license injection")
-			return "", "", err
-		}
-		global := ensureMap(doc, "global")
-		license := ensureMap(global, "license")
-		if usesLicenseSecret(opts.ChartPath) {
-			secret := ensureMap(license, "secret")
-			secret["inlineSecret"] = opts.LicenseKey
-		} else {
-			license["key"] = opts.LicenseKey
-		}
-		out, err := yaml.Marshal(doc)
+		content, err = injectLicense(content, opts)
 		if err != nil {
-			logging.Logger.Debug().Err(err).Msg("Failed to marshal YAML after license injection")
 			return "", "", err
 		}
-		content = string(out)
-		logging.Logger.Debug().Msg("License key injected successfully")
 	} else {
 		logging.Logger.Debug().Msg("No license key provided, skipping injection")
 	}
@@ -279,6 +199,121 @@ func Process(ctx context.Context, valuesFile string, opts Options) (string, stri
 	}
 	logging.Logger.Debug().Int("bytes", len(content)).Str("output-path", outputPath).Msg("Successfully wrote bytes to")
 	return outputPath, content, nil
+}
+
+func parseValuesConfig(valuesConfig string) (map[string]string, error) {
+	var m map[string]any
+	if err := json.Unmarshal([]byte(valuesConfig), &m); err != nil {
+		return nil, err
+	}
+	configEnv := map[string]string{}
+	for k, v := range m {
+		configEnv[k] = fmt.Sprintf("%v", v)
+	}
+	return configEnv, nil
+}
+
+func envLookup(configEnv, envOverrides map[string]string) func(string) (string, bool) {
+	return func(name string) (string, bool) {
+		if v, ok := configEnv[name]; ok {
+			return v, true
+		}
+		if envOverrides != nil {
+			v, ok := envOverrides[name]
+			return v, ok
+		}
+		v, ok := os.LookupEnv(name)
+		return v, ok
+	}
+}
+
+func logSubstitutions(ph []string, getVal func(string) (string, bool)) {
+	if len(ph) == 0 {
+		return
+	}
+	logging.Logger.Info().Msg("Substituting environment variables:")
+	for _, p := range ph {
+		if val, ok := getVal(p); ok {
+			displayVal := val
+			if IsSecretName(p) {
+				displayVal = "***"
+			}
+			logging.Logger.Info().Str("var", p).Str("value", displayVal).Msg("")
+		}
+	}
+}
+
+func requirePlaceholders(ctx context.Context, ph []string, getVal func(string) (string, bool), opts Options) error {
+	// Check for missing variables and prompt if interactive
+	var missing []string
+	for _, p := range ph {
+		if _, ok := getVal(p); ok {
+			continue
+		}
+		if opts.Interactive && promptPlaceholder(ctx, p, opts) {
+			continue
+		}
+		missing = append(missing, p)
+	}
+	if len(missing) > 0 {
+		sort.Strings(missing)
+		logging.Logger.Debug().Int("count", len(missing)).Msg("Missing required environment variables")
+		return MissingEnvError{Missing: missing}
+	}
+	logging.Logger.Debug().Msg("All required environment variables are present")
+	return nil
+}
+
+func promptPlaceholder(ctx context.Context, p string, opts Options) bool {
+	// Try to guess a default or just empty
+	defVal := ""
+	val, err := env.Prompt(ctx, p, defVal)
+	if err != nil {
+		logging.Logger.Error().Err(err).Msg("Failed to read input")
+		return false
+	}
+	if val == "" {
+		return false
+	}
+	// Store in the appropriate env source so subsequent lookups find it
+	if opts.EnvOverrides != nil {
+		opts.EnvOverrides[p] = val
+	} else {
+		os.Setenv(p, val)
+	}
+	// Also persist to .env file if configured
+	if opts.EnvFile != "" {
+		if err := env.Append(opts.EnvFile, p, val); err != nil {
+			logging.Logger.Warn().Err(err).Msg("Failed to append to .env file")
+		} else {
+			logging.Logger.Info().Msg("Saved to .env file")
+		}
+	}
+	return true
+}
+
+func injectLicense(content string, opts Options) (string, error) {
+	logging.Logger.Debug().Msg("Injecting license key into global.license.key")
+	var doc map[string]any
+	if err := yaml.Unmarshal([]byte(content), &doc); err != nil {
+		logging.Logger.Debug().Err(err).Msg("Failed to unmarshal YAML for license injection")
+		return "", err
+	}
+	global := ensureMap(doc, "global")
+	license := ensureMap(global, "license")
+	if usesLicenseSecret(opts.ChartPath) {
+		secret := ensureMap(license, "secret")
+		secret["inlineSecret"] = opts.LicenseKey
+	} else {
+		license["key"] = opts.LicenseKey
+	}
+	out, err := yaml.Marshal(doc)
+	if err != nil {
+		logging.Logger.Debug().Err(err).Msg("Failed to marshal YAML after license injection")
+		return "", err
+	}
+	logging.Logger.Debug().Msg("License key injected successfully")
+	return string(out), nil
 }
 
 // IsSecretName reports whether an environment variable name looks like it holds
@@ -325,14 +360,12 @@ func ProcessImageTags(opts Options) (string, error) {
 	configEnv := map[string]string{}
 	if opts.ValuesConfig != "" && opts.ValuesConfig != "{}" {
 		logging.Logger.Debug().Msg("Parsing values-config JSON for image tags")
-		var m map[string]any
-		if err := json.Unmarshal([]byte(opts.ValuesConfig), &m); err != nil {
+		parsed, err := parseValuesConfig(opts.ValuesConfig)
+		if err != nil {
 			logging.Logger.Debug().Err(err).Msg("Failed to parse values-config")
 			return "", err
 		}
-		for k, v := range m {
-			configEnv[k] = fmt.Sprintf("%v", v)
-		}
+		configEnv = parsed
 		logging.Logger.Debug().Int("count", len(configEnv)).Msg("Loaded config values for image tags")
 	}
 
@@ -348,17 +381,7 @@ func ProcessImageTags(opts Options) (string, error) {
 	ph := placeholders.Find(content)
 	logging.Logger.Debug().Int("count", len(ph)).Msg("Found placeholders in image tags file")
 
-	getVal := func(name string) (string, bool) {
-		if v, ok := configEnv[name]; ok {
-			return v, true
-		}
-		if opts.EnvOverrides != nil {
-			v, ok := opts.EnvOverrides[name]
-			return v, ok
-		}
-		v, ok := os.LookupEnv(name)
-		return v, ok
-	}
+	getVal := envLookup(configEnv, opts.EnvOverrides)
 
 	// Check for missing variables - for image tags we skip missing vars silently
 	// since not all image tags may be provided in every scenario

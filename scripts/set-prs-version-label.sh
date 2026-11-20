@@ -37,7 +37,7 @@ done
 get_prs_per_chart_dir () {
     chart_dir="${1}"
     cliff_config_file=".github/config/cliff.toml"
-    # shellcheck disable=SC2154
+    # shellcheck disable=SC2154 # previousSourceSHA and sourceSHA come from the environment; the script checks them before the first call
     git-cliff "${previousSourceSHA}..${sourceSHA}" \
         --context \
         --config "${cliff_config_file}" \
@@ -50,7 +50,7 @@ get_prs_per_chart_dir () {
 # https://github.com/cli/cli/discussions/7097#discussioncomment-5229031
 get_issues_per_pr () {
     pr_number="${1}"
-    # shellcheck disable=SC2016
+    # shellcheck disable=SC2016 # the $ names are GraphQL variables, not shell expansions
     gh api graphql -F owner="${REPO_OWNER}" -F repo="${REPO_NAME}" -F pr="${pr_number}" -f query='
         query ($owner: String!, $repo: String!, $pr: Int!) {
             repository(owner: $owner, name: $repo) {

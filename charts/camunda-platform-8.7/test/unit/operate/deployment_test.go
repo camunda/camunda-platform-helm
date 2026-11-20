@@ -103,7 +103,7 @@ func (s *deploymentTemplateTest) TestContainerSetGlobalAnnotations() {
 	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
 
 	// then
-	s.Require().Equal("bar", deployment.ObjectMeta.Annotations["foo"])
+	s.Require().Equal("bar", deployment.Annotations["foo"])
 }
 
 func (s *deploymentTemplateTest) TestContainerSetImageNameSubChart() {

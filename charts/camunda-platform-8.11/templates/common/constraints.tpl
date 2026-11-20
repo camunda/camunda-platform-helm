@@ -1636,7 +1636,7 @@ The following values inside your values.yaml need to be set but were not:
     {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
   {{- end }}
 
-  {{- if and (eq (include "camundaPlatform.grpcIngressRendered" .) "true") (eq (include "camundaPlatform.orchestrationGRPCTLSEnabled" .) "true") (ne .Values.orchestration.ingress.grpc.className "nginx") }}
+  {{- if and (eq (include "camundaPlatform.grpcIngressRendered" .) "true") (eq (include "camundaPlatform.orchestrationGRPCTLSEnabled" .) "true") (ne .Values.orchestration.ingress.grpc.className "nginx") (ne .Values.orchestration.ingress.grpc.className "openshift-default") }}
     {{- $warningMessage := printf "%s %s %s"
         "[camunda][warning]"
         (printf "Upstream TLS is enabled for the Orchestration gRPC server, so the chart annotates the gRPC Ingress with nginx.ingress.kubernetes.io/backend-protocol: GRPCS, but orchestration.ingress.grpc.className is %q rather than nginx." .Values.orchestration.ingress.grpc.className)

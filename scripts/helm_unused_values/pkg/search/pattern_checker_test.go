@@ -143,7 +143,7 @@ func TestSearchKeyByPatternInTemplates(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// Create a test registry
 			registry := patterns.New()
-			registry.RegisterBuiltins()
+			_ = registry.RegisterBuiltins()
 
 			// Create the test finder
 			finder := &search.Finder{

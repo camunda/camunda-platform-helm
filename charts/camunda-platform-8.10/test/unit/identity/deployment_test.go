@@ -213,7 +213,7 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 				helm.UnmarshalK8SYaml(t, output, &deployment)
 
 				// then
-				s.Require().Equal("bar", deployment.ObjectMeta.Annotations["foo"])
+				s.Require().Equal("bar", deployment.Annotations["foo"])
 			},
 		}, {
 			Skip: true,

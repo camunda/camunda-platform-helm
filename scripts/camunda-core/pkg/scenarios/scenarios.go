@@ -126,6 +126,8 @@ func (c *DeploymentConfig) ValidateAgainstValues(scenariosDir string) error {
 
 // ResolvePaths returns the ordered list of values files based on the configuration.
 // Files are returned in order: base -> base modifiers -> identity -> persistence -> platform -> infra -> features -> migrator -> image-tags
+//
+//nolint:gocognit // split tracked in #7584
 func (c *DeploymentConfig) ResolvePaths(scenariosDir string) ([]string, error) {
 	valuesDir := filepath.Join(scenariosDir, ValuesDir)
 
@@ -337,6 +339,8 @@ func (c *DeploymentConfig) needsMigrator() bool {
 
 // MapScenarioToConfig converts a legacy scenario name to a DeploymentConfig.
 // This provides backward compatibility with the old --scenario flag.
+//
+//nolint:gocyclo // split tracked in #7584
 func MapScenarioToConfig(scenario string) *DeploymentConfig {
 	config := &DeploymentConfig{}
 

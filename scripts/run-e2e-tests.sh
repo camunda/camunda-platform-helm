@@ -16,9 +16,9 @@
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# shellcheck disable=SC1091
+# shellcheck disable=SC1091 # the shellcheck hook of .pre-commit-config.yaml runs without -x and does not follow sourced files
 source "$(dirname "$0")/base_playwright_script.sh"
-# shellcheck disable=SC1091
+# shellcheck disable=SC1091 # the shellcheck hook of .pre-commit-config.yaml runs without -x and does not follow sourced files
 source "$(dirname "$0")/render-e2e-env.sh"
 
 # ------------------------------------------------------------------------------
@@ -288,7 +288,7 @@ while [[ $# -gt 0 ]]; do
       shift 2
       ;;
     -v | --verbose)
-      # shellcheck disable=SC2034
+      # shellcheck disable=SC2034 # log() of the sourced base_playwright_script.sh reads VERBOSE
       VERBOSE=true
       shift
       ;;
@@ -396,7 +396,7 @@ fi
 # Export every variable from the namespace-scoped .env into the shell so that
 # the npx playwright subprocess inherits them without needing the .env file.
 set -a
-# shellcheck disable=SC1090
+# shellcheck disable=SC1090 # ENV_FILE is the .env file that this script renders at run time
 source "$ENV_FILE"
 set +a
 
@@ -417,7 +417,7 @@ if [[ "$PLAYWRIGHT_PROJECT" == "api" ]]; then
     --ci="$IS_CI" \
     --output "$API_ENV_FILE" || exit 1
   set -a
-  # shellcheck disable=SC1090
+  # shellcheck disable=SC1090 # API_ENV_FILE is the file that deploy-camunda e2e-env api-suite writes at run time
   source "$API_ENV_FILE"
   set +a
   rm -f "$API_ENV_FILE"

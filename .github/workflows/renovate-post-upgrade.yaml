@@ -47,13 +47,7 @@ jobs:
         run: |
           make install.readme-generator
       - name: Install tools
-        uses: ./.github/actions/install-tool-versions
-        with:
-          tools: |
-            golang
-            helm
-            helm-ct
-            yq
+        uses: camunda/infraex-common-config/.github/actions/asdf-install-tooling@e2923304b40dfc031b3f595bcc1445e90c981adb # 3.0.0
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: |
@@ -74,6 +68,7 @@ jobs:
           SUPPORTED_CHANGED=$(echo "${CHANGED_CHARTS}" | tr ' ' '\n' | grep -Fxf <(printf '%s\n' "$ROUTINE_CHARTS") | tr '\n' ' ' | xargs || true)
           echo "SUPPORTED_CHANGED=${SUPPORTED_CHANGED}" | tee -a "$GITHUB_ENV"
       - name: Run go mod tidy
+        if: ${{ !startsWith(github.ref_name, 'renovate/major-') && !endsWith(github.ref_name, '.x') }}
         run: |
           set -euo pipefail
           echo "Running 'go mod tidy' on all go.mod files..."

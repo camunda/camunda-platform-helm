@@ -129,7 +129,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
 
 				// then
-				s.Require().Equal("camunda-platform-test-foo-"+s.component, deployment.ObjectMeta.Name)
+				s.Require().Equal("camunda-platform-test-foo-"+s.component, deployment.Name)
 			},
 		}, {
 			Name: "TestContainerOverrideAppFullname",
@@ -144,7 +144,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
 
 				// then
-				s.Require().Equal("foo-"+s.component, deployment.ObjectMeta.Name)
+				s.Require().Equal("foo-"+s.component, deployment.Name)
 			},
 		}, {
 			Name: "TestContainerSetPodLabels",
@@ -222,7 +222,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
 
 				// then
-				s.Require().Equal("bar", deployment.ObjectMeta.Annotations["foo"])
+				s.Require().Equal("bar", deployment.Annotations["foo"])
 			},
 		}, {
 			Name: "TestContainerSetImageNameSubChart",

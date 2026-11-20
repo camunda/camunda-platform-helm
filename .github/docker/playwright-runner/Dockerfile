@@ -114,7 +114,7 @@
 # This stage downloads CLI tools and compresses them with UPX.
 # Only the compressed binaries are copied to the final image.
 # ==============================================================================
-FROM debian:bookworm-slim@sha256:99c0b25c46d0214d5a2091092e7908907dcaecd6a962cde0ac700acee222b6f3 AS tools
+FROM debian:bookworm-slim@sha256:734a72b3d6142a71993b4bc580ca01d8ca687f77a2c422d96a961d3376b179bc AS tools
 
 # Install minimal tools for downloading and compressing
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -126,6 +126,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Download UPX directly from GitHub releases
 # UPX is not available in Debian Bookworm's apt repositories
 ARG UPX_VERSION=4.2.4
+# hadolint ignore=DL4006 # no PR job builds this image, so a fix cannot be proven
 RUN curl -fsSL "https://github.com/upx/upx/releases/download/v${UPX_VERSION}/upx-${UPX_VERSION}-amd64_linux.tar.xz" \
     | tar -xJf - --strip-components=1 -C /usr/local/bin "upx-${UPX_VERSION}-amd64_linux/upx" \
     && upx --version
@@ -147,6 +148,7 @@ WORKDIR /tools
 # ------------------------------------------------------------------------------
 
 # Helm - For Helm chart operations
+# hadolint ignore=DL4006 # no PR job builds this image, so a fix cannot be proven
 RUN curl -fsSL "https://get.helm.sh/helm-v${HELM_VERSION}-linux-amd64.tar.gz" | tar -xzf - \
     && mv linux-amd64/helm ./helm \
     && rm -rf linux-amd64
@@ -187,7 +189,7 @@ RUN echo "=== Compressed binary sizes ===" && ls -lh /tools/
 # ==============================================================================
 # Stage 2: Final optimized image
 # ==============================================================================
-FROM node:24-slim@sha256:c86ecead9e55a5210ac1727de38a4ca840bf03dcaf34dc9749addbf383b1920c
+FROM node:24-slim@sha256:dc26ae92c9fb15cf6b1d63e20f0944b2efe0f115b20e00be48fb23fceb061c54
 
 LABEL org.opencontainers.image.source="https://github.com/camunda/camunda-platform-helm"
 LABEL org.opencontainers.image.description="Playwright Runner (Ultra-optimized, Chromium headless-shell only) for Camunda Platform Helm integration tests"
@@ -295,6 +297,7 @@ COPY --from=tools /tools/aws-iam-authenticator /usr/local/bin/
 # The plugin handles the 'gke-gcloud-auth-plugin' exec in kubeconfig files
 # without needing the full gcloud CLI.
 # ==============================================================================
+# hadolint ignore=DL4006 # no PR job builds this image, so a fix cannot be proven
 RUN curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg \
     && echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" > /etc/apt/sources.list.d/google-cloud-sdk.list \
     && apt-get update \
@@ -346,6 +349,7 @@ RUN npm install -g playwright@${PLAYWRIGHT_VERSION} zbctl@${ZBCTL_VERSION#v} \
 # downloading a newer toolchain at runtime, keeping image behaviour
 # deterministic.
 # ==============================================================================
+# hadolint ignore=DL4006 # no PR job builds this image, so a fix cannot be proven
 RUN curl -fsSL "https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz" \
     | tar -C /usr/local -xzf - \
     && rm -rf /usr/local/go/doc /usr/local/go/test /usr/local/go/api \
@@ -366,6 +370,7 @@ RUN mkdir -p "${GOPATH}/bin" "${GOCACHE}" "${GOMODCACHE}"
 # runtime by scripts/base_playwright_script.sh.
 COPY e2e-package.json /opt/e2e-prebuilt/package.json
 
+# hadolint ignore=DL3003 # no PR job builds this image, so a fix cannot be proven
 RUN cd /opt/e2e-prebuilt \
     && jq 'del(.devDependencies["@camunda/e2e-test-suite"], .dependencies["@camunda/e2e-test-suite"])' \
         package.json > package.json.stripped \
@@ -420,6 +425,7 @@ RUN echo "=== Verifying tool installations ===" \
     && echo "=== All tools verified successfully ==="
 
 # Run as root by default (CI typically runs as root)
+# hadolint ignore=DL3002,DL3066 # root by design, CI passes --user root; no PR job builds this image
 USER root
 
 ENTRYPOINT ["/bin/bash", "-c"]
