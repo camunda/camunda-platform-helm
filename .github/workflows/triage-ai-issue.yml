@@ -146,7 +146,7 @@ jobs:
             # Query for issues in Inbox status without TRIAGE:COMPLETED label
             # shellcheck disable=SC2016 # the $ names are GraphQL variables, not shell expansions
             QUERY='
-              query($owner:String!, $repo:String!, $projectNumber:Int!) {
+              query($owner:String!, $repo:String!) {
                 repository(owner:$owner, name:$repo) {
                   issues(first:50, states:OPEN, orderBy:{field:CREATED_AT, direction:DESC}) {
                     nodes {
@@ -171,7 +171,7 @@ jobs:
                 }
               }'
 
-            RESPONSE=$(gh api graphql -f query="$QUERY" -F owner="$OWNER" -F repo="$REPO" -F projectNumber="$PROJECT_NUMBER")
+            RESPONSE=$(gh api graphql -f query="$QUERY" -F owner="$OWNER" -F repo="$REPO")
 
             # Filter issues:
             # - In target project (#33)
