@@ -180,6 +180,12 @@ integration:
     - id: qa-opensearch
       shortname: qaos
       enabled: false
+    - id: qa-rdbms
+      shortname: qardbms
+      enabled: false
+    - id: qa-rdbms-upg-modular
+      shortname: qardbupg
+      enabled: false
     - id: qa-opensearch-upg-install
       shortname: qaosupg
       enabled: false
@@ -235,6 +241,3 @@ integration:
       shortname: ptnt
       tier: 2
       enabled: true
-    - id: dogfood
-      shortname: dogfd
-      enabled: false

@@ -9,14 +9,19 @@ global:
     zeebe:
       enabled: false
   host: "$CAMUNDA_HOSTNAME"
+  compatibility:
+    nginx:
+      renderAnnotations: false
   ingress:
     enabled: true
-    className: nginx
+    className: contour
     tls:
       enabled: true
       # A wildcard certificate will be used.
 
     annotations:
+      projectcontour.io/websocket-routes: "/modeler-ws"
+      projectcontour.io/response-timeout: "300s"
       external-dns.alpha.kubernetes.io/hostname: "{{ .Values.global.host }}"
       external-dns.alpha.kubernetes.io/ttl: "60"
 
@@ -254,15 +259,19 @@ orchestration:
     timeoutSeconds: 5
   livenessProbe:
     enabled: false
+  service:
+    annotations:
+      projectcontour.io/upstream-protocol.h2c: "26500"
   ingress:
     grpc:
       enabled: true
-      className: nginx
+      className: contour
       host: "grpc-{{ .Values.global.host }}"
       tls:
         enabled: true
         secretName: camunda-platform-zeebe-gateway
       annotations:
+        projectcontour.io/response-timeout: "120s"
         external-dns.alpha.kubernetes.io/hostname: "grpc-{{ .Values.global.host }}"
         external-dns.alpha.kubernetes.io/ttl: "60"
 

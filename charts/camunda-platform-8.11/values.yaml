@@ -2201,7 +2201,7 @@ orchestration:
         usernameClaim: preferred_username
         ## @param orchestration.security.authentication.oidc.preferUsernameClaim (DEPRECATED) can be used to set OIDC prefer-username-claim.
         preferUsernameClaim: false
-        ## @param orchestration.security.authentication.oidc.clientIdClaim (DEPRECATED) can be used to set client ID claim.
+        ## @param orchestration.security.authentication.oidc.clientIdClaim (DEPRECATED) can be used to set client ID claim. This value also sets the Optimize client ID claim (`camunda.security.authentication.oidc.client-id-claim`), which Optimize uses to accept API client tokens on its public API.
         clientIdClaim: client_id
         ## @param orchestration.security.authentication.oidc.groupsClaim (DEPRECATED) can be used to set group claim.
         groupsClaim: ""

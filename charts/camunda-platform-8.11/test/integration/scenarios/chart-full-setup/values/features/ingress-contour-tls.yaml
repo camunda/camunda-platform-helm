@@ -1,0 +1,24 @@
+# Opt-in, test-only: no scenario selects this layer yet.
+# Requires features/orchestration-tls.yaml (gRPC TLS) AND orchestration-tls-rest.yaml or orchestration-tls-rest-appconfig.yaml (REST TLS):
+# upstream-protocol.tls on 8080 only works when orchestration REST itself serves TLS.
+# Never combine with ingress-contour.yaml.
+global:
+  compatibility:
+    nginx:
+      renderAnnotations: false
+  ingress:
+    className: contour
+    annotations:
+      projectcontour.io/websocket-routes: "/modeler-ws"
+      projectcontour.io/response-timeout: "300s"
+orchestration:
+  service:
+    annotations:
+      projectcontour.io/upstream-protocol.h2c: ""
+      projectcontour.io/upstream-protocol.h2: "26500"
+      projectcontour.io/upstream-protocol.tls: "8080"
+  ingress:
+    grpc:
+      className: contour
+      annotations:
+        projectcontour.io/response-timeout: "infinity"

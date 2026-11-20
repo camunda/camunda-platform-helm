@@ -4,7 +4,7 @@
 global:
   ingress:
     enabled: true
-    className: nginx
+    className: contour
     # The Ingress host will be added via CLI.
     host: "$CAMUNDA_HOSTNAME"
     tls:

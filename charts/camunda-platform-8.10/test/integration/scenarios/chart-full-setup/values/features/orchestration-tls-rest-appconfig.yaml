@@ -8,6 +8,10 @@
 # and emits no SSL env: the keystore is hand-wired below, which is what an
 # operator owning application.yaml actually does.
 orchestration:
+  # Contour: REST serves TLS on 8080, so Envoy must speak TLS to that port.
+  service:
+    annotations:
+      projectcontour.io/upstream-protocol.tls: "8080"
   extraConfiguration:
     - file: orchestration-rest-tls.yaml
       content: |

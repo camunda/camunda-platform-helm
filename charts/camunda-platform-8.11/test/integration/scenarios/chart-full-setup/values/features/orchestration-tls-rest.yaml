@@ -16,3 +16,8 @@ global:
       secret:
         existingSecret: orchestration-tls
         existingSecretKey: tls.crt
+# Contour: REST serves TLS on 8080, so Envoy must speak TLS to that port.
+orchestration:
+  service:
+    annotations:
+      projectcontour.io/upstream-protocol.tls: "8080"

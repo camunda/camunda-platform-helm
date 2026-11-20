@@ -21,6 +21,7 @@ topology:
         - elasticsearch
       features:
         - multinamespace-hub
+        - ingress-nginx
     - role: orchestration
       namespace-suffix: orcha
       modeler-cluster-id: orchestration

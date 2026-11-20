@@ -28,13 +28,13 @@ import (
 )
 
 // antiAffinityValues sets a preferred host anti-affinity under prefix, the
-// shape the dogfood companion values use.
+// shape the companion values use.
 func antiAffinityValues(prefix string) map[string]string {
 	term := prefix + "podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[0]."
 	return map[string]string{
 		term + "weight":                                        "100",
 		term + "podAffinityTerm.topologyKey":                   "kubernetes.io/hostname",
-		term + "podAffinityTerm.labelSelector.matchLabels.app": "dogfood",
+		term + "podAffinityTerm.labelSelector.matchLabels.app": "companion",
 	}
 }
 
@@ -46,7 +46,7 @@ func assertAntiAffinity(t *testing.T, affinity *corev1.Affinity) {
 	require.Len(t, terms, 1)
 	require.Equal(t, int32(100), terms[0].Weight)
 	require.Equal(t, "kubernetes.io/hostname", terms[0].PodAffinityTerm.TopologyKey)
-	require.Equal(t, map[string]string{"app": "dogfood"}, terms[0].PodAffinityTerm.LabelSelector.MatchLabels)
+	require.Equal(t, map[string]string{"app": "companion"}, terms[0].PodAffinityTerm.LabelSelector.MatchLabels)
 }
 
 func TestCompanionAffinityRendering(t *testing.T) {
