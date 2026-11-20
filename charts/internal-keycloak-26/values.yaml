@@ -18,6 +18,9 @@ image:
 ## Camunda (Bitnami-based) image: /opt/bitnami/keycloak/bin/kc.sh
 command: /opt/keycloak/bin/kc.sh
 
+## @param extraStartupArgs Extra arguments for `kc.sh start`, space-separated.
+extraStartupArgs: ""
+
 ## @param imagePullSecrets Array of image pull secret names.
 imagePullSecrets: []
 
