@@ -34,7 +34,7 @@ global:
         audience: $ENTRA_APP_CLIENT_ID
         clientApiAudience: $ENTRA_APP_CLIENT_ID
         publicApiAudience: $ENTRA_APP_CLIENT_ID
-        redirectUrl: "https://{{ .Values.global.host }}{{ .Values.webModeler.contextPath }}"
+        redirectUrl: "https://{{ .Values.global.host }}{{ .Values.camundaHub.contextPath | default .Values.webModeler.contextPath }}"
       console:
         wellKnown: https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration
         clientId: $ENTRA_APP_CLIENT_ID
