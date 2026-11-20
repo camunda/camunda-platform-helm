@@ -25,6 +25,7 @@ import (
 	"scripts/camunda-core/pkg/logging"
 	"scripts/deploy-camunda/config"
 	"scripts/deploy-camunda/deploy"
+	"scripts/deploy-camunda/format"
 	"scripts/prepare-helm-values/pkg/env"
 
 	"github.com/spf13/cobra"
@@ -37,6 +38,7 @@ import (
 func newDoctorCommand() *cobra.Command {
 	var skipKube bool
 	var fix bool
+	var outputFormat string
 
 	cmd := &cobra.Command{
 		Use:   "doctor",
@@ -52,6 +54,10 @@ Exits non-zero if any required check fails.`,
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := validateDoctorFlags(outputFormat, fix); err != nil {
+				return err
+			}
+
 			ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 			defer stop()
 
@@ -94,9 +100,9 @@ Exits non-zero if any required check fails.`,
 				SkipKubeReachability: skipKube,
 			})
 
-			var buf bytes.Buffer
-			report.Render(&buf)
-			fmt.Fprint(os.Stdout, buf.String())
+			if err := writeDoctorReport(os.Stdout, report, outputFormat); err != nil {
+				return err
+			}
 
 			// --fix: prompt for the missing vars, persist to .env, and re-check.
 			if fix && !report.OK() {
@@ -141,6 +147,7 @@ Exits non-zero if any required check fails.`,
 	f.StringVarP(&flags.LogLevel, "log-level", "l", "info", "Log level")
 	f.BoolVar(&skipKube, "skip-kube-check", false, "Skip the cluster reachability probe")
 	f.BoolVar(&fix, "fix", false, "Prompt for missing variables and write them to the .env file")
+	f.StringVar(&outputFormat, "format", format.OutputText, "Output format: text or json (json prints one deploy-camunda/v1 Result envelope)")
 
 	return cmd
 }
