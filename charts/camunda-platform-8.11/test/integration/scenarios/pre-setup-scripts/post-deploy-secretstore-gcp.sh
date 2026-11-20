@@ -19,8 +19,8 @@ NAMESPACE="${TEST_NAMESPACE:?TEST_NAMESPACE must be set}"
 RELEASE="${RELEASE_NAME:-integration}"
 RESOLVE_USER="${SECRET_STORE_RESOLVE_USER:-demo}"
 
-# The lifecycle runner invokes hooks under `bash -x`, which traces the expansion below
-# into the job log. Drop xtrace across the credential read and restore the caller's state.
+# When xtrace is on, it traces the expansion below into the job log. Drop xtrace across the
+# credential read and restore the caller's state.
 xtrace_was_on=0
 case $- in *x*) xtrace_was_on=1 ;; esac
 { set +x; } 2>/dev/null
@@ -151,7 +151,7 @@ for attempt in {1..60}; do
 
   # --max-time bounds a gateway that accepts the connection and never answers; without it
   # the retry budget does not hold because curl never returns. xtrace is dropped across the
-  # whole exchange so `bash -x` traces neither --user nor the resolved payload.
+  # whole exchange so xtrace traces neither --user nor the resolved payload.
   { set +x; } 2>/dev/null
   response="$(curl --silent --show-error --max-time 10 \
     --user "${RESOLVE_USER}:${RESOLVE_PASSWORD}" \
