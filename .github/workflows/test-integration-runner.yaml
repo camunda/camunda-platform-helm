@@ -582,6 +582,20 @@ jobs:
           chart-path: ${{ env.CHART_PATH }}
           namespace: ${{ env.TEST_NAMESPACE }}
 
+      - name: Helm - Install - Register Entra Redirect URIs
+        if: inputs.auth == 'oidc' || inputs.scenario == 'oidc' || inputs.test-identity == 'oidc'
+        timeout-minutes: 5
+        env:
+          TEST_INGRESS_HOST: ${{ steps.setup.outputs.ingress-host }}
+          ENTRA_APP_CLIENT_ID: ${{ steps.setup.outputs.ENTRA_APP_CLIENT_ID }}
+          ENTRA_APP_CLIENT_SECRET: ${{ steps.setup.outputs.ENTRA_APP_CLIENT_SECRET }}
+          ENTRA_APP_OBJECT_ID: ${{ steps.setup.outputs.ENTRA_APP_OBJECT_ID }}
+          ENTRA_APP_DIRECTORY_ID: ${{ steps.setup.outputs.ENTRA_APP_DIRECTORY_ID }}
+        run: |
+          deploy-camunda entra update-redirect-uris \
+            --ingress-host "$TEST_INGRESS_HOST" \
+            --log-level info
+
       - name: Helm - Install - Configure Helm with Entra Values
         if: (inputs.auth == 'oidc' || inputs.scenario == 'oidc' || inputs.test-identity == 'oidc') && inputs.values-config == '{}'
         timeout-minutes: 5
@@ -607,9 +621,6 @@ jobs:
           ENTRA_APP_DIRECTORY_ID: ${{ steps.setup.outputs.ENTRA_APP_DIRECTORY_ID }}
         run: |
           echo "$EXTRA_VALUES" > /tmp/extra-values-file.yaml
-          deploy-camunda entra update-redirect-uris \
-            --ingress-host "$TEST_INGRESS_HOST" \
-            --log-level info
 
       - name: Helm - Install - Pre-install scenario tweaks
         timeout-minutes: 5
@@ -1004,6 +1015,20 @@ jobs:
       ##########################################################################################################
       # Upgrade
       ##########################################################################################################
+      - name: Helm - Upgrade - Register Entra Redirect URIs
+        if: inputs.auth == 'oidc' || inputs.test-identity == 'oidc'
+        timeout-minutes: 5
+        env:
+          TEST_INGRESS_HOST: ${{ steps.setup.outputs.ingress-host }}
+          ENTRA_APP_CLIENT_ID: ${{ steps.setup.outputs.ENTRA_APP_CLIENT_ID }}
+          ENTRA_APP_CLIENT_SECRET: ${{ steps.setup.outputs.ENTRA_APP_CLIENT_SECRET }}
+          ENTRA_APP_OBJECT_ID: ${{ steps.setup.outputs.ENTRA_APP_OBJECT_ID }}
+          ENTRA_APP_DIRECTORY_ID: ${{ steps.setup.outputs.ENTRA_APP_DIRECTORY_ID }}
+        run: |
+          deploy-camunda entra update-redirect-uris \
+            --ingress-host "$TEST_INGRESS_HOST" \
+            --log-level info
+
       - name: Helm - Upgrade - Configure Helm with Entra Values
         if: (inputs.auth == 'oidc' || inputs.test-identity == 'oidc') && inputs.values-config == '{}'
         timeout-minutes: 5
@@ -1029,9 +1054,6 @@ jobs:
           ENTRA_APP_DIRECTORY_ID: ${{ steps.setup.outputs.ENTRA_APP_DIRECTORY_ID }}
         run: |
           echo "$EXTRA_VALUES" > /tmp/extra-values-file.yaml
-          deploy-camunda entra update-redirect-uris \
-            --ingress-host "$TEST_INGRESS_HOST" \
-            --log-level info
 
       # NOTE: helm package + pre-upgrade scripts are handled by `deploy-camunda matrix run`.
       # The runner deploys directly from the chart directory (no `helm package` needed) and
