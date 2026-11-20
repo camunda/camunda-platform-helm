@@ -272,7 +272,7 @@ orchestration:
         secretName: camunda-platform-zeebe-gateway
       annotations:
         projectcontour.io/response-timeout: "120s"
-        external-dns.alpha.kubernetes.io/hostname: "orchestration-{{ .Values.global.host }}"
+        external-dns.alpha.kubernetes.io/hostname: "grpc-{{ .Values.global.host }}"
         external-dns.alpha.kubernetes.io/ttl: "60"
 
 prometheusServiceMonitor:
