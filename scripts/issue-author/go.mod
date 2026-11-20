@@ -1,6 +1,6 @@
 module scripts/issue-author
 
-go 1.27.3
+go 1.27.4
 
 require scripts/camunda-core v0.0.0
 
