@@ -480,6 +480,29 @@ Environment exposed to each hook type differs:
   plus the same passthrough list. They don't see `TEST_NAMESPACE` or
   `KUBE_CONTEXT` — the runner supplies the target context directly.
 
+### NetworkPolicy proof (8.11, draft)
+
+The tier-2 `networkpolicy` scenario on chart 8.11 is a metadata-only registry
+entry (Keycloak auth, Elasticsearch persistence, install flow, GKE `distroci`).
+It is `enabled: false` until it is verified on a cluster, so pass `--include-disabled`.
+
+- The NetworkPolicy values are a scenario layer taken from
+  `charts/camunda-platform-8.11/test/integration/scenarios/networkpolicy/`, which
+  the #7928 branch adds. The registry entry carries no values of its own.
+- User `--extra-values` files are applied after the scenario layer and override it.
+- The entry does not declare `features: [networkpolicy]` yet. The registry
+  validator needs the matching values file, so the feature is added after the
+  #7924–#7928 NetworkPolicy chain merges to `main`, in the same PR or the one
+  immediately after it, together with the values it points at.
+- The deploy-camunda team owns the Phase-0 values-chain golden regeneration
+  (`TestValuesChainGolden`).
+
+```bash
+deploy-camunda matrix run --repo-root . --versions 8.11 --include-disabled \
+  --shortname-filter networkpolicy --shortname-exact --flow-filter install --platform gke \
+  --ingress-base-domain-gke ci.distro.ultrawombat.com --namespace-prefix <prefix>
+```
+
 ### S3-compatible document-store acceptance (8.10)
 
 The tier-2 `docs3` scenario provisions a namespace-local S3-compatible store
