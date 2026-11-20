@@ -75,6 +75,29 @@ func (s *secretStoreConstraintsTest) TestConstraintFailures() {
 			},
 		},
 		{
+			Name:     "Physical tenant id with a dash is rejected naming the normalised id",
+			Template: "templates/orchestration/serviceaccount.yaml",
+			Values: mergeValues(secretStoreBaseValues(), map[string]string{
+				"orchestration.secretStore.physicalTenants.tenant-a.aws.default.region": "us-east-1",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Error(err)
+				s.Require().Contains(err.Error(), "orchestration.secretStore.physicalTenants.tenant-a: physical tenant ids must be lowercase alphanumeric")
+				s.Require().Contains(err.Error(), "Rename it to 'tenanta', the id Camunda 8.10 registered it under, and nothing else")
+			},
+		},
+		{
+			Name:     "Physical tenant id with an underscore and capitals is rejected naming the normalised id",
+			Template: "templates/orchestration/serviceaccount.yaml",
+			Values: mergeValues(secretStoreBaseValues(), map[string]string{
+				"orchestration.secretStore.physicalTenants.Tenant_B.aws.default.region": "us-east-1",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Error(err)
+				s.Require().Contains(err.Error(), "Camunda 8.11 rejects 'Tenant_B' at startup. Rename it to 'tenantb'")
+			},
+		},
+		{
 			Name:     "Conflicting roleArn across tenants is rejected",
 			Template: "templates/orchestration/serviceaccount.yaml",
 			Values: mergeValues(secretStoreBaseValues(), map[string]string{
