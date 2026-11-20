@@ -29,6 +29,7 @@ package provider
 
 import (
 	"context"
+	"slices"
 )
 
 // Slot identifies one pluggable concern of a deployment.
@@ -59,12 +60,7 @@ func Slots() []Slot {
 
 // Valid reports whether s is one of the known slots.
 func (s Slot) Valid() bool {
-	for _, known := range Slots() {
-		if s == known {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(Slots(), s)
 }
 
 // Finding is a single Preflight result. Code is a stable machine-readable

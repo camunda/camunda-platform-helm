@@ -120,7 +120,7 @@ func TestConcurrentRegisterLookup(t *testing.T) {
 	r := NewRegistry()
 	const n = 50
 	var wg sync.WaitGroup
-	for i := 0; i < n; i++ {
+	for i := range n {
 		name := fmt.Sprintf("p%02d", i)
 		wg.Add(2)
 		go func() {
