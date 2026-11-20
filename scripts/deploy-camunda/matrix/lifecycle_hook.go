@@ -180,7 +180,7 @@ func buildHookFunc(flags *config.RuntimeFlags, hook *LifecycleHook, kind hookKin
 
 		scriptEnv := lifecycleScriptEnv(flags, namespace)
 
-		if err := executil.RunCommand(hookCtx, "bash", []string{"-x", scriptPath}, scriptEnv, ""); err != nil {
+		if err := executil.RunCommand(hookCtx, "bash", []string{scriptPath}, scriptEnv, ""); err != nil {
 			return fmt.Errorf("%s script %s failed: %w", kind, scriptPath, err)
 		}
 		logging.Logger.Info().
