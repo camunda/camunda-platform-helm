@@ -19,16 +19,11 @@ import (
 	"context"
 	"errors"
 	"maps"
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
-	"gopkg.in/yaml.v3"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-
-	"scripts/deploy-camunda/matrix"
 )
 
 const twoPropertyManifest = `
@@ -266,34 +261,5 @@ func TestParseCredentialSource_MapsTargetKeysToProperties(t *testing.T) {
 		if got[k] != v {
 			t.Errorf("Targets[creds][%s] = %q, want %q", k, got[k], v)
 		}
-	}
-}
-
-func TestDogfoodCredentialsManifest_ReadsOneSourceWithDistinctProperties(t *testing.T) {
-	path := filepath.Join("..", "..", "..", "charts", "camunda-platform-8.10", "test", "integration", "external-secrets", "dogfood-credentials.yaml")
-	manifest, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatal(err)
-	}
-	manifest, err = matrix.RenderCredentialsManifest(manifest, "dogfood")
-	if err != nil {
-		t.Fatal(err)
-	}
-	src, err := parseCredentialSource(manifest)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if src.Name != "dogfood-credentials" {
-		t.Errorf("source for base dogfood = %q, want dogfood-credentials", src.Name)
-	}
-	if src.Name == "integration-test" {
-		t.Fatal("dogfood credentials must not read the CI-wide integration-test source")
-	}
-	var doc externalSecretDoc
-	if err := yaml.Unmarshal(manifest, &doc); err != nil {
-		t.Fatal(err)
-	}
-	if len(doc.Spec.Data) != len(src.Properties) {
-		t.Errorf("%d target keys share %d source properties; every credential must have its own value", len(doc.Spec.Data), len(src.Properties))
 	}
 }

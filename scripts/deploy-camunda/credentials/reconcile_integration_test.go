@@ -51,6 +51,12 @@ var keycloakImage = func() string {
 // password must be rejected, set, and then accepted.
 // dockerRunDetached starts a container and returns its ID. Only stdout is
 // read: on a first pull, docker writes pull progress to stderr.
+// The integration tests run the reconcile scripts against these images.
+const (
+	postgresImage      = "postgres:16.16-alpine3.24"
+	elasticsearchImage = "docker.elastic.co/elasticsearch/elasticsearch:8.18.0"
+)
+
 func dockerRunDetached(ctx context.Context, t *testing.T, args ...string) string {
 	t.Helper()
 	var stderr bytes.Buffer
