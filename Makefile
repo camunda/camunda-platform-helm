@@ -53,12 +53,15 @@ build.ci-result-cache:
 test.ci-result-cache:
 	cd scripts/ci-result-cache && go test -race ./...
 
-.PHONY: test.issue-author run.issue-author
+.PHONY: test.issue-author run.issue-author run.issue-triage
 test.issue-author:
 	cd scripts/issue-author && go test -race ./...
 
 run.issue-author:
 	@cd scripts/issue-author && go run .
+
+run.issue-triage:
+	@cd scripts/issue-author && go run . triage
 
 .PHONY: install.ci-result-cache
 install.ci-result-cache:

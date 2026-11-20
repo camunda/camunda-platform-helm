@@ -1,0 +1,8 @@
+{
+  "number": 42,
+  "title": "Chart <upgrade> & \"pods\" fail",
+  "body": "Steps:\n1. helm upgrade\n2. the pods crash\n\n",
+  "state": "open",
+  "user": {"login": "external-user", "type": "User"},
+  "labels": [{"name": "area/ci"}, {"name": "version/8.8"}]
+}
