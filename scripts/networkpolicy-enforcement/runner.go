@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"slices"
 )
 
 const (
@@ -209,6 +210,10 @@ func egressOpen() []egress {
 }
 
 func (r runner) steps() []step {
+	return slices.Concat(r.ingressSteps(), r.egressSteps(), r.allowedNamespaceSteps())
+}
+
+func (r runner) ingressSteps() []step {
 	both := []string{"zeebe", "connectors"}
 	enforced := append(all(inside, true), all(outsider, false)...)
 	return []step{
@@ -224,6 +229,13 @@ func (r runner) steps() []step {
 			{from: outsider, component: connectors, ports: componentPorts[connectors], want: true},
 		}},
 		{name: "S5 rollback to the first revision deletes the policies", action: r.rollback, reaches: all(outsider, true)},
+	}
+}
+
+func (r runner) egressSteps() []step {
+	both := []string{"zeebe", "connectors"}
+	enforced := append(all(inside, true), all(outsider, false)...)
+	return []step{
 		{name: "S6 fresh install with policies on leaves egress open", action: r.reinstall, policies: both, reaches: enforced, egress: egressOpen()},
 		{name: "S7 egress blocks everything but the namespace and DNS", action: r.deploy("upgrade", r.values("values-egress.yaml")...), policies: both, reaches: enforced, egress: []egress{
 			{targetConnectors, true}, {targetDNS, true}, {targetOutsider, false}, {targetAllowed, false}, {targetExternal, false},
@@ -232,5 +244,40 @@ func (r runner) steps() []step {
 			{targetConnectors, true}, {targetDNS, true}, {targetAllowed, true}, {targetOutsider, false}, {targetExternal, false},
 		}},
 		{name: "S9 rollback removes the egress rules", action: r.rollback, policies: both, reaches: enforced, egress: egressOpen()},
+	}
+}
+
+func (r runner) allowedNamespaceSteps() []step {
+	both := []string{"zeebe", "connectors"}
+	clientPorts := []int{8080, 26500}
+	internalPorts := []int{9600, 26501, 26502}
+	tenantLabel := "camunda.io/tenant-of=" + r.cfg.namespace
+	return []step{
+		{name: "S10 allowedNamespaces opens the client ports to the allowed namespace", action: r.deploy("upgrade", r.values("values-allowed-namespaces.yaml")...), policies: both, reaches: append(append(all(inside, true), all(outsider, false)...),
+			reach{from: allowed, component: zeebe, ports: clientPorts, want: true},
+			reach{from: allowed, component: zeebe, ports: internalPorts, want: false},
+			reach{from: allowed, component: connectors, ports: componentPorts[connectors], want: true},
+		)},
+		{name: "S11 a namespaceSelector entry follows the namespace label", action: r.then(r.labelNamespace(r.sourceNamespace(outsider), tenantLabel), r.deploy("upgrade", r.values("values-allowed-selector.yaml")...)), policies: both, reaches: []reach{
+			{from: outsider, component: zeebe, ports: clientPorts, want: true},
+			{from: outsider, component: zeebe, ports: internalPorts, want: false},
+			{from: allowed, component: zeebe, ports: clientPorts, want: false},
+		}},
+		{name: "S11 removing the namespace label blocks it again without an upgrade", action: r.labelNamespace(r.sourceNamespace(outsider), "camunda.io/tenant-of-"), policies: both, reaches: all(outsider, false)},
+		{name: "S12 an empty component list replaces the global list", action: r.deploy("upgrade", r.values("values-allowed-component-override.yaml")...), policies: both, reaches: []reach{
+			{from: allowed, component: zeebe, ports: clientPorts, want: true},
+			{from: allowed, component: connectors, ports: componentPorts[connectors], want: false},
+		}},
+	}
+}
+
+func (r runner) then(actions ...func(context.Context) error) func(context.Context) error {
+	return func(ctx context.Context) error {
+		for _, action := range actions {
+			if err := action(ctx); err != nil {
+				return err
+			}
+		}
+		return nil
 	}
 }

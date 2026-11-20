@@ -20,6 +20,8 @@ Cilium).
 | `global.networkPolicy.enabled` | `false` | Master switch. |
 | `global.networkPolicy.ingress.enabled` | `true` | Renders the ingress policies when the master switch is on. |
 | `global.networkPolicy.ingress.extraRules` | `[]` | `NetworkPolicyIngressRule` entries appended to every rendered policy. Rendered with `tpl`. |
+| `global.networkPolicy.ingress.allowedNamespaces` | `[]` | Namespaces allowed to reach the client ports of every component. See [Allowing other namespaces](#allowing-other-namespaces). |
+| `<component>.networkPolicy.ingress.allowedNamespaces` | unset | Replaces the global list for that component. Unset inherits the global list; `[]` allows no other namespace. |
 | `global.networkPolicy.egress.enabled` | `false` | Adds egress rules to the rendered policies. |
 | `global.networkPolicy.egress.allowDNS` | `true` | Allows egress to `kube-dns` in `kube-system` on port 53, UDP and TCP. |
 | `global.networkPolicy.egress.extraRules` | `[]` | `NetworkPolicyEgressRule` entries appended to every policy. Rendered with `tpl`. |
@@ -56,7 +58,7 @@ any pod in the release namespace on the pod ports:
 | Camunda Hub WebSockets | `templates/web-modeler/networkpolicy-websockets.yaml` | 8060 |
 
 Traffic from outside the namespace, such as an ingress controller or Prometheus, is
-blocked unless it is allowed through `extraRules`:
+blocked unless it is allowed through `allowedNamespaces` or `extraRules`:
 
 ```yaml
 global:
@@ -69,6 +71,193 @@ global:
                 matchLabels:
                   kubernetes.io/metadata.name: ingress-nginx
 ```
+
+## Allowing other namespaces
+
+`allowedNamespaces` lets pods in other namespaces reach a component without writing
+`NetworkPolicyIngressRule` entries by hand. Each entry renders one ingress rule, placed
+after the release-namespace rule and before `global.networkPolicy.ingress.extraRules`.
+Rules are additive, so the result is the union of the release namespace, the listed
+namespaces and the `extraRules`.
+
+An allowed namespace reaches only the component client ports, not the cluster-internal
+or management ports:
+
+| Component | Default client ports |
+|---|---|
+| Orchestration Cluster | `orchestration.service.httpPort` (8080), `orchestration.service.grpcPort` (26500) |
+| Connectors | `connectors.service.serverPort` (8080) |
+| Identity | 8084 |
+| Optimize | 8090 |
+| Camunda Hub REST API | 8081 |
+| Camunda Hub WebSockets | 8060 |
+
+The broker ports 26501 and 26502 and the management ports (9600, 8082, 8092, 8091) are
+never opened by default. Open a management port only through an entry `ports` list.
+
+### Entry forms
+
+Each entry is a string or an object:
+
+```yaml
+global:
+  networkPolicy:
+    enabled: true
+    ingress:
+      allowedNamespaces:
+        # Namespace name, matched on kubernetes.io/metadata.name. Rendered with tpl.
+        - camunda-hub
+        - "{{ .Release.Namespace }}-clients"
+        # Object with name: the same as a string, plus optional podSelector and ports.
+        - name: monitoring
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: prometheus
+          ports:
+            - protocol: TCP
+              port: 9600
+        # Object with namespaceSelector: any namespace carrying the labels.
+        - namespaceSelector:
+            matchLabels:
+              camunda.io/tenant-of: "{{ .Release.Namespace }}"
+```
+
+- An object sets exactly one of `name` or `namespaceSelector`; the chart fails otherwise.
+- An empty `namespaceSelector` (`{}`) would match every namespace and fails the render.
+- `podSelector` is set in the same peer as the namespace selector, so both must match.
+- `ports` replaces the default client ports for that entry and is passed through as
+  `NetworkPolicyPort` entries, including `endPort`.
+- Strings and object values are rendered with `tpl`.
+
+### Inherit or replace
+
+A component without `networkPolicy.ingress.allowedNamespaces` uses the global list. A
+component that sets the key, including to `[]`, replaces the global list for its own
+policy; the lists are not merged. `[]` narrows that component to the release namespace
+and its `extraRules`:
+
+```yaml
+global:
+  networkPolicy:
+    enabled: true
+    ingress:
+      allowedNamespaces:
+        - camunda-hub
+connectors:
+  networkPolicy:
+    ingress:
+      allowedNamespaces: []
+```
+
+## Split-namespace layouts
+
+### Hub and Orchestration Cluster in different namespaces
+
+With `global.topology.mode` splitting Camunda Hub and the Orchestration Cluster across
+namespaces, the receiving release allows the calling namespace. On the Orchestration
+Cluster release:
+
+```yaml
+global:
+  networkPolicy:
+    enabled: true
+    ingress:
+      allowedNamespaces:
+        - camunda-hub
+```
+
+The Hub components then reach the Orchestration Cluster on 8080 and 26500 only.
+
+### Monitoring
+
+Prometheus scrapes the management port, which is not a client port. Allow it explicitly
+on the component that is scraped:
+
+```yaml
+orchestration:
+  networkPolicy:
+    ingress:
+      allowedNamespaces:
+        - name: monitoring
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: prometheus
+          ports:
+            - protocol: TCP
+              port: 9600
+```
+
+Setting the component list replaces the global one, so repeat any global entries that
+the Orchestration Cluster still needs.
+
+### Ingress controller
+
+```yaml
+global:
+  networkPolicy:
+    ingress:
+      allowedNamespaces: [ingress-nginx]
+```
+
+### Tenant namespaces
+
+Label each namespace that belongs to a release and select it by label. Labelling or
+unlabelling a namespace takes effect without a `helm upgrade`:
+
+```yaml
+global:
+  networkPolicy:
+    ingress:
+      allowedNamespaces:
+        - namespaceSelector:
+            matchLabels:
+              camunda.io/tenant-of: "{{ .Release.Namespace }}"
+```
+
+```bash
+kubectl label namespace tenant-a camunda.io/tenant-of=camunda
+```
+
+### Database and Connectors in other namespaces
+
+A database in another namespace, and Connectors calling an Orchestration Cluster in
+another namespace with egress on, are egress-side cases. Allowed namespace lists for
+egress are planned for alpha3; until then use `global.networkPolicy.egress.extraRules`.
+
+### Upgrade order
+
+When a release starts calling another, upgrade the receiving release first, so its
+policy allows the caller before the caller starts sending traffic.
+
+### Migrating extraRules to allowedNamespaces
+
+An ingress rule that selects a namespace by name:
+
+```yaml
+global:
+  networkPolicy:
+    ingress:
+      extraRules:
+        - from:
+            - namespaceSelector:
+                matchLabels:
+                  kubernetes.io/metadata.name: camunda-hub
+```
+
+becomes:
+
+```yaml
+global:
+  networkPolicy:
+    ingress:
+      allowedNamespaces:
+        - camunda-hub
+```
+
+The `extraRules` form without `ports` opens every port to that namespace; the
+`allowedNamespaces` form opens only the client ports. Add a `ports` list to the entry
+when the old rule relied on another port. Remove the `extraRules` entry in the same
+upgrade; keeping both is harmless but leaves the wider rule in place.
 
 ## Egress
 
@@ -159,5 +348,7 @@ without egress removes the egress rules again.
 
 The shared helpers `camundaPlatform.networkPolicyEnabled`,
 `camundaPlatform.networkPolicyIngressEnabled`,
-`camundaPlatform.networkPolicyEgressEnabled` and `camundaPlatform.networkPolicy` live in
+`camundaPlatform.networkPolicyEgressEnabled`,
+`camundaPlatform.networkPolicyAllowedNamespacesList`,
+`camundaPlatform.networkPolicyAllowedNamespaceRules` and `camundaPlatform.networkPolicy` live in
 `templates/common/_helpers.tpl`. Unit and golden tests are in `test/unit/common/networkpolicy_test.go`.

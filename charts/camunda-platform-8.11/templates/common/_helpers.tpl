@@ -3358,13 +3358,75 @@ true
 {{- end -}}
 
 {{/*
+[camunda-platform] Resolves the ingress allowedNamespaces list of a component: the component
+networkPolicy.ingress.allowedNamespaces when it is set, including an empty list, otherwise
+global.networkPolicy.ingress.allowedNamespaces. Returns JSON of the form {"allowedNamespaces": [...]}.
+
+Usage:
+{{ (include "camundaPlatform.networkPolicyAllowedNamespacesList" (dict "networkPolicy" .Values.connectors.networkPolicy "context" $) | fromJson).allowedNamespaces }}
+*/}}
+{{- define "camundaPlatform.networkPolicyAllowedNamespacesList" -}}
+{{- $global := (.context.Values.global.networkPolicy | default dict).ingress | default dict -}}
+{{- $component := (.networkPolicy | default dict).ingress | default dict -}}
+{{- $list := $global.allowedNamespaces | default list -}}
+{{- if kindIs "slice" $component.allowedNamespaces -}}
+  {{- $list = $component.allowedNamespaces -}}
+{{- end -}}
+{{- dict "allowedNamespaces" $list | toJson -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] Renders one NetworkPolicyIngressRule per allowedNamespaces entry. A string entry, or
+an object entry with name, selects the namespace by its kubernetes.io/metadata.name label; an object
+entry with namespaceSelector uses that selector. An object entry may add a podSelector, set in the same
+peer, and ports, which replace the default ports.
+
+Usage:
+{{ include "camundaPlatform.networkPolicyAllowedNamespaceRules" (dict "allowedNamespaces" $list "defaultPorts" (list 8080) "context" $) }}
+*/}}
+{{- define "camundaPlatform.networkPolicyAllowedNamespaceRules" -}}
+{{- $context := .context -}}
+{{- $defaultPorts := .defaultPorts -}}
+{{- range .allowedNamespaces }}
+{{- $entry := dict -}}
+{{- if kindIs "string" . -}}
+  {{- $entry = dict "name" (tpl . $context) -}}
+{{- else -}}
+  {{- $entry = tpl (toYaml .) $context | fromYaml -}}
+{{- end }}
+- from:
+    - namespaceSelector:
+        {{- if hasKey $entry "name" }}
+        matchLabels:
+          kubernetes.io/metadata.name: {{ $entry.name | quote }}
+        {{- else }}
+        {{- toYaml $entry.namespaceSelector | nindent 8 }}
+        {{- end }}
+      {{- with $entry.podSelector }}
+      podSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+  ports:
+    {{- if hasKey $entry "ports" }}
+    {{- toYaml $entry.ports | nindent 4 }}
+    {{- else }}
+    {{- range $defaultPorts }}
+    - protocol: TCP
+      port: {{ . }}
+    {{- end }}
+    {{- end }}
+{{- end }}
+{{- end -}}
+
+{{/*
 [camunda-platform] Renders the component NetworkPolicy. Ingress rules allow pods in the release
-namespace to reach the given pod ports, followed by global.networkPolicy.ingress.extraRules. Egress
+namespace to reach the given pod ports, then the namespaces in the resolved allowedNamespaces list
+to reach the publicPorts, followed by global.networkPolicy.ingress.extraRules. Egress
 rules allow the release namespace and, with global.networkPolicy.egress.allowDNS, kube-dns on port 53,
 followed by global.networkPolicy.egress.extraRules and the component networkPolicy.egress.extraRules.
 
 Usage:
-{{ include "camundaPlatform.networkPolicy" (dict "name" $name "labels" $labels "matchLabels" $matchLabels "ports" (list 8080) "networkPolicy" .Values.connectors.networkPolicy "context" $) }}
+{{ include "camundaPlatform.networkPolicy" (dict "name" $name "labels" $labels "matchLabels" $matchLabels "ports" (list 8080) "publicPorts" (list 8080) "networkPolicy" .Values.connectors.networkPolicy "context" $) }}
 */}}
 {{- define "camundaPlatform.networkPolicy" -}}
 {{- $ingress := .context.Values.global.networkPolicy.ingress | default dict -}}
@@ -3403,6 +3465,10 @@ spec:
         - protocol: TCP
           port: {{ . }}
         {{- end }}
+    {{- $allowedNamespaces := (include "camundaPlatform.networkPolicyAllowedNamespacesList" . | fromJson).allowedNamespaces }}
+    {{- with $allowedNamespaces }}
+    {{- include "camundaPlatform.networkPolicyAllowedNamespaceRules" (dict "allowedNamespaces" . "defaultPorts" $.publicPorts "context" $.context) | trim | nindent 4 }}
+    {{- end }}
     {{- with $ingress.extraRules }}
     {{- tpl (toYaml .) $.context | nindent 4 }}
     {{- end }}
