@@ -41,7 +41,7 @@ import (
 // Returns the list of processed file paths in the output directory.
 func processCommonValues(ctx context.Context, scenarioPath, outputDir, envFile, platform string, envOverrides map[string]string) ([]string, error) {
 	// Common directory is a sibling to the scenario directory
-	commonDir := filepath.Join(filepath.Dir(scenarioPath), "..", "common")
+	commonDir := filepath.Join(filepath.Dir(filepath.Clean(scenarioPath)), "common")
 
 	logging.Logger.Debug().
 		Str("scenarioPath", scenarioPath).
