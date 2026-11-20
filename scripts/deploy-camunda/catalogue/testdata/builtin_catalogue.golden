@@ -1,0 +1,5586 @@
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: elasticsearch
+    catalogue: builtin/8.10
+    description: registry scenario elasticsearch (shortname eske, tier 1, enabled true)
+  spec:
+    chart:
+      version: "8.10"
+      path: charts/camunda-platform-8.10
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.eks: preemptible
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: orchestration-tls
+    catalogue: builtin/8.10
+    description: registry scenario orchestration-tls (shortname estls, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.10"
+      path: charts/camunda-platform-8.10
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:orchestration-tls
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: orchestration-tls-rest
+    catalogue: builtin/8.10
+    description: registry scenario orchestration-tls-rest (shortname estlr, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.10"
+      path: charts/camunda-platform-8.10
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:orchestration-tls-rest
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: orchestration-tls-rest-appconfig
+    catalogue: builtin/8.10
+    description: registry scenario orchestration-tls-rest-appconfig (shortname estlc, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.10"
+      path: charts/camunda-platform-8.10
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:orchestration-tls-rest-appconfig
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: connectors-tls
+    catalogue: builtin/8.10
+    description: registry scenario connectors-tls (shortname cotls, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.10"
+      path: charts/camunda-platform-8.10
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:connectors-tls
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: optimize-tls
+    catalogue: builtin/8.10
+    description: registry scenario optimize-tls (shortname optls, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.10"
+      path: charts/camunda-platform-8.10
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:optimize-tls
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: opensearch
+    catalogue: builtin/8.10
+    description: registry scenario opensearch (shortname oske, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.10"
+      path: charts/camunda-platform-8.10
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:opensearch-embedded
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: opensearch-self-signed
+    catalogue: builtin/8.10
+    description: registry scenario opensearch-self-signed (shortname osss, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.10"
+      path: charts/camunda-platform-8.10
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:opensearch-self-signed
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: opensearch-self-signed-os-trust
+    catalogue: builtin/8.10
+    description: registry scenario opensearch-self-signed-os-trust (shortname osot, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.10"
+      path: charts/camunda-platform-8.10
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:opensearch-self-signed-os-trust
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: upgrade-migration
+    catalogue: builtin/8.10
+    description: registry scenario upgrade-migration (shortname eske-upgm, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.10"
+      path: charts/camunda-platform-8.10
+    values:
+      - auth:keycloak
+    requires:
+      - slot: flow
+        oneOf:
+          - upgrade-minor
+    providers:
+      infra.eks: preemptible
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: elasticsearch-basic
+    catalogue: builtin/8.10
+    description: registry scenario elasticsearch-basic (shortname esba, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.10"
+      path: charts/camunda-platform-8.10
+    values:
+      - auth:basic
+      - identity:basic
+      - persistence:elasticsearch
+    requires:
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.eks: preemptible
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: oidc
+    catalogue: builtin/8.10
+    description: registry scenario oidc (shortname esoi, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.10"
+      path: charts/camunda-platform-8.10
+    values:
+      - auth:oidc
+      - identity:oidc
+      - persistence:elasticsearch
+      - feature:postgresql-companion
+      - feature:hub-ping
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.eks: preemptible
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: oidc-defaults
+    catalogue: builtin/8.10
+    description: registry scenario oidc-defaults (shortname esoid, tier 1, enabled true)
+  spec:
+    chart:
+      version: "8.10"
+      path: charts/camunda-platform-8.10
+    values:
+      - auth:oidc
+      - identity:oidc
+      - persistence:elasticsearch
+      - feature:postgresql-companion
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.eks: preemptible
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: auth0
+    catalogue: builtin/8.10
+    description: registry scenario auth0 (shortname esa0, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.10"
+      path: charts/camunda-platform-8.10
+    values:
+      - auth:oidc
+      - identity:auth0
+      - persistence:elasticsearch
+      - feature:hub-ping
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.eks: preemptible
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: orchestration-entra
+    catalogue: builtin/8.10
+    description: registry scenario orchestration-entra (shortname ocen, tier 1, enabled true)
+  spec:
+    chart:
+      version: "8.10"
+      path: charts/camunda-platform-8.10
+    values:
+      - auth:oidc
+      - identity:oidc
+      - persistence:elasticsearch
+      - feature:orchestration-entra
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: keycloak-mt
+    catalogue: builtin/8.10
+    description: registry scenario keycloak-mt (shortname kemt, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.10"
+      path: charts/camunda-platform-8.10
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch-companion
+      - feature:custom-history
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - upgrade-minor
+    providers:
+      infra.eks: preemptible
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: keycloak-rba
+    catalogue: builtin/8.10
+    description: registry scenario keycloak-rba (shortname kerba, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.10"
+      path: charts/camunda-platform-8.10
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch-companion
+      - feature:rba
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - upgrade-minor
+    providers:
+      infra.eks: preemptible
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: keycloak-original-upgrade
+    catalogue: builtin/8.10
+    description: registry scenario keycloak-original (shortname keyc, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.10"
+      path: charts/camunda-platform-8.10
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch-companion
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - upgrade-minor
+    providers:
+      infra.eks: preemptible
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: keycloak-original-install-tier2
+    catalogue: builtin/8.10
+    description: registry scenario keycloak-original (shortname keorg, tier 2, enabled false)
+  spec:
+    chart:
+      version: "8.10"
+      path: charts/camunda-platform-8.10
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.eks: preemptible
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: gateway-keycloak
+    catalogue: builtin/8.10
+    description: registry scenario gateway-keycloak (shortname gatkc, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.10"
+      path: charts/camunda-platform-8.10
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:gateway
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.eks: preemptible
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: elasticsearch-arm
+    catalogue: builtin/8.10
+    description: registry scenario elasticsearch-arm (shortname esarm, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.10"
+      path: charts/camunda-platform-8.10
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:arm
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: arm
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: no-secondary-storage
+    catalogue: builtin/8.10
+    description: registry scenario noSecondaryStorage (shortname nosec, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.10"
+      path: charts/camunda-platform-8.10
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:no-elasticsearch
+      - feature:no-secondary-storage
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: documentstore
+    catalogue: builtin/8.10
+    description: registry scenario documentstore (shortname docstr, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.10"
+      path: charts/camunda-platform-8.10
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:postgresql-companion
+      - feature:documentstore
+    requires:
+      - slot: platform
+        oneOf:
+          - eks
+    providers:
+      infra.eks: preemptible
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: documentstore-s3-compatible
+    catalogue: builtin/8.10
+    description: registry scenario documentstore-s3-compatible (shortname docs3, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.10"
+      path: charts/camunda-platform-8.10
+    values:
+      - auth:basic
+      - identity:basic
+      - persistence:elasticsearch
+      - feature:documentstore-s3-compatible
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: secretstore-file
+    catalogue: builtin/8.10
+    description: registry scenario secretstore-file (shortname secfl, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.10"
+      path: charts/camunda-platform-8.10
+    values:
+      - auth:basic
+      - identity:basic
+      - persistence:elasticsearch
+      - feature:secretstore-file
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: secretstore-gcp
+    catalogue: builtin/8.10
+    description: registry scenario secretstore-gcp (shortname secgc, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.10"
+      path: charts/camunda-platform-8.10
+    values:
+      - auth:basic
+      - identity:basic
+      - persistence:elasticsearch
+      - feature:secretstore-gcp
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: rdbms-self-signed
+    catalogue: builtin/8.10
+    description: registry scenario rdbms-self-signed (shortname rdbss, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.10"
+      path: charts/camunda-platform-8.10
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:rdbms-self-signed
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: rdbms-external
+    catalogue: builtin/8.10
+    description: registry scenario rdbms-external (shortname rdbme, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.10"
+      path: charts/camunda-platform-8.10
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:rdbms-external
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: rdbms
+    catalogue: builtin/8.10
+    description: registry scenario rdbms (shortname rdbms, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.10"
+      path: charts/camunda-platform-8.10
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:rdbms
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: component-persistence
+    catalogue: builtin/8.10
+    description: registry scenario component-persistence (shortname cprst, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.10"
+      path: charts/camunda-platform-8.10
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:persistence
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: component-persistence-upgrade
+    catalogue: builtin/8.10
+    description: registry scenario component-persistence-upgrade (shortname cprsu, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.10"
+      path: charts/camunda-platform-8.10
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:persistence
+      - feature:postgresql-companion
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - upgrade-minor
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: hub-legacy-install
+    catalogue: builtin/8.10
+    description: registry scenario hub-legacy (shortname huble, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.10"
+      path: charts/camunda-platform-8.10
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:hub-legacy
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: shadow-e2e
+    catalogue: builtin/8.10
+    description: registry scenario shadow-e2e (shortname shde2, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.10"
+      path: charts/camunda-platform-8.10
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: hub-legacy-upgrade
+    catalogue: builtin/8.10
+    description: registry scenario hub-legacy (shortname hublu, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.10"
+      path: charts/camunda-platform-8.10
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:hub-legacy
+      - feature:postgresql-companion
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - upgrade-minor
+    providers:
+      infra.eks: preemptible
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: hub-mixed
+    catalogue: builtin/8.10
+    description: registry scenario hub-mixed (shortname hubmu, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.10"
+      path: charts/camunda-platform-8.10
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:hub-mixed
+      - feature:postgresql-companion
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - upgrade-minor
+    providers:
+      infra.eks: preemptible
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: hub-webmodeler-only
+    catalogue: builtin/8.10
+    description: registry scenario hub-webmodeler-only (shortname hubwo, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.10"
+      path: charts/camunda-platform-8.10
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch-companion
+      - feature:hub-webmodeler-only
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - upgrade-minor
+    providers:
+      infra.eks: preemptible
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: hub-console-only
+    catalogue: builtin/8.10
+    description: registry scenario hub-console-only (shortname hubco, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.10"
+      path: charts/camunda-platform-8.10
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch-companion
+      - feature:hub-console-only
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - upgrade-minor
+    providers:
+      infra.eks: preemptible
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: hub-external-db
+    catalogue: builtin/8.10
+    description: registry scenario hub-external-db (shortname hubdb, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.10"
+      path: charts/camunda-platform-8.10
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:hub-external-db
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: keycloak-original-install-tier1
+    catalogue: builtin/8.10
+    description: registry scenario keycloak-original (shortname keyco, tier 1, enabled true)
+  spec:
+    chart:
+      version: "8.10"
+      path: charts/camunda-platform-8.10
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:hub-ping
+      - feature:hub-ping-keycloak-token-endpoint
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: alwaysgreen
+    catalogue: builtin/8.10
+    description: registry scenario alwaysgreen (shortname agrn, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.10"
+      path: charts/camunda-platform-8.10
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: alwaysgreen
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-elasticsearch-upg-install
+    catalogue: builtin/8.10
+    description: registry scenario qa-elasticsearch-upg (shortname qaelupg, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.10"
+      path: charts/camunda-platform-8.10
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:postgresql-companion
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-elasticsearch-upg-modular
+    catalogue: builtin/8.10
+    description: registry scenario qa-elasticsearch-upg (shortname qaelupg, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.10"
+      path: charts/camunda-platform-8.10
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:postgresql-companion
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - modular-upgrade-minor
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-elasticsearch
+    catalogue: builtin/8.10
+    description: registry scenario qa-elasticsearch (shortname qael, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.10"
+      path: charts/camunda-platform-8.10
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:postgresql-companion
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-opensearch
+    catalogue: builtin/8.10
+    description: registry scenario qa-opensearch (shortname qaos, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.10"
+      path: charts/camunda-platform-8.10
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:opensearch-embedded
+      - feature:postgresql-companion
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-rdbms
+    catalogue: builtin/8.10
+    description: registry scenario qa-rdbms (shortname qardbms, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.10"
+      path: charts/camunda-platform-8.10
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:rdbms
+      - feature:postgresql-companion
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-rdbms-upg-modular
+    catalogue: builtin/8.10
+    description: registry scenario qa-rdbms-upg (shortname qardbupg, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.10"
+      path: charts/camunda-platform-8.10
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:rdbms-cnpg
+      - feature:postgresql-companion
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - modular-upgrade-minor
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-opensearch-upg-install
+    catalogue: builtin/8.10
+    description: registry scenario qa-opensearch-upg (shortname qaosupg, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.10"
+      path: charts/camunda-platform-8.10
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:opensearch-embedded
+      - feature:postgresql-companion
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-opensearch-upg-modular
+    catalogue: builtin/8.10
+    description: registry scenario qa-opensearch-upg (shortname qaosupg, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.10"
+      path: charts/camunda-platform-8.10
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:opensearch-embedded
+      - feature:postgresql-companion
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - modular-upgrade-minor
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-elasticsearch-mt
+    catalogue: builtin/8.10
+    description: registry scenario qa-elasticsearch-mt (shortname qaelmt, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.10"
+      path: charts/camunda-platform-8.10
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:postgresql-companion
+      - feature:multitenancy
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-elasticsearch-mt-upg-install
+    catalogue: builtin/8.10
+    description: registry scenario qa-elasticsearch-mt-upg (shortname qaelmtupg, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.10"
+      path: charts/camunda-platform-8.10
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:postgresql-companion
+      - feature:multitenancy
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-elasticsearch-mt-upg-modular
+    catalogue: builtin/8.10
+    description: registry scenario qa-elasticsearch-mt-upg (shortname qaelmtupg, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.10"
+      path: charts/camunda-platform-8.10
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:postgresql-companion
+      - feature:multitenancy
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - modular-upgrade-minor
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-elasticsearch-rba
+    catalogue: builtin/8.10
+    description: registry scenario qa-elasticsearch-rba (shortname qaelrba, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.10"
+      path: charts/camunda-platform-8.10
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:postgresql-companion
+      - feature:rba
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-document-store-gke
+    catalogue: builtin/8.10
+    description: registry scenario qa-document-store (shortname qadoc, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.10"
+      path: charts/camunda-platform-8.10
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:postgresql-companion
+      - feature:documentstore
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-document-store-eks
+    catalogue: builtin/8.10
+    description: registry scenario qa-document-store (shortname qadoc, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.10"
+      path: charts/camunda-platform-8.10
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:postgresql-companion
+      - feature:documentstore
+    requires:
+      - slot: platform
+        oneOf:
+          - eks
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.eks: preemptible
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-document-store-upg-install-gke
+    catalogue: builtin/8.10
+    description: registry scenario qa-document-store-upg (shortname qadocupg, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.10"
+      path: charts/camunda-platform-8.10
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:postgresql-companion
+      - feature:documentstore
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-document-store-upg-install-eks
+    catalogue: builtin/8.10
+    description: registry scenario qa-document-store-upg (shortname qadocupg, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.10"
+      path: charts/camunda-platform-8.10
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:postgresql-companion
+      - feature:documentstore
+    requires:
+      - slot: platform
+        oneOf:
+          - eks
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.eks: preemptible
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-document-store-upg-modular-gke
+    catalogue: builtin/8.10
+    description: registry scenario qa-document-store-upg (shortname qadocupg, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.10"
+      path: charts/camunda-platform-8.10
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:postgresql-companion
+      - feature:documentstore
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - modular-upgrade-minor
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-document-store-upg-modular-eks
+    catalogue: builtin/8.10
+    description: registry scenario qa-document-store-upg (shortname qadocupg, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.10"
+      path: charts/camunda-platform-8.10
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:postgresql-companion
+      - feature:documentstore
+    requires:
+      - slot: platform
+        oneOf:
+          - eks
+      - slot: flow
+        oneOf:
+          - modular-upgrade-minor
+    providers:
+      infra.eks: preemptible
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-license
+    catalogue: builtin/8.10
+    description: registry scenario qa-license (shortname lic, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.10"
+      path: charts/camunda-platform-8.10
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:postgresql-companion
+      - feature:license
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: multinamespace
+    catalogue: builtin/8.10
+    description: registry scenario multinamespace (shortname mns, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.10"
+      path: charts/camunda-platform-8.10
+    values:
+      - auth:keycloak
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: multinamespace-2orch
+    catalogue: builtin/8.10
+    description: registry scenario multinamespace-2orch (shortname mns2, tier 1, enabled true)
+  spec:
+    chart:
+      version: "8.10"
+      path: charts/camunda-platform-8.10
+    values:
+      - auth:keycloak
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: multinamespace-optimize
+    catalogue: builtin/8.10
+    description: registry scenario multinamespace-optimize (shortname mnop, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.10"
+      path: charts/camunda-platform-8.10
+    values:
+      - auth:keycloak
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: physicaltenants
+    catalogue: builtin/8.10
+    description: registry scenario physicaltenants (shortname ptnt, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.10"
+      path: charts/camunda-platform-8.10
+    values:
+      - auth:keycloak
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: elasticsearch
+    catalogue: builtin/8.11
+    description: registry scenario elasticsearch (shortname eske, tier 1, enabled true)
+  spec:
+    chart:
+      version: "8.11"
+      path: charts/camunda-platform-8.11
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.eks: preemptible
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: orchestration-tls
+    catalogue: builtin/8.11
+    description: registry scenario orchestration-tls (shortname estls, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.11"
+      path: charts/camunda-platform-8.11
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:orchestration-tls
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: orchestration-tls-rest
+    catalogue: builtin/8.11
+    description: registry scenario orchestration-tls-rest (shortname estlr, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.11"
+      path: charts/camunda-platform-8.11
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:orchestration-tls-rest
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: orchestration-tls-rest-appconfig
+    catalogue: builtin/8.11
+    description: registry scenario orchestration-tls-rest-appconfig (shortname estlc, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.11"
+      path: charts/camunda-platform-8.11
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:orchestration-tls-rest-appconfig
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: connectors-tls
+    catalogue: builtin/8.11
+    description: registry scenario connectors-tls (shortname cotls, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.11"
+      path: charts/camunda-platform-8.11
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:connectors-tls
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: optimize-tls
+    catalogue: builtin/8.11
+    description: registry scenario optimize-tls (shortname optls, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.11"
+      path: charts/camunda-platform-8.11
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:optimize-tls
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: opensearch
+    catalogue: builtin/8.11
+    description: registry scenario opensearch (shortname oske, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.11"
+      path: charts/camunda-platform-8.11
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:opensearch-embedded
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: opensearch-self-signed
+    catalogue: builtin/8.11
+    description: registry scenario opensearch-self-signed (shortname osss, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.11"
+      path: charts/camunda-platform-8.11
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:opensearch-self-signed
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: opensearch-self-signed-os-trust
+    catalogue: builtin/8.11
+    description: registry scenario opensearch-self-signed-os-trust (shortname osot, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.11"
+      path: charts/camunda-platform-8.11
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:opensearch-self-signed-os-trust
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: upgrade-migration
+    catalogue: builtin/8.11
+    description: registry scenario upgrade-migration (shortname eske-upgm, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.11"
+      path: charts/camunda-platform-8.11
+    values:
+      - auth:keycloak
+    requires:
+      - slot: flow
+        oneOf:
+          - upgrade-minor
+    providers:
+      infra.eks: preemptible
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: elasticsearch-basic
+    catalogue: builtin/8.11
+    description: registry scenario elasticsearch-basic (shortname esba, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.11"
+      path: charts/camunda-platform-8.11
+    values:
+      - auth:basic
+      - identity:basic
+      - persistence:elasticsearch
+    requires:
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.eks: preemptible
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: oidc
+    catalogue: builtin/8.11
+    description: registry scenario oidc (shortname esoi, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.11"
+      path: charts/camunda-platform-8.11
+    values:
+      - auth:oidc
+      - identity:oidc
+      - persistence:elasticsearch
+      - feature:postgresql-companion
+      - feature:hub-ping
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.eks: preemptible
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: oidc-defaults
+    catalogue: builtin/8.11
+    description: registry scenario oidc-defaults (shortname esoid, tier 1, enabled true)
+  spec:
+    chart:
+      version: "8.11"
+      path: charts/camunda-platform-8.11
+    values:
+      - auth:oidc
+      - identity:oidc
+      - persistence:elasticsearch
+      - feature:postgresql-companion
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.eks: preemptible
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: auth0
+    catalogue: builtin/8.11
+    description: registry scenario auth0 (shortname esa0, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.11"
+      path: charts/camunda-platform-8.11
+    values:
+      - auth:oidc
+      - identity:auth0
+      - persistence:elasticsearch
+      - feature:hub-ping
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.eks: preemptible
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: orchestration-entra
+    catalogue: builtin/8.11
+    description: registry scenario orchestration-entra (shortname ocen, tier 1, enabled true)
+  spec:
+    chart:
+      version: "8.11"
+      path: charts/camunda-platform-8.11
+    values:
+      - auth:oidc
+      - identity:oidc
+      - persistence:elasticsearch
+      - feature:orchestration-entra
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: keycloak-mt
+    catalogue: builtin/8.11
+    description: registry scenario keycloak-mt (shortname kemt, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.11"
+      path: charts/camunda-platform-8.11
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch-companion
+      - feature:custom-history
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - upgrade-minor
+    providers:
+      infra.eks: preemptible
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: keycloak-rba
+    catalogue: builtin/8.11
+    description: registry scenario keycloak-rba (shortname kerba, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.11"
+      path: charts/camunda-platform-8.11
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch-companion
+      - feature:rba
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - upgrade-minor
+    providers:
+      infra.eks: preemptible
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: keycloak-original-upgrade
+    catalogue: builtin/8.11
+    description: registry scenario keycloak-original (shortname keyc, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.11"
+      path: charts/camunda-platform-8.11
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch-companion
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - upgrade-minor
+    providers:
+      infra.eks: preemptible
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: keycloak-original-install-tier2
+    catalogue: builtin/8.11
+    description: registry scenario keycloak-original (shortname keorg, tier 2, enabled false)
+  spec:
+    chart:
+      version: "8.11"
+      path: charts/camunda-platform-8.11
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.eks: preemptible
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: gateway-keycloak
+    catalogue: builtin/8.11
+    description: registry scenario gateway-keycloak (shortname gatkc, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.11"
+      path: charts/camunda-platform-8.11
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:gateway
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.eks: preemptible
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: elasticsearch-arm
+    catalogue: builtin/8.11
+    description: registry scenario elasticsearch-arm (shortname esarm, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.11"
+      path: charts/camunda-platform-8.11
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:arm
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: arm
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: no-secondary-storage
+    catalogue: builtin/8.11
+    description: registry scenario noSecondaryStorage (shortname nosec, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.11"
+      path: charts/camunda-platform-8.11
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:no-elasticsearch
+      - feature:no-secondary-storage
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: documentstore
+    catalogue: builtin/8.11
+    description: registry scenario documentstore (shortname docstr, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.11"
+      path: charts/camunda-platform-8.11
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:postgresql-companion
+      - feature:documentstore
+    requires:
+      - slot: platform
+        oneOf:
+          - eks
+    providers:
+      infra.eks: preemptible
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: documentstore-s3-compatible
+    catalogue: builtin/8.11
+    description: registry scenario documentstore-s3-compatible (shortname docs3, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.11"
+      path: charts/camunda-platform-8.11
+    values:
+      - auth:basic
+      - identity:basic
+      - persistence:elasticsearch
+      - feature:documentstore-s3-compatible
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: secretstore-file
+    catalogue: builtin/8.11
+    description: registry scenario secretstore-file (shortname secfl, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.11"
+      path: charts/camunda-platform-8.11
+    values:
+      - auth:basic
+      - identity:basic
+      - persistence:elasticsearch
+      - feature:secretstore-file
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: secretstore-gcp
+    catalogue: builtin/8.11
+    description: registry scenario secretstore-gcp (shortname secgc, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.11"
+      path: charts/camunda-platform-8.11
+    values:
+      - auth:basic
+      - identity:basic
+      - persistence:elasticsearch
+      - feature:secretstore-gcp
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: rdbms-self-signed
+    catalogue: builtin/8.11
+    description: registry scenario rdbms-self-signed (shortname rdbss, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.11"
+      path: charts/camunda-platform-8.11
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:rdbms-self-signed
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: rdbms-external
+    catalogue: builtin/8.11
+    description: registry scenario rdbms-external (shortname rdbme, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.11"
+      path: charts/camunda-platform-8.11
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:rdbms-external
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: rdbms
+    catalogue: builtin/8.11
+    description: registry scenario rdbms (shortname rdbms, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.11"
+      path: charts/camunda-platform-8.11
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:rdbms
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: component-persistence
+    catalogue: builtin/8.11
+    description: registry scenario component-persistence (shortname cprst, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.11"
+      path: charts/camunda-platform-8.11
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:persistence
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: component-persistence-upgrade
+    catalogue: builtin/8.11
+    description: registry scenario component-persistence-upgrade (shortname cprsu, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.11"
+      path: charts/camunda-platform-8.11
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:persistence
+      - feature:postgresql-companion
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - upgrade-minor
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: hub-legacy-install
+    catalogue: builtin/8.11
+    description: registry scenario hub-legacy (shortname huble, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.11"
+      path: charts/camunda-platform-8.11
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:hub-legacy
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: shadow-e2e
+    catalogue: builtin/8.11
+    description: registry scenario shadow-e2e (shortname shde2, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.11"
+      path: charts/camunda-platform-8.11
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: hub-legacy-upgrade
+    catalogue: builtin/8.11
+    description: registry scenario hub-legacy (shortname hublu, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.11"
+      path: charts/camunda-platform-8.11
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:hub-legacy
+      - feature:postgresql-companion
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - upgrade-minor
+    providers:
+      infra.eks: preemptible
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: hub-mixed
+    catalogue: builtin/8.11
+    description: registry scenario hub-mixed (shortname hubmu, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.11"
+      path: charts/camunda-platform-8.11
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:hub-mixed
+      - feature:postgresql-companion
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - upgrade-minor
+    providers:
+      infra.eks: preemptible
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: hub-webmodeler-only
+    catalogue: builtin/8.11
+    description: registry scenario hub-webmodeler-only (shortname hubwo, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.11"
+      path: charts/camunda-platform-8.11
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch-companion
+      - feature:hub-webmodeler-only
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - upgrade-minor
+    providers:
+      infra.eks: preemptible
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: hub-console-only
+    catalogue: builtin/8.11
+    description: registry scenario hub-console-only (shortname hubco, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.11"
+      path: charts/camunda-platform-8.11
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch-companion
+      - feature:hub-console-only
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - upgrade-minor
+    providers:
+      infra.eks: preemptible
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: hub-external-db
+    catalogue: builtin/8.11
+    description: registry scenario hub-external-db (shortname hubdb, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.11"
+      path: charts/camunda-platform-8.11
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:hub-external-db
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: keycloak-original-install-tier1
+    catalogue: builtin/8.11
+    description: registry scenario keycloak-original (shortname keyco, tier 1, enabled true)
+  spec:
+    chart:
+      version: "8.11"
+      path: charts/camunda-platform-8.11
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:hub-ping
+      - feature:hub-ping-keycloak-token-endpoint
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: alwaysgreen
+    catalogue: builtin/8.11
+    description: registry scenario alwaysgreen (shortname agrn, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.11"
+      path: charts/camunda-platform-8.11
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: alwaysgreen
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-elasticsearch-upg-install
+    catalogue: builtin/8.11
+    description: registry scenario qa-elasticsearch-upg (shortname qaelupg, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.11"
+      path: charts/camunda-platform-8.11
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:postgresql-companion
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-elasticsearch-upg-modular
+    catalogue: builtin/8.11
+    description: registry scenario qa-elasticsearch-upg (shortname qaelupg, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.11"
+      path: charts/camunda-platform-8.11
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:postgresql-companion
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - modular-upgrade-minor
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-elasticsearch
+    catalogue: builtin/8.11
+    description: registry scenario qa-elasticsearch (shortname qael, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.11"
+      path: charts/camunda-platform-8.11
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:postgresql-companion
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-opensearch
+    catalogue: builtin/8.11
+    description: registry scenario qa-opensearch (shortname qaos, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.11"
+      path: charts/camunda-platform-8.11
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:opensearch-embedded
+      - feature:postgresql-companion
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-rdbms
+    catalogue: builtin/8.11
+    description: registry scenario qa-rdbms (shortname qardbms, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.11"
+      path: charts/camunda-platform-8.11
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:rdbms
+      - feature:postgresql-companion
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-rdbms-upg-modular
+    catalogue: builtin/8.11
+    description: registry scenario qa-rdbms-upg (shortname qardbupg, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.11"
+      path: charts/camunda-platform-8.11
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:rdbms
+      - feature:postgresql-companion
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - modular-upgrade-minor
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-opensearch-upg-install
+    catalogue: builtin/8.11
+    description: registry scenario qa-opensearch-upg (shortname qaosupg, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.11"
+      path: charts/camunda-platform-8.11
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:opensearch-embedded
+      - feature:postgresql-companion
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-opensearch-upg-modular
+    catalogue: builtin/8.11
+    description: registry scenario qa-opensearch-upg (shortname qaosupg, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.11"
+      path: charts/camunda-platform-8.11
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:opensearch-embedded
+      - feature:postgresql-companion
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - modular-upgrade-minor
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-elasticsearch-mt
+    catalogue: builtin/8.11
+    description: registry scenario qa-elasticsearch-mt (shortname qaelmt, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.11"
+      path: charts/camunda-platform-8.11
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:postgresql-companion
+      - feature:multitenancy
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-elasticsearch-mt-upg-install
+    catalogue: builtin/8.11
+    description: registry scenario qa-elasticsearch-mt-upg (shortname qaelmtupg, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.11"
+      path: charts/camunda-platform-8.11
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:postgresql-companion
+      - feature:multitenancy
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-elasticsearch-mt-upg-modular
+    catalogue: builtin/8.11
+    description: registry scenario qa-elasticsearch-mt-upg (shortname qaelmtupg, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.11"
+      path: charts/camunda-platform-8.11
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:postgresql-companion
+      - feature:multitenancy
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - modular-upgrade-minor
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-elasticsearch-rba
+    catalogue: builtin/8.11
+    description: registry scenario qa-elasticsearch-rba (shortname qaelrba, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.11"
+      path: charts/camunda-platform-8.11
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:postgresql-companion
+      - feature:rba
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-document-store-gke
+    catalogue: builtin/8.11
+    description: registry scenario qa-document-store (shortname qadoc, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.11"
+      path: charts/camunda-platform-8.11
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:postgresql-companion
+      - feature:documentstore
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-document-store-eks
+    catalogue: builtin/8.11
+    description: registry scenario qa-document-store (shortname qadoc, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.11"
+      path: charts/camunda-platform-8.11
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:postgresql-companion
+      - feature:documentstore
+    requires:
+      - slot: platform
+        oneOf:
+          - eks
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.eks: preemptible
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-document-store-upg-install-gke
+    catalogue: builtin/8.11
+    description: registry scenario qa-document-store-upg (shortname qadocupg, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.11"
+      path: charts/camunda-platform-8.11
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:postgresql-companion
+      - feature:documentstore
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-document-store-upg-install-eks
+    catalogue: builtin/8.11
+    description: registry scenario qa-document-store-upg (shortname qadocupg, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.11"
+      path: charts/camunda-platform-8.11
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:postgresql-companion
+      - feature:documentstore
+    requires:
+      - slot: platform
+        oneOf:
+          - eks
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.eks: preemptible
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-document-store-upg-modular-gke
+    catalogue: builtin/8.11
+    description: registry scenario qa-document-store-upg (shortname qadocupg, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.11"
+      path: charts/camunda-platform-8.11
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:postgresql-companion
+      - feature:documentstore
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - modular-upgrade-minor
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-document-store-upg-modular-eks
+    catalogue: builtin/8.11
+    description: registry scenario qa-document-store-upg (shortname qadocupg, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.11"
+      path: charts/camunda-platform-8.11
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:postgresql-companion
+      - feature:documentstore
+    requires:
+      - slot: platform
+        oneOf:
+          - eks
+      - slot: flow
+        oneOf:
+          - modular-upgrade-minor
+    providers:
+      infra.eks: preemptible
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-license
+    catalogue: builtin/8.11
+    description: registry scenario qa-license (shortname lic, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.11"
+      path: charts/camunda-platform-8.11
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:postgresql-companion
+      - feature:license
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: multinamespace
+    catalogue: builtin/8.11
+    description: registry scenario multinamespace (shortname mns, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.11"
+      path: charts/camunda-platform-8.11
+    values:
+      - auth:keycloak
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: multinamespace-2orch
+    catalogue: builtin/8.11
+    description: registry scenario multinamespace-2orch (shortname mns2, tier 1, enabled true)
+  spec:
+    chart:
+      version: "8.11"
+      path: charts/camunda-platform-8.11
+    values:
+      - auth:keycloak
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: multinamespace-optimize
+    catalogue: builtin/8.11
+    description: registry scenario multinamespace-optimize (shortname mnop, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.11"
+      path: charts/camunda-platform-8.11
+    values:
+      - auth:keycloak
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: physicaltenants
+    catalogue: builtin/8.11
+    description: registry scenario physicaltenants (shortname ptnt, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.11"
+      path: charts/camunda-platform-8.11
+    values:
+      - auth:keycloak
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: elasticsearch
+    catalogue: builtin/8.6
+    description: registry scenario elasticsearch (shortname es, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.6"
+      path: charts/camunda-platform-8.6
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+          - eks
+      - slot: flow
+        oneOf:
+          - install,upgrade-patch
+    providers:
+      infra.eks: preemptible
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: opensearch
+    catalogue: builtin/8.6
+    description: registry scenario opensearch (shortname os, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.6"
+      path: charts/camunda-platform-8.6
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:opensearch
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: multitenancy
+    catalogue: builtin/8.6
+    description: registry scenario multitenancy (shortname mt, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.6"
+      path: charts/camunda-platform-8.6
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:multitenancy
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: elasticsearch
+    catalogue: builtin/8.7
+    description: registry scenario elasticsearch (shortname eske, tier 1, enabled true)
+  spec:
+    chart:
+      version: "8.7"
+      path: charts/camunda-platform-8.7
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.eks: preemptible
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: enterprise-values
+    catalogue: builtin/8.7
+    description: registry scenario enterprise-values (shortname entv, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.7"
+      path: charts/camunda-platform-8.7
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:enterprise
+      - feature:keycloak-admin-audience-off
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: keycloak-mt
+    catalogue: builtin/8.7
+    description: registry scenario keycloak-mt (shortname kemt, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.7"
+      path: charts/camunda-platform-8.7
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install,upgrade-patch
+    providers:
+      infra.eks: preemptible
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: keycloak-rba
+    catalogue: builtin/8.7
+    description: registry scenario keycloak-rba (shortname kerba, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.7"
+      path: charts/camunda-platform-8.7
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: oidc
+    catalogue: builtin/8.7
+    description: registry scenario oidc (shortname esoi, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.7"
+      path: charts/camunda-platform-8.7
+    values:
+      - auth:oidc
+      - persistence:elasticsearch
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install,upgrade-patch
+    providers:
+      infra.eks: preemptible
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: keycloak-original-install-patch
+    catalogue: builtin/8.7
+    description: registry scenario keycloak-original (shortname keyc, tier 2, enabled false)
+  spec:
+    chart:
+      version: "8.7"
+      path: charts/camunda-platform-8.7
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install,upgrade-patch
+    providers:
+      infra.eks: preemptible
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: opensearch-embedded
+    catalogue: builtin/8.7
+    description: registry scenario opensearch-embedded (shortname osem, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.7"
+      path: charts/camunda-platform-8.7
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:opensearch-embedded
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: component-persistence
+    catalogue: builtin/8.7
+    description: registry scenario component-persistence (shortname cprst, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.7"
+      path: charts/camunda-platform-8.7
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:persistence
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: shadow-e2e
+    catalogue: builtin/8.7
+    description: registry scenario shadow-e2e (shortname shde2, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.7"
+      path: charts/camunda-platform-8.7
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: keycloak-original-install
+    catalogue: builtin/8.7
+    description: registry scenario keycloak-original (shortname keyco, tier 1, enabled true)
+  spec:
+    chart:
+      version: "8.7"
+      path: charts/camunda-platform-8.7
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: alwaysgreen
+    catalogue: builtin/8.7
+    description: registry scenario alwaysgreen (shortname agrn, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.7"
+      path: charts/camunda-platform-8.7
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: alwaysgreen
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-elasticsearch
+    catalogue: builtin/8.7
+    description: registry scenario qa-elasticsearch (shortname qael, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.7"
+      path: charts/camunda-platform-8.7
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+          - eks
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.eks: preemptible
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-elasticsearch-rba
+    catalogue: builtin/8.7
+    description: registry scenario qa-elasticsearch-rba (shortname qarba, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.7"
+      path: charts/camunda-platform-8.7
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:rba
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-elasticsearch-mt
+    catalogue: builtin/8.7
+    description: registry scenario qa-elasticsearch-mt (shortname qamt, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.7"
+      path: charts/camunda-platform-8.7
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:multitenancy
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-license
+    catalogue: builtin/8.7
+    description: registry scenario qa-license (shortname lic, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.7"
+      path: charts/camunda-platform-8.7
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:license
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-opensearch
+    catalogue: builtin/8.7
+    description: registry scenario qa-opensearch (shortname qaos, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.7"
+      path: charts/camunda-platform-8.7
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:opensearch-embedded
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: elasticsearch
+    catalogue: builtin/8.8
+    description: registry scenario elasticsearch (shortname eske, tier 1, enabled true)
+  spec:
+    chart:
+      version: "8.8"
+      path: charts/camunda-platform-8.8
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: orchestration-tls
+    catalogue: builtin/8.8
+    description: registry scenario orchestration-tls (shortname estls, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.8"
+      path: charts/camunda-platform-8.8
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:orchestration-tls
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: enterprise-values
+    catalogue: builtin/8.8
+    description: registry scenario enterprise-values (shortname entv, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.8"
+      path: charts/camunda-platform-8.8
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:enterprise
+      - feature:keycloak-admin-audience-off
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: upgrade-migration
+    catalogue: builtin/8.8
+    description: registry scenario upgrade-migration (shortname eske-upgm, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.8"
+      path: charts/camunda-platform-8.8
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:migrator
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - upgrade-minor
+    providers:
+      infra.eks: preemptible
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: elasticsearch-basic
+    catalogue: builtin/8.8
+    description: registry scenario elasticsearch-basic (shortname esba, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.8"
+      path: charts/camunda-platform-8.8
+    values:
+      - auth:basic
+      - identity:basic
+      - persistence:elasticsearch
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.eks: preemptible
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: oidc
+    catalogue: builtin/8.8
+    description: registry scenario oidc (shortname esoi, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.8"
+      path: charts/camunda-platform-8.8
+    values:
+      - auth:oidc
+      - identity:oidc
+      - persistence:elasticsearch
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install,upgrade-minor
+    providers:
+      infra.eks: preemptible
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: keycloak-mt
+    catalogue: builtin/8.8
+    description: registry scenario keycloak-mt (shortname kemt, tier 2, enabled false)
+  spec:
+    chart:
+      version: "8.8"
+      path: charts/camunda-platform-8.8
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - upgrade-minor
+    providers:
+      infra.eks: preemptible
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: keycloak-rba
+    catalogue: builtin/8.8
+    description: registry scenario keycloak-rba (shortname kerba, tier 2, enabled false)
+  spec:
+    chart:
+      version: "8.8"
+      path: charts/camunda-platform-8.8
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:rba
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - upgrade-minor
+    providers:
+      infra.eks: preemptible
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: elasticsearch-self-signed-upgrade
+    catalogue: builtin/8.8
+    description: registry scenario elasticsearch-self-signed-upgrade (shortname esss, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.8"
+      path: charts/camunda-platform-8.8
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch-self-signed
+      - feature:migrator
+      - feature:zeebe-tls
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - upgrade-minor
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: elasticsearch-self-signed-os-trust
+    catalogue: builtin/8.8
+    description: registry scenario elasticsearch-self-signed-os-trust (shortname esot, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.8"
+      path: charts/camunda-platform-8.8
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch-self-signed-os-trust
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: keycloak-original-upgrade-tier2
+    catalogue: builtin/8.8
+    description: registry scenario keycloak-original (shortname keyc, tier 2, enabled false)
+  spec:
+    chart:
+      version: "8.8"
+      path: charts/camunda-platform-8.8
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - upgrade-minor
+    providers:
+      infra.eks: preemptible
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: elasticsearch-2
+    catalogue: builtin/8.8
+    description: registry scenario elasticsearch (shortname eshy, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.8"
+      path: charts/camunda-platform-8.8
+    values:
+      - auth:hybrid
+      - identity:hybrid
+      - persistence:elasticsearch
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: elasticsearch-arm
+    catalogue: builtin/8.8
+    description: registry scenario elasticsearch-arm (shortname esarm, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.8"
+      path: charts/camunda-platform-8.8
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:arm
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: arm
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: opensearch
+    catalogue: builtin/8.8
+    description: registry scenario opensearch (shortname oske, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.8"
+      path: charts/camunda-platform-8.8
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:opensearch-embedded
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: documentstore
+    catalogue: builtin/8.8
+    description: registry scenario documentstore (shortname docstr, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.8"
+      path: charts/camunda-platform-8.8
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:documentstore
+    requires:
+      - slot: platform
+        oneOf:
+          - eks
+    providers:
+      infra.eks: preemptible
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: no-secondary-storage
+    catalogue: builtin/8.8
+    description: registry scenario noSecondaryStorage (shortname nosec, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.8"
+      path: charts/camunda-platform-8.8
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:no-elasticsearch
+      - feature:no-secondary-storage
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: component-persistence
+    catalogue: builtin/8.8
+    description: registry scenario component-persistence (shortname cprst, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.8"
+      path: charts/camunda-platform-8.8
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:persistence
+      - feature:migrator
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: keycloak-ldap
+    catalogue: builtin/8.8
+    description: registry scenario keycloak-ldap (shortname keldp, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.8"
+      path: charts/camunda-platform-8.8
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:ldap
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: keycloak-original-install-tier1
+    catalogue: builtin/8.8
+    description: registry scenario keycloak-original (shortname keyco, tier 2, enabled false)
+  spec:
+    chart:
+      version: "8.8"
+      path: charts/camunda-platform-8.8
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: alwaysgreen
+    catalogue: builtin/8.8
+    description: registry scenario alwaysgreen (shortname agrn, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.8"
+      path: charts/camunda-platform-8.8
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: alwaysgreen
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: keycloak-original-install
+    catalogue: builtin/8.8
+    description: registry scenario keycloak-original (shortname kcor, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.8"
+      path: charts/camunda-platform-8.8
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: elasticsearch-3
+    catalogue: builtin/8.8
+    description: registry scenario elasticsearch (shortname es, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.8"
+      path: charts/camunda-platform-8.8
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-elasticsearch
+    catalogue: builtin/8.8
+    description: registry scenario qa-elasticsearch (shortname qael, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.8"
+      path: charts/camunda-platform-8.8
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-opensearch
+    catalogue: builtin/8.8
+    description: registry scenario qa-opensearch (shortname qaos, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.8"
+      path: charts/camunda-platform-8.8
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:opensearch-embedded
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-elasticsearch-rba
+    catalogue: builtin/8.8
+    description: registry scenario qa-elasticsearch-rba (shortname qaelrba, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.8"
+      path: charts/camunda-platform-8.8
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:rba
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-elasticsearch-mt
+    catalogue: builtin/8.8
+    description: registry scenario qa-elasticsearch-mt (shortname qaelmt, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.8"
+      path: charts/camunda-platform-8.8
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:multitenancy
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-license
+    catalogue: builtin/8.8
+    description: registry scenario qa-license (shortname lic, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.8"
+      path: charts/camunda-platform-8.8
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:license
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-entra
+    catalogue: builtin/8.8
+    description: registry scenario qa-entra (shortname qaen, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.8"
+      path: charts/camunda-platform-8.8
+    values:
+      - auth:oidc
+      - identity:oidc
+      - persistence:elasticsearch
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-document-store
+    catalogue: builtin/8.8
+    description: registry scenario qa-document-store (shortname qadoc, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.8"
+      path: charts/camunda-platform-8.8
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:documentstore
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+          - eks
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.eks: preemptible
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-document-store-upg
+    catalogue: builtin/8.8
+    description: registry scenario qa-document-store-upg (shortname qadocupg, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.8"
+      path: charts/camunda-platform-8.8
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:documentstore
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-elasticsearch-tasklist-v1
+    catalogue: builtin/8.8
+    description: registry scenario qa-elasticsearch-tasklist-v1 (shortname qaeltlv1, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.8"
+      path: charts/camunda-platform-8.8
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:tasklist-v1
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-opensearch-tasklist-v1
+    catalogue: builtin/8.8
+    description: registry scenario qa-opensearch-tasklist-v1 (shortname qaosupg, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.8"
+      path: charts/camunda-platform-8.8
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:opensearch-embedded
+      - feature:tasklist-v1
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-elasticsearch-rba-tasklist-v1
+    catalogue: builtin/8.8
+    description: registry scenario qa-elasticsearch-rba-tasklist-v1 (shortname qaelrbaupg, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.8"
+      path: charts/camunda-platform-8.8
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:rba
+      - feature:tasklist-v1
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-elasticsearch-mt-tasklist-v1
+    catalogue: builtin/8.8
+    description: registry scenario qa-elasticsearch-mt-tasklist-v1 (shortname qaelmtupg, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.8"
+      path: charts/camunda-platform-8.8
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:multitenancy
+      - feature:tasklist-v1
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-license-tasklist-v1
+    catalogue: builtin/8.8
+    description: registry scenario qa-license-tasklist-v1 (shortname licupg, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.8"
+      path: charts/camunda-platform-8.8
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:license
+      - feature:tasklist-v1
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-elasticsearch-upg-install
+    catalogue: builtin/8.8
+    description: registry scenario qa-elasticsearch-upg (shortname qaelupg, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.8"
+      path: charts/camunda-platform-8.8
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-elasticsearch-upg-modular
+    catalogue: builtin/8.8
+    description: registry scenario qa-elasticsearch-upg (shortname qaelupg, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.8"
+      path: charts/camunda-platform-8.8
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:migrator
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - modular-upgrade-minor
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-elasticsearch-document-upg
+    catalogue: builtin/8.8
+    description: registry scenario qa-elasticsearch-document-upg (shortname qaeldocupg, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.8"
+      path: charts/camunda-platform-8.8
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:documentstore
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-opensearch-upg
+    catalogue: builtin/8.8
+    description: registry scenario qa-opensearch-upg (shortname qaosupg2, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.8"
+      path: charts/camunda-platform-8.8
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:opensearch-embedded
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-elasticsearch-rba-upg
+    catalogue: builtin/8.8
+    description: registry scenario qa-elasticsearch-rba-upg (shortname qaelrbaup2, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.8"
+      path: charts/camunda-platform-8.8
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:rba
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-elasticsearch-mt-upg
+    catalogue: builtin/8.8
+    description: registry scenario qa-elasticsearch-mt-upg (shortname qaelmtup2, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.8"
+      path: charts/camunda-platform-8.8
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:multitenancy
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-license-upg
+    catalogue: builtin/8.8
+    description: registry scenario qa-license-upg (shortname licup2, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.8"
+      path: charts/camunda-platform-8.8
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:license
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: elasticsearch
+    catalogue: builtin/8.9
+    description: registry scenario elasticsearch (shortname eske, tier 1, enabled true)
+  spec:
+    chart:
+      version: "8.9"
+      path: charts/camunda-platform-8.9
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install,upgrade-minor
+    providers:
+      infra.eks: preemptible
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: orchestration-tls
+    catalogue: builtin/8.9
+    description: registry scenario orchestration-tls (shortname estls, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.9"
+      path: charts/camunda-platform-8.9
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:orchestration-tls
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: enterprise-values
+    catalogue: builtin/8.9
+    description: registry scenario enterprise-values (shortname entv, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.9"
+      path: charts/camunda-platform-8.9
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:enterprise
+      - feature:keycloak-admin-audience-off
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: opensearch
+    catalogue: builtin/8.9
+    description: registry scenario opensearch (shortname oske, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.9"
+      path: charts/camunda-platform-8.9
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:opensearch-embedded
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: elasticsearch-basic
+    catalogue: builtin/8.9
+    description: registry scenario elasticsearch-basic (shortname esba, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.9"
+      path: charts/camunda-platform-8.9
+    values:
+      - auth:basic
+      - identity:basic
+      - persistence:elasticsearch
+    requires:
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.eks: preemptible
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: oidc
+    catalogue: builtin/8.9
+    description: registry scenario oidc (shortname esoi, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.9"
+      path: charts/camunda-platform-8.9
+    values:
+      - auth:oidc
+      - identity:oidc
+      - persistence:elasticsearch
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install,upgrade-minor
+    providers:
+      infra.eks: preemptible
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: keycloak-mt
+    catalogue: builtin/8.9
+    description: registry scenario keycloak-mt (shortname kemt, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.9"
+      path: charts/camunda-platform-8.9
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - upgrade-minor
+    providers:
+      infra.eks: preemptible
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: keycloak-rba
+    catalogue: builtin/8.9
+    description: registry scenario keycloak-rba (shortname kerba, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.9"
+      path: charts/camunda-platform-8.9
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:rba
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - upgrade-minor
+    providers:
+      infra.eks: preemptible
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: keycloak-original-install-tier2
+    catalogue: builtin/8.9
+    description: registry scenario keycloak-original (shortname keorg, tier 2, enabled false)
+  spec:
+    chart:
+      version: "8.9"
+      path: charts/camunda-platform-8.9
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.eks: preemptible
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: elasticsearch-self-signed
+    catalogue: builtin/8.9
+    description: registry scenario elasticsearch-self-signed (shortname esss, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.9"
+      path: charts/camunda-platform-8.9
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch-self-signed
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: elasticsearch-self-signed-os-trust
+    catalogue: builtin/8.9
+    description: registry scenario elasticsearch-self-signed-os-trust (shortname esot, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.9"
+      path: charts/camunda-platform-8.9
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch-self-signed-os-trust
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: gateway-keycloak
+    catalogue: builtin/8.9
+    description: registry scenario gateway-keycloak (shortname gatkc, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.9"
+      path: charts/camunda-platform-8.9
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:gateway
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.eks: preemptible
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: elasticsearch-arm
+    catalogue: builtin/8.9
+    description: registry scenario elasticsearch-arm (shortname esarm, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.9"
+      path: charts/camunda-platform-8.9
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:arm
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: arm
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: no-secondary-storage
+    catalogue: builtin/8.9
+    description: registry scenario noSecondaryStorage (shortname nosec, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.9"
+      path: charts/camunda-platform-8.9
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:no-elasticsearch
+      - feature:no-secondary-storage
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: documentstore
+    catalogue: builtin/8.9
+    description: registry scenario documentstore (shortname docstr, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.9"
+      path: charts/camunda-platform-8.9
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:documentstore
+    requires:
+      - slot: platform
+        oneOf:
+          - eks
+    providers:
+      infra.eks: preemptible
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: rdbms-external
+    catalogue: builtin/8.9
+    description: registry scenario rdbms-external (shortname rdbme, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.9"
+      path: charts/camunda-platform-8.9
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:rdbms-external
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: rdbms
+    catalogue: builtin/8.9
+    description: registry scenario rdbms (shortname rdbms, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.9"
+      path: charts/camunda-platform-8.9
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:rdbms
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: component-persistence
+    catalogue: builtin/8.9
+    description: registry scenario component-persistence (shortname cprst, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.9"
+      path: charts/camunda-platform-8.9
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:persistence
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install,upgrade-minor
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: legacy-exporter-args
+    catalogue: builtin/8.9
+    description: registry scenario legacy-exporter-args (shortname lgexp, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.9"
+      path: charts/camunda-platform-8.9
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:legacy-exporter-args
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: keycloak-original-install-tier1
+    catalogue: builtin/8.9
+    description: registry scenario keycloak-original (shortname keyco, tier 2, enabled false)
+  spec:
+    chart:
+      version: "8.9"
+      path: charts/camunda-platform-8.9
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: alwaysgreen
+    catalogue: builtin/8.9
+    description: registry scenario alwaysgreen (shortname agrn, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.9"
+      path: charts/camunda-platform-8.9
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: alwaysgreen
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: shadow-e2e
+    catalogue: builtin/8.9
+    description: registry scenario shadow-e2e (shortname shde2, tier 2, enabled true)
+  spec:
+    chart:
+      version: "8.9"
+      path: charts/camunda-platform-8.9
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-elasticsearch
+    catalogue: builtin/8.9
+    description: registry scenario qa-elasticsearch (shortname qael, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.9"
+      path: charts/camunda-platform-8.9
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-opensearch
+    catalogue: builtin/8.9
+    description: registry scenario qa-opensearch (shortname qaos, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.9"
+      path: charts/camunda-platform-8.9
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:opensearch-embedded
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-rdbms
+    catalogue: builtin/8.9
+    description: registry scenario qa-rdbms (shortname qardbms, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.9"
+      path: charts/camunda-platform-8.9
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:rdbms
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-elasticsearch-rba
+    catalogue: builtin/8.9
+    description: registry scenario qa-elasticsearch-rba (shortname qaelrba, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.9"
+      path: charts/camunda-platform-8.9
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:rba
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-elasticsearch-mt
+    catalogue: builtin/8.9
+    description: registry scenario qa-elasticsearch-mt (shortname qaelmt, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.9"
+      path: charts/camunda-platform-8.9
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:multitenancy
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-license
+    catalogue: builtin/8.9
+    description: registry scenario qa-license (shortname lic, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.9"
+      path: charts/camunda-platform-8.9
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:license
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-entra
+    catalogue: builtin/8.9
+    description: registry scenario qa-entra (shortname qaen, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.9"
+      path: charts/camunda-platform-8.9
+    values:
+      - auth:oidc
+      - identity:oidc
+      - persistence:elasticsearch
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-document-store
+    catalogue: builtin/8.9
+    description: registry scenario qa-document-store (shortname qadoc, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.9"
+      path: charts/camunda-platform-8.9
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:documentstore
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+          - eks
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.eks: preemptible
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-elasticsearch-tasklist-v1
+    catalogue: builtin/8.9
+    description: registry scenario qa-elasticsearch-tasklist-v1 (shortname qaeltlv1, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.9"
+      path: charts/camunda-platform-8.9
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:tasklist-v1
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-opensearch-tasklist-v1
+    catalogue: builtin/8.9
+    description: registry scenario qa-opensearch-tasklist-v1 (shortname qaosupg, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.9"
+      path: charts/camunda-platform-8.9
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:opensearch-embedded
+      - feature:tasklist-v1
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-elasticsearch-rba-tasklist-v1
+    catalogue: builtin/8.9
+    description: registry scenario qa-elasticsearch-rba-tasklist-v1 (shortname qaelrbaupg, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.9"
+      path: charts/camunda-platform-8.9
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:rba
+      - feature:tasklist-v1
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-elasticsearch-mt-tasklist-v1
+    catalogue: builtin/8.9
+    description: registry scenario qa-elasticsearch-mt-tasklist-v1 (shortname qaelmtupg, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.9"
+      path: charts/camunda-platform-8.9
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:multitenancy
+      - feature:tasklist-v1
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-license-tasklist-v1
+    catalogue: builtin/8.9
+    description: registry scenario qa-license-tasklist-v1 (shortname licupg, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.9"
+      path: charts/camunda-platform-8.9
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:license
+      - feature:tasklist-v1
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-elasticsearch-upg-install
+    catalogue: builtin/8.9
+    description: registry scenario qa-elasticsearch-upg (shortname qaelupg, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.9"
+      path: charts/camunda-platform-8.9
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-elasticsearch-upg-modular
+    catalogue: builtin/8.9
+    description: registry scenario qa-elasticsearch-upg (shortname qaelupg, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.9"
+      path: charts/camunda-platform-8.9
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - modular-upgrade-minor
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-elasticsearch-document-upg
+    catalogue: builtin/8.9
+    description: registry scenario qa-elasticsearch-document-upg (shortname qaeldocupg, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.9"
+      path: charts/camunda-platform-8.9
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:documentstore
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-opensearch-upg-install
+    catalogue: builtin/8.9
+    description: registry scenario qa-opensearch-upg (shortname qaosupg2, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.9"
+      path: charts/camunda-platform-8.9
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:opensearch-embedded
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-opensearch-upg-modular
+    catalogue: builtin/8.9
+    description: registry scenario qa-opensearch-upg (shortname qaosupg, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.9"
+      path: charts/camunda-platform-8.9
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:opensearch-embedded
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - modular-upgrade-minor
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-elasticsearch-rba-upg
+    catalogue: builtin/8.9
+    description: registry scenario qa-elasticsearch-rba-upg (shortname qaelrbaup2, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.9"
+      path: charts/camunda-platform-8.9
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:rba
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-elasticsearch-mt-upg-install
+    catalogue: builtin/8.9
+    description: registry scenario qa-elasticsearch-mt-upg (shortname qaelmtup2, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.9"
+      path: charts/camunda-platform-8.9
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:multitenancy
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-elasticsearch-mt-upg-modular
+    catalogue: builtin/8.9
+    description: registry scenario qa-elasticsearch-mt-upg (shortname qaelmtupg, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.9"
+      path: charts/camunda-platform-8.9
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:multitenancy
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - modular-upgrade-minor
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-license-upg
+    catalogue: builtin/8.9
+    description: registry scenario qa-license-upg (shortname licup2, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.9"
+      path: charts/camunda-platform-8.9
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:license
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-document-store-upg-install-modular
+    catalogue: builtin/8.9
+    description: registry scenario qa-document-store-upg (shortname qadocupg, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.9"
+      path: charts/camunda-platform-8.9
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:documentstore
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+          - eks
+      - slot: flow
+        oneOf:
+          - install,modular-upgrade-minor
+    providers:
+      infra.eks: preemptible
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: qa-document-store-upg-modular
+    catalogue: builtin/8.9
+    description: registry scenario qa-document-store-upg (shortname qadocupg, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.9"
+      path: charts/camunda-platform-8.9
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+      - feature:documentstore
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+          - eks
+      - slot: flow
+        oneOf:
+          - modular-upgrade-minor
+    providers:
+      infra.eks: preemptible
+      infra.gke: qa-workloads
+- apiVersion: deploy-camunda/v1
+  kind: Recipe
+  metadata:
+    name: keycloak-original-install
+    catalogue: builtin/8.9
+    description: registry scenario keycloak-original (shortname kcor, tier 0, enabled false)
+  spec:
+    chart:
+      version: "8.9"
+      path: charts/camunda-platform-8.9
+    values:
+      - auth:keycloak
+      - identity:keycloak
+      - persistence:elasticsearch
+    requires:
+      - slot: platform
+        oneOf:
+          - gke
+      - slot: flow
+        oneOf:
+          - install
+    providers:
+      infra.gke: distroci
