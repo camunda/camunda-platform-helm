@@ -179,7 +179,7 @@ func matrixRunFlagGroups() map[string][]string {
 			"platform", "repo-root", "namespace-prefix",
 			"kube-context", "kube-context-gke", "kube-context-eks",
 			"ingress-base-domain", "ingress-base-domain-gke", "ingress-base-domain-eks",
-			"namespace-override",
+			"namespace-override", "external-secrets",
 		},
 		grpAuth: {
 			"use-vault-backed-secrets", "use-vault-backed-secrets-gke", "use-vault-backed-secrets-eks",

@@ -142,6 +142,9 @@ func applyExternalSecretsOther(ctx context.Context, client *Client, repoRoot, ch
 		logging.Logger.Debug().Msg("no integration-test external-secret manifest found (optional, continuing)")
 		return nil
 	}
+	if err := deleteExternalSecretsTargeting(ctx, client, namespace, secretNameIntegrationCredentials); err != nil {
+		return err
+	}
 	if err := applyManifestFile(ctx, client, namespace, file); err != nil {
 		return fmt.Errorf("apply integration-test credentials %s: %w", file, err)
 	}
@@ -274,7 +277,7 @@ func deleteExternalSecretsTargeting(ctx context.Context, client *Client, namespa
 			Str("namespace", namespace).
 			Str("externalSecret", item.GetName()).
 			Str("target", targetSecret).
-			Msg("removing stale ExternalSecret so it cannot overwrite the replicated secret")
+			Msg("removing stale ExternalSecret that targets the same Secret")
 
 		err = client.dynamicClient.Resource(externalSecretGVR).Namespace(namespace).
 			Delete(ctx, item.GetName(), metav1.DeleteOptions{})
