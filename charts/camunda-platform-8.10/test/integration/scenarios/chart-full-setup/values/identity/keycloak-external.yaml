@@ -25,14 +25,9 @@
 
 global:
   host: "$CAMUNDA_HOSTNAME"
-  # Stays on ingress-nginx (Contour rejects the ExternalName Keycloak Service), so keep the
-  # chart's nginx annotations that base.yaml turns off for the Contour scenarios.
-  compatibility:
-    nginx:
-      renderAnnotations: true
   ingress:
     enabled: true
-    className: nginx
+    className: contour
     tls:
       enabled: true
       # A wildcard certificate will be used.

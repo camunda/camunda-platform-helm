@@ -22,8 +22,8 @@ global:
     keycloak:
       url:
         protocol: http
-        # FQDN required: the ExternalName service target must be resolvable from
-        # the ingress controller namespace (which runs in a different namespace).
+        # A host in the release namespace makes the chart route /auth straight to
+        # this Service; any other host renders an ExternalName proxy Service.
         host: "keycloak.{{ .Release.Namespace }}.svc.cluster.local"
         port: "80"
       internal: true
