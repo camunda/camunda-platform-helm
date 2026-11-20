@@ -256,8 +256,8 @@ func TestSynthesizeReleaseOpts_GenericIngressBaseDomainStillWorks(t *testing.T) 
 // secret. BuildEntryFlags sets Secrets.ExternalSecrets = (NamespaceOverride
 // == ""), which is false for every topology release (they always set
 // NamespaceOverride to their own namespace) — so external secrets were never
-// applied. The topology driver has no cluster-setup-secrets action run for
-// it, so it must force ExternalSecrets on for every release itself.
+// applied. The topology driver must force ExternalSecrets on for every
+// release itself.
 func TestApplyTopologyReleaseOverrides_ForcesExternalSecrets(t *testing.T) {
 	for _, tc := range []struct {
 		name    string
