@@ -191,7 +191,7 @@ func (c *checker) run(ctx context.Context) error {
 	if _, err := c.kube(ctx, "rollout", "status", "deployment/"+c.gatewayName(), "--timeout=10m"); err != nil {
 		return err
 	}
-	if err := retry(ctx, attempts, delay, c.sleep, func() error {
+	if err := retry(ctx, retryPolicy{attempts, delay, c.sleep}, func() error {
 		scaledBrokers, scaledGateways, err := c.readyReplicas(ctx)
 		if err != nil {
 			return err
@@ -260,7 +260,7 @@ func parseCount(raw []byte) (int, error) {
 
 func (c *checker) verifyIngresses(ctx context.Context) (endpoint, endpoint, error) {
 	var web, rest endpoint
-	err := retry(ctx, attempts, delay, c.sleep, func() error {
+	err := retry(ctx, retryPolicy{attempts, delay, c.sleep}, func() error {
 		raw, err := c.kube(ctx, "get", "ingress", "-o", "json")
 		if err != nil {
 			return err
@@ -359,7 +359,7 @@ func (c *checker) loadClientSecret(ctx context.Context) error {
 }
 
 func (c *checker) acquireToken(ctx context.Context) error {
-	return retry(ctx, attempts, delay, c.sleep, func() error {
+	return retry(ctx, retryPolicy{attempts, delay, c.sleep}, func() error {
 		form := url.Values{
 			"client_id":     {venomClientID},
 			"client_secret": {c.clientSecret},
@@ -404,7 +404,7 @@ func (c *checker) verifyRound(ctx context.Context, brokers int, phase string) er
 }
 
 func (c *checker) verifyREST(ctx context.Context, brokers int) error {
-	if err := retry(ctx, attempts, delay, c.sleep, func() error {
+	if err := retry(ctx, retryPolicy{attempts, delay, c.sleep}, func() error {
 		body, err := c.restRequest(ctx, http.MethodGet, "/topology", "", nil)
 		if err != nil {
 			return err
@@ -414,7 +414,7 @@ func (c *checker) verifyREST(ctx context.Context, brokers int) error {
 		return err
 	}
 
-	if err := retry(ctx, attempts, delay, c.sleep, func() error {
+	if err := retry(ctx, retryPolicy{attempts, delay, c.sleep}, func() error {
 		body, contentType, err := multipartFile("resources", c.cfg.bpmnFile)
 		if err != nil {
 			return err
@@ -426,7 +426,7 @@ func (c *checker) verifyREST(ctx context.Context, brokers int) error {
 	}
 
 	var instanceKey string
-	if err := retry(ctx, attempts, delay, c.sleep, func() error {
+	if err := retry(ctx, retryPolicy{attempts, delay, c.sleep}, func() error {
 		payload, _ := json.Marshal(map[string]string{"processDefinitionId": c.cfg.processID})
 		body, err := c.restRequest(ctx, http.MethodPost, "/process-instances", "application/json", payload)
 		if err != nil {
@@ -438,7 +438,7 @@ func (c *checker) verifyREST(ctx context.Context, brokers int) error {
 		return err
 	}
 
-	return retry(ctx, attempts, delay, c.sleep, func() error {
+	return retry(ctx, retryPolicy{attempts, delay, c.sleep}, func() error {
 		payload := []byte(`{"filter":{"processInstanceKey":"` + instanceKey + `"}}`)
 		body, err := c.restRequest(ctx, http.MethodPost, "/process-instances/search", "application/json", payload)
 		if err != nil {
@@ -504,19 +504,19 @@ func (c *checker) verifyGRPC(ctx context.Context, pod string) error {
 		return c.exec(ctx, c.cfg.zbctl, append(append([]string{}, args...), base...)...)
 	}
 
-	if err := retry(ctx, attempts, delay, c.sleep, func() error {
+	if err := retry(ctx, retryPolicy{attempts, delay, c.sleep}, func() error {
 		_, err := zbctl("status")
 		return err
 	}, "topology"); err != nil {
 		return err
 	}
-	if err := retry(ctx, attempts, delay, c.sleep, func() error {
+	if err := retry(ctx, retryPolicy{attempts, delay, c.sleep}, func() error {
 		_, err := zbctl("deploy", "resource", c.cfg.bpmnFile)
 		return err
 	}, "deployment"); err != nil {
 		return err
 	}
-	return retry(ctx, attempts, delay, c.sleep, func() error {
+	return retry(ctx, retryPolicy{attempts, delay, c.sleep}, func() error {
 		out, err := zbctl("create", "instance", c.cfg.processID)
 		if err != nil {
 			return err
@@ -708,7 +708,14 @@ func truncate(body []byte, limit int) string {
 	return text
 }
 
-func retry(ctx context.Context, attempts int, delay time.Duration, sleep func(context.Context, time.Duration) error, action func() error, message string) error {
+type retryPolicy struct {
+	attempts int
+	delay    time.Duration
+	sleep    func(context.Context, time.Duration) error
+}
+
+func retry(ctx context.Context, policy retryPolicy, action func() error, message string) error {
+	attempts, delay, sleep := policy.attempts, policy.delay, policy.sleep
 	if attempts < 1 {
 		return errors.New("retry attempts must be positive")
 	}

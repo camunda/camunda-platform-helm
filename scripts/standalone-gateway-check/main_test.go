@@ -144,7 +144,7 @@ func TestAssertBrokerCount(t *testing.T) {
 func TestRetry(t *testing.T) {
 	calls := 0
 	noSleep := func(context.Context, time.Duration) error { return nil }
-	err := retry(context.Background(), 3, time.Millisecond, noSleep, func() error {
+	err := retry(context.Background(), retryPolicy{3, time.Millisecond, noSleep}, func() error {
 		calls++
 		if calls < 3 {
 			return errors.New("not yet")
@@ -154,7 +154,7 @@ func TestRetry(t *testing.T) {
 	if err != nil || calls != 3 {
 		t.Fatalf("calls=%d err=%v", calls, err)
 	}
-	err = retry(context.Background(), 2, time.Millisecond, noSleep, func() error { return errors.New("boom") }, "action")
+	err = retry(context.Background(), retryPolicy{2, time.Millisecond, noSleep}, func() error { return errors.New("boom") }, "action")
 	if err == nil || !strings.Contains(err.Error(), "action failed after 2 attempts: boom") {
 		t.Fatalf("unexpected error %v", err)
 	}
