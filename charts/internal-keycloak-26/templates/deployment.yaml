@@ -58,6 +58,10 @@ spec:
             - --http-management-relative-path=/
             - --proxy-headers=xforwarded
             - --health-enabled=true
+            # 26.8.2 rejects Admin API tokens without the kc-admin-api scope and the
+            # camunda-identity client has none yet (keycloak/keycloak#54885). Remove once
+            # camunda/identity assigns that scope.
+            - --spi-admin--audience-check-enabled=false
           env:
             - name: KC_PROXY
               value: {{ .Values.proxy | quote }}
