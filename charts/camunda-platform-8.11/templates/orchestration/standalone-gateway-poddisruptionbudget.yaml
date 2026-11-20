@@ -1,0 +1,18 @@
+{{- if and (eq (include "orchestration.standaloneGatewayEnabled" .) "true") .Values.orchestration.standaloneGateway.podDisruptionBudget.enabled -}}
+{{- $pdb := .Values.orchestration.standaloneGateway.podDisruptionBudget -}}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "orchestration.standaloneGatewayFullname" . }}
+  labels:
+    {{- include "orchestration.standaloneGatewayLabels" . | nindent 4 }}
+spec:
+  {{- if not (kindIs "invalid" $pdb.minAvailable) }}
+  minAvailable: {{ $pdb.minAvailable }}
+  {{- else }}
+  maxUnavailable: {{ $pdb.maxUnavailable }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "orchestration.standaloneGatewayMatchLabels" . | nindent 6 }}
+{{- end }}

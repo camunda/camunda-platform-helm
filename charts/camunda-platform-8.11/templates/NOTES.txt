@@ -60,10 +60,14 @@
 
 The Cluster itself is not exposed as a service which means that you can use `kubectl port-forward` to access the Orchestration cluster from outside Kubernetes:
 
-> kubectl port-forward svc/{{ include "orchestration.serviceName" . }} 26500:26500 -n {{ .Release.Namespace }}
-> kubectl port-forward svc/{{ include "orchestration.serviceName" . }} 8080:8080 -n {{ .Release.Namespace }}
+> kubectl port-forward svc/{{ include "orchestration.clientServiceName" . }} 26500:26500 -n {{ .Release.Namespace }}
+> kubectl port-forward svc/{{ include "orchestration.clientServiceName" . }} 8080:8080 -n {{ .Release.Namespace }}
 
 Now you can connect your workers and clients to `localhost:26500` for gRPC or `localhost:8080` for REST API usage.
+{{- if eq (include "orchestration.standaloneGatewayEnabled" .) "true" }}
+
+The gRPC and REST APIs are served by the standalone gateway Deployment `{{ include "orchestration.standaloneGatewayFullname" . }}`, which scales independently of the brokers through `orchestration.standaloneGateway.replicas`. The web applications are still served by `svc/{{ include "orchestration.serviceName" . }}`.
+{{- end }}
 
 {{ if or (eq (include "camundaPlatform.orchestrationEnabled" .) "true") (eq (include "camundaPlatform.identityEnabled" .) "true") }}
 ### Connecting to Web apps
@@ -130,6 +134,10 @@ Default user: "{{ .Values.identity.firstUser.username }}". No password is config
 
 {{- if .Values.global.ingress.enabled }}
 - Camunda REST API: {{ include "camundaPlatform.ingressExternalURL" (dict "context" . "host" .Values.global.host "tlsEnabled" (eq (include "camundaPlatform.ingressProtocol" .) "https")) }}
+{{- end }}
+
+{{- with include "orchestration.standaloneGatewayRESTExternalURL" . }}
+- Camunda REST API (standalone gateway): {{ . }}
 {{- end }}
 
 {{- if or .Values.global.ingress.enabled .Values.orchestration.ingress.grpc.enabled }}

@@ -146,3 +146,47 @@ func TestGoldenZoneAwareMigrationTemplateOrchestration(t *testing.T) {
 		}
 	}
 }
+
+func TestGoldenStandaloneGatewayTemplateOrchestration(t *testing.T) {
+	t.Parallel()
+
+	chartPath, err := filepath.Abs("../../../")
+	require.NoError(t, err)
+
+	standaloneGateway := map[string]string{
+		"orchestration.standaloneGateway.enabled":                     "true",
+		"orchestration.standaloneGateway.replicas":                    "4",
+		"orchestration.standaloneGateway.serviceAccount.enabled":      "true",
+		"orchestration.standaloneGateway.podDisruptionBudget.enabled": "true",
+		"orchestration.standaloneGateway.autoscaling.enabled":         "true",
+		"orchestration.standaloneGateway.ingress.rest.enabled":        "true",
+		"orchestration.standaloneGateway.ingress.rest.host":           "api.camunda.example.com",
+		"orchestration.standaloneGateway.gateway.rest.enabled":        "true",
+		"global.gateway.enabled":                                      "true",
+		"global.host":                                                 "camunda.example.com",
+	}
+	templates := map[string]string{
+		"standalone-gateway-deployment":          "templates/orchestration/standalone-gateway-deployment.yaml",
+		"standalone-gateway-configmap":           "templates/orchestration/standalone-gateway-configmap.yaml",
+		"standalone-gateway-service":             "templates/orchestration/standalone-gateway-service.yaml",
+		"standalone-gateway-serviceaccount":      "templates/orchestration/standalone-gateway-serviceaccount.yaml",
+		"standalone-gateway-poddisruptionbudget": "templates/orchestration/standalone-gateway-poddisruptionbudget.yaml",
+		"standalone-gateway-hpa":                 "templates/orchestration/standalone-gateway-hpa.yaml",
+		"standalone-gateway-httproute":           "templates/orchestration/standalone-gateway-httproute.yaml",
+		"standalone-gateway-ingress-rest":        "templates/common/ingress-standalone-gateway-rest.yaml",
+	}
+
+	for name, template := range templates {
+		suite.Run(t, &utils.TemplateGoldenTest{
+			ChartPath:      chartPath,
+			Release:        "camunda-platform-test",
+			Namespace:      "camunda-platform-test",
+			GoldenFileName: name,
+			Templates:      []string{template},
+			SetValues:      standaloneGateway,
+			IgnoredLines: []string{
+				`\s+checksum/.+?:\s+.*`,
+			},
+		})
+	}
+}
