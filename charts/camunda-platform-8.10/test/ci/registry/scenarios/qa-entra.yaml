@@ -2,7 +2,7 @@ name: qa-entra
 auth: oidc
 flows:
   - install
-identity: oidc
+identity: oidc-qa
 persistence: elasticsearch
 features:
   - postgresql-companion
