@@ -5,5 +5,6 @@
       "labels" (include "orchestration.labels" .)
       "matchLabels" (include "orchestration.matchLabels" .)
       "ports" (list $svc.httpPort $svc.commandPort $svc.internalPort $svc.managementPort $svc.grpcPort)
+      "networkPolicy" .Values.orchestration.networkPolicy
       "context" .) }}
 {{- end -}}
