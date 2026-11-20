@@ -1,3 +1,3 @@
 module camunda.com/orchestration-entra-lifecycle
 
-go 1.27.3
+go 1.27.4
