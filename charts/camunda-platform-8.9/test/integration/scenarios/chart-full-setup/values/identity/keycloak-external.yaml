@@ -2,7 +2,7 @@
 global:
   ingress:
     enabled: true
-    className: nginx
+    className: contour
     host: "$CAMUNDA_HOSTNAME"
     tls:
       enabled: true
