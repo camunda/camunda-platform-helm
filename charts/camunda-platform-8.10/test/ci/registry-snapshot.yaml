@@ -1983,6 +1983,7 @@ integration:
                 identity: keycloak
                 features:
                   - multinamespace-hub
+                  - ingress-nginx
                 dependencies:
                   - keycloak
                   - postgresql
@@ -2029,6 +2030,7 @@ integration:
                 features:
                   - multinamespace-reset-clients
                   - multinamespace-2orch-hub
+                  - ingress-nginx
                 dependencies:
                   - keycloak
                   - postgresql
@@ -2118,6 +2120,7 @@ integration:
                 features:
                   - multinamespace-reset-clients
                   - multinamespace-optimize-hub
+                  - ingress-nginx
                 dependencies:
                   - keycloak
                   - postgresql
@@ -2197,6 +2200,7 @@ integration:
                 features:
                   - multinamespace-reset-clients
                   - physicaltenants-hub
+                  - ingress-nginx
                 dependencies:
                   - keycloak-fixed-issuer
                   - postgresql
