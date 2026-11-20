@@ -1204,9 +1204,10 @@ func TestFilterRedirectURIs(t *testing.T) {
 	existing := []string{
 		// Non-CI URI — should be preserved.
 		"https://production.example.com/callback",
-		// Stale CI URI — should be removed.
-		"https://old-ns.ci.distro.ultrawombat.com/identity/auth/login-callback",
-		"https://old-ns.ci.distro.ultrawombat.com/operate/identity-callback",
+		// Another live CI deployment — should be preserved.
+		"https://other-ns.ci.distro.ultrawombat.com/identity/auth/login-callback",
+		// Current host — should be replaced by newURIs.
+		"https://new-ns.ci.distro.ultrawombat.com/stale-callback",
 		// Malformed URI with trailing comma — should be removed.
 		"https://broken.ci.distro.ultrawombat.com/callback,",
 		// Empty string — should be removed.
@@ -1222,10 +1223,11 @@ func TestFilterRedirectURIs(t *testing.T) {
 		"https://new-ns.ci.distro.ultrawombat.com/operate/identity-callback",
 	}
 
-	result := filterRedirectURIs(existing, newURIs)
+	result := filterRedirectURIs(existing, newURIs, "new-ns.ci.distro.ultrawombat.com")
 
 	expected := []string{
 		"https://production.example.com/callback",
+		"https://other-ns.ci.distro.ultrawombat.com/identity/auth/login-callback",
 		"https://staging.distribution.aws.camunda.cloud/callback",
 		"https://new-ns.ci.distro.ultrawombat.com/identity/auth/login-callback",
 		"https://new-ns.ci.distro.ultrawombat.com/operate/identity-callback",
@@ -1241,12 +1243,43 @@ func TestFilterRedirectURIs(t *testing.T) {
 	}
 }
 
+func TestFilterRedirectURIs_CapsRetainedCIURIs(t *testing.T) {
+	var existing []string
+	for i := 0; i < maxCIRedirectURIs+10; i++ {
+		existing = append(existing, fmt.Sprintf("https://ns-%d%s/callback", i, ciDomainSuffix))
+	}
+	existing = append(existing, "https://production.example.com/callback")
+
+	newURIs := []string{"https://new-ns" + ciDomainSuffix + "/callback"}
+
+	result := filterRedirectURIs(existing, newURIs, "new-ns"+ciDomainSuffix)
+
+	ciCount := 0
+	for _, uri := range result {
+		if isCIDomainURI(uri) {
+			ciCount++
+		}
+	}
+	if ciCount != maxCIRedirectURIs {
+		t.Errorf("retained CI URIs = %d, want %d", ciCount, maxCIRedirectURIs)
+	}
+	if result[0] != fmt.Sprintf("https://ns-%d%s/callback", 11, ciDomainSuffix) {
+		t.Errorf("oldest CI URIs were not dropped first, got %q", result[0])
+	}
+	if !slices.Contains(result, "https://production.example.com/callback") {
+		t.Error("non-CI URI was dropped by the cap")
+	}
+	if !slices.Contains(result, newURIs[0]) {
+		t.Error("new URI missing from result")
+	}
+}
+
 func TestFilterRedirectURIs_EmptyExisting(t *testing.T) {
 	newURIs := []string{
 		"https://ns.ci.distro.ultrawombat.com/callback",
 	}
 
-	result := filterRedirectURIs(nil, newURIs)
+	result := filterRedirectURIs(nil, newURIs, "ns.ci.distro.ultrawombat.com")
 	if len(result) != 1 {
 		t.Fatalf("expected 1 URI, got %d: %v", len(result), result)
 	}
@@ -1261,7 +1294,7 @@ func TestFilterRedirectURIs_DeduplicatesNewURIs(t *testing.T) {
 		"https://ns.ci.distro.ultrawombat.com/callback", // duplicate
 	}
 
-	result := filterRedirectURIs(nil, newURIs)
+	result := filterRedirectURIs(nil, newURIs, "ns.ci.distro.ultrawombat.com")
 	if len(result) != 1 {
 		t.Fatalf("expected 1 URI after dedup, got %d: %v", len(result), result)
 	}
@@ -1396,7 +1429,7 @@ func TestUpdateRedirectURIs_HappyPath(t *testing.T) {
 		t.Fatal("expected PATCH request, got none")
 	}
 
-	// Verify web URIs: production preserved, stale CI removed, new added.
+	// Verify web URIs: production and other CI hosts preserved, new added.
 	webData, ok := patchReceived["web"].(map[string]any)
 	if !ok {
 		t.Fatal("missing 'web' in PATCH payload")
@@ -1411,10 +1444,10 @@ func TestUpdateRedirectURIs_HappyPath(t *testing.T) {
 		webStrings[i] = u.(string)
 	}
 
-	// Should contain production + 5 new web URIs = 6 total.
-	// Old CI URIs and corrupt URI should be removed.
-	if len(webStrings) != 6 {
-		t.Errorf("web URI count = %d, want 6, got: %v", len(webStrings), webStrings)
+	// Should contain production + 2 other-host CI URIs + 5 new web URIs = 8.
+	// Only the corrupt URI should be removed.
+	if len(webStrings) != 8 {
+		t.Errorf("web URI count = %d, want 8, got: %v", len(webStrings), webStrings)
 	}
 
 	// Verify production URI is preserved.
@@ -1423,10 +1456,13 @@ func TestUpdateRedirectURIs_HappyPath(t *testing.T) {
 		t.Error("production URI was not preserved in web URIs")
 	}
 
-	// Verify stale CI URI was removed.
-	for _, u := range webStrings {
-		if strings.Contains(u, "old-ns.ci.distro.ultrawombat.com") {
-			t.Errorf("stale CI URI should have been removed: %s", u)
+	// Verify another CI deployment's URIs were preserved.
+	for _, want := range []string{
+		"https://old-ns.ci.distro.ultrawombat.com/identity/auth/login-callback",
+		"https://old-ns.ci.distro.ultrawombat.com/operate/identity-callback",
+	} {
+		if !slices.Contains(webStrings, want) {
+			t.Errorf("other CI host URI should have been preserved: %s", want)
 		}
 	}
 
@@ -1447,13 +1483,13 @@ func TestUpdateRedirectURIs_HappyPath(t *testing.T) {
 		t.Fatal("missing 'redirectUris' in spa payload")
 	}
 
-	// Should contain production + 2 new SPA URIs = 3 total.
-	if len(spaURIs) != 3 {
+	// Should contain production + 1 other-host CI URI + 2 new SPA URIs = 4.
+	if len(spaURIs) != 4 {
 		spaStrings := make([]string, len(spaURIs))
 		for i, u := range spaURIs {
 			spaStrings[i] = u.(string)
 		}
-		t.Errorf("spa URI count = %d, want 3, got: %v", len(spaURIs), spaStrings)
+		t.Errorf("spa URI count = %d, want 4, got: %v", len(spaURIs), spaStrings)
 	}
 }
 

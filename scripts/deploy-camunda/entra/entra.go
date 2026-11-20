@@ -927,24 +927,58 @@ func isValidURI(uri string) bool {
 	return true
 }
 
+// isHostURI returns true if the URI's authority is exactly the given host.
+func isHostURI(uri, host string) bool {
+	base := "https://" + host
+	return uri == base || strings.HasPrefix(uri, base+"/")
+}
+
+// maxCIRedirectURIs caps how many CI redirect URIs are retained per URI type.
+const maxCIRedirectURIs = 120
+
+// capCIRedirectURIs drops CI URIs from the front of the list until at most
+// max of them remain. Non-CI URIs are never dropped.
+func capCIRedirectURIs(uris []string, max int) []string {
+	ciCount := 0
+	for _, uri := range uris {
+		if isCIDomainURI(uri) {
+			ciCount++
+		}
+	}
+	if ciCount <= max {
+		return uris
+	}
+
+	drop := ciCount - max
+	var result []string
+	for _, uri := range uris {
+		if drop > 0 && isCIDomainURI(uri) {
+			drop--
+			logging.Logger.Debug().Str("uri", uri).Msg("Pruning oldest CI redirect URI")
+			continue
+		}
+		result = append(result, uri)
+	}
+	return result
+}
+
 // filterRedirectURIs filters a list of redirect URIs:
 // - Removes invalid URIs (empty, trailing commas).
-// - Removes stale CI URIs (those matching the CI domain suffix).
-// - Preserves all non-CI URIs (e.g., production, staging).
+// - Removes the current host's URIs, which newURIs re-adds.
+// - Preserves every other host's URIs, other CI deployments included.
 // - Appends the new URIs for the current deployment.
-// - Deduplicates the result.
-func filterRedirectURIs(existing []string, newURIs []string) []string {
+// - Deduplicates the result and caps retained CI URIs at maxCIRedirectURIs.
+func filterRedirectURIs(existing []string, newURIs []string, host string) []string {
 	seen := make(map[string]bool)
 	var result []string
 
-	// Keep existing non-CI URIs that are valid.
 	for _, uri := range existing {
 		if !isValidURI(uri) {
 			logging.Logger.Debug().Str("uri", uri).Msg("Removing invalid redirect URI")
 			continue
 		}
-		if isCIDomainURI(uri) {
-			logging.Logger.Debug().Str("uri", uri).Msg("Removing stale CI redirect URI")
+		if isHostURI(uri, host) {
+			logging.Logger.Debug().Str("uri", uri).Msg("Replacing redirect URI of the current host")
 			continue
 		}
 		if !seen[uri] {
@@ -953,7 +987,8 @@ func filterRedirectURIs(existing []string, newURIs []string) []string {
 		}
 	}
 
-	// Add new URIs for the current deployment.
+	result = capCIRedirectURIs(result, maxCIRedirectURIs-len(newURIs))
+
 	for _, uri := range newURIs {
 		if !seen[uri] {
 			seen[uri] = true
@@ -968,7 +1003,7 @@ func filterRedirectURIs(existing []string, newURIs []string) []string {
 // registration. It:
 // 1. Authenticates to Graph API using the parent app credentials.
 // 2. Fetches the current web and SPA redirect URIs.
-// 3. Removes stale CI URIs and invalid/malformed URIs.
+// 3. Removes the current host's URIs and invalid/malformed URIs.
 // 4. Adds the redirect URIs for the current deployment's ingress host.
 // 5. PATCHes the updated URI lists back to the app registration.
 func UpdateRedirectURIs(ctx context.Context, opts RedirectURIOptions) error {
@@ -1027,8 +1062,8 @@ func UpdateRedirectURIs(ctx context.Context, opts RedirectURIOptions) error {
 	newWebURIs, newSpaURIs := buildRedirectURIs(opts.IngressHost)
 
 	// Step 4: Filter and merge.
-	finalWebURIs := filterRedirectURIs(appData.Web.RedirectURIs, newWebURIs)
-	finalSpaURIs := filterRedirectURIs(appData.Spa.RedirectURIs, newSpaURIs)
+	finalWebURIs := filterRedirectURIs(appData.Web.RedirectURIs, newWebURIs, opts.IngressHost)
+	finalSpaURIs := filterRedirectURIs(appData.Spa.RedirectURIs, newSpaURIs, opts.IngressHost)
 
 	logging.Logger.Info().
 		Int("finalWebURIs", len(finalWebURIs)).
