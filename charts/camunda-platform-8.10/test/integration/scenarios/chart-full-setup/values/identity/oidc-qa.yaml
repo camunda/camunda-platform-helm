@@ -20,7 +20,11 @@ global:
         # this existingSecret must be a string literal
         secret:
           inlineSecret: $ENTRA_APP_CLIENT_SECRET
-        initialClaimValue: $INITIAL_CLAIM_VALUE
+        # Left blank on purpose. A non-blank initial claim makes Identity create
+        # its "Default" rule on the same claim/value/type triple as the rule
+        # below, and MappingRuleInitializerService skips any later rule whose
+        # triple already exists -- so the component roles would never be granted.
+        initialClaimValue: ""
         redirectUrl: "https://{{ .Values.global.host }}{{ .Values.identity.contextPath }}"
       optimize:
         clientId: $ENTRA_APP_CLIENT_ID
@@ -95,8 +99,10 @@ identity:
     - name: IDENTITY_MAPPINGRULES_0_RULETYPE
       value: "ROLE"
     - name: IDENTITY_MAPPINGRULES_0_APPLIEDROLENAMES_0
-      value: "Hub"
+      value: "ManagementIdentity"
     - name: IDENTITY_MAPPINGRULES_0_APPLIEDROLENAMES_1
-      value: "Hub Admin"
+      value: "Hub"
     - name: IDENTITY_MAPPINGRULES_0_APPLIEDROLENAMES_2
+      value: "Hub Admin"
+    - name: IDENTITY_MAPPINGRULES_0_APPLIEDROLENAMES_3
       value: "Optimize"
