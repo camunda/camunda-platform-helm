@@ -59,8 +59,7 @@ orchestration:
         clientId: $ENTRA_APP_CLIENT_ID
         audience: $ENTRA_APP_CLIENT_ID
         secret:
-          existingSecret: integration-test-credentials
-          existingSecretKey: entra-child-app-client-secret
+          inlineSecret: $ENTRA_APP_CLIENT_SECRET
     initialization:
       defaultRoles:
         admin:
