@@ -1545,7 +1545,7 @@ jobs:
 
       - name: Generate E2E repository token
         id: e2e-repository-token
-        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@3e556b42c8771fe1afb91361ae44e81367a37f5e # main
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@13e74c7d453d3dcdca49f4a3413da3770643bfc2 # main
         with:
           github-app-id-vault-key: GITHUB_APP_ID
           github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/quality-assurance-ci
@@ -1820,7 +1820,7 @@ jobs:
           ref: ${{ inputs.camunda-helm-git-ref }}
 
       - name: Setup Go
-        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7
         with:
           go-version-file: scripts/ci-result-cache/go.mod
           cache: true
