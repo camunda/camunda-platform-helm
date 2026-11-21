@@ -20,7 +20,11 @@ global:
         # this existingSecret must be a string literal
         secret:
           inlineSecret: $ENTRA_APP_CLIENT_SECRET
-        initialClaimValue: $INITIAL_CLAIM_VALUE
+        # Left blank on purpose. A non-blank initial claim makes Identity create
+        # its "Default" rule on the same claim/value/type triple as the rule
+        # below, and MappingRuleInitializerService skips any later rule whose
+        # triple already exists -- so the component roles would never be granted.
+        initialClaimValue: ""
         redirectUrl: "https://{{ .Values.global.host }}{{ .Values.identity.contextPath }}"
       optimize:
         clientId: $ENTRA_APP_CLIENT_ID
@@ -34,7 +38,7 @@ global:
         audience: $ENTRA_APP_CLIENT_ID
         clientApiAudience: $ENTRA_APP_CLIENT_ID
         publicApiAudience: $ENTRA_APP_CLIENT_ID
-        redirectUrl: "https://{{ .Values.global.host }}{{ .Values.webModeler.contextPath }}"
+        redirectUrl: "https://{{ .Values.global.host }}{{ .Values.camundaHub.contextPath | default .Values.webModeler.contextPath }}"
       console:
         wellKnown: https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration
         clientId: $ENTRA_APP_CLIENT_ID
@@ -55,8 +59,7 @@ orchestration:
         clientId: $ENTRA_APP_CLIENT_ID
         audience: $ENTRA_APP_CLIENT_ID
         secret:
-          existingSecret: integration-test-credentials
-          existingSecretKey: entra-child-app-client-secret
+          inlineSecret: $ENTRA_APP_CLIENT_SECRET
     initialization:
       defaultRoles:
         admin:
@@ -79,3 +82,26 @@ console:
   env:
     - name: CAMUNDA_IDENTITY_JWKS_URL
       value: https://login.microsoftonline.com/$ENTRA_APP_DIRECTORY_ID/discovery/v2.0/keys
+
+# Mirrors the roles the Keycloak path seeds on identity.firstUser; the OIDC
+# path seeds only the Default rule, which grants the Identity UI alone.
+identity:
+  env:
+    - name: IDENTITY_MAPPINGRULES_0_NAME
+      value: "QA E2E component access"
+    - name: IDENTITY_MAPPINGRULES_0_CLAIMNAME
+      value: "oid"
+    - name: IDENTITY_MAPPINGRULES_0_CLAIMVALUE
+      value: "$INITIAL_CLAIM_VALUE"
+    - name: IDENTITY_MAPPINGRULES_0_OPERATOR
+      value: "EQUALS"
+    - name: IDENTITY_MAPPINGRULES_0_RULETYPE
+      value: "ROLE"
+    - name: IDENTITY_MAPPINGRULES_0_APPLIEDROLENAMES_0
+      value: "ManagementIdentity"
+    - name: IDENTITY_MAPPINGRULES_0_APPLIEDROLENAMES_1
+      value: "Hub"
+    - name: IDENTITY_MAPPINGRULES_0_APPLIEDROLENAMES_2
+      value: "Hub Admin"
+    - name: IDENTITY_MAPPINGRULES_0_APPLIEDROLENAMES_3
+      value: "Optimize"
