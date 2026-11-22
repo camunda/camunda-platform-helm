@@ -65,6 +65,18 @@ orchestration:
         admin:
           users:
             - $INITIAL_CLAIM_VALUE
+  # Replaces base-qa.yaml's orchestration.env wholesale: Helm replaces arrays
+  # rather than merging them. Its rules key on preferred_username and client_id,
+  # which Entra v2.0 tokens do not carry -- the client GUID arrives in "azp".
+  env:
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_MAPPINGRULEID
+      value: "entra-client-mapping-rule"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_CLAIMNAME
+      value: "azp"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_CLAIMVALUE
+      value: "$ENTRA_APP_CLIENT_ID"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGRULES_0
+      value: "entra-client-mapping-rule"
 
 connectors:
   security:
