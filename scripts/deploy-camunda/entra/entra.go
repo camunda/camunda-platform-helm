@@ -28,6 +28,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"slices"
 	"strings"
 	"time"
 
@@ -933,33 +934,55 @@ func isHostURI(uri, host string) bool {
 	return uri == base || strings.HasPrefix(uri, base+"/")
 }
 
-// maxCIRedirectURIs caps how many CI redirect URIs are retained per URI type.
-const maxCIRedirectURIs = 120
+// maxRedirectURIs is Entra's limit on redirect URIs per app registration,
+// counted across all platform types.
+// https://learn.microsoft.com/en-us/entra/identity-platform/reply-url#maximum-number-of-redirect-uris
+const maxRedirectURIs = 256
 
-// capCIRedirectURIs drops CI URIs from the front of the list until at most
-// max of them remain. Non-CI URIs are never dropped.
-func capCIRedirectURIs(uris []string, max int) []string {
-	ciCount := 0
+// isPrunableURI reports whether uri is a CI URI of a host other than host.
+func isPrunableURI(uri, host string) bool {
+	return isCIDomainURI(uri) && !isHostURI(uri, host)
+}
+
+func countPrunable(uris []string, host string) int {
+	n := 0
 	for _, uri := range uris {
-		if isCIDomainURI(uri) {
-			ciCount++
+		if isPrunableURI(uri, host) {
+			n++
 		}
 	}
-	if ciCount <= max {
-		return uris
-	}
+	return n
+}
 
-	drop := ciCount - max
-	var result []string
-	for _, uri := range uris {
-		if drop > 0 && isCIDomainURI(uri) {
-			drop--
-			logging.Logger.Debug().Str("uri", uri).Msg("Pruning oldest CI redirect URI")
-			continue
+func firstPrunable(uris []string, host string) int {
+	for i, uri := range uris {
+		if isPrunableURI(uri, host) {
+			return i
 		}
-		result = append(result, uri)
 	}
-	return result
+	return -1
+}
+
+// capRedirectURIs drops the oldest CI URIs of other hosts, from whichever
+// list holds more of them, until web and spa together fit maxRedirectURIs.
+// Non-CI URIs and the current host's URIs are never dropped.
+func capRedirectURIs(web, spa []string, host string) ([]string, []string) {
+	for len(web)+len(spa) > maxRedirectURIs {
+		wc, sc := countPrunable(web, host), countPrunable(spa, host)
+		switch {
+		case wc == 0 && sc == 0:
+			return web, spa
+		case wc >= sc:
+			i := firstPrunable(web, host)
+			logging.Logger.Debug().Str("uri", web[i]).Msg("Pruning oldest CI redirect URI")
+			web = slices.Delete(web, i, i+1)
+		default:
+			i := firstPrunable(spa, host)
+			logging.Logger.Debug().Str("uri", spa[i]).Msg("Pruning oldest CI redirect URI")
+			spa = slices.Delete(spa, i, i+1)
+		}
+	}
+	return web, spa
 }
 
 // filterRedirectURIs filters a list of redirect URIs:
@@ -967,7 +990,7 @@ func capCIRedirectURIs(uris []string, max int) []string {
 // - Removes the current host's URIs, which newURIs re-adds.
 // - Preserves every other host's URIs, other CI deployments included.
 // - Appends the new URIs for the current deployment.
-// - Deduplicates the result and caps retained CI URIs at maxCIRedirectURIs.
+// - Deduplicates the result. capRedirectURIs enforces the Entra limit.
 func filterRedirectURIs(existing []string, newURIs []string, host string) []string {
 	seen := make(map[string]bool)
 	var result []string
@@ -986,8 +1009,6 @@ func filterRedirectURIs(existing []string, newURIs []string, host string) []stri
 			result = append(result, uri)
 		}
 	}
-
-	result = capCIRedirectURIs(result, maxCIRedirectURIs-len(newURIs))
 
 	for _, uri := range newURIs {
 		if !seen[uri] {
@@ -1064,6 +1085,7 @@ func UpdateRedirectURIs(ctx context.Context, opts RedirectURIOptions) error {
 	// Step 4: Filter and merge.
 	finalWebURIs := filterRedirectURIs(appData.Web.RedirectURIs, newWebURIs, opts.IngressHost)
 	finalSpaURIs := filterRedirectURIs(appData.Spa.RedirectURIs, newSpaURIs, opts.IngressHost)
+	finalWebURIs, finalSpaURIs = capRedirectURIs(finalWebURIs, finalSpaURIs, opts.IngressHost)
 
 	logging.Logger.Info().
 		Int("finalWebURIs", len(finalWebURIs)).
