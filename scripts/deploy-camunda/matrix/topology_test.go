@@ -343,11 +343,11 @@ func TestTopologyValidate_Valid(t *testing.T) {
 }
 
 func TestRenderCredentialsManifest(t *testing.T) {
-	got, err := RenderCredentialsManifest([]byte("key: ${TOPOLOGY_BASE}-credentials\nother: ${TOPOLOGY_BASE}\n"), "dogfood")
+	got, err := RenderCredentialsManifest([]byte("key: ${TOPOLOGY_BASE}-credentials\nother: ${TOPOLOGY_BASE}\n"), "demo")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if string(got) != "key: dogfood-credentials\nother: dogfood\n" {
+	if string(got) != "key: demo-credentials\nother: demo\n" {
 		t.Errorf("got %q", got)
 	}
 	if _, err := RenderCredentialsManifest([]byte("key: ${TOPOLOGY_BASE}-credentials"), " "); err == nil {

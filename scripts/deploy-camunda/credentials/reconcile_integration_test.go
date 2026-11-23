@@ -30,7 +30,7 @@ import (
 )
 
 // keycloakImage is the internal-keycloak-26 chart default, which every Keycloak
-// companion, dogfood included, deploys; reading it keeps the integration tests
+// companion deploys; reading it keeps the integration tests
 // on the image Renovate maintains.
 var keycloakImage = func() string {
 	raw, err := os.ReadFile(filepath.Join("..", "..", "..", "charts", "internal-keycloak-26", "values.yaml"))
