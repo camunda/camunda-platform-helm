@@ -27,9 +27,21 @@ import (
 	"scripts/camunda-core/pkg/ghactions"
 )
 
+var repoPattern = regexp.MustCompile(`^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$`)
+
 type client struct {
 	http              *http.Client
 	base, token, repo string
+}
+
+func noRedirect(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
+
+func newClient(repo, token string) client {
+	base := os.Getenv("GITHUB_API_URL")
+	if base == "" {
+		base = "https://api.github.com"
+	}
+	return client{http: &http.Client{Timeout: 30 * time.Second, CheckRedirect: noRedirect}, base: strings.TrimRight(base, "/"), token: token, repo: repo}
 }
 
 func (c client) get(path string, result any) error {
@@ -92,15 +104,10 @@ func (c client) internal(number int) (bool, error) {
 func run() error {
 	repo, token := os.Getenv("GITHUB_REPOSITORY"), os.Getenv("GH_TOKEN")
 	number, err := strconv.Atoi(os.Getenv("ISSUE_NUMBER"))
-	if err != nil || number <= 0 || token == "" || !regexp.MustCompile(`^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$`).MatchString(repo) {
+	if err != nil || number <= 0 || token == "" || !repoPattern.MatchString(repo) {
 		return fmt.Errorf("GH_TOKEN, GITHUB_REPOSITORY (owner/repo), and positive ISSUE_NUMBER are required")
 	}
-	base := os.Getenv("GITHUB_API_URL")
-	if base == "" {
-		base = "https://api.github.com"
-	}
-	c := client{http: &http.Client{Timeout: 30 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}, base: strings.TrimRight(base, "/"), token: token, repo: repo}
-	internal, err := c.internal(number)
+	internal, err := newClient(repo, token).internal(number)
 	if err != nil {
 		return err
 	}
@@ -114,7 +121,11 @@ func run() error {
 }
 
 func main() {
-	if err := run(); err != nil {
+	command := run
+	if len(os.Args) > 1 && os.Args[1] == "triage" {
+		command = runTriage
+	}
+	if err := command(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
