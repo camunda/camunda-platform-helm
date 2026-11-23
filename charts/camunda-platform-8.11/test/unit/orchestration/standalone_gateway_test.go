@@ -576,6 +576,67 @@ func (s *StandaloneGatewayTemplateTest) TestDifferentValuesInputs() {
 			},
 		},
 		{
+			Name:     "TestDedicatedServiceAccountReceivesSecretStoreIdentity",
+			Template: "templates/orchestration/standalone-gateway-serviceaccount.yaml",
+			Values: withStandaloneGateway(map[string]string{
+				"orchestration.standaloneGateway.serviceAccount.enabled":          "true",
+				"orchestration.standaloneGateway.serviceAccount.annotations.team": "payments",
+				"orchestration.secretStore.aws.default.region":                    "us-east-1",
+				"orchestration.secretStore.aws.default.roleArn":                   "arn:aws:iam::123456789012:role/camunda-secrets",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var serviceAccount corev1.ServiceAccount
+				helm.UnmarshalK8SYaml(t, output, &serviceAccount)
+				require.Equal(t, "arn:aws:iam::123456789012:role/camunda-secrets", serviceAccount.Annotations["eks.amazonaws.com/role-arn"])
+				require.Equal(t, "payments", serviceAccount.Annotations["team"])
+			},
+		},
+		{
+			Name:     "TestPhysicalTenantFileStoreReachesGateway",
+			Template: standaloneGatewayDeployment,
+			Values: withStandaloneGateway(map[string]string{
+				"orchestration.secretStore.file.default.path":                         "/root/secrets",
+				"orchestration.secretStore.file.default.secret.existingSecret":        "shared-secret",
+				"orchestration.secretStore.physicalTenants.tenanta.file.default.path": "/tenant/secrets",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(t, output, &deployment)
+				var tenantVolumeName string
+				for _, volume := range deployment.Spec.Template.Spec.Volumes {
+					if volume.Secret != nil && volume.Secret.SecretName == "shared-secret" && strings.Contains(volume.Name, "tenanta") {
+						tenantVolumeName = volume.Name
+					}
+				}
+				require.NotEmpty(t, tenantVolumeName)
+				require.LessOrEqual(t, len(tenantVolumeName), 63)
+				for _, mount := range deployment.Spec.Template.Spec.Containers[0].VolumeMounts {
+					if mount.Name == tenantVolumeName {
+						require.Equal(t, "/tenant/secrets", mount.MountPath)
+						return
+					}
+				}
+				t.Fatal("tenant file store mount was not rendered on the standalone gateway")
+			},
+		},
+		{
+			Name:     "TestPhysicalTenantSecretStoreInGatewayConfiguration",
+			Template: "templates/orchestration/standalone-gateway-configmap.yaml",
+			Values: withStandaloneGateway(map[string]string{
+				"orchestration.secretStore.file.default.path":                         "/root/secrets",
+				"orchestration.secretStore.file.default.secret.existingSecret":        "shared-secret",
+				"orchestration.secretStore.physicalTenants.tenanta.file.default.path": "/tenant/secrets",
+			}),
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+				require.Contains(t, configmap.Data["application.yaml"], "/tenant/secrets")
+			},
+		},
+		{
 			Name:     "TestConstraintRequiresAuthentication",
 			Template: standaloneGatewayDeployment,
 			Values: withStandaloneGateway(map[string]string{
