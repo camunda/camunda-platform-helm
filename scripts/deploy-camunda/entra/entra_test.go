@@ -71,13 +71,17 @@ func noRedirectVerifyWait(t *testing.T) {
 // fakeRedirectApp is a Graph application whose GET returns what the last
 // PATCH wrote. afterPatch, when set, runs after each PATCH is stored.
 // getStatusAfterPatch, when non-zero, is the status every GET returns once a
-// PATCH has been stored.
+// PATCH has been stored. staleReads GETs after each PATCH return the
+// pre-PATCH state, like a lagging Graph replica.
 type fakeRedirectApp struct {
 	mu                  sync.Mutex
 	app                 redirectURIApp
+	prePatch            redirectURIApp
 	patches             int
 	afterPatch          func(f *fakeRedirectApp)
 	getStatusAfterPatch int
+	staleReads          int
+	staleLeft           int
 }
 
 func (f *fakeRedirectApp) handlers() map[string]http.HandlerFunc {
@@ -92,6 +96,11 @@ func (f *fakeRedirectApp) handlers() map[string]http.HandlerFunc {
 				})
 				return
 			}
+			if f.staleLeft > 0 {
+				f.staleLeft--
+				jsonResponse(w, 200, f.prePatch)
+				return
+			}
 			jsonResponse(w, 200, f.app)
 		},
 		"PATCH /applications/parent-obj-id": func(w http.ResponseWriter, r *http.Request) {
@@ -99,6 +108,8 @@ func (f *fakeRedirectApp) handlers() map[string]http.HandlerFunc {
 			_ = json.NewDecoder(r.Body).Decode(&patch)
 			f.mu.Lock()
 			defer f.mu.Unlock()
+			f.prePatch = f.app
+			f.staleLeft = f.staleReads
 			f.app.Web, f.app.Spa = patch.Web, patch.Spa
 			f.patches++
 			if f.afterPatch != nil {
@@ -109,7 +120,10 @@ func (f *fakeRedirectApp) handlers() map[string]http.HandlerFunc {
 	}
 }
 
-func runUpdateRedirectURIs(t *testing.T, f *fakeRedirectApp, host string) error {
+// redirectTestHost is the ingress host runUpdateRedirectURIs registers.
+const redirectTestHost = "new-ns" + ciDomainSuffix
+
+func runUpdateRedirectURIs(t *testing.T, f *fakeRedirectApp) error {
 	t.Helper()
 	noRedirectVerifyWait(t)
 	srv := newTestServer(t, f.handlers())
@@ -119,7 +133,7 @@ func runUpdateRedirectURIs(t *testing.T, f *fakeRedirectApp, host string) error 
 	t.Cleanup(func() { graphBaseURL, loginBaseURL = origGraph, origLogin })
 	return UpdateRedirectURIs(context.Background(), RedirectURIOptions{
 		ObjectID:     "parent-obj-id",
-		IngressHost:  host,
+		IngressHost:  redirectTestHost,
 		DirectoryID:  "test-tenant",
 		ClientID:     "parent-client",
 		ClientSecret: "parent-secret",
@@ -1750,7 +1764,7 @@ func TestUpdateRedirectURIs_OverLimitReservesPublicClient(t *testing.T) {
 }
 
 func TestUpdateRedirectURIs_RewritesAfterConcurrentOverwrite(t *testing.T) {
-	host := "new-ns" + ciDomainSuffix
+	host := redirectTestHost
 	otherWeb, otherSpa := buildRedirectURIs("other-ns" + ciDomainSuffix)
 	f := &fakeRedirectApp{}
 	f.afterPatch = func(f *fakeRedirectApp) {
@@ -1760,7 +1774,7 @@ func TestUpdateRedirectURIs_RewritesAfterConcurrentOverwrite(t *testing.T) {
 		}
 	}
 
-	if err := runUpdateRedirectURIs(t, f, host); err != nil {
+	if err := runUpdateRedirectURIs(t, f); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
@@ -1775,13 +1789,31 @@ func TestUpdateRedirectURIs_RewritesAfterConcurrentOverwrite(t *testing.T) {
 	}
 }
 
+func TestUpdateRedirectURIs_WaitsOutStaleReadsWithoutRewriting(t *testing.T) {
+	host := redirectTestHost
+	otherWeb, otherSpa := buildRedirectURIs("other-ns" + ciDomainSuffix)
+	f := &fakeRedirectApp{staleReads: redirectVerifyReads - 1}
+	f.app.Web.RedirectURIs, f.app.Spa.RedirectURIs = otherWeb, otherSpa
+
+	if err := runUpdateRedirectURIs(t, f); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if f.patches != 1 {
+		t.Errorf("PATCH count = %d, want 1", f.patches)
+	}
+	if !hasHostRedirectURIs(f.app, host) || !hasHostRedirectURIs(f.app, "other-ns"+ciDomainSuffix) {
+		t.Error("redirect URIs of a host are missing after stale reads")
+	}
+}
+
 func TestUpdateRedirectURIs_FailsWhenOverwrittenEveryAttempt(t *testing.T) {
 	f := &fakeRedirectApp{}
 	f.afterPatch = func(f *fakeRedirectApp) {
 		f.app.Web.RedirectURIs, f.app.Spa.RedirectURIs = nil, nil
 	}
 
-	err := runUpdateRedirectURIs(t, f, "new-ns"+ciDomainSuffix)
+	err := runUpdateRedirectURIs(t, f)
 
 	if err == nil || !strings.Contains(err.Error(), "concurrent update") {
 		t.Fatalf("error = %v, want concurrent update failure", err)
@@ -1794,7 +1826,7 @@ func TestUpdateRedirectURIs_FailsWhenOverwrittenEveryAttempt(t *testing.T) {
 func TestUpdateRedirectURIs_FailsWhenVerificationReadFails(t *testing.T) {
 	f := &fakeRedirectApp{getStatusAfterPatch: 503}
 
-	err := runUpdateRedirectURIs(t, f, "new-ns"+ciDomainSuffix)
+	err := runUpdateRedirectURIs(t, f)
 
 	if err == nil || !strings.Contains(err.Error(), "status=503") {
 		t.Fatalf("error = %v, want verification read failure with status=503", err)

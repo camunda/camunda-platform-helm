@@ -67,6 +67,10 @@ var (
 // when a concurrent registration removed them.
 const redirectVerifyAttempts = 3
 
+// redirectVerifyReads is how many read-backs follow each write before the URIs
+// count as removed; Graph reads can return a replica's pre-write state.
+const redirectVerifyReads = 6
+
 // loginBaseURL is the Microsoft identity platform base URL. It is a variable
 // so tests can override it with a local httptest server URL.
 var loginBaseURL = "https://login.microsoftonline.com"
@@ -1118,6 +1122,25 @@ func hasHostRedirectURIs(app redirectURIApp, host string) bool {
 	return true
 }
 
+// awaitHostRedirectURIs reads the app back until it contains host's redirect
+// URIs or redirectVerifyReads reads have passed, and returns the last read.
+func awaitHostRedirectURIs(ctx context.Context, g graphTarget, host string) (redirectURIApp, bool, error) {
+	var app redirectURIApp
+	for range redirectVerifyReads {
+		if err := waitRedirectVerify(ctx); err != nil {
+			return app, false, fmt.Errorf("entra: verify redirect URIs: %w", err)
+		}
+		var err error
+		if app, err = fetchRedirectURIApp(ctx, g); err != nil {
+			return app, false, err
+		}
+		if hasHostRedirectURIs(app, host) {
+			return app, true, nil
+		}
+	}
+	return app, false, nil
+}
+
 func waitRedirectVerify(ctx context.Context) error {
 	wait := redirectVerifyDelay
 	if redirectVerifyJitter > 0 {
@@ -1138,9 +1161,9 @@ func waitRedirectVerify(ctx context.Context) error {
 //  3. Replaces the current host's URIs and removes invalid/malformed URIs.
 //  4. Adds the redirect URIs for the current deployment's ingress host.
 //  5. PATCHes the updated URI lists back to the app registration.
-//  6. Reads the app back after a jittered wait and repeats from step 3 when a
-//     concurrent registration removed this host's URIs, failing after
-//     redirectVerifyAttempts writes.
+//  6. Reads the app back up to redirectVerifyReads times, a jittered wait
+//     apart, and repeats from step 3 from the last read when none contains this
+//     host's URIs, failing after redirectVerifyAttempts writes.
 func UpdateRedirectURIs(ctx context.Context, opts RedirectURIOptions) error {
 	if err := resolveRedirectOpts(&opts); err != nil {
 		return fmt.Errorf("entra: %w", err)
@@ -1178,13 +1201,11 @@ func UpdateRedirectURIs(ctx context.Context, opts RedirectURIOptions) error {
 		if err := patchRedirectURIs(ctx, g, app, opts.IngressHost); err != nil {
 			return err
 		}
-		if err := waitRedirectVerify(ctx); err != nil {
-			return fmt.Errorf("entra: verify redirect URIs: %w", err)
-		}
-		if app, err = fetchRedirectURIApp(ctx, g); err != nil {
+		var found bool
+		if app, found, err = awaitHostRedirectURIs(ctx, g, opts.IngressHost); err != nil {
 			return err
 		}
-		if hasHostRedirectURIs(app, opts.IngressHost) {
+		if found {
 			logging.Logger.Info().
 				Str("objectId", opts.ObjectID).
 				Int("attempt", attempt).
