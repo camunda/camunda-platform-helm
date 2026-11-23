@@ -910,12 +910,6 @@ func buildRedirectURIs(host string) (web []string, spa []string) {
 	return web, spa
 }
 
-// isCIDomainURI returns true if the URI belongs to a CI deployment
-// (contains the CI ingress domain suffix).
-func isCIDomainURI(uri string) bool {
-	return strings.Contains(uri, ciDomainSuffix)
-}
-
 // isValidURI returns true if the URI is a well-formed redirect URI.
 // It rejects URIs with trailing commas (data corruption) and empty strings.
 func isValidURI(uri string) bool {
